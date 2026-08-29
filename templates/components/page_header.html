@@ -5,9 +5,12 @@
        subtitulo="Visão geral" acao_label="Nova solicitação" acao_url="/solicitacoes/nova/" %}
 {% endcomment %}
 <div class="page-header">
-  <div>
-    <h1 class="page-header__titulo">{{ titulo }}</h1>
-    {% if subtitulo %}<p class="page-header__subtitulo">{{ subtitulo }}</p>{% endif %}
+  <div class="page-header__identificacao">
+    {% if icone %}<span class="page-header__icone" aria-hidden="true">{{ icone }}</span>{% endif %}
+    <div>
+      <h1 class="page-header__titulo">{{ titulo }}</h1>
+      {% if subtitulo %}<p class="page-header__subtitulo">{{ subtitulo }}</p>{% endif %}
+    </div>
   </div>
   {% if acao_label and acao_url %}
     <div class="page-header__acoes">

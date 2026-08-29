@@ -5,11 +5,19 @@
 <nav class="navbar">
   <div class="navbar__inner">
     <a class="navbar__link {% if request.resolver_match.namespace == 'dashboard' %}navbar__link--ativo{% endif %}"
-       href="{% url 'dashboard:index' %}">Dashboard</a>
+       href="{% url 'dashboard:index' %}"><span class="navbar__icone" aria-hidden="true">⌂</span>Dashboard</a>
     <a class="navbar__link {% if request.resolver_match.namespace == 'solicitacoes' %}navbar__link--ativo{% endif %}"
-       href="{% url 'solicitacoes:nova' %}">Nova solicitação</a>
+       href="{% url 'solicitacoes:nova' %}"><span class="navbar__icone" aria-hidden="true">▤</span>Solicitações</a>
     {% if user.is_staff %}
-      <a class="navbar__link" href="{% url 'admin:index' %}">Cadastros (admin)</a>
+      <a class="navbar__link" href="{% url 'admin:index' %}"><span class="navbar__icone" aria-hidden="true">♙</span>Cadastros</a>
     {% endif %}
+    <span class="navbar__link navbar__link--indisponivel"><span class="navbar__icone" aria-hidden="true">▥</span>Relatórios</span>
+    <span class="navbar__link navbar__link--indisponivel"><span class="navbar__icone" aria-hidden="true">⚙</span>Configurações</span>
+    <span class="navbar__spacer"></span>
+    {% if user.is_staff %}<a class="navbar__acao" href="{% url 'admin:index' %}">Acesso gestor</a>{% endif %}
+    <form method="post" action="{% url 'accounts:logout' %}" class="navbar__logout">
+      {% csrf_token %}
+      <button type="submit">Sair</button>
+    </form>
   </div>
 </nav>

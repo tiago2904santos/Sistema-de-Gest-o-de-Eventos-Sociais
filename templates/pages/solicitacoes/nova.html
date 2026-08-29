@@ -3,101 +3,139 @@
 {% block title %}Nova Solicitação — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with atual="Nova Solicitação de Evento Social" %}
-  {% include "components/page_header.html" with titulo="Nova Solicitação de Evento Social" subtitulo="Preencha as informações abaixo para registrar a solicitação" %}
-
-  {# Formulário ainda sem persistência: layout com dados mockados nesta etapa. #}
-  <form method="post" action="">
+  <form method="post" action="" id="form-solicitacao">
     {% csrf_token %}
 
-    <section class="section-card">
-      {% include "components/section_card.html" with numero="1" titulo="Dados da solicitação" subtitulo="Informações gerais do evento" %}
-      <div class="section-card__corpo">
-        <div class="form-grid">
-          {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True largura="4" %}
-          {% include "components/input.html" with name="data_inicio_evento" label="Início do evento" tipo="date" obrigatorio=True largura="4" %}
-          {% include "components/input.html" with name="data_fim_evento" label="Fim do evento" tipo="date" obrigatorio=True largura="4" %}
-          {% include "components/select.html" with name="tipo_evento" label="Tipo de evento" opcoes=tipos_evento obrigatorio=True largura="4" %}
-          {% include "components/select.html" with name="municipio" label="Município" opcoes=municipios obrigatorio=True largura="4" %}
-          {% include "components/select.html" with name="regiao" label="Região" opcoes=regioes largura="4" ajuda="Preenchida automaticamente a partir do município." %}
-          {% include "components/input.html" with name="local_evento" label="Local do evento" placeholder="Ex.: Praça central, escola municipal..." obrigatorio=True largura="" %}
-        </div>
-      </div>
-    </section>
+    {% include "components/breadcrumb.html" with atual="Nova solicitação" %}
 
-    <section class="section-card">
-      {% include "components/section_card.html" with numero="2" titulo="Solicitante" subtitulo="Quem está solicitando o evento" %}
-      <div class="section-card__corpo">
-        <div class="form-grid">
-          {% include "components/input.html" with name="solicitante_nome" label="Nome completo" obrigatorio=True largura="6" %}
-          {% include "components/input.html" with name="solicitante_cargo" label="Cargo" largura="6" %}
-          {% include "components/input.html" with name="solicitante_unidade" label="Unidade" largura="6" %}
-          {% include "components/input.html" with name="contato" label="Contato (telefone / e-mail)" obrigatorio=True largura="6" %}
-          {% include "components/select.html" with name="orgao_responsavel" label="Órgão responsável" opcoes=orgaos obrigatorio=True largura="6" %}
-        </div>
+    <div class="solicitacao-intro">
+      {% include "components/page_header.html" with titulo="Nova Solicitação de Evento Social" subtitulo="Preencha os dados abaixo para registrar a solicitação de atendimento do evento." icone="▤" %}
+      <div class="solicitacao-intro__acoes">
+        {% url 'dashboard:index' as url_dashboard %}
+        {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_dashboard %}
+        {% include "components/button.html" with label="Salvar rascunho" variante="secundario" tipo="submit" name="acao" value="rascunho" %}
+        {% include "components/button.html" with label="Enviar solicitação" variante="dourado" tipo="submit" name="acao" value="enviar" %}
       </div>
-    </section>
+    </div>
 
-    <section class="section-card">
-      {% include "components/section_card.html" with numero="3" titulo="Serviços e estrutura do evento" subtitulo="O que será ofertado no evento" %}
-      <div class="section-card__corpo">
-        <div class="form-grid">
-          <div class="form-campo">
-            <span class="form-label">Serviços solicitados</span>
+    <div class="solicitacao-layout">
+      <div class="solicitacao-conteudo">
+        <section class="section-card">
+          {% include "components/section_card.html" with numero="1" titulo="Dados da solicitação" %}
+          <div class="section-card__corpo">
             <div class="form-grid">
-              {% for servico in servicos %}
-                <label class="form-check form-campo--4">
-                  <input type="checkbox" name="servicos" value="{{ servico }}"> {{ servico }}
-                </label>
-              {% endfor %}
+              <div class="form-campo form-campo--3">
+                <label class="form-label" for="id_status">Situação</label>
+                <input class="form-controle form-controle--somente-leitura" id="id_status" value="Rascunho" readonly>
+              </div>
+              {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True largura="3" %}
+              {% include "components/input.html" with name="data_inicio_evento" label="Início do evento" tipo="date" obrigatorio=True largura="3" %}
+              {% include "components/input.html" with name="data_fim_evento" label="Fim do evento" tipo="date" obrigatorio=True largura="3" %}
+              {% include "components/select.html" with name="tipo_evento" label="Tipo do evento" opcoes=tipos_evento obrigatorio=True largura="4" %}
+              {% include "components/select.html" with name="municipio" label="Município" opcoes=municipios obrigatorio=True largura="4" %}
+              <div class="form-campo form-campo--4">
+                <label class="form-label" for="id_regiao">Região</label>
+                <input class="form-controle form-controle--somente-leitura" id="id_regiao" name="regiao" placeholder="Definida pelo município" readonly>
+              </div>
+              <div class="form-campo form-campo--4">
+                <label class="form-label" for="id_mes_evento">Mês do evento</label>
+                <input class="form-controle form-controle--somente-leitura" id="id_mes_evento" placeholder="Calculado pela data" readonly>
+              </div>
+              {% include "components/input.html" with name="local_evento" label="Local do evento" placeholder="Ex.: Praça central, escola municipal..." obrigatorio=True largura="" %}
             </div>
           </div>
-          <label class="form-check form-campo--6">
-            <input type="checkbox" name="unidade_movel"> Unidade móvel
-          </label>
-          <label class="form-check form-campo--6">
-            <input type="checkbox" name="veiculo_exposicao"> Veículo de exposição
-          </label>
-          {% include "components/textarea.html" with name="descricao_complementar" label="Descrição complementar" placeholder="Detalhes adicionais sobre a estrutura do evento..." largura="" %}
-        </div>
-      </div>
-    </section>
+        </section>
 
-    <section class="section-card">
-      {% include "components/section_card.html" with numero="4" titulo="Planejamento operacional" subtitulo="Recursos e equipes envolvidos" %}
-      <div class="section-card__corpo">
-        <div class="form-grid">
-          {% include "components/input.html" with name="quantidade_servidores" label="Quantidade de servidores" tipo="number" largura="4" %}
-          {% include "components/select.html" with name="tipo_operacao" label="Tipo de operação" opcoes=tipos_operacao largura="4" %}
-          {% include "components/input.html" with name="quantidade_cin" label="Quantidade de CIN prevista" tipo="number" largura="4" %}
-          <div class="form-campo--6 form-campo">
-            <span class="form-label">Equipes designadas</span>
-            {% for equipe in equipes %}
-              <label class="form-check">
-                <input type="checkbox" name="equipes" value="{{ equipe }}"> {{ equipe }}
-              </label>
-            {% endfor %}
+        <section class="section-card">
+          {% include "components/section_card.html" with numero="2" titulo="Solicitante" %}
+          <div class="section-card__corpo">
+            <div class="form-grid">
+              {% include "components/input.html" with name="solicitante_nome" label="Solicitante" obrigatorio=True largura="4" %}
+              {% include "components/input.html" with name="solicitante_cargo" label="Cargo" obrigatorio=True largura="4" %}
+              {% include "components/input.html" with name="solicitante_unidade" label="Unidade / instituição" obrigatorio=True largura="4" %}
+              {% include "components/input.html" with name="contato" label="Contato" obrigatorio=True largura="6" %}
+              {% include "components/select.html" with name="orgao_responsavel" label="Órgão responsável" opcoes=orgaos obrigatorio=True largura="6" %}
+            </div>
           </div>
-          {% include "components/select.html" with name="motorista" label="Motorista" opcoes=motoristas largura="6" %}
-        </div>
-      </div>
-    </section>
+        </section>
 
-    <section class="section-card">
-      {% include "components/section_card.html" with numero="5" titulo="Despacho DG" subtitulo="Preenchido pela Diretoria-Geral" %}
-      <div class="section-card__corpo">
-        <div class="form-grid">
-          {% include "components/select.html" with name="decisao_dg" label="Decisão da DG" opcoes=decisoes_dg placeholder="Pendente" largura="4" %}
-          {% include "components/textarea.html" with name="observacoes_dg" label="Observações da DG" placeholder="Observações do despacho..." largura="" %}
-        </div>
-      </div>
-    </section>
+        <section class="section-card">
+          {% include "components/section_card.html" with numero="3" titulo="Serviços e estrutura do evento" %}
+          <div class="section-card__corpo">
+            <fieldset class="form-campo form-fieldset">
+              <legend class="form-label">Serviços solicitados</legend>
+              <div class="chip-grid">
+                {% for servico in servicos %}
+                  <label class="check-chip">
+                    <input type="checkbox" name="servicos" value="{{ servico }}">
+                    <span aria-hidden="true">✓</span>{{ servico }}
+                  </label>
+                {% endfor %}
+              </div>
+            </fieldset>
+            <div class="form-grid form-grid--separado">
+              <fieldset class="form-campo form-campo--3 form-fieldset">
+                <legend class="form-label">Unidade móvel</legend>
+                <div class="segmented-control">
+                  <label><input type="radio" name="unidade_movel" value="1"><span>Sim</span></label>
+                  <label><input type="radio" name="unidade_movel" value="0" checked><span>Não</span></label>
+                </div>
+              </fieldset>
+              <fieldset class="form-campo form-campo--3 form-fieldset">
+                <legend class="form-label">Veículos de exposição</legend>
+                <div class="segmented-control">
+                  <label><input type="radio" name="veiculo_exposicao" value="1"><span>Sim</span></label>
+                  <label><input type="radio" name="veiculo_exposicao" value="0" checked><span>Não</span></label>
+                </div>
+              </fieldset>
+              {% include "components/textarea.html" with name="descricao_complementar" label="Descrição complementar" placeholder="Detalhes adicionais sobre serviços e estrutura..." largura="6" linhas="3" %}
+            </div>
+          </div>
+        </section>
 
-    <div class="acoes-formulario">
-      {% url 'dashboard:index' as url_dashboard %}
-      {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_dashboard %}
-      {% include "components/button.html" with label="Salvar rascunho" variante="secundario" tipo="submit" %}
-      {% include "components/button.html" with label="Enviar solicitação" variante="dourado" tipo="submit" %}
+        <section class="section-card">
+          {% include "components/section_card.html" with numero="4" titulo="Planejamento operacional" %}
+          <div class="section-card__corpo">
+            <div class="form-grid">
+              <fieldset class="form-campo form-campo--4 form-fieldset">
+                <legend class="form-label">Equipes</legend>
+                <div class="chip-grid chip-grid--compacto">
+                  {% for equipe in equipes %}
+                    <label class="check-chip"><input type="checkbox" name="equipes" value="{{ equipe }}"><span aria-hidden="true">✓</span>{{ equipe }}</label>
+                  {% endfor %}
+                </div>
+              </fieldset>
+              {% include "components/select.html" with name="motorista" label="Motorista" opcoes=motoristas largura="4" %}
+              {% include "components/input.html" with name="quantidade_servidores" label="Quantidade de servidores sugerida" tipo="number" largura="4" %}
+              {% include "components/select.html" with name="tipo_operacao" label="Tipo" opcoes=tipos_operacao largura="6" %}
+              {% include "components/input.html" with name="quantidade_cin" label="Quantidade de CIN agendadas" tipo="number" largura="6" %}
+            </div>
+          </div>
+        </section>
+
+        <section class="section-card">
+          {% include "components/section_card.html" with numero="5" titulo="Despacho DG" %}
+          <div class="section-card__corpo">
+            <fieldset class="form-campo form-fieldset">
+              <legend class="form-label">Decisão</legend>
+              <div class="decision-grid">
+                <label class="decision-option decision-option--success"><input type="radio" name="decisao_dg" value="ATENDER"><span>✓</span>Atender</label>
+                <label class="decision-option decision-option--danger"><input type="radio" name="decisao_dg" value="NAO_ATENDER"><span>×</span>Não atender</label>
+                <label class="decision-option decision-option--cancel"><input type="radio" name="decisao_dg" value="CANCELADO"><span>⊘</span>Evento cancelado</label>
+              </div>
+            </fieldset>
+            <div class="form-grid form-grid--separado">
+              {% include "components/textarea.html" with name="observacoes_dg" label="Observações DG" placeholder="Observações do despacho..." largura="" linhas="3" %}
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="solicitacao-sidebar" aria-label="Acompanhamento da solicitação">
+        {% include "components/solicitation_summary.html" %}
+        {% include "components/workflow_timeline.html" %}
+        {% include "components/request_checklist.html" %}
+      </aside>
     </div>
   </form>
 {% endblock %}
