@@ -8,7 +8,9 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.http import Http404
 from django.core.paginator import Paginator
+from django.db.models import ProtectedError
 from django.forms import modelform_factory
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -21,22 +23,24 @@ from .models import (
     Motorista,
     Municipio,
     OrgaoResponsavel,
-    Regiao,
     Servico,
     TipoEvento,
 )
 
 CADASTROS = {
     "tipos-evento": {"model": TipoEvento, "titulo": "Tipos de evento", "campos": ["nome"]},
-    "servicos": {"model": Servico, "titulo": "Serviços", "campos": ["nome", "descricao"]},
+    "servicos": {"model": Servico, "titulo": "Serviços", "campos": ["nome"]},
     "equipes": {"model": Equipe, "titulo": "Equipes", "campos": ["nome"]},
     "orgaos": {
         "model": OrgaoResponsavel,
         "titulo": "Órgãos responsáveis",
-        "campos": ["nome", "sigla"],
+        "campos": ["nome"],
     },
-    "regioes": {"model": Regiao, "titulo": "Regiões", "campos": ["nome"]},
-    "municipios": {"model": Municipio, "titulo": "Municípios", "campos": ["nome", "regiao"]},
+    "municipios": {
+        "model": Municipio,
+        "titulo": "Municípios",
+        "campos": ["nome", "estado", "regiao"],
+    },
     "motoristas": {"model": Motorista, "titulo": "Motoristas", "campos": ["nome", "telefone"]},
 }
 
@@ -50,7 +54,7 @@ def _exigir_administrador(request):
 
 def _config(slug):
     if slug not in CADASTROS:
-        raise PermissionDenied
+        raise Http404
     return CADASTROS[slug]
 
 
@@ -107,7 +111,7 @@ def lista(request, slug):
     config = _config(slug)
     queryset = config["model"].objects.all()
     if slug == "municipios":
-        queryset = queryset.select_related("regiao")
+        queryset = queryset.select_related("estado", "regiao")
     termo = request.GET.get("q", "").strip()
     if termo:
         queryset = queryset.filter(nome__icontains=termo)
@@ -174,4 +178,28 @@ def alternar_ativo(request, slug, pk):
         request,
         f"Registro {'ativado' if objeto.ativo else 'inativado'} com sucesso.",
     )
+    return redirect("cadastros:lista", slug=slug)
+
+
+@login_required
+@require_POST
+def excluir(request, slug, pk):
+    _exigir_administrador(request)
+    config = _config(slug)
+    objeto = get_object_or_404(config["model"], pk=pk)
+    descricao = f"{objeto._meta.verbose_name} '{objeto}' (id {objeto.pk})"
+    try:
+        objeto.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            "Este registro não pode ser excluído porque está vinculado a "
+            "solicitações ou a outros cadastros. Use a ação Inativar para "
+            "retirá-lo dos novos formulários.",
+        )
+    else:
+        LogAuditoria.objects.create(
+            usuario=request.user, acao="CADASTRO_EXCLUIDO", descricao=descricao
+        )
+        messages.success(request, "Registro excluído com sucesso.")
     return redirect("cadastros:lista", slug=slug)

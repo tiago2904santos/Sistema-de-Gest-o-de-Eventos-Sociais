@@ -22,6 +22,17 @@ def _opcoes(iteravel):
     return [{"valor": str(getattr(item, "pk", item)), "rotulo": str(item)} for item in iteravel]
 
 
+def _opcoes_municipios(iteravel):
+    return [
+        {
+            "valor": str(item.pk),
+            "rotulo": str(item),
+            "estado": str(item.estado_id),
+        }
+        for item in iteravel
+    ]
+
+
 def _opcoes_choices(choices):
     return [{"valor": str(valor), "rotulo": str(rotulo)} for valor, rotulo in choices]
 
@@ -45,8 +56,8 @@ def _marcados(form, nome):
 
 CAMPOS_FORMULARIO = [
     "data_solicitacao", "data_inicio_evento", "data_fim_evento", "tipo_evento",
-    "municipio", "local_evento", "solicitante_nome", "solicitante_cargo",
-    "solicitante_unidade", "contato", "orgao_responsavel", "unidade_movel",
+    "municipio", "local_evento", "solicitante_nome", "solicitante_cargo_unidade",
+    "contato", "orgao_responsavel", "unidade_movel",
     "veiculo_exposicao", "descricao_complementar", "quantidade_servidores",
     "tipo_operacao", "quantidade_cin", "motorista", "decisao_dg", "observacoes_dg",
 ]
@@ -76,6 +87,12 @@ def _contexto_formulario(request, form, solicitacao=None):
         for nome in CAMPOS_FORMULARIO:
             if nome not in valores:
                 valores[nome] = _valor_da_instancia(solicitacao, nome)
+    if "estado" not in valores:
+        valores["estado"] = (
+            str(solicitacao.municipio.estado_id)
+            if solicitacao and solicitacao.municipio_id
+            else ""
+        )
 
     def opcoes_de(nome, fallback_relacao=None):
         if nome in form.fields:
@@ -95,6 +112,32 @@ def _contexto_formulario(request, form, solicitacao=None):
 
     servicos_salvos = list(solicitacao.servicos.all()) if solicitacao else []
     equipes_salvas = list(solicitacao.equipes.all()) if solicitacao else []
+    estados_salvos = (
+        [solicitacao.municipio.estado]
+        if solicitacao and solicitacao.municipio_id
+        else []
+    )
+    equipes_disponiveis = opcoes_de("equipes", equipes_salvas)
+    equipes_marcadas = marcados_de("equipes", equipes_salvas)
+    quantidades_salvas = {
+        str(item.equipe_id): item.quantidade_servidores
+        for item in solicitacao.itens_equipe.all()
+    } if solicitacao else {}
+    equipes_planejamento = []
+    for equipe in equipes_disponiveis:
+        nome_quantidade = f"quantidade_equipe_{equipe['valor']}"
+        if form.is_bound:
+            quantidade = form.data.get(nome_quantidade, "")
+        else:
+            quantidade = quantidades_salvas.get(equipe["valor"], "")
+        equipes_planejamento.append(
+            {
+                **equipe,
+                "selecionada": equipe["valor"] in equipes_marcadas,
+                "nome_quantidade": nome_quantidade,
+                "quantidade": "" if quantidade is None else str(quantidade),
+            }
+        )
 
     return {
         "form": form,
@@ -104,27 +147,41 @@ def _contexto_formulario(request, form, solicitacao=None):
         "erro_periodo": form.errors.get("data_inicio_evento")
         or form.errors.get("data_fim_evento"),
         "tipos_evento": opcoes_de("tipo_evento"),
-        "municipios": opcoes_de("municipio"),
+        "estados": opcoes_de("estado", estados_salvos),
+        "municipios": _opcoes_municipios(form.fields["municipio"].queryset)
+        if "municipio" in form.fields
+        else _opcoes_municipios([solicitacao.municipio])
+        if solicitacao and solicitacao.municipio_id
+        else [],
         "orgaos": opcoes_de("orgao_responsavel"),
         "servicos": opcoes_de("servicos", servicos_salvos),
-        "equipes": opcoes_de("equipes", equipes_salvas),
+        "equipes": equipes_disponiveis,
+        "equipes_planejamento": equipes_planejamento,
         "motoristas": opcoes_de("motorista"),
         "tipos_operacao": _opcoes_choices(TipoOperacao.choices),
         "servicos_marcados": marcados_de("servicos", servicos_salvos),
-        "equipes_marcadas": marcados_de("equipes", equipes_salvas),
+        "equipes_marcadas": equipes_marcadas,
         "timeline": services.montar_timeline(solicitacao),
         "dados_desabilitado": bool(solicitacao) and not acoes["editar_dados"],
-        "planejamento_desabilitado": bool(solicitacao) and not acoes["editar_planejamento"],
+        # Quem edita o formulário completo também edita o planejamento; senão,
+        # os campos desabilitados não seriam enviados e seriam apagados no save.
+        "planejamento_desabilitado": bool(solicitacao)
+        and not (acoes["editar_dados"] or acoes["editar_planejamento"]),
         "mostrar_enviar": acoes["enviar"] if solicitacao else True,
+        "mostrar_despacho_dg": bool(solicitacao)
+        and permissions.eh_gestor_dg(request.user),
+        "modo_analise": bool(solicitacao) and acoes["encaminhar_despacho"],
     }
 
 
 def _obter_visivel(request, pk):
     solicitacao = get_object_or_404(
         SolicitacaoEvento.objects.select_related(
-            "municipio", "regiao", "tipo_evento", "orgao_responsavel", "motorista",
+            "municipio__estado", "regiao", "tipo_evento", "orgao_responsavel", "motorista",
             "criado_por", "decidido_por",
-        ).prefetch_related("servicos", "equipes", "historico__usuario"),
+        ).prefetch_related(
+            "servicos", "equipes", "itens_equipe__equipe", "historico__usuario"
+        ),
         pk=pk,
     )
     if not permissions.pode_ver(request.user, solicitacao):
@@ -156,7 +213,8 @@ def nova_solicitacao(request):
             else:
                 messages.success(request, f"Rascunho #{solicitacao.pk} salvo com sucesso.")
             return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
-        messages.error(request, "Corrija os campos destacados para continuar.")
+        else:
+            messages.error(request, "Corrija os campos destacados para continuar.")
     else:
         form = SolicitacaoForm()
     contexto = _contexto_formulario(request, form)
@@ -178,29 +236,60 @@ def editar_solicitacao(request, pk):
         extras = {"enviar": acao == "enviar"} if edicao_completa else {}
         if acao == "enviar" and not permissions.pode_enviar(request.user, solicitacao):
             raise PermissionDenied
+        if (
+            acao == "encaminhar_despacho"
+            and not permissions.pode_encaminhar_despacho(request.user, solicitacao)
+        ):
+            raise PermissionDenied
         form = classe_form(request.POST, instance=solicitacao, **extras)
         if form.is_valid():
-            with transaction.atomic():
-                solicitacao = form.save()
-                services.registrar_historico(
-                    solicitacao,
-                    request.user,
-                    AcaoHistorico.ATUALIZACAO if edicao_completa else AcaoHistorico.PLANEJAMENTO,
-                    status_novo=solicitacao.status,
-                )
-                if acao == "enviar":
-                    services.enviar(solicitacao, request.user)
-            if acao == "enviar":
-                messages.success(request, f"Solicitação #{solicitacao.pk} enviada com sucesso.")
+            try:
+                with transaction.atomic():
+                    solicitacao = form.save()
+                    services.registrar_historico(
+                        solicitacao,
+                        request.user,
+                        AcaoHistorico.ATUALIZACAO
+                        if edicao_completa
+                        else AcaoHistorico.PLANEJAMENTO,
+                        status_novo=solicitacao.status,
+                    )
+                    if acao == "enviar":
+                        services.enviar(solicitacao, request.user)
+                    elif acao == "encaminhar_despacho":
+                        services.encaminhar_para_despacho(solicitacao, request.user)
+            except ValidationError as erro:
+                for mensagem_erro in erro.messages:
+                    messages.error(request, mensagem_erro)
             else:
+                if acao == "enviar":
+                    messages.success(
+                        request, f"Solicitação #{solicitacao.pk} enviada com sucesso."
+                    )
+                    return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
+                if acao == "encaminhar_despacho":
+                    messages.success(
+                        request,
+                        f"Análise salva e solicitação #{solicitacao.pk} encaminhada para a DG.",
+                    )
+                    return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
                 messages.success(request, f"Solicitação #{solicitacao.pk} atualizada.")
-            return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
-        messages.error(request, "Corrija os campos destacados para continuar.")
+                if not edicao_completa:
+                    return redirect("solicitacoes:editar", pk=solicitacao.pk)
+                return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
+        else:
+            messages.error(request, "Corrija os campos destacados para continuar.")
     else:
         form = classe_form(instance=solicitacao)
 
     contexto = _contexto_formulario(request, form, solicitacao)
-    contexto["titulo_pagina"] = f"Editar Solicitação #{solicitacao.pk}"
+    if contexto["modo_analise"]:
+        contexto["titulo_pagina"] = f"Análise da Solicitação #{solicitacao.pk}"
+        contexto["subtitulo_pagina"] = (
+            "Complete o planejamento e encaminhe a solicitação para a decisão da DG."
+        )
+    else:
+        contexto["titulo_pagina"] = f"Editar Solicitação #{solicitacao.pk}"
     return render(request, "pages/solicitacoes/form.html", contexto)
 
 
@@ -276,6 +365,7 @@ def detalhe_solicitacao(request, pk):
             "solicitacao": solicitacao,
             "titulo_pagina": f"Solicitação #{solicitacao.pk}",
             "acoes": permissions.acoes_permitidas(request.user, solicitacao),
+            "mostrar_despacho_dg": permissions.eh_gestor_dg(request.user),
             "timeline": services.montar_timeline(solicitacao),
             "historico": solicitacao.historico.all(),
             "form_despacho": DespachoForm(),
@@ -316,10 +406,9 @@ def iniciar_analise(request, pk):
     solicitacao = _obter_visivel(request, pk)
     if not permissions.pode_iniciar_analise(request.user, solicitacao):
         raise PermissionDenied
-    return _executar_transicao(
-        request, solicitacao, services.iniciar_analise,
-        f"Análise da solicitação #{solicitacao.pk} iniciada.",
-    )
+    services.iniciar_analise(solicitacao, request.user)
+    messages.success(request, f"Análise da solicitação #{solicitacao.pk} iniciada.")
+    return redirect("solicitacoes:editar", pk=solicitacao.pk)
 
 
 @login_required

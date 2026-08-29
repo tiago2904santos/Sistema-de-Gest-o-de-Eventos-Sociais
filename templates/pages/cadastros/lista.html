@@ -26,7 +26,7 @@
         <thead>
           <tr>
             <th>Nome</th>
-            {% if eh_municipio %}<th>Região</th>{% endif %}
+            {% if eh_municipio %}<th>Estado</th><th>Região</th>{% endif %}
             <th>Situação</th>
             <th>Atualizado em</th>
             <th>Ações</th>
@@ -36,7 +36,7 @@
           {% for objeto in pagina %}
             <tr>
               <td><strong>{{ objeto.nome }}</strong></td>
-              {% if eh_municipio %}<td>{{ objeto.regiao }}</td>{% endif %}
+              {% if eh_municipio %}<td>{{ objeto.estado }}</td><td>{{ objeto.regiao }}</td>{% endif %}
               <td>
                 {% if objeto.ativo %}
                   <span class="status-badge status-badge--atendida">Ativo</span>
@@ -46,12 +46,17 @@
               </td>
               <td>{{ objeto.atualizado_em|date:"d/m/Y H:i" }}</td>
               <td class="tabela__acoes">
-                <a href="{% url 'cadastros:editar' slug objeto.pk %}">Editar</a>
-                ·
-                <form method="post" action="{% url 'cadastros:alternar_ativo' slug objeto.pk %}" class="acao-inline">
-                  {% csrf_token %}
-                  <button type="submit" class="acao-inline__botao">{{ objeto.ativo|yesno:"Inativar,Ativar" }}</button>
-                </form>
+                <div class="tabela__acoes-grupo">
+                  <a href="{% url 'cadastros:editar' slug objeto.pk %}" class="btn btn--secundario btn--compacto">Editar</a>
+                  <form method="post" action="{% url 'cadastros:alternar_ativo' slug objeto.pk %}" class="acao-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn--secundario btn--compacto btn--alternar-ativo">{{ objeto.ativo|yesno:"Inativar,Ativar" }}</button>
+                  </form>
+                  <form method="post" action="{% url 'cadastros:excluir' slug objeto.pk %}" class="acao-inline" data-confirmar-exclusao>
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn--perigo-suave btn--compacto">Excluir</button>
+                  </form>
+                </div>
               </td>
             </tr>
           {% empty %}

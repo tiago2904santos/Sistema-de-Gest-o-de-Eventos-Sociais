@@ -80,7 +80,9 @@
     if (instancia.busca) {
       var selecionada = instancia.nativo.options[instancia.nativo.selectedIndex];
       instancia.busca.value = instancia.nativo.value && selecionada ? selecionada.text : "";
-      instancia.opcoes.forEach(function (opcao) { opcao.hidden = false; });
+      instancia.opcoes.forEach(function (opcao) {
+        opcao.hidden = opcao.hasAttribute("data-filtered-out");
+      });
       if (instancia.mensagemVazia) instancia.mensagemVazia.hidden = true;
     }
     if (devolverFoco) instancia.trigger.focus();
@@ -155,7 +157,8 @@
       if (nativo.value && selecionada && termo === normalizarTexto(selecionada.text)) termo = "";
       var visiveis = [];
       opcoes.forEach(function (opcao) {
-        var corresponde = normalizarTexto(opcao.textContent).indexOf(termo) !== -1;
+        var corresponde = !opcao.hasAttribute("data-filtered-out")
+          && normalizarTexto(opcao.textContent).indexOf(termo) !== -1;
         opcao.hidden = !corresponde;
         if (corresponde) visiveis.push(opcao);
       });
@@ -782,36 +785,67 @@
     var inicio = campo("data_inicio_evento");
     var fim = campo("data_fim_evento");
     var municipio = campo("municipio");
-    var quantidadeServidores = campo("quantidade_servidores");
+    var estado = campo("estado");
     var quantidadeCin = campo("quantidade_cin");
-    var contato = campo("contato");
     var servicos = formulario.querySelectorAll('[name="servicos"]:checked');
     var equipes = formulario.querySelectorAll('[name="equipes"]:checked');
     var nomesEquipes = Array.prototype.map.call(equipes, function (item) {
       var rotulo = item.closest("label");
-      return rotulo ? rotulo.textContent.trim() : item.value;
+      var alocacao = item.closest("[data-equipe-alocacao]");
+      var quantidade = alocacao && alocacao.querySelector("[data-equipe-quantidade]");
+      var nome = rotulo ? rotulo.textContent.trim() : item.value;
+      return quantidade && quantidade.value ? nome + " (" + quantidade.value + ")" : nome;
     });
+    var quantidadesEquipes = Array.prototype.map.call(equipes, function (item) {
+      var alocacao = item.closest("[data-equipe-alocacao]");
+      var quantidade = alocacao && alocacao.querySelector("[data-equipe-quantidade]");
+      return quantidade ? Number(quantidade.value || 0) : 0;
+    });
+    var totalServidores = quantidadesEquipes.reduce(function (total, quantidade) {
+      return total + quantidade;
+    }, 0);
 
     var periodo = inicio && inicio.value ? formatarData(inicio.value) : "";
     if (fim && fim.value) periodo += " a " + formatarData(fim.value);
 
     definirResumo("resumo-periodo", periodo);
+    definirResumo("resumo-estado", textoSelecionado("estado"));
     definirResumo("resumo-municipio", textoSelecionado("municipio"));
     definirResumo("resumo-tipo", textoSelecionado("tipo_evento"));
     definirResumo("resumo-equipes", nomesEquipes.join(", "));
-    definirResumo("resumo-servidores", quantidadeServidores && quantidadeServidores.value);
+    definirResumo("resumo-servidores", totalServidores || "");
     definirResumo("resumo-cin", quantidadeCin && quantidadeCin.value);
 
-    marcarChecklist("contato", contato && contato.value.trim());
     marcarChecklist("periodo", inicio && inicio.value && fim && fim.value);
+    marcarChecklist("estado", estado && estado.value);
     marcarChecklist("municipio", municipio && municipio.value);
     marcarChecklist("servicos", servicos.length);
     marcarChecklist("equipe", equipes.length);
     marcarChecklist(
       "quantidades",
-      quantidadeServidores && quantidadeServidores.value && quantidadeCin && quantidadeCin.value
+      equipes.length
+        && quantidadesEquipes.every(function (quantidade) { return quantidade > 0; })
+        && quantidadeCin
+        && quantidadeCin.value
     );
   }
+
+  formulario.querySelectorAll("[data-equipe-alocacao]").forEach(function (alocacao) {
+    var checkbox = alocacao.querySelector("[data-equipe-checkbox]");
+    var quantidade = alocacao.querySelector("[data-equipe-quantidade]");
+    if (!checkbox || !quantidade) return;
+    var bloqueadoPorPermissao = checkbox.disabled;
+
+    function sincronizarQuantidade(focar) {
+      quantidade.disabled = bloqueadoPorPermissao || !checkbox.checked;
+      if (focar && checkbox.checked && !quantidade.value && !bloqueadoPorPermissao) {
+        quantidade.focus();
+      }
+    }
+
+    checkbox.addEventListener("change", function () { sincronizarQuantidade(true); });
+    sincronizarQuantidade(false);
+  });
 
   var dataSolicitacao = campo("data_solicitacao");
   if (dataSolicitacao && !dataSolicitacao.value) {
@@ -821,7 +855,144 @@
     dataSolicitacao.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
+  var tipoEvento = campo("tipo_evento");
+  var estadoEvento = campo("estado");
+  var municipioEvento = campo("municipio");
+  var solicitanteNome = campo("solicitante_nome");
+  var solicitanteCargoUnidade = campo("solicitante_cargo_unidade");
+
+  function normalizarNomeEvento(valor) {
+    return String(valor || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase("pt-BR")
+      .trim();
+  }
+
+  function preencherSolicitanteParanaEmAcao() {
+    if (!tipoEvento || normalizarNomeEvento(textoSelecionado("tipo_evento")) !== "parana em acao") {
+      return;
+    }
+    if (solicitanteNome) solicitanteNome.value = "Paraná em Ação";
+    if (solicitanteCargoUnidade) solicitanteCargoUnidade.value = "SEJU";
+  }
+
+  if (tipoEvento) {
+    tipoEvento.addEventListener("change", preencherSolicitanteParanaEmAcao);
+    preencherSolicitanteParanaEmAcao();
+  }
+
+  function filtrarMunicipiosPorEstado() {
+    if (!estadoEvento || !municipioEvento) return;
+    var estadoSelecionado = estadoEvento.value;
+    var wrapperMunicipio = municipioEvento.closest("[data-custom-select]");
+    var opcaoSelecionada = municipioEvento.options[municipioEvento.selectedIndex];
+
+    Array.prototype.forEach.call(municipioEvento.options, function (opcao) {
+      var estadoOpcao = opcao.getAttribute("data-parent-value");
+      var visivel = !estadoOpcao || estadoOpcao === estadoSelecionado;
+      opcao.hidden = !visivel;
+      opcao.disabled = !visivel;
+    });
+
+    if (
+      opcaoSelecionada
+      && opcaoSelecionada.getAttribute("data-parent-value")
+      && opcaoSelecionada.getAttribute("data-parent-value") !== estadoSelecionado
+    ) {
+      municipioEvento.value = "";
+      municipioEvento.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    if (wrapperMunicipio) {
+      wrapperMunicipio.querySelectorAll(".custom-select__opcao").forEach(function (opcao) {
+        var visivel = opcao.getAttribute("data-parent-value") === estadoSelecionado;
+        opcao.toggleAttribute("data-filtered-out", !visivel);
+        opcao.hidden = !visivel;
+      });
+      var buscaMunicipio = wrapperMunicipio.querySelector("[data-custom-select-search]");
+      if (buscaMunicipio && !municipioEvento.value) buscaMunicipio.value = "";
+    }
+  }
+
+  if (estadoEvento && municipioEvento) {
+    estadoEvento.addEventListener("change", filtrarMunicipiosPorEstado);
+    filtrarMunicipiosPorEstado();
+  }
+
   formulario.addEventListener("input", atualizarAcompanhamento);
   formulario.addEventListener("change", atualizarAcompanhamento);
   atualizarAcompanhamento();
+})();
+
+/**
+ * Confirmação em duas etapas para exclusões, sem diálogo nativo do navegador.
+ * Primeiro clique arma o botão ("Confirmar?"); o segundo clique envia.
+ */
+(function () {
+  "use strict";
+
+  document.querySelectorAll("[data-confirmar-exclusao]").forEach(function (formulario) {
+    var botao = formulario.querySelector('button[type="submit"]');
+    if (!botao) return;
+    var rotuloOriginal = botao.textContent;
+    var armado = false;
+    var temporizador = null;
+
+    function desarmar() {
+      armado = false;
+      botao.textContent = rotuloOriginal;
+      botao.classList.remove("is-armado");
+      if (temporizador) {
+        clearTimeout(temporizador);
+        temporizador = null;
+      }
+    }
+
+    formulario.addEventListener("submit", function (evento) {
+      if (armado) return;
+      evento.preventDefault();
+      armado = true;
+      botao.textContent = "Confirmar?";
+      botao.classList.add("is-armado");
+      temporizador = setTimeout(desarmar, 4000);
+    });
+
+    botao.addEventListener("blur", desarmar);
+  });
+})();
+
+/**
+ * Motorista só se aplica quando o evento tem unidade móvel: sem unidade
+ * móvel, o select fica desabilitado e a seleção é limpa. A mesma regra é
+ * garantida no servidor (forms de solicitação e planejamento).
+ */
+(function () {
+  "use strict";
+
+  var formulario = document.querySelector("#form-solicitacao");
+  if (!formulario) return;
+  var motorista = formulario.querySelector('select[name="motorista"]');
+  var radios = formulario.querySelectorAll('input[name="unidade_movel"]');
+  if (!motorista || !radios.length) return;
+  var wrapper = motorista.closest("[data-custom-select]");
+  var trigger = wrapper && wrapper.querySelector("[data-custom-select-trigger]");
+  var desabilitadoPorPermissao = motorista.disabled;
+
+  function aplicarRegra() {
+    if (desabilitadoPorPermissao) return;
+    var comUnidadeMovel = formulario.querySelector('input[name="unidade_movel"]:checked');
+    var ativo = Boolean(comUnidadeMovel && comUnidadeMovel.value === "1");
+    if (!ativo && motorista.value) {
+      motorista.value = "";
+    }
+    motorista.disabled = !ativo;
+    if (trigger) trigger.disabled = !ativo;
+    motorista.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  radios.forEach(function (radio) {
+    radio.addEventListener("change", aplicarRegra);
+  });
+  aplicarRegra();
 })();

@@ -58,7 +58,7 @@
                 <td class="tabela__acoes">
                   <a href="{% url 'solicitacoes:detalhe' s.pk %}">Detalhes</a>
                   {% if linha.acoes.editar %}
-                    · <a href="{% url 'solicitacoes:editar' s.pk %}">Editar</a>
+                    · <a href="{% url 'solicitacoes:editar' s.pk %}">{% if linha.acoes.encaminhar_despacho %}Continuar análise{% else %}Editar{% endif %}</a>
                   {% endif %}
                 </td>
               </tr>

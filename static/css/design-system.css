@@ -603,6 +603,36 @@ textarea.form-controle {
   width: 100%;
 }
 
+/* Variante compacta para ações em linhas de tabela. */
+.btn--compacto {
+  padding: 0.3rem 0.75rem;
+  font-size: var(--texto-xs);
+}
+
+/* Largura fixa para Ativar/Inativar não desalinhar a coluna de ações. */
+.btn--alternar-ativo {
+  min-width: 5.25rem;
+}
+
+/* Perigo em contorno: menos peso visual dentro de tabelas. */
+.btn--perigo-suave {
+  background: var(--cor-superficie);
+  color: var(--cor-erro);
+  border-color: var(--cor-erro);
+}
+
+.btn--perigo-suave:hover {
+  background: var(--cor-erro);
+  color: #fff;
+}
+
+/* Estado armado da exclusão em duas etapas: pede o clique de confirmação. */
+.btn--perigo-suave.is-armado {
+  background: var(--cor-erro);
+  color: #fff;
+  border-color: var(--cor-erro);
+}
+
 /* --------------------------------------------------------------------------
    11. Tabelas
    -------------------------------------------------------------------------- */
@@ -1026,13 +1056,64 @@ textarea.form-controle {
 .form-controle--somente-leitura { background: #f0f1f2; color: #656b73; }
 textarea.form-controle { min-height: 68px; }
 .form-fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
-.chip-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip-grid--compacto { gap: 6px; }
+/* Grade de colunas uniformes: chips alinhados, sem larguras desiguais. */
+.chip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px;
+}
+.chip-grid--compacto {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+}
+.chip-grid--equipes {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.chip-grid--equipes .check-chip {
+  min-width: 92px;
+  flex: 1 1 0;
+  white-space: nowrap;
+}
+.equipe-alocacao-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+.equipe-alocacao {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: 8px;
+  align-items: end;
+}
+.equipe-alocacao .check-chip {
+  min-height: 42px;
+}
+.equipe-alocacao__quantidade label {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--cor-texto-suave);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.equipe-alocacao__quantidade .form-controle {
+  min-height: 42px;
+  padding-inline: 10px;
+  text-align: center;
+}
+.equipe-alocacao__quantidade .form-controle:disabled {
+  background: var(--cor-superficie);
+  color: var(--cor-texto-suave);
+  opacity: 0.65;
+}
 .check-chip {
-  position: relative; min-height: 36px; display: inline-flex; align-items: center;
+  position: relative; min-height: 36px; display: flex; align-items: center;
   justify-content: flex-start; gap: 8px; padding: 7px 11px; border: 1px solid var(--cor-borda);
   border-radius: 8px; background: var(--cor-superficie); color: var(--cor-texto);
-  font-size: 0.72rem; font-weight: 600; cursor: pointer; user-select: none;
+  font-size: 0.72rem; font-weight: 600; line-height: 1.3; cursor: pointer; user-select: none;
   transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 .check-chip input, .segmented-control input, .decision-option input {
@@ -1176,25 +1257,164 @@ textarea.form-controle { min-height: 68px; }
 /* --------------------------------------------------------------------------
    Listagem e detalhe de solicitações
    -------------------------------------------------------------------------- */
+/* Chip somente leitura (detalhe): exibido como selecionado. */
 .check-chip--estatico {
   cursor: default;
+  border-color: var(--cor-acento);
+  background: #fbf6e8;
 }
 
-.resumo-lista--detalhe {
+.check-chip--estatico span {
+  border-color: var(--cor-acento);
+  background: var(--cor-acento);
+}
+
+.check-chip--estatico span .ui-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* --------------------------------------------------------------------------
+   Página de detalhe da solicitação
+   -------------------------------------------------------------------------- */
+
+/* Variações dos summary cards da visão geral do detalhe. */
+.summary-card__valor--texto {
+  font-size: var(--texto-lg);
+  line-height: 1.35;
+  margin-top: var(--esp-2);
+  font-weight: 700;
+}
+
+.summary-card__valor--badge {
+  margin-top: var(--esp-3);
+}
+
+/* Grade de cards do detalhe (2 colunas + cards largos). */
+.detalhe-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--esp-3) var(--esp-5);
-  margin-top: var(--esp-4);
+  gap: var(--esp-5);
 }
 
-.resumo-lista--detalhe > div {
+.detalhe-card {
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-card);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+}
+
+.detalhe-card--largo {
+  grid-column: 1 / -1;
+}
+
+.detalhe-card__cabecalho {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-4) var(--esp-5);
+  border-bottom: 1px solid var(--cor-borda);
+  background: #fafbfc;
+}
+
+.detalhe-card__icone {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 9px;
+  background: var(--cor-dourado-100);
+  color: var(--cor-dourado-700);
+  display: grid;
+  place-items: center;
+}
+
+.detalhe-card__icone .ui-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.detalhe-card__titulo {
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--cor-dourado-700);
+}
+
+.detalhe-card__corpo {
+  padding: var(--esp-3) var(--esp-5) var(--esp-5);
+  flex: 1;
+}
+
+.detalhe-card__corpo--tabela {
+  padding: 0;
+}
+
+.detalhe-card__rotulo {
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--cor-texto-suave);
+  margin: var(--esp-3) 0;
+}
+
+/* Linhas rótulo/valor com divisórias, no padrão do painel de resumo. */
+.linhas-dados {
+  margin: 0;
+}
+
+.linhas-dados > div {
+  display: grid;
+  grid-template-columns: minmax(150px, 38%) 1fr;
+  gap: var(--esp-4);
+  padding: var(--esp-3) 0;
+  border-bottom: 1px solid #eef0f2;
+  align-items: baseline;
+}
+
+.linhas-dados > div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.linhas-dados dt {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.linhas-dados dd {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--cor-texto);
+  overflow-wrap: break-word;
+}
+
+.linhas-dados--separado {
+  margin-top: var(--esp-4);
+  padding-top: var(--esp-2);
+  border-top: 1px solid var(--cor-borda);
+}
+
+@media (max-width: 1000px) {
+  .detalhe-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .tabela__acoes {
   white-space: nowrap;
+}
+
+.tabela__acoes-grupo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
 }
 
 .paginacao {
@@ -1217,7 +1437,7 @@ textarea.form-controle { min-height: 68px; }
 }
 
 @media (max-width: 760px) {
-  .resumo-lista--detalhe { grid-template-columns: 1fr; }
+  .linhas-dados > div { grid-template-columns: 1fr; gap: 2px; }
 }
 
 .summary-card--link {

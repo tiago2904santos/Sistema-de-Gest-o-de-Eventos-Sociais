@@ -15,6 +15,7 @@ from django.db import transaction
 
 from cadastros.models import (
     Equipe,
+    Estado,
     Municipio,
     OrgaoResponsavel,
     Regiao,
@@ -23,7 +24,13 @@ from cadastros.models import (
 )
 from solicitacoes.permissions import GRUPOS_PADRAO
 
-TIPOS_EVENTO = ["Ação social", "Feira de serviços", "Mutirão CIN", "Evento institucional"]
+TIPOS_EVENTO = [
+    "Ação social",
+    "Feira de serviços",
+    "Mutirão CIN",
+    "Evento institucional",
+    "Paraná em Ação",
+]
 
 SERVICOS = [
     "Emissão de CIN",
@@ -34,9 +41,9 @@ SERVICOS = [
 ]
 
 ORGAOS = [
-    ("Instituto de Identificação do Paraná", "IIPR"),
-    ("Delegacia-Geral", "DG"),
-    ("Delegacia-Geral Adjunta", "DGA"),
+    "Instituto de Identificação do Paraná",
+    "Delegacia-Geral",
+    "Delegacia-Geral Adjunta",
 ]
 
 EQUIPES = ["Equipe Alfa", "Equipe Bravo", "Equipe Charlie"]
@@ -75,22 +82,28 @@ class Command(BaseCommand):
             _, criado = Servico.objects.get_or_create(nome=nome)
             criados += criado
 
-        for nome, sigla in ORGAOS:
-            _, criado = OrgaoResponsavel.objects.get_or_create(
-                nome=nome, defaults={"sigla": sigla}
-            )
+        for nome in ORGAOS:
+            _, criado = OrgaoResponsavel.objects.get_or_create(nome=nome)
             criados += criado
 
         for nome in EQUIPES:
             _, criado = Equipe.objects.get_or_create(nome=nome)
             criados += criado
 
+        parana, criado = Estado.objects.get_or_create(
+            codigo_ibge=41,
+            defaults={"nome": "Paraná", "sigla": "PR"},
+        )
+        criados += criado
+
         for regiao_nome, municipios in MUNICIPIOS_PR.items():
             regiao, criado = Regiao.objects.get_or_create(nome=regiao_nome)
             criados += criado
             for municipio_nome in municipios:
                 _, criado = Municipio.objects.get_or_create(
-                    nome=municipio_nome, regiao=regiao
+                    nome=municipio_nome,
+                    estado=parana,
+                    defaults={"regiao": regiao},
                 )
                 criados += criado
 
@@ -100,6 +113,6 @@ class Command(BaseCommand):
             )
         )
         self.stdout.write(
-            "Para a carga completa dos municípios do PR use: "
-            "python manage.py importar_municipios <arquivo.csv>"
+            "Para sincronizar todos os estados e municípios do Brasil use: "
+            "python manage.py importar_localidades_ibge"
         )

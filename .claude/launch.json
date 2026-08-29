@@ -4,8 +4,8 @@
     {
       "name": "django-dev",
       "runtimeExecutable": ".venv\\Scripts\\python.exe",
-      "runtimeArgs": ["manage.py", "runserver", "8010"],
-      "port": 8010
+      "runtimeArgs": ["manage.py", "runserver", "8021"],
+      "port": 8021
     }
   ]
 }

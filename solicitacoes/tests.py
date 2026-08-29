@@ -8,6 +8,7 @@ from django.urls import reverse
 
 from cadastros.models import (
     Equipe,
+    Estado,
     Motorista,
     Municipio,
     OrgaoResponsavel,
@@ -16,7 +17,7 @@ from cadastros.models import (
     TipoEvento,
 )
 
-from .forms import DespachoForm, SolicitacaoForm
+from .forms import DespachoForm, PlanejamentoForm, SolicitacaoForm
 from .models import (
     AcaoHistorico,
     DecisaoDG,
@@ -34,12 +35,20 @@ class BaseSolicitacaoTestCase(TestCase):
     def setUpTestData(cls):
         cls.regiao = Regiao.objects.create(nome="Região Teste")
         cls.outra_regiao = Regiao.objects.create(nome="Outra Região")
-        cls.municipio = Municipio.objects.create(nome="Cidade Teste", regiao=cls.regiao)
+        cls.estado = Estado.objects.get(codigo_ibge=41)
+        cls.outro_estado = Estado.objects.create(
+            nome="São Paulo", sigla="SP", codigo_ibge=35
+        )
+        cls.municipio = Municipio.objects.create(
+            nome="Cidade Teste", estado=cls.estado, regiao=cls.regiao
+        )
         cls.tipo = TipoEvento.objects.create(nome="Ação social")
+        cls.tipo_parana_em_acao = TipoEvento.objects.create(nome="Paraná em Ação")
         cls.orgao = OrgaoResponsavel.objects.create(nome="Órgão Teste")
         cls.servico = Servico.objects.create(nome="Emissão de CIN")
         cls.outro_servico = Servico.objects.create(nome="Coleta de digitais")
         cls.equipe = Equipe.objects.create(nome="Equipe Alfa")
+        cls.outra_equipe = Equipe.objects.create(nome="IIPR")
         cls.motorista = Motorista.objects.create(nome="Motorista Teste")
 
         cls.solicitante = User.objects.create_user("solicitante", password="x")
@@ -59,8 +68,7 @@ class BaseSolicitacaoTestCase(TestCase):
             "tipo_evento": self.tipo,
             "orgao_responsavel": self.orgao,
             "solicitante_nome": "Fulano",
-            "solicitante_cargo": "Agente",
-            "solicitante_unidade": "Unidade X",
+            "solicitante_cargo_unidade": "Agente / Unidade X",
             "contato": "41 99999-0000",
             "local_evento": "Praça central",
             "criado_por": self.solicitante,
@@ -81,11 +89,11 @@ class BaseSolicitacaoTestCase(TestCase):
             "data_inicio_evento": "2026-09-10",
             "data_fim_evento": "2026-09-11",
             "tipo_evento": self.tipo.pk,
+            "estado": self.estado.pk,
             "municipio": self.municipio.pk,
             "local_evento": "Praça central",
             "solicitante_nome": "Fulano",
-            "solicitante_cargo": "Agente",
-            "solicitante_unidade": "Unidade X",
+            "solicitante_cargo_unidade": "Agente / Unidade X",
             "contato": "41 99999-0000",
             "orgao_responsavel": self.orgao.pk,
             "servicos": [self.servico.pk],
@@ -95,13 +103,20 @@ class BaseSolicitacaoTestCase(TestCase):
 
 
 class ModelosTests(BaseSolicitacaoTestCase):
+    def test_tipo_operacao_padrao_e_diaria(self):
+        solicitacao = self.criar_solicitacao()
+        self.assertEqual(solicitacao.tipo_operacao, "DIARIA")
+        self.assertEqual(solicitacao.get_tipo_operacao_display(), "Diária")
+
     def test_regiao_derivada_do_municipio(self):
         solicitacao = self.criar_solicitacao(regiao=None)
         self.assertEqual(solicitacao.regiao, self.regiao)
 
     def test_regiao_corrigida_ao_trocar_municipio(self):
         solicitacao = self.criar_solicitacao()
-        novo_municipio = Municipio.objects.create(nome="Nova", regiao=self.outra_regiao)
+        novo_municipio = Municipio.objects.create(
+            nome="Nova", estado=self.outro_estado, regiao=self.outra_regiao
+        )
         solicitacao.municipio = novo_municipio
         solicitacao.save()
         self.assertEqual(solicitacao.regiao, self.outra_regiao)
@@ -125,12 +140,16 @@ class ModelosTests(BaseSolicitacaoTestCase):
 
     def test_equipe_unica_por_solicitacao(self):
         solicitacao = self.criar_solicitacao()
-        solicitacao.itens_equipe.create(equipe=self.equipe)
+        solicitacao.itens_equipe.create(equipe=self.equipe, quantidade_servidores=5)
         with self.assertRaises(Exception):
             solicitacao.itens_equipe.create(equipe=self.equipe)
 
 
 class FormsTests(BaseSolicitacaoTestCase):
+    def test_estado_padrao_e_parana(self):
+        form = SolicitacaoForm()
+        self.assertEqual(form.initial["estado"], self.estado.pk)
+
     def test_rascunho_parcial_valido(self):
         form = SolicitacaoForm({"data_solicitacao": "2026-08-01"}, enviar=False)
         self.assertTrue(form.is_valid(), form.errors)
@@ -146,12 +165,77 @@ class FormsTests(BaseSolicitacaoTestCase):
         form = SolicitacaoForm(dados, enviar=True)
         self.assertTrue(form.is_valid(), form.errors)
 
+    def test_contato_nao_e_obrigatorio_para_envio(self):
+        dados = self.dados_completos_post()
+        dados["contato"] = ""
+
+        form = SolicitacaoForm(dados, enviar=True)
+
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_local_do_evento_nao_e_obrigatorio_para_envio(self):
+        dados = self.dados_completos_post()
+        dados["local_evento"] = ""
+
+        form = SolicitacaoForm(dados, enviar=True)
+
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_parana_em_acao_define_solicitante_e_cargo_unidade(self):
+        dados = self.dados_completos_post()
+        dados["tipo_evento"] = self.tipo_parana_em_acao.pk
+        dados["solicitante_nome"] = "Outro solicitante"
+        dados["solicitante_cargo_unidade"] = "Outro cargo"
+
+        form = SolicitacaoForm(dados, enviar=True)
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["solicitante_nome"], "Paraná em Ação")
+        self.assertEqual(form.cleaned_data["solicitante_cargo_unidade"], "SEJU")
+
+    def test_municipio_deve_pertencer_ao_estado(self):
+        dados = self.dados_completos_post()
+        dados["estado"] = self.outro_estado.pk
+
+        form = SolicitacaoForm(dados, enviar=True)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("municipio", form.errors)
+
     def test_periodo_invertido_invalido(self):
         dados = self.dados_completos_post()
         dados["data_fim_evento"] = "2026-09-01"
         form = SolicitacaoForm(dados, enviar=True)
         self.assertFalse(form.is_valid())
         self.assertIn("data_fim_evento", form.errors)
+
+    def test_motorista_apenas_com_unidade_movel(self):
+        dados = self.dados_completos_post(acao="rascunho")
+        dados["unidade_movel"] = "0"
+        dados["motorista"] = self.motorista.pk
+
+        form = SolicitacaoForm(dados, enviar=False)
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIsNone(form.cleaned_data["motorista"])
+
+        dados["unidade_movel"] = "1"
+        form = SolicitacaoForm(dados, enviar=False)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["motorista"], self.motorista)
+
+    def test_planejamento_limpa_motorista_sem_unidade_movel(self):
+        solicitacao = self.criar_solicitacao(
+            unidade_movel=True, motorista=self.motorista
+        )
+        form = PlanejamentoForm(
+            {"unidade_movel": "0", "motorista": self.motorista.pk},
+            instance=solicitacao,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        solicitacao = form.save()
+        self.assertIsNone(solicitacao.motorista)
+        self.assertFalse(solicitacao.unidade_movel)
 
     def test_despacho_negativo_exige_observacao(self):
         form = DespachoForm({"decisao": DecisaoDG.NAO_ATENDER, "observacao": ""})
@@ -177,9 +261,8 @@ class FormsTests(BaseSolicitacaoTestCase):
 class WorkflowTests(BaseSolicitacaoTestCase):
     def test_fluxo_completo_valido(self):
         solicitacao = self.solicitacao_completa()
-        solicitacao.itens_equipe.create(equipe=self.equipe)
-        solicitacao.quantidade_servidores = 5
-        solicitacao.tipo_operacao = "ORDINARIA"
+        solicitacao.itens_equipe.create(equipe=self.equipe, quantidade_servidores=5)
+        solicitacao.tipo_operacao = "DIARIA"
         solicitacao.save()
 
         services.enviar(solicitacao, self.solicitante)
@@ -245,9 +328,8 @@ class WorkflowTests(BaseSolicitacaoTestCase):
 
     def test_historico_registrado_nas_transicoes(self):
         solicitacao = self.solicitacao_completa()
-        solicitacao.itens_equipe.create(equipe=self.equipe)
-        solicitacao.quantidade_servidores = 5
-        solicitacao.tipo_operacao = "ORDINARIA"
+        solicitacao.itens_equipe.create(equipe=self.equipe, quantidade_servidores=5)
+        solicitacao.tipo_operacao = "DIARIA"
         solicitacao.save()
         services.enviar(solicitacao, self.solicitante)
         services.iniciar_analise(solicitacao, self.analista)
@@ -299,6 +381,15 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.assertEqual(solicitacao.criado_por, self.solicitante)
         self.assertTrue(
             solicitacao.historico.filter(acao=AcaoHistorico.CRIACAO).exists()
+        )
+
+    def test_botao_salvar_rascunho_ignora_validacao_nativa(self):
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(reverse("solicitacoes:nova"))
+
+        self.assertContains(
+            resposta,
+            'name="acao" value="rascunho" formnovalidate',
         )
 
     def test_criar_e_enviar(self):
@@ -362,22 +453,69 @@ class ViewsTests(BaseSolicitacaoTestCase):
             reverse("solicitacoes:editar", args=[solicitacao.pk]),
             {
                 "acao": "rascunho",
-                "equipes": [self.equipe.pk],
-                "quantidade_servidores": 4,
-                "tipo_operacao": "ORDINARIA",
+                "equipes": [self.equipe.pk, self.outra_equipe.pk],
+                f"quantidade_equipe_{self.equipe.pk}": 2,
+                f"quantidade_equipe_{self.outra_equipe.pk}": 6,
+                "tipo_operacao": "DIARIA",
                 "motorista": self.motorista.pk,
                 "solicitante_nome": "Hackeado",
             },
         )
         self.assertEqual(resposta.status_code, 302)
         solicitacao.refresh_from_db()
-        self.assertEqual(solicitacao.quantidade_servidores, 4)
-        self.assertEqual(list(solicitacao.equipes.all()), [self.equipe])
+        self.assertEqual(solicitacao.quantidade_servidores, 8)
+        self.assertEqual(
+            {
+                item.equipe: item.quantidade_servidores
+                for item in solicitacao.itens_equipe.select_related("equipe")
+            },
+            {self.equipe: 2, self.outra_equipe: 6},
+        )
         # Campos fora do planejamento não podem ser alterados pelo analista.
         self.assertEqual(solicitacao.solicitante_nome, "Fulano")
         self.assertTrue(
             solicitacao.historico.filter(acao=AcaoHistorico.PLANEJAMENTO).exists()
         )
+
+    def test_secao_despacho_dg_fica_oculta_para_solicitante_e_analista(self):
+        solicitacao = self.solicitacao_completa()
+        self.client.force_login(self.solicitante)
+
+        resposta = self.client.get(
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
+        )
+        self.assertNotContains(resposta, ">Despacho DG<", html=False)
+
+        services.enviar(solicitacao, self.solicitante)
+        services.iniciar_analise(solicitacao, self.analista)
+        self.client.force_login(self.analista)
+        resposta = self.client.get(
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
+        )
+        self.assertNotContains(resposta, ">Despacho DG<", html=False)
+        resposta = self.client.get(
+            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+        self.assertNotContains(resposta, ">Despacho DG<", html=False)
+
+    def test_secao_despacho_dg_nao_aparece_no_cadastro_nem_para_administrador(self):
+        self.client.force_login(self.superusuario)
+
+        resposta = self.client.get(reverse("solicitacoes:nova"))
+
+        self.assertNotContains(resposta, ">Despacho DG<", html=False)
+        self.assertNotContains(resposta, 'name="decisao_dg_visual"')
+
+    def test_secao_despacho_dg_fica_visivel_para_gestor_dg(self):
+        solicitacao = self.solicitacao_completa()
+        solicitacao.status = StatusSolicitacao.AGUARDANDO_DESPACHO
+        solicitacao.save()
+        self.client.force_login(self.gestor)
+
+        resposta = self.client.get(
+            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+        self.assertContains(resposta, ">Despacho DG<", html=False)
 
     def test_transicoes_exigem_post(self):
         solicitacao = self.solicitacao_completa()
@@ -387,6 +525,69 @@ class ViewsTests(BaseSolicitacaoTestCase):
             reverse("solicitacoes:iniciar_analise", args=[solicitacao.pk])
         )
         self.assertEqual(resposta.status_code, 405)
+
+    def test_analisar_abre_formulario_e_encaminha_na_mesma_tela(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.client.force_login(self.analista)
+
+        detalhe = self.client.get(
+            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+        self.assertContains(detalhe, "Analisar solicitação")
+        self.assertNotContains(detalhe, ">Editar<", html=False)
+
+        resposta = self.client.post(
+            reverse("solicitacoes:iniciar_analise", args=[solicitacao.pk])
+        )
+        self.assertRedirects(
+            resposta, reverse("solicitacoes:editar", args=[solicitacao.pk])
+        )
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.EM_ANALISE)
+
+        detalhe = self.client.get(
+            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+        self.assertContains(detalhe, "Continuar análise")
+        self.assertNotContains(detalhe, "Encaminhar para despacho")
+
+        resposta = self.client.get(
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
+        )
+        self.assertContains(resposta, "Análise da Solicitação")
+        self.assertContains(resposta, "Salvar análise")
+        self.assertContains(resposta, "Salvar e encaminhar para DG")
+
+        resposta = self.client.post(
+            reverse("solicitacoes:editar", args=[solicitacao.pk]),
+            {
+                "acao": "encaminhar_despacho",
+                "equipes": [self.equipe.pk],
+                f"quantidade_equipe_{self.equipe.pk}": 4,
+                "tipo_operacao": "DIARIA",
+                "quantidade_cin": 100,
+            },
+        )
+        self.assertRedirects(
+            resposta, reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+        solicitacao.refresh_from_db()
+        self.assertEqual(
+            solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO
+        )
+        self.assertEqual(list(solicitacao.equipes.all()), [self.equipe])
+
+    def test_solicitacao_enviada_nao_abre_planejamento_sem_iniciar_analise(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.client.force_login(self.analista)
+
+        resposta = self.client.get(
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
+        )
+
+        self.assertEqual(resposta.status_code, 403)
 
     def test_perfis_nas_transicoes(self):
         solicitacao = self.solicitacao_completa()

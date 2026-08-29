@@ -24,8 +24,6 @@ class TipoEvento(CadastroBase):
 
 
 class Servico(CadastroBase):
-    descricao = models.TextField("descrição", blank=True)
-
     class Meta(CadastroBase.Meta):
         verbose_name = "serviço"
         verbose_name_plural = "serviços"
@@ -38,8 +36,6 @@ class Equipe(CadastroBase):
 
 
 class OrgaoResponsavel(CadastroBase):
-    sigla = models.CharField("sigla", max_length=20, blank=True)
-
     class Meta(CadastroBase.Meta):
         verbose_name = "órgão responsável"
         verbose_name_plural = "órgãos responsáveis"
@@ -51,8 +47,26 @@ class Regiao(CadastroBase):
         verbose_name_plural = "regiões"
 
 
+class Estado(CadastroBase):
+    sigla = models.CharField("sigla", max_length=2, unique=True)
+    codigo_ibge = models.PositiveSmallIntegerField("código IBGE", unique=True)
+
+    class Meta(CadastroBase.Meta):
+        verbose_name = "estado"
+        verbose_name_plural = "estados"
+
+
 class Municipio(CadastroBase):
     nome = models.CharField("nome", max_length=150)
+    codigo_ibge = models.PositiveIntegerField(
+        "código IBGE", unique=True, blank=True, null=True
+    )
+    estado = models.ForeignKey(
+        Estado,
+        verbose_name="estado",
+        on_delete=models.PROTECT,
+        related_name="municipios",
+    )
     regiao = models.ForeignKey(
         Regiao,
         verbose_name="região",
@@ -64,7 +78,7 @@ class Municipio(CadastroBase):
         verbose_name = "município"
         verbose_name_plural = "municípios"
         constraints = [
-            models.UniqueConstraint(fields=["nome", "regiao"], name="municipio_unico_por_regiao"),
+            models.UniqueConstraint(fields=["nome", "estado"], name="municipio_unico_por_estado"),
         ]
 
 

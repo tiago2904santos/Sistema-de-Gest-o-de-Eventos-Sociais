@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Sistema de Gestão de Eventos Sociais{% endblock %}</title>
   <link rel="icon" href="{% static 'icons/favicon.svg' %}" type="image/svg+xml">
-  <link rel="stylesheet" href="{% static 'css/design-system.css' %}">
+  <link rel="stylesheet" href="{% static 'css/design-system.css' %}?v=20260829-2">
   {% block extra_css %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
   {% block body %}{% endblock %}
-  <script src="{% static 'js/app.js' %}" defer></script>
+  <script src="{% static 'js/app.js' %}?v=20260829-3" defer></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

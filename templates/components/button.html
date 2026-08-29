@@ -9,5 +9,5 @@
   <a href="{{ href }}" class="btn btn--{{ variante|default:'primario' }}{% if bloco %} btn--bloco{% endif %}">{{ label }}</a>
 {% else %}
   <button type="{{ tipo|default:'button' }}" class="btn btn--{{ variante|default:'primario' }}{% if bloco %} btn--bloco{% endif %}"
-          {% if name %}name="{{ name }}"{% endif %}{% if value %} value="{{ value }}"{% endif %}>{{ label }}</button>
+          {% if name %}name="{{ name }}"{% endif %}{% if value %} value="{{ value }}"{% endif %}{% if formnovalidate %} formnovalidate{% endif %}>{{ label }}</button>
 {% endif %}

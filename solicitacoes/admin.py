@@ -33,7 +33,14 @@ class SolicitacaoEventoAdmin(admin.ModelAdmin):
     search_fields = ("solicitante_nome", "local_evento", "municipio__nome")
     date_hierarchy = "data_inicio_evento"
     inlines = [SolicitacaoEventoServicoInline, SolicitacaoEventoEquipeInline]
-    readonly_fields = ("regiao", "decidido_por", "decidido_em", "criado_em", "atualizado_em")
+    readonly_fields = (
+        "regiao",
+        "quantidade_servidores",
+        "decidido_por",
+        "decidido_em",
+        "criado_em",
+        "atualizado_em",
+    )
 
 
 @admin.register(HistoricoSolicitacao)

@@ -7,7 +7,15 @@ system; estes formulários concentram validação e persistência.
 from django import forms
 from django.db import transaction
 
-from cadastros.models import Equipe, Motorista, Municipio, OrgaoResponsavel, Servico, TipoEvento
+from cadastros.models import (
+    Equipe,
+    Estado,
+    Motorista,
+    Municipio,
+    OrgaoResponsavel,
+    Servico,
+    TipoEvento,
+)
 
 from .models import (
     DecisaoDG,
@@ -15,8 +23,23 @@ from .models import (
     SolicitacaoEventoEquipe,
     SolicitacaoEventoServico,
     StatusSolicitacao,
+    TipoOperacao,
 )
 from .services import CAMPOS_OBRIGATORIOS_ENVIO
+
+
+def _campo_sim_nao(rotulo):
+    """Campo booleano para os controles segmentados Sim/Não (valores "1"/"0").
+
+    forms.BooleanField com CheckboxInput interpretaria "0" como True.
+    """
+    return forms.TypedChoiceField(
+        label=rotulo,
+        choices=[("1", "Sim"), ("0", "Não")],
+        coerce=lambda valor: valor == "1",
+        required=False,
+        empty_value=False,
+    )
 
 
 def _queryset_ativo(model, instance_pk=None):
@@ -44,15 +67,67 @@ def _sincronizar_vinculos(manager, campo_fk, selecionados):
     manager.model.objects.bulk_create(novos)
 
 
+def _ler_quantidades_equipes(form, equipes):
+    """Lê a quantidade informada ao lado de cada equipe selecionada."""
+    quantidades = {}
+    for equipe in equipes:
+        valor = str(form.data.get(f"quantidade_equipe_{equipe.pk}", "")).strip()
+        if not valor:
+            quantidades[equipe.pk] = None
+            continue
+        try:
+            quantidade = int(valor)
+        except (TypeError, ValueError):
+            quantidade = 0
+        if quantidade < 1:
+            form.add_error(
+                "equipes",
+                f"Informe uma quantidade válida de servidores para {equipe}.",
+            )
+            quantidades[equipe.pk] = None
+        else:
+            quantidades[equipe.pk] = quantidade
+    return quantidades
+
+
+def _sincronizar_equipes(solicitacao, selecionadas, quantidades):
+    """Sincroniza as equipes e recalcula o total a partir de suas quantidades."""
+    atuais = {item.equipe_id: item for item in solicitacao.itens_equipe.all()}
+    desejadas = {equipe.pk for equipe in selecionadas}
+
+    for equipe_id, item in atuais.items():
+        if equipe_id not in desejadas:
+            item.delete()
+
+    for equipe in selecionadas:
+        quantidade = quantidades.get(equipe.pk)
+        item = atuais.get(equipe.pk)
+        if item:
+            if item.quantidade_servidores != quantidade:
+                item.quantidade_servidores = quantidade
+                item.save(update_fields=["quantidade_servidores"])
+        else:
+            SolicitacaoEventoEquipe.objects.create(
+                solicitacao=solicitacao,
+                equipe=equipe,
+                quantidade_servidores=quantidade,
+            )
+
+    solicitacao.recalcular_quantidade_servidores()
+
+
 class SolicitacaoForm(forms.ModelForm):
+    estado = forms.ModelChoiceField(
+        queryset=Estado.objects.none(), required=False, label="Estado"
+    )
     servicos = forms.ModelMultipleChoiceField(
         queryset=Servico.objects.none(), required=False, label="Serviços solicitados"
     )
     equipes = forms.ModelMultipleChoiceField(
         queryset=Equipe.objects.none(), required=False, label="Equipes"
     )
-    unidade_movel = forms.BooleanField(required=False, label="Unidade móvel")
-    veiculo_exposicao = forms.BooleanField(required=False, label="Veículos de exposição")
+    unidade_movel = _campo_sim_nao("Unidade móvel")
+    veiculo_exposicao = _campo_sim_nao("Veículos de exposição")
 
     class Meta:
         model = SolicitacaoEvento
@@ -64,14 +139,12 @@ class SolicitacaoForm(forms.ModelForm):
             "municipio",
             "local_evento",
             "solicitante_nome",
-            "solicitante_cargo",
-            "solicitante_unidade",
+            "solicitante_cargo_unidade",
             "contato",
             "orgao_responsavel",
             "unidade_movel",
             "veiculo_exposicao",
             "descricao_complementar",
-            "quantidade_servidores",
             "tipo_operacao",
             "quantidade_cin",
             "motorista",
@@ -81,12 +154,16 @@ class SolicitacaoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.enviar = enviar
         instancia = self.instance if self.instance.pk else None
+        self.fields["estado"].queryset = _queryset_ativo(
+            Estado,
+            instancia and instancia.municipio and instancia.municipio.estado_id,
+        )
         self.fields["tipo_evento"].queryset = _queryset_ativo(
             TipoEvento, instancia and instancia.tipo_evento_id
         )
         self.fields["municipio"].queryset = _queryset_ativo(
             Municipio, instancia and instancia.municipio_id
-        ).select_related("regiao")
+        ).select_related("estado", "regiao")
         self.fields["orgao_responsavel"].queryset = _queryset_ativo(
             OrgaoResponsavel, instancia and instancia.orgao_responsavel_id
         )
@@ -102,11 +179,28 @@ class SolicitacaoForm(forms.ModelForm):
             | (instancia.equipes.all() if instancia else Equipe.objects.none())
         ).distinct()
         if instancia:
+            if instancia.municipio_id:
+                self.initial.setdefault("estado", instancia.municipio.estado_id)
             self.initial.setdefault("servicos", list(instancia.servicos.all()))
             self.initial.setdefault("equipes", list(instancia.equipes.all()))
+        elif not self.is_bound:
+            parana = self.fields["estado"].queryset.filter(sigla="PR").first()
+            if parana:
+                self.initial.setdefault("estado", parana.pk)
 
     def clean(self):
         dados = super().clean()
+        dados["tipo_operacao"] = dados.get("tipo_operacao") or TipoOperacao.DIARIA
+        tipo_evento = dados.get("tipo_evento")
+        estado = dados.get("estado")
+        municipio = dados.get("municipio")
+        if estado and municipio and municipio.estado_id != estado.pk:
+            self.add_error(
+                "municipio", "Selecione um município pertencente ao estado informado."
+            )
+        if tipo_evento and tipo_evento.nome.casefold() == "paraná em ação".casefold():
+            dados["solicitante_nome"] = "Paraná em Ação"
+            dados["solicitante_cargo_unidade"] = "SEJU"
         inicio = dados.get("data_inicio_evento")
         fim = dados.get("data_fim_evento")
         if inicio and fim and fim < inicio:
@@ -114,6 +208,8 @@ class SolicitacaoForm(forms.ModelForm):
                 "data_fim_evento", "A data de fim não pode ser anterior à data de início."
             )
         if self.enviar:
+            if not estado:
+                self.add_error("estado", "Campo obrigatório para o envio.")
             for campo in CAMPOS_OBRIGATORIOS_ENVIO:
                 if campo in self.fields and not dados.get(campo):
                     self.add_error(campo, "Campo obrigatório para o envio.")
@@ -121,7 +217,17 @@ class SolicitacaoForm(forms.ModelForm):
                 self.add_error(
                     "servicos", "Selecione ao menos um serviço para enviar a solicitação."
                 )
+        # Motorista só se aplica quando há unidade móvel no evento.
+        if not dados.get("unidade_movel"):
+            dados["motorista"] = None
+        self.quantidades_equipes = _ler_quantidades_equipes(
+            self, dados.get("equipes") or []
+        )
         return dados
+
+    def clean_motorista(self):
+        motorista = self.cleaned_data.get("motorista")
+        return motorista if self.cleaned_data.get("unidade_movel") else None
 
     @transaction.atomic
     def save(self, criado_por=None):
@@ -132,8 +238,10 @@ class SolicitacaoForm(forms.ModelForm):
         _sincronizar_vinculos(
             solicitacao.itens_servico, "servico", self.cleaned_data.get("servicos") or []
         )
-        _sincronizar_vinculos(
-            solicitacao.itens_equipe, "equipe", self.cleaned_data.get("equipes") or []
+        _sincronizar_equipes(
+            solicitacao,
+            self.cleaned_data.get("equipes") or [],
+            self.quantidades_equipes,
         )
         return solicitacao
 
@@ -144,8 +252,8 @@ class PlanejamentoForm(forms.ModelForm):
     equipes = forms.ModelMultipleChoiceField(
         queryset=Equipe.objects.none(), required=False, label="Equipes"
     )
-    unidade_movel = forms.BooleanField(required=False, label="Unidade móvel")
-    veiculo_exposicao = forms.BooleanField(required=False, label="Veículos de exposição")
+    unidade_movel = _campo_sim_nao("Unidade móvel")
+    veiculo_exposicao = _campo_sim_nao("Veículos de exposição")
 
     class Meta:
         model = SolicitacaoEvento
@@ -153,7 +261,6 @@ class PlanejamentoForm(forms.ModelForm):
             "unidade_movel",
             "veiculo_exposicao",
             "descricao_complementar",
-            "quantidade_servidores",
             "tipo_operacao",
             "quantidade_cin",
             "motorista",
@@ -172,11 +279,27 @@ class PlanejamentoForm(forms.ModelForm):
         if instancia:
             self.initial.setdefault("equipes", list(instancia.equipes.all()))
 
+    def clean(self):
+        dados = super().clean()
+        # Motorista só se aplica quando há unidade móvel no evento.
+        if not dados.get("unidade_movel"):
+            dados["motorista"] = None
+        self.quantidades_equipes = _ler_quantidades_equipes(
+            self, dados.get("equipes") or []
+        )
+        return dados
+
+    def clean_motorista(self):
+        motorista = self.cleaned_data.get("motorista")
+        return motorista if self.cleaned_data.get("unidade_movel") else None
+
     @transaction.atomic
     def save(self, criado_por=None):
         solicitacao = super().save()
-        _sincronizar_vinculos(
-            solicitacao.itens_equipe, "equipe", self.cleaned_data.get("equipes") or []
+        _sincronizar_equipes(
+            solicitacao,
+            self.cleaned_data.get("equipes") or [],
+            self.quantidades_equipes,
         )
         return solicitacao
 

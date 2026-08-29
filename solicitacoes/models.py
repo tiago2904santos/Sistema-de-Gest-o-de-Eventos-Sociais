@@ -22,9 +22,8 @@ class DecisaoDG(models.TextChoices):
 
 
 class TipoOperacao(models.TextChoices):
-    ORDINARIA = "ORDINARIA", "Ordinária"
-    ITINERANTE = "ITINERANTE", "Itinerante"
-    ESPECIAL = "ESPECIAL", "Especial"
+    DIARIA = "DIARIA", "Diária"
+    EXTRAJORNADA = "EXTRAJORNADA", "Extrajornada"
 
 
 class SolicitacaoEvento(models.Model):
@@ -71,8 +70,9 @@ class SolicitacaoEvento(models.Model):
     )
 
     solicitante_nome = models.CharField("nome do solicitante", max_length=150, blank=True)
-    solicitante_cargo = models.CharField("cargo do solicitante", max_length=100, blank=True)
-    solicitante_unidade = models.CharField("unidade do solicitante", max_length=150, blank=True)
+    solicitante_cargo_unidade = models.CharField(
+        "cargo / unidade do solicitante", max_length=255, blank=True
+    )
     contato = models.CharField("contato", max_length=100, blank=True)
 
     orgao_responsavel = models.ForeignKey(
@@ -96,6 +96,7 @@ class SolicitacaoEvento(models.Model):
         "tipo de operação",
         max_length=20,
         choices=TipoOperacao.choices,
+        default=TipoOperacao.DIARIA,
         blank=True,
     )
     quantidade_cin = models.PositiveIntegerField(
@@ -206,6 +207,17 @@ class SolicitacaoEvento(models.Model):
             self.regiao_id = self.municipio.regiao_id
         super().save(*args, **kwargs)
 
+    def recalcular_quantidade_servidores(self):
+        cache = getattr(self, "_prefetched_objects_cache", {})
+        cache.pop("itens_equipe", None)
+        cache.pop("equipes", None)
+        total = self.itens_equipe.aggregate(
+            total=models.Sum("quantidade_servidores")
+        )["total"]
+        self.quantidade_servidores = total
+        type(self).objects.filter(pk=self.pk).update(quantidade_servidores=total)
+        return total
+
 
 class SolicitacaoEventoServico(models.Model):
     solicitacao = models.ForeignKey(
@@ -248,6 +260,9 @@ class SolicitacaoEventoEquipe(models.Model):
         on_delete=models.PROTECT,
         related_name="itens_solicitacao",
     )
+    quantidade_servidores = models.PositiveIntegerField(
+        "quantidade de servidores", blank=True, null=True
+    )
     observacao = models.CharField("observação", max_length=255, blank=True)
 
     class Meta:
@@ -261,6 +276,16 @@ class SolicitacaoEventoEquipe(models.Model):
 
     def __str__(self):
         return f"{self.solicitacao_id} — {self.equipe}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.solicitacao.recalcular_quantidade_servidores()
+
+    def delete(self, *args, **kwargs):
+        solicitacao = self.solicitacao
+        resultado = super().delete(*args, **kwargs)
+        solicitacao.recalcular_quantidade_servidores()
+        return resultado
 
 
 class AcaoHistorico(models.TextChoices):

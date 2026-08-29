@@ -85,10 +85,7 @@ def pode_editar_planejamento(user, solicitacao):
         return user.is_superuser
     if eh_administrador(user):
         return True
-    return eh_analista(user) and solicitacao.status in {
-        StatusSolicitacao.ENVIADA,
-        StatusSolicitacao.EM_ANALISE,
-    }
+    return eh_analista(user) and solicitacao.status == StatusSolicitacao.EM_ANALISE
 
 
 def pode_editar(user, solicitacao):

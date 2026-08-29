@@ -46,11 +46,8 @@ CAMPOS_OBRIGATORIOS_ENVIO = {
     "data_fim_evento": "Fim do evento",
     "tipo_evento": "Tipo do evento",
     "municipio": "Município",
-    "local_evento": "Local do evento",
     "solicitante_nome": "Solicitante",
-    "solicitante_cargo": "Cargo",
-    "solicitante_unidade": "Unidade / instituição",
-    "contato": "Contato",
+    "solicitante_cargo_unidade": "Cargo / unidade",
     "orgao_responsavel": "Órgão responsável",
 }
 
@@ -102,8 +99,8 @@ def pendencias_para_despacho(solicitacao):
     faltas = []
     if not solicitacao.itens_equipe.exists():
         faltas.append("Ao menos uma equipe designada")
-    if not solicitacao.quantidade_servidores:
-        faltas.append("Quantidade de servidores")
+    elif solicitacao.itens_equipe.exclude(quantidade_servidores__gt=0).exists():
+        faltas.append("Quantidade de servidores de cada equipe")
     if not solicitacao.tipo_operacao:
         faltas.append("Tipo de operação")
     return faltas

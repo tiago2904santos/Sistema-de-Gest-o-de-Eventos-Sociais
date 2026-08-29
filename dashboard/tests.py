@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from cadastros.models import Municipio, OrgaoResponsavel, Regiao, TipoEvento
+from cadastros.models import Estado, Municipio, OrgaoResponsavel, Regiao, TipoEvento
 from solicitacoes.models import SolicitacaoEvento, StatusSolicitacao
 
 User = get_user_model()
@@ -16,7 +16,10 @@ class DashboardTests(TestCase):
     def setUpTestData(cls):
         cls.usuario = User.objects.create_user("usuario", password="x")
         cls.regiao = Regiao.objects.create(nome="Região")
-        cls.municipio = Municipio.objects.create(nome="Cidade", regiao=cls.regiao)
+        cls.estado = Estado.objects.get(codigo_ibge=41)
+        cls.municipio = Municipio.objects.create(
+            nome="Cidade", estado=cls.estado, regiao=cls.regiao
+        )
         cls.tipo = TipoEvento.objects.create(nome="Ação social")
         cls.orgao = OrgaoResponsavel.objects.create(nome="Órgão")
 

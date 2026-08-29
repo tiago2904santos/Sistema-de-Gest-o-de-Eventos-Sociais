@@ -15,12 +15,12 @@
     {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
   </label>
   <div class="form-controle-wrapper form-controle-wrapper--select custom-select{% if pesquisavel %} custom-select--pesquisavel{% endif %}{% if erros %} is-invalid{% endif %}"
-       data-custom-select{% if pesquisavel %} data-searchable{% endif %}>
+       data-custom-select{% if pesquisavel %} data-searchable{% endif %}{% if dependente_de %} data-depends-on="{{ dependente_de }}"{% endif %}>
     <select class="form-controle custom-select__native" id="id_{{ name }}" name="{{ name }}"
             {% if obrigatorio %}required{% endif %}{% if desabilitado %} disabled{% endif %}>
       <option value="">{{ placeholder|default:"Selecione..." }}</option>
       {% for opcao in opcoes %}
-        <option value="{{ opcao.valor|default:opcao }}"{% if selecionado and opcao.valor|default:opcao|stringformat:"s" == selecionado|stringformat:"s" %} selected{% endif %}>{{ opcao.rotulo|default:opcao }}</option>
+        <option value="{{ opcao.valor|default:opcao }}"{% if opcao.estado %} data-parent-value="{{ opcao.estado }}"{% endif %}{% if selecionado and opcao.valor|default:opcao|stringformat:"s" == selecionado|stringformat:"s" %} selected{% endif %}>{{ opcao.rotulo|default:opcao }}</option>
       {% endfor %}
     </select>
     {% if pesquisavel %}
@@ -45,7 +45,7 @@
         {% for opcao in opcoes %}
           <button class="custom-select__opcao" type="button" role="option"
                   aria-selected="{% if selecionado and opcao.valor|default:opcao|stringformat:"s" == selecionado|stringformat:"s" %}true{% else %}false{% endif %}"
-                  data-value="{{ opcao.valor|default:opcao }}">
+                  data-value="{{ opcao.valor|default:opcao }}"{% if opcao.estado %} data-parent-value="{{ opcao.estado }}"{% endif %}>
             <span>{{ opcao.rotulo|default:opcao }}</span>
             <span class="custom-select__check" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
           </button>

@@ -10,10 +10,6 @@
     {% include "components/page_header.html" with titulo=titulo_pagina subtitulo="Acompanhamento completo da solicitação" icone="document" %}
     <div class="solicitacao-intro__acoes">
       {% include "components/button.html" with label="Voltar" variante="secundario" href=url_lista %}
-      {% if acoes.editar %}
-        {% url 'solicitacoes:editar' solicitacao.pk as url_editar %}
-        {% include "components/button.html" with label="Editar" variante="secundario" href=url_editar %}
-      {% endif %}
       {% if acoes.enviar %}
         <form method="post" action="{% url 'solicitacoes:enviar' solicitacao.pk %}">
           {% csrf_token %}
@@ -23,145 +19,195 @@
       {% if acoes.iniciar_analise %}
         <form method="post" action="{% url 'solicitacoes:iniciar_analise' solicitacao.pk %}">
           {% csrf_token %}
-          {% include "components/button.html" with label="Iniciar análise" variante="dourado" tipo="submit" %}
+          {% include "components/button.html" with label="Analisar solicitação" variante="dourado" tipo="submit" %}
         </form>
-      {% endif %}
-      {% if acoes.encaminhar_despacho %}
-        <form method="post" action="{% url 'solicitacoes:encaminhar_despacho' solicitacao.pk %}">
-          {% csrf_token %}
-          {% include "components/button.html" with label="Encaminhar para despacho" variante="dourado" tipo="submit" %}
-        </form>
+      {% elif acoes.encaminhar_despacho %}
+        {% url 'solicitacoes:editar' solicitacao.pk as url_editar %}
+        {% include "components/button.html" with label="Continuar análise" variante="dourado" href=url_editar %}
+      {% elif acoes.editar %}
+        {% url 'solicitacoes:editar' solicitacao.pk as url_editar %}
+        {% include "components/button.html" with label="Editar" variante="secundario" href=url_editar %}
       {% endif %}
     </div>
   </div>
 
   <div class="solicitacao-layout">
     <div class="solicitacao-conteudo">
-      <section class="section-card">
-        {% include "components/section_card.html" with numero="1" titulo="Dados da solicitação" %}
-        <div class="section-card__corpo">
-          <dl class="resumo-lista resumo-lista--detalhe">
-            <div><dt>Situação</dt><dd>{% include "components/status_badge.html" with status=solicitacao.status label=solicitacao.get_status_display %}</dd></div>
-            <div><dt>Data da solicitação</dt><dd>{{ solicitacao.data_solicitacao|date:"d/m/Y" }}</dd></div>
-            <div><dt>Período do evento</dt><dd>{% if solicitacao.data_inicio_evento %}{{ solicitacao.data_inicio_evento|date:"d/m/Y" }}{% if solicitacao.data_fim_evento %} a {{ solicitacao.data_fim_evento|date:"d/m/Y" }}{% endif %}{% else %}—{% endif %}</dd></div>
-            <div><dt>Tipo do evento</dt><dd>{{ solicitacao.tipo_evento|default:"—" }}</dd></div>
-            <div><dt>Município</dt><dd>{{ solicitacao.municipio|default:"—" }}</dd></div>
-            <div><dt>Região</dt><dd>{{ solicitacao.regiao|default:"—" }}</dd></div>
-            <div><dt>Local do evento</dt><dd>{{ solicitacao.local_evento|default:"—" }}</dd></div>
-          </dl>
-        </div>
-      </section>
 
-      <section class="section-card">
-        {% include "components/section_card.html" with numero="2" titulo="Solicitante" %}
-        <div class="section-card__corpo">
-          <dl class="resumo-lista resumo-lista--detalhe">
-            <div><dt>Solicitante</dt><dd>{{ solicitacao.solicitante_nome|default:"—" }}</dd></div>
-            <div><dt>Cargo</dt><dd>{{ solicitacao.solicitante_cargo|default:"—" }}</dd></div>
-            <div><dt>Unidade / instituição</dt><dd>{{ solicitacao.solicitante_unidade|default:"—" }}</dd></div>
-            <div><dt>Contato</dt><dd>{{ solicitacao.contato|default:"—" }}</dd></div>
-            <div><dt>Órgão responsável</dt><dd>{{ solicitacao.orgao_responsavel|default:"—" }}</dd></div>
-            <div><dt>Registrada por</dt><dd>{{ solicitacao.criado_por }}</dd></div>
-          </dl>
+      {# Visão geral: os quatro fatos principais da solicitação. #}
+      <div class="grid-resumo">
+        <div class="summary-card">
+          <p class="summary-card__titulo">Situação</p>
+          <p class="summary-card__valor summary-card__valor--badge">{% include "components/status_badge.html" with status=solicitacao.status label=solicitacao.get_status_display %}</p>
+          <p class="summary-card__variacao">Registrada em {{ solicitacao.data_solicitacao|date:"d/m/Y" }}</p>
         </div>
-      </section>
-
-      <section class="section-card">
-        {% include "components/section_card.html" with numero="3" titulo="Serviços e estrutura do evento" %}
-        <div class="section-card__corpo">
-          <div class="chip-grid">
-            {% for servico in solicitacao.servicos.all %}
-              <span class="check-chip check-chip--estatico"><span aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>{{ servico }}</span>
-            {% empty %}
-              <p class="texto-suave">Nenhum serviço selecionado.</p>
-            {% endfor %}
-          </div>
-          <dl class="resumo-lista resumo-lista--detalhe">
-            <div><dt>Unidade móvel</dt><dd>{{ solicitacao.unidade_movel|yesno:"Sim,Não" }}</dd></div>
-            <div><dt>Veículos de exposição</dt><dd>{{ solicitacao.veiculo_exposicao|yesno:"Sim,Não" }}</dd></div>
-            <div><dt>Descrição complementar</dt><dd>{{ solicitacao.descricao_complementar|default:"—"|linebreaksbr }}</dd></div>
-          </dl>
+        <div class="summary-card">
+          <p class="summary-card__titulo">Período do evento</p>
+          <p class="summary-card__valor summary-card__valor--texto">{% if solicitacao.data_inicio_evento %}{{ solicitacao.data_inicio_evento|date:"d/m/Y" }}{% if solicitacao.data_fim_evento %} a {{ solicitacao.data_fim_evento|date:"d/m/Y" }}{% endif %}{% else %}—{% endif %}</p>
+          <p class="summary-card__variacao">{{ solicitacao.local_evento|default:"Local a definir"|truncatechars:45 }}</p>
         </div>
-      </section>
-
-      <section class="section-card">
-        {% include "components/section_card.html" with numero="4" titulo="Planejamento operacional" %}
-        <div class="section-card__corpo">
-          <div class="chip-grid chip-grid--compacto">
-            {% for equipe in solicitacao.equipes.all %}
-              <span class="check-chip check-chip--estatico"><span aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>{{ equipe }}</span>
-            {% empty %}
-              <p class="texto-suave">Nenhuma equipe designada.</p>
-            {% endfor %}
-          </div>
-          <dl class="resumo-lista resumo-lista--detalhe">
-            <div><dt>Motorista</dt><dd>{{ solicitacao.motorista|default:"—" }}</dd></div>
-            <div><dt>Quantidade de servidores</dt><dd>{{ solicitacao.quantidade_servidores|default:"—" }}</dd></div>
-            <div><dt>Tipo de operação</dt><dd>{{ solicitacao.get_tipo_operacao_display|default:"—" }}</dd></div>
-            <div><dt>Quantidade de CIN</dt><dd>{{ solicitacao.quantidade_cin|default:"—" }}</dd></div>
-          </dl>
+        <div class="summary-card">
+          <p class="summary-card__titulo">Município</p>
+          <p class="summary-card__valor summary-card__valor--texto">{{ solicitacao.municipio|default:"—" }}</p>
+          <p class="summary-card__variacao">{% if solicitacao.regiao %}{{ solicitacao.regiao }}{% if solicitacao.municipio.estado %} · {{ solicitacao.municipio.estado }}{% endif %}{% else %}Região a definir{% endif %}</p>
         </div>
-      </section>
+        <div class="summary-card">
+          <p class="summary-card__titulo">Tipo do evento</p>
+          <p class="summary-card__valor summary-card__valor--texto">{{ solicitacao.tipo_evento|default:"—" }}</p>
+          <p class="summary-card__variacao">{{ solicitacao.orgao_responsavel|default:"Órgão a definir" }}</p>
+        </div>
+      </div>
 
-      <section class="section-card">
-        {% include "components/section_card.html" with numero="5" titulo="Despacho DG" %}
-        <div class="section-card__corpo">
-          {% if acoes.despachar %}
-            <form method="post" action="{% url 'solicitacoes:despachar' solicitacao.pk %}">
-              {% csrf_token %}
-              <fieldset class="form-campo form-fieldset">
-                <legend class="form-label">Decisão</legend>
-                <div class="decision-grid">
-                  <label class="decision-option decision-option--success"><input type="radio" name="decisao" value="ATENDER" required><span>{% include "components/icon.html" with nome="check" %}</span>Atender</label>
-                  <label class="decision-option decision-option--danger"><input type="radio" name="decisao" value="NAO_ATENDER"><span>{% include "components/icon.html" with nome="x" %}</span>Não atender</label>
-                  <label class="decision-option decision-option--cancel"><input type="radio" name="decisao" value="CANCELADO"><span>{% include "components/icon.html" with nome="ban" %}</span>Evento cancelado</label>
-                </div>
-              </fieldset>
-              <div class="form-grid form-grid--separado">
-                {% include "components/textarea.html" with name="observacao" label="Observações DG" placeholder="Obrigatórias para não atendimento ou cancelamento." largura="" linhas="3" %}
-              </div>
-              <div class="acoes-formulario">
-                {% include "components/button.html" with label="Registrar decisão" variante="dourado" tipo="submit" %}
-              </div>
-            </form>
-          {% else %}
-            <dl class="resumo-lista resumo-lista--detalhe">
-              <div><dt>Decisão</dt><dd>{{ solicitacao.get_decisao_dg_display }}</dd></div>
-              <div><dt>Observações DG</dt><dd>{{ solicitacao.observacoes_dg|default:"—"|linebreaksbr }}</dd></div>
-              {% if solicitacao.decidido_por %}
-                <div><dt>Decidido por</dt><dd>{{ solicitacao.decidido_por }}</dd></div>
-                <div><dt>Decidido em</dt><dd>{{ solicitacao.decidido_em|date:"d/m/Y H:i" }}</dd></div>
-              {% endif %}
+      <div class="detalhe-grid">
+        <section class="detalhe-card">
+          <header class="detalhe-card__cabecalho">
+            <span class="detalhe-card__icone">{% include "components/icon.html" with nome="calendar" %}</span>
+            <h2 class="detalhe-card__titulo">Dados do evento</h2>
+          </header>
+          <div class="detalhe-card__corpo">
+            <dl class="linhas-dados">
+              <div><dt>Data da solicitação</dt><dd>{{ solicitacao.data_solicitacao|date:"d/m/Y" }}</dd></div>
+              <div><dt>Período do evento</dt><dd>{% if solicitacao.data_inicio_evento %}{{ solicitacao.data_inicio_evento|date:"d/m/Y" }}{% if solicitacao.data_fim_evento %} a {{ solicitacao.data_fim_evento|date:"d/m/Y" }}{% endif %}{% else %}—{% endif %}</dd></div>
+              <div><dt>Tipo do evento</dt><dd>{{ solicitacao.tipo_evento|default:"—" }}</dd></div>
+              <div><dt>Local do evento</dt><dd>{{ solicitacao.local_evento|default:"—" }}</dd></div>
+              <div><dt>Estado</dt><dd>{% if solicitacao.municipio %}{{ solicitacao.municipio.estado }}{% else %}—{% endif %}</dd></div>
+              <div><dt>Município</dt><dd>{{ solicitacao.municipio|default:"—" }}</dd></div>
+              <div><dt>Região</dt><dd>{{ solicitacao.regiao|default:"—" }}</dd></div>
             </dl>
-          {% endif %}
-        </div>
-      </section>
-
-      <section class="section-card">
-        {% include "components/section_card.html" with numero="6" titulo="Histórico" %}
-        <div class="section-card__corpo">
-          <div class="tabela-wrapper">
-            <table class="tabela">
-              <thead>
-                <tr><th>Data/hora</th><th>Ação</th><th>Status</th><th>Usuário</th><th>Observação</th></tr>
-              </thead>
-              <tbody>
-                {% for registro in historico %}
-                  <tr>
-                    <td>{{ registro.criado_em|date:"d/m/Y H:i" }}</td>
-                    <td>{{ registro.get_acao_display }}</td>
-                    <td>{% if registro.status_novo %}{% include "components/status_badge.html" with status=registro.status_novo label=registro.get_status_novo_display %}{% else %}—{% endif %}</td>
-                    <td>{{ registro.usuario|default:"—" }}</td>
-                    <td>{{ registro.observacao|default:"—" }}</td>
-                  </tr>
-                {% empty %}
-                  <tr><td colspan="5" class="texto-suave texto-centro">Nenhum registro no histórico.</td></tr>
-                {% endfor %}
-              </tbody>
-            </table>
           </div>
-        </div>
-      </section>
+        </section>
+
+        <section class="detalhe-card">
+          <header class="detalhe-card__cabecalho">
+            <span class="detalhe-card__icone">{% include "components/icon.html" with nome="users" %}</span>
+            <h2 class="detalhe-card__titulo">Solicitante</h2>
+          </header>
+          <div class="detalhe-card__corpo">
+            <dl class="linhas-dados">
+              <div><dt>Solicitante</dt><dd>{{ solicitacao.solicitante_nome|default:"—" }}</dd></div>
+              <div><dt>Cargo / unidade</dt><dd>{{ solicitacao.solicitante_cargo_unidade|default:"—" }}</dd></div>
+              <div><dt>Contato</dt><dd>{{ solicitacao.contato|default:"—" }}</dd></div>
+              <div><dt>Órgão responsável</dt><dd>{{ solicitacao.orgao_responsavel|default:"—" }}</dd></div>
+              <div><dt>Registrada por</dt><dd>{{ solicitacao.criado_por }}</dd></div>
+            </dl>
+          </div>
+        </section>
+
+        <section class="detalhe-card">
+          <header class="detalhe-card__cabecalho">
+            <span class="detalhe-card__icone">{% include "components/icon.html" with nome="checklist" %}</span>
+            <h2 class="detalhe-card__titulo">Serviços e estrutura</h2>
+          </header>
+          <div class="detalhe-card__corpo">
+            <p class="detalhe-card__rotulo">Serviços solicitados</p>
+            <div class="chip-grid chip-grid--compacto">
+              {% for servico in solicitacao.servicos.all %}
+                <span class="check-chip check-chip--estatico"><span aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>{{ servico }}</span>
+              {% empty %}
+                <p class="texto-suave">Nenhum serviço selecionado.</p>
+              {% endfor %}
+            </div>
+            <dl class="linhas-dados linhas-dados--separado">
+              <div><dt>Unidade móvel</dt><dd>{{ solicitacao.unidade_movel|yesno:"Sim,Não" }}</dd></div>
+              <div><dt>Veículos de exposição</dt><dd>{{ solicitacao.veiculo_exposicao|yesno:"Sim,Não" }}</dd></div>
+              <div><dt>Descrição complementar</dt><dd>{{ solicitacao.descricao_complementar|default:"—"|linebreaksbr }}</dd></div>
+            </dl>
+          </div>
+        </section>
+
+        <section class="detalhe-card">
+          <header class="detalhe-card__cabecalho">
+            <span class="detalhe-card__icone">{% include "components/icon.html" with nome="settings" %}</span>
+            <h2 class="detalhe-card__titulo">Planejamento operacional</h2>
+          </header>
+          <div class="detalhe-card__corpo">
+            <p class="detalhe-card__rotulo">Servidores por equipe</p>
+            <div class="chip-grid chip-grid--compacto">
+              {% for item in solicitacao.itens_equipe.all %}
+                <span class="check-chip check-chip--estatico"><span aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>{{ item.equipe }} · {{ item.quantidade_servidores|default:"—" }}</span>
+              {% empty %}
+                <p class="texto-suave">Nenhuma equipe designada.</p>
+              {% endfor %}
+            </div>
+            <dl class="linhas-dados linhas-dados--separado">
+              {% if solicitacao.unidade_movel %}
+                <div><dt>Motorista</dt><dd>{{ solicitacao.motorista|default:"—" }}</dd></div>
+              {% endif %}
+              <div><dt>Quantidade de servidores</dt><dd>{{ solicitacao.quantidade_servidores|default:"—" }}</dd></div>
+              <div><dt>Tipo de operação</dt><dd>{{ solicitacao.get_tipo_operacao_display|default:"—" }}</dd></div>
+              <div><dt>Quantidade de CIN</dt><dd>{{ solicitacao.quantidade_cin|default:"—" }}</dd></div>
+            </dl>
+          </div>
+        </section>
+
+        {% if mostrar_despacho_dg %}
+          <section class="detalhe-card detalhe-card--largo">
+            <header class="detalhe-card__cabecalho">
+              <span class="detalhe-card__icone">{% include "components/icon.html" with nome="clipboard" %}</span>
+              <h2 class="detalhe-card__titulo">Despacho DG</h2>
+            </header>
+            <div class="detalhe-card__corpo">
+              {% if acoes.despachar %}
+                <form method="post" action="{% url 'solicitacoes:despachar' solicitacao.pk %}">
+                  {% csrf_token %}
+                  <fieldset class="form-campo form-fieldset">
+                    <legend class="form-label">Decisão</legend>
+                    <div class="decision-grid">
+                      <label class="decision-option decision-option--success"><input type="radio" name="decisao" value="ATENDER" required><span>{% include "components/icon.html" with nome="check" %}</span>Atender</label>
+                      <label class="decision-option decision-option--danger"><input type="radio" name="decisao" value="NAO_ATENDER"><span>{% include "components/icon.html" with nome="x" %}</span>Não atender</label>
+                      <label class="decision-option decision-option--cancel"><input type="radio" name="decisao" value="CANCELADO"><span>{% include "components/icon.html" with nome="ban" %}</span>Evento cancelado</label>
+                    </div>
+                  </fieldset>
+                  <div class="form-grid form-grid--separado">
+                    {% include "components/textarea.html" with name="observacao" label="Observações DG" placeholder="Obrigatórias para não atendimento ou cancelamento." largura="" linhas="3" %}
+                  </div>
+                  <div class="acoes-formulario">
+                    {% include "components/button.html" with label="Registrar decisão" variante="dourado" tipo="submit" %}
+                  </div>
+                </form>
+              {% else %}
+                <dl class="linhas-dados">
+                  <div><dt>Decisão</dt><dd>{{ solicitacao.get_decisao_dg_display }}</dd></div>
+                  {% if solicitacao.decidido_por %}
+                    <div><dt>Decidido por</dt><dd>{{ solicitacao.decidido_por }}</dd></div>
+                    <div><dt>Decidido em</dt><dd>{{ solicitacao.decidido_em|date:"d/m/Y H:i" }}</dd></div>
+                  {% endif %}
+                  <div><dt>Observações DG</dt><dd>{{ solicitacao.observacoes_dg|default:"—"|linebreaksbr }}</dd></div>
+                </dl>
+              {% endif %}
+            </div>
+          </section>
+        {% endif %}
+
+        <section class="detalhe-card detalhe-card--largo">
+          <header class="detalhe-card__cabecalho">
+            <span class="detalhe-card__icone">{% include "components/icon.html" with nome="activity" %}</span>
+            <h2 class="detalhe-card__titulo">Histórico</h2>
+          </header>
+          <div class="detalhe-card__corpo detalhe-card__corpo--tabela">
+            <div class="tabela-wrapper">
+              <table class="tabela">
+                <thead>
+                  <tr><th>Data/hora</th><th>Ação</th><th>Status</th><th>Usuário</th><th>Observação</th></tr>
+                </thead>
+                <tbody>
+                  {% for registro in historico %}
+                    <tr>
+                      <td>{{ registro.criado_em|date:"d/m/Y H:i" }}</td>
+                      <td>{{ registro.get_acao_display }}</td>
+                      <td>{% if registro.status_novo %}{% include "components/status_badge.html" with status=registro.status_novo label=registro.get_status_novo_display %}{% else %}—{% endif %}</td>
+                      <td>{{ registro.usuario|default:"—" }}</td>
+                      <td>{{ registro.observacao|default:"—" }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="5" class="texto-suave texto-centro">Nenhum registro no histórico.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
 
     <aside class="solicitacao-sidebar" aria-label="Acompanhamento da solicitação">
@@ -174,7 +220,7 @@
           <div><dt>Período do evento</dt><dd>{% if solicitacao.data_inicio_evento %}{{ solicitacao.data_inicio_evento|date:"d/m/Y" }}{% if solicitacao.data_fim_evento %} a {{ solicitacao.data_fim_evento|date:"d/m/Y" }}{% endif %}{% else %}—{% endif %}</dd></div>
           <div><dt>Município</dt><dd>{{ solicitacao.municipio|default:"—" }}</dd></div>
           <div><dt>Tipo do evento</dt><dd>{{ solicitacao.tipo_evento|default:"—" }}</dd></div>
-          <div><dt>Equipe envolvida</dt><dd>{% for equipe in solicitacao.equipes.all %}{{ equipe }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd></div>
+          <div><dt>Equipe envolvida</dt><dd>{% for item in solicitacao.itens_equipe.all %}{{ item.equipe }}{% if item.quantidade_servidores %} ({{ item.quantidade_servidores }}){% endif %}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd></div>
           <div><dt>Quantidade de servidores</dt><dd>{{ solicitacao.quantidade_servidores|default:"—" }}</dd></div>
           <div><dt>Quantidade de CIN</dt><dd>{{ solicitacao.quantidade_cin|default:"—" }}</dd></div>
         </dl>

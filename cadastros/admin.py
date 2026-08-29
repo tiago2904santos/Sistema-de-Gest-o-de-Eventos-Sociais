@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import (
+    Estado,
     Equipe,
     Motorista,
     Municipio,
@@ -34,7 +35,7 @@ class EquipeAdmin(CadastroBaseAdmin):
 
 @admin.register(OrgaoResponsavel)
 class OrgaoResponsavelAdmin(CadastroBaseAdmin):
-    list_display = ("nome", "sigla", "ativo", "atualizado_em")
+    pass
 
 
 @admin.register(Regiao)
@@ -42,10 +43,15 @@ class RegiaoAdmin(CadastroBaseAdmin):
     pass
 
 
+@admin.register(Estado)
+class EstadoAdmin(CadastroBaseAdmin):
+    list_display = ("nome", "sigla", "codigo_ibge", "ativo", "atualizado_em")
+
+
 @admin.register(Municipio)
 class MunicipioAdmin(CadastroBaseAdmin):
-    list_display = ("nome", "regiao", "ativo", "atualizado_em")
-    list_filter = ("ativo", "regiao")
+    list_display = ("nome", "estado", "regiao", "ativo", "atualizado_em")
+    list_filter = ("ativo", "estado", "regiao")
 
 
 @admin.register(Motorista)
