@@ -1,0 +1,43 @@
+{% extends "layouts/app_shell.html" %}
+{% load static %}
+
+{% block title %}Dashboard — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% url 'solicitacoes:nova' as url_nova %}
+  {% include "components/page_header.html" with titulo="Dashboard" subtitulo="Visão geral das solicitações de eventos sociais" acao_label="Nova solicitação" acao_url=url_nova %}
+
+  <div class="grid-resumo">
+    {% for item in resumo %}
+      {% include "components/summary_card.html" with titulo=item.titulo valor=item.valor variacao=item.variacao %}
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    {% include "components/card.html" with titulo="Últimas solicitações" %}
+    <div class="tabela-wrapper">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>Nº</th>
+            <th>Município</th>
+            <th>Tipo de evento</th>
+            <th>Início do evento</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in ultimas_solicitacoes %}
+            <tr>
+              <td><strong>#{{ s.id }}</strong></td>
+              <td>{{ s.municipio }}</td>
+              <td>{{ s.tipo_evento }}</td>
+              <td>{{ s.data_inicio }}</td>
+              <td>{% include "components/status_badge.html" with status=s.status label=s.status_label %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

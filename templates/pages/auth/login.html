@@ -1,0 +1,52 @@
+{% extends "layouts/auth.html" %}
+
+{% block title %}Acesso ao Sistema — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+<div class="auth-card">
+  <form method="post" class="auth-card__corpo">
+    {% csrf_token %}
+
+    <div>
+      <h1 class="auth-card__titulo">Acesso ao Sistema</h1>
+      <p class="auth-card__subtitulo">
+        Informe seu usuário institucional e a senha cadastrada pelo
+        administrador da unidade.
+      </p>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="alerta alerta--error">
+        {% for erro in form.non_field_errors %}{{ erro }}{% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="form-campo">
+      <label class="form-label" for="id_username">Usuário</label>
+      <input class="form-controle" type="text" name="username" id="id_username"
+             autofocus autocomplete="username" required
+             placeholder="Informe seu usuário">
+      {% if form.username.errors %}<p class="form-erro">{{ form.username.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="form-campo">
+      <label class="form-label" for="id_password">Senha</label>
+      <input class="form-controle" type="password" name="password" id="id_password"
+             autocomplete="current-password" required
+             placeholder="••••••••">
+      {% if form.password.errors %}<p class="form-erro">{{ form.password.errors.0 }}</p>{% endif %}
+    </div>
+
+    <input type="hidden" name="next" value="{{ next }}">
+
+    {% include "components/button.html" with label="Entrar" variante="dourado" tipo="submit" bloco=True %}
+  </form>
+
+  <div class="auth-card__rodape">
+    Ambiente restrito e monitorado
+  </div>
+  <p class="auth-card__ajuda">
+    Problemas com o acesso? Entre em contato com o administrador da unidade.
+  </p>
+</div>
+{% endblock %}

@@ -24,5 +24,6 @@ def nova_solicitacao(request):
         "equipes": ["Equipe Alfa", "Equipe Bravo", "Equipe Charlie"],
         "motoristas": ["A definir", "Motorista 1", "Motorista 2"],
         "tipos_operacao": ["Ordinária", "Itinerante", "Especial"],
+        "decisoes_dg": ["Pendente", "Deferida", "Indeferida"],
     }
     return render(request, "pages/solicitacoes/nova.html", contexto)
