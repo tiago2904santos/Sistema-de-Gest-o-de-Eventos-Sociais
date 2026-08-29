@@ -9,16 +9,41 @@
   <label class="form-label" for="id_{{ name }}">
     {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
   </label>
-  <div class="form-controle-wrapper{% if tipo == 'date' %} form-controle-wrapper--date{% endif %}">
+  <div class="form-controle-wrapper{% if tipo == 'date' %} form-controle-wrapper--date custom-date{% endif %}"{% if tipo == 'date' %} data-custom-date{% endif %}>
     <input
-      class="form-controle"
+      class="form-controle{% if tipo == 'date' %} custom-date__native{% endif %}"
       type="{{ tipo|default:'text' }}"
       id="id_{{ name }}"
       name="{{ name }}"
       {% if valor %}value="{{ valor }}"{% endif %}
       {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
       {% if obrigatorio %}required{% endif %}>
-    {% if tipo == 'date' %}<span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="calendar" %}</span>{% endif %}
+    {% if tipo == 'date' %}
+      <button class="form-controle custom-date__trigger" type="button"
+              aria-label="{{ label }}" aria-haspopup="dialog" aria-expanded="false"
+              aria-controls="id_{{ name }}_calendar" data-custom-date-trigger>
+        <span class="custom-date__valor">dd/mm/aaaa</span>
+        <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="calendar" %}</span>
+      </button>
+      <div class="custom-date__calendar" id="id_{{ name }}_calendar" role="dialog"
+           aria-label="Calendário de {{ label|lower }}" data-custom-date-calendar hidden>
+        <div class="custom-date__cabecalho">
+          <strong class="custom-date__mes" aria-live="polite" data-custom-date-month></strong>
+          <div class="custom-date__navegacao">
+            <button type="button" aria-label="Mês anterior" data-custom-date-prev>{% include "components/icon.html" with nome="chevron-left" %}</button>
+            <button type="button" aria-label="Próximo mês" data-custom-date-next>{% include "components/icon.html" with nome="chevron-right" %}</button>
+          </div>
+        </div>
+        <div class="custom-date__semana" aria-hidden="true">
+          <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+        </div>
+        <div class="custom-date__dias" role="grid" data-custom-date-grid></div>
+        <div class="custom-date__rodape">
+          <button type="button" data-custom-date-clear>Limpar</button>
+          <button type="button" data-custom-date-today>Hoje</button>
+        </div>
+      </div>
+    {% endif %}
   </div>
   {% if ajuda %}<p class="form-ajuda">{{ ajuda }}</p>{% endif %}
 </div>

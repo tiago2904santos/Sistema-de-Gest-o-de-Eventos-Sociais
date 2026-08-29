@@ -904,7 +904,87 @@ textarea.form-controle {
 .form-controle-wrapper--date .form-controle::-webkit-calendar-picker-indicator {
   z-index: 2; width: 20px; height: 20px; margin: 0; opacity: 0; cursor: pointer;
 }
+.form-controle-wrapper--date:not(.is-enhanced) .custom-date__native::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
 .form-controle-wrapper--date .form-controle__icone { font-size: 1.05rem; }
+.custom-date .custom-date__trigger { display: none; }
+.custom-date.is-enhanced .custom-date__native {
+  position: absolute; width: 1px; height: 1px; margin: 0; padding: 0;
+  overflow: hidden; opacity: 0; pointer-events: none;
+}
+.custom-date.is-enhanced .custom-date__trigger {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  background: #fff; color: #858b93; text-align: left; cursor: pointer;
+}
+.custom-date__trigger.has-value { color: var(--cor-texto); }
+.custom-date__calendar {
+  position: absolute; z-index: 60; top: calc(100% + 6px); left: 0;
+  width: min(300px, calc(100vw - 32px)); padding: 12px;
+  border: 1px solid #cfd3d7; border-radius: 9px; background: #fff;
+  box-shadow: 0 14px 30px rgba(28, 31, 35, 0.16);
+}
+.custom-date__calendar[hidden] { display: none; }
+.custom-date__cabecalho {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 38px; margin-bottom: 7px;
+}
+.custom-date__mes {
+  color: var(--cor-texto); font-size: 0.82rem; font-weight: 700;
+}
+.custom-date__navegacao { display: flex; align-items: center; gap: 3px; }
+.custom-date__navegacao button {
+  width: 34px; height: 34px; display: grid; place-items: center;
+  border: 0; border-radius: 6px; background: #fff; color: #4f5660; cursor: pointer;
+}
+.custom-date__navegacao button:hover,
+.custom-date__navegacao button:focus-visible {
+  outline: 0; background: #f4edd8; color: #755b12;
+}
+.custom-date__navegacao .ui-icon { width: 17px; height: 17px; }
+.custom-date__semana,
+.custom-date__dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.custom-date__semana { margin-bottom: 3px; }
+.custom-date__semana span {
+  height: 28px; display: grid; place-items: center; color: #747b84;
+  font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+}
+.custom-date__dia {
+  position: relative; min-width: 0; height: 32px; display: grid; place-items: center;
+  border: 1px solid transparent; border-radius: 6px; background: #fff;
+  color: var(--cor-texto); font: inherit; font-size: 0.74rem; cursor: pointer;
+}
+.custom-date__dia:hover,
+.custom-date__dia:focus-visible {
+  outline: 0; border-color: #dfcf9f; background: #f7f3e8; color: #6f5b21;
+}
+.custom-date__dia.is-outside { color: #a4a9af; }
+.custom-date__dia.is-today { border-color: #c9951a; color: #805e0a; font-weight: 700; }
+.custom-date__dia.is-selected {
+  border-color: #a87300; background: #c9951a; color: #fff; font-weight: 700;
+}
+.custom-date__rodape {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 9px; padding-top: 9px; border-top: 1px solid #eceef0;
+}
+.custom-date__rodape button {
+  min-height: 30px; padding: 4px 7px; border: 0; border-radius: 5px;
+  background: #fff; color: #8a650b; font: inherit; font-size: 0.7rem;
+  font-weight: 650; cursor: pointer;
+}
+.custom-date__rodape button:hover,
+.custom-date__rodape button:focus-visible { outline: 0; background: #f4edd8; }
+.custom-date.is-open .custom-date__trigger {
+  border-color: var(--cor-dourado-700);
+  box-shadow: 0 0 0 3px rgba(190, 164, 90, 0.18);
+}
+.custom-date.is-open .custom-date__trigger .form-controle__icone { color: var(--cor-dourado-700); }
+.custom-date.is-invalid .custom-date__trigger {
+  border-color: var(--cor-erro); box-shadow: 0 0 0 3px rgba(190, 50, 50, 0.12);
+}
+.section-card:has(.custom-date.is-open) {
+  position: relative; z-index: 20; overflow: visible;
+}
 .form-controle--somente-leitura { background: #f0f1f2; color: #656b73; }
 textarea.form-controle { min-height: 68px; }
 .form-fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
