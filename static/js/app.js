@@ -77,6 +77,12 @@
     instancia.wrapper.classList.remove("is-open");
     instancia.menu.hidden = true;
     instancia.trigger.setAttribute("aria-expanded", "false");
+    if (instancia.busca) {
+      var selecionada = instancia.nativo.options[instancia.nativo.selectedIndex];
+      instancia.busca.value = instancia.nativo.value && selecionada ? selecionada.text : "";
+      instancia.opcoes.forEach(function (opcao) { opcao.hidden = false; });
+      if (instancia.mensagemVazia) instancia.mensagemVazia.hidden = true;
+    }
     if (devolverFoco) instancia.trigger.focus();
   }
 
@@ -91,8 +97,10 @@
     var trigger = wrapper.querySelector("[data-custom-select-trigger]");
     var valor = wrapper.querySelector(".custom-select__valor");
     var menu = wrapper.querySelector("[data-custom-select-menu]");
+    var busca = wrapper.querySelector("[data-custom-select-search]");
+    var mensagemVazia = wrapper.querySelector("[data-custom-select-empty]");
     var opcoes = Array.prototype.slice.call(wrapper.querySelectorAll(".custom-select__opcao"));
-    if (!nativo || !trigger || !valor || !menu) return;
+    if (!nativo || !trigger || !menu || (!busca && !valor)) return;
 
     var instancia = {
       wrapper: wrapper,
@@ -100,6 +108,8 @@
       trigger: trigger,
       menu: menu,
       opcoes: opcoes,
+      busca: busca,
+      mensagemVazia: mensagemVazia,
       aberto: false
     };
     seletoresAbertos.push(instancia);
@@ -114,7 +124,8 @@
 
     function sincronizar() {
       var selecionada = opcaoAtual();
-      valor.textContent = selecionada ? selecionada.text : "Selecione...";
+      if (busca) busca.value = nativo.value && selecionada ? selecionada.text : "";
+      else valor.textContent = selecionada ? selecionada.text : "Selecione...";
       trigger.classList.toggle("has-value", Boolean(nativo.value));
       trigger.removeAttribute("aria-invalid");
       wrapper.classList.remove("is-invalid");
@@ -125,6 +136,33 @@
       });
     }
 
+    function normalizarTexto(texto) {
+      return String(texto || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLocaleLowerCase("pt-BR")
+        .trim();
+    }
+
+    function opcoesVisiveis() {
+      return opcoes.filter(function (opcao) { return !opcao.hidden; });
+    }
+
+    function filtrarOpcoes() {
+      if (!busca) return opcoes;
+      var termo = normalizarTexto(busca.value);
+      var selecionada = opcaoAtual();
+      if (nativo.value && selecionada && termo === normalizarTexto(selecionada.text)) termo = "";
+      var visiveis = [];
+      opcoes.forEach(function (opcao) {
+        var corresponde = normalizarTexto(opcao.textContent).indexOf(termo) !== -1;
+        opcao.hidden = !corresponde;
+        if (corresponde) visiveis.push(opcao);
+      });
+      if (mensagemVazia) mensagemVazia.hidden = visiveis.length > 0;
+      return visiveis;
+    }
+
     function abrirSeletor() {
       if (instancia.aberto || nativo.disabled) return;
       fecharOutrosSeletores(instancia);
@@ -133,6 +171,11 @@
       wrapper.classList.add("is-open");
       menu.hidden = false;
       trigger.setAttribute("aria-expanded", "true");
+      if (busca) {
+        filtrarOpcoes();
+        busca.focus();
+        return;
+      }
       var selecionada = opcoes.find(function (opcao) {
         return opcao.getAttribute("data-value") === nativo.value;
       });
@@ -149,32 +192,76 @@
     }
 
     function moverFoco(direcao) {
-      if (!opcoes.length) return;
-      var indice = opcoes.indexOf(document.activeElement);
+      var disponiveis = opcoesVisiveis();
+      if (!disponiveis.length) return;
+      var indice = disponiveis.indexOf(document.activeElement);
       if (indice < 0) indice = 0;
-      indice = (indice + direcao + opcoes.length) % opcoes.length;
-      if (opcoes[indice]) opcoes[indice].focus();
+      indice = (indice + direcao + disponiveis.length) % disponiveis.length;
+      if (disponiveis[indice]) disponiveis[indice].focus();
     }
 
     trigger.addEventListener("click", function () {
-      if (instancia.aberto) fecharSeletor(instancia, true);
+      if (busca) abrirSeletor();
+      else if (instancia.aberto) fecharSeletor(instancia, true);
       else abrirSeletor();
     });
 
     trigger.addEventListener("keydown", function (event) {
-      if (["ArrowDown", "ArrowUp", "Enter", " "].indexOf(event.key) !== -1) {
+      if (busca) {
+        var disponiveis = opcoesVisiveis();
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          abrirSeletor();
+          disponiveis = opcoesVisiveis();
+          if (disponiveis[0]) disponiveis[0].focus();
+        } else if (event.key === "ArrowUp") {
+          event.preventDefault();
+          abrirSeletor();
+          disponiveis = opcoesVisiveis();
+          if (disponiveis.length) disponiveis[disponiveis.length - 1].focus();
+        } else if (event.key === "Enter") {
+          if (!instancia.aberto) {
+            event.preventDefault();
+            abrirSeletor();
+          } else if (disponiveis.length === 1) {
+            event.preventDefault();
+            selecionar(disponiveis[0]);
+          }
+        } else if (event.key === "Escape") {
+          event.preventDefault();
+          fecharSeletor(instancia, true);
+        } else if (event.key === "Tab") {
+          fecharSeletor(instancia, false);
+        }
+      } else if (["ArrowDown", "ArrowUp", "Enter", " "].indexOf(event.key) !== -1) {
         event.preventDefault();
         abrirSeletor();
       }
     });
+
+    if (busca) {
+      busca.addEventListener("input", function () {
+        var selecionada = opcaoAtual();
+        if (nativo.value && (!selecionada || busca.value !== selecionada.text)) {
+          nativo.value = "";
+          trigger.classList.remove("has-value");
+          opcoes.forEach(function (opcao) {
+            opcao.setAttribute("aria-selected", "false");
+            opcao.classList.remove("is-selected");
+          });
+        }
+        abrirSeletor();
+        filtrarOpcoes();
+      });
+    }
 
     opcoes.forEach(function (opcao) {
       opcao.addEventListener("click", function () { selecionar(opcao); });
       opcao.addEventListener("keydown", function (event) {
         if (event.key === "ArrowDown") { event.preventDefault(); moverFoco(1); }
         else if (event.key === "ArrowUp") { event.preventDefault(); moverFoco(-1); }
-        else if (event.key === "Home") { event.preventDefault(); if (opcoes[0]) opcoes[0].focus(); }
-        else if (event.key === "End") { event.preventDefault(); if (opcoes.length) opcoes[opcoes.length - 1].focus(); }
+        else if (event.key === "Home") { var inicio = opcoesVisiveis(); event.preventDefault(); if (inicio[0]) inicio[0].focus(); }
+        else if (event.key === "End") { var fim = opcoesVisiveis(); event.preventDefault(); if (fim.length) fim[fim.length - 1].focus(); }
         else if (event.key === "Escape") { event.preventDefault(); fecharSeletor(instancia, true); }
         else if (event.key === "Tab") fecharSeletor(instancia, false);
       });

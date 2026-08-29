@@ -2,35 +2,51 @@
   Componente: select.
   Uso:
     {% include "components/select.html" with name="municipio" label="Município"
-       opcoes=municipios placeholder="Selecione..." obrigatorio=True largura="6" %}
+       opcoes=municipios placeholder="Selecione..." obrigatorio=True largura="6" pesquisavel=True %}
   `opcoes`: lista de strings (ou objetos com __str__).
+  `pesquisavel`: adiciona busca por texto para listas extensas.
 {% endcomment %}
 <div class="form-campo{% if largura %} form-campo--{{ largura }}{% endif %}">
   <label class="form-label" for="id_{{ name }}">
     {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
   </label>
-  <div class="form-controle-wrapper form-controle-wrapper--select custom-select" data-custom-select>
+  <div class="form-controle-wrapper form-controle-wrapper--select custom-select{% if pesquisavel %} custom-select--pesquisavel{% endif %}"
+       data-custom-select{% if pesquisavel %} data-searchable{% endif %}>
     <select class="form-controle custom-select__native" id="id_{{ name }}" name="{{ name }}" {% if obrigatorio %}required{% endif %}>
       <option value="">{{ placeholder|default:"Selecione..." }}</option>
       {% for opcao in opcoes %}
         <option value="{{ opcao }}">{{ opcao }}</option>
       {% endfor %}
     </select>
-    <button class="form-controle custom-select__trigger" type="button"
-            aria-label="{{ label }}" aria-haspopup="listbox" aria-expanded="false"
-            aria-controls="id_{{ name }}_listbox" data-custom-select-trigger>
-      <span class="custom-select__valor">{{ placeholder|default:"Selecione..." }}</span>
+    {% if pesquisavel %}
+      <input class="form-controle custom-select__trigger custom-select__combobox" type="text"
+             autocomplete="off" spellcheck="false" placeholder="{{ placeholder|default:'Selecione...' }}"
+             role="combobox" aria-label="{{ label }}" aria-autocomplete="list"
+             aria-haspopup="listbox" aria-expanded="false" aria-controls="id_{{ name }}_listbox"
+             data-custom-select-trigger data-custom-select-search>
       <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
-    </button>
-    <div class="custom-select__menu" id="id_{{ name }}_listbox" role="listbox"
-         aria-label="Opções de {{ label|lower }}" data-custom-select-menu hidden>
-      {% for opcao in opcoes %}
-        <button class="custom-select__opcao" type="button" role="option"
-                aria-selected="false" data-value="{{ opcao }}">
-          <span>{{ opcao }}</span>
-          <span class="custom-select__check" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
-        </button>
-      {% endfor %}
+    {% else %}
+      <button class="form-controle custom-select__trigger" type="button"
+              aria-label="{{ label }}" aria-haspopup="listbox" aria-expanded="false"
+              aria-controls="id_{{ name }}_listbox" data-custom-select-trigger>
+        <span class="custom-select__valor">{{ placeholder|default:"Selecione..." }}</span>
+        <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+      </button>
+    {% endif %}
+    <div class="custom-select__menu" data-custom-select-menu hidden>
+      <div class="custom-select__lista" id="id_{{ name }}_listbox" role="listbox"
+           aria-label="Opções de {{ label|lower }}">
+        {% for opcao in opcoes %}
+          <button class="custom-select__opcao" type="button" role="option"
+                  aria-selected="false" data-value="{{ opcao }}">
+            <span>{{ opcao }}</span>
+            <span class="custom-select__check" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
+          </button>
+        {% endfor %}
+        {% if pesquisavel %}
+          <p class="custom-select__vazio" data-custom-select-empty hidden>Nenhuma opção encontrada.</p>
+        {% endif %}
+      </div>
     </div>
   </div>
   {% if ajuda %}<p class="form-ajuda">{{ ajuda }}</p>{% endif %}

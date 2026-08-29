@@ -867,12 +867,23 @@ textarea.form-controle {
 .custom-select__trigger.has-value { color: #000; }
 .custom-select__menu {
   position: absolute; z-index: 60; top: calc(100% + 6px); right: 0; left: 0;
-  max-height: 260px; overflow-y: auto; padding: 6px;
+  max-height: 300px; overflow: hidden; padding: 6px;
   border: 1px solid #cfd3d7; border-radius: 8px; background: #fff;
   box-shadow: 0 14px 30px rgba(28, 31, 35, 0.16);
-  scrollbar-width: thin; scrollbar-color: #c8ccd1 transparent;
 }
 .custom-select__menu[hidden] { display: none; }
+.custom-select__lista {
+  max-height: 248px; display: grid; gap: 2px; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: #c8ccd1 transparent;
+}
+.custom-select.is-enhanced .custom-select__combobox {
+  padding-right: 42px; background: #fff; color: var(--cor-texto);
+}
+.custom-select__combobox::placeholder { color: #858b93; }
+.custom-select__vazio {
+  margin: 0; padding: 18px 10px; color: var(--cor-texto-suave);
+  font-size: 0.74rem; text-align: center;
+}
 .custom-select__opcao {
   width: 100%; min-height: 38px; display: flex; align-items: center;
   justify-content: space-between; gap: 12px; padding: 8px 10px;
@@ -880,6 +891,7 @@ textarea.form-controle {
   font: inherit; font-size: 0.78rem; line-height: 1.3; text-align: left;
   cursor: pointer;
 }
+.custom-select__opcao[hidden] { display: none; }
 .custom-select__opcao:hover,
 .custom-select__opcao:focus-visible {
   outline: 0; background: #f7f3e8; color: #bea45a;
