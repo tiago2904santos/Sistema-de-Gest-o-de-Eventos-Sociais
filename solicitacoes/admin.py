@@ -1,6 +1,11 @@
 from django.contrib import admin
 
-from .models import SolicitacaoEvento, SolicitacaoEventoEquipe, SolicitacaoEventoServico
+from .models import (
+    HistoricoSolicitacao,
+    SolicitacaoEvento,
+    SolicitacaoEventoEquipe,
+    SolicitacaoEventoServico,
+)
 
 
 class SolicitacaoEventoServicoInline(admin.TabularInline):
@@ -28,4 +33,19 @@ class SolicitacaoEventoAdmin(admin.ModelAdmin):
     search_fields = ("solicitante_nome", "local_evento", "municipio__nome")
     date_hierarchy = "data_inicio_evento"
     inlines = [SolicitacaoEventoServicoInline, SolicitacaoEventoEquipeInline]
-    readonly_fields = ("regiao", "criado_em", "atualizado_em")
+    readonly_fields = ("regiao", "decidido_por", "decidido_em", "criado_em", "atualizado_em")
+
+
+@admin.register(HistoricoSolicitacao)
+class HistoricoSolicitacaoAdmin(admin.ModelAdmin):
+    list_display = ("solicitacao", "acao", "status_anterior", "status_novo", "usuario", "criado_em")
+    list_filter = ("acao", "status_novo")
+    readonly_fields = (
+        "solicitacao",
+        "usuario",
+        "acao",
+        "status_anterior",
+        "status_novo",
+        "observacao",
+        "criado_em",
+    )
