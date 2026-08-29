@@ -1172,3 +1172,50 @@ textarea.form-controle { min-height: 68px; }
   .decision-grid { grid-template-columns: 1fr; }
   .page-header__icone { width: 48px; height: 48px; flex-basis: 48px; }
 }
+
+/* --------------------------------------------------------------------------
+   Listagem e detalhe de solicitações
+   -------------------------------------------------------------------------- */
+.check-chip--estatico {
+  cursor: default;
+}
+
+.resumo-lista--detalhe {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--esp-3) var(--esp-5);
+  margin-top: var(--esp-4);
+}
+
+.resumo-lista--detalhe > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tabela__acoes {
+  white-space: nowrap;
+}
+
+.paginacao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  border-top: 1px solid var(--cor-borda);
+  font-size: var(--texto-sm);
+}
+
+.paginacao__links {
+  display: flex;
+  gap: var(--esp-4);
+}
+
+.lista-filtros__acoes {
+  display: flex;
+  align-items: flex-end;
+}
+
+@media (max-width: 760px) {
+  .resumo-lista--detalhe { grid-template-columns: 1fr; }
+}

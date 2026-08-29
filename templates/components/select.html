@@ -2,20 +2,25 @@
   Componente: select.
   Uso:
     {% include "components/select.html" with name="municipio" label="Município"
-       opcoes=municipios placeholder="Selecione..." obrigatorio=True largura="6" pesquisavel=True %}
-  `opcoes`: lista de strings (ou objetos com __str__).
+       opcoes=municipios placeholder="Selecione..." obrigatorio=True largura="6"
+       pesquisavel=True selecionado=valores.municipio erros=form.errors.municipio %}
+  `opcoes`: lista de dicts {"valor": "1", "rotulo": "Curitiba"} ou de strings.
+  `selecionado`: valor atual (string) para pré-selecionar a opção salva.
+  `erros`: lista de erros de validação do campo.
   `pesquisavel`: adiciona busca por texto para listas extensas.
+  `desabilitado`: bloqueia a edição preservando o visual.
 {% endcomment %}
 <div class="form-campo{% if largura %} form-campo--{{ largura }}{% endif %}">
   <label class="form-label" for="id_{{ name }}">
     {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
   </label>
-  <div class="form-controle-wrapper form-controle-wrapper--select custom-select{% if pesquisavel %} custom-select--pesquisavel{% endif %}"
+  <div class="form-controle-wrapper form-controle-wrapper--select custom-select{% if pesquisavel %} custom-select--pesquisavel{% endif %}{% if erros %} is-invalid{% endif %}"
        data-custom-select{% if pesquisavel %} data-searchable{% endif %}>
-    <select class="form-controle custom-select__native" id="id_{{ name }}" name="{{ name }}" {% if obrigatorio %}required{% endif %}>
+    <select class="form-controle custom-select__native" id="id_{{ name }}" name="{{ name }}"
+            {% if obrigatorio %}required{% endif %}{% if desabilitado %} disabled{% endif %}>
       <option value="">{{ placeholder|default:"Selecione..." }}</option>
       {% for opcao in opcoes %}
-        <option value="{{ opcao }}">{{ opcao }}</option>
+        <option value="{{ opcao.valor|default:opcao }}"{% if selecionado and opcao.valor|default:opcao|stringformat:"s" == selecionado|stringformat:"s" %} selected{% endif %}>{{ opcao.rotulo|default:opcao }}</option>
       {% endfor %}
     </select>
     {% if pesquisavel %}
@@ -23,12 +28,13 @@
              autocomplete="off" spellcheck="false" placeholder="{{ placeholder|default:'Selecione...' }}"
              role="combobox" aria-label="{{ label }}" aria-autocomplete="list"
              aria-haspopup="listbox" aria-expanded="false" aria-controls="id_{{ name }}_listbox"
+             {% if desabilitado %}disabled{% endif %}
              data-custom-select-trigger data-custom-select-search>
       <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
     {% else %}
       <button class="form-controle custom-select__trigger" type="button"
               aria-label="{{ label }}" aria-haspopup="listbox" aria-expanded="false"
-              aria-controls="id_{{ name }}_listbox" data-custom-select-trigger>
+              aria-controls="id_{{ name }}_listbox" {% if desabilitado %}disabled{% endif %} data-custom-select-trigger>
         <span class="custom-select__valor">{{ placeholder|default:"Selecione..." }}</span>
         <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
       </button>
@@ -38,8 +44,9 @@
            aria-label="Opções de {{ label|lower }}">
         {% for opcao in opcoes %}
           <button class="custom-select__opcao" type="button" role="option"
-                  aria-selected="false" data-value="{{ opcao }}">
-            <span>{{ opcao }}</span>
+                  aria-selected="{% if selecionado and opcao.valor|default:opcao|stringformat:"s" == selecionado|stringformat:"s" %}true{% else %}false{% endif %}"
+                  data-value="{{ opcao.valor|default:opcao }}">
+            <span>{{ opcao.rotulo|default:opcao }}</span>
             <span class="custom-select__check" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
           </button>
         {% endfor %}
@@ -49,5 +56,6 @@
       </div>
     </div>
   </div>
+  {% if erros %}<p class="form-erro">{{ erros.0 }}</p>{% endif %}
   {% if ajuda %}<p class="form-ajuda">{{ ajuda }}</p>{% endif %}
 </div>

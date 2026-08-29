@@ -9,11 +9,13 @@
     {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
   </label>
   <textarea
-    class="form-controle"
+    class="form-controle{% if erros %} is-invalid{% endif %}"
     id="id_{{ name }}"
     name="{{ name }}"
     rows="{{ linhas|default:'4' }}"
     {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+    {% if desabilitado %}disabled{% endif %}
     {% if obrigatorio %}required{% endif %}>{{ valor|default:"" }}</textarea>
+  {% if erros %}<p class="form-erro">{{ erros.0 }}</p>{% endif %}
   {% if ajuda %}<p class="form-ajuda">{{ ajuda }}</p>{% endif %}
 </div>

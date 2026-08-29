@@ -7,7 +7,7 @@
     <a class="navbar__link {% if request.resolver_match.namespace == 'dashboard' %}navbar__link--ativo{% endif %}"
        href="{% url 'dashboard:index' %}"><span class="navbar__icone">{% include "components/icon.html" with nome="home" %}</span>Dashboard</a>
     <a class="navbar__link {% if request.resolver_match.namespace == 'solicitacoes' %}navbar__link--ativo{% endif %}"
-       href="{% url 'solicitacoes:nova' %}"><span class="navbar__icone">{% include "components/icon.html" with nome="document" %}</span>Solicitações</a>
+       href="{% url 'solicitacoes:lista' %}"><span class="navbar__icone">{% include "components/icon.html" with nome="document" %}</span>Solicitações</a>
     {% if user.is_staff %}
       <a class="navbar__link" href="{% url 'admin:index' %}"><span class="navbar__icone">{% include "components/icon.html" with nome="users" %}</span>Cadastros</a>
     {% endif %}

@@ -1,0 +1,89 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Solicitações — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with atual="Solicitações" %}
+
+  {% url 'solicitacoes:nova' as url_nova %}
+  {% include "components/page_header.html" with titulo="Solicitações de Eventos Sociais" subtitulo="Acompanhe e gerencie as solicitações registradas" icone="document" acao_label="Nova solicitação" acao_url=url_nova %}
+
+  <div class="card mb-4">
+    <div class="card__corpo">
+      <form method="get" class="form-grid" action="">
+        {% include "components/input.html" with name="q" label="Busca" placeholder="Solicitante, local ou município..." largura="4" valor=valores_filtro.q %}
+        {% include "components/select.html" with name="status" label="Status" opcoes=opcoes_status placeholder="Todos os status" largura="4" selecionado=valores_filtro.status %}
+        {% include "components/select.html" with name="municipio" label="Município" opcoes=opcoes_municipios placeholder="Todos os municípios" largura="4" pesquisavel=True selecionado=valores_filtro.municipio %}
+        {% include "components/select.html" with name="tipo_evento" label="Tipo do evento" opcoes=opcoes_tipos placeholder="Todos os tipos" largura="4" selecionado=valores_filtro.tipo_evento %}
+        {% include "components/input.html" with name="inicio" label="Eventos a partir de" tipo="date" largura="3" valor=valores_filtro.inicio %}
+        {% include "components/input.html" with name="fim" label="Eventos até" tipo="date" largura="3" valor=valores_filtro.fim %}
+        <div class="form-campo form-campo--2 lista-filtros__acoes">
+          {% include "components/button.html" with label="Filtrar" variante="primario" tipo="submit" %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    {% include "components/card.html" with titulo="Solicitações" %}
+    <div class="tabela-wrapper">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>Nº</th>
+            <th>Município</th>
+            <th>Tipo de evento</th>
+            <th>Período</th>
+            <th>Solicitante</th>
+            <th>Data da solicitação</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for linha in linhas %}
+            {% with s=linha.solicitacao %}
+              <tr>
+                <td><strong>#{{ s.pk }}</strong></td>
+                <td>{{ s.municipio|default:"—" }}</td>
+                <td>{{ s.tipo_evento|default:"—" }}</td>
+                <td>
+                  {% if s.data_inicio_evento %}
+                    {{ s.data_inicio_evento|date:"d/m/Y" }}{% if s.data_fim_evento %} a {{ s.data_fim_evento|date:"d/m/Y" }}{% endif %}
+                  {% else %}—{% endif %}
+                </td>
+                <td>{{ s.solicitante_nome|default:"—" }}</td>
+                <td>{{ s.data_solicitacao|date:"d/m/Y" }}</td>
+                <td>{% include "components/status_badge.html" with status=s.status label=s.get_status_display %}</td>
+                <td class="tabela__acoes">
+                  <a href="{% url 'solicitacoes:detalhe' s.pk %}">Detalhes</a>
+                  {% if linha.acoes.editar %}
+                    · <a href="{% url 'solicitacoes:editar' s.pk %}">Editar</a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endwith %}
+          {% empty %}
+            <tr><td colspan="8" class="texto-suave texto-centro">Nenhuma solicitação encontrada.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if pagina.paginator.num_pages > 1 %}
+      <div class="card__corpo paginacao">
+        <span class="texto-suave">
+          Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}
+          ({{ pagina.paginator.count }} solicitações)
+        </span>
+        <span class="paginacao__links">
+          {% if pagina.has_previous %}
+            <a href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">Anterior</a>
+          {% endif %}
+          {% if pagina.has_next %}
+            <a href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima</a>
+          {% endif %}
+        </span>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

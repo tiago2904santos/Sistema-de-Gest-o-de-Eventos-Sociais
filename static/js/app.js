@@ -787,7 +787,10 @@
     var contato = campo("contato");
     var servicos = formulario.querySelectorAll('[name="servicos"]:checked');
     var equipes = formulario.querySelectorAll('[name="equipes"]:checked');
-    var nomesEquipes = Array.prototype.map.call(equipes, function (item) { return item.value; });
+    var nomesEquipes = Array.prototype.map.call(equipes, function (item) {
+      var rotulo = item.closest("label");
+      return rotulo ? rotulo.textContent.trim() : item.value;
+    });
 
     var periodo = inicio && inicio.value ? formatarData(inicio.value) : "";
     if (fim && fim.value) periodo += " a " + formatarData(fim.value);

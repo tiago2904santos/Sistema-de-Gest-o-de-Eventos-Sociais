@@ -7,12 +7,16 @@
   <span class="form-label" id="id_{{ name }}_label">
     {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
   </span>
-  <div class="form-controle-wrapper form-controle-wrapper--date custom-date custom-date--range"
+  <div class="form-controle-wrapper form-controle-wrapper--date custom-date custom-date--range{% if erros %} is-invalid{% endif %}"
        data-custom-date-range>
     <div class="custom-date__range-native">
       <input class="form-controle" type="date" id="id_{{ start_name }}" name="{{ start_name }}"
+             {% if valor_inicio %}value="{{ valor_inicio }}"{% endif %}
+             {% if desabilitado %}disabled{% endif %}
              aria-label="Início de {{ label|lower }}" data-custom-date-range-start{% if obrigatorio %} required{% endif %}>
       <input class="form-controle" type="date" id="id_{{ end_name }}" name="{{ end_name }}"
+             {% if valor_fim %}value="{{ valor_fim }}"{% endif %}
+             {% if desabilitado %}disabled{% endif %}
              aria-label="Fim de {{ label|lower }}" data-custom-date-range-end{% if obrigatorio %} required{% endif %}>
     </div>
     <button class="form-controle custom-date__trigger" type="button"
@@ -44,4 +48,5 @@
       </div>
     </div>
   </div>
+  {% if erros %}<p class="form-erro">{{ erros.0 }}</p>{% endif %}
 </div>
