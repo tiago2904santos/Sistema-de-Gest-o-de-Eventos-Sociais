@@ -17,6 +17,7 @@
   });
 
   var sidebarAcompanhamento = document.querySelector(".solicitacao-sidebar");
+  var rodapeAplicacao = document.querySelector(".app-shell__footer");
   var ajusteSidebarPendente = false;
   var topoDocumentoSidebar = null;
 
@@ -33,12 +34,20 @@
     if (!sidebarAcompanhamento) return;
     if (window.innerWidth <= 980) {
       sidebarAcompanhamento.classList.remove("is-stuck");
+      sidebarAcompanhamento.style.removeProperty("--sidebar-footer-shift");
       topoDocumentoSidebar = null;
       return;
     }
     if (topoDocumentoSidebar === null) medirPosicaoSidebar();
     var encostouNoTopo = window.scrollY >= topoDocumentoSidebar - 14;
     sidebarAcompanhamento.classList.toggle("is-stuck", encostouNoTopo);
+    var deslocamentoRodape = 0;
+    if (encostouNoTopo && rodapeAplicacao) {
+      var topoRodape = rodapeAplicacao.getBoundingClientRect().top;
+      var baseSidebar = 14 + sidebarAcompanhamento.offsetHeight;
+      deslocamentoRodape = Math.min(0, topoRodape - 10 - baseSidebar);
+    }
+    sidebarAcompanhamento.style.setProperty("--sidebar-footer-shift", deslocamentoRodape + "px");
   }
 
   function agendarAjusteSidebar() {
@@ -53,6 +62,7 @@
     window.addEventListener("scroll", agendarAjusteSidebar, { passive: true });
     window.addEventListener("resize", function () {
       sidebarAcompanhamento.classList.remove("is-stuck");
+      sidebarAcompanhamento.style.removeProperty("--sidebar-footer-shift");
       topoDocumentoSidebar = null;
       agendarAjusteSidebar();
     });

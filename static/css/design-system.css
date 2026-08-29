@@ -813,6 +813,8 @@ textarea.form-controle {
   gap: 20px; align-items: start;
 }
 .solicitacao-conteudo, .solicitacao-sidebar { min-width: 0; }
+.app-shell__main:has(#form-solicitacao) { padding-bottom: 10px; }
+.solicitacao-conteudo .section-card:last-child { margin-bottom: 0; }
 .solicitacao-sidebar {
   position: sticky; top: 14px;
   height: calc(100vh - 28px); height: calc(100dvh - 28px);
@@ -822,6 +824,7 @@ textarea.form-controle {
 }
 .solicitacao-sidebar.is-stuck {
   position: fixed; top: 14px; left: var(--sidebar-left); width: var(--sidebar-width);
+  transform: translateY(var(--sidebar-footer-shift, 0px));
 }
 .section-card { border-radius: 9px; margin-bottom: 12px; box-shadow: none; }
 .section-card__cabecalho { padding: 11px 14px; background: #fff; }
@@ -1064,8 +1067,7 @@ textarea.form-controle { min-height: 68px; }
 }
 .side-card__icone { color: #c38c09; font-size: 1rem; }
 .resumo-lista {
-  min-height: 0; flex: 1 1 auto; margin: 0; padding: 0 14px; overflow-y: auto;
-  scrollbar-width: thin; scrollbar-color: #c8ccd1 transparent;
+  min-height: 0; flex: 1 1 auto; margin: 0; padding: 0 14px; overflow-y: hidden;
 }
 .resumo-lista > div {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px;
@@ -1077,11 +1079,11 @@ textarea.form-controle { min-height: 68px; }
   margin: 0; max-width: 210px; text-align: right; font-size: 0.7rem; font-weight: 700;
 }
 .timeline {
-  min-height: 0; flex: 1 1 auto; margin: 0; padding: 12px 14px; overflow-y: auto;
-  list-style: none; scrollbar-width: thin; scrollbar-color: #c8ccd1 transparent;
+  min-height: 0; flex: 1 1 auto; display: flex; flex-direction: column;
+  margin: 0; padding: 12px 14px 0; overflow-y: hidden; list-style: none;
 }
 .timeline__item {
-  position: relative; min-height: 46px; display: grid;
+  position: relative; min-height: 46px; flex: 1 1 0; display: grid;
   grid-template-columns: 24px minmax(0, 1fr) auto; gap: 10px; align-items: start;
 }
 .timeline__item:not(:last-child)::after {
@@ -1106,11 +1108,11 @@ textarea.form-controle { min-height: 68px; }
   color: #a87300; font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
 }
 .checklist {
-  min-height: 0; flex: 1 1 auto; margin: 0; padding: 7px 14px 9px; overflow-y: auto;
-  list-style: none; scrollbar-width: thin; scrollbar-color: #c8ccd1 transparent;
+  min-height: 0; flex: 1 1 auto; margin: 0; padding: 7px 14px 9px;
+  overflow-y: hidden; list-style: none;
 }
 .checklist li {
-  min-height: 28px; display: flex; align-items: center; justify-content: space-between;
+  min-height: 25px; display: flex; align-items: center; justify-content: space-between;
   gap: 10px; color: var(--cor-texto-suave); font-size: 0.7rem;
 }
 .checklist i {
