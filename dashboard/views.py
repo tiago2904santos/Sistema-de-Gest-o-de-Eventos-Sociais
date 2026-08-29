@@ -1,58 +1,86 @@
+from datetime import timedelta
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
+from django.utils import timezone
+
+from solicitacoes.models import SolicitacaoEvento, StatusSolicitacao
+from solicitacoes.permissions import queryset_visivel
 
 
 @login_required
 def index(request):
-    """Dashboard inicial com indicadores (dados mockados nesta etapa)."""
+    """Dashboard com indicadores calculados do banco."""
+    hoje = timezone.localdate()
+    visiveis = queryset_visivel(request.user, SolicitacaoEvento.objects.all())
+
+    inicio_mes = hoje.replace(day=1)
+    mes_anterior_fim = inicio_mes - timedelta(days=1)
+
+    no_mes = visiveis.filter(
+        data_solicitacao__year=hoje.year, data_solicitacao__month=hoje.month
+    ).count()
+    no_mes_anterior = visiveis.filter(
+        data_solicitacao__year=mes_anterior_fim.year,
+        data_solicitacao__month=mes_anterior_fim.month,
+    ).count()
+    diferenca = no_mes - no_mes_anterior
+
+    aguardando = visiveis.filter(
+        status=StatusSolicitacao.AGUARDANDO_DESPACHO
+    ).count()
+
+    finalizadas_ano = visiveis.filter(
+        data_solicitacao__year=hoje.year,
+        status__in=[StatusSolicitacao.ATENDIDA, StatusSolicitacao.NAO_ATENDIDA],
+    ).count()
+    atendidas_ano = visiveis.filter(
+        data_solicitacao__year=hoje.year, status=StatusSolicitacao.ATENDIDA
+    ).count()
+    percentual = round(atendidas_ano * 100 / finalizadas_ano) if finalizadas_ano else 0
+
+    proximos = visiveis.filter(
+        data_inicio_evento__gte=hoje,
+        data_inicio_evento__lte=hoje + timedelta(days=30),
+    ).exclude(
+        status__in=[StatusSolicitacao.CANCELADA, StatusSolicitacao.NAO_ATENDIDA]
+    )
+    proximos_total = proximos.count()
+    proximos_unidade_movel = proximos.filter(unidade_movel=True).count()
+
     resumo = [
-        {"titulo": "Solicitações no mês", "valor": 18, "variacao": "+3 em relação a julho"},
-        {"titulo": "Aguardando despacho", "valor": 5, "variacao": "2 com prazo próximo"},
-        {"titulo": "Atendidas no ano", "valor": 112, "variacao": "87% de atendimento"},
-        {"titulo": "Eventos nos próximos 30 dias", "valor": 7, "variacao": "3 com unidade móvel"},
-    ]
-    ultimas_solicitacoes = [
         {
-            "id": 1042,
-            "municipio": "Curitiba",
-            "tipo_evento": "Ação social",
-            "data_inicio": "05/09/2026",
-            "status": "AGUARDANDO_DESPACHO",
-            "status_label": "Aguardando despacho",
+            "titulo": "Solicitações no mês",
+            "valor": no_mes,
+            "variacao": (
+                f"{diferenca:+d} em relação ao mês anterior" if no_mes_anterior or no_mes else "Sem registros"
+            ),
         },
         {
-            "id": 1041,
-            "municipio": "Londrina",
-            "tipo_evento": "Feira de serviços",
-            "data_inicio": "12/09/2026",
-            "status": "EM_ANALISE",
-            "status_label": "Em análise",
+            "titulo": "Aguardando despacho",
+            "valor": aguardando,
+            "variacao": "Pendentes de decisão da DG",
         },
         {
-            "id": 1040,
-            "municipio": "Maringá",
-            "tipo_evento": "Mutirão CIN",
-            "data_inicio": "20/09/2026",
-            "status": "ATENDIDA",
-            "status_label": "Atendida",
+            "titulo": "Atendidas no ano",
+            "valor": atendidas_ano,
+            "variacao": (
+                f"{percentual}% das finalizadas" if finalizadas_ano else "Nenhuma finalizada ainda"
+            ),
         },
         {
-            "id": 1039,
-            "municipio": "Cascavel",
-            "tipo_evento": "Ação social",
-            "data_inicio": "28/08/2026",
-            "status": "NAO_ATENDIDA",
-            "status_label": "Não atendida",
-        },
-        {
-            "id": 1038,
-            "municipio": "Ponta Grossa",
-            "tipo_evento": "Evento institucional",
-            "data_inicio": "30/08/2026",
-            "status": "ENVIADA",
-            "status_label": "Enviada",
+            "titulo": "Eventos nos próximos 30 dias",
+            "valor": proximos_total,
+            "variacao": (
+                f"{proximos_unidade_movel} com unidade móvel" if proximos_total else "Nenhum evento agendado"
+            ),
         },
     ]
+
+    ultimas_solicitacoes = visiveis.select_related("municipio", "tipo_evento").order_by(
+        "-criado_em"
+    )[:5]
+
     return render(
         request,
         "pages/dashboard/index.html",

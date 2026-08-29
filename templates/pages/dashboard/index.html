@@ -29,12 +29,14 @@
         <tbody>
           {% for s in ultimas_solicitacoes %}
             <tr>
-              <td><strong>#{{ s.id }}</strong></td>
-              <td>{{ s.municipio }}</td>
-              <td>{{ s.tipo_evento }}</td>
-              <td>{{ s.data_inicio }}</td>
-              <td>{% include "components/status_badge.html" with status=s.status label=s.status_label %}</td>
+              <td><strong><a href="{% url 'solicitacoes:detalhe' s.pk %}">#{{ s.pk }}</a></strong></td>
+              <td>{{ s.municipio|default:"—" }}</td>
+              <td>{{ s.tipo_evento|default:"—" }}</td>
+              <td>{{ s.data_inicio_evento|date:"d/m/Y"|default:"—" }}</td>
+              <td>{% include "components/status_badge.html" with status=s.status label=s.get_status_display %}</td>
             </tr>
+          {% empty %}
+            <tr><td colspan="5" class="texto-suave texto-centro">Nenhuma solicitação registrada ainda.</td></tr>
           {% endfor %}
         </tbody>
       </table>
