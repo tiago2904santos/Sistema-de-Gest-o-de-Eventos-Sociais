@@ -267,7 +267,8 @@ class WorkflowTests(BaseSolicitacaoTestCase):
     def test_timeline_reflete_status(self):
         solicitacao = self.solicitacao_completa()
         etapas = services.montar_timeline(solicitacao)
-        self.assertEqual(etapas[1]["estado"], "atual")
+        self.assertEqual(etapas[0]["titulo"], "Enviar solicitação")
+        self.assertEqual(etapas[0]["estado"], "atual")
         solicitacao.status = StatusSolicitacao.ATENDIDA
         etapas = services.montar_timeline(solicitacao)
         self.assertEqual(etapas[-1]["titulo"], "Atendida")

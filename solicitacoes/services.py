@@ -227,11 +227,6 @@ def montar_timeline(solicitacao=None):
 
     etapas = [
         {
-            "titulo": "Solicitação iniciada",
-            "subtitulo": quando(AcaoHistorico.CRIACAO) or "Rascunho em preenchimento",
-            "estado": "concluido",
-        },
-        {
             "titulo": "Enviar solicitação",
             "subtitulo": quando(AcaoHistorico.ENVIO)
             or ("Aguardando preenchimento" if posicao == 0 else "Pendente"),
