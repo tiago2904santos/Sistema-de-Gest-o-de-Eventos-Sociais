@@ -6,7 +6,7 @@
 {% endcomment %}
 <div class="page-header">
   <div class="page-header__identificacao">
-    {% if icone %}<span class="page-header__icone" aria-hidden="true">{{ icone }}</span>{% endif %}
+    {% if icone %}<span class="page-header__icone">{% include "components/icon.html" with nome=icone %}</span>{% endif %}
     <div>
       <h1 class="page-header__titulo">{{ titulo }}</h1>
       {% if subtitulo %}<p class="page-header__subtitulo">{{ subtitulo }}</p>{% endif %}

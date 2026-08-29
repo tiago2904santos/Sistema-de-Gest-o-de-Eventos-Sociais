@@ -9,7 +9,7 @@
     {% include "components/breadcrumb.html" with atual="Nova solicitação" %}
 
     <div class="solicitacao-intro">
-      {% include "components/page_header.html" with titulo="Nova Solicitação de Evento Social" subtitulo="Preencha os dados abaixo para registrar a solicitação de atendimento do evento." icone="▤" %}
+      {% include "components/page_header.html" with titulo="Nova Solicitação de Evento Social" subtitulo="Preencha os dados abaixo para registrar a solicitação de atendimento do evento." icone="document" %}
       <div class="solicitacao-intro__acoes">
         {% url 'dashboard:index' as url_dashboard %}
         {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_dashboard %}
@@ -60,7 +60,7 @@
                 {% for servico in servicos %}
                   <label class="check-chip">
                     <input type="checkbox" name="servicos" value="{{ servico }}">
-                    <span aria-hidden="true">✓</span>{{ servico }}
+                    <span aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>{{ servico }}
                   </label>
                 {% endfor %}
               </div>
@@ -93,7 +93,7 @@
                 <legend class="form-label">Equipes</legend>
                 <div class="chip-grid chip-grid--compacto">
                   {% for equipe in equipes %}
-                    <label class="check-chip"><input type="checkbox" name="equipes" value="{{ equipe }}"><span aria-hidden="true">✓</span>{{ equipe }}</label>
+                    <label class="check-chip"><input type="checkbox" name="equipes" value="{{ equipe }}"><span aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>{{ equipe }}</label>
                   {% endfor %}
                 </div>
               </fieldset>
@@ -111,9 +111,9 @@
             <fieldset class="form-campo form-fieldset">
               <legend class="form-label">Decisão</legend>
               <div class="decision-grid">
-                <label class="decision-option decision-option--success"><input type="radio" name="decisao_dg" value="ATENDER"><span>✓</span>Atender</label>
-                <label class="decision-option decision-option--danger"><input type="radio" name="decisao_dg" value="NAO_ATENDER"><span>×</span>Não atender</label>
-                <label class="decision-option decision-option--cancel"><input type="radio" name="decisao_dg" value="CANCELADO"><span>⊘</span>Evento cancelado</label>
+                <label class="decision-option decision-option--success"><input type="radio" name="decisao_dg" value="ATENDER"><span>{% include "components/icon.html" with nome="check" %}</span>Atender</label>
+                <label class="decision-option decision-option--danger"><input type="radio" name="decisao_dg" value="NAO_ATENDER"><span>{% include "components/icon.html" with nome="x" %}</span>Não atender</label>
+                <label class="decision-option decision-option--cancel"><input type="radio" name="decisao_dg" value="CANCELADO"><span>{% include "components/icon.html" with nome="ban" %}</span>Evento cancelado</label>
               </div>
             </fieldset>
             <div class="form-grid form-grid--separado">

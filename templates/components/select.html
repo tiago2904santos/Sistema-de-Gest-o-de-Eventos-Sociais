@@ -9,11 +9,14 @@
   <label class="form-label" for="id_{{ name }}">
     {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
   </label>
-  <select class="form-controle" id="id_{{ name }}" name="{{ name }}" {% if obrigatorio %}required{% endif %}>
-    <option value="">{{ placeholder|default:"Selecione..." }}</option>
-    {% for opcao in opcoes %}
-      <option value="{{ opcao }}">{{ opcao }}</option>
-    {% endfor %}
-  </select>
+  <div class="form-controle-wrapper form-controle-wrapper--select">
+    <select class="form-controle" id="id_{{ name }}" name="{{ name }}" {% if obrigatorio %}required{% endif %}>
+      <option value="">{{ placeholder|default:"Selecione..." }}</option>
+      {% for opcao in opcoes %}
+        <option value="{{ opcao }}">{{ opcao }}</option>
+      {% endfor %}
+    </select>
+    <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+  </div>
   {% if ajuda %}<p class="form-ajuda">{{ ajuda }}</p>{% endif %}
 </div>

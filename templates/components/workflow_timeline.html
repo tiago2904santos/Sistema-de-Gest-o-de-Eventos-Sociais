@@ -1,11 +1,11 @@
 <section class="side-card" aria-labelledby="status-solicitacao-titulo">
   <header class="side-card__cabecalho">
-    <span class="side-card__icone" aria-hidden="true">◎</span>
+    <span class="side-card__icone">{% include "components/icon.html" with nome="activity" %}</span>
     <h2 id="status-solicitacao-titulo">Status / despacho</h2>
   </header>
   <ol class="timeline">
     <li class="timeline__item timeline__item--concluido">
-      <span class="timeline__marcador" aria-hidden="true">✓</span>
+      <span class="timeline__marcador" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
       <div><strong>Solicitação iniciada</strong><small>Rascunho em preenchimento</small></div>
     </li>
     <li class="timeline__item timeline__item--atual">

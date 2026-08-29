@@ -9,13 +9,16 @@
   <label class="form-label" for="id_{{ name }}">
     {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
   </label>
-  <input
-    class="form-controle"
-    type="{{ tipo|default:'text' }}"
-    id="id_{{ name }}"
-    name="{{ name }}"
-    {% if valor %}value="{{ valor }}"{% endif %}
-    {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
-    {% if obrigatorio %}required{% endif %}>
+  <div class="form-controle-wrapper{% if tipo == 'date' %} form-controle-wrapper--date{% endif %}">
+    <input
+      class="form-controle"
+      type="{{ tipo|default:'text' }}"
+      id="id_{{ name }}"
+      name="{{ name }}"
+      {% if valor %}value="{{ valor }}"{% endif %}
+      {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+      {% if obrigatorio %}required{% endif %}>
+    {% if tipo == 'date' %}<span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="calendar" %}</span>{% endif %}
+  </div>
   {% if ajuda %}<p class="form-ajuda">{{ ajuda }}</p>{% endif %}
 </div>
