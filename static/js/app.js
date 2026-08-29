@@ -18,16 +18,27 @@
 
   var sidebarAcompanhamento = document.querySelector(".solicitacao-sidebar");
   var ajusteSidebarPendente = false;
+  var topoDocumentoSidebar = null;
+
+  function medirPosicaoSidebar() {
+    if (!sidebarAcompanhamento) return;
+    var retangulo = sidebarAcompanhamento.getBoundingClientRect();
+    topoDocumentoSidebar = retangulo.top + window.scrollY;
+    sidebarAcompanhamento.style.setProperty("--sidebar-left", retangulo.left + "px");
+    sidebarAcompanhamento.style.setProperty("--sidebar-width", retangulo.width + "px");
+  }
 
   function ajustarAlturaSidebar() {
     ajusteSidebarPendente = false;
     if (!sidebarAcompanhamento) return;
     if (window.innerWidth <= 980) {
-      sidebarAcompanhamento.style.removeProperty("--sidebar-top");
+      sidebarAcompanhamento.classList.remove("is-stuck");
+      topoDocumentoSidebar = null;
       return;
     }
-    var topoVisivel = Math.max(14, sidebarAcompanhamento.getBoundingClientRect().top);
-    sidebarAcompanhamento.style.setProperty("--sidebar-top", topoVisivel + "px");
+    if (topoDocumentoSidebar === null) medirPosicaoSidebar();
+    var encostouNoTopo = window.scrollY >= topoDocumentoSidebar - 14;
+    sidebarAcompanhamento.classList.toggle("is-stuck", encostouNoTopo);
   }
 
   function agendarAjusteSidebar() {
@@ -37,9 +48,14 @@
   }
 
   if (sidebarAcompanhamento) {
+    medirPosicaoSidebar();
     ajustarAlturaSidebar();
     window.addEventListener("scroll", agendarAjusteSidebar, { passive: true });
-    window.addEventListener("resize", agendarAjusteSidebar);
+    window.addEventListener("resize", function () {
+      sidebarAcompanhamento.classList.remove("is-stuck");
+      topoDocumentoSidebar = null;
+      agendarAjusteSidebar();
+    });
   }
 
   var seletoresAbertos = [];
