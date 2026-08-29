@@ -262,6 +262,4 @@ def montar_timeline(solicitacao=None):
                 "estado": "concluido",
             }
         )
-    else:
-        etapas.append({"titulo": "Resultado", "subtitulo": "Pendente", "estado": "pendente"})
     return etapas
