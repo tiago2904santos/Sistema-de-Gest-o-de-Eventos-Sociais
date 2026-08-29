@@ -1,10 +1,14 @@
 {% extends "layouts/base.html" %}
 {% comment %}
-  Layout das páginas de autenticação: card centralizado sobre fundo grafite.
+  Layout das páginas de autenticação: barra institucional grafite no topo
+  (com linha dourada) e card centralizado sobre fundo cinza claro.
 {% endcomment %}
 
 {% block body %}
 <div class="auth-shell">
-  {% block conteudo %}{% endblock %}
+  {% include "components/top_header.html" %}
+  <div class="auth-shell__conteudo">
+    {% block conteudo %}{% endblock %}
+  </div>
 </div>
 {% endblock %}

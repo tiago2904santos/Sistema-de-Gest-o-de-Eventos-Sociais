@@ -8,28 +8,33 @@
    1. Tokens
    -------------------------------------------------------------------------- */
 :root {
-  /* Cores institucionais */
-  --cor-grafite-900: #16191d;
-  --cor-grafite-800: #1f2429;
-  --cor-grafite-700: #2a3038;
-  --cor-grafite-600: #3a424c;
+  /* Paleta institucional obrigatória:
+     #333333 (grafite) · #BEA45A (dourado) · #D1D3D4 (cinza claro) · #808080 (cinza) */
+  --cor-grafite-900: #262626;
+  --cor-grafite-800: #333333;
+  --cor-grafite-700: #404040;
+  --cor-grafite-600: #4d4d4d;
 
-  --cor-dourado-500: #c9a227;
-  --cor-dourado-400: #d9b544;
-  --cor-dourado-100: #f7efd4;
+  --cor-dourado-700: #8f7a3e;
+  --cor-dourado-500: #bea45a;
+  --cor-dourado-400: #ccb676;
+  --cor-dourado-100: #f4efe1;
 
-  --cor-fundo: #f4f5f7;
+  --cor-cinza-500: #808080;
+  --cor-cinza-300: #d1d3d4;
+
+  --cor-fundo: #ededee;
   --cor-superficie: #ffffff;
-  --cor-borda: #e1e4ea;
-  --cor-borda-forte: #c9ced8;
+  --cor-borda: #d1d3d4;
+  --cor-borda-forte: #bcbec0;
 
-  --cor-texto: #1d2129;
-  --cor-texto-suave: #5b6472;
-  --cor-texto-fraco: #8a93a2;
-  --cor-texto-invertido: #f5f6f8;
+  --cor-texto: #333333;
+  --cor-texto-suave: #808080;
+  --cor-texto-fraco: #9b9d9f;
+  --cor-texto-invertido: #f5f5f5;
 
-  --cor-primaria: #1f2429;
-  --cor-primaria-hover: #2a3038;
+  --cor-primaria: #333333;
+  --cor-primaria-hover: #404040;
   --cor-acento: var(--cor-dourado-500);
 
   /* Estados */
@@ -186,7 +191,7 @@ img {
 
 .top-header__subtitulo {
   font-size: var(--texto-xs);
-  color: #aeb6c2;
+  color: #c4c4c4;
   text-transform: uppercase;
   letter-spacing: 1.2px;
 }
@@ -199,7 +204,7 @@ img {
 }
 
 .top-header__usuario-nome {
-  color: #d6dae1;
+  color: #dddddd;
 }
 
 /* --------------------------------------------------------------------------
@@ -338,12 +343,12 @@ img {
 }
 
 .section-card__numero {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: var(--cor-grafite-800);
-  color: var(--cor-dourado-400);
+  background: var(--cor-acento);
+  color: #ffffff;
   font-size: var(--texto-sm);
   font-weight: 700;
   display: grid;
@@ -351,8 +356,11 @@ img {
 }
 
 .section-card__titulo {
-  font-size: var(--texto-lg);
-  font-weight: 600;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--cor-dourado-700);
 }
 
 .section-card__subtitulo {
@@ -452,8 +460,11 @@ img {
 
 .form-label {
   display: block;
-  font-size: var(--texto-sm);
-  font-weight: 600;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--cor-grafite-600);
   margin-bottom: var(--esp-2);
 }
 
@@ -475,8 +486,8 @@ img {
 
 .form-controle:focus {
   outline: none;
-  border-color: var(--cor-grafite-600);
-  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.25);
+  border-color: var(--cor-acento);
+  box-shadow: 0 0 0 3px rgba(190, 164, 90, 0.28);
 }
 
 .form-controle::placeholder {
@@ -485,7 +496,7 @@ img {
 
 select.form-controle {
   appearance: none;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%235b6472' d='M6 8 0 0h12z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23808080' d='M6 8 0 0h12z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   padding-right: 2.25rem;
@@ -555,11 +566,13 @@ textarea.form-controle {
 
 .btn--dourado {
   background: var(--cor-acento);
-  color: var(--cor-grafite-900);
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
 }
 
 .btn--dourado:hover {
-  background: var(--cor-dourado-400);
+  background: var(--cor-dourado-700);
 }
 
 .btn--secundario {
@@ -658,56 +671,25 @@ textarea.form-controle {
    -------------------------------------------------------------------------- */
 .auth-shell {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #e4e5e6 0%, var(--cor-cinza-300) 100%);
+}
+
+.auth-shell__conteudo {
+  flex: 1;
   display: grid;
   place-items: center;
-  padding: var(--esp-5);
-  background:
-    radial-gradient(ellipse at 20% -10%, rgba(201, 162, 39, 0.10), transparent 55%),
-    linear-gradient(160deg, var(--cor-grafite-900) 0%, var(--cor-grafite-800) 55%, var(--cor-grafite-700) 100%);
+  padding: var(--esp-6) var(--esp-5);
 }
 
 .auth-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 430px;
   background: var(--cor-superficie);
   border-radius: var(--raio-lg);
   box-shadow: var(--sombra-elevada);
   overflow: hidden;
-}
-
-.auth-card__topo {
-  background: var(--cor-grafite-900);
-  color: var(--cor-texto-invertido);
-  text-align: center;
-  padding: var(--esp-6) var(--esp-5) var(--esp-5);
-  border-bottom: 3px solid var(--cor-acento);
-}
-
-.auth-card__emblema {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto var(--esp-3);
-  border-radius: 50%;
-  background: var(--cor-grafite-700);
-  border: 2px solid var(--cor-acento);
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  color: var(--cor-dourado-400);
-  letter-spacing: 0.5px;
-}
-
-.auth-card__titulo {
-  font-size: var(--texto-lg);
-  font-weight: 600;
-}
-
-.auth-card__subtitulo {
-  margin-top: var(--esp-1);
-  font-size: var(--texto-xs);
-  color: #aeb6c2;
-  text-transform: uppercase;
-  letter-spacing: 1.4px;
 }
 
 .auth-card__corpo {
@@ -717,9 +699,31 @@ textarea.form-controle {
   gap: var(--esp-4);
 }
 
+.auth-card__titulo {
+  font-size: var(--texto-xl);
+  font-weight: 700;
+  color: var(--cor-texto);
+}
+
+.auth-card__subtitulo {
+  margin-top: var(--esp-2);
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
 .auth-card__rodape {
   padding: var(--esp-4) var(--esp-6);
   border-top: 1px solid var(--cor-borda);
+  text-align: center;
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--cor-dourado-700);
+}
+
+.auth-card__ajuda {
+  padding: 0 var(--esp-6) var(--esp-5);
   text-align: center;
   font-size: var(--texto-xs);
   color: var(--cor-texto-fraco);
