@@ -17,9 +17,29 @@ python -m venv .venv
 pip install -r requirements.txt
 copy .env.example .env   # ajuste as credenciais do PostgreSQL
 python manage.py migrate
+python manage.py seed_initial_data
 python manage.py createsuperuser
 python manage.py runserver
 ```
+
+## Dados iniciais e municípios
+
+- `python manage.py seed_initial_data` — idempotente; cria os grupos de perfil
+  (SOLICITANTE, ANALISTA, GESTOR_DG, ADMINISTRADOR), tipos de evento, serviços,
+  órgãos, equipes e uma amostra de municípios do PR por mesorregião do IBGE.
+- `python manage.py importar_municipios <arquivo.csv>` — carga completa dos 399
+  municípios do Paraná a partir de um CSV oficial (colunas `nome;regiao`,
+  separador `;`, UTF-8). Fonte recomendada: lista de municípios do IBGE ou o
+  dataset institucional da PCPR com o mapeamento de regiões.
+
+## Perfis e workflow
+
+O fluxo é RASCUNHO → ENVIADA → EM_ANALISE → AGUARDANDO_DESPACHO →
+ATENDIDA/NAO_ATENDIDA/CANCELADA (decisão da DG). As transições são
+centralizadas em `solicitacoes/services.py` e a política de acesso em
+`solicitacoes/permissions.py` (grupos do Django; superusuário ignora
+restrições). Cada ação relevante gera `HistoricoSolicitacao`; ações
+administrativas de cadastros geram `LogAuditoria`.
 
 ## Estrutura
 
