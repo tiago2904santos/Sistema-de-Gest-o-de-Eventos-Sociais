@@ -31,16 +31,8 @@
               {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True largura="3" %}
               {% include "components/input.html" with name="data_inicio_evento" label="Início do evento" tipo="date" obrigatorio=True largura="3" %}
               {% include "components/input.html" with name="data_fim_evento" label="Fim do evento" tipo="date" obrigatorio=True largura="3" %}
-              {% include "components/select.html" with name="tipo_evento" label="Tipo do evento" opcoes=tipos_evento obrigatorio=True largura="4" %}
-              {% include "components/select.html" with name="municipio" label="Município" opcoes=municipios obrigatorio=True largura="4" %}
-              <div class="form-campo form-campo--4">
-                <label class="form-label" for="id_regiao">Região</label>
-                <input class="form-controle form-controle--somente-leitura" id="id_regiao" name="regiao" placeholder="Definida pelo município" readonly>
-              </div>
-              <div class="form-campo form-campo--4">
-                <label class="form-label" for="id_mes_evento">Mês do evento</label>
-                <input class="form-controle form-controle--somente-leitura" id="id_mes_evento" placeholder="Calculado pela data" readonly>
-              </div>
+              {% include "components/select.html" with name="tipo_evento" label="Tipo do evento" opcoes=tipos_evento obrigatorio=True largura="6" %}
+              {% include "components/select.html" with name="municipio" label="Município" opcoes=municipios obrigatorio=True largura="6" %}
               {% include "components/input.html" with name="local_evento" label="Local do evento" placeholder="Ex.: Praça central, escola municipal..." obrigatorio=True largura="" %}
             </div>
           </div>

@@ -19,19 +19,6 @@
   var formulario = document.querySelector("#form-solicitacao");
   if (!formulario) return;
 
-  var regioesPorMunicipio = {
-    Curitiba: "Curitiba e RM",
-    Londrina: "Norte",
-    Maringá: "Noroeste",
-    Cascavel: "Oeste",
-    "Ponta Grossa": "Campos Gerais"
-  };
-
-  var meses = [
-    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-  ];
-
   function campo(nome) {
     return formulario.querySelector('[name="' + nome + '"]');
   }
@@ -78,14 +65,6 @@
     definirResumo("resumo-equipes", nomesEquipes.join(", "));
     definirResumo("resumo-servidores", quantidadeServidores && quantidadeServidores.value);
     definirResumo("resumo-cin", quantidadeCin && quantidadeCin.value);
-
-    var regiao = document.getElementById("id_regiao");
-    if (regiao && municipio) regiao.value = regioesPorMunicipio[municipio.value] || "";
-
-    var mes = document.getElementById("id_mes_evento");
-    if (mes) {
-      mes.value = inicio && inicio.value ? meses[Number(inicio.value.split("-")[1]) - 1] : "";
-    }
 
     marcarChecklist("contato", contato && contato.value.trim());
     marcarChecklist("periodo", inicio && inicio.value && fim && fim.value);
