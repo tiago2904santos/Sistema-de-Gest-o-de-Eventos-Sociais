@@ -1,3 +1,4 @@
+{% load static %}
 {% comment %}
   Componente: top_header — cabeçalho grafite com linha dourada.
   Uso: {% include "components/top_header.html" %}
@@ -6,7 +7,7 @@
   <div class="top-header__inner">
     <a class="top-header__brand" href="{% url 'core:home' %}">
       <span class="top-header__identidade" aria-label="Polícia Civil do Paraná">
-        <span class="top-header__brasao" aria-hidden="true">PC</span>
+        <img class="top-header__brasao" src="{% static 'icons/favicon.svg' %}" alt="Brasão da Polícia Civil do Paraná">
         <strong class="top-header__sigla">PCPR</strong>
       </span>
       <span class="top-header__divisor" aria-hidden="true"></span>
