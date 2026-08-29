@@ -1017,21 +1017,31 @@ textarea.form-controle { min-height: 68px; }
 .chip-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip-grid--compacto { gap: 6px; }
 .check-chip {
-  position: relative; min-height: 34px; display: inline-flex; align-items: center;
-  justify-content: center; gap: 7px; padding: 7px 12px; border: 1px solid #e2d3a7;
-  border-radius: var(--raio-sm); background: #fffdf8; color: var(--cor-texto);
-  font-size: 0.72rem; font-weight: 600; cursor: pointer;
+  position: relative; min-height: 36px; display: inline-flex; align-items: center;
+  justify-content: flex-start; gap: 8px; padding: 7px 11px; border: 1px solid var(--cor-borda);
+  border-radius: 8px; background: var(--cor-superficie); color: var(--cor-texto);
+  font-size: 0.72rem; font-weight: 600; cursor: pointer; user-select: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 .check-chip input, .segmented-control input, .decision-option input {
   position: absolute; opacity: 0; pointer-events: none;
 }
 .check-chip span {
-  width: 16px; height: 16px; display: grid; place-items: center; border-radius: 50%;
-  background: #dadde0; color: #fff; font-size: 0.62rem;
+  width: 17px; height: 17px; flex: 0 0 17px; display: grid; place-items: center;
+  border: 1.5px solid #aeb4bb; border-radius: 5px; background: #fff; color: #fff;
+  font-size: 0.62rem; transition: border-color 0.15s ease, background-color 0.15s ease;
 }
-.check-chip span .ui-icon { width: 11px; height: 11px; }
+.check-chip span .ui-icon {
+  width: 11px; height: 11px; opacity: 0; transform: scale(0.65);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.check-chip:hover { border-color: #bea45a; background: #fffdf8; }
+.check-chip:has(input:focus-visible) {
+  border-color: #bea45a; box-shadow: 0 0 0 3px rgba(190, 164, 90, 0.18);
+}
 .check-chip:has(input:checked) { border-color: #bea45a; background: #fbf6e8; }
-.check-chip:has(input:checked) span { background: #bea45a; }
+.check-chip:has(input:checked) span { border-color: #bea45a; background: #bea45a; }
+.check-chip:has(input:checked) span .ui-icon { opacity: 1; transform: scale(1); }
 .segmented-control {
   display: inline-grid; grid-template-columns: repeat(2, minmax(58px, 1fr));
   overflow: hidden; border: 1px solid var(--cor-borda); border-radius: var(--raio-sm);
