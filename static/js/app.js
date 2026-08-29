@@ -16,6 +16,32 @@
     }, 6000);
   });
 
+  var sidebarAcompanhamento = document.querySelector(".solicitacao-sidebar");
+  var ajusteSidebarPendente = false;
+
+  function ajustarAlturaSidebar() {
+    ajusteSidebarPendente = false;
+    if (!sidebarAcompanhamento) return;
+    if (window.innerWidth <= 980) {
+      sidebarAcompanhamento.style.removeProperty("--sidebar-top");
+      return;
+    }
+    var topoVisivel = Math.max(14, sidebarAcompanhamento.getBoundingClientRect().top);
+    sidebarAcompanhamento.style.setProperty("--sidebar-top", topoVisivel + "px");
+  }
+
+  function agendarAjusteSidebar() {
+    if (ajusteSidebarPendente) return;
+    ajusteSidebarPendente = true;
+    window.requestAnimationFrame(ajustarAlturaSidebar);
+  }
+
+  if (sidebarAcompanhamento) {
+    ajustarAlturaSidebar();
+    window.addEventListener("scroll", agendarAjusteSidebar, { passive: true });
+    window.addEventListener("resize", agendarAjusteSidebar);
+  }
+
   var seletoresAbertos = [];
   var calendariosAbertos = [];
 
