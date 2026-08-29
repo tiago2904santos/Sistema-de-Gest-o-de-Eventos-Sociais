@@ -1,0 +1,45 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with atual=titulo_pagina %}
+  {% include "components/page_header.html" with titulo=titulo_pagina subtitulo="Dados de acesso e perfil do usuário" icone="users" %}
+
+  <form method="post" action="">
+    {% csrf_token %}
+
+    <section class="section-card">
+      {% include "components/section_card.html" with numero="1" titulo="Dados do usuário" %}
+      <div class="section-card__corpo">
+        <div class="form-grid">
+          {% include "components/input.html" with name="first_name" label="Nome" obrigatorio=True largura="6" valor=valores.first_name erros=erros.first_name %}
+          {% include "components/input.html" with name="last_name" label="Sobrenome" largura="6" valor=valores.last_name erros=erros.last_name %}
+          {% include "components/input.html" with name="username" label="Usuário" obrigatorio=True largura="4" valor=valores.username erros=erros.username ajuda="Usado para entrar no sistema." %}
+          {% include "components/input.html" with name="email" label="E-mail institucional" tipo="email" largura="4" valor=valores.email erros=erros.email %}
+          {% include "components/select.html" with name="perfil" label="Perfil de acesso" opcoes=opcoes_perfil obrigatorio=True largura="4" selecionado=valores.perfil erros=erros.perfil %}
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      {% include "components/section_card.html" with numero="2" titulo="Senha" %}
+      <div class="section-card__corpo">
+        <div class="form-grid">
+          {% if instancia %}
+            {% include "components/input.html" with name="senha" label="Nova senha" tipo="password" largura="6" erros=erros.senha ajuda="Deixe em branco para manter a senha atual." %}
+          {% else %}
+            {% include "components/input.html" with name="senha" label="Senha inicial" tipo="password" obrigatorio=True largura="6" erros=erros.senha ajuda="Informe ao servidor a senha inicial definida aqui." %}
+          {% endif %}
+          {% include "components/input.html" with name="confirmacao_senha" label="Confirmação da senha" tipo="password" largura="6" erros=erros.confirmacao_senha %}
+        </div>
+      </div>
+    </section>
+
+    <div class="acoes-formulario">
+      {% url 'accounts:usuarios_lista' as url_voltar %}
+      {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
+      {% include "components/button.html" with label="Salvar" variante="dourado" tipo="submit" %}
+    </div>
+  </form>
+{% endblock %}

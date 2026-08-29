@@ -10,11 +10,14 @@
        href="{% url 'solicitacoes:lista' %}"><span class="navbar__icone">{% include "components/icon.html" with nome="document" %}</span>Solicitações</a>
     {% if usuario_eh_administrador %}
       <a class="navbar__link {% if request.resolver_match.namespace == 'cadastros' %}navbar__link--ativo{% endif %}"
-         href="{% url 'cadastros:index' %}"><span class="navbar__icone">{% include "components/icon.html" with nome="users" %}</span>Cadastros</a>
+         href="{% url 'cadastros:index' %}"><span class="navbar__icone">{% include "components/icon.html" with nome="checklist" %}</span>Cadastros</a>
+      <a class="navbar__link {% if 'usuarios' in request.resolver_match.url_name %}navbar__link--ativo{% endif %}"
+         href="{% url 'accounts:usuarios_lista' %}"><span class="navbar__icone">{% include "components/icon.html" with nome="users" %}</span>Usuários</a>
     {% endif %}
     <span class="navbar__link navbar__link--indisponivel"><span class="navbar__icone">{% include "components/icon.html" with nome="chart" %}</span>Relatórios</span>
     <span class="navbar__link navbar__link--indisponivel"><span class="navbar__icone">{% include "components/icon.html" with nome="settings" %}</span>Configurações</span>
     <span class="navbar__spacer"></span>
+    <a class="navbar__acao" href="{% url 'accounts:alterar_senha' %}">Alterar senha</a>
     {% if user.is_staff %}<a class="navbar__acao" href="{% url 'admin:index' %}">Acesso gestor</a>{% endif %}
     <form method="post" action="{% url 'accounts:logout' %}" class="navbar__logout">
       {% csrf_token %}

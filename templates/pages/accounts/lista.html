@@ -1,0 +1,82 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Usuários — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with atual="Usuários" %}
+
+  {% url 'accounts:usuarios_novo' as url_novo %}
+  {% include "components/page_header.html" with titulo="Usuários e perfis" subtitulo="Gerencie quem acessa o sistema e com qual perfil" icone="users" acao_label="Novo usuário" acao_url=url_novo %}
+
+  <div class="card mb-4">
+    <div class="card__corpo">
+      <form method="get" class="form-grid" action="">
+        {% include "components/input.html" with name="q" label="Busca" placeholder="Nome, usuário ou e-mail..." largura="4" valor=termo %}
+        {% include "components/select.html" with name="perfil" label="Perfil" opcoes=opcoes_perfil placeholder="Todos os perfis" largura="3" selecionado=perfil_filtro %}
+        {% include "components/select.html" with name="situacao" label="Situação" opcoes=opcoes_situacao placeholder="Todas" largura="3" selecionado=situacao_filtro %}
+        <div class="form-campo form-campo--2 lista-filtros__acoes">
+          {% include "components/button.html" with label="Filtrar" variante="primario" tipo="submit" %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    {% include "components/card.html" with titulo="Usuários" %}
+    <div class="tabela-wrapper">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Usuário</th>
+            <th>E-mail</th>
+            <th>Perfil</th>
+            <th>Situação</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for linha in linhas %}
+            {% with u=linha.usuario %}
+              <tr>
+                <td><strong>{{ u.get_full_name|default:"—" }}</strong></td>
+                <td>{{ u.username }}</td>
+                <td>{{ u.email|default:"—" }}</td>
+                <td>{{ linha.perfil }}</td>
+                <td>
+                  {% if u.is_active %}
+                    <span class="status-badge status-badge--atendida">Ativo</span>
+                  {% else %}
+                    <span class="status-badge status-badge--cancelada">Inativo</span>
+                  {% endif %}
+                </td>
+                <td class="tabela__acoes">
+                  <div class="tabela__acoes-grupo">
+                    <a href="{% url 'accounts:usuarios_editar' u.pk %}" class="btn btn--secundario btn--compacto">Editar</a>
+                    {% if u != request.user %}
+                      <form method="post" action="{% url 'accounts:usuarios_alternar_ativo' u.pk %}" class="acao-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn--secundario btn--compacto btn--alternar-ativo">{{ u.is_active|yesno:"Inativar,Ativar" }}</button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endwith %}
+          {% empty %}
+            <tr><td colspan="6" class="texto-suave texto-centro">Nenhum usuário encontrado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if pagina.paginator.num_pages > 1 %}
+      <div class="card__corpo paginacao">
+        <span class="texto-suave">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }} ({{ pagina.paginator.count }} usuários)</span>
+        <span class="paginacao__links">
+          {% if pagina.has_previous %}<a href="?q={{ termo|urlencode }}&perfil={{ perfil_filtro }}&situacao={{ situacao_filtro }}&pagina={{ pagina.previous_page_number }}">Anterior</a>{% endif %}
+          {% if pagina.has_next %}<a href="?q={{ termo|urlencode }}&perfil={{ perfil_filtro }}&situacao={{ situacao_filtro }}&pagina={{ pagina.next_page_number }}">Próxima</a>{% endif %}
+        </span>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Alterar senha — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with atual="Alterar senha" %}
+  {% include "components/page_header.html" with titulo="Alterar senha" subtitulo="Atualize a senha de acesso da sua conta" icone="settings" %}
+
+  <form method="post" action="">
+    {% csrf_token %}
+
+    <section class="section-card">
+      {% include "components/section_card.html" with numero="1" titulo="Nova senha" %}
+      <div class="section-card__corpo">
+        {% if form.non_field_errors %}
+          <div class="alerta alerta--error mb-4">
+            {% for erro in form.non_field_errors %}{{ erro }}{% endfor %}
+          </div>
+        {% endif %}
+        <div class="form-grid">
+          {% include "components/input.html" with name="old_password" label="Senha atual" tipo="password" obrigatorio=True largura="4" erros=form.errors.old_password %}
+          {% include "components/input.html" with name="new_password1" label="Nova senha" tipo="password" obrigatorio=True largura="4" erros=form.errors.new_password1 ajuda="Mínimo de 8 caracteres, evitando senhas óbvias." %}
+          {% include "components/input.html" with name="new_password2" label="Confirmação da nova senha" tipo="password" obrigatorio=True largura="4" erros=form.errors.new_password2 %}
+        </div>
+      </div>
+    </section>
+
+    <div class="acoes-formulario">
+      {% url 'dashboard:index' as url_voltar %}
+      {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
+      {% include "components/button.html" with label="Alterar senha" variante="dourado" tipo="submit" %}
+    </div>
+  </form>
+{% endblock %}
