@@ -8,6 +8,15 @@
   {% url 'solicitacoes:nova' as url_nova %}
   {% include "components/page_header.html" with titulo="Solicitações de Eventos Sociais" subtitulo="Acompanhe e gerencie as solicitações registradas" icone="document" acao_label="Nova solicitação" acao_url=url_nova %}
 
+  <div class="fila-chips">
+    <a class="fila-chip{% if not fila_ativa %} fila-chip--ativa{% endif %}" href="{% url 'solicitacoes:lista' %}">Todas</a>
+    {% for fila in filas %}
+      <a class="fila-chip{% if fila_ativa == fila.chave %} fila-chip--ativa{% endif %}" href="?fila={{ fila.chave }}">
+        {{ fila.rotulo }} <strong>{{ fila.total }}</strong>
+      </a>
+    {% endfor %}
+  </div>
+
   <div class="card mb-4">
     <div class="card__corpo">
       <form method="get" class="form-grid" action="">
@@ -56,10 +65,18 @@
                 <td>{{ s.data_solicitacao|date:"d/m/Y" }}</td>
                 <td>{% include "components/status_badge.html" with status=s.status label=s.get_status_display %}</td>
                 <td class="tabela__acoes">
-                  <a href="{% url 'solicitacoes:detalhe' s.pk %}">Detalhes</a>
-                  {% if linha.acoes.editar %}
-                    · <a href="{% url 'solicitacoes:editar' s.pk %}">{% if linha.acoes.encaminhar_despacho %}Continuar análise{% else %}Editar{% endif %}</a>
-                  {% endif %}
+                  <div class="tabela__acoes-grupo">
+                    {% if linha.acoes.analisar %}
+                      <a href="{% url 'solicitacoes:analisar' s.pk %}" class="btn btn--dourado btn--compacto">Analisar</a>
+                    {% elif linha.acoes.despachar %}
+                      <a href="{% url 'solicitacoes:detalhe' s.pk %}#despacho-dg" class="btn btn--dourado btn--compacto">Despachar</a>
+                    {% elif linha.acoes.enviar %}
+                      <a href="{% url 'solicitacoes:editar' s.pk %}" class="btn btn--dourado btn--compacto">Continuar</a>
+                    {% elif linha.acoes.editar_dados %}
+                      <a href="{% url 'solicitacoes:editar' s.pk %}" class="btn btn--secundario btn--compacto">Editar</a>
+                    {% endif %}
+                    <a href="{% url 'solicitacoes:detalhe' s.pk %}" class="btn btn--secundario btn--compacto">Detalhes</a>
+                  </div>
                 </td>
               </tr>
             {% endwith %}

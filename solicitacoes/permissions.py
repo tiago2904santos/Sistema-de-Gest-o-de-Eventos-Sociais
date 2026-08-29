@@ -105,6 +105,14 @@ def pode_iniciar_analise(user, solicitacao):
     return solicitacao.status == StatusSolicitacao.ENVIADA and eh_analista(user)
 
 
+def pode_analisar(user, solicitacao):
+    """Acesso à tela de análise: solicitações enviadas ou já em análise."""
+    return eh_analista(user) and solicitacao.status in {
+        StatusSolicitacao.ENVIADA,
+        StatusSolicitacao.EM_ANALISE,
+    }
+
+
 def pode_encaminhar_despacho(user, solicitacao):
     return solicitacao.status == StatusSolicitacao.EM_ANALISE and eh_analista(user)
 
@@ -123,6 +131,7 @@ def acoes_permitidas(user, solicitacao):
         "editar_dados": pode_editar_dados(user, solicitacao),
         "editar_planejamento": pode_editar_planejamento(user, solicitacao),
         "enviar": pode_enviar(user, solicitacao),
+        "analisar": pode_analisar(user, solicitacao),
         "iniciar_analise": pode_iniciar_analise(user, solicitacao),
         "encaminhar_despacho": pode_encaminhar_despacho(user, solicitacao),
         "despachar": pode_despachar(user, solicitacao),

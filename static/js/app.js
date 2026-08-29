@@ -926,6 +926,37 @@
 })();
 
 /**
+ * Máscara de telefone brasileiro para campos de contato.
+ * Aceita 10 dígitos (fixo) ou 11 dígitos (celular).
+ */
+(function () {
+  "use strict";
+
+  function formatarTelefone(valor) {
+    var digitos = String(valor || "").replace(/\D/g, "").slice(0, 11);
+    if (!digitos) return "";
+    if (digitos.length <= 2) return "(" + digitos;
+
+    var ddd = digitos.slice(0, 2);
+    var numero = digitos.slice(2);
+    if (numero.length <= 4) return "(" + ddd + ") " + numero;
+    if (numero.length <= 8) {
+      return "(" + ddd + ") " + numero.slice(0, 4) + "-" + numero.slice(4);
+    }
+    return "(" + ddd + ") " + numero.slice(0, 5) + "-" + numero.slice(5);
+  }
+
+  document.querySelectorAll("[data-mask-telefone]").forEach(function (campo) {
+    function aplicarMascara() {
+      campo.value = formatarTelefone(campo.value);
+    }
+
+    campo.addEventListener("input", aplicarMascara);
+    aplicarMascara();
+  });
+})();
+
+/**
  * Confirmação em duas etapas para exclusões, sem diálogo nativo do navegador.
  * Primeiro clique arma o botão ("Confirmar?"); o segundo clique envia.
  */
@@ -995,4 +1026,19 @@
     radio.addEventListener("change", aplicarRegra);
   });
   aplicarRegra();
+})();
+
+/**
+ * Rola até a seção de trabalho da tela atual (ex.: planejamento na análise),
+ * poupando o usuário de procurar o formulário no meio da página.
+ */
+(function () {
+  "use strict";
+
+  var alvo = document.querySelector("[data-rolar-para]");
+  if (alvo) {
+    window.setTimeout(function () {
+      alvo.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+  }
 })();

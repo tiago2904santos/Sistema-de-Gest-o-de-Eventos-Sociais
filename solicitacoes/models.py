@@ -332,3 +332,14 @@ class HistoricoSolicitacao(models.Model):
 
     def __str__(self):
         return f"{self.solicitacao_id} — {self.get_acao_display()}"
+
+    @property
+    def rotulo_status(self):
+        """Exibe a decisão da DG no histórico, em vez do estado resultante."""
+        if self.acao == AcaoHistorico.DECISAO:
+            return {
+                StatusSolicitacao.ATENDIDA: DecisaoDG.ATENDER.label,
+                StatusSolicitacao.NAO_ATENDIDA: DecisaoDG.NAO_ATENDER.label,
+                StatusSolicitacao.CANCELADA: DecisaoDG.CANCELADO.label,
+            }.get(self.status_novo, self.get_status_novo_display())
+        return self.get_status_novo_display()

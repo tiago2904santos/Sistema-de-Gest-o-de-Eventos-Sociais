@@ -195,7 +195,7 @@
                     <tr>
                       <td>{{ registro.criado_em|date:"d/m/Y H:i" }}</td>
                       <td>{{ registro.get_acao_display }}</td>
-                      <td>{% if registro.status_novo %}{% include "components/status_badge.html" with status=registro.status_novo label=registro.get_status_novo_display %}{% else %}—{% endif %}</td>
+                      <td>{% if registro.status_novo %}{% include "components/status_badge.html" with status=registro.status_novo label=registro.rotulo_status %}{% else %}—{% endif %}</td>
                       <td>{{ registro.usuario|default:"—" }}</td>
                       <td>{{ registro.observacao|default:"—" }}</td>
                     </tr>

@@ -210,17 +210,18 @@ class FormsTests(BaseSolicitacaoTestCase):
         self.assertIn("data_fim_evento", form.errors)
 
     def test_motorista_apenas_com_unidade_movel(self):
-        dados = self.dados_completos_post(acao="rascunho")
-        dados["unidade_movel"] = "0"
-        dados["motorista"] = self.motorista.pk
-
-        form = SolicitacaoForm(dados, enviar=False)
-
+        solicitacao = self.criar_solicitacao()
+        form = PlanejamentoForm(
+            {"unidade_movel": "0", "motorista": self.motorista.pk, "tipo_operacao": "DIARIA"},
+            instance=solicitacao,
+        )
         self.assertTrue(form.is_valid(), form.errors)
         self.assertIsNone(form.cleaned_data["motorista"])
 
-        dados["unidade_movel"] = "1"
-        form = SolicitacaoForm(dados, enviar=False)
+        form = PlanejamentoForm(
+            {"unidade_movel": "1", "motorista": self.motorista.pk, "tipo_operacao": "DIARIA"},
+            instance=solicitacao,
+        )
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(form.cleaned_data["motorista"], self.motorista)
 
@@ -345,6 +346,23 @@ class WorkflowTests(BaseSolicitacaoTestCase):
                 AcaoHistorico.DECISAO,
             ],
         )
+        self.assertEqual(solicitacao.historico.last().rotulo_status, "Atender")
+
+    def test_historico_converte_status_final_em_decisao_da_dg(self):
+        solicitacao = self.solicitacao_completa()
+        rotulos = {
+            StatusSolicitacao.ATENDIDA: "Atender",
+            StatusSolicitacao.NAO_ATENDIDA: "Não atender",
+            StatusSolicitacao.CANCELADA: "Evento cancelado",
+        }
+
+        for status, rotulo in rotulos.items():
+            registro = solicitacao.historico.create(
+                usuario=self.gestor,
+                acao=AcaoHistorico.DECISAO,
+                status_novo=status,
+            )
+            self.assertEqual(registro.rotulo_status, rotulo)
 
     def test_timeline_reflete_status(self):
         solicitacao = self.solicitacao_completa()
@@ -391,6 +409,16 @@ class ViewsTests(BaseSolicitacaoTestCase):
             resposta,
             'name="acao" value="rascunho" formnovalidate',
         )
+
+    def test_contato_usa_mascara_de_telefone(self):
+        self.client.force_login(self.solicitante)
+
+        resposta = self.client.get(reverse("solicitacoes:nova"))
+
+        self.assertContains(resposta, 'name="contato"')
+        self.assertContains(resposta, 'inputmode="tel"')
+        self.assertContains(resposta, 'maxlength="15"')
+        self.assertContains(resposta, "data-mask-telefone")
 
     def test_criar_e_enviar(self):
         self.client.force_login(self.solicitante)
@@ -450,9 +478,9 @@ class ViewsTests(BaseSolicitacaoTestCase):
         services.iniciar_analise(solicitacao, self.analista)
         self.client.force_login(self.analista)
         resposta = self.client.post(
-            reverse("solicitacoes:editar", args=[solicitacao.pk]),
+            reverse("solicitacoes:analisar", args=[solicitacao.pk]),
             {
-                "acao": "rascunho",
+                "acao": "salvar_analise",
                 "equipes": [self.equipe.pk, self.outra_equipe.pk],
                 f"quantidade_equipe_{self.equipe.pk}": 2,
                 f"quantidade_equipe_{self.outra_equipe.pk}": 6,
@@ -490,7 +518,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         services.iniciar_analise(solicitacao, self.analista)
         self.client.force_login(self.analista)
         resposta = self.client.get(
-            reverse("solicitacoes:editar", args=[solicitacao.pk])
+            reverse("solicitacoes:analisar", args=[solicitacao.pk])
         )
         self.assertNotContains(resposta, ">Despacho DG<", html=False)
         resposta = self.client.get(
@@ -519,14 +547,13 @@ class ViewsTests(BaseSolicitacaoTestCase):
 
     def test_transicoes_exigem_post(self):
         solicitacao = self.solicitacao_completa()
-        services.enviar(solicitacao, self.solicitante)
-        self.client.force_login(self.analista)
+        self.client.force_login(self.solicitante)
         resposta = self.client.get(
-            reverse("solicitacoes:iniciar_analise", args=[solicitacao.pk])
+            reverse("solicitacoes:enviar", args=[solicitacao.pk])
         )
         self.assertEqual(resposta.status_code, 405)
 
-    def test_analisar_abre_formulario_e_encaminha_na_mesma_tela(self):
+    def test_analisar_inicia_automaticamente_e_encaminha_na_mesma_tela(self):
         solicitacao = self.solicitacao_completa()
         services.enviar(solicitacao, self.solicitante)
         self.client.force_login(self.analista)
@@ -537,30 +564,22 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.assertContains(detalhe, "Analisar solicitação")
         self.assertNotContains(detalhe, ">Editar<", html=False)
 
-        resposta = self.client.post(
-            reverse("solicitacoes:iniciar_analise", args=[solicitacao.pk])
+        # Abrir a tela de análise já inicia a análise, sem clique extra.
+        resposta = self.client.get(
+            reverse("solicitacoes:analisar", args=[solicitacao.pk])
         )
-        self.assertRedirects(
-            resposta, reverse("solicitacoes:editar", args=[solicitacao.pk])
-        )
+        self.assertEqual(resposta.status_code, 200)
         solicitacao.refresh_from_db()
         self.assertEqual(solicitacao.status, StatusSolicitacao.EM_ANALISE)
-
-        detalhe = self.client.get(
-            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
-        )
-        self.assertContains(detalhe, "Continuar análise")
-        self.assertNotContains(detalhe, "Encaminhar para despacho")
-
-        resposta = self.client.get(
-            reverse("solicitacoes:editar", args=[solicitacao.pk])
+        self.assertTrue(
+            solicitacao.historico.filter(acao=AcaoHistorico.INICIO_ANALISE).exists()
         )
         self.assertContains(resposta, "Análise da Solicitação")
         self.assertContains(resposta, "Salvar análise")
         self.assertContains(resposta, "Salvar e encaminhar para DG")
 
         resposta = self.client.post(
-            reverse("solicitacoes:editar", args=[solicitacao.pk]),
+            reverse("solicitacoes:analisar", args=[solicitacao.pk]),
             {
                 "acao": "encaminhar_despacho",
                 "equipes": [self.equipe.pk],
@@ -578,35 +597,54 @@ class ViewsTests(BaseSolicitacaoTestCase):
         )
         self.assertEqual(list(solicitacao.equipes.all()), [self.equipe])
 
-    def test_solicitacao_enviada_nao_abre_planejamento_sem_iniciar_analise(self):
+    def test_editar_redireciona_analista_para_analise(self):
         solicitacao = self.solicitacao_completa()
         services.enviar(solicitacao, self.solicitante)
         self.client.force_login(self.analista)
-
         resposta = self.client.get(
             reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
+        self.assertRedirects(
+            resposta, reverse("solicitacoes:analisar", args=[solicitacao.pk]),
+            target_status_code=200,
+        )
 
-        self.assertEqual(resposta.status_code, 403)
-
-    def test_perfis_nas_transicoes(self):
+    def test_perfis_na_analise(self):
         solicitacao = self.solicitacao_completa()
         services.enviar(solicitacao, self.solicitante)
         self.client.force_login(self.solicitante)
-        resposta = self.client.post(
-            reverse("solicitacoes:iniciar_analise", args=[solicitacao.pk])
+        resposta = self.client.get(
+            reverse("solicitacoes:analisar", args=[solicitacao.pk])
         )
         self.assertEqual(resposta.status_code, 403)
         self.client.force_login(self.gestor)
-        resposta = self.client.post(
-            reverse("solicitacoes:iniciar_analise", args=[solicitacao.pk])
+        resposta = self.client.get(
+            reverse("solicitacoes:analisar", args=[solicitacao.pk])
         )
         self.assertEqual(resposta.status_code, 403)
         self.client.force_login(self.analista)
-        resposta = self.client.post(
-            reverse("solicitacoes:iniciar_analise", args=[solicitacao.pk])
+        resposta = self.client.get(
+            reverse("solicitacoes:analisar", args=[solicitacao.pk])
         )
-        self.assertEqual(resposta.status_code, 302)
+        self.assertEqual(resposta.status_code, 200)
+
+    def test_lista_mostra_fila_e_acao_contextual(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.client.force_login(self.analista)
+        resposta = self.client.get(reverse("solicitacoes:lista"))
+        self.assertContains(resposta, "Para analisar")
+        self.assertContains(resposta, ">Analisar<", html=False)
+
+        resposta = self.client.get(reverse("solicitacoes:lista"), {"fila": "analise"})
+        self.assertEqual(resposta.context["pagina"].paginator.count, 1)
+
+        solicitacao.status = StatusSolicitacao.AGUARDANDO_DESPACHO
+        solicitacao.save()
+        self.client.force_login(self.gestor)
+        resposta = self.client.get(reverse("solicitacoes:lista"))
+        self.assertContains(resposta, "Aguardando despacho")
+        self.assertContains(resposta, ">Despachar<", html=False)
 
     def test_despacho_via_view(self):
         solicitacao = self.solicitacao_completa()
@@ -628,6 +666,23 @@ class ViewsTests(BaseSolicitacaoTestCase):
             reverse("solicitacoes:detalhe", args=[solicitacao.pk])
         )
         self.assertEqual(resposta.status_code, 200)
+
+    def test_detalhe_reutiliza_formulario_em_modo_somente_leitura(self):
+        solicitacao = self.solicitacao_completa()
+        self.client.force_login(self.solicitante)
+
+        resposta = self.client.get(
+            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+
+        self.assertTrue(resposta.context["somente_leitura"])
+        self.assertContains(resposta, "Dados da solicitação")
+        self.assertContains(resposta, "Serviços e estrutura do evento")
+        self.assertContains(resposta, "Planejamento operacional")
+        self.assertContains(resposta, 'name="solicitante_nome"', html=False)
+        self.assertContains(resposta, "disabled", html=False)
+        self.assertNotContains(resposta, "Salvar rascunho")
+        self.assertNotContains(resposta, "Salvar análise")
 
     def test_lista_filtros_e_paginacao(self):
         for indice in range(18):

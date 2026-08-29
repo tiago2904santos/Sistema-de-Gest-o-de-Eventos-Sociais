@@ -1183,10 +1183,10 @@ textarea.form-controle { min-height: 68px; }
 }
 .timeline {
   min-height: 0; flex: 1 1 auto; display: flex; flex-direction: column;
-  margin: 0; padding: 12px 14px 0; overflow-y: hidden; list-style: none;
+  margin: 0; padding: 8px 14px 0; overflow-y: hidden; list-style: none;
 }
 .timeline__item {
-  position: relative; min-height: 46px; flex: 1 1 0; display: grid;
+  position: relative; min-height: 36px; flex: 1 1 0; display: grid;
   grid-template-columns: 24px minmax(0, 1fr) auto; gap: 10px; align-items: start;
 }
 .timeline__item:not(:last-child)::after {
@@ -1434,6 +1434,47 @@ textarea.form-controle { min-height: 68px; }
 .lista-filtros__acoes {
   display: flex;
   align-items: flex-end;
+}
+
+/* Atalhos de fila da listagem: a tarefa de cada perfil em um clique. */
+.fila-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-4);
+}
+
+.fila-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: 0.35rem 0.9rem;
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: 999px;
+  background: var(--cor-superficie);
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+}
+
+.fila-chip strong {
+  color: var(--cor-texto);
+}
+
+.fila-chip:hover {
+  text-decoration: none;
+  border-color: var(--cor-acento);
+  color: var(--cor-texto);
+}
+
+.fila-chip--ativa {
+  background: var(--cor-grafite-800);
+  border-color: var(--cor-grafite-800);
+  color: #ffffff;
+}
+
+.fila-chip--ativa strong {
+  color: var(--cor-dourado-400);
 }
 
 @media (max-width: 760px) {

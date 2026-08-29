@@ -20,6 +20,7 @@
       name="{{ name }}"
       {% if valor %}value="{{ valor }}"{% endif %}
       {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+      {% if mascara == "telefone" %}inputmode="tel" autocomplete="tel" maxlength="15" data-mask-telefone{% endif %}
       {% if desabilitado %}disabled{% endif %}
       {% if obrigatorio %}required{% endif %}>
     {% if tipo == 'date' %}

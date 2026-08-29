@@ -224,24 +224,21 @@ def nova_solicitacao(request):
 
 @login_required
 def editar_solicitacao(request, pk):
+    """Edição dos dados do pedido — restrita a quem pode editar os dados."""
     solicitacao = _obter_visivel(request, pk)
-    if not permissions.pode_editar(request.user, solicitacao):
+    if not permissions.pode_editar_dados(request.user, solicitacao):
+        # Analista chega aqui por link antigo: envia direto para a análise.
+        if permissions.pode_analisar(request.user, solicitacao):
+            return redirect("solicitacoes:analisar", pk=solicitacao.pk)
         raise PermissionDenied
-
-    edicao_completa = permissions.pode_editar_dados(request.user, solicitacao)
-    classe_form = SolicitacaoForm if edicao_completa else PlanejamentoForm
 
     if request.method == "POST":
         acao = request.POST.get("acao", "rascunho")
-        extras = {"enviar": acao == "enviar"} if edicao_completa else {}
         if acao == "enviar" and not permissions.pode_enviar(request.user, solicitacao):
             raise PermissionDenied
-        if (
-            acao == "encaminhar_despacho"
-            and not permissions.pode_encaminhar_despacho(request.user, solicitacao)
-        ):
-            raise PermissionDenied
-        form = classe_form(request.POST, instance=solicitacao, **extras)
+        form = SolicitacaoForm(
+            request.POST, instance=solicitacao, enviar=(acao == "enviar")
+        )
         if form.is_valid():
             try:
                 with transaction.atomic():
@@ -249,15 +246,11 @@ def editar_solicitacao(request, pk):
                     services.registrar_historico(
                         solicitacao,
                         request.user,
-                        AcaoHistorico.ATUALIZACAO
-                        if edicao_completa
-                        else AcaoHistorico.PLANEJAMENTO,
+                        AcaoHistorico.ATUALIZACAO,
                         status_novo=solicitacao.status,
                     )
                     if acao == "enviar":
                         services.enviar(solicitacao, request.user)
-                    elif acao == "encaminhar_despacho":
-                        services.encaminhar_para_despacho(solicitacao, request.user)
             except ValidationError as erro:
                 for mensagem_erro in erro.messages:
                     messages.error(request, mensagem_erro)
@@ -266,30 +259,78 @@ def editar_solicitacao(request, pk):
                     messages.success(
                         request, f"Solicitação #{solicitacao.pk} enviada com sucesso."
                     )
-                    return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
-                if acao == "encaminhar_despacho":
-                    messages.success(
-                        request,
-                        f"Análise salva e solicitação #{solicitacao.pk} encaminhada para a DG.",
-                    )
-                    return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
-                messages.success(request, f"Solicitação #{solicitacao.pk} atualizada.")
-                if not edicao_completa:
-                    return redirect("solicitacoes:editar", pk=solicitacao.pk)
+                else:
+                    messages.success(request, f"Solicitação #{solicitacao.pk} atualizada.")
                 return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
         else:
             messages.error(request, "Corrija os campos destacados para continuar.")
     else:
-        form = classe_form(instance=solicitacao)
+        form = SolicitacaoForm(instance=solicitacao)
 
     contexto = _contexto_formulario(request, form, solicitacao)
-    if contexto["modo_analise"]:
-        contexto["titulo_pagina"] = f"Análise da Solicitação #{solicitacao.pk}"
-        contexto["subtitulo_pagina"] = (
-            "Complete o planejamento e encaminhe a solicitação para a decisão da DG."
+    contexto["titulo_pagina"] = f"Editar Solicitação #{solicitacao.pk}"
+    return render(request, "pages/solicitacoes/form.html", contexto)
+
+
+@login_required
+def analisar_solicitacao(request, pk):
+    """Tela de análise do analista: um único lugar para todo o trabalho.
+
+    Ao abrir uma solicitação ENVIADA, a análise inicia automaticamente
+    (sem o clique burocrático de "iniciar análise"). Os dados do pedido
+    aparecem em leitura; estrutura e planejamento ficam editáveis, com
+    "Salvar análise" e "Salvar e encaminhar para DG" na mesma tela.
+    """
+    solicitacao = _obter_visivel(request, pk)
+    if not permissions.pode_analisar(request.user, solicitacao):
+        raise PermissionDenied
+
+    if solicitacao.status == StatusSolicitacao.ENVIADA:
+        services.iniciar_analise(solicitacao, request.user)
+        messages.info(
+            request, f"Análise da solicitação #{solicitacao.pk} iniciada."
         )
+
+    if request.method == "POST":
+        acao = request.POST.get("acao", "salvar_analise")
+        form = PlanejamentoForm(request.POST, instance=solicitacao)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    solicitacao = form.save()
+                    services.registrar_historico(
+                        solicitacao,
+                        request.user,
+                        AcaoHistorico.PLANEJAMENTO,
+                        status_novo=solicitacao.status,
+                    )
+                    if acao == "encaminhar_despacho":
+                        services.encaminhar_para_despacho(solicitacao, request.user)
+            except ValidationError as erro:
+                for mensagem_erro in erro.messages:
+                    messages.error(request, mensagem_erro)
+            else:
+                if acao == "encaminhar_despacho":
+                    messages.success(
+                        request,
+                        f"Análise concluída: solicitação #{solicitacao.pk} encaminhada para a DG.",
+                    )
+                    return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
+                messages.success(request, "Análise salva.")
+                return redirect("solicitacoes:analisar", pk=solicitacao.pk)
+        else:
+            messages.error(request, "Corrija os campos destacados para continuar.")
     else:
-        contexto["titulo_pagina"] = f"Editar Solicitação #{solicitacao.pk}"
+        form = PlanejamentoForm(instance=solicitacao)
+
+    contexto = _contexto_formulario(request, form, solicitacao)
+    contexto["modo_analise"] = True
+    # O despacho pertence à DG, na tela de detalhe — não à análise.
+    contexto["mostrar_despacho_dg"] = False
+    contexto["titulo_pagina"] = f"Análise da Solicitação #{solicitacao.pk}"
+    contexto["subtitulo_pagina"] = (
+        "Complete o planejamento e encaminhe a solicitação para a decisão da DG."
+    )
     return render(request, "pages/solicitacoes/form.html", contexto)
 
 
@@ -297,15 +338,58 @@ def editar_solicitacao(request, pk):
 # Listagem e detalhe
 # ---------------------------------------------------------------------------
 
+FILAS = {
+    "analise": {
+        "rotulo": "Para analisar",
+        "status": [StatusSolicitacao.ENVIADA, StatusSolicitacao.EM_ANALISE],
+    },
+    "despacho": {
+        "rotulo": "Aguardando despacho",
+        "status": [StatusSolicitacao.AGUARDANDO_DESPACHO],
+    },
+    "rascunhos": {
+        "rotulo": "Meus rascunhos",
+        "status": [StatusSolicitacao.RASCUNHO],
+    },
+}
+
+
+def _filas_do_usuario(user, queryset):
+    """Atalhos de fila com contagem, conforme o perfil do usuário."""
+    filas = []
+    if permissions.eh_analista(user):
+        filas.append("analise")
+    if permissions.eh_gestor_dg(user):
+        filas.append("despacho")
+    filas.append("rascunhos")
+    resultado = []
+    for chave in filas:
+        config = FILAS[chave]
+        parcial = queryset.filter(status__in=config["status"])
+        if chave == "rascunhos":
+            parcial = parcial.filter(criado_por=user)
+        resultado.append(
+            {"chave": chave, "rotulo": config["rotulo"], "total": parcial.count()}
+        )
+    return resultado
+
+
 @login_required
 def lista_solicitacoes(request):
     filtros = FiltroSolicitacoesForm(request.GET or None)
-    queryset = permissions.queryset_visivel(
+    base = permissions.queryset_visivel(
         request.user,
         SolicitacaoEvento.objects.select_related(
             "municipio", "tipo_evento", "regiao", "criado_por"
         ),
-    ).order_by("-data_solicitacao", "-pk")
+    )
+    queryset = base.order_by("-data_solicitacao", "-pk")
+
+    fila = request.GET.get("fila", "")
+    if fila in FILAS:
+        queryset = queryset.filter(status__in=FILAS[fila]["status"])
+        if fila == "rascunhos":
+            queryset = queryset.filter(criado_por=request.user)
 
     if filtros.is_valid():
         dados = filtros.cleaned_data
@@ -347,6 +431,8 @@ def lista_solicitacoes(request):
             "opcoes_municipios": _opcoes(filtros.fields["municipio"].queryset),
             "opcoes_tipos": _opcoes(filtros.fields["tipo_evento"].queryset),
             "querystring": parametros.urlencode(),
+            "filas": _filas_do_usuario(request.user, base),
+            "fila_ativa": fila,
             "linhas": [
                 {"solicitacao": s, "acoes": permissions.acoes_permitidas(request.user, s)}
                 for s in pagina
@@ -358,19 +444,25 @@ def lista_solicitacoes(request):
 @login_required
 def detalhe_solicitacao(request, pk):
     solicitacao = _obter_visivel(request, pk)
-    return render(
+    contexto = _contexto_formulario(
         request,
-        "pages/solicitacoes/detalhe.html",
-        {
-            "solicitacao": solicitacao,
-            "titulo_pagina": f"Solicitação #{solicitacao.pk}",
-            "acoes": permissions.acoes_permitidas(request.user, solicitacao),
-            "mostrar_despacho_dg": permissions.eh_gestor_dg(request.user),
-            "timeline": services.montar_timeline(solicitacao),
-            "historico": solicitacao.historico.all(),
-            "form_despacho": DespachoForm(),
-        },
+        SolicitacaoForm(instance=solicitacao),
+        solicitacao,
     )
+    contexto.update(
+        {
+            "titulo_pagina": f"Solicitação #{solicitacao.pk}",
+            "subtitulo_pagina": "Visualização completa da solicitação",
+            "acoes": permissions.acoes_permitidas(request.user, solicitacao),
+            "historico": solicitacao.historico.all(),
+            "somente_leitura": True,
+            "dados_desabilitado": True,
+            "planejamento_desabilitado": True,
+            "mostrar_enviar": False,
+            "modo_analise": False,
+        }
+    )
+    return render(request, "pages/solicitacoes/form.html", contexto)
 
 
 # ---------------------------------------------------------------------------
@@ -398,17 +490,6 @@ def enviar_solicitacao(request, pk):
         request, solicitacao, services.enviar,
         f"Solicitação #{solicitacao.pk} enviada com sucesso.",
     )
-
-
-@login_required
-@require_POST
-def iniciar_analise(request, pk):
-    solicitacao = _obter_visivel(request, pk)
-    if not permissions.pode_iniciar_analise(request.user, solicitacao):
-        raise PermissionDenied
-    services.iniciar_analise(solicitacao, request.user)
-    messages.success(request, f"Análise da solicitação #{solicitacao.pk} iniciada.")
-    return redirect("solicitacoes:editar", pk=solicitacao.pk)
 
 
 @login_required
