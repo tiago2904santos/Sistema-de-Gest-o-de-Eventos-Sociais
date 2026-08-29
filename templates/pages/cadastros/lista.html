@@ -1,0 +1,73 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% url 'cadastros:index' as url_cadastros %}
+  {% include "components/breadcrumb.html" with atual=titulo %}
+  {% url 'cadastros:novo' slug as url_novo %}
+  {% include "components/page_header.html" with titulo=titulo subtitulo="Gerencie os registros deste cadastro" icone="users" acao_label="Novo registro" acao_url=url_novo %}
+
+  <div class="card mb-4">
+    <div class="card__corpo">
+      <form method="get" class="form-grid" action="">
+        {% include "components/input.html" with name="q" label="Busca" placeholder="Nome do registro..." largura="6" valor=termo %}
+        <div class="form-campo form-campo--3 lista-filtros__acoes">
+          {% include "components/button.html" with label="Filtrar" variante="primario" tipo="submit" %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    {% include "components/card.html" with titulo=titulo %}
+    <div class="tabela-wrapper">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            {% if eh_municipio %}<th>Região</th>{% endif %}
+            <th>Situação</th>
+            <th>Atualizado em</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for objeto in pagina %}
+            <tr>
+              <td><strong>{{ objeto.nome }}</strong></td>
+              {% if eh_municipio %}<td>{{ objeto.regiao }}</td>{% endif %}
+              <td>
+                {% if objeto.ativo %}
+                  <span class="status-badge status-badge--atendida">Ativo</span>
+                {% else %}
+                  <span class="status-badge status-badge--cancelada">Inativo</span>
+                {% endif %}
+              </td>
+              <td>{{ objeto.atualizado_em|date:"d/m/Y H:i" }}</td>
+              <td class="tabela__acoes">
+                <a href="{% url 'cadastros:editar' slug objeto.pk %}">Editar</a>
+                ·
+                <form method="post" action="{% url 'cadastros:alternar_ativo' slug objeto.pk %}" class="acao-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="acao-inline__botao">{{ objeto.ativo|yesno:"Inativar,Ativar" }}</button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="texto-suave texto-centro">Nenhum registro encontrado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if pagina.paginator.num_pages > 1 %}
+      <div class="card__corpo paginacao">
+        <span class="texto-suave">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }} ({{ pagina.paginator.count }} registros)</span>
+        <span class="paginacao__links">
+          {% if pagina.has_previous %}<a href="?q={{ termo|urlencode }}&pagina={{ pagina.previous_page_number }}">Anterior</a>{% endif %}
+          {% if pagina.has_next %}<a href="?q={{ termo|urlencode }}&pagina={{ pagina.next_page_number }}">Próxima</a>{% endif %}
+        </span>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

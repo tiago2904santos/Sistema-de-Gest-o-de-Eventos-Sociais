@@ -1,0 +1,18 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Cadastros — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with atual="Cadastros" %}
+  {% include "components/page_header.html" with titulo="Cadastros" subtitulo="Tabelas de apoio utilizadas pelas solicitações" icone="users" %}
+
+  <div class="grid-resumo">
+    {% for grupo in grupos %}
+      <a class="summary-card summary-card--link" href="{% url 'cadastros:lista' grupo.slug %}">
+        <p class="summary-card__titulo">{{ grupo.titulo }}</p>
+        <p class="summary-card__valor">{{ grupo.total }}</p>
+        <p class="summary-card__variacao">Gerenciar registros</p>
+      </a>
+    {% endfor %}
+  </div>
+{% endblock %}

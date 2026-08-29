@@ -1219,3 +1219,30 @@ textarea.form-controle { min-height: 68px; }
 @media (max-width: 760px) {
   .resumo-lista--detalhe { grid-template-columns: 1fr; }
 }
+
+.summary-card--link {
+  display: block;
+  color: inherit;
+}
+
+.summary-card--link:hover {
+  text-decoration: none;
+  border-color: var(--cor-acento);
+}
+
+.acao-inline {
+  display: inline;
+}
+
+.acao-inline__botao {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--cor-info);
+  cursor: pointer;
+}
+
+.acao-inline__botao:hover {
+  text-decoration: underline;
+}
