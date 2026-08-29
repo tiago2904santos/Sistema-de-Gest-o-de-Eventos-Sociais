@@ -9,14 +9,29 @@
   <label class="form-label" for="id_{{ name }}">
     {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
   </label>
-  <div class="form-controle-wrapper form-controle-wrapper--select">
-    <select class="form-controle" id="id_{{ name }}" name="{{ name }}" {% if obrigatorio %}required{% endif %}>
+  <div class="form-controle-wrapper form-controle-wrapper--select custom-select" data-custom-select>
+    <select class="form-controle custom-select__native" id="id_{{ name }}" name="{{ name }}" {% if obrigatorio %}required{% endif %}>
       <option value="">{{ placeholder|default:"Selecione..." }}</option>
       {% for opcao in opcoes %}
         <option value="{{ opcao }}">{{ opcao }}</option>
       {% endfor %}
     </select>
-    <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+    <button class="form-controle custom-select__trigger" type="button"
+            aria-label="{{ label }}" aria-haspopup="listbox" aria-expanded="false"
+            aria-controls="id_{{ name }}_listbox" data-custom-select-trigger>
+      <span class="custom-select__valor">{{ placeholder|default:"Selecione..." }}</span>
+      <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+    </button>
+    <div class="custom-select__menu" id="id_{{ name }}_listbox" role="listbox"
+         aria-label="Opções de {{ label|lower }}" data-custom-select-menu hidden>
+      {% for opcao in opcoes %}
+        <button class="custom-select__opcao" type="button" role="option"
+                aria-selected="false" data-value="{{ opcao }}">
+          <span>{{ opcao }}</span>
+          <span class="custom-select__check" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
+        </button>
+      {% endfor %}
+    </div>
   </div>
   {% if ajuda %}<p class="form-ajuda">{{ ajuda }}</p>{% endif %}
 </div>
