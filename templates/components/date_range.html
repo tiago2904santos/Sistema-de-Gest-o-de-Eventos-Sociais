@@ -1,0 +1,47 @@
+{% comment %}
+  Componente: intervalo de datas.
+  Mantém dois inputs nativos para compatibilidade com o backend e oferece
+  um único calendário visual quando o JavaScript está disponível.
+{% endcomment %}
+<div class="form-campo{% if largura %} form-campo--{{ largura }}{% endif %}">
+  <span class="form-label" id="id_{{ name }}_label">
+    {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
+  </span>
+  <div class="form-controle-wrapper form-controle-wrapper--date custom-date custom-date--range"
+       data-custom-date-range>
+    <div class="custom-date__range-native">
+      <input class="form-controle" type="date" id="id_{{ start_name }}" name="{{ start_name }}"
+             aria-label="Início de {{ label|lower }}" data-custom-date-range-start{% if obrigatorio %} required{% endif %}>
+      <input class="form-controle" type="date" id="id_{{ end_name }}" name="{{ end_name }}"
+             aria-label="Fim de {{ label|lower }}" data-custom-date-range-end{% if obrigatorio %} required{% endif %}>
+    </div>
+    <button class="form-controle custom-date__trigger" type="button"
+            aria-labelledby="id_{{ name }}_label" aria-haspopup="dialog" aria-expanded="false"
+            aria-controls="id_{{ name }}_calendar" data-custom-date-range-trigger>
+      <span class="custom-date__valor">dd/mm/aaaa — dd/mm/aaaa</span>
+      <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="calendar" %}</span>
+    </button>
+    <div class="custom-date__calendar custom-date__calendar--range" id="id_{{ name }}_calendar"
+         role="dialog" aria-label="Calendário de {{ label|lower }}"
+         data-custom-date-range-calendar hidden>
+      <div class="custom-date__cabecalho">
+        <div>
+          <strong class="custom-date__mes" aria-live="polite" data-custom-date-range-month></strong>
+          <small class="custom-date__instrucao" data-custom-date-range-hint>Selecione a data inicial</small>
+        </div>
+        <div class="custom-date__navegacao">
+          <button type="button" aria-label="Mês anterior" data-custom-date-range-prev>{% include "components/icon.html" with nome="chevron-left" %}</button>
+          <button type="button" aria-label="Próximo mês" data-custom-date-range-next>{% include "components/icon.html" with nome="chevron-right" %}</button>
+        </div>
+      </div>
+      <div class="custom-date__semana" aria-hidden="true">
+        <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+      </div>
+      <div class="custom-date__dias" role="grid" data-custom-date-range-grid></div>
+      <div class="custom-date__rodape">
+        <button type="button" data-custom-date-range-clear>Limpar</button>
+        <button type="button" data-custom-date-range-today>Hoje</button>
+      </div>
+    </div>
+  </div>
+</div>

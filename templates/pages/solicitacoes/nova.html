@@ -29,8 +29,7 @@
                 <input class="form-controle form-controle--somente-leitura" id="id_status" value="Rascunho" readonly>
               </div>
               {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True largura="3" %}
-              {% include "components/input.html" with name="data_inicio_evento" label="Início do evento" tipo="date" obrigatorio=True largura="3" %}
-              {% include "components/input.html" with name="data_fim_evento" label="Fim do evento" tipo="date" obrigatorio=True largura="3" %}
+              {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Período do evento" obrigatorio=True largura="6" %}
               {% include "components/select.html" with name="tipo_evento" label="Tipo do evento" opcoes=tipos_evento obrigatorio=True largura="6" %}
               {% include "components/select.html" with name="municipio" label="Município" opcoes=municipios obrigatorio=True largura="6" %}
               {% include "components/input.html" with name="local_evento" label="Local do evento" placeholder="Ex.: Praça central, escola municipal..." obrigatorio=True largura="" %}

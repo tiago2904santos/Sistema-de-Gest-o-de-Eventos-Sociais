@@ -355,6 +355,252 @@
     sincronizar();
   });
 
+  document.querySelectorAll("[data-custom-date-range]").forEach(function (wrapper) {
+    var inicio = wrapper.querySelector("[data-custom-date-range-start]");
+    var fim = wrapper.querySelector("[data-custom-date-range-end]");
+    var trigger = wrapper.querySelector("[data-custom-date-range-trigger]");
+    var valor = wrapper.querySelector(".custom-date__valor");
+    var calendario = wrapper.querySelector("[data-custom-date-range-calendar]");
+    var tituloMes = wrapper.querySelector("[data-custom-date-range-month]");
+    var instrucao = wrapper.querySelector("[data-custom-date-range-hint]");
+    var grade = wrapper.querySelector("[data-custom-date-range-grid]");
+    var anterior = wrapper.querySelector("[data-custom-date-range-prev]");
+    var proximo = wrapper.querySelector("[data-custom-date-range-next]");
+    var limpar = wrapper.querySelector("[data-custom-date-range-clear]");
+    var hojeBotao = wrapper.querySelector("[data-custom-date-range-today]");
+    if (!inicio || !fim || !trigger || !valor || !calendario || !grade) return;
+
+    var hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    var dataInicial = dataPorIso(inicio.value);
+    var mesVisivel = dataInicial || hoje;
+    mesVisivel = new Date(mesVisivel.getFullYear(), mesVisivel.getMonth(), 1);
+
+    var instancia = {
+      wrapper: wrapper,
+      trigger: trigger,
+      calendario: calendario,
+      aberto: false
+    };
+    calendariosAbertos.push(instancia);
+    wrapper.classList.add("is-enhanced");
+    inicio.tabIndex = -1;
+    fim.tabIndex = -1;
+    inicio.setAttribute("aria-hidden", "true");
+    fim.setAttribute("aria-hidden", "true");
+    trigger.disabled = inicio.disabled || fim.disabled || inicio.readOnly || fim.readOnly;
+
+    function dataEstaIndisponivel(iso) {
+      var minimo = inicio.min || fim.min;
+      var maximo = fim.max || inicio.max;
+      return Boolean((minimo && iso < minimo) || (maximo && iso > maximo));
+    }
+
+    function focarData(iso) {
+      var alvo = grade.querySelector('[data-date="' + iso + '"]');
+      if (alvo && !alvo.disabled) alvo.focus();
+    }
+
+    function renderizar() {
+      var nomeMes = new Intl.DateTimeFormat("pt-BR", {
+        month: "long",
+        year: "numeric"
+      }).format(mesVisivel);
+      tituloMes.textContent = nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1);
+      instrucao.textContent = inicio.value && !fim.value
+        ? "Agora selecione a data final"
+        : "Selecione a data inicial";
+      grade.innerHTML = "";
+
+      var primeiroDia = new Date(mesVisivel.getFullYear(), mesVisivel.getMonth(), 1);
+      var inicioGrade = new Date(
+        primeiroDia.getFullYear(),
+        primeiroDia.getMonth(),
+        1 - primeiroDia.getDay()
+      );
+
+      for (var indice = 0; indice < 42; indice += 1) {
+        var data = new Date(
+          inicioGrade.getFullYear(),
+          inicioGrade.getMonth(),
+          inicioGrade.getDate() + indice
+        );
+        var iso = isoDaData(data);
+        var dentroDoIntervalo = Boolean(inicio.value && fim.value && iso > inicio.value && iso < fim.value);
+        var botao = document.createElement("button");
+        botao.type = "button";
+        botao.className = "custom-date__dia";
+        botao.textContent = String(data.getDate());
+        botao.setAttribute("role", "gridcell");
+        botao.setAttribute("data-date", iso);
+        botao.setAttribute("aria-label", new Intl.DateTimeFormat("pt-BR", {
+          day: "numeric", month: "long", year: "numeric"
+        }).format(data));
+        botao.setAttribute(
+          "aria-selected",
+          inicio.value === iso || fim.value === iso ? "true" : "false"
+        );
+        botao.classList.toggle("is-outside", data.getMonth() !== mesVisivel.getMonth());
+        botao.classList.toggle("is-today", iso === isoDaData(hoje));
+        botao.classList.toggle("is-in-range", dentroDoIntervalo);
+        botao.classList.toggle("is-range-start", inicio.value === iso);
+        botao.classList.toggle("is-range-end", fim.value === iso);
+        botao.disabled = dataEstaIndisponivel(iso);
+        grade.appendChild(botao);
+      }
+    }
+
+    function dispararAlteracao(campo) {
+      campo.dispatchEvent(new Event("input", { bubbles: true }));
+      campo.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    function sincronizar() {
+      var dataInicio = dataPorIso(inicio.value);
+      var dataFim = dataPorIso(fim.value);
+      if (dataInicio && dataFim) {
+        valor.textContent = dataFormatada(dataInicio) + " — " + dataFormatada(dataFim);
+      } else if (dataInicio) {
+        valor.textContent = dataFormatada(dataInicio) + " — selecione o fim";
+      } else {
+        valor.textContent = "dd/mm/aaaa — dd/mm/aaaa";
+      }
+      trigger.classList.toggle("has-value", Boolean(dataInicio));
+      trigger.removeAttribute("aria-invalid");
+      wrapper.classList.remove("is-invalid");
+      if (dataInicio) mesVisivel = new Date(dataInicio.getFullYear(), dataInicio.getMonth(), 1);
+      if (instancia.aberto) renderizar();
+    }
+
+    function selecionarData(data) {
+      var iso = isoDaData(data);
+      if (dataEstaIndisponivel(iso)) return;
+
+      if (!inicio.value || fim.value) {
+        inicio.value = iso;
+        fim.value = "";
+        sincronizar();
+        dispararAlteracao(inicio);
+        dispararAlteracao(fim);
+        renderizar();
+        focarData(iso);
+        return;
+      }
+
+      if (iso < inicio.value) {
+        inicio.value = iso;
+        fim.value = "";
+        sincronizar();
+        dispararAlteracao(inicio);
+        dispararAlteracao(fim);
+        renderizar();
+        focarData(iso);
+        return;
+      }
+
+      fim.value = iso;
+      sincronizar();
+      dispararAlteracao(fim);
+      fecharCalendario(instancia, true);
+    }
+
+    function abrirCalendario() {
+      if (instancia.aberto || trigger.disabled) return;
+      fecharOutrosSeletores(null);
+      fecharOutrosCalendarios(instancia);
+      instancia.aberto = true;
+      wrapper.classList.add("is-open");
+      calendario.hidden = false;
+      trigger.setAttribute("aria-expanded", "true");
+      renderizar();
+      focarData(fim.value || inicio.value || isoDaData(hoje));
+    }
+
+    function mudarMes(deslocamento) {
+      mesVisivel = new Date(mesVisivel.getFullYear(), mesVisivel.getMonth() + deslocamento, 1);
+      renderizar();
+      var preferida = dataPorIso(fim.value || inicio.value) || hoje;
+      var ultimoDia = new Date(mesVisivel.getFullYear(), mesVisivel.getMonth() + 1, 0).getDate();
+      var destino = new Date(
+        mesVisivel.getFullYear(),
+        mesVisivel.getMonth(),
+        Math.min(preferida.getDate(), ultimoDia)
+      );
+      focarData(isoDaData(destino));
+    }
+
+    trigger.addEventListener("click", function () {
+      if (instancia.aberto) fecharCalendario(instancia, true);
+      else abrirCalendario();
+    });
+    trigger.addEventListener("keydown", function (event) {
+      if (["ArrowDown", "Enter", " "].indexOf(event.key) !== -1) {
+        event.preventDefault();
+        abrirCalendario();
+      }
+    });
+    anterior.addEventListener("click", function () { mudarMes(-1); });
+    proximo.addEventListener("click", function () { mudarMes(1); });
+    limpar.addEventListener("click", function () {
+      inicio.value = "";
+      fim.value = "";
+      sincronizar();
+      dispararAlteracao(inicio);
+      dispararAlteracao(fim);
+      fecharCalendario(instancia, true);
+    });
+    hojeBotao.addEventListener("click", function () {
+      var isoHoje = isoDaData(hoje);
+      inicio.value = isoHoje;
+      fim.value = isoHoje;
+      sincronizar();
+      dispararAlteracao(inicio);
+      dispararAlteracao(fim);
+      fecharCalendario(instancia, true);
+    });
+    grade.addEventListener("click", function (event) {
+      var dia = event.target.closest("[data-date]");
+      if (dia) selecionarData(dataPorIso(dia.getAttribute("data-date")));
+    });
+    grade.addEventListener("keydown", function (event) {
+      var dia = event.target.closest("[data-date]");
+      if (!dia) return;
+      var atual = dataPorIso(dia.getAttribute("data-date"));
+      var deslocamento = null;
+      if (event.key === "ArrowLeft") deslocamento = -1;
+      else if (event.key === "ArrowRight") deslocamento = 1;
+      else if (event.key === "ArrowUp") deslocamento = -7;
+      else if (event.key === "ArrowDown") deslocamento = 7;
+      else if (event.key === "Home") deslocamento = -atual.getDay();
+      else if (event.key === "End") deslocamento = 6 - atual.getDay();
+      else if (event.key === "PageUp") { event.preventDefault(); mudarMes(-1); return; }
+      else if (event.key === "PageDown") { event.preventDefault(); mudarMes(1); return; }
+      else if (event.key === "Escape") { event.preventDefault(); fecharCalendario(instancia, true); return; }
+      else if (event.key === "Tab") { fecharCalendario(instancia, false); return; }
+      if (deslocamento === null) return;
+      event.preventDefault();
+      var destino = new Date(atual.getFullYear(), atual.getMonth(), atual.getDate() + deslocamento);
+      if (destino.getMonth() !== mesVisivel.getMonth() || destino.getFullYear() !== mesVisivel.getFullYear()) {
+        mesVisivel = new Date(destino.getFullYear(), destino.getMonth(), 1);
+        renderizar();
+      }
+      focarData(isoDaData(destino));
+    });
+
+    inicio.addEventListener("change", sincronizar);
+    fim.addEventListener("change", sincronizar);
+    inicio.addEventListener("focus", function () { trigger.focus(); });
+    fim.addEventListener("focus", function () { trigger.focus(); });
+    [inicio, fim].forEach(function (campo) {
+      campo.addEventListener("invalid", function () {
+        wrapper.classList.add("is-invalid");
+        trigger.setAttribute("aria-invalid", "true");
+        trigger.focus();
+      });
+    });
+    sincronizar();
+  });
+
   document.addEventListener("pointerdown", function (event) {
     seletoresAbertos.forEach(function (instancia) {
       if (!instancia.wrapper.contains(event.target)) fecharSeletor(instancia, false);

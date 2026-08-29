@@ -917,6 +917,11 @@ textarea.form-controle {
   width: 100%; display: flex; align-items: center; justify-content: space-between;
   background: #fff; color: #858b93; text-align: left; cursor: pointer;
 }
+.custom-date__range-native { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.custom-date.is-enhanced .custom-date__range-native {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  opacity: 0; pointer-events: none;
+}
 .custom-date__trigger.has-value { color: var(--cor-texto); }
 .custom-date__calendar {
   position: absolute; z-index: 60; top: calc(100% + 6px); left: 0;
@@ -931,6 +936,9 @@ textarea.form-controle {
 }
 .custom-date__mes {
   color: var(--cor-texto); font-size: 0.82rem; font-weight: 700;
+}
+.custom-date__instrucao {
+  display: block; margin-top: 2px; color: #7b8189; font-size: 0.62rem;
 }
 .custom-date__navegacao { display: flex; align-items: center; gap: 3px; }
 .custom-date__navegacao button {
@@ -962,6 +970,14 @@ textarea.form-controle {
 .custom-date__dia.is-today { border-color: #c9951a; color: #805e0a; font-weight: 700; }
 .custom-date__dia.is-selected {
   border-color: #a87300; background: #c9951a; color: #fff; font-weight: 700;
+}
+.custom-date__dia.is-in-range {
+  border-color: #eadfbf; border-radius: 3px; background: #f7f1df; color: #6f5b21;
+}
+.custom-date__dia.is-range-start,
+.custom-date__dia.is-range-end {
+  border-color: #a87300; border-radius: 6px; background: #c9951a; color: #fff;
+  font-weight: 700;
 }
 .custom-date__rodape {
   display: flex; align-items: center; justify-content: space-between;
