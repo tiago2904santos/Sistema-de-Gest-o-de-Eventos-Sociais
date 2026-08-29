@@ -1,0 +1,16 @@
+{% comment %}
+  Componente: section_card — cabeçalho numerado de seção de formulário.
+  Uso (a página abre/fecha a section, mantendo o markup balanceado):
+
+    <section class="section-card">
+      {% include "components/section_card.html" with numero="1" titulo="Dados da solicitação" subtitulo="..." %}
+      <div class="section-card__corpo">...</div>
+    </section>
+{% endcomment %}
+<header class="section-card__cabecalho">
+  <span class="section-card__numero">{{ numero }}</span>
+  <div>
+    <h2 class="section-card__titulo">{{ titulo }}</h2>
+    {% if subtitulo %}<p class="section-card__subtitulo">{{ subtitulo }}</p>{% endif %}
+  </div>
+</header>

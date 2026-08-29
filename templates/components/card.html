@@ -1,0 +1,15 @@
+{% comment %}
+  Componente: card — cabeçalho padrão de card.
+  O conteúdo do card fica a cargo da página, mantendo o markup balanceado:
+
+    <div class="card">
+      {% include "components/card.html" with titulo="Últimas solicitações" %}
+      <div class="card__corpo">...</div>
+    </div>
+{% endcomment %}
+<div class="card__cabecalho">
+  <h2 class="card__titulo">{{ titulo }}</h2>
+  {% if acao_label and acao_url %}
+    <a href="{{ acao_url }}" class="btn btn--secundario">{{ acao_label }}</a>
+  {% endif %}
+</div>

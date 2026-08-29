@@ -1,0 +1,12 @@
+{% comment %}
+  Componente: button — renderiza <a> quando `href` é passado, senão <button>.
+  Variantes: primario (padrão), dourado, secundario, perigo, fantasma.
+  Uso:
+    {% include "components/button.html" with label="Salvar" variante="primario" tipo="submit" %}
+    {% include "components/button.html" with label="Voltar" variante="secundario" href="/dashboard/" %}
+{% endcomment %}
+{% if href %}
+  <a href="{{ href }}" class="btn btn--{{ variante|default:'primario' }}{% if bloco %} btn--bloco{% endif %}">{{ label }}</a>
+{% else %}
+  <button type="{{ tipo|default:'button' }}" class="btn btn--{{ variante|default:'primario' }}{% if bloco %} btn--bloco{% endif %}">{{ label }}</button>
+{% endif %}

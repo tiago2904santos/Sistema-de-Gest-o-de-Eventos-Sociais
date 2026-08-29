@@ -1,0 +1,29 @@
+{% extends "layouts/base.html" %}
+{% comment %}
+  App shell: estrutura padrão das páginas autenticadas.
+  Composição: top_header + navbar + conteúdo + rodapé.
+  Páginas devem estender este layout e preencher o bloco "conteudo".
+{% endcomment %}
+
+{% block body %}
+<div class="app-shell">
+  {% include "components/top_header.html" %}
+  {% include "components/navbar.html" %}
+
+  <main class="app-shell__main">
+    {% if messages %}
+      <div class="alertas">
+        {% for message in messages %}
+          <div class="alerta alerta--{{ message.tags|default:'info' }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% block conteudo %}{% endblock %}
+  </main>
+
+  <footer class="app-shell__footer">
+    Sistema de Gestão de Eventos Sociais — uso institucional
+  </footer>
+</div>
+{% endblock %}

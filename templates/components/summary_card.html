@@ -1,0 +1,9 @@
+{% comment %}
+  Componente: summary_card — indicador de resumo do dashboard.
+  Uso: {% include "components/summary_card.html" with titulo="..." valor=18 variacao="..." %}
+{% endcomment %}
+<div class="summary-card">
+  <p class="summary-card__titulo">{{ titulo }}</p>
+  <p class="summary-card__valor">{{ valor }}</p>
+  {% if variacao %}<p class="summary-card__variacao">{{ variacao }}</p>{% endif %}
+</div>

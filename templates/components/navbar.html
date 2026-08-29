@@ -1,0 +1,15 @@
+{% comment %}
+  Componente: navbar — navegação principal abaixo do top_header.
+  O link ativo é resolvido pelo namespace da rota atual.
+{% endcomment %}
+<nav class="navbar">
+  <div class="navbar__inner">
+    <a class="navbar__link {% if request.resolver_match.namespace == 'dashboard' %}navbar__link--ativo{% endif %}"
+       href="{% url 'dashboard:index' %}">Dashboard</a>
+    <a class="navbar__link {% if request.resolver_match.namespace == 'solicitacoes' %}navbar__link--ativo{% endif %}"
+       href="{% url 'solicitacoes:nova' %}">Nova solicitação</a>
+    {% if user.is_staff %}
+      <a class="navbar__link" href="{% url 'admin:index' %}">Cadastros (admin)</a>
+    {% endif %}
+  </div>
+</nav>

@@ -1,0 +1,18 @@
+{% comment %}
+  Componente: breadcrumb.
+  Uso: {% include "components/breadcrumb.html" with itens=breadcrumb %}
+  onde `itens` é uma lista de dicts {"label": ..., "url": ...} (url opcional
+  no último item). Alternativa rápida: passar apenas `atual="Título"`.
+{% endcomment %}
+<nav class="breadcrumb" aria-label="Trilha de navegação">
+  <a href="{% url 'dashboard:index' %}">Início</a>
+  {% if itens %}
+    {% for item in itens %}
+      <span class="breadcrumb__separador">/</span>
+      {% if item.url %}<a href="{{ item.url }}">{{ item.label }}</a>{% else %}<span>{{ item.label }}</span>{% endif %}
+    {% endfor %}
+  {% elif atual %}
+    <span class="breadcrumb__separador">/</span>
+    <span>{{ atual }}</span>
+  {% endif %}
+</nav>

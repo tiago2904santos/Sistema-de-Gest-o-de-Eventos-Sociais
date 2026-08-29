@@ -1,0 +1,6 @@
+{% comment %}
+  Componente: status_badge.
+  Uso: {% include "components/status_badge.html" with status="AGUARDANDO_DESPACHO" label="Aguardando despacho" %}
+  `status` deve ser um dos códigos de StatusSolicitacao.
+{% endcomment %}
+<span class="status-badge status-badge--{{ status|lower }}">{{ label|default:status }}</span>

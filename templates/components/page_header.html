@@ -1,0 +1,17 @@
+{% comment %}
+  Componente: page_header — título da página + subtítulo + ação principal.
+  Uso:
+    {% include "components/page_header.html" with titulo="Dashboard"
+       subtitulo="Visão geral" acao_label="Nova solicitação" acao_url="/solicitacoes/nova/" %}
+{% endcomment %}
+<div class="page-header">
+  <div>
+    <h1 class="page-header__titulo">{{ titulo }}</h1>
+    {% if subtitulo %}<p class="page-header__subtitulo">{{ subtitulo }}</p>{% endif %}
+  </div>
+  {% if acao_label and acao_url %}
+    <div class="page-header__acoes">
+      {% include "components/button.html" with label=acao_label href=acao_url variante=acao_variante|default:"dourado" %}
+    </div>
+  {% endif %}
+</div>

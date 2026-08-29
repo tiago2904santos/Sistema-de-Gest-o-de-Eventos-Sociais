@@ -1,0 +1,25 @@
+{% comment %}
+  Componente: table — tabela simples para células de texto.
+  Uso:
+    {% include "components/table.html" with cabecalhos=lista_cabecalhos linhas=lista_de_listas %}
+  Para células ricas (badges, links), use as classes .tabela-wrapper/.tabela
+  diretamente na página, mantendo o mesmo padrão visual.
+{% endcomment %}
+<div class="tabela-wrapper">
+  <table class="tabela">
+    <thead>
+      <tr>
+        {% for cabecalho in cabecalhos %}<th>{{ cabecalho }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for linha in linhas %}
+        <tr>
+          {% for celula in linha %}<td>{{ celula }}</td>{% endfor %}
+        </tr>
+      {% empty %}
+        <tr><td colspan="{{ cabecalhos|length }}" class="texto-suave texto-centro">Nenhum registro encontrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

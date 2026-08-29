@@ -1,0 +1,21 @@
+{% comment %}
+  Componente: input.
+  Uso:
+    {% include "components/input.html" with name="solicitante_nome" label="Nome"
+       tipo="text" placeholder="..." obrigatorio=True largura="6" ajuda="..." valor="..." %}
+  `largura`: colunas do grid (3, 4, 6 ou vazio = 12).
+{% endcomment %}
+<div class="form-campo{% if largura %} form-campo--{{ largura }}{% endif %}">
+  <label class="form-label" for="id_{{ name }}">
+    {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
+  </label>
+  <input
+    class="form-controle"
+    type="{{ tipo|default:'text' }}"
+    id="id_{{ name }}"
+    name="{{ name }}"
+    {% if valor %}value="{{ valor }}"{% endif %}
+    {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+    {% if obrigatorio %}required{% endif %}>
+  {% if ajuda %}<p class="form-ajuda">{{ ajuda }}</p>{% endif %}
+</div>

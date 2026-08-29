@@ -1,0 +1,19 @@
+{% comment %}
+  Componente: textarea.
+  Uso:
+    {% include "components/textarea.html" with name="descricao_complementar"
+       label="Descrição complementar" linhas="4" placeholder="..." largura="" %}
+{% endcomment %}
+<div class="form-campo{% if largura %} form-campo--{{ largura }}{% endif %}">
+  <label class="form-label" for="id_{{ name }}">
+    {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
+  </label>
+  <textarea
+    class="form-controle"
+    id="id_{{ name }}"
+    name="{{ name }}"
+    rows="{{ linhas|default:'4' }}"
+    {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+    {% if obrigatorio %}required{% endif %}>{{ valor|default:"" }}</textarea>
+  {% if ajuda %}<p class="form-ajuda">{{ ajuda }}</p>{% endif %}
+</div>

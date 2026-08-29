@@ -1,0 +1,19 @@
+{% comment %}
+  Componente: select.
+  Uso:
+    {% include "components/select.html" with name="municipio" label="Município"
+       opcoes=municipios placeholder="Selecione..." obrigatorio=True largura="6" %}
+  `opcoes`: lista de strings (ou objetos com __str__).
+{% endcomment %}
+<div class="form-campo{% if largura %} form-campo--{{ largura }}{% endif %}">
+  <label class="form-label" for="id_{{ name }}">
+    {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
+  </label>
+  <select class="form-controle" id="id_{{ name }}" name="{{ name }}" {% if obrigatorio %}required{% endif %}>
+    <option value="">{{ placeholder|default:"Selecione..." }}</option>
+    {% for opcao in opcoes %}
+      <option value="{{ opcao }}">{{ opcao }}</option>
+    {% endfor %}
+  </select>
+  {% if ajuda %}<p class="form-ajuda">{{ ajuda }}</p>{% endif %}
+</div>
