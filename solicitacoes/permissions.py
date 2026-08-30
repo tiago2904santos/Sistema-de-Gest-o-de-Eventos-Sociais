@@ -69,13 +69,16 @@ def queryset_visivel(user, queryset):
     )
 
 
+STATUS_EDITAVEIS = {StatusSolicitacao.RASCUNHO, StatusSolicitacao.DEVOLVIDA}
+
+
 def pode_editar_dados(user, solicitacao):
-    """A revisão acontece no rascunho, pelo criador (ou superusuário)."""
+    """Rascunhos e devolvidas são editáveis pelo criador (ou superusuário)."""
     if solicitacao.finalizada:
         return user.is_superuser
     return user.is_superuser or (
         solicitacao.criado_por_id == user.pk
-        and solicitacao.status == StatusSolicitacao.RASCUNHO
+        and solicitacao.status in STATUS_EDITAVEIS
     )
 
 
@@ -84,7 +87,7 @@ def pode_editar(user, solicitacao):
 
 
 def pode_enviar(user, solicitacao):
-    return solicitacao.status == StatusSolicitacao.RASCUNHO and (
+    return solicitacao.status in STATUS_EDITAVEIS and (
         user.is_superuser or solicitacao.criado_por_id == user.pk
     )
 

@@ -5,10 +5,15 @@ from django.utils import timezone
 
 
 class StatusSolicitacao(models.TextChoices):
-    """Fluxo enxuto: rascunho → aguardando despacho → decisão da DG."""
+    """Fluxo enxuto: rascunho → aguardando despacho → decisão da DG.
+
+    A DG também pode devolver para ajuste: a solicitação volta a ser editável
+    pelo criador e pode ser reenviada.
+    """
 
     RASCUNHO = "RASCUNHO", "Rascunho"
     AGUARDANDO_DESPACHO = "AGUARDANDO_DESPACHO", "Aguardando despacho"
+    DEVOLVIDA = "DEVOLVIDA", "Devolvida para ajuste"
     ATENDIDA = "ATENDIDA", "Atendida"
     NAO_ATENDIDA = "NAO_ATENDIDA", "Não atendida"
     CANCELADA = "CANCELADA", "Cancelada"
@@ -299,6 +304,7 @@ class AcaoHistorico(models.TextChoices):
     INICIO_ANALISE = "INICIO_ANALISE", "Análise iniciada"
     PLANEJAMENTO = "PLANEJAMENTO", "Planejamento atualizado"
     ENCAMINHAMENTO_DESPACHO = "ENCAMINHAMENTO_DESPACHO", "Encaminhada para despacho"
+    DEVOLUCAO = "DEVOLUCAO", "Devolvida para ajuste"
     DECISAO = "DECISAO", "Decisão da DG registrada"
 
 

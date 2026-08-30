@@ -470,6 +470,7 @@ img {
 .status-badge--enviada { background: var(--cor-info-fundo); color: var(--cor-info); }
 .status-badge--em_analise { background: var(--cor-info-fundo); color: var(--cor-info); }
 .status-badge--aguardando_despacho { background: var(--cor-alerta-fundo); color: var(--cor-alerta); }
+.status-badge--devolvida { background: var(--cor-alerta-fundo); color: var(--cor-alerta); }
 .status-badge--atendida { background: var(--cor-sucesso-fundo); color: var(--cor-sucesso); }
 .status-badge--nao_atendida { background: var(--cor-erro-fundo); color: var(--cor-erro); }
 .status-badge--cancelada { background: var(--cor-neutro-fundo); color: var(--cor-neutro); }
@@ -1183,7 +1184,7 @@ textarea.form-controle { min-height: 68px; }
 }
 .segmented-control label + label span { border-left: 1px solid var(--cor-borda); }
 .segmented-control input:checked + span { background: #bea45a; color: #fff; font-weight: 700; }
-.decision-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.decision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
 .decision-option {
   position: relative; min-height: 38px; display: flex; align-items: center;
   justify-content: center; gap: 9px; border: 1px solid currentColor;
@@ -1193,6 +1194,7 @@ textarea.form-controle { min-height: 68px; }
 .decision-option--success { color: var(--cor-sucesso); }
 .decision-option--danger { color: var(--cor-erro); }
 .decision-option--cancel { color: #7a4e96; }
+.decision-option--return { color: var(--cor-alerta); }
 .decision-option > span { display: grid; place-items: center; font-size: 1rem; }
 .decision-option:has(input:checked) { background: #f0f1f2; outline: 2px solid currentColor; outline-offset: 1px; }
 .side-card {

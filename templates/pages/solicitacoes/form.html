@@ -156,10 +156,11 @@
                       <label class="decision-option decision-option--success"><input type="radio" name="decisao" value="ATENDER" required><span>{% include "components/icon.html" with nome="check" %}</span>Atender</label>
                       <label class="decision-option decision-option--danger"><input type="radio" name="decisao" value="NAO_ATENDER"><span>{% include "components/icon.html" with nome="x" %}</span>Não atender</label>
                       <label class="decision-option decision-option--cancel"><input type="radio" name="decisao" value="CANCELADO"><span>{% include "components/icon.html" with nome="ban" %}</span>Evento cancelado</label>
+                      <label class="decision-option decision-option--return"><input type="radio" name="decisao" value="DEVOLVER"><span>{% include "components/icon.html" with nome="undo" %}</span>Devolver para ajuste</label>
                     </div>
                   </fieldset>
                   <div class="form-grid form-grid--separado">
-                    {% include "components/textarea.html" with name="observacao" label="Observações DG" placeholder="Obrigatórias para não atendimento ou cancelamento." largura="" linhas="3" %}
+                    {% include "components/textarea.html" with name="observacao" label="Observações DG" placeholder="Obrigatórias para não atendimento, cancelamento ou devolução." largura="" linhas="3" %}
                   </div>
                   <div class="acoes-formulario">
                     {% include "components/button.html" with label="Registrar decisão" variante="dourado" tipo="submit" %}

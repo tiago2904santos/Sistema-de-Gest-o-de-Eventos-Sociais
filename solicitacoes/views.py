@@ -278,22 +278,28 @@ FILAS = {
     "rascunhos": {
         "rotulo": "Meus rascunhos",
         "status": [StatusSolicitacao.RASCUNHO],
+        "apenas_do_usuario": True,
+    },
+    "devolvidas": {
+        "rotulo": "Devolvidas para ajuste",
+        "status": [StatusSolicitacao.DEVOLVIDA],
+        "apenas_do_usuario": True,
     },
 }
 
 
 def _filas_do_usuario(user, queryset):
     """Atalhos de fila com contagem, conforme o perfil do usuário."""
-    # A fila de despacho é da DG; rascunhos são de cada um.
+    # A fila de despacho é da DG; rascunhos e devolvidas são de cada um.
     filas = []
     if permissions.eh_gestor_dg(user):
         filas.append("despacho")
-    filas.append("rascunhos")
+    filas.extend(["rascunhos", "devolvidas"])
     resultado = []
     for chave in filas:
         config = FILAS[chave]
         parcial = queryset.filter(status__in=config["status"])
-        if chave == "rascunhos":
+        if config.get("apenas_do_usuario"):
             parcial = parcial.filter(criado_por=user)
         resultado.append(
             {"chave": chave, "rotulo": config["rotulo"], "total": parcial.count()}
@@ -315,7 +321,7 @@ def lista_solicitacoes(request):
     fila = request.GET.get("fila", "")
     if fila in FILAS:
         queryset = queryset.filter(status__in=FILAS[fila]["status"])
-        if fila == "rascunhos":
+        if FILAS[fila].get("apenas_do_usuario"):
             queryset = queryset.filter(criado_por=request.user)
 
     if filtros.is_valid():
@@ -442,6 +448,12 @@ def despachar(request, pk):
             for erro in erros_campo:
                 messages.error(request, erro)
         return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
+    if form.cleaned_data["decisao"] == DespachoForm.DEVOLVER:
+        return _executar_transicao(
+            request, solicitacao, services.devolver,
+            f"Solicitação #{solicitacao.pk} devolvida para ajuste.",
+            observacao=form.cleaned_data["observacao"],
+        )
     return _executar_transicao(
         request, solicitacao, services.despachar,
         f"Decisão registrada para a solicitação #{solicitacao.pk}.",

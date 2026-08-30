@@ -264,12 +264,16 @@ class SolicitacaoForm(forms.ModelForm):
 
 
 class DespachoForm(forms.Form):
+    # Além das decisões finais, a DG pode devolver para o criador ajustar.
+    DEVOLVER = "DEVOLVER"
+
     decisao = forms.ChoiceField(
         label="Decisão",
         choices=[
             (DecisaoDG.ATENDER, "Atender"),
             (DecisaoDG.NAO_ATENDER, "Não atender"),
             (DecisaoDG.CANCELADO, "Evento cancelado"),
+            (DEVOLVER, "Devolver para ajuste"),
         ],
         error_messages={"required": "Selecione a decisão da DG."},
     )
@@ -283,6 +287,11 @@ class DespachoForm(forms.Form):
             self.add_error(
                 "observacao",
                 "A observação é obrigatória para não atendimento ou cancelamento.",
+            )
+        if decisao == self.DEVOLVER and not observacao:
+            self.add_error(
+                "observacao",
+                "Informe o motivo da devolução para o solicitante ajustar.",
             )
         dados["observacao"] = observacao
         return dados

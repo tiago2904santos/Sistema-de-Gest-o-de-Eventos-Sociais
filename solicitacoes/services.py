@@ -32,8 +32,12 @@ TRANSICOES_VALIDAS = {
         StatusSolicitacao.ATENDIDA,
         StatusSolicitacao.NAO_ATENDIDA,
         StatusSolicitacao.CANCELADA,
+        StatusSolicitacao.DEVOLVIDA,
     },
+    StatusSolicitacao.DEVOLVIDA: {StatusSolicitacao.AGUARDANDO_DESPACHO},
 }
+
+STATUS_EDITAVEIS = {StatusSolicitacao.RASCUNHO, StatusSolicitacao.DEVOLVIDA}
 
 STATUS_POR_DECISAO = {
     DecisaoDG.ATENDER: StatusSolicitacao.ATENDIDA,
@@ -106,9 +110,11 @@ def pendencias_para_envio(solicitacao):
 
 @transaction.atomic
 def enviar(solicitacao, usuario):
-    """Envia a solicitação revisada direto para o despacho da DG."""
-    if solicitacao.status != StatusSolicitacao.RASCUNHO:
-        raise TransicaoInvalida("Apenas rascunhos podem ser enviados.")
+    """Envia a solicitação revisada (nova ou devolvida) para o despacho da DG."""
+    if solicitacao.status not in STATUS_EDITAVEIS:
+        raise TransicaoInvalida(
+            "Apenas rascunhos ou solicitações devolvidas podem ser enviados."
+        )
     faltas = pendencias_para_envio(solicitacao)
     if faltas:
         raise ValidationError(
@@ -130,6 +136,37 @@ def enviar(solicitacao, usuario):
         f"{solicitacao.municipio or 'Município a definir'} — "
         f"{solicitacao.tipo_evento or 'tipo a definir'}.",
         link=f"{link_detalhe}#despacho-dg",
+    )
+    return solicitacao
+
+
+@transaction.atomic
+def devolver(solicitacao, usuario, observacao):
+    """A DG devolve para o criador ajustar e reenviar, com o motivo."""
+    if solicitacao.status != StatusSolicitacao.AGUARDANDO_DESPACHO:
+        raise TransicaoInvalida(
+            "Somente solicitações aguardando despacho podem ser devolvidas."
+        )
+    observacao = (observacao or "").strip()
+    if not observacao:
+        raise ValidationError(
+            "Informe o motivo da devolução para o solicitante ajustar."
+        )
+    anterior = _transicionar(solicitacao, StatusSolicitacao.DEVOLVIDA)
+    solicitacao.save()
+    registrar_historico(
+        solicitacao,
+        usuario,
+        AcaoHistorico.DEVOLUCAO,
+        status_anterior=anterior,
+        status_novo=solicitacao.status,
+        observacao=observacao,
+    )
+    notificar(
+        [solicitacao.criado_por],
+        f"Solicitação #{solicitacao.pk} devolvida para ajuste",
+        observacao,
+        link=reverse("solicitacoes:editar", args=[solicitacao.pk]),
     )
     return solicitacao
 
@@ -188,15 +225,22 @@ def montar_timeline(solicitacao=None):
 
     status = solicitacao.status if solicitacao else StatusSolicitacao.RASCUNHO
     rascunho = status == StatusSolicitacao.RASCUNHO
+    devolvida = status == StatusSolicitacao.DEVOLVIDA
     aguardando = status == StatusSolicitacao.AGUARDANDO_DESPACHO
     finalizada = bool(solicitacao) and solicitacao.finalizada
+
+    if devolvida:
+        subtitulo_envio = "Devolvida para ajuste — revise e reenvie"
+    elif rascunho:
+        subtitulo_envio = "Aguardando preenchimento"
+    else:
+        subtitulo_envio = None
 
     etapas = [
         {
             "titulo": "Enviar para a DG",
-            "subtitulo": quando(AcaoHistorico.ENVIO)
-            or ("Aguardando preenchimento" if rascunho else "Pendente"),
-            "estado": "atual" if rascunho else "concluido",
+            "subtitulo": subtitulo_envio or quando(AcaoHistorico.ENVIO) or "Pendente",
+            "estado": "atual" if rascunho or devolvida else "concluido",
         },
         {
             "titulo": "Aguardando despacho DG",

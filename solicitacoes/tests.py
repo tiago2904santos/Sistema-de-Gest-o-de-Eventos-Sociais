@@ -341,6 +341,51 @@ class WorkflowTests(BaseSolicitacaoTestCase):
         with self.assertRaises(services.TransicaoInvalida):
             services.despachar(solicitacao, self.gestor, DecisaoDG.NAO_ATENDER, "x")
 
+    def test_devolucao_para_ajuste_e_reenvio(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.devolver(solicitacao, self.gestor, "Falta detalhar o local.")
+        self.assertEqual(solicitacao.status, StatusSolicitacao.DEVOLVIDA)
+        registro = solicitacao.historico.get(acao=AcaoHistorico.DEVOLUCAO)
+        self.assertEqual(registro.observacao, "Falta detalhar o local.")
+        # Depois do ajuste, o criador reenvia e a DG decide normalmente.
+        services.enviar(solicitacao, self.solicitante)
+        self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
+        services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER)
+        self.assertEqual(solicitacao.status, StatusSolicitacao.ATENDIDA)
+
+    def test_devolucao_exige_observacao(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        with self.assertRaises(ValidationError):
+            services.devolver(solicitacao, self.gestor, "  ")
+        self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
+
+    def test_devolucao_apenas_aguardando_despacho(self):
+        solicitacao = self.solicitacao_completa()
+        with self.assertRaises(services.TransicaoInvalida):
+            services.devolver(solicitacao, self.gestor, "Motivo")
+
+    def test_devolvida_e_editavel_pelo_criador(self):
+        from . import permissions as perms
+
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.devolver(solicitacao, self.gestor, "Ajustar período.")
+        self.assertTrue(perms.pode_editar_dados(self.solicitante, solicitacao))
+        self.assertTrue(perms.pode_enviar(self.solicitante, solicitacao))
+        # Devolvida não é rascunho: continua visível e não pode ser excluída.
+        self.assertTrue(perms.pode_ver(self.outro_solicitante, solicitacao))
+        self.assertFalse(perms.pode_excluir(self.solicitante, solicitacao))
+
+    def test_timeline_devolvida_reabre_primeira_etapa(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.devolver(solicitacao, self.gestor, "Ajustar equipe.")
+        etapas = services.montar_timeline(solicitacao)
+        self.assertEqual(etapas[0]["estado"], "atual")
+        self.assertIn("Devolvida", etapas[0]["subtitulo"])
+
     def test_historico_registrado_nas_transicoes(self):
         solicitacao = self.solicitacao_completa()
         services.enviar(solicitacao, self.solicitante)
@@ -668,6 +713,47 @@ class ViewsTests(BaseSolicitacaoTestCase):
             reverse("solicitacoes:lista"), {"fila": "despacho"}
         )
         self.assertEqual(resposta.context["pagina"].paginator.count, 1)
+
+    def test_devolucao_via_view(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.client.force_login(self.gestor)
+        # Sem motivo, a devolução é recusada.
+        resposta = self.client.post(
+            reverse("solicitacoes:despachar", args=[solicitacao.pk]),
+            {"decisao": "DEVOLVER", "observacao": ""},
+        )
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
+
+        resposta = self.client.post(
+            reverse("solicitacoes:despachar", args=[solicitacao.pk]),
+            {"decisao": "DEVOLVER", "observacao": "Detalhar o local do evento."},
+        )
+        self.assertEqual(resposta.status_code, 302)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.DEVOLVIDA)
+
+        # O criador reenvia pela própria tela de detalhe.
+        self.client.force_login(self.solicitante)
+        resposta = self.client.post(
+            reverse("solicitacoes:enviar", args=[solicitacao.pk])
+        )
+        self.assertEqual(resposta.status_code, 302)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
+
+    def test_fila_devolvidas_na_lista(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.devolver(solicitacao, self.gestor, "Ajustar datas.")
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(
+            reverse("solicitacoes:lista"), {"fila": "devolvidas"}
+        )
+        self.assertEqual(resposta.context["pagina"].paginator.count, 1)
+        self.assertContains(resposta, "Devolvidas para ajuste")
+        self.assertContains(resposta, ">Continuar<", html=False)
 
     def test_despacho_via_view(self):
         solicitacao = self.solicitacao_completa()
