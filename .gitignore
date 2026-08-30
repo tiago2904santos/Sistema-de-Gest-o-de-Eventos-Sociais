@@ -19,6 +19,9 @@ staticfiles/
 # Anexos enviados pelos usuários
 media/
 
+# Dumps de backup do banco
+backups/
+
 # IDEs e sistema
 .vscode/
 .idea/
