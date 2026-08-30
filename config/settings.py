@@ -53,6 +53,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # WhiteNoise serve os estáticos direto do app em produção (waitress).
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -174,6 +176,16 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+if not DEBUG:
+    # Nome com hash em cada arquivo estático (cache-busting): o navegador
+    # dos usuários nunca fica com CSS/JS antigo depois de uma atualização.
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 # Anexos das solicitações. O download passa por uma view com checagem de
 # permissão (solicitacoes.views.baixar_anexo) — não exponha MEDIA_URL

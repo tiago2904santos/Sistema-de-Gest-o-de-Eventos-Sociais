@@ -22,6 +22,9 @@ media/
 # Dumps de backup do banco
 backups/
 
+# Logs do servidor de produção local
+logs/
+
 # IDEs e sistema
 .vscode/
 .idea/
