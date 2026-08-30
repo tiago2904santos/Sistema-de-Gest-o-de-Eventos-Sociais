@@ -6,7 +6,10 @@ Todas as mudanças de status passam por aqui: as views nunca alteram o campo
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.urls import reverse
 from django.utils import timezone
+
+from core.notificacoes import notificar, usuarios_do_grupo
 
 from .models import (
     AcaoHistorico,
@@ -124,6 +127,13 @@ def enviar(solicitacao, usuario):
         status_anterior=anterior,
         status_novo=solicitacao.status,
     )
+    notificar(
+        usuarios_do_grupo("ANALISTA"),
+        f"Solicitação #{solicitacao.pk} aguardando análise",
+        f"{solicitacao.municipio or 'Município a definir'} — "
+        f"{solicitacao.tipo_evento or 'tipo a definir'}.",
+        link=reverse("solicitacoes:analisar", args=[solicitacao.pk]),
+    )
     return solicitacao
 
 
@@ -163,6 +173,19 @@ def encaminhar_para_despacho(solicitacao, usuario):
         status_anterior=anterior,
         status_novo=solicitacao.status,
     )
+    link_detalhe = reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+    notificar(
+        usuarios_do_grupo("GESTOR_DG"),
+        f"Solicitação #{solicitacao.pk} aguardando despacho",
+        f"{solicitacao.municipio or 'Município a definir'} — análise concluída.",
+        link=f"{link_detalhe}#despacho-dg",
+    )
+    notificar(
+        [solicitacao.criado_por],
+        f"Solicitação #{solicitacao.pk} encaminhada para a DG",
+        "A análise foi concluída e a decisão está com a Diretoria-Geral.",
+        link=link_detalhe,
+    )
     return solicitacao
 
 
@@ -194,6 +217,12 @@ def despachar(solicitacao, usuario, decisao, observacao=""):
         status_anterior=anterior,
         status_novo=solicitacao.status,
         observacao=observacao,
+    )
+    notificar(
+        [solicitacao.criado_por],
+        f"Solicitação #{solicitacao.pk}: {solicitacao.get_status_display().lower()}",
+        observacao or "A Diretoria-Geral registrou a decisão.",
+        link=reverse("solicitacoes:detalhe", args=[solicitacao.pk]),
     )
     return solicitacao
 

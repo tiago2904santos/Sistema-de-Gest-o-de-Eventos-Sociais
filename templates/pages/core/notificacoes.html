@@ -1,0 +1,42 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Notificações — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with atual="Notificações" %}
+  {% include "components/page_header.html" with titulo="Notificações" subtitulo="Avisos sobre as suas solicitações e filas de trabalho" icone="bell" %}
+
+  <div class="card">
+    {% include "components/card.html" with titulo="Suas notificações" %}
+    <ul class="notificacoes-lista">
+      {% for item in notificacoes %}
+        {% with n=item.notificacao %}
+          <li class="notificacao{% if item.nao_lida %} notificacao--nova{% endif %}">
+            <span class="notificacao__icone">{% include "components/icon.html" with nome="bell" %}</span>
+            <div class="notificacao__conteudo">
+              {% if n.link %}
+                <a class="notificacao__titulo" href="{{ n.link }}">{{ n.titulo }}</a>
+              {% else %}
+                <span class="notificacao__titulo">{{ n.titulo }}</span>
+              {% endif %}
+              {% if n.mensagem %}<p class="notificacao__mensagem">{{ n.mensagem }}</p>{% endif %}
+              <small class="notificacao__quando">{{ n.criada_em|date:"d/m/Y H:i" }}</small>
+            </div>
+            {% if item.nao_lida %}<span class="notificacao__marcador" aria-label="Não lida"></span>{% endif %}
+          </li>
+        {% endwith %}
+      {% empty %}
+        <li class="notificacao notificacao--vazia texto-suave">Nenhuma notificação por aqui ainda.</li>
+      {% endfor %}
+    </ul>
+    {% if pagina.paginator.num_pages > 1 %}
+      <div class="card__corpo paginacao">
+        <span class="texto-suave">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+        <span class="paginacao__links">
+          {% if pagina.has_previous %}<a href="?pagina={{ pagina.previous_page_number }}">Anterior</a>{% endif %}
+          {% if pagina.has_next %}<a href="?pagina={{ pagina.next_page_number }}">Próxima</a>{% endif %}
+        </span>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

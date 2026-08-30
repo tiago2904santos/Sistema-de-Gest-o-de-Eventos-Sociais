@@ -18,6 +18,10 @@
     </a>
     {% if user.is_authenticated %}
       <div class="top-header__usuario">
+        <a class="top-header__sino" href="{% url 'core:notificacoes' %}" aria-label="Notificações{% if notificacoes_nao_lidas %} ({{ notificacoes_nao_lidas }} não lidas){% endif %}">
+          {% include "components/icon.html" with nome="bell" %}
+          {% if notificacoes_nao_lidas %}<span class="top-header__sino-contador">{{ notificacoes_nao_lidas }}</span>{% endif %}
+        </a>
         <span class="top-header__usuario-dados">
           <strong>{{ user.get_full_name|default:user.username }}</strong>
           <small>{% if user.is_staff %}ACESSO GESTOR{% else %}USUÁRIO AUTENTICADO{% endif %}</small>

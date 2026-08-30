@@ -203,6 +203,44 @@ img {
   font-size: var(--texto-sm);
 }
 
+/* Sino de notificações no cabeçalho, com contador de não lidas. */
+.top-header__sino {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: var(--cor-texto-invertido);
+}
+
+.top-header__sino:hover {
+  background: var(--cor-grafite-700);
+  text-decoration: none;
+  color: var(--cor-dourado-400);
+}
+
+.top-header__sino .ui-icon {
+  width: 19px;
+  height: 19px;
+}
+
+.top-header__sino-contador {
+  position: absolute;
+  top: 1px;
+  right: 0;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--cor-acento);
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
 .top-header__usuario-nome {
   color: #dddddd;
 }
@@ -1489,6 +1527,78 @@ textarea.form-controle { min-height: 68px; }
 .summary-card--link:hover {
   text-decoration: none;
   border-color: var(--cor-acento);
+}
+
+/* Central de notificações */
+.notificacoes-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notificacao {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-4);
+  padding: var(--esp-4) var(--esp-5);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.notificacao:last-child {
+  border-bottom: 0;
+}
+
+.notificacao--nova {
+  background: #fbf6e8;
+}
+
+.notificacao__icone {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 9px;
+  background: var(--cor-dourado-100);
+  color: var(--cor-dourado-700);
+  display: grid;
+  place-items: center;
+}
+
+.notificacao__icone .ui-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.notificacao__titulo {
+  font-weight: 700;
+  color: var(--cor-texto);
+}
+
+.notificacao__mensagem {
+  margin-top: 2px;
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.notificacao__quando {
+  display: block;
+  margin-top: var(--esp-1);
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-fraco);
+}
+
+.notificacao__marcador {
+  width: 9px;
+  height: 9px;
+  margin-top: 6px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--cor-acento);
+  flex: 0 0 9px;
+}
+
+.notificacao--vazia {
+  justify-content: center;
+  padding: var(--esp-6);
 }
 
 .acao-inline {

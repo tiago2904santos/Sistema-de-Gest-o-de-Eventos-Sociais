@@ -74,6 +74,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.perfis",
+                "core.context_processors.notificacoes",
             ],
         },
     },
@@ -140,6 +141,27 @@ USE_TZ = True
 # ---------------------------------------------------------------------------
 # Arquivos estáticos
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# E-mail (notificações)
+#
+# Sem EMAIL_HOST definido, usa o backend de console (mensagens no terminal),
+# que é seguro para desenvolvimento. Em produção, configure via .env.
+# ---------------------------------------------------------------------------
+
+if os.environ.get("EMAIL_HOST"):
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = os.environ["EMAIL_HOST"]
+    EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+    EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+    EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+    EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "1") == "1"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL", "eventos-sociais@localhost"
+)
 
 STATIC_URL = "static/"
 
