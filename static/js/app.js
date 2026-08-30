@@ -1045,3 +1045,70 @@
     }, 150);
   }
 })();
+
+/**
+ * Controle de upload de anexos: o input nativo fica oculto e o usuário vê
+ * um botão estilizado + a lista dos arquivos selecionados, com opção de
+ * remover cada um antes de salvar. Sem seleção, mostra o texto de vazio.
+ */
+(function () {
+  "use strict";
+
+  function tamanhoLegivel(bytes) {
+    if (bytes >= 1048576) {
+      return (bytes / 1048576).toFixed(1).replace(".", ",") + " MB";
+    }
+    return Math.max(1, Math.round(bytes / 1024)) + " KB";
+  }
+
+  document.querySelectorAll("[data-upload-anexos]").forEach(function (bloco) {
+    var input = bloco.querySelector('input[type="file"]');
+    var lista = bloco.querySelector(".upload-anexos__lista");
+    var vazio = bloco.querySelector(".upload-anexos__vazio");
+    if (!input || !lista) return;
+
+    function removerArquivo(indice) {
+      var dt = new DataTransfer();
+      Array.prototype.forEach.call(input.files, function (arquivo, i) {
+        if (i !== indice) dt.items.add(arquivo);
+      });
+      input.files = dt.files;
+      render();
+    }
+
+    function render() {
+      lista.innerHTML = "";
+      var arquivos = Array.prototype.slice.call(input.files);
+      if (vazio) vazio.hidden = arquivos.length > 0;
+      arquivos.forEach(function (arquivo, indice) {
+        var item = document.createElement("li");
+        item.className = "upload-anexos__item";
+
+        var nome = document.createElement("span");
+        nome.className = "upload-anexos__nome";
+        nome.textContent = arquivo.name;
+
+        var meta = document.createElement("span");
+        meta.className = "upload-anexos__meta";
+        meta.textContent = tamanhoLegivel(arquivo.size);
+
+        var remover = document.createElement("button");
+        remover.type = "button";
+        remover.className = "upload-anexos__remover";
+        remover.setAttribute("aria-label", "Remover " + arquivo.name);
+        remover.textContent = "×";
+        remover.addEventListener("click", function () {
+          removerArquivo(indice);
+        });
+
+        item.appendChild(nome);
+        item.appendChild(meta);
+        item.appendChild(remover);
+        lista.appendChild(item);
+      });
+    }
+
+    input.addEventListener("change", render);
+    render();
+  });
+})();

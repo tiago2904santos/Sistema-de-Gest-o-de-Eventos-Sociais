@@ -208,9 +208,14 @@
                 <p class="texto-suave">Nenhum arquivo anexado.</p>
               {% endif %}
               {% if pode_gerenciar_anexos %}
-                <div class="anexos-upload">
-                  <input type="file" name="arquivo" form="form-anexo-upload" class="form-controle anexos-upload__arquivo" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods" required>
-                  <button type="submit" form="form-anexo-upload" class="btn btn--secundario">Anexar arquivo</button>
+                <div class="upload-anexos" data-upload-anexos>
+                  <input type="file" name="arquivo" id="id_anexo_upload" form="form-anexo-upload" class="upload-anexos__input" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods" required>
+                  <div class="upload-anexos__acoes">
+                    <label for="id_anexo_upload" class="btn btn--secundario">Escolher arquivo</label>
+                    <button type="submit" form="form-anexo-upload" class="btn btn--dourado">Anexar arquivo</button>
+                  </div>
+                  <span class="upload-anexos__vazio texto-suave">Nenhum arquivo selecionado.</span>
+                  <ul class="upload-anexos__lista"></ul>
                 </div>
                 <p class="texto-suave anexos-upload__ajuda">PDF, imagens ou documentos de escritório, até 10 MB por arquivo.</p>
               {% endif %}
@@ -220,10 +225,15 @@
           <section class="section-card" id="anexos">
             {% include "components/section_card.html" with numero="5" titulo="Anexos" %}
             <div class="section-card__corpo">
-              <div class="anexos-upload">
-                <input type="file" name="anexos" multiple class="form-controle anexos-upload__arquivo" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods">
+              <div class="upload-anexos" data-upload-anexos>
+                <input type="file" name="anexos" id="id_anexos_cadastro" multiple class="upload-anexos__input" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods">
+                <div class="upload-anexos__acoes">
+                  <label for="id_anexos_cadastro" class="btn btn--secundario">Escolher arquivos</label>
+                </div>
+                <span class="upload-anexos__vazio texto-suave">Nenhum arquivo selecionado — eles serão salvos junto com a solicitação.</span>
+                <ul class="upload-anexos__lista"></ul>
               </div>
-              <p class="texto-suave anexos-upload__ajuda">Ofício, memorando, foto do local... PDF, imagens ou documentos de escritório, até 10 MB por arquivo. Os arquivos são salvos junto com a solicitação.</p>
+              <p class="texto-suave anexos-upload__ajuda">Ofício, memorando, foto do local... PDF, imagens ou documentos de escritório, até 10 MB por arquivo.</p>
             </div>
           </section>
         {% endif %}

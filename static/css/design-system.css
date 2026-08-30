@@ -1235,8 +1235,30 @@ textarea.form-controle { min-height: 68px; }
   .anexo-item__acoes { width: 100%; justify-content: flex-end; }
 }
 
-.anexos-upload { display: flex; gap: 12px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
-.anexos-upload__arquivo { max-width: 420px; flex: 1 1 260px; }
+.upload-anexos { display: grid; gap: 10px; justify-items: start; margin-top: 4px; }
+.upload-anexos__input {
+  position: absolute; width: 1px; height: 1px; opacity: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.upload-anexos__input:focus-visible ~ .upload-anexos__acoes label {
+  outline: 2px solid var(--cor-dourado-500); outline-offset: 2px;
+}
+.upload-anexos__acoes { display: flex; gap: 10px; flex-wrap: wrap; }
+.upload-anexos__acoes label { cursor: pointer; }
+.upload-anexos__lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; width: 100%; }
+.upload-anexos__item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border: 1px dashed var(--cor-borda);
+  border-radius: var(--raio-sm); background: var(--cor-superficie);
+}
+.upload-anexos__nome { flex: 1 1 auto; min-width: 0; font-size: 0.82rem; font-weight: 600; overflow-wrap: anywhere; }
+.upload-anexos__meta { font-size: 0.72rem; color: var(--cor-texto-suave); white-space: nowrap; }
+.upload-anexos__remover {
+  border: 0; background: none; color: var(--cor-erro);
+  font-size: 1.15rem; line-height: 1; cursor: pointer; padding: 2px 6px;
+}
+.upload-anexos__remover:hover { color: #a03030; }
+
 .anexos-upload__ajuda { margin-top: 6px; font-size: 0.78rem; }
 
 .decision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
