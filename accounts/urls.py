@@ -39,14 +39,7 @@ urlpatterns = [
         ),
         name="senha_reset_concluido",
     ),
-    path(
-        "entrar/",
-        auth_views.LoginView.as_view(
-            template_name="pages/auth/login.html",
-            redirect_authenticated_user=True,
-        ),
-        name="login",
-    ),
+    path("entrar/", views.AcessoView.as_view(), name="login"),
     path("sair/", auth_views.LogoutView.as_view(), name="logout"),
     path("alterar-senha/", views.AlterarSenhaView.as_view(), name="alterar_senha"),
     # Gestão de usuários — perfil administrador.

@@ -1,4 +1,5 @@
 {% extends "layouts/auth.html" %}
+{% load static %}
 
 {% block title %}Recuperar senha — Sistema de Gestão de Eventos Sociais{% endblock %}
 
@@ -7,33 +8,45 @@
   <form method="post" class="auth-card__corpo">
     {% csrf_token %}
 
-    <div>
+    <div class="auth-card__cabecalho">
+      <img class="auth-card__brasao" src="{% static 'icons/favicon.svg' %}" alt="Brasão da Polícia Civil do Paraná">
       <h1 class="auth-card__titulo">Recuperar senha</h1>
       <p class="auth-card__subtitulo">
-        Informe o e-mail cadastrado no seu usuário. Enviaremos um link
-        para você definir uma nova senha.
+        Informe o e-mail cadastrado no seu usuário para receber um link
+        de recuperação de senha.
       </p>
     </div>
 
     {% if form.non_field_errors %}
-      <div class="alerta alerta--error">
-        {% for erro in form.non_field_errors %}{{ erro }}{% endfor %}
+      <div class="auth-alerta" role="alert">
+        <span class="auth-alerta__icone" aria-hidden="true">{% include "components/icon.html" with nome="alert" %}</span>
+        <div>{% for erro in form.non_field_errors %}{{ erro }}{% endfor %}</div>
       </div>
     {% endif %}
 
     <div class="form-campo">
       <label class="form-label" for="id_email">E-mail</label>
-      <input class="form-controle" type="email" name="email" id="id_email"
-             autofocus autocomplete="email" required
-             placeholder="seuemail@pc.pr.gov.br">
-      {% if form.email.errors %}<p class="form-erro">{{ form.email.errors.0 }}</p>{% endif %}
+      <div class="campo-com-icone">
+        <span class="campo-com-icone__icone" aria-hidden="true">{% include "components/icon.html" with nome="mail" %}</span>
+        <input class="form-controle" type="email" name="email" id="id_email"
+               autofocus autocomplete="email" required
+               placeholder="seuemail@pc.pr.gov.br">
+      </div>
+      {% for erro in form.email.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
     </div>
 
-    {% include "components/button.html" with label="Enviar link de recuperação" variante="dourado" tipo="submit" bloco=True %}
-  </form>
+    <button type="submit" class="btn btn--dourado btn--bloco auth-card__entrar">
+      Enviar link de recuperação
+      {% include "components/icon.html" with nome="send" %}
+    </button>
 
-  <p class="auth-card__ajuda">
-    <a href="{% url 'accounts:login' %}">Voltar para o acesso</a>
-  </p>
+    <div class="auth-card__restrito" aria-hidden="true">
+      <span>{% include "components/icon.html" with nome="lock" %}</span>
+    </div>
+
+    <p class="auth-card__link">
+      <a href="{% url 'accounts:login' %}">Voltar para o acesso {% include "components/icon.html" with nome="chevron-right" %}</a>
+    </p>
+  </form>
 </div>
 {% endblock %}

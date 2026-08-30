@@ -842,7 +842,7 @@ textarea.form-controle {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #dfe1e3;
+  background: #eceded;
 }
 
 .auth-shell__conteudo {
@@ -850,15 +850,62 @@ textarea.form-controle {
   display: grid;
   place-items: center;
   padding: var(--esp-6) var(--esp-5);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Marca d'água do brasão à direita: presença institucional sem competir
+   com o card. O tom vem do próprio SVG colorido, lavado para o cinza. */
+.auth-shell__marca {
+  position: absolute;
+  right: -4%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(34vw, 460px);
+  opacity: 0.05;
+  filter: grayscale(1);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Chevrons decorativos à esquerda: um cinza de apoio e o filete dourado,
+   apontando para o card (quadrados rotacionados com só duas bordas). */
+.auth-shell__conteudo::before,
+.auth-shell__conteudo::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  pointer-events: none;
+}
+
+.auth-shell__conteudo::before {
+  left: -21rem;
+  width: 26rem;
+  height: 26rem;
+  transform: translateY(-58%) rotate(45deg);
+  border-top: 2.75rem solid #e4e5e5;
+  border-right: 2.75rem solid #e4e5e5;
+}
+
+.auth-shell__conteudo::after {
+  left: -16rem;
+  width: 24rem;
+  height: 24rem;
+  transform: translateY(-42%) rotate(45deg);
+  border-top: 2px solid var(--cor-dourado-500);
+  border-right: 2px solid var(--cor-dourado-500);
+  opacity: 0.75;
 }
 
 .auth-card {
   width: 100%;
-  max-width: 430px;
+  max-width: 460px;
   background: var(--cor-superficie);
   border-radius: var(--raio-lg);
   box-shadow: var(--sombra-elevada);
   overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 .auth-card__corpo {
@@ -866,6 +913,16 @@ textarea.form-controle {
   display: flex;
   flex-direction: column;
   gap: var(--esp-4);
+}
+
+.auth-card__cabecalho {
+  text-align: center;
+}
+
+.auth-card__brasao {
+  width: 84px;
+  height: auto;
+  margin-bottom: var(--esp-3);
 }
 
 .auth-card__titulo {
@@ -880,6 +937,91 @@ textarea.form-controle {
   color: var(--cor-texto-suave);
 }
 
+/* Alerta de credencial dentro do card, com o ícone alinhado à primeira linha. */
+.auth-alerta {
+  display: flex;
+  gap: var(--esp-3);
+  align-items: flex-start;
+  padding: var(--esp-3) var(--esp-4);
+  border-radius: var(--raio-md);
+  background: var(--cor-erro-fundo);
+  border: 1px solid #f0c9c5;
+  color: var(--cor-erro);
+  font-size: var(--texto-sm);
+}
+
+.auth-alerta__icone { display: flex; padding-top: 2px; }
+.auth-alerta__icone .ui-icon { width: 18px; height: 18px; }
+
+/* Campo com ícone à esquerda (usuário, cadeado, e-mail). */
+.campo-com-icone { position: relative; display: block; }
+
+.campo-com-icone__icone {
+  position: absolute;
+  top: 50%;
+  left: 0.85rem;
+  transform: translateY(-50%);
+  display: flex;
+  color: var(--cor-texto-fraco);
+  pointer-events: none;
+}
+
+.campo-com-icone__icone .ui-icon { width: 17px; height: 17px; }
+.campo-com-icone .form-controle { padding-left: 2.5rem; }
+
+.auth-card__lembrar {
+  color: var(--cor-texto-suave);
+  user-select: none;
+}
+
+.auth-card__entrar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-2);
+  /* Como no modelo visual: a ação de acesso fala em caixa de frase. */
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: var(--texto-md);
+}
+
+.auth-card__entrar .ui-icon { width: 18px; height: 18px; }
+
+/* "Ambiente restrito e monitorado" entre dois fios, com o cadeado. */
+.auth-card__restrito {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  margin-top: var(--esp-2);
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+  white-space: nowrap;
+}
+
+.auth-card__restrito::before,
+.auth-card__restrito::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.auth-card__restrito span { display: flex; color: var(--cor-texto-fraco); }
+.auth-card__restrito .ui-icon { width: 15px; height: 15px; }
+
+.auth-card__link {
+  text-align: center;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.auth-card__link a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+}
+
+.auth-card__link .ui-icon { width: 14px; height: 14px; }
+
 .auth-card__rodape {
   padding: var(--esp-4) var(--esp-6);
   border-top: 1px solid var(--cor-borda);
@@ -892,10 +1034,10 @@ textarea.form-controle {
 }
 
 .auth-card__ajuda {
-  padding: 0 var(--esp-6) var(--esp-5);
   text-align: center;
-  font-size: var(--texto-xs);
+  font-size: var(--texto-sm);
   color: var(--cor-texto-fraco);
+  line-height: 1.6;
 }
 
 /* --------------------------------------------------------------------------

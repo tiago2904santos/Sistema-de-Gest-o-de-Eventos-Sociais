@@ -1,4 +1,5 @@
 {% extends "layouts/auth.html" %}
+{% load static %}
 
 {% block title %}Acesso ao Sistema — Sistema de Gestão de Eventos Sociais{% endblock %}
 
@@ -7,7 +8,8 @@
   <form method="post" class="auth-card__corpo">
     {% csrf_token %}
 
-    <div>
+    <div class="auth-card__cabecalho">
+      <img class="auth-card__brasao" src="{% static 'icons/favicon.svg' %}" alt="Brasão da Polícia Civil do Paraná">
       <h1 class="auth-card__titulo">Acesso ao Sistema</h1>
       <p class="auth-card__subtitulo">
         Informe seu usuário institucional e a senha cadastrada pelo
@@ -16,27 +18,32 @@
     </div>
 
     {% if form.non_field_errors %}
-      <div class="alerta alerta--error">
-        {% for erro in form.non_field_errors %}{{ erro }}{% endfor %}
+      <div class="auth-alerta" role="alert">
+        <span class="auth-alerta__icone" aria-hidden="true">{% include "components/icon.html" with nome="alert" %}</span>
+        <div>{% for erro in form.non_field_errors %}{{ erro }}{% endfor %}</div>
       </div>
     {% endif %}
 
     <div class="form-campo">
       <label class="form-label" for="id_username">Usuário</label>
-      {# O usuário volta preenchido depois de um erro; a senha, nunca. #}
-      <input class="form-controle" type="text" name="username" id="id_username"
-             value="{{ form.username.value|default:'' }}"
-             autofocus autocomplete="username" required
-             placeholder="Informe seu usuário">
+      <div class="campo-com-icone">
+        <span class="campo-com-icone__icone" aria-hidden="true">{% include "components/icon.html" with nome="user" %}</span>
+        {# O usuário volta preenchido depois de um erro; a senha, nunca. #}
+        <input class="form-controle" type="text" name="username" id="id_username"
+               value="{{ form.username.value|default:'' }}"
+               autofocus autocomplete="username" required
+               placeholder="Informe seu usuário">
+      </div>
       {% for erro in form.username.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
     </div>
 
     <div class="form-campo">
       <label class="form-label" for="id_password">Senha</label>
-      <div class="campo-senha" data-campo-senha>
+      <div class="campo-com-icone campo-senha" data-campo-senha>
+        <span class="campo-com-icone__icone" aria-hidden="true">{% include "components/icon.html" with nome="lock" %}</span>
         <input class="form-controle" type="password" name="password" id="id_password"
                autocomplete="current-password" required
-               placeholder="••••••••">
+               placeholder="Informe sua senha">
         <button type="button" class="campo-senha__alternar" data-alternar-senha
                 aria-label="Mostrar senha" aria-pressed="false">
           {% include "components/icon.html" with nome="eye" %}
@@ -45,17 +52,30 @@
       {% for erro in form.password.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
     </div>
 
+    <label class="form-check auth-card__lembrar">
+      <input type="checkbox" name="manter_conectado" value="1">
+      Mantenha-me conectado
+    </label>
+
     <input type="hidden" name="next" value="{{ next }}">
 
-    {% include "components/button.html" with label="Entrar" variante="dourado" tipo="submit" bloco=True %}
-  </form>
+    <button type="submit" class="btn btn--dourado btn--bloco auth-card__entrar">
+      {% include "components/icon.html" with nome="login" %}
+      Entrar
+    </button>
 
-  <div class="auth-card__rodape">
-    Ambiente restrito e monitorado
-  </div>
-  <p class="auth-card__ajuda">
-    <a href="{% url 'accounts:senha_reset' %}">Esqueci minha senha</a>
-    &nbsp;·&nbsp; Problemas com o acesso? Fale com o administrador da unidade.
-  </p>
+    <div class="auth-card__restrito" aria-label="Ambiente restrito e monitorado">
+      <span aria-hidden="true">{% include "components/icon.html" with nome="lock" %}</span>
+      Ambiente restrito e monitorado
+    </div>
+
+    <p class="auth-card__link">
+      <a href="{% url 'accounts:senha_reset' %}">Esqueci minha senha {% include "components/icon.html" with nome="chevron-right" %}</a>
+    </p>
+    <p class="auth-card__ajuda">
+      Problemas com o acesso?<br>
+      Fale com o administrador da unidade.
+    </p>
+  </form>
 </div>
 {% endblock %}

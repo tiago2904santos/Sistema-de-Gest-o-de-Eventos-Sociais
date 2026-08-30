@@ -1,4 +1,5 @@
 {% extends "layouts/auth.html" %}
+{% load static %}
 
 {% block title %}Definir nova senha — Sistema de Gestão de Eventos Sociais{% endblock %}
 
@@ -8,7 +9,8 @@
     <form method="post" class="auth-card__corpo">
       {% csrf_token %}
 
-      <div>
+      <div class="auth-card__cabecalho">
+        <img class="auth-card__brasao" src="{% static 'icons/favicon.svg' %}" alt="Brasão da Polícia Civil do Paraná">
         <h1 class="auth-card__titulo">Definir nova senha</h1>
         <p class="auth-card__subtitulo">
           Escolha uma nova senha para o usuário <strong>{{ form.user.username }}</strong>.
@@ -39,7 +41,8 @@
     </form>
   {% else %}
     <div class="auth-card__corpo">
-      <div>
+      <div class="auth-card__cabecalho">
+        <img class="auth-card__brasao" src="{% static 'icons/favicon.svg' %}" alt="Brasão da Polícia Civil do Paraná">
         <h1 class="auth-card__titulo">Link inválido</h1>
         <p class="auth-card__subtitulo">
           Este link de recuperação já foi usado ou expirou.

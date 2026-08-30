@@ -2,12 +2,29 @@
 
 from django import forms
 from django.contrib.auth import get_user_model, password_validation
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 
 from solicitacoes.permissions import GRUPOS_PADRAO
 
 User = get_user_model()
+
+
+class AcessoForm(AuthenticationForm):
+    """Login com a opção de manter a sessão após fechar o navegador."""
+
+    manter_conectado = forms.BooleanField(
+        required=False, label="Mantenha-me conectado"
+    )
+
+    error_messages = {
+        **AuthenticationForm.error_messages,
+        "invalid_login": (
+            "Usuário ou senha incorretos. Verifique se digitou corretamente. "
+            "Atenção: os campos diferenciam maiúsculas e minúsculas."
+        ),
+    }
 
 PERFIS = [
     ("SOLICITANTE", "Solicitante"),

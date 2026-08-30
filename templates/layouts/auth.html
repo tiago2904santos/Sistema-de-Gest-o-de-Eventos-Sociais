@@ -5,9 +5,11 @@
 {% endcomment %}
 
 {% block body %}
+{% load static %}
 <div class="auth-shell">
   {% include "components/top_header.html" %}
   <div class="auth-shell__conteudo">
+    <img class="auth-shell__marca" src="{% static 'icons/favicon.svg' %}" alt="" aria-hidden="true">
     {% block conteudo %}{% endblock %}
   </div>
 </div>
