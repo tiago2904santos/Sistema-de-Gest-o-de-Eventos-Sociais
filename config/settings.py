@@ -155,7 +155,13 @@ if os.environ.get("EMAIL_HOST"):
     EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
     EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
     EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
-    EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "1") == "1"
+    # TLS (porta 587) é o padrão; use EMAIL_USE_SSL=1 para servidores na 465.
+    EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "0") == "1"
+    EMAIL_USE_TLS = (
+        not EMAIL_USE_SSL and os.environ.get("EMAIL_USE_TLS", "1") == "1"
+    )
+    # Não deixa uma requisição presa se o servidor de e-mail não responder.
+    EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "10"))
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
