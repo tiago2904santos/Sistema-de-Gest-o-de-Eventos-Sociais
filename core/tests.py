@@ -6,7 +6,15 @@ from django.core import mail
 from django.test import TestCase
 from django.urls import reverse
 
-from cadastros.models import Estado, Municipio, OrgaoResponsavel, Regiao, Servico, TipoEvento
+from cadastros.models import (
+    Equipe,
+    Estado,
+    Municipio,
+    OrgaoResponsavel,
+    Regiao,
+    Servico,
+    TipoEvento,
+)
 from core.models import Notificacao
 from solicitacoes import services
 from solicitacoes.models import DecisaoDG, SolicitacaoEvento, StatusSolicitacao
@@ -21,11 +29,12 @@ class NotificacoesWorkflowTests(TestCase):
         cls.solicitante = User.objects.create_user(
             "solicitante", password="x", email="solicitante@pc.pr.gov.br"
         )
-        # Usuário comum: no novo modelo, todo solicitante também analisa.
-        cls.analista = User.objects.create_user(
-            "analista", password="x", email="analista@pc.pr.gov.br"
+        cls.colega = User.objects.create_user(
+            "colega", password="x", email="colega@pc.pr.gov.br"
         )
-        cls.gestor = User.objects.create_user("gestor", password="x")
+        cls.gestor = User.objects.create_user(
+            "gestor", password="x", email="gestor@pc.pr.gov.br"
+        )
         cls.gestor.groups.add(Group.objects.create(name=GRUPO_GESTOR_DG))
 
         regiao = Regiao.objects.create(nome="Região")
@@ -49,41 +58,24 @@ class NotificacoesWorkflowTests(TestCase):
         cls.solicitacao.itens_servico.create(
             servico=Servico.objects.create(nome="Emissão de CIN")
         )
+        cls.solicitacao.itens_equipe.create(
+            equipe=Equipe.objects.create(nome="Equipe Alfa"),
+            quantidade_servidores=4,
+        )
 
-    def test_envio_notifica_equipe_exceto_autor(self):
+    def test_envio_notifica_gestores_dg(self):
         services.enviar(self.solicitacao, self.solicitante)
-        notificacao = Notificacao.objects.get(usuario=self.analista)
-        self.assertIn("aguardando análise", notificacao.titulo)
+        notificacao = Notificacao.objects.get(usuario=self.gestor)
+        self.assertIn("aguardando despacho", notificacao.titulo)
         self.assertIn(
-            reverse("solicitacoes:analisar", args=[self.solicitacao.pk]),
+            reverse("solicitacoes:detalhe", args=[self.solicitacao.pk]),
             notificacao.link,
         )
-        self.assertTrue(Notificacao.objects.filter(usuario=self.gestor).exists())
-        # Quem enviou não é notificado do próprio envio.
+        # Só a DG recebe: nem o autor, nem os demais colegas.
         self.assertFalse(
             Notificacao.objects.filter(usuario=self.solicitante).exists()
         )
-
-    def test_encaminhamento_notifica_gestores_e_solicitante(self):
-        from cadastros.models import Equipe
-
-        self.solicitacao.status = StatusSolicitacao.EM_ANALISE
-        self.solicitacao.itens_equipe.create(
-            equipe=Equipe.objects.create(nome="Alfa"), quantidade_servidores=4
-        )
-        self.solicitacao.tipo_operacao = "DIARIA"
-        self.solicitacao.save()
-        services.encaminhar_para_despacho(self.solicitacao, self.analista)
-        self.assertTrue(
-            Notificacao.objects.filter(
-                usuario=self.gestor, titulo__icontains="aguardando despacho"
-            ).exists()
-        )
-        self.assertTrue(
-            Notificacao.objects.filter(
-                usuario=self.solicitante, titulo__icontains="encaminhada"
-            ).exists()
-        )
+        self.assertFalse(Notificacao.objects.filter(usuario=self.colega).exists())
 
     def test_decisao_notifica_solicitante(self):
         self.solicitacao.status = StatusSolicitacao.AGUARDANDO_DESPACHO
@@ -100,14 +92,14 @@ class NotificacoesWorkflowTests(TestCase):
             services.enviar(self.solicitacao, self.solicitante)
         self.assertEqual(len(mail.outbox), 1)
         email = mail.outbox[0]
-        self.assertIn("aguardando análise", email.subject)
-        self.assertIn(self.analista.email, email.to)
+        self.assertIn("aguardando despacho", email.subject)
+        self.assertIn(self.gestor.email, email.to)
 
     def test_usuario_inativo_nao_recebe(self):
-        self.analista.is_active = False
-        self.analista.save()
+        self.gestor.is_active = False
+        self.gestor.save()
         services.enviar(self.solicitacao, self.solicitante)
-        self.assertFalse(Notificacao.objects.filter(usuario=self.analista).exists())
+        self.assertFalse(Notificacao.objects.filter(usuario=self.gestor).exists())
 
 
 class CentralNotificacoesTests(TestCase):

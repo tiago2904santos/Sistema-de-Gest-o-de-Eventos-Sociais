@@ -4,12 +4,13 @@ Centraliza todas as regras de perfil (Groups) e de estado, usadas pelas views
 para autorizar ações e pelos templates para exibir/ocultar botões.
 
 Modelo de perfis:
-- SOLICITANTE: todo usuário — cria, envia E analisa/encaminha (solicitante e
-  analista são as mesmas pessoas; não existe perfil "analista").
+- SOLICITANTE: todo usuário — cria, revisa e envia para a DG.
 - GESTOR_DG: o único que despacha/autoriza; também gerencia usuários.
 - ADMINISTRADOR: um solicitante que gerencia usuários e cadastros, mas NÃO
   pode despachar.
 - Superusuário ignora todas as restrições.
+
+Fluxo: RASCUNHO → (enviar) → AGUARDANDO_DESPACHO → decisão da DG.
 """
 
 from django.db.models import Q
@@ -30,8 +31,6 @@ STATUS_FINAIS = {
     StatusSolicitacao.NAO_ATENDIDA,
     StatusSolicitacao.CANCELADA,
 }
-
-STATUS_ANALISE = {StatusSolicitacao.ENVIADA, StatusSolicitacao.EM_ANALISE}
 
 
 def _pertence(user, *grupos):
@@ -71,6 +70,7 @@ def queryset_visivel(user, queryset):
 
 
 def pode_editar_dados(user, solicitacao):
+    """A revisão acontece no rascunho, pelo criador (ou superusuário)."""
     if solicitacao.finalizada:
         return user.is_superuser
     return user.is_superuser or (
@@ -79,35 +79,14 @@ def pode_editar_dados(user, solicitacao):
     )
 
 
-def pode_editar_planejamento(user, solicitacao):
-    if solicitacao.finalizada:
-        return user.is_superuser
-    return solicitacao.status in STATUS_ANALISE
-
-
 def pode_editar(user, solicitacao):
-    return pode_editar_dados(user, solicitacao) or pode_editar_planejamento(
-        user, solicitacao
-    )
+    return pode_editar_dados(user, solicitacao)
 
 
 def pode_enviar(user, solicitacao):
     return solicitacao.status == StatusSolicitacao.RASCUNHO and (
         user.is_superuser or solicitacao.criado_por_id == user.pk
     )
-
-
-def pode_analisar(user, solicitacao):
-    """Análise é de todos: qualquer usuário trabalha a fila de enviadas."""
-    return solicitacao.status in STATUS_ANALISE
-
-
-def pode_iniciar_analise(user, solicitacao):
-    return solicitacao.status == StatusSolicitacao.ENVIADA
-
-
-def pode_encaminhar_despacho(user, solicitacao):
-    return solicitacao.status == StatusSolicitacao.EM_ANALISE
 
 
 def pode_despachar(user, solicitacao):
@@ -122,10 +101,6 @@ def acoes_permitidas(user, solicitacao):
         "ver": pode_ver(user, solicitacao),
         "editar": pode_editar(user, solicitacao),
         "editar_dados": pode_editar_dados(user, solicitacao),
-        "editar_planejamento": pode_editar_planejamento(user, solicitacao),
         "enviar": pode_enviar(user, solicitacao),
-        "analisar": pode_analisar(user, solicitacao),
-        "iniciar_analise": pode_iniciar_analise(user, solicitacao),
-        "encaminhar_despacho": pode_encaminhar_despacho(user, solicitacao),
         "despachar": pode_despachar(user, solicitacao),
     }

@@ -66,9 +66,7 @@
                 <td>{% include "components/status_badge.html" with status=s.status label=s.get_status_display %}</td>
                 <td class="tabela__acoes">
                   <div class="tabela__acoes-grupo">
-                    {% if linha.acoes.analisar %}
-                      <a href="{% url 'solicitacoes:analisar' s.pk %}" class="btn btn--dourado btn--compacto">Analisar</a>
-                    {% elif linha.acoes.despachar %}
+                    {% if linha.acoes.despachar %}
                       <a href="{% url 'solicitacoes:detalhe' s.pk %}#despacho-dg" class="btn btn--dourado btn--compacto">Despachar</a>
                     {% elif linha.acoes.enviar %}
                       <a href="{% url 'solicitacoes:editar' s.pk %}" class="btn btn--dourado btn--compacto">Continuar</a>

@@ -1,4 +1,4 @@
-"""Formulários das solicitações de evento social.
+﻿"""Formulários das solicitações de evento social.
 
 A renderização é feita manualmente pelos components aprovados do design
 system; estes formulários concentram validação e persistência.
@@ -117,10 +117,9 @@ def _sincronizar_equipes(solicitacao, selecionadas, quantidades):
 
 
 class SolicitacaoForm(forms.ModelForm):
-    """Dados do pedido, preenchidos pelo solicitante.
+    """Formulário único da solicitação: dados, serviços e planejamento.
 
-    O planejamento operacional (equipes, motorista, tipo de operação, CIN)
-    pertence à etapa de análise e fica no PlanejamentoForm.
+    Quem cria também revisa e envia — não existe etapa de análise separada.
     """
 
     estado = forms.ModelChoiceField(
@@ -128,6 +127,9 @@ class SolicitacaoForm(forms.ModelForm):
     )
     servicos = forms.ModelMultipleChoiceField(
         queryset=Servico.objects.none(), required=False, label="Serviços solicitados"
+    )
+    equipes = forms.ModelMultipleChoiceField(
+        queryset=Equipe.objects.none(), required=False, label="Equipes"
     )
     unidade_movel = _campo_sim_nao("Unidade móvel")
     veiculo_exposicao = _campo_sim_nao("Veículos de exposição")
@@ -148,6 +150,9 @@ class SolicitacaoForm(forms.ModelForm):
             "unidade_movel",
             "veiculo_exposicao",
             "descricao_complementar",
+            "tipo_operacao",
+            "quantidade_cin",
+            "motorista",
         ]
 
     def __init__(self, *args, enviar=False, **kwargs):
@@ -167,14 +172,22 @@ class SolicitacaoForm(forms.ModelForm):
         self.fields["orgao_responsavel"].queryset = _queryset_ativo(
             OrgaoResponsavel, instancia and instancia.orgao_responsavel_id
         )
+        self.fields["motorista"].queryset = _queryset_ativo(
+            Motorista, instancia and instancia.motorista_id
+        )
         self.fields["servicos"].queryset = (
             Servico.objects.filter(ativo=True)
             | (instancia.servicos.all() if instancia else Servico.objects.none())
+        ).distinct()
+        self.fields["equipes"].queryset = (
+            Equipe.objects.filter(ativo=True)
+            | (instancia.equipes.all() if instancia else Equipe.objects.none())
         ).distinct()
         if instancia:
             if instancia.municipio_id:
                 self.initial.setdefault("estado", instancia.municipio.estado_id)
             self.initial.setdefault("servicos", list(instancia.servicos.all()))
+            self.initial.setdefault("equipes", list(instancia.equipes.all()))
         elif not self.is_bound:
             parana = self.fields["estado"].queryset.filter(sigla="PR").first()
             if parana:
@@ -182,6 +195,7 @@ class SolicitacaoForm(forms.ModelForm):
 
     def clean(self):
         dados = super().clean()
+        dados["tipo_operacao"] = dados.get("tipo_operacao") or TipoOperacao.DIARIA
         tipo_evento = dados.get("tipo_evento")
         estado = dados.get("estado")
         municipio = dados.get("municipio")
@@ -208,10 +222,29 @@ class SolicitacaoForm(forms.ModelForm):
                 self.add_error(
                     "servicos", "Selecione ao menos um serviço para enviar a solicitação."
                 )
-        # Sem unidade móvel, um motorista eventualmente definido perde o vínculo.
-        if "unidade_movel" in dados and not dados.get("unidade_movel"):
-            self.instance.motorista = None
+            if not dados.get("equipes"):
+                self.add_error(
+                    "equipes", "Designe ao menos uma equipe para enviar à DG."
+                )
+        # Motorista só se aplica quando há unidade móvel no evento.
+        if not dados.get("unidade_movel"):
+            dados["motorista"] = None
+        self.quantidades_equipes = _ler_quantidades_equipes(
+            self, dados.get("equipes") or []
+        )
+        if self.enviar:
+            for equipe in dados.get("equipes") or []:
+                if not self.quantidades_equipes.get(equipe.pk):
+                    self.add_error(
+                        "equipes",
+                        f"Informe a quantidade de servidores de {equipe} para enviar à DG.",
+                    )
+                    break
         return dados
+
+    def clean_motorista(self):
+        motorista = self.cleaned_data.get("motorista")
+        return motorista if self.cleaned_data.get("unidade_movel") else None
 
     @transaction.atomic
     def save(self, criado_por=None):
@@ -222,60 +255,6 @@ class SolicitacaoForm(forms.ModelForm):
         _sincronizar_vinculos(
             solicitacao.itens_servico, "servico", self.cleaned_data.get("servicos") or []
         )
-        return solicitacao
-
-
-class PlanejamentoForm(forms.ModelForm):
-    """Edição restrita ao planejamento operacional (perfil analista)."""
-
-    equipes = forms.ModelMultipleChoiceField(
-        queryset=Equipe.objects.none(), required=False, label="Equipes"
-    )
-    unidade_movel = _campo_sim_nao("Unidade móvel")
-    veiculo_exposicao = _campo_sim_nao("Veículos de exposição")
-
-    class Meta:
-        model = SolicitacaoEvento
-        fields = [
-            "unidade_movel",
-            "veiculo_exposicao",
-            "descricao_complementar",
-            "tipo_operacao",
-            "quantidade_cin",
-            "motorista",
-        ]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        instancia = self.instance if self.instance.pk else None
-        self.fields["motorista"].queryset = _queryset_ativo(
-            Motorista, instancia and instancia.motorista_id
-        )
-        self.fields["equipes"].queryset = (
-            Equipe.objects.filter(ativo=True)
-            | (instancia.equipes.all() if instancia else Equipe.objects.none())
-        ).distinct()
-        if instancia:
-            self.initial.setdefault("equipes", list(instancia.equipes.all()))
-
-    def clean(self):
-        dados = super().clean()
-        dados["tipo_operacao"] = dados.get("tipo_operacao") or TipoOperacao.DIARIA
-        # Motorista só se aplica quando há unidade móvel no evento.
-        if not dados.get("unidade_movel"):
-            dados["motorista"] = None
-        self.quantidades_equipes = _ler_quantidades_equipes(
-            self, dados.get("equipes") or []
-        )
-        return dados
-
-    def clean_motorista(self):
-        motorista = self.cleaned_data.get("motorista")
-        return motorista if self.cleaned_data.get("unidade_movel") else None
-
-    @transaction.atomic
-    def save(self, criado_por=None):
-        solicitacao = super().save()
         _sincronizar_equipes(
             solicitacao,
             self.cleaned_data.get("equipes") or [],

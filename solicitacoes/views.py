@@ -1,4 +1,4 @@
-from django.contrib import messages
+﻿from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from .forms import DespachoForm, FiltroSolicitacoesForm, PlanejamentoForm, SolicitacaoForm
+from .forms import DespachoForm, FiltroSolicitacoesForm, SolicitacaoForm
 from .models import AcaoHistorico, SolicitacaoEvento, StatusSolicitacao, TipoOperacao
 from . import permissions, services
 
@@ -79,7 +79,7 @@ def _contexto_formulario(request, form, solicitacao=None):
     if solicitacao:
         acoes = permissions.acoes_permitidas(request.user, solicitacao)
     else:
-        acoes = {"editar_dados": True, "editar_planejamento": True, "despachar": False}
+        acoes = {"editar_dados": True, "enviar": True, "despachar": False}
 
     valores = _valores(form)
     # Campos fora do formulário (seções desabilitadas) exibem o valor salvo.
@@ -163,14 +163,11 @@ def _contexto_formulario(request, form, solicitacao=None):
         "equipes_marcadas": equipes_marcadas,
         "timeline": services.montar_timeline(solicitacao),
         "dados_desabilitado": bool(solicitacao) and not acoes["editar_dados"],
-        # Quem edita o formulário completo também edita o planejamento; senão,
-        # os campos desabilitados não seriam enviados e seriam apagados no save.
-        "planejamento_desabilitado": bool(solicitacao)
-        and not (acoes["editar_dados"] or acoes["editar_planejamento"]),
+        # Formulário único: o planejamento acompanha a edição dos dados.
+        "planejamento_desabilitado": bool(solicitacao) and not acoes["editar_dados"],
         "mostrar_enviar": acoes["enviar"] if solicitacao else True,
         "mostrar_despacho_dg": bool(solicitacao)
         and permissions.eh_gestor_dg(request.user),
-        "modo_analise": bool(solicitacao) and acoes["encaminhar_despacho"],
     }
 
 
@@ -224,12 +221,9 @@ def nova_solicitacao(request):
 
 @login_required
 def editar_solicitacao(request, pk):
-    """Edição dos dados do pedido — restrita a quem pode editar os dados."""
+    """Revisão do rascunho pelo criador, antes do envio à DG."""
     solicitacao = _obter_visivel(request, pk)
     if not permissions.pode_editar_dados(request.user, solicitacao):
-        # Analista chega aqui por link antigo: envia direto para a análise.
-        if permissions.pode_analisar(request.user, solicitacao):
-            return redirect("solicitacoes:analisar", pk=solicitacao.pk)
         raise PermissionDenied
 
     if request.method == "POST":
@@ -272,77 +266,11 @@ def editar_solicitacao(request, pk):
     return render(request, "pages/solicitacoes/form.html", contexto)
 
 
-@login_required
-def analisar_solicitacao(request, pk):
-    """Tela de análise do analista: um único lugar para todo o trabalho.
-
-    Ao abrir uma solicitação ENVIADA, a análise inicia automaticamente
-    (sem o clique burocrático de "iniciar análise"). Os dados do pedido
-    aparecem em leitura; estrutura e planejamento ficam editáveis, com
-    "Salvar análise" e "Salvar e encaminhar para DG" na mesma tela.
-    """
-    solicitacao = _obter_visivel(request, pk)
-    if not permissions.pode_analisar(request.user, solicitacao):
-        raise PermissionDenied
-
-    if solicitacao.status == StatusSolicitacao.ENVIADA:
-        services.iniciar_analise(solicitacao, request.user)
-        messages.info(
-            request, f"Análise da solicitação #{solicitacao.pk} iniciada."
-        )
-
-    if request.method == "POST":
-        acao = request.POST.get("acao", "salvar_analise")
-        form = PlanejamentoForm(request.POST, instance=solicitacao)
-        if form.is_valid():
-            try:
-                with transaction.atomic():
-                    solicitacao = form.save()
-                    services.registrar_historico(
-                        solicitacao,
-                        request.user,
-                        AcaoHistorico.PLANEJAMENTO,
-                        status_novo=solicitacao.status,
-                    )
-                    if acao == "encaminhar_despacho":
-                        services.encaminhar_para_despacho(solicitacao, request.user)
-            except ValidationError as erro:
-                for mensagem_erro in erro.messages:
-                    messages.error(request, mensagem_erro)
-            else:
-                if acao == "encaminhar_despacho":
-                    messages.success(
-                        request,
-                        f"Análise concluída: solicitação #{solicitacao.pk} encaminhada para a DG.",
-                    )
-                    return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
-                messages.success(request, "Análise salva.")
-                return redirect("solicitacoes:analisar", pk=solicitacao.pk)
-        else:
-            messages.error(request, "Corrija os campos destacados para continuar.")
-    else:
-        form = PlanejamentoForm(instance=solicitacao)
-
-    contexto = _contexto_formulario(request, form, solicitacao)
-    contexto["modo_analise"] = True
-    # O despacho pertence à DG, na tela de detalhe — não à análise.
-    contexto["mostrar_despacho_dg"] = False
-    contexto["titulo_pagina"] = f"Análise da Solicitação #{solicitacao.pk}"
-    contexto["subtitulo_pagina"] = (
-        "Complete o planejamento e encaminhe a solicitação para a decisão da DG."
-    )
-    return render(request, "pages/solicitacoes/form.html", contexto)
-
-
 # ---------------------------------------------------------------------------
 # Listagem e detalhe
 # ---------------------------------------------------------------------------
 
 FILAS = {
-    "analise": {
-        "rotulo": "Para analisar",
-        "status": [StatusSolicitacao.ENVIADA, StatusSolicitacao.EM_ANALISE],
-    },
     "despacho": {
         "rotulo": "Aguardando despacho",
         "status": [StatusSolicitacao.AGUARDANDO_DESPACHO],
@@ -356,8 +284,8 @@ FILAS = {
 
 def _filas_do_usuario(user, queryset):
     """Atalhos de fila com contagem, conforme o perfil do usuário."""
-    # Todos analisam; a fila de despacho é exclusiva da DG.
-    filas = ["analise"]
+    # A fila de despacho é da DG; rascunhos são de cada um.
+    filas = []
     if permissions.eh_gestor_dg(user):
         filas.append("despacho")
     filas.append("rascunhos")
@@ -458,7 +386,6 @@ def detalhe_solicitacao(request, pk):
             "dados_desabilitado": True,
             "planejamento_desabilitado": True,
             "mostrar_enviar": False,
-            "modo_analise": False,
         }
     )
     return render(request, "pages/solicitacoes/form.html", contexto)
@@ -488,18 +415,6 @@ def enviar_solicitacao(request, pk):
     return _executar_transicao(
         request, solicitacao, services.enviar,
         f"Solicitação #{solicitacao.pk} enviada com sucesso.",
-    )
-
-
-@login_required
-@require_POST
-def encaminhar_despacho(request, pk):
-    solicitacao = _obter_visivel(request, pk)
-    if not permissions.pode_encaminhar_despacho(request.user, solicitacao):
-        raise PermissionDenied
-    return _executar_transicao(
-        request, solicitacao, services.encaminhar_para_despacho,
-        f"Solicitação #{solicitacao.pk} encaminhada para despacho da DG.",
     )
 
 

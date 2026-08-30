@@ -1,7 +1,9 @@
 """Camada de serviço do workflow de solicitações.
 
-Todas as mudanças de status passam por aqui: as views nunca alteram o campo
-`status` diretamente, e transições inválidas levantam `TransicaoInvalida`.
+Fluxo enxuto: o solicitante cria/revisa e envia direto para a DG; a DG
+despacha. Todas as mudanças de status passam por aqui: as views nunca alteram
+o campo `status` diretamente, e transições inválidas levantam
+`TransicaoInvalida`.
 """
 
 from django.core.exceptions import ValidationError
@@ -9,7 +11,7 @@ from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
 
-from core.notificacoes import notificar, usuarios_ativos, usuarios_do_grupo
+from core.notificacoes import notificar, usuarios_do_grupo
 
 from .models import (
     AcaoHistorico,
@@ -25,9 +27,7 @@ class TransicaoInvalida(ValidationError):
 
 
 TRANSICOES_VALIDAS = {
-    StatusSolicitacao.RASCUNHO: {StatusSolicitacao.ENVIADA},
-    StatusSolicitacao.ENVIADA: {StatusSolicitacao.EM_ANALISE},
-    StatusSolicitacao.EM_ANALISE: {StatusSolicitacao.AGUARDANDO_DESPACHO},
+    StatusSolicitacao.RASCUNHO: {StatusSolicitacao.AGUARDANDO_DESPACHO},
     StatusSolicitacao.AGUARDANDO_DESPACHO: {
         StatusSolicitacao.ATENDIDA,
         StatusSolicitacao.NAO_ATENDIDA,
@@ -86,24 +86,19 @@ def _transicionar(solicitacao, novo_status):
 
 
 def pendencias_para_envio(solicitacao):
-    """Lista de rótulos de campos ainda pendentes para o envio."""
+    """Pendências para enviar à DG: dados, serviços e planejamento mínimo."""
     faltas = [
         rotulo
         for campo, rotulo in CAMPOS_OBRIGATORIOS_ENVIO.items()
         if not getattr(solicitacao, campo)
     ]
-    if solicitacao.pk and not solicitacao.itens_servico.exists():
-        faltas.append("Ao menos um serviço solicitado")
-    return faltas
-
-
-def pendencias_para_despacho(solicitacao):
-    """Pendências do planejamento operacional antes do despacho."""
-    faltas = []
-    if not solicitacao.itens_equipe.exists():
-        faltas.append("Ao menos uma equipe designada")
-    elif solicitacao.itens_equipe.exclude(quantidade_servidores__gt=0).exists():
-        faltas.append("Quantidade de servidores de cada equipe")
+    if solicitacao.pk:
+        if not solicitacao.itens_servico.exists():
+            faltas.append("Ao menos um serviço solicitado")
+        if not solicitacao.itens_equipe.exists():
+            faltas.append("Ao menos uma equipe designada")
+        elif solicitacao.itens_equipe.exclude(quantidade_servidores__gt=0).exists():
+            faltas.append("Quantidade de servidores de cada equipe")
     if not solicitacao.tipo_operacao:
         faltas.append("Tipo de operação")
     return faltas
@@ -111,6 +106,7 @@ def pendencias_para_despacho(solicitacao):
 
 @transaction.atomic
 def enviar(solicitacao, usuario):
+    """Envia a solicitação revisada direto para o despacho da DG."""
     if solicitacao.status != StatusSolicitacao.RASCUNHO:
         raise TransicaoInvalida("Apenas rascunhos podem ser enviados.")
     faltas = pendencias_para_envio(solicitacao)
@@ -118,7 +114,7 @@ def enviar(solicitacao, usuario):
         raise ValidationError(
             "Preencha os campos obrigatórios antes de enviar: " + ", ".join(faltas) + "."
         )
-    anterior = _transicionar(solicitacao, StatusSolicitacao.ENVIADA)
+    anterior = _transicionar(solicitacao, StatusSolicitacao.AGUARDANDO_DESPACHO)
     solicitacao.save()
     registrar_historico(
         solicitacao,
@@ -127,65 +123,13 @@ def enviar(solicitacao, usuario):
         status_anterior=anterior,
         status_novo=solicitacao.status,
     )
-    # Todos analisam (solicitante = analista); avisa a equipe, menos o autor.
-    notificar(
-        usuarios_ativos(exceto=usuario),
-        f"Solicitação #{solicitacao.pk} aguardando análise",
-        f"{solicitacao.municipio or 'Município a definir'} — "
-        f"{solicitacao.tipo_evento or 'tipo a definir'}.",
-        link=reverse("solicitacoes:analisar", args=[solicitacao.pk]),
-    )
-    return solicitacao
-
-
-@transaction.atomic
-def iniciar_analise(solicitacao, usuario):
-    anterior = _transicionar(solicitacao, StatusSolicitacao.EM_ANALISE)
-    solicitacao.save()
-    registrar_historico(
-        solicitacao,
-        usuario,
-        AcaoHistorico.INICIO_ANALISE,
-        status_anterior=anterior,
-        status_novo=solicitacao.status,
-    )
-    return solicitacao
-
-
-@transaction.atomic
-def encaminhar_para_despacho(solicitacao, usuario):
-    if solicitacao.status != StatusSolicitacao.EM_ANALISE:
-        raise TransicaoInvalida(
-            "Somente solicitações em análise podem ser encaminhadas para despacho."
-        )
-    faltas = pendencias_para_despacho(solicitacao)
-    if faltas:
-        raise ValidationError(
-            "Complete o planejamento operacional antes do despacho: "
-            + ", ".join(faltas)
-            + "."
-        )
-    anterior = _transicionar(solicitacao, StatusSolicitacao.AGUARDANDO_DESPACHO)
-    solicitacao.save()
-    registrar_historico(
-        solicitacao,
-        usuario,
-        AcaoHistorico.ENCAMINHAMENTO_DESPACHO,
-        status_anterior=anterior,
-        status_novo=solicitacao.status,
-    )
     link_detalhe = reverse("solicitacoes:detalhe", args=[solicitacao.pk])
     notificar(
         usuarios_do_grupo("GESTOR_DG"),
         f"Solicitação #{solicitacao.pk} aguardando despacho",
-        f"{solicitacao.municipio or 'Município a definir'} — análise concluída.",
+        f"{solicitacao.municipio or 'Município a definir'} — "
+        f"{solicitacao.tipo_evento or 'tipo a definir'}.",
         link=f"{link_detalhe}#despacho-dg",
-    )
-    notificar(
-        [solicitacao.criado_por],
-        f"Solicitação #{solicitacao.pk} encaminhada para a DG",
-        "A análise foi concluída e a decisão está com a Diretoria-Geral.",
-        link=link_detalhe,
     )
     return solicitacao
 
@@ -243,40 +187,28 @@ def montar_timeline(solicitacao=None):
         return timezone.localtime(registro.criado_em).strftime("%d/%m/%Y %H:%M") if registro else None
 
     status = solicitacao.status if solicitacao else StatusSolicitacao.RASCUNHO
-    ordem = [
-        StatusSolicitacao.RASCUNHO,
-        StatusSolicitacao.ENVIADA,
-        StatusSolicitacao.EM_ANALISE,
-        StatusSolicitacao.AGUARDANDO_DESPACHO,
-    ]
-    # Posição no fluxo: 0..3 conforme a ordem acima; 4 = finalizada.
-    posicao = ordem.index(status) if status in ordem else len(ordem)
+    rascunho = status == StatusSolicitacao.RASCUNHO
+    aguardando = status == StatusSolicitacao.AGUARDANDO_DESPACHO
+    finalizada = bool(solicitacao) and solicitacao.finalizada
 
     etapas = [
         {
-            "titulo": "Enviar solicitação",
+            "titulo": "Enviar para a DG",
             "subtitulo": quando(AcaoHistorico.ENVIO)
-            or ("Aguardando preenchimento" if posicao == 0 else "Pendente"),
-            "estado": "concluido" if posicao >= 1 else "atual",
-        },
-        {
-            "titulo": "Análise",
-            "subtitulo": quando(AcaoHistorico.INICIO_ANALISE)
-            or ("Aguardando início" if posicao == 1 else "Pendente"),
-            "estado": "concluido"
-            if posicao >= 3
-            else ("atual" if posicao in (1, 2) else "pendente"),
+            or ("Aguardando preenchimento" if rascunho else "Pendente"),
+            "estado": "atual" if rascunho else "concluido",
         },
         {
             "titulo": "Aguardando despacho DG",
-            "subtitulo": quando(AcaoHistorico.ENCAMINHAMENTO_DESPACHO) or "Pendente",
+            "subtitulo": (quando(AcaoHistorico.ENVIO) if aguardando else None)
+            or "Pendente",
             "estado": "concluido"
-            if posicao >= 4
-            else ("atual" if posicao == 3 else "pendente"),
+            if finalizada
+            else ("atual" if aguardando else "pendente"),
         },
     ]
 
-    if solicitacao and solicitacao.finalizada:
+    if finalizada:
         rotulos = {
             StatusSolicitacao.ATENDIDA: "Atendida",
             StatusSolicitacao.NAO_ATENDIDA: "Não atendida",

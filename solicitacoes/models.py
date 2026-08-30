@@ -5,13 +5,17 @@ from django.utils import timezone
 
 
 class StatusSolicitacao(models.TextChoices):
+    """Fluxo enxuto: rascunho → aguardando despacho → decisão da DG."""
+
     RASCUNHO = "RASCUNHO", "Rascunho"
-    ENVIADA = "ENVIADA", "Enviada"
-    EM_ANALISE = "EM_ANALISE", "Em análise"
     AGUARDANDO_DESPACHO = "AGUARDANDO_DESPACHO", "Aguardando despacho"
     ATENDIDA = "ATENDIDA", "Atendida"
     NAO_ATENDIDA = "NAO_ATENDIDA", "Não atendida"
     CANCELADA = "CANCELADA", "Cancelada"
+
+
+# Status extintos que ainda aparecem em registros antigos de histórico.
+STATUS_LEGADOS = {"ENVIADA": "Enviada", "EM_ANALISE": "Em análise"}
 
 
 class DecisaoDG(models.TextChoices):
@@ -316,12 +320,9 @@ class HistoricoSolicitacao(models.Model):
         related_name="historico_solicitacoes",
     )
     acao = models.CharField("ação", max_length=30, choices=AcaoHistorico.choices)
-    status_anterior = models.CharField(
-        "status anterior", max_length=25, choices=StatusSolicitacao.choices, blank=True
-    )
-    status_novo = models.CharField(
-        "status novo", max_length=25, choices=StatusSolicitacao.choices, blank=True
-    )
+    # Sem choices: o histórico preserva status extintos de fluxos antigos.
+    status_anterior = models.CharField("status anterior", max_length=25, blank=True)
+    status_novo = models.CharField("status novo", max_length=25, blank=True)
     observacao = models.TextField("observação", blank=True)
     criado_em = models.DateTimeField("criado em", auto_now_add=True)
 
@@ -337,9 +338,12 @@ class HistoricoSolicitacao(models.Model):
     def rotulo_status(self):
         """Exibe a decisão da DG no histórico, em vez do estado resultante."""
         if self.acao == AcaoHistorico.DECISAO:
-            return {
+            rotulo = {
                 StatusSolicitacao.ATENDIDA: DecisaoDG.ATENDER.label,
                 StatusSolicitacao.NAO_ATENDIDA: DecisaoDG.NAO_ATENDER.label,
                 StatusSolicitacao.CANCELADA: DecisaoDG.CANCELADO.label,
-            }.get(self.status_novo, self.get_status_novo_display())
-        return self.get_status_novo_display()
+            }.get(self.status_novo)
+            if rotulo:
+                return rotulo
+        rotulos = {**dict(StatusSolicitacao.choices), **STATUS_LEGADOS}
+        return rotulos.get(self.status_novo, self.status_novo)

@@ -26,23 +26,16 @@
           {% if acoes.enviar %}
             <form method="post" action="{% url 'solicitacoes:enviar' solicitacao.pk %}">
               {% csrf_token %}
-              {% include "components/button.html" with label="Enviar solicitação" variante="dourado" tipo="submit" %}
+              {% include "components/button.html" with label="Enviar para a DG" variante="dourado" tipo="submit" %}
             </form>
-          {% elif acoes.analisar %}
-            {% url 'solicitacoes:analisar' solicitacao.pk as url_analisar %}
-            {% include "components/button.html" with label="Analisar solicitação" variante="dourado" href=url_analisar %}
           {% elif acoes.despachar %}
             {% include "components/button.html" with label="Registrar despacho" variante="dourado" href="#despacho-dg" %}
           {% endif %}
-        {% elif modo_analise %}
-          {% include "components/button.html" with label="Voltar" variante="secundario" href=url_voltar %}
-          {% include "components/button.html" with label="Salvar análise" variante="secundario" tipo="submit" name="acao" value="salvar_analise" %}
-          {% include "components/button.html" with label="Salvar e encaminhar para DG" variante="dourado" tipo="submit" name="acao" value="encaminhar_despacho" %}
         {% else %}
           {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
           {% include "components/button.html" with label="Salvar rascunho" variante="secundario" tipo="submit" name="acao" value="rascunho" formnovalidate=True %}
           {% if mostrar_enviar %}
-            {% include "components/button.html" with label="Enviar solicitação" variante="dourado" tipo="submit" name="acao" value="enviar" %}
+            {% include "components/button.html" with label="Enviar para a DG" variante="dourado" tipo="submit" name="acao" value="enviar" %}
           {% endif %}
         {% endif %}
       </div>
@@ -115,8 +108,7 @@
           </div>
         </section>
 
-        {% if modo_analise or somente_leitura %}
-        <section class="section-card" id="planejamento"{% if modo_analise %} data-rolar-para{% endif %}>
+        <section class="section-card" id="planejamento">
           {% include "components/section_card.html" with numero="4" titulo="Planejamento operacional" %}
           <div class="section-card__corpo">
             <div class="form-grid">
@@ -144,7 +136,6 @@
             </div>
           </div>
         </section>
-        {% endif %}
 
         {% if mostrar_despacho_dg %}
           <section class="section-card" id="despacho-dg">
