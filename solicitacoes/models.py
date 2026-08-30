@@ -297,6 +297,51 @@ class SolicitacaoEventoEquipe(models.Model):
         return resultado
 
 
+def _caminho_anexo(instance, filename):
+    return f"solicitacoes/{instance.solicitacao_id}/{filename}"
+
+
+class AnexoSolicitacao(models.Model):
+    """Documento anexado à solicitação (ofício, memorando, foto do local...)."""
+
+    solicitacao = models.ForeignKey(
+        SolicitacaoEvento,
+        verbose_name="solicitação",
+        on_delete=models.CASCADE,
+        related_name="anexos",
+    )
+    arquivo = models.FileField("arquivo", upload_to=_caminho_anexo, max_length=500)
+    nome_original = models.CharField("nome original", max_length=255)
+    tamanho = models.PositiveIntegerField("tamanho (bytes)", default=0)
+    enviado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="enviado por",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="anexos_enviados",
+    )
+    criado_em = models.DateTimeField("criado em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "anexo da solicitação"
+        verbose_name_plural = "anexos da solicitação"
+        ordering = ["criado_em", "pk"]
+
+    def __str__(self):
+        return f"{self.solicitacao_id} — {self.nome_original}"
+
+    @property
+    def tamanho_legivel(self):
+        if self.tamanho >= 1024 * 1024:
+            return f"{self.tamanho / (1024 * 1024):.1f} MB"
+        return f"{max(self.tamanho, 1) / 1024:.0f} KB"
+
+    def delete(self, *args, **kwargs):
+        self.arquivo.delete(save=False)
+        return super().delete(*args, **kwargs)
+
+
 class AcaoHistorico(models.TextChoices):
     CRIACAO = "CRIACAO", "Rascunho criado"
     ATUALIZACAO = "ATUALIZACAO", "Solicitação atualizada"

@@ -16,6 +16,9 @@ db.sqlite3
 # Arquivos estáticos coletados
 staticfiles/
 
+# Anexos enviados pelos usuários
+media/
+
 # IDEs e sistema
 .vscode/
 .idea/

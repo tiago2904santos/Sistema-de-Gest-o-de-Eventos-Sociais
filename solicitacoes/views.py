@@ -4,11 +4,18 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from .forms import DespachoForm, FiltroSolicitacoesForm, SolicitacaoForm
-from .models import AcaoHistorico, SolicitacaoEvento, StatusSolicitacao, TipoOperacao
+from .forms import AnexoForm, DespachoForm, FiltroSolicitacoesForm, SolicitacaoForm
+from .models import (
+    AcaoHistorico,
+    AnexoSolicitacao,
+    SolicitacaoEvento,
+    StatusSolicitacao,
+    TipoOperacao,
+)
 from . import permissions, services
 
 ITENS_POR_PAGINA = 15
@@ -168,6 +175,10 @@ def _contexto_formulario(request, form, solicitacao=None):
         "mostrar_enviar": acoes["enviar"] if solicitacao else True,
         "mostrar_despacho_dg": bool(solicitacao)
         and permissions.eh_gestor_dg(request.user),
+        "anexos": list(solicitacao.anexos.select_related("enviado_por"))
+        if solicitacao
+        else [],
+        "pode_gerenciar_anexos": acoes["editar_dados"] if solicitacao else False,
     }
 
 
@@ -422,6 +433,68 @@ def enviar_solicitacao(request, pk):
         request, solicitacao, services.enviar,
         f"Solicitação #{solicitacao.pk} enviada com sucesso.",
     )
+
+
+# ---------------------------------------------------------------------------
+# Anexos
+# ---------------------------------------------------------------------------
+
+@login_required
+@require_POST
+def adicionar_anexo(request, pk):
+    solicitacao = _obter_visivel(request, pk)
+    if not permissions.pode_editar_dados(request.user, solicitacao):
+        raise PermissionDenied
+    form = AnexoForm(request.POST, request.FILES)
+    if form.is_valid():
+        arquivo = form.cleaned_data["arquivo"]
+        AnexoSolicitacao.objects.create(
+            solicitacao=solicitacao,
+            arquivo=arquivo,
+            nome_original=arquivo.name,
+            tamanho=arquivo.size,
+            enviado_por=request.user,
+        )
+        services.registrar_historico(
+            solicitacao, request.user, AcaoHistorico.ATUALIZACAO,
+            status_novo=solicitacao.status,
+            observacao=f"Anexo adicionado: {arquivo.name}",
+        )
+        messages.success(request, f"Arquivo {arquivo.name} anexado.")
+    else:
+        for erros_campo in form.errors.values():
+            for erro in erros_campo:
+                messages.error(request, erro)
+    return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
+
+
+@login_required
+def baixar_anexo(request, pk, anexo_pk):
+    solicitacao = _obter_visivel(request, pk)
+    anexo = get_object_or_404(solicitacao.anexos, pk=anexo_pk)
+    return FileResponse(
+        anexo.arquivo.open("rb"),
+        as_attachment=True,
+        filename=anexo.nome_original,
+    )
+
+
+@login_required
+@require_POST
+def excluir_anexo(request, pk, anexo_pk):
+    solicitacao = _obter_visivel(request, pk)
+    if not permissions.pode_editar_dados(request.user, solicitacao):
+        raise PermissionDenied
+    anexo = get_object_or_404(solicitacao.anexos, pk=anexo_pk)
+    nome = anexo.nome_original
+    anexo.delete()
+    services.registrar_historico(
+        solicitacao, request.user, AcaoHistorico.ATUALIZACAO,
+        status_novo=solicitacao.status,
+        observacao=f"Anexo removido: {nome}",
+    )
+    messages.success(request, f"Anexo {nome} removido.")
+    return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
 
 
 @login_required

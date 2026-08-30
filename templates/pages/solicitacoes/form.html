@@ -143,9 +143,58 @@
           </div>
         </section>
 
+        {% if solicitacao %}
+          <section class="section-card" id="anexos">
+            {% include "components/section_card.html" with numero="5" titulo="Anexos" %}
+            <div class="section-card__corpo">
+              {% if anexos %}
+                <div class="tabela-wrapper">
+                  <table class="tabela">
+                    <thead><tr><th>Arquivo</th><th>Tamanho</th><th>Enviado por</th><th>Data</th><th>Ações</th></tr></thead>
+                    <tbody>
+                      {% for anexo in anexos %}
+                        <tr>
+                          <td>{{ anexo.nome_original }}</td>
+                          <td>{{ anexo.tamanho_legivel }}</td>
+                          <td>{{ anexo.enviado_por|default:"—" }}</td>
+                          <td>{{ anexo.criado_em|date:"d/m/Y H:i" }}</td>
+                          <td class="tabela__acoes">
+                            <div class="tabela__acoes-grupo">
+                              <a href="{% url 'solicitacoes:anexo_baixar' solicitacao.pk anexo.pk %}" class="btn btn--secundario btn--compacto">Baixar</a>
+                              {% if pode_gerenciar_anexos %}
+                                <button type="submit" form="form-anexo-excluir-{{ anexo.pk }}" class="btn btn--perigo-suave btn--compacto">Excluir</button>
+                              {% endif %}
+                            </div>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <p class="texto-suave">Nenhum arquivo anexado.</p>
+              {% endif %}
+              {% if pode_gerenciar_anexos %}
+                <div class="anexos-upload">
+                  <input type="file" name="arquivo" form="form-anexo-upload" class="form-controle anexos-upload__arquivo" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods" required>
+                  <button type="submit" form="form-anexo-upload" class="btn btn--secundario">Anexar arquivo</button>
+                </div>
+                <p class="texto-suave anexos-upload__ajuda">PDF, imagens ou documentos de escritório, até 10 MB por arquivo.</p>
+              {% endif %}
+            </div>
+          </section>
+        {% elif not somente_leitura %}
+          <section class="section-card" id="anexos">
+            {% include "components/section_card.html" with numero="5" titulo="Anexos" %}
+            <div class="section-card__corpo">
+              <p class="texto-suave">Salve o rascunho para anexar arquivos (ofício, memorando, foto do local...).</p>
+            </div>
+          </section>
+        {% endif %}
+
         {% if mostrar_despacho_dg %}
           <section class="section-card" id="despacho-dg">
-            {% include "components/section_card.html" with numero="5" titulo="Despacho DG" %}
+            {% include "components/section_card.html" with numero="6" titulo="Despacho DG" %}
             <div class="section-card__corpo">
               {% if somente_leitura and acoes.despachar %}
                 <form method="post" action="{% url 'solicitacoes:despachar' solicitacao.pk %}">
@@ -185,7 +234,7 @@
 
         {% if somente_leitura %}
           <section class="section-card">
-            {% include "components/section_card.html" with numero="6" titulo="Histórico" %}
+            {% include "components/section_card.html" with numero="7" titulo="Histórico" %}
             <div class="section-card__corpo">
               <div class="tabela-wrapper">
                 <table class="tabela">
@@ -220,5 +269,14 @@
     </div>
   {% else %}
     </form>
+  {% endif %}
+
+  {% if solicitacao and pode_gerenciar_anexos %}
+    {# Formulários auxiliares dos anexos: os controles na seção 5 apontam #}
+    {# para cá via atributo form, evitando aninhar formulários. #}
+    <form id="form-anexo-upload" method="post" action="{% url 'solicitacoes:anexo_adicionar' solicitacao.pk %}" enctype="multipart/form-data">{% csrf_token %}</form>
+    {% for anexo in anexos %}
+      <form id="form-anexo-excluir-{{ anexo.pk }}" method="post" action="{% url 'solicitacoes:anexo_excluir' solicitacao.pk anexo.pk %}">{% csrf_token %}</form>
+    {% endfor %}
   {% endif %}
 {% endblock %}

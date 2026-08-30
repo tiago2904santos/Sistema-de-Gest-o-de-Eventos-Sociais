@@ -1,9 +1,12 @@
+import shutil
+import tempfile
 from datetime import date
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from cadastros.models import (
@@ -830,3 +833,132 @@ class ViewsTests(BaseSolicitacaoTestCase):
         pks = [linha["solicitacao"].pk for linha in resposta.context["linhas"]]
         self.assertIn(enviada.pk, pks)
         self.assertNotIn(rascunho.pk, pks)
+
+
+_MEDIA_TESTES = tempfile.mkdtemp(prefix="anexos-teste-")
+
+
+@override_settings(MEDIA_ROOT=_MEDIA_TESTES)
+class AnexosTests(BaseSolicitacaoTestCase):
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(_MEDIA_TESTES, ignore_errors=True)
+
+    def arquivo(self, nome="oficio.pdf", conteudo=b"%PDF-1.4 teste"):
+        return SimpleUploadedFile(nome, conteudo, content_type="application/pdf")
+
+    def test_criador_anexa_no_rascunho(self):
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        resposta = self.client.post(
+            reverse("solicitacoes:anexo_adicionar", args=[solicitacao.pk]),
+            {"arquivo": self.arquivo()},
+        )
+        self.assertRedirects(
+            resposta, reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+        anexo = solicitacao.anexos.get()
+        self.assertEqual(anexo.nome_original, "oficio.pdf")
+        self.assertGreater(anexo.tamanho, 0)
+        self.assertEqual(anexo.enviado_por, self.solicitante)
+        self.assertTrue(
+            solicitacao.historico.filter(
+                observacao__contains="Anexo adicionado: oficio.pdf"
+            ).exists()
+        )
+
+    def test_extensao_proibida_e_rejeitada(self):
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        self.client.post(
+            reverse("solicitacoes:anexo_adicionar", args=[solicitacao.pk]),
+            {"arquivo": SimpleUploadedFile("virus.exe", b"MZ")},
+        )
+        self.assertEqual(solicitacao.anexos.count(), 0)
+
+    def test_arquivo_grande_e_rejeitado(self):
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        gigante = SimpleUploadedFile("grande.pdf", b"x" * (10 * 1024 * 1024 + 1))
+        self.client.post(
+            reverse("solicitacoes:anexo_adicionar", args=[solicitacao.pk]),
+            {"arquivo": gigante},
+        )
+        self.assertEqual(solicitacao.anexos.count(), 0)
+
+    def test_anexo_bloqueado_apos_envio(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.client.force_login(self.solicitante)
+        resposta = self.client.post(
+            reverse("solicitacoes:anexo_adicionar", args=[solicitacao.pk]),
+            {"arquivo": self.arquivo()},
+        )
+        self.assertEqual(resposta.status_code, 403)
+
+    def test_download_respeita_visibilidade(self):
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        self.client.post(
+            reverse("solicitacoes:anexo_adicionar", args=[solicitacao.pk]),
+            {"arquivo": self.arquivo()},
+        )
+        anexo = solicitacao.anexos.get()
+        url = reverse("solicitacoes:anexo_baixar", args=[solicitacao.pk, anexo.pk])
+
+        resposta = self.client.get(url)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(b"".join(resposta.streaming_content), b"%PDF-1.4 teste")
+
+        # Rascunho é privado: outro usuário não baixa o anexo.
+        self.client.force_login(self.outro_solicitante)
+        resposta = self.client.get(url)
+        self.assertEqual(resposta.status_code, 403)
+
+    def test_qualquer_usuario_baixa_anexo_de_solicitacao_enviada(self):
+        solicitacao = self.solicitacao_completa()
+        self.client.force_login(self.solicitante)
+        self.client.post(
+            reverse("solicitacoes:anexo_adicionar", args=[solicitacao.pk]),
+            {"arquivo": self.arquivo()},
+        )
+        services.enviar(solicitacao, self.solicitante)
+        anexo = solicitacao.anexos.get()
+        self.client.force_login(self.outro_solicitante)
+        resposta = self.client.get(
+            reverse("solicitacoes:anexo_baixar", args=[solicitacao.pk, anexo.pk])
+        )
+        self.assertEqual(resposta.status_code, 200)
+
+    def test_criador_exclui_anexo_do_rascunho(self):
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        self.client.post(
+            reverse("solicitacoes:anexo_adicionar", args=[solicitacao.pk]),
+            {"arquivo": self.arquivo()},
+        )
+        anexo = solicitacao.anexos.get()
+        caminho = anexo.arquivo.path
+        resposta = self.client.post(
+            reverse("solicitacoes:anexo_excluir", args=[solicitacao.pk, anexo.pk])
+        )
+        self.assertEqual(resposta.status_code, 302)
+        self.assertEqual(solicitacao.anexos.count(), 0)
+        import os
+
+        self.assertFalse(os.path.exists(caminho))
+
+    def test_secao_anexos_no_detalhe(self):
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        self.client.post(
+            reverse("solicitacoes:anexo_adicionar", args=[solicitacao.pk]),
+            {"arquivo": self.arquivo()},
+        )
+        resposta = self.client.get(
+            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+        self.assertContains(resposta, "Anexos")
+        self.assertContains(resposta, "oficio.pdf")
+        self.assertContains(resposta, "Anexar arquivo")

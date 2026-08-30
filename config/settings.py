@@ -169,4 +169,11 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Anexos das solicitações. O download passa por uma view com checagem de
+# permissão (solicitacoes.views.baixar_anexo) — não exponha MEDIA_URL
+# diretamente no servidor web.
+MEDIA_URL = "media/"
+
+MEDIA_ROOT = BASE_DIR / "media"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

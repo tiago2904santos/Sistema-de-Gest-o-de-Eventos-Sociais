@@ -263,6 +263,32 @@ class SolicitacaoForm(forms.ModelForm):
         return solicitacao
 
 
+class AnexoForm(forms.Form):
+    """Upload de anexo: tipos de documento comuns, até 10 MB."""
+
+    EXTENSOES_PERMITIDAS = {
+        "pdf", "png", "jpg", "jpeg", "doc", "docx", "xls", "xlsx", "odt", "ods",
+    }
+    TAMANHO_MAXIMO = 10 * 1024 * 1024
+
+    arquivo = forms.FileField(
+        label="Arquivo",
+        error_messages={"required": "Selecione um arquivo para anexar."},
+    )
+
+    def clean_arquivo(self):
+        arquivo = self.cleaned_data["arquivo"]
+        extensao = arquivo.name.rsplit(".", 1)[-1].lower() if "." in arquivo.name else ""
+        if extensao not in self.EXTENSOES_PERMITIDAS:
+            raise forms.ValidationError(
+                "Tipo de arquivo não permitido. Use: "
+                + ", ".join(sorted(self.EXTENSOES_PERMITIDAS)) + "."
+            )
+        if arquivo.size > self.TAMANHO_MAXIMO:
+            raise forms.ValidationError("O arquivo não pode passar de 10 MB.")
+        return arquivo
+
+
 class DespachoForm(forms.Form):
     # Além das decisões finais, a DG pode devolver para o criador ajustar.
     DEVOLVER = "DEVOLVER"

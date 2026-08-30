@@ -1184,6 +1184,10 @@ textarea.form-controle { min-height: 68px; }
 }
 .segmented-control label + label span { border-left: 1px solid var(--cor-borda); }
 .segmented-control input:checked + span { background: #bea45a; color: #fff; font-weight: 700; }
+.anexos-upload { display: flex; gap: 12px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+.anexos-upload__arquivo { max-width: 420px; flex: 1 1 260px; }
+.anexos-upload__ajuda { margin-top: 6px; font-size: 0.78rem; }
+
 .decision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
 .decision-option {
   position: relative; min-height: 38px; display: flex; align-items: center;
