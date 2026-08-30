@@ -46,7 +46,8 @@
     Ambiente restrito e monitorado
   </div>
   <p class="auth-card__ajuda">
-    Problemas com o acesso? Entre em contato com o administrador da unidade.
+    <a href="{% url 'accounts:senha_reset' %}">Esqueci minha senha</a>
+    &nbsp;·&nbsp; Problemas com o acesso? Fale com o administrador da unidade.
   </p>
 </div>
 {% endblock %}

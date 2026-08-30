@@ -1,0 +1,11 @@
+Olá, {{ user.get_username }}.
+
+Recebemos um pedido para redefinir a senha do seu usuário no Sistema de
+Gestão de Eventos Sociais da PCPR.
+
+Para definir uma nova senha, acesse o link abaixo:
+
+{{ protocol }}://{{ domain }}{% url 'accounts:senha_reset_confirmar' uidb64=uid token=token %}
+
+Se você não pediu a redefinição, ignore esta mensagem — sua senha
+continua a mesma.

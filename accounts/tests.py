@@ -1,5 +1,8 @@
+import re
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.core import mail
 from django.test import TestCase
 from django.urls import reverse
 
@@ -167,3 +170,54 @@ class AlterarSenhaTests(TestCase):
         self.assertEqual(resposta.status_code, 200)
         usuario.refresh_from_db()
         self.assertTrue(usuario.check_password("SenhaAntiga#1"))
+
+
+class RecuperacaoSenhaTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.usuario = User.objects.create_user(
+            "fulano", password="senha-antiga", email="fulano@pc.pr.gov.br"
+        )
+
+    def test_link_esqueci_senha_na_tela_de_login(self):
+        resposta = self.client.get(reverse("accounts:login"))
+        self.assertContains(resposta, "Esqueci minha senha")
+        self.assertContains(resposta, reverse("accounts:senha_reset"))
+
+    def test_fluxo_completo_de_recuperacao(self):
+        resposta = self.client.post(
+            reverse("accounts:senha_reset"), {"email": "fulano@pc.pr.gov.br"}
+        )
+        self.assertRedirects(resposta, reverse("accounts:senha_reset_enviado"))
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        self.assertIn("Recuperação de senha", email.subject)
+        self.assertIn("fulano", email.body)
+
+        link = re.search(r"/conta/senha/recuperar/[^/]+/[^/\s]+/", email.body)
+        self.assertIsNotNone(link, email.body)
+
+        # O primeiro acesso redireciona para a URL interna com o token na sessão.
+        resposta = self.client.get(link.group(0), follow=True)
+        self.assertEqual(resposta.status_code, 200)
+        url_definir = resposta.request["PATH_INFO"]
+
+        resposta = self.client.post(
+            url_definir,
+            {
+                "new_password1": "NovaSenha!2026",
+                "new_password2": "NovaSenha!2026",
+            },
+        )
+        self.assertRedirects(resposta, reverse("accounts:senha_reset_concluido"))
+        self.usuario.refresh_from_db()
+        self.assertTrue(self.usuario.check_password("NovaSenha!2026"))
+
+    def test_email_desconhecido_nao_envia_nem_revela(self):
+        resposta = self.client.post(
+            reverse("accounts:senha_reset"), {"email": "naoexiste@pc.pr.gov.br"}
+        )
+        # Mesma resposta de sucesso (não revela quais e-mails existem)...
+        self.assertRedirects(resposta, reverse("accounts:senha_reset_enviado"))
+        # ...mas nenhum e-mail sai.
+        self.assertEqual(len(mail.outbox), 0)

@@ -1,0 +1,19 @@
+{% extends "layouts/auth.html" %}
+
+{% block title %}Senha alterada — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+<div class="auth-card">
+  <div class="auth-card__corpo">
+    <div>
+      <h1 class="auth-card__titulo">Senha alterada</h1>
+      <p class="auth-card__subtitulo">
+        Sua senha foi redefinida com sucesso. Use a nova senha para entrar
+        no sistema.
+      </p>
+    </div>
+    {% url 'accounts:login' as url_login %}
+    {% include "components/button.html" with label="Ir para o acesso" variante="dourado" href=url_login bloco=True %}
+  </div>
+</div>
+{% endblock %}

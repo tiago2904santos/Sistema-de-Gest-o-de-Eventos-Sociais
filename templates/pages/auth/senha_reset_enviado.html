@@ -1,0 +1,19 @@
+{% extends "layouts/auth.html" %}
+
+{% block title %}Link enviado — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+<div class="auth-card">
+  <div class="auth-card__corpo">
+    <div>
+      <h1 class="auth-card__titulo">Verifique seu e-mail</h1>
+      <p class="auth-card__subtitulo">
+        Se o e-mail informado estiver cadastrado, você receberá em instantes
+        um link para definir uma nova senha. Confira também a caixa de spam.
+      </p>
+    </div>
+    {% url 'accounts:login' as url_login %}
+    {% include "components/button.html" with label="Voltar para o acesso" variante="secundario" href=url_login bloco=True %}
+  </div>
+</div>
+{% endblock %}

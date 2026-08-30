@@ -1,0 +1,39 @@
+{% extends "layouts/auth.html" %}
+
+{% block title %}Recuperar senha — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+<div class="auth-card">
+  <form method="post" class="auth-card__corpo">
+    {% csrf_token %}
+
+    <div>
+      <h1 class="auth-card__titulo">Recuperar senha</h1>
+      <p class="auth-card__subtitulo">
+        Informe o e-mail cadastrado no seu usuário. Enviaremos um link
+        para você definir uma nova senha.
+      </p>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="alerta alerta--error">
+        {% for erro in form.non_field_errors %}{{ erro }}{% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="form-campo">
+      <label class="form-label" for="id_email">E-mail</label>
+      <input class="form-controle" type="email" name="email" id="id_email"
+             autofocus autocomplete="email" required
+             placeholder="seuemail@pc.pr.gov.br">
+      {% if form.email.errors %}<p class="form-erro">{{ form.email.errors.0 }}</p>{% endif %}
+    </div>
+
+    {% include "components/button.html" with label="Enviar link de recuperação" variante="dourado" tipo="submit" bloco=True %}
+  </form>
+
+  <p class="auth-card__ajuda">
+    <a href="{% url 'accounts:login' %}">Voltar para o acesso</a>
+  </p>
+</div>
+{% endblock %}
