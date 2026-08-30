@@ -1239,7 +1239,8 @@ class AnexosTests(BaseSolicitacaoTestCase):
     def test_campo_de_upload_na_tela_de_cadastro(self):
         self.client.force_login(self.solicitante)
         resposta = self.client.get(reverse("solicitacoes:nova"))
-        self.assertContains(resposta, 'name="anexos" multiple')
+        self.assertContains(resposta, 'name="anexos"')
+        self.assertContains(resposta, "Escolher arquivos")
         self.assertContains(resposta, 'enctype="multipart/form-data"')
 
     def test_criador_anexa_no_rascunho(self):
