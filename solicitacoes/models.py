@@ -94,6 +94,15 @@ class SolicitacaoEvento(models.Model):
     )
 
     unidade_movel = models.BooleanField("unidade móvel", default=False)
+    unidade_movel_designada = models.ForeignKey(
+        "cadastros.UnidadeMovel",
+        verbose_name="unidade móvel designada",
+        on_delete=models.PROTECT,
+        related_name="solicitacoes",
+        blank=True,
+        null=True,
+        help_text="Qual unidade móvel vai ao evento (obrigatória quando há unidade móvel).",
+    )
     veiculo_exposicao = models.BooleanField("veículo de exposição", default=False)
     local_evento = models.CharField("local do evento", max_length=255, blank=True)
     descricao_complementar = models.TextField("descrição complementar", blank=True)
@@ -350,6 +359,7 @@ class AcaoHistorico(models.TextChoices):
     PLANEJAMENTO = "PLANEJAMENTO", "Planejamento atualizado"
     ENCAMINHAMENTO_DESPACHO = "ENCAMINHAMENTO_DESPACHO", "Encaminhada para despacho"
     DEVOLUCAO = "DEVOLUCAO", "Devolvida para ajuste"
+    AJUSTE_DG = "AJUSTE_DG", "Quantidade ajustada pela DG"
     DECISAO = "DECISAO", "Decisão da DG registrada"
 
 

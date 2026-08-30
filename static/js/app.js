@@ -994,32 +994,35 @@
 })();
 
 /**
- * Motorista só se aplica quando o evento tem unidade móvel: sem unidade
- * móvel, o select fica desabilitado e a seleção é limpa. A mesma regra é
- * garantida no servidor (forms de solicitação e planejamento).
+ * Campos que só existem com unidade móvel: "Qual unidade móvel" e
+ * "Motorista" ficam ocultos quando a resposta é Não, e a seleção é limpa.
+ * A mesma regra é garantida no servidor (SolicitacaoForm).
  */
 (function () {
   "use strict";
 
   var formulario = document.querySelector("#form-solicitacao");
   if (!formulario) return;
-  var motorista = formulario.querySelector('select[name="motorista"]');
   var radios = formulario.querySelectorAll('input[name="unidade_movel"]');
-  if (!motorista || !radios.length) return;
-  var wrapper = motorista.closest("[data-custom-select]");
-  var trigger = wrapper && wrapper.querySelector("[data-custom-select-trigger]");
-  var desabilitadoPorPermissao = motorista.disabled;
+  if (!radios.length) return;
+  var selects = ["unidade_movel_designada", "motorista"]
+    .map(function (nome) {
+      return formulario.querySelector('select[name="' + nome + '"]');
+    })
+    .filter(Boolean);
+  if (!selects.length) return;
 
   function aplicarRegra() {
-    if (desabilitadoPorPermissao) return;
-    var comUnidadeMovel = formulario.querySelector('input[name="unidade_movel"]:checked');
-    var ativo = Boolean(comUnidadeMovel && comUnidadeMovel.value === "1");
-    if (!ativo && motorista.value) {
-      motorista.value = "";
-    }
-    motorista.disabled = !ativo;
-    if (trigger) trigger.disabled = !ativo;
-    motorista.dispatchEvent(new Event("change", { bubbles: true }));
+    var marcado = formulario.querySelector('input[name="unidade_movel"]:checked');
+    var ativo = Boolean(marcado && marcado.value === "1");
+    selects.forEach(function (select) {
+      var campo = select.closest(".form-campo");
+      if (campo) campo.style.display = ativo ? "" : "none";
+      if (!ativo && !select.disabled && select.value) {
+        select.value = "";
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
   }
 
   radios.forEach(function (radio) {

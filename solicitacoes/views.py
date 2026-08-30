@@ -64,12 +64,15 @@ def _marcados(form, nome):
 CAMPOS_FORMULARIO = [
     "data_solicitacao", "data_inicio_evento", "data_fim_evento", "tipo_evento",
     "municipio", "local_evento", "solicitante_nome", "solicitante_cargo_unidade",
-    "contato", "orgao_responsavel", "unidade_movel",
+    "contato", "orgao_responsavel", "unidade_movel", "unidade_movel_designada",
     "veiculo_exposicao", "descricao_complementar", "quantidade_servidores",
     "tipo_operacao", "quantidade_cin", "motorista", "decisao_dg", "observacoes_dg",
 ]
 
-CAMPOS_FK = {"tipo_evento", "municipio", "orgao_responsavel", "motorista"}
+CAMPOS_FK = {
+    "tipo_evento", "municipio", "orgao_responsavel", "motorista",
+    "unidade_movel_designada",
+}
 
 
 def _valor_da_instancia(solicitacao, nome):
@@ -165,6 +168,7 @@ def _contexto_formulario(request, form, solicitacao=None):
         "equipes": equipes_disponiveis,
         "equipes_planejamento": equipes_planejamento,
         "motoristas": opcoes_de("motorista"),
+        "unidades_moveis": opcoes_de("unidade_movel_designada"),
         "tipos_operacao": _opcoes_choices(TipoOperacao.choices),
         "servicos_marcados": marcados_de("servicos", servicos_salvos),
         "equipes_marcadas": equipes_marcadas,
@@ -608,9 +612,19 @@ def despachar(request, pk):
             f"Solicitação #{solicitacao.pk} devolvida para ajuste.",
             observacao=form.cleaned_data["observacao"],
         )
+    # A DG aceita as quantidades propostas ou informa novas por equipe.
+    quantidades = {}
+    for item in solicitacao.itens_equipe.all():
+        valor = str(request.POST.get(f"quantidade_dg_{item.equipe_id}", "")).strip()
+        if valor:
+            try:
+                quantidades[item.equipe_id] = int(valor)
+            except ValueError:
+                quantidades[item.equipe_id] = 0
     return _executar_transicao(
         request, solicitacao, services.despachar,
         f"Decisão registrada para a solicitação #{solicitacao.pk}.",
         decisao=form.cleaned_data["decisao"],
         observacao=form.cleaned_data["observacao"],
+        quantidades=quantidades,
     )

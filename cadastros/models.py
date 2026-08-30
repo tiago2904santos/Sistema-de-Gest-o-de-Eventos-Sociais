@@ -88,3 +88,11 @@ class Motorista(CadastroBase):
     class Meta(CadastroBase.Meta):
         verbose_name = "motorista"
         verbose_name_plural = "motoristas"
+
+
+class UnidadeMovel(CadastroBase):
+    """Veículos de unidade móvel disponíveis para designar aos eventos."""
+
+    class Meta(CadastroBase.Meta):
+        verbose_name = "unidade móvel"
+        verbose_name_plural = "unidades móveis"

@@ -105,6 +105,8 @@ def pendencias_para_envio(solicitacao):
             faltas.append("Quantidade de servidores de cada equipe")
     if not solicitacao.tipo_operacao:
         faltas.append("Tipo de operação")
+    if solicitacao.unidade_movel and not solicitacao.unidade_movel_designada_id:
+        faltas.append("Qual unidade móvel vai ao evento")
     return faltas
 
 
@@ -171,8 +173,42 @@ def devolver(solicitacao, usuario, observacao):
     return solicitacao
 
 
+def ajustar_quantidades_dg(solicitacao, usuario, quantidades):
+    """A DG aceita ou altera a quantidade de servidores de cada equipe.
+
+    `quantidades` mapeia equipe_id -> nova quantidade (int >= 1). Alterações
+    são aplicadas e registradas no histórico; valores iguais são ignorados.
+    """
+    itens = {item.equipe_id: item for item in solicitacao.itens_equipe.select_related("equipe")}
+    mudancas = []
+    for equipe_id, quantidade in (quantidades or {}).items():
+        item = itens.get(equipe_id)
+        if item is None:
+            continue
+        if not isinstance(quantidade, int) or quantidade < 1:
+            raise ValidationError(
+                f"Informe uma quantidade válida de servidores para {item.equipe}."
+            )
+        if item.quantidade_servidores != quantidade:
+            mudancas.append(
+                f"{item.equipe}: {item.quantidade_servidores or 0} → {quantidade}"
+            )
+            item.quantidade_servidores = quantidade
+            item.save(update_fields=["quantidade_servidores"])
+    if mudancas:
+        solicitacao.recalcular_quantidade_servidores()
+        registrar_historico(
+            solicitacao,
+            usuario,
+            AcaoHistorico.AJUSTE_DG,
+            status_novo=solicitacao.status,
+            observacao="; ".join(mudancas),
+        )
+    return mudancas
+
+
 @transaction.atomic
-def despachar(solicitacao, usuario, decisao, observacao=""):
+def despachar(solicitacao, usuario, decisao, observacao="", quantidades=None):
     if solicitacao.finalizada:
         raise TransicaoInvalida("A solicitação já foi finalizada e não aceita novo despacho.")
     if solicitacao.status != StatusSolicitacao.AGUARDANDO_DESPACHO:
@@ -186,6 +222,8 @@ def despachar(solicitacao, usuario, decisao, observacao=""):
         raise ValidationError(
             "A observação da DG é obrigatória para decisões de não atendimento ou cancelamento."
         )
+    # A DG pode aceitar as quantidades propostas ou ajustá-las ao decidir.
+    ajustar_quantidades_dg(solicitacao, usuario, quantidades)
     anterior = _transicionar(solicitacao, STATUS_POR_DECISAO[decisao])
     solicitacao.decisao_dg = decisao
     solicitacao.observacoes_dg = observacao

@@ -25,6 +25,7 @@ from .models import (
     OrgaoResponsavel,
     Servico,
     TipoEvento,
+    UnidadeMovel,
 )
 
 CADASTROS = {
@@ -42,6 +43,11 @@ CADASTROS = {
         "campos": ["nome", "estado", "regiao"],
     },
     "motoristas": {"model": Motorista, "titulo": "Motoristas", "campos": ["nome", "telefone"]},
+    "unidades-moveis": {
+        "model": UnidadeMovel,
+        "titulo": "Unidades móveis",
+        "campos": ["nome"],
+    },
 }
 
 ITENS_POR_PAGINA = 20

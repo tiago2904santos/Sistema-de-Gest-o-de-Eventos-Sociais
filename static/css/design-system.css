@@ -1184,6 +1184,14 @@ textarea.form-controle { min-height: 68px; }
 }
 .segmented-control label + label span { border-left: 1px solid var(--cor-borda); }
 .segmented-control input:checked + span { background: #bea45a; color: #fff; font-weight: 700; }
+.equipe-alocacao__nome {
+  display: flex; align-items: center; min-height: 42px;
+  padding: 0 14px; border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm); background: var(--cor-superficie);
+  font-size: 0.82rem; font-weight: 600; color: var(--cor-texto);
+}
+.despacho-quantidades-ajuda { margin-bottom: 10px; font-size: 0.8rem; }
+
 .anexos-upload { display: flex; gap: 12px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
 .anexos-upload__arquivo { max-width: 420px; flex: 1 1 260px; }
 .anexos-upload__ajuda { margin-top: 6px; font-size: 0.78rem; }

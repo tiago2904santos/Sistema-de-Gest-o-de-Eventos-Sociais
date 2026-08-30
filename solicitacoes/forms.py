@@ -15,6 +15,7 @@ from cadastros.models import (
     OrgaoResponsavel,
     Servico,
     TipoEvento,
+    UnidadeMovel,
 )
 
 from .models import (
@@ -148,6 +149,7 @@ class SolicitacaoForm(forms.ModelForm):
             "contato",
             "orgao_responsavel",
             "unidade_movel",
+            "unidade_movel_designada",
             "veiculo_exposicao",
             "descricao_complementar",
             "tipo_operacao",
@@ -174,6 +176,9 @@ class SolicitacaoForm(forms.ModelForm):
         )
         self.fields["motorista"].queryset = _queryset_ativo(
             Motorista, instancia and instancia.motorista_id
+        )
+        self.fields["unidade_movel_designada"].queryset = _queryset_ativo(
+            UnidadeMovel, instancia and instancia.unidade_movel_designada_id
         )
         self.fields["servicos"].queryset = (
             Servico.objects.filter(ativo=True)
@@ -226,9 +231,15 @@ class SolicitacaoForm(forms.ModelForm):
                 self.add_error(
                     "equipes", "Designe ao menos uma equipe para enviar à DG."
                 )
-        # Motorista só se aplica quando há unidade móvel no evento.
+        # Motorista e a unidade designada só se aplicam com unidade móvel.
         if not dados.get("unidade_movel"):
             dados["motorista"] = None
+            dados["unidade_movel_designada"] = None
+        elif self.enviar and not dados.get("unidade_movel_designada"):
+            self.add_error(
+                "unidade_movel_designada",
+                "Informe qual unidade móvel vai ao evento.",
+            )
         self.quantidades_equipes = _ler_quantidades_equipes(
             self, dados.get("equipes") or []
         )
@@ -245,6 +256,10 @@ class SolicitacaoForm(forms.ModelForm):
     def clean_motorista(self):
         motorista = self.cleaned_data.get("motorista")
         return motorista if self.cleaned_data.get("unidade_movel") else None
+
+    def clean_unidade_movel_designada(self):
+        designada = self.cleaned_data.get("unidade_movel_designada")
+        return designada if self.cleaned_data.get("unidade_movel") else None
 
     @transaction.atomic
     def save(self, criado_por=None):

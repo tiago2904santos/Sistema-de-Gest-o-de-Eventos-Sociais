@@ -18,6 +18,7 @@ from cadastros.models import (
     Regiao,
     Servico,
     TipoEvento,
+    UnidadeMovel,
 )
 
 from .forms import DespachoForm, SolicitacaoForm
@@ -53,6 +54,7 @@ class BaseSolicitacaoTestCase(TestCase):
         cls.equipe = Equipe.objects.create(nome="Equipe Alfa")
         cls.outra_equipe = Equipe.objects.create(nome="IIPR")
         cls.motorista = Motorista.objects.create(nome="Motorista Teste")
+        cls.van = UnidadeMovel.objects.create(nome="Van CIN 01")
 
         cls.solicitante = User.objects.create_user("solicitante", password="x")
         cls.outro_solicitante = User.objects.create_user("outro", password="x")
@@ -106,6 +108,7 @@ class BaseSolicitacaoTestCase(TestCase):
             f"quantidade_equipe_{self.equipe.pk}": 4,
             "tipo_operacao": "DIARIA",
             "unidade_movel": "1",
+            "unidade_movel_designada": self.van.pk,
             "veiculo_exposicao": "0",
         }
 
@@ -253,6 +256,24 @@ class FormsTests(BaseSolicitacaoTestCase):
         self.assertIsNone(solicitacao.motorista)
         self.assertFalse(solicitacao.unidade_movel)
 
+    def test_envio_com_unidade_movel_exige_qual_unidade(self):
+        dados = self.dados_completos_post()
+        dados["unidade_movel_designada"] = ""
+        form = SolicitacaoForm(dados, enviar=True)
+        self.assertFalse(form.is_valid())
+        self.assertIn("unidade_movel_designada", form.errors)
+
+    def test_sem_unidade_movel_limpa_designada_e_motorista(self):
+        dados = self.dados_completos_post(acao="rascunho")
+        dados["unidade_movel"] = "0"
+        dados["motorista"] = self.motorista.pk
+
+        form = SolicitacaoForm(dados, enviar=False)
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIsNone(form.cleaned_data["unidade_movel_designada"])
+        self.assertIsNone(form.cleaned_data["motorista"])
+
     def test_despacho_negativo_exige_observacao(self):
         form = DespachoForm({"decisao": DecisaoDG.NAO_ATENDER, "observacao": ""})
         self.assertFalse(form.is_valid())
@@ -343,6 +364,59 @@ class WorkflowTests(BaseSolicitacaoTestCase):
         services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER)
         with self.assertRaises(services.TransicaoInvalida):
             services.despachar(solicitacao, self.gestor, DecisaoDG.NAO_ATENDER, "x")
+
+    def test_dg_ajusta_quantidade_de_servidores_ao_despachar(self):
+        solicitacao = self.solicitacao_completa()
+        solicitacao.itens_equipe.create(
+            equipe=self.outra_equipe, quantidade_servidores=4
+        )
+        services.enviar(solicitacao, self.solicitante)
+
+        item_alfa = solicitacao.itens_equipe.get(equipe=self.equipe)
+        services.despachar(
+            solicitacao,
+            self.gestor,
+            DecisaoDG.ATENDER,
+            quantidades={self.equipe.pk: 3, self.outra_equipe.pk: 4},
+        )
+
+        item_alfa.refresh_from_db()
+        solicitacao.refresh_from_db()
+        self.assertEqual(item_alfa.quantidade_servidores, 3)
+        self.assertEqual(solicitacao.quantidade_servidores, 7)
+        registro = solicitacao.historico.get(acao=AcaoHistorico.AJUSTE_DG)
+        self.assertIn("Equipe Alfa: 5 → 3", registro.observacao)
+        # A equipe aceita sem mudança não entra no registro.
+        self.assertNotIn("IIPR", registro.observacao)
+
+    def test_despacho_sem_ajuste_nao_registra_ajuste(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.despachar(
+            solicitacao,
+            self.gestor,
+            DecisaoDG.ATENDER,
+            quantidades={self.equipe.pk: 5},
+        )
+        self.assertFalse(
+            solicitacao.historico.filter(acao=AcaoHistorico.AJUSTE_DG).exists()
+        )
+
+    def test_ajuste_da_dg_com_quantidade_invalida_rejeitado(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        with self.assertRaises(ValidationError):
+            services.despachar(
+                solicitacao,
+                self.gestor,
+                DecisaoDG.ATENDER,
+                quantidades={self.equipe.pk: 0},
+            )
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
+        self.assertEqual(
+            solicitacao.itens_equipe.get(equipe=self.equipe).quantidade_servidores, 5
+        )
 
     def test_devolucao_para_ajuste_e_reenvio(self):
         solicitacao = self.solicitacao_completa()
@@ -770,6 +844,47 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.assertEqual(resposta.status_code, 302)
         solicitacao.refresh_from_db()
         self.assertEqual(solicitacao.status, StatusSolicitacao.NAO_ATENDIDA)
+
+    def test_despacho_via_view_com_ajuste_de_quantidade(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.client.force_login(self.gestor)
+
+        resposta = self.client.get(
+            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+        self.assertContains(resposta, f'name="quantidade_dg_{self.equipe.pk}"')
+        self.assertContains(resposta, "Quantidade de servidores por equipe")
+
+        resposta = self.client.post(
+            reverse("solicitacoes:despachar", args=[solicitacao.pk]),
+            {
+                "decisao": "ATENDER",
+                "observacao": "",
+                f"quantidade_dg_{self.equipe.pk}": 2,
+            },
+        )
+        self.assertEqual(resposta.status_code, 302)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.ATENDIDA)
+        self.assertEqual(solicitacao.quantidade_servidores, 2)
+        self.assertTrue(
+            solicitacao.historico.filter(acao=AcaoHistorico.AJUSTE_DG).exists()
+        )
+
+    def test_campo_qual_unidade_movel_no_formulario(self):
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(reverse("solicitacoes:nova"))
+        self.assertContains(resposta, 'name="unidade_movel_designada"')
+        self.assertContains(resposta, "Van CIN 01")
+
+    def test_cadastro_de_unidades_moveis_disponivel(self):
+        self.client.force_login(self.administrador)
+        resposta = self.client.get(
+            reverse("cadastros:lista", args=["unidades-moveis"])
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Van CIN 01")
 
     def test_superusuario_ignora_restricoes(self):
         solicitacao = self.criar_solicitacao()
