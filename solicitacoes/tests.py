@@ -835,6 +835,44 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.assertNotIn(rascunho.pk, pks)
 
 
+class ExportacaoCsvTests(BaseSolicitacaoTestCase):
+    def test_exporta_lista_filtrada(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        outra = self.criar_solicitacao(local_evento="Escola municipal")
+        self.client.force_login(self.solicitante)
+
+        resposta = self.client.get(reverse("solicitacoes:exportar"))
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta["Content-Type"], "text/csv; charset=utf-8")
+        self.assertIn("attachment", resposta["Content-Disposition"])
+        conteudo = resposta.content.decode("utf-8-sig")
+        self.assertIn("Aguardando despacho", conteudo)
+        self.assertIn("Equipe Alfa (5)", conteudo)
+        self.assertIn("Escola municipal", conteudo)
+
+        # O filtro de status vale também na exportação.
+        resposta = self.client.get(
+            reverse("solicitacoes:exportar"),
+            {"status": StatusSolicitacao.RASCUNHO},
+        )
+        conteudo = resposta.content.decode("utf-8-sig")
+        self.assertIn("Escola municipal", conteudo)
+        self.assertNotIn("Aguardando despacho", conteudo)
+
+    def test_exportacao_respeita_visibilidade(self):
+        rascunho_alheio = self.criar_solicitacao()
+        self.client.force_login(self.outro_solicitante)
+        resposta = self.client.get(reverse("solicitacoes:exportar"))
+        conteudo = resposta.content.decode("utf-8-sig")
+        # Só o cabeçalho: rascunho de outro usuário não sai no CSV.
+        self.assertEqual(len(conteudo.strip().splitlines()), 1)
+
+    def test_exportacao_exige_login(self):
+        resposta = self.client.get(reverse("solicitacoes:exportar"))
+        self.assertEqual(resposta.status_code, 302)
+
+
 _MEDIA_TESTES = tempfile.mkdtemp(prefix="anexos-teste-")
 
 

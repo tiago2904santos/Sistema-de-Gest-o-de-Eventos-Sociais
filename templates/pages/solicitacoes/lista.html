@@ -28,6 +28,7 @@
         {% include "components/input.html" with name="fim" label="Eventos até" tipo="date" largura="3" valor=valores_filtro.fim %}
         <div class="form-campo form-campo--2 lista-filtros__acoes">
           {% include "components/button.html" with label="Filtrar" variante="primario" tipo="submit" %}
+          <a href="{% url 'solicitacoes:exportar' %}{% if querystring %}?{{ querystring }}{% endif %}" class="btn btn--secundario">Exportar CSV</a>
         </div>
       </form>
     </div>

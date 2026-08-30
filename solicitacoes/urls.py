@@ -7,6 +7,7 @@ app_name = "solicitacoes"
 urlpatterns = [
     path("", views.lista_solicitacoes, name="lista"),
     path("nova/", views.nova_solicitacao, name="nova"),
+    path("exportar/", views.exportar_solicitacoes, name="exportar"),
     path("<int:pk>/", views.detalhe_solicitacao, name="detalhe"),
     path("<int:pk>/editar/", views.editar_solicitacao, name="editar"),
     # Transições de workflow — somente POST.

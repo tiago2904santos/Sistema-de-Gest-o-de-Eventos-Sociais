@@ -318,8 +318,8 @@ def _filas_do_usuario(user, queryset):
     return resultado
 
 
-@login_required
-def lista_solicitacoes(request):
+def _queryset_filtrado(request):
+    """Solicitações visíveis com fila e filtros da listagem aplicados."""
     filtros = FiltroSolicitacoesForm(request.GET or None)
     base = permissions.queryset_visivel(
         request.user,
@@ -355,6 +355,13 @@ def lista_solicitacoes(request):
         if dados.get("fim"):
             queryset = queryset.filter(data_inicio_evento__lte=dados["fim"])
 
+    return queryset, base, filtros, fila
+
+
+@login_required
+def lista_solicitacoes(request):
+    queryset, base, filtros, fila = _queryset_filtrado(request)
+
     paginador = Paginator(queryset, ITENS_POR_PAGINA)
     pagina = paginador.get_page(request.GET.get("pagina"))
 
@@ -383,6 +390,80 @@ def lista_solicitacoes(request):
             ],
         },
     )
+
+
+@login_required
+def exportar_solicitacoes(request):
+    """Exporta a listagem filtrada em CSV legível pelo Excel (pt-BR)."""
+    import csv
+
+    from django.http import HttpResponse
+    from django.utils import timezone as tz
+
+    queryset, _base, _filtros, _fila = _queryset_filtrado(request)
+    queryset = queryset.select_related(
+        "orgao_responsavel", "motorista", "decidido_por"
+    ).prefetch_related("servicos", "itens_equipe__equipe")
+
+    hoje = tz.localdate().strftime("%Y-%m-%d")
+    resposta = HttpResponse(content_type="text/csv; charset=utf-8")
+    resposta["Content-Disposition"] = (
+        f'attachment; filename="solicitacoes-{hoje}.csv"'
+    )
+    # BOM para o Excel reconhecer UTF-8; ponto e vírgula para o Excel pt-BR.
+    resposta.write("﻿")
+    escritor = csv.writer(resposta, delimiter=";", lineterminator="\r\n")
+    escritor.writerow([
+        "Nº", "Status", "Data da solicitação", "Início do evento", "Fim do evento",
+        "Município", "Região", "Tipo de evento", "Local", "Solicitante",
+        "Cargo / unidade", "Contato", "Órgão responsável", "Serviços",
+        "Equipes (servidores)", "Total de servidores", "Tipo de operação",
+        "Unidade móvel", "Veículo de exposição", "Qtde CIN", "Motorista",
+        "Decisão DG", "Observações DG", "Decidido por", "Decidido em",
+        "Criado por",
+    ])
+
+    def data(valor, formato="%d/%m/%Y"):
+        if not valor:
+            return ""
+        if hasattr(valor, "astimezone"):
+            valor = tz.localtime(valor)
+        return valor.strftime(formato)
+
+    for s in queryset:
+        equipes = "; ".join(
+            f"{item.equipe} ({item.quantidade_servidores or '-'})"
+            for item in s.itens_equipe.all()
+        )
+        escritor.writerow([
+            s.pk,
+            s.get_status_display(),
+            data(s.data_solicitacao),
+            data(s.data_inicio_evento),
+            data(s.data_fim_evento),
+            s.municipio or "",
+            s.regiao or "",
+            s.tipo_evento or "",
+            s.local_evento,
+            s.solicitante_nome,
+            s.solicitante_cargo_unidade,
+            s.contato,
+            s.orgao_responsavel or "",
+            "; ".join(str(servico) for servico in s.servicos.all()),
+            equipes,
+            s.quantidade_servidores or "",
+            s.get_tipo_operacao_display() if s.tipo_operacao else "",
+            "Sim" if s.unidade_movel else "Não",
+            "Sim" if s.veiculo_exposicao else "Não",
+            s.quantidade_cin or "",
+            s.motorista or "",
+            s.get_decisao_dg_display(),
+            s.observacoes_dg,
+            s.decidido_por or "",
+            data(s.decidido_em, "%d/%m/%Y %H:%M"),
+            s.criado_por,
+        ])
+    return resposta
 
 
 @login_required
