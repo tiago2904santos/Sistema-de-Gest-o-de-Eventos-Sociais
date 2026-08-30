@@ -594,12 +594,46 @@ def excluir_solicitacao(request, pk):
     return redirect("solicitacoes:lista")
 
 
+def _quantidades_dg_do_post(request, solicitacao):
+    """Quantidades por equipe informadas pela DG no formulário de despacho."""
+    quantidades = {}
+    for item in solicitacao.itens_equipe.all():
+        valor = str(request.POST.get(f"quantidade_dg_{item.equipe_id}", "")).strip()
+        if valor:
+            try:
+                quantidades[item.equipe_id] = int(valor)
+            except ValueError:
+                quantidades[item.equipe_id] = 0
+    return quantidades
+
+
 @login_required
 @require_POST
 def despachar(request, pk):
     solicitacao = _obter_visivel(request, pk)
     if not permissions.pode_despachar(request.user, solicitacao):
         raise PermissionDenied
+
+    # Salvar apenas os ajustes de quantidade, sem decidir ainda.
+    if request.POST.get("acao_despacho") == "salvar_ajustes":
+        try:
+            mudancas = services.salvar_ajustes_dg(
+                solicitacao, request.user, _quantidades_dg_do_post(request, solicitacao)
+            )
+        except ValidationError as erro:
+            for mensagem_erro in erro.messages:
+                messages.error(request, mensagem_erro)
+        else:
+            if mudancas:
+                messages.success(
+                    request,
+                    f"Ajustes salvos para a solicitação #{solicitacao.pk}: "
+                    + "; ".join(mudancas) + ".",
+                )
+            else:
+                messages.info(request, "Nenhuma alteração nas quantidades.")
+        return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
+
     form = DespachoForm(request.POST)
     if not form.is_valid():
         for erros_campo in form.errors.values():
@@ -613,18 +647,10 @@ def despachar(request, pk):
             observacao=form.cleaned_data["observacao"],
         )
     # A DG aceita as quantidades propostas ou informa novas por equipe.
-    quantidades = {}
-    for item in solicitacao.itens_equipe.all():
-        valor = str(request.POST.get(f"quantidade_dg_{item.equipe_id}", "")).strip()
-        if valor:
-            try:
-                quantidades[item.equipe_id] = int(valor)
-            except ValueError:
-                quantidades[item.equipe_id] = 0
     return _executar_transicao(
         request, solicitacao, services.despachar,
         f"Decisão registrada para a solicitação #{solicitacao.pk}.",
         decisao=form.cleaned_data["decisao"],
         observacao=form.cleaned_data["observacao"],
-        quantidades=quantidades,
+        quantidades=_quantidades_dg_do_post(request, solicitacao),
     )

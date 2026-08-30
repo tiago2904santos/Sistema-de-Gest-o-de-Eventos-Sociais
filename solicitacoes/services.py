@@ -208,6 +208,16 @@ def ajustar_quantidades_dg(solicitacao, usuario, quantidades):
 
 
 @transaction.atomic
+def salvar_ajustes_dg(solicitacao, usuario, quantidades):
+    """A DG salva ajustes de quantidade sem registrar a decisão ainda."""
+    if solicitacao.status != StatusSolicitacao.AGUARDANDO_DESPACHO:
+        raise TransicaoInvalida(
+            "Somente solicitações aguardando despacho podem ser ajustadas pela DG."
+        )
+    return ajustar_quantidades_dg(solicitacao, usuario, quantidades)
+
+
+@transaction.atomic
 def despachar(solicitacao, usuario, decisao, observacao="", quantidades=None):
     if solicitacao.finalizada:
         raise TransicaoInvalida("A solicitação já foi finalizada e não aceita novo despacho.")

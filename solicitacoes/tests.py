@@ -418,6 +418,28 @@ class WorkflowTests(BaseSolicitacaoTestCase):
             solicitacao.itens_equipe.get(equipe=self.equipe).quantidade_servidores, 5
         )
 
+    def test_dg_salva_ajustes_sem_decidir(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+
+        mudancas = services.salvar_ajustes_dg(
+            solicitacao, self.gestor, {self.equipe.pk: 2}
+        )
+
+        self.assertEqual(len(mudancas), 1)
+        solicitacao.refresh_from_db()
+        # Continua aguardando despacho — só as quantidades mudaram.
+        self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
+        self.assertEqual(solicitacao.quantidade_servidores, 2)
+        self.assertTrue(
+            solicitacao.historico.filter(acao=AcaoHistorico.AJUSTE_DG).exists()
+        )
+
+    def test_salvar_ajustes_apenas_aguardando_despacho(self):
+        solicitacao = self.solicitacao_completa()
+        with self.assertRaises(services.TransicaoInvalida):
+            services.salvar_ajustes_dg(solicitacao, self.gestor, {self.equipe.pk: 2})
+
     def test_devolucao_para_ajuste_e_reenvio(self):
         solicitacao = self.solicitacao_completa()
         services.enviar(solicitacao, self.solicitante)
@@ -871,6 +893,50 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.assertTrue(
             solicitacao.historico.filter(acao=AcaoHistorico.AJUSTE_DG).exists()
         )
+
+    def test_salvar_ajustes_via_view_sem_decidir(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.client.force_login(self.gestor)
+
+        resposta = self.client.get(
+            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+        self.assertContains(resposta, "Salvar ajustes")
+
+        resposta = self.client.post(
+            reverse("solicitacoes:despachar", args=[solicitacao.pk]),
+            {
+                "acao_despacho": "salvar_ajustes",
+                f"quantidade_dg_{self.equipe.pk}": 3,
+            },
+        )
+        self.assertEqual(resposta.status_code, 302)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
+        self.assertEqual(solicitacao.quantidade_servidores, 3)
+
+        # Depois a DG decide normalmente, sem repetir o ajuste.
+        resposta = self.client.post(
+            reverse("solicitacoes:despachar", args=[solicitacao.pk]),
+            {"decisao": "ATENDER", "observacao": ""},
+        )
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.ATENDIDA)
+        self.assertEqual(solicitacao.quantidade_servidores, 3)
+
+    def test_salvar_ajustes_exige_gestor(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.client.force_login(self.solicitante)
+        resposta = self.client.post(
+            reverse("solicitacoes:despachar", args=[solicitacao.pk]),
+            {
+                "acao_despacho": "salvar_ajustes",
+                f"quantidade_dg_{self.equipe.pk}": 3,
+            },
+        )
+        self.assertEqual(resposta.status_code, 403)
 
     def test_campo_qual_unidade_movel_no_formulario(self):
         self.client.force_login(self.solicitante)
