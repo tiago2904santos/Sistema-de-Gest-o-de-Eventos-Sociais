@@ -1067,18 +1067,47 @@
     var vazio = bloco.querySelector(".upload-anexos__vazio");
     if (!input || !lista) return;
 
-    function removerArquivo(indice) {
+    // Em inputs múltiplos, cada "Escolher arquivos" SOMA à seleção anterior
+    // (o navegador sozinho substituiria a lista inteira).
+    var acumulados = [];
+
+    function sincronizarInput() {
       var dt = new DataTransfer();
-      Array.prototype.forEach.call(input.files, function (arquivo, i) {
-        if (i !== indice) dt.items.add(arquivo);
+      acumulados.forEach(function (arquivo) {
+        dt.items.add(arquivo);
       });
       input.files = dt.files;
+    }
+
+    function removerArquivo(indice) {
+      acumulados.splice(indice, 1);
+      sincronizarInput();
+      render();
+    }
+
+    function aoSelecionar() {
+      var novos = Array.prototype.slice.call(input.files);
+      if (!input.multiple) {
+        acumulados = novos;
+      } else {
+        novos.forEach(function (novo) {
+          var repetido = acumulados.some(function (existente) {
+            return (
+              existente.name === novo.name &&
+              existente.size === novo.size &&
+              existente.lastModified === novo.lastModified
+            );
+          });
+          if (!repetido) acumulados.push(novo);
+        });
+        sincronizarInput();
+      }
       render();
     }
 
     function render() {
       lista.innerHTML = "";
-      var arquivos = Array.prototype.slice.call(input.files);
+      var arquivos = acumulados;
       if (vazio) vazio.hidden = arquivos.length > 0;
       arquivos.forEach(function (arquivo, indice) {
         var item = document.createElement("li");
@@ -1108,7 +1137,7 @@
       });
     }
 
-    input.addEventListener("change", render);
+    input.addEventListener("change", aoSelecionar);
     render();
   });
 })();
