@@ -66,6 +66,25 @@ class DashboardTests(TestCase):
         # A cancelada fica fora dos eventos dos próximos 30 dias.
         self.assertEqual(resumo["Eventos nos próximos 30 dias"], 3)
 
+    def test_grafico_mensal_no_periodo_pedido(self):
+        self.criar()
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.get(reverse("dashboard:index"))
+        grafico = resposta.context["grafico"]
+        self.assertEqual(len(grafico["barras"]), 12)
+        self.assertEqual(sum(barra["valor"] for barra in grafico["barras"]), 1)
+        # Altura em inteiro: um float viraria "66,7" no template pt-BR e o
+        # CSS descartaria o estilo.
+        for barra in grafico["barras"]:
+            self.assertIsInstance(barra["altura"], int)
+
+        resposta = self.client.get(reverse("dashboard:index"), {"meses": 6})
+        self.assertEqual(len(resposta.context["grafico"]["barras"]), 6)
+
+        resposta = self.client.get(reverse("dashboard:index"), {"meses": "invalido"})
+        self.assertEqual(len(resposta.context["grafico"]["barras"]), 12)
+
     def test_ultimas_solicitacoes(self):
         criadas = [self.criar() for _ in range(7)]
         self.client.force_login(self.usuario)

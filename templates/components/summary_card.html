@@ -1,12 +1,30 @@
 {% comment %}
-  Componente: summary_card — indicador de resumo do dashboard.
-  Uso: {% include "components/summary_card.html" with titulo="..." valor=18
-       variacao="..." tendencia="alta|baixa" url="/solicitacoes/?status=..." %}
+  Componente: summary_card — indicador do dashboard, no modelo do redesign:
+  ícone em círculo, título, número grande, sparkline dos últimos 12 meses e
+  a linha de variação. Uso:
+    {% include "components/summary_card.html" with titulo="..." valor=18
+       icone="document" cor="neutra|dourada|sucesso|info" destaque=True
+       sparkline=item.sparkline variacao="..." tendencia="alta|baixa"
+       url="/solicitacoes/?..." %}
   Com `url`, o cartão inteiro vira link para a listagem correspondente.
 {% endcomment %}
-<{% if url %}a href="{{ url }}"{% else %}div{% endif %} class="summary-card{% if url %} summary-card--link{% endif %}">
-  <p class="summary-card__titulo">{{ titulo }}</p>
-  <p class="summary-card__valor">{{ valor }}</p>
+<{% if url %}a href="{{ url }}"{% else %}div{% endif %} class="summary-card summary-card--{{ cor|default:'neutra' }}{% if destaque %} summary-card--destaque{% endif %}{% if url %} summary-card--link{% endif %}">
+  <div class="summary-card__topo">
+    {% if icone %}
+      <span class="summary-card__icone" aria-hidden="true">{% include "components/icon.html" with nome=icone %}</span>
+    {% endif %}
+    <div class="summary-card__metrica">
+      <p class="summary-card__titulo">{{ titulo }}</p>
+      <p class="summary-card__valor">{{ valor }}</p>
+    </div>
+    {% if sparkline %}
+      <div class="summary-card__sparkline" aria-hidden="true">
+        {% for barra in sparkline %}
+          <span style="height: {{ barra.altura }}%"></span>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
   {% if variacao %}
     <p class="summary-card__variacao{% if tendencia %} summary-card__variacao--{{ tendencia }}{% endif %}">
       {% if tendencia %}<span class="summary-card__seta" aria-hidden="true">{% if tendencia == "alta" %}↑{% else %}↓{% endif %}</span>{% endif %}

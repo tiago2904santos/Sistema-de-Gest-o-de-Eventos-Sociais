@@ -410,15 +410,36 @@ img {
   padding: var(--esp-5);
 }
 
-/* Summary card — indicadores do dashboard */
+/* Summary card — indicadores do dashboard, no modelo do redesign:
+   ícone em círculo, número grande e sparkline dos últimos 12 meses. */
 .summary-card {
   background: var(--cor-superficie);
   border: 1px solid var(--cor-borda);
   border-radius: var(--raio-lg);
   box-shadow: var(--sombra-card);
-  padding: var(--esp-5);
-  border-top: 3px solid var(--cor-acento);
+  padding: var(--esp-4) var(--esp-5);
 }
+
+.summary-card__topo {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-3);
+}
+
+.summary-card__icone {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--cor-fundo);
+  color: var(--cor-texto-suave);
+}
+
+.summary-card__icone .ui-icon { width: 20px; height: 20px; }
+
+.summary-card__metrica { flex: 1; min-width: 0; }
 
 .summary-card__titulo {
   font-size: var(--texto-xs);
@@ -429,14 +450,30 @@ img {
 }
 
 .summary-card__valor {
-  font-size: 2.25rem;
+  font-size: 2.1rem;
   font-weight: 700;
-  line-height: 1.2;
-  margin-top: var(--esp-2);
+  line-height: 1.15;
+  margin-top: var(--esp-1);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Doze meses em barrinhas, ancoradas na base do número. */
+.summary-card__sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 44px;
+  align-self: flex-end;
+}
+
+.summary-card__sparkline span {
+  width: 5px;
+  border-radius: 2px 2px 0 0;
+  background: var(--cor-cinza-300);
 }
 
 .summary-card__variacao {
-  margin-top: var(--esp-1);
+  margin-top: var(--esp-2);
   font-size: var(--texto-xs);
   color: var(--cor-texto-fraco);
 }
@@ -445,6 +482,22 @@ img {
 .summary-card__seta { font-weight: 700; }
 .summary-card__variacao--alta { color: var(--cor-sucesso); }
 .summary-card__variacao--baixa { color: var(--cor-erro); }
+
+/* Cores por métrica: ícone e sparkline contam a mesma história. */
+.summary-card--dourada .summary-card__icone { background: var(--cor-dourado-100); color: var(--cor-dourado-700); }
+.summary-card--dourada .summary-card__sparkline span { background: #dcc48e; }
+.summary-card--sucesso .summary-card__icone { background: var(--cor-sucesso-fundo); color: var(--cor-sucesso); }
+.summary-card--sucesso .summary-card__sparkline span { background: #a9d4ba; }
+.summary-card--info .summary-card__icone { background: var(--cor-info-fundo); color: var(--cor-info); }
+.summary-card--info .summary-card__sparkline span { background: #a9c6e2; }
+
+/* O cartão que pede ação da DG hoje: contorno dourado e fundo âmbar suave. */
+.summary-card--destaque {
+  border: 1.5px solid var(--cor-dourado-500);
+  background: #fdfaf2;
+}
+
+.summary-card--destaque .summary-card__valor { color: var(--cor-dourado-700); }
 
 /* Cartão que leva à listagem já filtrada. */
 .summary-card--link {
@@ -457,8 +510,7 @@ img {
 .summary-card--link:hover,
 .summary-card--link:focus-visible {
   text-decoration: none;
-  border-color: var(--cor-borda-forte);
-  border-top-color: var(--cor-acento);
+  border-color: var(--cor-dourado-500);
   box-shadow: var(--sombra-elevada);
   transform: translateY(-1px);
 }
@@ -2097,3 +2149,138 @@ textarea.form-controle { min-height: 68px; }
     background: none;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Dashboard — gráfico mensal e painel lado a lado (modelo do redesign)
+   -------------------------------------------------------------------------- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.btn--com-icone {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.btn--com-icone .ui-icon { width: 17px; height: 17px; }
+
+.dashboard-paineis {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: var(--esp-5);
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-paineis { grid-template-columns: 1fr; }
+}
+
+.grafico-card { display: flex; flex-direction: column; }
+
+.grafico-card__cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  padding: var(--esp-4) var(--esp-5);
+}
+
+.grafico-card__titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  font-size: var(--texto-md);
+  font-weight: 600;
+}
+
+.grafico-card__titulo .ui-icon { width: 18px; height: 18px; color: var(--cor-texto-suave); }
+
+.grafico-card__periodo .form-controle {
+  width: auto;
+  padding: 0.35rem 2rem 0.35rem 0.75rem;
+  font-size: var(--texto-sm);
+}
+
+.grafico-barras {
+  display: flex;
+  gap: var(--esp-3);
+  padding: var(--esp-2) var(--esp-5) var(--esp-4);
+  flex: 1;
+}
+
+/* Eixo Y: os ticks se distribuem pela altura útil das barras. */
+.grafico-barras__eixo {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 220px;
+  padding-bottom: 1.4rem; /* compensa a linha dos rótulos dos meses */
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-fraco);
+  font-variant-numeric: tabular-nums;
+}
+
+.grafico-barras__area {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  height: 220px;
+}
+
+.grafico-barras__coluna {
+  flex: 1;
+  min-width: 0;
+  height: 100%; /* altura definida para o % da barra resolver */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--esp-1);
+}
+
+.grafico-barras__barra {
+  width: min(100%, 26px);
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--cor-dourado-500);
+}
+
+.grafico-barras__coluna:hover .grafico-barras__barra { background: var(--cor-dourado-700); }
+
+.grafico-barras__rotulo {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-suave);
+  line-height: 1;
+}
+
+.grafico-card__rodape {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  margin: 0;
+  padding: var(--esp-3) var(--esp-5);
+  border-top: 1px solid var(--cor-borda);
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-fraco);
+}
+
+.grafico-card__rodape .ui-icon { width: 14px; height: 14px; }
+
+/* Chevron no fim da linha clicável: mostra que a linha abre a solicitação. */
+.tabela__abrir {
+  width: 2rem;
+  color: var(--cor-texto-fraco);
+  text-align: right;
+}
+
+.tabela__abrir .ui-icon { width: 15px; height: 15px; }
+
+.tabela--clicavel tbody tr:hover .tabela__abrir { color: var(--cor-dourado-700); }

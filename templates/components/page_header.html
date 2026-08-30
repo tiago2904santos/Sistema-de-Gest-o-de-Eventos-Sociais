@@ -14,7 +14,13 @@
   </div>
   {% if acao_label and acao_url %}
     <div class="page-header__acoes">
-      {% include "components/button.html" with label=acao_label href=acao_url variante=acao_variante|default:"dourado" %}
+      {% if acao_icone %}
+        <a href="{{ acao_url }}" class="btn btn--{{ acao_variante|default:'dourado' }} btn--com-icone">
+          {% include "components/icon.html" with nome=acao_icone %}{{ acao_label }}
+        </a>
+      {% else %}
+        {% include "components/button.html" with label=acao_label href=acao_url variante=acao_variante|default:"dourado" %}
+      {% endif %}
     </div>
   {% endif %}
 </div>
