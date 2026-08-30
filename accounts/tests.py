@@ -172,6 +172,58 @@ class AlterarSenhaTests(TestCase):
         self.assertTrue(usuario.check_password("SenhaAntiga#1"))
 
 
+class TrocaObrigatoriaDeSenhaTests(TestCase):
+    """Senha cadastrada por outra pessoa vale só até o primeiro acesso."""
+
+    def setUp(self):
+        self.usuario = User.objects.create_user("fulano", password="SenhaInicial#1")
+        self.usuario.deve_trocar_senha = True
+        self.usuario.save(update_fields=["deve_trocar_senha"])
+        self.client.force_login(self.usuario)
+
+    def test_navegacao_e_desviada_para_a_troca(self):
+        resposta = self.client.get(reverse("dashboard:index"))
+        self.assertRedirects(resposta, reverse("accounts:alterar_senha"))
+
+    def test_pagina_de_troca_continua_acessivel(self):
+        resposta = self.client.get(reverse("accounts:alterar_senha"))
+        self.assertEqual(resposta.status_code, 200)
+        self.assertTrue(resposta.context["troca_obrigatoria"])
+
+    def test_apos_trocar_a_navegacao_e_liberada(self):
+        self.client.post(
+            reverse("accounts:alterar_senha"),
+            {
+                "old_password": "SenhaInicial#1",
+                "new_password1": "SenhaMinha#2026",
+                "new_password2": "SenhaMinha#2026",
+            },
+        )
+        self.usuario.refresh_from_db()
+        self.assertFalse(self.usuario.deve_trocar_senha)
+        self.assertEqual(
+            self.client.get(reverse("dashboard:index")).status_code, 200
+        )
+
+    def test_usuario_criado_pelo_admin_nasce_com_a_marca(self):
+        admin = User.objects.create_user("chefe", password="x", is_superuser=True)
+        admin.is_staff = True
+        admin.save()
+        self.client.force_login(admin)
+        self.client.post(
+            reverse("accounts:usuarios_novo"),
+            {
+                "first_name": "Novato",
+                "username": "novato",
+                "email": "novato@pc.pr.gov.br",
+                "perfil": GRUPO_SOLICITANTE,
+                "senha": "SenhaInicial#9",
+                "confirmacao_senha": "SenhaInicial#9",
+            },
+        )
+        self.assertTrue(User.objects.get(username="novato").deve_trocar_senha)
+
+
 class RecuperacaoSenhaTests(TestCase):
     @classmethod
     def setUpTestData(cls):

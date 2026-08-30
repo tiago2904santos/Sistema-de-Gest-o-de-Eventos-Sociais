@@ -150,3 +150,15 @@ class AlterarSenhaView(SuccessMessageMixin, PasswordChangeView):
     template_name = "pages/auth/alterar_senha.html"
     success_url = reverse_lazy("dashboard:index")
     success_message = "Senha alterada com sucesso."
+
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        contexto["troca_obrigatoria"] = self.request.user.deve_trocar_senha
+        return contexto
+
+    def form_valid(self, form):
+        resposta = super().form_valid(form)
+        if self.request.user.deve_trocar_senha:
+            self.request.user.deve_trocar_senha = False
+            self.request.user.save(update_fields=["deve_trocar_senha"])
+        return resposta

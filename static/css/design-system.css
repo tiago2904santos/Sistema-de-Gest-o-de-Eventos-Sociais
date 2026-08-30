@@ -441,6 +441,39 @@ img {
   color: var(--cor-texto-fraco);
 }
 
+/* A seta diz a direção; a cor diz se a direção é boa notícia. */
+.summary-card__seta { font-weight: 700; }
+.summary-card__variacao--alta { color: var(--cor-sucesso); }
+.summary-card__variacao--baixa { color: var(--cor-erro); }
+
+/* Cartão que leva à listagem já filtrada. */
+.summary-card--link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.summary-card--link:hover,
+.summary-card--link:focus-visible {
+  text-decoration: none;
+  border-color: var(--cor-borda-forte);
+  border-top-color: var(--cor-acento);
+  box-shadow: var(--sombra-elevada);
+  transform: translateY(-1px);
+}
+
+.summary-card--link:focus-visible {
+  outline: 2px solid var(--cor-acento);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .summary-card--link { transition: none; }
+  .summary-card--link:hover,
+  .summary-card--link:focus-visible { transform: none; }
+}
+
 /* --------------------------------------------------------------------------
    8. Status badge
    -------------------------------------------------------------------------- */
@@ -453,6 +486,7 @@ img {
   font-size: var(--texto-xs);
   font-weight: 600;
   letter-spacing: 0.3px;
+  white-space: nowrap;
   background: var(--cor-neutro-fundo);
   color: var(--cor-neutro);
 }
@@ -486,11 +520,13 @@ img {
 }
 
 .form-campo { grid-column: span 12; }
+.form-campo--9 { grid-column: span 9; }
 .form-campo--6 { grid-column: span 6; }
 .form-campo--4 { grid-column: span 4; }
 .form-campo--3 { grid-column: span 3; }
 
 @media (max-width: 760px) {
+  .form-campo--9,
   .form-campo--6,
   .form-campo--4,
   .form-campo--3 {
@@ -649,6 +685,18 @@ textarea.form-controle {
   font-size: var(--texto-xs);
 }
 
+/* Caixa alta marca a ação principal da página; repetida linha a linha numa
+   tabela ela vira ruído, então o botão compacto volta à caixa normal. */
+.btn--dourado.btn--compacto {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Estado armado do confirmar em duas etapas (ações douradas). */
+.btn--dourado.is-armado {
+  background: var(--cor-grafite-800);
+}
+
 /* Largura fixa para Ativar/Inativar não desalinhar a coluna de ações. */
 .btn--alternar-ativo {
   min-width: 5.25rem;
@@ -678,6 +726,59 @@ textarea.form-controle {
    -------------------------------------------------------------------------- */
 .tabela-wrapper {
   overflow-x: auto;
+}
+
+/* Sombra na borda direita enquanto houver coluna escondida à direita:
+   sem ela, no celular, a tabela parece terminar no meio. */
+.tabela-wrapper {
+  background:
+    linear-gradient(to right, var(--cor-superficie) 30%, rgba(255, 255, 255, 0)) left center,
+    linear-gradient(to left, var(--cor-superficie) 30%, rgba(255, 255, 255, 0)) right center,
+    radial-gradient(farthest-side at 0 50%, rgba(22, 25, 29, 0.16), transparent) left center,
+    radial-gradient(farthest-side at 100% 50%, rgba(22, 25, 29, 0.16), transparent) right center;
+  background-repeat: no-repeat;
+  background-size: 32px 100%, 32px 100%, 14px 100%, 14px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+.tabela-wrapper:focus-visible {
+  outline: 2px solid var(--cor-acento);
+  outline-offset: -2px;
+}
+
+/* Cabeçalho clicável para ordenar a listagem. */
+.tabela__ordenar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+  color: inherit;
+  text-decoration: none;
+}
+
+.tabela__ordenar:hover {
+  color: var(--cor-texto);
+  text-decoration: none;
+}
+
+.tabela__ordenar.is-ativa {
+  color: var(--cor-dourado-700);
+}
+
+.tabela__seta {
+  font-size: 0.7em;
+  opacity: 0.45;
+}
+
+.tabela__ordenar.is-ativa .tabela__seta,
+.tabela__ordenar:hover .tabela__seta {
+  opacity: 1;
+}
+
+.lista-contagem {
+  margin: 0;
+  padding: 0 var(--esp-5) var(--esp-3);
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-suave);
 }
 
 .tabela {
@@ -851,7 +952,6 @@ textarea.form-controle {
 .navbar__link { display: inline-flex; align-items: center; gap: 9px; padding: 0 18px; }
 .navbar__icone { color: var(--cor-texto-suave); font-size: 1rem; }
 .navbar__link--ativo .navbar__icone { color: var(--cor-dourado-700); }
-.navbar__link--indisponivel { cursor: default; opacity: 0.78; }
 .navbar__spacer { flex: 1; }
 .navbar__acao,
 .navbar__logout button {
@@ -1042,6 +1142,13 @@ textarea.form-controle {
   outline: 0; background: #f4edd8; color: #bea45a;
 }
 .custom-date__navegacao .ui-icon { width: 17px; height: 17px; }
+/* Salto de ano: mesma área de clique, peso menor que o passo de mês. */
+.custom-date__salto {
+  width: 28px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+}
 .custom-date__semana,
 .custom-date__dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
 .custom-date__semana { margin-bottom: 3px; }
@@ -1096,10 +1203,10 @@ textarea.form-controle {
 .form-controle--somente-leitura { background: #f0f1f2; color: #656b73; }
 textarea.form-controle { min-height: 68px; }
 .form-fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
-/* Grade de colunas uniformes: chips alinhados, sem larguras desiguais. */
+/* Serviços sempre distribuídos em duas colunas de mesma largura. */
 .chip-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 .chip-grid--compacto {
@@ -1119,8 +1226,14 @@ textarea.form-controle { min-height: 68px; }
 }
 .equipe-alocacao-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+.equipe-alocacao-grid:has(> .equipe-alocacao:only-child) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.equipe-alocacao-grid:has(> .equipe-alocacao:nth-child(3):last-child) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .equipe-alocacao {
   display: grid;
@@ -1210,6 +1323,36 @@ textarea.form-controle { min-height: 68px; }
   text-transform: uppercase; color: var(--cor-texto-suave);
 }
 .resumo-dg dd { margin: 0; font-size: 0.9rem; font-weight: 600; color: var(--cor-texto); }
+/* Texto corrido (descrição, observações) respira e não vira peso de rótulo. */
+.resumo-dg__texto-longo {
+  font-weight: 400;
+  line-height: 1.55;
+  max-width: 70ch;
+}
+
+/* Aviso de devolução: o motivo do ajuste é a primeira coisa a ser lida. */
+.aviso-devolucao {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: var(--esp-5);
+  padding: 16px 20px;
+  border: 1px solid var(--cor-alerta);
+  border-left-width: 4px;
+  border-radius: var(--raio-md);
+  background: var(--cor-alerta-fundo);
+}
+.aviso-devolucao__icone { display: flex; color: var(--cor-alerta); padding-top: 2px; }
+.aviso-devolucao__icone .ui-icon { width: 20px; height: 20px; }
+.aviso-devolucao__texto { flex: 1; display: grid; gap: 4px; }
+.aviso-devolucao__texto strong { color: var(--cor-alerta); }
+.aviso-devolucao__texto p { margin: 0; color: var(--cor-texto); }
+.aviso-devolucao__texto small { color: var(--cor-texto-suave); font-size: var(--texto-xs); }
+.aviso-devolucao .btn { flex-shrink: 0; }
+
+@media (max-width: 640px) {
+  .aviso-devolucao { flex-wrap: wrap; }
+}
 
 .anexos-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .anexo-item {
@@ -1695,4 +1838,120 @@ textarea.form-controle { min-height: 68px; }
 
 .acao-inline__botao:hover {
   text-decoration: underline;
+}
+
+/* Linha inteira clicável nas tabelas de atalho (dashboard). */
+.tabela--clicavel tbody tr[data-linha-url] { cursor: pointer; }
+.tabela--clicavel tbody tr[data-linha-url]:focus-visible {
+  outline: 2px solid var(--cor-acento);
+  outline-offset: -2px;
+}
+
+/* Campo de senha com botão de revelar. */
+.campo-senha { position: relative; display: block; }
+.campo-senha .form-controle { padding-right: 2.75rem; }
+.campo-senha__alternar {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--raio-sm);
+  background: transparent;
+  color: var(--cor-texto-suave);
+  cursor: pointer;
+}
+.campo-senha__alternar:hover { color: var(--cor-texto); background: var(--cor-fundo); }
+.campo-senha__alternar:focus-visible {
+  outline: 2px solid var(--cor-acento);
+  outline-offset: 1px;
+}
+.campo-senha__alternar .ui-icon { width: 18px; height: 18px; }
+
+/* Cartão de notificação inteiro clicável. */
+.notificacao--clicavel { cursor: pointer; }
+.notificacao--clicavel:hover { background: var(--cor-fundo); }
+
+/* --------------------------------------------------------------------------
+   Tabela como cartões no celular
+   Uma tabela de 8 colunas em 375px empurra status e ações para fora da tela,
+   e a rolagem lateral escondia justamente o que se vai ler. Cada linha vira
+   um cartão com "rótulo: valor", usando o data-rotulo de cada célula.
+   -------------------------------------------------------------------------- */
+@media (max-width: 767px) {
+  .tabela--cartoes-no-celular,
+  .tabela--cartoes-no-celular tbody,
+  .tabela--cartoes-no-celular tr,
+  .tabela--cartoes-no-celular td {
+    display: block;
+    width: auto;
+  }
+
+  .tabela--cartoes-no-celular thead {
+    /* Escondido do olho, mantido para leitores de tela. */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .tabela--cartoes-no-celular tbody tr {
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-md);
+    margin: 0 var(--esp-4) var(--esp-3);
+    padding: var(--esp-2) 0;
+    background: var(--cor-superficie);
+  }
+
+  .tabela--cartoes-no-celular tbody tr:hover { background: var(--cor-superficie); }
+
+  .tabela--cartoes-no-celular td {
+    display: grid;
+    grid-template-columns: minmax(6.5rem, 40%) 1fr;
+    gap: var(--esp-3);
+    align-items: baseline;
+    padding: var(--esp-2) var(--esp-4);
+    border: 0;
+  }
+
+  .tabela--cartoes-no-celular td::before {
+    content: attr(data-rotulo);
+    font-size: var(--texto-xs);
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--cor-texto-suave);
+  }
+
+  /* O selo de status não quebra linha; quando não couber ao lado do rótulo,
+     ele desce para a linha seguinte em vez de vazar a borda do cartão. */
+  .tabela--cartoes-no-celular td[data-rotulo="Status"] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-1) var(--esp-3);
+  }
+
+  /* A célula de ações ocupa a largura toda, abaixo dos dados. */
+  .tabela--cartoes-no-celular td.tabela__acoes {
+    display: block;
+    border-top: 1px solid var(--cor-borda);
+    margin-top: var(--esp-2);
+    padding-top: var(--esp-3);
+  }
+
+  .tabela--cartoes-no-celular .tabela__acoes-grupo { flex-wrap: wrap; }
+
+  /* Sem colunas escondidas, a sombra de rolagem lateral perde a função. */
+  .tabela-wrapper:has(.tabela--cartoes-no-celular) {
+    overflow-x: visible;
+    background: none;
+  }
 }

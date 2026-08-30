@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
+from django.urls import reverse
 from django.utils import timezone
 
 from solicitacoes.models import SolicitacaoEvento, StatusSolicitacao
@@ -30,23 +31,25 @@ def index(request):
         status=StatusSolicitacao.AGUARDANDO_DESPACHO
     ).count()
 
-    # Deferidas em andamento contam como decisão favorável da DG.
-    finalizadas_ano = visiveis.filter(
-        data_solicitacao__year=hoje.year,
+    # "Deferida em andamento" é decisão favorável com evento ainda por vir;
+    # "Atendida" é evento realizado e confirmado. Os dois números aparecem
+    # separados para o cartão não prometer atendimento que ainda não houve.
+    do_ano = visiveis.filter(data_solicitacao__year=hoje.year)
+    decididas_ano = do_ano.filter(
         status__in=[
             StatusSolicitacao.ATENDIDA,
             StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
             StatusSolicitacao.NAO_ATENDIDA,
         ],
     ).count()
-    atendidas_ano = visiveis.filter(
-        data_solicitacao__year=hoje.year,
+    deferidas_ano = do_ano.filter(
         status__in=[
             StatusSolicitacao.ATENDIDA,
             StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
         ],
     ).count()
-    percentual = round(atendidas_ano * 100 / finalizadas_ano) if finalizadas_ano else 0
+    atendidas_ano = do_ano.filter(status=StatusSolicitacao.ATENDIDA).count()
+    percentual = round(deferidas_ano * 100 / decididas_ano) if decididas_ano else 0
 
     proximos = visiveis.filter(
         data_inicio_evento__gte=hoje,
@@ -57,31 +60,44 @@ def index(request):
     proximos_total = proximos.count()
     proximos_unidade_movel = proximos.filter(unidade_movel=True).count()
 
+    lista = reverse("solicitacoes:lista")
     resumo = [
         {
             "titulo": "Solicitações no mês",
             "valor": no_mes,
             "variacao": (
-                f"{diferenca:+d} em relação ao mês anterior" if no_mes_anterior or no_mes else "Sem registros"
+                f"{abs(diferenca)} em relação ao mês anterior"
+                if no_mes_anterior or no_mes
+                else "Sem registros"
             ),
+            "tendencia": "alta" if diferenca > 0 else "baixa" if diferenca < 0 else "",
+            "url": lista,
         },
         {
             "titulo": "Aguardando despacho",
             "valor": aguardando,
             "variacao": "Pendentes de decisão da DG",
+            "url": f"{lista}?status={StatusSolicitacao.AGUARDANDO_DESPACHO}",
         },
         {
-            "titulo": "Atendidas no ano",
-            "valor": atendidas_ano,
+            "titulo": "Deferidas no ano",
+            "valor": deferidas_ano,
             "variacao": (
-                f"{percentual}% das finalizadas" if finalizadas_ano else "Nenhuma finalizada ainda"
+                f"{atendidas_ano} já atendidas · {percentual}% das decididas"
+                if decididas_ano
+                else "Nenhuma decisão registrada ainda"
             ),
+            "url": f"{lista}?status={StatusSolicitacao.DEFERIDA_EM_ANDAMENTO}",
         },
         {
             "titulo": "Eventos nos próximos 30 dias",
             "valor": proximos_total,
             "variacao": (
                 f"{proximos_unidade_movel} com unidade móvel" if proximos_total else "Nenhum evento agendado"
+            ),
+            "url": (
+                f"{lista}?inicio={hoje:%Y-%m-%d}"
+                f"&fim={hoje + timedelta(days=30):%Y-%m-%d}"
             ),
         },
     ]
@@ -93,5 +109,9 @@ def index(request):
     return render(
         request,
         "pages/dashboard/index.html",
-        {"resumo": resumo, "ultimas_solicitacoes": ultimas_solicitacoes},
+        {
+            "resumo": resumo,
+            "ultimas_solicitacoes": ultimas_solicitacoes,
+            "url_lista": lista,
+        },
     )

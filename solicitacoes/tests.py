@@ -109,7 +109,6 @@ class BaseSolicitacaoTestCase(TestCase):
             "tipo_operacao": "DIARIA",
             "unidade_movel": "1",
             "unidade_movel_designada": self.van.pk,
-            "veiculo_exposicao": "0",
         }
 
 
@@ -901,7 +900,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
             reverse("solicitacoes:lista"), {"fila": "devolvidas"}
         )
         self.assertEqual(resposta.context["pagina"].paginator.count, 1)
-        self.assertContains(resposta, "Devolvidas para ajuste")
+        self.assertContains(resposta, "Minhas devolvidas")
         self.assertContains(resposta, ">Continuar<", html=False)
 
     def test_despacho_via_view(self):
@@ -1055,7 +1054,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
             reverse("solicitacoes:lista"), {"fila": "andamento"}
         )
         self.assertEqual(resposta.context["pagina"].paginator.count, 1)
-        self.assertContains(resposta, "Deferidas em andamento")
+        self.assertContains(resposta, "Minhas deferidas")
         self.assertContains(resposta, ">Confirmar<", html=False)
 
     def test_pagina_do_dg_e_um_resumo(self):
@@ -1073,13 +1072,14 @@ class ViewsTests(BaseSolicitacaoTestCase):
         # As quantidades continuam editáveis no despacho.
         self.assertContains(resposta, f'name="quantidade_dg_{self.equipe.pk}"')
 
-        # O solicitante continua vendo a visualização completa.
+        # O solicitante vê o mesmo resumo, sem o formulário de despacho.
         self.client.force_login(self.solicitante)
         resposta = self.client.get(
             reverse("solicitacoes:detalhe", args=[solicitacao.pk])
         )
         self.assertNotContains(resposta, "Resumo para despacho da Diretoria-Geral")
-        self.assertContains(resposta, 'name="solicitante_nome"')
+        self.assertContains(resposta, "Resumo da solicitação")
+        self.assertNotContains(resposta, f'name="quantidade_dg_{self.equipe.pk}"')
 
     def test_campo_qual_unidade_movel_no_formulario(self):
         self.client.force_login(self.solicitante)
@@ -1103,7 +1103,12 @@ class ViewsTests(BaseSolicitacaoTestCase):
         )
         self.assertEqual(resposta.status_code, 200)
 
-    def test_detalhe_reutiliza_formulario_em_modo_somente_leitura(self):
+    def test_detalhe_e_leitura_e_nao_formulario(self):
+        """Ver não é editar: a página de detalhe é resumo em rótulo/valor.
+
+        Campos com cara de editáveis que não salvam nada confundiam o usuário
+        e ainda arrastavam a lista inteira de municípios para o HTML.
+        """
         solicitacao = self.solicitacao_completa()
         self.client.force_login(self.solicitante)
 
@@ -1112,11 +1117,10 @@ class ViewsTests(BaseSolicitacaoTestCase):
         )
 
         self.assertTrue(resposta.context["somente_leitura"])
-        self.assertContains(resposta, "Dados da solicitação")
-        self.assertContains(resposta, "Serviços e estrutura do evento")
-        self.assertContains(resposta, "Planejamento operacional")
-        self.assertContains(resposta, 'name="solicitante_nome"', html=False)
-        self.assertContains(resposta, "disabled", html=False)
+        self.assertContains(resposta, "Resumo da solicitação")
+        self.assertContains(resposta, solicitacao.solicitante_nome)
+        self.assertNotContains(resposta, 'name="solicitante_nome"')
+        self.assertNotContains(resposta, 'name="municipio"')
         self.assertNotContains(resposta, "Salvar rascunho")
         self.assertContains(resposta, "Enviar para a DG")
 
@@ -1157,6 +1161,77 @@ class ViewsTests(BaseSolicitacaoTestCase):
         pks = [linha["solicitacao"].pk for linha in resposta.context["linhas"]]
         self.assertIn(enviada.pk, pks)
         self.assertNotIn(rascunho.pk, pks)
+
+    def test_listagem_ordena_pela_coluna_pedida(self):
+        primeira = self.criar_solicitacao(solicitante_nome="Ana")
+        segunda = self.criar_solicitacao(solicitante_nome="Zulmira")
+        self.client.force_login(self.solicitante)
+
+        crescente = self.client.get(
+            reverse("solicitacoes:lista"), {"ordem": "solicitante"}
+        )
+        decrescente = self.client.get(
+            reverse("solicitacoes:lista"), {"ordem": "-solicitante"}
+        )
+
+        def nomes(resposta):
+            return [
+                linha["solicitacao"].solicitante_nome
+                for linha in resposta.context["linhas"]
+            ]
+
+        self.assertLess(
+            nomes(crescente).index(primeira.solicitante_nome),
+            nomes(crescente).index(segunda.solicitante_nome),
+        )
+        self.assertGreater(
+            nomes(decrescente).index(primeira.solicitante_nome),
+            nomes(decrescente).index(segunda.solicitante_nome),
+        )
+
+    def test_ordem_invalida_cai_no_padrao(self):
+        self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+
+        resposta = self.client.get(
+            reverse("solicitacoes:lista"), {"ordem": "'; DROP TABLE"}
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+
+    def test_devolvida_mostra_motivo_em_destaque(self):
+        """O motivo do ajuste não pode ficar só numa célula do histórico."""
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.devolver(solicitacao, self.gestor, observacao="Detalhe o local.")
+        self.client.force_login(self.solicitante)
+
+        resposta = self.client.get(
+            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+
+        self.assertContains(resposta, "aviso-devolucao")
+        self.assertContains(resposta, "Detalhe o local.")
+        self.assertContains(resposta, "Editar e reenviar")
+
+    def test_despacho_invalido_preserva_a_decisao_escolhida(self):
+        """Errar a observação não pode apagar a decisão já selecionada."""
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.client.force_login(self.gestor)
+
+        resposta = self.client.post(
+            reverse("solicitacoes:despachar", args=[solicitacao.pk]),
+            {"decisao": DespachoForm.DEVOLVER, "observacao": ""},
+        )
+
+        self.assertTrue(resposta["Location"].endswith("#despacho-dg"))
+        detalhe = self.client.get(
+            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+        self.assertEqual(
+            detalhe.context["despacho_pendente"]["decisao"], DespachoForm.DEVOLVER
+        )
 
 
 class ExportacaoCsvTests(BaseSolicitacaoTestCase):
@@ -1291,6 +1366,27 @@ class AnexosTests(BaseSolicitacaoTestCase):
             {"arquivo": self.arquivo()},
         )
         self.assertEqual(resposta.status_code, 403)
+
+    def test_anexo_bloqueado_apos_finalizacao_mesmo_para_superusuario(self):
+        """Dossiê de evento encerrado não muda mais — nem por superusuário."""
+        solicitacao = self.solicitacao_completa()
+        solicitacao.status = StatusSolicitacao.ATENDIDA
+        solicitacao.save(update_fields=["status"])
+        superusuario = get_user_model().objects.create_superuser(
+            "raiz-anexos", password="x"
+        )
+        self.client.force_login(superusuario)
+
+        resposta = self.client.post(
+            reverse("solicitacoes:anexo_adicionar", args=[solicitacao.pk]),
+            {"arquivo": self.arquivo()},
+        )
+
+        self.assertEqual(resposta.status_code, 403)
+        detalhe = self.client.get(
+            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+        self.assertNotContains(detalhe, "Anexar arquivo")
 
     def test_download_respeita_visibilidade(self):
         solicitacao = self.criar_solicitacao()

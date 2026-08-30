@@ -10,7 +10,7 @@
       {% csrf_token %}
   {% endif %}
 
-    {% include "components/breadcrumb.html" with atual=titulo_pagina %}
+    {% include "components/breadcrumb.html" with itens=breadcrumb %}
 
     <div class="solicitacao-intro">
       {% include "components/page_header.html" with titulo=titulo_pagina subtitulo=subtitulo_pagina|default:"Preencha os dados abaixo para registrar a solicitação de atendimento do evento." icone="document" %}
@@ -24,7 +24,7 @@
             {% include "components/button.html" with label="Editar" variante="secundario" href=url_editar %}
           {% endif %}
           {% if acoes.concluir %}
-            <form method="post" action="{% url 'solicitacoes:concluir' solicitacao.pk %}">
+            <form method="post" action="{% url 'solicitacoes:concluir' solicitacao.pk %}" data-confirmar="Confirmar e encerrar?">
               {% csrf_token %}
               {% include "components/button.html" with label="Confirmar atendimento" variante="dourado" tipo="submit" %}
             </form>
@@ -55,15 +55,30 @@
 
     <div class="solicitacao-layout">
       <div class="solicitacao-conteudo">
-        {% if modo_resumo_dg %}
-          {# Página do DG: resumo compacto — só as quantidades do despacho são editáveis. #}
+        {% if motivo_devolucao %}
+          <div class="aviso-devolucao" role="status">
+            <span class="aviso-devolucao__icone" aria-hidden="true">{% include "components/icon.html" with nome="undo" %}</span>
+            <div class="aviso-devolucao__texto">
+              <strong>Devolvida para ajuste pela Diretoria-Geral</strong>
+              <p>{{ motivo_devolucao.observacao }}</p>
+              <small>{{ motivo_devolucao.usuario|default:"Diretoria-Geral" }} · {{ motivo_devolucao.criado_em|date:"d/m/Y H:i" }}</small>
+            </div>
+            {% if acoes.editar_dados %}
+              {% url 'solicitacoes:editar' solicitacao.pk as url_ajustar %}
+              {% include "components/button.html" with label="Editar e reenviar" variante="dourado" href=url_ajustar %}
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {% if modo_resumo %}
+          {# Leitura: resumo em rótulo/valor — os campos editáveis vivem só em /editar/. #}
           <section class="section-card">
             {% include "components/section_card.html" with numero="1" titulo="Resumo da solicitação" subtitulo="Dados enviados pelo solicitante." %}
             <div class="section-card__corpo">
               <dl class="resumo-dg">
                 <div class="resumo-dg__item"><dt>Situação</dt><dd>{% include "components/status_badge.html" with status=solicitacao.status label=solicitacao.get_status_display %}</dd></div>
                 <div class="resumo-dg__item"><dt>Data da solicitação</dt><dd>{{ solicitacao.data_solicitacao|date:"d/m/Y" }}</dd></div>
-                <div class="resumo-dg__item"><dt>Período do evento</dt><dd>{% if solicitacao.data_inicio_evento %}{{ solicitacao.data_inicio_evento|date:"d/m/Y" }}{% if solicitacao.data_fim_evento %} a {{ solicitacao.data_fim_evento|date:"d/m/Y" }}{% endif %}{% else %}—{% endif %}</dd></div>
+                <div class="resumo-dg__item"><dt>Período do evento</dt><dd>{% if solicitacao.data_inicio_evento %}{{ solicitacao.data_inicio_evento|date:"d/m/Y" }}{% if solicitacao.data_fim_evento and solicitacao.data_fim_evento != solicitacao.data_inicio_evento %} a {{ solicitacao.data_fim_evento|date:"d/m/Y" }}{% endif %}{% else %}—{% endif %}</dd></div>
                 <div class="resumo-dg__item"><dt>Tipo do evento</dt><dd>{{ solicitacao.tipo_evento|default:"—" }}</dd></div>
                 <div class="resumo-dg__item"><dt>Município</dt><dd>{{ solicitacao.municipio|default:"—" }}{% if solicitacao.municipio %} — {{ solicitacao.municipio.estado.sigla }}{% endif %}</dd></div>
                 <div class="resumo-dg__item"><dt>Região</dt><dd>{{ solicitacao.regiao|default:"—" }}</dd></div>
@@ -75,12 +90,15 @@
                 <div class="resumo-dg__item"><dt>Serviços solicitados</dt><dd>{% for servico in solicitacao.servicos.all %}{{ servico }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd></div>
                 <div class="resumo-dg__item"><dt>Unidade móvel</dt><dd>{% if solicitacao.unidade_movel %}Sim{% if solicitacao.unidade_movel_designada %} — {{ solicitacao.unidade_movel_designada }}{% endif %}{% else %}Não{% endif %}</dd></div>
                 <div class="resumo-dg__item"><dt>Motorista</dt><dd>{{ solicitacao.motorista|default:"—" }}</dd></div>
-                <div class="resumo-dg__item"><dt>Veículo de exposição</dt><dd>{{ solicitacao.veiculo_exposicao|yesno:"Sim,Não" }}</dd></div>
                 <div class="resumo-dg__item"><dt>Tipo de operação</dt><dd>{% if solicitacao.tipo_operacao %}{{ solicitacao.get_tipo_operacao_display }}{% else %}—{% endif %}</dd></div>
                 <div class="resumo-dg__item"><dt>Quantidade de CIN</dt><dd>{{ solicitacao.quantidade_cin|default:"—" }}</dd></div>
+                <div class="resumo-dg__item"><dt>Equipes designadas</dt><dd>{% for item in itens_equipe %}{{ item.equipe }}{% if item.quantidade_servidores %} ({{ item.quantidade_servidores }}){% endif %}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd></div>
                 <div class="resumo-dg__item"><dt>Total de servidores propostos</dt><dd>{{ solicitacao.quantidade_servidores|default:"—" }}</dd></div>
                 {% if solicitacao.descricao_complementar %}
-                  <div class="resumo-dg__item resumo-dg__item--largo"><dt>Descrição complementar</dt><dd>{{ solicitacao.descricao_complementar }}</dd></div>
+                  <div class="resumo-dg__item resumo-dg__item--largo"><dt>Descrição complementar</dt><dd class="resumo-dg__texto-longo">{{ solicitacao.descricao_complementar|linebreaksbr }}</dd></div>
+                {% endif %}
+                {% if solicitacao.observacoes_dg %}
+                  <div class="resumo-dg__item resumo-dg__item--largo"><dt>Observações da DG</dt><dd class="resumo-dg__texto-longo">{{ solicitacao.observacoes_dg|linebreaksbr }}</dd></div>
                 {% endif %}
               </dl>
             </div>
@@ -129,7 +147,7 @@
                   </label>
                 {% endfor %}
               </div>
-              {% if erros.servicos %}<p class="form-erro">{{ erros.servicos.0 }}</p>{% endif %}
+              {% for erro in erros.servicos %}<p class="form-erro">{{ erro }}</p>{% endfor %}
             </fieldset>
             <div class="form-grid form-grid--separado">
               <fieldset class="form-campo form-campo--3 form-fieldset">
@@ -140,13 +158,6 @@
                 </div>
               </fieldset>
               {% include "components/select.html" with name="unidade_movel_designada" label="Qual unidade móvel" opcoes=unidades_moveis placeholder="Selecione a unidade..." largura="3" selecionado=valores.unidade_movel_designada erros=erros.unidade_movel_designada desabilitado=planejamento_desabilitado %}
-              <fieldset class="form-campo form-campo--3 form-fieldset">
-                <legend class="form-label">Veículos de exposição</legend>
-                <div class="segmented-control">
-                  <label><input type="radio" name="veiculo_exposicao" value="1"{% if valores.veiculo_exposicao == "1" %} checked{% endif %}{% if planejamento_desabilitado %} disabled{% endif %}><span>Sim</span></label>
-                  <label><input type="radio" name="veiculo_exposicao" value="0"{% if valores.veiculo_exposicao != "1" %} checked{% endif %}{% if planejamento_desabilitado %} disabled{% endif %}><span>Não</span></label>
-                </div>
-              </fieldset>
               {% include "components/textarea.html" with name="descricao_complementar" label="Descrição complementar" placeholder="Detalhes adicionais sobre serviços e estrutura..." largura="6" linhas="3" valor=valores.descricao_complementar erros=erros.descricao_complementar desabilitado=planejamento_desabilitado %}
             </div>
           </div>
@@ -172,7 +183,7 @@
                     </div>
                   {% endfor %}
                 </div>
-                {% if erros.equipes %}<p class="form-erro">{{ erros.equipes.0 }}</p>{% endif %}
+                {% for erro in erros.equipes %}<p class="form-erro">{{ erro }}</p>{% endfor %}
               </fieldset>
               {% include "components/select.html" with name="motorista" label="Motorista" opcoes=motoristas largura="4" selecionado=valores.motorista erros=erros.motorista desabilitado=planejamento_desabilitado %}
               {% include "components/select.html" with name="tipo_operacao" label="Tipo" opcoes=tipos_operacao largura="6" selecionado=valores.tipo_operacao erros=erros.tipo_operacao desabilitado=planejamento_desabilitado %}
@@ -184,7 +195,7 @@
 
         {% if solicitacao %}
           <section class="section-card" id="anexos">
-            {% include "components/section_card.html" with numero=modo_resumo_dg|yesno:"2,5" titulo="Anexos" %}
+            {% include "components/section_card.html" with numero=modo_resumo|yesno:"2,5" titulo="Anexos" %}
             <div class="section-card__corpo">
               {% if anexos %}
                 <ul class="anexos-lista">
@@ -240,9 +251,8 @@
 
         {% if mostrar_despacho_dg %}
           <section class="section-card" id="despacho-dg">
-            {% include "components/section_card.html" with numero=modo_resumo_dg|yesno:"3,6" titulo="Despacho DG" %}
+            {% include "components/section_card.html" with numero=modo_resumo|yesno:"3,6" titulo="Despacho DG" %}
             <div class="section-card__corpo">
-              {% if somente_leitura and acoes.despachar %}
                 <form method="post" action="{% url 'solicitacoes:despachar' solicitacao.pk %}">
                   {% csrf_token %}
                   {% if solicitacao.itens_equipe.all %}
@@ -265,33 +275,20 @@
                   <fieldset class="form-campo form-fieldset">
                     <legend class="form-label">Decisão</legend>
                     <div class="decision-grid">
-                      <label class="decision-option decision-option--success"><input type="radio" name="decisao" value="ATENDER" required><span>{% include "components/icon.html" with nome="check" %}</span>Atender</label>
-                      <label class="decision-option decision-option--danger"><input type="radio" name="decisao" value="NAO_ATENDER"><span>{% include "components/icon.html" with nome="x" %}</span>Não atender</label>
-                      <label class="decision-option decision-option--cancel"><input type="radio" name="decisao" value="CANCELADO"><span>{% include "components/icon.html" with nome="ban" %}</span>Evento cancelado</label>
-                      <label class="decision-option decision-option--return"><input type="radio" name="decisao" value="DEVOLVER"><span>{% include "components/icon.html" with nome="undo" %}</span>Devolver para ajuste</label>
+                      <label class="decision-option decision-option--success"><input type="radio" name="decisao" value="ATENDER" required{% if despacho_pendente.decisao == "ATENDER" %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>Atender</label>
+                      <label class="decision-option decision-option--danger"><input type="radio" name="decisao" value="NAO_ATENDER"{% if despacho_pendente.decisao == "NAO_ATENDER" %} checked{% endif %}><span>{% include "components/icon.html" with nome="x" %}</span>Não atender</label>
+                      <label class="decision-option decision-option--cancel"><input type="radio" name="decisao" value="CANCELADO"{% if despacho_pendente.decisao == "CANCELADO" %} checked{% endif %}><span>{% include "components/icon.html" with nome="ban" %}</span>Evento cancelado</label>
+                      <label class="decision-option decision-option--return"><input type="radio" name="decisao" value="DEVOLVER"{% if despacho_pendente.decisao == "DEVOLVER" %} checked{% endif %}><span>{% include "components/icon.html" with nome="undo" %}</span>Devolver para ajuste</label>
                     </div>
                   </fieldset>
                   <div class="form-grid form-grid--separado">
-                    {% include "components/textarea.html" with name="observacao" label="Observações DG" placeholder="Obrigatórias para não atendimento, cancelamento ou devolução." largura="" linhas="3" %}
+                    {% include "components/textarea.html" with name="observacao" label="Observações DG" placeholder="Obrigatórias para não atendimento, cancelamento ou devolução." largura="" linhas="3" valor=despacho_pendente.observacao %}
                   </div>
                   <div class="acoes-formulario">
                     <button type="submit" class="btn btn--secundario" name="acao_despacho" value="salvar_ajustes" formnovalidate>Salvar ajustes</button>
                     {% include "components/button.html" with label="Registrar decisão" variante="dourado" tipo="submit" %}
                   </div>
                 </form>
-              {% else %}
-                <fieldset class="form-campo form-fieldset">
-                  <legend class="form-label">Decisão</legend>
-                  <div class="decision-grid">
-                    <label class="decision-option decision-option--success"><input type="radio" name="decisao_dg_visual" value="ATENDER"{% if valores.decisao_dg == "ATENDER" %} checked{% endif %} disabled><span>{% include "components/icon.html" with nome="check" %}</span>Atender</label>
-                    <label class="decision-option decision-option--danger"><input type="radio" name="decisao_dg_visual" value="NAO_ATENDER"{% if valores.decisao_dg == "NAO_ATENDER" %} checked{% endif %} disabled><span>{% include "components/icon.html" with nome="x" %}</span>Não atender</label>
-                    <label class="decision-option decision-option--cancel"><input type="radio" name="decisao_dg_visual" value="CANCELADO"{% if valores.decisao_dg == "CANCELADO" %} checked{% endif %} disabled><span>{% include "components/icon.html" with nome="ban" %}</span>Evento cancelado</label>
-                  </div>
-                </fieldset>
-                <div class="form-grid form-grid--separado">
-                  {% include "components/textarea.html" with name="observacoes_dg_visual" label="Observações DG" placeholder="Registradas no despacho da Diretoria-Geral." largura="" linhas="3" valor=valores.observacoes_dg desabilitado=True %}
-                </div>
-              {% endif %}
             </div>
           </section>
         {% endif %}
@@ -299,12 +296,12 @@
         {% if somente_leitura %}
           {% if acoes.concluir or acoes.cancelar %}
             <section class="section-card" id="encerramento">
-              {% include "components/section_card.html" with numero=modo_resumo_dg|yesno:"4,7" titulo="Encerramento do evento" %}
+              {% include "components/section_card.html" with numero=modo_resumo|yesno:"4,7" titulo="Encerramento do evento" %}
               <div class="section-card__corpo">
                 {% if acoes.concluir %}
                   <div class="encerramento-bloco">
-                    <p class="texto-suave">O evento já aconteceu? Confirme o atendimento para encerrar a solicitação.</p>
-                    <form method="post" action="{% url 'solicitacoes:concluir' solicitacao.pk %}">
+                    <p class="texto-suave">O evento já aconteceu? Confirme o atendimento para encerrar a solicitação — depois disso ela não aceita mais alterações.</p>
+                    <form method="post" action="{% url 'solicitacoes:concluir' solicitacao.pk %}" data-confirmar="Confirmar e encerrar?">
                       {% csrf_token %}
                       {% include "components/button.html" with label="Confirmar atendimento" variante="dourado" tipo="submit" %}
                     </form>
@@ -313,6 +310,7 @@
                 {% if acoes.cancelar %}
                   <form method="post" action="{% url 'solicitacoes:cancelar_evento' solicitacao.pk %}" class="encerramento-bloco encerramento-bloco--cancelamento" data-confirmar-exclusao>
                     {% csrf_token %}
+                    <p class="texto-suave">Use quando o <strong>evento em si</strong> não vai mais acontecer — o organizador desmarcou, por exemplo. Para negar o atendimento de um evento que continua de pé, a DG usa a decisão “Não atender” no despacho.</p>
                     {% include "components/textarea.html" with name="motivo_cancelamento" label="O evento foi cancelado?" placeholder="Informe o motivo do cancelamento do evento (obrigatório)." largura="" linhas="2" %}
                     <button type="submit" class="btn btn--perigo-suave">Registrar cancelamento do evento</button>
                   </form>
@@ -321,7 +319,7 @@
             </section>
           {% endif %}
           <section class="section-card">
-            {% include "components/section_card.html" with numero=modo_resumo_dg|yesno:"5,8" titulo="Histórico" %}
+            {% include "components/section_card.html" with numero=modo_resumo|yesno:"5,8" titulo="Histórico" %}
             <div class="section-card__corpo">
               <div class="tabela-wrapper">
                 <table class="tabela">
@@ -347,9 +345,9 @@
       </div>
 
       <aside class="solicitacao-sidebar" aria-label="Acompanhamento da solicitação">
-        {% if not modo_resumo_dg %}{% include "components/solicitation_summary.html" %}{% endif %}
+        {% if not modo_resumo %}{% include "components/solicitation_summary.html" %}{% endif %}
         {% include "components/workflow_timeline.html" with etapas=timeline %}
-        {% if not modo_resumo_dg %}{% include "components/request_checklist.html" %}{% endif %}
+        {% if not modo_resumo %}{% include "components/request_checklist.html" %}{% endif %}
       </aside>
     </div>
   {% if somente_leitura %}

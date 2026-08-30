@@ -42,6 +42,12 @@ class UsuarioForm(forms.ModelForm):
         self.fields["last_name"].label = "Sobrenome"
         self.fields["username"].label = "Usuário"
         self.fields["email"].label = "E-mail institucional"
+        # Sem e-mail o usuário não recebe aviso de evento nem recupera a
+        # própria senha. Exigido em cadastros novos e de quem já tem um — os
+        # usuários antigos sem e-mail continuam editáveis sem inventar um.
+        self.fields["email"].required = not self.instance.pk or bool(
+            self.instance.email
+        )
         if self.instance.pk:
             grupo = self.instance.groups.filter(name__in=GRUPOS_PADRAO).first()
             if grupo:
@@ -72,6 +78,9 @@ class UsuarioForm(forms.ModelForm):
         usuario = super().save(commit=False)
         if self.cleaned_data.get("senha"):
             usuario.set_password(self.cleaned_data["senha"])
+            # Quem definiu a senha conhece a senha: o titular troca no acesso
+            # seguinte para que ela volte a ser só dele.
+            usuario.deve_trocar_senha = True
         usuario.save()
         # Perfil único dentre os grupos padrão (outros grupos são preservados).
         usuario.groups.remove(*usuario.groups.filter(name__in=GRUPOS_PADRAO))

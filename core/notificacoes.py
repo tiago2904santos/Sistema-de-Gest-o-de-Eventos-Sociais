@@ -31,14 +31,29 @@ def usuarios_ativos(exceto=None):
     return queryset
 
 
-def notificar(usuarios, titulo, mensagem="", link=""):
-    """Cria notificações internas e agenda os e-mails correspondentes."""
-    destinatarios = [usuario for usuario in usuarios if usuario and usuario.is_active]
+def notificar(usuarios, titulo, mensagem="", link="", solicitacao=None, exceto=None):
+    """Cria notificações internas e agenda os e-mails correspondentes.
+
+    `exceto` retira o autor da ação da lista: ninguém precisa ser avisado do
+    que acabou de fazer. `solicitacao` vincula a notificação à origem, para
+    que ela desapareça junto quando a solicitação é excluída.
+    """
+    destinatarios = {
+        usuario.pk: usuario
+        for usuario in usuarios
+        if usuario and usuario.is_active and usuario != exceto
+    }.values()
     if not destinatarios:
         return []
 
     notificacoes = Notificacao.objects.bulk_create(
-        Notificacao(usuario=usuario, titulo=titulo, mensagem=mensagem, link=link)
+        Notificacao(
+            usuario=usuario,
+            solicitacao=solicitacao,
+            titulo=titulo,
+            mensagem=mensagem,
+            link=link,
+        )
         for usuario in destinatarios
     )
 

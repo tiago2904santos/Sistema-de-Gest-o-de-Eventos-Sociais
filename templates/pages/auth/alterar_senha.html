@@ -4,7 +4,11 @@
 
 {% block conteudo %}
   {% include "components/breadcrumb.html" with atual="Alterar senha" %}
-  {% include "components/page_header.html" with titulo="Alterar senha" subtitulo="Atualize a senha de acesso da sua conta" icone="settings" %}
+  {% if troca_obrigatoria %}
+    {% include "components/page_header.html" with titulo="Defina sua senha" subtitulo="A senha atual foi cadastrada por outra pessoa — escolha uma que só você conheça para continuar." icone="settings" %}
+  {% else %}
+    {% include "components/page_header.html" with titulo="Alterar senha" subtitulo="Atualize a senha de acesso da sua conta" icone="settings" %}
+  {% endif %}
 
   <form method="post" action="">
     {% csrf_token %}
@@ -26,8 +30,10 @@
     </section>
 
     <div class="acoes-formulario">
-      {% url 'dashboard:index' as url_voltar %}
-      {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
+      {% if not troca_obrigatoria %}
+        {% url 'dashboard:index' as url_voltar %}
+        {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
+      {% endif %}
       {% include "components/button.html" with label="Alterar senha" variante="dourado" tipo="submit" %}
     </div>
   </form>

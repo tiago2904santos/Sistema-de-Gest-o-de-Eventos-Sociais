@@ -34,8 +34,11 @@
           <small class="custom-date__instrucao" data-custom-date-range-hint>Selecione a data inicial</small>
         </div>
         <div class="custom-date__navegacao">
+          {# Salto de ano: eventos são marcados com meses de antecedência. #}
+          <button type="button" class="custom-date__salto" aria-label="Ano anterior" data-custom-date-range-prev-ano>«</button>
           <button type="button" aria-label="Mês anterior" data-custom-date-range-prev>{% include "components/icon.html" with nome="chevron-left" %}</button>
           <button type="button" aria-label="Próximo mês" data-custom-date-range-next>{% include "components/icon.html" with nome="chevron-right" %}</button>
+          <button type="button" class="custom-date__salto" aria-label="Próximo ano" data-custom-date-range-next-ano>»</button>
         </div>
       </div>
       <div class="custom-date__semana" aria-hidden="true">

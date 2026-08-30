@@ -30,3 +30,7 @@ logs/
 .idea/
 Thumbs.db
 .DS_Store
+
+# Prints da auditoria visual (material de trabalho, nao versionar)
+auditoria-visual/
+auditoria-visual.zip

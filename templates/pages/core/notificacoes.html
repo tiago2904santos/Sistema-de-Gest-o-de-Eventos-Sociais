@@ -11,7 +11,7 @@
     <ul class="notificacoes-lista">
       {% for item in notificacoes %}
         {% with n=item.notificacao %}
-          <li class="notificacao{% if item.nao_lida %} notificacao--nova{% endif %}">
+          <li class="notificacao{% if item.nao_lida %} notificacao--nova{% endif %}{% if n.link %} notificacao--clicavel{% endif %}"{% if n.link %} data-linha-url="{{ n.link }}"{% endif %}>
             <span class="notificacao__icone">{% include "components/icon.html" with nome="bell" %}</span>
             <div class="notificacao__conteudo">
               {% if n.link %}

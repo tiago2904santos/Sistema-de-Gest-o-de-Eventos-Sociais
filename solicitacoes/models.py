@@ -106,7 +106,6 @@ class SolicitacaoEvento(models.Model):
         null=True,
         help_text="Qual unidade móvel vai ao evento (obrigatória quando há unidade móvel).",
     )
-    veiculo_exposicao = models.BooleanField("veículo de exposição", default=False)
     local_evento = models.CharField("local do evento", max_length=255, blank=True)
     descricao_complementar = models.TextField("descrição complementar", blank=True)
 
@@ -356,6 +355,8 @@ class AnexoSolicitacao(models.Model):
 
 class AcaoHistorico(models.TextChoices):
     CRIACAO = "CRIACAO", "Rascunho criado"
+    # Registro que nasceu na planilha de eventos, não no sistema.
+    IMPORTACAO = "IMPORTACAO", "Importada da planilha"
     ATUALIZACAO = "ATUALIZACAO", "Solicitação atualizada"
     ENVIO = "ENVIO", "Solicitação enviada"
     INICIO_ANALISE = "INICIO_ANALISE", "Análise iniciada"

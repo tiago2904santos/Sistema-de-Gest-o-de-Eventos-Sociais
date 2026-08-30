@@ -9,14 +9,14 @@
 
   <div class="grid-resumo">
     {% for item in resumo %}
-      {% include "components/summary_card.html" with titulo=item.titulo valor=item.valor variacao=item.variacao %}
+      {% include "components/summary_card.html" with titulo=item.titulo valor=item.valor variacao=item.variacao tendencia=item.tendencia url=item.url %}
     {% endfor %}
   </div>
 
   <div class="card">
-    {% include "components/card.html" with titulo="Últimas solicitações" %}
-    <div class="tabela-wrapper">
-      <table class="tabela">
+    {% include "components/card.html" with titulo="Últimas solicitações" acao_label="Ver todas" acao_url=url_lista %}
+    <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Últimas solicitações">
+      <table class="tabela tabela--clicavel">
         <thead>
           <tr>
             <th>Nº</th>
@@ -28,7 +28,7 @@
         </thead>
         <tbody>
           {% for s in ultimas_solicitacoes %}
-            <tr>
+            <tr data-linha-url="{% url 'solicitacoes:detalhe' s.pk %}">
               <td><strong><a href="{% url 'solicitacoes:detalhe' s.pk %}">#{{ s.pk }}</a></strong></td>
               <td>{{ s.municipio|default:"—" }}</td>
               <td>{{ s.tipo_evento|default:"—" }}</td>

@@ -147,6 +147,8 @@ def enviar(solicitacao, usuario):
         f"{solicitacao.municipio or 'Município a definir'} — "
         f"{solicitacao.tipo_evento or 'tipo a definir'}.",
         link=f"{link_detalhe}#despacho-dg",
+        solicitacao=solicitacao,
+        exceto=usuario,
     )
     return solicitacao
 
@@ -178,6 +180,8 @@ def devolver(solicitacao, usuario, observacao):
         f"Solicitação #{solicitacao.pk} devolvida para ajuste",
         observacao,
         link=reverse("solicitacoes:editar", args=[solicitacao.pk]),
+        solicitacao=solicitacao,
+        exceto=usuario,
     )
     return solicitacao
 
@@ -262,6 +266,8 @@ def despachar(solicitacao, usuario, decisao, observacao="", quantidades=None):
         f"Solicitação #{solicitacao.pk}: {solicitacao.get_status_display().lower()}",
         observacao or "A Diretoria-Geral registrou a decisão.",
         link=reverse("solicitacoes:detalhe", args=[solicitacao.pk]),
+        solicitacao=solicitacao,
+        exceto=usuario,
     )
     return solicitacao
 
@@ -288,6 +294,8 @@ def concluir_atendimento(solicitacao, usuario):
         f"{solicitacao.municipio or 'Município a definir'} — o solicitante "
         "confirmou que o evento foi atendido.",
         link=reverse("solicitacoes:detalhe", args=[solicitacao.pk]),
+        solicitacao=solicitacao,
+        exceto=usuario,
     )
     return solicitacao
 
@@ -316,6 +324,8 @@ def cancelar_evento(solicitacao, usuario, observacao):
         f"Solicitação #{solicitacao.pk}: evento cancelado",
         observacao,
         link=reverse("solicitacoes:detalhe", args=[solicitacao.pk]),
+        solicitacao=solicitacao,
+        exceto=usuario,
     )
     return solicitacao
 
@@ -348,16 +358,26 @@ def montar_timeline(solicitacao=None):
     else:
         subtitulo_envio = None
 
+    # Etapa já vencida sem data no histórico (caso das solicitações importadas
+    # da planilha) não é "Pendente": só não sabemos quando aconteceu.
+    def subtitulo(data, concluida, pendente="Pendente"):
+        if data:
+            return data
+        return "Concluída" if concluida else pendente
+
     etapas = [
         {
             "titulo": "Enviar para a DG",
-            "subtitulo": subtitulo_envio or quando(AcaoHistorico.ENVIO) or "Pendente",
+            "subtitulo": subtitulo_envio
+            or subtitulo(quando(AcaoHistorico.ENVIO), not (rascunho or devolvida)),
             "estado": "atual" if rascunho or devolvida else "concluido",
         },
         {
             "titulo": "Aguardando despacho DG",
-            "subtitulo": (quando(AcaoHistorico.ENVIO) if aguardando else None)
-            or "Pendente",
+            "subtitulo": subtitulo(
+                quando(AcaoHistorico.ENVIO) if aguardando else None,
+                finalizada or deferida,
+            ),
             "estado": "concluido"
             if finalizada or deferida
             else ("atual" if aguardando else "pendente"),

@@ -16,6 +16,13 @@ URL_MUNICIPIOS = (
     "https://servicodados.ibge.gov.br/api/v1/localidades/municipios?orderBy=nome"
 )
 
+# Regiões operacionais da PCPR (ver regiao_do_municipio).
+REGIAO_CAPITAL = "Capital"
+REGIAO_INTERIOR = "Interior"
+REGIAO_BRASILIA = "Brasília"
+NOME_CAPITAL = "Curitiba"
+NOME_BRASILIA = "Brasília"
+
 
 def obter_json(url):
     requisicao = Request(url, headers={"User-Agent": "PCPR-Eventos-Sociais/1.0"})
@@ -47,6 +54,20 @@ def uf_do_municipio(item):
     return regiao_intermediaria.get("UF")
 
 
+def regiao_do_municipio(nome_municipio, estado):
+    """Região operacional da PCPR: Capital, Brasília ou Interior.
+
+    Não é a divisão geográfica do IBGE — é como a Diretoria-Geral organiza o
+    deslocamento das equipes. Curitiba é a Capital, Brasília entra à parte por
+    causa dos eventos nacionais, e todo o resto é Interior.
+    """
+    if estado.sigla == "PR" and nome_municipio == NOME_CAPITAL:
+        return REGIAO_CAPITAL
+    if nome_municipio == NOME_BRASILIA:
+        return REGIAO_BRASILIA
+    return REGIAO_INTERIOR
+
+
 class Command(BaseCommand):
     help = "Baixa e sincroniza todos os estados e municípios da API oficial do IBGE."
 
@@ -74,8 +95,9 @@ class Command(BaseCommand):
                 ignorados += 1
                 continue
             estado = estados[uf["id"]]
-            nome_regiao = (uf.get("regiao") or {}).get("nome") or estado.nome
-            regiao, _ = Regiao.objects.get_or_create(nome=nome_regiao)
+            regiao, _ = Regiao.objects.get_or_create(
+                nome=regiao_do_municipio(item["nome"], estado)
+            )
 
             municipio = Municipio.objects.filter(codigo_ibge=item["id"]).first()
             if not municipio:

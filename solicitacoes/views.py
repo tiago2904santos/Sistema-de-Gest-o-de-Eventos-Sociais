@@ -6,6 +6,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from .forms import (
@@ -71,7 +72,7 @@ CAMPOS_FORMULARIO = [
     "data_solicitacao", "data_inicio_evento", "data_fim_evento", "tipo_evento",
     "municipio", "local_evento", "solicitante_nome", "solicitante_cargo_unidade",
     "contato", "orgao_responsavel", "unidade_movel", "unidade_movel_designada",
-    "veiculo_exposicao", "descricao_complementar", "quantidade_servidores",
+    "descricao_complementar", "quantidade_servidores",
     "tipo_operacao", "quantidade_cin", "motorista", "decisao_dg", "observacoes_dg",
 ]
 
@@ -89,6 +90,14 @@ def _valor_da_instancia(solicitacao, nome):
     if isinstance(valor, bool):
         return "1" if valor else "0"
     return "" if valor is None else str(valor)
+
+
+def _breadcrumb(titulo):
+    """Trilha das telas de solicitação, sempre passando pela listagem."""
+    return [
+        {"label": "Solicitações", "url": reverse("solicitacoes:lista")},
+        {"label": titulo},
+    ]
 
 
 def _contexto_formulario(request, form, solicitacao=None):
@@ -183,12 +192,15 @@ def _contexto_formulario(request, form, solicitacao=None):
         # Formulário único: o planejamento acompanha a edição dos dados.
         "planejamento_desabilitado": bool(solicitacao) and not acoes["editar_dados"],
         "mostrar_enviar": acoes["enviar"] if solicitacao else True,
-        "mostrar_despacho_dg": bool(solicitacao)
-        and permissions.eh_gestor_dg(request.user),
+        # Só aparece para quem pode decidir agora: fora disso a decisão da DG
+        # já está no resumo, e um formulário desabilitado só confunde.
+        "mostrar_despacho_dg": bool(solicitacao) and acoes.get("despachar", False),
         "anexos": list(solicitacao.anexos.select_related("enviado_por"))
         if solicitacao
         else [],
-        "pode_gerenciar_anexos": acoes["editar_dados"] if solicitacao else False,
+        "pode_gerenciar_anexos": acoes.get("gerenciar_anexos", False)
+        if solicitacao
+        else False,
     }
 
 
@@ -257,6 +269,7 @@ def nova_solicitacao(request):
         form = SolicitacaoForm()
     contexto = _contexto_formulario(request, form)
     contexto["titulo_pagina"] = "Nova Solicitação de Evento Social"
+    contexto["breadcrumb"] = _breadcrumb("Nova solicitação")
     return render(request, "pages/solicitacoes/form.html", contexto)
 
 
@@ -304,6 +317,7 @@ def editar_solicitacao(request, pk):
 
     contexto = _contexto_formulario(request, form, solicitacao)
     contexto["titulo_pagina"] = f"Editar Solicitação #{solicitacao.pk}"
+    contexto["breadcrumb"] = _breadcrumb(f"Editar #{solicitacao.pk}")
     return render(request, "pages/solicitacoes/form.html", contexto)
 
 
@@ -321,13 +335,15 @@ FILAS = {
         "status": [StatusSolicitacao.RASCUNHO],
         "apenas_do_usuario": True,
     },
+    # "Minhas" no rótulo porque a contagem é só das solicitações do usuário,
+    # enquanto a tabela ao lado mostra as de todo mundo.
     "devolvidas": {
-        "rotulo": "Devolvidas para ajuste",
+        "rotulo": "Minhas devolvidas",
         "status": [StatusSolicitacao.DEVOLVIDA],
         "apenas_do_usuario": True,
     },
     "andamento": {
-        "rotulo": "Deferidas em andamento",
+        "rotulo": "Minhas deferidas",
         "status": [StatusSolicitacao.DEFERIDA_EM_ANDAMENTO],
         "apenas_do_usuario": True,
     },
@@ -353,6 +369,34 @@ def _filas_do_usuario(user, queryset):
     return resultado
 
 
+# Colunas ordenáveis da listagem: rótulo da URL -> campos do banco.
+ORDENACOES = {
+    "numero": ["pk"],
+    "municipio": ["municipio__nome", "-data_solicitacao"],
+    "tipo": ["tipo_evento__nome", "-data_solicitacao"],
+    "periodo": ["data_inicio_evento", "-pk"],
+    "solicitante": ["solicitante_nome", "-data_solicitacao"],
+    "data": ["data_solicitacao", "-pk"],
+    "status": ["status", "-data_solicitacao"],
+}
+ORDENACAO_PADRAO = "-data"
+
+
+def _ordenacao(request):
+    """Lê `ordem` da URL (com "-" para decrescente) e devolve (chave, campos)."""
+    pedido = request.GET.get("ordem") or ORDENACAO_PADRAO
+    decrescente = pedido.startswith("-")
+    chave = pedido.lstrip("-")
+    if chave not in ORDENACOES:
+        pedido, decrescente, chave = ORDENACAO_PADRAO, True, "data"
+    campos = ORDENACOES[chave]
+    if decrescente:
+        campos = [
+            campo[1:] if campo.startswith("-") else f"-{campo}" for campo in campos
+        ]
+    return pedido, campos
+
+
 def _queryset_filtrado(request):
     """Solicitações visíveis com fila e filtros da listagem aplicados."""
     filtros = FiltroSolicitacoesForm(request.GET or None)
@@ -362,7 +406,8 @@ def _queryset_filtrado(request):
             "municipio", "tipo_evento", "regiao", "criado_por"
         ),
     )
-    queryset = base.order_by("-data_solicitacao", "-pk")
+    _pedido, campos_ordem = _ordenacao(request)
+    queryset = base.order_by(*campos_ordem)
 
     fila = request.GET.get("fila", "")
     if fila in FILAS:
@@ -393,9 +438,41 @@ def _queryset_filtrado(request):
     return queryset, base, filtros, fila
 
 
+CAMPOS_FILTRO = ["q", "status", "municipio", "tipo_evento", "inicio", "fim"]
+
+
+def _colunas_ordenaveis(request, pedido):
+    """Cabeçalhos com o link e a seta da próxima ordenação."""
+    parametros = request.GET.copy()
+    parametros.pop("pagina", None)
+    parametros.pop("ordem", None)
+    base = parametros.urlencode()
+    atual = pedido.lstrip("-")
+    decrescente = pedido.startswith("-")
+
+    colunas = []
+    for chave, rotulo in [
+        ("numero", "Nº"), ("municipio", "Município"), ("tipo", "Tipo de evento"),
+        ("periodo", "Período"), ("solicitante", "Solicitante"),
+        ("data", "Data da solicitação"), ("status", "Status"),
+    ]:
+        ativa = chave == atual
+        # Clicar na coluna ativa inverte; numa nova coluna começa crescente.
+        proximo = f"-{chave}" if ativa and not decrescente else chave
+        colunas.append({
+            "chave": chave,
+            "rotulo": rotulo,
+            "ativa": ativa,
+            "descendente": ativa and decrescente,
+            "url": f"?{base}&ordem={proximo}" if base else f"?ordem={proximo}",
+        })
+    return colunas
+
+
 @login_required
 def lista_solicitacoes(request):
     queryset, base, filtros, fila = _queryset_filtrado(request)
+    pedido, _campos = _ordenacao(request)
 
     paginador = Paginator(queryset, ITENS_POR_PAGINA)
     pagina = paginador.get_page(request.GET.get("pagina"))
@@ -419,6 +496,9 @@ def lista_solicitacoes(request):
             "querystring": parametros.urlencode(),
             "filas": _filas_do_usuario(request.user, base),
             "fila_ativa": fila,
+            "tem_filtros": any(request.GET.get(nome) for nome in CAMPOS_FILTRO),
+            "total_resultados": paginador.count,
+            "colunas": _colunas_ordenaveis(request, pedido),
             "linhas": [
                 {"solicitacao": s, "acoes": permissions.acoes_permitidas(request.user, s)}
                 for s in pagina
@@ -453,7 +533,7 @@ def exportar_solicitacoes(request):
         "Município", "Região", "Tipo de evento", "Local", "Solicitante",
         "Cargo / unidade", "Contato", "Órgão responsável", "Serviços",
         "Equipes (servidores)", "Total de servidores", "Tipo de operação",
-        "Unidade móvel", "Veículo de exposição", "Qtde CIN", "Motorista",
+        "Unidade móvel", "Qtde CIN", "Motorista",
         "Decisão DG", "Observações DG", "Decidido por", "Decidido em",
         "Criado por",
     ])
@@ -489,7 +569,6 @@ def exportar_solicitacoes(request):
             s.quantidade_servidores or "",
             s.get_tipo_operacao_display() if s.tipo_operacao else "",
             "Sim" if s.unidade_movel else "Não",
-            "Sim" if s.veiculo_exposicao else "Não",
             s.quantidade_cin or "",
             s.motorista or "",
             s.get_decisao_dg_display(),
@@ -501,6 +580,14 @@ def exportar_solicitacoes(request):
     return resposta
 
 
+def _despacho_pendente(request, solicitacao):
+    """Decisão e observação que o gestor tentou registrar e não passaram."""
+    pendente = request.session.pop("despacho_pendente", None)
+    if not pendente or pendente.get("solicitacao") != solicitacao.pk:
+        return None
+    return pendente
+
+
 @login_required
 def detalhe_solicitacao(request, pk):
     solicitacao = _obter_visivel(request, pk)
@@ -510,12 +597,17 @@ def detalhe_solicitacao(request, pk):
         solicitacao,
     )
     acoes = permissions.acoes_permitidas(request.user, solicitacao)
-    modo_resumo_dg = acoes["despachar"]
+    devolucao = (
+        solicitacao.historico.filter(acao=AcaoHistorico.DEVOLUCAO).last()
+        if solicitacao.status == StatusSolicitacao.DEVOLVIDA
+        else None
+    )
     contexto.update(
         {
             "titulo_pagina": f"Solicitação #{solicitacao.pk}",
+            "breadcrumb": _breadcrumb(f"Solicitação #{solicitacao.pk}"),
             "subtitulo_pagina": "Resumo para despacho da Diretoria-Geral"
-            if modo_resumo_dg
+            if acoes["despachar"]
             else "Visualização completa da solicitação",
             "acoes": acoes,
             "historico": solicitacao.historico.all(),
@@ -523,8 +615,11 @@ def detalhe_solicitacao(request, pk):
             "dados_desabilitado": True,
             "planejamento_desabilitado": True,
             "mostrar_enviar": False,
-            # A página do DG é um resumo: só as quantidades são editáveis.
-            "modo_resumo_dg": modo_resumo_dg,
+            # Ler é ler: a página inteira vira resumo, nunca formulário.
+            "modo_resumo": True,
+            "itens_equipe": list(solicitacao.itens_equipe.select_related("equipe")),
+            "motivo_devolucao": devolucao,
+            "despacho_pendente": _despacho_pendente(request, solicitacao),
         }
     )
     return render(request, "pages/solicitacoes/form.html", contexto)
@@ -533,6 +628,17 @@ def detalhe_solicitacao(request, pk):
 # ---------------------------------------------------------------------------
 # Transições de workflow (somente POST)
 # ---------------------------------------------------------------------------
+
+def _voltar_ao_despacho(request, solicitacao, decisao="", observacao=""):
+    """Devolve o gestor à seção do despacho com o que ele já tinha escolhido."""
+    request.session["despacho_pendente"] = {
+        "solicitacao": solicitacao.pk,
+        "decisao": decisao,
+        "observacao": observacao,
+    }
+    url = reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+    return redirect(f"{url}#despacho-dg")
+
 
 def _executar_transicao(request, solicitacao, funcao, mensagem, **kwargs):
     try:
@@ -592,7 +698,7 @@ def cancelar_evento(request, pk):
 @require_POST
 def adicionar_anexo(request, pk):
     solicitacao = _obter_visivel(request, pk)
-    if not permissions.pode_editar_dados(request.user, solicitacao):
+    if not permissions.pode_gerenciar_anexos(request.user, solicitacao):
         raise PermissionDenied
     form = AnexoForm(request.POST, request.FILES)
     if form.is_valid():
@@ -632,7 +738,7 @@ def baixar_anexo(request, pk, anexo_pk):
 @require_POST
 def excluir_anexo(request, pk, anexo_pk):
     solicitacao = _obter_visivel(request, pk)
-    if not permissions.pode_editar_dados(request.user, solicitacao):
+    if not permissions.pode_gerenciar_anexos(request.user, solicitacao):
         raise PermissionDenied
     anexo = get_object_or_404(solicitacao.anexos, pk=anexo_pk)
     nome = anexo.nome_original
@@ -703,18 +809,33 @@ def despachar(request, pk):
         for erros_campo in form.errors.values():
             for erro in erros_campo:
                 messages.error(request, erro)
-        return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
-    if form.cleaned_data["decisao"] == DespachoForm.DEVOLVER:
-        return _executar_transicao(
-            request, solicitacao, services.devolver,
-            f"Solicitação #{solicitacao.pk} devolvida para ajuste.",
-            observacao=form.cleaned_data["observacao"],
+        return _voltar_ao_despacho(
+            request,
+            solicitacao,
+            request.POST.get("decisao", ""),
+            request.POST.get("observacao", ""),
         )
-    # A DG aceita as quantidades propostas ou informa novas por equipe.
-    return _executar_transicao(
-        request, solicitacao, services.despachar,
-        f"Decisão registrada para a solicitação #{solicitacao.pk}.",
-        decisao=form.cleaned_data["decisao"],
-        observacao=form.cleaned_data["observacao"],
-        quantidades=_quantidades_dg_do_post(request, solicitacao),
-    )
+
+    decisao = form.cleaned_data["decisao"]
+    observacao = form.cleaned_data["observacao"]
+    try:
+        if decisao == DespachoForm.DEVOLVER:
+            services.devolver(solicitacao, request.user, observacao=observacao)
+            sucesso = f"Solicitação #{solicitacao.pk} devolvida para ajuste."
+        else:
+            # A DG aceita as quantidades propostas ou informa novas por equipe.
+            services.despachar(
+                solicitacao,
+                request.user,
+                decisao=decisao,
+                observacao=observacao,
+                quantidades=_quantidades_dg_do_post(request, solicitacao),
+            )
+            sucesso = f"Decisão registrada para a solicitação #{solicitacao.pk}."
+    except ValidationError as erro:
+        for mensagem_erro in erro.messages:
+            messages.error(request, mensagem_erro)
+        return _voltar_ao_despacho(request, solicitacao, decisao, observacao)
+
+    messages.success(request, sucesso)
+    return redirect("solicitacoes:detalhe", pk=solicitacao.pk)

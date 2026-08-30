@@ -133,7 +133,6 @@ class SolicitacaoForm(forms.ModelForm):
         queryset=Equipe.objects.none(), required=False, label="Equipes"
     )
     unidade_movel = _campo_sim_nao("Unidade móvel")
-    veiculo_exposicao = _campo_sim_nao("Veículos de exposição")
 
     class Meta:
         model = SolicitacaoEvento
@@ -150,7 +149,6 @@ class SolicitacaoForm(forms.ModelForm):
             "orgao_responsavel",
             "unidade_movel",
             "unidade_movel_designada",
-            "veiculo_exposicao",
             "descricao_complementar",
             "tipo_operacao",
             "quantidade_cin",
@@ -244,13 +242,20 @@ class SolicitacaoForm(forms.ModelForm):
             self, dados.get("equipes") or []
         )
         if self.enviar:
-            for equipe in dados.get("equipes") or []:
-                if not self.quantidades_equipes.get(equipe.pk):
-                    self.add_error(
-                        "equipes",
-                        f"Informe a quantidade de servidores de {equipe} para enviar à DG.",
-                    )
-                    break
+            # Todas as equipes sem quantidade de uma vez: apontar uma por
+            # envio obrigaria o usuário a descobrir o resto tentativa a tentativa.
+            sem_quantidade = [
+                str(equipe)
+                for equipe in dados.get("equipes") or []
+                if not self.quantidades_equipes.get(equipe.pk)
+            ]
+            if sem_quantidade:
+                self.add_error(
+                    "equipes",
+                    "Informe a quantidade de servidores de "
+                    + ", ".join(sem_quantidade)
+                    + " para enviar à DG.",
+                )
         return dados
 
     def clean_motorista(self):

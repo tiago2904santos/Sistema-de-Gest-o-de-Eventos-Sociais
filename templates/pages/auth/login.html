@@ -23,18 +23,26 @@
 
     <div class="form-campo">
       <label class="form-label" for="id_username">Usuário</label>
+      {# O usuário volta preenchido depois de um erro; a senha, nunca. #}
       <input class="form-controle" type="text" name="username" id="id_username"
+             value="{{ form.username.value|default:'' }}"
              autofocus autocomplete="username" required
              placeholder="Informe seu usuário">
-      {% if form.username.errors %}<p class="form-erro">{{ form.username.errors.0 }}</p>{% endif %}
+      {% for erro in form.username.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
     </div>
 
     <div class="form-campo">
       <label class="form-label" for="id_password">Senha</label>
-      <input class="form-controle" type="password" name="password" id="id_password"
-             autocomplete="current-password" required
-             placeholder="••••••••">
-      {% if form.password.errors %}<p class="form-erro">{{ form.password.errors.0 }}</p>{% endif %}
+      <div class="campo-senha" data-campo-senha>
+        <input class="form-controle" type="password" name="password" id="id_password"
+               autocomplete="current-password" required
+               placeholder="••••••••">
+        <button type="button" class="campo-senha__alternar" data-alternar-senha
+                aria-label="Mostrar senha" aria-pressed="false">
+          {% include "components/icon.html" with nome="eye" %}
+        </button>
+      </div>
+      {% for erro in form.password.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
     </div>
 
     <input type="hidden" name="next" value="{{ next }}">

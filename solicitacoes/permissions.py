@@ -105,6 +105,18 @@ def pode_despachar(user, solicitacao):
     )
 
 
+def pode_gerenciar_anexos(user, solicitacao):
+    """Anexos seguem a edição dos dados, mas param na finalização.
+
+    Depois de atendida, não atendida ou cancelada o dossiê fecha — inclusive
+    para o superusuário, que ainda pode corrigir dados mas não deve alterar
+    os documentos que instruíram um evento já encerrado.
+    """
+    if solicitacao.finalizada:
+        return False
+    return pode_editar_dados(user, solicitacao)
+
+
 def pode_concluir(user, solicitacao):
     """Após o evento, o solicitante confirma que foi atendido."""
     return solicitacao.status == StatusSolicitacao.DEFERIDA_EM_ANDAMENTO and (
@@ -135,4 +147,5 @@ def acoes_permitidas(user, solicitacao):
         "despachar": pode_despachar(user, solicitacao),
         "concluir": pode_concluir(user, solicitacao),
         "cancelar": pode_cancelar(user, solicitacao),
+        "gerenciar_anexos": pode_gerenciar_anexos(user, solicitacao),
     }

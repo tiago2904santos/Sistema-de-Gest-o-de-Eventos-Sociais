@@ -61,6 +61,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Depois da autenticação e das mensagens: precisa de request.user.
+    "accounts.middleware.TrocaDeSenhaObrigatoriaMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"

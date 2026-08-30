@@ -322,6 +322,8 @@
     var grade = wrapper.querySelector("[data-custom-date-grid]");
     var anterior = wrapper.querySelector("[data-custom-date-prev]");
     var proximo = wrapper.querySelector("[data-custom-date-next]");
+    var anoAnterior = wrapper.querySelector("[data-custom-date-prev-ano]");
+    var anoProximo = wrapper.querySelector("[data-custom-date-next-ano]");
     var limpar = wrapper.querySelector("[data-custom-date-clear]");
     var hojeBotao = wrapper.querySelector("[data-custom-date-today]");
     if (!nativo || !trigger || !valor || !calendario || !grade) return;
@@ -450,6 +452,8 @@
     });
     anterior.addEventListener("click", function () { mudarMes(-1); });
     proximo.addEventListener("click", function () { mudarMes(1); });
+    if (anoAnterior) anoAnterior.addEventListener("click", function () { mudarMes(-12); });
+    if (anoProximo) anoProximo.addEventListener("click", function () { mudarMes(12); });
     limpar.addEventListener("click", function () {
       nativo.value = "";
       sincronizar();
@@ -508,6 +512,8 @@
     var grade = wrapper.querySelector("[data-custom-date-range-grid]");
     var anterior = wrapper.querySelector("[data-custom-date-range-prev]");
     var proximo = wrapper.querySelector("[data-custom-date-range-next]");
+    var anoAnterior = wrapper.querySelector("[data-custom-date-range-prev-ano]");
+    var anoProximo = wrapper.querySelector("[data-custom-date-range-next-ano]");
     var limpar = wrapper.querySelector("[data-custom-date-range-clear]");
     var hojeBotao = wrapper.querySelector("[data-custom-date-range-today]");
     if (!inicio || !fim || !trigger || !valor || !calendario || !grade) return;
@@ -683,6 +689,8 @@
     });
     anterior.addEventListener("click", function () { mudarMes(-1); });
     proximo.addEventListener("click", function () { mudarMes(1); });
+    if (anoAnterior) anoAnterior.addEventListener("click", function () { mudarMes(-12); });
+    if (anoProximo) anoProximo.addEventListener("click", function () { mudarMes(12); });
     limpar.addEventListener("click", function () {
       inicio.value = "";
       fim.value = "";
@@ -957,16 +965,19 @@
 })();
 
 /**
- * Confirmação em duas etapas para exclusões, sem diálogo nativo do navegador.
- * Primeiro clique arma o botão ("Confirmar?"); o segundo clique envia.
+ * Confirmação em duas etapas para ações sem volta, sem diálogo nativo do
+ * navegador. Primeiro clique arma o botão; o segundo envia.
+ * `data-confirmar="texto"` personaliza o rótulo armado.
  */
 (function () {
   "use strict";
 
-  document.querySelectorAll("[data-confirmar-exclusao]").forEach(function (formulario) {
+  var seletor = "[data-confirmar-exclusao], [data-confirmar]";
+  document.querySelectorAll(seletor).forEach(function (formulario) {
     var botao = formulario.querySelector('button[type="submit"]');
     if (!botao) return;
     var rotuloOriginal = botao.textContent;
+    var rotuloArmado = formulario.getAttribute("data-confirmar") || "Confirmar?";
     var armado = false;
     var temporizador = null;
 
@@ -984,7 +995,7 @@
       if (armado) return;
       evento.preventDefault();
       armado = true;
-      botao.textContent = "Confirmar?";
+      botao.textContent = rotuloArmado;
       botao.classList.add("is-armado");
       temporizador = setTimeout(desarmar, 4000);
     });
@@ -1139,5 +1150,287 @@
 
     input.addEventListener("change", aoSelecionar);
     render();
+  });
+})();
+
+/**
+ * Validação com mensagem escrita em cada campo.
+ * O navegador só mostra a bolha nativa no primeiro campo inválido e pinta os
+ * demais de vermelho sem dizer o que falta. Aqui a validação nativa é
+ * desligada e substituída: todos os campos com problema ganham um texto
+ * explicativo de uma vez, e a página rola até o primeiro deles.
+ */
+(function () {
+  "use strict";
+
+  var MENSAGENS = {
+    valueMissing: {
+      SELECT: "Selecione uma opção.",
+      TEXTAREA: "Preencha este campo.",
+      padrao: "Preencha este campo.",
+    },
+    rangeUnderflow: "Informe um número maior.",
+    rangeOverflow: "Informe um número menor.",
+    typeMismatch: "Confira o formato do que foi digitado.",
+  };
+
+  function mensagemDe(campo) {
+    var estado = campo.validity;
+    if (estado.valueMissing) {
+      return MENSAGENS.valueMissing[campo.tagName] || MENSAGENS.valueMissing.padrao;
+    }
+    var chave = ["rangeUnderflow", "rangeOverflow", "typeMismatch"].find(function (nome) {
+      return estado[nome];
+    });
+    return (chave && MENSAGENS[chave]) || campo.validationMessage || "Valor inválido.";
+  }
+
+  function campoContainer(campo) {
+    return campo.closest(".form-campo") || campo.parentElement;
+  }
+
+  function limparErro(campo) {
+    var container = campoContainer(campo);
+    if (!container) return;
+    var erro = container.querySelector("[data-erro-cliente]");
+    if (erro) erro.remove();
+    campo.removeAttribute("aria-invalid");
+    var wrapper = campo.closest(".custom-select, .custom-date, .form-controle-wrapper");
+    if (wrapper) wrapper.classList.remove("is-invalid");
+  }
+
+  function marcarErro(campo) {
+    var container = campoContainer(campo);
+    if (!container) return;
+    var erro = container.querySelector("[data-erro-cliente]");
+    if (!erro) {
+      erro = document.createElement("p");
+      erro.className = "form-erro";
+      erro.setAttribute("data-erro-cliente", "");
+      container.appendChild(erro);
+    }
+    erro.textContent = mensagemDe(campo);
+    campo.setAttribute("aria-invalid", "true");
+    var wrapper = campo.closest(".custom-select, .custom-date, .form-controle-wrapper");
+    if (wrapper) wrapper.classList.add("is-invalid");
+  }
+
+  document.querySelectorAll("form").forEach(function (formulario) {
+    // Só campos que o formulário envia de fato: a caixa de busca dentro de um
+    // combobox não tem name, é sempre válida, e apagaria a mensagem do select
+    // que divide o mesmo container com ela.
+    var campos = Array.prototype.filter.call(
+      formulario.querySelectorAll("input, select, textarea"),
+      function (campo) {
+        return campo.name && campo.willValidate;
+      }
+    );
+    if (!campos.length) return;
+    // Assume a validação: sem isto o navegador interrompe antes e só a bolha
+    // nativa do primeiro campo aparece.
+    formulario.setAttribute("novalidate", "");
+
+    campos.forEach(function (campo) {
+      ["input", "change"].forEach(function (evento) {
+        campo.addEventListener(evento, function () {
+          if (campo.checkValidity()) limparErro(campo);
+        });
+      });
+    });
+
+    formulario.addEventListener("submit", function (evento) {
+      // "Salvar rascunho" e afins passam direto, como o formnovalidate pede.
+      var enviador = evento.submitter;
+      if (enviador && enviador.formNoValidate) return;
+      if (formulario.checkValidity()) return;
+
+      evento.preventDefault();
+      var invalidos = [];
+      campos.forEach(function (campo) {
+        if (campo.disabled || campo.checkValidity()) {
+          limparErro(campo);
+          return;
+        }
+        marcarErro(campo);
+        invalidos.push(campo);
+      });
+      if (!invalidos.length) return;
+
+      var primeiro = invalidos[0];
+      var alvo = campoContainer(primeiro) || primeiro;
+      alvo.scrollIntoView({ behavior: "smooth", block: "center" });
+      var foco = primeiro.closest(".custom-select, .custom-date");
+      var focavel = foco ? foco.querySelector("[data-custom-select-trigger], [data-custom-date-trigger]") : primeiro;
+      if (focavel && focavel.focus) {
+        setTimeout(function () { focavel.focus({ preventScroll: true }); }, 300);
+      }
+    });
+  });
+})();
+
+/**
+ * Linha de tabela clicável: o número já é link, mas o alvo real do usuário é
+ * a linha toda. Cliques em links, botões ou seleção de texto são respeitados.
+ */
+(function () {
+  "use strict";
+
+  document.querySelectorAll("[data-linha-url]").forEach(function (linha) {
+    var destino = linha.getAttribute("data-linha-url");
+
+    linha.addEventListener("click", function (evento) {
+      if (evento.target.closest("a, button, input, label")) return;
+      if (window.getSelection && String(window.getSelection())) return;
+      window.location.href = destino;
+    });
+  });
+})();
+
+/**
+ * Alterna a visibilidade da senha. Digitar senha institucional às cegas é a
+ * principal origem de "usuário e senha incorretos" no primeiro acesso.
+ */
+(function () {
+  "use strict";
+
+  var SVG_ABERTO =
+    '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path><circle cx="12" cy="12" r="3"></circle>';
+  var SVG_FECHADO =
+    '<path d="M10.6 6.2A9.9 9.9 0 0 1 12 6c6.5 0 10 6 10 6a17 17 0 0 1-3.2 3.7M6.2 7.4A17 17 0 0 0 2 12s3.5 6 10 6a9.6 9.6 0 0 0 3.9-.8"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path><path d="M3 3l18 18"></path>';
+
+  document.querySelectorAll("[data-alternar-senha]").forEach(function (botao) {
+    var campo = botao.parentElement.querySelector('input[type="password"], input[type="text"]');
+    if (!campo) return;
+    var svg = botao.querySelector("svg");
+
+    botao.addEventListener("click", function () {
+      var revelando = campo.type === "password";
+      campo.type = revelando ? "text" : "password";
+      botao.setAttribute("aria-pressed", String(revelando));
+      botao.setAttribute("aria-label", revelando ? "Ocultar senha" : "Mostrar senha");
+      if (svg) svg.innerHTML = revelando ? SVG_FECHADO : SVG_ABERTO;
+      campo.focus();
+    });
+  });
+})();
+
+/**
+ * Rascunho automático do formulário de solicitação.
+ * O formulário é longo e uma falha no envio custava todo o preenchimento.
+ * O conteúdo fica no navegador (localStorage) enquanto a solicitação não é
+ * salva, e some assim que o envio dá certo.
+ */
+(function () {
+  "use strict";
+
+  var chave = "rascunho:" + window.location.pathname;
+  var IGNORADOS = ["csrfmiddlewaretoken", "acao"];
+
+  // Primeiro a faxina: depois de um envio bem-sucedido a página de destino é
+  // o resumo, que não tem formulário nenhum — se a limpeza dependesse dele,
+  // o rascunho ficaria preso no navegador para sempre.
+  try {
+    var enviado = window.sessionStorage.getItem("rascunho-enviado");
+    if (enviado && enviado !== chave) {
+      window.localStorage.removeItem(enviado);
+      window.sessionStorage.removeItem("rascunho-enviado");
+    }
+  } catch (erro) {
+    /* Sem storage disponível não há rascunho a limpar. */
+  }
+
+  var formulario = document.getElementById("form-solicitacao");
+  if (!formulario || formulario.tagName !== "FORM") return;
+
+  function disponivel() {
+    try {
+      window.localStorage.setItem("__teste__", "1");
+      window.localStorage.removeItem("__teste__");
+      return true;
+    } catch (erro) {
+      return false;
+    }
+  }
+
+  if (!disponivel()) return;
+
+  function campos() {
+    return Array.prototype.filter.call(
+      formulario.querySelectorAll("input, select, textarea"),
+      function (campo) {
+        return (
+          campo.name &&
+          IGNORADOS.indexOf(campo.name) === -1 &&
+          campo.type !== "file" &&
+          campo.type !== "hidden"
+        );
+      }
+    );
+  }
+
+  function guardar() {
+    var dados = {};
+    campos().forEach(function (campo) {
+      if (campo.type === "checkbox" || campo.type === "radio") {
+        if (!campo.checked) return;
+        (dados[campo.name] = dados[campo.name] || []).push(campo.value);
+      } else if (campo.value) {
+        dados[campo.name] = campo.value;
+      }
+    });
+    try {
+      window.localStorage.setItem(chave, JSON.stringify(dados));
+    } catch (erro) {
+      /* Cota estourada: seguir sem rascunho é melhor que travar o formulário. */
+    }
+  }
+
+  function restaurar() {
+    var bruto = window.localStorage.getItem(chave);
+    if (!bruto) return false;
+    var dados;
+    try {
+      dados = JSON.parse(bruto);
+    } catch (erro) {
+      window.localStorage.removeItem(chave);
+      return false;
+    }
+    var restaurou = false;
+    campos().forEach(function (campo) {
+      var salvo = dados[campo.name];
+      if (salvo === undefined) return;
+      if (campo.type === "checkbox" || campo.type === "radio") {
+        var marcar = Array.isArray(salvo) && salvo.indexOf(campo.value) !== -1;
+        if (campo.checked !== marcar) restaurou = true;
+        campo.checked = marcar;
+      } else if (campo.value !== salvo) {
+        campo.value = salvo;
+        restaurou = true;
+      }
+      campo.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    return restaurou;
+  }
+
+  function avisarRestauracao() {
+    var aviso = document.createElement("div");
+    aviso.className = "alerta alerta--info";
+    aviso.setAttribute("role", "status");
+    aviso.textContent =
+      "Recuperamos o que você tinha preenchido nesta tela e não chegou a ser salvo.";
+    formulario.parentNode.insertBefore(aviso, formulario);
+  }
+
+  // Só recupera em formulário novo: editar já traz os dados salvos do banco.
+  var ehNovo = !formulario.querySelector('[name="acao"]') ||
+    window.location.pathname.indexOf("/nova/") !== -1;
+  if (ehNovo && restaurar()) avisarRestauracao();
+
+  formulario.addEventListener("input", guardar);
+  formulario.addEventListener("change", guardar);
+  formulario.addEventListener("submit", function () {
+    // O envio pode falhar e recarregar esta mesma página; por isso a limpeza
+    // só acontece quando o navegador chega a outro endereço.
+    window.sessionStorage.setItem("rascunho-enviado", chave);
   });
 })();

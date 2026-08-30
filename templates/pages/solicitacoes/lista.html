@@ -9,7 +9,7 @@
   {% include "components/page_header.html" with titulo="Solicitações de Eventos Sociais" subtitulo="Acompanhe e gerencie as solicitações registradas" icone="document" acao_label="Nova solicitação" acao_url=url_nova %}
 
   <div class="fila-chips">
-    <a class="fila-chip{% if not fila_ativa %} fila-chip--ativa{% endif %}" href="{% url 'solicitacoes:lista' %}">Todas</a>
+    <a class="fila-chip{% if not fila_ativa and not tem_filtros %} fila-chip--ativa{% endif %}" href="{% url 'solicitacoes:lista' %}">Todas</a>
     {% for fila in filas %}
       <a class="fila-chip{% if fila_ativa == fila.chave %} fila-chip--ativa{% endif %}" href="?fila={{ fila.chave }}">
         {{ fila.rotulo }} <strong>{{ fila.total }}</strong>
@@ -26,8 +26,12 @@
         {% include "components/select.html" with name="tipo_evento" label="Tipo do evento" opcoes=opcoes_tipos placeholder="Todos os tipos" largura="4" selecionado=valores_filtro.tipo_evento %}
         {% include "components/input.html" with name="inicio" label="Eventos a partir de" tipo="date" largura="3" valor=valores_filtro.inicio %}
         {% include "components/input.html" with name="fim" label="Eventos até" tipo="date" largura="3" valor=valores_filtro.fim %}
+        {% if fila_ativa %}<input type="hidden" name="fila" value="{{ fila_ativa }}">{% endif %}
         <div class="form-campo form-campo--2 lista-filtros__acoes">
           {% include "components/button.html" with label="Filtrar" variante="primario" tipo="submit" %}
+          {% if tem_filtros %}
+            <a href="{% url 'solicitacoes:lista' %}{% if fila_ativa %}?fila={{ fila_ativa }}{% endif %}" class="btn btn--secundario">Limpar</a>
+          {% endif %}
           <a href="{% url 'solicitacoes:exportar' %}{% if querystring %}?{{ querystring }}{% endif %}" class="btn btn--secundario">Exportar CSV</a>
         </div>
       </form>
@@ -36,35 +40,42 @@
 
   <div class="card">
     {% include "components/card.html" with titulo="Solicitações" %}
-    <div class="tabela-wrapper">
-      <table class="tabela">
+    {% if total_resultados %}
+      <p class="lista-contagem">
+        {{ total_resultados }} solicitaç{{ total_resultados|pluralize:"ão,ões" }}{% if tem_filtros %} com os filtros aplicados{% endif %}
+      </p>
+    {% endif %}
+    <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Tabela de solicitações">
+      <table class="tabela tabela--ordenavel tabela--cartoes-no-celular">
         <thead>
           <tr>
-            <th>Nº</th>
-            <th>Município</th>
-            <th>Tipo de evento</th>
-            <th>Período</th>
-            <th>Solicitante</th>
-            <th>Data da solicitação</th>
-            <th>Status</th>
+            {% for coluna in colunas %}
+              <th{% if coluna.ativa %} aria-sort="{{ coluna.descendente|yesno:"descending,ascending" }}"{% endif %}>
+                <a href="{{ coluna.url }}" class="tabela__ordenar{% if coluna.ativa %} is-ativa{% endif %}">
+                  {{ coluna.rotulo }}
+                  <span class="tabela__seta" aria-hidden="true">{% if coluna.ativa %}{{ coluna.descendente|yesno:"↓,↑" }}{% else %}↕{% endif %}</span>
+                </a>
+              </th>
+            {% endfor %}
             <th>Ações</th>
           </tr>
         </thead>
         <tbody>
           {% for linha in linhas %}
             {% with s=linha.solicitacao %}
+              {# data-rotulo alimenta o modo cartão no celular (ver CSS). #}
               <tr>
-                <td><strong>#{{ s.pk }}</strong></td>
-                <td>{{ s.municipio|default:"—" }}</td>
-                <td>{{ s.tipo_evento|default:"—" }}</td>
-                <td>
+                <td data-rotulo="Nº"><strong>#{{ s.pk }}</strong></td>
+                <td data-rotulo="Município">{{ s.municipio|default:"—" }}</td>
+                <td data-rotulo="Tipo de evento">{{ s.tipo_evento|default:"—" }}</td>
+                <td data-rotulo="Período">
                   {% if s.data_inicio_evento %}
-                    {{ s.data_inicio_evento|date:"d/m/Y" }}{% if s.data_fim_evento %} a {{ s.data_fim_evento|date:"d/m/Y" }}{% endif %}
+                    {{ s.data_inicio_evento|date:"d/m/Y" }}{% if s.data_fim_evento and s.data_fim_evento != s.data_inicio_evento %} a {{ s.data_fim_evento|date:"d/m/Y" }}{% endif %}
                   {% else %}—{% endif %}
                 </td>
-                <td>{{ s.solicitante_nome|default:"—" }}</td>
-                <td>{{ s.data_solicitacao|date:"d/m/Y" }}</td>
-                <td>{% include "components/status_badge.html" with status=s.status label=s.get_status_display %}</td>
+                <td data-rotulo="Solicitante">{{ s.solicitante_nome|default:"—" }}</td>
+                <td data-rotulo="Data da solicitação">{{ s.data_solicitacao|date:"d/m/Y" }}</td>
+                <td data-rotulo="Status">{% include "components/status_badge.html" with status=s.status label=s.get_status_display %}</td>
                 <td class="tabela__acoes">
                   <div class="tabela__acoes-grupo">
                     {% if linha.acoes.despachar %}

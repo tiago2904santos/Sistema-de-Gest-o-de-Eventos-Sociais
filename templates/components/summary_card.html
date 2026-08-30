@@ -1,9 +1,16 @@
 {% comment %}
   Componente: summary_card — indicador de resumo do dashboard.
-  Uso: {% include "components/summary_card.html" with titulo="..." valor=18 variacao="..." %}
+  Uso: {% include "components/summary_card.html" with titulo="..." valor=18
+       variacao="..." tendencia="alta|baixa" url="/solicitacoes/?status=..." %}
+  Com `url`, o cartão inteiro vira link para a listagem correspondente.
 {% endcomment %}
-<div class="summary-card">
+<{% if url %}a href="{{ url }}"{% else %}div{% endif %} class="summary-card{% if url %} summary-card--link{% endif %}">
   <p class="summary-card__titulo">{{ titulo }}</p>
   <p class="summary-card__valor">{{ valor }}</p>
-  {% if variacao %}<p class="summary-card__variacao">{{ variacao }}</p>{% endif %}
-</div>
+  {% if variacao %}
+    <p class="summary-card__variacao{% if tendencia %} summary-card__variacao--{{ tendencia }}{% endif %}">
+      {% if tendencia %}<span class="summary-card__seta" aria-hidden="true">{% if tendencia == "alta" %}↑{% else %}↓{% endif %}</span>{% endif %}
+      {{ variacao }}
+    </p>
+  {% endif %}
+</{% if url %}a{% else %}div{% endif %}>

@@ -11,6 +11,16 @@ class Notificacao(models.Model):
         on_delete=models.CASCADE,
         related_name="notificacoes",
     )
+    # Sem o vínculo, apagar uma solicitação deixava a notificação apontando
+    # para uma página inexistente; o cascade remove as duas juntas.
+    solicitacao = models.ForeignKey(
+        "solicitacoes.SolicitacaoEvento",
+        verbose_name="solicitação",
+        on_delete=models.CASCADE,
+        related_name="notificacoes",
+        blank=True,
+        null=True,
+    )
     titulo = models.CharField("título", max_length=150)
     mensagem = models.CharField("mensagem", max_length=255, blank=True)
     link = models.CharField("link", max_length=255, blank=True)

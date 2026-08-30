@@ -62,7 +62,7 @@ class DashboardTests(TestCase):
         resumo = {item["titulo"]: item["valor"] for item in resposta.context["resumo"]}
         self.assertEqual(resumo["Solicitações no mês"], 4)
         self.assertEqual(resumo["Aguardando despacho"], 1)
-        self.assertEqual(resumo["Atendidas no ano"], 1)
+        self.assertEqual(resumo["Deferidas no ano"], 1)
         # A cancelada fica fora dos eventos dos próximos 30 dias.
         self.assertEqual(resumo["Eventos nos próximos 30 dias"], 3)
 

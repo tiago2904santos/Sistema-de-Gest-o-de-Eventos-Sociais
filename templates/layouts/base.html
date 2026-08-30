@@ -1,16 +1,16 @@
-{% load static %}<!DOCTYPE html>
+{% load static estaticos %}<!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Sistema de Gestão de Eventos Sociais{% endblock %}</title>
   <link rel="icon" href="{% static 'icons/favicon.svg' %}" type="image/svg+xml">
-  <link rel="stylesheet" href="{% static 'css/design-system.css' %}?v=20260830-6">
+  <link rel="stylesheet" href="{% estatico 'css/design-system.css' %}">
   {% block extra_css %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
   {% block body %}{% endblock %}
-  <script src="{% static 'js/app.js' %}?v=20260830-6" defer></script>
+  <script src="{% estatico 'js/app.js' %}" defer></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

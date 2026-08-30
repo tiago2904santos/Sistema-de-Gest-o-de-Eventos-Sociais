@@ -16,6 +16,6 @@
     {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
     {% if desabilitado %}disabled{% endif %}
     {% if obrigatorio %}required{% endif %}>{{ valor|default:"" }}</textarea>
-  {% if erros %}<p class="form-erro">{{ erros.0 }}</p>{% endif %}
+  {% for erro in erros %}<p class="form-erro">{{ erro }}</p>{% endfor %}
   {% if ajuda %}<p class="form-ajuda">{{ ajuda }}</p>{% endif %}
 </div>

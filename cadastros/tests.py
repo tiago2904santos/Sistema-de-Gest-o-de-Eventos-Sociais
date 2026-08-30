@@ -64,7 +64,8 @@ class SeedTests(TestCase):
         municipio = Municipio.objects.get(codigo_ibge=4106902)
         self.assertEqual(municipio.nome, "Curitiba")
         self.assertEqual(municipio.estado.sigla, "PR")
-        self.assertEqual(municipio.regiao.nome, "Sul")
+        # Região operacional da PCPR, não a macrorregião do IBGE.
+        self.assertEqual(municipio.regiao.nome, "Capital")
 
 
 class CrudCadastrosTests(TestCase):
