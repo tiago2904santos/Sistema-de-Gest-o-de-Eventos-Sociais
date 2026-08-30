@@ -10,7 +10,7 @@ somente-leitura que enxerga apenas as views de relatório.
 | `vw_solicitacoes` | Uma linha por solicitação, desnormalizada: status e decisão com rótulos em português, município/região/estado, tipo de evento, órgão, mês/ano do evento (derivados da data de início), quantidades, datas. |
 | `vw_solicitacao_servicos` | Uma linha por serviço vinculado a cada solicitação. |
 | `vw_solicitacao_equipes` | Uma linha por equipe vinculada, com a quantidade de servidores da equipe. |
-| `vw_tempos_workflow` | Timestamps de cada etapa (criação, envio, início da análise, encaminhamento, decisão) — calcule os tempos de tramitação no Power BI com DAX (`DATEDIFF`). |
+| `vw_tempos_workflow` | Timestamps das etapas do fluxo (criação, envio, decisão) e a métrica pronta `dias_envio_ate_decisao` (tempo de tramitação na DG, em dias). |
 
 ## Passo a passo
 
