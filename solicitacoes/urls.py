@@ -26,4 +26,6 @@ urlpatterns = [
         name="anexo_excluir",
     ),
     path("<int:pk>/despachar/", views.despachar, name="despachar"),
+    path("<int:pk>/concluir/", views.concluir_solicitacao, name="concluir"),
+    path("<int:pk>/cancelar-evento/", views.cancelar_evento, name="cancelar_evento"),
 ]

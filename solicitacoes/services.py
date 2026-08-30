@@ -29,18 +29,27 @@ class TransicaoInvalida(ValidationError):
 TRANSICOES_VALIDAS = {
     StatusSolicitacao.RASCUNHO: {StatusSolicitacao.AGUARDANDO_DESPACHO},
     StatusSolicitacao.AGUARDANDO_DESPACHO: {
-        StatusSolicitacao.ATENDIDA,
+        StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
         StatusSolicitacao.NAO_ATENDIDA,
         StatusSolicitacao.CANCELADA,
         StatusSolicitacao.DEVOLVIDA,
     },
-    StatusSolicitacao.DEVOLVIDA: {StatusSolicitacao.AGUARDANDO_DESPACHO},
+    StatusSolicitacao.DEVOLVIDA: {
+        StatusSolicitacao.AGUARDANDO_DESPACHO,
+        StatusSolicitacao.CANCELADA,
+    },
+    # Deferida: o evento acontece e o solicitante confirma o atendimento —
+    # ou o evento é cancelado no caminho.
+    StatusSolicitacao.DEFERIDA_EM_ANDAMENTO: {
+        StatusSolicitacao.ATENDIDA,
+        StatusSolicitacao.CANCELADA,
+    },
 }
 
 STATUS_EDITAVEIS = {StatusSolicitacao.RASCUNHO, StatusSolicitacao.DEVOLVIDA}
 
 STATUS_POR_DECISAO = {
-    DecisaoDG.ATENDER: StatusSolicitacao.ATENDIDA,
+    DecisaoDG.ATENDER: StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
     DecisaoDG.NAO_ATENDER: StatusSolicitacao.NAO_ATENDIDA,
     DecisaoDG.CANCELADO: StatusSolicitacao.CANCELADA,
 }
@@ -257,6 +266,60 @@ def despachar(solicitacao, usuario, decisao, observacao="", quantidades=None):
     return solicitacao
 
 
+@transaction.atomic
+def concluir_atendimento(solicitacao, usuario):
+    """O solicitante confirma que o evento aconteceu e foi atendido."""
+    if solicitacao.status != StatusSolicitacao.DEFERIDA_EM_ANDAMENTO:
+        raise TransicaoInvalida(
+            "Somente solicitações deferidas em andamento podem ser confirmadas."
+        )
+    anterior = _transicionar(solicitacao, StatusSolicitacao.ATENDIDA)
+    solicitacao.save()
+    registrar_historico(
+        solicitacao,
+        usuario,
+        AcaoHistorico.CONCLUSAO,
+        status_anterior=anterior,
+        status_novo=solicitacao.status,
+    )
+    notificar(
+        usuarios_do_grupo("GESTOR_DG", exceto=usuario),
+        f"Solicitação #{solicitacao.pk}: atendimento confirmado",
+        f"{solicitacao.municipio or 'Município a definir'} — o solicitante "
+        "confirmou que o evento foi atendido.",
+        link=reverse("solicitacoes:detalhe", args=[solicitacao.pk]),
+    )
+    return solicitacao
+
+
+@transaction.atomic
+def cancelar_evento(solicitacao, usuario, observacao):
+    """Qualquer usuário registra que o evento foi cancelado, com o motivo."""
+    observacao = (observacao or "").strip()
+    if not observacao:
+        raise ValidationError("Informe o motivo do cancelamento do evento.")
+    anterior = _transicionar(solicitacao, StatusSolicitacao.CANCELADA)
+    solicitacao.save()
+    registrar_historico(
+        solicitacao,
+        usuario,
+        AcaoHistorico.CANCELAMENTO,
+        status_anterior=anterior,
+        status_novo=solicitacao.status,
+        observacao=observacao,
+    )
+    interessados = set(usuarios_do_grupo("GESTOR_DG"))
+    interessados.add(solicitacao.criado_por)
+    interessados.discard(usuario)
+    notificar(
+        list(interessados),
+        f"Solicitação #{solicitacao.pk}: evento cancelado",
+        observacao,
+        link=reverse("solicitacoes:detalhe", args=[solicitacao.pk]),
+    )
+    return solicitacao
+
+
 def montar_timeline(solicitacao=None):
     """Etapas da timeline lateral a partir do status e histórico reais.
 
@@ -275,6 +338,7 @@ def montar_timeline(solicitacao=None):
     rascunho = status == StatusSolicitacao.RASCUNHO
     devolvida = status == StatusSolicitacao.DEVOLVIDA
     aguardando = status == StatusSolicitacao.AGUARDANDO_DESPACHO
+    deferida = status == StatusSolicitacao.DEFERIDA_EM_ANDAMENTO
     finalizada = bool(solicitacao) and solicitacao.finalizada
 
     if devolvida:
@@ -295,12 +359,37 @@ def montar_timeline(solicitacao=None):
             "subtitulo": (quando(AcaoHistorico.ENVIO) if aguardando else None)
             or "Pendente",
             "estado": "concluido"
-            if finalizada
+            if finalizada or deferida
             else ("atual" if aguardando else "pendente"),
         },
     ]
 
+    if deferida:
+        etapas.append(
+            {
+                "titulo": "Deferida — em andamento",
+                "subtitulo": quando(AcaoHistorico.DECISAO) or "Deferida pela DG",
+                "estado": "atual",
+            }
+        )
+        etapas.append(
+            {
+                "titulo": "Atendimento do evento",
+                "subtitulo": "Confirme após o evento acontecer",
+                "estado": "pendente",
+            }
+        )
+
     if finalizada:
+        # Atendida passou pela fase deferida; mostra o caminho completo.
+        if status == StatusSolicitacao.ATENDIDA and quando(AcaoHistorico.DECISAO):
+            etapas.append(
+                {
+                    "titulo": "Deferida — em andamento",
+                    "subtitulo": quando(AcaoHistorico.DECISAO),
+                    "estado": "concluido",
+                }
+            )
         rotulos = {
             StatusSolicitacao.ATENDIDA: "Atendida",
             StatusSolicitacao.NAO_ATENDIDA: "Não atendida",
@@ -309,7 +398,10 @@ def montar_timeline(solicitacao=None):
         etapas.append(
             {
                 "titulo": rotulos[solicitacao.status],
-                "subtitulo": quando(AcaoHistorico.DECISAO) or "Decisão registrada",
+                "subtitulo": quando(AcaoHistorico.CONCLUSAO)
+                or quando(AcaoHistorico.CANCELAMENTO)
+                or quando(AcaoHistorico.DECISAO)
+                or "Encerrada",
                 "estado": "concluido",
             }
         )

@@ -13,9 +13,14 @@ from django.db import transaction
 from .models import Notificacao
 
 
-def usuarios_do_grupo(nome_grupo):
-    """Usuários ativos de um grupo de perfil."""
-    return get_user_model().objects.filter(is_active=True, groups__name=nome_grupo)
+def usuarios_do_grupo(nome_grupo, exceto=None):
+    """Usuários ativos de um grupo de perfil, opcionalmente excluindo um."""
+    queryset = get_user_model().objects.filter(
+        is_active=True, groups__name=nome_grupo
+    )
+    if exceto is not None:
+        queryset = queryset.exclude(pk=exceto.pk)
+    return queryset
 
 
 def usuarios_ativos(exceto=None):

@@ -105,6 +105,25 @@ def pode_despachar(user, solicitacao):
     )
 
 
+def pode_concluir(user, solicitacao):
+    """Após o evento, o solicitante confirma que foi atendido."""
+    return solicitacao.status == StatusSolicitacao.DEFERIDA_EM_ANDAMENTO and (
+        user.is_superuser or solicitacao.criado_por_id == user.pk
+    )
+
+
+STATUS_CANCELAVEIS = {
+    StatusSolicitacao.AGUARDANDO_DESPACHO,
+    StatusSolicitacao.DEVOLVIDA,
+    StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
+}
+
+
+def pode_cancelar(user, solicitacao):
+    """Evento cancelado pode ser registrado por qualquer usuário que o vê."""
+    return solicitacao.status in STATUS_CANCELAVEIS and pode_ver(user, solicitacao)
+
+
 def acoes_permitidas(user, solicitacao):
     """Mapa de ações para os templates decidirem o que exibir."""
     return {
@@ -114,4 +133,6 @@ def acoes_permitidas(user, solicitacao):
         "enviar": pode_enviar(user, solicitacao),
         "excluir": pode_excluir(user, solicitacao),
         "despachar": pode_despachar(user, solicitacao),
+        "concluir": pode_concluir(user, solicitacao),
+        "cancelar": pode_cancelar(user, solicitacao),
     }

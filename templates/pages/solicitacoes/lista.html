@@ -69,6 +69,8 @@
                   <div class="tabela__acoes-grupo">
                     {% if linha.acoes.despachar %}
                       <a href="{% url 'solicitacoes:detalhe' s.pk %}#despacho-dg" class="btn btn--dourado btn--compacto">Despachar</a>
+                    {% elif linha.acoes.concluir %}
+                      <a href="{% url 'solicitacoes:detalhe' s.pk %}#encerramento" class="btn btn--dourado btn--compacto">Confirmar</a>
                     {% elif linha.acoes.enviar %}
                       <a href="{% url 'solicitacoes:editar' s.pk %}" class="btn btn--dourado btn--compacto">Continuar</a>
                     {% elif linha.acoes.editar_dados %}

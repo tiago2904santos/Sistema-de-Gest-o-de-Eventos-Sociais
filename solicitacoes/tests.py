@@ -297,19 +297,27 @@ class FormsTests(BaseSolicitacaoTestCase):
 
 class WorkflowTests(BaseSolicitacaoTestCase):
     def test_fluxo_completo_valido(self):
-        """Fluxo enxuto: rascunho → enviar para a DG → decisão."""
+        """Rascunho → envio → deferida em andamento → confirmação do solicitante."""
         solicitacao = self.solicitacao_completa()
 
         services.enviar(solicitacao, self.solicitante)
         self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
         services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER)
-        self.assertEqual(solicitacao.status, StatusSolicitacao.ATENDIDA)
+        self.assertEqual(
+            solicitacao.status, StatusSolicitacao.DEFERIDA_EM_ANDAMENTO
+        )
         self.assertEqual(solicitacao.decidido_por, self.gestor)
         self.assertIsNotNone(solicitacao.decidido_em)
+        # Depois do evento, o solicitante confirma o atendimento.
+        services.concluir_atendimento(solicitacao, self.solicitante)
+        self.assertEqual(solicitacao.status, StatusSolicitacao.ATENDIDA)
+        self.assertTrue(
+            solicitacao.historico.filter(acao=AcaoHistorico.CONCLUSAO).exists()
+        )
 
     def test_decisoes_definem_status_final(self):
         casos = [
-            (DecisaoDG.ATENDER, StatusSolicitacao.ATENDIDA),
+            (DecisaoDG.ATENDER, StatusSolicitacao.DEFERIDA_EM_ANDAMENTO),
             (DecisaoDG.NAO_ATENDER, StatusSolicitacao.NAO_ATENDIDA),
             (DecisaoDG.CANCELADO, StatusSolicitacao.CANCELADA),
         ]
@@ -440,6 +448,44 @@ class WorkflowTests(BaseSolicitacaoTestCase):
         with self.assertRaises(services.TransicaoInvalida):
             services.salvar_ajustes_dg(solicitacao, self.gestor, {self.equipe.pk: 2})
 
+    def test_concluir_apenas_deferida_em_andamento(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        with self.assertRaises(services.TransicaoInvalida):
+            services.concluir_atendimento(solicitacao, self.solicitante)
+
+    def test_cancelamento_do_evento_com_motivo(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER)
+
+        services.cancelar_evento(
+            solicitacao, self.outro_solicitante, "Chuva forte no dia do evento."
+        )
+
+        self.assertEqual(solicitacao.status, StatusSolicitacao.CANCELADA)
+        registro = solicitacao.historico.get(acao=AcaoHistorico.CANCELAMENTO)
+        self.assertEqual(registro.observacao, "Chuva forte no dia do evento.")
+        self.assertEqual(registro.usuario, self.outro_solicitante)
+
+    def test_cancelamento_exige_motivo(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        with self.assertRaises(ValidationError):
+            services.cancelar_evento(solicitacao, self.solicitante, "   ")
+        self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
+
+    def test_cancelamento_nao_se_aplica_a_finalizadas_nem_rascunho(self):
+        rascunho = self.criar_solicitacao()
+        with self.assertRaises(services.TransicaoInvalida):
+            services.cancelar_evento(rascunho, self.solicitante, "Motivo")
+
+        finalizada = self.solicitacao_completa()
+        finalizada.status = StatusSolicitacao.NAO_ATENDIDA
+        finalizada.save()
+        with self.assertRaises(services.TransicaoInvalida):
+            services.cancelar_evento(finalizada, self.solicitante, "Motivo")
+
     def test_devolucao_para_ajuste_e_reenvio(self):
         solicitacao = self.solicitacao_completa()
         services.enviar(solicitacao, self.solicitante)
@@ -451,7 +497,9 @@ class WorkflowTests(BaseSolicitacaoTestCase):
         services.enviar(solicitacao, self.solicitante)
         self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
         services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER)
-        self.assertEqual(solicitacao.status, StatusSolicitacao.ATENDIDA)
+        self.assertEqual(
+            solicitacao.status, StatusSolicitacao.DEFERIDA_EM_ANDAMENTO
+        )
 
     def test_devolucao_exige_observacao(self):
         solicitacao = self.solicitacao_completa()
@@ -730,7 +778,9 @@ class ViewsTests(BaseSolicitacaoTestCase):
         )
         self.assertEqual(resposta.status_code, 302)
         solicitacao.refresh_from_db()
-        self.assertEqual(solicitacao.status, StatusSolicitacao.ATENDIDA)
+        self.assertEqual(
+            solicitacao.status, StatusSolicitacao.DEFERIDA_EM_ANDAMENTO
+        )
 
     def test_criador_exclui_rascunho(self):
         solicitacao = self.criar_solicitacao()
@@ -888,7 +938,9 @@ class ViewsTests(BaseSolicitacaoTestCase):
         )
         self.assertEqual(resposta.status_code, 302)
         solicitacao.refresh_from_db()
-        self.assertEqual(solicitacao.status, StatusSolicitacao.ATENDIDA)
+        self.assertEqual(
+            solicitacao.status, StatusSolicitacao.DEFERIDA_EM_ANDAMENTO
+        )
         self.assertEqual(solicitacao.quantidade_servidores, 2)
         self.assertTrue(
             solicitacao.historico.filter(acao=AcaoHistorico.AJUSTE_DG).exists()
@@ -922,7 +974,9 @@ class ViewsTests(BaseSolicitacaoTestCase):
             {"decisao": "ATENDER", "observacao": ""},
         )
         solicitacao.refresh_from_db()
-        self.assertEqual(solicitacao.status, StatusSolicitacao.ATENDIDA)
+        self.assertEqual(
+            solicitacao.status, StatusSolicitacao.DEFERIDA_EM_ANDAMENTO
+        )
         self.assertEqual(solicitacao.quantidade_servidores, 3)
 
     def test_salvar_ajustes_exige_gestor(self):
@@ -937,6 +991,72 @@ class ViewsTests(BaseSolicitacaoTestCase):
             },
         )
         self.assertEqual(resposta.status_code, 403)
+
+    def test_solicitante_confirma_atendimento_via_view(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER)
+
+        # A tela do criador mostra o botão e a seção de encerramento.
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(
+            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+        self.assertContains(resposta, "Confirmar atendimento")
+        self.assertContains(resposta, "Encerramento do evento")
+
+        # Outro usuário não pode confirmar pelo criador.
+        self.client.force_login(self.outro_solicitante)
+        resposta = self.client.post(
+            reverse("solicitacoes:concluir", args=[solicitacao.pk])
+        )
+        self.assertEqual(resposta.status_code, 403)
+
+        self.client.force_login(self.solicitante)
+        resposta = self.client.post(
+            reverse("solicitacoes:concluir", args=[solicitacao.pk])
+        )
+        self.assertEqual(resposta.status_code, 302)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.ATENDIDA)
+
+    def test_qualquer_usuario_cancela_evento_via_view(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.client.force_login(self.outro_solicitante)
+
+        resposta = self.client.get(
+            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+        self.assertContains(resposta, "Registrar cancelamento do evento")
+
+        # Sem motivo, nada muda.
+        resposta = self.client.post(
+            reverse("solicitacoes:cancelar_evento", args=[solicitacao.pk]),
+            {"motivo_cancelamento": ""},
+        )
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
+
+        resposta = self.client.post(
+            reverse("solicitacoes:cancelar_evento", args=[solicitacao.pk]),
+            {"motivo_cancelamento": "Evento cancelado pela prefeitura."},
+        )
+        self.assertEqual(resposta.status_code, 302)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.CANCELADA)
+
+    def test_fila_deferidas_em_andamento(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER)
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(
+            reverse("solicitacoes:lista"), {"fila": "andamento"}
+        )
+        self.assertEqual(resposta.context["pagina"].paginator.count, 1)
+        self.assertContains(resposta, "Deferidas em andamento")
+        self.assertContains(resposta, ">Confirmar<", html=False)
 
     def test_campo_qual_unidade_movel_no_formulario(self):
         self.client.force_login(self.solicitante)
@@ -1066,6 +1186,38 @@ class AnexosTests(BaseSolicitacaoTestCase):
 
     def arquivo(self, nome="oficio.pdf", conteudo=b"%PDF-1.4 teste"):
         return SimpleUploadedFile(nome, conteudo, content_type="application/pdf")
+
+    def test_upload_direto_no_cadastro_da_solicitacao(self):
+        self.client.force_login(self.solicitante)
+        dados = self.dados_completos_post(acao="rascunho")
+        dados["anexos"] = [
+            self.arquivo("oficio.pdf"),
+            self.arquivo("memorando.pdf", b"%PDF-1.4 memo"),
+        ]
+        resposta = self.client.post(reverse("solicitacoes:nova"), dados)
+        solicitacao = SolicitacaoEvento.objects.latest("pk")
+        self.assertRedirects(
+            resposta, reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+        self.assertEqual(solicitacao.anexos.count(), 2)
+        self.assertEqual(
+            sorted(solicitacao.anexos.values_list("nome_original", flat=True)),
+            ["memorando.pdf", "oficio.pdf"],
+        )
+
+    def test_upload_invalido_no_cadastro_nao_salva_nada(self):
+        self.client.force_login(self.solicitante)
+        dados = self.dados_completos_post(acao="rascunho")
+        dados["anexos"] = [SimpleUploadedFile("virus.exe", b"MZ")]
+        resposta = self.client.post(reverse("solicitacoes:nova"), dados)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(SolicitacaoEvento.objects.count(), 0)
+
+    def test_campo_de_upload_na_tela_de_cadastro(self):
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(reverse("solicitacoes:nova"))
+        self.assertContains(resposta, 'name="anexos" multiple')
+        self.assertContains(resposta, 'enctype="multipart/form-data"')
 
     def test_criador_anexa_no_rascunho(self):
         solicitacao = self.criar_solicitacao()

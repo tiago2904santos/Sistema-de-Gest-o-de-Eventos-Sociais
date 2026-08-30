@@ -6,7 +6,7 @@
   {% if somente_leitura %}
     <div id="form-solicitacao">
   {% else %}
-    <form method="post" action="" id="form-solicitacao">
+    <form method="post" action="" id="form-solicitacao" enctype="multipart/form-data">
       {% csrf_token %}
   {% endif %}
 
@@ -22,6 +22,12 @@
           {% if acoes.editar_dados %}
             {% url 'solicitacoes:editar' solicitacao.pk as url_editar %}
             {% include "components/button.html" with label="Editar" variante="secundario" href=url_editar %}
+          {% endif %}
+          {% if acoes.concluir %}
+            <form method="post" action="{% url 'solicitacoes:concluir' solicitacao.pk %}">
+              {% csrf_token %}
+              {% include "components/button.html" with label="Confirmar atendimento" variante="dourado" tipo="submit" %}
+            </form>
           {% endif %}
           {% if acoes.enviar %}
             <form method="post" action="{% url 'solicitacoes:enviar' solicitacao.pk %}">
@@ -188,7 +194,10 @@
           <section class="section-card" id="anexos">
             {% include "components/section_card.html" with numero="5" titulo="Anexos" %}
             <div class="section-card__corpo">
-              <p class="texto-suave">Salve o rascunho para anexar arquivos (ofício, memorando, foto do local...).</p>
+              <div class="anexos-upload">
+                <input type="file" name="anexos" multiple class="form-controle anexos-upload__arquivo" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods">
+              </div>
+              <p class="texto-suave anexos-upload__ajuda">Ofício, memorando, foto do local... PDF, imagens ou documentos de escritório, até 10 MB por arquivo. Os arquivos são salvos junto com a solicitação.</p>
             </div>
           </section>
         {% endif %}
@@ -252,8 +261,31 @@
         {% endif %}
 
         {% if somente_leitura %}
+          {% if acoes.concluir or acoes.cancelar %}
+            <section class="section-card" id="encerramento">
+              {% include "components/section_card.html" with numero="7" titulo="Encerramento do evento" %}
+              <div class="section-card__corpo">
+                {% if acoes.concluir %}
+                  <div class="encerramento-bloco">
+                    <p class="texto-suave">O evento já aconteceu? Confirme o atendimento para encerrar a solicitação.</p>
+                    <form method="post" action="{% url 'solicitacoes:concluir' solicitacao.pk %}">
+                      {% csrf_token %}
+                      {% include "components/button.html" with label="Confirmar atendimento" variante="dourado" tipo="submit" %}
+                    </form>
+                  </div>
+                {% endif %}
+                {% if acoes.cancelar %}
+                  <form method="post" action="{% url 'solicitacoes:cancelar_evento' solicitacao.pk %}" class="encerramento-bloco encerramento-bloco--cancelamento" data-confirmar-exclusao>
+                    {% csrf_token %}
+                    {% include "components/textarea.html" with name="motivo_cancelamento" label="O evento foi cancelado?" placeholder="Informe o motivo do cancelamento do evento (obrigatório)." largura="" linhas="2" %}
+                    <button type="submit" class="btn btn--perigo-suave">Registrar cancelamento do evento</button>
+                  </form>
+                {% endif %}
+              </div>
+            </section>
+          {% endif %}
           <section class="section-card">
-            {% include "components/section_card.html" with numero="7" titulo="Histórico" %}
+            {% include "components/section_card.html" with numero="8" titulo="Histórico" %}
             <div class="section-card__corpo">
               <div class="tabela-wrapper">
                 <table class="tabela">

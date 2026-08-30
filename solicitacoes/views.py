@@ -8,7 +8,13 @@ from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from .forms import AnexoForm, DespachoForm, FiltroSolicitacoesForm, SolicitacaoForm
+from .forms import (
+    AnexoForm,
+    DespachoForm,
+    FiltroSolicitacoesForm,
+    SolicitacaoForm,
+    validar_arquivo_anexo,
+)
 from .models import (
     AcaoHistorico,
     AnexoSolicitacao,
@@ -205,19 +211,39 @@ def _obter_visivel(request, pk):
 # Criação e edição
 # ---------------------------------------------------------------------------
 
+def _criar_anexos_enviados(solicitacao, arquivos, usuario):
+    for arquivo in arquivos:
+        AnexoSolicitacao.objects.create(
+            solicitacao=solicitacao,
+            arquivo=arquivo,
+            nome_original=arquivo.name,
+            tamanho=arquivo.size,
+            enviado_por=usuario,
+        )
+
+
 @login_required
 def nova_solicitacao(request):
     """Tela "Nova Solicitação de Evento Social" com persistência real."""
     if request.method == "POST":
         acao = request.POST.get("acao", "rascunho")
         form = SolicitacaoForm(request.POST, enviar=(acao == "enviar"))
-        if form.is_valid():
+        arquivos = request.FILES.getlist("anexos")
+        erros_anexos = [
+            erro
+            for erro in (validar_arquivo_anexo(arquivo) for arquivo in arquivos)
+            if erro
+        ]
+        for erro in erros_anexos:
+            messages.error(request, erro)
+        if form.is_valid() and not erros_anexos:
             with transaction.atomic():
                 solicitacao = form.save(criado_por=request.user)
                 services.registrar_historico(
                     solicitacao, request.user, AcaoHistorico.CRIACAO,
                     status_novo=solicitacao.status,
                 )
+                _criar_anexos_enviados(solicitacao, arquivos, request.user)
                 if acao == "enviar":
                     services.enviar(solicitacao, request.user)
             if acao == "enviar":
@@ -300,6 +326,11 @@ FILAS = {
         "status": [StatusSolicitacao.DEVOLVIDA],
         "apenas_do_usuario": True,
     },
+    "andamento": {
+        "rotulo": "Deferidas em andamento",
+        "status": [StatusSolicitacao.DEFERIDA_EM_ANDAMENTO],
+        "apenas_do_usuario": True,
+    },
 }
 
 
@@ -309,7 +340,7 @@ def _filas_do_usuario(user, queryset):
     filas = []
     if permissions.eh_gestor_dg(user):
         filas.append("despacho")
-    filas.extend(["rascunhos", "devolvidas"])
+    filas.extend(["rascunhos", "devolvidas", "andamento"])
     resultado = []
     for chave in filas:
         config = FILAS[chave]
@@ -517,6 +548,33 @@ def enviar_solicitacao(request, pk):
     return _executar_transicao(
         request, solicitacao, services.enviar,
         f"Solicitação #{solicitacao.pk} enviada com sucesso.",
+    )
+
+
+@login_required
+@require_POST
+def concluir_solicitacao(request, pk):
+    """O solicitante confirma que o evento aconteceu e foi atendido."""
+    solicitacao = _obter_visivel(request, pk)
+    if not permissions.pode_concluir(request.user, solicitacao):
+        raise PermissionDenied
+    return _executar_transicao(
+        request, solicitacao, services.concluir_atendimento,
+        f"Atendimento da solicitação #{solicitacao.pk} confirmado.",
+    )
+
+
+@login_required
+@require_POST
+def cancelar_evento(request, pk):
+    """Qualquer usuário registra o cancelamento do evento, com motivo."""
+    solicitacao = _obter_visivel(request, pk)
+    if not permissions.pode_cancelar(request.user, solicitacao):
+        raise PermissionDenied
+    return _executar_transicao(
+        request, solicitacao, services.cancelar_evento,
+        f"Evento da solicitação #{solicitacao.pk} registrado como cancelado.",
+        observacao=request.POST.get("motivo_cancelamento", ""),
     )
 
 

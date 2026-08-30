@@ -14,6 +14,9 @@ class StatusSolicitacao(models.TextChoices):
     RASCUNHO = "RASCUNHO", "Rascunho"
     AGUARDANDO_DESPACHO = "AGUARDANDO_DESPACHO", "Aguardando despacho"
     DEVOLVIDA = "DEVOLVIDA", "Devolvida para ajuste"
+    # A DG deferiu; o evento ainda vai acontecer. O solicitante confirma o
+    # atendimento depois, levando ao status final ATENDIDA.
+    DEFERIDA_EM_ANDAMENTO = "DEFERIDA_EM_ANDAMENTO", "Deferida — em andamento"
     ATENDIDA = "ATENDIDA", "Atendida"
     NAO_ATENDIDA = "NAO_ATENDIDA", "Não atendida"
     CANCELADA = "CANCELADA", "Cancelada"
@@ -361,6 +364,8 @@ class AcaoHistorico(models.TextChoices):
     DEVOLUCAO = "DEVOLUCAO", "Devolvida para ajuste"
     AJUSTE_DG = "AJUSTE_DG", "Quantidade ajustada pela DG"
     DECISAO = "DECISAO", "Decisão da DG registrada"
+    CONCLUSAO = "CONCLUSAO", "Atendimento confirmado"
+    CANCELAMENTO = "CANCELAMENTO", "Evento cancelado"
 
 
 class HistoricoSolicitacao(models.Model):
@@ -400,6 +405,7 @@ class HistoricoSolicitacao(models.Model):
         """Exibe a decisão da DG no histórico, em vez do estado resultante."""
         if self.acao == AcaoHistorico.DECISAO:
             rotulo = {
+                StatusSolicitacao.DEFERIDA_EM_ANDAMENTO: DecisaoDG.ATENDER.label,
                 StatusSolicitacao.ATENDIDA: DecisaoDG.ATENDER.label,
                 StatusSolicitacao.NAO_ATENDIDA: DecisaoDG.NAO_ATENDER.label,
                 StatusSolicitacao.CANCELADA: DecisaoDG.CANCELADO.label,

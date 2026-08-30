@@ -30,12 +30,21 @@ def index(request):
         status=StatusSolicitacao.AGUARDANDO_DESPACHO
     ).count()
 
+    # Deferidas em andamento contam como decisão favorável da DG.
     finalizadas_ano = visiveis.filter(
         data_solicitacao__year=hoje.year,
-        status__in=[StatusSolicitacao.ATENDIDA, StatusSolicitacao.NAO_ATENDIDA],
+        status__in=[
+            StatusSolicitacao.ATENDIDA,
+            StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
+            StatusSolicitacao.NAO_ATENDIDA,
+        ],
     ).count()
     atendidas_ano = visiveis.filter(
-        data_solicitacao__year=hoje.year, status=StatusSolicitacao.ATENDIDA
+        data_solicitacao__year=hoje.year,
+        status__in=[
+            StatusSolicitacao.ATENDIDA,
+            StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
+        ],
     ).count()
     percentual = round(atendidas_ano * 100 / finalizadas_ano) if finalizadas_ano else 0
 

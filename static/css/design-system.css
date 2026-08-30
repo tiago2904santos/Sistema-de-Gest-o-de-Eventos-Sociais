@@ -471,6 +471,7 @@ img {
 .status-badge--em_analise { background: var(--cor-info-fundo); color: var(--cor-info); }
 .status-badge--aguardando_despacho { background: var(--cor-alerta-fundo); color: var(--cor-alerta); }
 .status-badge--devolvida { background: var(--cor-alerta-fundo); color: var(--cor-alerta); }
+.status-badge--deferida_em_andamento { background: var(--cor-info-fundo); color: var(--cor-info); }
 .status-badge--atendida { background: var(--cor-sucesso-fundo); color: var(--cor-sucesso); }
 .status-badge--nao_atendida { background: var(--cor-erro-fundo); color: var(--cor-erro); }
 .status-badge--cancelada { background: var(--cor-neutro-fundo); color: var(--cor-neutro); }
@@ -1191,6 +1192,11 @@ textarea.form-controle { min-height: 68px; }
   font-size: 0.82rem; font-weight: 600; color: var(--cor-texto);
 }
 .despacho-quantidades-ajuda { margin-bottom: 10px; font-size: 0.8rem; }
+
+.encerramento-bloco { display: grid; gap: 10px; justify-items: stretch; }
+.encerramento-bloco .btn { justify-self: start; }
+.encerramento-bloco .form-campo { width: 100%; }
+.encerramento-bloco--cancelamento { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--cor-borda); }
 
 .anexos-upload { display: flex; gap: 12px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
 .anexos-upload__arquivo { max-width: 420px; flex: 1 1 260px; }
