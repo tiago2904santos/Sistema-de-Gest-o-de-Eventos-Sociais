@@ -31,6 +31,12 @@
           {% elif acoes.despachar %}
             {% include "components/button.html" with label="Registrar despacho" variante="dourado" href="#despacho-dg" %}
           {% endif %}
+          {% if acoes.excluir %}
+            <form method="post" action="{% url 'solicitacoes:excluir' solicitacao.pk %}" data-confirmar-exclusao>
+              {% csrf_token %}
+              <button type="submit" class="btn btn--perigo-suave">Excluir</button>
+            </form>
+          {% endif %}
         {% else %}
           {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
           {% include "components/button.html" with label="Salvar rascunho" variante="secundario" tipo="submit" name="acao" value="rascunho" formnovalidate=True %}

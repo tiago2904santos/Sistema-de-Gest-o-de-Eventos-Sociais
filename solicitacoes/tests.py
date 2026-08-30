@@ -588,6 +588,62 @@ class ViewsTests(BaseSolicitacaoTestCase):
         solicitacao.refresh_from_db()
         self.assertEqual(solicitacao.status, StatusSolicitacao.ATENDIDA)
 
+    def test_criador_exclui_rascunho(self):
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        resposta = self.client.post(
+            reverse("solicitacoes:excluir", args=[solicitacao.pk])
+        )
+        self.assertRedirects(resposta, reverse("solicitacoes:lista"))
+        self.assertFalse(
+            SolicitacaoEvento.objects.filter(pk=solicitacao.pk).exists()
+        )
+
+    def test_exclusao_exige_post(self):
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(
+            reverse("solicitacoes:excluir", args=[solicitacao.pk])
+        )
+        self.assertEqual(resposta.status_code, 405)
+        self.assertTrue(
+            SolicitacaoEvento.objects.filter(pk=solicitacao.pk).exists()
+        )
+
+    def test_solicitacao_enviada_nao_pode_ser_excluida(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.client.force_login(self.solicitante)
+        resposta = self.client.post(
+            reverse("solicitacoes:excluir", args=[solicitacao.pk])
+        )
+        self.assertEqual(resposta.status_code, 403)
+        self.assertTrue(
+            SolicitacaoEvento.objects.filter(pk=solicitacao.pk).exists()
+        )
+
+    def test_rascunho_alheio_nao_pode_ser_excluido(self):
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.outro_solicitante)
+        resposta = self.client.post(
+            reverse("solicitacoes:excluir", args=[solicitacao.pk])
+        )
+        self.assertEqual(resposta.status_code, 403)
+        self.assertTrue(
+            SolicitacaoEvento.objects.filter(pk=solicitacao.pk).exists()
+        )
+
+    def test_botao_excluir_aparece_apenas_no_rascunho_proprio(self):
+        rascunho = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(reverse("solicitacoes:lista"), {"fila": "rascunhos"})
+        self.assertContains(resposta, f"/solicitacoes/{rascunho.pk}/excluir/")
+
+        enviada = self.solicitacao_completa()
+        services.enviar(enviada, self.solicitante)
+        resposta = self.client.get(reverse("solicitacoes:lista"))
+        self.assertNotContains(resposta, f"/solicitacoes/{enviada.pk}/excluir/")
+
     def test_lista_mostra_fila_e_acao_contextual(self):
         rascunho = self.criar_solicitacao()
         solicitacao = self.solicitacao_completa()

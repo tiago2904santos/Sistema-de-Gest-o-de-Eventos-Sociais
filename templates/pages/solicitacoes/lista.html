@@ -74,6 +74,12 @@
                       <a href="{% url 'solicitacoes:editar' s.pk %}" class="btn btn--secundario btn--compacto">Editar</a>
                     {% endif %}
                     <a href="{% url 'solicitacoes:detalhe' s.pk %}" class="btn btn--secundario btn--compacto">Detalhes</a>
+                    {% if linha.acoes.excluir %}
+                      <form method="post" action="{% url 'solicitacoes:excluir' s.pk %}" class="acao-inline" data-confirmar-exclusao>
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn--perigo-suave btn--compacto">Excluir</button>
+                      </form>
+                    {% endif %}
                   </div>
                 </td>
               </tr>

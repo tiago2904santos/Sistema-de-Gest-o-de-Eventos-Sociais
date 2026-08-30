@@ -11,5 +11,6 @@ urlpatterns = [
     path("<int:pk>/editar/", views.editar_solicitacao, name="editar"),
     # Transições de workflow — somente POST.
     path("<int:pk>/enviar/", views.enviar_solicitacao, name="enviar"),
+    path("<int:pk>/excluir/", views.excluir_solicitacao, name="excluir"),
     path("<int:pk>/despachar/", views.despachar, name="despachar"),
 ]

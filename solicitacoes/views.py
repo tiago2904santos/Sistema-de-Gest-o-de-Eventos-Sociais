@@ -420,6 +420,18 @@ def enviar_solicitacao(request, pk):
 
 @login_required
 @require_POST
+def excluir_solicitacao(request, pk):
+    solicitacao = _obter_visivel(request, pk)
+    if not permissions.pode_excluir(request.user, solicitacao):
+        raise PermissionDenied
+    numero = solicitacao.pk
+    solicitacao.delete()
+    messages.success(request, f"Rascunho #{numero} excluído.")
+    return redirect("solicitacoes:lista")
+
+
+@login_required
+@require_POST
 def despachar(request, pk):
     solicitacao = _obter_visivel(request, pk)
     if not permissions.pode_despachar(request.user, solicitacao):

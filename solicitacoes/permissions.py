@@ -89,6 +89,13 @@ def pode_enviar(user, solicitacao):
     )
 
 
+def pode_excluir(user, solicitacao):
+    """Só rascunhos podem ser excluídos — depois do envio fica o histórico."""
+    return solicitacao.status == StatusSolicitacao.RASCUNHO and (
+        user.is_superuser or solicitacao.criado_por_id == user.pk
+    )
+
+
 def pode_despachar(user, solicitacao):
     return solicitacao.status == StatusSolicitacao.AGUARDANDO_DESPACHO and eh_gestor_dg(
         user
@@ -102,5 +109,6 @@ def acoes_permitidas(user, solicitacao):
         "editar": pode_editar(user, solicitacao),
         "editar_dados": pode_editar_dados(user, solicitacao),
         "enviar": pode_enviar(user, solicitacao),
+        "excluir": pode_excluir(user, solicitacao),
         "despachar": pode_despachar(user, solicitacao),
     }
