@@ -509,16 +509,22 @@ def detalhe_solicitacao(request, pk):
         SolicitacaoForm(instance=solicitacao),
         solicitacao,
     )
+    acoes = permissions.acoes_permitidas(request.user, solicitacao)
+    modo_resumo_dg = acoes["despachar"]
     contexto.update(
         {
             "titulo_pagina": f"Solicitação #{solicitacao.pk}",
-            "subtitulo_pagina": "Visualização completa da solicitação",
-            "acoes": permissions.acoes_permitidas(request.user, solicitacao),
+            "subtitulo_pagina": "Resumo para despacho da Diretoria-Geral"
+            if modo_resumo_dg
+            else "Visualização completa da solicitação",
+            "acoes": acoes,
             "historico": solicitacao.historico.all(),
             "somente_leitura": True,
             "dados_desabilitado": True,
             "planejamento_desabilitado": True,
             "mostrar_enviar": False,
+            # A página do DG é um resumo: só as quantidades são editáveis.
+            "modo_resumo_dg": modo_resumo_dg,
         }
     )
     return render(request, "pages/solicitacoes/form.html", contexto)

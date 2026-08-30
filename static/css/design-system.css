@@ -1198,6 +1198,19 @@ textarea.form-controle { min-height: 68px; }
 .encerramento-bloco .form-campo { width: 100%; }
 .encerramento-bloco--cancelamento { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--cor-borda); }
 
+.resumo-dg {
+  margin: 0; display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px 28px;
+}
+.resumo-dg__item { display: grid; gap: 3px; }
+.resumo-dg__item--largo { grid-column: 1 / -1; }
+.resumo-dg dt {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--cor-texto-suave);
+}
+.resumo-dg dd { margin: 0; font-size: 0.9rem; font-weight: 600; color: var(--cor-texto); }
+
 .anexos-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .anexo-item {
   display: flex; align-items: center; gap: 14px;

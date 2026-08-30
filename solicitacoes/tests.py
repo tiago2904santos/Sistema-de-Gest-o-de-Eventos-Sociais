@@ -1058,6 +1058,29 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.assertContains(resposta, "Deferidas em andamento")
         self.assertContains(resposta, ">Confirmar<", html=False)
 
+    def test_pagina_do_dg_e_um_resumo(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+
+        # Gestor com despacho pendente vê o resumo, sem o formulário completo.
+        self.client.force_login(self.gestor)
+        resposta = self.client.get(
+            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+        self.assertContains(resposta, "Resumo da solicitação")
+        self.assertContains(resposta, "Resumo para despacho da Diretoria-Geral")
+        self.assertNotContains(resposta, 'name="solicitante_nome"')
+        # As quantidades continuam editáveis no despacho.
+        self.assertContains(resposta, f'name="quantidade_dg_{self.equipe.pk}"')
+
+        # O solicitante continua vendo a visualização completa.
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(
+            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+        )
+        self.assertNotContains(resposta, "Resumo para despacho da Diretoria-Geral")
+        self.assertContains(resposta, 'name="solicitante_nome"')
+
     def test_campo_qual_unidade_movel_no_formulario(self):
         self.client.force_login(self.solicitante)
         resposta = self.client.get(reverse("solicitacoes:nova"))
