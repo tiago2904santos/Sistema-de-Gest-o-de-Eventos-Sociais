@@ -155,29 +155,23 @@
             {% include "components/section_card.html" with numero="5" titulo="Anexos" %}
             <div class="section-card__corpo">
               {% if anexos %}
-                <div class="tabela-wrapper">
-                  <table class="tabela">
-                    <thead><tr><th>Arquivo</th><th>Tamanho</th><th>Enviado por</th><th>Data</th><th>Ações</th></tr></thead>
-                    <tbody>
-                      {% for anexo in anexos %}
-                        <tr>
-                          <td>{{ anexo.nome_original }}</td>
-                          <td>{{ anexo.tamanho_legivel }}</td>
-                          <td>{{ anexo.enviado_por|default:"—" }}</td>
-                          <td>{{ anexo.criado_em|date:"d/m/Y H:i" }}</td>
-                          <td class="tabela__acoes">
-                            <div class="tabela__acoes-grupo">
-                              <a href="{% url 'solicitacoes:anexo_baixar' solicitacao.pk anexo.pk %}" class="btn btn--secundario btn--compacto">Baixar</a>
-                              {% if pode_gerenciar_anexos %}
-                                <button type="submit" form="form-anexo-excluir-{{ anexo.pk }}" class="btn btn--perigo-suave btn--compacto">Excluir</button>
-                              {% endif %}
-                            </div>
-                          </td>
-                        </tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
-                </div>
+                <ul class="anexos-lista">
+                  {% for anexo in anexos %}
+                    <li class="anexo-item">
+                      <span class="anexo-item__icone" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+                      <div class="anexo-item__info">
+                        <span class="anexo-item__nome">{{ anexo.nome_original }}</span>
+                        <span class="anexo-item__meta">{{ anexo.tamanho_legivel }} · {{ anexo.enviado_por|default:"—" }} · {{ anexo.criado_em|date:"d/m/Y H:i" }}</span>
+                      </div>
+                      <div class="anexo-item__acoes">
+                        <a href="{% url 'solicitacoes:anexo_baixar' solicitacao.pk anexo.pk %}" class="btn btn--secundario btn--compacto">Baixar</a>
+                        {% if pode_gerenciar_anexos %}
+                          <button type="submit" form="form-anexo-excluir-{{ anexo.pk }}" class="btn btn--perigo-suave btn--compacto">Excluir</button>
+                        {% endif %}
+                      </div>
+                    </li>
+                  {% endfor %}
+                </ul>
               {% else %}
                 <p class="texto-suave">Nenhum arquivo anexado.</p>
               {% endif %}

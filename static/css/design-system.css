@@ -1198,6 +1198,30 @@ textarea.form-controle { min-height: 68px; }
 .encerramento-bloco .form-campo { width: 100%; }
 .encerramento-bloco--cancelamento { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--cor-borda); }
 
+.anexos-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.anexo-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 14px; border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm); background: #fff;
+}
+.anexo-item__icone {
+  display: grid; place-items: center; flex: 0 0 38px; height: 38px;
+  border-radius: var(--raio-sm); background: var(--cor-dourado-100);
+  color: var(--cor-dourado-500);
+}
+.anexo-item__icone .ui-icon { width: 18px; height: 18px; }
+.anexo-item__info { flex: 1 1 auto; min-width: 0; display: grid; gap: 2px; }
+.anexo-item__nome {
+  font-size: 0.86rem; font-weight: 600; color: var(--cor-texto);
+  overflow-wrap: anywhere;
+}
+.anexo-item__meta { font-size: 0.74rem; color: var(--cor-texto-suave); }
+.anexo-item__acoes { display: flex; gap: 8px; flex: 0 0 auto; }
+@media (max-width: 640px) {
+  .anexo-item { flex-wrap: wrap; }
+  .anexo-item__acoes { width: 100%; justify-content: flex-end; }
+}
+
 .anexos-upload { display: flex; gap: 12px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
 .anexos-upload__arquivo { max-width: 420px; flex: 1 1 260px; }
 .anexos-upload__ajuda { margin-top: 6px; font-size: 0.78rem; }
