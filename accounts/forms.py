@@ -11,7 +11,6 @@ User = get_user_model()
 
 PERFIS = [
     ("SOLICITANTE", "Solicitante"),
-    ("ANALISTA", "Analista"),
     ("GESTOR_DG", "Gestor DG"),
     ("ADMINISTRADOR", "Administrador"),
 ]

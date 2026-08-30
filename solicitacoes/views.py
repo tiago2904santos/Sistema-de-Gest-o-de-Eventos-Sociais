@@ -356,9 +356,8 @@ FILAS = {
 
 def _filas_do_usuario(user, queryset):
     """Atalhos de fila com contagem, conforme o perfil do usuário."""
-    filas = []
-    if permissions.eh_analista(user):
-        filas.append("analise")
+    # Todos analisam; a fila de despacho é exclusiva da DG.
+    filas = ["analise"]
     if permissions.eh_gestor_dg(user):
         filas.append("despacho")
     filas.append("rascunhos")

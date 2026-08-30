@@ -24,7 +24,7 @@ from .models import (
     SolicitacaoEvento,
     StatusSolicitacao,
 )
-from .permissions import GRUPO_ANALISTA, GRUPO_GESTOR_DG
+from .permissions import GRUPO_ADMINISTRADOR, GRUPO_GESTOR_DG
 from . import services
 
 User = get_user_model()
@@ -53,10 +53,12 @@ class BaseSolicitacaoTestCase(TestCase):
 
         cls.solicitante = User.objects.create_user("solicitante", password="x")
         cls.outro_solicitante = User.objects.create_user("outro", password="x")
+        # Solicitante e analista são as mesmas pessoas: usuário comum analisa.
         cls.analista = User.objects.create_user("analista", password="x")
-        cls.analista.groups.add(Group.objects.create(name=GRUPO_ANALISTA))
         cls.gestor = User.objects.create_user("gestor", password="x")
         cls.gestor.groups.add(Group.objects.create(name=GRUPO_GESTOR_DG))
+        cls.administrador = User.objects.create_user("administrador", password="x")
+        cls.administrador.groups.add(Group.objects.create(name=GRUPO_ADMINISTRADOR))
         cls.superusuario = User.objects.create_superuser("root", password="x")
 
     def criar_solicitacao(self, **kwargs):
@@ -463,14 +465,25 @@ class ViewsTests(BaseSolicitacaoTestCase):
         )
         self.assertEqual(resposta.status_code, 403)
 
-    def test_solicitante_nao_edita_apos_envio(self):
+    def test_solicitante_nao_edita_dados_apos_envio(self):
+        """Após o envio, os dados travam; o caminho passa a ser a análise."""
         solicitacao = self.solicitacao_completa()
         services.enviar(solicitacao, self.solicitante)
         self.client.force_login(self.solicitante)
         resposta = self.client.get(
             reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
-        self.assertEqual(resposta.status_code, 403)
+        self.assertRedirects(
+            resposta, reverse("solicitacoes:analisar", args=[solicitacao.pk]),
+            target_status_code=200,
+        )
+        # O POST de edição de dados segue bloqueado.
+        resposta = self.client.post(
+            reverse("solicitacoes:editar", args=[solicitacao.pk]),
+            {"acao": "rascunho", "solicitante_nome": "Hackeado"},
+        )
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.solicitante_nome, "Fulano")
 
     def test_analista_edita_planejamento_e_nao_dados(self):
         solicitacao = self.solicitacao_completa()
@@ -609,24 +622,40 @@ class ViewsTests(BaseSolicitacaoTestCase):
             target_status_code=200,
         )
 
-    def test_perfis_na_analise(self):
+    def test_qualquer_usuario_analisa(self):
+        """Solicitante e analista são as mesmas pessoas: todos analisam."""
         solicitacao = self.solicitacao_completa()
         services.enviar(solicitacao, self.solicitante)
-        self.client.force_login(self.solicitante)
-        resposta = self.client.get(
-            reverse("solicitacoes:analisar", args=[solicitacao.pk])
-        )
-        self.assertEqual(resposta.status_code, 403)
+        for usuario in [self.solicitante, self.analista, self.gestor, self.administrador]:
+            with self.subTest(usuario=usuario.username):
+                self.client.force_login(usuario)
+                resposta = self.client.get(
+                    reverse("solicitacoes:analisar", args=[solicitacao.pk])
+                )
+                self.assertEqual(resposta.status_code, 200)
+                solicitacao.refresh_from_db()
+                self.assertEqual(solicitacao.status, StatusSolicitacao.EM_ANALISE)
+
+    def test_apenas_gestor_dg_despacha(self):
+        """Administrador gerencia logins, mas não tem alçada de despacho."""
+        solicitacao = self.solicitacao_completa()
+        solicitacao.status = StatusSolicitacao.AGUARDANDO_DESPACHO
+        solicitacao.save()
+        dados = {"decisao": "ATENDER", "observacao": ""}
+        for usuario in [self.solicitante, self.administrador]:
+            with self.subTest(usuario=usuario.username):
+                self.client.force_login(usuario)
+                resposta = self.client.post(
+                    reverse("solicitacoes:despachar", args=[solicitacao.pk]), dados
+                )
+                self.assertEqual(resposta.status_code, 403)
         self.client.force_login(self.gestor)
-        resposta = self.client.get(
-            reverse("solicitacoes:analisar", args=[solicitacao.pk])
+        resposta = self.client.post(
+            reverse("solicitacoes:despachar", args=[solicitacao.pk]), dados
         )
-        self.assertEqual(resposta.status_code, 403)
-        self.client.force_login(self.analista)
-        resposta = self.client.get(
-            reverse("solicitacoes:analisar", args=[solicitacao.pk])
-        )
-        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.status_code, 302)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.ATENDIDA)
 
     def test_lista_mostra_fila_e_acao_contextual(self):
         solicitacao = self.solicitacao_completa()

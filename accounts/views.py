@@ -1,4 +1,4 @@
-"""Gestão de usuários (perfil administrador) e conta do próprio usuário."""
+"""Gestão de usuários (administrador ou gestor DG) e conta do próprio usuário."""
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
@@ -13,7 +13,7 @@ from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
 
 from auditoria.models import LogAuditoria
-from solicitacoes.permissions import eh_administrador
+from solicitacoes.permissions import pode_gerenciar_usuarios
 
 from .forms import PERFIS, UsuarioForm, perfil_do_usuario
 
@@ -22,8 +22,9 @@ User = get_user_model()
 ITENS_POR_PAGINA = 20
 
 
-def _exigir_administrador(request):
-    if not eh_administrador(request.user):
+def _exigir_gestao_de_usuarios(request):
+    """Gestão de usuários: administrador ou gestor DG."""
+    if not pode_gerenciar_usuarios(request.user):
         raise PermissionDenied
 
 
@@ -37,7 +38,7 @@ def _registrar_auditoria(usuario_acao, acao, alvo):
 
 @login_required
 def lista_usuarios(request):
-    _exigir_administrador(request)
+    _exigir_gestao_de_usuarios(request)
     queryset = User.objects.order_by("first_name", "username")
 
     termo = request.GET.get("q", "").strip()
@@ -83,7 +84,7 @@ def lista_usuarios(request):
 
 @login_required
 def editar_usuario(request, pk=None):
-    _exigir_administrador(request)
+    _exigir_gestao_de_usuarios(request)
     instancia = get_object_or_404(User, pk=pk) if pk else None
     if request.method == "POST":
         form = UsuarioForm(request.POST, instance=instancia)
@@ -126,7 +127,7 @@ def editar_usuario(request, pk=None):
 @login_required
 @require_POST
 def alternar_ativo_usuario(request, pk):
-    _exigir_administrador(request)
+    _exigir_gestao_de_usuarios(request)
     usuario = get_object_or_404(User, pk=pk)
     if usuario == request.user:
         messages.error(request, "Você não pode inativar o seu próprio usuário.")

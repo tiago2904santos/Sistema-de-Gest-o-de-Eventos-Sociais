@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from auditoria.models import LogAuditoria
-from solicitacoes.permissions import GRUPO_ADMINISTRADOR, GRUPO_ANALISTA
+from solicitacoes.permissions import GRUPO_ADMINISTRADOR, GRUPO_GESTOR_DG, GRUPO_SOLICITANTE
 
 User = get_user_model()
 
@@ -27,6 +27,13 @@ class GestaoUsuariosTests(TestCase):
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, "comum")
 
+    def test_gestor_dg_tambem_gerencia_usuarios(self):
+        gestor = User.objects.create_user("gestor", password="x")
+        gestor.groups.add(Group.objects.create(name=GRUPO_GESTOR_DG))
+        self.client.force_login(gestor)
+        resposta = self.client.get(reverse("accounts:usuarios_lista"))
+        self.assertEqual(resposta.status_code, 200)
+
     def test_criar_usuario_com_perfil_e_senha(self):
         self.client.force_login(self.admin)
         resposta = self.client.post(
@@ -36,14 +43,14 @@ class GestaoUsuariosTests(TestCase):
                 "last_name": "Silva",
                 "username": "maria.silva",
                 "email": "maria.silva@pc.pr.gov.br",
-                "perfil": GRUPO_ANALISTA,
+                "perfil": GRUPO_SOLICITANTE,
                 "senha": "SenhaForte#2026",
                 "confirmacao_senha": "SenhaForte#2026",
             },
         )
         self.assertEqual(resposta.status_code, 302)
         usuario = User.objects.get(username="maria.silva")
-        self.assertTrue(usuario.groups.filter(name=GRUPO_ANALISTA).exists())
+        self.assertTrue(usuario.groups.filter(name=GRUPO_SOLICITANTE).exists())
         self.assertTrue(usuario.check_password("SenhaForte#2026"))
         self.assertTrue(LogAuditoria.objects.filter(acao="USUARIO_CRIADO").exists())
 
@@ -54,7 +61,7 @@ class GestaoUsuariosTests(TestCase):
             {
                 "first_name": "João",
                 "username": "joao",
-                "perfil": GRUPO_ANALISTA,
+                "perfil": GRUPO_SOLICITANTE,
                 "senha": "",
                 "confirmacao_senha": "",
             },
@@ -67,7 +74,7 @@ class GestaoUsuariosTests(TestCase):
             {
                 "first_name": "João",
                 "username": "joao",
-                "perfil": GRUPO_ANALISTA,
+                "perfil": GRUPO_SOLICITANTE,
                 "senha": "SenhaForte#2026",
                 "confirmacao_senha": "Diferente#2026",
             },
@@ -82,7 +89,7 @@ class GestaoUsuariosTests(TestCase):
             {
                 "first_name": "Ana",
                 "username": "ana",
-                "perfil": GRUPO_ANALISTA,
+                "perfil": GRUPO_SOLICITANTE,
                 "senha": "12345678",
                 "confirmacao_senha": "12345678",
             },
@@ -92,7 +99,7 @@ class GestaoUsuariosTests(TestCase):
 
     def test_editar_troca_perfil_sem_trocar_senha(self):
         self.client.force_login(self.admin)
-        self.comum.groups.add(Group.objects.create(name=GRUPO_ANALISTA))
+        self.comum.groups.add(Group.objects.create(name=GRUPO_SOLICITANTE))
         resposta = self.client.post(
             reverse("accounts:usuarios_editar", args=[self.comum.pk]),
             {
@@ -106,7 +113,7 @@ class GestaoUsuariosTests(TestCase):
         self.assertEqual(resposta.status_code, 302)
         self.comum.refresh_from_db()
         self.assertTrue(self.comum.groups.filter(name=GRUPO_ADMINISTRADOR).exists())
-        self.assertFalse(self.comum.groups.filter(name=GRUPO_ANALISTA).exists())
+        self.assertFalse(self.comum.groups.filter(name=GRUPO_SOLICITANTE).exists())
         self.assertTrue(self.comum.check_password("x"))
 
     def test_inativar_e_reativar_usuario(self):

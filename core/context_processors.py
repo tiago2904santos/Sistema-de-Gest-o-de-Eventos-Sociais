@@ -1,12 +1,18 @@
-from solicitacoes.permissions import eh_administrador
+from solicitacoes.permissions import eh_administrador, pode_gerenciar_usuarios
 
 
 def perfis(request):
     """Disponibiliza flags de perfil para a navegação."""
     usuario = getattr(request, "user", None)
     if not usuario or not usuario.is_authenticated:
-        return {"usuario_eh_administrador": False}
-    return {"usuario_eh_administrador": eh_administrador(usuario)}
+        return {
+            "usuario_eh_administrador": False,
+            "usuario_gerencia_usuarios": False,
+        }
+    return {
+        "usuario_eh_administrador": eh_administrador(usuario),
+        "usuario_gerencia_usuarios": pode_gerenciar_usuarios(usuario),
+    }
 
 
 def notificacoes(request):

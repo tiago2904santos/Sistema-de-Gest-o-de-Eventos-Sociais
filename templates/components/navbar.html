@@ -11,6 +11,8 @@
     {% if usuario_eh_administrador %}
       <a class="navbar__link {% if request.resolver_match.namespace == 'cadastros' %}navbar__link--ativo{% endif %}"
          href="{% url 'cadastros:index' %}"><span class="navbar__icone">{% include "components/icon.html" with nome="checklist" %}</span>Cadastros</a>
+    {% endif %}
+    {% if usuario_gerencia_usuarios %}
       <a class="navbar__link {% if 'usuarios' in request.resolver_match.url_name %}navbar__link--ativo{% endif %}"
          href="{% url 'accounts:usuarios_lista' %}"><span class="navbar__icone">{% include "components/icon.html" with nome="users" %}</span>Usuários</a>
     {% endif %}

@@ -22,7 +22,11 @@ from cadastros.models import (
     Servico,
     TipoEvento,
 )
-from solicitacoes.permissions import GRUPOS_PADRAO
+from solicitacoes.permissions import (
+    GRUPO_ANALISTA_LEGADO,
+    GRUPO_SOLICITANTE,
+    GRUPOS_PADRAO,
+)
 
 TIPOS_EVENTO = [
     "Ação social",
@@ -73,6 +77,17 @@ class Command(BaseCommand):
         for nome in GRUPOS_PADRAO:
             _, criado = Group.objects.get_or_create(name=nome)
             criados += criado
+
+        # Perfil legado: quem era ANALISTA vira SOLICITANTE (mesmas pessoas).
+        legado = Group.objects.filter(name=GRUPO_ANALISTA_LEGADO).first()
+        if legado:
+            solicitante = Group.objects.get(name=GRUPO_SOLICITANTE)
+            for usuario in legado.user_set.all():
+                usuario.groups.add(solicitante)
+            legado.delete()
+            self.stdout.write(
+                "Perfil legado ANALISTA migrado para SOLICITANTE e removido."
+            )
 
         for nome in TIPOS_EVENTO:
             _, criado = TipoEvento.objects.get_or_create(nome=nome)

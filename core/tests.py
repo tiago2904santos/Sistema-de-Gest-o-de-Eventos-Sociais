@@ -10,7 +10,7 @@ from cadastros.models import Estado, Municipio, OrgaoResponsavel, Regiao, Servic
 from core.models import Notificacao
 from solicitacoes import services
 from solicitacoes.models import DecisaoDG, SolicitacaoEvento, StatusSolicitacao
-from solicitacoes.permissions import GRUPO_ANALISTA, GRUPO_GESTOR_DG
+from solicitacoes.permissions import GRUPO_GESTOR_DG
 
 User = get_user_model()
 
@@ -21,10 +21,10 @@ class NotificacoesWorkflowTests(TestCase):
         cls.solicitante = User.objects.create_user(
             "solicitante", password="x", email="solicitante@pc.pr.gov.br"
         )
+        # Usuário comum: no novo modelo, todo solicitante também analisa.
         cls.analista = User.objects.create_user(
             "analista", password="x", email="analista@pc.pr.gov.br"
         )
-        cls.analista.groups.add(Group.objects.create(name=GRUPO_ANALISTA))
         cls.gestor = User.objects.create_user("gestor", password="x")
         cls.gestor.groups.add(Group.objects.create(name=GRUPO_GESTOR_DG))
 
@@ -50,13 +50,18 @@ class NotificacoesWorkflowTests(TestCase):
             servico=Servico.objects.create(nome="Emissão de CIN")
         )
 
-    def test_envio_notifica_analistas(self):
+    def test_envio_notifica_equipe_exceto_autor(self):
         services.enviar(self.solicitacao, self.solicitante)
         notificacao = Notificacao.objects.get(usuario=self.analista)
         self.assertIn("aguardando análise", notificacao.titulo)
         self.assertIn(
             reverse("solicitacoes:analisar", args=[self.solicitacao.pk]),
             notificacao.link,
+        )
+        self.assertTrue(Notificacao.objects.filter(usuario=self.gestor).exists())
+        # Quem enviou não é notificado do próprio envio.
+        self.assertFalse(
+            Notificacao.objects.filter(usuario=self.solicitante).exists()
         )
 
     def test_encaminhamento_notifica_gestores_e_solicitante(self):

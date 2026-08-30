@@ -18,6 +18,14 @@ def usuarios_do_grupo(nome_grupo):
     return get_user_model().objects.filter(is_active=True, groups__name=nome_grupo)
 
 
+def usuarios_ativos(exceto=None):
+    """Todos os usuários ativos, opcionalmente excluindo um deles."""
+    queryset = get_user_model().objects.filter(is_active=True)
+    if exceto is not None:
+        queryset = queryset.exclude(pk=exceto.pk)
+    return queryset
+
+
 def notificar(usuarios, titulo, mensagem="", link=""):
     """Cria notificações internas e agenda os e-mails correspondentes."""
     destinatarios = [usuario for usuario in usuarios if usuario and usuario.is_active]

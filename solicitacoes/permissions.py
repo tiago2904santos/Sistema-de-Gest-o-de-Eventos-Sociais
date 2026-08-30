@@ -2,6 +2,14 @@
 
 Centraliza todas as regras de perfil (Groups) e de estado, usadas pelas views
 para autorizar ações e pelos templates para exibir/ocultar botões.
+
+Modelo de perfis:
+- SOLICITANTE: todo usuário — cria, envia E analisa/encaminha (solicitante e
+  analista são as mesmas pessoas; não existe perfil "analista").
+- GESTOR_DG: o único que despacha/autoriza; também gerencia usuários.
+- ADMINISTRADOR: um solicitante que gerencia usuários e cadastros, mas NÃO
+  pode despachar.
+- Superusuário ignora todas as restrições.
 """
 
 from django.db.models import Q
@@ -9,17 +17,21 @@ from django.db.models import Q
 from .models import StatusSolicitacao
 
 GRUPO_SOLICITANTE = "SOLICITANTE"
-GRUPO_ANALISTA = "ANALISTA"
 GRUPO_GESTOR_DG = "GESTOR_DG"
 GRUPO_ADMINISTRADOR = "ADMINISTRADOR"
 
-GRUPOS_PADRAO = [GRUPO_SOLICITANTE, GRUPO_ANALISTA, GRUPO_GESTOR_DG, GRUPO_ADMINISTRADOR]
+# Perfil legado, migrado para SOLICITANTE pelo seed.
+GRUPO_ANALISTA_LEGADO = "ANALISTA"
+
+GRUPOS_PADRAO = [GRUPO_SOLICITANTE, GRUPO_GESTOR_DG, GRUPO_ADMINISTRADOR]
 
 STATUS_FINAIS = {
     StatusSolicitacao.ATENDIDA,
     StatusSolicitacao.NAO_ATENDIDA,
     StatusSolicitacao.CANCELADA,
 }
+
+STATUS_ANALISE = {StatusSolicitacao.ENVIADA, StatusSolicitacao.EM_ANALISE}
 
 
 def _pertence(user, *grupos):
@@ -30,51 +42,38 @@ def eh_administrador(user):
     return user.is_superuser or _pertence(user, GRUPO_ADMINISTRADOR)
 
 
-def eh_analista(user):
-    return eh_administrador(user) or _pertence(user, GRUPO_ANALISTA)
-
-
 def eh_gestor_dg(user):
-    return eh_administrador(user) or _pertence(user, GRUPO_GESTOR_DG)
+    """Alçada de despacho: apenas o grupo GESTOR_DG (administrador NÃO)."""
+    return user.is_superuser or _pertence(user, GRUPO_GESTOR_DG)
+
+
+def pode_gerenciar_usuarios(user):
+    """Gestão de usuários: administrador ou gestor DG."""
+    return eh_administrador(user) or eh_gestor_dg(user)
 
 
 def pode_ver(user, solicitacao):
-    if eh_administrador(user):
-        return True
-    if solicitacao.criado_por_id == user.pk:
+    """Rascunho é privado do criador; o restante é visível a todos."""
+    if user.is_superuser:
         return True
     if solicitacao.status == StatusSolicitacao.RASCUNHO:
-        return False
-    if eh_analista(user):
-        return True
-    if eh_gestor_dg(user):
-        return (
-            solicitacao.status == StatusSolicitacao.AGUARDANDO_DESPACHO
-            or solicitacao.status in STATUS_FINAIS
-        )
-    return False
+        return solicitacao.criado_por_id == user.pk
+    return True
 
 
 def queryset_visivel(user, queryset):
     """Restringe um queryset de solicitações ao que o usuário pode ver."""
-    if eh_administrador(user):
+    if user.is_superuser:
         return queryset
-    filtro = Q(criado_por=user)
-    if eh_analista(user):
-        filtro |= ~Q(status=StatusSolicitacao.RASCUNHO)
-    if eh_gestor_dg(user):
-        filtro |= Q(status=StatusSolicitacao.AGUARDANDO_DESPACHO) | Q(
-            status__in=STATUS_FINAIS
-        )
-    return queryset.filter(filtro)
+    return queryset.filter(
+        ~Q(status=StatusSolicitacao.RASCUNHO) | Q(criado_por=user)
+    )
 
 
 def pode_editar_dados(user, solicitacao):
     if solicitacao.finalizada:
         return user.is_superuser
-    if eh_administrador(user):
-        return True
-    return (
+    return user.is_superuser or (
         solicitacao.criado_por_id == user.pk
         and solicitacao.status == StatusSolicitacao.RASCUNHO
     )
@@ -83,9 +82,7 @@ def pode_editar_dados(user, solicitacao):
 def pode_editar_planejamento(user, solicitacao):
     if solicitacao.finalizada:
         return user.is_superuser
-    if eh_administrador(user):
-        return True
-    return eh_analista(user) and solicitacao.status == StatusSolicitacao.EM_ANALISE
+    return solicitacao.status in STATUS_ANALISE
 
 
 def pode_editar(user, solicitacao):
@@ -95,26 +92,22 @@ def pode_editar(user, solicitacao):
 
 
 def pode_enviar(user, solicitacao):
-    return (
-        solicitacao.status == StatusSolicitacao.RASCUNHO
-        and (eh_administrador(user) or solicitacao.criado_por_id == user.pk)
+    return solicitacao.status == StatusSolicitacao.RASCUNHO and (
+        user.is_superuser or solicitacao.criado_por_id == user.pk
     )
 
 
-def pode_iniciar_analise(user, solicitacao):
-    return solicitacao.status == StatusSolicitacao.ENVIADA and eh_analista(user)
-
-
 def pode_analisar(user, solicitacao):
-    """Acesso à tela de análise: solicitações enviadas ou já em análise."""
-    return eh_analista(user) and solicitacao.status in {
-        StatusSolicitacao.ENVIADA,
-        StatusSolicitacao.EM_ANALISE,
-    }
+    """Análise é de todos: qualquer usuário trabalha a fila de enviadas."""
+    return solicitacao.status in STATUS_ANALISE
+
+
+def pode_iniciar_analise(user, solicitacao):
+    return solicitacao.status == StatusSolicitacao.ENVIADA
 
 
 def pode_encaminhar_despacho(user, solicitacao):
-    return solicitacao.status == StatusSolicitacao.EM_ANALISE and eh_analista(user)
+    return solicitacao.status == StatusSolicitacao.EM_ANALISE
 
 
 def pode_despachar(user, solicitacao):

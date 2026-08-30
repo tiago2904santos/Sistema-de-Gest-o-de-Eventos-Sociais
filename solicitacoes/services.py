@@ -9,7 +9,7 @@ from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
 
-from core.notificacoes import notificar, usuarios_do_grupo
+from core.notificacoes import notificar, usuarios_ativos, usuarios_do_grupo
 
 from .models import (
     AcaoHistorico,
@@ -127,8 +127,9 @@ def enviar(solicitacao, usuario):
         status_anterior=anterior,
         status_novo=solicitacao.status,
     )
+    # Todos analisam (solicitante = analista); avisa a equipe, menos o autor.
     notificar(
-        usuarios_do_grupo("ANALISTA"),
+        usuarios_ativos(exceto=usuario),
         f"Solicitação #{solicitacao.pk} aguardando análise",
         f"{solicitacao.municipio or 'Município a definir'} — "
         f"{solicitacao.tipo_evento or 'tipo a definir'}.",
