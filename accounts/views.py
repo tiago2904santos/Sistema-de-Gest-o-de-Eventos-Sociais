@@ -1,5 +1,7 @@
 """Gestão de usuários (administrador ou gestor DG) e conta do próprio usuário."""
 
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
@@ -10,6 +12,8 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.utils import timezone
+from django.utils.http import urlencode
 from django.views.decorators.http import require_POST
 
 from auditoria.models import LogAuditoria
@@ -36,6 +40,34 @@ def _registrar_auditoria(usuario_acao, acao, alvo):
     )
 
 
+def _iniciais(usuario):
+    letras = ""
+    for parte in [usuario.first_name, usuario.last_name]:
+        primeira = next((ch for ch in parte if ch.isalpha()), "")
+        letras += primeira
+    return (letras or usuario.username[:2]).upper()[:2]
+
+
+def _ultimo_acesso(usuario):
+    if not usuario.last_login:
+        return "—"
+    momento = timezone.localtime(usuario.last_login)
+    hoje = timezone.localdate()
+    if momento.date() == hoje:
+        return f"Hoje às {momento:%H:%M}"
+    if momento.date() == hoje - timedelta(days=1):
+        return f"Ontem às {momento:%H:%M}"
+    return f"{momento:%d/%m/%Y} às {momento:%H:%M}"
+
+
+def _perfil_slug(usuario):
+    """Chave visual do selo de perfil (superusuário tem selo próprio)."""
+    if usuario.is_superuser:
+        return "super"
+    grupo = usuario.groups.filter(name__in=["SOLICITANTE", "GESTOR_DG", "ADMINISTRADOR"]).first()
+    return grupo.name.lower() if grupo else ""
+
+
 @login_required
 def lista_usuarios(request):
     _exigir_gestao_de_usuarios(request)
@@ -58,12 +90,25 @@ def lista_usuarios(request):
     elif situacao == "inativos":
         queryset = queryset.filter(is_active=False)
 
-    pagina = Paginator(queryset.distinct(), ITENS_POR_PAGINA).get_page(
-        request.GET.get("pagina")
-    )
+    paginator = Paginator(queryset.distinct(), ITENS_POR_PAGINA)
+    pagina = paginator.get_page(request.GET.get("pagina"))
     linhas = [
-        {"usuario": usuario, "perfil": perfil_do_usuario(usuario)} for usuario in pagina
+        {
+            "usuario": usuario,
+            "perfil": perfil_do_usuario(usuario),
+            "perfil_slug": _perfil_slug(usuario),
+            "iniciais": _iniciais(usuario),
+            "ultimo_acesso": _ultimo_acesso(usuario),
+        }
+        for usuario in pagina
     ]
+    parametros = {}
+    if termo:
+        parametros["q"] = termo
+    if perfil:
+        parametros["perfil"] = perfil
+    if situacao:
+        parametros["situacao"] = situacao
     return render(
         request,
         "pages/accounts/lista.html",
@@ -78,6 +123,11 @@ def lista_usuarios(request):
                 {"valor": "ativos", "rotulo": "Ativos"},
                 {"valor": "inativos", "rotulo": "Inativos"},
             ],
+            "querystring": urlencode(parametros),
+            "paginas_visiveis": list(
+                paginator.get_elided_page_range(pagina.number, on_each_side=2, on_ends=1)
+            ),
+            "elipse": paginator.ELLIPSIS,
         },
     )
 
@@ -120,6 +170,10 @@ def editar_usuario(request, pk=None):
             "titulo_pagina": (
                 f"Editar usuário: {instancia.username}" if instancia else "Novo usuário"
             ),
+            "breadcrumb": [
+                {"label": "Usuários", "url": reverse_lazy("accounts:usuarios_lista")},
+                {"label": "Editar usuário" if instancia else "Novo usuário"},
+            ],
         },
     )
 

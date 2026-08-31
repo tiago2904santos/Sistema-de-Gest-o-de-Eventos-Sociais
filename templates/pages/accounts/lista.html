@@ -8,30 +8,39 @@
   {% url 'accounts:usuarios_novo' as url_novo %}
   {% include "components/page_header.html" with titulo="Usuários e perfis" subtitulo="Gerencie quem acessa o sistema e com qual perfil" icone="users" acao_label="Novo usuário" acao_url=url_novo %}
 
-  <div class="card mb-4">
-    <div class="card__corpo">
-      <form method="get" class="form-grid" action="">
-        {% include "components/input.html" with name="q" label="Busca" placeholder="Nome, usuário ou e-mail..." largura="4" valor=termo %}
-        {% include "components/select.html" with name="perfil" label="Perfil" opcoes=opcoes_perfil placeholder="Todos os perfis" largura="3" selecionado=perfil_filtro %}
-        {% include "components/select.html" with name="situacao" label="Situação" opcoes=opcoes_situacao placeholder="Todas" largura="3" selecionado=situacao_filtro %}
-        <div class="form-campo form-campo--2 lista-filtros__acoes">
-          {% include "components/button.html" with label="Filtrar" variante="primario" tipo="submit" %}
+  <div class="card lista-filtros-card">
+    <form method="get" class="lista-filtros lista-filtros--rotulos" data-auto-enviar>
+      <div class="form-campo lista-filtros__busca lista-filtros__busca--curta">
+        <label class="form-label" for="id_q">Busca</label>
+        <div class="campo-com-icone">
+          <span class="campo-com-icone__icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+          <input class="form-controle" type="search" name="q" id="id_q"
+                 value="{{ termo }}" placeholder="Nome, usuário ou e-mail...">
         </div>
-      </form>
-    </div>
+      </div>
+      {% include "components/select.html" with name="perfil" label="Perfil" opcoes=opcoes_perfil placeholder="Todos os perfis" selecionado=perfil_filtro %}
+      {% include "components/select.html" with name="situacao" label="Situação" opcoes=opcoes_situacao placeholder="Todas" selecionado=situacao_filtro %}
+      <button type="submit" class="btn btn--secundario lista-filtros__avancados lista-filtros__aplicar">
+        {% include "components/icon.html" with nome="filter" %}
+        Filtros
+      </button>
+    </form>
   </div>
 
   <div class="card">
-    {% include "components/card.html" with titulo="Usuários" %}
-    <div class="tabela-wrapper">
-      <table class="tabela">
+    <div class="card__cabecalho lista-cabecalho">
+      <h2 class="card__titulo">Usuários
+        <span class="lista-cabecalho__contagem">{{ pagina.paginator.count }} registro{{ pagina.paginator.count|pluralize }}</span>
+      </h2>
+    </div>
+    <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Tabela de usuários">
+      <table class="tabela tabela--cartoes-no-celular">
         <thead>
           <tr>
-            <th>Nome</th>
             <th>Usuário</th>
-            <th>E-mail</th>
             <th>Perfil</th>
             <th>Situação</th>
+            <th>Último acesso</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -39,43 +48,82 @@
           {% for linha in linhas %}
             {% with u=linha.usuario %}
               <tr>
-                <td><strong>{{ u.get_full_name|default:"—" }}</strong></td>
-                <td>{{ u.username }}</td>
-                <td>{{ u.email|default:"—" }}</td>
-                <td>{{ linha.perfil }}</td>
-                <td>
+                <td data-rotulo="Usuário">
+                  <div class="usuario-celula">
+                    <span class="usuario-avatar usuario-avatar--{{ linha.perfil_slug|default:'padrao' }}{% if not u.is_active %} usuario-avatar--inativo{% endif %}" aria-hidden="true">{{ linha.iniciais }}</span>
+                    <span class="usuario-celula__dados">
+                      <strong>{{ u.get_full_name|default:u.username }}</strong>
+                      <small>{{ u.username }}{% if u.email %} &nbsp;·&nbsp; {{ u.email }}{% endif %}</small>
+                    </span>
+                  </div>
+                </td>
+                <td data-rotulo="Perfil">
+                  <span class="perfil-badge perfil-badge--{{ linha.perfil_slug|default:'padrao' }}">
+                    {% if linha.perfil_slug == "super" %}{% include "components/icon.html" with nome="crown" %}{% endif %}
+                    {{ linha.perfil }}
+                  </span>
+                </td>
+                <td data-rotulo="Situação">
                   {% if u.is_active %}
                     <span class="status-badge status-badge--atendida">Ativo</span>
                   {% else %}
                     <span class="status-badge status-badge--cancelada">Inativo</span>
                   {% endif %}
                 </td>
+                <td data-rotulo="Último acesso">{{ linha.ultimo_acesso }}</td>
                 <td class="tabela__acoes">
                   <div class="tabela__acoes-grupo">
-                    <a href="{% url 'accounts:usuarios_editar' u.pk %}" class="btn btn--secundario btn--compacto">Editar</a>
+                    <a href="{% url 'accounts:usuarios_editar' u.pk %}" class="btn btn--compacto btn--acao btn--acao-continuar">{% include "components/icon.html" with nome="pencil" %}Editar</a>
                     {% if u != request.user %}
-                      <form method="post" action="{% url 'accounts:usuarios_alternar_ativo' u.pk %}" class="acao-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn--secundario btn--compacto btn--alternar-ativo">{{ u.is_active|yesno:"Inativar,Ativar" }}</button>
-                      </form>
+                      <div class="menu-flutuante" data-menu>
+                        <button type="button" class="btn btn--secundario btn--compacto tabela__kebab" data-menu-gatilho
+                                aria-haspopup="true" aria-expanded="false" aria-label="Mais ações de {{ u.username }}">
+                          {% include "components/icon.html" with nome="kebab" %}
+                        </button>
+                        <div class="menu-flutuante__corpo" hidden data-menu-corpo>
+                          <form method="post" action="{% url 'accounts:usuarios_alternar_ativo' u.pk %}">
+                            {% csrf_token %}
+                            {% if u.is_active %}
+                              <button type="submit">{% include "components/icon.html" with nome="ban" %}Inativar</button>
+                            {% else %}
+                              <button type="submit">{% include "components/icon.html" with nome="check-circle" %}Ativar</button>
+                            {% endif %}
+                          </form>
+                        </div>
+                      </div>
                     {% endif %}
                   </div>
                 </td>
               </tr>
             {% endwith %}
           {% empty %}
-            <tr><td colspan="6" class="texto-suave texto-centro">Nenhum usuário encontrado.</td></tr>
+            <tr><td colspan="5" class="texto-suave texto-centro">Nenhum usuário encontrado.</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
     {% if pagina.paginator.num_pages > 1 %}
       <div class="card__corpo paginacao">
-        <span class="texto-suave">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }} ({{ pagina.paginator.count }} usuários)</span>
-        <span class="paginacao__links">
-          {% if pagina.has_previous %}<a href="?q={{ termo|urlencode }}&perfil={{ perfil_filtro }}&situacao={{ situacao_filtro }}&pagina={{ pagina.previous_page_number }}">Anterior</a>{% endif %}
-          {% if pagina.has_next %}<a href="?q={{ termo|urlencode }}&perfil={{ perfil_filtro }}&situacao={{ situacao_filtro }}&pagina={{ pagina.next_page_number }}">Próxima</a>{% endif %}
+        <span class="texto-suave">
+          Exibindo {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }} registros
         </span>
+        <nav class="paginacao__paginas" aria-label="Paginação">
+          {% if pagina.has_previous %}
+            <a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+          {% endif %}
+          {% for numero in paginas_visiveis %}
+            {% if numero == elipse %}
+              <span class="paginacao__elipse" aria-hidden="true">…</span>
+            {% elif numero == pagina.number %}
+              <span class="paginacao__numero paginacao__numero--atual" aria-current="page">{{ numero }}</span>
+            {% else %}
+              <a class="paginacao__numero" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
+            {% endif %}
+          {% endfor %}
+          {% if pagina.has_next %}
+            <a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+          {% endif %}
+        </nav>
       </div>
     {% endif %}
   </div>

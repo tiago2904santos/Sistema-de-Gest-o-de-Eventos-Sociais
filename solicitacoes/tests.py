@@ -1315,7 +1315,7 @@ class AnexosTests(BaseSolicitacaoTestCase):
         self.client.force_login(self.solicitante)
         resposta = self.client.get(reverse("solicitacoes:nova"))
         self.assertContains(resposta, 'name="anexos"')
-        self.assertContains(resposta, "Adicionar arquivos")
+        self.assertContains(resposta, "Arraste arquivos aqui ou clique para selecionar")
         self.assertContains(resposta, 'enctype="multipart/form-data"')
 
     def test_criador_anexa_no_rascunho(self):

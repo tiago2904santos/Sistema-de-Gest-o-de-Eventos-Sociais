@@ -1,14 +1,33 @@
-<section class="side-card" aria-labelledby="checklist-solicitacao-titulo">
+{% comment %}
+  Componente: request_checklist — etapas do preenchimento do formulário.
+  Cada item espelha uma seção; o estado (Concluído / Em preenchimento /
+  Pendente) é atualizado em tempo real pelo app.js (atualizarAcompanhamento).
+{% endcomment %}
+<section class="side-card" aria-labelledby="etapas-solicitacao-titulo">
   <header class="side-card__cabecalho">
     <span class="side-card__icone">{% include "components/icon.html" with nome="checklist" %}</span>
-    <h2 id="checklist-solicitacao-titulo">Checklist</h2>
+    <h2 id="etapas-solicitacao-titulo">Etapas</h2>
   </header>
-  <ul class="checklist">
-    <li data-check="periodo"><span>Período preenchido</span><i aria-hidden="true"></i></li>
-    <li data-check="estado"><span>Estado definido</span><i aria-hidden="true"></i></li>
-    <li data-check="municipio"><span>Município definido</span><i aria-hidden="true"></i></li>
-    <li data-check="servicos"><span>Serviços selecionados</span><i aria-hidden="true"></i></li>
-    <li data-check="equipe"><span>Equipe definida</span><i aria-hidden="true"></i></li>
-    <li data-check="quantidades"><span>Quantidades informadas</span><i aria-hidden="true"></i></li>
-  </ul>
+  <ol class="etapas">
+    <li class="etapa" data-etapa="dados">
+      <span class="etapa__numero" aria-hidden="true">1</span>
+      <div><strong>Dados da solicitação</strong><small class="etapa__estado">Pendente</small></div>
+    </li>
+    <li class="etapa" data-etapa="solicitante">
+      <span class="etapa__numero" aria-hidden="true">2</span>
+      <div><strong>Solicitante</strong><small class="etapa__estado">Pendente</small></div>
+    </li>
+    <li class="etapa" data-etapa="servicos">
+      <span class="etapa__numero" aria-hidden="true">3</span>
+      <div><strong>Serviços e estrutura do evento</strong><small class="etapa__estado">Pendente</small></div>
+    </li>
+    <li class="etapa" data-etapa="planejamento">
+      <span class="etapa__numero" aria-hidden="true">4</span>
+      <div><strong>Planejamento operacional</strong><small class="etapa__estado">Pendente</small></div>
+    </li>
+    <li class="etapa{% if anexos %} etapa--concluida{% endif %}" data-etapa="anexos" data-etapa-opcional>
+      <span class="etapa__numero" aria-hidden="true">5</span>
+      <div><strong>Anexos</strong><small class="etapa__estado">{% if anexos %}Concluído{% else %}Opcional{% endif %}</small></div>
+    </li>
+  </ol>
 </section>

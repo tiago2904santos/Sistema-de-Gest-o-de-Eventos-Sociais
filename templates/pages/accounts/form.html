@@ -3,42 +3,104 @@
 {% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with atual=titulo_pagina %}
-  {% include "components/page_header.html" with titulo=titulo_pagina subtitulo="Dados de acesso e perfil do usuário" icone="users" %}
+  {% url 'accounts:usuarios_lista' as url_usuarios %}
+  {% include "components/breadcrumb.html" with itens=breadcrumb %}
+
+  <div class="usuario-cabecalho">
+    {% include "components/page_header.html" with titulo=titulo_pagina subtitulo="Dados de acesso e perfil do usuário" icone="users" %}
+    <aside class="painel-dica painel-dica--destaque">
+      <span class="painel-dica__icone" aria-hidden="true">{% include "components/icon.html" with nome="info" %}</span>
+      <div>
+        <strong>Sobre o perfil de acesso</strong>
+        <p>Defina o nível de acesso do usuário de acordo com suas responsabilidades no sistema.</p>
+      </div>
+    </aside>
+  </div>
 
   <form method="post" action="">
     {% csrf_token %}
 
     <section class="section-card">
-      {% include "components/section_card.html" with numero="1" titulo="Dados do usuário" %}
+      {% include "components/section_card.html" with numero="1" titulo="Dados do usuário" subtitulo="Informações cadastrais e de identificação" %}
       <div class="section-card__corpo">
         <div class="form-grid">
-          {% include "components/input.html" with name="first_name" label="Nome" obrigatorio=True largura="6" valor=valores.first_name erros=erros.first_name %}
-          {% include "components/input.html" with name="last_name" label="Sobrenome" largura="6" valor=valores.last_name erros=erros.last_name %}
-          {% include "components/input.html" with name="username" label="Usuário" obrigatorio=True largura="4" valor=valores.username erros=erros.username ajuda="Usado para entrar no sistema." %}
-          {% include "components/input.html" with name="email" label="E-mail institucional" tipo="email" largura="4" valor=valores.email erros=erros.email %}
-          {% include "components/select.html" with name="perfil" label="Perfil de acesso" opcoes=opcoes_perfil obrigatorio=True largura="4" selecionado=valores.perfil erros=erros.perfil %}
+          {% include "components/input.html" with name="first_name" label="Nome" obrigatorio=True largura="6" valor=valores.first_name erros=erros.first_name placeholder="Digite o nome" %}
+          {% include "components/input.html" with name="last_name" label="Sobrenome" largura="6" valor=valores.last_name erros=erros.last_name placeholder="Digite o sobrenome" %}
+          {% include "components/input.html" with name="username" label="Usuário" obrigatorio=True largura="6" valor=valores.username erros=erros.username placeholder="Digite o nome de usuário" ajuda="Será utilizado para login no sistema." %}
+          {% include "components/input.html" with name="email" label="E-mail institucional" tipo="email" largura="6" valor=valores.email erros=erros.email placeholder="usuario@pc.pr.gov.br" ajuda="Informe um e-mail institucional válido." %}
+        </div>
+        <div class="usuario-form__linha">
+          <div>
+            {% include "components/select.html" with name="perfil" label="Perfil de acesso" opcoes=opcoes_perfil obrigatorio=True placeholder="Selecione o perfil de acesso" selecionado=valores.perfil erros=erros.perfil ajuda="Define o nível de permissões e funcionalidades disponíveis para o usuário." %}
+          </div>
+          <aside class="painel-dica">
+            <span class="painel-dica__icone" aria-hidden="true">{% include "components/icon.html" with nome="shield" %}</span>
+            <div>
+              <strong>Perfil selecionado</strong>
+              <p data-perfil-info="">Selecione um perfil para visualizar a descrição e permissões.</p>
+              <p data-perfil-info="SOLICITANTE" hidden>Registra e acompanha as próprias solicitações de eventos, edita rascunhos e reenvia as devolvidas para ajuste.</p>
+              <p data-perfil-info="GESTOR_DG" hidden>Despacha as solicitações enviadas à Diretoria-Geral: defere, devolve para ajuste ou registra o não atendimento.</p>
+              <p data-perfil-info="ADMINISTRADOR" hidden>Gerencia usuários e as tabelas de apoio (cadastros); não despacha solicitações.</p>
+            </div>
+          </aside>
         </div>
       </div>
     </section>
 
     <section class="section-card">
-      {% include "components/section_card.html" with numero="2" titulo="Senha" %}
+      {% include "components/section_card.html" with numero="2" titulo="Acesso" subtitulo=instancia|yesno:"Redefinição de senha (opcional),Definição da senha inicial" %}
       <div class="section-card__corpo">
-        <div class="form-grid">
-          {% if instancia %}
-            {% include "components/input.html" with name="senha" label="Nova senha" tipo="password" largura="6" erros=erros.senha ajuda="Deixe em branco para manter a senha atual." %}
-          {% else %}
-            {% include "components/input.html" with name="senha" label="Senha inicial" tipo="password" obrigatorio=True largura="6" erros=erros.senha ajuda="Informe ao servidor a senha inicial definida aqui." %}
-          {% endif %}
-          {% include "components/input.html" with name="confirmacao_senha" label="Confirmação da senha" tipo="password" largura="6" erros=erros.confirmacao_senha %}
+        <div class="usuario-form__linha">
+          <div class="form-grid">
+            <div class="form-campo form-campo--6">
+              <label class="form-label" for="id_senha">
+                {% if instancia %}Nova senha{% else %}Senha inicial <span class="form-label__obrigatorio">*</span>{% endif %}
+              </label>
+              <div class="campo-senha campo-senha--simples{% if erros.senha %} is-invalid{% endif %}" data-campo-senha>
+                <input class="form-controle" type="password" name="senha" id="id_senha"
+                       autocomplete="new-password" placeholder="Digite a senha inicial"{% if not instancia %} required{% endif %}>
+                <button type="button" class="campo-senha__alternar" data-alternar-senha
+                        aria-label="Mostrar senha" aria-pressed="false">
+                  {% include "components/icon.html" with nome="eye" %}
+                </button>
+              </div>
+              {% for erro in erros.senha %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+              <p class="form-ajuda">{% if instancia %}Deixe em branco para manter a senha atual.{% else %}Informe a senha inicial que será utilizada no primeiro acesso.{% endif %}</p>
+            </div>
+            <div class="form-campo form-campo--6">
+              <label class="form-label" for="id_confirmacao_senha">
+                Confirmação da senha{% if not instancia %} <span class="form-label__obrigatorio">*</span>{% endif %}
+              </label>
+              <div class="campo-senha campo-senha--simples{% if erros.confirmacao_senha %} is-invalid{% endif %}" data-campo-senha>
+                <input class="form-controle" type="password" name="confirmacao_senha" id="id_confirmacao_senha"
+                       autocomplete="new-password" placeholder="Confirme a senha inicial">
+                <button type="button" class="campo-senha__alternar" data-alternar-senha
+                        aria-label="Mostrar senha" aria-pressed="false">
+                  {% include "components/icon.html" with nome="eye" %}
+                </button>
+              </div>
+              {% for erro in erros.confirmacao_senha %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+              <p class="form-ajuda">Repita a senha para confirmação.</p>
+            </div>
+          </div>
+          <aside class="painel-dica">
+            <span class="painel-dica__icone" aria-hidden="true">{% include "components/icon.html" with nome="lock" %}</span>
+            <div>
+              <strong>Dicas para uma senha segura</strong>
+              <ul>
+                <li>Mínimo de 8 caracteres</li>
+                <li>Use letras maiúsculas e minúsculas</li>
+                <li>Inclua números e símbolos</li>
+                <li>Evite dados pessoais</li>
+              </ul>
+            </div>
+          </aside>
         </div>
       </div>
     </section>
 
     <div class="acoes-formulario">
-      {% url 'accounts:usuarios_lista' as url_voltar %}
-      {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
+      {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_usuarios %}
       {% include "components/button.html" with label="Salvar" variante="dourado" tipo="submit" %}
     </div>
   </form>

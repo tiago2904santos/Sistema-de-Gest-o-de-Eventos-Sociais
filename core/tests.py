@@ -107,7 +107,8 @@ class CentralNotificacoesTests(TestCase):
     def setUpTestData(cls):
         cls.usuario = User.objects.create_user("fulano", password="x")
 
-    def test_pagina_marca_como_lidas(self):
+    def test_pagina_nao_marca_como_lidas(self):
+        """A leitura é explícita: abrir a central não marca nada como lido."""
         Notificacao.objects.create(usuario=self.usuario, titulo="Aviso 1")
         Notificacao.objects.create(usuario=self.usuario, titulo="Aviso 2")
         self.client.force_login(self.usuario)
@@ -115,9 +116,38 @@ class CentralNotificacoesTests(TestCase):
         resposta = self.client.get(reverse("core:notificacoes"))
         self.assertContains(resposta, "Aviso 1")
         self.assertContains(resposta, "Aviso 2")
-        self.assertEqual(
-            self.usuario.notificacoes.filter(lida=False).count(), 0
+        self.assertContains(resposta, "Marcar todas como lidas")
+        self.assertEqual(self.usuario.notificacoes.filter(lida=False).count(), 2)
+
+    def test_botao_marca_todas_como_lidas(self):
+        Notificacao.objects.create(usuario=self.usuario, titulo="Aviso 1")
+        Notificacao.objects.create(usuario=self.usuario, titulo="Aviso 2")
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.post(reverse("core:notificacoes_marcar_lidas"))
+        self.assertRedirects(resposta, reverse("core:notificacoes"))
+        self.assertEqual(self.usuario.notificacoes.filter(lida=False).count(), 0)
+
+    def test_abrir_marca_como_lida_e_redireciona(self):
+        aviso = Notificacao.objects.create(
+            usuario=self.usuario, titulo="Aviso", link="/solicitacoes/"
         )
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.get(reverse("core:notificacao_abrir", args=[aviso.pk]))
+        self.assertEqual(resposta.status_code, 302)
+        self.assertEqual(resposta.url, "/solicitacoes/")
+        aviso.refresh_from_db()
+        self.assertTrue(aviso.lida)
+
+    def test_filtro_de_nao_lidas(self):
+        Notificacao.objects.create(usuario=self.usuario, titulo="Aviso novo")
+        Notificacao.objects.create(usuario=self.usuario, titulo="Aviso antigo", lida=True)
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.get(reverse("core:notificacoes"), {"filtro": "nao-lidas"})
+        self.assertContains(resposta, "Aviso novo")
+        self.assertNotContains(resposta, "Aviso antigo")
 
     def test_contador_no_cabecalho(self):
         Notificacao.objects.create(usuario=self.usuario, titulo="Aviso")

@@ -29,7 +29,22 @@
           </div>
         </div>
       {% else %}
-        {% include "components/page_header.html" with titulo=titulo_pagina subtitulo=subtitulo_pagina|default:"Preencha os dados abaixo para registrar a solicitação de atendimento do evento." icone="document" %}
+        {# Na edição o selo de status acompanha o título, como no modelo. #}
+        <div class="page-header">
+          <div class="page-header__identificacao">
+            <span class="page-header__icone">{% include "components/icon.html" with nome="document" %}</span>
+            <div>
+              <h1 class="page-header__titulo">{{ titulo_pagina }}</h1>
+              <p class="page-header__subtitulo{% if solicitacao %} page-header__subtitulo--com-selo{% endif %}">
+                {% if solicitacao %}
+                  {% include "components/status_badge.html" with status=solicitacao.status label=solicitacao.get_status_display %}
+                  <span aria-hidden="true">·</span>
+                {% endif %}
+                {% if subtitulo_pagina %}{{ subtitulo_pagina }}{% elif solicitacao %}Edite as informações abaixo para atualizar a solicitação de atendimento do evento.{% else %}Preencha os dados abaixo para registrar a solicitação de atendimento do evento.{% endif %}
+              </p>
+            </div>
+          </div>
+        </div>
         <div class="solicitacao-intro__acoes">
           {% if solicitacao %}{% url 'solicitacoes:detalhe' solicitacao.pk as url_voltar %}{% else %}{% url 'solicitacoes:lista' as url_voltar %}{% endif %}
           {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
@@ -168,7 +183,7 @@
                 </div>
               </fieldset>
               {% include "components/select.html" with name="unidade_movel_designada" label="Qual unidade móvel" opcoes=unidades_moveis placeholder="Selecione a unidade..." largura="3" selecionado=valores.unidade_movel_designada erros=erros.unidade_movel_designada desabilitado=planejamento_desabilitado %}
-              {% include "components/textarea.html" with name="descricao_complementar" label="Descrição complementar" placeholder="Detalhes adicionais sobre serviços e estrutura..." largura="6" linhas="3" valor=valores.descricao_complementar erros=erros.descricao_complementar desabilitado=planejamento_desabilitado %}
+              {% include "components/textarea.html" with name="descricao_complementar" label="Descrição complementar" placeholder="Detalhes adicionais sobre serviços e estrutura..." largura="" linhas="3" valor=valores.descricao_complementar erros=erros.descricao_complementar desabilitado=planejamento_desabilitado %}
             </div>
           </div>
         </section>
@@ -195,7 +210,8 @@
                 </div>
                 {% for erro in erros.equipes %}<p class="form-erro">{{ erro }}</p>{% endfor %}
               </fieldset>
-              {% include "components/select.html" with name="motorista" label="Motorista" opcoes=motoristas largura="4" selecionado=valores.motorista erros=erros.motorista desabilitado=planejamento_desabilitado %}
+              {% include "components/select.html" with name="motorista" label="Motorista" opcoes=motoristas largura="" selecionado=valores.motorista erros=erros.motorista desabilitado=planejamento_desabilitado %}
+              {# Tipo e CIN dividem uma linha inteira, como pedido. #}
               {% include "components/select.html" with name="tipo_operacao" label="Tipo" opcoes=tipos_operacao largura="6" selecionado=valores.tipo_operacao erros=erros.tipo_operacao desabilitado=planejamento_desabilitado %}
               {% include "components/input.html" with name="quantidade_cin" label="Quantidade de CIN agendadas" tipo="number" largura="6" valor=valores.quantidade_cin erros=erros.quantidade_cin desabilitado=planejamento_desabilitado %}
             </div>
@@ -257,13 +273,15 @@
             <div class="section-card__corpo">
               <div class="upload-anexos" data-upload-anexos>
                 <input type="file" name="anexos" id="id_anexos_cadastro" multiple class="upload-anexos__input" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods">
-                <div class="upload-anexos__acoes">
-                  <label for="id_anexos_cadastro" class="btn btn--secundario">Adicionar arquivos</label>
-                </div>
-                <span class="upload-anexos__vazio texto-suave">Nenhum arquivo selecionado — eles serão salvos junto com a solicitação.</span>
+                <label for="id_anexos_cadastro" class="upload-dropzone" data-upload-dropzone>
+                  <span class="upload-dropzone__icone" aria-hidden="true">{% include "components/icon.html" with nome="upload" %}</span>
+                  <strong>Arraste arquivos aqui ou clique para selecionar</strong>
+                  <small>Ofício, memorando, foto do local, PDF, imagens ou documentos de escritório.</small>
+                  <small>Tamanho máximo: 10 MB por arquivo.</small>
+                </label>
+                <span class="upload-anexos__vazio texto-suave" hidden>Nenhum arquivo selecionado — eles serão salvos junto com a solicitação.</span>
                 <ul class="upload-anexos__lista"></ul>
               </div>
-              <p class="texto-suave anexos-upload__ajuda">Ofício, memorando, foto do local... PDF, imagens ou documentos de escritório, até 10 MB por arquivo.</p>
             </div>
           </section>
         {% endif %}
@@ -413,6 +431,7 @@
 
       <aside class="solicitacao-sidebar{% if modo_resumo %} solicitacao-sidebar--resumo{% endif %}" aria-label="Acompanhamento da solicitação">
         {% if not modo_resumo %}{% include "components/solicitation_summary.html" %}{% endif %}
+        {% if not modo_resumo %}{% include "components/request_checklist.html" %}{% endif %}
         {% include "components/workflow_timeline.html" with etapas=timeline %}
         {% if somente_leitura %}
           {# Ações logo abaixo do status: a primária em destaque, apoio em par. #}
@@ -448,7 +467,6 @@
             {% endif %}
           </div>
         {% endif %}
-        {% if not modo_resumo %}{% include "components/request_checklist.html" %}{% endif %}
       </aside>
     </div>
   {% if somente_leitura %}

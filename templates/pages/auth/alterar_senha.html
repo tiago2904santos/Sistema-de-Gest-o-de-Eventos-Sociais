@@ -13,28 +13,92 @@
   <form method="post" action="">
     {% csrf_token %}
 
-    <section class="section-card">
+    <section class="section-card senha-card">
       {% include "components/section_card.html" with numero="1" titulo="Nova senha" %}
-      <div class="section-card__corpo">
+      <div class="section-card__corpo senha-corpo">
         {% if form.non_field_errors %}
           <div class="alerta alerta--error mb-4">
             {% for erro in form.non_field_errors %}{{ erro }}{% endfor %}
           </div>
         {% endif %}
-        <div class="form-grid">
-          {% include "components/input.html" with name="old_password" label="Senha atual" tipo="password" obrigatorio=True largura="4" erros=form.errors.old_password %}
-          {% include "components/input.html" with name="new_password1" label="Nova senha" tipo="password" obrigatorio=True largura="4" erros=form.errors.new_password1 ajuda="Mínimo de 8 caracteres, evitando senhas óbvias." %}
-          {% include "components/input.html" with name="new_password2" label="Confirmação da nova senha" tipo="password" obrigatorio=True largura="4" erros=form.errors.new_password2 %}
+
+        <div class="form-campo">
+          <label class="form-label" for="id_old_password">Senha atual <span class="form-label__obrigatorio">*</span></label>
+          <div class="campo-senha{% if form.errors.old_password %} is-invalid{% endif %}" data-campo-senha>
+            <input class="form-controle" type="password" name="old_password" id="id_old_password"
+                   autocomplete="current-password" required placeholder="Digite sua senha atual">
+            <button type="button" class="campo-senha__alternar" data-alternar-senha
+                    aria-label="Mostrar senha" aria-pressed="false">
+              {% include "components/icon.html" with nome="eye" %}
+            </button>
+          </div>
+          {% for erro in form.errors.old_password %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+        </div>
+
+        <div class="form-campo">
+          <label class="form-label" for="id_new_password1">Nova senha <span class="form-label__obrigatorio">*</span></label>
+          <div class="campo-senha{% if form.errors.new_password1 %} is-invalid{% endif %}" data-campo-senha>
+            <input class="form-controle" type="password" name="new_password1" id="id_new_password1"
+                   autocomplete="new-password" required placeholder="Digite sua nova senha">
+            <button type="button" class="campo-senha__alternar" data-alternar-senha
+                    aria-label="Mostrar senha" aria-pressed="false">
+              {% include "components/icon.html" with nome="eye" %}
+            </button>
+          </div>
+          <div class="forca-senha" data-forca-senha data-usuario="{{ request.user.username }}">
+            <span class="forca-senha__rotulo">Força da senha</span>
+            <span class="forca-senha__barras" aria-hidden="true">
+              <span class="forca-senha__barra forca-senha__barra--fraca"></span>
+              <span class="forca-senha__barra forca-senha__barra--media"></span>
+              <span class="forca-senha__barra forca-senha__barra--forte"></span>
+            </span>
+            <span class="forca-senha__texto" data-forca-texto aria-live="polite"></span>
+          </div>
+          <p class="form-ajuda">Mínimo de 8 caracteres, evitando senhas óbvias.</p>
+          {% for erro in form.errors.new_password1 %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+        </div>
+
+        <div class="form-campo">
+          <label class="form-label" for="id_new_password2">Confirmação da nova senha <span class="form-label__obrigatorio">*</span></label>
+          <div class="campo-senha{% if form.errors.new_password2 %} is-invalid{% endif %}" data-campo-senha>
+            <input class="form-controle" type="password" name="new_password2" id="id_new_password2"
+                   autocomplete="new-password" required placeholder="Confirme sua nova senha">
+            <button type="button" class="campo-senha__alternar" data-alternar-senha
+                    aria-label="Mostrar senha" aria-pressed="false">
+              {% include "components/icon.html" with nome="eye" %}
+            </button>
+          </div>
+          {% for erro in form.errors.new_password2 %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+        </div>
+
+        <div class="requisitos-senha">
+          <span class="requisitos-senha__icone" aria-hidden="true">{% include "components/icon.html" with nome="shield" %}</span>
+          <div>
+            <strong>Requisitos da senha</strong>
+            <ul class="requisitos-senha__lista">
+              <li data-requisito="tamanho">{% include "components/icon.html" with nome="check-circle" %}Mínimo de 8 caracteres</li>
+              <li data-requisito="caixa">{% include "components/icon.html" with nome="check-circle" %}Use letras maiúsculas e minúsculas</li>
+              <li data-requisito="simbolos">{% include "components/icon.html" with nome="check-circle" %}Inclua números ou símbolos</li>
+              <li data-requisito="pessoais">{% include "components/icon.html" with nome="check-circle" %}Evite dados pessoais</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="dica-seguranca">
+          <span class="dica-seguranca__icone" aria-hidden="true">{% include "components/icon.html" with nome="shield" %}</span>
+          <div>
+            <strong>Dica de segurança</strong>
+            <p>Use uma senha forte e exclusiva. Evite reutilizar senhas de outros serviços para proteger sua conta.</p>
+          </div>
         </div>
       </div>
+      <div class="senha-card__acoes">
+        {% if not troca_obrigatoria %}
+          {% url 'dashboard:index' as url_voltar %}
+          {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
+        {% endif %}
+        {% include "components/button.html" with label="Alterar senha" variante="dourado" tipo="submit" %}
+      </div>
     </section>
-
-    <div class="acoes-formulario">
-      {% if not troca_obrigatoria %}
-        {% url 'dashboard:index' as url_voltar %}
-        {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
-      {% endif %}
-      {% include "components/button.html" with label="Alterar senha" variante="dourado" tipo="submit" %}
-    </div>
   </form>
 {% endblock %}

@@ -789,6 +789,31 @@
     if (item) item.classList.toggle("is-complete", Boolean(completo));
   }
 
+  // Etapas da lateral: concluída quando todos os campos da seção estão
+  // preenchidos, "em preenchimento" quando parte deles está.
+  function marcarEtapa(nome, feitos, total) {
+    var item = document.querySelector('[data-etapa="' + nome + '"]');
+    if (!item) return;
+    var concluida = total > 0 && feitos >= total;
+    var andamento = !concluida && feitos > 0;
+    item.classList.toggle("etapa--concluida", concluida);
+    item.classList.toggle("etapa--andamento", andamento);
+    var texto = item.querySelector(".etapa__estado");
+    if (texto) {
+      texto.textContent = concluida
+        ? "Concluído"
+        : andamento
+          ? "Em preenchimento"
+          : item.hasAttribute("data-etapa-opcional")
+            ? "Opcional"
+            : "Pendente";
+    }
+  }
+
+  function contar(condicoes) {
+    return condicoes.filter(Boolean).length;
+  }
+
   function atualizarAcompanhamento() {
     var inicio = campo("data_inicio_evento");
     var fim = campo("data_fim_evento");
@@ -836,6 +861,31 @@
         && quantidadeCin
         && quantidadeCin.value
     );
+
+    var solicitanteNome = campo("solicitante_nome");
+    var solicitanteCargo = campo("solicitante_cargo_unidade");
+    var orgao = campo("orgao_responsavel");
+    var quantidadesOk = Boolean(
+      equipes.length
+        && quantidadesEquipes.every(function (quantidade) { return quantidade > 0; })
+    );
+    marcarEtapa("dados", contar([
+      Boolean(inicio && inicio.value && fim && fim.value),
+      Boolean(estado && estado.value),
+      Boolean(municipio && municipio.value),
+      Boolean(textoSelecionado("tipo_evento")),
+    ]), 4);
+    marcarEtapa("solicitante", contar([
+      Boolean(solicitanteNome && solicitanteNome.value.trim()),
+      Boolean(solicitanteCargo && solicitanteCargo.value.trim()),
+      Boolean(orgao && orgao.value),
+    ]), 3);
+    marcarEtapa("servicos", contar([servicos.length > 0]), 1);
+    marcarEtapa("planejamento", contar([equipes.length > 0, quantidadesOk]), 2);
+    var anexosNovos = formulario.querySelector('input[name="anexos"]');
+    if (anexosNovos && anexosNovos.files.length) {
+      marcarEtapa("anexos", 1, 1);
+    }
   }
 
   formulario.querySelectorAll("[data-equipe-alocacao]").forEach(function (alocacao) {
@@ -1145,6 +1195,34 @@
         item.appendChild(meta);
         item.appendChild(remover);
         lista.appendChild(item);
+      });
+    }
+
+    // Arrastar e soltar na área tracejada soma à seleção, como o input.
+    var zona = bloco.querySelector("[data-upload-dropzone]");
+    if (zona) {
+      ["dragenter", "dragover"].forEach(function (evento) {
+        zona.addEventListener(evento, function (e) {
+          e.preventDefault();
+          zona.classList.add("is-arrastando");
+        });
+      });
+      ["dragleave", "drop"].forEach(function (evento) {
+        zona.addEventListener(evento, function (e) {
+          e.preventDefault();
+          zona.classList.remove("is-arrastando");
+        });
+      });
+      zona.addEventListener("drop", function (e) {
+        var soltos = e.dataTransfer && e.dataTransfer.files;
+        if (!soltos || !soltos.length) return;
+        var dt = new DataTransfer();
+        Array.prototype.forEach.call(soltos, function (arquivo) {
+          dt.items.add(arquivo);
+        });
+        input.files = dt.files;
+        aoSelecionar();
+        input.dispatchEvent(new Event("change", { bubbles: true }));
       });
     }
 
@@ -1594,4 +1672,55 @@
   });
 
   aplicar();
+})();
+
+// Formulário de usuários: descreve o perfil de acesso escolhido.
+(function () {
+  var descricoes = document.querySelectorAll("[data-perfil-info]");
+  if (!descricoes.length) return;
+  var select = document.getElementById("id_perfil");
+  if (!select) return;
+  function atualizar() {
+    descricoes.forEach(function (item) {
+      item.hidden = (item.getAttribute("data-perfil-info") || "") !== select.value;
+    });
+  }
+  select.addEventListener("change", atualizar);
+  atualizar();
+})();
+
+// Alterar senha: medidor de força e requisitos marcados em tempo real.
+(function () {
+  var medidor = document.querySelector("[data-forca-senha]");
+  var campo = document.getElementById("id_new_password1");
+  if (!medidor || !campo) return;
+  var texto = medidor.querySelector("[data-forca-texto]");
+  var barras = medidor.querySelectorAll(".forca-senha__barra");
+  var itens = document.querySelectorAll("[data-requisito]");
+  var usuario = (medidor.getAttribute("data-usuario") || "").toLowerCase();
+  function atualizar() {
+    var valor = campo.value;
+    var requisitos = {
+      tamanho: valor.length >= 8,
+      caixa: /[a-z]/.test(valor) && /[A-Z]/.test(valor),
+      simbolos: /\d/.test(valor) || /[^A-Za-z0-9]/.test(valor),
+      pessoais: valor !== "" && (!usuario || valor.toLowerCase().indexOf(usuario) === -1),
+    };
+    itens.forEach(function (item) {
+      item.classList.toggle("is-ok", !!requisitos[item.getAttribute("data-requisito")]);
+    });
+    var pontos = Object.keys(requisitos).filter(function (chave) {
+      return requisitos[chave];
+    }).length;
+    var nivel = !valor ? 0 : pontos <= 2 ? 1 : pontos === 3 ? 2 : 3;
+    barras.forEach(function (barra, indice) {
+      barra.classList.toggle("is-ativa", indice < nivel);
+    });
+    if (texto) {
+      texto.textContent = ["", "Fraca", "Média", "Forte"][nivel];
+      texto.setAttribute("data-nivel", String(nivel));
+    }
+  }
+  campo.addEventListener("input", atualizar);
+  atualizar();
 })();
