@@ -1,5 +1,39 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
+
+
+class ModeloTemporal(models.Model):
+    """Base abstrata com carimbos de criação e atualização."""
+
+    criado_em = models.DateTimeField("criado em", auto_now_add=True)
+    atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+class ModeloCancelavel(models.Model):
+    """Base abstrata para entidades canceláveis com motivo e reativação."""
+
+    cancelado = models.BooleanField("cancelado", default=False)
+    motivo_cancelamento = models.TextField("motivo do cancelamento", blank=True)
+    cancelado_em = models.DateTimeField("cancelado em", blank=True, null=True)
+
+    class Meta:
+        abstract = True
+
+    def cancelar(self, motivo=""):
+        self.cancelado = True
+        self.motivo_cancelamento = motivo
+        self.cancelado_em = timezone.now()
+        self.save(update_fields=["cancelado", "motivo_cancelamento", "cancelado_em"])
+
+    def reativar(self):
+        self.cancelado = False
+        self.motivo_cancelamento = ""
+        self.cancelado_em = None
+        self.save(update_fields=["cancelado", "motivo_cancelamento", "cancelado_em"])
 
 
 class Notificacao(models.Model):

@@ -61,6 +61,9 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Requisição corrente em thread-local: a auditoria por signals lê o
+    # usuário e o caminho daqui, sem acoplamento com as views.
+    "core.middleware.RequisicaoAtualMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Depois da autenticação e das mensagens: precisa de request.user.
