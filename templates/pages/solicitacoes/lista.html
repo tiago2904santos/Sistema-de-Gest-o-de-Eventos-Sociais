@@ -6,10 +6,12 @@
   {% include "components/breadcrumb.html" with atual="Solicitações" %}
 
   {% url 'solicitacoes:nova' as url_nova %}
-  {% include "components/page_header.html" with titulo="Solicitações de Eventos Sociais" subtitulo="Acompanhe e gerencie as solicitações registradas" icone="document" acao_label="Nova solicitação" acao_url=url_nova %}
+  {% include "components/page_header.html" with titulo="Solicitações de Eventos Sociais" subtitulo="Acompanhe e gerencie as solicitações registradas" icone="document" acao_label="Nova solicitação" acao_url=url_nova acao_icone="plus" %}
 
   <div class="fila-chips">
-    <a class="fila-chip{% if not fila_ativa and not tem_filtros %} fila-chip--ativa{% endif %}" href="{% url 'solicitacoes:lista' %}">Todas</a>
+    <a class="fila-chip{% if not fila_ativa and not tem_filtros %} fila-chip--ativa{% endif %}" href="{% url 'solicitacoes:lista' %}">
+      Todas <strong>{{ total_geral }}</strong>
+    </a>
     {% for fila in filas %}
       <a class="fila-chip{% if fila_ativa == fila.chave %} fila-chip--ativa{% endif %}" href="?fila={{ fila.chave }}">
         {{ fila.rotulo }} <strong>{{ fila.total }}</strong>
@@ -17,89 +19,135 @@
     {% endfor %}
   </div>
 
-  <div class="card mb-4">
-    <div class="card__corpo">
-      <form method="get" class="form-grid" action="">
-        {% include "components/input.html" with name="q" label="Busca" placeholder="Solicitante, local ou município..." largura="4" valor=valores_filtro.q %}
-        {% include "components/select.html" with name="status" label="Status" opcoes=opcoes_status placeholder="Todos os status" largura="4" selecionado=valores_filtro.status %}
-        {% include "components/select.html" with name="municipio" label="Município" opcoes=opcoes_municipios placeholder="Todos os municípios" largura="4" pesquisavel=True selecionado=valores_filtro.municipio %}
-        {% include "components/select.html" with name="tipo_evento" label="Tipo do evento" opcoes=opcoes_tipos placeholder="Todos os tipos" largura="4" selecionado=valores_filtro.tipo_evento %}
-        {% include "components/input.html" with name="inicio" label="Eventos a partir de" tipo="date" largura="3" valor=valores_filtro.inicio %}
-        {% include "components/input.html" with name="fim" label="Eventos até" tipo="date" largura="3" valor=valores_filtro.fim %}
-        {% if fila_ativa %}<input type="hidden" name="fila" value="{{ fila_ativa }}">{% endif %}
-        <div class="form-campo form-campo--2 lista-filtros__acoes">
-          {% include "components/button.html" with label="Filtrar" variante="primario" tipo="submit" %}
-          {% if tem_filtros %}
-            <a href="{% url 'solicitacoes:lista' %}{% if fila_ativa %}?fila={{ fila_ativa }}{% endif %}" class="btn btn--secundario">Limpar</a>
-          {% endif %}
-          <a href="{% url 'solicitacoes:exportar' %}{% if querystring %}?{{ querystring }}{% endif %}" class="btn btn--secundario">Exportar CSV</a>
+  <div class="card lista-filtros-card">
+    <form method="get" class="lista-filtros filtros-flutuantes" data-auto-enviar>
+      {% if fila_ativa %}<input type="hidden" name="fila" value="{{ fila_ativa }}">{% endif %}
+      <div class="form-campo lista-filtros__busca">
+        <label class="form-label sr-only" for="id_q">Busca</label>
+        <div class="campo-com-icone">
+          <span class="campo-com-icone__icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+          <input class="form-controle" type="search" name="q" id="id_q"
+                 value="{{ valores_filtro.q }}"
+                 placeholder="Buscar por solicitante, local ou município...">
         </div>
-      </form>
-    </div>
+      </div>
+      {% include "components/select.html" with name="status" label="Status" opcoes=opcoes_status placeholder="Todos os status" selecionado=valores_filtro.status %}
+      {% include "components/select.html" with name="municipio" label="Município" opcoes=opcoes_municipios placeholder="Todos os municípios" pesquisavel=True selecionado=valores_filtro.municipio %}
+      {% include "components/select.html" with name="tipo_evento" label="Tipo de evento" opcoes=opcoes_tipos placeholder="Todos os tipos" selecionado=valores_filtro.tipo_evento %}
+      <button type="button" class="btn btn--secundario lista-filtros__avancados" data-expande="#filtros-avancados"
+              aria-expanded="{% if valores_filtro.inicio or valores_filtro.fim %}true{% else %}false{% endif %}" aria-controls="filtros-avancados">
+        {% include "components/icon.html" with nome="filter" %}
+        Filtros avançados
+        {% include "components/icon.html" with nome="chevron-down" %}
+      </button>
+      <div class="lista-filtros__painel" id="filtros-avancados"
+           {% if not valores_filtro.inicio and not valores_filtro.fim %}hidden{% endif %}>
+        {% include "components/input.html" with name="inicio" label="Eventos a partir de" tipo="date" valor=valores_filtro.inicio %}
+        {% include "components/input.html" with name="fim" label="Eventos até" tipo="date" valor=valores_filtro.fim %}
+        {% if tem_filtros %}
+          <a href="{% url 'solicitacoes:lista' %}{% if fila_ativa %}?fila={{ fila_ativa }}{% endif %}" class="btn btn--secundario">Limpar filtros</a>
+        {% endif %}
+      </div>
+    </form>
   </div>
 
   <div class="card">
-    {% include "components/card.html" with titulo="Solicitações" %}
-    {% if total_resultados %}
-      <p class="lista-contagem">
-        {{ total_resultados }} solicitaç{{ total_resultados|pluralize:"ão,ões" }}{% if tem_filtros %} com os filtros aplicados{% endif %}
-      </p>
-    {% endif %}
+    <div class="card__cabecalho lista-cabecalho">
+      <h2 class="card__titulo">Solicitações
+        {% if total_resultados %}
+          <span class="lista-cabecalho__contagem">{{ total_resultados }} solicitaç{{ total_resultados|pluralize:"ão,ões" }}{% if tem_filtros %} com os filtros aplicados{% endif %}</span>
+        {% endif %}
+      </h2>
+      <div class="lista-cabecalho__acoes">
+        <div class="menu-flutuante" data-menu>
+          <button type="button" class="btn btn--secundario btn--com-icone" data-menu-gatilho aria-haspopup="true" aria-expanded="false">
+            {% include "components/icon.html" with nome="columns" %}
+            Colunas
+            {% include "components/icon.html" with nome="chevron-down" %}
+          </button>
+          <div class="menu-flutuante__corpo menu-flutuante__corpo--colunas" hidden data-menu-corpo data-colunas-menu>
+            {% for coluna in colunas %}
+              {% if coluna.chave != "numero" %}
+                <label class="form-check"><input type="checkbox" checked data-coluna-toggle="{{ coluna.chave }}">{{ coluna.rotulo }}</label>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        <a href="{% url 'solicitacoes:exportar' %}{% if querystring %}?{{ querystring }}{% endif %}" class="btn btn--secundario btn--com-icone">
+          {% include "components/icon.html" with nome="download" %}
+          Exportar CSV
+        </a>
+      </div>
+    </div>
     <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Tabela de solicitações">
-      <table class="tabela tabela--ordenavel tabela--cartoes-no-celular">
+      <table class="tabela tabela--ordenavel tabela--clicavel tabela--cartoes-no-celular" data-tabela-colunas>
         <thead>
           <tr>
             {% for coluna in colunas %}
-              <th{% if coluna.ativa %} aria-sort="{{ coluna.descendente|yesno:"descending,ascending" }}"{% endif %}>
+              <th data-col="{{ coluna.chave }}"{% if coluna.ativa %} aria-sort="{{ coluna.descendente|yesno:"descending,ascending" }}"{% endif %}>
                 <a href="{{ coluna.url }}" class="tabela__ordenar{% if coluna.ativa %} is-ativa{% endif %}">
                   {{ coluna.rotulo }}
-                  <span class="tabela__seta" aria-hidden="true">{% if coluna.ativa %}{{ coluna.descendente|yesno:"↓,↑" }}{% else %}↕{% endif %}</span>
+                  <span class="tabela__seta" aria-hidden="true">{% if coluna.ativa %}{% if coluna.descendente %}{% include "components/icon.html" with nome="arrow-down" %}{% else %}{% include "components/icon.html" with nome="arrow-up" %}{% endif %}{% else %}{% include "components/icon.html" with nome="ordenar" %}{% endif %}</span>
                 </a>
               </th>
             {% endfor %}
             <th>Ações</th>
+            <th><span class="sr-only">Abrir</span></th>
           </tr>
         </thead>
         <tbody>
           {% for linha in linhas %}
             {% with s=linha.solicitacao %}
               {# data-rotulo alimenta o modo cartão no celular (ver CSS). #}
-              <tr>
-                <td data-rotulo="Nº"><strong>#{{ s.pk }}</strong></td>
-                <td data-rotulo="Município">{{ s.municipio|default:"—" }}</td>
-                <td data-rotulo="Tipo de evento">{{ s.tipo_evento|default:"—" }}</td>
-                <td data-rotulo="Período">
+              <tr data-linha-url="{% url 'solicitacoes:detalhe' s.pk %}">
+                <td data-rotulo="Nº" data-col="numero"><strong>#{{ s.pk }}</strong></td>
+                <td data-rotulo="Município" data-col="municipio">{{ s.municipio|default:"—" }}</td>
+                <td data-rotulo="Tipo de evento" data-col="tipo">{{ s.tipo_evento|default:"—" }}</td>
+                <td data-rotulo="Período" data-col="periodo">
                   {% if s.data_inicio_evento %}
                     {{ s.data_inicio_evento|date:"d/m/Y" }}{% if s.data_fim_evento and s.data_fim_evento != s.data_inicio_evento %} a {{ s.data_fim_evento|date:"d/m/Y" }}{% endif %}
                   {% else %}—{% endif %}
                 </td>
-                <td data-rotulo="Solicitante">{{ s.solicitante_nome|default:"—" }}</td>
-                <td data-rotulo="Data da solicitação">{{ s.data_solicitacao|date:"d/m/Y" }}</td>
-                <td data-rotulo="Status">{% include "components/status_badge.html" with status=s.status label=s.get_status_display %}</td>
+                <td data-rotulo="Solicitante" data-col="solicitante">{{ s.solicitante_nome|default:"—" }}</td>
+                <td data-rotulo="Data da solicitação" data-col="data">{{ s.data_solicitacao|date:"d/m/Y" }}</td>
+                <td data-rotulo="Status" data-col="status">{% include "components/status_badge.html" with status=s.status label=s.get_status_display %}</td>
                 <td class="tabela__acoes">
                   <div class="tabela__acoes-grupo">
+                    {# Cada ação tem cara própria: cor da família + ícone, no mesmo tamanho. #}
                     {% if linha.acoes.despachar %}
-                      <a href="{% url 'solicitacoes:detalhe' s.pk %}#despacho-dg" class="btn btn--dourado btn--compacto">Despachar</a>
+                      <a href="{% url 'solicitacoes:detalhe' s.pk %}#despacho-dg" class="btn btn--compacto btn--acao btn--acao-despachar">{% include "components/icon.html" with nome="gavel" %}Despachar</a>
                     {% elif linha.acoes.concluir %}
-                      <a href="{% url 'solicitacoes:detalhe' s.pk %}#encerramento" class="btn btn--dourado btn--compacto">Confirmar</a>
+                      <a href="{% url 'solicitacoes:detalhe' s.pk %}#encerramento" class="btn btn--compacto btn--acao btn--acao-confirmar">{% include "components/icon.html" with nome="check" %}Confirmar</a>
                     {% elif linha.acoes.enviar %}
-                      <a href="{% url 'solicitacoes:editar' s.pk %}" class="btn btn--dourado btn--compacto">Continuar</a>
-                    {% elif linha.acoes.editar_dados %}
-                      <a href="{% url 'solicitacoes:editar' s.pk %}" class="btn btn--secundario btn--compacto">Editar</a>
+                      <a href="{% url 'solicitacoes:editar' s.pk %}" class="btn btn--compacto btn--acao btn--acao-continuar">{% include "components/icon.html" with nome="pencil" %}Continuar</a>
+                    {% else %}
+                      <a href="{% url 'solicitacoes:detalhe' s.pk %}" class="btn btn--compacto btn--acao btn--acao-detalhes">{% include "components/icon.html" with nome="eye" %}Detalhes</a>
                     {% endif %}
-                    <a href="{% url 'solicitacoes:detalhe' s.pk %}" class="btn btn--secundario btn--compacto">Detalhes</a>
-                    {% if linha.acoes.excluir %}
-                      <form method="post" action="{% url 'solicitacoes:excluir' s.pk %}" class="acao-inline" data-confirmar-exclusao>
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn--perigo-suave btn--compacto">Excluir</button>
-                      </form>
-                    {% endif %}
+                    <div class="menu-flutuante" data-menu>
+                      <button type="button" class="btn btn--secundario btn--compacto tabela__kebab" data-menu-gatilho
+                              aria-haspopup="true" aria-expanded="false" aria-label="Mais ações da solicitação #{{ s.pk }}">
+                        {% include "components/icon.html" with nome="kebab" %}
+                      </button>
+                      <div class="menu-flutuante__corpo" hidden data-menu-corpo>
+                        <a href="{% url 'solicitacoes:detalhe' s.pk %}">{% include "components/icon.html" with nome="eye" %}Detalhes</a>
+                        {% if linha.acoes.editar_dados %}
+                          <a href="{% url 'solicitacoes:editar' s.pk %}">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                        {% endif %}
+                        {% if linha.acoes.excluir %}
+                          <form method="post" action="{% url 'solicitacoes:excluir' s.pk %}" data-confirmar-exclusao>
+                            {% csrf_token %}
+                            <button type="submit" class="menu-flutuante__perigo">{% include "components/icon.html" with nome="trash" %}Excluir</button>
+                          </form>
+                        {% endif %}
+                      </div>
+                    </div>
                   </div>
                 </td>
+                <td class="tabela__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</td>
               </tr>
             {% endwith %}
           {% empty %}
-            <tr><td colspan="8" class="texto-suave texto-centro">Nenhuma solicitação encontrada.</td></tr>
+            <tr><td colspan="9" class="texto-suave texto-centro">Nenhuma solicitação encontrada.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -107,17 +155,25 @@
     {% if pagina.paginator.num_pages > 1 %}
       <div class="card__corpo paginacao">
         <span class="texto-suave">
-          Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}
-          ({{ pagina.paginator.count }} solicitações)
+          Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }} solicitações
         </span>
-        <span class="paginacao__links">
+        <nav class="paginacao__paginas" aria-label="Paginação">
           {% if pagina.has_previous %}
-            <a href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">Anterior</a>
+            <a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
           {% endif %}
+          {% for numero in paginas_visiveis %}
+            {% if numero == elipse %}
+              <span class="paginacao__elipse" aria-hidden="true">…</span>
+            {% elif numero == pagina.number %}
+              <span class="paginacao__numero paginacao__numero--atual" aria-current="page">{{ numero }}</span>
+            {% else %}
+              <a class="paginacao__numero" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
+            {% endif %}
+          {% endfor %}
           {% if pagina.has_next %}
-            <a href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima</a>
+            <a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
           {% endif %}
-        </span>
+        </nav>
       </div>
     {% endif %}
   </div>

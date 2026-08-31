@@ -3,31 +3,38 @@
 {% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with atual=titulo %}
-  {% include "components/page_header.html" with titulo=titulo subtitulo="Preencha os dados do registro" icone="users" %}
+  {% include "components/breadcrumb.html" with itens=breadcrumb %}
+  {% include "components/page_header.html" with titulo=titulo subtitulo=subtitulo_pagina icone="checklist" %}
 
-  <form method="post" action="">
+  <form method="post" action="" class="card cadastro-form">
     {% csrf_token %}
-    <section class="section-card">
-      {% include "components/section_card.html" with numero="1" titulo="Dados do registro" %}
-      <div class="section-card__corpo">
-        <div class="form-grid">
-          {% for campo in campos %}
-            {% if campo.tipo == "select" %}
-              {% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes obrigatorio=campo.obrigatorio largura="6" selecionado=campo.valor erros=campo.erros %}
-            {% elif campo.tipo == "textarea" %}
-              {% include "components/textarea.html" with name=campo.name label=campo.label largura="" linhas="3" valor=campo.valor erros=campo.erros obrigatorio=campo.obrigatorio %}
-            {% else %}
-              {% include "components/input.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio largura="" valor=campo.valor erros=campo.erros %}
-            {% endif %}
-          {% endfor %}
-        </div>
-        <div class="acoes-formulario">
-          {% url 'cadastros:lista' slug as url_voltar %}
-          {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
-          {% include "components/button.html" with label="Salvar" variante="dourado" tipo="submit" %}
-        </div>
+    <div class="card__corpo">
+      <header class="cadastro-form__cabecalho">
+        <h2 class="cadastro-form__titulo">{{ cartao_titulo }}</h2>
+        <p class="cadastro-form__intro">{{ cartao_intro }}</p>
+      </header>
+      <div class="form-grid">
+        {% for campo in campos %}
+          {% if campo.tipo == "select" %}
+            {% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes obrigatorio=campo.obrigatorio largura="6" selecionado=campo.valor erros=campo.erros %}
+          {% elif campo.tipo == "textarea" %}
+            {% include "components/textarea.html" with name=campo.name label=campo.label largura="" linhas="3" valor=campo.valor erros=campo.erros obrigatorio=campo.obrigatorio %}
+          {% elif campo.name == "nome" %}
+            {% include "components/input.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio largura="" valor=campo.valor erros=campo.erros placeholder=exemplo %}
+          {% else %}
+            {% include "components/input.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio largura="" valor=campo.valor erros=campo.erros %}
+          {% endif %}
+        {% endfor %}
       </div>
-    </section>
+      <p class="cadastro-form__nota">
+        <span class="cadastro-form__nota-icone" aria-hidden="true">{% include "components/icon.html" with nome="info" %}</span>
+        O nome {{ genitivo }} será exibido nas telas de cadastros e solicitações.
+      </p>
+      <div class="acoes-formulario">
+        {% url 'cadastros:lista' slug as url_voltar %}
+        {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
+        {% include "components/button.html" with label="Salvar" variante="dourado" tipo="submit" %}
+      </div>
+    </div>
   </form>
 {% endblock %}

@@ -725,7 +725,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         resposta = self.client.get(
             reverse("solicitacoes:detalhe", args=[solicitacao.pk])
         )
-        self.assertContains(resposta, ">Despacho DG<", html=False)
+        self.assertContains(resposta, ">Despacho da DG<", html=False)
 
     def test_transicoes_exigem_post(self):
         solicitacao = self.solicitacao_completa()
@@ -846,7 +846,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         resposta = self.client.get(reverse("solicitacoes:lista"))
         self.assertContains(resposta, "Meus rascunhos")
         self.assertNotContains(resposta, "Aguardando despacho</a>")
-        self.assertContains(resposta, ">Continuar<", html=False)
+        self.assertContains(resposta, "Continuar</a>", html=False)
 
         resposta = self.client.get(
             reverse("solicitacoes:lista"), {"fila": "rascunhos"}
@@ -856,7 +856,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.client.force_login(self.gestor)
         resposta = self.client.get(reverse("solicitacoes:lista"))
         self.assertContains(resposta, "Aguardando despacho")
-        self.assertContains(resposta, ">Despachar<", html=False)
+        self.assertContains(resposta, "Despachar</a>", html=False)
         resposta = self.client.get(
             reverse("solicitacoes:lista"), {"fila": "despacho"}
         )
@@ -900,8 +900,8 @@ class ViewsTests(BaseSolicitacaoTestCase):
             reverse("solicitacoes:lista"), {"fila": "devolvidas"}
         )
         self.assertEqual(resposta.context["pagina"].paginator.count, 1)
-        self.assertContains(resposta, "Minhas devolvidas")
-        self.assertContains(resposta, ">Continuar<", html=False)
+        self.assertContains(resposta, "Devolvidas para ajuste")
+        self.assertContains(resposta, "Continuar</a>", html=False)
 
     def test_despacho_via_view(self):
         solicitacao = self.solicitacao_completa()
@@ -925,7 +925,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
             reverse("solicitacoes:detalhe", args=[solicitacao.pk])
         )
         self.assertContains(resposta, f'name="quantidade_dg_{self.equipe.pk}"')
-        self.assertContains(resposta, "Quantidade de servidores por equipe")
+        self.assertContains(resposta, "Proposta do solicitante")
 
         resposta = self.client.post(
             reverse("solicitacoes:despachar", args=[solicitacao.pk]),
@@ -1054,8 +1054,8 @@ class ViewsTests(BaseSolicitacaoTestCase):
             reverse("solicitacoes:lista"), {"fila": "andamento"}
         )
         self.assertEqual(resposta.context["pagina"].paginator.count, 1)
-        self.assertContains(resposta, "Minhas deferidas")
-        self.assertContains(resposta, ">Confirmar<", html=False)
+        self.assertContains(resposta, "Deferidas")
+        self.assertContains(resposta, "Confirmar</a>", html=False)
 
     def test_pagina_do_dg_e_um_resumo(self):
         solicitacao = self.solicitacao_completa()

@@ -22,13 +22,36 @@
           {% include "components/icon.html" with nome="bell" %}
           {% if notificacoes_nao_lidas %}<span class="top-header__sino-contador">{{ notificacoes_nao_lidas }}</span>{% endif %}
         </a>
-        <span class="top-header__usuario-dados">
-          <strong>{{ user.get_full_name|default:user.username }}</strong>
-          <small>{% if user.is_staff %}ACESSO GESTOR{% else %}USUÁRIO AUTENTICADO{% endif %}</small>
-        </span>
-        <span class="top-header__avatar" aria-hidden="true">
-          {{ user.first_name|first|default:user.username|first|upper }}{{ user.last_name|first|upper }}
-        </span>
+        {# As ações de conta moram no menu do avatar — o header fica só com identidade. #}
+        <div class="menu-usuario" data-menu-usuario>
+          <button type="button" class="menu-usuario__gatilho" data-menu-usuario-gatilho
+                  aria-haspopup="menu" aria-expanded="false">
+            <span class="top-header__usuario-dados">
+              <strong>{{ user.get_full_name|default:user.username }}</strong>
+              <small>{% if user.is_staff %}ACESSO GESTOR{% else %}USUÁRIO AUTENTICADO{% endif %}</small>
+            </span>
+            <span class="top-header__avatar" aria-hidden="true">
+              {{ user.first_name|first|default:user.username|first|upper }}{{ user.last_name|first|upper }}
+            </span>
+            <span class="menu-usuario__seta" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+          </button>
+          <div class="menu-usuario__menu" role="menu" hidden data-menu-usuario-menu>
+            <a role="menuitem" href="{% url 'accounts:alterar_senha' %}">
+              {% include "components/icon.html" with nome="lock" %}Alterar senha
+            </a>
+            {% if user.is_staff %}
+              <a role="menuitem" href="{% url 'admin:index' %}">
+                {% include "components/icon.html" with nome="settings" %}Acesso gestor
+              </a>
+            {% endif %}
+            <form method="post" action="{% url 'accounts:logout' %}" class="menu-usuario__sair">
+              {% csrf_token %}
+              <button type="submit" role="menuitem">
+                {% include "components/icon.html" with nome="login" %}Sair
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
     {% endif %}
   </div>

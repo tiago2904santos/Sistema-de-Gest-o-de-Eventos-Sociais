@@ -13,6 +13,8 @@ from django.core.paginator import Paginator
 from django.db.models import ProtectedError
 from django.forms import modelform_factory
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.http import urlencode
 from django.views.decorators.http import require_POST
 
 from auditoria.models import LogAuditoria
@@ -28,25 +30,85 @@ from .models import (
     UnidadeMovel,
 )
 
+# `icone` e `cor` alimentam os cartões da página inicial de cadastros;
+# `singular`, `genitivo`, `novo` e `exemplo` alimentam listas e formulários.
 CADASTROS = {
-    "tipos-evento": {"model": TipoEvento, "titulo": "Tipos de evento", "campos": ["nome"]},
-    "servicos": {"model": Servico, "titulo": "Serviços", "campos": ["nome"]},
-    "equipes": {"model": Equipe, "titulo": "Equipes", "campos": ["nome"]},
+    "tipos-evento": {
+        "model": TipoEvento,
+        "titulo": "Tipos de evento",
+        "campos": ["nome"],
+        "icone": "calendar",
+        "cor": "#bea45a",
+        "singular": "tipo de evento",
+        "genitivo": "do tipo de evento",
+        "novo": "Novo tipo de evento",
+        "exemplo": "Ex.: PCPR na Comunidade",
+    },
+    "servicos": {
+        "model": Servico,
+        "titulo": "Serviços",
+        "campos": ["nome"],
+        "icone": "checklist",
+        "cor": "#bea45a",
+        "singular": "serviço",
+        "genitivo": "do serviço",
+        "novo": "Novo serviço",
+        "exemplo": "Ex.: Apresentação da banda institucional",
+    },
+    "equipes": {
+        "model": Equipe,
+        "titulo": "Equipes",
+        "campos": ["nome"],
+        "icone": "users",
+        "cor": "#d9c58c",
+        "singular": "equipe",
+        "genitivo": "da equipe",
+        "novo": "Nova equipe",
+        "exemplo": "Ex.: Ascom",
+    },
     "orgaos": {
         "model": OrgaoResponsavel,
         "titulo": "Órgãos responsáveis",
         "campos": ["nome"],
+        "icone": "landmark",
+        "cor": "#d9c58c",
+        "singular": "órgão responsável",
+        "genitivo": "do órgão responsável",
+        "novo": "Novo órgão responsável",
+        "exemplo": "Ex.: PCPR",
     },
     "municipios": {
         "model": Municipio,
         "titulo": "Municípios",
         "campos": ["nome", "estado", "regiao"],
+        "icone": "map-pin",
+        "cor": "#9fd6b1",
+        "singular": "município",
+        "genitivo": "do município",
+        "novo": "Novo município",
+        "exemplo": "Ex.: Curitiba",
     },
-    "motoristas": {"model": Motorista, "titulo": "Motoristas", "campos": ["nome", "telefone"]},
+    "motoristas": {
+        "model": Motorista,
+        "titulo": "Motoristas",
+        "campos": ["nome", "telefone"],
+        "icone": "volante",
+        "cor": "#b9c9ec",
+        "singular": "motorista",
+        "genitivo": "do motorista",
+        "novo": "Novo motorista",
+        "exemplo": "Ex.: João da Silva",
+    },
     "unidades-moveis": {
         "model": UnidadeMovel,
         "titulo": "Unidades móveis",
         "campos": ["nome"],
+        "icone": "truck",
+        "cor": "#cdb4e4",
+        "singular": "unidade móvel",
+        "genitivo": "da unidade móvel",
+        "novo": "Nova unidade móvel",
+        "exemplo": "Ex.: Caminhão",
     },
 }
 
@@ -105,7 +167,13 @@ def _registrar_auditoria(usuario, acao, objeto):
 def index(request):
     _exigir_administrador(request)
     grupos = [
-        {"slug": slug, "titulo": config["titulo"], "total": config["model"].objects.count()}
+        {
+            "slug": slug,
+            "titulo": config["titulo"],
+            "total": config["model"].objects.count(),
+            "icone": config["icone"],
+            "cor": config["cor"],
+        }
         for slug, config in CADASTROS.items()
     ]
     return render(request, "pages/cadastros/index.html", {"grupos": grupos})
@@ -121,15 +189,38 @@ def lista(request, slug):
     termo = request.GET.get("q", "").strip()
     if termo:
         queryset = queryset.filter(nome__icontains=termo)
-    pagina = Paginator(queryset, ITENS_POR_PAGINA).get_page(request.GET.get("pagina"))
+    situacao = request.GET.get("situacao", "").strip()
+    if situacao == "ativos":
+        queryset = queryset.filter(ativo=True)
+    elif situacao == "inativos":
+        queryset = queryset.filter(ativo=False)
+    paginator = Paginator(queryset, ITENS_POR_PAGINA)
+    pagina = paginator.get_page(request.GET.get("pagina"))
+    parametros = {}
+    if termo:
+        parametros["q"] = termo
+    if situacao:
+        parametros["situacao"] = situacao
     return render(
         request,
         "pages/cadastros/lista.html",
         {
             "slug": slug,
             "titulo": config["titulo"],
+            "singular": config["singular"],
             "pagina": pagina,
             "termo": termo,
+            "situacao": situacao,
+            "tem_filtros": bool(termo or situacao),
+            "opcoes_situacao": [
+                {"valor": "ativos", "rotulo": "Ativos"},
+                {"valor": "inativos", "rotulo": "Inativos"},
+            ],
+            "querystring": urlencode(parametros),
+            "paginas_visiveis": list(
+                paginator.get_elided_page_range(pagina.number, on_each_side=2, on_ends=1)
+            ),
+            "elipse": paginator.ELLIPSIS,
             "eh_municipio": slug == "municipios",
         },
     )
@@ -155,6 +246,11 @@ def editar(request, slug, pk=None):
         messages.error(request, "Corrija os campos destacados para continuar.")
     else:
         form = FormClass(instance=instancia)
+    apenas_nome = config["campos"] == ["nome"]
+    if apenas_nome:
+        intro = f"Informe o nome {config['genitivo']} que poderá ser utilizado nas solicitações."
+    else:
+        intro = f"Informe os dados {config['genitivo']} que poderão ser utilizados nas solicitações."
     return render(
         request,
         "pages/cadastros/form.html",
@@ -163,6 +259,19 @@ def editar(request, slug, pk=None):
             "titulo": config["titulo"],
             "instancia": instancia,
             "campos": _campos_para_template(form),
+            "cartao_titulo": f"Editar {config['singular']}" if pk else config["novo"],
+            "cartao_intro": intro,
+            "exemplo": config["exemplo"],
+            "genitivo": config["genitivo"],
+            "subtitulo_pagina": (
+                "Atualize os dados deste registro"
+                if pk
+                else "Cadastre uma opção disponível nas solicitações"
+            ),
+            "breadcrumb": [
+                {"label": config["titulo"], "url": reverse("cadastros:lista", args=[slug])},
+                {"label": "Editar registro" if pk else "Novo registro"},
+            ],
         },
     )
 

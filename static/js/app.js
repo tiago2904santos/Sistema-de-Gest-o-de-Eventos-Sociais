@@ -1434,3 +1434,164 @@
     window.sessionStorage.setItem("rascunho-enviado", chave);
   });
 })();
+
+/**
+ * Menu do avatar no cabeçalho: alterar senha, acesso gestor e sair moram
+ * aqui para o topo da página carregar só identidade e notificações.
+ */
+(function () {
+  "use strict";
+
+  document.querySelectorAll("[data-menu-usuario]").forEach(function (wrapper) {
+    var gatilho = wrapper.querySelector("[data-menu-usuario-gatilho]");
+    var menu = wrapper.querySelector("[data-menu-usuario-menu]");
+    if (!gatilho || !menu) return;
+
+    function fechar() {
+      menu.hidden = true;
+      gatilho.setAttribute("aria-expanded", "false");
+    }
+
+    gatilho.addEventListener("click", function (evento) {
+      evento.stopPropagation();
+      var abrir = menu.hidden;
+      menu.hidden = !abrir;
+      gatilho.setAttribute("aria-expanded", String(abrir));
+    });
+
+    document.addEventListener("click", function (evento) {
+      if (!menu.hidden && !wrapper.contains(evento.target)) fechar();
+    });
+
+    document.addEventListener("keydown", function (evento) {
+      if (evento.key === "Escape" && !menu.hidden) {
+        fechar();
+        gatilho.focus();
+      }
+    });
+  });
+})();
+
+/**
+ * Formulário que se envia sozinho quando um campo muda (ex.: o seletor de
+ * período do gráfico). O select customizado repassa o change ao nativo.
+ */
+(function () {
+  "use strict";
+
+  document.querySelectorAll("form[data-auto-enviar]").forEach(function (formulario) {
+    formulario.addEventListener("change", function () {
+      formulario.submit();
+    });
+  });
+})();
+
+/**
+ * Menu flutuante genérico (kebab de ações, seletor de colunas): mesmo
+ * comportamento do menu do avatar, para qualquer gatilho + corpo.
+ */
+(function () {
+  "use strict";
+
+  document.querySelectorAll("[data-menu]").forEach(function (wrapper) {
+    var gatilho = wrapper.querySelector("[data-menu-gatilho]");
+    var corpo = wrapper.querySelector("[data-menu-corpo]");
+    if (!gatilho || !corpo) return;
+
+    function fechar() {
+      corpo.hidden = true;
+      gatilho.setAttribute("aria-expanded", "false");
+    }
+
+    gatilho.addEventListener("click", function (evento) {
+      evento.stopPropagation();
+      var abrir = corpo.hidden;
+      corpo.hidden = !abrir;
+      gatilho.setAttribute("aria-expanded", String(abrir));
+    });
+
+    document.addEventListener("click", function (evento) {
+      if (!corpo.hidden && !wrapper.contains(evento.target)) fechar();
+    });
+
+    document.addEventListener("keydown", function (evento) {
+      if (evento.key === "Escape" && !corpo.hidden) {
+        fechar();
+        gatilho.focus();
+      }
+    });
+  });
+})();
+
+/**
+ * Painel expansível (ex.: filtros avançados da listagem).
+ */
+(function () {
+  "use strict";
+
+  document.querySelectorAll("[data-expande]").forEach(function (botao) {
+    var alvo = document.querySelector(botao.getAttribute("data-expande"));
+    if (!alvo) return;
+    // O servidor decide o estado inicial (aberto quando há data preenchida).
+    alvo.hidden = botao.getAttribute("aria-expanded") !== "true";
+
+    botao.addEventListener("click", function () {
+      alvo.hidden = !alvo.hidden;
+      botao.setAttribute("aria-expanded", String(!alvo.hidden));
+    });
+  });
+})();
+
+/**
+ * Seletor de colunas da listagem, lembrado por navegador (localStorage).
+ * Nº e Ações ficam sempre visíveis; o resto o usuário decide.
+ */
+(function () {
+  "use strict";
+
+  var tabela = document.querySelector("[data-tabela-colunas]");
+  var menu = document.querySelector("[data-colunas-menu]");
+  if (!tabela || !menu) return;
+
+  var CHAVE = "lista-colunas-ocultas";
+
+  function ocultas() {
+    try {
+      return JSON.parse(window.localStorage.getItem(CHAVE)) || [];
+    } catch (erro) {
+      return [];
+    }
+  }
+
+  function guardar(lista) {
+    try {
+      window.localStorage.setItem(CHAVE, JSON.stringify(lista));
+    } catch (erro) {
+      /* Sem storage o seletor funciona só na página atual. */
+    }
+  }
+
+  function aplicar() {
+    var lista = ocultas();
+    tabela.querySelectorAll("[data-col]").forEach(function (celula) {
+      celula.classList.toggle(
+        "coluna-oculta", lista.indexOf(celula.getAttribute("data-col")) !== -1
+      );
+    });
+    menu.querySelectorAll("[data-coluna-toggle]").forEach(function (caixa) {
+      caixa.checked = lista.indexOf(caixa.getAttribute("data-coluna-toggle")) === -1;
+    });
+  }
+
+  menu.querySelectorAll("[data-coluna-toggle]").forEach(function (caixa) {
+    caixa.addEventListener("change", function () {
+      var chave = caixa.getAttribute("data-coluna-toggle");
+      var lista = ocultas().filter(function (item) { return item !== chave; });
+      if (!caixa.checked) lista.push(chave);
+      guardar(lista);
+      aplicar();
+    });
+  });
+
+  aplicar();
+})();

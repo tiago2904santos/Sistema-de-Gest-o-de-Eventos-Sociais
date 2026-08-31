@@ -26,7 +26,8 @@
     {% endif %}
   </div>
   {% if variacao %}
-    <p class="summary-card__variacao{% if tendencia %} summary-card__variacao--{{ tendencia }}{% endif %}">
+    {# tendencia_neutra: seta sem cor — subir ou descer é só informação. #}
+    <p class="summary-card__variacao{% if tendencia %} summary-card__variacao--{% if tendencia_neutra %}neutra{% else %}{{ tendencia }}{% endif %}{% endif %}">
       {% if tendencia %}<span class="summary-card__seta" aria-hidden="true">{% if tendencia == "alta" %}↑{% else %}↓{% endif %}</span>{% endif %}
       {{ variacao }}
     </p>

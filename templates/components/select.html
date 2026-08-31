@@ -11,7 +11,8 @@
   `desabilitado`: bloqueia a edição preservando o visual.
 {% endcomment %}
 <div class="form-campo{% if largura %} form-campo--{{ largura }}{% endif %}">
-  <label class="form-label" for="id_{{ name }}">
+  {# rotulo_oculto: label só para leitores de tela, sem ocupar layout. #}
+  <label class="form-label{% if rotulo_oculto %} sr-only{% endif %}" for="id_{{ name }}">
     {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
   </label>
   <div class="form-controle-wrapper form-controle-wrapper--select custom-select{% if pesquisavel %} custom-select--pesquisavel{% endif %}{% if erros %} is-invalid{% endif %}"

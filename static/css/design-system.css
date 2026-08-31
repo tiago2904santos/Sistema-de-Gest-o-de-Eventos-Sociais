@@ -130,12 +130,12 @@ img {
   padding: var(--esp-6) var(--esp-5) var(--esp-7);
 }
 
+/* Rodapé quase invisível: sem faixa própria, só uma linha de assinatura. */
 .app-shell__footer {
-  border-top: 1px solid var(--cor-borda);
-  background: var(--cor-superficie);
-  padding: var(--esp-4) var(--esp-5);
+  padding: var(--esp-3) var(--esp-5);
   text-align: center;
-  font-size: var(--texto-xs);
+  font-size: 0.68rem;
+  letter-spacing: 0.2px;
   color: var(--cor-texto-fraco);
 }
 
@@ -308,7 +308,9 @@ img {
 .page-header {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  /* Centrado: a ação principal alinha com o bloco do título em vez de
+     flutuar sozinha na borda de baixo. */
+  align-items: center;
   justify-content: space-between;
   gap: var(--esp-4);
   margin-bottom: var(--esp-5);
@@ -331,6 +333,12 @@ img {
 .page-header__acoes {
   display: flex;
   gap: var(--esp-3);
+}
+
+/* CTA do cabeçalho um pouco mais contido, para compor com o título. */
+.page-header__acoes .btn {
+  padding: 0.55rem 1.15rem;
+  font-size: var(--texto-sm);
 }
 
 /* --------------------------------------------------------------------------
@@ -433,8 +441,8 @@ img {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: var(--cor-fundo);
-  color: var(--cor-texto-suave);
+  background: #e9eaec;
+  color: var(--cor-grafite-600);
 }
 
 .summary-card__icone .ui-icon { width: 20px; height: 20px; }
@@ -457,19 +465,23 @@ img {
   font-variant-numeric: tabular-nums;
 }
 
-/* Doze meses em barrinhas, ancoradas na base do número. */
+/* Doze meses em barrinhas, ancoradas na base do número. A largura é fixa
+   (12 barras × 5px + 11 folgas × 3px) para os quatro cartões alinharem. */
 .summary-card__sparkline {
   display: flex;
   align-items: flex-end;
+  justify-content: flex-end;
   gap: 3px;
+  width: 93px;
   height: 44px;
+  flex-shrink: 0;
   align-self: flex-end;
 }
 
 .summary-card__sparkline span {
   width: 5px;
   border-radius: 2px 2px 0 0;
-  background: var(--cor-cinza-300);
+  background: #b9bcc0;
 }
 
 .summary-card__variacao {
@@ -478,10 +490,12 @@ img {
   color: var(--cor-texto-fraco);
 }
 
-/* A seta diz a direção; a cor diz se a direção é boa notícia. */
+/* A seta diz a direção; a cor só entra quando a direção é boa ou má
+   notícia de verdade — variação informativa fica em neutro. */
 .summary-card__seta { font-weight: 700; }
 .summary-card__variacao--alta { color: var(--cor-sucesso); }
 .summary-card__variacao--baixa { color: var(--cor-erro); }
+.summary-card__variacao--neutra { color: var(--cor-texto-suave); }
 
 /* Cores por métrica: ícone e sparkline contam a mesma história. */
 .summary-card--dourada .summary-card__icone { background: var(--cor-dourado-100); color: var(--cor-dourado-700); }
@@ -1186,6 +1200,13 @@ textarea.form-controle {
   display: grid; grid-template-rows: minmax(0, 1.15fr) minmax(0, 0.95fr) minmax(0, 1fr);
   gap: 10px; overflow: hidden;
 }
+/* No resumo a lateral tem só timeline + ações: dimensiona pelo conteúdo
+   (evita cortar etapas ou sobrar espaço) e rola a timeline se faltar tela. */
+.solicitacao-sidebar--resumo {
+  height: auto;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.solicitacao-sidebar--resumo .timeline { overflow-y: auto; }
 .solicitacao-sidebar.is-stuck {
   position: fixed; top: 14px; left: var(--sidebar-left); width: var(--sidebar-width);
   transform: translateY(var(--sidebar-footer-shift, 0px));
@@ -1500,10 +1521,38 @@ textarea.form-controle { min-height: 68px; }
 }
 .despacho-quantidades-ajuda { margin-bottom: 10px; font-size: 0.8rem; }
 
-.encerramento-bloco { display: grid; gap: 10px; justify-items: stretch; }
-.encerramento-bloco .btn { justify-self: start; }
-.encerramento-bloco .form-campo { width: 100%; }
-.encerramento-bloco--cancelamento { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--cor-borda); }
+/* Encerramento em cartões, na mesma linguagem dos cards de decisão:
+   confirmar (verde) e cancelamento do evento (roxo) lado a lado. */
+.encerramento-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--esp-4);
+  align-items: stretch;
+}
+
+/* Cartões com a mesma altura e botões rentes à base. */
+.encerramento-cartao--confirmar form { margin-top: auto; }
+.encerramento-cartao--cancelar .form-controle { margin-top: auto; }
+
+.encerramento-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  padding: var(--esp-5);
+  border: 1px solid currentColor;
+  border-radius: var(--raio-md);
+}
+
+.encerramento-cartao__icone { display: flex; }
+.encerramento-cartao__icone .ui-icon { width: 22px; height: 22px; }
+.encerramento-cartao strong { font-size: var(--texto-sm); }
+.encerramento-cartao p { margin: 0; font-size: var(--texto-xs); color: var(--cor-texto-suave); }
+.encerramento-cartao .form-controle { background: var(--cor-superficie); color: var(--cor-texto); }
+
+.encerramento-cartao--confirmar { color: var(--cor-sucesso); background: #f2f9f5; }
+.encerramento-cartao--confirmar strong { color: var(--cor-sucesso); }
+.encerramento-cartao--cancelar { color: #7a4e96; background: #f7f2fb; }
+.encerramento-cartao--cancelar strong { color: #7a4e96; }
 
 .resumo-dg {
   margin: 0; display: grid;
@@ -1598,19 +1647,52 @@ textarea.form-controle { min-height: 68px; }
 
 .anexos-upload__ajuda { margin-top: 6px; font-size: 0.78rem; }
 
+/* Cards de decisão: título colorido, ícone e a explicação de cada opção. */
 .decision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
 .decision-option {
-  position: relative; min-height: 38px; display: flex; align-items: center;
-  justify-content: center; gap: 9px; border: 1px solid currentColor;
-  border-radius: var(--raio-sm); background: #fff; font-size: 0.72rem;
-  font-weight: 700; text-transform: uppercase; cursor: pointer;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--esp-4) var(--esp-3);
+  border: 1px solid currentColor;
+  border-radius: var(--raio-md);
+  background: #fff;
+  text-align: center;
+  cursor: pointer;
 }
-.decision-option--success { color: var(--cor-sucesso); }
-.decision-option--danger { color: var(--cor-erro); }
-.decision-option--cancel { color: #7a4e96; }
-.decision-option--return { color: var(--cor-alerta); }
-.decision-option > span { display: grid; place-items: center; font-size: 1rem; }
-.decision-option:has(input:checked) { background: #f0f1f2; outline: 2px solid currentColor; outline-offset: 1px; }
+/* Cada opção com o fundo tingido da sua cor, como no modelo. */
+.decision-option--success { color: var(--cor-sucesso); background: #f2f9f5; }
+.decision-option--danger { color: var(--cor-erro); background: #fdf4f3; }
+.decision-option--cancel { color: #7a4e96; background: #f7f2fb; }
+.decision-option--return { color: var(--cor-alerta); background: #fdf8ec; }
+.decision-option__icone { display: grid; place-items: center; }
+.decision-option__icone .ui-icon { width: 22px; height: 22px; }
+.decision-option strong {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.decision-option small {
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: var(--cor-texto-suave);
+}
+.decision-option:has(input:checked) {
+  background: #fdfaf2;
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+
+/* Proposta do solicitante: caixas neutras que destacam o que veio dele. */
+.equipe-alocacao--proposta {
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  padding: var(--esp-2) var(--esp-3);
+}
 .side-card {
   min-height: 0; display: flex; flex-direction: column; overflow: hidden;
   border: 1px solid var(--cor-borda); border-radius: 9px; background: #fff;
@@ -1637,29 +1719,39 @@ textarea.form-controle { min-height: 68px; }
 }
 .timeline {
   min-height: 0; flex: 1 1 auto; display: flex; flex-direction: column;
-  margin: 0; padding: 8px 14px 0; overflow-y: hidden; list-style: none;
+  margin: 0; padding: 14px 16px 6px; overflow-y: hidden; list-style: none;
 }
+/* Etapas com o respiro do modelo: cada informação em sua própria linha. */
 .timeline__item {
-  position: relative; min-height: 36px; flex: 1 1 0; display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto; gap: 10px; align-items: start;
+  position: relative; display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: start;
+  padding-bottom: 22px;
 }
+
+.timeline__item:last-child { padding-bottom: 10px; }
 .timeline__item:not(:last-child)::after {
-  content: ""; position: absolute; top: 23px; bottom: -1px; left: 11px;
+  content: ""; position: absolute; top: 28px; bottom: 2px; left: 12px;
   width: 2px; background: #d7dade;
 }
 .timeline__marcador {
-  z-index: 1; width: 22px; height: 22px; display: grid; place-items: center;
+  z-index: 1; width: 26px; height: 26px; display: grid; place-items: center;
   border: 2px solid #aeb4bb; border-radius: 50%; background: #fff;
   color: #fff; font-size: 0.65rem;
 }
-.timeline__marcador .ui-icon { width: 12px; height: 12px; stroke-width: 2.4; }
+.timeline__marcador .ui-icon { width: 14px; height: 14px; stroke-width: 2.4; }
 .timeline__item--concluido .timeline__marcador { border-color: var(--cor-sucesso); background: var(--cor-sucesso); }
 .timeline__item--concluido::after { background: #8cc9a5; }
 .timeline__item--atual .timeline__marcador {
   border-color: #bea45a; box-shadow: inset 0 0 0 4px #fff; background: #bea45a;
 }
-.timeline__item strong { display: block; font-size: 0.72rem; }
-.timeline__item small { display: block; margin-top: 3px; color: var(--cor-texto-suave); font-size: 0.66rem; }
+.timeline__item strong { display: block; font-size: 0.8rem; font-weight: 600; }
+.timeline__item small {
+  display: block; margin-top: 4px; color: var(--cor-texto-suave);
+  font-size: 0.7rem; line-height: 1.45;
+}
+.timeline__estado { font-weight: 600; }
+.timeline__item--concluido .timeline__estado { color: var(--cor-sucesso); }
+.timeline__item--atual .timeline__estado { color: var(--cor-dourado-700); }
 .timeline__etiqueta {
   padding: 3px 8px; border: 1px solid #bea45a; border-radius: 4px;
   color: #bea45a; font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
@@ -1707,6 +1799,79 @@ textarea.form-controle { min-height: 68px; }
   .decision-grid { grid-template-columns: 1fr; }
   .page-header__icone { width: 48px; height: 48px; flex-basis: 48px; }
 }
+
+/* --------------------------------------------------------------------------
+   Cadastros — cartões da página inicial (dourado no hover, como no modelo)
+   -------------------------------------------------------------------------- */
+.cadastro-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--esp-5);
+}
+.cadastro-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--esp-5);
+  align-items: center;
+  padding: 30px 24px;
+  border: 1px solid #edeff1;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--cor-texto);
+  box-shadow: 0 1px 3px rgba(51, 51, 51, 0.05);
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.cadastro-card:hover, .cadastro-card:focus-visible {
+  border-color: var(--cor-acento);
+  background: #fdf9ef;
+  box-shadow: 0 2px 10px rgba(190, 164, 90, 0.25);
+  text-decoration: none;
+}
+.cadastro-card__icone {
+  width: 72px; height: 72px; display: grid; place-items: center;
+  border-radius: 20px; background: #f7f1e3; color: var(--cor-dourado-700);
+}
+.cadastro-card__icone .ui-icon { width: 34px; height: 34px; stroke-width: 1.6; }
+.cadastro-card__info { display: grid; justify-items: start; gap: 6px; }
+.cadastro-card__titulo { font-size: 0.95rem; font-weight: 600; }
+.cadastro-card__valor { font-size: 2.5rem; font-weight: 700; line-height: 1.05; }
+.cadastro-card__barra { width: 64px; height: 6px; margin-top: 4px; border-radius: 999px; }
+.cadastro-card__seta { color: var(--cor-texto-suave); display: flex; }
+.cadastro-card__seta .ui-icon { width: 22px; height: 22px; }
+.cadastro-card:hover .cadastro-card__seta { color: var(--cor-dourado-700); }
+@media (max-width: 1400px) { .cadastro-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 1000px) { .cadastro-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .cadastro-grid { grid-template-columns: 1fr; } }
+
+/* Formulário de cadastro em cartão único de largura total. */
+.cadastro-form__cabecalho {
+  margin-bottom: var(--esp-5);
+  padding-bottom: var(--esp-4);
+  border-bottom: 1px solid var(--cor-borda);
+}
+.cadastro-form__titulo { color: var(--cor-dourado-700); font-size: 1.05rem; font-weight: 700; }
+.cadastro-form__intro { margin: 4px 0 0; color: var(--cor-texto-suave); font-size: var(--texto-sm); }
+.cadastro-form__nota {
+  display: flex; align-items: center; gap: 8px;
+  margin: var(--esp-4) 0 0; color: var(--cor-texto-suave); font-size: var(--texto-sm);
+}
+.cadastro-form__nota-icone { display: flex; color: var(--cor-dourado-700); }
+.cadastro-form__nota-icone .ui-icon { width: 18px; height: 18px; }
+
+/* Busca de largura contida (listas de cadastros, como no modelo). */
+.lista-filtros__busca--curta { flex: 0 1 420px; }
+
+/* Contagem de registros no canto direito do cartão de filtros. */
+.lista-filtros__contagem {
+  margin-left: auto; align-self: center;
+  color: var(--cor-texto-suave); font-size: var(--texto-sm); white-space: nowrap;
+}
+
+/* Coluna decorativa com ícone de documento (listas de cadastros). */
+.tabela__col-icone { width: 40px; padding-right: 0; }
+.tabela__icone-doc { display: flex; color: var(--cor-dourado-700); }
+.tabela__icone-doc .ui-icon { width: 18px; height: 18px; }
 
 /* --------------------------------------------------------------------------
    Listagem e detalhe de solicitações
@@ -1898,17 +2063,19 @@ textarea.form-controle { min-height: 68px; }
   margin-bottom: var(--esp-4);
 }
 
+/* Retângulo arredondado, como no modelo visual: sem pílula e sem cor por
+   categoria — só a fila ativa fica preenchida em grafite. */
 .fila-chip {
   display: inline-flex;
   align-items: center;
   gap: var(--esp-2);
-  padding: 0.35rem 0.9rem;
-  border: 1px solid var(--cor-borda-forte);
-  border-radius: 999px;
+  padding: 0.42rem 1rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
   background: var(--cor-superficie);
   color: var(--cor-texto-suave);
-  font-size: var(--texto-xs);
-  font-weight: 600;
+  font-size: var(--texto-sm);
+  font-weight: 500;
 }
 
 .fila-chip strong {
@@ -1925,10 +2092,11 @@ textarea.form-controle { min-height: 68px; }
   background: var(--cor-grafite-800);
   border-color: var(--cor-grafite-800);
   color: #ffffff;
+  font-weight: 600;
 }
 
 .fila-chip--ativa strong {
-  color: var(--cor-dourado-400);
+  color: #ffffff;
 }
 
 @media (max-width: 760px) {
@@ -2034,11 +2202,32 @@ textarea.form-controle { min-height: 68px; }
   text-decoration: underline;
 }
 
-/* Linha inteira clicável nas tabelas de atalho (dashboard). */
-.tabela--clicavel tbody tr[data-linha-url] { cursor: pointer; }
+/* Linha inteira clicável nas tabelas de atalho (dashboard): o hover deixa
+   claro que a linha abre a solicitação. */
+.tabela--clicavel tbody tr[data-linha-url] {
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.tabela--clicavel tbody tr[data-linha-url]:hover { background: #faf6ec; }
+
 .tabela--clicavel tbody tr[data-linha-url]:focus-visible {
   outline: 2px solid var(--cor-acento);
   outline-offset: -2px;
+}
+
+.tabela--clicavel .tabela__abrir .ui-icon {
+  transition: transform 0.12s ease;
+}
+
+.tabela--clicavel tbody tr[data-linha-url]:hover .tabela__abrir .ui-icon {
+  transform: translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabela--clicavel tbody tr[data-linha-url],
+  .tabela--clicavel .tabela__abrir .ui-icon { transition: none; }
+  .tabela--clicavel tbody tr[data-linha-url]:hover .tabela__abrir .ui-icon { transform: none; }
 }
 
 /* Campo de senha com botão de revelar. */
@@ -2174,8 +2363,17 @@ textarea.form-controle { min-height: 68px; }
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   gap: var(--esp-5);
-  align-items: start;
 }
+
+/* Os dois cards têm a mesma altura (stretch do grid); a tabela ocupa o card
+   inteiro distribuindo a folga entre as linhas — sem vazio no rodapé. */
+.dashboard-paineis > .card {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-paineis .tabela-wrapper { flex: 1; }
+.dashboard-paineis .tabela-wrapper .tabela { height: 100%; }
 
 @media (max-width: 1024px) {
   .dashboard-paineis { grid-template-columns: 1fr; }
@@ -2201,16 +2399,28 @@ textarea.form-controle { min-height: 68px; }
 
 .grafico-card__titulo .ui-icon { width: 18px; height: 18px; color: var(--cor-texto-suave); }
 
+/* Seletor de período discreto, integrado ao cabeçalho do card. */
+.grafico-card__periodo .form-campo { width: 185px; }
+
 .grafico-card__periodo .form-controle {
   width: auto;
-  padding: 0.35rem 2rem 0.35rem 0.75rem;
-  font-size: var(--texto-sm);
+  padding: 0.3rem 1.9rem 0.3rem 0.7rem;
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-suave);
+  border-color: transparent;
+  background: var(--cor-fundo);
+}
+
+.grafico-card__periodo .form-controle:hover,
+.grafico-card__periodo .form-controle:focus {
+  border-color: var(--cor-borda);
+  color: var(--cor-texto);
 }
 
 .grafico-barras {
   display: flex;
   gap: var(--esp-3);
-  padding: var(--esp-2) var(--esp-5) var(--esp-4);
+  padding: var(--esp-4) var(--esp-5) var(--esp-4);
   flex: 1;
 }
 
@@ -2220,9 +2430,9 @@ textarea.form-controle { min-height: 68px; }
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-end;
-  height: 220px;
-  padding-bottom: 1.4rem; /* compensa a linha dos rótulos dos meses */
-  font-size: var(--texto-xs);
+  height: 260px;
+  padding-bottom: 1.5rem; /* compensa a linha dos rótulos dos meses */
+  font-size: 0.68rem;
   color: var(--cor-texto-fraco);
   font-variant-numeric: tabular-nums;
 }
@@ -2231,8 +2441,13 @@ textarea.form-controle { min-height: 68px; }
   flex: 1;
   display: flex;
   align-items: stretch;
-  gap: 6px;
-  height: 220px;
+  gap: 8px;
+  height: 260px;
+  /* Linhas de grade suaves nos mesmos pontos dos ticks (0, 1/3, 2/3, teto),
+     descontando a faixa dos rótulos dos meses na base. */
+  background:
+    linear-gradient(to bottom, rgba(51, 51, 51, 0.07) 1px, transparent 1px) top left / 100% calc((100% - 1.5rem) / 3) repeat-y;
+  border-bottom: none;
 }
 
 .grafico-barras__coluna {
@@ -2243,21 +2458,21 @@ textarea.form-controle { min-height: 68px; }
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
-  gap: var(--esp-1);
+  gap: var(--esp-2);
 }
 
 .grafico-barras__barra {
-  width: min(100%, 26px);
+  width: min(100%, 18px);
   min-height: 2px;
-  border-radius: 4px 4px 0 0;
+  border-radius: 3px 3px 0 0;
   background: var(--cor-dourado-500);
 }
 
 .grafico-barras__coluna:hover .grafico-barras__barra { background: var(--cor-dourado-700); }
 
 .grafico-barras__rotulo {
-  font-size: var(--texto-xs);
-  color: var(--cor-texto-suave);
+  font-size: 0.68rem;
+  color: var(--cor-texto-fraco);
   line-height: 1;
 }
 
@@ -2284,3 +2499,509 @@ textarea.form-controle { min-height: 68px; }
 .tabela__abrir .ui-icon { width: 15px; height: 15px; }
 
 .tabela--clicavel tbody tr:hover .tabela__abrir { color: var(--cor-dourado-700); }
+
+/* --------------------------------------------------------------------------
+   Menu do avatar no cabeçalho
+   Alterar senha, acesso gestor e sair moram aqui; o topo fica só com a
+   identidade e o sino, sem repetir ações na navbar.
+   -------------------------------------------------------------------------- */
+.menu-usuario { position: relative; }
+
+.menu-usuario__gatilho {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: 0.3rem 0.55rem;
+  border: 0;
+  border-radius: var(--raio-md);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: right;
+}
+
+.menu-usuario__gatilho:hover,
+.menu-usuario__gatilho[aria-expanded="true"] {
+  background: var(--cor-grafite-700);
+}
+
+.menu-usuario__gatilho:focus-visible {
+  outline: 2px solid var(--cor-acento);
+  outline-offset: 2px;
+}
+
+.menu-usuario__seta { display: flex; color: #9a9a9a; }
+.menu-usuario__seta .ui-icon { width: 15px; height: 15px; }
+
+.menu-usuario__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 210px;
+  padding: var(--esp-2);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-elevada);
+  z-index: 60;
+}
+
+.menu-usuario__menu a,
+.menu-usuario__menu button {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 0;
+  border-radius: var(--raio-sm);
+  background: transparent;
+  color: var(--cor-texto);
+  font-size: var(--texto-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-usuario__menu a:hover,
+.menu-usuario__menu button:hover {
+  background: var(--cor-fundo);
+  text-decoration: none;
+}
+
+.menu-usuario__menu .ui-icon { width: 16px; height: 16px; color: var(--cor-texto-suave); }
+
+.menu-usuario__sair {
+  margin-top: var(--esp-1);
+  padding-top: var(--esp-1);
+  border-top: 1px solid var(--cor-borda);
+}
+
+.menu-usuario__sair button { color: var(--cor-erro); }
+.menu-usuario__sair button .ui-icon { color: var(--cor-erro); transform: scaleX(-1); }
+.menu-usuario__sair button:hover { background: var(--cor-erro-fundo); }
+
+/* Tabela mais respirada só nos atalhos do dashboard: linhas mais baixas
+   para o painel não pesar mais que o gráfico ao lado. */
+.tabela--compacta td { padding-top: 0.62rem; padding-bottom: 0.62rem; }
+
+/* --------------------------------------------------------------------------
+   Listagem de solicitações — modelo do redesign
+   -------------------------------------------------------------------------- */
+
+/* Barra de filtros em linha única, com labels flutuando sobre a borda. */
+.lista-filtros-card { margin-bottom: var(--esp-4); }
+
+.lista-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-4) var(--esp-5);
+}
+
+.lista-filtros .form-campo { margin: 0; }
+.lista-filtros__busca { flex: 1 1 260px; }
+.lista-filtros > .form-campo:not(.lista-filtros__busca) { flex: 0 1 200px; }
+
+.lista-filtros__avancados {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  font-size: var(--texto-sm);
+}
+
+.lista-filtros__avancados .ui-icon { width: 15px; height: 15px; }
+.lista-filtros__avancados[aria-expanded="true"] .ui-icon:last-child { transform: rotate(180deg); }
+
+.lista-filtros__painel {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-3);
+  padding-top: var(--esp-3);
+  border-top: 1px dashed var(--cor-borda);
+}
+
+/* O display da classe venceria o [hidden] do navegador sem esta regra. */
+.lista-filtros__painel[hidden] { display: none; }
+
+.lista-filtros__painel .form-campo { flex: 0 1 200px; }
+
+/* Labels flutuando sobre a borda dos campos de filtro (modelo visual). */
+.filtros-flutuantes .form-campo { position: relative; }
+
+.filtros-flutuantes .form-label:not(.sr-only) {
+  position: absolute;
+  top: -0.5rem;
+  left: 0.7rem;
+  z-index: 2;
+  margin: 0;
+  padding: 0 0.3rem;
+  background: var(--cor-superficie);
+  font-size: 0.6rem;
+  letter-spacing: 0.5px;
+  color: var(--cor-texto-suave);
+}
+
+/* Cabeçalho do card da tabela: contagem junto do título, ações à direita. */
+.lista-cabecalho { align-items: center; }
+
+.lista-cabecalho__contagem {
+  margin-left: var(--esp-3);
+  font-size: var(--texto-xs);
+  font-weight: 400;
+  color: var(--cor-texto-suave);
+}
+
+.lista-cabecalho__acoes { display: flex; gap: var(--esp-2); }
+.lista-cabecalho__acoes .btn { font-size: var(--texto-xs); }
+
+/* Menu flutuante genérico (kebab, colunas). */
+.menu-flutuante { position: relative; display: inline-flex; }
+
+.menu-flutuante__corpo {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 180px;
+  padding: var(--esp-2);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-elevada);
+  z-index: 40;
+}
+
+.menu-flutuante__corpo a,
+.menu-flutuante__corpo button {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: 0;
+  border-radius: var(--raio-sm);
+  background: transparent;
+  color: var(--cor-texto);
+  font-size: var(--texto-sm);
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.menu-flutuante__corpo a:hover,
+.menu-flutuante__corpo button:hover {
+  background: var(--cor-fundo);
+  text-decoration: none;
+}
+
+.menu-flutuante__corpo .ui-icon { width: 15px; height: 15px; color: var(--cor-texto-suave); }
+.menu-flutuante__perigo { color: var(--cor-erro) !important; }
+.menu-flutuante__perigo .ui-icon { color: var(--cor-erro) !important; }
+
+.menu-flutuante__corpo--colunas { min-width: 210px; }
+.menu-flutuante__corpo--colunas .form-check { padding: 0.35rem 0.5rem; cursor: pointer; }
+
+.tabela__kebab { padding-left: 0.45rem; padding-right: 0.45rem; }
+.tabela__kebab .ui-icon { width: 15px; height: 15px; }
+
+/* Botões de ação da tabela: mesmo tamanho para todos, e cada ação com a
+   cor da sua família — despacho dourado, confirmação verde, ajuste âmbar,
+   leitura neutra. */
+.btn--acao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 7.75rem;
+  border: 1px solid transparent;
+}
+
+.btn--acao .ui-icon { width: 14px; height: 14px; flex-shrink: 0; }
+
+.btn--acao-despachar { background: var(--cor-acento); color: #fff; }
+.btn--acao-despachar:hover { background: var(--cor-dourado-700); color: #fff; }
+
+.btn--acao-confirmar { background: var(--cor-sucesso); color: #fff; }
+.btn--acao-confirmar:hover { background: #17663a; color: #fff; }
+
+.btn--acao-continuar { background: var(--cor-alerta); color: #fff; }
+.btn--acao-continuar:hover { background: #7d5700; color: #fff; }
+
+.btn--acao-detalhes {
+  background: var(--cor-superficie);
+  border-color: var(--cor-borda-forte);
+  color: var(--cor-texto-suave);
+}
+
+.btn--acao-detalhes:hover {
+  border-color: var(--cor-grafite-600);
+  color: var(--cor-texto);
+  background: var(--cor-superficie);
+}
+
+/* Coluna escondida pelo seletor de colunas. */
+.coluna-oculta { display: none !important; }
+
+/* Setas de ordenação em ícone. */
+.tabela__seta .ui-icon { width: 13px; height: 13px; vertical-align: -2px; }
+
+/* Paginação numerada. */
+.paginacao__paginas {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+}
+
+.paginacao__numero,
+.paginacao__passo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.5rem;
+  justify-content: center;
+  border-radius: var(--raio-sm);
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.paginacao__passo .ui-icon { width: 14px; height: 14px; }
+
+.paginacao__numero:hover,
+.paginacao__passo:hover {
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  text-decoration: none;
+}
+
+.paginacao__numero--atual {
+  background: var(--cor-acento);
+  color: #fff;
+  font-weight: 700;
+}
+
+.paginacao__elipse { color: var(--cor-texto-fraco); padding: 0 0.2rem; }
+
+/* Rodapé com cadeado e versão. */
+.app-shell__footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-2);
+  flex-wrap: wrap;
+}
+
+.app-shell__footer-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+}
+
+.app-shell__footer .ui-icon { width: 12px; height: 12px; }
+
+@media (max-width: 767px) {
+  .lista-filtros > .form-campo:not(.lista-filtros__busca) { flex: 1 1 100%; }
+  .lista-cabecalho { flex-wrap: wrap; gap: var(--esp-2); }
+  .paginacao__paginas { flex-wrap: wrap; }
+}
+
+/* --------------------------------------------------------------------------
+   Detalhe da solicitação — modelo do redesign
+   -------------------------------------------------------------------------- */
+
+/* Subtítulo com o selo de status ao lado. */
+.page-header__subtitulo--com-selo {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  flex-wrap: wrap;
+}
+
+/* Resumo em blocos temáticos, cada um com título e ícone próprios. */
+.resumo-blocos { display: grid; gap: var(--esp-4); }
+
+.resumo-bloco {
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  padding: var(--esp-4);
+}
+
+.resumo-bloco__titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  margin: 0 0 var(--esp-3);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+.resumo-bloco__titulo .ui-icon { width: 15px; height: 15px; }
+
+/* Ações da solicitação na coluna lateral, abaixo do status: a primária em
+   destaque e o par Editar/Voltar dividindo a linha, como no modelo. */
+.side-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+
+.side-acoes form { display: contents; }
+
+.side-acoes__primaria {
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
+}
+
+.side-acoes__linha {
+  display: flex;
+  gap: var(--esp-2);
+}
+
+.side-acoes__linha .btn {
+  flex: 1;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Linhas extras da timeline (quem fez, quando e a observação). */
+.timeline__conteudo { min-width: 0; }
+.timeline__observacao {
+  color: var(--cor-texto-fraco);
+  overflow-wrap: break-word;
+}
+
+/* Chevron de recolher no cabeçalho da seção (Anexos). */
+.section-card__cabecalho { position: relative; }
+
+.section-card__recolher {
+  position: absolute;
+  right: var(--esp-4);
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: var(--raio-sm);
+  background: transparent;
+  color: var(--cor-texto-suave);
+  cursor: pointer;
+}
+
+.section-card__recolher:hover { background: var(--cor-fundo); color: var(--cor-texto); }
+.section-card__recolher .ui-icon { width: 17px; height: 17px; transition: transform 0.15s ease; }
+/* Aberto aponta para cima; fechado, para baixo — como no modelo. */
+.section-card__recolher[aria-expanded="true"] .ui-icon { transform: rotate(180deg); }
+
+/* Painel de anexos: estado e botões dentro da mesma caixa, como no modelo. */
+.anexos-painel {
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  padding: var(--esp-4) var(--esp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.anexos-painel__info {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-4);
+}
+
+.anexos-painel__icone {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie);
+  color: var(--cor-texto-suave);
+}
+
+.anexos-painel__icone .ui-icon { width: 20px; height: 20px; }
+.anexos-painel__titulo { margin: 0; font-size: var(--texto-sm); color: var(--cor-texto-suave); }
+.anexos-painel__ajuda { margin: 2px 0 0; font-size: var(--texto-xs); color: var(--cor-texto-fraco); }
+.anexos-painel .upload-anexos { margin: 0; }
+
+/* Proposta do solicitante: caixas cinza com rótulo/valor, como no modelo. */
+.proposta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--esp-3);
+}
+
+.proposta-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  padding: var(--esp-3) var(--esp-4);
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+}
+
+.proposta-item__campo { display: grid; gap: 3px; }
+.proposta-item__campo--quantidade { width: 96px; }
+
+.proposta-item__rotulo {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+.proposta-item__valor { font-weight: 600; font-size: var(--texto-sm); }
+
+/* A quantidade parece texto (como no modelo) e vira campo ao interagir. */
+.proposta-item .form-controle {
+  padding: 0.1rem 0.2rem;
+  border-color: transparent;
+  background: transparent;
+  font-weight: 600;
+  font-size: var(--texto-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.proposta-item .form-controle:hover,
+.proposta-item .form-controle:focus {
+  border-color: var(--cor-borda-forte);
+  background: var(--cor-superficie);
+}
+
+/* Divisor com chevron entre a proposta e a decisão, como no modelo. */
+.despacho-divisor {
+  display: flex;
+  justify-content: center;
+  margin: var(--esp-2) 0;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.despacho-divisor__botao {
+  margin-top: -13px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 50%;
+  background: var(--cor-superficie);
+  color: var(--cor-texto-suave);
+  cursor: pointer;
+}
+
+.despacho-divisor__botao:hover { color: var(--cor-texto); border-color: var(--cor-borda-forte); }
+.despacho-divisor__botao .ui-icon { width: 14px; height: 14px; transition: transform 0.15s ease; }
+.despacho-divisor__botao[aria-expanded="false"] .ui-icon { transform: rotate(180deg); }

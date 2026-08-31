@@ -1,8 +1,9 @@
 {% comment %}
   Componente: workflow_timeline — etapas reais do fluxo da solicitação.
   Uso: {% include "components/workflow_timeline.html" with etapas=timeline %}
-  `etapas`: lista de dicts {"titulo", "subtitulo", "estado"} onde estado é
-  "concluido", "atual" ou "pendente" (montada por solicitacoes.services.montar_timeline).
+  `etapas`: lista de dicts {"titulo", "subtitulo", "estado"} e, nas etapas já
+  vencidas, {"quando", "usuario", "observacao"} vindos do histórico
+  (montada por solicitacoes.services.montar_timeline).
 {% endcomment %}
 <section class="side-card" aria-labelledby="status-solicitacao-titulo">
   <header class="side-card__cabecalho">
@@ -13,7 +14,13 @@
     {% for etapa in etapas %}
       <li class="timeline__item{% if etapa.estado == 'concluido' %} timeline__item--concluido{% elif etapa.estado == 'atual' %} timeline__item--atual{% endif %}">
         <span class="timeline__marcador" aria-hidden="true">{% if etapa.estado == 'concluido' %}{% include "components/icon.html" with nome="check" %}{% endif %}</span>
-        <div><strong>{{ etapa.titulo }}</strong><small>{{ etapa.subtitulo }}</small></div>
+        <div class="timeline__conteudo">
+          <strong>{{ etapa.titulo }}</strong>
+          <small class="timeline__estado">{{ etapa.subtitulo }}</small>
+          {% if etapa.quando %}<small>{{ etapa.quando }}</small>{% endif %}
+          {% if etapa.usuario %}<small>{{ etapa.usuario }}</small>{% endif %}
+          {% if etapa.observacao %}<small class="timeline__observacao">{{ etapa.observacao }}</small>{% endif %}
+        </div>
         {% if etapa.estado == 'atual' %}<span class="timeline__etiqueta">Atual</span>{% endif %}
       </li>
     {% endfor %}

@@ -325,26 +325,32 @@ def editar_solicitacao(request, pk):
 # Listagem e detalhe
 # ---------------------------------------------------------------------------
 
+# Filas = atalhos de status no mesmo escopo da tabela (todo mundo), exceto
+# as pessoais, marcadas com "apenas_do_usuario" e rotuladas como "minhas".
 FILAS = {
     "despacho": {
         "rotulo": "Aguardando despacho",
         "status": [StatusSolicitacao.AGUARDANDO_DESPACHO],
+    },
+    "devolvidas": {
+        "rotulo": "Devolvidas para ajuste",
+        "status": [StatusSolicitacao.DEVOLVIDA],
+    },
+    "andamento": {
+        "rotulo": "Deferidas",
+        "status": [StatusSolicitacao.DEFERIDA_EM_ANDAMENTO],
+    },
+    "canceladas": {
+        "rotulo": "Canceladas",
+        "status": [StatusSolicitacao.CANCELADA],
     },
     "rascunhos": {
         "rotulo": "Meus rascunhos",
         "status": [StatusSolicitacao.RASCUNHO],
         "apenas_do_usuario": True,
     },
-    # "Minhas" no rótulo porque a contagem é só das solicitações do usuário,
-    # enquanto a tabela ao lado mostra as de todo mundo.
-    "devolvidas": {
-        "rotulo": "Minhas devolvidas",
-        "status": [StatusSolicitacao.DEVOLVIDA],
-        "apenas_do_usuario": True,
-    },
-    "andamento": {
-        "rotulo": "Minhas deferidas",
-        "status": [StatusSolicitacao.DEFERIDA_EM_ANDAMENTO],
+    "minhas": {
+        "rotulo": "Minhas",
         "apenas_do_usuario": True,
     },
 }
@@ -352,19 +358,25 @@ FILAS = {
 
 def _filas_do_usuario(user, queryset):
     """Atalhos de fila com contagem, conforme o perfil do usuário."""
-    # A fila de despacho é da DG; rascunhos e devolvidas são de cada um.
+    # A fila de despacho é da DG; as pessoais valem para todos.
     filas = []
     if permissions.eh_gestor_dg(user):
         filas.append("despacho")
-    filas.extend(["rascunhos", "devolvidas", "andamento"])
+    filas.extend(["devolvidas", "andamento", "canceladas", "rascunhos", "minhas"])
     resultado = []
     for chave in filas:
         config = FILAS[chave]
-        parcial = queryset.filter(status__in=config["status"])
+        parcial = queryset
+        if config.get("status"):
+            parcial = parcial.filter(status__in=config["status"])
         if config.get("apenas_do_usuario"):
             parcial = parcial.filter(criado_por=user)
         resultado.append(
-            {"chave": chave, "rotulo": config["rotulo"], "total": parcial.count()}
+            {
+                "chave": chave,
+                "rotulo": config["rotulo"],
+                "total": parcial.count(),
+            }
         )
     return resultado
 
@@ -411,7 +423,8 @@ def _queryset_filtrado(request):
 
     fila = request.GET.get("fila", "")
     if fila in FILAS:
-        queryset = queryset.filter(status__in=FILAS[fila]["status"])
+        if FILAS[fila].get("status"):
+            queryset = queryset.filter(status__in=FILAS[fila]["status"])
         if FILAS[fila].get("apenas_do_usuario"):
             queryset = queryset.filter(criado_por=request.user)
 
@@ -476,6 +489,10 @@ def lista_solicitacoes(request):
 
     paginador = Paginator(queryset, ITENS_POR_PAGINA)
     pagina = paginador.get_page(request.GET.get("pagina"))
+    # Números de página com reticências ("1 2 3 … 7") para pular direto.
+    paginas_visiveis = list(
+        paginador.get_elided_page_range(pagina.number, on_each_side=1, on_ends=1)
+    )
 
     parametros = request.GET.copy()
     parametros.pop("pagina", None)
@@ -496,8 +513,11 @@ def lista_solicitacoes(request):
             "querystring": parametros.urlencode(),
             "filas": _filas_do_usuario(request.user, base),
             "fila_ativa": fila,
+            "total_geral": base.count(),
             "tem_filtros": any(request.GET.get(nome) for nome in CAMPOS_FILTRO),
             "total_resultados": paginador.count,
+            "paginas_visiveis": paginas_visiveis,
+            "elipse": Paginator.ELLIPSIS,
             "colunas": _colunas_ordenaveis(request, pedido),
             "linhas": [
                 {"solicitacao": s, "acoes": permissions.acoes_permitidas(request.user, s)}

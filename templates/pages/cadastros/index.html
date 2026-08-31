@@ -6,12 +6,16 @@
   {% include "components/breadcrumb.html" with atual="Cadastros" %}
   {% include "components/page_header.html" with titulo="Cadastros" subtitulo="Tabelas de apoio utilizadas pelas solicitações" icone="users" %}
 
-  <div class="grid-resumo">
+  <div class="cadastro-grid">
     {% for grupo in grupos %}
-      <a class="summary-card summary-card--link" href="{% url 'cadastros:lista' grupo.slug %}">
-        <p class="summary-card__titulo">{{ grupo.titulo }}</p>
-        <p class="summary-card__valor">{{ grupo.total }}</p>
-        <p class="summary-card__variacao">Gerenciar registros</p>
+      <a class="cadastro-card" href="{% url 'cadastros:lista' grupo.slug %}">
+        <span class="cadastro-card__icone" aria-hidden="true">{% include "components/icon.html" with nome=grupo.icone %}</span>
+        <span class="cadastro-card__info">
+          <span class="cadastro-card__titulo">{{ grupo.titulo }}</span>
+          <span class="cadastro-card__valor">{{ grupo.total }}</span>
+          <span class="cadastro-card__barra" style="background: {{ grupo.cor }};" aria-hidden="true"></span>
+        </span>
+        <span class="cadastro-card__seta" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</span>
       </a>
     {% endfor %}
   </div>

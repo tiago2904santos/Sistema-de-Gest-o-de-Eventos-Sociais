@@ -13,4 +13,11 @@
     <h2 class="section-card__titulo">{{ titulo }}</h2>
     {% if subtitulo %}<p class="section-card__subtitulo">{{ subtitulo }}</p>{% endif %}
   </div>
+  {% if recolhe %}
+    {# recolhe: id do corpo que o chevron do cabeçalho abre e fecha. #}
+    <button type="button" class="section-card__recolher" data-expande="#{{ recolhe }}"
+            aria-expanded="true" aria-controls="{{ recolhe }}" aria-label="Recolher {{ titulo|lower }}">
+      {% include "components/icon.html" with nome="chevron-down" %}
+    </button>
+  {% endif %}
 </header>

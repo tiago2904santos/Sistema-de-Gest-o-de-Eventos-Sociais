@@ -23,7 +23,12 @@
   </main>
 
   <footer class="app-shell__footer">
-    Sistema de Gestão de Eventos Sociais — uso institucional
+    <span class="app-shell__footer-item">
+      {% include "components/icon.html" with nome="lock" %}
+      Ambiente restrito e monitorado
+    </span>
+    <span aria-hidden="true">·</span>
+    <span>Sistema de Gestão de Eventos Sociais — versão 2.0</span>
   </footer>
 </div>
 {% endblock %}

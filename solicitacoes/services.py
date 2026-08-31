@@ -333,16 +333,29 @@ def cancelar_evento(solicitacao, usuario, observacao):
 def montar_timeline(solicitacao=None):
     """Etapas da timeline lateral a partir do status e histórico reais.
 
-    Sem solicitação (tela de criação), devolve o estado inicial de rascunho.
+    Cada etapa vencida traz quem fez, quando e a observação do histórico —
+    o mesmo rastro do processo que a tela de cadastro registra. Sem
+    solicitação (tela de criação), devolve o estado inicial de rascunho.
     """
 
-    def quando(acao):
+    def registro_de(*acoes):
         if not solicitacao or not solicitacao.pk:
             return None
-        registro = next(
-            (h for h in solicitacao.historico.all() if h.acao == acao), None
+        return next(
+            (h for h in solicitacao.historico.all() if h.acao in acoes), None
         )
-        return timezone.localtime(registro.criado_em).strftime("%d/%m/%Y %H:%M") if registro else None
+
+    def detalhes(registro):
+        """Data/hora, autor e observação de um registro do histórico."""
+        if registro is None:
+            return {}
+        return {
+            "quando": timezone.localtime(registro.criado_em).strftime(
+                "%d/%m/%Y %H:%M"
+            ),
+            "usuario": str(registro.usuario) if registro.usuario else "",
+            "observacao": registro.observacao,
+        }
 
     status = solicitacao.status if solicitacao else StatusSolicitacao.RASCUNHO
     rascunho = status == StatusSolicitacao.RASCUNHO
@@ -356,40 +369,40 @@ def montar_timeline(solicitacao=None):
     elif rascunho:
         subtitulo_envio = "Aguardando preenchimento"
     else:
-        subtitulo_envio = None
+        subtitulo_envio = "Concluída"
 
-    # Etapa já vencida sem data no histórico (caso das solicitações importadas
-    # da planilha) não é "Pendente": só não sabemos quando aconteceu.
-    def subtitulo(data, concluida, pendente="Pendente"):
-        if data:
-            return data
-        return "Concluída" if concluida else pendente
+    # Origem da etapa de envio: o envio em si ou, nas importadas da
+    # planilha, o registro de importação.
+    registro_envio = registro_de(
+        AcaoHistorico.ENVIO, AcaoHistorico.IMPORTACAO, AcaoHistorico.CRIACAO
+    )
 
     etapas = [
         {
             "titulo": "Enviar para a DG",
-            "subtitulo": subtitulo_envio
-            or subtitulo(quando(AcaoHistorico.ENVIO), not (rascunho or devolvida)),
+            "subtitulo": subtitulo_envio,
             "estado": "atual" if rascunho or devolvida else "concluido",
+            **(detalhes(registro_envio) if not (rascunho or devolvida) else {}),
         },
         {
             "titulo": "Aguardando despacho DG",
-            "subtitulo": subtitulo(
-                quando(AcaoHistorico.ENVIO) if aguardando else None,
-                finalizada or deferida,
-            ),
+            "subtitulo": "Concluída" if finalizada or deferida else "Pendente",
             "estado": "concluido"
             if finalizada or deferida
             else ("atual" if aguardando else "pendente"),
+            **(detalhes(registro_envio) if aguardando else {}),
         },
     ]
+
+    registro_decisao = registro_de(AcaoHistorico.DECISAO)
 
     if deferida:
         etapas.append(
             {
                 "titulo": "Deferida — em andamento",
-                "subtitulo": quando(AcaoHistorico.DECISAO) or "Deferida pela DG",
+                "subtitulo": "Deferida pela DG",
                 "estado": "atual",
+                **detalhes(registro_decisao),
             }
         )
         etapas.append(
@@ -402,12 +415,13 @@ def montar_timeline(solicitacao=None):
 
     if finalizada:
         # Atendida passou pela fase deferida; mostra o caminho completo.
-        if status == StatusSolicitacao.ATENDIDA and quando(AcaoHistorico.DECISAO):
+        if status == StatusSolicitacao.ATENDIDA and registro_decisao:
             etapas.append(
                 {
                     "titulo": "Deferida — em andamento",
-                    "subtitulo": quando(AcaoHistorico.DECISAO),
+                    "subtitulo": "Deferida pela DG",
                     "estado": "concluido",
+                    **detalhes(registro_decisao),
                 }
             )
         rotulos = {
@@ -415,14 +429,17 @@ def montar_timeline(solicitacao=None):
             StatusSolicitacao.NAO_ATENDIDA: "Não atendida",
             StatusSolicitacao.CANCELADA: "Cancelada",
         }
+        registro_final = (
+            registro_de(AcaoHistorico.CONCLUSAO)
+            or registro_de(AcaoHistorico.CANCELAMENTO)
+            or registro_decisao
+        )
         etapas.append(
             {
                 "titulo": rotulos[solicitacao.status],
-                "subtitulo": quando(AcaoHistorico.CONCLUSAO)
-                or quando(AcaoHistorico.CANCELAMENTO)
-                or quando(AcaoHistorico.DECISAO)
-                or "Encerrada",
+                "subtitulo": "Encerrada",
                 "estado": "concluido",
+                **detalhes(registro_final),
             }
         )
     return etapas

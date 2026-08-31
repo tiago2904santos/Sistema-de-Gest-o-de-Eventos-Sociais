@@ -131,11 +131,14 @@ def index(request):
             "cor": "neutra",
             "sparkline": _sparkline(serie_todas),
             "variacao": (
-                f"{abs(diferenca)} em relação ao mês anterior"
+                f"{abs(diferenca)} vs. mês anterior"
                 if no_mes_anterior or no_mes
                 else "Sem registros"
             ),
             "tendencia": "alta" if diferenca > 0 else "baixa" if diferenca < 0 else "",
+            # Menos solicitações não é má notícia por si — a seta informa,
+            # sem pintar de vermelho.
+            "tendencia_neutra": True,
             "url": lista,
         },
         {
