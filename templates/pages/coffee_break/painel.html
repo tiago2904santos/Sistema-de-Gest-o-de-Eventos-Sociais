@@ -1,0 +1,101 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Coffee Break — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with atual="Coffee Break" %}
+
+  {% url 'coffee_break:nova' as url_nova %}
+  {% include "components/page_header.html" with titulo="Coffee Break — ASCOM" subtitulo="Controle dos lotes contratados e do consumo por solicitação" icone="coffee" acao_label="Nova solicitação" acao_url=url_nova acao_icone="plus" %}
+
+  <div class="grid-resumo">
+    {% for item in resumo %}
+      {% include "components/summary_card.html" with titulo=item.titulo valor=item.valor icone=item.icone cor=item.cor destaque=item.destaque variacao=item.variacao url=item.url %}
+    {% endfor %}
+  </div>
+
+  {% if lotes_em_alerta %}
+    <div class="alertas">
+      {% for lote in lotes_em_alerta %}
+        <div class="alerta alerta--warning">
+          {{ lote.rotulo_curto }} — {{ lote.contrato.fornecedor.razao_social }}: restam
+          apenas <strong>{{ lote.restante }}</strong> de {{ lote.quantidade_total }} unidades
+          (limite de alerta: {{ limiar_alerta }}%).
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="dashboard-paineis">
+    <div class="card">
+      {% include "components/card.html" with titulo="Lotes ativos" acao_label="Ver todos" acao_url=url_lotes %}
+      <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Lotes ativos">
+        <table class="tabela tabela--clicavel tabela--compacta">
+          <thead>
+            <tr>
+              <th>Lote</th>
+              <th>Fornecedor</th>
+              <th>Consumo</th>
+              <th>Restante</th>
+              <th><span class="sr-only">Abrir</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for lote in lotes %}
+              <tr data-linha-url="{% url 'coffee_break:lote_detalhe' lote.pk %}">
+                <td><strong>{{ lote.rotulo_curto }}</strong></td>
+                <td>{{ lote.contrato.fornecedor.razao_social }}</td>
+                <td>
+                  {% widthratio lote.consumido lote.quantidade_total 100 as pct %}
+                  <div class="medidor" role="img" aria-label="{{ lote.consumido }} de {{ lote.quantidade_total }} unidades consumidas">
+                    <span class="medidor__preenchido{% if pct|add:0 >= 90 %} medidor__preenchido--critico{% elif pct|add:0 >= 70 %} medidor__preenchido--atencao{% endif %}" style="width: {{ pct }}%"></span>
+                  </div>
+                  <div class="medidor-legenda">
+                    <span>{{ lote.consumido }} / {{ lote.quantidade_total }}</span>
+                    <span>{{ pct }}%</span>
+                  </div>
+                </td>
+                <td><strong>{{ lote.restante }}</strong></td>
+                <td class="tabela__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="texto-suave texto-centro">Nenhum lote ativo cadastrado.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      {% include "components/card.html" with titulo="Solicitações recentes" acao_label="Ver todas" acao_url=url_solicitacoes %}
+      <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Solicitações recentes">
+        <table class="tabela tabela--clicavel tabela--compacta">
+          <thead>
+            <tr>
+              <th>Nº</th>
+              <th>Evento</th>
+              <th>Lote</th>
+              <th>Qtde</th>
+              <th>Situação</th>
+              <th><span class="sr-only">Abrir</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in recentes %}
+              <tr data-linha-url="{% url 'coffee_break:detalhe' s.pk %}">
+                <td><strong>{{ s.numero|default:"—" }}</strong></td>
+                <td>{{ s.descricao_evento|truncatechars:45 }}</td>
+                <td>{{ s.lote.rotulo_curto }}</td>
+                <td>{{ s.quantidade }}</td>
+                <td>{% include "components/status_badge.html" with status=s.situacao_financeira_css label=s.situacao_financeira_display %}</td>
+                <td class="tabela__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6" class="texto-suave texto-centro">Nenhuma solicitação registrada ainda.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}

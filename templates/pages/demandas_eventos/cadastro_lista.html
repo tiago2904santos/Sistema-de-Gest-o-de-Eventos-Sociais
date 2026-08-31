@@ -1,0 +1,12 @@
+{% extends "layouts/app_shell.html" %}
+{% block title %}{{ config.titulo }} — ASCOM{% endblock %}
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with atual=config.titulo %}
+  {% url 'demandas_eventos:cadastro_novo' tipo as url_novo %}
+  {% include "components/page_header.html" with titulo=config.titulo subtitulo="Cadastro de apoio das demandas da ASCOM" icone="checklist" acao_label="Novo registro" acao_url=url_novo %}
+  <div class="card lista-filtros-card"><form method="get" class="lista-filtros"><div class="form-campo lista-filtros__busca"><label class="sr-only" for="id_q">Busca</label><div class="campo-com-icone"><span class="campo-com-icone__icone">{% include "components/icon.html" with nome="search" %}</span><input class="form-controle" id="id_q" name="q" value="{{ q }}" placeholder="Buscar..."></div></div><span class="lista-filtros__contagem">{{ pagina.paginator.count }} registro{{ pagina.paginator.count|pluralize }}</span></form></div>
+  <div class="card"><div class="tabela-wrapper"><table class="tabela tabela--cartoes-no-celular"><thead><tr><th>Nome</th><th>Situação</th><th>Ação</th></tr></thead><tbody>
+    {% for item in pagina %}<tr><td data-rotulo="Nome"><strong>{% if tipo == 'respostas' %}{{ item.tipo }}{% else %}{{ item.nome }}{% endif %}</strong>{% if tipo == 'palestrantes' and item.lotacao %}<br><span class="texto-suave">{{ item.lotacao }}</span>{% endif %}</td><td data-rotulo="Situação">{% if item.ativo %}<span class="status-badge status-badge--atendida">Ativo</span>{% else %}<span class="status-badge status-badge--cancelada">Inativo</span>{% endif %}</td><td><a class="btn btn--secundario btn--compacto" href="{% url 'demandas_eventos:cadastro_editar' tipo item.pk %}">Editar</a></td></tr>
+    {% empty %}<tr><td colspan="3" class="texto-suave texto-centro">Nenhum registro encontrado.</td></tr>{% endfor %}
+  </tbody></table></div></div>
+{% endblock %}

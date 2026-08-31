@@ -1,0 +1,99 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Solicitação de Coffee Break — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with itens=breadcrumb %}
+
+  <div class="solicitacao-intro">
+    <div class="page-header">
+      <div class="page-header__identificacao">
+        <span class="page-header__icone">{% include "components/icon.html" with nome="coffee" %}</span>
+        <div>
+          <h1 class="page-header__titulo">Solicitação {{ solicitacao.numero|default:solicitacao.pk }}</h1>
+          <p class="page-header__subtitulo page-header__subtitulo--com-selo">
+            {% include "components/status_badge.html" with status=solicitacao.situacao_financeira_css label=solicitacao.situacao_financeira_display %}
+            <span aria-hidden="true">·</span>
+            {{ solicitacao.lote.rotulo_curto }} — {{ solicitacao.lote.contrato.fornecedor.razao_social }}
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="solicitacao-intro__acoes">
+      {% url 'coffee_break:solicitacoes' as url_voltar %}
+      {% include "components/button.html" with label="Voltar" variante="secundario" href=url_voltar %}
+      {% if not solicitacao.cancelada %}
+        {% url 'coffee_break:editar' solicitacao.pk as url_editar %}
+        {% include "components/button.html" with label="Editar" variante="dourado" href=url_editar %}
+      {% endif %}
+    </div>
+  </div>
+
+  {% if solicitacao.cancelada %}
+    <div class="alertas">
+      <div class="alerta alerta--warning">
+        Solicitação cancelada{% if solicitacao.cancelada_em %} em {{ solicitacao.cancelada_em|date:"d/m/Y H:i" }}{% endif %}{% if solicitacao.cancelada_por %} por {{ solicitacao.cancelada_por }}{% endif %} — a quantidade não consome o saldo do lote.
+        {% if solicitacao.motivo_cancelamento %}Motivo: {{ solicitacao.motivo_cancelamento }}{% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  <section class="section-card">
+    {% include "components/section_card.html" with numero="1" titulo="Lote e evento" %}
+    <div class="section-card__corpo">
+      <dl class="resumo-dg">
+        <div class="resumo-dg__item"><dt>Lote</dt><dd><a href="{% url 'coffee_break:lote_detalhe' lote.pk %}">{{ lote.rotulo_curto }}</a></dd></div>
+        <div class="resumo-dg__item"><dt>Fornecedor</dt><dd>{{ lote.contrato.fornecedor.razao_social }}</dd></div>
+        <div class="resumo-dg__item"><dt>Contrato</dt><dd>{{ lote.contrato.numero }}</dd></div>
+        <div class="resumo-dg__item"><dt>Nº da solicitação</dt><dd>{{ solicitacao.numero|default:"—" }}</dd></div>
+        <div class="resumo-dg__item"><dt>Data da solicitação</dt><dd>{{ solicitacao.data_solicitacao|date:"d/m/Y" }}</dd></div>
+        <div class="resumo-dg__item"><dt>Data do evento</dt><dd>{{ solicitacao.periodo_evento_display|default:"—" }}</dd></div>
+        <div class="resumo-dg__item"><dt>Quantidade solicitada</dt><dd>{{ solicitacao.quantidade }}</dd></div>
+        <div class="resumo-dg__item"><dt>Saldo atual do lote</dt><dd>{{ lote.restante }} de {{ lote.quantidade_total }}</dd></div>
+        <div class="resumo-dg__item resumo-dg__item--largo"><dt>Descrição do evento</dt><dd class="resumo-dg__texto-longo">{{ solicitacao.descricao_evento }}</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="section-card">
+    {% include "components/section_card.html" with numero="2" titulo="Informações fiscais e de pagamento" %}
+    <div class="section-card__corpo">
+      <dl class="resumo-dg">
+        <div class="resumo-dg__item"><dt>Nota fiscal</dt><dd>{{ solicitacao.numero_nota_fiscal|default:"—" }}</dd></div>
+        <div class="resumo-dg__item"><dt>Protocolo de pagamento</dt><dd>{{ solicitacao.protocolo_pagamento|default:"—" }}</dd></div>
+        <div class="resumo-dg__item"><dt>Atesto e envio ao GAF</dt><dd>{{ solicitacao.data_atesto_gaf|date:"d/m/Y"|default:"—" }}</dd></div>
+        <div class="resumo-dg__item"><dt>Ordem bancária emitida</dt><dd>{{ solicitacao.data_ordem_bancaria|date:"d/m/Y"|default:"—" }}</dd></div>
+        <div class="resumo-dg__item"><dt>OB enviada à empresa</dt><dd>{{ solicitacao.data_envio_empresa|date:"d/m/Y"|default:"—" }}</dd></div>
+        <div class="resumo-dg__item"><dt>Situação financeira</dt><dd>{% include "components/status_badge.html" with status=solicitacao.situacao_financeira_css label=solicitacao.situacao_financeira_display %}</dd></div>
+        {% if solicitacao.observacoes %}
+          <div class="resumo-dg__item resumo-dg__item--largo"><dt>Observações</dt><dd class="resumo-dg__texto-longo">{{ solicitacao.observacoes|linebreaksbr }}</dd></div>
+        {% endif %}
+      </dl>
+    </div>
+  </section>
+
+  <section class="section-card">
+    {% include "components/section_card.html" with numero="3" titulo="Registro" %}
+    <div class="section-card__corpo">
+      <dl class="resumo-dg">
+        <div class="resumo-dg__item"><dt>Criada por</dt><dd>{{ solicitacao.criado_por }}</dd></div>
+        <div class="resumo-dg__item"><dt>Criada em</dt><dd>{{ solicitacao.criado_em|date:"d/m/Y H:i" }}</dd></div>
+        <div class="resumo-dg__item"><dt>Atualizada em</dt><dd>{{ solicitacao.atualizado_em|date:"d/m/Y H:i" }}</dd></div>
+      </dl>
+      <div class="lista-cabecalho__acoes" style="margin-top: var(--esp-3);">
+        {% if solicitacao.cancelada %}
+          <form method="post" action="{% url 'coffee_break:reativar' solicitacao.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn--secundario btn--com-icone">{% include "components/icon.html" with nome="undo" %}Reativar solicitação</button>
+          </form>
+        {% else %}
+          <form method="post" action="{% url 'coffee_break:cancelar' solicitacao.pk %}" data-confirmar="Confirmar cancelamento?">
+            {% csrf_token %}
+            <input type="hidden" name="motivo" value="Cancelada pela ASCOM no sistema.">
+            <button type="submit" class="btn btn--perigo btn--com-icone">{% include "components/icon.html" with nome="ban" %}Cancelar solicitação</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+{% endblock %}

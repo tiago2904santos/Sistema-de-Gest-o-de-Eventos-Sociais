@@ -1,0 +1,114 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Lotes de Coffee Break — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with itens=breadcrumb %}
+
+  {% include "components/page_header.html" with titulo="Lotes de Coffee Break" subtitulo="Capacidade contratada, consumo e saldo por lote" icone="coffee" %}
+
+  <div class="card lista-filtros-card">
+    <form method="get" class="lista-filtros filtros-flutuantes" data-auto-enviar>
+      <div class="form-campo lista-filtros__busca">
+        <label class="form-label sr-only" for="id_q">Busca</label>
+        <div class="campo-com-icone">
+          <span class="campo-com-icone__icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+          <input class="form-controle" type="search" name="q" id="id_q"
+                 value="{{ valores_filtro.q }}"
+                 placeholder="Buscar por fornecedor, contrato ou município...">
+        </div>
+      </div>
+      {% include "components/select.html" with name="exercicio" label="Exercício" opcoes=opcoes_exercicios placeholder="Todos os exercícios" selecionado=valores_filtro.exercicio %}
+      {% include "components/select.html" with name="situacao" label="Situação" opcoes=opcoes_situacao placeholder="Todas" selecionado=valores_filtro.situacao %}
+      {% if tem_filtros %}
+        <a href="{% url 'coffee_break:lotes' %}" class="btn btn--secundario">Limpar filtros</a>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card__cabecalho lista-cabecalho">
+      <h2 class="card__titulo">Lotes
+        {% if total_resultados %}
+          <span class="lista-cabecalho__contagem">{{ total_resultados }} lote{{ total_resultados|pluralize }}{% if tem_filtros %} com os filtros aplicados{% endif %}</span>
+        {% endif %}
+      </h2>
+    </div>
+    <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Tabela de lotes">
+      <table class="tabela tabela--ordenavel tabela--clicavel tabela--cartoes-no-celular">
+        <thead>
+          <tr>
+            {% for coluna in colunas %}
+              <th{% if coluna.ativa %} aria-sort="{{ coluna.descendente|yesno:"descending,ascending" }}"{% endif %}>
+                {% if coluna.url %}
+                  <a href="{{ coluna.url }}" class="tabela__ordenar{% if coluna.ativa %} is-ativa{% endif %}">
+                    {{ coluna.rotulo }}
+                    <span class="tabela__seta" aria-hidden="true">{% if coluna.ativa %}{% if coluna.descendente %}{% include "components/icon.html" with nome="arrow-down" %}{% else %}{% include "components/icon.html" with nome="arrow-up" %}{% endif %}{% else %}{% include "components/icon.html" with nome="ordenar" %}{% endif %}</span>
+                  </a>
+                {% else %}{{ coluna.rotulo }}{% endif %}
+              </th>
+            {% endfor %}
+            <th>Municípios</th>
+            <th>Consumido</th>
+            <th>Situação</th>
+            <th><span class="sr-only">Abrir</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lote in pagina %}
+            <tr data-linha-url="{% url 'coffee_break:lote_detalhe' lote.pk %}">
+              <td data-rotulo="Lote"><strong>Lote {{ lote.numero }}</strong></td>
+              <td data-rotulo="Fornecedor">{{ lote.contrato.fornecedor.razao_social }}</td>
+              <td data-rotulo="Contrato">{{ lote.contrato.numero }}</td>
+              <td data-rotulo="Exercício">{{ lote.exercicio }}</td>
+              <td data-rotulo="Capacidade">{{ lote.quantidade_total }}</td>
+              <td data-rotulo="Restante"><strong>{{ lote.restante }}</strong></td>
+              <td data-rotulo="Municípios">{{ lote.municipios_texto|truncatechars:40|default:"—" }}</td>
+              <td data-rotulo="Consumido">
+                {% widthratio lote.consumido lote.quantidade_total 100 as pct %}
+                <div class="medidor" role="img" aria-label="{{ lote.consumido }} de {{ lote.quantidade_total }} unidades consumidas">
+                  <span class="medidor__preenchido{% if pct|add:0 >= 90 %} medidor__preenchido--critico{% elif pct|add:0 >= 70 %} medidor__preenchido--atencao{% endif %}" style="width: {{ pct }}%"></span>
+                </div>
+                <div class="medidor-legenda"><span>{{ lote.consumido }}</span><span>{{ pct }}%</span></div>
+              </td>
+              <td data-rotulo="Situação">
+                {% if lote.ativo %}
+                  <span class="status-badge status-badge--atendida">Ativo</span>
+                {% else %}
+                  <span class="status-badge status-badge--cancelada">Inativo</span>
+                {% endif %}
+              </td>
+              <td class="tabela__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="10" class="texto-suave texto-centro">Nenhum lote encontrado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if pagina.paginator.num_pages > 1 %}
+      <div class="card__corpo paginacao">
+        <span class="texto-suave">
+          Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }} lotes
+        </span>
+        <nav class="paginacao__paginas" aria-label="Paginação">
+          {% if pagina.has_previous %}
+            <a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+          {% endif %}
+          {% for numero in paginas_visiveis %}
+            {% if numero == elipse %}
+              <span class="paginacao__elipse" aria-hidden="true">…</span>
+            {% elif numero == pagina.number %}
+              <span class="paginacao__numero paginacao__numero--atual" aria-current="page">{{ numero }}</span>
+            {% else %}
+              <a class="paginacao__numero" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
+            {% endif %}
+          {% endfor %}
+          {% if pagina.has_next %}
+            <a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+          {% endif %}
+        </nav>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

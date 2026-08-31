@@ -575,6 +575,11 @@ img {
 .status-badge--atendida { background: var(--cor-sucesso-fundo); color: var(--cor-sucesso); }
 .status-badge--nao_atendida { background: var(--cor-erro-fundo); color: var(--cor-erro); }
 .status-badge--cancelada { background: var(--cor-neutro-fundo); color: var(--cor-neutro); }
+.status-badge--pendente,
+.status-badge--aguardando_retorno { background: var(--cor-alerta-fundo); color: var(--cor-alerta); }
+.status-badge--em_andamento,
+.status-badge--evento_agendado { background: var(--cor-info-fundo); color: var(--cor-info); }
+.status-badge--nao_atender { background: var(--cor-erro-fundo); color: var(--cor-erro); }
 
 /* --------------------------------------------------------------------------
    9. Formulários
@@ -3155,3 +3160,145 @@ textarea.form-controle { min-height: 68px; }
 .despacho-divisor__botao:hover { color: var(--cor-texto); border-color: var(--cor-borda-forte); }
 .despacho-divisor__botao .ui-icon { width: 14px; height: 14px; transition: transform 0.15s ease; }
 .despacho-divisor__botao[aria-expanded="false"] .ui-icon { transform: rotate(180deg); }
+
+/* ---------------------------------------------------------------------------
+   Medidor de consumo — barra horizontal genérica (usada no módulo Coffee
+   Break para capacidade dos lotes). Aditivo: não altera telas existentes.
+   --------------------------------------------------------------------------- */
+
+.medidor {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--cor-neutro-fundo);
+  overflow: hidden;
+}
+
+.medidor__preenchido {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--cor-sucesso);
+  transition: width 0.2s ease;
+}
+
+.medidor__preenchido--atencao { background: var(--cor-alerta); }
+.medidor__preenchido--critico { background: var(--cor-erro); }
+
+.medidor-legenda {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  font-size: 0.8rem;
+  color: var(--cor-texto-suave);
+  margin-top: 4px;
+}
+
+/* ---------------------------------------------------------------------------
+   Portal de módulos (hub) — tela inicial entre o login e os módulos.
+   Aditivo: não altera telas existentes.
+   --------------------------------------------------------------------------- */
+
+.portal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--esp-4);
+  margin-bottom: var(--esp-4);
+}
+
+.portal-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+  padding: var(--esp-5);
+}
+
+.portal-card__cabecalho {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-3);
+}
+
+.portal-card__icone {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  background: var(--cor-dourado-100, var(--cor-alerta-fundo));
+  color: var(--cor-acento);
+}
+
+.portal-card__icone .ui-icon { width: 22px; height: 22px; }
+
+.portal-card__titulo { font-size: 1.05rem; margin: 0; }
+
+.portal-card__descricao {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
+  line-height: 1.45;
+}
+
+.portal-card__metricas {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--esp-2);
+  margin: 0;
+}
+
+.portal-card__metrica {
+  display: grid;
+  gap: 2px;
+  padding: var(--esp-3);
+  border-radius: 10px;
+  background: var(--cor-fundo);
+  text-align: center;
+}
+
+.portal-card__metrica dd { margin: 0; font-size: 1.3rem; font-weight: 700; }
+
+.portal-card__metrica dt {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+.portal-card__metrica--destaque {
+  background: var(--cor-alerta-fundo);
+}
+
+.portal-card__metrica--destaque dd { color: var(--cor-alerta); }
+
+.portal-card__acoes { margin-top: auto; }
+
+.portal-admin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  padding: var(--esp-4) var(--esp-5);
+  flex-wrap: wrap;
+}
+
+.portal-admin__texto {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+}
+
+/* Contexto do módulo na navbar: "Início / Nome do módulo". */
+.navbar__contexto { color: var(--cor-texto-fraco); }
+
+.navbar__modulo {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cor-acento);
+  white-space: nowrap;
+  padding-right: var(--esp-2);
+}

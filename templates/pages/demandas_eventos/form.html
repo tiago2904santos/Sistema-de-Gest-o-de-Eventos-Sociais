@@ -1,0 +1,47 @@
+{% extends "layouts/app_shell.html" %}
+{% block title %}{{ titulo }} — ASCOM{% endblock %}
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with itens=breadcrumb %}
+  {% include "components/page_header.html" with titulo=titulo subtitulo="Registre e acompanhe a demanda recebida pela ASCOM" icone="document" %}
+  <form method="post" class="cadastro-form">{% csrf_token %}
+    <section class="section-card">
+      {% include "components/section_card.html" with numero="1" titulo="Identificação da demanda" %}
+      <div class="section-card__corpo"><div class="form-grid">
+        {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True largura="4" valor=valores.data_solicitacao erros=erros.data_solicitacao %}
+        {% include "components/select.html" with name="tipo_evento" label="Tipo de evento" opcoes=opcoes_tipos obrigatorio=True largura="4" selecionado=valores.tipo_evento erros=erros.tipo_evento %}
+        {% include "components/select.html" with name="tema" label="Tema" opcoes=opcoes_temas largura="4" selecionado=valores.tema erros=erros.tema pesquisavel=True %}
+        {% include "components/input.html" with name="canal_solicitacao" label="Solicitado via" largura="4" valor=valores.canal_solicitacao erros=erros.canal_solicitacao placeholder="E-mail, WhatsApp, protocolo..." %}
+        {% include "components/select.html" with name="municipio" label="Município" opcoes=opcoes_municipios largura="4" selecionado=valores.municipio erros=erros.municipio pesquisavel=True %}
+        {% include "components/select.html" with name="status" label="Status" opcoes=opcoes_status obrigatorio=True largura="4" selecionado=valores.status erros=erros.status %}
+        {% include "components/input.html" with name="solicitante" label="Solicitante" obrigatorio=True largura="6" valor=valores.solicitante erros=erros.solicitante %}
+        {% include "components/input.html" with name="contato" label="Contato" largura="6" valor=valores.contato erros=erros.contato %}
+        {% include "components/input.html" with name="assunto_email" label="Assunto do e-mail" largura="12" valor=valores.assunto_email erros=erros.assunto_email %}
+      </div></div>
+    </section>
+    <section class="section-card">
+      {% include "components/section_card.html" with numero="2" titulo="Evento" %}
+      <div class="section-card__corpo"><div class="form-grid">
+        {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Período estruturado" largura="6" valor_inicio=valores.data_inicio_evento valor_fim=valores.data_fim_evento erros=erros.data_fim_evento %}
+        {% include "components/input.html" with name="periodo_evento_texto" label="Período em texto" largura="6" valor=valores.periodo_evento_texto erros=erros.periodo_evento_texto placeholder="Ex.: 23 e 24/08, horário a definir" %}
+        {% include "components/textarea.html" with name="descricao" label="Descrição" largura="12" linhas="3" valor=valores.descricao erros=erros.descricao %}
+        {% include "components/textarea.html" with name="pedido_contato" label="Pedido / contato original" largura="12" linhas="5" valor=valores.pedido_contato erros=erros.pedido_contato %}
+        {% include "components/input.html" with name="quantidade_publico" label="Quantidade de público" tipo="number" largura="4" valor=valores.quantidade_publico erros=erros.quantidade_publico %}
+        {% include "components/input.html" with name="unidade" label="Unidade" largura="4" valor=valores.unidade erros=erros.unidade %}
+        {% include "components/input.html" with name="responsavel_organizacao" label="Responsável pela organização" largura="4" valor=valores.responsavel_organizacao erros=erros.responsavel_organizacao %}
+      </div></div>
+    </section>
+    <section class="section-card">
+      {% include "components/section_card.html" with numero="3" titulo="Atendimento e acompanhamento" %}
+      <div class="section-card__corpo"><div class="form-grid">
+        {% include "components/select.html" with name="responsavel_atendimento" label="Responsável pelo atendimento" opcoes=opcoes_responsaveis largura="6" selecionado=valores.responsavel_atendimento erros=erros.responsavel_atendimento pesquisavel=True %}
+        <fieldset class="form-campo form-campo--6 form-fieldset"><legend class="form-label">Palestrantes</legend><div class="chip-grid">{% for item in opcoes_palestrantes %}<label class="check-chip"><input type="checkbox" name="palestrantes" value="{{ item.valor }}"{% if item.valor in palestrantes_marcados %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ item.rotulo }}</label>{% empty %}<span class="texto-suave">Nenhum palestrante cadastrado.</span>{% endfor %}</div>{% for erro in erros.palestrantes %}<p class="form-erro">{{ erro }}</p>{% endfor %}</fieldset>
+        {% include "components/textarea.html" with name="andamento" label="Andamento" largura="12" linhas="4" valor=valores.andamento erros=erros.andamento %}
+        {% include "components/textarea.html" with name="informacoes_previas" label="Informações prévias" largura="12" linhas="3" valor=valores.informacoes_previas erros=erros.informacoes_previas %}
+        {% include "components/textarea.html" with name="briefing" label="Briefing" largura="6" linhas="4" valor=valores.briefing erros=erros.briefing %}
+        {% include "components/textarea.html" with name="materia_site" label="Matéria no site" largura="6" linhas="4" valor=valores.materia_site erros=erros.materia_site %}
+        <fieldset class="form-campo form-campo--12 form-fieldset"><legend class="form-label">Setores envolvidos <span class="form-label__obrigatorio">*</span></legend><div class="chip-grid">{% for item in opcoes_setores %}<label class="check-chip"><input type="checkbox" name="setores" value="{{ item.valor }}"{% if item.valor in setores_marcados %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ item.rotulo }}</label>{% endfor %}</div>{% for erro in erros.setores %}<p class="form-erro">{{ erro }}</p>{% endfor %}</fieldset>
+      </div></div>
+    </section>
+    <div class="acoes-formulario"><a class="btn btn--secundario" href="{% if instancia %}{% url 'demandas_eventos:detalhe' instancia.pk %}{% else %}{% url 'demandas_eventos:lista' %}{% endif %}">Cancelar</a>{% include "components/button.html" with label="Salvar demanda" variante="dourado" tipo="submit" %}</div>
+  </form>
+{% endblock %}

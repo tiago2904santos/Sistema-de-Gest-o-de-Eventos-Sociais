@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     "solicitacoes",
     "dashboard",
     "auditoria",
+    "coffee_break",
+    "demandas_eventos",
 ]
 
 MIDDLEWARE = [
@@ -63,6 +65,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Depois da autenticação e das mensagens: precisa de request.user.
     "accounts.middleware.TrocaDeSenhaObrigatoriaMiddleware",
+    # Bloqueio de módulos restritos (Setor ↔ Modulo) direto no backend.
+    "accounts.modulos.AutorizacaoPorModuloMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -79,6 +83,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.perfis",
                 "core.context_processors.notificacoes",
+                "accounts.context_processors.modulos",
             ],
         },
     },
@@ -120,7 +125,8 @@ else:
 AUTH_USER_MODEL = "accounts.User"
 
 LOGIN_URL = "accounts:login"
-LOGIN_REDIRECT_URL = "dashboard:index"
+# Depois do login, o usuário cai no portal de módulos (hub).
+LOGIN_REDIRECT_URL = "core:home"
 LOGOUT_REDIRECT_URL = "accounts:login"
 
 AUTH_PASSWORD_VALIDATORS = [

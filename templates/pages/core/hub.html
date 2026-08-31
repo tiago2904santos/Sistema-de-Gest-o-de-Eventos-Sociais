@@ -1,0 +1,56 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Início — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/page_header.html" with titulo="Central de módulos" subtitulo="Escolha um módulo para trabalhar — os indicadores mostram a situação atual de cada um" icone="home" %}
+
+  <div class="portal-grid">
+    {% for cartao in cartoes %}
+      <section class="card portal-card" aria-labelledby="portal-{{ cartao.slug }}">
+        <header class="portal-card__cabecalho">
+          <span class="portal-card__icone" aria-hidden="true">{% include "components/icon.html" with nome=cartao.icone %}</span>
+          <div>
+            <h2 class="portal-card__titulo" id="portal-{{ cartao.slug }}">{{ cartao.nome }}</h2>
+            {% if cartao.descricao %}<p class="portal-card__descricao">{{ cartao.descricao }}</p>{% endif %}
+          </div>
+        </header>
+        {% if cartao.metricas %}
+          <dl class="portal-card__metricas">
+            {% for metrica in cartao.metricas %}
+              <div class="portal-card__metrica{% if metrica.destaque and metrica.valor %} portal-card__metrica--destaque{% endif %}">
+                <dd>{{ metrica.valor }}</dd>
+                <dt>{{ metrica.rotulo }}</dt>
+              </div>
+            {% endfor %}
+          </dl>
+        {% endif %}
+        <div class="portal-card__acoes">
+          <a href="{{ cartao.url }}" class="btn btn--dourado btn--com-icone">
+            Entrar no módulo
+            {% include "components/icon.html" with nome="arrow-right" %}
+          </a>
+        </div>
+      </section>
+    {% empty %}
+      <div class="card portal-card">
+        <p class="texto-suave">Nenhum módulo liberado para os seus setores ainda. Procure o administrador do sistema.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if mostrar_usuarios %}
+    <div class="card portal-admin">
+      <div class="portal-admin__texto">
+        <span class="portal-card__icone" aria-hidden="true">{% include "components/icon.html" with nome="users" %}</span>
+        <div>
+          <h2 class="card__titulo">Gestão de usuários</h2>
+          <p class="texto-suave">Cadastre usuários, defina perfis e vincule setores.</p>
+        </div>
+      </div>
+      <a href="{% url 'accounts:usuarios_lista' %}" class="btn btn--secundario btn--com-icone">
+        {% include "components/icon.html" with nome="users" %}Gerenciar usuários
+      </a>
+    </div>
+  {% endif %}
+{% endblock %}

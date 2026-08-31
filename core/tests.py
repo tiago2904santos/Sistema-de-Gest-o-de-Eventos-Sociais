@@ -161,3 +161,72 @@ class CentralNotificacoesTests(TestCase):
         self.client.force_login(self.usuario)
         resposta = self.client.get(reverse("core:notificacoes"))
         self.assertNotContains(resposta, "Segredo do outro")
+
+
+class PortalTests(TestCase):
+    """Hub de módulos: a camada intermediadora entre o login e os módulos."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from accounts.models import Setor
+
+        cls.usuario = User.objects.create_user("fulano", password="x")
+        cls.ascom = User.objects.create_user("ascom", password="x")
+        cls.ascom.setores.add(Setor.objects.get(nome="ASCOM"))
+        cls.superusuario = User.objects.create_superuser("root", password="x")
+        cls.gestor = User.objects.create_user("gestor", password="x")
+        cls.gestor.groups.add(Group.objects.create(name=GRUPO_GESTOR_DG))
+
+    def test_anonimo_vai_para_o_login(self):
+        resposta = self.client.get(reverse("core:home"))
+        self.assertRedirects(resposta, reverse("accounts:login"))
+
+    def test_usuario_comum_ve_so_eventos_sociais(self):
+        self.client.force_login(self.usuario)
+        resposta = self.client.get(reverse("core:home"))
+        self.assertContains(resposta, "Eventos Sociais")
+        self.assertContains(resposta, reverse("dashboard:index"))
+        self.assertNotContains(resposta, "Coffee Break")
+        self.assertNotContains(resposta, "Demandas ASCOM")
+
+    def test_ascom_ve_os_modulos_do_setor(self):
+        self.client.force_login(self.ascom)
+        resposta = self.client.get(reverse("core:home"))
+        self.assertContains(resposta, "Eventos Sociais")
+        self.assertContains(resposta, "Coffee Break")
+
+    def test_superusuario_ve_todos_os_modulos_e_gestao(self):
+        self.client.force_login(self.superusuario)
+        resposta = self.client.get(reverse("core:home"))
+        self.assertContains(resposta, "Eventos Sociais")
+        self.assertContains(resposta, "Coffee Break")
+        self.assertContains(resposta, "Demandas ASCOM")
+        self.assertContains(resposta, reverse("accounts:usuarios_lista"))
+
+    def test_gestao_de_usuarios_so_para_quem_gerencia(self):
+        self.client.force_login(self.usuario)
+        resposta = self.client.get(reverse("core:home"))
+        self.assertNotContains(resposta, reverse("accounts:usuarios_lista"))
+
+        self.client.force_login(self.gestor)
+        resposta = self.client.get(reverse("core:home"))
+        self.assertContains(resposta, reverse("accounts:usuarios_lista"))
+
+    def test_login_redireciona_para_o_portal(self):
+        self.usuario.set_password("SenhaForte#2026")
+        self.usuario.save()
+        resposta = self.client.post(
+            reverse("accounts:login"),
+            {"username": "fulano", "password": "SenhaForte#2026"},
+        )
+        self.assertRedirects(resposta, reverse("core:home"))
+
+    def test_cadastros_na_navbar_so_para_administrador(self):
+        """Dentro de Eventos Sociais, Cadastros aparece só para admin."""
+        self.client.force_login(self.usuario)
+        resposta = self.client.get(reverse("dashboard:index"))
+        self.assertNotContains(resposta, f'href="{reverse("cadastros:index")}"')
+
+        self.client.force_login(self.superusuario)
+        resposta = self.client.get(reverse("dashboard:index"))
+        self.assertContains(resposta, f'href="{reverse("cadastros:index")}"')

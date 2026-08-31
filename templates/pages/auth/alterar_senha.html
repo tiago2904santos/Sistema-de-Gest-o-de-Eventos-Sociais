@@ -94,7 +94,7 @@
       </div>
       <div class="senha-card__acoes">
         {% if not troca_obrigatoria %}
-          {% url 'dashboard:index' as url_voltar %}
+          {% url 'core:home' as url_voltar %}
           {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
         {% endif %}
         {% include "components/button.html" with label="Alterar senha" variante="dourado" tipo="submit" %}

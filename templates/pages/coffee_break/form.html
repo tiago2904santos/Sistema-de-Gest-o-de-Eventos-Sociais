@@ -1,0 +1,97 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  <form method="post" action="" id="form-coffee-break">
+    {% csrf_token %}
+
+    {% include "components/breadcrumb.html" with itens=breadcrumb %}
+
+    <div class="solicitacao-intro">
+      <div class="page-header">
+        <div class="page-header__identificacao">
+          <span class="page-header__icone">{% include "components/icon.html" with nome="coffee" %}</span>
+          <div>
+            <h1 class="page-header__titulo">{{ titulo_pagina }}</h1>
+            <p class="page-header__subtitulo{% if solicitacao and solicitacao.cancelada %} page-header__subtitulo--com-selo{% endif %}">
+              {% if solicitacao and solicitacao.cancelada %}
+                {% include "components/status_badge.html" with status="cancelada" label="Cancelada" %}
+                <span aria-hidden="true">·</span>
+              {% endif %}
+              O saldo do lote é validado no salvamento — a quantidade não pode passar do restante.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="solicitacao-intro__acoes">
+        {% if solicitacao %}{% url 'coffee_break:detalhe' solicitacao.pk as url_voltar %}{% else %}{% url 'coffee_break:solicitacoes' as url_voltar %}{% endif %}
+        {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
+        {% include "components/button.html" with label="Salvar solicitação" variante="dourado" tipo="submit" %}
+      </div>
+    </div>
+
+    {% if erros_gerais %}
+      <div class="alertas">
+        {% for erro in erros_gerais %}<div class="alerta alerta--error">{{ erro }}</div>{% endfor %}
+      </div>
+    {% endif %}
+
+    <section class="section-card">
+      {% include "components/section_card.html" with numero="1" titulo="Lote e evento" subtitulo="Contra qual lote a solicitação consome saldo e para qual evento." %}
+      <div class="section-card__corpo">
+        <div class="form-grid">
+          {% include "components/select.html" with name="lote" label="Lote" opcoes=lotes obrigatorio=True largura="6" pesquisavel=True selecionado=valores.lote erros=erros.lote %}
+          <div class="form-campo form-campo--3">
+            <label class="form-label" for="id_saldo_lote">Saldo disponível</label>
+            <input class="form-controle form-controle--somente-leitura" id="id_saldo_lote" value="—" readonly
+                   data-saldo-lote data-saldos="{% for pk, info in saldos_lotes.items %}{{ pk }}:{{ info.restante }}/{{ info.total }}{% if not forloop.last %};{% endif %}{% endfor %}">
+          </div>
+          {% include "components/input.html" with name="quantidade" label="Quantidade solicitada" tipo="number" obrigatorio=True largura="3" valor=valores.quantidade erros=erros.quantidade %}
+          {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True largura="3" valor=valores.data_solicitacao erros=erros.data_solicitacao %}
+          {% include "components/input.html" with name="numero" label="Nº da solicitação" placeholder="Ex.: 02/2026" largura="3" ajuda="Identificador institucional — texto, não número." valor=valores.numero erros=erros.numero %}
+          {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Data ou período do evento" largura="6" valor_inicio=valores.data_inicio_evento valor_fim=valores.data_fim_evento erros=erro_periodo %}
+          {% include "components/input.html" with name="periodo_evento_texto" label="Período irregular (texto)" placeholder="Ex.: 23, 24 e 25/03" largura="6" ajuda="Use quando o evento não couber em um intervalo simples de datas." valor=valores.periodo_evento_texto erros=erros.periodo_evento_texto %}
+          {% include "components/textarea.html" with name="descricao_evento" label="Descrição do evento" obrigatorio=True linhas="3" largura="" valor=valores.descricao_evento erros=erros.descricao_evento %}
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      {% include "components/section_card.html" with numero="2" titulo="Informações fiscais e de pagamento" subtitulo="Marcos que definem a situação financeira da solicitação." %}
+      <div class="section-card__corpo">
+        <div class="form-grid">
+          {% include "components/input.html" with name="numero_nota_fiscal" label="Número da nota fiscal" largura="4" valor=valores.numero_nota_fiscal erros=erros.numero_nota_fiscal %}
+          {% include "components/input.html" with name="protocolo_pagamento" label="Protocolo de pagamento" largura="4" valor=valores.protocolo_pagamento erros=erros.protocolo_pagamento %}
+          {% include "components/input.html" with name="data_atesto_gaf" label="Atesto e envio ao GAF" tipo="date" largura="4" valor=valores.data_atesto_gaf erros=erros.data_atesto_gaf %}
+          {% include "components/input.html" with name="data_ordem_bancaria" label="Ordem bancária emitida em" tipo="date" largura="4" valor=valores.data_ordem_bancaria erros=erros.data_ordem_bancaria %}
+          {% include "components/input.html" with name="data_envio_empresa" label="OB enviada à empresa em" tipo="date" largura="4" valor=valores.data_envio_empresa erros=erros.data_envio_empresa %}
+          {% include "components/textarea.html" with name="observacoes" label="Observações" linhas="3" largura="" valor=valores.observacoes erros=erros.observacoes %}
+        </div>
+      </div>
+    </section>
+  </form>
+
+  <script>
+    // Mostra o saldo do lote escolhido ao lado da quantidade — os dados vêm
+    // renderizados no atributo data-saldos; a validação real é no backend.
+    (function () {
+      var campoSaldo = document.querySelector("[data-saldo-lote]");
+      var seletorLote = document.getElementById("id_lote");
+      if (!campoSaldo || !seletorLote) return;
+      var saldos = {};
+      (campoSaldo.dataset.saldos || "").split(";").forEach(function (par) {
+        var partes = par.split(":");
+        if (partes.length === 2) saldos[partes[0]] = partes[1];
+      });
+      function atualizar() {
+        var info = saldos[seletorLote.value];
+        campoSaldo.value = info
+          ? info.split("/")[0] + " de " + info.split("/")[1] + " unidades"
+          : "—";
+      }
+      seletorLote.addEventListener("change", atualizar);
+      atualizar();
+    })();
+  </script>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "layouts/app_shell.html" %}
+{% block title %}Demandas de eventos — ASCOM{% endblock %}
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with atual="Demandas ASCOM" %}
+  {% url 'demandas_eventos:nova' as url_nova %}
+  {% include "components/page_header.html" with titulo="Demandas de eventos — ASCOM" subtitulo="Palestras, eventos e PCPR na Comunidade" icone="calendar" acao_label="Nova demanda" acao_url=url_nova %}
+
+  <div class="dashboard-resumo">
+    {% for item in resumo %}
+      {% include "components/summary_card.html" with titulo=item.titulo valor=item.valor icone=item.icone cor=item.cor url=item.url %}
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <div class="card__cabecalho"><h2>Próximos eventos</h2><a class="btn btn--secundario btn--compacto" href="{% url 'demandas_eventos:lista' %}">Ver todas</a></div>
+    <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Próximos eventos">
+      <table class="tabela tabela--cartoes-no-celular">
+        <thead><tr><th>Data</th><th>Tipo</th><th>Município</th><th>Solicitante</th><th>Status</th><th>Ação</th></tr></thead>
+        <tbody>
+          {% for demanda in proximas %}
+            <tr>
+              <td data-rotulo="Data">{{ demanda.data_inicio_evento|date:"d/m/Y" }}</td>
+              <td data-rotulo="Tipo"><strong>{{ demanda.tipo_evento }}</strong></td>
+              <td data-rotulo="Município">{{ demanda.municipio|default:demanda.municipio_texto|default:"—" }}</td>
+              <td data-rotulo="Solicitante">{{ demanda.solicitante }}</td>
+              <td data-rotulo="Status">{% include "components/status_badge.html" with status=demanda.status label=demanda.get_status_display %}</td>
+              <td><a class="btn btn--compacto btn--acao btn--acao-continuar" href="{% url 'demandas_eventos:detalhe' demanda.pk %}">Ver</a></td>
+            </tr>
+          {% empty %}<tr><td colspan="6" class="texto-suave texto-centro">Nenhum evento futuro agendado.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="acoes-formulario">
+    <a class="btn btn--secundario" href="{% url 'demandas_eventos:cadastro_lista' 'palestrantes' %}">Palestrantes</a>
+    <a class="btn btn--secundario" href="{% url 'demandas_eventos:cadastro_lista' 'temas' %}">Temas</a>
+    <a class="btn btn--secundario" href="{% url 'demandas_eventos:cadastro_lista' 'respostas' %}">Respostas padrão</a>
+  </div>
+{% endblock %}

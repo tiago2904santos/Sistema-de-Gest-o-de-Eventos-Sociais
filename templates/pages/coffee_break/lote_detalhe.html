@@ -1,0 +1,105 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}{{ lote.rotulo_curto }} — Coffee Break — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with itens=breadcrumb %}
+
+  {% url 'coffee_break:nova' as url_nova %}
+  {% include "components/page_header.html" with titulo=lote.rotulo_curto subtitulo=fornecedor.razao_social icone="coffee" acao_label="Nova solicitação" acao_url=url_nova acao_icone="plus" %}
+
+  <div class="grid-resumo">
+    {% include "components/summary_card.html" with titulo="Capacidade contratada" valor=lote.quantidade_total icone="coffee" cor="neutra" variacao=lote.exercicio %}
+    {% include "components/summary_card.html" with titulo="Unidades consumidas" valor=lote.consumido icone="chart" cor="info" variacao=percentual|stringformat:"s"|add:"% da capacidade" %}
+    {% include "components/summary_card.html" with titulo="Saldo restante" valor=lote.restante icone="check-circle" cor="sucesso" variacao="Disponível para novas solicitações" %}
+  </div>
+
+  <div class="dashboard-paineis">
+    <div class="card">
+      {% include "components/card.html" with titulo="Dados contratuais" %}
+      <div class="card__corpo">
+        <dl class="resumo-dg">
+          <div class="resumo-dg__item"><dt>Fornecedor</dt><dd>{{ fornecedor.razao_social }}</dd></div>
+          <div class="resumo-dg__item"><dt>CNPJ</dt><dd>{{ fornecedor.cnpj_formatado|default:"—" }}</dd></div>
+          <div class="resumo-dg__item"><dt>Contato</dt><dd>{{ fornecedor.contato|default:"—" }}{% if fornecedor.telefone %} · {{ fornecedor.telefone }}{% endif %}</dd></div>
+          <div class="resumo-dg__item"><dt>E-mail</dt><dd>{{ fornecedor.email|default:"—" }}</dd></div>
+          <div class="resumo-dg__item"><dt>Contrato</dt><dd>{{ contrato.numero }}</dd></div>
+          <div class="resumo-dg__item"><dt>GMS</dt><dd>{{ contrato.numero_gms|default:"—" }}</dd></div>
+          {% if contrato.termo_aditivo %}<div class="resumo-dg__item"><dt>Termo aditivo</dt><dd>{{ contrato.termo_aditivo }}</dd></div>{% endif %}
+          <div class="resumo-dg__item"><dt>Empenho</dt><dd>{{ lote.empenho|default:"—" }}</dd></div>
+          <div class="resumo-dg__item"><dt>Fiscal responsável</dt><dd>{{ contrato.fiscal_responsavel|default:"—" }}</dd></div>
+          <div class="resumo-dg__item resumo-dg__item--largo"><dt>Objeto</dt><dd class="resumo-dg__texto-longo">{{ contrato.objeto|default:"—" }}</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card">
+      {% include "components/card.html" with titulo="Municípios abrangidos" %}
+      <div class="card__corpo">
+        {% if municipios %}
+          <p>{% for municipio in municipios %}{{ municipio.nome }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+        {% endif %}
+        {% if lote.municipios_texto %}
+          <p class="texto-suave">{{ lote.municipios_texto }}</p>
+        {% elif not municipios %}
+          <p class="texto-suave">Nenhum município registrado para este lote.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if lote.orientacoes %}
+    <div class="card">
+      {% include "components/card.html" with titulo="Orientações" %}
+      <div class="card__corpo"><p class="texto-suave">{{ lote.orientacoes|linebreaksbr }}</p></div>
+    </div>
+  {% endif %}
+
+  {% if lote.especificacoes_tecnicas %}
+    <div class="card">
+      {% include "components/card.html" with titulo="Especificações técnicas" %}
+      <div class="card__corpo"><p class="texto-suave">{{ lote.especificacoes_tecnicas|linebreaksbr }}</p></div>
+    </div>
+  {% endif %}
+
+  {% if lote.observacoes %}
+    <div class="card">
+      {% include "components/card.html" with titulo="Observações" %}
+      <div class="card__corpo"><p class="texto-suave">{{ lote.observacoes|linebreaksbr }}</p></div>
+    </div>
+  {% endif %}
+
+  <div class="card">
+    {% include "components/card.html" with titulo="Solicitações do lote" %}
+    <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Solicitações do lote">
+      <table class="tabela tabela--clicavel tabela--cartoes-no-celular">
+        <thead>
+          <tr>
+            <th>Nº</th>
+            <th>Evento</th>
+            <th>Data do evento</th>
+            <th>Qtde</th>
+            <th>Nota fiscal</th>
+            <th>Situação</th>
+            <th><span class="sr-only">Abrir</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in solicitacoes %}
+            <tr data-linha-url="{% url 'coffee_break:detalhe' s.pk %}">
+              <td data-rotulo="Nº"><strong>{{ s.numero|default:"—" }}</strong></td>
+              <td data-rotulo="Evento">{{ s.descricao_evento|truncatechars:60 }}</td>
+              <td data-rotulo="Data do evento">{{ s.periodo_evento_display|default:"—" }}</td>
+              <td data-rotulo="Qtde">{{ s.quantidade }}</td>
+              <td data-rotulo="Nota fiscal">{{ s.numero_nota_fiscal|default:"—" }}</td>
+              <td data-rotulo="Situação">{% include "components/status_badge.html" with status=s.situacao_financeira_css label=s.situacao_financeira_display %}</td>
+              <td class="tabela__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="texto-suave texto-centro">Nenhuma solicitação registrada neste lote.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

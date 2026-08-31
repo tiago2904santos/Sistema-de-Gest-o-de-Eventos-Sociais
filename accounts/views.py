@@ -216,7 +216,7 @@ class AcessoView(LoginView):
 
 class AlterarSenhaView(SuccessMessageMixin, PasswordChangeView):
     template_name = "pages/auth/alterar_senha.html"
-    success_url = reverse_lazy("dashboard:index")
+    success_url = reverse_lazy("core:home")
     success_message = "Senha alterada com sucesso."
 
     def get_context_data(self, **kwargs):

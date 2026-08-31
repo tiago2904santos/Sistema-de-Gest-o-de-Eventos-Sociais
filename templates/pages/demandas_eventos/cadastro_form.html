@@ -1,0 +1,15 @@
+{% extends "layouts/app_shell.html" %}
+{% block title %}{% if instancia %}Editar{% else %}Novo{% endif %} {{ config.singular }} — ASCOM{% endblock %}
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with itens=breadcrumb %}
+  {% include "components/page_header.html" with titulo=config.titulo subtitulo="Cadastro de apoio das demandas da ASCOM" icone="checklist" %}
+  <form method="post" class="card cadastro-form">{% csrf_token %}<div class="card__corpo"><div class="form-grid">
+    {% for campo in campos %}
+      {% if campo.tipo == 'select' %}{% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes obrigatorio=campo.obrigatorio largura="6" selecionado=campo.valor erros=campo.erros pesquisavel=True %}
+      {% elif campo.tipo == 'textarea' %}{% include "components/textarea.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio largura="12" linhas="8" valor=campo.valor erros=campo.erros %}
+      {% elif campo.tipo == 'multiplo' %}<fieldset class="form-campo form-campo--12 form-fieldset"><legend class="form-label">{{ campo.label }}</legend><div class="chip-grid">{% for opcao in campo.opcoes %}<label class="check-chip"><input type="checkbox" name="{{ campo.name }}" value="{{ opcao.valor }}"{% if opcao.valor in campo.marcados %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ opcao.rotulo }}</label>{% endfor %}</div></fieldset>
+      {% elif campo.tipo == 'boolean' %}<label class="check-chip"><input type="checkbox" name="{{ campo.name }}" value="1"{% if campo.valor %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ campo.label }}</label>
+      {% else %}{% include "components/input.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio largura="6" valor=campo.valor erros=campo.erros %}{% endif %}
+    {% endfor %}
+  </div><div class="acoes-formulario"><a class="btn btn--secundario" href="{% url 'demandas_eventos:cadastro_lista' tipo %}">Cancelar</a>{% include "components/button.html" with label="Salvar" variante="dourado" tipo="submit" %}</div></div></form>
+{% endblock %}

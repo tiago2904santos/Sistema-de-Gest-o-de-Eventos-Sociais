@@ -5,7 +5,7 @@
   no último item). Alternativa rápida: passar apenas `atual="Título"`.
 {% endcomment %}
 <nav class="breadcrumb" aria-label="Trilha de navegação">
-  <a href="{% url 'dashboard:index' %}">Início</a>
+  <a href="{% url 'core:home' %}">Início</a>
   {% if itens %}
     {% for item in itens %}
       <span class="breadcrumb__separador">/</span>

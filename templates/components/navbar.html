@@ -1,21 +1,21 @@
 {% comment %}
-  Componente: navbar — navegação principal abaixo do top_header.
-  O link ativo é resolvido pelo namespace da rota atual.
+  Componente: navbar — navegação contextual abaixo do top_header.
+  Fora de um módulo mostra só o "Início" (portal). Dentro de um módulo,
+  mostra o Início + apenas os itens daquele módulo, montados pelo
+  context processor accounts.context_processors.modulos.
 {% endcomment %}
 <nav class="navbar">
   <div class="navbar__inner">
-    <a class="navbar__link {% if request.resolver_match.namespace == 'dashboard' %}navbar__link--ativo{% endif %}"
-       href="{% url 'dashboard:index' %}"><span class="navbar__icone">{% include "components/icon.html" with nome="home" %}</span>Dashboard</a>
-    <a class="navbar__link {% if request.resolver_match.namespace == 'solicitacoes' %}navbar__link--ativo{% endif %}"
-       href="{% url 'solicitacoes:lista' %}"><span class="navbar__icone">{% include "components/icon.html" with nome="document" %}</span>Solicitações</a>
-    {% if usuario_eh_administrador %}
-      <a class="navbar__link {% if request.resolver_match.namespace == 'cadastros' %}navbar__link--ativo{% endif %}"
-         href="{% url 'cadastros:index' %}"><span class="navbar__icone">{% include "components/icon.html" with nome="checklist" %}</span>Cadastros</a>
+    <a class="navbar__link {% if not modulo_ativo %}navbar__link--ativo{% endif %}"
+       href="{% url 'core:home' %}"><span class="navbar__icone">{% include "components/icon.html" with nome="home" %}</span>Início</a>
+    {% if modulo_ativo %}
+      <span class="navbar__contexto" aria-hidden="true">/</span>
+      <span class="navbar__modulo">{{ modulo_ativo.nome }}</span>
+      {% for item in nav_itens %}
+        <a class="navbar__link {% if item.ativo %}navbar__link--ativo{% endif %}" href="{{ item.url }}">
+          <span class="navbar__icone">{% include "components/icon.html" with nome=item.icone %}</span>{{ item.rotulo }}</a>
+      {% endfor %}
     {% endif %}
-    {% if usuario_gerencia_usuarios %}
-      <a class="navbar__link {% if 'usuarios' in request.resolver_match.url_name %}navbar__link--ativo{% endif %}"
-         href="{% url 'accounts:usuarios_lista' %}"><span class="navbar__icone">{% include "components/icon.html" with nome="users" %}</span>Usuários</a>
-    {% endif %}
-    {# Ações de conta moram no menu do avatar; aqui só navegação. #}
+    {# Ações de conta e administração moram no menu do avatar e no portal. #}
   </div>
 </nav>

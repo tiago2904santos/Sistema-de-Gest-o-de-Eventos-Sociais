@@ -9,11 +9,140 @@ from django.views.decorators.http import require_POST
 ITENS_POR_PAGINA = 20
 
 
+def _metricas_eventos(usuario, hoje):
+    from solicitacoes.models import SolicitacaoEvento, StatusSolicitacao
+    from solicitacoes.permissions import queryset_visivel
+
+    visiveis = queryset_visivel(usuario, SolicitacaoEvento.objects.all())
+    proximos = visiveis.filter(
+        data_inicio_evento__gte=hoje,
+        data_inicio_evento__lte=hoje + timedelta(days=30),
+    ).exclude(
+        status__in=[
+            StatusSolicitacao.CANCELADA,
+            StatusSolicitacao.NAO_ATENDIDA,
+        ]
+    )
+    return [
+        {
+            "rotulo": "No mês",
+            "valor": visiveis.filter(
+                data_solicitacao__year=hoje.year, data_solicitacao__month=hoje.month
+            ).count(),
+        },
+        {
+            "rotulo": "Aguardando despacho",
+            "valor": visiveis.filter(
+                status=StatusSolicitacao.AGUARDANDO_DESPACHO
+            ).count(),
+            "destaque": True,
+        },
+        {"rotulo": "Eventos em 30 dias", "valor": proximos.count()},
+    ]
+
+
+def _metricas_coffee_break(usuario, hoje):
+    from coffee_break import services as coffee_services
+    from coffee_break.models import (
+        LoteCoffeeBreak,
+        SituacaoFinanceira,
+        SolicitacaoCoffeeBreak,
+    )
+
+    lotes = list(LoteCoffeeBreak.objects.filter(ativo=True).com_consumo())
+    restante = sum(lote.restante for lote in lotes)
+    em_alerta = len(coffee_services.lotes_em_alerta(lotes))
+    pendencias = sum(
+        1
+        for s in SolicitacaoCoffeeBreak.objects.filter(cancelada=False).only(
+            "cancelada",
+            "numero_nota_fiscal",
+            "protocolo_pagamento",
+            "data_atesto_gaf",
+            "data_ordem_bancaria",
+            "data_envio_empresa",
+        )
+        if s.situacao_financeira != SituacaoFinanceira.CONCLUIDA
+    )
+    return [
+        {"rotulo": "Saldo dos lotes", "valor": restante},
+        {"rotulo": "Pendências financeiras", "valor": pendencias, "destaque": True},
+        {"rotulo": "Lotes em alerta", "valor": em_alerta},
+    ]
+
+
+def _metricas_demandas(usuario, hoje):
+    from demandas_eventos.models import DemandaEvento, StatusDemanda
+    from demandas_eventos.permissions import queryset_visivel
+
+    visiveis = queryset_visivel(usuario, DemandaEvento.objects.all())
+    return [
+        {
+            "rotulo": "Pendentes",
+            "valor": visiveis.filter(status=StatusDemanda.PENDENTE).count(),
+            "destaque": True,
+        },
+        {
+            "rotulo": "Em andamento",
+            "valor": visiveis.filter(
+                status__in=[
+                    StatusDemanda.EM_ANDAMENTO,
+                    StatusDemanda.AGUARDANDO_RETORNO,
+                ]
+            ).count(),
+        },
+        {
+            "rotulo": "Eventos agendados",
+            "valor": visiveis.filter(
+                status=StatusDemanda.EVENTO_AGENDADO
+            ).count(),
+        },
+    ]
+
+
+# Cada módulo do portal sabe calcular os próprios indicadores do hub.
+METRICAS_POR_MODULO = {
+    "eventos": _metricas_eventos,
+    "coffee_break": _metricas_coffee_break,
+    "demandas_eventos": _metricas_demandas,
+}
+
+
 def home(request):
-    """Raiz do site: envia para o dashboard (ou login, se não autenticado)."""
-    if request.user.is_authenticated:
-        return redirect("dashboard:index")
-    return redirect("accounts:login")
+    """Raiz do site: portal de módulos (ou login, se não autenticado).
+
+    Camada intermediadora entre o login e os módulos: mostra um panorama do
+    que os setores do usuário têm e a entrada de cada módulo. Dentro de um
+    módulo, a navegação passa a ser só daquele módulo (navbar contextual).
+    """
+    if not request.user.is_authenticated:
+        return redirect("accounts:login")
+
+    from django.urls import reverse
+
+    from accounts.modulos import modulos_do_portal
+    from solicitacoes.permissions import pode_gerenciar_usuarios
+
+    hoje = timezone.localdate()
+    cartoes = []
+    for modulo in modulos_do_portal(request.user):
+        calcular = METRICAS_POR_MODULO.get(modulo["slug"])
+        cartoes.append(
+            {
+                **modulo,
+                "url": reverse(modulo["entrada"]),
+                "metricas": calcular(request.user, hoje) if calcular else [],
+            }
+        )
+
+    return render(
+        request,
+        "pages/core/hub.html",
+        {
+            "cartoes": cartoes,
+            "mostrar_usuarios": pode_gerenciar_usuarios(request.user),
+        },
+    )
 
 
 @login_required

@@ -10,4 +10,6 @@ urlpatterns = [
     path("dashboard/", include("dashboard.urls")),
     path("cadastros/", include("cadastros.urls")),
     path("solicitacoes/", include("solicitacoes.urls")),
+    path("coffee-break/", include("coffee_break.urls")),
+    path("ascom/demandas/", include("demandas_eventos.urls")),
 ]

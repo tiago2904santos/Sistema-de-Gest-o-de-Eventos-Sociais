@@ -152,7 +152,7 @@ class AlterarSenhaTests(TestCase):
                 "new_password2": "SenhaNova#2026",
             },
         )
-        self.assertRedirects(resposta, reverse("dashboard:index"))
+        self.assertRedirects(resposta, reverse("core:home"))
         usuario.refresh_from_db()
         self.assertTrue(usuario.check_password("SenhaNova#2026"))
 
