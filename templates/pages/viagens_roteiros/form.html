@@ -1,0 +1,117 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with itens=breadcrumb %}
+  {% include "components/page_header.html" with titulo=titulo subtitulo="Monte o percurso trecho a trecho; as diárias saem daí" icone="map-pin" %}
+
+  <form method="post" action="{{ url_acao }}" class="card cadastro-form">
+    {% csrf_token %}
+    <div class="card__corpo">
+      <header class="cadastro-form__cabecalho">
+        <h2 class="cadastro-form__titulo">Dados do roteiro</h2>
+        <p class="cadastro-form__intro">
+          A sede é de onde a equipe sai e para onde volta — passar por ela no
+          meio do caminho não gera diária.
+        </p>
+      </header>
+
+      {% for erro in form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+
+      <div class="form-grid">
+        {% for campo in form %}
+          <div class="form-campo{% if campo.name == 'observacoes' %}{% else %} form-campo--6{% endif %}">
+            <label class="form-label" for="{{ campo.id_for_label }}">
+              {{ campo.label }}{% if campo.field.required %} <span class="form-label__obrigatorio">*</span>{% endif %}
+            </label>
+            <div class="form-controle-wrapper{% if campo.errors %} is-invalid{% endif %}">
+              {{ campo }}
+            </div>
+            {% for erro in campo.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+            {% if campo.help_text %}<p class="form-ajuda">{{ campo.help_text }}</p>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card__corpo">
+      <header class="cadastro-form__cabecalho">
+        <h2 class="cadastro-form__titulo">Trechos</h2>
+        <p class="cadastro-form__intro">
+          Um trecho por deslocamento, na ordem em que acontecem. O último é a
+          volta à sede: a chegada dele fecha a conta.
+        </p>
+      </header>
+
+      {{ formset.management_form }}
+      {% for erro in formset.non_form_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+
+      <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Trechos do roteiro">
+        <table class="tabela tabela--cartoes-no-celular">
+          <thead>
+            <tr>
+              <th>Ordem</th>
+              <th>Origem</th>
+              <th>Destino</th>
+              <th>Saída</th>
+              <th>Chegada</th>
+              <th>km</th>
+              <th>Remover</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for trecho in formset %}
+              {% if trecho.non_field_errors %}
+                <tr>
+                  <td colspan="7">
+                    {% for erro in trecho.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+                  </td>
+                </tr>
+              {% endif %}
+              <tr>
+                {{ trecho.id }}
+                <td data-rotulo="Ordem">
+                  {{ trecho.ordem }}
+                  {% for erro in trecho.ordem.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+                </td>
+                <td data-rotulo="Origem">
+                  {{ trecho.origem_municipio }}
+                  {% for erro in trecho.origem_municipio.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+                </td>
+                <td data-rotulo="Destino">
+                  {{ trecho.destino_municipio }}
+                  {% for erro in trecho.destino_municipio.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+                </td>
+                <td data-rotulo="Saída">
+                  {{ trecho.saida_dt }}
+                  {% for erro in trecho.saida_dt.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+                </td>
+                <td data-rotulo="Chegada">
+                  {{ trecho.chegada_dt }}
+                  {% for erro in trecho.chegada_dt.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+                </td>
+                <td data-rotulo="km">
+                  {{ trecho.distancia_km }}
+                  {% for erro in trecho.distancia_km.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+                </td>
+                <td data-rotulo="Remover">
+                  {% if trecho.instance.pk %}{{ trecho.DELETE }}{% else %}<span class="texto-suave">—</span>{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="form-ajuda">
+        Linhas em branco são ignoradas. Para acrescentar mais trechos, salve e
+        abra a edição de novo.
+      </p>
+
+      <div class="acoes-formulario">
+        {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
+        {% include "components/button.html" with label="Salvar roteiro" variante="dourado" tipo="submit" %}
+      </div>
+    </div>
+  </form>
+{% endblock %}

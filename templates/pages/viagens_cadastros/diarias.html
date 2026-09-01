@@ -11,23 +11,13 @@
     {% include "components/page_header.html" with titulo="Tabela de diárias" subtitulo="Valores por faixa, com vigência" icone="chart" %}
   {% endif %}
 
-  <div class="resumo-cards">
+  <div class="grid-resumo">
     {% for item in vigentes %}
-      <div class="card summary-card">
-        <div class="card__corpo">
-          <span class="summary-card__rotulo">{{ item.rotulo }}</span>
-          {% if item.tabela %}
-            <strong class="summary-card__valor">R$ {{ item.tabela.valor_24h }}</strong>
-            <span class="texto-suave">
-              15%: R$ {{ item.tabela.valor_15 }} · 30%: R$ {{ item.tabela.valor_30 }}
-            </span>
-            <span class="texto-suave">Desde {{ item.tabela.vigencia_inicio|date:"d/m/Y" }}</span>
-          {% else %}
-            <strong class="summary-card__valor">—</strong>
-            <span class="texto-suave">Sem vigência cadastrada</span>
-          {% endif %}
-        </div>
-      </div>
+      {% if item.tabela %}
+        {% include "components/summary_card.html" with titulo=item.rotulo valor=item.valor_24h icone="chart" cor="dourada" variacao=item.resumo_percentuais %}
+      {% else %}
+        {% include "components/summary_card.html" with titulo=item.rotulo valor="—" icone="alert" cor="neutra" variacao="Sem vigência cadastrada" %}
+      {% endif %}
     {% endfor %}
   </div>
 

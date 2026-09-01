@@ -59,7 +59,7 @@ Entregue:
 
 Fica para depois, sem bloquear a F2: enriquecer `Municipio` (capital, lat/long) e importar a base geográfica do sistema de origem.
 
-### Fase 2 — Roteiros e diárias 🟡 (motor e modelos entregues; telas pendentes)
+### Fase 2 — Roteiros e diárias ✅ (F2b, o mapa, segue opcional e em aberto)
 
 **Entregue nesta etapa — o cálculo, que é a parte de dinheiro:**
 
@@ -73,9 +73,25 @@ Duas diferenças deliberadas em relação à origem, ambas documentadas no módu
 - **Sem tabela de valores embutida no código.** Lá, sem vigência cadastrada o cálculo cai numa tabela fixa no módulo; aqui levanta `SemTabelaDeDiarias`. Valor de diária mora em `TabelaDiaria` — é o motivo de ela existir — e um valor congelado no código envelhece em silêncio.
 - **Capitais numa tabela única** (as 27 UFs). A origem cruza a base geográfica com um mapa de reserva e mantém um teste para os dois não divergirem; aqui não há duas fontes para divergir.
 
-**Falta para fechar a fase:** telas no padrão do A (montar roteiro, calcular, revisar) e, como subfase opcional, o mapa com cálculo automático de rota (F2b, decisão DA3).
+**Telas entregues** (`viagens_roteiros/`), no padrão visual do A: lista com busca e filtro de situação, formulário que monta o percurso trecho a trecho num formset, e tela de detalhe que dispara o cálculo e mostra a composição parcela a parcela — cada uma com a vigência que a sustentou. O módulo "Viagens" passa a abrir nos roteiros; os cadastros viram um item da mesma navegação.
 
-**Gate parcial cumprido:** cálculo idêntico ao da origem nos casos de caracterização; suíte verde em SQLite e PostgreSQL.
+**O que só apareceu ao abrir as telas de verdade.** A suíte estava verde e o motor, correto, quando um passeio pelas páginas contra um PostgreSQL semeado revelou sete defeitos que nenhum teste de banco pegaria — todos agora com teste de regressão que falha sem o conserto:
+
+| Defeito | Por que passava despercebido |
+| --- | --- |
+| Cartões do topo montados à mão com uma classe CSS inventada (`resumo-cards`) | O design system tem `grid-resumo` + `summary_card`; nada quebra, só fica feio |
+| Cartões da tabela de diárias escrevendo `R$ 43.58` sobre uma tabela que dizia `R$ 43,58` | Um f-string cru não passa pela localização que o template aplica |
+| Campos do formulário sem `form-controle` | O navegador desenhava controles nativos no meio de uma tela estilizada |
+| Opção vazia dos selects em inglês (*"Select an option"*, padrão do Django 6.1) | O resto do sistema diz "Selecione...", via um componente que este formulário não usa |
+| `min="0"` no número de servidores, que o servidor recusa | O erro só apareceria depois de enviar |
+| Linha de trecho em branco virando trecho vazio | `ordem` tem `default=1`: mexer só nesse número marca a linha como alterada, contra o "linhas em branco são ignoradas" escrito na própria tela |
+| Corrigir um trecho recusado criando um segundo roteiro a cada tentativa | O roteiro já fora gravado, mas o `action=""` do formulário reenviava para `/novo/` — o comentário da própria view afirmava o contrário do que o código fazia |
+
+A lição que fica para as fases seguintes: **suíte verde não é tela conferida.** Defeito de apresentação e de formulário não aparece em teste que só olha para o banco.
+
+**Falta para fechar o domínio:** como subfase opcional, o mapa com cálculo automático de rota (F2b, decisão DA3).
+
+**Gate cumprido:** cálculo idêntico ao da origem nos casos de caracterização; telas exercitadas de ponta a ponta contra PostgreSQL semeado (montar, calcular, cancelar, reativar, excluir); suíte verde em SQLite e PostgreSQL.
 
 ### Fase 3 — Núcleo documental (4–6 sessões)
 

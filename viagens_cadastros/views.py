@@ -19,6 +19,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import number_format
 from django.utils.http import urlencode
 from django.views.decorators.http import require_POST
 
@@ -388,15 +389,36 @@ def excluir(request, slug, pk):
     return redirect("viagens_cadastros:lista", slug=slug)
 
 
+def _reais(valor):
+    """Mesma formatação que o template aplica na tabela logo abaixo dos cartões.
+
+    Um f-string cru escreveria "43.58" ao lado de um "43,58" renderizado pelo
+    Django — dois números iguais com aparências diferentes na mesma tela.
+    """
+    return number_format(valor, decimal_pos=2, force_grouping=True)
+
+
 @acesso_ao_modulo
 def diarias(request):
     """Histórico de vigências, da mais recente para a mais antiga."""
     tabelas = TabelaDiaria.objects.all()
     hoje = timezone.localdate()
-    vigentes = [
-        {"rotulo": rotulo, "tabela": TabelaDiaria.vigente_em(faixa, hoje)}
-        for faixa, rotulo in TabelaDiaria.Faixa.choices
-    ]
+    vigentes = []
+    for faixa, rotulo in TabelaDiaria.Faixa.choices:
+        tabela = TabelaDiaria.vigente_em(faixa, hoje)
+        vigentes.append(
+            {
+                "rotulo": rotulo,
+                "tabela": tabela,
+                "valor_24h": f"R$ {_reais(tabela.valor_24h)}" if tabela else "—",
+                "resumo_percentuais": (
+                    f"15%: R$ {_reais(tabela.valor_15)}"
+                    f" · 30%: R$ {_reais(tabela.valor_30)}"
+                    if tabela
+                    else ""
+                ),
+            }
+        )
     return render(
         request,
         "pages/viagens_cadastros/diarias.html",

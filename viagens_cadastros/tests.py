@@ -1,3 +1,4 @@
+import re
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -649,3 +650,36 @@ class SeedDoModuloTests(TestCase):
         # Vincular a ASCOM por padrão daria acesso a quem talvez não deva ter.
         modulo = Modulo.objects.get(codigo=CODIGO_MODULO)
         self.assertEqual(modulo.setores.count(), 0)
+
+
+class TelaDeDiariasTests(BaseViagensTestCase):
+    """Os cartões do topo e a tabela mostram os mesmos números."""
+
+    def setUp(self):
+        self.client.force_login(self.criar_usuario("leitora_diarias"))
+        TabelaDiaria.objects.create(
+            faixa=TabelaDiaria.Faixa.INTERIOR,
+            valor_24h=Decimal("290.55"),
+            vigencia_inicio=date(2026, 1, 1),
+        )
+
+    def test_o_cartao_escreve_os_derivados_no_padrao_brasileiro(self):
+        # O cartão era montado com f-string crua e saía "43.58" logo acima de um
+        # "43,58" renderizado pelo Django: o mesmo número com duas caras.
+        resposta = self.client.get(reverse("viagens_cadastros:diarias"))
+        self.assertContains(resposta, "15%: R$ 43,58 · 30%: R$ 87,17")
+        self.assertNotContains(resposta, "43.58")
+
+    def test_o_cartao_mostra_o_valor_como_dinheiro(self):
+        # Olhar só a página inteira não serve: a tabela abaixo já escreve
+        # "R$ 290,55" e o teste passaria mesmo com o cartão exibindo um número
+        # solto. O que se afirma aqui é o conteúdo do cartão.
+        resposta = self.client.get(reverse("viagens_cadastros:diarias"))
+        valores = re.findall(
+            r'summary-card__valor">(.*?)</p>', resposta.content.decode(), re.S
+        )
+        self.assertIn("R$ 290,55", [v.strip() for v in valores])
+
+    def test_faixa_sem_vigencia_nao_finge_ter_valor(self):
+        resposta = self.client.get(reverse("viagens_cadastros:diarias"))
+        self.assertContains(resposta, "Sem vigência cadastrada")

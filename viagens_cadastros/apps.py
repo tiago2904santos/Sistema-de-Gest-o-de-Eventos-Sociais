@@ -15,15 +15,23 @@ class ViagensCadastrosConfig(AppConfig):
             "viagens",
             nome="Viagens",
             descricao=(
-                "Cadastros do domínio de viagens: servidores, viaturas, "
-                "unidades e a tabela de diárias vigente."
+                "Domínio de viagens: roteiros com cálculo de diárias e os "
+                "cadastros que os sustentam — servidores, viaturas e vigências."
             ),
             icone="volante",
             codigo=CODIGO_MODULO,
-            entrada="viagens_cadastros:index",
-            namespaces=["viagens_cadastros"],
+            entrada="viagens_roteiros:lista",
+            # O módulo cobre os dois apps: o middleware protege ambos
+            # os namespaces, e a navegação abaixo mistura as telas dos dois.
+            namespaces=["viagens_cadastros", "viagens_roteiros"],
             ordem=40,
             itens=[
+                {
+                    "rotulo": "Roteiros",
+                    "icone": "map-pin",
+                    "url": "viagens_roteiros:lista",
+                    "url_names": ("lista", "novo", "editar", "detalhe"),
+                },
                 {
                     "rotulo": "Cadastros",
                     "icone": "home",
