@@ -44,6 +44,57 @@ def chegada_final(roteiro):
     return ultimo.chegada_dt if ultimo else None
 
 
+def previa_diarias(form, formset):
+    """Roda o motor sobre o formulário como está, sem gravar nada.
+
+    É a prévia da tela de montagem: o operador vê o valor enquanto preenche,
+    como no editor de referência. Linhas com erro ou marcadas para remoção
+    ficam de fora — a prévia mostra o que seria gravado, não o que está
+    quebrado.
+    """
+    form.is_valid()
+    formset.is_valid()
+    dados_form = getattr(form, "cleaned_data", None) or {}
+    sede = dados_form.get("origem_municipio")
+    quantidade = dados_form.get("quantidade_servidores") or 1
+
+    marcadores = []
+    fim = None
+    for form_trecho in formset.forms:
+        if form_trecho.errors:
+            continue
+        dados = getattr(form_trecho, "cleaned_data", None) or {}
+        if dados.get("DELETE"):
+            continue
+        saida = form_trecho.instance.saida_dt
+        chegada = form_trecho.instance.chegada_dt
+        destino = dados.get("destino_municipio")
+        if chegada and (fim is None or chegada > fim):
+            fim = chegada
+        if not (saida and destino):
+            continue
+        marcadores.append(
+            Marcador(
+                saida=saida,
+                chegada=chegada,
+                destino_cidade=destino.nome,
+                destino_uf=destino.estado.sigla,
+            )
+        )
+
+    if not marcadores or not fim:
+        raise RoteiroIncalculavel(
+            "Preencha destino, saída e chegada dos trechos para ver a prévia."
+        )
+    return calcular_diarias(
+        marcadores,
+        fim,
+        quantidade_servidores=quantidade,
+        sede_cidade=sede.nome if sede else "",
+        sede_uf=sede.estado.sigla if sede else "",
+    )
+
+
 @transaction.atomic
 def recalcular_diarias(roteiro):
     """Recalcula o roteiro e grava o resultado com a composição que o explica.

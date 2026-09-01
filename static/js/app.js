@@ -7,6 +7,7 @@
 
   // Fecha alertas automaticamente após 6 segundos.
   document.querySelectorAll(".alerta").forEach(function (alerta) {
+    if (alerta.matches("[data-resumo-erros]")) return;
     setTimeout(function () {
       alerta.style.transition = "opacity 0.4s ease";
       alerta.style.opacity = "0";
@@ -94,7 +95,10 @@
     });
   }
 
-  document.querySelectorAll("[data-custom-select]").forEach(function (wrapper) {
+  // Função nomeada (e não um forEach anônimo) para que DS.aprimorar consiga
+  // ligar selects inseridos dinamicamente; o is-enhanced impede religação.
+  function aprimorarSelect(wrapper) {
+    if (wrapper.classList.contains("is-enhanced")) return;
     var nativo = wrapper.querySelector(".custom-select__native");
     var trigger = wrapper.querySelector("[data-custom-select-trigger]");
     var valor = wrapper.querySelector(".custom-select__valor");
@@ -278,7 +282,9 @@
       trigger.focus();
     });
     sincronizar();
-  });
+  }
+
+  document.querySelectorAll("[data-custom-select]").forEach(aprimorarSelect);
 
   function fecharCalendario(instancia, devolverFoco) {
     if (!instancia || !instancia.aberto) return;
@@ -286,6 +292,10 @@
     instancia.wrapper.classList.remove("is-open");
     instancia.calendario.hidden = true;
     instancia.trigger.setAttribute("aria-expanded", "false");
+    if (instancia.recortes) {
+      devolverRecorte(instancia.recortes);
+      instancia.recortes = null;
+    }
     if (devolverFoco) instancia.trigger.focus();
   }
 
@@ -313,7 +323,47 @@
     return new Intl.DateTimeFormat("pt-BR").format(data);
   }
 
-  document.querySelectorAll("[data-custom-date]").forEach(function (wrapper) {
+  // Popover dentro de container que recorta (a tabela de trechos rola nos
+  // dois eixos) era cortado pela metade e ainda criava barra de rolagem. Aqui
+  // ele sai do fluxo do container e passa a ser posicionado pela viewport.
+  function temAncestralQueRecorta(elemento) {
+    var atual = elemento.parentElement;
+    while (atual && atual !== document.body) {
+      var estilo = getComputedStyle(atual);
+      if (estilo.overflowX !== "visible" || estilo.overflowY !== "visible") return true;
+      atual = atual.parentElement;
+    }
+    return false;
+  }
+
+  // O painel fica preso ao campo pelo CSS (absoluto); quem sai da frente é o
+  // recorte: os ancestrais que o cortariam — a tabela de trechos rola nos dois
+  // eixos — mostram o que transborda enquanto ele está aberto, e voltam ao
+  // normal quando fecha.
+  function liberarRecorte(elemento) {
+    var liberados = [];
+    var atual = elemento.parentElement;
+    while (atual && atual !== document.body) {
+      var estilo = getComputedStyle(atual);
+      if (estilo.overflowX !== "visible" || estilo.overflowY !== "visible") {
+        liberados.push({ elemento: atual, overflow: atual.style.overflow });
+        atual.style.overflow = "visible";
+      }
+      atual = atual.parentElement;
+    }
+    return liberados;
+  }
+
+  function devolverRecorte(liberados) {
+    (liberados || []).forEach(function (item) {
+      if (item.overflow) item.elemento.style.overflow = item.overflow;
+      else item.elemento.style.removeProperty("overflow");
+    });
+  }
+
+  // Mesmo desenho do aprimorarSelect: nomeada para uso do DS.aprimorar.
+  function aprimorarData(wrapper) {
+    if (wrapper.classList.contains("is-enhanced")) return;
     var nativo = wrapper.querySelector(".custom-date__native");
     var trigger = wrapper.querySelector("[data-custom-date-trigger]");
     var valor = wrapper.querySelector(".custom-date__valor");
@@ -424,6 +474,7 @@
       calendario.hidden = false;
       trigger.setAttribute("aria-expanded", "true");
       renderizar();
+      instancia.recortes = liberarRecorte(wrapper);
       focarData(nativo.value || isoDaData(hoje));
     }
 
@@ -491,6 +542,16 @@
       focarData(isoDaData(destino));
     });
 
+    // Clicar fora fecha, como no seletor e no calendário de várias datas.
+    // Sem isto o painel ficava aberto sobre a tela até escolher uma data.
+    document.addEventListener("click", function (evento) {
+      if (!instancia.aberto) return;
+      // Navegar entre meses redesenha a grade: o alvo do clique já saiu do
+      // DOM quando o evento chega aqui, e `contains` diria "clique fora".
+      if (!evento.target.isConnected) return;
+      if (!wrapper.contains(evento.target)) fecharCalendario(instancia, false);
+    });
+
     nativo.addEventListener("change", sincronizar);
     nativo.addEventListener("focus", function () { trigger.focus(); });
     nativo.addEventListener("invalid", function () {
@@ -499,7 +560,266 @@
       trigger.focus();
     });
     sincronizar();
-  });
+  }
+
+  document.querySelectorAll("[data-custom-date]").forEach(aprimorarData);
+
+  // Calendário de várias datas (components/date_multi.html): o gatilho é o
+  // próprio botão, e a quantidade esperada vem do `data-max` do wrapper —
+  // que quem usa pode mudar a qualquer momento. Ao completar o máximo, ou
+  // no "Aplicar", o wrapper emite `ds:datas-multi` com as datas escolhidas.
+  function aprimorarDataMultipla(wrapper) {
+    if (wrapper.classList.contains("is-enhanced")) return;
+    // Vários gatilhos para um calendário só: no bate-volta, os campos de data
+    // da ida e da volta abrem o mesmo, e as duas escolhas preenchem os dois.
+    var gatilhos = Array.prototype.slice.call(
+      wrapper.querySelectorAll("[data-custom-date-multi-trigger]")
+    );
+    var trigger = gatilhos[0];
+    var gatilhoAtual = trigger;
+    var recortes = null;
+    var calendario = wrapper.querySelector("[data-custom-date-multi-calendar]");
+    var grade = wrapper.querySelector("[data-custom-date-multi-grid]");
+    var tituloMes = wrapper.querySelector("[data-custom-date-multi-month]");
+    var contagem = wrapper.querySelector("[data-custom-date-multi-contagem]");
+    var dica = wrapper.querySelector("[data-custom-date-multi-dica]");
+    if (!trigger || !calendario || !grade || !tituloMes) return;
+    wrapper.classList.add("is-enhanced");
+
+    var hoje = new Date();
+    hoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    var mesVisivel = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    var escolhidas = [];
+    var aberto = false;
+
+    function maximo() {
+      return Math.max(1, Number(wrapper.getAttribute("data-max") || 1));
+    }
+
+    function renderizar() {
+      var nomeMes = new Intl.DateTimeFormat("pt-BR", {
+        month: "long", year: "numeric"
+      }).format(mesVisivel);
+      tituloMes.textContent = nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1);
+      grade.innerHTML = "";
+
+      var primeiroDia = new Date(mesVisivel.getFullYear(), mesVisivel.getMonth(), 1);
+      var inicioGrade = new Date(
+        primeiroDia.getFullYear(), primeiroDia.getMonth(), 1 - primeiroDia.getDay()
+      );
+
+      for (var indice = 0; indice < 42; indice += 1) {
+        var data = new Date(
+          inicioGrade.getFullYear(), inicioGrade.getMonth(), inicioGrade.getDate() + indice
+        );
+        var iso = isoDaData(data);
+        var posicao = escolhidas.indexOf(iso);
+        var botao = document.createElement("button");
+        botao.type = "button";
+        botao.className = "custom-date__dia";
+        botao.textContent = String(data.getDate());
+        botao.setAttribute("role", "gridcell");
+        botao.setAttribute("data-date", iso);
+        botao.setAttribute("aria-label", new Intl.DateTimeFormat("pt-BR", {
+          day: "numeric", month: "long", year: "numeric"
+        }).format(data));
+        botao.setAttribute("aria-selected", posicao > -1 ? "true" : "false");
+        botao.classList.toggle("is-outside", data.getMonth() !== mesVisivel.getMonth());
+        botao.classList.toggle("is-today", iso === isoDaData(hoje));
+        botao.classList.toggle("is-selected", posicao > -1);
+        // A ordem da escolha é o que diz para qual trecho a data vai.
+        if (posicao > -1) botao.setAttribute("data-ordem", String(posicao + 1));
+        grade.appendChild(botao);
+      }
+      if (contagem) {
+        contagem.textContent = escolhidas.length + " de " + maximo() +
+          (maximo() === 1 ? " data" : " datas");
+      }
+      if (dica) dica.textContent = wrapper.getAttribute("data-dica") || "";
+    }
+
+    function fechar(devolverFoco) {
+      if (!aberto) return;
+      aberto = false;
+      calendario.hidden = true;
+      wrapper.classList.remove("is-open");
+      gatilhos.forEach(function (g) { g.setAttribute("aria-expanded", "false"); });
+      devolverRecorte(recortes);
+      recortes = null;
+      if (devolverFoco) gatilhoAtual.focus();
+    }
+
+    function abrir() {
+      if (aberto) return;
+      aberto = true;
+      calendario.hidden = false;
+      wrapper.classList.add("is-open");
+      gatilhoAtual.setAttribute("aria-expanded", "true");
+      renderizar();
+      // Com mais de um gatilho, o painel se muda para o invólucro do campo
+      // clicado: fica preso a ele pelo CSS, como no calendário de um gatilho
+      // só, e acompanha a rolagem sem recálculo.
+      if (gatilhos.length > 1) {
+        var casa = gatilhoAtual.parentElement;
+        if (casa && calendario.parentElement !== casa) casa.appendChild(calendario);
+      }
+      recortes = liberarRecorte(calendario);
+      var primeiro = grade.querySelector('[data-date="' + isoDaData(hoje) + '"]');
+      if (primeiro) primeiro.focus();
+    }
+
+    function aplicar() {
+      wrapper.dispatchEvent(new CustomEvent("ds:datas-multi", {
+        bubbles: true,
+        detail: { datas: escolhidas.slice() },
+      }));
+      fechar(true);
+    }
+
+    function alternarData(iso) {
+      var posicao = escolhidas.indexOf(iso);
+      if (posicao > -1) escolhidas.splice(posicao, 1);
+      else if (escolhidas.length < maximo()) escolhidas.push(iso);
+      else return;  // cheio: soltar uma data antes de trocar
+      renderizar();
+      var foco = grade.querySelector('[data-date="' + iso + '"]');
+      if (foco) foco.focus();
+      // Completou o que se pedia: aplica sem exigir mais um clique.
+      if (escolhidas.length === maximo()) aplicar();
+    }
+
+    function mudarMes(deslocamento) {
+      mesVisivel = new Date(
+        mesVisivel.getFullYear(), mesVisivel.getMonth() + deslocamento, 1
+      );
+      renderizar();
+    }
+
+    gatilhos.forEach(function (gatilho) {
+      gatilho.addEventListener("click", function () {
+        if (aberto && gatilhoAtual === gatilho) { fechar(true); return; }
+        if (aberto) fechar(false);
+        gatilhoAtual = gatilho;
+        abrir();
+      });
+    });
+    wrapper.querySelector("[data-custom-date-multi-prev]")
+      .addEventListener("click", function () { mudarMes(-1); });
+    wrapper.querySelector("[data-custom-date-multi-next]")
+      .addEventListener("click", function () { mudarMes(1); });
+    wrapper.querySelector("[data-custom-date-multi-prev-ano]")
+      .addEventListener("click", function () { mudarMes(-12); });
+    wrapper.querySelector("[data-custom-date-multi-next-ano]")
+      .addEventListener("click", function () { mudarMes(12); });
+    wrapper.querySelector("[data-custom-date-multi-clear]")
+      .addEventListener("click", function () { escolhidas = []; renderizar(); });
+    wrapper.querySelector("[data-custom-date-multi-apply]")
+      .addEventListener("click", aplicar);
+
+    grade.addEventListener("click", function (evento) {
+      var dia = evento.target.closest("[data-date]");
+      if (dia) alternarData(dia.getAttribute("data-date"));
+    });
+
+    grade.addEventListener("keydown", function (evento) {
+      var dia = evento.target.closest("[data-date]");
+      if (!dia) return;
+      var atual = dataPorIso(dia.getAttribute("data-date"));
+      var deslocamento = null;
+      if (evento.key === "ArrowLeft") deslocamento = -1;
+      else if (evento.key === "ArrowRight") deslocamento = 1;
+      else if (evento.key === "ArrowUp") deslocamento = -7;
+      else if (evento.key === "ArrowDown") deslocamento = 7;
+      else if (evento.key === "Escape") { evento.preventDefault(); fechar(true); return; }
+      else if (evento.key === "Tab") { fechar(false); return; }
+      if (deslocamento === null) return;
+      evento.preventDefault();
+      var destino = new Date(
+        atual.getFullYear(), atual.getMonth(), atual.getDate() + deslocamento
+      );
+      if (destino.getMonth() !== mesVisivel.getMonth() ||
+          destino.getFullYear() !== mesVisivel.getFullYear()) {
+        mesVisivel = new Date(destino.getFullYear(), destino.getMonth(), 1);
+        renderizar();
+      }
+      var alvo = grade.querySelector('[data-date="' + isoDaData(destino) + '"]');
+      if (alvo) alvo.focus();
+    });
+
+    document.addEventListener("click", function (evento) {
+      if (!aberto) return;
+      // Escolher um dia redesenha a grade: o botão clicado sai do DOM antes
+      // de o evento chegar aqui, e `contains` diria que o clique foi fora.
+      if (!evento.target.isConnected) return;
+      if (!wrapper.contains(evento.target)) fechar(false);
+    });
+  }
+
+  document.querySelectorAll("[data-custom-date-multi]").forEach(aprimorarDataMultipla);
+
+  // Filtro em cascata: um select mostra só as opções cujo
+  // `data-parent-value` casa com o valor do select de que ele depende
+  // (ex.: municípios do estado escolhido). O filho declara
+  // `data-depends-on="<id do pai>"` no wrapper.
+  function ligarCascata(wrapper) {
+    if (wrapper.dataset.cascataLigada === "1") return;
+    var alvoId = wrapper.getAttribute("data-depends-on");
+    var pai = alvoId ? document.getElementById(alvoId) : null;
+    var nativo = wrapper.querySelector(".custom-select__native");
+    if (!pai || !nativo) return;
+    wrapper.dataset.cascataLigada = "1";
+
+    var opcoesMenu = Array.prototype.slice.call(
+      wrapper.querySelectorAll(".custom-select__opcao")
+    );
+
+    function aplicar(limparSelecao) {
+      var valorPai = pai.value;
+      Array.prototype.forEach.call(nativo.options, function (opcao) {
+        if (!opcao.value) return;
+        var dono = opcao.getAttribute("data-parent-value");
+        // Sem pai escolhido, a lista inteira continua disponível.
+        var visivel = !valorPai || !dono || dono === valorPai;
+        opcao.hidden = !visivel;
+        if (visivel) opcao.removeAttribute("data-filtered-out");
+        else opcao.setAttribute("data-filtered-out", "");
+      });
+      opcoesMenu.forEach(function (opcao) {
+        var dono = opcao.getAttribute("data-parent-value");
+        var visivel = !valorPai || !dono || dono === valorPai;
+        opcao.hidden = !visivel;
+        if (visivel) opcao.removeAttribute("data-filtered-out");
+        else opcao.setAttribute("data-filtered-out", "");
+      });
+      // Seleção que não pertence mais ao pai escolhido é descartada.
+      var atual = nativo.options[nativo.selectedIndex];
+      if (
+        limparSelecao && nativo.value && atual &&
+        atual.getAttribute("data-parent-value") &&
+        atual.getAttribute("data-parent-value") !== valorPai
+      ) {
+        nativo.value = "";
+        nativo.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
+
+    pai.addEventListener("change", function () { aplicar(true); });
+    aplicar(false);
+  }
+
+  // Conteúdo inserido dinamicamente (ex.: linhas de destino do editor de
+  // roteiro) pede o mesmo comportamento dos componentes já aprimorados.
+  // DS.aprimorar(raiz) liga selects, datas e cascatas ainda crus na raiz.
+  window.DS = window.DS || {};
+  window.DS.aprimorar = function (raiz) {
+    var alvo = raiz || document;
+    alvo.querySelectorAll("[data-custom-select]").forEach(aprimorarSelect);
+    alvo.querySelectorAll("[data-custom-date]").forEach(aprimorarData);
+    alvo.querySelectorAll("[data-custom-date-multi]").forEach(aprimorarDataMultipla);
+    alvo.querySelectorAll("[data-depends-on]").forEach(ligarCascata);
+  };
+
+  document.querySelectorAll("[data-depends-on]").forEach(ligarCascata);
 
   document.querySelectorAll("[data-custom-date-range]").forEach(function (wrapper) {
     var inicio = wrapper.querySelector("[data-custom-date-range-start]");
@@ -1271,7 +1591,14 @@
     var container = campoContainer(campo);
     if (!container) return;
     var erro = container.querySelector("[data-erro-cliente]");
-    if (erro) erro.remove();
+    if (erro) {
+      var descritosPor = (campo.getAttribute("aria-describedby") || "")
+        .split(/\s+/)
+        .filter(function (id) { return id && id !== erro.id; });
+      if (descritosPor.length) campo.setAttribute("aria-describedby", descritosPor.join(" "));
+      else campo.removeAttribute("aria-describedby");
+      erro.remove();
+    }
     campo.removeAttribute("aria-invalid");
     var wrapper = campo.closest(".custom-select, .custom-date, .form-controle-wrapper");
     if (wrapper) wrapper.classList.remove("is-invalid");
@@ -1285,10 +1612,17 @@
       erro = document.createElement("p");
       erro.className = "form-erro";
       erro.setAttribute("data-erro-cliente", "");
+      var baseId = campo.id || campo.name || "campo";
+      erro.id = baseId + "-erro-cliente";
       container.appendChild(erro);
     }
     erro.textContent = mensagemDe(campo);
     campo.setAttribute("aria-invalid", "true");
+    var descritosPor = (campo.getAttribute("aria-describedby") || "")
+      .split(/\s+/)
+      .filter(Boolean);
+    if (descritosPor.indexOf(erro.id) === -1) descritosPor.push(erro.id);
+    campo.setAttribute("aria-describedby", descritosPor.join(" "));
     var wrapper = campo.closest(".custom-select, .custom-date, .form-controle-wrapper");
     if (wrapper) wrapper.classList.add("is-invalid");
   }
@@ -1362,6 +1696,9 @@
       window.location.href = destino;
     });
   });
+
+  var resumoErros = document.querySelector("[data-resumo-erros]");
+  if (resumoErros) resumoErros.focus();
 })();
 
 /**
@@ -1558,6 +1895,12 @@
   "use strict";
 
   document.querySelectorAll("form[data-auto-enviar]").forEach(function (formulario) {
+    formulario.addEventListener("keydown", function (evento) {
+      if (evento.key === "Enter" && evento.target.matches('input[type="search"]')) {
+        evento.preventDefault();
+        formulario.requestSubmit();
+      }
+    });
     formulario.addEventListener("change", function () {
       formulario.submit();
     });
@@ -1723,4 +2066,26 @@
   }
   campo.addEventListener("input", atualizar);
   atualizar();
+})();
+
+// Tabelas largas: informa a continuidade somente quando existe conteúdo fora
+// da área visível. A dica desaparece assim que o usuário chega ao fim.
+(function () {
+  var wrappers = document.querySelectorAll(".tabela-wrapper");
+  if (!wrappers.length) return;
+  wrappers.forEach(function (wrapper) {
+    var dica = document.createElement("p");
+    dica.className = "tabela-scroll-hint";
+    dica.textContent = "Deslize a tabela para ver mais →";
+    dica.setAttribute("aria-live", "polite");
+    wrapper.insertAdjacentElement("beforebegin", dica);
+    function atualizar() {
+      var temOverflow = wrapper.scrollWidth > wrapper.clientWidth + 2;
+      var chegouAoFim = wrapper.scrollLeft + wrapper.clientWidth >= wrapper.scrollWidth - 2;
+      dica.hidden = !temOverflow || chegouAoFim;
+    }
+    wrapper.addEventListener("scroll", atualizar, { passive: true });
+    window.addEventListener("resize", atualizar);
+    atualizar();
+  });
 })();

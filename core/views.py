@@ -6,6 +6,11 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+
+def erro_403(request, exception=None):
+    """Resposta de acesso negado com orientação e retorno seguro."""
+    return render(request, "403.html", status=403)
+
 ITENS_POR_PAGINA = 20
 
 

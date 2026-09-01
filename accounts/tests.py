@@ -7,6 +7,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from auditoria.models import LogAuditoria
+from accounts.models import Setor
 from solicitacoes.permissions import GRUPO_ADMINISTRADOR, GRUPO_GESTOR_DG, GRUPO_SOLICITANTE
 
 User = get_user_model()
@@ -18,6 +19,7 @@ class GestaoUsuariosTests(TestCase):
         cls.admin = User.objects.create_user("admin", password="x")
         cls.admin.groups.add(Group.objects.create(name=GRUPO_ADMINISTRADOR))
         cls.comum = User.objects.create_user("comum", password="x")
+        cls.setor = Setor.objects.create(nome="Assessoria de Comunicação", sigla="ASCOM")
 
     def test_lista_exige_administrador(self):
         self.client.force_login(self.comum)
@@ -49,12 +51,14 @@ class GestaoUsuariosTests(TestCase):
                 "perfil": GRUPO_SOLICITANTE,
                 "senha": "SenhaForte#2026",
                 "confirmacao_senha": "SenhaForte#2026",
+                "setores": [self.setor.pk],
             },
         )
         self.assertEqual(resposta.status_code, 302)
         usuario = User.objects.get(username="maria.silva")
         self.assertTrue(usuario.groups.filter(name=GRUPO_SOLICITANTE).exists())
         self.assertTrue(usuario.check_password("SenhaForte#2026"))
+        self.assertEqual(list(usuario.setores.all()), [self.setor])
         self.assertTrue(LogAuditoria.objects.filter(acao="USUARIO_CRIADO").exists())
 
     def test_criacao_exige_senha_e_confirmacao(self):

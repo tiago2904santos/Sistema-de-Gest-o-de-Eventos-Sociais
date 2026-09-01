@@ -8,7 +8,12 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
 
-from .models import LoteCoffeeBreak, SituacaoFinanceira
+from .models import (
+    AcaoHistoricoCoffeeBreak,
+    HistoricoCoffeeBreak,
+    LoteCoffeeBreak,
+    SituacaoFinanceira,
+)
 
 # Situação -> sufixo dos status-badges já existentes no design system.
 CSS_SITUACAO = {
@@ -84,14 +89,30 @@ def salvar_com_saldo(solicitacao):
     return solicitacao
 
 
+def registrar_historico(solicitacao, usuario, acao, descricao=""):
+    return HistoricoCoffeeBreak.objects.create(
+        solicitacao=solicitacao,
+        usuario=usuario,
+        acao=acao,
+        descricao=(descricao or "").strip(),
+    )
+
+
 def cancelar(solicitacao, usuario, motivo=""):
     """Cancelamento auditável: sai do consumo, mas permanece no histórico."""
     if solicitacao.cancelada:
         raise ValidationError("A solicitação já está cancelada.")
+    if solicitacao.concluida:
+        raise ValidationError(
+            "Solicitações com o fluxo financeiro concluído não podem ser canceladas."
+        )
+    motivo = (motivo or "").strip()
+    if not motivo:
+        raise ValidationError("Informe o motivo do cancelamento.")
     solicitacao.cancelada = True
     solicitacao.cancelada_em = timezone.now()
     solicitacao.cancelada_por = usuario
-    solicitacao.motivo_cancelamento = (motivo or "").strip()[:255]
+    solicitacao.motivo_cancelamento = motivo[:255]
     solicitacao.save(
         update_fields=[
             "cancelada",
@@ -101,10 +122,16 @@ def cancelar(solicitacao, usuario, motivo=""):
             "atualizado_em",
         ]
     )
+    registrar_historico(
+        solicitacao,
+        usuario,
+        AcaoHistoricoCoffeeBreak.CANCELAMENTO,
+        motivo,
+    )
     return solicitacao
 
 
-def reativar(solicitacao):
+def reativar(solicitacao, usuario=None):
     """Desfaz um cancelamento, revalidando o saldo do lote."""
     if not solicitacao.cancelada:
         raise ValidationError("A solicitação não está cancelada.")
@@ -129,6 +156,12 @@ def reativar(solicitacao):
                 "motivo_cancelamento",
                 "atualizado_em",
             ]
+        )
+        registrar_historico(
+            solicitacao,
+            usuario,
+            AcaoHistoricoCoffeeBreak.REATIVACAO,
+            "Saldo revalidado e solicitação reativada.",
         )
     return solicitacao
 

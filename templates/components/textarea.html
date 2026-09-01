@@ -5,7 +5,8 @@
        label="Descrição complementar" linhas="4" placeholder="..." largura="" %}
 {% endcomment %}
 <div class="form-campo{% if largura %} form-campo--{{ largura }}{% endif %}">
-  <label class="form-label" for="id_{{ name }}">
+  {# rotulo_oculto: label só para leitores de tela, sem ocupar layout. #}
+  <label class="form-label{% if rotulo_oculto %} sr-only{% endif %}" for="id_{{ name }}">
     {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
   </label>
   <textarea
@@ -14,8 +15,9 @@
     name="{{ name }}"
     rows="{{ linhas|default:'4' }}"
     {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+    {% if erros %}aria-invalid="true" aria-describedby="id_{{ name }}_erro{% if ajuda %} id_{{ name }}_ajuda{% endif %}"{% elif ajuda %}aria-describedby="id_{{ name }}_ajuda"{% endif %}
     {% if desabilitado %}disabled{% endif %}
     {% if obrigatorio %}required{% endif %}>{{ valor|default:"" }}</textarea>
-  {% for erro in erros %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-  {% if ajuda %}<p class="form-ajuda">{{ ajuda }}</p>{% endif %}
+  {% for erro in erros %}<p class="form-erro"{% if forloop.first %} id="id_{{ name }}_erro"{% endif %}>{{ erro }}</p>{% endfor %}
+  {% if ajuda %}<p class="form-ajuda" id="id_{{ name }}_ajuda">{{ ajuda }}</p>{% endif %}
 </div>

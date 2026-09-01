@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import urlencode
@@ -17,10 +18,13 @@ from django.views.decorators.http import require_POST
 
 from auditoria.models import LogAuditoria
 
-from .forms import RoteiroForm, TrechoFormSet
+from cadastros.models import Estado, Municipio
+
+from .forms import DestinoFormSet, RoteiroForm, TrechoFormSet
 from .models import Roteiro
 from .permissions import acesso_ao_modulo, pode_editar_roteiros
-from .services.calculo import recalcular_diarias
+from .services.calculo import previa_diarias, recalcular_diarias
+from .services.rota import RotaIndisponivel, calcular_rota
 from .services.diarias import (
     RoteiroIncalculavel,
     SemTabelaDeDiarias,
@@ -124,10 +128,20 @@ def editar(request, pk=None):
     if request.method == "POST":
         form = RoteiroForm(request.POST, instance=roteiro)
         formset = TrechoFormSet(request.POST, instance=roteiro)
+        destinos = DestinoFormSet(request.POST, instance=roteiro)
+        rascunho = request.POST.get("acao") == "rascunho"
         if form.is_valid():
             salvo = form.save()
-            # O formset só sabe a que roteiro pertence depois que ele existe.
+            # Rascunho é o roteiro em construção; salvar de vez o finaliza.
+            salvo.status = (
+                Roteiro.Status.RASCUNHO if rascunho else Roteiro.Status.FINALIZADO
+            )
+            salvo.save(update_fields=["status", "atualizado_em"])
+            # Os formsets só sabem a que roteiro pertencem depois que ele existe.
             formset = TrechoFormSet(request.POST, instance=salvo)
+            destinos = DestinoFormSet(request.POST, instance=salvo)
+            if destinos.is_valid():
+                destinos.save()
             if formset.is_valid():
                 formset.save()
                 _registrar_auditoria(
@@ -135,7 +149,23 @@ def editar(request, pk=None):
                     "VIAGENS_ROTEIRO_ATUALIZADO" if pk else "VIAGENS_ROTEIRO_CRIADO",
                     salvo,
                 )
-                messages.success(request, "Roteiro salvo com sucesso.")
+                # O cálculo acompanha o salvamento, como no editor de
+                # referência: quem preencheu o percurso vê o valor na hora.
+                try:
+                    resultado = recalcular_diarias(salvo)
+                except (SemTabelaDeDiarias, RoteiroIncalculavel) as erro:
+                    messages.success(request, "Roteiro salvo com sucesso.")
+                    messages.info(request, f"Diárias ainda não calculadas: {erro}")
+                else:
+                    totais = resultado["totais"]
+                    messages.success(
+                        request,
+                        "Roteiro salvo — diárias: "
+                        f"R$ {totais['total_valor']} ({totais['resumo_diarias']}).",
+                    )
+                if rascunho:
+                    # Rascunho continua em edição: quem salvou ainda está montando.
+                    return redirect("viagens_roteiros:editar", pk=salvo.pk)
                 return redirect("viagens_roteiros:detalhe", pk=salvo.pk)
             if not pk:
                 # Trechos inválidos num roteiro recém-criado: ele já existe no
@@ -145,7 +175,7 @@ def editar(request, pk=None):
                 return render(
                     request,
                     "pages/viagens_roteiros/form.html",
-                    _contexto_do_form(salvo, form, formset),
+                    _contexto_do_form(salvo, form, formset, destinos),
                 )
         else:
             formset = TrechoFormSet(request.POST, instance=roteiro)
@@ -154,19 +184,121 @@ def editar(request, pk=None):
     else:
         form = RoteiroForm(instance=roteiro)
         formset = TrechoFormSet(instance=roteiro)
+        destinos = DestinoFormSet(instance=roteiro)
 
     return render(
         request,
         "pages/viagens_roteiros/form.html",
-        _contexto_do_form(roteiro, form, formset),
+        _contexto_do_form(roteiro, form, formset, destinos),
     )
 
 
-def _contexto_do_form(roteiro, form, formset):
+def _opcoes_roteiros_base(atual):
+    """Roteiros salvos que podem servir de base, do mais recente para trás."""
+    queryset = (
+        Roteiro.objects.select_related("origem_municipio")
+        .prefetch_related("destinos__municipio")
+        .filter(cancelado=False)
+        .order_by("-atualizado_em")
+    )
+    if atual and atual.pk:
+        queryset = queryset.exclude(pk=atual.pk)
+    opcoes = []
+    for roteiro in queryset[:200]:
+        destinos = [
+            destino.municipio.nome
+            for destino in roteiro.destinos.all()
+            if destino.municipio_id
+        ]
+        percurso = " → ".join(destinos) if destinos else "sem destinos"
+        sede = roteiro.origem_municipio.nome if roteiro.origem_municipio_id else "sem sede"
+        opcoes.append(
+            {"valor": str(roteiro.pk), "rotulo": f"#{roteiro.pk} · {sede} → {percurso}"}
+        )
+    return opcoes
+
+
+def _opcoes(iteravel):
+    """Formato que `components/select.html` espera: valor + rótulo."""
+    return [
+        {"valor": str(getattr(item, "pk", item)), "rotulo": str(item)}
+        for item in iteravel
+    ]
+
+
+def _opcoes_municipios(queryset):
+    """Municípios com o estado no `data-parent-value`, para o filtro em cascata.
+
+    O select do estado é só da tela: quem vai para o banco é o município.
+    """
+    return [
+        {
+            "valor": str(municipio.pk),
+            "rotulo": municipio.nome,
+            "estado": str(municipio.estado_id),
+        }
+        for municipio in queryset
+    ]
+
+
+def _valor_str(campo_bound):
+    valor = campo_bound.value()
+    return "" if valor is None else str(valor)
+
+
+def _cards_de_trechos(formset):
+    """Cada form do formset vira um card; os vazios ficam como slots ocultos.
+
+    O botão "Adicionar trecho" da tela só revela o próximo slot — assim todo
+    controle já nasce com o comportamento do design system ligado, sem DOM
+    dinâmico.
+    """
+    cards = []
+    for form_trecho in formset.forms:
+        visivel = bool(form_trecho.instance.pk) or bool(form_trecho.errors)
+        if not visivel and form_trecho.is_bound:
+            visivel = any(
+                form_trecho.data.get(f"{form_trecho.prefix}-{nome}")
+                for nome in form_trecho.CAMPOS_DE_CONTEUDO
+            )
+        cards.append({"form": form_trecho, "visivel": visivel})
+    return cards
+
+
+def _cards_de_destinos(destinos):
+    """Linhas de destino visíveis; slots vazios ficam ocultos até o "+"."""
+    cards = []
+    for form_destino in destinos.forms:
+        visivel = bool(form_destino.instance.pk) or bool(form_destino.errors)
+        if not visivel and form_destino.is_bound:
+            visivel = bool(
+                form_destino.data.get(f"{form_destino.prefix}-municipio")
+            )
+        cards.append({"form": form_destino, "visivel": visivel})
+    return cards
+
+
+def _contexto_do_form(roteiro, form, formset, destinos):
     return {
         "roteiro": roteiro,
         "form": form,
         "formset": formset,
+        "destinos": destinos,
+        "trechos_cards": _cards_de_trechos(formset),
+        "destinos_cards": _cards_de_destinos(destinos),
+        "opcoes_municipios": _opcoes_municipios(
+            form.fields["origem_municipio"].queryset
+        ),
+        "opcoes_estados": _opcoes(
+            Estado.objects.filter(municipios__ativo=True).distinct().order_by("nome")
+        ),
+        "opcoes_solicitacoes": _opcoes(form.fields["solicitacao"].queryset),
+        # Roteiros já cadastrados, para repetir um percurso conhecido em vez
+        # de remontá-lo. Fora o próprio, que não serve de base para si mesmo.
+        "opcoes_roteiros_base": _opcoes_roteiros_base(roteiro),
+        "valores": {
+            nome: _valor_str(form[nome]) for nome in form.fields
+        },
         # Um roteiro recém-criado cujos trechos não passaram continua sendo
         # editado no endereço dele. Reenviar para /novo/ criaria um segundo
         # roteiro a cada correção.
@@ -229,6 +361,99 @@ def detalhe(request, pk):
             "pode_editar": pode_editar_roteiros(request.user),
         },
     )
+
+
+@acesso_ao_modulo
+def dados_do_roteiro(request, pk):
+    """Sede e destinos de um roteiro salvo, para reaproveitar na montagem.
+
+    A tela usa isto quando se escolhe um roteiro como base: ela repete o
+    percurso dele — sede e destinos, na ordem — e o operador ajusta datas e
+    horários. Nada é copiado no banco; o roteiro novo nasce independente.
+    """
+    roteiro = get_object_or_404(
+        Roteiro.objects.select_related("origem_municipio__estado"), pk=pk
+    )
+    destinos = roteiro.destinos.select_related("municipio__estado").all()
+    return JsonResponse(
+        {
+            "sede": (
+                {
+                    "municipio": roteiro.origem_municipio_id,
+                    "estado": roteiro.origem_municipio.estado_id,
+                }
+                if roteiro.origem_municipio_id
+                else None
+            ),
+            "destinos": [
+                {
+                    "municipio": destino.municipio_id,
+                    "estado": destino.municipio.estado_id,
+                }
+                for destino in destinos
+            ],
+        }
+    )
+
+
+@acesso_ao_modulo
+@require_POST
+def previa(request):
+    """Prévia das diárias sobre o formulário como está, sem gravar.
+
+    A tela chama a cada mudança relevante; a resposta é JSON porque o
+    resultado atualiza só o bloco "Diárias" do editor.
+    """
+    _exigir_edicao(request)
+    form = RoteiroForm(request.POST)
+    formset = TrechoFormSet(request.POST)
+    try:
+        resultado = previa_diarias(form, formset)
+    except (SemTabelaDeDiarias, RoteiroIncalculavel) as erro:
+        return JsonResponse({"ok": False, "motivo": str(erro)})
+    totais = resultado["totais"]
+    # O tipo de destino sai das faixas efetivamente usadas (ex.: "Interior",
+    # ou "Interior + Capital" num percurso misto).
+    faixas = list(
+        dict.fromkeys(t.get("tipo", "") for t in resultado["trechos"] if t.get("tipo"))
+    )
+    return JsonResponse(
+        {
+            "ok": True,
+            "totais": {
+                "total_valor": totais["total_valor"],
+                "resumo_diarias": totais["resumo_diarias"],
+                "valor_extenso": totais["valor_extenso"],
+                "quantidade_servidores": totais["quantidade_servidores"],
+                "valor_por_servidor": totais["valor_por_servidor"],
+                "tipo_destino": " + ".join(faixas),
+            },
+        }
+    )
+
+
+@acesso_ao_modulo
+@require_POST
+def rota(request):
+    """Rota do percurso no mapa: sede e destinos em ordem, ida e retorno.
+
+    Recebe os ids dos municípios na ordem do percurso e devolve os totais,
+    os segmentos (para preencher distância e tempo de viagem por trecho) e a
+    geometria da linha. Nada é gravado.
+    """
+    _exigir_edicao(request)
+    ids = [valor for valor in request.POST.getlist("municipios") if valor]
+    municipios_por_id = {
+        str(m.pk): m
+        for m in Municipio.objects.filter(pk__in=ids).select_related("estado")
+    }
+    ordenados = [municipios_por_id[i] for i in ids if i in municipios_por_id]
+    try:
+        resultado = calcular_rota(ordenados)
+    except RotaIndisponivel as erro:
+        return JsonResponse({"ok": False, "motivo": str(erro)})
+    resultado["ok"] = True
+    return JsonResponse(resultado)
 
 
 @acesso_ao_modulo

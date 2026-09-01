@@ -6,31 +6,18 @@ Por isso o formulário principal guarda pouca coisa (sede, equipe, vínculo) e o
 conjunto de trechos carrega o essencial.
 """
 
+from datetime import datetime
+
 from django import forms
 from django.forms import inlineformset_factory
+from django.utils import timezone
 
 from cadastros.models import Municipio
 from solicitacoes.models import SolicitacaoEvento
 
-from .models import Roteiro, RoteiroTrecho
+from .models import Roteiro, RoteiroDestino, RoteiroTrecho
 
-
-class EntradaDataHora(forms.DateTimeInput):
-    """Campo nativo de data e hora do navegador.
-
-    O formato ISO é o que o ``datetime-local`` envia e espera de volta; sem
-    declará-lo nos ``input_formats``, editar um roteiro existente traria o
-    campo vazio.
-    """
-
-    input_type = "datetime-local"
-
-    def __init__(self, attrs=None):
-        super().__init__(attrs={"class": "form-controle", **(attrs or {})},
-                         format="%Y-%m-%dT%H:%M")
-
-
-FORMATOS_DATA_HORA = ["%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M", "%d/%m/%Y %H:%M"]
+FORMATOS_DATA = ["%Y-%m-%d", "%d/%m/%Y"]
 
 # O mesmo rótulo que `components/select.html` usa nas demais telas.
 PLACEHOLDER_SELECT = "Selecione..."
@@ -57,18 +44,24 @@ def _vestir(form):
 
 
 class RoteiroForm(forms.ModelForm):
+    """Sede e vínculo do roteiro — o percurso vem dos formsets.
+
+    ``quantidade_servidores`` e ``observacoes`` ficam de fora por decisão do
+    dono do produto (01/09/2026): a tela não os oferece. Deixá-los no
+    formulário faria a edição gravar o vazio por cima do que está no banco;
+    fora dele, o valor guardado é preservado — e roteiro novo nasce com o
+    padrão do modelo (um servidor).
+    """
+
     class Meta:
         model = Roteiro
         fields = [
             "origem_municipio",
-            "quantidade_servidores",
             "solicitacao",
-            "observacoes",
         ]
         labels = {"origem_municipio": "município sede"}
         help_texts = {
             "origem_municipio": "De onde a equipe sai e para onde volta.",
-            "quantidade_servidores": "O total das diárias é multiplicado por este número.",
             "solicitacao": "Opcional: vincula o roteiro a uma solicitação de evento.",
         }
 
@@ -79,16 +72,7 @@ class RoteiroForm(forms.ModelForm):
             "-data_solicitacao", "-pk"
         )
         self.fields["solicitacao"].required = False
-        # `clean_quantidade_servidores` recusa zero; deixar o `min` do HTML em 0
-        # faria o navegador aceitar um valor que o servidor devolve com erro.
-        self.fields["quantidade_servidores"].widget.attrs["min"] = 1
         _vestir(self)
-
-    def clean_quantidade_servidores(self):
-        quantidade = self.cleaned_data.get("quantidade_servidores")
-        if quantidade is not None and quantidade < 1:
-            raise forms.ValidationError("Informe ao menos um servidor.")
-        return quantidade
 
     def save(self, commit=True):
         roteiro = super().save(commit=False)
@@ -103,20 +87,32 @@ class RoteiroForm(forms.ModelForm):
 
 
 class RoteiroTrechoForm(forms.ModelForm):
+    """Um deslocamento do percurso, com data e hora separadas.
+
+    O par data + hora segue a organização do editor de referência: a data usa
+    o calendário do design system e a hora fica num campo próprio. Os dois são
+    compostos em ``saida_dt``/``chegada_dt`` na validação.
+    """
+
+    saida_data = forms.DateField(
+        label="Data de saída", required=False, input_formats=FORMATOS_DATA
+    )
+    saida_hora = forms.TimeField(label="Hora de saída", required=False)
+    chegada_data = forms.DateField(
+        label="Data de chegada", required=False, input_formats=FORMATOS_DATA
+    )
+    chegada_hora = forms.TimeField(label="Hora de chegada", required=False)
+
     class Meta:
         model = RoteiroTrecho
         fields = [
             "ordem",
+            "sentido",
             "origem_municipio",
             "destino_municipio",
-            "saida_dt",
-            "chegada_dt",
             "distancia_km",
+            "duracao_min",
         ]
-        widgets = {
-            "saida_dt": EntradaDataHora(),
-            "chegada_dt": EntradaDataHora(),
-        }
 
     # `ordem` tem default=1, então o navegador desenha as linhas extras já
     # preenchidas. Mexer só nesse número faz o Django considerar a linha
@@ -125,20 +121,44 @@ class RoteiroTrechoForm(forms.ModelForm):
     CAMPOS_DE_CONTEUDO = (
         "origem_municipio",
         "destino_municipio",
-        "saida_dt",
-        "chegada_dt",
+        "saida_data",
+        "saida_hora",
+        "chegada_data",
+        "chegada_hora",
         "distancia_km",
     )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for nome in ("saida_dt", "chegada_dt"):
-            self.fields[nome].input_formats = FORMATOS_DATA_HORA
         for nome in ("origem_municipio", "destino_municipio"):
             self.fields[nome].queryset = _municipios_ativos()
-        self.fields["ordem"].widget.attrs["min"] = 1
-        self.fields["distancia_km"].widget.attrs.update({"step": "0.01", "min": 0})
-        _vestir(self)
+        # Preenchidos pela tela (rota e tempos), nunca digitados: um POST sem
+        # eles cai nos defaults do modelo em vez de derrubar o formulário.
+        self.fields["sentido"].required = False
+        self.fields["duracao_min"].required = False
+        if self.instance.pk:
+            for prefixo in ("saida", "chegada"):
+                instante = getattr(self.instance, f"{prefixo}_dt")
+                if instante:
+                    local = timezone.localtime(instante)
+                    self.initial.setdefault(f"{prefixo}_data", local.date())
+                    self.initial.setdefault(
+                        f"{prefixo}_hora",
+                        local.time().replace(second=0, microsecond=0),
+                    )
+
+    def _compor_instante(self, dados, prefixo, rotulo):
+        data = dados.get(f"{prefixo}_data")
+        hora = dados.get(f"{prefixo}_hora")
+        if data and not hora:
+            self.add_error(f"{prefixo}_hora", f"Informe a hora de {rotulo}.")
+            return None
+        if hora and not data:
+            self.add_error(f"{prefixo}_data", f"Informe a data de {rotulo}.")
+            return None
+        if not data:
+            return None
+        return timezone.make_aware(datetime.combine(data, hora))
 
     def esta_em_branco(self):
         """Linha sem nenhum dado além da ordem — a tela promete ignorá-la."""
@@ -160,38 +180,67 @@ class RoteiroTrechoForm(forms.ModelForm):
                 return dados
             dados["DELETE"] = True
             return dados
-        saida, chegada = dados.get("saida_dt"), dados.get("chegada_dt")
+        if not dados.get("sentido"):
+            dados["sentido"] = RoteiroTrecho.Sentido.IDA
+            self.instance.sentido = RoteiroTrecho.Sentido.IDA
+        saida = self._compor_instante(dados, "saida", "saída")
+        chegada = self._compor_instante(dados, "chegada", "chegada")
         if saida and chegada and chegada < saida:
             self.add_error(
-                "chegada_dt", "A chegada não pode ser anterior à saída do trecho."
+                "chegada_hora", "A chegada não pode ser anterior à saída do trecho."
             )
         # Trecho sem destino não entra no cálculo; é melhor recusar na tela do
         # que gravar uma linha que o motor vai ignorar em silêncio.
-        if dados.get("saida_dt") and not dados.get("destino_municipio"):
+        if saida and not dados.get("destino_municipio"):
             self.add_error("destino_municipio", "Informe o destino do trecho.")
+        # Fora de Meta.fields, os instantes não passam pelo construtor do
+        # ModelForm: a instância recebe o valor composto aqui.
+        self.instance.saida_dt = saida
+        self.instance.chegada_dt = chegada
         return dados
 
 
-class BaseTrechoFormSet(forms.BaseInlineFormSet):
-    """Numera as linhas novas em sequência.
-
-    `ordem` tem `default=1`, então sem isto o formulário abre com "1" em todas
-    as linhas extras — e preencher duas sem tocar no número, que é o caminho
-    natural, esbarra na unicidade de (roteiro, ordem) já no primeiro envio.
-    """
-
-    def add_fields(self, form, index):
-        super().add_fields(form, index)
-        if index is not None and index >= self.initial_form_count():
-            form.fields["ordem"].initial = index + 1
-
-
+# `extra=1`: um slot em branco para a tela revelar de saída; os demais cards
+# nascem do <template> com o empty_form, clonados pelo roteiro-editor.js
+# (DS.aprimorar liga os componentes). Slot em branco é ignorado na gravação.
 TrechoFormSet = inlineformset_factory(
     Roteiro,
     RoteiroTrecho,
     form=RoteiroTrechoForm,
-    formset=BaseTrechoFormSet,
-    extra=3,
+    extra=1,
+    can_delete=True,
+    min_num=0,
+    validate_min=False,
+)
+
+
+class RoteiroDestinoForm(forms.ModelForm):
+    """Uma linha de destino — o percurso nasce daqui, na ordem da visita."""
+
+    class Meta:
+        model = RoteiroDestino
+        fields = ["ordem", "municipio"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["municipio"].queryset = _municipios_ativos()
+        self.fields["municipio"].required = False
+
+    def clean(self):
+        dados = super().clean()
+        if dados.get("DELETE"):
+            return dados
+        # Linha vazia é slot da tela: some na gravação, sem alarde.
+        if not dados.get("municipio"):
+            dados["DELETE"] = True
+        return dados
+
+
+DestinoFormSet = inlineformset_factory(
+    Roteiro,
+    RoteiroDestino,
+    form=RoteiroDestinoForm,
+    extra=1,
     can_delete=True,
     min_num=0,
     validate_min=False,

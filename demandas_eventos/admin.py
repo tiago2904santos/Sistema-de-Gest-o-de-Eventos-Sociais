@@ -1,6 +1,34 @@
+from django import forms
 from django.contrib import admin
 
-from .models import DemandaEvento, Palestrante, RespostaPadrao, Tema
+from .models import (
+    DemandaEvento,
+    HistoricoDemanda,
+    Palestrante,
+    RespostaPadrao,
+    Tema,
+)
+
+
+class DemandaEventoAdminForm(forms.ModelForm):
+    class Meta:
+        model = DemandaEvento
+        fields = "__all__"
+
+    def clean_setores(self):
+        setores = self.cleaned_data.get("setores")
+        if not setores:
+            raise forms.ValidationError("Selecione ao menos um setor envolvido.")
+        return setores
+
+
+class HistoricoDemandaInline(admin.TabularInline):
+    model = HistoricoDemanda
+    extra = 0
+    can_delete = False
+    readonly_fields = (
+        "usuario", "acao", "status_anterior", "status_novo", "descricao", "criado_em"
+    )
 
 
 @admin.register(Tema)
@@ -27,6 +55,7 @@ class RespostaPadraoAdmin(admin.ModelAdmin):
 
 @admin.register(DemandaEvento)
 class DemandaEventoAdmin(admin.ModelAdmin):
+    form = DemandaEventoAdminForm
     list_display = (
         "id", "data_solicitacao", "tipo_evento", "municipio", "solicitante", "status"
     )
@@ -36,4 +65,7 @@ class DemandaEventoAdmin(admin.ModelAdmin):
     )
     date_hierarchy = "data_solicitacao"
     filter_horizontal = ("palestrantes", "setores")
-    readonly_fields = ("origem_importacao", "chave_importacao", "criado_em", "atualizado_em")
+    readonly_fields = (
+        "status", "origem_importacao", "chave_importacao", "criado_em", "atualizado_em"
+    )
+    inlines = (HistoricoDemandaInline,)

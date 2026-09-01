@@ -64,14 +64,23 @@ def _perfil_slug(usuario):
     """Chave visual do selo de perfil (superusuário tem selo próprio)."""
     if usuario.is_superuser:
         return "super"
-    grupo = usuario.groups.filter(name__in=["SOLICITANTE", "GESTOR_DG", "ADMINISTRADOR"]).first()
+    grupo = next(
+        (
+            grupo
+            for grupo in usuario.groups.all()
+            if grupo.name in {"SOLICITANTE", "GESTOR_DG", "ADMINISTRADOR"}
+        ),
+        None,
+    )
     return grupo.name.lower() if grupo else ""
 
 
 @login_required
 def lista_usuarios(request):
     _exigir_gestao_de_usuarios(request)
-    queryset = User.objects.order_by("first_name", "username")
+    queryset = User.objects.prefetch_related("groups", "setores").order_by(
+        "first_name", "username"
+    )
 
     termo = request.GET.get("q", "").strip()
     perfil = request.GET.get("perfil", "")
@@ -167,6 +176,14 @@ def editar_usuario(request, pk=None):
             "valores": valores,
             "erros": form.errors,
             "opcoes_perfil": [{"valor": valor, "rotulo": rotulo} for valor, rotulo in PERFIS],
+            "opcoes_setores": [
+                {"valor": str(setor.pk), "rotulo": str(setor)}
+                for setor in form.fields["setores"].queryset
+            ],
+            "setores_marcados": [
+                str(getattr(setor, "pk", setor))
+                for setor in (form["setores"].value() or [])
+            ],
             "titulo_pagina": (
                 f"Editar usuário: {instancia.username}" if instancia else "Novo usuário"
             ),

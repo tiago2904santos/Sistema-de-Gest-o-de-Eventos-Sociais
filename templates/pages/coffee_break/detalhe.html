@@ -22,7 +22,7 @@
     <div class="solicitacao-intro__acoes">
       {% url 'coffee_break:solicitacoes' as url_voltar %}
       {% include "components/button.html" with label="Voltar" variante="secundario" href=url_voltar %}
-      {% if not solicitacao.cancelada %}
+      {% if pode_editar %}
         {% url 'coffee_break:editar' solicitacao.pk as url_editar %}
         {% include "components/button.html" with label="Editar" variante="dourado" href=url_editar %}
       {% endif %}
@@ -31,7 +31,7 @@
 
   {% if solicitacao.cancelada %}
     <div class="alertas">
-      <div class="alerta alerta--warning">
+      <div class="alerta alerta--warning" role="status">
         Solicitação cancelada{% if solicitacao.cancelada_em %} em {{ solicitacao.cancelada_em|date:"d/m/Y H:i" }}{% endif %}{% if solicitacao.cancelada_por %} por {{ solicitacao.cancelada_por }}{% endif %} — a quantidade não consome o saldo do lote.
         {% if solicitacao.motivo_cancelamento %}Motivo: {{ solicitacao.motivo_cancelamento }}{% endif %}
       </div>
@@ -80,20 +80,40 @@
         <div class="resumo-dg__item"><dt>Criada em</dt><dd>{{ solicitacao.criado_em|date:"d/m/Y H:i" }}</dd></div>
         <div class="resumo-dg__item"><dt>Atualizada em</dt><dd>{{ solicitacao.atualizado_em|date:"d/m/Y H:i" }}</dd></div>
       </dl>
-      <div class="lista-cabecalho__acoes" style="margin-top: var(--esp-3);">
+      <div class="lista-cabecalho__acoes detalhe-acoes-registro">
         {% if solicitacao.cancelada %}
           <form method="post" action="{% url 'coffee_break:reativar' solicitacao.pk %}">
             {% csrf_token %}
             <button type="submit" class="btn btn--secundario btn--com-icone">{% include "components/icon.html" with nome="undo" %}Reativar solicitação</button>
           </form>
-        {% else %}
-          <form method="post" action="{% url 'coffee_break:cancelar' solicitacao.pk %}" data-confirmar="Confirmar cancelamento?">
+        {% elif not solicitacao.concluida %}
+          <form method="post" action="{% url 'coffee_break:cancelar' solicitacao.pk %}" class="cancelamento-form">
             {% csrf_token %}
-            <input type="hidden" name="motivo" value="Cancelada pela ASCOM no sistema.">
+            <label class="form-label" for="id_motivo_cancelamento">Motivo do cancelamento <span class="form-label__obrigatorio">*</span></label>
+            <input class="form-controle" type="text" id="id_motivo_cancelamento" name="motivo" maxlength="255" required placeholder="Explique por que o pedido foi cancelado">
             <button type="submit" class="btn btn--perigo btn--com-icone">{% include "components/icon.html" with nome="ban" %}Cancelar solicitação</button>
           </form>
+        {% else %}
+          <p class="texto-suave">Fluxo financeiro concluído. O registro permanece disponível apenas para consulta e histórico.</p>
         {% endif %}
       </div>
+    </div>
+  </section>
+
+  <section class="section-card">
+    {% include "components/section_card.html" with numero="4" titulo="Histórico" subtitulo="Alterações e transições registradas no sistema" %}
+    <div class="section-card__corpo">
+      <ol class="historico-lista">
+        {% for registro in historico %}
+          <li>
+            <strong>{{ registro.get_acao_display }}</strong>
+            <span>{{ registro.criado_em|date:"d/m/Y H:i" }} · {{ registro.usuario|default:"Sistema" }}</span>
+            {% if registro.descricao %}<p>{{ registro.descricao }}</p>{% endif %}
+          </li>
+        {% empty %}
+          <li class="texto-suave">Nenhuma alteração registrada.</li>
+        {% endfor %}
+      </ol>
     </div>
   </section>
 {% endblock %}

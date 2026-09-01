@@ -20,6 +20,12 @@
   <form method="post" action="">
     {% csrf_token %}
 
+    {% if form.errors %}
+      <div class="alerta alerta--error resumo-erros" role="alert" tabindex="-1" data-resumo-erros>
+        <strong>Revise os campos indicados antes de salvar.</strong>
+      </div>
+    {% endif %}
+
     <section class="section-card">
       {% include "components/section_card.html" with numero="1" titulo="Dados do usuário" subtitulo="Informações cadastrais e de identificação" %}
       <div class="section-card__corpo">
@@ -27,7 +33,7 @@
           {% include "components/input.html" with name="first_name" label="Nome" obrigatorio=True largura="6" valor=valores.first_name erros=erros.first_name placeholder="Digite o nome" %}
           {% include "components/input.html" with name="last_name" label="Sobrenome" largura="6" valor=valores.last_name erros=erros.last_name placeholder="Digite o sobrenome" %}
           {% include "components/input.html" with name="username" label="Usuário" obrigatorio=True largura="6" valor=valores.username erros=erros.username placeholder="Digite o nome de usuário" ajuda="Será utilizado para login no sistema." %}
-          {% include "components/input.html" with name="email" label="E-mail institucional" tipo="email" largura="6" valor=valores.email erros=erros.email placeholder="usuario@pc.pr.gov.br" ajuda="Informe um e-mail institucional válido." %}
+          {% include "components/input.html" with name="email" label="E-mail institucional" tipo="email" obrigatorio=form.email.field.required largura="6" valor=valores.email erros=erros.email placeholder="usuario@pc.pr.gov.br" ajuda="Informe um e-mail institucional válido." %}
         </div>
         <div class="usuario-form__linha">
           <div>
@@ -48,7 +54,28 @@
     </section>
 
     <section class="section-card">
-      {% include "components/section_card.html" with numero="2" titulo="Acesso" subtitulo=instancia|yesno:"Redefinição de senha (opcional),Definição da senha inicial" %}
+      {% include "components/section_card.html" with numero="2" titulo="Setores e módulos" subtitulo="Defina as áreas institucionais que liberam os módulos do portal" %}
+      <div class="section-card__corpo">
+        <fieldset class="form-campo form-fieldset" id="id_setores"{% if erros.setores %} aria-invalid="true" aria-describedby="id_setores_erro"{% endif %}>
+          <legend class="form-label">Setores autorizados</legend>
+          <p class="form-ajuda">Os módulos disponíveis serão derivados dos setores selecionados. Deixe vazio apenas para usuários sem acesso operacional.</p>
+          <div class="chip-grid">
+            {% for setor in opcoes_setores %}
+              <label class="check-chip">
+                <input type="checkbox" name="setores" value="{{ setor.valor }}"{% if setor.valor in setores_marcados %} checked{% endif %}>
+                <span aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>{{ setor.rotulo }}
+              </label>
+            {% empty %}
+              <p class="texto-suave">Nenhum setor ativo cadastrado.</p>
+            {% endfor %}
+          </div>
+          {% for erro in erros.setores %}<p class="form-erro"{% if forloop.first %} id="id_setores_erro"{% endif %}>{{ erro }}</p>{% endfor %}
+        </fieldset>
+      </div>
+    </section>
+
+    <section class="section-card">
+      {% include "components/section_card.html" with numero="3" titulo="Acesso" subtitulo=instancia|yesno:"Redefinição de senha (opcional),Definição da senha inicial" %}
       <div class="section-card__corpo">
         <div class="usuario-form__linha">
           <div class="form-grid">

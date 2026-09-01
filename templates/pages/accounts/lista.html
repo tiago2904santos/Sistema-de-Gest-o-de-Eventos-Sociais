@@ -54,6 +54,7 @@
                     <span class="usuario-celula__dados">
                       <strong>{{ u.get_full_name|default:u.username }}</strong>
                       <small>{{ u.username }}{% if u.email %} &nbsp;·&nbsp; {{ u.email }}{% endif %}</small>
+                      <small>Setores: {% for setor in u.setores.all %}{{ setor }}{% if not forloop.last %}, {% endif %}{% empty %}nenhum{% endfor %}</small>
                     </span>
                   </div>
                 </td>

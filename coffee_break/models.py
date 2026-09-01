@@ -287,6 +287,11 @@ class SolicitacaoCoffeeBreak(models.Model):
         verbose_name_plural = "solicitações de coffee break"
         ordering = ["-data_solicitacao", "-criado_em"]
         constraints = [
+            models.UniqueConstraint(
+                fields=["lote", "numero"],
+                condition=~models.Q(numero=""),
+                name="coffee_numero_unico_por_lote",
+            ),
             models.CheckConstraint(
                 condition=(
                     models.Q(data_inicio_evento__isnull=True)
@@ -299,6 +304,18 @@ class SolicitacaoCoffeeBreak(models.Model):
             models.CheckConstraint(
                 condition=models.Q(quantidade__gte=1) | models.Q(cancelada=True),
                 name="coffee_quantidade_positiva",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(data_ordem_bancaria__isnull=True)
+                | models.Q(data_atesto_gaf__isnull=True)
+                | models.Q(data_ordem_bancaria__gte=models.F("data_atesto_gaf")),
+                name="coffee_ob_apos_atesto",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(data_envio_empresa__isnull=True)
+                | models.Q(data_ordem_bancaria__isnull=True)
+                | models.Q(data_envio_empresa__gte=models.F("data_ordem_bancaria")),
+                name="coffee_envio_apos_ob",
             ),
         ]
 
@@ -319,6 +336,38 @@ class SolicitacaoCoffeeBreak(models.Model):
             )
         if not self.cancelada and (self.quantidade or 0) < 1:
             errors["quantidade"] = "A quantidade deve ser de pelo menos 1 unidade."
+        if self.protocolo_pagamento and not self.numero_nota_fiscal:
+            errors["protocolo_pagamento"] = (
+                "Informe a nota fiscal antes do protocolo de pagamento."
+            )
+        if self.data_atesto_gaf and not self.protocolo_pagamento:
+            errors["data_atesto_gaf"] = (
+                "Informe o protocolo de pagamento antes do atesto."
+            )
+        if self.data_ordem_bancaria and not self.data_atesto_gaf:
+            errors["data_ordem_bancaria"] = (
+                "Informe o atesto antes da ordem bancária."
+            )
+        if self.data_envio_empresa and not self.data_ordem_bancaria:
+            errors["data_envio_empresa"] = (
+                "Informe a emissão da ordem bancária antes do envio à empresa."
+            )
+        if (
+            self.data_atesto_gaf
+            and self.data_ordem_bancaria
+            and self.data_ordem_bancaria < self.data_atesto_gaf
+        ):
+            errors["data_ordem_bancaria"] = (
+                "A ordem bancária não pode ser anterior ao atesto."
+            )
+        if (
+            self.data_ordem_bancaria
+            and self.data_envio_empresa
+            and self.data_envio_empresa < self.data_ordem_bancaria
+        ):
+            errors["data_envio_empresa"] = (
+                "O envio à empresa não pode ser anterior à emissão da ordem bancária."
+            )
         if errors:
             raise ValidationError(errors)
 
@@ -341,9 +390,7 @@ class SolicitacaoCoffeeBreak(models.Model):
 
     @property
     def periodo_evento_display(self):
-        """Período legível: texto original quando irregular, datas quando não."""
-        if self.periodo_evento_texto:
-            return self.periodo_evento_texto
+        """Período legível: datas estruturadas são a fonte oficial."""
         if self.data_inicio_evento and self.data_fim_evento and (
             self.data_fim_evento != self.data_inicio_evento
         ):
@@ -353,4 +400,57 @@ class SolicitacaoCoffeeBreak(models.Model):
             )
         if self.data_inicio_evento:
             return f"{self.data_inicio_evento:%d/%m/%Y}"
-        return ""
+        return self.periodo_evento_texto
+
+    @property
+    def financeiro_iniciado(self):
+        return any(
+            (
+                self.numero_nota_fiscal,
+                self.protocolo_pagamento,
+                self.data_atesto_gaf,
+                self.data_ordem_bancaria,
+                self.data_envio_empresa,
+            )
+        )
+
+    @property
+    def concluida(self):
+        return bool(self.data_envio_empresa) and not self.cancelada
+
+
+class AcaoHistoricoCoffeeBreak(models.TextChoices):
+    CRIACAO = "CRIACAO", "Solicitação criada"
+    ATUALIZACAO = "ATUALIZACAO", "Solicitação atualizada"
+    CANCELAMENTO = "CANCELAMENTO", "Solicitação cancelada"
+    REATIVACAO = "REATIVACAO", "Solicitação reativada"
+
+
+class HistoricoCoffeeBreak(models.Model):
+    solicitacao = models.ForeignKey(
+        SolicitacaoCoffeeBreak,
+        on_delete=models.CASCADE,
+        related_name="historico",
+        verbose_name="solicitação",
+    )
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="historico_coffee_break",
+        null=True,
+        blank=True,
+        verbose_name="usuário",
+    )
+    acao = models.CharField(
+        "ação", max_length=20, choices=AcaoHistoricoCoffeeBreak.choices
+    )
+    descricao = models.TextField("descrição", blank=True)
+    criado_em = models.DateTimeField("criado em", auto_now_add=True)
+
+    class Meta:
+        ordering = ["criado_em", "pk"]
+        verbose_name = "histórico de coffee break"
+        verbose_name_plural = "históricos de coffee break"
+
+    def __str__(self):
+        return f"{self.solicitacao_id} — {self.get_acao_display()}"

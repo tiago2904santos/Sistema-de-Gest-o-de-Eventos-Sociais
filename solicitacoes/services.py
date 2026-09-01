@@ -6,7 +6,7 @@ o campo `status` diretamente, e transições inválidas levantam
 `TransicaoInvalida`.
 """
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
@@ -302,7 +302,15 @@ def concluir_atendimento(solicitacao, usuario):
 
 @transaction.atomic
 def cancelar_evento(solicitacao, usuario, observacao):
-    """Qualquer usuário registra que o evento foi cancelado, com o motivo."""
+    """Registra cancelamento apenas para autoria ou alçada autorizada."""
+    from .permissions import STATUS_CANCELAVEIS, pode_cancelar
+
+    if solicitacao.status not in STATUS_CANCELAVEIS:
+        raise TransicaoInvalida(
+            "Apenas solicitações em andamento podem ser canceladas."
+        )
+    if not pode_cancelar(usuario, solicitacao):
+        raise PermissionDenied("Você não pode cancelar esta solicitação.")
     observacao = (observacao or "").strip()
     if not observacao:
         raise ValidationError("Informe o motivo do cancelamento do evento.")

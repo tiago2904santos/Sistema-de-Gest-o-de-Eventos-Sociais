@@ -7,7 +7,7 @@ nunca deixa rastro na trilha.
 """
 
 from django.db import transaction
-from django.db.models.signals import post_save, pre_delete, pre_save
+from django.db.models.signals import m2m_changed, post_save, pre_delete, pre_save
 
 from core.middleware import obter_requisicao_atual
 
@@ -28,6 +28,8 @@ MODELOS_EXCLUIDOS = {
     "auditoria.registroauditoria",
     "auditoria.logauditoria",
     "solicitacoes.historicosolicitacao",
+    "coffee_break.historicocoffeebreak",
+    "demandas_eventos.historicodemanda",
     "core.notificacao",
 }
 
@@ -133,7 +135,45 @@ def _registrar_antes_de_excluir(sender, instance, **kwargs):
     )
 
 
+def _registrar_relacao_muitos_para_muitos(
+    sender, instance, action, reverse, model, pk_set, **kwargs
+):
+    """Registra concessões de acesso e vínculos operacionais feitos via M2M."""
+    if action not in {"post_add", "post_remove", "post_clear"}:
+        return
+    if not _deve_auditar(type(instance)):
+        return
+    from .models import RegistroAuditoria
+
+    campo = sender._meta.label_lower
+    if not reverse:
+        for candidato in instance._meta.many_to_many:
+            if candidato.remote_field.through is sender:
+                campo = candidato.name
+                break
+    operacao = {
+        "post_add": "adicionados",
+        "post_remove": "removidos",
+        "post_clear": "limpos",
+    }[action]
+    _agendar_registro(
+        instance,
+        RegistroAuditoria.Acao.ATUALIZACAO,
+        {
+            campo: {
+                "operacao": operacao,
+                "modelo_relacionado": model._meta.label_lower,
+                "ids": sorted(str(pk) for pk in (pk_set or set())),
+            }
+        },
+    )
+
+
 def conectar_signals_de_auditoria():
     pre_save.connect(_capturar_estado_anterior, dispatch_uid="auditoria_pre_save")
     post_save.connect(_registrar_apos_salvar, dispatch_uid="auditoria_post_save")
     pre_delete.connect(_registrar_antes_de_excluir, dispatch_uid="auditoria_pre_delete")
+    m2m_changed.connect(
+        _registrar_relacao_muitos_para_muitos,
+        dispatch_uid="auditoria_m2m_changed",
+    )

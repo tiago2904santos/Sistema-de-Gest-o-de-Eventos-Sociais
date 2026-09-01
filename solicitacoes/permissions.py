@@ -13,8 +13,6 @@ Modelo de perfis:
 Fluxo: RASCUNHO → (enviar) → AGUARDANDO_DESPACHO → decisão da DG.
 """
 
-from django.db.models import Q
-
 from .models import StatusSolicitacao
 
 GRUPO_SOLICITANTE = "SOLICITANTE"
@@ -52,21 +50,20 @@ def pode_gerenciar_usuarios(user):
 
 
 def pode_ver(user, solicitacao):
-    """Rascunho é privado do criador; o restante é visível a todos."""
-    if user.is_superuser:
-        return True
-    if solicitacao.status == StatusSolicitacao.RASCUNHO:
-        return solicitacao.criado_por_id == user.pk
-    return True
+    """Dossiê pertence ao criador; DG e administração têm visão transversal."""
+    return (
+        user.is_superuser
+        or solicitacao.criado_por_id == user.pk
+        or eh_gestor_dg(user)
+        or eh_administrador(user)
+    )
 
 
 def queryset_visivel(user, queryset):
     """Restringe um queryset de solicitações ao que o usuário pode ver."""
-    if user.is_superuser:
+    if user.is_superuser or eh_gestor_dg(user) or eh_administrador(user):
         return queryset
-    return queryset.filter(
-        ~Q(status=StatusSolicitacao.RASCUNHO) | Q(criado_por=user)
-    )
+    return queryset.filter(criado_por=user)
 
 
 STATUS_EDITAVEIS = {StatusSolicitacao.RASCUNHO, StatusSolicitacao.DEVOLVIDA}
@@ -132,8 +129,15 @@ STATUS_CANCELAVEIS = {
 
 
 def pode_cancelar(user, solicitacao):
-    """Evento cancelado pode ser registrado por qualquer usuário que o vê."""
-    return solicitacao.status in STATUS_CANCELAVEIS and pode_ver(user, solicitacao)
+    """Cancelamento exige autoria ou alçada institucional explícita."""
+    if solicitacao.status not in STATUS_CANCELAVEIS:
+        return False
+    return (
+        user.is_superuser
+        or solicitacao.criado_por_id == user.pk
+        or eh_gestor_dg(user)
+        or eh_administrador(user)
+    )
 
 
 def acoes_permitidas(user, solicitacao):

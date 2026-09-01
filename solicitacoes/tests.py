@@ -464,13 +464,13 @@ class WorkflowTests(BaseSolicitacaoTestCase):
         services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER)
 
         services.cancelar_evento(
-            solicitacao, self.outro_solicitante, "Chuva forte no dia do evento."
+            solicitacao, self.solicitante, "Chuva forte no dia do evento."
         )
 
         self.assertEqual(solicitacao.status, StatusSolicitacao.CANCELADA)
         registro = solicitacao.historico.get(acao=AcaoHistorico.CANCELAMENTO)
         self.assertEqual(registro.observacao, "Chuva forte no dia do evento.")
-        self.assertEqual(registro.usuario, self.outro_solicitante)
+        self.assertEqual(registro.usuario, self.solicitante)
 
     def test_cancelamento_exige_motivo(self):
         solicitacao = self.solicitacao_completa()
@@ -525,8 +525,8 @@ class WorkflowTests(BaseSolicitacaoTestCase):
         services.devolver(solicitacao, self.gestor, "Ajustar período.")
         self.assertTrue(perms.pode_editar_dados(self.solicitante, solicitacao))
         self.assertTrue(perms.pode_enviar(self.solicitante, solicitacao))
-        # Devolvida não é rascunho: continua visível e não pode ser excluída.
-        self.assertTrue(perms.pode_ver(self.outro_solicitante, solicitacao))
+        # O dossiê devolvido continua privado do criador e não pode ser excluído.
+        self.assertFalse(perms.pode_ver(self.outro_solicitante, solicitacao))
         self.assertFalse(perms.pode_excluir(self.solicitante, solicitacao))
 
     def test_timeline_devolvida_reabre_primeira_etapa(self):
@@ -1024,7 +1024,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         solicitacao.refresh_from_db()
         self.assertEqual(solicitacao.status, StatusSolicitacao.ATENDIDA)
 
-    def test_qualquer_usuario_cancela_evento_via_view(self):
+    def test_usuario_nao_cancela_evento_de_terceiro_via_view(self):
         solicitacao = self.solicitacao_completa()
         services.enviar(solicitacao, self.solicitante)
         self.client.force_login(self.outro_solicitante)
@@ -1032,16 +1032,19 @@ class ViewsTests(BaseSolicitacaoTestCase):
         resposta = self.client.get(
             reverse("solicitacoes:detalhe", args=[solicitacao.pk])
         )
-        self.assertContains(resposta, "Registrar cancelamento do evento")
-
-        # Sem motivo, nada muda.
+        self.assertEqual(resposta.status_code, 403)
         resposta = self.client.post(
             reverse("solicitacoes:cancelar_evento", args=[solicitacao.pk]),
-            {"motivo_cancelamento": ""},
+            {"motivo_cancelamento": "Tentativa sem autorização."},
         )
+        self.assertEqual(resposta.status_code, 403)
         solicitacao.refresh_from_db()
         self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
 
+    def test_criador_cancela_proprio_evento_via_view(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.client.force_login(self.solicitante)
         resposta = self.client.post(
             reverse("solicitacoes:cancelar_evento", args=[solicitacao.pk]),
             {"motivo_cancelamento": "Evento cancelado pela prefeitura."},
@@ -1164,8 +1167,13 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.client.force_login(self.outro_solicitante)
         resposta = self.client.get(reverse("solicitacoes:lista"))
         pks = [linha["solicitacao"].pk for linha in resposta.context["linhas"]]
-        self.assertIn(enviada.pk, pks)
+        self.assertNotIn(enviada.pk, pks)
         self.assertNotIn(rascunho.pk, pks)
+
+        self.client.force_login(self.gestor)
+        resposta = self.client.get(reverse("solicitacoes:lista"))
+        pks = [linha["solicitacao"].pk for linha in resposta.context["linhas"]]
+        self.assertIn(enviada.pk, pks)
 
     def test_listagem_ordena_pela_coluna_pedida(self):
         primeira = self.criar_solicitacao(solicitante_nome="Ana")
@@ -1412,7 +1420,7 @@ class AnexosTests(BaseSolicitacaoTestCase):
         resposta = self.client.get(url)
         self.assertEqual(resposta.status_code, 403)
 
-    def test_qualquer_usuario_baixa_anexo_de_solicitacao_enviada(self):
+    def test_usuario_nao_baixa_anexo_de_solicitacao_enviada_de_terceiro(self):
         solicitacao = self.solicitacao_completa()
         self.client.force_login(self.solicitante)
         self.client.post(
@@ -1425,7 +1433,17 @@ class AnexosTests(BaseSolicitacaoTestCase):
         resposta = self.client.get(
             reverse("solicitacoes:anexo_baixar", args=[solicitacao.pk, anexo.pk])
         )
-        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.status_code, 403)
+
+    def test_conteudo_disfarcado_de_pdf_e_rejeitado(self):
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        resposta = self.client.post(
+            reverse("solicitacoes:anexo_adicionar", args=[solicitacao.pk]),
+            {"arquivo": SimpleUploadedFile("oficio.pdf", b"MZ executavel")},
+        )
+        self.assertEqual(resposta.status_code, 302)
+        self.assertFalse(solicitacao.anexos.exists())
 
     def test_criador_exclui_anexo_do_rascunho(self):
         solicitacao = self.criar_solicitacao()

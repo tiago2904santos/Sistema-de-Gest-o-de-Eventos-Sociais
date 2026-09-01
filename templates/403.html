@@ -1,0 +1,17 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Acesso não autorizado — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  <main class="erro-pagina" aria-labelledby="erro-titulo">
+    <span class="erro-pagina__codigo" aria-hidden="true">403</span>
+    <div>
+      <h1 id="erro-titulo">Você não tem acesso a esta página</h1>
+      <p>O endereço existe, mas seu perfil ou seus setores não possuem a autorização necessária.</p>
+      <div class="acoes-formulario">
+        <a class="btn btn--dourado" href="{% url 'core:home' %}">Voltar ao início</a>
+      </div>
+      <p class="form-ajuda">Se este acesso fizer parte do seu trabalho, solicite ao administrador o vínculo ao setor correto.</p>
+    </div>
+  </main>
+{% endblock %}

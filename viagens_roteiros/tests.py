@@ -369,6 +369,12 @@ class MontagemPelaTelaTests(BaseTelaRoteiroTestCase):
             "origem_municipio": self.curitiba.pk,
             "quantidade_servidores": 1,
             "observacoes": "",
+            "destinos-TOTAL_FORMS": "1",
+            "destinos-INITIAL_FORMS": "0",
+            "destinos-MIN_NUM_FORMS": "0",
+            "destinos-MAX_NUM_FORMS": "1000",
+            "destinos-0-ordem": "1",
+            "destinos-0-municipio": self.sao_paulo.pk,
             "trechos-TOTAL_FORMS": "1",
             "trechos-INITIAL_FORMS": "0",
             "trechos-MIN_NUM_FORMS": "0",
@@ -376,8 +382,10 @@ class MontagemPelaTelaTests(BaseTelaRoteiroTestCase):
             "trechos-0-ordem": "1",
             "trechos-0-origem_municipio": self.curitiba.pk,
             "trechos-0-destino_municipio": self.sao_paulo.pk,
-            "trechos-0-saida_dt": "2026-08-12T08:00",
-            "trechos-0-chegada_dt": "2026-08-12T18:00",
+            "trechos-0-saida_data": "2026-08-12",
+            "trechos-0-saida_hora": "08:00",
+            "trechos-0-chegada_data": "2026-08-12",
+            "trechos-0-chegada_hora": "18:00",
             "trechos-0-distancia_km": "",
         }
         base.update(extras)
@@ -391,6 +399,119 @@ class MontagemPelaTelaTests(BaseTelaRoteiroTestCase):
         )
         self.assertEqual(roteiro.trechos.count(), 1)
         self.assertEqual(roteiro.trechos.get().destino_municipio, self.sao_paulo)
+
+    def test_salvar_ja_calcula_as_diarias(self):
+        """O cálculo acompanha o salvamento — sem passo extra de "calcular"."""
+        resposta = self.client.post(
+            reverse("viagens_roteiros:novo"), self.dados(), follow=True
+        )
+        roteiro = Roteiro.objects.latest("pk")
+        self.assertIsNotNone(roteiro.valor_diarias)
+        self.assertContains(resposta, "diárias")
+
+    def test_roteiro_incompleto_salva_e_avisa_sem_erro(self):
+        """Percurso sem datas não impede salvar; o aviso explica o que falta."""
+        incompleto = self.dados(
+            **{
+                "trechos-0-saida_data": "",
+                "trechos-0-saida_hora": "",
+                "trechos-0-chegada_data": "",
+                "trechos-0-chegada_hora": "",
+            }
+        )
+        resposta = self.client.post(
+            reverse("viagens_roteiros:novo"), incompleto, follow=True
+        )
+        roteiro = Roteiro.objects.latest("pk")
+        self.assertIsNone(roteiro.valor_diarias)
+        self.assertContains(resposta, "ainda não calculadas")
+
+    def test_o_calendario_de_datas_abre_no_proprio_botao(self):
+        """"Preencher datas de saída" é o gatilho do calendário de N datas."""
+        resposta = self.client.get(reverse("viagens_roteiros:novo"))
+        corpo = resposta.content.decode()
+        self.assertIn("data-custom-date-multi", corpo)
+        self.assertIn("data-custom-date-multi-trigger", corpo)
+        self.assertIn("Preencher datas de saída", corpo)
+        # O painel antigo (campo "a partir de" + aplicar) não existe mais.
+        self.assertNotIn('name="datas_a_partir_de"', corpo)
+
+    def test_a_tela_oferece_estado_para_filtrar_municipio(self):
+        """Estado é filtro de tela: o município carrega o dono no `data-parent-value`."""
+        resposta = self.client.get(reverse("viagens_roteiros:novo"))
+        corpo = resposta.content.decode()
+        self.assertIn('name="origem_estado"', corpo)
+        self.assertIn('data-depends-on="id_origem_estado"', corpo)
+        self.assertIn('data-parent-value="%s"' % self.curitiba.estado_id, corpo)
+
+    def test_destinos_sao_gravados_na_ordem_da_visita(self):
+        self.client.post(reverse("viagens_roteiros:novo"), self.dados())
+        roteiro = Roteiro.objects.latest("pk")
+        destinos = list(roteiro.destinos.values_list("municipio__nome", flat=True))
+        self.assertEqual(destinos, ["São Paulo"])
+
+    def test_rota_sem_chave_explica_a_configuracao(self):
+        """Sem OPENROUTESERVICE_API_KEY o endpoint explica o que falta.
+
+        A chave do ambiente é anulada de propósito: o teste descreve o
+        comportamento sem configuração e não pode depender do `.env` local
+        (nem sair chamando a API de verdade quando a chave existir).
+        """
+        from cadastros.models import Municipio
+
+        Municipio.objects.filter(
+            pk__in=[self.curitiba.pk, self.sao_paulo.pk]
+        ).update(latitude="-25.4290000", longitude="-49.2671000")
+        with self.settings(OPENROUTESERVICE_API_KEY=""):
+            resposta = self.client.post(
+                reverse("viagens_roteiros:calcular_rota"),
+                {"municipios": [self.curitiba.pk, self.sao_paulo.pk]},
+            )
+        dados = resposta.json()
+        self.assertFalse(dados["ok"])
+        self.assertIn("OPENROUTESERVICE_API_KEY", dados["motivo"])
+
+    def test_rota_sem_coordenadas_aponta_os_municipios(self):
+        resposta = self.client.post(
+            reverse("viagens_roteiros:calcular_rota"),
+            {"municipios": [self.curitiba.pk, self.sao_paulo.pk]},
+        )
+        dados = resposta.json()
+        self.assertFalse(dados["ok"])
+        self.assertIn("coordenadas", dados["motivo"])
+
+    def test_previa_devolve_o_total_sem_gravar_nada(self):
+        """A prévia roda o motor sobre o formulário e não cria roteiro."""
+        antes = Roteiro.objects.count()
+        resposta = self.client.post(
+            reverse("viagens_roteiros:previa_diarias"), self.dados()
+        )
+        dados = resposta.json()
+        self.assertTrue(dados["ok"])
+        self.assertIn("total_valor", dados["totais"])
+        self.assertEqual(Roteiro.objects.count(), antes)
+
+    def test_previa_incompleta_explica_o_que_falta(self):
+        incompleto = self.dados(
+            **{"trechos-0-saida_data": "", "trechos-0-saida_hora": ""}
+        )
+        resposta = self.client.post(
+            reverse("viagens_roteiros:previa_diarias"), incompleto
+        )
+        dados = resposta.json()
+        self.assertFalse(dados["ok"])
+        self.assertIn("prévia", dados["motivo"])
+
+    def test_previa_exige_permissao_de_edicao(self):
+        from django.contrib.auth import get_user_model
+
+        leitora = get_user_model().objects.create_user("leitora_previa")
+        leitora.setores.add(self.setor)
+        self.client.force_login(leitora)
+        resposta = self.client.post(
+            reverse("viagens_roteiros:previa_diarias"), self.dados()
+        )
+        self.assertEqual(resposta.status_code, 403)
 
     def test_roteiro_sem_solicitacao_nasce_avulso(self):
         self.client.post(reverse("viagens_roteiros:novo"), self.dados())
@@ -412,7 +533,7 @@ class MontagemPelaTelaTests(BaseTelaRoteiroTestCase):
     def test_chegada_antes_da_saida_e_recusada_na_tela(self):
         resposta = self.client.post(
             reverse("viagens_roteiros:novo"),
-            self.dados(**{"trechos-0-chegada_dt": "2026-08-12T06:00"}),
+            self.dados(**{"trechos-0-chegada_hora": "06:00"}),
         )
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, "não pode ser anterior à saída")
@@ -526,6 +647,10 @@ class DefeitosEncontradosNoSmokeTests(BaseTelaRoteiroTestCase):
             "origem_municipio": self.curitiba.pk,
             "quantidade_servidores": 1,
             "observacoes": "",
+            "destinos-TOTAL_FORMS": "0",
+            "destinos-INITIAL_FORMS": "0",
+            "destinos-MIN_NUM_FORMS": "0",
+            "destinos-MAX_NUM_FORMS": "1000",
             "trechos-TOTAL_FORMS": "2",
             "trechos-INITIAL_FORMS": "0",
             "trechos-MIN_NUM_FORMS": "0",
@@ -533,16 +658,20 @@ class DefeitosEncontradosNoSmokeTests(BaseTelaRoteiroTestCase):
             "trechos-0-ordem": "1",
             "trechos-0-origem_municipio": self.curitiba.pk,
             "trechos-0-destino_municipio": self.sao_paulo.pk,
-            "trechos-0-saida_dt": "2026-08-12T08:00",
-            "trechos-0-chegada_dt": "2026-08-12T18:00",
+            "trechos-0-saida_data": "2026-08-12",
+            "trechos-0-saida_hora": "08:00",
+            "trechos-0-chegada_data": "2026-08-12",
+            "trechos-0-chegada_hora": "18:00",
             "trechos-0-distancia_km": "",
             # Só a ordem mexida — o resto em branco, como quem numera as linhas
             # antes de preenchê-las.
             "trechos-1-ordem": ordem_da_linha_vazia,
             "trechos-1-origem_municipio": "",
             "trechos-1-destino_municipio": "",
-            "trechos-1-saida_dt": "",
-            "trechos-1-chegada_dt": "",
+            "trechos-1-saida_data": "",
+            "trechos-1-saida_hora": "",
+            "trechos-1-chegada_data": "",
+            "trechos-1-chegada_hora": "",
             "trechos-1-distancia_km": "",
         }
 
@@ -564,6 +693,10 @@ class DefeitosEncontradosNoSmokeTests(BaseTelaRoteiroTestCase):
                 "origem_municipio": self.curitiba.pk,
                 "quantidade_servidores": 1,
                 "observacoes": "",
+                "destinos-TOTAL_FORMS": "0",
+                "destinos-INITIAL_FORMS": "0",
+                "destinos-MIN_NUM_FORMS": "0",
+                "destinos-MAX_NUM_FORMS": "1000",
                 "trechos-TOTAL_FORMS": "1",
                 "trechos-INITIAL_FORMS": "1",
                 "trechos-MIN_NUM_FORMS": "0",
@@ -572,8 +705,10 @@ class DefeitosEncontradosNoSmokeTests(BaseTelaRoteiroTestCase):
                 "trechos-0-ordem": "1",
                 "trechos-0-origem_municipio": "",
                 "trechos-0-destino_municipio": "",
-                "trechos-0-saida_dt": "",
-                "trechos-0-chegada_dt": "",
+                "trechos-0-saida_data": "",
+                "trechos-0-saida_hora": "",
+                "trechos-0-chegada_data": "",
+                "trechos-0-chegada_hora": "",
                 "trechos-0-distancia_km": "",
             },
         )
@@ -587,7 +722,7 @@ class DefeitosEncontradosNoSmokeTests(BaseTelaRoteiroTestCase):
         # estilizada — o formulário parecia de outro sistema.
         resposta = self.client.get(reverse("viagens_roteiros:novo"))
         corpo = resposta.content.decode()
-        for campo in ("origem_municipio", "quantidade_servidores", "observacoes"):
+        for campo in ("origem_municipio", "roteiro_base"):
             with self.subTest(campo=campo):
                 marcacao = re.search(
                     r'<(?:input|select|textarea)[^>]*name="%s"[^>]*>' % campo, corpo
@@ -597,20 +732,34 @@ class DefeitosEncontradosNoSmokeTests(BaseTelaRoteiroTestCase):
 
     def test_a_opcao_vazia_dos_selects_fala_portugues(self):
         # O padrão do Django ("Select an option") vinha em inglês no meio de uma
-        # tela em português; o resto do sistema diz "Selecione...".
+        # tela em português; os pickers dizem "Buscar município...".
         resposta = self.client.get(reverse("viagens_roteiros:novo"))
-        self.assertContains(resposta, "Selecione...")
+        self.assertContains(resposta, "Buscar município...")
         self.assertNotContains(resposta, "Select an option")
 
-    def test_o_minimo_do_html_acompanha_a_validacao_do_servidor(self):
-        # `clean_quantidade_servidores` recusa zero: deixar min=0 no HTML só
-        # adiaria o erro para depois do envio.
+    def test_a_tela_nao_oferece_servidores_nem_observacoes(self):
+        """Decisão do dono (01/09/2026): os dois campos saíram da tela.
+
+        Fora do formulário, editar um roteiro preserva o que está gravado em
+        vez de sobrescrever com vazio — é isso que este teste protege.
+        """
         resposta = self.client.get(reverse("viagens_roteiros:novo"))
-        marcacao = re.search(
-            r'<input[^>]*name="quantidade_servidores"[^>]*>',
-            resposta.content.decode(),
+        corpo = resposta.content.decode()
+        self.assertNotIn('name="quantidade_servidores"', corpo)
+        self.assertNotIn('name="observacoes"', corpo)
+
+    def test_editar_preserva_servidores_e_observacoes_gravados(self):
+        roteiro = self.roteiro_curitiba_sp_abatia()
+        Roteiro.objects.filter(pk=roteiro.pk).update(
+            quantidade_servidores=4, observacoes="Combinado por telefone."
         )
-        self.assertIn('min="1"', marcacao.group(0))
+        self.client.post(
+            reverse("viagens_roteiros:editar", args=[roteiro.pk]),
+            self.dados_com_linha_em_branco(),
+        )
+        roteiro.refresh_from_db()
+        self.assertEqual(roteiro.quantidade_servidores, 4)
+        self.assertEqual(roteiro.observacoes, "Combinado por telefone.")
 
     def test_a_lista_diz_o_tipo_do_roteiro_para_quem_nao_ve_o_icone(self):
         # A coluna anunciava "Tipo" e entregava um ícone `aria-hidden`: para um
@@ -624,36 +773,57 @@ class DefeitosEncontradosNoSmokeTests(BaseTelaRoteiroTestCase):
         # continuar a edição *dele*. Com `action=""` o reenvio voltava para
         # /novo/ e cada correção deixava mais um roteiro para trás.
         invalido = self.dados_com_linha_em_branco()
-        invalido["trechos-0-chegada_dt"] = "2026-08-12T06:00"
+        invalido["trechos-0-chegada_hora"] = "06:00"
         resposta = self.client.post(reverse("viagens_roteiros:novo"), invalido)
         self.assertEqual(resposta.status_code, 200)
         criados = Roteiro.objects.count()
 
         destino = re.search(
-            r'<form method="post" action="([^"]*)" class="card cadastro-form"',
+            r'<form method="post" action="([^"]*)" id="form-roteiro"',
             resposta.content.decode(),
         ).group(1)
         self.assertTrue(destino, "o formulário precisa apontar para o roteiro gravado")
 
-        corrigido = dict(invalido, **{"trechos-0-chegada_dt": "2026-08-12T18:00"})
+        corrigido = dict(invalido, **{"trechos-0-chegada_hora": "18:00"})
         self.client.post(destino, corrigido)
         self.assertEqual(Roteiro.objects.count(), criados)
 
-    def test_as_linhas_novas_ja_vem_numeradas_em_sequencia(self):
-        # Com `default=1` em todas, preencher duas linhas sem tocar no número
-        # — o caminho natural — batia na unicidade de (roteiro, ordem) logo no
-        # primeiro envio.
-        resposta = self.client.get(reverse("viagens_roteiros:novo"))
-        ordens = re.findall(
-            r'name="trechos-\d+-ordem"[^>]*value="(\d+)"', resposta.content.decode()
-        )
-        self.assertEqual(ordens, ["1", "2", "3"])
-
-    def test_editar_continua_numerando_a_partir_dos_trechos_gravados(self):
-        roteiro = self.roteiro_curitiba_sp_abatia()  # 3 trechos gravados
-        resposta = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
-        ordens = re.findall(
-            r'name="trechos-\d+-ordem"[^>]*value="(\d+)"', resposta.content.decode()
-        )
-        # Os três gravados mantêm a ordem que têm; as três linhas novas seguem.
-        self.assertEqual(ordens[3:], ["4", "5", "6"])
+    def test_dois_trechos_na_mesma_ordem_nao_derrubam_a_gravacao(self):
+        # A ordem é reindexada pelo `roteiro-editor.js`, mas ela chega ao
+        # servidor em campo oculto do POST: um envio com duas linhas na mesma
+        # posição bate na unicidade de (roteiro, ordem). O que se afirma aqui é
+        # que isso volta como erro de formulário, e não como erro 500.
+        dados = {
+            "origem_municipio": self.curitiba.pk,
+            "quantidade_servidores": 1,
+            "observacoes": "",
+            "destinos-TOTAL_FORMS": "0",
+            "destinos-INITIAL_FORMS": "0",
+            "destinos-MIN_NUM_FORMS": "0",
+            "destinos-MAX_NUM_FORMS": "1000",
+            "trechos-TOTAL_FORMS": "2",
+            "trechos-INITIAL_FORMS": "0",
+            "trechos-MIN_NUM_FORMS": "0",
+            "trechos-MAX_NUM_FORMS": "1000",
+        }
+        for i, (origem, destino) in enumerate(
+            [(self.curitiba, self.sao_paulo), (self.sao_paulo, self.curitiba)]
+        ):
+            dados.update(
+                {
+                    # As duas na posição 1 — o estado que a reindexação evita.
+                    f"trechos-{i}-ordem": "1",
+                    f"trechos-{i}-sentido": "IDA",
+                    f"trechos-{i}-origem_municipio": origem.pk,
+                    f"trechos-{i}-destino_municipio": destino.pk,
+                    f"trechos-{i}-saida_data": "2026-08-12",
+                    f"trechos-{i}-saida_hora": "08:00",
+                    f"trechos-{i}-chegada_data": "2026-08-12",
+                    f"trechos-{i}-chegada_hora": "14:00",
+                    f"trechos-{i}-distancia_km": "",
+                    f"trechos-{i}-duracao_min": "",
+                }
+            )
+        resposta = self.client.post(reverse("viagens_roteiros:novo"), dados)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertLessEqual(Roteiro.objects.latest("pk").trechos.count(), 1)

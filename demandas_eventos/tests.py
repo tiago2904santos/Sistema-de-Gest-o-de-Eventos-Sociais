@@ -12,7 +12,13 @@ from accounts.models import Modulo, Setor
 from cadastros.models import TipoEvento
 
 from .forms import DemandaEventoForm
-from .models import DemandaEvento, Palestrante, RespostaPadrao, StatusDemanda, Tema
+from .models import (
+    DemandaEvento,
+    Palestrante,
+    RespostaPadrao,
+    StatusDemanda,
+    Tema,
+)
 from .permissions import CODIGO_MODULO
 
 User = get_user_model()
@@ -87,10 +93,9 @@ class FormulariosViewsTests(BaseDemandasTestCase):
             "canal_solicitacao": "E-mail",
             "solicitante": "Colégio Estadual",
             "contato": "colegio@example.org",
-            "status": StatusDemanda.EVENTO_AGENDADO,
             "data_inicio_evento": "2026-09-10",
             "data_fim_evento": "2026-09-11",
-            "periodo_evento_texto": "10 e 11/09, das 9h às 12h",
+            "periodo_evento_texto": "",
             "setores": [self.ascom.pk],
         }
 
@@ -113,7 +118,62 @@ class FormulariosViewsTests(BaseDemandasTestCase):
         self.assertRedirects(resposta, reverse("demandas_eventos:detalhe", args=[demanda.pk]))
         resposta = self.client.get(reverse("demandas_eventos:detalhe", args=[demanda.pk]))
         self.assertContains(resposta, "Colégio Estadual")
-        self.assertContains(resposta, "Evento agendado")
+        self.assertContains(resposta, "Demanda #")
+        self.assertContains(resposta, "Pendente")
+        self.assertEqual(demanda.historico.count(), 1)
+
+        resposta = self.client.post(
+            reverse("demandas_eventos:transicionar", args=[demanda.pk]),
+            {"novo_status": StatusDemanda.EM_ANDAMENTO},
+        )
+        self.assertRedirects(
+            resposta, reverse("demandas_eventos:detalhe", args=[demanda.pk])
+        )
+        demanda.refresh_from_db()
+        self.assertEqual(demanda.status, StatusDemanda.EM_ANDAMENTO)
+        self.assertEqual(demanda.historico.count(), 2)
+
+    def test_responsavel_precisa_pertencer_ao_setor_envolvido(self):
+        dados = self.dados_post()
+        dados["responsavel_atendimento"] = self.outro.pk
+        form = DemandaEventoForm(dados, usuario=self.usuario)
+        self.assertFalse(form.is_valid())
+        self.assertIn("responsavel_atendimento", form.errors)
+
+    def test_status_final_exige_justificativa_e_bloqueia_edicao(self):
+        demanda = self.criar_demanda(status=StatusDemanda.EM_ANDAMENTO)
+        self.client.force_login(self.usuario)
+        resposta = self.client.post(
+            reverse("demandas_eventos:transicionar", args=[demanda.pk]),
+            {"novo_status": StatusDemanda.CANCELADA, "justificativa": ""},
+        )
+        demanda.refresh_from_db()
+        self.assertEqual(demanda.status, StatusDemanda.EM_ANDAMENTO)
+
+        self.client.post(
+            reverse("demandas_eventos:transicionar", args=[demanda.pk]),
+            {"novo_status": StatusDemanda.CANCELADA, "justificativa": "Evento cancelado."},
+        )
+        demanda.refresh_from_db()
+        self.assertEqual(demanda.status, StatusDemanda.CANCELADA)
+        self.assertEqual(
+            self.client.get(reverse("demandas_eventos:editar", args=[demanda.pk])).status_code,
+            403,
+        )
+
+    def test_edicao_concorrente_e_rejeitada(self):
+        demanda = self.criar_demanda()
+        versao_antiga = str(int(demanda.atualizado_em.timestamp() * 1_000_000))
+        demanda.andamento = "Alteração concorrente"
+        demanda.save(update_fields=["andamento", "atualizado_em"])
+        dados = self.dados_post()
+        dados["versao"] = versao_antiga
+        self.client.force_login(self.usuario)
+        resposta = self.client.post(
+            reverse("demandas_eventos:editar", args=[demanda.pk]), dados
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "alterada por outra pessoa")
 
     def test_listagem_filtra_status_e_busca(self):
         self.criar_demanda(solicitante="Demanda visível", status=StatusDemanda.PENDENTE)
@@ -124,6 +184,28 @@ class FormulariosViewsTests(BaseDemandasTestCase):
         self.assertNotContains(resposta, "Demanda visível")
         resposta = self.client.get(reverse("demandas_eventos:lista"), {"q": "visível"})
         self.assertContains(resposta, "Demanda visível")
+
+    def test_datas_invalidas_nos_filtros_nao_geram_erro(self):
+        self.criar_demanda(solicitante="Demanda visível")
+        self.client.force_login(self.usuario)
+        resposta = self.client.get(
+            reverse("demandas_eventos:lista"),
+            {"inicio": "31-02-2026", "fim": "invalida"},
+        )
+        self.assertEqual(resposta.status_code, 200)
+        resposta = self.client.get(
+            reverse("demandas_eventos:exportar"), {"inicio": "invalida"}
+        )
+        self.assertEqual(resposta.status_code, 200)
+
+    def test_exportacao_respeita_recorte_visivel(self):
+        self.criar_demanda(solicitante="Demanda exportável")
+        self.criar_demanda(setor=self.outro_setor, solicitante="Demanda de outro setor")
+        self.client.force_login(self.usuario)
+        resposta = self.client.get(reverse("demandas_eventos:exportar"))
+        conteudo = resposta.content.decode("utf-8-sig")
+        self.assertIn("Demanda exportável", conteudo)
+        self.assertNotIn("Demanda de outro setor", conteudo)
 
     def test_cadastro_de_resposta_padrao(self):
         self.client.force_login(self.usuario)
@@ -181,5 +263,6 @@ class ImportacaoPlanilhaTests(BaseDemandasTestCase):
         demanda = DemandaEvento.objects.get(solicitante="Escola Teste")
         self.assertEqual(demanda.periodo_evento_texto, "10 e 11/09")
         self.assertEqual(demanda.status, StatusDemanda.EVENTO_AGENDADO)
+        self.assertEqual(demanda.historico.count(), 1)
         self.assertTrue(Palestrante.objects.filter(nome="Dra. Teste").exists())
         self.assertTrue(RespostaPadrao.objects.filter(tipo="Recebimento").exists())

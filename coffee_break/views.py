@@ -4,6 +4,7 @@ Todas as rotas exigem o módulo ASCOM_COFFEE_BREAK (decorator + middleware);
 ocultar o menu nunca é a única barreira.
 """
 
+from django import forms
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
@@ -13,12 +14,22 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from .forms import (
+    ContratoCoffeeBreakForm,
     FiltroLotesForm,
     FiltroSolicitacoesCoffeeForm,
+    FornecedorForm,
+    LoteCoffeeBreakForm,
     SolicitacaoCoffeeBreakForm,
 )
-from .models import LoteCoffeeBreak, SituacaoFinanceira, SolicitacaoCoffeeBreak
-from .permissions import acesso_ao_modulo
+from .models import (
+    AcaoHistoricoCoffeeBreak,
+    ContratoCoffeeBreak,
+    Fornecedor,
+    LoteCoffeeBreak,
+    SituacaoFinanceira,
+    SolicitacaoCoffeeBreak,
+)
+from .permissions import acesso_ao_modulo, gerenciamento_de_cadastros
 from . import services
 
 ITENS_POR_PAGINA = 15
@@ -61,6 +72,82 @@ def _paginar(request, queryset):
     parametros = request.GET.copy()
     parametros.pop("pagina", None)
     return pagina, paginas_visiveis, parametros.urlencode()
+
+
+CADASTROS_COFFEE = {
+    "fornecedores": {
+        "model": Fornecedor,
+        "form": FornecedorForm,
+        "titulo": "Fornecedores",
+        "singular": "fornecedor",
+        "busca": ("razao_social", "cnpj", "contato", "email"),
+    },
+    "contratos": {
+        "model": ContratoCoffeeBreak,
+        "form": ContratoCoffeeBreakForm,
+        "titulo": "Contratos",
+        "singular": "contrato",
+        "busca": ("numero", "numero_gms", "fornecedor__razao_social"),
+    },
+    "lotes": {
+        "model": LoteCoffeeBreak,
+        "form": LoteCoffeeBreakForm,
+        "titulo": "Lotes contratados",
+        "singular": "lote",
+        "busca": (
+            "exercicio",
+            "empenho",
+            "contrato__numero",
+            "contrato__fornecedor__razao_social",
+        ),
+    },
+}
+
+
+def _config_cadastro(tipo):
+    config = CADASTROS_COFFEE.get(tipo)
+    if not config:
+        from django.http import Http404
+
+        raise Http404
+    return config
+
+
+def _campos_cadastro(form):
+    campos = []
+    for nome, campo in form.fields.items():
+        if isinstance(campo.widget, forms.HiddenInput):
+            continue
+        valor = form[nome].value()
+        item = {
+            "name": nome,
+            "label": campo.label,
+            "erros": form.errors.get(nome),
+            "obrigatorio": campo.required,
+            "ajuda": campo.help_text,
+            "valor": "" if valor is None else str(valor),
+        }
+        if isinstance(campo, forms.ModelMultipleChoiceField):
+            item.update(
+                {
+                    "tipo": "multiplo",
+                    "opcoes": _opcoes(campo.queryset),
+                    "marcados": [
+                        str(getattr(v, "pk", v)) for v in (valor or [])
+                    ],
+                }
+            )
+        elif isinstance(campo, forms.ModelChoiceField):
+            item.update({"tipo": "select", "opcoes": _opcoes(campo.queryset)})
+        elif isinstance(campo.widget, forms.Textarea):
+            item["tipo"] = "textarea"
+        elif isinstance(campo, forms.BooleanField):
+            item["tipo"] = "boolean"
+            item["valor"] = bool(valor)
+        else:
+            item["tipo"] = getattr(campo.widget, "input_type", "text")
+        campos.append(item)
+    return campos
 
 
 def _colunas_ordenaveis(request, pedido, colunas, ordenacoes):
@@ -430,6 +517,51 @@ def lista_solicitacoes(request):
     )
 
 
+@acesso_ao_modulo
+def exportar_solicitacoes(request):
+    """Exporta o recorte atual para conciliação operacional e financeira."""
+    import csv
+
+    from django.http import HttpResponse
+    from django.utils import timezone as tz
+
+    itens, _filtros, _pedido = _filtrar_solicitacoes(request)
+    resposta = HttpResponse(content_type="text/csv; charset=utf-8")
+    resposta["Content-Disposition"] = (
+        f'attachment; filename="coffee-break-{tz.localdate():%Y-%m-%d}.csv"'
+    )
+    resposta.write("﻿")
+    escritor = csv.writer(resposta, delimiter=";", lineterminator="\r\n")
+    escritor.writerow(
+        [
+            "Nº", "Lote", "Fornecedor", "Data da solicitação", "Evento",
+            "Período", "Quantidade", "Nota fiscal", "Protocolo",
+            "Atesto GAF", "Ordem bancária", "Envio à empresa", "Situação",
+            "Criado por",
+        ]
+    )
+    for solicitacao in itens:
+        escritor.writerow(
+            [
+                solicitacao.numero,
+                solicitacao.lote.rotulo_curto,
+                solicitacao.lote.contrato.fornecedor.razao_social,
+                solicitacao.data_solicitacao.strftime("%d/%m/%Y"),
+                solicitacao.descricao_evento,
+                solicitacao.periodo_evento_display,
+                solicitacao.quantidade,
+                solicitacao.numero_nota_fiscal,
+                solicitacao.protocolo_pagamento,
+                solicitacao.data_atesto_gaf.strftime("%d/%m/%Y") if solicitacao.data_atesto_gaf else "",
+                solicitacao.data_ordem_bancaria.strftime("%d/%m/%Y") if solicitacao.data_ordem_bancaria else "",
+                solicitacao.data_envio_empresa.strftime("%d/%m/%Y") if solicitacao.data_envio_empresa else "",
+                solicitacao.situacao_financeira_display,
+                solicitacao.criado_por,
+            ]
+        )
+    return resposta
+
+
 def _contexto_formulario(request, form, solicitacao=None):
     lotes_com_saldo = (
         LoteCoffeeBreak.objects.filter(
@@ -460,6 +592,7 @@ def _contexto_formulario(request, form, solicitacao=None):
         "valores": valores,
         "lotes": _opcoes(form.fields["lote"].queryset),
         "saldos_lotes": saldos,
+        "dados_base_bloqueados": bool(solicitacao and solicitacao.financeiro_iniciado),
     }
 
 
@@ -478,6 +611,12 @@ def nova_solicitacao(request):
                         )
                 messages.error(request, "Corrija os campos destacados para continuar.")
             else:
+                services.registrar_historico(
+                    solicitacao,
+                    request.user,
+                    AcaoHistoricoCoffeeBreak.CRIACAO,
+                    "Solicitação registrada no sistema.",
+                )
                 messages.success(
                     request,
                     f"Solicitação de coffee break registrada no {solicitacao.lote.rotulo_curto}.",
@@ -501,6 +640,12 @@ def editar_solicitacao(request, pk):
     solicitacao = get_object_or_404(
         SolicitacaoCoffeeBreak.objects.select_related("lote"), pk=pk
     )
+    if solicitacao.cancelada or solicitacao.concluida:
+        messages.warning(
+            request,
+            "Solicitações canceladas ou concluídas ficam bloqueadas para edição. Use o histórico para consultar as alterações.",
+        )
+        return redirect("coffee_break:detalhe", pk=solicitacao.pk)
     if request.method == "POST":
         form = SolicitacaoCoffeeBreakForm(request.POST, instance=solicitacao)
         if form.is_valid():
@@ -514,6 +659,19 @@ def editar_solicitacao(request, pk):
                         )
                 messages.error(request, "Corrija os campos destacados para continuar.")
             else:
+                alterados = [
+                    form.fields[nome].label
+                    for nome in form.changed_data
+                    if nome in form.fields and nome != "versao"
+                ]
+                services.registrar_historico(
+                    solicitacao,
+                    request.user,
+                    AcaoHistoricoCoffeeBreak.ATUALIZACAO,
+                    "Campos atualizados: " + ", ".join(alterados)
+                    if alterados
+                    else "Solicitação salva sem alteração de campos.",
+                )
                 messages.success(request, "Solicitação de coffee break atualizada.")
                 return redirect("coffee_break:detalhe", pk=solicitacao.pk)
         else:
@@ -534,7 +692,7 @@ def detalhe_solicitacao(request, pk):
     solicitacao = get_object_or_404(
         SolicitacaoCoffeeBreak.objects.select_related(
             "lote__contrato__fornecedor", "criado_por", "cancelada_por"
-        ),
+        ).prefetch_related("historico__usuario"),
         pk=pk,
     )
     lote = LoteCoffeeBreak.objects.com_consumo().get(pk=solicitacao.lote_id)
@@ -548,6 +706,8 @@ def detalhe_solicitacao(request, pk):
             ),
             "solicitacao": solicitacao,
             "lote": lote,
+            "pode_editar": not solicitacao.cancelada and not solicitacao.concluida,
+            "historico": solicitacao.historico.all(),
         },
     )
 
@@ -576,10 +736,92 @@ def cancelar_solicitacao(request, pk):
 def reativar_solicitacao(request, pk):
     solicitacao = get_object_or_404(SolicitacaoCoffeeBreak, pk=pk)
     try:
-        services.reativar(solicitacao)
+        services.reativar(solicitacao, request.user)
     except ValidationError as erro:
         for mensagem in erro.messages:
             messages.error(request, mensagem)
     else:
         messages.success(request, "Solicitação reativada e saldo consumido.")
     return redirect("coffee_break:detalhe", pk=solicitacao.pk)
+
+
+# ---------------------------------------------------------------------------
+# Cadastros contratuais — backoffice institucional, restrito a administradores
+# ---------------------------------------------------------------------------
+
+@gerenciamento_de_cadastros
+def cadastros(request):
+    return redirect("coffee_break:cadastro_lista", tipo="fornecedores")
+
+
+@gerenciamento_de_cadastros
+def lista_cadastro(request, tipo):
+    config = _config_cadastro(tipo)
+    q = request.GET.get("q", "").strip()
+    queryset = config["model"].objects.all()
+    if tipo == "contratos":
+        queryset = queryset.select_related("fornecedor")
+    elif tipo == "lotes":
+        queryset = queryset.select_related("contrato__fornecedor").com_consumo()
+    if q:
+        busca = Q()
+        for campo in config["busca"]:
+            busca |= Q(**{f"{campo}__icontains": q})
+        queryset = queryset.filter(busca)
+    pagina, paginas_visiveis, querystring = _paginar(request, queryset)
+    return render(
+        request,
+        "pages/coffee_break/cadastro_lista.html",
+        {
+            "config": config,
+            "tipo": tipo,
+            "q": q,
+            "pagina": pagina,
+            "paginas_visiveis": paginas_visiveis,
+            "elipse": Paginator.ELLIPSIS,
+            "querystring": querystring,
+            "breadcrumb": _breadcrumb({"label": "Cadastros"}, {"label": config["titulo"]}),
+        },
+    )
+
+
+@gerenciamento_de_cadastros
+def editar_cadastro(request, tipo, pk=None):
+    config = _config_cadastro(tipo)
+    instancia = get_object_or_404(config["model"], pk=pk) if pk else None
+    if request.method == "POST":
+        form = config["form"](request.POST, instance=instancia)
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                f"{config['singular'].capitalize()} salvo com sucesso.",
+            )
+            return redirect("coffee_break:cadastro_lista", tipo=tipo)
+        messages.error(request, "Corrija os campos destacados para continuar.")
+    else:
+        form = config["form"](instance=instancia)
+    return render(
+        request,
+        "pages/coffee_break/cadastro_form.html",
+        {
+            "config": config,
+            "tipo": tipo,
+            "instancia": instancia,
+            "form": form,
+            "campos": _campos_cadastro(form),
+            "breadcrumb": _breadcrumb(
+                {
+                    "label": "Cadastros",
+                    "url": reverse("coffee_break:cadastro_lista", args=[tipo]),
+                },
+                {
+                    "label": (
+                        f"Editar {config['singular']}"
+                        if instancia
+                        else f"Novo {config['singular']}"
+                    )
+                },
+            ),
+        },
+    )

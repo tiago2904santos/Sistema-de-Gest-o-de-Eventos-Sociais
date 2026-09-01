@@ -1,0 +1,69 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}{{ config.titulo }} — Coffee Break{% endblock %}
+
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with itens=breadcrumb %}
+  {% url 'coffee_break:cadastro_novo' tipo as url_novo %}
+  {% include "components/page_header.html" with titulo=config.titulo subtitulo="Dados contratuais do módulo de Coffee Break" icone="checklist" acao_label="Novo registro" acao_url=url_novo acao_icone="plus" %}
+
+  <nav class="abas" aria-label="Cadastros de Coffee Break">
+    <a class="abas__item{% if tipo == 'fornecedores' %} abas__item--ativo{% endif %}" href="{% url 'coffee_break:cadastro_lista' 'fornecedores' %}">Fornecedores</a>
+    <a class="abas__item{% if tipo == 'contratos' %} abas__item--ativo{% endif %}" href="{% url 'coffee_break:cadastro_lista' 'contratos' %}">Contratos</a>
+    <a class="abas__item{% if tipo == 'lotes' %} abas__item--ativo{% endif %}" href="{% url 'coffee_break:cadastro_lista' 'lotes' %}">Lotes</a>
+  </nav>
+
+  <div class="card lista-filtros-card">
+    <form method="get" class="lista-filtros">
+      <div class="form-campo lista-filtros__busca">
+        <label class="sr-only" for="id_q">Buscar em {{ config.titulo|lower }}</label>
+        <div class="campo-com-icone">
+          <span class="campo-com-icone__icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+          <input class="form-controle" type="search" id="id_q" name="q" value="{{ q }}" placeholder="Buscar em {{ config.titulo|lower }}...">
+        </div>
+      </div>
+      <button class="btn btn--dourado" type="submit">Buscar</button>
+      {% if q %}<a class="btn btn--secundario" href="{% url 'coffee_break:cadastro_lista' tipo %}">Limpar</a>{% endif %}
+      <span class="lista-filtros__contagem">{{ pagina.paginator.count }} registro{{ pagina.paginator.count|pluralize }}</span>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="tabela-wrapper" tabindex="0" role="region" aria-label="{{ config.titulo }}">
+      <table class="tabela tabela--cartoes-no-celular">
+        <thead><tr><th>Registro</th><th>Informações</th><th>Situação</th><th>Ação</th></tr></thead>
+        <tbody>
+          {% for item in pagina %}
+            <tr>
+              <td data-rotulo="Registro"><strong>
+                {% if tipo == 'fornecedores' %}{{ item.razao_social }}
+                {% elif tipo == 'contratos' %}Contrato {{ item.numero }}
+                {% else %}{{ item.rotulo_curto }}{% endif %}
+              </strong></td>
+              <td data-rotulo="Informações">
+                {% if tipo == 'fornecedores' %}{{ item.cnpj_formatado|default:"CNPJ não informado" }}
+                {% elif tipo == 'contratos' %}{{ item.fornecedor.razao_social }}{% if item.numero_gms %} · GMS {{ item.numero_gms }}{% endif %}
+                {% else %}{{ item.contrato }} · {{ item.consumido }} consumidas · {{ item.restante }} restantes{% endif %}
+              </td>
+              <td data-rotulo="Situação">
+                {% if item.ativo %}<span class="status-badge status-badge--atendida">Ativo</span>{% else %}<span class="status-badge status-badge--cancelada">Inativo</span>{% endif %}
+              </td>
+              <td data-rotulo="Ação"><a class="btn btn--secundario btn--compacto" href="{% url 'coffee_break:cadastro_editar' tipo item.pk %}">Editar</a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="texto-suave texto-centro">Nenhum registro encontrado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if pagina.paginator.num_pages > 1 %}
+      <nav class="paginacao" aria-label="Paginação">
+        {% for numero in paginas_visiveis %}
+          {% if numero == elipse %}<span class="paginacao__elipse">…</span>
+          {% elif numero == pagina.number %}<span class="paginacao__numero paginacao__numero--atual" aria-current="page">{{ numero }}</span>
+          {% else %}<a class="paginacao__numero" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}pagina={{ numero }}">{{ numero }}</a>{% endif %}
+        {% endfor %}
+      </nav>
+    {% endif %}
+  </div>
+{% endblock %}

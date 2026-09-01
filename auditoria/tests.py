@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from django.test import RequestFactory, TestCase
 
 from cadastros.models import Servico
+from accounts.models import Setor
 from core.middleware import RequisicaoAtualMiddleware
 from solicitacoes.models import AcaoHistorico, HistoricoSolicitacao, SolicitacaoEvento
 
@@ -100,6 +101,20 @@ class RegistroAuditoriaSignalsTests(TestCase):
         registro = RegistroAuditoria.objects.get(modelo="cadastros.servico")
         self.assertEqual(registro.usuario, usuario)
         self.assertEqual(registro.caminho_requisicao, "/cadastros/servicos/novo/")
+
+    def test_vinculo_de_setor_do_usuario_tambem_fica_na_trilha(self):
+        usuario = User.objects.create_user(username="setorizada")
+        setor = Setor.objects.create(nome="Setor de teste")
+        with self.captureOnCommitCallbacks(execute=True):
+            usuario.setores.add(setor)
+
+        registro = RegistroAuditoria.objects.get(
+            modelo="accounts.user",
+            objeto_id=str(usuario.pk),
+            acao=RegistroAuditoria.Acao.ATUALIZACAO,
+        )
+        self.assertEqual(registro.alteracoes["setores"]["operacao"], "adicionados")
+        self.assertEqual(registro.alteracoes["setores"]["ids"], [str(setor.pk)])
 
 
 class RegistroAuditoriaImutabilidadeTests(TestCase):
