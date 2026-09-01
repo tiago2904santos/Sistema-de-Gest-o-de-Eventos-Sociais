@@ -5,7 +5,7 @@ Uso:
     python manage.py importar_planilha caminho/planilha.csv --usuario Tiago --limpar
 
 --limpar apaga todas as solicitações e os cadastros de apoio (tipos de evento,
-serviços, equipes, órgãos, motoristas e unidades móveis) antes de importar.
+serviços, equipes, órgãos e unidades móveis) antes de importar.
 Estados, regiões, municípios e usuários são preservados.
 """
 
@@ -20,7 +20,6 @@ from django.db import transaction
 
 from cadastros.models import (
     Equipe,
-    Motorista,
     Municipio,
     OrgaoResponsavel,
     Servico,
@@ -96,6 +95,25 @@ def _norm(texto):
 
 def _vazio(texto):
     return _norm(texto) in VAZIOS
+
+
+def _resolver_motorista(nome):
+    """Servidor que dirige, criado sob demanda a partir do nome da planilha.
+
+    A busca usa o nome já em maiúsculas porque é assim que ``Servidor.save()``
+    grava: procurar pelo texto original faria cada reimportação tentar criar de
+    novo o mesmo servidor e esbarrar na unicidade do nome.
+    """
+    from viagens_cadastros.models import Cargo, Servidor
+
+    nome = _limpa(nome).upper()
+    if not nome:
+        return None
+    servidor = Servidor.objects.filter(nome=nome).first()
+    if servidor is not None:
+        return servidor
+    cargo, _ = Cargo.objects.get_or_create(nome="MOTORISTA")
+    return Servidor.objects.create(nome=nome, cargo=cargo)
 
 
 def _parse_data_solicitacao(texto):
@@ -203,7 +221,7 @@ class Command(BaseCommand):
             "solicitações": SolicitacaoEvento.objects.count(),
         }
         SolicitacaoEvento.objects.all().delete()
-        for modelo in (TipoEvento, Servico, Equipe, OrgaoResponsavel, Motorista, UnidadeMovel):
+        for modelo in (TipoEvento, Servico, Equipe, OrgaoResponsavel, UnidadeMovel):
             totais[modelo._meta.verbose_name_plural] = modelo.objects.count()
             modelo.objects.all().delete()
         resumo = ", ".join(f"{v} {k}" for k, v in totais.items() if v)
@@ -295,7 +313,7 @@ class Command(BaseCommand):
             ),
             quantidade_cin=_parse_int_inicial(qtd_cin) if not _vazio(qtd_cin) else None,
             motorista=(
-                Motorista.objects.get_or_create(nome=_limpa(motorista))[0]
+                _resolver_motorista(_limpa(motorista))
                 if not _vazio(motorista) else None
             ),
             decisao_dg=DECISAO_MAP.get(despacho.upper(), DecisaoDG.PENDENTE),

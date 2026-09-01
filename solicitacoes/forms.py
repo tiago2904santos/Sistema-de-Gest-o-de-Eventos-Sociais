@@ -6,17 +6,18 @@ system; estes formulários concentram validação e persistência.
 
 from django import forms
 from django.db import transaction
+from django.db.models import Q
 
 from cadastros.models import (
     Equipe,
     Estado,
-    Motorista,
     Municipio,
     OrgaoResponsavel,
     Servico,
     TipoEvento,
     UnidadeMovel,
 )
+from viagens_cadastros.models import Servidor
 
 from .models import (
     DecisaoDG,
@@ -48,6 +49,26 @@ def _queryset_ativo(model, instance_pk=None):
     qs = model.objects.filter(ativo=True)
     if instance_pk:
         qs = qs | model.objects.filter(pk=instance_pk)
+    return qs.distinct()
+
+
+def _queryset_motoristas(instance_pk=None):
+    """Servidores que exercem o papel de motorista, e não o quadro inteiro.
+
+    Motorista deixou de ser cadastro próprio e virou papel de `Servidor`. Sem
+    este recorte, o select desta tela passaria a listar todos os servidores
+    ativos para qualquer solicitante — uma lista longa demais para uso e uma
+    exposição do quadro a quem não tem o módulo de viagens.
+
+    Vale como motorista quem tem o cargo MOTORISTA ou está designado como
+    condutor de alguma viatura; o já vinculado continua na lista para o
+    histórico permanecer legível.
+    """
+    qs = Servidor.objects.filter(ativo=True).filter(
+        Q(cargo__nome="MOTORISTA") | Q(viaturas_que_dirige__isnull=False)
+    )
+    if instance_pk:
+        qs = qs | Servidor.objects.filter(pk=instance_pk)
     return qs.distinct()
 
 
@@ -172,8 +193,8 @@ class SolicitacaoForm(forms.ModelForm):
         self.fields["orgao_responsavel"].queryset = _queryset_ativo(
             OrgaoResponsavel, instancia and instancia.orgao_responsavel_id
         )
-        self.fields["motorista"].queryset = _queryset_ativo(
-            Motorista, instancia and instancia.motorista_id
+        self.fields["motorista"].queryset = _queryset_motoristas(
+            instancia and instancia.motorista_id
         )
         self.fields["unidade_movel_designada"].queryset = _queryset_ativo(
             UnidadeMovel, instancia and instancia.unidade_movel_designada_id

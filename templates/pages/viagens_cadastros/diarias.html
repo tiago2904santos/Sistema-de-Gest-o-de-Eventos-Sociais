@@ -1,0 +1,70 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Tabela de diárias — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with atual="Tabela de diárias" %}
+  {% url 'viagens_cadastros:diaria_nova' as url_nova %}
+  {% if pode_editar %}
+    {% include "components/page_header.html" with titulo="Tabela de diárias" subtitulo="Valores por faixa, com vigência" icone="chart" acao_label="Nova vigência" acao_url=url_nova %}
+  {% else %}
+    {% include "components/page_header.html" with titulo="Tabela de diárias" subtitulo="Valores por faixa, com vigência" icone="chart" %}
+  {% endif %}
+
+  <div class="resumo-cards">
+    {% for item in vigentes %}
+      <div class="card summary-card">
+        <div class="card__corpo">
+          <span class="summary-card__rotulo">{{ item.rotulo }}</span>
+          {% if item.tabela %}
+            <strong class="summary-card__valor">R$ {{ item.tabela.valor_24h }}</strong>
+            <span class="texto-suave">
+              15%: R$ {{ item.tabela.valor_15 }} · 30%: R$ {{ item.tabela.valor_30 }}
+            </span>
+            <span class="texto-suave">Desde {{ item.tabela.vigencia_inicio|date:"d/m/Y" }}</span>
+          {% else %}
+            <strong class="summary-card__valor">—</strong>
+            <span class="texto-suave">Sem vigência cadastrada</span>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Histórico de vigências">
+      <table class="tabela tabela--cartoes-no-celular">
+        <thead>
+          <tr>
+            <th>Faixa</th>
+            <th>Vigente a partir de</th>
+            <th>24 horas</th>
+            <th>15%</th>
+            <th>30%</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tabela in tabelas %}
+            <tr>
+              <td data-rotulo="Faixa"><strong>{{ tabela.get_faixa_display }}</strong></td>
+              <td data-rotulo="Vigente a partir de">{{ tabela.vigencia_inicio|date:"d/m/Y" }}</td>
+              <td data-rotulo="24 horas">R$ {{ tabela.valor_24h }}</td>
+              <td data-rotulo="15%">R$ {{ tabela.valor_15 }}</td>
+              <td data-rotulo="30%">R$ {{ tabela.valor_30 }}</td>
+              <td class="tabela__acoes">
+                {% if pode_editar %}
+                  <a href="{% url 'viagens_cadastros:diaria_editar' tabela.pk %}" class="btn btn--compacto btn--acao btn--acao-continuar">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                {% else %}
+                  <span class="texto-suave">—</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="texto-suave texto-centro">Nenhuma vigência cadastrada.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

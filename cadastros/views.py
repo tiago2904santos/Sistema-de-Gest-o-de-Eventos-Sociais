@@ -22,7 +22,6 @@ from solicitacoes.permissions import eh_administrador
 
 from .models import (
     Equipe,
-    Motorista,
     Municipio,
     OrgaoResponsavel,
     Servico,
@@ -87,17 +86,6 @@ CADASTROS = {
         "genitivo": "do município",
         "novo": "Novo município",
         "exemplo": "Ex.: Curitiba",
-    },
-    "motoristas": {
-        "model": Motorista,
-        "titulo": "Motoristas",
-        "campos": ["nome", "telefone"],
-        "icone": "volante",
-        "cor": "#b9c9ec",
-        "singular": "motorista",
-        "genitivo": "do motorista",
-        "novo": "Novo motorista",
-        "exemplo": "Ex.: João da Silva",
     },
     "unidades-moveis": {
         "model": UnidadeMovel,

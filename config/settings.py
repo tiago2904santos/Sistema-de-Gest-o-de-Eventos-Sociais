@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "auditoria",
     "coffee_break",
     "demandas_eventos",
+    "viagens_cadastros",
 ]
 
 MIDDLEWARE = [

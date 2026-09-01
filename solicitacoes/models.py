@@ -122,11 +122,13 @@ class SolicitacaoEvento(models.Model):
     quantidade_cin = models.PositiveIntegerField(
         "quantidade de CIN", blank=True, null=True
     )
+    # Motorista é um papel, não um cadastro à parte: quem dirige é um servidor
+    # do domínio de viagens (ver `viagens_cadastros.Servidor`).
     motorista = models.ForeignKey(
-        "cadastros.Motorista",
+        "viagens_cadastros.Servidor",
         verbose_name="motorista",
         on_delete=models.PROTECT,
-        related_name="solicitacoes",
+        related_name="solicitacoes_como_motorista",
         blank=True,
         null=True,
     )

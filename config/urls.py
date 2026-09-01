@@ -12,4 +12,5 @@ urlpatterns = [
     path("solicitacoes/", include("solicitacoes.urls")),
     path("coffee-break/", include("coffee_break.urls")),
     path("ascom/demandas/", include("demandas_eventos.urls")),
+    path("viagens/cadastros/", include("viagens_cadastros.urls")),
 ]

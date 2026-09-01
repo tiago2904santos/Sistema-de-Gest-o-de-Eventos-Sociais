@@ -12,7 +12,6 @@ from django.urls import reverse
 from cadastros.models import (
     Equipe,
     Estado,
-    Motorista,
     Municipio,
     OrgaoResponsavel,
     Regiao,
@@ -20,6 +19,7 @@ from cadastros.models import (
     TipoEvento,
     UnidadeMovel,
 )
+from viagens_cadastros.models import Cargo, Servidor
 
 from .forms import DespachoForm, SolicitacaoForm
 from .models import (
@@ -53,7 +53,12 @@ class BaseSolicitacaoTestCase(TestCase):
         cls.outro_servico = Servico.objects.create(nome="Coleta de digitais")
         cls.equipe = Equipe.objects.create(nome="Equipe Alfa")
         cls.outra_equipe = Equipe.objects.create(nome="IIPR")
-        cls.motorista = Motorista.objects.create(nome="Motorista Teste")
+        # Motorista é papel, não cadastro: o servidor precisa do cargo para
+        # figurar no select da solicitação.
+        cargo_motorista = Cargo.objects.create(nome="MOTORISTA")
+        cls.motorista = Servidor.objects.create(
+            nome="Motorista Teste", cargo=cargo_motorista
+        )
         cls.van = UnidadeMovel.objects.create(nome="Van CIN 01")
 
         cls.solicitante = User.objects.create_user("solicitante", password="x")
