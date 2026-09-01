@@ -58,6 +58,20 @@
 
     <div class="solicitacao-layout">
       <div class="solicitacao-conteudo">
+        {% if form.errors and not somente_leitura %}
+          <div class="alerta alerta--error resumo-erros" role="alert" tabindex="-1" data-resumo-erros>
+            <strong>Revise os campos indicados antes de continuar.</strong>
+            <ul>
+              {% for campo, mensagens in form.errors.items %}
+                {% for mensagem in mensagens %}
+                  <li>
+                    {% if campo == "__all__" %}{{ mensagem }}{% else %}<a href="#id_{{ campo }}">{{ mensagem }}</a>{% endif %}
+                  </li>
+                {% endfor %}
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
         {% if motivo_devolucao %}
           <div class="aviso-devolucao" role="status">
             <span class="aviso-devolucao__icone" aria-hidden="true">{% include "components/icon.html" with nome="undo" %}</span>
@@ -162,7 +176,7 @@
         <section class="section-card">
           {% include "components/section_card.html" with numero="3" titulo="Serviços e estrutura do evento" %}
           <div class="section-card__corpo">
-            <fieldset class="form-campo form-fieldset">
+            <fieldset class="form-campo form-fieldset" id="id_servicos"{% if erros.servicos %} aria-invalid="true" aria-describedby="id_servicos_erro"{% endif %}>
               <legend class="form-label">Serviços solicitados</legend>
               <div class="chip-grid">
                 {% for servico in servicos %}
@@ -172,7 +186,7 @@
                   </label>
                 {% endfor %}
               </div>
-              {% for erro in erros.servicos %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+              {% for erro in erros.servicos %}<p class="form-erro"{% if forloop.first %} id="id_servicos_erro"{% endif %}>{{ erro }}</p>{% endfor %}
             </fieldset>
             <div class="form-grid form-grid--separado">
               <fieldset class="form-campo form-campo--3 form-fieldset">
@@ -192,7 +206,7 @@
           {% include "components/section_card.html" with numero="4" titulo="Planejamento operacional" %}
           <div class="section-card__corpo">
             <div class="form-grid">
-              <fieldset class="form-campo form-fieldset">
+              <fieldset class="form-campo form-fieldset" id="id_equipes"{% if erros.equipes %} aria-invalid="true" aria-describedby="id_equipes_erro"{% endif %}>
                 <legend class="form-label">Equipes e quantidade de servidores</legend>
                 <div class="equipe-alocacao-grid">
                   {% for equipe in equipes_planejamento %}
@@ -208,7 +222,7 @@
                     </div>
                   {% endfor %}
                 </div>
-                {% for erro in erros.equipes %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+                {% for erro in erros.equipes %}<p class="form-erro"{% if forloop.first %} id="id_equipes_erro"{% endif %}>{{ erro }}</p>{% endfor %}
               </fieldset>
               {% include "components/select.html" with name="motorista" label="Motorista" opcoes=motoristas largura="" selecionado=valores.motorista erros=erros.motorista desabilitado=planejamento_desabilitado %}
               {# Tipo e CIN dividem uma linha inteira, como pedido. #}

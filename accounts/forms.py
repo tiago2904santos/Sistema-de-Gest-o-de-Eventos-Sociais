@@ -6,6 +6,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 
+from .models import Setor
 from solicitacoes.permissions import GRUPOS_PADRAO
 
 User = get_user_model()
@@ -39,7 +40,10 @@ def perfil_do_usuario(usuario):
     """Nome do perfil (grupo padrão) do usuário, para exibição."""
     if usuario.is_superuser:
         return "Superusuário"
-    grupo = usuario.groups.filter(name__in=GRUPOS_PADRAO).first()
+    grupo = next(
+        (grupo for grupo in usuario.groups.all() if grupo.name in GRUPOS_PADRAO),
+        None,
+    )
     return ROTULOS_PERFIS.get(grupo.name, grupo.name) if grupo else "—"
 
 
@@ -47,10 +51,15 @@ class UsuarioForm(forms.ModelForm):
     perfil = forms.ChoiceField(choices=PERFIS, label="Perfil de acesso")
     senha = forms.CharField(required=False, label="Senha")
     confirmacao_senha = forms.CharField(required=False, label="Confirmação da senha")
+    setores = forms.ModelMultipleChoiceField(
+        queryset=Setor.objects.none(),
+        required=False,
+        label="Setores e módulos de acesso",
+    )
 
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "username", "email"]
+        fields = ["first_name", "last_name", "username", "email", "setores"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -65,6 +74,10 @@ class UsuarioForm(forms.ModelForm):
         self.fields["email"].required = not self.instance.pk or bool(
             self.instance.email
         )
+        setores = Setor.objects.filter(ativo=True)
+        if self.instance.pk:
+            setores = setores | self.instance.setores.all()
+        self.fields["setores"].queryset = setores.distinct().order_by("nome")
         if self.instance.pk:
             grupo = self.instance.groups.filter(name__in=GRUPOS_PADRAO).first()
             if grupo:
@@ -103,4 +116,5 @@ class UsuarioForm(forms.ModelForm):
         usuario.groups.remove(*usuario.groups.filter(name__in=GRUPOS_PADRAO))
         grupo, _ = Group.objects.get_or_create(name=self.cleaned_data["perfil"])
         usuario.groups.add(grupo)
+        usuario.setores.set(self.cleaned_data.get("setores") or [])
         return usuario

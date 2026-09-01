@@ -36,6 +36,9 @@ class SolicitacaoEventoAdmin(admin.ModelAdmin):
     readonly_fields = (
         "regiao",
         "quantidade_servidores",
+        "status",
+        "decisao_dg",
+        "observacoes_dg",
         "decidido_por",
         "decidido_em",
         "criado_em",

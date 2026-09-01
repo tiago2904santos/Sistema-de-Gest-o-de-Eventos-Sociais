@@ -1,117 +1,311 @@
 {% extends "layouts/app_shell.html" %}
+{% load static estaticos %}
 
 {% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+{% endblock %}
+
 {% block conteudo %}
   {% include "components/breadcrumb.html" with itens=breadcrumb %}
-  {% include "components/page_header.html" with titulo=titulo subtitulo="Monte o percurso trecho a trecho; as diárias saem daí" icone="map-pin" %}
 
-  <form method="post" action="{{ url_acao }}" class="card cadastro-form">
-    {% csrf_token %}
-    <div class="card__corpo">
-      <header class="cadastro-form__cabecalho">
-        <h2 class="cadastro-form__titulo">Dados do roteiro</h2>
-        <p class="cadastro-form__intro">
-          A sede é de onde a equipe sai e para onde volta — passar por ela no
-          meio do caminho não gera diária.
-        </p>
-      </header>
+  <div class="editor-roteiro" data-roteiro-editor
+       data-url-previa="{% url 'viagens_roteiros:previa_diarias' %}"
+       data-url-rota="{% url 'viagens_roteiros:calcular_rota' %}">
 
-      {% for erro in form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+    <div class="page-header editor-roteiro__topo">
+      <div class="page-header__identificacao">
+        <span class="page-header__icone">{% include "components/icon.html" with nome="map-pin" %}</span>
+        <div>
+          <h1 class="page-header__titulo">Roteiro e diárias</h1>
+          <p class="page-header__subtitulo">Monte o percurso, calcule os deslocamentos e estime as diárias da viagem.</p>
+        </div>
+      </div>
+      {# O vínculo acompanha o título: vale para o roteiro inteiro. #}
+      <div class="editor-roteiro__topo-campos">
+        {% include "components/select.html" with name="solicitacao" label="Solicitação vinculada" opcoes=opcoes_solicitacoes placeholder="Roteiro avulso" pesquisavel=True selecionado=valores.solicitacao erros=form.errors.solicitacao form_alvo="form-roteiro" %}
+      </div>
+    </div>
 
-      <div class="form-grid">
-        {% for campo in form %}
-          <div class="form-campo{% if campo.name == 'observacoes' %}{% else %} form-campo--6{% endif %}">
-            <label class="form-label" for="{{ campo.id_for_label }}">
-              {{ campo.label }}{% if campo.field.required %} <span class="form-label__obrigatorio">*</span>{% endif %}
-            </label>
-            <div class="form-controle-wrapper{% if campo.errors %} is-invalid{% endif %}">
-              {{ campo }}
+    <form method="post" action="{{ url_acao }}" id="form-roteiro" class="editor-roteiro__principal">
+      {% csrf_token %}
+
+      {# ------------------------------------------------------------- 1 #}
+      <section class="card secao">
+        <header class="secao__cabecalho">
+          <span class="secao__numero" aria-hidden="true">1</span>
+          <h2 class="secao__titulo">Origem e destinos</h2>
+        </header>
+        <div class="card__corpo">
+          {% for erro in form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Sede (origem da viagem)</strong>
+              <p class="texto-suave">De onde a equipe sai e para onde volta.</p>
             </div>
-            {% for erro in campo.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-            {% if campo.help_text %}<p class="form-ajuda">{{ campo.help_text }}</p>{% endif %}
+            <div class="bloco-split__corpo destino-row destino-row--sede">
+              <div class="destino-row__estado">
+                {% include "components/select.html" with name="origem_estado" label="Estado da sede" rotulo_oculto=True opcoes=opcoes_estados placeholder="Buscar estado..." pesquisavel=True %}
+              </div>
+              <div class="destino-row__campo">
+                {% include "components/select.html" with name="origem_municipio" label="Município sede" rotulo_oculto=True opcoes=opcoes_municipios placeholder="Buscar município..." pesquisavel=True dependente_de="id_origem_estado" selecionado=valores.origem_municipio erros=form.errors.origem_municipio %}
+              </div>
+            </div>
           </div>
-        {% endfor %}
-      </div>
-    </div>
 
-    <div class="card__corpo">
-      <header class="cadastro-form__cabecalho">
-        <h2 class="cadastro-form__titulo">Trechos</h2>
-        <p class="cadastro-form__intro">
-          Um trecho por deslocamento, na ordem em que acontecem. O último é a
-          volta à sede: a chegada dele fecha a conta.
-        </p>
-      </header>
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Destinos (ordem da visita)</strong>
+              <p class="texto-suave">Locais na ordem da visita. Arraste para reordenar.</p>
+            </div>
+            <div class="bloco-split__corpo">
+              {{ destinos.management_form }}
+              {% for erro in destinos.non_form_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+              <div class="destinos" data-destinos>
+                {% for card in destinos_cards %}
+                  {% include "pages/viagens_roteiros/_destino_row.html" with destino=card.form visivel=card.visivel opcoes_municipios=opcoes_municipios opcoes_estados=opcoes_estados %}
+                {% endfor %}
+              </div>
+              <template data-destino-modelo>
+                {% include "pages/viagens_roteiros/_destino_row.html" with destino=destinos.empty_form visivel=True opcoes_municipios=opcoes_municipios opcoes_estados=opcoes_estados %}
+              </template>
+            </div>
+          </div>
 
-      {{ formset.management_form }}
-      {% for erro in formset.non_form_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+        </div>
+      </section>
 
-      <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Trechos do roteiro">
-        <table class="tabela tabela--cartoes-no-celular">
-          <thead>
-            <tr>
-              <th>Ordem</th>
-              <th>Origem</th>
-              <th>Destino</th>
-              <th>Saída</th>
-              <th>Chegada</th>
-              <th>km</th>
-              <th>Remover</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for trecho in formset %}
-              {% if trecho.non_field_errors %}
+      {# ------------------------------------------------------------- 2 #}
+      <section class="card secao">
+        <header class="secao__cabecalho">
+          <span class="secao__numero" aria-hidden="true">2</span>
+          <div class="secao__identificacao">
+            <h2 class="secao__titulo">Bate-volta diário e cálculo</h2>
+          </div>
+          <button type="button" class="interruptor" data-expande="#bate-volta-painel"
+                  aria-expanded="false" aria-controls="bate-volta-painel" data-bate-volta-toggle>
+            <span class="interruptor__trilho" aria-hidden="true"><span class="interruptor__botao"></span></span>
+            <span class="interruptor__rotulo">Sem bate-volta diário</span>
+          </button>
+        </header>
+
+        <div class="card__corpo">
+          {# Ida numa linha, volta na outra — o período vale para as duas. #}
+          <div class="bate-volta" id="bate-volta-painel" hidden data-bate-volta>
+            <div class="bate-volta__periodo">
+              {% include "components/date_range.html" with name="bv_periodo" start_name="bv_inicio" end_name="bv_fim" label="Período" largura="6" %}
+            </div>
+
+            <div class="bate-volta__sentidos">
+              <div class="bate-volta__sentido">
+                <span class="bate-volta__rotulo">Ida</span>
+                {% include "components/input.html" with name="bv_ida_data" label="Data" tipo="date" %}
+                {% include "components/input.html" with name="bv_ida_saida" label="Saída" tipo="time" %}
+                {% include "components/input.html" with name="bv_ida_tempo" label="Tempo de viagem" tipo="time" %}
+              </div>
+              <div class="bate-volta__sentido">
+                <span class="bate-volta__rotulo">Volta</span>
+                {% include "components/input.html" with name="bv_volta_data" label="Data" tipo="date" %}
+                {% include "components/input.html" with name="bv_volta_saida" label="Saída" tipo="time" %}
+                {% include "components/input.html" with name="bv_volta_tempo" label="Tempo de viagem" tipo="time" %}
+              </div>
+            </div>
+
+            <p class="form-erro" data-bate-volta-erro hidden></p>
+          </div>
+
+          <div class="rota-metricas">
+            <div class="metrica">
+              <span class="metrica__rotulo">Distância (ida e volta)</span>
+              <strong class="metrica__valor" data-rota-distancia-total>—</strong>
+            </div>
+            <div class="metrica">
+              <span class="metrica__rotulo">Tempo (ida e volta)</span>
+              <strong class="metrica__valor" data-rota-tempo-total>—</strong>
+            </div>
+            <div class="metrica">
+              <span class="metrica__rotulo">Distância de ida</span>
+              <strong class="metrica__valor" data-rota-distancia-ida>—</strong>
+            </div>
+            <div class="metrica">
+              <span class="metrica__rotulo">Tempo de ida</span>
+              <strong class="metrica__valor" data-rota-tempo-ida>—</strong>
+            </div>
+          </div>
+
+          <div class="mapa" data-mapa-wrapper>
+            <div class="mapa__acoes">
+              <button type="button" class="btn btn--secundario btn--compacto btn--com-icone" data-rota-calcular>
+                {% include "components/icon.html" with nome="map-pin" %}<span data-rota-calcular-rotulo>Calcular rota</span>
+              </button>
+              <button type="button" class="btn btn--secundario btn--compacto btn--com-icone" data-rota-enquadrar disabled>
+                {% include "components/icon.html" with nome="eye" %}Ver rota inteira
+              </button>
+            </div>
+            <div class="mapa__superficie" id="mapa-roteiro" data-mapa></div>
+            <p class="form-erro mapa__erro" data-rota-erro hidden></p>
+          </div>
+        </div>
+      </section>
+
+      {# ------------------------------------------------------------- 3 #}
+      <section class="card secao">
+        <header class="secao__cabecalho">
+          <span class="secao__numero" aria-hidden="true">3</span>
+          <div class="secao__identificacao">
+            <h2 class="secao__titulo">Trechos</h2>
+          </div>
+          {# O calendário abre no próprio botão: uma data por trecho, na ordem. #}
+          {% include "components/date_multi.html" with id="datas-trechos" label="Preencher datas de saída" icone="calendar" maximo=1 dica="Escolha uma data por trecho, na ordem do percurso." %}
+        </header>
+
+        <div class="card__corpo">
+          {{ formset.management_form }}
+          {% for erro in formset.non_form_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+
+          {% comment %}
+            Sem trechos, a tabela inteira sai de cena: cabeçalho de colunas
+            sobre o vazio não informa nada.
+          {% endcomment %}
+          <p class="trechos-vazio" data-trechos-vazio hidden>
+            Os trechos aparecem aqui depois de definir a sede e os destinos.
+          </p>
+
+          <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Trechos do roteiro"
+               data-trechos-tabela>
+            <table class="tabela tabela--compacta trechos-tabela" data-trechos>
+              <thead>
                 <tr>
-                  <td colspan="7">
-                    {% for erro in trecho.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-                  </td>
+                  <th>Trecho</th>
+                  <th>Origem</th>
+                  <th>Destino</th>
+                  <th>Data de saída</th>
+                  <th>Hora de saída</th>
+                  <th>Tempo de viagem</th>
+                  <th>Distância</th>
                 </tr>
-              {% endif %}
-              <tr>
-                {{ trecho.id }}
-                <td data-rotulo="Ordem">
-                  {{ trecho.ordem }}
-                  {% for erro in trecho.ordem.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-                </td>
-                <td data-rotulo="Origem">
-                  {{ trecho.origem_municipio }}
-                  {% for erro in trecho.origem_municipio.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-                </td>
-                <td data-rotulo="Destino">
-                  {{ trecho.destino_municipio }}
-                  {% for erro in trecho.destino_municipio.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-                </td>
-                <td data-rotulo="Saída">
-                  {{ trecho.saida_dt }}
-                  {% for erro in trecho.saida_dt.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-                </td>
-                <td data-rotulo="Chegada">
-                  {{ trecho.chegada_dt }}
-                  {% for erro in trecho.chegada_dt.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-                </td>
-                <td data-rotulo="km">
-                  {{ trecho.distancia_km }}
-                  {% for erro in trecho.distancia_km.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-                </td>
-                <td data-rotulo="Remover">
-                  {% if trecho.instance.pk %}{{ trecho.DELETE }}{% else %}<span class="texto-suave">—</span>{% endif %}
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <p class="form-ajuda">
-        Linhas em branco são ignoradas. Para acrescentar mais trechos, salve e
-        abra a edição de novo.
-      </p>
+              </thead>
+              <tbody>
+                {% for card in trechos_cards %}
+                  {% include "pages/viagens_roteiros/_trecho_linha.html" with trecho=card.form visivel=card.visivel %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
 
-      <div class="acoes-formulario">
-        {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
-        {% include "components/button.html" with label="Salvar roteiro" variante="dourado" tipo="submit" %}
+          <template data-trecho-modelo>
+            <table><tbody>
+              {% include "pages/viagens_roteiros/_trecho_linha.html" with trecho=formset.empty_form visivel=True %}
+            </tbody></table>
+          </template>
+        </div>
+      </section>
+
+      {# ------------------------------------------------------------- 4 #}
+      <section class="card secao">
+        <header class="secao__cabecalho">
+          <span class="secao__numero" aria-hidden="true">4</span>
+          <div class="secao__identificacao">
+            <h2 class="secao__titulo">Diárias</h2>
+          </div>
+          <span class="status-badge status-badge--deferida_em_andamento" data-diarias-chip hidden></span>
+        </header>
+
+        <div class="card__corpo">
+          <div class="diarias-metricas">
+            <div class="metrica">
+              <span class="metrica__rotulo">Valor total</span>
+              <strong class="metrica__valor" data-diarias-valor>{% if roteiro.valor_diarias is not None %}R$ {{ roteiro.valor_diarias }}{% else %}—{% endif %}</strong>
+            </div>
+            <div class="metrica">
+              <span class="metrica__rotulo">Tipo de destino</span>
+              <strong class="metrica__valor" data-diarias-tipo>—</strong>
+            </div>
+            <div class="metrica">
+              <span class="metrica__rotulo">Quantidade de diárias</span>
+              <strong class="metrica__valor" data-diarias-composicao>{{ roteiro.resumo_diarias|default:"—" }}</strong>
+            </div>
+            <div class="metrica">
+              <span class="metrica__rotulo">Valor por extenso</span>
+              <strong class="metrica__valor metrica__valor--texto" data-diarias-extenso>{{ roteiro.valor_diarias_extenso|default:"—" }}</strong>
+            </div>
+          </div>
+          <p class="texto-suave" data-diarias-aviso>
+            Preencha destino, saída e chegada dos trechos para ver a prévia.
+          </p>
+        </div>
+      </section>
+    </form>
+
+    <aside class="editor-roteiro__lateral">
+      <section class="card painel-lateral">
+        <header class="painel-lateral__cabecalho">
+          {% include "components/icon.html" with nome="checklist" %}
+          <h2>Resumo do roteiro</h2>
+        </header>
+        <dl class="painel-lateral__lista">
+          <div><dt>Sede</dt><dd data-resumo-sede>—</dd></div>
+          <div><dt>Total de destinos</dt><dd data-resumo-destinos>0</dd></div>
+          <div><dt>Total de trechos</dt><dd data-resumo-trechos>0</dd></div>
+          <div><dt>Distância estimada (ida e volta)</dt><dd data-resumo-distancia>—</dd></div>
+          <div><dt>Tempo total (ida e volta)</dt><dd data-resumo-tempo>—</dd></div>
+          <div><dt>Tipo de destino</dt><dd data-resumo-tipo>—</dd></div>
+          <div><dt>Quantidade de servidores</dt><dd data-resumo-servidores>{{ roteiro.quantidade_servidores|default:"1" }}</dd></div>
+        </dl>
+      </section>
+
+      <section class="card painel-lateral">
+        <header class="painel-lateral__cabecalho">
+          {% include "components/icon.html" with nome="ordenar" %}
+          <h2>Etapas</h2>
+        </header>
+        <ol class="etapas-roteiro">
+          <li class="etapa-roteiro etapa-roteiro--ativa" data-etapa="1">
+            <span class="etapa-roteiro__numero" aria-hidden="true">1</span>
+            <span class="etapa-roteiro__texto">
+              <strong>Origem e destinos</strong>
+              <small data-etapa-estado>Em preenchimento</small>
+            </span>
+            <span class="etapa-roteiro__marca" aria-hidden="true">{% include "components/icon.html" with nome="check-circle" %}</span>
+          </li>
+          <li class="etapa-roteiro" data-etapa="2">
+            <span class="etapa-roteiro__numero" aria-hidden="true">2</span>
+            <span class="etapa-roteiro__texto">
+              <strong>Bate-volta diário e cálculo</strong>
+              <small data-etapa-estado>Pendente</small>
+            </span>
+            <span class="etapa-roteiro__marca" aria-hidden="true">{% include "components/icon.html" with nome="check-circle" %}</span>
+          </li>
+          <li class="etapa-roteiro" data-etapa="3">
+            <span class="etapa-roteiro__numero" aria-hidden="true">3</span>
+            <span class="etapa-roteiro__texto">
+              <strong>Trechos</strong>
+              <small data-etapa-estado>Pendente</small>
+            </span>
+            <span class="etapa-roteiro__marca" aria-hidden="true">{% include "components/icon.html" with nome="check-circle" %}</span>
+          </li>
+          <li class="etapa-roteiro" data-etapa="4">
+            <span class="etapa-roteiro__numero" aria-hidden="true">4</span>
+            <span class="etapa-roteiro__texto">
+              <strong>Diárias</strong>
+              <small data-etapa-estado>Pendente</small>
+            </span>
+            <span class="etapa-roteiro__marca" aria-hidden="true">{% include "components/icon.html" with nome="check-circle" %}</span>
+          </li>
+        </ol>
+      </section>
+
+      <div class="editor-roteiro__acoes">
+        <a href="{{ url_voltar }}" class="btn btn--secundario">Cancelar</a>
+        <button type="submit" form="form-roteiro" name="acao" value="salvar" class="btn btn--dourado">Salvar roteiro</button>
       </div>
-    </div>
-  </form>
+    </aside>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'vendor/leaflet/leaflet.js' %}" defer></script>
+  <script src="{% estatico 'js/roteiro-editor.js' %}" defer></script>
 {% endblock %}

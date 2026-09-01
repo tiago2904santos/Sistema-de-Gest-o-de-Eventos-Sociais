@@ -40,6 +40,9 @@
         Filtros avançados
         {% include "components/icon.html" with nome="chevron-down" %}
       </button>
+      <button type="submit" class="btn btn--dourado lista-filtros__buscar">
+        {% include "components/icon.html" with nome="search" %}Buscar
+      </button>
       <div class="lista-filtros__painel" id="filtros-avancados"
            {% if not valores_filtro.inicio and not valores_filtro.fim %}hidden{% endif %}>
         {% include "components/input.html" with name="inicio" label="Eventos a partir de" tipo="date" valor=valores_filtro.inicio %}
@@ -100,7 +103,7 @@
             {% with s=linha.solicitacao %}
               {# data-rotulo alimenta o modo cartão no celular (ver CSS). #}
               <tr data-linha-url="{% url 'solicitacoes:detalhe' s.pk %}">
-                <td data-rotulo="Nº" data-col="numero"><strong>#{{ s.pk }}</strong></td>
+                <td data-rotulo="Nº" data-col="numero"><strong><a href="{% url 'solicitacoes:detalhe' s.pk %}" aria-label="Abrir solicitação #{{ s.pk }}">#{{ s.pk }}</a></strong></td>
                 <td data-rotulo="Município" data-col="municipio">{{ s.municipio|default:"—" }}</td>
                 <td data-rotulo="Tipo de evento" data-col="tipo">{{ s.tipo_evento|default:"—" }}</td>
                 <td data-rotulo="Período" data-col="periodo">

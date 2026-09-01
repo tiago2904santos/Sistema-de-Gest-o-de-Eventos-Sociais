@@ -46,5 +46,14 @@ class CoffeeBreakConfig(AppConfig):
                         "cancelar", "reativar",
                     ),
                 },
+                {
+                    "rotulo": "Cadastros",
+                    "icone": "checklist",
+                    "url": "coffee_break:cadastros",
+                    "url_names": (
+                        "cadastros", "cadastro_lista", "cadastro_novo", "cadastro_editar",
+                    ),
+                    "somente_admin": True,
+                },
             ],
         )

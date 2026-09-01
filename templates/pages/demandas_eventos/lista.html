@@ -11,31 +11,37 @@
         <label class="form-label sr-only" for="id_q">Busca</label>
         <div class="campo-com-icone"><span class="campo-com-icone__icone">{% include "components/icon.html" with nome="search" %}</span><input class="form-controle" type="search" name="q" id="id_q" value="{{ q }}" placeholder="Buscar solicitante, descrição ou assunto..."></div>
       </div>
-      <button type="button" class="btn btn--secundario lista-filtros__avancados" data-expande="#filtros-demandas" aria-expanded="{% if tem_filtros %}true{% else %}false{% endif %}">{% include "components/icon.html" with nome="filter" %} Filtros</button>
+      <button type="button" class="btn btn--secundario lista-filtros__avancados" data-expande="#filtros-demandas" aria-expanded="{% if tem_filtros %}true{% else %}false{% endif %}" aria-controls="filtros-demandas">{% include "components/icon.html" with nome="filter" %} Filtros</button>
+      <button type="submit" class="btn btn--dourado lista-filtros__buscar">{% include "components/icon.html" with nome="search" %}Buscar</button>
       <span class="lista-filtros__contagem">{{ pagina.paginator.count }} demanda{{ pagina.paginator.count|pluralize }}</span>
       <div class="lista-filtros__painel" id="filtros-demandas" {% if not tem_filtros %}hidden{% endif %}>
         {% include "components/select.html" with name="status" label="Status" opcoes=opcoes_status placeholder="Todos" selecionado=status %}
         {% include "components/select.html" with name="tipo" label="Tipo de evento" opcoes=opcoes_tipos placeholder="Todos" selecionado=tipo %}
         {% include "components/select.html" with name="municipio" label="Município" opcoes=opcoes_municipios placeholder="Todos" selecionado=municipio pesquisavel=True %}
+        {% include "components/select.html" with name="responsavel" label="Responsável" opcoes=opcoes_responsaveis placeholder="Todos" selecionado=responsavel pesquisavel=True %}
+        {% include "components/select.html" with name="setor" label="Setor" opcoes=opcoes_setores placeholder="Todos" selecionado=setor %}
+        {% include "components/input.html" with name="inicio" label="Solicitadas a partir de" tipo="date" valor=inicio %}
+        {% include "components/input.html" with name="fim" label="Solicitadas até" tipo="date" valor=fim %}
         {% if tem_filtros %}<a class="btn btn--secundario" href="{% url 'demandas_eventos:lista' %}">Limpar filtros</a>{% endif %}
       </div>
     </form>
   </div>
 
   <div class="card">
+    <div class="card__cabecalho lista-cabecalho"><h2 class="card__titulo">Demandas</h2><a class="btn btn--secundario btn--com-icone" href="{% url 'demandas_eventos:exportar' %}{% if querystring %}?{{ querystring }}{% endif %}">{% include "components/icon.html" with nome="download" %}Exportar CSV</a></div>
     <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Demandas de eventos">
       <table class="tabela tabela--cartoes-no-celular">
         <thead><tr><th>Solicitação</th><th>Tipo / tema</th><th>Evento</th><th>Município</th><th>Solicitante</th><th>Status</th><th>Ações</th></tr></thead>
         <tbody>
           {% for demanda in pagina %}
             <tr>
-              <td data-rotulo="Solicitação">{{ demanda.data_solicitacao|date:"d/m/Y" }}</td>
+              <td data-rotulo="Solicitação"><a href="{% url 'demandas_eventos:detalhe' demanda.pk %}" aria-label="Abrir demanda #{{ demanda.pk }}">#{{ demanda.pk }} · {{ demanda.data_solicitacao|date:"d/m/Y" }}</a></td>
               <td data-rotulo="Tipo / tema"><strong>{{ demanda.tipo_evento }}</strong>{% if demanda.tema %}<br><span class="texto-suave">{{ demanda.tema }}</span>{% endif %}</td>
-              <td data-rotulo="Evento">{% if demanda.data_inicio_evento %}{{ demanda.data_inicio_evento|date:"d/m/Y" }}{% elif demanda.periodo_evento_texto %}{{ demanda.periodo_evento_texto }}{% else %}—{% endif %}</td>
+              <td data-rotulo="Evento">{{ demanda.periodo_evento_display|default:"—" }}</td>
               <td data-rotulo="Município">{{ demanda.municipio|default:demanda.municipio_texto|default:"—" }}</td>
               <td data-rotulo="Solicitante">{{ demanda.solicitante|truncatechars:55 }}</td>
               <td data-rotulo="Status">{% include "components/status_badge.html" with status=demanda.status label=demanda.get_status_display %}</td>
-              <td class="tabela__acoes"><div class="tabela__acoes-grupo"><a class="btn btn--compacto btn--acao btn--acao-continuar" href="{% url 'demandas_eventos:detalhe' demanda.pk %}">Ver</a><a class="btn btn--secundario btn--compacto" href="{% url 'demandas_eventos:editar' demanda.pk %}">Editar</a></div></td>
+              <td class="tabela__acoes"><div class="tabela__acoes-grupo"><a class="btn btn--compacto btn--acao btn--acao-continuar" href="{% url 'demandas_eventos:detalhe' demanda.pk %}">Ver</a>{% if not demanda.finalizada %}<a class="btn btn--secundario btn--compacto" href="{% url 'demandas_eventos:editar' demanda.pk %}">Editar</a>{% endif %}</div></td>
             </tr>
           {% empty %}<tr><td colspan="7" class="texto-suave texto-centro">Nenhuma demanda encontrada.</td></tr>{% endfor %}
         </tbody>

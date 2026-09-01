@@ -17,7 +17,9 @@ def pode_ver(user, demanda):
 
 
 def pode_editar(user, demanda):
-    return pode_ver(user, demanda)
+    if user.is_superuser:
+        return True
+    return pode_ver(user, demanda) and not demanda.finalizada
 
 
 def setores_do_usuario_para_modulo(user):

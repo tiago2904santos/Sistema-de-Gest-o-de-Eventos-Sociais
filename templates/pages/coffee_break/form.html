@@ -5,6 +5,7 @@
 {% block conteudo %}
   <form method="post" action="" id="form-coffee-break">
     {% csrf_token %}
+    <input type="hidden" name="versao" value="{{ valores.versao }}">
 
     {% include "components/breadcrumb.html" with itens=breadcrumb %}
 
@@ -31,9 +32,18 @@
       </div>
     </div>
 
-    {% if erros_gerais %}
+    {% if form.errors %}
       <div class="alertas">
-        {% for erro in erros_gerais %}<div class="alerta alerta--error">{{ erro }}</div>{% endfor %}
+        <div class="alerta alerta--error resumo-erros" role="alert" tabindex="-1" data-resumo-erros>
+          <strong>Revise os campos indicados antes de salvar.</strong>
+          {% for erro in erros_gerais %}<p>{{ erro }}</p>{% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if dados_base_bloqueados %}
+      <div class="alerta alerta--info" role="status">
+        Os dados do pedido e do evento foram bloqueados porque o fluxo financeiro já começou. Os marcos financeiros e as observações continuam editáveis.
       </div>
     {% endif %}
 
@@ -41,18 +51,18 @@
       {% include "components/section_card.html" with numero="1" titulo="Lote e evento" subtitulo="Contra qual lote a solicitação consome saldo e para qual evento." %}
       <div class="section-card__corpo">
         <div class="form-grid">
-          {% include "components/select.html" with name="lote" label="Lote" opcoes=lotes obrigatorio=True largura="6" pesquisavel=True selecionado=valores.lote erros=erros.lote %}
+          {% include "components/select.html" with name="lote" label="Lote" opcoes=lotes obrigatorio=True largura="6" pesquisavel=True selecionado=valores.lote erros=erros.lote desabilitado=dados_base_bloqueados %}
           <div class="form-campo form-campo--3">
             <label class="form-label" for="id_saldo_lote">Saldo disponível</label>
             <input class="form-controle form-controle--somente-leitura" id="id_saldo_lote" value="—" readonly
                    data-saldo-lote data-saldos="{% for pk, info in saldos_lotes.items %}{{ pk }}:{{ info.restante }}/{{ info.total }}{% if not forloop.last %};{% endif %}{% endfor %}">
           </div>
-          {% include "components/input.html" with name="quantidade" label="Quantidade solicitada" tipo="number" obrigatorio=True largura="3" valor=valores.quantidade erros=erros.quantidade %}
-          {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True largura="3" valor=valores.data_solicitacao erros=erros.data_solicitacao %}
-          {% include "components/input.html" with name="numero" label="Nº da solicitação" placeholder="Ex.: 02/2026" largura="3" ajuda="Identificador institucional — texto, não número." valor=valores.numero erros=erros.numero %}
-          {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Data ou período do evento" largura="6" valor_inicio=valores.data_inicio_evento valor_fim=valores.data_fim_evento erros=erro_periodo %}
-          {% include "components/input.html" with name="periodo_evento_texto" label="Período irregular (texto)" placeholder="Ex.: 23, 24 e 25/03" largura="6" ajuda="Use quando o evento não couber em um intervalo simples de datas." valor=valores.periodo_evento_texto erros=erros.periodo_evento_texto %}
-          {% include "components/textarea.html" with name="descricao_evento" label="Descrição do evento" obrigatorio=True linhas="3" largura="" valor=valores.descricao_evento erros=erros.descricao_evento %}
+          {% include "components/input.html" with name="quantidade" label="Quantidade solicitada" tipo="number" obrigatorio=True largura="3" valor=valores.quantidade erros=erros.quantidade desabilitado=dados_base_bloqueados %}
+          {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True largura="3" valor=valores.data_solicitacao erros=erros.data_solicitacao desabilitado=dados_base_bloqueados %}
+          {% include "components/input.html" with name="numero" label="Nº da solicitação" placeholder="Ex.: 02/2026" largura="3" ajuda="Identificador institucional — texto, não número." valor=valores.numero erros=erros.numero desabilitado=dados_base_bloqueados %}
+          {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Data ou período do evento" largura="6" valor_inicio=valores.data_inicio_evento valor_fim=valores.data_fim_evento erros=erro_periodo desabilitado=dados_base_bloqueados %}
+          {% include "components/input.html" with name="periodo_evento_texto" label="Período irregular (texto)" placeholder="Ex.: 23, 24 e 25/03" largura="6" ajuda="Use somente quando não houver datas estruturadas." valor=valores.periodo_evento_texto erros=erros.periodo_evento_texto desabilitado=dados_base_bloqueados %}
+          {% include "components/textarea.html" with name="descricao_evento" label="Descrição do evento" obrigatorio=True linhas="3" largura="" valor=valores.descricao_evento erros=erros.descricao_evento desabilitado=dados_base_bloqueados %}
         </div>
       </div>
     </section>

@@ -188,3 +188,63 @@ class DemandaEvento(models.Model):
             and self.data_fim_evento < self.data_inicio_evento
         ):
             raise ValidationError({"data_fim_evento": "A data final não pode ser anterior à inicial."})
+
+    @property
+    def finalizada(self):
+        return self.status in {
+            StatusDemanda.ATENDIDA,
+            StatusDemanda.NAO_ATENDER,
+            StatusDemanda.CANCELADA,
+        }
+
+    @property
+    def periodo_evento_display(self):
+        if self.data_inicio_evento and self.data_fim_evento:
+            if self.data_inicio_evento == self.data_fim_evento:
+                return f"{self.data_inicio_evento:%d/%m/%Y}"
+            return f"{self.data_inicio_evento:%d/%m/%Y} a {self.data_fim_evento:%d/%m/%Y}"
+        if self.data_inicio_evento:
+            return f"{self.data_inicio_evento:%d/%m/%Y}"
+        return self.periodo_evento_texto
+
+
+class AcaoHistoricoDemanda(models.TextChoices):
+    CRIACAO = "CRIACAO", "Demanda criada"
+    ATUALIZACAO = "ATUALIZACAO", "Demanda atualizada"
+    TRANSICAO = "TRANSICAO", "Status alterado"
+
+
+class HistoricoDemanda(models.Model):
+    demanda = models.ForeignKey(
+        DemandaEvento,
+        on_delete=models.CASCADE,
+        related_name="historico",
+        verbose_name="demanda",
+    )
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="historico_demandas_ascom",
+        null=True,
+        blank=True,
+        verbose_name="usuário",
+    )
+    acao = models.CharField(
+        "ação", max_length=20, choices=AcaoHistoricoDemanda.choices
+    )
+    status_anterior = models.CharField("status anterior", max_length=25, blank=True)
+    status_novo = models.CharField("status novo", max_length=25, blank=True)
+    descricao = models.TextField("descrição", blank=True)
+    criado_em = models.DateTimeField("criado em", auto_now_add=True)
+
+    class Meta:
+        ordering = ["criado_em", "pk"]
+        verbose_name = "histórico de demanda ASCOM"
+        verbose_name_plural = "históricos de demandas ASCOM"
+
+    def __str__(self):
+        return f"{self.demanda_id} — {self.get_acao_display()}"
+
+    @property
+    def status_novo_display(self):
+        return dict(StatusDemanda.choices).get(self.status_novo, self.status_novo)

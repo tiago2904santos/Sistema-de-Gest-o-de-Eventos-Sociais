@@ -4,6 +4,8 @@ A renderização é feita manualmente pelos components aprovados do design
 system; estes formulários concentram validação e persistência.
 """
 
+import zipfile
+
 from django import forms
 from django.db import transaction
 from django.db.models import Q
@@ -320,7 +322,57 @@ def validar_arquivo_anexo(arquivo):
         )
     if arquivo.size > TAMANHO_MAXIMO_ANEXO:
         return f"{arquivo.name}: o arquivo não pode passar de 10 MB."
+    if not _conteudo_compativel_com_extensao(arquivo, extensao):
+        return (
+            f"{arquivo.name}: o conteúdo do arquivo não corresponde ao tipo "
+            "informado. Gere o documento novamente e tente anexá-lo."
+        )
     return None
+
+
+def _conteudo_compativel_com_extensao(arquivo, extensao):
+    """Confere assinatura/container sem confiar em nome ou Content-Type."""
+    posicao = arquivo.tell()
+    try:
+        arquivo.seek(0)
+        cabecalho = arquivo.read(16)
+        arquivo.seek(0)
+        if extensao == "pdf":
+            return cabecalho.startswith(b"%PDF-")
+        if extensao == "png":
+            return cabecalho.startswith(b"\x89PNG\r\n\x1a\n")
+        if extensao in {"jpg", "jpeg"}:
+            return cabecalho.startswith(b"\xff\xd8\xff")
+        if extensao in {"doc", "xls"}:
+            return cabecalho.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1")
+        if extensao in {"docx", "xlsx", "odt", "ods"}:
+            if not zipfile.is_zipfile(arquivo):
+                return False
+            arquivo.seek(0)
+            with zipfile.ZipFile(arquivo) as pacote:
+                nomes = set(pacote.namelist())
+                if extensao == "docx":
+                    return "[Content_Types].xml" in nomes and any(
+                        nome.startswith("word/") for nome in nomes
+                    )
+                if extensao == "xlsx":
+                    return "[Content_Types].xml" in nomes and any(
+                        nome.startswith("xl/") for nome in nomes
+                    )
+                try:
+                    mimetype = pacote.read("mimetype").decode("ascii")
+                except (KeyError, UnicodeDecodeError):
+                    return False
+                esperado = {
+                    "odt": "application/vnd.oasis.opendocument.text",
+                    "ods": "application/vnd.oasis.opendocument.spreadsheet",
+                }
+                return mimetype == esperado[extensao]
+        return False
+    except (OSError, ValueError, zipfile.BadZipFile):
+        return False
+    finally:
+        arquivo.seek(posicao)
 
 
 class AnexoForm(forms.Form):

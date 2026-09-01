@@ -1,0 +1,90 @@
+{% comment %}
+  Card de um deslocamento. Os trechos são GERADOS a partir da sede e dos
+  destinos (como no editor de referência): as cidades aparecem em leitura e
+  vivem em campos ocultos; o operador preenche datas, horas e tempos.
+  O último deslocamento é o Retorno (sentido=RETORNO), com título próprio e
+  sem remoção — o roteiro-editor.js aplica essa apresentação.
+  Usado no loop do formset e no <template data-trecho-modelo> (empty_form).
+  Espera no contexto: trecho (form), visivel.
+{% endcomment %}
+<section class="trecho-card{% if trecho.sentido.value == 'RETORNO' %} trecho-card--retorno{% endif %}" data-trecho
+         data-sentido="{{ trecho.sentido.value|default:'IDA' }}" {% if not visivel %}hidden{% endif %}>
+  {{ trecho.id }}
+  <input type="hidden" name="{{ trecho.ordem.html_name }}" value="{{ trecho.ordem.value|default:1 }}" data-trecho-ordem>
+  <input type="hidden" name="{{ trecho.sentido.html_name }}" value="{{ trecho.sentido.value|default:'IDA' }}" data-trecho-sentido>
+  <input type="hidden" name="{{ trecho.origem_municipio.html_name }}" value="{{ trecho.origem_municipio.value|default_if_none:'' }}" data-trecho-origem>
+  <input type="hidden" name="{{ trecho.destino_municipio.html_name }}" value="{{ trecho.destino_municipio.value|default_if_none:'' }}" data-trecho-destino>
+  <input type="hidden" name="{{ trecho.distancia_km.html_name }}" value="{{ trecho.distancia_km.value|default_if_none:'' }}" data-trecho-km>
+  <input type="hidden" name="{{ trecho.duracao_min.html_name }}" value="{{ trecho.duracao_min.value|default_if_none:'' }}" data-trecho-duracao-min>
+  {% if trecho.instance.pk %}<span hidden>{{ trecho.DELETE }}</span>{% endif %}
+
+  <header class="trecho-card__cabecalho">
+    <span class="trecho-card__numero" data-trecho-numero>Trecho</span>
+    <span class="trecho-card__rota" data-trecho-rota></span>
+    <span class="trecho-card__km" data-trecho-km-chip hidden></span>
+    <button type="button" class="btn btn--secundario btn--compacto btn--com-icone" data-trecho-remover>
+      {% include "components/icon.html" with nome="trash" %}Remover
+    </button>
+  </header>
+
+  <div class="trecho-card__corpo" data-trecho-corpo>
+    {% for erro in trecho.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+    {# As cidades vivem em campos ocultos; os erros delas aparecem aqui. #}
+    {% for erro in trecho.origem_municipio.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+    {% for erro in trecho.destino_municipio.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+
+    <div class="trecho-card__metades">
+      <div class="trecho-card__metade">
+        <span class="trecho-card__metade-titulo">Saída</span>
+        <div class="form-grid">
+          <div class="form-campo">
+            <label class="form-label">Cidade</label>
+            <input class="form-controle" type="text" value="" readonly tabindex="-1"
+                   aria-readonly="true" data-trecho-origem-rotulo>
+          </div>
+          {% include "components/input.html" with name=trecho.saida_data.html_name label="Data" tipo="date" largura="6" valor=trecho.saida_data.value|default_if_none:"" erros=trecho.saida_data.errors %}
+          {% include "components/input.html" with name=trecho.saida_hora.html_name label="Hora" tipo="time" largura="6" valor=trecho.saida_hora.value|default_if_none:"" erros=trecho.saida_hora.errors %}
+        </div>
+      </div>
+      <div class="trecho-card__metade">
+        <span class="trecho-card__metade-titulo">Chegada</span>
+        <div class="form-grid">
+          <div class="form-campo">
+            <label class="form-label">Cidade</label>
+            <input class="form-controle" type="text" value="" readonly tabindex="-1"
+                   aria-readonly="true" data-trecho-destino-rotulo>
+          </div>
+          {% include "components/input.html" with name=trecho.chegada_data.html_name label="Data" tipo="date" largura="6" valor=trecho.chegada_data.value|default_if_none:"" erros=trecho.chegada_data.errors %}
+          {% include "components/input.html" with name=trecho.chegada_hora.html_name label="Hora" tipo="time" largura="6" valor=trecho.chegada_hora.value|default_if_none:"" erros=trecho.chegada_hora.errors %}
+        </div>
+      </div>
+    </div>
+
+    <div class="trecho-card__tempos">
+      <div class="form-campo">
+        <label class="form-label">Tempo de viagem</label>
+        <input class="form-controle" type="text" value="" readonly tabindex="-1"
+               aria-readonly="true" placeholder="--:--" data-trecho-tempo-viagem>
+      </div>
+      <div class="form-campo">
+        <label class="form-label">Tempo adicional</label>
+        <div class="tempo-stepper">
+          <button type="button" class="btn btn--secundario btn--compacto" data-tempo-menos aria-label="Reduzir 15 minutos">−</button>
+          <input class="form-controle" type="text" value="00:00" readonly tabindex="-1"
+                 aria-readonly="true" data-trecho-tempo-adicional>
+          <button type="button" class="btn btn--secundario btn--compacto" data-tempo-mais aria-label="Acrescentar 15 minutos">+</button>
+        </div>
+      </div>
+      <div class="form-campo">
+        <label class="form-label">Tempo total</label>
+        <input class="form-controle" type="text" value="" readonly tabindex="-1"
+               aria-readonly="true" placeholder="--:--" data-trecho-tempo-total>
+      </div>
+    </div>
+  </div>
+
+  <div class="trecho-card__removido" data-trecho-removido hidden>
+    <span>Trecho marcado para remoção — será excluído ao salvar.</span>
+    <button type="button" class="btn btn--secundario btn--compacto" data-trecho-desfazer>Desfazer</button>
+  </div>
+</section>

@@ -17,11 +17,14 @@
   </label>
   <div class="form-controle-wrapper form-controle-wrapper--select custom-select{% if pesquisavel %} custom-select--pesquisavel{% endif %}{% if erros %} is-invalid{% endif %}"
        data-custom-select{% if pesquisavel %} data-searchable{% endif %}{% if dependente_de %} data-depends-on="{{ dependente_de }}"{% endif %}>
+    {# form_alvo: campo fora do <form> que ainda é enviado com ele. #}
     <select class="form-controle custom-select__native" id="id_{{ name }}" name="{{ name }}"
+            {% if form_alvo %}form="{{ form_alvo }}"{% endif %}
+            {% if erros %}aria-invalid="true" aria-describedby="id_{{ name }}_erro{% if ajuda %} id_{{ name }}_ajuda{% endif %}"{% elif ajuda %}aria-describedby="id_{{ name }}_ajuda"{% endif %}
             {% if obrigatorio %}required{% endif %}{% if desabilitado %} disabled{% endif %}>
       <option value="">{{ placeholder|default:"Selecione..." }}</option>
       {% for opcao in opcoes %}
-        <option value="{{ opcao.valor|default:opcao }}"{% if opcao.estado %} data-parent-value="{{ opcao.estado }}"{% endif %}{% if selecionado and opcao.valor|default:opcao|stringformat:"s" == selecionado|stringformat:"s" %} selected{% endif %}>{{ opcao.rotulo|default:opcao }}</option>
+        <option value="{{ opcao.valor|default:opcao }}"{% if opcao.estado %} data-parent-value="{{ opcao.estado }}"{% endif %}{% if opcao.relacionados %} data-related-values="{{ opcao.relacionados }}"{% endif %}{% if selecionado and opcao.valor|default:opcao|stringformat:"s" == selecionado|stringformat:"s" %} selected{% endif %}>{{ opcao.rotulo|default:opcao }}</option>
       {% endfor %}
     </select>
     {% if pesquisavel %}
@@ -46,7 +49,7 @@
         {% for opcao in opcoes %}
           <button class="custom-select__opcao" type="button" role="option"
                   aria-selected="{% if selecionado and opcao.valor|default:opcao|stringformat:"s" == selecionado|stringformat:"s" %}true{% else %}false{% endif %}"
-                  data-value="{{ opcao.valor|default:opcao }}"{% if opcao.estado %} data-parent-value="{{ opcao.estado }}"{% endif %}>
+                  data-value="{{ opcao.valor|default:opcao }}"{% if opcao.estado %} data-parent-value="{{ opcao.estado }}"{% endif %}{% if opcao.relacionados %} data-related-values="{{ opcao.relacionados }}"{% endif %}>
             <span>{{ opcao.rotulo|default:opcao }}</span>
             <span class="custom-select__check" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
           </button>
@@ -57,6 +60,6 @@
       </div>
     </div>
   </div>
-  {% for erro in erros %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-  {% if ajuda %}<p class="form-ajuda">{{ ajuda }}</p>{% endif %}
+  {% for erro in erros %}<p class="form-erro"{% if forloop.first %} id="id_{{ name }}_erro"{% endif %}>{{ erro }}</p>{% endfor %}
+  {% if ajuda %}<p class="form-ajuda" id="id_{{ name }}_ajuda">{{ ajuda }}</p>{% endif %}
 </div>

@@ -73,6 +73,14 @@ class Municipio(CadastroBase):
         on_delete=models.PROTECT,
         related_name="municipios",
     )
+    # Coordenadas para o mapa e o cálculo de rota do módulo Viagens.
+    # Opcionais: preenchidas por importação/geocodificação, nunca à mão.
+    latitude = models.DecimalField(
+        "latitude", max_digits=10, decimal_places=7, blank=True, null=True
+    )
+    longitude = models.DecimalField(
+        "longitude", max_digits=10, decimal_places=7, blank=True, null=True
+    )
 
     class Meta(CadastroBase.Meta):
         verbose_name = "município"

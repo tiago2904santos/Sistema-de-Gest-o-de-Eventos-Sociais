@@ -30,32 +30,13 @@ class ViagensCadastrosConfig(AppConfig):
                     "rotulo": "Roteiros",
                     "icone": "map-pin",
                     "url": "viagens_roteiros:lista",
-                    "url_names": ("lista", "novo", "editar", "detalhe"),
                 },
+                # Servidores, viaturas e diárias moram DENTRO de Cadastros:
+                # o hub em viagens_cadastros:index lista todos os grupos.
                 {
                     "rotulo": "Cadastros",
-                    "icone": "home",
+                    "icone": "checklist",
                     "url": "viagens_cadastros:index",
-                    "url_names": ("index",),
-                },
-                {
-                    "rotulo": "Servidores",
-                    "icone": "users",
-                    "url": "viagens_cadastros:lista",
-                    "url_args": ("servidores",),
-                    "url_names": ("lista", "novo", "editar"),
-                },
-                {
-                    "rotulo": "Viaturas",
-                    "icone": "truck",
-                    "url": "viagens_cadastros:lista",
-                    "url_args": ("viaturas",),
-                },
-                {
-                    "rotulo": "Diárias",
-                    "icone": "chart",
-                    "url": "viagens_cadastros:diarias",
-                    "url_names": ("diarias", "diaria_nova", "diaria_editar"),
                 },
             ],
         )

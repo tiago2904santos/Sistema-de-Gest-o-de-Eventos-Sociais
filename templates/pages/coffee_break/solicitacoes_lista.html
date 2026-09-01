@@ -27,6 +27,7 @@
         Filtros avançados
         {% include "components/icon.html" with nome="chevron-down" %}
       </button>
+      <button type="submit" class="btn btn--dourado lista-filtros__buscar">{% include "components/icon.html" with nome="search" %}Buscar</button>
       <div class="lista-filtros__painel" id="filtros-avancados"
            {% if not valores_filtro.inicio and not valores_filtro.fim and not valores_filtro.fornecedor %}hidden{% endif %}>
         {% include "components/select.html" with name="fornecedor" label="Fornecedor" opcoes=opcoes_fornecedores placeholder="Todos os fornecedores" selecionado=valores_filtro.fornecedor %}
@@ -46,6 +47,7 @@
           <span class="lista-cabecalho__contagem">{{ total_resultados }} solicitaç{{ total_resultados|pluralize:"ão,ões" }}{% if tem_filtros %} com os filtros aplicados{% endif %}</span>
         {% endif %}
       </h2>
+      <a href="{% url 'coffee_break:exportar' %}{% if querystring %}?{{ querystring }}{% endif %}" class="btn btn--secundario btn--com-icone">{% include "components/icon.html" with nome="download" %}Exportar CSV</a>
     </div>
     <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Tabela de solicitações de coffee break">
       <table class="tabela tabela--ordenavel tabela--clicavel tabela--cartoes-no-celular">
@@ -70,7 +72,7 @@
         <tbody>
           {% for s in pagina %}
             <tr data-linha-url="{% url 'coffee_break:detalhe' s.pk %}">
-              <td data-rotulo="Nº"><strong>{{ s.numero|default:"—" }}</strong></td>
+              <td data-rotulo="Nº"><strong><a href="{% url 'coffee_break:detalhe' s.pk %}" aria-label="Abrir solicitação {{ s.numero|default:s.pk }}">{{ s.numero|default:"—" }}</a></strong></td>
               <td data-rotulo="Lote">{{ s.lote.rotulo_curto }}</td>
               <td data-rotulo="Evento">{{ s.descricao_evento|truncatechars:50 }}</td>
               <td data-rotulo="Data do evento">{{ s.periodo_evento_display|default:"—" }}</td>
@@ -80,7 +82,7 @@
               <td data-rotulo="Situação">{% include "components/status_badge.html" with status=s.situacao_financeira_css label=s.situacao_financeira_display %}</td>
               <td class="tabela__acoes">
                 <div class="tabela__acoes-grupo">
-                  {% if not s.cancelada %}
+                  {% if not s.cancelada and not s.concluida %}
                     <a href="{% url 'coffee_break:editar' s.pk %}" class="btn btn--compacto btn--acao btn--acao-continuar">{% include "components/icon.html" with nome="pencil" %}Editar</a>
                   {% else %}
                     <a href="{% url 'coffee_break:detalhe' s.pk %}" class="btn btn--compacto btn--acao btn--acao-detalhes">{% include "components/icon.html" with nome="eye" %}Detalhes</a>

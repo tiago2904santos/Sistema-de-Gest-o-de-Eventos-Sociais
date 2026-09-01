@@ -13,12 +13,14 @@ from openpyxl import load_workbook
 from accounts.models import Setor
 from cadastros.models import Municipio, TipoEvento
 from demandas_eventos.models import (
+    AcaoHistoricoDemanda,
     DemandaEvento,
     Palestrante,
     RespostaPadrao,
     StatusDemanda,
     Tema,
 )
+from demandas_eventos.services import registrar_historico
 
 
 def _texto(valor):
@@ -268,4 +270,12 @@ class Command(BaseCommand):
             }
             demanda, criada = DemandaEvento.objects.update_or_create(chave_importacao=chave, defaults=defaults)
             demanda.setores.set([ascom])
+            if criada:
+                registrar_historico(
+                    demanda,
+                    None,
+                    AcaoHistoricoDemanda.CRIACAO,
+                    f"Importada de {demanda.origem_importacao}.",
+                    status_novo=demanda.status,
+                )
             resumo["demandas" if criada else "ignoradas"] += 1

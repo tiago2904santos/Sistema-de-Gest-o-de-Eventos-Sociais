@@ -43,7 +43,7 @@
           <tbody>
             {% for lote in lotes %}
               <tr data-linha-url="{% url 'coffee_break:lote_detalhe' lote.pk %}">
-                <td><strong>{{ lote.rotulo_curto }}</strong></td>
+                <td><strong><a href="{% url 'coffee_break:lote_detalhe' lote.pk %}">{{ lote.rotulo_curto }}</a></strong></td>
                 <td>{{ lote.contrato.fornecedor.razao_social }}</td>
                 <td>
                   {% widthratio lote.consumido lote.quantidade_total 100 as pct %}
@@ -83,7 +83,7 @@
           <tbody>
             {% for s in recentes %}
               <tr data-linha-url="{% url 'coffee_break:detalhe' s.pk %}">
-                <td><strong>{{ s.numero|default:"—" }}</strong></td>
+                <td><strong><a href="{% url 'coffee_break:detalhe' s.pk %}">{{ s.numero|default:"—" }}</a></strong></td>
                 <td>{{ s.descricao_evento|truncatechars:45 }}</td>
                 <td>{{ s.lote.rotulo_curto }}</td>
                 <td>{{ s.quantidade }}</td>

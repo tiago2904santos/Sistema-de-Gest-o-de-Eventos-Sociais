@@ -4,8 +4,8 @@
   mostra o Início + apenas os itens daquele módulo, montados pelo
   context processor accounts.context_processors.modulos.
 {% endcomment %}
-<nav class="navbar">
-  <div class="navbar__inner">
+<nav class="navbar" aria-label="Navegação principal">
+  <div class="navbar__inner" tabindex="0">
     <a class="navbar__link {% if not modulo_ativo %}navbar__link--ativo{% endif %}"
        href="{% url 'core:home' %}"><span class="navbar__icone">{% include "components/icon.html" with nome="home" %}</span>Início</a>
     {% if modulo_ativo %}
@@ -16,6 +16,7 @@
           <span class="navbar__icone">{% include "components/icon.html" with nome=item.icone %}</span>{{ item.rotulo }}</a>
       {% endfor %}
     {% endif %}
+    {% if modulo_ativo %}<span class="navbar__dica-mobile" aria-hidden="true">Deslize para ver mais →</span>{% endif %}
     {# Ações de conta e administração moram no menu do avatar e no portal. #}
   </div>
 </nav>

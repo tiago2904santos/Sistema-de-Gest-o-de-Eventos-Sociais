@@ -20,6 +20,7 @@
       </div>
       {% include "components/select.html" with name="exercicio" label="Exercício" opcoes=opcoes_exercicios placeholder="Todos os exercícios" selecionado=valores_filtro.exercicio %}
       {% include "components/select.html" with name="situacao" label="Situação" opcoes=opcoes_situacao placeholder="Todas" selecionado=valores_filtro.situacao %}
+      <button type="submit" class="btn btn--dourado lista-filtros__buscar">{% include "components/icon.html" with nome="search" %}Buscar</button>
       {% if tem_filtros %}
         <a href="{% url 'coffee_break:lotes' %}" class="btn btn--secundario">Limpar filtros</a>
       {% endif %}
@@ -57,7 +58,7 @@
         <tbody>
           {% for lote in pagina %}
             <tr data-linha-url="{% url 'coffee_break:lote_detalhe' lote.pk %}">
-              <td data-rotulo="Lote"><strong>Lote {{ lote.numero }}</strong></td>
+              <td data-rotulo="Lote"><strong><a href="{% url 'coffee_break:lote_detalhe' lote.pk %}" aria-label="Abrir lote {{ lote.numero }}">Lote {{ lote.numero }}</a></strong></td>
               <td data-rotulo="Fornecedor">{{ lote.contrato.fornecedor.razao_social }}</td>
               <td data-rotulo="Contrato">{{ lote.contrato.numero }}</td>
               <td data-rotulo="Exercício">{{ lote.exercicio }}</td>

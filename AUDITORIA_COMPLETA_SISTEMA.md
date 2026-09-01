@@ -633,3 +633,50 @@ Conclusão: o tempo local é confortável. As prioridades de desempenho são eli
 O produto não precisa de uma reconstrução. A arquitetura e o design atual sustentam evolução incremental, e o fluxo de Eventos demonstra um bom padrão de maturidade que pode ser reaproveitado pelos outros módulos. A ordem correta é primeiro resolver governança e integridade; depois acessibilidade e produtividade; por fim modularização e escala.
 
 O risco mais urgente é conhecido e reproduzível: **ver uma solicitação hoje concede, em determinados estados, o poder de cancelá-la**. Uma decisão explícita sobre essa regra deve preceder as demais melhorias.
+
+---
+
+## 12. Implementação das correções — 01/09/2026
+
+As correções página a página dos módulos Eventos Sociais, Coffee Break e Demandas ASCOM foram implementadas após esta auditoria.
+
+### Eventos Sociais
+
+- Visibilidade limitada ao criador, com visão transversal somente para gestor DG, administrador e superusuário; anexos seguem a mesma regra.
+- Cancelamento separado da permissão de leitura e validado novamente no serviço de domínio.
+- Resumo de erros e mensagens específicas para serviços/equipes obrigatórios.
+- Busca com botão explícito e suporte a Enter; identificador principal das tabelas virou link real.
+- Validação de assinatura de PDF, PNG, JPEG e documentos de escritório, além de extensão e tamanho.
+- Contadores de filas consolidados em uma agregação e estados de workflow protegidos no Admin.
+
+### Coffee Break
+
+- Sequência financeira validada no modelo/formulário; datas cronológicas protegidas também no banco quando compatíveis com o legado.
+- Dados-base congelados após o início financeiro; registros concluídos ou cancelados ficam somente para consulta.
+- Cancelamento exige motivo e não é permitido após conclusão; reativação revalida o saldo sob bloqueio transacional.
+- Histórico de criação, edição, cancelamento e reativação; controle otimista de concorrência.
+- Exportação CSV preservando filtros, links reais nas tabelas e ajuda contextual do fluxo.
+- Backoffice institucional para fornecedores, contratos e lotes, restrito a administradores e com validação de capacidade consumida.
+
+### Demandas ASCOM
+
+- Responsáveis limitados aos setores elegíveis, filtrados em tempo real no formulário e validados no servidor.
+- Status removido da edição livre e substituído por transições explícitas, com justificativa em cancelamento/não atendimento.
+- Estados finais bloqueados para edição; histórico registra criação, alterações e transições.
+- Título de detalhe corrigido, período unificado, controle de concorrência e importação com trilha de criação.
+- Filtros por período, responsável e setor; exportação CSV respeitando o recorte de visibilidade.
+- Datas inválidas em filtros são ignoradas com segurança em vez de causar erro 500.
+
+### Plataforma compartilhada
+
+- Administração de usuários agora vincula setores; alterações M2M também entram na auditoria.
+- Mensagens globais possuem regiões vivas; erros estão associados por `aria-describedby` e resumos recebem foco.
+- Página 403 institucional, hardening configurável de produção e proteção contra segredo inseguro fora de debug.
+- Navegação móvel sinalizada, indicação de tabelas roláveis e ações de formulário persistentes em telas estreitas.
+
+### Verificação da implementação
+
+- 224 testes dos módulos afetados passaram.
+- Migrações aplicadas com sucesso em base PostgreSQL isolada e `makemigrations --check` sem diferenças.
+- Jornadas reais verificadas no navegador em desktop e 390 × 844 px, sem overflow global.
+- A suíte completa executou 405 testes; 404 passaram. A única falha está em um teste preexistente e fora do escopo, no módulo Viagens, que ainda procura a marcação antiga do formulário depois do redesign desse módulo.

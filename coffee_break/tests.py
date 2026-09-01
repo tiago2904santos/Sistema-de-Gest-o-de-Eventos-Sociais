@@ -3,6 +3,7 @@ import io
 
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
@@ -10,6 +11,7 @@ from django.urls import reverse
 from accounts.models import Modulo, Setor
 from accounts.modulos import codigos_modulos_do_usuario, usuario_tem_modulo
 from cadastros.models import Estado, Municipio, Regiao
+from solicitacoes.permissions import GRUPO_ADMINISTRADOR
 
 from .forms import SolicitacaoCoffeeBreakForm
 from .management.commands.importar_coffee_break import (
@@ -40,6 +42,10 @@ class BaseCoffeeBreakTestCase(TestCase):
         cls.ascom.setores.add(cls.setor_ascom)
         cls.sem_modulo = User.objects.create_user("comum", password="x")
         cls.superusuario = User.objects.create_superuser("root", password="x")
+        cls.admin_modulo = User.objects.create_user("admin-coffee", password="x")
+        cls.admin_modulo.setores.add(cls.setor_ascom)
+        grupo_admin, _ = Group.objects.get_or_create(name=GRUPO_ADMINISTRADOR)
+        cls.admin_modulo.groups.add(grupo_admin)
 
         cls.fornecedor = Fornecedor.objects.create(
             razao_social="PADARIA E CONFEITARIA FAVO E MEL LTDA",
@@ -259,6 +265,34 @@ class SaldoTests(BaseCoffeeBreakTestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("data_fim_evento", form.errors)
 
+    def test_marcos_financeiros_exigem_sequencia(self):
+        form = SolicitacaoCoffeeBreakForm(
+            data={
+                "lote": self.lote.pk,
+                "data_solicitacao": "2026-08-01",
+                "descricao_evento": "Teste",
+                "quantidade": "10",
+                "data_ordem_bancaria": "2026-08-10",
+            }
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("data_ordem_bancaria", form.errors)
+
+    def test_periodo_textual_e_datas_nao_sao_aceitos_juntos_em_novo_registro(self):
+        form = SolicitacaoCoffeeBreakForm(
+            data={
+                "lote": self.lote.pk,
+                "data_solicitacao": "2026-08-01",
+                "descricao_evento": "Teste",
+                "quantidade": "10",
+                "data_inicio_evento": "2026-08-10",
+                "data_fim_evento": "2026-08-11",
+                "periodo_evento_texto": "10 e 11/08",
+            }
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("periodo_evento_texto", form.errors)
+
     def test_cancelamento_devolve_saldo_e_registra_auditoria(self):
         solicitacao = self.criar_solicitacao(quantidade=80)
         services.cancelar(solicitacao, self.ascom, motivo="Evento adiado")
@@ -306,7 +340,14 @@ class SituacaoFinanceiraTests(BaseCoffeeBreakTestCase):
         self.assertEqual(s.situacao_financeira, SituacaoFinanceira.CONCLUIDA)
 
     def test_cancelada_prevalece(self):
-        s = self.criar_solicitacao(cancelada=True, data_envio_empresa=dt.date(2026, 6, 16))
+        s = self.criar_solicitacao(
+            cancelada=True,
+            numero_nota_fiscal="8046",
+            protocolo_pagamento="25.419.856-0",
+            data_atesto_gaf=dt.date(2026, 2, 18),
+            data_ordem_bancaria=dt.date(2026, 2, 24),
+            data_envio_empresa=dt.date(2026, 6, 16),
+        )
         self.assertEqual(s.situacao_financeira, SituacaoFinanceira.CANCELADA)
 
 
@@ -348,6 +389,7 @@ class ViewsTests(BaseCoffeeBreakTestCase):
         )
         self.assertEqual(solicitacao.criado_por, self.ascom)
         self.assertEqual(solicitacao.quantidade, 40)
+        self.assertEqual(solicitacao.historico.count(), 1)
 
     def test_criacao_acima_do_saldo_mostra_erro(self):
         resposta = self.client.post(
@@ -361,7 +403,11 @@ class ViewsTests(BaseCoffeeBreakTestCase):
         solicitacao = self.criar_solicitacao(numero="05/2026")
         resposta = self.client.post(
             reverse("coffee_break:editar", args=[solicitacao.pk]),
-            self.dados_post(quantidade="55", numero_nota_fiscal="8046"),
+            self.dados_post(
+                quantidade="55",
+                numero_nota_fiscal="8046",
+                versao=str(int(solicitacao.atualizado_em.timestamp() * 1_000_000)),
+            ),
         )
         solicitacao.refresh_from_db()
         self.assertRedirects(
@@ -369,6 +415,35 @@ class ViewsTests(BaseCoffeeBreakTestCase):
         )
         self.assertEqual(solicitacao.quantidade, 55)
         self.assertEqual(solicitacao.numero_nota_fiscal, "8046")
+        self.assertEqual(solicitacao.historico.count(), 1)
+
+    def test_edicao_concorrente_e_rejeitada(self):
+        solicitacao = self.criar_solicitacao(numero="05/2026")
+        versao_antiga = str(int(solicitacao.atualizado_em.timestamp() * 1_000_000))
+        solicitacao.observacoes = "Alterada por outra pessoa"
+        solicitacao.save(update_fields=["observacoes", "atualizado_em"])
+        resposta = self.client.post(
+            reverse("coffee_break:editar", args=[solicitacao.pk]),
+            self.dados_post(versao=versao_antiga),
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "alterada por outra pessoa")
+
+    def test_concluida_nao_abre_edicao(self):
+        solicitacao = self.criar_solicitacao(
+            numero="05/2026",
+            numero_nota_fiscal="1",
+            protocolo_pagamento="P1",
+            data_atesto_gaf=dt.date(2026, 8, 2),
+            data_ordem_bancaria=dt.date(2026, 8, 3),
+            data_envio_empresa=dt.date(2026, 8, 4),
+        )
+        resposta = self.client.get(
+            reverse("coffee_break:editar", args=[solicitacao.pk])
+        )
+        self.assertRedirects(
+            resposta, reverse("coffee_break:detalhe", args=[solicitacao.pk])
+        )
 
     def test_form_nao_aceita_lote_inativo(self):
         lote_inativo = LoteCoffeeBreak.objects.create(
@@ -460,6 +535,98 @@ class ViewsTests(BaseCoffeeBreakTestCase):
         )
         solicitacao.refresh_from_db()
         self.assertTrue(solicitacao.cancelada)
+
+    def test_cancelar_exige_motivo(self):
+        solicitacao = self.criar_solicitacao()
+        resposta = self.client.post(
+            reverse("coffee_break:cancelar", args=[solicitacao.pk]), {"motivo": ""}
+        )
+        self.assertRedirects(
+            resposta, reverse("coffee_break:detalhe", args=[solicitacao.pk])
+        )
+        solicitacao.refresh_from_db()
+        self.assertFalse(solicitacao.cancelada)
+
+    def test_concluida_nao_pode_ser_cancelada(self):
+        solicitacao = self.criar_solicitacao(
+            numero_nota_fiscal="1",
+            protocolo_pagamento="P1",
+            data_atesto_gaf=dt.date(2026, 8, 2),
+            data_ordem_bancaria=dt.date(2026, 8, 3),
+            data_envio_empresa=dt.date(2026, 8, 4),
+        )
+        resposta = self.client.post(
+            reverse("coffee_break:cancelar", args=[solicitacao.pk]),
+            {"motivo": "Tentativa indevida"},
+        )
+        self.assertRedirects(
+            resposta, reverse("coffee_break:detalhe", args=[solicitacao.pk])
+        )
+        solicitacao.refresh_from_db()
+        self.assertFalse(solicitacao.cancelada)
+        detalhe = self.client.get(reverse("coffee_break:detalhe", args=[solicitacao.pk]))
+        self.assertNotContains(detalhe, "id_motivo_cancelamento")
+
+
+class CadastrosCoffeeBreakTests(BaseCoffeeBreakTestCase):
+    def test_operador_comum_nao_acessa_cadastros_contratuais(self):
+        self.client.force_login(self.ascom)
+        resposta = self.client.get(
+            reverse("coffee_break:cadastro_lista", args=["fornecedores"])
+        )
+        self.assertEqual(resposta.status_code, 403)
+        self.assertNotContains(
+            self.client.get(reverse("coffee_break:painel")),
+            reverse("coffee_break:cadastros"),
+        )
+
+    def test_administrador_cria_fornecedor_pela_interface(self):
+        self.client.force_login(self.admin_modulo)
+        resposta = self.client.post(
+            reverse("coffee_break:cadastro_novo", args=["fornecedores"]),
+            {
+                "razao_social": "Fornecedor Institucional Ltda",
+                "cnpj": "12.345.678/0001-95",
+                "contato": "Equipe comercial",
+                "telefone": "41 3333-4444",
+                "email": "contato@example.com",
+                "ativo": "1",
+            },
+        )
+        self.assertRedirects(
+            resposta,
+            reverse("coffee_break:cadastro_lista", args=["fornecedores"]),
+        )
+        self.assertTrue(
+            Fornecedor.objects.filter(
+                razao_social="Fornecedor Institucional Ltda",
+                cnpj="12345678000195",
+            ).exists()
+        )
+        painel = self.client.get(reverse("coffee_break:painel"))
+        self.assertContains(painel, reverse("coffee_break:cadastros"))
+
+    def test_capacidade_do_lote_nao_pode_ficar_abaixo_do_consumido(self):
+        self.criar_solicitacao(quantidade=30)
+        self.client.force_login(self.admin_modulo)
+        resposta = self.client.post(
+            reverse("coffee_break:cadastro_editar", args=["lotes", self.lote.pk]),
+            {
+                "contrato": self.contrato.pk,
+                "numero": self.lote.numero,
+                "exercicio": self.lote.exercicio,
+                "quantidade_total": 20,
+                "empenho": self.lote.empenho,
+                "municipios_texto": "",
+                "orientacoes": "",
+                "especificacoes_tecnicas": "",
+                "observacoes": "",
+                "ativo": "1",
+                "versao": str(int(self.lote.atualizado_em.timestamp() * 1_000_000)),
+            },
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "já consumiu 30 unidades")
 
 
 # ---------------------------------------------------------------------------

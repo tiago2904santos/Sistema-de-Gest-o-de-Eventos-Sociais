@@ -1,18 +1,30 @@
 from django import forms
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_date
+from django.utils.dateparse import parse_date
+from django.views.decorators.http import require_POST
 
 from cadastros.models import Municipio, TipoEvento
 
 from .forms import DemandaEventoForm, PalestranteForm, RespostaPadraoForm, TemaForm
-from .models import DemandaEvento, Palestrante, RespostaPadrao, StatusDemanda, Tema
-from .permissions import pode_editar, queryset_visivel
+from .models import (
+    AcaoHistoricoDemanda,
+    DemandaEvento,
+    Palestrante,
+    RespostaPadrao,
+    StatusDemanda,
+    Tema,
+)
+from .permissions import pode_editar, queryset_visivel, setores_do_usuario_para_modulo
+from . import services
 
 ITENS_POR_PAGINA = 20
 
@@ -23,6 +35,19 @@ def _opcoes(iteravel):
 
 def _opcoes_choices(choices):
     return [{"valor": valor, "rotulo": rotulo} for valor, rotulo in choices]
+
+
+def _opcoes_responsaveis(iteravel):
+    return [
+        {
+            "valor": str(usuario.pk),
+            "rotulo": str(usuario),
+            "relacionados": ",".join(
+                str(setor.pk) for setor in usuario.setores.all()
+            ),
+        }
+        for usuario in iteravel
+    ]
 
 
 def _demanda_visivel(request, pk):
@@ -63,6 +88,10 @@ def lista_demandas(request):
     status = request.GET.get("status", "").strip()
     tipo = request.GET.get("tipo", "").strip()
     municipio = request.GET.get("municipio", "").strip()
+    responsavel = request.GET.get("responsavel", "").strip()
+    setor = request.GET.get("setor", "").strip()
+    inicio = request.GET.get("inicio", "").strip()
+    fim = request.GET.get("fim", "").strip()
     if q:
         queryset = queryset.filter(
             Q(solicitante__icontains=q)
@@ -77,6 +106,17 @@ def lista_demandas(request):
         queryset = queryset.filter(tipo_evento_id=tipo)
     if municipio.isdigit():
         queryset = queryset.filter(municipio_id=municipio)
+    if responsavel.isdigit():
+        queryset = queryset.filter(responsavel_atendimento_id=responsavel)
+    if setor.isdigit():
+        queryset = queryset.filter(setores__id=setor)
+    inicio_valido = parse_date(inicio) if inicio else None
+    fim_valido = parse_date(fim) if fim else None
+    if inicio_valido:
+        queryset = queryset.filter(data_solicitacao__gte=inicio_valido)
+    if fim_valido:
+        queryset = queryset.filter(data_solicitacao__lte=fim_valido)
+    queryset = queryset.distinct()
     queryset = queryset.order_by("-data_solicitacao", "-pk")
     paginator = Paginator(queryset, ITENS_POR_PAGINA)
     pagina = paginator.get_page(request.GET.get("pagina"))
@@ -91,13 +131,24 @@ def lista_demandas(request):
             "status": status,
             "tipo": tipo,
             "municipio": municipio,
+            "responsavel": responsavel,
+            "setor": setor,
+            "inicio": inicio,
+            "fim": fim,
             "opcoes_status": _opcoes_choices(StatusDemanda.choices),
             "opcoes_tipos": _opcoes(TipoEvento.objects.filter(ativo=True)),
             "opcoes_municipios": _opcoes(Municipio.objects.filter(demandas_ascom__isnull=False).distinct()),
+            "opcoes_responsaveis": _opcoes(
+                get_user_model().objects.filter(
+                    is_active=True,
+                    setores__in=setores_do_usuario_para_modulo(request.user),
+                ).distinct().order_by("first_name", "username")
+            ),
+            "opcoes_setores": _opcoes(setores_do_usuario_para_modulo(request.user)),
             "querystring": parametros.urlencode(),
             "paginas_visiveis": list(paginator.get_elided_page_range(pagina.number, on_each_side=2, on_ends=1)),
             "elipse": paginator.ELLIPSIS,
-            "tem_filtros": bool(q or status or tipo or municipio),
+            "tem_filtros": bool(q or status or tipo or municipio or responsavel or setor or inicio or fim),
         },
     )
 
@@ -118,8 +169,9 @@ def _contexto_form(form, instancia):
         "opcoes_tipos": _opcoes(form.fields["tipo_evento"].queryset),
         "opcoes_temas": _opcoes(form.fields["tema"].queryset),
         "opcoes_municipios": _opcoes(form.fields["municipio"].queryset),
-        "opcoes_responsaveis": _opcoes(form.fields["responsavel_atendimento"].queryset),
-        "opcoes_status": _opcoes_choices(StatusDemanda.choices),
+        "opcoes_responsaveis": _opcoes_responsaveis(
+            form.fields["responsavel_atendimento"].queryset
+        ),
         "opcoes_palestrantes": _opcoes(form.fields["palestrantes"].queryset),
         "palestrantes_marcados": marcados("palestrantes"),
         "opcoes_setores": _opcoes(form.fields["setores"].queryset),
@@ -136,6 +188,29 @@ def editar_demanda(request, pk=None):
         form = DemandaEventoForm(request.POST, instance=instancia, usuario=request.user)
         if form.is_valid():
             demanda = form.save(criado_por=request.user)
+            if instancia:
+                alterados = [
+                    form.fields[nome].label
+                    for nome in form.changed_data
+                    if nome in form.fields and nome != "versao"
+                ]
+                services.registrar_historico(
+                    demanda,
+                    request.user,
+                    AcaoHistoricoDemanda.ATUALIZACAO,
+                    "Campos atualizados: " + ", ".join(alterados)
+                    if alterados
+                    else "Demanda salva sem alteração de campos.",
+                    status_novo=demanda.status,
+                )
+            else:
+                services.registrar_historico(
+                    demanda,
+                    request.user,
+                    AcaoHistoricoDemanda.CRIACAO,
+                    "Demanda registrada no sistema.",
+                    status_novo=demanda.status,
+                )
             messages.success(request, f"Demanda #{demanda.pk} salva com sucesso.")
             return redirect("demandas_eventos:detalhe", pk=demanda.pk)
         messages.error(request, "Corrija os campos destacados para continuar.")
@@ -162,12 +237,89 @@ def detalhe_demanda(request, pk):
         "pages/demandas_eventos/detalhe.html",
         {
             "demanda": demanda,
+            "titulo_detalhe": f"Demanda #{demanda.pk}",
+            "pode_editar": pode_editar(request.user, demanda),
+            "opcoes_transicao": services.opcoes_transicao(demanda),
+            "historico": demanda.historico.select_related("usuario"),
             "breadcrumb": [
                 {"label": "Demandas ASCOM", "url": reverse("demandas_eventos:lista")},
                 {"label": f"Demanda #{demanda.pk}"},
             ],
         },
     )
+
+
+@login_required
+def exportar_demandas(request):
+    import csv
+
+    from django.http import HttpResponse
+
+    # Reaproveita exatamente os mesmos parâmetros por uma requisição interna
+    # não seria seguro; aplica o recorte visível e os filtros básicos aqui.
+    queryset = queryset_visivel(
+        request.user,
+        DemandaEvento.objects.select_related(
+            "tipo_evento", "tema", "municipio", "responsavel_atendimento"
+        ).prefetch_related("setores"),
+    )
+    q = request.GET.get("q", "").strip()
+    if q:
+        queryset = queryset.filter(
+            Q(solicitante__icontains=q) | Q(descricao__icontains=q)
+            | Q(pedido_contato__icontains=q) | Q(assunto_email__icontains=q)
+        )
+    filtros_simples = {
+        "status": "status",
+        "tipo": "tipo_evento_id",
+        "municipio": "municipio_id",
+        "responsavel": "responsavel_atendimento_id",
+        "setor": "setores__id",
+    }
+    for parametro, campo in filtros_simples.items():
+        valor = request.GET.get(parametro, "").strip()
+        if valor:
+            queryset = queryset.filter(**{campo: valor})
+    inicio = parse_date(request.GET.get("inicio", ""))
+    fim = parse_date(request.GET.get("fim", ""))
+    if inicio:
+        queryset = queryset.filter(data_solicitacao__gte=inicio)
+    if fim:
+        queryset = queryset.filter(data_solicitacao__lte=fim)
+    resposta = HttpResponse(content_type="text/csv; charset=utf-8")
+    resposta["Content-Disposition"] = 'attachment; filename="demandas-ascom.csv"'
+    resposta.write("﻿")
+    escritor = csv.writer(resposta, delimiter=";", lineterminator="\r\n")
+    escritor.writerow(["Nº", "Solicitação", "Tipo", "Tema", "Evento", "Município", "Solicitante", "Responsável", "Setores", "Status"])
+    for demanda in queryset.distinct():
+        escritor.writerow([
+            demanda.pk, demanda.data_solicitacao.strftime("%d/%m/%Y"),
+            demanda.tipo_evento, demanda.tema or "", demanda.periodo_evento_display,
+            demanda.municipio or demanda.municipio_texto, demanda.solicitante,
+            demanda.responsavel_atendimento or demanda.responsavel_atendimento_texto,
+            ", ".join(str(setor) for setor in demanda.setores.all()),
+            demanda.get_status_display(),
+        ])
+    return resposta
+
+
+@login_required
+@require_POST
+def transicionar_demanda(request, pk):
+    demanda = _demanda_visivel(request, pk)
+    try:
+        services.transicionar(
+            demanda,
+            request.user,
+            request.POST.get("novo_status", ""),
+            request.POST.get("justificativa", ""),
+        )
+    except ValidationError as erro:
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+    else:
+        messages.success(request, "Status da demanda atualizado com sucesso.")
+    return redirect("demandas_eventos:detalhe", pk=demanda.pk)
 
 
 CADASTROS = {

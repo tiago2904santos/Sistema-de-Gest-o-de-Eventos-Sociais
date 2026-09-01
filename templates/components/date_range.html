@@ -13,11 +13,11 @@
       <input class="form-controle" type="date" id="id_{{ start_name }}" name="{{ start_name }}"
              {% if valor_inicio %}value="{{ valor_inicio }}"{% endif %}
              {% if desabilitado %}disabled{% endif %}
-             aria-label="Início de {{ label|lower }}" data-custom-date-range-start{% if obrigatorio %} required{% endif %}>
+             aria-label="Início de {{ label|lower }}"{% if erros %} aria-invalid="true" aria-describedby="id_{{ name }}_erro"{% endif %} data-custom-date-range-start{% if obrigatorio %} required{% endif %}>
       <input class="form-controle" type="date" id="id_{{ end_name }}" name="{{ end_name }}"
              {% if valor_fim %}value="{{ valor_fim }}"{% endif %}
              {% if desabilitado %}disabled{% endif %}
-             aria-label="Fim de {{ label|lower }}" data-custom-date-range-end{% if obrigatorio %} required{% endif %}>
+             aria-label="Fim de {{ label|lower }}"{% if erros %} aria-invalid="true" aria-describedby="id_{{ name }}_erro"{% endif %} data-custom-date-range-end{% if obrigatorio %} required{% endif %}>
     </div>
     <button class="form-controle custom-date__trigger" type="button"
             aria-labelledby="id_{{ name }}_label" aria-haspopup="dialog" aria-expanded="false"
@@ -51,5 +51,5 @@
       </div>
     </div>
   </div>
-  {% if erros %}<p class="form-erro">{{ erros.0 }}</p>{% endif %}
+  {% if erros %}<p class="form-erro" id="id_{{ name }}_erro">{{ erros.0 }}</p>{% endif %}
 </div>

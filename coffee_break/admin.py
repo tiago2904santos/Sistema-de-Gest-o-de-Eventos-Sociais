@@ -7,8 +7,16 @@ from .models import (
     ContratoCoffeeBreak,
     Fornecedor,
     LoteCoffeeBreak,
+    HistoricoCoffeeBreak,
     SolicitacaoCoffeeBreak,
 )
+
+
+class HistoricoCoffeeBreakInline(admin.TabularInline):
+    model = HistoricoCoffeeBreak
+    extra = 0
+    can_delete = False
+    readonly_fields = ("usuario", "acao", "descricao", "criado_em")
 
 
 @admin.register(Fornecedor)
@@ -142,6 +150,7 @@ class SolicitacaoCoffeeBreakAdmin(admin.ModelAdmin):
         "criado_em",
         "atualizado_em",
     )
+    inlines = (HistoricoCoffeeBreakInline,)
 
     @admin.display(description="Evento")
     def descricao_resumida(self, obj):

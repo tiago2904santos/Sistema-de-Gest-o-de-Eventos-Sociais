@@ -25,11 +25,30 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 
+if not DEBUG and SECRET_KEY.startswith("inseguro-"):
+    raise RuntimeError("Defina DJANGO_SECRET_KEY antes de iniciar em produção.")
+
 ALLOWED_HOSTS = [
     h.strip()
     for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
     if h.strip()
 ]
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SECURE_SSL_REDIRECT", "1") == "1"
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SAMESITE = "Lax"
+    SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = "DENY"
+    if os.environ.get("DJANGO_TRUST_PROXY_HTTPS", "0") == "1":
+        SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # ---------------------------------------------------------------------------
 # Aplicações
@@ -208,3 +227,16 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ---------------------------------------------------------------------------
+# Rotas (módulo Viagens)
+#
+# O cálculo de rota do editor de roteiro usa o OpenRouteService no servidor.
+# Sem a chave, o mapa continua no ar e o botão "Calcular rota" explica o que
+# falta — nenhuma outra tela depende disso.
+# ---------------------------------------------------------------------------
+
+OPENROUTESERVICE_API_KEY = os.environ.get("OPENROUTESERVICE_API_KEY", "")
+ROUTE_REQUEST_TIMEOUT_SECONDS = int(
+    os.environ.get("ROUTE_REQUEST_TIMEOUT_SECONDS", "12")
+)

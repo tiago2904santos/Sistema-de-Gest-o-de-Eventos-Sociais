@@ -14,7 +14,9 @@
     {% if messages %}
       <div class="alertas">
         {% for message in messages %}
-          <div class="alerta alerta--{{ message.tags|default:'info' }}">{{ message }}</div>
+          <div class="alerta alerta--{{ message.tags|default:'info' }}"
+               role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}"
+               aria-live="{% if message.tags == 'error' %}assertive{% else %}polite{% endif %}">{{ message }}</div>
         {% endfor %}
       </div>
     {% endif %}

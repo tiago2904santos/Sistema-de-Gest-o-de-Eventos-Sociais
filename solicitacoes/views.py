@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -363,19 +363,24 @@ def _filas_do_usuario(user, queryset):
     if permissions.eh_gestor_dg(user):
         filas.append("despacho")
     filas.extend(["devolvidas", "andamento", "canceladas", "rascunhos", "minhas"])
+    agregacoes = {}
+    for chave in filas:
+        config = FILAS[chave]
+        condicao = Q()
+        if config.get("status"):
+            condicao &= Q(status__in=config["status"])
+        if config.get("apenas_do_usuario"):
+            condicao &= Q(criado_por=user)
+        agregacoes[chave] = Count("pk", filter=condicao)
+    totais = queryset.aggregate(**agregacoes)
     resultado = []
     for chave in filas:
         config = FILAS[chave]
-        parcial = queryset
-        if config.get("status"):
-            parcial = parcial.filter(status__in=config["status"])
-        if config.get("apenas_do_usuario"):
-            parcial = parcial.filter(criado_por=user)
         resultado.append(
             {
                 "chave": chave,
                 "rotulo": config["rotulo"],
-                "total": parcial.count(),
+                "total": totais[chave],
             }
         )
     return resultado
@@ -699,7 +704,7 @@ def concluir_solicitacao(request, pk):
 @login_required
 @require_POST
 def cancelar_evento(request, pk):
-    """Qualquer usuário registra o cancelamento do evento, com motivo."""
+    """Criador ou perfil institucional autorizado registra o cancelamento."""
     solicitacao = _obter_visivel(request, pk)
     if not permissions.pode_cancelar(request.user, solicitacao):
         raise PermissionDenied
