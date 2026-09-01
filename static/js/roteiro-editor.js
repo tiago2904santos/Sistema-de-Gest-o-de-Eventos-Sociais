@@ -140,28 +140,95 @@
     sincronizarTrechos();
   }
 
-  // Arrastar para reordenar (alça ⠿).
-  var arrastada = null;
-  editor.addEventListener("dragstart", function (evento) {
-    var linha = evento.target.closest("[data-destino]");
-    if (!linha) return;
-    arrastada = linha;
-    evento.dataTransfer.effectAllowed = "move";
-  });
-  editor.addEventListener("dragover", function (evento) {
-    if (!arrastada) return;
-    var alvo = evento.target.closest("[data-destino]");
-    if (!alvo || alvo === arrastada) return;
+  // Arrastar para reordenar, pela alça. A mecânica é a do editor de
+  // referência: ponteiro (não o drag-and-drop do HTML5, que não anima), com
+  // limiar de 8px antes de começar; a linha na mão apaga e a vizinha abre
+  // espaço para onde ela vai cair — o vão que se alarga já diz o lugar, sem
+  // precisar desenhar fio nenhum.
+  var LIMIAR_ARRASTE = 8;
+  var arraste = null;
+
+  function limparAlvosDeSoltura() {
+    linhasDestino().forEach(function (linha) {
+      linha.classList.remove("is-drop-target", "is-drop-before", "is-drop-after");
+    });
+  }
+
+  function alvoDeSoltura(arrastada, y) {
+    var alvo = null;
+    var menorDistancia = Infinity;
+    destinosVisiveis().forEach(function (linha) {
+      if (linha === arrastada) return;
+      var caixa = linha.getBoundingClientRect();
+      var centro = caixa.top + caixa.height / 2;
+      var distancia = Math.abs(y - centro);
+      if (distancia < menorDistancia) {
+        menorDistancia = distancia;
+        alvo = { linha: linha, depois: y >= centro };
+      }
+    });
+    return alvo;
+  }
+
+  function marcarAlvo(alvo) {
+    limparAlvosDeSoltura();
+    if (!alvo) return;
+    alvo.linha.classList.add("is-drop-target");
+    alvo.linha.classList.add(alvo.depois ? "is-drop-after" : "is-drop-before");
+  }
+
+  function encerrarArraste() {
+    if (arraste && arraste.linha) arraste.linha.classList.remove("is-dragging");
+    arraste = null;
+    document.body.classList.remove("is-arrastando-destino");
+    limparAlvosDeSoltura();
+    document.removeEventListener("pointermove", aoMoverPonteiro);
+    document.removeEventListener("pointerup", aoSoltarPonteiro);
+    document.removeEventListener("pointercancel", encerrarArraste);
+  }
+
+  function aoMoverPonteiro(evento) {
+    if (!arraste) return;
+    var dx = evento.clientX - arraste.x;
+    var dy = evento.clientY - arraste.y;
+    if (!arraste.ativo) {
+      if (Math.sqrt(dx * dx + dy * dy) < LIMIAR_ARRASTE) return;
+      arraste.ativo = true;
+      arraste.linha.classList.add("is-dragging");
+      document.body.classList.add("is-arrastando-destino");
+    }
     evento.preventDefault();
-    var caixa = alvo.getBoundingClientRect();
-    var antes = evento.clientY < caixa.top + caixa.height / 2;
-    listaDestinos.insertBefore(arrastada, antes ? alvo : alvo.nextSibling);
-  });
-  editor.addEventListener("dragend", function () {
-    if (!arrastada) return;
-    arrastada = null;
+    arraste.alvo = alvoDeSoltura(arraste.linha, evento.clientY);
+    marcarAlvo(arraste.alvo);
+  }
+
+  function aoSoltarPonteiro(evento) {
+    if (!arraste) return;
+    if (!arraste.ativo) { encerrarArraste(); return; }
+    evento.preventDefault();
+    var alvo = arraste.alvo || alvoDeSoltura(arraste.linha, evento.clientY);
+    var arrastada = arraste.linha;
+    encerrarArraste();
+    if (!alvo || alvo.linha === arrastada) return;
+    var referencia = alvo.depois ? alvo.linha.nextSibling : alvo.linha;
+    if (referencia === arrastada) return;
+    listaDestinos.insertBefore(arrastada, referencia);
     renumerarDestinos();
     sincronizarTrechos();
+  }
+
+  editor.addEventListener("pointerdown", function (evento) {
+    if (evento.button !== 0) return;
+    // Com um destino só não há o que reordenar.
+    if (destinosVisiveis().length <= 1) return;
+    if (!evento.target.closest("[data-destino-alca]")) return;
+    var linha = evento.target.closest("[data-destino]");
+    if (!linha) return;
+    encerrarArraste();
+    arraste = { linha: linha, x: evento.clientX, y: evento.clientY, alvo: null, ativo: false };
+    document.addEventListener("pointermove", aoMoverPonteiro);
+    document.addEventListener("pointerup", aoSoltarPonteiro);
+    document.addEventListener("pointercancel", encerrarArraste);
   });
 
   // ------------------------------------------------------------------
@@ -247,29 +314,53 @@
     if (rotuloKm) rotuloKm.textContent = distancia ? km(distancia) : "—";
   }
 
+  function adicionalDe(linha) {
+    return Number(linha.getAttribute("data-adicional-min") || "") || 0;
+  }
+
   function atualizarTempos(linha) {
     var viagem = Number(linha.getAttribute("data-viagem-min") || "") || null;
+    var adicional = adicionalDe(linha);
+    var viagemRotulo = linha.querySelector("[data-trecho-tempo-viagem]");
+    var adicionalRotulo = linha.querySelector("[data-trecho-adicional-rotulo]");
     var totalRotulo = linha.querySelector("[data-trecho-tempo-total]");
     var duracaoMin = campoDe(linha, "duracao_min");
 
-    if (totalRotulo) totalRotulo.textContent = viagem === null ? "—" : hhmmDe(viagem);
-    if (duracaoMin) duracaoMin.value = viagem === null ? "" : String(viagem);
+    // O tempo total é o da rota mais a espera informada à mão; é ele que
+    // define a chegada e, por ela, a conta das diárias.
+    var total = viagem === null ? (adicional || null) : viagem + adicional;
 
-    // A chegada não é digitada: é a saída mais o tempo de viagem da rota,
-    // gravada em campos ocultos — é dela que o motor calcula as diárias.
+    if (viagemRotulo) viagemRotulo.textContent = viagem === null ? "—" : hhmmDe(viagem);
+    if (adicionalRotulo) adicionalRotulo.textContent = hhmmDe(adicional);
+    if (totalRotulo) totalRotulo.textContent = total === null ? "—" : hhmmDe(total);
+    if (duracaoMin) duracaoMin.value = total === null ? "" : String(total);
+
+    // A chegada não é digitada: é a saída mais o tempo total, gravada em
+    // campos ocultos — é dela que o motor calcula as diárias — e mostrada na
+    // última coluna, para quem monta o percurso ver onde o trecho termina.
     var dataSaida = campoDe(linha, "saida_data");
     var horaSaida = campoDe(linha, "saida_hora");
-    if (viagem !== null && dataSaida && dataSaida.value && horaSaida && horaSaida.value) {
+    var chegadaRotulo = linha.querySelector("[data-trecho-chegada-rotulo]");
+    var textoChegada = "—";
+    if (total !== null && dataSaida && dataSaida.value && horaSaida && horaSaida.value) {
       var saida = new Date(dataSaida.value + "T" + horaSaida.value);
       if (!Number.isNaN(saida.getTime())) {
-        var chegada = new Date(saida.getTime() + viagem * 60000);
+        var chegada = new Date(saida.getTime() + total * 60000);
+        var horaChegada = hhmmDe(chegada.getHours() * 60 + chegada.getMinutes());
         definirCampo(campoDe(linha, "chegada_data"), isoDe(chegada));
-        definirCampo(
-          campoDe(linha, "chegada_hora"),
-          hhmmDe(chegada.getHours() * 60 + chegada.getMinutes())
-        );
+        definirCampo(campoDe(linha, "chegada_hora"), horaChegada);
+        textoChegada = new Intl.DateTimeFormat("pt-BR").format(chegada) + " " + horaChegada;
       }
     }
+    if (chegadaRotulo) chegadaRotulo.textContent = textoChegada;
+  }
+
+  function ajustarAdicional(linha, passo) {
+    // Nunca negativo: descontar espera que não houve encurtaria a viagem.
+    var novo = Math.max(0, adicionalDe(linha) + passo);
+    linha.setAttribute("data-adicional-min", String(novo));
+    atualizarTempos(linha);
+    agendarPrevia();
   }
 
   function aplicarPerna(linha, origem, destino, sentido) {
@@ -348,7 +439,9 @@
   // O calendário do cabeçalho pede uma data por trecho: dois destinos são
   // três trechos (sede→1, 1→2, 2→sede), logo três datas. O máximo acompanha
   // o percurso, e as datas entram na ordem em que foram escolhidas.
-  var calendarioDatas = editor.querySelector("[data-custom-date-multi]");
+  // A página tem dois calendários múltiplos (datas de saída e bate-volta):
+  // este é o do cabeçalho dos Trechos, pelo id do componente.
+  var calendarioDatas = editor.querySelector("#datas-trechos[data-custom-date-multi]");
 
   function sincronizarCalendarioDeDatas() {
     if (!calendarioDatas) return;
@@ -400,7 +493,10 @@
 
   function garantirMapa() {
     if (mapa || !mapaElemento || !window.L) return mapa;
-    mapa = window.L.map(mapaElemento).setView([-24.6, -51.5], 7);
+    // Sem zoom pela roda: rolar a página sobre o mapa mudava a escala em
+    // vez de descer a tela. O zoom continua nos botões + e −.
+    mapa = window.L.map(mapaElemento, { scrollWheelZoom: false })
+      .setView([-24.6, -51.5], 7);
     window.L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 18,
       attribution: "© OpenStreetMap",
@@ -522,17 +618,35 @@
     return campo ? campo.value : "";
   }
 
-  // O calendário do período é um atalho: escolher o intervalo preenche as
-  // duas datas de uma vez (início na ida, fim na volta). Depois disso cada
-  // sentido tem data própria e pode ser ajustado sozinho.
-  function espalharPeriodoNasDatas() {
-    var inicio = valorBv("inicio");
-    var fim = valorBv("fim");
-    if (inicio) definirCampo(editor.querySelector('[name="bv_ida_data"]'), inicio);
-    // Um dia só marcado no calendário serve para ida e volta no mesmo dia.
-    if (fim || inicio) {
-      definirCampo(editor.querySelector('[name="bv_volta_data"]'), fim || inicio);
-    }
+  // Os campos de data da ida e da volta são gatilhos do mesmo calendário: as
+  // duas datas escolhidas nele entram na ordem — a primeira na ida, a segunda
+  // na volta. Uma data só serve para ida e volta no mesmo dia.
+  var painelDatasBv = editor.querySelector(".bate-volta__sentidos[data-custom-date-multi]");
+
+  function rotuloDataBr(iso) {
+    var partes = String(iso || "").split("-");
+    return partes.length === 3 ? partes[2] + "/" + partes[1] + "/" + partes[0] : "dd/mm/aaaa";
+  }
+
+  function mostrarDatasBv() {
+    ["ida", "volta"].forEach(function (sentido) {
+      var campo = editor.querySelector('[name="bv_' + sentido + '_data"]');
+      var rotulo = editor.querySelector('[data-bv-rotulo="' + sentido + '"]');
+      if (!campo || !rotulo) return;
+      rotulo.textContent = rotuloDataBr(campo.value);
+      rotulo.closest(".custom-date__trigger").classList.toggle("has-value", Boolean(campo.value));
+    });
+  }
+
+  if (painelDatasBv) {
+    painelDatasBv.addEventListener("ds:datas-multi", function (evento) {
+      var datas = evento.detail.datas.slice().sort();
+      if (!datas.length) return;
+      definirCampo(editor.querySelector('[name="bv_ida_data"]'), datas[0]);
+      definirCampo(editor.querySelector('[name="bv_volta_data"]'), datas[1] || datas[0]);
+      mostrarDatasBv();
+      agendarBateVolta();
+    });
   }
 
   // Os trechos nascem sozinhos quando período e horários estão completos —
@@ -636,6 +750,48 @@
   // ------------------------------------------------------------------
   // Prévia das diárias
   // ------------------------------------------------------------------
+
+  // Repetir um roteiro salvo: busca a sede e os destinos dele e refaz o
+  // percurso nesta tela. É cópia — o roteiro novo não fica preso ao antigo.
+  var seletorBase = editor.querySelector('select[name="roteiro_base"]');
+
+  function aplicarRoteiroBase(dados) {
+    if (dados.sede) {
+      var estadoSede = editor.querySelector('select[name="origem_estado"]');
+      definirCampo(estadoSede, dados.sede.estado);
+      definirCampo(sede, dados.sede.municipio);
+    }
+    // Zera os destinos atuais antes de repetir os do roteiro escolhido.
+    destinosVisiveis().forEach(function (linha, indice) {
+      if (indice > 0) removerLinhaDestino(linha);
+    });
+    var primeira = destinosVisiveis()[0];
+    dados.destinos.forEach(function (destino, indice) {
+      var linha = indice === 0 ? primeira : criarLinhaDestino(null);
+      if (!linha) return;
+      definirCampo(linha.querySelector('select[name$="-estado"]'), destino.estado);
+      definirCampo(selectDaLinha(linha), destino.municipio);
+    });
+    if (!dados.destinos.length && primeira) {
+      definirCampo(selectDaLinha(primeira), "");
+    }
+    percursoManual = false;
+    sincronizarTrechos();
+    agendarPrevia();
+  }
+
+  if (seletorBase) {
+    seletorBase.addEventListener("change", function () {
+      var pk = seletorBase.value;
+      if (!pk || !window.fetch) return;
+      fetch("/viagens/roteiros/" + encodeURIComponent(pk) + "/dados/", {
+        headers: { "X-Requested-With": "fetch" },
+      })
+        .then(function (resposta) { return resposta.ok ? resposta.json() : null; })
+        .then(function (dados) { if (dados) aplicarRoteiroBase(dados); })
+        .catch(function () { /* repetir é atalho: falha de rede não trava a tela */ });
+    });
+  }
 
   var urlPrevia = editor.getAttribute("data-url-previa");
   var previaAgendada = null;
@@ -742,6 +898,11 @@
     var removerDestino = evento.target.closest("[data-destino-remover]");
     if (removerDestino) { removerLinhaDestino(removerDestino.closest("[data-destino]")); return; }
 
+    var menos = evento.target.closest("[data-tempo-menos]");
+    if (menos) { ajustarAdicional(menos.closest("[data-trecho]"), -15); return; }
+    var mais = evento.target.closest("[data-tempo-mais]");
+    if (mais) { ajustarAdicional(mais.closest("[data-trecho]"), 15); return; }
+
     if (evento.target.closest("[data-rota-calcular]")) { calcularRota(); return; }
     var enquadrar = evento.target.closest("[data-rota-enquadrar]");
     if (enquadrar && mapa && camadaRota) {
@@ -775,10 +936,11 @@
   editor.addEventListener("change", function (evento) {
     // Campos do bate-volta: geram os trechos assim que ficam completos.
     if (evento.target.closest("[data-bate-volta]")) {
-      // Mexer no período espalha as datas para os dois sentidos; mexer numa
-      // data de sentido não volta a mexer no período.
-      var nome = evento.target.name || "";
-      if (nome === "bv_inicio" || nome === "bv_fim") espalharPeriodoNasDatas();
+      // O tempo da volta acompanha o da ida: é o mesmo percurso ao contrário.
+      // Continua editável — mexer na ida apenas repõe o espelho.
+      if (evento.target.name === "bv_ida_tempo") {
+        definirCampo(editor.querySelector('[name="bv_volta_tempo"]'), evento.target.value);
+      }
       agendarBateVolta();
       return;
     }

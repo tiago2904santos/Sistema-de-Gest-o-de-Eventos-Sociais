@@ -1413,9 +1413,15 @@ textarea.form-controle {
 /* Calendário de várias datas: o gatilho é o próprio botão da página, e o
    número na quina do dia diz a ordem em que a data foi escolhida. */
 .custom-date--multi { position: relative; display: inline-block; }
+/* Acima do mapa: o Leaflet e os botões sobre ele usam z-index 500. */
 .custom-date__calendar--multi {
-  left: auto; right: 0; width: min(320px, calc(100vw - 32px));
+  left: auto; right: 0; z-index: 900;
+  width: min(320px, calc(100vw - 32px));
 }
+
+/* Hospedado dentro de um campo (as datas do bate-volta), o painel abre pela
+   esquerda dele, como qualquer calendário de campo. */
+.custom-date .custom-date__calendar--multi { left: 0; right: auto; }
 .custom-date__dica {
   margin: 0 0 9px; color: var(--cor-texto-suave); font-size: 0.7rem;
 }
@@ -1424,6 +1430,11 @@ textarea.form-controle {
 .custom-date__contagem {
   color: var(--cor-texto-suave); font-size: 0.7rem; font-weight: 700;
 }
+/* No calendário de várias datas os dias do meio guardam o mesmo canto dos
+   demais: aqui não há a faixa contínua que justifica o raio menor do
+   componente de intervalo. */
+.custom-date__calendar--multi .custom-date__dia.is-in-range { border-radius: 6px; }
+
 .custom-date__dia[data-ordem]::after {
   content: attr(data-ordem);
   position: absolute; top: 1px; right: 3px;
@@ -3464,13 +3475,35 @@ textarea.form-controle { min-height: 68px; }
 
 .destinos { display: grid; gap: var(--esp-2); }
 
+/* As duas linhas — sede e destino — dividem a MESMA grade de cinco colunas:
+   alça, "+", estado, município e lixeira. A sede não tem botões, então os
+   campos dela se esticam por cima dessas colunas; como a grade é a mesma, a
+   divisão entre estado e município cai exatamente no mesmo ponto nas duas. */
 .destino-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 16px 34px minmax(0, 34fr) minmax(0, 66fr) 34px;
   align-items: center;
   gap: var(--esp-2);
 }
 
 .destino-row[hidden] { display: none; }
+
+/* Reordenar sem desenhar nada: a linha na mão apaga e a vizinha ABRE ESPAÇO
+   para onde ela vai cair. O vão que se alarga já diz o lugar — sem fio, e
+   some sozinho quando o ponteiro sai dali. São 4px sobre um vão de 8: dá
+   para ler o destino do movimento sem sacudir a lista. */
+.destino-row { transition: transform 140ms ease, opacity 140ms ease; }
+.destino-row.is-dragging { cursor: grabbing; opacity: 0.4; }
+.destino-row.is-drop-target.is-drop-before { transform: translateY(4px); }
+.destino-row.is-drop-target.is-drop-after { transform: translateY(-4px); }
+
+/* Durante o arraste, nada de seleção de texto pelo caminho. */
+.is-arrastando-destino,
+.is-arrastando-destino * { user-select: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .destino-row { transition: none; }
+}
 
 .destino-row__alca {
   cursor: grab;
@@ -3482,46 +3515,33 @@ textarea.form-controle { min-height: 68px; }
    linha inteira ficar com um só alinhamento. */
 .destino-row__adicionar,
 .destino-row__remover {
-  flex: 0 0 auto;
   min-height: 38px;
   height: 38px;
-  padding-inline: 10px;
+  padding-inline: 0;
+  justify-content: center;
 }
 
 /* Estado filtra município: estreito à esquerda, município ocupa o resto.
    A sede reserva a mesma largura da alça e do "+" dos destinos, para os
    campos das duas linhas começarem exatamente na mesma coluna. */
-/* Nome de município é mais longo que o de estado: a proporção acompanha. */
-.destino-row__estado { flex: 0 1 34%; min-width: 0; }
-.destino-row__campo { flex: 1 1 66%; min-width: 0; }
+/* Nome de município é mais longo que o de estado: 34/66 na grade acima. */
+.destino-row__estado,
+.destino-row__campo { min-width: 0; }
 .destino-row__estado .form-campo,
 .destino-row__campo .form-campo { margin: 0; }
 
-.destino-row--sede { display: flex; align-items: center; gap: var(--esp-2); }
 
-/* A sede reserva, nas duas pontas, o espaço que os destinos gastam com a
-   alça e o "+" (à esquerda) e com a lixeira (à direita) — assim as duas
-   linhas começam e terminam na mesma coluna. Larguras medidas na tela. */
-.destino-row--sede::before {
-  content: "";
-  flex: 0 0 auto;
-  /* alça 16px + vão 8px + botão 33,6px, medidos na tela */
-  width: 57.6px;
-}
-
-.destino-row--sede::after {
-  content: "";
-  flex: 0 0 auto;
-  /* mesma largura da lixeira do destino */
-  width: 33.6px;
-}
+/* A sede ocupa a linha inteira: o estado toma também as colunas da alça e do
+   "+", e o município a da lixeira. */
+.destino-row--sede .destino-row__estado { grid-column: 1 / 4; }
+.destino-row--sede .destino-row__campo { grid-column: 4 / 6; }
 
 @media (max-width: 720px) {
-  .destino-row { flex-wrap: wrap; }
-  .destino-row__estado,
-  .destino-row__campo { flex: 1 1 100%; }
-  .destino-row--sede::before,
-  .destino-row--sede::after { display: none; }
+  .destino-row { grid-template-columns: 16px 34px minmax(0, 1fr) 34px; }
+  .destino-row__estado { grid-column: 3 / 5; }
+  .destino-row__campo { grid-column: 1 / 5; }
+  .destino-row--sede .destino-row__estado,
+  .destino-row--sede .destino-row__campo { grid-column: 1 / 5; }
 }
 
 /* Métricas (rota e diárias) -------------------------------------------- */
@@ -3598,12 +3618,15 @@ textarea.form-controle { min-height: 68px; }
 .bate-volta__periodo { max-width: 340px; margin-bottom: var(--esp-3); }
 .bate-volta__periodo .form-campo { margin: 0; }
 
-/* Ida numa linha, volta na outra — as colunas se alinham entre as duas. */
-.bate-volta__sentidos { display: grid; gap: var(--esp-2); }
+/* Ida numa linha, volta na outra — as colunas se alinham entre as duas.
+   `relative` porque o calendário compartilhado das datas é ancorado aqui. */
+.bate-volta__sentidos { position: relative; display: grid; gap: var(--esp-2); }
 
 .bate-volta__sentido {
   display: grid;
-  grid-template-columns: 68px repeat(3, minmax(0, 190px));
+  /* Rótulo fixo à esquerda; os três campos dividem em partes iguais o
+     espaço que sobra, ocupando a largura inteira do painel. */
+  grid-template-columns: 68px repeat(3, minmax(0, 1fr));
   align-items: center;
   gap: var(--esp-3);
 }
@@ -3639,6 +3662,30 @@ textarea.form-controle { min-height: 68px; }
 
 .trechos-tabela .form-campo { margin: 0; min-width: 150px; }
 
+/* Passos de 15 minutos do tempo adicional: os dois botões e o valor no meio,
+   na altura da linha. */
+.tempo-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.tempo-stepper .btn {
+  min-height: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.tempo-stepper__valor {
+  min-width: 44px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 .trechos-vazio {
   margin: 0;
   padding: var(--esp-5);
@@ -3654,7 +3701,6 @@ textarea.form-controle { min-height: 68px; }
 .trecho-linha[hidden],
 .trecho-linha__erros[hidden] { display: none; }
 
-.trecho-linha--retorno td:first-child { border-left: 3px solid var(--cor-acento); }
 
 /* Painel lateral -------------------------------------------------------- */
 

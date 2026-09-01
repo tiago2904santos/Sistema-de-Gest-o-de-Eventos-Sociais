@@ -12,6 +12,8 @@ urlpatterns = [
     # Rota do percurso para o mapa — POST, nada é gravado.
     path("calcular-rota/", views.rota, name="calcular_rota"),
     path("<int:pk>/", views.detalhe, name="detalhe"),
+    # Sede e destinos de um roteiro salvo, para reaproveitar na montagem.
+    path("<int:pk>/dados/", views.dados_do_roteiro, name="dados"),
     path("<int:pk>/editar/", views.editar, name="editar"),
     path("<int:pk>/calcular/", views.calcular, name="calcular"),
     path("<int:pk>/cancelar/", views.cancelar, name="cancelar"),

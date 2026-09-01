@@ -22,9 +22,13 @@
           <p class="page-header__subtitulo">Monte o percurso, calcule os deslocamentos e estime as diárias da viagem.</p>
         </div>
       </div>
-      {# O vínculo acompanha o título: vale para o roteiro inteiro. #}
+      {% comment %}
+        Repetir um percurso já cadastrado em vez de remontá-lo: escolher um
+        roteiro aqui copia a sede e os destinos dele para esta tela. É cópia,
+        não vínculo — o roteiro novo nasce independente do escolhido.
+      {% endcomment %}
       <div class="editor-roteiro__topo-campos">
-        {% include "components/select.html" with name="solicitacao" label="Solicitação vinculada" opcoes=opcoes_solicitacoes placeholder="Roteiro avulso" pesquisavel=True selecionado=valores.solicitacao erros=form.errors.solicitacao form_alvo="form-roteiro" %}
+        {% include "components/select.html" with name="roteiro_base" label="Repetir roteiro existente" opcoes=opcoes_roteiros_base placeholder="Começar do zero" pesquisavel=True %}
       </div>
     </div>
 
@@ -94,22 +98,72 @@
         <div class="card__corpo">
           {# Ida numa linha, volta na outra — o período vale para as duas. #}
           <div class="bate-volta" id="bate-volta-painel" hidden data-bate-volta>
-            <div class="bate-volta__periodo">
-              {% include "components/date_range.html" with name="bv_periodo" start_name="bv_inicio" end_name="bv_fim" label="Período" largura="6" %}
-            </div>
-
-            <div class="bate-volta__sentidos">
+            {% comment %}
+              Os dois campos de data são gatilhos do MESMO calendário: escolher
+              duas datas nele preenche a ida (primeira) e a volta (segunda).
+              O invólucro é o `data-custom-date-multi` do design system.
+            {% endcomment %}
+            <div class="bate-volta__sentidos" data-custom-date-multi data-max="2">
               <div class="bate-volta__sentido">
                 <span class="bate-volta__rotulo">Ida</span>
-                {% include "components/input.html" with name="bv_ida_data" label="Data" tipo="date" %}
+                <div class="form-campo">
+                  <label class="form-label" for="bv_ida_data_gatilho">Data</label>
+                  <div class="form-controle-wrapper custom-date is-enhanced">
+                    <button type="button" class="form-controle custom-date__trigger"
+                            id="bv_ida_data_gatilho" aria-haspopup="dialog" aria-expanded="false"
+                            data-custom-date-multi-trigger>
+                      <span class="custom-date__valor" data-bv-rotulo="ida">dd/mm/aaaa</span>
+                      <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="calendar" %}</span>
+                    </button>
+                    <input type="hidden" name="bv_ida_data" id="id_bv_ida_data">
+                  </div>
+                </div>
                 {% include "components/input.html" with name="bv_ida_saida" label="Saída" tipo="time" %}
                 {% include "components/input.html" with name="bv_ida_tempo" label="Tempo de viagem" tipo="time" %}
               </div>
+
               <div class="bate-volta__sentido">
                 <span class="bate-volta__rotulo">Volta</span>
-                {% include "components/input.html" with name="bv_volta_data" label="Data" tipo="date" %}
+                <div class="form-campo">
+                  <label class="form-label" for="bv_volta_data_gatilho">Data</label>
+                  <div class="form-controle-wrapper custom-date is-enhanced">
+                    <button type="button" class="form-controle custom-date__trigger"
+                            id="bv_volta_data_gatilho" aria-haspopup="dialog" aria-expanded="false"
+                            data-custom-date-multi-trigger>
+                      <span class="custom-date__valor" data-bv-rotulo="volta">dd/mm/aaaa</span>
+                      <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="calendar" %}</span>
+                    </button>
+                    <input type="hidden" name="bv_volta_data" id="id_bv_volta_data">
+                  </div>
+                </div>
                 {% include "components/input.html" with name="bv_volta_saida" label="Saída" tipo="time" %}
                 {% include "components/input.html" with name="bv_volta_tempo" label="Tempo de viagem" tipo="time" %}
+              </div>
+
+              {# O calendário compartilhado pelos dois gatilhos acima. #}
+              <div class="custom-date__calendar custom-date__calendar--multi"
+                   role="dialog" aria-label="Datas da ida e da volta"
+                   data-custom-date-multi-calendar hidden>
+                <div class="custom-date__cabecalho">
+                  <strong class="custom-date__mes" aria-live="polite" data-custom-date-multi-month></strong>
+                  <div class="custom-date__navegacao">
+                    <button type="button" class="custom-date__salto" aria-label="Ano anterior" data-custom-date-multi-prev-ano>«</button>
+                    <button type="button" aria-label="Mês anterior" data-custom-date-multi-prev>{% include "components/icon.html" with nome="chevron-left" %}</button>
+                    <button type="button" aria-label="Próximo mês" data-custom-date-multi-next>{% include "components/icon.html" with nome="chevron-right" %}</button>
+                    <button type="button" class="custom-date__salto" aria-label="Próximo ano" data-custom-date-multi-next-ano>»</button>
+                  </div>
+                </div>
+                <div class="custom-date__semana" aria-hidden="true">
+                  <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+                </div>
+                <div class="custom-date__dias" role="grid" data-custom-date-multi-grid></div>
+                <div class="custom-date__rodape custom-date__rodape--multi">
+                  <span class="custom-date__contagem" aria-live="polite" data-custom-date-multi-contagem></span>
+                  <span class="custom-date__rodape-acoes">
+                    <button type="button" data-custom-date-multi-clear>Limpar</button>
+                    <button type="button" data-custom-date-multi-apply>Aplicar</button>
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -178,13 +232,14 @@
             <table class="tabela tabela--compacta trechos-tabela" data-trechos>
               <thead>
                 <tr>
-                  <th>Trecho</th>
                   <th>Origem</th>
                   <th>Destino</th>
                   <th>Data de saída</th>
                   <th>Hora de saída</th>
                   <th>Tempo de viagem</th>
-                  <th>Distância</th>
+                  <th>Tempo adicional</th>
+                  <th>Tempo total</th>
+                  <th>Data/hora de chegada</th>
                 </tr>
               </thead>
               <tbody>

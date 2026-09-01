@@ -11,7 +11,7 @@
   o wrapper emite `ds:datas-multi` com `detail.datas` (ISO, na ordem em que
   foram escolhidas).
 {% endcomment %}
-<div class="custom-date custom-date--multi" data-custom-date-multi
+<div class="custom-date custom-date--multi" id="{{ id }}" data-custom-date-multi
      data-max="{{ maximo|default:1 }}"{% if dica %} data-dica="{{ dica }}"{% endif %}>
   <button type="button" class="btn btn--secundario btn--com-icone"
           aria-haspopup="dialog" aria-expanded="false" aria-controls="{{ id }}_calendario"
@@ -21,7 +21,6 @@
 
   <div class="custom-date__calendar custom-date__calendar--multi" id="{{ id }}_calendario"
        role="dialog" aria-label="{{ label }}" data-custom-date-multi-calendar hidden>
-    <p class="custom-date__dica" data-custom-date-multi-dica>{{ dica }}</p>
     <div class="custom-date__cabecalho">
       <strong class="custom-date__mes" aria-live="polite" data-custom-date-multi-month></strong>
       <div class="custom-date__navegacao">

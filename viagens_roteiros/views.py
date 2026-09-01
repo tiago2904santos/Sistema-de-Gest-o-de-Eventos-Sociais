@@ -193,6 +193,31 @@ def editar(request, pk=None):
     )
 
 
+def _opcoes_roteiros_base(atual):
+    """Roteiros salvos que podem servir de base, do mais recente para trás."""
+    queryset = (
+        Roteiro.objects.select_related("origem_municipio")
+        .prefetch_related("destinos__municipio")
+        .filter(cancelado=False)
+        .order_by("-atualizado_em")
+    )
+    if atual and atual.pk:
+        queryset = queryset.exclude(pk=atual.pk)
+    opcoes = []
+    for roteiro in queryset[:200]:
+        destinos = [
+            destino.municipio.nome
+            for destino in roteiro.destinos.all()
+            if destino.municipio_id
+        ]
+        percurso = " → ".join(destinos) if destinos else "sem destinos"
+        sede = roteiro.origem_municipio.nome if roteiro.origem_municipio_id else "sem sede"
+        opcoes.append(
+            {"valor": str(roteiro.pk), "rotulo": f"#{roteiro.pk} · {sede} → {percurso}"}
+        )
+    return opcoes
+
+
 def _opcoes(iteravel):
     """Formato que `components/select.html` espera: valor + rótulo."""
     return [
@@ -268,6 +293,9 @@ def _contexto_do_form(roteiro, form, formset, destinos):
             Estado.objects.filter(municipios__ativo=True).distinct().order_by("nome")
         ),
         "opcoes_solicitacoes": _opcoes(form.fields["solicitacao"].queryset),
+        # Roteiros já cadastrados, para repetir um percurso conhecido em vez
+        # de remontá-lo. Fora o próprio, que não serve de base para si mesmo.
+        "opcoes_roteiros_base": _opcoes_roteiros_base(roteiro),
         "valores": {
             nome: _valor_str(form[nome]) for nome in form.fields
         },
@@ -332,6 +360,39 @@ def detalhe(request, pk):
             ],
             "pode_editar": pode_editar_roteiros(request.user),
         },
+    )
+
+
+@acesso_ao_modulo
+def dados_do_roteiro(request, pk):
+    """Sede e destinos de um roteiro salvo, para reaproveitar na montagem.
+
+    A tela usa isto quando se escolhe um roteiro como base: ela repete o
+    percurso dele — sede e destinos, na ordem — e o operador ajusta datas e
+    horários. Nada é copiado no banco; o roteiro novo nasce independente.
+    """
+    roteiro = get_object_or_404(
+        Roteiro.objects.select_related("origem_municipio__estado"), pk=pk
+    )
+    destinos = roteiro.destinos.select_related("municipio__estado").all()
+    return JsonResponse(
+        {
+            "sede": (
+                {
+                    "municipio": roteiro.origem_municipio_id,
+                    "estado": roteiro.origem_municipio.estado_id,
+                }
+                if roteiro.origem_municipio_id
+                else None
+            ),
+            "destinos": [
+                {
+                    "municipio": destino.municipio_id,
+                    "estado": destino.municipio.estado_id,
+                }
+                for destino in destinos
+            ],
+        }
     )
 
 

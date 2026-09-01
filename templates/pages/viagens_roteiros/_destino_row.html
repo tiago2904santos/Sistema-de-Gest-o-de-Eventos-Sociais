@@ -7,7 +7,7 @@
   Espera no contexto: destino (form), opcoes_municipios, opcoes_estados, visivel.
 {% endcomment %}
 {% with id_estado="id_"|add:destino.prefix|add:"-estado" nome_estado=destino.prefix|add:"-estado" %}
-<div class="destino-row" data-destino draggable="true" {% if not visivel %}hidden{% endif %}>
+<div class="destino-row" data-destino {% if not visivel %}hidden{% endif %}>
   {{ destino.id }}
   <input type="hidden" name="{{ destino.ordem.html_name }}" value="{{ destino.ordem.value|default:1 }}" data-destino-ordem>
   {% if destino.instance.pk %}<span hidden>{{ destino.DELETE }}</span>{% endif %}

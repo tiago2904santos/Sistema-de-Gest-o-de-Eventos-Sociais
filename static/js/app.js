@@ -292,11 +292,9 @@
     instancia.wrapper.classList.remove("is-open");
     instancia.calendario.hidden = true;
     instancia.trigger.setAttribute("aria-expanded", "false");
-    if (instancia.reancorar) {
-      window.removeEventListener("scroll", instancia.reancorar, true);
-      window.removeEventListener("resize", instancia.reancorar);
-      soltarPopover(instancia.calendario);
-      instancia.reancorar = null;
+    if (instancia.recortes) {
+      devolverRecorte(instancia.recortes);
+      instancia.recortes = null;
     }
     if (devolverFoco) instancia.trigger.focus();
   }
@@ -338,28 +336,29 @@
     return false;
   }
 
-  function ancorarPopover(painel, gatilho) {
-    var caixa = gatilho.getBoundingClientRect();
-    var altura = painel.offsetHeight;
-    var largura = painel.offsetWidth;
-    var margem = 6;
-    // Abre para baixo; se não couber, vira para cima do campo.
-    var topo = caixa.bottom + margem;
-    if (topo + altura > window.innerHeight - margem) {
-      topo = Math.max(margem, caixa.top - altura - margem);
+  // O painel fica preso ao campo pelo CSS (absoluto); quem sai da frente é o
+  // recorte: os ancestrais que o cortariam — a tabela de trechos rola nos dois
+  // eixos — mostram o que transborda enquanto ele está aberto, e voltam ao
+  // normal quando fecha.
+  function liberarRecorte(elemento) {
+    var liberados = [];
+    var atual = elemento.parentElement;
+    while (atual && atual !== document.body) {
+      var estilo = getComputedStyle(atual);
+      if (estilo.overflowX !== "visible" || estilo.overflowY !== "visible") {
+        liberados.push({ elemento: atual, overflow: atual.style.overflow });
+        atual.style.overflow = "visible";
+      }
+      atual = atual.parentElement;
     }
-    var esquerda = Math.min(
-      caixa.left, Math.max(margem, window.innerWidth - largura - margem)
-    );
-    painel.style.position = "fixed";
-    painel.style.top = topo + "px";
-    painel.style.left = esquerda + "px";
+    return liberados;
   }
 
-  function soltarPopover(painel) {
-    painel.style.removeProperty("position");
-    painel.style.removeProperty("top");
-    painel.style.removeProperty("left");
+  function devolverRecorte(liberados) {
+    (liberados || []).forEach(function (item) {
+      if (item.overflow) item.elemento.style.overflow = item.overflow;
+      else item.elemento.style.removeProperty("overflow");
+    });
   }
 
   // Mesmo desenho do aprimorarSelect: nomeada para uso do DS.aprimorar.
@@ -475,14 +474,7 @@
       calendario.hidden = false;
       trigger.setAttribute("aria-expanded", "true");
       renderizar();
-      // Dentro de um container que recorta (a tabela de trechos), o painel
-      // sai do fluxo e passa a acompanhar o campo pela viewport.
-      if (temAncestralQueRecorta(wrapper)) {
-        instancia.reancorar = function () { ancorarPopover(calendario, trigger); };
-        instancia.reancorar();
-        window.addEventListener("scroll", instancia.reancorar, true);
-        window.addEventListener("resize", instancia.reancorar);
-      }
+      instancia.recortes = liberarRecorte(wrapper);
       focarData(nativo.value || isoDaData(hoje));
     }
 
@@ -578,7 +570,14 @@
   // no "Aplicar", o wrapper emite `ds:datas-multi` com as datas escolhidas.
   function aprimorarDataMultipla(wrapper) {
     if (wrapper.classList.contains("is-enhanced")) return;
-    var trigger = wrapper.querySelector("[data-custom-date-multi-trigger]");
+    // Vários gatilhos para um calendário só: no bate-volta, os campos de data
+    // da ida e da volta abrem o mesmo, e as duas escolhas preenchem os dois.
+    var gatilhos = Array.prototype.slice.call(
+      wrapper.querySelectorAll("[data-custom-date-multi-trigger]")
+    );
+    var trigger = gatilhos[0];
+    var gatilhoAtual = trigger;
+    var recortes = null;
     var calendario = wrapper.querySelector("[data-custom-date-multi-calendar]");
     var grade = wrapper.querySelector("[data-custom-date-multi-grid]");
     var tituloMes = wrapper.querySelector("[data-custom-date-multi-month]");
@@ -644,8 +643,10 @@
       aberto = false;
       calendario.hidden = true;
       wrapper.classList.remove("is-open");
-      trigger.setAttribute("aria-expanded", "false");
-      if (devolverFoco) trigger.focus();
+      gatilhos.forEach(function (g) { g.setAttribute("aria-expanded", "false"); });
+      devolverRecorte(recortes);
+      recortes = null;
+      if (devolverFoco) gatilhoAtual.focus();
     }
 
     function abrir() {
@@ -653,8 +654,16 @@
       aberto = true;
       calendario.hidden = false;
       wrapper.classList.add("is-open");
-      trigger.setAttribute("aria-expanded", "true");
+      gatilhoAtual.setAttribute("aria-expanded", "true");
       renderizar();
+      // Com mais de um gatilho, o painel se muda para o invólucro do campo
+      // clicado: fica preso a ele pelo CSS, como no calendário de um gatilho
+      // só, e acompanha a rolagem sem recálculo.
+      if (gatilhos.length > 1) {
+        var casa = gatilhoAtual.parentElement;
+        if (casa && calendario.parentElement !== casa) casa.appendChild(calendario);
+      }
+      recortes = liberarRecorte(calendario);
       var primeiro = grade.querySelector('[data-date="' + isoDaData(hoje) + '"]');
       if (primeiro) primeiro.focus();
     }
@@ -686,9 +695,13 @@
       renderizar();
     }
 
-    trigger.addEventListener("click", function () {
-      if (aberto) fechar(true);
-      else abrir();
+    gatilhos.forEach(function (gatilho) {
+      gatilho.addEventListener("click", function () {
+        if (aberto && gatilhoAtual === gatilho) { fechar(true); return; }
+        if (aberto) fechar(false);
+        gatilhoAtual = gatilho;
+        abrir();
+      });
     });
     wrapper.querySelector("[data-custom-date-multi-prev]")
       .addEventListener("click", function () { mudarMes(-1); });

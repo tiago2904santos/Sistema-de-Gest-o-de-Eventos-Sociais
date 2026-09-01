@@ -722,7 +722,7 @@ class DefeitosEncontradosNoSmokeTests(BaseTelaRoteiroTestCase):
         # estilizada — o formulário parecia de outro sistema.
         resposta = self.client.get(reverse("viagens_roteiros:novo"))
         corpo = resposta.content.decode()
-        for campo in ("origem_municipio", "solicitacao"):
+        for campo in ("origem_municipio", "roteiro_base"):
             with self.subTest(campo=campo):
                 marcacao = re.search(
                     r'<(?:input|select|textarea)[^>]*name="%s"[^>]*>' % campo, corpo
