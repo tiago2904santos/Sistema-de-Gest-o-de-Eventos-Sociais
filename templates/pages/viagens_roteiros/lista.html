@@ -1,0 +1,115 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Roteiros — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with atual="Roteiros" %}
+  {% url 'viagens_roteiros:novo' as url_novo %}
+  {% if pode_editar %}
+    {% include "components/page_header.html" with titulo="Roteiros" subtitulo="Deslocamentos e o cálculo das diárias" icone="map-pin" acao_label="Novo roteiro" acao_url=url_novo %}
+  {% else %}
+    {% include "components/page_header.html" with titulo="Roteiros" subtitulo="Deslocamentos e o cálculo das diárias" icone="map-pin" %}
+  {% endif %}
+
+  <div class="card lista-filtros-card">
+    <form method="get" class="lista-filtros" data-auto-enviar>
+      <div class="form-campo lista-filtros__busca lista-filtros__busca--curta">
+        <label class="form-label sr-only" for="id_q">Busca</label>
+        <div class="campo-com-icone">
+          <span class="campo-com-icone__icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+          <input class="form-controle" type="search" name="q" id="id_q"
+                 value="{{ termo }}" placeholder="Buscar por município...">
+        </div>
+      </div>
+      <button type="button" class="btn btn--secundario lista-filtros__avancados" data-expande="#filtros-roteiros"
+              aria-expanded="{% if situacao %}true{% else %}false{% endif %}" aria-controls="filtros-roteiros">
+        {% include "components/icon.html" with nome="filter" %}
+        Filtros
+        {% include "components/icon.html" with nome="chevron-down" %}
+      </button>
+      <span class="lista-filtros__contagem">{{ pagina.paginator.count }} roteiro{{ pagina.paginator.count|pluralize }}</span>
+      <div class="lista-filtros__painel" id="filtros-roteiros" {% if not situacao %}hidden{% endif %}>
+        {% include "components/select.html" with name="situacao" label="Situação" opcoes=opcoes_situacao placeholder="Todas as situações" selecionado=situacao %}
+        {% if tem_filtros %}
+          <a href="{% url 'viagens_roteiros:lista' %}" class="btn btn--secundario">Limpar filtros</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Tabela de roteiros">
+      <table class="tabela tabela--cartoes-no-celular">
+        <thead>
+          <tr>
+            <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
+            <th>Sede</th>
+            <th>Destinos</th>
+            <th>Servidores</th>
+            <th>Diárias</th>
+            <th>Situação</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for linha in linhas %}
+            <tr>
+              {# O ícone distingue avulso de roteiro preso a uma solicitação; sem o rótulo oculto a coluna anunciaria "Tipo" e não diria nada. #}
+              <td class="tabela__col-icone">
+                <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=linha.icone %}</span>
+                <span class="sr-only">{{ linha.roteiro.get_tipo_display }}</span>
+              </td>
+              <td data-rotulo="Sede"><strong>{{ linha.roteiro.origem_municipio|default:"—" }}</strong></td>
+              <td data-rotulo="Destinos">{{ linha.destinos }}</td>
+              <td data-rotulo="Servidores">{{ linha.roteiro.quantidade_servidores }}</td>
+              <td data-rotulo="Diárias">
+                {% if linha.roteiro.valor_diarias is not None %}
+                  R$ {{ linha.roteiro.valor_diarias }}
+                  <span class="texto-suave">{{ linha.roteiro.resumo_diarias }}</span>
+                {% else %}
+                  <span class="texto-suave">Não calculado</span>
+                {% endif %}
+              </td>
+              <td data-rotulo="Situação">
+                {% if linha.roteiro.cancelado %}
+                  <span class="status-badge status-badge--cancelada">Cancelado</span>
+                {% else %}
+                  <span class="status-badge status-badge--atendida">Ativo</span>
+                {% endif %}
+              </td>
+              <td class="tabela__acoes">
+                <a href="{% url 'viagens_roteiros:detalhe' linha.roteiro.pk %}" class="btn btn--compacto btn--acao btn--acao-continuar">{% include "components/icon.html" with nome="eye" %}Abrir</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="texto-suave texto-centro">Nenhum roteiro encontrado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if pagina.paginator.num_pages > 1 %}
+      <div class="card__corpo paginacao">
+        <span class="texto-suave">
+          Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }} roteiros
+        </span>
+        <nav class="paginacao__paginas" aria-label="Paginação">
+          {% if pagina.has_previous %}
+            <a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+          {% endif %}
+          {% for numero in paginas_visiveis %}
+            {% if numero == elipse %}
+              <span class="paginacao__elipse" aria-hidden="true">…</span>
+            {% elif numero == pagina.number %}
+              <span class="paginacao__numero paginacao__numero--atual" aria-current="page">{{ numero }}</span>
+            {% else %}
+              <a class="paginacao__numero" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
+            {% endif %}
+          {% endfor %}
+          {% if pagina.has_next %}
+            <a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+          {% endif %}
+        </nav>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

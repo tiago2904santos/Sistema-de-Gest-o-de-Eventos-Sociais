@@ -41,21 +41,57 @@ Infraestrutura transversal que todo o resto usa, aplicada primeiro ao próprio d
 
 **Gate:** suíte completa verde (214 testes existentes + novos), `makemigrations --check` limpo.
 
-### Fase 1 — Cadastros de viagens (3–5 sessões)
+### Fase 1 — Cadastros de viagens ✅ (entregue)
 
-- Novo app `viagens_cadastros` (ou extensão de `cadastros` — decidir no início da fase): `Servidor`, `Cargo`, `Unidade`, `Combustivel`, `Viatura`, `TabelaDiaria` (vigenciada, valores 15/30% derivados — portar com os testes de caracterização do B).
-- Sem coluna `area`; constraints de unicidade viram globais (CPF/RG/telefone/placa únicos — a versão mais forte, que o B listou como defeito `DB-05` da placa por área).
-- Enriquecer `Municipio` (capital, lat/long) + comando de importação da base do B.
-- Módulo `VIAGENS` registrado no portal do A; CRUD no padrão `CADASTROS` por slug do A.
-- Migração `Motorista` → `Servidor` e re-aponte de `SolicitacaoEvento.motorista`.
-- **Gate:** CRUDs operando, ETL de cadastros do B idempotente com relatório, suíte verde.
+Decisões tomadas na abertura da fase:
 
-### Fase 2 — Roteiros e diárias (4–6 sessões)
+- **DA1 — app novo `viagens_cadastros`**, e não extensão de `cadastros`. O app existente tem um CRUD genérico por slug construído sobre `CadastroBase` (`nome` único + `ativo`); `Servidor`, `Viatura` e `TabelaDiaria` não cabem nesse molde — têm status derivado, unicidade condicional, vigência e validação de conteúdo (CPF, placa). Enfiá-los ali obrigaria a enfraquecer o CRUD que hoje serve bem aos cadastros de eventos.
+- **DA2 — dois grupos, `VIAGENS_GESTOR` e `VIAGENS_OPERADOR`**, sob o módulo `VIAGENS`. Os três papéis por área do sistema de origem (ADMIN/EDITOR/LEITOR) colapsam aqui: quem tem o módulo e nenhum grupo **consulta**; o operador mantém servidores, viaturas e catálogos; só o gestor mexe na **tabela de diárias**, porque é dinheiro que vai para documento oficial.
 
-- Portar `Roteiro`, `RoteiroDestino`, `RoteiroTrecho`, `RoteiroDiariaComponente` com todas as constraints de período/não-negativos (`DB-07`/`DB-13` do B).
-- **Antes de qualquer código:** portar os testes de caracterização do cálculo de diárias do B (`roteiros/services/diarias.py` — regra do próprio B: dinheiro não muda sem caracterização).
-- Telas no padrão do A (FBVs + services). Campos manuais de distância/duração; **F2b (opcional):** mapa Leaflet + OpenRouteService.
-- **Gate:** cálculo de diárias idêntico ao B nos casos de caracterização; suíte verde.
+Entregue:
+
+- `Unidade`, `Cargo`, `Combustivel`, `Servidor`, `Viatura`, `TabelaDiaria` — sem coluna `area`, com as unicidades pareadas da origem colapsadas em **uma constraint global** cada (a versão mais forte); placa única no sistema.
+- Normalização e máscaras próprias (`normalizacao.py`): o dado é guardado cru (só dígitos, placa sem hífen, nome em maiúsculas) e formatado na exibição, para a unicidade valer sobre o dado real.
+- `TabelaDiaria` com vigência e percentuais de 15%/30% derivados e gravados; `vigente_em` devolve `None` em vez de inventar valor. `faixa_da_regiao()` liga as três regiões operacionais de `cadastros.Regiao` às três faixas, sem tornar o dinheiro dependente de um catálogo editável.
+- Módulo `VIAGENS` no portal, CRUD completo, tela própria de diárias.
+- **`Motorista` convertido em `Servidor`** e `SolicitacaoEvento.motorista` re-apontado, em três migrações (estrutura → dados → estrutura). A conversão é idempotente (`legado_origem`/`legado_pk`), reversível, funde motoristas que eram a mesma pessoa e tolera telefone repetido ou inválido no legado.
+- 90 testes novos, incluindo sete que exercitam a migração de dados real pelo executor de migrações. Suíte completa verde **em SQLite e em PostgreSQL**.
+
+Fica para depois, sem bloquear a F2: enriquecer `Municipio` (capital, lat/long) e importar a base geográfica do sistema de origem.
+
+### Fase 2 — Roteiros e diárias ✅ (F2b, o mapa, segue opcional e em aberto)
+
+**Entregue nesta etapa — o cálculo, que é a parte de dinheiro:**
+
+- **Testes de caracterização primeiro**, como o plano exige: os demonstrativos do sistema oficial de solicitação de diárias (R$ 773,19, R$ 1.144,45, R$ 1.169,47, R$ 290,55, R$ 371,26) reproduzidos ao centavo antes de qualquer decisão de implementação. Eles descrevem o que a administração paga, não o que o código faz — se quebrarem, o defeito é do código.
+- **Motor portado** (`viagens_roteiros/services/diarias.py`) com as três regras que os demonstrativos revelam: o período de um destino vai da *chegada* nele à *chegada* no seguinte (o tempo de estrada é faturado onde o servidor estava, em vez de sumir da conta); períodos consecutivos da mesma faixa formam **um** trecho tarifário, com um único complemento sobre a sobra somada; e a escada do resto por **duração** (≤6h nada, ≤8h 15%, ≤12h 30%, >12h uma diária cheia) — o calendário não entra.
+- **Modelos** `Roteiro`, `RoteiroDestino`, `RoteiroTrecho` e `RoteiroDiariaComponente`, com as constraints de período encadeado e não-negativos defendidas pelo banco (`core/constraints.py`, reaproveitável nas fases seguintes).
+- **Gravação da composição**: cada parcela guarda a vigência que a sustentou, e a vigência fica protegida contra exclusão — é o que explica um pagamento anos depois, quando os valores já forem outros. Recalcular substitui o conjunto inteiro numa transação, em vez de editar parcela existente.
+
+Duas diferenças deliberadas em relação à origem, ambas documentadas no módulo:
+
+- **Sem tabela de valores embutida no código.** Lá, sem vigência cadastrada o cálculo cai numa tabela fixa no módulo; aqui levanta `SemTabelaDeDiarias`. Valor de diária mora em `TabelaDiaria` — é o motivo de ela existir — e um valor congelado no código envelhece em silêncio.
+- **Capitais numa tabela única** (as 27 UFs). A origem cruza a base geográfica com um mapa de reserva e mantém um teste para os dois não divergirem; aqui não há duas fontes para divergir.
+
+**Telas entregues** (`viagens_roteiros/`), no padrão visual do A: lista com busca e filtro de situação, formulário que monta o percurso trecho a trecho num formset, e tela de detalhe que dispara o cálculo e mostra a composição parcela a parcela — cada uma com a vigência que a sustentou. O módulo "Viagens" passa a abrir nos roteiros; os cadastros viram um item da mesma navegação.
+
+**O que só apareceu ao abrir as telas de verdade.** A suíte estava verde e o motor, correto, quando um passeio pelas páginas contra um PostgreSQL semeado revelou sete defeitos que nenhum teste de banco pegaria — todos agora com teste de regressão que falha sem o conserto:
+
+| Defeito | Por que passava despercebido |
+| --- | --- |
+| Cartões do topo montados à mão com uma classe CSS inventada (`resumo-cards`) | O design system tem `grid-resumo` + `summary_card`; nada quebra, só fica feio |
+| Cartões da tabela de diárias escrevendo `R$ 43.58` sobre uma tabela que dizia `R$ 43,58` | Um f-string cru não passa pela localização que o template aplica |
+| Campos do formulário sem `form-controle` | O navegador desenhava controles nativos no meio de uma tela estilizada |
+| Opção vazia dos selects em inglês (*"Select an option"*, padrão do Django 6.1) | O resto do sistema diz "Selecione...", via um componente que este formulário não usa |
+| `min="0"` no número de servidores, que o servidor recusa | O erro só apareceria depois de enviar |
+| Linha de trecho em branco virando trecho vazio | `ordem` tem `default=1`: mexer só nesse número marca a linha como alterada, contra o "linhas em branco são ignoradas" escrito na própria tela |
+| Corrigir um trecho recusado criando um segundo roteiro a cada tentativa | O roteiro já fora gravado, mas o `action=""` do formulário reenviava para `/novo/` — o comentário da própria view afirmava o contrário do que o código fazia |
+
+A lição que fica para as fases seguintes: **suíte verde não é tela conferida.** Defeito de apresentação e de formulário não aparece em teste que só olha para o banco.
+
+**Falta para fechar o domínio:** como subfase opcional, o mapa com cálculo automático de rota (F2b, decisão DA3).
+
+**Gate cumprido:** cálculo idêntico ao da origem nos casos de caracterização; telas exercitadas de ponta a ponta contra PostgreSQL semeado (montar, calcular, cancelar, reativar, excluir); suíte verde em SQLite e PostgreSQL.
 
 ### Fase 3 — Núcleo documental (4–6 sessões)
 
@@ -99,10 +135,33 @@ Infraestrutura transversal que todo o resto usa, aplicada primeiro ao próprio d
 
 ## 4. Decisões pendentes do usuário (novas, sob a base A)
 
-| # | Decisão | Quando |
-|---|---|---|
-| DA1 | App único `viagens_*` vs estender `cadastros` existente | Início da F1 |
-| DA2 | Grupos/perfis do domínio de viagens (quem cria roteiro, quem assina, quem presta contas) | F1 |
-| DA3 | Incluir F2b (mapa/ORS) ou manter km/duração manuais | Fim da F2 |
-| DA4 | Destino das funções fora de escopo do B (Drive, eProtocolo, planos, OS) | Antes da F6 |
-| DA5 | Hospedagem do sistema unificado (manter Windows/waitress vs VPS) | Antes da F6 |
+| # | Decisão | Quando | Situação |
+|---|---|---|---|
+| DA1 | App único `viagens_*` vs estender `cadastros` existente | Início da F1 | ✅ app novo `viagens_cadastros` |
+| DA2 | Grupos/perfis do domínio de viagens | F1 | ✅ `VIAGENS_GESTOR` + `VIAGENS_OPERADOR` sob o módulo `VIAGENS` |
+| DA3 | Incluir F2b (mapa/ORS) ou manter km/duração manuais | Fim da F2 | aberta |
+| DA4 | Destino das funções fora de escopo do B (Drive, eProtocolo, planos, OS) | Antes da F6 | aberta |
+| DA5 | Hospedagem do sistema unificado (manter Windows/waitress vs VPS) | Antes da F6 | aberta |
+| DA6 | Quais setores recebem o módulo `VIAGENS` (o seed não vincula nenhum) | Ao implantar a F1 | aberta |
+
+## 5. Lições da F1 que valem para as próximas fases
+
+- **Rodar a suíte em PostgreSQL antes de subir.** A conversão de motoristas passava em SQLite e falhava em PostgreSQL: o banco recusa `ALTER TABLE` numa tabela com eventos de gatilho pendentes, e a migração misturava, na mesma transação, a inserção dos servidores e a alteração da coluna. Em produção o `migrate` abortaria no meio. Daí a regra: **migração de dados nunca divide arquivo com migração de esquema**.
+- **`max_length` do modelo valida a entrada crua do formulário**, antes de qualquer normalização — um CPF digitado com pontuação era recusado por tamanho. Campos que guardam dado normalizado precisam declarar o campo de formulário à mão, com folga.
+- Testar migração de dados exige fixar o alvo de **todos** os apps envolvidos: o estado histórico de um alvo só inclui as migrações de que ele depende.
+- **Data e hora vindas do banco estão em UTC** (`USE_TZ=True`). Formatá-las sem localizar faria uma saída às 08:00 sair como 11:00 no documento. Todo ponto que exibe horário precisa passar por `timezone.localtime` — e um teste com data ciente do fuso é o que impede a regressão.
+
+## 6. F1 — mudanças de comportamento visíveis e pendências
+
+A conversão de motoristas muda coisas que o usuário percebe. Nada disso é defeito, mas convém saber antes de implantar:
+
+- **O campo "Motorista" da solicitação lista quem exerce o papel**: servidor com cargo MOTORISTA ou designado como condutor de alguma viatura. Sem esse recorte, a tela passaria a expor o quadro inteiro de servidores a qualquer solicitante, inclusive a quem não tem o módulo de viagens. Cadastrar um motorista novo exige, portanto, dar-lhe o cargo MOTORISTA ou vinculá-lo a uma viatura.
+- **Nomes de motorista passam a aparecer em MAIÚSCULAS** nas telas e no CSV exportado, porque é assim que o domínio de viagens grava pessoas. Os cadastros de eventos seguem como estavam.
+- **`importar_planilha --limpar` não apaga mais os servidores** criados por importações anteriores (eles agora vivem em outro app). Apaga o que sempre apagou dos cadastros de eventos.
+- O módulo `VIAGENS` nasce **sem setor vinculado**: ninguém, além do superusuário, enxerga as telas até que um administrador ligue o setor ao módulo (decisão DA6).
+
+Achados da revisão adversarial que **não** foram corrigidos nesta entrega, por serem menores que o risco de ampliar o PR:
+
+- A reversão da conversão devolve os nomes já normalizados (em maiúsculas), não a grafia original — a informação de caixa do cadastro antigo não é recuperável, porque não é guardada.
+- Violação de unicidade que escape da validação do formulário (dois operadores gravando ao mesmo tempo) ainda aparece como erro técnico, não como mensagem de campo.
+- A busca da lista compara o termo digitado com o dado normalizado: procurar CPF com pontuação não encontra. Buscar por nome funciona (a comparação ignora caixa).

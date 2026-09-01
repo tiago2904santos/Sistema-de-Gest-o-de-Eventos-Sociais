@@ -82,14 +82,6 @@ class Municipio(CadastroBase):
         ]
 
 
-class Motorista(CadastroBase):
-    telefone = models.CharField("telefone", max_length=30, blank=True)
-
-    class Meta(CadastroBase.Meta):
-        verbose_name = "motorista"
-        verbose_name_plural = "motoristas"
-
-
 class UnidadeMovel(CadastroBase):
     """Veículos de unidade móvel disponíveis para designar aos eventos."""
 

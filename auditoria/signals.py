@@ -17,6 +17,10 @@ APPS_AUDITADOS = {
     "solicitacoes",
     "coffee_break",
     "demandas_eventos",
+    # App novo entra aqui junto com o app, e não depois: a tabela de diárias é
+    # dinheiro que vai para documento oficial, e alteração de valor sem rastro
+    # é o tipo de coisa que só se descobre quando alguém contesta o pagamento.
+    "viagens_cadastros",
 }
 
 # Modelos com trilha própria ou que só gerariam ruído.

@@ -3,7 +3,6 @@ from django.contrib import admin
 from .models import (
     Estado,
     Equipe,
-    Motorista,
     Municipio,
     OrgaoResponsavel,
     Regiao,
@@ -54,6 +53,3 @@ class MunicipioAdmin(CadastroBaseAdmin):
     list_filter = ("ativo", "estado", "regiao")
 
 
-@admin.register(Motorista)
-class MotoristaAdmin(CadastroBaseAdmin):
-    list_display = ("nome", "telefone", "ativo", "atualizado_em")

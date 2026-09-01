@@ -1,0 +1,22 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Cadastros de viagens — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with atual="Viagens" %}
+  {% include "components/page_header.html" with titulo="Cadastros de viagens" subtitulo="Servidores, viaturas e valores de diária usados nas viagens" icone="volante" %}
+
+  <div class="cadastro-grid">
+    {% for grupo in grupos %}
+      <a class="cadastro-card" href="{% if grupo.url %}{{ grupo.url }}{% else %}{% url 'viagens_cadastros:lista' grupo.slug %}{% endif %}">
+        <span class="cadastro-card__icone" aria-hidden="true">{% include "components/icon.html" with nome=grupo.icone %}</span>
+        <span class="cadastro-card__info">
+          <span class="cadastro-card__titulo">{{ grupo.titulo }}</span>
+          <span class="cadastro-card__valor">{{ grupo.total }}</span>
+          <span class="cadastro-card__barra" style="background: {{ grupo.cor }};" aria-hidden="true"></span>
+        </span>
+        <span class="cadastro-card__seta" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</span>
+      </a>
+    {% endfor %}
+  </div>
+{% endblock %}
