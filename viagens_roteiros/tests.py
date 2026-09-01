@@ -638,3 +638,22 @@ class DefeitosEncontradosNoSmokeTests(BaseTelaRoteiroTestCase):
         corrigido = dict(invalido, **{"trechos-0-chegada_dt": "2026-08-12T18:00"})
         self.client.post(destino, corrigido)
         self.assertEqual(Roteiro.objects.count(), criados)
+
+    def test_as_linhas_novas_ja_vem_numeradas_em_sequencia(self):
+        # Com `default=1` em todas, preencher duas linhas sem tocar no número
+        # — o caminho natural — batia na unicidade de (roteiro, ordem) logo no
+        # primeiro envio.
+        resposta = self.client.get(reverse("viagens_roteiros:novo"))
+        ordens = re.findall(
+            r'name="trechos-\d+-ordem"[^>]*value="(\d+)"', resposta.content.decode()
+        )
+        self.assertEqual(ordens, ["1", "2", "3"])
+
+    def test_editar_continua_numerando_a_partir_dos_trechos_gravados(self):
+        roteiro = self.roteiro_curitiba_sp_abatia()  # 3 trechos gravados
+        resposta = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
+        ordens = re.findall(
+            r'name="trechos-\d+-ordem"[^>]*value="(\d+)"', resposta.content.decode()
+        )
+        # Os três gravados mantêm a ordem que têm; as três linhas novas seguem.
+        self.assertEqual(ordens[3:], ["4", "5", "6"])

@@ -172,10 +172,25 @@ class RoteiroTrechoForm(forms.ModelForm):
         return dados
 
 
+class BaseTrechoFormSet(forms.BaseInlineFormSet):
+    """Numera as linhas novas em sequência.
+
+    `ordem` tem `default=1`, então sem isto o formulário abre com "1" em todas
+    as linhas extras — e preencher duas sem tocar no número, que é o caminho
+    natural, esbarra na unicidade de (roteiro, ordem) já no primeiro envio.
+    """
+
+    def add_fields(self, form, index):
+        super().add_fields(form, index)
+        if index is not None and index >= self.initial_form_count():
+            form.fields["ordem"].initial = index + 1
+
+
 TrechoFormSet = inlineformset_factory(
     Roteiro,
     RoteiroTrecho,
     form=RoteiroTrechoForm,
+    formset=BaseTrechoFormSet,
     extra=3,
     can_delete=True,
     min_num=0,
