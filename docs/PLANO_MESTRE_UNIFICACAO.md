@@ -59,12 +59,23 @@ Entregue:
 
 Fica para depois, sem bloquear a F2: enriquecer `Municipio` (capital, lat/long) e importar a base geográfica do sistema de origem.
 
-### Fase 2 — Roteiros e diárias (4–6 sessões)
+### Fase 2 — Roteiros e diárias 🟡 (motor e modelos entregues; telas pendentes)
 
-- Portar `Roteiro`, `RoteiroDestino`, `RoteiroTrecho`, `RoteiroDiariaComponente` com todas as constraints de período/não-negativos (`DB-07`/`DB-13` do B).
-- **Antes de qualquer código:** portar os testes de caracterização do cálculo de diárias do B (`roteiros/services/diarias.py` — regra do próprio B: dinheiro não muda sem caracterização).
-- Telas no padrão do A (FBVs + services). Campos manuais de distância/duração; **F2b (opcional):** mapa Leaflet + OpenRouteService.
-- **Gate:** cálculo de diárias idêntico ao B nos casos de caracterização; suíte verde.
+**Entregue nesta etapa — o cálculo, que é a parte de dinheiro:**
+
+- **Testes de caracterização primeiro**, como o plano exige: os demonstrativos do sistema oficial de solicitação de diárias (R$ 773,19, R$ 1.144,45, R$ 1.169,47, R$ 290,55, R$ 371,26) reproduzidos ao centavo antes de qualquer decisão de implementação. Eles descrevem o que a administração paga, não o que o código faz — se quebrarem, o defeito é do código.
+- **Motor portado** (`viagens_roteiros/services/diarias.py`) com as três regras que os demonstrativos revelam: o período de um destino vai da *chegada* nele à *chegada* no seguinte (o tempo de estrada é faturado onde o servidor estava, em vez de sumir da conta); períodos consecutivos da mesma faixa formam **um** trecho tarifário, com um único complemento sobre a sobra somada; e a escada do resto por **duração** (≤6h nada, ≤8h 15%, ≤12h 30%, >12h uma diária cheia) — o calendário não entra.
+- **Modelos** `Roteiro`, `RoteiroDestino`, `RoteiroTrecho` e `RoteiroDiariaComponente`, com as constraints de período encadeado e não-negativos defendidas pelo banco (`core/constraints.py`, reaproveitável nas fases seguintes).
+- **Gravação da composição**: cada parcela guarda a vigência que a sustentou, e a vigência fica protegida contra exclusão — é o que explica um pagamento anos depois, quando os valores já forem outros. Recalcular substitui o conjunto inteiro numa transação, em vez de editar parcela existente.
+
+Duas diferenças deliberadas em relação à origem, ambas documentadas no módulo:
+
+- **Sem tabela de valores embutida no código.** Lá, sem vigência cadastrada o cálculo cai numa tabela fixa no módulo; aqui levanta `SemTabelaDeDiarias`. Valor de diária mora em `TabelaDiaria` — é o motivo de ela existir — e um valor congelado no código envelhece em silêncio.
+- **Capitais numa tabela única** (as 27 UFs). A origem cruza a base geográfica com um mapa de reserva e mantém um teste para os dois não divergirem; aqui não há duas fontes para divergir.
+
+**Falta para fechar a fase:** telas no padrão do A (montar roteiro, calcular, revisar) e, como subfase opcional, o mapa com cálculo automático de rota (F2b, decisão DA3).
+
+**Gate parcial cumprido:** cálculo idêntico ao da origem nos casos de caracterização; suíte verde em SQLite e PostgreSQL.
 
 ### Fase 3 — Núcleo documental (4–6 sessões)
 
@@ -122,6 +133,7 @@ Fica para depois, sem bloquear a F2: enriquecer `Municipio` (capital, lat/long) 
 - **Rodar a suíte em PostgreSQL antes de subir.** A conversão de motoristas passava em SQLite e falhava em PostgreSQL: o banco recusa `ALTER TABLE` numa tabela com eventos de gatilho pendentes, e a migração misturava, na mesma transação, a inserção dos servidores e a alteração da coluna. Em produção o `migrate` abortaria no meio. Daí a regra: **migração de dados nunca divide arquivo com migração de esquema**.
 - **`max_length` do modelo valida a entrada crua do formulário**, antes de qualquer normalização — um CPF digitado com pontuação era recusado por tamanho. Campos que guardam dado normalizado precisam declarar o campo de formulário à mão, com folga.
 - Testar migração de dados exige fixar o alvo de **todos** os apps envolvidos: o estado histórico de um alvo só inclui as migrações de que ele depende.
+- **Data e hora vindas do banco estão em UTC** (`USE_TZ=True`). Formatá-las sem localizar faria uma saída às 08:00 sair como 11:00 no documento. Todo ponto que exibe horário precisa passar por `timezone.localtime` — e um teste com data ciente do fuso é o que impede a regressão.
 
 ## 6. F1 — mudanças de comportamento visíveis e pendências
 
