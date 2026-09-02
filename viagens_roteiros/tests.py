@@ -787,6 +787,46 @@ class DefeitosEncontradosNoSmokeTests(BaseTelaRoteiroTestCase):
         self.client.post(destino, corrigido)
         self.assertEqual(Roteiro.objects.count(), criados)
 
+    def test_dois_trechos_na_mesma_ordem_nao_derrubam_a_gravacao(self):
+        # A ordem é reindexada pelo `roteiro-editor.js`, mas ela chega ao
+        # servidor em campo oculto do POST: um envio com duas linhas na mesma
+        # posição bate na unicidade de (roteiro, ordem). O que se afirma aqui é
+        # que isso volta como erro de formulário, e não como erro 500.
+        dados = {
+            "origem_municipio": self.curitiba.pk,
+            "quantidade_servidores": 1,
+            "observacoes": "",
+            "destinos-TOTAL_FORMS": "0",
+            "destinos-INITIAL_FORMS": "0",
+            "destinos-MIN_NUM_FORMS": "0",
+            "destinos-MAX_NUM_FORMS": "1000",
+            "trechos-TOTAL_FORMS": "2",
+            "trechos-INITIAL_FORMS": "0",
+            "trechos-MIN_NUM_FORMS": "0",
+            "trechos-MAX_NUM_FORMS": "1000",
+        }
+        for i, (origem, destino) in enumerate(
+            [(self.curitiba, self.sao_paulo), (self.sao_paulo, self.curitiba)]
+        ):
+            dados.update(
+                {
+                    # As duas na posição 1 — o estado que a reindexação evita.
+                    f"trechos-{i}-ordem": "1",
+                    f"trechos-{i}-sentido": "IDA",
+                    f"trechos-{i}-origem_municipio": origem.pk,
+                    f"trechos-{i}-destino_municipio": destino.pk,
+                    f"trechos-{i}-saida_data": "2026-08-12",
+                    f"trechos-{i}-saida_hora": "08:00",
+                    f"trechos-{i}-chegada_data": "2026-08-12",
+                    f"trechos-{i}-chegada_hora": "14:00",
+                    f"trechos-{i}-distancia_km": "",
+                    f"trechos-{i}-duracao_min": "",
+                }
+            )
+        resposta = self.client.post(reverse("viagens_roteiros:novo"), dados)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertLessEqual(Roteiro.objects.latest("pk").trechos.count(), 1)
+
 
 class ParidadeComOEditorDeReferenciaTests(BaseTelaRoteiroTestCase):
     """O que a tela ganhou ao espelhar o editor da Central de Viagens.
@@ -1310,3 +1350,34 @@ class SemTelaDeDetalheTests(BaseTelaRoteiroTestCase):
         self.assertRedirects(
             resposta, reverse("viagens_roteiros:editar", args=[roteiro.pk])
         )
+
+
+class NumeracaoDasLinhasNovasTests(BaseTelaRoteiroTestCase):
+    """A linha em branco não nasce na posição de outra.
+
+    `ordem` tem `default=1`: sem numeração, o slot em branco chegava ao
+    servidor disputando a posição 1 com o primeiro trecho de verdade. A tela
+    reindexa por JavaScript, mas o formulário não pode depender disso.
+    Encontrado pela auditoria comparativa com o sistema de origem.
+    """
+
+    def setUp(self):
+        self.client.force_login(self.criar_usuario("numeracao", "VIAGENS_OPERADOR"))
+
+    def ordens(self, resposta, prefixo):
+        return re.findall(
+            r'name="%s-\d+-ordem"[^>]*value="(\d+)"' % prefixo,
+            resposta.content.decode(),
+        )
+
+    def test_a_tela_nova_numera_o_slot_em_branco_a_partir_de_um(self):
+        resposta = self.client.get(reverse("viagens_roteiros:novo"))
+        self.assertEqual(self.ordens(resposta, "trechos"), ["1"])
+        self.assertEqual(self.ordens(resposta, "destinos"), ["1"])
+
+    def test_a_edicao_numera_a_partir_dos_trechos_gravados(self):
+        roteiro = self.roteiro_curitiba_sp_abatia()  # 3 trechos gravados
+        resposta = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
+        ordens = self.ordens(resposta, "trechos")
+        # Os gravados mantêm a posição que têm; o slot em branco vem depois.
+        self.assertEqual(ordens, ["1", "2", "3", "4"])

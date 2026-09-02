@@ -225,7 +225,18 @@ class FormSetTolerante(BaseInlineFormSet):
     padrão exige o id nas primeiras INITIAL_FORMS linhas e, sem ele, nem
     valida. Aqui a linha órfã é tratada como nova: gravada se tem dados,
     ignorada se está em branco ou marcada para exclusão.
+
+    Também numera as linhas novas em sequência: ``ordem`` tem ``default=1``,
+    e sem isto toda linha em branco nasce na posição 1 — duas preenchidas
+    sem tocar no número esbarram na unicidade de (roteiro, ordem) já no
+    primeiro envio. A tela reindexa por JavaScript, mas o formulário não
+    pode depender disso para não se contradizer sozinho.
     """
+
+    def add_fields(self, form, index):
+        super().add_fields(form, index)
+        if index is not None and index >= self.initial_form_count():
+            form.fields["ordem"].initial = index + 1
 
     def _construct_form(self, i, **kwargs):
         form = super()._construct_form(i, **kwargs)
