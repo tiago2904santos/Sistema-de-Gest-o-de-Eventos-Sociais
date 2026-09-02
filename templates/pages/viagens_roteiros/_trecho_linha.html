@@ -29,7 +29,6 @@
   <td data-rotulo="Hora de saída">
     {% include "components/input.html" with name=trecho.saida_hora.html_name label="Hora de saída" rotulo_oculto=True tipo="time" valor=trecho.saida_hora.value|default_if_none:"" erros=trecho.saida_hora.errors %}
   </td>
-  <td data-rotulo="Tempo de viagem"><span data-trecho-tempo-viagem>—</span></td>
   <td data-rotulo="Tempo adicional">
     {% comment %}
       Espera em campo, pedágio, parada: soma ao tempo da rota e entra na
@@ -52,7 +51,7 @@
 </tr>
 {% if trecho.non_field_errors or trecho.origem_municipio.errors or trecho.destino_municipio.errors or trecho.chegada_data.errors or trecho.chegada_hora.errors %}
   <tr class="trecho-linha__erros" data-trecho-erros>
-    <td colspan="8">
+    <td colspan="7">
       {% for erro in trecho.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
       {# Cidades e chegada vivem em campos ocultos; os erros aparecem aqui. #}
       {% for erro in trecho.origem_municipio.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}

@@ -36,12 +36,12 @@
       {% csrf_token %}
 
       {# ------------------------------------------------------------- 1 #}
-      <section class="card secao">
-        <header class="secao__cabecalho">
-          <span class="secao__numero" aria-hidden="true">1</span>
-          <h2 class="secao__titulo">Origem e destinos</h2>
+      <section class="section-card">
+        <header class="section-card__cabecalho">
+          <span class="section-card__numero" aria-hidden="true">1</span>
+          <h2 class="section-card__titulo">Origem e destinos</h2>
         </header>
-        <div class="card__corpo">
+        <div class="section-card__corpo">
           {% for erro in form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
 
           <div class="bloco-split">
@@ -82,11 +82,11 @@
       </section>
 
       {# ------------------------------------------------------------- 2 #}
-      <section class="card secao">
-        <header class="secao__cabecalho">
-          <span class="secao__numero" aria-hidden="true">2</span>
-          <div class="secao__identificacao">
-            <h2 class="secao__titulo">Bate-volta diário e cálculo</h2>
+      <section class="section-card">
+        <header class="section-card__cabecalho">
+          <span class="section-card__numero" aria-hidden="true">2</span>
+          <div class="section-card__identificacao">
+            <h2 class="section-card__titulo">Bate-volta diário e cálculo</h2>
           </div>
           <button type="button" class="interruptor" data-expande="#bate-volta-painel"
                   aria-expanded="false" aria-controls="bate-volta-painel" data-bate-volta-toggle>
@@ -95,7 +95,7 @@
           </button>
         </header>
 
-        <div class="card__corpo">
+        <div class="section-card__corpo">
           {# Ida numa linha, volta na outra — o período vale para as duas. #}
           <div class="bate-volta" id="bate-volta-painel" hidden data-bate-volta>
             {% comment %}
@@ -205,17 +205,17 @@
       </section>
 
       {# ------------------------------------------------------------- 3 #}
-      <section class="card secao">
-        <header class="secao__cabecalho">
-          <span class="secao__numero" aria-hidden="true">3</span>
-          <div class="secao__identificacao">
-            <h2 class="secao__titulo">Trechos</h2>
+      <section class="section-card">
+        <header class="section-card__cabecalho">
+          <span class="section-card__numero" aria-hidden="true">3</span>
+          <div class="section-card__identificacao">
+            <h2 class="section-card__titulo">Trechos</h2>
           </div>
           {# O calendário abre no próprio botão: uma data por trecho, na ordem. #}
           {% include "components/date_multi.html" with id="datas-trechos" label="Preencher datas de saída" icone="calendar" maximo=1 dica="Escolha uma data por trecho, na ordem do percurso." %}
         </header>
 
-        <div class="card__corpo">
+        <div class="section-card__corpo">
           {{ formset.management_form }}
           {% for erro in formset.non_form_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
 
@@ -236,7 +236,6 @@
                   <th>Destino</th>
                   <th>Data de saída</th>
                   <th>Hora de saída</th>
-                  <th>Tempo de viagem</th>
                   <th>Tempo adicional</th>
                   <th>Tempo total</th>
                   <th>Data/hora de chegada</th>
@@ -259,16 +258,16 @@
       </section>
 
       {# ------------------------------------------------------------- 4 #}
-      <section class="card secao">
-        <header class="secao__cabecalho">
-          <span class="secao__numero" aria-hidden="true">4</span>
-          <div class="secao__identificacao">
-            <h2 class="secao__titulo">Diárias</h2>
+      <section class="section-card">
+        <header class="section-card__cabecalho">
+          <span class="section-card__numero" aria-hidden="true">4</span>
+          <div class="section-card__identificacao">
+            <h2 class="section-card__titulo">Diárias</h2>
           </div>
           <span class="status-badge status-badge--deferida_em_andamento" data-diarias-chip hidden></span>
         </header>
 
-        <div class="card__corpo">
+        <div class="section-card__corpo">
           <div class="diarias-metricas">
             <div class="metrica">
               <span class="metrica__rotulo">Valor total</span>
@@ -287,20 +286,17 @@
               <strong class="metrica__valor metrica__valor--texto" data-diarias-extenso>{{ roteiro.valor_diarias_extenso|default:"—" }}</strong>
             </div>
           </div>
-          <p class="texto-suave" data-diarias-aviso>
-            Preencha destino, saída e chegada dos trechos para ver a prévia.
-          </p>
         </div>
       </section>
     </form>
 
     <aside class="editor-roteiro__lateral">
-      <section class="card painel-lateral">
-        <header class="painel-lateral__cabecalho">
-          {% include "components/icon.html" with nome="checklist" %}
+      <section class="side-card">
+        <header class="side-card__cabecalho">
+          <span class="side-card__icone">{% include "components/icon.html" with nome="checklist" %}</span>
           <h2>Resumo do roteiro</h2>
         </header>
-        <dl class="painel-lateral__lista">
+        <dl class="resumo-lista">
           <div><dt>Sede</dt><dd data-resumo-sede>—</dd></div>
           <div><dt>Total de destinos</dt><dd data-resumo-destinos>0</dd></div>
           <div><dt>Total de trechos</dt><dd data-resumo-trechos>0</dd></div>
@@ -311,9 +307,9 @@
         </dl>
       </section>
 
-      <section class="card painel-lateral">
-        <header class="painel-lateral__cabecalho">
-          {% include "components/icon.html" with nome="ordenar" %}
+      <section class="side-card">
+        <header class="side-card__cabecalho">
+          <span class="side-card__icone">{% include "components/icon.html" with nome="ordenar" %}</span>
           <h2>Etapas</h2>
         </header>
         <ol class="etapas-roteiro">

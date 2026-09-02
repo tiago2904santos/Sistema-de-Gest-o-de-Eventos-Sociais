@@ -798,7 +798,6 @@
   var tipoDestino = "";
 
   function aplicarPrevia(dados) {
-    var aviso = editor.querySelector("[data-diarias-aviso]");
     var chip = editor.querySelector("[data-diarias-chip]");
     if (dados.ok) {
       escreverTexto("[data-diarias-valor]", "R$ " + dados.totais.total_valor);
@@ -812,11 +811,9 @@
           (servidores === 1 ? " servidor)" : " servidores)");
         chip.hidden = false;
       }
-      if (aviso) aviso.textContent = "Prévia — o valor definitivo é gravado ao salvar.";
     } else {
       tipoDestino = "";
       if (chip) chip.hidden = true;
-      if (aviso) aviso.textContent = dados.motivo;
     }
     atualizarPainelLateral();
   }
