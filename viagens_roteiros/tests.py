@@ -394,9 +394,7 @@ class MontagemPelaTelaTests(BaseTelaRoteiroTestCase):
     def test_criar_roteiro_com_um_trecho(self):
         resposta = self.client.post(reverse("viagens_roteiros:novo"), self.dados())
         roteiro = Roteiro.objects.latest("pk")
-        self.assertRedirects(
-            resposta, reverse("viagens_roteiros:detalhe", args=[roteiro.pk])
-        )
+        self.assertRedirects(resposta, reverse("viagens_roteiros:lista"))
         self.assertEqual(roteiro.trechos.count(), 1)
         self.assertEqual(roteiro.trechos.get().destino_municipio, self.sao_paulo)
 
@@ -569,14 +567,15 @@ class CalculoPelaTelaTests(BaseTelaRoteiroTestCase):
         self.assertEqual(roteiro.valor_diarias, Decimal("773.19"))
         self.assertContains(resposta, "773,19")
 
-    def test_o_detalhe_mostra_a_composicao_depois_do_calculo(self):
+    def test_a_edicao_mostra_a_composicao_gravada_depois_do_calculo(self):
         roteiro = self.roteiro_curitiba_sp_abatia()
         recalcular_diarias(roteiro)
         resposta = self.client.get(
-            reverse("viagens_roteiros:detalhe", args=[roteiro.pk])
+            reverse("viagens_roteiros:editar", args=[roteiro.pk])
         )
         self.assertEqual(len(resposta.context["parcelas"]), 3)
         self.assertContains(resposta, "CAPITAL")
+        self.assertContains(resposta, "Composição gravada no último cálculo")
 
     def test_roteiro_sem_trecho_avisa_em_vez_de_quebrar(self):
         roteiro = Roteiro.objects.create(origem_municipio=self.curitiba)
@@ -787,3 +786,527 @@ class DefeitosEncontradosNoSmokeTests(BaseTelaRoteiroTestCase):
         corrigido = dict(invalido, **{"trechos-0-chegada_hora": "18:00"})
         self.client.post(destino, corrigido)
         self.assertEqual(Roteiro.objects.count(), criados)
+
+
+class ParidadeComOEditorDeReferenciaTests(BaseTelaRoteiroTestCase):
+    """O que a tela ganhou ao espelhar o editor da Central de Viagens.
+
+    Estimativa por trecho, rota gravada com o roteiro (e marcada como
+    desatualizada quando o percurso muda), gravação automática do rascunho e
+    os tempos do trecho gravados em separado.
+    """
+
+    def setUp(self):
+        self.client.force_login(self.criar_usuario("paridade", "VIAGENS_OPERADOR"))
+
+    def dados(self, **extras):
+        base = {
+            "origem_municipio": self.curitiba.pk,
+            "destinos-TOTAL_FORMS": "1",
+            "destinos-INITIAL_FORMS": "0",
+            "destinos-MIN_NUM_FORMS": "0",
+            "destinos-MAX_NUM_FORMS": "1000",
+            "destinos-0-ordem": "1",
+            "destinos-0-municipio": self.sao_paulo.pk,
+            "trechos-TOTAL_FORMS": "1",
+            "trechos-INITIAL_FORMS": "0",
+            "trechos-MIN_NUM_FORMS": "0",
+            "trechos-MAX_NUM_FORMS": "1000",
+            "trechos-0-ordem": "1",
+            "trechos-0-origem_municipio": self.curitiba.pk,
+            "trechos-0-destino_municipio": self.sao_paulo.pk,
+            "trechos-0-saida_data": "2026-08-12",
+            "trechos-0-saida_hora": "08:00",
+            "trechos-0-chegada_data": "2026-08-12",
+            "trechos-0-chegada_hora": "18:00",
+            "trechos-0-distancia_km": "",
+        }
+        base.update(extras)
+        return base
+
+    def rota_valida(self):
+        from .services.rota import assinatura_dos_ids
+
+        return {
+            "rota_geojson": '{"type": "LineString", "coordinates": [[-49.27, -25.43], [-46.63, -23.55]]}',
+            "rota_distancia_km": "812.5",
+            "rota_duracao_min": "600",
+            "rota_fonte": "openrouteservice",
+            "rota_assinatura": assinatura_dos_ids(
+                [self.curitiba.pk, self.sao_paulo.pk, self.curitiba.pk]
+            ),
+            "rota_calculada_em": "2026-08-01T10:00:00-03:00",
+        }
+
+    # -- regras de tempo do editor de referência ---------------------------
+
+    def test_arredondamento_a_passos_de_15_minutos(self):
+        from .services.rota import arredondar_a_15
+
+        self.assertEqual(arredondar_a_15(65), 60)   # resto 5 cai
+        self.assertEqual(arredondar_a_15(66), 75)   # resto 6 sobe
+        self.assertEqual(arredondar_a_15(0), 0)
+
+    def test_tempo_adicional_sugerido(self):
+        from .services.rota import tempo_adicional_sugerido
+
+        self.assertEqual(tempo_adicional_sugerido(20), 0)     # menos de meia hora
+        self.assertEqual(tempo_adicional_sugerido(60), 15)    # piso de 15
+        self.assertEqual(tempo_adicional_sugerido(300), 45)   # 1/6 = 50 -> 45
+
+    def test_tempo_de_viagem_calibrado(self):
+        from .services.rota import tempo_de_viagem
+
+        # (100 + 12) / 74 h = 90,8 min; com 15% dos 90 min da API dá 90,7,
+        # que arredonda para 90.
+        self.assertEqual(tempo_de_viagem(100, 90), 90)
+
+    # -- estimativa por trecho ---------------------------------------------
+
+    def test_estimar_trecho_sem_chave_explica_a_configuracao(self):
+        from cadastros.models import Municipio
+
+        Municipio.objects.filter(
+            pk__in=[self.curitiba.pk, self.sao_paulo.pk]
+        ).update(latitude="-25.4290000", longitude="-49.2671000")
+        with self.settings(OPENROUTESERVICE_API_KEY=""):
+            resposta = self.client.post(
+                reverse("viagens_roteiros:estimar_trecho"),
+                {"origem": self.curitiba.pk, "destino": self.sao_paulo.pk},
+            )
+        dados = resposta.json()
+        self.assertFalse(dados["ok"])
+        self.assertIn("OPENROUTESERVICE_API_KEY", dados["motivo"])
+
+    def test_estimar_trecho_responde_do_cache_sem_consultar_a_api(self):
+        from django.core.cache import cache
+
+        chave = f"viagens:estimativa:{self.curitiba.pk}:{self.sao_paulo.pk}"
+        cache.set(
+            chave,
+            {
+                "origem": self.curitiba.pk,
+                "destino": self.sao_paulo.pk,
+                "distancia_km": 410.2,
+                "duracao_min": 330,
+                "tempo_viagem_min": 345,
+                "tempo_adicional_sugerido_min": 60,
+                "fonte": "openrouteservice",
+            },
+            60,
+        )
+        try:
+            with self.settings(OPENROUTESERVICE_API_KEY=""):
+                resposta = self.client.post(
+                    reverse("viagens_roteiros:estimar_trecho"),
+                    {"origem": self.curitiba.pk, "destino": self.sao_paulo.pk},
+                )
+        finally:
+            cache.delete(chave)
+        dados = resposta.json()
+        self.assertTrue(dados["ok"])
+        self.assertEqual(dados["tempo_viagem_min"], 345)
+        self.assertEqual(dados["tempo_adicional_sugerido_min"], 60)
+
+    def test_estimar_trecho_sem_os_dois_ids_explica(self):
+        resposta = self.client.post(
+            reverse("viagens_roteiros:estimar_trecho"), {"origem": self.curitiba.pk}
+        )
+        self.assertFalse(resposta.json()["ok"])
+
+    # -- rota gravada com o roteiro ----------------------------------------
+
+    def test_a_rota_enviada_pela_tela_e_gravada_como_calculada(self):
+        self.client.post(reverse("viagens_roteiros:novo"), self.dados(**self.rota_valida()))
+        roteiro = Roteiro.objects.latest("pk")
+        self.assertEqual(roteiro.rota_status, Roteiro.RotaStatus.CALCULADA)
+        self.assertEqual(roteiro.rota_geojson["type"], "LineString")
+        self.assertEqual(roteiro.rota_distancia_km, Decimal("812.50"))
+        self.assertEqual(roteiro.rota_duracao_min, 600)
+        self.assertEqual(roteiro.rota_fonte, "openrouteservice")
+        self.assertIsNotNone(roteiro.rota_calculada_em)
+
+    def test_rota_quebrada_e_ignorada_sem_derrubar_o_salvamento(self):
+        dados = self.dados(**self.rota_valida())
+        dados["rota_geojson"] = "{isto nao e json"
+        resposta = self.client.post(reverse("viagens_roteiros:novo"), dados)
+        roteiro = Roteiro.objects.latest("pk")
+        self.assertEqual(resposta.status_code, 302)
+        self.assertIsNone(roteiro.rota_geojson)
+        self.assertEqual(roteiro.rota_status, Roteiro.RotaStatus.PENDENTE)
+
+    def test_mudar_o_percurso_sem_recalcular_marca_a_rota_como_desatualizada(self):
+        self.client.post(reverse("viagens_roteiros:novo"), self.dados(**self.rota_valida()))
+        roteiro = Roteiro.objects.latest("pk")
+        destino = roteiro.destinos.get()
+        trecho = roteiro.trechos.get()
+        # Troca o destino, mas manda a rota antiga (a tela guarda a última).
+        editado = self.dados(
+            **self.rota_valida(),
+            **{
+                "destinos-INITIAL_FORMS": "1",
+                "destinos-0-id": destino.pk,
+                "destinos-0-municipio": self.abatia.pk,
+                "trechos-INITIAL_FORMS": "1",
+                "trechos-0-id": trecho.pk,
+                "trechos-0-destino_municipio": self.abatia.pk,
+            },
+        )
+        self.client.post(reverse("viagens_roteiros:editar", args=[roteiro.pk]), editado)
+        roteiro.refresh_from_db()
+        self.assertEqual(roteiro.rota_status, Roteiro.RotaStatus.DESATUALIZADA)
+        # A rota continua gravada: desatualizada não é apagada.
+        self.assertIsNotNone(roteiro.rota_geojson)
+
+    def test_editar_reabre_com_a_rota_gravada_para_o_mapa(self):
+        self.client.post(reverse("viagens_roteiros:novo"), self.dados(**self.rota_valida()))
+        roteiro = Roteiro.objects.latest("pk")
+        resposta = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
+        self.assertContains(resposta, 'id="rota-inicial"')
+        self.assertContains(resposta, "LineString")
+
+    # -- tempos do trecho ----------------------------------------------------
+
+    def test_tempo_de_viagem_e_adicional_sao_gravados_em_separado(self):
+        self.client.post(
+            reverse("viagens_roteiros:novo"),
+            self.dados(
+                **{
+                    "trechos-0-tempo_viagem_min": "345",
+                    "trechos-0-tempo_adicional_min": "60",
+                    "trechos-0-duracao_min": "405",
+                    "trechos-0-rota_fonte": "openrouteservice",
+                }
+            ),
+        )
+        trecho = Roteiro.objects.latest("pk").trechos.get()
+        self.assertEqual(trecho.tempo_viagem_min, 345)
+        self.assertEqual(trecho.tempo_adicional_min, 60)
+        self.assertEqual(trecho.duracao_min, 405)
+        self.assertEqual(trecho.rota_fonte, "openrouteservice")
+
+    def test_trecho_sem_adicional_informado_grava_zero(self):
+        self.client.post(reverse("viagens_roteiros:novo"), self.dados())
+        trecho = Roteiro.objects.latest("pk").trechos.get()
+        self.assertEqual(trecho.tempo_adicional_min, 0)
+
+    # -- gravação automática -------------------------------------------------
+
+    def test_autosave_cria_o_rascunho_e_devolve_os_ids(self):
+        antes = Roteiro.objects.count()
+        resposta = self.client.post(reverse("viagens_roteiros:autosave_novo"), self.dados())
+        dados = resposta.json()
+        self.assertTrue(dados["ok"])
+        self.assertTrue(dados["criado"])
+        self.assertEqual(Roteiro.objects.count(), antes + 1)
+        roteiro = Roteiro.objects.get(pk=dados["pk"])
+        self.assertEqual(roteiro.status, Roteiro.Status.RASCUNHO)
+        self.assertEqual(dados["url_editar"], reverse("viagens_roteiros:editar", args=[roteiro.pk]))
+        self.assertEqual(dados["ids"]["destinos-0-id"], roteiro.destinos.get().pk)
+        self.assertEqual(dados["ids"]["trechos-0-id"], roteiro.trechos.get().pk)
+
+    def test_autosave_seguinte_edita_o_mesmo_roteiro(self):
+        primeiro = self.client.post(
+            reverse("viagens_roteiros:autosave_novo"), self.dados()
+        ).json()
+        ids = primeiro["ids"]
+        segundo = self.client.post(
+            primeiro["url_autosave"],
+            self.dados(
+                **{
+                    "destinos-INITIAL_FORMS": "1",
+                    "destinos-0-id": ids["destinos-0-id"],
+                    "trechos-INITIAL_FORMS": "1",
+                    "trechos-0-id": ids["trechos-0-id"],
+                    "trechos-0-saida_hora": "09:00",
+                }
+            ),
+        ).json()
+        self.assertTrue(segundo["ok"])
+        self.assertFalse(segundo["criado"])
+        roteiro = Roteiro.objects.get(pk=primeiro["pk"])
+        self.assertEqual(roteiro.trechos.count(), 1)
+        self.assertEqual(roteiro.destinos.count(), 1)
+        self.assertEqual(
+            timezone.localtime(roteiro.trechos.get().saida_dt).strftime("%H:%M"), "09:00"
+        )
+
+    def test_autosave_nao_mexe_em_roteiro_finalizado(self):
+        self.client.post(reverse("viagens_roteiros:novo"), self.dados(acao="salvar"))
+        roteiro = Roteiro.objects.latest("pk")
+        self.assertEqual(roteiro.status, Roteiro.Status.FINALIZADO)
+        resposta = self.client.post(
+            reverse("viagens_roteiros:autosave", args=[roteiro.pk]),
+            self.dados(**{"trechos-0-saida_hora": "05:00"}),
+        )
+        self.assertFalse(resposta.json()["ok"])
+        roteiro.refresh_from_db()
+        self.assertEqual(roteiro.status, Roteiro.Status.FINALIZADO)
+
+    def test_autosave_exige_permissao_de_edicao(self):
+        from django.contrib.auth import get_user_model
+
+        leitora = get_user_model().objects.create_user("leitora_autosave")
+        leitora.setores.add(self.setor)
+        self.client.force_login(leitora)
+        resposta = self.client.post(reverse("viagens_roteiros:autosave_novo"), self.dados())
+        self.assertEqual(resposta.status_code, 403)
+
+    # -- o que a tela carrega ------------------------------------------------
+
+    def test_a_tela_traz_os_enderecos_e_liga_a_gravacao_automatica(self):
+        resposta = self.client.get(reverse("viagens_roteiros:novo"))
+        self.assertContains(resposta, 'data-url-estimar="')
+        self.assertContains(resposta, 'data-url-autosave="')
+        self.assertContains(resposta, 'data-autosave="1"')
+        self.assertContains(resposta, 'name="rota_geojson"')
+
+    def test_roteiro_finalizado_abre_com_a_gravacao_automatica_desligada(self):
+        self.client.post(reverse("viagens_roteiros:novo"), self.dados(acao="salvar"))
+        roteiro = Roteiro.objects.latest("pk")
+        resposta = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
+        self.assertContains(resposta, 'data-autosave="0"')
+
+    def test_o_calendario_dos_trechos_e_sequencial_e_o_do_bate_volta_tambem(self):
+        resposta = self.client.get(reverse("viagens_roteiros:novo"))
+        html = resposta.content.decode()
+        self.assertIn('id="datas-trechos" data-custom-date-multi', html)
+        self.assertEqual(html.count("data-sequencial"), 2)
+        self.assertIn("data-custom-date-multi-undo", html)
+
+    def test_a_tela_mostra_a_situacao_da_rota_e_o_aviso_de_desatualizada(self):
+        resposta = self.client.get(reverse("viagens_roteiros:novo"))
+        self.assertContains(resposta, "data-rota-status")
+        self.assertContains(resposta, "data-rota-desatualizada")
+        self.assertContains(resposta, "Recalcule a rota")
+
+    # -- defeitos vistos ao gravar de verdade ------------------------------
+
+    def test_id_de_trecho_ja_apagado_nao_derruba_a_gravacao_seguinte(self):
+        # A tela guarda oculta a linha que o autosave anterior apagou, ainda
+        # com o id antigo e marcada para exclusão. Para o formset esse id é
+        # "escolha inválida", e a gravação inteira falhava por causa dela.
+        primeiro = self.client.post(
+            reverse("viagens_roteiros:autosave_novo"), self.dados()
+        ).json()
+        trecho_antigo = primeiro["ids"]["trechos-0-id"]
+        # Apaga o trecho 0 e cria outro no lugar (índice 1).
+        segundo = self.client.post(
+            primeiro["url_autosave"],
+            self.dados(
+                **{
+                    "destinos-INITIAL_FORMS": "1",
+                    "destinos-0-id": primeiro["ids"]["destinos-0-id"],
+                    "trechos-TOTAL_FORMS": "2",
+                    "trechos-INITIAL_FORMS": "1",
+                    "trechos-0-id": trecho_antigo,
+                    "trechos-0-DELETE": "on",
+                    "trechos-1-ordem": "1",
+                    "trechos-1-origem_municipio": self.curitiba.pk,
+                    "trechos-1-destino_municipio": self.sao_paulo.pk,
+                    "trechos-1-saida_data": "2026-08-13",
+                    "trechos-1-saida_hora": "08:00",
+                    "trechos-1-chegada_data": "2026-08-13",
+                    "trechos-1-chegada_hora": "18:00",
+                }
+            ),
+        ).json()
+        self.assertTrue(segundo["gravou"]["trechos"])
+        self.assertNotIn("trechos-0-id", segundo["ids"])
+        # Terceira gravação ainda carrega o id apagado, oculto e marcado.
+        terceiro = self.client.post(
+            primeiro["url_autosave"],
+            self.dados(
+                **{
+                    "destinos-INITIAL_FORMS": "1",
+                    "destinos-0-id": primeiro["ids"]["destinos-0-id"],
+                    "trechos-TOTAL_FORMS": "2",
+                    "trechos-INITIAL_FORMS": "2",
+                    "trechos-0-id": trecho_antigo,
+                    "trechos-0-DELETE": "on",
+                    "trechos-1-id": segundo["ids"]["trechos-1-id"],
+                    "trechos-1-ordem": "1",
+                    "trechos-1-origem_municipio": self.curitiba.pk,
+                    "trechos-1-destino_municipio": self.sao_paulo.pk,
+                    "trechos-1-saida_data": "2026-08-13",
+                    "trechos-1-saida_hora": "10:00",
+                    "trechos-1-chegada_data": "2026-08-13",
+                    "trechos-1-chegada_hora": "18:00",
+                }
+            ),
+        ).json()
+        self.assertTrue(terceiro["gravou"]["trechos"], terceiro)
+        roteiro = Roteiro.objects.get(pk=primeiro["pk"])
+        self.assertEqual(roteiro.trechos.count(), 1)
+        self.assertEqual(
+            timezone.localtime(roteiro.trechos.get().saida_dt).strftime("%H:%M"), "10:00"
+        )
+
+    def test_salvar_tambem_tolera_id_apagado(self):
+        primeiro = self.client.post(
+            reverse("viagens_roteiros:autosave_novo"), self.dados()
+        ).json()
+        trecho_antigo = primeiro["ids"]["trechos-0-id"]
+        RoteiroTrecho.objects.filter(pk=trecho_antigo).delete()
+        resposta = self.client.post(
+            primeiro["url_editar"],
+            self.dados(
+                acao="salvar",
+                **{
+                    "destinos-INITIAL_FORMS": "1",
+                    "destinos-0-id": primeiro["ids"]["destinos-0-id"],
+                    "trechos-INITIAL_FORMS": "1",
+                    "trechos-0-id": trecho_antigo,
+                },
+            ),
+        )
+        self.assertRedirects(resposta, reverse("viagens_roteiros:lista"))
+        self.assertEqual(Roteiro.objects.get(pk=primeiro["pk"]).trechos.count(), 1)
+
+    def test_editar_reabre_as_datas_dos_trechos_em_iso(self):
+        # `<input type="date">` só entende ISO: a data localizada ("12 de
+        # Agosto de 2026") reabria o campo em branco.
+        self.client.post(reverse("viagens_roteiros:novo"), self.dados())
+        roteiro = Roteiro.objects.latest("pk")
+        resposta = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
+        self.assertContains(resposta, 'value="2026-08-12"')
+        self.assertContains(resposta, 'value="08:00"')
+        self.assertContains(resposta, 'value="18:00"')
+
+    def test_autosave_avisa_quando_os_trechos_nao_passam(self):
+        resposta = self.client.post(
+            reverse("viagens_roteiros:autosave_novo"),
+            self.dados(**{"trechos-0-chegada_hora": "06:00"}),
+        ).json()
+        self.assertTrue(resposta["ok"])
+        self.assertFalse(resposta["gravou"]["trechos"])
+        self.assertIn("trechos", resposta["motivo"])
+
+    def test_previa_funciona_na_edicao_com_os_ids_dos_trechos(self):
+        # Na edição o formulário carrega os ids gravados; a prévia, que roda
+        # sem roteiro, tratava esse id como escolha inválida e não calculava.
+        self.client.post(reverse("viagens_roteiros:novo"), self.dados())
+        roteiro = Roteiro.objects.latest("pk")
+        resposta = self.client.post(
+            reverse("viagens_roteiros:previa_diarias"),
+            self.dados(
+                **{
+                    "destinos-INITIAL_FORMS": "1",
+                    "destinos-0-id": roteiro.destinos.get().pk,
+                    "trechos-INITIAL_FORMS": "1",
+                    "trechos-0-id": roteiro.trechos.get().pk,
+                }
+            ),
+        )
+        dados = resposta.json()
+        self.assertTrue(dados["ok"], dados)
+        # Capital, saída e chegada no mesmo dia: 30% de R$ 371,26.
+        self.assertEqual(dados["totais"]["total_valor"], "111,38")
+
+    def test_editar_reabre_os_numeros_do_trecho_sem_localizar(self):
+        # "257,88" no campo oculto era recusado pelo próprio formulário ao
+        # salvar de novo, e a prévia deixava o trecho de fora da conta.
+        self.client.post(
+            reverse("viagens_roteiros:novo"),
+            self.dados(
+                **{
+                    "trechos-0-distancia_km": "257.88",
+                    "trechos-0-tempo_viagem_min": "1230",
+                    "trechos-0-duracao_min": "1260",
+                }
+            ),
+        )
+        roteiro = Roteiro.objects.latest("pk")
+        html = self.client.get(
+            reverse("viagens_roteiros:editar", args=[roteiro.pk])
+        ).content.decode()
+        self.assertIn('value="257.88"', html)
+        self.assertIn('value="1230"', html)
+        self.assertNotIn('value="257,88"', html)
+        self.assertNotIn('value="1.230"', html)
+        # E o reenvio do que a tela carregou salva sem erro.
+        resposta = self.client.post(
+            reverse("viagens_roteiros:editar", args=[roteiro.pk]),
+            self.dados(
+                acao="salvar",
+                **{
+                    "destinos-INITIAL_FORMS": "1",
+                    "destinos-0-id": roteiro.destinos.get().pk,
+                    "trechos-INITIAL_FORMS": "1",
+                    "trechos-0-id": roteiro.trechos.get().pk,
+                    "trechos-0-distancia_km": "257.88",
+                },
+            ),
+        )
+        self.assertRedirects(resposta, reverse("viagens_roteiros:lista"))
+
+
+class SemTelaDeDetalheTests(BaseTelaRoteiroTestCase):
+    """O roteiro tem uma tela só — a de edição, que também mostra o cálculo.
+
+    Decisão do dono do produto (02/09/2026): a tela de detalhe repetia o que
+    o editor já mostra e obrigava a um pulo a mais para qualquer ajuste.
+    """
+
+    def setUp(self):
+        self.client.force_login(self.criar_usuario("sem_detalhe", "VIAGENS_OPERADOR"))
+
+    def test_o_endereco_antigo_leva_a_edicao(self):
+        roteiro = self.roteiro_curitiba_sp_abatia()
+        resposta = self.client.get(f"/viagens/roteiros/{roteiro.pk}/")
+        self.assertRedirects(
+            resposta,
+            reverse("viagens_roteiros:editar", args=[roteiro.pk]),
+            status_code=301,
+        )
+
+    def test_a_lista_abre_o_roteiro_na_edicao(self):
+        roteiro = self.roteiro_curitiba_sp_abatia()
+        resposta = self.client.get(reverse("viagens_roteiros:lista"))
+        self.assertContains(
+            resposta, reverse("viagens_roteiros:editar", args=[roteiro.pk])
+        )
+
+    def test_a_edicao_traz_as_acoes_do_ciclo_de_vida(self):
+        roteiro = self.roteiro_curitiba_sp_abatia()
+        resposta = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
+        for nome in ("calcular", "cancelar", "excluir"):
+            self.assertContains(
+                resposta, reverse(f"viagens_roteiros:{nome}", args=[roteiro.pk])
+            )
+        self.assertContains(resposta, "Situação do roteiro")
+
+    def test_a_situacao_do_roteiro_aparece_no_cabecalho(self):
+        roteiro = self.roteiro_curitiba_sp_abatia()
+        resposta = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
+        self.assertContains(resposta, "editor-roteiro__titulo")
+        self.assertContains(resposta, "Rascunho")
+        roteiro.cancelar("Evento adiado")
+        resposta = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
+        self.assertContains(resposta, "status-badge--cancelada")
+
+    def test_roteiro_novo_nao_oferece_cancelar_nem_excluir(self):
+        resposta = self.client.get(reverse("viagens_roteiros:novo"))
+        self.assertNotContains(resposta, "Situação do roteiro")
+
+    def test_cancelar_volta_para_a_edicao_e_a_tela_mostra_o_motivo(self):
+        roteiro = self.roteiro_curitiba_sp_abatia()
+        resposta = self.client.post(
+            reverse("viagens_roteiros:cancelar", args=[roteiro.pk]),
+            {"motivo": "Evento adiado"},
+            follow=True,
+        )
+        self.assertRedirects(
+            resposta, reverse("viagens_roteiros:editar", args=[roteiro.pk])
+        )
+        self.assertContains(resposta, "Evento adiado")
+        self.assertContains(resposta, "Reativar")
+
+    def test_calcular_volta_para_a_edicao(self):
+        roteiro = self.roteiro_curitiba_sp_abatia()
+        resposta = self.client.post(
+            reverse("viagens_roteiros:calcular", args=[roteiro.pk])
+        )
+        self.assertRedirects(
+            resposta, reverse("viagens_roteiros:editar", args=[roteiro.pk])
+        )

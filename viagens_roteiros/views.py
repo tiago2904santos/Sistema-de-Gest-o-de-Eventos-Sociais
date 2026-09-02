@@ -6,13 +6,17 @@ cadastrada, faltam datas), a mensagem que sobe é a da exceção: ela já diz o 
 fazer, e traduzi-la de novo aqui só criaria duas versões da mesma explicação.
 """
 
+from contextlib import contextmanager
+
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q
+from django.db import transaction
+from django.db.models import F, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.http import urlencode
 from django.views.decorators.http import require_POST
 
@@ -24,7 +28,14 @@ from .forms import DestinoFormSet, RoteiroForm, TrechoFormSet
 from .models import Roteiro
 from .permissions import acesso_ao_modulo, pode_editar_roteiros
 from .services.calculo import previa_diarias, recalcular_diarias
-from .services.rota import RotaIndisponivel, calcular_rota
+from .services.rota import (
+    RotaIndisponivel,
+    aplicar_rota_enviada,
+    calcular_rota,
+    conferir_rota_gravada,
+    estimar_trecho as estimar_trecho_entre,
+    rota_para_tela,
+)
 from .services.diarias import (
     RoteiroIncalculavel,
     SemTabelaDeDiarias,
@@ -37,6 +48,91 @@ ITENS_POR_PAGINA = 20
 def _exigir_edicao(request):
     if not pode_editar_roteiros(request.user):
         raise PermissionDenied
+
+
+# Bem acima de qualquer ordem real; só serve para tirar as gravadas do caminho.
+DESLOCAMENTO_DE_ORDEM = 1_000_000
+
+
+@contextmanager
+def _ordens_afastadas(roteiro):
+    """Tira as ordens gravadas do caminho enquanto o formset valida e grava.
+
+    Destino e trecho têm ordem única por roteiro. Renumerar o percurso troca
+    ordens entre linhas, e uma linha nova pode assumir a ordem de outra que
+    está sendo apagada no mesmo envio — o formset valida linha a linha
+    contra o banco e recusava tudo. Com as ordens gravadas deslocadas para
+    longe, cada linha assume a sua sem esbarrar em ninguém; o que não foi
+    regravado volta ao lugar no fim.
+    """
+    roteiro.destinos.update(ordem=F("ordem") + DESLOCAMENTO_DE_ORDEM)
+    roteiro.trechos.update(ordem=F("ordem") + DESLOCAMENTO_DE_ORDEM)
+    try:
+        yield
+    finally:
+        # O que ficou deslocado é linha que o envio não conhecia (não veio
+        # com id). Volta à ordem original se ela ainda está livre; senão vai
+        # para depois da última, sem derrubar a gravação.
+        for relacao in (roteiro.destinos, roteiro.trechos):
+            deslocados = list(
+                relacao.filter(ordem__gte=DESLOCAMENTO_DE_ORDEM).order_by("ordem")
+            )
+            if not deslocados:
+                continue
+            ocupadas = set(
+                relacao.filter(ordem__lt=DESLOCAMENTO_DE_ORDEM).values_list(
+                    "ordem", flat=True
+                )
+            )
+            proxima = (max(ocupadas) if ocupadas else 0) + 1
+            for linha in deslocados:
+                original = linha.ordem - DESLOCAMENTO_DE_ORDEM
+                if original in ocupadas:
+                    linha.ordem = proxima
+                    proxima += 1
+                else:
+                    linha.ordem = original
+                ocupadas.add(linha.ordem)
+                linha.save(update_fields=["ordem"])
+
+
+def _sem_identidade(post):
+    """O POST do editor sem os ids das linhas nem a contagem de iniciais."""
+    dados = post.copy()
+    for chave in list(dados.keys()):
+        # `-roteiro` é a chave estrangeira que o formset inline emite: com
+        # valor, ela precisa bater com o pai — que a prévia não tem.
+        if chave.endswith("-id") or chave.endswith("-roteiro"):
+            dados[chave] = ""
+        elif chave.endswith("-INITIAL_FORMS"):
+            dados[chave] = "0"
+    return dados
+
+
+def _sanear_ids(post, roteiro):
+    """Esquece, no POST, os ids de destinos e trechos que já não existem.
+
+    A tela grava sozinha enquanto se monta o percurso, e uma gravação pode
+    apagar linhas que a tela ainda carrega ocultas, marcadas para exclusão,
+    com o id antigo. Para o formset um id inexistente é "escolha inválida" —
+    e a gravação seguinte inteira falhava por causa de uma linha que já não
+    era nada. Sem o id, a linha vira slot novo: em branco ou marcada para
+    exclusão, é ignorada.
+    """
+    if not (roteiro and roteiro.pk):
+        return post
+    post = post.copy()
+    existentes = {
+        "destinos": {str(pk) for pk in roteiro.destinos.values_list("pk", flat=True)},
+        "trechos": {str(pk) for pk in roteiro.trechos.values_list("pk", flat=True)},
+    }
+    for chave in list(post.keys()):
+        partes = chave.split("-")
+        if len(partes) != 3 or partes[2] != "id" or partes[0] not in existentes:
+            continue
+        if post[chave] and post[chave] not in existentes[partes[0]]:
+            post[chave] = ""
+    return post
 
 
 def _registrar_auditoria(usuario, acao, roteiro):
@@ -126,24 +222,32 @@ def editar(request, pk=None):
     roteiro = get_object_or_404(Roteiro, pk=pk) if pk else None
 
     if request.method == "POST":
-        form = RoteiroForm(request.POST, instance=roteiro)
-        formset = TrechoFormSet(request.POST, instance=roteiro)
-        destinos = DestinoFormSet(request.POST, instance=roteiro)
-        rascunho = request.POST.get("acao") == "rascunho"
+        dados = _sanear_ids(request.POST, roteiro)
+        form = RoteiroForm(dados, instance=roteiro)
+        formset = TrechoFormSet(dados, instance=roteiro)
+        destinos = DestinoFormSet(dados, instance=roteiro)
+        rascunho = dados.get("acao") == "rascunho"
         if form.is_valid():
-            salvo = form.save()
+            salvo = form.save(commit=False)
             # Rascunho é o roteiro em construção; salvar de vez o finaliza.
             salvo.status = (
                 Roteiro.Status.RASCUNHO if rascunho else Roteiro.Status.FINALIZADO
             )
-            salvo.save(update_fields=["status", "atualizado_em"])
+            # A rota que a tela calculou viaja em campos ocultos e fica
+            # gravada com o roteiro, para o mapa reabrir desenhado.
+            aplicar_rota_enviada(salvo, dados)
+            salvo.save()
             # Os formsets só sabem a que roteiro pertencem depois que ele existe.
-            formset = TrechoFormSet(request.POST, instance=salvo)
-            destinos = DestinoFormSet(request.POST, instance=salvo)
-            if destinos.is_valid():
-                destinos.save()
-            if formset.is_valid():
-                formset.save()
+            formset = TrechoFormSet(dados, instance=salvo)
+            destinos = DestinoFormSet(dados, instance=salvo)
+            with transaction.atomic(), _ordens_afastadas(salvo):
+                if destinos.is_valid():
+                    destinos.save()
+                conferir_rota_gravada(salvo)
+                trechos_ok = formset.is_valid()
+                if trechos_ok:
+                    formset.save()
+            if trechos_ok:
                 _registrar_auditoria(
                     request.user,
                     "VIAGENS_ROTEIRO_ATUALIZADO" if pk else "VIAGENS_ROTEIRO_CRIADO",
@@ -166,7 +270,8 @@ def editar(request, pk=None):
                 if rascunho:
                     # Rascunho continua em edição: quem salvou ainda está montando.
                     return redirect("viagens_roteiros:editar", pk=salvo.pk)
-                return redirect("viagens_roteiros:detalhe", pk=salvo.pk)
+                # Finalizado, o trabalho acabou: volta para a lista.
+                return redirect("viagens_roteiros:lista")
             if not pk:
                 # Trechos inválidos num roteiro recém-criado: ele já existe no
                 # banco, então a tela continua a edição dele em vez de criar
@@ -178,7 +283,7 @@ def editar(request, pk=None):
                     _contexto_do_form(salvo, form, formset, destinos),
                 )
         else:
-            formset = TrechoFormSet(request.POST, instance=roteiro)
+            formset = TrechoFormSet(dados, instance=roteiro)
             formset.is_valid()
         messages.error(request, "Corrija os campos destacados para continuar.")
     else:
@@ -307,60 +412,40 @@ def _contexto_do_form(roteiro, form, formset, destinos):
             if roteiro and roteiro.pk
             else ""
         ),
-        "titulo": "Editar roteiro" if roteiro and roteiro.pk else "Novo roteiro",
-        "url_voltar": (
-            reverse("viagens_roteiros:detalhe", args=[roteiro.pk])
+        # A composição parcela a parcela do último cálculo gravado: é o que
+        # explica o valor depois, quando os valores vigentes já forem outros.
+        # Vive aqui desde que a tela de detalhe deixou de existir.
+        "parcelas": (
+            roteiro.componentes_diarias.select_related("tabela_diaria").all()
             if roteiro and roteiro.pk
-            else reverse("viagens_roteiros:lista")
+            else []
         ),
+        "total_formatado": (
+            f"R$ {formatar_valor(roteiro.valor_diarias)}"
+            if roteiro and roteiro.valor_diarias is not None
+            else "—"
+        ),
+        # A rota gravada, para o mapa reabrir desenhado; e os endereços que a
+        # tela usa enquanto se monta o percurso.
+        "rota_inicial": rota_para_tela(roteiro),
+        "url_autosave": (
+            reverse("viagens_roteiros:autosave", args=[roteiro.pk])
+            if roteiro and roteiro.pk
+            else reverse("viagens_roteiros:autosave_novo")
+        ),
+        # A gravação automática só vale enquanto o roteiro é rascunho: um
+        # roteiro finalizado tem diárias congeladas que um trecho mexido em
+        # silêncio deixaria mentindo. Nele, só o "Salvar" grava.
+        "autosave_ligado": not (
+            roteiro and roteiro.pk and roteiro.status == Roteiro.Status.FINALIZADO
+        ),
+        "titulo": "Editar roteiro" if roteiro and roteiro.pk else "Novo roteiro",
+        "url_voltar": reverse("viagens_roteiros:lista"),
         "breadcrumb": [
             {"label": "Roteiros", "url": reverse("viagens_roteiros:lista")},
             {"label": "Editar roteiro" if roteiro and roteiro.pk else "Novo roteiro"},
         ],
     }
-
-
-@acesso_ao_modulo
-def detalhe(request, pk):
-    roteiro = get_object_or_404(
-        Roteiro.objects.select_related("origem_municipio__estado", "solicitacao"), pk=pk
-    )
-    trechos = roteiro.trechos.select_related(
-        "origem_municipio", "destino_municipio"
-    ).all()
-    parcelas = roteiro.componentes_diarias.select_related("tabela_diaria").all()
-    equipe = roteiro.quantidade_servidores
-    return render(
-        request,
-        "pages/viagens_roteiros/detalhe.html",
-        {
-            "roteiro": roteiro,
-            "trechos": trechos,
-            "parcelas": parcelas,
-            "destinos": _resumo_do_destino(roteiro),
-            "total_formatado": (
-                f"R$ {formatar_valor(roteiro.valor_diarias)}"
-                if roteiro.valor_diarias is not None
-                else "—"
-            ),
-            "resumo_equipe": f"{equipe} servidor{'es' if equipe != 1 else ''}",
-            "rotulo_vinculo": (
-                f"Solicitação {roteiro.solicitacao_id}"
-                if roteiro.solicitacao_id
-                else "Avulso"
-            ),
-            "detalhe_vinculo": (
-                "Roteiro de solicitação de evento"
-                if roteiro.solicitacao_id
-                else "Sem solicitação vinculada"
-            ),
-            "breadcrumb": [
-                {"label": "Roteiros", "url": reverse("viagens_roteiros:lista")},
-                {"label": _resumo_do_destino(roteiro)},
-            ],
-            "pode_editar": pode_editar_roteiros(request.user),
-        },
-    )
 
 
 @acesso_ao_modulo
@@ -405,8 +490,12 @@ def previa(request):
     resultado atualiza só o bloco "Diárias" do editor.
     """
     _exigir_edicao(request)
-    form = RoteiroForm(request.POST)
-    formset = TrechoFormSet(request.POST)
+    # Como se tudo fosse novo: a prévia não grava e não precisa saber quais
+    # linhas existem — e, sem o roteiro, um id de trecho gravado seria
+    # "escolha inválida" e derrubaria a linha da conta.
+    dados = _sem_identidade(request.POST)
+    form = RoteiroForm(dados)
+    formset = TrechoFormSet(dados)
     try:
         resultado = previa_diarias(form, formset)
     except (SemTabelaDeDiarias, RoteiroIncalculavel) as erro:
@@ -458,6 +547,104 @@ def rota(request):
 
 @acesso_ao_modulo
 @require_POST
+def estimar_trecho(request):
+    """Distância e tempo de viagem de um trecho, para a tabela se preencher.
+
+    A tela chama uma vez por trecho ainda sem tempo assim que sede e destinos
+    existem. Nada é gravado.
+    """
+    _exigir_edicao(request)
+    ids = [request.POST.get("origem") or "", request.POST.get("destino") or ""]
+    if not all(ids):
+        return JsonResponse({"ok": False, "motivo": "Informe origem e destino."})
+    municipios = {
+        str(m.pk): m
+        for m in Municipio.objects.filter(pk__in=ids).select_related("estado")
+    }
+    if ids[0] not in municipios or ids[1] not in municipios:
+        return JsonResponse({"ok": False, "motivo": "Município não encontrado."})
+    try:
+        resultado = estimar_trecho_entre(municipios[ids[0]], municipios[ids[1]])
+    except RotaIndisponivel as erro:
+        return JsonResponse({"ok": False, "motivo": str(erro)})
+    return JsonResponse(dict(resultado, ok=True))
+
+
+def _ids_gravados(formset):
+    """`prefixo-N-id` → pk, para a tela aprender os ids que acabou de criar."""
+    return {
+        f"{form.prefix}-id": form.instance.pk
+        for form in formset.forms
+        if form.instance.pk and not form.cleaned_data.get("DELETE")
+    }
+
+
+@acesso_ao_modulo
+@require_POST
+def autosave(request, pk=None):
+    """Grava o rascunho como está, sem sair da tela.
+
+    A tela envia o formulário inteiro um segundo depois da última mudança. O
+    roteiro nasce na primeira gravação — a resposta traz o endereço de edição
+    e os ids dos destinos e trechos criados, para a tela passar a editá-los
+    em vez de recriá-los. Um roteiro finalizado não recebe gravação
+    automática: as diárias dele estão congeladas, e mexer nos trechos por
+    baixo delas as deixaria mentindo.
+    """
+    _exigir_edicao(request)
+    roteiro = get_object_or_404(Roteiro, pk=pk) if pk else None
+    if roteiro and roteiro.status == Roteiro.Status.FINALIZADO:
+        return JsonResponse(
+            {"ok": False, "motivo": "Roteiro finalizado: grave pelo \u201cSalvar\u201d."}
+        )
+    dados = _sanear_ids(request.POST, roteiro)
+    form = RoteiroForm(dados, instance=roteiro)
+    if not form.is_valid():
+        return JsonResponse({"ok": False, "motivo": "Corrija os campos destacados."})
+    with transaction.atomic():
+        salvo = form.save(commit=False)
+        salvo.status = Roteiro.Status.RASCUNHO
+        aplicar_rota_enviada(salvo, dados)
+        salvo.save()
+        destinos = DestinoFormSet(dados, instance=salvo)
+        formset = TrechoFormSet(dados, instance=salvo)
+        ids = {}
+        with _ordens_afastadas(salvo):
+            gravou = {"destinos": destinos.is_valid(), "trechos": formset.is_valid()}
+            if gravou["destinos"]:
+                destinos.save()
+                ids.update(_ids_gravados(destinos))
+            conferir_rota_gravada(salvo)
+            if gravou["trechos"]:
+                formset.save()
+                ids.update(_ids_gravados(formset))
+        if not pk:
+            _registrar_auditoria(request.user, "VIAGENS_ROTEIRO_CRIADO", salvo)
+    # O que não passou fica dito: a tela avisa que o rascunho está parcial.
+    pendencias = []
+    if not gravou["trechos"]:
+        pendencias.append("os trechos não foram gravados (revise datas e destinos)")
+    if not gravou["destinos"]:
+        pendencias.append("os destinos não foram gravados")
+    return JsonResponse(
+        {
+            "ok": True,
+            "pk": salvo.pk,
+            "criado": not pk,
+            "url_editar": reverse("viagens_roteiros:editar", args=[salvo.pk]),
+            "url_autosave": reverse("viagens_roteiros:autosave", args=[salvo.pk]),
+            "url_voltar": reverse("viagens_roteiros:lista"),
+            "ids": ids,
+            "gravou": gravou,
+            "motivo": "; ".join(pendencias),
+            "rota_status": salvo.rota_status,
+            "salvo_em": timezone.localtime().strftime("%H:%M"),
+        }
+    )
+
+
+@acesso_ao_modulo
+@require_POST
 def calcular(request, pk):
     _exigir_edicao(request)
     roteiro = get_object_or_404(Roteiro, pk=pk)
@@ -475,7 +662,7 @@ def calcular(request, pk):
             f"{resultado['totais']['total_valor']} "
             f"({resultado['totais']['resumo_diarias']}).",
         )
-    return redirect("viagens_roteiros:detalhe", pk=roteiro.pk)
+    return redirect("viagens_roteiros:editar", pk=roteiro.pk)
 
 
 @acesso_ao_modulo
@@ -486,11 +673,11 @@ def cancelar(request, pk):
     motivo = request.POST.get("motivo", "").strip()
     if not motivo:
         messages.error(request, "Informe o motivo do cancelamento.")
-        return redirect("viagens_roteiros:detalhe", pk=roteiro.pk)
+        return redirect("viagens_roteiros:editar", pk=roteiro.pk)
     roteiro.cancelar(motivo)
     _registrar_auditoria(request.user, "VIAGENS_ROTEIRO_CANCELADO", roteiro)
     messages.success(request, "Roteiro cancelado.")
-    return redirect("viagens_roteiros:detalhe", pk=roteiro.pk)
+    return redirect("viagens_roteiros:editar", pk=roteiro.pk)
 
 
 @acesso_ao_modulo
@@ -501,7 +688,7 @@ def reativar(request, pk):
     roteiro.reativar()
     _registrar_auditoria(request.user, "VIAGENS_ROTEIRO_REATIVADO", roteiro)
     messages.success(request, "Roteiro reativado.")
-    return redirect("viagens_roteiros:detalhe", pk=roteiro.pk)
+    return redirect("viagens_roteiros:editar", pk=roteiro.pk)
 
 
 @acesso_ao_modulo

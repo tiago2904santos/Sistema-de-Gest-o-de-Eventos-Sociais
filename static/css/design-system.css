@@ -418,6 +418,10 @@ img {
   padding: var(--esp-5);
 }
 
+/* Ação no cabeçalho da seção (o toggle do bate-volta, o botão de datas):
+   encosta na direita, deixando o título com o espaço que sobra. */
+.section-card__acao { margin-left: auto; }
+
 /* Summary card — indicadores do dashboard, no modelo do redesign:
    ícone em círculo, número grande e sparkline dos últimos 12 meses. */
 .summary-card {
@@ -1191,7 +1195,9 @@ textarea.form-controle {
   color: var(--cor-dourado-700); font-size: 1.7rem;
 }
 .solicitacao-intro__acoes { display: flex; align-items: center; gap: var(--esp-3); }
-.solicitacao-layout {
+/* A tela de roteiro usa a mesma grade: conteúdo + lateral fixa. */
+.solicitacao-layout,
+.editor-roteiro {
   display: grid; grid-template-columns: minmax(0, 1fr) 390px;
   gap: 20px; align-items: start;
 }
@@ -1413,6 +1419,17 @@ textarea.form-controle {
 /* Calendário de várias datas: o gatilho é o próprio botão da página, e o
    número na quina do dia diz a ordem em que a data foi escolhida. */
 .custom-date--multi { position: relative; display: inline-block; }
+
+/* "Data 2 de 3 · Londrina → Maringá": para qual passo vai a próxima data. */
+.custom-date__contexto {
+  margin: 0 0 var(--esp-2);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--cor-dourado-700);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 /* Acima do mapa: o Leaflet e os botões sobre ele usam z-index 500. */
 .custom-date__calendar--multi {
   left: auto; right: 0; z-index: 900;
@@ -1848,11 +1865,13 @@ textarea.form-controle { min-height: 68px; }
 }
 
 @media (max-width: 1180px) {
-  .solicitacao-layout { grid-template-columns: minmax(0, 1fr) 330px; }
+  .solicitacao-layout,
+  .editor-roteiro { grid-template-columns: minmax(0, 1fr) 330px; }
   .navbar__link { padding-left: 12px; padding-right: 12px; }
 }
 @media (max-width: 980px) {
-  .solicitacao-layout { grid-template-columns: 1fr; }
+  .solicitacao-layout,
+  .editor-roteiro { grid-template-columns: 1fr; }
   .solicitacao-sidebar, .solicitacao-sidebar.is-stuck {
     position: static; height: auto; max-height: none; overflow: visible;
     display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: none;
@@ -3336,31 +3355,33 @@ textarea.form-controle { min-height: 68px; }
 }
 
 /* ---------------------------------------------------------------------------
-   Editor de roteiro (módulo Viagens): seções numeradas, tabela de trechos,
-   métricas e painel lateral. Aditivo — não altera telas existentes.
+   Editor de roteiro (módulo Viagens): o layout, os cartões numerados e a
+   lateral vêm do design system (`.solicitacao-layout`, `.section-card`,
+   `.side-card`); aqui ficam só as peças próprias desta tela.
    --------------------------------------------------------------------------- */
 
-.editor-roteiro {
+/* Densidade igual à da tela de solicitação: cartões mais juntos. */
+.editor-roteiro__principal .section-card { margin-bottom: 12px; }
+.editor-roteiro__principal .section-card:last-child { margin-bottom: 0; }
+
+/* Um traço separa os blocos rotulados dentro da mesma seção. */
+.editor-roteiro__principal .bloco-split + .bloco-split {
+  border-top: 1px solid var(--cor-borda);
+  margin-top: var(--esp-3);
+  padding-top: var(--esp-4);
+}
+
+/* A barra de introdução ocupa a largura toda, acima das duas colunas. */
+.editor-roteiro__topo { grid-column: 1 / -1; }
+
+/* A lateral acompanha a rolagem, como na tela de solicitação. */
+.editor-roteiro__lateral {
+  position: sticky;
+  top: 14px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: var(--esp-4);
-  align-items: start;
+  gap: 10px;
+  align-content: start;
 }
-
-.editor-roteiro__topo {
-  grid-column: 1 / -1;
-  margin-bottom: 0;
-}
-
-/* Vínculo ao lado do título, valendo para o roteiro inteiro. */
-.editor-roteiro__topo-campos { width: min(280px, 100%); }
-
-.editor-roteiro__acoes {
-  display: flex;
-  gap: var(--esp-3);
-}
-
-.editor-roteiro__acoes .btn { flex: 1; justify-content: center; white-space: nowrap; }
 
 .editor-roteiro__principal {
   display: grid;
@@ -3368,55 +3389,82 @@ textarea.form-controle { min-height: 68px; }
   min-width: 0;
 }
 
-.editor-roteiro__lateral {
-  display: grid;
-  gap: var(--esp-4);
-  position: sticky;
-  top: var(--esp-4);
-}
-
 @media (max-width: 1100px) {
   .editor-roteiro { grid-template-columns: 1fr; }
   .editor-roteiro__lateral { position: static; }
 }
 
-/* Seção numerada ------------------------------------------------------- */
+/* Barra de ações do topo: o estado da gravação automática à esquerda dos
+   botões, em texto discreto que muda de cor conforme o que aconteceu. */
+.editor-roteiro__acoes { align-items: center; }
 
-.secao__cabecalho {
+/* Aviso que vale para o roteiro inteiro (cancelado), acima das colunas. */
+.editor-roteiro__aviso { grid-column: 1 / -1; margin-bottom: 0; }
+
+/* A situação do roteiro fica ao lado do título, na mesma linha. */
+.editor-roteiro__titulo {
   display: flex;
   align-items: center;
   gap: var(--esp-3);
-  padding: var(--esp-4) var(--esp-5) 0;
+  flex-wrap: wrap;
 }
 
-.secao__numero {
+.editor-roteiro__titulo .page-header__titulo { margin: 0; }
+
+/* Ciclo de vida, na lateral: cada ação é um formulário próprio. */
+.acoes-roteiro {
   display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: var(--cor-acento);
-  color: #fff;
+  gap: var(--esp-3);
+  padding: var(--esp-3) var(--esp-4) var(--esp-4);
+}
+
+.acoes-roteiro form { display: grid; gap: var(--esp-2); }
+.acoes-roteiro .btn { width: 100%; justify-content: center; }
+.acoes-roteiro .form-campo { margin: 0; grid-column: auto; }
+
+/* Composição gravada das diárias: aberta, mas dobrável — é conferência, e
+   não o número que a tela existe para mostrar. */
+.composicao {
+  margin-top: var(--esp-4);
+  border: 1px solid var(--cor-borda);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.composicao__resumo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  padding: var(--esp-3) var(--esp-4);
+  background: var(--cor-fundo);
+  cursor: pointer;
   font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.secao__identificacao { flex: 1; min-width: 0; }
-
-.secao__titulo {
-  margin: 0;
-  font-size: 1rem;
-  color: var(--cor-acento);
-}
-
-.secao__intro {
-  margin: 2px 0 0;
-  font-size: 0.82rem;
   color: var(--cor-texto-suave);
 }
 
-.secao__cabecalho > .secao__titulo { flex: 1; }
+.composicao__resumo strong { color: var(--cor-texto); font-variant-numeric: tabular-nums; }
+.composicao .tabela-wrapper { border-top: 1px solid var(--cor-borda); }
+
+.autosave-status {
+  margin: 0 var(--esp-2) 0 0;
+  font-size: 0.72rem;
+  color: var(--cor-texto-suave);
+  transition: color 0.2s ease;
+}
+
+.autosave-status[data-estado="salvando"] { color: var(--cor-info); }
+.autosave-status[data-estado="salvo"] { color: var(--cor-sucesso); }
+.autosave-status[data-estado="erro"] { color: var(--cor-erro); }
+
+/* Cabeçalho de seção com mais de um controle à direita (chip + interruptor). */
+.editor-roteiro__acoes-cabecalho {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-3);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 
 /* Interruptor (bate-volta) --------------------------------------------- */
 
@@ -3464,8 +3512,16 @@ textarea.form-controle { min-height: 68px; }
 }
 
 .bloco-split:first-child { padding-top: 0; }
+.bloco-split__rotulo strong { font-size: 0.86rem; }
 .bloco-split__rotulo p { margin: 3px 0 0; font-size: 0.7rem; line-height: 1.35; }
 .bloco-split__corpo { min-width: 0; }
+
+/* "Sede › A › B": o percurso no lugar da descrição, assim que existe. */
+.bloco-split__rotulo .percurso-previa {
+  color: var(--cor-dourado-700);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
 
 @media (max-width: 820px) {
   .bloco-split { grid-template-columns: 1fr; }
@@ -3509,7 +3565,15 @@ textarea.form-controle { min-height: 68px; }
   cursor: grab;
   color: var(--cor-texto-fraco);
   display: inline-flex;
+  transition: color 0.15s ease;
 }
+
+.destino-row:hover .destino-row__alca { color: var(--cor-texto-suave); }
+
+/* Com um destino só não há o que remover nem reordenar: os controles ficam
+   no lugar (a grade não muda), só somem da vista. */
+.destino-row--unica .destino-row__remover,
+.destino-row--unica .destino-row__alca { visibility: hidden; }
 
 /* Os dois botões da linha acompanham a altura do campo (38px), para a
    linha inteira ficar com um só alinhamento. */
@@ -3555,17 +3619,53 @@ textarea.form-controle { min-height: 68px; }
   align-items: stretch;
 }
 
-.diarias-metricas { margin-bottom: var(--esp-3); }
+/* Os três cartões dividem a linha inteira em partes iguais; o "por extenso"
+   ocupa a linha seguinte. Com `auto-fit`, três cartões numa faixa que cabe
+   quatro deixavam um vão à direita. */
+.diarias-metricas {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: var(--esp-3);
+}
+
+@media (max-width: 900px) {
+  .diarias-metricas { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+}
 
 .metrica {
+  position: relative;
   display: grid;
   gap: 4px;
   align-content: start;
   padding: var(--esp-3) var(--esp-4);
+  padding-right: calc(var(--esp-4) + 22px);
   border: 1px solid var(--cor-borda);
   border-radius: 10px;
   background: var(--cor-superficie);
+  min-width: 0;
 }
+
+/* O ícone senta no canto, discreto: identifica sem competir com o número. */
+.metrica__icone {
+  position: absolute;
+  top: var(--esp-3);
+  right: var(--esp-3);
+  display: inline-flex;
+  color: var(--cor-acento);
+  opacity: 0.75;
+}
+
+.metrica__icone .ui-icon { width: 18px; height: 18px; }
+
+/* O valor total das diárias é o número que a tela existe para mostrar. */
+.metrica--destaque {
+  background: var(--cor-dourado-100);
+  border-color: color-mix(in srgb, var(--cor-acento) 55%, var(--cor-borda));
+}
+
+.metrica--destaque .metrica__rotulo { color: var(--cor-dourado-700); }
+.metrica__valor--grande { font-size: 1.55rem; letter-spacing: -0.01em; }
+.metrica--larga { grid-column: 1 / -1; }
+.metrica__valor { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
 .metrica__rotulo {
   font-size: 0.68rem;
@@ -3585,12 +3685,80 @@ textarea.form-controle { min-height: 68px; }
 .mapa { position: relative; }
 
 .mapa__superficie {
-  height: 340px;
+  height: 360px;
   border: 1px solid var(--cor-borda);
   border-radius: 12px;
   overflow: hidden;
   z-index: 0;
+  background: var(--cor-fundo);
 }
+
+/* Enquanto o servidor calcula: um véu sobre o mapa, com o giro no meio. */
+.mapa__carregando {
+  position: absolute;
+  inset: 0;
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-2);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--cor-superficie) 72%, transparent);
+  color: var(--cor-texto);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.mapa__carregando[hidden] { display: none; }
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--cor-borda);
+  border-top-color: var(--cor-acento);
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; }
+}
+
+/* Rótulos fixos dos municípios no mapa, na tipografia do sistema. */
+.leaflet-tooltip.mapa__rotulo {
+  padding: 2px 7px;
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: 6px;
+  color: var(--cor-texto);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  box-shadow: 0 2px 6px rgba(22, 25, 29, 0.12);
+}
+
+.leaflet-tooltip.mapa__rotulo--sede {
+  border-color: var(--cor-acento);
+  color: var(--cor-dourado-700);
+}
+
+/* O percurso mudou depois do cálculo: aviso antes do mapa. */
+.aviso-rota {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-2);
+  margin: 0 0 var(--esp-3);
+  padding: var(--esp-2) var(--esp-3);
+  border-radius: 10px;
+  background: var(--cor-alerta-fundo);
+  color: var(--cor-alerta);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.aviso-rota[hidden] { display: none; }
+.aviso-rota .ui-icon { flex: 0 0 auto; width: 16px; height: 16px; margin-top: 1px; }
 
 .mapa__acoes {
   position: absolute;
@@ -3601,7 +3769,10 @@ textarea.form-controle { min-height: 68px; }
   gap: var(--esp-2);
 }
 
-.mapa__acoes .btn { background: var(--cor-superficie); }
+/* Sobre o mapa, o botão secundário ganha fundo opaco; o dourado já o tem.
+   `hidden` precisa vencer o display do `.btn`. */
+.mapa__acoes .btn--secundario { background: var(--cor-superficie); }
+.mapa__acoes .btn[hidden] { display: none; }
 .mapa__erro { margin-top: var(--esp-2); }
 
 /* Bate-volta e preenchimento de datas ---------------------------------- */
@@ -3609,9 +3780,12 @@ textarea.form-controle { min-height: 68px; }
 .bate-volta {
   margin-bottom: var(--esp-4);
   padding: var(--esp-4);
-  border: 1px dashed var(--cor-borda);
+  border: 1px solid var(--cor-borda);
   border-radius: 12px;
+  background: var(--cor-fundo);
 }
+
+.bate-volta__resumo { margin: var(--esp-3) 0 0; font-size: 0.74rem; }
 
 .bate-volta[hidden] { display: none; }
 
@@ -3662,6 +3836,49 @@ textarea.form-controle { min-height: 68px; }
 
 .trechos-tabela .form-campo { margin: 0; min-width: 150px; }
 
+.trechos-tabela th {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+  white-space: nowrap;
+}
+
+.trechos-tabela tbody tr { transition: background 0.12s ease; }
+.trechos-tabela tbody tr:hover td { background: color-mix(in srgb, var(--cor-fundo) 70%, transparent); }
+
+.trecho-linha__cidade { font-weight: 600; white-space: nowrap; }
+
+/* "Retorno": a volta para a sede, marcada no próprio destino. */
+.trecho-linha__tag {
+  display: inline-block;
+  margin-left: var(--esp-2);
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--cor-dourado-100);
+  color: var(--cor-dourado-700);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.trecho-linha__tag[hidden] { display: none; }
+
+.trecho-linha__total { font-variant-numeric: tabular-nums; }
+
+/* De onde saiu o total: "viagem 02:30", em letra miúda embaixo. */
+.trecho-linha__nota {
+  display: block;
+  font-size: 0.66rem;
+  color: var(--cor-texto-suave);
+  white-space: nowrap;
+}
+
+.trecho-linha__chegada { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
 /* Passos de 15 minutos do tempo adicional: os dois botões e o valor no meio,
    na altura da linha. */
 .tempo-stepper {
@@ -3689,11 +3906,19 @@ textarea.form-controle { min-height: 68px; }
 .trechos-vazio {
   margin: 0;
   padding: var(--esp-5);
+  display: grid;
+  justify-items: center;
+  gap: 4px;
   border: 1px dashed var(--cor-borda);
   border-radius: 12px;
   color: var(--cor-texto-suave);
+  font-size: 0.82rem;
   text-align: center;
 }
+
+.trechos-vazio strong { color: var(--cor-texto); }
+.trechos-vazio__icone { display: inline-flex; color: var(--cor-acento); margin-bottom: 2px; }
+.trechos-vazio__icone .ui-icon { width: 26px; height: 26px; }
 
 .trechos-vazio[hidden],
 .tabela-wrapper[hidden] { display: none; }
@@ -3702,44 +3927,6 @@ textarea.form-controle { min-height: 68px; }
 .trecho-linha__erros[hidden] { display: none; }
 
 
-/* Painel lateral -------------------------------------------------------- */
-
-.painel-lateral__cabecalho {
-  display: flex;
-  align-items: center;
-  gap: var(--esp-2);
-  padding: var(--esp-3) var(--esp-4);
-  border-bottom: 1px solid var(--cor-borda);
-  color: var(--cor-acento);
-}
-
-.painel-lateral__cabecalho h2 {
-  margin: 0;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.painel-lateral__cabecalho .ui-icon { width: 16px; height: 16px; }
-
-.painel-lateral__lista {
-  margin: 0;
-  padding: var(--esp-3) var(--esp-4);
-  display: grid;
-  gap: var(--esp-2);
-}
-
-.painel-lateral__lista > div {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--esp-3);
-  font-size: 0.85rem;
-}
-
-.painel-lateral__lista dt { color: var(--cor-texto-suave); }
-.painel-lateral__lista dd { margin: 0; font-weight: 600; text-align: right; }
 
 /* Etapas ---------------------------------------------------------------- */
 

@@ -9,7 +9,7 @@ conjunto de trechos carrega o essencial.
 from datetime import datetime
 
 from django import forms
-from django.forms import inlineformset_factory
+from django.forms import BaseInlineFormSet, inlineformset_factory
 from django.utils import timezone
 
 from cadastros.models import Municipio
@@ -112,6 +112,9 @@ class RoteiroTrechoForm(forms.ModelForm):
             "destino_municipio",
             "distancia_km",
             "duracao_min",
+            "tempo_viagem_min",
+            "tempo_adicional_min",
+            "rota_fonte",
         ]
 
     # `ordem` tem default=1, então o navegador desenha as linhas extras já
@@ -136,16 +139,28 @@ class RoteiroTrechoForm(forms.ModelForm):
         # eles cai nos defaults do modelo em vez de derrubar o formulário.
         self.fields["sentido"].required = False
         self.fields["duracao_min"].required = False
+        self.fields["tempo_viagem_min"].required = False
+        self.fields["tempo_adicional_min"].required = False
+        self.fields["rota_fonte"].required = False
         if self.instance.pk:
+            # Em ISO, e não como date/time: a tela põe o valor direto num
+            # <input type="date">, que só entende "2026-09-10" — a data
+            # localizada ("10 de Setembro de 2026") reabria o campo vazio.
             for prefixo in ("saida", "chegada"):
                 instante = getattr(self.instance, f"{prefixo}_dt")
                 if instante:
                     local = timezone.localtime(instante)
-                    self.initial.setdefault(f"{prefixo}_data", local.date())
-                    self.initial.setdefault(
-                        f"{prefixo}_hora",
-                        local.time().replace(second=0, microsecond=0),
-                    )
+                    self.initial.setdefault(f"{prefixo}_data", local.date().isoformat())
+                    self.initial.setdefault(f"{prefixo}_hora", local.strftime("%H:%M"))
+            # Os números também saem crus: localizados ("257,88") o próprio
+            # formulário os recusava ao reenviar, e a tela soma e compara
+            # esses campos em JavaScript.
+            if self.instance.distancia_km is not None:
+                self.initial["distancia_km"] = f"{self.instance.distancia_km:.2f}"
+            for nome in ("duracao_min", "tempo_viagem_min", "tempo_adicional_min"):
+                valor = getattr(self.instance, nome)
+                if valor is not None:
+                    self.initial[nome] = str(valor)
 
     def _compor_instante(self, dados, prefixo, rotulo):
         data = dados.get(f"{prefixo}_data")
@@ -183,6 +198,8 @@ class RoteiroTrechoForm(forms.ModelForm):
         if not dados.get("sentido"):
             dados["sentido"] = RoteiroTrecho.Sentido.IDA
             self.instance.sentido = RoteiroTrecho.Sentido.IDA
+        if dados.get("tempo_adicional_min") is None:
+            dados["tempo_adicional_min"] = 0
         saida = self._compor_instante(dados, "saida", "saída")
         chegada = self._compor_instante(dados, "chegada", "chegada")
         if saida and chegada and chegada < saida:
@@ -200,6 +217,32 @@ class RoteiroTrechoForm(forms.ModelForm):
         return dados
 
 
+class FormSetTolerante(BaseInlineFormSet):
+    """Formset que aceita, na faixa inicial, linha cujo id já não existe.
+
+    A tela grava sozinha enquanto se monta o percurso; uma gravação pode
+    apagar uma linha que a tela ainda carrega com o id antigo. O formset
+    padrão exige o id nas primeiras INITIAL_FORMS linhas e, sem ele, nem
+    valida. Aqui a linha órfã é tratada como nova: gravada se tem dados,
+    ignorada se está em branco ou marcada para exclusão.
+    """
+
+    def _construct_form(self, i, **kwargs):
+        form = super()._construct_form(i, **kwargs)
+        form.fields[self._pk_field.name].required = False
+        return form
+
+    def save_new_objects(self, commit=True):
+        novos = super().save_new_objects(commit)
+        for form in self.initial_forms:
+            if form.instance.pk is not None or not form.has_changed():
+                continue
+            if self._should_delete_form(form):
+                continue
+            novos.append(self.save_new(form, commit=commit))
+        return novos
+
+
 # `extra=1`: um slot em branco para a tela revelar de saída; os demais cards
 # nascem do <template> com o empty_form, clonados pelo roteiro-editor.js
 # (DS.aprimorar liga os componentes). Slot em branco é ignorado na gravação.
@@ -207,6 +250,7 @@ TrechoFormSet = inlineformset_factory(
     Roteiro,
     RoteiroTrecho,
     form=RoteiroTrechoForm,
+    formset=FormSetTolerante,
     extra=1,
     can_delete=True,
     min_num=0,
@@ -240,6 +284,7 @@ DestinoFormSet = inlineformset_factory(
     Roteiro,
     RoteiroDestino,
     form=RoteiroDestinoForm,
+    formset=FormSetTolerante,
     extra=1,
     can_delete=True,
     min_num=0,

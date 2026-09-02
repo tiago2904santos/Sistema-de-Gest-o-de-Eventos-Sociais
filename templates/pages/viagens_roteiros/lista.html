@@ -78,7 +78,8 @@
                 {% endif %}
               </td>
               <td class="tabela__acoes">
-                <a href="{% url 'viagens_roteiros:detalhe' linha.roteiro.pk %}" class="btn btn--compacto btn--acao btn--acao-continuar">{% include "components/icon.html" with nome="eye" %}Abrir</a>
+                {# O roteiro tem uma tela só: a de edição, que também mostra o cálculo. #}
+                <a href="{% url 'viagens_roteiros:editar' linha.roteiro.pk %}" class="btn btn--compacto btn--acao btn--acao-continuar">{% include "components/icon.html" with nome="eye" %}Abrir</a>
               </td>
             </tr>
           {% empty %}

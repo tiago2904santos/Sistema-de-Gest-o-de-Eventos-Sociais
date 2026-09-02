@@ -3,11 +3,16 @@
   dos destinos: origem e destino aparecem em leitura e vivem em campos
   ocultos, o operador informa a saída e o tempo adicional, e a chegada é
   composta pela tela (saída + tempo de viagem + adicional) em campos ocultos.
+
+  O tempo de viagem (estimado pelo serviço de rotas) e o adicional ficam em
+  campos próprios, gravados em separado: é o que permite reabrir o trecho
+  como foi montado, e não só com o total.
+
   Usada no loop do formset e no <template data-trecho-modelo> (empty_form,
   com __prefix__ trocado pelo índice).
   Espera no contexto: trecho (form), visivel.
 {% endcomment %}
-<tr class="trecho-linha" data-trecho data-sentido="{{ trecho.sentido.value|default:'IDA' }}"
+<tr class="trecho-linha{% if trecho.sentido.value == 'RETORNO' %} trecho-linha--retorno{% endif %}" data-trecho data-sentido="{{ trecho.sentido.value|default:'IDA' }}"
     {% if not visivel %}hidden{% endif %}>
   <td data-rotulo="Origem">
     {{ trecho.id }}
@@ -17,12 +22,19 @@
     <input type="hidden" name="{{ trecho.destino_municipio.html_name }}" value="{{ trecho.destino_municipio.value|default_if_none:'' }}" data-trecho-destino>
     <input type="hidden" name="{{ trecho.distancia_km.html_name }}" value="{{ trecho.distancia_km.value|default_if_none:'' }}" data-trecho-km>
     <input type="hidden" name="{{ trecho.duracao_min.html_name }}" value="{{ trecho.duracao_min.value|default_if_none:'' }}" data-trecho-duracao-min>
+    <input type="hidden" name="{{ trecho.tempo_viagem_min.html_name }}" value="{{ trecho.tempo_viagem_min.value|default_if_none:'' }}" data-trecho-viagem-min>
+    <input type="hidden" name="{{ trecho.tempo_adicional_min.html_name }}" value="{{ trecho.tempo_adicional_min.value|default_if_none:'0' }}" data-trecho-adicional-min>
+    <input type="hidden" name="{{ trecho.rota_fonte.html_name }}" value="{{ trecho.rota_fonte.value|default_if_none:'' }}" data-trecho-fonte>
     <input type="hidden" name="{{ trecho.chegada_data.html_name }}" value="{{ trecho.chegada_data.value|default_if_none:'' }}" data-trecho-chegada-data>
     <input type="hidden" name="{{ trecho.chegada_hora.html_name }}" value="{{ trecho.chegada_hora.value|default_if_none:'' }}" data-trecho-chegada-hora>
-    {% if trecho.instance.pk %}<span hidden>{{ trecho.DELETE }}</span>{% endif %}
-    <span data-trecho-origem-rotulo>—</span>
+    <span hidden>{{ trecho.DELETE }}</span>
+    <span class="trecho-linha__cidade" data-trecho-origem-rotulo>—</span>
   </td>
-  <td data-rotulo="Destino"><span data-trecho-destino-rotulo>—</span></td>
+  <td data-rotulo="Destino">
+    <span class="trecho-linha__cidade" data-trecho-destino-rotulo>—</span>
+    {# Só no último deslocamento: é a volta para a sede. #}
+    <span class="trecho-linha__tag" data-trecho-tag hidden>Retorno</span>
+  </td>
   <td data-rotulo="Data de saída">
     {% include "components/input.html" with name=trecho.saida_data.html_name label="Data de saída" rotulo_oculto=True tipo="date" valor=trecho.saida_data.value|default_if_none:"" erros=trecho.saida_data.errors %}
   </td>
@@ -42,12 +54,16 @@
               aria-label="Acrescentar 15 minutos ao tempo adicional">+</button>
     </div>
   </td>
-  <td data-rotulo="Tempo total"><span data-trecho-tempo-total>—</span></td>
+  <td data-rotulo="Tempo total">
+    <strong class="trecho-linha__total" data-trecho-tempo-total>—</strong>
+    {# De onde vem o total: o tempo de viagem estimado, antes do adicional. #}
+    <small class="trecho-linha__nota" data-trecho-viagem-nota></small>
+  </td>
   {% comment %}
     A chegada não é digitada: é a saída mais o tempo total (rota + adicional),
     a mesma que vai nos campos ocultos e alimenta o cálculo das diárias.
   {% endcomment %}
-  <td data-rotulo="Data/hora de chegada"><span data-trecho-chegada-rotulo>—</span></td>
+  <td data-rotulo="Data/hora de chegada"><span class="trecho-linha__chegada" data-trecho-chegada-rotulo>—</span></td>
 </tr>
 {% if trecho.non_field_errors or trecho.origem_municipio.errors or trecho.destino_municipio.errors or trecho.chegada_data.errors or trecho.chegada_hora.errors %}
   <tr class="trecho-linha__erros" data-trecho-erros>

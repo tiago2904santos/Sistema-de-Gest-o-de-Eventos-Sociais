@@ -8,9 +8,10 @@ Portado da Central de Viagens 3. Duas adaptações ao sistema unificado:
   roteiro pode nascer avulso ou vinculado a uma solicitação já deferida. É a
   ponte entre os dois domínios que a auditoria da unificação previu.
 
-Fica de fora, por ora, a máquina de rota e mapa da origem (GeoJSON, cálculo por
-serviço externo, assinatura de invalidação): distância e duração são informadas
-à mão, e a rota automática é subfase própria.
+A rota calculada (GeoJSON, totais, fonte e quando foi calculada) fica gravada
+no roteiro, como na origem, para o mapa reabrir desenhado. Uma assinatura do
+percurso (sede + destinos, na ordem) diz se ela ainda corresponde ao que está
+gravado: mudou o percurso sem recalcular, a rota fica "desatualizada".
 
 A composição das diárias é gravada parcela a parcela em
 ``RoteiroDiariaComponente``. Ela é imutável por decisão: é o que explica um
@@ -73,6 +74,32 @@ class Roteiro(ModeloTemporal, ModeloCancelavel):
     valor_diarias_extenso = models.TextField("valor por extenso", blank=True)
     observacoes = models.TextField("observações", blank=True)
 
+    # Rota calculada pelo serviço de rotas, para o mapa reabrir desenhado sem
+    # nova consulta. `rota_assinatura` é o percurso (sede + destinos) que ela
+    # descreve; quando o percurso gravado deixa de bater com ela, o status
+    # passa a DESATUALIZADA e a tela pede o recálculo.
+    class RotaStatus(models.TextChoices):
+        PENDENTE = "PENDENTE", "Pendente"
+        CALCULADA = "CALCULADA", "Calculada"
+        DESATUALIZADA = "DESATUALIZADA", "Desatualizada"
+
+    rota_status = models.CharField(
+        "situação da rota",
+        max_length=20,
+        choices=RotaStatus.choices,
+        default=RotaStatus.PENDENTE,
+    )
+    rota_geojson = models.JSONField("geometria da rota", blank=True, null=True)
+    rota_distancia_km = models.DecimalField(
+        "distância da rota (km)", max_digits=10, decimal_places=2, blank=True, null=True
+    )
+    rota_duracao_min = models.PositiveIntegerField(
+        "duração da rota (min)", blank=True, null=True
+    )
+    rota_fonte = models.CharField("fonte da rota", max_length=40, blank=True)
+    rota_assinatura = models.CharField("assinatura do percurso", max_length=128, blank=True)
+    rota_calculada_em = models.DateTimeField("rota calculada em", blank=True, null=True)
+
     class Meta:
         ordering = ["-criado_em"]
         verbose_name = "roteiro"
@@ -109,6 +136,7 @@ class Roteiro(ModeloTemporal, ModeloCancelavel):
                 mensagem="A volta à sede não pode ser anterior à saída.",
             ),
             nao_negativo("valor_diarias", name="roteiro_valor_diarias_nao_negativo"),
+            nao_negativo("rota_distancia_km", name="roteiro_rota_distancia_nao_negativa"),
         ]
 
     def __str__(self):
@@ -156,8 +184,10 @@ class RoteiroDestino(ModeloTemporal):
 class RoteiroTrecho(ModeloTemporal):
     """Um deslocamento entre dois municípios, com horários e quilometragem.
 
-    Distância e duração são informadas à mão nesta fase; o cálculo automático
-    por serviço de rotas é subfase própria.
+    A duração total é o tempo de viagem (estimado pelo serviço de rotas) mais
+    o tempo adicional que o operador acrescenta — espera, pedágio, parada. As
+    duas parcelas ficam gravadas em separado para a tela reabrir o trecho como
+    foi montado, em vez de só o total.
     """
 
     class Sentido(models.TextChoices):
@@ -195,6 +225,13 @@ class RoteiroTrecho(ModeloTemporal):
     duracao_min = models.PositiveIntegerField(
         "duração (min)", blank=True, null=True
     )
+    tempo_viagem_min = models.PositiveIntegerField(
+        "tempo de viagem (min)", blank=True, null=True
+    )
+    tempo_adicional_min = models.PositiveIntegerField(
+        "tempo adicional (min)", default=0
+    )
+    rota_fonte = models.CharField("fonte da estimativa", max_length=40, blank=True)
 
     class Meta:
         ordering = ["ordem", "pk"]

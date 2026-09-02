@@ -5,18 +5,21 @@
   Usada no loop do formset e no <template data-destino-modelo> (empty_form;
   o roteiro-editor.js troca __prefix__ pelo índice).
   Espera no contexto: destino (form), opcoes_municipios, opcoes_estados, visivel.
+
+  O DELETE sai sempre, mesmo em linha nova: a gravação automática dá id à
+  linha sem recarregar a tela, e a partir daí removê-la é marcar o DELETE.
 {% endcomment %}
 {% with id_estado="id_"|add:destino.prefix|add:"-estado" nome_estado=destino.prefix|add:"-estado" %}
 <div class="destino-row" data-destino {% if not visivel %}hidden{% endif %}>
   {{ destino.id }}
   <input type="hidden" name="{{ destino.ordem.html_name }}" value="{{ destino.ordem.value|default:1 }}" data-destino-ordem>
-  {% if destino.instance.pk %}<span hidden>{{ destino.DELETE }}</span>{% endif %}
+  <span hidden>{{ destino.DELETE }}</span>
 
   <span class="destino-row__alca" data-destino-alca title="Arrastar para reordenar" aria-hidden="true">
     {% include "components/icon.html" with nome="grip" %}
   </span>
   <button type="button" class="btn btn--dourado btn--compacto destino-row__adicionar" data-destino-adicionar
-          aria-label="Adicionar destino abaixo">
+          aria-label="Adicionar destino abaixo" title="Adicionar destino abaixo">
     {% include "components/icon.html" with nome="plus" %}
   </button>
   <div class="destino-row__estado">
@@ -26,7 +29,7 @@
     {% include "components/select.html" with name=destino.municipio.html_name label="Município do destino" rotulo_oculto=True opcoes=opcoes_municipios placeholder="Buscar município..." pesquisavel=True dependente_de=id_estado selecionado=destino.municipio.value|default_if_none:""|stringformat:"s" erros=destino.municipio.errors %}
   </div>
   <button type="button" class="btn btn--perigo btn--compacto destino-row__remover" data-destino-remover
-          aria-label="Remover destino">
+          aria-label="Remover destino" title="Remover destino">
     {% include "components/icon.html" with nome="trash" %}
   </button>
 </div>

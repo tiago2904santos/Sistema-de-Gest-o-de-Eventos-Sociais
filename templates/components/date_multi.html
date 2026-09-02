@@ -3,16 +3,22 @@
   botão. Uso:
     {% include "components/date_multi.html" with id="datas-trechos"
        label="Preencher datas de saída" icone="calendar" maximo=3
-       dica="Uma data por trecho, na ordem." %}
+       sequencial=True %}
 
   O número de datas é definido por `maximo` e pode ser ajustado em tempo de
   execução pelo `data-max` do wrapper (é o que o editor de roteiro faz, a
   cada mudança do percurso). Ao completar o máximo — ou no botão "Aplicar" —
   o wrapper emite `ds:datas-multi` com `detail.datas` (ISO, na ordem em que
   foram escolhidas).
+
+  `sequencial`: cada clique acrescenta a PRÓXIMA data — a mesma pode repetir
+  (ida e volta no mesmo dia) e não se volta no tempo; "Desfazer" tira a
+  última. O rodapé mostra para qual passo a data vai (`data-passos`, uma
+  lista JSON de rótulos que o wrapper pode atualizar), e ao completar o
+  máximo o calendário aplica e fecha sozinho, sem "Aplicar".
 {% endcomment %}
-<div class="custom-date custom-date--multi" id="{{ id }}" data-custom-date-multi
-     data-max="{{ maximo|default:1 }}"{% if dica %} data-dica="{{ dica }}"{% endif %}>
+<div class="custom-date custom-date--multi{% if extra_class %} {{ extra_class }}{% endif %}" id="{{ id }}" data-custom-date-multi
+     data-max="{{ maximo|default:1 }}"{% if sequencial %} data-sequencial{% endif %}{% if dica %} data-dica="{{ dica }}"{% endif %}>
   <button type="button" class="btn btn--secundario btn--com-icone"
           aria-haspopup="dialog" aria-expanded="false" aria-controls="{{ id }}_calendario"
           data-custom-date-multi-trigger>
@@ -30,6 +36,9 @@
         <button type="button" class="custom-date__salto" aria-label="Próximo ano" data-custom-date-multi-next-ano>»</button>
       </div>
     </div>
+    {% if sequencial %}
+      <p class="custom-date__contexto" aria-live="polite" data-custom-date-multi-contexto></p>
+    {% endif %}
     <div class="custom-date__semana" aria-hidden="true">
       <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
     </div>
@@ -38,7 +47,11 @@
       <span class="custom-date__contagem" aria-live="polite" data-custom-date-multi-contagem></span>
       <span class="custom-date__rodape-acoes">
         <button type="button" data-custom-date-multi-clear>Limpar</button>
-        <button type="button" data-custom-date-multi-apply>Aplicar</button>
+        {% if sequencial %}
+          <button type="button" data-custom-date-multi-undo>Desfazer</button>
+        {% else %}
+          <button type="button" data-custom-date-multi-apply>Aplicar</button>
+        {% endif %}
       </span>
     </div>
   </div>

@@ -10,30 +10,77 @@
 {% block conteudo %}
   {% include "components/breadcrumb.html" with itens=breadcrumb %}
 
+  {% comment %}
+    O editor conversa com o servidor por quatro endereços: prévia das
+    diárias, rota do mapa, estimativa de cada trecho e gravação automática
+    do rascunho. Todos em `data-*` para o roteiro-editor.js.
+  {% endcomment %}
   <div class="editor-roteiro" data-roteiro-editor
        data-url-previa="{% url 'viagens_roteiros:previa_diarias' %}"
-       data-url-rota="{% url 'viagens_roteiros:calcular_rota' %}">
+       data-url-rota="{% url 'viagens_roteiros:calcular_rota' %}"
+       data-url-estimar="{% url 'viagens_roteiros:estimar_trecho' %}"
+       data-url-autosave="{{ url_autosave }}"
+       data-autosave="{% if autosave_ligado %}1{% else %}0{% endif %}">
 
-    <div class="page-header editor-roteiro__topo">
-      <div class="page-header__identificacao">
-        <span class="page-header__icone">{% include "components/icon.html" with nome="map-pin" %}</span>
-        <div>
-          <h1 class="page-header__titulo">Roteiro e diárias</h1>
-          <p class="page-header__subtitulo">Monte o percurso, calcule os deslocamentos e estime as diárias da viagem.</p>
+    {# A rota gravada, para o mapa reabrir desenhado e com os totais. #}
+    {% if rota_inicial %}{{ rota_inicial|json_script:"rota-inicial" }}{% endif %}
+
+    <div class="solicitacao-intro editor-roteiro__topo">
+      <div class="page-header">
+        <div class="page-header__identificacao">
+          <span class="page-header__icone">{% include "components/icon.html" with nome="map-pin" %}</span>
+          <div>
+            {# A situação do roteiro fica ao lado do título: é o que vale para a tela inteira. #}
+            <div class="editor-roteiro__titulo">
+              <h1 class="page-header__titulo">Roteiro e diárias</h1>
+              {% if roteiro.pk %}
+                {% if roteiro.cancelado %}
+                  <span class="status-badge status-badge--cancelada">Cancelado</span>
+                {% elif roteiro.status == "FINALIZADO" %}
+                  <span class="status-badge status-badge--atendida">Finalizado</span>
+                {% else %}
+                  <span class="status-badge status-badge--rascunho">Rascunho</span>
+                {% endif %}
+              {% endif %}
+            </div>
+            <p class="page-header__subtitulo">Monte o percurso, calcule os deslocamentos e estime as diárias da viagem.</p>
+          </div>
         </div>
       </div>
-      {% comment %}
-        Repetir um percurso já cadastrado em vez de remontá-lo: escolher um
-        roteiro aqui copia a sede e os destinos dele para esta tela. É cópia,
-        não vínculo — o roteiro novo nasce independente do escolhido.
-      {% endcomment %}
-      <div class="editor-roteiro__topo-campos">
-        {% include "components/select.html" with name="roteiro_base" label="Repetir roteiro existente" opcoes=opcoes_roteiros_base placeholder="Começar do zero" pesquisavel=True %}
+      {# As ações do formulário ficam no topo, como na tela de solicitação. #}
+      <div class="solicitacao-intro__acoes editor-roteiro__acoes">
+        <p class="autosave-status" data-autosave-status role="status" aria-live="polite">
+          {% if autosave_ligado %}Rascunho salvo automaticamente enquanto você monta.{% else %}Roteiro finalizado: as mudanças só valem ao salvar.{% endif %}
+        </p>
+        {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
+        <button type="submit" form="form-roteiro" name="acao" value="rascunho"
+                class="btn btn--secundario" formnovalidate>Salvar rascunho</button>
+        <button type="submit" form="form-roteiro" name="acao" value="salvar"
+                class="btn btn--dourado">Salvar roteiro</button>
       </div>
     </div>
 
-    <form method="post" action="{{ url_acao }}" id="form-roteiro" class="editor-roteiro__principal">
+    {% if roteiro.cancelado %}
+      <p class="editor-roteiro__aviso aviso-rota" role="status">
+        {% include "components/icon.html" with nome="ban" %}
+        <span><strong>Roteiro cancelado.</strong> {{ roteiro.motivo_cancelamento }}</span>
+      </p>
+    {% endif %}
+
+    <form method="post" action="{{ url_acao }}" id="form-roteiro" class="editor-roteiro__principal" novalidate>
       {% csrf_token %}
+
+      {% comment %}
+        A última rota calculada viaja com o formulário e fica gravada no
+        roteiro (geometria, totais, fonte, assinatura do percurso e quando
+        foi calculada): o mapa reabre desenhado sem nova consulta.
+      {% endcomment %}
+      <input type="hidden" name="rota_geojson" data-rota-campo="geojson">
+      <input type="hidden" name="rota_distancia_km" data-rota-campo="distancia">
+      <input type="hidden" name="rota_duracao_min" data-rota-campo="duracao">
+      <input type="hidden" name="rota_fonte" data-rota-campo="fonte">
+      <input type="hidden" name="rota_assinatura" data-rota-campo="assinatura">
+      <input type="hidden" name="rota_calculada_em" data-rota-campo="calculada_em">
 
       {# ------------------------------------------------------------- 1 #}
       <section class="section-card">
@@ -43,6 +90,21 @@
         </header>
         <div class="section-card__corpo">
           {% for erro in form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+
+          {% comment %}
+            Repetir um percurso já cadastrado em vez de remontá-lo: escolher um
+            roteiro aqui copia a sede e os destinos dele para esta tela. É
+            cópia, não vínculo — o roteiro novo nasce independente.
+          {% endcomment %}
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Repetir roteiro existente</strong>
+              <p class="texto-suave">Copia a sede e os destinos de um roteiro já salvo.</p>
+            </div>
+            <div class="bloco-split__corpo">
+              {% include "components/select.html" with name="roteiro_base" label="Roteiro existente" rotulo_oculto=True opcoes=opcoes_roteiros_base placeholder="Começar do zero" pesquisavel=True %}
+            </div>
+          </div>
 
           <div class="bloco-split">
             <div class="bloco-split__rotulo">
@@ -62,7 +124,8 @@
           <div class="bloco-split">
             <div class="bloco-split__rotulo">
               <strong>Destinos (ordem da visita)</strong>
-              <p class="texto-suave">Locais na ordem da visita. Arraste para reordenar.</p>
+              {# Vira o percurso ("Sede › A › B") assim que houver destinos. #}
+              <p class="texto-suave" data-percurso-previa data-texto-padrao="Locais na ordem da visita. Arraste para reordenar.">Locais na ordem da visita. Arraste para reordenar.</p>
             </div>
             <div class="bloco-split__corpo">
               {{ destinos.management_form }}
@@ -88,22 +151,27 @@
           <div class="section-card__identificacao">
             <h2 class="section-card__titulo">Bate-volta diário e cálculo</h2>
           </div>
-          <button type="button" class="interruptor" data-expande="#bate-volta-painel"
-                  aria-expanded="false" aria-controls="bate-volta-painel" data-bate-volta-toggle>
-            <span class="interruptor__trilho" aria-hidden="true"><span class="interruptor__botao"></span></span>
-            <span class="interruptor__rotulo">Sem bate-volta diário</span>
-          </button>
+          <div class="section-card__acao editor-roteiro__acoes-cabecalho">
+            <span class="status-badge status-badge--rascunho" data-rota-status>Rota pendente</span>
+            <button type="button" class="interruptor" data-expande="#bate-volta-painel"
+                    aria-expanded="false" aria-controls="bate-volta-painel" data-bate-volta-toggle>
+              <span class="interruptor__trilho" aria-hidden="true"><span class="interruptor__botao"></span></span>
+              <span class="interruptor__rotulo">Sem bate-volta diário</span>
+            </button>
+          </div>
         </header>
 
         <div class="section-card__corpo">
-          {# Ida numa linha, volta na outra — o período vale para as duas. #}
+          {% comment %}
+            Ida numa linha, volta na outra — o período vale para as duas e
+            cada dia dele vira um par de trechos (ida e volta), como no editor
+            de referência. Os dois campos de data são gatilhos do MESMO
+            calendário: a primeira escolha é a ida, a segunda a volta (pode
+            ser o mesmo dia).
+          {% endcomment %}
           <div class="bate-volta" id="bate-volta-painel" hidden data-bate-volta>
-            {% comment %}
-              Os dois campos de data são gatilhos do MESMO calendário: escolher
-              duas datas nele preenche a ida (primeira) e a volta (segunda).
-              O invólucro é o `data-custom-date-multi` do design system.
-            {% endcomment %}
-            <div class="bate-volta__sentidos" data-custom-date-multi data-max="2">
+            <div class="bate-volta__sentidos" data-custom-date-multi data-max="2" data-sequencial
+                 data-passos='["Primeiro dia (ida)", "Último dia (volta)"]'>
               <div class="bate-volta__sentido">
                 <span class="bate-volta__rotulo">Ida</span>
                 <div class="form-campo">
@@ -153,6 +221,7 @@
                     <button type="button" class="custom-date__salto" aria-label="Próximo ano" data-custom-date-multi-next-ano>»</button>
                   </div>
                 </div>
+                <p class="custom-date__contexto" aria-live="polite" data-custom-date-multi-contexto></p>
                 <div class="custom-date__semana" aria-hidden="true">
                   <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
                 </div>
@@ -161,45 +230,59 @@
                   <span class="custom-date__contagem" aria-live="polite" data-custom-date-multi-contagem></span>
                   <span class="custom-date__rodape-acoes">
                     <button type="button" data-custom-date-multi-clear>Limpar</button>
-                    <button type="button" data-custom-date-multi-apply>Aplicar</button>
+                    <button type="button" data-custom-date-multi-undo>Desfazer</button>
                   </span>
                 </div>
               </div>
             </div>
 
+            <p class="bate-volta__resumo texto-suave" data-bate-volta-resumo>Preencha as datas, as saídas e o tempo de viagem: os trechos de cada dia nascem sozinhos.</p>
             <p class="form-erro" data-bate-volta-erro hidden></p>
           </div>
 
           <div class="rota-metricas">
             <div class="metrica">
+              <span class="metrica__icone" aria-hidden="true">{% include "components/icon.html" with nome="map-pin" %}</span>
               <span class="metrica__rotulo">Distância (ida e volta)</span>
               <strong class="metrica__valor" data-rota-distancia-total>—</strong>
             </div>
             <div class="metrica">
+              <span class="metrica__icone" aria-hidden="true">{% include "components/icon.html" with nome="clock" %}</span>
               <span class="metrica__rotulo">Tempo (ida e volta)</span>
               <strong class="metrica__valor" data-rota-tempo-total>—</strong>
             </div>
             <div class="metrica">
+              <span class="metrica__icone" aria-hidden="true">{% include "components/icon.html" with nome="arrow-right" %}</span>
               <span class="metrica__rotulo">Distância de ida</span>
               <strong class="metrica__valor" data-rota-distancia-ida>—</strong>
             </div>
             <div class="metrica">
+              <span class="metrica__icone" aria-hidden="true">{% include "components/icon.html" with nome="hourglass" %}</span>
               <span class="metrica__rotulo">Tempo de ida</span>
               <strong class="metrica__valor" data-rota-tempo-ida>—</strong>
             </div>
           </div>
 
+          {# O percurso mudou depois do cálculo: a rota desenhada já não é ele. #}
+          <p class="aviso-rota" data-rota-desatualizada role="status" hidden>
+            {% include "components/icon.html" with nome="alert" %}
+            <span>A ordem dos destinos mudou. Recalcule a rota para atualizar distância e tempo estimados.</span>
+          </p>
+
           <div class="mapa" data-mapa-wrapper>
-            <div class="mapa__acoes">
-              <button type="button" class="btn btn--secundario btn--compacto btn--com-icone" data-rota-calcular>
+            <div class="mapa__acoes" role="toolbar" aria-label="Ações do mapa da rota">
+              <button type="button" class="btn btn--dourado btn--compacto btn--com-icone" data-rota-calcular>
                 {% include "components/icon.html" with nome="map-pin" %}<span data-rota-calcular-rotulo>Calcular rota</span>
               </button>
-              <button type="button" class="btn btn--secundario btn--compacto btn--com-icone" data-rota-enquadrar disabled>
+              <button type="button" class="btn btn--secundario btn--compacto btn--com-icone" data-rota-enquadrar hidden>
                 {% include "components/icon.html" with nome="eye" %}Ver rota inteira
               </button>
             </div>
             <div class="mapa__superficie" id="mapa-roteiro" data-mapa></div>
-            <p class="form-erro mapa__erro" data-rota-erro hidden></p>
+            <div class="mapa__carregando" data-rota-carregando role="status" aria-live="polite" hidden>
+              <span class="spinner" aria-hidden="true"></span>Calculando rota…
+            </div>
+            <p class="form-erro mapa__erro" data-rota-erro role="alert" hidden></p>
           </div>
         </div>
       </section>
@@ -212,20 +295,24 @@
             <h2 class="section-card__titulo">Trechos</h2>
           </div>
           {# O calendário abre no próprio botão: uma data por trecho, na ordem. #}
-          {% include "components/date_multi.html" with id="datas-trechos" label="Preencher datas de saída" icone="calendar" maximo=1 dica="Escolha uma data por trecho, na ordem do percurso." %}
+          {% include "components/date_multi.html" with extra_class="section-card__acao" id="datas-trechos" label="Preencher datas de saída" icone="calendar" maximo=1 sequencial=True %}
         </header>
 
         <div class="section-card__corpo">
           {{ formset.management_form }}
           {% for erro in formset.non_form_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+          {# Estimativa que falhou (serviço fora, município sem coordenada). #}
+          <p class="form-erro" data-trechos-erro role="alert" hidden></p>
 
           {% comment %}
             Sem trechos, a tabela inteira sai de cena: cabeçalho de colunas
             sobre o vazio não informa nada.
           {% endcomment %}
-          <p class="trechos-vazio" data-trechos-vazio hidden>
-            Os trechos aparecem aqui depois de definir a sede e os destinos.
-          </p>
+          <div class="trechos-vazio" data-trechos-vazio hidden>
+            <span class="trechos-vazio__icone" aria-hidden="true">{% include "components/icon.html" with nome="ordenar" %}</span>
+            <strong>Trechos ainda não disponíveis</strong>
+            <span>Os trechos aparecem aqui depois de definir a sede e os destinos.</span>
+          </div>
 
           <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Trechos do roteiro"
                data-trechos-tabela>
@@ -264,28 +351,72 @@
           <div class="section-card__identificacao">
             <h2 class="section-card__titulo">Diárias</h2>
           </div>
-          <span class="status-badge status-badge--deferida_em_andamento" data-diarias-chip hidden></span>
+          {# Aguardando dados → calculando → atualizado / desatualizado / falha. #}
+          <span class="status-badge status-badge--rascunho section-card__acao" data-diarias-chip role="status" aria-live="polite">Aguardando dados</span>
         </header>
 
         <div class="section-card__corpo">
+          <p class="form-erro" data-diarias-erro role="alert" hidden></p>
           <div class="diarias-metricas">
-            <div class="metrica">
+            <div class="metrica metrica--destaque">
+              <span class="metrica__icone" aria-hidden="true">{% include "components/icon.html" with nome="landmark" %}</span>
               <span class="metrica__rotulo">Valor total</span>
-              <strong class="metrica__valor" data-diarias-valor>{% if roteiro.valor_diarias is not None %}R$ {{ roteiro.valor_diarias }}{% else %}—{% endif %}</strong>
+              <strong class="metrica__valor metrica__valor--grande" data-diarias-valor>{% if roteiro.valor_diarias is not None %}R$ {{ roteiro.valor_diarias }}{% else %}—{% endif %}</strong>
             </div>
             <div class="metrica">
+              <span class="metrica__icone" aria-hidden="true">{% include "components/icon.html" with nome="map-pin" %}</span>
               <span class="metrica__rotulo">Tipo de destino</span>
               <strong class="metrica__valor" data-diarias-tipo>—</strong>
             </div>
             <div class="metrica">
+              <span class="metrica__icone" aria-hidden="true">{% include "components/icon.html" with nome="checklist" %}</span>
               <span class="metrica__rotulo">Quantidade de diárias</span>
               <strong class="metrica__valor" data-diarias-composicao>{{ roteiro.resumo_diarias|default:"—" }}</strong>
             </div>
-            <div class="metrica">
+            <div class="metrica metrica--larga">
+              <span class="metrica__icone" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
               <span class="metrica__rotulo">Valor por extenso</span>
               <strong class="metrica__valor metrica__valor--texto" data-diarias-extenso>{{ roteiro.valor_diarias_extenso|default:"—" }}</strong>
             </div>
           </div>
+
+          {% comment %}
+            A composição do último cálculo GRAVADO — não a da prévia acima,
+            que muda a cada tecla. Cada parcela guarda a vigência que a
+            sustentou: é o que explica o pagamento depois, quando os valores
+            vigentes já forem outros.
+          {% endcomment %}
+          {% if parcelas %}
+            <details class="composicao" open>
+              <summary class="composicao__resumo">
+                <span>Composição gravada no último cálculo</span>
+                <strong>{{ total_formatado }}</strong>
+              </summary>
+              <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Composição das diárias">
+                <table class="tabela tabela--compacta">
+                  <thead>
+                    <tr>
+                      <th>Faixa</th><th>Percentual</th><th>Qtde</th>
+                      <th>Valor unitário</th><th>Subtotal</th><th>Período</th><th>Vigência</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for parcela in parcelas %}
+                      <tr>
+                        <td data-rotulo="Faixa"><strong>{{ parcela.faixa }}</strong></td>
+                        <td data-rotulo="Percentual">{{ parcela.percentual }}%</td>
+                        <td data-rotulo="Qtde">{{ parcela.quantidade }}</td>
+                        <td data-rotulo="Valor unitário">R$ {{ parcela.valor_unitario }}</td>
+                        <td data-rotulo="Subtotal">R$ {{ parcela.subtotal }}</td>
+                        <td data-rotulo="Período">{{ parcela.periodo_inicio|date:"d/m H:i" }} — {{ parcela.periodo_fim|date:"d/m H:i" }}</td>
+                        <td data-rotulo="Vigência">{{ parcela.tabela_vigencia_inicio|date:"d/m/Y"|default:"—" }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          {% endif %}
         </div>
       </section>
     </form>
@@ -302,6 +433,7 @@
           <div><dt>Total de trechos</dt><dd data-resumo-trechos>0</dd></div>
           <div><dt>Distância estimada (ida e volta)</dt><dd data-resumo-distancia>—</dd></div>
           <div><dt>Tempo total (ida e volta)</dt><dd data-resumo-tempo>—</dd></div>
+          <div><dt>Rota no mapa</dt><dd data-resumo-rota>Pendente</dd></div>
           <div><dt>Tipo de destino</dt><dd data-resumo-tipo>—</dd></div>
           <div><dt>Quantidade de servidores</dt><dd data-resumo-servidores>{{ roteiro.quantidade_servidores|default:"1" }}</dd></div>
         </dl>
@@ -348,10 +480,54 @@
         </ol>
       </section>
 
-      <div class="editor-roteiro__acoes">
-        <a href="{{ url_voltar }}" class="btn btn--secundario">Cancelar</a>
-        <button type="submit" form="form-roteiro" name="acao" value="salvar" class="btn btn--dourado">Salvar roteiro</button>
-      </div>
+      {% comment %}
+        Ciclo de vida do roteiro — recalcular, cancelar, reativar e excluir.
+        Fica na lateral porque cada ação é um formulário próprio, e formulário
+        dentro de formulário o navegador não aceita. Só aparece depois que o
+        roteiro existe: não há o que cancelar no que ainda não foi gravado.
+      {% endcomment %}
+      {% if roteiro.pk %}
+        <section class="side-card">
+          <header class="side-card__cabecalho">
+            <span class="side-card__icone">{% include "components/icon.html" with nome="settings" %}</span>
+            <h2>Situação do roteiro</h2>
+          </header>
+          <div class="side-card__corpo acoes-roteiro">
+            <form method="post" action="{% url 'viagens_roteiros:calcular' roteiro.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn--secundario btn--com-icone">
+                {% include "components/icon.html" with nome="activity" %}
+                {% if roteiro.valor_diarias is not None %}Recalcular e gravar diárias{% else %}Calcular e gravar diárias{% endif %}
+              </button>
+            </form>
+
+            {% if roteiro.cancelado %}
+              <form method="post" action="{% url 'viagens_roteiros:reativar' roteiro.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn--secundario btn--com-icone">
+                  {% include "components/icon.html" with nome="undo" %}Reativar
+                </button>
+              </form>
+            {% else %}
+              <form method="post" action="{% url 'viagens_roteiros:cancelar' roteiro.pk %}" class="acoes-roteiro__cancelar">
+                {% csrf_token %}
+                {% include "components/input.html" with name="motivo" label="Motivo do cancelamento" rotulo_oculto=True placeholder="Motivo do cancelamento" obrigatorio=True %}
+                <button type="submit" class="btn btn--secundario btn--com-icone">
+                  {% include "components/icon.html" with nome="ban" %}Cancelar roteiro
+                </button>
+              </form>
+            {% endif %}
+
+            <form method="post" action="{% url 'viagens_roteiros:excluir' roteiro.pk %}" data-confirmar-exclusao>
+              {% csrf_token %}
+              <button type="submit" class="btn btn--perigo btn--com-icone">
+                {% include "components/icon.html" with nome="trash" %}Excluir roteiro
+              </button>
+            </form>
+          </div>
+        </section>
+      {% endif %}
+
     </aside>
   </div>
 {% endblock %}

@@ -568,6 +568,11 @@
   // próprio botão, e a quantidade esperada vem do `data-max` do wrapper —
   // que quem usa pode mudar a qualquer momento. Ao completar o máximo, ou
   // no "Aplicar", o wrapper emite `ds:datas-multi` com as datas escolhidas.
+  //
+  // Com `data-sequencial`, cada clique é a PRÓXIMA data da lista: a mesma
+  // pode repetir (ida e volta no mesmo dia) e não se volta no tempo — a data
+  // anterior à última escolhida é ignorada. "Desfazer" tira a última. O
+  // rodapé diz para qual passo a data vai (`data-passos`, lista JSON).
   function aprimorarDataMultipla(wrapper) {
     if (wrapper.classList.contains("is-enhanced")) return;
     // Vários gatilhos para um calendário só: no bate-volta, os campos de data
@@ -583,6 +588,10 @@
     var tituloMes = wrapper.querySelector("[data-custom-date-multi-month]");
     var contagem = wrapper.querySelector("[data-custom-date-multi-contagem]");
     var dica = wrapper.querySelector("[data-custom-date-multi-dica]");
+    var contexto = wrapper.querySelector("[data-custom-date-multi-contexto]");
+    var desfazer = wrapper.querySelector("[data-custom-date-multi-undo]");
+    var aplicarBotao = wrapper.querySelector("[data-custom-date-multi-apply]");
+    var sequencial = wrapper.hasAttribute("data-sequencial");
     if (!trigger || !calendario || !grade || !tituloMes) return;
     wrapper.classList.add("is-enhanced");
 
@@ -596,6 +605,29 @@
       return Math.max(1, Number(wrapper.getAttribute("data-max") || 1));
     }
 
+    function passos() {
+      try {
+        var lista = JSON.parse(wrapper.getAttribute("data-passos") || "[]");
+        return Array.isArray(lista) ? lista : [];
+      } catch (erro) {
+        return [];
+      }
+    }
+
+    // "Trecho 2 de 3 · Londrina → Maringá": qual data se está escolhendo.
+    function atualizarContexto() {
+      if (!contexto) return;
+      var total = maximo();
+      if (escolhidas.length >= total) {
+        contexto.textContent = "Todas as datas escolhidas.";
+        return;
+      }
+      var numero = escolhidas.length + 1;
+      var rotulo = passos()[numero - 1] || "";
+      contexto.textContent =
+        "Data " + numero + " de " + total + (rotulo ? " · " + rotulo : "");
+    }
+
     function renderizar() {
       var nomeMes = new Intl.DateTimeFormat("pt-BR", {
         month: "long", year: "numeric"
@@ -607,13 +639,17 @@
       var inicioGrade = new Date(
         primeiroDia.getFullYear(), primeiroDia.getMonth(), 1 - primeiroDia.getDay()
       );
+      var ordenadas = escolhidas.slice().sort();
+      var primeira = ordenadas.length ? ordenadas[0] : null;
+      var ultima = ordenadas.length ? ordenadas[ordenadas.length - 1] : null;
 
       for (var indice = 0; indice < 42; indice += 1) {
         var data = new Date(
           inicioGrade.getFullYear(), inicioGrade.getMonth(), inicioGrade.getDate() + indice
         );
         var iso = isoDaData(data);
-        var posicao = escolhidas.indexOf(iso);
+        // Com repetição a mesma data pode estar duas vezes: vale a última.
+        var posicao = escolhidas.lastIndexOf(iso);
         var botao = document.createElement("button");
         botao.type = "button";
         botao.className = "custom-date__dia";
@@ -627,6 +663,12 @@
         botao.classList.toggle("is-outside", data.getMonth() !== mesVisivel.getMonth());
         botao.classList.toggle("is-today", iso === isoDaData(hoje));
         botao.classList.toggle("is-selected", posicao > -1);
+        // Entre a primeira e a última escolhidas, os dias ganham a faixa
+        // apagada do intervalo — o período que a viagem cobre.
+        botao.classList.toggle(
+          "is-in-range",
+          posicao === -1 && primeira !== null && iso > primeira && iso < ultima
+        );
         // A ordem da escolha é o que diz para qual trecho a data vai.
         if (posicao > -1) botao.setAttribute("data-ordem", String(posicao + 1));
         grade.appendChild(botao);
@@ -636,6 +678,8 @@
           (maximo() === 1 ? " data" : " datas");
       }
       if (dica) dica.textContent = wrapper.getAttribute("data-dica") || "";
+      if (desfazer) desfazer.disabled = escolhidas.length === 0;
+      atualizarContexto();
     }
 
     function fechar(devolverFoco) {
@@ -652,6 +696,8 @@
     function abrir() {
       if (aberto) return;
       aberto = true;
+      // Lista completa é lista já aplicada: reabrir começa outra escolha.
+      if (escolhidas.length >= maximo()) escolhidas = [];
       calendario.hidden = false;
       wrapper.classList.add("is-open");
       gatilhoAtual.setAttribute("aria-expanded", "true");
@@ -677,10 +723,17 @@
     }
 
     function alternarData(iso) {
-      var posicao = escolhidas.indexOf(iso);
-      if (posicao > -1) escolhidas.splice(posicao, 1);
-      else if (escolhidas.length < maximo()) escolhidas.push(iso);
-      else return;  // cheio: soltar uma data antes de trocar
+      if (sequencial) {
+        if (escolhidas.length >= maximo()) return;
+        // Não se volta no tempo: a próxima data é a mesma ou depois.
+        if (escolhidas.length && iso < escolhidas[escolhidas.length - 1]) return;
+        escolhidas.push(iso);
+      } else {
+        var posicao = escolhidas.indexOf(iso);
+        if (posicao > -1) escolhidas.splice(posicao, 1);
+        else if (escolhidas.length < maximo()) escolhidas.push(iso);
+        else return;  // cheio: soltar uma data antes de trocar
+      }
       renderizar();
       var foco = grade.querySelector('[data-date="' + iso + '"]');
       if (foco) foco.focus();
@@ -713,8 +766,13 @@
       .addEventListener("click", function () { mudarMes(12); });
     wrapper.querySelector("[data-custom-date-multi-clear]")
       .addEventListener("click", function () { escolhidas = []; renderizar(); });
-    wrapper.querySelector("[data-custom-date-multi-apply]")
-      .addEventListener("click", aplicar);
+    if (aplicarBotao) aplicarBotao.addEventListener("click", aplicar);
+    if (desfazer) {
+      desfazer.addEventListener("click", function () {
+        escolhidas.pop();
+        renderizar();
+      });
+    }
 
     grade.addEventListener("click", function (evento) {
       var dia = evento.target.closest("[data-date]");
