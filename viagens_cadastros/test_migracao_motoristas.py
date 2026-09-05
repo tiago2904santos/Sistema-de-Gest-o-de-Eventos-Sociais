@@ -23,7 +23,7 @@ ANTES = [
 ]
 DEPOIS = [
     ("accounts", "0003_setor_modulo_user_setores"),
-    ("viagens_cadastros", "0002_seed_modulo_viagens"),
+    ("viagens_cadastros", "0003_remove_cargo_ativo_remove_combustivel_ativo_and_more"),
     ("solicitacoes", "0019_motorista_aponta_para_servidor"),
     ("cadastros", "0008_remove_motorista"),
 ]
@@ -134,7 +134,7 @@ class MigracaoMotoristaParaServidorTests(TransactionTestCase):
         apps = self._aplicar_conversao()
         Servidor = apps.get_model("viagens_cadastros", "Servidor")
 
-        self.assertTrue(Servidor.objects.get(nome="BRUNO DIAS").ativo)
+        self.assertTrue(Servidor.objects.filter(nome="BRUNO DIAS").exists())
 
     def test_telefone_repetido_no_legado_nao_derruba_a_conversao(self):
         apps = self._estado_anterior()

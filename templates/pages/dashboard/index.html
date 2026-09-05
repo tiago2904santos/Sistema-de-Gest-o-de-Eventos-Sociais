@@ -1,78 +1,123 @@
-{% extends "layouts/app_shell.html" %}
-{% load static %}
+{% extends "layouts/app_shell_v32.html" %}
 
 {% block title %}Dashboard — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% url 'solicitacoes:nova' as url_nova %}
-  {% include "components/page_header.html" with titulo="Dashboard" subtitulo="Visão geral das solicitações de eventos sociais" acao_label="Nova solicitação" acao_url=url_nova acao_icone="document-plus" %}
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker">Eventos Sociais</div>
+      <h1>Dashboard</h1>
+      <p class="d-cabeca__sub">Visão geral das solicitações de eventos sociais.</p>
+    </div>
+    <div class="d-acoes">
+      <a class="btn-primaria" href="{% url 'solicitacoes:nova' %}">{% include "components/icon.html" with nome="document-plus" %}Nova solicitação</a>
+    </div>
+  </div>
 
-  <div class="grid-resumo">
+  {# KPIs: cada cartão abre a lista já filtrada. #}
+  <div class="db-kpis">
     {% for item in resumo %}
-      {% include "components/summary_card.html" with titulo=item.titulo valor=item.valor icone=item.icone cor=item.cor destaque=item.destaque sparkline=item.sparkline variacao=item.variacao tendencia=item.tendencia tendencia_neutra=item.tendencia_neutra url=item.url %}
+      <a class="kpi{% if item.destaque %} kpi--destaque{% endif %}" href="{{ item.url }}">
+        <span class="kpi__ic">{% include "components/icon.html" with nome=item.icone %}</span>
+        <span>
+          <b>{{ item.valor }}</b>
+          <span>{{ item.titulo }}</span>
+          <small>{% if item.tendencia == "alta" %}{% include "components/icon.html" with nome="arrow-up" %}{% elif item.tendencia == "baixa" %}{% include "components/icon.html" with nome="arrow-down" %}{% endif %}{{ item.variacao }}</small>
+        </span>
+      </a>
     {% endfor %}
   </div>
 
-  <div class="dashboard-paineis">
-    <div class="card grafico-card">
-      <div class="grafico-card__cabecalho">
-        <h2 class="grafico-card__titulo">
-          <span aria-hidden="true">{% include "components/icon.html" with nome="chart" %}</span>
-          Solicitações por mês
-        </h2>
-        <form method="get" class="grafico-card__periodo" data-auto-enviar>
-          {% include "components/select.html" with name="meses" label="Período do gráfico" rotulo_oculto=True opcoes=periodos_grafico selecionado=grafico.meses %}
+  <div class="db-2col">
+    <section class="pa-card">
+      <h2 class="pa-h">
+        {% include "components/icon.html" with nome="chart" %}Solicitações por mês
+        <form method="get" class="pa-periodo" data-auto-enviar>
+          <label class="sr-only" for="id_meses">Período do gráfico</label>
+          <select id="id_meses" name="meses">
+            {% for periodo in periodos_grafico %}
+              <option value="{{ periodo.valor }}"{% if periodo.valor == grafico.meses %} selected{% endif %}>{{ periodo.rotulo }}</option>
+            {% endfor %}
+          </select>
         </form>
+      </h2>
+      <div class="gr" role="img" aria-label="Gráfico de solicitações por mês">
+        {% for barra in grafico.barras %}
+          <div class="gr__c{% if forloop.last %} gr__c--hoje{% endif %}" title="{{ barra.titulo }}">
+            <span class="gr__t">{{ barra.valor }} solicitaç{{ barra.valor|pluralize:"ão,ões" }}</span>
+            <span class="gr__b" style="height:{{ barra.altura }}%"></span>
+            <span class="gr__m">{{ barra.rotulo|lower }}</span>
+          </div>
+        {% endfor %}
       </div>
-      <div class="grafico-barras" role="img" aria-label="Gráfico de solicitações por mês">
-        <div class="grafico-barras__eixo" aria-hidden="true">
-          {% for tick in grafico.eixo %}<span>{{ tick }}</span>{% endfor %}
-        </div>
-        <div class="grafico-barras__area">
-          {% for barra in grafico.barras %}
-            <div class="grafico-barras__coluna" title="{{ barra.titulo }}">
-              <span class="grafico-barras__barra" style="height: {{ barra.altura }}%"></span>
-              <span class="grafico-barras__rotulo">{{ barra.rotulo }}</span>
-            </div>
-          {% endfor %}
-        </div>
-      </div>
-      <p class="grafico-card__rodape">
-        <span aria-hidden="true">{% include "components/icon.html" with nome="info" %}</span>
-        Dados atualizados em {{ grafico.atualizado_em|date:"d/m/Y H:i" }}
-      </p>
-    </div>
+      <p class="pa-rodape">{% include "components/icon.html" with nome="info" %}Dados atualizados em {{ grafico.atualizado_em|date:"d/m/Y H:i" }}</p>
+    </section>
 
-    <div class="card">
-      {% include "components/card.html" with titulo="Últimas solicitações" acao_label="Ver todas" acao_url=url_lista %}
-      <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Últimas solicitações">
-        <table class="tabela tabela--clicavel tabela--compacta">
+    <section class="pa-card">
+      <h2 class="pa-h">{% include "components/icon.html" with nome="gavel" %}Despacho da DG<em>{{ despacho.ano }}</em></h2>
+      <div class="pa-dg pa-dg--col">
+        <div class="pa-dg__i">
+          <b>{% if despacho.media_dias is not None %}{{ despacho.media_dias|floatformat:1 }}{% else %}—{% endif %}</b>
+          <span>dias · média entre envio e decisão{% if despacho.decididas %} ({{ despacho.decididas }} decidida{{ despacho.decididas|pluralize }}){% endif %}</span>
+        </div>
+        <div class="pa-dg__i pa-dg__i--wn">
+          <b>{{ despacho.pendentes }}</b>
+          <span>pendente{{ despacho.pendentes|pluralize }} de despacho</span>
+        </div>
+      </div>
+      <div class="pa-mini">
+        <span>Atender <b>{{ despacho.atender }}</b></span>
+        <span>Não atender <b>{{ despacho.nao_atender }}</b></span>
+        <span>Evento cancelado <b>{{ despacho.cancelados }}</b></span>
+      </div>
+      <a class="pa-link" href="{{ url_despacho }}">Ver fila de despacho</a>
+    </section>
+  </div>
+
+  <div class="db-linha2">
+    <section class="pa-card pa-card--lista">
+      <h2 class="pa-h pa-h--lista">Últimas solicitações{% if ultimas_solicitacoes %}<em>{{ ultimas_solicitacoes|length }} mais recentes</em>{% endif %}<a href="{{ url_lista }}">Ver todas</a></h2>
+      <div class="dt-w">
+        <table class="dt">
           <thead>
             <tr>
-              <th>Nº</th>
-              <th>Município</th>
-              <th>Tipo de evento</th>
-              <th>Início do evento</th>
-              <th>Status</th>
-              <th><span class="sr-only">Abrir</span></th>
+              <th class="c-id">Nº</th>
+              <th class="c-status">Status</th>
+              <th class="c-tipo">Tipo de evento</th>
+              <th class="c-mun">Município</th>
+              <th class="c-per">Início do evento</th>
             </tr>
           </thead>
           <tbody>
             {% for s in ultimas_solicitacoes %}
               <tr data-linha-url="{% url 'solicitacoes:detalhe' s.pk %}">
-                <td><strong><a href="{% url 'solicitacoes:detalhe' s.pk %}">#{{ s.pk }}</a></strong></td>
-                <td>{{ s.municipio|default:"—" }}</td>
-                <td>{{ s.tipo_evento|default:"—" }}</td>
-                <td>{{ s.data_inicio_evento|date:"d/m/Y"|default:"—" }}</td>
-                <td>{% include "components/status_badge.html" with status=s.status label=s.get_status_display %}</td>
-                <td class="tabela__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</td>
+                <td class="c-id"><a href="{% url 'solicitacoes:detalhe' s.pk %}"><i>#</i>{{ s.pk }}</a></td>
+                <td class="c-status"><span class="st st--{{ s.status|lower }}">{{ s.get_status_display }}</span></td>
+                <td class="c-tipo">{{ s.tipo_evento|default:"—" }}</td>
+                <td class="c-mun">{{ s.municipio|default:"—" }}</td>
+                <td class="c-per">{{ s.data_inicio_evento|date:"d/m/Y"|default:"—" }}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="6" class="texto-suave texto-centro">Nenhuma solicitação registrada ainda.</td></tr>
+              <tr><td colspan="5" class="dt__vazio">Nenhuma solicitação registrada ainda.</td></tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
+
+    <section class="pa-card pa-card--lista">
+      <h2 class="pa-h pa-h--lista">Próximos eventos<em>próximos 30 dias</em></h2>
+      <div class="pa-ev">
+        {% for s in proximos_eventos %}
+          <a href="{% url 'solicitacoes:detalhe' s.pk %}">
+            <span class="pa-ev__d">{{ s.data_inicio_evento|date:"d" }}<small>{{ s.data_inicio_evento|date:"M" }}</small></span>
+            <span class="pa-ev__t">{{ s.tipo_evento|default:"Solicitação sem tipo definido" }}</span>
+            <span class="pa-ev__m">{{ s.municipio|default:"—" }}</span>
+          </a>
+        {% empty %}
+          <p class="dt__vazio">Nenhum evento agendado nos próximos 30 dias.</p>
+        {% endfor %}
+      </div>
+    </section>
   </div>
 {% endblock %}

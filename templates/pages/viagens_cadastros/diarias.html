@@ -1,12 +1,15 @@
 {% extends "layouts/app_shell.html" %}
+{% load static estaticos %}
 
 {% block title %}Tabela de diárias — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-cadastros.css' %}">{% endblock %}
 
 {% block conteudo %}
   {% include "components/breadcrumb.html" with atual="Tabela de diárias" %}
   {% url 'viagens_cadastros:diaria_nova' as url_nova %}
   {% if pode_editar %}
-    {% include "components/page_header.html" with titulo="Tabela de diárias" subtitulo="Valores por faixa, com vigência" icone="chart" acao_label="Nova vigência" acao_url=url_nova %}
+    {% include "components/page_header.html" with titulo="Tabela de diárias" subtitulo="Valores por faixa, com histórico e vigência preservados" icone="chart" acao_label="Nova vigência" acao_url=url_nova acao_icone="plus" %}
   {% else %}
     {% include "components/page_header.html" with titulo="Tabela de diárias" subtitulo="Valores por faixa, com vigência" icone="chart" %}
   {% endif %}
@@ -44,14 +47,17 @@
               <td data-rotulo="30%">R$ {{ tabela.valor_30 }}</td>
               <td class="tabela__acoes">
                 {% if pode_editar %}
-                  <a href="{% url 'viagens_cadastros:diaria_editar' tabela.pk %}" class="btn btn--compacto btn--acao btn--acao-continuar">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                  <div class="tabela__acoes-grupo viagens-acoes-linha">
+                    <a href="{% url 'viagens_cadastros:diaria_editar' tabela.pk %}" class="btn btn--compacto btn--acao btn--acao-continuar">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                    <a href="{% url 'viagens_cadastros:diaria_excluir' tabela.pk %}" class="btn btn--compacto btn--perigo-suave">{% include "components/icon.html" with nome="trash" %}Excluir</a>
+                  </div>
                 {% else %}
                   <span class="texto-suave">—</span>
                 {% endif %}
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="6" class="texto-suave texto-centro">Nenhuma vigência cadastrada.</td></tr>
+            <tr><td colspan="6"><div class="viagens-vazio"><span aria-hidden="true">{% include "components/icon.html" with nome="chart" %}</span><strong>Nenhuma vigência cadastrada</strong><p>Cadastre o primeiro valor para habilitar o cálculo de diárias.</p>{% if pode_editar %}<a class="btn btn--dourado" href="{{ url_nova }}">{% include "components/icon.html" with nome="plus" %}Nova vigência</a>{% endif %}</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

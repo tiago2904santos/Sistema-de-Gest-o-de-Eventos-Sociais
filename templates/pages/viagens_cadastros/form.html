@@ -1,64 +1,129 @@
 {% extends "layouts/app_shell.html" %}
+{% load static estaticos %}
 
 {% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 
+{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-cadastros.css' %}">{% endblock %}
+
 {% block conteudo %}
   {% include "components/breadcrumb.html" with itens=breadcrumb %}
-  {% include "components/page_header.html" with titulo=titulo subtitulo=subtitulo_pagina icone="volante" %}
+  {% include "components/page_header.html" with titulo=cartao_titulo subtitulo=subtitulo_pagina icone="volante" %}
 
-  <form method="post" action="" class="card cadastro-form">
+  <form method="post" action="" class="cadastro-viagens-form" data-viagens-form>
     {% csrf_token %}
-    <div class="card__corpo">
-      <header class="cadastro-form__cabecalho">
-        <h2 class="cadastro-form__titulo">{{ cartao_titulo }}</h2>
-        <p class="cadastro-form__intro">{{ cartao_intro }}</p>
-      </header>
 
-      {% for erro in erros_gerais %}
-        <p class="form-erro">{{ erro }}</p>
-      {% endfor %}
+    <div class="cadastro-viagens-form__intro">
+      <div>
+        <span class="viagens-eyebrow">{% if instancia %}Edição{% else %}Novo cadastro{% endif %}</span>
+        <p>{{ cartao_intro }}</p>
+      </div>
+      <span class="cadastro-viagens-form__obrigatorio"><b>*</b> campos obrigatórios</span>
+    </div>
 
-      <div class="form-grid">
-        {% for campo in campos %}
-          {% if campo.tipo == "select" %}
-            {% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes obrigatorio=campo.obrigatorio largura="6" selecionado=campo.valor erros=campo.erros ajuda=campo.ajuda %}
-          {% elif campo.tipo == "multiselect" %}
-            <div class="form-campo">
-              <label class="form-label" for="id_{{ campo.name }}">{{ campo.label }}</label>
-              <div class="form-controle-wrapper{% if campo.erros %} is-invalid{% endif %}">
-                <select class="form-controle" id="id_{{ campo.name }}" name="{{ campo.name }}" multiple size="6">
-                  {% for opcao in campo.opcoes %}
-                    <option value="{{ opcao.valor }}"{% if opcao.selecionado %} selected{% endif %}>{{ opcao.rotulo }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              {% for erro in campo.erros %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-              <p class="form-ajuda">Segure Ctrl (ou Cmd) para escolher mais de um.</p>
+    {% if tem_erros %}
+      <div class="alerta alerta--error resumo-erros" role="alert" tabindex="-1" data-resumo-erros>
+        <strong>Revise os campos destacados</strong>
+        <ul>
+          {% for erro in erros_gerais %}<li>{{ erro }}</li>{% endfor %}
+          {% for secao in secoes %}{% for campo in secao.campos %}{% for erro in campo.erros %}<li><a href="#id_{{ campo.name }}">{{ campo.label }}: {{ erro }}</a></li>{% endfor %}{% endfor %}{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    {% for secao in secoes %}
+      <section class="section-card viagens-form-secao" aria-labelledby="secao-{{ secao.numero }}-titulo">
+        <header class="section-card__cabecalho">
+          <span class="section-card__numero">{{ secao.numero }}</span>
+          <div>
+            <h2 class="section-card__titulo" id="secao-{{ secao.numero }}-titulo">{{ secao.titulo }}</h2>
+            <p class="section-card__subtitulo">{{ secao.subtitulo }}</p>
+          </div>
+        </header>
+        <div class="section-card__corpo">
+          <div class="form-grid viagens-form-grid">
+            {% for campo in secao.campos %}
+              {% if campo.tipo == "select" %}
+                {% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes obrigatorio=campo.obrigatorio largura="6" selecionado=campo.valor erros=campo.erros ajuda=campo.ajuda placeholder=campo.placeholder pesquisavel=campo.pesquisavel %}
+              {% elif campo.tipo == "multiselect" %}
+                <fieldset class="form-campo viagens-multiselect" data-multiselect>
+                  <legend class="form-label">{{ campo.label }}{% if campo.obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}</legend>
+                  {% if campo.ajuda %}<p class="form-ajuda viagens-multiselect__ajuda" id="id_{{ campo.name }}_ajuda">{{ campo.ajuda }}</p>{% endif %}
+                  <div class="viagens-multiselect__barra">
+                    <div class="campo-com-icone">
+                      <span class="campo-com-icone__icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+                      <input class="form-controle" type="search" placeholder="Buscar por nome, cargo ou unidade" aria-label="Buscar em {{ campo.label|lower }}" data-multiselect-search>
+                    </div>
+                    <span class="viagens-multiselect__contador" aria-live="polite"><strong data-multiselect-count>{{ campo.selecionados }}</strong> <span data-multiselect-label>selecionado{{ campo.selecionados|pluralize }}</span></span>
+                  </div>
+                  <div class="viagens-multiselect__opcoes{% if campo.erros %} is-invalid{% endif %}" role="group" aria-describedby="id_{{ campo.name }}_ajuda">
+                    {% for opcao in campo.opcoes %}
+                      <label class="viagens-pessoa-opcao" data-multiselect-option data-search="{{ opcao.rotulo }} {{ opcao.detalhes }}">
+                        <input type="checkbox" name="{{ campo.name }}" value="{{ opcao.valor }}"{% if opcao.selecionado %} checked{% endif %}>
+                        <span class="viagens-pessoa-opcao__avatar" aria-hidden="true">{{ opcao.iniciais }}</span>
+                        <span class="viagens-pessoa-opcao__texto">
+                          <strong>{{ opcao.rotulo }}</strong>
+                          <small>{{ opcao.detalhes|default:"Cadastro sem cargo ou unidade" }}</small>
+                        </span>
+                        <span class="viagens-pessoa-opcao__check" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
+                      </label>
+                    {% empty %}
+                      <p class="viagens-multiselect__vazio">Nenhum servidor disponível para vincular.</p>
+                    {% endfor %}
+                    <p class="viagens-multiselect__vazio" data-multiselect-empty hidden>Nenhum servidor corresponde à busca.</p>
+                  </div>
+                  {% for erro in campo.erros %}<p class="form-erro"{% if forloop.first %} id="id_{{ campo.name }}_erro"{% endif %}>{{ erro }}</p>{% endfor %}
+                </fieldset>
+              {% elif campo.tipo == "checkbox" %}
+                <div class="form-campo viagens-opcao-padrao">
+                  <label for="id_{{ campo.name }}">
+                    <span>
+                      <strong>{{ campo.label }}</strong>
+                      {% if campo.ajuda %}<small id="id_{{ campo.name }}_ajuda">{{ campo.ajuda }}</small>{% endif %}
+                    </span>
+                    <span class="viagens-switch">
+                      <input type="checkbox" id="id_{{ campo.name }}" name="{{ campo.name }}" value="1"{% if campo.marcado %} checked{% endif %}>
+                      <span aria-hidden="true"></span>
+                    </span>
+                  </label>
+                  {% for erro in campo.erros %}<p class="form-erro"{% if forloop.first %} id="id_{{ campo.name }}_erro"{% endif %}>{{ erro }}</p>{% endfor %}
+                </div>
+              {% elif campo.tipo == "data" %}
+                {% include "components/input.html" with name=campo.name label=campo.label tipo="date" obrigatorio=campo.obrigatorio largura="6" valor=campo.valor erros=campo.erros ajuda=campo.ajuda %}
+              {% else %}
+                <div class="form-campo form-campo--6">
+                  <label class="form-label" for="id_{{ campo.name }}">{{ campo.label }}{% if campo.obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}</label>
+                  <div class="form-controle-wrapper{% if campo.erros %} is-invalid{% endif %}">
+                    <input class="form-controle" type="{{ campo.tipo|default:'text' }}" id="id_{{ campo.name }}" name="{{ campo.name }}"
+                           value="{{ campo.valor }}"{% if campo.placeholder %} placeholder="{{ campo.placeholder }}"{% endif %}
+                           {% if campo.inputmode %} inputmode="{{ campo.inputmode }}"{% endif %}{% if campo.autocomplete %} autocomplete="{{ campo.autocomplete }}"{% endif %}
+                           {% if campo.maxlength %} maxlength="{{ campo.maxlength }}"{% endif %}{% if campo.step %} step="{{ campo.step }}"{% endif %}{% if campo.min %} min="{{ campo.min }}"{% endif %}
+                           {% if campo.mascara %} data-mask="{{ campo.mascara }}"{% endif %}{% if campo.uppercase %} data-uppercase="true"{% endif %}
+                           {% if campo.name == "valor_24h" %} data-diaria-base="true"{% endif %}
+                           {% if campo.erros %} aria-invalid="true" aria-describedby="id_{{ campo.name }}_erro{% if campo.ajuda %} id_{{ campo.name }}_ajuda{% endif %}"{% elif campo.ajuda %} aria-describedby="id_{{ campo.name }}_ajuda"{% endif %}
+                           {% if campo.obrigatorio %} required{% endif %}>
+                  </div>
+                  {% for erro in campo.erros %}<p class="form-erro"{% if forloop.first %} id="id_{{ campo.name }}_erro"{% endif %}>{{ erro }}</p>{% endfor %}
+                  {% if campo.ajuda %}<p class="form-ajuda" id="id_{{ campo.name }}_ajuda">{{ campo.ajuda }}</p>{% endif %}
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+          {% if secao.preview_diaria %}
+            <div class="viagens-diaria-preview" aria-live="polite">
+              <span><small>15% da diária</small><strong data-diaria-15>R$ 0,00</strong></span>
+              <span><small>30% da diária</small><strong data-diaria-30>R$ 0,00</strong></span>
+              <p>{% include "components/icon.html" with nome="info" %} Prévia calculada automaticamente a partir do valor de 24 horas.</p>
             </div>
-          {% elif campo.tipo == "checkbox" %}
-            <div class="form-campo form-campo--checkbox">
-              <label class="form-label" for="id_{{ campo.name }}">
-                <input type="checkbox" id="id_{{ campo.name }}" name="{{ campo.name }}"
-                       value="1"{% if campo.marcado %} checked{% endif %}>
-                {{ campo.label }}
-              </label>
-              {% for erro in campo.erros %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-              {% if campo.ajuda %}<p class="form-ajuda">{{ campo.ajuda }}</p>{% endif %}
-            </div>
-          {% elif campo.tipo == "data" %}
-            {% include "components/input.html" with name=campo.name label=campo.label tipo="date" obrigatorio=campo.obrigatorio largura="6" valor=campo.valor erros=campo.erros ajuda=campo.ajuda %}
-          {% elif campo.name == "nome" or campo.name == "placa" %}
-            {% include "components/input.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio largura="" valor=campo.valor erros=campo.erros ajuda=campo.ajuda placeholder=exemplo %}
-          {% else %}
-            {% include "components/input.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio largura="6" valor=campo.valor erros=campo.erros ajuda=campo.ajuda %}
           {% endif %}
-        {% endfor %}
-      </div>
+        </div>
+      </section>
+    {% endfor %}
 
-      <div class="acoes-formulario">
-        {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
-        {% include "components/button.html" with label="Salvar" variante="dourado" tipo="submit" %}
-      </div>
+    <div class="acoes-formulario cadastro-viagens-form__acoes">
+      <a class="btn btn--secundario" href="{{ url_voltar }}">Cancelar</a>
+      <button class="btn btn--dourado btn--com-icone" type="submit">{% include "components/icon.html" with nome="check" %}{% if instancia %}Salvar alterações{% else %}Criar registro{% endif %}</button>
     </div>
   </form>
 {% endblock %}
+
+{% block extra_js %}<script src="{% estatico 'js/viagens-cadastros.js' %}" defer></script>{% endblock %}

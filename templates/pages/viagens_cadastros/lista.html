@@ -1,18 +1,21 @@
 {% extends "layouts/app_shell.html" %}
+{% load static estaticos %}
 
 {% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-cadastros.css' %}">{% endblock %}
 
 {% block conteudo %}
   {% include "components/breadcrumb.html" with atual=titulo %}
   {% url 'viagens_cadastros:novo' slug as url_novo %}
   {% if pode_editar %}
-    {% include "components/page_header.html" with titulo=titulo subtitulo="Cadastros do domínio de viagens" icone="volante" acao_label=novo acao_url=url_novo %}
+    {% include "components/page_header.html" with titulo=titulo subtitulo=descricao icone=icone acao_label=novo acao_url=url_novo acao_icone="plus" %}
   {% else %}
-    {% include "components/page_header.html" with titulo=titulo subtitulo="Cadastros do domínio de viagens" icone="volante" %}
+    {% include "components/page_header.html" with titulo=titulo subtitulo=descricao icone=icone %}
   {% endif %}
 
   <div class="card lista-filtros-card">
-    <form method="get" class="lista-filtros" data-auto-enviar>
+    <form method="get" class="lista-filtros viagens-lista-filtros">
       <div class="form-campo lista-filtros__busca lista-filtros__busca--curta">
         <label class="form-label sr-only" for="id_q">Busca</label>
         <div class="campo-com-icone">
@@ -21,19 +24,9 @@
                  value="{{ termo }}" placeholder="Buscar {{ singular }}...">
         </div>
       </div>
-      <button type="button" class="btn btn--secundario lista-filtros__avancados" data-expande="#filtros-viagens"
-              aria-expanded="{% if situacao %}true{% else %}false{% endif %}" aria-controls="filtros-viagens">
-        {% include "components/icon.html" with nome="filter" %}
-        Filtros
-        {% include "components/icon.html" with nome="chevron-down" %}
-      </button>
+      <button type="submit" class="btn btn--dourado lista-filtros__buscar">{% include "components/icon.html" with nome="search" %}Buscar</button>
+      {% if tem_filtros %}<a href="{% url 'viagens_cadastros:lista' slug %}" class="btn btn--secundario">Limpar</a>{% endif %}
       <span class="lista-filtros__contagem">{{ pagina.paginator.count }} registro{{ pagina.paginator.count|pluralize }}</span>
-      <div class="lista-filtros__painel" id="filtros-viagens" {% if not situacao %}hidden{% endif %}>
-        {% include "components/select.html" with name="situacao" label="Situação" opcoes=opcoes_situacao placeholder="Todas as situações" selecionado=situacao %}
-        {% if tem_filtros %}
-          <a href="{% url 'viagens_cadastros:lista' slug %}" class="btn btn--secundario">Limpar filtros</a>
-        {% endif %}
-      </div>
     </form>
   </div>
 
@@ -45,7 +38,7 @@
             <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
             <th>{{ rotulo_principal }}</th>
             {% for coluna in colunas %}<th>{{ coluna.rotulo }}</th>{% endfor %}
-            <th>Situação</th>
+            {% if slug == "servidores" or slug == "viaturas" %}<th>Qualidade</th>{% endif %}
             <th>Ações</th>
           </tr>
         </thead>
@@ -57,37 +50,16 @@
               {% for celula in linha.celulas %}
                 <td data-rotulo="{{ celula.rotulo }}">{{ celula.valor }}</td>
               {% endfor %}
-              <td data-rotulo="Situação">
-                {% if linha.objeto.ativo %}
-                  <span class="status-badge status-badge--atendida">Ativo</span>
-                {% else %}
-                  <span class="status-badge status-badge--cancelada">Inativo</span>
-                {% endif %}
-              </td>
+              {% if slug == "servidores" or slug == "viaturas" %}
+                <td data-rotulo="Qualidade">
+                  <span class="status-badge {% if linha.status == 'COMPLETO' %}status-badge--atendida{% else %}status-badge--rascunho{% endif %}">{{ linha.status_label }}</span>
+                </td>
+              {% endif %}
               <td class="tabela__acoes">
                 {% if pode_editar %}
-                  <div class="tabela__acoes-grupo">
+                  <div class="tabela__acoes-grupo viagens-acoes-linha">
                     <a href="{% url 'viagens_cadastros:editar' slug linha.objeto.pk %}" class="btn btn--compacto btn--acao btn--acao-continuar">{% include "components/icon.html" with nome="pencil" %}Editar</a>
-                    <div class="menu-flutuante" data-menu>
-                      <button type="button" class="btn btn--secundario btn--compacto tabela__kebab" data-menu-gatilho
-                              aria-haspopup="true" aria-expanded="false" aria-label="Mais ações de {{ linha.principal }}">
-                        {% include "components/icon.html" with nome="kebab" %}
-                      </button>
-                      <div class="menu-flutuante__corpo" hidden data-menu-corpo>
-                        <form method="post" action="{% url 'viagens_cadastros:alternar_ativo' slug linha.objeto.pk %}">
-                          {% csrf_token %}
-                          {% if linha.objeto.ativo %}
-                            <button type="submit">{% include "components/icon.html" with nome="ban" %}Inativar</button>
-                          {% else %}
-                            <button type="submit">{% include "components/icon.html" with nome="check-circle" %}Ativar</button>
-                          {% endif %}
-                        </form>
-                        <form method="post" action="{% url 'viagens_cadastros:excluir' slug linha.objeto.pk %}" data-confirmar-exclusao>
-                          {% csrf_token %}
-                          <button type="submit" class="menu-flutuante__perigo">{% include "components/icon.html" with nome="trash" %}Excluir</button>
-                        </form>
-                      </div>
-                    </div>
+                    <a href="{% url 'viagens_cadastros:excluir' slug linha.objeto.pk %}" class="btn btn--compacto btn--perigo-suave">{% include "components/icon.html" with nome="trash" %}Excluir</a>
                   </div>
                 {% else %}
                   <span class="texto-suave">—</span>
@@ -95,7 +67,14 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="{{ colunas|length|add:4 }}" class="texto-suave texto-centro">Nenhum registro encontrado.</td></tr>
+            <tr><td colspan="{{ colunas|length|add:4 }}">
+              <div class="viagens-vazio">
+                <span aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+                <strong>{% if termo %}Nenhum resultado para “{{ termo }}”{% else %}Nenhum registro cadastrado{% endif %}</strong>
+                <p>{% if termo %}Revise o termo ou limpe a busca.{% else %}Crie o primeiro registro para começar a usar esta categoria.{% endif %}</p>
+                {% if pode_editar and not termo %}<a class="btn btn--dourado" href="{{ url_novo }}">{% include "components/icon.html" with nome="plus" %}{{ novo }}</a>{% endif %}
+              </div>
+            </td></tr>
           {% endfor %}
         </tbody>
       </table>

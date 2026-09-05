@@ -59,14 +59,14 @@ def _queryset_motoristas(instance_pk=None):
 
     Motorista deixou de ser cadastro próprio e virou papel de `Servidor`. Sem
     este recorte, o select desta tela passaria a listar todos os servidores
-    ativos para qualquer solicitante — uma lista longa demais para uso e uma
+    para qualquer solicitante — uma lista longa demais para uso e uma
     exposição do quadro a quem não tem o módulo de viagens.
 
     Vale como motorista quem tem o cargo MOTORISTA ou está designado como
     condutor de alguma viatura; o já vinculado continua na lista para o
     histórico permanecer legível.
     """
-    qs = Servidor.objects.filter(ativo=True).filter(
+    qs = Servidor.objects.filter(
         Q(cargo__nome="MOTORISTA") | Q(viaturas_que_dirige__isnull=False)
     )
     if instance_pk:

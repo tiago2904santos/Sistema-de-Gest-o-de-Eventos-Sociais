@@ -14,14 +14,14 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import ProtectedError, Q
+from django.db.models import PROTECT, RESTRICT, ProtectedError, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import number_format
 from django.utils.http import urlencode
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods
 
 from auditoria.models import LogAuditoria
 
@@ -50,7 +50,7 @@ CADASTROS = {
         "singular": "servidor",
         "novo": "Novo servidor",
         "icone": "users",
-        "cor": "#bea45a",
+        "descricao": "Pessoas, documentos, contato e lotação usados nas viagens.",
         "exemplo": "Ex.: MARIA DA SILVA",
         "busca": ["nome__icontains", "cpf__icontains"],
         "select_related": ["cargo", "unidade"],
@@ -58,6 +58,24 @@ CADASTROS = {
             {"rotulo": "Cargo", "attr": "cargo"},
             {"rotulo": "Unidade", "attr": "unidade"},
             {"rotulo": "CPF", "attr": "cpf_formatado"},
+            {"rotulo": "Telefone", "attr": "telefone_formatado"},
+        ],
+        "secoes": [
+            {
+                "titulo": "Identificação funcional",
+                "subtitulo": "Nome e cargo que aparecerão nos documentos oficiais.",
+                "campos": ["nome", "cargo"],
+            },
+            {
+                "titulo": "Documentos pessoais",
+                "subtitulo": "CPF e RG são validados antes da gravação.",
+                "campos": ["cpf", "rg"],
+            },
+            {
+                "titulo": "Contato e lotação",
+                "subtitulo": "Dados para comunicação e vínculo administrativo.",
+                "campos": ["telefone", "unidade"],
+            },
         ],
     },
     "viaturas": {
@@ -67,16 +85,36 @@ CADASTROS = {
         "singular": "viatura",
         "novo": "Nova viatura",
         "icone": "truck",
-        "cor": "#bea45a",
+        "descricao": "Veículos, características, lotação e condutores autorizados.",
         "exemplo": "Ex.: ABC1D23",
         "busca": ["placa__icontains", "modelo__icontains"],
         "select_related": ["combustivel", "unidade"],
+        "prefetch_related": ["motoristas"],
         "rotulo_principal": "Placa",
         "attr_principal": "placa_formatada",
         "colunas": [
             {"rotulo": "Modelo", "attr": "modelo"},
             {"rotulo": "Tipo", "attr": "get_tipo_display"},
+            {"rotulo": "Combustível", "attr": "combustivel"},
             {"rotulo": "Unidade", "attr": "unidade"},
+            {"rotulo": "Condutores", "attr": "motoristas", "contagem": True},
+        ],
+        "secoes": [
+            {
+                "titulo": "Identificação do veículo",
+                "subtitulo": "Placa, modelo e tipo operacional.",
+                "campos": ["placa", "modelo", "tipo"],
+            },
+            {
+                "titulo": "Abastecimento e lotação",
+                "subtitulo": "Referências usadas no planejamento da viagem.",
+                "campos": ["combustivel", "unidade"],
+            },
+            {
+                "titulo": "Condutores autorizados",
+                "subtitulo": "Escolha todos os servidores que podem dirigir esta viatura.",
+                "campos": ["motoristas"],
+            },
         ],
     },
     "unidades": {
@@ -86,10 +124,26 @@ CADASTROS = {
         "singular": "unidade",
         "novo": "Nova unidade",
         "icone": "landmark",
-        "cor": "#808080",
+        "descricao": "Unidades administrativas e respectivos servidores lotados.",
         "exemplo": "Ex.: DELEGACIA DE CURITIBA",
         "busca": ["nome__icontains", "sigla__icontains"],
-        "colunas": [{"rotulo": "Sigla", "attr": "sigla"}],
+        "prefetch_related": ["servidores"],
+        "colunas": [
+            {"rotulo": "Sigla", "attr": "sigla"},
+            {"rotulo": "Servidores", "attr": "servidores", "contagem": True},
+        ],
+        "secoes": [
+            {
+                "titulo": "Identificação da unidade",
+                "subtitulo": "Nome por extenso e sigla institucional.",
+                "campos": ["nome", "sigla"],
+            },
+            {
+                "titulo": "Servidores lotados",
+                "subtitulo": "Gerencie a lotação sem precisar editar cada pessoa separadamente.",
+                "campos": ["servidores"],
+            },
+        ],
     },
     "cargos": {
         "model": Cargo,
@@ -98,10 +152,17 @@ CADASTROS = {
         "singular": "cargo",
         "novo": "Novo cargo",
         "icone": "shield",
-        "cor": "#808080",
+        "descricao": "Funções dos servidores e cargo sugerido nos novos cadastros.",
         "exemplo": "Ex.: INVESTIGADOR",
         "busca": ["nome__icontains"],
         "colunas": [{"rotulo": "Padrão", "attr": "is_padrao", "booleano": True}],
+        "secoes": [
+            {
+                "titulo": "Dados do cargo",
+                "subtitulo": "Defina o nome e, se desejar, marque-o como sugestão padrão.",
+                "campos": ["nome", "is_padrao"],
+            }
+        ],
     },
     "combustiveis": {
         "model": Combustivel,
@@ -110,12 +171,33 @@ CADASTROS = {
         "singular": "combustível",
         "novo": "Novo combustível",
         "icone": "activity",
-        "cor": "#808080",
+        "descricao": "Tipos de combustível e opção sugerida nas novas viaturas.",
         "exemplo": "Ex.: GASOLINA",
         "busca": ["nome__icontains"],
         "colunas": [{"rotulo": "Padrão", "attr": "is_padrao", "booleano": True}],
+        "secoes": [
+            {
+                "titulo": "Dados do combustível",
+                "subtitulo": "Defina o nome e, se desejar, marque-o como sugestão padrão.",
+                "campos": ["nome", "is_padrao"],
+            }
+        ],
     },
 }
+
+DIARIA_SECOES = [
+    {
+        "titulo": "Vigência e faixa",
+        "subtitulo": "Escolha onde o valor se aplica e a data em que passa a valer.",
+        "campos": ["faixa", "vigencia_inicio"],
+    },
+    {
+        "titulo": "Valor-base",
+        "subtitulo": "Os valores de 15% e 30% serão calculados automaticamente.",
+        "campos": ["valor_24h"],
+        "preview_diaria": True,
+    },
+]
 
 
 def _config(slug):
@@ -137,52 +219,106 @@ def _registrar_auditoria(usuario, acao, objeto):
     )
 
 
-def _campos_para_template(form):
-    """Descreve os campos do form para os components genéricos."""
-    campos = []
-    for nome, campo in form.fields.items():
-        valor = form[nome].value()
-        descricao = {
-            "name": nome,
-            "label": campo.label,
-            "obrigatorio": campo.required,
-            "erros": form.errors.get(nome),
-            "ajuda": campo.help_text,
-            "valor": "" if valor is None else str(valor),
-        }
-        if isinstance(campo, forms.ModelMultipleChoiceField):
-            selecionados = {str(item) for item in (valor or [])}
-            descricao["tipo"] = "multiselect"
-            descricao["opcoes"] = [
+def _iniciais(nome):
+    partes = [parte for parte in str(nome).split() if parte]
+    return "".join(parte[0] for parte in partes[:2]).upper()
+
+
+def _campo_para_template(form, nome):
+    """Descreve um campo sem perder atributos e estados do ModelForm."""
+    campo = form.fields[nome]
+    bound = form[nome]
+    valor = bound.value()
+    attrs = campo.widget.attrs
+    descricao = {
+        "name": nome,
+        "label": campo.label,
+        "obrigatorio": campo.required,
+        "erros": form.errors.get(nome),
+        "ajuda": campo.help_text,
+        "valor": "" if valor is None else str(valor),
+        "placeholder": attrs.get("placeholder", ""),
+        "inputmode": attrs.get("inputmode", ""),
+        "autocomplete": attrs.get("autocomplete", ""),
+        "maxlength": attrs.get("maxlength", ""),
+        "step": attrs.get("step", ""),
+        "min": attrs.get("min", ""),
+        "mascara": attrs.get("data-mask", ""),
+        "uppercase": attrs.get("data-uppercase") == "true",
+    }
+    if isinstance(campo, forms.ModelMultipleChoiceField):
+        selecionados = {str(item) for item in (valor or [])}
+        descricao["tipo"] = "multiselect"
+        opcoes = []
+        for obj in campo.queryset:
+            detalhes = []
+            if getattr(obj, "cargo_id", None):
+                detalhes.append(str(obj.cargo))
+            if getattr(obj, "unidade_id", None):
+                detalhes.append(str(obj.unidade))
+            opcoes.append(
                 {
                     "valor": str(obj.pk),
                     "rotulo": str(obj),
+                    "detalhes": " · ".join(detalhes),
+                    "iniciais": _iniciais(obj),
                     "selecionado": str(obj.pk) in selecionados,
                 }
-                for obj in campo.queryset
-            ]
-        elif isinstance(campo, forms.ModelChoiceField):
-            descricao["tipo"] = "select"
-            descricao["opcoes"] = [
-                {"valor": str(obj.pk), "rotulo": str(obj)} for obj in campo.queryset
-            ]
-        elif isinstance(campo, forms.TypedChoiceField) or isinstance(
-            campo, forms.ChoiceField
-        ):
-            descricao["tipo"] = "select"
-            descricao["opcoes"] = [
-                {"valor": str(chave), "rotulo": str(rotulo)}
-                for chave, rotulo in campo.choices
-                if chave != ""
-            ]
-        elif isinstance(campo, forms.BooleanField):
-            descricao["tipo"] = "checkbox"
-            descricao["marcado"] = bool(valor)
-        elif isinstance(campo.widget, forms.DateInput):
-            descricao["tipo"] = "data"
-        else:
-            descricao["tipo"] = "input"
-        campos.append(descricao)
+            )
+        descricao["opcoes"] = opcoes
+        descricao["selecionados"] = len(selecionados)
+    elif isinstance(campo, forms.ModelChoiceField):
+        descricao["tipo"] = "select"
+        descricao["pesquisavel"] = campo.queryset.count() > 8
+        descricao["placeholder"] = campo.empty_label or "Selecione..."
+        descricao["opcoes"] = [
+            {"valor": str(obj.pk), "rotulo": str(obj)} for obj in campo.queryset
+        ]
+    elif isinstance(campo, (forms.TypedChoiceField, forms.ChoiceField)):
+        descricao["tipo"] = "select"
+        descricao["opcoes"] = [
+            {"valor": str(chave), "rotulo": str(rotulo)}
+            for chave, rotulo in campo.choices
+            if chave != ""
+        ]
+    elif isinstance(campo, forms.BooleanField):
+        descricao["tipo"] = "checkbox"
+        descricao["marcado"] = bool(valor)
+    elif isinstance(campo.widget, forms.DateInput):
+        descricao["tipo"] = "data"
+    else:
+        descricao["tipo"] = getattr(campo.widget, "input_type", "text") or "text"
+    return descricao
+
+
+def _secoes_para_template(form, definicoes):
+    """Agrupa os campos na ordem editorial da tela."""
+    secoes = []
+    incluidos = set()
+    for numero, definicao in enumerate(definicoes, start=1):
+        nomes = [nome for nome in definicao["campos"] if nome in form.fields]
+        incluidos.update(nomes)
+        secao = {**definicao, "numero": numero}
+        secao["campos"] = [_campo_para_template(form, nome) for nome in nomes]
+        secoes.append(secao)
+    restantes = [nome for nome in form.fields if nome not in incluidos]
+    if restantes:
+        secoes.append(
+            {
+                "numero": len(secoes) + 1,
+                "titulo": "Outros dados",
+                "subtitulo": "Informações complementares do registro.",
+                "campos": [_campo_para_template(form, nome) for nome in restantes],
+            }
+        )
+    return secoes
+
+
+def _campos_para_template(form):
+    """Compatibilidade para testes e consumidores que usam a lista plana."""
+    campos = []
+    for nome, campo in form.fields.items():
+        campos.append(_campo_para_template(form, nome))
     return campos
 
 
@@ -194,7 +330,10 @@ def _linhas_da_lista(config, pagina):
         celulas = []
         for coluna in config["colunas"]:
             valor = getattr(objeto, coluna["attr"], "")
-            if callable(valor):
+            if coluna.get("contagem"):
+                valor = valor.count()
+                valor = f"{valor} vinculado{'s' if valor != 1 else ''}"
+            elif callable(valor):
                 valor = valor()
             if coluna.get("booleano"):
                 valor = "Sim" if valor else "—"
@@ -204,6 +343,10 @@ def _linhas_da_lista(config, pagina):
                 "objeto": objeto,
                 "principal": getattr(objeto, attr_principal, "") or "—",
                 "celulas": celulas,
+                "status": getattr(objeto, "status", ""),
+                "status_label": (
+                    objeto.get_status_display() if getattr(objeto, "status", "") else ""
+                ),
             }
         )
     return linhas
@@ -211,13 +354,16 @@ def _linhas_da_lista(config, pagina):
 
 @acesso_ao_modulo
 def index(request):
+    pode_criar_cadastros = pode_editar_cadastros(request.user)
     grupos = [
         {
             "slug": slug,
             "titulo": config["titulo"],
             "total": config["model"].objects.count(),
             "icone": config["icone"],
-            "cor": config["cor"],
+            "descricao": config["descricao"],
+            "url_novo": reverse("viagens_cadastros:novo", args=[slug]),
+            "pode_criar": pode_criar_cadastros,
         }
         for slug, config in CADASTROS.items()
     ]
@@ -227,14 +373,16 @@ def index(request):
             "titulo": "Tabela de diárias",
             "total": TabelaDiaria.objects.count(),
             "icone": "chart",
-            "cor": "#bea45a",
+            "descricao": "Valores por faixa e histórico completo de vigências.",
             "url": reverse("viagens_cadastros:diarias"),
+            "url_novo": reverse("viagens_cadastros:diaria_nova"),
+            "pode_criar": pode_editar_diarias(request.user),
         }
     )
     return render(
         request,
         "pages/viagens_cadastros/index.html",
-        {"grupos": grupos, "pode_editar": pode_editar_cadastros(request.user)},
+        {"grupos": grupos},
     )
 
 
@@ -244,24 +392,19 @@ def lista(request, slug):
     queryset = config["model"].objects.all()
     if config.get("select_related"):
         queryset = queryset.select_related(*config["select_related"])
+    if config.get("prefetch_related"):
+        queryset = queryset.prefetch_related(*config["prefetch_related"])
     termo = request.GET.get("q", "").strip()
     if termo:
         filtro = Q()
         for campo in config["busca"]:
             filtro |= Q(**{campo: termo})
         queryset = queryset.filter(filtro)
-    situacao = request.GET.get("situacao", "").strip()
-    if situacao == "ativos":
-        queryset = queryset.filter(ativo=True)
-    elif situacao == "inativos":
-        queryset = queryset.filter(ativo=False)
     paginator = Paginator(queryset, ITENS_POR_PAGINA)
     pagina = paginator.get_page(request.GET.get("pagina"))
     parametros = {}
     if termo:
         parametros["q"] = termo
-    if situacao:
-        parametros["situacao"] = situacao
     return render(
         request,
         "pages/viagens_cadastros/lista.html",
@@ -275,13 +418,10 @@ def lista(request, slug):
             "colunas": config["colunas"],
             "rotulo_principal": config.get("rotulo_principal", "Nome"),
             "termo": termo,
-            "situacao": situacao,
-            "tem_filtros": bool(termo or situacao),
+            "tem_filtros": bool(termo),
             "pode_editar": pode_editar_cadastros(request.user),
-            "opcoes_situacao": [
-                {"valor": "ativos", "rotulo": "Ativos"},
-                {"valor": "inativos", "rotulo": "Inativos"},
-            ],
+            "icone": config["icone"],
+            "descricao": config["descricao"],
             "querystring": urlencode(parametros),
             "paginas_visiveis": list(
                 paginator.get_elided_page_range(pagina.number, on_each_side=2, on_ends=1)
@@ -319,7 +459,9 @@ def editar(request, slug, pk=None):
             "titulo": config["titulo"],
             "instancia": instancia,
             "campos": _campos_para_template(form),
+            "secoes": _secoes_para_template(form, config["secoes"]),
             "erros_gerais": form.non_field_errors(),
+            "tem_erros": bool(form.errors),
             "cartao_titulo": f"Editar {config['singular']}" if pk else config["novo"],
             "cartao_intro": (
                 f"Informe os dados do cadastro de {config['singular']} usados "
@@ -343,41 +485,83 @@ def editar(request, slug, pk=None):
     )
 
 
-@acesso_ao_modulo
-@require_POST
-def alternar_ativo(request, slug, pk):
-    _exigir_edicao(request)
-    config = _config(slug)
-    objeto = get_object_or_404(config["model"], pk=pk)
-    objeto.ativo = not objeto.ativo
-    objeto.save(update_fields=["ativo", "atualizado_em"])
-    _registrar_auditoria(
-        request.user,
-        "VIAGENS_CADASTRO_ATIVADO" if objeto.ativo else "VIAGENS_CADASTRO_INATIVADO",
-        objeto,
-    )
-    messages.success(
-        request,
-        f"Registro {'ativado' if objeto.ativo else 'inativado'} com sucesso.",
-    )
-    return redirect("viagens_cadastros:lista", slug=slug)
+def _dependencias_protegidas(objeto):
+    """Resume vínculos que impedem exclusão, antes de o usuário confirmar."""
+    dependencias = []
+    for relacao in objeto._meta.related_objects:
+        if relacao.on_delete not in {PROTECT, RESTRICT}:
+            continue
+        try:
+            relacionado = getattr(objeto, relacao.get_accessor_name())
+            if relacao.one_to_one:
+                itens = [relacionado]
+                total = 1
+            else:
+                consulta = relacionado.all()
+                total = consulta.count()
+                itens = list(consulta[:3])
+        except relacao.related_model.DoesNotExist:
+            continue
+        if not total:
+            continue
+        nome = relacao.related_model._meta.verbose_name_plural
+        dependencias.append(
+            {
+                "nome": str(nome).capitalize(),
+                "total": total,
+                "amostras": [str(item) for item in itens],
+            }
+        )
+    return dependencias
+
+
+def _contexto_exclusao(*, objeto, titulo, voltar, dependencias, diaria=False):
+    return {
+        "objeto": objeto,
+        "titulo": titulo,
+        "url_voltar": voltar,
+        "dependencias": dependencias,
+        "bloqueada": bool(dependencias),
+        "diaria": diaria,
+        "breadcrumb": [
+            {"label": titulo, "url": voltar},
+            {"label": "Excluir registro"},
+        ],
+    }
 
 
 @acesso_ao_modulo
-@require_POST
+@require_http_methods(["GET", "POST"])
 def excluir(request, slug, pk):
     _exigir_edicao(request)
     config = _config(slug)
     objeto = get_object_or_404(config["model"], pk=pk)
+    voltar = reverse("viagens_cadastros:lista", args=[slug])
+    dependencias = _dependencias_protegidas(objeto)
+    if request.method == "GET" or dependencias:
+        if request.method == "POST" and dependencias:
+            messages.error(
+                request,
+                "A exclusão foi bloqueada porque este registro ainda possui vínculos.",
+            )
+        return render(
+            request,
+            "pages/viagens_cadastros/confirmar_exclusao.html",
+            _contexto_exclusao(
+                objeto=objeto,
+                titulo=config["titulo"],
+                voltar=voltar,
+                dependencias=dependencias,
+            ),
+        )
     descricao = f"{objeto._meta.verbose_name} '{objeto}' (id {objeto.pk})"
     try:
         objeto.delete()
     except ProtectedError:
         messages.error(
             request,
-            "Este registro não pode ser excluído porque está vinculado a "
-            "viagens, solicitações ou a outros cadastros. Use a ação Inativar "
-            "para retirá-lo dos novos formulários.",
+            "Este registro ganhou um novo vínculo e não pôde ser excluído. "
+            "Revise os registros relacionados e tente novamente.",
         )
     else:
         LogAuditoria.objects.create(
@@ -386,7 +570,7 @@ def excluir(request, slug, pk):
             descricao=descricao,
         )
         messages.success(request, "Registro excluído com sucesso.")
-    return redirect("viagens_cadastros:lista", slug=slug)
+    return redirect(voltar)
 
 
 def _reais(valor):
@@ -456,7 +640,9 @@ def diaria_editar(request, pk=None):
             "titulo": "Tabela de diárias",
             "instancia": instancia,
             "campos": _campos_para_template(form),
+            "secoes": _secoes_para_template(form, DIARIA_SECOES),
             "erros_gerais": form.non_field_errors(),
+            "tem_erros": bool(form.errors),
             "cartao_titulo": "Editar vigência" if pk else "Nova vigência",
             "cartao_intro": (
                 "Informe apenas o valor de 24 horas: os percentuais de 15% e "
@@ -476,3 +662,33 @@ def diaria_editar(request, pk=None):
             ],
         },
     )
+
+
+@acesso_ao_modulo
+@require_http_methods(["GET", "POST"])
+def diaria_excluir(request, pk):
+    if not pode_editar_diarias(request.user):
+        raise PermissionDenied
+    tabela = get_object_or_404(TabelaDiaria, pk=pk)
+    voltar = reverse("viagens_cadastros:diarias")
+    if request.method == "GET":
+        return render(
+            request,
+            "pages/viagens_cadastros/confirmar_exclusao.html",
+            _contexto_exclusao(
+                objeto=tabela,
+                titulo="Tabela de diárias",
+                voltar=voltar,
+                dependencias=[],
+                diaria=True,
+            ),
+        )
+    descricao = f"{tabela._meta.verbose_name} '{tabela}' (id {tabela.pk})"
+    tabela.delete()
+    LogAuditoria.objects.create(
+        usuario=request.user,
+        acao="VIAGENS_DIARIA_EXCLUIDA",
+        descricao=descricao,
+    )
+    messages.success(request, "Vigência excluída com sucesso.")
+    return redirect(voltar)

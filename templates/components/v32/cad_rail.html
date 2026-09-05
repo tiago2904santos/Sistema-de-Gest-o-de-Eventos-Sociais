@@ -1,0 +1,13 @@
+{% comment %}
+  Trilha lateral dos cadastros de apoio (V3.2): um item por tabela, com contador.
+  Uso: {% include "components/v32/cad_rail.html" with grupos=grupos slug_ativo=slug %}
+{% endcomment %}
+<nav class="cad-rail" aria-label="Cadastros de apoio">
+  <div class="cad-rail__h">Tabelas de apoio</div>
+  {% for grupo in grupos %}
+    <a class="cad-i" href="{% url 'cadastros:lista' grupo.slug %}"{% if grupo.slug == slug_ativo %} aria-current="page"{% endif %}>
+      <span class="cad-i__ic">{% include "components/icon.html" with nome=grupo.icone %}</span>
+      <span class="cad-i__t">{{ grupo.titulo }}</span><span class="cad-i__n">{{ grupo.total }}</span>
+    </a>
+  {% endfor %}
+</nav>

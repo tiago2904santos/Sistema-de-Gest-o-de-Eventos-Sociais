@@ -1,0 +1,381 @@
+/* =============================================================================
+   PCPR · Design System V3.2 — ponte para o app Django
+   Só o que os pilotos não cobrem: shell com rodapé, mensagens do Django,
+   controles de filtro como links/selects reais e coluna oculta do app.js.
+   ========================================================================== */
+
+.app-v32{min-height:100vh;display:flex;flex-direction:column}
+.app-v32>.conteudo{flex:1 0 auto;width:100%}
+
+.rodape-v32{max-width:var(--larg);width:100%;margin:0 auto;padding:var(--s4) var(--pad) var(--s6);display:flex;align-items:center;gap:var(--s2);font-size:12px;color:var(--n-400);border-top:1px solid var(--n-150)}
+.rodape-v32 .ui-icon{width:13px;height:13px}
+.rodape-v32 span+span{margin-left:var(--s1)}
+
+.avisos-v32{display:grid;gap:var(--s2);padding-top:var(--s5)}
+.avisos-v32 .aviso{margin:0}
+.aviso--ok{background:var(--ok-b);border-color:var(--ok-r);color:var(--ok-t)}
+.aviso--ok .ui-icon,.aviso--ok b{color:var(--ok-t)}
+.aviso--info{background:var(--in-b);border-color:var(--in-r);color:var(--in-t)}
+.aviso--info .ui-icon,.aviso--info b{color:var(--in-t)}
+
+/* Dropdowns fora da toolbar não podem esticar (.dd é flex:1 na barra). */
+.ident__fim .dd,.acoes .dd,.fpanel__ferr .dd{flex:0 0 auto;width:auto}
+.ident-user[aria-expanded=true]{background:rgba(255,255,255,.1)}
+.ident__fim .dd__c{min-width:230px}
+.ident__fim .dd__t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dd__c form{margin:0}
+.dd__c form .dd__i{width:100%}
+.dd__c--rolavel{max-height:340px;overflow:auto}
+
+/* Elementos que nos pilotos eram <button> e aqui são links reais. */
+a.fila,a.fc,a.acao-linha,a.ib-linha,a.pag__n,a.pag__passo,a.ind__i,a.modulo,a.ident-icone,a.btn--secundaria,a.btn--quieta{text-decoration:none}
+a.fila{color:var(--n-500)}
+a.ind__i{color:inherit}
+a.acao-linha{color:var(--n-800)}
+a.ib-linha{color:var(--n-400)}
+a.btn--secundaria{color:var(--n-700)}
+a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
+.pag__passo[aria-disabled=true]{cursor:default}
+
+/* Em larguras intermediárias o valor do filter control encolhe com reticências
+   em vez de vazar; o próprio .fc não pode ter overflow oculto, senão colapsa
+   como item de coluna flex no mobile. */
+.fc>span:not(.fc__rot):not(.fc__n){min-width:0;overflow:hidden;text-overflow:ellipsis}
+.fc--combo{min-height:var(--ctrl-h);flex:0 1 280px;min-width:190px;cursor:default}
+.modulo__nome{white-space:nowrap}
+
+/* Filter control com <select> nativo (listas longas, ex.: municípios). */
+/* Combobox com busca vestido de controle de filtro: o campo perde a moldura
+   própria e quem desenha a borda e o foco é o .fc que o abriga. */
+.fc--combo .form-campo{flex:1 1 auto;min-width:0;gap:0}
+.fc--combo .custom-select__trigger{height:auto;padding:0 20px 0 0;border:0;background:0;box-shadow:none;font-size:13.5px;color:var(--n-900)}
+.fc--combo .custom-select__trigger:focus{outline:none;border-color:transparent;box-shadow:none}
+.fc--combo .custom-select__trigger::placeholder{color:var(--n-900)}
+.fc--combo .form-controle__icone{right:0}
+.fc--combo .custom-select__menu{min-width:280px}
+.fc--combo[data-ativo] .custom-select__trigger::placeholder{color:var(--d-800)}
+.fc__limpar{flex:none;width:22px;height:22px;margin-left:2px;display:grid;place-items:center;border-radius:99px;color:var(--n-450)}
+.fc__limpar:hover{background:var(--n-100);color:var(--n-900)}
+.fc__limpar .ui-icon{width:13px;height:13px}
+.fc--combo[data-ativo] .form-controle__icone{display:none}
+.fc--combo[data-ativo] .custom-select__trigger{padding-right:2px}
+.fc:focus-within{border-color:var(--d-550);box-shadow:0 0 0 3px var(--d-100)}
+.fc[data-ativo] 
+.chips-v32{padding:0 0 var(--s4)}
+.semres .btn-primaria{display:inline-flex}
+
+/* ---------- Detalhe ---------------------------------------------------- */
+.reg__t em{margin-left:auto;font-style:normal;font-size:11.5px;font-weight:400;color:var(--n-450)}
+.reg--sec .reg__t{display:flex;align-items:baseline;gap:var(--s2)}
+.reg--sec-lista{padding:13px 0 6px!important}
+.reg--sec-lista .reg__t{padding:0 18px}
+.reg--sec-lista dl{margin:0}
+.reg--sec-lista .resumo__linha{padding:6px 18px}
+.resumo__linha .st{height:22px;font-size:11.5px}
+.resumo__pendente{color:var(--n-450)!important;font-weight:400!important}
+.gc--servicos{grid-template-columns:minmax(0,66%) minmax(0,1fr);align-items:start}
+.gc .larga-total{grid-column:1/-1}
+.reg__div--dg{background:var(--d-200)}
+.reg__t span{min-width:0}
+.dl-eq label.dl-eq__i{cursor:text}
+.dg-obs{margin-top:16px}
+.dg-obs .reg__st{display:block;margin-bottom:8px}
+.dg-pe{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:16px}
+.dg-pe .btn--secundaria{height:44px}
+.dg-grade--encerramento{align-items:start}
+.enc-op{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border:1px solid var(--n-200);border-radius:9px;background:var(--branco)}
+.enc-op b{font-size:14px;color:var(--n-900)}
+.enc-op p{margin:0 0 4px;font-size:12.5px;color:var(--n-600);line-height:1.5}
+.enc-op .btn-primaria,.enc-op .btn--secundaria{align-self:flex-start;height:40px}
+.btn--destrutiva{color:var(--dg-t)!important;border-color:var(--dg-r)!important}
+.btn--destrutiva:hover{background:var(--dg-b)!important}
+.texto-vazio{margin:0;font-size:12.5px;color:var(--n-450)}
+.etapas--lateral{padding:0}
+.etapas--lateral .etapa{padding-left:0}
+.etapas--lateral .etapa:not(:last-child)::before{left:4px}
+.anexo--linha{display:flex;align-items:center;gap:4px;padding:2px 0}
+.anexo__abrir{display:flex;align-items:flex-start;gap:var(--s2);flex:1 1 auto;min-width:0;padding:6px 8px;border-radius:6px;color:inherit;text-decoration:none}
+.anexo__abrir:hover{background:var(--n-50)}
+.anexo__abrir>.ui-icon{width:15px;height:15px;color:var(--n-400);margin-top:2px;flex:none}
+.d-acoes form{margin:0}
+.d-acoes .ib{width:38px;height:38px}
+.aviso--callout .btn-primaria{text-decoration:none}
+@container (max-width:900px){
+  .d-grade{grid-template-columns:1fr}
+  .sticky{position:static;max-height:none;overflow:visible}
+  .gc--3,.gc--servicos{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .dg-grade{grid-template-columns:1fr}
+}
+
+/* ---------- Formulário -------------------------------------------------- */
+.sticky--form{display:flex;flex-direction:column}
+.campo-e>span em,.campo-e legend span em,.form-label__obrigatorio{color:var(--d-700);font-style:normal;margin-left:2px}
+.campo-e--bloco{border:0;padding:0;margin:0 0 14px;min-width:0}
+.campo-e--bloco legend{padding:0;margin-bottom:6px}
+.campo-e--bloco legend span{font-size:12.5px;color:var(--n-600);font-weight:500}
+.form-campo{display:flex;flex-direction:column;gap:6px;min-width:0}
+.form-label{font-size:12.5px;color:var(--n-600);font-weight:500}
+.form-erro{display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--dg-t);margin:3px 0 0}
+.form-controle{height:38px;width:100%;padding:0 var(--s3);border:1px solid var(--n-200);border-radius:7px;background:var(--branco);color:var(--n-900);font:inherit;font-size:13.5px}
+.form-controle:focus{outline:none;border-color:var(--d-550);box-shadow:0 0 0 3px var(--d-100)}
+.form-controle-wrapper{position:relative}
+.form-controle__icone{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--n-300);pointer-events:none;display:grid;transition:transform var(--motion),color var(--motion)}
+.form-controle__icone .ui-icon{width:14px;height:14px}
+.is-invalid .form-controle,.is-invalid .custom-select__trigger{border-color:var(--dg-t)!important}
+.eq-linha label.eq-linha__n{cursor:pointer}
+.eq-linha .stepper-n input:disabled{background:var(--n-50);color:var(--n-400)}
+.an-add{text-decoration:none;font-weight:600;color:var(--n-600)}
+.an-add--zona{height:auto;padding:16px;align-items:center;gap:12px;border-width:1.5px}
+.an-add--zona span{display:flex;flex-direction:column;gap:2px}
+.an-add--zona b{font-size:13px;color:var(--n-800)}
+.an-add--zona small{font-size:11.5px;color:var(--n-450)}
+.an-add--zona.is-arrastando{border-color:var(--d-500);background:var(--d-50)}
+.upload-anexos{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.upload-anexos__input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.upload-anexos__acoes{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.upload-anexos__vazio{font-size:11.5px;color:var(--n-450)}
+.upload-anexos__lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.upload-anexos__lista:empty{display:none}
+.upload-anexos__item{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--n-200);border-radius:7px;font-size:12.5px;background:var(--branco)}
+.upload-anexos__nome{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--n-800)}
+.upload-anexos__meta{font-size:11px;color:var(--n-450)}
+.upload-anexos__remover{width:24px;height:24px;border:0;background:0;border-radius:5px;color:var(--n-500);cursor:pointer;font-size:16px;line-height:1}
+.upload-anexos__remover:hover{background:var(--dg-b);color:var(--dg-t)}
+.upload-anexos--lateral .an-add{height:36px}
+.upload-anexos--lateral .btn--secundaria{align-self:flex-start;height:34px}
+/* margin-top:auto joga a barra para o fim da lateral esticada: só assim o
+   position:sticky;bottom prende os botões no rodapé da janela. */
+.frm-acoes--flut{margin-top:auto}
+.frm-acoes--flut .frm-cancelar{text-decoration:none}
+.step-i.etapa--concluida .step-i__m{background:var(--ok-t);border-color:var(--ok-t);color:#fff}
+.step-i.etapa--andamento .step-i__m{border-color:var(--d-500);color:var(--d-700);background:var(--d-50)}
+.step-i.etapa--andamento .step-i__t{color:var(--n-900);font-weight:600}
+/* Select pesquisável do app.js (município), no vocabulário V3.2. */
+.custom-select .custom-select__trigger{display:none}
+.custom-select.is-enhanced .custom-select__native{position:absolute;width:1px;height:1px;margin:0;padding:0;overflow:hidden;opacity:0;pointer-events:none}
+.custom-select.is-enhanced .custom-select__trigger{width:100%;display:flex;align-items:center;justify-content:space-between;padding-right:38px;background:var(--branco);color:var(--n-400);text-align:left;cursor:pointer}
+.custom-select__trigger.has-value{color:var(--n-900)}
+.custom-select.is-enhanced .custom-select__combobox{padding-right:38px;background:var(--branco);color:var(--n-900)}
+.custom-select__combobox::placeholder{color:var(--n-300)}
+.custom-select__menu{position:absolute;z-index:60;top:calc(100% + 6px);right:0;left:0;max-height:300px;overflow:hidden;padding:6px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco);box-shadow:0 1px 2px rgba(26,25,23,.06),0 14px 30px -10px rgba(26,25,23,.2)}
+.custom-select__menu[hidden]{display:none}
+.custom-select__lista{max-height:248px;display:grid;gap:2px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
+.custom-select__opcao>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.custom-select__vazio{margin:0;padding:18px 10px;color:var(--n-450);font-size:12.5px;text-align:center}
+.custom-select__opcao{width:100%;min-height:36px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 10px;border:0;border-radius:6px;background:var(--branco);color:var(--n-700);font:inherit;font-size:13.5px;line-height:1.3;text-align:left;cursor:pointer}
+.custom-select__opcao[hidden]{display:none}
+.custom-select__opcao:hover,.custom-select__opcao:focus-visible{outline:0;background:var(--n-50);color:var(--n-900)}
+.custom-select__opcao.is-selected{background:var(--d-50);color:var(--n-900);font-weight:600}
+.custom-select__check{flex:0 0 auto;color:var(--d-700);opacity:0}
+.custom-select__check .ui-icon{width:15px;height:15px}
+.custom-select__opcao.is-selected .custom-select__check{opacity:1}
+.custom-select.is-open .custom-select__trigger,.custom-select.is-open .custom-select__combobox{border-color:var(--d-550);box-shadow:0 0 0 3px var(--d-100)}
+.custom-select.is-open .form-controle__icone{color:var(--d-700);transform:translateY(-50%) rotate(180deg)}
+@container (max-width:900px){
+  .frm-grade{grid-template-columns:1fr}
+  .g-form--3,.g-form--2,.condicional{grid-template-columns:1fr}
+  .g-form .c2{grid-column:auto}
+  .frm-acoes--flut{position:sticky;bottom:0;padding:12px 0;z-index:40}
+}
+
+/* Seletor de colunas do app.js. */
+.coluna-oculta{display:none!important}
+
+/* Data List mobile: escondida no desktop; no container estreito substitui a tabela. */
+.lista-mobile-v32{display:none}
+.lista-mobile-v32 .m-lista{border:1px solid var(--n-200);border-radius:10px 10px 0 0;overflow:hidden}
+.lista-mobile-v32 .m-item:last-child{border-bottom:0}
+.lista-mobile-v32 .m-pag{border:1px solid var(--n-200);border-top:0;border-radius:0 0 10px 10px;background:var(--branco)}
+.m-pag a,.m-pag span[aria-disabled]{height:44px;padding:0 8px;color:var(--n-700);font-weight:600;display:flex;align-items:center;gap:4px;text-decoration:none}
+.m-pag span[aria-disabled]{opacity:.4}
+.m-pag .m-pag__meio{height:auto;padding:0;font-weight:500;color:var(--n-500)}
+.m-item[data-linha-url]{cursor:pointer}
+.m-item .m-item__rodape span:first-child:empty{flex:1}
+
+@container (max-width:680px){
+  .rodape-v32{padding:var(--s4) 16px var(--s6);flex-wrap:wrap}
+  .ident__fim .dd{flex:0 0 auto}
+  .fc--combo{flex:1 1 100%}
+  .painel{display:none}
+  .lista-mobile-v32{display:block}
+}
+
+/* ---- Cabeçalhos de seção (painel, cadastros) e de formulário simples --- */
+.d-cabeca--secao{align-items:flex-end;padding:var(--s5) 0 var(--s3)}
+.d-cabeca--secao h1{font-size:28px}
+.d-cabeca--form{align-items:flex-end;padding:var(--s4) 0 var(--s3)}
+.d-cabeca--form h1{font-size:26px;margin-top:var(--s2)}
+
+/* ---- Painel ---------------------------------------------------------- */
+.kpi{text-decoration:none}
+.kpi .kpi__ic{display:grid}
+.kpi>span:last-child{min-width:0;margin:0}
+.kpi small .ui-icon{width:11px;height:11px;vertical-align:-1px;margin-right:3px}
+.pa-h .ui-icon{width:15px;height:15px;color:var(--n-450);flex:none}
+.pa-h--lista{padding:15px 18px 13px;margin:0;border-bottom:1px solid var(--n-150)}
+.pa-periodo{margin-left:auto}
+.pa-periodo select{height:30px;border:1px solid var(--n-200);border-radius:6px;background:var(--branco);font:inherit;font-size:12.5px;font-weight:500;color:var(--n-700);padding:0 8px;cursor:pointer}
+.pa-periodo select:focus{outline:none;border-color:var(--d-550);box-shadow:0 0 0 3px var(--d-100)}
+.pa-rodape{display:flex;align-items:center;gap:6px;margin:14px 0 0;font-size:11.5px;color:var(--n-450)}
+.pa-rodape .ui-icon{width:13px;height:13px;flex:none}
+.pa-dg--col{flex-direction:column;align-items:stretch;gap:16px;padding-bottom:16px;margin-bottom:12px}
+.pa-link{display:inline-block;margin-top:14px;font-size:12.5px;font-weight:600;color:var(--d-700);text-decoration:none}
+.pa-link:hover{text-decoration:underline}
+.pa-card--lista .c-id a{color:inherit;text-decoration:none}
+.dt__vazio{padding:28px 18px;text-align:center;color:var(--n-500);font-size:13px;margin:0}
+
+/* ---- Cadastros ------------------------------------------------------- */
+.cad-visao{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:18px}
+.cad-barra__fim span{font-size:12.5px;color:var(--n-500)}
+.cad-limpar{font-size:12.5px;font-weight:600;color:var(--d-700);text-decoration:none}
+.cad-limpar:hover{text-decoration:underline}
+.cad-lista .lista-mobile-v32 .m-lista{border:0;border-top:1px solid var(--n-150);border-radius:0}
+.cad-lista .lista-mobile-v32 .m-pag{border:0;border-top:1px solid var(--n-150);border-radius:0}
+.cad-frm{max-width:600px;margin:0 auto 0 0;padding-bottom:48px}
+.cad-frm__intro{margin:-6px 0 16px;font-size:12.5px;color:var(--n-500)}
+.pa-card--uc .cad-frm__intro{margin-top:0}
+.cad-frm .aviso--erro{margin-bottom:16px}
+.cad-frm__erro-geral{display:block;margin-top:4px;font-size:12.5px}
+.campo-e>span em{color:var(--d-700);font-style:normal;margin-left:2px}
+.campo-e>.msg-erro{font-size:11.5px;color:var(--dg-t);font-weight:400}
+.ctrl--ta{height:auto;min-height:96px;padding:10px var(--s3);resize:vertical;line-height:1.5}
+.cad-frm__nota{display:flex;align-items:flex-start;gap:6px;margin:14px 0 0;font-size:12px;color:var(--n-500)}
+.cad-frm__nota .ui-icon{width:13px;height:13px;flex:none;margin-top:2px}
+.cad-frm__acoes{display:flex;align-items:center;gap:10px;margin-top:20px;padding-top:14px;border-top:1px solid var(--n-150)}
+.cad-frm__acoes .frm-cancelar{display:inline-flex;align-items:center;text-decoration:none}
+.cad-frm__acoes .btn-primaria{height:40px}
+
+@container (max-width:900px){
+  .db-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .db-2col,.db-linha2{grid-template-columns:1fr}
+  .cad-grade{grid-template-columns:1fr}
+  .cad-rail{position:static;display:flex;overflow-x:auto;scrollbar-width:none}
+  .cad-rail::-webkit-scrollbar{display:none}
+  .cad-rail__h{display:none}
+  .cad-rail .cad-i{flex:none;border-bottom:0;border-right:1px solid var(--n-100)}
+  .cad-rail .cad-i[aria-current]{box-shadow:inset 0 -2px 0 var(--d-500)}
+  .cad-visao{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@container (max-width:680px){
+  .db-kpis{grid-template-columns:1fr}
+  .kpi--destaque b{font-size:28px}
+  .cad-lista .dt-w,.cad-lista .pag{display:none}
+  .cad-visao{grid-template-columns:1fr;padding:12px}
+  .cad-barra{padding:12px 16px}
+  .cad-barra .busca{flex:1 1 100%;max-width:none}
+  .cad-frm__acoes{position:sticky;bottom:0;background:var(--branco);padding:12px 0;z-index:40}
+  .gr{gap:4px}
+  .gr__m{font-size:9px}
+}
+
+/* ---- Shell: marca truncável no container estreito ---------------------- */
+.marca__org{overflow:hidden;text-overflow:ellipsis;min-width:0}
+
+/* ---- Listagem mobile: ferramentas + bottom sheets ---------------------- */
+.m-ferramentas-v32{display:none}
+.m-sheet .campo{display:flex;flex-direction:column;gap:6px}
+.m-sheet .campo__label{font-size:13px;color:var(--n-600)}
+.m-sheet a.m-op{text-decoration:none}
+.m-sheet__rodape a.btn--secundaria{text-decoration:none}
+body.m-sheet-aberto{overflow:hidden}
+@container (max-width:680px){
+  .barra__esq{flex-direction:row;flex-wrap:wrap;gap:8px}
+  .barra__esq .busca{flex:1 1 100%;width:100%}
+  .barra__esq>.dd,.barra__esq>.fc--combo,.fpanel{display:none!important}
+  .m-ferramentas-v32{display:flex;width:100%;padding:0}
+  .m-ferramentas-v32 .m-bt{flex:1 1 0;justify-content:center}
+}
+
+/* ---- Larguras intermediárias (681–1100px): tabela rola dentro do painel,
+   abas e indicadores rolam na horizontal em vez de estourar a página ------ */
+.filas{overflow-x:auto;scrollbar-width:none;max-width:100%}
+.filas::-webkit-scrollbar{display:none}
+.filas .fila{flex:none}
+.cabeca__dir{max-width:100%;min-width:0}
+.ind{max-width:100%;overflow-x:auto;scrollbar-width:none}
+.ind::-webkit-scrollbar{display:none}
+@container (max-width:1100px){
+  .dt-w,.pa-card--lista .dt-w{overflow-x:auto;overflow-y:hidden;padding-bottom:0}
+}
+
+/* sr-only ancorado à esquerda: na posição estática (fim de uma tabela larga) ele
+   estendia a largura rolável da página. */
+.sr-only{left:0}
+
+/* Painel · a linha de baixo tem dois cartões lado a lado: eles crescem juntos
+   até a altura do mais alto, em vez de cada um parar no seu conteúdo. */
+.db-linha2{align-items:stretch}
+.db-linha2>.pa-card--lista{align-self:stretch;display:flex;flex-direction:column;min-height:0}
+.db-linha2>.pa-card--lista>.pa-h{flex:none}
+.db-linha2 .dt-w,.db-linha2 .pa-ev{flex:1 1 auto;min-height:0}
+.db-linha2 .pa-ev{overflow-y:auto}
+
+/* Ações do formulário: sem Cancelar, os dois botões dividem a mesma linha
+   (quando só há um, ele ocupa a largura inteira). */
+.frm-acoes--flut{flex-direction:row;align-items:stretch;gap:8px;flex-wrap:nowrap}
+.frm-acoes--flut .btn--secundaria,.frm-acoes--flut .btn-primaria{flex:1 1 0;width:auto;min-width:0;white-space:nowrap;padding-left:10px;padding-right:10px}
+.frm-acoes--flut .btn-primaria .ui-icon{flex:none}
+/* O botao secundario tem 36px por padrao; iguala ao primario para os dois
+   ficarem com a mesma altura na linha. */
+.frm-acoes--flut .btn--secundaria{height:var(--ctrl-h);border-radius:8px;font-size:14.5px;gap:var(--s2)}
+
+/* Bloco condicional da unidade móvel: aparece só quando a resposta é "Sim",
+   então recebe o mesmo tom bronze das opções marcadas e vira um painel preso
+   à escolha, em vez de dois selects soltos. */
+.condicional{margin-top:2px;padding:14px 16px;border-left:3px solid var(--d-500);border-radius:0 9px 9px 0;background:var(--d-50)}
+.condicional .form-label,.condicional>.campo-e>span{color:var(--d-800)}
+.condicional .ctrl{background:var(--branco);border-color:var(--d-300)}
+.condicional .ctrl:hover{border-color:var(--d-500)}
+
+/* A lateral nunca rola por dentro: o V3.2 a prendia na janela com altura
+   máxima e barra própria. Aqui ela só flutua quando cabe inteira na janela — o
+   ds-v32.js mede e marca .pode-flutuar. Não cabendo, rola junto com a página e
+   as ações continuam presas ao rodapé pela regra .frm-acoes--flut. */
+.sticky{position:static;max-height:none;overflow:visible}
+.sticky.pode-flutuar{position:sticky;top:var(--s5);align-self:start}
+
+/* ---- Calendário e select do sistema (app.js) nos tokens da V3.2 ---------
+   Os componentes input.html/date_range.html/select.html trazem a marcação do
+   design system antigo; aqui ela ganha a pele da V3.2 para os campos não
+   caírem no widget nativo do navegador. */
+.form-label__obrigatorio{color:var(--d-700);font-style:normal}
+.form-controle:hover:not(:disabled):not([readonly]){border-color:var(--n-250)}
+.form-controle:disabled{background:var(--n-50);color:var(--n-400)}
+.form-controle-wrapper--date .form-controle{padding-right:38px;cursor:pointer;color-scheme:light}
+.form-controle-wrapper--date .form-controle::-webkit-calendar-picker-indicator{z-index:2;width:20px;height:20px;margin:0;opacity:0;cursor:pointer}
+.form-controle-wrapper--date:not(.is-enhanced) .custom-date__native::-webkit-calendar-picker-indicator{opacity:1}
+.custom-date{position:relative}
+.custom-date .custom-date__trigger{display:none}
+.custom-date.is-enhanced .custom-date__native,
+.custom-date.is-enhanced .custom-date__range-native{position:absolute;width:1px;height:1px;margin:0;padding:0;overflow:hidden;opacity:0;pointer-events:none}
+.custom-date__range-native{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.custom-date.is-enhanced .custom-date__trigger{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--branco);color:var(--n-300);text-align:left;cursor:pointer}
+.custom-date__trigger.has-value{color:var(--n-900)}
+.custom-date.is-open .custom-date__trigger{border-color:var(--d-550);box-shadow:0 0 0 3px var(--d-100)}
+.custom-date.is-open .form-controle__icone{color:var(--d-700)}
+.custom-date.is-invalid .custom-date__trigger{border-color:var(--dg-t)}
+.custom-date__calendar{position:absolute;z-index:60;top:calc(100% + 6px);left:0;width:min(300px,calc(100vw - 32px));padding:12px;border:1px solid var(--n-200);border-radius:10px;background:var(--branco);box-shadow:0 14px 30px rgba(26,25,23,.16)}
+.custom-date__calendar[hidden]{display:none}
+.custom-date__cabecalho{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:34px;margin-bottom:7px}
+.custom-date__mes{display:block;color:var(--n-900);font-size:13px;font-weight:600}
+.custom-date__mes::first-letter{text-transform:uppercase}
+.custom-date__instrucao{display:block;margin-top:2px;color:var(--n-450);font-size:10.5px}
+.custom-date__navegacao{display:flex;align-items:center;gap:2px}
+.custom-date__navegacao button{width:30px;height:30px;display:grid;place-items:center;border:0;border-radius:6px;background:0;color:var(--n-600);cursor:pointer;font:inherit}
+.custom-date__navegacao button:hover,.custom-date__navegacao button:focus-visible{outline:0;background:var(--d-50);color:var(--d-700)}
+.custom-date__navegacao .ui-icon{width:15px;height:15px}
+.custom-date__salto{width:26px;font-size:14px;font-weight:700;line-height:1}
+.custom-date__semana,.custom-date__dias{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.custom-date__semana{margin-bottom:3px}
+.custom-date__semana span{height:26px;display:grid;place-items:center;color:var(--n-450);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.custom-date__dia{position:relative;min-width:0;height:32px;display:grid;place-items:center;border:1px solid transparent;border-radius:7px;background:0;color:var(--n-800);font:inherit;font-size:12.5px;font-variant-numeric:tabular-nums;cursor:pointer}
+.custom-date__dia:hover,.custom-date__dia:focus-visible{outline:0;border-color:var(--d-300);background:var(--d-50);color:var(--d-800)}
+.custom-date__dia.is-outside{color:var(--n-300)}
+.custom-date__dia.is-today{border-color:var(--d-500);color:var(--d-800);font-weight:600}
+.custom-date__dia.is-selected,.custom-date__dia.is-range-start,.custom-date__dia.is-range-end{border-color:var(--d-600);background:var(--d-600);color:#fff;font-weight:600}
+.custom-date__dia.is-in-range{border-color:transparent;border-radius:3px;background:var(--d-50);color:var(--d-800)}
+.custom-date__rodape{display:flex;align-items:center;justify-content:space-between;margin-top:9px;padding-top:9px;border-top:1px solid var(--n-150)}
+.custom-date__rodape button{min-height:28px;padding:4px 8px;border:0;border-radius:6px;background:0;color:var(--d-700);font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.custom-date__rodape button:hover,.custom-date__rodape button:focus-visible{outline:0;background:var(--d-50)}
+/* Um calendário aberto não pode ser cortado pelo cartão da seção. */
+.reg:has(.custom-date.is-open),.reg:has(.custom-select.is-open){position:relative;z-index:20;overflow:visible}

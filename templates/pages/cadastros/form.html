@@ -1,40 +1,68 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 
-{% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+{% block title %}{{ cartao_titulo }} — {{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with itens=breadcrumb %}
-  {% include "components/page_header.html" with titulo=titulo subtitulo=subtitulo_pagina icone="checklist" %}
+  <div class="d-cabeca d-cabeca--form">
+    <div class="d-cabeca__esq">
+      <a class="voltar" href="{% url 'cadastros:lista' slug %}">{% include "components/icon.html" with nome="chevron-left" %}Voltar para {{ titulo }}</a>
+      <h1>{{ cartao_titulo }}</h1>
+      <p class="d-cabeca__sub">{{ subtitulo_pagina }}.</p>
+    </div>
+  </div>
 
-  <form method="post" action="" class="card cadastro-form">
+  <form method="post" action="" class="cad-frm">
     {% csrf_token %}
-    <div class="card__corpo">
-      <header class="cadastro-form__cabecalho">
-        <h2 class="cadastro-form__titulo">{{ cartao_titulo }}</h2>
-        <p class="cadastro-form__intro">{{ cartao_intro }}</p>
-      </header>
-      <div class="form-grid">
+    <section class="pa-card{% if apenas_nome %} pa-card--uc{% endif %}">
+      {% if not apenas_nome %}<h2 class="pa-h">Dados {{ genitivo }}</h2>{% endif %}
+      <p class="cad-frm__intro">{{ cartao_intro }}</p>
+
+      {% if erros_total %}
+        <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
+          {% include "components/icon.html" with nome="alert" %}
+          <div>
+            <b>Não foi possível salvar {{ singular|default:"o registro" }}</b>
+            Encontramos {{ erros_total }} {% if erros_total == 1 %}campo que precisa ser corrigido{% else %}campos que precisam ser corrigidos{% endif %}.
+            {% for erro in erros_gerais %}<span class="form-erro cad-frm__erro-geral">{{ erro }}</span>{% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="g-form g-form--2">
         {% for campo in campos %}
           {% if campo.tipo == "select" %}
-            {% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes obrigatorio=campo.obrigatorio largura="6" selecionado=campo.valor erros=campo.erros %}
-          {% elif campo.tipo == "textarea" %}
-            {% include "components/textarea.html" with name=campo.name label=campo.label largura="" linhas="3" valor=campo.valor erros=campo.erros obrigatorio=campo.obrigatorio %}
-          {% elif campo.name == "nome" %}
-            {% include "components/input.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio largura="" valor=campo.valor erros=campo.erros placeholder=exemplo %}
+            {# Select do sistema (app.js): mesma lista, sem o widget nativo do navegador. #}
+            {% include "components/select.html" with name=campo.name label=campo.label|capfirst opcoes=campo.opcoes obrigatorio=campo.obrigatorio selecionado=campo.valor erros=campo.erros %}
           {% else %}
-            {% include "components/input.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio largura="" valor=campo.valor erros=campo.erros %}
+          <label class="campo-e form-campo cheia{% if campo.erros %} campo-e--erro{% endif %}">
+            <span>{{ campo.label|capfirst }}{% if campo.obrigatorio %}<em>*</em>{% endif %}</span>
+            {% if campo.tipo == "textarea" %}
+              <textarea class="ctrl ctrl--ta{% if campo.erros %} ctrl--erro{% endif %}" id="id_{{ campo.name }}" name="{{ campo.name }}" rows="3"
+                        {% if campo.obrigatorio %}required{% endif %}
+                        {% if campo.erros %}aria-invalid="true" aria-describedby="msg-{{ campo.name }}"{% endif %}>{{ campo.valor }}</textarea>
+            {% else %}
+              <input class="ctrl{% if campo.erros %} ctrl--erro{% endif %}" type="text" id="id_{{ campo.name }}" name="{{ campo.name }}" value="{{ campo.valor }}"
+                     {% if campo.name == "nome" %}placeholder="{{ exemplo }}" autofocus{% endif %}
+                     {% if campo.obrigatorio %}required{% endif %}
+                     {% if campo.erros %}aria-invalid="true" aria-describedby="msg-{{ campo.name }}"{% endif %}>
+            {% endif %}
+            {% if campo.erros %}
+              <span class="msg-erro form-erro" id="msg-{{ campo.name }}">{% include "components/icon.html" with nome="alert" %}{{ campo.erros|join:" " }}</span>
+            {% endif %}
+          </label>
           {% endif %}
         {% endfor %}
       </div>
-      <p class="cadastro-form__nota">
-        <span class="cadastro-form__nota-icone" aria-hidden="true">{% include "components/icon.html" with nome="info" %}</span>
-        O nome {{ genitivo }} será exibido nas telas de cadastros e solicitações.
+
+      <p class="cad-frm__nota">
+        {% include "components/icon.html" with nome="info" %}
+        <span>O nome {{ genitivo }} será exibido nas telas de cadastros e solicitações.</span>
       </p>
-      <div class="acoes-formulario">
-        {% url 'cadastros:lista' slug as url_voltar %}
-        {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
-        {% include "components/button.html" with label="Salvar" variante="dourado" tipo="submit" %}
+
+      <div class="cad-frm__acoes">
+        <a class="frm-cancelar" href="{% url 'cadastros:lista' slug %}">Cancelar</a>
+        <button type="submit" class="btn-primaria">Salvar {{ singular }}</button>
       </div>
-    </div>
+    </section>
   </form>
 {% endblock %}

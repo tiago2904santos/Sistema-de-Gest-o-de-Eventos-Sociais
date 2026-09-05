@@ -60,7 +60,6 @@ class Unidade(ModeloTemporal):
 
     nome = models.CharField("nome", max_length=255, unique=True)
     sigla = models.CharField("sigla", max_length=50, blank=True)
-    ativo = models.BooleanField("ativo", default=True)
 
     class Meta:
         ordering = ["nome"]
@@ -85,7 +84,6 @@ class CatalogoComPadrao(ModeloTemporal):
 
     nome = models.CharField("nome", max_length=120, unique=True)
     is_padrao = models.BooleanField("padrão", default=False)
-    ativo = models.BooleanField("ativo", default=True)
 
     class Meta:
         abstract = True
@@ -173,7 +171,6 @@ class Servidor(ModeloTemporal, OrigemLegado):
         null=True,
         related_name="servidores",
     )
-    ativo = models.BooleanField("ativo", default=True)
 
     class Meta:
         ordering = ["nome"]
@@ -291,7 +288,6 @@ class Viatura(ModeloTemporal):
         blank=True,
         related_name="viaturas_que_dirige",
     )
-    ativo = models.BooleanField("ativo", default=True)
 
     class Meta:
         ordering = ["placa"]

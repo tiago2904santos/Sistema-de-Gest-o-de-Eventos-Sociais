@@ -20,20 +20,6 @@ from .normalizacao import (
 )
 
 
-def apenas_ativos(campo, vinculado_pk=None):
-    """Restringe o select a registros ativos, sem esconder o já vinculado.
-
-    A mensagem de erro de exclusão promete que inativar "retira das novas
-    escolhas"; sem isto o registro inativo continuaria selecionável. Manter o
-    que já está vinculado evita que abrir um cadastro antigo e salvar apague
-    silenciosamente a escolha anterior.
-    """
-    queryset = campo.queryset.filter(ativo=True)
-    if vinculado_pk:
-        queryset = queryset | campo.queryset.filter(pk=vinculado_pk)
-    campo.queryset = queryset.distinct()
-
-
 class NomeNormalizadoMixin:
     """Normaliza o nome já na validação, e não só ao gravar.
 
@@ -49,9 +35,49 @@ class NomeNormalizadoMixin:
 
 
 class UnidadeForm(NomeNormalizadoMixin, forms.ModelForm):
+    servidores = forms.ModelMultipleChoiceField(
+        label="Servidores vinculados",
+        queryset=Servidor.objects.none(),
+        required=False,
+        help_text=(
+            "Selecione quem está lotado nesta unidade. Ao mover um servidor, "
+            "a lotação anterior é atualizada automaticamente."
+        ),
+    )
+
     class Meta:
         model = Unidade
-        fields = ["nome", "sigla", "ativo"]
+        fields = ["nome", "sigla"]
+        widgets = {
+            "nome": forms.TextInput(
+                attrs={"placeholder": "Ex.: DELEGACIA DE CURITIBA", "data-uppercase": "true"}
+            ),
+            "sigla": forms.TextInput(
+                attrs={"placeholder": "Ex.: DC", "data-uppercase": "true", "maxlength": "50"}
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["servidores"].queryset = Servidor.objects.select_related(
+            "cargo", "unidade"
+        ).order_by("nome")
+        if self.instance and self.instance.pk and not self.is_bound:
+            self.initial["servidores"] = list(
+                Servidor.objects.filter(unidade=self.instance).values_list("pk", flat=True)
+            )
+
+    def save(self, commit=True):
+        unidade = super().save(commit=commit)
+        if commit:
+            selecionados = self.cleaned_data.get("servidores")
+            if selecionados is not None:
+                ids = {servidor.pk for servidor in selecionados}
+                Servidor.objects.filter(pk__in=ids).update(unidade=unidade)
+                Servidor.objects.filter(unidade=unidade).exclude(pk__in=ids).update(
+                    unidade=None
+                )
+        return unidade
 
     def clean_sigla(self):
         return normalizar_maiusculas(self.cleaned_data.get("sigla"))
@@ -60,13 +86,31 @@ class UnidadeForm(NomeNormalizadoMixin, forms.ModelForm):
 class CargoForm(NomeNormalizadoMixin, forms.ModelForm):
     class Meta:
         model = Cargo
-        fields = ["nome", "is_padrao", "ativo"]
+        fields = ["nome", "is_padrao"]
+        labels = {"nome": "Cargo", "is_padrao": "Usar como cargo padrão"}
+        help_texts = {
+            "is_padrao": "Será sugerido automaticamente ao criar um servidor."
+        }
+        widgets = {
+            "nome": forms.TextInput(
+                attrs={"placeholder": "Ex.: INVESTIGADOR", "data-uppercase": "true"}
+            )
+        }
 
 
 class CombustivelForm(NomeNormalizadoMixin, forms.ModelForm):
     class Meta:
         model = Combustivel
-        fields = ["nome", "is_padrao", "ativo"]
+        fields = ["nome", "is_padrao"]
+        labels = {"nome": "Combustível", "is_padrao": "Usar como combustível padrão"}
+        help_texts = {
+            "is_padrao": "Será sugerido automaticamente ao criar uma viatura."
+        }
+        widgets = {
+            "nome": forms.TextInput(
+                attrs={"placeholder": "Ex.: GASOLINA", "data-uppercase": "true"}
+            )
+        }
 
 
 class ServidorForm(NomeNormalizadoMixin, forms.ModelForm):
@@ -79,25 +123,65 @@ class ServidorForm(NomeNormalizadoMixin, forms.ModelForm):
         max_length=14,
         required=False,
         help_text="Pode digitar com ou sem pontuação.",
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "000.000.000-00",
+                "inputmode": "numeric",
+                "autocomplete": "off",
+                "data-mask": "cpf",
+                "maxlength": "14",
+            }
+        ),
     )
     telefone = forms.CharField(
-        label="telefone",
+        label="Telefone",
         max_length=16,
         required=False,
         help_text="Com DDD. Pode digitar com ou sem pontuação.",
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "(00) 00000-0000",
+                "inputmode": "tel",
+                "autocomplete": "tel",
+                "data-mask": "telefone",
+                "maxlength": "16",
+            }
+        ),
     )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        instancia = self.instance if self.instance and self.instance.pk else None
-        apenas_ativos(self.fields["cargo"], instancia and instancia.cargo_id)
-        apenas_ativos(self.fields["unidade"], instancia and instancia.unidade_id)
+        self.fields["cargo"].queryset = Cargo.objects.order_by("nome")
+        self.fields["unidade"].queryset = Unidade.objects.order_by("nome")
+        self.fields["cargo"].empty_label = "Selecione (opcional)"
+        self.fields["unidade"].empty_label = "Selecione (opcional)"
+        if not self.instance.pk and not self.is_bound:
+            padrao = Cargo.objects.filter(is_padrao=True).first()
+            if padrao:
+                self.initial.setdefault("cargo", padrao.pk)
 
     class Meta:
         model = Servidor
-        fields = ["nome", "cargo", "cpf", "rg", "telefone", "unidade", "ativo"]
+        fields = ["nome", "cargo", "cpf", "rg", "telefone", "unidade"]
         help_texts = {
-            "rg": f'Deixe em branco ou escreva "{RG_NAO_POSSUI}" se não possuir.',
+            "rg": f'Deixe em branco ou escreva "{RG_NAO_POSSUI_EXIBICAO}" se não possuir.',
+        }
+        widgets = {
+            "nome": forms.TextInput(
+                attrs={
+                    "placeholder": "Ex.: MARIA DA SILVA",
+                    "autocomplete": "name",
+                    "data-uppercase": "true",
+                }
+            ),
+            "rg": forms.TextInput(
+                attrs={
+                    "placeholder": "00.000.000-0 ou NÃO POSSUI RG",
+                    "autocomplete": "off",
+                    "data-mask": "rg",
+                    "maxlength": "30",
+                }
+            ),
         }
 
     def clean_cpf(self):
@@ -139,22 +223,33 @@ class ServidorForm(NomeNormalizadoMixin, forms.ModelForm):
 class ViaturaForm(forms.ModelForm):
     # Mesma razão do CPF: a placa é guardada sem hífen (7 caracteres), mas
     # "ABC-1234" tem 8 e é como as pessoas escrevem.
-    placa = forms.CharField(label="placa", max_length=10)
+    placa = forms.CharField(
+        label="Placa",
+        max_length=10,
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "ABC-1234 ou ABC1D23",
+                "autocomplete": "off",
+                "data-mask": "placa",
+                "data-uppercase": "true",
+            }
+        ),
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        instancia = self.instance if self.instance and self.instance.pk else None
-        apenas_ativos(self.fields["combustivel"], instancia and instancia.combustivel_id)
-        apenas_ativos(self.fields["unidade"], instancia and instancia.unidade_id)
-        # Motoristas é M2M: o vínculo existente é preservado pelo próprio
-        # queryset dos já selecionados.
-        campo = self.fields["motoristas"]
-        vinculados = (
-            list(instancia.motoristas.values_list("pk", flat=True)) if instancia else []
-        )
-        campo.queryset = (
-            campo.queryset.filter(ativo=True) | campo.queryset.filter(pk__in=vinculados)
-        ).distinct()
+        self.fields["combustivel"].queryset = Combustivel.objects.order_by("nome")
+        self.fields["unidade"].queryset = Unidade.objects.order_by("nome")
+        self.fields["motoristas"].queryset = Servidor.objects.select_related(
+            "cargo", "unidade"
+        ).order_by("nome")
+        self.fields["combustivel"].empty_label = "Selecione (opcional)"
+        self.fields["unidade"].empty_label = "Selecione (opcional)"
+        if not self.instance.pk and not self.is_bound:
+            padrao = Combustivel.objects.filter(is_padrao=True).first()
+            if padrao:
+                self.initial.setdefault("combustivel", padrao.pk)
+            self.initial.setdefault("tipo", Viatura.Tipo.DESCARACTERIZADA)
 
     class Meta:
         model = Viatura
@@ -165,9 +260,16 @@ class ViaturaForm(forms.ModelForm):
             "combustivel",
             "unidade",
             "motoristas",
-            "ativo",
         ]
-        help_texts = {"placa": "Formato antigo (ABC1234) ou Mercosul (ABC1D23)."}
+        help_texts = {
+            "placa": "Formato antigo (ABC1234) ou Mercosul (ABC1D23).",
+            "motoristas": "Selecione todos os servidores autorizados a conduzir esta viatura.",
+        }
+        widgets = {
+            "modelo": forms.TextInput(
+                attrs={"placeholder": "Ex.: RENAULT DUSTER", "data-uppercase": "true"}
+            )
+        }
 
     def clean_placa(self):
         placa = normalizar_placa(self.cleaned_data.get("placa"))
@@ -186,7 +288,18 @@ class TabelaDiariaForm(forms.ModelForm):
     class Meta:
         model = TabelaDiaria
         fields = ["faixa", "vigencia_inicio", "valor_24h"]
-        widgets = {"vigencia_inicio": forms.DateInput(attrs={"type": "date"})}
+        widgets = {
+            "vigencia_inicio": forms.DateInput(attrs={"type": "date"}),
+            "valor_24h": forms.NumberInput(
+                attrs={
+                    "step": "0.01",
+                    "min": "0.04",
+                    "inputmode": "decimal",
+                    "placeholder": "0,00",
+                    "data-diaria-base": "true",
+                }
+            ),
+        }
 
     def clean_valor_24h(self):
         valor = self.cleaned_data.get("valor_24h")

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-densidade="padrao" data-dourado="institucional" data-divisorias="filete">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Serviços — Cadastros</title>
+<link rel="stylesheet" href="design-system/components-v3-2.css">
+</head>
+<body>
+<header class="ident"><div class="ident__in">
+  <div class="marca">
+    <span class="marca__moldura"><img src="assets/brasao-pcpr.svg" alt="Brasão da Polícia Civil do Paraná"></span>
+    <span class="marca__org">Polícia Civil do Paraná</span>
+  </div>
+  <span class="risco-i" aria-hidden="true"></span>
+  <span class="ident__sistema">Sistema de Gestão de Eventos Sociais</span>
+  <div class="ident__fim">
+    <button class="ident-icone" aria-label="Notificações"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="ident-icone__ponto"></span></button>
+    <button class="ident-icone" aria-label="Ajuda"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button>
+    <button class="ident-user" aria-haspopup="true" aria-expanded="false">
+      <span class="ident-user__av">MR</span><span class="ident-user__n">Cel. Marcos Ribeiro</span>
+      <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+  </div>
+</div></header>
+
+<nav class="navbar"><div class="navbar__in">
+  <button class="modulo" aria-haspopup="true" aria-expanded="false">
+    <span class="modulo__nome">Eventos Sociais</span>
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+  </button>
+  <div class="nav-mod">
+    <a href="Piloto V3.2 - Solicitacoes (desktop).html">Solicitações</a>
+    <a href="Piloto - Painel Eventos Sociais (desktop).html">Painel</a>
+    <a href="Piloto - Cadastros (desktop).html" aria-current="page">Cadastros</a>
+    <a href="#">Relatórios</a>
+  </div>
+</div></nav>
+
+<main class="conteudo">
+  <div class="d-cabeca" style="align-items:flex-end;padding:var(--s5) 0 var(--s3)">
+    <div class="d-cabeca__esq">
+      <div class="kicker">Eventos Sociais</div>
+      <h1 style="font-size:28px">Cadastros</h1>
+      <p class="d-cabeca__sub">Tabelas de apoio utilizadas pelas solicitações.</p>
+    </div>
+    <div class="d-acoes">
+      <button class="btn-primaria" id="btn-novo">
+        <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Novo serviço
+      </button>
+    </div>
+  </div>
+
+  <div class="cad-grade">
+    <nav class="cad-rail" aria-label="Cadastros de apoio">
+      <div class="cad-rail__h">Tabelas de apoio</div>
+      <a class="cad-i" href="#">
+        <span class="cad-i__ic"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg></span>
+        <span class="cad-i__t">Tipos de evento</span><span class="cad-i__n">12</span>
+      </a>
+      <a class="cad-i" href="#" aria-current="page">
+        <span class="cad-i__ic"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></span>
+        <span class="cad-i__t">Serviços</span><span class="cad-i__n">18</span>
+      </a>
+      <a class="cad-i" href="#">
+        <span class="cad-i__ic"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        <span class="cad-i__t">Equipes</span><span class="cad-i__n">24</span>
+      </a>
+      <a class="cad-i" href="#">
+        <span class="cad-i__ic"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 18v-7"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M6 18v-7"/><path d="m12 2 8 5H4l8-5Z"/><path d="M3 21h18"/></svg></span>
+        <span class="cad-i__t">Órgãos responsáveis</span><span class="cad-i__n">9</span>
+      </a>
+      <a class="cad-i" href="Piloto - Cadastros (desktop).html">
+        <span class="cad-i__ic"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></span>
+        <span class="cad-i__t">Municípios</span><span class="cad-i__n">399</span>
+      </a>
+      <a class="cad-i" href="#">
+        <span class="cad-i__ic"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35a1 1 0 0 0-.78-.38H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg></span>
+        <span class="cad-i__t">Unidades móveis</span><span class="cad-i__n">4</span>
+      </a>
+    </nav>
+
+    <section class="pa-card pa-card--lista">
+      <div class="cad-titulo">
+        <h2>Serviços</h2>
+        <span><b>18</b> cadastrados · <b>16</b> ativos</span>
+      </div>
+      <div class="cad-barra">
+        <div class="busca">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" placeholder="Buscar serviço pelo nome" aria-label="Buscar serviço pelo nome">
+        </div>
+        <button class="fc" aria-haspopup="true" aria-expanded="false"><span class="fc__rot">Situação</span>Todas
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+      <div class="dt-w"><table class="dt">
+        <thead><tr>
+          <th class="c-nome" aria-sort="ascending"><button class="dt__ord">Nome<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7"/></svg></button></th>
+          <th class="c-sit"><button class="dt__ord">Situação<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7"/></svg></button></th>
+          <th class="c-cad-acoes">Ações</th>
+        </tr></thead>
+        <tbody id="corpo-servicos">
+        </tbody>
+      </table></div>
+      <div class="pag">
+        <span>Mostrando <b id="cont-mostrando">1–18</b> de <b>18</b> serviços</span>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div class="mo-veu" id="veu" hidden>
+  <div class="mo" role="dialog" aria-modal="true" aria-labelledby="mo-titulo">
+    <div class="mo__topo">
+      <h2 id="mo-titulo">Novo serviço</h2>
+      <button class="mo__fechar" id="mo-fechar" aria-label="Fechar"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    </div>
+    <div class="mo__corpo">
+      <p id="mo-intro" style="margin:0 0 14px;font-size:12.5px;color:var(--n-500)">Informe o nome do serviço que poderá ser utilizado nas solicitações.</p>
+      <label class="campo-e cheia">
+        <span>Nome<em>*</em></span>
+        <input class="ctrl" type="text" id="mo-nome" placeholder="Ex.: Apresentação da banda institucional" aria-describedby="mo-erro-nome">
+        <span class="msg-erro" id="mo-erro-nome" hidden><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>Já existe um serviço com este nome.</span>
+      </label>
+    </div>
+    <div class="mo__rodape">
+      <button class="frm-cancelar" id="mo-cancelar" style="margin-right:auto">Cancelar</button>
+      <button class="btn-primaria" id="mo-salvar" style="height:40px">Salvar serviço</button>
+    </div>
+  </div>
+</div>
+
+<div class="mo-toast" id="toast"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span id="toast-msg">Serviço salvo com sucesso.</span></div>
+
+<script>
+const icEdit='<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>';
+const icOn='<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></svg>';
+const icOff='<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18.36 6.64A9 9 0 0 1 20.77 15"/><path d="M6.16 6.16a9 9 0 1 0 12.68 12.68"/><path d="M12 2v4"/><path d="m2 2 20 20"/></svg>';
+const icDel='<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>';
+const kebab='<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>';
+
+let SERVICOS = ['Palestra educativa','Apresentação da banda institucional','Emissão de CIN','Exposição institucional','Ação social','Feira de serviços','Mutirão de cidadania','Orientação jurídica','Coleta de sangue','Vacinação','Atendimento psicológico','Cadastro biométrico','Distribuição de brinquedos','Cinema itinerante','Torneio esportivo','Palestra sobre trânsito','Recreação infantil'].map((n,i)=>({id:i+1,nome:n,ativo:!(n==='Torneio esportivo')}));
+
+function render(destacarId){
+  const corpo=document.getElementById('corpo-servicos');
+  corpo.innerHTML = SERVICOS.slice().sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')).map(s=>`
+    <tr data-id="${s.id}"${destacarId===s.id?' class="linha-destaque"':''}>
+      <td class="c-nome">${s.nome}</td>
+      <td class="c-sit"><span class="st ${s.ativo?'st--ativo':'st--inativo'}">${s.ativo?'Ativo':'Inativo'}</span></td>
+      <td class="c-cad-acoes"><div class="acoes">
+        <button class="acao-linha" data-editar="${s.id}">${icEdit}Editar</button>
+        <div class="dd"><button class="ib-linha" data-dd="k${s.id}" aria-haspopup="true" aria-expanded="false" aria-label="Mais ações de ${s.nome}">${kebab}</button>
+          <div class="dd__c" hidden data-dd-c="k${s.id}"><div class="dd__t">${s.nome}</div>
+            <button class="dd__i" data-alternar="${s.id}">${s.ativo?icOff+'Inativar':icOn+'Ativar'}</button>
+            <div class="dd__s"></div>
+            <button class="dd__i dd__i--perigo" data-excluir="${s.id}">${icDel}Excluir</button>
+          </div></div>
+      </div></td>
+    </tr>`).join('');
+  document.getElementById('cont-mostrando').textContent = `1–${SERVICOS.length}`;
+}
+render();
+
+const veu=document.getElementById('veu'), inputNome=document.getElementById('mo-nome'), erroNome=document.getElementById('mo-erro-nome'), titulo=document.getElementById('mo-titulo'), btnSalvar=document.getElementById('mo-salvar');
+let editandoId=null;
+
+function abrirModal(id){
+  editandoId=id;
+  erroNome.hidden=true; inputNome.classList.remove('ctrl--erro');
+  if(id){
+    const s=SERVICOS.find(x=>x.id===id);
+    titulo.textContent='Editar serviço'; btnSalvar.textContent='Salvar serviço';
+    inputNome.value=s.nome;
+  } else {
+    titulo.textContent='Novo serviço'; btnSalvar.textContent='Salvar serviço';
+    inputNome.value='';
+  }
+  veu.hidden=false;
+  setTimeout(()=>inputNome.focus(),0);
+}
+function fecharModal(){ veu.hidden=true; }
+
+function toast(msg){
+  const t=document.getElementById('toast'); document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('ativo'); setTimeout(()=>t.classList.remove('ativo'),2200);
+}
+
+document.getElementById('btn-novo').addEventListener('click',()=>abrirModal(null));
+document.getElementById('mo-fechar').addEventListener('click',fecharModal);
+document.getElementById('mo-cancelar').addEventListener('click',fecharModal);
+veu.addEventListener('click',e=>{if(e.target===veu)fecharModal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!veu.hidden)fecharModal()});
+
+btnSalvar.addEventListener('click',()=>{
+  const nome=inputNome.value.trim();
+  const duplicado=SERVICOS.some(s=>s.nome.toLowerCase()===nome.toLowerCase() && s.id!==editandoId);
+  if(!nome || duplicado){
+    inputNome.classList.add('ctrl--erro');
+    erroNome.hidden=false;
+    erroNome.querySelector('span')?.remove();
+    erroNome.lastChild.textContent = !nome ? 'Informe o nome do serviço.' : 'Já existe um serviço com este nome.';
+    inputNome.focus();
+    return;
+  }
+  let id;
+  if(editandoId){ const s=SERVICOS.find(x=>x.id===editandoId); s.nome=nome; id=editandoId; }
+  else { id=Math.max(...SERVICOS.map(s=>s.id))+1; SERVICOS.push({id,nome,ativo:true}); }
+  fecharModal();
+  render(id);
+  toast(editandoId?'Serviço atualizado com sucesso.':'Serviço salvo com sucesso.');
+});
+
+document.addEventListener('click',e=>{
+  const ed=e.target.closest('[data-editar]'); if(ed){abrirModal(+ed.dataset.editar);return}
+  const alt=e.target.closest('[data-alternar]');
+  if(alt){const s=SERVICOS.find(x=>x.id===+alt.dataset.alternar);s.ativo=!s.ativo;render(s.id);toast(s.ativo?'Serviço ativado.':'Serviço inativado.');return}
+  const exc=e.target.closest('[data-excluir]');
+  if(exc){const id=+exc.dataset.excluir;SERVICOS=SERVICOS.filter(s=>s.id!==id);render();toast('Serviço excluído.');return}
+  const g=e.target.closest('[data-dd]');
+  const fechar=()=>document.querySelectorAll('[data-dd-c]').forEach(c=>{c.hidden=true;const t=document.querySelector(`[data-dd="${c.dataset.ddC}"]`);if(t)t.setAttribute('aria-expanded','false')});
+  if(g){const c=document.querySelector(`[data-dd-c="${g.dataset.dd}"]`);const abrir=c.hidden;fechar();c.hidden=!abrir;g.setAttribute('aria-expanded',String(abrir));return}
+  if(!e.target.closest('.dd__c'))fechar();
+});
+</script>
+</body>
+</html>

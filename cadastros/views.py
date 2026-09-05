@@ -151,20 +151,25 @@ def _registrar_auditoria(usuario, acao, objeto):
     )
 
 
-@login_required
-def index(request):
-    _exigir_administrador(request)
-    grupos = [
+def _grupos():
+    """Trilha lateral dos cadastros: um item por tabela, com o total de registros."""
+    return [
         {
             "slug": slug,
             "titulo": config["titulo"],
             "total": config["model"].objects.count(),
             "icone": config["icone"],
             "cor": config["cor"],
+            "novo": config["novo"],
         }
         for slug, config in CADASTROS.items()
     ]
-    return render(request, "pages/cadastros/index.html", {"grupos": grupos})
+
+
+@login_required
+def index(request):
+    _exigir_administrador(request)
+    return render(request, "pages/cadastros/index.html", {"grupos": _grupos()})
 
 
 @login_required
@@ -196,6 +201,10 @@ def lista(request, slug):
             "slug": slug,
             "titulo": config["titulo"],
             "singular": config["singular"],
+            "novo": config["novo"],
+            "grupos": _grupos(),
+            "total_registros": config["model"].objects.count(),
+            "total_ativos": config["model"].objects.filter(ativo=True).count(),
             "pagina": pagina,
             "termo": termo,
             "situacao": situacao,
@@ -235,6 +244,9 @@ def editar(request, slug, pk=None):
     else:
         form = FormClass(instance=instancia)
     apenas_nome = config["campos"] == ["nome"]
+    campos = _campos_para_template(form)
+    erros_gerais = list(form.non_field_errors())
+    erros_total = sum(1 for campo in campos if campo["erros"]) + len(erros_gerais)
     if apenas_nome:
         intro = f"Informe o nome {config['genitivo']} que poderá ser utilizado nas solicitações."
     else:
@@ -246,7 +258,11 @@ def editar(request, slug, pk=None):
             "slug": slug,
             "titulo": config["titulo"],
             "instancia": instancia,
-            "campos": _campos_para_template(form),
+            "singular": config["singular"],
+            "apenas_nome": apenas_nome,
+            "campos": campos,
+            "erros_gerais": erros_gerais,
+            "erros_total": erros_total,
             "cartao_titulo": f"Editar {config['singular']}" if pk else config["novo"],
             "cartao_intro": intro,
             "exemplo": config["exemplo"],

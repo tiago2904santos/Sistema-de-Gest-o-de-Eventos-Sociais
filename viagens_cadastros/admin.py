@@ -5,29 +5,28 @@ from .models import Cargo, Combustivel, Servidor, TabelaDiaria, Unidade, Viatura
 
 @admin.register(Unidade)
 class UnidadeAdmin(admin.ModelAdmin):
-    list_display = ("nome", "sigla", "ativo", "atualizado_em")
-    list_filter = ("ativo",)
+    list_display = ("nome", "sigla", "atualizado_em")
     search_fields = ("nome", "sigla")
 
 
 @admin.register(Cargo)
 class CargoAdmin(admin.ModelAdmin):
-    list_display = ("nome", "is_padrao", "ativo", "atualizado_em")
-    list_filter = ("ativo", "is_padrao")
+    list_display = ("nome", "is_padrao", "atualizado_em")
+    list_filter = ("is_padrao",)
     search_fields = ("nome",)
 
 
 @admin.register(Combustivel)
 class CombustivelAdmin(admin.ModelAdmin):
-    list_display = ("nome", "is_padrao", "ativo", "atualizado_em")
-    list_filter = ("ativo", "is_padrao")
+    list_display = ("nome", "is_padrao", "atualizado_em")
+    list_filter = ("is_padrao",)
     search_fields = ("nome",)
 
 
 @admin.register(Servidor)
 class ServidorAdmin(admin.ModelAdmin):
-    list_display = ("nome", "cargo", "unidade", "cpf_formatado", "status", "ativo")
-    list_filter = ("ativo", "status", "cargo", "unidade")
+    list_display = ("nome", "cargo", "unidade", "cpf_formatado", "status")
+    list_filter = ("status", "cargo", "unidade")
     search_fields = ("nome", "cpf", "rg")
     list_select_related = ("cargo", "unidade")
     readonly_fields = ("status", "sem_rg", "legado_origem", "legado_pk")
@@ -35,8 +34,8 @@ class ServidorAdmin(admin.ModelAdmin):
 
 @admin.register(Viatura)
 class ViaturaAdmin(admin.ModelAdmin):
-    list_display = ("placa", "modelo", "tipo", "unidade", "status", "ativo")
-    list_filter = ("ativo", "status", "tipo", "combustivel", "unidade")
+    list_display = ("placa", "modelo", "tipo", "unidade", "status")
+    list_filter = ("status", "tipo", "combustivel", "unidade")
     search_fields = ("placa", "modelo")
     list_select_related = ("combustivel", "unidade")
     filter_horizontal = ("motoristas",)

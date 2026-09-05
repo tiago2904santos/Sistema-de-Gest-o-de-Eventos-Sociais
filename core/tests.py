@@ -153,7 +153,9 @@ class CentralNotificacoesTests(TestCase):
         Notificacao.objects.create(usuario=self.usuario, titulo="Aviso")
         self.client.force_login(self.usuario)
         resposta = self.client.get(reverse("dashboard:index"))
-        self.assertContains(resposta, "top-header__sino-contador")
+        # O shell V3.2 sinaliza não lidas com o ponto no sino e a contagem no rótulo.
+        self.assertContains(resposta, "ident-icone__ponto")
+        self.assertContains(resposta, "1 não lida")
 
     def test_notificacoes_sao_do_proprio_usuario(self):
         outro = User.objects.create_user("outro", password="x")

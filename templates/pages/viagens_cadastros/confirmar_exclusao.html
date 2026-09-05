@@ -1,0 +1,43 @@
+{% extends "layouts/app_shell.html" %}
+{% load static estaticos %}
+
+{% block title %}Excluir registro — Sistema de Gestão de Eventos Sociais{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-cadastros.css' %}">{% endblock %}
+
+{% block conteudo %}
+  {% include "components/breadcrumb.html" with itens=breadcrumb %}
+  {% include "components/page_header.html" with titulo="Excluir registro" subtitulo="Confirme com segurança antes de remover" icone="trash" %}
+
+  <section class="card viagens-exclusao" aria-labelledby="exclusao-titulo">
+    <div class="card__corpo">
+      <span class="viagens-exclusao__icone{% if bloqueada %} viagens-exclusao__icone--bloqueada{% endif %}" aria-hidden="true">{% include "components/icon.html" with nome="trash" %}</span>
+      {% if bloqueada %}
+        <span class="viagens-eyebrow">Exclusão bloqueada</span>
+        <h2 id="exclusao-titulo">“{{ objeto }}” ainda está em uso</h2>
+        <p>Para evitar perda de dados, remova ou altere os vínculos abaixo antes de excluir este cadastro.</p>
+        <div class="viagens-dependencias">
+          {% for dependencia in dependencias %}
+            <div>
+              <strong>{{ dependencia.total }} — {{ dependencia.nome }}</strong>
+              {% if dependencia.amostras %}<span>{{ dependencia.amostras|join:", " }}{% if dependencia.total > 3 %} e outros{% endif %}</span>{% endif %}
+            </div>
+          {% endfor %}
+        </div>
+        <div class="acoes-formulario"><a class="btn btn--dourado" href="{{ url_voltar }}">Voltar para a lista</a></div>
+      {% else %}
+        <span class="viagens-eyebrow">Ação permanente</span>
+        <h2 id="exclusao-titulo">Excluir “{{ objeto }}”?</h2>
+        <p>{% if diaria %}Esta vigência deixará de fazer parte do histórico de diárias.{% else %}Este registro será removido dos cadastros de viagens.{% endif %} Essa ação não pode ser desfeita.</p>
+        <div class="viagens-exclusao__resumo">
+          <span>{% include "components/icon.html" with nome="alert" %}</span>
+          <div><strong>Confira antes de continuar</strong><small>Você está excluindo exatamente o registro exibido acima.</small></div>
+        </div>
+        <form method="post" class="acoes-formulario">
+          {% csrf_token %}
+          <a class="btn btn--secundario" href="{{ url_voltar }}">Cancelar</a>
+          <button class="btn btn--perigo btn--com-icone" type="submit">{% include "components/icon.html" with nome="trash" %}Excluir definitivamente</button>
+        </form>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}

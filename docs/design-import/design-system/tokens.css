@@ -1,0 +1,107 @@
+/* =============================================================================
+   PCPR · Design System — Camada 1 e 2: tokens
+   1. Primitivos  (valor bruto — nenhum componente consome direto)
+   2. Semânticos  (o que o CSS de componente usa; troca de tema acontece aqui)
+   ========================================================================== */
+
+:root{
+  /* ---------- 1. PRIMITIVOS ---------- */
+
+  /* Grafite — derivado de #333333 */
+  --gf-950:#1b1d21; --gf-900:#24262b; --gf-800:#333333; --gf-700:#3c4046;
+  --gf-600:#52565c; --gf-500:#767a80; --gf-400:#9a9ea3; --gf-300:#c4c7c9;
+  --gf-200:#d1d3d4; --gf-100:#e4e5e6; --gf-50:#eef0f0;  --gf-25:#f7f8f8;
+  --white:#ffffff;
+
+  /* Dourado — derivado de #BEA45A (500 é o institucional; 700 existe para texto/ícone) */
+  --gd-800:#6d5926; --gd-700:#8a7132; --gd-600:#a58a44; --gd-500:#bea45a;
+  --gd-400:#cdb677; --gd-300:#dccb9c; --gd-100:#efe5c9; --gd-50:#faf6ea;
+
+  /* Estados — dessaturados, tom institucional */
+  --ok-700:#17603a;  --ok-600:#1e7e46;  --ok-100:#cfe6d9; --ok-50:#e9f4ee;
+  --wn-700:#7d5600;  --wn-600:#9a6b00;  --wn-100:#eeddb2; --wn-50:#fdf5e3;
+  --dg-700:#97201a;  --dg-600:#b3261e;  --dg-100:#f0cdca; --dg-50:#fbeceb;
+  --in-700:#13507f;  --in-600:#175d9c;  --in-100:#c8dcee; --in-50:#eaf2f9;
+  --pp-700:#5e3d7a;  --pp-600:#7a4e96;  --pp-100:#e0d3ea; --pp-50:#f6f1fa;
+
+  /* Espaçamento — passo de 4px */
+  --s-0:0; --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:20px;
+  --s-6:24px; --s-7:32px; --s-8:40px; --s-9:48px; --s-10:64px; --s-11:80px;
+
+  /* Raios */
+  --r-1:3px; --r-2:5px; --r-3:8px; --r-4:12px; --r-full:999px;
+
+  /* Elevação — máximo 3 níveis; nada de sombra longa */
+  --elev-0:none;
+  --elev-1:0 1px 1px rgba(27,29,33,.05);
+  --elev-2:0 2px 6px rgba(27,29,33,.07), 0 1px 2px rgba(27,29,33,.05);
+  --elev-3:0 10px 28px rgba(27,29,33,.14), 0 2px 6px rgba(27,29,33,.06);
+
+  /* Tipografia */
+  --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",sans-serif;
+  --font-num:"Segoe UI",system-ui,sans-serif;
+  --t-11:.6875rem; --t-12:.75rem;  --t-13:.8125rem; --t-14:.875rem;
+  --t-15:.9375rem; --t-16:1rem;    --t-18:1.125rem; --t-20:1.25rem;
+  --t-24:1.5rem;   --t-28:1.75rem; --t-32:2rem;
+  --lh-tight:1.2; --lh-snug:1.35; --lh-base:1.5; --lh-loose:1.6;
+  --w-regular:400; --w-medium:500; --w-semibold:600; --w-bold:700;
+  --track-caps:.09em; --track-tight:-.01em;
+
+  /* Layout */
+  --largura-conteudo:1440px;
+  --z-sticky:20; --z-overlay:60; --z-modal:80;
+  --motion-fast:120ms; --motion-base:180ms; --ease:cubic-bezier(.2,0,.2,1);
+
+  /* ---------- 2. SEMÂNTICOS ---------- */
+
+  /* Superfícies: papel < superfície < elevada. Contraste real, não 3%. */
+  --superficie-papel:#f2f3f3;
+  --superficie:var(--white);
+  --superficie-elevada:var(--white);
+  --superficie-afundada:var(--gf-25);
+  --superficie-hover:#f6f7f7;
+  --superficie-selecionada:var(--gd-50);
+  --superficie-inversa:var(--gf-900);
+
+  /* Texto */
+  --texto-forte:var(--gf-900);
+  --texto:var(--gf-700);
+  --texto-suave:var(--gf-500);
+  --texto-fraco:var(--gf-400);
+  --texto-inverso:#f2f2f0;
+  --texto-inverso-suave:#b7b9bb;
+
+  /* Linhas — borda é exceção; o padrão é o filete */
+  --linha-fina:var(--gf-100);
+  --linha:var(--gf-200);
+  --linha-forte:var(--gf-300);
+  --linha-inversa:rgba(255,255,255,.14);
+
+  /* Acento institucional — um destaque por tela */
+  --acento:var(--gd-500);
+  --acento-forte:var(--gd-700);      /* texto e ícone sobre claro (contraste ≥ 4,5:1) */
+  --acento-suave:var(--gd-50);
+  --acento-linha:var(--gd-300);
+
+  /* Ação: cor = importância, nunca o nome da operação */
+  --acao-primaria-bg:var(--gd-500);
+  --acao-primaria-bg-hover:var(--gd-600);
+  --acao-primaria-fg:#241f10;
+  --acao-secundaria-fg:var(--gf-800);
+  --acao-secundaria-linha:var(--gf-300);
+  --acao-destrutiva-fg:var(--dg-600);
+  --acao-destrutiva-linha:var(--dg-100);
+
+  /* Foco visível único em todo o sistema */
+  --foco:0 0 0 2px var(--white), 0 0 0 4px var(--gd-600);
+  --foco-escuro:0 0 0 2px var(--gf-900), 0 0 0 4px var(--gd-400);
+
+  /* ---------- 3. COMPONENTE ---------- */
+  --ctrl-altura-lg:40px; --ctrl-altura-md:36px; --ctrl-altura-sm:30px;
+  --ctrl-padding-x:12px; --ctrl-raio:var(--r-2);
+  --btn-raio:var(--r-2);
+  --tabela-linha-y:11px; --tabela-linha-y-conforto:15px; --tabela-celula-x:14px;
+  --card-padding:var(--s-6);
+  --pagina-padding-x:var(--s-7);
+  --secao-gap:var(--s-7);
+}

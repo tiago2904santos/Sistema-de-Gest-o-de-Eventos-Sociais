@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-densidade="padrao" data-dourado="institucional" data-divisorias="filete">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nova solicitação — validação</title>
+<link rel="stylesheet" href="design-system/components-v3-2.css">
+</head>
+<body>
+<header class="ident"><div class="ident__in">
+  <div class="marca">
+    <span class="marca__moldura"><img src="assets/brasao-pcpr.svg" alt="Brasão da Polícia Civil do Paraná"></span>
+    <span class="marca__org">Polícia Civil do Paraná</span>
+  </div>
+  <span class="risco-i" aria-hidden="true"></span>
+  <span class="ident__sistema">Sistema de Gestão de Eventos Sociais</span>
+  <div class="ident__fim">
+    <button class="ident-icone" aria-label="Notificações"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="ident-icone__ponto"></span></button>
+    <button class="ident-user" aria-haspopup="true" aria-expanded="false">
+      <span class="ident-user__av">MR</span><span class="ident-user__n">Cel. Marcos Ribeiro</span>
+      <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+  </div>
+</div></header>
+
+<nav class="navbar"><div class="navbar__in">
+  <button class="modulo" aria-haspopup="true" aria-expanded="false">
+    <span class="modulo__nome">Eventos Sociais</span>
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+  </button>
+  <div class="nav-mod">
+    <a href="Piloto V3.2 - Solicitacoes (desktop).html" aria-current="page">Solicitações</a>
+    <a href="#">Painel</a>
+    <a href="#">Cadastros</a>
+    <a href="#">Relatórios</a>
+  </div>
+</div></nav>
+
+<main class="conteudo">
+  <div class="frm-cabeca">
+    <div>
+      <div class="kicker">Eventos Sociais</div>
+      <h1>Nova solicitação<span class="frm-rasc"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>Rascunho</span></h1>
+      <p class="frm-cabeca__sub">Preencha os dados necessários para registrar a solicitação.</p>
+    </div>
+  </div>
+
+  <div class="frm-grade">
+    <div>
+      <div class="aviso aviso--erro" role="alert" tabindex="-1">
+        <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+        <div>
+          <b>Não foi possível enviar a solicitação</b>
+          Encontramos 4 campos que precisam ser corrigidos.
+          <ul class="aviso--erro__lista">
+            <li><a href="#erro-municipio">Município <span>— Dados da solicitação</span></a></li>
+            <li><a href="#erro-orgao">Órgão responsável <span>— Solicitante</span></a></li>
+            <li><a href="#erro-unidade-movel">Qual unidade móvel <span>— Serviços e estrutura</span></a></li>
+            <li><a href="#erro-qtd-equipe">Quantidade de servidores <span>— Planejamento operacional</span></a></li>
+          </ul>
+        </div>
+      </div>
+
+      <section class="reg" id="sec-dados">
+        <h2 class="reg__t">Dados da solicitação</h2>
+        <div class="g-form g-form--3">
+          <label class="campo-e"><span>Data da solicitação<em>*</em></span>
+            <input class="ctrl" type="date" value="2026-08-30"></label>
+          <label class="campo-e c2"><span>Período do evento<em>*</em></span>
+            <div class="campo-e--datas"><label><input class="ctrl" type="date" value="2026-09-18"></label><label><span data-comment-anchor="5d2a450b05-span"></span><input class="ctrl" type="date" value="2026-09-19"></label></div></label>
+          <label class="campo-e"><span>Tipo do evento<em>*</em></span>
+            <select class="ctrl"><option>Ciclo de palestras</option><option>Ação social</option><option>Feira de serviços</option></select></label>
+          <label class="campo-e" id="erro-municipio"><span>Municipio<em>*</em></span>
+            <select class="ctrl ctrl--erro foco-inicial" aria-invalid="true" aria-describedby="msg-municipio" autofocus><option value="" selected>Selecione...</option><option>Curitiba</option><option>Londrina</option></select>
+            <span class="msg-erro" id="msg-municipio"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>Campo obrigatório para o envio.</span></label>
+          <label class="campo-e"><span>Estado<em>*</em></span>
+            <select class="ctrl"><option>Paraná</option></select></label>
+          <label class="campo-e cheia"><span>Local do evento</span>
+            <input class="ctrl" type="text" value="Auditório da Escola Superior de Polícia Civil"></label>
+        </div>
+      </section>
+
+      <section class="reg" id="sec-solicitante">
+        <h2 class="reg__t">Solicitante</h2>
+        <div class="g-form g-form--3">
+          <label class="campo-e c2"><span>Solicitante<em>*</em></span>
+            <input class="ctrl" type="text" value="Cel. Marcos A. Ribeiro"></label>
+          <label class="campo-e"><span>Contato</span><input class="ctrl" type="tel" value="(41) 3281-4400"></label>
+          <label class="campo-e c2"><span>Cargo / unidade<em>*</em></span>
+            <input class="ctrl" type="text" value="Diretor-Geral — Diretoria-Geral"></label>
+          <label class="campo-e" id="erro-orgao"><span>Órgão responsável<em>*</em></span>
+            <select class="ctrl ctrl--erro" aria-invalid="true" aria-describedby="msg-orgao"><option value="" selected>Selecione...</option><option>Escola Superior de Polícia Civil</option></select>
+            <span class="msg-erro" id="msg-orgao"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>Campo obrigatório para o envio.</span></label>
+        </div>
+      </section>
+
+      <section class="reg" id="sec-servicos">
+        <h2 class="reg__t">Serviços e estrutura</h2>
+        <div class="campo-e" style="margin-bottom:14px">
+          <span>Serviços solicitados<em>*</em></span>
+          <div class="opc-cards">
+            <label class="opc-card"><input type="checkbox" checked>Palestra educativa</label>
+            <label class="opc-card"><input type="checkbox" checked>Emissão de CIN</label>
+            <label class="opc-card"><input type="checkbox" checked>Exposição institucional</label>
+            <label class="opc-card"><input type="checkbox">Ação social</label>
+            <label class="opc-card"><input type="checkbox">Feira de serviços</label>
+            <label class="opc-card"><input type="checkbox">Mutirão de cidadania</label>
+          </div>
+        </div>
+        <div class="g-form g-form--2">
+          <div class="campo-e" style="width:975px;height:65px">
+            <span>Unidade móvel</span>
+            <div class="unidade-sim-nao">
+              <label class="seg2"><input type="radio" name="um" checked>Sim</label>
+              <label class="seg2"><input type="radio" name="um">Não</label>
+            </div>
+          </div>
+          <div class="condicional" style="margin-top:-2px;padding:12px 14px;background:var(--n-25);border:1px solid var(--n-150);border-left:2px solid var(--d-500);border-radius:8px">
+            <label class="campo-e" id="erro-unidade-movel"><span>Qual unidade móvel<em>*</em></span>
+              <select class="ctrl ctrl--erro" aria-invalid="true" aria-describedby="msg-unidade-movel"><option value="" selected>Selecione a unidade...</option><option>Unidade Móvel CIN 02</option><option>Unidade Móvel CIN 01</option></select>
+              <span class="msg-erro" id="msg-unidade-movel"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>Informe qual unidade móvel vai ao evento.</span></label>
+            <label class="campo-e"><span>Motorista</span>
+              <select class="ctrl"><option>Insp. Paulo R. Andrade</option></select></label>
+          </div>
+          <label class="campo-e cheia"><span>Descrição complementar</span>
+            <textarea class="ta" placeholder="Detalhes adicionais sobre serviços e estrutura...">Duas palestras sobre prevenção a fraudes digitais e atendimento à vítima para servidores da rede municipal de ensino, com emissão de CIN na unidade móvel nos dois dias do evento.</textarea></label>
+        </div>
+      </section>
+
+      <section class="reg" id="sec-planejamento">
+        <h2 class="reg__t">Planejamento operacional</h2>
+        <div class="campo-e" style="margin-bottom:14px">
+          <span>Equipes e quantidade de servidores<em>*</em></span>
+          <div class="eq-lista grupo-erro" id="erro-qtd-equipe">
+            <label class="eq-linha"><input type="checkbox" checked><span class="eq-linha__n">NUCIBER — Combate aos Cibercrimes</span>
+              <div class="stepper-n"><button type="button" aria-label="Diminuir">−</button><input type="text" value="4" aria-label="Quantidade"><button type="button" aria-label="Aumentar">+</button></div></label>
+            <label class="eq-linha"><input type="checkbox" checked><span class="eq-linha__n">DEAM Curitiba</span>
+              <div class="stepper-n"><button type="button" aria-label="Diminuir">−</button><input type="text" value="" placeholder="0" class="ctrl--erro" aria-invalid="true" aria-describedby="msg-qtd-equipe" aria-label="Quantidade"><button type="button" aria-label="Aumentar">+</button></div></label>
+            <label class="eq-linha"><input type="checkbox"><span class="eq-linha__n">1º DP Curitiba</span>
+              <div class="stepper-n"><button type="button">−</button><input type="text" value="" placeholder="0"><button type="button">+</button></div></label>
+          </div>
+          <span class="msg-erro" id="msg-qtd-equipe" style="margin-top:6px"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>Informe a quantidade de servidores de DEAM Curitiba para enviar à DG.</span>
+        </div>
+        <div class="g-form g-form--3" style="width:1484px;height:67px">
+          <label class="campo-e"><span>Tipo</span><select class="ctrl"><option>Diária</option><option>Extrajornada</option></select></label>
+          <label class="campo-e"><span>Quantidade de CIN agendadas</span><input class="ctrl" type="number" value="120"></label>
+        </div>
+      </section>
+
+      <section class="reg" id="sec-anexos">
+        <h2 class="reg__t">Anexos</h2>
+        <button class="an-add" style="height:107px;padding:0 16px;border-width:1.5px;border-radius:6px;font-size:13px;width:978px" data-comment-anchor="5945518d57-button"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Adicionar arquivo — PDF, DOC, XLS, ODT ou imagem, até 10 MB</button>
+        <div class="an-lista">
+          <button class="anexo" style="border-width:1px;border-style:solid;border-color:#E8E5DF" data-comment-anchor="55ef3c1f62-button"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg><span class="anexo__txt"><b>Oficio-SME-442-2026.pdf</b><small>318 KB</small></span></button>
+        </div>
+      </section>
+    </div>
+
+    <aside class="sticky" data-comment-anchor="6f9f62d28c-aside" style="width:309px;display:flex;flex-direction:column;max-height:calc(100vh - 40px)">
+  <section class="reg reg--sec">
+    <h2 class="reg__t">Resumo</h2>
+    <dl>
+      <div class="resumo__linha"><dt>Período</dt><dd>18–19/09/2026</dd></div>
+      <div class="resumo__linha"><dt>Município</dt><dd>Curitiba</dd></div>
+      <div class="resumo__linha"><dt>Tipo</dt><dd>Ciclo de palestras</dd></div>
+      <div class="resumo__linha"><dt>Equipes</dt><dd>2</dd></div>
+      <div class="resumo__linha"><dt>Servidores</dt><dd>7</dd></div>
+      <div class="resumo__linha"><dt>CIN agendadas</dt><dd>120</dd></div>
+      <div class="resumo__linha"><dt>Unidade móvel</dt><dd>CIN 02</dd></div>
+    </dl>
+  </section>
+  <section class="reg reg--sec" style="margin-top:10px">
+    <h2 class="reg__t">Etapas</h2>
+    <div class="step-v">
+      <button class="step-i step-i--concluido" data-ir="#sec-dados"><span class="step-i__m">✓</span><span><span class="step-i__t">Dados da solicitação</span></span></button>
+      <button class="step-i step-i--erro" data-ir="#erro-orgao"><span class="step-i__m">!</span><span><span class="step-i__t">Solicitante</span><span class="step-i__s">Contém erro</span></span></button>
+      <button class="step-i step-i--erro" data-ir="#erro-unidade-movel"><span class="step-i__m">!</span><span><span class="step-i__t">Serviços e estrutura</span><span class="step-i__s">Contém erro</span></span></button>
+      <button class="step-i step-i--erro" data-ir="#erro-qtd-equipe"><span class="step-i__m">!</span><span><span class="step-i__t">Planejamento</span><span class="step-i__s">Contém erro</span></span></button>
+      <button class="step-i" data-ir="#sec-anexos"><span class="step-i__m">5</span><span><span class="step-i__t">Anexos</span></span></button>
+    </div>
+  </section>
+  <div class="frm-acoes" style="margin-top:10px" data-comment-anchor="00b7f62f65-div">
+    <button class="btn--secundaria" style="height:40px">Salvar rascunho</button>
+    <button class="btn-primaria" style="height:40px">Enviar para a DG</button>
+  </div>
+</aside>
+  </div>
+</main>
+
+<script>
+document.querySelectorAll('[data-ir]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelector(b.dataset.ir).scrollIntoView({behavior:'smooth',block:'start'});
+}));
+document.querySelectorAll('.stepper-n').forEach(s=>{
+  const [menos,input,mais]=s.children;
+  menos.addEventListener('click',()=>{input.value=Math.max(0,(+input.value||0)-1)});
+  mais.addEventListener('click',()=>{input.value=(+input.value||0)+1});
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-densidade="padrao" data-dourado="institucional" data-divisorias="filete">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nova solicitação — mobile · validação</title>
+<link rel="stylesheet" href="design-system/components-v3-2.css">
+</head>
+<body class="m-moldura">
+<div class="m-app">
+  <header class="m-topo">
+    <div class="m-topo__marca">
+      <span class="m-topo__moldura"><img src="assets/brasao-pcpr.svg" alt="Brasão da Polícia Civil do Paraná"></span>
+      <span class="m-topo__sigla">PCPR</span>
+    </div>
+    <div class="m-topo__fim">
+      <button class="m-icone" aria-label="Notificações"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="m-icone__ponto"></span></button>
+      <button class="m-avatar" aria-label="Cel. Marcos Ribeiro">MR</button>
+    </div>
+  </header>
+  <nav class="m-nav" id="m-nav">
+    <button class="m-nav__gatilho"><span class="kicker" style="margin:0">Eventos Sociais</span><span class="m-nav__contexto">Nova solicitação</span>
+      <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+  </nav>
+
+  <div class="mf-topo">
+    <h1>Nova solicitação<span class="frm-rasc"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>Rascunho</span></h1>
+    <p>Preencha os dados necessários para registrar a solicitação.</p>
+  </div>
+
+  <div class="mf-passos" role="tablist" aria-label="Etapas do formulário">
+    <span class="mf-passo mf-passo--concluido"><span class="mf-passo__m">✓</span>Dados</span>
+    <span class="mf-passo mf-passo--erro" onclick="document.getElementById('merro-orgao').scrollIntoView({behavior:'smooth',block:'center'})"><span class="mf-passo__m">!</span>Solicitante</span>
+    <span class="mf-passo mf-passo--erro" onclick="document.getElementById('merro-unidade-movel').scrollIntoView({behavior:'smooth',block:'center'})"><span class="mf-passo__m">!</span>Serviços</span>
+    <span class="mf-passo mf-passo--erro" onclick="document.getElementById('merro-qtd-equipe').scrollIntoView({behavior:'smooth',block:'center'})"><span class="mf-passo__m">!</span>Planejamento</span>
+    <span class="mf-passo"><span class="mf-passo__m">5</span>Anexos</span>
+  </div>
+
+  <div class="mf-aviso-erro">
+    <div class="mf-aviso-erro__topo"><b>4 campos precisam de correção</b><button id="merro-toggle" aria-expanded="false" aria-controls="merro-lista">Ver erros</button></div>
+    <ul class="mf-aviso-erro__lista" id="merro-lista" hidden>
+      <li><a href="#merro-municipio">Município <span>— Dados da solicitação</span></a></li>
+      <li><a href="#merro-orgao">Órgão responsável <span>— Solicitante</span></a></li>
+      <li><a href="#merro-unidade-movel">Qual unidade móvel <span>— Serviços e estrutura</span></a></li>
+      <li><a href="#merro-qtd-equipe">Quantidade de servidores <span>— Planejamento</span></a></li>
+    </ul>
+  </div>
+
+  <button class="mf-resumo-bt" id="mf-resumo-gatilho" aria-expanded="false" aria-controls="mf-resumo-corpo">Ver resumo da solicitação
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+  </button>
+  <div class="mf-resumo-corpo" id="mf-resumo-corpo" hidden>
+    <div class="resumo__linha"><dt>Período</dt><dd>18–19/09/2026</dd></div>
+    <div class="resumo__linha"><dt>Município</dt><dd>Curitiba</dd></div>
+    <div class="resumo__linha"><dt>Tipo</dt><dd>Ciclo de palestras</dd></div>
+    <div class="resumo__linha"><dt>Equipes</dt><dd>2</dd></div>
+    <div class="resumo__linha"><dt>Servidores</dt><dd>7</dd></div>
+    <div class="resumo__linha"><dt>CIN agendadas</dt><dd>120</dd></div>
+    <div class="resumo__linha"><dt>Unidade móvel</dt><dd>CIN 02</dd></div>
+  </div>
+
+  <div class="pn">
+    <section class="mf-sec" id="msec-dados">
+      <h2>Dados da solicitação</h2>
+      <label class="mf-campo"><span>Data da solicitação<em>*</em></span><input class="ctrl" type="date" value="2026-08-30"></label>
+      <div class="mf-campo"><span>Período do evento<em>*</em></span>
+        <div class="mf-2col"><input class="ctrl" type="date" value="2026-09-18" aria-label="Início"><input class="ctrl" type="date" value="2026-09-19" aria-label="Fim"></div></div>
+      <label class="mf-campo"><span>Tipo do evento<em>*</em></span><select class="ctrl"><option>Ciclo de palestras</option><option>Ação social</option></select></label>
+      <div class="mf-campo mf-2col" style="margin-bottom:0">
+        <label class="mf-campo"><span>Estado<em>*</em></span><select class="ctrl"><option>Paraná</option></select></label>
+        <label class="mf-campo" id="merro-municipio"><span>Município<em>*</em></span><select class="ctrl ctrl--erro" aria-invalid="true" aria-describedby="mmsg-municipio" autofocus><option value="" selected>Selecione...</option><option>Curitiba</option><option>Londrina</option></select>
+          <span class="msg-erro" id="mmsg-municipio"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>Campo obrigatório para o envio.</span></label>
+      </div>
+      <label class="mf-campo" style="margin-top:14px"><span>Local do evento</span><input class="ctrl" type="text" value="Auditório da Escola Superior de Polícia Civil"></label>
+    </section>
+
+    <section class="mf-sec" id="msec-solicitante">
+      <h2>Solicitante</h2>
+      <label class="mf-campo"><span>Solicitante<em>*</em></span><input class="ctrl" type="text" value="Cel. Marcos A. Ribeiro"></label>
+      <label class="mf-campo"><span>Cargo / unidade<em>*</em></span><input class="ctrl" type="text" value="Diretor-Geral — Diretoria-Geral"></label>
+      <label class="mf-campo"><span>Contato</span><input class="ctrl" type="tel" value="(41) 3281-4400"></label>
+      <label class="mf-campo" style="margin-bottom:0" id="merro-orgao"><span>Órgão responsável<em>*</em></span><select class="ctrl ctrl--erro" aria-invalid="true" aria-describedby="mmsg-orgao"><option value="" selected>Selecione...</option><option>Escola Superior de Polícia Civil</option></select>
+        <span class="msg-erro" id="mmsg-orgao"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>Campo obrigatório para o envio.</span></label>
+    </section>
+
+    <section class="mf-sec" id="msec-servicos">
+      <h2>Serviços e estrutura</h2>
+      <div class="mf-campo"><span>Serviços solicitados<em>*</em></span>
+        <div class="mf-opc">
+          <label class="mf-opc-card"><input type="checkbox" checked>Palestra educativa</label>
+          <label class="mf-opc-card"><input type="checkbox" checked>Emissão de CIN</label>
+          <label class="mf-opc-card"><input type="checkbox" checked>Exposição institucional</label>
+          <label class="mf-opc-card"><input type="checkbox">Ação social</label>
+          <label class="mf-opc-card"><input type="checkbox">Feira de serviços</label>
+        </div>
+      </div>
+      <div class="mf-campo"><span>Unidade móvel</span>
+        <div class="unidade-sim-nao"><label class="seg2"><input type="radio" name="um" checked>Sim</label><label class="seg2"><input type="radio" name="um">Não</label></div>
+      </div>
+      <div class="mf-condicional">
+        <label class="mf-campo" id="merro-unidade-movel"><span>Qual unidade móvel<em>*</em></span><select class="ctrl ctrl--erro" aria-invalid="true" aria-describedby="mmsg-unidade-movel"><option value="" selected>Selecione a unidade...</option><option>Unidade Móvel CIN 02</option><option>Unidade Móvel CIN 01</option></select>
+          <span class="msg-erro" id="mmsg-unidade-movel"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>Informe qual unidade móvel vai ao evento.</span></label>
+        <label class="mf-campo"><span>Motorista</span><select class="ctrl"><option>Insp. Paulo R. Andrade</option></select></label>
+      </div>
+      <label class="mf-campo" style="margin-bottom:0"><span>Descrição complementar</span><textarea class="ta">Duas palestras sobre prevenção a fraudes digitais e atendimento à vítima para servidores da rede municipal de ensino, com emissão de CIN na unidade móvel nos dois dias do evento.</textarea></label>
+    </section>
+
+    <section class="mf-sec" id="msec-planejamento">
+      <h2>Planejamento operacional</h2>
+      <span style="font-size:12.5px;color:var(--n-600);font-weight:500;display:block;margin-bottom:6px">Equipes e quantidade de servidores<em style="color:var(--d-700);font-style:normal">*</em></span>
+      <div class="mf-eq grupo-erro" id="merro-qtd-equipe">
+        <label class="mf-eq-linha"><input type="checkbox" checked><span class="mf-eq-linha__n">NUCIBER — Combate aos Cibercrimes</span>
+          <div class="stepper-n"><button type="button" aria-label="Diminuir">−</button><input type="text" value="4" aria-label="Quantidade"><button type="button" aria-label="Aumentar">+</button></div></label>
+        <label class="mf-eq-linha"><input type="checkbox" checked><span class="mf-eq-linha__n">DEAM Curitiba</span>
+          <div class="stepper-n"><button type="button" aria-label="Diminuir">−</button><input type="text" value="" placeholder="0" class="ctrl--erro" aria-invalid="true" aria-describedby="mmsg-qtd" aria-label="Quantidade"><button type="button" aria-label="Aumentar">+</button></div></label>
+        <label class="mf-eq-linha"><input type="checkbox"><span class="mf-eq-linha__n">1º DP Curitiba</span>
+          <div class="stepper-n"><button type="button">−</button><input type="text" value="" placeholder="0"><button type="button">+</button></div></label>
+      </div>
+      <span class="msg-erro" id="mmsg-qtd" style="margin-top:8px"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>Informe a quantidade de servidores de DEAM Curitiba para enviar à DG.</span>
+      <div class="mf-2col" style="margin-top:14px">
+        <label class="mf-campo" style="margin-bottom:0"><span>Tipo</span><select class="ctrl"><option>Diária</option><option>Extrajornada</option></select></label>
+        <label class="mf-campo" style="margin-bottom:0"><span>Quantidade de CIN</span><input class="ctrl" type="number" value="120"></label>
+      </div>
+    </section>
+
+    <section class="mf-sec" id="msec-anexos">
+      <h2>Anexos</h2>
+      <button class="mf-an-add"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Adicionar arquivo</button>
+      <div style="margin-top:8px">
+        <button class="anexo"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg><span class="anexo__txt"><b>Oficio-SME-442-2026.pdf</b><small>318 KB</small></span></button>
+      </div>
+    </section>
+  </div>
+  <div style="height:80px"></div>
+
+  <div class="mf-acoes">
+    <button class="btn--secundaria">Salvar rascunho</button>
+    <button class="btn-primaria">Enviar para a DG</button>
+  </div>
+</div>
+</div>
+
+<script>
+const eb=document.getElementById('merro-toggle'),el=document.getElementById('merro-lista');
+eb.addEventListener('click',()=>{const ab=el.hidden;el.hidden=!ab;eb.setAttribute('aria-expanded',String(ab));eb.textContent=ab?'Ocultar':'Ver erros'});
+const rb=document.getElementById('mf-resumo-gatilho'),rc=document.getElementById('mf-resumo-corpo');
+rb.addEventListener('click',()=>{const ab=rc.hidden;rc.hidden=!ab;rb.setAttribute('aria-expanded',String(ab))});
+document.querySelectorAll('.stepper-n').forEach(s=>{
+  const [menos,input,mais]=s.children;
+  menos.addEventListener('click',()=>{input.value=Math.max(0,(+input.value||0)-1)});
+  mais.addEventListener('click',()=>{input.value=(+input.value||0)+1});
+});
+const passosEl=document.querySelector('.mf-passos');
+function atualizarFadePassos(){
+  if(!passosEl)return;
+  const max=passosEl.scrollWidth-passosEl.clientWidth-1;
+  passosEl.classList.toggle('tem-mais-fim',passosEl.scrollLeft<max);
+  passosEl.classList.toggle('tem-mais-inicio',passosEl.scrollLeft>0);
+}
+if(passosEl){atualizarFadePassos();passosEl.addEventListener('scroll',atualizarFadePassos);window.addEventListener('resize',atualizarFadePassos)}
+</script>
+</body>
+</html>

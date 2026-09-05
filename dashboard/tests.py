@@ -90,5 +90,5 @@ class DashboardTests(TestCase):
         self.client.force_login(self.usuario)
         resposta = self.client.get(reverse("dashboard:index"))
         ultimas = list(resposta.context["ultimas_solicitacoes"])
-        self.assertEqual(len(ultimas), 5)
+        self.assertEqual(len(ultimas), 6)
         self.assertEqual(ultimas[0], criadas[-1])

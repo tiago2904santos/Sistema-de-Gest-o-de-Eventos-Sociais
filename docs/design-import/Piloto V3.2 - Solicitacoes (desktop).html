@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-densidade="padrao" data-dourado="institucional" data-divisorias="filete">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V3.2 — Solicitações de Eventos Sociais</title>
+<link rel="stylesheet" href="design-system/components-v3-2.css">
+</head>
+<body>
+<header class="ident"><div class="ident__in">
+  <div class="marca">
+    <span class="marca__moldura"><img src="assets/brasao-pcpr.svg" alt="Brasão da Polícia Civil do Paraná"></span>
+    <span class="marca__org">Polícia Civil do Paraná</span>
+  </div>
+  <span class="risco-i" aria-hidden="true"></span>
+  <span class="ident__sistema">Sistema de Gestão de Eventos Sociais</span>
+  <div class="ident__fim">
+    <button class="ident-icone" aria-label="Notificações"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="ident-icone__ponto"></span></button>
+    <button class="ident-icone" aria-label="Ajuda"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button>
+    <button class="ident-user" aria-haspopup="true" aria-expanded="false">
+      <span class="ident-user__av">MR</span><span class="ident-user__n">Cel. Marcos Ribeiro</span>
+      <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+  </div>
+</div></header>
+
+<nav class="navbar"><div class="navbar__in">
+  <button class="modulo" aria-haspopup="true" aria-expanded="false">
+    <span class="modulo__nome">Eventos Sociais</span>
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+  </button>
+  <div class="nav-mod">
+    <a href="#" aria-current="page">Solicitações</a>
+    <a href="#">Painel</a>
+    <a href="#">Cadastros</a>
+    <a href="#">Relatórios</a>
+  </div>
+</div></nav>
+
+<main class="conteudo" id="folha"></main>
+
+<div id="ajustes"></div>
+<script src="piloto-v3-2.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "densidade": "confortavel",
+  "dourado": "institucional",
+  "divisorias": "filete"
+}/*EDITMODE-END*/;
+
+function Ajustes() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  React.useEffect(() => {
+    const r = document.documentElement;
+    r.dataset.densidade = t.densidade;
+    r.dataset.dourado = t.dourado;
+    r.dataset.divisorias = t.divisorias;
+  }, [t.densidade, t.dourado, t.divisorias]);
+  return (
+    <React.Fragment>
+    <span hidden data-ajustes-ativos={`${t.densidade}/${t.dourado}/${t.divisorias}`}></span>
+    <TweaksPanel>
+      <TweakSection label="Composição" />
+      <TweakRadio label="Densidade" value={t.densidade}
+        options={[{value:'compacta',label:'Compacta'},{value:'padrao',label:'Padrão'},{value:'confortavel',label:'Confortável'}]}
+        onChange={(v) => setTweak('densidade', v)} />
+      <TweakRadio label="Divisórias da tabela" value={t.divisorias}
+        options={[{value:'filete',label:'Filete'},{value:'zebra',label:'Zebra'},{value:'nenhuma',label:'Nenhuma'}]}
+        onChange={(v) => setTweak('divisorias', v)} />
+      <TweakSection label="Identidade" />
+      <TweakRadio label="Presença do dourado" value={t.dourado}
+        options={[{value:'sobrio',label:'Sóbrio'},{value:'institucional',label:'Institucional'},{value:'cerimonial',label:'Cerimonial'}]}
+        onChange={(v) => setTweak('dourado', v)} />
+    </TweaksPanel>
+    </React.Fragment>
+  );
+}
+ReactDOM.createRoot(document.getElementById('ajustes')).render(<Ajustes />);
+</script>
+</body>
+</html>

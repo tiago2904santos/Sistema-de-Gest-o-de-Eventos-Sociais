@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-densidade="padrao" data-dourado="institucional" data-divisorias="filete">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Padrão de Listagem — Mobile</title>
+<link rel="stylesheet" href="design-system/components-v3-2.css">
+</head>
+<body class="m-moldura">
+<nav class="m-seletor" id="seletor"></nav>
+<div class="m-app">
+  <header class="m-topo">
+    <div class="m-topo__marca">
+      <span class="m-topo__moldura"><img src="assets/brasao-pcpr.svg" alt="Brasão da Polícia Civil do Paraná"></span>
+      <span class="m-topo__sigla">PCPR</span>
+    </div>
+    <div class="m-topo__fim">
+      <button class="m-icone" aria-label="Notificações"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="m-icone__ponto"></span></button>
+      <button class="m-avatar" aria-label="Cel. Marcos Ribeiro">MR</button>
+    </div>
+  </header>
+
+  <nav class="m-nav" id="m-nav">
+    <button class="m-nav__gatilho" id="m-nav-gatilho" aria-haspopup="true" aria-expanded="false">
+      Eventos Sociais<span class="m-nav__contexto">Solicitações</span>
+      <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div class="m-nav__drawer" id="m-nav-drawer" hidden>
+      <button class="m-nav__item" aria-current="page">Solicitações</button>
+      <button class="m-nav__item">Painel</button>
+      <button class="m-nav__item">Cadastros</button>
+      <button class="m-nav__item">Relatórios</button>
+    </div>
+  </nav>
+
+  <main id="folha-m"></main>
+</div>
+
+<div class="m-veu" id="m-veu" hidden></div>
+<div class="m-sheet" id="m-sheet-filtros" hidden></div>
+<div class="m-sheet" id="m-sheet-ordenar" hidden></div>
+
+<script src="piloto-mobile.js"></script>
+<script>
+const CENARIOS=[
+{k:'normal',r:'1 · Normal'},
+{k:'filtros',r:'2 · Filtros abertos'},
+{k:'vazio',r:'3 · Vazio'},
+{k:'sem-resultados',r:'4 · Sem resultados'},
+{k:'menu',r:'5 · Menu de ações'},
+{k:'pressionado',r:'6 · Item pressionado'},
+{k:'ordenacao',r:'7 · Ordenação ativa'}];
+
+function resetMobileEst(){
+  est.fila='';est.ordem='data';est.desc=true;est.sel=null;est.cenario='normal';
+  Object.keys(est.f).forEach(k=>est.f[k]='');
+  est.sheetFiltros=false;est.sheetOrdenar=false;est.navAberta=false;est.forcarPressed=null;est.forcarMenu=null;
+}
+function aplicarCenario(k){
+  resetMobileEst();
+  if(k==='filtros'){est.sheetFiltros=true;est.f.status='Aguardando despacho'}
+  if(k==='vazio'){est.fila='rascunhos';est.cenario='vazio'}
+  if(k==='sem-resultados'){est.f.status='Cancelada';est.f.municipio='Curitiba'}
+  if(k==='ordenacao'){est.ordem='municipio';est.desc=false}
+  if(k==='menu'){est.forcarMenu=216}
+  if(k==='pressionado'){est.forcarPressed=215}
+  render();
+  document.querySelectorAll('#seletor button').forEach(b=>b.toggleAttribute('aria-current',b.dataset.k===k));
+}
+const bar=document.getElementById('seletor');
+bar.innerHTML=CENARIOS.map(c=>`<button data-k="${c.k}">${c.r}</button>`).join('');
+bar.addEventListener('click',e=>{const b=e.target.closest('button');if(b)aplicarCenario(b.dataset.k)});
+aplicarCenario('normal');
+</script>
+</body>
+</html>

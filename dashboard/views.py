@@ -1,13 +1,19 @@
 from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count
+from django.db.models import Count, Min, Q
 from django.db.models.functions import TruncMonth
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
 
-from solicitacoes.models import SolicitacaoEvento, StatusSolicitacao
+from solicitacoes.models import (
+    AcaoHistorico,
+    DecisaoDG,
+    HistoricoSolicitacao,
+    SolicitacaoEvento,
+    StatusSolicitacao,
+)
 from solicitacoes.permissions import queryset_visivel
 
 MESES_ABREVIADOS = [
@@ -212,7 +218,43 @@ def index(request):
 
     ultimas_solicitacoes = visiveis.select_related("municipio", "tipo_evento").order_by(
         "-criado_em"
-    )[:5]
+    )[:6]
+
+    # Próximos eventos: os mesmos 30 dias do cartão, em ordem de data.
+    proximos_eventos = proximos.select_related("municipio", "tipo_evento").order_by(
+        "data_inicio_evento", "pk"
+    )[:7]
+
+    # Despacho da DG: tempo médio entre envio e decisão, com a mesma regra da
+    # vw_tempos_workflow (primeiro ENVIO e primeira DECISAO do histórico).
+    marcos = (
+        HistoricoSolicitacao.objects.filter(solicitacao__in=visiveis)
+        .values("solicitacao_id")
+        .annotate(
+            enviado_em=Min("criado_em", filter=Q(acao=AcaoHistorico.ENVIO)),
+            decidido_em=Min("criado_em", filter=Q(acao=AcaoHistorico.DECISAO)),
+        )
+        .filter(enviado_em__isnull=False, decidido_em__isnull=False)
+    )
+    dias = [
+        (marco["decidido_em"] - marco["enviado_em"]).total_seconds() / 86400
+        for marco in marcos
+        if marco["decidido_em"] >= marco["enviado_em"]
+    ]
+    por_decisao = dict(
+        do_ano.values_list("decisao_dg").annotate(total=Count("pk")).values_list(
+            "decisao_dg", "total"
+        )
+    )
+    despacho = {
+        "media_dias": round(sum(dias) / len(dias), 1) if dias else None,
+        "decididas": len(dias),
+        "pendentes": aguardando,
+        "atender": por_decisao.get(DecisaoDG.ATENDER, 0),
+        "nao_atender": por_decisao.get(DecisaoDG.NAO_ATENDER, 0),
+        "cancelados": por_decisao.get(DecisaoDG.CANCELADO, 0),
+        "ano": hoje.year,
+    }
 
     return render(
         request,
@@ -222,6 +264,9 @@ def index(request):
             "grafico": grafico,
             "periodos_grafico": PERIODOS_GRAFICO,
             "ultimas_solicitacoes": ultimas_solicitacoes,
+            "proximos_eventos": proximos_eventos,
+            "despacho": despacho,
             "url_lista": lista,
+            "url_despacho": f"{lista}?status={StatusSolicitacao.AGUARDANDO_DESPACHO}",
         },
     )

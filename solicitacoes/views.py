@@ -398,6 +398,16 @@ ORDENACOES = {
 }
 ORDENACAO_PADRAO = "-data"
 
+# Ordenações oferecidas no bottom sheet mobile (mesmas chaves de ORDENACOES).
+ORDENACOES_MOBILE = [
+    {"valor": "-data", "rotulo": "Mais recentes primeiro"},
+    {"valor": "data", "rotulo": "Mais antigas primeiro"},
+    {"valor": "periodo", "rotulo": "Evento mais próximo"},
+    {"valor": "-numero", "rotulo": "Número (maior primeiro)"},
+    {"valor": "municipio", "rotulo": "Município (A–Z)"},
+    {"valor": "status", "rotulo": "Status (A–Z)"},
+]
+
 
 def _ordenacao(request):
     """Lê `ordem` da URL (com "-" para decrescente) e devolve (chave, campos)."""
@@ -469,10 +479,12 @@ def _colunas_ordenaveis(request, pedido):
     decrescente = pedido.startswith("-")
 
     colunas = []
-    for chave, rotulo in [
-        ("numero", "Nº"), ("municipio", "Município"), ("tipo", "Tipo de evento"),
-        ("periodo", "Período"), ("solicitante", "Solicitante"),
-        ("data", "Data da solicitação"), ("status", "Status"),
+    # Ordem e classes das colunas seguem o padrão de listagem V3.2 aprovado.
+    for chave, rotulo, classe in [
+        ("numero", "Nº", "c-id"), ("status", "Status", "c-status"),
+        ("tipo", "Tipo de evento", "c-tipo"), ("municipio", "Município", "c-mun"),
+        ("periodo", "Período do evento", "c-per"), ("solicitante", "Solicitante", "c-sol"),
+        ("data", "Data da solicitação", "c-data"),
     ]:
         ativa = chave == atual
         # Clicar na coluna ativa inverte; numa nova coluna começa crescente.
@@ -480,6 +492,7 @@ def _colunas_ordenaveis(request, pedido):
         colunas.append({
             "chave": chave,
             "rotulo": rotulo,
+            "classe": classe,
             "ativa": ativa,
             "descendente": ativa and decrescente,
             "url": f"?{base}&ordem={proximo}" if base else f"?ordem={proximo}",
@@ -520,6 +533,12 @@ def lista_solicitacoes(request):
             "fila_ativa": fila,
             "total_geral": base.count(),
             "tem_filtros": any(request.GET.get(nome) for nome in CAMPOS_FILTRO),
+            # Filtros além da busca: contagem exibida no botão "Filtros" do mobile.
+            "filtros_ativos": sum(
+                1 for nome in CAMPOS_FILTRO if nome != "q" and request.GET.get(nome)
+            ),
+            "ordenacoes_mobile": ORDENACOES_MOBILE,
+            "ordem_atual": pedido,
             "total_resultados": paginador.count,
             "paginas_visiveis": paginas_visiveis,
             "elipse": Paginator.ELLIPSIS,
@@ -647,7 +666,7 @@ def detalhe_solicitacao(request, pk):
             "despacho_pendente": _despacho_pendente(request, solicitacao),
         }
     )
-    return render(request, "pages/solicitacoes/form.html", contexto)
+    return render(request, "pages/solicitacoes/detalhe.html", contexto)
 
 
 # ---------------------------------------------------------------------------

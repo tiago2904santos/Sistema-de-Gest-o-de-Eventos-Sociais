@@ -12,7 +12,7 @@ from django.urls import reverse
 from accounts.models import Modulo, Setor
 from cadastros.models import Regiao
 
-from .forms import CargoForm, ServidorForm, TabelaDiariaForm, ViaturaForm
+from .forms import CargoForm, ServidorForm, TabelaDiariaForm, UnidadeForm, ViaturaForm
 from .models import (
     Cargo,
     Combustivel,
@@ -248,8 +248,12 @@ class TabelaDiariaTests(TestCase):
 
 
 class FormulariosTests(TestCase):
+    def test_cadastros_nao_possuem_mais_estado_ativo_inativo(self):
+        for modelo in (Unidade, Cargo, Combustivel, Servidor, Viatura):
+            self.assertNotIn("ativo", {campo.name for campo in modelo._meta.fields})
+
     def test_cpf_com_digito_verificador_errado_e_recusado(self):
-        form = ServidorForm(data={"nome": "Teste", "cpf": "11111111111", "ativo": True})
+        form = ServidorForm(data={"nome": "Teste", "cpf": "11111111111"})
         self.assertFalse(form.is_valid())
         self.assertIn("cpf", form.errors)
 
@@ -314,20 +318,37 @@ class FormulariosTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("valor_24h", form.errors)
 
-    def test_cargo_inativo_nao_aparece_no_formulario_de_servidor(self):
-        ativo = Cargo.objects.create(nome="Ativo")
-        Cargo.objects.create(nome="Aposentado", ativo=False)
+    def test_todos_os_cargos_aparecem_no_formulario_de_servidor(self):
+        primeiro = Cargo.objects.create(nome="Investigador")
+        segundo = Cargo.objects.create(nome="Delegado")
         opcoes = list(ServidorForm().fields["cargo"].queryset)
-        self.assertEqual(opcoes, [ativo])
+        self.assertEqual(opcoes, [segundo, primeiro])
 
-    def test_cargo_inativo_ja_vinculado_continua_selecionavel(self):
-        inativo = Cargo.objects.create(nome="Aposentado", ativo=False)
-        servidor = Servidor.objects.create(nome="Antiga", cargo=inativo)
-        opcoes = list(ServidorForm(instance=servidor).fields["cargo"].queryset)
-        self.assertIn(inativo, opcoes)
+    def test_unidade_form_copia_vinculo_de_servidores_do_gerenciador_original(self):
+        unidade = Unidade.objects.create(nome="Unidade Norte")
+        servidor = Servidor.objects.create(nome="Lotada", unidade=unidade)
+        form = UnidadeForm(instance=unidade)
+        self.assertIn("servidores", form.fields)
+        self.assertIn(servidor.pk, form.initial["servidores"])
+
+    def test_unidade_form_atualiza_os_servidores_lotados(self):
+        unidade = Unidade.objects.create(nome="Unidade Norte")
+        outra = Unidade.objects.create(nome="Unidade Sul")
+        entra = Servidor.objects.create(nome="Entra", unidade=outra)
+        sai = Servidor.objects.create(nome="Sai", unidade=unidade)
+        form = UnidadeForm(
+            data={"nome": unidade.nome, "sigla": "UN", "servidores": [entra.pk]},
+            instance=unidade,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+        entra.refresh_from_db()
+        sai.refresh_from_db()
+        self.assertEqual(entra.unidade, unidade)
+        self.assertIsNone(sai.unidade)
 
     def test_cpf_em_branco_e_aceito(self):
-        form = ServidorForm(data={"nome": "Teste", "cpf": "", "ativo": True})
+        form = ServidorForm(data={"nome": "Teste", "cpf": ""})
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_telefone_sem_ddd_e_recusado(self):
@@ -341,7 +362,7 @@ class FormulariosTests(TestCase):
         self.assertIn("placa", form.errors)
 
     def test_placa_mercosul_e_aceita(self):
-        form = ViaturaForm(data={"placa": "abc1d23", "ativo": True})
+        form = ViaturaForm(data={"placa": "abc1d23"})
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_diaria_com_valor_zero_e_recusada(self):
@@ -538,15 +559,15 @@ class TelasTests(BaseViagensTestCase):
         marcados = [o["rotulo"] for o in campo["opcoes"] if o["selecionado"]]
         self.assertEqual(marcados, ["JÁ VINCULADO"])
 
-    def test_alternar_ativo_inverte_a_situacao(self):
-        servidor = Servidor.objects.create(nome="Alterna")
-        self.client.post(
-            reverse(
-                "viagens_cadastros:alternar_ativo", args=["servidores", servidor.pk]
-            )
+    def test_lista_expoe_apenas_editar_e_excluir(self):
+        Servidor.objects.create(nome="Sem alternância")
+        resposta = self.client.get(
+            reverse("viagens_cadastros:lista", args=["servidores"])
         )
-        servidor.refresh_from_db()
-        self.assertFalse(servidor.ativo)
+        self.assertContains(resposta, "Editar")
+        self.assertContains(resposta, "Excluir")
+        self.assertNotContains(resposta, "Inativar")
+        self.assertNotContains(resposta, "Ativar")
 
     def test_excluir_vinculado_avisa_em_vez_de_apagar(self):
         from solicitacoes.models import SolicitacaoEvento
@@ -559,7 +580,35 @@ class TelasTests(BaseViagensTestCase):
             follow=True,
         )
         self.assertTrue(Servidor.objects.filter(pk=servidor.pk).exists())
-        self.assertContains(resposta, "não pode ser excluído")
+        self.assertContains(resposta, "Exclusão bloqueada")
+        self.assertContains(resposta, "Solicitações de evento")
+
+    def test_exclusao_simples_exige_confirmacao_e_remove_no_post(self):
+        servidor = Servidor.objects.create(nome="Pode excluir")
+        url = reverse(
+            "viagens_cadastros:excluir", args=["servidores", servidor.pk]
+        )
+        resposta = self.client.get(url)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Excluir definitivamente")
+        self.assertTrue(Servidor.objects.filter(pk=servidor.pk).exists())
+        resposta = self.client.post(url)
+        self.assertRedirects(
+            resposta, reverse("viagens_cadastros:lista", args=["servidores"])
+        )
+        self.assertFalse(Servidor.objects.filter(pk=servidor.pk).exists())
+
+    def test_gestor_pode_excluir_vigencia_de_diaria(self):
+        self.client.force_login(self.criar_usuario("gestora4", GRUPO_GESTOR))
+        tabela = TabelaDiaria.objects.create(
+            faixa=TabelaDiaria.Faixa.BRASILIA,
+            vigencia_inicio=date(2026, 1, 1),
+            valor_24h=Decimal("468.15"),
+        )
+        url = reverse("viagens_cadastros:diaria_excluir", args=[tabela.pk])
+        self.assertEqual(self.client.get(url).status_code, 200)
+        self.client.post(url)
+        self.assertFalse(TabelaDiaria.objects.filter(pk=tabela.pk).exists())
 
     def test_tela_de_diarias_mostra_a_vigencia_atual_por_faixa(self):
         TabelaDiaria.objects.create(
@@ -631,13 +680,11 @@ class SelecaoDeMotoristaNaSolicitacaoTests(TestCase):
         alheio = Servidor.objects.create(nome="Nao Dirige", cargo=cargo)
         self.assertNotIn(alheio, self._queryset())
 
-    def test_motorista_inativo_some_mas_o_ja_vinculado_permanece(self):
+    def test_motorista_cadastrado_fica_disponivel_sem_estado_ativo_inativo(self):
         cargo = Cargo.objects.create(nome="MOTORISTA")
-        inativo = Servidor.objects.create(
-            nome="Aposentado", cargo=cargo, ativo=False
-        )
-        self.assertNotIn(inativo, self._queryset())
-        self.assertIn(inativo, self._queryset(instance_pk=inativo.pk))
+        motorista = Servidor.objects.create(nome="Condutor", cargo=cargo)
+        self.assertIn(motorista, self._queryset())
+        self.assertIn(motorista, self._queryset(instance_pk=motorista.pk))
 
 
 class SeedDoModuloTests(TestCase):

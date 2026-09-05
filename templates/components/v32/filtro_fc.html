@@ -1,0 +1,35 @@
+{% load consulta %}
+{% comment %}
+  Filter control V3.2: rótulo + valor atual em um botão contornado.
+  Uso: {% include "components/v32/filtro_fc.html" with nome="status" rotulo="Status" opcoes=opcoes_status valor=valores_filtro.status padrao="Todos" %}
+  `opcoes`: lista de dicts {"valor", "rotulo"}. Listas curtas viram um menu de
+  links que reescrevem a querystring; listas longas (municípios) viram um
+  <select> nativo dentro do mesmo contorno, enviado pelo form[data-auto-enviar].
+{% endcomment %}
+{% if opcoes|length > 30 %}
+  {# Lista longa (municípios): combobox com busca do app.js dentro do controle da barra. #}
+  <div class="fc fc--combo"{% if valor %} data-ativo{% endif %}>
+    <span class="fc__rot">{{ rotulo }}</span>
+    {% include "components/select.html" with name=nome label=rotulo opcoes=opcoes selecionado=valor pesquisavel=True rotulo_oculto=True placeholder=padrao|default:"Todos" %}
+    {% if valor %}<a class="fc__limpar" href="{% qs_definir nome '' %}" aria-label="Limpar filtro de {{ rotulo|lower }}">{% include "components/icon.html" with nome="x" %}</a>{% endif %}
+  </div>
+{% else %}
+  <div class="dd" data-menu>
+    <button type="button" class="fc" data-menu-gatilho{% if valor %} data-ativo{% endif %} aria-haspopup="true" aria-expanded="false">
+      <span class="fc__rot">{{ rotulo }}</span>
+      <span>{% if valor %}{% for opcao in opcoes %}{% if opcao.valor|stringformat:"s" == valor|stringformat:"s" %}{{ opcao.rotulo }}{% endif %}{% endfor %}{% else %}{{ padrao|default:"Todos" }}{% endif %}</span>
+      {% include "components/icon.html" with nome="chevron-down" %}
+    </button>
+    <div class="dd__c dd__c--esq dd__c--rolavel" hidden data-menu-corpo>
+      <div class="dd__t">{{ rotulo }}</div>
+      <a class="dd__i{% if not valor %} dd__i--sel{% endif %}" href="{% qs_definir nome '' %}">
+        {% if valor %}<span class="dd__vaga"></span>{% else %}{% include "components/icon.html" with nome="check" %}{% endif %}{{ padrao|default:"Todos" }}
+      </a>
+      {% for opcao in opcoes %}
+        <a class="dd__i{% if opcao.valor|stringformat:"s" == valor|stringformat:"s" and valor %} dd__i--sel{% endif %}" href="{% qs_definir nome opcao.valor %}">
+          {% if opcao.valor|stringformat:"s" == valor|stringformat:"s" and valor %}{% include "components/icon.html" with nome="check" %}{% else %}<span class="dd__vaga"></span>{% endif %}{{ opcao.rotulo }}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}

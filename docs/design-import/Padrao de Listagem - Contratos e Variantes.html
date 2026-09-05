@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-densidade="padrao" data-dourado="institucional" data-divisorias="filete">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contratos responsivos — família Lista com filtros</title>
+<link rel="stylesheet" href="design-system/components-v3-2.css">
+<style>
+.doc{max-width:1120px;margin:0 auto;padding:0 48px 64px}
+.doc h2{font-size:20px;font-weight:600;color:var(--n-900);letter-spacing:-.012em;margin:40px 0 4px}
+.doc h2:first-of-type{margin-top:28px}
+.doc__sub{margin:0 0 16px;font-size:13px;color:var(--n-500)}
+.doc__t{width:100%;border-collapse:collapse;background:var(--branco);border:1px solid var(--n-200);border-radius:10px;overflow:hidden}
+.doc__t th{background:var(--n-50);padding:11px 16px;text-align:left;font-size:12.5px;font-weight:600;color:var(--n-600);border-bottom:1px solid var(--n-200);white-space:nowrap}
+.doc__t td{padding:11px 16px;border-bottom:1px solid var(--n-100);font-size:13px;color:var(--n-700);vertical-align:top}
+.doc__t tr:last-child td{border-bottom:0}
+.doc__t td:first-child{font-weight:600;color:var(--n-900);white-space:nowrap}
+.doc__t code{font:600 12px ui-monospace,Menlo,Consolas,monospace;color:var(--d-800);background:var(--d-50);padding:1px 5px;border-radius:4px}
+.doc__nota{margin:12px 0 0;font-size:12.5px;color:var(--n-500)}
+.doc__regra{background:var(--branco);border:1px solid var(--n-200);border-left:2px solid var(--d-500);border-radius:8px;padding:14px 18px;margin:20px 0 0;font-size:13.5px;color:var(--n-700)}
+.doc__regra b{color:var(--n-900)}
+</style>
+</head>
+<body>
+<header class="ident"><div class="ident__in">
+  <div class="marca">
+    <span class="marca__moldura"><img src="assets/brasao-pcpr.svg" alt="Brasão da Polícia Civil do Paraná"></span>
+    <span class="marca__org">Polícia Civil do Paraná</span>
+  </div>
+  <span class="risco-i" aria-hidden="true"></span>
+  <span class="ident__sistema">Design System — contratos da família Lista com filtros</span>
+</div></header>
+
+<main class="doc">
+  <div class="cabeca" style="padding-bottom:8px">
+    <div class="cabeca__esq">
+      <div class="kicker">Design System · Padrão oficial</div>
+      <h1>Lista com filtros</h1>
+      <p class="cabeca__sub">Contratos responsivos e variantes dos componentes. Direção congelada — vale para todas as páginas de listagem do sistema.</p>
+    </div>
+  </div>
+
+  <div class="doc__regra"><b>Regra fundamental.</b> Mobile não é redução do desktop. Cada componente tem duas variantes com o mesmo contrato de dados, funcionalidades, ações e nomenclatura — apenas a composição muda. Nenhuma informação pode ser omitida na variante mobile; nenhuma pode depender de scroll horizontal estrutural.</div>
+
+  <h2>1 · Contratos responsivos</h2>
+  <p class="doc__sub">Cada componente da família tem uma variante desktop e uma variante mobile obrigatórias.</p>
+  <table class="doc__t">
+    <thead><tr><th>Componente</th><th>Variante desktop</th><th>Variante mobile</th><th>Contrato preservado</th></tr></thead>
+    <tbody>
+      <tr><td>Registros</td><td>Data Table — colunas fixas, cabeçalho ordenável, painel com raio 10px</td><td>Data List — linha contínua com separador sutil, sem card pesado, sem scroll horizontal</td><td>Todos os campos visíveis: nº, status, tipo, município, período, solicitante, unidade, data da solicitação</td></tr>
+      <tr><td>Filtros</td><td>Filter Bar — busca + 3 filter controls contornados + botão Filtros que abre painel expansível em linha única</td><td>Filter Bottom Sheet — busca full-width + botões Filtros / Ordenar; todos os 7 filtros dentro do sheet</td><td>Mesmos 7 filtros, mesmo contador de ativos, Limpar filtros sempre disponível</td></tr>
+      <tr><td>Filas de trabalho</td><td>Abas horizontais com sublinhado dourado e contador</td><td>Tab scroller em pílulas, ativo em dourado sólido, fade nas bordas, sem scrollbar nativa</td><td>As 7 filas na mesma ordem, com os mesmos totais</td></tr>
+      <tr><td>Ordenação</td><td>Clique no cabeçalho da coluna — <code>aria-sort</code> + seta dourada</td><td>Bottom sheet "Ordenar por" com as 6 ordenações nomeadas</td><td>Mesmas chaves de ordenação e direções</td></tr>
+      <tr><td>Resumo operacional</td><td>3 indicadores com ícone em chip, divisores de filete, alinhados à base do título</td><td>Grid de 3 colunas em faixa única tonalizada com divisores internos</td><td>Total, Aguardando despacho, Devolvidas — cada um navega para sua fila</td></tr>
+      <tr><td>Ação primária</td><td>Botão dourado sólido à direita do cabeçalho</td><td>Botão dourado sólido full-width abaixo dos indicadores</td><td>Rótulo e destino idênticos</td></tr>
+      <tr><td>Navegação</td><td>Faixa de identidade + barra de módulo com 4 seções</td><td>App shell compacto (brasão + sigla + sino + avatar) e seletor de módulo com drawer</td><td>Todas as seções acessíveis; identidade institucional preservada</td></tr>
+      <tr><td>Paginação</td><td>Numerada com elipse, dentro do painel, + Por página</td><td>Anterior · Página X de Y · Próxima, + Por página secundário</td><td>Mesma contagem total e tamanho de página</td></tr>
+    </tbody>
+  </table>
+
+  <h2>2 · Ações contextuais por registro</h2>
+  <p class="doc__sub">A ação principal deriva do status. A linha inteira sempre abre o detalhe; o menu ⋮ carrega as secundárias.</p>
+  <table class="doc__t">
+    <thead><tr><th>Status</th><th>Ação contextual</th><th>Desktop</th><th>Mobile</th></tr></thead>
+    <tbody>
+      <tr><td>Aguardando despacho</td><td>Despachar</td><td rowspan="4">Botão outline de 28px na coluna de ações, sempre visível, com chevron e kebab à direita</td><td rowspan="4">Pill compacta de 44px de altura no rodapé do item, kebab de 44×44 à direita</td></tr>
+      <tr><td>Deferida — em andamento</td><td>Confirmar</td></tr>
+      <tr><td>Rascunho · Devolvida</td><td>Continuar</td></tr>
+      <tr><td>Atendida · Não atendida · Cancelada</td><td>Nenhuma (estado terminal)</td></tr>
+    </tbody>
+  </table>
+  <p class="doc__nota">Menu ⋮ — Detalhes e Histórico sempre; Editar quando Rascunho ou Devolvida; Excluir apenas em Rascunho, separado por filete e em vermelho.</p>
+
+  <h2>3 · Estados da página</h2>
+  <table class="doc__t">
+    <thead><tr><th>Estado</th><th>Gatilho</th><th>Composição</th></tr></thead>
+    <tbody>
+      <tr><td>Normal com dados</td><td>Fila com registros</td><td>Data Table / Data List completa com paginação</td></tr>
+      <tr><td>Filtros avançados abertos</td><td>Botão Filtros</td><td>Desktop: painel em linha única sob a toolbar. Mobile: bottom sheet com header e rodapé fixos, corpo rolável</td></tr>
+      <tr><td>Vazio — sem registros</td><td>Fila sem nenhum registro</td><td>Ícone linear discreto, título curto, descrição e ação contextual <b>Nova solicitação</b></td></tr>
+      <tr><td>Sem resultados da busca</td><td>Filtros aplicados sem correspondência</td><td>Ícone de busca sem resultado, título, descrição e <b>Limpar filtros</b></td></tr>
+      <tr><td>Foco / pressionado</td><td>Hover no desktop, toque no mobile</td><td>Filete dourado de 3px na borda esquerda + fundo <code>--n-25</code> — linguagem global de item em foco</td></tr>
+      <tr><td>Menu de ações aberto</td><td>Kebab do registro</td><td>Dropdown ancorado à direita, com título do registro e ações filtradas por status</td></tr>
+      <tr><td>Ordenação ativa</td><td>Cabeçalho de coluna ou sheet Ordenar</td><td>Desktop: <code>aria-sort</code> com seta dourada. Mobile: item marcado com check no sheet</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4 · Tokens e medidas fixas</h2>
+  <table class="doc__t">
+    <thead><tr><th>Dimensão</th><th>Desktop</th><th>Mobile</th></tr></thead>
+    <tbody>
+      <tr><td>Largura do conteúdo</td><td><code>--larg</code> 1440px, <code>--pad</code> 48px</td><td>App shell 430px, padding 16px</td></tr>
+      <tr><td>Altura de controle</td><td><code>--ctrl-h</code> 44px</td><td>44px — nunca abaixo disso em alvo de toque</td></tr>
+      <tr><td>Densidade da linha</td><td><code>--linha-y</code> 13px (tweak: 8 / 13 / 18)</td><td>Item com 10px vertical, gap interno 4px</td></tr>
+      <tr><td>Acento</td><td colspan="2"><code>--acento</code> = <code>--d-500</code> · numerais e ícones ativos em <code>--acento-num</code> = <code>--d-700</code></td></tr>
+      <tr><td>Raio</td><td colspan="2">Painel 10px · controles 8–9px · badges 5–6px · pílulas e avatares 99px</td></tr>
+      <tr><td>Transição</td><td colspan="2"><code>--motion</code> 130ms cubic-bezier(.2,0,.2,1) — uma única curva em toda a família</td></tr>
+    </tbody>
+  </table>
+
+  <h2>5 · Arquivos de referência</h2>
+  <table class="doc__t">
+    <thead><tr><th>Arquivo</th><th>Papel</th></tr></thead>
+    <tbody>
+      <tr><td>design-system/components-v3-2.css</td><td>Folha única — tokens, componentes desktop, bloco mobile <code>m-*</code> e tweaks</td></tr>
+      <tr><td>Piloto V3.2 - Solicitacoes (desktop).html</td><td>Referência oficial desktop — congelada</td></tr>
+      <tr><td>Padrao de Listagem - Estados.html</td><td>7 estados desktop</td></tr>
+      <tr><td>Padrao de Listagem - Mobile.html</td><td>Referência oficial mobile + 7 estados</td></tr>
+    </tbody>
+  </table>
+</main>
+</body>
+</html>

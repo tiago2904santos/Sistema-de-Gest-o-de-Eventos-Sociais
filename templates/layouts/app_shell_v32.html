@@ -1,0 +1,92 @@
+{% extends "layouts/base.html" %}
+{% load static estaticos %}
+{% comment %}
+  App shell V3.2: composição do Design System aprovado (faixa de identidade,
+  barra de módulo, conteúdo e rodapé). Carrega apenas o CSS V3.2, sem o
+  design-system.css antigo — as páginas migram uma a uma para este layout.
+{% endcomment %}
+
+{% block css_principal %}
+  <link rel="stylesheet" href="{% estatico 'css/ds-v32.css' %}">
+  <link rel="stylesheet" href="{% estatico 'css/ds-v32-bridge.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="pagina app-v32">
+  <header class="ident"><div class="ident__in">
+    <a class="marca" href="{% url 'core:home' %}">
+      <span class="marca__moldura"><img src="{% static 'icons/favicon.svg' %}" alt="Brasão da Polícia Civil do Paraná"></span>
+      <span class="marca__org">Polícia Civil do Paraná</span>
+    </a>
+    <span class="risco-i" aria-hidden="true"></span>
+    <span class="ident__sistema">Sistema de Gestão de Eventos Sociais</span>
+    {% if user.is_authenticated %}
+      <div class="ident__fim">
+        <a class="ident-icone" href="{% url 'core:notificacoes' %}" aria-label="Notificações{% if notificacoes_nao_lidas %} ({{ notificacoes_nao_lidas }} não lidas){% endif %}">
+          {% include "components/icon.html" with nome="bell" %}
+          {% if notificacoes_nao_lidas %}<span class="ident-icone__ponto"></span>{% endif %}
+        </a>
+        <div class="dd" data-menu>
+          <button type="button" class="ident-user" data-menu-gatilho aria-haspopup="menu" aria-expanded="false">
+            <span class="ident-user__av" aria-hidden="true">{{ user.first_name|first|default:user.username|first|upper }}{{ user.last_name|first|upper }}</span>
+            <span class="ident-user__n">{{ user.get_full_name|default:user.username }}</span>
+            {% include "components/icon.html" with nome="chevron-down" %}
+          </button>
+          <div class="dd__c" role="menu" hidden data-menu-corpo>
+            <div class="dd__t">{% if user.is_staff %}Acesso gestor{% else %}Usuário autenticado{% endif %}</div>
+            <a class="dd__i" role="menuitem" href="{% url 'accounts:alterar_senha' %}">{% include "components/icon.html" with nome="lock" %}Alterar senha</a>
+            {% if user.is_staff %}
+              <a class="dd__i" role="menuitem" href="{% url 'admin:index' %}">{% include "components/icon.html" with nome="settings" %}Acesso gestor</a>
+            {% endif %}
+            <div class="dd__s"></div>
+            <form method="post" action="{% url 'accounts:logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="dd__i dd__i--perigo" role="menuitem">{% include "components/icon.html" with nome="login" %}Sair</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div></header>
+
+  <nav class="navbar" aria-label="Navegação principal"><div class="navbar__in">
+    {# Fora do portal a navegação fica restrita ao módulo ativo (regra dos testes de módulo); o seletor leva ao portal. #}
+    <a class="modulo" href="{% url 'core:home' %}" title="Voltar ao portal de módulos">
+      <span class="modulo__nome">{{ modulo_ativo.nome|default:"Início" }}</span>
+      {% include "components/icon.html" with nome="chevron-down" %}
+    </a>
+    {% if nav_itens %}
+      <div class="nav-mod">
+        {% for item in nav_itens %}
+          <a href="{{ item.url }}"{% if item.ativo %} aria-current="page"{% endif %}>{{ item.rotulo }}</a>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div></nav>
+
+  <main class="conteudo">
+    {% if messages %}
+      <div class="avisos-v32">
+        {% for message in messages %}
+          <div class="aviso{% if 'error' in message.tags %} aviso--erro{% elif 'success' in message.tags %} aviso--ok{% elif 'info' in message.tags %} aviso--info{% endif %}"
+               role="{% if 'error' in message.tags %}alert{% else %}status{% endif %}">
+            {% if 'error' in message.tags %}{% include "components/icon.html" with nome="x" %}{% elif 'success' in message.tags %}{% include "components/icon.html" with nome="check" %}{% else %}{% include "components/icon.html" with nome="info" %}{% endif %}
+            <div>{{ message }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% block conteudo %}{% endblock %}
+  </main>
+
+  <footer class="rodape-v32">
+    {% include "components/icon.html" with nome="lock" %}
+    <span>Ambiente restrito e monitorado</span>
+    <span aria-hidden="true">·</span>
+    <span>Sistema de Gestão de Eventos Sociais — versão 2.0</span>
+  </footer>
+</div>
+{% endblock %}
+
+{% block extra_js %}<script src="{% estatico 'js/ds-v32.js' %}" defer></script>{% endblock %}

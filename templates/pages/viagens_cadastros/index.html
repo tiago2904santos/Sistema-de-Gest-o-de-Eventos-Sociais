@@ -1,22 +1,45 @@
 {% extends "layouts/app_shell.html" %}
+{% load static estaticos %}
 
 {% block title %}Cadastros de viagens — Sistema de Gestão de Eventos Sociais{% endblock %}
 
+{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-cadastros.css' %}">{% endblock %}
+
 {% block conteudo %}
   {% include "components/breadcrumb.html" with atual="Viagens" %}
-  {% include "components/page_header.html" with titulo="Cadastros de viagens" subtitulo="Servidores, viaturas e valores de diária usados nas viagens" icone="volante" %}
+  {% include "components/page_header.html" with titulo="Cadastros de viagens" subtitulo="Uma base única para pessoas, veículos, lotações e valores" icone="volante" %}
 
-  <div class="cadastro-grid">
+  <section class="viagens-hub-intro" aria-labelledby="viagens-hub-titulo">
+    <div>
+      <span class="viagens-eyebrow">Base operacional</span>
+      <h2 id="viagens-hub-titulo">Tudo o que alimenta uma viagem começa aqui</h2>
+      <p>Entre em uma categoria para consultar, criar, editar ou excluir registros. Sem estados intermediários e sem ações escondidas.</p>
+    </div>
+    <div class="viagens-hub-intro__total" aria-label="Total de categorias">
+      <strong>{{ grupos|length }}</strong>
+      <span>categorias organizadas</span>
+    </div>
+  </section>
+
+  <div class="cadastro-grid viagens-cadastro-grid">
     {% for grupo in grupos %}
-      <a class="cadastro-card" href="{% if grupo.url %}{{ grupo.url }}{% else %}{% url 'viagens_cadastros:lista' grupo.slug %}{% endif %}">
-        <span class="cadastro-card__icone" aria-hidden="true">{% include "components/icon.html" with nome=grupo.icone %}</span>
-        <span class="cadastro-card__info">
-          <span class="cadastro-card__titulo">{{ grupo.titulo }}</span>
-          <span class="cadastro-card__valor">{{ grupo.total }}</span>
-          <span class="cadastro-card__barra" style="background: {{ grupo.cor }};" aria-hidden="true"></span>
-        </span>
-        <span class="cadastro-card__seta" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</span>
-      </a>
+      <article class="cadastro-card viagens-cadastro-card">
+        <a class="viagens-cadastro-card__principal" href="{% if grupo.url %}{{ grupo.url }}{% else %}{% url 'viagens_cadastros:lista' grupo.slug %}{% endif %}">
+          <span class="cadastro-card__icone" aria-hidden="true">{% include "components/icon.html" with nome=grupo.icone %}</span>
+          <span class="cadastro-card__info">
+            <span class="cadastro-card__titulo">{{ grupo.titulo }}</span>
+            <span class="cadastro-card__valor">{{ grupo.total }}</span>
+            <span class="viagens-cadastro-card__rotulo">registro{{ grupo.total|pluralize }}</span>
+          </span>
+          <span class="cadastro-card__seta" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</span>
+          <span class="viagens-cadastro-card__descricao">{{ grupo.descricao }}</span>
+        </a>
+        {% if grupo.pode_criar %}
+          <a class="viagens-cadastro-card__criar" href="{{ grupo.url_novo }}">
+            {% include "components/icon.html" with nome="plus" %} Criar novo
+          </a>
+        {% endif %}
+      </article>
     {% endfor %}
   </div>
 {% endblock %}

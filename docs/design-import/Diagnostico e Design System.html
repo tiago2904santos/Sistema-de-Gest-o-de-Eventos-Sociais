@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagnóstico visual e arquitetura do Design System — PCPR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#24262b;--graphite:#333;--text:#3c4046;--muted:#767a80;--faint:#9a9ea3;--line:#e4e5e6;--line-soft:#eeeff0;--paper:#fbfbfa;--surface:#fff;--gold:#bea45a;--gold-deep:#8a7132;--gold-wash:#faf6ea;--ok:#1e7e46;--warn:#9a6b00;--bad:#b3261e;--sans:"Segoe UI",system-ui,-apple-system,sans-serif;--serif:"Source Serif 4",Georgia,serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--text);font:16px/1.62 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--gold-deep)}a:hover{color:var(--ink)}
+.masthead{background:var(--graphite);color:#f2f2f0;border-bottom:3px solid var(--gold)}
+.masthead__in{max-width:1180px;margin:0 auto;padding:26px 40px 24px;display:flex;align-items:flex-end;justify-content:space-between;gap:32px;flex-wrap:wrap}
+.masthead__eyebrow{font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+.masthead h1{font:600 1.9rem/1.15 var(--serif);margin:8px 0 0;letter-spacing:-.01em}
+.masthead p{margin:6px 0 0;color:#b9bbbd;font-size:.9rem;max-width:56ch}
+.masthead__meta{display:grid;gap:2px;text-align:right;font-size:.78rem;color:#b9bbbd}
+.masthead__meta b{color:#f2f2f0;font-weight:600}
+.wrap{max-width:1180px;margin:0 auto;padding:0 40px 96px;display:grid;grid-template-columns:216px 1fr;gap:56px;align-items:start}
+nav.toc{position:sticky;top:32px;padding-top:44px;font-size:.82rem;display:grid;gap:2px}
+nav.toc a{display:block;padding:5px 0 5px 12px;border-left:2px solid var(--line);color:var(--muted);text-decoration:none}
+nav.toc a:hover{border-left-color:var(--gold);color:var(--ink)}
+main{padding-top:44px;min-width:0}
+section{margin:0 0 60px;scroll-margin-top:24px}
+.sec-num{font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-deep);font-weight:600}
+h2{font:600 1.42rem/1.25 var(--serif);color:var(--ink);margin:6px 0 14px;letter-spacing:-.01em}
+h3{font:600 .96rem/1.4 var(--sans);color:var(--ink);margin:30px 0 8px}
+h4{font:600 .8rem/1.4 var(--sans);color:var(--ink);margin:20px 0 6px;letter-spacing:.01em}
+p{margin:0 0 12px;text-wrap:pretty}
+.lede{font-size:1.06rem;color:var(--text)}
+ul,ol{margin:0 0 12px;padding-left:20px}li{margin:0 0 5px;text-wrap:pretty}
+table{width:100%;border-collapse:collapse;font-size:.86rem;margin:12px 0 16px}
+th{text-align:left;font-weight:600;color:var(--ink);border-bottom:1.5px solid var(--ink);padding:0 12px 7px 0;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase}
+td{padding:9px 12px 9px 0;border-bottom:1px solid var(--line-soft);vertical-align:top}
+tr:last-child td{border-bottom:1px solid var(--line)}
+td code,p code,li code{font:.82em ui-monospace,"Cascadia Mono",Menlo,monospace;color:var(--gold-deep);background:#f5f3ee;padding:1px 4px;border-radius:3px}
+.finding{display:grid;grid-template-columns:34px 1fr;gap:14px;padding:16px 0;border-top:1px solid var(--line-soft)}
+.finding:first-of-type{border-top:1px solid var(--line)}
+.finding__n{font:600 .95rem/1 var(--serif);color:var(--gold-deep);padding-top:3px}
+.finding__t{font-weight:600;color:var(--ink);margin:0 0 4px}
+.finding__e{margin:6px 0 0;font-size:.8rem;color:var(--muted)}
+.pull{border-left:2px solid var(--gold);padding:2px 0 2px 18px;margin:18px 0;color:var(--ink);font:400 1.02rem/1.5 var(--serif)}
+.note{background:var(--gold-wash);border:1px solid #ecdfbe;border-radius:4px;padding:14px 18px;margin:16px 0;font-size:.88rem}
+.note b{color:var(--gold-deep)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:0 40px}
+.swatches{display:flex;gap:0;margin:14px 0 6px;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.sw{flex:1;padding:44px 10px 10px;font-size:.68rem;letter-spacing:.04em;color:#fff}
+.sw small{display:block;opacity:.7;font-size:.9em}
+.tag{display:inline-block;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:2px 7px;border-radius:3px;white-space:nowrap}
+.tag--keep{background:#e6f0e9;color:var(--ok)}.tag--fix{background:#fbf3de;color:var(--warn)}.tag--kill{background:#fbeae8;color:var(--bad)}.tag--new{background:#eceef2;color:#4a5462}
+.rule{border:0;border-top:1px solid var(--line);margin:0 0 44px}
+footer{max-width:1180px;margin:0 auto;padding:22px 40px 40px;border-top:1px solid var(--line);color:var(--faint);font-size:.76rem;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+@media (max-width:900px){.wrap{grid-template-columns:1fr;gap:0;padding:0 22px 60px}nav.toc{display:none}.two{grid-template-columns:1fr}.masthead__in{padding:22px}.masthead__meta{text-align:left}}
+</style>
+</head>
+<body>
+<header class="masthead"><div class="masthead__in">
+<div><div class="masthead__eyebrow">Polícia Civil do Paraná · Remodelação visual</div>
+<h1>Diagnóstico visual e arquitetura do Design System</h1>
+<p>Análise do sistema atual antes de qualquer redesenho de tela. Nenhuma regra de negócio, campo ou fluxo foi alterado neste documento.</p></div>
+<div class="masthead__meta"><span><b>Etapa 1</b> · análise e proposta</span><span>120 telas · 8 grupos · 5 módulos</span><span><b>02/09/2026</b> — v1 para revisão</span></div>
+</div></header>
+
+<div class="wrap">
+<nav class="toc">
+<a href="#s1">1 · Diagnóstico global</a>
+<a href="#s2">2 · Problemas sistêmicos</a>
+<a href="#s3">3 · Inconsistências</a>
+<a href="#s4">4 · Famílias de página</a>
+<a href="#s5">5 · Inventário de componentes</a>
+<a href="#s6">6 · Arquitetura proposta</a>
+<a href="#s7">7 · Princípios visuais</a>
+<a href="#s8">8 · Componentes globais</a>
+<a href="#s9">9 · Páginas-piloto</a>
+<a href="#s10">10 · UX em atenção</a>
+<a href="#s11">Limites e o que não muda</a>
+</nav>
+
+<main>
+
+<section id="s1">
+<div class="sec-num">Seção 1</div><h2>Diagnóstico visual global</h2>
+<p class="lede">O sistema não tem um problema de gosto — tem um problema de <b>origem única</b>. Existe um design system declarado (<code>static/css/design-system.css</code>, 4.174 linhas, 201 classes de primeiro nível), mas ele foi crescendo por página em vez de por componente. O resultado é um produto que parece cinco produtos parecidos: mesma paleta, mesmo cabeçalho, decisões diferentes em cada módulo.</p>
+
+<p>A identidade institucional está correta e deve ser preservada: cabeçalho grafite com filete dourado, brasão à esquerda, fundo claro, sobriedade. O que falha é a camada abaixo dela — hierarquia, densidade, semântica de cor e reuso.</p>
+
+<div class="pull">O sistema tem identidade, mas não tem gramática. Cada tela reinventa como dizer “isto é um título”, “isto é uma seção”, “isto é a ação principal”.</div>
+
+<h3>As seis constatações</h3>
+<div class="finding"><div class="finding__n">01</div><div>
+<p class="finding__t">Duas gerações de CSS convivem no mesmo arquivo</p>
+<p>As seções 1–16 definem os componentes base; os apêndices posteriores refazem os mesmos componentes sob o rótulo “modelo do redesign”. Nada foi removido — o novo foi empilhado sobre o antigo.</p>
+<p class="finding__e">Evidência: “Listagem e detalhe de solicitações” (l. 2084) e “Página de detalhe” (l. 2104) continuam vivas ao lado de “Listagem — modelo do redesign” (l. 2793), “Detalhe — modelo do redesign” (l. 3018) e “Dashboard — modelo do redesign” (l. 2547).</p></div></div>
+
+<div class="finding"><div class="finding__n">02</div><div>
+<p class="finding__t">Componentes base são redeclarados, não configurados</p>
+<p>Os quatro componentes mais usados do sistema mudam de definição no meio do arquivo, sem variante e sem token: quem edita um formulário não sabe qual regra vence.</p>
+<p class="finding__e">Evidência: <code>.section-card</code> (l. 373 → l. 1225, raio 14px→9px e sombra removida), <code>.form-grid</code> (591→1230), <code>.form-label</code> (612→1232), <code>.form-controle</code> (626→1233), <code>.tabela-wrapper</code> duas vezes seguidas (802 e 808), <code>.summary-card--link</code> (521→2314), <code>.diarias-metricas</code> (3614→3625).</p></div></div>
+
+<div class="finding"><div class="finding__n">03</div><div>
+<p class="finding__t">Excesso de camadas: caixa dentro de caixa como padrão</p>
+<p>A página de detalhe entrega quatro níveis de recipiente — <code>.section-card</code> → <code>.detalhe-card</code>/<code>.resumo-bloco</code> → <code>.linhas-dados</code> → <code>.equipe-alocacao</code> — todos com borda cinza, raio e sombra próprios. Cada nível cobra ~1px de borda e ~24px de padding; o conteúdo perde ~30% da largura útil e toda a hierarquia se achata.</p></div></div>
+
+<div class="finding"><div class="finding__n">04</div><div>
+<p class="finding__t">Cor deixou de indicar importância e passou a indicar rótulo</p>
+<p>Na lista de Eventos Sociais, dourado = “Despachar”, verde = “Confirmar”, âmbar = “Continuar”, contorno = “Detalhes”. No Coffee Break, o mesmo espaço de ação traz “Editar” em dourado escuro sólido. Em ASCOM, a ação primária é “Editar demanda” no topo. O usuário não consegue aprender “o botão cheio é o que devo fazer agora”.</p>
+<p class="finding__e">Evidência: <code>.btn--acao-despachar</code>, <code>--acao-confirmar</code>, <code>--acao-continuar</code>, <code>--acao-detalhes</code> (l. 2929–2938) coexistindo com <code>.btn--primario</code>, <code>--dourado</code>, <code>--secundario</code>, <code>--perigo</code>, <code>--perigo-suave</code>, <code>--fantasma</code>: 15 variantes de botão.</p></div></div>
+
+<div class="finding"><div class="finding__n">05</div><div>
+<p class="finding__t">Tipografia sem degraus: quase tudo é caixa-alta pequena</p>
+<p>Rótulos de campo, cabeçalhos de tabela, títulos de seção, eyebrow de módulo e legendas de KPI usam a mesma receita (0,66–0,75rem, uppercase, letter-spacing). Quando todo texto secundário grita no mesmo tom, o olho não encontra o primário — a hierarquia depende só do tamanho do número.</p></div></div>
+
+<div class="finding"><div class="finding__n">06</div><div>
+<p class="finding__t">Densidade invertida: muito ar onde há pouca informação, aperto onde há muita</p>
+<p>Um formulário de cadastro com um único campo ocupa um card de 1.540px de largura; a lista de solicitações com 8 colunas quebra “Ciclo de Palestras Saúde e Bem-Estar…” em cinco linhas. O layout é sempre o mesmo container, independente da carga.</p></div></div>
+</section>
+<hr class="rule">
+
+<section id="s2">
+<div class="sec-num">Seção 2</div><h2>Problemas sistêmicos</h2>
+<p>Estes não são defeitos de tela; são decisões ausentes na base. Cada um se repete em dezenas de páginas e precisa ser resolvido uma única vez.</p>
+<table>
+<thead><tr><th style="width:26%">Problema</th><th style="width:38%">Como se manifesta</th><th>Correção na base</th></tr></thead>
+<tbody>
+<tr><td><b>Tokens sem escala</b></td><td><code>--cor-dourado-700</code>, <code>-500</code> e <code>-400</code> são o mesmo <code>#BEA45A</code>; existem 2 sombras e 3 raios, mas o CSS usa 9px, 12px, 13px, 5px direto no código</td><td>Três camadas de token: primitivo → semântico → componente. Escala real de dourado e de cinza, 5 níveis de elevação, 4 raios, espaçamento em passos de 4px</td></tr>
+<tr><td><b>Zero hierarquia de superfície</b></td><td>Fundo <code>#f4f5f6</code>, card <code>#fff</code>, borda <code>#d1d3d4</code> — separação de 3% de luminância; tudo flutua no mesmo plano</td><td>Papel/superfície/superfície elevada com contraste definido, borda como recurso de exceção e não padrão</td></tr>
+<tr><td><b>Ausência de componente de dados</b></td><td>Cinco formas de mostrar pares rótulo/valor: <code>.linhas-dados</code>, <code>.resumo-lista</code>, <code>.grid-resumo</code>, <code>.detalhe-grid</code>, <code>.proposta-grid</code></td><td>Um <code>data-list</code> com variantes (2/3/4 colunas, empilhado) usado em todos os detalhes e resumos</td></tr>
+<tr><td><b>Campos vazios com o mesmo peso dos preenchidos</b></td><td>Detalhes exibem até 18 pares e metade vem “—”; o “—” consome a mesma área do dado real</td><td>Regra de exibição: vazio recolhe para linha compacta ou agrupa em “Não informado (5)”</td></tr>
+<tr><td><b>Ações sem ancoragem fixa</b></td><td>Ação primária mora na sidebar direita (Eventos), no topo direito (ASCOM), dentro da linha da tabela (Coffee) ou no rodapé da seção</td><td><code>action-bar</code> global: sempre o mesmo lugar por família de página, com regra de prioridade</td></tr>
+<tr><td><b>Filtros com contratos diferentes</b></td><td>Eventos aplica ao mudar o select; Coffee exige clicar <b>Buscar</b>; cadastros usam “Filtros ▾” recolhido; usuários mostram 3 filtros sempre abertos</td><td>Um <code>filter-bar</code>: busca + até 3 filtros rápidos + “avançados” recolhível, com comportamento único e badge de filtros ativos</td></tr>
+<tr><td><b>Estados vazios improvisados</b></td><td>“Nenhum registro encontrado.” como linha de tabela em cadastros; card ilustrado em notificações; tabela com cabeçalho e corpo vazio em viaturas/unidades</td><td>Um <code>empty-state</code> com três modos: sem dados, sem resultado de busca, sem permissão</td></tr>
+<tr><td><b>Responsivo resolvido por página</b></td><td>Navbar rolável com aviso “Deslize para ver mais →” sobreposto aos itens; título do cabeçalho em 3 linhas no mobile; três botões empilhados em larguras diferentes</td><td>Shell responsivo único: cabeçalho compacto, seletor de módulo, barra de ação fixa no rodapé, tabela→cartão com hierarquia (já existe em <code>l. 2468</code> e deve virar padrão)</td></tr>
+<tr><td><b>CSS por módulo em paralelo</b></td><td><code>viagens-cadastros.css</code> recria o hub de cadastros com <code>.viagens-cadastro-card</code> e <code>.viagens-hub-intro</code> ao lado de <code>.cadastro-card</code></td><td>Nenhum CSS por módulo. Módulo escolhe variante, não estilo</td></tr>
+</tbody></table>
+</section>
+<hr class="rule">
+
+<section id="s3">
+<div class="sec-num">Seção 3</div><h2>Inconsistências mapeadas</h2>
+<p>Componentes que fazem o mesmo trabalho com implementações diferentes. A coluna “variantes” conta as classes de primeiro nível hoje existentes.</p>
+<table>
+<thead><tr><th style="width:20%">Função</th><th style="width:8%">Variantes</th><th style="width:44%">Classes atuais</th><th>Destino</th></tr></thead>
+<tbody>
+<tr><td>Recipiente / caixa</td><td><b>16</b></td><td><code>.card</code> · <code>.section-card</code> · <code>.summary-card</code> · <code>.detalhe-card</code> · <code>.side-card</code> · <code>.cadastro-card</code> · <code>.portal-card</code> · <code>.viagens-cadastro-card</code> · <code>.grafico-card</code> · <code>.encerramento-cartao</code> · <code>.notificacao-cartao</code> · <code>.senha-card</code> · <code>.auth-card</code> · <code>.painel-dica</code> · <code>.resumo-bloco</code> · <code>.metrica</code></td><td><span class="tag tag--fix">1 Card + 4 variantes</span></td></tr>
+<tr><td>Botão</td><td><b>15</b></td><td><code>--primario</code> · <code>--dourado</code> · <code>--secundario</code> · <code>--perigo</code> · <code>--perigo-suave</code> · <code>--fantasma</code> · <code>--bloco</code> · <code>--compacto</code> · <code>--com-icone</code> · <code>--alternar-ativo</code> · <code>--acao</code> · <code>--acao-despachar</code> · <code>--acao-confirmar</code> · <code>--acao-continuar</code> · <code>--acao-detalhes</code></td><td><span class="tag tag--fix">4 intenções × 3 tamanhos</span></td></tr>
+<tr><td>KPI / métrica</td><td><b>4</b></td><td><code>.summary-card</code> (Eventos, Coffee) · <code>.metrica</code> (Viagens) · <code>.portal-card</code> KPIs (hub) · KPI empilhado do painel ASCOM</td><td><span class="tag tag--fix">1 KPI card</span></td></tr>
+<tr><td>Cabeçalho de seção</td><td><b>5</b></td><td><code>.card__cabecalho</code> · <code>.section-card__cabecalho</code> (numerado) · <code>.detalhe-card</code> eyebrow · <code>.resumo-bloco</code> · <code>.side-card</code></td><td><span class="tag tag--fix">1 section-header</span></td></tr>
+<tr><td>Pares rótulo/valor</td><td><b>5</b></td><td><code>.linhas-dados</code> · <code>.resumo-lista</code> · <code>.grid-resumo</code> · <code>.detalhe-grid</code> · <code>.proposta-grid</code></td><td><span class="tag tag--fix">1 data-list</span></td></tr>
+<tr><td>Linha do tempo / etapas</td><td><b>6</b></td><td><code>.timeline</code> · <code>.etapas</code> · <code>.checklist</code> · <code>.etapas-roteiro</code> · <code>.etapa-roteiro</code> · <code>.tempo-stepper</code></td><td><span class="tag tag--fix">timeline + stepper</span></td></tr>
+<tr><td>Seleção múltipla / chips</td><td><b>5</b></td><td><code>.chip-grid</code> (+2 modificadores) · <code>.check-chip</code> · <code>.fila-chip</code> · <code>.segmented-control</code> · <code>.interruptor</code></td><td><span class="tag tag--fix">checkbox-card · tabs · switch</span></td></tr>
+<tr><td>Escolha de decisão</td><td><b>2</b></td><td><code>.decision-grid/.decision-option</code> (despacho) · <code>.encerramento-grid/.encerramento-cartao</code> (encerramento)</td><td><span class="tag tag--fix">1 choice-card</span></td></tr>
+<tr><td>Barra de progresso</td><td><b>2</b></td><td><code>.medidor</code> (Coffee) · <code>.forca-senha</code> (senha)</td><td><span class="tag tag--fix">1 meter</span></td></tr>
+<tr><td>Aviso / alerta</td><td><b>4</b></td><td><code>.alerta</code> (messages) · <code>.aviso-devolucao</code> · <code>.aviso-rota</code> · <code>.painel-dica</code> · <code>.dica-seguranca</code></td><td><span class="tag tag--fix">1 alert + 1 callout</span></td></tr>
+<tr><td>Selo de status</td><td><b>2</b></td><td><code>.status-badge</code> (7 estados) · <code>.perfil-badge</code> (4 perfis)</td><td><span class="tag tag--keep">preservar, unificar tokens</span></td></tr>
+</tbody></table>
+<div class="note"><b>Leitura direta:</b> 66 classes de componente cobrem 11 funções. Um sistema saudável faria isso com ~20 — o excesso é o custo de manutenção que hoje transforma cada ajuste visual em uma caçada pelo arquivo.</div>
+</section>
+<hr class="rule">
+
+<section id="s4">
+<div class="sec-num">Seção 4</div><h2>Famílias de página</h2>
+<p>As 120 telas catalogadas se reduzem a <b>10 padrões</b>. Resolver bem estes dez resolve o sistema inteiro; qualquer tela nova deve nascer de um deles.</p>
+<table>
+<thead><tr><th style="width:4%">#</th><th style="width:22%">Família</th><th style="width:8%">Telas</th><th>Onde aparece</th></tr></thead>
+<tbody>
+<tr><td>A</td><td><b>Autenticação</b></td><td>7</td><td>Login, login com erro, recuperar senha, envio confirmado, redefinição concluída, alterar senha, 403</td></tr>
+<tr><td>B</td><td><b>Portal de módulos</b></td><td>1</td><td>Central de módulos (Eventos, Coffee, ASCOM, Viagens) com KPIs por módulo</td></tr>
+<tr><td>C</td><td><b>Painel de módulo</b></td><td>3</td><td>Dashboard Eventos, Painel Coffee Break, Dashboard ASCOM — hoje com três layouts distintos de KPI</td></tr>
+<tr><td>D</td><td><b>Hub de cadastros</b></td><td>2</td><td>Cadastros gerais (7 cartões contadores), Cadastros de viagens (6 cartões + faixa de intro)</td></tr>
+<tr><td>E</td><td><b>Lista com filtros</b></td><td>~30</td><td>Solicitações de eventos (+filas, colunas, kebab), Coffee (solicitações, lotes, fornecedores, contratos), ASCOM (demandas, temas, palestrantes, respostas), Viagens (servidores, viaturas, unidades, cargos, combustíveis, diárias, roteiros), Usuários, Municípios (5.571 registros)</td></tr>
+<tr><td>F</td><td><b>Formulário simples</b></td><td>~26</td><td>CRUD de cadastros de 1 a 6 campos em todos os módulos — hoje um campo isolado num card de largura total</td></tr>
+<tr><td>G</td><td><b>Formulário composto</b></td><td>~12</td><td>Nova/editar solicitação (5 seções + resumo + etapas), solicitação de Coffee, demanda ASCOM, novo usuário, editor de roteiro (mapa, trechos, cálculo de diárias)</td></tr>
+<tr><td>H</td><td><b>Detalhe e workflow de decisão</b></td><td>~18</td><td>Eventos em 6 estados (aguardando despacho, em andamento, atendida, devolvida, cancelada, não atendida), ASCOM em 7 estados, Coffee em 2, detalhe de lote</td></tr>
+<tr><td>I</td><td><b>Feed / notificações</b></td><td>1</td><td>Notificações com filas Todas/Não lidas/Lidas e agrupamento por dia</td></tr>
+<tr><td>J</td><td><b>Confirmação destrutiva</b></td><td>1+</td><td>Excluir diária (página inteira) — em outros módulos a mesma ação vive no kebab, sem confirmação equivalente</td></tr>
+</tbody></table>
+<p style="font-size:.86rem;color:var(--muted)">Transversais (não são famílias, são camadas): estados vazios e “sem resultados” (~10 ocorrências), overlays (kebab, filtros avançados, seletor de colunas, menu do avatar, date picker/range) e a versão mobile de cada família (10 capturas).</p>
+</section>
+<hr class="rule">
+
+<section id="s5">
+<div class="sec-num">Seção 5</div><h2>Inventário de componentes: o que fica, o que muda</h2>
+<p>Base atual: <code>templates/components/</code> (19 parciais), <code>templates/layouts/</code> (3), <code>design-system.css</code> (16 seções + 12 apêndices), <code>viagens-cadastros.css</code>, <code>app.js</code>, <code>roteiro-editor.js</code>, <code>viagens-cadastros.js</code>.</p>
+<table>
+<thead><tr><th style="width:24%">Ativo atual</th><th style="width:16%">Decisão</th><th>Justificativa</th></tr></thead>
+<tbody>
+<tr><td>Cabeçalho grafite + filete dourado + brasão</td><td><span class="tag tag--keep">preservar</span></td><td>É a assinatura institucional e a única constante reconhecível entre os módulos</td></tr>
+<tr><td>Paleta <code>#333 · #BEA45A · #D1D3D4 · #808080</code></td><td><span class="tag tag--keep">preservar e derivar</span></td><td>Base correta; falta a escala funcional em volta dela (ver seção 6)</td></tr>
+<tr><td><code>status_badge</code> com 7 estados de negócio</td><td><span class="tag tag--keep">preservar</span></td><td>Vocabulário de negócio já estabelecido e legível; ajustar só tokens de cor e largura</td></tr>
+<tr><td><code>workflow_timeline</code> lateral</td><td><span class="tag tag--fix">refinar</span></td><td>Conceito certo (mostra onde a solicitação está); marcadores pequenos, linha fina, não fixa ao rolar</td></tr>
+<tr><td><code>section_card</code> numerado (formulários)</td><td><span class="tag tag--fix">refinar</span></td><td>A numeração 1–5 compete com o título; virar eyebrow numerada + <code>section-header</code> único, sem caixa dupla</td></tr>
+<tr><td><code>table</code> + <code>tabela</code> + variantes mobile</td><td><span class="tag tag--fix">padronizar</span></td><td>Ordenação por setas de texto, colunas sem largura mínima, ações de 1 a 3 botões por linha; consolidar num único data-table com cartão no mobile</td></tr>
+<tr><td><code>input</code> / <code>select</code> / <code>textarea</code> / <code>date_range</code> / <code>date_multi</code></td><td><span class="tag tag--fix">padronizar</span></td><td>Parciais boas, mas <code>.form-controle</code> tem duas definições e as alturas divergem entre módulos</td></tr>
+<tr><td>16 famílias de caixa · 15 botões · 5 grids de dados</td><td><span class="tag tag--kill">unificar</span></td><td>Colapsar conforme a seção 3, mantendo aparência final equivalente onde já funciona</td></tr>
+<tr><td>Blocos “modelo do redesign” duplicados</td><td><span class="tag tag--kill">eliminar</span></td><td>Depois da unificação, remover a geração antiga — não há tela que dependa das duas</td></tr>
+<tr><td><code>viagens-cadastros.css</code></td><td><span class="tag tag--kill">absorver</span></td><td>Vira variante do hub e da lista globais</td></tr>
+<tr><td>Modal, tooltip, paginação numerada, loading</td><td><span class="tag tag--new">criar</span></td><td>Não existem como componente: confirmação destrutiva é página, paginação varia entre “Anterior/Próxima” e numerada, não há estado de carregamento</td></tr>
+</tbody></table>
+</section>
+<hr class="rule">
+
+<section id="s6">
+<div class="sec-num">Seção 6</div><h2>Arquitetura proposta do Design System</h2>
+<h3>Três camadas de token</h3>
+<table>
+<thead><tr><th style="width:22%">Camada</th><th style="width:30%">Exemplo</th><th>Regra</th></tr></thead>
+<tbody>
+<tr><td><b>1 · Primitivo</b></td><td><code>--grafite-100…900</code>, <code>--dourado-50…700</code>, <code>--espaco-1…12</code> (4px), <code>--raio-1…4</code>, <code>--elev-0…3</code></td><td>Valor bruto. Nenhum componente usa diretamente</td></tr>
+<tr><td><b>2 · Semântico</b></td><td><code>--superficie</code>, <code>--superficie-elevada</code>, <code>--texto-primario</code>, <code>--texto-secundario</code>, <code>--linha-sutil</code>, <code>--acento</code>, <code>--acao-primaria</code>, <code>--estado-atencao</code></td><td>É o que o CSS de componente consome. Tema (claro/escuro/alto contraste) troca aqui</td></tr>
+<tr><td><b>3 · Componente</b></td><td><code>--btn-altura-md</code>, <code>--tabela-linha-y</code>, <code>--card-padding</code></td><td>Ajuste local sem tocar em valor bruto — é onde a densidade de 20% se controla</td></tr>
+</tbody></table>
+
+<h3>Paleta funcional derivada</h3>
+<div class="swatches">
+<div class="sw" style="background:#24262b">Grafite 900<small>#24262B · texto e cabeçalho</small></div>
+<div class="sw" style="background:#3c4046">Grafite 700<small>#3C4046 · corpo</small></div>
+<div class="sw" style="background:#767a80">Cinza 500<small>#767A80 · secundário</small></div>
+<div class="sw" style="background:#d1d3d4;color:#3c4046">Cinza 300<small>#D1D3D4 · linhas</small></div>
+<div class="sw" style="background:#bea45a">Dourado 500<small>#BEA45A · acento</small></div>
+<div class="sw" style="background:#8a7132">Dourado 700<small>#8A7132 · texto/hover</small></div>
+<div class="sw" style="background:#faf6ea;color:#8a7132">Dourado 50<small>#FAF6EA · realce</small></div>
+</div>
+<p style="font-size:.86rem;color:var(--muted)">O dourado ganha um tom escuro (contraste ≥ 4,5:1 para texto e ícone, hoje inexistente) e um tom de fundo. Estados verde/âmbar/vermelho/azul permanecem dessaturados como hoje, apenas normalizados em par fundo+texto. O dourado passa a marcar <b>uma</b> coisa por tela: a ação primária ou o item ativo — nunca as duas.</p>
+
+<h3>Camadas de arquivo</h3>
+<ol>
+<li><code>tokens.css</code> — as três camadas acima, sem seletor de componente</li>
+<li><code>base.css</code> — reset, tipografia, foco visível, utilitários mínimos</li>
+<li><code>components/*.css</code> — um arquivo por componente global, cada um dono exclusivo do seu seletor</li>
+<li><code>patterns/*.css</code> — as 10 famílias da seção 4 (list-page, detail-page, form-page…), só composição</li>
+<li>Nenhum CSS por módulo. Módulo entra como <code>data-modulo</code> no shell, alterando apenas o acento do seletor de módulo</li>
+</ol>
+<p>No Django, cada componente global vira parcial em <code>templates/components/</code> com contrato de argumentos documentado — evoluindo as 19 parciais existentes em vez de substituí-las, para que os templates de página mudem o mínimo.</p>
+</section>
+<hr class="rule">
+
+<section id="s7">
+<div class="sec-num">Seção 7</div><h2>Princípios visuais</h2>
+<div class="two">
+<div>
+<h4>1 · Linha antes de caixa</h4>
+<p>Agrupamento se faz com espaço e um filete; card só quando o bloco é clicável, arrastável ou realmente independente. Meta: no máximo <b>dois</b> níveis de recipiente por tela.</p>
+<h4>2 · Um destaque por tela</h4>
+<p>O dourado marca a ação primária ou o item ativo. Se houver dois dourados na mesma dobra, um deles está errado.</p>
+<h4>3 · Hierarquia por peso, não por caixa-alta</h4>
+<p>Uppercase fica reservado a um único nível — a eyebrow de seção. Rótulos de campo e cabeçalhos de tabela passam a caixa normal, cinza, 13px.</p>
+<h4>4 · Densidade proporcional à informação</h4>
+<p>Formulário de 1 campo em coluna de 480px; tabela de 8 colunas em largura total com mínimos por coluna. O container acompanha a carga, não o contrário.</p>
+</div>
+<div>
+<h4>5 · Estado sempre no mesmo lugar</h4>
+<p>Selo de status junto ao identificador do registro; linha do tempo à direita; ação primária na barra de ação. Igual em todos os módulos.</p>
+<h4>6 · O vazio não paga aluguel</h4>
+<p>Dado não informado recolhe. Nenhuma tela deve dedicar metade da área a travessões.</p>
+<h4>7 · Sobriedade institucional</h4>
+<p>Sem gradiente decorativo, sem vidro, sem sombra longa. Elevação máxima de 2 níveis. Ícone só quando distingue — não como enfeite de título.</p>
+<h4>8 · Aprendível em uma tela</h4>
+<p>Quem entende a lista de Eventos Sociais entende a lista de Coffee, ASCOM e Viagens: mesma barra de filtros, mesma ordenação, mesma ação primária + kebab, mesma paginação.</p>
+</div>
+</div>
+</section>
+<hr class="rule">
+
+<section id="s8">
+<div class="sec-num">Seção 8</div><h2>Componentes que devem ser globais</h2>
+<table>
+<thead><tr><th style="width:22%">Componente</th><th style="width:26%">Variantes</th><th>Nota de decisão</th></tr></thead>
+<tbody>
+<tr><td>App Shell</td><td>autenticado · auth · mobile</td><td>Cabeçalho + seletor de módulo + navegação do módulo. Resolve o eyebrow “/ COFFEE BREAK” solto dentro da navbar e o aviso “Deslize para ver mais”</td></tr>
+<tr><td>Page Header</td><td>com/sem ação · com/sem status</td><td>Título, subtítulo, selo de estado e barra de ação em posição fixa; breadcrumb deixa de repetir o título</td></tr>
+<tr><td>Section Header</td><td>numerada · simples · recolhível</td><td>Substitui 5 cabeçalhos concorrentes</td></tr>
+<tr><td>Button</td><td>primário · secundário · discreto · destrutivo × sm/md/lg + ícone</td><td>Cor = importância. O rótulo diz a operação (“Despachar”, “Confirmar”); a cor não</td></tr>
+<tr><td>Icon Button</td><td>md · sm · kebab</td><td>Alvo mínimo de 40px; hoje o kebab é menor que o botão vizinho</td></tr>
+<tr><td>Input · Select · Textarea · Date · Search</td><td>md · sm · leitura · erro</td><td>Altura e raio únicos; mensagem de erro sempre abaixo, nunca deslocando o layout</td></tr>
+<tr><td>Checkbox · Radio · Switch · Checkbox-card</td><td>lista · grade</td><td>Checkbox-card unifica <code>.check-chip</code> e a grade de serviços com alturas iguais</td></tr>
+<tr><td>Filter Bar</td><td>rápida · avançada · com filas (tabs)</td><td>Contrato único de aplicação e badge de filtros ativos</td></tr>
+<tr><td>Tabs</td><td>filas com contador · abas de conteúdo</td><td>As filas “Todas / Aguardando despacho 14 / …” passam a abas coladas à tabela</td></tr>
+<tr><td>Status Badge</td><td>7 estados de negócio + 4 perfis</td><td>Preservar semântica, normalizar par fundo/texto e largura</td></tr>
+<tr><td>KPI Card</td><td>neutro · destaque (ação) · com tendência · com micrográfico</td><td>Um só layout de KPI nos 3 painéis e no portal; corrige o empilhamento vertical do painel ASCOM</td></tr>
+<tr><td>Card</td><td>plano · clicável · destaque · seção</td><td>Uma definição, sem redeclaração</td></tr>
+<tr><td>Data Table</td><td>densa · confortável · cartão (mobile)</td><td>Ordenação com ícone, colunas configuráveis, 1 ação primária + kebab, seleção futura</td></tr>
+<tr><td>Pagination</td><td>numerada · compacta</td><td>Necessária para Municípios (5.571 registros / 279 páginas)</td></tr>
+<tr><td>Data List</td><td>2 · 3 · 4 colunas · empilhada</td><td>Substitui os 5 grids de rótulo/valor; regra de campo vazio embutida</td></tr>
+<tr><td>Detail Section</td><td>aberta · recolhível</td><td>Agrupa Evento / Solicitante / Estrutura / Planejamento sem caixa dentro de caixa</td></tr>
+<tr><td>Timeline · Stepper</td><td>vertical (workflow) · horizontal (progresso)</td><td>Marcadores maiores, linha mais forte, sticky no desktop</td></tr>
+<tr><td>Choice Card</td><td>decisão · encerramento</td><td>Unifica despacho da DG e encerramento do evento</td></tr>
+<tr><td>Action Bar</td><td>topo · rodapé de seção · fixa no mobile</td><td>Fim das ações espalhadas em três lugares diferentes</td></tr>
+<tr><td>Alert · Callout</td><td>info · atenção · erro · sucesso</td><td>Unifica messages, aviso de devolução, aviso de rota, dicas</td></tr>
+<tr><td>Empty State</td><td>sem dados · sem resultado · sem permissão</td><td>Inclui ação de saída (“Limpar filtros”, “Novo registro”)</td></tr>
+<tr><td>Modal · Dropdown · Tooltip</td><td>confirmação · formulário curto · menu</td><td>Confirmação destrutiva deixa de ser página inteira em Viagens</td></tr>
+<tr><td>Meter</td><td>consumo · força de senha</td><td>Uma barra com limites de atenção/crítico</td></tr>
+<tr><td>Upload / Dropzone</td><td>vazia · com lista</td><td>Já existe no formulário; falta no detalhe (hoje é “Escolher arquivo” + botão solto)</td></tr>
+<tr><td>Loading / Skeleton</td><td>página · tabela · autosave</td><td>Inexistente; o “Rascunho salvo automaticamente” do roteiro é texto solto sem retorno visual</td></tr>
+</tbody></table>
+</section>
+<hr class="rule">
+
+<section id="s9">
+<div class="sec-num">Seção 9</div><h2>Páginas-piloto recomendadas</h2>
+<p>Cinco telas, nesta ordem. Juntas exercitam <b>todos</b> os componentes globais e cobrem por herança cerca de 90 das 120 telas.</p>
+<table>
+<thead><tr><th style="width:5%">Ordem</th><th style="width:30%">Tela</th><th style="width:14%">Família</th><th>Por que esta</th></tr></thead>
+<tbody>
+<tr><td><b>1</b></td><td>Solicitações de Eventos Sociais — lista</td><td>E</td><td>A mais densa do sistema: filas com contador, barra de filtros, filtros avançados, seletor de colunas, ordenação, ação primária + kebab, paginação, exportação e a versão cartão no mobile. Define o padrão de ~30 listas</td></tr>
+<tr><td><b>2</b></td><td>Solicitação #216 — aguardando despacho</td><td>H</td><td>A tela de decisão mais importante: agrupamento temático do resumo, proposta → decisão da DG, anexos, histórico, timeline lateral e barra de ação. Define ~18 telas de detalhe em todos os módulos</td></tr>
+<tr><td><b>3</b></td><td>Nova solicitação de evento social</td><td>G</td><td>Formulário de 5 seções com resumo e etapas laterais, checkbox-cards, equipes+quantidade, date range, dropzone e resumo de erros. Define ~12 formulários compostos</td></tr>
+<tr><td><b>4</b></td><td>Central de módulos + Painel do módulo</td><td>B · C</td><td>Primeira tela após o login e o KPI card em suas quatro variantes; alinha os três painéis hoje divergentes</td></tr>
+<tr><td><b>5</b></td><td>Cadastro de Serviços — lista + formulário</td><td>E · F</td><td>O par CRUD mais simples, replicado ~26 vezes. Estabelece lista leve, formulário estreito, estado vazio e confirmação destrutiva</td></tr>
+</tbody></table>
+<div class="note"><b>Fora da sequência, como piloto de identidade:</b> a tela de <b>Login</b>. É rápida, não tem risco funcional e é onde a decisão institucional (brasão, composição, sobriedade) fica visível para aprovação antes de tocar nas telas operacionais.</div>
+</section>
+<hr class="rule">
+
+<section id="s10">
+<div class="sec-num">Seção 10</div><h2>Problemas de UX que merecem atenção especial</h2>
+<h3>Aplicáveis no redesign visual (não tocam regra de negócio)</h3>
+<ol>
+<li><b>Não se sabe o que fazer agora.</b> Nos detalhes, o título diz “Solicitação #216” e o subtítulo “Resumo para despacho”, mas a ação está na coluna direita, abaixo da dobra em telas menores. Corrigir com barra de ação ancorada e uma frase de estado (“Aguardando sua decisão desde 30/08”).</li>
+<li><b>Ordenação e busca invisíveis.</b> Setas de texto (↕↑↓) nos cabeçalhos e coluna ativa sem marcação; a linha inteira é clicável mas nada indica isso.</li>
+<li><b>Filtros ocupando a primeira dobra.</b> No mobile, o cartão de filtros consome a tela inteira antes do primeiro resultado.</li>
+<li><b>Navegação de módulo frágil.</b> O rótulo “/ COFFEE BREAK” dentro da navbar não navega, desalinha os itens e no mobile ainda ganha o aviso “Deslize para ver mais →” sobreposto. Precisa de um seletor de módulo explícito.</li>
+<li><b>Municípios com 5.571 registros e 279 páginas.</b> A entrada correta é a busca, não a página 1 em ordem alfabética.</li>
+<li><b>Erros de formulário sem resumo.</b> As mensagens aparecem por campo, mas em um formulário de 5 seções o usuário não sabe quantas e onde — falta o resumo com âncoras no topo.</li>
+<li><b>Ausência de retorno de carregamento.</b> Nenhum estado de espera em buscas, salvamentos e no autosave do roteiro.</li>
+<li><b>Exclusão sem simetria.</b> Página de confirmação em Viagens; nos demais módulos, ação direta no kebab. Padronizar em modal de confirmação com nome do registro digitado apenas quando a exclusão for irreversível.</li>
+<li><b>Alvos de toque.</b> Kebab, checkbox de serviços e paginação abaixo de 40px no mobile.</li>
+<li><b>Foco e teclado.</b> Não há estilo de foco consistente; overlays (kebab, filtros, colunas) não fecham com Esc de forma uniforme.</li>
+</ol>
+<h3>Recomendações que tocam fluxo — <b>não</b> serão aplicadas sem sua aprovação</h3>
+<ul>
+<li><b>Ordem dos campos do formulário de solicitação:</b> hoje “Situação” (somente leitura) abre a seção 1; o natural seria começar por tipo/período e mover a situação para o cabeçalho como selo.</li>
+<li><b>Devolvida para ajuste:</b> recolher o resumo por padrão e destacar o motivo + “Editar e reenviar”, reduzindo cliques no reenvio.</li>
+<li><b>Decisão da DG em um passo:</b> hoje há “Salvar ajustes” e “Registrar decisão” lado a lado; unificar (ajuste vira parte do registro) reduz erro, mas altera o comportamento de gravação.</li>
+<li><b>Encerramento vs. cancelamento do evento:</b> as duas caixas têm o mesmo peso visual e semânticas muito diferentes; propor confirmação em modal para o cancelamento.</li>
+<li><b>Filtros com aplicação automática em todos os módulos:</b> exige remover o botão “Buscar” do Coffee Break.</li>
+<li><b>Municípios limitados ao Paraná</b> (hoje 5.571 nacionais) — decisão de negócio, apenas registrada aqui.</li>
+</ul>
+</section>
+<hr class="rule">
+
+<section id="s11">
+<div class="sec-num">Encerramento</div><h2>Limites desta remodelação</h2>
+<p>Preservados integralmente: regras de negócio, estados e transições de workflow, campos e obrigatoriedades, permissões por perfil, nomenclaturas (Despacho, Deferida, Devolvida para ajuste, Não atendida, Diretoria-Geral, CIN, Lote, Demanda), estrutura de módulos, rotas e templates de página. A remodelação atua em tokens, componentes e composição — a camada que hoje não tem dono.</p>
+<div class="note"><b>Próximo passo, sob sua aprovação:</b> revisar este diagnóstico e liberar (a) a paleta funcional e a escala tipográfica e (b) a primeira página-piloto — <i>Solicitações de Eventos Sociais</i> — apresentada com a lista, o estado vazio e a versão mobile na mesma entrega, para servir de referência às outras 29 listas.</div>
+</section>
+
+</main>
+</div>
+<footer><span>Polícia Civil do Paraná · Sistema de Gestão de Eventos Sociais — remodelação visual, etapa 1</span><span>Documento de análise · 02/09/2026 · v1</span></footer>
+</body>
+</html>

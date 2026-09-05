@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-densidade="padrao" data-dourado="institucional" data-divisorias="filete">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nova unidade móvel — Cadastros</title>
+<link rel="stylesheet" href="design-system/components-v3-2.css">
+<style>.cad-frm{max-width:480px;margin:0 auto 0 0}</style>
+</head>
+<body>
+<header class="ident"><div class="ident__in">
+  <div class="marca">
+    <span class="marca__moldura"><img src="assets/brasao-pcpr.svg" alt="Brasão da Polícia Civil do Paraná"></span>
+    <span class="marca__org">Polícia Civil do Paraná</span>
+  </div>
+  <span class="risco-i" aria-hidden="true"></span>
+  <span class="ident__sistema">Sistema de Gestão de Eventos Sociais</span>
+  <div class="ident__fim">
+    <button class="ident-icone" aria-label="Notificações"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="ident-icone__ponto"></span></button>
+    <button class="ident-icone" aria-label="Ajuda"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button>
+    <button class="ident-user" aria-haspopup="true" aria-expanded="false">
+      <span class="ident-user__av">MR</span><span class="ident-user__n">Cel. Marcos Ribeiro</span>
+      <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+  </div>
+</div></header>
+
+<nav class="navbar"><div class="navbar__in">
+  <button class="modulo" aria-haspopup="true" aria-expanded="false">
+    <span class="modulo__nome">Eventos Sociais</span>
+    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+  </button>
+  <div class="nav-mod">
+    <a href="Piloto V3.2 - Solicitacoes (desktop).html">Solicitações</a>
+    <a href="Piloto - Painel Eventos Sociais (desktop).html">Painel</a>
+    <a href="Piloto - Cadastros (desktop).html" aria-current="page">Cadastros</a>
+    <a href="#">Relatórios</a>
+  </div>
+</div></nav>
+
+<main class="conteudo">
+  <div class="d-cabeca" style="align-items:flex-end;padding:var(--s4) 0 var(--s3)">
+    <div class="d-cabeca__esq">
+      <a class="voltar" href="Piloto - Cadastros (desktop).html">
+        <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Voltar para Unidades móveis
+      </a>
+      <h1 style="font-size:26px;margin-top:var(--s2)">Nova unidade móvel</h1>
+      <p class="d-cabeca__sub">Informe o nome da unidade móvel que poderá ser utilizado nas solicitações.</p>
+    </div>
+  </div>
+
+  <div class="cad-frm" style="padding-bottom:48px">
+    <section class="pa-card pa-card--uc">
+            <div class="g-form g-form--2">
+        <label class="campo-e cheia"><span>Nome<em>*</em></span>
+          <input class="ctrl" type="text" placeholder="Ex.: Caminhão">
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:16px;padding-top:12px;border-top:1px solid var(--n-150)">
+        <button class="frm-cancelar" style="margin-right:auto">Cancelar</button>
+        <button class="btn-primaria" style="height:40px">Salvar unidade móvel</button>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>
