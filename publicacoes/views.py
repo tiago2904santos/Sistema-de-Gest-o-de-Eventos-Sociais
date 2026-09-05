@@ -15,6 +15,7 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateformat import format as formatar_data
 from django.views.decorators.http import require_POST
 
 from core.listagens import (
@@ -103,7 +104,7 @@ def painel(request):
             "titulo": "Pautas no mês",
             "valor": mes["total"],
             "icone": "document",
-            "variacao": hoje.strftime("%B de %Y").capitalize(),
+            "variacao": formatar_data(hoje, r"F \d\e Y"),
             "url": f"{url_lista}?inicio={inicio_mes:%Y-%m-%d}",
         },
         {
@@ -148,7 +149,7 @@ def painel(request):
             "kicker": KICKER,
             "resumo": resumo,
             "mes": mes,
-            "mes_rotulo": hoje.strftime("%B/%Y"),
+            "mes_rotulo": formatar_data(hoje, "F/Y").lower(),
             "por_jornalista": services.por_jornalista(inicio_mes),
             "por_unidade": services.por_unidade(inicio_mes),
             "grafico": services.serie_mensal(6, hoje),
@@ -397,7 +398,7 @@ def detalhe(request, pk):
             "titulo": "Pauta recebida",
             "subtitulo": f"{publicacao.data:%d/%m/%Y}"
             + (f" · {publicacao.inicio_pauta:%H:%M}" if publicacao.inicio_pauta else ""),
-            "estado": "concluida",
+            "estado": "concluido",
         },
         {
             "titulo": "Colocada para edição",
@@ -406,7 +407,7 @@ def detalhe(request, pk):
                 if publicacao.colocada_edicao
                 else "Sem horário registrado"
             ),
-            "estado": "concluida" if publicacao.colocada_edicao else "pendente",
+            "estado": "concluido" if publicacao.colocada_edicao else "pendente",
         },
         {
             "titulo": "Publicada",
@@ -420,14 +421,14 @@ def detalhe(request, pk):
                 if publicacao.data_publicacao
                 else "Aguardando publicação"
             ),
-            "estado": "concluida" if publicacao.publicada else "pendente",
+            "estado": "concluido" if publicacao.publicada else "pendente",
         },
     ]
     if publicacao.status == StatusPublicacao.CANCELADA:
         etapas[-1] = {
             "titulo": "Cancelada",
             "subtitulo": "Pauta não publicada",
-            "estado": "cancelada",
+            "estado": "cancelado",
         }
     return render(
         request,

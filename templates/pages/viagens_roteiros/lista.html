@@ -1,45 +1,45 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 
 {% block title %}Roteiros — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with atual="Roteiros" %}
+  {% include "components/v32/breadcrumb.html" with atual="Roteiros" %}
   {% url 'viagens_roteiros:novo' as url_novo %}
   {% if pode_editar %}
-    {% include "components/page_header.html" with titulo="Roteiros" subtitulo="Deslocamentos e o cálculo das diárias" icone="map-pin" acao_label="Novo roteiro" acao_url=url_novo %}
+    {% include "components/v32/page_header.html" with titulo="Roteiros" subtitulo="Deslocamentos e o cálculo das diárias" icone="map-pin" acao_label="Novo roteiro" acao_url=url_novo %}
   {% else %}
-    {% include "components/page_header.html" with titulo="Roteiros" subtitulo="Deslocamentos e o cálculo das diárias" icone="map-pin" %}
+    {% include "components/v32/page_header.html" with titulo="Roteiros" subtitulo="Deslocamentos e o cálculo das diárias" icone="map-pin" %}
   {% endif %}
 
-  <div class="card lista-filtros-card">
-    <form method="get" class="lista-filtros" data-auto-enviar>
-      <div class="form-campo lista-filtros__busca lista-filtros__busca--curta">
+  <div class="pa-card pa-card--lista v32-bloco v32-filtros">
+    <form method="get" class="v32-barra" data-auto-enviar>
+      <div class="form-campo v32-busca lista-filtros__busca--curta">
         <label class="form-label sr-only" for="id_q">Busca</label>
-        <div class="campo-com-icone">
-          <span class="campo-com-icone__icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+        <div class="busca">
+          <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
           <input class="form-controle" type="search" name="q" id="id_q"
                  value="{{ termo }}" placeholder="Buscar por município...">
         </div>
       </div>
-      <button type="button" class="btn btn--secundario lista-filtros__avancados" data-expande="#filtros-roteiros"
+      <button type="button" class=" btn--secundaria " data-expande="#filtros-roteiros"
               aria-expanded="{% if situacao %}true{% else %}false{% endif %}" aria-controls="filtros-roteiros">
         {% include "components/icon.html" with nome="filter" %}
         Filtros
         {% include "components/icon.html" with nome="chevron-down" %}
       </button>
-      <span class="lista-filtros__contagem">{{ pagina.paginator.count }} roteiro{{ pagina.paginator.count|pluralize }}</span>
-      <div class="lista-filtros__painel" id="filtros-roteiros" {% if not situacao %}hidden{% endif %}>
+      <span class="v32-meta">{{ pagina.paginator.count }} roteiro{{ pagina.paginator.count|pluralize }}</span>
+      <div class="v32-filtros-painel" id="filtros-roteiros" {% if not situacao %}hidden{% endif %}>
         {% include "components/select.html" with name="situacao" label="Situação" opcoes=opcoes_situacao placeholder="Todas as situações" selecionado=situacao %}
         {% if tem_filtros %}
-          <a href="{% url 'viagens_roteiros:lista' %}" class="btn btn--secundario">Limpar filtros</a>
+          <a href="{% url 'viagens_roteiros:lista' %}" class=" btn--secundaria">Limpar filtros</a>
         {% endif %}
       </div>
     </form>
   </div>
 
-  <div class="card">
-    <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Tabela de roteiros">
-      <table class="tabela tabela--cartoes-no-celular">
+  <div class="pa-card pa-card--lista v32-bloco">
+    <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Tabela de roteiros">
+      <table class="dt dt--responsiva">
         <thead>
           <tr>
             <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
@@ -65,49 +65,84 @@
               <td data-rotulo="Diárias">
                 {% if linha.roteiro.valor_diarias is not None %}
                   R$ {{ linha.roteiro.valor_diarias }}
-                  <span class="texto-suave">{{ linha.roteiro.resumo_diarias }}</span>
+                  <span class="v32-suave">{{ linha.roteiro.resumo_diarias }}</span>
                 {% else %}
-                  <span class="texto-suave">Não calculado</span>
+                  <span class="v32-suave">Não calculado</span>
                 {% endif %}
               </td>
               <td data-rotulo="Situação">
                 {% if linha.roteiro.cancelado %}
-                  <span class="status-badge status-badge--cancelada">Cancelado</span>
+                  <span class="st st--inativo">Cancelado</span>
                 {% else %}
-                  <span class="status-badge status-badge--atendida">Ativo</span>
+                  <span class="st st--ativo">Ativo</span>
                 {% endif %}
               </td>
-              <td class="tabela__acoes">
+              <td class="c-cad-acoes">
                 {# O roteiro tem uma tela só: a de edição, que também mostra o cálculo. #}
-                <a href="{% url 'viagens_roteiros:editar' linha.roteiro.pk %}" class="btn btn--compacto btn--acao btn--acao-continuar">{% include "components/icon.html" with nome="eye" %}Abrir</a>
+                <a href="{% url 'viagens_roteiros:editar' linha.roteiro.pk %}" class="  acao-linha ">{% include "components/icon.html" with nome="eye" %}Abrir</a>
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="7" class="texto-suave texto-centro">Nenhum roteiro encontrado.</td></tr>
+            <tr><td colspan="7" class="v32-suave dt__vazio">Nenhum roteiro encontrado.</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+<div class="lista-mobile-v32"><div class="m-lista">
+          {% for linha in linhas %}
+            <article class="m-item">
+              {# O ícone distingue avulso de roteiro preso a uma solicitação; sem o rótulo oculto a coluna anunciaria "Tipo" e não diria nada. #}
+              <div class="m-item__campo">
+                <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=linha.icone %}</span>
+                <span class="sr-only">{{ linha.roteiro.get_tipo_display }}</span>
+              </div>
+              <div class="m-item__campo" data-rotulo="Sede"><strong>{{ linha.roteiro.origem_municipio|default:"—" }}</strong></div>
+              <div class="m-item__campo" data-rotulo="Destinos">{{ linha.destinos }}</div>
+              <div class="m-item__campo" data-rotulo="Servidores">{{ linha.roteiro.quantidade_servidores }}</div>
+              <div class="m-item__campo" data-rotulo="Diárias">
+                {% if linha.roteiro.valor_diarias is not None %}
+                  R$ {{ linha.roteiro.valor_diarias }}
+                  <span class="v32-suave">{{ linha.roteiro.resumo_diarias }}</span>
+                {% else %}
+                  <span class="v32-suave">Não calculado</span>
+                {% endif %}
+              </div>
+              <div class="m-item__campo" data-rotulo="Situação">
+                {% if linha.roteiro.cancelado %}
+                  <span class="st st--inativo">Cancelado</span>
+                {% else %}
+                  <span class="st st--ativo">Ativo</span>
+                {% endif %}
+              </div>
+              <div class="m-item__campo" data-rotulo="Ações">
+                {# O roteiro tem uma tela só: a de edição, que também mostra o cálculo. #}
+                <a href="{% url 'viagens_roteiros:editar' linha.roteiro.pk %}" class="  acao-linha ">{% include "components/icon.html" with nome="eye" %}Abrir</a>
+              </div>
+            </article>
+          {% empty %}
+            <article class="m-item"><p class="m-vazio">Nenhum roteiro encontrado.</p></article>
+          {% endfor %}
+        </div></div>
     {% if pagina.paginator.num_pages > 1 %}
-      <div class="card__corpo paginacao">
-        <span class="texto-suave">
+      <div class="v32-corpo pag">
+        <span class="v32-suave">
           Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }} roteiros
         </span>
-        <nav class="paginacao__paginas" aria-label="Paginação">
+        <nav class="pag__nav" aria-label="Paginação">
           {% if pagina.has_previous %}
-            <a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+            <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
           {% endif %}
           {% for numero in paginas_visiveis %}
             {% if numero == elipse %}
-              <span class="paginacao__elipse" aria-hidden="true">…</span>
+              <span class="pag__el" aria-hidden="true">…</span>
             {% elif numero == pagina.number %}
-              <span class="paginacao__numero paginacao__numero--atual" aria-current="page">{{ numero }}</span>
+              <span class="pag__n " aria-current="page">{{ numero }}</span>
             {% else %}
-              <a class="paginacao__numero" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
+              <a class="pag__n" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
             {% endif %}
           {% endfor %}
           {% if pagina.has_next %}
-            <a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+            <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
           {% endif %}
         </nav>
       </div>

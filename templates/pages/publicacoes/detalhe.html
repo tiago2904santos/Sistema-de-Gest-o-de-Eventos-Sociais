@@ -1,0 +1,110 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Detalhe da pauta no padrão V3.2 (mesma composição do detalhe de
+  Solicitações): cabeçalho com status e ações, regiões de leitura e lateral
+  fixa com acompanhamento e resumo.
+{% endcomment %}
+
+{% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  <div class="d-cabeca">
+    <div class="d-cabeca__esq">
+      <a class="voltar" href="{% url 'publicacoes:lista' %}">{% include "components/icon.html" with nome="chevron-left" %}Voltar para publicações</a>
+      <div class="d-titulo">
+        <h1>{{ titulo_pagina }}</h1>
+        <span class="st st--{{ publicacao.status_css }}">{{ publicacao.get_status_display }}</span>
+      </div>
+      <p class="d-cabeca__sub">
+        {{ publicacao.titulo }}<br>
+        {{ publicacao.unidade|default:"Unidade não informada" }} · {{ publicacao.data|date:"d/m/Y" }}{% if publicacao.inicio_pauta %} às {{ publicacao.inicio_pauta|time:"H:i" }}{% endif %} · {{ publicacao.jornalista }}
+      </p>
+    </div>
+    <div class="d-acoes">
+      <div class="dd" data-menu>
+        <button type="button" class="ib" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações">{% include "components/icon.html" with nome="kebab" %}</button>
+        <div class="dd__c" hidden data-menu-corpo>
+          <div class="dd__t">{{ titulo_pagina }}</div>
+          <a class="dd__i" href="{% url 'publicacoes:editar' publicacao.pk %}">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+          {% if publicacao.link_site %}<a class="dd__i" href="{{ publicacao.link_site }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="arrow-right" %}Abrir no site da PCPR</a>{% endif %}
+          {% if publicacao.link_aen %}<a class="dd__i" href="{{ publicacao.link_aen }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="arrow-right" %}Abrir na AEN</a>{% endif %}
+        </div>
+      </div>
+      {% if publicacao.link_site %}
+        <a class="btn--secundaria" href="{{ publicacao.link_site }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="arrow-right" %}Ver publicação</a>
+      {% endif %}
+      <a class="btn-primaria" href="{% url 'publicacoes:editar' publicacao.pk %}">{% include "components/icon.html" with nome="pencil" %}{% if publicacao.encerrada %}Editar{% else %}Atualizar pauta{% endif %}</a>
+    </div>
+  </div>
+
+  <div class="d-grade">
+    <div>
+      <section class="reg">
+        <h2 class="reg__t">Pauta</h2>
+        <dl class="gc gc--3">
+          <div class="f larga"><dt>Título</dt><dd>{{ publicacao.titulo }}</dd></div>
+          <div class="f"><dt>Data da pauta</dt><dd>{{ publicacao.data|date:"d/m/Y" }}{% if publicacao.inicio_pauta %}<small>Início às {{ publicacao.inicio_pauta|time:"H:i" }}</small>{% endif %}</dd></div>
+          <div class="f"><dt>Unidade responsável</dt><dd>{{ publicacao.unidade|default:"—" }}</dd></div>
+          <div class="f"><dt>Fonte da pauta</dt><dd>{{ publicacao.fonte|default:"—" }}</dd></div>
+          <div class="f"><dt>Jornalista responsável</dt><dd>{{ publicacao.jornalista }}</dd></div>
+          {% if publicacao.andamento %}
+            <div class="f larga-total"><dt>Andamento</dt><dd class="corrido">{{ publicacao.andamento|linebreaksbr }}</dd></div>
+          {% endif %}
+        </dl>
+      </section>
+
+      <section class="reg">
+        <h2 class="reg__t">Produção e publicação</h2>
+        <dl class="gc gc--3">
+          <div class="f"><dt>Colocada para edição</dt><dd>{% if publicacao.colocada_edicao %}{{ publicacao.colocada_edicao|time:"H:i" }}{% else %}—{% endif %}</dd></div>
+          <div class="f"><dt>Publicada em</dt><dd>{% if publicacao.data_publicacao %}{{ publicacao.data_publicacao|date:"d/m/Y" }}{% if publicacao.horario_publicacao %}<small>às {{ publicacao.horario_publicacao|time:"H:i" }}</small>{% endif %}{% else %}—{% endif %}</dd></div>
+          <div class="f"><dt>Tempo até publicar</dt><dd>{{ publicacao.tempo_ate_publicacao_display|default:"—" }}</dd></div>
+          <div class="f"><dt>Revisão</dt><dd>{{ publicacao.revisao|default:"—" }}</dd></div>
+          <div class="f"><dt>Galeria de fotos</dt><dd>{{ publicacao.galeria_fotos|default:"—" }}</dd></div>
+        </dl>
+      </section>
+
+      <section class="reg">
+        <h2 class="reg__t">Distribuição</h2>
+        <dl class="gc gc--3">
+          <div class="f"><dt>Bitly nos grupos</dt><dd>{% if publicacao.bitly_grupos is None %}—{% elif publicacao.bitly_grupos %}Sim{% else %}Não{% endif %}</dd></div>
+          <div class="f"><dt>Enviado para a SESP</dt><dd>{% if publicacao.enviado_sesp is None %}—{% elif publicacao.enviado_sesp %}Sim{% else %}Não{% endif %}</dd></div>
+          <div class="f"><dt>Publicado na AEN</dt><dd>{% if publicacao.publicado_aen is None %}—{% elif publicacao.publicado_aen %}Sim{% else %}Não{% endif %}</dd></div>
+          <div class="f larga-total"><dt>Link no site da PCPR</dt><dd class="corrido">{% if publicacao.link_site %}<a href="{{ publicacao.link_site }}" target="_blank" rel="noopener">{{ publicacao.link_site }}</a>{% else %}—{% endif %}</dd></div>
+          <div class="f larga-total"><dt>Link na AEN</dt><dd class="corrido">{% if publicacao.link_aen %}<a href="{{ publicacao.link_aen }}" target="_blank" rel="noopener">{{ publicacao.link_aen }}</a>{% else %}—{% endif %}</dd></div>
+        </dl>
+      </section>
+    </div>
+
+    <aside class="sticky" aria-label="Acompanhamento da pauta">
+      <section class="reg reg--sec">
+        <h2 class="reg__t">Acompanhamento</h2>
+        <div class="etapas etapas--lateral">
+          {% for etapa in etapas %}
+            <div class="etapa etapa--{{ etapa.estado }}">
+              <span class="etapa__m"></span>
+              <div>
+                <div class="etapa__t">{{ etapa.titulo }}</div>
+                <div class="etapa__s">{{ etapa.subtitulo }}</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="reg reg--sec reg--sec-lista">
+        <h2 class="reg__t">Resumo</h2>
+        <dl>
+          <div class="resumo__linha"><dt>Status</dt><dd><span class="st st--{{ publicacao.status_css }}">{{ publicacao.get_status_display }}</span></dd></div>
+          <div class="resumo__linha"><dt>Jornalista</dt><dd>{{ publicacao.jornalista }}</dd></div>
+          <div class="resumo__linha"><dt>Revisão</dt><dd>{{ publicacao.revisao|default:"—" }}</dd></div>
+          <div class="resumo__linha"><dt>Galeria</dt><dd>{{ publicacao.galeria_fotos|default:"—" }}</dd></div>
+          <div class="resumo__linha"><dt>SESP</dt><dd>{% if publicacao.enviado_sesp %}Sim{% elif publicacao.enviado_sesp is None %}—{% else %}Não{% endif %}</dd></div>
+          <div class="resumo__linha"><dt>AEN</dt><dd>{% if publicacao.publicado_aen %}Sim{% elif publicacao.publicado_aen is None %}—{% else %}Não{% endif %}</dd></div>
+          <div class="resumo__linha"><dt>Registrada por</dt><dd>{{ publicacao.criado_por|default:"Importação" }}</dd></div>
+          <div class="resumo__linha"><dt>Atualizada em</dt><dd>{{ publicacao.atualizado_em|date:"d/m/Y H:i" }}</dd></div>
+        </dl>
+      </section>
+    </aside>
+  </div>
+{% endblock %}

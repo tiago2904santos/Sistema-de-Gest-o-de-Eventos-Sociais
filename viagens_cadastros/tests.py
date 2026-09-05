@@ -723,7 +723,7 @@ class TelaDeDiariasTests(BaseViagensTestCase):
         # solto. O que se afirma aqui é o conteúdo do cartão.
         resposta = self.client.get(reverse("viagens_cadastros:diarias"))
         valores = re.findall(
-            r'summary-card__valor">(.*?)</p>', resposta.content.decode(), re.S
+            r'<b data-kpi-valor>(.*?)</b>', resposta.content.decode(), re.S
         )
         self.assertIn("R$ 290,55", [v.strip() for v in valores])
 

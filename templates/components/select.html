@@ -10,6 +10,9 @@
   `pesquisavel`: adiciona busca por texto para listas extensas.
   `desabilitado`: bloqueia a edição preservando o visual.
 {% endcomment %}
+{% if multiplo %}
+  {% include "components/v32/select_multiple.html" %}
+{% else %}
 <div class="form-campo{% if largura %} form-campo--{{ largura }}{% endif %}">
   {# rotulo_oculto: label só para leitores de tela, sem ocupar layout. #}
   <label class="form-label{% if rotulo_oculto %} sr-only{% endif %}" for="id_{{ name }}">
@@ -63,3 +66,4 @@
   {% for erro in erros %}<p class="form-erro"{% if forloop.first %} id="id_{{ name }}_erro"{% endif %}>{{ erro }}</p>{% endfor %}
   {% if ajuda %}<p class="form-ajuda" id="id_{{ name }}_ajuda">{{ ajuda }}</p>{% endif %}
 </div>
+{% endif %}

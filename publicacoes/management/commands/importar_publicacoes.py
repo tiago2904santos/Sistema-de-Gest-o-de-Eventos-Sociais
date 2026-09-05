@@ -25,6 +25,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from core.planilhas import (
+    canonizar_unidade,
     chave_importacao,
     como_data,
     limpa,
@@ -160,7 +161,7 @@ class Command(BaseCommand):
         return self.responsaveis[chave], original
 
     def _unidade(self, valor):
-        nome = limpa(valor)
+        nome = canonizar_unidade(valor)
         if vazio(nome):
             return None
         chave = norm(nome)
@@ -220,15 +221,15 @@ class Command(BaseCommand):
         aen_bruto = _celula(linha, "aen")
         link_site = limpa(_celula(linha, "link_site"))
         link_aen = limpa(_celula(linha, "link_aen"))
+        # Coluna "Link PCPR" vazia e "Link AEN" com endereço da PCPR: era o
+        # link do site que escorregou uma coluna.
+        if not link_site and "policiacivil.pr.gov.br" in link_aen:
+            link_site, link_aen = link_aen, ""
         publicado_aen = sim_nao(aen_bruto)
         if isinstance(aen_bruto, str) and aen_bruto.strip().lower().startswith("http"):
             publicado_aen = True
             if not link_aen:
                 link_aen = limpa(aen_bruto)
-        # Coluna "Link PCPR" vazia e "Link AEN" com endereço da PCPR: era o
-        # link do site que escorregou uma coluna.
-        if not link_site and "policiacivil.pr.gov.br" in link_aen:
-            link_site, link_aen = link_aen, ""
 
         status_bruto = norm(_celula(linha, "status"))
         status = STATUS.get(status_bruto)

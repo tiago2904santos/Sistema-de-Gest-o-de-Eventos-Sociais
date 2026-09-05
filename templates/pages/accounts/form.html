@@ -1,14 +1,14 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 
 {% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
   {% url 'accounts:usuarios_lista' as url_usuarios %}
-  {% include "components/breadcrumb.html" with itens=breadcrumb %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
 
-  <div class="usuario-cabecalho">
-    {% include "components/page_header.html" with titulo=titulo_pagina subtitulo="Dados de acesso e perfil do usuário" icone="users" %}
-    <aside class="painel-dica painel-dica--destaque">
+  <div class="v32-conta-cabecalho">
+    {% include "components/v32/page_header.html" with titulo=titulo_pagina subtitulo="Dados de acesso e perfil do usuário" icone="users" %}
+    <aside class="aviso aviso--info v32-dica">
       <span class="painel-dica__icone" aria-hidden="true">{% include "components/icon.html" with nome="info" %}</span>
       <div>
         <strong>Sobre o perfil de acesso</strong>
@@ -17,19 +17,19 @@
     </aside>
   </div>
 
-  <form method="post" action="">
+  <form method="post" action="" class="cad-frm v32-conta-form">
     {% csrf_token %}
 
     {% if form.errors %}
-      <div class="alerta alerta--error resumo-erros" role="alert" tabindex="-1" data-resumo-erros>
+      <div class="aviso v32-aviso-texto aviso--erro resumo-erros" role="alert" tabindex="-1" data-resumo-erros>
         <strong>Revise os campos indicados antes de salvar.</strong>
       </div>
     {% endif %}
 
-    <section class="section-card">
-      {% include "components/section_card.html" with numero="1" titulo="Dados do usuário" subtitulo="Informações cadastrais e de identificação" %}
-      <div class="section-card__corpo">
-        <div class="form-grid">
+    <section class="reg">
+      {% include "components/v32/section_card.html" with numero="1" titulo="Dados do usuário" subtitulo="Informações cadastrais e de identificação" %}
+      <div class="reg-corpo">
+        <div class="g-form v32-form-grid">
           {% include "components/input.html" with name="first_name" label="Nome" obrigatorio=True largura="6" valor=valores.first_name erros=erros.first_name placeholder="Digite o nome" %}
           {% include "components/input.html" with name="last_name" label="Sobrenome" largura="6" valor=valores.last_name erros=erros.last_name placeholder="Digite o sobrenome" %}
           {% include "components/input.html" with name="username" label="Usuário" obrigatorio=True largura="6" valor=valores.username erros=erros.username placeholder="Digite o nome de usuário" ajuda="Será utilizado para login no sistema." %}
@@ -39,7 +39,7 @@
           <div>
             {% include "components/select.html" with name="perfil" label="Perfil de acesso" opcoes=opcoes_perfil obrigatorio=True placeholder="Selecione o perfil de acesso" selecionado=valores.perfil erros=erros.perfil ajuda="Define o nível de permissões e funcionalidades disponíveis para o usuário." %}
           </div>
-          <aside class="painel-dica">
+          <aside class="aviso aviso--info v32-dica">
             <span class="painel-dica__icone" aria-hidden="true">{% include "components/icon.html" with nome="shield" %}</span>
             <div>
               <strong>Perfil selecionado</strong>
@@ -53,20 +53,20 @@
       </div>
     </section>
 
-    <section class="section-card">
-      {% include "components/section_card.html" with numero="2" titulo="Setores e módulos" subtitulo="Defina as áreas institucionais que liberam os módulos do portal" %}
-      <div class="section-card__corpo">
-        <fieldset class="form-campo form-fieldset" id="id_setores"{% if erros.setores %} aria-invalid="true" aria-describedby="id_setores_erro"{% endif %}>
+    <section class="reg">
+      {% include "components/v32/section_card.html" with numero="2" titulo="Setores e módulos" subtitulo="Defina as áreas institucionais que liberam os módulos do portal" %}
+      <div class="reg-corpo">
+        <fieldset class="form-campo campo-e--bloco" id="id_setores"{% if erros.setores %} aria-invalid="true" aria-describedby="id_setores_erro"{% endif %}>
           <legend class="form-label">Setores autorizados</legend>
           <p class="form-ajuda">Os módulos disponíveis serão derivados dos setores selecionados. Deixe vazio apenas para usuários sem acesso operacional.</p>
-          <div class="chip-grid">
+          <div class="opc-cards">
             {% for setor in opcoes_setores %}
-              <label class="check-chip">
+              <label class="opc-card">
                 <input type="checkbox" name="setores" value="{{ setor.valor }}"{% if setor.valor in setores_marcados %} checked{% endif %}>
                 <span aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>{{ setor.rotulo }}
               </label>
             {% empty %}
-              <p class="texto-suave">Nenhum setor ativo cadastrado.</p>
+              <p class="v32-suave">Nenhum setor ativo cadastrado.</p>
             {% endfor %}
           </div>
           {% for erro in erros.setores %}<p class="form-erro"{% if forloop.first %} id="id_setores_erro"{% endif %}>{{ erro }}</p>{% endfor %}
@@ -74,11 +74,11 @@
       </div>
     </section>
 
-    <section class="section-card">
-      {% include "components/section_card.html" with numero="3" titulo="Acesso" subtitulo=instancia|yesno:"Redefinição de senha (opcional),Definição da senha inicial" %}
-      <div class="section-card__corpo">
+    <section class="reg">
+      {% include "components/v32/section_card.html" with numero="3" titulo="Acesso" subtitulo=instancia|yesno:"Redefinição de senha (opcional),Definição da senha inicial" %}
+      <div class="reg-corpo">
         <div class="usuario-form__linha">
-          <div class="form-grid">
+          <div class="g-form v32-form-grid">
             <div class="form-campo form-campo--6">
               <label class="form-label" for="id_senha">
                 {% if instancia %}Nova senha{% else %}Senha inicial <span class="form-label__obrigatorio">*</span>{% endif %}
@@ -110,7 +110,7 @@
               <p class="form-ajuda">Repita a senha para confirmação.</p>
             </div>
           </div>
-          <aside class="painel-dica">
+          <aside class="aviso aviso--info v32-dica">
             <span class="painel-dica__icone" aria-hidden="true">{% include "components/icon.html" with nome="lock" %}</span>
             <div>
               <strong>Dicas para uma senha segura</strong>
@@ -126,9 +126,9 @@
       </div>
     </section>
 
-    <div class="acoes-formulario">
-      {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_usuarios %}
-      {% include "components/button.html" with label="Salvar" variante="dourado" tipo="submit" %}
+    <div class="cad-frm__acoes v32-conta-acoes">
+      {% include "components/v32/button.html" with label="Cancelar" variante="secundario" href=url_usuarios %}
+      {% include "components/v32/button.html" with label="Salvar" variante="dourado" tipo="submit" %}
     </div>
   </form>
 {% endblock %}

@@ -1,0 +1,7 @@
+<header class="reg-cabecalho">
+  <div>
+    <h2 class="reg__t">{% if numero %}<span class="reg-numero">{{ numero }}</span>{% endif %}{{ titulo }}</h2>
+    {% if subtitulo %}<p class="cad-frm__intro">{{ subtitulo }}</p>{% endif %}
+  </div>
+  {% if recolhe %}<button type="button" class="ib-linha" data-expande="#{{ recolhe }}" aria-expanded="true" aria-controls="{{ recolhe }}" aria-label="Recolher {{ titulo|lower }}">{% include "components/icon.html" with nome="chevron-down" %}</button>{% endif %}
+</header>

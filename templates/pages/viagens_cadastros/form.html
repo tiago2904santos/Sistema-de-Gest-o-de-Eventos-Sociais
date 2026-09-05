@@ -1,15 +1,15 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 {% load static estaticos %}
 
 {% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 
-{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-cadastros.css' %}">{% endblock %}
+
 
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with itens=breadcrumb %}
-  {% include "components/page_header.html" with titulo=cartao_titulo subtitulo=subtitulo_pagina icone="volante" %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+  {% include "components/v32/page_header.html" with titulo=cartao_titulo subtitulo=subtitulo_pagina icone="volante" %}
 
-  <form method="post" action="" class="cadastro-viagens-form" data-viagens-form>
+  <form method="post" action="" class="cad-frm cadastro-viagens-form" data-viagens-form>
     {% csrf_token %}
 
     <div class="cadastro-viagens-form__intro">
@@ -21,7 +21,7 @@
     </div>
 
     {% if tem_erros %}
-      <div class="alerta alerta--error resumo-erros" role="alert" tabindex="-1" data-resumo-erros>
+      <div class="aviso v32-aviso-texto aviso--erro resumo-erros" role="alert" tabindex="-1" data-resumo-erros>
         <strong>Revise os campos destacados</strong>
         <ul>
           {% for erro in erros_gerais %}<li>{{ erro }}</li>{% endfor %}
@@ -31,16 +31,16 @@
     {% endif %}
 
     {% for secao in secoes %}
-      <section class="section-card viagens-form-secao" aria-labelledby="secao-{{ secao.numero }}-titulo">
-        <header class="section-card__cabecalho">
-          <span class="section-card__numero">{{ secao.numero }}</span>
+      <section class="reg viagens-form-secao" aria-labelledby="secao-{{ secao.numero }}-titulo">
+        <header class="v32-secao-cabecalho">
+          <span class="reg-numero">{{ secao.numero }}</span>
           <div>
-            <h2 class="section-card__titulo" id="secao-{{ secao.numero }}-titulo">{{ secao.titulo }}</h2>
-            <p class="section-card__subtitulo">{{ secao.subtitulo }}</p>
+            <h2 class="reg__t" id="secao-{{ secao.numero }}-titulo">{{ secao.titulo }}</h2>
+            <p class="cad-frm__intro">{{ secao.subtitulo }}</p>
           </div>
         </header>
-        <div class="section-card__corpo">
-          <div class="form-grid viagens-form-grid">
+        <div class="reg-corpo">
+          <div class="g-form v32-form-grid viagens-form-grid">
             {% for campo in secao.campos %}
               {% if campo.tipo == "select" %}
                 {% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes obrigatorio=campo.obrigatorio largura="6" selecionado=campo.valor erros=campo.erros ajuda=campo.ajuda placeholder=campo.placeholder pesquisavel=campo.pesquisavel %}
@@ -49,8 +49,8 @@
                   <legend class="form-label">{{ campo.label }}{% if campo.obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}</legend>
                   {% if campo.ajuda %}<p class="form-ajuda viagens-multiselect__ajuda" id="id_{{ campo.name }}_ajuda">{{ campo.ajuda }}</p>{% endif %}
                   <div class="viagens-multiselect__barra">
-                    <div class="campo-com-icone">
-                      <span class="campo-com-icone__icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+                    <div class="busca">
+                      <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
                       <input class="form-controle" type="search" placeholder="Buscar por nome, cargo ou unidade" aria-label="Buscar em {{ campo.label|lower }}" data-multiselect-search>
                     </div>
                     <span class="viagens-multiselect__contador" aria-live="polite"><strong data-multiselect-count>{{ campo.selecionados }}</strong> <span data-multiselect-label>selecionado{{ campo.selecionados|pluralize }}</span></span>
@@ -90,21 +90,7 @@
               {% elif campo.tipo == "data" %}
                 {% include "components/input.html" with name=campo.name label=campo.label tipo="date" obrigatorio=campo.obrigatorio largura="6" valor=campo.valor erros=campo.erros ajuda=campo.ajuda %}
               {% else %}
-                <div class="form-campo form-campo--6">
-                  <label class="form-label" for="id_{{ campo.name }}">{{ campo.label }}{% if campo.obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}</label>
-                  <div class="form-controle-wrapper{% if campo.erros %} is-invalid{% endif %}">
-                    <input class="form-controle" type="{{ campo.tipo|default:'text' }}" id="id_{{ campo.name }}" name="{{ campo.name }}"
-                           value="{{ campo.valor }}"{% if campo.placeholder %} placeholder="{{ campo.placeholder }}"{% endif %}
-                           {% if campo.inputmode %} inputmode="{{ campo.inputmode }}"{% endif %}{% if campo.autocomplete %} autocomplete="{{ campo.autocomplete }}"{% endif %}
-                           {% if campo.maxlength %} maxlength="{{ campo.maxlength }}"{% endif %}{% if campo.step %} step="{{ campo.step }}"{% endif %}{% if campo.min %} min="{{ campo.min }}"{% endif %}
-                           {% if campo.mascara %} data-mask="{{ campo.mascara }}"{% endif %}{% if campo.uppercase %} data-uppercase="true"{% endif %}
-                           {% if campo.name == "valor_24h" %} data-diaria-base="true"{% endif %}
-                           {% if campo.erros %} aria-invalid="true" aria-describedby="id_{{ campo.name }}_erro{% if campo.ajuda %} id_{{ campo.name }}_ajuda{% endif %}"{% elif campo.ajuda %} aria-describedby="id_{{ campo.name }}_ajuda"{% endif %}
-                           {% if campo.obrigatorio %} required{% endif %}>
-                  </div>
-                  {% for erro in campo.erros %}<p class="form-erro"{% if forloop.first %} id="id_{{ campo.name }}_erro"{% endif %}>{{ erro }}</p>{% endfor %}
-                  {% if campo.ajuda %}<p class="form-ajuda" id="id_{{ campo.name }}_ajuda">{{ campo.ajuda }}</p>{% endif %}
-                </div>
+                {% include "components/input.html" with name=campo.name label=campo.label tipo=campo.tipo largura="6" valor=campo.valor placeholder=campo.placeholder obrigatorio=campo.obrigatorio erros=campo.erros ajuda=campo.ajuda inputmode=campo.inputmode autocomplete=campo.autocomplete maxlength=campo.maxlength passo=campo.step minimo=campo.min mascara_cadastro=campo.mascara uppercase=campo.uppercase diaria_base=secao.preview_diaria %}
               {% endif %}
             {% endfor %}
           </div>
@@ -119,11 +105,11 @@
       </section>
     {% endfor %}
 
-    <div class="acoes-formulario cadastro-viagens-form__acoes">
-      <a class="btn btn--secundario" href="{{ url_voltar }}">Cancelar</a>
-      <button class="btn btn--dourado btn--com-icone" type="submit">{% include "components/icon.html" with nome="check" %}{% if instancia %}Salvar alterações{% else %}Criar registro{% endif %}</button>
+    <div class="cad-frm__acoes cadastro-viagens-form__acoes">
+      <a class=" btn--secundaria" href="{{ url_voltar }}">Cancelar</a>
+      <button class=" btn-primaria " type="submit">{% include "components/icon.html" with nome="check" %}{% if instancia %}Salvar alterações{% else %}Criar registro{% endif %}</button>
     </div>
   </form>
 {% endblock %}
 
-{% block extra_js %}<script src="{% estatico 'js/viagens-cadastros.js' %}" defer></script>{% endblock %}
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-cadastros.js' %}" defer></script>{% endblock %}

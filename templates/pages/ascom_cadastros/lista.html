@@ -1,0 +1,160 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load consulta %}
+{% comment %}
+  Cadastros de apoio dos módulos da ASCOM no padrão V3.2 (mesma composição
+  dos Cadastros de Eventos Sociais). Genérico: as views informam os nomes
+  de rota (`url_lista`, `url_novo`, `url_editar`, `url_alternar`) e a trilha
+  lateral (`grupos`, cada um com a própria URL).
+{% endcomment %}
+
+{% block title %}{{ titulo }} — Cadastros — {{ modulo_titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker">{{ kicker }}</div>
+      <h1>Cadastros</h1>
+      <p class="d-cabeca__sub">{{ modulo_sub }}</p>
+    </div>
+    <div class="d-acoes">
+      <a class="btn-primaria" href="{% url url_novo slug %}">{% include "components/icon.html" with nome="plus" %}{{ novo }}</a>
+    </div>
+  </div>
+
+  <div class="cad-grade">
+    <nav class="cad-rail" aria-label="Cadastros de apoio">
+      <div class="cad-rail__h">Tabelas de apoio</div>
+      {% for grupo in grupos %}
+        <a class="cad-i" href="{{ grupo.url }}"{% if grupo.slug == slug %} aria-current="page"{% endif %}>
+          <span class="cad-i__ic">{% include "components/icon.html" with nome=grupo.icone %}</span>
+          <span class="cad-i__t">{{ grupo.titulo }}</span><span class="cad-i__n">{{ grupo.total }}</span>
+        </a>
+      {% endfor %}
+    </nav>
+
+    <section class="pa-card pa-card--lista cad-lista">
+      <div class="cad-titulo">
+        <h2>{{ titulo }}</h2>
+        <span><b>{{ total_registros }}</b> cadastrado{{ total_registros|pluralize }} · <b>{{ total_ativos }}</b> ativo{{ total_ativos|pluralize }}</span>
+      </div>
+
+      <form method="get" class="cad-barra" data-auto-enviar>
+        {% if situacao %}<input type="hidden" name="situacao" value="{{ situacao }}">{% endif %}
+        <div class="busca">
+          {% include "components/icon.html" with nome="search" %}
+          <label class="sr-only" for="id_q">Buscar {{ singular }} pelo nome</label>
+          <input type="search" name="q" id="id_q" value="{{ termo }}" placeholder="Buscar {{ singular }} pelo nome" autocomplete="off">
+        </div>
+        {% include "components/v32/filtro_fc.html" with nome="situacao" rotulo="Situação" opcoes=opcoes_situacao valor=situacao padrao="Todas" %}
+        <div class="cad-barra__fim">
+          {% if tem_filtros %}
+            <span>{{ pagina.paginator.count }} resultado{{ pagina.paginator.count|pluralize }}</span>
+            <a class="cad-limpar" href="{% url url_lista slug %}">Limpar filtros</a>
+          {% endif %}
+        </div>
+      </form>
+
+      <div class="dt-w">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th class="c-nome">Nome</th>
+              <th class="c-sit">Situação</th>
+              <th class="c-data">Atualizado em</th>
+              <th class="c-cad-acoes">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for objeto in pagina %}
+              <tr>
+                <td class="c-nome">{{ objeto.nome }}</td>
+                <td class="c-sit">{% if objeto.ativo %}<span class="st st--ativo">Ativo</span>{% else %}<span class="st st--inativo">Inativo</span>{% endif %}</td>
+                <td class="c-data">{{ objeto.atualizado_em|date:"d/m/Y H:i" }}</td>
+                <td class="c-cad-acoes">
+                  <div class="acoes">
+                    <a class="acao-linha" href="{% url url_editar slug objeto.pk %}">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                    <div class="dd" data-menu>
+                      <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações de {{ objeto.nome }}">{% include "components/icon.html" with nome="kebab" %}</button>
+                      <div class="dd__c" hidden data-menu-corpo>
+                        <div class="dd__t">{{ objeto.nome }}</div>
+                        <form method="post" action="{% url url_alternar slug objeto.pk %}">
+                          {% csrf_token %}
+                          {% if objeto.ativo %}
+                            <button type="submit" class="dd__i">{% include "components/icon.html" with nome="ban" %}Inativar</button>
+                          {% else %}
+                            <button type="submit" class="dd__i">{% include "components/icon.html" with nome="check-circle" %}Ativar</button>
+                          {% endif %}
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="dt__vazio">Nenhum registro encontrado.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if pagina.paginator.count %}
+        <div class="pag">
+          <span>Mostrando <b>{{ pagina.start_index }}–{{ pagina.end_index }}</b> de <b>{{ pagina.paginator.count }}</b> registro{{ pagina.paginator.count|pluralize }}</span>
+          {% if pagina.paginator.num_pages > 1 %}
+            <nav class="pag__nav" aria-label="Paginação">
+              {% if pagina.has_previous %}
+                <a class="pag__passo" href="{% qs_definir 'pagina' pagina.previous_page_number %}">{% include "components/icon.html" with nome="chevron-left" %}Anterior</a>
+              {% else %}
+                <span class="pag__passo" aria-disabled="true">{% include "components/icon.html" with nome="chevron-left" %}Anterior</span>
+              {% endif %}
+              {% for numero in paginas_visiveis %}
+                {% if numero == elipse %}
+                  <span class="pag__el" aria-hidden="true">…</span>
+                {% elif numero == pagina.number %}
+                  <span class="pag__n" aria-current="page">{{ numero }}</span>
+                {% else %}
+                  <a class="pag__n" href="{% qs_definir 'pagina' numero %}">{{ numero }}</a>
+                {% endif %}
+              {% endfor %}
+              {% if pagina.has_next %}
+                <a class="pag__passo" href="{% qs_definir 'pagina' pagina.next_page_number %}">Próxima{% include "components/icon.html" with nome="chevron-right" %}</a>
+              {% else %}
+                <span class="pag__passo" aria-disabled="true">Próxima{% include "components/icon.html" with nome="chevron-right" %}</span>
+              {% endif %}
+            </nav>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <div class="lista-mobile-v32">
+        <div class="m-lista">
+          {% for objeto in pagina %}
+            <div class="m-item">
+              <div class="m-item__topo">
+                <span class="m-item__tipo">{{ objeto.nome }}</span>
+                {% if objeto.ativo %}<span class="st st--ativo">Ativo</span>{% else %}<span class="st st--inativo">Inativo</span>{% endif %}
+              </div>
+              <div class="m-item__meta">Atualizado em {{ objeto.atualizado_em|date:"d/m/Y H:i" }}</div>
+              <div class="m-item__rodape">
+                <a class="acao-linha" href="{% url url_editar slug objeto.pk %}">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                <form method="post" action="{% url url_alternar slug objeto.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="acao-linha">{% if objeto.ativo %}{% include "components/icon.html" with nome="ban" %}Inativar{% else %}{% include "components/icon.html" with nome="check-circle" %}Ativar{% endif %}</button>
+                </form>
+              </div>
+            </div>
+          {% empty %}
+            <p class="dt__vazio">Nenhum registro encontrado.</p>
+          {% endfor %}
+        </div>
+        {% if pagina.paginator.num_pages > 1 %}
+          <div class="m-pag">
+            {% if pagina.has_previous %}<a href="{% qs_definir 'pagina' pagina.previous_page_number %}">{% include "components/icon.html" with nome="chevron-left" %}Anterior</a>{% else %}<span aria-disabled="true">{% include "components/icon.html" with nome="chevron-left" %}Anterior</span>{% endif %}
+            <span class="m-pag__meio">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+            {% if pagina.has_next %}<a href="{% qs_definir 'pagina' pagina.next_page_number %}">Próxima{% include "components/icon.html" with nome="chevron-right" %}</a>{% else %}<span aria-disabled="true">Próxima{% include "components/icon.html" with nome="chevron-right" %}</span>{% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+{% endblock %}

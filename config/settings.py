@@ -70,6 +70,8 @@ INSTALLED_APPS = [
     "auditoria",
     "coffee_break",
     "demandas_eventos",
+    "publicacoes",
+    "atendimento_imprensa",
     "viagens_cadastros",
     "viagens_roteiros",
 ]

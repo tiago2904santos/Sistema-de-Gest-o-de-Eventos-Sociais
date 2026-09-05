@@ -1,48 +1,51 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 {% block title %}Demanda #{{ demanda.pk }} — ASCOM{% endblock %}
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with itens=breadcrumb %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
   {% if pode_editar %}{% url 'demandas_eventos:editar' demanda.pk as url_editar %}{% endif %}
-  {% include "components/page_header.html" with titulo=titulo_detalhe subtitulo=demanda.tipo_evento icone="document" acao_label=pode_editar|yesno:"Editar demanda," acao_url=url_editar %}
-  <section class="section-card"><div class="section-card__corpo resumo-blocos">
-    <div class="resumo-bloco"><h3 class="resumo-bloco__titulo">{% include "components/icon.html" with nome="calendar" %}Evento</h3><dl class="resumo-dg">
-      <div class="resumo-dg__item"><dt>Status</dt><dd>{% include "components/status_badge.html" with status=demanda.status label=demanda.get_status_display %}</dd></div>
-      <div class="resumo-dg__item"><dt>Tipo</dt><dd>{{ demanda.tipo_evento }}</dd></div><div class="resumo-dg__item"><dt>Tema</dt><dd>{{ demanda.tema|default:"—" }}</dd></div>
-      <div class="resumo-dg__item"><dt>Data da solicitação</dt><dd>{{ demanda.data_solicitacao|date:"d/m/Y" }}</dd></div>
-      <div class="resumo-dg__item"><dt>Período</dt><dd>{{ demanda.periodo_evento_display|default:"—" }}</dd></div>
-      <div class="resumo-dg__item"><dt>Município</dt><dd>{{ demanda.municipio|default:demanda.municipio_texto|default:"—" }}</dd></div><div class="resumo-dg__item"><dt>Público</dt><dd>{{ demanda.quantidade_publico|default:"—" }}</dd></div>
+  {% include "components/v32/page_header.html" with titulo=titulo_detalhe subtitulo=demanda.tipo_evento icone="document" acao_label=pode_editar|yesno:"Editar demanda," acao_url=url_editar %}
+<div class="d-grade"><div>
+  <section class="reg"><div class="reg-corpo v32-resumo-blocos">
+    <div class="v32-resumo-bloco"><h3 class="reg__t">{% include "components/icon.html" with nome="calendar" %}Evento</h3><dl class="gc gc--3">
+      <div class="f"><dt>Status</dt><dd>{% include "components/v32/status_badge.html" with status=demanda.status label=demanda.get_status_display %}</dd></div>
+      <div class="f"><dt>Tipo</dt><dd>{{ demanda.tipo_evento }}</dd></div><div class="f"><dt>Tema</dt><dd>{{ demanda.tema|default:"—" }}</dd></div>
+      <div class="f"><dt>Data da solicitação</dt><dd>{{ demanda.data_solicitacao|date:"d/m/Y" }}</dd></div>
+      <div class="f"><dt>Período</dt><dd>{{ demanda.periodo_evento_display|default:"—" }}</dd></div>
+      <div class="f"><dt>Município</dt><dd>{{ demanda.municipio|default:demanda.municipio_texto|default:"—" }}</dd></div><div class="f"><dt>Público</dt><dd>{{ demanda.quantidade_publico|default:"—" }}</dd></div>
     </dl></div>
-    <div class="resumo-bloco"><h3 class="resumo-bloco__titulo">{% include "components/icon.html" with nome="user" %}Solicitante</h3><dl class="resumo-dg"><div class="resumo-dg__item"><dt>Solicitante</dt><dd>{{ demanda.solicitante }}</dd></div><div class="resumo-dg__item"><dt>Contato</dt><dd>{{ demanda.contato|default:"—" }}</dd></div><div class="resumo-dg__item"><dt>Solicitado via</dt><dd>{{ demanda.canal_solicitacao|default:"—" }}</dd></div><div class="resumo-dg__item"><dt>Assunto</dt><dd>{{ demanda.assunto_email|default:"—" }}</dd></div></dl></div>
-    <div class="resumo-bloco"><h3 class="resumo-bloco__titulo">{% include "components/icon.html" with nome="users" %}Atendimento</h3><dl class="resumo-dg"><div class="resumo-dg__item"><dt>Responsável</dt><dd>{{ demanda.responsavel_atendimento|default:demanda.responsavel_atendimento_texto|default:"—" }}</dd></div><div class="resumo-dg__item"><dt>Palestrantes</dt><dd>{% for item in demanda.palestrantes.all %}{{ item }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd></div><div class="resumo-dg__item"><dt>Unidade</dt><dd>{{ demanda.unidade|default:"—" }}</dd></div><div class="resumo-dg__item"><dt>Setores</dt><dd>{% for setor in demanda.setores.all %}{{ setor }}{% if not forloop.last %}, {% endif %}{% endfor %}</dd></div></dl></div>
-    {% if demanda.descricao or demanda.pedido_contato or demanda.andamento %}<div class="resumo-bloco"><h3 class="resumo-bloco__titulo">{% include "components/icon.html" with nome="document" %}Registro</h3><dl class="resumo-dg">{% if demanda.descricao %}<div class="resumo-dg__item resumo-dg__item--largo"><dt>Descrição</dt><dd class="resumo-dg__texto-longo">{{ demanda.descricao|linebreaksbr }}</dd></div>{% endif %}{% if demanda.pedido_contato %}<div class="resumo-dg__item resumo-dg__item--largo"><dt>Pedido original</dt><dd class="resumo-dg__texto-longo">{{ demanda.pedido_contato|linebreaksbr }}</dd></div>{% endif %}{% if demanda.andamento %}<div class="resumo-dg__item resumo-dg__item--largo"><dt>Andamento</dt><dd class="resumo-dg__texto-longo">{{ demanda.andamento|linebreaksbr }}</dd></div>{% endif %}</dl></div>{% endif %}
+    <div class="v32-resumo-bloco"><h3 class="reg__t">{% include "components/icon.html" with nome="user" %}Solicitante</h3><dl class="gc gc--3"><div class="f"><dt>Solicitante</dt><dd>{{ demanda.solicitante }}</dd></div><div class="f"><dt>Contato</dt><dd>{{ demanda.contato|default:"—" }}</dd></div><div class="f"><dt>Solicitado via</dt><dd>{{ demanda.canal_solicitacao|default:"—" }}</dd></div><div class="f"><dt>Assunto</dt><dd>{{ demanda.assunto_email|default:"—" }}</dd></div></dl></div>
+    <div class="v32-resumo-bloco"><h3 class="reg__t">{% include "components/icon.html" with nome="users" %}Atendimento</h3><dl class="gc gc--3"><div class="f"><dt>Responsável</dt><dd>{{ demanda.responsavel_atendimento|default:demanda.responsavel_atendimento_texto|default:"—" }}</dd></div><div class="f"><dt>Palestrantes</dt><dd>{% for item in demanda.palestrantes.all %}{{ item }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd></div><div class="f"><dt>Unidade</dt><dd>{{ demanda.unidade|default:"—" }}</dd></div><div class="f"><dt>Setores</dt><dd>{% for setor in demanda.setores.all %}{{ setor }}{% if not forloop.last %}, {% endif %}{% endfor %}</dd></div></dl></div>
+    {% if demanda.descricao or demanda.pedido_contato or demanda.andamento %}<div class="v32-resumo-bloco"><h3 class="reg__t">{% include "components/icon.html" with nome="document" %}Registro</h3><dl class="gc gc--3">{% if demanda.descricao %}<div class="f cheia"><dt>Descrição</dt><dd class="corrido">{{ demanda.descricao|linebreaksbr }}</dd></div>{% endif %}{% if demanda.pedido_contato %}<div class="f cheia"><dt>Pedido original</dt><dd class="corrido">{{ demanda.pedido_contato|linebreaksbr }}</dd></div>{% endif %}{% if demanda.andamento %}<div class="f cheia"><dt>Andamento</dt><dd class="corrido">{{ demanda.andamento|linebreaksbr }}</dd></div>{% endif %}</dl></div>{% endif %}
   </div></section>
 
   {% if opcoes_transicao %}
-    <section class="section-card">
-      {% include "components/section_card.html" with numero="2" titulo="Atualizar status" subtitulo="Cada mudança fica registrada no histórico" %}
-      <div class="section-card__corpo">
-        <form method="post" action="{% url 'demandas_eventos:transicionar' demanda.pk %}" class="form-grid">
+    <section class="reg">
+      {% include "components/v32/section_card.html" with numero="2" titulo="Atualizar status" subtitulo="Cada mudança fica registrada no histórico" %}
+      <div class="reg-corpo">
+        <form method="post" action="{% url 'demandas_eventos:transicionar' demanda.pk %}" class="g-form v32-form-grid">
           {% csrf_token %}
           {% include "components/select.html" with name="novo_status" label="Próximo status" opcoes=opcoes_transicao obrigatorio=True largura="6" %}
           {% include "components/input.html" with name="justificativa" label="Justificativa" largura="6" ajuda="Obrigatória para não atender ou cancelar." %}
-          <div class="acoes-formulario"><button type="submit" class="btn btn--dourado">Atualizar status</button></div>
+          <div class="cad-frm__acoes cheia"><button type="submit" class=" btn-primaria">Atualizar status</button></div>
         </form>
       </div>
     </section>
   {% endif %}
 
-  <section class="section-card">
-    {% include "components/section_card.html" with numero="3" titulo="Histórico" subtitulo="Alterações e transições da demanda" %}
-    <div class="section-card__corpo">
-      <ol class="historico-lista">
+</div><aside class="sticky">
+  <section class="reg">
+    {% include "components/v32/section_card.html" with numero="3" titulo="Histórico" subtitulo="Alterações e transições da demanda" %}
+    <div class="reg-corpo">
+      <ol class="linha-t v32-historico">
         {% for registro in historico %}
           <li>
             <strong>{{ registro.get_acao_display }}{% if registro.status_novo %} — {{ registro.status_novo_display }}{% endif %}</strong>
             <span>{{ registro.criado_em|date:"d/m/Y H:i" }} · {{ registro.usuario|default:"Sistema" }}</span>
             {% if registro.descricao %}<p>{{ registro.descricao }}</p>{% endif %}
           </li>
-        {% empty %}<li class="texto-suave">Nenhuma alteração registrada.</li>{% endfor %}
+        {% empty %}<li class="v32-suave">Nenhuma alteração registrada.</li>{% endfor %}
       </ol>
     </div>
   </section>
+</aside></div>
 {% endblock %}

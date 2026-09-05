@@ -1,36 +1,36 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 
 {% block title %}{{ config.titulo }} — Coffee Break{% endblock %}
 
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with itens=breadcrumb %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
   {% url 'coffee_break:cadastro_novo' tipo as url_novo %}
-  {% include "components/page_header.html" with titulo=config.titulo subtitulo="Dados contratuais do módulo de Coffee Break" icone="checklist" acao_label="Novo registro" acao_url=url_novo acao_icone="plus" %}
+  {% include "components/v32/page_header.html" with titulo=config.titulo subtitulo="Dados contratuais do módulo de Coffee Break" icone="checklist" acao_label="Novo registro" acao_url=url_novo acao_icone="plus" %}
 
-  <nav class="abas" aria-label="Cadastros de Coffee Break">
-    <a class="abas__item{% if tipo == 'fornecedores' %} abas__item--ativo{% endif %}" href="{% url 'coffee_break:cadastro_lista' 'fornecedores' %}">Fornecedores</a>
-    <a class="abas__item{% if tipo == 'contratos' %} abas__item--ativo{% endif %}" href="{% url 'coffee_break:cadastro_lista' 'contratos' %}">Contratos</a>
-    <a class="abas__item{% if tipo == 'lotes' %} abas__item--ativo{% endif %}" href="{% url 'coffee_break:cadastro_lista' 'lotes' %}">Lotes</a>
+  <div class="cad-grade"><nav class="cad-rail" aria-label="Cadastros de Coffee Break">
+    <a class="cad-i"{% if tipo == 'fornecedores' %} aria-current="page"{% endif %} href="{% url 'coffee_break:cadastro_lista' 'fornecedores' %}">Fornecedores</a>
+    <a class="cad-i"{% if tipo == 'contratos' %} aria-current="page"{% endif %} href="{% url 'coffee_break:cadastro_lista' 'contratos' %}">Contratos</a>
+    <a class="cad-i"{% if tipo == 'lotes' %} aria-current="page"{% endif %} href="{% url 'coffee_break:cadastro_lista' 'lotes' %}">Lotes</a>
   </nav>
-
-  <div class="card lista-filtros-card">
-    <form method="get" class="lista-filtros">
-      <div class="form-campo lista-filtros__busca">
+<div>
+  <div class="pa-card pa-card--lista v32-bloco v32-filtros">
+    <form method="get" class="v32-barra">
+      <div class="form-campo v32-busca">
         <label class="sr-only" for="id_q">Buscar em {{ config.titulo|lower }}</label>
-        <div class="campo-com-icone">
-          <span class="campo-com-icone__icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+        <div class="busca">
+          <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
           <input class="form-controle" type="search" id="id_q" name="q" value="{{ q }}" placeholder="Buscar em {{ config.titulo|lower }}...">
         </div>
       </div>
-      <button class="btn btn--dourado" type="submit">Buscar</button>
-      {% if q %}<a class="btn btn--secundario" href="{% url 'coffee_break:cadastro_lista' tipo %}">Limpar</a>{% endif %}
-      <span class="lista-filtros__contagem">{{ pagina.paginator.count }} registro{{ pagina.paginator.count|pluralize }}</span>
+      <button class=" btn-primaria" type="submit">Buscar</button>
+      {% if q %}<a class=" btn--secundaria" href="{% url 'coffee_break:cadastro_lista' tipo %}">Limpar</a>{% endif %}
+      <span class="v32-meta">{{ pagina.paginator.count }} registro{{ pagina.paginator.count|pluralize }}</span>
     </form>
   </div>
 
-  <div class="card">
-    <div class="tabela-wrapper" tabindex="0" role="region" aria-label="{{ config.titulo }}">
-      <table class="tabela tabela--cartoes-no-celular">
+  <div class="pa-card pa-card--lista v32-bloco">
+    <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="{{ config.titulo }}">
+      <table class="dt dt--responsiva">
         <thead><tr><th>Registro</th><th>Informações</th><th>Situação</th><th>Ação</th></tr></thead>
         <tbody>
           {% for item in pagina %}
@@ -46,24 +46,47 @@
                 {% else %}{{ item.contrato }} · {{ item.consumido }} consumidas · {{ item.restante }} restantes{% endif %}
               </td>
               <td data-rotulo="Situação">
-                {% if item.ativo %}<span class="status-badge status-badge--atendida">Ativo</span>{% else %}<span class="status-badge status-badge--cancelada">Inativo</span>{% endif %}
+                {% if item.ativo %}<span class="st st--ativo">Ativo</span>{% else %}<span class="st st--inativo">Inativo</span>{% endif %}
               </td>
-              <td data-rotulo="Ação"><a class="btn btn--secundario btn--compacto" href="{% url 'coffee_break:cadastro_editar' tipo item.pk %}">Editar</a></td>
+              <td data-rotulo="Ação"><a class=" btn--secundaria " href="{% url 'coffee_break:cadastro_editar' tipo item.pk %}">Editar</a></td>
             </tr>
           {% empty %}
-            <tr><td colspan="4" class="texto-suave texto-centro">Nenhum registro encontrado.</td></tr>
+            <tr><td colspan="4" class="v32-suave dt__vazio">Nenhum registro encontrado.</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+<div class="lista-mobile-v32"><div class="m-lista">
+          {% for item in pagina %}
+            <article class="m-item">
+              <div class="m-item__campo" data-rotulo="Registro"><strong>
+                {% if tipo == 'fornecedores' %}{{ item.razao_social }}
+                {% elif tipo == 'contratos' %}Contrato {{ item.numero }}
+                {% else %}{{ item.rotulo_curto }}{% endif %}
+              </strong></div>
+              <div class="m-item__campo" data-rotulo="Informações">
+                {% if tipo == 'fornecedores' %}{{ item.cnpj_formatado|default:"CNPJ não informado" }}
+                {% elif tipo == 'contratos' %}{{ item.fornecedor.razao_social }}{% if item.numero_gms %} · GMS {{ item.numero_gms }}{% endif %}
+                {% else %}{{ item.contrato }} · {{ item.consumido }} consumidas · {{ item.restante }} restantes{% endif %}
+              </div>
+              <div class="m-item__campo" data-rotulo="Situação">
+                {% if item.ativo %}<span class="st st--ativo">Ativo</span>{% else %}<span class="st st--inativo">Inativo</span>{% endif %}
+              </div>
+              <div class="m-item__campo" data-rotulo="Ação"><a class=" btn--secundaria " href="{% url 'coffee_break:cadastro_editar' tipo item.pk %}">Editar</a></div>
+            </article>
+          {% empty %}
+            <article class="m-item"><p class="m-vazio">Nenhum registro encontrado.</p></article>
+          {% endfor %}
+        </div></div>
     {% if pagina.paginator.num_pages > 1 %}
-      <nav class="paginacao" aria-label="Paginação">
+      <nav class="pag" aria-label="Paginação">
         {% for numero in paginas_visiveis %}
-          {% if numero == elipse %}<span class="paginacao__elipse">…</span>
-          {% elif numero == pagina.number %}<span class="paginacao__numero paginacao__numero--atual" aria-current="page">{{ numero }}</span>
-          {% else %}<a class="paginacao__numero" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}pagina={{ numero }}">{{ numero }}</a>{% endif %}
+          {% if numero == elipse %}<span class="pag__el">…</span>
+          {% elif numero == pagina.number %}<span class="pag__n " aria-current="page">{{ numero }}</span>
+          {% else %}<a class="pag__n" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}pagina={{ numero }}">{{ numero }}</a>{% endif %}
         {% endfor %}
       </nav>
     {% endif %}
   </div>
+</div></div>
 {% endblock %}

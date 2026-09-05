@@ -1,38 +1,38 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 {% load static estaticos %}
 
 {% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 
-{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-cadastros.css' %}">{% endblock %}
+
 
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with atual=titulo %}
+  {% include "components/v32/breadcrumb.html" with atual=titulo %}
   {% url 'viagens_cadastros:novo' slug as url_novo %}
   {% if pode_editar %}
-    {% include "components/page_header.html" with titulo=titulo subtitulo=descricao icone=icone acao_label=novo acao_url=url_novo acao_icone="plus" %}
+    {% include "components/v32/page_header.html" with titulo=titulo subtitulo=descricao icone=icone acao_label=novo acao_url=url_novo acao_icone="plus" %}
   {% else %}
-    {% include "components/page_header.html" with titulo=titulo subtitulo=descricao icone=icone %}
+    {% include "components/v32/page_header.html" with titulo=titulo subtitulo=descricao icone=icone %}
   {% endif %}
 
-  <div class="card lista-filtros-card">
-    <form method="get" class="lista-filtros viagens-lista-filtros">
-      <div class="form-campo lista-filtros__busca lista-filtros__busca--curta">
+  <div class="pa-card pa-card--lista v32-bloco v32-filtros">
+    <form method="get" class="v32-barra viagens-lista-filtros">
+      <div class="form-campo v32-busca lista-filtros__busca--curta">
         <label class="form-label sr-only" for="id_q">Busca</label>
-        <div class="campo-com-icone">
-          <span class="campo-com-icone__icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+        <div class="busca">
+          <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
           <input class="form-controle" type="search" name="q" id="id_q"
                  value="{{ termo }}" placeholder="Buscar {{ singular }}...">
         </div>
       </div>
-      <button type="submit" class="btn btn--dourado lista-filtros__buscar">{% include "components/icon.html" with nome="search" %}Buscar</button>
-      {% if tem_filtros %}<a href="{% url 'viagens_cadastros:lista' slug %}" class="btn btn--secundario">Limpar</a>{% endif %}
-      <span class="lista-filtros__contagem">{{ pagina.paginator.count }} registro{{ pagina.paginator.count|pluralize }}</span>
+      <button type="submit" class=" btn-primaria ">{% include "components/icon.html" with nome="search" %}Buscar</button>
+      {% if tem_filtros %}<a href="{% url 'viagens_cadastros:lista' slug %}" class=" btn--secundaria">Limpar</a>{% endif %}
+      <span class="v32-meta">{{ pagina.paginator.count }} registro{{ pagina.paginator.count|pluralize }}</span>
     </form>
   </div>
 
-  <div class="card">
-    <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Tabela de registros">
-      <table class="tabela tabela--cartoes-no-celular">
+  <div class="pa-card pa-card--lista v32-bloco">
+    <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Tabela de registros">
+      <table class="dt dt--responsiva">
         <thead>
           <tr>
             <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
@@ -52,53 +52,88 @@
               {% endfor %}
               {% if slug == "servidores" or slug == "viaturas" %}
                 <td data-rotulo="Qualidade">
-                  <span class="status-badge {% if linha.status == 'COMPLETO' %}status-badge--atendida{% else %}status-badge--rascunho{% endif %}">{{ linha.status_label }}</span>
+                  <span class="st {% if linha.status == 'COMPLETO' %}st--ativo{% else %}st--rascunho{% endif %}">{{ linha.status_label }}</span>
                 </td>
               {% endif %}
-              <td class="tabela__acoes">
+              <td class="c-cad-acoes">
                 {% if pode_editar %}
-                  <div class="tabela__acoes-grupo viagens-acoes-linha">
-                    <a href="{% url 'viagens_cadastros:editar' slug linha.objeto.pk %}" class="btn btn--compacto btn--acao btn--acao-continuar">{% include "components/icon.html" with nome="pencil" %}Editar</a>
-                    <a href="{% url 'viagens_cadastros:excluir' slug linha.objeto.pk %}" class="btn btn--compacto btn--perigo-suave">{% include "components/icon.html" with nome="trash" %}Excluir</a>
+                  <div class="acoes viagens-acoes-linha">
+                    <a href="{% url 'viagens_cadastros:editar' slug linha.objeto.pk %}" class="  acao-linha ">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                    <a href="{% url 'viagens_cadastros:excluir' slug linha.objeto.pk %}" class="  acao-linha v32-acao-perigo">{% include "components/icon.html" with nome="trash" %}Excluir</a>
                   </div>
                 {% else %}
-                  <span class="texto-suave">—</span>
+                  <span class="v32-suave">—</span>
                 {% endif %}
               </td>
             </tr>
           {% empty %}
             <tr><td colspan="{{ colunas|length|add:4 }}">
-              <div class="viagens-vazio">
+              <div class="semres viagens-vazio">
                 <span aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
                 <strong>{% if termo %}Nenhum resultado para “{{ termo }}”{% else %}Nenhum registro cadastrado{% endif %}</strong>
                 <p>{% if termo %}Revise o termo ou limpe a busca.{% else %}Crie o primeiro registro para começar a usar esta categoria.{% endif %}</p>
-                {% if pode_editar and not termo %}<a class="btn btn--dourado" href="{{ url_novo }}">{% include "components/icon.html" with nome="plus" %}{{ novo }}</a>{% endif %}
+                {% if pode_editar and not termo %}<a class=" btn-primaria" href="{{ url_novo }}">{% include "components/icon.html" with nome="plus" %}{{ novo }}</a>{% endif %}
               </div>
             </td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+<div class="lista-mobile-v32"><div class="m-lista">
+          {% for linha in linhas %}
+            <article class="m-item">
+              <div class="m-item__campo" aria-hidden="true"><span class="tabela__icone-doc">{% include "components/icon.html" with nome="document" %}</span></div>
+              <div class="m-item__campo" data-rotulo="{{ rotulo_principal }}"><strong>{{ linha.principal }}</strong></div>
+              {% for celula in linha.celulas %}
+                <div class="m-item__campo" data-rotulo="{{ celula.rotulo }}">{{ celula.valor }}</div>
+              {% endfor %}
+              {% if slug == "servidores" or slug == "viaturas" %}
+                <div class="m-item__campo" data-rotulo="Qualidade">
+                  <span class="st {% if linha.status == 'COMPLETO' %}st--ativo{% else %}st--rascunho{% endif %}">{{ linha.status_label }}</span>
+                </div>
+              {% endif %}
+              <div class="m-item__campo" data-rotulo="Ações">
+                {% if pode_editar %}
+                  <div class="acoes viagens-acoes-linha">
+                    <a href="{% url 'viagens_cadastros:editar' slug linha.objeto.pk %}" class="  acao-linha ">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                    <a href="{% url 'viagens_cadastros:excluir' slug linha.objeto.pk %}" class="  acao-linha v32-acao-perigo">{% include "components/icon.html" with nome="trash" %}Excluir</a>
+                  </div>
+                {% else %}
+                  <span class="v32-suave">—</span>
+                {% endif %}
+              </div>
+            </article>
+          {% empty %}
+            <article class="m-item"><p class="m-vazio">
+              <div class="semres viagens-vazio">
+                <span aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+                <strong>{% if termo %}Nenhum resultado para “{{ termo }}”{% else %}Nenhum registro cadastrado{% endif %}</strong>
+                <p>{% if termo %}Revise o termo ou limpe a busca.{% else %}Crie o primeiro registro para começar a usar esta categoria.{% endif %}</p>
+                {% if pode_editar and not termo %}<a class=" btn-primaria" href="{{ url_novo }}">{% include "components/icon.html" with nome="plus" %}{{ novo }}</a>{% endif %}
+              </div>
+            </p></article>
+          {% endfor %}
+        </div></div>
     {% if pagina.paginator.num_pages > 1 %}
-      <div class="card__corpo paginacao">
-        <span class="texto-suave">
+      <div class="v32-corpo pag">
+        <span class="v32-suave">
           Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }} registros
         </span>
-        <nav class="paginacao__paginas" aria-label="Paginação">
+        <nav class="pag__nav" aria-label="Paginação">
           {% if pagina.has_previous %}
-            <a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+            <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
           {% endif %}
           {% for numero in paginas_visiveis %}
             {% if numero == elipse %}
-              <span class="paginacao__elipse" aria-hidden="true">…</span>
+              <span class="pag__el" aria-hidden="true">…</span>
             {% elif numero == pagina.number %}
-              <span class="paginacao__numero paginacao__numero--atual" aria-current="page">{{ numero }}</span>
+              <span class="pag__n " aria-current="page">{{ numero }}</span>
             {% else %}
-              <a class="paginacao__numero" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
+              <a class="pag__n" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
             {% endif %}
           {% endfor %}
           {% if pagina.has_next %}
-            <a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+            <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
           {% endif %}
         </nav>
       </div>

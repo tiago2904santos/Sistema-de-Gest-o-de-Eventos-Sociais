@@ -1,0 +1,134 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Detalhe do atendimento no padrão V3.2 (mesma composição do detalhe de
+  Solicitações): cabeçalho com situação e ações, regiões de leitura e
+  lateral fixa com acompanhamento e resumo.
+{% endcomment %}
+
+{% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  <div class="d-cabeca">
+    <div class="d-cabeca__esq">
+      <a class="voltar" href="{% url 'atendimento_imprensa:lista' %}">{% include "components/icon.html" with nome="chevron-left" %}Voltar para atendimentos</a>
+      <div class="d-titulo">
+        <h1>{{ titulo_pagina }}</h1>
+        <span class="st st--{{ atendimento.situacao_css }}">{{ atendimento.get_situacao_display }}</span>
+      </div>
+      <p class="d-cabeca__sub">
+        {{ atendimento.jornalista }}{% if atendimento.veiculo %} — {{ atendimento.veiculo }}{% endif %} · {{ atendimento.data|date:"d/m/Y" }}{% if atendimento.horario %} às {{ atendimento.horario|time:"H:i" }}{% endif %}<br>
+        {% if atendimento.responsavel %}Atendido por {{ atendimento.responsavel }}{% else %}Sem responsável definido{% endif %}{% if atendimento.deadline %} · Deadline {{ atendimento.deadline|date:"d/m/Y" }}{% endif %}
+      </p>
+    </div>
+    <div class="d-acoes">
+      <div class="dd" data-menu>
+        <button type="button" class="ib" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações">{% include "components/icon.html" with nome="kebab" %}</button>
+        <div class="dd__c" hidden data-menu-corpo>
+          <div class="dd__t">{{ titulo_pagina }}</div>
+          <a class="dd__i" href="{% url 'atendimento_imprensa:editar' atendimento.pk %}">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+          <a class="dd__i" href="{% url 'atendimento_imprensa:novo' %}">{% include "components/icon.html" with nome="plus" %}Novo atendimento</a>
+        </div>
+      </div>
+      <a class="btn-primaria" href="{% url 'atendimento_imprensa:editar' atendimento.pk %}">{% include "components/icon.html" with nome="pencil" %}{% if atendimento.aberto %}Atualizar atendimento{% else %}Editar{% endif %}</a>
+    </div>
+  </div>
+
+  {% if deadline_vencido %}
+    <div class="aviso aviso--callout" role="status">
+      <div class="aviso__txt">
+        {% include "components/icon.html" with nome="alert" %}
+        <div class="aviso__corpo">
+          <b>Deadline vencido</b>
+          <p>O prazo de veiculação ({{ atendimento.deadline|date:"d/m/Y" }}) já passou e o pedido continua em aberto.</p>
+        </div>
+      </div>
+      <a class="btn-primaria" href="{% url 'atendimento_imprensa:editar' atendimento.pk %}">Atualizar situação</a>
+    </div>
+  {% endif %}
+
+  <div class="d-grade">
+    <div>
+      <section class="reg">
+        <h2 class="reg__t">Pedido</h2>
+        <dl class="gc gc--3">
+          <div class="f"><dt>Jornalista</dt><dd>{{ atendimento.jornalista }}{% if atendimento.contato %}<small>{{ atendimento.contato }}</small>{% endif %}</dd></div>
+          <div class="f"><dt>Veículo</dt><dd>{{ atendimento.veiculo|default:"—" }}</dd></div>
+          <div class="f"><dt>Recebido em</dt><dd>{{ atendimento.data|date:"d/m/Y" }}{% if atendimento.horario %}<small>às {{ atendimento.horario|time:"H:i" }}</small>{% endif %}</dd></div>
+          <div class="f"><dt>Responsável pelo atendimento</dt><dd>{{ atendimento.responsavel|default:"—" }}</dd></div>
+          <div class="f"><dt>Deadline / veiculação</dt><dd>{% if atendimento.deadline %}{{ atendimento.deadline|date:"d/m/Y" }}{% else %}—{% endif %}</dd></div>
+          <div class="f"><dt>Situação</dt><dd><span class="st st--{{ atendimento.situacao_css }}">{{ atendimento.get_situacao_display }}</span></dd></div>
+          <div class="f larga-total"><dt>Pedido</dt><dd class="corrido">{{ atendimento.pedido|linebreaksbr }}</dd></div>
+        </dl>
+      </section>
+
+      <section class="reg">
+        <h2 class="reg__t">Fontes consultadas</h2>
+        {% if fontes %}
+          <div class="dt-w">
+            <table class="dt dt--fontes">
+              <thead>
+                <tr><th>Fonte</th><th class="c-per">Acionada</th><th class="c-per">Retornou</th></tr>
+              </thead>
+              <tbody>
+                {% for linha in fontes %}
+                  <tr class="dt__estatica">
+                    <td>{{ linha.fonte }}</td>
+                    <td class="c-per">{{ linha.inicio|default:"—" }}</td>
+                    <td class="c-per">{{ linha.fim|default:"—" }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="texto-vazio">Nenhuma fonte registrada.</p>
+        {% endif %}
+        {% if atendimento.andamento %}
+          <div class="reg__div"></div>
+          <p class="reg__st">Andamento</p>
+          <p class="corrido">{{ atendimento.andamento|linebreaksbr }}</p>
+        {% endif %}
+      </section>
+
+      <section class="reg">
+        <h2 class="reg__t">Resposta</h2>
+        <dl class="gc gc--3">
+          <div class="f"><dt>Horário da resposta</dt><dd>{% if atendimento.horario_resposta %}{{ atendimento.horario_resposta|time:"H:i" }}{% else %}—{% endif %}</dd></div>
+          <div class="f"><dt>Responsável pela resposta</dt><dd>{{ atendimento.responsavel_resposta|default:"—" }}</dd></div>
+          <div class="f larga-total"><dt>Resposta enviada</dt><dd class="corrido">{% if atendimento.resposta %}{{ atendimento.resposta|linebreaksbr }}{% else %}—{% endif %}</dd></div>
+        </dl>
+      </section>
+    </div>
+
+    <aside class="sticky" aria-label="Acompanhamento do atendimento">
+      <section class="reg reg--sec">
+        <h2 class="reg__t">Acompanhamento</h2>
+        <div class="etapas etapas--lateral">
+          {% for etapa in etapas %}
+            <div class="etapa etapa--{{ etapa.estado }}">
+              <span class="etapa__m"></span>
+              <div>
+                <div class="etapa__t">{{ etapa.titulo }}</div>
+                <div class="etapa__s">{{ etapa.subtitulo }}</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="reg reg--sec reg--sec-lista">
+        <h2 class="reg__t">Resumo</h2>
+        <dl>
+          <div class="resumo__linha"><dt>Situação</dt><dd><span class="st st--{{ atendimento.situacao_css }}">{{ atendimento.get_situacao_display }}</span></dd></div>
+          <div class="resumo__linha"><dt>Veículo</dt><dd>{{ atendimento.veiculo|default:"—" }}</dd></div>
+          <div class="resumo__linha"><dt>Atendimento</dt><dd>{{ atendimento.responsavel|default:"—" }}</dd></div>
+          <div class="resumo__linha"><dt>Resposta</dt><dd>{{ atendimento.responsavel_resposta|default:"—" }}</dd></div>
+          <div class="resumo__linha"><dt>Fontes</dt><dd>{{ fontes|length }}</dd></div>
+          <div class="resumo__linha"><dt>Deadline</dt><dd{% if deadline_vencido %} class="resumo__pendente"{% endif %}>{% if atendimento.deadline %}{{ atendimento.deadline|date:"d/m/Y" }}{% else %}—{% endif %}</dd></div>
+          <div class="resumo__linha"><dt>Registrado por</dt><dd>{{ atendimento.criado_por|default:"Importação" }}</dd></div>
+          <div class="resumo__linha"><dt>Atualizado em</dt><dd>{{ atendimento.atualizado_em|date:"d/m/Y H:i" }}</dd></div>
+        </dl>
+      </section>
+    </aside>
+  </div>
+{% endblock %}

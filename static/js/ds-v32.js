@@ -100,3 +100,166 @@
     if (despacho) window.setTimeout(function () { despacho.scrollIntoView({ block: "start" }); }, 50);
   }
 })();
+
+// A busca não deve enviar ao perder foco: Enter e Buscar continuam enviando.
+(function () {
+  "use strict";
+  document.querySelectorAll('.v32-barra[data-auto-enviar] input[type="search"]').forEach(function (campo) {
+    campo.addEventListener("change", function (evento) { evento.stopPropagation(); });
+  });
+})();
+
+// Seletor múltiplo: mantém select/name/valores do Django e seleção com Ctrl,
+// Shift e teclado, expondo o mesmo menu de opções no vocabulário V3.2.
+(function () {
+  "use strict";
+  document.querySelectorAll("[data-v32-multiple]").forEach(function (wrapper) {
+    var native = wrapper.querySelector("select");
+    var trigger = wrapper.querySelector("[data-multiple-trigger]");
+    var menu = wrapper.querySelector("[data-multiple-menu]");
+    var items = [].slice.call(wrapper.querySelectorAll("[data-multiple-option]"));
+    var search = wrapper.querySelector("[data-multiple-search]");
+    var anchor = 0;
+    if (!native || !trigger || !menu) return;
+    function update() {
+      var labels = [];
+      items.forEach(function (item, index) {
+        var selected = native.options[index].selected;
+        item.setAttribute("aria-selected", String(selected));
+        item.classList.toggle("is-selected", selected);
+        if (selected) labels.push(native.options[index].text);
+      });
+      wrapper.querySelector("[data-multiple-value]").textContent = labels.length ? labels.join(", ") : "Selecione...";
+      trigger.classList.toggle("has-value", !!labels.length);
+    }
+    function close() {
+      menu.hidden = true;
+      trigger.setAttribute("aria-expanded", "false");
+      wrapper.classList.remove("is-open");
+    }
+    function choose(index, event) {
+      if (native.disabled) return;
+      var toggle = event.ctrlKey || event.metaKey || event.pointerType === "touch";
+      if (event.shiftKey) {
+        [].forEach.call(native.options, function (option, i) {
+          if (!toggle) option.selected = false;
+          if (i >= Math.min(anchor, index) && i <= Math.max(anchor, index)) option.selected = true;
+        });
+      } else {
+        var selected = native.options[index].selected;
+        if (!toggle) [].forEach.call(native.options, function (option) { option.selected = false; });
+        native.options[index].selected = toggle ? !selected : true;
+        anchor = index;
+      }
+      native.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    trigger.addEventListener("click", function () {
+      if (!menu.hidden) { close(); return; }
+      menu.hidden = false;
+      trigger.setAttribute("aria-expanded", "true");
+      wrapper.classList.add("is-open");
+      var first = items.find(function (item) { return item.getAttribute("aria-selected") === "true"; }) || items[0];
+      if (first) first.focus();
+    });
+    if (search) {
+      search.addEventListener("input", function () {
+        var term = search.value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        items.forEach(function (item) {
+          item.hidden = !item.textContent.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(term);
+        });
+      });
+      search.addEventListener("change", function (event) { event.stopPropagation(); });
+      search.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") event.preventDefault();
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          var firstVisible = items.find(function (item) { return !item.hidden; });
+          if (firstVisible) firstVisible.focus();
+        }
+      });
+    }
+    items.forEach(function (item, index) {
+      item.addEventListener("click", function (event) { choose(index, event); });
+      item.addEventListener("keydown", function (event) {
+        var next;
+        if (event.key === "ArrowDown") next = Math.min(items.length - 1, index + 1);
+        if (event.key === "ArrowUp") next = Math.max(0, index - 1);
+        if (event.key === "Home") next = 0;
+        if (event.key === "End") next = items.length - 1;
+        if (next !== undefined) {
+          var direction = next >= index ? 1 : -1;
+          while (items[next] && items[next].hidden) next += direction;
+          if (!items[next]) return;
+          event.preventDefault(); items[next].focus();
+          if (!(event.ctrlKey || event.metaKey) || event.shiftKey) choose(next, event);
+        }
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") {
+          event.preventDefault();
+          [].forEach.call(native.options, function (option) { option.selected = true; });
+          native.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      });
+    });
+    wrapper.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") { close(); trigger.focus(); }
+      if (event.key === "Tab") close();
+    });
+    document.addEventListener("click", function (event) { if (!wrapper.contains(event.target)) close(); });
+    native.addEventListener("change", update);
+    if (native.form) native.form.addEventListener("reset", function () { window.setTimeout(update, 0); });
+    wrapper.classList.add("is-enhanced");
+    native.tabIndex = -1;
+    update();
+  });
+})();
+
+// Coffee Break: saldo informativo do lote, sem alterar a validação no servidor.
+// Mostra o saldo do lote escolhido ao lado da quantidade — os dados vêm
+    // renderizados no atributo data-saldos; a validação real é no backend.
+    (function () {
+      var campoSaldo = document.querySelector("[data-saldo-lote]");
+      var seletorLote = document.getElementById("id_lote");
+      if (!campoSaldo || !seletorLote) return;
+      var saldos = {};
+      (campoSaldo.dataset.saldos || "").split(";").forEach(function (par) {
+        var partes = par.split(":");
+        if (partes.length === 2) saldos[partes[0]] = partes[1];
+      });
+      function atualizar() {
+        var info = saldos[seletorLote.value];
+        campoSaldo.value = info
+          ? info.split("/")[0] + " de " + info.split("/")[1] + " unidades"
+          : "—";
+      }
+      seletorLote.addEventListener("change", atualizar);
+      atualizar();
+    })();
+
+// Demandas ASCOM: opções de responsável conforme os setores, preservadas.
+(function () {
+      var responsavel = document.getElementById("id_responsavel_atendimento");
+      var setores = document.querySelectorAll('input[name="setores"]');
+      if (!responsavel || !setores.length) return;
+      var custom = responsavel.closest("[data-custom-select]");
+      function atualizarResponsaveis() {
+        var ativos = Array.prototype.filter.call(setores, function (item) {
+          return item.checked;
+        }).map(function (item) { return item.value; });
+        responsavel.querySelectorAll("option[data-related-values]").forEach(function (opcao) {
+          var relacionados = (opcao.getAttribute("data-related-values") || "").split(",");
+          var elegivel = relacionados.some(function (id) { return ativos.indexOf(id) !== -1; });
+          opcao.disabled = !elegivel;
+          opcao.hidden = !elegivel;
+          if (!elegivel && opcao.selected) responsavel.value = "";
+        });
+        if (custom) {
+          custom.querySelectorAll("[data-related-values][data-value]").forEach(function (opcao) {
+            var relacionados = (opcao.getAttribute("data-related-values") || "").split(",");
+            opcao.hidden = !relacionados.some(function (id) { return ativos.indexOf(id) !== -1; });
+          });
+        }
+        responsavel.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      setores.forEach(function (setor) { setor.addEventListener("change", atualizarResponsaveis); });
+      atualizarResponsaveis();
+    })();

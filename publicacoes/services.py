@@ -4,6 +4,7 @@ import datetime as dt
 
 from django.db.models import Count, F, Q
 from django.utils import timezone
+from django.utils.dateformat import format as formatar_data
 
 from .models import Publicacao, StatusPublicacao, formatar_duracao
 
@@ -77,7 +78,7 @@ def por_jornalista(inicio, fim=None, limite=8):
     if fim:
         qs = qs.filter(data__lte=fim)
     return list(
-        qs.values(nome=F("jornalista__nome"))
+        qs.values(nome=F("jornalista__nome"), pk=F("jornalista_id"))
         .annotate(
             total=Count("pk"),
             publicadas=Count("pk", filter=Q(status=StatusPublicacao.PUBLICADA)),
@@ -91,7 +92,7 @@ def por_unidade(inicio, fim=None, limite=8):
     if fim:
         qs = qs.filter(data__lte=fim)
     return list(
-        qs.values(nome=F("unidade__nome"))
+        qs.values(nome=F("unidade__nome"), pk=F("unidade_id"))
         .annotate(total=Count("pk"))
         .order_by("-total", "nome")[:limite]
     )
@@ -114,8 +115,8 @@ def serie_mensal(meses=6, hoje=None):
     }
     barras = [
         {
-            "rotulo": marco.strftime("%b/%y"),
-            "titulo": marco.strftime("%B de %Y"),
+            "rotulo": formatar_data(marco, "M/y"),
+            "titulo": formatar_data(marco, r"F \d\e Y"),
             "valor": contagens.get((marco.year, marco.month), 0),
         }
         for marco in marcos

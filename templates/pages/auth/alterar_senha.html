@@ -1,23 +1,23 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 
 {% block title %}Alterar senha — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with atual="Alterar senha" %}
+  {% include "components/v32/breadcrumb.html" with atual="Alterar senha" %}
   {% if troca_obrigatoria %}
-    {% include "components/page_header.html" with titulo="Defina sua senha" subtitulo="A senha atual foi cadastrada por outra pessoa — escolha uma que só você conheça para continuar." icone="settings" %}
+    {% include "components/v32/page_header.html" with titulo="Defina sua senha" subtitulo="A senha atual foi cadastrada por outra pessoa — escolha uma que só você conheça para continuar." icone="settings" %}
   {% else %}
-    {% include "components/page_header.html" with titulo="Alterar senha" subtitulo="Atualize a senha de acesso da sua conta" icone="settings" %}
+    {% include "components/v32/page_header.html" with titulo="Alterar senha" subtitulo="Atualize a senha de acesso da sua conta" icone="settings" %}
   {% endif %}
 
-  <form method="post" action="">
+  <form method="post" action="" class="cad-frm">
     {% csrf_token %}
 
-    <section class="section-card senha-card">
-      {% include "components/section_card.html" with numero="1" titulo="Nova senha" %}
-      <div class="section-card__corpo senha-corpo">
+    <section class="reg senha-card">
+      {% include "components/v32/section_card.html" with numero="1" titulo="Nova senha" %}
+      <div class="reg-corpo senha-corpo">
         {% if form.non_field_errors %}
-          <div class="alerta alerta--error mb-4">
+          <div class="aviso v32-aviso-texto aviso--erro mb-4">
             {% for erro in form.non_field_errors %}{{ erro }}{% endfor %}
           </div>
         {% endif %}
@@ -92,12 +92,12 @@
           </div>
         </div>
       </div>
-      <div class="senha-card__acoes">
+      <div class="cad-frm__acoes">
         {% if not troca_obrigatoria %}
           {% url 'core:home' as url_voltar %}
-          {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
+          {% include "components/v32/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
         {% endif %}
-        {% include "components/button.html" with label="Alterar senha" variante="dourado" tipo="submit" %}
+        {% include "components/v32/button.html" with label="Alterar senha" variante="dourado" tipo="submit" %}
       </div>
     </section>
   </form>

@@ -1,40 +1,40 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 
 {% block title %}Usuários — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with atual="Usuários" %}
+  {% include "components/v32/breadcrumb.html" with atual="Usuários" %}
 
   {% url 'accounts:usuarios_novo' as url_novo %}
-  {% include "components/page_header.html" with titulo="Usuários e perfis" subtitulo="Gerencie quem acessa o sistema e com qual perfil" icone="users" acao_label="Novo usuário" acao_url=url_novo %}
+  {% include "components/v32/page_header.html" with titulo="Usuários e perfis" subtitulo="Gerencie quem acessa o sistema e com qual perfil" icone="users" acao_label="Novo usuário" acao_url=url_novo %}
 
-  <div class="card lista-filtros-card">
-    <form method="get" class="lista-filtros lista-filtros--rotulos" data-auto-enviar>
-      <div class="form-campo lista-filtros__busca lista-filtros__busca--curta">
+  <div class="pa-card pa-card--lista v32-bloco v32-filtros">
+    <form method="get" class="v32-barra lista-filtros--rotulos" data-auto-enviar>
+      <div class="form-campo v32-busca lista-filtros__busca--curta">
         <label class="form-label" for="id_q">Busca</label>
-        <div class="campo-com-icone">
-          <span class="campo-com-icone__icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+        <div class="busca">
+          <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
           <input class="form-controle" type="search" name="q" id="id_q"
                  value="{{ termo }}" placeholder="Nome, usuário ou e-mail...">
         </div>
       </div>
       {% include "components/select.html" with name="perfil" label="Perfil" opcoes=opcoes_perfil placeholder="Todos os perfis" selecionado=perfil_filtro %}
       {% include "components/select.html" with name="situacao" label="Situação" opcoes=opcoes_situacao placeholder="Todas" selecionado=situacao_filtro %}
-      <button type="submit" class="btn btn--secundario lista-filtros__avancados lista-filtros__aplicar">
+      <button type="submit" class="btn--secundaria  lista-filtros__aplicar">
         {% include "components/icon.html" with nome="filter" %}
         Filtros
       </button>
     </form>
   </div>
 
-  <div class="card">
-    <div class="card__cabecalho lista-cabecalho">
-      <h2 class="card__titulo">Usuários
-        <span class="lista-cabecalho__contagem">{{ pagina.paginator.count }} registro{{ pagina.paginator.count|pluralize }}</span>
+  <div class="pa-card pa-card--lista v32-bloco">
+    <div class="cad-titulo ">
+      <h2 class="reg__t">Usuários
+        <span class="v32-meta">{{ pagina.paginator.count }} registro{{ pagina.paginator.count|pluralize }}</span>
       </h2>
     </div>
-    <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Tabela de usuários">
-      <table class="tabela tabela--cartoes-no-celular">
+    <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Tabela de usuários">
+      <table class="dt dt--responsiva">
         <thead>
           <tr>
             <th>Usuário</th>
@@ -66,28 +66,28 @@
                 </td>
                 <td data-rotulo="Situação">
                   {% if u.is_active %}
-                    <span class="status-badge status-badge--atendida">Ativo</span>
+                    <span class="st st--ativo">Ativo</span>
                   {% else %}
-                    <span class="status-badge status-badge--cancelada">Inativo</span>
+                    <span class="st st--inativo">Inativo</span>
                   {% endif %}
                 </td>
                 <td data-rotulo="Último acesso">{{ linha.ultimo_acesso }}</td>
-                <td class="tabela__acoes">
-                  <div class="tabela__acoes-grupo">
-                    <a href="{% url 'accounts:usuarios_editar' u.pk %}" class="btn btn--compacto btn--acao btn--acao-continuar">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                <td class="c-cad-acoes">
+                  <div class="acoes">
+                    <a href="{% url 'accounts:usuarios_editar' u.pk %}" class=" acao-linha ">{% include "components/icon.html" with nome="pencil" %}Editar</a>
                     {% if u != request.user %}
-                      <div class="menu-flutuante" data-menu>
-                        <button type="button" class="btn btn--secundario btn--compacto tabela__kebab" data-menu-gatilho
+                      <div class="dd" data-menu>
+                        <button type="button" class="ib-linha" data-menu-gatilho
                                 aria-haspopup="true" aria-expanded="false" aria-label="Mais ações de {{ u.username }}">
                           {% include "components/icon.html" with nome="kebab" %}
                         </button>
-                        <div class="menu-flutuante__corpo" hidden data-menu-corpo>
+                        <div class="dd__c" hidden data-menu-corpo>
                           <form method="post" action="{% url 'accounts:usuarios_alternar_ativo' u.pk %}">
                             {% csrf_token %}
                             {% if u.is_active %}
-                              <button type="submit">{% include "components/icon.html" with nome="ban" %}Inativar</button>
+                              <button type="submit" class="dd__i">{% include "components/icon.html" with nome="ban" %}Inativar</button>
                             {% else %}
-                              <button type="submit">{% include "components/icon.html" with nome="check-circle" %}Ativar</button>
+                              <button type="submit" class="dd__i">{% include "components/icon.html" with nome="check-circle" %}Ativar</button>
                             {% endif %}
                           </form>
                         </div>
@@ -98,31 +98,88 @@
               </tr>
             {% endwith %}
           {% empty %}
-            <tr><td colspan="5" class="texto-suave texto-centro">Nenhum usuário encontrado.</td></tr>
+            <tr><td colspan="5" class="v32-suave dt__vazio">Nenhum usuário encontrado.</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+<div class="lista-mobile-v32"><div class="m-lista">
+          {% for linha in linhas %}
+            {% with u=linha.usuario %}
+              <article class="m-item">
+                <div class="m-item__campo" data-rotulo="Usuário">
+                  <div class="usuario-celula">
+                    <span class="usuario-avatar usuario-avatar--{{ linha.perfil_slug|default:'padrao' }}{% if not u.is_active %} usuario-avatar--inativo{% endif %}" aria-hidden="true">{{ linha.iniciais }}</span>
+                    <span class="usuario-celula__dados">
+                      <strong>{{ u.get_full_name|default:u.username }}</strong>
+                      <small>{{ u.username }}{% if u.email %} &nbsp;·&nbsp; {{ u.email }}{% endif %}</small>
+                      <small>Setores: {% for setor in u.setores.all %}{{ setor }}{% if not forloop.last %}, {% endif %}{% empty %}nenhum{% endfor %}</small>
+                    </span>
+                  </div>
+                </div>
+                <div class="m-item__campo" data-rotulo="Perfil">
+                  <span class="perfil-badge perfil-badge--{{ linha.perfil_slug|default:'padrao' }}">
+                    {% if linha.perfil_slug == "super" %}{% include "components/icon.html" with nome="crown" %}{% endif %}
+                    {{ linha.perfil }}
+                  </span>
+                </div>
+                <div class="m-item__campo" data-rotulo="Situação">
+                  {% if u.is_active %}
+                    <span class="st st--ativo">Ativo</span>
+                  {% else %}
+                    <span class="st st--inativo">Inativo</span>
+                  {% endif %}
+                </div>
+                <div class="m-item__campo" data-rotulo="Último acesso">{{ linha.ultimo_acesso }}</div>
+                <div class="m-item__campo" data-rotulo="Ações">
+                  <div class="acoes">
+                    <a href="{% url 'accounts:usuarios_editar' u.pk %}" class=" acao-linha ">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                    {% if u != request.user %}
+                      <div class="dd" data-menu>
+                        <button type="button" class="ib-linha" data-menu-gatilho
+                                aria-haspopup="true" aria-expanded="false" aria-label="Mais ações de {{ u.username }}">
+                          {% include "components/icon.html" with nome="kebab" %}
+                        </button>
+                        <div class="dd__c" hidden data-menu-corpo>
+                          <form method="post" action="{% url 'accounts:usuarios_alternar_ativo' u.pk %}">
+                            {% csrf_token %}
+                            {% if u.is_active %}
+                              <button type="submit" class="dd__i">{% include "components/icon.html" with nome="ban" %}Inativar</button>
+                            {% else %}
+                              <button type="submit" class="dd__i">{% include "components/icon.html" with nome="check-circle" %}Ativar</button>
+                            {% endif %}
+                          </form>
+                        </div>
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </article>
+            {% endwith %}
+          {% empty %}
+            <article class="m-item"><p class="m-vazio">Nenhum usuário encontrado.</p></article>
+          {% endfor %}
+        </div></div>
     {% if pagina.paginator.num_pages > 1 %}
-      <div class="card__corpo paginacao">
-        <span class="texto-suave">
+      <div class="v32-corpo pag">
+        <span class="v32-suave">
           Exibindo {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }} registros
         </span>
-        <nav class="paginacao__paginas" aria-label="Paginação">
+        <nav class="pag__nav" aria-label="Paginação">
           {% if pagina.has_previous %}
-            <a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+            <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
           {% endif %}
           {% for numero in paginas_visiveis %}
             {% if numero == elipse %}
-              <span class="paginacao__elipse" aria-hidden="true">…</span>
+              <span class="pag__el" aria-hidden="true">…</span>
             {% elif numero == pagina.number %}
-              <span class="paginacao__numero paginacao__numero--atual" aria-current="page">{{ numero }}</span>
+              <span class="pag__n " aria-current="page">{{ numero }}</span>
             {% else %}
-              <a class="paginacao__numero" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
+              <a class="pag__n" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
             {% endif %}
           {% endfor %}
           {% if pagina.has_next %}
-            <a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+            <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
           {% endif %}
         </nav>
       </div>

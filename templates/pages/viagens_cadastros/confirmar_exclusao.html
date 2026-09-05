@@ -1,15 +1,15 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 {% load static estaticos %}
 
 {% block title %}Excluir registro — Sistema de Gestão de Eventos Sociais{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-cadastros.css' %}">{% endblock %}
+
 
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with itens=breadcrumb %}
-  {% include "components/page_header.html" with titulo="Excluir registro" subtitulo="Confirme com segurança antes de remover" icone="trash" %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+  {% include "components/v32/page_header.html" with titulo="Excluir registro" subtitulo="Confirme com segurança antes de remover" icone="trash" %}
 
-  <section class="card viagens-exclusao" aria-labelledby="exclusao-titulo">
-    <div class="card__corpo">
+  <section class="pa-card pa-card--lista v32-bloco viagens-exclusao" aria-labelledby="exclusao-titulo">
+    <div class="v32-corpo">
       <span class="viagens-exclusao__icone{% if bloqueada %} viagens-exclusao__icone--bloqueada{% endif %}" aria-hidden="true">{% include "components/icon.html" with nome="trash" %}</span>
       {% if bloqueada %}
         <span class="viagens-eyebrow">Exclusão bloqueada</span>
@@ -23,7 +23,7 @@
             </div>
           {% endfor %}
         </div>
-        <div class="acoes-formulario"><a class="btn btn--dourado" href="{{ url_voltar }}">Voltar para a lista</a></div>
+        <div class="cad-frm__acoes"><a class=" btn-primaria" href="{{ url_voltar }}">Voltar para a lista</a></div>
       {% else %}
         <span class="viagens-eyebrow">Ação permanente</span>
         <h2 id="exclusao-titulo">Excluir “{{ objeto }}”?</h2>
@@ -32,10 +32,10 @@
           <span>{% include "components/icon.html" with nome="alert" %}</span>
           <div><strong>Confira antes de continuar</strong><small>Você está excluindo exatamente o registro exibido acima.</small></div>
         </div>
-        <form method="post" class="acoes-formulario">
+        <form method="post" class="cad-frm__acoes">
           {% csrf_token %}
-          <a class="btn btn--secundario" href="{{ url_voltar }}">Cancelar</a>
-          <button class="btn btn--perigo btn--com-icone" type="submit">{% include "components/icon.html" with nome="trash" %}Excluir definitivamente</button>
+          <a class=" btn--secundaria" href="{{ url_voltar }}">Cancelar</a>
+          <button class=" btn--secundaria btn--destrutiva " type="submit">{% include "components/icon.html" with nome="trash" %}Excluir definitivamente</button>
         </form>
       {% endif %}
     </div>

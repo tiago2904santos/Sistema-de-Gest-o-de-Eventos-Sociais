@@ -1,27 +1,27 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 
 {% block title %}Notificações — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with atual="Notificações" %}
-  {% include "components/page_header.html" with titulo="Notificações" subtitulo="Avisos sobre as suas solicitações e filas de trabalho" icone="bell" %}
+  {% include "components/v32/breadcrumb.html" with atual="Notificações" %}
+  {% include "components/v32/page_header.html" with titulo="Notificações" subtitulo="Avisos sobre as suas solicitações e filas de trabalho" icone="bell" %}
 
-  <div class="card notificacoes-filtros">
-    <div class="fila-chips notificacoes-filtros__chips">
-      <a class="fila-chip{% if not filtro %} fila-chip--ativa{% endif %}" href="{% url 'core:notificacoes' %}">
-        Todas <strong>{{ total }}</strong>
+  <div class="pa-card pa-card--lista v32-bloco notificacoes-filtros">
+    <div class="filas notificacoes-filtros__chips">
+      <a class="fila"{% if not filtro %} aria-current="page"{% endif %} href="{% url 'core:notificacoes' %}">
+        Todas <strong class="fila__n">{{ total }}</strong>
       </a>
-      <a class="fila-chip{% if filtro == 'nao-lidas' %} fila-chip--ativa{% endif %}" href="?filtro=nao-lidas">
-        Não lidas <strong>{{ nao_lidas }}</strong>
+      <a class="fila"{% if filtro == 'nao-lidas' %} aria-current="page"{% endif %} href="?filtro=nao-lidas">
+        Não lidas <strong class="fila__n">{{ nao_lidas }}</strong>
       </a>
-      <a class="fila-chip{% if filtro == 'lidas' %} fila-chip--ativa{% endif %}" href="?filtro=lidas">
-        Lidas <strong>{{ lidas }}</strong>
+      <a class="fila"{% if filtro == 'lidas' %} aria-current="page"{% endif %} href="?filtro=lidas">
+        Lidas <strong class="fila__n">{{ lidas }}</strong>
       </a>
     </div>
     {% if nao_lidas %}
       <form method="post" action="{% url 'core:notificacoes_marcar_lidas' %}">
         {% csrf_token %}
-        <button type="submit" class="btn btn--secundario btn--com-icone notificacoes-filtros__marcar">
+        <button type="submit" class="btn--secundaria  notificacoes-filtros__marcar">
           {% include "components/icon.html" with nome="check-circle" %}
           Marcar todas como lidas
         </button>
@@ -32,24 +32,24 @@
   {% for grupo in grupos %}
     <h2 class="notificacoes-grupo">{{ grupo.rotulo }}</h2>
     {% for n in grupo.itens %}
-      <a class="notificacao-cartao{% if not n.lida %} notificacao-cartao--nova{% endif %}"
+      <a class="m-item notificacao-cartao{% if not n.lida %} notificacao-cartao--nova{% endif %}"
          href="{% url 'core:notificacao_abrir' n.pk %}">
-        <span class="notificacao-cartao__icone" aria-hidden="true">{% include "components/icon.html" with nome="bell" %}</span>
-        <span class="notificacao-cartao__ponto" aria-hidden="true"></span>
-        <span class="notificacao-cartao__conteudo">
+        <span class="m-item notificacao-cartao__icone" aria-hidden="true">{% include "components/icon.html" with nome="bell" %}</span>
+        <span class="m-item notificacao-cartao__ponto" aria-hidden="true"></span>
+        <span class="m-item notificacao-cartao__conteudo">
           <strong>{{ n.titulo }}</strong>
-          {% if n.mensagem %}<span class="notificacao-cartao__mensagem">{{ n.mensagem }}</span>{% endif %}
-          <span class="notificacao-cartao__meta">
-            <span class="notificacao-cartao__quando">{% include "components/icon.html" with nome="clock" %}{{ n.criada_em|date:"d/m/Y H:i" }}</span>
-            <span class="notificacao-cartao__divisor" aria-hidden="true">|</span>
-            <span class="notificacao-cartao__tag">{% if n.solicitacao_id %}Solicitação{% else %}Sistema{% endif %}</span>
+          {% if n.mensagem %}<span class="m-item notificacao-cartao__mensagem">{{ n.mensagem }}</span>{% endif %}
+          <span class="m-item notificacao-cartao__meta">
+            <span class="m-item notificacao-cartao__quando">{% include "components/icon.html" with nome="clock" %}{{ n.criada_em|date:"d/m/Y H:i" }}</span>
+            <span class="m-item notificacao-cartao__divisor" aria-hidden="true">|</span>
+            <span class="m-item notificacao-cartao__tag">{% if n.solicitacao_id %}Solicitação{% else %}Sistema{% endif %}</span>
           </span>
         </span>
-        <span class="notificacao-cartao__seta" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</span>
+        <span class="m-item notificacao-cartao__seta" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</span>
       </a>
     {% endfor %}
   {% empty %}
-    <div class="card notificacoes-vazio">
+    <div class="semres notificacoes-vazio">
       <span class="notificacoes-vazio__icone" aria-hidden="true">{% include "components/icon.html" with nome="bell" %}</span>
       <strong>Nenhuma notificação</strong>
       <p>Quando houver novas atualizações, elas aparecerão aqui.</p>
@@ -57,14 +57,14 @@
   {% endfor %}
 
   {% if pagina.paginator.num_pages > 1 %}
-    <div class="card"><div class="card__corpo paginacao">
-      <span class="texto-suave">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
-      <nav class="paginacao__paginas" aria-label="Paginação">
+    <div class="pa-card pa-card--lista v32-bloco"><div class="v32-corpo pag">
+      <span class="v32-suave">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+      <nav class="pag__nav" aria-label="Paginação">
         {% if pagina.has_previous %}
-          <a class="paginacao__passo" href="?{% if filtro %}filtro={{ filtro }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+          <a class="pag__passo" href="?{% if filtro %}filtro={{ filtro }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
         {% endif %}
         {% if pagina.has_next %}
-          <a class="paginacao__passo" href="?{% if filtro %}filtro={{ filtro }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+          <a class="pag__passo" href="?{% if filtro %}filtro={{ filtro }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
         {% endif %}
       </nav>
     </div></div>

@@ -1,20 +1,20 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 {% block title %}Demandas de eventos — ASCOM{% endblock %}
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with itens=None atual="Demandas ASCOM" %}
+  {% include "components/v32/breadcrumb.html" with itens=None atual="Demandas ASCOM" %}
   {% url 'demandas_eventos:nova' as url_nova %}
-  {% include "components/page_header.html" with titulo="Demandas de eventos" subtitulo="Acompanhe palestras, eventos e ações da ASCOM" icone="document" acao_label="Nova demanda" acao_url=url_nova %}
+  {% include "components/v32/page_header.html" with titulo="Demandas de eventos" subtitulo="Acompanhe palestras, eventos e ações da ASCOM" icone="document" acao_label="Nova demanda" acao_url=url_nova %}
 
-  <div class="card lista-filtros-card">
-    <form method="get" class="lista-filtros" data-auto-enviar>
-      <div class="form-campo lista-filtros__busca">
+  <div class="pa-card pa-card--lista v32-bloco v32-filtros">
+    <form method="get" class="v32-barra" data-auto-enviar>
+      <div class="form-campo v32-busca">
         <label class="form-label sr-only" for="id_q">Busca</label>
-        <div class="campo-com-icone"><span class="campo-com-icone__icone">{% include "components/icon.html" with nome="search" %}</span><input class="form-controle" type="search" name="q" id="id_q" value="{{ q }}" placeholder="Buscar solicitante, descrição ou assunto..."></div>
+        <div class="busca"><span class="busca-icone">{% include "components/icon.html" with nome="search" %}</span><input class="form-controle" type="search" name="q" id="id_q" value="{{ q }}" placeholder="Buscar solicitante, descrição ou assunto..."></div>
       </div>
-      <button type="button" class="btn btn--secundario lista-filtros__avancados" data-expande="#filtros-demandas" aria-expanded="{% if tem_filtros %}true{% else %}false{% endif %}" aria-controls="filtros-demandas">{% include "components/icon.html" with nome="filter" %} Filtros</button>
-      <button type="submit" class="btn btn--dourado lista-filtros__buscar">{% include "components/icon.html" with nome="search" %}Buscar</button>
-      <span class="lista-filtros__contagem">{{ pagina.paginator.count }} demanda{{ pagina.paginator.count|pluralize }}</span>
-      <div class="lista-filtros__painel" id="filtros-demandas" {% if not tem_filtros %}hidden{% endif %}>
+      <button type="button" class=" btn--secundaria " data-expande="#filtros-demandas" aria-expanded="{% if tem_filtros %}true{% else %}false{% endif %}" aria-controls="filtros-demandas">{% include "components/icon.html" with nome="filter" %} Filtros</button>
+      <button type="submit" class=" btn-primaria ">{% include "components/icon.html" with nome="search" %}Buscar</button>
+      <span class="v32-meta">{{ pagina.paginator.count }} demanda{{ pagina.paginator.count|pluralize }}</span>
+      <div class="v32-filtros-painel" id="filtros-demandas" {% if not tem_filtros %}hidden{% endif %}>
         {% include "components/select.html" with name="status" label="Status" opcoes=opcoes_status placeholder="Todos" selecionado=status %}
         {% include "components/select.html" with name="tipo" label="Tipo de evento" opcoes=opcoes_tipos placeholder="Todos" selecionado=tipo %}
         {% include "components/select.html" with name="municipio" label="Município" opcoes=opcoes_municipios placeholder="Todos" selecionado=municipio pesquisavel=True %}
@@ -22,36 +22,49 @@
         {% include "components/select.html" with name="setor" label="Setor" opcoes=opcoes_setores placeholder="Todos" selecionado=setor %}
         {% include "components/input.html" with name="inicio" label="Solicitadas a partir de" tipo="date" valor=inicio %}
         {% include "components/input.html" with name="fim" label="Solicitadas até" tipo="date" valor=fim %}
-        {% if tem_filtros %}<a class="btn btn--secundario" href="{% url 'demandas_eventos:lista' %}">Limpar filtros</a>{% endif %}
+        {% if tem_filtros %}<a class=" btn--secundaria" href="{% url 'demandas_eventos:lista' %}">Limpar filtros</a>{% endif %}
       </div>
     </form>
   </div>
 
-  <div class="card">
-    <div class="card__cabecalho lista-cabecalho"><h2 class="card__titulo">Demandas</h2><a class="btn btn--secundario btn--com-icone" href="{% url 'demandas_eventos:exportar' %}{% if querystring %}?{{ querystring }}{% endif %}">{% include "components/icon.html" with nome="download" %}Exportar CSV</a></div>
-    <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Demandas de eventos">
-      <table class="tabela tabela--cartoes-no-celular">
+  <div class="pa-card pa-card--lista v32-bloco">
+    <div class="cad-titulo "><h2 class="reg__t">Demandas</h2><a class=" btn--secundaria " href="{% url 'demandas_eventos:exportar' %}{% if querystring %}?{{ querystring }}{% endif %}">{% include "components/icon.html" with nome="download" %}Exportar CSV</a></div>
+    <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Demandas de eventos">
+      <table class="dt dt--responsiva">
         <thead><tr><th>Solicitação</th><th>Tipo / tema</th><th>Evento</th><th>Município</th><th>Solicitante</th><th>Status</th><th>Ações</th></tr></thead>
         <tbody>
           {% for demanda in pagina %}
             <tr>
               <td data-rotulo="Solicitação"><a href="{% url 'demandas_eventos:detalhe' demanda.pk %}" aria-label="Abrir demanda #{{ demanda.pk }}">#{{ demanda.pk }} · {{ demanda.data_solicitacao|date:"d/m/Y" }}</a></td>
-              <td data-rotulo="Tipo / tema"><strong>{{ demanda.tipo_evento }}</strong>{% if demanda.tema %}<br><span class="texto-suave">{{ demanda.tema }}</span>{% endif %}</td>
+              <td data-rotulo="Tipo / tema"><strong>{{ demanda.tipo_evento }}</strong>{% if demanda.tema %}<br><span class="v32-suave">{{ demanda.tema }}</span>{% endif %}</td>
               <td data-rotulo="Evento">{{ demanda.periodo_evento_display|default:"—" }}</td>
               <td data-rotulo="Município">{{ demanda.municipio|default:demanda.municipio_texto|default:"—" }}</td>
               <td data-rotulo="Solicitante">{{ demanda.solicitante|truncatechars:55 }}</td>
-              <td data-rotulo="Status">{% include "components/status_badge.html" with status=demanda.status label=demanda.get_status_display %}</td>
-              <td class="tabela__acoes"><div class="tabela__acoes-grupo"><a class="btn btn--compacto btn--acao btn--acao-continuar" href="{% url 'demandas_eventos:detalhe' demanda.pk %}">Ver</a>{% if not demanda.finalizada %}<a class="btn btn--secundario btn--compacto" href="{% url 'demandas_eventos:editar' demanda.pk %}">Editar</a>{% endif %}</div></td>
+              <td data-rotulo="Status">{% include "components/v32/status_badge.html" with status=demanda.status label=demanda.get_status_display %}</td>
+              <td class="c-cad-acoes"><div class="acoes"><a class="  acao-linha " href="{% url 'demandas_eventos:detalhe' demanda.pk %}">Ver</a>{% if not demanda.finalizada %}<a class=" btn--secundaria " href="{% url 'demandas_eventos:editar' demanda.pk %}">Editar</a>{% endif %}</div></td>
             </tr>
-          {% empty %}<tr><td colspan="7" class="texto-suave texto-centro">Nenhuma demanda encontrada.</td></tr>{% endfor %}
+          {% empty %}<tr><td colspan="7" class="v32-suave dt__vazio">Nenhuma demanda encontrada.</td></tr>{% endfor %}
         </tbody>
       </table>
     </div>
+<div class="lista-mobile-v32"><div class="m-lista">
+          {% for demanda in pagina %}
+            <article class="m-item">
+              <div class="m-item__campo" data-rotulo="Solicitação"><a href="{% url 'demandas_eventos:detalhe' demanda.pk %}" aria-label="Abrir demanda #{{ demanda.pk }}">#{{ demanda.pk }} · {{ demanda.data_solicitacao|date:"d/m/Y" }}</a></div>
+              <div class="m-item__campo" data-rotulo="Tipo / tema"><strong>{{ demanda.tipo_evento }}</strong>{% if demanda.tema %}<br><span class="v32-suave">{{ demanda.tema }}</span>{% endif %}</div>
+              <div class="m-item__campo" data-rotulo="Evento">{{ demanda.periodo_evento_display|default:"—" }}</div>
+              <div class="m-item__campo" data-rotulo="Município">{{ demanda.municipio|default:demanda.municipio_texto|default:"—" }}</div>
+              <div class="m-item__campo" data-rotulo="Solicitante">{{ demanda.solicitante|truncatechars:55 }}</div>
+              <div class="m-item__campo" data-rotulo="Status">{% include "components/v32/status_badge.html" with status=demanda.status label=demanda.get_status_display %}</div>
+              <div class="m-item__campo" data-rotulo="Ações"><div class="acoes"><a class="  acao-linha " href="{% url 'demandas_eventos:detalhe' demanda.pk %}">Ver</a>{% if not demanda.finalizada %}<a class=" btn--secundaria " href="{% url 'demandas_eventos:editar' demanda.pk %}">Editar</a>{% endif %}</div></div>
+            </article>
+          {% empty %}<article class="m-item"><p class="m-vazio">Nenhuma demanda encontrada.</p></article>{% endfor %}
+        </div></div>
     {% if pagina.paginator.num_pages > 1 %}
-      <div class="card__corpo paginacao"><span class="texto-suave">Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }}</span><nav class="paginacao__paginas" aria-label="Paginação">
-        {% if pagina.has_previous %}<a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">Anterior</a>{% endif %}
-        {% for numero in paginas_visiveis %}{% if numero == elipse %}<span class="paginacao__elipse">…</span>{% elif numero == pagina.number %}<span class="paginacao__numero paginacao__numero--atual">{{ numero }}</span>{% else %}<a class="paginacao__numero" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>{% endif %}{% endfor %}
-        {% if pagina.has_next %}<a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima</a>{% endif %}
+      <div class="v32-corpo pag"><span class="v32-suave">Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }}</span><nav class="pag__nav" aria-label="Paginação">
+        {% if pagina.has_previous %}<a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">Anterior</a>{% endif %}
+        {% for numero in paginas_visiveis %}{% if numero == elipse %}<span class="pag__el">…</span>{% elif numero == pagina.number %}<span class="pag__n" aria-current="page">{{ numero }}</span>{% else %}<a class="pag__n" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>{% endif %}{% endfor %}
+        {% if pagina.has_next %}<a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima</a>{% endif %}
       </nav></div>
     {% endif %}
   </div>

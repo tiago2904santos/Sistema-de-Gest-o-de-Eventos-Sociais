@@ -19,7 +19,7 @@
 {% endcomment %}
 <div class="custom-date custom-date--multi{% if extra_class %} {{ extra_class }}{% endif %}" id="{{ id }}" data-custom-date-multi
      data-max="{{ maximo|default:1 }}"{% if sequencial %} data-sequencial{% endif %}{% if dica %} data-dica="{{ dica }}"{% endif %}>
-  <button type="button" class="btn btn--secundario btn--com-icone"
+  <button type="button" class="btn btn--secundario btn--com-icone{% if v32 %} btn--secundaria{% endif %}"
           aria-haspopup="dialog" aria-expanded="false" aria-controls="{{ id }}_calendario"
           data-custom-date-multi-trigger>
     {% if icone %}{% include "components/icon.html" with nome=icone %}{% endif %}{{ label }}

@@ -1,0 +1,122 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Nova pauta / edição no padrão V3.2 (mesma composição do formulário de
+  Solicitações): seções contínuas, lateral com etapas e barra de ações fixa.
+  Campos espelham as colunas do Relatório de Publicações.
+{% endcomment %}
+
+{% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  <form method="post" action="" id="form-publicacao">
+    {% csrf_token %}
+
+    <div class="frm-cabeca">
+      <div>
+        <div class="kicker">{{ kicker }}</div>
+        <h1>{{ titulo_pagina }}<span class="frm-rasc">{% include "components/icon.html" with nome="document" %}{% if publicacao %}{{ publicacao.get_status_display }}{% else %}Nova{% endif %}</span></h1>
+        <p class="frm-cabeca__sub">{% if publicacao %}Atualize o andamento, a publicação e a distribuição da pauta.{% else %}Registre a pauta assim que ela chegar; os demais dados podem ser completados depois.{% endif %}</p>
+      </div>
+    </div>
+
+    <div class="frm-grade">
+      <div>
+        {% if form.errors %}
+          <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
+            {% include "components/icon.html" with nome="info" %}
+            <div>
+              <b>Não foi possível salvar a pauta</b>
+              Revise os campos indicados antes de continuar.
+              <ul class="aviso--erro__lista">
+                {% for campo, mensagens in form.errors.items %}
+                  {% for mensagem in mensagens %}
+                    <li>{% if campo == "__all__" %}{{ mensagem }}{% else %}<a href="#id_{{ campo }}">{{ mensagem }}</a>{% endif %}</li>
+                  {% endfor %}
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        {% endif %}
+
+        <section class="reg" id="sec-pauta">
+          <h2 class="reg__t">Pauta</h2>
+          <div class="g-form g-form--3">
+            {% include "components/input.html" with name="data" label="Data da pauta" tipo="date" obrigatorio=True valor=valores.data erros=erros.data %}
+            <label class="campo-e form-campo"><span>Início da pauta</span>
+              <input class="ctrl{% if erros.inicio_pauta %} ctrl--erro{% endif %}" type="text" id="id_inicio_pauta" name="inicio_pauta" value="{{ valores.inicio_pauta }}" placeholder="hh:mm" inputmode="numeric" autocomplete="off">
+              {% for erro in erros.inicio_pauta %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+            {% include "components/select.html" with name="status" label="Status" opcoes=opcoes_status obrigatorio=True selecionado=valores.status erros=erros.status placeholder="Selecione..." %}
+            {% include "components/select.html" with name="jornalista" label="Jornalista responsável" opcoes=opcoes_jornalistas obrigatorio=True selecionado=valores.jornalista erros=erros.jornalista %}
+            {% include "components/select.html" with name="unidade" label="Unidade responsável" opcoes=opcoes_unidades pesquisavel=True selecionado=valores.unidade erros=erros.unidade placeholder="Buscar unidade..." %}
+            <label class="campo-e form-campo"><span>Outra unidade (não listada)</span>
+              <input class="ctrl{% if erros.unidade_nova %} ctrl--erro{% endif %}" type="text" id="id_unidade_nova" name="unidade_nova" value="{{ valores.unidade_nova }}" placeholder="Ex.: DP Nova Londrina">
+              {% for erro in erros.unidade_nova %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+            <label class="campo-e form-campo cheia"><span>Título da pauta<em>*</em></span>
+              <input class="ctrl{% if erros.titulo %} ctrl--erro{% endif %}" type="text" id="id_titulo" name="titulo" value="{{ valores.titulo }}" required maxlength="300" placeholder="Ex.: PCPR prende homem por tráfico de drogas em Colombo">
+              {% for erro in erros.titulo %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+            <label class="campo-e form-campo c2"><span>Fonte da pauta</span>
+              <input class="ctrl{% if erros.fonte %} ctrl--erro{% endif %}" type="text" id="id_fonte" name="fonte" value="{{ valores.fonte }}" maxlength="200" placeholder="Ex.: Del. Marcos Vinicius">
+              {% for erro in erros.fonte %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+            <label class="campo-e form-campo cheia"><span>Andamento</span>
+              <textarea class="ta{% if erros.andamento %} ctrl--erro{% endif %}" id="id_andamento" name="andamento" placeholder="Ex.: aguardando fotos do delegado">{{ valores.andamento }}</textarea>
+              {% for erro in erros.andamento %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+          </div>
+        </section>
+
+        <section class="reg" id="sec-producao">
+          <h2 class="reg__t">Produção e publicação</h2>
+          <div class="g-form g-form--3">
+            <label class="campo-e form-campo"><span>Colocada para edição</span>
+              <input class="ctrl{% if erros.colocada_edicao %} ctrl--erro{% endif %}" type="text" id="id_colocada_edicao" name="colocada_edicao" value="{{ valores.colocada_edicao }}" placeholder="hh:mm" inputmode="numeric" autocomplete="off">
+              {% for erro in erros.colocada_edicao %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+            {% include "components/input.html" with name="data_publicacao" label="Data de publicação" tipo="date" valor=valores.data_publicacao erros=erros.data_publicacao %}
+            <label class="campo-e form-campo"><span>Horário de publicação</span>
+              <input class="ctrl{% if erros.horario_publicacao %} ctrl--erro{% endif %}" type="text" id="id_horario_publicacao" name="horario_publicacao" value="{{ valores.horario_publicacao }}" placeholder="hh:mm" inputmode="numeric" autocomplete="off">
+              {% for erro in erros.horario_publicacao %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+            {% include "components/select.html" with name="revisao" label="Revisão" opcoes=opcoes_revisao selecionado=valores.revisao erros=erros.revisao placeholder="Quem revisou" %}
+            {% include "components/select.html" with name="galeria_fotos" label="Galeria de fotos" opcoes=opcoes_revisao selecionado=valores.galeria_fotos erros=erros.galeria_fotos placeholder="Quem montou a galeria" %}
+          </div>
+        </section>
+
+        <section class="reg" id="sec-distribuicao">
+          <h2 class="reg__t">Distribuição</h2>
+          <div class="g-form g-form--3">
+            {% include "components/select.html" with name="bitly_grupos" label="Bitly nos grupos" opcoes=opcoes_sim_nao selecionado=valores.bitly_grupos erros=erros.bitly_grupos placeholder="—" %}
+            {% include "components/select.html" with name="enviado_sesp" label="Enviado para a SESP" opcoes=opcoes_sim_nao selecionado=valores.enviado_sesp erros=erros.enviado_sesp placeholder="—" %}
+            {% include "components/select.html" with name="publicado_aen" label="Publicado na AEN" opcoes=opcoes_sim_nao selecionado=valores.publicado_aen erros=erros.publicado_aen placeholder="—" %}
+            <label class="campo-e form-campo cheia"><span>Link no site da PCPR</span>
+              <input class="ctrl{% if erros.link_site %} ctrl--erro{% endif %}" type="url" id="id_link_site" name="link_site" value="{{ valores.link_site }}" placeholder="https://www.policiacivil.pr.gov.br/Noticia/...">
+              {% for erro in erros.link_site %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+            <label class="campo-e form-campo cheia"><span>Link na AEN</span>
+              <input class="ctrl{% if erros.link_aen %} ctrl--erro{% endif %}" type="url" id="id_link_aen" name="link_aen" value="{{ valores.link_aen }}" placeholder="https://www.aen.pr.gov.br/...">
+              {% for erro in erros.link_aen %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+          </div>
+        </section>
+      </div>
+
+      <aside class="sticky sticky--form">
+        <section class="reg reg--sec">
+          <h2 class="reg__t">Etapas</h2>
+          <div class="step-v">
+            <button type="button" class="step-i{% if erros.data or erros.titulo or erros.jornalista or erros.unidade or erros.status %} step-i--erro{% endif %}" data-ir="#sec-pauta"><span class="step-i__m">1</span><span><span class="step-i__t">Pauta</span><span class="step-i__s">Entrada, fonte e título</span></span></button>
+            <button type="button" class="step-i{% if erros.data_publicacao or erros.horario_publicacao or erros.colocada_edicao %} step-i--erro{% endif %}" data-ir="#sec-producao"><span class="step-i__m">2</span><span><span class="step-i__t">Produção e publicação</span><span class="step-i__s">Edição, revisão e horários</span></span></button>
+            <button type="button" class="step-i{% if erros.link_site or erros.link_aen %} step-i--erro{% endif %}" data-ir="#sec-distribuicao"><span class="step-i__m">3</span><span><span class="step-i__t">Distribuição</span><span class="step-i__s">Grupos, SESP, AEN e links</span></span></button>
+          </div>
+        </section>
+        <div class="frm-acoes frm-acoes--flut">
+          {% if publicacao %}<a class="frm-cancelar" href="{% url 'publicacoes:detalhe' publicacao.pk %}">Cancelar</a>{% else %}<a class="frm-cancelar" href="{% url 'publicacoes:lista' %}">Cancelar</a>{% endif %}
+          <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check" %}{% if publicacao %}Salvar alterações{% else %}Registrar pauta{% endif %}</button>
+        </div>
+      </aside>
+    </div>
+  </form>
+{% endblock %}

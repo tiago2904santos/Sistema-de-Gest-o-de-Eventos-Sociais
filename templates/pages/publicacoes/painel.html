@@ -1,0 +1,118 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Painel do módulo de Publicações no padrão V3.2 (mesma composição do
+  Dashboard de Eventos Sociais): KPIs, gráfico mensal, rankings e recentes.
+{% endcomment %}
+
+{% block title %}Painel — Publicações — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker">{{ kicker }}</div>
+      <h1>Painel</h1>
+      <p class="d-cabeca__sub">Visão geral das pautas e publicações da assessoria.</p>
+    </div>
+    <div class="d-acoes">
+      <a class="btn-primaria" href="{% url 'publicacoes:nova' %}">{% include "components/icon.html" with nome="document-plus" %}Nova pauta</a>
+    </div>
+  </div>
+
+  <div class="db-kpis">
+    {% for item in resumo %}
+      <a class="kpi{% if item.destaque %} kpi--destaque{% endif %}" href="{{ item.url }}">
+        <span class="kpi__ic">{% include "components/icon.html" with nome=item.icone %}</span>
+        <span>
+          <b>{{ item.valor }}</b>
+          <span>{{ item.titulo }}</span>
+          <small>{{ item.variacao }}</small>
+        </span>
+      </a>
+    {% endfor %}
+  </div>
+
+  <div class="db-2col">
+    <section class="pa-card">
+      <h2 class="pa-h">{% include "components/icon.html" with nome="chart" %}Pautas por mês<em>últimos 6 meses</em></h2>
+      <div class="gr" role="img" aria-label="Gráfico de pautas por mês">
+        {% for barra in grafico %}
+          <div class="gr__c{% if forloop.last %} gr__c--hoje{% endif %}" title="{{ barra.titulo }}">
+            <span class="gr__t">{{ barra.valor }} pauta{{ barra.valor|pluralize }}</span>
+            <span class="gr__b" style="height:{{ barra.altura }}%"></span>
+            <span class="gr__m">{{ barra.rotulo|lower }}</span>
+          </div>
+        {% endfor %}
+      </div>
+      <p class="pa-rodape">{% include "components/icon.html" with nome="info" %}Contagem pela data de entrada da pauta.</p>
+    </section>
+
+    <section class="pa-card">
+      <h2 class="pa-h">{% include "components/icon.html" with nome="users" %}Por jornalista<em>{{ mes_rotulo }}</em></h2>
+      {% if por_jornalista %}
+        <div class="rank">
+          {% for item in por_jornalista %}
+            <a class="rank__i" href="{{ url_lista }}?jornalista={{ item.pk }}">
+              <span class="rank__n">{{ item.nome }}</span>
+              <span class="rank__b"><span style="width:{% widthratio item.total por_jornalista.0.total 100 %}%"></span></span>
+              <span class="rank__v"><b>{{ item.total }}</b>{{ item.publicadas }} publicada{{ item.publicadas|pluralize }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="dt__vazio">Nenhuma pauta registrada neste mês.</p>
+      {% endif %}
+      <div class="pa-mini">
+        <span>SESP <b>{{ mes.sesp }}</b></span>
+        <span>AEN <b>{{ mes.aen }}</b></span>
+        <span>Canceladas <b>{{ mes.canceladas }}</b></span>
+      </div>
+    </section>
+  </div>
+
+  <div class="db-linha2">
+    <section class="pa-card pa-card--lista">
+      <h2 class="pa-h pa-h--lista">Últimas pautas<em>8 mais recentes</em><a href="{{ url_lista }}">Ver todas</a></h2>
+      <div class="dt-w">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th class="c-data">Data</th>
+              <th class="c-status">Status</th>
+              <th class="c-tipo">Título</th>
+              <th class="c-mun">Unidade</th>
+              <th class="c-per">Publicada</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in recentes %}
+              <tr data-linha-url="{% url 'publicacoes:detalhe' p.pk %}">
+                <td class="c-data"><a href="{% url 'publicacoes:detalhe' p.pk %}">{{ p.data|date:"d/m/Y" }}</a></td>
+                <td class="c-status"><span class="st st--{{ p.status_css }}">{{ p.get_status_display }}</span></td>
+                <td class="c-tipo c-tipo--quebra">{{ p.titulo|truncatechars:70 }}</td>
+                <td class="c-mun">{{ p.unidade|default:"—" }}</td>
+                <td class="c-per">{{ p.data_publicacao|date:"d/m/Y"|default:"—" }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="dt__vazio">Nenhuma pauta registrada ainda.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="pa-card pa-card--lista">
+      <h2 class="pa-h pa-h--lista">Unidades mais publicadas<em>{{ mes_rotulo }}</em></h2>
+      <div class="pa-ev">
+        {% for item in por_unidade %}
+          <a href="{{ url_lista }}?unidade={{ item.pk }}">
+            <span class="pa-ev__d">{{ item.total }}<small>pauta{{ item.total|pluralize }}</small></span>
+            <span class="pa-ev__t">{{ item.nome }}</span>
+            <span class="pa-ev__m">{% widthratio item.total mes.total 100 %}% do mês</span>
+          </a>
+        {% empty %}
+          <p class="dt__vazio">Nenhuma unidade com pauta neste mês.</p>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+{% endblock %}

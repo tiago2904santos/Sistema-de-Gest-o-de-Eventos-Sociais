@@ -17,17 +17,20 @@ FORMATOS_HORA = ["%H:%M", "%Hh%M", "%Hh", "%H:%M:%S", "%HH%M", "%H.%M"]
 
 
 def limpa(texto):
-    """Colapsa espaços internos e apara as pontas; None vira ""."""
+    """Uma linha só: colapsa qualquer espaço (inclusive quebras) e apara as pontas."""
     if texto is None:
         return ""
-    return re.sub(r"[ \t\r\f\v]+", " ", str(texto)).strip()
+    return re.sub(r"\s+", " ", str(texto).replace("￼", "")).strip()
 
 
 def limpa_multilinha(texto):
     """Preserva quebras de linha (campos de fonte/andamento), sem excesso."""
     if texto is None:
         return ""
-    linhas = [limpa(linha) for linha in str(texto).replace("\r", "").split("\n")]
+    linhas = [
+        re.sub(r"[ \t\f\v]+", " ", linha).strip()
+        for linha in str(texto).replace("\r", "").split("\n")
+    ]
     corpo = "\n".join(linhas).strip()
     return re.sub(r"\n{3,}", "\n\n", corpo)
 
@@ -40,6 +43,22 @@ def norm(texto):
         for c in unicodedata.normalize("NFD", base)
         if unicodedata.category(c) != "Mn"
     )
+
+
+def chave_compacta(texto):
+    """norm() sem espaços nem pontuação — "Band News" e "BandNews" coincidem."""
+    return re.sub(r"[^a-z0-9]", "", norm(texto))
+
+
+def canonizar_unidade(nome):
+    """Padroniza "10DP", "10 DP", "10º DP" -> "10ª DP" (e SDP/DH idem)."""
+    texto = limpa(nome)
+    m = re.match(r"^(\d+)\s*[ªºo°]?\s*(DP|SDP|DH|DRP)\b(.*)$", texto, re.IGNORECASE)
+    if not m:
+        return texto
+    resto = limpa(m.group(3))
+    base = f"{int(m.group(1))}ª {m.group(2).upper()}"
+    return f"{base} {resto}" if resto else base
 
 
 def vazio(valor):

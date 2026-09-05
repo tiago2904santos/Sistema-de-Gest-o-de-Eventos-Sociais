@@ -1,0 +1,128 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Novo atendimento / edição no padrão V3.2 (mesma composição do formulário
+  de Solicitações): seções contínuas, lateral com etapas e barra de ações
+  fixa. Campos espelham as colunas do Relatório de atendimento.
+{% endcomment %}
+
+{% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  <form method="post" action="" id="form-atendimento">
+    {% csrf_token %}
+
+    <div class="frm-cabeca">
+      <div>
+        <div class="kicker">{{ kicker }}</div>
+        <h1>{{ titulo_pagina }}<span class="frm-rasc">{% include "components/icon.html" with nome="mail" %}{% if atendimento %}{{ atendimento.get_situacao_display }}{% else %}Novo{% endif %}</span></h1>
+        <p class="frm-cabeca__sub">{% if atendimento %}Atualize as fontes consultadas, a situação e a resposta enviada.{% else %}Registre o pedido do jornalista assim que ele chegar; fontes e resposta podem ser completadas depois.{% endif %}</p>
+      </div>
+    </div>
+
+    <div class="frm-grade">
+      <div>
+        {% if form.errors %}
+          <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
+            {% include "components/icon.html" with nome="info" %}
+            <div>
+              <b>Não foi possível salvar o atendimento</b>
+              Revise os campos indicados antes de continuar.
+              <ul class="aviso--erro__lista">
+                {% for campo, mensagens in form.errors.items %}
+                  {% for mensagem in mensagens %}
+                    <li>{% if campo == "__all__" %}{{ mensagem }}{% else %}<a href="#id_{{ campo }}">{{ mensagem }}</a>{% endif %}</li>
+                  {% endfor %}
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        {% endif %}
+
+        <section class="reg" id="sec-pedido">
+          <h2 class="reg__t">Pedido</h2>
+          <div class="g-form g-form--3">
+            {% include "components/input.html" with name="data" label="Data do pedido" tipo="date" obrigatorio=True valor=valores.data erros=erros.data %}
+            <label class="campo-e form-campo"><span>Horário do pedido</span>
+              <input class="ctrl{% if erros.horario %} ctrl--erro{% endif %}" type="text" id="id_horario" name="horario" value="{{ valores.horario }}" placeholder="hh:mm" inputmode="numeric" autocomplete="off">
+              {% for erro in erros.horario %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+            {% include "components/select.html" with name="situacao" label="Situação" opcoes=opcoes_situacao obrigatorio=True selecionado=valores.situacao erros=erros.situacao placeholder="Selecione..." %}
+            <label class="campo-e form-campo"><span>Jornalista<em>*</em></span>
+              <input class="ctrl{% if erros.jornalista %} ctrl--erro{% endif %}" type="text" id="id_jornalista" name="jornalista" value="{{ valores.jornalista }}" required maxlength="150" list="lista-jornalistas" autocomplete="off" placeholder="Nome de quem pediu">
+              <datalist id="lista-jornalistas">{% for nome in jornalistas_sugeridos %}<option value="{{ nome }}">{% endfor %}</datalist>
+              {% for erro in erros.jornalista %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+            {% include "components/select.html" with name="veiculo" label="Veículo" opcoes=opcoes_veiculos pesquisavel=True selecionado=valores.veiculo erros=erros.veiculo placeholder="Buscar veículo..." %}
+            <label class="campo-e form-campo"><span>Outro veículo (não listado)</span>
+              <input class="ctrl{% if erros.veiculo_novo %} ctrl--erro{% endif %}" type="text" id="id_veiculo_novo" name="veiculo_novo" value="{{ valores.veiculo_novo }}" placeholder="Ex.: Rádio Clube">
+              {% for erro in erros.veiculo_novo %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+            <label class="campo-e form-campo"><span>Contato</span>
+              <input class="ctrl{% if erros.contato %} ctrl--erro{% endif %}" type="text" id="id_contato" name="contato" value="{{ valores.contato }}" maxlength="150" placeholder="Telefone ou e-mail">
+              {% for erro in erros.contato %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+            {% include "components/select.html" with name="responsavel" label="Responsável pelo atendimento" opcoes=opcoes_responsaveis selecionado=valores.responsavel erros=erros.responsavel placeholder="Quem atendeu" %}
+            {% include "components/input.html" with name="deadline" label="Deadline / veiculação" tipo="date" valor=valores.deadline erros=erros.deadline %}
+            <label class="campo-e form-campo cheia"><span>Pedido<em>*</em></span>
+              <textarea class="ta{% if erros.pedido %} ctrl--erro{% endif %}" id="id_pedido" name="pedido" required placeholder="O que o jornalista pediu, com os dados do caso.">{{ valores.pedido }}</textarea>
+              {% for erro in erros.pedido %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+          </div>
+        </section>
+
+        <section class="reg" id="sec-fontes">
+          <h2 class="reg__t">Fontes consultadas</h2>
+          <p class="reg__st">Uma fonte por bloco; separe as fontes com uma linha em branco. Os horários seguem a mesma ordem.</p>
+          <div class="g-form g-form--3">
+            <label class="campo-e form-campo"><span>Fontes</span>
+              <textarea class="ta{% if erros.fonte %} ctrl--erro{% endif %}" id="id_fonte" name="fonte" placeholder="Del. Fulano&#10;&#10;Ascom DPCAP">{{ valores.fonte }}</textarea>
+              {% for erro in erros.fonte %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+            <label class="campo-e form-campo"><span>Início do pedido às fontes</span>
+              <textarea class="ta{% if erros.inicio_pedido %} ctrl--erro{% endif %}" id="id_inicio_pedido" name="inicio_pedido" placeholder="09h12&#10;&#10;09h40">{{ valores.inicio_pedido }}</textarea>
+              {% for erro in erros.inicio_pedido %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+            <label class="campo-e form-campo"><span>Retorno das fontes</span>
+              <textarea class="ta{% if erros.final_pedido %} ctrl--erro{% endif %}" id="id_final_pedido" name="final_pedido" placeholder="09h30&#10;&#10;10h05">{{ valores.final_pedido }}</textarea>
+              {% for erro in erros.final_pedido %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+            <label class="campo-e form-campo cheia"><span>Andamento</span>
+              <textarea class="ta{% if erros.andamento %} ctrl--erro{% endif %}" id="id_andamento" name="andamento" placeholder="O que cada fonte respondeu, pendências, encaminhamentos.">{{ valores.andamento }}</textarea>
+              {% for erro in erros.andamento %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+          </div>
+        </section>
+
+        <section class="reg" id="sec-resposta">
+          <h2 class="reg__t">Resposta</h2>
+          <div class="g-form g-form--3">
+            <label class="campo-e form-campo"><span>Horário da resposta</span>
+              <input class="ctrl{% if erros.horario_resposta %} ctrl--erro{% endif %}" type="text" id="id_horario_resposta" name="horario_resposta" value="{{ valores.horario_resposta }}" placeholder="hh:mm" inputmode="numeric" autocomplete="off">
+              {% for erro in erros.horario_resposta %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+            {% include "components/select.html" with name="responsavel_resposta" label="Responsável pela resposta" opcoes=opcoes_responsaveis selecionado=valores.responsavel_resposta erros=erros.responsavel_resposta placeholder="Quem respondeu" %}
+            <label class="campo-e form-campo cheia"><span>Resposta enviada</span>
+              <textarea class="ta ta--alta{% if erros.resposta %} ctrl--erro{% endif %}" id="id_resposta" name="resposta" placeholder="Texto enviado ao jornalista.">{{ valores.resposta }}</textarea>
+              {% for erro in erros.resposta %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
+            </label>
+          </div>
+        </section>
+      </div>
+
+      <aside class="sticky sticky--form">
+        <section class="reg reg--sec">
+          <h2 class="reg__t">Etapas</h2>
+          <div class="step-v">
+            <button type="button" class="step-i{% if erros.data or erros.jornalista or erros.veiculo or erros.pedido or erros.situacao or erros.deadline %} step-i--erro{% endif %}" data-ir="#sec-pedido"><span class="step-i__m">1</span><span><span class="step-i__t">Pedido</span><span class="step-i__s">Jornalista, veículo e prazo</span></span></button>
+            <button type="button" class="step-i{% if erros.fonte or erros.inicio_pedido or erros.final_pedido or erros.andamento %} step-i--erro{% endif %}" data-ir="#sec-fontes"><span class="step-i__m">2</span><span><span class="step-i__t">Fontes consultadas</span><span class="step-i__s">Quem foi acionado e quando</span></span></button>
+            <button type="button" class="step-i{% if erros.resposta or erros.horario_resposta or erros.responsavel_resposta %} step-i--erro{% endif %}" data-ir="#sec-resposta"><span class="step-i__m">3</span><span><span class="step-i__t">Resposta</span><span class="step-i__s">Texto enviado e horário</span></span></button>
+          </div>
+        </section>
+        <div class="frm-acoes frm-acoes--flut">
+          {% if atendimento %}<a class="frm-cancelar" href="{% url 'atendimento_imprensa:detalhe' atendimento.pk %}">Cancelar</a>{% else %}<a class="frm-cancelar" href="{% url 'atendimento_imprensa:lista' %}">Cancelar</a>{% endif %}
+          <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check" %}{% if atendimento %}Salvar alterações{% else %}Registrar atendimento{% endif %}</button>
+        </div>
+      </aside>
+    </div>
+  </form>
+{% endblock %}

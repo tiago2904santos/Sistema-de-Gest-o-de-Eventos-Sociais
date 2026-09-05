@@ -1,0 +1,19 @@
+{# O select mantém o envio múltiplo; o menu próprio preserva Ctrl e Shift. #}
+<div class="form-campo{% if largura %} form-campo--{{ largura }}{% endif %}">
+  <label class="form-label" id="id_{{ name }}_label" for="id_{{ name }}">{{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}</label>
+  <div class="custom-select form-controle-wrapper{% if erros %} is-invalid{% endif %}" data-v32-multiple>
+    <select class="form-controle custom-select__native cadastro-multiplo" id="id_{{ name }}" name="{{ name }}" multiple size="10"{% if obrigatorio %} required{% endif %}{% if desabilitado %} disabled{% endif %}{% if erros %} aria-invalid="true" aria-describedby="id_{{ name }}_erro{% if ajuda %} id_{{ name }}_ajuda{% endif %}"{% elif ajuda %} aria-describedby="id_{{ name }}_ajuda"{% endif %}>
+      {% for opcao in opcoes %}<option value="{{ opcao.valor }}"{% if opcao.valor in marcados %} selected{% endif %}>{{ opcao.rotulo }}</option>{% endfor %}
+    </select>
+    <button type="button" class="form-controle custom-select__trigger" data-multiple-trigger aria-labelledby="id_{{ name }}_label" aria-haspopup="listbox" aria-controls="id_{{ name }}_listbox" aria-expanded="false"{% if desabilitado %} disabled{% endif %}><span data-multiple-value>Selecione...</span><span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span></button>
+    <div class="custom-select__menu" data-multiple-menu hidden>
+      <input class="form-controle" type="search" data-multiple-search placeholder="Buscar..." aria-label="Buscar em {{ label|lower }}" autocomplete="off">
+      <div class="custom-select__lista" role="listbox" aria-multiselectable="true" aria-labelledby="id_{{ name }}_label" id="id_{{ name }}_listbox">
+        {% for opcao in opcoes %}<button class="custom-select__opcao" type="button" role="option" data-multiple-option="{{ opcao.valor }}" aria-selected="{% if opcao.valor in marcados %}true{% else %}false{% endif %}" tabindex="-1"><span>{{ opcao.rotulo }}</span><span class="custom-select__check" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span></button>{% endfor %}
+      </div>
+    </div>
+  </div>
+  {% for erro in erros %}<p class="form-erro"{% if forloop.first %} id="id_{{ name }}_erro"{% endif %}>{{ erro }}</p>{% endfor %}
+  {% if ajuda %}<p class="form-ajuda" id="id_{{ name }}_ajuda">{{ ajuda }}</p>{% endif %}
+  <p class="form-ajuda">Use Ctrl para selecionar mais de um município.</p>
+</div>

@@ -1,19 +1,20 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 {% block title %}{{ titulo }} — ASCOM{% endblock %}
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with itens=breadcrumb %}
-  {% include "components/page_header.html" with titulo=titulo subtitulo="Registre e acompanhe a demanda recebida pela ASCOM" icone="document" %}
-  <form method="post" class="cadastro-form">{% csrf_token %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+  {% include "components/v32/page_header.html" with titulo=titulo subtitulo="Registre e acompanhe a demanda recebida pela ASCOM" icone="document" %}
+  <form method="post" class="v32-form-longo">{% csrf_token %}
     <input type="hidden" name="versao" value="{{ valores.versao }}">
     {% if form.errors %}
-      <div class="alerta alerta--error resumo-erros" role="alert" tabindex="-1" data-resumo-erros>
+      <div class="aviso v32-aviso-texto aviso--erro resumo-erros" role="alert" tabindex="-1" data-resumo-erros>
         <strong>Revise os campos indicados antes de salvar.</strong>
         {% for erro in form.non_field_errors %}<p>{{ erro }}</p>{% endfor %}
       </div>
     {% endif %}
-    <section class="section-card">
-      {% include "components/section_card.html" with numero="1" titulo="Identificação da demanda" %}
-      <div class="section-card__corpo"><div class="form-grid">
+<div class="frm-grade"><div>
+    <section class="reg" id="sec-identificacao">
+      {% include "components/v32/section_card.html" with numero="1" titulo="Identificação da demanda" %}
+      <div class="reg-corpo"><div class="g-form v32-form-grid">
         {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True largura="4" valor=valores.data_solicitacao erros=erros.data_solicitacao %}
         {% include "components/select.html" with name="tipo_evento" label="Tipo de evento" opcoes=opcoes_tipos obrigatorio=True largura="4" selecionado=valores.tipo_evento erros=erros.tipo_evento %}
         {% include "components/select.html" with name="tema" label="Tema" opcoes=opcoes_temas largura="4" selecionado=valores.tema erros=erros.tema pesquisavel=True %}
@@ -25,9 +26,9 @@
         {% include "components/input.html" with name="assunto_email" label="Assunto do e-mail" largura="12" valor=valores.assunto_email erros=erros.assunto_email %}
       </div></div>
     </section>
-    <section class="section-card">
-      {% include "components/section_card.html" with numero="2" titulo="Evento" %}
-      <div class="section-card__corpo"><div class="form-grid">
+    <section class="reg" id="sec-evento">
+      {% include "components/v32/section_card.html" with numero="2" titulo="Evento" %}
+      <div class="reg-corpo"><div class="g-form v32-form-grid">
         {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Período estruturado" largura="6" valor_inicio=valores.data_inicio_evento valor_fim=valores.data_fim_evento erros=erros.data_fim_evento %}
         {% include "components/input.html" with name="periodo_evento_texto" label="Período em texto" largura="6" valor=valores.periodo_evento_texto erros=erros.periodo_evento_texto placeholder="Ex.: 23 e 24/08, horário a definir" ajuda="Use somente quando não houver datas estruturadas." %}
         {% include "components/textarea.html" with name="descricao" label="Descrição" largura="12" linhas="3" valor=valores.descricao erros=erros.descricao %}
@@ -37,47 +38,23 @@
         {% include "components/input.html" with name="responsavel_organizacao" label="Responsável pela organização" largura="4" valor=valores.responsavel_organizacao erros=erros.responsavel_organizacao %}
       </div></div>
     </section>
-    <section class="section-card">
-      {% include "components/section_card.html" with numero="3" titulo="Atendimento e acompanhamento" %}
-      <div class="section-card__corpo"><div class="form-grid">
+    <section class="reg" id="sec-atendimento">
+      {% include "components/v32/section_card.html" with numero="3" titulo="Atendimento e acompanhamento" %}
+      <div class="reg-corpo"><div class="g-form v32-form-grid">
         {% include "components/select.html" with name="responsavel_atendimento" label="Responsável pelo atendimento" opcoes=opcoes_responsaveis largura="6" selecionado=valores.responsavel_atendimento erros=erros.responsavel_atendimento pesquisavel=True ajuda="As opções acompanham os setores envolvidos selecionados." %}
-        <fieldset class="form-campo form-campo--6 form-fieldset" id="id_palestrantes"{% if erros.palestrantes %} aria-invalid="true" aria-describedby="id_palestrantes_erro"{% endif %}><legend class="form-label">Palestrantes</legend><div class="chip-grid">{% for item in opcoes_palestrantes %}<label class="check-chip"><input type="checkbox" name="palestrantes" value="{{ item.valor }}"{% if item.valor in palestrantes_marcados %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ item.rotulo }}</label>{% empty %}<span class="texto-suave">Nenhum palestrante cadastrado.</span>{% endfor %}</div>{% for erro in erros.palestrantes %}<p class="form-erro"{% if forloop.first %} id="id_palestrantes_erro"{% endif %}>{{ erro }}</p>{% endfor %}</fieldset>
+        <fieldset class="form-campo form-campo--6 campo-e--bloco" id="id_palestrantes"{% if erros.palestrantes %} aria-invalid="true" aria-describedby="id_palestrantes_erro"{% endif %}><legend class="form-label">Palestrantes</legend><div class="opc-cards">{% for item in opcoes_palestrantes %}<label class="opc-card"><input type="checkbox" name="palestrantes" value="{{ item.valor }}"{% if item.valor in palestrantes_marcados %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ item.rotulo }}</label>{% empty %}<span class="v32-suave">Nenhum palestrante cadastrado.</span>{% endfor %}</div>{% for erro in erros.palestrantes %}<p class="form-erro"{% if forloop.first %} id="id_palestrantes_erro"{% endif %}>{{ erro }}</p>{% endfor %}</fieldset>
         {% include "components/textarea.html" with name="andamento" label="Andamento" largura="12" linhas="4" valor=valores.andamento erros=erros.andamento %}
         {% include "components/textarea.html" with name="informacoes_previas" label="Informações prévias" largura="12" linhas="3" valor=valores.informacoes_previas erros=erros.informacoes_previas %}
         {% include "components/textarea.html" with name="briefing" label="Briefing" largura="6" linhas="4" valor=valores.briefing erros=erros.briefing %}
         {% include "components/textarea.html" with name="materia_site" label="Matéria no site" largura="6" linhas="4" valor=valores.materia_site erros=erros.materia_site %}
-        <fieldset class="form-campo form-campo--12 form-fieldset" id="id_setores"{% if erros.setores %} aria-invalid="true" aria-describedby="id_setores_erro"{% endif %}><legend class="form-label">Setores envolvidos <span class="form-label__obrigatorio">*</span></legend><div class="chip-grid">{% for item in opcoes_setores %}<label class="check-chip"><input type="checkbox" name="setores" value="{{ item.valor }}"{% if item.valor in setores_marcados %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ item.rotulo }}</label>{% endfor %}</div>{% for erro in erros.setores %}<p class="form-erro"{% if forloop.first %} id="id_setores_erro"{% endif %}>{{ erro }}</p>{% endfor %}</fieldset>
+        <fieldset class="form-campo form-campo--12 campo-e--bloco" id="id_setores"{% if erros.setores %} aria-invalid="true" aria-describedby="id_setores_erro"{% endif %}><legend class="form-label">Setores envolvidos <span class="form-label__obrigatorio">*</span></legend><div class="opc-cards">{% for item in opcoes_setores %}<label class="opc-card"><input type="checkbox" name="setores" value="{{ item.valor }}"{% if item.valor in setores_marcados %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ item.rotulo }}</label>{% endfor %}</div>{% for erro in erros.setores %}<p class="form-erro"{% if forloop.first %} id="id_setores_erro"{% endif %}>{{ erro }}</p>{% endfor %}</fieldset>
       </div></div>
     </section>
-    <div class="acoes-formulario"><a class="btn btn--secundario" href="{% if instancia %}{% url 'demandas_eventos:detalhe' instancia.pk %}{% else %}{% url 'demandas_eventos:lista' %}{% endif %}">Cancelar</a>{% include "components/button.html" with label="Salvar demanda" variante="dourado" tipo="submit" %}</div>
+</div><aside class="frm-lateral"><div class="sticky"><section class="reg reg--sec"><h2 class="reg__t">{{ titulo }}</h2><nav class="step-v" aria-label="Seções do formulário">
+<button type="button" class="step-i" data-ir="#sec-identificacao"><span class="step-i__m">1</span><span class="step-i__t">Identificação da demanda</span></button>
+<button type="button" class="step-i" data-ir="#sec-evento"><span class="step-i__m">2</span><span class="step-i__t">Evento</span></button>
+<button type="button" class="step-i" data-ir="#sec-atendimento"><span class="step-i__m">3</span><span class="step-i__t">Atendimento e acompanhamento</span></button>
+</nav></section></div>    <div class="frm-acoes frm-acoes--flut"><a class=" btn--secundaria" href="{% if instancia %}{% url 'demandas_eventos:detalhe' instancia.pk %}{% else %}{% url 'demandas_eventos:lista' %}{% endif %}">Cancelar</a>{% include "components/v32/button.html" with label="Salvar demanda" variante="dourado" tipo="submit" %}</div></aside></div>
   </form>
-  <script>
-    (function () {
-      var responsavel = document.getElementById("id_responsavel_atendimento");
-      var setores = document.querySelectorAll('input[name="setores"]');
-      if (!responsavel || !setores.length) return;
-      var custom = responsavel.closest("[data-custom-select]");
-      function atualizarResponsaveis() {
-        var ativos = Array.prototype.filter.call(setores, function (item) {
-          return item.checked;
-        }).map(function (item) { return item.value; });
-        responsavel.querySelectorAll("option[data-related-values]").forEach(function (opcao) {
-          var relacionados = (opcao.getAttribute("data-related-values") || "").split(",");
-          var elegivel = relacionados.some(function (id) { return ativos.indexOf(id) !== -1; });
-          opcao.disabled = !elegivel;
-          opcao.hidden = !elegivel;
-          if (!elegivel && opcao.selected) responsavel.value = "";
-        });
-        if (custom) {
-          custom.querySelectorAll("[data-related-values][data-value]").forEach(function (opcao) {
-            var relacionados = (opcao.getAttribute("data-related-values") || "").split(",");
-            opcao.hidden = !relacionados.some(function (id) { return ativos.indexOf(id) !== -1; });
-          });
-        }
-        responsavel.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-      setores.forEach(function (setor) { setor.addEventListener("change", atualizarResponsaveis); });
-      atualizarResponsaveis();
-    })();
-  </script>
+
 {% endblock %}

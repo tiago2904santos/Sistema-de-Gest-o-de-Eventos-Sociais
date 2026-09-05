@@ -1,0 +1,5 @@
+{% if href %}
+  <a href="{{ href }}" class="{% if variante == 'secundario' %}btn--secundaria{% elif variante == 'perigo' %}btn--secundaria btn--destrutiva{% elif variante == 'fantasma' %}btn--quieta{% else %}btn-primaria{% endif %}">{{ label }}</a>
+{% else %}
+  <button type="{{ tipo|default:'button' }}" class="{% if variante == 'secundario' %}btn--secundaria{% elif variante == 'perigo' %}btn--secundaria btn--destrutiva{% elif variante == 'fantasma' %}btn--quieta{% else %}btn-primaria{% endif %}"{% if name %} name="{{ name }}"{% endif %}{% if value %} value="{{ value }}"{% endif %}{% if formnovalidate %} formnovalidate{% endif %}>{{ label }}</button>
+{% endif %}

@@ -1,15 +1,15 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 
 {% block title %}Início — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% include "components/page_header.html" with titulo="Central de módulos" subtitulo="Escolha um módulo para trabalhar — os indicadores mostram a situação atual de cada um" icone="home" %}
+  {% include "components/v32/page_header.html" with titulo="Central de módulos" subtitulo="Escolha um módulo para trabalhar — os indicadores mostram a situação atual de cada um" icone="home" %}
 
   <div class="portal-grid">
     {% for cartao in cartoes %}
-      <section class="card portal-card" aria-labelledby="portal-{{ cartao.slug }}">
+      <section class="pa-card portal-card" aria-labelledby="portal-{{ cartao.slug }}">
         <header class="portal-card__cabecalho">
-          <span class="portal-card__icone" aria-hidden="true">{% include "components/icon.html" with nome=cartao.icone %}</span>
+          <span class="kpi__ic portal-card__icone" aria-hidden="true">{% include "components/icon.html" with nome=cartao.icone %}</span>
           <div>
             <h2 class="portal-card__titulo" id="portal-{{ cartao.slug }}">{{ cartao.nome }}</h2>
             {% if cartao.descricao %}<p class="portal-card__descricao">{{ cartao.descricao }}</p>{% endif %}
@@ -26,29 +26,29 @@
           </dl>
         {% endif %}
         <div class="portal-card__acoes">
-          <a href="{{ cartao.url }}" class="btn btn--dourado btn--com-icone">
+          <a href="{{ cartao.url }}" class="btn-primaria ">
             Entrar no módulo
             {% include "components/icon.html" with nome="arrow-right" %}
           </a>
         </div>
       </section>
     {% empty %}
-      <div class="card portal-card">
-        <p class="texto-suave">Nenhum módulo liberado para os seus setores ainda. Procure o administrador do sistema.</p>
+      <div class="pa-card portal-card">
+        <p class="v32-suave">Nenhum módulo liberado para os seus setores ainda. Procure o administrador do sistema.</p>
       </div>
     {% endfor %}
   </div>
 
   {% if mostrar_usuarios %}
-    <div class="card portal-admin">
+    <div class="pa-card portal-admin">
       <div class="portal-admin__texto">
-        <span class="portal-card__icone" aria-hidden="true">{% include "components/icon.html" with nome="users" %}</span>
+        <span class="kpi__ic portal-card__icone" aria-hidden="true">{% include "components/icon.html" with nome="users" %}</span>
         <div>
-          <h2 class="card__titulo">Gestão de usuários</h2>
-          <p class="texto-suave">Cadastre usuários, defina perfis e vincule setores.</p>
+          <h2 class="reg__t">Gestão de usuários</h2>
+          <p class="v32-suave">Cadastre usuários, defina perfis e vincule setores.</p>
         </div>
       </div>
-      <a href="{% url 'accounts:usuarios_lista' %}" class="btn btn--secundario btn--com-icone">
+      <a href="{% url 'accounts:usuarios_lista' %}" class="btn--secundaria ">
         {% include "components/icon.html" with nome="users" %}Gerenciar usuários
       </a>
     </div>

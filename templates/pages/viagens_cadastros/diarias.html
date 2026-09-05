@@ -1,32 +1,32 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 {% load static estaticos %}
 
 {% block title %}Tabela de diárias — Sistema de Gestão de Eventos Sociais{% endblock %}
 
-{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-cadastros.css' %}">{% endblock %}
+
 
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with atual="Tabela de diárias" %}
+  {% include "components/v32/breadcrumb.html" with atual="Tabela de diárias" %}
   {% url 'viagens_cadastros:diaria_nova' as url_nova %}
   {% if pode_editar %}
-    {% include "components/page_header.html" with titulo="Tabela de diárias" subtitulo="Valores por faixa, com histórico e vigência preservados" icone="chart" acao_label="Nova vigência" acao_url=url_nova acao_icone="plus" %}
+    {% include "components/v32/page_header.html" with titulo="Tabela de diárias" subtitulo="Valores por faixa, com histórico e vigência preservados" icone="chart" acao_label="Nova vigência" acao_url=url_nova acao_icone="plus" %}
   {% else %}
-    {% include "components/page_header.html" with titulo="Tabela de diárias" subtitulo="Valores por faixa, com vigência" icone="chart" %}
+    {% include "components/v32/page_header.html" with titulo="Tabela de diárias" subtitulo="Valores por faixa, com vigência" icone="chart" %}
   {% endif %}
 
-  <div class="grid-resumo">
+  <div class="db-kpis">
     {% for item in vigentes %}
       {% if item.tabela %}
-        {% include "components/summary_card.html" with titulo=item.rotulo valor=item.valor_24h icone="chart" cor="dourada" variacao=item.resumo_percentuais %}
+        {% include "components/v32/summary_card.html" with titulo=item.rotulo valor=item.valor_24h icone="chart" cor="dourada" variacao=item.resumo_percentuais %}
       {% else %}
-        {% include "components/summary_card.html" with titulo=item.rotulo valor="—" icone="alert" cor="neutra" variacao="Sem vigência cadastrada" %}
+        {% include "components/v32/summary_card.html" with titulo=item.rotulo valor="—" icone="alert" cor="neutra" variacao="Sem vigência cadastrada" %}
       {% endif %}
     {% endfor %}
   </div>
 
-  <div class="card">
-    <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Histórico de vigências">
-      <table class="tabela tabela--cartoes-no-celular">
+  <div class="pa-card pa-card--lista v32-bloco">
+    <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Histórico de vigências">
+      <table class="dt dt--responsiva">
         <thead>
           <tr>
             <th>Faixa</th>
@@ -45,22 +45,45 @@
               <td data-rotulo="24 horas">R$ {{ tabela.valor_24h }}</td>
               <td data-rotulo="15%">R$ {{ tabela.valor_15 }}</td>
               <td data-rotulo="30%">R$ {{ tabela.valor_30 }}</td>
-              <td class="tabela__acoes">
+              <td class="c-cad-acoes">
                 {% if pode_editar %}
-                  <div class="tabela__acoes-grupo viagens-acoes-linha">
-                    <a href="{% url 'viagens_cadastros:diaria_editar' tabela.pk %}" class="btn btn--compacto btn--acao btn--acao-continuar">{% include "components/icon.html" with nome="pencil" %}Editar</a>
-                    <a href="{% url 'viagens_cadastros:diaria_excluir' tabela.pk %}" class="btn btn--compacto btn--perigo-suave">{% include "components/icon.html" with nome="trash" %}Excluir</a>
+                  <div class="acoes viagens-acoes-linha">
+                    <a href="{% url 'viagens_cadastros:diaria_editar' tabela.pk %}" class="  acao-linha ">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                    <a href="{% url 'viagens_cadastros:diaria_excluir' tabela.pk %}" class="  acao-linha v32-acao-perigo">{% include "components/icon.html" with nome="trash" %}Excluir</a>
                   </div>
                 {% else %}
-                  <span class="texto-suave">—</span>
+                  <span class="v32-suave">—</span>
                 {% endif %}
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="6"><div class="viagens-vazio"><span aria-hidden="true">{% include "components/icon.html" with nome="chart" %}</span><strong>Nenhuma vigência cadastrada</strong><p>Cadastre o primeiro valor para habilitar o cálculo de diárias.</p>{% if pode_editar %}<a class="btn btn--dourado" href="{{ url_nova }}">{% include "components/icon.html" with nome="plus" %}Nova vigência</a>{% endif %}</div></td></tr>
+            <tr><td colspan="6"><div class="semres viagens-vazio"><span aria-hidden="true">{% include "components/icon.html" with nome="chart" %}</span><strong>Nenhuma vigência cadastrada</strong><p>Cadastre o primeiro valor para habilitar o cálculo de diárias.</p>{% if pode_editar %}<a class=" btn-primaria" href="{{ url_nova }}">{% include "components/icon.html" with nome="plus" %}Nova vigência</a>{% endif %}</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+<div class="lista-mobile-v32"><div class="m-lista">
+          {% for tabela in tabelas %}
+            <article class="m-item">
+              <div class="m-item__campo" data-rotulo="Faixa"><strong>{{ tabela.get_faixa_display }}</strong></div>
+              <div class="m-item__campo" data-rotulo="Vigente a partir de">{{ tabela.vigencia_inicio|date:"d/m/Y" }}</div>
+              <div class="m-item__campo" data-rotulo="24 horas">R$ {{ tabela.valor_24h }}</div>
+              <div class="m-item__campo" data-rotulo="15%">R$ {{ tabela.valor_15 }}</div>
+              <div class="m-item__campo" data-rotulo="30%">R$ {{ tabela.valor_30 }}</div>
+              <div class="m-item__campo" data-rotulo="Ações">
+                {% if pode_editar %}
+                  <div class="acoes viagens-acoes-linha">
+                    <a href="{% url 'viagens_cadastros:diaria_editar' tabela.pk %}" class="  acao-linha ">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                    <a href="{% url 'viagens_cadastros:diaria_excluir' tabela.pk %}" class="  acao-linha v32-acao-perigo">{% include "components/icon.html" with nome="trash" %}Excluir</a>
+                  </div>
+                {% else %}
+                  <span class="v32-suave">—</span>
+                {% endif %}
+              </div>
+            </article>
+          {% empty %}
+            <article class="m-item"><p class="m-vazio"><div class="semres viagens-vazio"><span aria-hidden="true">{% include "components/icon.html" with nome="chart" %}</span><strong>Nenhuma vigência cadastrada</strong><p>Cadastre o primeiro valor para habilitar o cálculo de diárias.</p>{% if pode_editar %}<a class=" btn-primaria" href="{{ url_nova }}">{% include "components/icon.html" with nome="plus" %}Nova vigência</a>{% endif %}</div></p></article>
+          {% endfor %}
+        </div></div>
   </div>
 {% endblock %}

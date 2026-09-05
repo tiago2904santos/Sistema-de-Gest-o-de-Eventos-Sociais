@@ -1,4 +1,4 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 
 {% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 
@@ -7,17 +7,17 @@
     {% csrf_token %}
     <input type="hidden" name="versao" value="{{ valores.versao }}">
 
-    {% include "components/breadcrumb.html" with itens=breadcrumb %}
+    {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
 
-    <div class="solicitacao-intro">
-      <div class="page-header">
-        <div class="page-header__identificacao">
-          <span class="page-header__icone">{% include "components/icon.html" with nome="coffee" %}</span>
+    <div class="d-cabeca">
+      <div class="d-cabeca__esq">
+        <div class="d-identificacao">
+          <span class="kpi__ic">{% include "components/icon.html" with nome="coffee" %}</span>
           <div>
-            <h1 class="page-header__titulo">{{ titulo_pagina }}</h1>
-            <p class="page-header__subtitulo{% if solicitacao and solicitacao.cancelada %} page-header__subtitulo--com-selo{% endif %}">
+            <h1 class="d-titulo-v32">{{ titulo_pagina }}</h1>
+            <p class="d-cabeca__sub{% if solicitacao and solicitacao.cancelada %} d-sub-status{% endif %}">
               {% if solicitacao and solicitacao.cancelada %}
-                {% include "components/status_badge.html" with status="cancelada" label="Cancelada" %}
+                {% include "components/v32/status_badge.html" with status="cancelada" label="Cancelada" %}
                 <span aria-hidden="true">·</span>
               {% endif %}
               O saldo do lote é validado no salvamento — a quantidade não pode passar do restante.
@@ -25,16 +25,12 @@
           </div>
         </div>
       </div>
-      <div class="solicitacao-intro__acoes">
-        {% if solicitacao %}{% url 'coffee_break:detalhe' solicitacao.pk as url_voltar %}{% else %}{% url 'coffee_break:solicitacoes' as url_voltar %}{% endif %}
-        {% include "components/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
-        {% include "components/button.html" with label="Salvar solicitação" variante="dourado" tipo="submit" %}
-      </div>
+
     </div>
 
     {% if form.errors %}
-      <div class="alertas">
-        <div class="alerta alerta--error resumo-erros" role="alert" tabindex="-1" data-resumo-erros>
+      <div class="avisos-v32">
+        <div class="aviso v32-aviso-texto aviso--erro resumo-erros" role="alert" tabindex="-1" data-resumo-erros>
           <strong>Revise os campos indicados antes de salvar.</strong>
           {% for erro in erros_gerais %}<p>{{ erro }}</p>{% endfor %}
         </div>
@@ -42,15 +38,16 @@
     {% endif %}
 
     {% if dados_base_bloqueados %}
-      <div class="alerta alerta--info" role="status">
+      <div class="aviso v32-aviso-texto aviso--info" role="status">
         Os dados do pedido e do evento foram bloqueados porque o fluxo financeiro já começou. Os marcos financeiros e as observações continuam editáveis.
       </div>
     {% endif %}
 
-    <section class="section-card">
-      {% include "components/section_card.html" with numero="1" titulo="Lote e evento" subtitulo="Contra qual lote a solicitação consome saldo e para qual evento." %}
-      <div class="section-card__corpo">
-        <div class="form-grid">
+    <div class="frm-grade"><div>
+    <section class="reg" id="sec-lote">
+      {% include "components/v32/section_card.html" with numero="1" titulo="Lote e evento" subtitulo="Contra qual lote a solicitação consome saldo e para qual evento." %}
+      <div class="reg-corpo">
+        <div class="g-form v32-form-grid">
           {% include "components/select.html" with name="lote" label="Lote" opcoes=lotes obrigatorio=True largura="6" pesquisavel=True selecionado=valores.lote erros=erros.lote desabilitado=dados_base_bloqueados %}
           <div class="form-campo form-campo--3">
             <label class="form-label" for="id_saldo_lote">Saldo disponível</label>
@@ -67,10 +64,10 @@
       </div>
     </section>
 
-    <section class="section-card">
-      {% include "components/section_card.html" with numero="2" titulo="Informações fiscais e de pagamento" subtitulo="Marcos que definem a situação financeira da solicitação." %}
-      <div class="section-card__corpo">
-        <div class="form-grid">
+    <section class="reg" id="sec-financeiro">
+      {% include "components/v32/section_card.html" with numero="2" titulo="Informações fiscais e de pagamento" subtitulo="Marcos que definem a situação financeira da solicitação." %}
+      <div class="reg-corpo">
+        <div class="g-form v32-form-grid">
           {% include "components/input.html" with name="numero_nota_fiscal" label="Número da nota fiscal" largura="4" valor=valores.numero_nota_fiscal erros=erros.numero_nota_fiscal %}
           {% include "components/input.html" with name="protocolo_pagamento" label="Protocolo de pagamento" largura="4" valor=valores.protocolo_pagamento erros=erros.protocolo_pagamento %}
           {% include "components/input.html" with name="data_atesto_gaf" label="Atesto e envio ao GAF" tipo="date" largura="4" valor=valores.data_atesto_gaf erros=erros.data_atesto_gaf %}
@@ -80,28 +77,22 @@
         </div>
       </div>
     </section>
+    </div><aside class="frm-lateral">
+      <div class="sticky">
+        <section class="reg reg--sec"><h2 class="reg__t">Lote e evento</h2>
+          <nav class="step-v" aria-label="Seções do formulário">
+            <button type="button" class="step-i" data-ir="#sec-lote"><span class="step-i__m">1</span><span class="step-i__t">Lote e evento</span></button>
+            <button type="button" class="step-i" data-ir="#sec-financeiro"><span class="step-i__m">2</span><span class="step-i__t">Informações fiscais e de pagamento</span></button>
+          </nav>
+        </section>
+      </div>
+      <div class="frm-acoes frm-acoes--flut">
+        {% if solicitacao %}{% url 'coffee_break:detalhe' solicitacao.pk as url_voltar %}{% else %}{% url 'coffee_break:solicitacoes' as url_voltar %}{% endif %}
+        {% include "components/v32/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
+        {% include "components/v32/button.html" with label="Salvar solicitação" variante="dourado" tipo="submit" %}
+      </div>
+    </aside></div>
   </form>
 
-  <script>
-    // Mostra o saldo do lote escolhido ao lado da quantidade — os dados vêm
-    // renderizados no atributo data-saldos; a validação real é no backend.
-    (function () {
-      var campoSaldo = document.querySelector("[data-saldo-lote]");
-      var seletorLote = document.getElementById("id_lote");
-      if (!campoSaldo || !seletorLote) return;
-      var saldos = {};
-      (campoSaldo.dataset.saldos || "").split(";").forEach(function (par) {
-        var partes = par.split(":");
-        if (partes.length === 2) saldos[partes[0]] = partes[1];
-      });
-      function atualizar() {
-        var info = saldos[seletorLote.value];
-        campoSaldo.value = info
-          ? info.split("/")[0] + " de " + info.split("/")[1] + " unidades"
-          : "—";
-      }
-      seletorLote.addEventListener("change", atualizar);
-      atualizar();
-    })();
-  </script>
+
 {% endblock %}

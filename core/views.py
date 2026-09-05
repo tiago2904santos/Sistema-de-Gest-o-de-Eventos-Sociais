@@ -105,11 +105,46 @@ def _metricas_demandas(usuario, hoje):
     ]
 
 
+def _metricas_publicacoes(usuario, hoje):
+    from publicacoes import services as publicacoes_services
+
+    mes = publicacoes_services.resumo_periodo(publicacoes_services.inicio_do_mes(hoje))
+    return [
+        {"rotulo": "Pautas no mês", "valor": mes["total"]},
+        {"rotulo": "Publicadas no mês", "valor": mes["publicadas"]},
+        {
+            "rotulo": "Em aberto",
+            "valor": publicacoes_services.em_aberto().count(),
+            "destaque": True,
+        },
+    ]
+
+
+def _metricas_atendimento_imprensa(usuario, hoje):
+    from atendimento_imprensa import services as imprensa_services
+
+    mes = imprensa_services.resumo_periodo(imprensa_services.inicio_do_mes(hoje))
+    return [
+        {"rotulo": "Pedidos no mês", "valor": mes["total"]},
+        {
+            "rotulo": "Em aberto",
+            "valor": imprensa_services.em_aberto().count(),
+            "destaque": True,
+        },
+        {
+            "rotulo": "Deadline vencido",
+            "valor": imprensa_services.deadline_vencido(hoje).count(),
+        },
+    ]
+
+
 # Cada módulo do portal sabe calcular os próprios indicadores do hub.
 METRICAS_POR_MODULO = {
     "eventos": _metricas_eventos,
     "coffee_break": _metricas_coffee_break,
     "demandas_eventos": _metricas_demandas,
+    "publicacoes": _metricas_publicacoes,
+    "atendimento_imprensa": _metricas_atendimento_imprensa,
 }
 
 

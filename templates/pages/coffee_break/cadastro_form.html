@@ -1,48 +1,40 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 
 {% block title %}{% if instancia %}Editar{% else %}Novo{% endif %} {{ config.singular }} — Coffee Break{% endblock %}
 
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with itens=breadcrumb %}
-  {% include "components/page_header.html" with titulo=config.titulo subtitulo="As alterações ficam registradas na auditoria do sistema" icone="checklist" %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+  {% include "components/v32/page_header.html" with titulo=config.titulo subtitulo="As alterações ficam registradas na auditoria do sistema" icone="checklist" %}
 
-  <form method="post" class="card cadastro-form">
+  <form method="post" class="pa-card pa-card--lista v32-bloco cad-frm">
     {% csrf_token %}
     {{ form.versao }}
-    <div class="card__corpo">
+    <div class="v32-corpo">
       {% if form.errors %}
-        <div class="alerta alerta--erro form-error-summary" role="alert" tabindex="-1" data-error-summary>
+        <div class="aviso v32-aviso-texto aviso--erro form-error-summary" role="alert" tabindex="-1" data-error-summary data-resumo-erros>
           <strong>Não foi possível salvar.</strong>
           <p>Revise os campos destacados abaixo.</p>
           {% for erro in form.non_field_errors %}<p>{{ erro }}</p>{% endfor %}
         </div>
       {% endif %}
-      <div class="form-grid">
+      <div class="g-form v32-form-grid">
         {% for campo in campos %}
           {% if campo.tipo == 'select' %}
             {% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes obrigatorio=campo.obrigatorio largura="6" selecionado=campo.valor erros=campo.erros pesquisavel=True ajuda=campo.ajuda %}
           {% elif campo.tipo == 'textarea' %}
             {% include "components/textarea.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio largura="12" linhas="5" valor=campo.valor erros=campo.erros ajuda=campo.ajuda %}
           {% elif campo.tipo == 'multiplo' %}
-            <div class="form-campo form-campo--12">
-              <label class="form-label" for="id_{{ campo.name }}">{{ campo.label }}</label>
-              <select class="form-controle cadastro-multiplo" id="id_{{ campo.name }}" name="{{ campo.name }}" multiple size="10"{% if campo.erros %} aria-invalid="true" aria-describedby="id_{{ campo.name }}_erro{% if campo.ajuda %} id_{{ campo.name }}_ajuda{% endif %}"{% elif campo.ajuda %} aria-describedby="id_{{ campo.name }}_ajuda"{% endif %}>
-                {% for opcao in campo.opcoes %}<option value="{{ opcao.valor }}"{% if opcao.valor in campo.marcados %} selected{% endif %}>{{ opcao.rotulo }}</option>{% endfor %}
-              </select>
-              {% for erro in campo.erros %}<p class="form-erro"{% if forloop.first %} id="id_{{ campo.name }}_erro"{% endif %}>{{ erro }}</p>{% endfor %}
-              {% if campo.ajuda %}<p class="form-ajuda" id="id_{{ campo.name }}_ajuda">{{ campo.ajuda }}</p>{% endif %}
-              <p class="form-ajuda">Use Ctrl para selecionar mais de um município.</p>
-            </div>
+            {% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes multiplo=True marcados=campo.marcados obrigatorio=campo.obrigatorio largura="12" erros=campo.erros ajuda=campo.ajuda %}
           {% elif campo.tipo == 'boolean' %}
-            <div class="form-campo form-campo--12"><label class="check-chip"><input type="checkbox" name="{{ campo.name }}" value="1"{% if campo.valor %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ campo.label }}</label></div>
+            <div class="form-campo form-campo--12"><label class="opc-card"><input type="checkbox" name="{{ campo.name }}" value="1"{% if campo.valor %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ campo.label }}</label></div>
           {% else %}
             {% include "components/input.html" with name=campo.name label=campo.label tipo=campo.tipo obrigatorio=campo.obrigatorio largura="6" valor=campo.valor erros=campo.erros ajuda=campo.ajuda %}
           {% endif %}
         {% endfor %}
       </div>
-      <div class="acoes-formulario">
-        <a class="btn btn--secundario" href="{% url 'coffee_break:cadastro_lista' tipo %}">Cancelar</a>
-        {% include "components/button.html" with label="Salvar" variante="dourado" tipo="submit" %}
+      <div class="cad-frm__acoes">
+        <a class=" btn--secundaria" href="{% url 'coffee_break:cadastro_lista' tipo %}">Cancelar</a>
+        {% include "components/v32/button.html" with label="Salvar" variante="dourado" tipo="submit" %}
       </div>
     </div>
   </form>

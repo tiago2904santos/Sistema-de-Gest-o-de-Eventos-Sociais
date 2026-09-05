@@ -1,0 +1,5 @@
+<nav class="trilha-v32" aria-label="Trilha de navegação">
+  <a href="{% url 'core:home' %}">Início</a>
+  {% if itens %}{% for item in itens %}<span aria-hidden="true">/</span>{% if item.url %}<a href="{{ item.url }}">{{ item.label }}</a>{% else %}<span>{{ item.label }}</span>{% endif %}{% endfor %}
+  {% elif atual %}<span aria-hidden="true">/</span><span>{{ atual }}</span>{% endif %}
+</nav>

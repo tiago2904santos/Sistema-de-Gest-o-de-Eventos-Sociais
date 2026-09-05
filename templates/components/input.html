@@ -25,6 +25,13 @@
       {% if minimo or minimo == 0 %}min="{{ minimo }}"{% endif %}
       {# form_alvo: campo fora do <form> que ainda é enviado com ele. #}
       {% if form_alvo %}form="{{ form_alvo }}"{% endif %}
+      {# Atributos opcionais dos cadastros de viagens; os hooks existentes continuam no mesmo input. #}
+      {% if inputmode %}inputmode="{{ inputmode }}"{% endif %}
+      {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+      {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+      {% if mascara_cadastro %}data-mask="{{ mascara_cadastro }}"{% endif %}
+      {% if uppercase %}data-uppercase="true"{% endif %}
+      {% if diaria_base %}data-diaria-base="true"{% endif %}
       {% if mascara == "telefone" %}inputmode="tel" autocomplete="tel" maxlength="15" data-mask-telefone{% endif %}
       {% if erros %}aria-invalid="true" aria-describedby="id_{{ name }}_erro{% if ajuda %} id_{{ name }}_ajuda{% endif %}"{% elif ajuda %}aria-describedby="id_{{ name }}_ajuda"{% endif %}
       {% if desabilitado %}disabled{% endif %}

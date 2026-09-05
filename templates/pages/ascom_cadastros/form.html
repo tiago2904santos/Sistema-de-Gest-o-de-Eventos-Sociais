@@ -1,0 +1,77 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Formulário genérico dos cadastros de apoio dos módulos da ASCOM (padrão
+  V3.2, mesma composição do formulário de Cadastros de Eventos Sociais).
+{% endcomment %}
+
+{% block title %}{{ cartao_titulo }} — {{ titulo }} — {{ modulo_titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  <div class="d-cabeca d-cabeca--form">
+    <div class="d-cabeca__esq">
+      <a class="voltar" href="{% url url_lista slug %}">{% include "components/icon.html" with nome="chevron-left" %}Voltar para {{ titulo }}</a>
+      <h1>{{ cartao_titulo }}</h1>
+      <p class="d-cabeca__sub">{% if instancia %}Atualize os dados deste registro.{% else %}Cadastre uma opção disponível nos formulários do módulo.{% endif %}</p>
+    </div>
+  </div>
+
+  <form method="post" action="" class="cad-frm">
+    {% csrf_token %}
+    <section class="pa-card">
+      <h2 class="pa-h">Dados {{ genitivo }}</h2>
+      <p class="cad-frm__intro">{{ cartao_intro }}</p>
+
+      {% if erros_total %}
+        <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
+          {% include "components/icon.html" with nome="alert" %}
+          <div>
+            <b>Não foi possível salvar {{ singular|default:"o registro" }}</b>
+            Encontramos {{ erros_total }} {% if erros_total == 1 %}campo que precisa ser corrigido{% else %}campos que precisam ser corrigidos{% endif %}.
+            {% for erro in erros_gerais %}<span class="form-erro cad-frm__erro-geral">{{ erro }}</span>{% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="g-form g-form--2">
+        {% for campo in campos %}
+          {% if campo.tipo == "select" %}
+            {% include "components/select.html" with name=campo.name label=campo.label|capfirst opcoes=campo.opcoes obrigatorio=campo.obrigatorio selecionado=campo.valor erros=campo.erros %}
+          {% elif campo.tipo == "boolean" %}
+            <label class="campo-e form-campo campo-e--check cheia">
+              <input type="checkbox" id="id_{{ campo.name }}" name="{{ campo.name }}" value="on"{% if campo.valor %} checked{% endif %}>
+              <span>{{ campo.label|capfirst }}</span>
+              {% if campo.erros %}<span class="msg-erro form-erro">{{ campo.erros|join:" " }}</span>{% endif %}
+            </label>
+          {% else %}
+            <label class="campo-e form-campo cheia{% if campo.erros %} campo-e--erro{% endif %}">
+              <span>{{ campo.label|capfirst }}{% if campo.obrigatorio %}<em>*</em>{% endif %}</span>
+              {% if campo.tipo == "textarea" %}
+                <textarea class="ctrl ctrl--ta{% if campo.erros %} ctrl--erro{% endif %}" id="id_{{ campo.name }}" name="{{ campo.name }}" rows="3"
+                          {% if campo.obrigatorio %}required{% endif %}
+                          {% if campo.erros %}aria-invalid="true" aria-describedby="msg-{{ campo.name }}"{% endif %}>{{ campo.valor }}</textarea>
+              {% else %}
+                <input class="ctrl{% if campo.erros %} ctrl--erro{% endif %}" type="text" id="id_{{ campo.name }}" name="{{ campo.name }}" value="{{ campo.valor }}"
+                       {% if campo.name == "nome" %}placeholder="{{ exemplo }}" autofocus{% endif %}
+                       {% if campo.obrigatorio %}required{% endif %}
+                       {% if campo.erros %}aria-invalid="true" aria-describedby="msg-{{ campo.name }}"{% endif %}>
+              {% endif %}
+              {% if campo.erros %}
+                <span class="msg-erro form-erro" id="msg-{{ campo.name }}">{% include "components/icon.html" with nome="alert" %}{{ campo.erros|join:" " }}</span>
+              {% endif %}
+            </label>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <p class="cad-frm__nota">
+        {% include "components/icon.html" with nome="info" %}
+        <span>Registros inativos deixam de aparecer nos formulários, mas continuam nos registros antigos.</span>
+      </p>
+
+      <div class="cad-frm__acoes">
+        <a class="frm-cancelar" href="{% url url_lista slug %}">Cancelar</a>
+        <button type="submit" class="btn-primaria">Salvar {{ singular }}</button>
+      </div>
+    </section>
+  </form>
+{% endblock %}

@@ -1,50 +1,61 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 
 {% block title %}Lotes de Coffee Break — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with itens=breadcrumb %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
 
-  {% include "components/page_header.html" with titulo="Lotes de Coffee Break" subtitulo="Capacidade contratada, consumo e saldo por lote" icone="coffee" %}
+  {% include "components/v32/page_header.html" with titulo="Lotes de Coffee Break" subtitulo="Capacidade contratada, consumo e saldo por lote" icone="coffee" %}
 
-  <div class="card lista-filtros-card">
-    <form method="get" class="lista-filtros filtros-flutuantes" data-auto-enviar>
-      <div class="form-campo lista-filtros__busca">
+  <div class="pa-card pa-card--lista v32-bloco v32-filtros">
+    <form method="get" class="v32-barra " data-auto-enviar>
+      <div class="form-campo v32-busca">
         <label class="form-label sr-only" for="id_q">Busca</label>
-        <div class="campo-com-icone">
-          <span class="campo-com-icone__icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+        <div class="busca">
+          <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
           <input class="form-controle" type="search" name="q" id="id_q"
                  value="{{ valores_filtro.q }}"
                  placeholder="Buscar por fornecedor, contrato ou município...">
         </div>
       </div>
+      <button type="button" class="m-bt v32-filtros-abrir" data-abrir-sheet="#coffee-filtros" aria-expanded="false" aria-controls="coffee-filtros">{% include "components/icon.html" with nome="filter" %}Filtros{% if tem_filtros %}<span class="m-bt__contagem">•</span>{% endif %}</button>
+      <section class="m-sheet v32-sheet-filtros" id="coffee-filtros" hidden aria-label="Filtros">
+        <div class="m-sheet__alca"></div>
+        <div class="m-sheet__topo"><h2>Filtros</h2><button type="button" class="m-sheet__fechar" data-fechar-sheet aria-label="Fechar filtros">{% include "components/icon.html" with nome="x" %}</button></div>
+        <div class="m-sheet__corpo">
       {% include "components/select.html" with name="exercicio" label="Exercício" opcoes=opcoes_exercicios placeholder="Todos os exercícios" selecionado=valores_filtro.exercicio %}
       {% include "components/select.html" with name="situacao" label="Situação" opcoes=opcoes_situacao placeholder="Todas" selecionado=valores_filtro.situacao %}
-      <button type="submit" class="btn btn--dourado lista-filtros__buscar">{% include "components/icon.html" with nome="search" %}Buscar</button>
+      <button type="submit" class=" btn-primaria ">{% include "components/icon.html" with nome="search" %}Buscar</button>
       {% if tem_filtros %}
-        <a href="{% url 'coffee_break:lotes' %}" class="btn btn--secundario">Limpar filtros</a>
+        <a href="{% url 'coffee_break:lotes' %}" class=" btn--secundaria">Limpar filtros</a>
       {% endif %}
+        </div>
+      </section>
     </form>
   </div>
 
-  <div class="card">
-    <div class="card__cabecalho lista-cabecalho">
-      <h2 class="card__titulo">Lotes
+  <div class="v32-ordem-mobile dd" data-menu>
+    <button type="button" class="btn--secundaria" data-menu-gatilho aria-expanded="false" aria-haspopup="true">{% include "components/icon.html" with nome="ordenar" %}Ordenar</button>
+    <div class="dd__c dd__c--esq" hidden data-menu-corpo>{% for coluna in colunas %}{% if coluna.url %}<a class="dd__i{% if coluna.ativa %} dd__i--sel{% endif %}" href="{{ coluna.url }}">{{ coluna.rotulo }}{% if coluna.ativa %}{% if coluna.descendente %}{% include "components/icon.html" with nome="arrow-down" %}{% else %}{% include "components/icon.html" with nome="arrow-up" %}{% endif %}{% endif %}</a>{% endif %}{% endfor %}</div>
+  </div>
+  <div class="pa-card pa-card--lista v32-bloco">
+    <div class="cad-titulo ">
+      <h2 class="reg__t">Lotes
         {% if total_resultados %}
-          <span class="lista-cabecalho__contagem">{{ total_resultados }} lote{{ total_resultados|pluralize }}{% if tem_filtros %} com os filtros aplicados{% endif %}</span>
+          <span class="v32-meta">{{ total_resultados }} lote{{ total_resultados|pluralize }}{% if tem_filtros %} com os filtros aplicados{% endif %}</span>
         {% endif %}
       </h2>
     </div>
-    <div class="tabela-wrapper" tabindex="0" role="region" aria-label="Tabela de lotes">
-      <table class="tabela tabela--ordenavel tabela--clicavel tabela--cartoes-no-celular">
+    <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Tabela de lotes">
+      <table class="dt   dt--responsiva">
         <thead>
           <tr>
             {% for coluna in colunas %}
               <th{% if coluna.ativa %} aria-sort="{{ coluna.descendente|yesno:"descending,ascending" }}"{% endif %}>
                 {% if coluna.url %}
-                  <a href="{{ coluna.url }}" class="tabela__ordenar{% if coluna.ativa %} is-ativa{% endif %}">
+                  <a href="{{ coluna.url }}" class="dt__ord{% if coluna.ativa %} is-ativa{% endif %}">
                     {{ coluna.rotulo }}
-                    <span class="tabela__seta" aria-hidden="true">{% if coluna.ativa %}{% if coluna.descendente %}{% include "components/icon.html" with nome="arrow-down" %}{% else %}{% include "components/icon.html" with nome="arrow-up" %}{% endif %}{% else %}{% include "components/icon.html" with nome="ordenar" %}{% endif %}</span>
+                    <span class="dt-seta" aria-hidden="true">{% if coluna.ativa %}{% if coluna.descendente %}{% include "components/icon.html" with nome="arrow-down" %}{% else %}{% include "components/icon.html" with nome="arrow-up" %}{% endif %}{% else %}{% include "components/icon.html" with nome="ordenar" %}{% endif %}</span>
                   </a>
                 {% else %}{{ coluna.rotulo }}{% endif %}
               </th>
@@ -74,42 +85,73 @@
               </td>
               <td data-rotulo="Situação">
                 {% if lote.ativo %}
-                  <span class="status-badge status-badge--atendida">Ativo</span>
+                  <span class="st st--ativo">Ativo</span>
                 {% else %}
-                  <span class="status-badge status-badge--cancelada">Inativo</span>
+                  <span class="st st--inativo">Inativo</span>
                 {% endif %}
               </td>
-              <td class="tabela__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</td>
+              <td class="dt-abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="10" class="texto-suave texto-centro">Nenhum lote encontrado.</td></tr>
+            <tr><td colspan="10" class="v32-suave dt__vazio">Nenhum lote encontrado.</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+<div class="lista-mobile-v32"><div class="m-lista">
+          {% for lote in pagina %}
+            <article class="m-item" data-linha-url="{% url 'coffee_break:lote_detalhe' lote.pk %}">
+              <div class="m-item__campo" data-rotulo="Lote"><strong><a href="{% url 'coffee_break:lote_detalhe' lote.pk %}" aria-label="Abrir lote {{ lote.numero }}">Lote {{ lote.numero }}</a></strong></div>
+              <div class="m-item__campo" data-rotulo="Fornecedor">{{ lote.contrato.fornecedor.razao_social }}</div>
+              <div class="m-item__campo" data-rotulo="Contrato">{{ lote.contrato.numero }}</div>
+              <div class="m-item__campo" data-rotulo="Exercício">{{ lote.exercicio }}</div>
+              <div class="m-item__campo" data-rotulo="Capacidade">{{ lote.quantidade_total }}</div>
+              <div class="m-item__campo" data-rotulo="Restante"><strong>{{ lote.restante }}</strong></div>
+              <div class="m-item__campo" data-rotulo="Municípios">{{ lote.municipios_texto|truncatechars:40|default:"—" }}</div>
+              <div class="m-item__campo" data-rotulo="Consumido">
+                {% widthratio lote.consumido lote.quantidade_total 100 as pct %}
+                <div class="medidor" role="img" aria-label="{{ lote.consumido }} de {{ lote.quantidade_total }} unidades consumidas">
+                  <span class="medidor__preenchido{% if pct|add:0 >= 90 %} medidor__preenchido--critico{% elif pct|add:0 >= 70 %} medidor__preenchido--atencao{% endif %}" style="width: {{ pct }}%"></span>
+                </div>
+                <div class="medidor-legenda"><span>{{ lote.consumido }}</span><span>{{ pct }}%</span></div>
+              </div>
+              <div class="m-item__campo" data-rotulo="Situação">
+                {% if lote.ativo %}
+                  <span class="st st--ativo">Ativo</span>
+                {% else %}
+                  <span class="st st--inativo">Inativo</span>
+                {% endif %}
+              </div>
+
+            </article>
+          {% empty %}
+            <article class="m-item"><p class="m-vazio">Nenhum lote encontrado.</p></article>
+          {% endfor %}
+        </div></div>
     {% if pagina.paginator.num_pages > 1 %}
-      <div class="card__corpo paginacao">
-        <span class="texto-suave">
+      <div class="v32-corpo pag">
+        <span class="v32-suave">
           Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }} lotes
         </span>
-        <nav class="paginacao__paginas" aria-label="Paginação">
+        <nav class="pag__nav" aria-label="Paginação">
           {% if pagina.has_previous %}
-            <a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+            <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
           {% endif %}
           {% for numero in paginas_visiveis %}
             {% if numero == elipse %}
-              <span class="paginacao__elipse" aria-hidden="true">…</span>
+              <span class="pag__el" aria-hidden="true">…</span>
             {% elif numero == pagina.number %}
-              <span class="paginacao__numero paginacao__numero--atual" aria-current="page">{{ numero }}</span>
+              <span class="pag__n " aria-current="page">{{ numero }}</span>
             {% else %}
-              <a class="paginacao__numero" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
+              <a class="pag__n" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
             {% endif %}
           {% endfor %}
           {% if pagina.has_next %}
-            <a class="paginacao__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+            <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
           {% endif %}
         </nav>
       </div>
     {% endif %}
   </div>
+<div class="m-veu" hidden data-fechar-sheet></div>
 {% endblock %}

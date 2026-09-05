@@ -1,0 +1,4 @@
+<{% if url %}a href="{{ url }}"{% else %}div{% endif %} class="kpi{% if destaque %} kpi--destaque{% endif %}">
+  {% if icone %}<span class="kpi__ic" aria-hidden="true">{% include "components/icon.html" with nome=icone %}</span>{% endif %}
+  <span><b data-kpi-valor>{{ valor }}</b><span>{{ titulo }}</span>{% if variacao %}<small>{% if tendencia == 'alta' %}{% include "components/icon.html" with nome="arrow-up" %}{% elif tendencia == 'baixa' %}{% include "components/icon.html" with nome="arrow-down" %}{% endif %}{{ variacao }}</small>{% endif %}</span>
+</{% if url %}a{% else %}div{% endif %}>

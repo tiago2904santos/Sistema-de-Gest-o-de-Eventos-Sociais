@@ -1,15 +1,15 @@
-{% extends "layouts/app_shell.html" %}
+{% extends "layouts/app_shell_v32.html" %}
 {% load static estaticos %}
 
 {% block title %}Cadastros de viagens — Sistema de Gestão de Eventos Sociais{% endblock %}
 
-{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-cadastros.css' %}">{% endblock %}
+
 
 {% block conteudo %}
-  {% include "components/breadcrumb.html" with atual="Viagens" %}
-  {% include "components/page_header.html" with titulo="Cadastros de viagens" subtitulo="Uma base única para pessoas, veículos, lotações e valores" icone="volante" %}
+  {% include "components/v32/breadcrumb.html" with atual="Viagens" %}
+  {% include "components/v32/page_header.html" with titulo="Cadastros de viagens" subtitulo="Uma base única para pessoas, veículos, lotações e valores" icone="volante" %}
 
-  <section class="viagens-hub-intro" aria-labelledby="viagens-hub-titulo">
+  <section class="pa-card viagens-hub-intro" aria-labelledby="viagens-hub-titulo">
     <div>
       <span class="viagens-eyebrow">Base operacional</span>
       <h2 id="viagens-hub-titulo">Tudo o que alimenta uma viagem começa aqui</h2>
@@ -21,11 +21,11 @@
     </div>
   </section>
 
-  <div class="cadastro-grid viagens-cadastro-grid">
+  <div class="cad-visao viagens-cadastro-grid">
     {% for grupo in grupos %}
-      <article class="cadastro-card viagens-cadastro-card">
+      <article class="pa-card pa-card--lista viagens-cadastro-card">
         <a class="viagens-cadastro-card__principal" href="{% if grupo.url %}{{ grupo.url }}{% else %}{% url 'viagens_cadastros:lista' grupo.slug %}{% endif %}">
-          <span class="cadastro-card__icone" aria-hidden="true">{% include "components/icon.html" with nome=grupo.icone %}</span>
+          <span class="kpi__ic" aria-hidden="true">{% include "components/icon.html" with nome=grupo.icone %}</span>
           <span class="cadastro-card__info">
             <span class="cadastro-card__titulo">{{ grupo.titulo }}</span>
             <span class="cadastro-card__valor">{{ grupo.total }}</span>

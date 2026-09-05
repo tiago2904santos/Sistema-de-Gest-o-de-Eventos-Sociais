@@ -379,3 +379,370 @@ body.m-sheet-aberto{overflow:hidden}
 .custom-date__rodape button:hover,.custom-date__rodape button:focus-visible{outline:0;background:var(--d-50)}
 /* Um calendário aberto não pode ser cortado pelo cartão da seção. */
 .reg:has(.custom-date.is-open),.reg:has(.custom-select.is-open){position:relative;z-index:20;overflow:visible}
+
+/* Migração dos módulos: trilha existente e cabeçalhos extraídos dos pilotos,
+   mantendo todos os links, textos e ações das telas Django. */
+.trilha-v32{display:flex;flex-wrap:wrap;gap:6px;padding-top:16px;font-size:11.5px;color:var(--n-450)}
+.trilha-v32 a{color:var(--n-500);text-decoration:none}
+.trilha-v32 a:hover{color:var(--d-700);text-decoration:underline}
+.d-identificacao{display:flex;align-items:flex-start;gap:12px;min-width:0}
+.d-identificacao>.kpi__ic{margin-top:4px}
+.d-titulo-v32{margin:0}
+.d-sub-status{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pa-h>h2{font:inherit;margin:0;flex:1;min-width:0}
+.pa-h>a{margin-left:auto;flex:none}
+.reg-cabecalho{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.reg-numero{display:inline-grid;place-items:center;width:23px;height:23px;margin-right:8px;border-radius:6px;background:var(--d-50);color:var(--d-700);font-size:12px}
+.v32-corpo{padding:16px 18px}
+.v32-bloco{margin-bottom:16px;min-width:0}
+.v32-bloco:has(.custom-select),.v32-bloco:has(.custom-date){overflow:visible}
+.v32-suave,.v32-meta{font-size:12.5px;color:var(--n-500)}
+.v32-meta{font-weight:400}
+.v32-aviso-texto{display:block;margin-bottom:14px}
+.v32-aviso-texto p{margin:6px 0 0}
+.reg__div-acoes{margin-top:16px;border-top:1px solid var(--n-150);padding-top:14px}
+.cancelamento-form{display:flex;flex-wrap:wrap;align-items:end;gap:8px;width:100%}
+.cancelamento-form>.form-label{width:100%}
+.cancelamento-form>.form-controle{flex:1 1 220px}
+.v32-historico{list-style:none;margin:0;padding:0}
+.v32-historico>li{position:relative;padding:0 0 16px 18px;border-left:1px solid var(--n-200);font-size:12.5px;overflow-wrap:anywhere}
+.v32-historico>li::before{content:"";position:absolute;left:-4px;top:5px;width:7px;height:7px;border-radius:50%;background:var(--d-500)}
+.v32-historico strong,.v32-historico span{display:block}
+.v32-historico span{font-size:11px;color:var(--n-450);margin-top:3px}
+.v32-historico p{margin:6px 0 0;color:var(--n-600)}
+
+/* Demandas ASCOM: agrupamentos do resumo usam o mesmo ritmo das seções do
+   detalhe; estados próprios reaproveitam os tokens semânticos aprovados. */
+.v32-resumo-bloco+.v32-resumo-bloco{margin-top:18px;padding-top:18px;border-top:1px solid var(--n-150)}
+.v32-resumo-bloco>.reg__t{display:flex;gap:8px;align-items:center}
+.v32-resumo-bloco>.reg__t .ui-icon{width:16px;height:16px;color:var(--n-450)}
+.st--pendente,.st--aguardando_retorno{background:var(--wn-b);color:var(--wn-t);border:1px solid var(--wn-r)}
+.st--em_andamento,.st--evento_agendado{background:var(--in-b);color:var(--in-t);border:1px solid var(--in-r)}
+.st--nao_atender{background:var(--dg-b);color:var(--dg-t);border:1px solid var(--dg-r)}
+
+/* Portal sem piloto próprio: cartões e métricas usam a escala dos pa-card/kpi.
+   Mantém a grade dos módulos autorizados e suas entradas fornecidas pela view. */
+.portal-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:20px}
+.portal-card{display:flex;flex-direction:column;min-width:0;padding:20px}
+.portal-card__cabecalho,.portal-admin__texto{display:flex;gap:12px;align-items:flex-start;min-width:0}
+.portal-card__titulo{font-size:18px;margin:0 0 6px;line-height:1.3}
+.portal-card__descricao{font-size:12.5px;color:var(--n-500);line-height:1.6;margin:0}
+.portal-card__metricas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0;padding:16px 0;border-top:1px solid var(--n-150);border-bottom:1px solid var(--n-150)}
+.portal-card__metrica{min-width:0}
+.portal-card__metrica dd{margin:0 0 6px;font-size:26px;line-height:1;font-weight:600;font-variant-numeric:tabular-nums}
+.portal-card__metrica dt{font-size:11px;line-height:1.4;color:var(--n-500)}
+.portal-card__metrica--destaque dd{color:var(--wn-t)}
+.portal-card__acoes{margin-top:auto;padding-top:12px}
+.portal-card__acoes a{width:100%;justify-content:space-between}
+.portal-admin{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:20px}
+.portal-admin .reg__t{margin:0 0 6px}
+.portal-admin p{margin:0}
+
+/* Notificações usam Data List em todas as larguras, preservando agrupamento,
+   estados de leitura, contadores e a ação explícita de marcar como lida. */
+.notificacoes-filtros{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:0 16px;flex-wrap:wrap}
+.notificacoes-filtros .filas{border:0;margin:0}
+.notificacoes-filtros .fila[aria-current]{color:var(--d-800);border-bottom-color:var(--d-500)}
+.notificacoes-grupo{font-size:12px;font-weight:600;color:var(--n-500);margin:20px 0 10px}
+.notificacao-cartao{display:flex;align-items:flex-start;gap:12px;text-decoration:none;color:var(--n-800);border:1px solid var(--n-200);border-radius:9px;margin-bottom:8px;padding:16px;background:var(--branco)}
+.notificacao-cartao--nova{background:var(--d-50);border-color:var(--d-200)}
+.notificacao-cartao__icone{display:grid;place-items:center;width:32px;height:32px;flex:none;border-radius:8px;background:var(--n-100);color:var(--n-450)}
+.notificacao-cartao__icone .ui-icon{width:16px;height:16px}
+.notificacao-cartao__ponto{display:none}
+.notificacao-cartao--nova .notificacao-cartao__ponto{display:block;width:6px;height:6px;border-radius:50%;background:var(--d-600);flex:none;margin-top:7px}
+.notificacao-cartao__conteudo{min-width:0;flex:1;display:grid;gap:6px;overflow-wrap:anywhere}
+.notificacao-cartao__conteudo>strong{font-size:13.5px}
+.notificacao-cartao__mensagem{font-size:12.5px;line-height:1.6;color:var(--n-600)}
+.notificacao-cartao__meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--n-450)}
+.notificacao-cartao__quando{display:inline-flex;align-items:center;gap:4px}
+.notificacao-cartao__quando .ui-icon,.notificacao-cartao__seta .ui-icon{width:13px;height:13px}
+.notificacao-cartao__seta{color:var(--n-400)}
+.notificacoes-vazio>strong{display:block;margin:10px 0;font-size:16px}
+.notificacoes-vazio p{font-size:13px;color:var(--n-500)}
+.notificacoes-vazio__icone{color:var(--n-400)}
+
+/* Conta: identidade, descrição de perfil e senha conservam seus hooks app.js;
+   cores, controles e dicas passam a usar os tokens do shell V3.2. */
+.usuario-celula{display:flex;align-items:center;gap:10px;min-width:0}
+.usuario-avatar{display:grid;place-items:center;width:32px;height:32px;flex:none;background:var(--d-50);color:var(--d-800);border:1px solid var(--d-200);border-radius:50%;font-size:11px;font-weight:600}
+.usuario-avatar--inativo{background:var(--nt-b);color:var(--n-400);border-color:var(--nt-r)}
+.usuario-celula__dados{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}
+.usuario-celula__dados small{font-size:11.5px;color:var(--n-500);font-weight:400}
+.perfil-badge{display:inline-flex;gap:5px;align-items:center;font-size:12px;color:var(--n-600);white-space:nowrap}
+.perfil-badge--super{color:var(--d-700)}
+.perfil-badge .ui-icon{width:13px;height:13px}
+.v32-conta-cabecalho{display:grid;grid-template-columns:minmax(0,1fr) 300px;align-items:center;gap:24px;margin-bottom:16px}
+.v32-conta-form{max-width:840px}
+.v32-dica{font-size:12px;line-height:1.6;margin:0}
+.v32-dica strong{font-size:12.5px}
+.v32-dica p{margin:4px 0 0}
+.v32-dica p[hidden]{display:none}
+.v32-dica ul{margin:4px 0 0;padding-left:16px}
+.usuario-form__linha{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-top:16px}
+.v32-conta-form fieldset{border:0;padding:0;margin:0;min-width:0}
+.v32-conta-form .opc-cards{margin-top:10px}
+.v32-conta-form .opc-card>span[aria-hidden]{display:none}
+.v32-conta-acoes{background:var(--n-25);padding:14px 0;position:sticky;bottom:0;z-index:40}
+.campo-senha{position:relative;display:block}
+.campo-senha .form-controle{padding-right:42px}
+.campo-senha__alternar{position:absolute;right:5px;top:4px;width:30px;height:30px;display:grid;place-items:center;border:0;border-radius:5px;background:none;color:var(--n-400);cursor:pointer}
+.campo-senha__alternar:hover{color:var(--n-800);background:var(--n-75)}
+.campo-senha__alternar .ui-icon{width:16px;height:16px}
+.senha-corpo{display:grid;gap:18px}
+.forca-senha{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:11px;color:var(--n-500);flex-wrap:wrap}
+.forca-senha__barras{display:flex;gap:4px;flex:1;min-width:80px}
+.forca-senha__barra{height:4px;flex:1;border-radius:3px;background:var(--n-150)}
+.forca-senha__barra--fraca.is-ativa{background:var(--dg-t)}
+.forca-senha__barra--media.is-ativa{background:var(--wn-t)}
+.forca-senha__barra--forte.is-ativa{background:var(--ok-t)}
+.forca-senha__texto[data-nivel="1"]{color:var(--dg-t)}
+.forca-senha__texto[data-nivel="2"]{color:var(--wn-t)}
+.forca-senha__texto[data-nivel="3"]{color:var(--ok-t)}
+.requisitos-senha,.dica-seguranca{display:flex;align-items:flex-start;gap:10px;padding:14px;border:1px solid var(--n-200);border-radius:8px;background:var(--n-25);font-size:12px;color:var(--n-600)}
+.requisitos-senha__icone,.dica-seguranca__icone{display:grid;color:var(--d-700)}
+.requisitos-senha__icone .ui-icon,.dica-seguranca__icone .ui-icon{width:17px;height:17px}
+.requisitos-senha__lista{padding:0;margin:8px 0 0;list-style:none;display:grid;gap:6px}
+.requisitos-senha__lista li{display:flex;align-items:center;gap:6px}
+.requisitos-senha__lista .ui-icon{width:14px;height:14px;flex:none;color:var(--n-300)}
+.requisitos-senha__lista .is-ok .ui-icon{color:var(--ok-t)}
+.dica-seguranca p{margin:4px 0 0;line-height:1.6}
+.v32-erro{max-width:760px;margin:48px auto}
+.erro-pagina__codigo{display:block;font-size:64px;font-weight:600;color:var(--d-500);margin-bottom:20px}
+.v32-erro h1{font-size:26px;margin:0 0 14px}
+.v32-erro p{line-height:1.6;color:var(--n-500)}
+.v32-erro .cad-frm__acoes{justify-content:center;border:0;margin:20px 0}
+
+@container (max-width:1100px){.portal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container (max-width:900px){.v32-conta-cabecalho{grid-template-columns:1fr;gap:0}.v32-conta-cabecalho>.v32-dica{margin-bottom:10px}}
+@container (max-width:680px){
+  .portal-grid{grid-template-columns:1fr}
+  .portal-admin{align-items:stretch;flex-direction:column}
+  .notificacoes-filtros{padding:0 12px 12px;gap:8px}
+  .notificacoes-filtros .filas{width:100%}
+  .notificacao-cartao{padding:14px;gap:8px}
+  .notificacao-cartao__icone{display:none}
+  .v32-erro{margin:24px auto}
+}
+.v32-form-grid>fieldset{margin:0;padding:0;border:0;min-width:0}
+.v32-form-grid>fieldset>legend{margin-bottom:8px}
+.v32-form-grid>.opc-card{grid-column:1/-1}
+.v32-form-grid .opc-card>span:has(.ui-icon){display:none}
+
+/* Os controles existentes usam larguras em doze colunas; conserva a organização
+   dos campos com o espaçamento V3.2 e sem limitar a altura das áreas de texto. */
+.v32-form-grid{grid-template-columns:repeat(12,minmax(0,1fr))}
+.v32-form-grid>.form-campo{grid-column:span 12}
+.v32-form-grid>.form-campo--3{grid-column:span 3}
+.v32-form-grid>.form-campo--4{grid-column:span 4}
+.v32-form-grid>.form-campo--6{grid-column:span 6}
+.v32-form-grid>.form-campo--9{grid-column:span 9}
+.v32-form-grid>.form-campo--12{grid-column:span 12}
+.form-ajuda{font-size:11.5px;line-height:1.5;color:var(--n-450);margin:0}
+textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 12px;resize:vertical}
+.frm-lateral{display:flex;flex-direction:column;align-self:stretch;gap:14px;min-width:0}
+.frm-lateral>.sticky{width:100%}
+.frm-lateral .step-i{width:100%;border:0;background:none;font:inherit;text-align:left;cursor:pointer}
+.frm-lateral .frm-acoes--flut{flex-wrap:wrap}
+.gc>.cheia{grid-column:1/-1}
+.gc .f{min-width:0;overflow-wrap:anywhere}
+.gc{margin:0}
+
+/* Filtros de módulos com opções próprias: mesma busca e controles do sistema,
+   com painel expansível que permanece acessível também no celular. */
+.v32-barra{display:flex;align-items:end;gap:10px;flex-wrap:wrap;padding:14px 18px}
+.v32-barra>.form-campo{flex:1 1 170px;min-width:0}
+.v32-barra>.v32-busca{flex:2 1 270px}
+.v32-barra>.btn-primaria{height:38px;font-size:13px}
+.v32-barra>.btn--secundaria{height:38px}
+.v32-filtros-painel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;width:100%;padding-top:14px;border-top:1px solid var(--n-150)}
+.v32-filtros-painel[hidden]{display:none}
+.busca-icone{display:grid;place-items:center}
+.v32-barra .busca{width:100%;max-width:none}
+.v32-barra .busca input{width:100%;min-width:0}
+.v32-barra .busca .form-controle{border:0;background:transparent;box-shadow:none}
+
+/* Consumo contratual é informação adicional do Coffee Break: medidor compacto
+   com as mesmas cores semânticas dos estados, sem alterar o valor calculado. */
+.medidor{height:6px;min-width:90px;background:var(--n-150);border-radius:4px;overflow:hidden}
+.medidor__preenchido{display:block;height:100%;max-width:100%;background:var(--d-500);border-radius:inherit}
+.medidor__preenchido--atencao{background:var(--wn-t)}
+.medidor__preenchido--critico{background:var(--dg-t)}
+.medidor-legenda{display:flex;justify-content:space-between;gap:10px;margin-top:5px;font-size:10.5px;color:var(--n-500)}
+
+/* Data Lists dos outros módulos preservam cada coluna e ação da tabela.
+   Paginação é compartilhada; só a representação das linhas muda no mobile. */
+.v32-tabela-desktop{overflow-x:auto;max-width:100%}
+.v32-tabela-desktop a{text-decoration:none;color:inherit}
+.v32-tabela-desktop .dt__ord{white-space:nowrap}
+.dt-abrir .ui-icon{width:14px;height:14px;color:var(--n-400)}
+.v32-ordem-mobile{display:none}
+.m-item__campo{min-width:0;font-size:13px;overflow-wrap:anywhere;line-height:1.5}
+.m-item__campo[data-rotulo]::before{content:attr(data-rotulo);display:block;font-size:10.5px;color:var(--n-450);font-weight:500;margin-bottom:2px}
+.m-item__campo a{text-decoration:none;color:inherit}
+.m-item__campo:has(.st),.m-item__campo:has(.acoes){grid-column:1/-1}
+.lista-mobile-v32 .m-item:has(.m-item__campo){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px}
+.lista-mobile-v32 .m-item__campo:first-child{grid-column:1/-1;font-weight:600}
+.cad-rail>.cad-i{font-size:13px;color:var(--n-800)}
+[data-v32-multiple] [data-multiple-value]{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Busca no menu múltiplo permite localizar municípios sem percorrer a lista. */
+[data-multiple-search]{margin-bottom:6px}
+[data-multiple-option][hidden]{display:none}
+
+/* Os dois painéis do Coffee Break contêm tabelas: divide a largura igualmente
+   e mantém a rolagem só no invólucro da tabela quando as colunas não couberem. */
+.v32-paineis-tabelas{grid-template-columns:repeat(2,minmax(0,1fr))}
+.v32-paineis-tabelas .dt{min-width:620px}
+.v32-paineis-tabelas .pa-card{align-self:stretch}
+
+/* A mesma instância dos filtros serve à barra desktop e ao bottom sheet:
+   não duplica ids, valores ou nomes de controles ao mudar a largura. */
+.v32-filtros-abrir{display:none}
+.v32-sheet-filtros,.v32-sheet-filtros[hidden],.v32-sheet-filtros>.m-sheet__corpo{display:contents}
+.v32-sheet-filtros>.m-sheet__topo,.v32-sheet-filtros>.m-sheet__alca{display:none}
+.v32-sheet-filtros .m-sheet__corpo>.form-campo{flex:1 1 170px;min-width:0}
+.v32-sheet-filtros .m-sheet__corpo>.btn-primaria{height:38px;font-size:13px}
+.v32-sheet-filtros .m-sheet__corpo>.btn--secundaria{height:38px}
+
+@container (max-width:900px){
+  .v32-paineis-tabelas{grid-template-columns:1fr}
+  .v32-form-grid>.form-campo{grid-column:span 6}
+  .v32-form-grid>.form-campo--12,.v32-form-grid>.form-campo:not([class*="form-campo--"]){grid-column:1/-1}
+}
+@container (max-width:680px){
+  .v32-filtros-abrir{display:flex;justify-content:center;width:100%}
+  .v32-sheet-filtros{display:flex}
+  .v32-sheet-filtros[hidden]{display:none}
+  .v32-sheet-filtros>.m-sheet__corpo{display:flex}
+  .v32-sheet-filtros>.m-sheet__topo{display:flex}
+  .v32-sheet-filtros>.m-sheet__alca{display:block}
+  .v32-sheet-filtros .m-sheet__corpo>.form-campo{flex:none}
+  .v32-sheet-filtros .m-sheet__corpo>.btn-primaria{flex:none;justify-content:center}
+  .v32-tabela-desktop{display:none}
+  .v32-ordem-mobile{display:block;flex:none;margin-bottom:12px}
+  .v32-barra{padding:12px;gap:10px}
+  .v32-barra>.form-campo,.v32-barra>.v32-busca{flex-basis:100%}
+  .v32-filtros-painel{grid-template-columns:1fr}
+  .v32-form-grid>.form-campo{grid-column:1/-1}
+  .frm-lateral>.sticky{display:none}
+  .v32-bloco .lista-mobile-v32 .m-lista{border:0;border-radius:0}
+  .v32-bloco .pag__nav{flex-wrap:wrap}
+  .d-identificacao>.kpi__ic{display:none}
+}
+
+/* ---------------------------------------------------------------------------
+   Módulos da ASCOM (Publicações e Atendimento à Imprensa) — complementos
+   sobre os tokens V3.2: status próprios, ranking do painel, colunas extras.
+   --------------------------------------------------------------------------- */
+.st--pendente{background:var(--wn-b);color:var(--wn-t);border:1px solid var(--wn-r)}
+.st--em_andamento{background:var(--in-b);color:var(--in-t);border:1px solid var(--in-r)}
+.st--publicada,.st--atendido{background:var(--ok-b);color:var(--ok-t);border:1px solid var(--ok-r)}
+.st--aguardando{background:var(--wn-b);color:var(--wn-t);border:1px solid var(--wn-r)}
+.st--nao_responder{background:var(--dg-b);color:var(--dg-t);border:1px solid var(--dg-r)}
+.etapa--cancelado .etapa__m{background:var(--dg-t)}
+.etapa--cancelado .etapa__t{color:var(--dg-t)}
+.dt__sub{display:block;font-size:11px;color:var(--n-450);margin-top:1px}
+.c-titulo{max-width:420px}
+.c-titulo b{white-space:normal;line-height:1.3}
+.c-tipo--quebra{white-space:normal;max-width:360px}
+.c-pedido{min-width:0;max-width:320px;font-size:13px;color:var(--n-700);line-height:1.35}
+.c-per--vencido,.c-per--vencido a{color:var(--dg-t);font-weight:600}
+.dt--fontes tbody tr,.dt__estatica{cursor:default}
+.dt--fontes tbody tr:hover td:first-child{box-shadow:none}
+.dt--fontes tbody tr:hover{background:transparent}
+.ta--alta{min-height:160px}
+.reg .reg__st+.corrido{margin:0;font-size:13.5px;line-height:1.6;color:var(--n-700)}
+.rank{display:grid;gap:6px;padding:4px 0 8px}
+.rank__i{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;gap:3px 10px;padding:6px 8px;margin:0 -8px;border-radius:8px;color:inherit;text-decoration:none}
+.rank__n{grid-column:1;grid-row:1}
+.rank__v{grid-column:2;grid-row:1}
+.rank__b{grid-column:1 / -1;grid-row:2}
+.rank__i:hover{background:var(--n-25)}
+.rank__n{font-size:13px;font-weight:600;color:var(--n-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank__b{display:block;height:8px;border-radius:99px;background:var(--n-100);overflow:hidden}
+.rank__b span{display:block;height:100%;border-radius:99px;background:var(--d-500);min-width:3px}
+.rank__v{font-size:11.5px;color:var(--n-500);white-space:nowrap;font-variant-numeric:tabular-nums}
+.rank__v b{display:inline-block;min-width:22px;margin-right:6px;font-size:13.5px;font-weight:600;color:var(--n-900)}
+.pa-card--larga{grid-column:1 / -1}
+.campo-e--check{flex-direction:row;align-items:center;gap:10px}
+.campo-e--check input{width:18px;height:18px;accent-color:var(--d-600)}
+.campo-e--check span{margin:0}
+@container (max-width: 680px){
+  .c-titulo,.c-pedido,.c-tipo--quebra{max-width:none}
+}
+/* Viagens: cadastros mantêm seus hooks de máscaras/vínculos, com composição e tokens V3.2. */
+.viagens-eyebrow{display:block;color:var(--d-700);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.viagens-hub-intro{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:18px}
+.viagens-hub-intro h2{font-size:18px;margin:0 0 8px}.viagens-hub-intro p{color:var(--n-500);margin:0;max-width:750px}
+.viagens-hub-intro__total{display:grid;flex-shrink:0;border-left:1px solid var(--n-200);padding-left:24px;color:var(--n-500);font-size:12px}
+.viagens-hub-intro__total strong{font-size:32px;color:var(--n-800)}
+.viagens-cadastro-grid{padding:0;grid-template-columns:repeat(3,minmax(0,1fr))}
+.viagens-cadastro-card{min-width:0}.viagens-cadastro-card__principal{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:20px;color:var(--n-800);text-decoration:none}
+.viagens-cadastro-card__principal:hover{background:var(--n-50)}
+.viagens-cadastro-card .cadastro-card__info{display:grid;gap:4px}.viagens-cadastro-card .cadastro-card__titulo{font-weight:600}.viagens-cadastro-card .cadastro-card__valor{font-size:28px;font-weight:600}
+.viagens-cadastro-card__descricao{grid-column:1/-1;color:var(--n-500);font-size:12px;line-height:1.6}.viagens-cadastro-card__rotulo{font-size:11px;color:var(--n-400)}
+.viagens-cadastro-card__criar{display:flex;align-items:center;justify-content:center;gap:7px;padding:12px;border-top:1px solid var(--n-200);color:var(--d-700);font-size:12px;text-decoration:none}
+.v32-acao-perigo{color:var(--dg-t)}.viagens-vazio{display:grid;justify-items:center;gap:10px}.viagens-vazio p{margin:0}.viagens-vazio>span .ui-icon{width:30px;height:30px}
+.cadastro-viagens-form{max-width:900px}.cadastro-viagens-form__intro{display:flex;justify-content:space-between;gap:20px;margin:0 0 18px;color:var(--n-500)}.cadastro-viagens-form__intro p{margin:0}.cadastro-viagens-form__obrigatorio{font-size:11px;white-space:nowrap}.cadastro-viagens-form__obrigatorio b{color:var(--dg-t)}
+.viagens-form-secao{margin-bottom:16px}.v32-secao-cabecalho{display:flex;gap:9px;align-items:baseline;margin-bottom:16px}.v32-secao-cabecalho .reg__t{margin-bottom:4px}.v32-secao-cabecalho .cad-frm__intro{margin:0}
+.viagens-form-grid>.form-campo:only-child{grid-column:1/-1}
+.viagens-multiselect{grid-column:1/-1;min-width:0;border:0;padding:0;margin:0}.viagens-multiselect__barra{display:flex;gap:12px;align-items:center;margin:12px 0}.viagens-multiselect__barra .busca{flex:1}.viagens-multiselect__contador{font-size:11px;color:var(--n-500)}
+/* A lista de pessoas cresce com a página; nenhum cartão ganha rolagem vertical própria. */
+.viagens-multiselect__opcoes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.viagens-pessoa-opcao{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border:1px solid var(--n-200);border-radius:8px;cursor:pointer}.viagens-pessoa-opcao[hidden]{display:none}
+.viagens-pessoa-opcao:has(input:checked){border-color:var(--d-700);background:var(--d-50)}.viagens-pessoa-opcao:focus-within{outline:2px solid var(--d-700);outline-offset:2px}
+.viagens-pessoa-opcao input{position:absolute;left:0;top:0;width:1px;height:1px;opacity:0}
+.viagens-pessoa-opcao__avatar{display:grid;place-items:center;width:32px;height:32px;background:var(--nt-b);border-radius:8px;font-size:11px}.viagens-pessoa-opcao__texto{display:grid;min-width:0;overflow-wrap:anywhere}.viagens-pessoa-opcao__texto strong{font-size:12px}.viagens-pessoa-opcao__texto small{font-size:11px;color:var(--n-500)}
+.viagens-pessoa-opcao__check{color:transparent}.viagens-pessoa-opcao:has(input:checked) .viagens-pessoa-opcao__check{color:var(--d-700)}.viagens-multiselect__vazio{grid-column:1/-1;text-align:center;color:var(--n-500);padding:20px}
+.viagens-opcao-padrao{grid-column:1/-1}.viagens-opcao-padrao>label{display:flex;justify-content:space-between;gap:16px;padding:14px;border:1px solid var(--n-200);border-radius:8px}.viagens-opcao-padrao label>span:first-child{display:grid;gap:4px}.viagens-opcao-padrao small{color:var(--n-500)}.viagens-switch input{width:18px;height:18px;accent-color:var(--d-700)}
+.viagens-diaria-preview{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px;border-top:1px solid var(--n-200);padding-top:18px}.viagens-diaria-preview>span{display:grid;gap:6px;background:var(--nt-b);padding:16px;border-radius:8px}.viagens-diaria-preview small{color:var(--n-500)}.viagens-diaria-preview strong{font-size:20px}.viagens-diaria-preview p{grid-column:1/-1;display:flex;gap:7px;color:var(--n-500);font-size:11px;margin:0}
+.viagens-exclusao{max-width:720px;margin:0 auto;text-align:center}.viagens-exclusao h2{font-size:20px}.viagens-exclusao p{color:var(--n-500);line-height:1.7}.viagens-exclusao__icone{display:grid;place-items:center;width:56px;height:56px;background:var(--dg-b);color:var(--dg-t);border-radius:12px;margin:0 auto 16px}.viagens-exclusao__icone--bloqueada{background:var(--wn-b);color:var(--wn-t)}
+.viagens-exclusao__resumo,.viagens-dependencias>div{display:flex;gap:12px;padding:16px;background:var(--nt-b);border-radius:8px;text-align:left;margin:16px 0}.viagens-exclusao__resumo div,.viagens-dependencias>div{display:grid;gap:4px}.viagens-exclusao__resumo small,.viagens-dependencias span{color:var(--n-500)}.viagens-exclusao .cad-frm__acoes{justify-content:center}
+@container(max-width:1100px){.viagens-cadastro-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container(max-width:680px){.viagens-cadastro-grid,.viagens-multiselect__opcoes{grid-template-columns:1fr}.viagens-hub-intro,.cadastro-viagens-form__intro,.viagens-multiselect__barra{flex-direction:column;align-items:stretch}.viagens-hub-intro__total{border-left:0;border-top:1px solid var(--n-200);padding:12px 0 0}.viagens-diaria-preview{grid-template-columns:1fr}}
+/* Editor de roteiro: classes funcionais permanecem; aparência, métricas e etapas seguem V3.2. */
+.editor-roteiro{padding-top:0}.editor-roteiro__topo,.editor-roteiro__aviso{grid-column:1/-1}.editor-roteiro__topo{padding-bottom:0}.editor-roteiro__titulo{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.editor-roteiro__principal,.editor-roteiro__lateral{min-width:0}.editor-roteiro__principal>.reg{margin-bottom:16px}.editor-roteiro__principal .reg__t{flex-wrap:wrap}.editor-roteiro .section-card__titulo,.editor-roteiro .side-card__cabecalho h2{font:inherit;margin:0}.editor-roteiro .section-card__acao{margin-left:auto}.editor-roteiro .side-card__icone{display:flex}
+.editor-roteiro__acoes-cabecalho{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}.editor-roteiro__acoes.frm-acoes{display:grid;gap:8px;margin-top:auto;position:sticky;bottom:0;padding:14px;background:var(--papel);border-top:1px solid var(--n-200);z-index:25}.editor-roteiro__acoes .btn--secundaria,.editor-roteiro__acoes .btn-primaria{justify-content:center}
+.editor-roteiro .resumo-lista{margin:0}.editor-roteiro .resumo-lista>div{display:flex;justify-content:space-between;gap:14px;font-size:12px;padding:9px 0;border-bottom:1px solid var(--n-150)}.editor-roteiro .resumo-lista dt{color:var(--n-500)}.editor-roteiro .resumo-lista dd{margin:0;text-align:right;color:var(--n-800);overflow-wrap:anywhere}
+.acoes-roteiro,.acoes-roteiro form{display:grid;gap:9px}.acoes-roteiro{gap:16px}.acoes-roteiro button{justify-content:center}.autosave-status{font-size:11px;color:var(--n-500);margin:0 0 4px;line-height:1.6}.autosave-status[data-estado=salvando]{color:var(--in-t)}.autosave-status[data-estado=salvo]{color:var(--ok-t)}.autosave-status[data-estado=erro]{color:var(--dg-t)}
+.editor-roteiro .bloco-split{display:grid;grid-template-columns:180px minmax(0,1fr);gap:18px;padding:16px 0}.editor-roteiro .bloco-split+.bloco-split{border-top:1px solid var(--n-150)}.editor-roteiro .bloco-split:first-child{padding-top:0}.bloco-split__rotulo strong{font-size:13px;color:var(--n-800)}.bloco-split__rotulo p{font-size:11px;line-height:1.6;margin:5px 0 0}.bloco-split__corpo{min-width:0}.percurso-previa{color:var(--d-700);overflow-wrap:anywhere}
+.editor-roteiro .destinos{display:grid;gap:10px}.editor-roteiro .destino-row{display:grid;grid-template-columns:16px 34px minmax(0,34fr) minmax(0,66fr) 34px;gap:8px;align-items:center}.editor-roteiro .destino-row[hidden]{display:none}.destino-row__estado,.destino-row__campo{min-width:0}.destino-row__adicionar,.destino-row__remover{height:38px;padding:0;justify-content:center}.destino-row__alca{display:flex;cursor:grab;color:var(--n-400);touch-action:none}.destino-row--sede .destino-row__estado{grid-column:1/4}.destino-row--sede .destino-row__campo{grid-column:4/6}
+.destino-row--unica .destino-row__remover,.destino-row--unica .destino-row__alca{visibility:hidden}.destino-row.is-dragging{opacity:.4;cursor:grabbing}.destino-row.is-drop-before{transform:translateY(4px)}.destino-row.is-drop-after{transform:translateY(-4px)}.is-arrastando-destino,.is-arrastando-destino *{user-select:none}
+/* O JS original substitui className dos chips; estes aliases preservam seus estados e os tokens aprovados. */
+.editor-roteiro .status-badge{display:inline-flex;align-items:center;min-height:24px;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:500;white-space:nowrap;background:var(--nt-b);color:var(--nt-t);border:1px solid var(--nt-r)}
+.editor-roteiro .status-badge--atendida{color:var(--ok-t);background:var(--ok-b);border-color:var(--ok-r)}.editor-roteiro .status-badge--pendente{color:var(--wn-t);background:var(--wn-b);border-color:var(--wn-r)}.editor-roteiro .status-badge--em_andamento{color:var(--in-t);background:var(--in-b);border-color:var(--in-r)}.editor-roteiro .status-badge--nao_atendida{color:var(--dg-t);background:var(--dg-b);border-color:var(--dg-r)}
+.interruptor{display:inline-flex;align-items:center;gap:8px;background:0;border:0;padding:0;cursor:pointer;font-size:12px}.interruptor__trilho{width:34px;height:20px;padding:3px;background:var(--n-250);border-radius:20px;flex-shrink:0}.interruptor__botao{display:block;width:14px;height:14px;background:var(--branco);border-radius:50%}.interruptor--ligado .interruptor__trilho{background:var(--d-600)}.interruptor--ligado .interruptor__botao{transform:translateX(14px)}
+.bate-volta{margin-bottom:18px;padding:16px;border:1px solid var(--n-200);border-radius:8px;background:var(--n-50)}.bate-volta[hidden]{display:none}.bate-volta__sentidos{position:relative;display:grid;gap:12px}.bate-volta__sentido{display:grid;grid-template-columns:45px repeat(3,minmax(0,1fr));align-items:center;gap:12px}.bate-volta__rotulo{font-size:11px;color:var(--d-700);font-weight:600}.bate-volta__resumo{font-size:11px;margin:12px 0 0}
+.rota-metricas,.diarias-metricas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}.diarias-metricas{grid-template-columns:repeat(3,minmax(0,1fr))}.metrica{position:relative;min-width:0;display:grid;gap:8px;align-content:start;padding:16px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco)}.metrica__icone{display:flex;color:var(--n-400)}.metrica__rotulo{font-size:11px;color:var(--n-500)}.metrica__valor{font-size:20px;color:var(--n-800);font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.metrica--destaque{background:var(--d-50);border-color:var(--d-200)}.metrica--destaque .metrica__valor{color:var(--d-700)}.metrica--larga{grid-column:1/-1}.metrica__valor--texto{font-size:13px;font-weight:400}
+.mapa{position:relative}.mapa__superficie{height:340px;border:1px solid var(--n-200);border-radius:8px;overflow:hidden;z-index:0;background:var(--n-75)}.mapa__acoes{position:absolute;top:12px;right:12px;left:48px;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;z-index:500}.mapa__acoes .btn--secundaria{background:var(--branco)}.mapa__acoes [hidden]{display:none}.mapa__carregando{position:absolute;inset:0;z-index:600;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:8px;background:rgba(255,255,255,.8)}.mapa__carregando[hidden]{display:none}.mapa__erro{margin-top:10px}.mapa__rotulo{font-family:var(--f);font-size:11px;color:var(--n-800)}.mapa__rotulo--sede{color:var(--d-700)}
+.aviso-rota{display:flex;align-items:flex-start;gap:8px;padding:12px;margin:0 0 16px;border:1px solid var(--wn-r);border-radius:8px;background:var(--wn-b);color:var(--wn-t);font-size:12px}.aviso-rota[hidden]{display:none}.spinner{width:18px;height:18px;border:2px solid var(--n-200);border-top-color:var(--d-600);border-radius:50%;animation:v32-girar .8s linear infinite}@keyframes v32-girar{to{transform:rotate(360deg)}}
+.composicao{border:1px solid var(--n-200);border-radius:8px;margin-top:16px;min-width:0}.composicao__resumo{display:flex;justify-content:space-between;gap:12px;padding:14px;cursor:pointer;background:var(--n-50);font-size:12px}.composicao .dt-w{overflow-x:auto}.composicao .dt{min-width:650px}
+/* Trechos viram cartões no celular usando os mesmos campos; nenhum formset é duplicado. */
+.editor-roteiro [data-trechos-tabela]{overflow-x:auto;max-width:100%}.trechos-tabela{min-width:1050px}.trechos-tabela .form-campo{min-width:140px}.trecho-linha__cidade{font-weight:600}.trecho-linha__tag{display:inline-block;border-radius:4px;padding:2px 6px;font-size:10px;background:var(--d-50);color:var(--d-700)}.trecho-linha__tag[hidden]{display:none}.trecho-linha__nota{display:block;font-size:10px;color:var(--n-500)}.tempo-stepper{display:inline-flex;align-items:center;gap:8px}.tempo-stepper button{height:28px;min-width:28px;padding:0;justify-content:center}.tempo-stepper__valor{min-width:40px;text-align:center;font-variant-numeric:tabular-nums}
+.trechos-vazio{display:grid;justify-items:center;gap:6px;padding:24px;border:1px dashed var(--n-200);border-radius:8px;text-align:center;font-size:12px;color:var(--n-500)}.trechos-vazio strong{color:var(--n-800)}.trechos-vazio[hidden],[data-trechos-tabela][hidden],.trecho-linha[hidden],.trecho-linha__erros[hidden]{display:none}
+.etapas-roteiro{list-style:none;padding:0;margin:0}.etapa-roteiro{cursor:default}.etapa-roteiro__numero{display:grid;place-items:center;width:20px;height:20px;border:1.5px solid var(--n-250);border-radius:50%;font-size:10px;flex-shrink:0}.etapa-roteiro__texto{display:grid;gap:3px;flex:1}.etapa-roteiro__texto strong{font-size:12px;font-weight:500}.etapa-roteiro__texto small{font-size:11px;color:var(--n-450)}.etapa-roteiro__marca{visibility:hidden;color:var(--ok-t)}.etapa-roteiro--concluida .etapa-roteiro__marca{visibility:visible}.etapa-roteiro--concluida .etapa-roteiro__numero{background:var(--ok-t);border-color:var(--ok-t);color:var(--branco)}.etapa-roteiro--ativa .etapa-roteiro__numero{border-color:var(--d-500);color:var(--d-700);background:var(--d-50)}
+/* A navegação horizontal não precisa de uma segunda barra no Windows. */
+.nav-mod{overflow-y:hidden;scrollbar-width:none}
+@container(max-width:1100px){.editor-roteiro .bloco-split{grid-template-columns:1fr}.rota-metricas{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container(max-width:900px){.editor-roteiro.frm-grade{grid-template-columns:1fr}.editor-roteiro__acoes.frm-acoes{position:static}}
+@container(max-width:680px){.editor-roteiro .destino-row{grid-template-columns:16px 34px minmax(0,1fr) 34px}.destino-row__estado{grid-column:3/5}.destino-row__campo{grid-column:1/5}.destino-row--sede .destino-row__estado,.destino-row--sede .destino-row__campo{grid-column:1/5}.editor-roteiro .section-card__acao{margin-left:0}.editor-roteiro__acoes-cabecalho{justify-content:flex-start}.bate-volta__sentido,.diarias-metricas{grid-template-columns:1fr}.rota-metricas{grid-template-columns:1fr 1fr}.mapa__superficie{height:300px}.editor-roteiro .trechos-tabela,.trechos-tabela tbody{display:block;min-width:0;width:100%}.trechos-tabela thead{display:none}.trechos-tabela .trecho-linha{display:grid;gap:4px;border:1px solid var(--n-200);border-radius:8px;margin-bottom:12px;padding:8px}.trechos-tabela .trecho-linha[hidden]{display:none}.trechos-tabela td{display:block;padding:8px;border:0;white-space:normal}.trechos-tabela td[data-rotulo]::before{content:attr(data-rotulo);display:block;font-size:10px;color:var(--n-450);margin-bottom:6px}.trechos-tabela .form-campo{min-width:0}.editor-roteiro [data-trechos-tabela]{overflow:visible}.editor-roteiro__acoes.frm-acoes{padding-inline:0}}
+/* Cabeçalhos e lateral do editor: números alinhados e ações de ciclo de vida disponíveis também no celular. */
+.editor-roteiro .section-card__cabecalho,.editor-roteiro .side-card__cabecalho{display:flex;align-items:center;gap:9px}
+.editor-roteiro .frm-lateral>.sticky{display:block}
+.editor-roteiro .step-i{cursor:default}
+/* Calendário sequencial do roteiro mantém ordem das datas e abre acima do mapa. */
+.custom-date--multi{position:relative;display:inline-block}
+.custom-date__calendar--multi{left:auto;right:0;z-index:900;width:min(320px,calc(100vw - 48px))}
+.bate-volta__sentidos>.custom-date__calendar--multi{left:0;right:auto}
+.custom-date__contexto{margin:0 0 8px;font-size:11px;font-weight:600;color:var(--d-700);overflow-wrap:anywhere}
+.custom-date__rodape--multi{gap:8px}.custom-date__rodape-acoes{display:flex;gap:3px}.custom-date__contagem,.custom-date__dica{font-size:11px;color:var(--n-500)}
+.custom-date__dia[data-ordem]{position:relative}.custom-date__dia[data-ordem]::after{content:attr(data-ordem);position:absolute;right:2px;top:0;font-size:8px;line-height:1}
+.editor-roteiro .reg:has([data-custom-date-multi-calendar]:not([hidden])){position:relative;z-index:950;overflow:visible}
+/* No celular o calendário de trechos abre pela borda inicial do botão, sem sair da página. */
+@container(max-width:680px){.custom-date--multi>.custom-date__calendar--multi{left:0;right:auto}}
+/* Colunas do editor cabem no painel desktop, inclusive com o calendário aberto. */
+.editor-roteiro .trechos-tabela{min-width:920px}
+.trechos-tabela .form-campo{min-width:120px}
+.trechos-tabela th{white-space:normal}
+.trechos-tabela td{padding:10px 8px}
+@container(max-width:680px){.editor-roteiro .trechos-tabela{min-width:0}.trechos-tabela .form-campo{min-width:0}.trechos-tabela td{padding:8px}}

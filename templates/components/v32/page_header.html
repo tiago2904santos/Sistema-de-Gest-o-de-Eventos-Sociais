@@ -1,0 +1,10 @@
+<div class="d-cabeca d-cabeca--secao">
+  <div class="d-cabeca__esq">
+    <div class="kicker">{{ modulo_ativo.nome }}</div>
+    <h1>{{ titulo }}</h1>
+    {% if subtitulo %}<p class="d-cabeca__sub">{{ subtitulo }}</p>{% endif %}
+  </div>
+  {% if acao_label and acao_url %}
+    <div class="d-acoes"><a href="{{ acao_url }}" class="btn-primaria">{% if acao_icone %}{% include "components/icon.html" with nome=acao_icone %}{% endif %}{{ acao_label }}</a></div>
+  {% endif %}
+</div>
