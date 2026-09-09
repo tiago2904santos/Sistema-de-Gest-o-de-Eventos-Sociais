@@ -1,0 +1,12 @@
+SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA
+POLÍCIA CIVIL DO PARANÁ
+[[divisao]]
+{{unidade_cabecalho}}
+Referente ao Ofício: {{oficio_motorista}}/{{ano}} |  |  |  |  |  | E-protocolo: {{protocolo_motorista}}
+FICHA INDIVIDUAL DO VEÍCULO (tipo): {{viatura}} |  |  |  |  |  | COMBUSTIVEL: {{combustivel}}
+PLACA OFICIAL: [[placa]] |  |  |  |  |  | PLACA RESERVADA: {{placa_reservada}}
+SAÍDA |  |  | CHEGADA |  |  | ORIGEM |  | DESTINO |  | Necessidade de Abastecimento
+DATA | HORA | KM (inicial) | DATA | HORA | KM (final)
+[[t1.data_saida]] | [[t1.hora_saida]] | [[t1.km_inicial]] | [[t1.data_chegada]] | [[t1.hora_chegada]] | [[t1.km_final]] | [[t1.origem]] |  | [[t1.destino]] |  | [[t1.abastecimento]]
+[[t2.data_saida]] | [[t2.hora_saida]] | [[t2.km_inicial]] | [[t2.data_chegada]] | [[t2.hora_chegada]] | [[t2.km_final]] | [[t2.origem]] |  | [[t2.destino]] |  | [[t2.abastecimento]]
+NOME: [[motorista]] |  |  | CPF: {{cpf_motorista}} |  |  | ASSINATURA:

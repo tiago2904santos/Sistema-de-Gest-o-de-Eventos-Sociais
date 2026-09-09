@@ -23,9 +23,12 @@ class ViagensCadastrosConfig(AppConfig):
             entrada="viagens_roteiros:lista",
             # O módulo cobre os dois apps: o middleware protege ambos
             # os namespaces, e a navegação abaixo mistura as telas dos dois.
-            namespaces=["viagens_cadastros", "viagens_roteiros"],
+            namespaces=["viagens_cadastros", "viagens_roteiros", "viagens_oficios", "viagens_termos", "viagens_prestacoes"],
             ordem=40,
             itens=[
+                {"rotulo": "Prestações", "icone": "checklist", "url": "viagens_prestacoes:index"},
+                {"rotulo": "Ofícios", "icone": "file-text", "url": "viagens_oficios:lista"},
+                {"rotulo": "Termos", "icone": "file-text", "url": "viagens_termos:lista"},
                 {
                     "rotulo": "Roteiros",
                     "icone": "map-pin",

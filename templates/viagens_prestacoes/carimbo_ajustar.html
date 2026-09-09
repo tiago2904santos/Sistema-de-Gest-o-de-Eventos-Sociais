@@ -1,0 +1,75 @@
+{% extends "viagens_prestacoes/base.html" %}{% load l10n static %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/pdf-place.css' %}">{% endblock %}
+{% block prestacao_conteudo %}  <form method="post"
+        id="carimbo-form"
+        class="pdf-place"
+        data-pdf-place
+        data-pdf-url="{{ pdf_url }}"
+        data-worker-src="{% static 'vendor/pdfjs/pdf.worker.min.js' %}"
+        data-caixas="{{ caixas_json }}">
+    {% csrf_token %}
+
+    <section class="section-card section-card__corpo"><h2>Ajustar carimbo</h2><p>Arraste o número para a linha do servidor. A alça ajusta o tamanho.</p>
+      <div>
+        <div class="pdf-place__pager">
+          <button type="button" class="btn--secundaria" id="carimbo-prev">Página anterior</button>
+          <span id="carimbo-page-label" class="pdf-place__pager-label">1 / 1</span>
+          <button type="button" class="btn--secundaria" id="carimbo-next">Próxima página</button>
+        </div>
+      </div>
+
+      <div>
+        {% if not caixas %}
+          <p>Esta prestação não tem servidores para carimbar.</p>
+        {% endif %}
+
+        <div class="pdf-place__viewer" id="carimbo-viewer">
+          <div class="pdf-place__stage" id="carimbo-stage">
+            <canvas id="carimbo-canvas"></canvas>
+            
+            {% for caixa in caixas %}
+              <div class="pdf-place__box"
+                   data-pdf-place-box
+                   data-ps="{{ caixa.ps_pk|unlocalize }}"
+                   data-pagina="{{ caixa.pagina|unlocalize }}"
+                   hidden>
+                <span class="pdf-place__box-text" data-pdf-place-text>{{ caixa.numero|default:"—" }}</span>
+                <span class="pdf-place__box-handle" data-pdf-place-handle aria-hidden="true"></span>
+              </div>
+              
+              <input type="hidden" name="caixa-{{ caixa.ps_pk|unlocalize }}-pagina" value="{{ caixa.pagina|unlocalize }}" data-pdf-place-field="pagina" data-ps="{{ caixa.ps_pk|unlocalize }}">
+              <input type="hidden" name="caixa-{{ caixa.ps_pk|unlocalize }}-x" value="{{ caixa.x|unlocalize }}" data-pdf-place-field="x" data-ps="{{ caixa.ps_pk|unlocalize }}">
+              <input type="hidden" name="caixa-{{ caixa.ps_pk|unlocalize }}-y" value="{{ caixa.y|unlocalize }}" data-pdf-place-field="y" data-ps="{{ caixa.ps_pk|unlocalize }}">
+              <input type="hidden" name="caixa-{{ caixa.ps_pk|unlocalize }}-tamanho" value="{{ caixa.tamanho|unlocalize }}" data-pdf-place-field="tamanho" data-ps="{{ caixa.ps_pk|unlocalize }}">
+            {% endfor %}
+          </div>
+        </div>
+
+        <p class="field__help" id="carimbo-hint">
+          Cada número acima é o do servidor na lista abaixo. Arraste até a linha dele na
+          tabela do ofício.
+        </p>
+
+        <ul class="pdf-place__legenda">
+          {% for caixa in caixas %}
+            <li class="pdf-place__legenda-item" data-pdf-place-legenda data-ps="{{ caixa.ps_pk|unlocalize }}">
+              <span class="pdf-place__legenda-nome">{{ caixa.nome }}</span>
+              {% if caixa.numero %}
+                <span class="pdf-place__legenda-numero">{{ caixa.numero }}</span>
+                <button type="button" class="btn--secundaria" id="ir-{{ caixa.ps_pk|unlocalize }}">Trazer para esta página</button>
+              {% else %}
+                <span>Sem número</span>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div>
+        <button type="submit" class="btn-primaria">Salvar posição</button>
+        <a class="btn--secundaria" href="{{ voltar_url }}">Voltar</a>
+      </div>
+    </section>
+  </form>
+{% endblock %}
+{% block extra_js %}{{ block.super }}<script src="{% static 'vendor/pdfjs/pdf.min.js' %}"></script><script src="{% static 'js/components/pdf-place.js' %}" defer></script><script src="{% static 'js/pages/prestacoes-carimbo.js' %}" defer></script>{% endblock %}

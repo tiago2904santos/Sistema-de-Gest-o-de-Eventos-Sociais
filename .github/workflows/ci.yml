@@ -54,3 +54,11 @@ jobs:
 
       - name: Testes
         run: python manage.py test --noinput --verbosity 2
+
+      # Os motores nativos são opcionais: imports guardados e testes com skipUnless.
+      # O fallback fpdf2 permite gerar PDF sem instalar pacotes apt no runner.
+      - name: Testes também em SQLite
+        run: >-
+          env -u POSTGRES_DB -u POSTGRES_USER -u POSTGRES_PASSWORD
+          -u POSTGRES_HOST -u POSTGRES_PORT PYTHON_DOTENV_DISABLED=1
+          python manage.py test --noinput --verbosity 2

@@ -74,6 +74,10 @@ INSTALLED_APPS = [
     "atendimento_imprensa",
     "viagens_cadastros",
     "viagens_roteiros",
+    "documentos",
+    "viagens_oficios",
+    "viagens_termos",
+    "viagens_prestacoes",
 ]
 
 MIDDLEWARE = [
@@ -242,3 +246,18 @@ OPENROUTESERVICE_API_KEY = os.environ.get("OPENROUTESERVICE_API_KEY", "")
 ROUTE_REQUEST_TIMEOUT_SECONDS = int(
     os.environ.get("ROUTE_REQUEST_TIMEOUT_SECONDS", "12")
 )
+
+# Núcleo documental síncrono. Motores nativos são opcionais e sondados sob demanda.
+DOCUMENTOS_DEFAULT_PDF_ENGINE = os.environ.get("DOCUMENTOS_DEFAULT_PDF_ENGINE", "auto")
+DOCUMENTOS_LIBREOFFICE_BINARY = os.environ.get("DOCUMENTOS_LIBREOFFICE_BINARY", "")
+# Último recurso do PDF: texto corrido, transliterado, sem o layout oficial.
+# Ligado só em desenvolvimento, como no sistema de origem. Em produção, um
+# documento degradado em silêncio é pior que a falha — ninguém percebe antes de
+# protocolar. Para assumir o risco conscientemente: DOCUMENTOS_SIMPLE_PDF_FALLBACK=1.
+DOCUMENTOS_SIMPLE_PDF_FALLBACK = (
+    os.environ.get("DOCUMENTOS_SIMPLE_PDF_FALLBACK", "1" if DEBUG else "0") == "1"
+)
+DOCUMENTOS_PDF_AUTO_FALLBACK = os.environ.get("DOCUMENTOS_PDF_AUTO_FALLBACK", "0") == "1"
+DOCUMENTOS_PERSIST_ARTEFATOS = True
+DOCUMENTOS_ARTIFACT_CACHE = True
+DOCUMENTOS_GENERATOR_VERSION = "eventos-f3-1"

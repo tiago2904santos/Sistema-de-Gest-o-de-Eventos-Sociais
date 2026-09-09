@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>{{ termo.textos.titulo }} - {{ termo.participante.nome }}</title>
+</head>
+<body class="termo-documento">
+  <header class="termo-cabecalho">
+    <div class="termo-cabecalho__orgao">Secretaria de Estado da Segurança Pública</div>
+    <div class="termo-cabecalho__linha">Polícia Civil do Paraná</div>
+    <div class="termo-cabecalho__linha">Departamento da Polícia Civil</div>
+    <div class="termo-cabecalho__unidade">{{ institucional.unidade|default:termo.oficio.origem }}</div>
+  </header>
+
+  <h1 class="termo-titulo">{{ termo.textos.titulo }}</h1>
+
+  <section class="termo-secao">
+    <h2>Identificação do ofício</h2>
+    <table class="termo-tabela">
+      <tr>
+        <th>Número</th>
+        <td>{{ termo.oficio.numero_formatado }}</td>
+        <th>Data</th>
+        <td>{{ termo.oficio.data_criacao }}</td>
+      </tr>
+      <tr>
+        <th>Protocolo</th>
+        <td>{{ termo.oficio.protocolo_formatado }}</td>
+        <th>Origem</th>
+        <td>{{ termo.oficio.origem }}</td>
+      </tr>
+      <tr>
+        <th>Destino</th>
+        <td>{{ termo.oficio.destino }}</td>
+        <th>Assunto</th>
+        <td>{{ termo.oficio.assunto }}</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="termo-secao">
+    <h2>Servidor participante</h2>
+    <table class="termo-tabela">
+      <tr>
+        <th>Nome</th>
+        <td colspan="3">{{ termo.participante.nome }}</td>
+      </tr>
+      <tr>
+        <th>RG</th>
+        <td>{{ termo.participante.rg_formatado }}</td>
+        <th>CPF</th>
+        <td>{{ termo.participante.cpf_formatado }}</td>
+      </tr>
+      <tr>
+        <th>Cargo</th>
+        <td>{{ termo.participante.cargo|default:"—" }}</td>
+        <th>Unidade</th>
+        <td>{{ termo.participante.unidade|default:"—" }}</td>
+      </tr>
+      <tr>
+        <th>Telefone</th>
+        <td>{{ termo.participante.telefone_formatado }}</td>
+        <th>E-mail</th>
+        <td>{{ termo.participante.email|default:"—" }}</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="termo-secao">
+    <h2>Dados da viagem</h2>
+    <table class="termo-tabela">
+      <tr>
+        <th>Destino principal</th>
+        <td>{{ termo.viagem.destino_principal }}</td>
+        <th>Período</th>
+        <td>{{ termo.viagem.periodo }}</td>
+      </tr>
+      <tr>
+        <th>Destinos</th>
+        <td colspan="3">{{ termo.viagem.destinos_texto }}</td>
+      </tr>
+      <tr>
+        <th>Roteiro de ida</th>
+        <td colspan="3">{{ termo.viagem.roteiro_ida_texto }}</td>
+      </tr>
+      <tr>
+        <th>Roteiro de retorno</th>
+        <td colspan="3">{{ termo.viagem.roteiro_retorno_texto }}</td>
+      </tr>
+      <tr>
+        <th>Diárias</th>
+        <td>{{ termo.viagem.quantidade_diarias }}</td>
+        <th>Valor</th>
+        <td>{{ termo.viagem.valor_diarias }}</td>
+      </tr>
+      <tr>
+        <th>Valor por extenso</th>
+        <td colspan="3">{{ termo.viagem.valor_diarias_extenso }}</td>
+      </tr>
+    </table>
+    <p class="termo-texto"><strong>Motivo:</strong> {{ termo.viagem.motivo }}</p>
+  </section>
+
+  <section class="termo-secao">
+    <h2>Transporte</h2>
+    <table class="termo-tabela">
+      <tr>
+        <th>Viatura</th>
+        <td>{% if termo.transporte.tem_viatura %}Sim{% else %}Não{% endif %}</td>
+        <th>Placa</th>
+        <td>{{ termo.transporte.placa }}</td>
+      </tr>
+      <tr>
+        <th>Modelo</th>
+        <td>{{ termo.transporte.modelo }}</td>
+        <th>Tipo</th>
+        <td>{{ termo.transporte.tipo }}</td>
+      </tr>
+      <tr>
+        <th>Combustível</th>
+        <td>{{ termo.transporte.combustivel }}</td>
+        <th>Motorista</th>
+        <td>{{ termo.transporte.motorista }}</td>
+      </tr>
+      <tr>
+        <th>Porte/transporte de armas</th>
+        <td>{{ termo.transporte.porte_armas }}</td>
+        <th>Unidade</th>
+        <td>{{ termo.transporte.unidade }}</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="termo-secao termo-secao--texto">
+    <h2>Autorização e declaração</h2>
+    <p>{{ termo.textos.corpo_autorizacao }}</p>
+    <p>{{ termo.textos.declaracao }}</p>
+    {% if termo.textos.observacoes and termo.textos.observacoes != "—" %}
+      <p><strong>Observações:</strong> {{ termo.textos.observacoes }}</p>
+    {% endif %}
+  </section>
+
+  <footer class="termo-assinaturas">
+    <p class="termo-local-data">{{ institucional.sede|default:institucional.cidade_endereco|default:"Curitiba" }}, {{ termo.oficio.data_criacao }}.</p>
+    <div class="termo-assinaturas__grid">
+      <div class="termo-assinatura">
+        <span></span>
+        <strong>{{ termo.participante.nome }}</strong>
+        <small>Servidor participante</small>
+      </div>
+      <div class="termo-assinatura">
+        <span></span>
+        <strong>{{ institucional.nome_chefia|default:"Chefia imediata" }}</strong>
+        <small>{{ institucional.cargo_chefia|default:"Autoridade competente" }}</small>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

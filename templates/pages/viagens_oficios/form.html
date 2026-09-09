@@ -1,0 +1,33 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load static %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/viagens-documentos.css' %}">{% endblock %}
+{% block conteudo %}
+{% include "components/v32/breadcrumb.html" with atual=titulo %}
+{% include "components/v32/page_header.html" with titulo=titulo subtitulo="Autorização de viagem, justificativa e termos dos servidores" icone="file-text" %}
+<div class="viagem-form">
+  <form method="post" id="form-oficio" novalidate>
+    {% csrf_token %}
+    {% for erro in form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+    {% for erro in jform.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+    {% for secao in secoes %}
+    <section class="section-card reg v32-bloco" id="{{ secao.id }}">
+      <header class="section-card__cabecalho reg__t"><span class="reg-numero">{{ forloop.counter }}</span><h2 class="section-card__titulo">{{ secao.titulo }}</h2></header>
+      <div class="section-card__corpo v32-form-grid viagem-campos">
+        {% include "pages/viagens_oficios/_campos.html" with campos=secao.campos %}
+        {% if secao.id == 'roteiro' %}<p><a class="btn--secundaria" href="{% url 'viagens_roteiros:novo' %}" target="_blank">Montar roteiro</a>{% if oficio.roteiro_id %} <a href="{% url 'viagens_roteiros:editar' oficio.roteiro_id %}" target="_blank">Abrir roteiro selecionado</a>{% endif %}</p>{% endif %}
+        {% if secao.id == 'justificativa' %}<p class="form-ajuda">{{ regra.motivo_regra }}</p>{% endif %}
+      </div>
+    </section>
+    {% endfor %}
+    <section id="resumo" class="section-card reg v32-bloco"><header class="section-card__cabecalho reg__t"><span class="reg-numero">5</span><h2 class="section-card__titulo">Resumo</h2></header><div class="section-card__corpo"><p>Salve o ofício para conferir o resumo e emitir os documentos.</p>{% if oficio.numero %}<p>Número reservado: <strong>{{ oficio.numero_formatado }}</strong>.</p>{% endif %}</div></section>
+  </form>
+  <aside class="viagem-etapas pa-card v32-corpo"><h2>Etapas do ofício</h2><nav aria-label="Etapas do formulário">{% for secao in secoes %}<a href="#{{ secao.id }}">{{ forloop.counter }}. {{ secao.titulo }}</a>{% endfor %}<a href="#resumo">5. Resumo</a></nav></aside>
+</div>
+<div class="viagem-acoes"><a class="btn--secundaria" href="{{ url_voltar }}">Voltar</a><button class="btn-primaria" form="form-oficio" type="submit">Salvar e conferir resumo</button></div>
+{% endblock %}
+{% block extra_js %}
+{{ block.super }}
+{{ modelos_texto|json_script:"oficio-modelos-texto" }}
+<script src="{% static 'js/viagens-oficios.js' %}" defer></script>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/viagens-documentos.css' %}">{% endblock %}
+{% block title %}Termos de autorização{% endblock %}
+{% block conteudo %}
+{% url 'viagens_termos:novo' as novo %}
+{% if pode_editar %}{% include "components/v32/page_header.html" with titulo="Termos de autorização" acao_label="Novo termo" acao_url=novo %}{% else %}{% include "components/v32/page_header.html" with titulo="Termos de autorização" %}{% endif %}
+<form method="get" class="pa-card v32-corpo v32-barra v32-bloco">{% include "components/input.html" with name="q" label="Busca" valor=q %}<label><input type="checkbox" name="cancelados" value="1" {% if request.GET.cancelados %}checked{% endif %}> Cancelados</label><button class="btn--secundaria">Filtrar</button></form>
+<div class="pa-card v32-corpo v32-bloco"><table class="dt"><thead><tr><th>Termo</th><th>Ofício</th><th>Destino</th><th>Período</th><th></th></tr></thead><tbody>{% for termo in pagina %}<tr><td>#{{ termo.pk }}</td><td>{{ termo.oficio|default:"Avulso" }}</td><td>{{ termo.destino_display }}</td><td>{{ termo.periodo_display }}</td><td><a href="{% url 'viagens_termos:detalhe' termo.pk %}">Abrir</a></td></tr>{% empty %}<tr><td colspan="5">Nenhum termo encontrado.</td></tr>{% endfor %}</tbody></table>{% include "pages/viagens_oficios/_paginacao.html" %}</div>
+{% endblock %}

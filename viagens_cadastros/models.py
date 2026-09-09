@@ -427,3 +427,169 @@ def faixa_da_regiao(regiao):
         if faixa.value == nome:
             return faixa.value
     return None
+
+from core.normalizers import normalize_upper, normalize_digits
+from core.utils.masks import format_masked_display
+
+
+class ConfiguracaoSistema(ModeloTemporal):
+    """Dados institucionais para documentos e regras da area atual."""
+
+    cidade_sede_padrao = models.ForeignKey(
+        "cadastros.Municipio",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="Cidade sede padrão",
+    )
+
+    prazo_justificativa_dias = models.PositiveIntegerField(default=10)
+
+    nome_orgao = models.CharField(max_length=200, blank=True)
+
+    sigla_orgao = models.CharField(max_length=20, blank=True)
+
+    unidade = models.ForeignKey(
+        Unidade,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="Unidade",
+    )
+
+    cep = models.CharField(max_length=9, blank=True, default="")
+
+    logradouro = models.CharField(max_length=160, blank=True, default="")
+
+    bairro = models.CharField(max_length=120, blank=True, default="")
+
+    cidade_endereco = models.CharField(max_length=120, blank=True, default="")
+
+    uf = models.CharField(max_length=2, blank=True, default="")
+
+    numero = models.CharField(max_length=20, blank=True, default="")
+
+    telefone = models.CharField(max_length=20, blank=True, default="")
+
+    ramal = models.CharField(max_length=20, blank=True, default="")
+
+    email = models.EmailField(blank=True, default="")
+
+    sede = models.CharField(max_length=200, blank=True, default="")
+
+    nome_chefia = models.CharField(max_length=120, blank=True, default="")
+
+    cargo_chefia = models.CharField(max_length=120, blank=True, default="")
+
+    destinatario_oficio = models.ForeignKey(
+        Servidor,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="Destinatário padrão do Ofício",
+        help_text="A unidade lotada deste servidor vira o DESTINO do cabeçalho do Ofício.",
+    )
+
+    destinatario_oficio_nome = models.CharField(max_length=255, blank=True, default="")
+
+    destinatario_oficio_cargo = models.CharField(max_length=120, blank=True, default="")
+
+    destinatario_oficio_unidade = models.CharField(max_length=255, blank=True, default="")
+
+    def __str__(self):
+        return "Configurações do sistema"
+
+    @property
+    def cep_formatado(self):
+        return format_masked_display("cep", self.cep)
+
+    @property
+    def telefone_formatado(self):
+        return format_masked_display("telefone", self.telefone)
+
+    chave = models.PositiveSmallIntegerField(default=1, unique=True, editable=False)
+
+    class Meta:
+        verbose_name = "configuração institucional de viagens"
+        constraints = [models.CheckConstraint(condition=Q(chave=1), name="viagens_config_singleton")]
+
+    @classmethod
+    def get_singleton(cls):
+        return cls.objects.get_or_create(chave=1)[0]
+
+    def save(self, *args, **kwargs):
+        def norm_upper_words(val):
+            return normalize_upper(val)
+
+        self.nome_orgao = norm_upper_words(self.nome_orgao)
+        self.sigla_orgao = norm_upper_words(self.sigla_orgao)
+        self.sede = norm_upper_words(self.sede)
+        self.nome_chefia = norm_upper_words(self.nome_chefia)
+        self.cargo_chefia = norm_upper_words(self.cargo_chefia)
+        self.cidade_endereco = norm_upper_words(self.cidade_endereco)
+        self.logradouro = norm_upper_words(self.logradouro)
+        self.bairro = norm_upper_words(self.bairro)
+        self.numero = norm_upper_words(self.numero)
+        self.uf = (self.uf or "").strip().upper()[:2]
+        self.cep = normalize_digits(self.cep)
+        self.telefone = normalize_digits(self.telefone)
+        # Mantém compatível com código que ainda lê `sede`: mesmo valor que cidade_endereco.
+        self.sede = self.cidade_endereco
+        # Destinatário do Ofício: se um servidor cadastrado foi selecionado e os
+        # campos de texto não foram preenchidos manualmente, herda nome/cargo/unidade dele.
+        if self.destinatario_oficio_id:
+            servidor = self.destinatario_oficio
+            if not self.destinatario_oficio_nome:
+                self.destinatario_oficio_nome = servidor.nome
+            if not self.destinatario_oficio_cargo and servidor.cargo_id:
+                self.destinatario_oficio_cargo = servidor.cargo.nome
+            if not self.destinatario_oficio_unidade and servidor.unidade_id:
+                self.destinatario_oficio_unidade = servidor.unidade.nome
+        self.destinatario_oficio_nome = norm_upper_words(self.destinatario_oficio_nome)
+        self.destinatario_oficio_cargo = norm_upper_words(self.destinatario_oficio_cargo)
+        self.destinatario_oficio_unidade = norm_upper_words(self.destinatario_oficio_unidade)
+        super().save(*args, **kwargs)
+
+
+class AssinaturaConfiguracao(ModeloTemporal):
+    """Assinante padrão por tipo de documento (Ofício, Justificativa, etc.)."""
+
+    OFICIO = "OFICIO"
+
+    JUSTIFICATIVA = "JUSTIFICATIVA"
+
+    TIPO_CHOICES = [
+        (OFICIO, "Ofício"),
+        (JUSTIFICATIVA, "Justificativa"),
+    ]
+
+    configuracao = models.ForeignKey(
+        ConfiguracaoSistema,
+        on_delete=models.CASCADE,
+        related_name="assinaturas",
+    )
+
+    tipo = models.CharField(max_length=30, choices=TIPO_CHOICES)
+
+    servidor = models.ForeignKey(
+        Servidor,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="Servidor",
+    )
+
+    ordem = models.PositiveSmallIntegerField(default=1)
+
+    ativo = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} – {self.servidor or '—'}"
+
+    class Meta:
+        ordering = ["tipo", "ordem"]
+        constraints = [models.UniqueConstraint(fields=["configuracao", "tipo", "ordem"], name="viagens_assinatura_ordem_unica")]

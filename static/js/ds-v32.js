@@ -1,7 +1,141 @@
 /**
  * Comportamentos próprios das páginas no Design System V3.2.
- * Complementa o app.js (menus, filtros, validação, anexos) sem substituí-lo.
+ * Complementa o app.js (menus, filtros, validação) sem substituí-lo.
  */
+/**
+ * Componente global upload_anexos: seleção por clique ou arrastar, lista
+ * acumulada e envio pelo formulário associado quando configurado.
+ */
+(function () {
+  "use strict";
+
+  function tamanhoLegivel(bytes) {
+    if (bytes >= 1048576) {
+      return (bytes / 1048576).toFixed(1).replace(".", ",") + " MB";
+    }
+    return Math.max(1, Math.round(bytes / 1024)) + " KB";
+  }
+
+  document.querySelectorAll("[data-upload-anexos]").forEach(function (bloco) {
+    var input = bloco.querySelector('input[type="file"]');
+    var lista = bloco.querySelector(".upload-anexos__lista");
+    var vazio = bloco.querySelector(".upload-anexos__vazio");
+    var erro = bloco.querySelector("[data-upload-erro]");
+    if (!input || !lista) return;
+
+    // Em inputs múltiplos, cada "Escolher arquivos" SOMA à seleção anterior
+    // (o navegador sozinho substituiria a lista inteira).
+    var acumulados = [];
+
+    function sincronizarInput() {
+      var dt = new DataTransfer();
+      acumulados.forEach(function (arquivo) {
+        dt.items.add(arquivo);
+      });
+      input.files = dt.files;
+    }
+
+    function removerArquivo(indice) {
+      acumulados.splice(indice, 1);
+      sincronizarInput();
+      render();
+    }
+
+    function aoSelecionar() {
+      if (erro) erro.hidden = true;
+      var novos = Array.prototype.slice.call(input.files);
+      if (!input.multiple) {
+        acumulados = novos;
+      } else {
+        novos.forEach(function (novo) {
+          var repetido = acumulados.some(function (existente) {
+            return (
+              existente.name === novo.name &&
+              existente.size === novo.size &&
+              existente.lastModified === novo.lastModified
+            );
+          });
+          if (!repetido) acumulados.push(novo);
+        });
+        sincronizarInput();
+      }
+      render();
+      if (input.files.length && input.form && input.hasAttribute("data-anexo-enviar-ao-selecionar")) {
+        input.form.requestSubmit();
+      }
+    }
+
+    function render() {
+      lista.innerHTML = "";
+      var arquivos = acumulados;
+      if (vazio) vazio.hidden = arquivos.length > 0;
+      arquivos.forEach(function (arquivo, indice) {
+        var item = document.createElement("li");
+        item.className = "upload-anexos__item";
+
+        var nome = document.createElement("span");
+        nome.className = "upload-anexos__nome";
+        nome.textContent = arquivo.name;
+
+        var meta = document.createElement("span");
+        meta.className = "upload-anexos__meta";
+        meta.textContent = tamanhoLegivel(arquivo.size);
+
+        var remover = document.createElement("button");
+        remover.type = "button";
+        remover.className = "upload-anexos__remover";
+        remover.setAttribute("aria-label", "Remover " + arquivo.name);
+        remover.textContent = "×";
+        remover.addEventListener("click", function () {
+          removerArquivo(indice);
+        });
+
+        item.appendChild(nome);
+        item.appendChild(meta);
+        item.appendChild(remover);
+        lista.appendChild(item);
+      });
+    }
+
+    // Arrastar e soltar na área tracejada soma à seleção, como o input.
+    var zona = bloco.querySelector("[data-upload-dropzone]");
+    if (zona) {
+      ["dragenter", "dragover"].forEach(function (evento) {
+        zona.addEventListener(evento, function (e) {
+          e.preventDefault();
+          zona.classList.add("is-arrastando");
+        });
+      });
+      ["dragleave", "drop"].forEach(function (evento) {
+        zona.addEventListener(evento, function (e) {
+          e.preventDefault();
+          zona.classList.remove("is-arrastando");
+        });
+      });
+      zona.addEventListener("drop", function (e) {
+        var soltos = e.dataTransfer && e.dataTransfer.files;
+        if (!soltos || !soltos.length) return;
+        if (!input.multiple && soltos.length > 1) {
+          if (erro) {
+            erro.textContent = "Selecione um arquivo por vez.";
+            erro.hidden = false;
+          }
+          return;
+        }
+        var dt = new DataTransfer();
+        Array.prototype.forEach.call(soltos, function (arquivo) {
+          dt.items.add(arquivo);
+        });
+        input.files = dt.files;
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    }
+
+    input.addEventListener("change", aoSelecionar);
+    render();
+  });
+})();
+
 (function () {
   "use strict";
 
@@ -263,3 +397,100 @@
       setores.forEach(function (setor) { setor.addEventListener("change", atualizarResponsaveis); });
       atualizarResponsaveis();
     })();
+// Cadastros de apoio: criar e editar na listagem, com validação do mesmo ModelForm.
+(function () {
+  "use strict";
+  var modal = document.querySelector("[data-cadastro-dialog]");
+  if (!modal) return;
+  var origem = null;
+  var requisicao = null;
+  var salvando = false;
+
+  function preparar(html) {
+    if (typeof html === "string") modal.innerHTML = html;
+    if (window.DS && window.DS.aprimorar) window.DS.aprimorar(modal);
+    if (!modal.open) modal.showModal();
+    var foco = modal.querySelector("[data-resumo-erros], input:not([type=hidden]), textarea, select");
+    if (foco) foco.focus();
+  }
+  function fechar() {
+    if (salvando) return;
+    if (requisicao) requisicao.abort();
+    modal.close();
+  }
+  modal.addEventListener("close", function () {
+    if (origem && origem.isConnected) origem.focus();
+  });
+  modal.addEventListener("cancel", function (evento) {
+    // Escape recolhe primeiro o combobox aberto; a segunda tecla fecha o modal.
+    if (salvando || modal.querySelector(".custom-select.is-open")) evento.preventDefault();
+  });
+  modal.addEventListener("keydown", function (evento) {
+    var aberto = modal.querySelector(".custom-select.is-open");
+    if (evento.key === "Escape" && aberto) {
+      evento.preventDefault();
+      var gatilho = aberto.querySelector("button.custom-select__trigger");
+      if (gatilho) gatilho.click();
+    }
+  });
+  modal.addEventListener("click", function (evento) {
+    if (evento.target.closest("[data-cadastro-fechar]")) fechar();
+  });
+  document.querySelectorAll("[data-cadastro-modal]").forEach(function (link) {
+    link.addEventListener("click", function (evento) {
+      if (evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey || evento.button) return;
+      evento.preventDefault();
+      origem = link;
+      if (requisicao) requisicao.abort();
+      requisicao = new AbortController();
+      preparar('<header class="mo__topo"><h2 id="cadastro-modal-titulo">Carregando cadastro…</h2><button type="button" class="mo__fechar" data-cadastro-fechar aria-label="Fechar cadastro">×</button></header><div class="mo__corpo" role="status">Aguarde…</div>');
+      fetch(link.href, { headers: { "X-Cadastro-Modal": "1" }, signal: requisicao.signal })
+        .then(function (resposta) {
+          if (!resposta.ok || resposta.redirected) throw new Error("acesso");
+          return resposta.text();
+        })
+        .then(preparar)
+        .catch(function (erro) {
+          if (erro.name !== "AbortError") window.location.assign(link.href);
+        });
+    });
+  });
+  modal.addEventListener("submit", function (evento) {
+    var form = evento.target.closest("[data-cadastro-form]");
+    if (!form) return;
+    evento.preventDefault();
+    if (salvando) return;
+    salvando = true;
+    var dados = new FormData(form);
+    form.setAttribute("aria-busy", "true");
+    form.querySelectorAll("button").forEach(function (botao) { botao.disabled = true; });
+    fetch(form.action, { method: "POST", body: dados, headers: { "X-Cadastro-Modal": "1" } })
+      .then(function (resposta) {
+        if (!resposta.ok || resposta.redirected) throw new Error("Não foi possível salvar. Verifique sua conexão e tente novamente.");
+        if ((resposta.headers.get("Content-Type") || "").indexOf("application/json") !== -1) {
+          return resposta.json().then(function (resultado) {
+            if (!resultado.ok) throw new Error("Não foi possível salvar.");
+            window.location.reload();
+          });
+        }
+        return resposta.text().then(preparar);
+      })
+      .catch(function (erro) {
+        var falha = form.querySelector("[data-cadastro-falha]");
+        if (falha) { falha.textContent = erro.message; falha.hidden = false; }
+      })
+      .finally(function () {
+        salvando = false;
+        form.removeAttribute("aria-busy");
+        form.querySelectorAll("button").forEach(function (botao) { botao.disabled = false; });
+      });
+  });
+  if (modal.hasAttribute("data-cadastro-inicial")) {
+    preparar();
+    var endereco = new URL(window.location.href);
+    endereco.pathname = modal.getAttribute("data-cadastro-lista");
+    endereco.searchParams.delete("novo");
+    endereco.searchParams.delete("editar");
+    window.history.replaceState(null, "", endereco);
+  }
+})();

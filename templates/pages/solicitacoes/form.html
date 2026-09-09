@@ -159,26 +159,10 @@
               <p class="texto-vazio">Nenhum arquivo anexado.</p>
             {% endfor %}
             {% if pode_gerenciar_anexos %}
-              <div class="upload-anexos" data-upload-anexos>
-                <input type="file" name="arquivo" id="id_anexo_upload" form="form-anexo-upload" class="upload-anexos__input" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods" required>
-                <div class="upload-anexos__acoes">
-                  <label for="id_anexo_upload" class="an-add">{% include "components/icon.html" with nome="plus" %}Escolher arquivo</label>
-                  <button type="submit" form="form-anexo-upload" class="btn--secundaria">Anexar arquivo</button>
-                </div>
-                <span class="upload-anexos__vazio">PDF, DOC, XLS, ODT ou imagem, até 10 MB.</span>
-                <ul class="upload-anexos__lista"></ul>
-              </div>
+              {% include "components/upload_anexos.html" with id="id_anexo_upload" name="arquivo" formulario="form-anexo-upload" obrigatorio=True rotulo_enviar="Anexar arquivo" only %}
             {% endif %}
           {% else %}
-            <div class="upload-anexos" data-upload-anexos>
-              <input type="file" name="anexos" id="id_anexos_cadastro" multiple class="upload-anexos__input" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods">
-              <label for="id_anexos_cadastro" class="an-add an-add--zona" data-upload-dropzone>
-                {% include "components/icon.html" with nome="plus" %}
-                <span><b>Arraste arquivos aqui ou clique para selecionar</b><small>Ofício, memorando, foto do local. PDF, DOC, XLS, ODT ou imagem, até 10 MB por arquivo.</small></span>
-              </label>
-              <span class="upload-anexos__vazio" hidden>Nenhum arquivo selecionado. Eles serão salvos junto com a solicitação.</span>
-              <ul class="upload-anexos__lista"></ul>
-            </div>
+            {% include "components/upload_anexos.html" with id="id_anexos_cadastro" name="anexos" multiple=True mensagem_vazio="Nenhum arquivo selecionado. Eles serão salvos junto com a solicitação." only %}
           {% endif %}
         </section>
       </div>

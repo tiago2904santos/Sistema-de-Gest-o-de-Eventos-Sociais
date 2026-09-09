@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Justificativa — {{ oficio.numero_formatado }}</title>
+</head>
+<body>
+  <div class="doc-orgao">{{ institucional.nome_orgao }}</div>
+  <div class="doc-unidade">{{ institucional.unidade }}</div>
+  <div class="doc-title">Justificativa de prazo — Ofício {{ oficio.numero_formatado }}</div>
+  <div class="doc-meta"><strong>Protocolo:</strong> {{ oficio.protocolo }}</div>
+
+  <div class="doc-section">
+    <h2>Texto</h2>
+    <p>{{ justificativa.texto|linebreaksbr|default:"—" }}</p>
+  </div>
+
+  <div class="doc-section doc-muted">
+    <p><strong>Obrigatória pela regra vigente:</strong>
+      {% if justificativa.exigida %}sim{% else %}não{% endif %}
+    </p>
+  </div>
+</body>
+</html>

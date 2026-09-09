@@ -1,0 +1,7 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/viagens-documentos.css' %}">{% endblock %}
+{% block conteudo %}
+{% include "components/v32/page_header.html" with titulo="Prévia do termo de autorização" %}
+<section class="pa-card v32-corpo"><p>{{ payload.institucional.unidade }}</p><h2>{{ payload.termo.participante.nome }}</h2><p>{{ payload.termo.participante.cargo }} · RG {{ payload.termo.participante.rg_formatado }} · CPF {{ payload.termo.participante.cpf_formatado }}</p><p>{{ payload.termo.viagem.destinos_texto }} · {{ payload.termo.viagem.periodo }}</p><p>{{ payload.termo.transporte.modelo }} · {{ payload.termo.transporte.placa }}</p><p>{{ payload.termo.textos.corpo_autorizacao }}</p><p>{{ payload.termo.textos.declaracao }}</p><a href="{% url 'viagens_termos:detalhe' termo.pk %}">Voltar ao termo</a></section>
+{% endblock %}

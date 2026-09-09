@@ -15,5 +15,5 @@
   </div>
   {% for erro in erros %}<p class="form-erro"{% if forloop.first %} id="id_{{ name }}_erro"{% endif %}>{{ erro }}</p>{% endfor %}
   {% if ajuda %}<p class="form-ajuda" id="id_{{ name }}_ajuda">{{ ajuda }}</p>{% endif %}
-  <p class="form-ajuda">Use Ctrl para selecionar mais de um município.</p>
+  <p class="form-ajuda">{{ ajuda_multipla|default:"Use Ctrl para selecionar mais de um município." }}</p>
 </div>

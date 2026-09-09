@@ -1,0 +1,10 @@
+{% extends "viagens_prestacoes/base.html" %}{% load l10n %}
+{% block prestacao_conteudo %}
+<div class="v32-barra v32-bloco"><a href="{{ editar_roteiro_url }}">Ajustar roteiro realizado</a><a href="{{ editar_motorista_url }}">Motorista e viatura</a><a href="{{ preview_pdf_url }}" target="_blank">Visualizar PDF</a><a href="{{ preview_xlsx_url }}">Baixar planilha</a></div>
+<p>Preencha a quilometragem de cada deslocamento. Os horários são os do roteiro realizado.</p>
+<form method="post" id="form-prestacao">{% csrf_token %}{{ formset.management_form }}
+{% for trecho in trechos %}<section class="section-card v32-bloco"><header class="section-card__cabecalho"><h2 class="section-card__titulo">{{ trecho.display.ordem }}. {{ trecho.display.rota }}</h2></header><div class="section-card__corpo"><p>{{ trecho.display.saida.data }} {{ trecho.display.saida.hora }} → {{ trecho.display.chegada.data }} {{ trecho.display.chegada.hora }}</p>
+{% for erro in trecho.form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+<input type="hidden" name="{{ trecho.form.id.html_name }}" value="{{ trecho.form.instance.pk|unlocalize }}">
+<div class="v32-form-grid viagem-campos">{% include "pages/viagens_oficios/_campos.html" with campos=trecho.campos %}</div></div></section>{% empty %}<p>O roteiro ainda não possui trechos. Use “Ajustar roteiro realizado” para registrá-los.</p>{% endfor %}</form>
+{% include "viagens_prestacoes/assinatura/_card.html" %}{% endblock %}{% block prestacao_acoes %}<div class="viagem-acoes"><a class="btn--secundaria" href="{% url 'viagens_prestacoes:index' %}">Voltar</a><button class="btn-primaria" form="form-prestacao">Salvar e continuar para o RT</button></div>{% endblock %}

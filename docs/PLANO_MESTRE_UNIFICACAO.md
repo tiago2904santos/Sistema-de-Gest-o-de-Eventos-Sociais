@@ -93,18 +93,35 @@ A lição que fica para as fases seguintes: **suíte verde não é tela conferid
 
 **Gate cumprido:** cálculo idêntico ao da origem nos casos de caracterização; telas exercitadas de ponta a ponta contra PostgreSQL semeado (montar, calcular, cancelar, reativar, excluir); suíte verde em SQLite e PostgreSQL.
 
-### Fase 3 — Núcleo documental (4–6 sessões)
+### Fase 3 — Núcleo documental ✅ (entregue em 09/09/2026)
 
-- Portar `documentos/services` do B: registry de tipos, façade, render docxtpl, cadeia de motores PDF (`word_com` → `libreoffice` → `weasyprint` → fallback), nomenclatura, `DocumentoArtefato` (payload_snapshot + hash) e versões de assinatura append-only. **Síncrono** (sem `DocumentoGeracao`/Celery).
-- Copiar os templates `.docx` de ofício/justificativa/termo + golden files de placeholders.
-- Novas dependências em `requirements.txt` (python-docx, docxtpl, docxcompose, weasyprint, pypdf, fpdf2; `docx2pdf`/`pywin32` só no Windows).
-- **Gate:** `documentos_check` portado passa; geração DOCX+PDF dos 3 tipos com golden files verdes.
+- **App `documentos` portado do GV:** registry com três tipos (`OFICIO`, `JUSTIFICATIVA`, `TERMO_AUTORIZACAO`), façade síncrona, render docxtpl, validadores, formatadores e nomenclatura. Datas cientes de fuso saem no horário de São Paulo; moeda usa a localização do Django.
+- **Cadeia PDF:** Word/COM → LibreOffice → WeasyPrint → fallback simples. Motores opcionais, imports protegidos, diagnóstico `documentos_check --json/--verbose`, cache de sondas e de conversão sem Redis.
+- **Persistência e auditoria:** `DocumentoArtefato` com hash, snapshot, metadados, arquivo e FKs opcionais para Servidor/Roteiro/usuário; cache por fingerprint coordenado pela façade. Migração inicial só de esquema. Assinatura manual e versões com as proteções de imutabilidade do GV, sem tokens públicos.
+- **Download privado:** `/documentos/<uuid>/baixar/`, liberado pelo módulo VIAGENS ou para superusuário, preferindo a versão assinada. Sem tela nova, mídia pública ou X-Accel-Redirect.
+- **Três modelos DOCX e golden files copiados byte a byte.** Manifesto SHA-256 adicional detecta também alterações de imagens e formatação. `ATUALIZAR_GOLDEN=1` verificado.
+- Dependências portadas, com exceção **autorizada** de `pywin32>=311,<313` para Python 3.14; pacotes Windows com marcador de ambiente. CI mantém PostgreSQL 18 e executa também a suíte SQLite.
 
-### Fase 4 — Ofícios, justificativas e termos (5–8 sessões)
+**Gate cumprido:** baseline de **509 testes**; pós-porte com **645 testes**, zero falhas e quatro skips do WeasyPrint sem bibliotecas nativas, em **PostgreSQL (226,226 s)** e **SQLite (214,672 s)**. `check` sem problemas e `makemigrations --check --dry-run` limpo. Os três tipos geraram DOCX e PDF; os PDFs usaram **word_com**, uma página cada, com hash/snapshot persistidos e cache hits comprovados em banco descartável.
 
-- Portar `Oficio` (+ numeração com lacunas e advisory lock do PostgreSQL), `Justificativa` (1:1), `TermoAutorizacao`, catálogos de motivo.
-- Fluxo no padrão do A (wizard de etapas do B reexpresso em FBVs: viajantes → transporte → roteiro → justificativa → resumo → documentos).
-- **Gate:** ofício completo criado e gerado em DOCX/PDF de ponta a ponta; numeração serializada sob concorrência testada.
+**Fora desta fase:** modelos/telas de ofícios e termos, Celery/Redis, Drive, protocolos, links públicos, unoserver, XLSX e overlay. As limitações preservadas do GV e os pontos de integração da F4 estão em [`FASE_3_NUCLEO_DOCUMENTAL.md`](FASE_3_NUCLEO_DOCUMENTAL.md). A validação não aplicou migrações no banco de desenvolvimento e não alterou arquivos do GV.
+
+### Fase 4 — Ofícios, justificativas e termos (concluída em 09/09/2026)
+
+- Implementados `viagens_oficios` e `viagens_termos`, com justificativa 1:1,
+  catálogos, numeração anual global, lacunas deliberadas, reserva transacional
+  PostgreSQL e alternativa `select_for_update`.
+- Formulário longo V3.2, consultas e ações por perfil VIAGENS, geração síncrona
+  DOCX/PDF pela F3, termos individuais/lotes e avulsos, origens no artefato/cache,
+  assinatura manual versionada e auditoria.
+- Configuração institucional e assinantes globais incluídos com autorização do
+  usuário. O gestor precisa preencher os dados oficiais antes do uso administrativo.
+- Gate documental conferido no desenvolvimento: Ofício 01/2026 com dois
+  servidores, DOCX/PDF e termos, além de termo avulso sem viatura. PostgreSQL:
+  **737 testes** (baseline **645**); SQLite: **737 testes**, ambos sem falhas.
+  Goldens verdes, `check` limpo e nenhuma alteração de migração pendente.
+- Relatório: [FASE_4_OFICIOS_JUSTIFICATIVAS_TERMOS.md](FASE_4_OFICIOS_JUSTIFICATIVAS_TERMOS.md).
+  Sem commit/push; alterações prontas para organização após autorização.
 
 ### Fase 5 — Prestações de contas (6–9 sessões)
 

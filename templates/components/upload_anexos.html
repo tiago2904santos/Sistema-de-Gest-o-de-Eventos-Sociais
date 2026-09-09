@@ -1,0 +1,17 @@
+{% comment %}
+  Seletor global de anexos V3.2. Informe id e name; multiple aceita seleção
+  acumulada. formulario associa o input a um form externo. envio_imediato
+  envia ao selecionar; rotulo_enviar mantém o envio explícito quando necessário.
+  mensagem_vazio explica quando os arquivos selecionados serão salvos.
+{% endcomment %}
+<div class="upload-anexos" data-upload-anexos>
+  <input type="file" name="{{ name }}" id="{{ id }}" class="upload-anexos__input" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods" aria-describedby="{{ id }}_ajuda"{% if formulario %} form="{{ formulario }}"{% endif %}{% if multiple %} multiple{% endif %}{% if obrigatorio %} required{% endif %}{% if envio_imediato %} data-anexo-enviar-ao-selecionar{% endif %}>
+  <label for="{{ id }}" class="an-add an-add--zona" data-upload-dropzone>
+    {% include "components/icon.html" with nome="plus" %}
+    <span><b>Arraste arquivos aqui ou clique para selecionar</b><small id="{{ id }}_ajuda">Ofício, memorando, foto do local. PDF, DOC, XLS, ODT ou imagem, até 10 MB por arquivo.{% if not multiple %} Selecione um arquivo por vez.{% endif %}</small></span>
+  </label>
+  {% if mensagem_vazio %}<span class="upload-anexos__vazio">{{ mensagem_vazio }}</span>{% endif %}
+  <p class="msg-erro" data-upload-erro role="alert" hidden></p>
+  <ul class="upload-anexos__lista" aria-live="polite" aria-label="Arquivos selecionados"></ul>
+  {% if rotulo_enviar %}<button type="submit"{% if formulario %} form="{{ formulario }}"{% endif %} class="btn--secundaria upload-anexos__enviar">{{ rotulo_enviar }}</button>{% endif %}
+</div>

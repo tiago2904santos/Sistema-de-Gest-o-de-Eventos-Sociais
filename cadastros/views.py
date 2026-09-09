@@ -8,7 +8,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.core.paginator import Paginator
 from django.db.models import ProtectedError
 from django.forms import modelform_factory
@@ -176,6 +176,18 @@ def index(request):
 def lista(request, slug):
     _exigir_administrador(request)
     config = _config(slug)
+    modal = None
+    if request.GET.get("novo") or request.GET.get("editar"):
+        pk = request.GET.get("editar")
+        if pk and not pk.isdecimal():
+            raise Http404
+        instancia = get_object_or_404(config["model"], pk=pk) if pk else None
+        modal = _contexto_modal(slug, config, _form_class(config)(instance=instancia), instancia)
+    return _render_lista(request, slug, modal)
+
+
+def _render_lista(request, slug, modal=None):
+    config = _config(slug)
     queryset = config["model"].objects.all()
     if slug == "municipios":
         queryset = queryset.select_related("estado", "regiao")
@@ -219,6 +231,7 @@ def lista(request, slug):
             ),
             "elipse": paginator.ELLIPSIS,
             "eh_municipio": slug == "municipios",
+            "modal": modal,
         },
     )
 
@@ -229,6 +242,13 @@ def editar(request, slug, pk=None):
     config = _config(slug)
     instancia = get_object_or_404(config["model"], pk=pk) if pk else None
     FormClass = _form_class(config)
+    via_modal = request.headers.get("X-Cadastro-Modal") == "1"
+    if request.method == "GET" and not via_modal:
+        parametros = request.GET.copy()
+        parametros.pop("novo", None)
+        parametros.pop("editar", None)
+        parametros["editar" if pk else "novo"] = str(pk) if pk else "1"
+        return redirect(f"{reverse('cadastros:lista', args=[slug])}?{parametros.urlencode()}")
     if request.method == "POST":
         form = FormClass(request.POST, instance=instancia)
         if form.is_valid():
@@ -239,10 +259,21 @@ def editar(request, slug, pk=None):
                 objeto,
             )
             messages.success(request, f"{config['titulo']}: registro salvo com sucesso.")
+            if via_modal:
+                return JsonResponse({"ok": True})
             return redirect("cadastros:lista", slug=slug)
-        messages.error(request, "Corrija os campos destacados para continuar.")
+        if not via_modal:
+            messages.error(request, "Corrija os campos destacados para continuar.")
     else:
         form = FormClass(instance=instancia)
+    contexto = _contexto_modal(slug, config, form, instancia)
+    if via_modal:
+        return render(request, "pages/cadastros/_modal_form.html", {"dados": contexto})
+    return _render_lista(request, slug, contexto)
+
+
+def _contexto_modal(slug, config, form, instancia):
+    pk = instancia.pk if instancia else None
     apenas_nome = config["campos"] == ["nome"]
     campos = _campos_para_template(form)
     erros_gerais = list(form.non_field_errors())
@@ -251,33 +282,30 @@ def editar(request, slug, pk=None):
         intro = f"Informe o nome {config['genitivo']} que poderá ser utilizado nas solicitações."
     else:
         intro = f"Informe os dados {config['genitivo']} que poderão ser utilizados nas solicitações."
-    return render(
-        request,
-        "pages/cadastros/form.html",
-        {
-            "slug": slug,
-            "titulo": config["titulo"],
-            "instancia": instancia,
-            "singular": config["singular"],
-            "apenas_nome": apenas_nome,
-            "campos": campos,
-            "erros_gerais": erros_gerais,
-            "erros_total": erros_total,
-            "cartao_titulo": f"Editar {config['singular']}" if pk else config["novo"],
-            "cartao_intro": intro,
-            "exemplo": config["exemplo"],
-            "genitivo": config["genitivo"],
-            "subtitulo_pagina": (
-                "Atualize os dados deste registro"
-                if pk
-                else "Cadastre uma opção disponível nas solicitações"
-            ),
-            "breadcrumb": [
-                {"label": config["titulo"], "url": reverse("cadastros:lista", args=[slug])},
-                {"label": "Editar registro" if pk else "Novo registro"},
-            ],
-        },
-    )
+    return {
+        "url_acao": reverse("cadastros:editar", args=[slug, pk]) if pk else reverse("cadastros:novo", args=[slug]),
+        "slug": slug,
+        "titulo": config["titulo"],
+        "instancia": instancia,
+        "singular": config["singular"],
+        "apenas_nome": apenas_nome,
+        "campos": campos,
+        "erros_gerais": erros_gerais,
+        "erros_total": erros_total,
+        "cartao_titulo": f"Editar {config['singular']}" if pk else config["novo"],
+        "cartao_intro": intro,
+        "exemplo": config["exemplo"],
+        "genitivo": config["genitivo"],
+        "subtitulo_pagina": (
+            "Atualize os dados deste registro"
+            if pk
+            else "Cadastre uma opção disponível nas solicitações"
+        ),
+        "breadcrumb": [
+            {"label": config["titulo"], "url": reverse("cadastros:lista", args=[slug])},
+            {"label": "Editar registro" if pk else "Novo registro"},
+        ],
+    }
 
 
 @login_required

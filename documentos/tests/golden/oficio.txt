@@ -1,0 +1,25 @@
+Senhor Delegado, Através deste, solicito [[assunto_termo]] e medidas para a concessão de diárias e recursos para combustível, conforme cronograma abaixo:
+ROTEIRO DE IDA
+ROTEIRO DE RETORNO
+Respeitosamente,
+[[nome_chefia]]
+[[cargo_chefia]]
+Ofício N° [[oficio]] [[assunto_oficio]] | DATA: [[data_do_oficio]]
+ORIGEM: [[unidade]] | DESTINO: [[orgao_destino]]
+Protocolo Nº: [[protocolo]] | Assunto: [[assunto_linha]]
+NOME | RG e CPF | CARGO | N° SOLICITAÇÃO 
+(Central de Viagens)
+[[col_servidor]] | [[col_rgcpf]] | [[col_cargo]] | [[col_solicitacao]]
+Destino da Viagem: [[destinos_bloco]] | N° de Diarias por Servidor:
+[[diarias_x]] diárias | Valor total do Ofício:
+[[diaria]]
+[[col_ida_saida]] | [[col_ida_chegada]]
+[[col_volta_saida]] | [[col_volta_chegada]]
+Meio de Transporte: [[viatura]] 
+Placa Oficial: [[placa]]  
+Motorista: [[motorista_formatado]] | Combustível: [[combustivel]]  
+Viatura [[tipo_viatura]] | Porte/Trânsito de arma: [[armamento]]
+Custos: Informar qual entidade custeará as diárias (hospedagem/alimentação) e deslocamento:
+[[custo]]
+Motivo da Viagem: [[motivo]].
+Declaro que os servidores estão cientes da necessidade de estar na posse de cartão corporativo vigente e apto para uso, no período do deslocamento.

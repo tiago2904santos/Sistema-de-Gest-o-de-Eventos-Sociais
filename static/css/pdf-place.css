@@ -1,0 +1,118 @@
+/* Posicionar algo sobre um PDF — o palco, as caixas arrastáveis e a legenda.
+ *
+ * Par de `js/components/pdf-place.js`. Vale para a tela interna de ajuste do carimbo do
+ * número de solicitação.
+ *
+ * A tela PÚBLICA de assinatura tem o mesmo comportamento e desenho próprio
+ * (`css/pages/prestacoes-assinatura.css`, classes `asgn-*`): ela roda fora do casco do
+ * sistema, com paleta própria, e trazê-la para os tokens do v2 é uma mudança visual de
+ * outra conversa. O que as duas telas compartilham é o MOTOR, não a pele.
+ */
+
+:is(html[data-theme]) .pdf-place__pager {
+  align-items: center;
+  display: flex;
+  gap: var(--space-1);
+}
+
+:is(html[data-theme]) .pdf-place__pager-label {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  min-width: 3.2rem;
+  text-align: center;
+}
+
+/* O palco é o cinza de trás da folha: sem ele a página branca do PDF encosta no fundo
+   do painel e some a silhueta do documento, que é o que diz onde a página começa. */
+:is(html[data-theme]) .pdf-place__viewer {
+  background: var(--surface-rail);
+  border-radius: var(--radius-field);
+  display: flex;
+  justify-content: center;
+  overflow: auto;
+  padding: var(--space-2);
+}
+
+:is(html[data-theme]) .pdf-place__stage {
+  position: relative;
+}
+
+/* A folha é BRANCA nos dois temas, e por token: não é cor de interface, é o papel do
+   documento. Escurecê-la no tema escuro mudaria o que o operador vê em relação ao PDF
+   que vai sair impresso. */
+:is(html[data-theme]) .pdf-place__stage canvas {
+  background: var(--paper);
+  box-shadow: var(--shadow-soft);
+  display: block;
+}
+
+/* A caixa é TRACEJADA e translúcida de propósito: ela cobre um pedaço do ofício, e um
+   retângulo opaco esconderia justamente a linha da tabela que o operador está mirando. */
+:is(html[data-theme]) .pdf-place__box {
+  align-items: center;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1.5px dashed var(--accent);
+  cursor: move;
+  display: flex;
+  justify-content: flex-start;
+  position: absolute;
+  touch-action: none;
+}
+
+:is(html[data-theme]) .pdf-place__box-text {
+  /* Preto porque é a tinta do carimbo: `carimbo_services` desenha em
+     `setFillColorRGB(0, 0, 0)`, e a prévia tem de mostrar o que vai para o PDF. */
+  color: var(--paper-ink);
+  font-family: Helvetica, Arial, sans-serif;
+  line-height: 1;
+  /* O texto acompanha a altura da caixa porque é dela que sai o corpo da fonte do
+     carimbo — o que se vê aqui tem de ser o tamanho que vai para o PDF. */
+  font-size: inherit;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+:is(html[data-theme]) .pdf-place__box--ativa {
+  border-style: solid;
+}
+
+:is(html[data-theme]) .pdf-place__box-handle {
+  background: var(--accent);
+  border: 2px solid var(--paper);
+  border-radius: 50%;
+  bottom: -9px;
+  cursor: nwse-resize;
+  height: 18px;
+  position: absolute;
+  right: -9px;
+  touch-action: none;
+  width: 18px;
+}
+
+:is(html[data-theme]) .pdf-place__legenda {
+  display: grid;
+  gap: var(--space-1);
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+}
+
+:is(html[data-theme]) .pdf-place__legenda-item {
+  align-items: center;
+  background: var(--surface-contrast, var(--surface));
+  border-radius: var(--radius-field);
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+
+:is(html[data-theme]) .pdf-place__legenda-nome {
+  color: var(--text-strong);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+:is(html[data-theme]) .pdf-place__legenda-numero {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}

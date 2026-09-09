@@ -1,0 +1,22 @@
+Ref. ao Ofício [[oficio]]	[[sede]], [[data_atual_extenso]]
+RELATÓRIO TÉCNICO DE VIAGEM
+VALORES UTILIZADOS NA VIAGEM:
+Declaramos que o trabalho previsto na programação de viagem foi realizado, assim como cumprido o período de realização da viagem e a documentação encaminhada ao setor responsável
+______________________________________
+CPF [[cpf_servidor]]
+Nome | [[nome_servidor]]
+CPF | [[cpf_servidor]]
+Diária: | [[diaria]]
+Translado: | [[translado]]
+Combustível: | Cartão Prime
+Passagem: | [[passagem]]
+DESCRIÇÃO DO EVENTO
+[[motivo]]
+OBJETIVO DA PARTICIPAÇÃO
+[[atividade]]
+CONCLUSÃO
+[[conclusao]]
+MEDIDAS A SEREM ADOTADAS PELO ÓRGÃO
+[[medidas]]
+INFORMAÇÕES COMPLEMENTARES
+[[info_complementares]]

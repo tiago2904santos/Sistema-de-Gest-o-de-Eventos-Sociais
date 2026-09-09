@@ -1,0 +1,13 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load static %}
+{% block title %}{{ page_title|default:"Prestação de contas" }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/viagens-documentos.css' %}"><link rel="stylesheet" href="{% static 'css/viagens-prestacoes.css' %}">{% endblock %}
+{% block conteudo %}
+{% include "components/v32/page_header.html" with titulo=flow_status_label|default:page_title subtitulo=ps.servidor.nome icone="file-text" %}
+<p><a href="{% url 'viagens_prestacoes:index' %}">Prestações</a>{% if prestacao %} · Ofício <a href="{% url 'viagens_oficios:detalhe' prestacao.oficio_id %}">{{ prestacao.oficio.numero_formatado }}</a>{% endif %}</p>
+<div class="viagem-form prestacao-form"><main>{% block prestacao_conteudo %}{% endblock %}</main>
+{% if ps %}<aside class="viagem-etapas pa-card v32-corpo"><h2>Etapas da prestação</h2><nav aria-label="Etapas da prestação">{% for step in wizard_page_steps %}<a href="{{ step.url }}" {% if step.aria_current %}aria-current="step"{% endif %}>{{ step.step_label }} · {{ step.title }}</a>{% endfor %}</nav><h3>Equipe</h3>{% for servidor in identificacao.servidores %}<p><a href="{% url 'viagens_prestacoes:diario_servidor' servidor.ps_pk %}">{{ servidor.nome_servidor }}</a></p>{% endfor %}
+{% if identificacao.servidores_removidos %}<details id="prestacao-removidos-section"><summary>Saíram da equipe · dados preservados</summary>{% for servidor in identificacao.servidores_removidos %}<p>{{ servidor.nome_servidor }} · {{ servidor.guardados }}</p>{% endfor %}</details>{% endif %}</aside>{% endif %}</div>
+{% block prestacao_acoes %}{% endblock %}
+{% endblock %}
+{% block extra_js %}{{ block.super }}<script src="{% static 'js/viagens-prestacoes.js' %}" defer></script>{% endblock %}

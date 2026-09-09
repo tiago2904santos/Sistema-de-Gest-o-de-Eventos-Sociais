@@ -1,0 +1,8 @@
+{% extends "viagens_prestacoes/base.html" %}{% load l10n %}
+{% block prestacao_conteudo %}<p>O texto é compartilhado pela equipe. Cada relatório recebe a identificação e a diária do respectivo servidor.</p>
+<div class="v32-barra v32-bloco"><a href="{% url 'viagens_prestacoes:modelos_index' %}?next={{ request.path|urlencode }}">Modelos de texto</a>{% for servidor in servidores %}<a href="{{ servidor.download_docx_url }}">Baixar DOCX</a><a href="{{ servidor.download_pdf_url }}?inline=1" target="_blank">Visualizar PDF</a>{% endfor %}</div>
+<form method="post" id="form-prestacao">{% csrf_token %}{% for erro in form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}<div class="section-card section-card__corpo viagem-campos">{% include "pages/viagens_oficios/_campos.html" %}
+{% if ps.diaria_valor_override is not None %}<p>Diária ajustada</p>{% endif %}
+{% include "components/input.html" with name=diaria_name label="Diária recebida por este servidor" valor=diaria_recebida ajuda="Preencha quando o valor recebido diferir do liberado, por exemplo R$ 87,00 (saque)." %}</div></form>
+{{ modelos_texto|json_script:"rt-modelos" }}
+{% include "viagens_prestacoes/assinatura/_card.html" %}{% endblock %}{% block prestacao_acoes %}<div class="viagem-acoes"><a class="btn--secundaria" href="{{ diario_url }}">Voltar ao diário</a><button class="btn--secundaria" form="form-prestacao">Salvar relatório</button><button class="btn-primaria" form="form-prestacao" name="continuar" value="1">Salvar e continuar</button></div>{% endblock %}

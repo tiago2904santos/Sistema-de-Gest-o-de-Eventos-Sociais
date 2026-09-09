@@ -12,6 +12,10 @@ from django.db.models.signals import m2m_changed, post_save, pre_delete, pre_sav
 from core.middleware import obter_requisicao_atual
 
 APPS_AUDITADOS = {
+    "viagens_prestacoes",
+    "viagens_oficios",
+    "viagens_termos",
+    "documentos",
     "accounts",
     "cadastros",
     "solicitacoes",
@@ -33,8 +37,21 @@ MODELOS_EXCLUIDOS = {
     "core.notificacao",
 }
 
-# Nomes de campo que nunca entram em snapshot nem em delta.
-CAMPOS_SENSIVEIS = {"password", "senha", "token", "access_token", "refresh_token"}
+# Nomes de campo que nunca entram em snapshot nem em delta: ou são segredo, ou
+# são cópia volumosa de dado pessoal que já vive no próprio registro.
+# `payload_snapshot` guarda o conteúdo inteiro do documento gerado (nome, CPF,
+# lotação); repetido na trilha, multiplicaria o dado pessoal sem acrescentar
+# rastro — quem gerou, quando e qual artefato continuam registrados.
+CAMPOS_SENSIVEIS = {
+    "password",
+    "senha",
+    "token",
+    "access_token",
+    "refresh_token",
+    "payload_snapshot",
+    "link_token_hash",
+    "cpf_prefixo_hash",
+}
 
 _ATRIBUTO_SNAPSHOT = "_auditoria_snapshot_anterior"
 
@@ -71,6 +88,9 @@ def _contexto_da_requisicao():
     usuario = getattr(requisicao, "user", None)
     if usuario is not None and not usuario.is_authenticated:
         usuario = None
+    rota = getattr(requisicao, "resolver_match", None)
+    if rota and rota.namespace == "viagens_assinaturas":
+        return usuario, rota.view_name
     return usuario, requisicao.path[:500]
 
 

@@ -145,7 +145,7 @@ class CrudCadastrosTests(TestCase):
         self.assertTrue(
             OrgaoResponsavel.objects.filter(nome="Secretaria de Estado da Justiça").exists()
         )
-        edicao = self.client.get(reverse("cadastros:novo", args=["orgaos"]))
+        edicao = self.client.get(reverse("cadastros:novo", args=["orgaos"]), follow=True)
         self.assertNotContains(edicao, 'name="sigla"')
 
     def test_excluir_registro_livre(self):
@@ -197,5 +197,73 @@ class CrudCadastrosTests(TestCase):
 
         self.assertEqual(resposta.status_code, 302)
         self.assertTrue(Servico.objects.filter(nome="Plantão de atendimento").exists())
-        edicao = self.client.get(reverse("cadastros:novo", args=["servicos"]))
+        edicao = self.client.get(reverse("cadastros:novo", args=["servicos"]), follow=True)
         self.assertNotContains(edicao, 'name="descricao"')
+
+    def test_enderecos_antigos_abrem_modal_na_lista(self):
+        self.client.force_login(self.admin)
+        tipo = TipoEvento.objects.create(nome="Exemplo")
+        for nome, args, parametro in (
+            ("novo", ["tipos-evento"], "novo=1"),
+            ("editar", ["tipos-evento", tipo.pk], f"editar={tipo.pk}"),
+        ):
+            with self.subTest(acao=nome):
+                resposta = self.client.get(reverse(f"cadastros:{nome}", args=args), follow=True)
+                self.assertIn(parametro, resposta.redirect_chain[0][0])
+                self.assertTemplateUsed(resposta, "pages/cadastros/lista.html")
+                self.assertContains(resposta, "data-cadastro-inicial")
+                self.assertContains(resposta, "data-cadastro-form")
+
+    def test_todos_os_cadastros_carregam_formulario_no_modal(self):
+        from .views import CADASTROS
+
+        self.client.force_login(self.admin)
+        for slug, config in CADASTROS.items():
+            with self.subTest(slug=slug):
+                resposta = self.client.get(reverse("cadastros:novo", args=[slug]), HTTP_X_CADASTRO_MODAL="1")
+                self.assertContains(resposta, "data-cadastro-form")
+                self.assertNotContains(resposta, "<html")
+                for campo in config["campos"]:
+                    self.assertContains(resposta, f'name="{campo}"')
+
+    def test_modal_valida_duplicidade_sem_gravar_e_permite_corrigir(self):
+        self.client.force_login(self.admin)
+        TipoEvento.objects.create(nome="Duplicado")
+        url = reverse("cadastros:novo", args=["tipos-evento"])
+        resposta = self.client.post(url, {"nome": "Duplicado"}, HTTP_X_CADASTRO_MODAL="1")
+        self.assertContains(resposta, "form-erro")
+        self.assertContains(resposta, 'value="Duplicado"')
+        self.assertEqual(TipoEvento.objects.count(), 1)
+        resposta = self.client.post(url, {"nome": "Corrigido"}, HTTP_X_CADASTRO_MODAL="1")
+        self.assertEqual(resposta.json(), {"ok": True})
+        self.assertTrue(TipoEvento.objects.filter(nome="Corrigido").exists())
+        self.assertEqual(LogAuditoria.objects.filter(acao="CADASTRO_CRIADO").count(), 1)
+
+    def test_modal_edita_registro_existente(self):
+        self.client.force_login(self.admin)
+        tipo = TipoEvento.objects.create(nome="Original")
+        url = reverse("cadastros:editar", args=["tipos-evento", tipo.pk])
+        resposta = self.client.get(url, HTTP_X_CADASTRO_MODAL="1")
+        self.assertContains(resposta, 'value="Original"')
+        resposta = self.client.post(url, {"nome": "Atualizado"}, HTTP_X_CADASTRO_MODAL="1")
+        self.assertEqual(resposta.json(), {"ok": True})
+        tipo.refresh_from_db()
+        self.assertEqual(tipo.nome, "Atualizado")
+        self.assertEqual(TipoEvento.objects.count(), 1)
+
+    def test_modal_mantem_restricao_de_acesso(self):
+        self.client.force_login(self.comum)
+        url = reverse("cadastros:novo", args=["tipos-evento"])
+        self.assertEqual(self.client.get(url, HTTP_X_CADASTRO_MODAL="1").status_code, 403)
+        self.assertEqual(self.client.post(url, {"nome": "Negado"}, HTTP_X_CADASTRO_MODAL="1").status_code, 403)
+        self.assertEqual(self.client.get(reverse("cadastros:lista", args=["tipos-evento"]), {"novo": "1"}).status_code, 403)
+        self.assertFalse(TipoEvento.objects.filter(nome="Negado").exists())
+
+    def test_modal_nao_remove_filtros_da_lista(self):
+        self.client.force_login(self.admin)
+        TipoEvento.objects.create(nome="Encontrado")
+        TipoEvento.objects.create(nome="Outro")
+        resposta = self.client.get(reverse("cadastros:lista", args=["tipos-evento"]), {"novo": "1", "q": "Encontrado", "situacao": "ativos"})
+        self.assertEqual(resposta.context["pagina"].paginator.count, 1)
+        self.assertEqual(resposta.context["termo"], "Encontrado")
+        self.assertContains(resposta, "data-cadastro-inicial")

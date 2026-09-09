@@ -1330,6 +1330,19 @@ class AnexosTests(BaseSolicitacaoTestCase):
         self.assertContains(resposta, 'name="anexos"')
         self.assertContains(resposta, "Arraste arquivos aqui ou clique para selecionar")
         self.assertContains(resposta, 'enctype="multipart/form-data"')
+        self.assertTemplateUsed(resposta, "components/upload_anexos.html")
+        self.assertContains(resposta, 'data-upload-dropzone', count=1)
+
+    def test_edicao_reutiliza_upload_global_sem_enviar_o_formulario_principal(self):
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(reverse("solicitacoes:editar", args=[solicitacao.pk]))
+        self.assertTemplateUsed(resposta, "components/upload_anexos.html")
+        self.assertContains(resposta, 'data-upload-dropzone', count=1)
+        self.assertContains(resposta, 'form="form-anexo-upload"', count=2)
+        self.assertContains(resposta, 'name="arquivo"', count=1)
+        self.assertContains(resposta, "Anexar arquivo")
+        self.assertNotContains(resposta, "data-anexo-enviar-ao-selecionar")
 
     def test_criador_anexa_no_rascunho(self):
         solicitacao = self.criar_solicitacao()
@@ -1400,6 +1413,7 @@ class AnexosTests(BaseSolicitacaoTestCase):
             reverse("solicitacoes:detalhe", args=[solicitacao.pk])
         )
         self.assertNotContains(detalhe, "Anexar arquivo")
+        self.assertNotContains(detalhe, "data-upload-anexos")
 
     def test_download_respeita_visibilidade(self):
         solicitacao = self.criar_solicitacao()
@@ -1475,4 +1489,9 @@ class AnexosTests(BaseSolicitacaoTestCase):
         )
         self.assertContains(resposta, "Anexos")
         self.assertContains(resposta, "oficio.pdf")
-        self.assertContains(resposta, "Anexar arquivo")
+        self.assertTemplateUsed(resposta, "components/upload_anexos.html")
+        self.assertContains(resposta, 'data-upload-dropzone', count=1)
+        self.assertContains(resposta, "Arraste arquivos aqui ou clique para selecionar")
+        self.assertContains(resposta, "data-anexo-enviar-ao-selecionar")
+        self.assertNotContains(resposta, "Anexar arquivo")
+        self.assertNotContains(resposta, "PDF, imagens ou documentos de escritório.")

@@ -11,7 +11,7 @@
       <p class="d-cabeca__sub">Tabelas de apoio utilizadas pelas solicitações.</p>
     </div>
     <div class="d-acoes">
-      <a class="btn-primaria" href="{% url 'cadastros:novo' slug %}">{% include "components/icon.html" with nome="plus" %}{{ novo }}</a>
+      <a class="btn-primaria" href="{% url 'cadastros:novo' slug %}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}{{ novo }}</a>
     </div>
   </div>
 
@@ -63,7 +63,7 @@
                 <td class="c-data">{{ objeto.atualizado_em|date:"d/m/Y H:i" }}</td>
                 <td class="c-cad-acoes">
                   <div class="acoes">
-                    <a class="acao-linha" href="{% url 'cadastros:editar' slug objeto.pk %}">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                    <a class="acao-linha" href="{% url 'cadastros:editar' slug objeto.pk %}" data-cadastro-modal>{% include "components/icon.html" with nome="pencil" %}Editar</a>
                     <div class="dd" data-menu>
                       <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações de {{ objeto.nome }}">{% include "components/icon.html" with nome="kebab" %}</button>
                       <div class="dd__c" hidden data-menu-corpo>
@@ -133,7 +133,7 @@
               </div>
               <div class="m-item__meta">{% if eh_municipio %}{{ objeto.estado }} · {{ objeto.regiao }} · {% endif %}Atualizado em {{ objeto.atualizado_em|date:"d/m/Y H:i" }}</div>
               <div class="m-item__rodape">
-                <a class="acao-linha" href="{% url 'cadastros:editar' slug objeto.pk %}">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                <a class="acao-linha" href="{% url 'cadastros:editar' slug objeto.pk %}" data-cadastro-modal>{% include "components/icon.html" with nome="pencil" %}Editar</a>
                 <div class="dd" data-menu>
                   <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações de {{ objeto.nome }}">{% include "components/icon.html" with nome="kebab" %}</button>
                   <div class="dd__c" hidden data-menu-corpo>
@@ -169,4 +169,7 @@
       </div>
     </section>
   </div>
+  <dialog class="mo v32-cadastro-modal" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{% url 'cadastros:lista' slug %}"{% if modal %} data-cadastro-inicial{% endif %}>
+    {% if modal %}{% include "pages/cadastros/_modal_form.html" with dados=modal %}{% endif %}
+  </dialog>
 {% endblock %}

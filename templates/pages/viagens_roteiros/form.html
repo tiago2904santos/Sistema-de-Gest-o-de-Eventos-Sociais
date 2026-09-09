@@ -60,6 +60,7 @@
 
     <form method="post" action="{{ url_acao }}" id="form-roteiro" class="editor-roteiro__principal" novalidate>
       {% csrf_token %}
+      {% firstof request.POST.next request.GET.next as retorno_prestacao %}<input type="hidden" name="next" value="{{ retorno_prestacao }}">
 
       {% comment %}
         A última rota calculada viaja com o formulário e fica gravada no

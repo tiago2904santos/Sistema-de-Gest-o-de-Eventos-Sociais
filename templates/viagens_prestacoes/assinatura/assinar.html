@@ -1,0 +1,104 @@
+{% extends "viagens_prestacoes/assinatura/base_publico.html" %}
+{% load static %}
+
+{% block title %}Assinar {{ doc_label }}{% endblock %}
+
+{% block content %}
+  
+  <section id="asgn-app"
+           data-pdf-url="{{ pdf_url }}"
+           data-worker-src="{{ worker_src }}"
+           data-nome="{{ nome|escape }}">
+    
+    {% with atual=indice|stringformat:"s" quantos=total|stringformat:"s" %}
+    {% with progresso=atual|add:" de "|add:quantos %}
+      <section class="asgn-card"><h1>Assinar {{ doc_label }}</h1><p>Crie sua assinatura, arraste para a posição no documento e envie.</p>
+        
+
+        
+          {% if erro %}<p class="asgn-alert" role="alert">{{ erro }}</p>{% endif %}
+
+          <div class="asgn-toolbar">
+            <button type="button" class="btn--secundaria" id="asgn-open-builder">Criar assinatura</button>
+            <div class="asgn-pager">
+              <button type="button" class="btn--secundaria" id="asgn-prev">Página anterior</button>
+              <span id="asgn-page-label" class="asgn-pager__label">1 / 1</span>
+              <button type="button" class="btn--secundaria" id="asgn-next">Próxima página</button>
+            </div>
+          </div>
+
+          
+          <div class="asgn-viewer" id="asgn-viewer">
+            <div class="asgn-stage" id="asgn-stage">
+              <canvas id="asgn-canvas"></canvas>
+              <div class="asgn-drag" id="asgn-drag" hidden>
+                <img id="asgn-drag-img" alt="Sua assinatura" draggable="false">
+                <span class="asgn-drag__handle" id="asgn-resize" aria-hidden="true"></span>
+              </div>
+            </div>
+          </div>
+          <p class="field__help" id="asgn-hint">Crie sua assinatura para posicioná-la no documento.</p>
+
+          <form method="post" id="asgn-form" action="{{ post_url }}">
+            {% csrf_token %}
+            <input type="hidden" name="assinatura_png" id="f-png">
+            <input type="hidden" name="modo" id="f-modo">
+            <input type="hidden" name="fonte" id="f-fonte">
+            <input type="hidden" name="pagina" id="f-pagina" value="0">
+            <input type="hidden" name="pos_x" id="f-x">
+            <input type="hidden" name="pos_y" id="f-y">
+            <input type="hidden" name="largura" id="f-w">
+            <input type="hidden" name="altura" id="f-h">
+
+            <div class="asgn-toolbar">
+              
+                <button type="submit" class="btn-primaria" id="asgn-submit" disabled>Enviar assinatura</button>
+              
+            </div>
+          </form>
+        
+      </section>
+    {% endwith %}{% endwith %}
+  </section>
+
+  
+  <div class="asgn-sheet" id="asgn-sheet" hidden>
+    <div class="asgn-sheet__backdrop" id="asgn-sheet-backdrop"></div>
+    <div class="asgn-sheet__panel" role="dialog" aria-modal="true" aria-label="Criar assinatura">
+      <div class="asgn-toolbar">
+        
+        <button type="button" class="asgn-tab is-active" data-tab="fonte">Escolher fonte</button>
+        <button type="button" class="asgn-tab" data-tab="desenho">Desenhar à mão</button>
+      </div>
+
+      <div class="asgn-tabpane" data-pane="fonte">
+        <div class="form-campo"><label for="asgn-name-input">Nome que aparecerá na assinatura</label>
+          
+            <input class="form-controle" id="asgn-name-input" value="{{ nome }}" maxlength="60">
+          
+        </div>
+
+        <div class="asgn-fontlist">{% for f in fontes %}<button type="button" class="asgn-fontchip asgn-fontchip--{{ f.key }}" data-key="{{ f.key }}" data-family="{{ f.family }}" aria-label="Assinatura na fonte {{ f.label }}">{{ nome }}</button>{% endfor %}</div>
+      </div>
+
+      <div class="asgn-tabpane" data-pane="desenho" hidden>
+        <div class="asgn-drawwrap">
+          <canvas id="asgn-draw" class="asgn-draw"></canvas>
+        </div>
+        <button type="button" class="btn--secundaria" id="asgn-draw-clear">Limpar</button>
+      </div>
+
+      <div class="asgn-toolbar">
+        <button type="button" class="btn--secundaria" id="asgn-sheet-cancel">Cancelar</button>
+        <button type="button" class="btn-primaria" id="asgn-sheet-apply" disabled>Usar assinatura</button>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block body_js %}
+  <script src="{{ pdfjs_src }}"></script>
+  
+  <script src="{% static 'js/components/pdf-place.js' %}" defer></script>
+  <script src="{% static 'js/pages/prestacoes-assinatura.js' %}" defer></script>
+{% endblock %}

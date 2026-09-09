@@ -1,0 +1,1 @@
+from .assinatura_services import pdf_rt_assinado_ou_gerado, pdf_db_assinado_ou_gerado

@@ -37,6 +37,9 @@ class TrocaDeSenhaObrigatoriaMiddleware:
         except Exception:
             return True
         nome = f"{rota.namespace}:{rota.url_name}" if rota.namespace else rota.url_name
+        # Exceção autorizada para o fluxo público, ainda protegido por token, CSRF e throttle.
+        if rota.namespace == "viagens_assinaturas":
+            return True
         if nome in ROTAS_LIBERADAS:
             return True
         # O admin do Django tem o próprio fluxo de senha; não sequestra.

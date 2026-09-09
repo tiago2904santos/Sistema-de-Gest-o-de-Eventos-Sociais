@@ -1,14 +1,15 @@
 {% extends "layouts/app_shell_v32.html" %}
 {% comment %}
-  Detalhe / workflow da solicitação no padrão V3.2 (piloto congelado #216 /
-  #218). Quatro regiões principais + lateral fixa com acompanhamento, resumo
-  operacional, anexos e histórico. Regras de negócio, transições e permissões
+  Detalhe / workflow da solicitação no padrão V3.2. Dados e histórico na
+  área principal; acompanhamento, resumo operacional e anexos na lateral.
+  Regras de negócio, transições e permissões
   vêm inalteradas da view e de `permissions.acoes_permitidas`.
 {% endcomment %}
 
 {% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
+<div class="sol-detalhe">
   <div class="d-cabeca">
     <div class="d-cabeca__esq">
       <a class="voltar" href="{% url 'solicitacoes:lista' %}">{% include "components/icon.html" with nome="chevron-left" %}Voltar para solicitações</a>
@@ -16,9 +17,10 @@
         <h1>{{ titulo_pagina }}</h1>
         <span class="st st--{{ solicitacao.status|lower }}">{{ solicitacao.get_status_display }}</span>
       </div>
-      <p class="d-cabeca__sub">
-        {{ solicitacao.tipo_evento|default:"Tipo de evento não informado" }} · {{ solicitacao.municipio|default:"Município não informado" }}{% if solicitacao.municipio %}, {{ solicitacao.municipio.estado.sigla }}{% endif %}{% if solicitacao.data_inicio_evento %} · {{ solicitacao.data_inicio_evento|date:"d/m/Y" }}{% if solicitacao.data_fim_evento and solicitacao.data_fim_evento != solicitacao.data_inicio_evento %} a {{ solicitacao.data_fim_evento|date:"d/m/Y" }}{% endif %}{% endif %}<br>
-        {{ solicitacao.solicitante_nome|default:"Solicitante não informado" }}{% if solicitacao.solicitante_cargo_unidade %} — {{ solicitacao.solicitante_cargo_unidade }}{% endif %}
+      <p class="d-cabeca__sub sol-detalhe__meta">
+        <span>{% include "components/icon.html" with nome="calendar" %}{{ solicitacao.tipo_evento|default:"Tipo de evento não informado" }}</span>
+        <span>{% include "components/icon.html" with nome="map-pin" %}{{ solicitacao.municipio|default:"Município não informado" }}{% if solicitacao.municipio %}, {{ solicitacao.municipio.estado.sigla }}{% endif %}{% if solicitacao.data_inicio_evento %} · {{ solicitacao.data_inicio_evento|date:"d/m/Y" }}{% if solicitacao.data_fim_evento and solicitacao.data_fim_evento != solicitacao.data_inicio_evento %} a {{ solicitacao.data_fim_evento|date:"d/m/Y" }}{% endif %}{% endif %}</span>
+        <span>{% include "components/icon.html" with nome="user" %}{{ solicitacao.solicitante_nome|default:"Solicitante não informado" }}{% if solicitacao.solicitante_cargo_unidade %} — {{ solicitacao.solicitante_cargo_unidade }}{% endif %}</span>
         <span class="sr-only">{{ subtitulo_pagina }}</span>
       </p>
     </div>
@@ -78,28 +80,33 @@
   {% endif %}
 
   <div class="d-grade">
-    <div>
+    <div class="sol-detalhe__principal">
       <section class="reg">
-        <h2 class="reg__t">Resumo da solicitação</h2>
-        <p class="reg__st">Evento</p>
-        <dl class="gc gc--3">
-          <div class="f"><dt>Tipo do evento</dt><dd>{{ solicitacao.tipo_evento|default:"—" }}</dd></div>
-          <div class="f"><dt>Período do evento</dt><dd>{% if solicitacao.data_inicio_evento %}{{ solicitacao.data_inicio_evento|date:"d/m/Y" }}{% if solicitacao.data_fim_evento and solicitacao.data_fim_evento != solicitacao.data_inicio_evento %} a {{ solicitacao.data_fim_evento|date:"d/m/Y" }}{% endif %}{% else %}—{% endif %}</dd></div>
-          <div class="f"><dt>Data da solicitação</dt><dd>{{ solicitacao.data_solicitacao|date:"d/m/Y" }}</dd></div>
-          <div class="f"><dt>Município</dt><dd>{{ solicitacao.municipio|default:"—" }}{% if solicitacao.municipio %}<small>{{ solicitacao.municipio.estado }}{% if solicitacao.regiao %} · {{ solicitacao.regiao }}{% endif %}</small>{% endif %}</dd></div>
-          <div class="f larga"><dt>Local do evento</dt><dd>{{ solicitacao.local_evento|default:"—" }}</dd></div>
-        </dl>
-        <div class="reg__div"></div>
-        <p class="reg__st">Solicitante</p>
-        <dl class="gc gc--3">
-          <div class="f"><dt>Solicitante</dt><dd>{{ solicitacao.solicitante_nome|default:"—" }}{% if solicitacao.solicitante_cargo_unidade %}<small>{{ solicitacao.solicitante_cargo_unidade }}</small>{% endif %}</dd></div>
-          <div class="f"><dt>Contato</dt><dd>{{ solicitacao.contato|default:"—" }}</dd></div>
-          <div class="f"><dt>Órgão responsável</dt><dd>{{ solicitacao.orgao_responsavel|default:"—" }}</dd></div>
-        </dl>
+        <h2 class="reg__t">{% include "components/icon.html" with nome="clipboard" %}Resumo da solicitação</h2>
+        <div class="sol-detalhe__dados">
+          <div class="sol-detalhe__evento">
+            <p class="reg__st">Evento</p>
+            <dl class="gc sol-detalhe__campos">
+              <div class="f"><dt>Tipo do evento</dt><dd>{{ solicitacao.tipo_evento|default:"—" }}</dd></div>
+              <div class="f"><dt>Período do evento</dt><dd>{% if solicitacao.data_inicio_evento %}{{ solicitacao.data_inicio_evento|date:"d/m/Y" }}{% if solicitacao.data_fim_evento and solicitacao.data_fim_evento != solicitacao.data_inicio_evento %} a {{ solicitacao.data_fim_evento|date:"d/m/Y" }}{% endif %}{% else %}—{% endif %}</dd></div>
+              <div class="f"><dt>Data da solicitação</dt><dd>{{ solicitacao.data_solicitacao|date:"d/m/Y" }}</dd></div>
+              <div class="f"><dt>Município</dt><dd>{{ solicitacao.municipio|default:"—" }}{% if solicitacao.municipio %}<small>{{ solicitacao.municipio.estado }}{% if solicitacao.regiao %} · {{ solicitacao.regiao }}{% endif %}</small>{% endif %}</dd></div>
+              <div class="f larga"><dt>Local do evento</dt><dd>{{ solicitacao.local_evento|default:"—" }}</dd></div>
+            </dl>
+          </div>
+          <div class="sol-detalhe__solicitante">
+            <p class="reg__st">Solicitante</p>
+            <dl class="gc">
+              <div class="f"><dt>Solicitante</dt><dd>{{ solicitacao.solicitante_nome|default:"—" }}{% if solicitacao.solicitante_cargo_unidade %}<small>{{ solicitacao.solicitante_cargo_unidade }}</small>{% endif %}</dd></div>
+              <div class="f"><dt>Contato</dt><dd>{{ solicitacao.contato|default:"—" }}</dd></div>
+              <div class="f"><dt>Órgão responsável</dt><dd>{{ solicitacao.orgao_responsavel|default:"—" }}</dd></div>
+            </dl>
+          </div>
+        </div>
       </section>
 
       <section class="reg">
-        <h2 class="reg__t">Serviços e estrutura</h2>
+        <h2 class="reg__t">{% include "components/icon.html" with nome="checklist" %}Serviços e estrutura</h2>
         <dl class="gc gc--servicos">
           <div class="f">
             <dt>Serviços solicitados</dt>
@@ -120,7 +127,13 @@
       </section>
 
       <section class="reg" id="planejamento">
-        <h2 class="reg__t">Planejamento operacional</h2>
+        <h2 class="reg__t">{% include "components/icon.html" with nome="users" %}Planejamento operacional</h2>
+        <dl class="sol-detalhe__indicadores">
+          <div><dt>Servidores</dt><dd>{{ solicitacao.quantidade_servidores|default:"—" }}</dd></div>
+          <div><dt>Motorista</dt><dd>{{ solicitacao.motorista|default:"—" }}</dd></div>
+          <div><dt>Tipo</dt><dd>{% if solicitacao.tipo_operacao %}{{ solicitacao.get_tipo_operacao_display }}{% else %}—{% endif %}</dd></div>
+          <div><dt>CIN agendadas</dt><dd>{{ solicitacao.quantidade_cin|default:"—" }}</dd></div>
+        </dl>
         <p class="reg__st">Equipes e quantidade de servidores</p>
         {% if itens_equipe %}
           <div class="dl-eq">
@@ -131,12 +144,6 @@
         {% else %}
           <p class="texto-vazio">Nenhuma equipe designada.</p>
         {% endif %}
-        <div class="resumo-op">
-          <span><b>{{ solicitacao.quantidade_servidores|default:"—" }}</b> servidores</span>
-          <span>Motorista: <b>{{ solicitacao.motorista|default:"—" }}</b></span>
-          <span>Tipo: <b>{% if solicitacao.tipo_operacao %}{{ solicitacao.get_tipo_operacao_display }}{% else %}—{% endif %}</b></span>
-          <span><b>{{ solicitacao.quantidade_cin|default:"—" }}</b> CIN agendadas</span>
-        </div>
       </section>
 
       {% if mostrar_despacho_dg %}
@@ -211,11 +218,24 @@
           </div>
         </section>
       {% endif %}{% endif %}
+      <section class="reg sol-detalhe__historico" id="historico">
+        <h2 class="reg__t">{% include "components/icon.html" with nome="clock" %}Histórico<em>{{ historico|length }} movimentaç{{ historico|length|pluralize:"ão,ões" }}</em></h2>
+        <div class="linha-t">
+          {% for registro in historico reversed %}
+            <div class="evento{% if forloop.first %} evento--ativo{% endif %}">
+              <div class="evento__topo"><span class="evento__t">{{ registro.get_acao_display }}</span><span class="evento__q">{{ registro.criado_em|date:"d/m/Y · H\hi" }}</span></div>
+              <p class="evento__d">{{ registro.usuario|default:"Sistema" }}{% if registro.status_novo %} · {{ registro.rotulo_status }}{% endif %}{% if registro.observacao %} · “{{ registro.observacao }}”{% endif %}</p>
+            </div>
+          {% empty %}
+            <p class="texto-vazio">Nenhum registro no histórico.</p>
+          {% endfor %}
+        </div>
+      </section>
     </div>
 
     <aside class="sticky" aria-label="Acompanhamento da solicitação">
       <section class="reg reg--sec">
-        <h2 class="reg__t">Acompanhamento</h2>
+        <h2 class="reg__t">{% include "components/icon.html" with nome="activity" %}Acompanhamento</h2>
         <div class="etapas etapas--lateral">
           {% for etapa in timeline %}
             <div class="etapa etapa--{{ etapa.estado }}">
@@ -232,7 +252,7 @@
       </section>
 
       <section class="reg reg--sec reg--sec-lista">
-        <h2 class="reg__t">Resumo operacional</h2>
+        <h2 class="reg__t">{% include "components/icon.html" with nome="chart" %}Resumo operacional</h2>
         <dl>
           <div class="resumo__linha"><dt>Situação</dt><dd><span class="st st--{{ solicitacao.status|lower }}">{{ solicitacao.get_status_display }}</span></dd></div>
           <div class="resumo__linha"><dt>Decisão da DG</dt><dd{% if solicitacao.decisao_dg == "PENDENTE" %} class="resumo__pendente"{% endif %}>{{ solicitacao.get_decisao_dg_display }}</dd></div>
@@ -245,7 +265,7 @@
       </section>
 
       <section class="reg reg--sec" id="anexos">
-        <h2 class="reg__t">Anexos<em>{{ anexos|length }} arquivo{{ anexos|length|pluralize }} · até 10 MB</em></h2>
+        <h2 class="reg__t">{% include "components/icon.html" with nome="document" %}Anexos<em>{{ anexos|length }} arquivo{{ anexos|length|pluralize }} · até 10 MB</em></h2>
         {% for anexo in anexos %}
           <div class="anexo anexo--linha">
             <a class="anexo__abrir" href="{% url 'solicitacoes:anexo_baixar' solicitacao.pk anexo.pk %}">
@@ -260,28 +280,8 @@
           <p class="texto-vazio">Nenhum arquivo anexado.</p>
         {% endfor %}
         {% if pode_gerenciar_anexos %}
-          <div class="upload-anexos upload-anexos--lateral" data-upload-anexos>
-            <input type="file" name="arquivo" id="id_anexo_upload" form="form-anexo-upload" class="upload-anexos__input" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods" required>
-            <label for="id_anexo_upload" class="an-add">{% include "components/icon.html" with nome="plus" %}Escolher arquivo</label>
-            <span class="upload-anexos__vazio">PDF, imagens ou documentos de escritório.</span>
-            <ul class="upload-anexos__lista"></ul>
-            <button type="submit" form="form-anexo-upload" class="btn--secundaria">Anexar arquivo</button>
-          </div>
+          {% include "components/upload_anexos.html" with id="id_anexo_upload" name="arquivo" formulario="form-anexo-upload" obrigatorio=True envio_imediato=True only %}
         {% endif %}
-      </section>
-
-      <section class="reg reg--sec">
-        <h2 class="reg__t">Histórico<em>{{ historico|length }} movimentaç{{ historico|length|pluralize:"ão,ões" }}</em></h2>
-        <div class="linha-t">
-          {% for registro in historico reversed %}
-            <div class="evento{% if forloop.first %} evento--ativo{% endif %}">
-              <div class="evento__topo"><span class="evento__t">{{ registro.get_acao_display }}</span><span class="evento__q">{{ registro.criado_em|date:"d/m/Y · H\hi" }}</span></div>
-              <p class="evento__d">{{ registro.usuario|default:"Sistema" }}{% if registro.status_novo %} · {{ registro.rotulo_status }}{% endif %}{% if registro.observacao %} · “{{ registro.observacao }}”{% endif %}</p>
-            </div>
-          {% empty %}
-            <p class="texto-vazio">Nenhum registro no histórico.</p>
-          {% endfor %}
-        </div>
       </section>
     </aside>
   </div>
@@ -293,4 +293,5 @@
       <form id="form-anexo-excluir-{{ anexo.pk }}" method="post" action="{% url 'solicitacoes:anexo_excluir' solicitacao.pk anexo.pk %}">{% csrf_token %}</form>
     {% endfor %}
   {% endif %}
+</div>
 {% endblock %}

@@ -1,0 +1,11 @@
+.viagem-form { display:grid; grid-template-columns:minmax(0,1fr) 260px; gap:24px; align-items:start; padding-bottom:24px; }
+.viagem-etapas { position:static; }
+.viagem-etapas h2 { font-size:16px; margin:0 0 16px; }
+.viagem-etapas nav { display:flex; flex-direction:column; gap:16px; }
+.viagem-acoes { position:sticky; bottom:0; display:flex; justify-content:flex-end; gap:12px; background:var(--surface,#fff); padding:16px; border-top:1px solid var(--border,#ddd); z-index:20; }
+.viagem-form section { scroll-margin-top:90px; }
+.viagem-documentos { display:flex; flex-wrap:wrap; gap:10px; }
+@media(max-width:900px) { .viagem-form { grid-template-columns:1fr; } .viagem-etapas { grid-row:1; } .viagem-etapas nav { flex-direction:row; flex-wrap:wrap; } }
+
+.viagem-campos { display:grid; gap:18px; }
+.viagem-campos > .form-campo { min-width:0; }

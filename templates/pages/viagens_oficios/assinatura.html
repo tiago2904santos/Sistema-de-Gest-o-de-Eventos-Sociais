@@ -1,0 +1,15 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/viagens-documentos.css' %}">{% endblock %}
+{% block title %}Documento assinado{% endblock %}
+{% block conteudo %}
+{% include "components/v32/page_header.html" with titulo="Documento assinado" subtitulo=artefato.nome_exibicao %}
+<form method="post" enctype="multipart/form-data" class="pa-card v32-corpo v32-bloco">
+  {% csrf_token %}
+  <label for="id_arquivo">Documento assinado (PDF)</label>
+  <input type="file" name="arquivo" id="id_arquivo" accept="application/pdf,.pdf">
+  {% for erro in form.arquivo.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+  {% if artefato.esta_assinado %}<p>Versão vigente: {{ artefato.assinado_nome_original }} · {{ artefato.assinado_em|date:"d/m/Y H:i" }}</p>{% endif %}
+  <div class="v32-barra"><a class="btn--secundaria" href="{{ url_voltar }}">Voltar</a><button class="btn-primaria" type="submit">Anexar versão assinada</button>{% if artefato.esta_assinado %}<button class="btn--secundaria btn--destrutiva" name="acao" value="remover">Revogar versão vigente</button>{% endif %}</div>
+</form>
+{% endblock %}

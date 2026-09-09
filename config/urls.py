@@ -7,6 +7,10 @@ from django.views.generic import RedirectView
 handler403 = "core.views.erro_403"
 
 urlpatterns = [
+    path("assinatura/", include("viagens_prestacoes.public_urls")),
+    path("viagens/prestacoes/", include("viagens_prestacoes.urls")),
+    path("viagens/oficios/", include("viagens_oficios.urls")),
+    path("viagens/termos/", include("viagens_termos.urls")),
     path("admin/", admin.site.urls),
     path("", include("core.urls")),
     path("conta/", include("accounts.urls")),
@@ -25,4 +29,5 @@ urlpatterns = [
     ),
     path("viagens/cadastros/", include("viagens_cadastros.urls")),
     path("viagens/roteiros/", include("viagens_roteiros.urls")),
+    path("documentos/", include("documentos.urls")),
 ]

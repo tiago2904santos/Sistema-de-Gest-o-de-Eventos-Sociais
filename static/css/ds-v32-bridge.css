@@ -108,6 +108,8 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
 }
 
 /* ---------- Formulário -------------------------------------------------- */
+/* Serviços: no máximo três cartões por linha, com quebra conforme o espaço disponível. */
+#id_servicos .opc-card{flex-basis:max(210px,calc((100% - 16px)/3));min-width:0}
 .sticky--form{display:flex;flex-direction:column}
 .campo-e>span em,.campo-e legend span em,.form-label__obrigatorio{color:var(--d-700);font-style:normal;margin-left:2px}
 .campo-e--bloco{border:0;padding:0;margin:0 0 14px;min-width:0}
@@ -124,15 +126,31 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
 .is-invalid .form-controle,.is-invalid .custom-select__trigger{border-color:var(--dg-t)!important}
 .eq-linha label.eq-linha__n{cursor:pointer}
 .eq-linha .stepper-n input:disabled{background:var(--n-50);color:var(--n-400)}
+/* Quantidades: um único contorno e foco para o conjunto, sem as setas nativas
+   que apareciam sobre o número ao passar o mouse. */
+.stepper-n{height:36px;border-radius:8px;background:var(--branco);transition:border-color var(--motion),box-shadow var(--motion)}
+.stepper-n:has(input:enabled):hover{border-color:var(--d-300)}
+.stepper-n:has(input:enabled):focus-within{border-color:var(--d-500);box-shadow:0 0 0 3px var(--d-100)}
+.stepper-n button{width:32px;height:34px;background:transparent;color:var(--n-500);transition:background var(--motion),color var(--motion)}
+.stepper-n button:hover{background:var(--d-50);color:var(--d-800)}
+.stepper-n button:active{background:var(--d-100)}
+.stepper-n button:focus-visible{box-shadow:inset 0 0 0 2px var(--d-500);border-radius:0}
+.stepper-n input{width:44px;height:34px;padding:0 4px;border-color:var(--n-150);border-radius:0;background:var(--branco);font-variant-numeric:tabular-nums;appearance:textfield;-moz-appearance:textfield}
+.stepper-n input:focus{outline:0;box-shadow:none;border-radius:0}
+.stepper-n input::-webkit-inner-spin-button,.stepper-n input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+/* Modelo global de anexos: mesma zona, lista e foco no formulário e na lateral. */
 .an-add{text-decoration:none;font-weight:600;color:var(--n-600)}
 .an-add--zona{height:auto;padding:16px;align-items:center;gap:12px;border-width:1.5px}
-.an-add--zona span{display:flex;flex-direction:column;gap:2px}
+.an-add--zona span{display:flex;flex-direction:column;gap:2px;min-width:0;overflow-wrap:anywhere}
 .an-add--zona b{font-size:13px;color:var(--n-800)}
 .an-add--zona small{font-size:11.5px;color:var(--n-450)}
 .an-add--zona.is-arrastando{border-color:var(--d-500);background:var(--d-50)}
-.upload-anexos{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-.upload-anexos__input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
-.upload-anexos__acoes{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.upload-anexos{position:relative;display:flex;flex-direction:column;gap:8px;margin-top:10px;min-width:0}
+.upload-anexos__input{position:absolute;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none}
+.upload-anexos__input:focus-visible+.an-add--zona{outline:2px solid var(--d-600);outline-offset:2px}
+.upload-anexos__enviar{align-self:flex-start}
+.upload-anexos [hidden]{display:none}
+.upload-anexos [data-upload-erro]{margin:0}
 .upload-anexos__vazio{font-size:11.5px;color:var(--n-450)}
 .upload-anexos__lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
 .upload-anexos__lista:empty{display:none}
@@ -141,11 +159,11 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
 .upload-anexos__meta{font-size:11px;color:var(--n-450)}
 .upload-anexos__remover{width:24px;height:24px;border:0;background:0;border-radius:5px;color:var(--n-500);cursor:pointer;font-size:16px;line-height:1}
 .upload-anexos__remover:hover{background:var(--dg-b);color:var(--dg-t)}
-.upload-anexos--lateral .an-add{height:36px}
-.upload-anexos--lateral .btn--secundaria{align-self:flex-start;height:34px}
 /* margin-top:auto joga a barra para o fim da lateral esticada: só assim o
    position:sticky;bottom prende os botões no rodapé da janela. */
 .frm-acoes--flut{margin-top:auto}
+/* Ações da solicitação ficam diretamente sobre a página, sem painel ao redor. */
+#form-solicitacao .frm-acoes--flut{background:transparent;border:0;box-shadow:none}
 .frm-acoes--flut .frm-cancelar{text-decoration:none}
 .step-i.etapa--concluida .step-i__m{background:var(--ok-t);border-color:var(--ok-t);color:#fff}
 .step-i.etapa--andamento .step-i__m{border-color:var(--d-500);color:var(--d-700);background:var(--d-50)}
@@ -226,6 +244,12 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
 
 /* ---- Cadastros ------------------------------------------------------- */
 .cad-visao{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:18px}
+/* Visão geral dos cadastros: trilha e painel terminam na mesma altura. */
+@container (min-width:901px){
+  .cad-grade:has(>.pa-card>.cad-visao){align-items:stretch}
+  .cad-grade:has(>.pa-card>.cad-visao)>.pa-card{align-self:stretch;display:flex;flex-direction:column}
+  .cad-grade>.pa-card>.cad-visao{flex:1}
+}
 .cad-barra__fim span{font-size:12.5px;color:var(--n-500)}
 .cad-limpar{font-size:12.5px;font-weight:600;color:var(--d-700);text-decoration:none}
 .cad-limpar:hover{text-decoration:underline}
@@ -322,7 +346,7 @@ body.m-sheet-aberto{overflow:hidden}
 /* Bloco condicional da unidade móvel: aparece só quando a resposta é "Sim",
    então recebe o mesmo tom bronze das opções marcadas e vira um painel preso
    à escolha, em vez de dois selects soltos. */
-.condicional{margin-top:2px;padding:14px 16px;border-left:3px solid var(--d-500);border-radius:0 9px 9px 0;background:var(--d-50)}
+.condicional{margin-top:2px;padding:14px 16px;border-left:3px solid var(--d-500);border-radius:9px;background:var(--d-50)}
 .condicional .form-label,.condicional>.campo-e>span{color:var(--d-800)}
 .condicional .ctrl{background:var(--branco);border-color:var(--d-300)}
 .condicional .ctrl:hover{border-color:var(--d-500)}
@@ -746,3 +770,89 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 .trechos-tabela th{white-space:normal}
 .trechos-tabela td{padding:10px 8px}
 @container(max-width:680px){.editor-roteiro .trechos-tabela{min-width:0}.trechos-tabela .form-campo{min-width:0}.trechos-tabela td{padding:8px}}
+/* CRUD de apoio em dialog: foco contido, fundo da listagem visível e controles V3.2. */
+.v32-cadastro-modal{padding:0;border:1px solid var(--n-200);margin:auto;max-width:min(520px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow-y:auto;color:var(--n-700)}
+.v32-cadastro-modal:not([open]){display:none}
+.v32-cadastro-modal::backdrop{background:rgba(26,25,23,.45)}
+.v32-cadastro-modal>form{min-width:0;width:100%}
+.v32-cadastro-modal .mo__corpo{overflow:visible}
+.v32-cadastro-modal .g-form{grid-template-columns:1fr}
+.v32-cadastro-modal .custom-select__menu{position:static;margin-top:6px;max-height:200px}
+.v32-cadastro-modal .custom-select__lista{max-height:145px}
+.v32-cadastro-modal .cad-frm__nota{margin-bottom:0}
+.v32-cadastro-modal .mo__rodape{position:sticky;bottom:0;background:var(--branco)}
+
+/* Detalhe da solicitação: grupos de leitura, números operacionais e histórico
+   com espaço próprio; escopo local preserva as demais telas do V3.2. */
+.sol-detalhe .d-cabeca{padding:24px 0;gap:20px;border-bottom:1px solid var(--n-200);margin-bottom:24px}
+.sol-detalhe .d-cabeca__esq{min-width:0}
+.sol-detalhe .d-acoes>.dd{flex:0 0 auto;width:auto}
+.sol-detalhe .d-titulo{flex-wrap:wrap;gap:12px}
+.sol-detalhe__meta{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:12px}
+.sol-detalhe__meta>span:not(.sr-only){display:flex;align-items:center;gap:6px;min-width:0;overflow-wrap:anywhere}
+.sol-detalhe__meta .ui-icon{color:var(--n-400);width:14px;height:14px}
+.sol-detalhe .d-grade{grid-template-columns:minmax(0,1fr) 320px;gap:20px}
+.sol-detalhe__principal,.sol-detalhe .sticky{min-width:0}
+.sol-detalhe .reg{padding:20px;border-radius:12px}
+.sol-detalhe .reg+.reg{margin-top:18px}
+.sol-detalhe .reg__t{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding-bottom:14px;margin-bottom:18px;border-bottom:1px solid var(--n-150)}
+.sol-detalhe .reg__t>.ui-icon{color:var(--d-700);width:17px;height:17px}
+.sol-detalhe__dados{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:24px}
+.sol-detalhe__campos{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.sol-detalhe__solicitante{padding:16px;background:var(--n-50);border:1px solid var(--n-150);border-radius:8px;min-width:0}
+.sol-detalhe__solicitante .gc{grid-template-columns:minmax(0,1fr);gap:18px}
+.sol-detalhe .reg__st{margin-bottom:14px}
+.sol-detalhe .f{gap:7px}
+.sol-detalhe .f dd{line-height:1.45}
+.sol-detalhe .gc--servicos{grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:20px 24px}
+.sol-detalhe .gc--servicos>.f:nth-child(2){border-left:1px solid var(--n-150);padding-left:16px}
+.sol-detalhe .chip-g{height:auto;min-height:30px;padding:5px 10px;overflow-wrap:anywhere}
+.sol-detalhe__indicadores{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:0 0 22px;background:var(--n-50);border:1px solid var(--n-150);border-radius:8px}
+.sol-detalhe__indicadores>div{padding:13px 14px;min-width:0}
+.sol-detalhe__indicadores>div+div{border-left:1px solid var(--n-150)}
+.sol-detalhe__indicadores dt{font-size:11.5px;color:var(--n-500);margin-bottom:6px}
+.sol-detalhe__indicadores dd{font-size:15px;font-weight:600;line-height:1.4;color:var(--n-900);margin:0;overflow-wrap:anywhere}
+.sol-detalhe #planejamento .dl-eq{border:1px solid var(--n-150);border-radius:8px}
+.sol-detalhe #planejamento .dl-eq__i{padding:11px 14px;justify-content:space-between;overflow-wrap:anywhere}
+.sol-detalhe #planejamento .dl-eq__q{font-size:12.5px;white-space:normal;text-align:right;flex-shrink:0;max-width:55%}
+.sol-detalhe .sticky .reg{padding:18px}
+.sol-detalhe .sticky .reg__t{font-size:14px;margin-bottom:12px;padding-bottom:12px;gap:7px}
+.sol-detalhe .sticky .reg__t>.ui-icon{width:15px;height:15px;color:var(--n-500)}
+.sol-detalhe .reg--sec-lista .reg__t{margin:0 18px 8px;padding:4px 0 12px}
+.sol-detalhe .reg--sec-lista .resumo__linha{padding:8px 18px;gap:12px}
+.sol-detalhe .sticky .etapa{padding:8px 0;gap:12px}
+.sol-detalhe .sticky .etapa:not(:last-child)::before{top:20px;bottom:-4px}
+.sol-detalhe .sticky .etapa__s{margin-top:4px;line-height:1.5}
+.sol-detalhe .texto-vazio{padding:12px 14px;background:var(--n-50);border-radius:7px}
+.sol-detalhe .anexo--linha{padding:5px 0}
+.sol-detalhe .anexo--linha+.anexo--linha{border-top:1px solid var(--n-150)}
+.sol-detalhe .anexo__abrir{padding-left:0}
+.sol-detalhe .upload-anexos{margin-top:14px}
+.sol-detalhe__historico .evento{padding-bottom:18px}
+.sol-detalhe__historico .evento:last-child{padding-bottom:0}
+.sol-detalhe__historico .evento__topo{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 16px}
+.sol-detalhe__historico .evento__d{line-height:1.6;overflow-wrap:anywhere;max-width:85ch}
+@container(max-width:1100px){
+  .sol-detalhe .d-grade{grid-template-columns:minmax(0,1fr) 290px;gap:16px}
+  .sol-detalhe__dados{grid-template-columns:minmax(0,1fr)}
+  .sol-detalhe__solicitante .gc{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .sol-detalhe__indicadores{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sol-detalhe__indicadores>div:nth-child(3){border-left:0}
+  .sol-detalhe__indicadores>div:nth-child(n+3){border-top:1px solid var(--n-150)}
+}
+@container(max-width:900px){
+  .sol-detalhe .d-grade{grid-template-columns:minmax(0,1fr)}
+  .sol-detalhe .sticky{position:static}
+}
+@container(max-width:680px){
+  .sol-detalhe .d-cabeca{padding:20px 0;margin-bottom:16px}
+  .sol-detalhe .d-cabeca h1{font-size:26px}
+  .sol-detalhe .d-acoes{width:100%;justify-content:flex-end}
+  .sol-detalhe .d-acoes>.btn-primaria,.sol-detalhe .d-acoes>form{flex:1;min-width:0;width:auto}
+  .sol-detalhe .d-acoes>.dd>.dd__c{left:0;right:auto}
+  .sol-detalhe .reg{padding:16px}
+  .sol-detalhe__campos,.sol-detalhe__solicitante .gc,.sol-detalhe .gc--servicos{grid-template-columns:minmax(0,1fr);gap:18px}
+  .sol-detalhe .gc .larga{grid-column:auto}
+  .sol-detalhe .gc--servicos>.f:nth-child(2){padding:16px 0 0;border-left:0;border-top:1px solid var(--n-150)}
+  .sol-detalhe__historico .evento__q{width:100%}
+}

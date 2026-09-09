@@ -1,0 +1,1 @@
+{% extends "viagens_prestacoes/assinatura/base_publico.html" %}{% block content %}<section class="asgn-card"><h1>Assinatura de documentos</h1><p>Você vai confirmar sua identidade e assinar cada documento.</p>{% for d in docs %}<h2>{{ d.label }}</h2><p>{{ d.signatario }}</p>{% endfor %}<a class="btn-primaria" href="{{ continuar_url }}">Começar</a></section>{% endblock %}
