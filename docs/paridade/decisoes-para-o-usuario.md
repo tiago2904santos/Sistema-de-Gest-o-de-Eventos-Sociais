@@ -114,6 +114,48 @@ Durante uma comparação, um cargo de teste foi gravado por engano no banco do G
 
 ---
 
+## F. Meta 3 — Ofícios (14/09/2026)
+
+### P16 — Quantidade de diárias digitada na origem e derivada aqui
+
+Já registrada na Meta 2 (`roteiros-editor.md`); vale também para o ofício, que herda o cálculo do roteiro. **Recomendação: manter derivado.**
+
+> Sua resposta: ______
+
+### P17 — "Resumo" no rodapé do cartão
+
+O cartão da origem tem três ações no rodapé: editar, documentos e mais ações. O nosso tem uma quarta, "Resumo", que abre a tela de conferência (etapas 5 e 6 do wizard, que aqui são uma tela própria). Sem ela, a conferência só é alcançável pelo formulário.
+
+**Recomendação: SIM, manter.** É o único caminho direto até a emissão a partir da lista; fica como adaptação registrada.
+
+> Sua resposta: ______
+
+### P18 — Conferência do formulário contra a origem
+
+O formulário, a conferência e os catálogos foram reconstruídos a partir do modelo, das regras portadas e do padrão da Meta 1, porque a origem não estava disponível neste ambiente e a Meta 0 não fotografou o wizard. A pergunta é se você abre as seis etapas da origem lado a lado com `/viagens/oficios/<id>/editar/` e `/viagens/oficios/<id>/` e aponta o que divergir, ou se aceita a reconstrução como está.
+
+**Recomendação: conferir.** É a única tela da meta cuja régua não foi a fotografia da origem. As capturas do destino estão em `imagens/meta3-oficio-form-*.png` e `meta3-oficio-detalhe-*.png`.
+
+> Sua resposta: ______
+
+### P19 — Gravação automática das etapas
+
+Cada página do wizard da origem grava sozinha (`dados_viajantes_autosave`, `transporte_autosave`, `wizard_roteiro_autosave_criar`, `justificativa_autosave`). Aqui a tela grava ao salvar, e o rascunho já nasce numerado pelo "Novo ofício". Trazer o autosave exige quatro endpoints e o mesmo mecanismo do editor de roteiro.
+
+**Recomendação: NÃO trazer agora, e autorizar a ausência.** O risco do wizard (perder uma etapa ao trocar de página) não existe numa tela só; o que se perde é só o que ainda não foi salvo, com aviso do navegador. Se preferir trazer, entra como incremento da Meta 7.
+
+> Sua resposta: ______
+
+### P20 — `form_simples.html` fora da Meta 3
+
+O renderizador genérico saiu do ofício e dos catálogos, mas continua servindo a numeração, a configuração institucional e os assinantes (Meta 1, P10) e o cadastro de termo (Meta 5). Removê-lo agora obrigaria a reescrever essas telas fora da ordem das metas.
+
+**Recomendação: SIM, deixar para as metas donas dessas telas.** Ele sai quando a P10 for implementada e a Meta 5 tratar os termos.
+
+> Sua resposta: ______
+
+---
+
 ## Resumo das recomendações
 
 | Item | Assunto | Recomendação |
@@ -129,3 +171,8 @@ Durante uma comparação, um cargo de teste foi gravado por engano no banco do G
 | P10 | Configuração institucional | Alinhar, sem remover campos nossos |
 | P01 | Assinantes de plano e ordem de serviço | Não trazer, autorizar a omissão |
 | P14 | Cargo de ensaio na origem | Apagar você, pela tela |
+| P16 | Quantidade de diárias | Manter derivada |
+| P17 | "Resumo" no cartão do ofício | Manter |
+| P18 | Conferir o formulário do ofício contra a origem | Conferir |
+| P19 | Gravação automática das etapas | Não trazer agora |
+| P20 | `form_simples.html` nas telas fora da meta | Deixar para as metas donas |

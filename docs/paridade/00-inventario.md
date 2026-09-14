@@ -99,37 +99,37 @@ Cada tela receberá um arquivo `<app>-<tela>.md`, com as quatro tabelas de campo
 
 | Rota da origem | Destino correspondente | Situação | Evidência e pendência |
 |---|---|---|---|
-| `oficios:index`<br>`/oficios/` | `viagens_oficios:lista`<br>`/viagens/oficios/` | existe e está incompleta | Tabela/formulário genéricos; faltam composição em cartões e blocos próprios das etapas. Fonte: `oficios/urls.py:9`. |
-| `oficios:novo`<br>`/oficios/novo/` | `viagens_oficios:novo`<br>`/viagens/oficios/novo/` | existe e está incompleta | Tabela/formulário genéricos; faltam composição em cartões e blocos próprios das etapas. Fonte: `oficios/urls.py:10`. |
-| `oficios:modelos_motivo_index`<br>`/oficios/modelos-motivo/` | `viagens_oficios:catalogo`<br>`/viagens/oficios/catalogos/<str:tipo>/`<br>`tipo=motivos` | existe e está incompleta | Catálogo genérico; inclusão rápida, padrão, exclusão, estados e textos precisam de paridade. Fonte: `oficios/urls.py:11`. |
-| `oficios:modelo_motivo_create`<br>`/oficios/modelos-motivo/novo/` | `viagens_oficios:catalogo_novo`<br>`/viagens/oficios/catalogos/<str:tipo>/novo/`<br>`tipo=motivos` | existe e está incompleta | Catálogo genérico; inclusão rápida, padrão, exclusão, estados e textos precisam de paridade. Fonte: `oficios/urls.py:12`. |
-| `oficios:modelo_motivo_update`<br>`/oficios/modelos-motivo/<int:pk>/editar/` | `viagens_oficios:catalogo_editar`<br>`/viagens/oficios/catalogos/<str:tipo>/<int:pk>/`<br>`tipo=motivos` | existe e está incompleta | Catálogo genérico; inclusão rápida, padrão, exclusão, estados e textos precisam de paridade. Fonte: `oficios/urls.py:13`. |
-| `oficios:modelo_motivo_definir_padrao`<br>`/oficios/modelos-motivo/<int:pk>/padrao/` | `viagens_oficios:catalogo_editar`<br>`/viagens/oficios/catalogos/<str:tipo>/<int:pk>/`<br>`tipo=motivos` | existe e está incompleta | Catálogo genérico; inclusão rápida, padrão, exclusão, estados e textos precisam de paridade. Fonte: `oficios/urls.py:14`. |
-| `oficios:modelo_motivo_delete`<br>`/oficios/modelos-motivo/<int:pk>/excluir/` | `viagens_oficios:catalogo_editar`<br>`/viagens/oficios/catalogos/<str:tipo>/<int:pk>/`<br>`tipo=motivos` | existe e está incompleta | Catálogo genérico; inclusão rápida, padrão, exclusão, estados e textos precisam de paridade. Fonte: `oficios/urls.py:19`. |
-| `oficios:detalhe`<br>`/oficios/<int:pk>/` | `viagens_oficios:detalhe`<br>`/viagens/oficios/<int:pk>/` | existe e está incompleta | Tabela/formulário genéricos; faltam composição em cartões e blocos próprios das etapas. Fonte: `oficios/urls.py:20`. |
-| `oficios:card_menus`<br>`/oficios/<int:pk>/menus/` | — | não existe | Endpoint não localizado; permanece pendência da Meta 3: card_menus. Fonte: `oficios/urls.py:21`. |
-| `oficios:editar`<br>`/oficios/<int:pk>/editar/` | `viagens_oficios:editar`<br>`/viagens/oficios/<int:pk>/editar/` | existe e está incompleta | Tabela/formulário genéricos; faltam composição em cartões e blocos próprios das etapas. Fonte: `oficios/urls.py:22`. |
-| `oficios:dados_viajantes`<br>`/oficios/<int:pk>/dados-viajantes/` | `viagens_oficios:editar`<br>`/viagens/oficios/<int:pk>/editar/` | existe e está incompleta | Campos concentrados no formulário genérico; a etapa dedicada e seus comportamentos não estão reproduzidos. Fonte: `oficios/urls.py:23`. |
-| `oficios:dados_viajantes_autosave`<br>`/oficios/<int:pk>/dados-viajantes/autosave/` | — | não existe | Endpoint não localizado; permanece pendência da Meta 3: dados_viajantes_autosave. Fonte: `oficios/urls.py:24`. |
-| `oficios:transporte`<br>`/oficios/<int:pk>/transporte/` | `viagens_oficios:editar`<br>`/viagens/oficios/<int:pk>/editar/` | existe e está incompleta | Campos concentrados no formulário genérico; a etapa dedicada e seus comportamentos não estão reproduzidos. Fonte: `oficios/urls.py:25`. |
-| `oficios:transporte_autosave`<br>`/oficios/<int:pk>/transporte/autosave/` | — | não existe | Endpoint não localizado; permanece pendência da Meta 3: transporte_autosave. Fonte: `oficios/urls.py:26`. |
-| `oficios:wizard_roteiro`<br>`/oficios/<int:pk>/roteiro/` | `viagens_oficios:editar`<br>`/viagens/oficios/<int:pk>/editar/` | existe e está incompleta | Campos concentrados no formulário genérico; a etapa dedicada e seus comportamentos não estão reproduzidos. Fonte: `oficios/urls.py:27`. |
-| `oficios:wizard_roteiro_autosave_criar`<br>`/oficios/<int:pk>/roteiro/autosave/criar/` | — | não existe | Endpoint não localizado; permanece pendência da Meta 3: wizard_roteiro_autosave_criar. Fonte: `oficios/urls.py:28`. |
-| `oficios:wizard_justificativa`<br>`/oficios/<int:pk>/justificativa/` | `viagens_oficios:editar`<br>`/viagens/oficios/<int:pk>/editar/` | existe e está incompleta | Campos concentrados no formulário genérico; a etapa dedicada e seus comportamentos não estão reproduzidos. Fonte: `oficios/urls.py:33`. |
-| `oficios:justificativa_autosave`<br>`/oficios/<int:pk>/justificativa/autosave/` | — | não existe | Endpoint não localizado; permanece pendência da Meta 3: justificativa_autosave. Fonte: `oficios/urls.py:34`. |
-| `oficios:wizard_resumo`<br>`/oficios/<int:pk>/resumo/` | `viagens_oficios:detalhe`<br>`/viagens/oficios/<int:pk>/` | existe e está incompleta | Detalhe reúne informações/documentos; não reproduz conferência e resumo como etapas próprias. Fonte: `oficios/urls.py:35`. |
-| `oficios:api_viatura_por_placa`<br>`/oficios/<int:pk>/api/viatura-por-placa/` | — | não existe | Endpoint não localizado; permanece pendência da Meta 3: api_viatura_por_placa. Fonte: `oficios/urls.py:36`. |
-| `oficios:wizard_documentos`<br>`/oficios/<int:pk>/documentos/` | `viagens_oficios:detalhe`<br>`/viagens/oficios/<int:pk>/` | existe e está incompleta | Detalhe reúne informações/documentos; não reproduz conferência e resumo como etapas próprias. Fonte: `oficios/urls.py:37`. |
-| `oficios:oficio_pdf_inline`<br>`/oficios/<int:pk>/documentos/oficio-pdf-inline/` | `viagens_oficios:preview_artefato`<br>`/viagens/oficios/documentos/<uuid:pk>/preview/` | existe e está incompleta | Prévia por UUID de artefato; falta entrada por ofício/tipo com os mesmos estados. Fonte: `oficios/urls.py:38`. |
-| `oficios:justificativa_pdf_inline`<br>`/oficios/<int:pk>/documentos/justificativa-pdf-inline/` | `viagens_oficios:preview_artefato`<br>`/viagens/oficios/documentos/<uuid:pk>/preview/` | existe e está incompleta | Prévia por UUID de artefato; falta entrada por ofício/tipo com os mesmos estados. Fonte: `oficios/urls.py:39`. |
+| `oficios:index`<br>`/oficios/` | `viagens_oficios:lista`<br>`/viagens/oficios/` | existe e está fiel | cartão, filtros, situações, ordenação, períodos e menus da origem (Meta 3, `oficios-lista.md`). Fonte: `oficios/urls.py:9` |
+| `oficios:novo`<br>`/oficios/novo/` | `viagens_oficios:novo`<br>`/viagens/oficios/novo/` | existe e está fiel | POST cria o rascunho numerado e abre o editor (`viagens_oficios:criar`); o GET antigo continua (`oficios-form.md`). Fonte: `oficios/urls.py:10` |
+| `oficios:modelos_motivo_index`<br>`/oficios/modelos-motivo/` | `viagens_oficios:catalogo`<br>`/viagens/oficios/catalogos/<str:tipo>/`<br>`tipo=motivos` | existe e está fiel | catálogo no padrão de cadastros da Meta 1 (`oficios-catalogos.md`). Fonte: `oficios/urls.py:11` |
+| `oficios:modelo_motivo_create`<br>`/oficios/modelos-motivo/novo/` | `viagens_oficios:catalogo_novo`<br>`/viagens/oficios/catalogos/<str:tipo>/novo/`<br>`tipo=motivos` | existe e está fiel | modal de inclusão (`oficios-catalogos.md`). Fonte: `oficios/urls.py:12` |
+| `oficios:modelo_motivo_update`<br>`/oficios/modelos-motivo/<int:pk>/editar/` | `viagens_oficios:catalogo_editar`<br>`/viagens/oficios/catalogos/<str:tipo>/<int:pk>/`<br>`tipo=motivos` | existe e está fiel | modal de edição (`oficios-catalogos.md`). Fonte: `oficios/urls.py:13` |
+| `oficios:modelo_motivo_definir_padrao`<br>`/oficios/modelos-motivo/<int:pk>/padrao/` | `viagens_oficios:catalogo_editar`<br>`/viagens/oficios/catalogos/<str:tipo>/<int:pk>/`<br>`tipo=motivos` | existe e está fiel | `viagens_cadastros:definir_padrao` no menu da linha (`oficios-catalogos.md`). Fonte: `oficios/urls.py:14` |
+| `oficios:modelo_motivo_delete`<br>`/oficios/modelos-motivo/<int:pk>/excluir/` | `viagens_oficios:catalogo_editar`<br>`/viagens/oficios/catalogos/<str:tipo>/<int:pk>/`<br>`tipo=motivos` | existe e está fiel | `viagens_cadastros:excluir` com diálogo (`oficios-catalogos.md`). Fonte: `oficios/urls.py:19` |
+| `oficios:detalhe`<br>`/oficios/<int:pk>/` | `viagens_oficios:detalhe`<br>`/viagens/oficios/<int:pk>/` | existe e está fiel | conferência com todos os blocos (`oficios-detalhe.md`). Fonte: `oficios/urls.py:20` |
+| `oficios:card_menus`<br>`/oficios/<int:pk>/menus/` | — | adaptado | os quatro menus são renderizados no próprio cartão, sem endpoint separado (`oficios-menus.md`). Fonte: `oficios/urls.py:21` |
+| `oficios:editar`<br>`/oficios/<int:pk>/editar/` | `viagens_oficios:editar`<br>`/viagens/oficios/<int:pk>/editar/` | existe e está fiel | formulário por blocos (`oficios-form.md`). Fonte: `oficios/urls.py:22` |
+| `oficios:dados_viajantes`<br>`/oficios/<int:pk>/dados-viajantes/` | `viagens_oficios:editar`<br>`/viagens/oficios/<int:pk>/editar/` | existe e está fiel | seção 1 do formulário: identificação, motivo, custeio e equipe (`oficios-form.md`). Fonte: `oficios/urls.py:23` |
+| `oficios:dados_viajantes_autosave`<br>`/oficios/<int:pk>/dados-viajantes/autosave/` | — | ausente | gravação automática das etapas aguarda decisão (P19). Fonte: `oficios/urls.py:24` |
+| `oficios:transporte`<br>`/oficios/<int:pk>/transporte/` | `viagens_oficios:editar`<br>`/viagens/oficios/<int:pk>/editar/` | existe e está fiel | seção 2: viatura cadastrada ou manual, motorista servidor ou externo, referência de origem, armas (`oficios-form.md`). Fonte: `oficios/urls.py:25` |
+| `oficios:transporte_autosave`<br>`/oficios/<int:pk>/transporte/autosave/` | — | ausente | gravação automática das etapas aguarda decisão (P19). Fonte: `oficios/urls.py:26` |
+| `oficios:wizard_roteiro`<br>`/oficios/<int:pk>/roteiro/` | `viagens_oficios:editar`<br>`/viagens/oficios/<int:pk>/editar/` | existe e está fiel | seção 3 com o resumo da rota (`oficios-form.md`). Fonte: `oficios/urls.py:27` |
+| `oficios:wizard_roteiro_autosave_criar`<br>`/oficios/<int:pk>/roteiro/autosave/criar/` | — | ausente | gravação automática das etapas aguarda decisão (P19). Fonte: `oficios/urls.py:28` |
+| `oficios:wizard_justificativa`<br>`/oficios/<int:pk>/justificativa/` | `viagens_oficios:editar`<br>`/viagens/oficios/<int:pk>/editar/` | existe e está fiel | seção 4 com regra de prazo, modelo e texto (`oficios-form.md`). Fonte: `oficios/urls.py:33` |
+| `oficios:justificativa_autosave`<br>`/oficios/<int:pk>/justificativa/autosave/` | — | ausente | gravação automática das etapas aguarda decisão (P19). Fonte: `oficios/urls.py:34` |
+| `oficios:wizard_resumo`<br>`/oficios/<int:pk>/resumo/` | `viagens_oficios:detalhe`<br>`/viagens/oficios/<int:pk>/` | existe e está fiel | conferência das seis etapas com pendências (`oficios-detalhe.md`). Fonte: `oficios/urls.py:35` |
+| `oficios:api_viatura_por_placa`<br>`/oficios/<int:pk>/api/viatura-por-placa/` | — | adaptado | a viatura cadastrada é escolhida por busca no próprio seletor (placa e modelo), sem consulta ao servidor. Fonte: `oficios/urls.py:36` |
+| `oficios:wizard_documentos`<br>`/oficios/<int:pk>/documentos/` | `viagens_oficios:detalhe`<br>`/viagens/oficios/<int:pk>/` | existe e está fiel | emissão, termos e documentos gerados na conferência (`oficios-detalhe.md`). Fonte: `oficios/urls.py:37` |
+| `oficios:oficio_pdf_inline`<br>`/oficios/<int:pk>/documentos/oficio-pdf-inline/` | `viagens_oficios:preview_artefato`<br>`/viagens/oficios/documentos/<uuid:pk>/preview/` | existe e está fiel | "Visualizar ofício" gera e abre em nova aba (`gerar` com `?inline=1`). Fonte: `oficios/urls.py:38` |
+| `oficios:justificativa_pdf_inline`<br>`/oficios/<int:pk>/documentos/justificativa-pdf-inline/` | `viagens_oficios:preview_artefato`<br>`/viagens/oficios/documentos/<uuid:pk>/preview/` | existe e está fiel | "Visualizar justificativa" (`gerar` com `?inline=1`). Fonte: `oficios/urls.py:39` |
 | `oficios:ordem_servico_pdf_inline`<br>`/oficios/<int:pk>/documentos/ordem-servico-pdf-inline/` | — | fora de escopo | Geração/prévia de ordem de serviço: fora do escopo expresso do pedido. Pontos de entrada em telas mistas ainda dependem de decisão. Fonte: `oficios/urls.py:44`. |
-| `oficios:baixar_justificativa_documento`<br>`/oficios/<int:pk>/documentos/justificativa/<str:formato>/` | `viagens_oficios:gerar`<br>`/viagens/oficios/<int:pk>/gerar/<str:tipo>/<str:formato>/`<br>`tipo=justificativa` | existe e está incompleta | Núcleo de geração existe, com entrada POST. Conferir contrato de download, nova aba, disponibilidade e erros. Fonte: `oficios/urls.py:49`. |
+| `oficios:baixar_justificativa_documento`<br>`/oficios/<int:pk>/documentos/justificativa/<str:formato>/` | `viagens_oficios:gerar`<br>`/viagens/oficios/<int:pk>/gerar/<str:tipo>/<str:formato>/`<br>`tipo=justificativa` | existe e está fiel | "Baixar PDF/DOCX" da justificativa nos menus e na conferência. Fonte: `oficios/urls.py:49` |
 | `oficios:baixar_ordem_servico_documento`<br>`/oficios/<int:pk>/documentos/ordem-servico/<str:formato>/` | — | fora de escopo | Geração/prévia de ordem de serviço: fora do escopo expresso do pedido. Pontos de entrada em telas mistas ainda dependem de decisão. Fonte: `oficios/urls.py:54`. |
-| `oficios:baixar_documento`<br>`/oficios/<int:pk>/documentos/<str:formato>/` | `viagens_oficios:gerar`<br>`/viagens/oficios/<int:pk>/gerar/<str:tipo>/<str:formato>/`<br>`tipo=oficio` | existe e está incompleta | Núcleo de geração existe, com entrada POST. Conferir contrato de download, nova aba, disponibilidade e erros. Fonte: `oficios/urls.py:59`. |
-| `oficios:excluir`<br>`/oficios/<int:pk>/excluir/` | `viagens_oficios:acao`<br>`/viagens/oficios/<int:pk>/acao/<str:acao>/`<br>`acao=excluir` | existe e está incompleta | Ação de domínio existe; conferir posição, confirmação, permissão e mensagens. Fonte: `oficios/urls.py:60`. |
-| `oficios:cancelar`<br>`/oficios/<int:pk>/cancelar/` | `viagens_oficios:acao`<br>`/viagens/oficios/<int:pk>/acao/<str:acao>/`<br>`acao=cancelar` | existe e está incompleta | Ação de domínio existe; conferir posição, confirmação, permissão e mensagens. Fonte: `oficios/urls.py:61`. |
-| `oficios:retificar`<br>`/oficios/<int:pk>/retificar/` | `viagens_oficios:acao`<br>`/viagens/oficios/<int:pk>/acao/<str:acao>/`<br>`acao=retificar` | existe e está incompleta | Ação de domínio existe; conferir posição, confirmação, permissão e mensagens. Fonte: `oficios/urls.py:62`. |
-| `oficios:marcar_complementar`<br>`/oficios/<int:pk>/complementar/` | `viagens_oficios:acao`<br>`/viagens/oficios/<int:pk>/acao/<str:acao>/`<br>`acao=complementar` | existe e está incompleta | Ação de domínio existe; conferir posição, confirmação, permissão e mensagens. Fonte: `oficios/urls.py:63`. |
+| `oficios:baixar_documento`<br>`/oficios/<int:pk>/documentos/<str:formato>/` | `viagens_oficios:gerar`<br>`/viagens/oficios/<int:pk>/gerar/<str:tipo>/<str:formato>/`<br>`tipo=oficio` | existe e está fiel | "Baixar PDF/DOCX" do ofício nos menus e na conferência. Fonte: `oficios/urls.py:59` |
+| `oficios:excluir`<br>`/oficios/<int:pk>/excluir/` | `viagens_oficios:acao`<br>`/viagens/oficios/<int:pk>/acao/<str:acao>/`<br>`acao=excluir` | existe e está fiel | "Excluir ofício" com confirmação, volta para onde foi disparado, bloqueio por vínculo. Fonte: `oficios/urls.py:60` |
+| `oficios:cancelar`<br>`/oficios/<int:pk>/cancelar/` | `viagens_oficios:acao`<br>`/viagens/oficios/<int:pk>/acao/<str:acao>/`<br>`acao=cancelar` | existe e está fiel | "Cancelar ofício" com motivo na conferência e confirmação no cartão. Fonte: `oficios/urls.py:61` |
+| `oficios:retificar`<br>`/oficios/<int:pk>/retificar/` | `viagens_oficios:acao`<br>`/viagens/oficios/<int:pk>/acao/<str:acao>/`<br>`acao=retificar` | existe e está fiel | liga e desliga a marca de retificação. Fonte: `oficios/urls.py:62` |
+| `oficios:marcar_complementar`<br>`/oficios/<int:pk>/complementar/` | `viagens_oficios:acao`<br>`/viagens/oficios/<int:pk>/acao/<str:acao>/`<br>`acao=complementar` | existe e está fiel | liga e desliga a marca de complementar. Fonte: `oficios/urls.py:63` |
 
 ### justificativas
 
@@ -138,11 +138,11 @@ Cada tela receberá um arquivo `<app>-<tela>.md`, com as quatro tabelas de campo
 | `justificativas:index`<br>`/justificativas/` | — | não existe | Tela/endpoint de justificativas aplicadas ausente; existem apenas campo no ofício e catálogo de modelos. Fonte: `justificativas/urls.py:9`. |
 | `justificativas:api_buscar_oficios`<br>`/justificativas/api/oficios/` | — | não existe | Tela/endpoint de justificativas aplicadas ausente; existem apenas campo no ofício e catálogo de modelos. Fonte: `justificativas/urls.py:10`. |
 | `justificativas:justificativa_delete`<br>`/justificativas/<int:pk>/excluir/` | — | não existe | Tela/endpoint de justificativas aplicadas ausente; existem apenas campo no ofício e catálogo de modelos. Fonte: `justificativas/urls.py:11`. |
-| `justificativas:modelos_index`<br>`/justificativas/modelos/` | `viagens_oficios:catalogo`<br>`/viagens/oficios/catalogos/<str:tipo>/`<br>`tipo=justificativas` | existe e está incompleta | Catálogo genérico sem comprovação de inclusão rápida, padrão, confirmação e mensagens iguais. Fonte: `justificativas/urls.py:12`. |
-| `justificativas:modelo_create`<br>`/justificativas/modelos/novo/` | `viagens_oficios:catalogo_novo`<br>`/viagens/oficios/catalogos/<str:tipo>/novo/`<br>`tipo=justificativas` | existe e está incompleta | Catálogo genérico sem comprovação de inclusão rápida, padrão, confirmação e mensagens iguais. Fonte: `justificativas/urls.py:13`. |
-| `justificativas:modelo_update`<br>`/justificativas/modelos/<int:pk>/editar/` | `viagens_oficios:catalogo_editar`<br>`/viagens/oficios/catalogos/<str:tipo>/<int:pk>/`<br>`tipo=justificativas` | existe e está incompleta | Catálogo genérico sem comprovação de inclusão rápida, padrão, confirmação e mensagens iguais. Fonte: `justificativas/urls.py:14`. |
-| `justificativas:modelo_definir_padrao`<br>`/justificativas/modelos/<int:pk>/padrao/` | `viagens_oficios:catalogo_editar`<br>`/viagens/oficios/catalogos/<str:tipo>/<int:pk>/`<br>`tipo=justificativas` | existe e está incompleta | Catálogo genérico sem comprovação de inclusão rápida, padrão, confirmação e mensagens iguais. Fonte: `justificativas/urls.py:15`. |
-| `justificativas:modelo_delete`<br>`/justificativas/modelos/<int:pk>/excluir/` | `viagens_oficios:catalogo_editar`<br>`/viagens/oficios/catalogos/<str:tipo>/<int:pk>/`<br>`tipo=justificativas` | existe e está incompleta | Catálogo genérico sem comprovação de inclusão rápida, padrão, confirmação e mensagens iguais. Fonte: `justificativas/urls.py:16`. |
+| `justificativas:modelos_index`<br>`/justificativas/modelos/` | `viagens_oficios:catalogo`<br>`/viagens/oficios/catalogos/<str:tipo>/`<br>`tipo=justificativas` | existe e está fiel | catálogo no padrão de cadastros da Meta 1 (`oficios-catalogos.md`). Fonte: `justificativas/urls.py:12` |
+| `justificativas:modelo_create`<br>`/justificativas/modelos/novo/` | `viagens_oficios:catalogo_novo`<br>`/viagens/oficios/catalogos/<str:tipo>/novo/`<br>`tipo=justificativas` | existe e está fiel | modal de inclusão (`oficios-catalogos.md`). Fonte: `justificativas/urls.py:13` |
+| `justificativas:modelo_update`<br>`/justificativas/modelos/<int:pk>/editar/` | `viagens_oficios:catalogo_editar`<br>`/viagens/oficios/catalogos/<str:tipo>/<int:pk>/`<br>`tipo=justificativas` | existe e está fiel | modal de edição (`oficios-catalogos.md`). Fonte: `justificativas/urls.py:14` |
+| `justificativas:modelo_definir_padrao`<br>`/justificativas/modelos/<int:pk>/padrao/` | `viagens_oficios:catalogo_editar`<br>`/viagens/oficios/catalogos/<str:tipo>/<int:pk>/`<br>`tipo=justificativas` | existe e está fiel | `viagens_cadastros:definir_padrao` (`oficios-catalogos.md`). Fonte: `justificativas/urls.py:15` |
+| `justificativas:modelo_delete`<br>`/justificativas/modelos/<int:pk>/excluir/` | `viagens_oficios:catalogo_editar`<br>`/viagens/oficios/catalogos/<str:tipo>/<int:pk>/`<br>`tipo=justificativas` | existe e está fiel | `viagens_cadastros:excluir` com diálogo (`oficios-catalogos.md`). Fonte: `justificativas/urls.py:16` |
 | `justificativas:legacy_modelo_create`<br>`/justificativas/novo/` | — | não existe | Alias legado a decidir; há dois padrões de exclusão idênticos na origem e o último fica sombreado. Não corrigir nem dispensar sem autorização. Fonte: `justificativas/urls.py:17`. |
 | `justificativas:legacy_modelo_update`<br>`/justificativas/<int:pk>/editar/` | — | não existe | Alias legado a decidir; há dois padrões de exclusão idênticos na origem e o último fica sombreado. Não corrigir nem dispensar sem autorização. Fonte: `justificativas/urls.py:18`. |
 | `justificativas:legacy_modelo_definir_padrao`<br>`/justificativas/<int:pk>/padrao/` | — | não existe | Alias legado a decidir; há dois padrões de exclusão idênticos na origem e o último fica sombreado. Não corrigir nem dispensar sem autorização. Fonte: `justificativas/urls.py:19`. |
@@ -436,3 +436,51 @@ larguras, nenhuma célula transbordando.
 aqui, pelo motor da Fase 2. Recomendação é manter derivado e registrar como
 adaptação permanente; é diferença visível na tela e aguarda a resposta do dono
 do produto, pela regra da seção 4 das metas. Nada mais da Meta 2 depende dela.
+
+## Meta 3 — Ofícios, comparada em 14/09/2026
+
+As telas do módulo estão fichadas em `oficios-lista.md`, `oficios-menus.md`,
+`oficios-form.md`, `oficios-detalhe.md` e `oficios-catalogos.md`. A lista e os
+menus foram comparados com as capturas e as árvores acessíveis da Meta 0; o
+formulário, a conferência e os catálogos não têm fotografia da origem neste
+repositório, e o Gerenciador de Viagens não estava disponível no ambiente
+desta rodada — a régua foi o modelo, as regras portadas na Fase 4 e o padrão
+de cadastros da Meta 1. Isso fica registrado como desvio do protocolo da
+seção 6 e pede a conferência lado a lado (P18).
+
+**Lista.** A tabela de seis colunas virou o cartão da origem: cabeçalho com
+número e protocolo, período e destinos, selo temporal, equipe com cargo,
+unidade e marca de motorista, placa e modelo, trechos com horários, valor
+total por extenso, quantidade de diárias e o bloco da justificativa. Filtros
+de status/ano/fila viraram busca por número, protocolo, motivo ou destino,
+quatro situações combináveis com contagem, seis ordenações (`?sort=`), dois
+períodos com calendário e "Limpar"; "Mostrando 1–20 de N" com `?page=`. Os
+quatro menus do cartão trazem os dezoito itens com as descrições de lá.
+"Novo ofício" passou a criar o rascunho numerado e abrir o editor.
+
+**Formulário.** O laço genérico sobre campos saiu. As seis etapas do wizard
+são seções de uma tela só, com os blocos da origem: identificação, motivo,
+custeio, equipe com termo por viajante; viatura cadastrada ou não cadastrada,
+motorista servidor ou externo com cartão e referência de origem, armas;
+roteiro com resumo da rota; regra de prazo e texto da justificativa;
+conferência com as pendências. A lateral mostra as seis etapas com o estado
+de cada uma.
+
+**Conferência e documentos.** O detalhe reúne as etapas 5 e 6: dados,
+equipe e termos, transporte, roteiro e diárias, justificativa, emissão do
+ofício e da justificativa (visualizar, PDF, DOCX), termos por servidor e em
+lote, documentos gerados com anexação de assinado, mais ações (retificar,
+complementar, arquivar, cancelar com motivo, reativar, excluir) e histórico.
+
+**Catálogos.** Motivos e modelos de justificativa passaram ao padrão de
+cadastros da Meta 1: lista com busca, situação Ativo/Inativo, modal de
+inclusão e edição, "Definir padrão" no menu da linha e exclusão com diálogo.
+Não entram no trilho nem nos cartões da entrada de Cadastros.
+
+**Prova.** 21 testes novos em `viagens_oficios/tests/test_paridade_meta3.py`;
+a suíte dos apps de viagens passou de 337 para 358 casos. Capturas do destino
+em `imagens/meta3-*.png`, ao lado das da origem (`meta0-oficios-*-origem.png`).
+
+**Pendências.** P17 a P20 na folha de decisões: gravação automática das
+etapas, conferência do formulário contra a origem, o link "Resumo" no cartão
+e a manutenção de `form_simples.html` para as telas fora da meta.

@@ -977,3 +977,191 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 
 /* O resumo do bate-volta só aparece quando o editor tem o que dizer. */
 .bate-volta__resumo:empty{display:none}
+
+/* ---------------------------------------------------------------------------
+   Lista de ofícios (Meta 3 de paridade): o cartão da origem — cabeçalho com
+   número e protocolo, equipe, placa e modelo, trechos, valor e justificativa,
+   com os quatro menus de ação — vestido com os tokens do V3.2. A origem é
+   escura; aqui os blocos internos usam o cinza claro dos painéis.
+   --------------------------------------------------------------------------- */
+.of-catalogos{display:flex;flex-wrap:wrap;gap:4px 14px;margin:-6px 0 14px}
+.of-catalogos .btn--quieta{height:30px;padding:0 6px;font-size:12.5px;font-weight:600}
+.of-filtros{align-items:end}
+.of-filtros__situacao{flex:1 1 100%;order:10}
+.of-filtros__ordem{flex:1 1 190px;min-width:0}
+.of-filtros__periodo{flex:1 1 210px;min-width:0}
+.of-filtros>.btn--secundaria,.of-filtros>a.btn--secundaria{height:38px}
+.of-filtros .form-label:not(.sr-only){font-size:11.5px}
+.of-paginacao{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.of-paginacao--rodape{margin:12px 0 0}
+.of-paginacao__contagem{margin:0;font-size:12.5px;color:var(--n-500)}
+.of-paginacao__contagem strong{color:var(--n-800)}
+.of-paginacao .pag__nav{margin:0}
+.of-lista{display:grid;gap:14px}
+.of-cartao{display:grid;gap:10px;padding:16px 18px;border:1px solid var(--n-200);border-radius:12px;background:var(--branco);min-width:0}
+.of-cartao--cancelado{background:var(--n-25)}
+.of-cartao--cancelado .of-cartao__titulo{color:var(--n-500);text-decoration:line-through}
+.of-cartao__cabeca{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.of-cartao__ident{min-width:0}
+.of-cartao__titulo{margin:0;font-size:15.5px;font-weight:700;color:var(--n-900);overflow-wrap:anywhere}
+.of-cartao__sub{margin:3px 0 0;font-size:12.5px;color:var(--n-500);overflow-wrap:anywhere}
+.of-cartao .st{flex:none;white-space:nowrap}
+.of-equipe{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:8px}
+.of-pessoa,.of-just{display:flex;align-items:center;gap:10px;min-width:0;padding:8px 10px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25)}
+.of-pessoa--motorista{border-color:var(--d-300);background:var(--d-50)}
+.of-av{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:var(--d-100);color:var(--d-800);font-size:12px;font-weight:700;letter-spacing:.02em}
+.of-pessoa__txt{display:grid;gap:2px;min-width:0;flex:1 1 auto}
+.of-pessoa__nome{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;font-weight:700;color:var(--n-900);overflow-wrap:anywhere}
+.of-pessoa__desc{font-size:11.5px;color:var(--n-500);overflow-wrap:anywhere}
+.of-tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:99px;background:var(--d-600);color:#fff;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.of-equipe__vazio{grid-column:1/-1;padding:9px 12px;border:1px dashed var(--n-200);border-radius:9px;font-size:12.5px;color:var(--n-500)}
+.of-grade{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1.1fr);gap:10px;align-items:stretch}
+.of-bloco{min-width:0;padding:12px 14px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25)}
+.of-rotulo{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--d-700)}
+.of-rotulo+*{display:block;margin:2px 0 10px}
+.of-bloco> :last-child{margin-bottom:0}
+.of-transporte__valor{font-size:26px;line-height:1.1;font-weight:800;color:var(--n-900);letter-spacing:.01em;overflow-wrap:anywhere}
+.of-nao-informado{font-size:13px;color:var(--n-500)}
+.of-trechos{list-style:none;margin:0;padding:8px;display:grid;gap:6px;align-content:start;max-height:190px;overflow:auto;scrollbar-width:thin}
+.of-trecho{display:grid;gap:2px;padding:8px 10px;border-radius:7px;background:var(--branco);border:1px solid var(--n-150);min-width:0}
+.of-trecho__rota{font-size:12.5px;font-weight:700;color:var(--n-900);overflow-wrap:anywhere}
+.of-trecho__hora{font-size:11.5px;color:var(--n-500);font-variant-numeric:tabular-nums}
+.of-valor{background:var(--d-50);border-color:var(--d-200)}
+.of-valor__num{font-size:26px;line-height:1.1;font-weight:800;color:var(--n-900);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.of-valor__ext{font-size:11px;line-height:1.4;color:var(--n-500);margin-top:-4px}
+.of-valor__qtd{font-size:16px;font-weight:700;color:var(--n-900)}
+.of-just{align-items:center}
+.of-just .of-pessoa__nome .st{height:20px;font-size:11px}
+.of-just__acoes{flex:none;margin-left:auto}
+.of-cartao__rodape{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:10px;border-top:1px solid var(--n-150)}
+.of-cartao .acoes{display:flex;align-items:center;gap:4px}
+.of-cartao .ib-linha{width:34px;height:34px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco);color:var(--n-600)}
+.of-cartao .ib-linha:hover,.of-cartao .ib-linha[aria-expanded=true]{border-color:var(--d-500);background:var(--d-50);color:var(--d-800)}
+.of-cartao .acao-linha{height:34px;color:var(--n-700)}
+.of-menu{flex:0 0 auto;width:auto;position:relative}
+.of-menu__corpo{min-width:290px;right:0;left:auto}
+.of-item{align-items:flex-start;height:auto;min-height:44px;padding:8px 10px;text-align:left;white-space:normal}
+.of-item>.ui-icon{flex:none;margin-top:2px}
+.of-item>span{display:grid;gap:2px;min-width:0}
+.of-item b{font-size:13px;color:var(--n-900)}
+.of-item small{font-size:11.5px;color:var(--n-500);line-height:1.35}
+.of-item.dd__i--perigo b{color:var(--dg-t)}
+.of-item--inativo{cursor:not-allowed;opacity:.55}
+.of-vazio{padding:40px 24px;text-align:center;display:grid;justify-items:center;gap:8px}
+.of-vazio h2{margin:0;font-size:22px}
+.of-vazio p{margin:0 0 8px;font-size:13.5px;color:var(--n-500)}
+.st--rascunho{background:var(--in-b);color:var(--in-t);border:1px solid var(--in-r)}
+.st--neutro{background:var(--nt-b);color:var(--nt-t);border:1px solid var(--nt-r)}
+@container(max-width:1100px){.of-grade{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.of-valor{grid-column:1/-1}}
+@container(max-width:680px){
+  .of-grade,.of-equipe{grid-template-columns:1fr}
+  .of-cartao{padding:14px}
+  .of-transporte__valor,.of-valor__num{font-size:22px}
+  .of-menu__corpo{right:auto;left:0}
+  .of-cartao__rodape{flex-wrap:wrap}
+  .of-filtros__ordem,.of-filtros__periodo{flex-basis:100%}
+}
+/* Ordenação escolhida é dado, não sugestão: mesma correção feita para a data
+   escolhida — a regra que pinta o gatilho vazio tem três classes. */
+.custom-select.is-enhanced .custom-select__trigger.has-value{color:var(--n-900)}
+
+/* ---------------------------------------------------------------------------
+   Formulário do ofício (Meta 3): as etapas do wizard da origem como seções de
+   uma tela só, com os blocos de lá. Reaproveita o `bloco-split` do editor de
+   roteiro (rótulo à esquerda, campos à direita) fora do escopo `.editor-roteiro`.
+   --------------------------------------------------------------------------- */
+.of-form .frm-grade{padding-top:0}
+.of-form__principal{min-width:0}
+.of-form__principal>.reg{margin-bottom:16px}
+.of-form .section-card__cabecalho{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.of-form .section-card__titulo{font:inherit;margin:0}
+.of-form .section-card__acao{margin-left:auto}
+.of-form .bloco-split{display:grid;grid-template-columns:200px minmax(0,1fr);gap:18px;padding:16px 0}
+.of-form .bloco-split+.bloco-split{border-top:1px solid var(--n-150)}
+.of-form .bloco-split:first-child{padding-top:0}
+.of-form .bloco-split:last-child{padding-bottom:0}
+.of-form .g-form{margin:0}
+.of-form .g-form--1{grid-template-columns:1fr}
+.of-form .condicional{margin-top:12px}
+.of-form .condicional[hidden],.of-form [data-viatura-cadastrada][hidden],.of-form [data-motorista-servidor][hidden],.of-form [data-roteiro-resumo][hidden],.of-form .aviso-rota[hidden]{display:none}
+.of-form .aviso-rota{margin:12px 0 0}
+.of-form .aviso--ok{margin:0;display:flex;align-items:flex-start;gap:8px}
+.of-form .campo-e--bloco{margin-bottom:12px}
+.of-form .unidade-sim-nao{display:flex;gap:8px}
+.of-form .seg2{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco);font-size:13px;cursor:pointer}
+.of-form .seg2:has(input:checked){border-color:var(--d-500);background:var(--d-50);color:var(--d-800);font-weight:600}
+.of-form .seg2 input{accent-color:var(--d-600)}
+.is-exigido .form-label::after{content:" *";color:var(--d-700)}
+.of-equipe-busca{margin-bottom:8px}
+.of-membros{border:1px solid var(--n-200);border-radius:9px;overflow:hidden;max-height:420px;overflow-y:auto;scrollbar-width:thin}
+.of-membros.grupo-erro{border-color:var(--dg-t)}
+.of-membros__cabeca,.of-membro{display:grid;grid-template-columns:44px 40px minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 12px}
+.of-membros__cabeca{grid-template-columns:44px minmax(0,1fr) auto;padding:7px 12px;background:var(--n-50);font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--n-500);border-bottom:1px solid var(--n-150)}
+.of-membro+.of-membro{border-top:1px solid var(--n-100)}
+.of-membro[hidden]{display:none}
+.of-membro--viaja{background:var(--d-25,#fbf8f2)}
+.of-membro__viaja,.of-membro__termo{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12.5px;color:var(--n-700)}
+.of-membro__viaja input,.of-membro__termo input{width:16px;height:16px;margin:0;accent-color:var(--d-600)}
+.of-membro__termo input:disabled+span{color:var(--n-300)}
+.of-membro .of-av{width:30px;height:30px;font-size:11px}
+.of-cartao-motorista .reg__st{margin:0 0 12px}
+.of-resumo-rota{margin-top:12px;padding:14px 16px;border:1px solid var(--d-200);border-radius:9px;background:var(--d-50)}
+.of-resumo-rota__cabeca{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;font-size:13px}
+.of-resumo-rota__cabeca .btn--quieta{height:28px;padding:0 6px;font-size:12px;font-weight:600;color:var(--d-700)}
+.of-resumo-rota__lista{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 16px;margin:0}
+.of-resumo-rota__lista>div{min-width:0}
+.of-resumo-rota__lista dt{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--n-500)}
+.of-resumo-rota__lista dd{margin:3px 0 0;font-size:13px;color:var(--n-900);overflow-wrap:anywhere}
+.of-resumo-rota__larga{grid-column:1/-1}
+.of-regra{padding:14px 16px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25)}
+.of-conferencia{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.of-conferencia__item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--n-200);border-radius:9px;background:var(--branco)}
+.of-conferencia__item>span:last-child{display:grid;gap:1px;min-width:0}
+.of-conferencia__item strong{font-size:13px}
+.of-conferencia__item small{font-size:11.5px;color:var(--n-500)}
+.of-conferencia__marca{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--n-250);font-size:12px;font-weight:700;color:var(--n-600)}
+.of-conferencia__marca .ui-icon{width:14px;height:14px}
+.of-conferencia__item--concluida{border-color:var(--ok-r);background:var(--ok-b)}
+.of-conferencia__item--concluida .of-conferencia__marca{background:var(--ok-t);border-color:var(--ok-t);color:#fff}
+.of-conferencia__item--pendente .of-conferencia__marca{border-color:var(--wn-t);color:var(--wn-t)}
+.of-pendencias{margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:var(--n-700)}
+.frm-lateral .step-i.etapa--opcional .step-i__m{border-style:dashed}
+a.step-i{text-decoration:none;color:inherit}
+@container(max-width:1100px){.of-form .bloco-split{grid-template-columns:1fr;gap:10px}.of-resumo-rota__lista,.of-conferencia{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container(max-width:680px){.of-resumo-rota__lista,.of-conferencia{grid-template-columns:1fr}.of-membros__cabeca{display:none}.of-membro{grid-template-columns:36px 32px minmax(0,1fr);gap:8px}.of-membro__termo{grid-column:2/-1}}
+/* O cartão do motorista externo não é uma grade de duas colunas como o
+   `.condicional` da unidade móvel: título em cima, campos embaixo. */
+.of-form .of-cartao-motorista{display:block}
+/* As duas ações da lateral cabem na largura dela, com quebra de linha se preciso. */
+.of-form .frm-acoes--flut{flex-wrap:wrap}
+.of-form .frm-acoes--flut .btn--secundaria,.of-form .frm-acoes--flut .btn-primaria{flex:1 1 120px;white-space:normal;line-height:1.2;text-align:center}
+
+/* Detalhe do ofício (Meta 3): conferência e documentos na composição do
+   detalhe da solicitação, com os blocos do cartão da lista reaproveitados. */
+.of-detalhe .d-titulo{align-items:center}
+.of-detalhe .d-acoes{align-items:center}
+.of-detalhe .d-acoes .dd__c{right:0;left:auto}
+.of-detalhe .reg__t .st{height:22px;font-size:11.5px;margin-left:2px}
+.of-abrir{margin-left:auto;display:inline-flex;align-items:center;gap:2px;font-size:12.5px;font-weight:600;color:var(--d-700);text-decoration:none}
+.of-abrir .ui-icon{width:14px;height:14px}
+.of-equipe--detalhe{margin-bottom:12px}
+.of-lote{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding-top:12px;border-top:1px solid var(--n-150)}
+.of-lote form{margin:0}
+.of-grade--detalhe{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.of-grade--detalhe .of-trechos{max-height:none}
+.of-emitir{display:grid;gap:10px;margin-bottom:18px}
+.of-emitir__grupo{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 12px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25)}
+.of-emitir__grupo>strong{min-width:110px;font-size:13px}
+.of-emitir__grupo form{margin:0}
+.of-emitir .btn-primaria,.of-emitir .btn--secundaria{height:36px;font-size:12.5px}
+.of-detalhe .reg__st em{margin-left:8px;font-style:normal;font-weight:400;color:var(--n-450)}
+.of-detalhe .dt td,.of-detalhe .dt th{white-space:normal}
+.of-detalhe .sticky .etapa--concluida .etapa__t{color:var(--ok-t)}
+.of-detalhe .sticky .etapa--pendente .etapa__m{border-color:var(--wn-t)}
+.of-detalhe .sticky .etapa--opcional .etapa__m{border-style:dashed}
+.of-pronto{margin:10px 0 0;padding:10px 12px;font-size:12.5px;display:flex;gap:6px;align-items:center}
+.of-prestacao__texto{margin:0 0 10px;line-height:1.5}
+.of-detalhe .enc-op{max-width:560px}
+.of-detalhe .enc-op .ta{min-height:80px}
+@container(max-width:900px){.of-grade--detalhe{grid-template-columns:1fr}}
+.of-regra-texto{margin:0 0 10px}

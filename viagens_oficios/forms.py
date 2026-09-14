@@ -67,6 +67,15 @@ class OficioForm(forms.ModelForm):
             if cd.get('motorista') and cd['motorista'].pk in viajantes:
                 cd['motorista_oficio_referencia'] = ''
                 cd['motorista_protocolo_ref'] = ''
+        # Viatura cadastrada e viatura manual são alternativas: escolher uma
+        # do cadastro apaga o que sobrou digitado no cartão da não cadastrada.
+        if cd.get('viatura'):
+            cd['transporte_placa_manual'] = ''
+            cd['transporte_modelo_manual'] = ''
+            cd['transporte_combustivel_manual'] = None
+            cd['transporte_tipo_manual'] = ''
+        if cd.get('custeio') == Oficio.CUSTEIO_OUTRA_INSTITUICAO and not (cd.get('custeio_observacao') or '').strip():
+            self.add_error('custeio_observacao', 'Informe a observação de custeio quando o custeio é de outra instituição.')
         cd['motivo'] = normalize_spaces(cd.get('motivo'))
         return cd
 
@@ -111,7 +120,16 @@ class ModeloMotivoOficioForm(forms.ModelForm):
     class Meta:
         model = ModeloMotivoOficio
         fields = ['nome', 'texto', 'ativo', 'ordem', 'is_padrao']
-        labels = {'is_padrao': 'Modelo padrão'}
+        labels = {'nome': 'Nome do modelo', 'texto': 'Texto', 'ordem': 'Ordem', 'ativo': 'Ativo', 'is_padrao': 'Usar como padrão'}
+        help_texts = {
+            'ativo': 'Inativo, o modelo some da escolha nos ofícios sem apagar o histórico.',
+            'is_padrao': 'Será sugerido automaticamente nos ofícios novos.',
+            'ordem': 'Posição na lista de escolha; menor aparece primeiro.',
+        }
+        widgets = {
+            'nome': forms.TextInput(attrs={'placeholder': 'Ex.: COBERTURA JORNALÍSTICA', 'data-uppercase': 'true'}),
+            'texto': forms.Textarea(attrs={'rows': 5, 'placeholder': 'Texto que vai para o ofício ao escolher este modelo'}),
+        }
 
 
 class ModeloJustificativaForm(ModeloMotivoOficioForm):

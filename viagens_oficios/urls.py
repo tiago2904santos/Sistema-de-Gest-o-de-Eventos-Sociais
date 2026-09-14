@@ -7,6 +7,7 @@ urlpatterns = [
     path('documentos/<uuid:pk>/preview/', views.preview_artefato, name='preview_artefato'),
     path('', views.lista, name='lista'),
     path('novo/', views.editar, name='novo'),
+    path('criar/', views.criar, name='criar'),
     path('numeracao/', views.numeracao, name='numeracao'),
     path('institucional/', catalogs.institucional, name='institucional'),
     path('catalogos/<str:tipo>/', catalogs.catalogo, name='catalogo'),

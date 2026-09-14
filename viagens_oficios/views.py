@@ -9,7 +9,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
 
-from core.listagens import paginar, opcoes_choices
+from core.listagens import ITENS_POR_PAGINA, paginar, opcoes_choices
 from core.numeracao import bloquear_escopo_numeracao, NAMESPACE_OFICIO
 from viagens_cadastros.permissions import acesso_ao_modulo, pode_editar_cadastros, eh_gestor_viagens
 from documentos.services.types import DocumentoTipo, DocumentoFormato
@@ -21,7 +21,7 @@ from .selectors import listar_oficios, get_oficio_by_id
 from .services import reservar_numero_oficio, excluir_oficio, retificar_oficio, marcar_oficio_complementar, validar_oficio_para_documento
 from .justificativas_services import atualizar_justificativa_oficio, avaliar_justificativa_oficio
 from .document_generation import gerar_documento
-from .view_helpers import campos_v32, secoes_oficio
+from .view_helpers import campos_v32
 
 
 def exigir_operador(request):
@@ -71,22 +71,89 @@ def assinatura_artefato(request, pk):
     return render(request, 'pages/viagens_oficios/assinatura.html', {'form': form, 'artefato': artefato, 'url_voltar': voltar})
 
 
+def _artefatos_pdf_da_pagina(oficios):
+    """Último PDF de cada documento dos ofícios da página, para "Visualizar" e "Anexar assinado".
+
+    Uma consulta para a página inteira: (ofício, tipo, servidor) → artefato.
+    """
+    from documentos.models import DocumentoArtefato
+    ids = [o.pk for o in oficios]
+    if not ids:
+        return {}
+    mapa = {}
+    for art in DocumentoArtefato.objects.filter(oficio_id__in=ids, formato='pdf').order_by('criado_em').values_list('oficio_id', 'tipo', 'servidor_id', 'pk'):
+        mapa[(art[0], art[1], art[2])] = art[3]
+    return mapa
+
+
 @acesso_ao_modulo
 def lista(request):
-    q, status, ano, fila = [request.GET.get(n, '') for n in ['q', 'status', 'ano', 'fila']]
-    pagina, paginas, query = paginar(request, listar_oficios(q, status, ano, fila))
+    from django.core.paginator import Paginator
+    from core.retorno import com_next, daqui
+    from . import abas as abas_de_oficio
+    from .presenters import cartao_da_lista
+    from .selectors import ORDENACAO_PADRAO, normalizar_ordenacao, opcoes_de_ordenacao
+
+    q = request.GET.get('q', '').strip()
+    datas = {n: request.GET.get(n, '') for n in ['viagem_de', 'viagem_ate', 'criacao_de', 'criacao_ate']}
+    sort = normalizar_ordenacao(request.GET.get('sort', ''))
+    escolhidas = abas_de_oficio.normalizar_abas(request.GET.getlist('situacao'))
+
+    # As contagens de situação valem para a busca e os períodos já aplicados,
+    # e não para a situação escolhida: é assim que "Cancelados (3)" continua
+    # dizendo quantos existem mesmo com outra situação marcada.
+    base = listar_oficios(q, **datas)
+    opcoes_situacao = abas_de_oficio.opcoes_de_aba(base, escolhidas)
+    queryset = listar_oficios(q, situacoes=escolhidas, sort=sort, **datas)
+
+    # A origem pagina com `page`, vinte por página.
+    paginator = Paginator(queryset, ITENS_POR_PAGINA)
+    pagina = paginator.get_page(request.GET.get('page'))
+    paginas_visiveis = list(paginator.get_elided_page_range(pagina.number, on_each_side=1, on_ends=1))
+    parametros = request.GET.copy()
+    parametros.pop('page', None)
+
+    volta = daqui(request)
+    artefatos = _artefatos_pdf_da_pagina(pagina.object_list)
+    cartoes = []
+    for oficio in pagina:
+        termos = {servidor_id: pk for (oficio_id, tipo, servidor_id), pk in artefatos.items()
+                  if oficio_id == oficio.pk and tipo == DocumentoTipo.TERMO_AUTORIZACAO.value and servidor_id}
+        cartoes.append(cartao_da_lista(
+            oficio,
+            editar_url=com_next(reverse('viagens_oficios:editar', args=[oficio.pk]), volta),
+            artefatos_termo=termos,
+            artefato_oficio_pdf=artefatos.get((oficio.pk, DocumentoTipo.OFICIO.value, None)),
+            artefato_justificativa_pdf=artefatos.get((oficio.pk, DocumentoTipo.JUSTIFICATIVA.value, None)),
+        ))
+
+    tem_filtros = bool(q or escolhidas or any(datas.values()) or sort != ORDENACAO_PADRAO)
     return render(request, 'pages/viagens_oficios/lista.html', {
-        'titulo': 'Ofícios', 'pagina': pagina, 'paginas_visiveis': paginas, 'querystring': query,
-        'q': q, 'status': status, 'ano': ano, 'fila': fila,
-        'opcoes_status': opcoes_choices(Oficio.STATUS_CHOICES),
-        'opcoes_fila': opcoes_choices([('ativos', 'Ativos'), ('cancelados', 'Cancelados'), ('todos', 'Todos')]),
+        'titulo': 'Ofícios', 'pagina': pagina, 'paginas_visiveis': paginas_visiveis,
+        'elipse': paginator.ELLIPSIS, 'querystring': parametros.urlencode(),
+        'cartoes': cartoes, 'q': q, 'sort': sort, 'datas': datas,
+        'opcoes_situacao': opcoes_situacao, 'opcoes_ordenacao': opcoes_de_ordenacao(),
+        'tem_filtros': tem_filtros, 'url_limpar': reverse('viagens_oficios:lista'),
+        'url_atual': volta,
         'pode_editar': pode_editar_cadastros(request.user), 'gestor': eh_gestor_viagens(request.user),
     })
 
 
 @acesso_ao_modulo
+@require_POST
+def criar(request):
+    """"Novo ofício" da origem: cria o rascunho já numerado e abre o formulário."""
+    from .services import criar_oficio_rascunho
+    exigir_operador(request)
+    oficio = criar_oficio_rascunho()
+    return redirect('viagens_oficios:editar', pk=oficio.pk)
+
+
+@acesso_ao_modulo
 @require_http_methods(['GET', 'POST'])
 def editar(request, pk=None):
+    from core.retorno import next_valido, voltar_para
+    from .form_context import contexto_form_oficio
     exigir_operador(request)
     oficio = get_oficio_by_id(pk) if pk else Oficio()
     form = OficioForm(request.POST or None, instance=oficio)
@@ -99,58 +166,106 @@ def editar(request, pk=None):
                 oficio = form.save()
                 reservar_numero_oficio(oficio, ano=oficio.data_criacao.year)
                 atualizar_justificativa_oficio(oficio, jform, action='save_continue')
-            messages.success(request, 'Ofício salvo.')
+            messages.success(request, f'Ofício {oficio.numero_formatado} salvo.')
+            # "Salvar e continuar" segue para o resumo (etapa 5); "Salvar" volta
+            # para onde a pessoa estava, quando a tela foi aberta com ?next=.
+            if request.POST.get('acao') == 'salvar' and next_valido(request):
+                return redirect(voltar_para(request, reverse('viagens_oficios:detalhe', args=[oficio.pk])))
             return redirect('viagens_oficios:detalhe', pk=oficio.pk)
-    return render(request, 'pages/viagens_oficios/form.html', {
-        'titulo': 'Editar ofício' if pk else 'Novo ofício', 'form': form, 'jform': jform,
-        'oficio': oficio, 'secoes': secoes_oficio(form, jform), 'pode_editar': True,
-        'url_voltar': reverse('viagens_oficios:detalhe', args=[pk]) if pk else reverse('viagens_oficios:lista'),
-        'regra': avaliar_justificativa_oficio(oficio),
+        messages.error(request, 'Não foi possível salvar o ofício. Revise os campos indicados.')
+    avaliacao = validar_oficio_para_documento(oficio) if pk else None
+    regra = avaliar_justificativa_oficio(oficio)
+    contexto = contexto_form_oficio(form, jform, oficio, avaliacao=avaliacao, regra=regra)
+    contexto.update({
+        'titulo': f'Ofício {oficio.numero_formatado}' if pk else 'Novo ofício', 'form': form, 'jform': jform,
+        'oficio': oficio, 'pode_editar': True, 'next': next_valido(request),
+        'url_voltar': voltar_para(request, reverse('viagens_oficios:detalhe', args=[pk]) if pk else reverse('viagens_oficios:lista')),
+        'url_novo_roteiro': reverse('viagens_roteiros:novo'),
         'modelos_texto': {
             'modelo_motivo': dict(ModeloMotivoOficio.objects.filter(ativo=True).values_list('pk', 'texto')),
             'justificativa-modelo': dict(ModeloJustificativa.objects.filter(ativo=True).values_list('pk', 'texto')),
         },
     })
+    return render(request, 'pages/viagens_oficios/form.html', contexto)
 
 
 @acesso_ao_modulo
 def detalhe(request, pk):
+    """Conferência, resumo e documentos: as etapas 5 e 6 do wizard da origem."""
     from auditoria.models import RegistroAuditoria
-    from .presenters import apresentar_oficio
+    from core.retorno import com_next, daqui
+    from .form_context import etapas_do_oficio
+    from .presenters import apresentar_oficio, cartao_da_lista
     oficio = get_oficio_by_id(pk)
+    avaliacao = validar_oficio_para_documento(oficio)
+    regra = avaliar_justificativa_oficio(oficio)
+    artefatos = _artefatos_pdf_da_pagina([oficio])
+    termos = {servidor_id: art for (_, tipo, servidor_id), art in artefatos.items()
+              if tipo == DocumentoTipo.TERMO_AUTORIZACAO.value and servidor_id}
+    cartao = cartao_da_lista(
+        oficio, editar_url=com_next(reverse('viagens_oficios:editar', args=[pk]), daqui(request)),
+        artefatos_termo=termos,
+        artefato_oficio_pdf=artefatos.get((pk, DocumentoTipo.OFICIO.value, None)),
+        artefato_justificativa_pdf=artefatos.get((pk, DocumentoTipo.JUSTIFICATIVA.value, None)),
+    )
     return render(request, 'pages/viagens_oficios/detalhe.html', {
-        'oficio': oficio, 'avaliacao': validar_oficio_para_documento(oficio),
+        'oficio': oficio, 'c': cartao, 'avaliacao': avaliacao, 'regra': regra,
+        'etapas': etapas_do_oficio(oficio, avaliacao, regra),
         'resumo': apresentar_oficio(oficio),
-        'regra': avaliar_justificativa_oficio(oficio),
         'pode_editar': pode_editar_cadastros(request.user),
-        'artefatos': oficio.artefatos.order_by('-criado_em')[:30],
+        'artefatos': oficio.artefatos.select_related('servidor').order_by('-criado_em')[:30],
         'historico': RegistroAuditoria.objects.filter(modelo='viagens_oficios.oficio', objeto_id=str(pk)).order_by('-criado_em')[:20],
+        'url_atual': daqui(request),
+        'tem_prestacao': hasattr(oficio, 'prestacao_contas'),
     })
 
 
 @acesso_ao_modulo
 @require_POST
 def acao(request, pk, acao):
+    from core.retorno import voltar_para
+    from .services import OficioVinculadoError, desfazer_complementar_oficio, desfazer_retificacao_oficio
     exigir_operador(request)
     oficio = get_oficio_by_id(pk)
+    # Da lista a ação volta para a lista como estava; do detalhe, para o detalhe.
+    destino = voltar_para(request, reverse('viagens_oficios:detalhe', args=[pk]))
     if acao == 'cancelar':
         oficio.cancelar(request.POST.get('motivo', ''))
+        messages.success(request, f'Ofício {oficio.numero_formatado} cancelado. O histórico foi mantido.')
     elif acao == 'reativar':
         oficio.reativar()
+        messages.success(request, f'Ofício {oficio.numero_formatado} reativado.')
     elif acao == 'arquivar':
         oficio.status = Oficio.STATUS_ARQUIVADO
         oficio.save(update_fields=['status', 'atualizado_em'])
+        messages.success(request, f'Ofício {oficio.numero_formatado} arquivado.')
     elif acao == 'retificar':
-        retificar_oficio(oficio)
+        # O mesmo item do menu liga e desliga a marca, como o estado de retificação da origem.
+        if oficio.retificado_documento:
+            desfazer_retificacao_oficio(oficio)
+            messages.success(request, f'Ofício {oficio.numero_formatado} deixou de ser retificado.')
+        else:
+            retificar_oficio(oficio)
+            messages.success(request, f'Ofício {oficio.numero_formatado} marcado como retificado.')
     elif acao == 'complementar':
-        marcar_oficio_complementar(oficio)
+        if oficio.complementar_documento:
+            desfazer_complementar_oficio(oficio)
+            messages.success(request, f'Ofício {oficio.numero_formatado} deixou de ser complementar.')
+        else:
+            marcar_oficio_complementar(oficio)
+            messages.success(request, f'Ofício {oficio.numero_formatado} identificado como complementar.')
     elif acao == 'excluir':
-        excluir_oficio(oficio)
-        return redirect('viagens_oficios:lista')
+        numero = oficio.numero_formatado
+        try:
+            excluir_oficio(oficio)
+        except OficioVinculadoError:
+            messages.error(request, f'O ofício {numero} tem prestação de contas ou documentos vinculados e não pode ser excluído.')
+            return redirect(destino)
+        messages.success(request, f'Ofício {numero} excluído. O número volta para a sequência.')
+        return redirect(voltar_para(request, reverse('viagens_oficios:lista')))
     else:
         raise Http404
-    messages.success(request, 'Ofício atualizado.')
-    return redirect('viagens_oficios:detalhe', pk=pk)
+    return redirect(destino)
 
 
 def resposta_documento(request, doc):
