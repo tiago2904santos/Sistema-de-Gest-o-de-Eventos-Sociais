@@ -154,6 +154,22 @@ O renderizador genérico saiu do ofício e dos catálogos, mas continua servindo
 
 > Sua resposta: ______
 
+### P21 — Aliases legados de justificativas (Meta 4)
+
+A origem tem quatro rotas antigas (`/justificativas/novo/`, `/<pk>/editar/`, `/<pk>/padrao/`, `/<pk>/excluir/`) que só apontam para as telas de modelos; a última é sombreada pela exclusão da justificativa, e por isso o inventário pediu para não corrigir nem dispensar sem autorização. Aqui não existem.
+
+**Recomendação: NÃO trazer, e autorizar a ausência.** São endereços internos que nenhuma tela daqui gera; trazê-los reproduziria o padrão sombreado.
+
+> Sua resposta: ______
+
+### P22 — Conferência da tela de justificativas contra a origem
+
+Como no formulário do ofício (P18), a tela de justificativas foi reconstruída a partir do código portado (inclusão rápida, seletor de ofícios com teto de 30, exclusão), sem fotografia da origem. Abra `/justificativas/` lá e `/viagens/oficios/justificativas/` aqui e aponte o que divergir.
+
+**Recomendação: conferir.** Capturas em `imagens/meta4-justificativas-*.png`.
+
+> Sua resposta: ______
+
 ---
 
 ## Resumo das recomendações
@@ -176,3 +192,5 @@ O renderizador genérico saiu do ofício e dos catálogos, mas continua servindo
 | P18 | Conferir o formulário do ofício contra a origem | Conferir |
 | P19 | Gravação automática das etapas | Não trazer agora |
 | P20 | `form_simples.html` nas telas fora da meta | Deixar para as metas donas |
+| P21 | Aliases legados de justificativas | Não trazer, autorizar a ausência |
+| P22 | Conferir a tela de justificativas contra a origem | Conferir |

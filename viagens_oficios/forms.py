@@ -112,6 +112,34 @@ class JustificativaForm(forms.ModelForm):
         return texto
 
 
+class JustificativaQuickAddForm(forms.Form):
+    """Inclusão rápida da origem: o mesmo texto para vários ofícios de uma vez."""
+
+    oficios = forms.ModelMultipleChoiceField(queryset=Oficio.objects.none(), label='Ofícios')
+    modelo = forms.ModelChoiceField(queryset=ModeloJustificativa.objects.none(), required=False, label='Modelo de justificativa')
+    texto = forms.CharField(label='Justificativa', widget=forms.Textarea(attrs={'rows': 5}),
+                            error_messages={'required': 'Informe o texto da justificativa.'})
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['oficios'].queryset = Oficio.objects.filter(cancelado=False)
+        self.fields['modelo'].queryset = ModeloJustificativa.objects.filter(ativo=True)
+        self.fields['oficios'].error_messages['required'] = 'Escolha ao menos um ofício.'
+        # O seletor lista só o que já foi escolhido; a busca vem do servidor.
+        from .picker import renderizar_so_os_escolhidos
+        renderizar_so_os_escolhidos(self, 'oficios')
+
+    def oficios_escolhidos(self):
+        from .picker import oficios_ja_escolhidos
+        return oficios_ja_escolhidos(self, 'oficios').select_related('roteiro').prefetch_related('servidores', 'roteiro__destinos__municipio__estado')
+
+    def clean_texto(self):
+        texto = normalize_spaces(self.cleaned_data.get('texto') or '')
+        if not texto:
+            raise forms.ValidationError('Informe o texto da justificativa.')
+        return texto
+
+
 class ModeloMotivoOficioForm(forms.ModelForm):
     def _get_validation_exclusions(self):
         # A troca de padrão é validada e gravada pelo save do catálogo.

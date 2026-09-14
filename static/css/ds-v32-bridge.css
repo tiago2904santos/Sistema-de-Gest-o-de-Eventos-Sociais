@@ -1165,3 +1165,26 @@ a.step-i{text-decoration:none;color:inherit}
 .of-detalhe .enc-op .ta{min-height:80px}
 @container(max-width:900px){.of-grade--detalhe{grid-template-columns:1fr}}
 .of-regra-texto{margin:0 0 10px}
+
+/* Justificativas (Meta 4): inclusão rápida com seletor de ofícios que busca
+   no servidor, e a lista das justificativas nos blocos do cartão de ofício. */
+.jt-rapida[hidden]{display:none}
+.jt-rapida .v32-secao-cabecalho{flex-direction:column;gap:2px;align-items:flex-start}
+.jt-rapida__grade{margin:0}
+.jt-picker{position:relative}
+.jt-picker .busca{width:100%;max-width:none}
+.jt-picker .busca .form-controle{border:0;background:transparent;box-shadow:none}
+.jt-picker.is-invalid .busca{border-color:var(--dg-t)}
+.jt-picker__menu{position:static;margin-top:6px;max-height:320px;overflow:auto}
+.jt-picker__menu[hidden]{display:none}
+.jt-opcao>span{display:grid;gap:2px;white-space:normal}
+.jt-opcao small{font-size:11px;color:var(--n-450)}
+.jt-escolhidos{margin-top:8px}
+.jt-escolhidos:empty{display:none}
+.jt-grade{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+.jt-regra{grid-template-columns:repeat(2,minmax(0,1fr));align-content:start}
+.jt-texto{align-items:flex-start}
+.jt-texto__corpo{white-space:pre-line;font-size:12.5px;color:var(--n-700);line-height:1.5}
+.jt-texto .of-pessoa__nome .v32-suave{font-weight:400}
+@container(max-width:900px){.jt-grade{grid-template-columns:1fr}}
+@container(max-width:680px){.jt-regra{grid-template-columns:1fr}}

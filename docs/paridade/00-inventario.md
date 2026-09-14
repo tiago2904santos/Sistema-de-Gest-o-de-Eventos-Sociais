@@ -135,9 +135,9 @@ Cada tela receberá um arquivo `<app>-<tela>.md`, com as quatro tabelas de campo
 
 | Rota da origem | Destino correspondente | Situação | Evidência e pendência |
 |---|---|---|---|
-| `justificativas:index`<br>`/justificativas/` | — | não existe | Tela/endpoint de justificativas aplicadas ausente; existem apenas campo no ofício e catálogo de modelos. Fonte: `justificativas/urls.py:9`. |
-| `justificativas:api_buscar_oficios`<br>`/justificativas/api/oficios/` | — | não existe | Tela/endpoint de justificativas aplicadas ausente; existem apenas campo no ofício e catálogo de modelos. Fonte: `justificativas/urls.py:10`. |
-| `justificativas:justificativa_delete`<br>`/justificativas/<int:pk>/excluir/` | — | não existe | Tela/endpoint de justificativas aplicadas ausente; existem apenas campo no ofício e catálogo de modelos. Fonte: `justificativas/urls.py:11`. |
+| `justificativas:index`<br>`/justificativas/` | `viagens_oficios:justificativas`<br>`/viagens/oficios/justificativas/` | existe e está fiel | lista com regra de prazo, texto e ações, mais a inclusão rápida (`justificativas-lista.md`). Fonte: `justificativas/urls.py:9` |
+| `justificativas:api_buscar_oficios`<br>`/justificativas/api/oficios/` | `viagens_oficios:justificativas_buscar_oficios`<br>`/viagens/oficios/justificativas/api/oficios/` | existe e está fiel | `viagens_oficios:justificativas_buscar_oficios`, até 30 resultados (`justificativas-lista.md`). Fonte: `justificativas/urls.py:10` |
+| `justificativas:justificativa_delete`<br>`/justificativas/<int:pk>/excluir/` | `viagens_oficios:justificativa_excluir`<br>`/viagens/oficios/justificativas/<int:pk>/excluir/` | existe e está fiel | `viagens_oficios:justificativa_excluir` apaga o texto e o modelo (`justificativas-lista.md`). Fonte: `justificativas/urls.py:11` |
 | `justificativas:modelos_index`<br>`/justificativas/modelos/` | `viagens_oficios:catalogo`<br>`/viagens/oficios/catalogos/<str:tipo>/`<br>`tipo=justificativas` | existe e está fiel | catálogo no padrão de cadastros da Meta 1 (`oficios-catalogos.md`). Fonte: `justificativas/urls.py:12` |
 | `justificativas:modelo_create`<br>`/justificativas/modelos/novo/` | `viagens_oficios:catalogo_novo`<br>`/viagens/oficios/catalogos/<str:tipo>/novo/`<br>`tipo=justificativas` | existe e está fiel | modal de inclusão (`oficios-catalogos.md`). Fonte: `justificativas/urls.py:13` |
 | `justificativas:modelo_update`<br>`/justificativas/modelos/<int:pk>/editar/` | `viagens_oficios:catalogo_editar`<br>`/viagens/oficios/catalogos/<str:tipo>/<int:pk>/`<br>`tipo=justificativas` | existe e está fiel | modal de edição (`oficios-catalogos.md`). Fonte: `justificativas/urls.py:14` |
@@ -484,3 +484,19 @@ em `imagens/meta3-*.png`, ao lado das da origem (`meta0-oficios-*-origem.png`).
 **Pendências.** P17 a P20 na folha de decisões: gravação automática das
 etapas, conferência do formulário contra a origem, o link "Resumo" no cartão
 e a manutenção de `form_simples.html` para as telas fora da meta.
+
+## Meta 4 — Justificativas, comparada em 14/09/2026
+
+Das doze rotas da origem, cinco (modelos) já estavam fiéis desde a Meta 3
+(`oficios-catalogos.md`), e a aplicação de modelo ao texto e a regra de prazo
+estão no formulário do ofício (`oficios-form.md`). Esta meta trouxe a tela que
+faltava: `justificativas:index`, com a inclusão rápida (vários ofícios, um
+modelo, um texto — `criar_justificativas_quick_add`, portado na F4 e sem tela
+até aqui), a busca de ofícios pelo servidor com teto de 30
+(`api_buscar_oficios`, `picker.py`) e a exclusão (`justificativa_delete`).
+Ficha em `justificativas-lista.md`; item "Justificativas" na navegação do
+módulo. Sem fotografia da origem no repositório: a régua foi o código portado
+(P22). Os quatro aliases legados continuam ausentes, à espera da P21.
+
+**Prova.** 8 testes novos em `viagens_oficios/tests/test_paridade_meta4.py`.
+Capturas em `imagens/meta4-*.png`.
