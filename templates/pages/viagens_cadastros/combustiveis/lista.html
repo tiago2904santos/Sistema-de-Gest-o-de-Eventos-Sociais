@@ -1,7 +1,0 @@
-{% extends "pages/viagens_cadastros/catalogo_lista.html" %}
-{% block campos_inclusao %}
-<fieldset class="catalogo-paridade__grupo" aria-label="Dados do combustível — Nome do combustível">
-  {% include "components/input.html" with name="nome" label="Combustível" valor=nome.valor obrigatorio=nome.obrigatorio maxlength=nome.maxlength erros=nome.erros uppercase=True %}
-</fieldset>
-{% endblock %}
-

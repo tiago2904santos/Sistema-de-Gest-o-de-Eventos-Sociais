@@ -54,24 +54,43 @@ class ParidadeServidoresTests(BaseViagensTestCase):
         self.assertContains(resposta, "Se houver vínculos com outros registros, a exclusão será bloqueada.")
         self.assertTrue(Servidor.objects.filter(pk=servidor.pk).exists())
 
-    def test_formulario_invalido_preserva_valor_e_links_de_retorno(self):
+    def test_formulario_invalido_preserva_valor_no_modal(self):
         url = reverse("viagens_cadastros:novo", args=["servidores"])
-        resposta = self.client.post(url, {"nome": "MARIA", "cpf": "11111111111"})
-        self.assertTemplateUsed(resposta, "pages/viagens_cadastros/servidores/form.html")
+        resposta = self.client.post(url, {"nome": "MARIA", "cpf": "11111111111"}, HTTP_X_CADASTRO_MODAL="1")
+        self.assertTemplateUsed(resposta, "pages/viagens_cadastros/_modal_form.html")
         self.assertContains(resposta, "CPF inválido")
         self.assertContains(resposta, 'value="MARIA"')
-        self.assertContains(resposta, "Gerenciar cargos")
-        self.assertContains(resposta, "next=%2Fviagens%2Fcadastros%2Fservidores%2Fnovo%2F")
+        self.assertFalse(Servidor.objects.filter(nome="MARIA").exists())
 
-    def test_criacao_de_cargo_preserva_caminho_ao_formulario_sem_redirect_externo(self):
+    def test_documento_repetido_avisa_em_vez_de_mostrar_a_constraint(self):
+        Servidor.objects.create(nome="JA CADASTRADO", cpf="52998224725", rg="123456789")
+        novo = reverse("viagens_cadastros:novo", args=["servidores"])
+        resposta = self.client.post(
+            novo, {"nome": "OUTRA PESSOA", "cpf": "529.982.247-25"}, HTTP_X_CADASTRO_MODAL="1"
+        )
+        self.assertContains(resposta, "Já existe um servidor com este CPF.")
+        self.assertNotContains(resposta, "viagens_servidor_cpf_unico")
+        resposta = self.client.post(
+            novo, {"nome": "OUTRA PESSOA", "rg": "12.345.678-9"}, HTTP_X_CADASTRO_MODAL="1"
+        )
+        self.assertContains(resposta, "Já existe um servidor com este RG.")
+        self.assertFalse(Servidor.objects.filter(nome="OUTRA PESSOA").exists())
+
+    def test_edicao_do_proprio_servidor_nao_acusa_documento_repetido(self):
+        servidor = Servidor.objects.create(nome="MESMA PESSOA", cpf="52998224725", rg="123456789")
+        resposta = self.client.post(
+            reverse("viagens_cadastros:editar", args=["servidores", servidor.pk]),
+            {"nome": "MESMA PESSOA EDITADA", "cpf": "529.982.247-25", "rg": "12.345.678-9"},
+            HTTP_X_CADASTRO_MODAL="1",
+        )
+        self.assertEqual(resposta.json(), {"ok": True})
+        servidor.refresh_from_db()
+        self.assertEqual(servidor.nome, "MESMA PESSOA EDITADA")
+
+    def test_criacao_de_cargo_respeita_retorno_interno_e_recusa_externo(self):
         url = reverse("viagens_cadastros:novo", args=["cargos"])
-        retorno = reverse("viagens_cadastros:novo", args=["servidores"])
-        lista_cargos = self.client.get(reverse("viagens_cadastros:lista", args=["cargos"]), {"next": retorno})
-        self.assertContains(lista_cargos, f'next=%2Fviagens%2Fcadastros%2Fservidores%2Fnovo%2F')
-        formulario = self.client.get(url, {"next": retorno})
-        self.assertEqual(formulario.context["url_retorno"], retorno)
-        self.assertTemplateUsed(formulario, "pages/viagens_cadastros/cargos/lista.html")
+        retorno = reverse("viagens_cadastros:lista", args=["servidores"])
         resposta = self.client.post(url, {"nome": "CARGO NOVO", "next": retorno})
-        self.assertRedirects(resposta, reverse("viagens_cadastros:lista", args=["cargos"]) + "?next=%2Fviagens%2Fcadastros%2Fservidores%2Fnovo%2F")
+        self.assertRedirects(resposta, retorno)
         resposta = self.client.post(url, {"nome": "OUTRO CARGO", "next": "https://externo.example/"})
         self.assertRedirects(resposta, reverse("viagens_cadastros:lista", args=["cargos"]))

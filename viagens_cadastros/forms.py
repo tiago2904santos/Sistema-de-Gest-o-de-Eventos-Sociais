@@ -6,6 +6,7 @@ formato de placa) porque um cadastro errado vira documento oficial errado.
 """
 
 from django import forms
+from django.utils import timezone
 
 from .models import Cargo, Combustivel, Servidor, TabelaDiaria, Unidade, Viatura
 from .normalizacao import (
@@ -35,19 +36,12 @@ class NomeNormalizadoMixin:
 
 
 class UnidadeForm(NomeNormalizadoMixin, forms.ModelForm):
-    servidores = forms.ModelMultipleChoiceField(
-        label="Servidores vinculados",
-        queryset=Servidor.objects.none(),
-        required=False,
-        help_text=(
-            "Selecione quem está lotado nesta unidade. Ao mover um servidor, "
-            "a lotação anterior é atualizada automaticamente."
-        ),
-    )
+    """Nome e sigla da unidade. Quem está lotado nela é definido no servidor."""
 
     class Meta:
         model = Unidade
         fields = ["nome", "sigla"]
+        error_messages = {"nome": {"unique": "Já existe uma unidade com este nome."}}
         widgets = {
             "nome": forms.TextInput(
                 attrs={"placeholder": "Ex.: DELEGACIA DE CURITIBA", "data-uppercase": "true"}
@@ -57,44 +51,30 @@ class UnidadeForm(NomeNormalizadoMixin, forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["servidores"].queryset = Servidor.objects.select_related(
-            "cargo", "unidade"
-        ).order_by("nome")
-        if self.instance and self.instance.pk and not self.is_bound:
-            self.initial["servidores"] = list(
-                Servidor.objects.filter(unidade=self.instance).values_list("pk", flat=True)
-            )
-
-    def save(self, commit=True):
-        unidade = super().save(commit=commit)
-        if commit:
-            selecionados = self.cleaned_data.get("servidores")
-            if selecionados is not None:
-                ids = {servidor.pk for servidor in selecionados}
-                Servidor.objects.filter(pk__in=ids).update(unidade=unidade)
-                Servidor.objects.filter(unidade=unidade).exclude(pk__in=ids).update(
-                    unidade=None
-                )
-        return unidade
-
     def clean_sigla(self):
         return normalizar_maiusculas(self.cleaned_data.get("sigla"))
 
 
-class UnidadeInclusaoForm(UnidadeForm):
-    """Inclusão rápida não recebe nem modifica lotações de servidores."""
+class PreservaPadraoOmitido:
+    """Campo ausente no envio não apaga o que já está gravado.
 
-    class Meta(UnidadeForm.Meta):
-        error_messages = {"nome": {"unique": "Já existe uma unidade com este nome."}}
+    A inclusão e a edição rápidas mandam só o nome. `is_padrao` é booleano:
+    ausente no POST chega ao formulário como False, e o salvamento desmarcaria
+    o padrão de quem nem estava editando esse campo.
+    """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields.pop("servidores")
+    def clean_is_padrao(self):
+        chave = self.add_prefix("is_padrao")
+        # Caixa desmarcada não viaja no POST. A sentinela do formulário
+        # completo é o que diz "eu gerencio este campo": sem ela, e sem o
+        # próprio campo, o envio é parcial e o valor gravado permanece.
+        enviado = chave in self.data or f"{chave}__enviado" in self.data
+        if not enviado and self.instance.pk:
+            return self.instance.is_padrao
+        return self.cleaned_data.get("is_padrao", False)
 
 
-class CargoForm(NomeNormalizadoMixin, forms.ModelForm):
+class CargoForm(PreservaPadraoOmitido, NomeNormalizadoMixin, forms.ModelForm):
     class Meta:
         model = Cargo
         fields = ["nome", "is_padrao"]
@@ -110,7 +90,7 @@ class CargoForm(NomeNormalizadoMixin, forms.ModelForm):
         }
 
 
-class CombustivelForm(NomeNormalizadoMixin, forms.ModelForm):
+class CombustivelForm(PreservaPadraoOmitido, NomeNormalizadoMixin, forms.ModelForm):
     class Meta:
         model = Combustivel
         fields = ["nome", "is_padrao"]
@@ -148,7 +128,8 @@ class ServidorForm(NomeNormalizadoMixin, forms.ModelForm):
     )
     telefone = forms.CharField(
         label="Telefone",
-        max_length=16,
+        # Folga para número com código de país; o modelo guarda só os dígitos.
+        max_length=20,
         required=False,
         help_text="Com DDD. Pode digitar com ou sem pontuação.",
         widget=forms.TextInput(
@@ -157,7 +138,7 @@ class ServidorForm(NomeNormalizadoMixin, forms.ModelForm):
                 "inputmode": "tel",
                 "autocomplete": "tel",
                 "data-mask": "telefone",
-                "maxlength": "16",
+                "maxlength": "20",
             }
         ),
     )
@@ -205,6 +186,11 @@ class ServidorForm(NomeNormalizadoMixin, forms.ModelForm):
             raise forms.ValidationError("O CPF deve ter 11 dígitos.")
         if not cpf_valido(cpf):
             raise forms.ValidationError("CPF inválido: verifique os dígitos.")
+        # A unicidade do CPF vem de uma constraint condicional (CPF vazio não
+        # colide), que o Django não sabe checar no formulário: sem esta
+        # verificação o usuário recebia o nome da constraint como mensagem.
+        if self._ja_existe("cpf", cpf):
+            raise forms.ValidationError("Já existe um servidor com este CPF.")
         return cpf
 
     def clean_telefone(self):
@@ -230,7 +216,17 @@ class ServidorForm(NomeNormalizadoMixin, forms.ModelForm):
             return ""
         if normalizar_maiusculas(rg) in {RG_NAO_POSSUI, RG_NAO_POSSUI_EXIBICAO}:
             return RG_NAO_POSSUI
-        return normalizar_rg(rg)
+        rg = normalizar_rg(rg)
+        if self._ja_existe("rg", rg):
+            raise forms.ValidationError("Já existe um servidor com este RG.")
+        return rg
+
+    def _ja_existe(self, campo, valor):
+        """Outro servidor já gravado com este documento (ignora o próprio)."""
+        outros = Servidor.objects.filter(**{campo: valor})
+        if self.instance.pk:
+            outros = outros.exclude(pk=self.instance.pk)
+        return outros.exists()
 
 
 class ViaturaForm(forms.ModelForm):
@@ -296,13 +292,17 @@ class ViaturaForm(forms.ModelForm):
 
 
 class TabelaDiariaForm(forms.ModelForm):
-    """Só o valor de 24 h é digitado; 15% e 30% saem dele no ``save`` do modelo."""
+    """Só o valor de 24 h é digitado; 15% e 30% saem dele no ``save`` do modelo.
+
+    A data de vigência não é escolhida na tela: uma tabela nova passa a valer
+    no dia em que é cadastrada, e editar uma existente preserva a data em que
+    ela entrou em vigor — é isso que mantém o valor dos roteiros antigos.
+    """
 
     class Meta:
         model = TabelaDiaria
-        fields = ["faixa", "vigencia_inicio", "valor_24h"]
+        fields = ["faixa", "valor_24h"]
         widgets = {
-            "vigencia_inicio": forms.DateInput(attrs={"type": "date"}),
             "valor_24h": forms.NumberInput(
                 attrs={
                     "step": "0.01",
@@ -313,6 +313,11 @@ class TabelaDiariaForm(forms.ModelForm):
                 }
             ),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            self.instance.vigencia_inicio = timezone.localdate()
 
     def clean_valor_24h(self):
         valor = self.cleaned_data.get("valor_24h")
@@ -332,14 +337,16 @@ class TabelaDiariaForm(forms.ModelForm):
 
     def clean(self):
         dados = super().clean()
-        faixa, inicio = dados.get("faixa"), dados.get("vigencia_inicio")
-        if faixa and inicio:
-            existentes = TabelaDiaria.objects.filter(faixa=faixa, vigencia_inicio=inicio)
+        faixa = dados.get("faixa")
+        if faixa:
+            existentes = TabelaDiaria.objects.filter(
+                faixa=faixa, vigencia_inicio=self.instance.vigencia_inicio
+            )
             if self.instance.pk:
                 existentes = existentes.exclude(pk=self.instance.pk)
             if existentes.exists():
                 raise forms.ValidationError(
                     "Já existe uma vigência desta faixa nesta data. "
-                    "Edite a existente ou escolha outra data de início."
+                    "Edite a existente em vez de cadastrar outra."
                 )
         return dados

@@ -1,0 +1,42 @@
+{% comment %}
+  Formulário de um cadastro de viagens dentro do modal da listagem — mesmo
+  contrato dos cadastros de Eventos: `data-cadastro-form`, envio por fetch e
+  `data-cadastro-falha` para o erro de rede.
+{% endcomment %}
+<form method="post" action="{{ dados.url_acao }}" data-cadastro-form novalidate>
+  {% csrf_token %}
+  <header class="mo__topo">
+    <h2 id="cadastro-modal-titulo">{{ dados.titulo }}</h2>
+    <button type="button" class="mo__fechar" data-cadastro-fechar aria-label="Fechar cadastro">{% include "components/icon.html" with nome="x" %}</button>
+  </header>
+  <div class="mo__corpo">
+    <p class="cad-frm__intro">{{ dados.intro }}</p>
+    {% if dados.erros_total %}
+      <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
+        {% include "components/icon.html" with nome="alert" %}
+        <div><b>Corrija antes de continuar</b>
+          Encontramos {{ dados.erros_total }} {% if dados.erros_total == 1 %}campo que precisa ser corrigido{% else %}campos que precisam ser corrigidos{% endif %}.
+          {% for erro in dados.erros_gerais %}<span class="form-erro cad-frm__erro-geral">{{ erro }}</span>{% endfor %}
+        </div>
+      </div>
+    {% endif %}
+    {% for secao in dados.secoes %}
+      {% if dados.varias_secoes %}<h3 class="mo__secao">{{ secao.titulo }}</h3>{% endif %}
+      <div class="g-form v32-form-grid">
+        {% for campo in secao.campos %}{% include "pages/viagens_cadastros/_campo.html" %}{% endfor %}
+      </div>
+      {% if secao.preview_diaria %}
+        <div class="diaria-previa" aria-live="polite">
+          <span><small>15% da diária</small><strong data-diaria-15>R$ 0,00</strong></span>
+          <span><small>30% da diária</small><strong data-diaria-30>R$ 0,00</strong></span>
+        </div>
+        <p class="form-ajuda">{% include "components/icon.html" with nome="info" %} Os percentuais não são editáveis: o servidor os grava a partir do valor de 24 horas.</p>
+      {% endif %}
+    {% endfor %}
+    <p class="form-erro" data-cadastro-falha role="alert" hidden></p>
+  </div>
+  <footer class="mo__rodape">
+    <button type="button" class="btn--secundaria" data-cadastro-fechar>Cancelar</button>
+    <button type="submit" class="btn-primaria">Salvar {{ dados.singular }}</button>
+  </footer>
+</form>

@@ -1,9 +1,0 @@
-{% extends "pages/viagens_cadastros/catalogo_lista.html" %}
-{% block campos_inclusao %}
-<fieldset class="catalogo-paridade__grupo" aria-label="Dados da unidade — Nome e sigla">
-  <div class="unidade-paridade__campos">
-    {% include "components/input.html" with name="nome" label="Nome" valor=nome.valor obrigatorio=nome.obrigatorio maxlength=nome.maxlength erros=nome.erros uppercase=True %}
-    {% include "components/input.html" with name="sigla" label="Sigla" valor=sigla.valor obrigatorio=sigla.obrigatorio maxlength=sigla.maxlength erros=sigla.erros uppercase=True %}
-  </div>
-</fieldset>
-{% endblock %}

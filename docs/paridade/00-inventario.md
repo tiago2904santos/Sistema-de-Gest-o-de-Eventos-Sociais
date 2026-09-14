@@ -367,3 +367,72 @@ Classificação mantida: 143 rotas incompletas, 16 sem correspondente e duas for
 ## Pesquisa de lotação — 10/09/2026
 
 Controle de Unidade alinhado nos formulários de servidor e viatura: nome completo e sigla nos resultados, busca sem acentos, limpeza, seleção por teclado e retorno pelo catálogo. Dezenove pares novos (incluindo a diferença anterior), total 195. Unidades temporárias 100/101 removidas somente no destino; nenhum cadastro da origem enviado nesta rodada. Os 142 testes de Cadastros passaram por banco, check e makemigrations limpos. A suíte completa anterior de 1.128 casos antecede este incremento. Classificação mantida: 143 incompletas, 16 sem correspondente e duas fora do escopo, sem rotas certificadas. Metas e P14 permanecem abertos. [Validação e limites](validacao-unidade-picker.json).
+
+## Decisões respondidas — 14/09/2026
+
+As onze pendências abertas foram respondidas pelo usuário na folha
+[decisoes-para-o-usuario.md](decisoes-para-o-usuario.md); `decisoes.json` está
+atualizado com a resposta, a data e o efeito de cada uma. **Não há mais decisão
+aguardando resposta**, e nenhuma meta continua bloqueada por pendência.
+
+Quatro delas foram aplicadas no código na mesma data, com teste que falha sem o
+conserto. A suíte de cadastros passou de 142 para 147 casos.
+
+| Item | Decisão | Situação |
+|---|---|---|
+| P05 | Preservar o padrão ao editar só o nome | aplicado |
+| P06 | Edição rápida preserva a lotação | aplicado |
+| P12 | Sigla do estado com exatamente duas letras | aplicado |
+| P15 | Telefone de 16 para 20; placa já estava certa; RG mantido | aplicado |
+| P01 | Assinantes de plano e ordem de serviço não vêm | autorizado, registrar nas fichas |
+| P07 | Nome e código do IBGE do estado não mudam | registrar como adaptação |
+| P08 | Mínimo da diária continua R$ 0,04 | registrar como adaptação |
+| P09 | Data continua em ISO | registrar como diferença deliberada |
+| P13 | Nome, região e coordenadas de cidade não mudam | registrar como adaptação |
+| P10 | Alinhar a configuração institucional, sem remover campos nossos | **pendente de implementação** |
+| P14 | Cargo de ensaio removido pelo usuário, na tela da origem | fora do agente |
+
+Dois pontos que mudaram em relação ao que as perguntas assumiam, conferidos no
+código e nos dados em 14/09/2026:
+
+- **A placa já estava em sete caracteres e sem separadores.** A parte da P15 que
+  pedia essa mudança estava resolvida antes da resposta.
+- **Aumentar o telefone não habilita código de país.** A regra de conteúdo exige
+  10 ou 11 dígitos e recusa o DDI; a folga de 20 caracteres serve à pontuação.
+  Mudar a regra de conteúdo não foi pedido nem autorizado.
+
+O que ainda falta para a Meta 1 fechar: implementar a P10, registrar nas fichas
+as adaptações acima com a respectiva autorização, e a remoção do cargo de ensaio
+na origem, que é do usuário. As Metas 2 a 7 continuam sem começar.
+
+## Meta 2 — Roteiros, comparada em 14/09/2026
+
+As duas telas do módulo foram comparadas contra a origem e estão fichadas em
+`roteiros-lista.md` e `roteiros-editor.md`. A origem foi lida no código e
+consultada somente leitura no banco; não foi aberta no navegador, pelo desvio
+de protocolo já registrado em 10/09/2026.
+
+**Lista.** Reescrita para o conteúdo da origem: rota no título com unidade
+federativa, selo temporal com as palavras de lá, período, contagem de trechos
+e valor na linha, quatro situações combináveis com contagem, e exclusão na
+própria linha voltando à lista como estava. Onze testes novos; a suíte do app
+foi de 119 para 130 casos.
+
+**Editor.** Já vinha em paridade desde 02/09/2026. A conferência achou uma
+lateral que a origem não tem — "Resumo do roteiro" e "Etapas" eram invenção
+nossa — e ela saiu inteira, junto com o "Salvar rascunho" que a gravação
+automática já cobre. As ações ficaram no rodapé do cartão, como lá: Voltar e
+Salvar roteiro, com o aviso de gravação automática só para leitor de tela. A
+tabela de trechos perdeu os pisos de largura de 920px e 1050px, que existiam
+para a tela de duas colunas e obrigavam a arrastar para o lado.
+
+**Prova.** 220 testes de `viagens_roteiros`, `viagens_oficios` e
+`viagens_termos` passando. Tabela de trechos medida no navegador: 875px de
+conteúdo em 875px visíveis no desktop, 615px em 615px no tablet, e no celular
+ela vira lista empilhada — nenhuma rolagem horizontal em nenhuma das três
+larguras, nenhuma célula transbordando.
+
+**Pendência.** P16: a quantidade de diárias é digitada na origem e derivada
+aqui, pelo motor da Fase 2. Recomendação é manter derivado e registrar como
+adaptação permanente; é diferença visível na tela e aguarda a resposta do dono
+do produto, pela regra da seção 4 das metas. Nada mais da Meta 2 depende dela.

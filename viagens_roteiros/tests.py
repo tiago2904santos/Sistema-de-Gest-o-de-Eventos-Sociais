@@ -6,7 +6,7 @@ o banco defende as regras por conta própria e que o resultado do motor chega
 """
 
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.db import IntegrityError, transaction
@@ -338,9 +338,17 @@ class TelaDeListaTests(BaseTelaRoteiroTestCase):
         self.client.force_login(self.criar_usuario("operadora", "VIAGENS_OPERADOR"))
 
     def test_a_lista_mostra_o_percurso_sem_repetir_a_sede_no_fim(self):
+        """O título é a rota inteira, e a volta à sede não entra de novo.
+
+        Meta 2: a origem abre o título pela sede e acrescenta a unidade
+        federativa de cada cidade. O que este teste protege desde sempre
+        continua valendo — a volta não aparece no fim.
+        """
         self.roteiro_curitiba_sp_abatia()
         resposta = self.client.get(reverse("viagens_roteiros:lista"))
-        self.assertContains(resposta, "São Paulo → Abatiá")
+        titulo = resposta.context["linhas"][0]["titulo"]
+        self.assertEqual(titulo, "Curitiba/PR → São Paulo/SP → Abatiá/PR")
+        self.assertFalse(titulo.endswith("Curitiba/PR"))
 
     def test_busca_encontra_pelo_municipio_de_destino(self):
         self.roteiro_curitiba_sp_abatia()
@@ -355,9 +363,108 @@ class TelaDeListaTests(BaseTelaRoteiroTestCase):
         cancelado.cancelar("Adiado")
         Roteiro.objects.create(origem_municipio=self.curitiba)
         resposta = self.client.get(
-            reverse("viagens_roteiros:lista"), {"situacao": "cancelados"}
+            reverse("viagens_roteiros:lista"), {"aba": "cancelados"}
         )
         self.assertEqual(len(resposta.context["linhas"]), 1)
+
+    def test_situacoes_sao_combinaveis_e_nenhuma_significa_todas(self):
+        """Paridade: o filtro da origem é multiescolha, não um menu único."""
+        cancelado = Roteiro.objects.create(origem_municipio=self.curitiba)
+        cancelado.cancelar("Adiado")
+        futuro = Roteiro.objects.create(
+            origem_municipio=self.curitiba,
+            saida_dt=timezone.now() + timedelta(days=5),
+        )
+        sem_data = Roteiro.objects.create(origem_municipio=self.curitiba)
+
+        url = reverse("viagens_roteiros:lista")
+        todos = self.client.get(url)
+        self.assertEqual(len(todos.context["linhas"]), 3)
+
+        dois = self.client.get(url, {"aba": ["cancelados", "futuras"]})
+        pks = {linha["roteiro"].pk for linha in dois.context["linhas"]}
+        self.assertEqual(pks, {cancelado.pk, futuro.pk})
+        self.assertNotIn(sem_data.pk, pks)
+
+    def test_cada_situacao_traz_a_contagem_ao_lado_do_rotulo(self):
+        cancelado = Roteiro.objects.create(origem_municipio=self.curitiba)
+        cancelado.cancelar("Adiado")
+        resposta = self.client.get(reverse("viagens_roteiros:lista"))
+        rotulos = {aba["valor"]: aba["rotulo"] for aba in resposta.context["abas"]}
+        self.assertEqual(rotulos["cancelados"], "Cancelados (1)")
+        self.assertEqual(rotulos["futuras"], "Que vão acontecer (0)")
+
+    def test_a_linha_traz_rota_periodo_trechos_e_valor(self):
+        """Paridade: a linha da origem responde o que é, quando, quantos e quanto."""
+        self.roteiro_curitiba_sp_abatia()
+        resposta = self.client.get(reverse("viagens_roteiros:lista"))
+        linha = resposta.context["linhas"][0]
+        self.assertEqual(linha["titulo"], "Curitiba/PR → São Paulo/SP → Abatiá/PR")
+        self.assertEqual(linha["periodo"], "12/08/2026 a 14/08/2026")
+        self.assertEqual(linha["trechos"], "3 trechos")
+        self.assertContains(resposta, "12/08/2026 a 14/08/2026")
+
+    def test_selo_temporal_usa_as_palavras_da_origem(self):
+        from viagens_roteiros.presenters import selo_temporal
+
+        hoje = timezone.localdate()
+
+        def roteiro_em(dias_inicio, dias_fim=None):
+            # `dt` já devolve data e hora com fuso — o que a produção grava.
+            inicio = dt(hoje.year, hoje.month, hoje.day, 8, 0) + timedelta(
+                days=dias_inicio
+            )
+            fim = inicio + timedelta(days=(dias_fim or 0))
+            return Roteiro.objects.create(
+                origem_municipio=self.curitiba, saida_dt=inicio, retorno_chegada_dt=fim
+            )
+
+        self.assertEqual(selo_temporal(roteiro_em(1))[0], "falta 1 dia")
+        self.assertEqual(selo_temporal(roteiro_em(3))[0], "faltam 3 dias")
+        self.assertEqual(selo_temporal(roteiro_em(0))[0], "começa hoje")
+        self.assertEqual(selo_temporal(roteiro_em(-1, 2))[0], "em andamento")
+        self.assertEqual(selo_temporal(roteiro_em(0, 0))[0], "começa hoje")
+        self.assertEqual(selo_temporal(roteiro_em(-1, 0))[0], "foi ontem")
+        self.assertEqual(selo_temporal(roteiro_em(-5, 0))[0], "há 5 dias")
+
+    def test_cancelado_prevalece_sobre_o_selo_temporal(self):
+        roteiro = Roteiro.objects.create(
+            origem_municipio=self.curitiba,
+            saida_dt=timezone.now() + timedelta(days=3),
+        )
+        roteiro.cancelar("Adiado")
+        resposta = self.client.get(reverse("viagens_roteiros:lista"))
+        self.assertEqual(resposta.context["linhas"][0]["selo"], "Cancelado")
+
+    def test_excluir_pela_lista_volta_para_a_lista_filtrada(self):
+        roteiro = Roteiro.objects.create(origem_municipio=self.curitiba)
+        volta = f"{reverse('viagens_roteiros:lista')}?q=Curitiba"
+        resposta = self.client.post(
+            reverse("viagens_roteiros:excluir", args=[roteiro.pk]), {"next": volta}
+        )
+        self.assertRedirects(resposta, volta)
+        self.assertFalse(Roteiro.objects.filter(pk=roteiro.pk).exists())
+
+    def test_lista_oferece_editar_e_excluir_na_propria_linha(self):
+        roteiro = Roteiro.objects.create(origem_municipio=self.curitiba)
+        resposta = self.client.get(reverse("viagens_roteiros:lista"))
+        html = resposta.content.decode()
+        self.assertIn(reverse("viagens_roteiros:excluir", args=[roteiro.pk]), html)
+        self.assertIn("data-confirmar-exclusao", html)
+
+    def test_editar_a_partir_da_lista_preserva_a_volta(self):
+        roteiro = Roteiro.objects.create(origem_municipio=self.curitiba)
+        resposta = self.client.get(reverse("viagens_roteiros:lista"), {"q": "Curitiba"})
+        self.assertIn("next=", resposta.context["linhas"][0]["editar_url"])
+
+    def test_vazio_por_filtro_fala_diferente_de_lista_vazia(self):
+        sem_nada = self.client.get(reverse("viagens_roteiros:lista"))
+        self.assertContains(sem_nada, "Nenhum roteiro registrado ainda")
+        Roteiro.objects.create(origem_municipio=self.curitiba)
+        com_filtro = self.client.get(
+            reverse("viagens_roteiros:lista"), {"q": "inexistente"}
+        )
+        self.assertContains(com_filtro, "Ajuste a busca ou troque de situação")
 
 
 class MontagemPelaTelaTests(BaseTelaRoteiroTestCase):
@@ -1307,14 +1414,19 @@ class SemTelaDeDetalheTests(BaseTelaRoteiroTestCase):
             resposta, reverse("viagens_roteiros:editar", args=[roteiro.pk])
         )
 
-    def test_a_edicao_traz_as_acoes_do_ciclo_de_vida(self):
+    def test_o_editor_nao_traz_acoes_de_ciclo_de_vida(self):
+        """Como na origem, o editor só tem Voltar e Salvar roteiro.
+
+        O cartão "Situação do roteiro" foi retirado a pedido do dono do produto
+        em 14/09/2026. Excluir continua na linha da lista.
+        """
         roteiro = self.roteiro_curitiba_sp_abatia()
         resposta = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
-        for nome in ("calcular", "cancelar", "excluir"):
-            self.assertContains(
+        for nome in ("calcular", "cancelar", "reativar", "excluir"):
+            self.assertNotContains(
                 resposta, reverse(f"viagens_roteiros:{nome}", args=[roteiro.pk])
             )
-        self.assertContains(resposta, "Situação do roteiro")
+        self.assertNotContains(resposta, "Situação do roteiro")
 
     def test_a_situacao_do_roteiro_aparece_no_cabecalho(self):
         roteiro = self.roteiro_curitiba_sp_abatia()
@@ -1340,7 +1452,6 @@ class SemTelaDeDetalheTests(BaseTelaRoteiroTestCase):
             resposta, reverse("viagens_roteiros:editar", args=[roteiro.pk])
         )
         self.assertContains(resposta, "Evento adiado")
-        self.assertContains(resposta, "Reativar")
 
     def test_calcular_volta_para_a_edicao(self):
         roteiro = self.roteiro_curitiba_sp_abatia()

@@ -1,36 +1,6 @@
-{% extends "layouts/app_shell_v32.html" %}
-{% load estaticos l10n %}
-{% block title %}Servidores{% endblock %}
-{% block conteudo %}
-<div class="servidor-paridade">
-  <div class="d-cabeca"><h1>Servidores</h1>{% if url_retorno %}<a class="btn--secundaria" href="{{ url_retorno }}">Voltar à viatura</a>{% endif %}</div>
-  <form data-cadastro-busca method="get" class="servidor-paridade__barra" role="search">
-    <div class="busca servidor-paridade__busca"><span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span><input class="form-controle" type="text" name="q" value="{{ termo }}" aria-label="Buscar servidores" placeholder="Buscar servidores"></div>
-    {% if cargo %}<input type="hidden" name="cargo" value="{{ cargo.pk|unlocalize }}">{% endif %}
-    {% if url_retorno %}<input type="hidden" name="next" value="{{ url_retorno }}">{% endif %}
-    <div class="servidor-paridade__select" data-cadastro-filtro-url>{% include "components/select.html" with name="filtro_cargo" label="Filtrar servidores por cargo" rotulo_oculto=True opcoes=opcoes_cargo selecionado=cargo_selecionado placeholder="Filtrar por cargo" %}</div>
-    {% if termo %}<a class="btn--secundaria" href="{% url 'viagens_cadastros:lista' 'servidores' %}{% if url_retorno %}?next={{ url_retorno|urlencode }}{% endif %}">Limpar</a>{% endif %}
-  </form>
-  {% include "pages/viagens_cadastros/_paginacao.html" %}
-  <div class="servidor-paridade__lista">
-    {% for linha in servidores %}{% with servidor=linha.objeto %}
-    <article class="reg servidor-paridade__cartao">
-      <span class="servidor-paridade__avatar" aria-hidden="true">{{ linha.iniciais }}</span>
-      <div class="servidor-paridade__dados"><h2>{{ servidor.nome }}</h2>
-        <p>{{ servidor.cargo|default:"—" }} · {{ servidor.cpf_formatado }} · {{ servidor.rg_formatado }} · {{ servidor.telefone_formatado }} · {% if servidor.unidade %}{{ servidor.unidade.sigla|default:servidor.unidade.nome }}{% else %}—{% endif %}</p>
-      </div>
-      {% if servidor.status == 'RASCUNHO' %}<span class="st st--rascunho">Rascunho</span>{% endif %}
-      {% if pode_editar %}<div class="acoes"><a class="acao-linha" href="{% url 'viagens_cadastros:editar' 'servidores' servidor.pk %}">{% include "components/icon.html" with nome="pencil" %}Editar</a><button type="button" class="acao-linha v32-acao-perigo" data-delete-url="{% url 'viagens_cadastros:excluir' 'servidores' servidor.pk %}{% if url_retorno %}?next={{ url_retorno|urlencode }}{% endif %}" data-servidor-excluir data-nome="{{ servidor.nome }}">{% include "components/icon.html" with nome="trash" %}Excluir</button></div>{% endif %}
-    </article>
-    {% endwith %}{% empty %}<div class="semres"><h2>Nenhum registro cadastrado</h2><p>Nenhum servidor cadastrado ainda.</p></div>{% endfor %}
-  </div>
-  {% if pode_editar %}<footer class="servidor-paridade__acoes"><a class="btn-primaria" href="{% url 'viagens_cadastros:novo' 'servidores' %}{% if url_retorno %}?next={{ url_retorno|urlencode }}{% endif %}">{% include "components/icon.html" with nome="plus" %}Novo servidor</a></footer>{% endif %}
-  <dialog class="servidor-paridade__dialog" data-servidor-dialog aria-labelledby="excluir-servidor-titulo">
-    <h2 id="excluir-servidor-titulo">Excluir servidor?</h2>
-    <p>Você está prestes a excluir <strong data-servidor-nome></strong>. Se houver vínculos com outros registros, a exclusão será bloqueada.</p>
-    <p>Esta ação é permanente e não poderá ser desfeita.</p>
-    <form method="post" data-servidor-delete-form>{% csrf_token %}<div class="servidor-paridade__acoes"><button class="btn--secundaria" type="button" data-servidor-fechar>Voltar</button><button class="btn-primaria" type="submit">Excluir</button></div></form>
-  </dialog>
-</div>
+{% extends "pages/viagens_cadastros/lista.html" %}
+{% load consulta %}
+
+{% block filtros %}
+  {% include "components/v32/filtro_fc.html" with nome="cargo" rotulo="Cargo" opcoes=opcoes_cargo valor=cargo_valor padrao="Todos" %}
 {% endblock %}
-{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-dialogos-cadastros.js' %}" defer></script><script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script><script src="{% estatico 'js/viagens-servidores.js' %}" defer></script>{% endblock %}

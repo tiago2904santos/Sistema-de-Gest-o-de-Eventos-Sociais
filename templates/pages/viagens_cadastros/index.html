@@ -1,28 +1,36 @@
 {% extends "layouts/app_shell_v32.html" %}
-{% block title %}Cadastros{% endblock %}
+
+{% block title %}Cadastros — Viagens{% endblock %}
+
 {% block conteudo %}
-<div class="cadastros-entrada-paridade">
-  <div class="d-cabeca"><div><h1>Cadastros</h1><p>Dados-base e cadastros auxiliares dos fluxos.</p></div></div>
-  <section class="reg" aria-labelledby="cadastros-principais">
-    <header class="cadastros-entrada-paridade__cabeca"><span>Operação</span><h2 id="cadastros-principais">Cadastros principais</h2><p>Dados compartilhados pelos documentos e fluxos de viagem.</p></header>
-    <div class="cadastros-entrada-paridade__grade">
-      {% for modulo in modulos %}
-      <article class="cadastros-entrada-paridade__cartao">
-        <span class="cadastros-entrada-paridade__iniciais" aria-hidden="true">{{ modulo.iniciais }}</span>
-        <span class="cadastros-entrada-paridade__categoria">{{ modulo.categoria|default:"Cadastro" }}</span>
-        <h3>{{ modulo.titulo }}</h3><p>{{ modulo.descricao }}</p>
-        <a class="btn--secundaria" href="{% if modulo.url %}{{ modulo.url }}{% else %}{% url 'viagens_cadastros:lista' modulo.slug %}{% endif %}">Abrir</a>
-      </article>
-      {% endfor %}
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker">Viagens</div>
+      <h1>Cadastros</h1>
+      <p class="d-cabeca__sub">Tabelas de apoio utilizadas pelos roteiros e documentos.</p>
     </div>
-  </section>
-  <section class="reg" aria-labelledby="cadastros-internos">
-    <header class="cadastros-entrada-paridade__cabeca"><span>Configuração</span><h2 id="cadastros-internos">Cadastros internos</h2><p>Parâmetros administrativos e referências de apoio.</p></header>
-    <div class="cadastros-entrada-paridade__grade"><article class="cadastros-entrada-paridade__cartao">
-      <span class="cadastros-entrada-paridade__iniciais" aria-hidden="true">ES</span><span class="cadastros-entrada-paridade__categoria">Base interna</span><h3>Estados</h3><p>Base administrativa interna para suporte à malha de cidades.</p><a class="btn--secundaria" href="{% url 'viagens_cadastros:estados' %}">Abrir</a>
-    </article></div>
-  </section>
-  {# Acesso existente preservado enquanto a aba Roteiros da configuração está pendente. #}
-  <div class="catalogo-paridade__acoes"><a class="btn--secundaria" href="{% url 'viagens_cadastros:diarias' %}">Tabela de diárias</a></div>
-</div>
+  </div>
+
+  <div class="cad-grade">
+    {% include "components/v32/cad_rail.html" with grupos=grupos slug_ativo="" %}
+
+    <section class="pa-card pa-card--lista">
+      <div class="cad-titulo">
+        <h2>Tabelas de apoio</h2>
+        <span><b>{{ cartoes|length }}</b> cadastros · escolha uma tabela para gerenciar os registros</span>
+      </div>
+      <div class="cad-visao">
+        {% for cartao in cartoes %}
+          <a class="kpi" href="{{ cartao.url }}">
+            <span class="kpi__ic">{% include "components/icon.html" with nome=cartao.icone %}</span>
+            <span><b>{{ cartao.total }}</b><span>{{ cartao.titulo }}</span><small>{{ cartao.legenda }}</small></span>
+          </a>
+        {% endfor %}
+      </div>
+      <div class="cad-meta">
+        {% include "components/icon.html" with nome="settings" %}
+        <span>Dados institucionais e assinaturas dos documentos ficam em <a href="{{ url_configuracoes }}">Configurações do sistema</a>.</span>
+      </div>
+    </section>
+  </div>
 {% endblock %}

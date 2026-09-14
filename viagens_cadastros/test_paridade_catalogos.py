@@ -12,36 +12,53 @@ class ParidadeCatalogosTests(BaseViagensTestCase):
         self.usuario = self.criar_usuario("catalogos", GRUPO_OPERADOR)
         self.client.force_login(self.usuario)
 
-    def test_inclusao_na_lista_normaliza_e_mantem_retorno(self):
+    def test_inclusao_normaliza_e_respeita_o_retorno(self):
         for slug, model in (("cargos", Cargo), ("combustiveis", Combustivel)):
             with self.subTest(slug=slug):
-                lista = reverse("viagens_cadastros:lista", args=[slug])
-                retorno = "/viagens/cadastros/servidores/novo/"
-                response = self.client.post(lista, {"nome": "  nome novo  ", "next": retorno})
-                self.assertRedirects(response, lista + "?next=%2Fviagens%2Fcadastros%2Fservidores%2Fnovo%2F")
+                retorno = "/viagens/cadastros/servidores/"
+                response = self.client.post(
+                    reverse("viagens_cadastros:novo", args=[slug]),
+                    {"nome": "  nome novo  ", "next": retorno},
+                )
+                self.assertRedirects(response, retorno)
                 self.assertTrue(model.objects.filter(nome="NOME NOVO").exists())
         self.assertEqual(LogAuditoria.objects.filter(usuario=self.usuario, acao="VIAGENS_CADASTRO_CRIADO").count(), 2)
 
-    def test_erro_de_inclusao_preserva_valor_e_lista(self):
-        lista = reverse("viagens_cadastros:lista", args=["cargos"])
-        response = self.client.post(lista, {"nome": self.cargo.nome.lower()})
-        self.assertTrue(response.context["form"].errors)
-        self.assertContains(response, 'aria-expanded="true"')
+    def test_erro_de_inclusao_reabre_o_modal_com_o_valor_digitado(self):
+        response = self.client.post(
+            reverse("viagens_cadastros:novo", args=["cargos"]), {"nome": self.cargo.nome.lower()}
+        )
+        # Sem JS a lista volta com o modal aberto; com JS o fetch recebe só o formulário.
+        self.assertTrue(response.context["modal"]["erros_total"])
+        self.assertContains(response, "data-cadastro-inicial")
         self.assertContains(response, self.cargo.nome)
         self.assertEqual(Cargo.objects.filter(nome=self.cargo.nome).count(), 1)
         self.assertContains(response, "Já existe um cargo com este nome.")
         self.assertContains(response, "Corrija antes de continuar")
 
-    def test_rota_novo_renderiza_catalogo_e_preserva_erro_de_combustivel(self):
+    def test_rota_novo_abre_o_modal_e_preserva_erro_de_combustivel(self):
         for slug in ["cargos", "combustiveis"]:
             url = reverse("viagens_cadastros:novo", args=[slug])
-            response = self.client.get(url)
-            self.assertTemplateUsed(response, f"pages/viagens_cadastros/{slug}/lista.html")
-            self.assertNotContains(response, "Usar como")
+            lista = reverse("viagens_cadastros:lista", args=[slug])
+            self.assertRedirects(self.client.get(url), lista + "?novo=1")
+            response = self.client.get(url, HTTP_X_CADASTRO_MODAL="1")
+            self.assertTemplateUsed(response, "pages/viagens_cadastros/_modal_form.html")
+            # O modal traz o cadastro inteiro, inclusive a marca de padrão.
+            self.assertContains(response, 'name="is_padrao"')
         Combustivel.objects.create(nome="ETANOL")
-        response = self.client.post(reverse("viagens_cadastros:novo", args=["combustiveis"]), {"nome": "etanol"})
+        response = self.client.post(
+            reverse("viagens_cadastros:novo", args=["combustiveis"]), {"nome": "etanol"},
+            HTTP_X_CADASTRO_MODAL="1",
+        )
         self.assertContains(response, "Já existe um combustível com este nome.")
         self.assertContains(response, 'value="etanol"')
+
+    def test_edicao_pelo_modal_responde_json_e_grava(self):
+        url = reverse("viagens_cadastros:editar", args=["cargos", self.cargo.pk])
+        response = self.client.post(url, {"nome": "cargo renomeado"}, HTTP_X_CADASTRO_MODAL="1")
+        self.assertEqual(response.json(), {"ok": True})
+        self.cargo.refresh_from_db()
+        self.assertEqual(self.cargo.nome, "CARGO RENOMEADO")
 
     def test_exclusao_get_nao_grava_e_post_preserva_retorno(self):
         cargo = Cargo.objects.create(nome="EXCLUSÃO DE ENSAIO")
@@ -94,8 +111,9 @@ class ParidadeCatalogosTests(BaseViagensTestCase):
     def test_leitor_nao_recebe_controles_nem_pode_gravar(self):
         self.client.force_login(self.criar_usuario("leitor_catalogos"))
         lista = reverse("viagens_cadastros:lista", args=["cargos"])
-        self.assertNotContains(self.client.get(lista), "data-catalogo-toggle")
-        self.assertEqual(self.client.post(lista, {"nome": "BLOQUEADO"}).status_code, 403)
+        self.assertNotContains(self.client.get(lista), "data-cadastro-modal")
+        novo = reverse("viagens_cadastros:novo", args=["cargos"])
+        self.assertEqual(self.client.post(novo, {"nome": "BLOQUEADO"}).status_code, 403)
         url = reverse("viagens_cadastros:definir_padrao", args=["cargos", self.cargo.pk])
         self.assertEqual(self.client.post(url).status_code, 403)
         self.assertFalse(Cargo.objects.filter(nome="BLOQUEADO").exists())

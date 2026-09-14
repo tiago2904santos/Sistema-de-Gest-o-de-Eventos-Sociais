@@ -1,35 +1,26 @@
-{% extends "layouts/app_shell_v32.html" %}
-{% load estaticos l10n %}
-{% block title %}Viaturas{% endblock %}
-{% block conteudo %}
-<div class="viatura-paridade catalogo-paridade">
-  <div class="d-cabeca"><h1>Viaturas</h1></div>
-  <form data-cadastro-busca method="get" role="search" class="viatura-paridade__barra" data-viatura-busca>
-    <input class="form-controle" type="text" name="q" value="{{ termo }}" placeholder="Buscar viaturas" aria-label="Buscar viaturas">
-    {% if combustivel %}<input type="hidden" name="combustivel" value="{{ combustivel.pk|unlocalize }}">{% elif unidade %}<input type="hidden" name="unidade" value="{{ unidade.pk|unlocalize }}">{% endif %}
-    <div class="viatura-paridade__filtro" data-viatura-filtro data-cadastro-filtro-url>{% include "components/select.html" with name="filtro_viatura" label="Filtrar viaturas por unidade ou combustível" rotulo_oculto=True opcoes=filtros selecionado=filtro_selecionado placeholder="Filtrar por unidade ou combustível" %}</div>
-    {% if termo %}<a class="btn--secundaria" href="{% url 'viagens_cadastros:lista' 'viaturas' %}">Limpar</a>{% endif %}
-  </form>
-  {% include "pages/viagens_cadastros/_paginacao.html" %}
-  <div class="catalogo-paridade__lista">
-    {% for linha in viaturas %}{% with viatura=linha.objeto %}
-    <article class="reg viatura-paridade__cartao">
-      <span class="catalogo-paridade__iniciais" aria-hidden="true">{{ linha.iniciais }}</span>
-      <div class="viatura-paridade__dados"><h2>{{ linha.titulo }}</h2>
-        <p>{{ viatura.placa_formatada }} · {% if viatura.unidade %}{{ viatura.unidade.sigla|default:viatura.unidade.nome }}{% else %}—{% endif %} · {{ viatura.combustivel|default:"—" }} · {{ viatura.get_tipo_display|default:"—" }} · {{ linha.motoristas }}</p>
+{% extends "pages/viagens_cadastros/lista.html" %}
+
+{% comment %}
+  O filtro de viaturas mistura unidade e combustível em uma lista só — cada
+  opção já vem com a URL pronta da view, com busca e contagem preservadas.
+{% endcomment %}
+
+{% block filtros %}
+  {% if filtros %}
+    <div class="dd" data-menu>
+      <button type="button" class="fc" data-menu-gatilho{% if combustivel or unidade %} data-ativo{% endif %} aria-haspopup="true" aria-expanded="false">
+        <span class="fc__rot">Recorte</span>
+        <span>{{ filtro_rotulo }}</span>
+        {% include "components/icon.html" with nome="chevron-down" %}
+      </button>
+      <div class="dd__c dd__c--esq dd__c--rolavel" hidden data-menu-corpo>
+        <div class="dd__t">Unidade ou combustível</div>
+        {% for filtro in filtros %}
+          <a class="dd__i{% if filtro.ativo %} dd__i--sel{% endif %}" href="{{ filtro.valor }}">
+            {% if filtro.ativo %}{% include "components/icon.html" with nome="check" %}{% else %}<span class="dd__vaga"></span>{% endif %}{{ filtro.rotulo }}
+          </a>
+        {% endfor %}
       </div>
-      {% if viatura.status == 'RASCUNHO' %}<span class="st st--rascunho">Rascunho</span>{% endif %}
-      {% if pode_editar %}<div class="acoes"><a class="acao-linha" href="{% url 'viagens_cadastros:editar' 'viaturas' viatura.pk %}">Editar</a><button type="button" class="acao-linha v32-acao-perigo" data-delete-url="{% url 'viagens_cadastros:excluir' 'viaturas' viatura.pk %}" data-catalogo-excluir data-nome="{{ linha.titulo }}">Excluir</button></div>{% endif %}
-    </article>
-    {% endwith %}{% empty %}<div class="semres"><h2>Nenhum registro cadastrado</h2><p>Nenhuma viatura cadastrada ainda.</p></div>{% endfor %}
-  </div>
-  {% if pode_editar %}<footer class="catalogo-paridade__acoes"><a class="btn-primaria" href="{% url 'viagens_cadastros:novo' 'viaturas' %}">Nova viatura</a></footer>{% endif %}
-  <dialog class="catalogo-paridade__dialog" data-catalogo-dialog aria-labelledby="viatura-excluir-titulo">
-    <h2 id="viatura-excluir-titulo">Excluir viatura?</h2>
-    <p>Você está prestes a excluir <strong data-catalogo-nome></strong>. Se houver vínculos com outros registros, a exclusão será bloqueada.</p>
-    <p>Esta ação é permanente e não poderá ser desfeita.</p>
-    <form method="post" data-catalogo-delete-form>{% csrf_token %}<div class="catalogo-paridade__acoes"><button class="btn--secundaria" type="button" data-catalogo-fechar>Voltar</button><button class="btn-primaria" type="submit">Excluir</button></div></form>
-  </dialog>
-</div>
+    </div>
+  {% endif %}
 {% endblock %}
-{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-dialogos-cadastros.js' %}" defer></script><script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script><script src="{% estatico 'js/viagens-catalogos.js' %}" defer></script>{% endblock %}

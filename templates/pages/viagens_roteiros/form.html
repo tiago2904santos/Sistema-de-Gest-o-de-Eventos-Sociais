@@ -228,7 +228,7 @@
               </div>
             </div>
 
-            <p class="bate-volta__resumo texto-suave v32-suave" data-bate-volta-resumo>Preencha as datas, as saídas e o tempo de viagem: os trechos de cada dia nascem sozinhos.</p>
+            <p class="bate-volta__resumo texto-suave v32-suave" data-bate-volta-resumo></p>
             <p class="form-erro" data-bate-volta-erro hidden></p>
           </div>
 
@@ -413,126 +413,20 @@
       </section>
     </form>
 
-    <aside class="editor-roteiro__lateral frm-lateral">
-      <div class="sticky">
-      <section class="side-card reg">
-        <header class="side-card__cabecalho reg__t">
-          <span class="side-card__icone">{% include "components/icon.html" with nome="checklist" %}</span>
-          <h2>Resumo do roteiro</h2>
-        </header>
-        <dl class="resumo-lista">
-          <div><dt>Sede</dt><dd data-resumo-sede>—</dd></div>
-          <div><dt>Total de destinos</dt><dd data-resumo-destinos>0</dd></div>
-          <div><dt>Total de trechos</dt><dd data-resumo-trechos>0</dd></div>
-          <div><dt>Distância estimada (ida e volta)</dt><dd data-resumo-distancia>—</dd></div>
-          <div><dt>Tempo total (ida e volta)</dt><dd data-resumo-tempo>—</dd></div>
-          <div><dt>Rota no mapa</dt><dd data-resumo-rota>Pendente</dd></div>
-          <div><dt>Tipo de destino</dt><dd data-resumo-tipo>—</dd></div>
-          <div><dt>Quantidade de servidores</dt><dd data-resumo-servidores>{{ roteiro.quantidade_servidores|default:"1" }}</dd></div>
-        </dl>
-      </section>
-
-      <section class="side-card reg">
-        <header class="side-card__cabecalho reg__t">
-          <span class="side-card__icone">{% include "components/icon.html" with nome="ordenar" %}</span>
-          <h2>Etapas</h2>
-        </header>
-        <ol class="etapas-roteiro step-v">
-          <li class="etapa-roteiro step-i etapa-roteiro--ativa" data-etapa="1">
-            <span class="etapa-roteiro__numero" aria-hidden="true">1</span>
-            <span class="etapa-roteiro__texto">
-              <strong>Origem e destinos</strong>
-              <small data-etapa-estado>Em preenchimento</small>
-            </span>
-            <span class="etapa-roteiro__marca" aria-hidden="true">{% include "components/icon.html" with nome="check-circle" %}</span>
-          </li>
-          <li class="etapa-roteiro step-i" data-etapa="2">
-            <span class="etapa-roteiro__numero" aria-hidden="true">2</span>
-            <span class="etapa-roteiro__texto">
-              <strong>Bate-volta diário e cálculo</strong>
-              <small data-etapa-estado>Pendente</small>
-            </span>
-            <span class="etapa-roteiro__marca" aria-hidden="true">{% include "components/icon.html" with nome="check-circle" %}</span>
-          </li>
-          <li class="etapa-roteiro step-i" data-etapa="3">
-            <span class="etapa-roteiro__numero" aria-hidden="true">3</span>
-            <span class="etapa-roteiro__texto">
-              <strong>Trechos</strong>
-              <small data-etapa-estado>Pendente</small>
-            </span>
-            <span class="etapa-roteiro__marca" aria-hidden="true">{% include "components/icon.html" with nome="check-circle" %}</span>
-          </li>
-          <li class="etapa-roteiro step-i" data-etapa="4">
-            <span class="etapa-roteiro__numero" aria-hidden="true">4</span>
-            <span class="etapa-roteiro__texto">
-              <strong>Diárias</strong>
-              <small data-etapa-estado>Pendente</small>
-            </span>
-            <span class="etapa-roteiro__marca" aria-hidden="true">{% include "components/icon.html" with nome="check-circle" %}</span>
-          </li>
-        </ol>
-      </section>
-
+    <footer class="editor-roteiro__rodape">
       {% comment %}
-        Ciclo de vida do roteiro — recalcular, cancelar, reativar e excluir.
-        Fica na lateral porque cada ação é um formulário próprio, e formulário
-        dentro de formulário o navegador não aceita. Só aparece depois que o
-        roteiro existe: não há o que cancelar no que ainda não foi gravado.
+        A origem põe as ações no rodapé do formulário: voltar à esquerda,
+        salvar à direita, e nada de lateral. O aviso de gravação automática
+        fica só para leitor de tela, como lá — quem está vendo a tela percebe
+        pelo próprio comportamento.
       {% endcomment %}
-      {% if roteiro.pk %}
-        <section class="side-card reg">
-          <header class="side-card__cabecalho reg__t">
-            <span class="side-card__icone">{% include "components/icon.html" with nome="settings" %}</span>
-            <h2>Situação do roteiro</h2>
-          </header>
-          <div class="side-card__corpo acoes-roteiro">
-            <form method="post" action="{% url 'viagens_roteiros:calcular' roteiro.pk %}">
-              {% csrf_token %}
-              <button type="submit" class="btn btn--secundario btn--secundaria btn--com-icone">
-                {% include "components/icon.html" with nome="activity" %}
-                {% if roteiro.valor_diarias is not None %}Recalcular e gravar diárias{% else %}Calcular e gravar diárias{% endif %}
-              </button>
-            </form>
-
-            {% if roteiro.cancelado %}
-              <form method="post" action="{% url 'viagens_roteiros:reativar' roteiro.pk %}">
-                {% csrf_token %}
-                <button type="submit" class="btn btn--secundario btn--secundaria btn--com-icone">
-                  {% include "components/icon.html" with nome="undo" %}Reativar
-                </button>
-              </form>
-            {% else %}
-              <form method="post" action="{% url 'viagens_roteiros:cancelar' roteiro.pk %}" class="acoes-roteiro__cancelar">
-                {% csrf_token %}
-                {% include "components/input.html" with name="motivo" label="Motivo do cancelamento" rotulo_oculto=True placeholder="Motivo do cancelamento" obrigatorio=True %}
-                <button type="submit" class="btn btn--secundario btn--secundaria btn--com-icone">
-                  {% include "components/icon.html" with nome="ban" %}Cancelar roteiro
-                </button>
-              </form>
-            {% endif %}
-
-            <form method="post" action="{% url 'viagens_roteiros:excluir' roteiro.pk %}" data-confirmar-exclusao>
-              {% csrf_token %}
-              <button type="submit" class="btn btn--perigo btn--secundaria btn--destrutiva btn--com-icone">
-                {% include "components/icon.html" with nome="trash" %}Excluir roteiro
-              </button>
-            </form>
-          </div>
-        </section>
-      {% endif %}
-
-      </div>
-      <div class="solicitacao-intro__acoes editor-roteiro__acoes frm-acoes">
-        <p class="autosave-status" data-autosave-status role="status" aria-live="polite">
-          {% if autosave_ligado %}Rascunho salvo automaticamente enquanto você monta.{% else %}Roteiro finalizado: as mudanças só valem ao salvar.{% endif %}
-        </p>
-        {% include "components/v32/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
-        <button type="submit" form="form-roteiro" name="acao" value="rascunho"
-                class="btn btn--secundario btn--secundaria" formnovalidate>Salvar rascunho</button>
-        <button type="submit" form="form-roteiro" name="acao" value="salvar"
-                class="btn btn--dourado btn-primaria">Salvar roteiro</button>
-      </div>
-    </aside>
+      <span class="sr-only" data-autosave-status role="status" aria-live="polite">
+        {% if autosave_ligado %}Rascunho salvo automaticamente enquanto você monta.{% else %}Roteiro finalizado: as mudanças só valem ao salvar.{% endif %}
+      </span>
+      {% include "components/v32/button.html" with label="Voltar" variante="secundario" href=url_voltar %}
+      <button type="submit" form="form-roteiro" name="acao" value="salvar"
+              class="btn btn--dourado btn-primaria">Salvar roteiro</button>
+    </footer>
   </div>
 {% endblock %}
 

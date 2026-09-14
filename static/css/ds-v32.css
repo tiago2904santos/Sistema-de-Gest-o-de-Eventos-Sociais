@@ -836,7 +836,7 @@ html[data-dourado=cerimonial] .dt th{background:var(--d-50);color:var(--d-800)}
 .cad-i[aria-current] .cad-i__t{color:var(--n-900);font-weight:600}
 .cad-i[aria-current] .cad-i__n{color:var(--d-800);font-weight:600}
 .cad-barra{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--n-150);flex-wrap:wrap}
-.cad-barra .busca{flex:1 1 260px;max-width:340px}
+.cad-barra .busca{flex:1 1 70%;}
 .cad-barra .busca input{height:38px}
 .cad-barra .fc{height:38px;flex:0 0 auto;width:auto}
 .cad-barra__fim{margin-left:auto;display:flex;align-items:center;gap:8px}

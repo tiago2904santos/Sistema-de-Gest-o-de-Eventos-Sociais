@@ -311,7 +311,6 @@ class FormulariosTests(TestCase):
         form = TabelaDiariaForm(
             data={
                 "faixa": TabelaDiaria.Faixa.INTERIOR,
-                "vigencia_inicio": "2026-01-01",
                 "valor_24h": "0.03",
             }
         )
@@ -324,28 +323,53 @@ class FormulariosTests(TestCase):
         opcoes = list(ServidorForm().fields["cargo"].queryset)
         self.assertEqual(opcoes, [segundo, primeiro])
 
-    def test_unidade_form_copia_vinculo_de_servidores_do_gerenciador_original(self):
-        unidade = Unidade.objects.create(nome="Unidade Norte")
-        servidor = Servidor.objects.create(nome="Lotada", unidade=unidade)
-        form = UnidadeForm(instance=unidade)
-        self.assertIn("servidores", form.fields)
-        self.assertIn(servidor.pk, form.initial["servidores"])
+    def test_unidade_form_preserva_os_servidores_lotados(self):
+        """Editar a unidade não mexe em quem está lotado nela.
 
-    def test_unidade_form_atualiza_os_servidores_lotados(self):
+        A lotação é campo do servidor; o formulário da unidade cuida apenas
+        de nome e sigla.
+        """
         unidade = Unidade.objects.create(nome="Unidade Norte")
-        outra = Unidade.objects.create(nome="Unidade Sul")
-        entra = Servidor.objects.create(nome="Entra", unidade=outra)
-        sai = Servidor.objects.create(nome="Sai", unidade=unidade)
+        lotado = Servidor.objects.create(nome="Continua", unidade=unidade)
         form = UnidadeForm(
-            data={"nome": unidade.nome, "sigla": "UN", "servidores": [entra.pk]},
-            instance=unidade,
+            data={"nome": "UNIDADE NORTE II", "sigla": "UN"}, instance=unidade
         )
         self.assertTrue(form.is_valid(), form.errors)
         form.save()
-        entra.refresh_from_db()
-        sai.refresh_from_db()
-        self.assertEqual(entra.unidade, unidade)
-        self.assertIsNone(sai.unidade)
+        lotado.refresh_from_db()
+        self.assertEqual(lotado.unidade, unidade)
+
+    def test_editar_so_o_nome_do_cargo_preserva_o_padrao(self):
+        """P05: `is_padrao` ausente no envio não desmarca o padrão gravado."""
+        cargo = Cargo.objects.create(nome="INVESTIGADOR", is_padrao=True)
+        form = CargoForm(data={"nome": "INVESTIGADOR CHEFE"}, instance=cargo)
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+        cargo.refresh_from_db()
+        self.assertTrue(cargo.is_padrao)
+
+    def test_desmarcar_o_padrao_do_cargo_continua_funcionando(self):
+        """A sentinela do formulário completo permite tirar o padrão."""
+        cargo = Cargo.objects.create(nome="INVESTIGADOR", is_padrao=True)
+        form = CargoForm(
+            data={"nome": cargo.nome, "is_padrao__enviado": "1"}, instance=cargo
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+        cargo.refresh_from_db()
+        self.assertFalse(cargo.is_padrao)
+
+    def test_telefone_aceita_pontuacao_alem_do_limite_antigo(self):
+        """P15: o limite do formulário passou de 16 para 20 caracteres.
+
+        A regra de conteúdo continua exigindo 10 ou 11 dígitos, então o que a
+        folga entrega é tolerância à pontuação — este número tem 18 caracteres
+        e antes era recusado por tamanho, sem nem chegar à validação.
+        """
+        digitado = "(41) 9 9999 - 9999"
+        self.assertGreater(len(digitado), 16)
+        form = ServidorForm(data={"nome": "Teste", "telefone": digitado})
+        self.assertTrue(form.is_valid(), form.errors)
 
     def test_cpf_em_branco_e_aceito(self):
         form = ServidorForm(data={"nome": "Teste", "cpf": ""})
@@ -369,7 +393,6 @@ class FormulariosTests(TestCase):
         form = TabelaDiariaForm(
             data={
                 "faixa": TabelaDiaria.Faixa.INTERIOR,
-                "vigencia_inicio": "2026-01-01",
                 "valor_24h": "0",
             }
         )
@@ -439,7 +462,6 @@ class PermissoesDeEscritaTests(BaseViagensTestCase):
             reverse("viagens_cadastros:diaria_nova"),
             {
                 "faixa": TabelaDiaria.Faixa.INTERIOR,
-                "vigencia_inicio": "2026-01-01",
                 "valor_24h": "300",
             },
         )
@@ -452,7 +474,6 @@ class PermissoesDeEscritaTests(BaseViagensTestCase):
             reverse("viagens_cadastros:diaria_nova"),
             {
                 "faixa": TabelaDiaria.Faixa.INTERIOR,
-                "vigencia_inicio": "2026-01-01",
                 "valor_24h": "300",
             },
         )
@@ -500,9 +521,10 @@ class TelasTests(BaseViagensTestCase):
 
     def test_tela_de_nova_vigencia_renderiza_para_quem_pode(self):
         self.client.force_login(self.criar_usuario("gestora3", GRUPO_GESTOR))
-        resposta = self.client.get(reverse("viagens_cadastros:diaria_nova"))
+        resposta = self.client.get(reverse("viagens_cadastros:diaria_nova"), HTTP_X_CADASTRO_MODAL="1")
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, "Nova vigência")
+        self.assertContains(resposta, 'name="valor_24h"')
 
     def test_slug_inexistente_devolve_404(self):
         resposta = self.client.get(
@@ -551,11 +573,11 @@ class TelasTests(BaseViagensTestCase):
         servidor = Servidor.objects.create(nome="Já Vinculado")
         viatura.motoristas.add(servidor)
         resposta = self.client.get(
-            reverse("viagens_cadastros:editar", args=["viaturas", viatura.pk])
+            reverse("viagens_cadastros:editar", args=["viaturas", viatura.pk]),
+            HTTP_X_CADASTRO_MODAL="1",
         )
-        campo = next(
-            c for c in resposta.context["campos"] if c["name"] == "motoristas"
-        )
+        campos = [c for secao in resposta.context["dados"]["secoes"] for c in secao["campos"]]
+        campo = next(c for c in campos if c["name"] == "motoristas")
         marcados = [o["rotulo"] for o in campo["opcoes"] if o["selecionado"]]
         self.assertEqual(marcados, ["JÁ VINCULADO"])
 
@@ -606,7 +628,9 @@ class TelasTests(BaseViagensTestCase):
             valor_24h=Decimal("468.15"),
         )
         url = reverse("viagens_cadastros:diaria_excluir", args=[tabela.pk])
-        self.assertEqual(self.client.get(url).status_code, 200)
+        # A confirmação é o diálogo da lista; o GET não apaga nem abre tela.
+        self.assertEqual(self.client.get(url).status_code, 302)
+        self.assertTrue(TabelaDiaria.objects.filter(pk=tabela.pk).exists())
         self.client.post(url)
         self.assertFalse(TabelaDiaria.objects.filter(pk=tabela.pk).exists())
 
@@ -718,7 +742,7 @@ class TelaDeDiariasTests(BaseViagensTestCase):
 
     def test_historico_mostra_o_valor_como_dinheiro(self):
         resposta = self.client.get(reverse("viagens_cadastros:diarias"))
-        valores = re.findall(r"<td>(R\$ .*?)</td>", resposta.content.decode(), re.S)
+        valores = re.findall(r"<td[^>]*>(R\$ .*?)</td>", resposta.content.decode(), re.S)
         self.assertIn("R$ 290,55", valores)
 
     def test_faixa_sem_vigencia_nao_finge_ter_valor(self):

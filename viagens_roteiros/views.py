@@ -143,55 +143,48 @@ def _registrar_auditoria(usuario, acao, roteiro):
     )
 
 
-def _resumo_do_destino(roteiro):
-    """Para onde se foi, na ordem — o que identifica o roteiro na lista."""
-    nomes = [
-        trecho.destino_municipio.nome
-        for trecho in roteiro.trechos.all()
-        if trecho.destino_municipio_id
-    ]
-    # A volta à sede não é destino: repetir a sede no fim polui a lista.
-    if len(nomes) > 1 and nomes[-1] == roteiro.sede_cidade:
-        nomes = nomes[:-1]
-    return " → ".join(nomes) if nomes else "—"
-
-
 @acesso_ao_modulo
 def lista(request):
-    queryset = (
-        Roteiro.objects.select_related("origem_municipio__estado")
-        .prefetch_related("trechos__destino_municipio")
-        .all()
+    from core.retorno import com_next, daqui
+
+    from . import abas as abas_de_roteiro
+    from .presenters import linha_da_lista
+
+    base = abas_de_roteiro.anotar_finalizacao(
+        Roteiro.objects.select_related("origem_municipio__estado").prefetch_related(
+            "trechos__destino_municipio__estado"
+        )
     )
     termo = request.GET.get("q", "").strip()
     if termo:
-        queryset = queryset.filter(
+        base = base.filter(
             Q(origem_municipio__nome__icontains=termo)
             | Q(trechos__destino_municipio__nome__icontains=termo)
             | Q(observacoes__icontains=termo)
         ).distinct()
-    situacao = request.GET.get("situacao", "").strip()
-    if situacao == "ativos":
-        queryset = queryset.filter(cancelado=False)
-    elif situacao == "cancelados":
-        queryset = queryset.filter(cancelado=True)
+
+    # As situações são combináveis e nenhuma marcada significa "todas" — é o
+    # comportamento da origem, e o que permite achar o roteiro da página 3.
+    escolhidas = abas_de_roteiro.normalizar_abas(request.GET.getlist("aba"))
+    filtro = abas_de_roteiro.q_das_abas(escolhidas)
+    queryset = base.filter(filtro) if filtro is not None else base
 
     paginator = Paginator(queryset, ITENS_POR_PAGINA)
     pagina = paginator.get_page(request.GET.get("pagina"))
 
+    volta = daqui(request)
     linhas = [
-        {
-            "roteiro": roteiro,
-            "destinos": _resumo_do_destino(roteiro),
-            "icone": "document" if roteiro.solicitacao_id else "map-pin",
-        }
+        linha_da_lista(
+            roteiro,
+            editar_url=com_next(
+                reverse("viagens_roteiros:editar", args=[roteiro.pk]), volta
+            ),
+            excluir_url=reverse("viagens_roteiros:excluir", args=[roteiro.pk]),
+        )
         for roteiro in pagina
     ]
-    parametros = {}
-    if termo:
-        parametros["q"] = termo
-    if situacao:
-        parametros["situacao"] = situacao
+    parametros = request.GET.copy()
+    parametros.pop("pagina", None)
 
     return render(
         request,
@@ -200,14 +193,11 @@ def lista(request):
             "pagina": pagina,
             "linhas": linhas,
             "termo": termo,
-            "situacao": situacao,
-            "tem_filtros": bool(termo or situacao),
+            "abas": abas_de_roteiro.opcoes_de_aba(base, escolhidas),
+            "abas_escolhidas": escolhidas,
+            "tem_filtros": bool(termo or escolhidas),
             "pode_editar": pode_editar_roteiros(request.user),
-            "opcoes_situacao": [
-                {"valor": "ativos", "rotulo": "Ativos"},
-                {"valor": "cancelados", "rotulo": "Cancelados"},
-            ],
-            "querystring": urlencode(parametros),
+            "querystring": parametros.urlencode(),
             "paginas_visiveis": list(
                 paginator.get_elided_page_range(pagina.number, on_each_side=2, on_ends=1)
             ),
@@ -706,4 +696,7 @@ def excluir(request, pk):
         usuario=request.user, acao="VIAGENS_ROTEIRO_EXCLUIDO", descricao=descricao
     )
     messages.success(request, "Roteiro excluído.")
-    return redirect("viagens_roteiros:lista")
+    # Excluir da lista devolve à lista como ela estava, com busca e filtros.
+    from core.retorno import voltar_para
+
+    return redirect(voltar_para(request, reverse("viagens_roteiros:lista")))

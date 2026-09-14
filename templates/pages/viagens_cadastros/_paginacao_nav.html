@@ -1,0 +1,25 @@
+{% comment %}
+  Navegação de páginas das listas de cadastros. As views de viagens leem
+  `page` (contrato da origem) e a querystring já carrega busca e filtros.
+{% endcomment %}
+<nav class="pag__nav" aria-label="Paginação">
+  {% if pagina.has_previous %}
+    <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %}Anterior</a>
+  {% else %}
+    <span class="pag__passo" aria-disabled="true">{% include "components/icon.html" with nome="chevron-left" %}Anterior</span>
+  {% endif %}
+  {% for numero in paginas_visiveis %}
+    {% if numero == elipse %}
+      <span class="pag__el" aria-hidden="true">…</span>
+    {% elif numero == pagina.number %}
+      <span class="pag__n" aria-current="page">{{ numero }}</span>
+    {% else %}
+      <a class="pag__n" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ numero }}" aria-label="Ir para a página {{ numero }}">{{ numero }}</a>
+    {% endif %}
+  {% endfor %}
+  {% if pagina.has_next %}
+    <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ pagina.next_page_number }}">Próxima{% include "components/icon.html" with nome="chevron-right" %}</a>
+  {% else %}
+    <span class="pag__passo" aria-disabled="true">Próxima{% include "components/icon.html" with nome="chevron-right" %}</span>
+  {% endif %}
+</nav>

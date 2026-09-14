@@ -22,19 +22,6 @@
         form.requestSubmit();
       }, 1000);
     });
-    form.addEventListener("submit", () => {
-      clearTimeout(temporizador);
-      // Estes selects contêm URLs; o recorte já viaja no campo oculto.
-      form.querySelectorAll("[data-cadastro-filtro-url] select").forEach(select => { select.disabled = true; });
-    });
-    form.querySelectorAll("[data-cadastro-filtro-url] select").forEach(select => {
-      select.addEventListener("change", () => {
-        clearTimeout(temporizador);
-        const destino = select.value;
-        temporizador = setTimeout(() => {
-          if (destino) window.location.assign(destino);
-        }, 1000);
-      });
-    });
+    form.addEventListener("submit", () => clearTimeout(temporizador));
   });
 })();

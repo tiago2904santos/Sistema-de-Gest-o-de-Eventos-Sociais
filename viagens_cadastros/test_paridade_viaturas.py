@@ -72,44 +72,53 @@ class ParidadeViaturasTests(BaseViagensTestCase):
         self.assertContains(response, "Nenhuma viatura cadastrada ainda.")
         self.assertContains(response, "Nova viatura")
 
-    def test_formulario_proprio_preserva_padrao_e_caminhos_de_gerenciamento(self):
+    def _campo_do_modal(self, response, nome):
+        campos = [campo for secao in response.context["dados"]["secoes"] for campo in secao["campos"]]
+        return next(campo for campo in campos if campo["name"] == nome)
+
+    def test_modal_de_inclusao_traz_os_padroes_do_cadastro(self):
         self.flex.is_padrao = True
         self.flex.save()
         url = reverse("viagens_cadastros:novo", args=["viaturas"])
-        response = self.client.get(url)
-        self.assertTemplateUsed(response, "pages/viagens_cadastros/viaturas/form.html")
-        self.assertTemplateNotUsed(response, "pages/viagens_cadastros/_campos.html")
-        self.assertEqual(response.context["combustivel"]["valor"], str(self.flex.pk))
-        self.assertEqual(response.context["tipo"]["valor"], Viatura.Tipo.DESCARACTERIZADA)
-        for slug in ["combustiveis", "unidades", "servidores"]:
-            self.assertIn("next=%2Fviagens%2Fcadastros%2Fviaturas%2Fnovo%2F", response.context[f"url_{slug}"])
+        # Sem JS o formulário mora na lista; o fetch do modal traz só o formulário.
+        self.assertRedirects(self.client.get(url), self.lista + "?novo=1")
+        response = self.client.get(url, HTTP_X_CADASTRO_MODAL="1")
+        self.assertTemplateUsed(response, "pages/viagens_cadastros/_modal_form.html")
+        self.assertEqual(self._campo_do_modal(response, "combustivel")["valor"], str(self.flex.pk))
+        self.assertEqual(self._campo_do_modal(response, "tipo")["valor"], Viatura.Tipo.DESCARACTERIZADA)
 
     def test_edicao_preserva_motoristas_e_erro_na_placa(self):
         pessoa = Servidor.objects.create(nome="JOÃO DE ENSAIO", cargo=self.cargo, cpf="52998224725")
         self.viatura.motoristas.add(pessoa)
         url = reverse("viagens_cadastros:editar", args=["viaturas", self.viatura.pk])
-        response = self.client.get(url)
-        self.assertTrue(next(p for p in response.context["pessoas"] if p["valor"] == str(pessoa.pk))["selecionado"])
-        response = self.client.post(url, {"placa": "INVALIDA", "modelo": "MODELO DIGITADO", "motoristas": [pessoa.pk]})
+        response = self.client.get(url, HTTP_X_CADASTRO_MODAL="1")
+        opcoes = self._campo_do_modal(response, "motoristas")["opcoes"]
+        self.assertTrue(next(o for o in opcoes if o["valor"] == str(pessoa.pk))["selecionado"])
+        response = self.client.post(
+            url, {"placa": "INVALIDA", "modelo": "MODELO DIGITADO", "motoristas": [pessoa.pk]},
+            HTTP_X_CADASTRO_MODAL="1",
+        )
         self.assertContains(response, "Placa inválida")
         self.assertContains(response, 'value="MODELO DIGITADO"')
-        self.assertTrue(response.context["motoristas_selecionados"])
+        opcoes = self._campo_do_modal(response, "motoristas")["opcoes"]
+        self.assertTrue(next(o for o in opcoes if o["valor"] == str(pessoa.pk))["selecionado"])
         self.viatura.refresh_from_db()
         self.assertEqual(self.viatura.placa, "AAA1234")
-        self.assertContains(response, "529.982.247-25")
 
-    def test_busca_do_seletor_inclui_identificacao_formatada_e_lotacao(self):
+    def test_opcoes_de_motorista_mostram_cargo_e_lotacao(self):
         pessoa = Servidor.objects.create(
             nome="JOÃO DE ENSAIO", cargo=self.cargo, cpf="52998224725",
             rg="12345678", unidade=self.unidade,
         )
-        response = self.client.get(reverse("viagens_cadastros:novo", args=["viaturas"]))
-        dados = next(p for p in response.context["pessoas"] if p["valor"] == str(pessoa.pk))
-        for termo in ["joao", self.cargo.nome.lower(), "529.982.247-25",
-                      pessoa.rg_formatado, self.unidade.sigla.lower(), self.unidade.nome.lower()]:
-            self.assertIn(termo, dados["busca"])
-        self.assertNotIn(pessoa.cpf, dados["busca"])
-        self.assertFalse(dados["selecionado"])
+        response = self.client.get(reverse("viagens_cadastros:novo", args=["viaturas"]), HTTP_X_CADASTRO_MODAL="1")
+        opcao = next(o for o in self._campo_do_modal(response, "motoristas")["opcoes"]
+                     if o["valor"] == str(pessoa.pk))
+        self.assertEqual(opcao["rotulo"], "JOÃO DE ENSAIO")
+        self.assertIn(self.cargo.nome, opcao["detalhes"])
+        self.assertIn(self.unidade.sigla, opcao["detalhes"])
+        # O CPF não vai para a tela de escolha: identifica-se por nome e lotação.
+        self.assertNotIn(pessoa.cpf, opcao["detalhes"])
+        self.assertFalse(opcao["selecionado"])
         self.assertFalse(self.viatura.motoristas.exists())
 
     def test_gravacao_dos_motoristas_e_mensagem_de_rascunho(self):

@@ -1,0 +1,9 @@
+{% comment %}Ações de uma linha da lista: editar e excluir pelo diálogo do catálogo.{% endcomment %}
+<div class="acoes">
+  {% if linha.url_editar %}
+    <a class="acao-linha" href="{{ linha.url_editar }}" aria-label="Editar {{ linha.nome }}" data-cadastro-modal>{% include "components/icon.html" with nome="pencil" %}Editar</a>
+  {% endif %}
+  {% if linha.url_excluir %}
+    <button type="button" class="acao-linha v32-acao-perigo" data-delete-url="{{ linha.url_excluir }}" data-catalogo-excluir data-nome="{{ linha.nome }}">{% include "components/icon.html" with nome="trash" %}Excluir</button>
+  {% endif %}
+</div>

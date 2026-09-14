@@ -26,7 +26,7 @@ class RespostasCadastrosTests(BaseViagensTestCase):
         dados = {"nome": servidor.nome, "cargo": self.cargo.pk, "cpf": "52998224725", "rg": "123456789", "next": "/viagens/"}
         response = self.client.post(editar, dados, follow=True)
         self.assertContains(response, "Servidor atualizado com sucesso.")
-        self.assertEqual(response.redirect_chain[0][0], reverse("viagens_cadastros:lista", args=["servidores"]))
+        self.assertEqual(response.redirect_chain[0][0], "/viagens/")
         servidor.refresh_from_db()
         self.assertEqual(servidor.status, Servidor.Status.COMPLETO)
         servidor.delete()
@@ -37,7 +37,7 @@ class RespostasCadastrosTests(BaseViagensTestCase):
         url = reverse("viagens_cadastros:novo", args=["servidores"])
         response = self.client.post(url, {"nome": "NÃO GRAVAR", "cpf": "11111111111"})
         self.assertContains(response, "Corrija antes de continuar", count=1)
-        self.assertContains(response, "Revise os campos destacados antes de continuar.")
+        self.assertContains(response, "campo que precisa ser corrigido")
         self.assertContains(response, 'value="NÃO GRAVAR"')
         self.assertNotContains(response, "Corrija os campos destacados para continuar.")
         self.assertFalse(Servidor.objects.filter(nome="NÃO GRAVAR").exists())
@@ -48,7 +48,7 @@ class RespostasCadastrosTests(BaseViagensTestCase):
         retorno = "/viagens/cadastros/viaturas/novo/"
         lista = reverse("viagens_cadastros:lista", args=["servidores"])
         pagina = self.client.get(lista, {"next": retorno, "q": servidor.nome})
-        link = re.search(r'<button[^>]*data-delete-url="([^"]+)"[^>]*data-servidor-excluir', pagina.content.decode())
+        link = re.search(r'<button[^>]*data-delete-url="([^"]+)"[^>]*data-catalogo-excluir', pagina.content.decode())
         self.assertIsNotNone(link)
         # O diálogo copia a URL real do botão; não injeta next no corpo do POST.
         url = unescape(link.group(1))

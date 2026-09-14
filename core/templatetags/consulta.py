@@ -15,6 +15,9 @@ def qs_definir(context, nome, valor=None):
     """`?` + GET atual com `nome` definido (ou removido, se vazio) e sem página."""
     parametros = context["request"].GET.copy()
     parametros.pop("pagina", None)
+    # Viagens ainda pagina com `page`; trocar de filtro tem de voltar à primeira
+    # página nos dois nomes, senão o parâmetro antigo continua vencendo.
+    parametros.pop("page", None)
     parametros.pop(nome, None)
     if valor not in (None, ""):
         parametros[nome] = str(valor)

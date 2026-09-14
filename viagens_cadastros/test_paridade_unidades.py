@@ -13,18 +13,17 @@ class ParidadeUnidadesTests(BaseViagensTestCase):
         self.client.force_login(self.usuario)
         self.lista = reverse("viagens_cadastros:lista", args=["unidades"])
 
-    def test_inclusao_normaliza_preserva_retorno_e_nao_move_servidores(self):
+    def test_inclusao_normaliza_e_nao_mexe_na_lotacao(self):
         anterior = Unidade.objects.create(nome="UNIDADE ANTERIOR")
         servidor = Servidor.objects.create(nome="SERVIDOR LOTADO", unidade=anterior)
-        response = self.client.post(self.lista, {
+        response = self.client.post(reverse("viagens_cadastros:novo", args=["unidades"]), {
             "nome": "  unidade de ensaio  ", "sigla": " ue ",
-            "servidores": [servidor.pk], "next": "/viagens/cadastros/viaturas/novo/",
         }, follow=True)
         self.assertContains(response, "Unidade criada com sucesso.")
-        self.assertContains(response, "Voltar ao servidor")
-        self.assertIn("next=%2Fviagens%2Fcadastros%2Fviaturas%2Fnovo%2F", response.redirect_chain[0][0])
+        self.assertEqual(response.redirect_chain[0][0], self.lista)
         nova = Unidade.objects.get(nome="UNIDADE DE ENSAIO")
         self.assertEqual(nova.sigla, "UE")
+        # Lotação é campo do servidor: cadastrar a unidade não move ninguém.
         servidor.refresh_from_db()
         self.assertEqual(servidor.unidade, anterior)
         self.assertFalse(nova.servidores.exists())
@@ -43,13 +42,14 @@ class ParidadeUnidadesTests(BaseViagensTestCase):
         self.assertEqual(self.client.get(self.lista, {"q": "delegacia 16"}).context["pagina"].paginator.count, 1)
 
     def test_duplicidade_preserva_campos_sem_gravar_e_rejeita_retorno_externo(self):
+        novo = reverse("viagens_cadastros:novo", args=["unidades"])
         Unidade.objects.create(nome="UNIDADE DUPLICADA")
-        response = self.client.post(self.lista, {"nome": "unidade duplicada", "sigla": "UD"})
+        response = self.client.post(novo, {"nome": "unidade duplicada", "sigla": "UD"})
         self.assertContains(response, "Já existe uma unidade com este nome.")
         self.assertContains(response, 'value="UD"')
-        self.assertTrue(response.context["form"].errors)
+        self.assertTrue(response.context["modal"]["erros_total"])
         self.assertEqual(Unidade.objects.filter(nome="UNIDADE DUPLICADA").count(), 1)
-        response = self.client.post(self.lista, {"nome": "SEM SIGLA", "next": "https://fora.example/"})
+        response = self.client.post(novo, {"nome": "SEM SIGLA", "next": "https://fora.example/"})
         self.assertRedirects(response, self.lista)
         self.assertEqual(Unidade.objects.get(nome="SEM SIGLA").sigla, "")
 
@@ -66,9 +66,12 @@ class ParidadeUnidadesTests(BaseViagensTestCase):
     def test_leitor_nao_recebe_acoes_nem_pode_criar_ou_excluir(self):
         unidade = Unidade.objects.create(nome="UNIDADE PROTEGIDA")
         self.client.force_login(self.criar_usuario("leitor_unidades"))
-        self.assertNotContains(self.client.get(self.lista), "data-catalogo-toggle")
+        self.assertNotContains(self.client.get(self.lista), "data-cadastro-modal")
         self.assertNotContains(self.client.get(self.lista), 'data-catalogo-excluir ')
-        self.assertEqual(self.client.post(self.lista, {"nome": "NÃO CRIAR"}).status_code, 403)
+        self.assertEqual(
+            self.client.post(reverse("viagens_cadastros:novo", args=["unidades"]), {"nome": "NÃO CRIAR"}).status_code,
+            403,
+        )
         self.assertEqual(self.client.post(reverse("viagens_cadastros:excluir", args=["unidades", unidade.pk])).status_code, 403)
         self.assertTrue(Unidade.objects.filter(pk=unidade.pk).exists())
 

@@ -871,7 +871,6 @@
       chip.className = "status-badge " + dados[1];
     }
     if (aviso) aviso.hidden = status !== "DESATUALIZADA";
-    escreverTexto("[data-resumo-rota]", dados[2]);
     var rotuloBotao = editor.querySelector("[data-rota-calcular-rotulo]");
     if (rotuloBotao) rotuloBotao.textContent = rotaCalculada ? "Recalcular rota" : "Calcular rota";
   }
@@ -1074,7 +1073,7 @@
       mostrarErro("[data-bate-volta-erro]", "");
       limparTrechosDoBateVolta();
       renumerarTrechos();
-      if (resumo) resumo.textContent = "Preencha as datas, as saídas e o tempo de viagem: os trechos de cada dia nascem sozinhos.";
+      if (resumo) resumo.textContent = "";
     }
     mostrarErro("[data-bate-volta-erro]", "");
 
@@ -1114,7 +1113,7 @@
       aplicandoEstado = false;
     }
     if (resumo) {
-      resumo.textContent = dias.length + (dias.length === 1 ? " dia" : " dias") +
+      if (resumo) resumo.textContent = dias.length + (dias.length === 1 ? " dia" : " dias") +
         " · " + (dias.length * 2) + " trechos gerados (ida e volta por dia).";
     }
     renumerarTrechos();
@@ -1444,41 +1443,10 @@
   // Painel lateral: resumo e etapas
   // ------------------------------------------------------------------
 
-  function definirEtapa(numero, estado, concluida) {
-    var etapa = editor.querySelector('[data-etapa="' + numero + '"]');
-    if (!etapa) return;
-    etapa.classList.toggle("etapa-roteiro--concluida", Boolean(concluida));
-    etapa.classList.toggle("etapa-roteiro--ativa", !concluida && estado === "Em preenchimento");
-    var texto = etapa.querySelector("[data-etapa-estado]");
-    if (texto) texto.textContent = concluida ? "Concluída" : estado;
-  }
-
-  function atualizarPainelLateral() {
-    var pontos = paradas();
-    var trechos = trechosAtivos();
-    var temSede = Boolean(sede && sede.value);
-
-    escreverTexto("[data-resumo-sede]", temSede ? rotulos[sede.value] : "—");
-    escreverTexto("[data-resumo-destinos]", String(pontos.length));
-    escreverTexto("[data-resumo-trechos]", String(trechos.length));
-    escreverTexto("[data-resumo-distancia]",
-      rotaCalculada ? km(rotaCalculada.distancia_total_km) : "—");
-    escreverTexto("[data-resumo-tempo]",
-      rotaCalculada ? humano(rotaCalculada.duracao_total_min) : "—");
-    escreverTexto("[data-resumo-tipo]", tipoDestino || "—");
-    escreverTexto("[data-resumo-servidores]",
-      (servidoresInput && servidoresInput.value) || "1");
-
-    var origemPronta = temSede && pontos.length > 0;
-    var trechosComData = trechos.length > 0 && trechos.every(function (linha) {
-      return valorDe(linha, "saida_data") && valorDe(linha, "saida_hora");
-    });
-
-    definirEtapa(1, "Em preenchimento", origemPronta);
-    definirEtapa(2, origemPronta ? "Em preenchimento" : "Pendente", Boolean(rotaCalculada));
-    definirEtapa(3, trechos.length ? "Em preenchimento" : "Pendente", trechosComData);
-    definirEtapa(4, trechosComData ? "Em preenchimento" : "Pendente", temResultadoDiarias);
-  }
+  // A lateral de etapas saiu na Meta 2 de paridade: a origem não tem lateral
+  // no editor. A função continua existindo, vazia, porque é chamada de sete
+  // pontos do editor e some junto com eles na próxima limpeza.
+  function atualizarPainelLateral() {}
 
   // ------------------------------------------------------------------
   // Ligações

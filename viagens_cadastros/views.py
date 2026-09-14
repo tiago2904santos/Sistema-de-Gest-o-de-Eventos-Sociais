@@ -36,7 +36,6 @@ from .forms import (
     ServidorForm,
     TabelaDiariaForm,
     UnidadeForm,
-    UnidadeInclusaoForm,
     ViaturaForm,
 )
 from .models import Cargo, Combustivel, ConfiguracaoSistema, Servidor, TabelaDiaria, Unidade, Viatura
@@ -52,6 +51,9 @@ CADASTROS = {
     "servidores": {
         "model": Servidor,
         "form": ServidorForm,
+        "busca_rotulo": "Buscar servidor por nome, CPF, cargo ou unidade",
+        "vazio": "Nenhum servidor cadastrado ainda.",
+        "intro_modal": "Só o nome é obrigatório; documentos e lotação podem ser completados depois.",
         "titulo": "Servidores",
         "singular": "servidor",
         "novo": "Novo servidor",
@@ -64,29 +66,27 @@ CADASTROS = {
             {"rotulo": "Cargo", "attr": "cargo"},
             {"rotulo": "Unidade", "attr": "unidade"},
             {"rotulo": "CPF", "attr": "cpf_formatado"},
+            {"rotulo": "RG", "attr": "rg_formatado"},
             {"rotulo": "Telefone", "attr": "telefone_formatado"},
         ],
         "secoes": [
             {
-                "titulo": "Identificação funcional",
-                "subtitulo": "Nome e cargo que aparecerão nos documentos oficiais.",
-                "campos": ["nome", "cargo"],
-            },
-            {
-                "titulo": "Documentos pessoais",
-                "subtitulo": "CPF e RG são validados antes da gravação.",
-                "campos": ["cpf", "rg"],
-            },
-            {
-                "titulo": "Contato e lotação",
-                "subtitulo": "Dados para comunicação e vínculo administrativo.",
-                "campos": ["telefone", "unidade"],
+                "titulo": "Dados do servidor",
+                "subtitulo": "Identificação, documentos e lotação.",
+                "campos": ["nome", "cargo", "cpf", "rg", "telefone", "unidade"],
+                # Uma linha para identificação, uma para documentos e contato,
+                # e a lotação fechando o formulário.
+                "larguras": {"nome": "6", "cargo": "6", "cpf": "4", "rg": "4",
+                             "telefone": "4", "unidade": "12"},
             },
         ],
     },
     "viaturas": {
         "model": Viatura,
         "form": ViaturaForm,
+        "busca_rotulo": "Buscar viatura por placa, modelo, combustível ou condutor",
+        "vazio": "Nenhuma viatura cadastrada ainda.",
+        "intro_modal": "Só a placa é obrigatória; modelo, tipo e condutores podem ser completados depois.",
         "titulo": "Viaturas",
         "singular": "viatura",
         "novo": "Nova viatura",
@@ -103,22 +103,20 @@ CADASTROS = {
             {"rotulo": "Tipo", "attr": "get_tipo_display"},
             {"rotulo": "Combustível", "attr": "combustivel"},
             {"rotulo": "Unidade", "attr": "unidade"},
-            {"rotulo": "Condutores", "attr": "motoristas", "contagem": True},
+            {"rotulo": "Condutores", "attr": "motoristas", "nomes": True,
+             "vazio": "Nenhum motorista vinculado"},
         ],
         "secoes": [
             {
-                "titulo": "Identificação do veículo",
-                "subtitulo": "Placa, modelo e tipo operacional.",
-                "campos": ["placa", "modelo", "tipo"],
-            },
-            {
-                "titulo": "Abastecimento e lotação",
-                "subtitulo": "Referências usadas no planejamento da viagem.",
-                "campos": ["combustivel", "unidade"],
+                "titulo": "Dados da viatura",
+                "subtitulo": "Identificação, abastecimento e lotação.",
+                "campos": ["placa", "modelo", "tipo", "combustivel", "unidade"],
+                "larguras": {"placa": "4", "modelo": "5", "tipo": "3",
+                             "combustivel": "6", "unidade": "6"},
             },
             {
                 "titulo": "Condutores autorizados",
-                "subtitulo": "Escolha todos os servidores que podem dirigir esta viatura.",
+                "subtitulo": "Servidores que podem dirigir esta viatura.",
                 "campos": ["motoristas"],
             },
         ],
@@ -126,6 +124,9 @@ CADASTROS = {
     "unidades": {
         "model": Unidade,
         "form": UnidadeForm,
+        "busca_rotulo": "Buscar unidade por nome ou sigla",
+        "vazio": "Nenhuma unidade cadastrada ainda.",
+        "intro_modal": "Nome por extenso e sigla da unidade. A lotação é definida no cadastro do servidor.",
         "titulo": "Unidades",
         "singular": "unidade",
         "novo": "Nova unidade",
@@ -140,20 +141,19 @@ CADASTROS = {
         ],
         "secoes": [
             {
-                "titulo": "Identificação da unidade",
-                "subtitulo": "Nome por extenso e sigla institucional.",
+                "titulo": "Dados da unidade",
+                "subtitulo": "Nome por extenso e sigla institucional. A lotação é definida no cadastro do servidor.",
                 "campos": ["nome", "sigla"],
-            },
-            {
-                "titulo": "Servidores lotados",
-                "subtitulo": "Gerencie a lotação sem precisar editar cada pessoa separadamente.",
-                "campos": ["servidores"],
+                "larguras": {"nome": "8", "sigla": "4"},
             },
         ],
     },
     "cargos": {
         "model": Cargo,
         "form": CargoForm,
+        "busca_rotulo": "Buscar cargo pelo nome",
+        "vazio": "Nenhum cargo cadastrado ainda.",
+        "intro_modal": "Nome do cargo usado nos servidores e nos documentos.",
         "titulo": "Cargos",
         "singular": "cargo",
         "novo": "Novo cargo",
@@ -173,6 +173,9 @@ CADASTROS = {
     "combustiveis": {
         "model": Combustivel,
         "form": CombustivelForm,
+        "busca_rotulo": "Buscar combustível pelo nome",
+        "vazio": "Nenhum combustível cadastrado ainda.",
+        "intro_modal": "Nome do combustível usado nas viaturas.",
         "titulo": "Combustíveis",
         "singular": "combustível",
         "novo": "Novo combustível",
@@ -191,25 +194,96 @@ CADASTROS = {
     },
 }
 
+DIARIAS = {
+    "model": TabelaDiaria,
+    "form": TabelaDiariaForm,
+    "titulo": "Diárias",
+    "singular": "vigência",
+    "novo": "Nova vigência",
+    "rotulo_principal": "Faixa",
+    "colunas": [
+        {"rotulo": "Vigente a partir de"},
+        {"rotulo": "24 horas"},
+        {"rotulo": "15%"},
+        {"rotulo": "30%"},
+    ],
+    "busca_rotulo": "",
+    "vazio": "Nenhuma vigência cadastrada.",
+    "intro_modal": (
+        "Informe apenas o valor de 24 horas; 15% e 30% são calculados. A tabela "
+        "passa a valer hoje e roteiros com saída anterior mantêm o valor da época."
+    ),
+}
+
 DIARIA_SECOES = [
     {
-        "titulo": "Vigência e faixa",
-        "subtitulo": "Escolha onde o valor se aplica e a data em que passa a valer.",
-        "campos": ["faixa", "vigencia_inicio"],
-    },
-    {
-        "titulo": "Valor-base",
-        "subtitulo": "Os valores de 15% e 30% serão calculados automaticamente.",
-        "campos": ["valor_24h"],
+        "titulo": "Valor da diária",
+        "subtitulo": (
+            "A tabela passa a valer hoje; roteiros com saída anterior mantêm o "
+            "valor que valia na época."
+        ),
+        "campos": ["faixa", "valor_24h"],
+        "larguras": {"faixa": "6", "valor_24h": "6"},
         "preview_diaria": True,
     },
 ]
+
+DIARIAS["secoes"] = DIARIA_SECOES
 
 
 def _config(slug):
     if slug not in CADASTROS:
         raise Http404
     return CADASTROS[slug]
+
+
+# Trilha lateral dos cadastros de viagens, no mesmo formato da trilha de
+# Eventos: um item por tabela, com o total de registros. Cidades e Estados são
+# bases compartilhadas com Eventos e têm rota própria; diárias também.
+RAIL = [
+    ("servidores", "Servidores", "users"),
+    ("viaturas", "Viaturas", "truck"),
+    ("unidades", "Unidades", "landmark"),
+    ("cargos", "Cargos", "shield"),
+    ("combustiveis", "Combustíveis", "activity"),
+]
+
+
+# Rótulo de contagem de cada tabela: "5 registros cadastrados" não serve para
+# viatura nem unidade, que são femininas — singular e plural vêm escritos.
+CONTAGEM_CARTAO = {
+    "servidores": ("servidor cadastrado", "servidores cadastrados"),
+    "viaturas": ("viatura cadastrada", "viaturas cadastradas"),
+    "unidades": ("unidade cadastrada", "unidades cadastradas"),
+    "cargos": ("cargo cadastrado", "cargos cadastrados"),
+    "combustiveis": ("combustível cadastrado", "combustíveis cadastrados"),
+    "diarias": ("vigência cadastrada", "vigências cadastradas"),
+}
+
+
+def _palavras(total, slug):
+    """"servidores cadastrados" / "servidor cadastrado" — sem adivinhar plural."""
+    singular, plural = CONTAGEM_CARTAO[slug]
+    return singular if total == 1 else plural
+
+
+def _grupos():
+    grupos = [
+        {
+            "slug": slug,
+            "titulo": titulo,
+            "icone": icone,
+            "total": CADASTROS[slug]["model"].objects.count(),
+            "url": reverse("viagens_cadastros:lista", args=[slug]),
+        }
+        for slug, titulo, icone in RAIL
+    ]
+    grupos.append({
+        "slug": "diarias", "titulo": "Diárias", "icone": "chart",
+        "total": TabelaDiaria.objects.count(),
+        "url": reverse("viagens_cadastros:diarias"),
+    })
+    return grupos
 
 
 def _exigir_edicao(request):
@@ -250,6 +324,7 @@ def _campo_para_template(form, nome, *, detalhes_unidade=False):
         "step": attrs.get("step", ""),
         "min": attrs.get("min", ""),
         "mascara": attrs.get("data-mask", ""),
+        "diaria_base": attrs.get("data-diaria-base") == "true",
         "uppercase": attrs.get("data-uppercase") == "true",
     }
     if isinstance(campo, forms.ModelMultipleChoiceField):
@@ -307,7 +382,12 @@ def _secoes_para_template(form, definicoes):
         nomes = [nome for nome in definicao["campos"] if nome in form.fields]
         incluidos.update(nomes)
         secao = {**definicao, "numero": numero}
-        secao["campos"] = [_campo_para_template(form, nome) for nome in nomes]
+        larguras = definicao.get("larguras", {})
+        secao["campos"] = []
+        for nome in nomes:
+            campo = _campo_para_template(form, nome)
+            campo["largura"] = larguras.get(nome, "")
+            secao["campos"].append(campo)
         secoes.append(secao)
     restantes = [nome for nome in form.fields if nome not in incluidos]
     if restantes:
@@ -322,17 +402,13 @@ def _secoes_para_template(form, definicoes):
     return secoes
 
 
-def _campos_para_template(form):
-    """Compatibilidade para testes e consumidores que usam a lista plana."""
-    campos = []
-    for nome, campo in form.fields.items():
-        campos.append(_campo_para_template(form, nome))
-    return campos
+SITUACAO_CHIP = {"RASCUNHO": "st--rascunho", "COMPLETO": "st--ativo"}
 
 
-def _linhas_da_lista(config, pagina):
+def _linhas_da_lista(config, slug, pagina, *, tem_acoes=True, retorno="", padrao=False):
     """Achata os objetos em linhas prontas: o template não chama método."""
     attr_principal = config.get("attr_principal", "nome")
+    sufixo = "?" + urlencode({"next": retorno}) if retorno else ""
     linhas = []
     for objeto in pagina:
         celulas = []
@@ -341,96 +417,142 @@ def _linhas_da_lista(config, pagina):
             if coluna.get("contagem"):
                 valor = valor.count()
                 valor = f"{valor} vinculado{'s' if valor != 1 else ''}"
+            elif coluna.get("nomes"):
+                valor = ", ".join(str(item) for item in valor.all())
             elif callable(valor):
                 valor = valor()
             if coluna.get("booleano"):
                 valor = "Sim" if valor else "—"
-            celulas.append({"rotulo": coluna["rotulo"], "valor": valor or "—"})
+            celulas.append({"rotulo": coluna["rotulo"], "valor": valor or coluna.get("vazio", "—")})
+        principal = getattr(objeto, attr_principal, "") or "—"
+        status = getattr(objeto, "status", "")
         linhas.append(
             {
                 "objeto": objeto,
-                "principal": getattr(objeto, attr_principal, "") or "—",
+                "principal": principal,
+                "nome": str(principal),
                 "celulas": celulas,
-                "status": getattr(objeto, "status", ""),
-                "status_label": (
-                    objeto.get_status_display() if getattr(objeto, "status", "") else ""
+                "status": status,
+                "status_label": objeto.get_status_display() if status else "",
+                "badge": {"texto": objeto.get_status_display(), "classe": SITUACAO_CHIP.get(status, "")} if status else None,
+                "url_editar": reverse("viagens_cadastros:editar", args=[slug, objeto.pk]) + sufixo if tem_acoes else "",
+                "url_excluir": reverse("viagens_cadastros:excluir", args=[slug, objeto.pk]) + sufixo if tem_acoes else "",
+                "url_padrao": (
+                    reverse("viagens_cadastros:definir_padrao", args=[slug, objeto.pk])
+                    if padrao and tem_acoes and not objeto.is_padrao else ""
                 ),
             }
         )
     return linhas
 
 
+def _contexto_lista(request, slug, config, *, pagina, linhas, termo, parametros,
+                    tem_acoes, tem_filtros=False, tem_situacao=False,
+                    acoes_template="", retorno="", texto_vazio="", modal=None):
+    """Chassi comum das listas: trilha, resumo, busca, tabela e paginação."""
+    url_lista = reverse("viagens_cadastros:lista", args=[slug]) if slug in CADASTROS else request.path
+    url_limpar = url_lista + ("?" + urlencode({"next": retorno}) if retorno else "")
+    total = config["model"].objects.count()
+    ocultos = [{"nome": nome, "valor": valor} for nome, valor in parametros.items() if nome != "q"]
+    return {
+        "slug": slug,
+        "grupos": _grupos(),
+        "titulo": config["titulo"],
+        "singular": config["singular"],
+        "novo": config["novo"],
+        "total_registros": total,
+        "resumo": _palavras(total, slug),
+        "rotulo_principal": config.get("rotulo_principal", "Nome"),
+        "colunas": config["colunas"],
+        "linhas": linhas,
+        "pagina": pagina,
+        "paginas_visiveis": list(
+            pagina.paginator.get_elided_page_range(pagina.number, on_each_side=1, on_ends=1)
+        ),
+        "elipse": pagina.paginator.ELLIPSIS,
+        "querystring": urlencode(parametros),
+        "campos_ocultos": ocultos,
+        "termo": termo,
+        "tem_filtros": tem_filtros,
+        "tem_situacao": tem_situacao,
+        "tem_acoes": tem_acoes,
+        "acoes_template": acoes_template,
+        "placeholder_busca": config["busca_rotulo"],
+        "texto_vazio": texto_vazio or config["vazio"],
+        "pode_editar": tem_acoes,
+        "url_novo": (
+            reverse("viagens_cadastros:novo", args=[slug]) + ("?" + urlencode({"next": retorno}) if retorno else "")
+            if tem_acoes and slug in CADASTROS else ""
+        ),
+        "url_lista": url_lista,
+        "url_limpar": url_limpar,
+        "url_retorno": retorno,
+        "modal": modal,
+    }
+
+
 @acesso_ao_modulo
 def index(request):
-    modulos = [
-        {"titulo": "Servidores", "descricao": "Pessoas vinculadas aos fluxos.", "slug": "servidores", "iniciais": "SE"},
-        {"titulo": "Cargos", "descricao": "Cargos utilizados em servidores.", "slug": "cargos", "iniciais": "CA"},
-        {"titulo": "Viaturas", "descricao": "Veículos operacionais.", "slug": "viaturas", "iniciais": "VI"},
-        {"titulo": "Combustíveis", "descricao": "Tipos de combustível.", "slug": "combustiveis", "iniciais": "CO"},
-        {"titulo": "Unidades", "descricao": "Unidades administrativas.", "slug": "unidades", "iniciais": "UN"},
-        {"titulo": "Configurações do sistema", "descricao": "Dados institucionais e assinaturas por tipo de documento.",
-         "url": reverse("viagens_oficios:institucional"), "iniciais": "CO", "categoria": "Sistema"},
+    grupos = _grupos()
+    cartoes = [
+        dict(grupo, legenda=f'{grupo["total"]} {_palavras(grupo["total"], grupo["slug"])}')
+        for grupo in grupos
     ]
-    return render(request, "pages/viagens_cadastros/index.html", {"modulos": modulos})
+    return render(request, "pages/viagens_cadastros/index.html", {
+        "grupos": grupos,
+        "cartoes": cartoes,
+        "url_configuracoes": reverse("viagens_oficios:institucional"),
+    })
 
 
 @acesso_ao_modulo
+@require_http_methods(["GET"])
 def lista(request, slug):
     config = _config(slug)
+    modal = _modal_pedido(request, slug, config)
     if slug == "servidores":
-        return _lista_servidores(request)
+        return _lista_servidores(request, modal)
     if slug == "viaturas":
-        return _lista_viaturas(request)
-    if slug in {"cargos", "combustiveis", "unidades"}:
-        return _lista_catalogo(request, slug)
-    queryset = config["model"].objects.all()
-    if config.get("select_related"):
-        queryset = queryset.select_related(*config["select_related"])
-    if config.get("prefetch_related"):
-        queryset = queryset.prefetch_related(*config["prefetch_related"])
-    termo = request.GET.get("q", "").strip()
-    if termo:
-        filtro = Q()
-        for campo in config["busca"]:
-            filtro |= Q(**{campo: termo})
-        queryset = queryset.filter(filtro)
-    paginator = Paginator(queryset, ITENS_POR_PAGINA)
-    pagina = paginator.get_page(request.GET.get("pagina"))
-    parametros = {}
-    if termo:
-        parametros["q"] = termo
-    retorno = _retorno_cadastro(request)
-    if retorno:
-        parametros["next"] = retorno
-    url_novo = reverse("viagens_cadastros:novo", args=[slug])
-    if retorno:
-        url_novo += "?" + urlencode({"next": retorno})
-    return render(
-        request,
-        "pages/viagens_cadastros/lista.html",
-        {
-            "slug": slug,
-            "titulo": config["titulo"],
-            "singular": config["singular"],
-            "novo": config["novo"],
-            "url_novo": url_novo,
-            "pagina": pagina,
-            "linhas": _linhas_da_lista(config, pagina),
-            "colunas": config["colunas"],
-            "rotulo_principal": config.get("rotulo_principal", "Nome"),
-            "termo": termo,
-            "tem_filtros": bool(termo),
-            "pode_editar": pode_editar_cadastros(request.user),
-            "icone": config["icone"],
-            "descricao": config["descricao"],
-            "querystring": urlencode(parametros),
-            "paginas_visiveis": list(
-                paginator.get_elided_page_range(pagina.number, on_each_side=1, on_ends=1)
-            ),
-            "elipse": paginator.ELLIPSIS,
-            "url_retorno": _retorno_cadastro(request),
-        },
-    )
+        return _lista_viaturas(request, modal)
+    return _lista_catalogo(request, slug, modal)
+
+
+def _modal_pedido(request, slug, config):
+    """`?novo=1` ou `?editar=<pk>` abrem a lista já com o cadastro no modal."""
+    if not (request.GET.get("novo") or request.GET.get("editar")):
+        return None
+    if not pode_editar_cadastros(request.user):
+        return None
+    pk = request.GET.get("editar")
+    if pk and not pk.isdecimal():
+        raise Http404
+    instancia = get_object_or_404(config["model"], pk=pk) if pk else None
+    return _contexto_modal(slug, config, config["form"](instance=instancia), instancia)
+
+
+def _contexto_modal(slug, config, form, instancia, url_acao=""):
+    """Dados do formulário em modal — o mesmo desenho dos cadastros de Eventos.
+
+    `url_acao` cobre os cadastros com rota própria (estados); os do registro
+    resolvem sozinhos a rota de criar ou editar.
+    """
+    pk = instancia.pk if instancia else None
+    secoes = _secoes_para_template(form, config["secoes"])
+    erros_gerais = list(form.non_field_errors())
+    erros_campos = sum(1 for secao in secoes for campo in secao["campos"] if campo["erros"])
+    if not url_acao:
+        url_acao = (reverse("viagens_cadastros:editar", args=[slug, pk]) if pk
+                    else reverse("viagens_cadastros:novo", args=[slug]))
+    return {
+        "url_acao": url_acao,
+        "titulo": f"Editar {config['singular']}" if pk else config["novo"],
+        "intro": config["intro_modal"],
+        "singular": config["singular"],
+        "secoes": secoes,
+        "varias_secoes": len(secoes) > 1,
+        "erros_gerais": erros_gerais,
+        "erros_total": erros_campos + len(erros_gerais),
+    }
 
 
 def _retorno_cadastro(request):
@@ -454,14 +576,7 @@ def _url_catalogo(slug, retorno=""):
     return url + ("?" + urlencode({"next": retorno}) if retorno else "")
 
 
-def _iniciais_catalogo(nome):
-    partes = str(nome or "").split()
-    if not partes:
-        return "??"
-    return (partes[0][:2] if len(partes) == 1 else partes[0][0] + partes[-1][0]).upper()
-
-
-def _lista_viaturas(request):
+def _lista_viaturas(request, modal=None):
     termo = request.GET.get("q", "").strip()
     base = Viatura.objects.select_related("combustivel", "unidade").prefetch_related("motoristas").order_by("placa")
     if termo:
@@ -508,36 +623,37 @@ def _lista_viaturas(request):
         parametros["unidade"] = unidade.pk
     paginator = Paginator(queryset, 15)
     pagina = paginator.get_page(request.GET.get("page") or request.GET.get("pagina"))
-    linhas = []
-    for viatura in pagina:
+    config = _config("viaturas")
+    pode_editar = pode_editar_cadastros(request.user)
+    linhas = _linhas_da_lista(config, "viaturas", pagina, tem_acoes=pode_editar)
+    for linha in linhas:
+        # A identificação da viatura junta modelo e placa, como na origem.
+        viatura = linha["objeto"]
         modelo = viatura.modelo.strip()
-        titulo = f"{modelo} — {viatura.placa_formatada}" if modelo else viatura.placa_formatada
-        linhas.append({"objeto": viatura, "titulo": titulo,
-                       "iniciais": _iniciais_catalogo(modelo or viatura.placa_formatada),
-                       "motoristas": ", ".join(m.nome for m in viatura.motoristas.all()) or "Nenhum motorista vinculado"})
-    return render(request, "pages/viagens_cadastros/viaturas/lista.html", {
-        "viaturas": linhas, "termo": termo, "combustivel": combustivel, "unidade": unidade,
-        "filtros": filtros, "filtro_selecionado": next((f["valor"] for f in filtros if f["ativo"]), ""),
-        "pagina": pagina, "querystring": urlencode(parametros),
-        "paginas_visiveis": list(paginator.get_elided_page_range(pagina.number, on_each_side=1, on_ends=1)),
-        "elipse": paginator.ELLIPSIS, "pode_editar": pode_editar_cadastros(request.user),
+        linha["principal"] = linha["nome"] = (
+            f"{modelo} — {viatura.placa_formatada}" if modelo else viatura.placa_formatada
+        )
+    contexto = _contexto_lista(
+        request, "viaturas", config, pagina=pagina, linhas=linhas, termo=termo,
+        parametros=parametros, tem_acoes=pode_editar, tem_filtros=bool(termo or combustivel or unidade),
+        tem_situacao=True, modal=modal,
+    )
+    contexto.update({
+        "viaturas": linhas,
+        "rotulo_principal": "Viatura",
+        "combustivel": combustivel,
+        "unidade": unidade,
+        "filtros": filtros,
+        "filtro_rotulo": next((f["rotulo"] for f in filtros if f["ativo"]), "Todos"),
+        "filtro_selecionado": next((f["valor"] for f in filtros if f["ativo"]), ""),
     })
+    return render(request, "pages/viagens_cadastros/viaturas/lista.html", contexto)
 
 
-def _lista_catalogo(request, slug):
-    """Catálogos com campos explícitos e inclusão no próprio painel."""
+def _lista_catalogo(request, slug, modal=None):
+    """Catálogos de apoio: lista simples; criar e editar acontecem no modal."""
     config = _config(slug)
     retorno = _retorno_cadastro(request)
-    form_class = UnidadeInclusaoForm if slug == "unidades" else config["form"]
-    form = form_class(request.POST if request.method == "POST" else None)
-    if request.method == "POST":
-        _exigir_edicao(request)
-        if form.is_valid():
-            objeto = form.save()
-            _registrar_auditoria(request.user, "VIAGENS_CADASTRO_CRIADO", objeto)
-            criado = "criada" if slug == "unidades" else "criado"
-            messages.success(request, f"{config['singular'].capitalize()} {criado} com sucesso.")
-            return redirect(_url_catalogo(slug, retorno))
     termo = request.GET.get("q", "").strip()
     queryset = config["model"].objects.order_by("nome")
     if termo:
@@ -551,24 +667,25 @@ def _lista_catalogo(request, slug):
     parametros = {"q": termo} if termo else {}
     if retorno:
         parametros["next"] = retorno
-    return render(request, f"pages/viagens_cadastros/{slug}/lista.html", {
-        "slug": slug, "titulo": config["titulo"], "singular": config["singular"],
-        "form": form, "nome": _campo_para_template(form, "nome"),
-        "sigla": _campo_para_template(form, "sigla") if slug == "unidades" else None,
-        "tem_padrao": slug in {"cargos", "combustiveis"},
-        "texto_vazio": "Nenhuma unidade cadastrada ainda." if slug == "unidades" else f"Nenhum {config['singular']} cadastrado ainda.",
-        "termo": termo, "pagina": pagina,
-        "itens": [{"objeto": item, "iniciais": "CT" if slug == "combustiveis" else _iniciais_catalogo((item.sigla or item.nome) if slug == "unidades" else item.nome)} for item in pagina],
-        "pode_editar": pode_editar_cadastros(request.user),
-        "url_retorno": retorno, "url_lista": _url_catalogo(slug, retorno),
+    pode_editar = pode_editar_cadastros(request.user)
+    tem_padrao = slug in {"cargos", "combustiveis"}
+    linhas = _linhas_da_lista(config, slug, pagina, tem_acoes=pode_editar, retorno=retorno, padrao=tem_padrao)
+    contexto = _contexto_lista(
+        request, slug, config, pagina=pagina, linhas=linhas, termo=termo,
+        parametros=parametros, tem_acoes=pode_editar, tem_filtros=bool(termo),
+        retorno=retorno, modal=modal,
+        acoes_template="pages/viagens_cadastros/_acoes_com_padrao.html" if tem_padrao else "",
+    )
+    contexto.update({
+        "itens": linhas,
+        "tem_padrao": tem_padrao,
+        "url_lista": _url_catalogo(slug, retorno),
         "rotulo_retorno": ("Voltar à viatura" if slug == "combustiveis" else
                            "Voltar ao servidor" if slug == "unidades" else
                            "Voltar ao servidor" if retorno.startswith("/viagens/cadastros/servidores/") else
                            "Voltar ao formulário"),
-        "querystring": urlencode(parametros),
-        "paginas_visiveis": list(paginator.get_elided_page_range(pagina.number, on_each_side=1, on_ends=1)),
-        "elipse": paginator.ELLIPSIS,
     })
+    return render(request, "pages/viagens_cadastros/lista.html", contexto)
 
 
 @acesso_ao_modulo
@@ -588,7 +705,7 @@ def definir_padrao(request, slug, pk):
     return redirect(_url_catalogo(slug, _retorno_cadastro(request)))
 
 
-def _lista_servidores(request):
+def _lista_servidores(request, modal=None):
     termo = request.GET.get("q", "").strip()
     base = Servidor.objects.select_related("cargo", "unidade").order_by("nome")
     if termo:
@@ -622,28 +739,59 @@ def _lista_servidores(request):
         parametros["cargo"] = cargo.pk
     paginator = Paginator(queryset, 25)
     pagina = paginator.get_page(request.GET.get("page") or request.GET.get("pagina"))
-    return render(request, "pages/viagens_cadastros/servidores/lista.html", {
-        "pagina": pagina,
-        "servidores": [{"objeto": item, "iniciais": _iniciais_catalogo(item.nome)} for item in pagina],
-        "termo": termo, "cargo": cargo, "filtros_cargo": filtros if len(filtros) > 1 else [],
-        "opcoes_cargo": [{"valor": item["url"], "rotulo": f"{item['nome']} ({item['total']})"} for item in filtros] if len(filtros) > 1 else [],
-        "cargo_selecionado": next((item["url"] for item in filtros if item["ativo"]), ""),
-        "filtro_cargo_rotulo": next((f"{item['nome']} ({item['total']})" for item in filtros if item["ativo"]), "Filtrar servidores por cargo"),
-        "querystring": urlencode(parametros), "tem_filtros": bool(termo or cargo),
-        "paginas_visiveis": list(paginator.get_elided_page_range(pagina.number, on_each_side=1, on_ends=1)),
-        "elipse": paginator.ELLIPSIS, "pode_editar": pode_editar_cadastros(request.user),
-        "url_retorno": retorno,
+    config = _config("servidores")
+    pode_editar = pode_editar_cadastros(request.user)
+    linhas = _linhas_da_lista(config, "servidores", pagina, tem_acoes=pode_editar, retorno=retorno)
+    contexto = _contexto_lista(
+        request, "servidores", config, pagina=pagina, linhas=linhas, termo=termo,
+        parametros=parametros, tem_acoes=pode_editar, tem_filtros=bool(termo or cargo),
+        tem_situacao=True, retorno=retorno, modal=modal,
+    )
+    contexto.update({
+        "servidores": linhas,
+        "cargo": cargo,
+        "cargo_valor": str(cargo.pk) if cargo else "",
+        "filtros_cargo": filtros if len(filtros) > 1 else [],
+        # O controle de filtro da barra reescreve a querystring pelo id do cargo.
+        "opcoes_cargo": [
+            {"valor": item.pk, "rotulo": f"{item.nome} ({base.filter(cargo=item).count()})"}
+            for item in cargos
+        ] if len(filtros) > 1 else [],
+        "rotulo_retorno": "Voltar à viatura",
     })
+    return render(request, "pages/viagens_cadastros/servidores/lista.html", contexto)
+
+
+MENSAGEM_RASCUNHO = {
+    "servidores": "Servidor salvo como rascunho. Complete cargo e CPF quando possível.",
+    "viaturas": "Viatura salva como rascunho. Complete modelo, combustível e tipo quando possível.",
+}
+
+
+def _mensagem_salvo(slug, config, objeto, editando):
+    """Rascunho avisa o que falta; o resto confirma a gravação."""
+    if getattr(objeto, "status", "") == "RASCUNHO" and slug in MENSAGEM_RASCUNHO:
+        return MENSAGEM_RASCUNHO[slug]
+    singular = config["singular"].capitalize()
+    concordancia = "a" if slug in {"viaturas", "unidades"} else "o"
+    acao = "atualizad" if editando else "criad"
+    return f"{singular} {acao}{concordancia} com sucesso."
 
 
 @acesso_ao_modulo
 def editar(request, slug, pk=None):
     _exigir_edicao(request)
     config = _config(slug)
-    if slug in {"cargos", "combustiveis"} and pk is None:
-        return _lista_catalogo(request, slug)
     instancia = get_object_or_404(config["model"], pk=pk) if pk else None
     FormClass = config["form"]
+    via_modal = request.headers.get("X-Cadastro-Modal") == "1"
+    if request.method == "GET" and not via_modal:
+        # O formulário vive na listagem: sem JS, a lista abre já com o modal.
+        parametros = request.GET.copy()
+        parametros.pop("novo", None)
+        parametros.pop("editar", None)
+        parametros["editar" if pk else "novo"] = str(pk) if pk else "1"
+        return redirect(f"{reverse('viagens_cadastros:lista', args=[slug])}?{parametros.urlencode()}")
     if request.method == "POST":
         form = FormClass(request.POST, instance=instancia)
         if form.is_valid():
@@ -653,107 +801,21 @@ def editar(request, slug, pk=None):
                 "VIAGENS_CADASTRO_ATUALIZADO" if pk else "VIAGENS_CADASTRO_CRIADO",
                 objeto,
             )
-            if slug == "servidores":
-                mensagem = (
-                    "Servidor salvo como rascunho. Complete cargo e CPF quando possível."
-                    if objeto.status == Servidor.Status.RASCUNHO else
-                    "Servidor atualizado com sucesso." if pk else "Servidor criado com sucesso."
-                )
-                messages.success(request, mensagem)
-            elif slug == "viaturas":
-                mensagem = (
-                    "Viatura salva como rascunho. Complete modelo, combustível e tipo quando possível."
-                    if objeto.status == Viatura.Status.RASCUNHO else
-                    "Viatura atualizada com sucesso." if pk else "Viatura criada com sucesso."
-                )
-                messages.success(request, mensagem)
-            else:
-                messages.success(request, f"{config['titulo']}: registro salvo com sucesso.")
-            retorno = "" if pk and slug in {"servidores", "viaturas"} else _retorno_cadastro(request)
+            messages.success(request, _mensagem_salvo(slug, config, objeto, bool(pk)))
+            if via_modal:
+                return JsonResponse({"ok": True})
+            retorno = _retorno_cadastro(request)
             return redirect(retorno) if retorno else redirect("viagens_cadastros:lista", slug=slug)
-        if slug not in {"viaturas", "servidores"}:
-            messages.error(request, "Corrija os campos destacados para continuar.")
     else:
         form = FormClass(instance=instancia)
-    if slug == "viaturas":
-        retorno = ("" if instancia else _retorno_cadastro(request)) or reverse("viagens_cadastros:lista", args=[slug])
-        selecionados = {str(pk) for pk in (form["motoristas"].value() or [])}
-        pessoas = []
-        for servidor in form.fields["motoristas"].queryset:
-            cargo = servidor.cargo.nome if servidor.cargo else ""
-            unidade = (servidor.unidade.sigla or servidor.unidade.nome) if servidor.unidade else ""
-            pessoas.append({"valor": str(servidor.pk), "nome": servidor.nome,
-                            "detalhes": " • ".join(v for v in [cargo, unidade] if v),
-                            "busca": _texto_busca(" ".join(v for v in [
-                                servidor.nome, cargo,
-                                servidor.cpf_formatado if servidor.cpf else "",
-                                servidor.rg_formatado if servidor.rg or servidor.sem_rg else "",
-                                unidade, servidor.unidade.nome if servidor.unidade else "",
-                            ] if v)),
-                            "iniciais": _iniciais_catalogo(servidor.nome),
-                            "rascunho": servidor.status == Servidor.Status.RASCUNHO,
-                            "selecionado": str(servidor.pk) in selecionados})
-        return render(request, "pages/viagens_cadastros/viaturas/form.html", {
-            "form": form, "instancia": instancia, "url_voltar": retorno,
-            "placa": _campo_para_template(form, "placa"),
-            "modelo": _campo_para_template(form, "modelo"),
-            "tipo": _campo_para_template(form, "tipo"),
-            "combustivel": _campo_para_template(form, "combustivel"),
-            "unidade": _campo_para_template(form, "unidade", detalhes_unidade=True),
-            "pessoas": pessoas, "motoristas_selecionados": bool(selecionados),
-            "url_combustiveis": _url_catalogo("combustiveis", request.path),
-            "url_unidades": _url_catalogo("unidades", request.path),
-            "url_servidores": _url_catalogo("servidores", request.path),
-            # Mantido para consumidores anteriores; o formulário não usa laço de campos.
-            "campos": _campos_para_template(form),
-        })
+    modal = _contexto_modal(slug, config, form, instancia)
+    if via_modal:
+        return render(request, "pages/viagens_cadastros/_modal_form.html", {"dados": modal})
     if slug == "servidores":
-        propria_url = request.path
-        return render(request, "pages/viagens_cadastros/servidores/form.html", {
-            "form": form, "instancia": instancia,
-            "nome": _campo_para_template(form, "nome"),
-            "cargo": _campo_para_template(form, "cargo"),
-            "cpf": _campo_para_template(form, "cpf"),
-            "rg": _campo_para_template(form, "rg"),
-            "telefone": _campo_para_template(form, "telefone"),
-            "unidade": _campo_para_template(form, "unidade", detalhes_unidade=True),
-            "url_voltar": ("" if instancia else _retorno_cadastro(request)) or reverse("viagens_cadastros:lista", args=[slug]),
-            "url_cargos": reverse("viagens_cadastros:lista", args=["cargos"]) + "?" + urlencode({"next": propria_url}),
-            "url_unidades": reverse("viagens_cadastros:lista", args=["unidades"]) + "?" + urlencode({"next": propria_url}),
-        })
-    return render(
-        request,
-        "pages/viagens_cadastros/form.html",
-        {
-            "slug": slug,
-            "url_retorno": _retorno_cadastro(request),
-            "titulo": config["titulo"],
-            "instancia": instancia,
-            "campos": _campos_para_template(form),
-            "secoes": _secoes_para_template(form, config["secoes"]),
-            "erros_gerais": form.non_field_errors(),
-            "tem_erros": bool(form.errors),
-            "cartao_titulo": f"Editar {config['singular']}" if pk else config["novo"],
-            "cartao_intro": (
-                f"Informe os dados do cadastro de {config['singular']} usados "
-                "nas viagens e nos documentos."
-            ),
-            "exemplo": config["exemplo"],
-            "url_voltar": reverse("viagens_cadastros:lista", args=[slug]) + ("?" + urlencode({"next": _retorno_cadastro(request)}) if _retorno_cadastro(request) else ""),
-            "subtitulo_pagina": (
-                "Atualize os dados deste registro"
-                if pk
-                else "Cadastre um registro do domínio de viagens"
-            ),
-            "breadcrumb": [
-                {
-                    "label": config["titulo"],
-                    "url": reverse("viagens_cadastros:lista", args=[slug]),
-                },
-                {"label": "Editar registro" if pk else "Novo registro"},
-            ],
-        },
-    )
+        return _lista_servidores(request, modal)
+    if slug == "viaturas":
+        return _lista_viaturas(request, modal)
+    return _lista_catalogo(request, slug, modal)
 
 
 def _dependencias_protegidas(objeto):
@@ -849,9 +911,63 @@ def _reais(valor):
 
 
 @acesso_ao_modulo
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["GET"])
 def diarias(request):
-    return _tela_diarias(request)
+    """Histórico de vigências; criar e editar acontecem no modal da lista."""
+    return _render_diarias(request, _modal_diaria(request))
+
+
+def _modal_diaria(request):
+    if not (request.GET.get("novo") or request.GET.get("editar")):
+        return None
+    if not pode_editar_diarias(request.user):
+        return None
+    pk = request.GET.get("editar")
+    if pk and not pk.isdecimal():
+        raise Http404
+    instancia = get_object_or_404(TabelaDiaria, pk=pk) if pk else None
+    return _contexto_modal_diaria(TabelaDiariaForm(instance=instancia), instancia)
+
+
+def _contexto_modal_diaria(form, instancia):
+    url = (reverse("viagens_cadastros:diaria_editar", args=[instancia.pk]) if instancia
+           else reverse("viagens_cadastros:diaria_nova"))
+    return _contexto_modal("diarias", DIARIAS, form, instancia, url)
+
+
+def _render_diarias(request, modal=None):
+    pode_editar = pode_editar_diarias(request.user)
+    paginator = Paginator(TabelaDiaria.objects.all(), ITENS_POR_PAGINA)
+    pagina = paginator.get_page(request.GET.get("page") or request.GET.get("pagina"))
+    linhas = [
+        {
+            "objeto": tabela,
+            "principal": tabela.get_faixa_display(),
+            "nome": f"{tabela.get_faixa_display()} a partir de {tabela.vigencia_inicio:%d/%m/%Y}",
+            "celulas": [
+                {"rotulo": "Vigente a partir de", "valor": f"{tabela.vigencia_inicio:%d/%m/%Y}"},
+                {"rotulo": "24 horas", "valor": f"R$ {_reais(tabela.valor_24h)}", "classe": "c-num"},
+                {"rotulo": "15%", "valor": f"R$ {_reais(tabela.valor_15)}", "classe": "c-num"},
+                {"rotulo": "30%", "valor": f"R$ {_reais(tabela.valor_30)}", "classe": "c-num"},
+            ],
+            "url_editar": reverse("viagens_cadastros:diaria_editar", args=[tabela.pk]) if pode_editar else "",
+            "url_excluir": reverse("viagens_cadastros:diaria_excluir", args=[tabela.pk]) if pode_editar else "",
+        }
+        for tabela in pagina
+    ]
+    contexto = _contexto_lista(
+        request, "diarias", DIARIAS, pagina=pagina, linhas=linhas, termo="",
+        parametros={}, tem_acoes=pode_editar, modal=modal,
+    )
+    contexto.update({
+        "sem_busca": True,
+        "url_novo": reverse("viagens_cadastros:diaria_nova") if pode_editar else "",
+        "aviso": "" if pode_editar else (
+            "Os valores de diária vêm de norma externa e valem para todas as unidades. "
+            "Só os perfis autorizados para gestão de diárias podem alterá-los."
+        ),
+    })
+    return render(request, "pages/viagens_cadastros/lista.html", contexto)
 
 
 @acesso_ao_modulo
@@ -860,37 +976,33 @@ def diaria_editar(request, pk=None):
     if not pode_editar_diarias(request.user):
         raise PermissionDenied
     instancia = get_object_or_404(TabelaDiaria, pk=pk) if pk else None
-    return _tela_diarias(request, instancia=instancia)
-
-
-def _tela_diarias(request, *, instancia=None):
-    pode_editar = pode_editar_diarias(request.user)
-    if request.method == "POST" and not pode_editar:
-        raise PermissionDenied
-    form = TabelaDiariaForm(request.POST if request.method == "POST" else None, instance=instancia)
-    if request.method == "POST" and form.is_valid():
-        tabela = form.save()
-        _registrar_auditoria(
-            request.user,
-            "VIAGENS_DIARIA_ATUALIZADA" if instancia else "VIAGENS_DIARIA_CRIADA",
-            tabela,
-        )
-        messages.success(
-            request,
-            f"Valores de {tabela.get_faixa_display()} valendo a partir de "
-            f"{tabela.vigencia_inicio:%d/%m/%Y}. Roteiros anteriores mantêm o valor da época.",
-        )
-        return redirect("viagens_cadastros:diarias")
-    return render(request, "pages/viagens_cadastros/diarias.html", {
-        "form": form, "instancia": instancia,
-        "tabelas": TabelaDiaria.objects.all(), "pode_editar": pode_editar,
-        "faixa": _campo_para_template(form, "faixa"),
-        "vigencia": _campo_para_template(form, "vigencia_inicio"),
-        "valor_24h": _campo_para_template(form, "valor_24h"),
-        "url_voltar": reverse("viagens_cadastros:diarias") if instancia else "/",
-        "url_salvar": (reverse("viagens_cadastros:diaria_editar", args=[instancia.pk]) if instancia
-                       else reverse("viagens_cadastros:diarias")),
-    })
+    via_modal = request.headers.get("X-Cadastro-Modal") == "1"
+    if request.method == "GET" and not via_modal:
+        destino = reverse("viagens_cadastros:diarias")
+        return redirect(f"{destino}?{'editar=' + str(pk) if pk else 'novo=1'}")
+    if request.method == "POST":
+        form = TabelaDiariaForm(request.POST, instance=instancia)
+        if form.is_valid():
+            tabela = form.save()
+            _registrar_auditoria(
+                request.user,
+                "VIAGENS_DIARIA_ATUALIZADA" if instancia else "VIAGENS_DIARIA_CRIADA",
+                tabela,
+            )
+            messages.success(
+                request,
+                f"Valores de {tabela.get_faixa_display()} valendo a partir de "
+                f"{tabela.vigencia_inicio:%d/%m/%Y}. Roteiros anteriores mantêm o valor da época.",
+            )
+            if via_modal:
+                return JsonResponse({"ok": True})
+            return redirect("viagens_cadastros:diarias")
+    else:
+        form = TabelaDiariaForm(instance=instancia)
+    modal = _contexto_modal_diaria(form, instancia)
+    if via_modal:
+        return render(request, "pages/viagens_cadastros/_modal_form.html", {"dados": modal})
+    return _render_diarias(request, modal)
 
 
 @acesso_ao_modulo
@@ -901,17 +1013,7 @@ def diaria_excluir(request, pk):
     tabela = get_object_or_404(TabelaDiaria, pk=pk)
     voltar = reverse("viagens_cadastros:diarias")
     if request.method == "GET":
-        return render(
-            request,
-            "pages/viagens_cadastros/confirmar_exclusao.html",
-            _contexto_exclusao(
-                objeto=tabela,
-                titulo="Tabela de diárias",
-                voltar=voltar,
-                dependencias=[],
-                diaria=True,
-            ),
-        )
+        return redirect(voltar)
     descricao = f"{tabela._meta.verbose_name} '{tabela}' (id {tabela.pk})"
     tabela.delete()
     LogAuditoria.objects.create(

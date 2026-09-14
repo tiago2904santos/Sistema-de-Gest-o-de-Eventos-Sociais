@@ -899,6 +899,9 @@
     alvo.querySelectorAll("[data-custom-date]").forEach(aprimorarData);
     alvo.querySelectorAll("[data-custom-date-multi]").forEach(aprimorarDataMultipla);
     alvo.querySelectorAll("[data-depends-on]").forEach(ligarCascata);
+    // Scripts de módulo (máscaras e seletores dos cadastros de viagens) ligam
+    // o que é deles no mesmo trecho recém-inserido.
+    document.dispatchEvent(new CustomEvent("ds:aprimorar", { detail: { raiz: alvo } }));
   };
 
   document.querySelectorAll("[data-depends-on]").forEach(ligarCascata);
@@ -2026,24 +2029,5 @@
   atualizar();
 })();
 
-// Tabelas largas: informa a continuidade somente quando existe conteúdo fora
-// da área visível. A dica desaparece assim que o usuário chega ao fim.
-(function () {
-  var wrappers = document.querySelectorAll(".tabela-wrapper");
-  if (!wrappers.length) return;
-  wrappers.forEach(function (wrapper) {
-    var dica = document.createElement("p");
-    dica.className = "tabela-scroll-hint";
-    dica.textContent = "Deslize a tabela para ver mais →";
-    dica.setAttribute("aria-live", "polite");
-    wrapper.insertAdjacentElement("beforebegin", dica);
-    function atualizar() {
-      var temOverflow = wrapper.scrollWidth > wrapper.clientWidth + 2;
-      var chegouAoFim = wrapper.scrollLeft + wrapper.clientWidth >= wrapper.scrollWidth - 2;
-      dica.hidden = !temOverflow || chegouAoFim;
-    }
-    wrapper.addEventListener("scroll", atualizar, { passive: true });
-    window.addEventListener("resize", atualizar);
-    atualizar();
-  });
-})();
+// A dica de rolagem lateral foi retirada em 14/09/2026: tabela que não cabe
+// se conserta na largura, não com um aviso pedindo para arrastar.
