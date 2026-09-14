@@ -1,10 +1,69 @@
 {% extends "viagens_prestacoes/base.html" %}{% load l10n %}
+{% comment %}
+  Etapa 1 — Diário de bordo: o motorista e a viatura do diário (com a troca), o
+  roteiro realizado (ajustável), a quilometragem e o abastecimento de cada
+  deslocamento, o documento (PDF/planilha) e a assinatura eletrônica do
+  motorista. Os campos gravam sozinhos; "Salvar e continuar" leva ao RT.
+{% endcomment %}
+{% block pc_acoes_topo %}
+  <a class="btn--secundaria" href="{{ preview_inline_url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}Visualizar PDF</a>
+  <a class="btn--secundaria" href="{{ preview_xlsx_url }}">{% include "components/icon.html" with nome="download" %}Baixar planilha</a>
+{% endblock %}
+{% block pc_avisos %}
+  {% if diaria_info.alterada %}
+    <div class="aviso aviso--callout" role="status"><div class="aviso__txt">{% include "components/icon.html" with nome="info" %}<div class="aviso__corpo"><b>Diárias recalculadas pelo roteiro realizado</b><p>Ofício: {{ diaria_info.valor_oficio_label }} ({{ diaria_info.qtd_oficio }}) · ajustado: {{ diaria_info.valor_ajustado_label }} ({{ diaria_info.qtd_ajustado }}).</p></div></div></div>
+  {% endif %}
+{% endblock %}
 {% block prestacao_conteudo %}
-<div class="v32-barra v32-bloco"><a href="{{ editar_roteiro_url }}">Ajustar roteiro realizado</a><a href="{{ editar_motorista_url }}">Motorista e viatura</a><a href="{{ preview_pdf_url }}" target="_blank">Visualizar PDF</a><a href="{{ preview_xlsx_url }}">Baixar planilha</a></div>
-<p>Preencha a quilometragem de cada deslocamento. Os horários são os do roteiro realizado.</p>
-<form method="post" id="form-prestacao">{% csrf_token %}{{ formset.management_form }}
-{% for trecho in trechos %}<section class="section-card v32-bloco"><header class="section-card__cabecalho"><h2 class="section-card__titulo">{{ trecho.display.ordem }}. {{ trecho.display.rota }}</h2></header><div class="section-card__corpo"><p>{{ trecho.display.saida.data }} {{ trecho.display.saida.hora }} → {{ trecho.display.chegada.data }} {{ trecho.display.chegada.hora }}</p>
-{% for erro in trecho.form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-<input type="hidden" name="{{ trecho.form.id.html_name }}" value="{{ trecho.form.instance.pk|unlocalize }}">
-<div class="v32-form-grid viagem-campos">{% include "pages/viagens_oficios/_campos.html" with campos=trecho.campos %}</div></div></section>{% empty %}<p>O roteiro ainda não possui trechos. Use “Ajustar roteiro realizado” para registrá-los.</p>{% endfor %}</form>
-{% include "viagens_prestacoes/assinatura/_card.html" %}{% endblock %}{% block prestacao_acoes %}<div class="viagem-acoes"><a class="btn--secundaria" href="{% url 'viagens_prestacoes:index' %}">Voltar</a><button class="btn-primaria" form="form-prestacao">Salvar e continuar para o RT</button></div>{% endblock %}
+  <section class="reg" id="motorista">
+    <h2 class="reg__t">{% include "components/icon.html" with nome="volante" %}Motorista e viatura{% if motorista_resumo.alterado or viatura_resumo.alterada %}<span class="st st--aguardando">Trocados neste diário</span>{% endif %}</h2>
+    <dl class="gc sol-detalhe__campos">
+      <div class="f"><dt>Motorista</dt><dd>{{ motorista_resumo.nome }}{% if motorista_resumo.cpf %}<small>CPF {{ motorista_resumo.cpf }}</small>{% endif %}<small>{{ motorista_resumo.origem }}</small></dd></div>
+      <div class="f"><dt>Viatura</dt><dd>{{ viatura_resumo.viatura }}{% if viatura_resumo.placa %}<small>Placa {{ viatura_resumo.placa }}{% if viatura_resumo.combustivel %} · {{ viatura_resumo.combustivel }}{% endif %}</small>{% endif %}{% if viatura_resumo.alterada %}<small>Viatura trocada neste diário</small>{% endif %}</dd></div>
+    </dl>
+    <div class="pc-acoes-linha">
+      <a class="btn--secundaria" href="{{ editar_motorista_url }}">{% include "components/icon.html" with nome="pencil" %}Trocar motorista / viatura</a>
+      <a class="btn--secundaria" href="{{ editar_roteiro_url }}">{% include "components/icon.html" with nome="map-pin" %}Ajustar roteiro realizado</a>
+    </div>
+    {% if alteracoes_roteiro %}<ul class="pc-alteracoes">{% for frase in alteracoes_roteiro %}<li>{{ frase }}</li>{% endfor %}</ul>{% endif %}
+  </section>
+
+  <section class="reg" id="deslocamentos">
+    <h2 class="reg__t">{% include "components/icon.html" with nome="truck" %}Deslocamentos <em>{{ trechos|length }} trecho{{ trechos|length|pluralize }}</em></h2>
+    <p class="pc-nota">Preencha a quilometragem de cada deslocamento e se houve necessidade de abastecimento. Os horários são os do roteiro realizado.</p>
+    <form method="post" id="form-prestacao" data-autosave data-autosave-url="{{ autosave_url }}" data-autosave-model="diario_bordo" data-autosave-id="{{ diario.pk|unlocalize }}">
+      {% csrf_token %}{{ formset.management_form }}
+      <span class="pc-autosave pc-autosave--form" data-autosave-estado aria-live="polite"></span>
+      {% if trechos %}
+        <div class="dt-w pc-trechos">
+          <table class="dt">
+            <thead><tr><th scope="col">#</th><th scope="col">Deslocamento</th><th scope="col">Saída</th><th scope="col">Chegada</th><th scope="col">Km inicial</th><th scope="col">Km final</th><th scope="col">Abastecimento</th></tr></thead>
+            <tbody>
+              {% for trecho in trechos %}
+                <tr>
+                  <td class="pc-trecho__n">{{ trecho.display.ordem }}</td>
+                  <td class="pc-trecho__rota"><b>{{ trecho.display.origem }}</b> → <b>{{ trecho.display.destino }}</b>{% for erro in trecho.form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}<input type="hidden" name="{{ trecho.form.id.html_name }}" value="{{ trecho.form.instance.pk|unlocalize }}"></td>
+                  <td class="pc-trecho__hora">{{ trecho.display.saida.data }}<small>{{ trecho.display.saida.hora }}</small></td>
+                  <td class="pc-trecho__hora">{{ trecho.display.chegada.data }}<small>{{ trecho.display.chegada.hora }}</small></td>
+                  <td class="pc-trecho__km">{% include "components/input.html" with name=trecho.form.km_inicial.html_name label="Km inicial" rotulo_oculto=True valor=trecho.form.km_inicial.value placeholder="0" inputmode="numeric" autocomplete="off" erros=trecho.form.km_inicial.errors %}</td>
+                  <td class="pc-trecho__km">{% include "components/input.html" with name=trecho.form.km_final.html_name label="Km final" rotulo_oculto=True valor=trecho.form.km_final.value placeholder="0" inputmode="numeric" autocomplete="off" erros=trecho.form.km_final.errors %}</td>
+                  <td class="pc-trecho__abast">{% include "components/select.html" with name=trecho.form.abastecimento.html_name label="Necessidade de abastecimento" rotulo_oculto=True opcoes=opcoes_abastecimento selecionado=trecho.form.abastecimento.value erros=trecho.form.abastecimento.errors %}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="texto-vazio">O roteiro ainda não possui trechos. Use “Ajustar roteiro realizado” para registrá-los.</p>
+      {% endif %}
+    </form>
+  </section>
+
+  {% include "viagens_prestacoes/assinatura/_card.html" %}
+{% endblock %}
+{% block prestacao_acoes %}
+  <footer class="editor-roteiro__rodape pc-fluxo__rodape">
+    <a class="btn--secundaria" href="{% url 'viagens_prestacoes:index' %}">Voltar</a>
+    <button type="submit" class="btn-primaria" form="form-prestacao">Salvar e continuar para o RT</button>
+  </footer>
+{% endblock %}

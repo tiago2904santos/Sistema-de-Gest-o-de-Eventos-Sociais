@@ -186,6 +186,30 @@ A foto da origem só mostra dois selos: "Realizado" (período no passado) e "Sem
 
 > Sua resposta: ______
 
+### P25 — Conferência das etapas e menus de prestações contra a origem (Meta 6)
+
+A lista de prestações foi conferida com a árvore acessível da Meta 0. As quatro etapas por servidor (diário, motorista/viatura, relatório técnico, documentos, PDF final), o conteúdo dos menus "Escolher documentos para baixar" e "Anexar documentos assinados", os modelos de texto e as páginas públicas de assinatura não têm fotografia da origem neste repositório e foram reconstruídos dos formulários, serviços e rotas portados na F5. Abra cada etapa lá e aqui e aponte o que divergir.
+
+**Recomendação: conferir.** Capturas em `imagens/meta6-prestacao-*-destino.png`.
+
+> Sua resposta: ______
+
+### P26 — Texto do aviso de liberação de diárias por WhatsApp
+
+A origem monta a mensagem do botão "Enviar aviso de liberação de diárias por WhatsApp" num template que não está neste repositório. Aqui a mensagem diz: "Olá, <nome>! As diárias do ofício <N> (<destino, de período>) foram liberadas. Valor: <diária>. Liberação em <data>. Prazo para saque: <data>. <unidade>", com o telefone do servidor quando cadastrado.
+
+**Recomendação: enviar o texto da origem** para trocar em `viagens_prestacoes/cartoes.py::mensagem_whatsapp`, se for diferente.
+
+> Sua resposta: ______
+
+### P27 — Situação da lista de prestações: combobox único ou filas combináveis
+
+A origem filtra a situação por um combobox único ("Filtrar por situação"). Aqui a lista usa as quatro filas combináveis com contagem (Não liberadas / Liberadas / Arquivados / Finalizados), como as listas de roteiros, ofícios e termos, e continua aceitando `?aba=`.
+
+**Recomendação: manter as filas combináveis**, pela coerência com as outras listas do módulo.
+
+> Sua resposta: ______
+
 ---
 
 ## Resumo das recomendações
@@ -212,3 +236,6 @@ A foto da origem só mostra dois selos: "Realizado" (período no passado) e "Sem
 | P22 | Conferir a tela de justificativas contra a origem | Conferir |
 | P23 | Conferir o cadastro e os downloads de termos contra a origem | Conferir |
 | P24 | Selos do termo além de "Realizado" e "Sem período" | Manter os cinco |
+| P25 | Conferir as etapas e menus de prestações contra a origem | Conferir |
+| P26 | Texto do aviso de WhatsApp | Enviar o texto da origem |
+| P27 | Situação da lista de prestações | Manter as filas combináveis |

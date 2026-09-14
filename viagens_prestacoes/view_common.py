@@ -139,7 +139,18 @@ _ROTULO_DA_ETAPA = {'diario': 'Diário de Bordo', 'rt': 'Relatório Técnico', '
 
 def contexto_do_fluxo(ps, atual: str, *, back_label=None, back_url=None) -> dict:
     """Cabeçalho e stepper das telas de fluxo da prestação, num lugar só."""
-    return {'wizard_page_steps': _build_prestacao_steps(ps, atual), 'flow_eyebrow': 'PRESTAÇÕES', 'flow_icon_label': 'PC', 'flow_module_label': 'Prestações de Contas', 'flow_back_label': back_label or 'Voltar à lista', 'flow_back_url': back_url or reverse('viagens_prestacoes:index'), 'flow_status_label': _ROTULO_DA_ETAPA[atual], 'flow_status_variant': 'draft'}
+    return {'wizard_page_steps': _build_prestacao_steps(ps, atual), 'flow_eyebrow': 'PRESTAÇÕES', 'flow_icon_label': 'PC', 'flow_module_label': 'Prestações de Contas', 'flow_back_label': back_label or 'Voltar à lista', 'flow_back_url': back_url or reverse('viagens_prestacoes:index'), 'flow_status_label': _ROTULO_DA_ETAPA[atual], 'flow_status_variant': 'draft',
+            # A equipe da lateral troca de servidor sem sair da etapa: é a navegação por servidor da origem.
+            'flow_view_name': _VIEW_DA_ETAPA[atual], 'flow_etapa': atual, 'flow_numero': [chave for chave, *_ in _ETAPAS].index(atual) + 1}
+
+
+_ETAPAS = [('diario', 'Etapa 1', 'Diário de Bordo'), ('rt', 'Etapa 2', 'Relatório Técnico'), ('documentos', 'Etapa 3', 'Documentos'), ('consolidado', 'Etapa 4', 'PDF Final')]
+_VIEW_DA_ETAPA = {'diario': 'viagens_prestacoes:diario_servidor', 'rt': 'viagens_prestacoes:rt_servidor', 'documentos': 'viagens_prestacoes:documentos_servidor', 'consolidado': 'viagens_prestacoes:consolidado_servidor'}
+
+
+def opcoes(choices):
+    """`[(valor, rótulo)]` → o formato do `components/select.html`."""
+    return [{'valor': str(valor), 'rotulo': str(rotulo)} for valor, rotulo in choices if valor not in (None, '')]
 
 def _autosave_version(obj, field_name='atualizado_em') -> int:
     obj.refresh_from_db()

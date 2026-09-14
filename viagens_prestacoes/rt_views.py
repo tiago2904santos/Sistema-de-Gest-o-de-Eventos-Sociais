@@ -101,6 +101,21 @@ def rt_servidor(request, ps_pk):
 
     servidores_ctx = [_servidor_rt_ctx(ps)]
     rt_url = reverse("viagens_prestacoes:rt_servidor", args=[ps.pk])
+    from .view_common import opcoes
+    campos_custeio = _build_campos_custeio(form)
+    for campo in campos_custeio:
+        if campo["uses_other"]:
+            campo["opcoes"] = opcoes(campo["field"].field.choices)
+            campo["valor"] = form[campo["campo"]].value() or ""
+            campo["valor_outro"] = form[f"{campo['campo']}_outro"].value() or ""
+            campo["erros_outro"] = form.errors.get(f"{campo['campo']}_outro")
+        campo["erros"] = form.errors.get(campo["campo"])
+    campos_modelo = _build_campos_modelo(form, return_url=rt_url)
+    for campo in campos_modelo:
+        campo["opcoes"] = [{"valor": str(m.pk), "rotulo": m.nome} for m in campo["select"].field.queryset]
+        campo["valor_modelo"] = form[f"modelo_{campo['campo']}"].value() or ""
+        campo["texto"] = form[campo["campo"]].value() or ""
+        campo["erros"] = form.errors.get(campo["campo"])
 
     return render(
         request,
@@ -108,8 +123,11 @@ def rt_servidor(request, ps_pk):
         {
             "page_title": f"Relatório Técnico — {ps.servidor.nome}",
             "form": form,
-            "campos_modelo": _build_campos_modelo(form, return_url=rt_url),
-            "campos_custeio": _build_campos_custeio(form),
+            "campos_modelo": campos_modelo,
+            "campos_custeio": campos_custeio,
+            "valor_diaria": form["diaria"].value() or "",
+            "erros_diaria": form.errors.get("diaria"),
+            "modelos_url": reverse("viagens_prestacoes:modelos_index"),
             "relatorio": relatorio,
             "prestacao": prestacao,
             "ps": ps,

@@ -135,7 +135,11 @@ def _format_dt_trecho(dt):
 
 
 def _label_cidade_uf_trecho(cidade):
-    return str(cidade) if cidade else "—"
+    """"CURITIBA/PR", como os trechos do cartão da origem."""
+    if not cidade:
+        return "—"
+    sigla = cidade.estado.sigla if getattr(cidade, "estado_id", None) else ""
+    return f"{str(cidade).upper()}/{sigla}" if sigla else str(cidade).upper()
 
 
 def _whatsapp_phone(servidor):

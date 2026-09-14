@@ -1217,3 +1217,120 @@ a.step-i{text-decoration:none;color:inherit}
 .tm-documento__titulo{margin:0 0 24px;font-size:20px;text-align:center;letter-spacing:.04em}
 .tm-documento__texto{margin:14px 0 0;font-size:14px;line-height:1.7;text-align:justify}
 @container(max-width:900px){.tm-cartao__corpo{flex-direction:column;align-items:flex-start}.tm-acoes{align-self:flex-end}}
+
+/* ---------- Meta 6 · prestações de contas ---------- */
+.pc-lista{gap:14px}
+.pc-cartao--arquivada{background:var(--n-25)}
+.pc-cartao--arquivada .of-cartao__titulo{color:var(--n-600)}
+.prestacao-card-group--start{border-bottom-left-radius:4px;border-bottom-right-radius:4px}
+.prestacao-card-group--middle{border-radius:4px;margin-top:-8px}
+.prestacao-card-group--end{border-top-left-radius:4px;border-top-right-radius:4px;margin-top:-8px}
+.st--pc-pendente{background:var(--wn-b);color:var(--wn-t);border:1px solid var(--wn-r,transparent)}
+.st--pc-em_preenchimento{background:var(--in-b);color:var(--in-t);border:1px solid var(--in-r,transparent)}
+.st--pc-enviada{background:var(--d-50);color:var(--d-800);border:1px solid var(--d-200)}
+.st--pc-aprovada{background:var(--ok-b);color:var(--ok-t);border:1px solid var(--ok-r,transparent)}
+.st--pc-reprovada{background:var(--dg-b);color:var(--dg-t);border:1px solid var(--dg-r,transparent)}
+.pc-servidor{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0;padding:8px 10px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25);margin:0}
+.pc-servidor--motorista{border-color:var(--d-300);background:var(--d-50)}
+.pc-servidor .of-pessoa__txt{flex:1 1 220px}
+.pc-servidor__solic{position:relative;flex:0 0 150px}
+.pc-solic.form-controle{height:34px;padding:0 10px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.pc-solic--leitura{display:inline-flex;align-items:center;height:34px;padding:0 10px;border:1px dashed var(--n-200);border-radius:8px;font-size:12.5px;color:var(--n-600)}
+.pc-autosave{position:absolute;right:0;top:100%;font-size:10.5px;color:var(--n-500);white-space:nowrap}
+.pc-autosave--ok{color:var(--ok-t)}.pc-autosave--erro{color:var(--dg-t)}
+.pc-periodo{flex:0 0 auto;position:relative}
+.pc-periodo__gatilho{height:34px;gap:6px;font-size:12.5px;white-space:nowrap}
+.pc-periodo__gatilho--definido{border-color:var(--d-400);background:var(--d-50);color:var(--d-800)}
+.pc-periodo__corpo{min-width:280px;left:0;right:auto;padding:10px 12px 12px}
+.pc-periodo__campos{display:grid;gap:10px;margin-bottom:10px}
+.pc-periodo__acoes{display:flex;justify-content:flex-end}
+.pc-periodo__leitura{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--n-600)}
+.pc-comprovante{height:20px;font-size:11px}
+.pc-wa{flex:none;margin-left:auto}
+.of-cartao .pc-wa{width:34px;height:34px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco);color:var(--ok-t);display:inline-grid;place-items:center}
+.of-cartao .pc-wa:hover{border-color:var(--ok-t);background:var(--ok-b)}
+.of-cartao .ib-linha--ativo{border-color:var(--d-500);background:var(--d-50);color:var(--d-800)}
+.pc-menu-downloads{min-width:340px}
+.pc-download{display:grid;gap:6px;padding:8px 10px;border-bottom:1px solid var(--n-100)}
+.pc-download:last-of-type{border-bottom:0}
+.pc-download__titulo{display:grid;gap:1px}
+.pc-download__titulo b{font-size:13px;color:var(--n-900)}
+.pc-download__titulo small{font-size:11.5px;color:var(--n-500)}
+.pc-download__versoes{display:flex;flex-wrap:wrap;gap:6px}
+.pc-download__versao{display:inline-flex;align-items:center;height:26px;padding:0 9px;border:1px solid var(--n-200);border-radius:6px;background:var(--branco);font-size:12px;font-weight:600;color:var(--n-800);text-decoration:none}
+.pc-download__versao:hover{border-color:var(--d-500);background:var(--d-50);color:var(--d-800)}
+.pc-anexar{margin:0}
+.pc-anexar__item{cursor:pointer;width:100%}
+.pc-anexar__item:focus-within{outline:2px solid var(--d-550);outline-offset:-2px}
+.pc-anexar__ver{display:inline-flex;align-items:center;gap:6px;margin:-2px 10px 8px 42px;font-size:11.5px;color:var(--d-800)}
+@media (max-width:720px){.pc-servidor__solic{flex-basis:100%}.pc-servidor .of-pessoa__txt{flex-basis:100%}}
+/* Meta 6 · etapas da prestação */
+.pc-fluxo .d-titulo h1{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.pc-fluxo__etapa{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--d-700)}
+.pc-fluxo__grade{align-items:start}
+.pc-fluxo__lateral .reg__t em{margin-left:auto;font-style:normal;font-size:11.5px;font-weight:400;color:var(--n-500)}
+.pc-fluxo .step-i{text-decoration:none;position:relative}
+.pc-fluxo .step-i:hover .step-i__t{color:var(--d-800)}
+.pc-equipe{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pc-equipe__item a{display:flex;align-items:center;gap:9px;padding:7px 9px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25);text-decoration:none;color:inherit}
+.pc-equipe__item a:hover{border-color:var(--d-300)}
+.pc-equipe__item--atual a{border-color:var(--d-400);background:var(--d-50)}
+.pc-equipe .of-av{width:28px;height:28px;font-size:10.5px}
+.pc-equipe .of-pessoa__nome{font-size:12.5px}
+.pc-equipe .of-pessoa__desc{font-size:11px}
+.pc-removidos{margin-top:10px;font-size:12px;color:var(--n-600)}
+.pc-removidos summary{cursor:pointer;font-weight:600}
+.pc-removidos ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.pc-removidos li{display:grid;gap:1px}.pc-removidos small{color:var(--n-500)}
+.pc-fluxo__rodape{position:sticky;bottom:0;background:var(--branco);padding:12px 0;z-index:20}
+.pc-fluxo__rodape form{margin:0}
+.pc-fluxo__nota{margin:0 0 14px;font-size:13px;color:var(--n-600)}
+.pc-acoes-linha{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pc-alteracoes{margin:12px 0 0;padding-left:18px;font-size:12.5px;color:var(--n-700)}
+.pc-alteracoes li+li{margin-top:4px}
+.pc-autosave--form{position:static;display:block;text-align:right;min-height:14px;margin-bottom:6px}
+.pc-trechos{margin-top:8px}
+.pc-trechos .dt td{vertical-align:middle}
+.pc-trecho__n{font-weight:700;color:var(--n-500);width:36px}
+.pc-trecho__rota b{font-size:13px;color:var(--n-900)}
+.pc-trecho__hora{white-space:nowrap;font-variant-numeric:tabular-nums}
+.pc-trecho__hora small{display:block;color:var(--n-500)}
+.pc-trecho__km{width:130px}.pc-trecho__abast{width:150px}
+.pc-trechos .form-campo{margin:0;min-width:0}
+.pc-trechos .form-controle{height:36px}
+.pc-modo{margin-top:12px;padding-top:12px;border-top:1px dashed var(--n-200)}
+.pc-modo[hidden]{display:none}
+.pc-custeio{display:grid;gap:8px}
+.pc-custeio [hidden]{display:none}
+.pc-texto .reg__t{display:flex;align-items:center;gap:10px}
+.pc-texto__modelos{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--d-800)}
+.pc-texto .g-form{margin-bottom:10px}
+.pc-uploads{display:grid;gap:10px}
+.pc-upload{display:grid;gap:10px;padding:12px 14px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25)}
+.pc-upload__cabeca{display:flex;align-items:center;gap:10px}
+.pc-upload__cabeca .of-av .ui-icon{width:16px;height:16px}
+.pc-upload .of-pessoa__nome .st{height:20px;font-size:11px}
+.pc-upload__anexos{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pc-upload__anexos li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 10px;border:1px solid var(--n-150);border-radius:7px;background:var(--branco);font-size:12.5px}
+.pc-upload__anexos li a{display:inline-flex;align-items:center;gap:6px;min-width:0;overflow-wrap:anywhere}
+.pc-upload__anexos form{margin:0}
+.acao-linha--perigo{color:var(--dg-t)}
+.prestacao-upload{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0}
+.pc-upload__escolher{cursor:pointer}
+.pc-upload__nome{flex:1 1 160px;font-size:12px;color:var(--n-600);overflow-wrap:anywhere}
+.pc-pendencias{margin:6px 0 0;padding-left:18px}
+.pc-pendencias li{font-size:13px;color:#4d3703}
+.pc-situacao{margin-top:14px}
+.pc-download__versao--assinado{border-color:var(--ok-r,var(--ok-t));background:var(--ok-b);color:var(--ok-t)}
+.pc-download__versao .ui-icon{width:13px;height:13px;margin-right:4px}
+.pc-assinatura__gerar{margin-top:6px}
+.pc-assinatura__revogar{margin-top:10px}
+.pc-link__url{margin:0;padding:12px 14px;border:1px dashed var(--d-300);border-radius:9px;background:var(--d-25,#fbf8f2);font-size:13px;overflow-wrap:anywhere}
+.pc-abas{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.pc-abas .v32-aba{text-decoration:none;color:var(--n-700)}
+.pc-modelos{display:grid;gap:14px}
+.pc-modelos__form{margin:0}
+.pc-modelo h2{margin:0;font-size:15px;font-weight:700;color:var(--n-900)}
+.pc-modelo__texto{margin:0;font-size:13px;line-height:1.55;color:var(--n-700);white-space:pre-line}
+.pc-fluxo .sol-detalhe__campos dd small{display:block;font-size:11.5px;color:var(--n-500)}
+.pc-nota{margin:0 0 12px;font-size:13px;line-height:1.5;color:var(--n-600)}
