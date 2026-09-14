@@ -1,0 +1,18 @@
+{
+  "escopo": "viagens_cadastros; não é a suíte completa do projeto",
+  "postgresql": {
+    "testes": 94,
+    "resultado": "OK",
+    "log": "logs/paridade-servidores-postgresql.txt"
+  },
+  "sqlite": {
+    "testes": 94,
+    "resultado": "OK",
+    "log": "logs/paridade-servidores-sqlite.txt"
+  },
+  "check": "sem problemas",
+  "makemigrations_check": "sem alterações",
+  "meta_0": "aberta",
+  "meta_1": "em andamento",
+  "paridade_completa": false
+}

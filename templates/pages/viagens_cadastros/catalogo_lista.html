@@ -1,0 +1,45 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block conteudo %}
+<div class="catalogo-paridade">
+  <div class="d-cabeca"><h1>{{ titulo }}</h1></div>
+  <section class="reg catalogo-paridade__controles">
+    <form data-cadastro-busca method="get" role="search" class="catalogo-paridade__busca">
+      <input class="form-controle" type="text" name="q" value="{{ termo }}" placeholder="Buscar {{ titulo|lower }}" aria-label="Buscar {{ titulo|lower }}">
+      {% if url_retorno %}<input type="hidden" name="next" value="{{ url_retorno }}">{% endif %}
+      {% if termo %}<a class="btn--secundaria" href="{{ request.path }}">Limpar</a>{% endif %}
+    </form>
+    {% if pode_editar %}
+    <form id="catalogo-inclusao" method="post" action="{{ url_lista }}" novalidate data-catalogo-form{% if not form.errors %} hidden{% endif %}>
+      {% csrf_token %}{% if url_retorno %}<input type="hidden" name="next" value="{{ url_retorno }}">{% endif %}
+      {% if form.errors %}<div class="aviso aviso--erro" role="alert" tabindex="-1" data-catalogo-erros><div><b>Corrija antes de continuar</b><ul class="aviso--erro__lista">{% for erro in form.non_field_errors %}<li>{{ erro }}</li>{% empty %}<li>Revise os campos destacados antes de continuar.</li>{% endfor %}</ul></div></div>{% endif %}
+      {% block campos_inclusao %}{% endblock %}
+    </form>
+    <button class="catalogo-paridade__toggle" type="button" aria-controls="catalogo-inclusao" aria-expanded="{% if form.errors %}true{% else %}false{% endif %}" aria-label="Cadastrar {{ singular }}" data-catalogo-toggle data-cadastrar="Cadastrar {{ singular }}" data-salvar="Salvar {{ singular }}"><span aria-hidden="true">+</span> <span data-catalogo-rotulo>Cadastrar {{ singular }}</span></button>
+    {% endif %}
+  </section>
+  {% include "pages/viagens_cadastros/_paginacao.html" %}
+  <div class="catalogo-paridade__lista">
+    {% for linha in itens %}{% with item=linha.objeto %}
+    <article class="reg catalogo-paridade__cartao">
+      <span class="catalogo-paridade__iniciais" aria-hidden="true">{{ linha.iniciais }}</span><div class="catalogo-paridade__identidade"><h2>{{ item.nome }}</h2>{% if slug == "unidades" %}<p>{{ item.sigla|default:"—" }}</p>{% endif %}</div>
+      {% if item.is_padrao %}<span class="st">Padrão</span>{% endif %}
+      {% if pode_editar %}<div class="acoes">
+        {% if tem_padrao and not item.is_padrao %}<form method="post" action="{% url 'viagens_cadastros:definir_padrao' slug item.pk %}">{% csrf_token %}{% if url_retorno %}<input type="hidden" name="next" value="{{ url_retorno }}">{% endif %}<button type="submit" class="acao-linha" aria-label="Definir {{ item.nome }} como padrão">Definir padrão</button></form>{% endif %}
+        <a class="acao-linha" href="{% url 'viagens_cadastros:editar' slug item.pk %}" aria-label="Editar {{ item.nome }}">Editar</a>
+        <button type="button" class="acao-linha v32-acao-perigo" data-delete-url="{% url 'viagens_cadastros:excluir' slug item.pk %}{% if url_retorno %}?next={{ url_retorno|urlencode }}{% endif %}" data-catalogo-excluir data-nome="{{ item.nome }}">Excluir</button>
+      </div>{% endif %}
+    </article>
+    {% endwith %}{% empty %}<div class="semres"><h2>Nenhum registro cadastrado</h2><p>{{ texto_vazio }}</p></div>{% endfor %}
+  </div>
+  {% if url_retorno %}<div class="catalogo-paridade__acoes"><a class="btn--secundaria" href="{{ url_retorno }}">{{ rotulo_retorno }}</a></div>{% endif %}
+  <dialog class="catalogo-paridade__dialog" data-catalogo-dialog aria-labelledby="catalogo-excluir-titulo">
+    <h2 id="catalogo-excluir-titulo">Excluir {{ singular }}?</h2>
+    <p>Você está prestes a excluir <strong data-catalogo-nome></strong>. Se houver vínculos com outros registros, a exclusão será bloqueada.</p>
+    <p>Esta ação é permanente e não poderá ser desfeita.</p>
+    <form method="post" data-catalogo-delete-form>{% csrf_token %}<div class="catalogo-paridade__acoes"><button class="btn--secundaria" type="button" data-catalogo-fechar>Voltar</button><button class="btn-primaria" type="submit">Excluir</button></div></form>
+  </dialog>
+</div>
+{% endblock %}
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-dialogos-cadastros.js' %}" defer></script><script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script><script src="{% estatico 'js/viagens-cadastros.js' %}" defer></script><script src="{% estatico 'js/viagens-catalogos.js' %}" defer></script>{% endblock %}

@@ -1,0 +1,226 @@
+{
+  "origem": [
+    {
+      "desabilitado": false,
+      "id": "id_placa",
+      "mascara": "placa",
+      "maxlength": "7",
+      "nome": "placa",
+      "obrigatorio": true,
+      "placeholder": "AAA1234 ou AAA1A23",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_modelo",
+      "mascara": "upper",
+      "maxlength": "120",
+      "nome": "modelo",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_tipo",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "tipo",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "select-one",
+      "valor": "DESCARACTERIZADA"
+    },
+    {
+      "desabilitado": false,
+      "id": "id_combustivel",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "combustivel",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "select-one",
+      "valor": "9"
+    },
+    {
+      "desabilitado": false,
+      "id": "id_unidade",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "unidade",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "select-one",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "",
+      "obrigatorio": false,
+      "placeholder": "Buscar unidade",
+      "tipo": "search",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_motoristas",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "motoristas",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "select-multiple",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "",
+      "obrigatorio": false,
+      "placeholder": "Digite nome, cargo ou CPF",
+      "tipo": "search",
+      "valor": ""
+    }
+  ],
+  "destino": [
+    {
+      "desabilitado": false,
+      "id": "id_placa",
+      "mascara": "placa",
+      "maxlength": "10",
+      "nome": "placa",
+      "obrigatorio": true,
+      "placeholder": "ABC-1234 ou ABC1D23",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_modelo",
+      "mascara": null,
+      "maxlength": "120",
+      "nome": "modelo",
+      "obrigatorio": false,
+      "placeholder": "Ex.: RENAULT DUSTER",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_tipo",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "tipo",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "select-one",
+      "valor": "DESCARACTERIZADA"
+    },
+    {
+      "desabilitado": false,
+      "id": "id_combustivel",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "combustivel",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "select-one",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_unidade",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "unidade",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "select-one",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "",
+      "obrigatorio": false,
+      "placeholder": "Buscar por nome, cargo ou unidade",
+      "tipo": "search",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "motoristas",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "checkbox",
+      "valor": "1"
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "motoristas",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "checkbox",
+      "valor": "2"
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "motoristas",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "checkbox",
+      "valor": "3"
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "motoristas",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "checkbox",
+      "valor": "4"
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "motoristas",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "checkbox",
+      "valor": "5"
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "motoristas",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "checkbox",
+      "valor": "6"
+    }
+  ]
+}

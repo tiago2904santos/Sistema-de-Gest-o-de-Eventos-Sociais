@@ -1,0 +1,49 @@
+{
+  "checks": [
+    {
+      "estado": "vazio",
+      "origem": {
+        "required": false,
+        "selected": "Selecione (opcional)",
+        "value": ""
+      },
+      "destino": {
+        "required": false,
+        "selected": "Selecione (opcional)",
+        "value": ""
+      }
+    },
+    {
+      "estado": "selecionado",
+      "origem": {
+        "required": false,
+        "selected": "AGENTE DE POLÍCIA JUDICIÁRIA",
+        "value": "1"
+      },
+      "destino": {
+        "required": false,
+        "selected": "MOTORISTA",
+        "value": "1"
+      }
+    },
+    {
+      "estado": "retirado",
+      "origem": {
+        "required": false,
+        "selected": "Selecione (opcional)",
+        "value": ""
+      },
+      "destino": {
+        "required": false,
+        "selected": "Selecione (opcional)",
+        "value": ""
+      }
+    }
+  ],
+  "pares": [
+    "meta1-servidor-cargo-opcao-vazia",
+    "meta1-servidor-cargo-vazio",
+    "meta1-servidor-cargo-selecionado",
+    "meta1-servidor-cargo-retirado"
+  ]
+}

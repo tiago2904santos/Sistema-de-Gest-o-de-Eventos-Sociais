@@ -1,0 +1,20 @@
+{
+  "origem": "fixture exclusivamente no banco de desenvolvimento do destino",
+  "unidade": 102,
+  "combustivel": 6,
+  "viatura": 4,
+  "placa": "ZZE9T92",
+  "nome": "ENSAIO EDICAO VIATURA 20260910",
+  "motorista_existente": 1,
+  "estado_inicial": {
+    "placa": "ZZE9T92",
+    "modelo": "ENSAIO EDICAO VIATURA 20260910",
+    "tipo": "DESCARACTERIZADA",
+    "combustivel_id": 6,
+    "unidade_id": 102,
+    "motoristas": [
+      1
+    ]
+  },
+  "removido": false
+}

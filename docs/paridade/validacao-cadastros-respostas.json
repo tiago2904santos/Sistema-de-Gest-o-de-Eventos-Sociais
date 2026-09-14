@@ -1,0 +1,57 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Meta 1 parcial — respostas de gravação e exclusão de servidores e viaturas",
+  "postgresql": {
+    "cadastros": {
+      "testes": 122,
+      "resultado": "OK",
+      "segundos": 26.62,
+      "pulados": 0,
+      "log": "../../logs/paridade-cadastros-respostas-postgresql.txt"
+    },
+    "completa": {
+      "testes": 1108,
+      "resultado": "OK",
+      "segundos": 118.997,
+      "pulados": 4,
+      "log": "../../logs/paridade-cadastros-respostas-completa-postgresql.txt"
+    }
+  },
+  "sqlite": {
+    "cadastros": {
+      "testes": 122,
+      "resultado": "OK",
+      "segundos": 18.106,
+      "pulados": 0,
+      "log": "../../logs/paridade-cadastros-respostas-sqlite.txt"
+    },
+    "completa": {
+      "testes": 1108,
+      "resultado": "OK",
+      "segundos": 74.865,
+      "pulados": 5,
+      "log": "../../logs/paridade-cadastros-respostas-completa-sqlite.txt"
+    }
+  },
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "diff_check": "limpo; avisos LF/CRLF preexistentes",
+  "origem": "6 hashes de arquivos de rotas preservados; nenhuma escrita executada na origem",
+  "pares_novos": [
+    "meta1-viatura-exclusao-direta"
+  ],
+  "limpeza": "limpeza-ensaio-respostas.json",
+  "pendencias": [
+    "Mensagens e bloqueios após POST na origem não ensaiados; origem somente leitura.",
+    "Proteção específica de histórico de prestação de contas no serviço da origem ainda não certificada.",
+    "Perfis e demais estados das telas continuam pendentes.",
+    "P01, P05, P06 e P07 aguardam decisões."
+  ],
+  "limites_ambiente": [
+    "Avisos de datas sem fuso em testes preexistentes.",
+    "WeasyPrint informa bibliotecas externas indisponíveis; conversão documental não certificada por esta rodada.",
+    "O ensaio de Word/COM registra exceção nativa e a suíte prossegue; quatro testes pulados no PostgreSQL e cinco no SQLite."
+  ],
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04"
+}

@@ -1,0 +1,68 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Meta 1 parcial — Unidade nos formulários de servidor e viatura",
+  "pares_novos": [
+    "meta1-unidade-busca-antes",
+    "meta1-unidade-sem-resultado",
+    "meta1-unidade-limpa",
+    "meta1-unidade-nome-sem-acento",
+    "meta1-unidade-limite-inferior",
+    "meta1-unidade-selecao-teclado",
+    "meta1-unidade-busca-sigla",
+    "meta1-unidade-limite-superior",
+    "meta1-unidade-escape",
+    "meta1-unidade-reaberta",
+    "meta1-unidade-selecao-clique",
+    "meta1-unidade-retorno-viatura",
+    "meta1-unidade-retirada",
+    "meta1-servidor-unidade-inicial",
+    "meta1-servidor-unidade-busca",
+    "meta1-servidor-unidade-selecionada",
+    "meta1-servidor-unidade-sem-resultado",
+    "meta1-servidor-unidade-limpa",
+    "meta1-servidor-unidade-retorno"
+  ],
+  "postgresql": {
+    "testes": 142,
+    "resultado": "OK",
+    "segundos": 44.648,
+    "log": "../../logs/paridade-unidade-picker-postgresql.txt"
+  },
+  "sqlite": {
+    "testes": 142,
+    "resultado": "OK",
+    "segundos": 32.169,
+    "log": "../../logs/paridade-unidade-picker-sqlite.txt"
+  },
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "javascript": "node --check limpo e fluxos exercitados no navegador",
+  "diff_check": "limpo, avisos LF/CRLF",
+  "temporarios_destino": [
+    {
+      "id": 100,
+      "nome": "ENSAIO LOTAÇÃO ALFA 20260910",
+      "removido": true
+    },
+    {
+      "id": 101,
+      "nome": "ENSAIO LOTAÇÃO BETA 20260910",
+      "removido": true
+    }
+  ],
+  "hashes_arquivos_rotas_origem": {
+    "cadastros": true,
+    "roteiros": true,
+    "oficios": true,
+    "justificativas": true,
+    "termos": true,
+    "prestacoes_contas": true
+  },
+  "limites": [
+    "Suíte completa de 1128 por banco anterior a este incremento.",
+    "Perfis, edição persistida e responsividade não certificados.",
+    "Hashes cobrem somente os seis arquivos de rotas; não comprovam preservação integral do banco. Incidente anterior P14 aberto."
+  ],
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04"
+}

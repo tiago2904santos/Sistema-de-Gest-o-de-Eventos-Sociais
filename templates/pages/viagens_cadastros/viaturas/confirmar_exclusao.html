@@ -1,0 +1,16 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% block title %}Excluir viatura?{% endblock %}
+{% block conteudo %}
+<div class="viatura-paridade">
+  <div class="d-cabeca"><h1>Excluir viatura?</h1></div>
+  <form method="post" class="cad-frm">
+    {% csrf_token %}
+    <section class="reg">
+      <header><h2>Excluir viatura?</h2><p>Esta ação é permanente e não poderá ser desfeita.</p></header>
+      <p>Você está prestes a excluir <strong>{{ viatura.placa }}</strong>.</p>
+      <div class="aviso aviso--erro"><p>Se houver vínculos com outros registros, a exclusão será bloqueada.</p></div>
+      <footer class="catalogo-paridade__acoes"><a class="btn--secundaria" href="{{ url_voltar }}">Voltar</a><button class="btn-primaria" type="submit">Excluir viatura</button></footer>
+    </section>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{
+  "origem": {
+    "aberto": "false",
+    "exibicao": "01/11/2026",
+    "readonly": true,
+    "valor": ""
+  },
+  "destino": {
+    "aberto": "false",
+    "exibicao": "01/11/2026",
+    "readonly": true,
+    "valor": "2026-11-01"
+  }
+}

@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     "viagens_oficios",
     "viagens_termos",
     "viagens_prestacoes",
+    "migracao_legado",
 ]
 
 MIDDLEWARE = [
@@ -151,6 +152,22 @@ else:
 # ---------------------------------------------------------------------------
 # Autenticação
 # ---------------------------------------------------------------------------
+
+# A origem só é conectada pelos comandos de migração. Nem o servidor nem a
+# suíte precisam de credenciais do GV. O PostgreSQL impõe somente leitura.
+if os.environ.get("LEGADO_DB_NAME"):
+    DATABASES["legado"] = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ["LEGADO_DB_NAME"],
+        "USER": os.environ.get("LEGADO_DB_USER", ""),
+        "PASSWORD": os.environ.get("LEGADO_DB_PASSWORD", ""),
+        "HOST": os.environ.get("LEGADO_DB_HOST", "127.0.0.1"),
+        "PORT": os.environ.get("LEGADO_DB_PORT", "5432"),
+        "OPTIONS": {"options": "-c default_transaction_read_only=on -c statement_timeout=60000"},
+        "CONN_MAX_AGE": 0,
+    }
+
+DATABASE_ROUTERS = ["migracao_legado.origem.RouterLegado"]
 
 AUTH_USER_MODEL = "accounts.User"
 

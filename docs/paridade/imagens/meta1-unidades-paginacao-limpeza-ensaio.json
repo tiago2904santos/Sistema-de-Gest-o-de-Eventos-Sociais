@@ -1,0 +1,7 @@
+{
+  "destino": {
+    "url": "http://localhost:8021/viagens/cadastros/unidades/",
+    "tela": "- banner:\n  - link \"Brasão da Polícia Civil do Paraná Polícia Civil do Paraná\":\n    - /url: /\n    - img \"Brasão da Polícia Civil do Paraná\"\n    - generic: Polícia Civil do Paraná\n  - generic: Sistema de Gestão de Eventos Sociais\n  - link \"Notificações\":\n    - /url: /notificacoes/\n  - button \"Tiago\":\n    - generic: T\n    - generic: Tiago\n- navigation \"Navegação principal\":\n  - link \"Viagens\":\n    - /url: /\n    - generic: Viagens\n  - link \"Prestações\":\n    - /url: /viagens/prestacoes/\n  - link \"Ofícios\":\n    - /url: /viagens/oficios/\n  - link \"Termos\":\n    - /url: /viagens/termos/\n  - link \"Roteiros\":\n    - /url: /viagens/roteiros/\n  - link \"Cadastros\":\n    - /url: /viagens/cadastros/\n- main:\n  - heading \"Unidades\" [level=1]\n  - search:\n    - searchbox \"Buscar unidades\"\n  - button \"Cadastrar unidade\": + Cadastrar unidade\n  - heading \"Nenhum registro cadastrado\" [level=2]\n  - paragraph: Nenhuma unidade cadastrada ainda.\n- contentinfo:\n  - generic: Ambiente restrito e monitorado\n  - generic: ·\n  - generic: Sistema de Gestão de Eventos Sociais — versão 2.0"
+  },
+  "observacao": "Lista vazia após remover apenas as 97 unidades identificadas no manifesto do ensaio."
+}

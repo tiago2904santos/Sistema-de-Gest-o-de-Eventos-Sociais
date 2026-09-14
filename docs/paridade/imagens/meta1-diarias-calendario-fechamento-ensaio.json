@@ -1,0 +1,11 @@
+{
+  "origem": {
+    "aberto": "false",
+    "valor": ""
+  },
+  "destino": {
+    "aberto": "false",
+    "valor": "2026-09-10"
+  },
+  "escape": "Antes: Escape fechou os dois calendários e devolveu foco a Abrir calendario."
+}

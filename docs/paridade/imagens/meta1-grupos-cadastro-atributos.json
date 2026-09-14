@@ -1,0 +1,210 @@
+[
+  {
+    "slug": "cargos",
+    "estado": "vazio",
+    "origem": {
+      "campos": [
+        {
+          "maxlength": 120,
+          "name": "nome",
+          "required": true,
+          "type": "text",
+          "value": ""
+        }
+      ],
+      "grupo": "Dados do cargo — Nome do cargo",
+      "rotulosVisiveis": 0
+    },
+    "destino": {
+      "campos": [
+        {
+          "maxlength": 120,
+          "name": "nome",
+          "required": true,
+          "type": "text",
+          "value": ""
+        }
+      ],
+      "grupo": "Dados do cargo — Nome do cargo",
+      "rotulosVisiveis": 0
+    }
+  },
+  {
+    "slug": "cargos",
+    "estado": "preenchido",
+    "origem": {
+      "campos": [
+        {
+          "maxlength": 120,
+          "name": "nome",
+          "required": true,
+          "type": "text",
+          "value": "ENSAIO DE CARGO"
+        }
+      ],
+      "grupo": "Dados do cargo — Nome do cargo",
+      "rotulosVisiveis": 0
+    },
+    "destino": {
+      "campos": [
+        {
+          "maxlength": 120,
+          "name": "nome",
+          "required": true,
+          "type": "text",
+          "value": "ENSAIO DE CARGO"
+        }
+      ],
+      "grupo": "Dados do cargo — Nome do cargo",
+      "rotulosVisiveis": 0
+    }
+  },
+  {
+    "slug": "combustiveis",
+    "estado": "vazio",
+    "origem": {
+      "campos": [
+        {
+          "maxlength": 120,
+          "name": "nome",
+          "required": true,
+          "type": "text",
+          "value": ""
+        }
+      ],
+      "grupo": "Dados do combustível — Nome do combustível",
+      "rotulosVisiveis": 0
+    },
+    "destino": {
+      "campos": [
+        {
+          "maxlength": 120,
+          "name": "nome",
+          "required": true,
+          "type": "text",
+          "value": ""
+        }
+      ],
+      "grupo": "Dados do combustível — Nome do combustível",
+      "rotulosVisiveis": 0
+    }
+  },
+  {
+    "slug": "combustiveis",
+    "estado": "preenchido",
+    "origem": {
+      "campos": [
+        {
+          "maxlength": 120,
+          "name": "nome",
+          "required": true,
+          "type": "text",
+          "value": "ENSAIO DE COMBUSTIVEL"
+        }
+      ],
+      "grupo": "Dados do combustível — Nome do combustível",
+      "rotulosVisiveis": 0
+    },
+    "destino": {
+      "campos": [
+        {
+          "maxlength": 120,
+          "name": "nome",
+          "required": true,
+          "type": "text",
+          "value": "ENSAIO DE COMBUSTIVEL"
+        }
+      ],
+      "grupo": "Dados do combustível — Nome do combustível",
+      "rotulosVisiveis": 0
+    }
+  },
+  {
+    "slug": "unidades",
+    "estado": "vazio",
+    "origem": {
+      "campos": [
+        {
+          "maxlength": 255,
+          "name": "nome",
+          "required": true,
+          "type": "text",
+          "value": ""
+        },
+        {
+          "maxlength": 50,
+          "name": "sigla",
+          "required": false,
+          "type": "text",
+          "value": ""
+        }
+      ],
+      "grupo": "Dados da unidade — Nome e sigla",
+      "rotulosVisiveis": 0
+    },
+    "destino": {
+      "campos": [
+        {
+          "maxlength": 255,
+          "name": "nome",
+          "required": true,
+          "type": "text",
+          "value": ""
+        },
+        {
+          "maxlength": 50,
+          "name": "sigla",
+          "required": false,
+          "type": "text",
+          "value": ""
+        }
+      ],
+      "grupo": "Dados da unidade — Nome e sigla",
+      "rotulosVisiveis": 0
+    }
+  },
+  {
+    "slug": "unidades",
+    "estado": "preenchido",
+    "origem": {
+      "campos": [
+        {
+          "maxlength": 255,
+          "name": "nome",
+          "required": true,
+          "type": "text",
+          "value": "ENSAIO DE UNIDADE"
+        },
+        {
+          "maxlength": 50,
+          "name": "sigla",
+          "required": false,
+          "type": "text",
+          "value": "EUN"
+        }
+      ],
+      "grupo": "Dados da unidade — Nome e sigla",
+      "rotulosVisiveis": 0
+    },
+    "destino": {
+      "campos": [
+        {
+          "maxlength": 255,
+          "name": "nome",
+          "required": true,
+          "type": "text",
+          "value": "ENSAIO DE UNIDADE"
+        },
+        {
+          "maxlength": 50,
+          "name": "sigla",
+          "required": false,
+          "type": "text",
+          "value": "EUN"
+        }
+      ],
+      "grupo": "Dados da unidade — Nome e sigla",
+      "rotulosVisiveis": 0
+    }
+  }
+]

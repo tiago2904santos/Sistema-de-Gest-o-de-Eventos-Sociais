@@ -856,3 +856,157 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
   .sol-detalhe .gc--servicos>.f:nth-child(2){padding:16px 0 0;border-left:0;border-top:1px solid var(--n-150)}
   .sol-detalhe__historico .evento__q{width:100%}
 }
+
+/* Paridade de servidores: cartões e blocos explícitos do GV com a pele V3.2.
+   A composição não cabe no renderizador genérico de tabela/formulário. */
+.servidor-paridade__barra{display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.servidor-paridade>.cad-frm{max-width:none;width:100%}
+.servidor-paridade__barra>p{flex:1;margin:0;color:var(--n-600)}
+.servidor-paridade__busca{flex:1;min-width:220px}
+.servidor-paridade__filtro{position:relative}
+.servidor-paridade__filtro summary{cursor:pointer;padding:12px;border:1px solid var(--n-200);border-radius:8px}
+.servidor-paridade__filtro nav{position:absolute;right:0;top:100%;z-index:20;min-width:280px;max-width:min(380px,90vw);padding:8px;background:var(--n-0,#fff);border:1px solid var(--n-200);border-radius:8px;box-shadow:0 8px 24px #0002}
+.servidor-paridade__filtro a{display:flex;justify-content:space-between;gap:20px;padding:12px;color:inherit;text-decoration:none}
+.servidor-paridade__filtro a[aria-current]{font-weight:700;background:var(--n-100)}
+.servidor-paridade__paginacao{margin:16px 0}
+.servidor-paridade__lista{display:grid;gap:12px}
+.servidor-paridade__cartao{display:flex;align-items:center;gap:18px;padding:20px;margin:0}
+.servidor-paridade__avatar{display:grid;place-items:center;width:44px;height:44px;flex-shrink:0;border-radius:10px;background:var(--n-100);font-weight:700}
+.servidor-paridade__dados{flex:1;min-width:0}
+.servidor-paridade__dados h2{font-size:16px;margin:0 0 6px;overflow-wrap:anywhere}
+.servidor-paridade__dados p{margin:0 0 10px;color:var(--n-600)}
+.servidor-paridade__dados dl{display:flex;gap:12px 28px;flex-wrap:wrap;margin:0}
+.servidor-paridade__dados dl>div{display:flex;gap:6px}
+.servidor-paridade__dados dt{font-weight:600;color:var(--n-600)}
+.servidor-paridade__dados dd{margin:0}
+.servidor-paridade__bloco{display:grid;grid-template-columns:minmax(180px,1fr) minmax(0,3fr);gap:24px;padding:28px 0;border-top:1px solid var(--n-150);margin-top:24px}
+.servidor-paridade__bloco h3{font-size:16px;margin:0 0 8px}
+.servidor-paridade__bloco p{color:var(--n-600);margin:0}
+.servidor-paridade__campos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.servidor-paridade__campos>.form-campo{grid-column:auto}
+.servidor-paridade__campos>.form-campo:first-child{grid-column:span 2}
+.servidor-paridade__gerenciavel{min-width:0}
+.servidor-paridade__gerenciavel>a{display:inline-block;margin-top:8px}
+.servidor-paridade__acoes{display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:20px 0}
+.servidor-paridade__dialog{width:min(520px,calc(100vw - 32px));padding:28px;border:1px solid var(--n-200);border-radius:12px;background:var(--n-0,#fff);color:var(--n-900);box-shadow:0 16px 48px #0003}
+.servidor-paridade__dialog::backdrop{background:#0007}
+.servidor-paridade__dialog h2{margin:0 0 16px;font-size:22px}
+.servidor-paridade__dialog p{line-height:1.6}
+@media(max-width:800px){.servidor-paridade__bloco{grid-template-columns:1fr}.servidor-paridade__cartao{flex-wrap:wrap}.servidor-paridade__cartao>.acoes{width:100%;justify-content:flex-end}}
+@media(max-width:560px){.servidor-paridade__campos{grid-template-columns:1fr}.servidor-paridade__campos>.form-campo:first-child{grid-column:auto}}
+
+/* Cargos e combustíveis: inclusão no trilho e cartões do GV, com tokens V3.2.
+   O painel preserva o botão único que expande, recolhe vazio ou salva. */
+.catalogo-paridade__controles{padding:0;overflow:hidden;margin-bottom:20px}
+.catalogo-paridade__busca{display:flex;gap:12px;padding:16px}
+.catalogo-paridade__busca>.form-controle{flex:1;min-width:0}
+/* Inclusão rápida do GV: grupo nomeado para acessibilidade, sem título visual duplicado. */
+.catalogo-paridade__grupo{display:block;min-width:0;border:0;margin:0;padding:20px}
+.catalogo-paridade__grupo>.form-campo{min-width:0}
+.catalogo-paridade__toggle{display:block;width:100%;padding:14px;border:0;border-top:1px solid var(--n-150);background:var(--n-50);color:var(--n-800);font:inherit;font-weight:600;cursor:pointer}
+.catalogo-paridade__toggle.is-filled{background:var(--n-900);color:var(--n-0,#fff)}
+.catalogo-paridade__lista{display:grid;gap:12px}
+.catalogo-paridade__cartao{display:flex;align-items:center;gap:16px;margin:0;padding:18px}
+.catalogo-paridade__cartao h2{font-size:16px;margin:0;overflow-wrap:anywhere}
+/* Unidades conservam nome e sigla no cartão e dois campos na inclusão rápida. */
+.catalogo-paridade__identidade{min-width:0}
+.catalogo-paridade__identidade p{margin:6px 0 0;color:var(--n-600);overflow-wrap:anywhere}
+.unidade-paridade__campos{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px}
+.unidade-paridade__campos>.form-campo{min-width:0}
+@media(max-width:600px){.unidade-paridade__campos{grid-template-columns:1fr}}
+.catalogo-paridade__iniciais{font-weight:700;color:var(--n-500)}
+.catalogo-paridade__cartao>.acoes{margin-left:auto;flex-shrink:0}
+.catalogo-paridade__cartao .acoes form{margin:0;display:flex}
+.catalogo-paridade__dialog{width:min(520px,calc(100vw - 32px));padding:28px;border:1px solid var(--n-200);border-radius:12px;background:var(--n-0,#fff);color:var(--n-900);box-shadow:0 16px 48px #0003}
+.catalogo-paridade__dialog::backdrop{background:#0007}
+.catalogo-paridade__dialog h2{margin:0 0 16px;font-size:22px}
+.catalogo-paridade__dialog p{line-height:1.6}
+.catalogo-paridade__acoes{display:flex;justify-content:flex-end;gap:12px;padding-top:20px}
+@media(max-width:800px){.catalogo-paridade__cartao{flex-wrap:wrap}.catalogo-paridade__cartao>.acoes{width:100%;justify-content:flex-end}}
+/* O resumo de erro da inclusão usa o alerta V3.2, com respiro no painel. */
+.catalogo-paridade [data-catalogo-erros]{margin:0 16px 16px}
+/* Viaturas: filtro misto e metadados completos por cartão, preservando o GV. */
+.viatura-paridade__barra{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+.viatura-paridade__barra>input{flex:1;min-width:0}
+.viatura-paridade__filtro{width:320px;max-width:45%}
+.viatura-paridade__filtro .form-campo{margin:0}
+.viatura-paridade__cartao{display:flex;align-items:center;gap:16px;margin:0;padding:20px}
+.viatura-paridade__dados{flex:1;min-width:0}
+.viatura-paridade__dados h2{font-size:16px;margin:0 0 8px;overflow-wrap:anywhere}
+.viatura-paridade__dados p{margin:0;color:var(--n-600);line-height:1.6;overflow-wrap:anywhere}
+@media(max-width:800px){.viatura-paridade__barra{flex-wrap:wrap}.viatura-paridade__barra>input{flex-basis:100%}.viatura-paridade__filtro{width:100%;max-width:none}.viatura-paridade__cartao{flex-wrap:wrap}.viatura-paridade__cartao>.acoes{width:100%;justify-content:flex-end}}
+/* Formulário de viaturas: quatro campos de identidade e cartões de motoristas do GV. */
+.viatura-form-paridade__identificacao{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.viatura-form-paridade__identificacao>.form-campo{grid-column:auto;min-width:0}
+.viatura-form-paridade__motoristas{border-top:1px solid var(--n-150);padding-top:24px}
+.viatura-form-paridade__motoristas>h3{font-size:16px;margin:0 0 8px}
+.viatura-form-paridade__motoristas>p{color:var(--n-600);margin-bottom:20px}
+.viatura-pessoas{position:relative}
+.viatura-pessoas__busca{display:flex;align-items:flex-end;gap:12px}
+.viatura-pessoas__busca>.form-campo{flex:1;min-width:0}
+.viatura-pessoas__busca>a{padding-bottom:12px}
+.viatura-pessoas__opcoes{position:absolute;left:0;right:0;z-index:20;max-height:300px;overflow:auto;background:var(--n-0,#fff);border:1px solid var(--n-200);border-radius:8px;box-shadow:0 8px 24px #0002}
+.viatura-pessoas__opcoes[hidden],.viatura-pessoas__cartao[hidden],.viatura-pessoas [hidden]{display:none}
+.viatura-pessoas__opcoes button{display:flex;justify-content:flex-start;gap:14px;width:100%;padding:14px;text-align:left}
+.viatura-pessoas__opcoes small{display:block;color:var(--n-600);margin-top:4px}
+.viatura-pessoas__selecionados{display:grid;gap:12px;margin-top:18px}
+.viatura-pessoas__cartao{display:flex;align-items:center;gap:14px;padding:16px;margin:0}
+.viatura-pessoas__cartao>div{flex:1;min-width:0}
+.viatura-pessoas__cartao p{margin:6px 0 0;color:var(--n-600)}
+.viatura-pessoas__cartao .st{margin-left:12px}
+.viatura-pessoas__iniciais{font-weight:700;color:var(--n-500)}
+@media(max-width:1100px){.viatura-form-paridade__identificacao{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.viatura-form-paridade__identificacao{grid-template-columns:1fr}.viatura-pessoas__busca{flex-wrap:wrap}.viatura-pessoas__busca>.form-campo{flex-basis:100%}.viatura-pessoas__cartao{align-items:flex-start}}
+/* O foco por setas do seletor de motoristas também precisa ser visível. */
+.viatura-pessoas__opcoes button.is-active{background:var(--n-100);outline:2px solid var(--n-300);outline-offset:-2px}
+.viatura-pessoas [data-pessoas-sem-resultado]{padding:14px;color:var(--n-600)}
+
+/* O recorte de servidores usa o select do DS, como os demais cadastros. */
+.servidor-paridade__select{width:320px;max-width:100%}
+.servidor-paridade__select .form-campo{margin:0}
+.catalogo-paridade .pag__passo[aria-disabled],.servidor-paridade .pag__passo[aria-disabled]{opacity:.4;cursor:default}
+
+/* Entrada de Cadastros: mesmos cartões e textos do GV dentro da composição DS V3.2. */
+.cadastros-entrada-paridade__cabeca{padding:24px 24px 0}
+.cadastros-entrada-paridade__cabeca>span,.cadastros-entrada-paridade__categoria{font-size:12px;color:var(--n-600)}
+.cadastros-entrada-paridade__cabeca h2{font-size:20px;margin:6px 0 8px}
+.cadastros-entrada-paridade p{color:var(--n-600);line-height:1.5}
+.cadastros-entrada-paridade__grade{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:24px}
+.cadastros-entrada-paridade__cartao{display:flex;flex-direction:column;align-items:flex-start;padding:20px;border:1px solid var(--n-200);border-radius:12px}
+.cadastros-entrada-paridade__iniciais{display:grid;place-items:center;width:40px;height:40px;margin-bottom:16px;background:var(--n-100);border-radius:8px;font-weight:700}
+.cadastros-entrada-paridade__cartao h3{font-size:18px;margin:8px 0}
+.cadastros-entrada-paridade__cartao p{margin:0 0 20px;flex:1}
+@media(max-width:1000px){.cadastros-entrada-paridade__grade{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.cadastros-entrada-paridade__grade{grid-template-columns:1fr}}
+
+/* Paridade GV: nova vigência e histórico na mesma superfície; controles DS em duas colunas. */
+.diarias-paridade .cad-frm { max-width: none; }
+.diarias-paridade .reg > header { margin-bottom: 24px; }
+.diarias-paridade__bloco { padding: 24px 0; border-top: 1px solid var(--borda, #e4e2dc); }
+.diarias-paridade__bloco h3 { margin: 0 0 6px; }
+.diarias-paridade__bloco > div > p { margin: 0 0 18px; }
+.diarias-paridade__campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.diarias-paridade__acoes { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 20px; }
+@media (max-width: 640px) { .diarias-paridade__campos { grid-template-columns: 1fr; } }
+
+/* Calendário GV optativo: mantém componentes DS, com campo de exibição e botão separados. */
+.custom-date[data-calendar-gv] .custom-date__campo-gv { display: none; }
+.custom-date[data-calendar-gv].is-enhanced .custom-date__campo-gv { display: flex; gap: 8px; }
+.custom-date[data-calendar-gv] .custom-date__valor { min-width: 0; flex: 1; cursor: pointer; }
+.custom-date[data-calendar-gv].is-enhanced .custom-date__trigger { width: 42px; flex: 0 0 42px; justify-content: center; }
+.custom-date[data-calendar-gv] .custom-date__cabecalho button { width: auto; height: 30px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--n-600); cursor: pointer; font: inherit; }
+.custom-date[data-calendar-gv] .custom-date__cabecalho button:hover, .custom-date[data-calendar-gv] .custom-date__cabecalho button:focus-visible { background: var(--d-50); color: var(--d-700); }
+/* Estados: três campos no bloco de inclusão/edição, como no catálogo de referência. */
+.estados-paridade__campos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.estados-paridade [data-catalogo-form] { padding: 1rem; }
+@media (max-width: 700px) { .estados-paridade__campos { grid-template-columns: 1fr; } }
+
+/* Lotação GV: sigla e nome no resultado, limpeza ao lado da busca, com controles DS. */
+[data-unidade-picker] .unidade-picker__texto { display: grid; gap: 3px; text-align: left; }
+[data-unidade-picker] .unidade-picker__texto small { color: var(--n-600); font-size: 12px; }
+[data-unidade-picker] .custom-select__opcao.is-active { background: var(--d-50); }
+[data-unidade-picker] .form-controle__icone { display: none; }
+[data-unidade-picker] .custom-select__combobox { padding-right: 42px; }
+.unidade-picker__limpar { position: absolute; right: 8px; top: 8px; width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 4px; background: transparent; color: var(--n-600); cursor: pointer; }
+.unidade-picker__limpar[hidden] { display: none; }
+.unidade-picker__limpar:hover, .unidade-picker__limpar:focus-visible { background: var(--n-100); }

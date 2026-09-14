@@ -1,0 +1,60 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Meta 1 parcial — teclado das confirmações de seis cadastros",
+  "pares_novos": [
+    "meta1-servidores-exclusao-espaco",
+    "meta1-servidores-exclusao-tab-inverso",
+    "meta1-servidores-exclusao-tab-direto",
+    "meta1-servidores-exclusao-escape",
+    "meta1-cargos-exclusao-teclado",
+    "meta1-cargos-exclusao-ciclo-foco",
+    "meta1-combustiveis-exclusao-teclado",
+    "meta1-combustiveis-exclusao-ciclo-foco",
+    "meta1-unidades-exclusao-teclado",
+    "meta1-unidades-exclusao-ciclo-foco",
+    "meta1-estados-exclusao-teclado",
+    "meta1-estados-exclusao-ciclo-foco",
+    "meta1-viaturas-exclusao-teclado",
+    "meta1-viaturas-exclusao-ciclo-foco",
+    "meta1-servidores-exclusao-botao-retorno"
+  ],
+  "passos_comparados": 23,
+  "cadastros_postgresql": {
+    "testes": 142,
+    "resultado": "OK",
+    "segundos": 32.583,
+    "log": "../../logs/paridade-dialogos-cadastros-postgresql.txt"
+  },
+  "cadastros_sqlite": {
+    "testes": 142,
+    "resultado": "OK",
+    "segundos": 26.568,
+    "log": "../../logs/paridade-dialogos-cadastros-sqlite.txt"
+  },
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "javascript": "node --check aprovado nos três scripts alterados/adicionados",
+  "diff_check": "limpo; avisos LF/CRLF preexistentes",
+  "hashes_rotas_origem": {
+    "cadastros": true,
+    "roteiros": true,
+    "oficios": true,
+    "justificativas": true,
+    "termos": true,
+    "prestacoes_contas": true
+  },
+  "temporarios_removidos": {
+    "combustivel": 4,
+    "unidade": 99,
+    "viatura": 3,
+    "placa": "ZZT9T91"
+  },
+  "origem": "Somente leitura, nenhum POST",
+  "limites": [
+    "POST de sucesso/bloqueio na origem não exercitado",
+    "Perfis da origem e demais pendências das fichas permanecem abertos"
+  ],
+  "ultima_suite_completa": "1124 testes por banco, anterior aos incrementos de cidades e teclado",
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04"
+}

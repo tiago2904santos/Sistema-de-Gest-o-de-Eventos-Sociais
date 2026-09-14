@@ -1,0 +1,135 @@
+[
+  {
+    "id": "P01",
+    "data": "2026-09-10",
+    "escopo": "Configuração — assinantes de PT/OS",
+    "situacao": "pendente",
+    "resposta_usuario": "Manter a meta pendente dessa decisão",
+    "efeito": "Não omitir os dois controles e não encerrar a Meta 1 até decisão posterior."
+  },
+  {
+    "id": "P02",
+    "data": "2026-09-10",
+    "escopo": "Permissão de edição de diárias",
+    "situacao": "autorizada",
+    "resposta_usuario": "Manter a permissão atual daqui e documentar",
+    "efeito": "Preservar VIAGENS_GESTOR e os perfis já autorizados pelo destino; registrar como adaptado na prova da tela."
+  },
+  {
+    "id": "P03",
+    "data": "2026-09-10",
+    "escopo": "Fechamento da Meta 0",
+    "situacao": "definida",
+    "resposta_usuario": "Não, manter a Meta 0 aberta",
+    "efeito": "Não encerrar apenas o inventário técnico nem iniciar a Meta 1 com base nas comparações iniciais."
+  },
+  {
+    "id": "P04",
+    "data": "2026-09-10",
+    "escopo": "Correções com a Meta 0 aberta",
+    "situacao": "autorizada",
+    "resposta_usuario": "Autorizar correções com a Meta 0 aberta",
+    "efeito": "Pode iniciar as correções das telas mantendo a Meta 0 aberta. Encerrar metas somente após provas completas; nenhuma diferença, regra ou permissão foi dispensada. Altera a restrição de sequência registrada em P03."
+  },
+  {
+    "id": "P05",
+    "data": "2026-09-10",
+    "escopo": "Edição inline de cargos e combustíveis — preservação do padrão",
+    "situacao": "aguardando resposta",
+    "pergunta": "Posso preservar o padrão ao editar apenas o nome e registrar a adaptação ao GV?",
+    "fundamento": "Seção 9. Na origem, o formulário inline envia apenas nome; CargoForm/CombustivelForm incluem is_padrao opcional e o serviço grava form.save(). A inferência de desmarcação vem do código, sem ensaio de escrita na origem.",
+    "efeito": "Não implementar alteração dependente nem dispensar diferença enquanto a decisão estiver pendente. Outras correções da Meta 1 continuam autorizadas por P04."
+  },
+  {
+    "id": "P06",
+    "data": "2026-09-10",
+    "escopo": "Unidades — edição rápida preservando lotação",
+    "situacao": "aguardando resposta",
+    "pergunta": "Posso fazer a edição rápida preservar os vínculos e manter o formulário completo para gerenciar a lotação?",
+    "fundamento": "Seção 9. GV UnidadeForm.save só sincroniza servidores se o campo foi enviado; destino UnidadeForm.save sincroniza mesmo com omissão. A inclusão rápida já implementada não recebe esse campo nem move servidores.",
+    "efeito": "Não alterar a regra de edição até resposta; busca e paginação continuam autorizadas por P04."
+  },
+  {
+    "id": "P07",
+    "data": "2026-09-10",
+    "escopo": "Estados — limite do nome e código IBGE opcional",
+    "situacao": "aguardando resposta",
+    "pergunta": "Posso alinhar Nome de 150 para 128 caracteres e código IBGE obrigatório para opcional, verificando os dados existentes antes?",
+    "fundamento": "Seção 9. A base Estado também é usada por Eventos; GV usa nome128 e codigo_ibge blank/null, destino nome150 e codigo_ibge obrigatório.",
+    "efeito": "Não mudar esquema ou validações dependentes até resposta. O CRUD público completo de Estados continua pendente."
+  },
+  {
+    "id": "P08",
+    "data": "2026-09-10",
+    "escopo": "Diárias — mínimo para derivados positivos",
+    "situacao": "aguardando resposta",
+    "pergunta": "Posso preservar o mínimo atual de R$ 0,04 e documentar a diferença para R$ 0,01 na entrada do GV?",
+    "fundamento": "Seção 9. Destino valida o mínimo para impedir 15% zerado; origem permite 0,01 no formulário, mas também tem restrições de derivados positivos no modelo. Nenhum POST desse valor foi enviado à origem.",
+    "efeito": "Regra e restrições atuais permanecem; mudança de validação depende de resposta. A composição e os textos de diárias continuam sendo corrigidos por P04."
+  },
+  {
+    "id": "P09",
+    "data": "2026-09-10",
+    "escopo": "Calendário — data exibida e valor oculto enviado",
+    "situacao": "aguardando resposta",
+    "pergunta": "Posso preservar o envio correto da data em ISO no destino e registrar a adaptação ao comportamento observado no GV?",
+    "fundamento": "Seção 9. Após seleção de 01/11/2026, ambos exibem a data, mas o hidden do GV fica vazio e o destino contém 2026-11-01. Repetido após recarregar usando Hoje: origem exibe 10/09/2026 e hidden vazio. Não foi enviado POST na origem; causa ainda indeterminada.",
+    "efeito": "Não certificar equivalência nem dispensar diferença enquanto pendente. O envio correto preexistente do destino permanece, conforme a exigência de ISO da seção 7."
+  },
+  {
+    "id": "P10",
+    "data": "2026-09-10",
+    "escopo": "Configuração institucional — campos, endereço e cidade-sede",
+    "situacao": "aguardando resposta",
+    "pergunta": "Posso alinhar o fluxo institucional ao GV, preservando no banco os campos que saírem da tela e adotando UF/cidade-sede derivadas do endereço/CEP e validações de CEP e telefone da origem?",
+    "fundamento": "Seção 9. GV permite dez campos institucionais, UF somente leitura preenchida por CEP, cidade-sede resolvida no serviço por UF/cidade. Destino oferece UF/cidade-sede manuais, prazo e outros campos; ConfiguracaoInstitucionalForm tem regra de sede/estado.",
+    "efeito": "Formulário e persistência institucional não alterados enquanto pendente. Consulta de CEP implementada separadamente, sem gravar configuração.",
+    "auditoria": "configuracao-impacto-formulario.json"
+  },
+  {
+    "id": "P11",
+    "data": "2026-09-10",
+    "escopo": "Retorno à viatura na lista de servidores, criação e busca",
+    "situacao": "autorizada",
+    "resposta_usuario": "Preservar o retorno atual e documentar",
+    "fundamento": "Seção 9. GV prepara back_url/next_url na view, mas templates/cadastros/servidores/index.html não apresenta retorno, usa create_url sem next e não inclui next na busca. Confirmado no navegador.",
+    "efeito": "Preservar no destino Voltar à viatura e next na criação e busca como adaptação autorizada. Não dispensa diferenças de exclusão, regras, permissões ou outras telas."
+  },
+  {
+    "id": "P12",
+    "data": "2026-09-10",
+    "escopo": "Estado — sigla com exatamente dois caracteres",
+    "situacao": "aguardando resposta",
+    "pergunta": "Posso exigir exatamente dois caracteres na sigla do Estado, como no GV?",
+    "fundamento": "Seção 9. EstadoForm do GV exige len=2; modelo compartilhado do destino exige valor não vazio e máximo 2. Todos os 27 estados existentes têm dois caracteres.",
+    "efeito": "Validação atual preservada até resposta; P07 sobre Nome/IBGE continua independente."
+  },
+  {
+    "id": "P13",
+    "data": "2026-09-10",
+    "escopo": "Cidades — Nome, Região e coordenadas",
+    "situacao": "aguardando resposta",
+    "pergunta": "Posso alinhar Nome a 255 caracteres, tornar Região opcional no modelo compartilhado e permitir coordenadas no cadastro, preservando vínculos existentes?",
+    "fundamento": "Seção 9. GV CidadeForm tem Nome255, Estado, Capital, IBGE e coordenadas; Municipio compartilhado tem Nome150 e Região obrigatória, coordenadas restritas a importação/geocodificação.",
+    "efeito": "Não alterar esquema, inclusão ou regras dependentes até resposta. Consulta de cidades e exportação são implementadas separadamente sem gravação."
+  },
+  {
+    "id": "P14",
+    "data": "2026-09-10",
+    "escopo": "Correção de gravação indevida na origem — cargo34",
+    "situacao": "aguardando resposta",
+    "pergunta": "Posso excluir somente o cargo34, ENSAIO DE CARGO, da área1 do GV, gravado indevidamente no ensaio anterior?",
+    "fundamento": "Seção3 proíbe qualquer escrita na origem. Consulta SQL com transação somente leitura confirmou nome, criação em 10/09/2026 16:51:47-03, is_padrao=false e zero vínculos nas três tabelas que referenciam cargos.",
+    "efeito": "Não remover na origem sem autorização excepcional. Cargo4 correspondente do destino removido. Corrigir a declaração anterior de nenhuma gravação e abandonar entradas da origem por recarregamento, sem acionar botão que também possa salvar.",
+    "evidencia": "incidente-cargo-origem.json"
+  },
+  {
+    "id": "P15",
+    "data": "2026-09-10",
+    "escopo": "Limites de Placa, RG e Telefone",
+    "situacao": "aguardando resposta",
+    "pergunta": "Posso alinhar Placa de 10 para 7 caracteres e retirar separadores na máscara, RG de 30 para 20 e Telefone de 16 para 20, preservando dados gravados e NÃO POSSUI RG?",
+    "fundamento": "Seção 9; limites conferidos nos formulários e nas fichas visuais. São validações de entrada existentes no destino.",
+    "efeito": "Não alterar esses limites ou a máscara de placa enquanto pendente; edição e outros ensaios de apresentação continuam por P04."
+  }
+]

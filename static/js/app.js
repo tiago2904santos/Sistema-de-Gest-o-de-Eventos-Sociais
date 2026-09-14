@@ -364,6 +364,8 @@
   // Mesmo desenho do aprimorarSelect: nomeada para uso do DS.aprimorar.
   function aprimorarData(wrapper) {
     if (wrapper.classList.contains("is-enhanced")) return;
+    var modoGV = wrapper.hasAttribute("data-calendar-gv");
+    var display = wrapper.querySelector("[data-custom-date-display]");
     var nativo = wrapper.querySelector(".custom-date__native");
     var trigger = wrapper.querySelector("[data-custom-date-trigger]");
     var valor = wrapper.querySelector(".custom-date__valor");
@@ -410,6 +412,7 @@
         month: "long",
         year: "numeric"
       }).format(mesVisivel);
+      if (modoGV) nomeMes = nomeMes.replace(" de ", " ");
       tituloMes.textContent = nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1);
       grade.innerHTML = "";
 
@@ -417,7 +420,7 @@
       var inicioGrade = new Date(
         primeiroDia.getFullYear(),
         primeiroDia.getMonth(),
-        1 - primeiroDia.getDay()
+        1 - ((primeiroDia.getDay() + (modoGV ? 6 : 0)) % 7)
       );
 
       for (var indice = 0; indice < 42; indice += 1) {
@@ -431,12 +434,13 @@
         botao.type = "button";
         botao.className = "custom-date__dia";
         botao.textContent = String(data.getDate());
-        botao.setAttribute("role", "gridcell");
+        if (!modoGV) botao.setAttribute("role", "gridcell");
         botao.setAttribute("data-date", iso);
         botao.setAttribute("aria-label", new Intl.DateTimeFormat("pt-BR", {
-          day: "numeric", month: "long", year: "numeric"
+          day: modoGV ? "2-digit" : "numeric", month: "long", year: "numeric"
         }).format(data));
-        botao.setAttribute("aria-selected", nativo.value === iso ? "true" : "false");
+        if (modoGV && iso === isoDaData(hoje)) botao.setAttribute("aria-label", botao.getAttribute("aria-label") + " (hoje)");
+        botao.setAttribute(modoGV ? "aria-pressed" : "aria-selected", nativo.value === iso ? "true" : "false");
         botao.classList.toggle("is-outside", data.getMonth() !== mesVisivel.getMonth());
         botao.classList.toggle("is-today", iso === isoDaData(hoje));
         botao.classList.toggle("is-selected", nativo.value === iso);
@@ -447,7 +451,8 @@
 
     function sincronizar() {
       var data = dataPorIso(nativo.value);
-      valor.textContent = data ? dataFormatada(data) : "dd/mm/aaaa";
+      if (display) display.value = data ? dataFormatada(data) : "";
+      else valor.textContent = data ? dataFormatada(data) : "dd/mm/aaaa";
       trigger.classList.toggle("has-value", Boolean(data));
       trigger.removeAttribute("aria-invalid");
       wrapper.classList.remove("is-invalid");
@@ -475,7 +480,7 @@
       trigger.setAttribute("aria-expanded", "true");
       renderizar();
       instancia.recortes = liberarRecorte(wrapper);
-      focarData(nativo.value || isoDaData(hoje));
+      if (!modoGV) focarData(nativo.value || isoDaData(hoje));
     }
 
     function mudarMes(deslocamento) {
@@ -488,7 +493,7 @@
         mesVisivel.getMonth(),
         Math.min(diaPreferido.getDate(), ultimoDia)
       );
-      focarData(isoDaData(destino));
+      if (!modoGV) focarData(isoDaData(destino));
     }
 
     trigger.addEventListener("click", function () {
@@ -496,6 +501,7 @@
       else abrirCalendario();
     });
     trigger.addEventListener("keydown", function (event) {
+      if (modoGV) return;
       if (["ArrowDown", "Enter", " "].indexOf(event.key) !== -1) {
         event.preventDefault();
         abrirCalendario();
@@ -510,7 +516,10 @@
       sincronizar();
       nativo.dispatchEvent(new Event("input", { bubbles: true }));
       nativo.dispatchEvent(new Event("change", { bubbles: true }));
-      fecharCalendario(instancia, true);
+      if (modoGV) {
+        mesVisivel = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        renderizar();
+      } else fecharCalendario(instancia, true);
     });
     hojeBotao.addEventListener("click", function () { selecionarData(hoje); });
     grade.addEventListener("click", function (event) {
@@ -518,6 +527,7 @@
       if (dia) selecionarData(dataPorIso(dia.getAttribute("data-date")));
     });
     grade.addEventListener("keydown", function (event) {
+      if (modoGV) return;
       var dia = event.target.closest("[data-date]");
       if (!dia) return;
       var atual = dataPorIso(dia.getAttribute("data-date"));
@@ -552,6 +562,20 @@
       if (!wrapper.contains(evento.target)) fecharCalendario(instancia, false);
     });
 
+    if (display) {
+      var focoDoPonteiro = false;
+      display.disabled = nativo.disabled || nativo.readOnly;
+      display.addEventListener("pointerdown", function () { focoDoPonteiro = true; });
+      display.addEventListener("focus", function () { if (!focoDoPonteiro) abrirCalendario(); });
+      display.addEventListener("click", function () { focoDoPonteiro = false; abrirCalendario(); });
+      display.addEventListener("blur", function () { focoDoPonteiro = false; });
+      document.addEventListener("keydown", function (event) {
+        if (instancia.aberto && event.key === "Escape") {
+          event.preventDefault();
+          fecharCalendario(instancia, true);
+        }
+      });
+    }
     nativo.addEventListener("change", sincronizar);
     nativo.addEventListener("focus", function () { trigger.focus(); });
     nativo.addEventListener("invalid", function () {

@@ -1,0 +1,437 @@
+{
+  "data": "2026-09-10",
+  "passos": [
+    {
+      "tela": "servidores",
+      "acao": "Shift+Tab de Voltar",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/servidores/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/servidores/"
+      }
+    },
+    {
+      "tela": "servidores",
+      "acao": "Tab de Excluir",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/servidores/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/servidores/"
+      }
+    },
+    {
+      "tela": "servidores",
+      "acao": "Escape",
+      "origem": {
+        "activeInDialog": false,
+        "activeTag": "BUTTON",
+        "activeText": "",
+        "dialogOpen": false,
+        "url": "http://127.0.0.1:8000/cadastros/servidores/"
+      },
+      "destino": {
+        "activeInDialog": false,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": false,
+        "url": "http://localhost:8021/viagens/cadastros/servidores/"
+      }
+    },
+    {
+      "tela": "cargos",
+      "acao": "Space abre",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/cargos/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/cargos/"
+      }
+    },
+    {
+      "tela": "cargos",
+      "acao": "Shift+Tab de Voltar",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/cargos/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/cargos/"
+      }
+    },
+    {
+      "tela": "cargos",
+      "acao": "Tab de Excluir",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/cargos/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/cargos/"
+      }
+    },
+    {
+      "tela": "cargos",
+      "acao": "Escape",
+      "origem": {
+        "activeInDialog": false,
+        "activeTag": "BUTTON",
+        "activeText": "",
+        "dialogOpen": false,
+        "url": "http://127.0.0.1:8000/cadastros/cargos/"
+      },
+      "destino": {
+        "activeInDialog": false,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": false,
+        "url": "http://localhost:8021/viagens/cadastros/cargos/"
+      }
+    },
+    {
+      "tela": "combustiveis",
+      "acao": "Space abre",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/combustiveis/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/combustiveis/"
+      }
+    },
+    {
+      "tela": "combustiveis",
+      "acao": "Shift+Tab de Voltar",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/combustiveis/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/combustiveis/"
+      }
+    },
+    {
+      "tela": "combustiveis",
+      "acao": "Tab de Excluir",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/combustiveis/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/combustiveis/"
+      }
+    },
+    {
+      "tela": "combustiveis",
+      "acao": "Escape",
+      "origem": {
+        "activeInDialog": false,
+        "activeTag": "BUTTON",
+        "activeText": "",
+        "dialogOpen": false,
+        "url": "http://127.0.0.1:8000/cadastros/combustiveis/"
+      },
+      "destino": {
+        "activeInDialog": false,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": false,
+        "url": "http://localhost:8021/viagens/cadastros/combustiveis/"
+      }
+    },
+    {
+      "tela": "unidades",
+      "acao": "Space abre",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/unidades/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/unidades/"
+      }
+    },
+    {
+      "tela": "unidades",
+      "acao": "Shift+Tab de Voltar",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/unidades/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/unidades/"
+      }
+    },
+    {
+      "tela": "unidades",
+      "acao": "Tab de Excluir",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/unidades/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/unidades/"
+      }
+    },
+    {
+      "tela": "unidades",
+      "acao": "Escape",
+      "origem": {
+        "activeInDialog": false,
+        "activeTag": "BUTTON",
+        "activeText": "",
+        "dialogOpen": false,
+        "url": "http://127.0.0.1:8000/cadastros/unidades/"
+      },
+      "destino": {
+        "activeInDialog": false,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": false,
+        "url": "http://localhost:8021/viagens/cadastros/unidades/"
+      }
+    },
+    {
+      "tela": "estados",
+      "acao": "Space abre",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/estados/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/estados/"
+      }
+    },
+    {
+      "tela": "estados",
+      "acao": "Shift+Tab de Voltar",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/estados/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/estados/"
+      }
+    },
+    {
+      "tela": "estados",
+      "acao": "Tab de Excluir",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/estados/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/estados/"
+      }
+    },
+    {
+      "tela": "estados",
+      "acao": "Escape",
+      "origem": {
+        "activeInDialog": false,
+        "activeTag": "BUTTON",
+        "activeText": "",
+        "dialogOpen": false,
+        "url": "http://127.0.0.1:8000/cadastros/estados/"
+      },
+      "destino": {
+        "activeInDialog": false,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": false,
+        "url": "http://localhost:8021/viagens/cadastros/estados/"
+      }
+    },
+    {
+      "tela": "viaturas",
+      "acao": "Space abre",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/viaturas/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/viaturas/"
+      }
+    },
+    {
+      "tela": "viaturas",
+      "acao": "Shift+Tab de Voltar",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/viaturas/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/viaturas/"
+      }
+    },
+    {
+      "tela": "viaturas",
+      "acao": "Tab de Excluir",
+      "origem": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://127.0.0.1:8000/cadastros/viaturas/"
+      },
+      "destino": {
+        "activeInDialog": true,
+        "activeTag": "BUTTON",
+        "activeText": "Voltar",
+        "dialogOpen": true,
+        "url": "http://localhost:8021/viagens/cadastros/viaturas/"
+      }
+    },
+    {
+      "tela": "viaturas",
+      "acao": "Escape",
+      "origem": {
+        "activeInDialog": false,
+        "activeTag": "BUTTON",
+        "activeText": "",
+        "dialogOpen": false,
+        "url": "http://127.0.0.1:8000/cadastros/viaturas/"
+      },
+      "destino": {
+        "activeInDialog": false,
+        "activeTag": "BUTTON",
+        "activeText": "Excluir",
+        "dialogOpen": false,
+        "url": "http://localhost:8021/viagens/cadastros/viaturas/"
+      }
+    }
+  ],
+  "pares": [
+    "meta1-servidores-exclusao-espaco",
+    "meta1-servidores-exclusao-tab-inverso",
+    "meta1-servidores-exclusao-tab-direto",
+    "meta1-servidores-exclusao-escape",
+    "meta1-cargos-exclusao-teclado",
+    "meta1-cargos-exclusao-ciclo-foco",
+    "meta1-combustiveis-exclusao-teclado",
+    "meta1-combustiveis-exclusao-ciclo-foco",
+    "meta1-unidades-exclusao-teclado",
+    "meta1-unidades-exclusao-ciclo-foco",
+    "meta1-estados-exclusao-teclado",
+    "meta1-estados-exclusao-ciclo-foco",
+    "meta1-viaturas-exclusao-teclado",
+    "meta1-viaturas-exclusao-ciclo-foco",
+    "meta1-servidores-exclusao-botao-retorno"
+  ],
+  "origem_somente_leitura": true
+}

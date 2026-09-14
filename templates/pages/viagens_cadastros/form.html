@@ -11,6 +11,7 @@
 
   <form method="post" action="" class="cad-frm cadastro-viagens-form" data-viagens-form>
     {% csrf_token %}
+    {% if url_retorno %}<input type="hidden" name="next" value="{{ url_retorno }}">{% endif %}
 
     <div class="cadastro-viagens-form__intro">
       <div>

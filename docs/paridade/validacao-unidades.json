@@ -1,0 +1,30 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Incremento parcial da Meta 1 — unidades",
+  "postgresql": {
+    "testes": 116,
+    "resultado": "OK",
+    "duracao_segundos": 27.846,
+    "log": "../../logs/paridade-unidades-postgresql.txt"
+  },
+  "sqlite": {
+    "testes": 116,
+    "resultado": "OK",
+    "duracao_segundos": 19.728,
+    "log": "../../logs/paridade-unidades-sqlite.txt"
+  },
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "diff_check": "limpo; avisos de normalização LF/CRLF",
+  "hashes_urls_origem": "6 arquivos preservados",
+  "pares_novos": [
+    "meta1-unidade-inclusao",
+    "meta1-unidades-cartoes-ensaio",
+    "meta1-unidades-sem-resultado",
+    "meta1-unidades-busca-sigla",
+    "meta1-unidade-confirmacao",
+    "meta1-unidades-retorno-viatura",
+    "meta1-unidades-retorno-servidor"
+  ],
+  "limites": "Metas 0 e 1 abertas; provas parciais. Testes antecedem apenas a alteração visual final da posição do link de retorno, conferida no navegador. Suíte completa anterior não atualizada neste incremento."
+}

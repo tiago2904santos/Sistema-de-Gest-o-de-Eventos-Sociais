@@ -1,0 +1,50 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Meta 1 parcial — serviço e endpoint de consulta de CEP",
+  "rota_resolvida": "/viagens/cadastros/api/cep/01001000/",
+  "hashes_origem": {
+    "cadastros": true,
+    "roteiros": true,
+    "oficios": true,
+    "justificativas": true,
+    "termos": true,
+    "prestacoes_contas": true
+  },
+  "pares_novos": [],
+  "postgresql": {
+    "testes": 131,
+    "resultado": "OK",
+    "segundos": 55.638,
+    "log": "../../logs/paridade-cep-postgresql.txt"
+  },
+  "sqlite": {
+    "testes": 131,
+    "resultado": "OK",
+    "segundos": 51.987,
+    "log": "../../logs/paridade-cep-sqlite.txt"
+  },
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "diff_check": "limpo; avisos LF/CRLF preexistentes",
+  "dependencias": "Nenhuma adicionada. urllib da biblioteca padrão, como no importador IBGE existente.",
+  "consulta_real": {
+    "procedimento": "Executado consultar_cep no destino, que fez GET público no ViaCEP; não é prova de sessão HTTP ou resposta do GV.",
+    "retorno_observado": {
+      "cep": "01001-000",
+      "logradouro": "Praça da Sé",
+      "bairro": "Sé",
+      "cidade": "São Paulo",
+      "uf": "SP",
+      "estado": "São Paulo"
+    },
+    "referencia_oficial": "https://viacep.com.br/"
+  },
+  "limites": [
+    "Navegador recusou abrir diretamente as duas URLs JSON da origem com net::ERR_BLOCKED_BY_CLIENT; nenhuma resposta visual foi certificada.",
+    "Não integrado ao formulário; P10 pendente.",
+    "Última suíte completa de 1.111 testes por banco antecede este incremento.",
+    "Perfis da origem e resposta de falha do fornecedor não exercitados em navegador."
+  ],
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04"
+}

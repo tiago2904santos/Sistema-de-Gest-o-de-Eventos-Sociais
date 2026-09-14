@@ -1,0 +1,45 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
+{% block title %}{% if instancia %}Editar{% else %}Novo{% endif %} servidor{% endblock %}
+{% block conteudo %}
+<div class="servidor-paridade">
+  <div class="d-cabeca"><div><div class="kicker">Cadastros</div><h1>{% if instancia %}Editar{% else %}Novo{% endif %} servidor</h1></div></div>
+  <div class="servidor-paridade__barra">
+    <p>{% if instancia %}Atualize os dados do servidor; campos pendentes podem ser completados depois.{% else %}Só o nome é obrigatório; demais campos podem ser completados depois.{% endif %}</p>
+    <a class="btn--secundaria" href="{{ url_voltar }}">{% include "components/icon.html" with nome="arrow-left" %}Voltar</a>
+  </div>
+  <form method="post" class="cad-frm" novalidate data-servidor-form>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ url_voltar }}">
+    {% if form.errors %}<div class="aviso aviso--erro" role="alert" tabindex="-1" data-servidor-erros><div><b>Corrija antes de continuar</b><ul class="aviso--erro__lista">{% for erro in form.non_field_errors %}<li>{{ erro }}</li>{% empty %}<li>Revise os campos destacados antes de continuar.</li>{% endfor %}</ul></div></div>{% endif %}
+    <section class="reg">
+      <header><h2>Dados do servidor</h2><p>{% if instancia %}Atualize os dados do servidor; campos pendentes podem ser completados depois.{% else %}Só o nome é obrigatório; demais campos podem ser completados depois.{% endif %}</p></header>
+      <section class="servidor-paridade__bloco" aria-labelledby="identificacao-titulo">
+        <div><h3 id="identificacao-titulo">Identificação funcional</h3><p>Dados pessoais e cargo</p></div>
+        <div class="servidor-paridade__campos">
+          {% include "components/input.html" with name="nome" label="Nome" valor=nome.valor obrigatorio=nome.obrigatorio erros=nome.erros maxlength=nome.maxlength uppercase=True autocomplete=nome.autocomplete largura="12" %}
+          <div class="servidor-paridade__gerenciavel">
+            {% include "components/select.html" with name="cargo" label="Cargo" opcoes=cargo.opcoes selecionado=cargo.valor erros=cargo.erros placeholder=cargo.placeholder permitir_vazio=True %}
+            <a href="{{ url_cargos }}" data-servidor-gerenciar>Gerenciar cargos</a>
+          </div>
+          {% include "components/input.html" with name="cpf" label="CPF" valor=cpf.valor erros=cpf.erros placeholder=cpf.placeholder maxlength=cpf.maxlength mascara_cadastro="cpf" inputmode=cpf.inputmode largura="6" %}
+          {% include "components/input.html" with name="rg" label="RG" valor=rg.valor erros=rg.erros placeholder=rg.placeholder maxlength=rg.maxlength mascara_cadastro="rg" ajuda=rg.ajuda largura="6" %}
+          {% include "components/input.html" with name="telefone" label="Telefone" valor=telefone.valor erros=telefone.erros placeholder=telefone.placeholder maxlength=telefone.maxlength mascara_cadastro="telefone" inputmode=telefone.inputmode largura="6" %}
+        </div>
+      </section>
+      <section class="servidor-paridade__bloco" aria-labelledby="lotacao-titulo">
+        <div><h3 id="lotacao-titulo">Lotação</h3><p>Unidade de lotação do servidor</p></div>
+        <div class="servidor-paridade__gerenciavel">
+          {% include "components/select.html" with name="unidade" label="Unidade" opcoes=unidade.opcoes selecionado=unidade.valor erros=unidade.erros placeholder="Buscar unidade" pesquisavel=True unidade_gv=True %}
+          <a href="{{ url_unidades }}" data-servidor-gerenciar>Gerenciar unidades</a>
+        </div>
+      </section>
+      <footer class="cad-frm__acoes servidor-paridade__acoes">
+        <a class="btn--secundaria" href="{{ url_voltar }}">{% include "components/icon.html" with nome="arrow-left" %}Voltar</a>
+        <button class="btn-primaria" type="submit">{% include "components/icon.html" with nome="check" %}Salvar</button>
+      </footer>
+    </section>
+  </form>
+</div>
+{% endblock %}
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-unidade-picker.js' %}" defer></script><script src="{% estatico 'js/viagens-cadastros.js' %}" defer></script><script src="{% estatico 'js/viagens-servidores.js' %}" defer></script>{% endblock %}

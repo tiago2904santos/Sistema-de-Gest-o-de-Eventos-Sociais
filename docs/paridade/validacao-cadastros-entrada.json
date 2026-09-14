@@ -1,0 +1,30 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Meta 1 parcial — entrada de cadastros e ordem dos dados de servidores",
+  "postgresql": {
+    "testes": 117,
+    "resultado": "OK",
+    "segundos": 26.44,
+    "log": "../../logs/paridade-cadastros-entrada-postgresql.txt"
+  },
+  "sqlite": {
+    "testes": 117,
+    "resultado": "OK",
+    "segundos": 17.824,
+    "log": "../../logs/paridade-cadastros-entrada-sqlite.txt"
+  },
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "diff_check": "limpo; avisos LF/CRLF de arquivos existentes",
+  "origem": "6 hashes das rotas preservados; nenhuma escrita executada na origem",
+  "pares_novos": [
+    "meta1-cadastros-entrada",
+    "meta1-servidores-ordem-dados"
+  ],
+  "pendencias": [
+    "Grupo Estados e acesso a diárias pela configuração.",
+    "P01, P05, P06 e P07 aguardam decisões.",
+    "Navegação e perfis ainda não exercitados integralmente.",
+    "A suíte completa de 1.103 testes por banco registrada antes antecede esta mudança de apresentação; não constitui fechamento desta meta."
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Meta 1 parcial — retorno de servidores para viatura",
+  "decisao": "P11 autorizada",
+  "pares_novos": [
+    "meta1-servidores-exclusao-retorno",
+    "meta1-servidores-busca-retorno-p11"
+  ],
+  "postgresql": {
+    "testes": 5,
+    "resultado": "OK",
+    "segundos": 0.646,
+    "log": "../../logs/paridade-servidores-retorno-postgresql.txt"
+  },
+  "sqlite": {
+    "testes": 5,
+    "resultado": "OK",
+    "segundos": 0.345,
+    "log": "../../logs/paridade-servidores-retorno-sqlite.txt"
+  },
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "hashes_rotas_origem": {
+    "cadastros": true,
+    "roteiros": true,
+    "oficios": true,
+    "justificativas": true,
+    "termos": true,
+    "prestacoes_contas": true
+  },
+  "ensaio_destino": {
+    "servidor_temporario_pk": 8,
+    "nome": "ENSAIO RETORNO P11 20260910",
+    "removido_confirmado_banco": true,
+    "criacao_retorna_viatura": true,
+    "exclusao_preserva_next_na_lista": true,
+    "voltar_a_viatura": true
+  },
+  "limites": [
+    "Nenhum POST na origem; bloqueios específicos de exclusão não certificados.",
+    "P11 cobre somente retorno na lista, criação e busca de servidores.",
+    "Cinco testes de respostas por banco neste incremento; não é execução completa da suíte."
+  ],
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04"
+}

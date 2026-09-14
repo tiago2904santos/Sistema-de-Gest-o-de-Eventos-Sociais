@@ -1,0 +1,12 @@
+{
+  "origem": {
+    "label": "Excluir",
+    "tag": "BUTTON",
+    "url": "/cadastros/servidores/1/excluir/?next=%2Fcadastros%2Fviaturas%2Fnova%2F"
+  },
+  "destino": {
+    "label": "Excluir",
+    "tag": "BUTTON",
+    "url": "/viagens/cadastros/servidores/1/excluir/?next=/viagens/cadastros/viaturas/novo/"
+  }
+}

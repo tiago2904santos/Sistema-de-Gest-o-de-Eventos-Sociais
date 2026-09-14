@@ -1,0 +1,37 @@
+{
+  "diarias": [
+    {
+      "pk": 3,
+      "faixa": "BRASILIA",
+      "vigencia_inicio": "2026-01-01",
+      "valor_24h": "468.12",
+      "valor_15": "70.22",
+      "valor_30": "140.44"
+    },
+    {
+      "pk": 2,
+      "faixa": "CAPITAL",
+      "vigencia_inicio": "2026-01-01",
+      "valor_24h": "371.26",
+      "valor_15": "55.69",
+      "valor_30": "111.38"
+    },
+    {
+      "pk": 1,
+      "faixa": "INTERIOR",
+      "vigencia_inicio": "2026-01-01",
+      "valor_24h": "290.55",
+      "valor_15": "43.58",
+      "valor_30": "87.17"
+    }
+  ],
+  "combustiveis": 0,
+  "hashes_rotas_origem": {
+    "cadastros": true,
+    "roteiros": true,
+    "oficios": true,
+    "justificativas": true,
+    "termos": true,
+    "prestacoes_contas": true
+  }
+}

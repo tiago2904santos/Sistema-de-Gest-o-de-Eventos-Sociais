@@ -1,0 +1,42 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Meta 1 parcial — selo Rascunho na seleção de motoristas",
+  "pares_novos": [
+    "meta1-viatura-motoristas-rascunho-opcao",
+    "meta1-viatura-motoristas-rascunho-cartao",
+    "meta1-viatura-motoristas-rascunho-retorno",
+    "meta1-viatura-motoristas-rascunho-removido",
+    "meta1-viatura-motoristas-limite-inferior"
+  ],
+  "postgresql": {
+    "testes": 10,
+    "resultado": "OK",
+    "segundos": 1.599,
+    "log": "../../logs/paridade-motoristas-rascunho-postgresql.txt"
+  },
+  "sqlite": {
+    "testes": 10,
+    "resultado": "OK",
+    "segundos": 0.782,
+    "log": "../../logs/paridade-motoristas-rascunho-sqlite.txt"
+  },
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "diff_check": "limpo; avisos LF/CRLF preexistentes",
+  "hashes_rotas_origem": {
+    "cadastros": true,
+    "roteiros": true,
+    "oficios": true,
+    "justificativas": true,
+    "termos": true,
+    "prestacoes_contas": true
+  },
+  "dados": "Status existente usado na apresentação; nenhuma gravação ou POST nos ensaios.",
+  "limites": [
+    "Retorno na origem sem link; reabertura direta restaurou seleção, não certifica navegação equivalente.",
+    "Perfis, RG/unidade no navegador do destino e demais estados continuam pendentes.",
+    "Esta rodada executou os 10 testes de viaturas; ampla de 132 antecede este complemento; completa de 1111 antecede também CEP e busca."
+  ],
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04"
+}

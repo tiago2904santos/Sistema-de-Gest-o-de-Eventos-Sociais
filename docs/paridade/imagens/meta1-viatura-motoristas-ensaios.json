@@ -1,0 +1,24 @@
+{
+  "rgOrigem": {
+    "consulta": "4.759.768-4",
+    "resultados": [
+      "ASADEMAR SCHONSAGENTE DE POLÍCIA JUDICIÁRIA"
+    ]
+  },
+  "unidadeOrigem": {
+    "consulta": "ASSESSORIA DE COMUNICAÇÃO SOCIAL",
+    "resultados": [
+      "ADADILSON JOSE DOMINGUESAGENTE DE POLÍCIA JUDICIÁRIA • ASCOM",
+      "CCCRISTIANE PANSOLIN CARDOSOAGENTE DE POLÍCIA JUDICIÁRIA • ASCOM",
+      "GTGABRIELA MONTEIRO TWARDOWSKIRascunhoASSESSORA • ASCOM"
+    ]
+  },
+  "limiteInferiorDestino": {
+    "ativo": "motorista-opcao-6",
+    "expandido": "true",
+    "visiveis": [
+      "motorista-opcao-6"
+    ]
+  },
+  "limites": "RG e nome completo da unidade exercitados na origem e em testes isolados do destino; não há esses dados nos motoristas de desenvolvimento do destino. Não constituem par visual desses filtros."
+}

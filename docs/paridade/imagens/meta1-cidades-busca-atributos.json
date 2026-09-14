@@ -1,0 +1,14 @@
+{
+  "origem": {
+    "focused": true,
+    "type": "text",
+    "url": "http://127.0.0.1:8000/cadastros/cidades/?q=cambe",
+    "value": "cambe"
+  },
+  "destino": {
+    "focused": true,
+    "type": "text",
+    "url": "http://localhost:8021/viagens/cadastros/cidades/?q=cambe",
+    "value": "cambe"
+  }
+}

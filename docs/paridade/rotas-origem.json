@@ -1,0 +1,1004 @@
+{
+  "cadastros": {
+    "arquivo": "cadastros/urls.py",
+    "sha256": "9e6d32d30e3c10a494fd328db5cebd0c098b559955d54695154e1f2db0ec0479",
+    "rotas": [
+      {
+        "nome": "index",
+        "padrao": "",
+        "callback": "views.index",
+        "linha": 8
+      },
+      {
+        "nome": "configuracao",
+        "padrao": "configuracao/",
+        "callback": "views.configuracao_sistema",
+        "linha": 9
+      },
+      {
+        "nome": "configuracao_aba",
+        "padrao": "configuracao/<slug:aba>/",
+        "callback": "views.configuracao_sistema",
+        "linha": 10
+      },
+      {
+        "nome": "api_consulta_cep",
+        "padrao": "api/cep/<str:cep>/",
+        "callback": "views.api_consulta_cep",
+        "linha": 11
+      },
+      {
+        "nome": "estados_index",
+        "padrao": "estados/",
+        "callback": "views.estados_index",
+        "linha": 12
+      },
+      {
+        "nome": "estado_update",
+        "padrao": "estados/<int:pk>/editar/",
+        "callback": "views.estado_update",
+        "linha": 13
+      },
+      {
+        "nome": "estado_delete",
+        "padrao": "estados/<int:pk>/excluir/",
+        "callback": "views.estado_delete",
+        "linha": 14
+      },
+      {
+        "nome": "unidades_index",
+        "padrao": "unidades/",
+        "callback": "views.unidades_index",
+        "linha": 15
+      },
+      {
+        "nome": "unidade_create",
+        "padrao": "unidades/nova/",
+        "callback": "views.unidades_index",
+        "linha": 16
+      },
+      {
+        "nome": "unidade_update",
+        "padrao": "unidades/<int:pk>/editar/",
+        "callback": "views.unidade_update",
+        "linha": 17
+      },
+      {
+        "nome": "unidade_delete",
+        "padrao": "unidades/<int:pk>/excluir/",
+        "callback": "views.unidade_delete",
+        "linha": 18
+      },
+      {
+        "nome": "cargos_index",
+        "padrao": "cargos/",
+        "callback": "views.cargos_index",
+        "linha": 19
+      },
+      {
+        "nome": "cargo_create",
+        "padrao": "cargos/novo/",
+        "callback": "views.cargos_index",
+        "linha": 20
+      },
+      {
+        "nome": "cargo_update",
+        "padrao": "cargos/<int:pk>/editar/",
+        "callback": "views.cargo_update",
+        "linha": 21
+      },
+      {
+        "nome": "cargo_set_default",
+        "padrao": "cargos/<int:pk>/definir-padrao/",
+        "callback": "views.cargo_set_default",
+        "linha": 22
+      },
+      {
+        "nome": "cargo_delete",
+        "padrao": "cargos/<int:pk>/excluir/",
+        "callback": "views.cargo_delete",
+        "linha": 23
+      },
+      {
+        "nome": "combustiveis_index",
+        "padrao": "combustiveis/",
+        "callback": "views.combustiveis_index",
+        "linha": 24
+      },
+      {
+        "nome": "combustivel_create",
+        "padrao": "combustiveis/novo/",
+        "callback": "views.combustiveis_index",
+        "linha": 25
+      },
+      {
+        "nome": "combustivel_update",
+        "padrao": "combustiveis/<int:pk>/editar/",
+        "callback": "views.combustivel_update",
+        "linha": 26
+      },
+      {
+        "nome": "combustivel_set_default",
+        "padrao": "combustiveis/<int:pk>/definir-padrao/",
+        "callback": "views.combustivel_set_default",
+        "linha": 27
+      },
+      {
+        "nome": "combustivel_delete",
+        "padrao": "combustiveis/<int:pk>/excluir/",
+        "callback": "views.combustivel_delete",
+        "linha": 32
+      },
+      {
+        "nome": "cidades_index",
+        "padrao": "cidades/",
+        "callback": "views.cidades_index",
+        "linha": 33
+      },
+      {
+        "nome": "cidade_create",
+        "padrao": "cidades/nova/",
+        "callback": "views.cidades_index",
+        "linha": 34
+      },
+      {
+        "nome": "cidades_export_csv",
+        "padrao": "cidades/exportar.csv",
+        "callback": "views.cidades_export_csv",
+        "linha": 35
+      },
+      {
+        "nome": "servidores_index",
+        "padrao": "servidores/",
+        "callback": "views.servidores_index",
+        "linha": 36
+      },
+      {
+        "nome": "servidor_create",
+        "padrao": "servidores/novo/",
+        "callback": "views.servidor_create",
+        "linha": 37
+      },
+      {
+        "nome": "servidor_update",
+        "padrao": "servidores/<int:pk>/editar/",
+        "callback": "views.servidor_update",
+        "linha": 38
+      },
+      {
+        "nome": "servidor_delete",
+        "padrao": "servidores/<int:pk>/excluir/",
+        "callback": "views.servidor_delete",
+        "linha": 39
+      },
+      {
+        "nome": "viaturas_index",
+        "padrao": "viaturas/",
+        "callback": "views.viaturas_index",
+        "linha": 40
+      },
+      {
+        "nome": "viatura_create",
+        "padrao": "viaturas/nova/",
+        "callback": "views.viatura_create",
+        "linha": 41
+      },
+      {
+        "nome": "viatura_update",
+        "padrao": "viaturas/<int:pk>/editar/",
+        "callback": "views.viatura_update",
+        "linha": 42
+      },
+      {
+        "nome": "viatura_delete",
+        "padrao": "viaturas/<int:pk>/excluir/",
+        "callback": "views.viatura_delete",
+        "linha": 43
+      }
+    ]
+  },
+  "roteiros": {
+    "arquivo": "roteiros/urls.py",
+    "sha256": "b89b65351d015442b7f4d0f9e5172dd9f8421ef3abde65d37e987459a26ba1d6",
+    "rotas": [
+      {
+        "nome": "index",
+        "padrao": "",
+        "callback": "views.index",
+        "linha": 9
+      },
+      {
+        "nome": "novo",
+        "padrao": "novo/",
+        "callback": "views.novo",
+        "linha": 10
+      },
+      {
+        "nome": "roteiro-autosave-create",
+        "padrao": "autosave/criar/",
+        "callback": "views.roteiro_autosave_create",
+        "linha": 11
+      },
+      {
+        "nome": "api_cidades_por_estado",
+        "padrao": "api/cidades/<int:estado_id>/",
+        "callback": "views.api_cidades_por_estado",
+        "linha": 12
+      },
+      {
+        "nome": "calcular_diarias",
+        "padrao": "calcular-diarias/",
+        "callback": "views.calcular_diarias",
+        "linha": 13
+      },
+      {
+        "nome": "trechos_estimar",
+        "padrao": "trechos/estimar/",
+        "callback": "views.trechos_estimar",
+        "linha": 14
+      },
+      {
+        "nome": "calcular_rota",
+        "padrao": "api/calcular-rota/",
+        "callback": "views.calcular_rota",
+        "linha": 15
+      },
+      {
+        "nome": "calcular_rota_preview",
+        "padrao": "api/calcular-rota-preview/",
+        "callback": "views.calcular_rota_preview",
+        "linha": 16
+      },
+      {
+        "nome": "roteiro-autosave",
+        "padrao": "<int:pk>/autosave/",
+        "callback": "views.roteiro_autosave",
+        "linha": 17
+      },
+      {
+        "nome": "editar",
+        "padrao": "<int:pk>/editar/",
+        "callback": "views.editar",
+        "linha": 18
+      },
+      {
+        "nome": "excluir",
+        "padrao": "<int:pk>/excluir/",
+        "callback": "views.excluir",
+        "linha": 19
+      }
+    ]
+  },
+  "oficios": {
+    "arquivo": "oficios/urls.py",
+    "sha256": "b626791cb3c2bb74da8d90f1f464da5445d2101f17bb26d74f498749f58a067c",
+    "rotas": [
+      {
+        "nome": "index",
+        "padrao": "",
+        "callback": "views.index",
+        "linha": 9
+      },
+      {
+        "nome": "novo",
+        "padrao": "novo/",
+        "callback": "views.novo",
+        "linha": 10
+      },
+      {
+        "nome": "modelos_motivo_index",
+        "padrao": "modelos-motivo/",
+        "callback": "views.modelos_motivo_index",
+        "linha": 11
+      },
+      {
+        "nome": "modelo_motivo_create",
+        "padrao": "modelos-motivo/novo/",
+        "callback": "views.modelos_motivo_index",
+        "linha": 12
+      },
+      {
+        "nome": "modelo_motivo_update",
+        "padrao": "modelos-motivo/<int:pk>/editar/",
+        "callback": "views.modelo_motivo_editar",
+        "linha": 13
+      },
+      {
+        "nome": "modelo_motivo_definir_padrao",
+        "padrao": "modelos-motivo/<int:pk>/padrao/",
+        "callback": "views.modelo_motivo_definir_padrao",
+        "linha": 14
+      },
+      {
+        "nome": "modelo_motivo_delete",
+        "padrao": "modelos-motivo/<int:pk>/excluir/",
+        "callback": "views.modelo_motivo_excluir",
+        "linha": 19
+      },
+      {
+        "nome": "detalhe",
+        "padrao": "<int:pk>/",
+        "callback": "views.detalhe",
+        "linha": 20
+      },
+      {
+        "nome": "card_menus",
+        "padrao": "<int:pk>/menus/",
+        "callback": "views.card_menus",
+        "linha": 21
+      },
+      {
+        "nome": "editar",
+        "padrao": "<int:pk>/editar/",
+        "callback": "views.editar",
+        "linha": 22
+      },
+      {
+        "nome": "dados_viajantes",
+        "padrao": "<int:pk>/dados-viajantes/",
+        "callback": "views.dados_viajantes",
+        "linha": 23
+      },
+      {
+        "nome": "dados_viajantes_autosave",
+        "padrao": "<int:pk>/dados-viajantes/autosave/",
+        "callback": "views.dados_viajantes_autosave",
+        "linha": 24
+      },
+      {
+        "nome": "transporte",
+        "padrao": "<int:pk>/transporte/",
+        "callback": "views.transporte",
+        "linha": 25
+      },
+      {
+        "nome": "transporte_autosave",
+        "padrao": "<int:pk>/transporte/autosave/",
+        "callback": "views.transporte_autosave",
+        "linha": 26
+      },
+      {
+        "nome": "wizard_roteiro",
+        "padrao": "<int:pk>/roteiro/",
+        "callback": "views.wizard_roteiro",
+        "linha": 27
+      },
+      {
+        "nome": "wizard_roteiro_autosave_criar",
+        "padrao": "<int:pk>/roteiro/autosave/criar/",
+        "callback": "views.wizard_roteiro_autosave_criar",
+        "linha": 28
+      },
+      {
+        "nome": "wizard_justificativa",
+        "padrao": "<int:pk>/justificativa/",
+        "callback": "views.wizard_justificativa",
+        "linha": 33
+      },
+      {
+        "nome": "justificativa_autosave",
+        "padrao": "<int:pk>/justificativa/autosave/",
+        "callback": "views.justificativa_autosave",
+        "linha": 34
+      },
+      {
+        "nome": "wizard_resumo",
+        "padrao": "<int:pk>/resumo/",
+        "callback": "views.wizard_resumo",
+        "linha": 35
+      },
+      {
+        "nome": "api_viatura_por_placa",
+        "padrao": "<int:pk>/api/viatura-por-placa/",
+        "callback": "views.api_viatura_por_placa",
+        "linha": 36
+      },
+      {
+        "nome": "wizard_documentos",
+        "padrao": "<int:pk>/documentos/",
+        "callback": "views.wizard_documentos",
+        "linha": 37
+      },
+      {
+        "nome": "oficio_pdf_inline",
+        "padrao": "<int:pk>/documentos/oficio-pdf-inline/",
+        "callback": "views.oficio_pdf_inline",
+        "linha": 38
+      },
+      {
+        "nome": "justificativa_pdf_inline",
+        "padrao": "<int:pk>/documentos/justificativa-pdf-inline/",
+        "callback": "views.justificativa_pdf_inline",
+        "linha": 39
+      },
+      {
+        "nome": "ordem_servico_pdf_inline",
+        "padrao": "<int:pk>/documentos/ordem-servico-pdf-inline/",
+        "callback": "views.ordem_servico_pdf_inline",
+        "linha": 44
+      },
+      {
+        "nome": "baixar_justificativa_documento",
+        "padrao": "<int:pk>/documentos/justificativa/<str:formato>/",
+        "callback": "views.baixar_justificativa_documento",
+        "linha": 49
+      },
+      {
+        "nome": "baixar_ordem_servico_documento",
+        "padrao": "<int:pk>/documentos/ordem-servico/<str:formato>/",
+        "callback": "views.baixar_ordem_servico_documento",
+        "linha": 54
+      },
+      {
+        "nome": "baixar_documento",
+        "padrao": "<int:pk>/documentos/<str:formato>/",
+        "callback": "views.baixar_documento",
+        "linha": 59
+      },
+      {
+        "nome": "excluir",
+        "padrao": "<int:pk>/excluir/",
+        "callback": "views.excluir",
+        "linha": 60
+      },
+      {
+        "nome": "cancelar",
+        "padrao": "<int:pk>/cancelar/",
+        "callback": "views.cancelar",
+        "linha": 61
+      },
+      {
+        "nome": "retificar",
+        "padrao": "<int:pk>/retificar/",
+        "callback": "views.retificar",
+        "linha": 62
+      },
+      {
+        "nome": "marcar_complementar",
+        "padrao": "<int:pk>/complementar/",
+        "callback": "views.marcar_complementar",
+        "linha": 63
+      }
+    ]
+  },
+  "justificativas": {
+    "arquivo": "justificativas/urls.py",
+    "sha256": "eb7bf84c34bf5312add3ecca5a8d753c4c88da1d06438b348c639a82fe2d116f",
+    "rotas": [
+      {
+        "nome": "index",
+        "padrao": "",
+        "callback": "views.index",
+        "linha": 9
+      },
+      {
+        "nome": "api_buscar_oficios",
+        "padrao": "api/oficios/",
+        "callback": "views.api_buscar_oficios",
+        "linha": 10
+      },
+      {
+        "nome": "justificativa_delete",
+        "padrao": "<int:pk>/excluir/",
+        "callback": "views.justificativa_excluir",
+        "linha": 11
+      },
+      {
+        "nome": "modelos_index",
+        "padrao": "modelos/",
+        "callback": "views.modelos_index",
+        "linha": 12
+      },
+      {
+        "nome": "modelo_create",
+        "padrao": "modelos/novo/",
+        "callback": "views.modelos_index",
+        "linha": 13
+      },
+      {
+        "nome": "modelo_update",
+        "padrao": "modelos/<int:pk>/editar/",
+        "callback": "views.modelo_editar",
+        "linha": 14
+      },
+      {
+        "nome": "modelo_definir_padrao",
+        "padrao": "modelos/<int:pk>/padrao/",
+        "callback": "views.modelo_definir_padrao",
+        "linha": 15
+      },
+      {
+        "nome": "modelo_delete",
+        "padrao": "modelos/<int:pk>/excluir/",
+        "callback": "views.modelo_excluir",
+        "linha": 16
+      },
+      {
+        "nome": "legacy_modelo_create",
+        "padrao": "novo/",
+        "callback": "views.legacy_modelos_redirect",
+        "linha": 17
+      },
+      {
+        "nome": "legacy_modelo_update",
+        "padrao": "<int:pk>/editar/",
+        "callback": "views.legacy_modelos_redirect",
+        "linha": 18
+      },
+      {
+        "nome": "legacy_modelo_definir_padrao",
+        "padrao": "<int:pk>/padrao/",
+        "callback": "views.legacy_modelos_redirect",
+        "linha": 19
+      },
+      {
+        "nome": "legacy_modelo_delete",
+        "padrao": "<int:pk>/excluir/",
+        "callback": "views.legacy_modelos_redirect",
+        "linha": 20
+      }
+    ]
+  },
+  "termos": {
+    "arquivo": "termos/urls.py",
+    "sha256": "98cba72be9423e33ef41bacb2b28ced41afd80576d4316bb4186847a3195394b",
+    "rotas": [
+      {
+        "nome": "index",
+        "padrao": "",
+        "callback": "views.index",
+        "linha": 9
+      },
+      {
+        "nome": "api_buscar_oficios",
+        "padrao": "api/oficios/",
+        "callback": "views.api_buscar_oficios",
+        "linha": 10
+      },
+      {
+        "nome": "novo",
+        "padrao": "novo/",
+        "callback": "views.novo",
+        "linha": 11
+      },
+      {
+        "nome": "editar",
+        "padrao": "<int:pk>/editar/",
+        "callback": "views.editar",
+        "linha": 12
+      },
+      {
+        "nome": "excluir",
+        "padrao": "<int:pk>/excluir/",
+        "callback": "views.excluir",
+        "linha": 13
+      },
+      {
+        "nome": "termo_cadastro_downloads",
+        "padrao": "<int:pk>/downloads/",
+        "callback": "views.termo_cadastro_downloads",
+        "linha": 14
+      },
+      {
+        "nome": "termo_cadastro_pdf_inline",
+        "padrao": "<int:pk>/pdf-inline/",
+        "callback": "views.termo_cadastro_pdf_inline",
+        "linha": 15
+      },
+      {
+        "nome": "termo_cadastro_generico_pdf_inline",
+        "padrao": "<int:pk>/pdf-inline/generico/",
+        "callback": "views.termo_cadastro_generico_pdf_inline",
+        "linha": 16
+      },
+      {
+        "nome": "termo_cadastro_servidor_pdf_inline",
+        "padrao": "<int:pk>/servidor/<int:servidor_pk>/pdf-inline/",
+        "callback": "views.termo_cadastro_servidor_pdf_inline",
+        "linha": 21
+      },
+      {
+        "nome": "baixar_termo_cadastro_pdf",
+        "padrao": "<int:pk>/pdf/",
+        "callback": "views.baixar_termo_cadastro_pdf",
+        "linha": 26
+      },
+      {
+        "nome": "baixar_termo_cadastro_docx",
+        "padrao": "<int:pk>/docx/",
+        "callback": "views.baixar_termo_cadastro_docx",
+        "linha": 27
+      },
+      {
+        "nome": "termo_cadastro_generico_assinado_anexar",
+        "padrao": "<int:pk>/generico/assinado/anexar/",
+        "callback": "views.termo_cadastro_generico_assinado_anexar",
+        "linha": 28
+      },
+      {
+        "nome": "termo_cadastro_servidor_assinado_anexar",
+        "padrao": "<int:pk>/servidor/<int:servidor_pk>/assinado/anexar/",
+        "callback": "views.termo_cadastro_servidor_assinado_anexar",
+        "linha": 33
+      },
+      {
+        "nome": "termo_cadastro_viatura_pdf_inline",
+        "padrao": "<int:pk>/viatura/pdf-inline/",
+        "callback": "views.termo_cadastro_viatura_pdf_inline",
+        "linha": 40
+      },
+      {
+        "nome": "baixar_termo_cadastro_viatura",
+        "padrao": "<int:pk>/viatura/<str:formato>/",
+        "callback": "views.baixar_termo_cadastro_viatura",
+        "linha": 45
+      },
+      {
+        "nome": "baixar_termo_cadastro_generico",
+        "padrao": "<int:pk>/generico/<str:formato>/",
+        "callback": "views.baixar_termo_cadastro_generico",
+        "linha": 50
+      },
+      {
+        "nome": "baixar_termo_cadastro_servidor",
+        "padrao": "<int:pk>/servidor/<int:servidor_pk>/<str:formato>/",
+        "callback": "views.baixar_termo_cadastro_servidor",
+        "linha": 55
+      },
+      {
+        "nome": "preview_termo_oficio",
+        "padrao": "oficio/<int:pk>/preview/",
+        "callback": "views.preview_termo_oficio",
+        "linha": 60
+      },
+      {
+        "nome": "termo_servidor_pdf_inline",
+        "padrao": "oficio/<int:pk>/servidor/<int:servidor_pk>/pdf-inline/",
+        "callback": "views.termo_servidor_pdf_inline",
+        "linha": 61
+      },
+      {
+        "nome": "termo_oficio_assinado_anexar",
+        "padrao": "oficio/<int:pk>/servidor/<int:servidor_pk>/assinado/anexar/",
+        "callback": "views.termo_oficio_assinado_anexar",
+        "linha": 66
+      },
+      {
+        "nome": "baixar_termo_servidor",
+        "padrao": "oficio/<int:pk>/servidor/<int:servidor_pk>/<str:formato>/",
+        "callback": "views.baixar_termo_servidor",
+        "linha": 71
+      },
+      {
+        "nome": "baixar_termos_todos_pdf",
+        "padrao": "oficio/<int:pk>/todos/pdf/",
+        "callback": "views.baixar_termos_todos_pdf",
+        "linha": 76
+      },
+      {
+        "nome": "baixar_termo_lote_zip",
+        "padrao": "oficio/<int:pk>/lote/<str:formato>/",
+        "callback": "views.baixar_termo_lote_zip",
+        "linha": 81
+      }
+    ]
+  },
+  "prestacoes_contas": {
+    "arquivo": "prestacoes_contas/urls.py",
+    "sha256": "80a93db3fd361391082fcde51fc03142a12b44d6911682a99fb0c9340d30ccdd",
+    "rotas": [
+      {
+        "nome": "index",
+        "padrao": "",
+        "callback": "views.index",
+        "linha": 11
+      },
+      {
+        "nome": "prestacao_downloads",
+        "padrao": "servidor-prestacao/<int:ps_pk>/downloads/",
+        "callback": "views.prestacao_downloads",
+        "linha": 12
+      },
+      {
+        "nome": "prestacao_download_compilado",
+        "padrao": "servidor-prestacao/<int:ps_pk>/downloads/compilado/",
+        "callback": "views.prestacao_download_compilado",
+        "linha": 13
+      },
+      {
+        "nome": "prestacao_download_assinado",
+        "padrao": "servidor-prestacao/<int:ps_pk>/downloads/assinado/<str:item_id>/<str:formato>/",
+        "callback": "views.prestacao_download_assinado",
+        "linha": 14
+      },
+      {
+        "nome": "prestacao_servidor_arquivar",
+        "padrao": "servidor-prestacao/<int:ps_pk>/arquivar/",
+        "callback": "views.prestacao_servidor_arquivar",
+        "linha": 16
+      },
+      {
+        "nome": "prestacao_servidor_finalizar",
+        "padrao": "servidor-prestacao/<int:ps_pk>/finalizar/",
+        "callback": "views.prestacao_servidor_finalizar",
+        "linha": 21
+      },
+      {
+        "nome": "documentos_servidor",
+        "padrao": "servidor-prestacao/<int:ps_pk>/documentos/",
+        "callback": "views.documentos_servidor",
+        "linha": 26
+      },
+      {
+        "nome": "rt_servidor",
+        "padrao": "servidor-prestacao/<int:ps_pk>/rt/",
+        "callback": "views.rt_servidor",
+        "linha": 31
+      },
+      {
+        "nome": "diario_servidor",
+        "padrao": "servidor-prestacao/<int:ps_pk>/diario/",
+        "callback": "views.diario_servidor",
+        "linha": 32
+      },
+      {
+        "nome": "consolidado_servidor",
+        "padrao": "servidor-prestacao/<int:ps_pk>/consolidado/",
+        "callback": "views.consolidado_servidor",
+        "linha": 37
+      },
+      {
+        "nome": "prestacao_arquivar",
+        "padrao": "prestacao/<int:pc_pk>/arquivar/",
+        "callback": "views.prestacao_arquivar",
+        "linha": 43
+      },
+      {
+        "nome": "prestacao_finalizar",
+        "padrao": "prestacao/<int:pc_pk>/finalizar/",
+        "callback": "views.prestacao_finalizar",
+        "linha": 44
+      },
+      {
+        "nome": "documentos",
+        "padrao": "prestacao/<int:pc_pk>/documentos/",
+        "callback": "views.documentos",
+        "linha": 45
+      },
+      {
+        "nome": "prestacao_arquivo_autosave",
+        "padrao": "prestacao/<int:pc_pk>/despacho/autosave/",
+        "callback": "views.prestacao_arquivo_autosave",
+        "linha": 46
+      },
+      {
+        "nome": "prestacao_despacho_assinado_anexar",
+        "padrao": "prestacao/<int:pc_pk>/despacho-assinado/anexar/",
+        "callback": "views.prestacao_despacho_assinado_anexar",
+        "linha": 47
+      },
+      {
+        "nome": "prestacao_oficio_assinado_anexar",
+        "padrao": "prestacao/<int:pc_pk>/oficio-assinado/anexar/",
+        "callback": "views.prestacao_oficio_assinado_anexar",
+        "linha": 52
+      },
+      {
+        "nome": "prestacao_carimbo_ajustar",
+        "padrao": "prestacao/<int:pc_pk>/oficio-assinado/carimbo/",
+        "callback": "views.prestacao_carimbo_ajustar",
+        "linha": 57
+      },
+      {
+        "nome": "prestacao_oficio_assinado_cru",
+        "padrao": "prestacao/<int:pc_pk>/oficio-assinado/cru/",
+        "callback": "views.prestacao_oficio_assinado_cru",
+        "linha": 62
+      },
+      {
+        "nome": "prestacao_servidor_assinado_anexar",
+        "padrao": "servidor-prestacao/<int:ps_pk>/assinado/<str:tipo>/anexar/",
+        "callback": "views.prestacao_servidor_assinado_anexar",
+        "linha": 67
+      },
+      {
+        "nome": "prestacao_documento_delete",
+        "padrao": "prestacao/<int:pc_pk>/anexo/<int:anexo_pk>/excluir/",
+        "callback": "views.prestacao_documento_excluir",
+        "linha": 72
+      },
+      {
+        "nome": "prestacao_documento_conteudo",
+        "padrao": "prestacao/<int:pc_pk>/anexo/<int:anexo_pk>/conteudo/",
+        "callback": "views.prestacao_documento_conteudo",
+        "linha": 73
+      },
+      {
+        "nome": "prestacao_servidor_solicitacao_autosave",
+        "padrao": "servidor-prestacao/<int:ps_pk>/solicitacao/autosave/",
+        "callback": "views.prestacao_servidor_solicitacao_autosave",
+        "linha": 78
+      },
+      {
+        "nome": "prestacao_servidor_arquivo_autosave",
+        "padrao": "servidor-prestacao/<int:ps_pk>/comprovante/autosave/",
+        "callback": "views.prestacao_servidor_arquivo_autosave",
+        "linha": 79
+      },
+      {
+        "nome": "rt_criar",
+        "padrao": "prestacao/<int:pc_pk>/rt/",
+        "callback": "views.rt_criar",
+        "linha": 80
+      },
+      {
+        "nome": "rt_autosave",
+        "padrao": "rt/<int:pk>/autosave/",
+        "callback": "views.rt_autosave",
+        "linha": 81
+      },
+      {
+        "nome": "card_menus",
+        "padrao": "<int:pk>/menus/",
+        "callback": "card_menus",
+        "linha": 82
+      },
+      {
+        "nome": "rt_servidor_autosave",
+        "padrao": "servidor-prestacao/<int:ps_pk>/rt/autosave/",
+        "callback": "views.rt_servidor_autosave",
+        "linha": 83
+      },
+      {
+        "nome": "rt_download_servidor",
+        "padrao": "rt/servidor/<int:ps_pk>/download/",
+        "callback": "views.rt_download_servidor",
+        "linha": 88
+      },
+      {
+        "nome": "rt_download_servidor_formato",
+        "padrao": "rt/servidor/<int:ps_pk>/download/<str:formato>/",
+        "callback": "views.rt_download_servidor",
+        "linha": 89
+      },
+      {
+        "nome": "diario_criar",
+        "padrao": "prestacao/<int:pc_pk>/diario/",
+        "callback": "views.diario_criar",
+        "linha": 90
+      },
+      {
+        "nome": "diario_editar_roteiro",
+        "padrao": "prestacao/<int:pc_pk>/diario/editar-roteiro/",
+        "callback": "views.diario_editar_roteiro",
+        "linha": 91
+      },
+      {
+        "nome": "diario_servidor_editar_roteiro",
+        "padrao": "servidor-prestacao/<int:ps_pk>/diario/editar-roteiro/",
+        "callback": "views.diario_servidor_editar_roteiro",
+        "linha": 92
+      },
+      {
+        "nome": "diario_motorista",
+        "padrao": "prestacao/<int:pc_pk>/diario/motorista/",
+        "callback": "views.diario_motorista",
+        "linha": 97
+      },
+      {
+        "nome": "diario_servidor_motorista",
+        "padrao": "servidor-prestacao/<int:ps_pk>/diario/motorista/",
+        "callback": "views.diario_servidor_motorista",
+        "linha": 98
+      },
+      {
+        "nome": "diario_autosave",
+        "padrao": "diario/<int:pk>/autosave/",
+        "callback": "views.diario_autosave",
+        "linha": 103
+      },
+      {
+        "nome": "diario_servidor_autosave",
+        "padrao": "servidor-prestacao/<int:ps_pk>/diario/autosave/",
+        "callback": "views.diario_servidor_autosave",
+        "linha": 104
+      },
+      {
+        "nome": "diario_download",
+        "padrao": "diario/<int:pk>/download/",
+        "callback": "views.diario_download",
+        "linha": 109
+      },
+      {
+        "nome": "diario_download_formato",
+        "padrao": "diario/<int:pk>/download/<str:formato>/",
+        "callback": "views.diario_download",
+        "linha": 110
+      },
+      {
+        "nome": "consolidado",
+        "padrao": "prestacao/<int:pc_pk>/consolidado/",
+        "callback": "views.consolidado",
+        "linha": 111
+      },
+      {
+        "nome": "consolidado_download",
+        "padrao": "servidor-prestacao/<int:ps_pk>/consolidado/download/",
+        "callback": "views.consolidado_download",
+        "linha": 112
+      },
+      {
+        "nome": "assinatura_rt_gerar",
+        "padrao": "servidor-prestacao/<int:ps_pk>/assinatura-rt/gerar/",
+        "callback": "views.assinatura_rt_gerar",
+        "linha": 114
+      },
+      {
+        "nome": "assinatura_rt_cancelar",
+        "padrao": "servidor-prestacao/<int:ps_pk>/assinatura-rt/cancelar/",
+        "callback": "views.assinatura_rt_cancelar",
+        "linha": 115
+      },
+      {
+        "nome": "assinatura_db_gerar",
+        "padrao": "prestacao/<int:pc_pk>/assinatura-db/gerar/",
+        "callback": "views.assinatura_db_gerar",
+        "linha": 116
+      },
+      {
+        "nome": "assinatura_db_cancelar",
+        "padrao": "prestacao/<int:pc_pk>/assinatura-db/cancelar/",
+        "callback": "views.assinatura_db_cancelar",
+        "linha": 117
+      },
+      {
+        "nome": "assinatura_landing",
+        "padrao": "assinar/<str:token>/",
+        "callback": "assinatura_views.publico_landing",
+        "linha": 119
+      },
+      {
+        "nome": "assinatura_concluido",
+        "padrao": "assinar/<str:token>/concluido/",
+        "callback": "assinatura_views.publico_concluido",
+        "linha": 120
+      },
+      {
+        "nome": "assinatura_identidade",
+        "padrao": "assinar/<str:token>/<str:tipo>/identidade/",
+        "callback": "assinatura_views.publico_identidade",
+        "linha": 121
+      },
+      {
+        "nome": "assinatura_assinar",
+        "padrao": "assinar/<str:token>/<str:tipo>/assinar/",
+        "callback": "assinatura_views.publico_assinar",
+        "linha": 122
+      },
+      {
+        "nome": "assinatura_pdf_origem",
+        "padrao": "assinar/<str:token>/<str:tipo>/pdf/",
+        "callback": "assinatura_views.publico_pdf_origem",
+        "linha": 123
+      },
+      {
+        "nome": "modelos_index",
+        "padrao": "modelos-texto/",
+        "callback": "views.modelos_index",
+        "linha": 125
+      },
+      {
+        "nome": "modelo_update",
+        "padrao": "modelos-texto/<int:pk>/editar/",
+        "callback": "views.modelo_editar",
+        "linha": 126
+      },
+      {
+        "nome": "modelo_delete",
+        "padrao": "modelos-texto/<int:pk>/excluir/",
+        "callback": "views.modelo_excluir",
+        "linha": 127
+      }
+    ]
+  }
+}

@@ -1,0 +1,160 @@
+{
+  "origem": [
+    {
+      "desabilitado": false,
+      "id": "id_nome",
+      "mascara": "upper",
+      "maxlength": "255",
+      "nome": "nome",
+      "obrigatorio": true,
+      "placeholder": null,
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_cargo",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "cargo",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "select-one",
+      "valor": "1"
+    },
+    {
+      "desabilitado": false,
+      "id": "id_cpf",
+      "mascara": "cpf",
+      "maxlength": "14",
+      "nome": "cpf",
+      "obrigatorio": false,
+      "placeholder": "000.000.000-00",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_rg",
+      "mascara": "rg",
+      "maxlength": "20",
+      "nome": "rg",
+      "obrigatorio": false,
+      "placeholder": "00.000.000-0",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_telefone",
+      "mascara": "telefone",
+      "maxlength": "20",
+      "nome": "telefone",
+      "obrigatorio": false,
+      "placeholder": "(00) 00000-0000",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_unidade",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "unidade",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "select-one",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "",
+      "obrigatorio": false,
+      "placeholder": "Buscar unidade",
+      "tipo": "search",
+      "valor": ""
+    }
+  ],
+  "destino": [
+    {
+      "desabilitado": false,
+      "id": "id_nome",
+      "mascara": null,
+      "maxlength": "255",
+      "nome": "nome",
+      "obrigatorio": true,
+      "placeholder": null,
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_cargo",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "cargo",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "select-one",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_cpf",
+      "mascara": "cpf",
+      "maxlength": "14",
+      "nome": "cpf",
+      "obrigatorio": false,
+      "placeholder": "000.000.000-00",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_rg",
+      "mascara": "rg",
+      "maxlength": "30",
+      "nome": "rg",
+      "obrigatorio": false,
+      "placeholder": "00.000.000-0 ou NÃO POSSUI RG",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_telefone",
+      "mascara": "telefone",
+      "maxlength": "16",
+      "nome": "telefone",
+      "obrigatorio": false,
+      "placeholder": "(00) 00000-0000",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_unidade",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "unidade",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "select-one",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "",
+      "obrigatorio": false,
+      "placeholder": "Buscar unidade",
+      "tipo": "text",
+      "valor": ""
+    }
+  ]
+}

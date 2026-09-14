@@ -1,45 +1,28 @@
 {% extends "layouts/app_shell_v32.html" %}
-{% load static estaticos %}
-
-{% block title %}Cadastros de viagens — Sistema de Gestão de Eventos Sociais{% endblock %}
-
-
-
+{% block title %}Cadastros{% endblock %}
 {% block conteudo %}
-  {% include "components/v32/breadcrumb.html" with atual="Viagens" %}
-  {% include "components/v32/page_header.html" with titulo="Cadastros de viagens" subtitulo="Uma base única para pessoas, veículos, lotações e valores" icone="volante" %}
-
-  <section class="pa-card viagens-hub-intro" aria-labelledby="viagens-hub-titulo">
-    <div>
-      <span class="viagens-eyebrow">Base operacional</span>
-      <h2 id="viagens-hub-titulo">Tudo o que alimenta uma viagem começa aqui</h2>
-      <p>Entre em uma categoria para consultar, criar, editar ou excluir registros. Sem estados intermediários e sem ações escondidas.</p>
-    </div>
-    <div class="viagens-hub-intro__total" aria-label="Total de categorias">
-      <strong>{{ grupos|length }}</strong>
-      <span>categorias organizadas</span>
+<div class="cadastros-entrada-paridade">
+  <div class="d-cabeca"><div><h1>Cadastros</h1><p>Dados-base e cadastros auxiliares dos fluxos.</p></div></div>
+  <section class="reg" aria-labelledby="cadastros-principais">
+    <header class="cadastros-entrada-paridade__cabeca"><span>Operação</span><h2 id="cadastros-principais">Cadastros principais</h2><p>Dados compartilhados pelos documentos e fluxos de viagem.</p></header>
+    <div class="cadastros-entrada-paridade__grade">
+      {% for modulo in modulos %}
+      <article class="cadastros-entrada-paridade__cartao">
+        <span class="cadastros-entrada-paridade__iniciais" aria-hidden="true">{{ modulo.iniciais }}</span>
+        <span class="cadastros-entrada-paridade__categoria">{{ modulo.categoria|default:"Cadastro" }}</span>
+        <h3>{{ modulo.titulo }}</h3><p>{{ modulo.descricao }}</p>
+        <a class="btn--secundaria" href="{% if modulo.url %}{{ modulo.url }}{% else %}{% url 'viagens_cadastros:lista' modulo.slug %}{% endif %}">Abrir</a>
+      </article>
+      {% endfor %}
     </div>
   </section>
-
-  <div class="cad-visao viagens-cadastro-grid">
-    {% for grupo in grupos %}
-      <article class="pa-card pa-card--lista viagens-cadastro-card">
-        <a class="viagens-cadastro-card__principal" href="{% if grupo.url %}{{ grupo.url }}{% else %}{% url 'viagens_cadastros:lista' grupo.slug %}{% endif %}">
-          <span class="kpi__ic" aria-hidden="true">{% include "components/icon.html" with nome=grupo.icone %}</span>
-          <span class="cadastro-card__info">
-            <span class="cadastro-card__titulo">{{ grupo.titulo }}</span>
-            <span class="cadastro-card__valor">{{ grupo.total }}</span>
-            <span class="viagens-cadastro-card__rotulo">registro{{ grupo.total|pluralize }}</span>
-          </span>
-          <span class="cadastro-card__seta" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</span>
-          <span class="viagens-cadastro-card__descricao">{{ grupo.descricao }}</span>
-        </a>
-        {% if grupo.pode_criar %}
-          <a class="viagens-cadastro-card__criar" href="{{ grupo.url_novo }}">
-            {% include "components/icon.html" with nome="plus" %} Criar novo
-          </a>
-        {% endif %}
-      </article>
-    {% endfor %}
-  </div>
+  <section class="reg" aria-labelledby="cadastros-internos">
+    <header class="cadastros-entrada-paridade__cabeca"><span>Configuração</span><h2 id="cadastros-internos">Cadastros internos</h2><p>Parâmetros administrativos e referências de apoio.</p></header>
+    <div class="cadastros-entrada-paridade__grade"><article class="cadastros-entrada-paridade__cartao">
+      <span class="cadastros-entrada-paridade__iniciais" aria-hidden="true">ES</span><span class="cadastros-entrada-paridade__categoria">Base interna</span><h3>Estados</h3><p>Base administrativa interna para suporte à malha de cidades.</p><a class="btn--secundaria" href="{% url 'viagens_cadastros:estados' %}">Abrir</a>
+    </article></div>
+  </section>
+  {# Acesso existente preservado enquanto a aba Roteiros da configuração está pendente. #}
+  <div class="catalogo-paridade__acoes"><a class="btn--secundaria" href="{% url 'viagens_cadastros:diarias' %}">Tabela de diárias</a></div>
+</div>
 {% endblock %}

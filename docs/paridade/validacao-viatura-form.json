@@ -1,0 +1,20 @@
+{
+  "escopo": "Formulário de viaturas e suíte viagens_cadastros; não é encerramento da Meta 1",
+  "postgresql": {
+    "testes": 111,
+    "segundos": 33.871,
+    "resultado": "OK",
+    "log": "logs/paridade-viatura-form-postgresql.txt"
+  },
+  "sqlite": {
+    "testes": 111,
+    "segundos": 21.027,
+    "resultado": "OK",
+    "log": "logs/paridade-viatura-form-sqlite.txt"
+  },
+  "check": "sem problemas",
+  "makemigrations": "nenhuma mudança",
+  "diff_check": "limpo",
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04"
+}

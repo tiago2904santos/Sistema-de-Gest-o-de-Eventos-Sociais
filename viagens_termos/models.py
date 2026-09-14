@@ -1,3 +1,4 @@
+from core.legado import OrigemLegado
 from django.db import models
 from django.utils import timezone
 from core.constraints import periodo_ordenado
@@ -6,7 +7,7 @@ from cadastros.models import Municipio, Estado
 from viagens_cadastros.models import Servidor, Viatura
 from viagens_oficios.models import Oficio
 
-class TermoAutorizacao(ModeloTemporal, ModeloCancelavel):
+class TermoAutorizacao(ModeloTemporal, ModeloCancelavel, OrigemLegado):
     oficio = models.ForeignKey(
         Oficio,
         on_delete=models.SET_NULL,
@@ -159,4 +160,4 @@ class TermoAutorizacao(ModeloTemporal, ModeloCancelavel):
 
     class Meta:
         ordering = ["-criado_em"]
-        constraints = [periodo_ordenado("data_evento_inicio", "data_evento_fim", name="termo_periodo_ordenado")]
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_termoautorizacao_origem"), periodo_ordenado("data_evento_inicio", "data_evento_fim", name="termo_periodo_ordenado")]

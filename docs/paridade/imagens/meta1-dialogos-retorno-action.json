@@ -1,0 +1,4 @@
+{
+  "origem": "http://127.0.0.1:8000/cadastros/servidores/1/excluir/?next=%2Fcadastros%2Fviaturas%2Fnova%2F",
+  "destino": "http://localhost:8021/viagens/cadastros/servidores/1/excluir/?next=/viagens/cadastros/viaturas/novo/"
+}

@@ -1,0 +1,59 @@
+{
+  "configuracoes": 1,
+  "configuracao_pk": 1,
+  "campos_fora_da_aba_instituicao": [
+    {
+      "campo": "cidade_sede_padrao",
+      "preenchido": false
+    },
+    {
+      "campo": "prazo_justificativa_dias",
+      "preenchido": true
+    },
+    {
+      "campo": "nome_orgao",
+      "preenchido": false
+    },
+    {
+      "campo": "sigla_orgao",
+      "preenchido": false
+    },
+    {
+      "campo": "nome_chefia",
+      "preenchido": false
+    },
+    {
+      "campo": "cargo_chefia",
+      "preenchido": false
+    },
+    {
+      "campo": "destinatario_oficio",
+      "preenchido": false
+    },
+    {
+      "campo": "destinatario_oficio_nome",
+      "preenchido": false
+    },
+    {
+      "campo": "destinatario_oficio_cargo",
+      "preenchido": false
+    },
+    {
+      "campo": "destinatario_oficio_unidade",
+      "preenchido": false
+    }
+  ],
+  "campos_instituicao_origem": [
+    "unidade",
+    "cep",
+    "numero",
+    "logradouro",
+    "bairro",
+    "cidade_endereco",
+    "uf",
+    "email",
+    "telefone",
+    "ramal"
+  ],
+  "decisao": "P10 aguardando resposta; nenhuma configuração modificada."
+}

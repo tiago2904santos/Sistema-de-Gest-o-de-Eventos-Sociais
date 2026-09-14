@@ -1,0 +1,127 @@
+{
+  "origem": [
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "q",
+      "obrigatorio": false,
+      "placeholder": "Buscar cidades",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_nome",
+      "mascara": "upper",
+      "maxlength": "255",
+      "nome": "nome",
+      "obrigatorio": true,
+      "placeholder": null,
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_estado",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "estado",
+      "obrigatorio": true,
+      "placeholder": null,
+      "tipo": "select-one",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_capital",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "capital",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "checkbox",
+      "valor": "on"
+    },
+    {
+      "desabilitado": false,
+      "id": "id_codigo_ibge",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "codigo_ibge",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "number",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_latitude",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "latitude",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "number",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_longitude",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "longitude",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "number",
+      "valor": ""
+    }
+  ],
+  "destino": [
+    {
+      "desabilitado": false,
+      "id": "id_q",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "q",
+      "obrigatorio": false,
+      "placeholder": "Buscar município pelo nome",
+      "tipo": "search",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_nome",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "nome",
+      "obrigatorio": true,
+      "placeholder": "Ex.: Curitiba",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_estado",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "estado",
+      "obrigatorio": true,
+      "placeholder": null,
+      "tipo": "select-one",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_regiao",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "regiao",
+      "obrigatorio": true,
+      "placeholder": null,
+      "tipo": "select-one",
+      "valor": ""
+    }
+  ]
+}

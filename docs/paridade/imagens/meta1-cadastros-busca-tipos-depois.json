@@ -1,0 +1,128 @@
+[
+  {
+    "slug": "cargos",
+    "origem": {
+      "focused": true,
+      "label": "Buscar cargos",
+      "placeholder": "Buscar cargos",
+      "semResultado": true,
+      "type": "text",
+      "url": "http://127.0.0.1:8000/cadastros/cargos/?q=zzgrupo20260910",
+      "value": "zzgrupo20260910"
+    },
+    "destino": {
+      "focused": true,
+      "label": "Buscar cargos",
+      "placeholder": "Buscar cargos",
+      "semResultado": true,
+      "type": "text",
+      "url": "http://localhost:8021/viagens/cadastros/cargos/?q=zzgrupo20260910",
+      "value": "zzgrupo20260910"
+    }
+  },
+  {
+    "slug": "combustiveis",
+    "origem": {
+      "focused": true,
+      "label": "Buscar combustíveis",
+      "placeholder": "Buscar combustíveis",
+      "semResultado": true,
+      "type": "text",
+      "url": "http://127.0.0.1:8000/cadastros/combustiveis/?q=zzgrupo20260910",
+      "value": "zzgrupo20260910"
+    },
+    "destino": {
+      "focused": true,
+      "label": "Buscar combustíveis",
+      "placeholder": "Buscar combustíveis",
+      "semResultado": true,
+      "type": "text",
+      "url": "http://localhost:8021/viagens/cadastros/combustiveis/?q=zzgrupo20260910",
+      "value": "zzgrupo20260910"
+    }
+  },
+  {
+    "slug": "unidades",
+    "origem": {
+      "focused": true,
+      "label": "Buscar unidades",
+      "placeholder": "Buscar unidades",
+      "semResultado": true,
+      "type": "text",
+      "url": "http://127.0.0.1:8000/cadastros/unidades/?q=zzgrupo20260910",
+      "value": "zzgrupo20260910"
+    },
+    "destino": {
+      "focused": true,
+      "label": "Buscar unidades",
+      "placeholder": "Buscar unidades",
+      "semResultado": true,
+      "type": "text",
+      "url": "http://localhost:8021/viagens/cadastros/unidades/?q=zzgrupo20260910",
+      "value": "zzgrupo20260910"
+    }
+  },
+  {
+    "slug": "servidores",
+    "origem": {
+      "focused": true,
+      "label": "Buscar servidores",
+      "placeholder": "Buscar servidores",
+      "semResultado": true,
+      "type": "text",
+      "url": "http://127.0.0.1:8000/cadastros/servidores/?q=zzgrupo20260910",
+      "value": "zzgrupo20260910"
+    },
+    "destino": {
+      "focused": true,
+      "label": "Buscar servidores",
+      "placeholder": "Buscar servidores",
+      "semResultado": true,
+      "type": "text",
+      "url": "http://localhost:8021/viagens/cadastros/servidores/?q=zzgrupo20260910",
+      "value": "zzgrupo20260910"
+    }
+  },
+  {
+    "slug": "viaturas",
+    "origem": {
+      "focused": true,
+      "label": "Buscar viaturas",
+      "placeholder": "Buscar viaturas",
+      "semResultado": true,
+      "type": "text",
+      "url": "http://127.0.0.1:8000/cadastros/viaturas/?q=zzgrupo20260910",
+      "value": "zzgrupo20260910"
+    },
+    "destino": {
+      "focused": true,
+      "label": "Buscar viaturas",
+      "placeholder": "Buscar viaturas",
+      "semResultado": true,
+      "type": "text",
+      "url": "http://localhost:8021/viagens/cadastros/viaturas/?q=zzgrupo20260910",
+      "value": "zzgrupo20260910"
+    }
+  },
+  {
+    "slug": "estados",
+    "origem": {
+      "focused": true,
+      "label": "Buscar estados",
+      "placeholder": "Buscar estados",
+      "semResultado": true,
+      "type": "text",
+      "url": "http://127.0.0.1:8000/cadastros/estados/?q=zzgrupo20260910",
+      "value": "zzgrupo20260910"
+    },
+    "destino": {
+      "focused": true,
+      "label": "Buscar estados",
+      "placeholder": "Buscar estados",
+      "semResultado": true,
+      "type": "text",
+      "url": "http://localhost:8021/viagens/cadastros/estados/?q=zzgrupo20260910",
+      "value": "zzgrupo20260910"
+    }
+  }
+]

@@ -7,15 +7,16 @@
 
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with atual=titulo %}
-  {% url 'viagens_cadastros:novo' slug as url_novo %}
   {% if pode_editar %}
     {% include "components/v32/page_header.html" with titulo=titulo subtitulo=descricao icone=icone acao_label=novo acao_url=url_novo acao_icone="plus" %}
   {% else %}
     {% include "components/v32/page_header.html" with titulo=titulo subtitulo=descricao icone=icone %}
   {% endif %}
+  {% if url_retorno %}<p><a class="btn--secundaria" href="{{ url_retorno }}">Voltar</a></p>{% endif %}
 
   <div class="pa-card pa-card--lista v32-bloco v32-filtros">
     <form method="get" class="v32-barra viagens-lista-filtros">
+      {% if url_retorno %}<input type="hidden" name="next" value="{{ url_retorno }}">{% endif %}
       <div class="form-campo v32-busca lista-filtros__busca--curta">
         <label class="form-label sr-only" for="id_q">Busca</label>
         <div class="busca">
@@ -25,7 +26,7 @@
         </div>
       </div>
       <button type="submit" class=" btn-primaria ">{% include "components/icon.html" with nome="search" %}Buscar</button>
-      {% if tem_filtros %}<a href="{% url 'viagens_cadastros:lista' slug %}" class=" btn--secundaria">Limpar</a>{% endif %}
+      {% if tem_filtros %}<a href="{% url 'viagens_cadastros:lista' slug %}{% if url_retorno %}?next={{ url_retorno|urlencode }}{% endif %}" class=" btn--secundaria">Limpar</a>{% endif %}
       <span class="v32-meta">{{ pagina.paginator.count }} registro{{ pagina.paginator.count|pluralize }}</span>
     </form>
   </div>
@@ -58,7 +59,7 @@
               <td class="c-cad-acoes">
                 {% if pode_editar %}
                   <div class="acoes viagens-acoes-linha">
-                    <a href="{% url 'viagens_cadastros:editar' slug linha.objeto.pk %}" class="  acao-linha ">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                    <a href="{% url 'viagens_cadastros:editar' slug linha.objeto.pk %}{% if url_retorno %}?next={{ url_retorno|urlencode }}{% endif %}" class="  acao-linha ">{% include "components/icon.html" with nome="pencil" %}Editar</a>
                     <a href="{% url 'viagens_cadastros:excluir' slug linha.objeto.pk %}" class="  acao-linha v32-acao-perigo">{% include "components/icon.html" with nome="trash" %}Excluir</a>
                   </div>
                 {% else %}
@@ -95,7 +96,7 @@
               <div class="m-item__campo" data-rotulo="Ações">
                 {% if pode_editar %}
                   <div class="acoes viagens-acoes-linha">
-                    <a href="{% url 'viagens_cadastros:editar' slug linha.objeto.pk %}" class="  acao-linha ">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                    <a href="{% url 'viagens_cadastros:editar' slug linha.objeto.pk %}{% if url_retorno %}?next={{ url_retorno|urlencode }}{% endif %}" class="  acao-linha ">{% include "components/icon.html" with nome="pencil" %}Editar</a>
                     <a href="{% url 'viagens_cadastros:excluir' slug linha.objeto.pk %}" class="  acao-linha v32-acao-perigo">{% include "components/icon.html" with nome="trash" %}Excluir</a>
                   </div>
                 {% else %}

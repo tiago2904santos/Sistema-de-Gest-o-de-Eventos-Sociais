@@ -1,3 +1,4 @@
+from core.legado import OrigemLegadoUUID
 import uuid
 
 from django.core.exceptions import ValidationError
@@ -6,7 +7,7 @@ from django.db import models
 from django.conf import settings
 
 
-class DocumentoArtefato(models.Model):
+class DocumentoArtefato(OrigemLegadoUUID):
     """
     Registro de documento gerado (binário, hash, snapshot) e opção de versão assinada.
     """
@@ -62,6 +63,7 @@ class DocumentoArtefato(models.Model):
         ordering = ["-criado_em"]
         verbose_name = "Artefato documental"
         verbose_name_plural = "Artefatos documentais"
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_documentoartefato_origem")]
 
     def __str__(self) -> str:
         return f"{self.tipo} ({self.formato}) {self.hash_sha256[:8]}"
@@ -90,7 +92,7 @@ class DocumentoArtefato(models.Model):
         return self.arquivo_assinado if self.esta_assinado else self.arquivo
 
 
-class DocumentoAssinaturaVersao(models.Model):
+class DocumentoAssinaturaVersao(OrigemLegadoUUID):
     """Versão assinada append-only; revogação é tombstone, nunca exclusão."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -123,6 +125,7 @@ class DocumentoAssinaturaVersao(models.Model):
         ordering = ["-criado_em"]
         verbose_name = "Versão assinada"
         verbose_name_plural = "Versões assinadas"
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_documentoassinaturaversao_origem")]
 
     def save(self, *args, **kwargs):
         if self.pk and not self._state.adding:

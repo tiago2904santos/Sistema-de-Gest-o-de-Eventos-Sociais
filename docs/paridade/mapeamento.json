@@ -1,0 +1,3342 @@
+[
+  {
+    "id": "cadastros:index",
+    "origem": "/cadastros/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 8,
+    "callback_origem": "views.index",
+    "destino": "viagens_cadastros:index",
+    "padrao_destino": "/viagens/cadastros/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Grupo Estados implementado e navegado; acesso a diárias pela configuração e outras provas pendentes.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-entrada.md",
+      "captura_origem": "imagens/meta1-cadastros-entrada-origem.png",
+      "captura_destino": "imagens/meta1-cadastros-entrada-destino.png",
+      "conteudo_observado": "imagens/meta1-cadastros-entrada-observacao.json",
+      "paridade_certificada": false
+    },
+    "historico_observacoes": [
+      {
+        "relatorio": "cadastros-entrada.md",
+        "captura_origem": "imagens/meta0-cadastros-entrada-origem.png",
+        "captura_destino": "imagens/meta0-cadastros-entrada-destino.png",
+        "conteudo_observado": "imagens/meta0-cadastros-entrada-observacao.json",
+        "paridade_certificada": false
+      }
+    ]
+  },
+  {
+    "id": "cadastros:configuracao",
+    "origem": "/cadastros/configuracao/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 9,
+    "callback_origem": "views.configuracao_sistema",
+    "destino": "viagens_oficios:institucional",
+    "padrao_destino": "/viagens/oficios/institucional/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Formulário genérico, sem as abas da origem; assinantes em catálogo separado. PT/OS na tela de origem: decisão de escopo pendente.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-configuracao.md",
+      "captura_origem": "imagens/meta0-configuracao-instituicao-origem.png",
+      "captura_destino": "imagens/meta0-configuracao-instituicao-destino.png",
+      "conteudo_observado": "imagens/meta0-configuracao-instituicao-observacao.json",
+      "paridade_certificada": false
+    }
+  },
+  {
+    "id": "cadastros:configuracao_aba",
+    "origem": "/cadastros/configuracao/<slug:aba>/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 10,
+    "callback_origem": "views.configuracao_sistema",
+    "destino": "viagens_oficios:institucional",
+    "padrao_destino": "/viagens/oficios/institucional/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Formulário genérico, sem as abas da origem; assinantes em catálogo separado. PT/OS na tela de origem: decisão de escopo pendente.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-configuracao.md",
+      "captura_origem": "imagens/meta0-configuracao-oficio-origem.png",
+      "captura_destino": "imagens/meta0-configuracao-oficio-destino.png",
+      "conteudo_observado": "imagens/meta0-configuracao-oficio-observacao.json",
+      "paridade_certificada": false,
+      "estados_adicionais": [
+        {
+          "captura_origem": "imagens/meta0-configuracao-roteiros-diarias-origem.png",
+          "captura_destino": "imagens/meta0-configuracao-roteiros-diarias-destino.png",
+          "conteudo_observado": "imagens/meta0-configuracao-roteiros-diarias-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta0-diaria-form-origem.png",
+          "captura_destino": "imagens/meta0-diaria-form-destino.png",
+          "conteudo_observado": "imagens/meta0-diaria-form-observacao.json"
+        },
+        {
+          "relatorio": "cadastros-diarias.md",
+          "captura_origem": "imagens/meta1-diarias-inclusao-historico-origem.png",
+          "captura_destino": "imagens/meta1-diarias-inclusao-historico-destino.png",
+          "conteudo_observado": "imagens/meta1-diarias-inclusao-historico-observacao.json",
+          "paridade_certificada": false
+        },
+        {
+          "relatorio": "cadastros-diarias.md",
+          "captura_origem": "imagens/meta1-diarias-previa-calculada-origem.png",
+          "captura_destino": "imagens/meta1-diarias-previa-calculada-destino.png",
+          "conteudo_observado": "imagens/meta1-diarias-previa-calculada-observacao.json",
+          "paridade_certificada": false
+        },
+        {
+          "relatorio": "cadastros-diarias.md",
+          "captura_origem": "imagens/meta1-diarias-calendarios-origem.png",
+          "captura_destino": "imagens/meta1-diarias-calendarios-destino.png",
+          "conteudo_observado": "imagens/meta1-diarias-calendarios-observacao.json",
+          "paridade_certificada": false
+        },
+        {
+          "relatorio": "cadastros-diarias.md",
+          "captura_origem": "imagens/meta1-diarias-data-selecionada-origem.png",
+          "captura_destino": "imagens/meta1-diarias-data-selecionada-destino.png",
+          "conteudo_observado": "imagens/meta1-diarias-data-selecionada-observacao.json",
+          "paridade_certificada": false
+        },
+        {
+          "relatorio": "cadastros-diarias.md",
+          "captura_origem": "imagens/meta1-diarias-historico-acoes-origem.png",
+          "captura_destino": "imagens/meta1-diarias-historico-acoes-destino.png",
+          "conteudo_observado": "imagens/meta1-diarias-historico-acoes-observacao.json",
+          "paridade_certificada": false
+        },
+        {
+          "relatorio": "cadastros-diarias.md",
+          "captura_origem": "imagens/meta1-diarias-calendario-campo-origem.png",
+          "captura_destino": "imagens/meta1-diarias-calendario-campo-destino.png",
+          "conteudo_observado": "imagens/meta1-diarias-calendario-campo-observacao.json",
+          "paridade_certificada": false,
+          "limite": "Controles e data visível comparados; valor oculto diverge na origem, P09 pendente."
+        },
+        {
+          "relatorio": "cadastros-diarias.md",
+          "captura_origem": "imagens/meta1-diarias-calendario-mes-anterior-origem.png",
+          "captura_destino": "imagens/meta1-diarias-calendario-mes-anterior-destino.png",
+          "conteudo_observado": "imagens/meta1-diarias-calendario-mes-anterior-observacao.json",
+          "paridade_certificada": false,
+          "limite": "Controles e data visível comparados; valor oculto diverge na origem, P09 pendente."
+        },
+        {
+          "relatorio": "cadastros-diarias.md",
+          "captura_origem": "imagens/meta1-diarias-calendario-data-retroativa-origem.png",
+          "captura_destino": "imagens/meta1-diarias-calendario-data-retroativa-destino.png",
+          "conteudo_observado": "imagens/meta1-diarias-calendario-data-retroativa-observacao.json",
+          "paridade_certificada": false,
+          "limite": "Controles e data visível comparados; valor oculto diverge na origem, P09 pendente."
+        },
+        {
+          "relatorio": "cadastros-diarias.md",
+          "captura_origem": "imagens/meta1-diarias-calendario-limpar-origem.png",
+          "captura_destino": "imagens/meta1-diarias-calendario-limpar-destino.png",
+          "conteudo_observado": "imagens/meta1-diarias-calendario-limpar-observacao.json",
+          "paridade_certificada": false,
+          "limite": "Controles e data visível comparados; valor oculto diverge na origem, P09 pendente."
+        },
+        {
+          "relatorio": "cadastros-diarias.md",
+          "captura_origem": "imagens/meta1-diarias-calendario-hoje-origem.png",
+          "captura_destino": "imagens/meta1-diarias-calendario-hoje-destino.png",
+          "conteudo_observado": "imagens/meta1-diarias-calendario-hoje-observacao.json",
+          "paridade_certificada": false,
+          "limite": "Controles e data visível comparados; valor oculto diverge na origem, P09 pendente."
+        },
+        {
+          "relatorio": "cadastros-diarias.md",
+          "captura_origem": "imagens/meta1-diarias-calendario-teclado-origem.png",
+          "captura_destino": "imagens/meta1-diarias-calendario-teclado-destino.png",
+          "conteudo_observado": "imagens/meta1-diarias-calendario-teclado-observacao.json",
+          "paridade_certificada": false,
+          "limite": "Controles e data visível comparados; valor oculto diverge na origem, P09 pendente."
+        },
+        {
+          "relatorio": "cadastros-diarias.md",
+          "captura_origem": "imagens/meta1-diarias-calendario-mes-seguinte-origem.png",
+          "captura_destino": "imagens/meta1-diarias-calendario-mes-seguinte-destino.png",
+          "conteudo_observado": "imagens/meta1-diarias-calendario-mes-seguinte-observacao.json",
+          "paridade_certificada": false,
+          "limite": "Controles e data visível comparados; valor oculto diverge na origem, P09 pendente."
+        }
+      ],
+      "relatorios_adicionais": [
+        "cadastros-diarias.md"
+      ],
+      "limite": "Ofício comparado à tela institucional; Roteiros comparado às páginas de diárias. P01 pendente."
+    }
+  },
+  {
+    "id": "cadastros:api_consulta_cep",
+    "origem": "/cadastros/api/cep/<str:cep>/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 11,
+    "callback_origem": "views.api_consulta_cep",
+    "destino": "viagens_cadastros:api_consulta_cep",
+    "padrao_destino": "/viagens/cadastros/api/cep/<str:cep>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Consulta de CEP implementada sem persistência; formato, erros e permissões cobertos por testes. Integração visual pendente de P10; navegador recusou abrir diretamente o JSON.",
+    "prova_visual": null
+  },
+  {
+    "id": "cadastros:estados_index",
+    "origem": "/cadastros/estados/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 12,
+    "callback_origem": "views.estados_index",
+    "destino": "viagens_cadastros:estados",
+    "padrao_destino": "/viagens/cadastros/estados/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Tela implementada sobre Estado compartilhado; P07/P12 e provas de perfis/estados pendentes.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-estados.md",
+      "captura_origem": "imagens/meta1-estados-lista-origem.png",
+      "captura_destino": "imagens/meta1-estados-lista-destino.png",
+      "conteudo_observado": "imagens/meta1-estados-lista-observacao.json",
+      "paridade_certificada": false,
+      "estados_adicionais": [
+        {
+          "captura_origem": "imagens/meta1-estados-exclusao-teclado-origem.jpg",
+          "captura_destino": "imagens/meta1-estados-exclusao-teclado-destino.jpg",
+          "conteudo_observado": "imagens/meta1-estados-exclusao-teclado-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-estados-exclusao-ciclo-foco-origem.jpg",
+          "captura_destino": "imagens/meta1-estados-exclusao-ciclo-foco-destino.jpg",
+          "conteudo_observado": "imagens/meta1-estados-exclusao-ciclo-foco-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-estados-busca-texto-origem.jpg",
+          "captura_destino": "imagens/meta1-estados-busca-texto-destino.jpg",
+          "conteudo_observado": "imagens/meta1-estados-busca-texto-observacao.json"
+        }
+      ]
+    },
+    "historico_observacoes": [
+      {
+        "relatorio": "cadastros-estados.md",
+        "captura_origem": "imagens/meta0-estados-origem.png",
+        "captura_destino": "imagens/meta0-estados-destino.png",
+        "conteudo_observado": "imagens/meta0-estados-observacao.json",
+        "paridade_certificada": false,
+        "estados_adicionais": [
+          {
+            "captura_origem": "imagens/meta0-estado-form-origem.png",
+            "captura_destino": "imagens/meta0-estado-form-destino.png",
+            "conteudo_observado": "imagens/meta0-estado-form-observacao.json"
+          }
+        ],
+        "limite": "Não há rota pública correspondente de Estados. Capturas do destino mostram a entrada de Cadastros, não um cadastro de estados."
+      }
+    ]
+  },
+  {
+    "id": "cadastros:estado_update",
+    "origem": "/cadastros/estados/<int:pk>/editar/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 13,
+    "callback_origem": "views.estado_update",
+    "destino": "viagens_cadastros:estado_editar",
+    "padrao_destino": "/viagens/cadastros/estados/<int:pk>/editar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Tela implementada sobre Estado compartilhado; P07/P12 e provas de perfis/estados pendentes.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-estados.md",
+      "captura_origem": "imagens/meta1-estados-edicao-origem.png",
+      "captura_destino": "imagens/meta1-estados-edicao-destino.png",
+      "conteudo_observado": "imagens/meta1-estados-edicao-observacao.json",
+      "paridade_certificada": false
+    }
+  },
+  {
+    "id": "cadastros:estado_delete",
+    "origem": "/cadastros/estados/<int:pk>/excluir/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 14,
+    "callback_origem": "views.estado_delete",
+    "destino": "viagens_cadastros:estado_excluir",
+    "padrao_destino": "/viagens/cadastros/estados/<int:pk>/excluir/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Tela implementada sobre Estado compartilhado; P07/P12 e provas de perfis/estados pendentes.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-estados.md",
+      "captura_origem": "imagens/meta1-estados-exclusao-direta-origem.png",
+      "captura_destino": "imagens/meta1-estados-exclusao-direta-destino.png",
+      "conteudo_observado": "imagens/meta1-estados-exclusao-direta-observacao.json",
+      "paridade_certificada": false
+    }
+  },
+  {
+    "id": "cadastros:unidades_index",
+    "origem": "/cadastros/unidades/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 15,
+    "callback_origem": "views.unidades_index",
+    "destino": "viagens_cadastros:lista",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/",
+    "parametros": {
+      "slug": "unidades"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Cartões, inclusão rápida e diálogo implementados por P04; edição, criação direta e provas restantes pendentes.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-unidades.md",
+      "captura_origem": "imagens/meta1-unidades-busca-automatica-origem.png",
+      "captura_destino": "imagens/meta1-unidades-busca-automatica-destino.png",
+      "conteudo_observado": "imagens/meta1-unidades-busca-automatica-observacao.json",
+      "paridade_certificada": false,
+      "estados_adicionais": [
+        {
+          "captura_origem": "imagens/meta1-unidades-paginacao-primeira-origem.png",
+          "captura_destino": "imagens/meta1-unidades-paginacao-primeira-destino.png",
+          "conteudo_observado": "imagens/meta1-unidades-paginacao-primeira-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidades-paginacao-intermediaria-origem.png",
+          "captura_destino": "imagens/meta1-unidades-paginacao-intermediaria-destino.png",
+          "conteudo_observado": "imagens/meta1-unidades-paginacao-intermediaria-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidades-paginacao-ultima-origem.png",
+          "captura_destino": "imagens/meta1-unidades-paginacao-ultima-destino.png",
+          "conteudo_observado": "imagens/meta1-unidades-paginacao-ultima-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidades-busca-nome-sem-acento-origem.png",
+          "captura_destino": "imagens/meta1-unidades-busca-nome-sem-acento-destino.png",
+          "conteudo_observado": "imagens/meta1-unidades-busca-nome-sem-acento-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidades-paginacao-com-busca-origem.png",
+          "captura_destino": "imagens/meta1-unidades-paginacao-com-busca-destino.png",
+          "conteudo_observado": "imagens/meta1-unidades-paginacao-com-busca-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidades-exclusao-teclado-origem.jpg",
+          "captura_destino": "imagens/meta1-unidades-exclusao-teclado-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidades-exclusao-teclado-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidades-exclusao-ciclo-foco-origem.jpg",
+          "captura_destino": "imagens/meta1-unidades-exclusao-ciclo-foco-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidades-exclusao-ciclo-foco-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidades-grupo-acessivel-origem.jpg",
+          "captura_destino": "imagens/meta1-unidades-grupo-acessivel-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidades-grupo-acessivel-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidades-grupo-preenchido-origem.jpg",
+          "captura_destino": "imagens/meta1-unidades-grupo-preenchido-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidades-grupo-preenchido-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidades-busca-texto-origem.jpg",
+          "captura_destino": "imagens/meta1-unidades-busca-texto-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidades-busca-texto-observacao.json"
+        }
+      ]
+    },
+    "historico_observacoes": [
+      {
+        "relatorio": "cadastros-unidades.md",
+        "captura_origem": "imagens/meta0-unidades-origem.png",
+        "captura_destino": "imagens/meta0-unidades-destino.png",
+        "conteudo_observado": "imagens/meta0-unidades-observacao.json",
+        "paridade_certificada": false,
+        "estados_adicionais": [
+          {
+            "captura_origem": "imagens/meta0-unidade-form-origem.png",
+            "captura_destino": "imagens/meta0-unidade-form-destino.png",
+            "conteudo_observado": "imagens/meta0-unidade-form-observacao.json"
+          }
+        ]
+      },
+      {
+        "relatorio": "cadastros-unidades.md",
+        "captura_origem": "imagens/meta1-unidades-cartoes-ensaio-origem.png",
+        "captura_destino": "imagens/meta1-unidades-cartoes-ensaio-destino.png",
+        "conteudo_observado": "imagens/meta1-unidades-cartoes-ensaio-observacao.json",
+        "paridade_certificada": false,
+        "estados_adicionais": [
+          {
+            "captura_origem": "imagens/meta1-unidade-inclusao-origem.png",
+            "captura_destino": "imagens/meta1-unidade-inclusao-destino.png",
+            "conteudo_observado": "imagens/meta1-unidade-inclusao-observacao.json"
+          },
+          {
+            "captura_origem": "imagens/meta1-unidades-sem-resultado-origem.png",
+            "captura_destino": "imagens/meta1-unidades-sem-resultado-destino.png",
+            "conteudo_observado": "imagens/meta1-unidades-sem-resultado-observacao.json"
+          },
+          {
+            "captura_origem": "imagens/meta1-unidades-busca-sigla-origem.png",
+            "captura_destino": "imagens/meta1-unidades-busca-sigla-destino.png",
+            "conteudo_observado": "imagens/meta1-unidades-busca-sigla-observacao.json"
+          },
+          {
+            "captura_origem": "imagens/meta1-unidade-confirmacao-origem.png",
+            "captura_destino": "imagens/meta1-unidade-confirmacao-destino.png",
+            "conteudo_observado": "imagens/meta1-unidade-confirmacao-observacao.json"
+          },
+          {
+            "captura_origem": "imagens/meta1-unidades-retorno-viatura-origem.png",
+            "captura_destino": "imagens/meta1-unidades-retorno-viatura-destino.png",
+            "conteudo_observado": "imagens/meta1-unidades-retorno-viatura-observacao.json"
+          },
+          {
+            "captura_origem": "imagens/meta1-unidades-retorno-servidor-origem.png",
+            "captura_destino": "imagens/meta1-unidades-retorno-servidor-destino.png",
+            "conteudo_observado": "imagens/meta1-unidades-retorno-servidor-observacao.json"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cadastros:unidade_create",
+    "origem": "/cadastros/unidades/nova/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 16,
+    "callback_origem": "views.unidades_index",
+    "destino": "viagens_cadastros:novo",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/novo/",
+    "parametros": {
+      "slug": "unidades"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Lista/formulário genéricos; conferir composição, campos, busca, paginação, ações e mensagens.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-unidades.md",
+      "captura_origem": "imagens/meta0-unidade-form-origem.png",
+      "captura_destino": "imagens/meta0-unidade-form-destino.png",
+      "conteudo_observado": "imagens/meta0-unidade-form-observacao.json",
+      "paridade_certificada": false,
+      "atributos": "imagens/meta0-unidade-form-campos.json",
+      "limite": "Observada inclusão rápida na listagem da origem; contrato de envio e acesso direto da rota de criação não certificados."
+    }
+  },
+  {
+    "id": "cadastros:unidade_update",
+    "origem": "/cadastros/unidades/<int:pk>/editar/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 17,
+    "callback_origem": "views.unidade_update",
+    "destino": "viagens_cadastros:editar",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/<int:pk>/editar/",
+    "parametros": {
+      "slug": "unidades"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Lista/formulário genéricos; conferir composição, campos, busca, paginação, ações e mensagens.",
+    "prova_visual": null
+  },
+  {
+    "id": "cadastros:unidade_delete",
+    "origem": "/cadastros/unidades/<int:pk>/excluir/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 18,
+    "callback_origem": "views.unidade_delete",
+    "destino": "viagens_cadastros:excluir",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/<int:pk>/excluir/",
+    "parametros": {
+      "slug": "unidades"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Cartões, inclusão rápida e diálogo implementados por P04; edição, criação direta e provas restantes pendentes.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-unidades.md",
+      "captura_origem": "imagens/meta1-unidade-confirmacao-origem.png",
+      "captura_destino": "imagens/meta1-unidade-confirmacao-destino.png",
+      "conteudo_observado": "imagens/meta1-unidade-confirmacao-observacao.json",
+      "paridade_certificada": false,
+      "estados_adicionais": [
+        {
+          "captura_origem": "imagens/meta1-unidade-inclusao-origem.png",
+          "captura_destino": "imagens/meta1-unidade-inclusao-destino.png",
+          "conteudo_observado": "imagens/meta1-unidade-inclusao-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidades-cartoes-ensaio-origem.png",
+          "captura_destino": "imagens/meta1-unidades-cartoes-ensaio-destino.png",
+          "conteudo_observado": "imagens/meta1-unidades-cartoes-ensaio-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidades-sem-resultado-origem.png",
+          "captura_destino": "imagens/meta1-unidades-sem-resultado-destino.png",
+          "conteudo_observado": "imagens/meta1-unidades-sem-resultado-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidades-busca-sigla-origem.png",
+          "captura_destino": "imagens/meta1-unidades-busca-sigla-destino.png",
+          "conteudo_observado": "imagens/meta1-unidades-busca-sigla-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidades-retorno-viatura-origem.png",
+          "captura_destino": "imagens/meta1-unidades-retorno-viatura-destino.png",
+          "conteudo_observado": "imagens/meta1-unidades-retorno-viatura-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidades-retorno-servidor-origem.png",
+          "captura_destino": "imagens/meta1-unidades-retorno-servidor-destino.png",
+          "conteudo_observado": "imagens/meta1-unidades-retorno-servidor-observacao.json"
+        }
+      ]
+    }
+  },
+  {
+    "id": "cadastros:cargos_index",
+    "origem": "/cadastros/cargos/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 19,
+    "callback_origem": "views.cargos_index",
+    "destino": "viagens_cadastros:lista",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/",
+    "parametros": {
+      "slug": "cargos"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Cartões e inclusão rápida corrigidos. Edição, estados posteriores e prova completa ainda pendentes.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-cargos.md",
+      "captura_origem": "imagens/meta1-cargos-busca-automatica-origem.png",
+      "captura_destino": "imagens/meta1-cargos-busca-automatica-destino.png",
+      "conteudo_observado": "imagens/meta1-cargos-busca-automatica-observacao.json",
+      "paridade_certificada": false,
+      "estados_adicionais": [
+        {
+          "relatorio": "cadastros-cargos.md",
+          "captura_origem": "imagens/meta1-cargos-retorno-rodape-origem.png",
+          "captura_destino": "imagens/meta1-cargos-retorno-rodape-destino.png",
+          "conteudo_observado": "imagens/meta1-cargos-retorno-rodape-observacao.json",
+          "paridade_certificada": false
+        },
+        {
+          "relatorio": "cadastros-cargos.md",
+          "captura_origem": "imagens/meta1-cargos-busca-com-retorno-origem.png",
+          "captura_destino": "imagens/meta1-cargos-busca-com-retorno-destino.png",
+          "conteudo_observado": "imagens/meta1-cargos-busca-com-retorno-observacao.json",
+          "paridade_certificada": false
+        },
+        {
+          "relatorio": "cadastros-cargos.md",
+          "captura_origem": "imagens/meta1-cargos-limpar-retorno-origem.png",
+          "captura_destino": "imagens/meta1-cargos-limpar-retorno-destino.png",
+          "conteudo_observado": "imagens/meta1-cargos-limpar-retorno-observacao.json",
+          "paridade_certificada": false
+        },
+        {
+          "captura_origem": "imagens/meta1-cargos-exclusao-teclado-origem.jpg",
+          "captura_destino": "imagens/meta1-cargos-exclusao-teclado-destino.jpg",
+          "conteudo_observado": "imagens/meta1-cargos-exclusao-teclado-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-cargos-exclusao-ciclo-foco-origem.jpg",
+          "captura_destino": "imagens/meta1-cargos-exclusao-ciclo-foco-destino.jpg",
+          "conteudo_observado": "imagens/meta1-cargos-exclusao-ciclo-foco-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-cargos-grupo-acessivel-origem.jpg",
+          "captura_destino": "imagens/meta1-cargos-grupo-acessivel-destino.jpg",
+          "conteudo_observado": "imagens/meta1-cargos-grupo-acessivel-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-cargos-grupo-preenchido-origem.jpg",
+          "captura_destino": "imagens/meta1-cargos-grupo-preenchido-destino.jpg",
+          "conteudo_observado": "imagens/meta1-cargos-grupo-preenchido-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-cargos-busca-texto-origem.jpg",
+          "captura_destino": "imagens/meta1-cargos-busca-texto-destino.jpg",
+          "conteudo_observado": "imagens/meta1-cargos-busca-texto-observacao.json"
+        }
+      ]
+    },
+    "historico_observacoes": [
+      {
+        "relatorio": "cadastros-cargos.md",
+        "captura_origem": "imagens/meta0-cargos-origem.png",
+        "captura_destino": "imagens/meta0-cargos-destino.png",
+        "conteudo_observado": "imagens/meta0-cargos-observacao.json",
+        "paridade_certificada": false,
+        "estados_adicionais": [
+          {
+            "captura_origem": "imagens/meta0-cargo-form-origem.png",
+            "captura_destino": "imagens/meta0-cargo-form-destino.png",
+            "conteudo_observado": "imagens/meta0-cargo-form-observacao.json"
+          },
+          {
+            "captura_origem": "imagens/meta0-cargo-editar-origem.png",
+            "captura_destino": "imagens/meta0-cargo-editar-destino.png",
+            "conteudo_observado": "imagens/meta0-cargo-editar-observacao.json"
+          }
+        ]
+      },
+      {
+        "relatorio": "cadastros-cargos.md",
+        "captura_origem": "imagens/meta1-cargos-lista-origem.png",
+        "captura_destino": "imagens/meta1-cargos-lista-destino.png",
+        "conteudo_observado": "imagens/meta1-cargos-lista-observacao.json",
+        "paridade_certificada": false
+      }
+    ]
+  },
+  {
+    "id": "cadastros:cargo_create",
+    "origem": "/cadastros/cargos/novo/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 20,
+    "callback_origem": "views.cargos_index",
+    "destino": "viagens_cadastros:novo",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/novo/",
+    "parametros": {
+      "slug": "cargos"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Acesso direto Novo agora abre catálogo, como observado na origem. Gravação e retorno exercitados no destino; comparação completa de estados pendente.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-cargos.md",
+      "captura_origem": "imagens/meta1-cargo-rota-novo-origem.png",
+      "captura_destino": "imagens/meta1-cargo-rota-novo-destino.png",
+      "conteudo_observado": "imagens/meta1-cargo-rota-novo-observacao.json",
+      "paridade_certificada": false
+    },
+    "historico_observacoes": [
+      {
+        "relatorio": "cadastros-cargos.md",
+        "captura_origem": "imagens/meta0-cargo-form-origem.png",
+        "captura_destino": "imagens/meta0-cargo-form-destino.png",
+        "conteudo_observado": "imagens/meta0-cargo-form-observacao.json",
+        "paridade_certificada": false,
+        "atributos": "imagens/meta0-cargo-form-campos.json",
+        "limite": "Observada inclusão rápida na listagem da origem; contrato de envio e acesso direto da rota de criação não certificados."
+      }
+    ]
+  },
+  {
+    "id": "cadastros:cargo_update",
+    "origem": "/cadastros/cargos/<int:pk>/editar/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 21,
+    "callback_origem": "views.cargo_update",
+    "destino": "viagens_cadastros:editar",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/<int:pk>/editar/",
+    "parametros": {
+      "slug": "cargos"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Lista/formulário genéricos; conferir composição, campos, busca, paginação, ações e mensagens.",
+    "prova_visual": null
+  },
+  {
+    "id": "cadastros:cargo_set_default",
+    "origem": "/cadastros/cargos/<int:pk>/definir-padrao/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 22,
+    "callback_origem": "views.cargo_set_default",
+    "destino": "viagens_cadastros:definir_padrao",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/<int:pk>/padrao/",
+    "parametros": {
+      "slug": "cargos"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Ação direta implementada com a regra existente; GET sem escrita, POST e permissões testados. Prova visual após gravação pendente.",
+    "prova_visual": null
+  },
+  {
+    "id": "cadastros:cargo_delete",
+    "origem": "/cadastros/cargos/<int:pk>/excluir/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 23,
+    "callback_origem": "views.cargo_delete",
+    "destino": "viagens_cadastros:excluir",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/<int:pk>/excluir/",
+    "parametros": {
+      "slug": "cargos"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Diálogo na lista e retorno ao catálogo implementados; criação/exclusão temporárias exercitadas no destino. Bloqueio com vínculo testado; estados correspondentes da origem ainda pendentes.",
+    "prova_visual": null
+  },
+  {
+    "id": "cadastros:combustiveis_index",
+    "origem": "/cadastros/combustiveis/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 24,
+    "callback_origem": "views.combustiveis_index",
+    "destino": "viagens_cadastros:lista",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/",
+    "parametros": {
+      "slug": "combustiveis"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Cartões e inclusão rápida corrigidos. Edição, estados posteriores e prova completa ainda pendentes.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-combustiveis.md",
+      "captura_origem": "imagens/meta1-combustiveis-busca-automatica-origem.png",
+      "captura_destino": "imagens/meta1-combustiveis-busca-automatica-destino.png",
+      "conteudo_observado": "imagens/meta1-combustiveis-busca-automatica-observacao.json",
+      "paridade_certificada": false,
+      "estados_adicionais": [
+        {
+          "relatorio": "cadastros-combustiveis.md",
+          "captura_origem": "imagens/meta1-combustiveis-retorno-rodape-origem.png",
+          "captura_destino": "imagens/meta1-combustiveis-retorno-rodape-destino.png",
+          "conteudo_observado": "imagens/meta1-combustiveis-retorno-rodape-observacao.json",
+          "paridade_certificada": false
+        },
+        {
+          "relatorio": "cadastros-combustiveis.md",
+          "captura_origem": "imagens/meta1-combustivel-maiusculas-origem.png",
+          "captura_destino": "imagens/meta1-combustivel-maiusculas-destino.png",
+          "conteudo_observado": "imagens/meta1-combustivel-maiusculas-observacao.json",
+          "paridade_certificada": false
+        },
+        {
+          "relatorio": "cadastros-combustiveis.md",
+          "captura_origem": "imagens/meta1-combustiveis-voltar-viatura-origem.png",
+          "captura_destino": "imagens/meta1-combustiveis-voltar-viatura-destino.png",
+          "conteudo_observado": "imagens/meta1-combustiveis-voltar-viatura-observacao.json",
+          "paridade_certificada": false
+        },
+        {
+          "captura_origem": "imagens/meta1-combustiveis-exclusao-teclado-origem.jpg",
+          "captura_destino": "imagens/meta1-combustiveis-exclusao-teclado-destino.jpg",
+          "conteudo_observado": "imagens/meta1-combustiveis-exclusao-teclado-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-combustiveis-exclusao-ciclo-foco-origem.jpg",
+          "captura_destino": "imagens/meta1-combustiveis-exclusao-ciclo-foco-destino.jpg",
+          "conteudo_observado": "imagens/meta1-combustiveis-exclusao-ciclo-foco-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-combustiveis-grupo-acessivel-origem.jpg",
+          "captura_destino": "imagens/meta1-combustiveis-grupo-acessivel-destino.jpg",
+          "conteudo_observado": "imagens/meta1-combustiveis-grupo-acessivel-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-combustiveis-grupo-preenchido-origem.jpg",
+          "captura_destino": "imagens/meta1-combustiveis-grupo-preenchido-destino.jpg",
+          "conteudo_observado": "imagens/meta1-combustiveis-grupo-preenchido-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-combustiveis-busca-texto-origem.jpg",
+          "captura_destino": "imagens/meta1-combustiveis-busca-texto-destino.jpg",
+          "conteudo_observado": "imagens/meta1-combustiveis-busca-texto-observacao.json"
+        }
+      ]
+    },
+    "historico_observacoes": [
+      {
+        "relatorio": "cadastros-combustiveis.md",
+        "captura_origem": "imagens/meta0-combustiveis-origem.png",
+        "captura_destino": "imagens/meta0-combustiveis-destino.png",
+        "conteudo_observado": "imagens/meta0-combustiveis-observacao.json",
+        "paridade_certificada": false,
+        "estados_adicionais": [
+          {
+            "captura_origem": "imagens/meta0-combustivel-form-origem.png",
+            "captura_destino": "imagens/meta0-combustivel-form-destino.png",
+            "conteudo_observado": "imagens/meta0-combustivel-form-observacao.json"
+          }
+        ]
+      },
+      {
+        "relatorio": "cadastros-combustiveis.md",
+        "captura_origem": "imagens/meta1-combustiveis-lista-origem.png",
+        "captura_destino": "imagens/meta1-combustiveis-lista-destino.png",
+        "conteudo_observado": "imagens/meta1-combustiveis-lista-observacao.json",
+        "paridade_certificada": false
+      }
+    ]
+  },
+  {
+    "id": "cadastros:combustivel_create",
+    "origem": "/cadastros/combustiveis/novo/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 25,
+    "callback_origem": "views.combustiveis_index",
+    "destino": "viagens_cadastros:novo",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/novo/",
+    "parametros": {
+      "slug": "combustiveis"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Acesso direto Novo agora abre catálogo, como observado na origem. Gravação e retorno exercitados no destino; comparação completa de estados pendente.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-combustiveis.md",
+      "captura_origem": "imagens/meta1-combustivel-rota-novo-origem.png",
+      "captura_destino": "imagens/meta1-combustivel-rota-novo-destino.png",
+      "conteudo_observado": "imagens/meta1-combustivel-rota-novo-observacao.json",
+      "paridade_certificada": false
+    },
+    "historico_observacoes": [
+      {
+        "relatorio": "cadastros-combustiveis.md",
+        "captura_origem": "imagens/meta0-combustivel-form-origem.png",
+        "captura_destino": "imagens/meta0-combustivel-form-destino.png",
+        "conteudo_observado": "imagens/meta0-combustivel-form-observacao.json",
+        "paridade_certificada": false,
+        "atributos": "imagens/meta0-combustivel-form-campos.json",
+        "limite": "Observada inclusão rápida na listagem da origem; contrato de envio e acesso direto da rota de criação não certificados."
+      }
+    ]
+  },
+  {
+    "id": "cadastros:combustivel_update",
+    "origem": "/cadastros/combustiveis/<int:pk>/editar/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 26,
+    "callback_origem": "views.combustivel_update",
+    "destino": "viagens_cadastros:editar",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/<int:pk>/editar/",
+    "parametros": {
+      "slug": "combustiveis"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Lista/formulário genéricos; conferir composição, campos, busca, paginação, ações e mensagens.",
+    "prova_visual": null
+  },
+  {
+    "id": "cadastros:combustivel_set_default",
+    "origem": "/cadastros/combustiveis/<int:pk>/definir-padrao/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 27,
+    "callback_origem": "views.combustivel_set_default",
+    "destino": "viagens_cadastros:definir_padrao",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/<int:pk>/padrao/",
+    "parametros": {
+      "slug": "combustiveis"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Ação direta implementada com a regra existente; GET sem escrita, POST e permissões testados. Prova visual após gravação pendente.",
+    "prova_visual": null
+  },
+  {
+    "id": "cadastros:combustivel_delete",
+    "origem": "/cadastros/combustiveis/<int:pk>/excluir/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 32,
+    "callback_origem": "views.combustivel_delete",
+    "destino": "viagens_cadastros:excluir",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/<int:pk>/excluir/",
+    "parametros": {
+      "slug": "combustiveis"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Diálogo na lista e retorno ao catálogo implementados; criação/exclusão temporárias exercitadas no destino. Bloqueio com vínculo testado; estados correspondentes da origem ainda pendentes.",
+    "prova_visual": null
+  },
+  {
+    "id": "cadastros:cidades_index",
+    "origem": "/cadastros/cidades/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 33,
+    "callback_origem": "views.cidades_index",
+    "destino": "viagens_cadastros:cidades",
+    "padrao_destino": "/viagens/cadastros/cidades/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Consulta em cartões, busca por nome/UF/estado e paginação15 observadas. Inclusão P13 e perfis da origem pendentes.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-cidades-lista.md",
+      "captura_origem": "imagens/meta1-cidades-lista-origem.jpg",
+      "captura_destino": "imagens/meta1-cidades-lista-destino.jpg",
+      "conteudo_observado": "imagens/meta1-cidades-lista-observacao.json",
+      "paridade_certificada": false,
+      "estados_adicionais": [
+        {
+          "captura_origem": "imagens/meta1-cidades-pagina2-origem.jpg",
+          "captura_destino": "imagens/meta1-cidades-pagina2-destino.jpg",
+          "conteudo_observado": "imagens/meta1-cidades-pagina2-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-cidades-busca-nome-origem.jpg",
+          "captura_destino": "imagens/meta1-cidades-busca-nome-destino.jpg",
+          "conteudo_observado": "imagens/meta1-cidades-busca-nome-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-cidades-busca-uf-origem.jpg",
+          "captura_destino": "imagens/meta1-cidades-busca-uf-destino.jpg",
+          "conteudo_observado": "imagens/meta1-cidades-busca-uf-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-cidades-busca-estado-origem.jpg",
+          "captura_destino": "imagens/meta1-cidades-busca-estado-destino.jpg",
+          "conteudo_observado": "imagens/meta1-cidades-busca-estado-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-cidades-busca-pagina2-origem.jpg",
+          "captura_destino": "imagens/meta1-cidades-busca-pagina2-destino.jpg",
+          "conteudo_observado": "imagens/meta1-cidades-busca-pagina2-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-cidades-sem-resultado-origem.jpg",
+          "captura_destino": "imagens/meta1-cidades-sem-resultado-destino.jpg",
+          "conteudo_observado": "imagens/meta1-cidades-sem-resultado-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-cidades-limpar-origem.jpg",
+          "captura_destino": "imagens/meta1-cidades-limpar-destino.jpg",
+          "conteudo_observado": "imagens/meta1-cidades-limpar-observacao.json"
+        }
+      ]
+    },
+    "historico_observacoes": [
+      {
+        "relatorio": "cadastros-cidades-lista.md",
+        "captura_origem": "imagens/meta0-cidades-origem.png",
+        "captura_destino": "imagens/meta0-cidades-destino.png",
+        "conteudo_observado": "imagens/meta0-cidades-observacao.json",
+        "paridade_certificada": false,
+        "estados_adicionais": [
+          {
+            "captura_origem": "imagens/meta0-cidades-pagina2-origem.png",
+            "captura_destino": "imagens/meta0-cidades-pagina2-destino.png",
+            "conteudo_observado": "imagens/meta0-cidades-pagina2-observacao.json"
+          },
+          {
+            "captura_origem": "imagens/meta0-cidades-sem-resultado-origem.png",
+            "captura_destino": "imagens/meta0-cidades-sem-resultado-destino.png",
+            "conteudo_observado": "imagens/meta0-cidades-sem-resultado-observacao.json"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cadastros:cidade_create",
+    "origem": "/cadastros/cidades/nova/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 34,
+    "callback_origem": "views.cidades_index",
+    "destino": "cadastros:novo",
+    "padrao_destino": "/cadastros/<slug:slug>/novo/",
+    "parametros": {
+      "slug": "municipios"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Cadastro correspondente, mas restrito ao administrador de Eventos. Permissão, campos, inclusão rápida e mensagens ainda divergem.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-cidade-form.md",
+      "captura_origem": "imagens/meta0-cidade-form-origem.png",
+      "captura_destino": "imagens/meta0-cidade-form-destino.png",
+      "conteudo_observado": "imagens/meta0-cidade-form-observacao.json",
+      "paridade_certificada": false,
+      "atributos": "imagens/meta0-cidade-form-campos.json",
+      "limite": "Inclusão rápida na lista do GV e diálogo no destino. Acesso direto e contrato de envio da rota da origem não exercitados."
+    }
+  },
+  {
+    "id": "cadastros:cidades_export_csv",
+    "origem": "/cadastros/cidades/exportar.csv",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 35,
+    "callback_origem": "views.cidades_export_csv",
+    "destino": "viagens_cadastros:cidades_exportar_csv",
+    "padrao_destino": "/viagens/cadastros/cidades/exportar.csv",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "CSV Cidade/UF com BOM e base inteira implementado e testado. Download real pareado e perfis da origem pendentes.",
+    "prova_visual": null
+  },
+  {
+    "id": "cadastros:servidores_index",
+    "origem": "/cadastros/servidores/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 36,
+    "callback_origem": "views.servidores_index",
+    "destino": "viagens_cadastros:lista",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/",
+    "parametros": {
+      "slug": "servidores"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Lista/formulário genéricos; conferir composição, campos, busca, paginação, ações e mensagens.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-servidores-lista.md",
+      "captura_origem": "imagens/meta1-servidores-ordem-dados-origem.png",
+      "captura_destino": "imagens/meta1-servidores-ordem-dados-destino.png",
+      "conteudo_observado": "imagens/meta1-servidores-ordem-dados-observacao.json",
+      "paridade_certificada": false,
+      "estados_adicionais": [
+        {
+          "captura_origem": "imagens/meta1-servidores-exclusao-espaco-origem.jpg",
+          "captura_destino": "imagens/meta1-servidores-exclusao-espaco-destino.jpg",
+          "conteudo_observado": "imagens/meta1-servidores-exclusao-espaco-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-servidores-exclusao-tab-inverso-origem.jpg",
+          "captura_destino": "imagens/meta1-servidores-exclusao-tab-inverso-destino.jpg",
+          "conteudo_observado": "imagens/meta1-servidores-exclusao-tab-inverso-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-servidores-exclusao-tab-direto-origem.jpg",
+          "captura_destino": "imagens/meta1-servidores-exclusao-tab-direto-destino.jpg",
+          "conteudo_observado": "imagens/meta1-servidores-exclusao-tab-direto-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-servidores-exclusao-escape-origem.jpg",
+          "captura_destino": "imagens/meta1-servidores-exclusao-escape-destino.jpg",
+          "conteudo_observado": "imagens/meta1-servidores-exclusao-escape-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-servidores-exclusao-botao-retorno-origem.jpg",
+          "captura_destino": "imagens/meta1-servidores-exclusao-botao-retorno-destino.jpg",
+          "conteudo_observado": "imagens/meta1-servidores-exclusao-botao-retorno-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-servidores-busca-texto-origem.jpg",
+          "captura_destino": "imagens/meta1-servidores-busca-texto-destino.jpg",
+          "conteudo_observado": "imagens/meta1-servidores-busca-texto-observacao.json"
+        }
+      ]
+    },
+    "historico_observacoes": [
+      {
+        "relatorio": "cadastros-servidores-lista.md",
+        "captura_origem": "imagens/meta0-servidores-origem.png",
+        "captura_destino": "imagens/meta0-servidores-destino.png",
+        "conteudo_observado": "imagens/meta0-servidores-observacao.json",
+        "paridade_certificada": false,
+        "estados_adicionais": [
+          {
+            "captura_origem": "imagens/meta0-servidores-filtro-cargo-origem.png",
+            "captura_destino": "imagens/meta0-servidores-filtro-cargo-destino.png",
+            "conteudo_observado": "imagens/meta0-servidores-filtro-cargo-observacao.json"
+          },
+          {
+            "captura_origem": "imagens/meta0-servidores-sem-resultado-origem.png",
+            "captura_destino": "imagens/meta0-servidores-sem-resultado-destino.png",
+            "conteudo_observado": "imagens/meta0-servidores-sem-resultado-observacao.json"
+          }
+        ]
+      },
+      {
+        "relatorio": "cadastros-servidores-lista.md",
+        "captura_origem": "imagens/meta1-servidores-lista-origem.png",
+        "captura_destino": "imagens/meta1-servidores-lista-destino.png",
+        "conteudo_observado": "imagens/meta1-servidores-lista-observacao.json",
+        "paridade_certificada": false,
+        "estados_adicionais": [
+          {
+            "captura_origem": "imagens/meta1-servidores-sem-resultado-origem.png",
+            "captura_destino": "imagens/meta1-servidores-sem-resultado-destino.png",
+            "conteudo_observado": "imagens/meta1-servidores-sem-resultado-observacao.json"
+          }
+        ],
+        "etapa": "Meta 1 iniciada por P04, com Meta 0 aberta"
+      },
+      {
+        "relatorio": "cadastros-servidores-lista.md",
+        "captura_origem": "imagens/meta1-servidores-filtro-select-origem.png",
+        "captura_destino": "imagens/meta1-servidores-filtro-select-destino.png",
+        "conteudo_observado": "imagens/meta1-servidores-filtro-select-observacao.json",
+        "paridade_certificada": false,
+        "estados_adicionais": [
+          {
+            "captura_origem": "imagens/meta1-servidores-filtro-cargo-aplicado-origem.png",
+            "captura_destino": "imagens/meta1-servidores-filtro-cargo-aplicado-destino.png",
+            "conteudo_observado": "imagens/meta1-servidores-filtro-cargo-aplicado-observacao.json"
+          },
+          {
+            "captura_origem": "imagens/meta1-servidores-busca-automatica-cargo-origem.png",
+            "captura_destino": "imagens/meta1-servidores-busca-automatica-cargo-destino.png",
+            "conteudo_observado": "imagens/meta1-servidores-busca-automatica-cargo-observacao.json"
+          }
+        ]
+      },
+      {
+        "relatorio": "cadastros-servidores-lista.md",
+        "captura_origem": "imagens/meta1-servidores-busca-retorno-p11-origem.png",
+        "captura_destino": "imagens/meta1-servidores-busca-retorno-p11-destino.png",
+        "conteudo_observado": "imagens/meta1-servidores-busca-retorno-p11-observacao.json",
+        "paridade_certificada": false
+      }
+    ]
+  },
+  {
+    "id": "cadastros:servidor_create",
+    "origem": "/cadastros/servidores/novo/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 37,
+    "callback_origem": "views.servidor_create",
+    "destino": "viagens_cadastros:novo",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/novo/",
+    "parametros": {
+      "slug": "servidores"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Lista/formulário genéricos; conferir composição, campos, busca, paginação, ações e mensagens.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-servidor-form.md",
+      "captura_origem": "imagens/meta1-servidor-form-origem.png",
+      "captura_destino": "imagens/meta1-servidor-form-destino.png",
+      "conteudo_observado": "imagens/meta1-servidor-form-observacao.json",
+      "paridade_certificada": false,
+      "estados_adicionais": [
+        {
+          "captura_origem": "imagens/meta1-servidor-cargo-opcao-vazia-origem.jpg",
+          "captura_destino": "imagens/meta1-servidor-cargo-opcao-vazia-destino.jpg",
+          "conteudo_observado": "imagens/meta1-servidor-cargo-opcao-vazia-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-servidor-cargo-vazio-origem.jpg",
+          "captura_destino": "imagens/meta1-servidor-cargo-vazio-destino.jpg",
+          "conteudo_observado": "imagens/meta1-servidor-cargo-vazio-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-servidor-cargo-selecionado-origem.jpg",
+          "captura_destino": "imagens/meta1-servidor-cargo-selecionado-destino.jpg",
+          "conteudo_observado": "imagens/meta1-servidor-cargo-selecionado-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-servidor-cargo-retirado-origem.jpg",
+          "captura_destino": "imagens/meta1-servidor-cargo-retirado-destino.jpg",
+          "conteudo_observado": "imagens/meta1-servidor-cargo-retirado-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-servidor-unidade-inicial-origem.jpg",
+          "captura_destino": "imagens/meta1-servidor-unidade-inicial-destino.jpg",
+          "conteudo_observado": "imagens/meta1-servidor-unidade-inicial-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-servidor-unidade-busca-origem.jpg",
+          "captura_destino": "imagens/meta1-servidor-unidade-busca-destino.jpg",
+          "conteudo_observado": "imagens/meta1-servidor-unidade-busca-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-servidor-unidade-selecionada-origem.jpg",
+          "captura_destino": "imagens/meta1-servidor-unidade-selecionada-destino.jpg",
+          "conteudo_observado": "imagens/meta1-servidor-unidade-selecionada-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-servidor-unidade-sem-resultado-origem.jpg",
+          "captura_destino": "imagens/meta1-servidor-unidade-sem-resultado-destino.jpg",
+          "conteudo_observado": "imagens/meta1-servidor-unidade-sem-resultado-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-servidor-unidade-limpa-origem.jpg",
+          "captura_destino": "imagens/meta1-servidor-unidade-limpa-destino.jpg",
+          "conteudo_observado": "imagens/meta1-servidor-unidade-limpa-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-servidor-unidade-retorno-origem.jpg",
+          "captura_destino": "imagens/meta1-servidor-unidade-retorno-destino.jpg",
+          "conteudo_observado": "imagens/meta1-servidor-unidade-retorno-observacao.json"
+        }
+      ],
+      "etapa": "Meta 1 iniciada por P04, com Meta 0 aberta",
+      "atributos": "imagens/meta1-servidor-form-campos.json"
+    },
+    "historico_observacoes": [
+      {
+        "relatorio": "cadastros-servidor-form.md",
+        "captura_origem": "imagens/meta0-servidor-form-origem.png",
+        "captura_destino": "imagens/meta0-servidor-form-destino.png",
+        "conteudo_observado": "imagens/meta0-servidor-form-observacao.json",
+        "paridade_certificada": false,
+        "atributos": "imagens/meta0-servidor-form-campos.json"
+      }
+    ]
+  },
+  {
+    "id": "cadastros:servidor_update",
+    "origem": "/cadastros/servidores/<int:pk>/editar/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 38,
+    "callback_origem": "views.servidor_update",
+    "destino": "viagens_cadastros:editar",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/<int:pk>/editar/",
+    "parametros": {
+      "slug": "servidores"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Lista/formulário genéricos; conferir composição, campos, busca, paginação, ações e mensagens.",
+    "prova_visual": null
+  },
+  {
+    "id": "cadastros:servidor_delete",
+    "origem": "/cadastros/servidores/<int:pk>/excluir/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 39,
+    "callback_origem": "views.servidor_delete",
+    "destino": "viagens_cadastros:excluir",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/<int:pk>/excluir/",
+    "parametros": {
+      "slug": "servidores"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Lista/formulário genéricos; conferir composição, campos, busca, paginação, ações e mensagens.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-servidor-exclusao.md",
+      "captura_origem": "imagens/meta1-servidores-confirmacao-origem.png",
+      "captura_destino": "imagens/meta1-servidores-confirmacao-destino.png",
+      "conteudo_observado": "imagens/meta1-servidores-confirmacao-observacao.json",
+      "paridade_certificada": false,
+      "estados_adicionais": [],
+      "etapa": "Meta 1 iniciada por P04, com Meta 0 aberta"
+    },
+    "historico_observacoes": [
+      {
+        "relatorio": "cadastros-servidor-exclusao.md",
+        "captura_origem": "imagens/meta0-servidor-exclusao-origem.png",
+        "captura_destino": "imagens/meta0-servidor-exclusao-destino.png",
+        "conteudo_observado": "imagens/meta0-servidor-exclusao-observacao.json",
+        "paridade_certificada": false,
+        "limite": "Confirmação inicial na origem versus bloqueio por vínculo no destino, com registros diferentes. Nenhuma exclusão submetida."
+      },
+      {
+        "relatorio": "cadastros-servidor-exclusao.md",
+        "captura_origem": "imagens/meta1-servidores-exclusao-retorno-origem.png",
+        "captura_destino": "imagens/meta1-servidores-exclusao-retorno-destino.png",
+        "conteudo_observado": "imagens/meta1-servidores-exclusao-retorno-observacao.json",
+        "paridade_certificada": false
+      }
+    ]
+  },
+  {
+    "id": "cadastros:viaturas_index",
+    "origem": "/cadastros/viaturas/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 40,
+    "callback_origem": "views.viaturas_index",
+    "destino": "viagens_cadastros:lista",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/",
+    "parametros": {
+      "slug": "viaturas"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Cartões completos, filtro misto, busca e diálogo corrigidos. Ensaios com dados temporários concluídos; paginação e demais estados ainda pendentes de comparação.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-viaturas-lista.md",
+      "captura_origem": "imagens/meta1-viaturas-busca-automatica-origem.png",
+      "captura_destino": "imagens/meta1-viaturas-busca-automatica-destino.png",
+      "conteudo_observado": "imagens/meta1-viaturas-busca-automatica-observacao.json",
+      "paridade_certificada": false,
+      "estados_adicionais": [
+        {
+          "captura_origem": "imagens/meta1-viaturas-exclusao-teclado-origem.jpg",
+          "captura_destino": "imagens/meta1-viaturas-exclusao-teclado-destino.jpg",
+          "conteudo_observado": "imagens/meta1-viaturas-exclusao-teclado-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-viaturas-exclusao-ciclo-foco-origem.jpg",
+          "captura_destino": "imagens/meta1-viaturas-exclusao-ciclo-foco-destino.jpg",
+          "conteudo_observado": "imagens/meta1-viaturas-exclusao-ciclo-foco-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-viaturas-busca-texto-origem.jpg",
+          "captura_destino": "imagens/meta1-viaturas-busca-texto-destino.jpg",
+          "conteudo_observado": "imagens/meta1-viaturas-busca-texto-observacao.json"
+        }
+      ]
+    },
+    "historico_observacoes": [
+      {
+        "relatorio": "cadastros-viaturas-lista.md",
+        "captura_origem": "imagens/meta0-viaturas-origem.png",
+        "captura_destino": "imagens/meta0-viaturas-destino.png",
+        "conteudo_observado": "imagens/meta0-viaturas-observacao.json",
+        "paridade_certificada": false,
+        "estados_adicionais": [
+          {
+            "captura_origem": "imagens/meta0-viaturas-filtro-origem.png",
+            "captura_destino": "imagens/meta0-viaturas-filtro-destino.png",
+            "conteudo_observado": "imagens/meta0-viaturas-filtro-observacao.json"
+          }
+        ]
+      },
+      {
+        "relatorio": "cadastros-viaturas-lista.md",
+        "captura_origem": "imagens/meta1-viaturas-cartoes-ensaio-origem.png",
+        "captura_destino": "imagens/meta1-viaturas-cartoes-ensaio-destino.png",
+        "conteudo_observado": "imagens/meta1-viaturas-cartoes-ensaio-observacao.json",
+        "paridade_certificada": false
+      }
+    ]
+  },
+  {
+    "id": "cadastros:viatura_create",
+    "origem": "/cadastros/viaturas/nova/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 41,
+    "callback_origem": "views.viatura_create",
+    "destino": "viagens_cadastros:novo",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/novo/",
+    "parametros": {
+      "slug": "viaturas"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Formulário próprio, seletor de motoristas e retorno de gerenciamento implementados. Limite/máscara da placa e demais estados ainda pendentes.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-viatura-form.md",
+      "captura_origem": "imagens/meta1-viatura-form-origem.png",
+      "captura_destino": "imagens/meta1-viatura-form-destino.png",
+      "conteudo_observado": "imagens/meta1-viatura-form-observacao.json",
+      "paridade_certificada": false,
+      "estados_adicionais": [
+        {
+          "captura_origem": "imagens/meta1-viatura-combustivel-opcao-vazia-origem.jpg",
+          "captura_destino": "imagens/meta1-viatura-combustivel-opcao-vazia-destino.jpg",
+          "conteudo_observado": "imagens/meta1-viatura-combustivel-opcao-vazia-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-viatura-combustivel-vazio-origem.jpg",
+          "captura_destino": "imagens/meta1-viatura-combustivel-vazio-destino.jpg",
+          "conteudo_observado": "imagens/meta1-viatura-combustivel-vazio-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-viatura-combustivel-selecionado-origem.jpg",
+          "captura_destino": "imagens/meta1-viatura-combustivel-selecionado-destino.jpg",
+          "conteudo_observado": "imagens/meta1-viatura-combustivel-selecionado-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-viatura-combustivel-retirado-origem.jpg",
+          "captura_destino": "imagens/meta1-viatura-combustivel-retirado-destino.jpg",
+          "conteudo_observado": "imagens/meta1-viatura-combustivel-retirado-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-viatura-tipo-opcoes-origem.jpg",
+          "captura_destino": "imagens/meta1-viatura-tipo-opcoes-destino.jpg",
+          "conteudo_observado": "imagens/meta1-viatura-tipo-opcoes-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-viatura-tipo-caracterizada-origem.jpg",
+          "captura_destino": "imagens/meta1-viatura-tipo-caracterizada-destino.jpg",
+          "conteudo_observado": "imagens/meta1-viatura-tipo-caracterizada-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidade-busca-antes-origem.jpg",
+          "captura_destino": "imagens/meta1-unidade-busca-antes-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidade-busca-antes-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidade-sem-resultado-origem.jpg",
+          "captura_destino": "imagens/meta1-unidade-sem-resultado-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidade-sem-resultado-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidade-limpa-origem.jpg",
+          "captura_destino": "imagens/meta1-unidade-limpa-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidade-limpa-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidade-nome-sem-acento-origem.jpg",
+          "captura_destino": "imagens/meta1-unidade-nome-sem-acento-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidade-nome-sem-acento-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidade-limite-inferior-origem.jpg",
+          "captura_destino": "imagens/meta1-unidade-limite-inferior-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidade-limite-inferior-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidade-selecao-teclado-origem.jpg",
+          "captura_destino": "imagens/meta1-unidade-selecao-teclado-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidade-selecao-teclado-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidade-busca-sigla-origem.jpg",
+          "captura_destino": "imagens/meta1-unidade-busca-sigla-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidade-busca-sigla-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidade-limite-superior-origem.jpg",
+          "captura_destino": "imagens/meta1-unidade-limite-superior-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidade-limite-superior-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidade-escape-origem.jpg",
+          "captura_destino": "imagens/meta1-unidade-escape-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidade-escape-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidade-reaberta-origem.jpg",
+          "captura_destino": "imagens/meta1-unidade-reaberta-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidade-reaberta-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidade-selecao-clique-origem.jpg",
+          "captura_destino": "imagens/meta1-unidade-selecao-clique-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidade-selecao-clique-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidade-retorno-viatura-origem.jpg",
+          "captura_destino": "imagens/meta1-unidade-retorno-viatura-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidade-retorno-viatura-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta1-unidade-retirada-origem.jpg",
+          "captura_destino": "imagens/meta1-unidade-retirada-destino.jpg",
+          "conteudo_observado": "imagens/meta1-unidade-retirada-observacao.json"
+        }
+      ]
+    },
+    "historico_observacoes": [
+      {
+        "relatorio": "cadastros-viatura-form.md",
+        "captura_origem": "imagens/meta0-viatura-form-origem.png",
+        "captura_destino": "imagens/meta0-viatura-form-destino.png",
+        "conteudo_observado": "imagens/meta0-viatura-form-observacao.json",
+        "paridade_certificada": false,
+        "atributos": "imagens/meta0-viatura-form-campos.json"
+      },
+      {
+        "relatorio": "cadastros-viatura-form.md",
+        "captura_origem": "imagens/meta1-viatura-motoristas-cargo-origem.png",
+        "captura_destino": "imagens/meta1-viatura-motoristas-cargo-destino.png",
+        "conteudo_observado": "imagens/meta1-viatura-motoristas-cargo-observacao.json",
+        "paridade_certificada": false
+      },
+      {
+        "relatorio": "cadastros-viatura-form.md",
+        "captura_origem": "imagens/meta1-viatura-motoristas-reabrir-seta-origem.png",
+        "captura_destino": "imagens/meta1-viatura-motoristas-reabrir-seta-destino.png",
+        "conteudo_observado": "imagens/meta1-viatura-motoristas-reabrir-seta-observacao.json",
+        "paridade_certificada": false
+      },
+      {
+        "relatorio": "cadastros-viatura-form.md",
+        "captura_origem": "imagens/meta1-viatura-motoristas-limite-superior-origem.png",
+        "captura_destino": "imagens/meta1-viatura-motoristas-limite-superior-destino.png",
+        "conteudo_observado": "imagens/meta1-viatura-motoristas-limite-superior-observacao.json",
+        "paridade_certificada": false
+      },
+      {
+        "relatorio": "cadastros-viatura-form.md",
+        "captura_origem": "imagens/meta1-viatura-motoristas-multiplos-teclado-origem.png",
+        "captura_destino": "imagens/meta1-viatura-motoristas-multiplos-teclado-destino.png",
+        "conteudo_observado": "imagens/meta1-viatura-motoristas-multiplos-teclado-observacao.json",
+        "paridade_certificada": false
+      },
+      {
+        "relatorio": "cadastros-viatura-form.md",
+        "captura_origem": "imagens/meta1-viatura-motoristas-remocao-parcial-origem.png",
+        "captura_destino": "imagens/meta1-viatura-motoristas-remocao-parcial-destino.png",
+        "conteudo_observado": "imagens/meta1-viatura-motoristas-remocao-parcial-observacao.json",
+        "paridade_certificada": false
+      },
+      {
+        "relatorio": "cadastros-viatura-form.md",
+        "captura_origem": "imagens/meta1-viatura-motoristas-cpf-sem-mascara-origem.png",
+        "captura_destino": "imagens/meta1-viatura-motoristas-cpf-sem-mascara-destino.png",
+        "conteudo_observado": "imagens/meta1-viatura-motoristas-cpf-sem-mascara-observacao.json",
+        "paridade_certificada": false
+      },
+      {
+        "relatorio": "cadastros-viatura-form.md",
+        "captura_origem": "imagens/meta1-viatura-motoristas-cpf-formatado-origem.png",
+        "captura_destino": "imagens/meta1-viatura-motoristas-cpf-formatado-destino.png",
+        "conteudo_observado": "imagens/meta1-viatura-motoristas-cpf-formatado-observacao.json",
+        "paridade_certificada": false
+      },
+      {
+        "relatorio": "cadastros-viatura-form.md",
+        "captura_origem": "imagens/meta1-viatura-motoristas-rascunho-opcao-origem.png",
+        "captura_destino": "imagens/meta1-viatura-motoristas-rascunho-opcao-destino.png",
+        "conteudo_observado": "imagens/meta1-viatura-motoristas-rascunho-opcao-observacao.json",
+        "paridade_certificada": false
+      },
+      {
+        "relatorio": "cadastros-viatura-form.md",
+        "captura_origem": "imagens/meta1-viatura-motoristas-rascunho-cartao-origem.png",
+        "captura_destino": "imagens/meta1-viatura-motoristas-rascunho-cartao-destino.png",
+        "conteudo_observado": "imagens/meta1-viatura-motoristas-rascunho-cartao-observacao.json",
+        "paridade_certificada": false
+      },
+      {
+        "relatorio": "cadastros-viatura-form.md",
+        "captura_origem": "imagens/meta1-viatura-motoristas-rascunho-retorno-origem.png",
+        "captura_destino": "imagens/meta1-viatura-motoristas-rascunho-retorno-destino.png",
+        "conteudo_observado": "imagens/meta1-viatura-motoristas-rascunho-retorno-observacao.json",
+        "paridade_certificada": false
+      },
+      {
+        "relatorio": "cadastros-viatura-form.md",
+        "captura_origem": "imagens/meta1-viatura-motoristas-rascunho-removido-origem.png",
+        "captura_destino": "imagens/meta1-viatura-motoristas-rascunho-removido-destino.png",
+        "conteudo_observado": "imagens/meta1-viatura-motoristas-rascunho-removido-observacao.json",
+        "paridade_certificada": false
+      },
+      {
+        "relatorio": "cadastros-viatura-form.md",
+        "captura_origem": "imagens/meta1-viatura-motoristas-limite-inferior-origem.png",
+        "captura_destino": "imagens/meta1-viatura-motoristas-limite-inferior-destino.png",
+        "conteudo_observado": "imagens/meta1-viatura-motoristas-limite-inferior-observacao.json",
+        "paridade_certificada": false
+      }
+    ]
+  },
+  {
+    "id": "cadastros:viatura_update",
+    "origem": "/cadastros/viaturas/<int:pk>/editar/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 42,
+    "callback_origem": "views.viatura_update",
+    "destino": "viagens_cadastros:editar",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/<int:pk>/editar/",
+    "parametros": {
+      "slug": "viaturas"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Lista/formulário genéricos; conferir composição, campos, busca, paginação, ações e mensagens.",
+    "prova_visual": null
+  },
+  {
+    "id": "cadastros:viatura_delete",
+    "origem": "/cadastros/viaturas/<int:pk>/excluir/",
+    "arquivo_origem": "cadastros/urls.py",
+    "linha_origem": 43,
+    "callback_origem": "views.viatura_delete",
+    "destino": "viagens_cadastros:excluir",
+    "padrao_destino": "/viagens/cadastros/<slug:slug>/<int:pk>/excluir/",
+    "parametros": {
+      "slug": "viaturas"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Confirmação direta e cancelamento comparados; resposta de exclusão ensaiada somente no destino. Bloqueios equivalentes e permissões pendentes.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "cadastros-viatura-exclusao.md",
+      "captura_origem": "imagens/meta1-viatura-exclusao-direta-origem.png",
+      "captura_destino": "imagens/meta1-viatura-exclusao-direta-destino.png",
+      "conteudo_observado": "imagens/meta1-viatura-exclusao-direta-observacao.json",
+      "paridade_certificada": false
+    }
+  },
+  {
+    "id": "roteiros:index",
+    "origem": "/roteiros/",
+    "arquivo_origem": "roteiros/urls.py",
+    "linha_origem": 9,
+    "callback_origem": "views.index",
+    "destino": "viagens_roteiros:lista",
+    "padrao_destino": "/viagens/roteiros/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "F2 tem composição específica e caracterização. Preservar o que está certo; fidelidade visual ainda não certificada nesta tarefa.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "00-observacao-visual.md",
+      "captura_origem": "imagens/meta0-roteiros-origem.png",
+      "captura_destino": "imagens/meta0-roteiros-destino.png",
+      "paridade_certificada": false
+    }
+  },
+  {
+    "id": "roteiros:novo",
+    "origem": "/roteiros/novo/",
+    "arquivo_origem": "roteiros/urls.py",
+    "linha_origem": 10,
+    "callback_origem": "views.novo",
+    "destino": "viagens_roteiros:novo",
+    "padrao_destino": "/viagens/roteiros/novo/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "F2 tem composição específica e caracterização. Preservar o que está certo; fidelidade visual ainda não certificada nesta tarefa.",
+    "prova_visual": null
+  },
+  {
+    "id": "roteiros:roteiro-autosave-create",
+    "origem": "/roteiros/autosave/criar/",
+    "arquivo_origem": "roteiros/urls.py",
+    "linha_origem": 11,
+    "callback_origem": "views.roteiro_autosave_create",
+    "destino": "viagens_roteiros:autosave_novo",
+    "padrao_destino": "/viagens/roteiros/autosave/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "F2 tem composição específica e caracterização. Preservar o que está certo; fidelidade visual ainda não certificada nesta tarefa.",
+    "prova_visual": null
+  },
+  {
+    "id": "roteiros:api_cidades_por_estado",
+    "origem": "/roteiros/api/cidades/<int:estado_id>/",
+    "arquivo_origem": "roteiros/urls.py",
+    "linha_origem": 12,
+    "callback_origem": "views.api_cidades_por_estado",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "não existe",
+    "motivo": "Não há API de cidades por estado; o destino usa opções locais dependentes. Conferir equivalência do comportamento.",
+    "prova_visual": null
+  },
+  {
+    "id": "roteiros:calcular_diarias",
+    "origem": "/roteiros/calcular-diarias/",
+    "arquivo_origem": "roteiros/urls.py",
+    "linha_origem": 13,
+    "callback_origem": "views.calcular_diarias",
+    "destino": "viagens_roteiros:previa_diarias",
+    "padrao_destino": "/viagens/roteiros/previa-diarias/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "F2 tem composição específica e caracterização. Preservar o que está certo; fidelidade visual ainda não certificada nesta tarefa.",
+    "prova_visual": null
+  },
+  {
+    "id": "roteiros:trechos_estimar",
+    "origem": "/roteiros/trechos/estimar/",
+    "arquivo_origem": "roteiros/urls.py",
+    "linha_origem": 14,
+    "callback_origem": "views.trechos_estimar",
+    "destino": "viagens_roteiros:estimar_trecho",
+    "padrao_destino": "/viagens/roteiros/estimar-trecho/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "F2 tem composição específica e caracterização. Preservar o que está certo; fidelidade visual ainda não certificada nesta tarefa.",
+    "prova_visual": null
+  },
+  {
+    "id": "roteiros:calcular_rota",
+    "origem": "/roteiros/api/calcular-rota/",
+    "arquivo_origem": "roteiros/urls.py",
+    "linha_origem": 15,
+    "callback_origem": "views.calcular_rota",
+    "destino": "viagens_roteiros:calcular_rota",
+    "padrao_destino": "/viagens/roteiros/calcular-rota/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "F2 tem composição específica e caracterização. Preservar o que está certo; fidelidade visual ainda não certificada nesta tarefa.",
+    "prova_visual": null
+  },
+  {
+    "id": "roteiros:calcular_rota_preview",
+    "origem": "/roteiros/api/calcular-rota-preview/",
+    "arquivo_origem": "roteiros/urls.py",
+    "linha_origem": 16,
+    "callback_origem": "views.calcular_rota_preview",
+    "destino": "viagens_roteiros:calcular_rota",
+    "padrao_destino": "/viagens/roteiros/calcular-rota/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "F2 tem composição específica e caracterização. Preservar o que está certo; fidelidade visual ainda não certificada nesta tarefa.",
+    "prova_visual": null
+  },
+  {
+    "id": "roteiros:roteiro-autosave",
+    "origem": "/roteiros/<int:pk>/autosave/",
+    "arquivo_origem": "roteiros/urls.py",
+    "linha_origem": 17,
+    "callback_origem": "views.roteiro_autosave",
+    "destino": "viagens_roteiros:autosave",
+    "padrao_destino": "/viagens/roteiros/<int:pk>/autosave/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "F2 tem composição específica e caracterização. Preservar o que está certo; fidelidade visual ainda não certificada nesta tarefa.",
+    "prova_visual": null
+  },
+  {
+    "id": "roteiros:editar",
+    "origem": "/roteiros/<int:pk>/editar/",
+    "arquivo_origem": "roteiros/urls.py",
+    "linha_origem": 18,
+    "callback_origem": "views.editar",
+    "destino": "viagens_roteiros:editar",
+    "padrao_destino": "/viagens/roteiros/<int:pk>/editar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "F2 tem composição específica e caracterização. Preservar o que está certo; fidelidade visual ainda não certificada nesta tarefa.",
+    "prova_visual": null
+  },
+  {
+    "id": "roteiros:excluir",
+    "origem": "/roteiros/<int:pk>/excluir/",
+    "arquivo_origem": "roteiros/urls.py",
+    "linha_origem": 19,
+    "callback_origem": "views.excluir",
+    "destino": "viagens_roteiros:excluir",
+    "padrao_destino": "/viagens/roteiros/<int:pk>/excluir/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "F2 tem composição específica e caracterização. Preservar o que está certo; fidelidade visual ainda não certificada nesta tarefa.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:index",
+    "origem": "/oficios/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 9,
+    "callback_origem": "views.index",
+    "destino": "viagens_oficios:lista",
+    "padrao_destino": "/viagens/oficios/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Tabela/formulário genéricos; faltam composição em cartões e blocos próprios das etapas.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "oficios-lista.md",
+      "relatorios_adicionais": [
+        "oficios-menus.md"
+      ],
+      "captura_origem": "imagens/meta0-oficios-origem.png",
+      "captura_destino": "imagens/meta0-oficios-destino.png",
+      "conteudo_observado": "imagens/meta0-oficios-observacao.json",
+      "estados_adicionais": [
+        {
+          "captura_origem": "imagens/meta0-oficios-situacao-origem.png",
+          "captura_destino": "imagens/meta0-oficios-situacao-destino.png",
+          "conteudo_observado": "imagens/meta0-oficios-situacao-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta0-oficios-ordenacao-origem.png",
+          "captura_destino": "imagens/meta0-oficios-ordenacao-destino.png",
+          "conteudo_observado": "imagens/meta0-oficios-ordenacao-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta0-oficios-ordenacao-aplicada-origem.png",
+          "captura_destino": "imagens/meta0-oficios-ordenacao-aplicada-destino.png",
+          "conteudo_observado": "imagens/meta0-oficios-ordenacao-aplicada-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta0-oficios-periodo-viagem-origem.png",
+          "captura_destino": "imagens/meta0-oficios-periodo-viagem-destino.png",
+          "conteudo_observado": "imagens/meta0-oficios-periodo-viagem-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta0-oficios-periodo-criacao-origem.png",
+          "captura_destino": "imagens/meta0-oficios-periodo-criacao-destino.png",
+          "conteudo_observado": "imagens/meta0-oficios-periodo-criacao-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta0-oficios-menu-acoes-origem.png",
+          "captura_destino": "imagens/meta0-oficios-menu-acoes-destino.png",
+          "conteudo_observado": "imagens/meta0-oficios-menu-acoes-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta0-oficios-menu-documentos-origem.png",
+          "captura_destino": "imagens/meta0-oficios-menu-documentos-destino.png",
+          "conteudo_observado": "imagens/meta0-oficios-menu-documentos-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta0-oficios-menu-termo-origem.png",
+          "captura_destino": "imagens/meta0-oficios-menu-termo-destino.png",
+          "conteudo_observado": "imagens/meta0-oficios-menu-termo-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta0-oficios-menu-justificativa-origem.png",
+          "captura_destino": "imagens/meta0-oficios-menu-justificativa-destino.png",
+          "conteudo_observado": "imagens/meta0-oficios-menu-justificativa-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta0-oficios-sem-resultado-origem.png",
+          "captura_destino": "imagens/meta0-oficios-sem-resultado-destino.png",
+          "conteudo_observado": "imagens/meta0-oficios-sem-resultado-observacao.json"
+        },
+        {
+          "captura_origem": "imagens/meta0-oficios-fila-destino-origem.png",
+          "captura_destino": "imagens/meta0-oficios-fila-destino-destino.png",
+          "conteudo_observado": "imagens/meta0-oficios-fila-destino-observacao.json"
+        }
+      ],
+      "paridade_certificada": false,
+      "limite": "Menus abertos e busca/ordenação exercitadas. Nenhuma operação de geração, alteração ou exclusão. A ausência dos menus é da listagem; detalhe do destino ainda pendente."
+    }
+  },
+  {
+    "id": "oficios:novo",
+    "origem": "/oficios/novo/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 10,
+    "callback_origem": "views.novo",
+    "destino": "viagens_oficios:novo",
+    "padrao_destino": "/viagens/oficios/novo/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Tabela/formulário genéricos; faltam composição em cartões e blocos próprios das etapas.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:modelos_motivo_index",
+    "origem": "/oficios/modelos-motivo/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 11,
+    "callback_origem": "views.modelos_motivo_index",
+    "destino": "viagens_oficios:catalogo",
+    "padrao_destino": "/viagens/oficios/catalogos/<str:tipo>/",
+    "parametros": {
+      "tipo": "motivos"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Catálogo genérico; inclusão rápida, padrão, exclusão, estados e textos precisam de paridade.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:modelo_motivo_create",
+    "origem": "/oficios/modelos-motivo/novo/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 12,
+    "callback_origem": "views.modelos_motivo_index",
+    "destino": "viagens_oficios:catalogo_novo",
+    "padrao_destino": "/viagens/oficios/catalogos/<str:tipo>/novo/",
+    "parametros": {
+      "tipo": "motivos"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Catálogo genérico; inclusão rápida, padrão, exclusão, estados e textos precisam de paridade.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:modelo_motivo_update",
+    "origem": "/oficios/modelos-motivo/<int:pk>/editar/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 13,
+    "callback_origem": "views.modelo_motivo_editar",
+    "destino": "viagens_oficios:catalogo_editar",
+    "padrao_destino": "/viagens/oficios/catalogos/<str:tipo>/<int:pk>/",
+    "parametros": {
+      "tipo": "motivos"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Catálogo genérico; inclusão rápida, padrão, exclusão, estados e textos precisam de paridade.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:modelo_motivo_definir_padrao",
+    "origem": "/oficios/modelos-motivo/<int:pk>/padrao/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 14,
+    "callback_origem": "views.modelo_motivo_definir_padrao",
+    "destino": "viagens_oficios:catalogo_editar",
+    "padrao_destino": "/viagens/oficios/catalogos/<str:tipo>/<int:pk>/",
+    "parametros": {
+      "tipo": "motivos"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Catálogo genérico; inclusão rápida, padrão, exclusão, estados e textos precisam de paridade.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:modelo_motivo_delete",
+    "origem": "/oficios/modelos-motivo/<int:pk>/excluir/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 19,
+    "callback_origem": "views.modelo_motivo_excluir",
+    "destino": "viagens_oficios:catalogo_editar",
+    "padrao_destino": "/viagens/oficios/catalogos/<str:tipo>/<int:pk>/",
+    "parametros": {
+      "tipo": "motivos"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Catálogo genérico; inclusão rápida, padrão, exclusão, estados e textos precisam de paridade.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:detalhe",
+    "origem": "/oficios/<int:pk>/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 20,
+    "callback_origem": "views.detalhe",
+    "destino": "viagens_oficios:detalhe",
+    "padrao_destino": "/viagens/oficios/<int:pk>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Tabela/formulário genéricos; faltam composição em cartões e blocos próprios das etapas.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:card_menus",
+    "origem": "/oficios/<int:pk>/menus/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 21,
+    "callback_origem": "views.card_menus",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "não existe",
+    "motivo": "Endpoint não localizado; permanece pendência da Meta 3: card_menus.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:editar",
+    "origem": "/oficios/<int:pk>/editar/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 22,
+    "callback_origem": "views.editar",
+    "destino": "viagens_oficios:editar",
+    "padrao_destino": "/viagens/oficios/<int:pk>/editar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Tabela/formulário genéricos; faltam composição em cartões e blocos próprios das etapas.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:dados_viajantes",
+    "origem": "/oficios/<int:pk>/dados-viajantes/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 23,
+    "callback_origem": "views.dados_viajantes",
+    "destino": "viagens_oficios:editar",
+    "padrao_destino": "/viagens/oficios/<int:pk>/editar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Campos concentrados no formulário genérico; a etapa dedicada e seus comportamentos não estão reproduzidos.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:dados_viajantes_autosave",
+    "origem": "/oficios/<int:pk>/dados-viajantes/autosave/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 24,
+    "callback_origem": "views.dados_viajantes_autosave",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "não existe",
+    "motivo": "Endpoint não localizado; permanece pendência da Meta 3: dados_viajantes_autosave.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:transporte",
+    "origem": "/oficios/<int:pk>/transporte/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 25,
+    "callback_origem": "views.transporte",
+    "destino": "viagens_oficios:editar",
+    "padrao_destino": "/viagens/oficios/<int:pk>/editar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Campos concentrados no formulário genérico; a etapa dedicada e seus comportamentos não estão reproduzidos.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:transporte_autosave",
+    "origem": "/oficios/<int:pk>/transporte/autosave/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 26,
+    "callback_origem": "views.transporte_autosave",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "não existe",
+    "motivo": "Endpoint não localizado; permanece pendência da Meta 3: transporte_autosave.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:wizard_roteiro",
+    "origem": "/oficios/<int:pk>/roteiro/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 27,
+    "callback_origem": "views.wizard_roteiro",
+    "destino": "viagens_oficios:editar",
+    "padrao_destino": "/viagens/oficios/<int:pk>/editar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Campos concentrados no formulário genérico; a etapa dedicada e seus comportamentos não estão reproduzidos.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:wizard_roteiro_autosave_criar",
+    "origem": "/oficios/<int:pk>/roteiro/autosave/criar/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 28,
+    "callback_origem": "views.wizard_roteiro_autosave_criar",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "não existe",
+    "motivo": "Endpoint não localizado; permanece pendência da Meta 3: wizard_roteiro_autosave_criar.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:wizard_justificativa",
+    "origem": "/oficios/<int:pk>/justificativa/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 33,
+    "callback_origem": "views.wizard_justificativa",
+    "destino": "viagens_oficios:editar",
+    "padrao_destino": "/viagens/oficios/<int:pk>/editar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Campos concentrados no formulário genérico; a etapa dedicada e seus comportamentos não estão reproduzidos.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:justificativa_autosave",
+    "origem": "/oficios/<int:pk>/justificativa/autosave/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 34,
+    "callback_origem": "views.justificativa_autosave",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "não existe",
+    "motivo": "Endpoint não localizado; permanece pendência da Meta 3: justificativa_autosave.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:wizard_resumo",
+    "origem": "/oficios/<int:pk>/resumo/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 35,
+    "callback_origem": "views.wizard_resumo",
+    "destino": "viagens_oficios:detalhe",
+    "padrao_destino": "/viagens/oficios/<int:pk>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Detalhe reúne informações/documentos; não reproduz conferência e resumo como etapas próprias.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:api_viatura_por_placa",
+    "origem": "/oficios/<int:pk>/api/viatura-por-placa/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 36,
+    "callback_origem": "views.api_viatura_por_placa",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "não existe",
+    "motivo": "Endpoint não localizado; permanece pendência da Meta 3: api_viatura_por_placa.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:wizard_documentos",
+    "origem": "/oficios/<int:pk>/documentos/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 37,
+    "callback_origem": "views.wizard_documentos",
+    "destino": "viagens_oficios:detalhe",
+    "padrao_destino": "/viagens/oficios/<int:pk>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Detalhe reúne informações/documentos; não reproduz conferência e resumo como etapas próprias.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:oficio_pdf_inline",
+    "origem": "/oficios/<int:pk>/documentos/oficio-pdf-inline/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 38,
+    "callback_origem": "views.oficio_pdf_inline",
+    "destino": "viagens_oficios:preview_artefato",
+    "padrao_destino": "/viagens/oficios/documentos/<uuid:pk>/preview/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Prévia por UUID de artefato; falta entrada por ofício/tipo com os mesmos estados.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:justificativa_pdf_inline",
+    "origem": "/oficios/<int:pk>/documentos/justificativa-pdf-inline/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 39,
+    "callback_origem": "views.justificativa_pdf_inline",
+    "destino": "viagens_oficios:preview_artefato",
+    "padrao_destino": "/viagens/oficios/documentos/<uuid:pk>/preview/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Prévia por UUID de artefato; falta entrada por ofício/tipo com os mesmos estados.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:ordem_servico_pdf_inline",
+    "origem": "/oficios/<int:pk>/documentos/ordem-servico-pdf-inline/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 44,
+    "callback_origem": "views.ordem_servico_pdf_inline",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "fora de escopo",
+    "motivo": "Geração/prévia de ordem de serviço: fora do escopo expresso do pedido. Pontos de entrada em telas mistas ainda dependem de decisão.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:baixar_justificativa_documento",
+    "origem": "/oficios/<int:pk>/documentos/justificativa/<str:formato>/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 49,
+    "callback_origem": "views.baixar_justificativa_documento",
+    "destino": "viagens_oficios:gerar",
+    "padrao_destino": "/viagens/oficios/<int:pk>/gerar/<str:tipo>/<str:formato>/",
+    "parametros": {
+      "tipo": "justificativa"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Núcleo de geração existe, com entrada POST. Conferir contrato de download, nova aba, disponibilidade e erros.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:baixar_ordem_servico_documento",
+    "origem": "/oficios/<int:pk>/documentos/ordem-servico/<str:formato>/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 54,
+    "callback_origem": "views.baixar_ordem_servico_documento",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "fora de escopo",
+    "motivo": "Geração/prévia de ordem de serviço: fora do escopo expresso do pedido. Pontos de entrada em telas mistas ainda dependem de decisão.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:baixar_documento",
+    "origem": "/oficios/<int:pk>/documentos/<str:formato>/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 59,
+    "callback_origem": "views.baixar_documento",
+    "destino": "viagens_oficios:gerar",
+    "padrao_destino": "/viagens/oficios/<int:pk>/gerar/<str:tipo>/<str:formato>/",
+    "parametros": {
+      "tipo": "oficio"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Núcleo de geração existe, com entrada POST. Conferir contrato de download, nova aba, disponibilidade e erros.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:excluir",
+    "origem": "/oficios/<int:pk>/excluir/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 60,
+    "callback_origem": "views.excluir",
+    "destino": "viagens_oficios:acao",
+    "padrao_destino": "/viagens/oficios/<int:pk>/acao/<str:acao>/",
+    "parametros": {
+      "acao": "excluir"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Ação de domínio existe; conferir posição, confirmação, permissão e mensagens.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:cancelar",
+    "origem": "/oficios/<int:pk>/cancelar/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 61,
+    "callback_origem": "views.cancelar",
+    "destino": "viagens_oficios:acao",
+    "padrao_destino": "/viagens/oficios/<int:pk>/acao/<str:acao>/",
+    "parametros": {
+      "acao": "cancelar"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Ação de domínio existe; conferir posição, confirmação, permissão e mensagens.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:retificar",
+    "origem": "/oficios/<int:pk>/retificar/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 62,
+    "callback_origem": "views.retificar",
+    "destino": "viagens_oficios:acao",
+    "padrao_destino": "/viagens/oficios/<int:pk>/acao/<str:acao>/",
+    "parametros": {
+      "acao": "retificar"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Ação de domínio existe; conferir posição, confirmação, permissão e mensagens.",
+    "prova_visual": null
+  },
+  {
+    "id": "oficios:marcar_complementar",
+    "origem": "/oficios/<int:pk>/complementar/",
+    "arquivo_origem": "oficios/urls.py",
+    "linha_origem": 63,
+    "callback_origem": "views.marcar_complementar",
+    "destino": "viagens_oficios:acao",
+    "padrao_destino": "/viagens/oficios/<int:pk>/acao/<str:acao>/",
+    "parametros": {
+      "acao": "complementar"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Ação de domínio existe; conferir posição, confirmação, permissão e mensagens.",
+    "prova_visual": null
+  },
+  {
+    "id": "justificativas:index",
+    "origem": "/justificativas/",
+    "arquivo_origem": "justificativas/urls.py",
+    "linha_origem": 9,
+    "callback_origem": "views.index",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "não existe",
+    "motivo": "Tela/endpoint de justificativas aplicadas ausente; existem apenas campo no ofício e catálogo de modelos.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "00-observacao-visual.md",
+      "captura_origem": "imagens/meta0-justificativas-origem.png",
+      "captura_destino": "imagens/meta0-justificativas-destino.png",
+      "paridade_certificada": false
+    }
+  },
+  {
+    "id": "justificativas:api_buscar_oficios",
+    "origem": "/justificativas/api/oficios/",
+    "arquivo_origem": "justificativas/urls.py",
+    "linha_origem": 10,
+    "callback_origem": "views.api_buscar_oficios",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "não existe",
+    "motivo": "Tela/endpoint de justificativas aplicadas ausente; existem apenas campo no ofício e catálogo de modelos.",
+    "prova_visual": null
+  },
+  {
+    "id": "justificativas:justificativa_delete",
+    "origem": "/justificativas/<int:pk>/excluir/",
+    "arquivo_origem": "justificativas/urls.py",
+    "linha_origem": 11,
+    "callback_origem": "views.justificativa_excluir",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "não existe",
+    "motivo": "Tela/endpoint de justificativas aplicadas ausente; existem apenas campo no ofício e catálogo de modelos.",
+    "prova_visual": null
+  },
+  {
+    "id": "justificativas:modelos_index",
+    "origem": "/justificativas/modelos/",
+    "arquivo_origem": "justificativas/urls.py",
+    "linha_origem": 12,
+    "callback_origem": "views.modelos_index",
+    "destino": "viagens_oficios:catalogo",
+    "padrao_destino": "/viagens/oficios/catalogos/<str:tipo>/",
+    "parametros": {
+      "tipo": "justificativas"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Catálogo genérico sem comprovação de inclusão rápida, padrão, confirmação e mensagens iguais.",
+    "prova_visual": null
+  },
+  {
+    "id": "justificativas:modelo_create",
+    "origem": "/justificativas/modelos/novo/",
+    "arquivo_origem": "justificativas/urls.py",
+    "linha_origem": 13,
+    "callback_origem": "views.modelos_index",
+    "destino": "viagens_oficios:catalogo_novo",
+    "padrao_destino": "/viagens/oficios/catalogos/<str:tipo>/novo/",
+    "parametros": {
+      "tipo": "justificativas"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Catálogo genérico sem comprovação de inclusão rápida, padrão, confirmação e mensagens iguais.",
+    "prova_visual": null
+  },
+  {
+    "id": "justificativas:modelo_update",
+    "origem": "/justificativas/modelos/<int:pk>/editar/",
+    "arquivo_origem": "justificativas/urls.py",
+    "linha_origem": 14,
+    "callback_origem": "views.modelo_editar",
+    "destino": "viagens_oficios:catalogo_editar",
+    "padrao_destino": "/viagens/oficios/catalogos/<str:tipo>/<int:pk>/",
+    "parametros": {
+      "tipo": "justificativas"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Catálogo genérico sem comprovação de inclusão rápida, padrão, confirmação e mensagens iguais.",
+    "prova_visual": null
+  },
+  {
+    "id": "justificativas:modelo_definir_padrao",
+    "origem": "/justificativas/modelos/<int:pk>/padrao/",
+    "arquivo_origem": "justificativas/urls.py",
+    "linha_origem": 15,
+    "callback_origem": "views.modelo_definir_padrao",
+    "destino": "viagens_oficios:catalogo_editar",
+    "padrao_destino": "/viagens/oficios/catalogos/<str:tipo>/<int:pk>/",
+    "parametros": {
+      "tipo": "justificativas"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Catálogo genérico sem comprovação de inclusão rápida, padrão, confirmação e mensagens iguais.",
+    "prova_visual": null
+  },
+  {
+    "id": "justificativas:modelo_delete",
+    "origem": "/justificativas/modelos/<int:pk>/excluir/",
+    "arquivo_origem": "justificativas/urls.py",
+    "linha_origem": 16,
+    "callback_origem": "views.modelo_excluir",
+    "destino": "viagens_oficios:catalogo_editar",
+    "padrao_destino": "/viagens/oficios/catalogos/<str:tipo>/<int:pk>/",
+    "parametros": {
+      "tipo": "justificativas"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Catálogo genérico sem comprovação de inclusão rápida, padrão, confirmação e mensagens iguais.",
+    "prova_visual": null
+  },
+  {
+    "id": "justificativas:legacy_modelo_create",
+    "origem": "/justificativas/novo/",
+    "arquivo_origem": "justificativas/urls.py",
+    "linha_origem": 17,
+    "callback_origem": "views.legacy_modelos_redirect",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "não existe",
+    "motivo": "Alias legado a decidir; há dois padrões de exclusão idênticos na origem e o último fica sombreado. Não corrigir nem dispensar sem autorização.",
+    "prova_visual": null
+  },
+  {
+    "id": "justificativas:legacy_modelo_update",
+    "origem": "/justificativas/<int:pk>/editar/",
+    "arquivo_origem": "justificativas/urls.py",
+    "linha_origem": 18,
+    "callback_origem": "views.legacy_modelos_redirect",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "não existe",
+    "motivo": "Alias legado a decidir; há dois padrões de exclusão idênticos na origem e o último fica sombreado. Não corrigir nem dispensar sem autorização.",
+    "prova_visual": null
+  },
+  {
+    "id": "justificativas:legacy_modelo_definir_padrao",
+    "origem": "/justificativas/<int:pk>/padrao/",
+    "arquivo_origem": "justificativas/urls.py",
+    "linha_origem": 19,
+    "callback_origem": "views.legacy_modelos_redirect",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "não existe",
+    "motivo": "Alias legado a decidir; há dois padrões de exclusão idênticos na origem e o último fica sombreado. Não corrigir nem dispensar sem autorização.",
+    "prova_visual": null
+  },
+  {
+    "id": "justificativas:legacy_modelo_delete",
+    "origem": "/justificativas/<int:pk>/excluir/",
+    "arquivo_origem": "justificativas/urls.py",
+    "linha_origem": 20,
+    "callback_origem": "views.legacy_modelos_redirect",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "não existe",
+    "motivo": "Alias legado a decidir; há dois padrões de exclusão idênticos na origem e o último fica sombreado. Não corrigir nem dispensar sem autorização.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:index",
+    "origem": "/termos/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 9,
+    "callback_origem": "views.index",
+    "destino": "viagens_termos:lista",
+    "padrao_destino": "/viagens/termos/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "00-observacao-visual.md",
+      "captura_origem": "imagens/meta0-termos-origem.png",
+      "captura_destino": "imagens/meta0-termos-destino.png",
+      "paridade_certificada": false
+    }
+  },
+  {
+    "id": "termos:api_buscar_oficios",
+    "origem": "/termos/api/oficios/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 10,
+    "callback_origem": "views.api_buscar_oficios",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "não existe",
+    "motivo": "Busca remota de ofícios para o cadastro de termos não localizada.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:novo",
+    "origem": "/termos/novo/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 11,
+    "callback_origem": "views.novo",
+    "destino": "viagens_termos:novo",
+    "padrao_destino": "/viagens/termos/novo/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:editar",
+    "origem": "/termos/<int:pk>/editar/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 12,
+    "callback_origem": "views.editar",
+    "destino": "viagens_termos:editar",
+    "padrao_destino": "/viagens/termos/<int:pk>/editar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:excluir",
+    "origem": "/termos/<int:pk>/excluir/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 13,
+    "callback_origem": "views.excluir",
+    "destino": "viagens_termos:acao",
+    "padrao_destino": "/viagens/termos/<int:pk>/acao/<str:acao>/",
+    "parametros": {
+      "acao": "excluir"
+    },
+    "situacao": "existe e está incompleta",
+    "motivo": "Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:termo_cadastro_downloads",
+    "origem": "/termos/<int:pk>/downloads/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 14,
+    "callback_origem": "views.termo_cadastro_downloads",
+    "destino": "viagens_termos:detalhe",
+    "padrao_destino": "/viagens/termos/<int:pk>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:termo_cadastro_pdf_inline",
+    "origem": "/termos/<int:pk>/pdf-inline/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 15,
+    "callback_origem": "views.termo_cadastro_pdf_inline",
+    "destino": "viagens_termos:preview",
+    "padrao_destino": "/viagens/termos/<int:pk>/preview/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:termo_cadastro_generico_pdf_inline",
+    "origem": "/termos/<int:pk>/pdf-inline/generico/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 16,
+    "callback_origem": "views.termo_cadastro_generico_pdf_inline",
+    "destino": "viagens_termos:preview",
+    "padrao_destino": "/viagens/termos/<int:pk>/preview/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:termo_cadastro_servidor_pdf_inline",
+    "origem": "/termos/<int:pk>/servidor/<int:servidor_pk>/pdf-inline/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 21,
+    "callback_origem": "views.termo_cadastro_servidor_pdf_inline",
+    "destino": "viagens_termos:preview_servidor",
+    "padrao_destino": "/viagens/termos/<int:pk>/preview/<int:servidor_id>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:baixar_termo_cadastro_pdf",
+    "origem": "/termos/<int:pk>/pdf/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 26,
+    "callback_origem": "views.baixar_termo_cadastro_pdf",
+    "destino": "viagens_termos:lote",
+    "padrao_destino": "/viagens/termos/<int:pk>/gerar/<str:formato>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:baixar_termo_cadastro_docx",
+    "origem": "/termos/<int:pk>/docx/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 27,
+    "callback_origem": "views.baixar_termo_cadastro_docx",
+    "destino": "viagens_termos:lote",
+    "padrao_destino": "/viagens/termos/<int:pk>/gerar/<str:formato>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:termo_cadastro_generico_assinado_anexar",
+    "origem": "/termos/<int:pk>/generico/assinado/anexar/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 28,
+    "callback_origem": "views.termo_cadastro_generico_assinado_anexar",
+    "destino": "viagens_oficios:assinatura_artefato",
+    "padrao_destino": "/viagens/oficios/documentos/<uuid:pk>/assinatura/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Anexação por UUID disponível; faltam pontos de entrada por termo/ofício, servidor e modalidade.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:termo_cadastro_servidor_assinado_anexar",
+    "origem": "/termos/<int:pk>/servidor/<int:servidor_pk>/assinado/anexar/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 33,
+    "callback_origem": "views.termo_cadastro_servidor_assinado_anexar",
+    "destino": "viagens_oficios:assinatura_artefato",
+    "padrao_destino": "/viagens/oficios/documentos/<uuid:pk>/assinatura/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Anexação por UUID disponível; faltam pontos de entrada por termo/ofício, servidor e modalidade.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:termo_cadastro_viatura_pdf_inline",
+    "origem": "/termos/<int:pk>/viatura/pdf-inline/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 40,
+    "callback_origem": "views.termo_cadastro_viatura_pdf_inline",
+    "destino": "viagens_termos:preview",
+    "padrao_destino": "/viagens/termos/<int:pk>/preview/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:baixar_termo_cadastro_viatura",
+    "origem": "/termos/<int:pk>/viatura/<str:formato>/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 45,
+    "callback_origem": "views.baixar_termo_cadastro_viatura",
+    "destino": "viagens_termos:lote",
+    "padrao_destino": "/viagens/termos/<int:pk>/gerar/<str:formato>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:baixar_termo_cadastro_generico",
+    "origem": "/termos/<int:pk>/generico/<str:formato>/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 50,
+    "callback_origem": "views.baixar_termo_cadastro_generico",
+    "destino": "viagens_termos:lote",
+    "padrao_destino": "/viagens/termos/<int:pk>/gerar/<str:formato>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:baixar_termo_cadastro_servidor",
+    "origem": "/termos/<int:pk>/servidor/<int:servidor_pk>/<str:formato>/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 55,
+    "callback_origem": "views.baixar_termo_cadastro_servidor",
+    "destino": "viagens_termos:gerar",
+    "padrao_destino": "/viagens/termos/<int:pk>/gerar/<int:servidor_id>/<str:formato>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:preview_termo_oficio",
+    "origem": "/termos/oficio/<int:pk>/preview/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 60,
+    "callback_origem": "views.preview_termo_oficio",
+    "destino": "viagens_oficios:detalhe",
+    "padrao_destino": "/viagens/oficios/<int:pk>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Fluxo relacionado disponível no ofício; conferir prévia por servidor, modos, PDF consolidado versus ZIP, nomes e estados.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:termo_servidor_pdf_inline",
+    "origem": "/termos/oficio/<int:pk>/servidor/<int:servidor_pk>/pdf-inline/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 61,
+    "callback_origem": "views.termo_servidor_pdf_inline",
+    "destino": "viagens_oficios:preview_artefato",
+    "padrao_destino": "/viagens/oficios/documentos/<uuid:pk>/preview/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Fluxo relacionado disponível no ofício; conferir prévia por servidor, modos, PDF consolidado versus ZIP, nomes e estados.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:termo_oficio_assinado_anexar",
+    "origem": "/termos/oficio/<int:pk>/servidor/<int:servidor_pk>/assinado/anexar/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 66,
+    "callback_origem": "views.termo_oficio_assinado_anexar",
+    "destino": "viagens_oficios:assinatura_artefato",
+    "padrao_destino": "/viagens/oficios/documentos/<uuid:pk>/assinatura/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Anexação por UUID disponível; faltam pontos de entrada por termo/ofício, servidor e modalidade.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:baixar_termo_servidor",
+    "origem": "/termos/oficio/<int:pk>/servidor/<int:servidor_pk>/<str:formato>/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 71,
+    "callback_origem": "views.baixar_termo_servidor",
+    "destino": "viagens_oficios:termo",
+    "padrao_destino": "/viagens/oficios/<int:pk>/termos/<int:servidor_id>/<str:formato>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Fluxo relacionado disponível no ofício; conferir prévia por servidor, modos, PDF consolidado versus ZIP, nomes e estados.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:baixar_termos_todos_pdf",
+    "origem": "/termos/oficio/<int:pk>/todos/pdf/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 76,
+    "callback_origem": "views.baixar_termos_todos_pdf",
+    "destino": "viagens_oficios:termos_lote",
+    "padrao_destino": "/viagens/oficios/<int:pk>/termos/<str:formato>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Fluxo relacionado disponível no ofício; conferir prévia por servidor, modos, PDF consolidado versus ZIP, nomes e estados.",
+    "prova_visual": null
+  },
+  {
+    "id": "termos:baixar_termo_lote_zip",
+    "origem": "/termos/oficio/<int:pk>/lote/<str:formato>/",
+    "arquivo_origem": "termos/urls.py",
+    "linha_origem": 81,
+    "callback_origem": "views.baixar_termo_lote_zip",
+    "destino": "viagens_oficios:termos_lote",
+    "padrao_destino": "/viagens/oficios/<int:pk>/termos/<str:formato>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Fluxo relacionado disponível no ofício; conferir prévia por servidor, modos, PDF consolidado versus ZIP, nomes e estados.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:index",
+    "origem": "/prestacoes-contas/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 11,
+    "callback_origem": "views.index",
+    "destino": "viagens_prestacoes:index",
+    "padrao_destino": "/viagens/prestacoes/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null,
+    "observacao_visual": {
+      "relatorio": "00-observacao-visual.md",
+      "captura_origem": "imagens/meta0-prestacoes-origem.png",
+      "captura_destino": "imagens/meta0-prestacoes-destino.png",
+      "paridade_certificada": false
+    }
+  },
+  {
+    "id": "prestacoes_contas:prestacao_downloads",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/downloads/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 12,
+    "callback_origem": "views.prestacao_downloads",
+    "destino": "viagens_prestacoes:prestacao_downloads",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/downloads/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:prestacao_download_compilado",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/downloads/compilado/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 13,
+    "callback_origem": "views.prestacao_download_compilado",
+    "destino": "viagens_prestacoes:prestacao_download_compilado",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/downloads/compilado/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:prestacao_download_assinado",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/downloads/assinado/<str:item_id>/<str:formato>/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 14,
+    "callback_origem": "views.prestacao_download_assinado",
+    "destino": "viagens_prestacoes:prestacao_download_assinado",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/downloads/assinado/<str:item_id>/<str:formato>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:prestacao_servidor_arquivar",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/arquivar/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 16,
+    "callback_origem": "views.prestacao_servidor_arquivar",
+    "destino": "viagens_prestacoes:prestacao_servidor_arquivar",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/arquivar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:prestacao_servidor_finalizar",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/finalizar/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 21,
+    "callback_origem": "views.prestacao_servidor_finalizar",
+    "destino": "viagens_prestacoes:prestacao_servidor_finalizar",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/finalizar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:documentos_servidor",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/documentos/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 26,
+    "callback_origem": "views.documentos_servidor",
+    "destino": "viagens_prestacoes:documentos_servidor",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/documentos/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:rt_servidor",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/rt/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 31,
+    "callback_origem": "views.rt_servidor",
+    "destino": "viagens_prestacoes:rt_servidor",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/rt/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:diario_servidor",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/diario/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 32,
+    "callback_origem": "views.diario_servidor",
+    "destino": "viagens_prestacoes:diario_servidor",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/diario/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:consolidado_servidor",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/consolidado/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 37,
+    "callback_origem": "views.consolidado_servidor",
+    "destino": "viagens_prestacoes:consolidado_servidor",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/consolidado/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:prestacao_arquivar",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/arquivar/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 43,
+    "callback_origem": "views.prestacao_arquivar",
+    "destino": "viagens_prestacoes:prestacao_arquivar",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/arquivar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:prestacao_finalizar",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/finalizar/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 44,
+    "callback_origem": "views.prestacao_finalizar",
+    "destino": "viagens_prestacoes:prestacao_finalizar",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/finalizar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:documentos",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/documentos/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 45,
+    "callback_origem": "views.documentos",
+    "destino": "viagens_prestacoes:documentos",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/documentos/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:prestacao_arquivo_autosave",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/despacho/autosave/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 46,
+    "callback_origem": "views.prestacao_arquivo_autosave",
+    "destino": "viagens_prestacoes:prestacao_arquivo_autosave",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/despacho/autosave/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:prestacao_despacho_assinado_anexar",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/despacho-assinado/anexar/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 47,
+    "callback_origem": "views.prestacao_despacho_assinado_anexar",
+    "destino": "viagens_prestacoes:prestacao_despacho_assinado_anexar",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/despacho-assinado/anexar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:prestacao_oficio_assinado_anexar",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/oficio-assinado/anexar/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 52,
+    "callback_origem": "views.prestacao_oficio_assinado_anexar",
+    "destino": "viagens_prestacoes:prestacao_oficio_assinado_anexar",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/oficio-assinado/anexar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:prestacao_carimbo_ajustar",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/oficio-assinado/carimbo/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 57,
+    "callback_origem": "views.prestacao_carimbo_ajustar",
+    "destino": "viagens_prestacoes:prestacao_carimbo_ajustar",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/oficio-assinado/carimbo/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:prestacao_oficio_assinado_cru",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/oficio-assinado/cru/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 62,
+    "callback_origem": "views.prestacao_oficio_assinado_cru",
+    "destino": "viagens_prestacoes:prestacao_oficio_assinado_cru",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/oficio-assinado/cru/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:prestacao_servidor_assinado_anexar",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/assinado/<str:tipo>/anexar/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 67,
+    "callback_origem": "views.prestacao_servidor_assinado_anexar",
+    "destino": "viagens_prestacoes:prestacao_servidor_assinado_anexar",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/assinado/<str:tipo>/anexar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:prestacao_documento_delete",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/anexo/<int:anexo_pk>/excluir/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 72,
+    "callback_origem": "views.prestacao_documento_excluir",
+    "destino": "viagens_prestacoes:prestacao_documento_delete",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/anexo/<int:anexo_pk>/excluir/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:prestacao_documento_conteudo",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/anexo/<int:anexo_pk>/conteudo/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 73,
+    "callback_origem": "views.prestacao_documento_conteudo",
+    "destino": "viagens_prestacoes:prestacao_documento_conteudo",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/anexo/<int:anexo_pk>/conteudo/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:prestacao_servidor_solicitacao_autosave",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/solicitacao/autosave/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 78,
+    "callback_origem": "views.prestacao_servidor_solicitacao_autosave",
+    "destino": "viagens_prestacoes:prestacao_servidor_solicitacao_autosave",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/solicitacao/autosave/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:prestacao_servidor_arquivo_autosave",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/comprovante/autosave/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 79,
+    "callback_origem": "views.prestacao_servidor_arquivo_autosave",
+    "destino": "viagens_prestacoes:prestacao_servidor_arquivo_autosave",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/comprovante/autosave/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:rt_criar",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/rt/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 80,
+    "callback_origem": "views.rt_criar",
+    "destino": "viagens_prestacoes:rt_criar",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/rt/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:rt_autosave",
+    "origem": "/prestacoes-contas/rt/<int:pk>/autosave/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 81,
+    "callback_origem": "views.rt_autosave",
+    "destino": "viagens_prestacoes:rt_autosave",
+    "padrao_destino": "/viagens/prestacoes/rt/<int:pk>/autosave/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:card_menus",
+    "origem": "/prestacoes-contas/<int:pk>/menus/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 82,
+    "callback_origem": "card_menus",
+    "destino": null,
+    "padrao_destino": null,
+    "parametros": {},
+    "situacao": "não existe",
+    "motivo": "Menu contextual por cartão e seu endpoint não existem no destino.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:rt_servidor_autosave",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/rt/autosave/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 83,
+    "callback_origem": "views.rt_servidor_autosave",
+    "destino": "viagens_prestacoes:rt_servidor_autosave",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/rt/autosave/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:rt_download_servidor",
+    "origem": "/prestacoes-contas/rt/servidor/<int:ps_pk>/download/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 88,
+    "callback_origem": "views.rt_download_servidor",
+    "destino": "viagens_prestacoes:rt_download_servidor",
+    "padrao_destino": "/viagens/prestacoes/rt/servidor/<int:ps_pk>/download/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:rt_download_servidor_formato",
+    "origem": "/prestacoes-contas/rt/servidor/<int:ps_pk>/download/<str:formato>/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 89,
+    "callback_origem": "views.rt_download_servidor",
+    "destino": "viagens_prestacoes:rt_download_servidor_formato",
+    "padrao_destino": "/viagens/prestacoes/rt/servidor/<int:ps_pk>/download/<str:formato>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:diario_criar",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/diario/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 90,
+    "callback_origem": "views.diario_criar",
+    "destino": "viagens_prestacoes:diario_criar",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/diario/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:diario_editar_roteiro",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/diario/editar-roteiro/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 91,
+    "callback_origem": "views.diario_editar_roteiro",
+    "destino": "viagens_prestacoes:diario_editar_roteiro",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/diario/editar-roteiro/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:diario_servidor_editar_roteiro",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/diario/editar-roteiro/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 92,
+    "callback_origem": "views.diario_servidor_editar_roteiro",
+    "destino": "viagens_prestacoes:diario_servidor_editar_roteiro",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/diario/editar-roteiro/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:diario_motorista",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/diario/motorista/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 97,
+    "callback_origem": "views.diario_motorista",
+    "destino": "viagens_prestacoes:diario_motorista",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/diario/motorista/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:diario_servidor_motorista",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/diario/motorista/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 98,
+    "callback_origem": "views.diario_servidor_motorista",
+    "destino": "viagens_prestacoes:diario_servidor_motorista",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/diario/motorista/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:diario_autosave",
+    "origem": "/prestacoes-contas/diario/<int:pk>/autosave/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 103,
+    "callback_origem": "views.diario_autosave",
+    "destino": "viagens_prestacoes:diario_autosave",
+    "padrao_destino": "/viagens/prestacoes/diario/<int:pk>/autosave/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:diario_servidor_autosave",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/diario/autosave/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 104,
+    "callback_origem": "views.diario_servidor_autosave",
+    "destino": "viagens_prestacoes:diario_servidor_autosave",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/diario/autosave/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:diario_download",
+    "origem": "/prestacoes-contas/diario/<int:pk>/download/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 109,
+    "callback_origem": "views.diario_download",
+    "destino": "viagens_prestacoes:diario_download",
+    "padrao_destino": "/viagens/prestacoes/diario/<int:pk>/download/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:diario_download_formato",
+    "origem": "/prestacoes-contas/diario/<int:pk>/download/<str:formato>/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 110,
+    "callback_origem": "views.diario_download",
+    "destino": "viagens_prestacoes:diario_download_formato",
+    "padrao_destino": "/viagens/prestacoes/diario/<int:pk>/download/<str:formato>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:consolidado",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/consolidado/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 111,
+    "callback_origem": "views.consolidado",
+    "destino": "viagens_prestacoes:consolidado",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/consolidado/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:consolidado_download",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/consolidado/download/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 112,
+    "callback_origem": "views.consolidado_download",
+    "destino": "viagens_prestacoes:consolidado_download",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/consolidado/download/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:assinatura_rt_gerar",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/assinatura-rt/gerar/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 114,
+    "callback_origem": "views.assinatura_rt_gerar",
+    "destino": "viagens_prestacoes:assinatura_rt_gerar",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/assinatura/gerar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:assinatura_rt_cancelar",
+    "origem": "/prestacoes-contas/servidor-prestacao/<int:ps_pk>/assinatura-rt/cancelar/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 115,
+    "callback_origem": "views.assinatura_rt_cancelar",
+    "destino": "viagens_prestacoes:assinatura_rt_cancelar",
+    "padrao_destino": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/assinatura/cancelar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:assinatura_db_gerar",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/assinatura-db/gerar/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 116,
+    "callback_origem": "views.assinatura_db_gerar",
+    "destino": "viagens_prestacoes:assinatura_db_gerar",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/diario/assinatura/gerar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:assinatura_db_cancelar",
+    "origem": "/prestacoes-contas/prestacao/<int:pc_pk>/assinatura-db/cancelar/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 117,
+    "callback_origem": "views.assinatura_db_cancelar",
+    "destino": "viagens_prestacoes:assinatura_db_cancelar",
+    "padrao_destino": "/viagens/prestacoes/prestacao/<int:pc_pk>/diario/assinatura/cancelar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:assinatura_landing",
+    "origem": "/prestacoes-contas/assinar/<str:token>/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 119,
+    "callback_origem": "assinatura_views.publico_landing",
+    "destino": "viagens_assinaturas:assinatura_landing",
+    "padrao_destino": "/assinatura/<str:token>/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:assinatura_concluido",
+    "origem": "/prestacoes-contas/assinar/<str:token>/concluido/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 120,
+    "callback_origem": "assinatura_views.publico_concluido",
+    "destino": "viagens_assinaturas:assinatura_concluido",
+    "padrao_destino": "/assinatura/<str:token>/concluido/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:assinatura_identidade",
+    "origem": "/prestacoes-contas/assinar/<str:token>/<str:tipo>/identidade/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 121,
+    "callback_origem": "assinatura_views.publico_identidade",
+    "destino": "viagens_assinaturas:assinatura_identidade",
+    "padrao_destino": "/assinatura/<str:token>/<str:tipo>/identidade/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:assinatura_assinar",
+    "origem": "/prestacoes-contas/assinar/<str:token>/<str:tipo>/assinar/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 122,
+    "callback_origem": "assinatura_views.publico_assinar",
+    "destino": "viagens_assinaturas:assinatura_assinar",
+    "padrao_destino": "/assinatura/<str:token>/<str:tipo>/assinar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:assinatura_pdf_origem",
+    "origem": "/prestacoes-contas/assinar/<str:token>/<str:tipo>/pdf/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 123,
+    "callback_origem": "assinatura_views.publico_pdf_origem",
+    "destino": "viagens_assinaturas:assinatura_pdf_origem",
+    "padrao_destino": "/assinatura/<str:token>/<str:tipo>/origem.pdf",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:modelos_index",
+    "origem": "/prestacoes-contas/modelos-texto/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 125,
+    "callback_origem": "views.modelos_index",
+    "destino": "viagens_prestacoes:modelos_index",
+    "padrao_destino": "/viagens/prestacoes/modelos-texto/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:modelo_update",
+    "origem": "/prestacoes-contas/modelos-texto/<int:pk>/editar/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 126,
+    "callback_origem": "views.modelo_editar",
+    "destino": "viagens_prestacoes:modelo_update",
+    "padrao_destino": "/viagens/prestacoes/modelos-texto/<int:pk>/editar/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  },
+  {
+    "id": "prestacoes_contas:modelo_delete",
+    "origem": "/prestacoes-contas/modelos-texto/<int:pk>/excluir/",
+    "arquivo_origem": "prestacoes_contas/urls.py",
+    "linha_origem": 127,
+    "callback_origem": "views.modelo_excluir",
+    "destino": "viagens_prestacoes:modelo_delete",
+    "padrao_destino": "/viagens/prestacoes/modelos-texto/<int:pk>/excluir/",
+    "parametros": {},
+    "situacao": "existe e está incompleta",
+    "motivo": "Endpoint portado na F5. Templates, cartões, estados, ações e mensagens ainda exigem prova visual; testes de domínio não certificam a tela.",
+    "prova_visual": null
+  }
+]

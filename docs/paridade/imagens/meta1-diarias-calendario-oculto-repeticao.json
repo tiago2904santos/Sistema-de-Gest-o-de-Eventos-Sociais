@@ -1,0 +1,10 @@
+{
+  "origem": {
+    "exibicao": "10/09/2026",
+    "readonly": true,
+    "url": "http://127.0.0.1:8000/cadastros/configuracao/roteiros/",
+    "valorEnviado": ""
+  },
+  "procedimento": "Página recarregada; Abrir calendario; Hoje. Nenhum POST.",
+  "decisao": "P09 pendente"
+}

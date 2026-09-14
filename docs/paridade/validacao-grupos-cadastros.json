@@ -1,0 +1,43 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Meta 1 parcial — grupos de inclusão e tipo da busca",
+  "pares_novos": [
+    "meta1-cargos-grupo-acessivel",
+    "meta1-cargos-grupo-preenchido",
+    "meta1-combustiveis-grupo-acessivel",
+    "meta1-combustiveis-grupo-preenchido",
+    "meta1-unidades-grupo-acessivel",
+    "meta1-unidades-grupo-preenchido",
+    "meta1-cargos-busca-texto",
+    "meta1-combustiveis-busca-texto",
+    "meta1-unidades-busca-texto",
+    "meta1-servidores-busca-texto",
+    "meta1-viaturas-busca-texto",
+    "meta1-estados-busca-texto"
+  ],
+  "grupos_comparados": 3,
+  "estados_por_grupo": [
+    "vazio",
+    "preenchido"
+  ],
+  "buscas_comparadas": 6,
+  "templates_compilados": 7,
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "diff_check": "limpo; avisos LF/CRLF preexistentes",
+  "hashes_rotas_origem": {
+    "cadastros": true,
+    "roteiros": true,
+    "oficios": true,
+    "justificativas": true,
+    "termos": true,
+    "prestacoes_contas": true
+  },
+  "banco": "Correção: cargo34 ENSAIO DE CARGO criado indevidamente na origem; cargo4 correspondente criado e removido no destino. Origem aguarda P14 para limpeza.",
+  "validacao_anterior": "142 testes de cadastros por banco aprovados na rodada de diálogos; anteriores a esta mudança de apresentação",
+  "ultima_suite_completa": "1124 por banco, anterior aos incrementos de cidades/teclado/grupos",
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04",
+  "origem_somente_leitura_cumprida": false,
+  "incidente": "incidente-cargo-origem.json"
+}

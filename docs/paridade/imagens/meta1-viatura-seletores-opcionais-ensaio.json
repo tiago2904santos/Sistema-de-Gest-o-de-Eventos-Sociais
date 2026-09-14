@@ -1,0 +1,59 @@
+{
+  "fuelChecks": [
+    {
+      "estado": "vazio",
+      "origem": {
+        "label": "Selecione (opcional)",
+        "required": false,
+        "value": ""
+      },
+      "destino": {
+        "label": "Selecione (opcional)",
+        "required": false,
+        "value": ""
+      }
+    },
+    {
+      "estado": "selecionado",
+      "origem": {
+        "label": "DIESEL",
+        "required": false,
+        "value": "4"
+      },
+      "destino": {
+        "label": "ENSAIO SELETOR COMBUSTIVEL 20260910",
+        "required": false,
+        "value": "5"
+      }
+    },
+    {
+      "estado": "retirado",
+      "origem": {
+        "label": "Selecione (opcional)",
+        "required": false,
+        "value": ""
+      },
+      "destino": {
+        "label": "Selecione (opcional)",
+        "required": false,
+        "value": ""
+      }
+    }
+  ],
+  "tipoChecks": {
+    "origem": {
+      "value": "CARACTERIZADA"
+    },
+    "destino": {
+      "value": "CARACTERIZADA"
+    }
+  },
+  "pares": [
+    "meta1-viatura-combustivel-opcao-vazia",
+    "meta1-viatura-combustivel-vazio",
+    "meta1-viatura-combustivel-selecionado",
+    "meta1-viatura-combustivel-retirado",
+    "meta1-viatura-tipo-opcoes",
+    "meta1-viatura-tipo-caracterizada"
+  ]
+}

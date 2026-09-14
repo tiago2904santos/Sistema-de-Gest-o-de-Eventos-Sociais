@@ -1,0 +1,50 @@
+{
+  "origem": [
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "q",
+      "obrigatorio": false,
+      "placeholder": "Buscar combustíveis",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_nome",
+      "mascara": "upper",
+      "maxlength": "120",
+      "nome": "nome",
+      "obrigatorio": true,
+      "placeholder": null,
+      "tipo": "text",
+      "valor": ""
+    }
+  ],
+  "destino": [
+    {
+      "desabilitado": false,
+      "id": "id_nome",
+      "mascara": null,
+      "maxlength": "120",
+      "nome": "nome",
+      "obrigatorio": true,
+      "placeholder": "Ex.: GASOLINA",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_is_padrao",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "is_padrao",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "checkbox",
+      "valor": "1"
+    }
+  ]
+}

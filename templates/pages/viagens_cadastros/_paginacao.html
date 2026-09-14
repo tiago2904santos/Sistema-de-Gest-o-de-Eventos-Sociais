@@ -1,0 +1,10 @@
+{% if pagina.has_other_pages %}
+<nav class="pag" aria-label="Paginação">
+  <span aria-live="polite">Mostrando {{ pagina.start_index }}–{{ pagina.end_index }} de {{ pagina.paginator.count }}</span>
+  <div class="pag__nav">
+    {% if pagina.has_previous %}<a class="pag__passo" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ pagina.previous_page_number }}" aria-label="Página anterior">‹</a>{% else %}<span class="pag__passo" aria-disabled="true">‹</span>{% endif %}
+    {% for numero in paginas_visiveis %}{% if numero == elipse %}<span aria-hidden="true">…</span>{% elif numero == pagina.number %}<span class="pag__n" aria-current="page">{{ numero }}</span>{% else %}<a class="pag__n" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ numero }}" aria-label="Ir para a página {{ numero }}">{{ numero }}</a>{% endif %}{% endfor %}
+    {% if pagina.has_next %}<a class="pag__passo" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ pagina.next_page_number }}" aria-label="Próxima página">›</a>{% else %}<span class="pag__passo" aria-disabled="true">›</span>{% endif %}
+  </div>
+</nav>
+{% endif %}

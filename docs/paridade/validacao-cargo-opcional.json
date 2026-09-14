@@ -1,0 +1,19 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Meta1 parcial — cargo opcional no formulário de servidor",
+  "pares_novos": [
+    "meta1-servidor-cargo-opcao-vazia",
+    "meta1-servidor-cargo-vazio",
+    "meta1-servidor-cargo-selecionado",
+    "meta1-servidor-cargo-retirado"
+  ],
+  "navegador": "Opção vazia, escolha e retirada de cargo observadas; valores nativos conferidos; sem enviar cadastro neste ensaio de seleção",
+  "templates": "componente e formulário compilados; opção vazia só aparece com permitir_vazio=True",
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "diff_check": "limpo; avisos LF/CRLF preexistentes",
+  "suite_anterior": "142 testes de cadastros por banco na rodada de diálogos; anteriores a grupos e cargo opcional. Não repetida para este ajuste de apresentação.",
+  "incidente_anterior": "Cargo34 criado indevidamente na origem na rodada de grupos; limpeza aguarda P14. Cargo4 do destino removido. Ver incidente-cargo-origem.json.",
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04"
+}

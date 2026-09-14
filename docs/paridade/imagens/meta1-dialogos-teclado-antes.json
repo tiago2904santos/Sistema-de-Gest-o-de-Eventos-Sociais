@@ -1,0 +1,17 @@
+{
+  "origem": {
+    "activeInDialog": true,
+    "activeTag": "BUTTON",
+    "activeText": "Excluir",
+    "dialogOpen": true,
+    "url": "http://127.0.0.1:8000/cadastros/servidores/"
+  },
+  "destino": {
+    "activeInDialog": false,
+    "activeTag": "BODY",
+    "activeText": "BODY",
+    "dialogOpen": true,
+    "url": "http://localhost:8021/viagens/cadastros/servidores/"
+  },
+  "ensaio": "Shift+Tab a partir de Voltar; origem foca Excluir, destino BODY. Nenhum POST."
+}

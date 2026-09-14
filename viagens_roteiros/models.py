@@ -18,13 +18,15 @@ A composição das diárias é gravada parcela a parcela em
 pagamento anos depois, quando os valores vigentes já forem outros.
 """
 
+from core.legado import OrigemLegado
+
 from django.db import models
 
 from core.constraints import nao_negativo, periodo_ordenado, positivo
 from core.models import ModeloCancelavel, ModeloTemporal
 
 
-class Roteiro(ModeloTemporal, ModeloCancelavel):
+class Roteiro(ModeloTemporal, ModeloCancelavel, OrigemLegado):
     class Status(models.TextChoices):
         RASCUNHO = "RASCUNHO", "Rascunho"
         FINALIZADO = "FINALIZADO", "Finalizado"
@@ -107,7 +109,7 @@ class Roteiro(ModeloTemporal, ModeloCancelavel):
         indexes = [
             models.Index(fields=["status", "-criado_em"], name="roteiro_status_criado_idx"),
         ]
-        constraints = [
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_roteiro_origem"),
             # Encadeadas: cada ponta do percurso vem depois da anterior. Só a
             # inversão é barrada — ida e volta no mesmo instante é degenerada,
             # não impossível.
@@ -153,7 +155,7 @@ class Roteiro(ModeloTemporal, ModeloCancelavel):
         return self.origem_municipio.estado.sigla if self.origem_municipio_id else ""
 
 
-class RoteiroDestino(ModeloTemporal):
+class RoteiroDestino(ModeloTemporal, OrigemLegado):
     """Um destino do roteiro, na ordem em que é visitado."""
 
     roteiro = models.ForeignKey(
@@ -171,7 +173,7 @@ class RoteiroDestino(ModeloTemporal):
         ordering = ["ordem", "pk"]
         verbose_name = "destino do roteiro"
         verbose_name_plural = "destinos do roteiro"
-        constraints = [
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_roteirodestino_origem"),
             models.UniqueConstraint(
                 fields=["roteiro", "ordem"], name="roteiro_destino_ordem_unica"
             ),
@@ -181,7 +183,7 @@ class RoteiroDestino(ModeloTemporal):
         return f"{self.ordem}. {self.municipio}"
 
 
-class RoteiroTrecho(ModeloTemporal):
+class RoteiroTrecho(ModeloTemporal, OrigemLegado):
     """Um deslocamento entre dois municípios, com horários e quilometragem.
 
     A duração total é o tempo de viagem (estimado pelo serviço de rotas) mais
@@ -233,11 +235,13 @@ class RoteiroTrecho(ModeloTemporal):
     )
     rota_fonte = models.CharField("fonte da estimativa", max_length=40, blank=True)
 
+    rota_calculada_em = models.DateTimeField("rota calculada em", blank=True, null=True)
+
     class Meta:
         ordering = ["ordem", "pk"]
         verbose_name = "trecho do roteiro"
         verbose_name_plural = "trechos do roteiro"
-        constraints = [
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_roteirotrecho_origem"),
             models.UniqueConstraint(
                 fields=["roteiro", "ordem"], name="roteiro_trecho_ordem_unica"
             ),
@@ -254,7 +258,7 @@ class RoteiroTrecho(ModeloTemporal):
         return f"{self.ordem}. {self.origem_municipio} → {self.destino_municipio}"
 
 
-class RoteiroDiariaComponente(ModeloTemporal):
+class RoteiroDiariaComponente(ModeloTemporal, OrigemLegado):
     """Uma parcela do total de diárias, com o valor que valeu quando foi paga.
 
     Imutável de propósito: é a explicação do pagamento. Recalcular o roteiro
@@ -286,8 +290,8 @@ class RoteiroDiariaComponente(ModeloTemporal):
         "percentual", choices=[(15, "15%"), (30, "30%"), (100, "100%")]
     )
     quantidade = models.PositiveIntegerField("quantidade", default=1)
-    valor_unitario = models.DecimalField("valor unitário", max_digits=10, decimal_places=2)
-    subtotal = models.DecimalField("subtotal", max_digits=12, decimal_places=2)
+    valor_unitario = models.DecimalField("valor unitário", max_digits=10, decimal_places=2, blank=True, null=True)
+    subtotal = models.DecimalField("subtotal", max_digits=12, decimal_places=2, blank=True, null=True)
     tabela_vigencia_inicio = models.DateField("vigência a partir de", blank=True, null=True)
     periodo_inicio = models.DateTimeField("início do período", blank=True, null=True)
     periodo_fim = models.DateTimeField("fim do período", blank=True, null=True)
@@ -301,7 +305,7 @@ class RoteiroDiariaComponente(ModeloTemporal):
                 fields=["percentual", "periodo_inicio"], name="roteiro_parcela_busca_idx"
             ),
         ]
-        constraints = [
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_roteirodiariacomponente_origem"),
             models.UniqueConstraint(
                 fields=["roteiro", "ordem"], name="roteiro_parcela_ordem_unica"
             ),

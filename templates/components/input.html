@@ -13,7 +13,7 @@
   <label class="form-label{% if rotulo_oculto %} sr-only{% endif %}" for="id_{{ name }}">
     {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
   </label>
-  <div class="form-controle-wrapper{% if tipo == 'date' %} form-controle-wrapper--date custom-date{% endif %}{% if erros %} is-invalid{% endif %}"{% if tipo == 'date' %} data-custom-date{% endif %}>
+  <div class="form-controle-wrapper{% if tipo == 'date' %} form-controle-wrapper--date custom-date{% endif %}{% if erros %} is-invalid{% endif %}"{% if tipo == 'date' %} data-custom-date{% if calendario_gv %} data-calendar-gv{% endif %}{% endif %}>
     <input
       class="form-controle{% if tipo == 'date' %} custom-date__native{% endif %}"
       type="{{ tipo|default:'text' }}"
@@ -35,17 +35,31 @@
       {% if mascara == "telefone" %}inputmode="tel" autocomplete="tel" maxlength="15" data-mask-telefone{% endif %}
       {% if erros %}aria-invalid="true" aria-describedby="id_{{ name }}_erro{% if ajuda %} id_{{ name }}_ajuda{% endif %}"{% elif ajuda %}aria-describedby="id_{{ name }}_ajuda"{% endif %}
       {% if desabilitado %}disabled{% endif %}
+      {% if somente_leitura %}readonly{% endif %}
       {% if obrigatorio %}required{% endif %}>
     {% if tipo == 'date' %}
+      {% if calendario_gv %}
+      <label class="form-label" for="id_{{ name }}_display">{{ rotulo_data|default:label }}</label>
+      <div class="custom-date__campo-gv">
+        <input class="form-controle custom-date__valor" id="id_{{ name }}_display" type="text" readonly placeholder="dd/mm/aaaa" autocomplete="off" inputmode="numeric" maxlength="10" aria-label="{{ rotulo_data|default:label }}" data-custom-date-display{% if desabilitado %} disabled{% endif %}>
+        <button class="form-controle custom-date__trigger" type="button" aria-label="Abrir calendario" aria-haspopup="dialog" aria-expanded="false" aria-controls="id_{{ name }}_calendar" data-custom-date-trigger>{% include "components/icon.html" with nome="calendar" %}</button>
+      </div>
+      {% else %}
       <button class="form-controle custom-date__trigger" type="button"
               aria-label="{{ label }}" aria-haspopup="dialog" aria-expanded="false"
               aria-controls="id_{{ name }}_calendar" data-custom-date-trigger>
         <span class="custom-date__valor">dd/mm/aaaa</span>
         <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="calendar" %}</span>
       </button>
+      {% endif %}
       <div class="custom-date__calendar" id="id_{{ name }}_calendar" role="dialog"
            aria-label="Calendário de {{ label|lower }}" data-custom-date-calendar hidden>
         <div class="custom-date__cabecalho">
+          {% if calendario_gv %}
+          <button type="button" aria-label="Mes anterior" data-custom-date-prev>Anterior</button>
+          <strong class="custom-date__mes" data-custom-date-month></strong>
+          <button type="button" aria-label="Próximo mês" data-custom-date-next>Próximo</button>
+          {% else %}
           <strong class="custom-date__mes" aria-live="polite" data-custom-date-month></strong>
           <div class="custom-date__navegacao">
             <button type="button" class="custom-date__salto" aria-label="Ano anterior" data-custom-date-prev-ano>«</button>
@@ -53,14 +67,14 @@
             <button type="button" aria-label="Próximo mês" data-custom-date-next>{% include "components/icon.html" with nome="chevron-right" %}</button>
             <button type="button" class="custom-date__salto" aria-label="Próximo ano" data-custom-date-next-ano>»</button>
           </div>
+          {% endif %}
         </div>
         <div class="custom-date__semana" aria-hidden="true">
-          <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+          {% if calendario_gv %}<span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sab</span><span>Dom</span>{% else %}<span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>{% endif %}
         </div>
-        <div class="custom-date__dias" role="grid" data-custom-date-grid></div>
+        <div class="custom-date__dias"{% if not calendario_gv %} role="grid"{% endif %} data-custom-date-grid></div>
         <div class="custom-date__rodape">
-          <button type="button" data-custom-date-clear>Limpar</button>
-          <button type="button" data-custom-date-today>Hoje</button>
+          {% if calendario_gv %}<button type="button" data-custom-date-today>Hoje</button><button type="button" data-custom-date-clear>Limpar</button>{% else %}<button type="button" data-custom-date-clear>Limpar</button><button type="button" data-custom-date-today>Hoje</button>{% endif %}
         </div>
       </div>
     {% endif %}

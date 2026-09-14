@@ -16,6 +16,8 @@ dois códigos (ver ``docs/PLANO_MESTRE_UNIFICACAO.md``):
   ponte entre os dois.
 """
 
+from core.legado import OrigemLegado
+
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.core.exceptions import ValidationError
@@ -40,22 +42,9 @@ from .normalizacao import (
 )
 
 
-class OrigemLegado(models.Model):
-    """Rastro da linha de origem em cargas vindas de outro sistema.
-
-    É a chave de idempotência das migrações de dados: reexecutar a carga
-    atualiza a linha existente em vez de duplicá-la, e permite desfazer
-    exatamente o que foi importado.
-    """
-
-    legado_origem = models.CharField("origem no legado", max_length=50, blank=True)
-    legado_pk = models.PositiveIntegerField("id no legado", blank=True, null=True)
-
-    class Meta:
-        abstract = True
 
 
-class Unidade(ModeloTemporal):
+class Unidade(ModeloTemporal, OrigemLegado):
     """Lotação: delegacia, divisão ou setor ao qual servidor e viatura pertencem."""
 
     nome = models.CharField("nome", max_length=255, unique=True)
@@ -65,6 +54,7 @@ class Unidade(ModeloTemporal):
         ordering = ["nome"]
         verbose_name = "unidade"
         verbose_name_plural = "unidades"
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_unidade_origem")]
 
     def __str__(self):
         return self.sigla or self.nome
@@ -102,12 +92,12 @@ class CatalogoComPadrao(ModeloTemporal):
         super().save(*args, **kwargs)
 
 
-class Cargo(CatalogoComPadrao):
+class Cargo(CatalogoComPadrao, OrigemLegado):
     class Meta(CatalogoComPadrao.Meta):
         abstract = False
         verbose_name = "cargo"
         verbose_name_plural = "cargos"
-        constraints = [
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_cargo_origem"),
             models.UniqueConstraint(
                 fields=["is_padrao"],
                 condition=Q(is_padrao=True),
@@ -116,12 +106,12 @@ class Cargo(CatalogoComPadrao):
         ]
 
 
-class Combustivel(CatalogoComPadrao):
+class Combustivel(CatalogoComPadrao, OrigemLegado):
     class Meta(CatalogoComPadrao.Meta):
         abstract = False
         verbose_name = "combustível"
         verbose_name_plural = "combustíveis"
-        constraints = [
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_combustivel_origem"),
             models.UniqueConstraint(
                 fields=["is_padrao"],
                 condition=Q(is_padrao=True),
@@ -243,7 +233,7 @@ class Servidor(ModeloTemporal, OrigemLegado):
         super().save(*args, **kwargs)
 
 
-class Viatura(ModeloTemporal):
+class Viatura(ModeloTemporal, OrigemLegado):
     """Veículo oficial que pode ser designado a uma viagem."""
 
     class Status(models.TextChoices):
@@ -293,6 +283,7 @@ class Viatura(ModeloTemporal):
         ordering = ["placa"]
         verbose_name = "viatura"
         verbose_name_plural = "viaturas"
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_viatura_origem")]
 
     def __str__(self):
         return self.placa_formatada
@@ -324,7 +315,7 @@ class Viatura(ModeloTemporal):
         super().save(*args, **kwargs)
 
 
-class TabelaDiaria(ModeloTemporal):
+class TabelaDiaria(ModeloTemporal, OrigemLegado):
     """Valor da diária por faixa, vigente a partir de uma data.
 
     O operador informa **apenas o valor de 24 horas**; 15% e 30% são derivados
@@ -358,7 +349,7 @@ class TabelaDiaria(ModeloTemporal):
         ordering = ["-vigencia_inicio", "faixa"]
         verbose_name = "tabela de diárias"
         verbose_name_plural = "tabelas de diárias"
-        constraints = [
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_tabeladiaria_origem"),
             models.UniqueConstraint(
                 fields=["faixa", "vigencia_inicio"],
                 name="viagens_tabela_diaria_faixa_vigencia_unica",
@@ -432,7 +423,7 @@ from core.normalizers import normalize_upper, normalize_digits
 from core.utils.masks import format_masked_display
 
 
-class ConfiguracaoSistema(ModeloTemporal):
+class ConfiguracaoSistema(ModeloTemporal, OrigemLegado):
     """Dados institucionais para documentos e regras da area atual."""
 
     cidade_sede_padrao = models.ForeignKey(
@@ -514,7 +505,7 @@ class ConfiguracaoSistema(ModeloTemporal):
 
     class Meta:
         verbose_name = "configuração institucional de viagens"
-        constraints = [models.CheckConstraint(condition=Q(chave=1), name="viagens_config_singleton")]
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_configuracaosistema_origem"), models.CheckConstraint(condition=Q(chave=1), name="viagens_config_singleton")]
 
     @classmethod
     def get_singleton(cls):
@@ -554,7 +545,7 @@ class ConfiguracaoSistema(ModeloTemporal):
         super().save(*args, **kwargs)
 
 
-class AssinaturaConfiguracao(ModeloTemporal):
+class AssinaturaConfiguracao(ModeloTemporal, OrigemLegado):
     """Assinante padrão por tipo de documento (Ofício, Justificativa, etc.)."""
 
     OFICIO = "OFICIO"
@@ -592,4 +583,4 @@ class AssinaturaConfiguracao(ModeloTemporal):
 
     class Meta:
         ordering = ["tipo", "ordem"]
-        constraints = [models.UniqueConstraint(fields=["configuracao", "tipo", "ordem"], name="viagens_assinatura_ordem_unica")]
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_assinaturaconfiguracao_origem"), models.UniqueConstraint(fields=["configuracao", "tipo", "ordem"], name="viagens_assinatura_ordem_unica")]

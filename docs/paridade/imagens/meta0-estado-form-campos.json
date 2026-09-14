@@ -1,0 +1,49 @@
+{
+  "origem": [
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "q",
+      "obrigatorio": false,
+      "placeholder": "Buscar estados",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_nome",
+      "mascara": "upper",
+      "maxlength": "128",
+      "nome": "nome",
+      "obrigatorio": true,
+      "placeholder": null,
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_sigla",
+      "mascara": "upper",
+      "maxlength": "2",
+      "nome": "sigla",
+      "obrigatorio": true,
+      "placeholder": null,
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_codigo_ibge",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "codigo_ibge",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "number",
+      "valor": ""
+    }
+  ],
+  "destino": []
+}

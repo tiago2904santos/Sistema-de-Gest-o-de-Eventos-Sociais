@@ -1,0 +1,20 @@
+{
+  "escopo": "viagens_cadastros; não é suíte completa nem fechamento de meta",
+  "postgresql": {
+    "testes": 99,
+    "segundos": 25.425,
+    "resultado": "OK",
+    "log": "logs/paridade-catalogos-postgresql.txt"
+  },
+  "sqlite": {
+    "testes": 99,
+    "segundos": 19.907,
+    "resultado": "OK",
+    "log": "logs/paridade-catalogos-sqlite.txt"
+  },
+  "check": "sem problemas",
+  "makemigrations": "nenhuma mudança",
+  "diff_check": "limpo",
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04"
+}

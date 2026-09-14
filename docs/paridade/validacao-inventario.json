@@ -1,0 +1,10 @@
+{
+  "rotas_origem": 161,
+  "linhas_mapeadas": 161,
+  "correspondencias_resolvidas": 138,
+  "rotas_sem_correspondencia": 21,
+  "fora_de_escopo": 2,
+  "rotas_com_prova_visual": 0,
+  "arquivos_urls_origem_preservados": 6,
+  "paridade_visual_comprovada": false
+}

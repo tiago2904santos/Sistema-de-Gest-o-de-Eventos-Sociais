@@ -1,0 +1,607 @@
+[
+  {
+    "nome": "viagens_assinaturas:verificar",
+    "padrao": "/assinatura/verificar/<str:codigo>/",
+    "callback": "viagens_prestacoes.assinatura_views.publico_verificar"
+  },
+  {
+    "nome": "viagens_assinaturas:assinatura_landing",
+    "padrao": "/assinatura/<str:token>/",
+    "callback": "viagens_prestacoes.assinatura_views.publico_landing"
+  },
+  {
+    "nome": "viagens_assinaturas:assinatura_concluido",
+    "padrao": "/assinatura/<str:token>/concluido/",
+    "callback": "viagens_prestacoes.assinatura_views.publico_concluido"
+  },
+  {
+    "nome": "viagens_assinaturas:assinatura_identidade",
+    "padrao": "/assinatura/<str:token>/<str:tipo>/identidade/",
+    "callback": "viagens_prestacoes.assinatura_views.publico_identidade"
+  },
+  {
+    "nome": "viagens_assinaturas:assinatura_assinar",
+    "padrao": "/assinatura/<str:token>/<str:tipo>/assinar/",
+    "callback": "viagens_prestacoes.assinatura_views.publico_assinar"
+  },
+  {
+    "nome": "viagens_assinaturas:assinatura_pdf_origem",
+    "padrao": "/assinatura/<str:token>/<str:tipo>/origem.pdf",
+    "callback": "viagens_prestacoes.assinatura_views.publico_pdf_origem"
+  },
+  {
+    "nome": "viagens_prestacoes:abrir_oficio",
+    "padrao": "/viagens/prestacoes/oficio/<int:pk>/abrir/",
+    "callback": "viagens_prestacoes.views.abrir_oficio"
+  },
+  {
+    "nome": "viagens_prestacoes:index",
+    "padrao": "/viagens/prestacoes/",
+    "callback": "viagens_prestacoes.views.index"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_downloads",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/downloads/",
+    "callback": "viagens_prestacoes.download_views.prestacao_downloads"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_download_compilado",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/downloads/compilado/",
+    "callback": "viagens_prestacoes.download_views.prestacao_download_compilado"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_download_assinado",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/downloads/assinado/<str:item_id>/<str:formato>/",
+    "callback": "viagens_prestacoes.download_views.prestacao_download_assinado"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_servidor_arquivar",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/arquivar/",
+    "callback": "viagens_prestacoes.views.prestacao_servidor_arquivar"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_servidor_finalizar",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/finalizar/",
+    "callback": "viagens_prestacoes.views.prestacao_servidor_finalizar"
+  },
+  {
+    "nome": "viagens_prestacoes:documentos_servidor",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/documentos/",
+    "callback": "viagens_prestacoes.document_views.documentos_servidor"
+  },
+  {
+    "nome": "viagens_prestacoes:rt_servidor",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/rt/",
+    "callback": "viagens_prestacoes.rt_views.rt_servidor"
+  },
+  {
+    "nome": "viagens_prestacoes:diario_servidor",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/diario/",
+    "callback": "viagens_prestacoes.diario_views.diario_servidor"
+  },
+  {
+    "nome": "viagens_prestacoes:consolidado_servidor",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/consolidado/",
+    "callback": "viagens_prestacoes.views.consolidado_servidor"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_arquivar",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/arquivar/",
+    "callback": "viagens_prestacoes.views.prestacao_arquivar"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_finalizar",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/finalizar/",
+    "callback": "viagens_prestacoes.views.prestacao_finalizar"
+  },
+  {
+    "nome": "viagens_prestacoes:documentos",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/documentos/",
+    "callback": "viagens_prestacoes.document_views.documentos"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_arquivo_autosave",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/despacho/autosave/",
+    "callback": "viagens_prestacoes.document_views.prestacao_arquivo_autosave"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_despacho_assinado_anexar",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/despacho-assinado/anexar/",
+    "callback": "viagens_prestacoes.document_views.prestacao_despacho_assinado_anexar"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_oficio_assinado_anexar",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/oficio-assinado/anexar/",
+    "callback": "viagens_prestacoes.document_views.prestacao_oficio_assinado_anexar"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_carimbo_ajustar",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/oficio-assinado/carimbo/",
+    "callback": "viagens_prestacoes.document_views.prestacao_carimbo_ajustar"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_oficio_assinado_cru",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/oficio-assinado/cru/",
+    "callback": "viagens_prestacoes.document_views.prestacao_oficio_assinado_cru"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_servidor_assinado_anexar",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/assinado/<str:tipo>/anexar/",
+    "callback": "viagens_prestacoes.document_views.prestacao_servidor_assinado_anexar"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_documento_delete",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/anexo/<int:anexo_pk>/excluir/",
+    "callback": "viagens_prestacoes.document_views.prestacao_documento_excluir"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_documento_conteudo",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/anexo/<int:anexo_pk>/conteudo/",
+    "callback": "viagens_prestacoes.document_views.prestacao_documento_conteudo"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_servidor_solicitacao_autosave",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/solicitacao/autosave/",
+    "callback": "viagens_prestacoes.views.prestacao_servidor_solicitacao_autosave"
+  },
+  {
+    "nome": "viagens_prestacoes:prestacao_servidor_arquivo_autosave",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/comprovante/autosave/",
+    "callback": "viagens_prestacoes.document_views.prestacao_servidor_arquivo_autosave"
+  },
+  {
+    "nome": "viagens_prestacoes:rt_criar",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/rt/",
+    "callback": "viagens_prestacoes.rt_views.rt_criar"
+  },
+  {
+    "nome": "viagens_prestacoes:rt_autosave",
+    "padrao": "/viagens/prestacoes/rt/<int:pk>/autosave/",
+    "callback": "viagens_prestacoes.rt_views.rt_autosave"
+  },
+  {
+    "nome": "viagens_prestacoes:rt_servidor_autosave",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/rt/autosave/",
+    "callback": "viagens_prestacoes.rt_views.rt_servidor_autosave"
+  },
+  {
+    "nome": "viagens_prestacoes:rt_download_servidor",
+    "padrao": "/viagens/prestacoes/rt/servidor/<int:ps_pk>/download/",
+    "callback": "viagens_prestacoes.rt_views.rt_download_servidor"
+  },
+  {
+    "nome": "viagens_prestacoes:rt_download_servidor_formato",
+    "padrao": "/viagens/prestacoes/rt/servidor/<int:ps_pk>/download/<str:formato>/",
+    "callback": "viagens_prestacoes.rt_views.rt_download_servidor"
+  },
+  {
+    "nome": "viagens_prestacoes:diario_criar",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/diario/",
+    "callback": "viagens_prestacoes.diario_views.diario_criar"
+  },
+  {
+    "nome": "viagens_prestacoes:diario_editar_roteiro",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/diario/editar-roteiro/",
+    "callback": "viagens_prestacoes.diario_views.diario_editar_roteiro"
+  },
+  {
+    "nome": "viagens_prestacoes:diario_servidor_editar_roteiro",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/diario/editar-roteiro/",
+    "callback": "viagens_prestacoes.diario_views.diario_servidor_editar_roteiro"
+  },
+  {
+    "nome": "viagens_prestacoes:diario_motorista",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/diario/motorista/",
+    "callback": "viagens_prestacoes.diario_views.diario_motorista"
+  },
+  {
+    "nome": "viagens_prestacoes:diario_servidor_motorista",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/diario/motorista/",
+    "callback": "viagens_prestacoes.diario_views.diario_servidor_motorista"
+  },
+  {
+    "nome": "viagens_prestacoes:diario_autosave",
+    "padrao": "/viagens/prestacoes/diario/<int:pk>/autosave/",
+    "callback": "viagens_prestacoes.diario_views.diario_autosave"
+  },
+  {
+    "nome": "viagens_prestacoes:diario_servidor_autosave",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/diario/autosave/",
+    "callback": "viagens_prestacoes.diario_views.diario_servidor_autosave"
+  },
+  {
+    "nome": "viagens_prestacoes:diario_download",
+    "padrao": "/viagens/prestacoes/diario/<int:pk>/download/",
+    "callback": "viagens_prestacoes.diario_views.diario_download"
+  },
+  {
+    "nome": "viagens_prestacoes:diario_download_formato",
+    "padrao": "/viagens/prestacoes/diario/<int:pk>/download/<str:formato>/",
+    "callback": "viagens_prestacoes.diario_views.diario_download"
+  },
+  {
+    "nome": "viagens_prestacoes:consolidado",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/consolidado/",
+    "callback": "viagens_prestacoes.views.consolidado"
+  },
+  {
+    "nome": "viagens_prestacoes:consolidado_download",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/consolidado/download/",
+    "callback": "viagens_prestacoes.views.consolidado_download"
+  },
+  {
+    "nome": "viagens_prestacoes:modelos_index",
+    "padrao": "/viagens/prestacoes/modelos-texto/",
+    "callback": "viagens_prestacoes.model_views.modelos_index"
+  },
+  {
+    "nome": "viagens_prestacoes:modelo_update",
+    "padrao": "/viagens/prestacoes/modelos-texto/<int:pk>/editar/",
+    "callback": "viagens_prestacoes.model_views.modelo_editar"
+  },
+  {
+    "nome": "viagens_prestacoes:modelo_delete",
+    "padrao": "/viagens/prestacoes/modelos-texto/<int:pk>/excluir/",
+    "callback": "viagens_prestacoes.model_views.modelo_excluir"
+  },
+  {
+    "nome": "viagens_prestacoes:assinatura_rt_gerar",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/assinatura/gerar/",
+    "callback": "viagens_prestacoes.signature_views.assinatura_rt_gerar"
+  },
+  {
+    "nome": "viagens_prestacoes:assinatura_rt_cancelar",
+    "padrao": "/viagens/prestacoes/servidor-prestacao/<int:ps_pk>/assinatura/cancelar/",
+    "callback": "viagens_prestacoes.signature_views.assinatura_rt_cancelar"
+  },
+  {
+    "nome": "viagens_prestacoes:assinatura_db_gerar",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/diario/assinatura/gerar/",
+    "callback": "viagens_prestacoes.signature_views.assinatura_db_gerar"
+  },
+  {
+    "nome": "viagens_prestacoes:assinatura_db_cancelar",
+    "padrao": "/viagens/prestacoes/prestacao/<int:pc_pk>/diario/assinatura/cancelar/",
+    "callback": "viagens_prestacoes.signature_views.assinatura_db_cancelar"
+  },
+  {
+    "nome": "viagens_oficios:assinatura_artefato",
+    "padrao": "/viagens/oficios/documentos/<uuid:pk>/assinatura/",
+    "callback": "viagens_oficios.views.assinatura_artefato"
+  },
+  {
+    "nome": "viagens_oficios:preview_artefato",
+    "padrao": "/viagens/oficios/documentos/<uuid:pk>/preview/",
+    "callback": "viagens_oficios.views.preview_artefato"
+  },
+  {
+    "nome": "viagens_oficios:lista",
+    "padrao": "/viagens/oficios/",
+    "callback": "viagens_oficios.views.lista"
+  },
+  {
+    "nome": "viagens_oficios:novo",
+    "padrao": "/viagens/oficios/novo/",
+    "callback": "viagens_oficios.views.editar"
+  },
+  {
+    "nome": "viagens_oficios:numeracao",
+    "padrao": "/viagens/oficios/numeracao/",
+    "callback": "viagens_oficios.views.numeracao"
+  },
+  {
+    "nome": "viagens_oficios:institucional",
+    "padrao": "/viagens/oficios/institucional/",
+    "callback": "viagens_oficios.catalogs.institucional"
+  },
+  {
+    "nome": "viagens_oficios:catalogo",
+    "padrao": "/viagens/oficios/catalogos/<str:tipo>/",
+    "callback": "viagens_oficios.catalogs.catalogo"
+  },
+  {
+    "nome": "viagens_oficios:catalogo_novo",
+    "padrao": "/viagens/oficios/catalogos/<str:tipo>/novo/",
+    "callback": "viagens_oficios.catalogs.catalogo"
+  },
+  {
+    "nome": "viagens_oficios:catalogo_editar",
+    "padrao": "/viagens/oficios/catalogos/<str:tipo>/<int:pk>/",
+    "callback": "viagens_oficios.catalogs.catalogo"
+  },
+  {
+    "nome": "viagens_oficios:detalhe",
+    "padrao": "/viagens/oficios/<int:pk>/",
+    "callback": "viagens_oficios.views.detalhe"
+  },
+  {
+    "nome": "viagens_oficios:editar",
+    "padrao": "/viagens/oficios/<int:pk>/editar/",
+    "callback": "viagens_oficios.views.editar"
+  },
+  {
+    "nome": "viagens_oficios:acao",
+    "padrao": "/viagens/oficios/<int:pk>/acao/<str:acao>/",
+    "callback": "viagens_oficios.views.acao"
+  },
+  {
+    "nome": "viagens_oficios:gerar",
+    "padrao": "/viagens/oficios/<int:pk>/gerar/<str:tipo>/<str:formato>/",
+    "callback": "viagens_oficios.views.gerar"
+  },
+  {
+    "nome": "viagens_oficios:termos_lote",
+    "padrao": "/viagens/oficios/<int:pk>/termos/<str:formato>/",
+    "callback": "viagens_oficios.views.termos"
+  },
+  {
+    "nome": "viagens_oficios:termo",
+    "padrao": "/viagens/oficios/<int:pk>/termos/<int:servidor_id>/<str:formato>/",
+    "callback": "viagens_oficios.views.termos"
+  },
+  {
+    "nome": "viagens_termos:lista",
+    "padrao": "/viagens/termos/",
+    "callback": "viagens_termos.views.lista"
+  },
+  {
+    "nome": "viagens_termos:novo",
+    "padrao": "/viagens/termos/novo/",
+    "callback": "viagens_termos.views.editar"
+  },
+  {
+    "nome": "viagens_termos:detalhe",
+    "padrao": "/viagens/termos/<int:pk>/",
+    "callback": "viagens_termos.views.detalhe"
+  },
+  {
+    "nome": "viagens_termos:editar",
+    "padrao": "/viagens/termos/<int:pk>/editar/",
+    "callback": "viagens_termos.views.editar"
+  },
+  {
+    "nome": "viagens_termos:preview",
+    "padrao": "/viagens/termos/<int:pk>/preview/",
+    "callback": "viagens_termos.views.preview"
+  },
+  {
+    "nome": "viagens_termos:preview_servidor",
+    "padrao": "/viagens/termos/<int:pk>/preview/<int:servidor_id>/",
+    "callback": "viagens_termos.views.preview"
+  },
+  {
+    "nome": "viagens_termos:lote",
+    "padrao": "/viagens/termos/<int:pk>/gerar/<str:formato>/",
+    "callback": "viagens_termos.views.gerar"
+  },
+  {
+    "nome": "viagens_termos:gerar",
+    "padrao": "/viagens/termos/<int:pk>/gerar/<int:servidor_id>/<str:formato>/",
+    "callback": "viagens_termos.views.gerar"
+  },
+  {
+    "nome": "viagens_termos:acao",
+    "padrao": "/viagens/termos/<int:pk>/acao/<str:acao>/",
+    "callback": "viagens_termos.views.acao"
+  },
+  {
+    "nome": "cadastros:index",
+    "padrao": "/cadastros/",
+    "callback": "cadastros.views.index"
+  },
+  {
+    "nome": "cadastros:lista",
+    "padrao": "/cadastros/<slug:slug>/",
+    "callback": "cadastros.views.lista"
+  },
+  {
+    "nome": "cadastros:novo",
+    "padrao": "/cadastros/<slug:slug>/novo/",
+    "callback": "cadastros.views.editar"
+  },
+  {
+    "nome": "cadastros:editar",
+    "padrao": "/cadastros/<slug:slug>/<int:pk>/editar/",
+    "callback": "cadastros.views.editar"
+  },
+  {
+    "nome": "cadastros:alternar_ativo",
+    "padrao": "/cadastros/<slug:slug>/<int:pk>/alternar-ativo/",
+    "callback": "cadastros.views.alternar_ativo"
+  },
+  {
+    "nome": "cadastros:excluir",
+    "padrao": "/cadastros/<slug:slug>/<int:pk>/excluir/",
+    "callback": "cadastros.views.excluir"
+  },
+  {
+    "nome": "solicitacoes:lista",
+    "padrao": "/solicitacoes/",
+    "callback": "solicitacoes.views.lista_solicitacoes"
+  },
+  {
+    "nome": "solicitacoes:nova",
+    "padrao": "/solicitacoes/nova/",
+    "callback": "solicitacoes.views.nova_solicitacao"
+  },
+  {
+    "nome": "solicitacoes:exportar",
+    "padrao": "/solicitacoes/exportar/",
+    "callback": "solicitacoes.views.exportar_solicitacoes"
+  },
+  {
+    "nome": "solicitacoes:detalhe",
+    "padrao": "/solicitacoes/<int:pk>/",
+    "callback": "solicitacoes.views.detalhe_solicitacao"
+  },
+  {
+    "nome": "solicitacoes:editar",
+    "padrao": "/solicitacoes/<int:pk>/editar/",
+    "callback": "solicitacoes.views.editar_solicitacao"
+  },
+  {
+    "nome": "solicitacoes:enviar",
+    "padrao": "/solicitacoes/<int:pk>/enviar/",
+    "callback": "solicitacoes.views.enviar_solicitacao"
+  },
+  {
+    "nome": "solicitacoes:excluir",
+    "padrao": "/solicitacoes/<int:pk>/excluir/",
+    "callback": "solicitacoes.views.excluir_solicitacao"
+  },
+  {
+    "nome": "solicitacoes:anexo_adicionar",
+    "padrao": "/solicitacoes/<int:pk>/anexos/adicionar/",
+    "callback": "solicitacoes.views.adicionar_anexo"
+  },
+  {
+    "nome": "solicitacoes:anexo_baixar",
+    "padrao": "/solicitacoes/<int:pk>/anexos/<int:anexo_pk>/baixar/",
+    "callback": "solicitacoes.views.baixar_anexo"
+  },
+  {
+    "nome": "solicitacoes:anexo_excluir",
+    "padrao": "/solicitacoes/<int:pk>/anexos/<int:anexo_pk>/excluir/",
+    "callback": "solicitacoes.views.excluir_anexo"
+  },
+  {
+    "nome": "solicitacoes:despachar",
+    "padrao": "/solicitacoes/<int:pk>/despachar/",
+    "callback": "solicitacoes.views.despachar"
+  },
+  {
+    "nome": "solicitacoes:concluir",
+    "padrao": "/solicitacoes/<int:pk>/concluir/",
+    "callback": "solicitacoes.views.concluir_solicitacao"
+  },
+  {
+    "nome": "solicitacoes:cancelar_evento",
+    "padrao": "/solicitacoes/<int:pk>/cancelar-evento/",
+    "callback": "solicitacoes.views.cancelar_evento"
+  },
+  {
+    "nome": "viagens_cadastros:index",
+    "padrao": "/viagens/cadastros/",
+    "callback": "viagens_cadastros.views.index"
+  },
+  {
+    "nome": "viagens_cadastros:diarias",
+    "padrao": "/viagens/cadastros/diarias/",
+    "callback": "viagens_cadastros.views.diarias"
+  },
+  {
+    "nome": "viagens_cadastros:diaria_nova",
+    "padrao": "/viagens/cadastros/diarias/nova/",
+    "callback": "viagens_cadastros.views.diaria_editar"
+  },
+  {
+    "nome": "viagens_cadastros:diaria_editar",
+    "padrao": "/viagens/cadastros/diarias/<int:pk>/editar/",
+    "callback": "viagens_cadastros.views.diaria_editar"
+  },
+  {
+    "nome": "viagens_cadastros:diaria_excluir",
+    "padrao": "/viagens/cadastros/diarias/<int:pk>/excluir/",
+    "callback": "viagens_cadastros.views.diaria_excluir"
+  },
+  {
+    "nome": "viagens_cadastros:lista",
+    "padrao": "/viagens/cadastros/<slug:slug>/",
+    "callback": "viagens_cadastros.views.lista"
+  },
+  {
+    "nome": "viagens_cadastros:novo",
+    "padrao": "/viagens/cadastros/<slug:slug>/novo/",
+    "callback": "viagens_cadastros.views.editar"
+  },
+  {
+    "nome": "viagens_cadastros:editar",
+    "padrao": "/viagens/cadastros/<slug:slug>/<int:pk>/editar/",
+    "callback": "viagens_cadastros.views.editar"
+  },
+  {
+    "nome": "viagens_cadastros:excluir",
+    "padrao": "/viagens/cadastros/<slug:slug>/<int:pk>/excluir/",
+    "callback": "viagens_cadastros.views.excluir"
+  },
+  {
+    "nome": "viagens_roteiros:lista",
+    "padrao": "/viagens/roteiros/",
+    "callback": "viagens_roteiros.views.lista"
+  },
+  {
+    "nome": "viagens_roteiros:novo",
+    "padrao": "/viagens/roteiros/novo/",
+    "callback": "viagens_roteiros.views.editar"
+  },
+  {
+    "nome": "viagens_roteiros:previa_diarias",
+    "padrao": "/viagens/roteiros/previa-diarias/",
+    "callback": "viagens_roteiros.views.previa"
+  },
+  {
+    "nome": "viagens_roteiros:calcular_rota",
+    "padrao": "/viagens/roteiros/calcular-rota/",
+    "callback": "viagens_roteiros.views.rota"
+  },
+  {
+    "nome": "viagens_roteiros:estimar_trecho",
+    "padrao": "/viagens/roteiros/estimar-trecho/",
+    "callback": "viagens_roteiros.views.estimar_trecho"
+  },
+  {
+    "nome": "viagens_roteiros:autosave_novo",
+    "padrao": "/viagens/roteiros/autosave/",
+    "callback": "viagens_roteiros.views.autosave"
+  },
+  {
+    "nome": "viagens_roteiros:detalhe",
+    "padrao": "/viagens/roteiros/<int:pk>/",
+    "callback": "django.views.generic.base.RedirectView"
+  },
+  {
+    "nome": "viagens_roteiros:dados",
+    "padrao": "/viagens/roteiros/<int:pk>/dados/",
+    "callback": "viagens_roteiros.views.dados_do_roteiro"
+  },
+  {
+    "nome": "viagens_roteiros:editar",
+    "padrao": "/viagens/roteiros/<int:pk>/editar/",
+    "callback": "viagens_roteiros.views.editar"
+  },
+  {
+    "nome": "viagens_roteiros:autosave",
+    "padrao": "/viagens/roteiros/<int:pk>/autosave/",
+    "callback": "viagens_roteiros.views.autosave"
+  },
+  {
+    "nome": "viagens_roteiros:calcular",
+    "padrao": "/viagens/roteiros/<int:pk>/calcular/",
+    "callback": "viagens_roteiros.views.calcular"
+  },
+  {
+    "nome": "viagens_roteiros:cancelar",
+    "padrao": "/viagens/roteiros/<int:pk>/cancelar/",
+    "callback": "viagens_roteiros.views.cancelar"
+  },
+  {
+    "nome": "viagens_roteiros:reativar",
+    "padrao": "/viagens/roteiros/<int:pk>/reativar/",
+    "callback": "viagens_roteiros.views.reativar"
+  },
+  {
+    "nome": "viagens_roteiros:excluir",
+    "padrao": "/viagens/roteiros/<int:pk>/excluir/",
+    "callback": "viagens_roteiros.views.excluir"
+  },
+  {
+    "nome": "documentos:baixar",
+    "padrao": "/documentos/<uuid:pk>/baixar/",
+    "callback": "documentos.views.baixar"
+  },
+  {
+    "nome": "viagens_cadastros:definir_padrao",
+    "padrao": "/viagens/cadastros/<slug:slug>/<int:pk>/padrao/",
+    "callback": "viagens_cadastros.views.definir_padrao"
+  }
+]

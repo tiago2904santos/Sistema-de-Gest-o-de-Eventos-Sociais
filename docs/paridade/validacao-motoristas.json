@@ -1,0 +1,45 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Meta 1 parcial — busca e teclado do seletor de motoristas",
+  "pares_novos": [
+    "meta1-viatura-motoristas-cargo",
+    "meta1-viatura-motoristas-reabrir-seta",
+    "meta1-viatura-motoristas-limite-superior",
+    "meta1-viatura-motoristas-multiplos-teclado",
+    "meta1-viatura-motoristas-remocao-parcial",
+    "meta1-viatura-motoristas-cpf-sem-mascara",
+    "meta1-viatura-motoristas-cpf-formatado"
+  ],
+  "postgresql": {
+    "testes": 132,
+    "resultado": "OK",
+    "segundos": 37.119,
+    "log": "../../logs/paridade-motoristas-postgresql.txt"
+  },
+  "sqlite": {
+    "testes": 132,
+    "resultado": "OK",
+    "segundos": 21.462,
+    "log": "../../logs/paridade-motoristas-sqlite.txt"
+  },
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "javascript": "node --check aprovado; sequência exercitada no navegador",
+  "hashes_rotas_origem": {
+    "cadastros": true,
+    "roteiros": true,
+    "oficios": true,
+    "justificativas": true,
+    "termos": true,
+    "prestacoes_contas": true
+  },
+  "escrita_ensaio": "Nenhum POST; nenhuma gravação de viatura. Seleções abandonadas por recarregamento.",
+  "limites": [
+    "RG e unidade sem par visual; ver ensaios adicionais.",
+    "Fallback Servidor cadastrado observado somente no destino; selo Rascunho ainda ausente.",
+    "Limite inferior com vários resultados e perfis ainda pendentes.",
+    "Última suíte completa de 1111 por banco antecede consulta de CEP e este incremento."
+  ],
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04"
+}

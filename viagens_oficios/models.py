@@ -1,3 +1,4 @@
+from core.legado import OrigemLegado
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
@@ -9,7 +10,7 @@ from viagens_roteiros.models import Roteiro
 
 CONSTRAINT_NUMERO_OFICIO = "viagens_oficio_ano_numero_unique"
 
-class Oficio(ModeloTemporal, ModeloCancelavel):
+class Oficio(ModeloTemporal, ModeloCancelavel, OrigemLegado):
     STATUS_RASCUNHO = "RASCUNHO"
 
     STATUS_GERADO = "GERADO"
@@ -254,7 +255,7 @@ class Oficio(ModeloTemporal, ModeloCancelavel):
 
     class Meta:
         ordering = ["-data_criacao", "-criado_em"]
-        constraints = [models.UniqueConstraint(fields=["ano", "numero"],
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_oficio_origem"), models.UniqueConstraint(fields=["ano", "numero"],
             condition=Q(ano__isnull=False, numero__isnull=False), name=CONSTRAINT_NUMERO_OFICIO)]
 
     @classmethod
@@ -277,19 +278,20 @@ class Oficio(ModeloTemporal, ModeloCancelavel):
             OficioNumeroLacuna.objects.filter(ano=self.ano, numero=self.numero).delete()
 
 
-class ConfiguracaoNumeracaoOficio(models.Model):
+class ConfiguracaoNumeracaoOficio(OrigemLegado):
     ano = models.PositiveIntegerField(unique=True)
     numero_inicial = models.PositiveIntegerField(default=1)
     atualizado_em = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-ano"]
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_configuracaonumeracaooficio_origem")]
 
     def __str__(self):
         return f"{self.ano}: inicia em {self.numero_inicial}"
 
 
-class OficioNumeroLacuna(models.Model):
+class OficioNumeroLacuna(OrigemLegado):
     """Somente números liberados por exclusão; saltos manuais não são lacunas."""
     ano = models.PositiveIntegerField(db_index=True)
     numero = models.PositiveIntegerField()
@@ -297,13 +299,13 @@ class OficioNumeroLacuna(models.Model):
 
     class Meta:
         ordering = ["ano", "numero"]
-        constraints = [models.UniqueConstraint(fields=["ano", "numero"], name="viagens_oficio_lacuna_unica")]
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_oficionumerolacuna_origem"), models.UniqueConstraint(fields=["ano", "numero"], name="viagens_oficio_lacuna_unica")]
 
     def __str__(self):
         return f"{self.numero:02d}/{self.ano}"
 
 
-class ModeloMotivoOficio(ModeloTemporal):
+class ModeloMotivoOficio(ModeloTemporal, OrigemLegado):
     nome = models.CharField(max_length=120)
 
     texto = models.TextField()
@@ -329,13 +331,13 @@ class ModeloMotivoOficio(ModeloTemporal):
 
     class Meta:
         ordering = ["ordem", "nome"]
-        constraints = [
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_modelomotivooficio_origem"),
             models.UniqueConstraint(fields=["nome"], name="viagens_motivo_nome_unico"),
             models.UniqueConstraint(fields=["is_padrao"], condition=Q(is_padrao=True), name="viagens_motivo_padrao_unico"),
         ]
 
 
-class ModeloJustificativa(ModeloTemporal):
+class ModeloJustificativa(ModeloTemporal, OrigemLegado):
     """Texto reutilizável de justificativa, com padrão único global."""
 
     nome = models.CharField(max_length=120)
@@ -362,13 +364,13 @@ class ModeloJustificativa(ModeloTemporal):
 
     class Meta:
         ordering = ["ordem", "nome"]
-        constraints = [
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_modelojustificativa_origem"),
             models.UniqueConstraint(fields=["nome"], name="viagens_justif_nome_unico"),
             models.UniqueConstraint(fields=["is_padrao"], condition=Q(is_padrao=True), name="viagens_justif_padrao_unico"),
         ]
 
 
-class Justificativa(ModeloTemporal):
+class Justificativa(ModeloTemporal, OrigemLegado):
     STATUS_RASCUNHO = "RASCUNHO"
 
     STATUS_FINALIZADA = "FINALIZADA"
@@ -410,3 +412,6 @@ class Justificativa(ModeloTemporal):
     def save(self, *args, **kwargs):
         self.texto = normalize_spaces(self.texto)
         super().save(*args, **kwargs)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_justificativa_origem")]

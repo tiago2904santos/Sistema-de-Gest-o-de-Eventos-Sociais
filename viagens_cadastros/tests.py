@@ -580,8 +580,8 @@ class TelasTests(BaseViagensTestCase):
             follow=True,
         )
         self.assertTrue(Servidor.objects.filter(pk=servidor.pk).exists())
-        self.assertContains(resposta, "Exclusão bloqueada")
-        self.assertContains(resposta, "Solicitações de evento")
+        self.assertContains(resposta, "Não foi possível excluir este cadastro porque ele está vinculado a outros registros.")
+        self.assertEqual(resposta.redirect_chain[0][0], reverse("viagens_cadastros:lista", args=["servidores"]))
 
     def test_exclusao_simples_exige_confirmacao_e_remove_no_post(self):
         servidor = Servidor.objects.create(nome="Pode excluir")
@@ -589,8 +589,8 @@ class TelasTests(BaseViagensTestCase):
             "viagens_cadastros:excluir", args=["servidores", servidor.pk]
         )
         resposta = self.client.get(url)
-        self.assertEqual(resposta.status_code, 200)
-        self.assertContains(resposta, "Excluir definitivamente")
+        self.assertRedirects(resposta, reverse("viagens_cadastros:lista", args=["servidores"]))
+        self.assertContains(self.client.get(reverse("viagens_cadastros:lista", args=["servidores"])), "Excluir servidor?")
         self.assertTrue(Servidor.objects.filter(pk=servidor.pk).exists())
         resposta = self.client.post(url)
         self.assertRedirects(
@@ -700,7 +700,7 @@ class SeedDoModuloTests(TestCase):
 
 
 class TelaDeDiariasTests(BaseViagensTestCase):
-    """Os cartões do topo e a tabela mostram os mesmos números."""
+    """O histórico preserva valores monetários e não inventa vigências."""
 
     def setUp(self):
         self.client.force_login(self.criar_usuario("leitora_diarias"))
@@ -710,23 +710,19 @@ class TelaDeDiariasTests(BaseViagensTestCase):
             vigencia_inicio=date(2026, 1, 1),
         )
 
-    def test_o_cartao_escreve_os_derivados_no_padrao_brasileiro(self):
-        # O cartão era montado com f-string crua e saía "43.58" logo acima de um
-        # "43,58" renderizado pelo Django: o mesmo número com duas caras.
+    def test_historico_escreve_derivados_no_padrao_brasileiro(self):
         resposta = self.client.get(reverse("viagens_cadastros:diarias"))
-        self.assertContains(resposta, "15%: R$ 43,58 · 30%: R$ 87,17")
+        self.assertContains(resposta, "R$ 43,58")
+        self.assertContains(resposta, "R$ 87,17")
         self.assertNotContains(resposta, "43.58")
 
-    def test_o_cartao_mostra_o_valor_como_dinheiro(self):
-        # Olhar só a página inteira não serve: a tabela abaixo já escreve
-        # "R$ 290,55" e o teste passaria mesmo com o cartão exibindo um número
-        # solto. O que se afirma aqui é o conteúdo do cartão.
+    def test_historico_mostra_o_valor_como_dinheiro(self):
         resposta = self.client.get(reverse("viagens_cadastros:diarias"))
-        valores = re.findall(
-            r'<b data-kpi-valor>(.*?)</b>', resposta.content.decode(), re.S
-        )
-        self.assertIn("R$ 290,55", [v.strip() for v in valores])
+        valores = re.findall(r"<td>(R\$ .*?)</td>", resposta.content.decode(), re.S)
+        self.assertIn("R$ 290,55", valores)
 
     def test_faixa_sem_vigencia_nao_finge_ter_valor(self):
+        TabelaDiaria.objects.all().delete()
         resposta = self.client.get(reverse("viagens_cadastros:diarias"))
-        self.assertContains(resposta, "Sem vigência cadastrada")
+        self.assertContains(resposta, "Nenhuma vigência cadastrada.")
+        self.assertNotContains(resposta, "R$ 0")

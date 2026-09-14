@@ -1,0 +1,13 @@
+{
+  "rotas_mapeadas": 161,
+  "rotas_com_observacao_parcial": 26,
+  "pares_capturados": 195,
+  "fichas_com_quatro_quadros": 17,
+  "rotas_certificadas": 0,
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04",
+  "erros": [],
+  "incidentes_abertos": [
+    "P14: cargo34 na origem, aguardando autorização para remoção"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "origem": [
+    {
+      "action": "http://127.0.0.1:8000/cadastros/estados/",
+      "campos": [
+        "",
+        "",
+        ""
+      ]
+    }
+  ],
+  "destino": {
+    "action": "http://localhost:8021/viagens/cadastros/estados/",
+    "campos": [
+      "",
+      "",
+      ""
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "data": "2026-09-10",
+  "origem_consulta_read_only": true,
+  "origem": {
+    "cadastros_cargo": [
+      [
+        34,
+        "ENSAIO DE CARGO"
+      ]
+    ],
+    "cadastros_combustivel": [],
+    "cadastros_unidade": []
+  },
+  "destino_apos_limpeza": {
+    "cargo": [],
+    "combustivel": [],
+    "unidade": []
+  },
+  "cargo_origem": {
+    "id": 34,
+    "nome": "ENSAIO DE CARGO",
+    "area": 1,
+    "is_padrao": false,
+    "created_at": "2026-09-10T16:51:47.100339-03:00",
+    "vinculos": {
+      "cadastros_servidor": 0,
+      "planos_trabalho_efetivoplano": 0,
+      "planos_trabalho_efetivoevento": 0
+    }
+  },
+  "situacao": "Cargo do destino4 removido; cargo34 da origem aguarda autorização P14 para remoção."
+}

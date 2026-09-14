@@ -1,0 +1,53 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Meta 1 parcial — consulta e exportação de cidades",
+  "pares_novos": [
+    "meta1-cidades-lista",
+    "meta1-cidades-pagina2",
+    "meta1-cidades-busca-nome",
+    "meta1-cidades-busca-uf",
+    "meta1-cidades-busca-estado",
+    "meta1-cidades-busca-pagina2",
+    "meta1-cidades-sem-resultado",
+    "meta1-cidades-limpar"
+  ],
+  "cadastros_postgresql": {
+    "testes": 142,
+    "resultado": "OK",
+    "segundos": 38.515,
+    "log": "../../logs/paridade-cidades-cadastros-postgresql.txt"
+  },
+  "cadastros_sqlite": {
+    "testes": 142,
+    "resultado": "OK",
+    "segundos": 31.297,
+    "log": "../../logs/paridade-cidades-cadastros-sqlite.txt"
+  },
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "diff_check": "limpo; avisos LF/CRLF preexistentes",
+  "hashes_rotas_origem": {
+    "cadastros": true,
+    "roteiros": true,
+    "oficios": true,
+    "justificativas": true,
+    "termos": true,
+    "prestacoes_contas": true
+  },
+  "dados": "Consultas somente GET; 5571 municípios existentes, nenhuma Região nula. Nenhuma gravação na base de desenvolvimento nesta rodada. Modelo Nome150 e Região obrigatória preservados.",
+  "pendencias": [
+    "P13: inclusão e regras de Nome, Região e coordenadas",
+    "Download real pareado do CSV",
+    "Permissões da origem, responsividade e demais estados"
+  ],
+  "ultima_suite_completa": "1124 testes por banco, anterior a este incremento",
+  "classificacao": {
+    "existe e está incompleta": 143,
+    "não existe": 16,
+    "fora de escopo": 2
+  },
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04",
+  "atributos_busca": "type=text, valor e foco conferidos em ambas; oito pares renovados após ajuste de apresentação",
+  "capturas": "JPEGs originais retornados pelo navegador, sem conversão ou edição; extensão corrigida para .jpg"
+}

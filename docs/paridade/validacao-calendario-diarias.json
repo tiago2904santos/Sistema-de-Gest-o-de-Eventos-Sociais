@@ -1,0 +1,45 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Meta 1 parcial — calendário optativo GV no componente DS de data",
+  "pares_novos": [
+    "meta1-diarias-calendario-campo",
+    "meta1-diarias-calendario-mes-anterior",
+    "meta1-diarias-calendario-data-retroativa",
+    "meta1-diarias-calendario-limpar",
+    "meta1-diarias-calendario-hoje",
+    "meta1-diarias-calendario-teclado",
+    "meta1-diarias-calendario-mes-seguinte"
+  ],
+  "postgresql": {
+    "testes": 1111,
+    "resultado": "OK",
+    "segundos": 150.295,
+    "pulados": 4,
+    "log": "../../logs/paridade-calendario-completa-postgresql.txt"
+  },
+  "sqlite": {
+    "testes": 1111,
+    "resultado": "OK",
+    "segundos": 90.967,
+    "pulados": 5,
+    "log": "../../logs/paridade-calendario-completa-sqlite.txt"
+  },
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "diff_check": "limpo; avisos LF/CRLF preexistentes",
+  "javascript": "node --check aprovado; controles testados no navegador",
+  "origem": "seis hashes de rotas preservados; nenhuma escrita executada",
+  "regressao": "Calendário padrão da solicitação: domingo, salto anual, seleção e limpeza preservados; nenhum envio.",
+  "pendencias": [
+    "P09: data visível do GV não preencheu o oculto; causa indeterminada e comparação de envio não certificada.",
+    "P01, P05, P06, P07 e P08 continuam pendentes.",
+    "Abas, perfis e demais estados não certificados."
+  ],
+  "limites_ambiente": [
+    "Avisos de datas sem fuso preexistentes.",
+    "WeasyPrint sem algumas bibliotecas externas.",
+    "Word/COM registra exceção nativa durante o ensaio e suíte prossegue; conversão documental não certificada por esta rodada."
+  ],
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04"
+}

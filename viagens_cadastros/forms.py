@@ -83,11 +83,23 @@ class UnidadeForm(NomeNormalizadoMixin, forms.ModelForm):
         return normalizar_maiusculas(self.cleaned_data.get("sigla"))
 
 
+class UnidadeInclusaoForm(UnidadeForm):
+    """Inclusão rápida não recebe nem modifica lotações de servidores."""
+
+    class Meta(UnidadeForm.Meta):
+        error_messages = {"nome": {"unique": "Já existe uma unidade com este nome."}}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields.pop("servidores")
+
+
 class CargoForm(NomeNormalizadoMixin, forms.ModelForm):
     class Meta:
         model = Cargo
         fields = ["nome", "is_padrao"]
         labels = {"nome": "Cargo", "is_padrao": "Usar como cargo padrão"}
+        error_messages = {"nome": {"unique": "Já existe um cargo com este nome."}}
         help_texts = {
             "is_padrao": "Será sugerido automaticamente ao criar um servidor."
         }
@@ -103,6 +115,7 @@ class CombustivelForm(NomeNormalizadoMixin, forms.ModelForm):
         model = Combustivel
         fields = ["nome", "is_padrao"]
         labels = {"nome": "Combustível", "is_padrao": "Usar como combustível padrão"}
+        error_messages = {"nome": {"unique": "Já existe um combustível com este nome."}}
         help_texts = {
             "is_padrao": "Será sugerido automaticamente ao criar uma viatura."
         }
@@ -316,3 +329,17 @@ class TabelaDiariaForm(forms.ModelForm):
                 "Valor muito baixo: o percentual de 15% ficaria zerado."
             )
         return valor
+
+    def clean(self):
+        dados = super().clean()
+        faixa, inicio = dados.get("faixa"), dados.get("vigencia_inicio")
+        if faixa and inicio:
+            existentes = TabelaDiaria.objects.filter(faixa=faixa, vigencia_inicio=inicio)
+            if self.instance.pk:
+                existentes = existentes.exclude(pk=self.instance.pk)
+            if existentes.exists():
+                raise forms.ValidationError(
+                    "Já existe uma vigência desta faixa nesta data. "
+                    "Edite a existente ou escolha outra data de início."
+                )
+        return dados

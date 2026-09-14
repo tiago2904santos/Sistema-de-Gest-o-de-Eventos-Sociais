@@ -1,0 +1,73 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Meta 1 parcial — Estados",
+  "pares_novos": [
+    "meta1-estados-lista",
+    "meta1-estados-inclusao",
+    "meta1-estados-busca",
+    "meta1-estados-edicao",
+    "meta1-estados-confirmacao",
+    "meta1-estados-exclusao-direta",
+    "meta1-estados-sem-resultado",
+    "meta1-estados-edicao-recolhida",
+    "meta1-cadastros-estados-entrada",
+    "meta1-estados-maiusculas"
+  ],
+  "cadastros_postgresql": {
+    "testes": 138,
+    "resultado": "OK",
+    "segundos": 33.354,
+    "log": "../../logs/paridade-estados-postgresql.txt"
+  },
+  "cadastros_sqlite": {
+    "testes": 138,
+    "resultado": "OK",
+    "segundos": 22.783,
+    "log": "../../logs/paridade-estados-sqlite.txt"
+  },
+  "hashes_rotas_origem": {
+    "cadastros": true,
+    "roteiros": true,
+    "oficios": true,
+    "justificativas": true,
+    "termos": true,
+    "prestacoes_contas": true
+  },
+  "dados_originais": "27 estados e todos os seus campos preservados; comparação integral antes/depois. Temporário 28 criado/editado/excluído.",
+  "pendencias": [
+    "P07: Nome e IBGE",
+    "P12: Sigla exatamente dois caracteres",
+    "Perfis da origem, responsividade, erros após POST da origem e paginação pareada"
+  ],
+  "completa": "Aprovada em PostgreSQL e SQLite",
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04",
+  "completa_postgresql": {
+    "testes": 1124,
+    "resultado": "OK",
+    "segundos": 171.998,
+    "pulados": 4,
+    "log": "../../logs/paridade-estados-completa-postgresql.txt"
+  },
+  "rotas_verificadas": {
+    "estados": "/viagens/cadastros/estados/",
+    "estado_editar": "/viagens/cadastros/estados/1/editar/",
+    "estado_excluir": "/viagens/cadastros/estados/1/excluir/"
+  },
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "diff_check": "limpo; avisos LF/CRLF preexistentes",
+  "javascript": "node --check limpo; fluxos ensaiados no navegador",
+  "limites_ambiente": [
+    "Avisos preexistentes de datas sem fuso.",
+    "WeasyPrint com bibliotecas externas indisponíveis.",
+    "Word COM emitiu exceção nativa 0x800706be e a execução continuou até OK; não certifica conversão visual de documentos."
+  ],
+  "completa_sqlite": {
+    "testes": 1124,
+    "resultado": "OK",
+    "segundos": 99.973,
+    "pulados": 5,
+    "log": "../../logs/paridade-estados-completa-sqlite.txt"
+  }
+}

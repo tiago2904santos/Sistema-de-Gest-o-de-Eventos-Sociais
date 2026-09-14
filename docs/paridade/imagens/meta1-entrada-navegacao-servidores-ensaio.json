@@ -1,0 +1,5 @@
+{
+  "origem": "http://127.0.0.1:8000/cadastros/servidores/",
+  "destino": "http://localhost:8021/viagens/cadastros/servidores/",
+  "observacao": "Abrir do cartão Servidores levou às listas nos dois lados."
+}

@@ -44,6 +44,8 @@ def roteiro_efetivo(prestacao):
 
 
 def _copiar_campos_concretos(origem, destino, excluir: set) -> None:
+    # Um ajuste feito aqui é um novo registro nativo, não a mesma linha do GV.
+    excluir = excluir | {"legado_origem", "legado_pk"}
     for campo in origem._meta.concrete_fields:
         if campo.primary_key or campo.name in excluir:
             continue

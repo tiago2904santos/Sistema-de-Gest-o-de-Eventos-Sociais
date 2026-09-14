@@ -1,0 +1,138 @@
+{
+  "origem": [
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "q",
+      "obrigatorio": false,
+      "placeholder": "Buscar unidades",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_nome",
+      "mascara": "upper",
+      "maxlength": "255",
+      "nome": "nome",
+      "obrigatorio": true,
+      "placeholder": null,
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_sigla",
+      "mascara": "upper",
+      "maxlength": "50",
+      "nome": "sigla",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "text",
+      "valor": ""
+    }
+  ],
+  "destino": [
+    {
+      "desabilitado": false,
+      "id": "id_nome",
+      "mascara": null,
+      "maxlength": "255",
+      "nome": "nome",
+      "obrigatorio": true,
+      "placeholder": "Ex.: DELEGACIA DE CURITIBA",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_sigla",
+      "mascara": null,
+      "maxlength": "50",
+      "nome": "sigla",
+      "obrigatorio": false,
+      "placeholder": "Ex.: DC",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "",
+      "obrigatorio": false,
+      "placeholder": "Buscar por nome, cargo ou unidade",
+      "tipo": "search",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "servidores",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "checkbox",
+      "valor": "1"
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "servidores",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "checkbox",
+      "valor": "2"
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "servidores",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "checkbox",
+      "valor": "3"
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "servidores",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "checkbox",
+      "valor": "4"
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "servidores",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "checkbox",
+      "valor": "5"
+    },
+    {
+      "desabilitado": false,
+      "id": "",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "servidores",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "checkbox",
+      "valor": "6"
+    }
+  ]
+}

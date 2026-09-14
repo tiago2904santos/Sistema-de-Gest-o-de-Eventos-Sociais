@@ -1,0 +1,94 @@
+{
+  "origem": [
+    {
+      "desabilitado": false,
+      "id": "id_faixa",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "faixa",
+      "obrigatorio": true,
+      "placeholder": null,
+      "tipo": "select-one",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_vigencia_inicio_display",
+      "mascara": null,
+      "maxlength": "10",
+      "nome": "",
+      "obrigatorio": false,
+      "placeholder": "dd/mm/aaaa",
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_valor_24h",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "valor_24h",
+      "obrigatorio": true,
+      "placeholder": null,
+      "tipo": "number",
+      "valor": ""
+    },
+    {
+      "desabilitado": true,
+      "id": "diaria-calc-15",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "text",
+      "valor": ""
+    },
+    {
+      "desabilitado": true,
+      "id": "diaria-calc-30",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "",
+      "obrigatorio": false,
+      "placeholder": null,
+      "tipo": "text",
+      "valor": ""
+    }
+  ],
+  "destino": [
+    {
+      "desabilitado": false,
+      "id": "id_faixa",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "faixa",
+      "obrigatorio": true,
+      "placeholder": null,
+      "tipo": "select-one",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_vigencia_inicio",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "vigencia_inicio",
+      "obrigatorio": true,
+      "placeholder": null,
+      "tipo": "date",
+      "valor": ""
+    },
+    {
+      "desabilitado": false,
+      "id": "id_valor_24h",
+      "mascara": null,
+      "maxlength": null,
+      "nome": "valor_24h",
+      "obrigatorio": true,
+      "placeholder": "0,00",
+      "tipo": "number",
+      "valor": ""
+    }
+  ]
+}

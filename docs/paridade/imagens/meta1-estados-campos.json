@@ -1,0 +1,48 @@
+{
+  "origem": [
+    {
+      "maxlength": 128,
+      "name": "nome",
+      "required": true,
+      "type": "text",
+      "value": "PARANÁ"
+    },
+    {
+      "maxlength": 2,
+      "name": "sigla",
+      "required": true,
+      "type": "text",
+      "value": "PR"
+    },
+    {
+      "maxlength": -1,
+      "name": "codigo_ibge",
+      "required": false,
+      "type": "number",
+      "value": "41"
+    }
+  ],
+  "destino": [
+    {
+      "maxlength": 150,
+      "name": "nome",
+      "required": true,
+      "type": "text",
+      "value": "Paraná"
+    },
+    {
+      "maxlength": 2,
+      "name": "sigla",
+      "required": true,
+      "type": "text",
+      "value": "PR"
+    },
+    {
+      "maxlength": -1,
+      "name": "codigo_ibge",
+      "required": true,
+      "type": "number",
+      "value": "41"
+    }
+  ]
+}

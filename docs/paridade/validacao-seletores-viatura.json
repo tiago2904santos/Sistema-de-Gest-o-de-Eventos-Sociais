@@ -1,0 +1,54 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Meta1 parcial — seletores de viatura",
+  "pares_novos": [
+    "meta1-viatura-combustivel-opcao-vazia",
+    "meta1-viatura-combustivel-vazio",
+    "meta1-viatura-combustivel-selecionado",
+    "meta1-viatura-combustivel-retirado",
+    "meta1-viatura-tipo-opcoes",
+    "meta1-viatura-tipo-caracterizada"
+  ],
+  "combustivel_temporario": {
+    "id": 5,
+    "nome": "ENSAIO SELETOR COMBUSTIVEL 20260910",
+    "removido": true
+  },
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "template": "compilado e exercitado no navegador",
+  "hashes_arquivos_rotas_origem": {
+    "cadastros": true,
+    "roteiros": true,
+    "oficios": true,
+    "justificativas": true,
+    "termos": true,
+    "prestacoes_contas": true
+  },
+  "incidente_anterior": "Cargo34 na origem aguarda limpeza P14; hashes de arquivos não comprovam preservação do banco.",
+  "suite_completa": {
+    "postgresql": {
+      "testes": 1128,
+      "resultado": "OK",
+      "pulados": 4,
+      "segundos": 206.529,
+      "log": "logs/paridade-seletores-completa-postgresql.txt"
+    },
+    "sqlite": {
+      "testes": 1128,
+      "resultado": "OK",
+      "pulados": 5,
+      "segundos": 149.528,
+      "log": "logs/paridade-seletores-completa-sqlite.txt"
+    }
+  },
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04",
+  "diff_check": "limpo; avisos de conversão LF/CRLF",
+  "limites_ambiente": [
+    "Avisos de datas sem fuso presentes nos dois bancos.",
+    "Bibliotecas externas do WeasyPrint indisponíveis.",
+    "Word COM emitiu exceção nativa 0x800706be; os dois processos continuaram até OK e terminaram com código zero. A suíte não certifica a aparência dos documentos."
+  ],
+  "verificacao_provas": "Seis pares JPEG originais, seis observações JSON, IDs únicos na galeria e quatro tabelas na ficha."
+}

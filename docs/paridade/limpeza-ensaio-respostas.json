@@ -1,0 +1,23 @@
+{
+  "servidor_temporario_existe": false,
+  "viatura_temporaria_existe": false,
+  "servidores_restantes": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "viaturas_restantes": 0,
+  "unidades_restantes": 0,
+  "combustiveis_restantes": 0,
+  "hashes_origem": {
+    "cadastros": true,
+    "roteiros": true,
+    "oficios": true,
+    "justificativas": true,
+    "termos": true,
+    "prestacoes_contas": true
+  }
+}

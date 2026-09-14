@@ -1,3 +1,4 @@
+from core.legado import OrigemLegado
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -48,7 +49,7 @@ class Modulo(models.Model):
         return self.nome
 
 
-class User(AbstractUser):
+class User(AbstractUser, OrigemLegado):
     """Usuário do sistema.
 
     Modelo customizado desde o início para permitir evolução futura
@@ -70,6 +71,7 @@ class User(AbstractUser):
     class Meta:
         verbose_name = "usuário"
         verbose_name_plural = "usuários"
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_user_origem")]
 
     def __str__(self):
         return self.get_full_name() or self.username

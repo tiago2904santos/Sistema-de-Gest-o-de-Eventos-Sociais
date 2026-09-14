@@ -1,0 +1,42 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Meta 1 parcial — retornos de catálogos, formulário e histórico de diárias",
+  "pares_novos": [
+    "meta1-cargos-retorno-rodape",
+    "meta1-cargos-busca-com-retorno",
+    "meta1-cargos-limpar-retorno",
+    "meta1-combustiveis-retorno-rodape",
+    "meta1-combustivel-maiusculas",
+    "meta1-combustiveis-voltar-viatura",
+    "meta1-diarias-inclusao-historico",
+    "meta1-diarias-previa-calculada",
+    "meta1-diarias-calendarios",
+    "meta1-diarias-data-selecionada",
+    "meta1-diarias-historico-acoes"
+  ],
+  "postgresql": {
+    "testes": 125,
+    "resultado": "OK",
+    "segundos": 41.578,
+    "log": "../../logs/paridade-diarias-catalogos-postgresql.txt"
+  },
+  "sqlite": {
+    "testes": 125,
+    "resultado": "OK",
+    "segundos": 30.238,
+    "log": "../../logs/paridade-diarias-catalogos-sqlite.txt"
+  },
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "diff_check": "limpo; avisos LF/CRLF preexistentes",
+  "dados_preservados": "ensaio-diarias-dados-preservados.json",
+  "pendencias": [
+    "Abas e integração com configuração ainda pendentes.",
+    "P01, P05, P06, P07 e P08 aguardam decisão.",
+    "Calendários diferem em detalhes de digitação, início da semana e navegação.",
+    "Erros de POST e perfis na origem não ensaiados; fonte somente leitura.",
+    "Última suíte completa de 1.108 por banco antecede esta rodada."
+  ],
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04"
+}

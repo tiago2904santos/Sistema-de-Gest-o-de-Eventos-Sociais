@@ -1,3 +1,4 @@
+from core.legado import OrigemLegado
 from django.db import models
 
 
@@ -47,16 +48,19 @@ class Regiao(CadastroBase):
         verbose_name_plural = "regiões"
 
 
-class Estado(CadastroBase):
+class Estado(CadastroBase, OrigemLegado):
     sigla = models.CharField("sigla", max_length=2, unique=True)
     codigo_ibge = models.PositiveSmallIntegerField("código IBGE", unique=True)
 
     class Meta(CadastroBase.Meta):
         verbose_name = "estado"
         verbose_name_plural = "estados"
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_estado_origem")]
 
 
-class Municipio(CadastroBase):
+class Municipio(CadastroBase, OrigemLegado):
+    capital = models.BooleanField("capital", default=False)
+
     nome = models.CharField("nome", max_length=150)
     codigo_ibge = models.PositiveIntegerField(
         "código IBGE", unique=True, blank=True, null=True
@@ -85,7 +89,7 @@ class Municipio(CadastroBase):
     class Meta(CadastroBase.Meta):
         verbose_name = "município"
         verbose_name_plural = "municípios"
-        constraints = [
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_municipio_origem"),
             models.UniqueConstraint(fields=["nome", "estado"], name="municipio_unico_por_estado"),
         ]
 

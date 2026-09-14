@@ -8,6 +8,8 @@
   `selecionado`: valor atual (string) para pré-selecionar a opção salva.
   `erros`: lista de erros de validação do campo.
   `pesquisavel`: adiciona busca por texto para listas extensas.
+  `permitir_vazio`: expõe a opção vazia no menu para permitir retirar uma escolha.
+  `unidade_gv`: pesquisa de lotação com sigla/nome, limpeza e teclado do GV.
   `desabilitado`: bloqueia a edição preservando o visual.
 {% endcomment %}
 {% if multiplo %}
@@ -19,7 +21,7 @@
     {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
   </label>
   <div class="form-controle-wrapper form-controle-wrapper--select custom-select{% if pesquisavel %} custom-select--pesquisavel{% endif %}{% if erros %} is-invalid{% endif %}"
-       data-custom-select{% if pesquisavel %} data-searchable{% endif %}{% if dependente_de %} data-depends-on="{{ dependente_de }}"{% endif %}>
+       {% if unidade_gv %}data-unidade-picker{% else %}data-custom-select{% endif %}{% if pesquisavel %} data-searchable{% endif %}{% if dependente_de %} data-depends-on="{{ dependente_de }}"{% endif %}>
     {# form_alvo: campo fora do <form> que ainda é enviado com ele. #}
     <select class="form-controle custom-select__native" id="id_{{ name }}" name="{{ name }}"
             {% if form_alvo %}form="{{ form_alvo }}"{% endif %}
@@ -38,6 +40,7 @@
              {% if desabilitado %}disabled{% endif %}
              data-custom-select-trigger data-custom-select-search>
       <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+      {% if unidade_gv %}<button type="button" class="unidade-picker__limpar" aria-label="Limpar busca" data-unidade-limpar hidden>{% include "components/icon.html" with nome="x" %}</button>{% endif %}
     {% else %}
       <button class="form-controle custom-select__trigger" type="button"
               aria-label="{{ label }}" aria-haspopup="listbox" aria-expanded="false"
@@ -49,16 +52,23 @@
     <div class="custom-select__menu" data-custom-select-menu hidden>
       <div class="custom-select__lista" id="id_{{ name }}_listbox" role="listbox"
            aria-label="Opções de {{ label|lower }}">
+        {% if permitir_vazio %}
+          <button class="custom-select__opcao" type="button" role="option"
+                  aria-selected="{% if not selecionado %}true{% else %}false{% endif %}" data-value="">
+            <span>{{ placeholder|default:"Selecione..." }}</span>
+            <span class="custom-select__check" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
+          </button>
+        {% endif %}
         {% for opcao in opcoes %}
           <button class="custom-select__opcao" type="button" role="option"
                   aria-selected="{% if selecionado and opcao.valor|default:opcao|stringformat:"s" == selecionado|stringformat:"s" %}true{% else %}false{% endif %}"
                   data-value="{{ opcao.valor|default:opcao }}"{% if opcao.estado %} data-parent-value="{{ opcao.estado }}"{% endif %}{% if opcao.relacionados %} data-related-values="{{ opcao.relacionados }}"{% endif %}>
-            <span>{{ opcao.rotulo|default:opcao }}</span>
+            <span{% if unidade_gv %} class="unidade-picker__texto"{% endif %}>{{ opcao.rotulo|default:opcao }}{% if unidade_gv and opcao.detalhes %}<small>{{ opcao.detalhes }}</small>{% endif %}</span>
             <span class="custom-select__check" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
           </button>
         {% endfor %}
         {% if pesquisavel %}
-          <p class="custom-select__vazio" data-custom-select-empty hidden>Nenhuma opção encontrada.</p>
+          <p class="custom-select__vazio" data-custom-select-empty hidden>{% if unidade_gv %}Nenhuma unidade encontrada.{% else %}Nenhuma opção encontrada.{% endif %}</p>
         {% endif %}
       </div>
     </div>

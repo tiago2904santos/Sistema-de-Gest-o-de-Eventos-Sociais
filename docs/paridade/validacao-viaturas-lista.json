@@ -1,0 +1,20 @@
+{
+  "escopo": "viagens_cadastros; lista de viaturas. Não é fechamento da Meta 1",
+  "postgresql": {
+    "testes": 108,
+    "segundos": 24.103,
+    "resultado": "OK",
+    "log": "logs/paridade-viaturas-lista-postgresql.txt"
+  },
+  "sqlite": {
+    "testes": 108,
+    "segundos": 18.461,
+    "resultado": "OK",
+    "log": "logs/paridade-viaturas-lista-sqlite.txt"
+  },
+  "check": "sem problemas",
+  "makemigrations": "nenhuma mudança",
+  "diff_check": "limpo",
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04"
+}

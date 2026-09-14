@@ -1,3 +1,4 @@
+from core.legado import OrigemLegado
 from django.db import models
 from .arquivos import ArquivoPrivadoField
 from core.constraints import periodo_ordenado
@@ -25,7 +26,7 @@ def prestacao_anexo_original_upload_to(instance, filename):
     """
     return f"viagens_prestacoes/{instance.prestacao_id or 'nova'}/originais/{filename}"
 
-class PrestacaoContas(models.Model):
+class PrestacaoContas(OrigemLegado):
     STATUS_PENDENTE = 'pendente'
     STATUS_EM_PREENCHIMENTO = 'em_preenchimento'
     STATUS_ENVIADA = 'enviada'
@@ -43,6 +44,7 @@ class PrestacaoContas(models.Model):
         ordering = ['-criado_em']
         verbose_name = 'Prestação de Contas'
         verbose_name_plural = 'Prestações de Contas'
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_prestacaocontas_origem")]
 
     def __str__(self):
         return f'Prestação — Ofício {self.oficio.numero_formatado}'
@@ -53,7 +55,7 @@ class PrestacaoServidorAtivosManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().filter(removida_em__isnull=True)
 
-class PrestacaoServidor(models.Model):
+class PrestacaoServidor(OrigemLegado):
     """Parte individual da prestação de um servidor dentro do ofício.
 
     Guarda o acompanhamento e o que muda de servidor para servidor: status,
@@ -92,7 +94,7 @@ class PrestacaoServidor(models.Model):
         verbose_name = 'Servidor da prestação'
         verbose_name_plural = 'Servidores da prestação'
         indexes = [models.Index(fields=['arquivada', 'finalizada', 'data_liberacao_diarias'], name='prest_serv_aba_idx'), models.Index(fields=['status'], name='prest_serv_status_idx')]
-        constraints = [models.UniqueConstraint(fields=['prestacao', 'servidor'], name='unique_servidor_por_prestacao'), positivo('diaria_valor_override', name='prest_serv_diaria_recebida_positiva'), periodo_ordenado('data_liberacao_diarias', 'prazo_limite_saque', name='prest_serv_prazo_apos_liberacao')]
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_prestacaoservidor_origem"), models.UniqueConstraint(fields=['prestacao', 'servidor'], name='unique_servidor_por_prestacao'), positivo('diaria_valor_override', name='prest_serv_diaria_recebida_positiva'), periodo_ordenado('data_liberacao_diarias', 'prazo_limite_saque', name='prest_serv_prazo_apos_liberacao')]
 
     def __str__(self):
         return f'{self.servidor} — Ofício {self.prestacao.oficio.numero_formatado}'
@@ -140,7 +142,9 @@ class PrestacaoServidor(models.Model):
         campo novo — é a única forma de um campo futuro não voltar a ser apagado
         em silêncio pela troca de equipe.
         """
-        return bool(self.numero_solicitacao.strip() or self.diaria_valor_override is not None or self.diaria_valor_override_observacao.strip() or self.data_liberacao_diarias or self.prazo_limite_saque or (self.status != self.STATUS_PENDENTE) or self.arquivada or self.finalizada or self.documentos_anexos.exists() or (hasattr(self, 'assinaturas') and self.assinaturas.exists()))
+        # A linha histórica importada deve continuar rastreável no diário da
+        # migração, mesmo quando ainda não tem preenchimento financeiro.
+        return bool(self.legado_pk is not None or self.numero_solicitacao.strip() or self.diaria_valor_override is not None or self.diaria_valor_override_observacao.strip() or self.data_liberacao_diarias or self.prazo_limite_saque or (self.status != self.STATUS_PENDENTE) or self.arquivada or self.finalizada or self.documentos_anexos.exists() or (hasattr(self, 'assinaturas') and self.assinaturas.exists()))
 
     def tem_prova_irrefazivel(self) -> bool:
         """Só o que ninguém consegue refazer se a linha sumir (`NOVO-35`).
@@ -187,7 +191,7 @@ class PrestacaoServidor(models.Model):
         self.removida_em = None
         self.save(update_fields=['removida_em', 'atualizado_em'])
 
-class PrestacaoDocumentoAnexo(models.Model):
+class PrestacaoDocumentoAnexo(OrigemLegado):
     TIPO_DESPACHO = 'despacho'
     TIPO_OFICIO_ASSINADO = 'oficio_assinado'
     TIPO_COMPROVANTE = 'comprovante'
@@ -216,11 +220,12 @@ class PrestacaoDocumentoAnexo(models.Model):
         ordering = ['tipo', 'criado_em', 'pk']
         verbose_name = 'Anexo da prestação de contas'
         verbose_name_plural = 'Anexos da prestação de contas'
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_prestacaodocumentoanexo_origem")]
 
     def __str__(self):
         return self.nome_original or self.arquivo.name
 
-class CarimboSolicitacao(models.Model):
+class CarimboSolicitacao(OrigemLegado):
     """Onde o número de solicitação de um servidor é desenhado no ofício assinado.
 
     O ofício que volta do eProtocolo traz a coluna de solicitação em branco — o número
@@ -242,7 +247,7 @@ class CarimboSolicitacao(models.Model):
     atualizado_em = models.DateTimeField(auto_now=True)
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=['anexo', 'servidor_prestacao'], name='carimbo_unico_por_servidor_no_anexo')]
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_carimbosolicitacao_origem"), models.UniqueConstraint(fields=['anexo', 'servidor_prestacao'], name='carimbo_unico_por_servidor_no_anexo')]
         ordering = ['pagina', 'y', 'x', 'pk']
         verbose_name = 'Carimbo do número de solicitação'
         verbose_name_plural = 'Carimbos do número de solicitação'
@@ -250,7 +255,7 @@ class CarimboSolicitacao(models.Model):
     def __str__(self):
         return f'carimbo p{self.pagina} de {self.servidor_prestacao_id}'
 
-class RelatorioTecnico(models.Model):
+class RelatorioTecnico(OrigemLegado):
     prestacao = models.OneToOneField(PrestacaoContas, on_delete=models.CASCADE, related_name='relatorio_tecnico')
     motivo = models.TextField(blank=True, default='')
     diaria = models.CharField(max_length=255, blank=True, default='')
@@ -267,11 +272,12 @@ class RelatorioTecnico(models.Model):
     class Meta:
         verbose_name = 'Relatório Técnico'
         verbose_name_plural = 'Relatórios Técnicos'
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_relatoriotecnico_origem")]
 
     def __str__(self):
         return f'RT — {self.prestacao}'
 
-class DiarioBordo(models.Model):
+class DiarioBordo(OrigemLegado):
     """Diário de bordo do veículo gerado a partir do roteiro do ofício da prestação.
 
     Os dados de cabeçalho (motorista, viatura, ofício, e-protocolo) vêm do ofício;
@@ -305,6 +311,7 @@ class DiarioBordo(models.Model):
     class Meta:
         verbose_name = 'Diário de Bordo'
         verbose_name_plural = 'Diários de Bordo'
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_diariobordo_origem")]
 
     def __str__(self):
         return f'Diário de bordo — {self.prestacao}'
@@ -319,7 +326,7 @@ class DiarioBordo(models.Model):
         """True quando a viatura foi trocada em relação à do ofício."""
         return self.viatura_modo != self.VIATURA_MODO_OFICIO
 
-class DiarioBordoTrecho(models.Model):
+class DiarioBordoTrecho(OrigemLegado):
     """Linha do diário de bordo, espelhando um trecho do roteiro do ofício."""
     diario = models.ForeignKey(DiarioBordo, on_delete=models.CASCADE, related_name='trechos')
     trecho = models.ForeignKey(RoteiroTrecho, on_delete=models.SET_NULL, null=True, blank=True, related_name='diario_bordo_trechos')
@@ -332,12 +339,12 @@ class DiarioBordoTrecho(models.Model):
         ordering = ['diario', 'ordem', 'pk']
         verbose_name = 'Trecho do diário de bordo'
         verbose_name_plural = 'Trechos do diário de bordo'
-        constraints = [models.UniqueConstraint(fields=['diario', 'ordem'], name='diario_trecho_ordem_unique'), periodo_ordenado('km_inicial', 'km_final', name='diario_trecho_km_ordenado', mensagem='O km final não pode ser menor que o km inicial.')]
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_diariobordotrecho_origem"), models.UniqueConstraint(fields=['diario', 'ordem'], name='diario_trecho_ordem_unique'), periodo_ordenado('km_inicial', 'km_final', name='diario_trecho_km_ordenado', mensagem='O km final não pode ser menor que o km inicial.')]
 
     def __str__(self):
         return f'Trecho {self.ordem} — {self.diario_id}'
 
-class ModeloTextoRelatorioTecnico(models.Model):
+class ModeloTextoRelatorioTecnico(OrigemLegado):
     """Textos reutilizáveis para preencher rapidamente os campos do RT."""
     CAMPO_MOTIVO = 'motivo'
     CAMPO_ATIVIDADE = 'atividade'
@@ -354,7 +361,7 @@ class ModeloTextoRelatorioTecnico(models.Model):
         ordering = ['campo', 'ordem', 'nome']
         verbose_name = 'Modelo de texto do RT'
         verbose_name_plural = 'Modelos de texto do RT'
-        constraints = [models.UniqueConstraint(fields=['campo', 'nome'], name='unique_modelo_texto_rt_campo_nome')]
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_modelotextorelatoriotecnico_origem"), models.UniqueConstraint(fields=['campo', 'nome'], name='unique_modelo_texto_rt_campo_nome')]
 
     def __str__(self):
         return f'{self.get_campo_display()} — {self.nome}'
@@ -369,7 +376,7 @@ def assinatura_png_upload_to(instance, filename):
 def assinatura_assinado_upload_to(instance, filename):
     return f"viagens_prestacoes/{instance.prestacao_id or 'nova'}/assinaturas/assinado_{instance.tipo}_{filename}"
 
-class AssinaturaDocumento(models.Model):
+class AssinaturaDocumento(OrigemLegado):
     """Assinatura por link público: apenas SHA-256 do token é persistido.
 
     Cada emissão tem snapshot imutável. Revogações preservam a prova anterior;
@@ -421,7 +428,7 @@ class AssinaturaDocumento(models.Model):
         ordering = ['prestacao', 'tipo']
         verbose_name = 'Assinatura de documento'
         verbose_name_plural = 'Assinaturas de documentos'
-        constraints = [models.UniqueConstraint(fields=['prestacao', 'tipo'], condition=Q(servidor_prestacao__isnull=True) & ~Q(status='cancelada'), name='uniq_assinatura_prestacao_tipo'), models.UniqueConstraint(fields=['servidor_prestacao', 'tipo'], condition=Q(servidor_prestacao__isnull=False) & ~Q(status='cancelada'), name='uniq_assinatura_servidor_tipo'), models.UniqueConstraint(fields=['codigo_verificacao'], condition=~Q(codigo_verificacao=''), name='uniq_assinatura_codigo')]
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_assinaturadocumento_origem"), models.UniqueConstraint(fields=['prestacao', 'tipo'], condition=Q(servidor_prestacao__isnull=True) & ~Q(status='cancelada'), name='uniq_assinatura_prestacao_tipo'), models.UniqueConstraint(fields=['servidor_prestacao', 'tipo'], condition=Q(servidor_prestacao__isnull=False) & ~Q(status='cancelada'), name='uniq_assinatura_servidor_tipo'), models.UniqueConstraint(fields=['codigo_verificacao'], condition=~Q(codigo_verificacao=''), name='uniq_assinatura_codigo')]
 
     def __str__(self):
         return f'Assinatura {self.get_tipo_display()} — {self.prestacao_id}'

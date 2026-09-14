@@ -123,11 +123,35 @@ A lição que fica para as fases seguintes: **suíte verde não é tela conferid
 - Relatório: [FASE_4_OFICIOS_JUSTIFICATIVAS_TERMOS.md](FASE_4_OFICIOS_JUSTIFICATIVAS_TERMOS.md).
   Sem commit/push; alterações prontas para organização após autorização.
 
-### Fase 5 — Prestações de contas (6–9 sessões)
+### Fase 5 — Prestações de contas ✅ (entregue em 10/09/2026)
 
-- F5a: `PrestacaoContas`, `PrestacaoServidor` (soft-remove), `RelatorioTecnico`, `DiarioBordo` (+trechos), anexos com validação, carimbo de nº de solicitação em PDF, downloads consolidados.
-- F5b: **assinatura eletrônica por link público** (token cifrado Fernet — adiciona `cryptography`; confirmação de identidade; carimbo de assinatura; código de verificação).
-- **Gate:** ciclo ofício→prestação→RT/diário→consolidado completo; assinatura pública funcional em F5b.
+- **F5a:** app `viagens_prestacoes`, prestação por ofício e servidor, remoção
+  reversível, roteiro ajustado, diário com trechos/KM, RT e modelos de texto,
+  anexos privados de até 10 MB e carimbo de solicitação por âncora do nome.
+- **Fluxo V3.2:** diário → RT → documentos → PDF final. Consolidação síncrona
+  pela F3, na ordem ofício → despachos → RTs → diários → comprovantes;
+  prioridade de PDF assinado enviado, depois assinado eletronicamente, depois
+  gerado. RT DOCX/PDF e diário XLSX/PDF, binários e goldens preservados.
+- **F5b:** token aleatório `secrets.token_urlsafe(32)`, somente hash SHA-256 no
+  banco, expiração padrão de sete dias, confirmação do nome e cinco primeiros
+  dígitos do CPF. Não há Fernet nem token recuperável no modelo de destino.
+  A divergência da cópia disponível do GV está documentada no relatório.
+- PNG transparente por fonte local ou desenho, sobre snapshot imutável,
+  `reportlab` + `pypdf`, código único de verificação, revogação com histórico e
+  bloqueio de carimbo repetido. CSRF preservado, throttle e limite de identidade
+  persistente. Exceção restrita ao middleware de troca de senha autorizada
+  pelo usuário; rotas internas permanecem sob VIAGENS.
+- **Gate cumprido:** ciclo completo na interface de dev, link aberto em sessão
+  anônima, RT assinado por fonte e diário por desenho, PDFs abertos e conferidos.
+  Página extra de protocolo testada com PDF sintético e geração nativa.
+  **1.050 testes** em PostgreSQL e SQLite, ambos verdes (baseline **737**);
+  quatro skips opcionais de WeasyPrint, mais um de advisory lock no SQLite.
+  Goldens verdes, `check` limpo e nenhuma migração pendente.
+- Quatro comandos de manutenção portados, auditoria integrada e compensação de
+  arquivos em rollback. Origem GV preservada por comparação de 105 hashes.
+  Testes usam mídia temporária; diagnóstico final não encontrou órfãos.
+- Relatório e roteiro para a F6:
+  [FASE_5_PRESTACOES_ASSINATURAS.md](FASE_5_PRESTACOES_ASSINATURAS.md).
 
 ### Fase 6 — Migração de dados do B e virada (3–4 sessões)
 

@@ -1,0 +1,80 @@
+[
+  {
+    "slug": "cargos",
+    "origem": {
+      "label": "Buscar cargos",
+      "placeholder": "Buscar cargos",
+      "type": "text"
+    },
+    "destino": {
+      "label": "Buscar cargos",
+      "placeholder": "Buscar cargos",
+      "type": "search"
+    }
+  },
+  {
+    "slug": "combustiveis",
+    "origem": {
+      "label": "Buscar combustíveis",
+      "placeholder": "Buscar combustíveis",
+      "type": "text"
+    },
+    "destino": {
+      "label": "Buscar combustíveis",
+      "placeholder": "Buscar combustíveis",
+      "type": "search"
+    }
+  },
+  {
+    "slug": "unidades",
+    "origem": {
+      "label": "Buscar unidades",
+      "placeholder": "Buscar unidades",
+      "type": "text"
+    },
+    "destino": {
+      "label": "Buscar unidades",
+      "placeholder": "Buscar unidades",
+      "type": "search"
+    }
+  },
+  {
+    "slug": "servidores",
+    "origem": {
+      "label": "Buscar servidores",
+      "placeholder": "Buscar servidores",
+      "type": "text"
+    },
+    "destino": {
+      "label": "Buscar servidores",
+      "placeholder": "Buscar servidores",
+      "type": "search"
+    }
+  },
+  {
+    "slug": "viaturas",
+    "origem": {
+      "label": "Buscar viaturas",
+      "placeholder": "Buscar viaturas",
+      "type": "text"
+    },
+    "destino": {
+      "label": "Buscar viaturas",
+      "placeholder": "Buscar viaturas",
+      "type": "search"
+    }
+  },
+  {
+    "slug": "estados",
+    "origem": {
+      "label": "Buscar estados",
+      "placeholder": "Buscar estados",
+      "type": "text"
+    },
+    "destino": {
+      "label": "Buscar estados",
+      "placeholder": "Buscar estados",
+      "type": "search"
+    }
+  }
+]

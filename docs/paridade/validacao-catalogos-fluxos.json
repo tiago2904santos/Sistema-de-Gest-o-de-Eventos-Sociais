@@ -1,0 +1,40 @@
+{
+  "escopo": "Estado parcial da Meta 1; não certifica paridade completa",
+  "cadastros": {
+    "postgresql": {
+      "testes": 102,
+      "segundos": 22.327,
+      "resultado": "OK",
+      "log": "logs/paridade-catalogos-fluxos-postgresql.txt"
+    },
+    "sqlite": {
+      "testes": 102,
+      "segundos": 20.937,
+      "resultado": "OK",
+      "log": "logs/paridade-catalogos-fluxos-sqlite.txt"
+    }
+  },
+  "suite_completa": {
+    "postgresql": {
+      "testes": 1088,
+      "segundos": 144.034,
+      "dispensas": 4,
+      "resultado": "OK",
+      "log": "logs/paridade-meta1-parcial-postgresql.txt"
+    },
+    "sqlite": {
+      "testes": 1088,
+      "segundos": 108.008,
+      "dispensas": 5,
+      "resultado": "OK",
+      "log": "logs/paridade-meta1-parcial-sqlite.txt"
+    }
+  },
+  "limites": "As suítes emitiram avisos de datas sem fuso e mensagens dos adaptadores de documentos, inclusive exceções COM; os resultados finais foram OK. Isso não comprova funcionamento visual de todos os fluxos de documentos.",
+  "check": "sem problemas",
+  "makemigrations": "nenhuma mudança",
+  "diff_check": "limpo",
+  "meta_0": "aberta",
+  "meta_1": "em andamento por P04",
+  "decisao_edicao_padrao": "P05 aguardando resposta"
+}

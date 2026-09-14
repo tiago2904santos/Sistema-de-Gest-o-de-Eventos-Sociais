@@ -22,13 +22,16 @@ def is_excel_pdf_available() -> bool:
     if platform.system() != "Windows":
         return False
     try:
+        import pythoncom
         import win32com.client  # noqa: F401
     except ImportError:
         return False
     excel = None
+    inicializado = False
     try:
-        import win32com.client
-
+        # Waitress executa a sonda em threads que ainda não inicializaram COM.
+        pythoncom.CoInitialize()
+        inicializado = True
         excel = win32com.client.DispatchEx("Excel.Application")
         excel.Visible = False
         return True
@@ -41,6 +44,8 @@ def is_excel_pdf_available() -> bool:
                 excel.Quit()
             except Exception:
                 logger.debug("Falha ao encerrar Excel após probe", exc_info=True)
+        if inicializado:
+            pythoncom.CoUninitialize()
 
 
 def convert_xlsx_to_pdf_excel_com(xlsx_bytes: bytes) -> bytes:

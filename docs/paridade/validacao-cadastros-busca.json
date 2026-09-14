@@ -1,0 +1,60 @@
+{
+  "data": "2026-09-10",
+  "escopo": "Meta 1 parcial — busca automática, select de cargo e paginação dos cadastros",
+  "cadastros": {
+    "postgresql": {
+      "testes": 117,
+      "resultado": "OK",
+      "segundos": 26.981,
+      "log": "../../logs/paridade-cadastros-busca-postgresql.txt"
+    },
+    "sqlite": {
+      "testes": 117,
+      "resultado": "OK",
+      "segundos": 18.728,
+      "log": "../../logs/paridade-cadastros-busca-sqlite.txt"
+    }
+  },
+  "suite_completa": {
+    "postgresql": {
+      "testes": 1103,
+      "resultado": "OK",
+      "dispensas": 4,
+      "segundos": 118.813,
+      "log": "../../logs/paridade-cadastros-busca-completa-postgresql.txt"
+    },
+    "sqlite": {
+      "testes": 1103,
+      "resultado": "OK",
+      "dispensas": 5,
+      "segundos": 77.047,
+      "log": "../../logs/paridade-cadastros-busca-completa-sqlite.txt"
+    }
+  },
+  "check": "limpo",
+  "makemigrations": "sem alterações",
+  "diff_check": "sem erros; avisos LF/CRLF nos arquivos existentes",
+  "origem": "6 hashes das rotas conferidos; nenhum comando de escrita ou POST executado na origem nesta rodada",
+  "ensaios": [
+    "meta1-unidades-busca-automatica",
+    "meta1-unidades-paginacao-primeira",
+    "meta1-unidades-paginacao-intermediaria",
+    "meta1-unidades-paginacao-ultima",
+    "meta1-unidades-busca-nome-sem-acento",
+    "meta1-unidades-paginacao-com-busca",
+    "meta1-servidores-filtro-select",
+    "meta1-servidores-filtro-cargo-aplicado",
+    "meta1-servidores-busca-automatica-cargo",
+    "meta1-cargos-busca-automatica",
+    "meta1-combustiveis-busca-automatica",
+    "meta1-viaturas-busca-automatica"
+  ],
+  "limpeza": "97 unidades temporárias identificadas no manifesto e removidas; identidade e ausência de vínculos verificadas antes de excluir",
+  "manifesto": "../../logs/paridade-unidades-paginacao-fixtures.json",
+  "limitacoes": [
+    "Metas 0 e 1 abertas; nenhuma rota certificada.",
+    "P01, P05 e P06 pendentes.",
+    "Os logs completos incluem avisos de datas sem fuso, bibliotecas externas de WeasyPrint e exceções nativas da automação Word (0x800706be), além de falhas simuladas pelos testes. As execuções continuaram e terminaram OK; isso não certifica a conversão documental no ambiente.",
+    "Paginação extensa exercitada no navegador em unidades. Nas outras listas, conferir os demais estados antes de certificar."
+  ]
+}

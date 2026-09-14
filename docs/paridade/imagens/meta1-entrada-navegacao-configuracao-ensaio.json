@@ -1,0 +1,15 @@
+{
+  "origem": {
+    "url": "http://127.0.0.1:8000/cadastros/configuracao/",
+    "titulos": [
+      "Instituição"
+    ]
+  },
+  "destino": {
+    "url": "http://localhost:8021/viagens/oficios/institucional/",
+    "titulos": [
+      "Configuração institucional de viagens"
+    ]
+  },
+  "observacao": "Abrir do cartão Configurações levou às telas existentes. Nenhum formulário enviado; paridade interna da configuração permanece pendente."
+}

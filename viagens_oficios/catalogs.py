@@ -12,7 +12,7 @@ from .forms import ModeloMotivoOficioForm, ModeloJustificativaForm
 from .views import exigir_operador
 from .view_helpers import campos_v32
 
-ConfiguracaoForm = forms.modelform_factory(ConfiguracaoSistema, exclude=['chave', 'sede'], labels={
+ConfiguracaoForm = forms.modelform_factory(ConfiguracaoSistema, exclude=['chave', 'sede', 'legado_origem', 'legado_pk'], labels={
     'prazo_justificativa_dias': 'Prazo mínimo para justificativa (dias)',
     'nome_orgao': 'Nome do órgão', 'sigla_orgao': 'Sigla do órgão', 'cep': 'CEP',
     'cidade_endereco': 'Cidade do endereço', 'uf': 'UF', 'numero': 'Número do endereço',

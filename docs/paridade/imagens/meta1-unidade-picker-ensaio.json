@@ -1,0 +1,187 @@
+{
+  "data": "2026-09-10",
+  "pares": [
+    "meta1-unidade-busca-antes",
+    "meta1-unidade-sem-resultado",
+    "meta1-unidade-limpa",
+    "meta1-unidade-nome-sem-acento",
+    "meta1-unidade-limite-inferior",
+    "meta1-unidade-selecao-teclado",
+    "meta1-unidade-busca-sigla",
+    "meta1-unidade-limite-superior",
+    "meta1-unidade-escape",
+    "meta1-unidade-reaberta",
+    "meta1-unidade-selecao-clique",
+    "meta1-unidade-retorno-viatura",
+    "meta1-unidade-retirada",
+    "meta1-servidor-unidade-inicial",
+    "meta1-servidor-unidade-busca",
+    "meta1-servidor-unidade-selecionada",
+    "meta1-servidor-unidade-sem-resultado",
+    "meta1-servidor-unidade-limpa",
+    "meta1-servidor-unidade-retorno"
+  ],
+  "estados": [
+    {
+      "estado": "limite inferior",
+      "origem": {
+        "active": [
+          "•ASCOM2ASSESSORIA DE COMUNICAÇÃO SOCIAL 2"
+        ],
+        "focus": "combobox",
+        "input": "comunicacao social",
+        "native": ""
+      },
+      "destino": {
+        "active": [
+          "ELBENSAIO LOTAÇÃO BETA 20260910"
+        ],
+        "focus": "combobox",
+        "input": "lotacao",
+        "native": ""
+      }
+    },
+    {
+      "estado": "selecionada teclado",
+      "origem": {
+        "active": [],
+        "focus": "combobox",
+        "input": "ASCOM2",
+        "native": "101"
+      },
+      "destino": {
+        "active": [],
+        "focus": "combobox",
+        "input": "ELB",
+        "native": "101"
+      }
+    },
+    {
+      "estado": "limite superior",
+      "origem": {
+        "active": [
+          "•ASCOMASSESSORIA DE COMUNICAÇÃO SOCIAL"
+        ],
+        "focus": "combobox",
+        "input": "ascom",
+        "native": "101"
+      },
+      "destino": {
+        "active": [
+          "ELAENSAIO LOTAÇÃO ALFA 20260910"
+        ],
+        "focus": "combobox",
+        "input": "el",
+        "native": "101"
+      }
+    },
+    {
+      "estado": "reaberta seta",
+      "origem": {
+        "active": [
+          "•ASCOM2ASSESSORIA DE COMUNICAÇÃO SOCIAL 2"
+        ],
+        "focus": "combobox",
+        "input": "ascom",
+        "native": "101"
+      },
+      "destino": {
+        "active": [
+          "ELBENSAIO LOTAÇÃO BETA 20260910"
+        ],
+        "focus": "combobox",
+        "input": "el",
+        "native": "101"
+      }
+    },
+    {
+      "estado": "retorno viatura",
+      "origem": {
+        "active": [],
+        "focus": null,
+        "input": "ASCOM",
+        "native": "100"
+      },
+      "destino": {
+        "active": [],
+        "focus": null,
+        "input": "ELA",
+        "native": "100"
+      }
+    },
+    {
+      "estado": "retirada após retorno",
+      "origem": {
+        "active": [],
+        "focus": "combobox",
+        "input": "",
+        "native": ""
+      },
+      "destino": {
+        "active": [],
+        "focus": "combobox",
+        "input": "",
+        "native": ""
+      }
+    },
+    {
+      "estado": "servidor enter direto",
+      "origem": {
+        "active": [],
+        "focus": "combobox",
+        "input": "ASCOM",
+        "native": "100"
+      },
+      "destino": {
+        "active": [],
+        "focus": "combobox",
+        "input": "ELA",
+        "native": "100"
+      }
+    },
+    {
+      "estado": "servidor unidade limpa",
+      "origem": {
+        "active": [],
+        "focus": "combobox",
+        "input": "",
+        "native": ""
+      },
+      "destino": {
+        "active": [],
+        "focus": "combobox",
+        "input": "",
+        "native": ""
+      }
+    },
+    {
+      "estado": "retorno servidor",
+      "origem": {
+        "active": [],
+        "focus": null,
+        "input": "ASCOM",
+        "native": "100"
+      },
+      "destino": {
+        "active": [],
+        "focus": null,
+        "input": "ELA",
+        "native": "100"
+      }
+    }
+  ],
+  "temporarios_destino": [
+    {
+      "id": 100,
+      "nome": "ENSAIO LOTAÇÃO ALFA 20260910",
+      "removido": true
+    },
+    {
+      "id": 101,
+      "nome": "ENSAIO LOTAÇÃO BETA 20260910",
+      "removido": true
+    }
+  ],
+  "limpeza_dom": "- banner:\n  - link \"Brasão da Polícia Civil do Paraná Polícia Civil do Paraná\":\n    - /url: /\n    - img \"Brasão da Polícia Civil do Paraná\"\n    - generic: Polícia Civil do Paraná\n  - generic: Sistema de Gestão de Eventos Sociais\n  - link \"Notificações\":\n    - /url: /notificacoes/\n  - button \"Tiago\":\n    - generic: T\n    - generic: Tiago\n- navigation \"Navegação principal\":\n  - link \"Viagens\":\n    - /url: /\n    - generic: Viagens\n  - link \"Prestações\":\n    - /url: /viagens/prestacoes/\n  - link \"Ofícios\":\n    - /url: /viagens/oficios/\n  - link \"Termos\":\n    - /url: /viagens/termos/\n  - link \"Roteiros\":\n    - /url: /viagens/roteiros/\n  - link \"Cadastros\":\n    - /url: /viagens/cadastros/\n- main:\n  - status:\n    - generic: Unidade excluída com sucesso.\n  - heading \"Unidades\" [level=1]\n  - search:\n    - textbox \"Buscar unidades\"\n  - button \"Cadastrar unidade\": + Cadastrar unidade\n  - heading \"Nenhum registro cadastrado\" [level=2]\n  - paragraph: Nenhuma unidade cadastrada ainda.\n  - link \"Voltar ao servidor\":\n    - /url: /viagens/cadastros/servidores/novo/\n- contentinfo:\n  - generic: Ambiente restrito e monitorado\n  - generic: ·\n  - generic: Sistema de Gestão de Eventos Sociais — versão 2.0",
+  "limites": "Sem envio de servidor ou viatura; apenas as duas unidades temporárias foram criadas/removidas no destino. Origem usada por GET e controles locais nesta rodada. P14 anterior permanece pendente."
+}
