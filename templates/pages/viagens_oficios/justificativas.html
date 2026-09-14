@@ -30,7 +30,7 @@
 
   {% if pode_editar %}
     <section class="pa-card v32-bloco jt-rapida" id="inclusao-rapida"{% if not abrir_inclusao %} hidden{% endif %}>
-      <form method="post" class="v32-corpo" id="form-inclusao-rapida" novalidate data-jt-rapida data-url-busca="{{ url_busca }}" data-limite="{{ limite_busca }}">
+      <form method="post" class="v32-corpo" id="form-inclusao-rapida" novalidate data-jt-rapida>
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ url_atual }}">
         <div class="v32-secao-cabecalho">
@@ -39,20 +39,20 @@
         </div>
         {% if form.non_field_errors %}{% for erro in form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}{% endif %}
         <div class="g-form g-form--2 jt-rapida__grade">
-          <div class="form-campo cheia jt-picker{% if form.errors.oficios %} is-invalid{% endif %}" data-jt-picker>
+          <div class="form-campo cheia jt-picker{% if form.errors.oficios %} is-invalid{% endif %}" data-picker-oficios data-url-busca="{{ url_busca }}" data-limite="{{ limite_busca }}" data-nome="{{ form.oficios.html_name }}">
             <label class="form-label" for="id_jt_busca">Ofícios <span class="form-label__obrigatorio">*</span></label>
             <div class="busca">
               <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
-              <input class="form-controle" type="search" id="id_jt_busca" placeholder="Buscar ofício por número, protocolo, viajante ou destino" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="jt-resultados" aria-autocomplete="list" data-jt-busca>
+              <input class="form-controle" type="search" id="id_jt_busca" placeholder="Buscar ofício por número, protocolo, viajante ou destino" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="jt-resultados" aria-autocomplete="list" data-picker-busca>
             </div>
-            <div class="custom-select__menu jt-picker__menu" id="jt-resultados" role="listbox" aria-label="Ofícios encontrados" data-jt-resultados hidden></div>
-            <p class="form-ajuda" data-jt-dica>Digite para buscar. A busca devolve até {{ limite_busca }} ofícios; refine o termo se o que procura não aparecer.</p>
-            <ul class="multi-pick__escolhidos jt-escolhidos" data-jt-escolhidos aria-live="polite">
+            <div class="custom-select__menu jt-picker__menu" id="jt-resultados" role="listbox" aria-label="Ofícios encontrados" data-picker-resultados hidden></div>
+            <p class="form-ajuda">Digite para buscar. A busca devolve até {{ limite_busca }} ofícios; refine o termo se o que procura não aparecer.</p>
+            <ul class="multi-pick__escolhidos jt-escolhidos" data-picker-escolhidos aria-live="polite">
               {% for o in escolhidos %}
                 <li class="multi-pick__escolhido" data-id="{{ o.id }}">
                   <input type="hidden" name="{{ form.oficios.html_name }}" value="{{ o.id }}">
                   <span>{{ o.main }}{% if o.meta %}<small>{{ o.meta }}</small>{% endif %}</span>
-                  <button type="button" class="multi-pick__remover" aria-label="Remover {{ o.main }}" data-jt-remover>×</button>
+                  <button type="button" class="multi-pick__remover" aria-label="Remover {{ o.main }}" data-picker-remover>×</button>
                 </li>
               {% endfor %}
             </ul>
@@ -163,5 +163,6 @@
 {% block extra_js %}
   {{ block.super }}
   {{ modelos_texto|json_script:"oficio-modelos-texto" }}
+  <script src="{% estatico 'js/viagens-picker-oficios.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-justificativas.js' %}" defer></script>
 {% endblock %}

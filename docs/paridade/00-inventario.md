@@ -18,7 +18,7 @@
 | roteiros | 11 | viagens_roteiros | 14 |
 | oficios | 31 | viagens_oficios | 15 |
 | justificativas | 12 | catálogo e campos em viagens_oficios | compartilhados com os 15 acima |
-| termos | 23 | viagens_termos e geração por ofício | 9 no app de termos |
+| termos | 23 | viagens_termos e geração por ofício | 12 no app de termos |
 | prestacoes_contas | 52 | viagens_prestacoes e viagens_assinaturas | 47 internos + 6 públicos |
 
 Os cinco apps de viagens e o namespace público de assinaturas somam **100 padrões atuais**, antes de contar os cadastros gerais e outros auxiliares. A referência a cinco rotas de Prestações no pedido não descreve mais o código: a F5 já ampliou esse conjunto. Isso não reduz a dívida de interface.
@@ -152,29 +152,29 @@ Cada tela receberá um arquivo `<app>-<tela>.md`, com as quatro tabelas de campo
 
 | Rota da origem | Destino correspondente | Situação | Evidência e pendência |
 |---|---|---|---|
-| `termos:index`<br>`/termos/` | `viagens_termos:lista`<br>`/viagens/termos/` | existe e está incompleta | Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem. Fonte: `termos/urls.py:9`. |
-| `termos:api_buscar_oficios`<br>`/termos/api/oficios/` | — | não existe | Busca remota de ofícios para o cadastro de termos não localizada. Fonte: `termos/urls.py:10`. |
-| `termos:novo`<br>`/termos/novo/` | `viagens_termos:novo`<br>`/viagens/termos/novo/` | existe e está incompleta | Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem. Fonte: `termos/urls.py:11`. |
-| `termos:editar`<br>`/termos/<int:pk>/editar/` | `viagens_termos:editar`<br>`/viagens/termos/<int:pk>/editar/` | existe e está incompleta | Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem. Fonte: `termos/urls.py:12`. |
-| `termos:excluir`<br>`/termos/<int:pk>/excluir/` | `viagens_termos:acao`<br>`/viagens/termos/<int:pk>/acao/<str:acao>/`<br>`acao=excluir` | existe e está incompleta | Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem. Fonte: `termos/urls.py:13`. |
-| `termos:termo_cadastro_downloads`<br>`/termos/<int:pk>/downloads/` | `viagens_termos:detalhe`<br>`/viagens/termos/<int:pk>/` | existe e está incompleta | Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem. Fonte: `termos/urls.py:14`. |
-| `termos:termo_cadastro_pdf_inline`<br>`/termos/<int:pk>/pdf-inline/` | `viagens_termos:preview`<br>`/viagens/termos/<int:pk>/preview/` | existe e está incompleta | Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem. Fonte: `termos/urls.py:15`. |
-| `termos:termo_cadastro_generico_pdf_inline`<br>`/termos/<int:pk>/pdf-inline/generico/` | `viagens_termos:preview`<br>`/viagens/termos/<int:pk>/preview/` | existe e está incompleta | Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem. Fonte: `termos/urls.py:16`. |
-| `termos:termo_cadastro_servidor_pdf_inline`<br>`/termos/<int:pk>/servidor/<int:servidor_pk>/pdf-inline/` | `viagens_termos:preview_servidor`<br>`/viagens/termos/<int:pk>/preview/<int:servidor_id>/` | existe e está incompleta | Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem. Fonte: `termos/urls.py:21`. |
-| `termos:baixar_termo_cadastro_pdf`<br>`/termos/<int:pk>/pdf/` | `viagens_termos:lote`<br>`/viagens/termos/<int:pk>/gerar/<str:formato>/` | existe e está incompleta | Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem. Fonte: `termos/urls.py:26`. |
-| `termos:baixar_termo_cadastro_docx`<br>`/termos/<int:pk>/docx/` | `viagens_termos:lote`<br>`/viagens/termos/<int:pk>/gerar/<str:formato>/` | existe e está incompleta | Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem. Fonte: `termos/urls.py:27`. |
-| `termos:termo_cadastro_generico_assinado_anexar`<br>`/termos/<int:pk>/generico/assinado/anexar/` | `viagens_oficios:assinatura_artefato`<br>`/viagens/oficios/documentos/<uuid:pk>/assinatura/` | existe e está incompleta | Anexação por UUID disponível; faltam pontos de entrada por termo/ofício, servidor e modalidade. Fonte: `termos/urls.py:28`. |
-| `termos:termo_cadastro_servidor_assinado_anexar`<br>`/termos/<int:pk>/servidor/<int:servidor_pk>/assinado/anexar/` | `viagens_oficios:assinatura_artefato`<br>`/viagens/oficios/documentos/<uuid:pk>/assinatura/` | existe e está incompleta | Anexação por UUID disponível; faltam pontos de entrada por termo/ofício, servidor e modalidade. Fonte: `termos/urls.py:33`. |
-| `termos:termo_cadastro_viatura_pdf_inline`<br>`/termos/<int:pk>/viatura/pdf-inline/` | `viagens_termos:preview`<br>`/viagens/termos/<int:pk>/preview/` | existe e está incompleta | Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem. Fonte: `termos/urls.py:40`. |
-| `termos:baixar_termo_cadastro_viatura`<br>`/termos/<int:pk>/viatura/<str:formato>/` | `viagens_termos:lote`<br>`/viagens/termos/<int:pk>/gerar/<str:formato>/` | existe e está incompleta | Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem. Fonte: `termos/urls.py:45`. |
-| `termos:baixar_termo_cadastro_generico`<br>`/termos/<int:pk>/generico/<str:formato>/` | `viagens_termos:lote`<br>`/viagens/termos/<int:pk>/gerar/<str:formato>/` | existe e está incompleta | Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem. Fonte: `termos/urls.py:50`. |
-| `termos:baixar_termo_cadastro_servidor`<br>`/termos/<int:pk>/servidor/<int:servidor_pk>/<str:formato>/` | `viagens_termos:gerar`<br>`/viagens/termos/<int:pk>/gerar/<int:servidor_id>/<str:formato>/` | existe e está incompleta | Correspondência parcial: formulário/lista genéricos, prévia HTML e modos/lotes sem prova de equivalência ao PDF e à composição da origem. Fonte: `termos/urls.py:55`. |
-| `termos:preview_termo_oficio`<br>`/termos/oficio/<int:pk>/preview/` | `viagens_oficios:detalhe`<br>`/viagens/oficios/<int:pk>/` | existe e está incompleta | Fluxo relacionado disponível no ofício; conferir prévia por servidor, modos, PDF consolidado versus ZIP, nomes e estados. Fonte: `termos/urls.py:60`. |
-| `termos:termo_servidor_pdf_inline`<br>`/termos/oficio/<int:pk>/servidor/<int:servidor_pk>/pdf-inline/` | `viagens_oficios:preview_artefato`<br>`/viagens/oficios/documentos/<uuid:pk>/preview/` | existe e está incompleta | Fluxo relacionado disponível no ofício; conferir prévia por servidor, modos, PDF consolidado versus ZIP, nomes e estados. Fonte: `termos/urls.py:61`. |
-| `termos:termo_oficio_assinado_anexar`<br>`/termos/oficio/<int:pk>/servidor/<int:servidor_pk>/assinado/anexar/` | `viagens_oficios:assinatura_artefato`<br>`/viagens/oficios/documentos/<uuid:pk>/assinatura/` | existe e está incompleta | Anexação por UUID disponível; faltam pontos de entrada por termo/ofício, servidor e modalidade. Fonte: `termos/urls.py:66`. |
-| `termos:baixar_termo_servidor`<br>`/termos/oficio/<int:pk>/servidor/<int:servidor_pk>/<str:formato>/` | `viagens_oficios:termo`<br>`/viagens/oficios/<int:pk>/termos/<int:servidor_id>/<str:formato>/` | existe e está incompleta | Fluxo relacionado disponível no ofício; conferir prévia por servidor, modos, PDF consolidado versus ZIP, nomes e estados. Fonte: `termos/urls.py:71`. |
-| `termos:baixar_termos_todos_pdf`<br>`/termos/oficio/<int:pk>/todos/pdf/` | `viagens_oficios:termos_lote`<br>`/viagens/oficios/<int:pk>/termos/<str:formato>/` | existe e está incompleta | Fluxo relacionado disponível no ofício; conferir prévia por servidor, modos, PDF consolidado versus ZIP, nomes e estados. Fonte: `termos/urls.py:76`. |
-| `termos:baixar_termo_lote_zip`<br>`/termos/oficio/<int:pk>/lote/<str:formato>/` | `viagens_oficios:termos_lote`<br>`/viagens/oficios/<int:pk>/termos/<str:formato>/` | existe e está incompleta | Fluxo relacionado disponível no ofício; conferir prévia por servidor, modos, PDF consolidado versus ZIP, nomes e estados. Fonte: `termos/urls.py:81`. |
+| `termos:index`<br>`/termos/` | `viagens_termos:lista`<br>`/viagens/termos/` | existe e está fiel | cartão, busca, situações e menus (`termos-lista.md`). Fonte: `termos/urls.py:9` |
+| `termos:api_buscar_oficios`<br>`/termos/api/oficios/` | `viagens_termos:api_buscar_oficios`<br>`/viagens/termos/api/oficios/` | existe e está fiel | mesma busca de ofícios das justificativas, teto de 30 (`termos-form.md`). Fonte: `termos/urls.py:10` |
+| `termos:novo`<br>`/termos/novo/` | `viagens_termos:novo`<br>`/viagens/termos/novo/` | existe e está fiel | cadastro por blocos com seletor de ofício, destinos adicionais, período, servidores e viatura (`termos-form.md`). Fonte: `termos/urls.py:11` |
+| `termos:editar`<br>`/termos/<int:pk>/editar/` | `viagens_termos:editar`<br>`/viagens/termos/<int:pk>/editar/` | existe e está fiel | idem, com o que herda do ofício (`termos-form.md`). Fonte: `termos/urls.py:12` |
+| `termos:excluir`<br>`/termos/<int:pk>/excluir/` | `viagens_termos:acao`<br>`/viagens/termos/<int:pk>/acao/<str:acao>/`<br>`acao=excluir` | existe e está fiel | confirmação em dois cliques na lista e no menu do detalhe (`termos-lista.md`). Fonte: `termos/urls.py:13` |
+| `termos:termo_cadastro_downloads`<br>`/termos/<int:pk>/downloads/` | `viagens_termos:detalhe`<br>`/viagens/termos/<int:pk>/` | existe e está fiel | "Escolher documentos para baixar": por servidor, genérico, viatura, todos (`termos-documentos.md`). Fonte: `termos/urls.py:14` |
+| `termos:termo_cadastro_pdf_inline`<br>`/termos/<int:pk>/pdf-inline/` | `viagens_termos:gerar`<br>`/viagens/termos/<int:pk>/gerar/0/pdf/?inline=1` | existe e está fiel | PDF genérico em nova aba; prévia em tela em `viagens_termos:preview` (`termos-documentos.md`). Fonte: `termos/urls.py:15` |
+| `termos:termo_cadastro_generico_pdf_inline`<br>`/termos/<int:pk>/pdf-inline/generico/` | `viagens_termos:gerar`<br>`/viagens/termos/<int:pk>/gerar/0/pdf/?inline=1` | existe e está fiel | "Visualizar termo genérico" (`termos-documentos.md`). Fonte: `termos/urls.py:16` |
+| `termos:termo_cadastro_servidor_pdf_inline`<br>`/termos/<int:pk>/servidor/<int:servidor_pk>/pdf-inline/` | `viagens_termos:gerar`<br>`/viagens/termos/<int:pk>/gerar/<int:servidor_id>/pdf/?inline=1` | existe e está fiel | "Visualizar" por servidor; prévia em tela em `viagens_termos:preview_servidor` (`termos-documentos.md`). Fonte: `termos/urls.py:21` |
+| `termos:baixar_termo_cadastro_pdf`<br>`/termos/<int:pk>/pdf/` | `viagens_termos:todos_pdf`<br>`/viagens/termos/<int:pk>/todos/pdf/` | existe e está fiel | um PDF só com todos os termos, `termo-<pk>-todos.pdf` (`termos-documentos.md`). Fonte: `termos/urls.py:26` |
+| `termos:baixar_termo_cadastro_docx`<br>`/termos/<int:pk>/docx/` | `viagens_termos:lote`<br>`/viagens/termos/<int:pk>/gerar/docx/` | existe e está fiel | ZIP com os DOCX de todos os servidores (`termos-documentos.md`). Fonte: `termos/urls.py:27` |
+| `termos:termo_cadastro_generico_assinado_anexar`<br>`/termos/<int:pk>/generico/assinado/anexar/` | `viagens_oficios:assinatura_artefato`<br>`/viagens/oficios/documentos/<uuid:pk>/assinatura/` | existe e está fiel | ponto de entrada no menu "Anexar termo assinado" da lista e nos documentos gerados (`termos-lista.md`). Fonte: `termos/urls.py:28` |
+| `termos:termo_cadastro_servidor_assinado_anexar`<br>`/termos/<int:pk>/servidor/<int:servidor_pk>/assinado/anexar/` | `viagens_oficios:assinatura_artefato`<br>`/viagens/oficios/documentos/<uuid:pk>/assinatura/` | existe e está fiel | por servidor, na lista e no detalhe; inativo até haver PDF (`termos-documentos.md`). Fonte: `termos/urls.py:33` |
+| `termos:termo_cadastro_viatura_pdf_inline`<br>`/termos/<int:pk>/viatura/pdf-inline/` | `viagens_termos:gerar_viatura`<br>`/viagens/termos/<int:pk>/gerar/viatura/pdf/?inline=1` | existe e está fiel | "Visualizar termo da viatura" (`termos-documentos.md`). Fonte: `termos/urls.py:40` |
+| `termos:baixar_termo_cadastro_viatura`<br>`/termos/<int:pk>/viatura/<str:formato>/` | `viagens_termos:gerar_viatura`<br>`/viagens/termos/<int:pk>/gerar/viatura/<str:formato>/` | existe e está fiel | PDF e DOCX da viatura com campos do servidor em branco (`termos-documentos.md`). Fonte: `termos/urls.py:45` |
+| `termos:baixar_termo_cadastro_generico`<br>`/termos/<int:pk>/generico/<str:formato>/` | `viagens_termos:gerar`<br>`/viagens/termos/<int:pk>/gerar/0/<str:formato>/` | existe e está fiel | PDF e DOCX do genérico (`termos-documentos.md`). Fonte: `termos/urls.py:50` |
+| `termos:baixar_termo_cadastro_servidor`<br>`/termos/<int:pk>/servidor/<int:servidor_pk>/<str:formato>/` | `viagens_termos:gerar`<br>`/viagens/termos/<int:pk>/gerar/<int:servidor_id>/<str:formato>/` | existe e está fiel | PDF e DOCX por servidor (`termos-documentos.md`). Fonte: `termos/urls.py:55` |
+| `termos:preview_termo_oficio`<br>`/termos/oficio/<int:pk>/preview/` | `viagens_oficios:detalhe`<br>`/viagens/oficios/<int:pk>/` | existe e está fiel | termos por servidor e em lote na conferência do ofício (`oficios-detalhe.md`). Fonte: `termos/urls.py:60` |
+| `termos:termo_servidor_pdf_inline`<br>`/termos/oficio/<int:pk>/servidor/<int:servidor_pk>/pdf-inline/` | `viagens_oficios:termo`<br>`/viagens/oficios/<int:pk>/termos/<int:servidor_id>/pdf/?inline=1` | existe e está fiel | "Visualizar termo" no menu do servidor (`oficios-menus.md`). Fonte: `termos/urls.py:61` |
+| `termos:termo_oficio_assinado_anexar`<br>`/termos/oficio/<int:pk>/servidor/<int:servidor_pk>/assinado/anexar/` | `viagens_oficios:assinatura_artefato`<br>`/viagens/oficios/documentos/<uuid:pk>/assinatura/` | existe e está fiel | "Anexar assinado" no menu do termo do servidor (`oficios-menus.md`). Fonte: `termos/urls.py:66` |
+| `termos:baixar_termo_servidor`<br>`/termos/oficio/<int:pk>/servidor/<int:servidor_pk>/<str:formato>/` | `viagens_oficios:termo`<br>`/viagens/oficios/<int:pk>/termos/<int:servidor_id>/<str:formato>/` | existe e está fiel | PDF e DOCX por servidor no ofício (`oficios-detalhe.md`). Fonte: `termos/urls.py:71` |
+| `termos:baixar_termos_todos_pdf`<br>`/termos/oficio/<int:pk>/todos/pdf/` | `viagens_oficios:termos_todos_pdf`<br>`/viagens/oficios/<int:pk>/termos/todos/pdf/` | existe e está fiel | um PDF só com os termos do ofício (`oficios-detalhe.md`). Fonte: `termos/urls.py:76` |
+| `termos:baixar_termo_lote_zip`<br>`/termos/oficio/<int:pk>/lote/<str:formato>/` | `viagens_oficios:termos_lote`<br>`/viagens/oficios/<int:pk>/termos/<str:formato>/` | existe e está fiel | ZIP de PDFs ou DOCX (`oficios-detalhe.md`). Fonte: `termos/urls.py:81` |
 
 ### prestacoes_contas
 
@@ -500,3 +500,43 @@ módulo. Sem fotografia da origem no repositório: a régua foi o código portad
 
 **Prova.** 8 testes novos em `viagens_oficios/tests/test_paridade_meta4.py`.
 Capturas em `imagens/meta4-*.png`.
+
+## Meta 5 — Termos de autorização, comparada em 14/09/2026
+
+As 23 rotas do app `termos` da origem estão cobertas: as 14 do cadastro de
+termos pelo app `viagens_termos` e as 9 "pelo ofício" pela conferência do
+ofício (Meta 3), agora com `viagens_oficios:termos_todos_pdf` para o PDF
+único. Fichas em `termos-lista.md`, `termos-form.md` e
+`termos-documentos.md`.
+
+**Lista.** A tabela genérica Termo/Ofício/Destino/Período virou o cartão da
+origem, conferido com a árvore acessível da Meta 0: título
+"DESTINO/PR · período" (só "PR" quando há apenas a UF), selo "Realizado" /
+"Sem período", linha "Ofício: N/AAAA · servidores · placa modelo", e os
+quatro comandos — escolher documentos para baixar, anexar termo assinado,
+editar e excluir. Busca pelo placeholder da origem (destino, ofício,
+protocolo, viatura ou servidor) e as quatro situações combináveis do módulo
+no lugar do combobox único. O destino herdado do ofício passou a sair como
+"Cidade/UF", como o próprio.
+
+**Cadastro.** `form_simples.html` saiu; a tela tem os blocos da origem:
+ofício vinculado com busca no servidor (o mesmo seletor das justificativas,
+um só ofício), destino com destinos adicionais e "Adicionar destino" sem
+gravar, período, servidores com busca e viatura; ao editar, o aviso do que
+o termo herda do ofício. Corrigido de passagem: os pares de destino
+adicional não levavam `name` no template anterior desta rodada.
+
+**Documentos.** O detalhe reúne o `termo_cadastro_downloads`: por servidor
+(visualizar, PDF, DOCX, anexar assinado), genérico, viatura (variante
+completa com os campos do servidor em branco), todos num PDF só
+(`todos/pdf/`, consolidado com pypdf) ou em ZIP, documentos gerados e a
+prévia em tela com troca de servidor. Cancelar com motivo, reativar e
+excluir no mesmo padrão dos ofícios.
+
+**Prova.** 20 testes novos em `viagens_oficios/tests/test_paridade_meta5.py`;
+a suíte dos apps de viagens foi a 407 casos. Capturas em
+`imagens/meta5-*.png`, ao lado das da origem (`meta0-termos-origem.png`).
+
+**Pendências.** P23 (conferência do cadastro e dos downloads contra a
+origem, sem fotografia aqui) e P24 (os selos "Previsto", "Em andamento" e
+"Cancelado", que completam os dois da origem).

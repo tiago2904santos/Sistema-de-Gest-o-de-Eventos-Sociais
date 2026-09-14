@@ -292,6 +292,28 @@ def gerar(request, pk, tipo, formato):
 
 @acesso_ao_modulo
 @require_POST
+def termos_todos_pdf(request, pk):
+    """Todos os termos do ofício num PDF só — `baixar_termos_todos_pdf` da origem."""
+    from viagens_termos.services import gerar_termo_lote
+    from viagens_termos.views import resposta_pdf_consolidado
+    exigir_operador(request)
+    oficio = get_oficio_by_id(pk)
+    if oficio.cancelado:
+        messages.error(request, 'Reative o ofício antes de gerar termos.')
+        return redirect('viagens_oficios:detalhe', pk=pk)
+    try:
+        documentos = gerar_termo_lote(oficio, DocumentoFormato.PDF)
+    except (ValidationError, DocumentError) as exc:
+        messages.error(request, '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
+        return redirect('viagens_oficios:detalhe', pk=pk)
+    if not documentos:
+        messages.error(request, 'Nenhum servidor selecionado para termo neste ofício.')
+        return redirect('viagens_oficios:detalhe', pk=pk)
+    return resposta_pdf_consolidado(documentos, f"{oficio.numero_formatado.replace('/', '-')}-termos.pdf")
+
+
+@acesso_ao_modulo
+@require_POST
 def termos(request, pk, formato, servidor_id=None):
     from viagens_termos.services import gerar_termo_um, gerar_termo_lote
     exigir_operador(request)

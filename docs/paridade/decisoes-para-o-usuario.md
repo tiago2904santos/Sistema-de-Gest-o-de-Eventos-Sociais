@@ -170,6 +170,22 @@ Como no formulário do ofício (P18), a tela de justificativas foi reconstruída
 
 > Sua resposta: ______
 
+### P23 — Conferência do cadastro e dos downloads de termos contra a origem (Meta 5)
+
+A lista de termos foi conferida com a árvore acessível da Meta 0. O cadastro (`/termos/novo/`) e a tela de downloads (`/termos/<pk>/downloads/`) não têm fotografia da origem neste repositório e foram reconstruídos a partir do formulário, das rotas e dos serviços portados na F4. Abra as duas telas lá e `/viagens/termos/novo/` e `/viagens/termos/<pk>/` aqui e aponte o que divergir.
+
+**Recomendação: conferir.** Capturas em `imagens/meta5-termo-form-*.png` e `imagens/meta5-termo-detalhe-*.png`.
+
+> Sua resposta: ______
+
+### P24 — Selos do termo além de "Realizado" e "Sem período"
+
+A foto da origem só mostra dois selos: "Realizado" (período no passado) e "Sem período". Para os termos com período futuro ou em curso, e para os cancelados, a tela daqui usa "Previsto", "Em andamento" e "Cancelado", na mesma régua das situações da lista.
+
+**Recomendação: manter os cinco selos.** Se a origem tiver palavras próprias para esses casos, basta trocar os rótulos em `viagens_termos/presenters.py`.
+
+> Sua resposta: ______
+
 ---
 
 ## Resumo das recomendações
@@ -194,3 +210,5 @@ Como no formulário do ofício (P18), a tela de justificativas foi reconstruída
 | P20 | `form_simples.html` nas telas fora da meta | Deixar para as metas donas |
 | P21 | Aliases legados de justificativas | Não trazer, autorizar a ausência |
 | P22 | Conferir a tela de justificativas contra a origem | Conferir |
+| P23 | Conferir o cadastro e os downloads de termos contra a origem | Conferir |
+| P24 | Selos do termo além de "Realizado" e "Sem período" | Manter os cinco |

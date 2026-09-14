@@ -119,6 +119,7 @@
         {% if pode_editar and not o.cancelado and c.equipe %}
           <div class="of-lote">
             <span class="v32-suave">Termos de autorização em lote:</span>
+            <form method="post" action="{% url 'viagens_oficios:termos_todos_pdf' o.pk %}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="document" %}Todos num PDF</button></form>
             <form method="post" action="{% url 'viagens_oficios:termos_lote' o.pk 'pdf' %}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="download" %}Todos em PDF (ZIP)</button></form>
             <form method="post" action="{% url 'viagens_oficios:termos_lote' o.pk 'docx' %}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="document" %}Todos em DOCX (ZIP)</button></form>
           </div>

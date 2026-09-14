@@ -1188,3 +1188,32 @@ a.step-i{text-decoration:none;color:inherit}
 .jt-texto .of-pessoa__nome .v32-suave{font-weight:400}
 @container(max-width:900px){.jt-grade{grid-template-columns:1fr}}
 @container(max-width:680px){.jt-regra{grid-template-columns:1fr}}
+
+/* Termos de autorização (Meta 5): a linha da origem — título com destino e
+   período, selo, descrição e quatro ações à direita — e o cadastro nos blocos
+   do editor. */
+.tm-cartao{padding:14px 18px}
+.tm-cartao__corpo{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.tm-cartao .of-cartao__titulo{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tm-cartao .of-cartao__titulo .st{font-weight:500}
+.tm-herdados{color:var(--d-700)}
+.tm-acoes{flex:none}
+.ib-linha--perigo{color:var(--dg-t)!important}
+.ib-linha--perigo:hover{border-color:var(--dg-r)!important;background:var(--dg-b)!important}
+.tm-cartao .acoes form{margin:0}
+.tm-form .editor-roteiro__rodape{grid-column:1/-1}
+.tm-adicional{margin-bottom:10px}
+.tm-form .aviso-rota{margin-top:12px}
+.tm-servidor{grid-column:1/-1}
+.tm-servidor__acoes{margin-left:auto;flex-wrap:wrap}
+.tm-servidor__acoes form{margin:0}
+.tm-servidor__acoes .acao-linha{height:32px}
+.tm-grupos{display:grid;gap:10px;margin:14px 0 18px}
+.tm-grupos .of-emitir__grupo>strong{min-width:150px}
+.tm-grupos .of-emitir__grupo>.v32-suave{flex:1 1 100%;margin:-4px 0 2px}
+.tm-grupos .btn-primaria,.tm-grupos .btn--secundaria{height:36px;font-size:12.5px}
+.tm-documento{max-width:820px;padding:32px 40px}
+.tm-documento__cabecalho{margin:0 0 4px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--n-500);text-align:center}
+.tm-documento__titulo{margin:0 0 24px;font-size:20px;text-align:center;letter-spacing:.04em}
+.tm-documento__texto{margin:14px 0 0;font-size:14px;line-height:1.7;text-align:justify}
+@container(max-width:900px){.tm-cartao__corpo{flex-direction:column;align-items:flex-start}.tm-acoes{align-self:flex-end}}
