@@ -32,8 +32,6 @@
   </td>
   <td data-rotulo="Destino">
     <span class="trecho-linha__cidade" data-trecho-destino-rotulo>—</span>
-    {# Só no último deslocamento: é a volta para a sede. #}
-    <span class="trecho-linha__tag" data-trecho-tag hidden>Retorno</span>
   </td>
   <td data-rotulo="Data de saída">
     {% include "components/input.html" with name=trecho.saida_data.html_name label="Data de saída" rotulo_oculto=True tipo="date" valor=trecho.saida_data.value|default_if_none:"" erros=trecho.saida_data.errors %}

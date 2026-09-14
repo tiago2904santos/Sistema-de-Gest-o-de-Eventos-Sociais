@@ -30,7 +30,7 @@
           <span><small>15% da diária</small><strong data-diaria-15>R$ 0,00</strong></span>
           <span><small>30% da diária</small><strong data-diaria-30>R$ 0,00</strong></span>
         </div>
-        <p class="form-ajuda">{% include "components/icon.html" with nome="info" %} Os percentuais não são editáveis: o servidor os grava a partir do valor de 24 horas.</p>
+        <p class="form-ajuda diaria-previa__nota">{% include "components/icon.html" with nome="info" %}<span>Os percentuais não são editáveis: o servidor os grava a partir do valor de 24 horas.</span></p>
       {% endif %}
     {% endfor %}
     <p class="form-erro" data-cadastro-falha role="alert" hidden></p>

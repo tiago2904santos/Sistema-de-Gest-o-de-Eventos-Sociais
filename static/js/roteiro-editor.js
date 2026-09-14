@@ -454,8 +454,6 @@
     var destino = rotulos[valorDe(linha, "destino_municipio")] || "";
     escreverEm(linha, "[data-trecho-origem-rotulo]", origem || "—");
     escreverEm(linha, "[data-trecho-destino-rotulo]", destino || "—");
-    var tag = linha.querySelector("[data-trecho-tag]");
-    if (tag) tag.hidden = linha.getAttribute("data-sentido") !== "RETORNO";
   }
 
   function viagemDe(linha) { return inteiroDe(valorDe(linha, "tempo_viagem_min")); }
