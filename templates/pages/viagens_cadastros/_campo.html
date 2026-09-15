@@ -54,6 +54,8 @@
     </label>
     {% for erro in campo.erros %}<p class="form-erro"{% if forloop.first %} id="id_{{ campo.name }}_erro"{% endif %}>{{ erro }}</p>{% endfor %}
   </div>
+{% elif campo.tipo == "textarea" %}
+  {% include "components/textarea.html" with name=campo.name label=campo.label largura=campo.largura linhas=campo.linhas placeholder=campo.placeholder obrigatorio=campo.obrigatorio valor=campo.valor erros=campo.erros ajuda=campo.ajuda %}
 {% elif campo.tipo == "data" %}
   {% include "components/input.html" with name=campo.name label=campo.label largura=campo.largura tipo="date" obrigatorio=campo.obrigatorio valor=campo.valor erros=campo.erros ajuda=campo.ajuda %}
 {% else %}

@@ -27,7 +27,14 @@ class ViagensCadastrosConfig(AppConfig):
             ordem=40,
             itens=[
                 {"rotulo": "Prestações", "icone": "checklist", "url": "viagens_prestacoes:index"},
-                {"rotulo": "Ofícios", "icone": "file-text", "url": "viagens_oficios:lista"},
+                # Ofícios e Justificativas dividem o namespace: o nome da rota
+                # decide qual item fica aceso.
+                {"rotulo": "Ofícios", "icone": "file-text", "url": "viagens_oficios:lista",
+                 "url_names": ("lista", "novo", "criar", "editar", "detalhe", "acao", "gerar", "termos_lote", "termo",
+                               "catalogo", "catalogo_novo", "catalogo_editar", "numeracao", "institucional",
+                               "assinatura_artefato", "preview_artefato")},
+                {"rotulo": "Justificativas", "icone": "document", "url": "viagens_oficios:justificativas",
+                 "url_names": ("justificativas", "justificativa_excluir", "justificativas_buscar_oficios")},
                 {"rotulo": "Termos", "icone": "file-text", "url": "viagens_termos:lista"},
                 {
                     "rotulo": "Roteiros",

@@ -1,13 +1,157 @@
 {% extends "layouts/app_shell_v32.html" %}
-{% load static %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/viagens-documentos.css' %}">{% endblock %}
-{% block title %}{{ termo }}{% endblock %}
+{% comment %}
+  Termo de autorização — resumo e documentos para baixar (o
+  `termo_cadastro_downloads` da origem): termo por servidor, genérico
+  (semipreenchido), da viatura, todos num PDF ou em ZIP, anexação do PDF
+  assinado, e as ações de editar, cancelar, reativar e excluir.
+{% endcomment %}
+
+{% block title %}Termo #{{ termo.pk }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
 {% block conteudo %}
-{% url 'viagens_termos:editar' termo.pk as editar %}
-{% if pode_editar %}{% include "components/v32/page_header.html" with titulo=termo acao_label="Editar termo" acao_url=editar %}{% else %}{% include "components/v32/page_header.html" with titulo=termo %}{% endif %}
-<section class="pa-card v32-corpo v32-bloco"><a href="{% url 'viagens_termos:lista' %}">Todos os termos</a><p>{{ termo.destino_display }} · {{ termo.periodo_display }}</p><p>{{ termo.oficio|default:"Termo avulso" }} · {{ termo.viatura_efetiva|default:"Sem viatura" }}</p><p>{% if termo.cancelado %}Cancelado: {{ termo.motivo_cancelamento }}{% else %}Ativo{% endif %}</p><a href="{% url 'viagens_termos:preview' termo.pk %}">Conferir prévia</a></section>
-<section class="pa-card v32-corpo v32-bloco"><h2>Servidores e documentos</h2>{% for s in servidores %}<div class="v32-barra"><strong>{{ s.nome }}</strong><a href="{% url 'viagens_termos:preview_servidor' termo.pk s.pk %}">Prévia</a>{% if pode_editar and not termo.cancelado %}<form method="post" action="{% url 'viagens_termos:gerar' termo.pk s.pk 'docx' %}">{% csrf_token %}<button class="btn--secundaria">DOCX</button></form><form method="post" action="{% url 'viagens_termos:gerar' termo.pk s.pk 'pdf' %}">{% csrf_token %}<button class="btn--secundaria">PDF</button></form>{% endif %}</div>{% empty %}<p>Sem servidor selecionado: geração semipreenchida.</p>{% if pode_editar %}<form method="post" action="{% url 'viagens_termos:gerar' termo.pk 0 'docx' %}">{% csrf_token %}<button class="btn--secundaria">DOCX semipreenchido</button></form>{% endif %}{% endfor %}
-{% if pode_editar and not termo.cancelado %}<div class="v32-barra"><form method="post" action="{% url 'viagens_termos:lote' termo.pk 'docx' %}">{% csrf_token %}<button class="btn-primaria">Todos em DOCX (ZIP)</button></form><form method="post" action="{% url 'viagens_termos:lote' termo.pk 'pdf' %}">{% csrf_token %}<button class="btn-primaria">Todos em PDF (ZIP)</button></form></div>{% endif %}</section>
-{% include "pages/viagens_oficios/_artefatos.html" %}
-{% if pode_editar %}<section class="pa-card v32-corpo v32-bloco">{% if termo.cancelado %}<form method="post" action="{% url 'viagens_termos:acao' termo.pk 'reativar' %}">{% csrf_token %}<button class="btn-primaria">Reativar termo</button></form>{% else %}<form method="post" action="{% url 'viagens_termos:acao' termo.pk 'cancelar' %}">{% csrf_token %}{% include "components/input.html" with name="motivo" label="Motivo do cancelamento" %}<button class="btn--secundaria btn--destrutiva">Cancelar termo</button></form>{% endif %}</section>{% endif %}
+{% with t=termo d=documentos %}
+<div class="sol-detalhe of-detalhe tm-detalhe">
+  <div class="d-cabeca">
+    <div class="d-cabeca__esq">
+      <a class="voltar" href="{% url 'viagens_termos:lista' %}">{% include "components/icon.html" with nome="chevron-left" %}Voltar para termos</a>
+      <div class="d-titulo"><h1>Termo #{{ t.pk }}</h1><span class="st st--{{ selo_tom }}">{{ selo }}</span></div>
+      <p class="d-cabeca__sub sol-detalhe__meta">
+        <span>{% include "components/icon.html" with nome="map-pin" %}{{ titulo }}</span>
+        <span>{% include "components/icon.html" with nome="document" %}{% if t.oficio_id %}Ofício {{ t.oficio.numero_formatado }}{% else %}Termo avulso{% endif %}</span>
+        {% if viatura %}<span>{% include "components/icon.html" with nome="truck" %}{{ viatura.placa_formatada }} {{ viatura.modelo }}</span>{% endif %}
+      </p>
+    </div>
+    <div class="d-acoes">
+      {% if pode_editar %}
+        <div class="dd" data-menu>
+          <button type="button" class="ib" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações do termo">{% include "components/icon.html" with nome="kebab" %}</button>
+          <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
+            <div class="dd__t">Termo #{{ t.pk }}</div>
+            {% if t.cancelado %}
+              <form method="post" action="{% url 'viagens_termos:acao' t.pk 'reativar' %}">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="undo" %}<span><b>Reativar termo</b><small>Voltar a gerar documentos</small></span></button></form>
+            {% else %}
+              <a class="dd__i of-item" href="#cancelamento">{% include "components/icon.html" with nome="ban" %}<span><b>Cancelar termo</b><small>Interromper mantendo o histórico</small></span></a>
+            {% endif %}
+            <div class="dd__s"></div>
+            <form method="post" action="{% url 'viagens_termos:acao' t.pk 'excluir' %}" data-confirmar="Confirmar exclusão?">{% csrf_token %}<button type="submit" class="dd__i dd__i--perigo of-item">{% include "components/icon.html" with nome="trash" %}<span><b>Excluir termo</b><small>Remover permanentemente quando permitido</small></span></button></form>
+          </div>
+        </div>
+        <a class="btn-primaria" href="{% url 'viagens_termos:editar' t.pk %}?next={{ url_atual|urlencode }}">{% include "components/icon.html" with nome="pencil" %}Editar termo</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if t.cancelado %}
+    <div class="aviso aviso--callout" role="status"><div class="aviso__txt">{% include "components/icon.html" with nome="ban" %}<div class="aviso__corpo"><b>Termo cancelado</b><p>{{ t.motivo_cancelamento|default:"Sem motivo registrado." }}</p></div></div></div>
+  {% endif %}
+
+  <div class="d-grade">
+    <div class="sol-detalhe__principal">
+      <section class="reg" id="resumo">
+        <h2 class="reg__t">{% include "components/icon.html" with nome="clipboard" %}Dados do termo</h2>
+        <dl class="gc sol-detalhe__campos">
+          <div class="f"><dt>Destino</dt><dd>{{ t.destino_display }}{% if "destino" in herdados %}<small>Herdado do ofício</small>{% endif %}</dd></div>
+          <div class="f"><dt>Período</dt><dd>{{ t.periodo_display }}{% if "período" in herdados %}<small>Herdado do ofício</small>{% endif %}</dd></div>
+          <div class="f"><dt>Ofício vinculado</dt><dd>{% if t.oficio_id %}<a href="{% url 'viagens_oficios:detalhe' t.oficio_id %}">Ofício {{ t.oficio.numero_formatado }}</a>{% if t.oficio.protocolo %}<small>Protocolo {{ t.oficio.protocolo }}</small>{% endif %}{% else %}Termo avulso{% endif %}</dd></div>
+          <div class="f"><dt>Viatura</dt><dd>{% if viatura %}{{ viatura.placa_formatada }} {{ viatura.modelo }}{% if "viatura" in herdados %}<small>Herdada do ofício</small>{% endif %}{% else %}Sem viatura<small>Variante do termo sem viatura</small>{% endif %}</dd></div>
+        </dl>
+      </section>
+
+      <section class="reg" id="documentos">
+        <h2 class="reg__t">{% include "components/icon.html" with nome="document-plus" %}Escolher documentos para baixar</h2>
+        {% if t.cancelado or t.oficio_id and t.oficio.cancelado %}
+          <p class="texto-vazio">Termo{% if t.oficio_id and t.oficio.cancelado %} ou ofício{% endif %} cancelado: reative para emitir documentos.</p>
+        {% else %}
+          <p class="reg__st">Termo por servidor{% if "servidores" in herdados %}<em>servidores com termo do ofício</em>{% endif %}</p>
+          <ul class="of-equipe of-equipe--detalhe">
+            {% for s in d.servidores %}
+              <li class="of-pessoa tm-servidor">
+                <span class="of-av" aria-hidden="true">{{ s.iniciais }}</span>
+                <span class="of-pessoa__txt"><span class="of-pessoa__nome">{{ s.servidor.nome }}</span>{% if s.descricao %}<span class="of-pessoa__desc">{{ s.descricao }}</span>{% endif %}</span>
+                {% if pode_editar %}
+                  <div class="acoes tm-servidor__acoes">
+                    <form method="post" action="{{ s.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="acao-linha">{% include "components/icon.html" with nome="eye" %}Visualizar</button></form>
+                    <form method="post" action="{{ s.url_pdf }}">{% csrf_token %}<button type="submit" class="acao-linha">{% include "components/icon.html" with nome="download" %}PDF</button></form>
+                    <form method="post" action="{{ s.url_docx }}">{% csrf_token %}<button type="submit" class="acao-linha">{% include "components/icon.html" with nome="document" %}DOCX</button></form>
+                    {% if s.url_assinado %}<a class="acao-linha" href="{{ s.url_assinado }}">{% include "components/icon.html" with nome="upload" %}Anexar assinado</a>{% else %}<span class="acao-linha of-item--inativo" title="Gere o PDF do termo primeiro">{% include "components/icon.html" with nome="upload" %}Anexar assinado</span>{% endif %}
+                  </div>
+                {% else %}
+                  <a class="acao-linha" href="{{ s.url_previa }}">{% include "components/icon.html" with nome="eye" %}Prévia</a>
+                {% endif %}
+              </li>
+            {% empty %}
+              <li class="of-equipe__vazio">Nenhum servidor: o termo sai só na versão genérica, para preencher à mão.</li>
+            {% endfor %}
+          </ul>
+          {% if pode_editar %}
+            <div class="tm-grupos">
+              <div class="of-emitir__grupo">
+                <strong>Termo genérico</strong><span class="v32-suave">Só destino e período, semipreenchido</span>
+                <form method="post" action="{{ d.generico.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="eye" %}Visualizar</button></form>
+                <form method="post" action="{{ d.generico.url_pdf }}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="download" %}Baixar PDF</button></form>
+                <form method="post" action="{{ d.generico.url_docx }}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="document" %}Baixar DOCX</button></form>
+                {% if d.generico.url_assinado %}<a class="btn--secundaria" href="{{ d.generico.url_assinado }}">{% include "components/icon.html" with nome="upload" %}Anexar assinado</a>{% endif %}
+              </div>
+              {% if d.viatura.viatura %}
+                <div class="of-emitir__grupo">
+                  <strong>Termo da viatura</strong><span class="v32-suave">{{ d.viatura.viatura.placa_formatada }} {{ d.viatura.viatura.modelo }}, campos do servidor em branco</span>
+                  <form method="post" action="{{ d.viatura.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="eye" %}Visualizar</button></form>
+                  <form method="post" action="{{ d.viatura.url_pdf }}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="download" %}Baixar PDF</button></form>
+                  <form method="post" action="{{ d.viatura.url_docx }}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="document" %}Baixar DOCX</button></form>
+                </div>
+              {% endif %}
+              <div class="of-emitir__grupo">
+                <strong>Todos os termos</strong><span class="v32-suave">{{ d.servidores|length }} servidor{{ d.servidores|length|pluralize:"es" }}</span>
+                <form method="post" action="{{ d.url_todos_pdf }}">{% csrf_token %}<button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="download" %}PDF único</button></form>
+                <form method="post" action="{{ d.url_lote_pdf }}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="download" %}ZIP de PDFs</button></form>
+                <form method="post" action="{{ d.url_lote_docx }}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="document" %}ZIP de DOCX</button></form>
+              </div>
+            </div>
+          {% endif %}
+        {% endif %}
+        <p class="reg__st">Documentos gerados<em>{{ artefatos|length }}</em></p>
+        <div class="dt-w"><table class="dt dt__estatica">
+          <thead><tr><th>Documento</th><th>Servidor</th><th>Gerado em</th><th>Formato</th><th class="c-cad-acoes">Ações</th></tr></thead>
+          <tbody>
+            {% for art in artefatos %}
+              <tr><td>{{ art.nome_exibicao }}{% if art.esta_assinado %} <span class="st st--atendido">Assinado</span>{% endif %}</td><td>{{ art.servidor|default:"—" }}</td><td>{{ art.criado_em|date:"d/m/Y H:i" }}</td><td>{{ art.formato|upper }}</td>
+                <td class="c-cad-acoes"><div class="acoes"><a class="acao-linha" href="{% url 'documentos:baixar' art.pk %}">{% include "components/icon.html" with nome="download" %}Baixar</a>{% if art.formato == 'pdf' %}<a class="acao-linha" href="{% url 'viagens_oficios:preview_artefato' art.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}Abrir</a>{% if pode_editar %}<a class="acao-linha" href="{% url 'viagens_oficios:assinatura_artefato' art.pk %}">{% include "components/icon.html" with nome="upload" %}{% if art.esta_assinado %}Assinado{% else %}Anexar assinado{% endif %}</a>{% endif %}{% endif %}</div></td></tr>
+            {% empty %}<tr><td colspan="5" class="dt__vazio">Nenhum documento gerado.</td></tr>{% endfor %}
+          </tbody></table></div>
+      </section>
+
+      {% if pode_editar and not t.cancelado %}
+        <section class="reg reg--dg" id="cancelamento">
+          <h2 class="reg__t">{% include "components/icon.html" with nome="ban" %}<span>Cancelamento</span></h2>
+          <form method="post" action="{% url 'viagens_termos:acao' t.pk 'cancelar' %}" class="enc-op" data-confirmar="Confirmar cancelamento?">
+            {% csrf_token %}
+            <b>O termo não vai mais valer?</b><p>Cancelar interrompe a emissão mantendo o histórico. É possível reativar depois.</p>
+            <label class="sr-only" for="id_motivo_cancelamento">Motivo do cancelamento</label>
+            <textarea class="ta" id="id_motivo_cancelamento" name="motivo" placeholder="Informe o motivo do cancelamento."></textarea>
+            <button type="submit" class="btn--secundaria btn--destrutiva">{% include "components/icon.html" with nome="ban" %}Cancelar termo</button>
+          </form>
+        </section>
+      {% endif %}
+    </div>
+
+    <aside class="sticky" aria-label="Resumo do termo">
+      <section class="reg reg--sec reg--sec-lista">
+        <h2 class="reg__t">{% include "components/icon.html" with nome="chart" %}Resumo</h2>
+        <dl>
+          <div class="resumo__linha"><dt>Situação</dt><dd><span class="st st--{{ selo_tom }}">{{ selo }}</span></dd></div>
+          <div class="resumo__linha"><dt>Servidores</dt><dd>{{ servidores|length }}</dd></div>
+          <div class="resumo__linha"><dt>Viatura</dt><dd>{% if viatura %}{{ viatura.placa_formatada }}{% else %}Sem viatura{% endif %}</dd></div>
+          <div class="resumo__linha"><dt>Documentos</dt><dd>{{ artefatos|length }}</dd></div>
+          <div class="resumo__linha"><dt>Criado em</dt><dd>{{ t.criado_em|date:"d/m/Y" }}</dd></div>
+        </dl>
+      </section>
+      <section class="reg reg--sec">
+        <h2 class="reg__t">{% include "components/icon.html" with nome="eye" %}Prévia em tela</h2>
+        <p class="v32-suave of-prestacao__texto">Confira o conteúdo do termo antes de gerar o documento.</p>
+        <a class="btn--secundaria" href="{% url 'viagens_termos:preview' t.pk %}">{% include "components/icon.html" with nome="chevron-right" %}Abrir prévia</a>
+      </section>
+    </aside>
+  </div>
+</div>
+{% endwith %}
 {% endblock %}

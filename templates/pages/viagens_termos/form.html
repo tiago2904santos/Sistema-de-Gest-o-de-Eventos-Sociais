@@ -1,0 +1,148 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load static estaticos %}
+{% comment %}
+  Cadastro do termo de autorização — Meta 5. Os blocos da origem: ofício
+  vinculado (busca no servidor), destino e destinos adicionais, período,
+  servidores e viatura. O que fica em branco herda do ofício vinculado; o
+  termo avulso precisa de destino e período.
+{% endcomment %}
+
+{% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with atual=titulo %}
+
+  <div class="editor-roteiro frm-grade of-form tm-form">
+    <div class="d-cabeca d-cabeca--form editor-roteiro__topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
+          <div>
+            <div class="editor-roteiro__titulo">
+              <h1 class="page-header__titulo d-titulo-v32">{{ titulo }}</h1>
+              {% if termo.cancelado %}<span class="st st--cancelada">Cancelado</span>{% endif %}
+            </div>
+            <p class="page-header__subtitulo d-cabeca__sub">Campos deixados em branco herdam os valores do ofício vinculado. Sem ofício, informe o destino e o período.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form method="post" action="" id="form-termo" class="editor-roteiro__principal" novalidate>
+      {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      <input type="hidden" name="quantidade_destinos" value="{{ quantidade_destinos }}">
+      {% if form.errors %}
+        <div class="aviso aviso--erro" role="alert" tabindex="-1">
+          {% include "components/icon.html" with nome="info" %}
+          <div><b>Não foi possível salvar o termo</b>Revise os campos indicados antes de continuar.
+            <ul class="aviso--erro__lista">{% for campo, mensagens in form.errors.items %}{% for m in mensagens %}<li>{% if campo == "__all__" %}{{ m }}{% else %}<a href="#id_{{ campo }}">{{ m }}</a>{% endif %}</li>{% endfor %}{% endfor %}</ul>
+          </div>
+        </div>
+      {% endif %}
+
+      <section class="section-card reg">
+        <header class="section-card__cabecalho reg__t"><span class="section-card__numero reg-numero" aria-hidden="true">1</span><h2 class="section-card__titulo">Ofício vinculado</h2></header>
+        <div class="section-card__corpo">
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo"><strong>Ofício</strong><p class="texto-suave v32-suave">Opcional. Com ofício, destino, período, servidores com termo e viatura vêm de lá quando ficam em branco aqui.</p></div>
+            <div class="bloco-split__corpo">
+              <div class="form-campo jt-picker{% if erros.oficio %} is-invalid{% endif %}" data-picker-oficios data-picker-unico data-url-busca="{{ url_busca }}" data-limite="30" data-nome="oficio">
+                <label class="form-label" for="id_oficio_busca">Buscar ofício</label>
+                <div class="busca">
+                  <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+                  <input class="form-controle" type="search" id="id_oficio_busca" placeholder="Buscar ofício por número, protocolo, viajante ou destino" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="oficio-resultados" aria-autocomplete="list" data-picker-busca>
+                </div>
+                <div class="custom-select__menu jt-picker__menu" id="oficio-resultados" role="listbox" aria-label="Ofícios encontrados" data-picker-resultados hidden></div>
+                <ul class="multi-pick__escolhidos jt-escolhidos" data-picker-escolhidos aria-live="polite">
+                  {% if oficio_escolhido %}
+                    <li class="multi-pick__escolhido" data-id="{{ oficio_escolhido.id }}">
+                      <input type="hidden" name="oficio" value="{{ oficio_escolhido.id }}">
+                      <span>{{ oficio_escolhido.main }}{% if oficio_escolhido.meta %}<small>{{ oficio_escolhido.meta }}</small>{% endif %}</span>
+                      <button type="button" class="multi-pick__remover" aria-label="Remover {{ oficio_escolhido.main }}" data-picker-remover>×</button>
+                    </li>
+                  {% endif %}
+                </ul>
+                {% for erro in erros.oficio %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+                <p class="form-ajuda">Termo avulso: deixe sem ofício e informe destino e período.</p>
+              </div>
+              {% if herdados %}<p class="aviso-rota" role="status">{% include "components/icon.html" with nome="info" %}<span>Este termo herda do ofício: {{ herdados|join:", " }}.</span></p>{% endif %}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card reg">
+        <header class="section-card__cabecalho reg__t"><span class="section-card__numero reg-numero" aria-hidden="true">2</span><h2 class="section-card__titulo">Destino e período</h2></header>
+        <div class="section-card__corpo">
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo"><strong>Destino</strong><p class="texto-suave v32-suave">Estado e município. Só o estado também vale.</p></div>
+            <div class="bloco-split__corpo g-form g-form--2">
+              {% include "components/select.html" with name="destino_estado" label="UF do destino" opcoes=estados pesquisavel=True placeholder="Buscar estado..." permitir_vazio=True selecionado=valores.destino_estado erros=erros.destino_estado %}
+              {% include "components/select.html" with name="destino_cidade" label="Município do destino" opcoes=municipios pesquisavel=True placeholder="Buscar município..." permitir_vazio=True dependente_de="id_destino_estado" selecionado=valores.destino_cidade erros=erros.destino_cidade %}
+            </div>
+          </div>
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo"><strong>Destinos adicionais</strong><p class="texto-suave v32-suave">Outros municípios do mesmo termo, na ordem.</p></div>
+            <div class="bloco-split__corpo">
+              {% for a in adicionais %}
+                <div class="g-form g-form--2 tm-adicional">
+                  {% include "components/select.html" with name=a.nome_estado label="Estado adicional" opcoes=estados pesquisavel=True placeholder="Buscar estado..." permitir_vazio=True selecionado=a.estado erros=a.erros_estado %}
+                  {% include "components/select.html" with name=a.nome_cidade label="Município adicional" opcoes=municipios pesquisavel=True placeholder="Buscar município..." permitir_vazio=True dependente_de=a.id_estado selecionado=a.cidade erros=a.erros_cidade %}
+                </div>
+              {% endfor %}
+              <button class="btn--secundaria btn--compacto" type="submit" name="acao" value="adicionar_destino" formnovalidate>{% include "components/icon.html" with nome="plus" %}Adicionar destino</button>
+            </div>
+          </div>
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo"><strong>Período</strong><p class="texto-suave v32-suave">Data inicial e final do evento. Um dia só: as duas iguais.</p></div>
+            <div class="bloco-split__corpo g-form g-form--2">
+              <div class="c2">{% include "components/date_range.html" with name="periodo_evento" start_name="data_evento_inicio" end_name="data_evento_fim" label="Período do evento" valor_inicio=valores.data_evento_inicio valor_fim=valores.data_evento_fim erros=erros.data_evento_inicio|default:erros.data_evento_fim %}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card reg">
+        <header class="section-card__cabecalho reg__t"><span class="section-card__numero reg-numero" aria-hidden="true">3</span><h2 class="section-card__titulo">Servidores e viatura</h2></header>
+        <div class="section-card__corpo">
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo"><strong>Servidores</strong><p class="texto-suave v32-suave">Um termo por servidor marcado. Nenhum marcado: os servidores com termo do ofício. <span data-equipe-contagem>0 servidores</span>.</p></div>
+            <div class="bloco-split__corpo">
+              <div class="form-campo of-equipe-busca"><label class="form-label sr-only" for="id_servidores_busca">Buscar servidor</label><div class="busca"><span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span><input class="form-controle" type="search" id="id_servidores_busca" placeholder="Buscar por nome, cargo ou unidade" data-equipe-busca autocomplete="off"></div></div>
+              <div class="of-membros{% if erros.servidores %} grupo-erro{% endif %}" data-equipe role="group" aria-label="Servidores do termo">
+                <div class="of-membros__cabeca" aria-hidden="true"><span>Termo</span><span>Servidor</span><span></span></div>
+                {% for p in servidores %}
+                  <div class="of-membro{% if p.selecionado %} of-membro--viaja{% endif %}" data-pessoa="{{ p.valor }}" data-busca="{{ p.rotulo }} {{ p.detalhes }}">
+                    <label class="of-membro__viaja"><input type="checkbox" name="servidores" value="{{ p.valor }}"{% if p.selecionado %} checked{% endif %}><span class="sr-only">{{ p.rotulo }} recebe termo</span></label>
+                    <span class="of-av" aria-hidden="true">{{ p.iniciais }}</span>
+                    <span class="of-pessoa__txt"><span class="of-pessoa__nome">{{ p.rotulo }}</span>{% if p.detalhes %}<span class="of-pessoa__desc">{{ p.detalhes }}</span>{% endif %}</span>
+                    <span></span>
+                  </div>
+                {% empty %}<p class="texto-vazio">Nenhum servidor cadastrado.</p>{% endfor %}
+              </div>
+              {% for erro in erros.servidores %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+            </div>
+          </div>
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo"><strong>Viatura</strong><p class="texto-suave v32-suave">Em branco, a do ofício. Define a variante do termo (com ou sem viatura).</p></div>
+            <div class="bloco-split__corpo g-form g-form--2">
+              {% include "components/select.html" with name="viatura" label="Viatura" opcoes=viaturas pesquisavel=True placeholder="Buscar por placa ou modelo..." permitir_vazio=True selecionado=valores.viatura erros=erros.viatura %}
+            </div>
+          </div>
+        </div>
+      </section>
+    </form>
+
+    <footer class="editor-roteiro__rodape">
+      {% include "components/v32/button.html" with label="Voltar" variante="secundario" href=url_voltar %}
+      <button type="submit" form="form-termo" name="acao" value="salvar" class="btn btn--dourado btn-primaria">Salvar termo</button>
+    </footer>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+  <script src="{% estatico 'js/viagens-picker-oficios.js' %}" defer></script>
+  <script src="{% estatico 'js/viagens-termos.js' %}" defer></script>
+{% endblock %}

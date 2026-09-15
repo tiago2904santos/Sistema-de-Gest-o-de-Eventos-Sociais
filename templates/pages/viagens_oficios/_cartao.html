@@ -1,0 +1,166 @@
+{% comment %}
+  Cartão de um ofício na lista, com o conteúdo e os menus do cartão da origem.
+  Contexto: `c` (viagens_oficios.presenters.cartao_da_lista), `pode_editar`,
+  `url_atual` (para as ações voltarem à lista como estava).
+{% endcomment %}
+{% with o=c.oficio %}
+<article class="of-cartao{% if o.cancelado %} of-cartao--cancelado{% endif %}" aria-labelledby="oficio-{{ o.pk }}-titulo">
+  <header class="of-cartao__cabeca">
+    <div class="of-cartao__ident">
+      <h2 class="of-cartao__titulo" id="oficio-{{ o.pk }}-titulo">{{ c.titulo }}</h2>
+      {% if c.subtitulo %}<p class="of-cartao__sub">{{ c.subtitulo }}</p>{% endif %}
+    </div>
+    <span class="st st--{{ c.selo_tom }}">{{ c.selo }}</span>
+  </header>
+
+  <ul class="of-equipe" aria-label="Equipe do ofício {{ o.numero_formatado }}">
+    {% for p in c.equipe %}
+      <li class="of-pessoa{% if p.motorista %} of-pessoa--motorista{% endif %}">
+        <span class="of-av" aria-hidden="true">{{ p.iniciais }}</span>
+        <span class="of-pessoa__txt">
+          <span class="of-pessoa__nome">{{ p.nome }}{% if p.motorista %} <span class="of-tag">Motorista</span>{% endif %}</span>
+          {% if p.descricao %}<span class="of-pessoa__desc">{{ p.descricao }}</span>{% endif %}
+        </span>
+        {% if pode_editar and not o.cancelado %}
+          <div class="dd of-menu" data-menu>
+            <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações do termo de {{ p.nome }}">{% include "components/icon.html" with nome="kebab" %}</button>
+            <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
+              <div class="dd__t">Termo de {{ p.nome }}</div>
+              <form method="post" action="{{ p.url_termo_pdf }}?inline=1" target="_blank">{% csrf_token %}
+                <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar termo</b><small>Abrir o documento no navegador</small></span></button>
+              </form>
+              <form method="post" action="{{ p.url_termo_pdf }}">{% csrf_token %}
+                <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Documento pronto para assinatura</small></span></button>
+              </form>
+              <form method="post" action="{{ p.url_termo_docx }}">{% csrf_token %}
+                <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivo editável do termo</small></span></button>
+              </form>
+              {% if p.url_termo_assinado %}
+                <a class="dd__i of-item" href="{{ p.url_termo_assinado }}">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Enviar o PDF depois da assinatura</small></span></a>
+              {% else %}
+                <span class="dd__i of-item of-item--inativo" aria-disabled="true" title="Gere o PDF do termo antes de anexar a versão assinada">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Gere o PDF do termo primeiro</small></span></span>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      </li>
+    {% empty %}
+      <li class="of-equipe__vazio">Nenhum servidor informado</li>
+    {% endfor %}
+  </ul>
+
+  <div class="of-grade">
+    <div class="of-bloco of-transporte">
+      <span class="of-rotulo">Placa</span>
+      {% if c.transporte.placa %}<strong class="of-transporte__valor">{{ c.transporte.placa }}</strong>{% else %}<em class="of-nao-informado">Não informado</em>{% endif %}
+      <span class="of-rotulo">Modelo</span>
+      {% if c.transporte.modelo %}<strong class="of-transporte__valor">{{ c.transporte.modelo }}</strong>{% else %}<em class="of-nao-informado">Não informado</em>{% endif %}
+    </div>
+    {% if c.trechos %}
+      <ul class="of-bloco of-trechos" aria-label="Trechos da viagem">
+        {% for t in c.trechos %}
+          <li class="of-trecho"><span class="of-trecho__rota">{{ t.rota }}</span><span class="of-trecho__hora">{{ t.horario }}</span></li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% if c.diarias %}
+      <div class="of-bloco of-valor">
+        <span class="of-rotulo">Valor total</span>
+        <strong class="of-valor__num">{{ c.diarias.valor }}</strong>
+        {% if c.diarias.extenso %}<span class="of-valor__ext">{{ c.diarias.extenso }}</span>{% endif %}
+        {% if c.diarias.quantidade %}
+          <span class="of-rotulo">Quantidade de diárias</span>
+          <strong class="of-valor__qtd">{{ c.diarias.quantidade }}</strong>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="of-just">
+    <span class="of-av" aria-hidden="true">JU</span>
+    <span class="of-pessoa__txt">
+      <span class="of-pessoa__nome">Justificativa <span class="st {% if c.justificativa.preenchida %}st--atendido{% else %}st--pendente{% endif %}">{% if c.justificativa.preenchida %}Preenchida{% else %}Pendente{% endif %}</span></span>
+      <span class="of-pessoa__desc">{{ c.justificativa.texto|truncatechars:160 }}</span>
+    </span>
+    {% if pode_editar %}
+      <div class="acoes of-just__acoes">
+        <a class="ib-linha" href="{{ c.editar_justificativa_url }}" aria-label="Editar justificativa" title="Editar justificativa">{% include "components/icon.html" with nome="pencil" %}</a>
+        {% if not o.cancelado %}
+          <div class="dd of-menu" data-menu>
+            <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Abrir documentos da justificativa" title="Documentos da justificativa">{% include "components/icon.html" with nome="document" %}</button>
+            <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
+              <div class="dd__t">Justificativa do ofício {{ o.numero_formatado }}</div>
+              <form method="post" action="{% url 'viagens_oficios:gerar' o.pk 'justificativa' 'pdf' %}?inline=1" target="_blank">{% csrf_token %}
+                <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar justificativa</b><small>Abrir o documento no navegador</small></span></button>
+              </form>
+              <form method="post" action="{% url 'viagens_oficios:gerar' o.pk 'justificativa' 'pdf' %}">{% csrf_token %}
+                <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Documento pronto para impressão</small></span></button>
+              </form>
+              <form method="post" action="{% url 'viagens_oficios:gerar' o.pk 'justificativa' 'docx' %}">{% csrf_token %}
+                <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivo editável da justificativa</small></span></button>
+              </form>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <footer class="of-cartao__rodape">
+    <div class="acoes">
+      {% if pode_editar %}
+        <a class="ib-linha" href="{{ c.editar_url }}" aria-label="Editar ofício" title="Editar ofício">{% include "components/icon.html" with nome="pencil" %}</a>
+      {% else %}
+        <a class="acao-linha" href="{% url 'viagens_oficios:detalhe' o.pk %}">{% include "components/icon.html" with nome="eye" %}Abrir</a>
+      {% endif %}
+    </div>
+    {% if pode_editar %}
+      <div class="acoes">
+        <a class="acao-linha" href="{% url 'viagens_oficios:detalhe' o.pk %}">{% include "components/icon.html" with nome="eye" %}Resumo</a>
+        {% if not o.cancelado %}
+          <div class="dd of-menu" data-menu>
+            <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Abrir documentos do ofício {{ o.numero_formatado }}" title="Documentos do ofício">{% include "components/icon.html" with nome="document" %}</button>
+            <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
+              <div class="dd__t">Ofício {{ o.numero_formatado }}</div>
+              <form method="post" action="{% url 'viagens_oficios:gerar' o.pk 'oficio' 'pdf' %}?inline=1" target="_blank">{% csrf_token %}
+                <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar ofício</b><small>Abrir o documento no navegador</small></span></button>
+              </form>
+              <form method="post" action="{% url 'viagens_oficios:gerar' o.pk 'oficio' 'pdf' %}">{% csrf_token %}
+                <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Documento pronto para impressão</small></span></button>
+              </form>
+              <form method="post" action="{% url 'viagens_oficios:gerar' o.pk 'oficio' 'docx' %}">{% csrf_token %}
+                <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivo editável do ofício</small></span></button>
+              </form>
+            </div>
+          </div>
+        {% endif %}
+        <div class="dd of-menu" data-menu>
+          <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações do ofício" title="Mais ações">{% include "components/icon.html" with nome="kebab" %}</button>
+          <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
+            <div class="dd__t">Ofício {{ o.numero_formatado }}</div>
+            {% if o.cancelado %}
+              <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'reativar' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+                <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="undo" %}<span><b>Reativar ofício</b><small>Retomar o fluxo do documento</small></span></button>
+              </form>
+            {% else %}
+              <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'retificar' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+                <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="undo" %}<span><b>Retificar ofício</b><small>Atualizar o estado de retificação</small></span></button>
+              </form>
+              <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'complementar' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+                <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="plus" %}<span><b>Ofício complementar</b><small>Identificar o documento como complementar</small></span></button>
+              </form>
+              <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'cancelar' %}" data-confirmar="Confirmar cancelamento?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+                <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="ban" %}<span><b>Cancelar ofício</b><small>Interromper o fluxo mantendo o histórico</small></span></button>
+              </form>
+            {% endif %}
+            <div class="dd__s"></div>
+            <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'excluir' %}" data-confirmar="Confirmar exclusão?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+              <button type="submit" class="dd__i dd__i--perigo of-item">{% include "components/icon.html" with nome="trash" %}<span><b>Excluir ofício</b><small>Remover permanentemente quando permitido</small></span></button>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </footer>
+</article>
+{% endwith %}

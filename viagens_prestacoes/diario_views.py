@@ -21,7 +21,9 @@ from .diario_services import (
     salvar_linhas_do_diario,
     sincronizar_trechos,
     trocar_motorista_do_diario,
+    viatura_resumo_diario,
     viatura_resumo_oficio,
+    alteracoes_datas_horarios_roteiro,
 )
 from .forms import DiarioBordoTrechoFormSet, DiarioMotoristaForm
 from .models import DiarioBordo
@@ -127,6 +129,7 @@ def diario_servidor(request, ps_pk):
             "diario": diario,
             "formset": formset,
             "trechos": trechos,
+            "opcoes_abastecimento": [{"valor": "sim", "rotulo": "Sim"}, {"valor": "nao", "rotulo": "Não"}],
             "identificacao": _build_identificacao(prestacao),
             **contexto_do_fluxo(ps, "diario"),
             "diaria_info": diaria_info(prestacao),
@@ -136,6 +139,8 @@ def diario_servidor(request, ps_pk):
             "editar_roteiro_url": reverse("viagens_prestacoes:diario_servidor_editar_roteiro", args=[ps.pk]),
             "editar_motorista_url": reverse("viagens_prestacoes:diario_servidor_motorista", args=[ps.pk]),
             "motorista_resumo": _motorista_resumo(diario),
+            "viatura_resumo": viatura_resumo_diario(diario),
+            "alteracoes_roteiro": alteracoes_datas_horarios_roteiro(prestacao),
             "rt_url": reverse("viagens_prestacoes:rt_servidor", args=[ps.pk]),
             "documentos_url": reverse("viagens_prestacoes:documentos_servidor", args=[ps.pk]),
             "autosave_url": reverse("viagens_prestacoes:diario_servidor_autosave", args=[ps.pk]),
@@ -317,6 +322,9 @@ def diario_servidor_motorista(request, ps_pk):
     ]
 
     viatura_oficio = viatura_resumo_oficio(prestacao.oficio)
+    from viagens_cadastros.models import Viatura
+    from .view_common import opcoes
+    valor = lambda nome: (str(getattr(form[nome].value(), "pk", form[nome].value())) if form[nome].value() not in (None, "") else "")
     return render(
         request,
         "viagens_prestacoes/diario_motorista_form.html",
@@ -348,6 +356,16 @@ def diario_servidor_motorista(request, ps_pk):
             "oficios_prefill": oficios_prefill,
             "oficios_prefill_options": oficios_prefill_options,
             "diario_url": diario_url,
+            # Blocos próprios da tela (sem laço genérico): as opções de cada seletor e os valores atuais.
+            "valores": {n: valor(n) for n in form.fields},
+            "erros": {n: form.errors.get(n) for n in form.fields},
+            "opcoes_motorista_modo": opcoes(DiarioBordo.MOTORISTA_MODO_CHOICES),
+            "opcoes_viatura_modo": opcoes(DiarioBordo.VIATURA_MODO_CHOICES),
+            "opcoes_servidores": [{"valor": str(s.pk), "rotulo": s.nome} for s in form.fields["motorista_servidor"].queryset],
+            "opcoes_viaturas": [{"valor": str(v.pk), "rotulo": f"{v.placa_formatada} — {v.modelo}" if v.modelo else v.placa_formatada} for v in form.fields["viatura"].queryset],
+            "opcoes_tipos": opcoes(Viatura.Tipo.choices),
+            "modo_motorista": valor("motorista_modo") or DiarioBordo.MOTORISTA_MODO_OFICIO,
+            "modo_viatura": valor("viatura_modo") or DiarioBordo.VIATURA_MODO_OFICIO,
         },
     )
 

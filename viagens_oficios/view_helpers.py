@@ -29,13 +29,3 @@ def campos_v32(form):
             elif nome.startswith('extra_cidade_'):
                 item['dependente_de'] = 'id_' + nome.replace('cidade', 'estado')
     return campos
-
-
-def secoes_oficio(form, justificativa):
-    campos = {c['name']: c for c in campos_v32(form)}
-    grupos = [
-        ('viajantes', 'Viajantes e solicitação', ['data_criacao', 'protocolo', 'assunto', 'solicitante', 'modelo_motivo', 'motivo', 'custeio', 'custeio_observacao', 'servidores', 'servidores_termo_autorizacao']),
-        ('transporte', 'Transporte', [n for n in campos if n.startswith(('motorista', 'transporte')) or n in ['viatura', 'porte_transporte_armas']]),
-        ('roteiro', 'Roteiro e diárias', ['roteiro']),
-    ]
-    return [{'id': id_, 'titulo': titulo, 'campos': [campos[n] for n in nomes]} for id_, titulo, nomes in grupos] + [{'id': 'justificativa', 'titulo': 'Justificativa', 'campos': campos_v32(justificativa)}]

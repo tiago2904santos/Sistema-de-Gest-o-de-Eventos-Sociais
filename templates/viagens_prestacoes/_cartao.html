@@ -1,0 +1,124 @@
+{% comment %}
+  Cartão de um servidor na lista de prestações (viagens_prestacoes.cartoes).
+  Contexto: `c`, `pode_editar`, `url_atual`.
+{% endcomment %}
+{% with s=c.servidores.0 %}
+<article class="of-cartao pc-cartao{% if c.group_class %} {{ c.group_class }}{% endif %}{% if c.arquivada %} pc-cartao--arquivada{% endif %}" aria-labelledby="ps-{{ c.ps_pk }}-titulo">
+  <header class="of-cartao__cabeca">
+    <div class="of-cartao__ident">
+      <h2 class="of-cartao__titulo" id="ps-{{ c.ps_pk }}-titulo">{{ c.titulo }}</h2>
+      {% if c.finalizada or c.arquivada %}<p class="of-cartao__sub">{% if c.finalizada %}Prestação finalizada{% if c.ps.finalizada_em %} em {{ c.ps.finalizada_em|date:"d/m/Y" }}{% endif %}{% endif %}{% if c.finalizada and c.arquivada %} · {% endif %}{% if c.arquivada %}Arquivada{% if c.ps.arquivada_em %} em {{ c.ps.arquivada_em|date:"d/m/Y" }}{% endif %}{% endif %}</p>{% endif %}
+    </div>
+    <span class="st st--pc-{{ c.status_value }}">{% if c.finalizada %}Finalizada{% else %}{{ c.status_label }}{% endif %}</span>
+  </header>
+
+  <form method="post" action="{% url 'viagens_prestacoes:index' %}" class="pc-servidor{% if s.is_motorista %} pc-servidor--motorista{% endif %}" data-autosave data-autosave-url="{{ s.solicitacao_autosave_url }}" data-autosave-model="prestacao_servidor" data-autosave-id="{{ s.ps_pk }}" aria-label="Servidor {{ s.name }}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="save_solicitacoes">
+    <input type="hidden" name="next" value="{{ url_atual }}">
+    {% if pode_editar %}
+      <div class="pc-servidor__solic">
+        <label class="sr-only" for="id_ps-{{ s.ps_pk }}-numero_solicitacao">Número da solicitação de {{ s.name }}</label>
+        <input class="form-controle pc-solic" type="text" id="id_ps-{{ s.ps_pk }}-numero_solicitacao" name="ps-{{ s.ps_pk }}-numero_solicitacao" value="{{ s.numero_solicitacao }}" placeholder="Solicitação" autocomplete="off" data-autosave-campo>
+        <span class="pc-autosave" data-autosave-estado aria-live="polite"></span>
+      </div>
+      <div class="dd pc-periodo" data-menu>
+        <button type="button" class="btn--secundaria btn--compacto pc-periodo__gatilho{% if s.periodo %} pc-periodo__gatilho--definido{% endif %}" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Definir período das diárias de {{ s.name }}">{% include "components/icon.html" with nome="calendar" %}<span>{{ s.periodo|default:"Período" }}</span></button>
+        <div class="dd__c pc-periodo__corpo" hidden data-menu-corpo>
+          <div class="dd__t">Diárias de {{ s.name }}</div>
+          <div class="pc-periodo__campos">
+            {% include "components/input.html" with name=s.nome_liberacao label="Liberação das diárias" tipo="date" valor=s.data_liberacao_diarias %}
+            {% include "components/input.html" with name=s.nome_prazo label="Prazo limite para saque" tipo="date" valor=s.prazo_limite_saque %}
+          </div>
+          <div class="pc-periodo__acoes"><button type="submit" class="btn-primaria btn--compacto">Salvar período</button></div>
+        </div>
+      </div>
+    {% else %}
+      <span class="pc-solic pc-solic--leitura">{{ s.numero_solicitacao|default:"Sem solicitação" }}</span>
+      {% if s.periodo %}<span class="pc-periodo__leitura">{% include "components/icon.html" with nome="calendar" %}{{ s.periodo }}</span>{% endif %}
+    {% endif %}
+    <span class="of-av" aria-hidden="true">{{ s.iniciais }}</span>
+    <span class="of-pessoa__txt">
+      <span class="of-pessoa__nome">{{ s.name }}{% if s.is_motorista %} <span class="of-tag">Motorista</span>{% endif %}{% if s.comprovante_ok %} <span class="st st--atendido pc-comprovante" title="Comprovante de saque anexado" aria-label="Comprovante de saque anexado">✓ Comprovante</span>{% endif %}</span>
+      {% if s.meta %}<span class="of-pessoa__desc">{{ s.meta }}</span>{% endif %}
+    </span>
+    <a class="ib-linha pc-wa" href="{{ s.whatsapp_url }}" target="_blank" rel="noopener" aria-label="Enviar aviso de liberação de diárias por WhatsApp" title="Enviar aviso de liberação de diárias por WhatsApp">{% include "components/icon.html" with nome="send" %}</a>
+  </form>
+
+  <div class="of-grade">
+    <div class="of-bloco of-transporte">
+      <span class="of-rotulo">Placa</span>
+      {% if c.veiculo_placa %}<strong class="of-transporte__valor">{{ c.veiculo_placa }}</strong>{% else %}<em class="of-nao-informado">Não informado</em>{% endif %}
+      <span class="of-rotulo">Modelo</span>
+      {% if c.veiculo_modelo %}<strong class="of-transporte__valor">{{ c.veiculo_modelo }}</strong>{% else %}<em class="of-nao-informado">Não informado</em>{% endif %}
+    </div>
+    {% if c.trechos %}
+      <ul class="of-bloco of-trechos" aria-label="Trechos da viagem">
+        {% for t in c.trechos %}<li class="of-trecho"><span class="of-trecho__rota">{{ t.rota }}</span><span class="of-trecho__hora">{{ t.saida }} → {{ t.chegada }}</span></li>{% endfor %}
+      </ul>
+    {% endif %}
+    {% if c.valor_diarias_display or c.quantidade_diarias_display %}
+      <div class="of-bloco of-valor">
+        {% if c.valor_diarias_display %}
+          <span class="of-rotulo">Valor total</span>
+          <strong class="of-valor__num">{{ c.valor_diarias_display }}</strong>
+          {% if c.valor_diarias_extenso %}<span class="of-valor__ext">{{ c.valor_diarias_extenso }}</span>{% endif %}
+        {% endif %}
+        {% if c.quantidade_diarias_display %}
+          <span class="of-rotulo">Quantidade de diárias</span>
+          <strong class="of-valor__qtd">{{ c.quantidade_diarias_display }}</strong>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <footer class="of-cartao__rodape">
+    <div class="acoes">
+      <a class="acao-linha" href="{{ c.diario_url }}">{% include "components/icon.html" with nome="chevron-right" %}Abrir prestação na etapa 1</a>
+      <a class="acao-linha" href="{{ c.consolidado_url }}">{% include "components/icon.html" with nome="checklist" %}Documentos e downloads</a>
+    </div>
+    <div class="acoes">
+      <div class="dd of-menu" data-menu>
+        <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Escolher documentos para baixar" title="Escolher documentos para baixar">{% include "components/icon.html" with nome="download" %}</button>
+        <div class="dd__c of-menu__corpo pc-menu-downloads" hidden data-menu-corpo>
+          <div class="dd__t">Documentos de {{ s.name }}</div>
+          {% for d in c.downloads %}
+            <div class="pc-download">
+              <span class="pc-download__titulo"><b>{{ d.titulo }}</b><small>{{ d.subtitulo }}</small></span>
+              <span class="pc-download__versoes">{% for v in d.versoes %}<a class="pc-download__versao" href="{{ v.url }}">{{ v.rotulo }}</a>{% endfor %}</span>
+            </div>
+          {% empty %}
+            <span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="info" %}<span><b>Nada para baixar ainda</b><small>Preencha o diário e o relatório técnico</small></span></span>
+          {% endfor %}
+          <div class="dd__s"></div>
+          <a class="dd__i of-item" href="{{ s.pacote_url }}">{% include "components/icon.html" with nome="download" %}<span><b>Pacote final (PDF)</b><small>Ofício, despacho, relatório técnico, diário e comprovante num PDF só</small></span></a>
+        </div>
+      </div>
+      {% if pode_editar %}
+        <div class="dd of-menu" data-menu>
+          <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="{{ c.rotulo_anexar }}" title="{{ c.rotulo_anexar }}">{% include "components/icon.html" with nome="upload" %}</button>
+          <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
+            <div class="dd__t">{{ c.rotulo_anexar }}</div>
+            {% for a in c.anexos %}
+              <form method="post" enctype="multipart/form-data" action="{{ a.url }}" class="pc-anexar" data-anexar-cartao>{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+                <label class="dd__i of-item pc-anexar__item">
+                  {% include "components/icon.html" with nome="upload" %}
+                  <span><b>{{ a.option_label }}</b><small>{% if a.current_name %}Anexado: {{ a.current_name }} · clique para substituir{% else %}Enviar {{ a.doc_label }}{% endif %}</small></span>
+                  <input type="file" name="arquivo" accept=".pdf,.png,.jpg,.jpeg" class="sr-only" aria-label="{{ a.option_label }}: escolher arquivo">
+                </label>
+              </form>
+              {% if a.current_view_url %}<a class="pc-anexar__ver" href="{{ a.current_view_url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}Ver {{ a.option_label|lower }} anexado</a>{% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        <form method="post" action="{{ c.finalizar_url }}" data-confirmar="{% if c.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+          <button type="submit" class="ib-linha{% if c.finalizada %} ib-linha--ativo{% endif %}" aria-label="{% if c.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}" title="{% if c.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}">{% include "components/icon.html" with nome="check-circle" %}</button>
+        </form>
+        <form method="post" action="{{ c.arquivar_url }}" data-confirmar="{% if c.arquivada %}Desarquivar a prestação?{% else %}Arquivar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+          <button type="submit" class="ib-linha{% if c.arquivada %} ib-linha--ativo{% endif %}" aria-label="{% if c.arquivada %}Desarquivar prestação{% else %}Arquivar prestação{% endif %}" title="{% if c.arquivada %}Desarquivar prestação{% else %}Arquivar prestação{% endif %}">{% include "components/icon.html" with nome="lock" %}</button>
+        </form>
+      {% endif %}
+    </div>
+  </footer>
+</article>
+{% endwith %}

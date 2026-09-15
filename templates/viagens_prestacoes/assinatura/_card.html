@@ -1,1 +1,24 @@
-<section class="section-card section-card__corpo"><h2>Assinatura eletrônica</h2><p>{{ assinatura.signatario }}</p>{% if assinatura.assinada %}<p>Assinado em {{ assinatura.assinado_em|date:"d/m/Y H:i" }} · Código <a href="{% url 'viagens_assinaturas:verificar' assinatura.codigo %}" target="_blank">{{ assinatura.codigo }}</a></p>{% elif assinatura.motivo %}<p>{{ assinatura.motivo }}</p>{% else %}{% if assinatura.link_ativo %}<p>Existe um link ativo até {{ assinatura.expira_em|date:"d/m/Y H:i" }}. Uma nova emissão revoga o link anterior.</p>{% endif %}<form method="post" action="{{ assinatura.gerar_url }}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">{% include "components/input.html" with name="dias" label="Validade em dias" tipo="number" valor="7" %}<button class="btn-primaria">Gerar link de assinatura</button></form>{% endif %}{% if assinatura.assinada or assinatura.link_ativo %}<form method="post" action="{{ assinatura.cancelar_url }}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn--secundaria">Revogar link e assinatura</button></form>{% endif %}</section>
+{% comment %}
+  Assinatura eletrônica do RT (servidor) ou do diário (motorista): quem assina,
+  o estado (assinado, link ativo, sem CPF) e os comandos de gerar e revogar.
+{% endcomment %}
+<section class="reg pc-assinatura" id="assinatura">
+  <h2 class="reg__t">{% include "components/icon.html" with nome="shield" %}Assinatura eletrônica{% if assinatura.assinada %}<span class="st st--atendido">Assinado</span>{% elif assinatura.link_ativo %}<span class="st st--aguardando">Link ativo</span>{% else %}<span class="st st--neutro">Não assinado</span>{% endif %}</h2>
+  <dl class="gc sol-detalhe__campos">
+    <div class="f"><dt>Documento</dt><dd>{{ assinatura.label }}</dd></div>
+    <div class="f"><dt>Signatário</dt><dd>{{ assinatura.signatario }}</dd></div>
+    {% if assinatura.assinada %}<div class="f"><dt>Assinado em</dt><dd>{{ assinatura.assinado_em|date:"d/m/Y H:i" }}<small>Código <a href="{% url 'viagens_assinaturas:verificar' assinatura.codigo %}" target="_blank" rel="noopener">{{ assinatura.codigo }}</a></small></dd></div>{% endif %}
+    {% if assinatura.link_ativo %}<div class="f"><dt>Link válido até</dt><dd>{{ assinatura.expira_em|date:"d/m/Y H:i" }}<small>Uma nova emissão revoga o link anterior.</small></dd></div>{% endif %}
+  </dl>
+  {% if assinatura.motivo and not assinatura.assinada %}
+    <p class="aviso">{% include "components/icon.html" with nome="alert" %}<span>{{ assinatura.motivo }}</span></p>
+  {% elif not assinatura.assinada %}
+    <form method="post" action="{{ assinatura.gerar_url }}" class="pc-assinatura__gerar">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+      <div class="g-form g-form--3">{% include "components/input.html" with name="dias" label="Validade do link em dias" tipo="number" valor="7" minimo=1 %}</div>
+      <div class="pc-acoes-linha"><button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="send" %}Gerar link de assinatura</button></div>
+    </form>
+  {% endif %}
+  {% if assinatura.assinada or assinatura.link_ativo %}
+    <form method="post" action="{{ assinatura.cancelar_url }}" class="pc-assinatura__revogar" data-confirmar="Revogar o link e a assinatura?">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="ban" %}Revogar link e assinatura</button></form>
+  {% endif %}
+</section>

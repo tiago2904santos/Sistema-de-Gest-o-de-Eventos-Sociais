@@ -1,7 +1,49 @@
 {% extends "layouts/app_shell_v32.html" %}
-{% load static %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/viagens-documentos.css' %}">{% endblock %}
+{% comment %}
+  Prévia em tela do termo de autorização: o mesmo payload que vai para o
+  DOCX/PDF, lido como documento. Um servidor por vez; troca-se pelo seletor.
+{% endcomment %}
+
+{% block title %}Prévia do termo #{{ termo.pk }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
 {% block conteudo %}
-{% include "components/v32/page_header.html" with titulo="Prévia do termo de autorização" %}
-<section class="pa-card v32-corpo"><p>{{ payload.institucional.unidade }}</p><h2>{{ payload.termo.participante.nome }}</h2><p>{{ payload.termo.participante.cargo }} · RG {{ payload.termo.participante.rg_formatado }} · CPF {{ payload.termo.participante.cpf_formatado }}</p><p>{{ payload.termo.viagem.destinos_texto }} · {{ payload.termo.viagem.periodo }}</p><p>{{ payload.termo.transporte.modelo }} · {{ payload.termo.transporte.placa }}</p><p>{{ payload.termo.textos.corpo_autorizacao }}</p><p>{{ payload.termo.textos.declaracao }}</p><a href="{% url 'viagens_termos:detalhe' termo.pk %}">Voltar ao termo</a></section>
+{% with p=payload.termo %}
+<div class="sol-detalhe of-detalhe tm-previa">
+  <div class="d-cabeca">
+    <div class="d-cabeca__esq">
+      <a class="voltar" href="{% url 'viagens_termos:detalhe' termo.pk %}">{% include "components/icon.html" with nome="chevron-left" %}Voltar ao termo</a>
+      <div class="d-titulo"><h1>Prévia do termo #{{ termo.pk }}</h1><span class="st st--neutro">{{ variante_rotulo }}</span></div>
+      <p class="d-cabeca__sub sol-detalhe__meta"><span>{% include "components/icon.html" with nome="map-pin" %}{{ titulo }}</span></p>
+    </div>
+    <div class="d-acoes">
+      {% if servidores|length > 1 %}
+        <div class="dd" data-menu>
+          <button type="button" class="btn--secundaria" data-menu-gatilho aria-haspopup="true" aria-expanded="false">{% include "components/icon.html" with nome="users" %}{{ servidor.nome|default:"Servidor" }}{% include "components/icon.html" with nome="chevron-down" %}</button>
+          <div class="dd__c" hidden data-menu-corpo>
+            <div class="dd__t">Prévia por servidor</div>
+            {% for s in servidores %}<a class="dd__i" href="{% url 'viagens_termos:preview_servidor' termo.pk s.pk %}">{% include "components/icon.html" with nome="user" %}{{ s.nome }}</a>{% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <section class="reg tm-documento">
+    <p class="tm-documento__cabecalho">{{ payload.institucional.unidade|default:"—" }}</p>
+    <h2 class="tm-documento__titulo">{{ p.textos.titulo }}</h2>
+    <dl class="gc sol-detalhe__campos">
+      <div class="f"><dt>Servidor</dt><dd>{{ p.participante.nome|default:"____________________" }}{% if p.participante.cargo %}<small>{{ p.participante.cargo }}</small>{% endif %}</dd></div>
+      <div class="f"><dt>RG / CPF</dt><dd>{{ p.participante.rg_formatado|default:"—" }} / {{ p.participante.cpf_formatado|default:"—" }}</dd></div>
+      <div class="f"><dt>Lotação</dt><dd>{{ p.participante.unidade|default:"—" }}</dd></div>
+      <div class="f"><dt>Destino</dt><dd>{{ p.viagem.destinos_texto }}</dd></div>
+      <div class="f"><dt>Período</dt><dd>{{ p.viagem.periodo }}</dd></div>
+      <div class="f"><dt>Transporte</dt><dd>{{ p.transporte.modelo }}<small>Placa {{ p.transporte.placa }} · {{ p.transporte.combustivel }}</small></dd></div>
+      <div class="f"><dt>Ofício</dt><dd>{% if termo.oficio_id %}{{ p.oficio.numero_formatado }}<small>Protocolo {{ p.oficio.protocolo_formatado }}</small>{% else %}Termo avulso{% endif %}</dd></div>
+    </dl>
+    <p class="corrido tm-documento__texto">{{ p.textos.corpo_autorizacao }}</p>
+    <p class="corrido tm-documento__texto">{{ p.textos.declaracao }}</p>
+    <p class="v32-suave">{{ payload.institucional.unidade_rodape|default:"" }}</p>
+  </section>
+</div>
+{% endwith %}
 {% endblock %}

@@ -1,4 +1,75 @@
-{% extends "viagens_prestacoes/base.html" %}{% block prestacao_conteudo %}{% if back_url %}<p><a href="{{ back_url }}">{{ back_label }}</a></p>{% endif %}
-<form method="get" class="v32-barra v32-bloco" role="search">{% include "components/input.html" with name="q" label="Buscar modelos" valor=q %}<input type="hidden" name="campo" value="{{ campo }}"><button class="btn--secundaria">Buscar</button></form>
-<nav class="v32-barra v32-bloco" aria-label="Campos do relatório">{% for aba in abas %}<a href="{{ aba.url }}" {% if aba.ativa %}aria-current="page"{% endif %}>{{ aba.label }}</a>{% endfor %}</nav>
-<form method="post">{% csrf_token %}<input type="hidden" name="next" value="{{ request.GET.next }}"><div class="section-card section-card__corpo viagem-campos">{% include "pages/viagens_oficios/_campos.html" %}<button class="btn-primaria">Salvar modelo</button></div></form>{% for modelo in modelos %}<section class="section-card section-card__corpo v32-bloco"><h2>{{ modelo.nome }}</h2><p>{{ modelo.get_campo_display }}</p><p>{{ modelo.texto }}</p><a href="{% url 'viagens_prestacoes:modelo_update' modelo.pk %}">Editar</a><form method="post" action="{% url 'viagens_prestacoes:modelo_delete' modelo.pk %}">{% csrf_token %}<button class="btn--secundaria btn--destrutiva">Excluir</button></form></section>{% endfor %}{% endblock %}
+{% extends "layouts/app_shell_v32.html" %}
+{% load static %}
+{% comment %}
+  Modelos de texto do relatório técnico (`modelos_index`, `modelo_update`,
+  `modelo_delete` da origem): um grupo por campo do relatório, busca por nome,
+  inclusão rápida no próprio grupo, edição e exclusão. Segue o padrão dos
+  catálogos das metas anteriores.
+{% endcomment %}
+{% block title %}Modelos de texto do relatório técnico — Sistema de Gestão de Eventos Sociais{% endblock %}
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with atual="Modelos de texto" %}
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker">{{ modulo_ativo.nome }}</div>
+      <h1>Modelos de texto do relatório técnico</h1>
+      <p class="d-cabeca__sub">Textos prontos para cada campo do relatório: descrição do evento, objetivo, conclusão, medidas e informações complementares.</p>
+    </div>
+    <div class="d-acoes">
+      {% if back_url %}<a class="btn--secundaria" href="{{ back_url }}">{% include "components/icon.html" with nome="chevron-left" %}{{ back_label }}</a>{% else %}<a class="btn--secundaria" href="{% url 'viagens_prestacoes:index' %}">{% include "components/icon.html" with nome="chevron-left" %}Voltar às prestações</a>{% endif %}
+    </div>
+  </div>
+
+  {% if not modelo %}
+    <nav class="v32-abas pc-abas" aria-label="Campos do relatório">
+      {% for aba in abas %}<a class="v32-aba{% if aba.ativa %} v32-aba--ativa{% endif %}" href="{{ aba.url }}"{% if aba.ativa %} aria-current="page"{% endif %}>{{ aba.label }}</a>{% endfor %}
+    </nav>
+
+    <div class="pa-card pa-card--lista v32-bloco v32-filtros">
+      <form method="get" class="v32-barra of-filtros" role="search" data-auto-enviar>
+        <input type="hidden" name="campo" value="{{ campo }}">{% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+        <div class="form-campo v32-busca"><label class="form-label sr-only" for="id_q">Buscar modelos</label><div class="busca"><span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span><input class="form-controle" type="search" name="q" id="id_q" value="{{ q }}" placeholder="Buscar modelo pelo nome" aria-label="Buscar modelos"></div></div>
+        <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="search" %}Buscar</button>
+        <span class="v32-meta">{{ modelos|length }} modelo{{ modelos|length|pluralize }}</span>
+      </form>
+    </div>
+  {% endif %}
+
+  <div class="pc-modelos" id="grupo-{{ campo }}">
+    <section class="reg reg--sec pc-modelos__form">
+      <h2 class="reg__t">{% if modelo %}Editar modelo{% else %}Novo modelo de {{ campo_rotulo|lower }}{% endif %}</h2>
+      <form method="post" action="{% if modelo %}{% url 'viagens_prestacoes:modelo_update' modelo.pk %}{% else %}{% url 'viagens_prestacoes:modelos_index' %}{% endif %}" novalidate>
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+        {% if not modelo %}<input type="hidden" name="quick_add_campo" value="{{ campo }}">{% endif %}
+        {% if form.errors %}<p class="form-erro">Revise os campos indicados.</p>{% endif %}
+        <div class="g-form g-form--2">
+          {% include "components/select.html" with name=prefixo|add:"campo" label="Campo do relatório" opcoes=opcoes_campo obrigatorio=True selecionado=valores.campo|default:campo erros=erros.campo %}
+          {% include "components/input.html" with name=prefixo|add:"nome" label="Nome" obrigatorio=True valor=valores.nome ajuda="Use um nome curto para identificar o modelo." autocomplete="off" erros=erros.nome %}
+        </div>
+        {% include "components/textarea.html" with name=prefixo|add:"texto" label="Texto do modelo" obrigatorio=True valor=valores.texto linhas="5" ajuda="Este texto será copiado para o campo do relatório e poderá ser editado antes de gerar." erros=erros.texto %}
+        <div class="pc-acoes-linha">
+          {% if modelo %}<a class="btn--secundaria" href="{% url 'viagens_prestacoes:modelos_index' %}?campo={{ modelo.campo }}">Cancelar</a>{% endif %}
+          <button type="submit" class="btn-primaria">Salvar modelo</button>
+        </div>
+      </form>
+    </section>
+    {% if not modelo %}
+      <div class="of-lista">
+        {% for m in modelos %}
+          <article class="of-cartao pc-modelo">
+            <header class="of-cartao__cabeca"><div class="of-cartao__ident"><h2>{{ m.nome }}</h2><p class="of-cartao__sub">{{ m.get_campo_display }}{% if m.ordem %} · ordem {{ m.ordem }}{% endif %}</p></div>
+              <div class="acoes">
+                <a class="ib-linha" href="{% url 'viagens_prestacoes:modelo_update' m.pk %}?next={{ url_atual|urlencode }}" aria-label="Editar modelo {{ m.nome }}" title="Editar modelo">{% include "components/icon.html" with nome="pencil" %}</a>
+                <form method="post" action="{% url 'viagens_prestacoes:modelo_delete' m.pk %}" data-confirmar="Confirmar exclusão?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}"><button type="submit" class="ib-linha ib-linha--perigo" aria-label="Excluir modelo {{ m.nome }}" title="Excluir modelo">{% include "components/icon.html" with nome="trash" %}</button></form>
+              </div>
+            </header>
+            <p class="corrido pc-modelo__texto">{{ m.texto|linebreaksbr }}</p>
+          </article>
+        {% empty %}
+          <div class="pa-card v32-bloco of-vazio"><h2>Nenhum modelo</h2><p>{% if q %}Nenhum modelo de {{ campo_rotulo|lower }} com esse nome.{% else %}Nenhum modelo de {{ campo_rotulo|lower }} cadastrado ainda. Use o formulário acima.{% endif %}</p></div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
