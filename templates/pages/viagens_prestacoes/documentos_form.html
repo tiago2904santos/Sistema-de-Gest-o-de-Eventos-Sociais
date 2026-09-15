@@ -1,10 +1,13 @@
-{% extends "viagens_prestacoes/base.html" %}{% load l10n %}
+{% extends "pages/viagens_prestacoes/base.html" %}{% load l10n %}
 {% comment %}
   Etapa 3 — Documentos: o número da solicitação e as datas de liberação e
   saque deste servidor, e os cinco documentos assinados — despacho e ofício
   (compartilhados pelo ofício; o ofício assinado recebe o carimbo do número
   de solicitação), comprovante de saque, relatório técnico e diário de bordo.
 {% endcomment %}
+{% block pc_salvar_topo %}
+  <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn-primaria">{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
+{% endblock %}
 {% block prestacao_conteudo %}
   <section class="reg" id="solicitacao">
     <h2 class="reg__t">{% include "components/icon.html" with nome="clipboard" %}Solicitação e liberação das diárias</h2>
@@ -83,12 +86,14 @@
         <p class="texto-vazio">Nenhum documento disponível ainda. Preencha o diário de bordo e o relatório técnico.</p>
       {% endfor %}
     </div>
+
+    {# Ações no fim do último cartão da etapa, como no roteiro. #}
+    <div class="frm-acoes-fim">
+      <a class="btn--secundaria" href="{{ rt_url }}">Voltar ao RT</a>
+      <span class="frm-acoes-fim__dir">
+        <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_arquivar' ps.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="lock" %}{% if ps.arquivada %}Desarquivar{% else %}Arquivar prestação{% endif %}</button></form>
+        <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check-circle" %}{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
+      </span>
+    </div>
   </section>
-{% endblock %}
-{% block prestacao_acoes %}
-  <footer class="pc-fluxo__rodape">
-    <a class="btn--secundaria" href="{{ rt_url }}">Voltar ao RT</a>
-    <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_arquivar' ps.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="lock" %}{% if ps.arquivada %}Desarquivar{% else %}Arquivar prestação{% endif %}</button></form>
-    <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check-circle" %}{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
-  </footer>
 {% endblock %}

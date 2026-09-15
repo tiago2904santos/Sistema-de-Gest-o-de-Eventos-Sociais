@@ -9,11 +9,11 @@
 {% block title %}Modelos de texto do relatório técnico — Sistema de Gestão de Eventos Sociais{% endblock %}
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with atual="Modelos de texto" %}
+  {# Cabeçalho no padrão da lista de roteiros: kicker junto do título e sem subtítulo. #}
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker">{{ modulo_ativo.nome }}</div>
+      <div class="kicker kicker--junto">{{ modulo_ativo.nome }}</div>
       <h1>Modelos de texto do relatório técnico</h1>
-      <p class="d-cabeca__sub">Textos prontos para cada campo do relatório: descrição do evento, objetivo, conclusão, medidas e informações complementares.</p>
     </div>
     <div class="d-acoes">
       {% if back_url %}<a class="btn--secundaria" href="{{ back_url }}">{% include "components/icon.html" with nome="chevron-left" %}{{ back_label }}</a>{% else %}<a class="btn--secundaria" href="{% url 'viagens_prestacoes:index' %}">{% include "components/icon.html" with nome="chevron-left" %}Voltar às prestações</a>{% endif %}
@@ -37,7 +37,7 @@
 
   <div class="pc-modelos" id="grupo-{{ campo }}">
     <section class="reg reg--sec pc-modelos__form">
-      <h2 class="reg__t">{% if modelo %}Editar modelo{% else %}Novo modelo de {{ campo_rotulo|lower }}{% endif %}</h2>
+      <h2 class="reg__t">{% include "components/icon.html" with nome="document" %}{% if modelo %}Editar modelo{% else %}Novo modelo de {{ campo_rotulo|lower }}{% endif %}</h2>
       <form method="post" action="{% if modelo %}{% url 'viagens_prestacoes:modelo_update' modelo.pk %}{% else %}{% url 'viagens_prestacoes:modelos_index' %}{% endif %}" novalidate>
         {% csrf_token %}
         {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
@@ -48,8 +48,9 @@
           {% include "components/input.html" with name=prefixo|add:"nome" label="Nome" obrigatorio=True valor=valores.nome ajuda="Use um nome curto para identificar o modelo." autocomplete="off" erros=erros.nome %}
         </div>
         {% include "components/textarea.html" with name=prefixo|add:"texto" label="Texto do modelo" obrigatorio=True valor=valores.texto linhas="5" ajuda="Este texto será copiado para o campo do relatório e poderá ser editado antes de gerar." erros=erros.texto %}
-        <div class="pc-acoes-linha">
-          {% if modelo %}<a class="btn--secundaria" href="{% url 'viagens_prestacoes:modelos_index' %}?campo={{ modelo.campo }}">Cancelar</a>{% endif %}
+        {# Ações no fim do cartão, como no roteiro: voltar à esquerda, salvar à direita. #}
+        <div class="frm-acoes-fim">
+          {% if modelo %}<a class="btn--secundaria" href="{% url 'viagens_prestacoes:modelos_index' %}?campo={{ modelo.campo }}">Voltar</a>{% else %}<span></span>{% endif %}
           <button type="submit" class="btn-primaria">Salvar modelo</button>
         </div>
       </form>

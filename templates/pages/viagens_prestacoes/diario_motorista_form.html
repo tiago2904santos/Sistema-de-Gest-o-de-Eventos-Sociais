@@ -1,4 +1,7 @@
-{% extends "viagens_prestacoes/base.html" %}
+{% extends "pages/viagens_prestacoes/base.html" %}
+{% block pc_salvar_topo %}
+  <button type="submit" class="btn-primaria" form="form-prestacao">Salvar motorista e viatura</button>
+{% endblock %}
 {% comment %}
   Troca de motorista e viatura só neste diário — o ofício não muda. Três modos
   para o motorista (manter o do ofício, outro servidor deste ofício, motorista
@@ -61,12 +64,12 @@
           {% include "components/input.html" with name="viatura_manual_combustivel" label="Combustível" valor=valores.viatura_manual_combustivel placeholder="Ex.: Gasolina" autocomplete="off" erros=erros.viatura_manual_combustivel %}
         </div>
       </div>
+
+      {# Ações no fim do último cartão da etapa, como no roteiro. #}
+      <div class="frm-acoes-fim">
+        <a class="btn--secundaria" href="{{ diario_url }}">Voltar ao diário</a>
+        <button type="submit" class="btn-primaria" form="form-prestacao">Salvar motorista e viatura</button>
+      </div>
     </section>
   </form>
-{% endblock %}
-{% block prestacao_acoes %}
-  <footer class="editor-roteiro__rodape pc-fluxo__rodape">
-    <a class="btn--secundaria" href="{{ diario_url }}">Voltar ao diário</a>
-    <button type="submit" class="btn-primaria" form="form-prestacao">Salvar motorista e viatura</button>
-  </footer>
 {% endblock %}

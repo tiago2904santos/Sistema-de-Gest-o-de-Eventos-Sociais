@@ -121,7 +121,7 @@ def diario_servidor(request, ps_pk):
 
     return render(
         request,
-        "viagens_prestacoes/diario_bordo_form.html",
+        "pages/viagens_prestacoes/diario_bordo_form.html",
         {
             "page_title": f"Diário de Bordo — {ps.servidor.nome}",
             "prestacao": prestacao,
@@ -326,7 +326,7 @@ def diario_servidor_motorista(request, ps_pk):
     valor = lambda nome: (str(getattr(form[nome].value(), "pk", form[nome].value())) if form[nome].value() not in (None, "") else "")
     return render(
         request,
-        "viagens_prestacoes/diario_motorista_form.html",
+        "pages/viagens_prestacoes/diario_motorista_form.html",
         {
             "page_title": "Trocar motorista / viatura",
             "prestacao": prestacao,

@@ -10,20 +10,28 @@
 {% block conteudo %}
 {% include "components/v32/breadcrumb.html" with atual=flow_status_label|default:page_title %}
 <div class="pc-fluxo">
-  <div class="d-cabeca">
-    <div class="d-cabeca__esq">
-      <a class="voltar" href="{{ flow_back_url|default:'/viagens/prestacoes/' }}">{% include "components/icon.html" with nome="chevron-left" %}{{ flow_back_label|default:"Voltar à lista" }}</a>
-      <div class="d-titulo">
-        <h1>{% if flow_numero %}<span class="pc-fluxo__etapa">Etapa {{ flow_numero }}</span> {% endif %}{{ flow_status_label|default:page_title }}</h1>
-        {% if ps %}<span class="st st--pc-{{ ps.status }}">{{ ps.status_display }}</span>{% if ps.finalizada %}<span class="st st--atendido">Finalizada</span>{% endif %}{% if ps.arquivada %}<span class="st st--neutro">Arquivada</span>{% endif %}{% endif %}
+  {% comment %}
+    Cabeçalho no padrão do roteiro: ícone, "Etapa N — nome" com o selo ao lado,
+    meta com ícones e a ação da etapa no topo à direita.
+  {% endcomment %}
+  <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+    <div class="page-header d-cabeca__esq">
+      <div class="page-header__identificacao d-identificacao">
+        <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="clipboard" %}</span>
+        <div>
+          <div class="frm-titulo">
+            <h1 class="page-header__titulo d-titulo-v32">{% if flow_numero %}<span class="pc-fluxo__etapa">Etapa {{ flow_numero }}</span> {% endif %}{{ flow_status_label|default:page_title }}</h1>
+            {% if ps %}<span class="st st--pc-{{ ps.status }}">{{ ps.status_display }}</span>{% if ps.finalizada %}<span class="st st--atendido">Finalizada</span>{% endif %}{% if ps.arquivada %}<span class="st st--neutro">Arquivada</span>{% endif %}{% endif %}
+          </div>
+          <p class="page-header__subtitulo d-cabeca__sub frm-meta">
+            {% if ps %}<span>{% include "components/icon.html" with nome="user" %}{{ ps.servidor.nome }}{% if ps.is_motorista %} · motorista{% endif %}</span>{% endif %}
+            {% if prestacao %}<span>{% include "components/icon.html" with nome="document" %}Ofício {{ prestacao.oficio.numero_formatado }}{% if identificacao.protocolo and identificacao.protocolo != "—" %} · {{ identificacao.protocolo }}{% endif %}</span>{% endif %}
+            {% if identificacao.destino and identificacao.destino != "—" %}<span>{% include "components/icon.html" with nome="map-pin" %}{{ identificacao.destino }}{% if identificacao.periodo and identificacao.periodo != "—" %} · {{ identificacao.periodo }}{% endif %}</span>{% endif %}
+          </p>
+        </div>
       </div>
-      <p class="d-cabeca__sub">
-        {% if ps %}<span>{% include "components/icon.html" with nome="user" %}{{ ps.servidor.nome }}{% if ps.is_motorista %} · motorista{% endif %}</span>{% endif %}
-        {% if prestacao %}<span>{% include "components/icon.html" with nome="document" %}Ofício {{ prestacao.oficio.numero_formatado }}{% if identificacao.protocolo and identificacao.protocolo != "—" %} · {{ identificacao.protocolo }}{% endif %}</span>{% endif %}
-        {% if identificacao.destino and identificacao.destino != "—" %}<span>{% include "components/icon.html" with nome="map-pin" %}{{ identificacao.destino }}{% if identificacao.periodo and identificacao.periodo != "—" %} · {{ identificacao.periodo }}{% endif %}</span>{% endif %}
-      </p>
     </div>
-    <div class="d-acoes">{% block pc_acoes_topo %}{% endblock %}</div>
+    <div class="frm-topo__acoes">{% block pc_acoes_topo %}{% endblock %}{% block pc_salvar_topo %}{% endblock %}</div>
   </div>
 
   {% if ps %}
@@ -62,8 +70,8 @@
 
   {% block pc_avisos %}{% endblock %}
 
+  {# As ações de cada etapa ficam no fim do último cartão dela, como no roteiro. #}
   <main class="pc-fluxo__principal">{% block prestacao_conteudo %}{% endblock %}</main>
-  {% block prestacao_acoes %}{% endblock %}
 </div>
 {% endblock %}
 {% block extra_js %}{{ block.super }}<script src="{% static 'js/viagens-prestacoes.js' %}" defer></script>{% block pc_js %}{% endblock %}{% endblock %}

@@ -207,7 +207,7 @@ def documentos_servidor(request, ps_pk):
 
     return render(
         request,
-        "viagens_prestacoes/documentos_form.html",
+        "pages/viagens_prestacoes/documentos_form.html",
         {
             "page_title": f"Documentos — {ps.servidor.nome}",
             "prestacao": prestacao,
@@ -482,7 +482,7 @@ def prestacao_carimbo_ajustar(request, pc_pk):
 
     return render(
         request,
-        "viagens_prestacoes/carimbo_ajustar.html",
+        "pages/viagens_prestacoes/carimbo_ajustar.html",
         {
             "page_title": "Ajustar posição do número de solicitação",
             "prestacao": prestacao,
