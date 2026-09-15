@@ -48,7 +48,7 @@
             <label class="btn--secundaria btn--compacto pc-upload__escolher" for="upload-{{ item.id }}">{% include "components/icon.html" with nome="upload" %}{% if item.anexos %}{% if item.multiplo %}Anexar mais{% else %}Substituir{% endif %}{% else %}Escolher arquivo{% endif %}</label>
             <input type="file" name="{{ item.campo }}" {% if item.multiplo %}multiple{% endif %} id="upload-{{ item.id }}" accept=".pdf,.png,.jpg,.jpeg" required class="sr-only" data-arquivo-nome="nome-{{ item.id }}">
             <span class="pc-upload__nome" id="nome-{{ item.id }}"></span>
-            <button type="submit" class="btn-primaria btn--compacto">Anexar {{ item.titulo|lower }}</button>
+            <button type="submit" class="btn--secundaria btn--compacto"><span class="sr-only">Anexar {{ item.titulo|lower }}</span><span aria-hidden="true">Anexar</span></button>
           </form>
         </article>
       {% endfor %}

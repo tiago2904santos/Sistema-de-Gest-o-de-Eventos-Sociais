@@ -59,10 +59,17 @@
             <div class="aviso__txt">{% include "components/icon.html" with nome="ban" %}<div class="aviso__corpo"><b>Ofício cancelado</b><p>{{ oficio.motivo_cancelamento|default:"Sem motivo registrado." }}</p><div class="aviso__meta">{{ oficio.cancelado_em|date:"d/m/Y · H\hi" }}</div></div></div>
           </div>
         {% elif oficio.pk and avaliacao.pendencias %}
+          {# Um lugar só para a conferência: o que falta é dito aqui, por extenso. #}
           <div class="aviso aviso--callout" role="status">
-            <div class="aviso__txt">{% include "components/icon.html" with nome="alert" %}<div class="aviso__corpo"><b>Faltam informações para emitir o documento</b><p>{{ avaliacao.pendencias|length }} pendência{{ avaliacao.pendencias|length|pluralize }} na conferência, no fim do formulário.</p></div></div>
+            <div class="aviso__txt">{% include "components/icon.html" with nome="alert" %}<div class="aviso__corpo">
+              <b>Faltam informações para emitir o documento</b>
+              <p>{{ avaliacao.pendencias|length }} pendência{{ avaliacao.pendencias|length|pluralize }} antes de gerar o ofício:</p>
+              <ul class="of-pendencias">{% for p in avaliacao.pendencias %}<li>{{ p }}</li>{% endfor %}</ul>
+            </div></div>
             <a class="btn-primaria" href="#dados">Completar o ofício</a>
           </div>
+        {% elif oficio.pk %}
+          <p class="aviso aviso--ok" role="status">{% include "components/icon.html" with nome="check-circle" %}<span>Ofício <strong>{{ oficio.numero_formatado }}</strong> pronto para emissão. Os documentos são gerados em <a href="#documentos">Documentos</a>.</span></p>
         {% endif %}
 
         {# ------------------------------------------------------------- 1 #}
@@ -296,39 +303,9 @@
           </div>
         </section>
 
-        {# ------------------------------------------------------------- 5 #}
-        <section class="section-card reg" id="resumo">
-          <header class="section-card__cabecalho reg__t">
-            <span class="section-card__numero reg-numero" aria-hidden="true">5</span>
-            <h2 class="section-card__titulo">Resumo</h2>
-            {% if oficio.pk %}<a class="btn--secundaria btn--compacto section-card__acao" href="#documentos">{% include "components/icon.html" with nome="eye" %}Conferir e emitir</a>{% endif %}
-          </header>
-          <div class="section-card__corpo">
-            {% if oficio.pk %}
-              <p class="reg__st">Conferência das etapas</p>
-              <div class="of-conferencia">
-                {% for etapa in etapas %}{% if etapa.id != "resumo" and etapa.id != "documentos" %}
-                  <div class="of-conferencia__item of-conferencia__item--{{ etapa.estado }}">
-                    <span class="of-conferencia__marca" aria-hidden="true">{% if etapa.estado == "concluida" %}{% include "components/icon.html" with nome="check" %}{% elif etapa.estado == "opcional" %}–{% else %}{{ etapa.numero }}{% endif %}</span>
-                    <span><strong>{{ etapa.titulo }}</strong><small>{% if etapa.estado == "concluida" %}Completo{% elif etapa.estado == "opcional" %}Não exigida{% else %}Pendente{% endif %}</small></span>
-                  </div>
-                {% endif %}{% endfor %}
-              </div>
-              {% if avaliacao.pendencias %}
-                <p class="reg__st">Pendências para emitir o documento</p>
-                <ul class="of-pendencias">{% for p in avaliacao.pendencias %}<li>{{ p }}</li>{% endfor %}</ul>
-              {% else %}
-                <p class="aviso aviso--ok">{% include "components/icon.html" with nome="check-circle" %}<span>Ofício <strong>{{ oficio.numero_formatado }}</strong> pronto para emissão. Os documentos são gerados na seção <a href="#documentos">Documentos</a>, logo abaixo.</span></p>
-              {% endif %}
-            {% else %}
-              <p class="texto-vazio">Salve o ofício para reservar o número, conferir as etapas e emitir os documentos.</p>
-            {% endif %}
-          </div>
-        </section>
-        <div class="frm-acoes">
-          <a class="btn--secundaria frm-cancelar" href="{{ url_voltar }}">Voltar</a>
-          <button type="submit" class="btn-primaria" name="acao" value="continuar">Salvar ofício</button>
-        </div>
+        {% if not oficio.pk %}
+          <p class="texto-vazio">Salve o ofício para reservar o número e liberar a emissão dos documentos.</p>
+        {% endif %}
     </div>
   </form>
 
@@ -339,7 +316,7 @@
   {# ---------------------------------------------------------------------- #}
   {% if oficio.pk %}{% with o=oficio %}
     <div class="of-detalhe sol-detalhe">
-      {# ----------------------------------------------------------- 6 #}
+      {# ----------------------------------------------------------- 5 #}
       <section class="reg" id="documentos">
         <h2 class="reg__t">{% include "components/icon.html" with nome="document-plus" %}Documentos</h2>
         {% if not o.cancelado %}
@@ -423,7 +400,7 @@
         </div>
       </section>
 
-      {# ----------------------------------------------------------- 7 #}
+      {# ----------------------------------------------------------- 6 #}
       <section class="reg sol-detalhe__historico" id="historico">
         <h2 class="reg__t">{% include "components/icon.html" with nome="clock" %}Histórico<em>{{ historico|length }} registro{{ historico|length|pluralize }}</em></h2>
         <div class="linha-t">
@@ -438,7 +415,7 @@
         </div>
       </section>
 
-      {# ----------------------------------------------------------- 8 #}
+      {# ----------------------------------------------------------- 7 #}
       <section class="reg reg--dg" id="encerramento">
         <h2 class="reg__t">{% include "components/icon.html" with nome="checklist" %}<span>Encerramento</span></h2>
         {% if o.cancelado %}
@@ -450,26 +427,18 @@
           </form>
         {% else %}
           <p class="reg__st">Marcas do documento</p>
-          <div class="of-emitir">
-            <div class="of-emitir__grupo">
-              <strong>Retificação</strong>
-              <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'retificar' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
-                <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="undo" %}{% if o.retificado_documento %}Desfazer retificação{% else %}Retificar ofício{% endif %}</button>
-              </form>
-            </div>
-            <div class="of-emitir__grupo">
-              <strong>Complementar</strong>
-              <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'complementar' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
-                <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="plus" %}{% if o.complementar_documento %}Desfazer complementar{% else %}Ofício complementar{% endif %}</button>
-              </form>
-            </div>
+          {# Cada botão já se explica: uma faixa de botões, sem moldura nem rótulo. #}
+          <div class="pc-acoes-linha of-acoes-estado">
+            <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'retificar' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+              <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="undo" %}{% if o.retificado_documento %}Desfazer retificação{% else %}Retificar ofício{% endif %}</button>
+            </form>
+            <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'complementar' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+              <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="plus" %}{% if o.complementar_documento %}Desfazer complementar{% else %}Ofício complementar{% endif %}</button>
+            </form>
             {% if o.status != "ARQUIVADO" %}
-              <div class="of-emitir__grupo">
-                <strong>Arquivamento</strong>
-                <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'arquivar' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
-                  <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="check-circle" %}Arquivar ofício</button>
-                </form>
-              </div>
+              <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'arquivar' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+                <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="check-circle" %}Arquivar ofício</button>
+              </form>
             {% endif %}
           </div>
 
@@ -498,6 +467,13 @@
       </section>
     </div>
   {% endwith %}{% endif %}
+
+  {# As ações fecham a página. Ficam fora do <form>, ligadas a ele pelo atributo
+     HTML5 `form`, para não sobrarem no meio da tela antes dos blocos de baixo. #}
+  <div class="frm-acoes of-form__acoes">
+    <a class="btn--secundaria frm-cancelar" href="{{ url_voltar }}">Voltar</a>
+    <button type="submit" class="btn-primaria" form="form-oficio" name="acao" value="continuar">Salvar ofício</button>
+  </div>
 {% endblock %}
 
 {% block extra_js %}

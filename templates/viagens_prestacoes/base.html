@@ -36,6 +36,8 @@
       {% endfor %}
     </nav>
 
+    {# Com um servidor só não há para onde navegar: a barra seria ruído. #}
+    {% if identificacao.servidores_count > 1 or identificacao.servidores_removidos %}
     <div class="pc-equipe-barra">
       <span class="pc-equipe-barra__r">{% include "components/icon.html" with nome="users" %}Equipe <em>{{ identificacao.servidores_count }}</em></span>
       <ul class="pc-equipe">
@@ -55,6 +57,7 @@
         </details>
       {% endif %}
     </div>
+    {% endif %}
   {% endif %}
 
   {% block pc_avisos %}{% endblock %}

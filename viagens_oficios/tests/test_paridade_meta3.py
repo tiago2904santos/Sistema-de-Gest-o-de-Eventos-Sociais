@@ -256,7 +256,7 @@ class FormularioTests(Cenario):
         for texto in ["Dados e viajantes", "Identificação", "Motivo", "Custeio", "Equipe", "Termo de autorização",
                       "Transporte", "Origem da viatura", "Cartão do motorista externo", "Ofício do motorista",
                       "Porte/transporte de armas", "Roteiro", "Resumo da rota", "Justificativa", "Regra de prazo",
-                      "Resumo", "Conferência das etapas", "Documentos"]:
+                      "Documentos"]:
             self.assertContains(r, texto)
         self.assertNotContains(r, "viagem-campos")
         self.assertTemplateNotUsed(r, "pages/viagens_oficios/_campos.html")
@@ -294,7 +294,7 @@ class ConferenciaNoFormularioTests(Cenario):
     def test_conferencia_documentos_e_acoes(self):
         o = self.oficio(dias=-20, protocolo="123456789", servidores=[self.janine, self.joao], motorista=self.joao, viatura=self.duster, justificativa="teste 1")
         r = self.client.get(reverse("viagens_oficios:editar", args=[o.pk]))
-        for texto in ["Conferência das etapas", "Dados e viajantes", "Documentos", "pronto para emissão",
+        for texto in ["Dados e viajantes", "Documentos", "pronto para emissão",
                       "Equipe", "Termos de autorização", "Todos num PDF", "Todos em PDF (ZIP)", "Todos em DOCX (ZIP)",
                       "Transporte", "Roteiro", "Justificativa", "Visualizar ofício", "Visualizar justificativa",
                       "Baixar DOCX", "Documentos gerados", "Encerramento", "Retificar ofício", "Ofício complementar",

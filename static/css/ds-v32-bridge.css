@@ -1010,12 +1010,12 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 .of-pessoa__desc{font-size:11.5px;color:var(--n-500);overflow-wrap:anywhere}
 .of-tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:99px;background:var(--d-600);color:#fff;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .of-equipe__vazio{grid-column:1/-1;padding:9px 12px;border:1px dashed var(--n-200);border-radius:9px;font-size:12.5px;color:var(--n-500)}
-.of-grade{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1.1fr);gap:10px;align-items:stretch}
+.of-grade{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.5fr) minmax(0,1.2fr);gap:10px;align-items:stretch}
 .of-bloco{min-width:0;padding:12px 14px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25)}
 .of-rotulo{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--d-700)}
 .of-rotulo+*{display:block;margin:2px 0 10px}
 .of-bloco> :last-child{margin-bottom:0}
-.of-transporte__valor{font-size:26px;line-height:1.1;font-weight:800;color:var(--n-900);letter-spacing:.01em;overflow-wrap:anywhere}
+.of-transporte__valor{font-size:15px;line-height:1.3;font-weight:600;color:var(--n-900);letter-spacing:.01em;overflow-wrap:anywhere}
 .of-nao-informado{font-size:13px;color:var(--n-500)}
 .of-trechos{list-style:none;margin:0;padding:8px;display:grid;gap:6px;align-content:start;max-height:190px;overflow:auto;scrollbar-width:thin}
 .of-trecho{display:grid;gap:2px;padding:8px 10px;border-radius:7px;background:var(--branco);border:1px solid var(--n-150);min-width:0}
@@ -1051,7 +1051,7 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 @container(max-width:680px){
   .of-grade,.of-equipe{grid-template-columns:1fr}
   .of-cartao{padding:14px}
-  .of-transporte__valor,.of-valor__num{font-size:22px}
+  .of-valor__num{font-size:22px}
   .of-menu__corpo{right:auto;left:0}
   .of-cartao__rodape{flex-wrap:wrap}
   .of-filtros__ordem,.of-filtros__periodo{flex-basis:100%}
@@ -1245,6 +1245,7 @@ a.step-i{text-decoration:none;color:inherit}
 .of-cartao .pc-wa{width:34px;height:34px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco);color:var(--ok-t);display:inline-grid;place-items:center}
 .of-cartao .pc-wa:hover{border-color:var(--ok-t);background:var(--ok-b)}
 .of-cartao .ib-linha--ativo{border-color:var(--d-500);background:var(--d-50);color:var(--d-800)}
+.acao-linha--ativo{color:var(--d-800);font-weight:600}
 .pc-menu-downloads{min-width:340px}
 .pc-download{display:grid;gap:6px;padding:8px 10px;border-bottom:1px solid var(--n-100)}
 .pc-download:last-of-type{border-bottom:0}
@@ -1324,7 +1325,9 @@ a.step-i{text-decoration:none;color:inherit}
 .acao-linha--perigo{color:var(--dg-t)}
 .prestacao-upload{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0}
 .pc-upload__escolher{cursor:pointer}
-.pc-upload__nome{flex:1 1 160px;font-size:12px;color:var(--n-600);overflow-wrap:anywhere}
+/* O nome do arquivo escolhido não empurra o botão para a outra ponta do
+   cartão: escolher e anexar são o mesmo gesto e ficam juntos. */
+.pc-upload__nome{flex:0 1 auto;font-size:12px;color:var(--n-600);overflow-wrap:anywhere}
 .pc-pendencias{margin:6px 0 0;padding-left:18px}
 .pc-pendencias li{font-size:13px;color:#4d3703}
 .pc-situacao{margin-top:14px}
@@ -1344,3 +1347,8 @@ a.step-i{text-decoration:none;color:inherit}
 
 /* Fieldset usado só para desabilitar o formulário inteiro em modo consulta. */
 .frm-fieldset{border:0;margin:0;padding:0;min-width:0;display:contents}
+
+/* Ofícios — tela única do ofício (V3.2): a barra de ações fecha a página, depois
+   do Encerramento, e liga-se ao formulário pelo atributo HTML5 `form`. */
+.of-form__acoes{justify-content:flex-end;flex-wrap:wrap;margin:18px 0 6px;padding-top:16px;border-top:1px solid var(--n-200)}
+.of-acoes-estado form{margin:0}
