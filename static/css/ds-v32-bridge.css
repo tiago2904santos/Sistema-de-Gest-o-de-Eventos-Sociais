@@ -1351,4 +1351,5 @@ a.step-i{text-decoration:none;color:inherit}
 /* Ofícios — tela única do ofício (V3.2): a barra de ações fecha a página, depois
    do Encerramento, e liga-se ao formulário pelo atributo HTML5 `form`. */
 .of-form__acoes{justify-content:flex-end;flex-wrap:wrap;margin:18px 0 6px;padding-top:16px;border-top:1px solid var(--n-200)}
+.of-acoes-estado{margin-bottom:18px}
 .of-acoes-estado form{margin:0}

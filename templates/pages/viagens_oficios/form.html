@@ -468,8 +468,11 @@
     </div>
   {% endwith %}{% endif %}
 
-  {# As ações fecham a página. Ficam fora do <form>, ligadas a ele pelo atributo
-     HTML5 `form`, para não sobrarem no meio da tela antes dos blocos de baixo. #}
+  {% comment %}
+    As ações fecham a página. Ficam fora do formulário, ligadas a ele pelo
+    atributo HTML5 `form`, para não sobrarem no meio da tela, antes dos blocos
+    de documentos, histórico e encerramento.
+  {% endcomment %}
   <div class="frm-acoes of-form__acoes">
     <a class="btn--secundaria frm-cancelar" href="{{ url_voltar }}">Voltar</a>
     <button type="submit" class="btn-primaria" form="form-oficio" name="acao" value="continuar">Salvar ofício</button>
