@@ -113,7 +113,7 @@
           </thead>
           <tbody>
             {% for p in linhas %}
-              <tr data-linha-url="{% url 'publicacoes:detalhe' p.pk %}" tabindex="0">
+              <tr data-linha-url="{% url 'publicacoes:editar' p.pk %}" tabindex="0">
                 <td class="c-data">{{ p.data|date:"d/m/Y" }}{% if p.inicio_pauta %}<small class="dt__sub">{{ p.inicio_pauta|time:"H:i" }}</small>{% endif %}</td>
                 <td class="c-status"><span class="st st--{{ p.status_css }}">{{ p.get_status_display }}</span></td>
                 <td class="c-sol c-titulo">
@@ -132,13 +132,12 @@
                     {% elif not p.encerrada %}
                       <a class="acao-linha" href="{% url 'publicacoes:editar' p.pk %}">{% include "components/icon.html" with nome="pencil" %}Atualizar</a>
                     {% endif %}
-                    <a class="ib-linha" href="{% url 'publicacoes:detalhe' p.pk %}" aria-label="Abrir pauta #{{ p.pk }}">{% include "components/icon.html" with nome="chevron-right" %}</a>
+                    <a class="ib-linha" href="{% url 'publicacoes:editar' p.pk %}" aria-label="Abrir pauta #{{ p.pk }}">{% include "components/icon.html" with nome="chevron-right" %}</a>
                     <div class="dd" data-menu>
                       <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações da pauta #{{ p.pk }}">{% include "components/icon.html" with nome="kebab" %}</button>
                       <div class="dd__c" hidden data-menu-corpo>
                         <div class="dd__t">Pauta #{{ p.pk }}</div>
-                        <a class="dd__i" href="{% url 'publicacoes:detalhe' p.pk %}">{% include "components/icon.html" with nome="eye" %}Detalhes</a>
-                        <a class="dd__i" href="{% url 'publicacoes:editar' p.pk %}">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                        <a class="dd__i" href="{% url 'publicacoes:editar' p.pk %}">{% include "components/icon.html" with nome="pencil" %}Abrir pauta</a>
                         {% if p.link_aen %}<a class="dd__i" href="{{ p.link_aen }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="arrow-right" %}Abrir na AEN</a>{% endif %}
                       </div>
                     </div>
@@ -178,7 +177,7 @@
     <div class="lista-mobile-v32">
       <div class="m-lista">
         {% for p in linhas %}
-          <div class="m-item" data-linha-url="{% url 'publicacoes:detalhe' p.pk %}">
+          <div class="m-item" data-linha-url="{% url 'publicacoes:editar' p.pk %}">
             <div class="m-item__topo">
               <span class="m-item__id">{{ p.data|date:"d/m/Y" }}</span>
               <span class="st st--{{ p.status_css }}">{{ p.get_status_display }}</span>
@@ -194,8 +193,7 @@
                 <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações da pauta #{{ p.pk }}">{% include "components/icon.html" with nome="kebab" %}</button>
                 <div class="dd__c" hidden data-menu-corpo>
                   <div class="dd__t">Pauta #{{ p.pk }}</div>
-                  <a class="dd__i" href="{% url 'publicacoes:detalhe' p.pk %}">{% include "components/icon.html" with nome="eye" %}Detalhes</a>
-                  <a class="dd__i" href="{% url 'publicacoes:editar' p.pk %}">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                  <a class="dd__i" href="{% url 'publicacoes:editar' p.pk %}">{% include "components/icon.html" with nome="pencil" %}Abrir pauta</a>
                   {% if p.link_site %}<a class="dd__i" href="{{ p.link_site }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="arrow-right" %}Abrir site</a>{% endif %}
                 </div>
               </div>

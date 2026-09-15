@@ -85,8 +85,8 @@
           </thead>
           <tbody>
             {% for p in recentes %}
-              <tr data-linha-url="{% url 'publicacoes:detalhe' p.pk %}">
-                <td class="c-data"><a href="{% url 'publicacoes:detalhe' p.pk %}">{{ p.data|date:"d/m/Y" }}</a></td>
+              <tr data-linha-url="{% url 'publicacoes:editar' p.pk %}">
+                <td class="c-data"><a href="{% url 'publicacoes:editar' p.pk %}">{{ p.data|date:"d/m/Y" }}</a></td>
                 <td class="c-status"><span class="st st--{{ p.status_css }}">{{ p.get_status_display }}</span></td>
                 <td class="c-tipo c-tipo--quebra">{{ p.titulo|truncatechars:70 }}</td>
                 <td class="c-mun">{{ p.unidade|default:"—" }}</td>

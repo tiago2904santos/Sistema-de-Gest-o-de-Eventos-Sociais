@@ -8,7 +8,7 @@ from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.test import TestCase
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 
 from accounts.models import Modulo, Setor
 from accounts.modulos import usuario_tem_modulo
@@ -190,8 +190,9 @@ class ViewsTests(BaseAtendimentoTestCase):
             },
         )
         atendimento = Atendimento.objects.get(jornalista="Cristina")
+        # O registro tem uma tela só: depois de salvar volta-se ao formulário.
         self.assertRedirects(
-            resposta, reverse("atendimento_imprensa:detalhe", args=[atendimento.pk])
+            resposta, reverse("atendimento_imprensa:editar", args=[atendimento.pk])
         )
         self.assertEqual(atendimento.horario, dt.time(10, 0))
         self.assertEqual(atendimento.criado_por, self.ascom)
@@ -219,7 +220,7 @@ class ViewsTests(BaseAtendimentoTestCase):
             },
         )
         self.assertRedirects(
-            resposta, reverse("atendimento_imprensa:detalhe", args=[atendimento.pk])
+            resposta, reverse("atendimento_imprensa:editar", args=[atendimento.pk])
         )
         atendimento.refresh_from_db()
         self.assertEqual(atendimento.situacao, SituacaoAtendimento.ATENDIDO)
@@ -253,16 +254,50 @@ class ViewsTests(BaseAtendimentoTestCase):
         self.assertIn("Exportada Lima", corpo)
         self.assertIn("Atendido", corpo)
 
-    def test_detalhe_com_deadline_vencido_e_painel(self):
+    def test_form_com_deadline_vencido_e_painel(self):
+        """O aviso de deadline vencido migrou do detalhe para o formulário."""
         atendimento = self.criar_atendimento(
             situacao=SituacaoAtendimento.AGUARDANDO_FONTE, resposta="",
             deadline=dt.date(2026, 8, 11),
+            fonte="Del Fulano", inicio_pedido="09h40",
         )
         resposta = self.client.get(
-            reverse("atendimento_imprensa:detalhe", args=[atendimento.pk])
+            reverse("atendimento_imprensa:editar", args=[atendimento.pk])
         )
         self.assertContains(resposta, "Deadline vencido")
+        # Acompanhamento, conferência das fontes e dados de registro também
+        # passaram a ser seções do formulário.
+        self.assertContains(resposta, "Acompanhamento")
+        self.assertContains(resposta, "Pedido recebido")
+        self.assertContains(resposta, "Del Fulano")
+        self.assertContains(resposta, "Registrado por")
         self.assertEqual(self.client.get(reverse("atendimento_imprensa:painel")).status_code, 200)
+
+    def test_tela_unica_sem_lateral_flutuante(self):
+        """Nenhuma tela do módulo tem menu lateral flutuante."""
+        atendimento = self.criar_atendimento()
+        urls = [
+            reverse("atendimento_imprensa:painel"),
+            reverse("atendimento_imprensa:lista"),
+            reverse("atendimento_imprensa:novo"),
+            reverse("atendimento_imprensa:editar", args=[atendimento.pk]),
+        ]
+        for url in urls:
+            corpo = self.client.get(url).content.decode("utf-8")
+            for marca in ("<aside", 'class="sticky', "frm-lateral", "frm-acoes--flut"):
+                self.assertNotIn(marca, corpo, f"{marca} em {url}")
+
+    def test_lista_e_painel_abrem_o_formulario(self):
+        """As listas abrem direto no formulário do registro."""
+        atendimento = self.criar_atendimento()
+        form_url = reverse("atendimento_imprensa:editar", args=[atendimento.pk])
+        for nome in ("atendimento_imprensa:lista", "atendimento_imprensa:painel"):
+            resposta = self.client.get(reverse(nome))
+            self.assertContains(resposta, f'data-linha-url="{form_url}"')
+
+    def test_rota_de_detalhe_nao_existe_mais(self):
+        with self.assertRaises(NoReverseMatch):
+            reverse("atendimento_imprensa:detalhe", args=[1])
 
     def test_cadastro_pela_interface(self):
         self.client.force_login(self.admin_modulo)

@@ -94,39 +94,53 @@ def _contexto_form(form, termo, request):
         "oficio_escolhido": oficio_escolhido, "url_busca": reverse("viagens_termos:api_buscar_oficios"),
         "herdados": herdados_do_termo(termo) if termo.pk else [],
         "next": next_valido(request),
-        "url_voltar": voltar_para(request, reverse("viagens_termos:detalhe", args=[termo.pk]) if termo.pk else reverse("viagens_termos:lista")),
+        # "Cancelar" volta para a lista (ou para de onde se veio): o termo não
+        # tem mais tela de detalhe para onde voltar.
+        "url_voltar": voltar_para(request, reverse("viagens_termos:lista")),
         "titulo": f"Termo #{termo.pk}" if termo.pk else "Novo termo",
+        "pode_editar": pode_editar_cadastros(request.user),
+        **_contexto_do_registro(termo, request),
+    }
+
+
+def _contexto_do_registro(termo, request):
+    """As seções que só existem num termo já salvo, na mesma tela do cadastro.
+
+    Vieram do antigo detalhe: os documentos para baixar (por servidor, o
+    genérico, o da viatura e os lotes), a anexação do assinado, o histórico de
+    documentos gerados e o cancelamento/reativação/exclusão.
+    """
+    if not termo.pk:
+        return {}
+    artefatos_pdf = artefatos_pdf_por_termo([termo]).get(termo.pk, {})
+    selo, tom = selo_do_termo(termo)
+    return {
+        "selo": selo, "selo_tom": tom,
+        "documentos": documentos_do_termo(termo, artefatos_pdf),
+        "servidores_do_termo": list(termo.servidores_efetivos()),
+        "viatura": termo.viatura_efetiva(),
+        "artefatos": termo.artefatos.select_related("servidor").order_by("-criado_em")[:30],
+        "pode_editar": pode_editar_cadastros(request.user),
+        "url_atual": daqui(request),
     }
 
 
 @acesso_ao_modulo
 @require_http_methods(["GET", "POST"])
 def editar(request, pk=None):
-    exigir_operador(request)
+    # Sem tela de detalhe, esta é a única tela do termo: quem só consulta
+    # precisa poder abri-la. Criar e gravar seguem exigindo operador.
+    if request.method == "POST" or not pk:
+        exigir_operador(request)
     termo = get_termo_by_id(pk) if pk else TermoAutorizacao()
     form = TermoAutorizacaoForm(request.POST or None, instance=termo)
     if request.method == "POST" and request.POST.get("acao") != "adicionar_destino":
         if form.is_valid():
             termo = form.save()
             messages.success(request, f"Termo #{termo.pk} salvo.")
-            return redirect(voltar_para(request, reverse("viagens_termos:detalhe", args=[termo.pk])))
+            return redirect(voltar_para(request, reverse("viagens_termos:editar", args=[termo.pk])))
         messages.error(request, "Não foi possível salvar o termo. Revise os campos indicados.")
     return render(request, "pages/viagens_termos/form.html", _contexto_form(form, termo, request))
-
-
-@acesso_ao_modulo
-def detalhe(request, pk):
-    termo = get_termo_by_id(pk)
-    artefatos = artefatos_pdf_por_termo([termo]).get(termo.pk, {})
-    selo, tom = selo_do_termo(termo)
-    return render(request, "pages/viagens_termos/detalhe.html", {
-        "termo": termo, "titulo": titulo_do_termo(termo), "selo": selo, "selo_tom": tom,
-        "herdados": herdados_do_termo(termo), "documentos": documentos_do_termo(termo, artefatos),
-        "servidores": list(termo.servidores_efetivos()), "viatura": termo.viatura_efetiva(),
-        "pode_editar": pode_editar_cadastros(request.user),
-        "artefatos": termo.artefatos.select_related("servidor").order_by("-criado_em")[:30],
-        "url_atual": daqui(request),
-    })
 
 
 @acesso_ao_modulo
@@ -169,7 +183,7 @@ def gerar(request, pk, formato, servidor_id=None, viatura=False, todos=False):
         raise Http404
     if _bloqueado(termo):
         messages.error(request, "Reative o termo e o ofício antes de gerar documentos.")
-        return redirect("viagens_termos:detalhe", pk=pk)
+        return redirect("viagens_termos:editar", pk=pk)
     fmt = DocumentoFormato(formato)
     try:
         if todos:
@@ -183,7 +197,7 @@ def gerar(request, pk, formato, servidor_id=None, viatura=False, todos=False):
         return resposta_documento(request, gerar_termo_cadastro_um(termo, servidor, fmt))
     except (ValidationError, DocumentError) as exc:
         messages.error(request, "; ".join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
-        return redirect("viagens_termos:detalhe", pk=pk)
+        return redirect("viagens_termos:editar", pk=pk)
 
 
 def gerar_viatura(request, pk, formato):
@@ -204,7 +218,7 @@ def acao(request, pk, acao):
     from .services import excluir_termo
     exigir_operador(request)
     termo = get_termo_by_id(pk)
-    destino = voltar_para(request, reverse("viagens_termos:detalhe", args=[pk]))
+    destino = voltar_para(request, reverse("viagens_termos:editar", args=[pk]))
     if acao == "cancelar":
         termo.cancelar(request.POST.get("motivo", ""))
         messages.success(request, f"Termo #{termo.pk} cancelado. O histórico foi mantido.")

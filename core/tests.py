@@ -68,7 +68,7 @@ class NotificacoesWorkflowTests(TestCase):
         notificacao = Notificacao.objects.get(usuario=self.gestor)
         self.assertIn("aguardando despacho", notificacao.titulo)
         self.assertIn(
-            reverse("solicitacoes:detalhe", args=[self.solicitacao.pk]),
+            reverse("solicitacoes:editar", args=[self.solicitacao.pk]),
             notificacao.link,
         )
         # Só a DG recebe: nem o autor, nem os demais colegas.

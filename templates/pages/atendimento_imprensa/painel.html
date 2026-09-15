@@ -86,8 +86,8 @@
           </thead>
           <tbody>
             {% for a in pendentes %}
-              <tr data-linha-url="{% url 'atendimento_imprensa:detalhe' a.pk %}">
-                <td class="c-per{% if a.deadline and a.deadline < hoje %} c-per--vencido{% endif %}"><a href="{% url 'atendimento_imprensa:detalhe' a.pk %}">{% if a.deadline %}{{ a.deadline|date:"d/m/Y" }}{% else %}—{% endif %}</a></td>
+              <tr data-linha-url="{% url 'atendimento_imprensa:editar' a.pk %}">
+                <td class="c-per{% if a.deadline and a.deadline < hoje %} c-per--vencido{% endif %}"><a href="{% url 'atendimento_imprensa:editar' a.pk %}">{% if a.deadline %}{{ a.deadline|date:"d/m/Y" }}{% else %}—{% endif %}</a></td>
                 <td class="c-status"><span class="st st--{{ a.situacao_css }}">{{ a.get_situacao_display }}</span></td>
                 <td class="c-tipo">{{ a.jornalista }}</td>
                 <td class="c-mun">{{ a.veiculo|default:"—" }}</td>
@@ -133,8 +133,8 @@
           </thead>
           <tbody>
             {% for a in recentes %}
-              <tr data-linha-url="{% url 'atendimento_imprensa:detalhe' a.pk %}">
-                <td class="c-data"><a href="{% url 'atendimento_imprensa:detalhe' a.pk %}">{{ a.data|date:"d/m/Y" }}</a></td>
+              <tr data-linha-url="{% url 'atendimento_imprensa:editar' a.pk %}">
+                <td class="c-data"><a href="{% url 'atendimento_imprensa:editar' a.pk %}">{{ a.data|date:"d/m/Y" }}</a></td>
                 <td class="c-status"><span class="st st--{{ a.situacao_css }}">{{ a.get_situacao_display }}</span></td>
                 <td class="c-tipo">{{ a.jornalista }}</td>
                 <td class="c-mun">{{ a.veiculo|default:"—" }}</td>

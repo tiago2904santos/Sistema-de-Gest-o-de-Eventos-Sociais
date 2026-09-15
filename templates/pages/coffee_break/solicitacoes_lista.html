@@ -82,8 +82,8 @@
         </thead>
         <tbody>
           {% for s in pagina %}
-            <tr data-linha-url="{% url 'coffee_break:detalhe' s.pk %}">
-              <td data-rotulo="Nº"><strong><a href="{% url 'coffee_break:detalhe' s.pk %}" aria-label="Abrir solicitação {{ s.numero|default:s.pk }}">{{ s.numero|default:"—" }}</a></strong></td>
+            <tr data-linha-url="{% url 'coffee_break:editar' s.pk %}">
+              <td data-rotulo="Nº"><strong><a href="{% url 'coffee_break:editar' s.pk %}" aria-label="Abrir solicitação {{ s.numero|default:s.pk }}">{{ s.numero|default:"—" }}</a></strong></td>
               <td data-rotulo="Lote">{{ s.lote.rotulo_curto }}</td>
               <td data-rotulo="Evento">{{ s.descricao_evento|truncatechars:50 }}</td>
               <td data-rotulo="Data do evento">{{ s.periodo_evento_display|default:"—" }}</td>
@@ -96,7 +96,7 @@
                   {% if not s.cancelada and not s.concluida %}
                     <a href="{% url 'coffee_break:editar' s.pk %}" class="  acao-linha ">{% include "components/icon.html" with nome="pencil" %}Editar</a>
                   {% else %}
-                    <a href="{% url 'coffee_break:detalhe' s.pk %}" class="  acao-linha ">{% include "components/icon.html" with nome="eye" %}Detalhes</a>
+                    <a href="{% url 'coffee_break:editar' s.pk %}" class="  acao-linha ">{% include "components/icon.html" with nome="eye" %}Abrir</a>
                   {% endif %}
                 </div>
               </td>
@@ -110,8 +110,8 @@
     </div>
 <div class="lista-mobile-v32"><div class="m-lista">
           {% for s in pagina %}
-            <article class="m-item" data-linha-url="{% url 'coffee_break:detalhe' s.pk %}">
-              <div class="m-item__campo" data-rotulo="Nº"><strong><a href="{% url 'coffee_break:detalhe' s.pk %}" aria-label="Abrir solicitação {{ s.numero|default:s.pk }}">{{ s.numero|default:"—" }}</a></strong></div>
+            <article class="m-item" data-linha-url="{% url 'coffee_break:editar' s.pk %}">
+              <div class="m-item__campo" data-rotulo="Nº"><strong><a href="{% url 'coffee_break:editar' s.pk %}" aria-label="Abrir solicitação {{ s.numero|default:s.pk }}">{{ s.numero|default:"—" }}</a></strong></div>
               <div class="m-item__campo" data-rotulo="Lote">{{ s.lote.rotulo_curto }}</div>
               <div class="m-item__campo" data-rotulo="Evento">{{ s.descricao_evento|truncatechars:50 }}</div>
               <div class="m-item__campo" data-rotulo="Data do evento">{{ s.periodo_evento_display|default:"—" }}</div>
@@ -124,7 +124,7 @@
                   {% if not s.cancelada and not s.concluida %}
                     <a href="{% url 'coffee_break:editar' s.pk %}" class="  acao-linha ">{% include "components/icon.html" with nome="pencil" %}Editar</a>
                   {% else %}
-                    <a href="{% url 'coffee_break:detalhe' s.pk %}" class="  acao-linha ">{% include "components/icon.html" with nome="eye" %}Detalhes</a>
+                    <a href="{% url 'coffee_break:editar' s.pk %}" class="  acao-linha ">{% include "components/icon.html" with nome="eye" %}Abrir</a>
                   {% endif %}
                 </div>
               </div>

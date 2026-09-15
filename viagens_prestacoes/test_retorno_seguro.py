@@ -35,7 +35,7 @@ class RetornoSeguroTests(PrestacaoFixturesMixin, TestCase):
 
     def test_next_interno_continua_sendo_honrado(self):
         """A proteção não pode custar o recurso: `next` do próprio host segue valendo."""
-        interno = reverse('viagens_prestacoes:consolidado_servidor', args=[self.ps.pk])
+        interno = reverse('viagens_prestacoes:documentos_servidor', args=[self.ps.pk])
         response = self.client.post(reverse('viagens_prestacoes:prestacao_servidor_arquivar', args=[self.ps.pk]), {'next': interno})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response['Location'], interno)

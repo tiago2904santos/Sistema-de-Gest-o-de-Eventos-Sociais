@@ -69,7 +69,7 @@
                       <form method="post" action="{{ d.generico.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar termo genérico</b><small>Só destino e período, para preencher à mão</small></span></button></form>
                       {% if d.viatura.viatura %}<form method="post" action="{{ d.viatura.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="truck" %}<span><b>Visualizar termo da viatura</b><small>{{ d.viatura.viatura.placa_formatada }} {{ d.viatura.viatura.modelo }}</small></span></button></form>{% endif %}
                       <div class="dd__s"></div>
-                      <a class="dd__i of-item" href="{{ l.url_detalhe }}#documentos">{% include "components/icon.html" with nome="checklist" %}<span><b>Todos os documentos</b><small>Por servidor, genérico, viatura e anexos</small></span></a>
+                      <a class="dd__i of-item" href="{{ l.url_editar }}#documentos">{% include "components/icon.html" with nome="checklist" %}<span><b>Todos os documentos</b><small>Por servidor, genérico, viatura e anexos</small></span></a>
                     {% endif %}
                   </div>
                 </div>
@@ -90,7 +90,7 @@
                   <button type="submit" class="ib-linha ib-linha--perigo" aria-label="Excluir termo" title="Excluir termo">{% include "components/icon.html" with nome="trash" %}</button>
                 </form>
               {% else %}
-                <a class="acao-linha" href="{{ l.url_detalhe }}">{% include "components/icon.html" with nome="eye" %}Abrir</a>
+                <a class="acao-linha" href="{{ l.url_previa }}">{% include "components/icon.html" with nome="eye" %}Abrir</a>
               {% endif %}
             </div>
           </div>

@@ -1,3 +1,4 @@
+import re
 import shutil
 import tempfile
 from datetime import date
@@ -604,7 +605,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         )
         solicitacao = SolicitacaoEvento.objects.latest("pk")
         self.assertRedirects(
-            resposta, reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            resposta, reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         self.assertEqual(solicitacao.status, StatusSolicitacao.RASCUNHO)
         self.assertEqual(solicitacao.criado_por, self.solicitante)
@@ -644,7 +645,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         )
         solicitacao = SolicitacaoEvento.objects.latest("pk")
         self.assertRedirects(
-            resposta, reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            resposta, reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
         self.assertEqual(list(solicitacao.servicos.all()), [self.servico])
@@ -678,18 +679,23 @@ class ViewsTests(BaseSolicitacaoTestCase):
         solicitacao = self.criar_solicitacao()
         self.client.force_login(self.outro_solicitante)
         resposta = self.client.get(
-            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         self.assertEqual(resposta.status_code, 403)
 
     def test_dados_travam_apos_envio(self):
+        """Tela única: depois do envio ela abre, mas só em leitura."""
         solicitacao = self.solicitacao_completa()
         services.enviar(solicitacao, self.solicitante)
         self.client.force_login(self.solicitante)
         resposta = self.client.get(
             reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
-        self.assertEqual(resposta.status_code, 403)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertTrue(resposta.context["somente_leitura"])
+        self.assertTrue(resposta.context["dados_desabilitado"])
+        self.assertNotContains(resposta, "Salvar alterações")
+        # O POST continua barrado: leitura não vira edição.
         resposta = self.client.post(
             reverse("solicitacoes:editar", args=[solicitacao.pk]),
             {"acao": "rascunho", "solicitante_nome": "Hackeado"},
@@ -709,7 +715,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
 
         services.enviar(solicitacao, self.solicitante)
         resposta = self.client.get(
-            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         self.assertNotContains(resposta, ">Despacho DG<", html=False)
 
@@ -728,7 +734,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.client.force_login(self.gestor)
 
         resposta = self.client.get(
-            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         self.assertContains(resposta, ">Despacho da DG<", html=False)
 
@@ -740,14 +746,14 @@ class ViewsTests(BaseSolicitacaoTestCase):
         )
         self.assertEqual(resposta.status_code, 405)
 
-    def test_enviar_pelo_detalhe(self):
+    def test_enviar_pela_tela_do_registro(self):
         solicitacao = self.solicitacao_completa()
         self.client.force_login(self.solicitante)
         resposta = self.client.post(
             reverse("solicitacoes:enviar", args=[solicitacao.pk])
         )
         self.assertRedirects(
-            resposta, reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            resposta, reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         solicitacao.refresh_from_db()
         self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
@@ -887,7 +893,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         solicitacao.refresh_from_db()
         self.assertEqual(solicitacao.status, StatusSolicitacao.DEVOLVIDA)
 
-        # O criador reenvia pela própria tela de detalhe.
+        # O criador reenvia pela própria tela do registro (o formulário).
         self.client.force_login(self.solicitante)
         resposta = self.client.post(
             reverse("solicitacoes:enviar", args=[solicitacao.pk])
@@ -927,7 +933,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.client.force_login(self.gestor)
 
         resposta = self.client.get(
-            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         self.assertContains(resposta, f'name="quantidade_dg_{self.equipe.pk}"')
         self.assertContains(resposta, "Proposta do solicitante")
@@ -956,7 +962,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.client.force_login(self.gestor)
 
         resposta = self.client.get(
-            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         self.assertContains(resposta, "Salvar ajustes")
 
@@ -1004,7 +1010,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         # A tela do criador mostra o botão e a seção de encerramento.
         self.client.force_login(self.solicitante)
         resposta = self.client.get(
-            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         self.assertContains(resposta, "Confirmar atendimento")
         self.assertContains(resposta, "Encerramento do evento")
@@ -1030,7 +1036,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.client.force_login(self.outro_solicitante)
 
         resposta = self.client.get(
-            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         self.assertEqual(resposta.status_code, 403)
         resposta = self.client.post(
@@ -1065,28 +1071,29 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.assertContains(resposta, "Deferidas")
         self.assertContains(resposta, "Confirmar</a>", html=False)
 
-    def test_pagina_do_dg_e_um_resumo(self):
+    def test_pagina_do_dg_traz_o_despacho_na_tela_do_registro(self):
+        """A DG despacha na mesma tela do registro, com os dados travados."""
         solicitacao = self.solicitacao_completa()
         services.enviar(solicitacao, self.solicitante)
 
-        # Gestor com despacho pendente vê o resumo, sem o formulário completo.
+        # Gestor com despacho pendente: dados em leitura + seção do despacho.
         self.client.force_login(self.gestor)
         resposta = self.client.get(
-            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
-        self.assertContains(resposta, "Resumo da solicitação")
-        self.assertContains(resposta, "Resumo para despacho da Diretoria-Geral")
-        self.assertNotContains(resposta, 'name="solicitante_nome"')
+        self.assertContains(resposta, ">Despacho da DG<", html=False)
+        self.assertTrue(resposta.context["somente_leitura"])
+        self.assertTrue(resposta.context["dados_desabilitado"])
+        self.assertContains(resposta, solicitacao.solicitante_nome)
         # As quantidades continuam editáveis no despacho.
         self.assertContains(resposta, f'name="quantidade_dg_{self.equipe.pk}"')
 
-        # O solicitante vê o mesmo resumo, sem o formulário de despacho.
+        # O solicitante abre a mesma tela, sem o formulário de despacho.
         self.client.force_login(self.solicitante)
         resposta = self.client.get(
-            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
-        self.assertNotContains(resposta, "Resumo para despacho da Diretoria-Geral")
-        self.assertContains(resposta, "Resumo da solicitação")
+        self.assertNotContains(resposta, ">Despacho da DG<", html=False)
         self.assertNotContains(resposta, f'name="quantidade_dg_{self.equipe.pk}"')
 
     def test_campo_qual_unidade_movel_no_formulario(self):
@@ -1107,30 +1114,72 @@ class ViewsTests(BaseSolicitacaoTestCase):
         solicitacao = self.criar_solicitacao()
         self.client.force_login(self.superusuario)
         resposta = self.client.get(
-            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         self.assertEqual(resposta.status_code, 200)
 
-    def test_detalhe_e_leitura_e_nao_formulario(self):
-        """Ver não é editar: a página de detalhe é resumo em rótulo/valor.
+    def test_registro_tem_uma_tela_so_o_formulario(self):
+        """O registro não tem tela de resumo: abrir é abrir o formulário.
 
-        Campos com cara de editáveis que não salvam nada confundiam o usuário
-        e ainda arrastavam a lista inteira de municípios para o HTML.
+        Os dados ficam editáveis nos próprios campos e o acompanhamento, o
+        histórico e as ações de workflow viram seções do mesmo fluxo.
         """
         solicitacao = self.solicitacao_completa()
         self.client.force_login(self.solicitante)
 
         resposta = self.client.get(
-            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
 
-        self.assertTrue(resposta.context["somente_leitura"])
-        self.assertContains(resposta, "Resumo da solicitação")
+        self.assertTemplateUsed(resposta, "pages/solicitacoes/form.html")
+        self.assertFalse(resposta.context["somente_leitura"])
+        # Os dados aparecem como campos do formulário, não como rótulo/valor.
+        self.assertContains(resposta, 'name="solicitante_nome"')
+        self.assertContains(resposta, 'name="municipio"')
         self.assertContains(resposta, solicitacao.solicitante_nome)
-        self.assertNotContains(resposta, 'name="solicitante_nome"')
-        self.assertNotContains(resposta, 'name="municipio"')
-        self.assertNotContains(resposta, "Salvar rascunho")
+        # Seções migradas do antigo detalhe continuam na mesma tela.
+        self.assertContains(resposta, ">Acompanhamento<", html=False)
+        self.assertContains(resposta, ">Histórico<", html=False)
+        self.assertContains(resposta, "Salvar rascunho")
         self.assertContains(resposta, "Enviar para a DG")
+
+    def test_formularios_de_workflow_nao_ficam_aninhados(self):
+        """Despacho, encerramento e anexos ficam fora do <form> principal."""
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+
+        for usuario in [self.solicitante, self.gestor]:
+            with self.subTest(usuario=usuario.username):
+                self.client.force_login(usuario)
+                resposta = self.client.get(
+                    reverse("solicitacoes:editar", args=[solicitacao.pk])
+                )
+                html = resposta.content.decode()
+                profundidade = maxima = 0
+                for tag in re.findall(r"</?form\b", html):
+                    profundidade += 1 if tag == "<form" else -1
+                    maxima = max(maxima, profundidade)
+                self.assertEqual(maxima, 1, "há <form> aninhado na tela")
+                self.assertEqual(profundidade, 0, "há <form> sem fechamento")
+
+    def test_tela_do_registro_nao_tem_lateral_flutuante(self):
+        """Coluna única: nada de aside, sticky ou ações flutuantes."""
+        solicitacao = self.solicitacao_completa()
+        self.client.force_login(self.solicitante)
+
+        for url in [
+            reverse("solicitacoes:nova"),
+            reverse("solicitacoes:editar", args=[solicitacao.pk]),
+            reverse("solicitacoes:lista"),
+        ]:
+            with self.subTest(url=url):
+                resposta = self.client.get(url)
+                conteudo = resposta.content.decode()
+                self.assertNotIn("<aside", conteudo)
+                self.assertNotIn('class="sticky', conteudo)
+                self.assertNotIn("frm-lateral", conteudo)
+                self.assertNotIn("frm-acoes--flut", conteudo)
+                self.assertNotIn("frm-grade", conteudo)
 
     def test_lista_filtros_e_paginacao(self):
         for indice in range(18):
@@ -1220,12 +1269,14 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.client.force_login(self.solicitante)
 
         resposta = self.client.get(
-            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
 
         self.assertContains(resposta, "aviso-devolucao")
         self.assertContains(resposta, "Detalhe o local.")
-        self.assertContains(resposta, "Editar e reenviar")
+        # Tela única: o usuário já está no formulário e reenvia daqui mesmo.
+        self.assertFalse(resposta.context["somente_leitura"])
+        self.assertContains(resposta, "Enviar para a DG")
 
     def test_despacho_invalido_preserva_a_decisao_escolhida(self):
         """Errar a observação não pode apagar a decisão já selecionada."""
@@ -1240,7 +1291,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
 
         self.assertTrue(resposta["Location"].endswith("#despacho-dg"))
         detalhe = self.client.get(
-            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         self.assertEqual(
             detalhe.context["despacho_pendente"]["decisao"], DespachoForm.DEVOLVER
@@ -1308,7 +1359,7 @@ class AnexosTests(BaseSolicitacaoTestCase):
         resposta = self.client.post(reverse("solicitacoes:nova"), dados)
         solicitacao = SolicitacaoEvento.objects.latest("pk")
         self.assertRedirects(
-            resposta, reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            resposta, reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         self.assertEqual(solicitacao.anexos.count(), 2)
         self.assertEqual(
@@ -1352,7 +1403,7 @@ class AnexosTests(BaseSolicitacaoTestCase):
             {"arquivo": self.arquivo()},
         )
         self.assertRedirects(
-            resposta, reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            resposta, reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         anexo = solicitacao.anexos.get()
         self.assertEqual(anexo.nome_original, "oficio.pdf")
@@ -1410,7 +1461,7 @@ class AnexosTests(BaseSolicitacaoTestCase):
 
         self.assertEqual(resposta.status_code, 403)
         detalhe = self.client.get(
-            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         self.assertNotContains(detalhe, "Anexar arquivo")
         self.assertNotContains(detalhe, "data-upload-anexos")
@@ -1477,7 +1528,8 @@ class AnexosTests(BaseSolicitacaoTestCase):
 
         self.assertFalse(os.path.exists(caminho))
 
-    def test_secao_anexos_no_detalhe(self):
+    def test_secao_anexos_na_tela_do_registro(self):
+        """Os anexos do registro vivem na seção do próprio formulário."""
         solicitacao = self.criar_solicitacao()
         self.client.force_login(self.solicitante)
         self.client.post(
@@ -1485,13 +1537,16 @@ class AnexosTests(BaseSolicitacaoTestCase):
             {"arquivo": self.arquivo()},
         )
         resposta = self.client.get(
-            reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+            reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         self.assertContains(resposta, "Anexos")
         self.assertContains(resposta, "oficio.pdf")
         self.assertTemplateUsed(resposta, "components/upload_anexos.html")
         self.assertContains(resposta, 'data-upload-dropzone', count=1)
         self.assertContains(resposta, "Arraste arquivos aqui ou clique para selecionar")
-        self.assertContains(resposta, "data-anexo-enviar-ao-selecionar")
-        self.assertNotContains(resposta, "Anexar arquivo")
-        self.assertNotContains(resposta, "PDF, imagens ou documentos de escritório.")
+        # Um envio explícito, para não competir com o salvamento do formulário.
+        self.assertContains(resposta, "Anexar arquivo")
+        self.assertNotContains(resposta, "data-anexo-enviar-ao-selecionar")
+        # O form auxiliar do anexo fica fora do <form> principal.
+        self.assertContains(resposta, 'id="form-anexo-upload"', count=1)
+        self.assertContains(resposta, "PDF, imagens ou documentos de escritório.", count=0)

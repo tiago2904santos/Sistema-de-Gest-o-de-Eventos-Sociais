@@ -224,8 +224,8 @@ class AssinaturaCardRenderTests(TestCase):
         self.assertFalse(r.context["assinatura"]["pode_assinar"])
         self.assertIn("motorista do ofício", r.context["assinatura"]["motivo"])
 
-    def test_consolidado_page_mostra_secao(self):
-        r = self.client.get(reverse("viagens_prestacoes:consolidado_servidor", args=[self.ps.pk]))
+    def test_etapa_de_documentos_mostra_o_fechamento(self):
+        r = self.client.get(reverse("viagens_prestacoes:documentos_servidor", args=[self.ps.pk]))
         self.assertEqual(r.status_code, 200)
-        self.assertContains(r, "Pacote final e finalização")
+        self.assertContains(r, "Pacote final e fechamento")
         self.assertIn("servidores", r.context)

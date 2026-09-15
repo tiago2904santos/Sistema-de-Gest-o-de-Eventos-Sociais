@@ -60,7 +60,7 @@ def correspondencia(app, nome):
             alvo = "viagens_oficios:editar"
             motivo = "Campos concentrados no formulário genérico; a etapa dedicada e seus comportamentos não estão reproduzidos."
         elif nome in {"wizard_resumo", "wizard_documentos"}:
-            alvo = "viagens_oficios:detalhe"
+            alvo = "viagens_oficios:editar"
             motivo = "Detalhe reúne informações/documentos; não reproduz conferência e resumo como etapas próprias."
         elif nome in {"baixar_documento", "baixar_justificativa_documento"}:
             alvo, params = "viagens_oficios:gerar", {"tipo": "justificativa" if "justificativa" in nome else "oficio"}

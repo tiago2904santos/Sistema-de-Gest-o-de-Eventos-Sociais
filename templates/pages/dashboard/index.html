@@ -90,8 +90,8 @@
           </thead>
           <tbody>
             {% for s in ultimas_solicitacoes %}
-              <tr data-linha-url="{% url 'solicitacoes:detalhe' s.pk %}">
-                <td class="c-id"><a href="{% url 'solicitacoes:detalhe' s.pk %}"><i>#</i>{{ s.pk }}</a></td>
+              <tr data-linha-url="{% url 'solicitacoes:editar' s.pk %}">
+                <td class="c-id"><a href="{% url 'solicitacoes:editar' s.pk %}"><i>#</i>{{ s.pk }}</a></td>
                 <td class="c-status"><span class="st st--{{ s.status|lower }}">{{ s.get_status_display }}</span></td>
                 <td class="c-tipo">{{ s.tipo_evento|default:"—" }}</td>
                 <td class="c-mun">{{ s.municipio|default:"—" }}</td>
@@ -109,7 +109,7 @@
       <h2 class="pa-h pa-h--lista">Próximos eventos<em>próximos 30 dias</em></h2>
       <div class="pa-ev">
         {% for s in proximos_eventos %}
-          <a href="{% url 'solicitacoes:detalhe' s.pk %}">
+          <a href="{% url 'solicitacoes:editar' s.pk %}">
             <span class="pa-ev__d">{{ s.data_inicio_evento|date:"d" }}<small>{{ s.data_inicio_evento|date:"M" }}</small></span>
             <span class="pa-ev__t">{{ s.tipo_evento|default:"Solicitação sem tipo definido" }}</span>
             <span class="pa-ev__m">{{ s.municipio|default:"—" }}</span>

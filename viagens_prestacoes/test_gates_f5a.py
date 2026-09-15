@@ -89,7 +89,7 @@ class GatesF5aTests(PrestacaoFixturesMixin, TestCase):
     def test_usuario_sem_modulo_recebe_403_nas_etapas(self):
         usuario=get_user_model().objects.create_user(username="sem_modulo_f5")
         self.client.force_login(usuario)
-        for rota,args in [("index",[]),("modelos_index",[]),("diario_servidor",[self.ps.pk]),("rt_servidor",[self.ps.pk]),("documentos_servidor",[self.ps.pk]),("consolidado_servidor",[self.ps.pk]),("consolidado_download",[self.ps.pk]),("prestacao_downloads",[self.ps.pk])]:
+        for rota,args in [("index",[]),("modelos_index",[]),("diario_servidor",[self.ps.pk]),("rt_servidor",[self.ps.pk]),("documentos_servidor",[self.ps.pk]),("consolidado_download",[self.ps.pk]),("prestacao_downloads",[self.ps.pk])]:
             with self.subTest(rota=rota):
                 self.assertEqual(self.client.get(reverse("viagens_prestacoes:"+rota,args=args)).status_code,403)
 

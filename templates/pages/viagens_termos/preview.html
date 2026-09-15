@@ -11,7 +11,7 @@
 <div class="sol-detalhe of-detalhe tm-previa">
   <div class="d-cabeca">
     <div class="d-cabeca__esq">
-      <a class="voltar" href="{% url 'viagens_termos:detalhe' termo.pk %}">{% include "components/icon.html" with nome="chevron-left" %}Voltar ao termo</a>
+      <a class="voltar" href="{% url 'viagens_termos:editar' termo.pk %}">{% include "components/icon.html" with nome="chevron-left" %}Voltar ao termo</a>
       <div class="d-titulo"><h1>Prévia do termo #{{ termo.pk }}</h1><span class="st st--neutro">{{ variante_rotulo }}</span></div>
       <p class="d-cabeca__sub sol-detalhe__meta"><span>{% include "components/icon.html" with nome="map-pin" %}{{ titulo }}</span></p>
     </div>

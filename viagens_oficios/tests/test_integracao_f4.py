@@ -195,10 +195,10 @@ class IntegracaoF4Tests(TestCase):
         o = self.criar()
         t = TermoAutorizacao.objects.create(oficio=o)
         rotas = [('viagens_oficios:lista', []), ('viagens_oficios:novo', []),
-                 ('viagens_oficios:detalhe', [o.pk]), ('viagens_oficios:editar', [o.pk]),
+                 ('viagens_oficios:editar', [o.pk]),
                  ('viagens_oficios:catalogo', ['motivos']), ('viagens_oficios:catalogo_novo', ['motivos']),
                  ('viagens_oficios:catalogo', ['justificativas']), ('viagens_oficios:catalogo_novo', ['justificativas']),
-                 ('viagens_termos:lista', []), ('viagens_termos:novo', []), ('viagens_termos:detalhe', [t.pk]),
+                 ('viagens_termos:lista', []), ('viagens_termos:novo', []), ('viagens_termos:editar', [t.pk]),
                  ('viagens_termos:editar', [t.pk]), ('viagens_termos:preview', [t.pk])]
         for nome, args in rotas:
             with self.subTest(nome=nome):
@@ -210,9 +210,12 @@ class IntegracaoF4Tests(TestCase):
             self.assertEqual(self.client.get(reverse(url)).status_code, 403)
 
     def test_leitor_consulta_mas_nao_cria_edita_nem_gera(self):
+        # Sem tela de detalhe, o ofício tem uma tela só — o formulário — e ela é
+        # de operador. O leitor continua chegando à lista e nada mais.
         o = self.criar()
         self.user.groups.clear()
-        self.assertEqual(self.client.get(reverse('viagens_oficios:detalhe', args=[o.pk])).status_code, 200)
+        self.assertEqual(self.client.get(reverse('viagens_oficios:lista')).status_code, 200)
+        self.assertEqual(self.client.get(reverse('viagens_oficios:editar', args=[o.pk])).status_code, 403)
         for name,args in [('viagens_oficios:novo',[]),('viagens_oficios:editar',[o.pk]),('viagens_termos:novo',[])]:
             self.assertEqual(self.client.post(reverse(name,args=args), self.payload()).status_code,403)
         self.assertEqual(self.client.post(reverse('viagens_oficios:gerar',args=[o.pk,'oficio','docx'])).status_code,403)

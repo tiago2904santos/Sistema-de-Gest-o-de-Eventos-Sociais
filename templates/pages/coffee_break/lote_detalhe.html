@@ -86,8 +86,8 @@
         </thead>
         <tbody>
           {% for s in solicitacoes %}
-            <tr data-linha-url="{% url 'coffee_break:detalhe' s.pk %}">
-              <td data-rotulo="Nº"><strong><a href="{% url 'coffee_break:detalhe' s.pk %}" aria-label="Abrir solicitação {{ s.numero|default:s.pk }}">{{ s.numero|default:"—" }}</a></strong></td>
+            <tr data-linha-url="{% url 'coffee_break:editar' s.pk %}">
+              <td data-rotulo="Nº"><strong><a href="{% url 'coffee_break:editar' s.pk %}" aria-label="Abrir solicitação {{ s.numero|default:s.pk }}">{{ s.numero|default:"—" }}</a></strong></td>
               <td data-rotulo="Evento">{{ s.descricao_evento|truncatechars:60 }}</td>
               <td data-rotulo="Data do evento">{{ s.periodo_evento_display|default:"—" }}</td>
               <td data-rotulo="Qtde">{{ s.quantidade }}</td>
@@ -103,8 +103,8 @@
     </div>
 <div class="lista-mobile-v32"><div class="m-lista">
           {% for s in solicitacoes %}
-            <article class="m-item" data-linha-url="{% url 'coffee_break:detalhe' s.pk %}">
-              <div class="m-item__campo" data-rotulo="Nº"><strong><a href="{% url 'coffee_break:detalhe' s.pk %}" aria-label="Abrir solicitação {{ s.numero|default:s.pk }}">{{ s.numero|default:"—" }}</a></strong></div>
+            <article class="m-item" data-linha-url="{% url 'coffee_break:editar' s.pk %}">
+              <div class="m-item__campo" data-rotulo="Nº"><strong><a href="{% url 'coffee_break:editar' s.pk %}" aria-label="Abrir solicitação {{ s.numero|default:s.pk }}">{{ s.numero|default:"—" }}</a></strong></div>
               <div class="m-item__campo" data-rotulo="Evento">{{ s.descricao_evento|truncatechars:60 }}</div>
               <div class="m-item__campo" data-rotulo="Data do evento">{{ s.periodo_evento_display|default:"—" }}</div>
               <div class="m-item__campo" data-rotulo="Qtde">{{ s.quantidade }}</div>

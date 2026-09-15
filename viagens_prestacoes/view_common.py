@@ -115,8 +115,7 @@ def _build_prestacao_steps(ps, atual: str) -> list:
     documentos_url = reverse('viagens_prestacoes:documentos_servidor', args=[ps.pk])
     rt_url = reverse('viagens_prestacoes:rt_servidor', args=[ps.pk])
     diario_url = reverse('viagens_prestacoes:diario_servidor', args=[ps.pk])
-    consolidado_url = reverse('viagens_prestacoes:consolidado_servidor', args=[ps.pk])
-    etapas = [('diario', 'Etapa 1', 'Diário de Bordo', diario_url), ('rt', 'Etapa 2', 'Relatório Técnico', rt_url), ('documentos', 'Etapa 3', 'Documentos', documentos_url), ('consolidado', 'Etapa 4', 'PDF Final', consolidado_url)]
+    etapas = [('diario', 'Etapa 1', 'Diário de Bordo', diario_url), ('rt', 'Etapa 2', 'Relatório Técnico', rt_url), ('documentos', 'Etapa 3', 'Documentos e fechamento', documentos_url)]
     steps = []
     atingiu_atual = False
     for chave, step_label, titulo, url in etapas:
@@ -135,7 +134,7 @@ def _build_prestacao_steps(ps, atual: str) -> list:
             status = 'Concluído'
         steps.append({'label': titulo, 'state': 'current' if state_class == 'is-current' else 'done' if state_class == 'is-complete' else '', 'marker': '✓' if state_class == 'is-complete' else str(len(steps) + 1), 'step_label': step_label, 'title': titulo, 'status': status, 'state_class': state_class, 'aria_current': aria_current, 'url': url})
     return steps
-_ROTULO_DA_ETAPA = {'diario': 'Diário de Bordo', 'rt': 'Relatório Técnico', 'documentos': 'Documentos', 'consolidado': 'PDF Final'}
+_ROTULO_DA_ETAPA = {'diario': 'Diário de Bordo', 'rt': 'Relatório Técnico', 'documentos': 'Documentos e fechamento'}
 
 def contexto_do_fluxo(ps, atual: str, *, back_label=None, back_url=None) -> dict:
     """Cabeçalho e stepper das telas de fluxo da prestação, num lugar só."""
@@ -144,8 +143,8 @@ def contexto_do_fluxo(ps, atual: str, *, back_label=None, back_url=None) -> dict
             'flow_view_name': _VIEW_DA_ETAPA[atual], 'flow_etapa': atual, 'flow_numero': [chave for chave, *_ in _ETAPAS].index(atual) + 1}
 
 
-_ETAPAS = [('diario', 'Etapa 1', 'Diário de Bordo'), ('rt', 'Etapa 2', 'Relatório Técnico'), ('documentos', 'Etapa 3', 'Documentos'), ('consolidado', 'Etapa 4', 'PDF Final')]
-_VIEW_DA_ETAPA = {'diario': 'viagens_prestacoes:diario_servidor', 'rt': 'viagens_prestacoes:rt_servidor', 'documentos': 'viagens_prestacoes:documentos_servidor', 'consolidado': 'viagens_prestacoes:consolidado_servidor'}
+_ETAPAS = [('diario', 'Etapa 1', 'Diário de Bordo'), ('rt', 'Etapa 2', 'Relatório Técnico'), ('documentos', 'Etapa 3', 'Documentos e fechamento')]
+_VIEW_DA_ETAPA = {'diario': 'viagens_prestacoes:diario_servidor', 'rt': 'viagens_prestacoes:rt_servidor', 'documentos': 'viagens_prestacoes:documentos_servidor'}
 
 
 def opcoes(choices):

@@ -51,7 +51,7 @@ def assinatura_artefato(request, pk):
     artefato = obter_artefato_para_download(request.user, pk)
     if artefato.formato != 'pdf' or not (artefato.oficio_id or artefato.termo_id):
         raise Http404
-    voltar = reverse('viagens_termos:detalhe', args=[artefato.termo_id]) if artefato.termo_id else reverse('viagens_oficios:detalhe', args=[artefato.oficio_id])
+    voltar = reverse('viagens_termos:editar', args=[artefato.termo_id]) if artefato.termo_id else reverse('viagens_oficios:editar', args=[artefato.oficio_id])
 
     class UploadForm(forms.Form):
         arquivo = forms.FileField(label='Documento assinado (PDF)')
@@ -149,6 +149,34 @@ def criar(request):
     return redirect('viagens_oficios:editar', pk=oficio.pk)
 
 
+def contexto_operacao_do_oficio(request, oficio):
+    """O que a tela de conferência montava e o formulário passou a mostrar.
+
+    Equipe com os endereços dos termos, documentos gerados e histórico: as
+    seções "Documentos", "Histórico" e "Encerramento" do formulário do ofício
+    existente. Sem tela de detalhe, é aqui que esse contexto nasce.
+    """
+    from auditoria.models import RegistroAuditoria
+    from core.retorno import com_next, daqui
+    from .presenters import cartao_da_lista
+    artefatos = _artefatos_pdf_da_pagina([oficio])
+    termos = {servidor_id: art for (_, tipo, servidor_id), art in artefatos.items()
+              if tipo == DocumentoTipo.TERMO_AUTORIZACAO.value and servidor_id}
+    url_atual = daqui(request)
+    return {
+        'c': cartao_da_lista(
+            oficio, editar_url=com_next(reverse('viagens_oficios:editar', args=[oficio.pk]), url_atual),
+            artefatos_termo=termos,
+            artefato_oficio_pdf=artefatos.get((oficio.pk, DocumentoTipo.OFICIO.value, None)),
+            artefato_justificativa_pdf=artefatos.get((oficio.pk, DocumentoTipo.JUSTIFICATIVA.value, None)),
+        ),
+        'artefatos': oficio.artefatos.select_related('servidor').order_by('-criado_em')[:30],
+        'historico': RegistroAuditoria.objects.filter(modelo='viagens_oficios.oficio', objeto_id=str(oficio.pk)).order_by('-criado_em')[:20],
+        'url_atual': url_atual,
+        'tem_prestacao': hasattr(oficio, 'prestacao_contas'),
+    }
+
+
 @acesso_ao_modulo
 @require_http_methods(['GET', 'POST'])
 def editar(request, pk=None):
@@ -167,11 +195,12 @@ def editar(request, pk=None):
                 reservar_numero_oficio(oficio, ano=oficio.data_criacao.year)
                 atualizar_justificativa_oficio(oficio, jform, action='save_continue')
             messages.success(request, f'Ofício {oficio.numero_formatado} salvo.')
-            # "Salvar e continuar" segue para o resumo (etapa 5); "Salvar" volta
+            # O ofício tem uma tela só: salvar recarrega o próprio formulário,
+            # já com a conferência e os documentos atualizados. "Salvar" volta
             # para onde a pessoa estava, quando a tela foi aberta com ?next=.
             if request.POST.get('acao') == 'salvar' and next_valido(request):
-                return redirect(voltar_para(request, reverse('viagens_oficios:detalhe', args=[oficio.pk])))
-            return redirect('viagens_oficios:detalhe', pk=oficio.pk)
+                return redirect(voltar_para(request, reverse('viagens_oficios:editar', args=[oficio.pk])))
+            return redirect('viagens_oficios:editar', pk=oficio.pk)
         messages.error(request, 'Não foi possível salvar o ofício. Revise os campos indicados.')
     avaliacao = validar_oficio_para_documento(oficio) if pk else None
     regra = avaliar_justificativa_oficio(oficio)
@@ -179,45 +208,16 @@ def editar(request, pk=None):
     contexto.update({
         'titulo': f'Ofício {oficio.numero_formatado}' if pk else 'Novo ofício', 'form': form, 'jform': jform,
         'oficio': oficio, 'pode_editar': True, 'next': next_valido(request),
-        'url_voltar': voltar_para(request, reverse('viagens_oficios:detalhe', args=[pk]) if pk else reverse('viagens_oficios:lista')),
+        'url_voltar': voltar_para(request, reverse('viagens_oficios:lista')),
         'url_novo_roteiro': reverse('viagens_roteiros:novo'),
         'modelos_texto': {
             'modelo_motivo': dict(ModeloMotivoOficio.objects.filter(ativo=True).values_list('pk', 'texto')),
             'justificativa-modelo': dict(ModeloJustificativa.objects.filter(ativo=True).values_list('pk', 'texto')),
         },
     })
+    if oficio.pk:
+        contexto.update(contexto_operacao_do_oficio(request, oficio))
     return render(request, 'pages/viagens_oficios/form.html', contexto)
-
-
-@acesso_ao_modulo
-def detalhe(request, pk):
-    """Conferência, resumo e documentos: as etapas 5 e 6 do wizard da origem."""
-    from auditoria.models import RegistroAuditoria
-    from core.retorno import com_next, daqui
-    from .form_context import etapas_do_oficio
-    from .presenters import apresentar_oficio, cartao_da_lista
-    oficio = get_oficio_by_id(pk)
-    avaliacao = validar_oficio_para_documento(oficio)
-    regra = avaliar_justificativa_oficio(oficio)
-    artefatos = _artefatos_pdf_da_pagina([oficio])
-    termos = {servidor_id: art for (_, tipo, servidor_id), art in artefatos.items()
-              if tipo == DocumentoTipo.TERMO_AUTORIZACAO.value and servidor_id}
-    cartao = cartao_da_lista(
-        oficio, editar_url=com_next(reverse('viagens_oficios:editar', args=[pk]), daqui(request)),
-        artefatos_termo=termos,
-        artefato_oficio_pdf=artefatos.get((pk, DocumentoTipo.OFICIO.value, None)),
-        artefato_justificativa_pdf=artefatos.get((pk, DocumentoTipo.JUSTIFICATIVA.value, None)),
-    )
-    return render(request, 'pages/viagens_oficios/detalhe.html', {
-        'oficio': oficio, 'c': cartao, 'avaliacao': avaliacao, 'regra': regra,
-        'etapas': etapas_do_oficio(oficio, avaliacao, regra),
-        'resumo': apresentar_oficio(oficio),
-        'pode_editar': pode_editar_cadastros(request.user),
-        'artefatos': oficio.artefatos.select_related('servidor').order_by('-criado_em')[:30],
-        'historico': RegistroAuditoria.objects.filter(modelo='viagens_oficios.oficio', objeto_id=str(pk)).order_by('-criado_em')[:20],
-        'url_atual': daqui(request),
-        'tem_prestacao': hasattr(oficio, 'prestacao_contas'),
-    })
 
 
 @acesso_ao_modulo
@@ -227,8 +227,8 @@ def acao(request, pk, acao):
     from .services import OficioVinculadoError, desfazer_complementar_oficio, desfazer_retificacao_oficio
     exigir_operador(request)
     oficio = get_oficio_by_id(pk)
-    # Da lista a ação volta para a lista como estava; do detalhe, para o detalhe.
-    destino = voltar_para(request, reverse('viagens_oficios:detalhe', args=[pk]))
+    # Da lista a ação volta para a lista como estava; do formulário, para o formulário.
+    destino = voltar_para(request, reverse('viagens_oficios:editar', args=[pk]))
     if acao == 'cancelar':
         oficio.cancelar(request.POST.get('motivo', ''))
         messages.success(request, f'Ofício {oficio.numero_formatado} cancelado. O histórico foi mantido.')
@@ -286,7 +286,7 @@ def gerar(request, pk, tipo, formato):
         doc = gerar_documento(oficio, DocumentoFormato(formato), DocumentoTipo(tipo))
     except (ValidationError, DocumentError) as exc:
         messages.error(request, '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
-        return redirect('viagens_oficios:detalhe', pk=pk)
+        return redirect('viagens_oficios:editar', pk=pk)
     return resposta_documento(request, doc)
 
 
@@ -300,15 +300,15 @@ def termos_todos_pdf(request, pk):
     oficio = get_oficio_by_id(pk)
     if oficio.cancelado:
         messages.error(request, 'Reative o ofício antes de gerar termos.')
-        return redirect('viagens_oficios:detalhe', pk=pk)
+        return redirect('viagens_oficios:editar', pk=pk)
     try:
         documentos = gerar_termo_lote(oficio, DocumentoFormato.PDF)
     except (ValidationError, DocumentError) as exc:
         messages.error(request, '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
-        return redirect('viagens_oficios:detalhe', pk=pk)
+        return redirect('viagens_oficios:editar', pk=pk)
     if not documentos:
         messages.error(request, 'Nenhum servidor selecionado para termo neste ofício.')
-        return redirect('viagens_oficios:detalhe', pk=pk)
+        return redirect('viagens_oficios:editar', pk=pk)
     return resposta_pdf_consolidado(documentos, f"{oficio.numero_formatado.replace('/', '-')}-termos.pdf")
 
 
@@ -322,7 +322,7 @@ def termos(request, pk, formato, servidor_id=None):
     oficio = get_oficio_by_id(pk)
     if oficio.cancelado:
         messages.error(request, 'Reative o ofício antes de gerar termos.')
-        return redirect('viagens_oficios:detalhe', pk=pk)
+        return redirect('viagens_oficios:editar', pk=pk)
     fmt = DocumentoFormato(formato)
     try:
         if servidor_id:
@@ -331,7 +331,7 @@ def termos(request, pk, formato, servidor_id=None):
         return resposta_lote(gerar_termo_lote(oficio, fmt))
     except (ValidationError, DocumentError) as exc:
         messages.error(request, '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
-        return redirect('viagens_oficios:detalhe', pk=pk)
+        return redirect('viagens_oficios:editar', pk=pk)
 
 
 def resposta_lote(documentos):

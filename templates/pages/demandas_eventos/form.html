@@ -11,7 +11,7 @@
         {% for erro in form.non_field_errors %}<p>{{ erro }}</p>{% endfor %}
       </div>
     {% endif %}
-<div class="frm-grade"><div>
+<div class="v32-bloco">
     <section class="reg" id="sec-identificacao">
       {% include "components/v32/section_card.html" with numero="1" titulo="Identificação da demanda" %}
       <div class="reg-corpo"><div class="g-form v32-form-grid">
@@ -20,7 +20,7 @@
         {% include "components/select.html" with name="tema" label="Tema" opcoes=opcoes_temas largura="4" selecionado=valores.tema erros=erros.tema pesquisavel=True %}
         {% include "components/input.html" with name="canal_solicitacao" label="Solicitado via" largura="4" valor=valores.canal_solicitacao erros=erros.canal_solicitacao placeholder="E-mail, WhatsApp, protocolo..." %}
         {% include "components/select.html" with name="municipio" label="Município" opcoes=opcoes_municipios largura="4" selecionado=valores.municipio erros=erros.municipio pesquisavel=True %}
-        <div class="form-campo form-campo--4"><label class="form-label" for="id_status_visual">Status</label><input class="form-controle form-controle--somente-leitura" id="id_status_visual" value="{% if instancia %}{{ instancia.get_status_display }}{% else %}Pendente{% endif %}" readonly><p class="form-ajuda">O status é alterado por ações rastreáveis na página de detalhe.</p></div>
+        <div class="form-campo form-campo--4"><label class="form-label" for="id_status_visual">Status</label><input class="form-controle form-controle--somente-leitura" id="id_status_visual" value="{% if instancia %}{{ instancia.get_status_display }}{% else %}Pendente{% endif %}" readonly><p class="form-ajuda">O status é alterado por ações rastreáveis na seção “Atualizar status” desta página.</p></div>
         {% include "components/input.html" with name="solicitante" label="Solicitante" obrigatorio=True largura="6" valor=valores.solicitante erros=erros.solicitante %}
         {% include "components/input.html" with name="contato" label="Contato" largura="6" valor=valores.contato erros=erros.contato %}
         {% include "components/input.html" with name="assunto_email" label="Assunto do e-mail" largura="12" valor=valores.assunto_email erros=erros.assunto_email %}
@@ -50,11 +50,38 @@
         <fieldset class="form-campo form-campo--12 campo-e--bloco" id="id_setores"{% if erros.setores %} aria-invalid="true" aria-describedby="id_setores_erro"{% endif %}><legend class="form-label">Setores envolvidos <span class="form-label__obrigatorio">*</span></legend><div class="opc-cards">{% for item in opcoes_setores %}<label class="opc-card"><input type="checkbox" name="setores" value="{{ item.valor }}"{% if item.valor in setores_marcados %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ item.rotulo }}</label>{% endfor %}</div>{% for erro in erros.setores %}<p class="form-erro"{% if forloop.first %} id="id_setores_erro"{% endif %}>{{ erro }}</p>{% endfor %}</fieldset>
       </div></div>
     </section>
-</div><aside class="frm-lateral"><div class="sticky"><section class="reg reg--sec"><h2 class="reg__t">{{ titulo }}</h2><nav class="step-v" aria-label="Seções do formulário">
-<button type="button" class="step-i" data-ir="#sec-identificacao"><span class="step-i__m">1</span><span class="step-i__t">Identificação da demanda</span></button>
-<button type="button" class="step-i" data-ir="#sec-evento"><span class="step-i__m">2</span><span class="step-i__t">Evento</span></button>
-<button type="button" class="step-i" data-ir="#sec-atendimento"><span class="step-i__m">3</span><span class="step-i__t">Atendimento e acompanhamento</span></button>
-</nav></section></div>    <div class="frm-acoes frm-acoes--flut"><a class=" btn--secundaria" href="{% if instancia %}{% url 'demandas_eventos:detalhe' instancia.pk %}{% else %}{% url 'demandas_eventos:lista' %}{% endif %}">Cancelar</a>{% include "components/v32/button.html" with label="Salvar demanda" variante="dourado" tipo="submit" %}</div></aside></div>
+    <div class="frm-acoes"><a class=" btn--secundaria" href="{% url 'demandas_eventos:lista' %}">Cancelar</a>{% include "components/v32/button.html" with label="Salvar demanda" variante="dourado" tipo="submit" %}</div>
+</div>
   </form>
 
+  {% if instancia %}
+    {% if opcoes_transicao %}
+      <section class="reg v32-bloco" id="sec-status">
+        {% include "components/v32/section_card.html" with numero="4" titulo="Atualizar status" subtitulo="Cada mudança fica registrada no histórico" %}
+        <div class="reg-corpo">
+          <form method="post" action="{% url 'demandas_eventos:transicionar' instancia.pk %}" class="g-form v32-form-grid">
+            {% csrf_token %}
+            {% include "components/select.html" with name="novo_status" label="Próximo status" opcoes=opcoes_transicao obrigatorio=True largura="6" %}
+            {% include "components/input.html" with name="justificativa" label="Justificativa" largura="6" ajuda="Obrigatória para não atender ou cancelar." %}
+            <div class="cad-frm__acoes cheia"><button type="submit" class=" btn-primaria">Atualizar status</button></div>
+          </form>
+        </div>
+      </section>
+    {% endif %}
+
+    <section class="reg v32-bloco" id="sec-historico">
+      {% include "components/v32/section_card.html" with numero="5" titulo="Histórico" subtitulo="Alterações e transições da demanda" %}
+      <div class="reg-corpo">
+        <ol class="linha-t v32-historico">
+          {% for registro in historico %}
+            <li>
+              <strong>{{ registro.get_acao_display }}{% if registro.status_novo %} — {{ registro.status_novo_display }}{% endif %}</strong>
+              <span>{{ registro.criado_em|date:"d/m/Y H:i" }} · {{ registro.usuario|default:"Sistema" }}</span>
+              {% if registro.descricao %}<p>{{ registro.descricao }}</p>{% endif %}
+            </li>
+          {% empty %}<li class="v32-suave">Nenhuma alteração registrada.</li>{% endfor %}
+        </ol>
+      </div>
+    </section>
+  {% endif %}
 {% endblock %}

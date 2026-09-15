@@ -8,7 +8,7 @@ def check_rotas_documentais(app_configs, **kwargs):
     errors = []
     for nome, args in [
         ('viagens_oficios:novo', []), ('viagens_oficios:editar', [1]),
-        ('viagens_oficios:detalhe', [1]), ('viagens_oficios:gerar', [1, 'oficio', 'pdf']),
+        ('viagens_oficios:gerar', [1, 'oficio', 'pdf']),
         ('viagens_termos:novo', []), ('viagens_termos:preview', [1]),
     ]:
         try:

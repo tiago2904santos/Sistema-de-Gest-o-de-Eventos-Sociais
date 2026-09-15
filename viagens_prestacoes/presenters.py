@@ -419,7 +419,7 @@ def apresentar_prestacao_servidor_card(
         "rt_url": reverse("viagens_prestacoes:rt_servidor", args=[ps.pk]),
         "tem_rt": rt is not None,
         "diario_url": reverse("viagens_prestacoes:diario_servidor", args=[ps.pk]),
-        "consolidado_url": reverse("viagens_prestacoes:consolidado_servidor", args=[ps.pk]),
+        "consolidado_url": reverse("viagens_prestacoes:documentos_servidor", args=[ps.pk]),
         "despacho_assinado": despacho_assinado,
         "search_text": " ".join(
             p for p in [oficio.numero_formatado, protocolo_display, servidor["name"], ps.numero_solicitacao] if p

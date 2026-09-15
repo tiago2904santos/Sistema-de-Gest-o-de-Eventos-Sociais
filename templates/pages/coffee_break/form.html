@@ -3,7 +3,7 @@
 {% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  <form method="post" action="" id="form-coffee-break">
+  <form method="post" action="" id="form-coffee-break" class="v32-bloco">
     {% csrf_token %}
     <input type="hidden" name="versao" value="{{ valores.versao }}">
 
@@ -15,12 +15,14 @@
           <span class="kpi__ic">{% include "components/icon.html" with nome="coffee" %}</span>
           <div>
             <h1 class="d-titulo-v32">{{ titulo_pagina }}</h1>
-            <p class="d-cabeca__sub{% if solicitacao and solicitacao.cancelada %} d-sub-status{% endif %}">
-              {% if solicitacao and solicitacao.cancelada %}
-                {% include "components/v32/status_badge.html" with status="cancelada" label="Cancelada" %}
+            <p class="d-cabeca__sub{% if solicitacao %} d-sub-status{% endif %}">
+              {% if solicitacao %}
+                {% include "components/v32/status_badge.html" with status=solicitacao.situacao_financeira_css label=solicitacao.situacao_financeira_display %}
                 <span aria-hidden="true">·</span>
+                {{ solicitacao.lote.rotulo_curto }} — {{ solicitacao.lote.contrato.fornecedor.razao_social }}
+              {% else %}
+                O saldo do lote é validado no salvamento — a quantidade não pode passar do restante.
               {% endif %}
-              O saldo do lote é validado no salvamento — a quantidade não pode passar do restante.
             </p>
           </div>
         </div>
@@ -37,13 +39,25 @@
       </div>
     {% endif %}
 
-    {% if dados_base_bloqueados %}
+    {% if solicitacao and solicitacao.cancelada %}
+      <div class="avisos-v32">
+        <div class="aviso v32-aviso-texto aviso--callout" role="status">
+          Solicitação cancelada{% if solicitacao.cancelada_em %} em {{ solicitacao.cancelada_em|date:"d/m/Y H:i" }}{% endif %}{% if solicitacao.cancelada_por %} por {{ solicitacao.cancelada_por }}{% endif %} — a quantidade não consome o saldo do lote.
+          {% if solicitacao.motivo_cancelamento %}Motivo: {{ solicitacao.motivo_cancelamento }}{% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if somente_leitura %}
+      <div class="aviso v32-aviso-texto aviso--info" role="status">
+        Solicitações canceladas ou concluídas ficam bloqueadas para edição. Os campos estão abertos apenas para consulta — use o histórico no fim da página para acompanhar as alterações.
+      </div>
+    {% elif dados_base_bloqueados %}
       <div class="aviso v32-aviso-texto aviso--info" role="status">
         Os dados do pedido e do evento foram bloqueados porque o fluxo financeiro já começou. Os marcos financeiros e as observações continuam editáveis.
       </div>
     {% endif %}
 
-    <div class="frm-grade"><div>
     <section class="reg" id="sec-lote">
       {% include "components/v32/section_card.html" with numero="1" titulo="Lote e evento" subtitulo="Contra qual lote a solicitação consome saldo e para qual evento." %}
       <div class="reg-corpo">
@@ -68,31 +82,91 @@
       {% include "components/v32/section_card.html" with numero="2" titulo="Informações fiscais e de pagamento" subtitulo="Marcos que definem a situação financeira da solicitação." %}
       <div class="reg-corpo">
         <div class="g-form v32-form-grid">
-          {% include "components/input.html" with name="numero_nota_fiscal" label="Número da nota fiscal" largura="4" valor=valores.numero_nota_fiscal erros=erros.numero_nota_fiscal %}
-          {% include "components/input.html" with name="protocolo_pagamento" label="Protocolo de pagamento" largura="4" valor=valores.protocolo_pagamento erros=erros.protocolo_pagamento %}
-          {% include "components/input.html" with name="data_atesto_gaf" label="Atesto e envio ao GAF" tipo="date" largura="4" valor=valores.data_atesto_gaf erros=erros.data_atesto_gaf %}
-          {% include "components/input.html" with name="data_ordem_bancaria" label="Ordem bancária emitida em" tipo="date" largura="4" valor=valores.data_ordem_bancaria erros=erros.data_ordem_bancaria %}
-          {% include "components/input.html" with name="data_envio_empresa" label="OB enviada à empresa em" tipo="date" largura="4" valor=valores.data_envio_empresa erros=erros.data_envio_empresa %}
-          {% include "components/textarea.html" with name="observacoes" label="Observações" linhas="3" largura="" valor=valores.observacoes erros=erros.observacoes %}
+          {% include "components/input.html" with name="numero_nota_fiscal" label="Número da nota fiscal" largura="4" valor=valores.numero_nota_fiscal erros=erros.numero_nota_fiscal desabilitado=somente_leitura %}
+          {% include "components/input.html" with name="protocolo_pagamento" label="Protocolo de pagamento" largura="4" valor=valores.protocolo_pagamento erros=erros.protocolo_pagamento desabilitado=somente_leitura %}
+          {% include "components/input.html" with name="data_atesto_gaf" label="Atesto e envio ao GAF" tipo="date" largura="4" valor=valores.data_atesto_gaf erros=erros.data_atesto_gaf desabilitado=somente_leitura %}
+          {% include "components/input.html" with name="data_ordem_bancaria" label="Ordem bancária emitida em" tipo="date" largura="4" valor=valores.data_ordem_bancaria erros=erros.data_ordem_bancaria desabilitado=somente_leitura %}
+          {% include "components/input.html" with name="data_envio_empresa" label="OB enviada à empresa em" tipo="date" largura="4" valor=valores.data_envio_empresa erros=erros.data_envio_empresa desabilitado=somente_leitura %}
+          {% include "components/textarea.html" with name="observacoes" label="Observações" linhas="3" largura="" valor=valores.observacoes erros=erros.observacoes desabilitado=somente_leitura %}
         </div>
       </div>
     </section>
-    </div><aside class="frm-lateral">
-      <div class="sticky">
-        <section class="reg reg--sec"><h2 class="reg__t">Lote e evento</h2>
-          <nav class="step-v" aria-label="Seções do formulário">
-            <button type="button" class="step-i" data-ir="#sec-lote"><span class="step-i__m">1</span><span class="step-i__t">Lote e evento</span></button>
-            <button type="button" class="step-i" data-ir="#sec-financeiro"><span class="step-i__m">2</span><span class="step-i__t">Informações fiscais e de pagamento</span></button>
-          </nav>
-        </section>
-      </div>
-      <div class="frm-acoes frm-acoes--flut">
-        {% if solicitacao %}{% url 'coffee_break:detalhe' solicitacao.pk as url_voltar %}{% else %}{% url 'coffee_break:solicitacoes' as url_voltar %}{% endif %}
-        {% include "components/v32/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
+
+    {% if solicitacao %}
+      <section class="reg" id="sec-vinculo">
+        {% include "components/v32/section_card.html" with numero="3" titulo="Lote e contrato" subtitulo="Vínculo contratual e situação derivada dos marcos financeiros." %}
+        <div class="reg-corpo">
+          <dl class="gc gc--3">
+            <div class="f"><dt>Lote</dt><dd><a href="{% url 'coffee_break:lote_detalhe' lote.pk %}">{{ lote.rotulo_curto }}</a></dd></div>
+            <div class="f"><dt>Fornecedor</dt><dd>{{ lote.contrato.fornecedor.razao_social }}</dd></div>
+            <div class="f"><dt>Contrato</dt><dd>{{ lote.contrato.numero }}</dd></div>
+            <div class="f"><dt>Saldo atual do lote</dt><dd>{{ lote.restante }} de {{ lote.quantidade_total }}</dd></div>
+            <div class="f"><dt>Situação financeira</dt><dd>{% include "components/v32/status_badge.html" with status=solicitacao.situacao_financeira_css label=solicitacao.situacao_financeira_display %}</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="reg" id="sec-registro">
+        {% include "components/v32/section_card.html" with numero="4" titulo="Registro" subtitulo="Autoria e datas de controle do registro." %}
+        <div class="reg-corpo">
+          <dl class="gc gc--3">
+            <div class="f"><dt>Criada por</dt><dd>{{ solicitacao.criado_por }}</dd></div>
+            <div class="f"><dt>Criada em</dt><dd>{{ solicitacao.criado_em|date:"d/m/Y H:i" }}</dd></div>
+            <div class="f"><dt>Atualizada em</dt><dd>{{ solicitacao.atualizado_em|date:"d/m/Y H:i" }}</dd></div>
+          </dl>
+        </div>
+      </section>
+    {% endif %}
+
+    <div class="frm-acoes reg__div-acoes">
+      {% url 'coffee_break:solicitacoes' as url_voltar %}
+      {% include "components/v32/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
+      {% if not somente_leitura %}
         {% include "components/v32/button.html" with label="Salvar solicitação" variante="dourado" tipo="submit" %}
-      </div>
-    </aside></div>
+      {% endif %}
+    </div>
   </form>
 
+  {% if solicitacao %}
+    {# Formulários de mudança de estado ficam FORA do formulário principal — HTML não permite aninhamento. #}
+    <section class="reg" id="sec-acoes">
+      {% include "components/v32/section_card.html" with numero="5" titulo="Situação da solicitação" subtitulo="Cancelamento e reativação afetam o saldo do lote." %}
+      <div class="reg-corpo">
+        <div class="d-acoes">
+          {% if solicitacao.cancelada %}
+            <form method="post" action="{% url 'coffee_break:reativar' solicitacao.pk %}">
+              {% csrf_token %}
+              <button type="submit" class=" btn--secundaria ">{% include "components/icon.html" with nome="undo" %}Reativar solicitação</button>
+            </form>
+          {% elif not solicitacao.concluida %}
+            <form method="post" action="{% url 'coffee_break:cancelar' solicitacao.pk %}" class="cancelamento-form">
+              {% csrf_token %}
+              <label class="form-label" for="id_motivo_cancelamento">Motivo do cancelamento <span class="form-label__obrigatorio">*</span></label>
+              <input class="form-controle" type="text" id="id_motivo_cancelamento" name="motivo" maxlength="255" required placeholder="Explique por que o pedido foi cancelado">
+              <button type="submit" class="btn--secundaria btn--destrutiva">{% include "components/icon.html" with nome="ban" %}Cancelar solicitação</button>
+            </form>
+          {% else %}
+            <p class="v32-suave">Fluxo financeiro concluído. O registro permanece disponível apenas para consulta e histórico.</p>
+          {% endif %}
+        </div>
+      </div>
+    </section>
 
+    <section class="reg" id="sec-historico">
+      {% include "components/v32/section_card.html" with numero="6" titulo="Histórico" subtitulo="Alterações e transições registradas no sistema" %}
+      <div class="reg-corpo">
+        <ol class="linha-t v32-historico">
+          {% for registro in historico %}
+            <li>
+              <strong>{{ registro.get_acao_display }}</strong>
+              <span>{{ registro.criado_em|date:"d/m/Y H:i" }} · {{ registro.usuario|default:"Sistema" }}</span>
+              {% if registro.descricao %}<p>{{ registro.descricao }}</p>{% endif %}
+            </li>
+          {% empty %}
+            <li class="v32-suave">Nenhuma alteração registrada.</li>
+          {% endfor %}
+        </ol>
+      </div>
+    </section>
+  {% endif %}
 {% endblock %}
