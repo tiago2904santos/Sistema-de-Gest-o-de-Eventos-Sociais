@@ -759,7 +759,7 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 .v32-cadastro-modal .g-form{grid-template-columns:1fr}
 /* Cadastros de viagens: modal mais largo, com linhas de até três campos. */
 .v32-cadastro-modal--larga{max-width:min(760px,calc(100vw - 32px))}
-.v32-cadastro-modal .g-form.v32-form-grid{grid-template-columns:repeat(12,minmax(0,1fr))}
+.v32-cadastro-modal .g-form.v32-form-grid{grid-template-columns:repeat(12,minmax(0,1fr));gap:14px 10px}
 .v32-cadastro-modal .mo__secao{margin:18px 0 10px;font-size:13px;font-weight:600;color:var(--n-900);text-transform:uppercase;letter-spacing:.06em}
 .v32-cadastro-modal .mo__secao:first-of-type{margin-top:6px}
 @media(max-width:720px){.v32-cadastro-modal .g-form.v32-form-grid>.form-campo{grid-column:1/-1}}
@@ -789,7 +789,7 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 /* Colunas de dinheiro e documento não quebram entre o símbolo e o número. */
 .dt td.c-num{white-space:nowrap;font-variant-numeric:tabular-nums}
 /* Prévia dos percentuais da diária, dentro do modal. */
-.diaria-previa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px;margin-top:14px}
+.diaria-previa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 10px;margin-top:14px}
 .diaria-previa>span{padding:10px 12px;border:1px solid var(--n-200);border-radius:8px;background:var(--n-25)}
 .diaria-previa small{display:block;font-size:11px;color:var(--n-500)}
 .diaria-previa strong{font-size:16px;color:var(--n-900);font-variant-numeric:tabular-nums}
