@@ -33,7 +33,14 @@ def modelos_index(request):
         if retorno: parametros["next"] = retorno
         abas.append({"campo": key, "label": label, "url": f"{base}?{urlencode(parametros)}", "ativa": key==campo})
     grupos = [{"campo": campo, "quick_add_form": form, "rows": [{"title": m.nome} for m in modelos]}]
-    return render(request, "viagens_prestacoes/modelos.html", {"form": form, "modelos": modelos, "campo": campo, "abas": abas, "grupos": grupos, "q": busca, "page_title": "Modelos de texto do RT", "back_url": retorno, "back_label": "Voltar para o relatório técnico" if retorno else ""})
+    return render(request, "viagens_prestacoes/modelos.html", {**_contexto_form_modelo(form), "modelos": modelos, "campo": campo, "campo_rotulo": campos[campo], "abas": abas, "grupos": grupos, "q": busca, "page_title": "Modelos de texto do RT", "back_url": retorno, "back_label": "Voltar para o relatório técnico" if retorno else "", "next": retorno, "url_atual": request.get_full_path()})
+
+
+def _contexto_form_modelo(form):
+    from .view_common import opcoes
+    valor = lambda nome: form[nome].value() or ""
+    return {"form": form, "valores": {n: valor(n) for n in form.fields}, "erros": {n: form.errors.get(n) for n in form.fields},
+            "opcoes_campo": opcoes(ModeloTextoRelatorioTecnico.CAMPO_CHOICES), "prefixo": (form.prefix + "-") if form.prefix else ""}
 
 
 def modelo_editar(request, pk):
@@ -41,8 +48,10 @@ def modelo_editar(request, pk):
     form = ModeloTextoRelatorioTecnicoForm(request.POST or None, instance=modelo)
     if request.method == "POST" and form.is_valid():
         form.save()
+        messages.success(request, "Modelo de texto salvo.")
         return redirect(voltar_para(request, reverse("viagens_prestacoes:modelos_index") + f"?campo={modelo.campo}"))
-    return render(request, "viagens_prestacoes/modelos.html", {"form": form, "modelo": modelo, "page_title": "Editar modelo de texto"})
+    campos = dict(ModeloTextoRelatorioTecnico.CAMPO_CHOICES)
+    return render(request, "viagens_prestacoes/modelos.html", {**_contexto_form_modelo(form), "modelo": modelo, "campo": modelo.campo, "campo_rotulo": campos.get(modelo.campo, ""), "page_title": "Editar modelo de texto", "next": next_valido(request), "url_atual": request.get_full_path()})
 
 
 def modelo_excluir(request, pk):

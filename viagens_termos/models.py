@@ -92,7 +92,8 @@ class TermoAutorizacao(ModeloTemporal, ModeloCancelavel, OrigemLegado):
         if self.destino_estado_id:
             return self.destino_estado.sigla
         destino = self._primeiro_destino_oficio()
-        return str(destino.municipio) if destino else ""
+        # Mesmo formato do destino próprio ("Cidade/UF"): é o que a lista da origem mostra.
+        return f"{destino.municipio.nome}/{destino.municipio.estado.sigla}" if destino else ""
 
     def periodo_efetivo(self):
         inicio = self.data_evento_inicio

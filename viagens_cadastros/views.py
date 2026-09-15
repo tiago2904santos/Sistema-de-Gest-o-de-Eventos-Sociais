@@ -26,6 +26,8 @@ from django.utils.http import urlencode, url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_http_methods
 
 from auditoria.models import LogAuditoria
+from viagens_oficios.forms import ModeloJustificativaForm, ModeloMotivoOficioForm
+from viagens_oficios.models import ModeloJustificativa, ModeloMotivoOficio
 
 from .cep import CEPIndisponivel, CEPNaoEncontrado, consultar_cep
 from core.normalizers import normalize_digits
@@ -192,6 +194,65 @@ CADASTROS = {
             }
         ],
     },
+    # Catálogos dos ofícios (Meta 3): vivem em `/oficios/modelos-motivo/` e
+    # `/justificativas/modelos/` na origem, e aqui seguem o mesmo padrão de
+    # lista, modal, padrão e exclusão dos demais cadastros. Não entram no
+    # trilho nem nos cartões da entrada de Cadastros, que a Meta 1 certificou
+    # com os seis grupos da origem.
+    "motivos-oficio": {
+        "model": ModeloMotivoOficio,
+        "form": ModeloMotivoOficioForm,
+        "busca_rotulo": "Buscar modelo de motivo pelo nome",
+        "vazio": "Nenhum modelo de motivo cadastrado ainda.",
+        "intro_modal": "Nome curto para escolher no ofício e o texto que vai para o campo Motivo. O padrão é sugerido em todo ofício novo.",
+        "titulo": "Motivos de ofício",
+        "singular": "modelo de motivo",
+        "novo": "Novo modelo de motivo",
+        "icone": "document",
+        "descricao": "Textos reutilizáveis para o motivo do ofício.",
+        "exemplo": "Ex.: COBERTURA JORNALÍSTICA",
+        "busca": ["nome__icontains", "texto__icontains"],
+        "situacao_ativo": True,
+        "colunas": [
+            {"rotulo": "Ordem", "attr": "ordem"},
+            {"rotulo": "Padrão", "attr": "is_padrao", "booleano": True},
+        ],
+        "secoes": [
+            {
+                "titulo": "Modelo de motivo",
+                "subtitulo": "Nome, texto e ordem de exibição; marque-o como padrão para ser sugerido nos novos ofícios.",
+                "campos": ["nome", "texto", "ordem", "ativo", "is_padrao"],
+                "larguras": {"nome": "8", "ordem": "4"},
+            }
+        ],
+    },
+    "modelos-justificativa": {
+        "model": ModeloJustificativa,
+        "form": ModeloJustificativaForm,
+        "busca_rotulo": "Buscar modelo de justificativa pelo nome",
+        "vazio": "Nenhum modelo de justificativa cadastrado ainda.",
+        "intro_modal": "Nome curto para escolher no ofício e o texto da justificativa. O padrão é sugerido quando a justificativa é exigida.",
+        "titulo": "Modelos de justificativa",
+        "singular": "modelo de justificativa",
+        "novo": "Novo modelo de justificativa",
+        "icone": "document",
+        "descricao": "Textos reutilizáveis para a justificativa de prazo do ofício.",
+        "exemplo": "Ex.: DEMANDA URGENTE",
+        "busca": ["nome__icontains", "texto__icontains"],
+        "situacao_ativo": True,
+        "colunas": [
+            {"rotulo": "Ordem", "attr": "ordem"},
+            {"rotulo": "Padrão", "attr": "is_padrao", "booleano": True},
+        ],
+        "secoes": [
+            {
+                "titulo": "Modelo de justificativa",
+                "subtitulo": "Nome, texto e ordem de exibição; marque-o como padrão para ser sugerido nos ofícios que exigem justificativa.",
+                "campos": ["nome", "texto", "ordem", "ativo", "is_padrao"],
+                "larguras": {"nome": "8", "ordem": "4"},
+            }
+        ],
+    },
 }
 
 DIARIAS = {
@@ -231,6 +292,11 @@ DIARIA_SECOES = [
 DIARIAS["secoes"] = DIARIA_SECOES
 
 
+# Catálogos com "usar como padrão" no menu da linha.
+CATALOGOS_DE_OFICIO = {"motivos-oficio", "modelos-justificativa"}
+COM_PADRAO = {"cargos", "combustiveis", *CATALOGOS_DE_OFICIO}
+
+
 def _config(slug):
     if slug not in CADASTROS:
         raise Http404
@@ -258,6 +324,8 @@ CONTAGEM_CARTAO = {
     "cargos": ("cargo cadastrado", "cargos cadastrados"),
     "combustiveis": ("combustível cadastrado", "combustíveis cadastrados"),
     "diarias": ("vigência cadastrada", "vigências cadastradas"),
+    "motivos-oficio": ("modelo cadastrado", "modelos cadastrados"),
+    "modelos-justificativa": ("modelo cadastrado", "modelos cadastrados"),
 }
 
 
@@ -369,6 +437,9 @@ def _campo_para_template(form, nome, *, detalhes_unidade=False):
         descricao["marcado"] = bool(valor)
     elif isinstance(campo.widget, forms.DateInput):
         descricao["tipo"] = "data"
+    elif isinstance(campo.widget, forms.Textarea):
+        descricao["tipo"] = "textarea"
+        descricao["linhas"] = attrs.get("rows", "4")
     else:
         descricao["tipo"] = getattr(campo.widget, "input_type", "text") or "text"
     return descricao
@@ -426,6 +497,10 @@ def _linhas_da_lista(config, slug, pagina, *, tem_acoes=True, retorno="", padrao
             celulas.append({"rotulo": coluna["rotulo"], "valor": valor or coluna.get("vazio", "—")})
         principal = getattr(objeto, attr_principal, "") or "—"
         status = getattr(objeto, "status", "")
+        badge = {"texto": objeto.get_status_display(), "classe": SITUACAO_CHIP.get(status, "")} if status else None
+        if badge is None and config.get("situacao_ativo"):
+            ativo = bool(getattr(objeto, "ativo", True))
+            badge = {"texto": "Ativo" if ativo else "Inativo", "classe": "st--ativo" if ativo else "st--inativo"}
         linhas.append(
             {
                 "objeto": objeto,
@@ -434,7 +509,7 @@ def _linhas_da_lista(config, slug, pagina, *, tem_acoes=True, retorno="", padrao
                 "celulas": celulas,
                 "status": status,
                 "status_label": objeto.get_status_display() if status else "",
-                "badge": {"texto": objeto.get_status_display(), "classe": SITUACAO_CHIP.get(status, "")} if status else None,
+                "badge": badge,
                 "url_editar": reverse("viagens_cadastros:editar", args=[slug, objeto.pk]) + sufixo if tem_acoes else "",
                 "url_excluir": reverse("viagens_cadastros:excluir", args=[slug, objeto.pk]) + sufixo if tem_acoes else "",
                 "url_padrao": (
@@ -655,7 +730,7 @@ def _lista_catalogo(request, slug, modal=None):
     config = _config(slug)
     retorno = _retorno_cadastro(request)
     termo = request.GET.get("q", "").strip()
-    queryset = config["model"].objects.order_by("nome")
+    queryset = config["model"].objects.order_by("ordem", "nome") if slug in CATALOGOS_DE_OFICIO else config["model"].objects.order_by("nome")
     if termo:
         procurado = _texto_busca(termo)
         campos = ("pk", "nome", "sigla") if slug == "unidades" else ("pk", "nome")
@@ -668,11 +743,12 @@ def _lista_catalogo(request, slug, modal=None):
     if retorno:
         parametros["next"] = retorno
     pode_editar = pode_editar_cadastros(request.user)
-    tem_padrao = slug in {"cargos", "combustiveis"}
+    tem_padrao = slug in COM_PADRAO
     linhas = _linhas_da_lista(config, slug, pagina, tem_acoes=pode_editar, retorno=retorno, padrao=tem_padrao)
     contexto = _contexto_lista(
         request, slug, config, pagina=pagina, linhas=linhas, termo=termo,
         parametros=parametros, tem_acoes=pode_editar, tem_filtros=bool(termo),
+        tem_situacao=bool(config.get("situacao_ativo")),
         retorno=retorno, modal=modal,
         acoes_template="pages/viagens_cadastros/_acoes_com_padrao.html" if tem_padrao else "",
     )
@@ -680,7 +756,8 @@ def _lista_catalogo(request, slug, modal=None):
         "itens": linhas,
         "tem_padrao": tem_padrao,
         "url_lista": _url_catalogo(slug, retorno),
-        "rotulo_retorno": ("Voltar à viatura" if slug == "combustiveis" else
+        "rotulo_retorno": ("Voltar aos ofícios" if slug in CATALOGOS_DE_OFICIO else
+                           "Voltar à viatura" if slug == "combustiveis" else
                            "Voltar ao servidor" if slug == "unidades" else
                            "Voltar ao servidor" if retorno.startswith("/viagens/cadastros/servidores/") else
                            "Voltar ao formulário"),
@@ -692,7 +769,7 @@ def _lista_catalogo(request, slug, modal=None):
 @require_http_methods(["GET", "POST"])
 def definir_padrao(request, slug, pk):
     _exigir_edicao(request)
-    if slug not in {"cargos", "combustiveis"}:
+    if slug not in COM_PADRAO:
         raise Http404
     config = _config(slug)
     objeto = get_object_or_404(config["model"], pk=pk)

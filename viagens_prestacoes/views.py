@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
+from core.listagens import ITENS_POR_PAGINA
 from core.normalizers import normalize_spaces
 from core.autosave import parse_autosave_payload, autosave_json_response, AutosavePayloadError
 from core.retorno import voltar_para
@@ -32,23 +33,35 @@ def index(request):
             messages.success(request, "Solicitações atualizadas.")
         return _redirect_lista(request)
     filtros = {k: request.GET.get(k) or None for k in ("q", "status", "viagem_de", "viagem_ate", "sort")}
-    from .models import PrestacaoServidor
-    from .presenters import apresentar_prestacao_servidor_card, marcar_agrupamento_cards
-    abas = request.GET.getlist("aba")
+    from .cartoes import SITUACOES, cartao_da_lista
+    from .presenters import get_configuracao_sistema, marcar_agrupamento_cards
+    from .selectors import normalizar_abas
+    from core.retorno import daqui
+    from viagens_cadastros.permissions import pode_editar_cadastros
+    abas = normalizar_abas(request.GET.getlist("aba")) if request.GET.getlist("aba") else []
     itens = listar_prestacoes(**filtros, aba=abas)
-    pagina = Paginator(itens, 20).get_page(request.GET.get("page"))
+    paginator = Paginator(itens, ITENS_POR_PAGINA)
+    pagina = paginator.get_page(request.GET.get("page"))
     contagem = contar_por_aba(**{k:v for k,v in filtros.items() if k != "sort"})
-    rotulos = {"nao_liberadas": "Não liberadas", "liberadas": "Liberadas", "arquivados": "Arquivados", "finalizados": "Finalizados"}
+    rotulos = dict(SITUACOES)
     vazias = {"nao_liberadas": "Nenhum servidor com diárias pendentes de liberação.", "liberadas": "Nenhum servidor com diárias já liberadas.", "arquivados": "Nenhuma prestação de servidor arquivada.", "finalizados": "Nenhuma prestação de servidor finalizada ainda."}
-    cards = marcar_agrupamento_cards([apresentar_prestacao_servidor_card(ps) for ps in pagina])
+    configuracao = get_configuracao_sistema()
+    cards = marcar_agrupamento_cards([cartao_da_lista(ps, configuracao=configuracao) for ps in pagina])
+    parametros = request.GET.copy()
+    parametros.pop("page", None)
     return render(request, "viagens_prestacoes/index.html", {
-        "page_title": "Prestações de contas", "page_obj": pagina, "cards": cards,
+        "page_title": "Prestações de contas", "page_obj": pagina, "pagina": pagina, "cards": cards,
         "prestacoes": pagina.object_list, "contagem": contagem,
         "q": filtros["q"] or "", "abas_selecionadas": abas,
         "has_filters": bool(abas or any(v for k,v in filtros.items() if k != "sort")),
         "situacao_options": [{"value": key, "label": f"{rotulos[key]} ({value})"} for key,value in contagem.items()],
-        "empty_message": vazias.get(abas[0], "Nenhuma prestação encontrada.") if abas else "Nenhuma prestação encontrada.",
-        "opcoes_status": [{"valor": v, "rotulo": label} for v,label in PrestacaoServidor.STATUS_CHOICES],
+        "opcoes_situacao": [{"valor": key, "rotulo": f"{rotulo} ({contagem[key]})", "selecionado": key in abas} for key, rotulo in SITUACOES],
+        "empty_message": vazias.get(abas[0], "Nenhuma prestação encontrada.") if len(abas) == 1 else "Nenhuma prestação encontrada.",
+        "querystring": parametros.urlencode(),
+        "paginas_visiveis": list(paginator.get_elided_page_range(pagina.number, on_each_side=1, on_ends=1)),
+        "elipse": paginator.ELLIPSIS,
+        "url_atual": daqui(request),
+        "pode_editar": pode_editar_cadastros(request.user),
     })
 
 

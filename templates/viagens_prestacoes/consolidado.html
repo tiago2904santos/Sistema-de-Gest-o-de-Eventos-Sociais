@@ -1,1 +1,52 @@
-{% extends "viagens_prestacoes/base.html" %}{% block prestacao_conteudo %}<section class="section-card section-card__corpo"><h2>Pacote final e finalização</h2><p>O PDF reúne: ofício, despacho, relatório técnico, diário de bordo e comprovantes.</p>{% if pendencias %}<h3>Falta para fechar o PDF final</h3><ul>{% for p in pendencias %}<li>{{ p }}</li>{% endfor %}</ul>{% else %}<a class="btn-primaria" href="{% url 'viagens_prestacoes:consolidado_download' ps.pk %}" target="_blank">Baixar pacote (PDF final)</a>{% endif %}<p>Situação: {{ ps.status_display }}{% if ps.finalizada %} · Finalizada{% endif %}</p></section><section class="section-card section-card__corpo"><h2>Documentos de {{ ps.servidor.nome }}</h2>{% for item in downloads %}<article><h3>{{ item.titulo }}</h3>{% for origem, formatos in item.versoes.items %}{% for formato, url in formatos.items %}<a class="btn--secundaria" href="{{ url }}">{% if origem == "assinado" %}Assinado{% else %}Original{% endif %} · {{ formato|upper }}</a> {% endfor %}{% endfor %}</article>{% endfor %}</section>{% endblock %}{% block prestacao_acoes %}<div class="viagem-acoes"><a class="btn--secundaria" href="{% url 'viagens_prestacoes:documentos_servidor' ps.pk %}">Ir para Documentos</a><form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn-primaria">{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form></div>{% endblock %}
+{% extends "viagens_prestacoes/base.html" %}
+{% comment %}
+  Etapa 4 — PDF final: o que ainda falta para fechar o pacote, o pacote em si
+  (ofício, despacho, relatório técnico, diário de bordo e comprovantes num
+  PDF só), os documentos deste servidor em original e assinado, e finalizar
+  ou reabrir a prestação.
+{% endcomment %}
+{% block prestacao_conteudo %}
+  <section class="reg" id="pacote">
+    <h2 class="reg__t">{% include "components/icon.html" with nome="document-plus" %}Pacote final e finalização</h2>
+    <p class="pc-nota">O PDF reúne: ofício, despacho, relatório técnico, diário de bordo e comprovantes.</p>
+    {% if pendencias %}
+      <div class="aviso aviso--callout" role="status"><div class="aviso__txt">{% include "components/icon.html" with nome="alert" %}<div class="aviso__corpo"><b>Falta para fechar o PDF final</b><ul class="pc-pendencias">{% for p in pendencias %}<li>{{ p }}</li>{% endfor %}</ul></div></div><a class="btn-primaria" href="{% url 'viagens_prestacoes:documentos_servidor' ps.pk %}">Ir para Documentos</a></div>
+    {% else %}
+      <p class="aviso aviso--ok">{% include "components/icon.html" with nome="check-circle" %}<span>Tudo pronto: o pacote de <strong>{{ ps.servidor.nome }}</strong> pode ser gerado.</span></p>
+      <div class="pc-acoes-linha"><a class="btn-primaria" href="{% url 'viagens_prestacoes:consolidado_download' ps.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="download" %}Baixar pacote (PDF final)</a></div>
+    {% endif %}
+    <dl class="gc sol-detalhe__campos pc-situacao">
+      <div class="f"><dt>Situação</dt><dd><span class="st st--pc-{{ ps.status }}">{{ ps.status_display }}</span>{% if ps.finalizada %} <span class="st st--atendido">Finalizada{% if ps.finalizada_em %} em {{ ps.finalizada_em|date:"d/m/Y" }}{% endif %}</span>{% endif %}{% if ps.arquivada %} <span class="st st--neutro">Arquivada</span>{% endif %}</dd></div>
+      <div class="f"><dt>Solicitação</dt><dd>{{ ps.numero_solicitacao|default:"—" }}</dd></div>
+      <div class="f"><dt>Liberação das diárias</dt><dd>{{ ps.data_liberacao_diarias|date:"d/m/Y"|default:"—" }}</dd></div>
+      <div class="f"><dt>Prazo para saque</dt><dd>{{ ps.prazo_limite_saque|date:"d/m/Y"|default:"—" }}</dd></div>
+    </dl>
+  </section>
+
+  <section class="reg" id="downloads">
+    <h2 class="reg__t">{% include "components/icon.html" with nome="download" %}Documentos de {{ ps.servidor.nome }}</h2>
+    <div class="pc-uploads">
+      {% for item in downloads %}
+        <article class="pc-upload">
+          <div class="pc-upload__cabeca">
+            <span class="of-av" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+            <span class="of-pessoa__txt"><span class="of-pessoa__nome">{{ item.titulo }}</span><span class="of-pessoa__desc">{{ item.subtitulo }}</span></span>
+          </div>
+          <div class="pc-download__versoes">
+            {% for formato, url in item.versoes.original.items %}<a class="pc-download__versao" href="{{ url }}">Original · {{ formato|upper }}</a>{% endfor %}
+            {% for formato, url in item.versoes.assinado.items %}<a class="pc-download__versao pc-download__versao--assinado" href="{{ url }}">{% include "components/icon.html" with nome="check" %}Assinado · {{ formato|upper }}</a>{% endfor %}
+          </div>
+        </article>
+      {% empty %}
+        <p class="texto-vazio">Nenhum documento disponível ainda. Preencha o diário de bordo e o relatório técnico.</p>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}
+{% block prestacao_acoes %}
+  <footer class="editor-roteiro__rodape pc-fluxo__rodape">
+    <a class="btn--secundaria" href="{% url 'viagens_prestacoes:documentos_servidor' ps.pk %}">Ir para Documentos</a>
+    <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_arquivar' ps.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="lock" %}{% if ps.arquivada %}Desarquivar{% else %}Arquivar prestação{% endif %}</button></form>
+    <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check-circle" %}{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
+  </footer>
+{% endblock %}

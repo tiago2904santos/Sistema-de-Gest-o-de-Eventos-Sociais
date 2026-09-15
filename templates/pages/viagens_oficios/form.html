@@ -1,33 +1,358 @@
 {% extends "layouts/app_shell_v32.html" %}
-{% load static %}
-{% block title %}{{ titulo }}{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/viagens-documentos.css' %}">{% endblock %}
+{% load static estaticos %}
+{% comment %}
+  Formulário do ofício — Meta 3 de paridade com o Gerenciador de Viagens.
+
+  O wizard da origem tem seis etapas: dados e viajantes, transporte, roteiro,
+  justificativa, resumo e documentos. Aqui elas são seções de uma tela só,
+  cada uma com os blocos de lá (identificação, motivo, custeio, equipe;
+  viatura e motorista com o cartão do motorista externo; roteiro com o resumo
+  da rota; regra de prazo e texto da justificativa; conferência). A lateral
+  mostra as etapas e o estado de cada uma. Nenhum campo é desenhado por laço.
+{% endcomment %}
+
+{% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
 {% block conteudo %}
-{% include "components/v32/breadcrumb.html" with atual=titulo %}
-{% include "components/v32/page_header.html" with titulo=titulo subtitulo="Autorização de viagem, justificativa e termos dos servidores" icone="file-text" %}
-<div class="viagem-form">
-  <form method="post" id="form-oficio" novalidate>
+  {% url 'viagens_oficios:lista' as url_lista %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb|default:None atual=titulo %}
+
+  <form method="post" action="" id="form-oficio" class="of-form" novalidate>
     {% csrf_token %}
-    {% for erro in form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-    {% for erro in jform.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-    {% for secao in secoes %}
-    <section class="section-card reg v32-bloco" id="{{ secao.id }}">
-      <header class="section-card__cabecalho reg__t"><span class="reg-numero">{{ forloop.counter }}</span><h2 class="section-card__titulo">{{ secao.titulo }}</h2></header>
-      <div class="section-card__corpo v32-form-grid viagem-campos">
-        {% include "pages/viagens_oficios/_campos.html" with campos=secao.campos %}
-        {% if secao.id == 'roteiro' %}<p><a class="btn--secundaria" href="{% url 'viagens_roteiros:novo' %}" target="_blank">Montar roteiro</a>{% if oficio.roteiro_id %} <a href="{% url 'viagens_roteiros:editar' oficio.roteiro_id %}" target="_blank">Abrir roteiro selecionado</a>{% endif %}</p>{% endif %}
-        {% if secao.id == 'justificativa' %}<p class="form-ajuda">{{ regra.motivo_regra }}</p>{% endif %}
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+    <div class="frm-cabeca">
+      <div>
+        <div class="kicker">{{ modulo_ativo.nome }}</div>
+        <h1>{{ titulo }}
+          <span class="frm-rasc">{% include "components/icon.html" with nome="document" %}{% if oficio.cancelado %}Cancelado{% else %}{{ oficio.get_status_display }}{% endif %}</span>
+        </h1>
+        <p class="frm-cabeca__sub">{% if oficio.pk %}Ofício de autorização de viagem criado em {{ oficio.criado_em|date:"d/m/Y" }}.{% else %}Preencha as etapas para emitir o ofício de autorização de viagem.{% endif %}</p>
       </div>
-    </section>
-    {% endfor %}
-    <section id="resumo" class="section-card reg v32-bloco"><header class="section-card__cabecalho reg__t"><span class="reg-numero">5</span><h2 class="section-card__titulo">Resumo</h2></header><div class="section-card__corpo"><p>Salve o ofício para conferir o resumo e emitir os documentos.</p>{% if oficio.numero %}<p>Número reservado: <strong>{{ oficio.numero_formatado }}</strong>.</p>{% endif %}</div></section>
+    </div>
+
+    <div class="frm-grade">
+      <div class="of-form__principal">
+        {% if form.errors or jform.errors %}
+          <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
+            {% include "components/icon.html" with nome="info" %}
+            <div>
+              <b>Não foi possível salvar o ofício</b>
+              Revise os campos indicados antes de continuar.
+              <ul class="aviso--erro__lista">
+                {% for campo, mensagens in form.errors.items %}{% for mensagem in mensagens %}
+                  <li>{% if campo == "__all__" %}{{ mensagem }}{% else %}<a href="#id_{{ campo }}">{{ mensagem }}</a>{% endif %}</li>
+                {% endfor %}{% endfor %}
+                {% for campo, mensagens in jform.errors.items %}{% for mensagem in mensagens %}
+                  <li><a href="#id_justificativa-{{ campo }}">Justificativa: {{ mensagem }}</a></li>
+                {% endfor %}{% endfor %}
+              </ul>
+            </div>
+          </div>
+        {% endif %}
+        {% if oficio.cancelado %}
+          <p class="aviso-rota" role="status">{% include "components/icon.html" with nome="ban" %}<span><strong>Ofício cancelado.</strong> {{ oficio.motivo_cancelamento }}</span></p>
+        {% endif %}
+
+        {# ------------------------------------------------------------- 1 #}
+        <section class="section-card reg" id="dados">
+          <header class="section-card__cabecalho reg__t">
+            <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+            <h2 class="section-card__titulo">Dados e viajantes</h2>
+          </header>
+          <div class="section-card__corpo">
+            <div class="bloco-split">
+              <div class="bloco-split__rotulo">
+                <strong>Identificação</strong>
+                <p class="texto-suave v32-suave">Data do ofício, protocolo do eProtocolo e unidade que solicita a viagem.</p>
+              </div>
+              <div class="bloco-split__corpo g-form g-form--3">
+                {% include "components/input.html" with name="data_criacao" label="Data do ofício" tipo="date" obrigatorio=True valor=valores.data_criacao erros=erros.data_criacao %}
+                {% include "components/input.html" with name="protocolo" label="Protocolo" placeholder="00.000.000-0" inputmode="numeric" maxlength="12" valor=valores.protocolo erros=erros.protocolo ajuda="Nove dígitos, com ou sem pontuação." %}
+                {% include "components/select.html" with name="solicitante" label="Unidade solicitante" opcoes=opcoes_unidades pesquisavel=True placeholder="Buscar unidade..." selecionado=valores.solicitante erros=erros.solicitante %}
+                <div class="cheia">
+                  {% include "components/input.html" with name="assunto" label="Assunto" placeholder="Identificação interna do ofício (não vai para o documento)" valor=valores.assunto erros=erros.assunto %}
+                </div>
+              </div>
+            </div>
+
+            <div class="bloco-split">
+              <div class="bloco-split__rotulo">
+                <strong>Motivo</strong>
+                <p class="texto-suave v32-suave">Escolher um modelo preenche o texto; ele pode ser ajustado depois.</p>
+              </div>
+              <div class="bloco-split__corpo g-form g-form--1">
+                {% include "components/select.html" with name="modelo_motivo" label="Modelo de motivo" opcoes=opcoes_motivos placeholder="Sem modelo" permitir_vazio=True selecionado=valores.modelo_motivo erros=erros.modelo_motivo %}
+                {% include "components/textarea.html" with name="motivo" label="Motivo" obrigatorio=True linhas="4" valor=valores.motivo erros=erros.motivo placeholder="Finalidade da viagem, como vai constar no ofício" %}
+              </div>
+            </div>
+
+            <div class="bloco-split">
+              <div class="bloco-split__rotulo">
+                <strong>Custeio</strong>
+                <p class="texto-suave v32-suave">Quem paga as diárias. Outra instituição exige a observação.</p>
+              </div>
+              <div class="bloco-split__corpo g-form g-form--2">
+                {% include "components/select.html" with name="custeio" label="Custeio" opcoes=opcoes_custeio obrigatorio=True selecionado=valores.custeio erros=erros.custeio %}
+                <div data-custeio-observacao>
+                  {% include "components/input.html" with name="custeio_observacao" label="Observação do custeio" valor=valores.custeio_observacao erros=erros.custeio_observacao placeholder="Ex.: custeado pela Prefeitura Municipal" %}
+                  <p class="form-ajuda" data-custeio-dica hidden>Obrigatória quando o custeio é de outra instituição.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bloco-split">
+              <div class="bloco-split__rotulo">
+                <strong>Equipe</strong>
+                <p class="texto-suave v32-suave">Marque quem viaja e, para cada viajante, se recebe o termo de autorização. <span data-equipe-contagem>0 viajantes</span>.</p>
+              </div>
+              <div class="bloco-split__corpo">
+                <div class="form-campo of-equipe-busca">
+                  <label class="form-label sr-only" for="id_equipe_busca">Buscar servidor</label>
+                  <div class="busca">
+                    <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+                    <input class="form-controle" type="search" id="id_equipe_busca" placeholder="Buscar por nome, cargo ou unidade" data-equipe-busca autocomplete="off">
+                  </div>
+                </div>
+                <div class="of-membros{% if erros.servidores %} grupo-erro{% endif %}" data-equipe role="group" aria-label="Viajantes">
+                  <div class="of-membros__cabeca" aria-hidden="true"><span>Viaja</span><span>Servidor</span><span>Termo de autorização</span></div>
+                  {% for p in opcoes_servidores %}
+                    <div class="of-membro{% if p.selecionado %} of-membro--viaja{% endif %}" data-pessoa="{{ p.valor }}" data-busca="{{ p.rotulo }} {{ p.detalhes }}">
+                      <label class="of-membro__viaja"><input type="checkbox" name="servidores" value="{{ p.valor }}"{% if p.selecionado %} checked{% endif %}><span class="sr-only">{{ p.rotulo }} viaja</span></label>
+                      <span class="of-av" aria-hidden="true">{{ p.iniciais }}</span>
+                      <span class="of-pessoa__txt"><span class="of-pessoa__nome">{{ p.rotulo }}</span>{% if p.detalhes %}<span class="of-pessoa__desc">{{ p.detalhes }}</span>{% endif %}</span>
+                      <label class="of-membro__termo"><input type="checkbox" name="servidores_termo_autorizacao" value="{{ p.valor }}"{% if p.termo %} checked{% endif %}{% if not p.selecionado %} disabled{% endif %}><span>Termo</span></label>
+                    </div>
+                  {% empty %}
+                    <p class="texto-vazio">Nenhum servidor cadastrado. Cadastre a equipe em Cadastros › Servidores.</p>
+                  {% endfor %}
+                </div>
+                {% for erro in erros.servidores %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+                {% for erro in erros.servidores_termo_autorizacao %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {# ------------------------------------------------------------- 2 #}
+        <section class="section-card reg" id="transporte">
+          <header class="section-card__cabecalho reg__t">
+            <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+            <h2 class="section-card__titulo">Transporte</h2>
+          </header>
+          <div class="section-card__corpo">
+            <div class="bloco-split">
+              <div class="bloco-split__rotulo">
+                <strong>Viatura</strong>
+                <p class="texto-suave v32-suave">Do cadastro, ou uma não cadastrada informada à mão.</p>
+              </div>
+              <div class="bloco-split__corpo">
+                <fieldset class="campo-e form-campo campo-e--bloco">
+                  <legend><span>Origem da viatura</span></legend>
+                  <div class="unidade-sim-nao">
+                    <label class="seg2"><input type="radio" name="viatura_modo" value="cadastrada"{% if modo_viatura == "cadastrada" %} checked{% endif %}>Cadastrada</label>
+                    <label class="seg2"><input type="radio" name="viatura_modo" value="manual"{% if modo_viatura == "manual" %} checked{% endif %}>Não cadastrada</label>
+                  </div>
+                </fieldset>
+                <div class="g-form g-form--2" data-viatura-cadastrada>
+                  {% include "components/select.html" with name="viatura" label="Viatura" opcoes=opcoes_viaturas pesquisavel=True placeholder="Buscar por placa ou modelo..." selecionado=valores.viatura erros=erros.viatura %}
+                </div>
+                <div class="condicional g-form g-form--2" data-viatura-manual hidden>
+                  {% include "components/input.html" with name="transporte_placa_manual" label="Placa da viatura não cadastrada" placeholder="AAA-0000" maxlength="8" uppercase=True mascara_cadastro="placa" valor=valores.transporte_placa_manual erros=erros.transporte_placa_manual %}
+                  {% include "components/input.html" with name="transporte_modelo_manual" label="Modelo da viatura não cadastrada" valor=valores.transporte_modelo_manual erros=erros.transporte_modelo_manual %}
+                  {% include "components/select.html" with name="transporte_combustivel_manual" label="Combustível da viatura não cadastrada" opcoes=opcoes_combustiveis permitir_vazio=True selecionado=valores.transporte_combustivel_manual erros=erros.transporte_combustivel_manual %}
+                  {% include "components/select.html" with name="transporte_tipo_manual" label="Tipo da viatura não cadastrada" opcoes=opcoes_tipos_viatura permitir_vazio=True selecionado=valores.transporte_tipo_manual erros=erros.transporte_tipo_manual %}
+                </div>
+              </div>
+            </div>
+
+            <div class="bloco-split">
+              <div class="bloco-split__rotulo">
+                <strong>Motorista</strong>
+                <p class="texto-suave v32-suave">Um servidor da equipe, um servidor de fora dela ou um motorista externo. Quem não está na equipe precisa do ofício e do protocolo que o autorizam.</p>
+              </div>
+              <div class="bloco-split__corpo">
+                <div class="g-form g-form--2">
+                  {% include "components/select.html" with name="motorista_modo" label="Identificação do motorista" opcoes=opcoes_motorista_modo obrigatorio=True selecionado=motorista_modo erros=erros.motorista_modo %}
+                  <div data-motorista-servidor>
+                    {% include "components/select.html" with name="motorista" label="Motorista" opcoes=opcoes_servidores pesquisavel=True placeholder="Buscar servidor..." permitir_vazio=True selecionado=valores.motorista erros=erros.motorista %}
+                  </div>
+                </div>
+                <p class="aviso-rota" data-motorista-aviso hidden role="status">{% include "components/icon.html" with nome="alert" %}<span>O motorista não está na equipe deste ofício: informe abaixo o ofício e o protocolo que autorizam a viagem dele.</span></p>
+                <div class="condicional of-cartao-motorista" data-motorista-manual hidden>
+                  <p class="reg__st">Cartão do motorista externo</p>
+                  <div class="g-form g-form--3">
+                    <div class="c2">{% include "components/input.html" with name="motorista_manual_nome" label="Nome do motorista externo" uppercase=True valor=valores.motorista_manual_nome erros=erros.motorista_manual_nome %}</div>
+                    {% include "components/input.html" with name="motorista_manual_cargo" label="Cargo do motorista externo" valor=valores.motorista_manual_cargo erros=erros.motorista_manual_cargo %}
+                    {% include "components/input.html" with name="motorista_manual_rg" label="RG do motorista externo" mascara_cadastro="rg" valor=valores.motorista_manual_rg erros=erros.motorista_manual_rg %}
+                    {% include "components/input.html" with name="motorista_manual_cpf" label="CPF do motorista externo" inputmode="numeric" mascara_cadastro="cpf" maxlength="14" valor=valores.motorista_manual_cpf erros=erros.motorista_manual_cpf %}
+                    {% include "components/input.html" with name="motorista_manual_unidade" label="Unidade do motorista externo" valor=valores.motorista_manual_unidade erros=erros.motorista_manual_unidade %}
+                    <div class="cheia">{% include "components/textarea.html" with name="motorista_manual_observacao" label="Observação sobre o motorista" linhas="2" valor=valores.motorista_manual_observacao erros=erros.motorista_manual_observacao %}</div>
+                  </div>
+                </div>
+                <div class="condicional g-form g-form--2" data-motorista-referencia hidden>
+                  {% include "components/input.html" with name="motorista_oficio_referencia" label="Ofício do motorista" placeholder="15/2026" ajuda="Referência no formato número/ano (ex.: 15/2026)." valor=valores.motorista_oficio_referencia erros=erros.motorista_oficio_referencia %}
+                  {% include "components/input.html" with name="motorista_protocolo_ref" label="Protocolo do motorista" placeholder="00.000.000-0" inputmode="numeric" maxlength="12" valor=valores.motorista_protocolo_ref erros=erros.motorista_protocolo_ref %}
+                </div>
+              </div>
+            </div>
+
+            <div class="bloco-split">
+              <div class="bloco-split__rotulo">
+                <strong>Armamento</strong>
+                <p class="texto-suave v32-suave">Consta no ofício como autorização de porte e transporte.</p>
+              </div>
+              <div class="bloco-split__corpo">
+                <div class="form-campo viagens-opcao-padrao">
+                  <label for="id_porte_transporte_armas">
+                    <span><strong>Porte/transporte de armas</strong><small>Marcado, o documento autoriza o porte e o transporte de armamento pela equipe.</small></span>
+                    <span class="viagens-switch"><input type="checkbox" id="id_porte_transporte_armas" name="porte_transporte_armas" value="on"{% if porte_armas %} checked{% endif %}><span aria-hidden="true"></span></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {# ------------------------------------------------------------- 3 #}
+        <section class="section-card reg" id="roteiro">
+          <header class="section-card__cabecalho reg__t">
+            <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
+            <h2 class="section-card__titulo">Roteiro</h2>
+            <a class="btn--secundaria btn--compacto section-card__acao" href="{{ url_novo_roteiro }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="map-pin" %}Montar roteiro</a>
+          </header>
+          <div class="section-card__corpo">
+            <div class="bloco-split">
+              <div class="bloco-split__rotulo">
+                <strong>Roteiro da viagem</strong>
+                <p class="texto-suave v32-suave">O ofício herda o percurso, as datas e o cálculo das diárias do roteiro escolhido.</p>
+              </div>
+              <div class="bloco-split__corpo">
+                {% include "components/select.html" with name="roteiro" label="Roteiro" opcoes=opcoes_roteiros pesquisavel=True placeholder="Buscar roteiro por sede ou destino..." permitir_vazio=True selecionado=valores.roteiro erros=erros.roteiro %}
+                <p class="texto-vazio" data-roteiro-vazio>Nenhum roteiro escolhido. Monte um roteiro novo ou escolha um da lista.</p>
+                <div class="of-resumo-rota" data-roteiro-resumo hidden>
+                  <div class="of-resumo-rota__cabeca"><strong>Resumo da rota</strong><a class="btn--quieta" href="#" target="_blank" rel="noopener" data-roteiro-abrir>Abrir roteiro {% include "components/icon.html" with nome="chevron-right" %}</a></div>
+                  <dl class="of-resumo-rota__lista">
+                    <div><dt>Sede</dt><dd data-roteiro-campo="sede">—</dd></div>
+                    <div><dt>Percurso</dt><dd data-roteiro-campo="rota">—</dd></div>
+                    <div><dt>Destinos</dt><dd data-roteiro-campo="destinos">—</dd></div>
+                    <div><dt>Período</dt><dd data-roteiro-campo="periodo">—</dd></div>
+                    <div><dt>Trechos</dt><dd data-roteiro-campo="trechos">—</dd></div>
+                    <div><dt>Servidores no cálculo</dt><dd data-roteiro-campo="servidores">—</dd></div>
+                    <div><dt>Quantidade de diárias</dt><dd data-roteiro-campo="resumo_diarias">—</dd></div>
+                    <div><dt>Valor total</dt><dd data-roteiro-campo="valor">—</dd></div>
+                    <div class="of-resumo-rota__larga"><dt>Por extenso</dt><dd data-roteiro-campo="extenso">—</dd></div>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {# ------------------------------------------------------------- 4 #}
+        <section class="section-card reg" id="justificativa">
+          <header class="section-card__cabecalho reg__t">
+            <span class="section-card__numero reg-numero" aria-hidden="true">4</span>
+            <h2 class="section-card__titulo">Justificativa</h2>
+            <span class="status-badge section-card__acao {% if regra.status == 'required' %}status-badge--pendente{% elif regra.status == 'not_applicable' %}status-badge--atendida{% else %}status-badge--rascunho{% endif %}" role="status">{% if regra.status == 'required' %}Obrigatória{% elif regra.status == 'not_applicable' %}Não exigida{% else %}Regra pendente{% endif %}</span>
+          </header>
+          <div class="section-card__corpo">
+            <div class="bloco-split">
+              <div class="bloco-split__rotulo">
+                <strong>Regra de prazo</strong>
+                <p class="texto-suave v32-suave">A justificativa é obrigatória quando o ofício sai com menos de {{ regra.prazo_dias }} dias de antecedência da primeira saída.</p>
+              </div>
+              <div class="bloco-split__corpo">
+                <dl class="of-resumo-rota__lista of-regra">
+                  <div><dt>Primeira saída</dt><dd>{% if regra.primeira_saida %}{{ regra.primeira_saida|date:"d/m/Y H:i" }}{% else %}—{% endif %}</dd></div>
+                  <div><dt>Data do ofício</dt><dd>{{ regra.data_criacao|date:"d/m/Y" }}</dd></div>
+                  <div><dt>Antecedência</dt><dd>{% if regra.dias_antecedencia is not None %}{{ regra.dias_antecedencia }} dia{{ regra.dias_antecedencia|pluralize }}{% else %}—{% endif %}</dd></div>
+                  <div><dt>Prazo mínimo</dt><dd>{{ regra.prazo_dias }} dias</dd></div>
+                  <div class="of-resumo-rota__larga"><dt>Avaliação</dt><dd>{{ regra.motivo_regra }}</dd></div>
+                </dl>
+              </div>
+            </div>
+            <div class="bloco-split">
+              <div class="bloco-split__rotulo">
+                <strong>Texto</strong>
+                <p class="texto-suave v32-suave">Escolher um modelo preenche o texto; ajuste antes de salvar.</p>
+              </div>
+              <div class="bloco-split__corpo g-form g-form--1">
+                {% include "components/select.html" with name="justificativa-modelo" label="Modelo de justificativa" opcoes=justificativa.opcoes_modelo placeholder="Sem modelo" permitir_vazio=True selecionado=justificativa.modelo erros=justificativa.erros_modelo %}
+                {% include "components/textarea.html" with name="justificativa-texto" label="Justificativa" linhas="5" valor=justificativa.texto erros=justificativa.erros_texto obrigatorio=regra.obrigatoria placeholder="Por que a viagem não pôde ser solicitada no prazo" %}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {# ------------------------------------------------------------- 5 #}
+        <section class="section-card reg" id="resumo">
+          <header class="section-card__cabecalho reg__t">
+            <span class="section-card__numero reg-numero" aria-hidden="true">5</span>
+            <h2 class="section-card__titulo">Resumo</h2>
+            {% if oficio.pk %}<a class="btn--secundaria btn--compacto section-card__acao" href="{% url 'viagens_oficios:detalhe' oficio.pk %}">{% include "components/icon.html" with nome="eye" %}Conferir e emitir</a>{% endif %}
+          </header>
+          <div class="section-card__corpo">
+            {% if oficio.pk %}
+              <div class="of-conferencia">
+                {% for etapa in etapas %}{% if etapa.id != "resumo" and etapa.id != "documentos" %}
+                  <div class="of-conferencia__item of-conferencia__item--{{ etapa.estado }}">
+                    <span class="of-conferencia__marca" aria-hidden="true">{% if etapa.estado == "concluida" %}{% include "components/icon.html" with nome="check" %}{% elif etapa.estado == "opcional" %}–{% else %}{{ etapa.numero }}{% endif %}</span>
+                    <span><strong>{{ etapa.titulo }}</strong><small>{% if etapa.estado == "concluida" %}Completo{% elif etapa.estado == "opcional" %}Não exigida{% else %}Pendente{% endif %}</small></span>
+                  </div>
+                {% endif %}{% endfor %}
+              </div>
+              {% if avaliacao.pendencias %}
+                <p class="reg__st">Pendências para emitir o documento</p>
+                <ul class="of-pendencias">{% for p in avaliacao.pendencias %}<li>{{ p }}</li>{% endfor %}</ul>
+              {% else %}
+                <p class="aviso aviso--ok">{% include "components/icon.html" with nome="check-circle" %}<span>Ofício <strong>{{ oficio.numero_formatado }}</strong> pronto para emissão. Os documentos são gerados na etapa 6, na tela de conferência.</span></p>
+              {% endif %}
+            {% else %}
+              <p class="texto-vazio">Salve o ofício para reservar o número, conferir as etapas e emitir os documentos.</p>
+            {% endif %}
+          </div>
+        </section>
+      </div>
+
+      <aside class="sticky sticky--form frm-lateral" aria-label="Etapas do ofício">
+        <section class="reg reg--sec reg--sec-lista">
+          <h2 class="reg__t">Ofício</h2>
+          <dl>
+            <div class="resumo__linha"><dt>Número</dt><dd>{{ oficio.numero_formatado }}</dd></div>
+            <div class="resumo__linha"><dt>Situação</dt><dd><span class="st {% if oficio.cancelado %}st--cancelada{% else %}st--{{ oficio.status|lower }}{% endif %}">{% if oficio.cancelado %}Cancelado{% else %}{{ oficio.get_status_display }}{% endif %}</span></dd></div>
+            {% if oficio.retificado_documento %}<div class="resumo__linha"><dt>Marca</dt><dd>Retificado</dd></div>{% endif %}
+            {% if oficio.complementar_documento %}<div class="resumo__linha"><dt>Marca</dt><dd>Complementar</dd></div>{% endif %}
+          </dl>
+        </section>
+        <section class="reg reg--sec">
+          <h2 class="reg__t">Etapas</h2>
+          <div class="step-v">
+            {% for etapa in etapas %}
+              {% if etapa.id == "documentos" %}
+                {% if oficio.pk %}<a class="step-i etapa--{{ etapa.estado }}" href="{% url 'viagens_oficios:detalhe' oficio.pk %}#documentos">{% else %}<span class="step-i etapa--{{ etapa.estado }}">{% endif %}
+              {% else %}
+                <button type="button" class="step-i etapa--{{ etapa.estado }}{% if etapa.id == 'dados' and erros.servidores or erros.motivo or erros.protocolo %} step-i--erro{% endif %}" data-ir="#{{ etapa.id }}" data-etapa="{{ etapa.id }}">
+              {% endif %}
+                <span class="step-i__m">{% if etapa.estado == "concluida" %}{% include "components/icon.html" with nome="check" %}{% else %}{{ etapa.numero }}{% endif %}</span>
+                <span><span class="step-i__t">{{ etapa.titulo }}</span><span class="step-i__s etapa__estado">{% if etapa.estado == "concluida" %}Concluído{% elif etapa.estado == "opcional" %}Não exigida{% elif etapa.id == "documentos" and not oficio.pk %}Depois de salvar{% else %}Pendente{% endif %}</span></span>
+              {% if etapa.id == "documentos" %}{% if oficio.pk %}</a>{% else %}</span>{% endif %}{% else %}</button>{% endif %}
+            {% endfor %}
+          </div>
+        </section>
+        <div class="frm-acoes frm-acoes--flut">
+          <a class="btn--secundaria frm-cancelar" href="{{ url_voltar }}">Voltar</a>
+          <button type="submit" class="btn-primaria" name="acao" value="continuar">Salvar e conferir</button>
+        </div>
+      </aside>
+    </div>
   </form>
-  <aside class="viagem-etapas pa-card v32-corpo"><h2>Etapas do ofício</h2><nav aria-label="Etapas do formulário">{% for secao in secoes %}<a href="#{{ secao.id }}">{{ forloop.counter }}. {{ secao.titulo }}</a>{% endfor %}<a href="#resumo">5. Resumo</a></nav></aside>
-</div>
-<div class="viagem-acoes"><a class="btn--secundaria" href="{{ url_voltar }}">Voltar</a><button class="btn-primaria" form="form-oficio" type="submit">Salvar e conferir resumo</button></div>
 {% endblock %}
+
 {% block extra_js %}
-{{ block.super }}
-{{ modelos_texto|json_script:"oficio-modelos-texto" }}
-<script src="{% static 'js/viagens-oficios.js' %}" defer></script>
+  {{ block.super }}
+  {{ modelos_texto|json_script:"oficio-modelos-texto" }}
+  {{ resumos_roteiros|json_script:"oficio-resumos-roteiros" }}
+  <script src="{% estatico 'js/viagens-cadastros.js' %}" defer></script>
+  <script src="{% estatico 'js/viagens-oficios.js' %}" defer></script>
 {% endblock %}

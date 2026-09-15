@@ -1,14 +1,12 @@
 from django import forms
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from viagens_cadastros.models import ConfiguracaoSistema, AssinaturaConfiguracao
 from viagens_cadastros.permissions import acesso_ao_modulo, eh_gestor_viagens, pode_editar_cadastros
-from .models import ModeloMotivoOficio, ModeloJustificativa
-from .forms import ModeloMotivoOficioForm, ModeloJustificativaForm
 from .views import exigir_operador
 from .view_helpers import campos_v32
 
@@ -41,34 +39,50 @@ class ConfiguracaoInstitucionalForm(ConfiguracaoForm):
         return cd
 
 
-CATALOGOS = {
-    'motivos': (ModeloMotivoOficio, ModeloMotivoOficioForm, 'Motivos de ofício'),
-    'justificativas': (ModeloJustificativa, ModeloJustificativaForm, 'Modelos de justificativa'),
-    'assinaturas': (AssinaturaConfiguracao, AssinaturaForm, 'Assinantes dos documentos'),
+# Os catálogos de motivo e de modelo de justificativa são cadastros de viagens
+# (Meta 3): lista, modal, "usar como padrão" e exclusão com diálogo, no padrão
+# fixado pela Meta 1. As rotas antigas deste app continuam respondendo.
+CATALOGOS_CADASTRO = {
+    'motivos': 'motivos-oficio',
+    'justificativas': 'modelos-justificativa',
 }
+
+
+def _catalogo_de_cadastro(request, slug, pk=None, novo=False):
+    from viagens_cadastros import views as cadastros
+
+    if request.method == 'POST':
+        if request.POST.get('acao') == 'excluir' and pk:
+            return cadastros.excluir(request, slug, pk)
+        return cadastros.editar(request, slug, pk)
+    if pk is None and not novo:
+        return cadastros.lista(request, slug)
+    # Novo e editar abrem a lista já com o modal (sem redirecionar): é o que
+    # o contrato das rotas deste app sempre respondeu.
+    cadastros._exigir_edicao(request)
+    config = cadastros._config(slug)
+    instancia = get_object_or_404(config['model'], pk=pk) if pk else None
+    modal = cadastros._contexto_modal(slug, config, config['form'](instance=instancia), instancia)
+    return cadastros._lista_catalogo(request, slug, modal)
 
 
 @acesso_ao_modulo
 @require_http_methods(['GET', 'POST'])
 def catalogo(request, tipo, pk=None, novo=False):
-    from django.http import Http404
-    if tipo not in CATALOGOS:
+    if tipo in CATALOGOS_CADASTRO:
+        return _catalogo_de_cadastro(request, CATALOGOS_CADASTRO[tipo], pk, novo)
+    if tipo != 'assinaturas':
         raise Http404
-    modelo, form_cls, titulo = CATALOGOS[tipo]
-    if tipo == 'assinaturas' and not eh_gestor_viagens(request.user):
+    if not eh_gestor_viagens(request.user):
         raise PermissionDenied
+    modelo, form_cls, titulo = AssinaturaConfiguracao, AssinaturaForm, 'Assinantes dos documentos'
     if pk is None and not novo:
-        qs = modelo.objects.all()
-        if request.GET.get('q') and tipo != 'assinaturas':
-            qs = qs.filter(nome__icontains=request.GET['q'])
         return render(request, 'pages/viagens_oficios/catalogo.html', {
-            'titulo': titulo, 'objetos': qs, 'tipo': tipo,
-            'pode_editar': eh_gestor_viagens(request.user) if tipo == 'assinaturas' else pode_editar_cadastros(request.user),
+            'titulo': titulo, 'objetos': modelo.objects.all(), 'tipo': tipo, 'pode_editar': True,
         })
     exigir_operador(request)
     obj = get_object_or_404(modelo, pk=pk) if pk else modelo()
-    if tipo == 'assinaturas':
-        obj.configuracao = ConfiguracaoSistema.get_singleton()
+    obj.configuracao = ConfiguracaoSistema.get_singleton()
     form = form_cls(request.POST or None, instance=obj)
     if request.method == 'POST':
         if request.POST.get('acao') == 'excluir' and pk:

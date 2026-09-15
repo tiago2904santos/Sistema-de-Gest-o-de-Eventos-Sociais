@@ -977,3 +977,360 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 
 /* O resumo do bate-volta só aparece quando o editor tem o que dizer. */
 .bate-volta__resumo:empty{display:none}
+
+/* ---------------------------------------------------------------------------
+   Lista de ofícios (Meta 3 de paridade): o cartão da origem — cabeçalho com
+   número e protocolo, equipe, placa e modelo, trechos, valor e justificativa,
+   com os quatro menus de ação — vestido com os tokens do V3.2. A origem é
+   escura; aqui os blocos internos usam o cinza claro dos painéis.
+   --------------------------------------------------------------------------- */
+.of-catalogos{display:flex;flex-wrap:wrap;gap:4px 14px;margin:-6px 0 14px}
+.of-catalogos .btn--quieta{height:30px;padding:0 6px;font-size:12.5px;font-weight:600}
+.of-filtros{align-items:end}
+.of-filtros__situacao{flex:1 1 100%;order:10}
+.of-filtros__ordem{flex:1 1 190px;min-width:0}
+.of-filtros__periodo{flex:1 1 210px;min-width:0}
+.of-filtros>.btn--secundaria,.of-filtros>a.btn--secundaria{height:38px}
+.of-filtros .form-label:not(.sr-only){font-size:11.5px}
+.of-paginacao{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.of-paginacao--rodape{margin:12px 0 0}
+.of-paginacao__contagem{margin:0;font-size:12.5px;color:var(--n-500)}
+.of-paginacao__contagem strong{color:var(--n-800)}
+.of-paginacao .pag__nav{margin:0}
+.of-lista{display:grid;gap:14px}
+.of-cartao{display:grid;gap:10px;padding:16px 18px;border:1px solid var(--n-200);border-radius:12px;background:var(--branco);min-width:0}
+.of-cartao--cancelado{background:var(--n-25)}
+.of-cartao--cancelado .of-cartao__titulo{color:var(--n-500);text-decoration:line-through}
+.of-cartao__cabeca{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.of-cartao__ident{min-width:0}
+.of-cartao__titulo{margin:0;font-size:15.5px;font-weight:700;color:var(--n-900);overflow-wrap:anywhere}
+.of-cartao__sub{margin:3px 0 0;font-size:12.5px;color:var(--n-500);overflow-wrap:anywhere}
+.of-cartao .st{flex:none;white-space:nowrap}
+.of-equipe{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:8px}
+.of-pessoa,.of-just{display:flex;align-items:center;gap:10px;min-width:0;padding:8px 10px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25)}
+.of-pessoa--motorista{border-color:var(--d-300);background:var(--d-50)}
+.of-av{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:var(--d-100);color:var(--d-800);font-size:12px;font-weight:700;letter-spacing:.02em}
+.of-pessoa__txt{display:grid;gap:2px;min-width:0;flex:1 1 auto}
+.of-pessoa__nome{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;font-weight:700;color:var(--n-900);overflow-wrap:anywhere}
+.of-pessoa__desc{font-size:11.5px;color:var(--n-500);overflow-wrap:anywhere}
+.of-tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:99px;background:var(--d-600);color:#fff;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.of-equipe__vazio{grid-column:1/-1;padding:9px 12px;border:1px dashed var(--n-200);border-radius:9px;font-size:12.5px;color:var(--n-500)}
+.of-grade{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1.1fr);gap:10px;align-items:stretch}
+.of-bloco{min-width:0;padding:12px 14px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25)}
+.of-rotulo{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--d-700)}
+.of-rotulo+*{display:block;margin:2px 0 10px}
+.of-bloco> :last-child{margin-bottom:0}
+.of-transporte__valor{font-size:26px;line-height:1.1;font-weight:800;color:var(--n-900);letter-spacing:.01em;overflow-wrap:anywhere}
+.of-nao-informado{font-size:13px;color:var(--n-500)}
+.of-trechos{list-style:none;margin:0;padding:8px;display:grid;gap:6px;align-content:start;max-height:190px;overflow:auto;scrollbar-width:thin}
+.of-trecho{display:grid;gap:2px;padding:8px 10px;border-radius:7px;background:var(--branco);border:1px solid var(--n-150);min-width:0}
+.of-trecho__rota{font-size:12.5px;font-weight:700;color:var(--n-900);overflow-wrap:anywhere}
+.of-trecho__hora{font-size:11.5px;color:var(--n-500);font-variant-numeric:tabular-nums}
+.of-valor{background:var(--d-50);border-color:var(--d-200)}
+.of-valor__num{font-size:26px;line-height:1.1;font-weight:800;color:var(--n-900);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.of-valor__ext{font-size:11px;line-height:1.4;color:var(--n-500);margin-top:-4px}
+.of-valor__qtd{font-size:16px;font-weight:700;color:var(--n-900)}
+.of-just{align-items:center}
+.of-just .of-pessoa__nome .st{height:20px;font-size:11px}
+.of-just__acoes{flex:none;margin-left:auto}
+.of-cartao__rodape{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:10px;border-top:1px solid var(--n-150)}
+.of-cartao .acoes{display:flex;align-items:center;gap:4px}
+.of-cartao .ib-linha{width:34px;height:34px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco);color:var(--n-600)}
+.of-cartao .ib-linha:hover,.of-cartao .ib-linha[aria-expanded=true]{border-color:var(--d-500);background:var(--d-50);color:var(--d-800)}
+.of-cartao .acao-linha{height:34px;color:var(--n-700)}
+.of-menu{flex:0 0 auto;width:auto;position:relative}
+.of-menu__corpo{min-width:290px;right:0;left:auto}
+.of-item{align-items:flex-start;height:auto;min-height:44px;padding:8px 10px;text-align:left;white-space:normal}
+.of-item>.ui-icon{flex:none;margin-top:2px}
+.of-item>span{display:grid;gap:2px;min-width:0}
+.of-item b{font-size:13px;color:var(--n-900)}
+.of-item small{font-size:11.5px;color:var(--n-500);line-height:1.35}
+.of-item.dd__i--perigo b{color:var(--dg-t)}
+.of-item--inativo{cursor:not-allowed;opacity:.55}
+.of-vazio{padding:40px 24px;text-align:center;display:grid;justify-items:center;gap:8px}
+.of-vazio h2{margin:0;font-size:22px}
+.of-vazio p{margin:0 0 8px;font-size:13.5px;color:var(--n-500)}
+.st--rascunho{background:var(--in-b);color:var(--in-t);border:1px solid var(--in-r)}
+.st--neutro{background:var(--nt-b);color:var(--nt-t);border:1px solid var(--nt-r)}
+@container(max-width:1100px){.of-grade{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.of-valor{grid-column:1/-1}}
+@container(max-width:680px){
+  .of-grade,.of-equipe{grid-template-columns:1fr}
+  .of-cartao{padding:14px}
+  .of-transporte__valor,.of-valor__num{font-size:22px}
+  .of-menu__corpo{right:auto;left:0}
+  .of-cartao__rodape{flex-wrap:wrap}
+  .of-filtros__ordem,.of-filtros__periodo{flex-basis:100%}
+}
+/* Ordenação escolhida é dado, não sugestão: mesma correção feita para a data
+   escolhida — a regra que pinta o gatilho vazio tem três classes. */
+.custom-select.is-enhanced .custom-select__trigger.has-value{color:var(--n-900)}
+
+/* ---------------------------------------------------------------------------
+   Formulário do ofício (Meta 3): as etapas do wizard da origem como seções de
+   uma tela só, com os blocos de lá. Reaproveita o `bloco-split` do editor de
+   roteiro (rótulo à esquerda, campos à direita) fora do escopo `.editor-roteiro`.
+   --------------------------------------------------------------------------- */
+.of-form .frm-grade{padding-top:0}
+.of-form__principal{min-width:0}
+.of-form__principal>.reg{margin-bottom:16px}
+.of-form .section-card__cabecalho{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.of-form .section-card__titulo{font:inherit;margin:0}
+.of-form .section-card__acao{margin-left:auto}
+.of-form .bloco-split{display:grid;grid-template-columns:200px minmax(0,1fr);gap:18px;padding:16px 0}
+.of-form .bloco-split+.bloco-split{border-top:1px solid var(--n-150)}
+.of-form .bloco-split:first-child{padding-top:0}
+.of-form .bloco-split:last-child{padding-bottom:0}
+.of-form .g-form{margin:0}
+.of-form .g-form--1{grid-template-columns:1fr}
+.of-form .condicional{margin-top:12px}
+.of-form .condicional[hidden],.of-form [data-viatura-cadastrada][hidden],.of-form [data-motorista-servidor][hidden],.of-form [data-roteiro-resumo][hidden],.of-form .aviso-rota[hidden]{display:none}
+.of-form .aviso-rota{margin:12px 0 0}
+.of-form .aviso--ok{margin:0;display:flex;align-items:flex-start;gap:8px}
+.of-form .campo-e--bloco{margin-bottom:12px}
+.of-form .unidade-sim-nao{display:flex;gap:8px}
+.of-form .seg2{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco);font-size:13px;cursor:pointer}
+.of-form .seg2:has(input:checked){border-color:var(--d-500);background:var(--d-50);color:var(--d-800);font-weight:600}
+.of-form .seg2 input{accent-color:var(--d-600)}
+.is-exigido .form-label::after{content:" *";color:var(--d-700)}
+.of-equipe-busca{margin-bottom:8px}
+.of-membros{border:1px solid var(--n-200);border-radius:9px;overflow:hidden;max-height:420px;overflow-y:auto;scrollbar-width:thin}
+.of-membros.grupo-erro{border-color:var(--dg-t)}
+.of-membros__cabeca,.of-membro{display:grid;grid-template-columns:44px 40px minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 12px}
+.of-membros__cabeca{grid-template-columns:44px minmax(0,1fr) auto;padding:7px 12px;background:var(--n-50);font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--n-500);border-bottom:1px solid var(--n-150)}
+.of-membro+.of-membro{border-top:1px solid var(--n-100)}
+.of-membro[hidden]{display:none}
+.of-membro--viaja{background:var(--d-25,#fbf8f2)}
+.of-membro__viaja,.of-membro__termo{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12.5px;color:var(--n-700)}
+.of-membro__viaja input,.of-membro__termo input{width:16px;height:16px;margin:0;accent-color:var(--d-600)}
+.of-membro__termo input:disabled+span{color:var(--n-300)}
+.of-membro .of-av{width:30px;height:30px;font-size:11px}
+.of-cartao-motorista .reg__st{margin:0 0 12px}
+.of-resumo-rota{margin-top:12px;padding:14px 16px;border:1px solid var(--d-200);border-radius:9px;background:var(--d-50)}
+.of-resumo-rota__cabeca{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;font-size:13px}
+.of-resumo-rota__cabeca .btn--quieta{height:28px;padding:0 6px;font-size:12px;font-weight:600;color:var(--d-700)}
+.of-resumo-rota__lista{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 16px;margin:0}
+.of-resumo-rota__lista>div{min-width:0}
+.of-resumo-rota__lista dt{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--n-500)}
+.of-resumo-rota__lista dd{margin:3px 0 0;font-size:13px;color:var(--n-900);overflow-wrap:anywhere}
+.of-resumo-rota__larga{grid-column:1/-1}
+.of-regra{padding:14px 16px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25)}
+.of-conferencia{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.of-conferencia__item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--n-200);border-radius:9px;background:var(--branco)}
+.of-conferencia__item>span:last-child{display:grid;gap:1px;min-width:0}
+.of-conferencia__item strong{font-size:13px}
+.of-conferencia__item small{font-size:11.5px;color:var(--n-500)}
+.of-conferencia__marca{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--n-250);font-size:12px;font-weight:700;color:var(--n-600)}
+.of-conferencia__marca .ui-icon{width:14px;height:14px}
+.of-conferencia__item--concluida{border-color:var(--ok-r);background:var(--ok-b)}
+.of-conferencia__item--concluida .of-conferencia__marca{background:var(--ok-t);border-color:var(--ok-t);color:#fff}
+.of-conferencia__item--pendente .of-conferencia__marca{border-color:var(--wn-t);color:var(--wn-t)}
+.of-pendencias{margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:var(--n-700)}
+.frm-lateral .step-i.etapa--opcional .step-i__m{border-style:dashed}
+a.step-i{text-decoration:none;color:inherit}
+@container(max-width:1100px){.of-form .bloco-split{grid-template-columns:1fr;gap:10px}.of-resumo-rota__lista,.of-conferencia{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container(max-width:680px){.of-resumo-rota__lista,.of-conferencia{grid-template-columns:1fr}.of-membros__cabeca{display:none}.of-membro{grid-template-columns:36px 32px minmax(0,1fr);gap:8px}.of-membro__termo{grid-column:2/-1}}
+/* O cartão do motorista externo não é uma grade de duas colunas como o
+   `.condicional` da unidade móvel: título em cima, campos embaixo. */
+.of-form .of-cartao-motorista{display:block}
+/* As duas ações da lateral cabem na largura dela, com quebra de linha se preciso. */
+.of-form .frm-acoes--flut{flex-wrap:wrap}
+.of-form .frm-acoes--flut .btn--secundaria,.of-form .frm-acoes--flut .btn-primaria{flex:1 1 120px;white-space:normal;line-height:1.2;text-align:center}
+
+/* Detalhe do ofício (Meta 3): conferência e documentos na composição do
+   detalhe da solicitação, com os blocos do cartão da lista reaproveitados. */
+.of-detalhe .d-titulo{align-items:center}
+.of-detalhe .d-acoes{align-items:center}
+.of-detalhe .d-acoes .dd__c{right:0;left:auto}
+.of-detalhe .reg__t .st{height:22px;font-size:11.5px;margin-left:2px}
+.of-abrir{margin-left:auto;display:inline-flex;align-items:center;gap:2px;font-size:12.5px;font-weight:600;color:var(--d-700);text-decoration:none}
+.of-abrir .ui-icon{width:14px;height:14px}
+.of-equipe--detalhe{margin-bottom:12px}
+.of-lote{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding-top:12px;border-top:1px solid var(--n-150)}
+.of-lote form{margin:0}
+.of-grade--detalhe{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.of-grade--detalhe .of-trechos{max-height:none}
+.of-emitir{display:grid;gap:10px;margin-bottom:18px}
+.of-emitir__grupo{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 12px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25)}
+.of-emitir__grupo>strong{min-width:110px;font-size:13px}
+.of-emitir__grupo form{margin:0}
+.of-emitir .btn-primaria,.of-emitir .btn--secundaria{height:36px;font-size:12.5px}
+.of-detalhe .reg__st em{margin-left:8px;font-style:normal;font-weight:400;color:var(--n-450)}
+.of-detalhe .dt td,.of-detalhe .dt th{white-space:normal}
+.of-detalhe .sticky .etapa--concluida .etapa__t{color:var(--ok-t)}
+.of-detalhe .sticky .etapa--pendente .etapa__m{border-color:var(--wn-t)}
+.of-detalhe .sticky .etapa--opcional .etapa__m{border-style:dashed}
+.of-pronto{margin:10px 0 0;padding:10px 12px;font-size:12.5px;display:flex;gap:6px;align-items:center}
+.of-prestacao__texto{margin:0 0 10px;line-height:1.5}
+.of-detalhe .enc-op{max-width:560px}
+.of-detalhe .enc-op .ta{min-height:80px}
+@container(max-width:900px){.of-grade--detalhe{grid-template-columns:1fr}}
+.of-regra-texto{margin:0 0 10px}
+
+/* Justificativas (Meta 4): inclusão rápida com seletor de ofícios que busca
+   no servidor, e a lista das justificativas nos blocos do cartão de ofício. */
+.jt-rapida[hidden]{display:none}
+.jt-rapida .v32-secao-cabecalho{flex-direction:column;gap:2px;align-items:flex-start}
+.jt-rapida__grade{margin:0}
+.jt-picker{position:relative}
+.jt-picker .busca{width:100%;max-width:none}
+.jt-picker .busca .form-controle{border:0;background:transparent;box-shadow:none}
+.jt-picker.is-invalid .busca{border-color:var(--dg-t)}
+.jt-picker__menu{position:static;margin-top:6px;max-height:320px;overflow:auto}
+.jt-picker__menu[hidden]{display:none}
+.jt-opcao>span{display:grid;gap:2px;white-space:normal}
+.jt-opcao small{font-size:11px;color:var(--n-450)}
+.jt-escolhidos{margin-top:8px}
+.jt-escolhidos:empty{display:none}
+.jt-grade{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+.jt-regra{grid-template-columns:repeat(2,minmax(0,1fr));align-content:start}
+.jt-texto{align-items:flex-start}
+.jt-texto__corpo{white-space:pre-line;font-size:12.5px;color:var(--n-700);line-height:1.5}
+.jt-texto .of-pessoa__nome .v32-suave{font-weight:400}
+@container(max-width:900px){.jt-grade{grid-template-columns:1fr}}
+@container(max-width:680px){.jt-regra{grid-template-columns:1fr}}
+
+/* Termos de autorização (Meta 5): a linha da origem — título com destino e
+   período, selo, descrição e quatro ações à direita — e o cadastro nos blocos
+   do editor. */
+.tm-cartao{padding:14px 18px}
+.tm-cartao__corpo{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.tm-cartao .of-cartao__titulo{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tm-cartao .of-cartao__titulo .st{font-weight:500}
+.tm-herdados{color:var(--d-700)}
+.tm-acoes{flex:none}
+.ib-linha--perigo{color:var(--dg-t)!important}
+.ib-linha--perigo:hover{border-color:var(--dg-r)!important;background:var(--dg-b)!important}
+.tm-cartao .acoes form{margin:0}
+.tm-form .editor-roteiro__rodape{grid-column:1/-1}
+.tm-adicional{margin-bottom:10px}
+.tm-form .aviso-rota{margin-top:12px}
+.tm-servidor{grid-column:1/-1}
+.tm-servidor__acoes{margin-left:auto;flex-wrap:wrap}
+.tm-servidor__acoes form{margin:0}
+.tm-servidor__acoes .acao-linha{height:32px}
+.tm-grupos{display:grid;gap:10px;margin:14px 0 18px}
+.tm-grupos .of-emitir__grupo>strong{min-width:150px}
+.tm-grupos .of-emitir__grupo>.v32-suave{flex:1 1 100%;margin:-4px 0 2px}
+.tm-grupos .btn-primaria,.tm-grupos .btn--secundaria{height:36px;font-size:12.5px}
+.tm-documento{max-width:820px;padding:32px 40px}
+.tm-documento__cabecalho{margin:0 0 4px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--n-500);text-align:center}
+.tm-documento__titulo{margin:0 0 24px;font-size:20px;text-align:center;letter-spacing:.04em}
+.tm-documento__texto{margin:14px 0 0;font-size:14px;line-height:1.7;text-align:justify}
+@container(max-width:900px){.tm-cartao__corpo{flex-direction:column;align-items:flex-start}.tm-acoes{align-self:flex-end}}
+
+/* ---------- Meta 6 · prestações de contas ---------- */
+.pc-lista{gap:14px}
+.pc-cartao--arquivada{background:var(--n-25)}
+.pc-cartao--arquivada .of-cartao__titulo{color:var(--n-600)}
+.prestacao-card-group--start{border-bottom-left-radius:4px;border-bottom-right-radius:4px}
+.prestacao-card-group--middle{border-radius:4px;margin-top:-8px}
+.prestacao-card-group--end{border-top-left-radius:4px;border-top-right-radius:4px;margin-top:-8px}
+.st--pc-pendente{background:var(--wn-b);color:var(--wn-t);border:1px solid var(--wn-r,transparent)}
+.st--pc-em_preenchimento{background:var(--in-b);color:var(--in-t);border:1px solid var(--in-r,transparent)}
+.st--pc-enviada{background:var(--d-50);color:var(--d-800);border:1px solid var(--d-200)}
+.st--pc-aprovada{background:var(--ok-b);color:var(--ok-t);border:1px solid var(--ok-r,transparent)}
+.st--pc-reprovada{background:var(--dg-b);color:var(--dg-t);border:1px solid var(--dg-r,transparent)}
+.pc-servidor{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0;padding:8px 10px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25);margin:0}
+.pc-servidor--motorista{border-color:var(--d-300);background:var(--d-50)}
+.pc-servidor .of-pessoa__txt{flex:1 1 220px}
+.pc-servidor__solic{position:relative;flex:0 0 150px}
+.pc-solic.form-controle{height:34px;padding:0 10px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.pc-solic--leitura{display:inline-flex;align-items:center;height:34px;padding:0 10px;border:1px dashed var(--n-200);border-radius:8px;font-size:12.5px;color:var(--n-600)}
+.pc-autosave{position:absolute;right:0;top:100%;font-size:10.5px;color:var(--n-500);white-space:nowrap}
+.pc-autosave--ok{color:var(--ok-t)}.pc-autosave--erro{color:var(--dg-t)}
+.pc-periodo{flex:0 0 auto;position:relative}
+.pc-periodo__gatilho{height:34px;gap:6px;font-size:12.5px;white-space:nowrap}
+.pc-periodo__gatilho--definido{border-color:var(--d-400);background:var(--d-50);color:var(--d-800)}
+.pc-periodo__corpo{min-width:280px;left:0;right:auto;padding:10px 12px 12px}
+.pc-periodo__campos{display:grid;gap:10px;margin-bottom:10px}
+.pc-periodo__acoes{display:flex;justify-content:flex-end}
+.pc-periodo__leitura{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--n-600)}
+.pc-comprovante{height:20px;font-size:11px}
+.pc-wa{flex:none;margin-left:auto}
+.of-cartao .pc-wa{width:34px;height:34px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco);color:var(--ok-t);display:inline-grid;place-items:center}
+.of-cartao .pc-wa:hover{border-color:var(--ok-t);background:var(--ok-b)}
+.of-cartao .ib-linha--ativo{border-color:var(--d-500);background:var(--d-50);color:var(--d-800)}
+.pc-menu-downloads{min-width:340px}
+.pc-download{display:grid;gap:6px;padding:8px 10px;border-bottom:1px solid var(--n-100)}
+.pc-download:last-of-type{border-bottom:0}
+.pc-download__titulo{display:grid;gap:1px}
+.pc-download__titulo b{font-size:13px;color:var(--n-900)}
+.pc-download__titulo small{font-size:11.5px;color:var(--n-500)}
+.pc-download__versoes{display:flex;flex-wrap:wrap;gap:6px}
+.pc-download__versao{display:inline-flex;align-items:center;height:26px;padding:0 9px;border:1px solid var(--n-200);border-radius:6px;background:var(--branco);font-size:12px;font-weight:600;color:var(--n-800);text-decoration:none}
+.pc-download__versao:hover{border-color:var(--d-500);background:var(--d-50);color:var(--d-800)}
+.pc-anexar{margin:0}
+.pc-anexar__item{cursor:pointer;width:100%}
+.pc-anexar__item:focus-within{outline:2px solid var(--d-550);outline-offset:-2px}
+.pc-anexar__ver{display:inline-flex;align-items:center;gap:6px;margin:-2px 10px 8px 42px;font-size:11.5px;color:var(--d-800)}
+@media (max-width:720px){.pc-servidor__solic{flex-basis:100%}.pc-servidor .of-pessoa__txt{flex-basis:100%}}
+/* Meta 6 · etapas da prestação */
+.pc-fluxo .d-titulo h1{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.pc-fluxo__etapa{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--d-700)}
+.pc-fluxo__grade{align-items:start}
+.pc-fluxo__lateral .reg__t em{margin-left:auto;font-style:normal;font-size:11.5px;font-weight:400;color:var(--n-500)}
+.pc-fluxo .step-i{text-decoration:none;position:relative}
+.pc-fluxo .step-i:hover .step-i__t{color:var(--d-800)}
+.pc-equipe{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pc-equipe__item a{display:flex;align-items:center;gap:9px;padding:7px 9px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25);text-decoration:none;color:inherit}
+.pc-equipe__item a:hover{border-color:var(--d-300)}
+.pc-equipe__item--atual a{border-color:var(--d-400);background:var(--d-50)}
+.pc-equipe .of-av{width:28px;height:28px;font-size:10.5px}
+.pc-equipe .of-pessoa__nome{font-size:12.5px}
+.pc-equipe .of-pessoa__desc{font-size:11px}
+.pc-removidos{margin-top:10px;font-size:12px;color:var(--n-600)}
+.pc-removidos summary{cursor:pointer;font-weight:600}
+.pc-removidos ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.pc-removidos li{display:grid;gap:1px}.pc-removidos small{color:var(--n-500)}
+.pc-fluxo__rodape{position:sticky;bottom:0;background:var(--branco);padding:12px 0;z-index:20}
+.pc-fluxo__rodape form{margin:0}
+.pc-fluxo__nota{margin:0 0 14px;font-size:13px;color:var(--n-600)}
+.pc-acoes-linha{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pc-alteracoes{margin:12px 0 0;padding-left:18px;font-size:12.5px;color:var(--n-700)}
+.pc-alteracoes li+li{margin-top:4px}
+.pc-autosave--form{position:static;display:block;text-align:right;min-height:14px;margin-bottom:6px}
+.pc-trechos{margin-top:8px}
+.pc-trechos .dt td{vertical-align:middle}
+.pc-trecho__n{font-weight:700;color:var(--n-500);width:36px}
+.pc-trecho__rota b{font-size:13px;color:var(--n-900)}
+.pc-trecho__hora{white-space:nowrap;font-variant-numeric:tabular-nums}
+.pc-trecho__hora small{display:block;color:var(--n-500)}
+.pc-trecho__km{width:130px}.pc-trecho__abast{width:150px}
+.pc-trechos .form-campo{margin:0;min-width:0}
+.pc-trechos .form-controle{height:36px}
+.pc-modo{margin-top:12px;padding-top:12px;border-top:1px dashed var(--n-200)}
+.pc-modo[hidden]{display:none}
+.pc-custeio{display:grid;gap:8px}
+.pc-custeio [hidden]{display:none}
+.pc-texto .reg__t{display:flex;align-items:center;gap:10px}
+.pc-texto__modelos{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--d-800)}
+.pc-texto .g-form{margin-bottom:10px}
+.pc-uploads{display:grid;gap:10px}
+.pc-upload{display:grid;gap:10px;padding:12px 14px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25)}
+.pc-upload__cabeca{display:flex;align-items:center;gap:10px}
+.pc-upload__cabeca .of-av .ui-icon{width:16px;height:16px}
+.pc-upload .of-pessoa__nome .st{height:20px;font-size:11px}
+.pc-upload__anexos{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pc-upload__anexos li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 10px;border:1px solid var(--n-150);border-radius:7px;background:var(--branco);font-size:12.5px}
+.pc-upload__anexos li a{display:inline-flex;align-items:center;gap:6px;min-width:0;overflow-wrap:anywhere}
+.pc-upload__anexos form{margin:0}
+.acao-linha--perigo{color:var(--dg-t)}
+.prestacao-upload{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0}
+.pc-upload__escolher{cursor:pointer}
+.pc-upload__nome{flex:1 1 160px;font-size:12px;color:var(--n-600);overflow-wrap:anywhere}
+.pc-pendencias{margin:6px 0 0;padding-left:18px}
+.pc-pendencias li{font-size:13px;color:#4d3703}
+.pc-situacao{margin-top:14px}
+.pc-download__versao--assinado{border-color:var(--ok-r,var(--ok-t));background:var(--ok-b);color:var(--ok-t)}
+.pc-download__versao .ui-icon{width:13px;height:13px;margin-right:4px}
+.pc-assinatura__gerar{margin-top:6px}
+.pc-assinatura__revogar{margin-top:10px}
+.pc-link__url{margin:0;padding:12px 14px;border:1px dashed var(--d-300);border-radius:9px;background:var(--d-25,#fbf8f2);font-size:13px;overflow-wrap:anywhere}
+.pc-abas{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.pc-abas .v32-aba{text-decoration:none;color:var(--n-700)}
+.pc-modelos{display:grid;gap:14px}
+.pc-modelos__form{margin:0}
+.pc-modelo h2{margin:0;font-size:15px;font-weight:700;color:var(--n-900)}
+.pc-modelo__texto{margin:0;font-size:13px;line-height:1.55;color:var(--n-700);white-space:pre-line}
+.pc-fluxo .sol-detalhe__campos dd small{display:block;font-size:11.5px;color:var(--n-500)}
+.pc-nota{margin:0 0 12px;font-size:13px;line-height:1.5;color:var(--n-600)}
