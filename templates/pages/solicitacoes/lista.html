@@ -7,9 +7,8 @@
   {# Banda A · cabeçalho com indicadores operacionais #}
   <div class="cabeca">
     <div class="cabeca__esq">
-      <div class="kicker">Eventos Sociais</div>
+      <div class="kicker kicker--junto">Eventos Sociais</div>
       <h1>Solicitações</h1>
-      <p class="cabeca__sub">Acompanhe e gerencie as solicitações registradas no módulo.</p>
     </div>
     <div class="cabeca__dir">
       <div class="ind">
@@ -31,8 +30,9 @@
           {% endif %}
         {% endfor %}
       </div>
-      <a class="btn-primaria" href="{% url 'solicitacoes:nova' %}">{% include "components/icon.html" with nome="plus" %}Nova solicitação</a>
     </div>
+    {# Botão flutuante, como na lista de roteiros: fixo no canto inferior direito. #}
+    <a class="btn-primaria btn-flutuante" href="{% url 'solicitacoes:nova' %}">{% include "components/icon.html" with nome="plus" %}Nova solicitação</a>
   </div>
 
   {# Banda B · filas de trabalho #}

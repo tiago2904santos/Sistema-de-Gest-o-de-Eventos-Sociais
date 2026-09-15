@@ -1,10 +1,15 @@
+{% comment %}
+  Cabeçalho de página (listas e painéis) no padrão da lista de roteiros: kicker
+  junto do título, sem subtítulo, e a ação principal como botão flutuante fixo no
+  canto inferior direito. `subtitulo` continua aceito por compatibilidade, mas
+  não é exibido.
+{% endcomment %}
 <div class="d-cabeca d-cabeca--secao">
   <div class="d-cabeca__esq">
-    <div class="kicker">{{ modulo_ativo.nome }}</div>
+    <div class="kicker kicker--junto">{{ modulo_ativo.nome }}</div>
     <h1>{{ titulo }}</h1>
-    {% if subtitulo %}<p class="d-cabeca__sub">{{ subtitulo }}</p>{% endif %}
   </div>
   {% if acao_label and acao_url %}
-    <div class="d-acoes"><a href="{{ acao_url }}" class="btn-primaria">{% if acao_icone %}{% include "components/icon.html" with nome=acao_icone %}{% endif %}{{ acao_label }}</a></div>
+    <a href="{{ acao_url }}" class="btn-primaria btn-flutuante">{% include "components/icon.html" with nome=acao_icone|default:"plus" %}{{ acao_label }}</a>
   {% endif %}
 </div>

@@ -12,18 +12,16 @@
 {% block conteudo %}
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker">{{ kicker }}</div>
+      <div class="kicker kicker--junto">{{ kicker }}</div>
       <h1>Cadastros</h1>
-      <p class="d-cabeca__sub">{{ modulo_sub }}</p>
     </div>
-    <div class="d-acoes">
-      <a class="btn-primaria" href="{% url url_novo slug %}">{% include "components/icon.html" with nome="plus" %}{{ novo }}</a>
-    </div>
+    {# Botão flutuante, como na lista de roteiros: fixo no canto inferior direito. #}
+    <a class="btn-primaria btn-flutuante" href="{% url url_novo slug %}">{% include "components/icon.html" with nome="plus" %}{{ novo }}</a>
   </div>
 
-  <div class="cad-grade">
+  <div class="cad-grade cad-grade--sem-folga">
+    {# Trilha sem o rótulo acima dos itens, como na lista de roteiros. #}
     <nav class="cad-rail" aria-label="Cadastros de apoio">
-      <div class="cad-rail__h">Tabelas de apoio</div>
       {% for grupo in grupos %}
         <a class="cad-i" href="{{ grupo.url }}"{% if grupo.slug == slug %} aria-current="page"{% endif %}>
           <span class="cad-i__ic">{% include "components/icon.html" with nome=grupo.icone %}</span>

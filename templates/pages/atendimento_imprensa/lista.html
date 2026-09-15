@@ -11,9 +11,8 @@
 {% block conteudo %}
   <div class="cabeca">
     <div class="cabeca__esq">
-      <div class="kicker">{{ kicker }}</div>
+      <div class="kicker kicker--junto">{{ kicker }}</div>
       <h1>Atendimentos</h1>
-      <p class="cabeca__sub">Pedidos dos jornalistas, fontes consultadas e respostas enviadas.</p>
     </div>
     <div class="cabeca__dir">
       <div class="ind">
@@ -35,8 +34,9 @@
           {% endif %}
         {% endfor %}
       </div>
-      <a class="btn-primaria" href="{% url 'atendimento_imprensa:novo' %}">{% include "components/icon.html" with nome="plus" %}Novo atendimento</a>
     </div>
+    {# Botão flutuante, como na lista de roteiros: fixo no canto inferior direito. #}
+    <a class="btn-primaria btn-flutuante" href="{% url 'atendimento_imprensa:novo' %}">{% include "components/icon.html" with nome="plus" %}Novo atendimento</a>
   </div>
 
   <div class="filas" role="tablist" aria-label="Filas de trabalho">

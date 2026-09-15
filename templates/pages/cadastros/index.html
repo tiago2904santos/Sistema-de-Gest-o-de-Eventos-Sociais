@@ -5,14 +5,13 @@
 {% block conteudo %}
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker">Eventos Sociais</div>
+      <div class="kicker kicker--junto">Eventos Sociais</div>
       <h1>Cadastros</h1>
-      <p class="d-cabeca__sub">Tabelas de apoio utilizadas pelas solicitações.</p>
     </div>
   </div>
 
-  <div class="cad-grade">
-    {% include "components/v32/cad_rail.html" with grupos=grupos slug_ativo="" %}
+  <div class="cad-grade cad-grade--sem-folga">
+    {% include "components/v32/cad_rail.html" with grupos=grupos slug_ativo="" sem_titulo=True %}
 
     <section class="pa-card pa-card--lista">
       <div class="cad-titulo">

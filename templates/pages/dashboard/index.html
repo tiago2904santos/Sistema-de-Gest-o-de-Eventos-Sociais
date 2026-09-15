@@ -5,13 +5,11 @@
 {% block conteudo %}
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker">Eventos Sociais</div>
+      <div class="kicker kicker--junto">Eventos Sociais</div>
       <h1>Dashboard</h1>
-      <p class="d-cabeca__sub">Visão geral das solicitações de eventos sociais.</p>
     </div>
-    <div class="d-acoes">
-      <a class="btn-primaria" href="{% url 'solicitacoes:nova' %}">{% include "components/icon.html" with nome="document-plus" %}Nova solicitação</a>
-    </div>
+    {# Botão flutuante, como na lista de roteiros: fixo no canto inferior direito. #}
+    <a class="btn-primaria btn-flutuante" href="{% url 'solicitacoes:nova' %}">{% include "components/icon.html" with nome="plus" %}Nova solicitação</a>
   </div>
 
   {# KPIs: cada cartão abre a lista já filtrada. #}

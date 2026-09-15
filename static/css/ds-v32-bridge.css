@@ -1556,3 +1556,52 @@ a.step-i{text-decoration:none;color:inherit}
    não há espaço e o desfoque grande virava névoa até a borda do modal. */
 .custom-select__menu.custom-select__menu--acima{box-shadow:0 -1px 2px rgba(26,25,23,.06),0 -6px 16px -6px rgba(26,25,23,.16)}
 .custom-select.is-open>.custom-select__menu.custom-select__menu--acima{box-shadow:0 -2px 6px rgba(26,25,23,.1),0 -12px 28px -10px rgba(26,25,23,.28)}
+
+/* ===========================================================================
+   Padrão do roteiro aplicado ao restante das páginas (15/09/2026).
+   Cabeçalho de formulário: ícone + "Novo X" / "Editar X <identificação>", selo de
+   situação ao lado do título, linha de meta com ícones e Salvar no topo à direita.
+   Avisos de erro fora dos cartões, logo acima da seção; Voltar/Salvar no fim do
+   último cartão do formulário (voltar à esquerda, salvar à direita).
+   Os nomes genéricos (frm-*) espelham as classes editor-roteiro__* do roteiro.
+   =========================================================================== */
+/* Mesmo respiro do roteiro entre o cabeçalho e o primeiro cartão (lá vem do gap da grade). */
+.frm-topo{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:0;margin-bottom:20px}
+.frm-topo .page-header{flex:1;min-width:0;margin:0;padding:0;border:0}
+.frm-topo__acoes{display:flex;align-items:center;gap:10px;flex:none}
+.frm-titulo{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.frm-titulo .page-header__titulo{margin:0}
+.frm-ident{overflow-wrap:anywhere}
+.frm-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px}
+.frm-meta>span{display:inline-flex;align-items:center;gap:6px;min-width:0;overflow-wrap:anywhere}
+.frm-meta .ui-icon{width:13px;height:13px;color:var(--n-400);flex:none}
+.frm-aviso{margin:0 0 16px;padding:10px 14px;align-items:center;font-size:13px;line-height:1.45}
+.frm-aviso[hidden]{display:none}
+.frm-acoes-fim{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px}
+.frm-acoes-fim>form{margin:0}
+.frm-acoes-fim__dir{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+/* Blocos rótulo/campo (ofício, termo, configurações): mesma largura de rótulo do roteiro,
+   rótulo centralizado na altura dos campos e sem texto de apoio embaixo do rótulo. */
+@container (min-width:1101px){.of-form .bloco-split{grid-template-columns:180px minmax(0,1fr)}}
+.of-form .bloco-split__rotulo,.editor-roteiro .bloco-split__rotulo{align-self:center}
+/* Botões quadrados de adicionar/remover linha (38×38, raio 8), como no roteiro. */
+.btn--quadrado{width:38px;min-width:38px;height:38px;padding:0;justify-content:center;flex:none;border-radius:8px}
+/* Lista com ações à direita do cabeçalho: o botão principal virou flutuante; sobram só as secundárias. */
+.d-acoes:empty{display:none}
+/* Botão flutuante dentro de <form> (Novo ofício é um POST): o form não ocupa espaço no cabeçalho. */
+form.btn-flutuante-form{margin:0;display:contents}
+/* Kicker junto do título em todas as listas e painéis. */
+.cabeca .kicker,.frm-cabeca .kicker{margin-bottom:4px}
+/* Formulários curtos (usuário, cadastros de apoio) na largura inteira, como o roteiro: o Salvar do topo
+   fica na mesma borda direita dos cartões. */
+.frm-topo~.cad-frm{max-width:none}
+
+/* Roteiro, pendências do diagnóstico (15/09/2026). */
+/* Kicker ("VIAGENS", "EVENTOS SOCIAIS") em repouso fica no cinza da paleta, não no dourado escuro
+   que saiu dela: dourado só marca o que está ativo ou selecionado. */
+.kicker{color:var(--n-450)}
+/* Diárias: o valor por extenso é uma linha sob os três cartões. */
+.diarias-extenso{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:12px 0 18px;font-size:13px;line-height:1.5;color:var(--n-800)}
+.diarias-extenso__rotulo{display:inline-flex;align-items:center;gap:6px;flex:none;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--n-500)}
+.diarias-extenso__rotulo .ui-icon{width:13px;height:13px;color:var(--n-400)}
+.diarias-extenso__valor{min-width:0;overflow-wrap:anywhere}

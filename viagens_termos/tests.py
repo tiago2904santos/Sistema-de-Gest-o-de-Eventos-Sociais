@@ -51,7 +51,7 @@ class SecoesDoRegistroNoFormularioTests(CenarioTermos):
                       "Cancelamento e exclusão", "Excluir termo"]:
             self.assertNotContains(r, texto)
         self.assertContains(r, "Salvar termo")
-        self.assertContains(r, "Cancelar")
+        self.assertContains(r, "Voltar")
 
     def test_formulario_do_termo_salvo_traz_o_que_era_do_detalhe(self):
         o = self.oficio(dias=-20, protocolo="123456789", servidores=[self.janine, self.joao], viatura=self.duster)
@@ -191,6 +191,15 @@ class ColunaUnicaTests(CenarioTermos):
         html = r.content.decode()
         principal = html.index('id="form-termo"')
         fecha = html.index("</form>", principal)
-        acoes = html.index('<div class="frm-acoes">', principal)
+        # Como no roteiro: Voltar/Salvar no fim do último cartão do formulário.
+        acoes = html.index('<div class="frm-acoes-fim">', principal)
         self.assertLess(acoes, fecha)
         self.assertIn("Salvar termo", html[acoes:fecha])
+
+    def test_salvar_tambem_no_topo_como_no_roteiro(self):
+        r = self.client.get(reverse("viagens_termos:novo"))
+        html = r.content.decode()
+        topo = html.index('class="frm-topo__acoes"')
+        self.assertLess(topo, html.index('id="form-termo"'))
+        self.assertIn('form="form-termo"', html[topo:topo + 400])
+        self.assertContains(r, "Novo termo")

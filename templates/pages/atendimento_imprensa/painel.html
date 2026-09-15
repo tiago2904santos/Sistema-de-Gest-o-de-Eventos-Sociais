@@ -10,13 +10,11 @@
 {% block conteudo %}
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker">{{ kicker }}</div>
+      <div class="kicker kicker--junto">{{ kicker }}</div>
       <h1>Painel</h1>
-      <p class="d-cabeca__sub">Visão geral dos pedidos da imprensa e do atendimento da assessoria.</p>
     </div>
-    <div class="d-acoes">
-      <a class="btn-primaria" href="{% url 'atendimento_imprensa:novo' %}">{% include "components/icon.html" with nome="document-plus" %}Novo atendimento</a>
-    </div>
+    {# Botão flutuante, como na lista de roteiros: fixo no canto inferior direito. #}
+    <a class="btn-primaria btn-flutuante" href="{% url 'atendimento_imprensa:novo' %}">{% include "components/icon.html" with nome="plus" %}Novo atendimento</a>
   </div>
 
   <div class="db-kpis">

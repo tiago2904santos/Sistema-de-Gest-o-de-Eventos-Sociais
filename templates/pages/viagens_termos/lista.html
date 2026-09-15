@@ -15,13 +15,11 @@
 
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker">{{ modulo_ativo.nome }}</div>
+      <div class="kicker kicker--junto">{{ modulo_ativo.nome }}</div>
       <h1>Termos de Autorização</h1>
-      <p class="d-cabeca__sub">Termos de autorização de viagem dos servidores, presos a um ofício ou avulsos.</p>
     </div>
-    <div class="d-acoes">
-      {% if pode_editar %}<a class="btn-primaria" href="{% url 'viagens_termos:novo' %}">{% include "components/icon.html" with nome="plus" %}Novo termo</a>{% endif %}
-    </div>
+    {# Botão flutuante, como na lista de roteiros: fixo no canto inferior direito. #}
+    {% if pode_editar %}<a class="btn-primaria btn-flutuante" href="{% url 'viagens_termos:novo' %}">{% include "components/icon.html" with nome="plus" %}Novo termo</a>{% endif %}
   </div>
 
   <div class="pa-card pa-card--lista v32-bloco v32-filtros">

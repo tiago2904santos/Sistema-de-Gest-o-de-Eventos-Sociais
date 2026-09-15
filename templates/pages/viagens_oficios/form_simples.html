@@ -4,13 +4,42 @@
 {% block title %}{{ titulo }}{% endblock %}
 {% block conteudo %}
 {% include "components/v32/breadcrumb.html" with atual=titulo %}
-{% include "components/v32/page_header.html" with titulo=titulo subtitulo=ajuda icone="file-text" %}
-{% if assinaturas_url %}<p><a class="btn--secundaria" href="{{ assinaturas_url }}">Gerenciar assinantes</a></p>{% endif %}
-<form method="post" class="pa-card v32-bloco v32-corpo" novalidate>
+
+{# Cabeçalho no padrão do roteiro: ícone, título e Salvar no topo. #}
+<div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+  <div class="page-header d-cabeca__esq">
+    <div class="page-header__identificacao d-identificacao">
+      <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
+      <div>
+        <div class="frm-titulo"><h1 class="page-header__titulo d-titulo-v32">{{ titulo }}</h1></div>
+        {% if ajuda %}<p class="page-header__subtitulo d-cabeca__sub frm-meta"><span>{% include "components/icon.html" with nome="info" %}{{ ajuda }}</span></p>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="frm-topo__acoes">
+    {% if assinaturas_url %}<a class="btn--secundaria" href="{{ assinaturas_url }}">Gerenciar assinantes</a>{% endif %}
+    <button class="btn-primaria" type="submit" form="form-simples">Salvar</button>
+  </div>
+</div>
+
+<form method="post" id="form-simples" novalidate>
   {% csrf_token %}
-  {% for erro in form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-  <div class="v32-form-grid viagem-campos">{% include "pages/viagens_oficios/_campos.html" %}</div>
-  {% if quantidade_destinos %}<input type="hidden" name="quantidade_destinos" value="{{ quantidade_destinos }}"><button class="btn--secundaria" type="submit" name="acao" value="adicionar_destino">Adicionar destino</button>{% endif %}
-  <div class="v32-barra"><a class="btn--secundaria" href="{{ url_voltar }}">Voltar</a><button class="btn-primaria" type="submit">Salvar</button>{% if excluir %}<button class="btn--secundaria btn--destrutiva" type="submit" name="acao" value="excluir">Excluir</button>{% endif %}</div>
+  {# Erros gerais fora do cartão, logo acima da seção, como no roteiro. #}
+  {% for erro in form.non_field_errors %}<p class="aviso aviso--erro frm-aviso" role="alert">{{ erro }}</p>{% endfor %}
+  <section class="reg">
+    {% include "components/v32/section_card.html" with numero="1" titulo=titulo %}
+    <div class="reg-corpo">
+      <div class="v32-form-grid viagem-campos">{% include "pages/viagens_oficios/_campos.html" %}</div>
+      {% if quantidade_destinos %}<input type="hidden" name="quantidade_destinos" value="{{ quantidade_destinos }}"><button class="btn--secundaria btn--compacto btn--quadrado" type="submit" name="acao" value="adicionar_destino" aria-label="Adicionar destino" title="Adicionar destino">{% include "components/icon.html" with nome="plus" %}</button>{% endif %}
+      {# Ações no fim do cartão, como no roteiro: voltar à esquerda, salvar à direita. #}
+      <div class="frm-acoes-fim">
+        <a class="btn--secundaria" href="{{ url_voltar }}">Voltar</a>
+        <span class="frm-acoes-fim__dir">
+          {% if excluir %}<button class="btn--secundaria btn--destrutiva" type="submit" name="acao" value="excluir">Excluir</button>{% endif %}
+          <button class="btn-primaria" type="submit">Salvar</button>
+        </span>
+      </div>
+    </div>
+  </section>
 </form>
 {% endblock %}

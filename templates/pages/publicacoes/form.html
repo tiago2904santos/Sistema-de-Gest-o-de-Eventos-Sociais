@@ -12,24 +12,29 @@
   <form method="post" action="" id="form-publicacao">
     {% csrf_token %}
 
-    <div class="frm-cabeca">
-      <div>
-        <a class="voltar" href="{% url 'publicacoes:lista' %}">{% include "components/icon.html" with nome="chevron-left" %}Voltar para publicações</a>
-        <div class="kicker">{{ kicker }}</div>
-        <h1>{{ titulo_pagina }}<span class="frm-rasc">{% include "components/icon.html" with nome="document" %}{% if publicacao %}{{ publicacao.get_status_display }}{% else %}Nova{% endif %}</span></h1>
-        <p class="frm-cabeca__sub">{% if publicacao %}Atualize o andamento, a publicação e a distribuição da pauta.{% else %}Registre a pauta assim que ela chegar; os demais dados podem ser completados depois.{% endif %}</p>
-        {% if publicacao %}
-          <p class="frm-cabeca__sub">
-            {{ publicacao.titulo }}<br>
-            {{ publicacao.unidade|default:"Unidade não informada" }} · {{ publicacao.data|date:"d/m/Y" }}{% if publicacao.inicio_pauta %} às {{ publicacao.inicio_pauta|time:"H:i" }}{% endif %} · {{ publicacao.jornalista }}
-          </p>
-        {% endif %}
+    {# Cabeçalho no padrão do roteiro: ícone, "Nova pauta" ou "Editar pauta <título>", situação ao lado, meta com ícones e Salvar no topo. #}
+    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
+          <div>
+            <div class="frm-titulo">
+              <h1 class="page-header__titulo d-titulo-v32">{% if publicacao %}Editar pauta <span class="frm-ident">{{ publicacao.titulo }}</span>{% else %}Nova pauta{% endif %}</h1>
+              <span class="frm-rasc">{% include "components/icon.html" with nome="document" %}{% if publicacao %}{{ publicacao.get_status_display }}{% else %}Nova{% endif %}</span>
+            </div>
+            {% if publicacao %}
+              <p class="page-header__subtitulo d-cabeca__sub frm-meta">
+                <span>{% include "components/icon.html" with nome="landmark" %}{{ publicacao.unidade|default:"Unidade não informada" }}</span>
+                <span>{% include "components/icon.html" with nome="calendar" %}{{ publicacao.data|date:"d/m/Y" }}{% if publicacao.inicio_pauta %} às {{ publicacao.inicio_pauta|time:"H:i" }}{% endif %}</span>
+                <span>{% include "components/icon.html" with nome="user" %}{{ publicacao.jornalista }}</span>
+              </p>
+            {% endif %}
+          </div>
+        </div>
       </div>
-      {% if publicacao %}
-        <div class="d-acoes">
-          {% if publicacao.link_site %}
-            <a class="btn--secundaria" href="{{ publicacao.link_site }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="arrow-right" %}Ver publicação</a>
-          {% endif %}
+      <div class="frm-topo__acoes">
+        <button type="submit" class="btn-primaria" form="form-publicacao">{% if publicacao %}Salvar alterações{% else %}Registrar pauta{% endif %}</button>
+        {% if publicacao %}
           {% if publicacao.link_site or publicacao.link_aen %}
             <div class="dd" data-menu>
               <button type="button" class="ib" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações">{% include "components/icon.html" with nome="kebab" %}</button>
@@ -40,8 +45,8 @@
               </div>
             </div>
           {% endif %}
-        </div>
-      {% endif %}
+        {% endif %}
+      </div>
     </div>
 
     <div>
@@ -129,6 +134,12 @@
               {% for erro in erros.link_aen %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
             </label>
           </div>
+
+          {# Ações no fim do último cartão editável, como no roteiro: voltar à esquerda, salvar à direita. #}
+          <div class="frm-acoes-fim">
+            <a class="btn--secundaria" href="{% url 'publicacoes:lista' %}">Voltar</a>
+            <button type="submit" class="btn-primaria">{% if publicacao %}Salvar alterações{% else %}Registrar pauta{% endif %}</button>
+          </div>
         </div>
       </section>
 
@@ -163,10 +174,6 @@
         </section>
       {% endif %}
 
-      <div class="frm-acoes">
-        <a class="frm-cancelar" href="{% url 'publicacoes:lista' %}">Cancelar</a>
-        <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check" %}{% if publicacao %}Salvar alterações{% else %}Registrar pauta{% endif %}</button>
-      </div>
     </div>
   </form>
 {% endblock %}

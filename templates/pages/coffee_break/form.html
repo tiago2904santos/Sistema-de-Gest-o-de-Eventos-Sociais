@@ -9,25 +9,30 @@
 
     {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
 
-    <div class="d-cabeca">
-      <div class="d-cabeca__esq">
-        <div class="d-identificacao">
-          <span class="kpi__ic">{% include "components/icon.html" with nome="coffee" %}</span>
+    {# Cabeçalho no padrão do roteiro: ícone, "Nova solicitação" ou "Editar solicitação <nº>", situação ao lado, meta com ícones e Salvar no topo. #}
+    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="coffee" %}</span>
           <div>
-            <h1 class="d-titulo-v32">{{ titulo_pagina }}</h1>
-            <p class="d-cabeca__sub{% if solicitacao %} d-sub-status{% endif %}">
-              {% if solicitacao %}
-                {% include "components/v32/status_badge.html" with status=solicitacao.situacao_financeira_css label=solicitacao.situacao_financeira_display %}
-                <span aria-hidden="true">·</span>
-                {{ solicitacao.lote.rotulo_curto }} — {{ solicitacao.lote.contrato.fornecedor.razao_social }}
-              {% else %}
-                O saldo do lote é validado no salvamento — a quantidade não pode passar do restante.
-              {% endif %}
-            </p>
+            <div class="frm-titulo">
+              <h1 class="page-header__titulo d-titulo-v32">{% if solicitacao %}Editar solicitação <span class="frm-ident">{{ solicitacao.numero|default:solicitacao.pk }}</span>{% else %}Nova solicitação{% endif %}</h1>
+              {% if solicitacao %}{% include "components/v32/status_badge.html" with status=solicitacao.situacao_financeira_css label=solicitacao.situacao_financeira_display %}{% endif %}
+            </div>
+            {% if solicitacao %}
+              <p class="page-header__subtitulo d-cabeca__sub frm-meta">
+                <span>{% include "components/icon.html" with nome="coffee" %}{{ solicitacao.lote.rotulo_curto }} — {{ solicitacao.lote.contrato.fornecedor.razao_social }}</span>
+                {% if solicitacao.data_solicitacao %}<span>{% include "components/icon.html" with nome="calendar" %}{{ solicitacao.data_solicitacao|date:"d/m/Y" }}</span>{% endif %}
+              </p>
+            {% endif %}
           </div>
         </div>
       </div>
-
+      {% if not somente_leitura %}
+        <div class="frm-topo__acoes">
+          <button type="submit" class="btn-primaria" form="form-coffee-break">Salvar solicitação</button>
+        </div>
+      {% endif %}
     </div>
 
     {% if form.errors %}
@@ -89,6 +94,15 @@
           {% include "components/input.html" with name="data_envio_empresa" label="OB enviada à empresa em" tipo="date" largura="4" valor=valores.data_envio_empresa erros=erros.data_envio_empresa desabilitado=somente_leitura %}
           {% include "components/textarea.html" with name="observacoes" label="Observações" linhas="3" largura="" valor=valores.observacoes erros=erros.observacoes desabilitado=somente_leitura %}
         </div>
+
+        {# Ações no fim do último cartão editável, como no roteiro: voltar à esquerda, salvar à direita. #}
+        <div class="frm-acoes-fim">
+          {% url 'coffee_break:solicitacoes' as url_voltar %}
+          {% include "components/v32/button.html" with label="Voltar" variante="secundario" href=url_voltar %}
+          {% if not somente_leitura %}
+            {% include "components/v32/button.html" with label="Salvar solicitação" variante="dourado" tipo="submit" %}
+          {% endif %}
+        </div>
       </div>
     </section>
 
@@ -118,13 +132,6 @@
       </section>
     {% endif %}
 
-    <div class="frm-acoes reg__div-acoes">
-      {% url 'coffee_break:solicitacoes' as url_voltar %}
-      {% include "components/v32/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
-      {% if not somente_leitura %}
-        {% include "components/v32/button.html" with label="Salvar solicitação" variante="dourado" tipo="submit" %}
-      {% endif %}
-    </div>
   </form>
 
   {% if solicitacao %}

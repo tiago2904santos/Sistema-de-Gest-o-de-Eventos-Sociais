@@ -6,18 +6,31 @@
   {% url 'accounts:usuarios_lista' as url_usuarios %}
   {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
 
-  <div class="v32-conta-cabecalho">
-    {% include "components/v32/page_header.html" with titulo=titulo_pagina subtitulo="Dados de acesso e perfil do usuário" icone="users" %}
-    <aside class="aviso aviso--info v32-dica">
-      <span class="painel-dica__icone" aria-hidden="true">{% include "components/icon.html" with nome="info" %}</span>
-      <div>
-        <strong>Sobre o perfil de acesso</strong>
-        <p>Defina o nível de acesso do usuário de acordo com suas responsabilidades no sistema.</p>
+  {# Cabeçalho no padrão do roteiro: ícone, "Novo usuário" ou "Editar usuário <login>", meta e Salvar no topo. #}
+  <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+    <div class="page-header d-cabeca__esq">
+      <div class="page-header__identificacao d-identificacao">
+        <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="users" %}</span>
+        <div>
+          <div class="frm-titulo">
+            <h1 class="page-header__titulo d-titulo-v32">{% if instancia %}Editar usuário <span class="frm-ident">{{ instancia.username }}</span>{% else %}Novo usuário{% endif %}</h1>
+            {% if instancia %}<span class="st {% if instancia.is_active %}st--ativo{% else %}st--inativo{% endif %}">{% if instancia.is_active %}Ativo{% else %}Inativo{% endif %}</span>{% endif %}
+          </div>
+          {% if instancia %}
+            <p class="page-header__subtitulo d-cabeca__sub frm-meta">
+              {% if instancia.get_full_name %}<span>{% include "components/icon.html" with nome="user" %}{{ instancia.get_full_name }}</span>{% endif %}
+              {% if instancia.email %}<span>{% include "components/icon.html" with nome="mail" %}{{ instancia.email }}</span>{% endif %}
+            </p>
+          {% endif %}
+        </div>
       </div>
-    </aside>
+    </div>
+    <div class="frm-topo__acoes">
+      <button type="submit" class="btn-primaria" form="form-usuario">Salvar</button>
+    </div>
   </div>
 
-  <form method="post" action="" class="cad-frm v32-conta-form">
+  <form method="post" action="" id="form-usuario" class="cad-frm v32-conta-form">
     {% csrf_token %}
 
     {% if form.errors %}
@@ -123,12 +136,13 @@
             </div>
           </aside>
         </div>
+
+        {# Ações no fim do último cartão, como no roteiro: voltar à esquerda, salvar à direita. #}
+        <div class="frm-acoes-fim">
+          {% include "components/v32/button.html" with label="Voltar" variante="secundario" href=url_usuarios %}
+          {% include "components/v32/button.html" with label="Salvar" variante="dourado" tipo="submit" %}
+        </div>
       </div>
     </section>
-
-    <div class="cad-frm__acoes v32-conta-acoes">
-      {% include "components/v32/button.html" with label="Cancelar" variante="secundario" href=url_usuarios %}
-      {% include "components/v32/button.html" with label="Salvar" variante="dourado" tipo="submit" %}
-    </div>
   </form>
 {% endblock %}
