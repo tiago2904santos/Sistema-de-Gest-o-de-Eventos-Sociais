@@ -92,7 +92,7 @@
     {% csrf_token %}
 
     <section class="reg" id="sec-dados">
-      <h2 class="reg__t">Dados da solicitação</h2>
+      <h2 class="reg__t"><span class="reg-numero" aria-hidden="true">1</span>Dados da solicitação</h2>
       <div class="g-form g-form--3">
         {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True valor=valores.data_solicitacao erros=erros.data_solicitacao desabilitado=dados_desabilitado %}
         <div class="c2">
@@ -109,7 +109,7 @@
     </section>
 
     <section class="reg" id="sec-solicitante">
-      <h2 class="reg__t">Solicitante</h2>
+      <h2 class="reg__t"><span class="reg-numero" aria-hidden="true">2</span>Solicitante</h2>
       <div class="g-form g-form--3">
         <label class="campo-e form-campo c2"><span>Solicitante<em>*</em></span>
           <input class="ctrl{% if erros.solicitante_nome %} ctrl--erro{% endif %}" type="text" id="id_solicitante_nome" name="solicitante_nome" value="{{ valores.solicitante_nome }}" required{% if dados_desabilitado %} disabled{% endif %}>
@@ -128,7 +128,7 @@
     </section>
 
     <section class="reg" id="sec-servicos">
-      <h2 class="reg__t">Serviços e estrutura</h2>
+      <h2 class="reg__t"><span class="reg-numero" aria-hidden="true">3</span>Serviços e estrutura</h2>
       <fieldset class="campo-e form-campo campo-e--bloco" id="id_servicos"{% if erros.servicos %} aria-invalid="true"{% endif %}>
         <legend><span>Serviços solicitados<em>*</em></span></legend>
         <div class="opc-cards{% if erros.servicos %} grupo-erro{% endif %}">
@@ -157,7 +157,7 @@
     </section>
 
     <section class="reg" id="sec-planejamento">
-      <h2 class="reg__t">Planejamento operacional</h2>
+      <h2 class="reg__t"><span class="reg-numero" aria-hidden="true">4</span>Planejamento operacional</h2>
       <fieldset class="campo-e form-campo campo-e--bloco" id="id_equipes"{% if erros.equipes %} aria-invalid="true"{% endif %}>
         <legend><span>Equipes e quantidade de servidores<em>*</em></span></legend>
         <div class="eq-lista{% if erros.equipes %} grupo-erro{% endif %}">
@@ -185,7 +185,7 @@
     </section>
 
     <section class="reg" id="sec-anexos">
-      <h2 class="reg__t">Anexos</h2>
+      <h2 class="reg__t"><span class="reg-numero" aria-hidden="true">5</span>Anexos</h2>
       {% if solicitacao %}
         {% for anexo in anexos %}
           <div class="anexo anexo--linha">

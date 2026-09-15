@@ -115,7 +115,6 @@ class ServidorForm(NomeNormalizadoMixin, forms.ModelForm):
         label="CPF",
         max_length=14,
         required=False,
-        help_text="Pode digitar com ou sem pontuação.",
         widget=forms.TextInput(
             attrs={
                 "placeholder": "000.000.000-00",
@@ -131,7 +130,6 @@ class ServidorForm(NomeNormalizadoMixin, forms.ModelForm):
         # Folga para número com código de país; o modelo guarda só os dígitos.
         max_length=20,
         required=False,
-        help_text="Com DDD. Pode digitar com ou sem pontuação.",
         widget=forms.TextInput(
             attrs={
                 "placeholder": "(00) 00000-0000",
@@ -158,7 +156,6 @@ class ServidorForm(NomeNormalizadoMixin, forms.ModelForm):
         model = Servidor
         fields = ["nome", "cargo", "cpf", "rg", "telefone", "unidade"]
         help_texts = {
-            "rg": f'Deixe em branco ou escreva "{RG_NAO_POSSUI_EXIBICAO}" se não possuir.',
         }
         widgets = {
             "nome": forms.TextInput(
@@ -272,7 +269,6 @@ class ViaturaForm(forms.ModelForm):
         ]
         help_texts = {
             "placa": "Formato antigo (ABC1234) ou Mercosul (ABC1D23).",
-            "motoristas": "Selecione todos os servidores autorizados a conduzir esta viatura.",
         }
         widgets = {
             "modelo": forms.TextInput(

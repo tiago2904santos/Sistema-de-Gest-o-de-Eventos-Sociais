@@ -126,7 +126,7 @@ class EtapasTests(CenarioPrestacoes):
         for texto in ["Etapa 1", "Diário de Bordo", "Etapas da prestação", "Equipe", "JOÃO MARIO DE GOES", "Motorista e viatura",
                       "Trocar motorista / viatura", "Ajustar roteiro realizado", "Visualizar PDF", "Baixar planilha", "Deslocamentos",
                       'name="form-0-km_inicial"', 'name="form-0-km_final"', 'name="form-0-abastecimento"', 'value="sim" selected',
-                      "Assinatura eletrônica", "Salvar e continuar para o RT", 'data-autosave-model="diario_bordo"']:
+                      "Salvar e continuar para o RT", 'data-autosave-model="diario_bordo"']:
             self.assertContains(r, texto)
         # A barra da equipe troca de servidor sem sair da etapa.
         self.assertContains(r, reverse("viagens_prestacoes:diario_servidor", args=[self.ps_joao.pk]))

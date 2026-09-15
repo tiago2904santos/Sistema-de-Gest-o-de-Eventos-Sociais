@@ -2,7 +2,6 @@
 
 import django.db.models.deletion
 import viagens_prestacoes.arquivos
-import viagens_prestacoes.models
 from django.db import migrations, models
 
 
@@ -25,16 +24,16 @@ class Migration(migrations.Migration):
                 ('link_criado_em', models.DateTimeField(blank=True, null=True)),
                 ('link_expira_em', models.DateTimeField(blank=True, null=True)),
                 ('identidade_confirmada_em', models.DateTimeField(blank=True, null=True)),
-                ('arquivo_origem', viagens_prestacoes.arquivos.ArquivoPrivadoField(blank=True, upload_to=viagens_prestacoes.models.assinatura_origem_upload_to)),
+                ('arquivo_origem', viagens_prestacoes.arquivos.ArquivoPrivadoField(blank=True, upload_to='viagens_prestacoes/assinaturas/')),
                 ('modo', models.CharField(blank=True, choices=[('fonte', 'Fonte'), ('desenho', 'Desenho')], default='', max_length=10)),
                 ('fonte', models.CharField(blank=True, default='', max_length=60)),
-                ('assinatura_png', viagens_prestacoes.arquivos.ArquivoPrivadoField(blank=True, upload_to=viagens_prestacoes.models.assinatura_png_upload_to)),
+                ('assinatura_png', viagens_prestacoes.arquivos.ArquivoPrivadoField(blank=True, upload_to='viagens_prestacoes/assinaturas/')),
                 ('pagina', models.PositiveIntegerField(default=0)),
                 ('pos_x', models.FloatField(blank=True, null=True)),
                 ('pos_y', models.FloatField(blank=True, null=True)),
                 ('largura', models.FloatField(blank=True, null=True)),
                 ('altura', models.FloatField(blank=True, null=True)),
-                ('arquivo_assinado', viagens_prestacoes.arquivos.ArquivoPrivadoField(blank=True, upload_to=viagens_prestacoes.models.assinatura_assinado_upload_to)),
+                ('arquivo_assinado', viagens_prestacoes.arquivos.ArquivoPrivadoField(blank=True, upload_to='viagens_prestacoes/assinaturas/')),
                 ('assinado_em', models.DateTimeField(blank=True, null=True)),
                 ('assinado_ip', models.CharField(blank=True, default='', max_length=64)),
                 ('codigo_verificacao', models.CharField(blank=True, default='', max_length=12)),

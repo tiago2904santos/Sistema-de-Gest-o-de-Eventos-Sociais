@@ -119,7 +119,7 @@ from documentos.services.formatters import format_currency_br
 
 
 def get_configuracao_sistema():
-    return ConfiguracaoSistema.get_singleton()
+    return ConfiguracaoSistema.atual()
 
 
 def _temporal_badge_oficio(oficio):

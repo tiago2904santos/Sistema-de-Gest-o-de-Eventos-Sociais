@@ -5,6 +5,7 @@
   `opcoes`: lista de dicts {"valor", "rotulo"}. Listas curtas viram um menu de
   links que reescrevem a querystring; listas longas (municípios) viram um
   <select> nativo dentro do mesmo contorno, enviado pelo form[data-auto-enviar].
+  `alinhar_direita`: o menu abre alinhado à borda direita do botão (filtro no fim da barra).
 {% endcomment %}
 {% if opcoes|length > 30 %}
   {# Lista longa (municípios): combobox com busca do app.js dentro do controle da barra. #}
@@ -20,7 +21,7 @@
       <span>{% if valor %}{% for opcao in opcoes %}{% if opcao.valor|stringformat:"s" == valor|stringformat:"s" %}{{ opcao.rotulo }}{% endif %}{% endfor %}{% else %}{{ padrao|default:"Todos" }}{% endif %}</span>
       {% include "components/icon.html" with nome="chevron-down" %}
     </button>
-    <div class="dd__c dd__c--esq dd__c--rolavel" hidden data-menu-corpo>
+    <div class="dd__c{% if not alinhar_direita %} dd__c--esq{% endif %} dd__c--rolavel" hidden data-menu-corpo>
       <div class="dd__t">{{ rotulo }}</div>
       <a class="dd__i{% if not valor %} dd__i--sel{% endif %}" href="{% qs_definir nome '' %}">
         {% if valor %}<span class="dd__vaga"></span>{% else %}{% include "components/icon.html" with nome="check" %}{% endif %}{{ padrao|default:"Todos" }}

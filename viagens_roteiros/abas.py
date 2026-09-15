@@ -6,7 +6,8 @@ mostra tudo. "Finalizado" não é campo do roteiro — é o estado das prestaç�
 dos ofícios que o usam, e por isso entra por subconsulta.
 """
 
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import DateTimeField, Exists, OuterRef, Q, Subquery
+from django.db.models.functions import Coalesce, TruncDate
 from django.utils import timezone
 
 ABA_FUTURAS = "futuras"
@@ -26,7 +27,9 @@ ABAS_VALIDAS = {chave for chave, _ in ABA_ROTULOS}
 # Finalizado: tem prestação e nenhuma delas está pendente.
 FINALIZADO_Q = Q(_tem_prestacao=True) & Q(_tem_prestacao_pendente=False)
 
-CAMPO_DATA = "saida_dt__date"
+# Data de início anotada em `anotar_finalizacao`: a do roteiro ou, sem ela, a
+# primeira saída dos trechos (é onde o editor grava as datas).
+CAMPO_DATA = "_inicio"
 CANCELADO_Q = Q(cancelado=True)
 
 
@@ -37,19 +40,30 @@ def normalizar_abas(valores):
 
 
 def anotar_finalizacao(queryset):
-    """Anota se o roteiro tem prestação e se alguma continua pendente.
+    """Anota se o roteiro tem prestação e se alguma continua pendente, e a data
+    de início usada pelas abas temporais.
 
     `Exists` em vez de contagem: evita agrupamento e deixa a negação correta.
     """
     from viagens_prestacoes.models import PrestacaoServidor
 
+    from .models import RoteiroTrecho
+
     todas = PrestacaoServidor.objects.filter(
         prestacao__oficio__roteiro=OuterRef("pk"),
         prestacao__oficio__cancelado=False,
     )
+    primeira_saida = (
+        RoteiroTrecho.objects.filter(roteiro=OuterRef("pk"), saida_dt__isnull=False)
+        .order_by("saida_dt")
+        .values("saida_dt")[:1]
+    )
     return queryset.annotate(
         _tem_prestacao=Exists(todas),
         _tem_prestacao_pendente=Exists(todas.filter(finalizada=False)),
+        _inicio=TruncDate(
+            Coalesce("saida_dt", Subquery(primeira_saida, output_field=DateTimeField()))
+        ),
     )
 
 
@@ -84,9 +98,9 @@ def contar_por_aba(queryset):
     return {chave: queryset.filter(q_da_aba(chave)).count() for chave, _ in ABA_ROTULOS}
 
 
-def opcoes_de_aba(queryset, escolhidas):
+def opcoes_de_aba(queryset, escolhidas, contagem=None):
     """Opções do filtro, com a contagem ao lado — como na origem."""
-    contagem = contar_por_aba(queryset)
+    contagem = contagem or contar_por_aba(queryset)
     marcadas = set(escolhidas or [])
     return [
         {

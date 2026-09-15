@@ -44,9 +44,6 @@ def render(request, template, context, **kwargs):
                 item["multiplo"] = True
                 item["campo"] = "despacho_arquivos" if item["id"] == "despacho" else f"ps-{ps.pk}-comprovante_arquivos"
                 item["url"] = reverse("viagens_prestacoes:" + ("prestacao_arquivo_autosave" if item["id"] == "despacho" else "prestacao_servidor_arquivo_autosave"), args=[pc.pk if item["id"] == "despacho" else ps.pk])
-    if context.get("ps") and template.endswith(("relatorio_tecnico_form.html", "diario_bordo_form.html")):
-        from .signature_views import _assinatura_rt_card, _assinatura_db_card
-        context["assinatura"] = _assinatura_rt_card(request, context["ps"]) if template.endswith("relatorio_tecnico_form.html") else _assinatura_db_card(request, context["ps"].prestacao)
     if context.get("ps"):
         from .services import diaria_recebida_display
         context["diaria_name"] = f"ps-{context['ps'].pk}-diaria_valor_override"

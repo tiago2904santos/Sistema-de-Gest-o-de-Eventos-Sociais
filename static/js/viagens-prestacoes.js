@@ -225,16 +225,4 @@
     });
   })();
 
-  /* ---------- copiar link de assinatura ---------- */
-  document.querySelectorAll("[data-copiar]").forEach(function (botao) {
-    botao.addEventListener("click", function () {
-      var alvo = document.querySelector(botao.getAttribute("data-copiar"));
-      if (!alvo || !navigator.clipboard) return;
-      navigator.clipboard.writeText(alvo.textContent.trim()).then(function () {
-        var original = botao.textContent;
-        botao.textContent = "Copiado";
-        setTimeout(function () { botao.textContent = original; }, 1500);
-      });
-    });
-  });
 })();

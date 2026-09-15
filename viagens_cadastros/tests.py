@@ -412,11 +412,11 @@ class AcessoAoModuloTests(BaseViagensTestCase):
         resposta = self.client.get(reverse("viagens_cadastros:index"))
         self.assertEqual(resposta.status_code, 403)
 
-    def test_com_modulo_a_tela_abre(self):
+    def test_com_modulo_cadastros_abre_em_servidores(self):
         usuario = self.criar_usuario("consulta")
         self.client.force_login(usuario)
         resposta = self.client.get(reverse("viagens_cadastros:index"))
-        self.assertEqual(resposta.status_code, 200)
+        self.assertRedirects(resposta, reverse("viagens_cadastros:lista", args=["servidores"]))
 
     def test_anonimo_e_mandado_para_o_login(self):
         resposta = self.client.get(reverse("viagens_cadastros:index"))

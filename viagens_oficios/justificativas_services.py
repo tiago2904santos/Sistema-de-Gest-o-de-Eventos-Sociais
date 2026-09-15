@@ -20,9 +20,9 @@ from .justificativas_selectors import get_or_none_justificativa_by_oficio
 
 
 def get_prazo_justificativa_dias() -> int:
-    """Prazo mínimo em dias corridos; usa ConfiguracaoSistema com fallback 10."""
+    """Prazo mínimo em dias corridos; do setor de quem gera, com fallback 10."""
     try:
-        return int(ConfiguracaoSistema.get_singleton().prazo_justificativa_dias)
+        return int(ConfiguracaoSistema.atual().prazo_justificativa_dias)
     except Exception as exc:
         capture(exc, "justificativas.get_prazo_justificativa_dias")
         return 10

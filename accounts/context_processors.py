@@ -33,6 +33,9 @@ def modulos(request):
         for item in ativo["itens"]:
             if item.get("somente_admin") and not eh_administrador(usuario):
                 continue
+            visivel_para = item.get("visivel_para")
+            if visivel_para and not visivel_para(usuario):
+                continue
             # Item ativo: mesmo namespace da rota do item e, quando o módulo
             # tem vários itens no mesmo namespace, o nome da rota decide.
             ns_item = item["url"].split(":")[0]

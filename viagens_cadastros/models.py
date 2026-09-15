@@ -424,7 +424,23 @@ from core.utils.masks import format_masked_display
 
 
 class ConfiguracaoSistema(ModeloTemporal, OrigemLegado):
-    """Dados institucionais para documentos e regras da area atual."""
+    """Dados institucionais dos documentos de viagens, um conjunto por setor.
+
+    Cada unidade (setor de lotação, ex.: ASCOM) tem os próprios documentos, e o
+    usuário nunca escolhe de qual unidade os dados vêm: ``atual()`` resolve pelo
+    setor de quem está logado. A linha sem setor é a **global**: guarda os
+    assinantes, que valem para todos os setores, e serve de molde para o setor
+    que ainda não tem configuração e de valor fora de requisição (comandos).
+    """
+
+    setor = models.OneToOneField(
+        "accounts.Setor",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="configuracao_viagens",
+        verbose_name="setor",
+    )
 
     cidade_sede_padrao = models.ForeignKey(
         "cadastros.Municipio",
@@ -501,15 +517,42 @@ class ConfiguracaoSistema(ModeloTemporal, OrigemLegado):
     def telefone_formatado(self):
         return format_masked_display("telefone", self.telefone)
 
-    chave = models.PositiveSmallIntegerField(default=1, unique=True, editable=False)
+    chave = models.PositiveSmallIntegerField(default=1, editable=False)
 
     class Meta:
         verbose_name = "configuração institucional de viagens"
-        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_configuracaosistema_origem"), models.CheckConstraint(condition=Q(chave=1), name="viagens_config_singleton")]
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_configuracaosistema_origem"), models.UniqueConstraint(fields=["chave"], condition=Q(setor__isnull=True), name="viagens_config_global_unica")]
+
+    # Campos que não passam da configuração global para a do setor recém-criada.
+    _NAO_COPIAR = frozenset({"id", "setor", "chave", "legado_origem", "legado_pk", "criado_em", "atualizado_em"})
 
     @classmethod
     def get_singleton(cls):
-        return cls.objects.get_or_create(chave=1)[0]
+        """A configuração global (sem setor)."""
+        return cls.objects.get_or_create(setor=None)[0]
+
+    @classmethod
+    def do_setor(cls, setor):
+        """A configuração do setor; na primeira vez nasce copiando a global."""
+        if setor is None:
+            return cls.get_singleton()
+        existente = cls.objects.filter(setor=setor).first()
+        if existente:
+            return existente
+        base = cls.get_singleton()
+        copia = {campo.attname: getattr(base, campo.attname) for campo in cls._meta.concrete_fields if campo.name not in cls._NAO_COPIAR}
+        return cls.objects.get_or_create(setor=setor, defaults=copia)[0]
+
+    @classmethod
+    def para_usuario(cls, usuario):
+        return cls.do_setor(setor_de_viagens(usuario))
+
+    @classmethod
+    def atual(cls):
+        """A do setor de quem faz a requisição em andamento; fora dela, a global."""
+        from core.middleware import obter_requisicao_atual
+
+        return cls.para_usuario(getattr(obter_requisicao_atual(), "user", None))
 
     def save(self, *args, **kwargs):
         def norm_upper_words(val):
@@ -543,6 +586,20 @@ class ConfiguracaoSistema(ModeloTemporal, OrigemLegado):
         self.destinatario_oficio_cargo = norm_upper_words(self.destinatario_oficio_cargo)
         self.destinatario_oficio_unidade = norm_upper_words(self.destinatario_oficio_unidade)
         super().save(*args, **kwargs)
+
+
+def setor_de_viagens(usuario):
+    """Setor de lotação que dá ao usuário o módulo de viagens (o primeiro, por nome).
+
+    Superusuário ou usuário sem setor ficam com ``None``, isto é, a configuração global.
+    """
+    if not usuario or not getattr(usuario, "is_authenticated", False):
+        return None
+    return (
+        usuario.setores.filter(ativo=True, modulos__codigo="VIAGENS", modulos__ativo=True)
+        .order_by("nome")
+        .first()
+    )
 
 
 class AssinaturaConfiguracao(ModeloTemporal, OrigemLegado):

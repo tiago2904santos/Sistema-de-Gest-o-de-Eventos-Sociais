@@ -1,8 +1,7 @@
 /* Ajustar onde cada número de solicitação é carimbado no ofício assinado.
  *
- * O visualizador de PDF e o arraste vêm de `components/pdf-place.js`, os mesmos da tela
- * pública de assinatura. O que é desta tela: uma caixa POR SERVIDOR (a assinatura tem
- * uma só), a troca de página escondendo as caixas que não são daquela folha, e o corpo
+ * O visualizador de PDF e o arraste vêm de `components/pdf-place.js`. O que é desta
+ * tela: uma caixa POR SERVIDOR, a troca de página escondendo as caixas que não são daquela folha, e o corpo
  * da fonte saindo da altura da caixa.
  *
  * Os campos ocultos guardam frações da página com origem no topo-esquerdo — a mesma

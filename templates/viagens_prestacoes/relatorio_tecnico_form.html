@@ -3,7 +3,7 @@
   Etapa 2 — Relatório técnico: custeio (diária, translado, combustível,
   passagem, com "Outro"), os cinco textos com modelo (descrição do evento,
   objetivo, conclusão, medidas, informações complementares), a diária recebida
-  por este servidor, o documento (DOCX/PDF) e a assinatura eletrônica. O texto
+  por este servidor e o documento (DOCX/PDF). O texto
   é compartilhado pela equipe; a identificação e a diária são de cada servidor.
 {% endcomment %}
 {% block pc_acoes_topo %}
@@ -51,7 +51,6 @@
     </section>
   </form>
   {{ modelos_texto|json_script:"rt-modelos" }}
-  {% include "viagens_prestacoes/assinatura/_card.html" %}
 {% endblock %}
 {% block prestacao_acoes %}
   <footer class="editor-roteiro__rodape pc-fluxo__rodape">

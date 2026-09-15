@@ -84,6 +84,29 @@
       var vazio = campo.querySelector("[data-multi-vazio]");
       var escolhidos = campo.parentNode.querySelector("[data-multi-escolhidos]");
       var opcoes = Array.prototype.slice.call(campo.querySelectorAll("[data-multi-opcao]"));
+      var ativa = null;
+
+      opcoes.forEach(function (opcao, indice) {
+        if (!opcao.id) opcao.id = (busca.id || "multi") + "_opcao_" + indice;
+      });
+
+      function visiveis() {
+        return opcoes.filter(function (opcao) { return !opcao.hidden; });
+      }
+
+      // Opção destacada: é a que o Enter escolhe.
+      function destacar(opcao, semRolar) {
+        if (ativa) ativa.classList.remove("is-active");
+        ativa = opcao || null;
+        if (ativa) {
+          ativa.classList.add("is-active");
+          busca.setAttribute("aria-activedescendant", ativa.id);
+          // Pelo mouse a opção já está à vista; rolar ali faria a lista "fugir".
+          if (!semRolar) ativa.scrollIntoView({ block: "nearest" });
+        } else {
+          busca.removeAttribute("aria-activedescendant");
+        }
+      }
 
       function linhaEscolhida(opcao) {
         var item = document.createElement("li");
@@ -124,6 +147,8 @@
           else if (casa) disponiveis += 1;
         });
         if (vazio) vazio.hidden = disponiveis !== 0;
+        // Digitando, a primeira opção que casa já fica pronta para o Enter.
+        destacar(termo ? visiveis()[0] : null);
       }
 
       function abrir() {
@@ -136,6 +161,7 @@
         menu.hidden = true;
         campo.classList.remove("is-open");
         busca.setAttribute("aria-expanded", "false");
+        destacar(null);
       }
 
       campo.classList.add("is-enhanced");
@@ -146,6 +172,9 @@
         sincronizar();
       });
       opcoes.forEach(function (opcao) {
+        opcao.addEventListener("mousemove", function () {
+          if (ativa !== opcao) destacar(opcao, true);
+        });
         opcao.addEventListener("click", function () {
           // O clique marca a caixa; limpar a busca devolve a lista inteira.
           window.setTimeout(function () {
@@ -154,6 +183,22 @@
             busca.focus();
           }, 0);
         });
+      });
+      busca.addEventListener("keydown", function (evento) {
+        if (evento.key === "ArrowDown" || evento.key === "ArrowUp") {
+          evento.preventDefault();
+          abrir();
+          var lista = visiveis();
+          if (!lista.length) return;
+          var indice = lista.indexOf(ativa);
+          if (evento.key === "ArrowDown") indice = indice < lista.length - 1 ? indice + 1 : 0;
+          else indice = indice > 0 ? indice - 1 : lista.length - 1;
+          destacar(lista[indice]);
+        } else if (evento.key === "Enter" && !menu.hidden) {
+          // Com a lista aberta o Enter escolhe; nunca envia o formulário.
+          evento.preventDefault();
+          if (ativa && !ativa.hidden) ativa.click();
+        }
       });
       campo.addEventListener("keydown", function (evento) {
         if (evento.key === "Escape" && !menu.hidden) {

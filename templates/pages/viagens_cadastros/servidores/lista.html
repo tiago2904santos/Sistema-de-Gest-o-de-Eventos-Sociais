@@ -2,5 +2,5 @@
 {% load consulta %}
 
 {% block filtros %}
-  {% include "components/v32/filtro_fc.html" with nome="cargo" rotulo="Cargo" opcoes=opcoes_cargo valor=cargo_valor padrao="Todos" %}
+  {% include "components/v32/filtro_fc.html" with nome="cargo" rotulo="Cargo" opcoes=opcoes_cargo valor=cargo_valor padrao="Todos" alinhar_direita=True %}
 {% endblock %}

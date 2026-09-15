@@ -56,7 +56,7 @@ def servidores_removidos_da_equipe(prestacao):
 
     Único ponto de leitura que usa `todos` de propósito: em todo o resto do
     sistema `objects` esconde estas linhas, e é isso que se quer. Aqui elas
-    precisam aparecer — preservar comprovante e assinatura sem lugar nenhum de
+    precisam aparecer — preservar comprovante e solicitação sem lugar nenhum de
     encontrá-los seria trocar "apagou em silêncio" por "sumiu em silêncio".
 
     A lista só não é vazia quando havia dado coletado: linha sem nada some de vez

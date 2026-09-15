@@ -360,4 +360,4 @@ class CatalogosTests(Cenario):
         self.client.post(reverse("viagens_cadastros:definir_padrao", args=["modelos-justificativa", m.pk]))
         m.refresh_from_db()
         self.assertTrue(m.is_padrao)
-        self.assertNotContains(self.client.get(reverse("viagens_cadastros:index")), "Motivos de ofício")
+        self.assertNotContains(self.client.get(reverse("viagens_cadastros:index"), follow=True), "Motivos de ofício")

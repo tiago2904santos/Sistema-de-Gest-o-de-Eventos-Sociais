@@ -15,5 +15,5 @@ docx2pdf>=0.1.8,<0.2; sys_platform == "win32"
 # Python 3.14 exige uma versão mais nova que a faixa do GV (306–307).
 pywin32>=311,<313; sys_platform == "win32"
 
-# Carimbo e assinatura da prestação (faixas do GV).
+# Carimbo da prestação (faixas do GV).
 reportlab>=5.0,<6.0

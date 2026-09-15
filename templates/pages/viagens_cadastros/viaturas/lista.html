@@ -13,7 +13,7 @@
         <span>{{ filtro_rotulo }}</span>
         {% include "components/icon.html" with nome="chevron-down" %}
       </button>
-      <div class="dd__c dd__c--esq dd__c--rolavel" hidden data-menu-corpo>
+      <div class="dd__c dd__c--rolavel" hidden data-menu-corpo>
         <div class="dd__t">Unidade ou combustível</div>
         {% for filtro in filtros %}
           <a class="dd__i{% if filtro.ativo %} dd__i--sel{% endif %}" href="{{ filtro.valor }}">

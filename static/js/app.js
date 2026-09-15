@@ -1431,14 +1431,15 @@
   document.querySelectorAll(seletor).forEach(function (formulario) {
     var botao = formulario.querySelector('button[type="submit"]');
     if (!botao) return;
-    var rotuloOriginal = botao.textContent;
+    // Guarda a marcação inteira: itens de menu têm ícone, título e descrição.
+    var conteudoOriginal = botao.innerHTML;
     var rotuloArmado = formulario.getAttribute("data-confirmar") || "Confirmar?";
     var armado = false;
     var temporizador = null;
 
     function desarmar() {
       armado = false;
-      botao.textContent = rotuloOriginal;
+      botao.innerHTML = conteudoOriginal;
       botao.classList.remove("is-armado");
       if (temporizador) {
         clearTimeout(temporizador);
@@ -1450,7 +1451,10 @@
       if (armado) return;
       evento.preventDefault();
       armado = true;
-      botao.textContent = rotuloArmado;
+      // Item com título (<b>) troca só o título e mantém ícone e descrição.
+      var titulo = botao.querySelector("b");
+      if (titulo) titulo.textContent = rotuloArmado;
+      else botao.textContent = rotuloArmado;
       botao.classList.add("is-armado");
       temporizador = setTimeout(desarmar, 4000);
     });
@@ -1875,6 +1879,10 @@
 (function () {
   "use strict";
 
+  // Um menu aberto por vez: abrir um fecha os demais (o clique no gatilho não
+  // chega ao document, então o "clique fora" não faria isso sozinho).
+  var fechamentos = [];
+
   document.querySelectorAll("[data-menu]").forEach(function (wrapper) {
     var gatilho = wrapper.querySelector("[data-menu-gatilho]");
     var corpo = wrapper.querySelector("[data-menu-corpo]");
@@ -1884,12 +1892,28 @@
       corpo.hidden = true;
       gatilho.setAttribute("aria-expanded", "false");
     }
+    fechamentos.push(fechar);
 
     gatilho.addEventListener("click", function (evento) {
       evento.stopPropagation();
       var abrir = corpo.hidden;
+      if (abrir) {
+        fechamentos.forEach(function (outro) { if (outro !== fechar) outro(); });
+      }
       corpo.hidden = !abrir;
       gatilho.setAttribute("aria-expanded", String(abrir));
+    });
+
+    // Escolher um item (abrir modal, excluir, enviar) também fecha o menu —
+    // menos o primeiro clique de uma exclusão em duas etapas, que só arma o
+    // botão: o menu fica aberto para o clique de confirmação.
+    corpo.addEventListener("click", function (evento) {
+      var item = evento.target.closest(".dd__i");
+      if (!item) return;
+      var confirmacao = item.matches('button[type="submit"]') &&
+        item.closest("[data-confirmar-exclusao], [data-confirmar]");
+      if (confirmacao && !item.classList.contains("is-armado")) return;
+      fechar();
     });
 
     document.addEventListener("click", function (evento) {

@@ -1,0 +1,180 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
+{% comment %}
+  Configurações dos documentos de viagens — só o gestor chega aqui.
+
+  Tudo o que ofícios, justificativas e termos puxam da instituição, numa tela
+  só e na mesma anatomia do formulário do ofício (seções numeradas, rótulo à
+  esquerda e campos à direita): cabeçalho, rodapé (que também define a sede), destinatário,
+  quem assina e prazo. Os assinantes, que antes moravam num catálogo à parte, viraram
+  um campo por documento: os documentos só leem o primeiro assinante ativo de
+  cada tipo.
+{% endcomment %}
+
+{% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% estatico 'css/pages/viagens-configuracoes.css' %}">{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+
+  <form method="post" action="" id="form-configuracoes" class="of-form cfg-form" novalidate data-cep-url="{% url 'viagens_cadastros:api_consulta_cep' '00000000' %}">
+    {% csrf_token %}
+
+    <div class="frm-cabeca">
+      <div>
+        <div class="kicker">Viagens</div>
+        <h1>{{ titulo }}</h1>
+        <p class="frm-cabeca__sub">{% if setor %}Dados de <b>{{ setor.nome }}</b>, a sua lotação: valem para os documentos de todos os usuários lotados nela.{% else %}Configuração geral, usada por quem não tem lotação no módulo.{% endif %} Os assinantes são os mesmos para todas as unidades.{% if atualizado_em %} Última alteração em {{ atualizado_em|date:"d/m/Y" }}.{% endif %}</p>
+      </div>
+    </div>
+
+    <div class="of-form__principal">
+      {% if form.errors %}
+        <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
+          {% include "components/icon.html" with nome="info" %}
+          <div>
+            <b>Não foi possível salvar as configurações</b>
+            Revise os campos indicados antes de continuar.
+            <ul class="aviso--erro__lista">
+              {% for campo, mensagens in form.errors.items %}{% for mensagem in mensagens %}
+                <li>{% if campo == "__all__" %}{{ mensagem }}{% else %}<a href="#id_{{ campo }}">{{ mensagem }}</a>{% endif %}</li>
+              {% endfor %}{% endfor %}
+            </ul>
+          </div>
+        </div>
+      {% endif %}
+
+      <section class="section-card reg" id="orgao">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+          <h2 class="section-card__titulo">Órgão emissor</h2>
+        </header>
+        <div class="section-card__corpo">
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Cabeçalho</strong>
+              <p class="texto-suave v32-suave">Primeiras linhas do ofício e da justificativa: órgão, sigla e a unidade que emite.</p>
+            </div>
+            <div class="bloco-split__corpo g-form g-form--3">
+              <div class="cfg-dupla">{% include "pages/viagens_cadastros/_campo.html" with campo=campos.nome_orgao %}</div>
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.sigla_orgao %}
+              <div class="cfg-cheia">{% include "pages/viagens_cadastros/_campo.html" with campo=campos.unidade %}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card reg" id="endereco">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+          <h2 class="section-card__titulo">Endereço e contato</h2>
+        </header>
+        <div class="section-card__corpo">
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Endereço</strong>
+              <p class="texto-suave v32-suave">Vai no rodapé das justificativas e dos termos. A cidade e a UF também definem a sede da unidade.</p>
+            </div>
+            <div class="bloco-split__corpo g-form g-form--3">
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.cep %}
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.logradouro %}
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.numero %}
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.bairro %}
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.cidade_endereco %}
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.uf %}
+            </div>
+          </div>
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Contato</strong>
+              <p class="texto-suave v32-suave">Telefone e e-mail da unidade para quem recebe o documento.</p>
+            </div>
+            <div class="bloco-split__corpo g-form g-form--3">
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.telefone %}
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.ramal %}
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.email %}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card reg" id="destinatario">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
+          <h2 class="section-card__titulo">Destinatário do ofício</h2>
+        </header>
+        <div class="section-card__corpo">
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Servidor</strong>
+              <p class="texto-suave v32-suave">A quem o ofício é endereçado. A unidade dele vira o destino no cabeçalho.</p>
+            </div>
+            <div class="bloco-split__corpo g-form g-form--1">
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.destinatario_oficio %}
+            </div>
+          </div>
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Como sai no ofício</strong>
+              <p class="texto-suave v32-suave">Em branco, cada campo usa o que está no cadastro do servidor escolhido.</p>
+            </div>
+            <div class="bloco-split__corpo g-form g-form--3">
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.destinatario_oficio_nome %}
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.destinatario_oficio_cargo %}
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.destinatario_oficio_unidade %}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card reg" id="assinaturas">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">4</span>
+          <h2 class="section-card__titulo">Assinaturas</h2>
+        </header>
+        <div class="section-card__corpo">
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Ofício e justificativa</strong>
+              <p class="texto-suave v32-suave">Nome e cargo de quem assina saem no fim de cada documento.</p>
+            </div>
+            <div class="bloco-split__corpo g-form g-form--2">
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.assina_oficio %}
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.assina_justificativa %}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card reg" id="sede">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">5</span>
+          <h2 class="section-card__titulo">Prazo</h2>
+        </header>
+        <div class="section-card__corpo">
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Justificativa</strong>
+              <p class="texto-suave v32-suave">Ofício emitido com menos dias de antecedência que isto exige justificativa.</p>
+            </div>
+            <div class="bloco-split__corpo g-form g-form--3">
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.prazo_justificativa_dias %}
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="frm-acoes">
+      <a class="btn--secundaria" href="{{ url_voltar }}">{% include "components/icon.html" with nome="chevron-left" %}Voltar aos ofícios</a>
+      <button type="submit" class="btn-primaria">Salvar configurações</button>
+    </div>
+  </form>
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+  <script src="{% estatico 'js/viagens-cadastros.js' %}" defer></script>
+  <script src="{% estatico 'js/pages/viagens-configuracoes.js' %}" defer></script>
+{% endblock %}

@@ -8,12 +8,12 @@ linhas semeadas ficavam órfãs na prestação, misturando equipes entre ofício
 
 Este comando alinha cada prestação ao ``oficio.servidores`` atual: remove as
 linhas de servidores que saíram do ofício e cria as que faltam. Servidores que
-permanecem — e seus dados individuais (solicitação, comprovante, assinatura) —
+permanecem — e seus dados individuais (solicitação, comprovante) —
 não são tocados.
 
 ``DB-06``: "remover" segue a mesma regra do sinal
 (``PrestacaoServidor.sair_da_equipe``). Linha sem nada coletado é apagada; linha
-com comprovante, assinatura ou número de solicitação é apenas marcada como fora
+com comprovante ou número de solicitação é apenas marcada como fora
 da equipe e some das telas, sem perder nada. O dry-run diz qual dos dois vai
 acontecer com cada servidor, porque é essa a diferença que importa revisar antes
 de rodar com ``--confirmar``.

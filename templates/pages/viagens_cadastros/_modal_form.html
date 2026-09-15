@@ -10,7 +10,6 @@
     <button type="button" class="mo__fechar" data-cadastro-fechar aria-label="Fechar cadastro">{% include "components/icon.html" with nome="x" %}</button>
   </header>
   <div class="mo__corpo">
-    <p class="cad-frm__intro">{{ dados.intro }}</p>
     {% if dados.erros_total %}
       <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
         {% include "components/icon.html" with nome="alert" %}
@@ -21,7 +20,6 @@
       </div>
     {% endif %}
     {% for secao in dados.secoes %}
-      {% if dados.varias_secoes %}<h3 class="mo__secao">{{ secao.titulo }}</h3>{% endif %}
       <div class="g-form v32-form-grid">
         {% for campo in secao.campos %}{% include "pages/viagens_cadastros/_campo.html" %}{% endfor %}
       </div>

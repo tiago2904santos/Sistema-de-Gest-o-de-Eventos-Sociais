@@ -33,11 +33,6 @@
     {% include "components/v32/cad_rail.html" with grupos=grupos slug_ativo=slug %}
 
     <section class="pa-card pa-card--lista cad-lista">
-      <div class="cad-titulo">
-        <h2>{{ titulo }}</h2>
-        <span><b>{{ total_registros }}</b> {{ resumo }}</span>
-      </div>
-
       {% if aviso %}
         <div class="cad-meta">{% include "components/icon.html" with nome="info" %}<span>{{ aviso }}</span></div>
       {% endif %}
@@ -52,10 +47,6 @@
         </div>
         {% block filtros %}{% endblock %}
         <div class="cad-barra__fim">
-          {% if tem_filtros %}
-            <span>{{ pagina.paginator.count }} resultado{{ pagina.paginator.count|pluralize }}</span>
-            <a class="cad-limpar" href="{{ url_limpar }}">Limpar filtros</a>
-          {% endif %}
           {% block barra_fim %}{% endblock %}
         </div>
       </form>
@@ -74,8 +65,8 @@
           <tbody>
             {% for linha in linhas %}
               <tr>
-                <td class="c-nome">{{ linha.principal }}</td>
-                {% for celula in linha.celulas %}<td class="{{ celula.classe }}" data-rotulo="{{ celula.rotulo }}">{{ celula.valor }}</td>{% endfor %}
+                <td class="c-nome">{{ linha.principal }}{% if linha.padrao %}<span class="st st--padrao">Padrão</span>{% endif %}</td>
+                {% for celula in linha.celulas %}<td class="{{ celula.classe }}{% if celula.valor == '—' %} c-vazio{% endif %}" data-rotulo="{{ celula.rotulo }}">{{ celula.valor }}</td>{% endfor %}
                 {% if tem_situacao %}
                   <td class="c-sit">{% if linha.badge %}<span class="st {{ linha.badge.classe }}">{{ linha.badge.texto }}</span>{% endif %}</td>
                 {% endif %}
@@ -97,10 +88,11 @@
         </table>
       </div>
 
-      {% if pagina.paginator.count %}
+      {# Uma página só: o total já está na trilha; o rodapé aparece para navegar. #}
+      {% if pagina.paginator.num_pages > 1 %}
         <div class="pag">
           <span>Mostrando <b>{{ pagina.start_index }}–{{ pagina.end_index }}</b> de <b>{{ pagina.paginator.count }}</b> registro{{ pagina.paginator.count|pluralize }}</span>
-          {% if pagina.paginator.num_pages > 1 %}{% include "pages/viagens_cadastros/_paginacao_nav.html" %}{% endif %}
+          {% include "pages/viagens_cadastros/_paginacao_nav.html" %}
         </div>
       {% endif %}
 
@@ -110,7 +102,7 @@
           {% for linha in linhas %}
             <div class="m-item">
               <div class="m-item__topo">
-                <span class="m-item__tipo">{{ linha.principal }}</span>
+                <span class="m-item__tipo">{{ linha.principal }}{% if linha.padrao %}<span class="st st--padrao">Padrão</span>{% endif %}</span>
                 {% if linha.badge %}<span class="st {{ linha.badge.classe }}">{{ linha.badge.texto }}</span>{% endif %}
               </div>
               <div class="m-item__meta">{% for celula in linha.celulas %}{% if not forloop.first %} · {% endif %}{{ celula.valor }}{% endfor %}</div>

@@ -186,6 +186,28 @@ def lista(request):
     parametros = request.GET.copy()
     parametros.pop("pagina", None)
 
+    # Situações como chips da trilha, iguais às tabelas de apoio dos cadastros:
+    # cada chip troca só a situação e mantém a busca.
+    contagem = abas_de_roteiro.contar_por_aba(base)
+
+    def url_da_situacao(aba=None):
+        destino = parametros.copy()
+        destino.pop("aba", None)
+        if aba:
+            destino["aba"] = aba
+        return "?" + destino.urlencode()
+
+    icones = {
+        abas_de_roteiro.ABA_FUTURAS: "calendar",
+        abas_de_roteiro.ABA_ATUAIS: "clock",
+        abas_de_roteiro.ABA_FINALIZADOS: "check-circle",
+        abas_de_roteiro.ABA_CANCELADOS: "ban",
+    }
+    situacoes = [{"slug": "todas", "titulo": "Todas", "total": base.count(), "icone": "checklist", "url": url_da_situacao()}] + [
+        {"slug": chave, "titulo": rotulo, "total": contagem[chave], "icone": icones[chave], "url": url_da_situacao(chave)}
+        for chave, rotulo in abas_de_roteiro.ABA_ROTULOS
+    ]
+
     return render(
         request,
         "pages/viagens_roteiros/lista.html",
@@ -193,8 +215,11 @@ def lista(request):
             "pagina": pagina,
             "linhas": linhas,
             "termo": termo,
-            "abas": abas_de_roteiro.opcoes_de_aba(base, escolhidas),
+            "abas": abas_de_roteiro.opcoes_de_aba(base, escolhidas, contagem),
             "abas_escolhidas": escolhidas,
+            "situacoes": situacoes,
+            # Chip aceso: nenhuma situação é "Todas"; várias (link antigo) não acendem nenhum.
+            "situacao_ativa": "todas" if not escolhidas else escolhidas[0] if len(escolhidas) == 1 else "",
             "tem_filtros": bool(termo or escolhidas),
             "pode_editar": pode_editar_roteiros(request.user),
             "querystring": parametros.urlencode(),

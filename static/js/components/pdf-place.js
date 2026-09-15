@@ -1,9 +1,7 @@
 /* Visualizador de PDF com caixa arrastável — o miolo de "posicione isto no documento".
  *
- * Duas telas fazem exatamente isso: a assinatura eletrônica, onde o signatário arrasta a
- * própria assinatura, e o ajuste do carimbo, onde o operador arrasta o número de
- * solicitação sobre o ofício do eProtocolo. O que elas compartilham é tudo menos O QUE se
- * arrasta: renderizar a página em canvas, navegar entre páginas, redesenhar quando a
+ * Usado no ajuste do carimbo, onde o operador arrasta o número de solicitação sobre o
+ * ofício do eProtocolo. Fica aqui tudo menos O QUE se arrasta: renderizar a página em canvas, navegar entre páginas, redesenhar quando a
  * janela muda de largura, e mover/redimensionar uma caixa presa ao palco.
  *
  * A saída é sempre a mesma: FRAÇÕES da página com origem no topo-esquerdo, que é o que
@@ -114,9 +112,8 @@
 
   /* Move e redimensiona uma caixa dentro do palco.
    *
-   * `aspecto` (largura/altura) é mantido no redimensionamento: a assinatura não pode
-   * distorcer, e o número precisa que a altura acompanhe a largura porque é dela que sai
-   * o corpo da fonte.
+   * `aspecto` (largura/altura) é mantido no redimensionamento: o número precisa que a
+   * altura acompanhe a largura porque é dela que sai o corpo da fonte.
    */
   function caixaArrastavel(opcoes) {
     var caixa = opcoes.caixa;

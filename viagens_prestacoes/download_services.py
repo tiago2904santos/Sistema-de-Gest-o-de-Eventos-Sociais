@@ -43,8 +43,6 @@ def _signed_url(ps, item_id, anexo):
 
 
 def payload_downloads(ps):
-    from .assinatura_services import assinatura_rt, assinatura_db
-    eletronicos = {"rt": assinatura_rt(ps), "diario": assinatura_db(ps.prestacao)}
     prestacao = ps.prestacao
     oficio = prestacao.oficio
     anexos = anexos_por_tipo(ps)
@@ -74,8 +72,6 @@ def payload_downloads(ps):
     itens = []
     for item_id, titulo, subtitulo, originais in definicoes:
         assinado = anexos.get(TIPOS[item_id])
-        eletronico = eletronicos.get(item_id)
-        assinado = assinado or (eletronico if eletronico and eletronico.assinada and eletronico.arquivo_assinado else None)
         versoes = {
             "original": originais,
             "assinado": {"pdf": _signed_url(ps, item_id, assinado)} if assinado else {},
@@ -102,11 +98,6 @@ def anexo_do_item(ps, item_id):
 def pdf_assinado(ps, item_id):
     anexo = anexo_do_item(ps, item_id)
     if not anexo:
-        from .assinatura_services import assinatura_rt, assinatura_db, _bytes_assinado
-        doc = assinatura_rt(ps) if item_id == "rt" else assinatura_db(ps.prestacao) if item_id == "diario" else None
-        conteudo = _bytes_assinado(doc)
-        if conteudo is not None:
-            return conteudo
         raise DocumentValidationError("Documento assinado não encontrado.")
     return _pdf_bytes_from_file_field(anexo.arquivo, anexo.get_tipo_display())
 

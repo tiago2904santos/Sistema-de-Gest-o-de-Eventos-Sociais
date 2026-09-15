@@ -89,8 +89,6 @@ def _contexto_da_requisicao():
     if usuario is not None and not usuario.is_authenticated:
         usuario = None
     rota = getattr(requisicao, "resolver_match", None)
-    if rota and rota.namespace == "viagens_assinaturas":
-        return usuario, rota.view_name
     return usuario, requisicao.path[:500]
 
 

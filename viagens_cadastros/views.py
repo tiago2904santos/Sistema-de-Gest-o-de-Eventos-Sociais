@@ -40,7 +40,7 @@ from .forms import (
     UnidadeForm,
     ViaturaForm,
 )
-from .models import Cargo, Combustivel, ConfiguracaoSistema, Servidor, TabelaDiaria, Unidade, Viatura
+from .models import Cargo, Combustivel, ConfiguracaoSistema, Servidor, TabelaDiaria, Unidade, Viatura, setor_de_viagens
 from .permissions import (
     acesso_ao_modulo,
     pode_editar_cadastros,
@@ -67,9 +67,10 @@ CADASTROS = {
         "colunas": [
             {"rotulo": "Cargo", "attr": "cargo"},
             {"rotulo": "Unidade", "attr": "unidade"},
-            {"rotulo": "CPF", "attr": "cpf_formatado"},
-            {"rotulo": "RG", "attr": "rg_formatado"},
-            {"rotulo": "Telefone", "attr": "telefone_formatado"},
+            # Documentos e telefone não quebram linha na tabela.
+            {"rotulo": "CPF", "attr": "cpf_formatado", "classe": "c-fixo"},
+            {"rotulo": "RG", "attr": "rg_formatado", "classe": "c-fixo"},
+            {"rotulo": "Telefone", "attr": "telefone_formatado", "classe": "c-fixo"},
         ],
         "secoes": [
             {
@@ -113,7 +114,7 @@ CADASTROS = {
                 "titulo": "Dados da viatura",
                 "subtitulo": "Identificação, abastecimento e lotação.",
                 "campos": ["placa", "modelo", "tipo", "combustivel", "unidade"],
-                "larguras": {"placa": "4", "modelo": "5", "tipo": "3",
+                "larguras": {"placa": "4", "modelo": "4", "tipo": "4",
                              "combustivel": "6", "unidade": "6"},
             },
             {
@@ -163,7 +164,7 @@ CADASTROS = {
         "descricao": "Funções dos servidores e cargo sugerido nos novos cadastros.",
         "exemplo": "Ex.: INVESTIGADOR",
         "busca": ["nome__icontains"],
-        "colunas": [{"rotulo": "Padrão", "attr": "is_padrao", "booleano": True}],
+        "colunas": [],
         "secoes": [
             {
                 "titulo": "Dados do cargo",
@@ -185,7 +186,7 @@ CADASTROS = {
         "descricao": "Tipos de combustível e opção sugerida nas novas viaturas.",
         "exemplo": "Ex.: GASOLINA",
         "busca": ["nome__icontains"],
-        "colunas": [{"rotulo": "Padrão", "attr": "is_padrao", "booleano": True}],
+        "colunas": [],
         "secoes": [
             {
                 "titulo": "Dados do combustível",
@@ -214,9 +215,7 @@ CADASTROS = {
         "busca": ["nome__icontains", "texto__icontains"],
         "situacao_ativo": True,
         "colunas": [
-            {"rotulo": "Ordem", "attr": "ordem"},
-            {"rotulo": "Padrão", "attr": "is_padrao", "booleano": True},
-        ],
+            {"rotulo": "Ordem", "attr": "ordem"},        ],
         "secoes": [
             {
                 "titulo": "Modelo de motivo",
@@ -241,9 +240,7 @@ CADASTROS = {
         "busca": ["nome__icontains", "texto__icontains"],
         "situacao_ativo": True,
         "colunas": [
-            {"rotulo": "Ordem", "attr": "ordem"},
-            {"rotulo": "Padrão", "attr": "is_padrao", "booleano": True},
-        ],
+            {"rotulo": "Ordem", "attr": "ordem"},        ],
         "secoes": [
             {
                 "titulo": "Modelo de justificativa",
@@ -494,7 +491,8 @@ def _linhas_da_lista(config, slug, pagina, *, tem_acoes=True, retorno="", padrao
                 valor = valor()
             if coluna.get("booleano"):
                 valor = "Sim" if valor else "—"
-            celulas.append({"rotulo": coluna["rotulo"], "valor": valor or coluna.get("vazio", "—")})
+            celulas.append({"rotulo": coluna["rotulo"], "valor": valor or coluna.get("vazio", "—"),
+                            "classe": coluna.get("classe", "")})
         principal = getattr(objeto, attr_principal, "") or "—"
         status = getattr(objeto, "status", "")
         badge = {"texto": objeto.get_status_display(), "classe": SITUACAO_CHIP.get(status, "")} if status else None
@@ -510,6 +508,8 @@ def _linhas_da_lista(config, slug, pagina, *, tem_acoes=True, retorno="", padrao
                 "status": status,
                 "status_label": objeto.get_status_display() if status else "",
                 "badge": badge,
+                # Registro sugerido nos formulários: vira chip ao lado do nome.
+                "padrao": bool(getattr(objeto, "is_padrao", False)),
                 "url_editar": reverse("viagens_cadastros:editar", args=[slug, objeto.pk]) + sufixo if tem_acoes else "",
                 "url_excluir": reverse("viagens_cadastros:excluir", args=[slug, objeto.pk]) + sufixo if tem_acoes else "",
                 "url_padrao": (
@@ -526,7 +526,6 @@ def _contexto_lista(request, slug, config, *, pagina, linhas, termo, parametros,
                     acoes_template="", retorno="", texto_vazio="", modal=None):
     """Chassi comum das listas: trilha, resumo, busca, tabela e paginação."""
     url_lista = reverse("viagens_cadastros:lista", args=[slug]) if slug in CADASTROS else request.path
-    url_limpar = url_lista + ("?" + urlencode({"next": retorno}) if retorno else "")
     total = config["model"].objects.count()
     ocultos = [{"nome": nome, "valor": valor} for nome, valor in parametros.items() if nome != "q"]
     return {
@@ -560,7 +559,6 @@ def _contexto_lista(request, slug, config, *, pagina, linhas, termo, parametros,
             if tem_acoes and slug in CADASTROS else ""
         ),
         "url_lista": url_lista,
-        "url_limpar": url_limpar,
         "url_retorno": retorno,
         "modal": modal,
     }
@@ -568,16 +566,8 @@ def _contexto_lista(request, slug, config, *, pagina, linhas, termo, parametros,
 
 @acesso_ao_modulo
 def index(request):
-    grupos = _grupos()
-    cartoes = [
-        dict(grupo, legenda=f'{grupo["total"]} {_palavras(grupo["total"], grupo["slug"])}')
-        for grupo in grupos
-    ]
-    return render(request, "pages/viagens_cadastros/index.html", {
-        "grupos": grupos,
-        "cartoes": cartoes,
-        "url_configuracoes": reverse("viagens_oficios:institucional"),
-    })
+    # Sem hub: Cadastros abre direto em Servidores; a rota fica para links antigos.
+    return redirect("viagens_cadastros:lista", slug="servidores")
 
 
 @acesso_ao_modulo
@@ -667,8 +657,10 @@ def _lista_viaturas(request, modal=None):
 
     combustivel = selecionado("combustivel", Combustivel)
     unidade = None if combustivel else selecionado("unidade", Unidade)
-    # Consultar a configuração não cria um singleton ao abrir uma lista.
-    cfg = ConfiguracaoSistema.objects.select_related("unidade").filter(chave=1).first()
+    # Consultar a configuração não cria uma ao abrir uma lista: a do setor de
+    # quem consulta ou, se ele ainda não tem, a global.
+    configuracoes = ConfiguracaoSistema.objects.select_related("unidade")
+    cfg = configuracoes.filter(setor=setor_de_viagens(request.user)).first() or configuracoes.filter(setor=None).first()
     unidade_cfg = cfg.unidade if cfg else None
     combustiveis = Combustivel.objects.annotate(total=Count("viaturas")).filter(total__gt=0).order_by("-total", "nome")[:3]
     url_lista = reverse("viagens_cadastros:lista", args=["viaturas"])

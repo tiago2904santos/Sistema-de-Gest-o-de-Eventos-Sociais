@@ -1,10 +1,11 @@
 from .models import ConfiguracaoSistema
 
 def build_configuracao_context():
-    configuracao = ConfiguracaoSistema.get_singleton()
+    # Dados do setor de quem gera; os assinantes são únicos, na configuração global.
+    configuracao = ConfiguracaoSistema.atual()
     cidade_doc = configuracao.cidade_endereco or ""
     assinaturas: dict = {}
-    for ass in configuracao.assinaturas.filter(ativo=True).select_related("servidor__cargo").order_by("tipo", "ordem"):
+    for ass in ConfiguracaoSistema.get_singleton().assinaturas.filter(ativo=True).select_related("servidor__cargo").order_by("tipo", "ordem"):
         assinaturas.setdefault(ass.tipo, []).append({
             "servidor": ass.servidor,
             "nome": ass.servidor.nome if ass.servidor else "",

@@ -1,11 +1,16 @@
 {% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
 {% comment %}
   Lista de roteiros — Meta 2 de paridade com o Gerenciador de Viagens.
 
   O conteúdo é o da origem: a rota identifica a linha, o selo diz quanto falta
   ou quanto tempo passou, e a meta traz período, trechos e valor. As quatro
   situações são combináveis e trazem a contagem ao lado, como lá; sem nenhuma
-  marcada, a lista mostra tudo. Editar e excluir ficam à vista, sem menu.
+  marcada, a lista mostra tudo.
+
+  A composição é a das listas dos cadastros: as situações são chips acima do
+  cartão, como as tabelas de apoio; a busca fica na barra do cartão e
+  editar/excluir no menu da linha.
 
   A pele é a daqui: tabela do V3.2 no desktop e Data List no celular, em vez do
   cartão da origem. Mesma informação, mesmas ações.
@@ -14,55 +19,41 @@
 {% block title %}Roteiros — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% include "components/v32/breadcrumb.html" with atual="Roteiros" %}
-  {% url 'viagens_roteiros:novo' as url_novo %}
-  {% if pode_editar %}
-    {% include "components/v32/page_header.html" with titulo="Roteiros" subtitulo="Deslocamentos e o cálculo das diárias" icone="map-pin" acao_label="Novo roteiro" acao_url=url_novo %}
-  {% else %}
-    {% include "components/v32/page_header.html" with titulo="Roteiros" subtitulo="Deslocamentos e o cálculo das diárias" icone="map-pin" %}
-  {% endif %}
-
-  <div class="pa-card pa-card--lista v32-bloco v32-filtros">
-    <form method="get" class="v32-barra" role="search">
-      <div class="form-campo v32-busca lista-filtros__busca--curta">
-        <label class="form-label sr-only" for="id_q">Busca</label>
-        <div class="busca">
-          <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
-          {# A busca é do servidor: precisa achar o roteiro que está na página 3. #}
-          <input class="form-controle" type="search" name="q" id="id_q"
-                 value="{{ termo }}" placeholder="Buscar por sede, destino ou observações"
-                 aria-label="Buscar roteiros">
-        </div>
+  {# Cabeçalho idêntico ao das listas dos cadastros de viagens. #}
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker">Viagens</div>
+      <h1>Roteiros</h1>
+      <p class="d-cabeca__sub">Deslocamentos e o cálculo das diárias.</p>
+    </div>
+    {% if pode_editar %}
+      <div class="d-acoes">
+        <a class="btn-primaria" href="{% url 'viagens_roteiros:novo' %}">{% include "components/icon.html" with nome="plus" %}Novo roteiro</a>
       </div>
-      <fieldset class="v32-abas-situacao">
-        <legend class="sr-only">Filtrar por situação</legend>
-        {% for aba in abas %}
-          <label class="v32-aba{% if aba.selecionado %} v32-aba--ativa{% endif %}">
-            <input type="checkbox" name="aba" value="{{ aba.valor }}"{% if aba.selecionado %} checked{% endif %}>
-            {{ aba.rotulo }}
-          </label>
-        {% endfor %}
-      </fieldset>
-      <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="search" %}Buscar</button>
-      {% if tem_filtros %}
-        <a href="{% url 'viagens_roteiros:lista' %}" class="btn--secundaria">{% include "components/icon.html" with nome="x" %}Limpar</a>
-      {% endif %}
-      <span class="v32-meta">{{ pagina.paginator.count }} roteiro{{ pagina.paginator.count|pluralize }}</span>
-    </form>
+    {% endif %}
   </div>
 
-  <div class="pa-card pa-card--lista v32-bloco">
+  <div class="cad-grade">
+    {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_titulo="Situação" rail_rotulo="Situação dos roteiros" %}
+
+  {# `cad-lista`: mesma pele da lista dos cadastros (barra no cartão, cabeçalho, hover, ações num menu). #}
+  <div class="pa-card pa-card--lista cad-lista">
+    {# A busca é do servidor (precisa achar o roteiro da página 3): envia 1 s depois de digitar. #}
+    <form method="get" class="cad-barra" role="search" data-cadastro-busca data-auto-enviar>
+      <div class="busca">
+        {% include "components/icon.html" with nome="search" %}
+        <label class="sr-only" for="id_q">Buscar roteiros</label>
+        <input type="search" name="q" id="id_q" value="{{ termo }}" placeholder="Buscar por sede, destino ou observações" autocomplete="off">
+      </div>
+    </form>
     <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Tabela de roteiros">
       <table class="dt dt--responsiva">
         <thead>
           <tr>
             <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
             <th>Rota</th>
-            <th>Período</th>
-            <th>Trechos</th>
-            <th>Servidores</th>
-            <th>Valor</th>
-            <th>Situação</th>
+            <th class="c-periodo">Período</th>
+            <th class="c-valor">Valor</th>
             <th class="c-cad-acoes">Ações</th>
           </tr>
         </thead>
@@ -74,33 +65,16 @@
                 <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=linha.icone %}</span>
                 <span class="sr-only">{{ linha.roteiro.get_tipo_display }}</span>
               </td>
-              <td data-rotulo="Rota"><strong>{{ linha.titulo }}</strong></td>
-              <td data-rotulo="Período">{{ linha.periodo }}</td>
-              <td data-rotulo="Trechos">{{ linha.trechos }}</td>
-              <td data-rotulo="Servidores">{{ linha.servidores }}</td>
-              <td data-rotulo="Valor">
+              <td class="c-nome" data-rotulo="Rota">{{ linha.titulo }}{% if linha.chip %}<span class="st st--{{ linha.selo_tom }}">{{ linha.chip }}</span>{% endif %}</td>
+              <td class="c-fixo c-periodo{% if linha.periodo == '—' %} c-vazio{% endif %}" data-rotulo="Período">{{ linha.periodo }}</td>              <td class="c-valor{% if linha.valor == '—' %} c-vazio{% endif %}" data-rotulo="Valor">
                 {{ linha.valor }}
                 {% if linha.resumo_diarias %}<span class="v32-suave">{{ linha.resumo_diarias }}</span>{% endif %}
               </td>
-              <td data-rotulo="Situação">
-                {% if linha.selo %}<span class="st st--{{ linha.selo_tom }}">{{ linha.selo }}</span>{% else %}<span class="v32-suave">—</span>{% endif %}
-              </td>
-              <td class="c-cad-acoes">
-                <div class="acoes">
-                  <a href="{{ linha.editar_url }}" class="acao-linha">{% include "components/icon.html" with nome="pencil" %}Editar</a>
-                  {% if pode_editar %}
-                    <form method="post" action="{{ linha.excluir_url }}" data-confirmar-exclusao>
-                      {% csrf_token %}
-                      <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                      <button type="submit" class="acao-linha acao-linha--perigo" aria-label="Excluir {{ linha.titulo }}">{% include "components/icon.html" with nome="trash" %}Excluir</button>
-                    </form>
-                  {% endif %}
-                </div>
-              </td>
+              <td class="c-cad-acoes">{% include "pages/viagens_roteiros/_acoes_linha.html" %}</td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="8" class="v32-suave dt__vazio">
+              <td colspan="5" class="v32-suave dt__vazio">
                 {% if tem_filtros %}Nenhum roteiro com esses filtros. Ajuste a busca ou troque de situação.{% else %}Nenhum roteiro registrado ainda.{% endif %}
               </td>
             </tr>
@@ -115,21 +89,12 @@
           <div class="m-item__topo">
             <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=linha.icone %}</span>
             <span class="sr-only">{{ linha.roteiro.get_tipo_display }}</span>
-            {% if linha.selo %}<span class="st st--{{ linha.selo_tom }}">{{ linha.selo }}</span>{% endif %}
+            {% if linha.chip %}<span class="st st--{{ linha.selo_tom }}">{{ linha.chip }}</span>{% endif %}
           </div>
           <div class="m-item__tipo">{{ linha.titulo }}</div>
           <div class="m-item__meta">{{ linha.periodo }} · {{ linha.trechos }} · {{ linha.servidores }} servidor{{ linha.servidores|pluralize:"es" }}</div>
           <div class="m-item__sol">{{ linha.valor }}<small>{{ linha.resumo_diarias }}</small></div>
-          <div class="m-item__rodape">
-            <a href="{{ linha.editar_url }}" class="acao-linha">{% include "components/icon.html" with nome="pencil" %}Editar</a>
-            {% if pode_editar %}
-              <form method="post" action="{{ linha.excluir_url }}" data-confirmar-exclusao>
-                {% csrf_token %}
-                <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                <button type="submit" class="acao-linha acao-linha--perigo" aria-label="Excluir {{ linha.titulo }}">{% include "components/icon.html" with nome="trash" %}Excluir</button>
-              </form>
-            {% endif %}
-          </div>
+          <div class="m-item__rodape">{% include "pages/viagens_roteiros/_acoes_linha.html" %}</div>
         </article>
       {% empty %}
         <article class="m-item"><p class="m-vazio">{% if tem_filtros %}Nenhum roteiro com esses filtros.{% else %}Nenhum roteiro registrado ainda.{% endif %}</p></article>
@@ -161,4 +126,7 @@
       </div>
     {% endif %}
   </div>
+  </div>
 {% endblock %}
+
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>{% endblock %}

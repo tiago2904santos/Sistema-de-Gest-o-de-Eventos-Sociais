@@ -2,8 +2,7 @@
 {% comment %}
   Etapa 1 — Diário de bordo: o motorista e a viatura do diário (com a troca), o
   roteiro realizado (ajustável), a quilometragem e o abastecimento de cada
-  deslocamento, o documento (PDF/planilha) e a assinatura eletrônica do
-  motorista. Os campos gravam sozinhos; "Salvar e continuar" leva ao RT.
+  deslocamento e o documento (PDF/planilha). Os campos gravam sozinhos; "Salvar e continuar" leva ao RT.
 {% endcomment %}
 {% block pc_acoes_topo %}
   <a class="btn--secundaria" href="{{ preview_inline_url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}Visualizar PDF</a>
@@ -58,8 +57,6 @@
       {% endif %}
     </form>
   </section>
-
-  {% include "viagens_prestacoes/assinatura/_card.html" %}
 {% endblock %}
 {% block prestacao_acoes %}
   <footer class="editor-roteiro__rodape pc-fluxo__rodape">

@@ -1,0 +1,17 @@
+/* Configurações dos documentos de viagens.
+ *
+ * O resto vem do formulário do ofício (`.of-form`, `.bloco-split`, `.section-card`
+ * no ds-v32-bridge). Aqui só o que é desta tela: campo que ocupa duas ou três
+ * colunas da grade e o respiro entre as seções e as ações. */
+
+.cfg-form .of-form__principal { padding-top: 16px; }
+.cfg-form .g-form > .cfg-dupla { grid-column: span 2; min-width: 0; }
+.cfg-form .g-form > .cfg-cheia { grid-column: 1 / -1; min-width: 0; }
+.cfg-form .frm-acoes { margin-top: 4px; }
+.cfg-cep-status:empty { display: none; }
+.cfg-cep-status--erro { color: var(--dg-t); }
+
+@container (max-width: 900px) {
+  .cfg-form .g-form > .cfg-dupla,
+  .cfg-form .g-form > .cfg-cheia { grid-column: auto; }
+}

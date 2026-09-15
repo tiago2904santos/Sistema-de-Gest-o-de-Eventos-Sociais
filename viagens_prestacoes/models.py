@@ -3,7 +3,6 @@ from django.db import models
 from .arquivos import ArquivoPrivadoField
 from core.constraints import periodo_ordenado
 from core.constraints import positivo
-from django.db.models import Q
 from django.core.validators import FileExtensionValidator
 from viagens_cadastros.models import Servidor
 from viagens_cadastros.models import Viatura
@@ -60,8 +59,7 @@ class PrestacaoServidor(OrigemLegado):
 
     Guarda o acompanhamento e o que muda de servidor para servidor: status,
     arquivamento/finalização, número da solicitação, comprovante de saque/
-    transferência (via ``PrestacaoDocumentoAnexo``) e a assinatura do relatório
-    técnico (via ``AssinaturaDocumento``). O texto do RT e o diário de bordo são
+    transferência (via ``PrestacaoDocumentoAnexo``). O texto do RT e o diário de bordo são
     compartilhados e ficam em ``PrestacaoContas``.
     """
     STATUS_PENDENTE = PrestacaoContas.STATUS_PENDENTE
@@ -144,7 +142,7 @@ class PrestacaoServidor(OrigemLegado):
         """
         # A linha histórica importada deve continuar rastreável no diário da
         # migração, mesmo quando ainda não tem preenchimento financeiro.
-        return bool(self.legado_pk is not None or self.numero_solicitacao.strip() or self.diaria_valor_override is not None or self.diaria_valor_override_observacao.strip() or self.data_liberacao_diarias or self.prazo_limite_saque or (self.status != self.STATUS_PENDENTE) or self.arquivada or self.finalizada or self.documentos_anexos.exists() or (hasattr(self, 'assinaturas') and self.assinaturas.exists()))
+        return bool(self.legado_pk is not None or self.numero_solicitacao.strip() or self.diaria_valor_override is not None or self.diaria_valor_override_observacao.strip() or self.data_liberacao_diarias or self.prazo_limite_saque or (self.status != self.STATUS_PENDENTE) or self.arquivada or self.finalizada or self.documentos_anexos.exists())
 
     def tem_prova_irrefazivel(self) -> bool:
         """Só o que ninguém consegue refazer se a linha sumir (`NOVO-35`).
@@ -163,10 +161,10 @@ class PrestacaoServidor(OrigemLegado):
         passe a "ter dados coletados" sem nunca ter entregue nada — e ficaria
         indelével para sempre por ação de terceiro.
 
-        Aqui ficam os três que, apagados, não voltam: o arquivo do comprovante, a
-        assinatura eletrônica e o número da solicitação digitado à mão.
+        Aqui ficam os dois que, apagados, não voltam: o arquivo do comprovante e o
+        número da solicitação digitado à mão.
         """
-        return bool(self.documentos_anexos.exists() or (hasattr(self, 'assinaturas') and self.assinaturas.exists()) or self.numero_solicitacao.strip())
+        return bool(self.documentos_anexos.exists() or self.numero_solicitacao.strip())
 
     def sair_da_equipe(self) -> bool:
         """Tira este servidor da equipe corrente. Devolve `True` se preservou a linha.
@@ -185,7 +183,7 @@ class PrestacaoServidor(OrigemLegado):
         return True
 
     def voltar_para_equipe(self) -> None:
-        """Desfaz `sair_da_equipe`, e com ela reaparecem anexos e assinaturas."""
+        """Desfaz `sair_da_equipe`, e com ela reaparecem os anexos."""
         if self.removida_em is None:
             return
         self.removida_em = None
@@ -365,88 +363,3 @@ class ModeloTextoRelatorioTecnico(OrigemLegado):
 
     def __str__(self):
         return f'{self.get_campo_display()} — {self.nome}'
-
-
-def assinatura_origem_upload_to(instance, filename):
-    return f"viagens_prestacoes/{instance.prestacao_id or 'nova'}/assinaturas/origem_{instance.tipo}_{filename}"
-
-def assinatura_png_upload_to(instance, filename):
-    return f"viagens_prestacoes/{instance.prestacao_id or 'nova'}/assinaturas/png_{instance.tipo}_{filename}"
-
-def assinatura_assinado_upload_to(instance, filename):
-    return f"viagens_prestacoes/{instance.prestacao_id or 'nova'}/assinaturas/assinado_{instance.tipo}_{filename}"
-
-class AssinaturaDocumento(OrigemLegado):
-    """Assinatura por link público: apenas SHA-256 do token é persistido.
-
-    Cada emissão tem snapshot imutável. Revogações preservam a prova anterior;
-    somente um registro vigente existe por documento e signatário.
-    """
-    TIPO_RT = 'rt'
-    TIPO_DB = 'db'
-    TIPO_CHOICES = [(TIPO_RT, 'Relatório Técnico'), (TIPO_DB, 'Diário de Bordo')]
-    STATUS_PENDENTE = 'pendente'
-    STATUS_ASSINADA = 'assinada'
-    STATUS_CANCELADA = 'cancelada'
-    STATUS_CHOICES = [(STATUS_PENDENTE, 'Pendente'), (STATUS_ASSINADA, 'Assinada'), (STATUS_CANCELADA, 'Cancelada')]
-    MODO_FONTE = 'fonte'
-    MODO_DESENHO = 'desenho'
-    MODO_CHOICES = [(MODO_FONTE, 'Fonte'), (MODO_DESENHO, 'Desenho')]
-    prestacao = models.ForeignKey(PrestacaoContas, on_delete=models.CASCADE, related_name='assinaturas')
-    servidor_prestacao = models.ForeignKey(PrestacaoServidor, on_delete=models.CASCADE, null=True, blank=True, related_name='assinaturas')
-    tipo = models.CharField(max_length=4, choices=TIPO_CHOICES, db_index=True)
-    signer = models.ForeignKey(Servidor, on_delete=models.PROTECT, related_name='assinaturas_documentos')
-    nome_esperado = models.CharField(max_length=255, blank=True, default='')
-    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default=STATUS_PENDENTE)
-    link_token_hash = models.CharField(max_length=64, blank=True, default='', db_index=True)
-    link_criado_em = models.DateTimeField(null=True, blank=True)
-    link_expira_em = models.DateTimeField(null=True, blank=True)
-    identidade_confirmada_em = models.DateTimeField(null=True, blank=True)
-    arquivo_origem = ArquivoPrivadoField(upload_to=assinatura_origem_upload_to, blank=True)
-    modo = models.CharField(max_length=10, choices=MODO_CHOICES, blank=True, default='')
-    fonte = models.CharField(max_length=60, blank=True, default='')
-    assinatura_png = ArquivoPrivadoField(upload_to=assinatura_png_upload_to, blank=True)
-    pagina = models.PositiveIntegerField(default=0)
-    pos_x = models.FloatField(null=True, blank=True)
-    pos_y = models.FloatField(null=True, blank=True)
-    largura = models.FloatField(null=True, blank=True)
-    altura = models.FloatField(null=True, blank=True)
-    arquivo_assinado = ArquivoPrivadoField(upload_to=assinatura_assinado_upload_to, blank=True)
-    assinado_em = models.DateTimeField(null=True, blank=True)
-    assinado_ip = models.CharField(max_length=64, blank=True, default='')
-    codigo_verificacao = models.CharField(max_length=12, blank=True, default='')
-    hash_documento = models.CharField(max_length=64, blank=True, default='')
-    hash_assinado = models.CharField(max_length=64, blank=True, default='')
-    cpf_prefixo_hash = models.CharField(max_length=64, blank=True, default='')
-    tentativas_identidade = models.PositiveSmallIntegerField(default=0)
-    bloqueada_ate = models.DateTimeField(null=True, blank=True)
-    revogada_em = models.DateTimeField(null=True, blank=True)
-    criado_em = models.DateTimeField(auto_now_add=True)
-    atualizado_em = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['prestacao', 'tipo']
-        verbose_name = 'Assinatura de documento'
-        verbose_name_plural = 'Assinaturas de documentos'
-        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_assinaturadocumento_origem"), models.UniqueConstraint(fields=['prestacao', 'tipo'], condition=Q(servidor_prestacao__isnull=True) & ~Q(status='cancelada'), name='uniq_assinatura_prestacao_tipo'), models.UniqueConstraint(fields=['servidor_prestacao', 'tipo'], condition=Q(servidor_prestacao__isnull=False) & ~Q(status='cancelada'), name='uniq_assinatura_servidor_tipo'), models.UniqueConstraint(fields=['codigo_verificacao'], condition=~Q(codigo_verificacao=''), name='uniq_assinatura_codigo')]
-
-    def __str__(self):
-        return f'Assinatura {self.get_tipo_display()} — {self.prestacao_id}'
-
-    @property
-    def assinada(self) -> bool:
-        return self.status == self.STATUS_ASSINADA and bool(self.arquivo_assinado)
-
-    @property
-    def link_expirado(self) -> bool:
-        from django.utils import timezone as _tz
-        return bool(self.link_expira_em and self.link_expira_em < _tz.now())
-
-    @property
-    def link_ativo(self) -> bool:
-        return bool(self.link_token_hash) and not self.link_expirado and self.status == self.STATUS_PENDENTE
-
-    @property
-    def cpf_esperado(self) -> str:
-        cpf = (self.signer.cpf or '').strip() if self.signer_id else ''
-        return ''.join((ch for ch in cpf if ch.isdigit()))[:11]

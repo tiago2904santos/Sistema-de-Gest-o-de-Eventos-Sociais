@@ -419,7 +419,11 @@
     modal.close();
   }
   modal.addEventListener("close", function () {
-    if (origem && origem.isConnected) origem.focus();
+    if (!origem || !origem.isConnected) return;
+    // Link dentro de um menu de linha já fechado: o foco volta ao botão do menu.
+    var menu = origem.closest("[data-menu]");
+    var gatilho = menu && menu.querySelector("[data-menu-gatilho]");
+    (gatilho || origem).focus();
   });
   modal.addEventListener("cancel", function (evento) {
     // Escape recolhe primeiro o combobox aberto; a segunda tecla fecha o modal.

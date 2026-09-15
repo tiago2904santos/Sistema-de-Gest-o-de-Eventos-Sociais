@@ -1,9 +1,26 @@
-{% comment %}Ações de uma linha da lista: editar e excluir pelo diálogo do catálogo.{% endcomment %}
-<div class="acoes">
-  {% if linha.url_editar %}
-    <a class="acao-linha" href="{{ linha.url_editar }}" aria-label="Editar {{ linha.nome }}" data-cadastro-modal>{% include "components/icon.html" with nome="pencil" %}Editar</a>
-  {% endif %}
-  {% if linha.url_excluir %}
-    <button type="button" class="acao-linha v32-acao-perigo" data-delete-url="{{ linha.url_excluir }}" data-catalogo-excluir data-nome="{{ linha.nome }}">{% include "components/icon.html" with nome="trash" %}Excluir</button>
-  {% endif %}
+{% comment %}
+  Ações de uma linha da lista num botão único, no padrão do "Mais ações" dos
+  ofícios: editar abre o modal do cadastro, "Definir padrão" só aparece onde a
+  view informa `url_padrao` e excluir abre o diálogo do catálogo.
+{% endcomment %}
+{% if linha.url_editar or linha.url_excluir %}
+<div class="dd of-menu cad-acoes" data-menu>
+  <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações de {{ linha.nome }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
+  <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
+    <div class="dd__t">{{ linha.nome }}</div>
+    {% if linha.url_editar %}
+      <a class="dd__i of-item" href="{{ linha.url_editar }}" data-cadastro-modal>{% include "components/icon.html" with nome="pencil" %}<span><b>Editar {{ singular }}</b><small>Alterar os dados do cadastro</small></span></a>
+    {% endif %}
+    {% if linha.url_padrao %}
+      <form method="post" action="{{ linha.url_padrao }}">
+        {% csrf_token %}
+        {% if url_retorno %}<input type="hidden" name="next" value="{{ url_retorno }}">{% endif %}
+        <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="check-circle" %}<span><b>Definir padrão</b><small>Sugerir este registro nos formulários</small></span></button>
+      </form>
+    {% endif %}
+    {% if linha.url_excluir %}
+      <button type="button" class="dd__i dd__i--perigo of-item" data-delete-url="{{ linha.url_excluir }}" data-catalogo-excluir data-nome="{{ linha.nome }}">{% include "components/icon.html" with nome="trash" %}<span><b>Excluir {{ singular }}</b><small>Remover permanentemente quando permitido</small></span></button>
+    {% endif %}
+  </div>
 </div>
+{% endif %}

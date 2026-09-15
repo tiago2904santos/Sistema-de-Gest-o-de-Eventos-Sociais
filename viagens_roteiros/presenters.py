@@ -38,10 +38,21 @@ def titulo_da_rota(roteiro) -> str:
 
 
 def periodo_do_roteiro(roteiro):
-    """(início, fim) do deslocamento, em data local."""
+    """(início, fim) do deslocamento.
+
+    O editor grava as datas nos trechos e deixa `saida_dt`/`retorno_chegada_dt`
+    do roteiro vazios; sem eles, o período vem da primeira saída e da última
+    chegada dos trechos (a lista já traz os trechos pré-carregados).
+    """
     inicio = roteiro.saida_dt
-    fim = roteiro.retorno_chegada_dt or roteiro.saida_dt
-    return inicio, fim
+    fim = roteiro.retorno_chegada_dt
+    if not inicio or not fim:
+        trechos = list(roteiro.trechos.all())
+        saidas = [t.saida_dt for t in trechos if t.saida_dt]
+        chegadas = [t.chegada_dt or t.saida_dt for t in trechos if t.chegada_dt or t.saida_dt]
+        inicio = inicio or (min(saidas) if saidas else None)
+        fim = fim or (max(chegadas) if chegadas else None)
+    return inicio, fim or inicio
 
 
 def selo_temporal(roteiro):
@@ -100,6 +111,24 @@ def valor_display(roteiro) -> str:
     return f"R$ {number_format(roteiro.valor_diarias, decimal_pos=2, force_grouping=True)}"
 
 
+# Depois disso o "há N dias" deixa de ajudar a achar o roteiro de agora.
+DIAS_CHIP_PASSADO = 45
+
+
+def chip_da_lista(roteiro, selo, tom):
+    """Chip ao lado da rota: o próprio selo, sumindo 45 dias após o fim.
+
+    Cancelado continua visível — é estado, não tempo.
+    """
+    if not selo or roteiro.cancelado:
+        return selo, tom
+    _, fim = periodo_do_roteiro(roteiro)
+    fim_data = _data_local(fim)
+    if fim_data and (timezone.localdate() - fim_data).days > DIAS_CHIP_PASSADO:
+        return None, tom
+    return selo, tom
+
+
 def linha_da_lista(roteiro, *, editar_url, excluir_url):
     """Tudo o que a linha da lista mostra, resolvido de uma vez."""
     selo, tom = selo_temporal(roteiro)
@@ -110,6 +139,7 @@ def linha_da_lista(roteiro, *, editar_url, excluir_url):
         "titulo": titulo_da_rota(roteiro),
         "selo": selo,
         "selo_tom": tom,
+        "chip": chip_da_lista(roteiro, selo, tom)[0],
         "periodo": periodo_display(roteiro),
         "trechos": trechos_display(roteiro),
         "valor": valor_display(roteiro),

@@ -1,0 +1,20 @@
+{% comment %}
+  Ações de uma linha de roteiro num botão único, no padrão dos cadastros e do
+  "Mais ações" dos ofícios. Excluir mantém a confirmação em duas etapas: o
+  primeiro clique arma o item e o menu continua aberto para confirmar.
+  Contexto: `linha`, `pode_editar`, `request`.
+{% endcomment %}
+<div class="dd of-menu cad-acoes" data-menu>
+  <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações do roteiro {{ linha.titulo }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
+  <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
+    <div class="dd__t">{{ linha.titulo }}</div>
+    <a class="dd__i of-item" href="{{ linha.editar_url }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar roteiro</b><small>Trechos, servidores e diárias</small></span></a>
+    {% if pode_editar %}
+      <form method="post" action="{{ linha.excluir_url }}" data-confirmar-exclusao data-confirmar="Confirmar exclusão?">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="submit" class="dd__i dd__i--perigo of-item">{% include "components/icon.html" with nome="trash" %}<span><b>Excluir roteiro</b><small>Remover permanentemente quando permitido</small></span></button>
+      </form>
+    {% endif %}
+  </div>
+</div>

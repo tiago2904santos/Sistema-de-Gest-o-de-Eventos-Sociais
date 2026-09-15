@@ -2,11 +2,6 @@
  *
  * Par de `js/components/pdf-place.js`. Vale para a tela interna de ajuste do carimbo do
  * número de solicitação.
- *
- * A tela PÚBLICA de assinatura tem o mesmo comportamento e desenho próprio
- * (`css/pages/prestacoes-assinatura.css`, classes `asgn-*`): ela roda fora do casco do
- * sistema, com paleta própria, e trazê-la para os tokens do v2 é uma mudança visual de
- * outra conversa. O que as duas telas compartilham é o MOTOR, não a pele.
  */
 
 :is(html[data-theme]) .pdf-place__pager {

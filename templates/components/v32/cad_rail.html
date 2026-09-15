@@ -6,7 +6,7 @@
   rota aqui) ou `url` já pronta — é o que permite a mesma trilha servir Viagens,
   onde cada cadastro tem rota própria (cidades, estados, diárias).
 {% endcomment %}
-<nav class="cad-rail" aria-label="Cadastros de apoio">
+<nav class="cad-rail" aria-label="{{ rail_rotulo|default:'Cadastros de apoio' }}">
   <div class="cad-rail__h">{{ rail_titulo|default:"Tabelas de apoio" }}</div>
   {% for grupo in grupos %}
     <a class="cad-i" href="{% if grupo.url %}{{ grupo.url }}{% else %}{% url 'cadastros:lista' grupo.slug %}{% endif %}"{% if grupo.slug == slug_ativo %} aria-current="page"{% endif %}>

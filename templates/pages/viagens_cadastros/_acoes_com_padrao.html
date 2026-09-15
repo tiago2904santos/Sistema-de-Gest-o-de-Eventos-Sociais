@@ -1,22 +1,5 @@
 {% comment %}
-  Cargos e combustíveis: além de editar e excluir, a linha define o registro
-  sugerido nos formulários. As ações secundárias ficam no menu da linha.
+  Cargos e combustíveis: o menu único da linha já traz "Definir padrão"
+  quando a view informa `url_padrao`.
 {% endcomment %}
-<div class="acoes">
-  <a class="acao-linha" href="{{ linha.url_editar }}" aria-label="Editar {{ linha.nome }}" data-cadastro-modal>{% include "components/icon.html" with nome="pencil" %}Editar</a>
-  <div class="dd" data-menu>
-    <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações de {{ linha.nome }}">{% include "components/icon.html" with nome="kebab" %}</button>
-    <div class="dd__c" hidden data-menu-corpo>
-      <div class="dd__t">{{ linha.nome }}</div>
-      {% if linha.url_padrao %}
-        <form method="post" action="{{ linha.url_padrao }}">
-          {% csrf_token %}
-          {% if url_retorno %}<input type="hidden" name="next" value="{{ url_retorno }}">{% endif %}
-          <button type="submit" class="dd__i">{% include "components/icon.html" with nome="check-circle" %}Definir padrão</button>
-        </form>
-        <div class="dd__s"></div>
-      {% endif %}
-      <button type="button" class="dd__i dd__i--perigo" data-delete-url="{{ linha.url_excluir }}" data-catalogo-excluir data-nome="{{ linha.nome }}">{% include "components/icon.html" with nome="trash" %}Excluir</button>
-    </div>
-  </div>
-</div>
+{% include "pages/viagens_cadastros/_acoes_linha.html" %}

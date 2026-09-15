@@ -122,7 +122,7 @@ def _data_relatorio_tecnico(oficio):
 
 def _sede() -> str:
     from viagens_cadastros.models import ConfiguracaoSistema
-    return ConfiguracaoSistema.get_singleton().cidade_endereco or ""
+    return ConfiguracaoSistema.atual().cidade_endereco or ""
 
 
 def _diaria_por_servidor(roteiro) -> Decimal | None:
@@ -670,8 +670,8 @@ def gerar_prestacao_consolidado_pdf(servidor_prestacao) -> bytes:
         "comprovante de saque/transferência",
     )
 
-    from .documentos_oficiais import pdf_db_assinado_ou_gerado
-    from .documentos_oficiais import pdf_rt_assinado_ou_gerado
+    from .documentos_oficiais import pdf_db_gerado
+    from .documentos_oficiais import pdf_rt_gerado
 
     oficio_upload_parts = _pdf_parts_from_anexos_opcional(
         prestacao.documentos_anexos.filter(tipo=PrestacaoDocumentoAnexo.TIPO_OFICIO_ASSINADO),
@@ -684,14 +684,14 @@ def gerar_prestacao_consolidado_pdf(servidor_prestacao) -> bytes:
         servidor_prestacao.documentos_anexos.filter(tipo=PrestacaoDocumentoAnexo.TIPO_RT_ASSINADO),
         "relatório técnico assinado",
     )
-    rt_parts = rt_upload_parts or [("relatório técnico", pdf_rt_assinado_ou_gerado(servidor_prestacao))]
+    rt_parts = rt_upload_parts or [("relatório técnico", pdf_rt_gerado(servidor_prestacao))]
 
     # Diário de bordo assinado é anexado no card do motorista (nível ofício).
     db_upload_parts = _pdf_parts_from_anexos_opcional(
         prestacao.documentos_anexos.filter(tipo=PrestacaoDocumentoAnexo.TIPO_DB_ASSINADO),
         "diário de bordo assinado",
     )
-    db_parts = db_upload_parts or [("diário de bordo", pdf_db_assinado_ou_gerado(prestacao))]
+    db_parts = db_upload_parts or [("diário de bordo", pdf_db_gerado(prestacao))]
 
     return _merge_pdf_parts(
         [

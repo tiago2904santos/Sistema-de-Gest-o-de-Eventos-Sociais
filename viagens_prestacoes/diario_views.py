@@ -134,8 +134,7 @@ def diario_servidor(request, ps_pk):
             **contexto_do_fluxo(ps, "diario"),
             "diaria_info": diaria_info(prestacao),
             "back_url": reverse("viagens_prestacoes:index"),
-            
-            "assinatura_next_url": reverse("viagens_prestacoes:diario_servidor", args=[ps.pk]),
+
             "editar_roteiro_url": reverse("viagens_prestacoes:diario_servidor_editar_roteiro", args=[ps.pk]),
             "editar_motorista_url": reverse("viagens_prestacoes:diario_servidor_motorista", args=[ps.pk]),
             "motorista_resumo": _motorista_resumo(diario),

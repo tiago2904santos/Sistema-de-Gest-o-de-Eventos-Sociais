@@ -1,8 +1,7 @@
 """Desenhar por cima de um PDF já pronto, sem regerá-lo.
 
-Duas telas fazem isso hoje: a assinatura eletrônica carimba um PNG sobre o snapshot
-do RT/diário, e a prestação carimba o número de solicitação sobre o ofício que voltou
-assinado do eProtocolo. O que as duas compartilham não é o desenho — é a manipulação
+Hoje quem usa é a prestação, que carimba o número de solicitação sobre o ofício que
+voltou assinado do eProtocolo. O que fica aqui não é o desenho — é a manipulação
 do PDF em volta dele, que é a parte que morde:
 
 - PDF cifrado com senha vazia precisa ser decifrado antes de qualquer leitura;

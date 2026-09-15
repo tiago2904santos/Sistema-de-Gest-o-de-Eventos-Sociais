@@ -404,6 +404,50 @@ class TelaDeListaTests(BaseTelaRoteiroTestCase):
         self.assertEqual(linha["trechos"], "3 trechos")
         self.assertContains(resposta, "12/08/2026 a 14/08/2026")
 
+    def test_sem_datas_no_roteiro_o_periodo_e_as_abas_vem_dos_trechos(self):
+        """O editor grava as datas só nos trechos; a lista não pode mostrar "—"
+        nem jogar o roteiro futuro em "Em andamento e realizados"."""
+        inicio = timezone.localtime(timezone.now() + timedelta(days=10)).replace(
+            hour=8, minute=0, second=0, microsecond=0
+        )
+        volta = inicio + timedelta(days=2)
+        roteiro = Roteiro.objects.create(origem_municipio=self.curitiba)
+        RoteiroTrecho.objects.create(
+            roteiro=roteiro, ordem=1, origem_municipio=self.curitiba,
+            destino_municipio=self.abatia, saida_dt=inicio, chegada_dt=inicio + timedelta(hours=6),
+        )
+        RoteiroTrecho.objects.create(
+            roteiro=roteiro, ordem=2, origem_municipio=self.abatia,
+            destino_municipio=self.curitiba, saida_dt=volta, chegada_dt=volta + timedelta(hours=6),
+        )
+        url = reverse("viagens_roteiros:lista")
+        resposta = self.client.get(url)
+        self.assertEqual(
+            resposta.context["linhas"][0]["periodo"], f"{inicio:%d/%m/%Y} a {volta:%d/%m/%Y}"
+        )
+        rotulos = {aba["valor"]: aba["rotulo"] for aba in resposta.context["abas"]}
+        self.assertEqual(rotulos["futuras"], "Que vão acontecer (1)")
+        futuras = self.client.get(url, {"aba": "futuras"})
+        self.assertEqual([linha["roteiro"].pk for linha in futuras.context["linhas"]], [roteiro.pk])
+
+    def test_chip_da_rota_some_45_dias_depois_do_fim(self):
+        """O chip ao lado da rota é o selo temporal, até 45 dias após o fim."""
+        agora = timezone.now()
+        recente = Roteiro.objects.create(
+            origem_municipio=self.curitiba,
+            saida_dt=agora - timedelta(days=12),
+            retorno_chegada_dt=agora - timedelta(days=10),
+        )
+        antigo = Roteiro.objects.create(
+            origem_municipio=self.curitiba,
+            saida_dt=agora - timedelta(days=52),
+            retorno_chegada_dt=agora - timedelta(days=50),
+        )
+        resposta = self.client.get(reverse("viagens_roteiros:lista"))
+        chips = {linha["roteiro"].pk: linha["chip"] for linha in resposta.context["linhas"]}
+        self.assertEqual(chips[recente.pk], "há 10 dias")
+        self.assertIsNone(chips[antigo.pk])
+
     def test_selo_temporal_usa_as_palavras_da_origem(self):
         from viagens_roteiros.presenters import selo_temporal
 

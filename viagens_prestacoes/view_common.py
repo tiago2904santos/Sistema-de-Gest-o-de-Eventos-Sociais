@@ -86,8 +86,6 @@ def _servidor_removido_identificacao(ps) -> dict:
         guardados.append('número da solicitação')
     if ps.documentos_anexos.exists():
         guardados.append('comprovante')
-    if hasattr(ps, "assinaturas") and ps.assinaturas.exists():
-        guardados.append('assinatura')
     identificacao['removida_em'] = ps.removida_em
     identificacao['guardados'] = ', '.join(guardados)
     return identificacao

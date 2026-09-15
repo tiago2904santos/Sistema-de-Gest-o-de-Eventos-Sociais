@@ -1,9 +1,8 @@
-from viagens_prestacoes.models import AssinaturaDocumento
 """`DB-06` — tirar um servidor da equipe do ofício não pode apagar o que ele entregou.
 
 O sinal que reconcilia `PrestacaoServidor` com `oficio.servidores` fazia
-`.delete()` em quem saía, e a cascata levava junto comprovante de saque, número
-da solicitação e assinatura eletrônica do relatório técnico. Trocar um servidor
+`.delete()` em quem saía, e a cascata levava junto comprovante de saque e número
+da solicitação. Trocar um servidor
 no ofício é edição rotineira; destruir prova financeira já coletada não é.
 
 Cada teste aqui existe para reprovar quando **uma** condição da correção cai.
@@ -44,14 +43,12 @@ class RemocaoDaEquipeBase(TestCase):
     def _anexar_comprovante(self, ps):
         return PrestacaoDocumentoAnexo.objects.create(prestacao=ps.prestacao, servidor_prestacao=ps, tipo=PrestacaoDocumentoAnexo.TIPO_COMPROVANTE, arquivo=SimpleUploadedFile('comprovante.pdf', PDF_MINIMO, content_type='application/pdf'), nome_original='comprovante.pdf')
 
-    def _assinar_rt(self, ps):
-        return AssinaturaDocumento.objects.create(prestacao=ps.prestacao, servidor_prestacao=ps, tipo=AssinaturaDocumento.TIPO_RT, signer=ps.servidor, status=AssinaturaDocumento.STATUS_ASSINADA, arquivo_assinado=SimpleUploadedFile('rt-assinado.pdf', PDF_MINIMO, content_type='application/pdf'))
 
 class GateDB06Tests(RemocaoDaEquipeBase):
     """O gate literal de `docs/PLANO_BACKEND.md:100`.
 
-    "teste que remove um servidor com anexo e assinatura e exige que ambos
-    sobrevivam".
+    "teste que remove um servidor com anexo e exige que ele sobreviva" (a
+    assinatura eletrônica, que também constava do gate, saiu do sistema).
     """
 
     def test_arquivo_do_comprovante_continua_no_disco(self):
@@ -64,13 +61,11 @@ class GateDB06Tests(RemocaoDaEquipeBase):
         self.assertEqual(anexo.arquivo.name, caminho)
         self.assertTrue(anexo.arquivo.storage.exists(caminho))
 
-    def test_remover_servidor_com_anexo_e_assinatura_preserva_os_dois(self):
+    def test_remover_servidor_com_anexo_preserva_o_anexo(self):
         ps_a = self._ps(self.servidor_a)
         anexo = self._anexar_comprovante(ps_a)
-        assinatura = self._assinar_rt(ps_a)
         self.oficio.servidores.set([self.servidor_b])
         self.assertTrue(PrestacaoDocumentoAnexo.objects.filter(pk=anexo.pk).exists(), 'o comprovante de saque foi apagado pela troca de equipe')
-        self.assertTrue(AssinaturaDocumento.objects.filter(pk=assinatura.pk).exists(), 'a assinatura eletrônica do RT foi apagada pela troca de equipe')
         self.assertTrue(PrestacaoServidor.todos.filter(pk=ps_a.pk).exists(), 'a linha do servidor foi apagada, e com ela o vínculo dos anexos')
 
 class RemocaoEscondeDaEquipeTests(RemocaoDaEquipeBase):
@@ -123,9 +118,7 @@ class LinhaSemDadosContinuaSendoApagadaTests(RemocaoDaEquipeBase):
 class CadaSinalDeDadoColetadoPreservaTests(RemocaoDaEquipeBase):
     """Uma cláusula de `tem_dados_coletados()` por vez, e **só** ela.
 
-    O teste do gate cria anexo *e* assinatura, então nenhum dos dois é o fator
-    que decide — provei isso invertendo: apagar a cláusula da assinatura
-    mantinha a suíte inteira verde, porque a do anexo já bastava. Cada caso aqui
+    Cada caso aqui
     deixa exatamente um sinal ligado, de modo que remover a cláusula
     correspondente reprove este caso e nenhum outro.
     """
@@ -165,13 +158,6 @@ class CadaSinalDeDadoColetadoPreservaTests(RemocaoDaEquipeBase):
         self._assert_preservada(oficio, ps_a, 'comprovante sozinho não preservou a linha')
         self.assertTrue(PrestacaoDocumentoAnexo.objects.filter(pk=anexo.pk).exists())
 
-    def test_so_a_assinatura_ja_preserva(self):
-        """Sem anexo nenhum — é o caso que a inversão mostrou estar descoberto."""
-        oficio, ps_a = self._oficio_novo(722)
-        assinatura = self._assinar_rt(ps_a)
-        self.assertFalse(ps_a.documentos_anexos.exists())
-        self._assert_preservada(oficio, ps_a, 'assinatura sozinha não preservou a linha')
-        self.assertTrue(AssinaturaDocumento.objects.filter(pk=assinatura.pk).exists())
 
 class VoltarParaEquipeRestauraTests(RemocaoDaEquipeBase):
     """O "desfazer" que o defeito dizia não existir."""
@@ -234,13 +220,12 @@ class BlocoDaTelaTests(RemocaoDaEquipeBase):
     def test_servidor_removido_aparece_com_o_que_ficou_guardado(self):
         ps_a = self._ps(self.servidor_a)
         self._anexar_comprovante(ps_a)
-        self._assinar_rt(ps_a)
         self.oficio.servidores.set([self.servidor_b])
         resposta = self._abrir_rt()
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, 'Saíram da equipe')
         self.assertContains(resposta, self.servidor_a.nome)
-        self.assertContains(resposta, 'comprovante, assinatura')
+        self.assertContains(resposta, 'comprovante')
 
 class CamposConhecidosDoServidorDaPrestacaoTests(TestCase):
     """Congela os campos de `PrestacaoServidor` para forçar uma decisão consciente.

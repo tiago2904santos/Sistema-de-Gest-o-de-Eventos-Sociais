@@ -4,8 +4,21 @@
     {
       "name": "django-dev",
       "runtimeExecutable": "cmd",
-      "runtimeArgs": ["/c", ".venv\\Scripts\\python.exe manage.py runserver %PORT%"],
+      "runtimeArgs": [
+        "/c",
+        ".venv\\Scripts\\python.exe manage.py runserver %PORT%"
+      ],
       "port": 8021,
+      "autoPort": true
+    },
+    {
+      "name": "render-v32",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        ".venv\\Scripts\\python.exe -m http.server %PORT% -d auditoria-visual"
+      ],
+      "port": 8022,
       "autoPort": true
     }
   ]

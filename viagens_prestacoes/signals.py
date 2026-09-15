@@ -13,8 +13,7 @@ def _sincronizar_prestacao_servidores(oficio):
     prestação, misturando equipes entre ofícios.
 
     ``DB-06``: "remover" aqui deixou de significar ``DELETE``. Quem sai levando
-    trabalho junto — comprovante de saque, assinatura do RT, número da
-    solicitação — é apenas marcado (``PrestacaoServidor.sair_da_equipe``), some
+    trabalho junto — comprovante de saque, número da solicitação — é apenas marcado (``PrestacaoServidor.sair_da_equipe``), some
     das telas e volta inteiro se o servidor voltar para a equipe. Quem não tem
     nada coletado continua sendo apagado, senão a prestação voltaria a exibir a
     equipe de outro ofício, que é o defeito que este sinal resolve.
