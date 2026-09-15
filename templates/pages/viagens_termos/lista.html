@@ -1,11 +1,16 @@
 {% extends "layouts/app_shell_v32.html" %}
 {% comment %}
-  Lista de termos de autorização — Meta 5 de paridade com o Gerenciador de
-  Viagens. Conteúdo da origem: busca por destino, ofício, protocolo, viatura
-  ou servidor; situação; um cartão por termo com "DESTINO/PR · período", o
-  selo (Realizado / Sem período), a linha "Ofício: N · servidores · placa
-  modelo" e as quatro ações: escolher documentos para baixar, anexar termo
-  assinado, editar e excluir.
+  Lista de termos de autorização — Meta 5, com o cartão reorganizado.
+
+  Da origem vêm a busca (destino, ofício, protocolo, viatura ou servidor), o
+  filtro de situação e as quatro ações: escolher documentos para baixar,
+  anexar termo assinado, editar e excluir.
+
+  O cartão diverge da origem em três pontos, de propósito: o título é só o
+  destino (o período saiu de dentro dele), a linha corrida "Ofício: N ·
+  servidores · placa modelo" virou quatro fatos com ícone — período, ofício,
+  servidores e viatura, cada um com o seu vazio nomeado — e ao lado do selo
+  temporal entrou o andamento dos documentos ("3 de 5 assinados").
 {% endcomment %}
 
 {% block title %}Termos de Autorização — Sistema de Gestão de Eventos Sociais{% endblock %}
@@ -49,8 +54,12 @@
         <article class="of-cartao tm-cartao{% if t.cancelado %} of-cartao--cancelado{% endif %}" aria-labelledby="termo-{{ t.pk }}-titulo">
           <div class="tm-cartao__corpo">
             <div class="of-cartao__ident">
-              <h2 class="of-cartao__titulo" id="termo-{{ t.pk }}-titulo">{{ l.titulo }} <span class="st st--{{ l.selo_tom }}">{{ l.selo }}</span></h2>
-              {% if l.descricao %}<p class="of-cartao__sub">{{ l.descricao }}</p>{% endif %}
+              <h2 class="of-cartao__titulo" id="termo-{{ t.pk }}-titulo">{{ l.titulo }} <span class="st st--{{ l.selo_tom }}">{{ l.selo }}</span> <span class="st st--{{ l.situacao_documentos.tom }}" title="Andamento dos termos: {{ l.situacao_documentos.gerados }} de {{ l.situacao_documentos.total }} em PDF, {{ l.situacao_documentos.assinados }} assinado{{ l.situacao_documentos.assinados|pluralize }}">{% include "components/icon.html" with nome="checklist" %}{{ l.situacao_documentos.rotulo }}</span></h2>
+              <ul class="tm-fatos" aria-label="Dados do termo #{{ t.pk }}">
+                {% for f in l.fatos %}
+                  <li class="tm-fato{% if f.ausente %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome=f.icone %}<span class="sr-only">{{ f.rotulo }}: </span>{{ f.texto }}</li>
+                {% endfor %}
+              </ul>
               {% if l.herdados %}<p class="of-cartao__sub tm-herdados">Herda do ofício: {{ l.herdados|join:", " }}.</p>{% endif %}
             </div>
             <div class="acoes tm-acoes">
@@ -76,10 +85,10 @@
                   <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
                     <div class="dd__t">Anexar termo assinado</div>
                     {% for s in d.servidores %}
-                      {% if s.url_assinado %}<a class="dd__i of-item" href="{{ s.url_assinado }}">{% include "components/icon.html" with nome="upload" %}<span><b>{{ s.servidor.nome }}</b><small>Enviar o PDF depois da assinatura</small></span></a>
+                      {% if s.url_assinado %}<a class="dd__i of-item" href="{{ s.url_assinado }}">{% include "components/icon.html" with nome=s.assinado|yesno:"check-circle,upload" %}<span><b>{{ s.servidor.nome }}</b><small>{% if s.assinado %}Assinado — enviar outra versão{% else %}Enviar o PDF depois da assinatura{% endif %}</small></span></a>
                       {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>{{ s.servidor.nome }}</b><small>Gere o PDF do termo primeiro</small></span></span>{% endif %}
                     {% endfor %}
-                    {% if d.generico.url_assinado %}<a class="dd__i of-item" href="{{ d.generico.url_assinado }}">{% include "components/icon.html" with nome="upload" %}<span><b>Termo genérico</b><small>Enviar o PDF depois da assinatura</small></span></a>
+                    {% if d.generico.url_assinado %}<a class="dd__i of-item" href="{{ d.generico.url_assinado }}">{% include "components/icon.html" with nome=d.generico.assinado|yesno:"check-circle,upload" %}<span><b>Termo genérico</b><small>{% if d.generico.assinado %}Assinado — enviar outra versão{% else %}Enviar o PDF depois da assinatura{% endif %}</small></span></a>
                     {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>Termo genérico</b><small>Gere o PDF do termo primeiro</small></span></span>{% endif %}
                   </div>
                 </div>
