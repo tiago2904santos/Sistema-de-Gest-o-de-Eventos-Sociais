@@ -22,19 +22,17 @@
   {# Cabeçalho idêntico ao das listas dos cadastros de viagens. #}
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker">Viagens</div>
+      <div class="kicker kicker--junto">Viagens</div>
       <h1>Roteiros</h1>
-      <p class="d-cabeca__sub">Deslocamentos e o cálculo das diárias.</p>
     </div>
     {% if pode_editar %}
-      <div class="d-acoes">
-        <a class="btn-primaria" href="{% url 'viagens_roteiros:novo' %}">{% include "components/icon.html" with nome="plus" %}Novo roteiro</a>
-      </div>
+      {# Botão flutuante: fixo no canto inferior direito, sempre à mão durante a rolagem. #}
+      <a class="btn-primaria btn-flutuante" href="{% url 'viagens_roteiros:novo' %}">{% include "components/icon.html" with nome="plus" %}Novo roteiro</a>
     {% endif %}
   </div>
 
-  <div class="cad-grade">
-    {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_titulo="Situação" rail_rotulo="Situação dos roteiros" %}
+  <div class="cad-grade cad-grade--sem-folga">
+    {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_rotulo="Situação dos roteiros" sem_titulo=True %}
 
   {# `cad-lista`: mesma pele da lista dos cadastros (barra no cartão, cabeçalho, hover, ações num menu). #}
   <div class="pa-card pa-card--lista cad-lista">

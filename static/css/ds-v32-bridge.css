@@ -81,12 +81,12 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
 .dg-obs{margin-top:16px}
 .dg-obs .reg__st{display:block;margin-bottom:8px}
 .dg-pe{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:16px}
-.dg-pe .btn--secundaria{height:44px}
+.dg-pe .btn--secundaria{height:36px}
 .dg-grade--encerramento{align-items:start}
 .enc-op{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border:1px solid var(--n-200);border-radius:9px;background:var(--branco)}
 .enc-op b{font-size:14px;color:var(--n-900)}
 .enc-op p{margin:0 0 4px;font-size:12.5px;color:var(--n-600);line-height:1.5}
-.enc-op .btn-primaria,.enc-op .btn--secundaria{align-self:flex-start;height:40px}
+.enc-op .btn-primaria,.enc-op .btn--secundaria{align-self:flex-start;height:36px}
 .btn--destrutiva{color:var(--dg-t)!important;border-color:var(--dg-r)!important}
 .btn--destrutiva:hover{background:var(--dg-b)!important}
 .texto-vazio{margin:0;font-size:12.5px;color:var(--n-450)}
@@ -181,7 +181,7 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
 .custom-select__vazio{margin:0;padding:18px 10px;color:var(--n-450);font-size:12.5px;text-align:center}
 .custom-select__opcao{width:100%;min-height:36px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 10px;border:0;border-radius:6px;background:var(--branco);color:var(--n-700);font:inherit;font-size:13.5px;line-height:1.3;text-align:left;cursor:pointer}
 .custom-select__opcao[hidden]{display:none}
-.custom-select__opcao:hover,.custom-select__opcao:focus-visible{outline:0;background:var(--n-50);color:var(--n-900)}
+.custom-select__menu:not(.is-navegavel) .custom-select__opcao:hover,.custom-select__opcao:focus-visible{outline:0;background:var(--n-50);color:var(--n-900)}/* Lista aprimorada: o destaque é um só (classe is-active), movido por teclado e mouse. */.custom-select__menu.is-navegavel .custom-select__opcao:focus-visible{background:transparent}.custom-select__menu.is-navegavel .custom-select__opcao.is-active{outline:0;background:var(--n-150);color:var(--n-900)}
 .custom-select__opcao.is-selected{background:var(--hover-b);color:var(--n-900);font-weight:600}
 .custom-select__check{flex:0 0 auto;color:var(--n-800);opacity:0}
 .custom-select__check .ui-icon{width:15px;height:15px}
@@ -273,7 +273,7 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
 .cad-frm__nota .ui-icon{width:13px;height:13px;flex:none;margin-top:2px}
 .cad-frm__acoes{display:flex;align-items:center;gap:10px;margin-top:20px;padding-top:14px;border-top:1px solid var(--n-150)}
 .cad-frm__acoes .frm-cancelar{display:inline-flex;align-items:center;text-decoration:none}
-.cad-frm__acoes .btn-primaria{height:40px}
+.cad-frm__acoes .btn-primaria{height:36px}
 
 @container (max-width:900px){
   .db-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -386,21 +386,21 @@ body.m-sheet-aberto{overflow:hidden}
 .custom-date__instrucao{display:block;margin-top:2px;color:var(--n-450);font-size:10.5px}
 .custom-date__navegacao{display:flex;align-items:center;gap:2px}
 .custom-date__navegacao button{width:30px;height:30px;display:grid;place-items:center;border:0;border-radius:6px;background:0;color:var(--n-600);cursor:pointer;font:inherit}
-.custom-date__navegacao button:hover,.custom-date__navegacao button:focus-visible{outline:0;background:var(--hover-b);color:var(--n-900)}
+.custom-date__navegacao button:hover,.custom-date__navegacao button:focus-visible{outline:0;background:var(--n-100);color:var(--n-900)}
 .custom-date__navegacao .ui-icon{width:15px;height:15px}
 .custom-date__salto{width:26px;font-size:14px;font-weight:700;line-height:1}
 .custom-date__semana,.custom-date__dias{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
 .custom-date__semana{margin-bottom:3px}
 .custom-date__semana span{height:26px;display:grid;place-items:center;color:var(--n-450);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 .custom-date__dia{position:relative;min-width:0;height:32px;display:grid;place-items:center;border:1px solid transparent;border-radius:7px;background:0;color:var(--n-800);font:inherit;font-size:12.5px;font-variant-numeric:tabular-nums;cursor:pointer}
-.custom-date__dia:hover,.custom-date__dia:focus-visible{outline:0;background:var(--hover-b);color:var(--n-900)}
+.custom-date__dia:hover,.custom-date__dia:focus-visible{outline:0;background:var(--n-100);color:var(--n-900)}
 .custom-date__dia.is-outside{color:var(--n-300)}
-.custom-date__dia.is-today{border-color:var(--d-500);color:var(--d-800);font-weight:600}
-.custom-date__dia.is-selected,.custom-date__dia.is-range-start,.custom-date__dia.is-range-end{border-color:var(--d-600);background:var(--d-600);color:#fff;font-weight:600}
-.custom-date__dia.is-in-range{border-color:transparent;border-radius:3px;background:var(--d-50);color:var(--d-800)}
+.custom-date__dia.is-today{border-color:var(--n-300);color:var(--n-900);font-weight:600}
+.custom-date__dia.is-selected,.custom-date__dia.is-range-start,.custom-date__dia.is-range-end{border-color:var(--n-800);background:var(--n-800);color:#fff;font-weight:600}
+.custom-date__dia.is-in-range{border-color:transparent;border-radius:3px;background:var(--n-150);color:var(--n-900)}
 .custom-date__rodape{display:flex;align-items:center;justify-content:space-between;margin-top:9px;padding-top:9px;border-top:1px solid var(--n-150)}
-.custom-date__rodape button{min-height:28px;padding:4px 8px;border:0;border-radius:6px;background:0;color:var(--link);font:inherit;font-size:12px;font-weight:600;cursor:pointer}
-.custom-date__rodape button:hover,.custom-date__rodape button:focus-visible{outline:0;background:var(--hover-b)}
+.custom-date__rodape button{min-height:28px;padding:4px 8px;border:0;border-radius:6px;background:0;color:var(--n-700);font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.custom-date__rodape button:hover,.custom-date__rodape button:focus-visible{outline:0;background:var(--n-150)}
 /* Um calendário aberto não pode ser cortado pelo cartão da seção. */
 .reg:has(.custom-date.is-open),.reg:has(.custom-select.is-open){position:relative;z-index:20;overflow:visible}
 
@@ -416,9 +416,9 @@ body.m-sheet-aberto{overflow:hidden}
 .pa-h>h2{font:inherit;margin:0;flex:1;min-width:0}
 .pa-h>a{margin-left:auto;flex:none}
 .reg-cabecalho{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-/* Seção numerada (padrão institucional): círculo dourado + título dourado em caixa alta. */
-.reg-numero{display:inline-grid;place-items:center;width:24px;height:24px;margin:0;border-radius:99px;background:var(--d-500);color:#fff;font-size:12px;font-weight:700;letter-spacing:0;text-transform:none;flex:none;font-variant-numeric:tabular-nums}
-.reg__t:has(.reg-numero){display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--d-700)}
+/* Seção numerada: número em círculo dourado, título normal e escuro ao lado. */
+.reg-numero{display:inline-grid;place-items:center;width:22px;height:22px;margin:0;border-radius:99px;background:var(--d-500);color:#fff;font-size:12px;font-weight:700;letter-spacing:0;text-transform:none;flex:none;font-variant-numeric:tabular-nums}
+.reg__t:has(.reg-numero){display:flex;align-items:center;gap:10px;font-size:15.5px;font-weight:600;letter-spacing:-.01em;text-transform:none;color:var(--n-900)}
 .reg__t:has(.reg-numero) .section-card__titulo{color:inherit}
 .v32-corpo{padding:16px 18px}
 .v32-bloco{margin-bottom:16px;min-width:0}
@@ -581,7 +581,7 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 .v32-barra{display:flex;align-items:end;gap:10px;flex-wrap:wrap;padding:14px 18px}
 .v32-barra>.form-campo{flex:1 1 170px;min-width:0}
 .v32-barra>.v32-busca{flex:2 1 270px}
-.v32-barra>.btn-primaria{height:38px;font-size:13px}
+.v32-barra>.btn-primaria{height:36px;font-size:13px}
 .v32-barra>.btn--secundaria{height:38px}
 .v32-filtros-painel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;width:100%;padding-top:14px;border-top:1px solid var(--n-150)}
 .v32-filtros-painel[hidden]{display:none}
@@ -710,16 +710,16 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 .editor-roteiro__acoes-cabecalho{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}.editor-roteiro__acoes.frm-acoes{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;position:static;padding:14px 0 0;background:0;border-top:1px solid var(--n-200)}.editor-roteiro__acoes .btn--secundaria,.editor-roteiro__acoes .btn-primaria{justify-content:center}
 .editor-roteiro .resumo-lista{margin:0}.editor-roteiro .resumo-lista>div{display:flex;justify-content:space-between;gap:14px;font-size:12px;padding:9px 0;border-bottom:1px solid var(--n-150)}.editor-roteiro .resumo-lista dt{color:var(--n-500)}.editor-roteiro .resumo-lista dd{margin:0;text-align:right;color:var(--n-800);overflow-wrap:anywhere}
 .acoes-roteiro,.acoes-roteiro form{display:grid;gap:9px}.acoes-roteiro{gap:16px}.acoes-roteiro button{justify-content:center}.autosave-status{font-size:11px;color:var(--n-500);margin:0 0 4px;line-height:1.6}.autosave-status[data-estado=salvando]{color:var(--in-t)}.autosave-status[data-estado=salvo]{color:var(--ok-t)}.autosave-status[data-estado=erro]{color:var(--dg-t)}
-.editor-roteiro .bloco-split{display:grid;grid-template-columns:180px minmax(0,1fr);gap:18px;padding:16px 0}.editor-roteiro .bloco-split+.bloco-split{border-top:1px solid var(--n-150)}.editor-roteiro .bloco-split:first-child{padding-top:0}.bloco-split__rotulo strong{font-size:13px;color:var(--n-800)}.bloco-split__rotulo p{font-size:11px;line-height:1.6;margin:5px 0 0}.bloco-split__corpo{min-width:0}.percurso-previa{color:var(--n-800);overflow-wrap:anywhere}
-.editor-roteiro .destinos{display:grid;gap:10px}.editor-roteiro .destino-row{display:grid;grid-template-columns:16px 34px minmax(0,34fr) minmax(0,66fr) 34px;gap:8px;align-items:center}.editor-roteiro .destino-row[hidden]{display:none}.destino-row__estado,.destino-row__campo{min-width:0}.destino-row__adicionar,.destino-row__remover{height:38px;padding:0;justify-content:center}.destino-row__alca{display:flex;cursor:grab;color:var(--n-400);touch-action:none}.destino-row--sede .destino-row__estado{grid-column:1/4}.destino-row--sede .destino-row__campo{grid-column:4/6}
-.destino-row--unica .destino-row__remover,.destino-row--unica .destino-row__alca{visibility:hidden}.destino-row.is-dragging{opacity:.4;cursor:grabbing}.destino-row.is-drop-before{transform:translateY(4px)}.destino-row.is-drop-after{transform:translateY(-4px)}.is-arrastando-destino,.is-arrastando-destino *{user-select:none}
+.editor-roteiro .bloco-split{display:grid;grid-template-columns:180px minmax(0,1fr);gap:18px;padding:16px 0}.editor-roteiro .bloco-split+.bloco-split{border-top:1px solid var(--n-150)}.editor-roteiro .bloco-split:first-child{padding-top:0}.bloco-split__rotulo strong{font-size:13px;color:var(--n-800)}.bloco-split__rotulo p{font-size:11px;line-height:1.6;margin:5px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bloco-split__corpo{min-width:0}.percurso-previa{color:var(--n-800);overflow-wrap:anywhere}
+.editor-roteiro .destinos{display:grid;gap:10px}.editor-roteiro .destino-row{display:grid;grid-template-columns:22px 38px minmax(0,34fr) minmax(0,66fr) 38px;gap:8px;align-items:center}.editor-roteiro .destino-row[hidden]{display:none}.destino-row__estado,.destino-row__campo{min-width:0}.destino-row__adicionar,.destino-row__remover{width:38px;min-width:38px;height:38px;padding:0;justify-content:center;flex:none;border-radius:8px}.destino-row__alca{display:flex;align-items:center;justify-content:center;width:22px;height:38px;border-radius:6px;cursor:grab;color:var(--n-300);touch-action:none;transition:color var(--motion),background var(--motion)}.destino-row__alca:hover{color:var(--n-700);background:transparent}.destino-row--sede .destino-row__estado{grid-column:1/4}.destino-row--sede .destino-row__campo{grid-column:4/6}
+.destino-row--unica .destino-row__remover,.destino-row--unica .destino-row__alca{visibility:hidden}.is-arrastando-destino,.is-arrastando-destino *{user-select:none}
 /* O JS original substitui className dos chips; estes aliases preservam seus estados e os tokens aprovados. */
 .editor-roteiro .status-badge{display:inline-flex;align-items:center;min-height:24px;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:500;white-space:nowrap;background:var(--nt-b);color:var(--nt-t);border:1px solid var(--nt-r)}
 .editor-roteiro .status-badge--atendida{color:var(--ok-t);background:var(--ok-b);border-color:var(--ok-r)}.editor-roteiro .status-badge--pendente{color:var(--wn-t);background:var(--wn-b);border-color:var(--wn-r)}.editor-roteiro .status-badge--em_andamento{color:var(--in-t);background:var(--in-b);border-color:var(--in-r)}.editor-roteiro .status-badge--nao_atendida{color:var(--dg-t);background:var(--dg-b);border-color:var(--dg-r)}
-.interruptor{display:inline-flex;align-items:center;gap:8px;background:0;border:0;padding:0;cursor:pointer;font-size:12px}.interruptor__trilho{width:34px;height:20px;padding:3px;background:var(--n-250);border-radius:20px;flex-shrink:0}.interruptor__botao{display:block;width:14px;height:14px;background:var(--branco);border-radius:50%}.interruptor--ligado .interruptor__trilho{background:var(--d-600)}.interruptor--ligado .interruptor__botao{transform:translateX(14px)}
-.bate-volta{margin-bottom:18px;padding:16px;border:1px solid var(--n-200);border-radius:8px;background:var(--n-50)}.bate-volta[hidden]{display:none}.bate-volta__sentidos{position:relative;display:grid;gap:12px}.bate-volta__sentido{display:grid;grid-template-columns:45px repeat(3,minmax(0,1fr));align-items:center;gap:12px}.bate-volta__rotulo{font-size:11px;color:var(--n-600);font-weight:600}.bate-volta__resumo{font-size:11px;margin:12px 0 0}
+.interruptor{display:inline-flex;align-items:center;gap:8px;background:0;border:0;padding:0;cursor:pointer;font-size:12px}.interruptor__trilho{width:34px;height:20px;padding:3px;background:var(--n-250);border-radius:20px;flex-shrink:0}.interruptor__botao{display:block;width:14px;height:14px;background:var(--branco);border-radius:50%}.interruptor--ligado .interruptor__trilho{background:var(--n-700)}.interruptor--ligado .interruptor__botao{transform:translateX(14px)}
+.bate-volta{margin-bottom:18px;padding:16px;border:1px solid var(--n-200);border-radius:8px;background:var(--n-25)}.bate-volta[hidden]{display:none}.bate-volta__sentidos{position:relative;display:grid;gap:12px}.bate-volta__sentido{display:grid;grid-template-columns:45px repeat(3,minmax(0,1fr));align-items:center;gap:12px}.bate-volta__rotulo{font-size:11px;color:var(--n-600);font-weight:600}.bate-volta__resumo{font-size:11px;margin:12px 0 0}
 .rota-metricas,.diarias-metricas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}.diarias-metricas{grid-template-columns:repeat(3,minmax(0,1fr))}.metrica{position:relative;min-width:0;display:grid;gap:8px;align-content:start;padding:16px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco)}.metrica__icone{display:flex;color:var(--n-400)}.metrica__rotulo{font-size:11px;color:var(--n-500)}.metrica__valor{font-size:20px;color:var(--n-800);font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.metrica--destaque{background:var(--d-50);border-color:var(--d-200)}.metrica--destaque .metrica__valor{color:var(--d-700)}.metrica--larga{grid-column:1/-1}.metrica__valor--texto{font-size:13px;font-weight:400}
-.mapa{position:relative}.mapa__superficie{height:340px;border:1px solid var(--n-200);border-radius:8px;overflow:hidden;z-index:0;background:var(--n-75)}.mapa__acoes{position:absolute;top:12px;right:12px;left:48px;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;z-index:500}.mapa__acoes .btn--secundaria{background:var(--branco)}.mapa__acoes [hidden]{display:none}.mapa__carregando{position:absolute;inset:0;z-index:600;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:8px;background:rgba(255,255,255,.8)}.mapa__carregando[hidden]{display:none}.mapa__erro{margin-top:10px}.mapa__rotulo{font-family:var(--f);font-size:11px;color:var(--n-800)}.mapa__rotulo--sede{color:var(--d-700)}
+.mapa{position:relative;isolation:isolate}.mapa__superficie{height:260px;border:1px solid var(--n-200);border-radius:8px;overflow:hidden;z-index:0;background:var(--n-75)}.mapa__acoes{position:absolute;top:12px;right:12px;left:48px;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;z-index:500}.mapa__acoes .btn--secundaria{background:var(--branco)}.mapa__acoes [hidden]{display:none}.mapa__carregando{position:absolute;inset:0;z-index:600;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:8px;background:rgba(255,255,255,.8)}.mapa__carregando[hidden]{display:none}.mapa__erro{margin-top:10px}.mapa__rotulo{font-family:var(--f);font-size:11px;color:var(--n-800)}.mapa__rotulo--sede{color:var(--d-700)}
 .aviso-rota{display:flex;align-items:flex-start;gap:8px;padding:12px;margin:0 0 16px;border:1px solid var(--wn-r);border-radius:8px;background:var(--wn-b);color:var(--wn-t);font-size:12px}.aviso-rota[hidden]{display:none}.spinner{width:18px;height:18px;border:2px solid var(--n-200);border-top-color:var(--d-600);border-radius:50%;animation:v32-girar .8s linear infinite}@keyframes v32-girar{to{transform:rotate(360deg)}}
 .composicao{border:1px solid var(--n-200);border-radius:8px;margin-top:16px;min-width:0}.composicao__resumo{display:flex;justify-content:space-between;gap:12px;padding:14px;cursor:pointer;background:var(--n-50);font-size:12px}.composicao .dt-w{overflow-x:auto}.composicao .dt{min-width:650px}
 /* Trechos viram cartões no celular usando os mesmos campos; nenhum formset é duplicado. */
@@ -730,7 +730,7 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 .nav-mod{overflow-y:hidden;scrollbar-width:none}
 @container(max-width:1100px){.editor-roteiro .bloco-split{grid-template-columns:1fr}.rota-metricas{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @container(max-width:900px){.editor-roteiro.frm-grade{grid-template-columns:1fr}.editor-roteiro__acoes.frm-acoes{position:static}}
-@container(max-width:680px){.editor-roteiro .destino-row{grid-template-columns:16px 34px minmax(0,1fr) 34px}.destino-row__estado{grid-column:3/5}.destino-row__campo{grid-column:1/5}.destino-row--sede .destino-row__estado,.destino-row--sede .destino-row__campo{grid-column:1/5}.editor-roteiro .section-card__acao{margin-left:0}.editor-roteiro__acoes-cabecalho{justify-content:flex-start}.bate-volta__sentido,.diarias-metricas{grid-template-columns:1fr}.rota-metricas{grid-template-columns:1fr 1fr}.mapa__superficie{height:300px}.editor-roteiro .trechos-tabela,.trechos-tabela tbody{display:block;min-width:0;width:100%}.trechos-tabela thead{display:none}.trechos-tabela .trecho-linha{display:grid;gap:4px;border:1px solid var(--n-200);border-radius:8px;margin-bottom:12px;padding:8px}.trechos-tabela .trecho-linha[hidden]{display:none}.trechos-tabela td{display:block;padding:8px;border:0;white-space:normal}.trechos-tabela td[data-rotulo]::before{content:attr(data-rotulo);display:block;font-size:10px;color:var(--n-450);margin-bottom:6px}.trechos-tabela .form-campo{min-width:0}.editor-roteiro [data-trechos-tabela]{overflow:visible}.editor-roteiro__acoes.frm-acoes{padding-inline:0}}
+@container(max-width:680px){.editor-roteiro .destino-row{grid-template-columns:22px 38px minmax(0,1fr) 38px}.destino-row__estado{grid-column:3/5}.destino-row__campo{grid-column:1/5}.destino-row--sede .destino-row__estado,.destino-row--sede .destino-row__campo{grid-column:1/5}.editor-roteiro .section-card__acao{margin-left:0}.editor-roteiro__acoes-cabecalho{justify-content:flex-start}.bate-volta__sentido,.diarias-metricas{grid-template-columns:1fr}.rota-metricas{grid-template-columns:1fr 1fr}.mapa__superficie{height:300px}.editor-roteiro .trechos-tabela,.trechos-tabela tbody{display:block;min-width:0;width:100%}.trechos-tabela thead{display:none}.trechos-tabela .trecho-linha{display:grid;gap:4px;border:1px solid var(--n-200);border-radius:8px;margin-bottom:12px;padding:8px}.trechos-tabela .trecho-linha[hidden]{display:none}.trechos-tabela td{display:block;padding:8px;border:0;white-space:normal}.trechos-tabela td[data-rotulo]::before{content:attr(data-rotulo);display:block;font-size:10px;color:var(--n-450);margin-bottom:6px}.trechos-tabela .form-campo{min-width:0}.editor-roteiro [data-trechos-tabela]{overflow:visible}.editor-roteiro__acoes.frm-acoes{padding-inline:0}}
 /* Cabeçalhos e lateral do editor: números alinhados e ações de ciclo de vida disponíveis também no celular. */
 .editor-roteiro .section-card__cabecalho,.editor-roteiro .side-card__cabecalho{display:flex;align-items:center;gap:9px}
 .editor-roteiro .frm-lateral>.sticky{display:block}
@@ -913,7 +913,7 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 .custom-date[data-calendar-gv] .custom-date__valor { min-width: 0; flex: 1; cursor: pointer; }
 .custom-date[data-calendar-gv].is-enhanced .custom-date__trigger { width: 42px; flex: 0 0 42px; justify-content: center; }
 .custom-date[data-calendar-gv] .custom-date__cabecalho button { width: auto; height: 30px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--n-600); cursor: pointer; font: inherit; }
-.custom-date[data-calendar-gv] .custom-date__cabecalho button:hover, .custom-date[data-calendar-gv] .custom-date__cabecalho button:focus-visible { background: var(--hover-b); color: var(--n-900); }
+.custom-date[data-calendar-gv] .custom-date__cabecalho button:hover, .custom-date[data-calendar-gv] .custom-date__cabecalho button:focus-visible { background: var(--n-100); color: var(--n-900); }
 
 /* Lotação GV: sigla e nome no resultado, limpeza ao lado da busca, com controles DS. */
 [data-unidade-picker] .unidade-picker__texto { display: grid; gap: 3px; text-align: left; }
@@ -960,7 +960,7 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 
 /* Destino único não reserva as colunas da alça e do remover: elas ficavam
    escondidas, mas ocupando espaço, e a linha nascia com um vão à direita. */
-.editor-roteiro .destino-row--unica{grid-template-columns:34px minmax(0,34fr) minmax(0,66fr)}
+.editor-roteiro .destino-row--unica{grid-template-columns:38px minmax(0,34fr) minmax(0,66fr)}
 .destino-row--unica .destino-row__alca,
 .destino-row--unica .destino-row__remover{display:none}
 
@@ -1367,3 +1367,192 @@ a.step-i{text-decoration:none;color:inherit}
 .of-form__acoes{justify-content:flex-end;flex-wrap:wrap;margin:18px 0 6px;padding-top:16px;border-top:1px solid var(--n-200)}
 .of-acoes-estado{margin-bottom:18px}
 .of-acoes-estado form{margin:0}
+
+/* Roteiro: cabeçalho com identificação do registro e Salvar no topo. */
+.editor-roteiro__topo{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.editor-roteiro__topo-acoes{display:flex;align-items:center;gap:10px;flex:none}
+.editor-roteiro__meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px}
+.editor-roteiro__meta>span{display:inline-flex;align-items:center;gap:6px;min-width:0;overflow-wrap:anywhere}
+.editor-roteiro__meta .ui-icon{width:13px;height:13px;color:var(--n-400);flex:none}
+/* Os totais da rota só entram quando há rota calculada ou gravada. */
+.rota-metricas[hidden]{display:none}
+
+/* Destinos: a linha arrastada flutua com sombra e as vizinhas deslizam. */
+.editor-roteiro .destino-row{border-radius:10px}
+.destinos.is-reordenando .destino-row{transition:transform 180ms cubic-bezier(.2,0,.2,1)}
+.destinos.is-reordenando .destino-row.is-dragging{position:relative;z-index:5;transition:none;background:transparent;box-shadow:none}
+.destinos.is-reordenando .destino-row.is-dragging .destino-row__alca{color:var(--n-800);background:transparent}
+.destinos.sem-transicao .destino-row{transition:none!important}
+.is-arrastando-destino,.is-arrastando-destino *{user-select:none;cursor:grabbing!important}
+@media (prefers-reduced-motion:reduce){.destinos.is-reordenando .destino-row{transition:none}}
+
+/* Mapa em camada própria: os controles do Leaflet não cobrem listas abertas acima. */
+/* Bloco de destinos encosta no fim do cartão. */
+.editor-roteiro .bloco-split:has([data-destinos]){padding-bottom:0}
+/* Lixeira da linha de destino: fundo vermelho claro sólido, sem borda visível.
+   `!important` porque .btn--destrutiva também usa, para cor e borda. */
+.editor-roteiro .destino-row__remover{background:var(--dg-b);border-color:var(--dg-b)!important;color:var(--dg-t)!important;box-shadow:none}
+.editor-roteiro .destino-row__remover:hover{background:var(--dg-r);border-color:var(--dg-r)!important;color:var(--dg-t)!important}
+/* Percurso no título da edição: quebra em nomes longos. */
+.editor-roteiro__percurso{overflow-wrap:anywhere}
+
+/* Ações sobre o mapa: Calcular/Recalcular rota com a mesma altura de "Ver rota inteira". */
+.mapa__acoes .btn-primaria{height:36px;padding:0 var(--s4);border-radius:7px;font-size:13.5px}
+.mapa__acoes .btn-primaria .ui-icon{width:15px;height:15px}
+
+/* Trechos: data e hora de saída só com a largura do conteúdo; o resto vai para as outras colunas.
+   Layout fixo lê a largura do cabeçalho; no celular o cabeçalho some e as linhas viram cartões. */
+.editor-roteiro .trechos-tabela th:nth-child(3){width:150px}
+.editor-roteiro .trechos-tabela th:nth-child(4){width:120px}
+
+/* Calendário: dia escolhido com o mesmo arredondamento da faixa entre as datas. */
+.custom-date__dia.is-today,.custom-date__dia.is-selected,.custom-date__dia.is-range-start,.custom-date__dia.is-range-end{border-radius:3px}
+/* Lista aprimorada: navegar pelas setas não acende o brilho de foco; o destaque cinza basta. */
+.custom-select__menu.is-navegavel .custom-select__opcao:focus,.custom-select__menu.is-navegavel .custom-select__opcao:focus-visible{outline:0;box-shadow:none}
+
+/* Lista de formulário: × para limpar a escolha, ao lado da seta (mesmo × desenhado por máscara do projeto). */
+.custom-select__limpar{position:absolute;top:50%;right:8px;transform:translateY(-50%);z-index:2;width:22px;height:22px;display:grid;place-items:center;padding:0;border:0;border-radius:5px;background:transparent;color:var(--n-400);cursor:pointer;transition:color var(--motion)}
+.custom-select__limpar[hidden]{display:none}
+.custom-select__limpar::before{content:"";width:12px;height:12px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E") center/contain no-repeat}
+.custom-select__limpar:hover{color:var(--n-800)}
+.custom-select__limpar:focus-visible{outline:0;box-shadow:0 0 7px 3px var(--foco)}
+.custom-select.is-enhanced.tem-limpar .form-controle__icone{display:none}
+
+/* Trechos com a pele da lista de cadastros (cad-lista no invólucro): faixa cinza no
+   cabeçalho, rótulos em maiúsculas, linhas que clareiam no hover e a tabela encostando
+   nas laterais e no fundo do cartão. No celular as linhas continuam como cartões. */
+@container (min-width:681px){
+  /* A tabela sobe até a faixa do cabeçalho: sem vão branco e sem linha dupla. */
+  .editor-roteiro .trechos-lista{margin:-16px -20px -16px;width:calc(100% + 40px);max-width:none;border-top:0}
+  .editor-roteiro .trechos-lista .dt{border:0;border-radius:0}
+  .editor-roteiro .trechos-lista .dt tbody tr:last-child td{border-bottom:0}
+  .editor-roteiro .trechos-lista .dt tbody tr:last-child td:first-child{border-bottom-left-radius:12px}
+  .editor-roteiro .trechos-lista .dt tbody tr:last-child td:last-child{border-bottom-right-radius:12px}
+  .editor-roteiro .trechos-lista .dt tbody td{vertical-align:middle}
+}
+/* Colunas de tempo com a largura dos controles; o resto fica com cidades e chegada. */
+.editor-roteiro .trechos-tabela th:nth-child(5){width:156px}
+.editor-roteiro .trechos-tabela th:nth-child(6){width:132px}
+.editor-roteiro .trechos-tabela th:nth-child(7){width:104px}
+/* Tempo de viagem: o campo digitável da hora de saída entre os botões do adicional. */
+.tempo-stepper--editavel{gap:6px}
+.tempo-stepper__campo.form-controle{width:62px;height:32px;padding:0 6px;text-align:center;font-variant-numeric:tabular-nums;font-size:13px}
+/* Seção 1: rótulos de sede e destinos centralizados na altura dos campos. */
+.editor-roteiro .bloco-split__rotulo{align-self:center}
+/* Seção 2: selo da rota e interruptor ao lado do título, não empurrados para a direita. */
+.editor-roteiro .section-card__acao.editor-roteiro__acoes-cabecalho--junto{margin-left:6px;justify-content:flex-start;flex:1 1 auto}
+/* Só o interruptor do bate-volta vai para a direita da linha; o selo da rota fica junto do título. */
+.editor-roteiro__acoes-cabecalho--junto>.interruptor{margin-left:auto}
+
+/* Calendário dentro de cabeçalho de seção não herda o título (tamanho, peso, cor). */
+.section-card__cabecalho .custom-date__calendar{font-size:14px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--n-700)}
+/* Calendário: faixa dos dias da semana com fundo cinza claro e letras discretas, como o cabeçalho das tabelas. */
+.custom-date__semana{margin:0 -12px 6px;padding:3px 12px;border-radius:0;background:transparent;border:0}
+.custom-date__semana span{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--n-500)}
+
+/* Calendário: botões com fundo suave. Navegação em cinza claro (dourado no hover, regra já existente);
+   Limpar e Desfazer em dourado claro, um tom mais forte no hover. */
+.custom-date__navegacao button{background:var(--n-100);color:var(--n-600);border-radius:6px}
+.custom-date__navegacao button:hover,.custom-date__navegacao button:focus-visible{background:var(--n-150);color:var(--n-900)}
+.custom-date__navegacao{gap:4px}
+.custom-date__rodape button{background:var(--n-100);color:var(--n-700);padding:4px 10px}
+.custom-date__rodape button:hover,.custom-date__rodape button:focus-visible{background:var(--n-150);color:var(--n-900)}
+.custom-date__rodape button:disabled{background:var(--n-100);color:var(--n-400);cursor:default}
+.custom-date__rodape-acoes{gap:6px}
+
+/* Calendário: cabeçalho « ‹ mês › ». O bloco de navegação sai do layout (display:contents) e cada
+   botão vai para a sua coluna pelo rótulo; o título (ou o bloco título + instrução do período) fica
+   centralizado. A variante GV (Anterior · mês · Próximo, sem bloco de navegação) não entra. */
+.custom-date__cabecalho:has(>.custom-date__navegacao){display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto;align-items:center;gap:4px}
+.custom-date__cabecalho>.custom-date__navegacao{display:contents}
+.custom-date__cabecalho:has(>.custom-date__navegacao)>:not(.custom-date__navegacao){grid-column:3;grid-row:1;justify-self:center;text-align:center;min-width:0}
+.custom-date__navegacao>[aria-label="Ano anterior"]{grid-column:1;grid-row:1}
+.custom-date__navegacao>[aria-label="Mês anterior"]{grid-column:2;grid-row:1}
+.custom-date__navegacao>[aria-label="Próximo mês"]{grid-column:4;grid-row:1}
+.custom-date__navegacao>[aria-label="Próximo ano"]{grid-column:5;grid-row:1}
+
+/* Botão primário: tamanho único de 36px, o mesmo do secundário ("Ver rota inteira"), em todo o sistema.
+   Telas de celular (sheets e rodapé de formulário móvel) mantêm os 46px de toque. */
+.btn-primaria{height:36px;padding:0 var(--s4);border-radius:7px;font-size:13.5px;gap:6px}
+.btn-primaria .ui-icon{width:15px;height:15px}
+
+/* Calendário todo em cinza (pedido de 15/09/2026, trocado do dourado): borda, separador do rodapé e contagem. */
+.custom-date__calendar{border-color:var(--n-200)}
+.custom-date__rodape{border-top-color:var(--n-150)}
+.custom-date__contagem{color:var(--n-500)}
+
+/* Botão primário sem borda, em qualquer estado (pedido de 15/09/2026). */
+.btn-primaria,.btn-primaria:hover,.btn-primaria:active,.btn-primaria:focus-visible{border:0}
+
+/* Calculando rota: véu com leve desfoque do mapa e cápsula branca que surge com giro dourado. */
+.mapa__carregando{background:rgba(255,255,255,.45);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);animation:mapa-veu 180ms ease-out}
+.mapa__carregando-caixa{display:inline-flex;align-items:center;gap:10px;padding:9px 16px 9px 12px;border-radius:99px;background:var(--branco);box-shadow:0 8px 24px rgba(38,38,38,.16);font-size:13px;font-weight:600;color:var(--n-800);animation:mapa-caixa 260ms cubic-bezier(.2,.8,.2,1)}
+.mapa__carregando .spinner{width:20px;height:20px;border:2.5px solid var(--d-100);border-top-color:var(--d-500);animation:v32-girar .9s cubic-bezier(.55,.15,.45,.85) infinite}
+@keyframes mapa-veu{from{opacity:0}to{opacity:1}}
+@keyframes mapa-caixa{from{opacity:0;transform:translateY(6px) scale(.96)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.mapa__carregando,.mapa__carregando-caixa{animation:none}.mapa__carregando .spinner{animation-duration:2s}}
+
+/* Roteiro: Voltar e Salvar no fim do bloco de Diárias, voltar à esquerda e salvar à direita. */
+.editor-roteiro__acoes-diarias{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px}
+
+/* Cabeçalho de seção numerada reinventado (15/09/2026): faixa no topo do cartão, encostando nas bordas,
+   com fundo claro e linha embaixo; número dourado em negrito separado do título por um divisor fino.
+   As variáveis acompanham o espaçamento interno de cada tipo de cartão. */
+.reg{--reg-py:16px;--reg-px:20px}
+.sol-detalhe .reg{--reg-py:20px;--reg-px:20px}
+@container(max-width:680px){.sol-detalhe .reg{--reg-py:16px;--reg-px:16px}}
+.reg>.reg__t:has(.reg-numero),.reg>.reg-cabecalho:has(.reg-numero){margin:calc(-1 * var(--reg-py)) calc(-1 * var(--reg-px)) 16px;padding:10px var(--reg-px);min-height:56px;display:flex;align-items:center;gap:12px;background:var(--branco);border-bottom:1px solid var(--n-150);border-radius:11px 11px 0 0}
+.reg>.reg-cabecalho:has(.reg-numero) .reg__t{margin:0}
+.reg>.reg-cabecalho:has(.reg-numero)>div{min-width:0}
+.reg-cabecalho:has(.reg-numero) .cad-frm__intro{margin:2px 0 0}
+.reg__t:has(.reg-numero){font-size:15px;font-weight:600;letter-spacing:-.005em;color:var(--n-900)}
+.reg-numero{width:auto;height:auto;min-width:0;display:inline-flex;align-items:center;padding:0 12px 0 0;margin:0;border-radius:0;background:none;border-right:1px solid var(--d-200);color:var(--d-600);font-size:15px;font-weight:700;line-height:20px;font-variant-numeric:tabular-nums}
+
+/* Roteiro: mensagem de erro sempre fora do cartão, como aviso logo acima da seção. */
+.editor-roteiro__erro{margin:0 0 16px;padding:10px 14px;align-items:center;font-size:13px;line-height:1.45}
+.editor-roteiro__erro[hidden]{display:none}
+
+/* Trechos: cabeçalho da tabela no cinza mais claro, sem disputar com a faixa branca da seção.
+   A lista de cadastros (aprovada) mantém o --n-100. */
+.editor-roteiro .trechos-lista.cad-lista .dt th{background:var(--n-50)}
+
+/* Lista de roteiros: separador fino entre o valor das diárias e a quantidade. */
+.cad-lista .dt .c-valor>.v32-suave::before{content:"";display:inline-block;width:1px;height:12px;margin:0 8px 0 6px;background:var(--n-250);vertical-align:-1px}
+/* O × só sobe de camada junto com o próprio campo aberto; fechado, nunca cobre a lista de outro campo. */
+.custom-select.is-open>.custom-select__limpar{z-index:62}
+
+/* Roteiro: sem espaço embaixo do editor (pedido de 15/09/2026). */
+.editor-roteiro.frm-grade{padding-bottom:0}
+
+/* Interruptor: animação ao ligar. A bolinha desliza com leve mola, o trilho troca de cor suave,
+   um anel discreto pulsa em volta e, pressionada, a bolinha estica um pouco. */
+.interruptor__trilho{position:relative;transition:background-color 220ms ease}
+.interruptor__botao{box-shadow:0 1px 2px rgba(38,38,38,.25);transition:transform 260ms cubic-bezier(.34,1.56,.64,1),width 160ms ease}
+.interruptor:active .interruptor__botao{width:18px}
+.interruptor--ligado:active .interruptor__botao{transform:translateX(10px)}
+.interruptor--ligado .interruptor__trilho{animation:interruptor-liga 420ms ease-out}
+@keyframes interruptor-liga{0%{box-shadow:0 0 0 0 rgba(77,77,77,.35)}100%{box-shadow:0 0 0 7px rgba(77,77,77,0)}}
+@media (prefers-reduced-motion:reduce){.interruptor__trilho,.interruptor__botao{transition:none}.interruptor--ligado .interruptor__trilho{animation:none}}
+
+/* Botão flutuante: a mesma aparência do botão primário (36px, raio 7px, sem sombra), só que fixo
+   no canto inferior direito da tela (lista de roteiros). Camada 30: acima do conteúdo, abaixo dos
+   menus de ação (40), listas de seleção e calendários (60) e janelas modais (100). */
+.btn-primaria.btn-flutuante{position:fixed;right:max(24px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));z-index:30}
+
+/* Kicker mais perto do título (lista de roteiros). */
+.kicker.kicker--junto{margin-bottom:4px}
+
+/* Lista de roteiros: sem espaço embaixo da grade de filtros e tabela. */
+.cad-grade.cad-grade--sem-folga{padding-bottom:0}
+
+/* Lista de roteiros: quantidade de diárias com o mesmo tamanho de fonte do valor. */
+.cad-lista .dt .c-valor>.v32-suave{font-size:inherit}
+
+/* Menu de ações aberto para cima (sem espaço embaixo): ancora acima do gatilho. */
+.dd__c.dd__c--acima{top:auto;bottom:calc(100% + 6px)}
+
+/* Lista aberta para cima: sombras espelhadas (deslocamento vertical negativo), para caírem
+   para cima e não por cima do próprio campo. Mais curtas e leves que as de baixo: acima quase
+   não há espaço e o desfoque grande virava névoa até a borda do modal. */
+.custom-select__menu.custom-select__menu--acima{box-shadow:0 -1px 2px rgba(26,25,23,.06),0 -6px 16px -6px rgba(26,25,23,.16)}
+.custom-select.is-open>.custom-select__menu.custom-select__menu--acima{box-shadow:0 -2px 6px rgba(26,25,23,.1),0 -12px 28px -10px rgba(26,25,23,.28)}

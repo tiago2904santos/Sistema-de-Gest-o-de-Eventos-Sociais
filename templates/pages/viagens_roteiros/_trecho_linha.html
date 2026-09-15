@@ -39,6 +39,21 @@
   <td data-rotulo="Hora de saída">
     {% include "components/input.html" with name=trecho.saida_hora.html_name label="Hora de saída" rotulo_oculto=True tipo="time" valor=trecho.saida_hora.value|default_if_none:"" erros=trecho.saida_hora.errors %}
   </td>
+  <td data-rotulo="Tempo de viagem">
+    {% comment %}
+      Estimado pelo serviço de rotas, mas editável: digita-se hh:mm ou anda de
+      15 em 15 minutos. O campo visível não tem name; quem é gravado é o
+      oculto `tempo_viagem_min`. Mexer à mão protege o valor das estimativas.
+    {% endcomment %}
+    <div class="tempo-stepper tempo-stepper--editavel">
+      <button type="button" class="btn btn--secundario btn--secundaria btn--compacto" data-viagem-menos
+              aria-label="Reduzir 15 minutos do tempo de viagem">−</button>
+      <input type="text" class="form-controle tempo-stepper__campo" inputmode="numeric" maxlength="5"
+             placeholder="--:--" autocomplete="off" aria-label="Tempo de viagem (horas e minutos)" data-trecho-viagem-editavel>
+      <button type="button" class="btn btn--secundario btn--secundaria btn--compacto" data-viagem-mais
+              aria-label="Acrescentar 15 minutos ao tempo de viagem">+</button>
+    </div>
+  </td>
   <td data-rotulo="Tempo adicional">
     {% comment %}
       Espera em campo, pedágio, parada: soma ao tempo da rota e entra na
@@ -54,8 +69,6 @@
   </td>
   <td data-rotulo="Tempo total">
     <strong class="trecho-linha__total" data-trecho-tempo-total>—</strong>
-    {# De onde vem o total: o tempo de viagem estimado, antes do adicional. #}
-    <small class="trecho-linha__nota" data-trecho-viagem-nota></small>
   </td>
   {% comment %}
     A chegada não é digitada: é a saída mais o tempo total (rota + adicional),
@@ -65,7 +78,7 @@
 </tr>
 {% if trecho.non_field_errors or trecho.origem_municipio.errors or trecho.destino_municipio.errors or trecho.chegada_data.errors or trecho.chegada_hora.errors %}
   <tr class="trecho-linha__erros" data-trecho-erros>
-    <td colspan="7">
+    <td colspan="8">
       {% for erro in trecho.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
       {# Cidades e chegada vivem em campos ocultos; os erros aparecem aqui. #}
       {% for erro in trecho.origem_municipio.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}

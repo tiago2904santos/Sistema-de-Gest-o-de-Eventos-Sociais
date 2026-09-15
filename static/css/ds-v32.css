@@ -8,9 +8,9 @@
 --n-950:#262626;--n-900:#333333;--n-800:#3f3f3f;--n-700:#4d4d4d;--n-600:#5e5e5e;
 --n-500:#6e6e6e;--n-450:#777777;--n-400:#808080;--n-300:#a6a8aa;--n-250:#d1d3d4;
 --n-200:#e1e2e3;--n-150:#e9eaeb;--n-100:#eff0f0;--n-75:#f3f4f4;--n-50:#f7f8f8;--n-25:#fbfbfb;
---branco:#fff;--papel:#f5f6f6;--grafite:#333333;
-/* dourado institucional */
---d-900:#5c4a1c;--d-800:#6d5926;--d-700:#7d6626;--d-600:#96762f;--d-550:#ab8b3c;
+--branco:#fff;--papel:#fafafa;--grafite:#333333;
+/* dourado institucional (o tom #96762f saiu a pedido do usuário: --d-600 é o dourado da paleta) */
+--d-900:#5c4a1c;--d-800:#6d5926;--d-700:#7d6626;--d-600:#bea45a;--d-550:#c9b06d;
 --d-500:#bea45a;--d-400:#c9b06d;--d-300:#ddd0ab;--d-200:#ebe0c4;--d-100:#f5eed9;--d-50:#faf7ef;
 /* estados semânticos */
 --ok-t:#1c7040;--ok-b:#e9f2ec;--ok-r:#cbe0d3;
@@ -125,7 +125,7 @@ a{color:var(--link);text-decoration:none}
 .busca input{width:100%;height:var(--ctrl-h);padding:0 var(--s4) 0 40px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco);font:inherit;font-size:14px;color:var(--n-900);transition:border-color var(--motion),box-shadow var(--motion)}
 .busca input::placeholder{color:var(--n-300)}
 .busca input:focus{outline:none;box-shadow:0 0 7px 3px var(--foco)}
-.busca:focus-within .ui-icon{color:var(--n-800)}
+.busca:focus-within .ui-icon{color:var(--sel-r)}
 .risco-b{display:none}
 /* Filter control contornado */
 .fc{display:inline-flex;align-items:center;gap:var(--s2);height:var(--ctrl-h);padding:0 var(--s4);border:1px solid var(--n-200);border-radius:8px;background:var(--branco);font-size:13.5px;color:var(--n-900);cursor:pointer;white-space:nowrap;flex:1 1 0;min-width:0;width:100%;transition:border-color var(--motion),background var(--motion)}
@@ -908,7 +908,7 @@ html[data-dourado=cerimonial] .dt th{background:var(--d-50);color:var(--d-800)}
 .mo__corpo{padding:18px 20px;overflow-y:auto}
 .mo__rodape{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--n-150)}
 /* Cancelar e confirmar lado a lado: mesma altura, fonte e cantos. */
-.mo__rodape .btn-primaria,.mo__rodape .btn--secundaria{height:40px;padding:0 var(--s4);border-radius:8px;font-size:14px}
+.mo__rodape .btn-primaria,.mo__rodape .btn--secundaria{height:36px;padding:0 var(--s4);border-radius:7px;font-size:13.5px}
 /* Mesmo tamanho real, mas o branco com borda clarinha "encolhe" ao lado do
    grafite: a borda um tom mais firme mostra o contorno inteiro (fixa, sem hover). */
 .mo__rodape .btn--secundaria{border-color:var(--n-250)}

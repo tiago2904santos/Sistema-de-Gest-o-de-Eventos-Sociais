@@ -17,6 +17,7 @@ from django.utils import timezone
 from cadastros.models import Estado, Municipio, Regiao
 from viagens_cadastros.models import TabelaDiaria
 
+from viagens_cadastros.models import ConfiguracaoSistema
 from .models import Roteiro, RoteiroDestino, RoteiroDiariaComponente, RoteiroTrecho
 from .services.calculo import chegada_final, marcadores_do_roteiro, recalcular_diarias
 from .services.diarias import RoteiroIncalculavel
@@ -1536,3 +1537,46 @@ class NumeracaoDasLinhasNovasTests(BaseTelaRoteiroTestCase):
         ordens = self.ordens(resposta, "trechos")
         # Os gravados mantêm a posição que têm; o slot em branco vem depois.
         self.assertEqual(ordens, ["1", "2", "3", "4"])
+
+
+class SedeDasConfiguracoesTests(BaseTelaRoteiroTestCase):
+    """A sede do roteiro novo vem do endereço (CEP) gravado em Configurações."""
+
+    def setUp(self):
+        self.usuario = self.criar_usuario("operadora_sede", "VIAGENS_OPERADOR")
+        self.client.force_login(self.usuario)
+        self.configuracao = ConfiguracaoSistema.para_usuario(self.usuario)
+
+    def definir_sede(self, municipio):
+        ConfiguracaoSistema.objects.filter(pk=self.configuracao.pk).update(
+            cidade_sede_padrao=municipio
+        )
+
+    def test_roteiro_novo_nasce_com_a_sede_das_configuracoes(self):
+        self.definir_sede(self.abatia)
+        resposta = self.client.get(reverse("viagens_roteiros:novo"))
+        self.assertEqual(resposta.context["valores"]["origem_municipio"], str(self.abatia.pk))
+
+    def test_sem_sede_configurada_o_campo_fica_vazio(self):
+        self.definir_sede(None)
+        resposta = self.client.get(reverse("viagens_roteiros:novo"))
+        self.assertEqual(resposta.context["valores"]["origem_municipio"], "")
+
+    def test_destinos_recebem_o_estado_da_sede_como_padrao(self):
+        self.definir_sede(self.abatia)
+        for url in (reverse("viagens_roteiros:novo"), reverse("viagens_roteiros:editar", args=[self.roteiro_curitiba_sp_abatia().pk])):
+            with self.subTest(url=url):
+                resposta = self.client.get(url)
+                self.assertContains(resposta, 'data-estado-padrao="%s"' % self.pr.pk)
+
+    def test_sem_sede_configurada_nao_ha_estado_padrao(self):
+        self.definir_sede(None)
+        resposta = self.client.get(reverse("viagens_roteiros:novo"))
+        self.assertContains(resposta, 'data-estado-padrao=""')
+
+    def test_edicao_mantem_a_sede_gravada_no_roteiro(self):
+        self.definir_sede(self.abatia)
+        roteiro = self.roteiro_curitiba_sp_abatia()
+        resposta = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
+        self.assertEqual(resposta.context["valores"]["origem_municipio"], str(self.curitiba.pk))
+

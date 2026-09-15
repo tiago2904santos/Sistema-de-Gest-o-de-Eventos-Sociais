@@ -232,6 +232,20 @@ def lista(request):
 
 
 @acesso_ao_modulo
+def _sede_inicial(request, roteiro):
+    """Roteiro novo já nasce com a sede das configurações.
+
+    A sede da unidade é o município do endereço (cidade e UF vindas do CEP)
+    gravado em Configurações. Continua editável: a viagem pode sair de outro lugar.
+    """
+    if roteiro is not None:
+        return None
+    from viagens_cadastros.models import ConfiguracaoSistema
+
+    sede = ConfiguracaoSistema.para_usuario(request.user).cidade_sede_padrao_id
+    return {"origem_municipio": sede} if sede else None
+
+
 def editar(request, pk=None):
     _exigir_edicao(request)
     from core.retorno import next_valido, com_next
@@ -304,7 +318,7 @@ def editar(request, pk=None):
             formset.is_valid()
         messages.error(request, "Corrija os campos destacados para continuar.")
     else:
-        form = RoteiroForm(instance=roteiro)
+        form = RoteiroForm(instance=roteiro, initial=_sede_inicial(request, roteiro))
         formset = TrechoFormSet(instance=roteiro)
         destinos = DestinoFormSet(instance=roteiro)
 
@@ -400,9 +414,21 @@ def _cards_de_destinos(destinos):
     return cards
 
 
+def _estado_padrao_destino():
+    """Estado da sede das configurações: todo destino sem município já nasce com ele.
+
+    Usa a configuração do setor de quem faz a requisição (a mesma que define a sede).
+    """
+    from viagens_cadastros.models import ConfiguracaoSistema
+
+    sede = ConfiguracaoSistema.atual().cidade_sede_padrao
+    return str(sede.estado_id) if sede else ""
+
+
 def _contexto_do_form(roteiro, form, formset, destinos):
     return {
         "roteiro": roteiro,
+        "estado_padrao_destino": _estado_padrao_destino(),
         "form": form,
         "formset": formset,
         "destinos": destinos,

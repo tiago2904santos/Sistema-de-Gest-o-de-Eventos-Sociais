@@ -78,7 +78,9 @@
     instancia.wrapper.classList.remove("is-open");
     instancia.menu.hidden = true;
     instancia.trigger.setAttribute("aria-expanded", "false");
+    instancia.opcoes.forEach(function (opcao) { opcao.classList.remove("is-active"); });
     if (instancia.busca) {
+      instancia.busca.removeAttribute("aria-activedescendant");
       var selecionada = instancia.nativo.options[instancia.nativo.selectedIndex];
       instancia.busca.value = instancia.nativo.value && selecionada ? selecionada.text : "";
       instancia.opcoes.forEach(function (opcao) {
@@ -120,9 +122,39 @@
     };
     seletoresAbertos.push(instancia);
     wrapper.classList.add("is-enhanced");
+    menu.classList.add("is-navegavel");
     nativo.tabIndex = -1;
     nativo.setAttribute("aria-hidden", "true");
     trigger.disabled = nativo.disabled;
+
+    // Botão para limpar a escolha, nos campos de formulário (os filtros das
+    // listas têm o próprio "Limpar"). Só aparece quando há valor escolhido.
+    var limpar = null;
+    var temOpcaoVazia = Array.prototype.some.call(nativo.options, function (opcao) { return opcao.value === ""; });
+    if (temOpcaoVazia && wrapper.closest(".form-campo") && !wrapper.closest(".fc--combo")) {
+      limpar = document.createElement("button");
+      limpar.type = "button";
+      limpar.className = "custom-select__limpar";
+      limpar.setAttribute("aria-label", "Limpar seleção");
+      limpar.title = "Limpar seleção";
+      limpar.hidden = true;
+      menu.parentNode.insertBefore(limpar, menu);
+
+      // Com o ×, a opção vazia ("Selecione...") sai da lista: parecia uma escolha
+      // marcada. O select nativo mantém a opção vazia; limpar é pelo botão e o
+      // texto continua no campo quando nada está escolhido.
+      opcoes.forEach(function (opcao) {
+        if (opcao.getAttribute("data-value") === "") opcao.remove();
+      });
+      opcoes = opcoes.filter(function (opcao) { return opcao.isConnected; });
+      instancia.opcoes = opcoes;
+    }
+
+    function mostrarLimpar(visivel) {
+      if (!limpar) return;
+      limpar.hidden = !visivel;
+      wrapper.classList.toggle("tem-limpar", visivel);
+    }
 
     function opcaoAtual() {
       return nativo.options[nativo.selectedIndex];
@@ -133,6 +165,7 @@
       if (busca) busca.value = nativo.value && selecionada ? selecionada.text : "";
       else valor.textContent = selecionada ? selecionada.text : "Selecione...";
       trigger.classList.toggle("has-value", Boolean(nativo.value));
+      mostrarLimpar(Boolean(nativo.value) && !nativo.disabled);
       trigger.removeAttribute("aria-invalid");
       wrapper.classList.remove("is-invalid");
       opcoes.forEach(function (opcao) {
@@ -152,6 +185,46 @@
 
     function opcoesVisiveis() {
       return opcoes.filter(function (opcao) { return !opcao.hidden; });
+    }
+
+    // Um destaque só, que o teclado e o mouse movem: é a opção que o Enter
+    // escolhe. Abrir destaca a opção escolhida (ou a primeira); digitar, a
+    // primeira que sobrou no filtro; passar o mouse leva o destaque junto.
+    var ativa = null;
+
+    function definirAtiva(opcao, rolar) {
+      if (ativa && ativa !== opcao) ativa.classList.remove("is-active");
+      ativa = opcao || null;
+      if (!ativa) {
+        if (busca) busca.removeAttribute("aria-activedescendant");
+        return;
+      }
+      ativa.classList.add("is-active");
+      if (busca) {
+        if (!ativa.id) ativa.id = (nativo.id || "select") + "_opcao_" + opcoes.indexOf(ativa);
+        busca.setAttribute("aria-activedescendant", ativa.id);
+      }
+      if (rolar && ativa.scrollIntoView) ativa.scrollIntoView({ block: "nearest" });
+    }
+
+    function ativarInicial(preferirSelecionada) {
+      var visiveis = opcoesVisiveis();
+      var selecionada = null;
+      if (preferirSelecionada && nativo.value) {
+        selecionada = visiveis.filter(function (opcao) {
+          return opcao.getAttribute("data-value") === nativo.value;
+        })[0] || null;
+      }
+      definirAtiva(selecionada || visiveis[0] || null, true);
+    }
+
+    function moverAtiva(direcao) {
+      var disponiveis = opcoesVisiveis();
+      if (!disponiveis.length) return;
+      var indice = disponiveis.indexOf(ativa);
+      if (indice < 0) indice = direcao > 0 ? 0 : disponiveis.length - 1;
+      else indice = (indice + direcao + disponiveis.length) % disponiveis.length;
+      definirAtiva(disponiveis[indice], true);
     }
 
     function filtrarOpcoes() {
@@ -180,6 +253,7 @@
       trigger.setAttribute("aria-expanded", "true");
       if (busca) {
         filtrarOpcoes();
+        ativarInicial(true);
         busca.focus();
         return;
       }
@@ -187,7 +261,7 @@
         return opcao.getAttribute("data-value") === nativo.value;
       });
       var destino = selecionada || opcoes[0];
-      if (destino) destino.focus();
+      if (destino) { definirAtiva(destino, true); destino.focus(); }
     }
 
     function selecionar(opcao) {
@@ -216,22 +290,23 @@
     trigger.addEventListener("keydown", function (event) {
       if (busca) {
         var disponiveis = opcoesVisiveis();
+        // As setas andam com o destaque sem tirar o foco do campo: dá para
+        // continuar digitando. Enter escolhe a opção destacada.
         if (event.key === "ArrowDown") {
           event.preventDefault();
-          abrirSeletor();
-          disponiveis = opcoesVisiveis();
-          if (disponiveis[0]) disponiveis[0].focus();
+          if (!instancia.aberto) abrirSeletor();
+          else moverAtiva(1);
         } else if (event.key === "ArrowUp") {
           event.preventDefault();
-          abrirSeletor();
-          disponiveis = opcoesVisiveis();
-          if (disponiveis.length) disponiveis[disponiveis.length - 1].focus();
+          if (!instancia.aberto) abrirSeletor();
+          else moverAtiva(-1);
         } else if (event.key === "Enter") {
+          event.preventDefault();
           if (!instancia.aberto) {
-            event.preventDefault();
             abrirSeletor();
-          } else if (disponiveis.length === 1) {
-            event.preventDefault();
+          } else if (ativa && !ativa.hidden) {
+            selecionar(ativa);
+          } else if (disponiveis.length) {
             selecionar(disponiveis[0]);
           }
         } else if (event.key === "Escape") {
@@ -252,6 +327,7 @@
         if (nativo.value && (!selecionada || busca.value !== selecionada.text)) {
           nativo.value = "";
           trigger.classList.remove("has-value");
+          mostrarLimpar(false);
           opcoes.forEach(function (opcao) {
             opcao.setAttribute("aria-selected", "false");
             opcao.classList.remove("is-selected");
@@ -259,11 +335,20 @@
         }
         abrirSeletor();
         filtrarOpcoes();
+        ativarInicial(false);
       });
     }
 
     opcoes.forEach(function (opcao) {
       opcao.addEventListener("click", function () { selecionar(opcao); });
+      // mousemove (e não mouseenter): rolar a lista com o teclado não rouba o
+      // destaque só porque uma opção passou por baixo do cursor parado.
+      opcao.addEventListener("mousemove", function () {
+        if (ativa === opcao) return;
+        definirAtiva(opcao, false);
+        if (!busca) opcao.focus({ preventScroll: true });
+      });
+      opcao.addEventListener("focus", function () { definirAtiva(opcao, false); });
       opcao.addEventListener("keydown", function (event) {
         if (event.key === "ArrowDown") { event.preventDefault(); moverFoco(1); }
         else if (event.key === "ArrowUp") { event.preventDefault(); moverFoco(-1); }
@@ -273,6 +358,22 @@
         else if (event.key === "Tab") fecharSeletor(instancia, false);
       });
     });
+
+    if (limpar) {
+      // mousedown sem padrão: o campo não perde o foco antes do clique chegar.
+      limpar.addEventListener("mousedown", function (event) { event.preventDefault(); });
+      limpar.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!nativo.value) return;
+        nativo.value = "";
+        sincronizar();
+        nativo.dispatchEvent(new Event("input", { bubbles: true }));
+        nativo.dispatchEvent(new Event("change", { bubbles: true }));
+        fecharSeletor(instancia, false);
+        trigger.focus();
+      });
+    }
 
     nativo.addEventListener("change", sincronizar);
     nativo.addEventListener("focus", function () { trigger.focus(); });
@@ -629,6 +730,22 @@
       return Math.max(1, Number(wrapper.getAttribute("data-max") || 1));
     }
 
+    // Datas já preenchidas no formulário, em ISO, mantidas por quem usa o
+    // calendário em `data-valores`. Sem o atributo, vale a última escolha feita.
+    function valoresInformados() {
+      var bruto = wrapper.getAttribute("data-valores");
+      if (bruto === null) return null;
+      try {
+        var lista = JSON.parse(bruto);
+        if (!Array.isArray(lista)) return [];
+        return lista.filter(function (valor) {
+          return /^\d{4}-\d{2}-\d{2}$/.test(String(valor));
+        }).slice(0, maximo());
+      } catch (erro) {
+        return [];
+      }
+    }
+
     function passos() {
       try {
         var lista = JSON.parse(wrapper.getAttribute("data-passos") || "[]");
@@ -720,8 +837,15 @@
     function abrir() {
       if (aberto) return;
       aberto = true;
-      // Lista completa é lista já aplicada: reabrir começa outra escolha.
-      if (escolhidas.length >= maximo()) escolhidas = [];
+      // Reabrir mostra o que já está preenchido, nunca um calendário em branco:
+      // as datas marcadas e o mês da primeira delas.
+      var informados = valoresInformados();
+      if (informados !== null) escolhidas = informados;
+      if (escolhidas.length > maximo()) escolhidas = escolhidas.slice(0, maximo());
+      if (escolhidas.length) {
+        var primeiraEscolhida = dataPorIso(escolhidas[0]);
+        mesVisivel = new Date(primeiraEscolhida.getFullYear(), primeiraEscolhida.getMonth(), 1);
+      }
       calendario.hidden = false;
       wrapper.classList.add("is-open");
       gatilhoAtual.setAttribute("aria-expanded", "true");
@@ -734,7 +858,8 @@
         if (casa && calendario.parentElement !== casa) casa.appendChild(calendario);
       }
       recortes = liberarRecorte(calendario);
-      var primeiro = grade.querySelector('[data-date="' + isoDaData(hoje) + '"]');
+      var focoInicial = escolhidas.length ? escolhidas[0] : isoDaData(hoje);
+      var primeiro = grade.querySelector('[data-date="' + focoInicial + '"]');
       if (primeiro) primeiro.focus();
     }
 
@@ -748,7 +873,9 @@
 
     function alternarData(iso) {
       if (sequencial) {
-        if (escolhidas.length >= maximo()) return;
+        // Lista cheia (reaberta com as datas já preenchidas): o clique começa
+        // uma escolha nova a partir deste dia.
+        if (escolhidas.length >= maximo()) escolhidas = [];
         // Não se volta no tempo: a próxima data é a mesma ou depois.
         if (escolhidas.length && iso < escolhidas[escolhidas.length - 1]) return;
         escolhidas.push(iso);
@@ -1894,14 +2021,30 @@
     }
     fechamentos.push(fechar);
 
+    // Abre para cima quando embaixo não cabe: ficaria cortado na janela ou
+    // esticaria a página. Só sobe se houver espaço acima do gatilho.
+    function posicionar(alturaAntes) {
+      corpo.classList.remove("dd__c--acima");
+      var margem = 12;
+      var caixa = corpo.getBoundingClientRect();
+      var caixaGatilho = gatilho.getBoundingClientRect();
+      var cortaNaJanela = caixa.bottom + margem > window.innerHeight;
+      var esticaPagina = caixa.bottom + window.scrollY > alturaAntes;
+      var cabeEmCima = caixaGatilho.top - caixa.height - 6 >= margem;
+      if ((cortaNaJanela || esticaPagina) && cabeEmCima) corpo.classList.add("dd__c--acima");
+    }
+
     gatilho.addEventListener("click", function (evento) {
       evento.stopPropagation();
       var abrir = corpo.hidden;
       if (abrir) {
         fechamentos.forEach(function (outro) { if (outro !== fechar) outro(); });
       }
+      // Altura da página antes de o menu aparecer: é com ela que se sabe se ele esticaria a página.
+      var alturaAntes = document.documentElement.scrollHeight;
       corpo.hidden = !abrir;
       gatilho.setAttribute("aria-expanded", String(abrir));
+      if (abrir) posicionar(alturaAntes);
     });
 
     // Escolher um item (abrir modal, excluir, enviar) também fecha o menu —

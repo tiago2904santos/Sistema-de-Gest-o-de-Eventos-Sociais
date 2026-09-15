@@ -21,7 +21,11 @@
     const caixa = modal.getBoundingClientRect();
     const abaixo = caixa.bottom - area.bottom - FOLGA;
     const acima = area.top - caixa.top - FOLGA;
-    const paraCima = abaixo < ALTURA_MINIMA && acima > abaixo;
+    // Altura que a lista realmente precisa (conteúdo + 12px de padding do menu),
+    // limitada ao máximo. Só sobe quando essa altura não cabe embaixo e há mais
+    // espaço acima: uma lista curta perto do rodapé continua abrindo para baixo.
+    const necessaria = Math.min(lista.scrollHeight + 12, ALTURA_MAXIMA);
+    const paraCima = abaixo < necessaria && acima > abaixo;
     menu.classList.toggle("custom-select__menu--acima", paraCima);
     const disponivel = Math.max(ALTURA_MINIMA, Math.min(ALTURA_MAXIMA, paraCima ? acima : abaixo));
     // O menu tem 6px de padding em cima e embaixo; a lista é quem rola.

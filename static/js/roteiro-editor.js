@@ -68,6 +68,31 @@
     return Number.isNaN(minutos) ? null : minutos;
   }
 
+  // Tempo digitado no campo de viagem: "5:30", "05:30", "530", "0530" ou só horas ("5").
+  // Vazio devolve ""; texto que não é tempo devolve null.
+  function minutosDoTexto(texto) {
+    var limpo = String(texto || "").trim();
+    if (!limpo) return "";
+    var horas;
+    var minutos;
+    if (limpo.indexOf(":") > -1) {
+      var partes = limpo.split(":");
+      horas = Number(partes[0] || 0);
+      // Minuto com um dígito só ("05:3") é a dezena que faltou completar: 05:30.
+      minutos = Number((partes[1] || "0").padEnd(2, "0"));
+    } else if (/^\d{1,2}$/.test(limpo)) {
+      horas = Number(limpo);
+      minutos = 0;
+    } else if (/^\d{3,4}$/.test(limpo)) {
+      horas = Number(limpo.slice(0, -2));
+      minutos = Number(limpo.slice(-2));
+    } else {
+      return null;
+    }
+    if (Number.isNaN(horas) || Number.isNaN(minutos) || minutos > 59 || horas < 0 || minutos < 0) return null;
+    return horas * 60 + minutos;
+  }
+
   function hhmmDe(minutos) {
     if (minutos === null || minutos === undefined || minutos < 0) return "";
     var h = Math.floor(minutos / 60);
@@ -195,18 +220,25 @@
     atualizarPercursoPrevia();
   }
 
-  // "Sede › A › B" no subtítulo dos destinos, assim que houver algum.
+  // "Sede › A › B": vai para o título da edição e, se a página tiver, para a
+  // prévia ao lado dos destinos. Os dois são opcionais e independentes.
   function atualizarPercursoPrevia() {
     var previa = editor.querySelector("[data-percurso-previa]");
-    if (!previa) return;
+    var titulo = editor.querySelector("[data-titulo-percurso]");
+    if (!previa && !titulo) return;
     var nomes = paradas().map(function (id) { return rotulos[id] || "?"; });
-    if (!nomes.length) {
+    var origem = sede && sede.value ? rotulos[sede.value] : "Sede";
+    var percurso = nomes.length ? [origem].concat(nomes).join(" › ") : "";
+    if (titulo && percurso) titulo.textContent = percurso;
+    if (!previa) return;
+    if (!percurso) {
       previa.textContent = previa.getAttribute("data-texto-padrao") || "";
+      previa.removeAttribute("title");
       previa.classList.remove("percurso-previa");
       return;
     }
-    var origem = sede && sede.value ? rotulos[sede.value] : "Sede";
-    previa.textContent = [origem].concat(nomes).join(" › ");
+    previa.textContent = percurso;
+    previa.setAttribute("title", percurso);
     previa.classList.add("percurso-previa");
   }
 
@@ -219,6 +251,21 @@
       return linha.hidden && !gravada(linha) && !selectDaLinha(linha).value &&
         indiceDe(linha) >= iniciais;
     });
+  }
+
+  // Destino ainda sem município já traz o estado da sede das configurações.
+  // Roda como estado aplicado (sem autosave): escolher o estado não é conteúdo.
+  var estadoPadrao = editor.getAttribute("data-estado-padrao") || "";
+
+  function preencherEstadoPadrao(linha) {
+    if (!estadoPadrao || !linha) return;
+    var municipio = selectDaLinha(linha);
+    if (municipio && municipio.value) return;
+    var estado = linha.querySelector('select[name$="-estado"]');
+    if (!estado) return;
+    var estava = aplicandoEstado;
+    aplicandoEstado = true;
+    try { definirCampo(estado, estadoPadrao); } finally { aplicandoEstado = estava; }
   }
 
   function criarLinhaDestino(depoisDe) {
@@ -236,6 +283,7 @@
     var caixa = caixaExclusao(slot);
     if (caixa) caixa.checked = false;
     slot.hidden = false;
+    preencherEstadoPadrao(slot);
     // O "+" da linha insere logo abaixo dela; sem origem, vai para o fim.
     if (depoisDe && depoisDe !== slot) {
       listaDestinos.insertBefore(slot, depoisDe.nextSibling);
@@ -264,48 +312,42 @@
     sincronizarTrechos();
   }
 
-  // Arrastar para reordenar, pela alça. A mecânica é a do editor de
-  // referência: ponteiro (não o drag-and-drop do HTML5, que não anima), com
-  // limiar de 8px antes de começar; a linha na mão apaga e a vizinha abre
-  // espaço para onde ela vai cair — o vão que se alarga já diz o lugar, sem
-  // precisar desenhar fio nenhum.
-  var LIMIAR_ARRASTE = 8;
+  // Arrastar para reordenar, pela alça. Ponteiro, não o drag-and-drop do
+  // HTML5: a linha acompanha o cursor e as vizinhas deslizam para abrir o
+  // lugar onde ela vai cair. Ao soltar, a ordem do DOM muda de uma vez, sem
+  // salto, porque as linhas já estão desenhadas onde vão ficar.
+  var LIMIAR_ARRASTE = 4;
   var arraste = null;
 
-  function limparAlvosDeSoltura() {
+  function limparDeslocamentos() {
     linhasDestino().forEach(function (linha) {
-      linha.classList.remove("is-drop-target", "is-drop-before", "is-drop-after");
+      linha.style.transform = "";
+      linha.classList.remove("is-dragging");
     });
   }
 
-  function alvoDeSoltura(arrastada, y) {
-    var alvo = null;
-    var menorDistancia = Infinity;
-    destinosVisiveis().forEach(function (linha) {
-      if (linha === arrastada) return;
-      var caixa = linha.getBoundingClientRect();
-      var centro = caixa.top + caixa.height / 2;
-      var distancia = Math.abs(y - centro);
-      if (distancia < menorDistancia) {
-        menorDistancia = distancia;
-        alvo = { linha: linha, depois: y >= centro };
-      }
-    });
-    return alvo;
-  }
-
-  function marcarAlvo(alvo) {
-    limparAlvosDeSoltura();
-    if (!alvo) return;
-    alvo.linha.classList.add("is-drop-target");
-    alvo.linha.classList.add(alvo.depois ? "is-drop-after" : "is-drop-before");
+  function prepararArraste() {
+    var linhas = destinosVisiveis();
+    var caixas = linhas.map(function (linha) { return linha.getBoundingClientRect(); });
+    var origem = linhas.indexOf(arraste.linha);
+    var vao = caixas.length > 1 ? Math.max(0, caixas[1].top - caixas[0].bottom) : 0;
+    arraste.linhas = linhas;
+    arraste.origem = origem;
+    arraste.alvo = origem;
+    arraste.centros = caixas.map(function (caixa) { return caixa.top + caixa.height / 2; });
+    arraste.passo = caixas[origem].height + vao;
+    arraste.minimo = caixas[0].top - caixas[origem].top;
+    arraste.maximo = caixas[caixas.length - 1].top - caixas[origem].top;
+    listaDestinos.classList.add("is-reordenando");
+    arraste.linha.classList.add("is-dragging");
+    document.body.classList.add("is-arrastando-destino");
   }
 
   function encerrarArraste() {
-    if (arraste && arraste.linha) arraste.linha.classList.remove("is-dragging");
     arraste = null;
+    limparDeslocamentos();
+    listaDestinos.classList.remove("is-reordenando");
     document.body.classList.remove("is-arrastando-destino");
-    limparAlvosDeSoltura();
     document.removeEventListener("pointermove", aoMoverPonteiro);
     document.removeEventListener("pointerup", aoSoltarPonteiro);
     document.removeEventListener("pointercancel", encerrarArraste);
@@ -313,30 +355,55 @@
 
   function aoMoverPonteiro(evento) {
     if (!arraste) return;
-    var dx = evento.clientX - arraste.x;
     var dy = evento.clientY - arraste.y;
     if (!arraste.ativo) {
-      if (Math.sqrt(dx * dx + dy * dy) < LIMIAR_ARRASTE) return;
+      var dx = evento.clientX - arraste.x;
+      if (Math.abs(dx) < LIMIAR_ARRASTE && Math.abs(dy) < LIMIAR_ARRASTE) return;
       arraste.ativo = true;
-      arraste.linha.classList.add("is-dragging");
-      document.body.classList.add("is-arrastando-destino");
+      prepararArraste();
     }
     evento.preventDefault();
-    arraste.alvo = alvoDeSoltura(arraste.linha, evento.clientY);
-    marcarAlvo(arraste.alvo);
+    // A linha não sai da lista: para exatamente no primeiro e no último lugar.
+    // As comparações abaixo aceitam empate, então as pontas continuam alcançáveis.
+    dy = Math.max(arraste.minimo, Math.min(arraste.maximo, dy));
+    arraste.linha.style.transform = "translateY(" + dy + "px)";
+
+    // O lugar de destino é o da última vizinha cujo centro a linha já passou.
+    var centro = arraste.centros[arraste.origem] + dy;
+    var alvo = arraste.origem;
+    arraste.centros.forEach(function (centroVizinha, indice) {
+      if (indice < arraste.origem && centro <= centroVizinha) alvo = Math.min(alvo, indice);
+      if (indice > arraste.origem && centro >= centroVizinha) alvo = Math.max(alvo, indice);
+    });
+    arraste.alvo = alvo;
+
+    arraste.linhas.forEach(function (linha, indice) {
+      if (indice === arraste.origem) return;
+      var desloca = 0;
+      if (arraste.origem < alvo && indice > arraste.origem && indice <= alvo) desloca = -arraste.passo;
+      if (arraste.origem > alvo && indice >= alvo && indice < arraste.origem) desloca = arraste.passo;
+      linha.style.transform = desloca ? "translateY(" + desloca + "px)" : "";
+    });
   }
 
   function aoSoltarPonteiro(evento) {
     if (!arraste) return;
     if (!arraste.ativo) { encerrarArraste(); return; }
     evento.preventDefault();
-    var alvo = arraste.alvo || alvoDeSoltura(arraste.linha, evento.clientY);
+    var linhas = arraste.linhas;
+    var origem = arraste.origem;
+    var alvo = arraste.alvo;
     var arrastada = arraste.linha;
+    listaDestinos.classList.add("sem-transicao");
+    if (alvo !== origem) {
+      var referencia = alvo > origem ? linhas[alvo].nextSibling : linhas[alvo];
+      listaDestinos.insertBefore(arrastada, referencia);
+    }
     encerrarArraste();
-    if (!alvo || alvo.linha === arrastada) return;
-    var referencia = alvo.depois ? alvo.linha.nextSibling : alvo.linha;
-    if (referencia === arrastada) return;
-    listaDestinos.insertBefore(arrastada, referencia);
+    window.requestAnimationFrame(function () {
+      window.requestAnimationFrame(function () { listaDestinos.classList.remove("sem-transicao"); });
+    });
+    if (alvo === origem) return;
     renumerarDestinos();
     percursoManual = false;
     sincronizarTrechos();
@@ -349,8 +416,9 @@
     if (!evento.target.closest("[data-destino-alca]")) return;
     var linha = evento.target.closest("[data-destino]");
     if (!linha) return;
+    evento.preventDefault();
     encerrarArraste();
-    arraste = { linha: linha, x: evento.clientX, y: evento.clientY, alvo: null, ativo: false };
+    arraste = { linha: linha, x: evento.clientX, y: evento.clientY, ativo: false };
     document.addEventListener("pointermove", aoMoverPonteiro);
     document.addEventListener("pointerup", aoSoltarPonteiro);
     document.addEventListener("pointercancel", encerrarArraste);
@@ -429,6 +497,7 @@
       campo.dispatchEvent(new Event("change", { bubbles: true }));
     });
     linha.removeAttribute("data-adicional-manual");
+    linha.removeAttribute("data-viagem-manual");
     linha.removeAttribute("data-bv");
   }
 
@@ -484,8 +553,11 @@
 
     escreverEm(linha, "[data-trecho-adicional-rotulo]", hhmmDe(adicional));
     escreverEm(linha, "[data-trecho-tempo-total]", total === null ? "—" : hhmmDe(total));
-    escreverEm(linha, "[data-trecho-viagem-nota]",
-      viagem === null ? "" : "viagem " + hhmmDe(viagem));
+    // O campo editável mostra o tempo de viagem, menos enquanto se digita nele.
+    var campoViagem = linha.querySelector("[data-trecho-viagem-editavel]");
+    if (campoViagem && document.activeElement !== campoViagem) {
+      campoViagem.value = viagem === null ? "" : hhmmDe(viagem);
+    }
     if (duracaoMin) definirCampo(duracaoMin, total === null ? "" : String(total));
 
     // A chegada não é digitada: é a saída mais o tempo total, gravada em
@@ -510,6 +582,25 @@
     escreverEm(linha, "[data-trecho-chegada-rotulo]", textoChegada);
   }
 
+  // Tempo de viagem mexido à mão: vale sobre as estimativas até um "Recalcular rota".
+  function definirViagemManual(linha, minutos) {
+    if (minutos === "" || minutos === null) {
+      definirViagem(linha, null);
+      linha.removeAttribute("data-viagem-manual");
+    } else {
+      definirViagem(linha, Math.max(0, minutos));
+      linha.setAttribute("data-viagem-manual", "1");
+    }
+    atualizarTempos(linha);
+    atualizarPainelLateral();
+    agendarPrevia();
+    agendarAutosave();
+  }
+
+  function ajustarViagem(linha, passo) {
+    definirViagemManual(linha, Math.max(0, (viagemDe(linha) || 0) + passo));
+  }
+
   function ajustarAdicional(linha, passo) {
     // Nunca negativo: descontar espera que não houve encurtaria a viagem.
     definirAdicional(linha, adicionalDe(linha) + passo, true);
@@ -532,6 +623,7 @@
       // Outro par de cidades: a estimativa anterior não vale mais. O
       // adicional que o operador ajustou à mão fica; o sugerido cai junto.
       definirViagem(linha, null, null, "");
+      linha.removeAttribute("data-viagem-manual");
       if (!linha.hasAttribute("data-adicional-manual")) definirAdicional(linha, 0, false);
     }
     atualizarLinha(linha);
@@ -635,7 +727,22 @@
     agendarAutosave();
   }
 
+  // Antes de abrir, o calendário recebe as saídas já preenchidas, na ordem
+  // dos trechos (até o primeiro sem data): reabre marcado, não em branco.
+  function informarDatasDeSaida(evento) {
+    if (!evento.target.closest("[data-custom-date-multi-trigger]")) return;
+    var datas = [];
+    trechosAtivos().some(function (linha) {
+      var valor = valorDe(linha, "saida_data");
+      if (!valor) return true;
+      datas.push(valor);
+      return false;
+    });
+    calendarioDatas.setAttribute("data-valores", JSON.stringify(datas));
+  }
+
   if (calendarioDatas) {
+    calendarioDatas.addEventListener("click", informarDatasDeSaida, true);
     calendarioDatas.addEventListener("ds:datas-multi", function (evento) {
       aplicarDatasDeSaida(evento.detail.datas);
     });
@@ -812,6 +919,9 @@
   }
 
   function mostrarMetricas(dados) {
+    // Os totais ficam ocultos até existir rota; a partir daqui passam a valer.
+    var blocoMetricas = editor.querySelector("[data-rota-metricas]");
+    if (blocoMetricas) blocoMetricas.hidden = false;
     var segmentos = dados.segmentos || [];
     var idaKm = null;
     var idaMin = null;
@@ -895,7 +1005,10 @@
     (dados.segmentos || []).forEach(function (segmento, indice) {
       var linha = ativos[indice];
       if (!linha) return;
-      definirViagem(linha, segmento.tempo_viagem_min, segmento.distancia_km, dados.fonte || "");
+      // Tempo de viagem digitado à mão fica; "Recalcular rota" põe o da rota por cima.
+      var viagemManual = linha.hasAttribute("data-viagem-manual") && !opcoes.sobrescreverAdicional;
+      definirViagem(linha, viagemManual ? viagemDe(linha) : segmento.tempo_viagem_min, segmento.distancia_km, dados.fonte || "");
+      if (!viagemManual) linha.removeAttribute("data-viagem-manual");
       if (opcoes.sobrescreverAdicional || !linha.hasAttribute("data-adicional-manual")) {
         definirAdicional(linha, segmento.tempo_adicional_sugerido_min || 0, false);
         linha.removeAttribute("data-adicional-manual");
@@ -998,7 +1111,18 @@
     });
   }
 
+  // Antes de abrir, o calendário do bate-volta recebe ida e volta já
+  // preenchidas: reabre com os dois dias marcados.
+  function informarDatasBv(evento) {
+    if (!evento.target.closest("[data-custom-date-multi-trigger]")) return;
+    var ida = (editor.querySelector('[name="bv_ida_data"]') || {}).value || "";
+    var volta = (editor.querySelector('[name="bv_volta_data"]') || {}).value || "";
+    var datas = ida ? (volta ? [ida, volta] : [ida]) : [];
+    painelDatasBv.setAttribute("data-valores", JSON.stringify(datas));
+  }
+
   if (painelDatasBv) {
+    painelDatasBv.addEventListener("click", informarDatasBv, true);
     painelDatasBv.addEventListener("ds:datas-multi", function (evento) {
       var datas = evento.detail.datas.slice().sort();
       if (!datas.length) return;
@@ -1456,6 +1580,11 @@
     var removerDestino = evento.target.closest("[data-destino-remover]");
     if (removerDestino) { removerLinhaDestino(removerDestino.closest("[data-destino]")); return; }
 
+    var viagemMenos = evento.target.closest("[data-viagem-menos]");
+    if (viagemMenos) { ajustarViagem(viagemMenos.closest("[data-trecho]"), -15); return; }
+    var viagemMais = evento.target.closest("[data-viagem-mais]");
+    if (viagemMais) { ajustarViagem(viagemMais.closest("[data-trecho]"), 15); return; }
+
     var menos = evento.target.closest("[data-tempo-menos]");
     if (menos) { ajustarAdicional(menos.closest("[data-trecho]"), -15); return; }
     var mais = evento.target.closest("[data-tempo-mais]");
@@ -1479,6 +1608,38 @@
         else desligarBateVolta();
       }, 0);
     }
+  });
+
+  // Campo de tempo de viagem: Enter confirma sem enviar o formulário; as setas
+  // andam 15 minutos, como os botões; só entram dígitos e dois-pontos.
+  editor.addEventListener("keydown", function (evento) {
+    var campo = evento.target.closest && evento.target.closest("[data-trecho-viagem-editavel]");
+    if (!campo) return;
+    var linhaTempo = campo.closest("[data-trecho]");
+    if (evento.key === "Enter") { evento.preventDefault(); campo.blur(); return; }
+    if (evento.key === "ArrowUp" || evento.key === "ArrowDown") {
+      evento.preventDefault();
+      var digitado = minutosDoTexto(campo.value);
+      if (typeof digitado === "number" && digitado !== viagemDe(linhaTempo)) definirViagem(linhaTempo, digitado);
+      ajustarViagem(linhaTempo, evento.key === "ArrowUp" ? 15 : -15);
+      campo.value = hhmmDe(viagemDe(linhaTempo));
+    }
+  });
+
+  // Máscara hh:mm: só dígitos (até quatro) e os dois-pontos entram sozinhos
+  // depois das horas. "5:" vira "05:", para quem digita a hora com um dígito.
+  function mascaraTempo(valor) {
+    var bruto = String(valor || "");
+    if (/^\d:/.test(bruto)) bruto = "0" + bruto;
+    var digitos = bruto.replace(/\D/g, "").slice(0, 4);
+    if (digitos.length <= 2) return digitos + (bruto.indexOf(":") === 2 && digitos.length === 2 ? ":" : "");
+    return digitos.slice(0, 2) + ":" + digitos.slice(2);
+  }
+
+  editor.addEventListener("input", function (evento) {
+    if (!evento.target.hasAttribute || !evento.target.hasAttribute("data-trecho-viagem-editavel")) return;
+    var mascarado = mascaraTempo(evento.target.value);
+    if (mascarado !== evento.target.value) evento.target.value = mascarado;
   });
 
   editor.addEventListener("change", function (evento) {
@@ -1514,6 +1675,14 @@
     }
 
     var linha = evento.target.closest("[data-trecho]");
+    if (linha && evento.target.hasAttribute("data-trecho-viagem-editavel")) {
+      var minutosDigitados = minutosDoTexto(evento.target.value);
+      // Texto que não é tempo volta ao valor anterior em vez de apagar a viagem.
+      if (minutosDigitados === null) { evento.target.value = hhmmDe(viagemDe(linha)); return; }
+      definirViagemManual(linha, minutosDigitados);
+      evento.target.value = minutosDigitados === "" ? "" : hhmmDe(minutosDigitados);
+      return;
+    }
     if (linha) {
       if (/saida_(data|hora)$/.test(evento.target.name || "")) atualizarTempos(linha);
       atualizarLinha(linha);
@@ -1547,6 +1716,7 @@
     derivarEstado(sede, editor.querySelector('select[name="origem_estado"]'));
     linhasDestino().forEach(function (linha) {
       derivarEstado(selectDaLinha(linha), linha.querySelector('select[name$="-estado"]'));
+      preencherEstadoPadrao(linha);
     });
 
     trechosVisiveis().forEach(function (linha) {
