@@ -378,12 +378,12 @@
               <span class="metrica__rotulo">Quantidade de diárias</span>
               <strong class="metrica__valor" data-diarias-composicao>{{ roteiro.resumo_diarias|default:"—" }}</strong>
             </div>
-            <div class="metrica metrica--larga">
-              <span class="metrica__icone" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
-              <span class="metrica__rotulo">Valor por extenso</span>
-              <strong class="metrica__valor metrica__valor--texto" data-diarias-extenso>{{ roteiro.valor_diarias_extenso|default:"—" }}</strong>
-            </div>
           </div>
+          {# O valor por extenso é uma linha de texto sob os cartões, não um quarto cartão. #}
+          <p class="diarias-extenso">
+            <span class="diarias-extenso__rotulo">{% include "components/icon.html" with nome="document" %}Por extenso</span>
+            <span class="diarias-extenso__valor" data-diarias-extenso>{{ roteiro.valor_diarias_extenso|default:"—" }}</span>
+          </p>
 
           {% comment %}
             A composição do último cálculo GRAVADO — não a da prévia acima,

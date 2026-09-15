@@ -171,9 +171,23 @@
     return fetch(url, {
       method: "POST", body: corpo, headers: { "X-Requested-With": "fetch" }
     }).then(function (resposta) {
-      if (!resposta.ok) throw new Error("HTTP " + resposta.status);
+      if (!resposta.ok) throw erroHttp(resposta.status);
       return resposta.json();
     });
+  }
+
+  // Resposta fora do 2xx vira uma frase para o operador, não "HTTP 501":
+  // quem lê a tela não tem como agir sobre um código.
+  function erroHttp(status) {
+    var texto;
+    if (status === 403) texto = "Sem permissão para editar roteiros.";
+    else if (status === 404) texto = "O endereço do serviço não foi encontrado no servidor.";
+    else if (status === 501) texto = "O servidor não aceitou este pedido (HTTP 501).";
+    else if (status >= 500) texto = "O servidor não conseguiu responder (HTTP " + status + ").";
+    else texto = "O servidor respondeu com erro (HTTP " + status + ").";
+    var erro = new Error(texto);
+    erro.status = status;
+    return erro;
   }
 
   // Campo `id` do formset: com valor, a linha já existe no banco.
@@ -807,9 +821,11 @@
     }, Promise.resolve()).then(function () {
       if (falhas.length) {
         var quantos = falhas.length === 1 ? "de um trecho" : "de " + falhas.length + " trechos";
+        // O tempo de viagem é editável: a estimativa que falhou não trava o roteiro.
         mostrarErro("[data-trechos-erro]",
-          "Não foi possível estimar a distância " + quantos + ". " +
-          (motivo || "Tente de novo alterando o destino."));
+          "Não foi possível estimar o tempo de viagem " + quantos + ". " +
+          (motivo || "Tente de novo alterando o destino.") +
+          " Informe o tempo à mão na coluna \"Tempo de viagem\" ou use \"Calcular rota\".");
       } else {
         mostrarErro("[data-trechos-erro]", "");
       }
