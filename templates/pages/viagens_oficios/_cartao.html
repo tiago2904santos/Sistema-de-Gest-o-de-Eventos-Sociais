@@ -108,15 +108,11 @@
 
   <footer class="of-cartao__rodape">
     <div class="acoes">
-      {% if pode_editar %}
-        <a class="ib-linha" href="{{ c.editar_url }}" aria-label="Editar ofício" title="Editar ofício">{% include "components/icon.html" with nome="pencil" %}</a>
-      {% else %}
-        <a class="acao-linha" href="{% url 'viagens_oficios:detalhe' o.pk %}">{% include "components/icon.html" with nome="eye" %}Abrir</a>
-      {% endif %}
+      {# O ofício tem uma tela só: o cartão abre direto o formulário. #}
+      <a class="acao-linha" href="{{ c.editar_url }}">{% include "components/icon.html" with nome="pencil" %}Abrir ofício</a>
     </div>
     {% if pode_editar %}
       <div class="acoes">
-        <a class="acao-linha" href="{% url 'viagens_oficios:detalhe' o.pk %}">{% include "components/icon.html" with nome="eye" %}Resumo</a>
         {% if not o.cancelado %}
           <div class="dd of-menu" data-menu>
             <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Abrir documentos do ofício {{ o.numero_formatado }}" title="Documentos do ofício">{% include "components/icon.html" with nome="document" %}</button>

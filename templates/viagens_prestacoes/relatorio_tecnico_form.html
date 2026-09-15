@@ -37,7 +37,7 @@
       <section class="reg pc-texto" id="grupo-{{ campo.campo }}">
         <h2 class="reg__t" id="{{ campo.section_id }}">{% include "components/icon.html" with nome="document" %}{{ campo.label }}<a class="pc-texto__modelos" href="{{ campo.manage_url }}">{% include "components/icon.html" with nome="settings" %}Modelos de texto</a></h2>
         <div class="g-form g-form--2">
-          {% include "components/select.html" with name="modelo_"|add:campo.campo label="Modelo de "|add:campo.label|lower opcoes=campo.opcoes placeholder="Selecione um modelo (opcional)" permitir_vazio=True selecionado=campo.valor_modelo %}
+          {% include "components/select.html" with name="modelo_"|add:campo.campo label="Modelo" opcoes=campo.opcoes placeholder="Selecione um modelo (opcional)" permitir_vazio=True selecionado=campo.valor_modelo %}
         </div>
         {% include "components/textarea.html" with name=campo.campo label=campo.label rotulo_oculto=True valor=campo.texto linhas="4" erros=campo.erros %}
       </section>

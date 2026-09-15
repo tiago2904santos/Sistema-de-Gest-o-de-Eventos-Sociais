@@ -24,7 +24,7 @@
               <td data-rotulo="Município">{{ demanda.municipio|default:demanda.municipio_texto|default:"—" }}</td>
               <td data-rotulo="Solicitante">{{ demanda.solicitante }}</td>
               <td data-rotulo="Status">{% include "components/v32/status_badge.html" with status=demanda.status label=demanda.get_status_display %}</td>
-              <td><a class="  acao-linha " href="{% url 'demandas_eventos:detalhe' demanda.pk %}">Ver</a></td>
+              <td><a class="  acao-linha " href="{% url 'demandas_eventos:editar' demanda.pk %}">Abrir</a></td>
             </tr>
           {% empty %}<tr><td colspan="6" class="v32-suave dt__vazio">Nenhum evento futuro agendado.</td></tr>{% endfor %}
         </tbody>
@@ -38,7 +38,7 @@
               <div class="m-item__campo" data-rotulo="Município">{{ demanda.municipio|default:demanda.municipio_texto|default:"—" }}</div>
               <div class="m-item__campo" data-rotulo="Solicitante">{{ demanda.solicitante }}</div>
               <div class="m-item__campo" data-rotulo="Status">{% include "components/v32/status_badge.html" with status=demanda.status label=demanda.get_status_display %}</div>
-              <div class="m-item__campo" data-rotulo="Ação"><a class="  acao-linha " href="{% url 'demandas_eventos:detalhe' demanda.pk %}">Ver</a></div>
+              <div class="m-item__campo" data-rotulo="Ação"><a class="  acao-linha " href="{% url 'demandas_eventos:editar' demanda.pk %}">Abrir</a></div>
             </article>
           {% empty %}<article class="m-item"><p class="m-vazio">Nenhum evento futuro agendado.</p></article>{% endfor %}
         </div></div>

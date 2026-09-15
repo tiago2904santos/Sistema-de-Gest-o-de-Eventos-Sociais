@@ -1,7 +1,7 @@
 # Meta 3 — Ofícios · Conferência e documentos
 
 **Origem:** `oficios:wizard_resumo` e `oficios:wizard_documentos` (etapas 5 e 6 do wizard), mais `oficios:detalhe`, `oficio_pdf_inline`, `justificativa_pdf_inline`, `baixar_documento`, `baixar_justificativa_documento`, `excluir`, `cancelar`, `retificar`, `marcar_complementar`.
-**Destino:** `viagens_oficios:detalhe`, em `pages/viagens_oficios/detalhe.html`, com `gerar`, `termo`, `termos_lote`, `acao`, `preview_artefato`, `assinatura_artefato` e `documentos:baixar`.
+**Destino:** `viagens_oficios:editar`, em `pages/viagens_oficios/form.html` (o ofício tem uma tela só), com `gerar`, `termo`, `termos_lote`, `acao`, `preview_artefato`, `assinatura_artefato` e `documentos:baixar`.
 **Data:** 14/09/2026.
 
 Mesma ressalva da ficha do formulário: não há fotografia das etapas 5 e 6 da origem neste repositório. A régua foi o conteúdo do cartão da lista (que a origem mostra por inteiro), as regras de conferência portadas e o inventário de rotas.

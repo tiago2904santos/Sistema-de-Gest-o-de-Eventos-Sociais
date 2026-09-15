@@ -79,7 +79,7 @@
     </div>
     <div class="acoes">
       <div class="dd of-menu" data-menu>
-        <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Escolher documentos para baixar" title="Escolher documentos para baixar">{% include "components/icon.html" with nome="download" %}</button>
+        <button type="button" class="acao-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false">{% include "components/icon.html" with nome="download" %}Escolher documentos para baixar</button>
         <div class="dd__c of-menu__corpo pc-menu-downloads" hidden data-menu-corpo>
           <div class="dd__t">Documentos de {{ s.name }}</div>
           {% for d in c.downloads %}
@@ -96,7 +96,7 @@
       </div>
       {% if pode_editar %}
         <div class="dd of-menu" data-menu>
-          <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="{{ c.rotulo_anexar }}" title="{{ c.rotulo_anexar }}">{% include "components/icon.html" with nome="upload" %}</button>
+          <button type="button" class="acao-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false">{% include "components/icon.html" with nome="upload" %}{{ c.rotulo_anexar }}</button>
           <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
             <div class="dd__t">{{ c.rotulo_anexar }}</div>
             {% for a in c.anexos %}
@@ -112,10 +112,10 @@
           </div>
         </div>
         <form method="post" action="{{ c.finalizar_url }}" data-confirmar="{% if c.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
-          <button type="submit" class="ib-linha{% if c.finalizada %} ib-linha--ativo{% endif %}" aria-label="{% if c.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}" title="{% if c.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}">{% include "components/icon.html" with nome="check-circle" %}</button>
+          <button type="submit" class="acao-linha{% if c.finalizada %} acao-linha--ativo{% endif %}">{% include "components/icon.html" with nome="check-circle" %}{% if c.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button>
         </form>
         <form method="post" action="{{ c.arquivar_url }}" data-confirmar="{% if c.arquivada %}Desarquivar a prestação?{% else %}Arquivar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
-          <button type="submit" class="ib-linha{% if c.arquivada %} ib-linha--ativo{% endif %}" aria-label="{% if c.arquivada %}Desarquivar prestação{% else %}Arquivar prestação{% endif %}" title="{% if c.arquivada %}Desarquivar prestação{% else %}Arquivar prestação{% endif %}">{% include "components/icon.html" with nome="lock" %}</button>
+          <button type="submit" class="acao-linha{% if c.arquivada %} acao-linha--ativo{% endif %}">{% include "components/icon.html" with nome="lock" %}{% if c.arquivada %}Desarquivar prestação{% else %}Arquivar prestação{% endif %}</button>
         </form>
       {% endif %}
     </div>

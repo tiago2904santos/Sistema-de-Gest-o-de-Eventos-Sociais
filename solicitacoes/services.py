@@ -140,13 +140,13 @@ def enviar(solicitacao, usuario):
         status_anterior=anterior,
         status_novo=solicitacao.status,
     )
-    link_detalhe = reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+    link_registro = reverse("solicitacoes:editar", args=[solicitacao.pk])
     notificar(
         usuarios_do_grupo("GESTOR_DG"),
         f"Solicitação #{solicitacao.pk} aguardando despacho",
         f"{solicitacao.municipio or 'Município a definir'} — "
         f"{solicitacao.tipo_evento or 'tipo a definir'}.",
-        link=f"{link_detalhe}#despacho-dg",
+        link=f"{link_registro}#despacho-dg",
         solicitacao=solicitacao,
         exceto=usuario,
     )
@@ -265,7 +265,7 @@ def despachar(solicitacao, usuario, decisao, observacao="", quantidades=None):
         [solicitacao.criado_por],
         f"Solicitação #{solicitacao.pk}: {solicitacao.get_status_display().lower()}",
         observacao or "A Diretoria-Geral registrou a decisão.",
-        link=reverse("solicitacoes:detalhe", args=[solicitacao.pk]),
+        link=reverse("solicitacoes:editar", args=[solicitacao.pk]),
         solicitacao=solicitacao,
         exceto=usuario,
     )
@@ -293,7 +293,7 @@ def concluir_atendimento(solicitacao, usuario):
         f"Solicitação #{solicitacao.pk}: atendimento confirmado",
         f"{solicitacao.municipio or 'Município a definir'} — o solicitante "
         "confirmou que o evento foi atendido.",
-        link=reverse("solicitacoes:detalhe", args=[solicitacao.pk]),
+        link=reverse("solicitacoes:editar", args=[solicitacao.pk]),
         solicitacao=solicitacao,
         exceto=usuario,
     )
@@ -331,7 +331,7 @@ def cancelar_evento(solicitacao, usuario, observacao):
         list(interessados),
         f"Solicitação #{solicitacao.pk}: evento cancelado",
         observacao,
-        link=reverse("solicitacoes:detalhe", args=[solicitacao.pk]),
+        link=reverse("solicitacoes:editar", args=[solicitacao.pk]),
         solicitacao=solicitacao,
         exceto=usuario,
     )

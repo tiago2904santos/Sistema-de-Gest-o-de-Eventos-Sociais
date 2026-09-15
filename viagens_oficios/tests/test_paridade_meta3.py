@@ -3,8 +3,9 @@
 Cobre o que a origem tem e a tela daqui passou a ter: busca por número,
 protocolo, motivo ou destino; as quatro situações combináveis com contagem;
 as seis ordenações; os dois períodos; o cartão com equipe, transporte,
-trechos, valor e justificativa; os menus de ação; o formulário por blocos e o
-detalhe com conferência; e os catálogos no padrão dos cadastros.
+trechos, valor e justificativa; os menus de ação; o formulário por blocos, com
+a conferência, os documentos, o histórico e o encerramento na mesma tela; e os
+catálogos no padrão dos cadastros.
 """
 
 from datetime import datetime, timedelta
@@ -255,10 +256,13 @@ class FormularioTests(Cenario):
         for texto in ["Dados e viajantes", "Identificação", "Motivo", "Custeio", "Equipe", "Termo de autorização",
                       "Transporte", "Origem da viatura", "Cartão do motorista externo", "Ofício do motorista",
                       "Porte/transporte de armas", "Roteiro", "Resumo da rota", "Justificativa", "Regra de prazo",
-                      "Resumo", "Etapas", "Documentos"]:
+                      "Documentos"]:
             self.assertContains(r, texto)
         self.assertNotContains(r, "viagem-campos")
         self.assertTemplateNotUsed(r, "pages/viagens_oficios/_campos.html")
+        # Coluna única: nada de menu lateral flutuante em tela nenhuma.
+        for marca in ["<aside", "frm-lateral", 'class="sticky', "step-v", "frm-acoes--flut"]:
+            self.assertNotContains(r, marca)
 
     def test_viatura_cadastrada_apaga_a_manual(self):
         r = self.client.post(reverse("viagens_oficios:novo"), self.payload())
@@ -281,22 +285,51 @@ class FormularioTests(Cenario):
         r = self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(next=volta, acao="salvar"))
         self.assertRedirects(r, volta)
         r = self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload())
-        self.assertRedirects(r, reverse("viagens_oficios:detalhe", args=[o.pk]))
+        self.assertRedirects(r, reverse("viagens_oficios:editar", args=[o.pk]))
 
 
-class DetalheTests(Cenario):
+class ConferenciaNoFormularioTests(Cenario):
+    """O que era a tela de detalhe agora é o fim do formulário do ofício."""
+
     def test_conferencia_documentos_e_acoes(self):
         o = self.oficio(dias=-20, protocolo="123456789", servidores=[self.janine, self.joao], motorista=self.joao, viatura=self.duster, justificativa="teste 1")
-        r = self.client.get(reverse("viagens_oficios:detalhe", args=[o.pk]))
-        for texto in ["Conferência", "1. Dados e viajantes", "6. Documentos", "Pronto para emissão", "Equipe", "Todos em PDF (ZIP)",
-                      "Transporte", "AAA-1234", "Roteiro e diárias", "CURITIBA/PR → ANTONINA/PR", "R$ 4.358,25",
-                      "Justificativa", "Preenchida", "Visualizar ofício", "Baixar DOCX", "Documentos gerados",
-                      "Retificar ofício", "Arquivar ofício", "Cancelamento", "Histórico", "Abrir prestação de contas"]:
-            self.assertContains(r, texto)
+        r = self.client.get(reverse("viagens_oficios:editar", args=[o.pk]))
+        for texto in ["Dados e viajantes", "Documentos", "pronto para emissão",
+                      "Equipe", "Termos de autorização", "Todos num PDF", "Todos em PDF (ZIP)", "Todos em DOCX (ZIP)",
+                      "Transporte", "Roteiro", "Justificativa", "Visualizar ofício", "Visualizar justificativa",
+                      "Baixar DOCX", "Documentos gerados", "Encerramento", "Retificar ofício", "Ofício complementar",
+                      "Arquivar ofício", "Cancelamento", "Excluir ofício", "Histórico", "Abrir prestação de contas"]:
+            with self.subTest(texto=texto):
+                self.assertContains(r, texto)
+
+    def test_formularios_secundarios_ficam_fora_do_formulario_do_oficio(self):
+        """HTML aninhado não existe: os POSTs de documento e de estado vêm depois.
+
+        O formulário do ofício engloba a página; um <form> de emissão ou de
+        cancelamento dentro dele seria HTML inválido e os dois posts se
+        atrapalhariam.
+        """
+        o = self.oficio(dias=-20, servidores=[self.janine], motorista=self.janine, viatura=self.duster)
+        corpo = self.client.get(reverse("viagens_oficios:editar", args=[o.pk])).content.decode()
+        abertura = corpo.index('id="form-oficio"')
+        fim_do_formulario = corpo.index("</form>", abertura)
+        for rota, args in [("viagens_oficios:gerar", [o.pk, "oficio", "pdf"]),
+                           ("viagens_oficios:termos_todos_pdf", [o.pk]),
+                           ("viagens_oficios:termos_lote", [o.pk, "docx"]),
+                           ("viagens_oficios:acao", [o.pk, "cancelar"]),
+                           ("viagens_oficios:acao", [o.pk, "retificar"]),
+                           ("viagens_oficios:acao", [o.pk, "excluir"])]:
+            with self.subTest(rota=rota, args=args):
+                self.assertGreater(corpo.index(reverse(rota, args=args)), fim_do_formulario)
+
+    def test_acao_volta_para_o_formulario(self):
+        o = self.oficio(dias=3, servidores=[self.janine])
+        r = self.client.post(reverse("viagens_oficios:acao", args=[o.pk, "arquivar"]))
+        self.assertRedirects(r, reverse("viagens_oficios:editar", args=[o.pk]))
 
     def test_pendencias_no_rascunho(self):
         o = self.oficio()
-        r = self.client.get(reverse("viagens_oficios:detalhe", args=[o.pk]))
+        r = self.client.get(reverse("viagens_oficios:editar", args=[o.pk]))
         self.assertContains(r, "Faltam informações para emitir o documento")
         self.assertContains(r, "Selecione ao menos um viajante.")
         self.assertContains(r, "Completar o ofício")

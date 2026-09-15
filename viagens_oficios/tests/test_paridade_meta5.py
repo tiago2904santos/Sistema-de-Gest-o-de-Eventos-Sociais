@@ -154,7 +154,7 @@ class ListaTermosTests(CenarioTermos):
         self.assertEqual(self.client.get(reverse("viagens_termos:novo")).status_code, 403)
         self.assertEqual(self.client.post(reverse("viagens_termos:gerar", args=[t.pk, 0, "pdf"])).status_code, 403)
         self.assertEqual(self.client.post(reverse("viagens_termos:acao", args=[t.pk, "excluir"])).status_code, 403)
-        self.assertEqual(self.client.get(reverse("viagens_termos:detalhe", args=[t.pk])).status_code, 200)
+        self.assertEqual(self.client.get(reverse("viagens_termos:editar", args=[t.pk])).status_code, 200)
 
     def test_item_de_navegacao(self):
         self.assertContains(self.lista(), 'aria-current="page">Termos</a>')
@@ -204,7 +204,7 @@ class FormTermoTests(CenarioTermos):
         self.assertContains(r, f"Ofício {o.numero_formatado}")
         self.assertContains(r, "Este termo herda do ofício: destino, período, servidores, viatura.")
         r = self.client.post(reverse("viagens_termos:editar", args=[t.pk]), {"oficio": o.pk, "viatura": "", "servidores": [str(self.janine.pk)]})
-        self.assertRedirects(r, reverse("viagens_termos:detalhe", args=[t.pk]))
+        self.assertRedirects(r, reverse("viagens_termos:editar", args=[t.pk]))
         t.refresh_from_db()
         self.assertEqual(list(t.servidores.all()), [self.janine])
 
@@ -230,16 +230,16 @@ class FormTermoTests(CenarioTermos):
 
 
 class DetalheEDocumentosTests(CenarioTermos):
-    def test_detalhe_lista_os_documentos(self):
+    def test_tela_do_termo_lista_os_documentos(self):
         o = self.oficio(dias=-20, protocolo="123456789", servidores=[self.janine, self.joao], viatura=self.duster)
         t = self.termo(oficio=o)
-        r = self.client.get(reverse("viagens_termos:detalhe", args=[t.pk]))
-        for texto in [f"Termo #{t.pk}", "Realizado", "Dados do termo", f"Ofício {o.numero_formatado}", "Herdado do ofício",
+        r = self.client.get(reverse("viagens_termos:editar", args=[t.pk]))
+        for texto in [f"Termo #{t.pk}", "Realizado", "Destino e período", "Servidores e viatura", f"Ofício {o.numero_formatado}", "herda do ofício",
                       "Escolher documentos para baixar", "Termo por servidor", "JANINE LACERDA DO PRADO", "JOÃO MARIO DE GOES",
                       "Visualizar", "Anexar assinado", "Termo genérico", "Só destino e período, semipreenchido",
                       "Termo da viatura", "AAA-1234 DUSTER, campos do servidor em branco", "Todos os termos", "2 servidores",
                       "PDF único", "ZIP de PDFs", "ZIP de DOCX", "Documentos gerados", "Nenhum documento gerado.",
-                      "Cancelamento", "Cancelar termo", "Prévia em tela", "Abrir prévia", "Editar termo"]:
+                      "Cancelamento", "Cancelar termo", "Prévia em tela", "Abrir prévia", "Salvar termo"]:
             self.assertContains(r, texto)
         self.assertContains(r, reverse("viagens_termos:preview", args=[t.pk]))
         self.assertContains(r, reverse("viagens_termos:todos_pdf", args=[t.pk]))
@@ -283,14 +283,14 @@ class DetalheEDocumentosTests(CenarioTermos):
                 self.assertEqual(len(nomes), 2)
                 self.assertTrue(all(z.read(n).startswith(assinatura) for n in nomes))
 
-        r = self.client.get(reverse("viagens_termos:detalhe", args=[t.pk]))
+        r = self.client.get(reverse("viagens_termos:editar", args=[t.pk]))
         self.assertNotContains(r, "Nenhum documento gerado.")
         self.assertContains(r, "JANINE LACERDA DO PRADO")
 
     def test_termo_cancelado_nao_gera(self):
         t = self.termo(cidade=self.antonina, inicio=self.data(3), servidores=[self.janine], cancelar=True)
         r = self.client.post(reverse("viagens_termos:gerar", args=[t.pk, self.janine.pk, "pdf"]), follow=True)
-        self.assertRedirects(r, reverse("viagens_termos:detalhe", args=[t.pk]))
+        self.assertRedirects(r, reverse("viagens_termos:editar", args=[t.pk]))
         self.assertContains(r, "Reative o termo e o ofício antes de gerar documentos.")
         self.assertFalse(DocumentoArtefato.objects.filter(termo=t).exists())
         self.assertEqual(self.client.post(reverse("viagens_termos:gerar", args=[t.pk, self.janine.pk, "txt"])).status_code, 404)
@@ -314,7 +314,7 @@ class DetalheEDocumentosTests(CenarioTermos):
 
     def test_acoes_cancelar_reativar_excluir(self):
         t = self.termo(cidade=self.antonina, inicio=self.data(3), servidores=[self.janine])
-        detalhe = reverse("viagens_termos:detalhe", args=[t.pk])
+        detalhe = reverse("viagens_termos:editar", args=[t.pk])
         r = self.client.post(reverse("viagens_termos:acao", args=[t.pk, "cancelar"]), {"motivo": "Evento adiado"})
         self.assertRedirects(r, detalhe)
         t.refresh_from_db()

@@ -17,7 +17,6 @@ urlpatterns = [
     path('catalogos/<str:tipo>/', catalogs.catalogo, name='catalogo'),
     path('catalogos/<str:tipo>/novo/', catalogs.catalogo, {'novo': True}, name='catalogo_novo'),
     path('catalogos/<str:tipo>/<int:pk>/', catalogs.catalogo, name='catalogo_editar'),
-    path('<int:pk>/', views.detalhe, name='detalhe'),
     path('<int:pk>/editar/', views.editar, name='editar'),
     path('<int:pk>/acao/<str:acao>/', views.acao, name='acao'),
     path('<int:pk>/gerar/<str:tipo>/<str:formato>/', views.gerar, name='gerar'),

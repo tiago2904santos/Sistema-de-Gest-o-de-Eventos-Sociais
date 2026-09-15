@@ -68,20 +68,7 @@ def index(request):
 def consolidado(request, pc_pk):
     pc = get_object_or_404(_prestacao_queryset(), pk=pc_pk)
     ps = _primeiro_servidor(pc)
-    return redirect("viagens_prestacoes:consolidado_servidor", ps_pk=ps.pk) if ps else _redirect_lista(request)
-
-
-def consolidado_servidor(request, ps_pk):
-    ps = _prestacao_servidor_full(ps_pk)
-    pendencias = pendencias_consolidado(ps)
-    from .download_services import payload_downloads
-    return render(request, "viagens_prestacoes/consolidado.html", {
-        "downloads": payload_downloads(ps)["itens"],
-        "servidores": [{"nome": ps.servidor.nome, "pode_gerar": not pendencias, "download_url": reverse("viagens_prestacoes:consolidado_download", args=[ps.pk])}],
-        "ps": ps, "prestacao": ps.prestacao,
-        "identificacao": _build_identificacao(ps.prestacao),
-        "pendencias": pendencias, **contexto_do_fluxo(ps, "consolidado"),
-    })
+    return redirect("viagens_prestacoes:documentos_servidor", ps_pk=ps.pk) if ps else _redirect_lista(request)
 
 
 def consolidado_download(request, ps_pk):
@@ -169,5 +156,5 @@ def abrir_oficio(request, pk):
     ps = oficio.prestacao_contas.servidores_prestacao.first()
     if ps is None:
         messages.error(request, "Inclua a equipe no ofício antes de abrir a prestação.")
-        return redirect("viagens_oficios:detalhe", pk=oficio.pk)
+        return redirect("viagens_oficios:editar", pk=oficio.pk)
     return redirect("viagens_prestacoes:diario_servidor", ps_pk=ps.pk)

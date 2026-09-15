@@ -28,7 +28,7 @@ def _fallback_da_prestacao(prestacao) -> str:
     """Para onde voltar quando o `next` não vier — ou vier apontando para fora (BE-08)."""
     ps = _primeiro_servidor(prestacao)
     if ps is not None:
-        return reverse("viagens_prestacoes:consolidado_servidor", args=[ps.pk])
+        return reverse("viagens_prestacoes:documentos_servidor", args=[ps.pk])
     return reverse("viagens_prestacoes:index")
 
 
@@ -109,7 +109,7 @@ def assinatura_rt_gerar(request, ps_pk):
     )
     forcar = request.POST.get("forcar") == "1"
     next_url = voltar_para(
-        request, reverse("viagens_prestacoes:consolidado_servidor", args=[ps.pk])
+        request, reverse("viagens_prestacoes:documentos_servidor", args=[ps.pk])
     )
     try:
         token, _docs = emitir_link_rt(ps, dias=request.POST.get("dias", 7), forcar=forcar)
@@ -150,7 +150,7 @@ def assinatura_db_gerar(request, pc_pk):
 def assinatura_rt_cancelar(request, ps_pk):
     ps = get_object_or_404(_prestacao_servidor_queryset(), pk=ps_pk)
     next_url = voltar_para(
-        request, reverse("viagens_prestacoes:consolidado_servidor", args=[ps.pk])
+        request, reverse("viagens_prestacoes:documentos_servidor", args=[ps.pk])
     )
     cancelar_assinatura_rt(ps)
     messages.success(request, "Link/assinatura revogados. Os arquivos anteriores foram preservados.")

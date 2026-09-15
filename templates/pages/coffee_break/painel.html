@@ -104,8 +104,8 @@
           </thead>
           <tbody>
             {% for s in recentes %}
-              <tr data-linha-url="{% url 'coffee_break:detalhe' s.pk %}">
-                <td><strong><a href="{% url 'coffee_break:detalhe' s.pk %}">{{ s.numero|default:"—" }}</a></strong></td>
+              <tr data-linha-url="{% url 'coffee_break:editar' s.pk %}">
+                <td><strong><a href="{% url 'coffee_break:editar' s.pk %}">{{ s.numero|default:"—" }}</a></strong></td>
                 <td>{{ s.descricao_evento|truncatechars:45 }}</td>
                 <td>{{ s.lote.rotulo_curto }}</td>
                 <td>{{ s.quantidade }}</td>
@@ -120,8 +120,8 @@
       </div>
 <div class="lista-mobile-v32"><div class="m-lista">
             {% for s in recentes %}
-              <article class="m-item" data-linha-url="{% url 'coffee_break:detalhe' s.pk %}">
-                <div class="m-item__campo" data-rotulo="Nº"><strong><a href="{% url 'coffee_break:detalhe' s.pk %}">{{ s.numero|default:"—" }}</a></strong></div>
+              <article class="m-item" data-linha-url="{% url 'coffee_break:editar' s.pk %}">
+                <div class="m-item__campo" data-rotulo="Nº"><strong><a href="{% url 'coffee_break:editar' s.pk %}">{{ s.numero|default:"—" }}</a></strong></div>
                 <div class="m-item__campo" data-rotulo="Evento">{{ s.descricao_evento|truncatechars:45 }}</div>
                 <div class="m-item__campo" data-rotulo="Lote">{{ s.lote.rotulo_curto }}</div>
                 <div class="m-item__campo" data-rotulo="Qtde">{{ s.quantidade }}</div>

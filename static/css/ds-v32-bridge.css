@@ -193,7 +193,7 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
   .frm-grade{grid-template-columns:1fr}
   .g-form--3,.g-form--2,.condicional{grid-template-columns:1fr}
   .g-form .c2{grid-column:auto}
-  .frm-acoes--flut{position:sticky;bottom:0;padding:12px 0;z-index:40}
+  .frm-acoes--flut{position:static;padding:12px 0}
 }
 
 /* Seletor de colunas do app.js. */
@@ -273,11 +273,7 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
   .db-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .db-2col,.db-linha2{grid-template-columns:1fr}
   .cad-grade{grid-template-columns:1fr}
-  .cad-rail{position:static;display:flex;overflow-x:auto;scrollbar-width:none}
-  .cad-rail::-webkit-scrollbar{display:none}
   .cad-rail__h{display:none}
-  .cad-rail .cad-i{flex:none;border-bottom:0;border-right:1px solid var(--n-100)}
-  .cad-rail .cad-i[aria-current]{box-shadow:inset 0 -2px 0 var(--d-500)}
   .cad-visao{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @container (max-width:680px){
@@ -351,12 +347,11 @@ body.m-sheet-aberto{overflow:hidden}
 .condicional .ctrl{background:var(--branco);border-color:var(--d-300)}
 .condicional .ctrl:hover{border-color:var(--d-500)}
 
-/* A lateral nunca rola por dentro: o V3.2 a prendia na janela com altura
-   máxima e barra própria. Aqui ela só flutua quando cabe inteira na janela — o
-   ds-v32.js mede e marca .pode-flutuar. Não cabendo, rola junto com a página e
-   as ações continuam presas ao rodapé pela regra .frm-acoes--flut. */
+/* Não existe mais lateral flutuante em tela nenhuma: tudo rola junto com a
+   página, em coluna única. A classe segue neutralizada aqui para o caso de
+   sobrar marcação antiga. */
 .sticky{position:static;max-height:none;overflow:visible}
-.sticky.pode-flutuar{position:sticky;top:var(--s5);align-self:start}
+.sticky.pode-flutuar{position:static}
 
 /* ---- Calendário e select do sistema (app.js) nos tokens da V3.2 ---------
    Os componentes input.html/date_range.html/select.html trazem a marcação do
@@ -704,7 +699,7 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 /* Editor de roteiro: classes funcionais permanecem; aparência, métricas e etapas seguem V3.2. */
 .editor-roteiro{padding-top:0}.editor-roteiro__topo,.editor-roteiro__aviso{grid-column:1/-1}.editor-roteiro__topo{padding-bottom:0}.editor-roteiro__titulo{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .editor-roteiro__principal,.editor-roteiro__lateral{min-width:0}.editor-roteiro__principal>.reg{margin-bottom:16px}.editor-roteiro__principal .reg__t{flex-wrap:wrap}.editor-roteiro .section-card__titulo,.editor-roteiro .side-card__cabecalho h2{font:inherit;margin:0}.editor-roteiro .section-card__acao{margin-left:auto}.editor-roteiro .side-card__icone{display:flex}
-.editor-roteiro__acoes-cabecalho{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}.editor-roteiro__acoes.frm-acoes{display:grid;gap:8px;margin-top:auto;position:sticky;bottom:0;padding:14px;background:var(--papel);border-top:1px solid var(--n-200);z-index:25}.editor-roteiro__acoes .btn--secundaria,.editor-roteiro__acoes .btn-primaria{justify-content:center}
+.editor-roteiro__acoes-cabecalho{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}.editor-roteiro__acoes.frm-acoes{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;position:static;padding:14px 0 0;background:0;border-top:1px solid var(--n-200)}.editor-roteiro__acoes .btn--secundaria,.editor-roteiro__acoes .btn-primaria{justify-content:center}
 .editor-roteiro .resumo-lista{margin:0}.editor-roteiro .resumo-lista>div{display:flex;justify-content:space-between;gap:14px;font-size:12px;padding:9px 0;border-bottom:1px solid var(--n-150)}.editor-roteiro .resumo-lista dt{color:var(--n-500)}.editor-roteiro .resumo-lista dd{margin:0;text-align:right;color:var(--n-800);overflow-wrap:anywhere}
 .acoes-roteiro,.acoes-roteiro form{display:grid;gap:9px}.acoes-roteiro{gap:16px}.acoes-roteiro button{justify-content:center}.autosave-status{font-size:11px;color:var(--n-500);margin:0 0 4px;line-height:1.6}.autosave-status[data-estado=salvando]{color:var(--in-t)}.autosave-status[data-estado=salvo]{color:var(--ok-t)}.autosave-status[data-estado=erro]{color:var(--dg-t)}
 .editor-roteiro .bloco-split{display:grid;grid-template-columns:180px minmax(0,1fr);gap:18px;padding:16px 0}.editor-roteiro .bloco-split+.bloco-split{border-top:1px solid var(--n-150)}.editor-roteiro .bloco-split:first-child{padding-top:0}.bloco-split__rotulo strong{font-size:13px;color:var(--n-800)}.bloco-split__rotulo p{font-size:11px;line-height:1.6;margin:5px 0 0}.bloco-split__corpo{min-width:0}.percurso-previa{color:var(--d-700);overflow-wrap:anywhere}
@@ -807,7 +802,7 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 .sol-detalhe__meta{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:12px}
 .sol-detalhe__meta>span:not(.sr-only){display:flex;align-items:center;gap:6px;min-width:0;overflow-wrap:anywhere}
 .sol-detalhe__meta .ui-icon{color:var(--n-400);width:14px;height:14px}
-.sol-detalhe .d-grade{grid-template-columns:minmax(0,1fr) 320px;gap:20px}
+.sol-detalhe .d-grade{grid-template-columns:minmax(0,1fr);gap:20px}
 .sol-detalhe__principal,.sol-detalhe .sticky{min-width:0}
 .sol-detalhe .reg{padding:20px;border-radius:12px}
 .sol-detalhe .reg+.reg{margin-top:18px}
@@ -849,7 +844,7 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 .sol-detalhe__historico .evento__topo{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 16px}
 .sol-detalhe__historico .evento__d{line-height:1.6;overflow-wrap:anywhere;max-width:85ch}
 @container(max-width:1100px){
-  .sol-detalhe .d-grade{grid-template-columns:minmax(0,1fr) 290px;gap:16px}
+  .sol-detalhe .d-grade{grid-template-columns:minmax(0,1fr);gap:16px}
   .sol-detalhe__dados{grid-template-columns:minmax(0,1fr)}
   .sol-detalhe__solicitante .gc{grid-template-columns:repeat(3,minmax(0,1fr))}
   .sol-detalhe__indicadores{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -1015,12 +1010,12 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 .of-pessoa__desc{font-size:11.5px;color:var(--n-500);overflow-wrap:anywhere}
 .of-tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:99px;background:var(--d-600);color:#fff;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .of-equipe__vazio{grid-column:1/-1;padding:9px 12px;border:1px dashed var(--n-200);border-radius:9px;font-size:12.5px;color:var(--n-500)}
-.of-grade{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1.1fr);gap:10px;align-items:stretch}
+.of-grade{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.5fr) minmax(0,1.2fr);gap:10px;align-items:stretch}
 .of-bloco{min-width:0;padding:12px 14px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25)}
 .of-rotulo{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--d-700)}
 .of-rotulo+*{display:block;margin:2px 0 10px}
 .of-bloco> :last-child{margin-bottom:0}
-.of-transporte__valor{font-size:26px;line-height:1.1;font-weight:800;color:var(--n-900);letter-spacing:.01em;overflow-wrap:anywhere}
+.of-transporte__valor{font-size:15px;line-height:1.3;font-weight:600;color:var(--n-900);letter-spacing:.01em;overflow-wrap:anywhere}
 .of-nao-informado{font-size:13px;color:var(--n-500)}
 .of-trechos{list-style:none;margin:0;padding:8px;display:grid;gap:6px;align-content:start;max-height:190px;overflow:auto;scrollbar-width:thin}
 .of-trecho{display:grid;gap:2px;padding:8px 10px;border-radius:7px;background:var(--branco);border:1px solid var(--n-150);min-width:0}
@@ -1056,7 +1051,7 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 @container(max-width:680px){
   .of-grade,.of-equipe{grid-template-columns:1fr}
   .of-cartao{padding:14px}
-  .of-transporte__valor,.of-valor__num{font-size:22px}
+  .of-valor__num{font-size:22px}
   .of-menu__corpo{right:auto;left:0}
   .of-cartao__rodape{flex-wrap:wrap}
   .of-filtros__ordem,.of-filtros__periodo{flex-basis:100%}
@@ -1250,6 +1245,7 @@ a.step-i{text-decoration:none;color:inherit}
 .of-cartao .pc-wa{width:34px;height:34px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco);color:var(--ok-t);display:inline-grid;place-items:center}
 .of-cartao .pc-wa:hover{border-color:var(--ok-t);background:var(--ok-b)}
 .of-cartao .ib-linha--ativo{border-color:var(--d-500);background:var(--d-50);color:var(--d-800)}
+.acao-linha--ativo{color:var(--d-800);font-weight:600}
 .pc-menu-downloads{min-width:340px}
 .pc-download{display:grid;gap:6px;padding:8px 10px;border-bottom:1px solid var(--n-100)}
 .pc-download:last-of-type{border-bottom:0}
@@ -1267,22 +1263,34 @@ a.step-i{text-decoration:none;color:inherit}
 /* Meta 6 · etapas da prestação */
 .pc-fluxo .d-titulo h1{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .pc-fluxo__etapa{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--d-700)}
-.pc-fluxo__grade{align-items:start}
-.pc-fluxo__lateral .reg__t em{margin-left:auto;font-style:normal;font-size:11.5px;font-weight:400;color:var(--n-500)}
-.pc-fluxo .step-i{text-decoration:none;position:relative}
-.pc-fluxo .step-i:hover .step-i__t{color:var(--d-800)}
-.pc-equipe{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.pc-equipe__item a{display:flex;align-items:center;gap:9px;padding:7px 9px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25);text-decoration:none;color:inherit}
+.pc-fluxo__principal{min-width:0}
+/* Os passos e a equipe são barras horizontais no topo — não há lateral. */
+.pc-passos{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.pc-passo{flex:1 1 200px;display:flex;align-items:center;gap:10px;min-width:0;padding:10px 12px;border:1px solid var(--n-150);border-radius:10px;background:var(--branco);text-decoration:none;color:inherit}
+.pc-passo:hover{border-color:var(--d-300)}
+.pc-passo__m{flex:none;width:22px;height:22px;border-radius:99px;border:1.5px solid var(--n-250);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--n-500)}
+.pc-passo__txt{display:grid;gap:1px;min-width:0}
+.pc-passo__txt b{font-size:13px;font-weight:600;color:var(--n-800);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-passo__txt small{font-size:11.5px;color:var(--n-500)}
+.pc-passo--feito .pc-passo__m{background:var(--ok-t);border-color:var(--ok-t);color:#fff}
+.pc-passo--atual{border-color:var(--d-400);background:var(--d-50)}
+.pc-passo--atual .pc-passo__m{border-color:var(--d-500);color:var(--d-700);background:var(--branco)}
+.pc-passo--atual .pc-passo__txt b{color:var(--n-900)}
+.pc-equipe-barra{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 16px;padding:10px 12px;border:1px solid var(--n-150);border-radius:10px;background:var(--n-25)}
+.pc-equipe-barra__r{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--n-600)}
+.pc-equipe-barra__r .ui-icon{width:15px;height:15px;color:var(--n-450)}
+.pc-equipe-barra__r em{font-style:normal;font-weight:400;color:var(--n-450)}
+.pc-equipe{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.pc-equipe__item a{display:flex;align-items:center;gap:8px;padding:5px 10px 5px 5px;border:1px solid var(--n-200);border-radius:99px;background:var(--branco);text-decoration:none;color:inherit}
 .pc-equipe__item a:hover{border-color:var(--d-300)}
 .pc-equipe__item--atual a{border-color:var(--d-400);background:var(--d-50)}
-.pc-equipe .of-av{width:28px;height:28px;font-size:10.5px}
-.pc-equipe .of-pessoa__nome{font-size:12.5px}
-.pc-equipe .of-pessoa__desc{font-size:11px}
-.pc-removidos{margin-top:10px;font-size:12px;color:var(--n-600)}
+.pc-equipe .of-av{width:24px;height:24px;font-size:10px}
+.pc-equipe__nome{font-size:12.5px;font-weight:500}
+.pc-removidos{flex-basis:100%;margin-top:2px;font-size:12px;color:var(--n-600)}
 .pc-removidos summary{cursor:pointer;font-weight:600}
 .pc-removidos ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
 .pc-removidos li{display:grid;gap:1px}.pc-removidos small{color:var(--n-500)}
-.pc-fluxo__rodape{position:sticky;bottom:0;background:var(--branco);padding:12px 0;z-index:20}
+.pc-fluxo__rodape{display:flex;flex-wrap:wrap;align-items:center;gap:9px;justify-content:flex-end;margin-top:var(--s5);padding-top:var(--s4);border-top:1px solid var(--n-150)}
 .pc-fluxo__rodape form{margin:0}
 .pc-fluxo__nota{margin:0 0 14px;font-size:13px;color:var(--n-600)}
 .pc-acoes-linha{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
@@ -1317,7 +1325,9 @@ a.step-i{text-decoration:none;color:inherit}
 .acao-linha--perigo{color:var(--dg-t)}
 .prestacao-upload{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0}
 .pc-upload__escolher{cursor:pointer}
-.pc-upload__nome{flex:1 1 160px;font-size:12px;color:var(--n-600);overflow-wrap:anywhere}
+/* O nome do arquivo escolhido não empurra o botão para a outra ponta do
+   cartão: escolher e anexar são o mesmo gesto e ficam juntos. */
+.pc-upload__nome{flex:0 1 auto;font-size:12px;color:var(--n-600);overflow-wrap:anywhere}
 .pc-pendencias{margin:6px 0 0;padding-left:18px}
 .pc-pendencias li{font-size:13px;color:#4d3703}
 .pc-situacao{margin-top:14px}
@@ -1334,3 +1344,12 @@ a.step-i{text-decoration:none;color:inherit}
 .pc-modelo__texto{margin:0;font-size:13px;line-height:1.55;color:var(--n-700);white-space:pre-line}
 .pc-fluxo .sol-detalhe__campos dd small{display:block;font-size:11.5px;color:var(--n-500)}
 .pc-nota{margin:0 0 12px;font-size:13px;line-height:1.5;color:var(--n-600)}
+
+/* Fieldset usado só para desabilitar o formulário inteiro em modo consulta. */
+.frm-fieldset{border:0;margin:0;padding:0;min-width:0;display:contents}
+
+/* Ofícios — tela única do ofício (V3.2): a barra de ações fecha a página, depois
+   do Encerramento, e liga-se ao formulário pelo atributo HTML5 `form`. */
+.of-form__acoes{justify-content:flex-end;flex-wrap:wrap;margin:18px 0 6px;padding-top:16px;border-top:1px solid var(--n-200)}
+.of-acoes-estado{margin-bottom:18px}
+.of-acoes-estado form{margin:0}

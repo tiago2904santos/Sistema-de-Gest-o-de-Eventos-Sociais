@@ -121,7 +121,7 @@
           </div>
           <footer class="of-cartao__rodape">
             <div class="acoes">
-              <a class="acao-linha" href="{% url 'viagens_oficios:detalhe' l.oficio.pk %}">{% include "components/icon.html" with nome="eye" %}Ofício</a>
+              <a class="acao-linha" href="{% url 'viagens_oficios:editar' l.oficio.pk %}">{% include "components/icon.html" with nome="eye" %}Ofício</a>
             </div>
             {% if pode_editar %}
               <div class="acoes">

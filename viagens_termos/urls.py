@@ -6,7 +6,6 @@ urlpatterns = [
     path('', views.lista, name='lista'),
     path('api/oficios/', views.api_buscar_oficios, name='api_buscar_oficios'),
     path('novo/', views.editar, name='novo'),
-    path('<int:pk>/', views.detalhe, name='detalhe'),
     path('<int:pk>/editar/', views.editar, name='editar'),
     path('<int:pk>/preview/', views.preview, name='preview'),
     path('<int:pk>/preview/<int:servidor_id>/', views.preview, name='preview_servidor'),

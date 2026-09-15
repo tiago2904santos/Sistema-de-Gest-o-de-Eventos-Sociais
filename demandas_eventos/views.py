@@ -212,41 +212,28 @@ def editar_demanda(request, pk=None):
                     status_novo=demanda.status,
                 )
             messages.success(request, f"Demanda #{demanda.pk} salva com sucesso.")
-            return redirect("demandas_eventos:detalhe", pk=demanda.pk)
+            return redirect("demandas_eventos:editar", pk=demanda.pk)
         messages.error(request, "Corrija os campos destacados para continuar.")
     else:
         form = DemandaEventoForm(instance=instancia, usuario=request.user)
     contexto = _contexto_form(form, instancia)
     contexto.update(
         {
-            "titulo": f"Editar demanda #{instancia.pk}" if instancia else "Nova demanda de evento",
+            "titulo": f"Demanda #{instancia.pk}" if instancia else "Nova demanda de evento",
             "breadcrumb": [
                 {"label": "Demandas ASCOM", "url": reverse("demandas_eventos:lista")},
-                {"label": "Editar" if instancia else "Nova demanda"},
+                {"label": f"Demanda #{instancia.pk}" if instancia else "Nova demanda"},
             ],
         }
     )
+    if instancia:
+        contexto.update(
+            {
+                "opcoes_transicao": services.opcoes_transicao(instancia),
+                "historico": instancia.historico.select_related("usuario"),
+            }
+        )
     return render(request, "pages/demandas_eventos/form.html", contexto)
-
-
-@login_required
-def detalhe_demanda(request, pk):
-    demanda = _demanda_visivel(request, pk)
-    return render(
-        request,
-        "pages/demandas_eventos/detalhe.html",
-        {
-            "demanda": demanda,
-            "titulo_detalhe": f"Demanda #{demanda.pk}",
-            "pode_editar": pode_editar(request.user, demanda),
-            "opcoes_transicao": services.opcoes_transicao(demanda),
-            "historico": demanda.historico.select_related("usuario"),
-            "breadcrumb": [
-                {"label": "Demandas ASCOM", "url": reverse("demandas_eventos:lista")},
-                {"label": f"Demanda #{demanda.pk}"},
-            ],
-        },
-    )
 
 
 @login_required
@@ -319,7 +306,9 @@ def transicionar_demanda(request, pk):
             messages.error(request, mensagem)
     else:
         messages.success(request, "Status da demanda atualizado com sucesso.")
-    return redirect("demandas_eventos:detalhe", pk=demanda.pk)
+    if pode_editar(request.user, demanda):
+        return redirect("demandas_eventos:editar", pk=demanda.pk)
+    return redirect("demandas_eventos:lista")
 
 
 CADASTROS = {

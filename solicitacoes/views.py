@@ -167,6 +167,7 @@ def _contexto_formulario(request, form, solicitacao=None):
     return {
         "form": form,
         "solicitacao": solicitacao,
+        "acoes": acoes,
         "valores": valores,
         "erros": form.errors,
         "erro_periodo": form.errors.get("data_inicio_evento")
@@ -262,7 +263,7 @@ def nova_solicitacao(request):
                 messages.success(request, f"Solicitação #{solicitacao.pk} enviada com sucesso.")
             else:
                 messages.success(request, f"Rascunho #{solicitacao.pk} salvo com sucesso.")
-            return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
+            return redirect("solicitacoes:editar", pk=solicitacao.pk)
         else:
             messages.error(request, "Corrija os campos destacados para continuar.")
     else:
@@ -275,12 +276,18 @@ def nova_solicitacao(request):
 
 @login_required
 def editar_solicitacao(request, pk):
-    """Revisão do rascunho pelo criador, antes do envio à DG."""
+    """Tela única do registro: dados, workflow, anexos e histórico.
+
+    Quem pode ver abre a tela; quem não pode editar recebe os campos
+    desabilitados, mas continua com as ações de workflow a que tem direito
+    (despacho da DG, encerramento, anexos). Só o POST exige alçada de edição.
+    """
     solicitacao = _obter_visivel(request, pk)
-    if not permissions.pode_editar_dados(request.user, solicitacao):
-        raise PermissionDenied
+    pode_editar = permissions.pode_editar_dados(request.user, solicitacao)
 
     if request.method == "POST":
+        if not pode_editar:
+            raise PermissionDenied
         acao = request.POST.get("acao", "rascunho")
         if acao == "enviar" and not permissions.pode_enviar(request.user, solicitacao):
             raise PermissionDenied
@@ -309,15 +316,29 @@ def editar_solicitacao(request, pk):
                     )
                 else:
                     messages.success(request, f"Solicitação #{solicitacao.pk} atualizada.")
-                return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
+                return redirect("solicitacoes:editar", pk=solicitacao.pk)
         else:
             messages.error(request, "Corrija os campos destacados para continuar.")
     else:
         form = SolicitacaoForm(instance=solicitacao)
 
+    devolucao = (
+        solicitacao.historico.filter(acao=AcaoHistorico.DEVOLUCAO).last()
+        if solicitacao.status == StatusSolicitacao.DEVOLVIDA
+        else None
+    )
     contexto = _contexto_formulario(request, form, solicitacao)
-    contexto["titulo_pagina"] = f"Editar Solicitação #{solicitacao.pk}"
-    contexto["breadcrumb"] = _breadcrumb(f"Editar #{solicitacao.pk}")
+    contexto.update(
+        {
+            "titulo_pagina": f"Solicitação #{solicitacao.pk}",
+            "breadcrumb": _breadcrumb(f"Solicitação #{solicitacao.pk}"),
+            "somente_leitura": not pode_editar,
+            "historico": solicitacao.historico.all(),
+            "itens_equipe": list(solicitacao.itens_equipe.select_related("equipe")),
+            "motivo_devolucao": devolucao,
+            "despacho_pendente": _despacho_pendente(request, solicitacao),
+        }
+    )
     return render(request, "pages/solicitacoes/form.html", contexto)
 
 
@@ -632,43 +653,6 @@ def _despacho_pendente(request, solicitacao):
     return pendente
 
 
-@login_required
-def detalhe_solicitacao(request, pk):
-    solicitacao = _obter_visivel(request, pk)
-    contexto = _contexto_formulario(
-        request,
-        SolicitacaoForm(instance=solicitacao),
-        solicitacao,
-    )
-    acoes = permissions.acoes_permitidas(request.user, solicitacao)
-    devolucao = (
-        solicitacao.historico.filter(acao=AcaoHistorico.DEVOLUCAO).last()
-        if solicitacao.status == StatusSolicitacao.DEVOLVIDA
-        else None
-    )
-    contexto.update(
-        {
-            "titulo_pagina": f"Solicitação #{solicitacao.pk}",
-            "breadcrumb": _breadcrumb(f"Solicitação #{solicitacao.pk}"),
-            "subtitulo_pagina": "Resumo para despacho da Diretoria-Geral"
-            if acoes["despachar"]
-            else "Visualização completa da solicitação",
-            "acoes": acoes,
-            "historico": solicitacao.historico.all(),
-            "somente_leitura": True,
-            "dados_desabilitado": True,
-            "planejamento_desabilitado": True,
-            "mostrar_enviar": False,
-            # Ler é ler: a página inteira vira resumo, nunca formulário.
-            "modo_resumo": True,
-            "itens_equipe": list(solicitacao.itens_equipe.select_related("equipe")),
-            "motivo_devolucao": devolucao,
-            "despacho_pendente": _despacho_pendente(request, solicitacao),
-        }
-    )
-    return render(request, "pages/solicitacoes/detalhe.html", contexto)
-
-
 # ---------------------------------------------------------------------------
 # Transições de workflow (somente POST)
 # ---------------------------------------------------------------------------
@@ -680,7 +664,7 @@ def _voltar_ao_despacho(request, solicitacao, decisao="", observacao=""):
         "decisao": decisao,
         "observacao": observacao,
     }
-    url = reverse("solicitacoes:detalhe", args=[solicitacao.pk])
+    url = reverse("solicitacoes:editar", args=[solicitacao.pk])
     return redirect(f"{url}#despacho-dg")
 
 
@@ -692,7 +676,7 @@ def _executar_transicao(request, solicitacao, funcao, mensagem, **kwargs):
             messages.error(request, mensagem_erro)
     else:
         messages.success(request, mensagem)
-    return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
+    return redirect("solicitacoes:editar", pk=solicitacao.pk)
 
 
 @login_required
@@ -764,7 +748,7 @@ def adicionar_anexo(request, pk):
         for erros_campo in form.errors.values():
             for erro in erros_campo:
                 messages.error(request, erro)
-    return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
+    return redirect("solicitacoes:editar", pk=solicitacao.pk)
 
 
 @login_required
@@ -793,7 +777,7 @@ def excluir_anexo(request, pk, anexo_pk):
         observacao=f"Anexo removido: {nome}",
     )
     messages.success(request, f"Anexo {nome} removido.")
-    return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
+    return redirect("solicitacoes:editar", pk=solicitacao.pk)
 
 
 @login_required
@@ -846,7 +830,7 @@ def despachar(request, pk):
                 )
             else:
                 messages.info(request, "Nenhuma alteração nas quantidades.")
-        return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
+        return redirect("solicitacoes:editar", pk=solicitacao.pk)
 
     form = DespachoForm(request.POST)
     if not form.is_valid():
@@ -882,4 +866,4 @@ def despachar(request, pk):
         return _voltar_ao_despacho(request, solicitacao, decisao, observacao)
 
     messages.success(request, sucesso)
-    return redirect("solicitacoes:detalhe", pk=solicitacao.pk)
+    return redirect("solicitacoes:editar", pk=solicitacao.pk)

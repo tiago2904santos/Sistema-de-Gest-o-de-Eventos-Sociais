@@ -25,8 +25,10 @@ from .carimbo_services import preparar_e_carimbar
 from .carimbo_services import salvar_posicoes
 from .presenters import kinds_de_anexo_assinado
 from .presenters import kinds_de_anexo_assinado_json
+from .download_services import payload_downloads
 from .services import marcar_servidor_em_preenchimento
 from .services import marcar_servidores_pendentes
+from .services import pendencias_consolidado
 from .view_common import (
     _autosave_form_errors,
     _autosave_version,
@@ -225,7 +227,10 @@ def documentos_servidor(request, ps_pk):
             "back_url": reverse("viagens_prestacoes:index"),
             # A etapa anterior é o RT desde a inversão de 2026-08-28 (diário → RT → documentos).
             "rt_url": reverse("viagens_prestacoes:rt_servidor", args=[ps.pk]),
-            "consolidado_url": reverse("viagens_prestacoes:consolidado_servidor", args=[ps.pk]),
+            # O fechamento (pacote final, downloads e finalização) virou o fim
+            # desta etapa: a tela de PDF final deixou de existir.
+            "pendencias": pendencias_consolidado(ps),
+            "downloads": payload_downloads(ps)["itens"],
         },
     )
 

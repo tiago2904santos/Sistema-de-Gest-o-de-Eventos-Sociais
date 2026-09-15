@@ -79,9 +79,9 @@ class AcessoDemandasTests(BaseDemandasTestCase):
         demanda = self.criar_demanda()
         self.client.force_login(self.outro)
         self.assertNotContains(self.client.get(reverse("demandas_eventos:lista")), "Escola Municipal")
-        self.assertEqual(self.client.get(reverse("demandas_eventos:detalhe", args=[demanda.pk])).status_code, 404)
+        self.assertEqual(self.client.get(reverse("demandas_eventos:editar", args=[demanda.pk])).status_code, 404)
         self.client.force_login(self.superusuario)
-        self.assertEqual(self.client.get(reverse("demandas_eventos:detalhe", args=[demanda.pk])).status_code, 200)
+        self.assertEqual(self.client.get(reverse("demandas_eventos:editar", args=[demanda.pk])).status_code, 200)
 
 
 class FormulariosViewsTests(BaseDemandasTestCase):
@@ -115,11 +115,21 @@ class FormulariosViewsTests(BaseDemandasTestCase):
         self.client.force_login(self.usuario)
         resposta = self.client.post(reverse("demandas_eventos:nova"), self.dados_post())
         demanda = DemandaEvento.objects.get(solicitante="Colégio Estadual")
-        self.assertRedirects(resposta, reverse("demandas_eventos:detalhe", args=[demanda.pk]))
-        resposta = self.client.get(reverse("demandas_eventos:detalhe", args=[demanda.pk]))
+        self.assertRedirects(resposta, reverse("demandas_eventos:editar", args=[demanda.pk]))
+        resposta = self.client.get(reverse("demandas_eventos:editar", args=[demanda.pk]))
         self.assertContains(resposta, "Colégio Estadual")
         self.assertContains(resposta, "Demanda #")
         self.assertContains(resposta, "Pendente")
+        # O formulário é a única tela do registro: traz o workflow e o histórico.
+        self.assertContains(resposta, "Atualizar status")
+        self.assertContains(resposta, "Histórico")
+        self.assertContains(
+            resposta, reverse("demandas_eventos:transicionar", args=[demanda.pk])
+        )
+        # Coluna única: sem menu lateral flutuante de seções.
+        self.assertNotContains(resposta, "frm-lateral")
+        self.assertNotContains(resposta, "step-v")
+        self.assertNotContains(resposta, "<aside")
         self.assertEqual(demanda.historico.count(), 1)
 
         resposta = self.client.post(
@@ -127,7 +137,7 @@ class FormulariosViewsTests(BaseDemandasTestCase):
             {"novo_status": StatusDemanda.EM_ANDAMENTO},
         )
         self.assertRedirects(
-            resposta, reverse("demandas_eventos:detalhe", args=[demanda.pk])
+            resposta, reverse("demandas_eventos:editar", args=[demanda.pk])
         )
         demanda.refresh_from_db()
         self.assertEqual(demanda.status, StatusDemanda.EM_ANDAMENTO)

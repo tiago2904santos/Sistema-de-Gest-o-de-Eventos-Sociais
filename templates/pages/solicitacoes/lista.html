@@ -126,7 +126,7 @@
           <tbody>
             {% for linha in linhas %}
               {% with s=linha.solicitacao %}
-                <tr data-linha-url="{% url 'solicitacoes:detalhe' s.pk %}" tabindex="0">
+                <tr data-linha-url="{% url 'solicitacoes:editar' s.pk %}" tabindex="0">
                   <td class="c-id" data-col="numero"><i>#</i>{{ s.pk }}</td>
                   <td class="c-status" data-col="status"><span class="st st--{{ s.status|lower }}">{{ s.get_status_display }}</span></td>
                   <td class="c-tipo" data-col="tipo">{{ s.tipo_evento|default:"—" }}</td>
@@ -143,23 +143,21 @@
                   <td class="c-data" data-col="data">{{ s.data_solicitacao|date:"d/m/Y" }}</td>
                   <td class="c-acoes">
                     <div class="acoes">
-                      {# Ação de workflow por estado; estados terminais só abrem o detalhe. #}
+                      {# Ação de workflow por estado; estados terminais só abrem o formulário. #}
                       {% if linha.acoes.despachar %}
-                        <a class="acao-linha" href="{% url 'solicitacoes:detalhe' s.pk %}#despacho-dg">{% include "components/icon.html" with nome="gavel" %}Despachar</a>
+                        <a class="acao-linha" href="{% url 'solicitacoes:editar' s.pk %}#despacho-dg">{% include "components/icon.html" with nome="gavel" %}Despachar</a>
                       {% elif linha.acoes.concluir %}
-                        <a class="acao-linha" href="{% url 'solicitacoes:detalhe' s.pk %}#encerramento">{% include "components/icon.html" with nome="check" %}Confirmar</a>
+                        <a class="acao-linha" href="{% url 'solicitacoes:editar' s.pk %}#encerramento">{% include "components/icon.html" with nome="check" %}Confirmar</a>
                       {% elif linha.acoes.enviar %}
                         <a class="acao-linha" href="{% url 'solicitacoes:editar' s.pk %}">{% include "components/icon.html" with nome="pencil" %}Continuar</a>
                       {% endif %}
-                      <a class="ib-linha" href="{% url 'solicitacoes:detalhe' s.pk %}" aria-label="Abrir solicitação #{{ s.pk }}">{% include "components/icon.html" with nome="chevron-right" %}</a>
+                      <a class="ib-linha" href="{% url 'solicitacoes:editar' s.pk %}" aria-label="Abrir solicitação #{{ s.pk }}">{% include "components/icon.html" with nome="chevron-right" %}</a>
                       <div class="dd" data-menu>
                         <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações da solicitação #{{ s.pk }}">{% include "components/icon.html" with nome="kebab" %}</button>
                         <div class="dd__c" hidden data-menu-corpo>
                           <div class="dd__t">Solicitação #{{ s.pk }}</div>
-                          <a class="dd__i" href="{% url 'solicitacoes:detalhe' s.pk %}">{% include "components/icon.html" with nome="eye" %}Detalhes</a>
-                          {% if linha.acoes.editar_dados %}
-                            <a class="dd__i" href="{% url 'solicitacoes:editar' s.pk %}">{% include "components/icon.html" with nome="pencil" %}Editar</a>
-                          {% endif %}
+                          {# Tela única: ver e editar são a mesma tela — o formulário. #}
+                          <a class="dd__i" href="{% url 'solicitacoes:editar' s.pk %}">{% include "components/icon.html" with nome="pencil" %}Abrir solicitação</a>
                           {% if linha.acoes.excluir %}
                             <div class="dd__s"></div>
                             <form method="post" action="{% url 'solicitacoes:excluir' s.pk %}" data-confirmar-exclusao>
@@ -208,7 +206,7 @@
       <div class="m-lista">
         {% for linha in linhas %}
           {% with s=linha.solicitacao %}
-            <div class="m-item" data-linha-url="{% url 'solicitacoes:detalhe' s.pk %}">
+            <div class="m-item" data-linha-url="{% url 'solicitacoes:editar' s.pk %}">
               <div class="m-item__topo">
                 <span class="m-item__id"><i>#</i>{{ s.pk }}</span>
                 <span class="st st--{{ s.status|lower }}">{{ s.get_status_display }}</span>
@@ -218,9 +216,9 @@
               <div class="m-item__sol">{{ s.solicitante_nome|default:"—" }}<small>{% if s.solicitante_cargo_unidade %}{{ s.solicitante_cargo_unidade }} · {% endif %}Solicitado em {{ s.data_solicitacao|date:"d/m/Y" }}</small></div>
               <div class="m-item__rodape">
                 {% if linha.acoes.despachar %}
-                  <a class="acao-linha" href="{% url 'solicitacoes:detalhe' s.pk %}#despacho-dg">{% include "components/icon.html" with nome="gavel" %}Despachar</a>
+                  <a class="acao-linha" href="{% url 'solicitacoes:editar' s.pk %}#despacho-dg">{% include "components/icon.html" with nome="gavel" %}Despachar</a>
                 {% elif linha.acoes.concluir %}
-                  <a class="acao-linha" href="{% url 'solicitacoes:detalhe' s.pk %}#encerramento">{% include "components/icon.html" with nome="check" %}Confirmar</a>
+                  <a class="acao-linha" href="{% url 'solicitacoes:editar' s.pk %}#encerramento">{% include "components/icon.html" with nome="check" %}Confirmar</a>
                 {% elif linha.acoes.enviar %}
                   <a class="acao-linha" href="{% url 'solicitacoes:editar' s.pk %}">{% include "components/icon.html" with nome="pencil" %}Continuar</a>
                 {% else %}
@@ -230,10 +228,7 @@
                   <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações da solicitação #{{ s.pk }}">{% include "components/icon.html" with nome="kebab" %}</button>
                   <div class="dd__c" hidden data-menu-corpo>
                     <div class="dd__t">Solicitação #{{ s.pk }}</div>
-                    <a class="dd__i" href="{% url 'solicitacoes:detalhe' s.pk %}">{% include "components/icon.html" with nome="eye" %}Detalhes</a>
-                    {% if linha.acoes.editar_dados %}
-                      <a class="dd__i" href="{% url 'solicitacoes:editar' s.pk %}">{% include "components/icon.html" with nome="pencil" %}Editar</a>
-                    {% endif %}
+                    <a class="dd__i" href="{% url 'solicitacoes:editar' s.pk %}">{% include "components/icon.html" with nome="pencil" %}Abrir solicitação</a>
                     {% if linha.acoes.excluir %}
                       <div class="dd__s"></div>
                       <form method="post" action="{% url 'solicitacoes:excluir' s.pk %}" data-confirmar-exclusao>

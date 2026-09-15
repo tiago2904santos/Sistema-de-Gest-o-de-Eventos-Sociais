@@ -299,8 +299,54 @@ def exportar(request):
 
 
 # ---------------------------------------------------------------------------
-# Formulário e detalhe
+# Formulário (tela única do atendimento)
 # ---------------------------------------------------------------------------
+
+def _etapas(atendimento):
+    """Acompanhamento do pedido — antes exibido na lateral do detalhe."""
+    fontes = atendimento.fontes_alinhadas
+    return [
+        {
+            "titulo": "Pedido recebido",
+            "subtitulo": f"{atendimento.data:%d/%m/%Y}"
+            + (f" · {atendimento.horario:%H:%M}" if atendimento.horario else ""),
+            "estado": "concluido",
+        },
+        {
+            "titulo": "Fontes consultadas",
+            "subtitulo": (
+                f"{len(fontes)} fonte"
+                f"{'s' if len(fontes) != 1 else ''} acionada"
+                f"{'s' if len(fontes) != 1 else ''}"
+                if atendimento.fonte
+                else "Nenhuma fonte registrada"
+            ),
+            "estado": "concluido" if atendimento.fonte else "pendente",
+        },
+        {
+            "titulo": "Resposta enviada",
+            "subtitulo": (
+                (
+                    f"{atendimento.horario_resposta:%H:%M}"
+                    if atendimento.horario_resposta
+                    else "Horário não registrado"
+                )
+                + (
+                    f" · {atendimento.responsavel_resposta}"
+                    if atendimento.responsavel_resposta
+                    else ""
+                )
+                if atendimento.atendido
+                else atendimento.get_situacao_display()
+            ),
+            "estado": "concluido" if atendimento.atendido else (
+                "cancelado"
+                if atendimento.situacao == SituacaoAtendimento.NAO_RESPONDER
+                else "pendente"
+            ),
+        },
+    ]
+
 
 def _valores(form):
     valores = {}
@@ -313,7 +359,7 @@ def _valores(form):
 
 
 def _contexto_formulario(form, atendimento=None):
-    return {
+    contexto = {
         "kicker": KICKER,
         "form": form,
         "atendimento": atendimento,
@@ -328,7 +374,24 @@ def _contexto_formulario(form, atendimento=None):
             .values_list("jornalista", flat=True)
             .distinct()[:400]
         ),
+        "etapas": [],
+        "fontes": [],
+        "deadline_vencido": False,
     }
+    if atendimento and atendimento.pk:
+        hoje = timezone.localdate()
+        contexto.update(
+            {
+                "etapas": _etapas(atendimento),
+                "fontes": atendimento.fontes_alinhadas,
+                "deadline_vencido": bool(
+                    atendimento.aberto
+                    and atendimento.deadline
+                    and atendimento.deadline < hoje
+                ),
+            }
+        )
+    return contexto
 
 
 def _salvar(request, form):
@@ -353,7 +416,7 @@ def novo(request):
                         form.add_error(campo if campo in form.fields else None, mensagem)
             else:
                 messages.success(request, "Atendimento registrado.")
-                return redirect("atendimento_imprensa:detalhe", pk=atendimento.pk)
+                return redirect("atendimento_imprensa:editar", pk=atendimento.pk)
         messages.error(request, "Corrija os campos destacados para continuar.")
     else:
         agora = timezone.localtime()
@@ -367,7 +430,12 @@ def novo(request):
 
 @acesso_ao_modulo
 def editar(request, pk):
-    atendimento = get_object_or_404(Atendimento, pk=pk)
+    atendimento = get_object_or_404(
+        Atendimento.objects.select_related(
+            "veiculo", "responsavel", "responsavel_resposta", "criado_por"
+        ),
+        pk=pk,
+    )
     if request.method == "POST":
         form = AtendimentoForm(request.POST, instance=atendimento)
         if form.is_valid():
@@ -379,69 +447,13 @@ def editar(request, pk):
                         form.add_error(campo if campo in form.fields else None, mensagem)
             else:
                 messages.success(request, "Atendimento atualizado.")
-                return redirect("atendimento_imprensa:detalhe", pk=atendimento.pk)
+                return redirect("atendimento_imprensa:editar", pk=atendimento.pk)
         messages.error(request, "Corrija os campos destacados para continuar.")
     else:
         form = AtendimentoForm(instance=atendimento)
     contexto = _contexto_formulario(form, atendimento)
-    contexto["titulo_pagina"] = f"Editar atendimento #{atendimento.pk}"
+    contexto["titulo_pagina"] = f"Atendimento #{atendimento.pk}"
     return render(request, "pages/atendimento_imprensa/form.html", contexto)
-
-
-@acesso_ao_modulo
-def detalhe(request, pk):
-    atendimento = get_object_or_404(
-        Atendimento.objects.select_related(
-            "veiculo", "responsavel", "responsavel_resposta", "criado_por"
-        ),
-        pk=pk,
-    )
-    hoje = timezone.localdate()
-    etapas = [
-        {
-            "titulo": "Pedido recebido",
-            "subtitulo": f"{atendimento.data:%d/%m/%Y}"
-            + (f" · {atendimento.horario:%H:%M}" if atendimento.horario else ""),
-            "estado": "concluido",
-        },
-        {
-            "titulo": "Fontes consultadas",
-            "subtitulo": (
-                f"{len(atendimento.fontes_alinhadas)} fonte"
-                f"{'s' if len(atendimento.fontes_alinhadas) != 1 else ''} acionada"
-                f"{'s' if len(atendimento.fontes_alinhadas) != 1 else ''}"
-                if atendimento.fonte
-                else "Nenhuma fonte registrada"
-            ),
-            "estado": "concluido" if atendimento.fonte else "pendente",
-        },
-        {
-            "titulo": "Resposta enviada",
-            "subtitulo": (
-                (f"{atendimento.horario_resposta:%H:%M}" if atendimento.horario_resposta else "Horário não registrado")
-                + (f" · {atendimento.responsavel_resposta}" if atendimento.responsavel_resposta else "")
-                if atendimento.atendido
-                else atendimento.get_situacao_display()
-            ),
-            "estado": "concluido" if atendimento.atendido else (
-                "cancelado" if atendimento.situacao == SituacaoAtendimento.NAO_RESPONDER else "pendente"
-            ),
-        },
-    ]
-    return render(
-        request,
-        "pages/atendimento_imprensa/detalhe.html",
-        {
-            "kicker": KICKER,
-            "atendimento": atendimento,
-            "titulo_pagina": f"Atendimento #{atendimento.pk}",
-            "etapas": etapas,
-            "fontes": atendimento.fontes_alinhadas,
-            "deadline_vencido": bool(
-                atendimento.aberto and atendimento.deadline and atendimento.deadline < hoje
-            ),
-        },
-    )
 
 
 # ---------------------------------------------------------------------------

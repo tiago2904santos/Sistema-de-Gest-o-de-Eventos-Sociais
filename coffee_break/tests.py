@@ -19,6 +19,7 @@ from .management.commands.importar_coffee_break import (
     parse_periodo_livre,
 )
 from .models import (
+    AcaoHistoricoCoffeeBreak,
     ContratoCoffeeBreak,
     Fornecedor,
     LoteCoffeeBreak,
@@ -105,7 +106,6 @@ class AutorizacaoModuloTests(BaseCoffeeBreakTestCase):
         solicitacao = self.criar_solicitacao()
         rotas = [reverse(rota, args=args) for rota, args in self.ROTAS]
         rotas += [
-            reverse("coffee_break:detalhe", args=[solicitacao.pk]),
             reverse("coffee_break:editar", args=[solicitacao.pk]),
             reverse("coffee_break:lote_detalhe", args=[self.lote.pk]),
         ]
@@ -385,7 +385,7 @@ class ViewsTests(BaseCoffeeBreakTestCase):
         )
         solicitacao = SolicitacaoCoffeeBreak.objects.get(numero="05/2026")
         self.assertRedirects(
-            resposta, reverse("coffee_break:detalhe", args=[solicitacao.pk])
+            resposta, reverse("coffee_break:editar", args=[solicitacao.pk])
         )
         self.assertEqual(solicitacao.criado_por, self.ascom)
         self.assertEqual(solicitacao.quantidade, 40)
@@ -411,11 +411,54 @@ class ViewsTests(BaseCoffeeBreakTestCase):
         )
         solicitacao.refresh_from_db()
         self.assertRedirects(
-            resposta, reverse("coffee_break:detalhe", args=[solicitacao.pk])
+            resposta, reverse("coffee_break:editar", args=[solicitacao.pk])
         )
         self.assertEqual(solicitacao.quantidade, 55)
         self.assertEqual(solicitacao.numero_nota_fiscal, "8046")
         self.assertEqual(solicitacao.historico.count(), 1)
+
+    def test_formulario_concentra_historico_vinculo_e_acoes(self):
+        """A tela única traz o que antes só existia no detalhe."""
+        solicitacao = self.criar_solicitacao(numero="05/2026")
+        services.registrar_historico(
+            solicitacao,
+            self.ascom,
+            AcaoHistoricoCoffeeBreak.CRIACAO,
+            "Solicitação registrada no sistema.",
+        )
+        resposta = self.client.get(
+            reverse("coffee_break:editar", args=[solicitacao.pk])
+        )
+        self.assertEqual(resposta.status_code, 200)
+        # Vínculo com o lote (link para a lista do lote) e dados contratuais.
+        self.assertContains(
+            resposta, reverse("coffee_break:lote_detalhe", args=[self.lote.pk])
+        )
+        self.assertContains(resposta, "PADARIA E CONFEITARIA FAVO E MEL LTDA")
+        self.assertContains(resposta, "0762/2024")
+        # Histórico e auditoria.
+        self.assertContains(resposta, "Histórico")
+        self.assertContains(resposta, "Solicitação registrada no sistema.")
+        self.assertContains(resposta, "Criada por")
+        # Transições de estado, fora do formulário principal.
+        self.assertContains(resposta, "id_motivo_cancelamento")
+        self.assertContains(
+            resposta, reverse("coffee_break:cancelar", args=[solicitacao.pk])
+        )
+
+    def test_formulario_nao_tem_coluna_lateral(self):
+        """Regra estrutural: coluna única, sem menu lateral flutuante."""
+        solicitacao = self.criar_solicitacao(numero="05/2026")
+        for url in (
+            reverse("coffee_break:nova"),
+            reverse("coffee_break:editar", args=[solicitacao.pk]),
+            reverse("coffee_break:lote_detalhe", args=[self.lote.pk]),
+            reverse("coffee_break:solicitacoes"),
+            reverse("coffee_break:painel"),
+        ):
+            conteudo = self.client.get(url).content.decode()
+            for marca in ("<aside", 'class="sticky"', "frm-lateral", "frm-acoes--flut"):
+                self.assertNotIn(marca, conteudo, f"{marca} em {url}")
 
     def test_edicao_concorrente_e_rejeitada(self):
         solicitacao = self.criar_solicitacao(numero="05/2026")
@@ -438,12 +481,23 @@ class ViewsTests(BaseCoffeeBreakTestCase):
             data_ordem_bancaria=dt.date(2026, 8, 3),
             data_envio_empresa=dt.date(2026, 8, 4),
         )
+        # A tela única do registro continua abrindo, mas sem permitir gravar.
         resposta = self.client.get(
             reverse("coffee_break:editar", args=[solicitacao.pk])
         )
-        self.assertRedirects(
-            resposta, reverse("coffee_break:detalhe", args=[solicitacao.pk])
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "bloqueadas para edição")
+        self.assertNotContains(resposta, "Salvar solicitação")
+        # E o POST é recusado sem alterar nada.
+        resposta = self.client.post(
+            reverse("coffee_break:editar", args=[solicitacao.pk]),
+            self.dados_post(quantidade="77"),
         )
+        self.assertRedirects(
+            resposta, reverse("coffee_break:editar", args=[solicitacao.pk])
+        )
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.quantidade, 30)
 
     def test_form_nao_aceita_lote_inativo(self):
         lote_inativo = LoteCoffeeBreak.objects.create(
@@ -531,7 +585,7 @@ class ViewsTests(BaseCoffeeBreakTestCase):
         self.assertEqual(self.client.get(url).status_code, 405)
         resposta = self.client.post(url, {"motivo": "Adiado"})
         self.assertRedirects(
-            resposta, reverse("coffee_break:detalhe", args=[solicitacao.pk])
+            resposta, reverse("coffee_break:editar", args=[solicitacao.pk])
         )
         solicitacao.refresh_from_db()
         self.assertTrue(solicitacao.cancelada)
@@ -542,7 +596,7 @@ class ViewsTests(BaseCoffeeBreakTestCase):
             reverse("coffee_break:cancelar", args=[solicitacao.pk]), {"motivo": ""}
         )
         self.assertRedirects(
-            resposta, reverse("coffee_break:detalhe", args=[solicitacao.pk])
+            resposta, reverse("coffee_break:editar", args=[solicitacao.pk])
         )
         solicitacao.refresh_from_db()
         self.assertFalse(solicitacao.cancelada)
@@ -560,12 +614,15 @@ class ViewsTests(BaseCoffeeBreakTestCase):
             {"motivo": "Tentativa indevida"},
         )
         self.assertRedirects(
-            resposta, reverse("coffee_break:detalhe", args=[solicitacao.pk])
+            resposta, reverse("coffee_break:editar", args=[solicitacao.pk])
         )
         solicitacao.refresh_from_db()
         self.assertFalse(solicitacao.cancelada)
-        detalhe = self.client.get(reverse("coffee_break:detalhe", args=[solicitacao.pk]))
-        self.assertNotContains(detalhe, "id_motivo_cancelamento")
+        formulario = self.client.get(
+            reverse("coffee_break:editar", args=[solicitacao.pk])
+        )
+        self.assertNotContains(formulario, "id_motivo_cancelamento")
+        self.assertContains(formulario, "Fluxo financeiro concluído")
 
 
 class CadastrosCoffeeBreakTests(BaseCoffeeBreakTestCase):
@@ -605,6 +662,17 @@ class CadastrosCoffeeBreakTests(BaseCoffeeBreakTestCase):
         )
         painel = self.client.get(reverse("coffee_break:painel"))
         self.assertContains(painel, reverse("coffee_break:cadastros"))
+
+    def test_cadastros_sem_trilho_lateral(self):
+        """Regra estrutural: coluna única também no backoffice do módulo."""
+        self.client.force_login(self.admin_modulo)
+        conteudo = self.client.get(
+            reverse("coffee_break:cadastro_lista", args=["fornecedores"])
+        ).content.decode()
+        for marca in ("<aside", 'class="sticky"', "cad-grade", "cad-rail"):
+            self.assertNotIn(marca, conteudo, marca)
+        # A navegação entre cadastros continua existindo, agora em linha.
+        self.assertIn(reverse("coffee_break:cadastro_lista", args=["lotes"]), conteudo)
 
     def test_capacidade_do_lote_nao_pode_ficar_abaixo_do_consumido(self):
         self.criar_solicitacao(quantidade=30)

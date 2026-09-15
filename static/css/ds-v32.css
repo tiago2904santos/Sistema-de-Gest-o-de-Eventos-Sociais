@@ -444,7 +444,7 @@ html[data-dourado=cerimonial] .dt th{background:var(--d-50);color:var(--d-800)}
 .d-cabeca__sub{margin:var(--s2) 0 0;font-size:13px;color:var(--n-500)}
 .d-acoes{display:flex;align-items:center;gap:var(--s2);flex:0 0 auto}
 
-.d-grade{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:var(--s5);align-items:start;padding-bottom:var(--s10)}
+.d-grade{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s5);align-items:start;padding-bottom:var(--s10)}
 .bloco{background:var(--branco);border:1px solid var(--n-200);border-radius:10px;overflow:hidden}
 .bloco+.bloco{margin-top:var(--s5)}
 .bloco__topo{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);padding:var(--s3) var(--s5);background:var(--n-50);border-bottom:1px solid var(--n-200)}
@@ -632,10 +632,10 @@ html[data-dourado=cerimonial] .dt th{background:var(--d-50);color:var(--d-800)}
 .frm-cabeca{padding:var(--s5) 0 var(--s4);display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s6);flex-wrap:wrap;border-bottom:1px solid var(--n-200)}
 .frm-cabeca h1{font-size:26px;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
 .frm-cabeca__sub{margin:6px 0 0;font-size:13px;color:var(--n-500)}
-.frm-acoes{display:flex;align-items:center;gap:9px;flex:0 0 auto}
-.frm-acoes--flut{position:sticky;bottom:14px;background:var(--branco);padding-top:10px;border-top:1px solid var(--n-150);flex-direction:column;align-items:stretch;gap:8px}
-.frm-acoes--flut .btn--secundaria,.frm-acoes--flut .btn-primaria{width:100%;justify-content:center}
-.frm-acoes--flut .frm-cancelar{align-self:center}
+.frm-acoes{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:9px;margin-top:var(--s5);padding-top:var(--s4);border-top:1px solid var(--n-150)}
+.frm-acoes--flut{position:static;bottom:auto;background:0}
+.frm-acoes--flut .btn--secundaria,.frm-acoes--flut .btn-primaria{width:auto;justify-content:center}
+.frm-acoes .frm-cancelar{margin-right:auto}
 .frm-cancelar{margin-right:auto;height:38px;padding:0 4px;border:0;background:0;color:var(--n-500);font-size:13px;font-weight:500;cursor:pointer}
 .frm-cancelar:hover{color:var(--n-800);text-decoration:underline}
 
@@ -821,17 +821,18 @@ html[data-dourado=cerimonial] .dt th{background:var(--d-50);color:var(--d-800)}
 .pa-ev__m{flex:none;font-size:11.5px;color:var(--n-500)}
 
 /* ---- Cadastros \u00b7 trilha lateral + lista --------------------------- */
-.cad-grade{display:grid;grid-template-columns:246px minmax(0,1fr);gap:14px;padding-bottom:40px;align-items:start}
-.cad-rail{background:var(--branco);border:1px solid var(--n-200);border-radius:9px;overflow:hidden;position:sticky;top:var(--s5)}
-.cad-rail__h{padding:13px 16px 11px;border-bottom:1px solid var(--n-150);font-size:11px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--d-700)}
-.cad-i{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--n-100);text-decoration:none;transition:background var(--motion)}
-.cad-i:last-child{border-bottom:0}
-.cad-i:hover{background:var(--n-25)}
-.cad-i__ic{width:26px;height:26px;border-radius:7px;background:var(--n-100);color:var(--n-450);display:grid;place-content:center;flex:none}
-.cad-i__ic .ui-icon{width:14px;height:14px;display:block}
-.cad-i__t{flex:1;min-width:0;font-size:13px;color:var(--n-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cad-grade{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding-bottom:40px;align-items:start}
+/* A trilha de cadastros era uma coluna presa à lateral; virou uma faixa de
+   abas no topo, para a página ficar em coluna única. */
+.cad-rail{display:flex;flex-wrap:wrap;align-items:center;gap:6px;position:static}
+.cad-rail__h{width:100%;padding:0 0 2px;font-size:11px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--d-700)}
+.cad-i{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--n-200);border-radius:99px;background:var(--branco);text-decoration:none;transition:background var(--motion)}
+.cad-i:hover{background:var(--n-25);border-color:var(--d-300)}
+.cad-i__ic{width:22px;height:22px;border-radius:7px;background:var(--n-100);color:var(--n-450);display:grid;place-content:center;flex:none}
+.cad-i__ic .ui-icon{width:13px;height:13px;display:block}
+.cad-i__t{min-width:0;font-size:13px;color:var(--n-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cad-i__n{font-size:12px;color:var(--n-450);font-variant-numeric:tabular-nums}
-.cad-i[aria-current]{background:var(--d-50);box-shadow:inset 2px 0 0 var(--d-500)}
+.cad-i[aria-current]{background:var(--d-50);border-color:var(--d-400)}
 .cad-i[aria-current] .cad-i__ic{background:var(--d-100);color:var(--d-700)}
 .cad-i[aria-current] .cad-i__t{color:var(--n-900);font-weight:600}
 .cad-i[aria-current] .cad-i__n{color:var(--d-800);font-weight:600}
@@ -875,7 +876,7 @@ html[data-dourado=cerimonial] .dt th{background:var(--d-50);color:var(--d-800)}
 .dt thead th:last-child{border-top-right-radius:8px}
 .dt tbody tr:last-child td:first-child{border-bottom-left-radius:8px}
 .dt tbody tr:last-child td:last-child{border-bottom-right-radius:8px}
-.frm-grade{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;padding:20px 0 60px}
+.frm-grade{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;padding:20px 0 60px}
 .campo-e{display:flex;flex-direction:column;gap:6px;min-width:0}
 .campo-e>span{font-size:12.5px;color:var(--n-600);font-weight:500}
 .campo-e--datas{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}

@@ -299,8 +299,49 @@ def exportar(request):
 
 
 # ---------------------------------------------------------------------------
-# Formulário e detalhe
+# Formulário (tela única do registro)
 # ---------------------------------------------------------------------------
+
+def _etapas(publicacao):
+    """Acompanhamento da pauta exibido como seção do próprio formulário."""
+    entrada = f"{publicacao.data:%d/%m/%Y}" if publicacao.data else "Sem data"
+    if publicacao.inicio_pauta:
+        entrada += f" · {publicacao.inicio_pauta:%H:%M}"
+    if publicacao.data_publicacao:
+        publicada = f"{publicacao.data_publicacao:%d/%m/%Y}"
+        if publicacao.horario_publicacao:
+            publicada += f" · {publicacao.horario_publicacao:%H:%M}"
+    else:
+        publicada = "Aguardando publicação"
+    etapas = [
+        {
+            "titulo": "Pauta recebida",
+            "subtitulo": entrada,
+            "estado": "concluido",
+        },
+        {
+            "titulo": "Colocada para edição",
+            "subtitulo": (
+                f"{publicacao.colocada_edicao:%H:%M}"
+                if publicacao.colocada_edicao
+                else "Sem horário registrado"
+            ),
+            "estado": "concluido" if publicacao.colocada_edicao else "pendente",
+        },
+        {
+            "titulo": "Publicada",
+            "subtitulo": publicada,
+            "estado": "concluido" if publicacao.publicada else "pendente",
+        },
+    ]
+    if publicacao.status == StatusPublicacao.CANCELADA:
+        etapas[-1] = {
+            "titulo": "Cancelada",
+            "subtitulo": "Pauta não publicada",
+            "estado": "cancelado",
+        }
+    return etapas
+
 
 def _valores(form):
     """Valores dos campos como texto, no formato que os components esperam."""
@@ -320,6 +361,7 @@ def _contexto_formulario(form, publicacao=None):
         "kicker": KICKER,
         "form": form,
         "publicacao": publicacao,
+        "etapas": _etapas(publicacao) if publicacao else [],
         "erros": form.errors,
         "erros_gerais": form.non_field_errors(),
         "valores": _valores(form),
@@ -353,7 +395,7 @@ def nova(request):
                         form.add_error(campo if campo in form.fields else None, mensagem)
             else:
                 messages.success(request, "Pauta registrada.")
-                return redirect("publicacoes:detalhe", pk=publicacao.pk)
+                return redirect("publicacoes:editar", pk=publicacao.pk)
         messages.error(request, "Corrija os campos destacados para continuar.")
     else:
         form = PublicacaoForm(initial={"data": timezone.localdate()})
@@ -364,7 +406,12 @@ def nova(request):
 
 @acesso_ao_modulo
 def editar(request, pk):
-    publicacao = get_object_or_404(Publicacao, pk=pk)
+    publicacao = get_object_or_404(
+        Publicacao.objects.select_related(
+            "jornalista", "unidade", "revisao", "galeria_fotos", "criado_por"
+        ),
+        pk=pk,
+    )
     if request.method == "POST":
         form = PublicacaoForm(request.POST, instance=publicacao)
         if form.is_valid():
@@ -376,70 +423,13 @@ def editar(request, pk):
                         form.add_error(campo if campo in form.fields else None, mensagem)
             else:
                 messages.success(request, "Pauta atualizada.")
-                return redirect("publicacoes:detalhe", pk=publicacao.pk)
+                return redirect("publicacoes:editar", pk=publicacao.pk)
         messages.error(request, "Corrija os campos destacados para continuar.")
     else:
         form = PublicacaoForm(instance=publicacao)
     contexto = _contexto_formulario(form, publicacao)
     contexto["titulo_pagina"] = f"Editar pauta #{publicacao.pk}"
     return render(request, "pages/publicacoes/form.html", contexto)
-
-
-@acesso_ao_modulo
-def detalhe(request, pk):
-    publicacao = get_object_or_404(
-        Publicacao.objects.select_related(
-            "jornalista", "unidade", "revisao", "galeria_fotos", "criado_por"
-        ),
-        pk=pk,
-    )
-    etapas = [
-        {
-            "titulo": "Pauta recebida",
-            "subtitulo": f"{publicacao.data:%d/%m/%Y}"
-            + (f" · {publicacao.inicio_pauta:%H:%M}" if publicacao.inicio_pauta else ""),
-            "estado": "concluido",
-        },
-        {
-            "titulo": "Colocada para edição",
-            "subtitulo": (
-                f"{publicacao.colocada_edicao:%H:%M}"
-                if publicacao.colocada_edicao
-                else "Sem horário registrado"
-            ),
-            "estado": "concluido" if publicacao.colocada_edicao else "pendente",
-        },
-        {
-            "titulo": "Publicada",
-            "subtitulo": (
-                f"{publicacao.data_publicacao:%d/%m/%Y}"
-                + (
-                    f" · {publicacao.horario_publicacao:%H:%M}"
-                    if publicacao.horario_publicacao
-                    else ""
-                )
-                if publicacao.data_publicacao
-                else "Aguardando publicação"
-            ),
-            "estado": "concluido" if publicacao.publicada else "pendente",
-        },
-    ]
-    if publicacao.status == StatusPublicacao.CANCELADA:
-        etapas[-1] = {
-            "titulo": "Cancelada",
-            "subtitulo": "Pauta não publicada",
-            "estado": "cancelado",
-        }
-    return render(
-        request,
-        "pages/publicacoes/detalhe.html",
-        {
-            "kicker": KICKER,
-            "publicacao": publicacao,
-            "titulo_pagina": f"Pauta #{publicacao.pk}",
-            "etapas": etapas,
-        },
-    )
 
 
 # ---------------------------------------------------------------------------

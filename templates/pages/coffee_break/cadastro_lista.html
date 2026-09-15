@@ -7,12 +7,13 @@
   {% url 'coffee_break:cadastro_novo' tipo as url_novo %}
   {% include "components/v32/page_header.html" with titulo=config.titulo subtitulo="Dados contratuais do módulo de Coffee Break" icone="checklist" acao_label="Novo registro" acao_url=url_novo acao_icone="plus" %}
 
-  <div class="cad-grade"><nav class="cad-rail" aria-label="Cadastros de Coffee Break">
-    <a class="cad-i"{% if tipo == 'fornecedores' %} aria-current="page"{% endif %} href="{% url 'coffee_break:cadastro_lista' 'fornecedores' %}">Fornecedores</a>
-    <a class="cad-i"{% if tipo == 'contratos' %} aria-current="page"{% endif %} href="{% url 'coffee_break:cadastro_lista' 'contratos' %}">Contratos</a>
-    <a class="cad-i"{% if tipo == 'lotes' %} aria-current="page"{% endif %} href="{% url 'coffee_break:cadastro_lista' 'lotes' %}">Lotes</a>
-  </nav>
-<div>
+  <div class="pa-card pa-card--lista v32-bloco">
+    <nav class="v32-barra" aria-label="Cadastros de Coffee Break">
+      <a class="btn--secundaria"{% if tipo == 'fornecedores' %} aria-current="page"{% endif %} href="{% url 'coffee_break:cadastro_lista' 'fornecedores' %}">Fornecedores</a>
+      <a class="btn--secundaria"{% if tipo == 'contratos' %} aria-current="page"{% endif %} href="{% url 'coffee_break:cadastro_lista' 'contratos' %}">Contratos</a>
+      <a class="btn--secundaria"{% if tipo == 'lotes' %} aria-current="page"{% endif %} href="{% url 'coffee_break:cadastro_lista' 'lotes' %}">Lotes</a>
+    </nav>
+  </div>
   <div class="pa-card pa-card--lista v32-bloco v32-filtros">
     <form method="get" class="v32-barra">
       <div class="form-campo v32-busca">
@@ -88,5 +89,4 @@
       </nav>
     {% endif %}
   </div>
-</div></div>
 {% endblock %}

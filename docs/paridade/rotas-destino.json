@@ -310,11 +310,6 @@
     "callback": "viagens_oficios.catalogs.catalogo"
   },
   {
-    "nome": "viagens_oficios:detalhe",
-    "padrao": "/viagens/oficios/<int:pk>/",
-    "callback": "viagens_oficios.views.detalhe"
-  },
-  {
     "nome": "viagens_oficios:editar",
     "padrao": "/viagens/oficios/<int:pk>/editar/",
     "callback": "viagens_oficios.views.editar"
@@ -428,11 +423,6 @@
     "nome": "solicitacoes:exportar",
     "padrao": "/solicitacoes/exportar/",
     "callback": "solicitacoes.views.exportar_solicitacoes"
-  },
-  {
-    "nome": "solicitacoes:detalhe",
-    "padrao": "/solicitacoes/<int:pk>/",
-    "callback": "solicitacoes.views.detalhe_solicitacao"
   },
   {
     "nome": "solicitacoes:editar",

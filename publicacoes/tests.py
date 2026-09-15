@@ -202,7 +202,8 @@ class ViewsTests(BasePublicacoesTestCase):
             },
         )
         pauta = Publicacao.objects.get(titulo="Nova pauta")
-        self.assertRedirects(resposta, reverse("publicacoes:detalhe", args=[pauta.pk]))
+        # A tela única do registro é o próprio formulário.
+        self.assertRedirects(resposta, reverse("publicacoes:editar", args=[pauta.pk]))
         self.assertEqual(pauta.criado_por, self.ascom)
         self.assertEqual(pauta.inicio_pauta, dt.time(9, 0))
 
@@ -223,7 +224,7 @@ class ViewsTests(BasePublicacoesTestCase):
                 "link_site": "https://www.policiacivil.pr.gov.br/Noticia/x",
             },
         )
-        self.assertRedirects(resposta, reverse("publicacoes:detalhe", args=[pauta.pk]))
+        self.assertRedirects(resposta, reverse("publicacoes:editar", args=[pauta.pk]))
         pauta.refresh_from_db()
         self.assertEqual(pauta.status, StatusPublicacao.PUBLICADA)
         self.assertEqual(pauta.horario_publicacao, dt.time(16, 20))
@@ -273,12 +274,48 @@ class ViewsTests(BasePublicacoesTestCase):
         self.assertIn("Pauta exportada", corpo)
         self.assertIn("Publicada", corpo)
 
-    def test_detalhe_e_painel(self):
-        pauta = self.criar_pauta(inicio_pauta=dt.time(10, 0), horario_publicacao=dt.time(12, 30))
-        resposta = self.client.get(reverse("publicacoes:detalhe", args=[pauta.pk]))
+    def test_formulario_e_painel(self):
+        # O antigo detalhe deixou de existir: acompanhamento, tempo até publicar,
+        # metadados do registro e atalhos de publicação vivem no formulário.
+        pauta = self.criar_pauta(
+            inicio_pauta=dt.time(10, 0),
+            horario_publicacao=dt.time(12, 30),
+            colocada_edicao=dt.time(11, 0),
+            link_site="https://www.policiacivil.pr.gov.br/Noticia/x",
+        )
+        resposta = self.client.get(reverse("publicacoes:editar", args=[pauta.pk]))
         self.assertContains(resposta, pauta.titulo)
         self.assertContains(resposta, "2h30")
+        self.assertContains(resposta, "Acompanhamento")
+        self.assertContains(resposta, "Colocada para edição")
+        self.assertContains(resposta, "Registrada por")
+        self.assertContains(resposta, "Abrir no site da PCPR")
         self.assertEqual(self.client.get(reverse("publicacoes:painel")).status_code, 200)
+
+    def test_listagem_abre_direto_no_formulario(self):
+        pauta = self.criar_pauta()
+        resposta = self.client.get(reverse("publicacoes:lista"))
+        url_form = reverse("publicacoes:editar", args=[pauta.pk])
+        self.assertContains(resposta, f'data-linha-url="{url_form}"')
+        self.assertNotContains(resposta, f"/pautas/{pauta.pk}/\"")
+
+    def test_telas_sem_menu_lateral_flutuante(self):
+        pauta = self.criar_pauta()
+        for url in (
+            reverse("publicacoes:nova"),
+            reverse("publicacoes:editar", args=[pauta.pk]),
+            reverse("publicacoes:lista"),
+            reverse("publicacoes:painel"),
+        ):
+            corpo = self.client.get(url).content.decode("utf-8")
+            for marca in ("<aside", 'class="sticky', "frm-lateral", "frm-acoes--flut"):
+                self.assertNotIn(marca, corpo, f"{marca} em {url}")
+
+    def test_rota_de_detalhe_nao_existe_mais(self):
+        from django.urls import NoReverseMatch
+
+        with self.assertRaises(NoReverseMatch):
+            reverse("publicacoes:detalhe", args=[1])
 
     def test_cadastro_pela_interface(self):
         self.client.force_login(self.admin_modulo)

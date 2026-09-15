@@ -2,9 +2,9 @@
 
 A lista com um cartão por servidor (cabeçalho do ofício, selo, solicitação e
 período das diárias, motorista, comprovante, WhatsApp, placa e modelo,
-trechos, valor e quantidade de diárias, os cinco comandos), as quatro etapas
-por servidor com a lateral de etapas e equipe (diário de bordo, troca de
-motorista/viatura, relatório técnico, documentos, PDF final), os modelos de
+trechos, valor e quantidade de diárias, os cinco comandos), as três etapas por
+servidor com as barras de etapas e equipe no topo (diário de bordo, troca de
+motorista/viatura, relatório técnico, documentos e fechamento), os modelos de
 texto do relatório no padrão de catálogo e o que o leitor não pode.
 """
 
@@ -45,7 +45,7 @@ class ListaPrestacoesTests(CenarioPrestacoes):
                       "Arquivados (0)", "Finalizados (0)", 'class="st st--pc-pendente">Pendente']:
             self.assertContains(r, texto)
         self.assertContains(r, reverse("viagens_prestacoes:diario_servidor", args=[self.ps_janine.pk]))
-        self.assertContains(r, reverse("viagens_prestacoes:consolidado_servidor", args=[self.ps_janine.pk]))
+        self.assertContains(r, reverse("viagens_prestacoes:documentos_servidor", args=[self.ps_janine.pk]))
         self.assertContains(r, reverse("viagens_prestacoes:prestacao_servidor_finalizar", args=[self.ps_janine.pk]))
         self.assertContains(r, reverse("viagens_prestacoes:prestacao_servidor_arquivar", args=[self.ps_janine.pk]))
         self.assertContains(r, reverse("viagens_prestacoes:prestacao_servidor_solicitacao_autosave", args=[self.ps_janine.pk]))
@@ -118,15 +118,17 @@ class ListaPrestacoesTests(CenarioPrestacoes):
 
 
 class EtapasTests(CenarioPrestacoes):
-    def test_diario_com_lateral_de_etapas_e_equipe(self):
+    def test_diario_com_barra_de_etapas_e_equipe(self):
         r = self.client.get(reverse("viagens_prestacoes:diario_servidor", args=[self.ps_janine.pk]))
         self.assertEqual(r.status_code, 200)
+        # Etapas e equipe são barras no topo: não há lateral flutuante.
+        self.assertNotContains(r, "<aside")
         for texto in ["Etapa 1", "Diário de Bordo", "Etapas da prestação", "Equipe", "JOÃO MARIO DE GOES", "Motorista e viatura",
                       "Trocar motorista / viatura", "Ajustar roteiro realizado", "Visualizar PDF", "Baixar planilha", "Deslocamentos",
                       'name="form-0-km_inicial"', 'name="form-0-km_final"', 'name="form-0-abastecimento"', 'value="sim" selected',
                       "Assinatura eletrônica", "Salvar e continuar para o RT", 'data-autosave-model="diario_bordo"']:
             self.assertContains(r, texto)
-        # A equipe da lateral troca de servidor sem sair da etapa.
+        # A barra da equipe troca de servidor sem sair da etapa.
         self.assertContains(r, reverse("viagens_prestacoes:diario_servidor", args=[self.ps_joao.pk]))
         self.assertNotContains(r, "_campos.html")
         self.assertNotContains(r, "form_simples")
@@ -167,18 +169,19 @@ class EtapasTests(CenarioPrestacoes):
         r = self.client.get(reverse("viagens_prestacoes:rt_servidor", args=[self.ps_joao.pk]))
         self.assertContains(r, "Registro fotográfico")
 
-    def test_documentos_e_pdf_final(self):
+    def test_documentos_e_fechamento_na_mesma_etapa(self):
+        """A etapa do PDF final deixou de ser uma tela: fecha dentro de Documentos."""
         r = self.client.get(reverse("viagens_prestacoes:documentos_servidor", args=[self.ps_janine.pk]))
-        for texto in ["Etapa 3", "Solicitação e liberação das diárias", "Número da solicitação", "Data de liberação das diárias", "Prazo limite para saque",
+        for texto in ["Etapa 3", "Documentos e fechamento", "Solicitação e liberação das diárias", "Número da solicitação",
+                      "Data de liberação das diárias", "Prazo limite para saque",
                       "Despacho assinado", "Ofício assinado", "Comprovante de saque ou transferência", "Relatório técnico assinado", "Diário de bordo assinado",
-                      "Compartilhado pela equipe do ofício", "Só de JANINE LACERDA DO PRADO", "Conferir e finalizar", "Voltar ao RT"]:
+                      "Compartilhado pela equipe do ofício", "Só de JANINE LACERDA DO PRADO", "Voltar ao RT",
+                      "Pacote final e fechamento", "Falta para fechar o PDF final", "Informe o número da solicitação",
+                      "Documentos de JANINE LACERDA DO PRADO", "Finalizar prestação", "Arquivar prestação"]:
             self.assertContains(r, texto)
         self.assertContains(r, 'type="file"', count=5)
-        r = self.client.get(reverse("viagens_prestacoes:consolidado_servidor", args=[self.ps_janine.pk]))
-        for texto in ["Etapa 4", "PDF Final", "Pacote final e finalização", "Falta para fechar o PDF final", "Informe o número da solicitação",
-                      "Ir para Documentos", "Documentos de JANINE LACERDA DO PRADO", "Finalizar prestação", "Arquivar prestação"]:
-            self.assertContains(r, texto)
         self.assertNotContains(r, "Baixar pacote (PDF final)")
+        self.assertNotContains(r, "Etapa 4")
 
 
 class ModelosDeTextoTests(CenarioPrestacoes):

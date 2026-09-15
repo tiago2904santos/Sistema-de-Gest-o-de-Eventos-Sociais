@@ -217,7 +217,7 @@ class PrestacaoServidorDiariaOverrideTests(TestCase):
         self.assertEqual(card['downloads_url'], reverse('viagens_prestacoes:prestacao_downloads', args=[self.ps_a.pk]))
         response = self.client.get(reverse('viagens_prestacoes:index'))
         self.assertContains(response, 'Documentos e downloads')
-        self.assertContains(response, reverse('viagens_prestacoes:consolidado_servidor', args=[self.ps_a.pk]))
+        self.assertContains(response, reverse('viagens_prestacoes:documentos_servidor', args=[self.ps_a.pk]))
 
     def test_downloads_lista_origens_e_disponibilidade_por_documento(self):
         DiarioBordo.objects.create(prestacao=self.prestacao)
@@ -339,7 +339,7 @@ class PrestacaoAssinadoUploadTests(TestCase):
             documentos = self.client.get(reverse('viagens_prestacoes:documentos_servidor', args=[ps_pk]))
             self.assertEqual(len(documentos.context['uploads']), 5)
             self.assertContains(documentos, 'type="file"', count=5)
-            self.assertContains(response, reverse('viagens_prestacoes:consolidado_servidor', args=[ps_pk]))
+            self.assertContains(response, reverse('viagens_prestacoes:documentos_servidor', args=[ps_pk]))
 
 class RelatorioTecnicoDocumentoTests(TestCase):
 
@@ -587,18 +587,19 @@ class RelatorioTecnicoDocumentoTests(TestCase):
         contexto = build_oficio_docxtpl_context(self.oficio)
         self.assertEqual(contexto['col_solicitacao'], 'SOL-789\n\n\n')
 
-    def test_consolidado_mostra_anexos_documentos_como_ok(self):
+    def test_fechamento_mostra_anexos_documentos_como_ok(self):
         with tempfile.TemporaryDirectory() as tmpdir, override_settings(MEDIA_ROOT=tmpdir):
             PrestacaoDocumentoAnexo.objects.create(prestacao=self.prestacao, tipo=PrestacaoDocumentoAnexo.TIPO_DESPACHO, arquivo=SimpleUploadedFile('despacho.pdf', pdf_minimo(), content_type='application/pdf'), nome_original='despacho.pdf')
             PrestacaoDocumentoAnexo.objects.create(prestacao=self.prestacao, servidor_prestacao=self.ps, tipo=PrestacaoDocumentoAnexo.TIPO_COMPROVANTE, arquivo=SimpleUploadedFile('comprovante-a.pdf', pdf_minimo(), content_type='application/pdf'), nome_original='comprovante-a.pdf')
             PrestacaoDocumentoAnexo.objects.create(prestacao=self.prestacao, servidor_prestacao=self.ps, tipo=PrestacaoDocumentoAnexo.TIPO_COMPROVANTE, arquivo=SimpleUploadedFile('comprovante-b.pdf', pdf_minimo(), content_type='application/pdf'), nome_original='comprovante-b.pdf')
-            response = self.client.get(reverse('viagens_prestacoes:consolidado_servidor', args=[self.ps.pk]))
+            response = self.client.get(reverse('viagens_prestacoes:documentos_servidor', args=[self.ps.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'Conferência')
         self.assertContains(response, 'Pacote final')
         servidor_ctx = response.context['servidores'][0]
-        self.assertEqual(servidor_ctx['nome'], self.ps.servidor.nome)
-        self.assertIn('download_url', servidor_ctx)
+        self.assertEqual(servidor_ctx['name'], self.ps.servidor.nome)
+        self.assertIn('downloads', response.context)
+        self.assertIn('pendencias', response.context)
 
     @mock.patch('viagens_prestacoes.views.gerar_prestacao_consolidado_pdf', return_value=pdf_minimo())
     def test_download_pdf_consolidado(self, _mock_pdf):

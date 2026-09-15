@@ -35,13 +35,13 @@
         <tbody>
           {% for demanda in pagina %}
             <tr>
-              <td data-rotulo="Solicitação"><a href="{% url 'demandas_eventos:detalhe' demanda.pk %}" aria-label="Abrir demanda #{{ demanda.pk }}">#{{ demanda.pk }} · {{ demanda.data_solicitacao|date:"d/m/Y" }}</a></td>
+              <td data-rotulo="Solicitação"><a href="{% url 'demandas_eventos:editar' demanda.pk %}" aria-label="Abrir demanda #{{ demanda.pk }}">#{{ demanda.pk }} · {{ demanda.data_solicitacao|date:"d/m/Y" }}</a></td>
               <td data-rotulo="Tipo / tema"><strong>{{ demanda.tipo_evento }}</strong>{% if demanda.tema %}<br><span class="v32-suave">{{ demanda.tema }}</span>{% endif %}</td>
               <td data-rotulo="Evento">{{ demanda.periodo_evento_display|default:"—" }}</td>
               <td data-rotulo="Município">{{ demanda.municipio|default:demanda.municipio_texto|default:"—" }}</td>
               <td data-rotulo="Solicitante">{{ demanda.solicitante|truncatechars:55 }}</td>
               <td data-rotulo="Status">{% include "components/v32/status_badge.html" with status=demanda.status label=demanda.get_status_display %}</td>
-              <td class="c-cad-acoes"><div class="acoes"><a class="  acao-linha " href="{% url 'demandas_eventos:detalhe' demanda.pk %}">Ver</a>{% if not demanda.finalizada %}<a class=" btn--secundaria " href="{% url 'demandas_eventos:editar' demanda.pk %}">Editar</a>{% endif %}</div></td>
+              <td class="c-cad-acoes"><div class="acoes"><a class=" btn--secundaria " href="{% url 'demandas_eventos:editar' demanda.pk %}">Abrir</a></div></td>
             </tr>
           {% empty %}<tr><td colspan="7" class="v32-suave dt__vazio">Nenhuma demanda encontrada.</td></tr>{% endfor %}
         </tbody>
@@ -50,13 +50,13 @@
 <div class="lista-mobile-v32"><div class="m-lista">
           {% for demanda in pagina %}
             <article class="m-item">
-              <div class="m-item__campo" data-rotulo="Solicitação"><a href="{% url 'demandas_eventos:detalhe' demanda.pk %}" aria-label="Abrir demanda #{{ demanda.pk }}">#{{ demanda.pk }} · {{ demanda.data_solicitacao|date:"d/m/Y" }}</a></div>
+              <div class="m-item__campo" data-rotulo="Solicitação"><a href="{% url 'demandas_eventos:editar' demanda.pk %}" aria-label="Abrir demanda #{{ demanda.pk }}">#{{ demanda.pk }} · {{ demanda.data_solicitacao|date:"d/m/Y" }}</a></div>
               <div class="m-item__campo" data-rotulo="Tipo / tema"><strong>{{ demanda.tipo_evento }}</strong>{% if demanda.tema %}<br><span class="v32-suave">{{ demanda.tema }}</span>{% endif %}</div>
               <div class="m-item__campo" data-rotulo="Evento">{{ demanda.periodo_evento_display|default:"—" }}</div>
               <div class="m-item__campo" data-rotulo="Município">{{ demanda.municipio|default:demanda.municipio_texto|default:"—" }}</div>
               <div class="m-item__campo" data-rotulo="Solicitante">{{ demanda.solicitante|truncatechars:55 }}</div>
               <div class="m-item__campo" data-rotulo="Status">{% include "components/v32/status_badge.html" with status=demanda.status label=demanda.get_status_display %}</div>
-              <div class="m-item__campo" data-rotulo="Ações"><div class="acoes"><a class="  acao-linha " href="{% url 'demandas_eventos:detalhe' demanda.pk %}">Ver</a>{% if not demanda.finalizada %}<a class=" btn--secundaria " href="{% url 'demandas_eventos:editar' demanda.pk %}">Editar</a>{% endif %}</div></div>
+              <div class="m-item__campo" data-rotulo="Ações"><div class="acoes"><a class=" btn--secundaria " href="{% url 'demandas_eventos:editar' demanda.pk %}">Abrir</a></div></div>
             </article>
           {% empty %}<article class="m-item"><p class="m-vazio">Nenhuma demanda encontrada.</p></article>{% endfor %}
         </div></div>

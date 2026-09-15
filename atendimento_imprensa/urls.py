@@ -9,7 +9,6 @@ urlpatterns = [
     path("atendimentos/", views.lista, name="lista"),
     path("atendimentos/exportar/", views.exportar, name="exportar"),
     path("atendimentos/novo/", views.novo, name="novo"),
-    path("atendimentos/<int:pk>/", views.detalhe, name="detalhe"),
     path("atendimentos/<int:pk>/editar/", views.editar, name="editar"),
     path("cadastros/", views.cadastros, name="cadastros"),
     path("cadastros/<str:tipo>/", views.lista_cadastro, name="cadastro_lista"),

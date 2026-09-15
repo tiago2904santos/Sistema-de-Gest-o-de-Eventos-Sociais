@@ -1,4 +1,4 @@
-"""Como o termo se apresenta na lista e no detalhe.
+"""Como o termo se apresenta na lista.
 
 A linha da origem (`termos/index`): título "DESTINO/PR · 24/08/2026 a
 30/08/2026" (ou só "PR" quando há apenas a unidade federativa), o selo
@@ -120,7 +120,7 @@ def linha_da_lista(termo, *, artefatos_pdf=None):
         "descricao": descricao_do_termo(termo),
         "herdados": herdados_do_termo(termo),
         "documentos": documentos_do_termo(termo, artefatos_pdf or {}),
-        "url_detalhe": reverse("viagens_termos:detalhe", args=[termo.pk]),
+        "url_previa": reverse("viagens_termos:preview", args=[termo.pk]),
         "url_editar": reverse("viagens_termos:editar", args=[termo.pk]),
         "url_excluir": reverse("viagens_termos:acao", args=[termo.pk, "excluir"]),
         "url_cancelar": reverse("viagens_termos:acao", args=[termo.pk, "cancelar"]),

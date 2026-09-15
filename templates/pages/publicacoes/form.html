@@ -1,8 +1,9 @@
 {% extends "layouts/app_shell_v32.html" %}
 {% comment %}
-  Nova pauta / edição no padrão V3.2 (mesma composição do formulário de
-  Solicitações): seções contínuas, lateral com etapas e barra de ações fixa.
-  Campos espelham as colunas do Relatório de Publicações.
+  Tela única da pauta no padrão V3.2: o formulário É a tela do registro
+  (não existe mais uma tela de detalhe). Fluxo em coluna única, sem lateral
+  flutuante — acompanhamento, registro e atalhos de publicação entram como
+  seções normais quando a pauta já existe.
 {% endcomment %}
 
 {% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
@@ -13,33 +14,57 @@
 
     <div class="frm-cabeca">
       <div>
+        <a class="voltar" href="{% url 'publicacoes:lista' %}">{% include "components/icon.html" with nome="chevron-left" %}Voltar para publicações</a>
         <div class="kicker">{{ kicker }}</div>
         <h1>{{ titulo_pagina }}<span class="frm-rasc">{% include "components/icon.html" with nome="document" %}{% if publicacao %}{{ publicacao.get_status_display }}{% else %}Nova{% endif %}</span></h1>
         <p class="frm-cabeca__sub">{% if publicacao %}Atualize o andamento, a publicação e a distribuição da pauta.{% else %}Registre a pauta assim que ela chegar; os demais dados podem ser completados depois.{% endif %}</p>
+        {% if publicacao %}
+          <p class="frm-cabeca__sub">
+            {{ publicacao.titulo }}<br>
+            {{ publicacao.unidade|default:"Unidade não informada" }} · {{ publicacao.data|date:"d/m/Y" }}{% if publicacao.inicio_pauta %} às {{ publicacao.inicio_pauta|time:"H:i" }}{% endif %} · {{ publicacao.jornalista }}
+          </p>
+        {% endif %}
       </div>
+      {% if publicacao %}
+        <div class="d-acoes">
+          {% if publicacao.link_site %}
+            <a class="btn--secundaria" href="{{ publicacao.link_site }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="arrow-right" %}Ver publicação</a>
+          {% endif %}
+          {% if publicacao.link_site or publicacao.link_aen %}
+            <div class="dd" data-menu>
+              <button type="button" class="ib" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações">{% include "components/icon.html" with nome="kebab" %}</button>
+              <div class="dd__c" hidden data-menu-corpo>
+                <div class="dd__t">{{ titulo_pagina }}</div>
+                {% if publicacao.link_site %}<a class="dd__i" href="{{ publicacao.link_site }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="arrow-right" %}Abrir no site da PCPR</a>{% endif %}
+                {% if publicacao.link_aen %}<a class="dd__i" href="{{ publicacao.link_aen }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="arrow-right" %}Abrir na AEN</a>{% endif %}
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
     </div>
 
-    <div class="frm-grade">
-      <div>
-        {% if form.errors %}
-          <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
-            {% include "components/icon.html" with nome="info" %}
-            <div>
-              <b>Não foi possível salvar a pauta</b>
-              Revise os campos indicados antes de continuar.
-              <ul class="aviso--erro__lista">
-                {% for campo, mensagens in form.errors.items %}
-                  {% for mensagem in mensagens %}
-                    <li>{% if campo == "__all__" %}{{ mensagem }}{% else %}<a href="#id_{{ campo }}">{{ mensagem }}</a>{% endif %}</li>
-                  {% endfor %}
+    <div>
+      {% if form.errors %}
+        <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
+          {% include "components/icon.html" with nome="info" %}
+          <div>
+            <b>Não foi possível salvar a pauta</b>
+            Revise os campos indicados antes de continuar.
+            <ul class="aviso--erro__lista">
+              {% for campo, mensagens in form.errors.items %}
+                {% for mensagem in mensagens %}
+                  <li>{% if campo == "__all__" %}{{ mensagem }}{% else %}<a href="#id_{{ campo }}">{{ mensagem }}</a>{% endif %}</li>
                 {% endfor %}
-              </ul>
-            </div>
+              {% endfor %}
+            </ul>
           </div>
-        {% endif %}
+        </div>
+      {% endif %}
 
-        <section class="reg" id="sec-pauta">
-          <h2 class="reg__t">Pauta</h2>
+      <section class="reg" id="sec-pauta">
+        {% include "components/v32/section_card.html" with numero="1" titulo="Pauta" subtitulo="Entrada, fonte e título" %}
+        <div class="reg-corpo">
           <div class="g-form g-form--3">
             {% include "components/input.html" with name="data" label="Data da pauta" tipo="date" obrigatorio=True valor=valores.data erros=erros.data %}
             <label class="campo-e form-campo"><span>Início da pauta</span>
@@ -66,10 +91,12 @@
               {% for erro in erros.andamento %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
             </label>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section class="reg" id="sec-producao">
-          <h2 class="reg__t">Produção e publicação</h2>
+      <section class="reg" id="sec-producao">
+        {% include "components/v32/section_card.html" with numero="2" titulo="Produção e publicação" subtitulo="Edição, revisão e horários" %}
+        <div class="reg-corpo">
           <div class="g-form g-form--3">
             <label class="campo-e form-campo"><span>Colocada para edição</span>
               <input class="ctrl{% if erros.colocada_edicao %} ctrl--erro{% endif %}" type="text" id="id_colocada_edicao" name="colocada_edicao" value="{{ valores.colocada_edicao }}" placeholder="hh:mm" inputmode="numeric" autocomplete="off">
@@ -83,10 +110,12 @@
             {% include "components/select.html" with name="revisao" label="Revisão" opcoes=opcoes_revisao selecionado=valores.revisao erros=erros.revisao placeholder="Quem revisou" %}
             {% include "components/select.html" with name="galeria_fotos" label="Galeria de fotos" opcoes=opcoes_revisao selecionado=valores.galeria_fotos erros=erros.galeria_fotos placeholder="Quem montou a galeria" %}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section class="reg" id="sec-distribuicao">
-          <h2 class="reg__t">Distribuição</h2>
+      <section class="reg" id="sec-distribuicao">
+        {% include "components/v32/section_card.html" with numero="3" titulo="Distribuição" subtitulo="Grupos, SESP, AEN e links" %}
+        <div class="reg-corpo">
           <div class="g-form g-form--3">
             {% include "components/select.html" with name="bitly_grupos" label="Bitly nos grupos" opcoes=opcoes_sim_nao selecionado=valores.bitly_grupos erros=erros.bitly_grupos placeholder="—" %}
             {% include "components/select.html" with name="enviado_sesp" label="Enviado para a SESP" opcoes=opcoes_sim_nao selecionado=valores.enviado_sesp erros=erros.enviado_sesp placeholder="—" %}
@@ -100,23 +129,44 @@
               {% for erro in erros.link_aen %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
             </label>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
-      <aside class="sticky sticky--form">
-        <section class="reg reg--sec">
-          <h2 class="reg__t">Etapas</h2>
-          <div class="step-v">
-            <button type="button" class="step-i{% if erros.data or erros.titulo or erros.jornalista or erros.unidade or erros.status %} step-i--erro{% endif %}" data-ir="#sec-pauta"><span class="step-i__m">1</span><span><span class="step-i__t">Pauta</span><span class="step-i__s">Entrada, fonte e título</span></span></button>
-            <button type="button" class="step-i{% if erros.data_publicacao or erros.horario_publicacao or erros.colocada_edicao %} step-i--erro{% endif %}" data-ir="#sec-producao"><span class="step-i__m">2</span><span><span class="step-i__t">Produção e publicação</span><span class="step-i__s">Edição, revisão e horários</span></span></button>
-            <button type="button" class="step-i{% if erros.link_site or erros.link_aen %} step-i--erro{% endif %}" data-ir="#sec-distribuicao"><span class="step-i__m">3</span><span><span class="step-i__t">Distribuição</span><span class="step-i__s">Grupos, SESP, AEN e links</span></span></button>
+      {% if publicacao %}
+        <section class="reg" id="sec-acompanhamento">
+          {% include "components/v32/section_card.html" with numero="4" titulo="Acompanhamento" subtitulo="Da entrada da pauta até a publicação" %}
+          <div class="reg-corpo">
+            <div class="etapas">
+              {% for etapa in etapas %}
+                <div class="etapa etapa--{{ etapa.estado }}">
+                  <span class="etapa__m"></span>
+                  <div>
+                    <div class="etapa__t">{{ etapa.titulo }}</div>
+                    <div class="etapa__s">{{ etapa.subtitulo }}</div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
           </div>
         </section>
-        <div class="frm-acoes frm-acoes--flut">
-          {% if publicacao %}<a class="frm-cancelar" href="{% url 'publicacoes:detalhe' publicacao.pk %}">Cancelar</a>{% else %}<a class="frm-cancelar" href="{% url 'publicacoes:lista' %}">Cancelar</a>{% endif %}
-          <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check" %}{% if publicacao %}Salvar alterações{% else %}Registrar pauta{% endif %}</button>
-        </div>
-      </aside>
+
+        <section class="reg" id="sec-registro">
+          {% include "components/v32/section_card.html" with numero="5" titulo="Registro" subtitulo="Dados calculados e histórico do cadastro" %}
+          <div class="reg-corpo">
+            <dl class="gc gc--3">
+              <div class="f"><dt>Status atual</dt><dd><span class="st st--{{ publicacao.status_css }}">{{ publicacao.get_status_display }}</span></dd></div>
+              <div class="f"><dt>Tempo até publicar</dt><dd>{{ publicacao.tempo_ate_publicacao_display|default:"—" }}</dd></div>
+              <div class="f"><dt>Registrada por</dt><dd>{{ publicacao.criado_por|default:"Importação" }}</dd></div>
+              <div class="f"><dt>Atualizada em</dt><dd>{{ publicacao.atualizado_em|date:"d/m/Y H:i" }}</dd></div>
+            </dl>
+          </div>
+        </section>
+      {% endif %}
+
+      <div class="frm-acoes">
+        <a class="frm-cancelar" href="{% url 'publicacoes:lista' %}">Cancelar</a>
+        <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check" %}{% if publicacao %}Salvar alterações{% else %}Registrar pauta{% endif %}</button>
+      </div>
     </div>
   </form>
 {% endblock %}

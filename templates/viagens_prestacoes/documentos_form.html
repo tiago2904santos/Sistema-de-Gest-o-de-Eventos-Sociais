@@ -48,16 +48,47 @@
             <label class="btn--secundaria btn--compacto pc-upload__escolher" for="upload-{{ item.id }}">{% include "components/icon.html" with nome="upload" %}{% if item.anexos %}{% if item.multiplo %}Anexar mais{% else %}Substituir{% endif %}{% else %}Escolher arquivo{% endif %}</label>
             <input type="file" name="{{ item.campo }}" {% if item.multiplo %}multiple{% endif %} id="upload-{{ item.id }}" accept=".pdf,.png,.jpg,.jpeg" required class="sr-only" data-arquivo-nome="nome-{{ item.id }}">
             <span class="pc-upload__nome" id="nome-{{ item.id }}"></span>
-            <button type="submit" class="btn-primaria btn--compacto">Anexar {{ item.titulo|lower }}</button>
+            <button type="submit" class="btn--secundaria btn--compacto"><span class="sr-only">Anexar {{ item.titulo|lower }}</span><span aria-hidden="true">Anexar</span></button>
           </form>
         </article>
       {% endfor %}
     </div>
   </section>
+  <section class="reg" id="pacote">
+    <h2 class="reg__t">{% include "components/icon.html" with nome="document-plus" %}Pacote final e fechamento</h2>
+    <p class="pc-nota">O PDF reúne: ofício, despacho, relatório técnico, diário de bordo e comprovantes.</p>
+    {% if pendencias %}
+      <div class="aviso aviso--callout" role="status"><div class="aviso__txt">{% include "components/icon.html" with nome="alert" %}<div class="aviso__corpo"><b>Falta para fechar o PDF final</b><ul class="pc-pendencias">{% for p in pendencias %}<li>{{ p }}</li>{% endfor %}</ul></div></div></div>
+    {% else %}
+      <p class="aviso aviso--ok">{% include "components/icon.html" with nome="check-circle" %}<span>Tudo pronto: o pacote de <strong>{{ ps.servidor.nome }}</strong> pode ser gerado.</span></p>
+      <div class="pc-acoes-linha"><a class="btn-primaria" href="{% url 'viagens_prestacoes:consolidado_download' ps.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="download" %}Baixar pacote (PDF final)</a></div>
+    {% endif %}
+  </section>
+
+  <section class="reg" id="downloads">
+    <h2 class="reg__t">{% include "components/icon.html" with nome="download" %}Documentos de {{ ps.servidor.nome }}</h2>
+    <div class="pc-uploads">
+      {% for item in downloads %}
+        <article class="pc-upload">
+          <div class="pc-upload__cabeca">
+            <span class="of-av" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+            <span class="of-pessoa__txt"><span class="of-pessoa__nome">{{ item.titulo }}</span><span class="of-pessoa__desc">{{ item.subtitulo }}</span></span>
+          </div>
+          <div class="pc-download__versoes">
+            {% for formato, url in item.versoes.original.items %}<a class="pc-download__versao" href="{{ url }}">Original · {{ formato|upper }}</a>{% endfor %}
+            {% for formato, url in item.versoes.assinado.items %}<a class="pc-download__versao pc-download__versao--assinado" href="{{ url }}">{% include "components/icon.html" with nome="check" %}Assinado · {{ formato|upper }}</a>{% endfor %}
+          </div>
+        </article>
+      {% empty %}
+        <p class="texto-vazio">Nenhum documento disponível ainda. Preencha o diário de bordo e o relatório técnico.</p>
+      {% endfor %}
+    </div>
+  </section>
 {% endblock %}
 {% block prestacao_acoes %}
-  <footer class="editor-roteiro__rodape pc-fluxo__rodape">
+  <footer class="pc-fluxo__rodape">
     <a class="btn--secundaria" href="{{ rt_url }}">Voltar ao RT</a>
-    <a class="btn-primaria" href="{{ consolidado_url }}">Conferir e finalizar</a>
+    <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_arquivar' ps.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="lock" %}{% if ps.arquivada %}Desarquivar{% else %}Arquivar prestação{% endif %}</button></form>
+    <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check-circle" %}{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
   </footer>
 {% endblock %}

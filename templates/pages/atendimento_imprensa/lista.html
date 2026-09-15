@@ -115,7 +115,7 @@
           </thead>
           <tbody>
             {% for a in linhas %}
-              <tr data-linha-url="{% url 'atendimento_imprensa:detalhe' a.pk %}" tabindex="0">
+              <tr data-linha-url="{% url 'atendimento_imprensa:editar' a.pk %}" tabindex="0">
                 <td class="c-data">{{ a.data|date:"d/m/Y" }}{% if a.horario %}<small class="dt__sub">{{ a.horario|time:"H:i" }}</small>{% endif %}</td>
                 <td class="c-status"><span class="st st--{{ a.situacao_css }}">{{ a.get_situacao_display }}</span></td>
                 <td class="c-sol"><b>{{ a.jornalista }}</b>{% if a.contato %}<small>{{ a.contato }}</small>{% endif %}</td>
@@ -128,13 +128,13 @@
                     {% if a.aberto %}
                       <a class="acao-linha" href="{% url 'atendimento_imprensa:editar' a.pk %}">{% include "components/icon.html" with nome="pencil" %}Atualizar</a>
                     {% endif %}
-                    <a class="ib-linha" href="{% url 'atendimento_imprensa:detalhe' a.pk %}" aria-label="Abrir atendimento #{{ a.pk }}">{% include "components/icon.html" with nome="chevron-right" %}</a>
+                    <a class="ib-linha" href="{% url 'atendimento_imprensa:editar' a.pk %}" aria-label="Abrir atendimento #{{ a.pk }}">{% include "components/icon.html" with nome="chevron-right" %}</a>
                     <div class="dd" data-menu>
                       <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações do atendimento #{{ a.pk }}">{% include "components/icon.html" with nome="kebab" %}</button>
                       <div class="dd__c" hidden data-menu-corpo>
                         <div class="dd__t">Atendimento #{{ a.pk }}</div>
-                        <a class="dd__i" href="{% url 'atendimento_imprensa:detalhe' a.pk %}">{% include "components/icon.html" with nome="eye" %}Detalhes</a>
-                        <a class="dd__i" href="{% url 'atendimento_imprensa:editar' a.pk %}">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                        <a class="dd__i" href="{% url 'atendimento_imprensa:editar' a.pk %}">{% include "components/icon.html" with nome="pencil" %}Abrir atendimento</a>
+                        <a class="dd__i" href="{% url 'atendimento_imprensa:novo' %}">{% include "components/icon.html" with nome="plus" %}Novo atendimento</a>
                       </div>
                     </div>
                   </div>
@@ -173,7 +173,7 @@
     <div class="lista-mobile-v32">
       <div class="m-lista">
         {% for a in linhas %}
-          <div class="m-item" data-linha-url="{% url 'atendimento_imprensa:detalhe' a.pk %}">
+          <div class="m-item" data-linha-url="{% url 'atendimento_imprensa:editar' a.pk %}">
             <div class="m-item__topo">
               <span class="m-item__id">{{ a.data|date:"d/m/Y" }}{% if a.horario %} · {{ a.horario|time:"H:i" }}{% endif %}</span>
               <span class="st st--{{ a.situacao_css }}">{{ a.get_situacao_display }}</span>
@@ -189,8 +189,8 @@
                 <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações do atendimento #{{ a.pk }}">{% include "components/icon.html" with nome="kebab" %}</button>
                 <div class="dd__c" hidden data-menu-corpo>
                   <div class="dd__t">Atendimento #{{ a.pk }}</div>
-                  <a class="dd__i" href="{% url 'atendimento_imprensa:detalhe' a.pk %}">{% include "components/icon.html" with nome="eye" %}Detalhes</a>
-                  <a class="dd__i" href="{% url 'atendimento_imprensa:editar' a.pk %}">{% include "components/icon.html" with nome="pencil" %}Editar</a>
+                  <a class="dd__i" href="{% url 'atendimento_imprensa:editar' a.pk %}">{% include "components/icon.html" with nome="pencil" %}Abrir atendimento</a>
+                  <a class="dd__i" href="{% url 'atendimento_imprensa:novo' %}">{% include "components/icon.html" with nome="plus" %}Novo atendimento</a>
                 </div>
               </div>
             </div>

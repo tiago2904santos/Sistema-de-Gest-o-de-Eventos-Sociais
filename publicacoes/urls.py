@@ -9,7 +9,6 @@ urlpatterns = [
     path("pautas/", views.lista, name="lista"),
     path("pautas/exportar/", views.exportar, name="exportar"),
     path("pautas/nova/", views.nova, name="nova"),
-    path("pautas/<int:pk>/", views.detalhe, name="detalhe"),
     path("pautas/<int:pk>/editar/", views.editar, name="editar"),
     path("cadastros/", views.cadastros, name="cadastros"),
     path("cadastros/<str:tipo>/", views.lista_cadastro, name="cadastro_lista"),

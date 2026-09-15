@@ -609,7 +609,7 @@ def pendencias_consolidado(servidor_prestacao) -> list[str]:
     Ofício, RT e diário não entram porque, sem o assinado, o pacote usa a versão
     que o próprio sistema gera.
 
-    Existe para a Etapa 4 poder DIZER o que falta antes de o operador clicar
+    Existe para o fechamento poder DIZER o que falta antes de o operador clicar
     (`NOVO-20260824-133423-10943c04a7c5`): a tela calculava `numero_ok`, não
     usava em lugar nenhum, e o clique no download caía numa página de espera que
     prometia um arquivo que nunca vinha.
@@ -619,21 +619,21 @@ def pendencias_consolidado(servidor_prestacao) -> list[str]:
 
     if not str(servidor_prestacao.numero_solicitacao or "").strip():
         pendencias.append(
-            "Informe o número da solicitação deste servidor na etapa Documentos.",
+            "Informe o número da solicitação deste servidor, acima.",
         )
 
     tem_despacho = prestacao.documentos_anexos.filter(
         tipo=PrestacaoDocumentoAnexo.TIPO_DESPACHO,
     ).exists() or bool(getattr(prestacao.despacho_assinado, "name", ""))
     if not tem_despacho:
-        pendencias.append("Anexe o despacho assinado do ofício na etapa Documentos.")
+        pendencias.append("Anexe o despacho assinado do ofício, acima.")
 
     tem_comprovante = servidor_prestacao.documentos_anexos.filter(
         tipo=PrestacaoDocumentoAnexo.TIPO_COMPROVANTE,
     ).exists()
     if not tem_comprovante:
         pendencias.append(
-            "Anexe o comprovante de saque/transferência deste servidor na etapa Documentos.",
+            "Anexe o comprovante de saque/transferência deste servidor, acima.",
         )
 
     return pendencias
@@ -649,7 +649,7 @@ def gerar_prestacao_consolidado_pdf(servidor_prestacao) -> bytes:
     a versão gerada/assinada eletronicamente pelo sistema."""
     prestacao = servidor_prestacao.prestacao
 
-    # Uma lista só para as duas pontas: o que a Etapa 4 mostra é exatamente o que
+    # Uma lista só para as duas pontas: o que o fechamento mostra é exatamente o que
     # a geração cobra. Antes o número era conferido aqui e os anexos só estouravam
     # lá dentro, com o texto de máquina do montador ("Anexe o arquivo: despacho
     # assinado do ofício."), a três chamadas de distância.

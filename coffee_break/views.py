@@ -562,7 +562,7 @@ def exportar_solicitacoes(request):
     return resposta
 
 
-def _contexto_formulario(request, form, solicitacao=None):
+def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False):
     lotes_com_saldo = (
         LoteCoffeeBreak.objects.filter(
             pk__in=[l.pk for l in form.fields["lote"].queryset]
@@ -582,7 +582,7 @@ def _contexto_formulario(request, form, solicitacao=None):
     for nome in form.fields:
         valor = form[nome].value()
         valores[nome] = "" if valor is None else str(valor)
-    return {
+    contexto = {
         "form": form,
         "solicitacao": solicitacao,
         "erros": form.errors,
@@ -592,8 +592,21 @@ def _contexto_formulario(request, form, solicitacao=None):
         "valores": valores,
         "lotes": _opcoes(form.fields["lote"].queryset),
         "saldos_lotes": saldos,
-        "dados_base_bloqueados": bool(solicitacao and solicitacao.financeiro_iniciado),
+        "somente_leitura": somente_leitura,
+        "dados_base_bloqueados": bool(
+            solicitacao and (solicitacao.financeiro_iniciado or somente_leitura)
+        ),
     }
+    if solicitacao is not None:
+        # O formulário é a única tela do registro: além dos campos editáveis ele
+        # carrega o vínculo com o lote, os dados de auditoria e o histórico.
+        contexto["lote"] = (
+            LoteCoffeeBreak.objects.com_consumo()
+            .select_related("contrato__fornecedor")
+            .get(pk=solicitacao.lote_id)
+        )
+        contexto["historico"] = solicitacao.historico.select_related("usuario")
+    return contexto
 
 
 @acesso_ao_modulo
@@ -621,7 +634,7 @@ def nova_solicitacao(request):
                     request,
                     f"Solicitação de coffee break registrada no {solicitacao.lote.rotulo_curto}.",
                 )
-                return redirect("coffee_break:detalhe", pk=solicitacao.pk)
+                return redirect("coffee_break:editar", pk=solicitacao.pk)
         else:
             messages.error(request, "Corrija os campos destacados para continuar.")
     else:
@@ -638,14 +651,32 @@ def nova_solicitacao(request):
 @acesso_ao_modulo
 def editar_solicitacao(request, pk):
     solicitacao = get_object_or_404(
-        SolicitacaoCoffeeBreak.objects.select_related("lote"), pk=pk
+        SolicitacaoCoffeeBreak.objects.select_related(
+            "lote__contrato__fornecedor", "criado_por", "cancelada_por"
+        ),
+        pk=pk,
     )
-    if solicitacao.cancelada or solicitacao.concluida:
+    somente_leitura = solicitacao.cancelada or solicitacao.concluida
+    if somente_leitura:
+        # O formulário é a única tela do registro: canceladas e concluídas
+        # continuam abrindo aqui, mas sem gravar — só para consulta, ações de
+        # situação e histórico.
         messages.warning(
             request,
             "Solicitações canceladas ou concluídas ficam bloqueadas para edição. Use o histórico para consultar as alterações.",
         )
-        return redirect("coffee_break:detalhe", pk=solicitacao.pk)
+        if request.method == "POST":
+            return redirect("coffee_break:editar", pk=solicitacao.pk)
+        form = SolicitacaoCoffeeBreakForm(instance=solicitacao)
+        contexto = _contexto_formulario(
+            request, form, solicitacao, somente_leitura=True
+        )
+        contexto["titulo_pagina"] = "Solicitação de Coffee Break"
+        contexto["breadcrumb"] = _breadcrumb(
+            {"label": "Solicitações", "url": reverse("coffee_break:solicitacoes")},
+            {"label": solicitacao.numero or f"#{solicitacao.pk}"},
+        )
+        return render(request, "pages/coffee_break/form.html", contexto)
     if request.method == "POST":
         form = SolicitacaoCoffeeBreakForm(request.POST, instance=solicitacao)
         if form.is_valid():
@@ -673,7 +704,7 @@ def editar_solicitacao(request, pk):
                     else "Solicitação salva sem alteração de campos.",
                 )
                 messages.success(request, "Solicitação de coffee break atualizada.")
-                return redirect("coffee_break:detalhe", pk=solicitacao.pk)
+                return redirect("coffee_break:editar", pk=solicitacao.pk)
         else:
             messages.error(request, "Corrija os campos destacados para continuar.")
     else:
@@ -685,31 +716,6 @@ def editar_solicitacao(request, pk):
         {"label": f"Editar #{solicitacao.pk}"},
     )
     return render(request, "pages/coffee_break/form.html", contexto)
-
-
-@acesso_ao_modulo
-def detalhe_solicitacao(request, pk):
-    solicitacao = get_object_or_404(
-        SolicitacaoCoffeeBreak.objects.select_related(
-            "lote__contrato__fornecedor", "criado_por", "cancelada_por"
-        ).prefetch_related("historico__usuario"),
-        pk=pk,
-    )
-    lote = LoteCoffeeBreak.objects.com_consumo().get(pk=solicitacao.lote_id)
-    return render(
-        request,
-        "pages/coffee_break/detalhe.html",
-        {
-            "breadcrumb": _breadcrumb(
-                {"label": "Solicitações", "url": reverse("coffee_break:solicitacoes")},
-                {"label": solicitacao.numero or f"#{solicitacao.pk}"},
-            ),
-            "solicitacao": solicitacao,
-            "lote": lote,
-            "pode_editar": not solicitacao.cancelada and not solicitacao.concluida,
-            "historico": solicitacao.historico.all(),
-        },
-    )
 
 
 @acesso_ao_modulo
@@ -728,7 +734,7 @@ def cancelar_solicitacao(request, pk):
             request,
             "Solicitação cancelada — a quantidade voltou ao saldo do lote.",
         )
-    return redirect("coffee_break:detalhe", pk=solicitacao.pk)
+    return redirect("coffee_break:editar", pk=solicitacao.pk)
 
 
 @acesso_ao_modulo
@@ -742,7 +748,7 @@ def reativar_solicitacao(request, pk):
             messages.error(request, mensagem)
     else:
         messages.success(request, "Solicitação reativada e saldo consumido.")
-    return redirect("coffee_break:detalhe", pk=solicitacao.pk)
+    return redirect("coffee_break:editar", pk=solicitacao.pk)
 
 
 # ---------------------------------------------------------------------------

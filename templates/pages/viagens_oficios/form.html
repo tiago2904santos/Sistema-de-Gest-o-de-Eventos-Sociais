@@ -7,8 +7,13 @@
   justificativa, resumo e documentos. Aqui elas são seções de uma tela só,
   cada uma com os blocos de lá (identificação, motivo, custeio, equipe;
   viatura e motorista com o cartão do motorista externo; roteiro com o resumo
-  da rota; regra de prazo e texto da justificativa; conferência). A lateral
-  mostra as etapas e o estado de cada uma. Nenhum campo é desenhado por laço.
+  da rota; regra de prazo e texto da justificativa; conferência). Nenhum campo
+  é desenhado por laço.
+
+  O ofício tem uma tela só: esta. Depois do `</form>` dos campos vêm as seções
+  operacionais que antes moravam no detalhe — documentos, histórico e
+  encerramento. Elas trazem formulários próprios (emissão, termos, ações de
+  estado) que não podem ficar aninhados no formulário do ofício.
 {% endcomment %}
 
 {% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
@@ -31,8 +36,7 @@
       </div>
     </div>
 
-    <div class="frm-grade">
-      <div class="of-form__principal">
+    <div class="of-form__principal">
         {% if form.errors or jform.errors %}
           <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
             {% include "components/icon.html" with nome="info" %}
@@ -51,7 +55,21 @@
           </div>
         {% endif %}
         {% if oficio.cancelado %}
-          <p class="aviso-rota" role="status">{% include "components/icon.html" with nome="ban" %}<span><strong>Ofício cancelado.</strong> {{ oficio.motivo_cancelamento }}</span></p>
+          <div class="aviso aviso--callout" role="status">
+            <div class="aviso__txt">{% include "components/icon.html" with nome="ban" %}<div class="aviso__corpo"><b>Ofício cancelado</b><p>{{ oficio.motivo_cancelamento|default:"Sem motivo registrado." }}</p><div class="aviso__meta">{{ oficio.cancelado_em|date:"d/m/Y · H\hi" }}</div></div></div>
+          </div>
+        {% elif oficio.pk and avaliacao.pendencias %}
+          {# Um lugar só para a conferência: o que falta é dito aqui, por extenso. #}
+          <div class="aviso aviso--callout" role="status">
+            <div class="aviso__txt">{% include "components/icon.html" with nome="alert" %}<div class="aviso__corpo">
+              <b>Faltam informações para emitir o documento</b>
+              <p>{{ avaliacao.pendencias|length }} pendência{{ avaliacao.pendencias|length|pluralize }} antes de gerar o ofício:</p>
+              <ul class="of-pendencias">{% for p in avaliacao.pendencias %}<li>{{ p }}</li>{% endfor %}</ul>
+            </div></div>
+            <a class="btn-primaria" href="#dados">Completar o ofício</a>
+          </div>
+        {% elif oficio.pk %}
+          <p class="aviso aviso--ok" role="status">{% include "components/icon.html" with nome="check-circle" %}<span>Ofício <strong>{{ oficio.numero_formatado }}</strong> pronto para emissão. Os documentos são gerados em <a href="#documentos">Documentos</a>.</span></p>
         {% endif %}
 
         {# ------------------------------------------------------------- 1 #}
@@ -285,68 +303,180 @@
           </div>
         </section>
 
-        {# ------------------------------------------------------------- 5 #}
-        <section class="section-card reg" id="resumo">
-          <header class="section-card__cabecalho reg__t">
-            <span class="section-card__numero reg-numero" aria-hidden="true">5</span>
-            <h2 class="section-card__titulo">Resumo</h2>
-            {% if oficio.pk %}<a class="btn--secundaria btn--compacto section-card__acao" href="{% url 'viagens_oficios:detalhe' oficio.pk %}">{% include "components/icon.html" with nome="eye" %}Conferir e emitir</a>{% endif %}
-          </header>
-          <div class="section-card__corpo">
-            {% if oficio.pk %}
-              <div class="of-conferencia">
-                {% for etapa in etapas %}{% if etapa.id != "resumo" and etapa.id != "documentos" %}
-                  <div class="of-conferencia__item of-conferencia__item--{{ etapa.estado }}">
-                    <span class="of-conferencia__marca" aria-hidden="true">{% if etapa.estado == "concluida" %}{% include "components/icon.html" with nome="check" %}{% elif etapa.estado == "opcional" %}–{% else %}{{ etapa.numero }}{% endif %}</span>
-                    <span><strong>{{ etapa.titulo }}</strong><small>{% if etapa.estado == "concluida" %}Completo{% elif etapa.estado == "opcional" %}Não exigida{% else %}Pendente{% endif %}</small></span>
-                  </div>
-                {% endif %}{% endfor %}
-              </div>
-              {% if avaliacao.pendencias %}
-                <p class="reg__st">Pendências para emitir o documento</p>
-                <ul class="of-pendencias">{% for p in avaliacao.pendencias %}<li>{{ p }}</li>{% endfor %}</ul>
-              {% else %}
-                <p class="aviso aviso--ok">{% include "components/icon.html" with nome="check-circle" %}<span>Ofício <strong>{{ oficio.numero_formatado }}</strong> pronto para emissão. Os documentos são gerados na etapa 6, na tela de conferência.</span></p>
-              {% endif %}
-            {% else %}
-              <p class="texto-vazio">Salve o ofício para reservar o número, conferir as etapas e emitir os documentos.</p>
-            {% endif %}
-          </div>
-        </section>
-      </div>
-
-      <aside class="sticky sticky--form frm-lateral" aria-label="Etapas do ofício">
-        <section class="reg reg--sec reg--sec-lista">
-          <h2 class="reg__t">Ofício</h2>
-          <dl>
-            <div class="resumo__linha"><dt>Número</dt><dd>{{ oficio.numero_formatado }}</dd></div>
-            <div class="resumo__linha"><dt>Situação</dt><dd><span class="st {% if oficio.cancelado %}st--cancelada{% else %}st--{{ oficio.status|lower }}{% endif %}">{% if oficio.cancelado %}Cancelado{% else %}{{ oficio.get_status_display }}{% endif %}</span></dd></div>
-            {% if oficio.retificado_documento %}<div class="resumo__linha"><dt>Marca</dt><dd>Retificado</dd></div>{% endif %}
-            {% if oficio.complementar_documento %}<div class="resumo__linha"><dt>Marca</dt><dd>Complementar</dd></div>{% endif %}
-          </dl>
-        </section>
-        <section class="reg reg--sec">
-          <h2 class="reg__t">Etapas</h2>
-          <div class="step-v">
-            {% for etapa in etapas %}
-              {% if etapa.id == "documentos" %}
-                {% if oficio.pk %}<a class="step-i etapa--{{ etapa.estado }}" href="{% url 'viagens_oficios:detalhe' oficio.pk %}#documentos">{% else %}<span class="step-i etapa--{{ etapa.estado }}">{% endif %}
-              {% else %}
-                <button type="button" class="step-i etapa--{{ etapa.estado }}{% if etapa.id == 'dados' and erros.servidores or erros.motivo or erros.protocolo %} step-i--erro{% endif %}" data-ir="#{{ etapa.id }}" data-etapa="{{ etapa.id }}">
-              {% endif %}
-                <span class="step-i__m">{% if etapa.estado == "concluida" %}{% include "components/icon.html" with nome="check" %}{% else %}{{ etapa.numero }}{% endif %}</span>
-                <span><span class="step-i__t">{{ etapa.titulo }}</span><span class="step-i__s etapa__estado">{% if etapa.estado == "concluida" %}Concluído{% elif etapa.estado == "opcional" %}Não exigida{% elif etapa.id == "documentos" and not oficio.pk %}Depois de salvar{% else %}Pendente{% endif %}</span></span>
-              {% if etapa.id == "documentos" %}{% if oficio.pk %}</a>{% else %}</span>{% endif %}{% else %}</button>{% endif %}
-            {% endfor %}
-          </div>
-        </section>
-        <div class="frm-acoes frm-acoes--flut">
-          <a class="btn--secundaria frm-cancelar" href="{{ url_voltar }}">Voltar</a>
-          <button type="submit" class="btn-primaria" name="acao" value="continuar">Salvar e conferir</button>
-        </div>
-      </aside>
+        {% if not oficio.pk %}
+          <p class="texto-vazio">Salve o ofício para reservar o número e liberar a emissão dos documentos.</p>
+        {% endif %}
     </div>
   </form>
+
+  {# ---------------------------------------------------------------------- #}
+  {# Daqui para baixo, fora do formulário do ofício: cada bloco tem o seu    #}
+  {# próprio POST (emissão, termos, ações de estado) e não pode ficar        #}
+  {# aninhado no <form> acima.                                              #}
+  {# ---------------------------------------------------------------------- #}
+  {% if oficio.pk %}{% with o=oficio %}
+    <div class="of-detalhe sol-detalhe">
+      {# ----------------------------------------------------------- 5 #}
+      <section class="reg" id="documentos">
+        <h2 class="reg__t">{% include "components/icon.html" with nome="document-plus" %}Documentos</h2>
+        {% if not o.cancelado %}
+          <div class="of-emitir">
+            <div class="of-emitir__grupo">
+              <strong>Ofício</strong>
+              <form method="post" action="{% url 'viagens_oficios:gerar' o.pk 'oficio' 'pdf' %}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="eye" %}Visualizar ofício</button></form>
+              <form method="post" action="{% url 'viagens_oficios:gerar' o.pk 'oficio' 'pdf' %}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="download" %}Baixar PDF</button></form>
+              <form method="post" action="{% url 'viagens_oficios:gerar' o.pk 'oficio' 'docx' %}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="document" %}Baixar DOCX</button></form>
+            </div>
+            <div class="of-emitir__grupo">
+              <strong>Justificativa</strong>
+              <form method="post" action="{% url 'viagens_oficios:gerar' o.pk 'justificativa' 'pdf' %}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="eye" %}Visualizar justificativa</button></form>
+              <form method="post" action="{% url 'viagens_oficios:gerar' o.pk 'justificativa' 'pdf' %}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="download" %}Baixar PDF</button></form>
+              <form method="post" action="{% url 'viagens_oficios:gerar' o.pk 'justificativa' 'docx' %}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="document" %}Baixar DOCX</button></form>
+            </div>
+          </div>
+        {% else %}
+          <p class="texto-vazio">Ofício cancelado: reative para emitir documentos.</p>
+        {% endif %}
+
+        <p class="reg__st">Termos de autorização<em>{{ c.equipe|length }} viajante{{ c.equipe|length|pluralize }}</em></p>
+        <ul class="of-equipe of-equipe--detalhe" aria-label="Termos da equipe">
+          {% for p in c.equipe %}
+            <li class="of-pessoa{% if p.motorista %} of-pessoa--motorista{% endif %}">
+              <span class="of-av" aria-hidden="true">{{ p.iniciais }}</span>
+              <span class="of-pessoa__txt">
+                <span class="of-pessoa__nome">{{ p.nome }}{% if p.motorista %} <span class="of-tag">Motorista</span>{% endif %}{% if not p.tem_termo %} <span class="st st--neutro">Sem termo</span>{% endif %}</span>
+                {% if p.descricao %}<span class="of-pessoa__desc">{{ p.descricao }}</span>{% endif %}
+              </span>
+              {% if not o.cancelado and p.tem_termo %}
+                <div class="dd of-menu" data-menu>
+                  <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações do termo de {{ p.nome }}">{% include "components/icon.html" with nome="kebab" %}</button>
+                  <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
+                    <div class="dd__t">Termo de {{ p.nome }}</div>
+                    <form method="post" action="{{ p.url_termo_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar termo</b><small>Abrir o documento no navegador</small></span></button></form>
+                    <form method="post" action="{{ p.url_termo_pdf }}">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Documento pronto para assinatura</small></span></button></form>
+                    <form method="post" action="{{ p.url_termo_docx }}">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivo editável do termo</small></span></button></form>
+                    {% if p.url_termo_assinado %}<a class="dd__i of-item" href="{{ p.url_termo_assinado }}">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Enviar o PDF depois da assinatura</small></span></a>{% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Gere o PDF do termo primeiro</small></span></span>{% endif %}
+                  </div>
+                </div>
+              {% endif %}
+            </li>
+          {% empty %}
+            <li class="of-equipe__vazio">Nenhum servidor informado</li>
+          {% endfor %}
+        </ul>
+        {% if not o.cancelado and c.equipe %}
+          <div class="of-lote">
+            <span class="v32-suave">Termos de autorização em lote:</span>
+            <form method="post" action="{% url 'viagens_oficios:termos_todos_pdf' o.pk %}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="document" %}Todos num PDF</button></form>
+            <form method="post" action="{% url 'viagens_oficios:termos_lote' o.pk 'pdf' %}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="download" %}Todos em PDF (ZIP)</button></form>
+            <form method="post" action="{% url 'viagens_oficios:termos_lote' o.pk 'docx' %}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="document" %}Todos em DOCX (ZIP)</button></form>
+          </div>
+        {% endif %}
+
+        <p class="reg__st">Documentos gerados<em>{{ artefatos|length }}</em></p>
+        <div class="dt-w">
+          <table class="dt dt__estatica">
+            <thead><tr><th>Documento</th><th>Servidor</th><th>Gerado em</th><th>Formato</th><th class="c-cad-acoes">Ações</th></tr></thead>
+            <tbody>
+              {% for art in artefatos %}
+                <tr>
+                  <td>{{ art.nome_exibicao }}{% if art.esta_assinado %} <span class="st st--atendido">Assinado</span>{% endif %}</td>
+                  <td>{{ art.servidor|default:"—" }}</td>
+                  <td>{{ art.criado_em|date:"d/m/Y H:i" }}</td>
+                  <td>{{ art.formato|upper }}</td>
+                  <td class="c-cad-acoes"><div class="acoes">
+                    <a class="acao-linha" href="{% url 'documentos:baixar' art.pk %}">{% include "components/icon.html" with nome="download" %}Baixar</a>
+                    {% if art.formato == 'pdf' %}
+                      <a class="acao-linha" href="{% url 'viagens_oficios:preview_artefato' art.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}Abrir</a>
+                      <a class="acao-linha" href="{% url 'viagens_oficios:assinatura_artefato' art.pk %}">{% include "components/icon.html" with nome="upload" %}{% if art.esta_assinado %}Assinado{% else %}Anexar assinado{% endif %}</a>
+                    {% endif %}
+                  </div></td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="5" class="dt__vazio">Nenhum documento gerado.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {# ----------------------------------------------------------- 6 #}
+      <section class="reg sol-detalhe__historico" id="historico">
+        <h2 class="reg__t">{% include "components/icon.html" with nome="clock" %}Histórico<em>{{ historico|length }} registro{{ historico|length|pluralize }}</em></h2>
+        <div class="linha-t">
+          {% for registro in historico %}
+            <div class="evento{% if forloop.first %} evento--ativo{% endif %}">
+              <div class="evento__topo"><span class="evento__t">{{ registro.get_acao_display }}</span><span class="evento__q">{{ registro.criado_em|date:"d/m/Y · H\hi" }}</span></div>
+              <p class="evento__d">{{ registro.usuario|default:"Sistema" }}</p>
+            </div>
+          {% empty %}
+            <p class="texto-vazio">Nenhum registro no histórico.</p>
+          {% endfor %}
+        </div>
+      </section>
+
+      {# ----------------------------------------------------------- 7 #}
+      <section class="reg reg--dg" id="encerramento">
+        <h2 class="reg__t">{% include "components/icon.html" with nome="checklist" %}<span>Encerramento</span></h2>
+        {% if o.cancelado %}
+          <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'reativar' %}" class="enc-op">
+            {% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+            <b>Reativar ofício</b>
+            <p>Retomar o fluxo do documento. O motivo e a data do cancelamento continuam no histórico.</p>
+            <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="undo" %}Reativar ofício</button>
+          </form>
+        {% else %}
+          <p class="reg__st">Marcas do documento</p>
+          {# Cada botão já se explica: uma faixa de botões, sem moldura nem rótulo. #}
+          <div class="pc-acoes-linha of-acoes-estado">
+            <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'retificar' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+              <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="undo" %}{% if o.retificado_documento %}Desfazer retificação{% else %}Retificar ofício{% endif %}</button>
+            </form>
+            <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'complementar' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+              <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="plus" %}{% if o.complementar_documento %}Desfazer complementar{% else %}Ofício complementar{% endif %}</button>
+            </form>
+            {% if o.status != "ARQUIVADO" %}
+              <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'arquivar' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+                <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="check-circle" %}Arquivar ofício</button>
+              </form>
+            {% endif %}
+          </div>
+
+          <p class="reg__st">Prestação de contas</p>
+          <p class="v32-suave of-prestacao__texto">Depois da viagem, a prestação de contas de cada servidor parte deste ofício.</p>
+          <a class="btn--secundaria" href="{% url 'viagens_prestacoes:abrir_oficio' o.pk %}">{% include "components/icon.html" with nome="chevron-right" %}Abrir prestação de contas</a>
+
+          <p class="reg__st" id="cancelamento">Cancelamento</p>
+          <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'cancelar' %}" class="enc-op" data-confirmar="Confirmar cancelamento?">
+            {% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+            <b>O ofício não vai mais valer?</b>
+            <p>Cancelar interrompe o fluxo mantendo o número e o histórico. É possível reativar depois.</p>
+            <label class="sr-only" for="id_motivo_cancelamento">Motivo do cancelamento</label>
+            <textarea class="ta" id="id_motivo_cancelamento" name="motivo" placeholder="Informe o motivo do cancelamento."></textarea>
+            <button type="submit" class="btn--secundaria btn--destrutiva">{% include "components/icon.html" with nome="ban" %}Cancelar ofício</button>
+          </form>
+        {% endif %}
+
+        <p class="reg__st">Exclusão</p>
+        <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'excluir' %}" class="enc-op" data-confirmar="Confirmar exclusão?">
+          {% csrf_token %}
+          <b>Excluir ofício</b>
+          <p>Remove o ofício permanentemente e devolve o número para a sequência. Não funciona quando há prestação de contas ou documentos vinculados.</p>
+          <button type="submit" class="btn--secundaria btn--destrutiva">{% include "components/icon.html" with nome="trash" %}Excluir ofício</button>
+        </form>
+      </section>
+    </div>
+  {% endwith %}{% endif %}
+
+  {% comment %}
+    As ações fecham a página. Ficam fora do formulário, ligadas a ele pelo
+    atributo HTML5 `form`, para não sobrarem no meio da tela, antes dos blocos
+    de documentos, histórico e encerramento.
+  {% endcomment %}
+  <div class="frm-acoes of-form__acoes">
+    <a class="btn--secundaria frm-cancelar" href="{{ url_voltar }}">Voltar</a>
+    <button type="submit" class="btn-primaria" form="form-oficio" name="acao" value="continuar">Salvar ofício</button>
+  </div>
 {% endblock %}
 
 {% block extra_js %}

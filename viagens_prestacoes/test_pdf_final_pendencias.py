@@ -1,14 +1,14 @@
 """O PDF Final diz o que falta antes de prometer um arquivo.
 
-`NOVO-20260824-133423-10943c04a7c5` — a Etapa 4 calculava `numero_ok` e não usava
-em lugar nenhum. Sem número de solicitação, sem despacho assinado ou sem
+`NOVO-20260824-133423-10943c04a7c5` — o fechamento calculava `numero_ok` e não
+usava em lugar nenhum. Sem número de solicitação, sem despacho assinado ou sem
 comprovante, a geração é recusada pelo serviço; a tela, porém, oferecia o
 download e o clique caía numa página que dizia "a geração continua em segundo
 plano" para um arquivo que ninguém estava gerando
 (`NOVO-20260824-133423-ade2a3103cc3`).
 
-Os testes prendem as duas pontas juntas: o que a Etapa 4 mostra é exatamente o
-que `gerar_prestacao_consolidado_pdf` cobra.
+Os testes prendem as duas pontas juntas: o que o fechamento mostra, no fim da
+etapa de Documentos, é exatamente o que `gerar_prestacao_consolidado_pdf` cobra.
 """
 from __future__ import annotations
 from viagens_prestacoes.test_helpers import autorizar_viagens, pdf_minimo
@@ -32,7 +32,7 @@ class PdfFinalPendenciasTests(PrestacaoFixturesMixin, TestCase):
         self.fixture = self.criar_prestacao(numero=1)
         self.prestacao = self.fixture.prestacao
         self.ps = self.fixture.prestacoes_servidor[0]
-        self.url = reverse('viagens_prestacoes:consolidado_servidor', args=[self.ps.pk])
+        self.url = reverse('viagens_prestacoes:documentos_servidor', args=[self.ps.pk])
 
     def _anexar(self, tipo, *, do_servidor=False, nome='arquivo.pdf'):
         return PrestacaoDocumentoAnexo.objects.create(prestacao=self.prestacao, servidor_prestacao=self.ps if do_servidor else None, tipo=tipo, arquivo=SimpleUploadedFile(nome, PDF_MINIMO, content_type='application/pdf'), nome_original=nome)
@@ -67,21 +67,19 @@ class PdfFinalPendenciasTests(PrestacaoFixturesMixin, TestCase):
         for pendencia in pendencias_consolidado(self.ps):
             self.assertIn(pendencia, str(erro.exception))
 
-    def test_etapa_4_lista_as_pendencias_e_nao_oferece_o_download(self):
+    def test_fechamento_lista_as_pendencias_e_nao_oferece_o_download(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        servidor = response.context['servidores'][0]
-        self.assertFalse(servidor['pode_gerar'])
+        self.assertTrue(response.context['pendencias'])
         self.assertContains(response, 'Falta para fechar o PDF final')
-        self.assertContains(response, 'Ir para Documentos')
         self.assertNotContains(response, 'Baixar pacote (PDF final)')
 
-    def test_etapa_4_volta_a_oferecer_o_pacote_quando_nada_falta(self):
+    def test_fechamento_volta_a_oferecer_o_pacote_quando_nada_falta(self):
         with tempfile.TemporaryDirectory() as tmpdir, override_settings(MEDIA_ROOT=tmpdir):
             self._completar()
             response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.context['servidores'][0]['pode_gerar'])
+        self.assertEqual(response.context['pendencias'], [])
         self.assertContains(response, 'Baixar pacote (PDF final)')
         self.assertNotContains(response, 'Falta para fechar o PDF final')
 
