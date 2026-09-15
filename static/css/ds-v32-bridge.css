@@ -1165,7 +1165,10 @@ a.step-i{text-decoration:none;color:inherit}
 .of-emitir__grupo>strong{min-width:110px;font-size:13px}
 .of-emitir__grupo form{margin:0}
 .of-emitir .btn-primaria,.of-emitir .btn--secundaria{height:36px;font-size:12.5px}
-.of-detalhe .reg__st em{margin-left:8px;font-style:normal;font-weight:400;color:var(--n-450)}
+/* O `em` do subtítulo veio do antigo detalhe junto com as seções que migraram
+   para o formulário do termo — sem o escopo `.tm-form` ele colava no rótulo
+   ("TERMO POR SERVIDORSERVIDORES COM TERMO DO OFÍCIO"). */
+.of-detalhe .reg__st em,.tm-form .reg__st em{margin-left:8px;font-style:normal;font-weight:400;color:var(--n-450)}
 .of-detalhe .dt td,.of-detalhe .dt th{white-space:normal}
 .of-detalhe .sticky .etapa--concluida .etapa__t{color:var(--ok-t)}
 .of-detalhe .sticky .etapa--pendente .etapa__m{border-color:var(--wn-t)}
@@ -1200,13 +1203,23 @@ a.step-i{text-decoration:none;color:inherit}
 @container(max-width:900px){.jt-grade{grid-template-columns:1fr}}
 @container(max-width:680px){.jt-regra{grid-template-columns:1fr}}
 
-/* Termos de autorização (Meta 5): a linha da origem — título com destino e
-   período, selo, descrição e quatro ações à direita — e o cadastro nos blocos
-   do editor. */
+/* Termos de autorização (Meta 5): o cartão — título com o destino, os dois
+   selos (temporal e dos documentos), os fatos com ícone e quatro ações à
+   direita — e o cadastro nos blocos do editor. */
 .tm-cartao{padding:14px 18px}
 .tm-cartao__corpo{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .tm-cartao .of-cartao__titulo{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .tm-cartao .of-cartao__titulo .st{font-weight:500}
+.tm-cartao .of-cartao__titulo .st .ui-icon{width:13px;height:13px;margin-right:5px}
+/* Os fatos do cartão: período, ofício, servidores e viatura, um ícone cada.
+   Cada item respira numa linha própria em telas estreitas e se alinha em
+   colunas fluidas nas largas — a mesma régua de `.sol-detalhe__meta`. */
+.tm-fatos{display:flex;flex-wrap:wrap;gap:5px 18px;margin:7px 0 0;padding:0;list-style:none}
+.tm-fato{display:flex;align-items:center;gap:6px;min-width:0;font-size:12.5px;color:var(--n-600);overflow-wrap:anywhere}
+.tm-fato .ui-icon{width:14px;height:14px;flex:none;color:var(--n-400)}
+/* O que falta continua visível, só que apagado: o vazio é informação. */
+.tm-fato--ausente{color:var(--n-400);font-style:italic}
+.tm-fato--ausente .ui-icon{color:var(--n-300)}
 .tm-herdados{color:var(--n-600)}
 .tm-acoes{flex:none}
 .ib-linha--perigo{color:var(--dg-t)!important}
@@ -1215,6 +1228,20 @@ a.step-i{text-decoration:none;color:inherit}
 .tm-form .editor-roteiro__rodape{grid-column:1/-1}
 .tm-adicional{margin-bottom:10px}
 .tm-form .aviso-rota{margin-top:12px}
+/* Herança do ofício: o nome do campo e o valor que vem dele, lado a lado. */
+.tm-heranca{align-items:flex-start}
+.tm-heranca__campos{display:grid;gap:4px 14px;margin:8px 0 0}
+.tm-heranca__campos>div{display:grid;grid-template-columns:96px 1fr;gap:4px 14px;align-items:baseline}
+.tm-heranca__campos dt{font-size:12px;font-weight:600;color:var(--n-600)}
+.tm-heranca__campos dd{margin:0;font-size:12.5px;color:var(--n-800);overflow-wrap:anywhere}
+/* Selo de estado de um documento só: "Sem PDF", "PDF gerado", "Assinado". */
+.tm-estado{height:20px;padding:0 7px;font-size:11px;font-weight:500;vertical-align:1px}
+.tm-servidor .of-pessoa__nome{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tm-grupos .of-emitir__grupo>strong{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* A prévia fechando a seção dos documentos, no lugar da seção só dela. */
+.tm-atalho-previa{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--n-150)}
+.tm-atalho-previa b{display:block;font-size:13px;color:var(--n-900)}
+.tm-atalho-previa p{margin:2px 0 0}
 .tm-servidor{grid-column:1/-1}
 .tm-servidor__acoes{margin-left:auto;flex-wrap:wrap}
 .tm-servidor__acoes form{margin:0}
@@ -1228,6 +1255,7 @@ a.step-i{text-decoration:none;color:inherit}
 .tm-documento__titulo{margin:0 0 24px;font-size:20px;text-align:center;letter-spacing:.04em}
 .tm-documento__texto{margin:14px 0 0;font-size:14px;line-height:1.7;text-align:justify}
 @container(max-width:900px){.tm-cartao__corpo{flex-direction:column;align-items:flex-start}.tm-acoes{align-self:flex-end}}
+@container(max-width:680px){.tm-fatos{flex-direction:column;gap:4px}.tm-heranca__campos>div{grid-template-columns:1fr}}
 
 /* ---------- Meta 6 · prestações de contas ---------- */
 .pc-lista{gap:14px}

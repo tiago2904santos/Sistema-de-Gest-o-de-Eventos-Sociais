@@ -6,11 +6,16 @@
   servidores e viatura. O que fica em branco herda do ofício vinculado; o
   termo avulso precisa de destino e período.
 
-  Num termo já salvo o fluxo continua na mesma tela, em coluna única: os
-  documentos para baixar (por servidor, genérico, da viatura, todos num PDF ou
-  em ZIP), a anexação do PDF assinado, os documentos já gerados, a prévia em
-  tela e o cancelamento/reativação/exclusão. Os formulários dessas seções são
-  independentes e ficam depois do `</form>` do cadastro — nunca aninhados.
+  Num termo já salvo o fluxo continua na mesma tela, em coluna única. O que
+  era quatro seções numeradas virou três: "Documentos" (4) junta o que baixar
+  — por servidor, genérico, da viatura, todos num PDF ou em ZIP —, a anexação
+  do PDF assinado e a prévia em tela, que sozinha não valia uma seção; o
+  histórico (5) e o cancelamento/reativação/exclusão (6) seguem separados. As
+  âncoras `#documentos`, `#previa`, `#gerados` e `#cancelamento` continuam
+  valendo, agora algumas dentro da seção 4.
+
+  Os formulários dessas seções são independentes e ficam depois do `</form>`
+  do cadastro — nunca aninhados.
 {% endcomment %}
 
 {% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
@@ -89,7 +94,20 @@
                 {% for erro in erros.oficio %}<p class="form-erro">{{ erro }}</p>{% endfor %}
                 <p class="form-ajuda">Termo avulso: deixe sem ofício e informe destino e período.</p>
               </div>
-              {% if herdados %}<p class="aviso-rota" role="status">{% include "components/icon.html" with nome="info" %}<span>Este termo herda do ofício: {{ herdados|join:", " }}.</span></p>{% endif %}
+              {% if heranca %}
+                {# Dizer só "herda o destino" obriga a abrir o ofício para saber qual: o valor herdado vem junto. #}
+                <div class="aviso-rota tm-heranca" role="status">
+                  {% include "components/icon.html" with nome="info" %}
+                  <div>
+                    <span>Este termo herda do ofício: {{ herdados|join:", " }}.</span>
+                    <dl class="tm-heranca__campos">
+                      {% for h in heranca %}
+                        <div><dt>{{ h.campo|capfirst }}</dt><dd>{{ h.valor|default:"Em branco também no ofício" }}</dd></div>
+                      {% endfor %}
+                    </dl>
+                  </div>
+                </div>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -167,8 +185,9 @@
     </form>
 
     {% if termo.pk %}{% with t=termo d=documentos %}
+      {# Seção 4: tudo o que se faz com o documento do termo — emitir, anexar o assinado e conferir. #}
       <section class="reg" id="documentos">
-        {% include "components/v32/section_card.html" with numero="4" titulo="Escolher documentos para baixar" subtitulo="Termo por servidor, genérico, da viatura, ou todos de uma vez." %}
+        {% include "components/v32/section_card.html" with numero="4" titulo="Documentos" subtitulo="Escolher documentos para baixar — por servidor, genérico, da viatura ou todos de uma vez —, anexar os assinados e conferir a prévia." %}
         <div class="reg-corpo">
           {% if t.cancelado or t.oficio_id and t.oficio.cancelado %}
             <p class="texto-vazio">Termo{% if t.oficio_id and t.oficio.cancelado %} ou ofício{% endif %} cancelado: reative para emitir documentos.</p>
@@ -178,13 +197,16 @@
               {% for s in d.servidores %}
                 <li class="of-pessoa tm-servidor">
                   <span class="of-av" aria-hidden="true">{{ s.iniciais }}</span>
-                  <span class="of-pessoa__txt"><span class="of-pessoa__nome">{{ s.servidor.nome }}</span>{% if s.descricao %}<span class="of-pessoa__desc">{{ s.descricao }}</span>{% endif %}</span>
+                  <span class="of-pessoa__txt">
+                    <span class="of-pessoa__nome">{{ s.servidor.nome }} <span class="st st--{{ s.estado_tom }} tm-estado">{{ s.estado }}</span></span>
+                    {% if s.descricao %}<span class="of-pessoa__desc">{{ s.descricao }}</span>{% endif %}
+                  </span>
                   {% if pode_editar %}
                     <div class="acoes tm-servidor__acoes">
                       <form method="post" action="{{ s.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="acao-linha">{% include "components/icon.html" with nome="eye" %}Visualizar</button></form>
                       <form method="post" action="{{ s.url_pdf }}">{% csrf_token %}<button type="submit" class="acao-linha">{% include "components/icon.html" with nome="download" %}PDF</button></form>
                       <form method="post" action="{{ s.url_docx }}">{% csrf_token %}<button type="submit" class="acao-linha">{% include "components/icon.html" with nome="document" %}DOCX</button></form>
-                      {% if s.url_assinado %}<a class="acao-linha" href="{{ s.url_assinado }}">{% include "components/icon.html" with nome="upload" %}Anexar assinado</a>{% else %}<span class="acao-linha of-item--inativo" title="Gere o PDF do termo primeiro">{% include "components/icon.html" with nome="upload" %}Anexar assinado</span>{% endif %}
+                      {% if s.url_assinado %}<a class="acao-linha" href="{{ s.url_assinado }}">{% include "components/icon.html" with nome=s.assinado|yesno:"check-circle,upload" %}{% if s.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}</a>{% else %}<span class="acao-linha of-item--inativo" title="Gere o PDF do termo primeiro">{% include "components/icon.html" with nome="upload" %}Anexar assinado</span>{% endif %}
                     </div>
                   {% else %}
                     <a class="acao-linha" href="{{ s.url_previa }}">{% include "components/icon.html" with nome="eye" %}Prévia</a>
@@ -197,11 +219,11 @@
             {% if pode_editar %}
               <div class="tm-grupos">
                 <div class="of-emitir__grupo">
-                  <strong>Termo genérico</strong><span class="v32-suave">Só destino e período, semipreenchido</span>
+                  <strong>Termo genérico <span class="st st--{{ d.generico.estado_tom }} tm-estado">{{ d.generico.estado }}</span></strong><span class="v32-suave">Só destino e período, semipreenchido</span>
                   <form method="post" action="{{ d.generico.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="eye" %}Visualizar</button></form>
                   <form method="post" action="{{ d.generico.url_pdf }}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="download" %}Baixar PDF</button></form>
                   <form method="post" action="{{ d.generico.url_docx }}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="document" %}Baixar DOCX</button></form>
-                  {% if d.generico.url_assinado %}<a class="btn--secundaria" href="{{ d.generico.url_assinado }}">{% include "components/icon.html" with nome="upload" %}Anexar assinado</a>{% endif %}
+                  {% if d.generico.url_assinado %}<a class="btn--secundaria" href="{{ d.generico.url_assinado }}">{% include "components/icon.html" with nome=d.generico.assinado|yesno:"check-circle,upload" %}{% if d.generico.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}</a>{% endif %}
                 </div>
                 {% if d.viatura.viatura %}
                   <div class="of-emitir__grupo">
@@ -212,7 +234,7 @@
                   </div>
                 {% endif %}
                 <div class="of-emitir__grupo">
-                  <strong>Todos os termos</strong><span class="v32-suave">{{ d.servidores|length }} servidor{{ d.servidores|length|pluralize:"es" }}</span>
+                  <strong>Todos os termos <span class="st st--{{ situacao_documentos.tom }} tm-estado">{{ situacao_documentos.rotulo }}</span></strong><span class="v32-suave">{{ d.servidores|length }} servidor{{ d.servidores|length|pluralize:"es" }}</span>
                   <form method="post" action="{{ d.url_todos_pdf }}">{% csrf_token %}<button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="download" %}PDF único</button></form>
                   <form method="post" action="{{ d.url_lote_pdf }}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="download" %}ZIP de PDFs</button></form>
                   <form method="post" action="{{ d.url_lote_docx }}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="document" %}ZIP de DOCX</button></form>
@@ -220,6 +242,14 @@
               </div>
             {% endif %}
           {% endif %}
+          {# A prévia era uma seção inteira para um link só; agora fecha a seção dos documentos. #}
+          <div class="tm-atalho-previa" id="previa">
+            <div>
+              <b>Prévia em tela</b>
+              <p class="v32-suave of-prestacao__texto">Confira o conteúdo do termo antes de gerar o documento.</p>
+            </div>
+            <a class="btn--secundaria" href="{% url 'viagens_termos:preview' t.pk %}">{% include "components/icon.html" with nome="chevron-right" %}Abrir prévia</a>
+          </div>
         </div>
       </section>
 
@@ -238,17 +268,9 @@
         </div>
       </section>
 
-      <section class="reg" id="previa">
-        {% include "components/v32/section_card.html" with numero="6" titulo="Prévia em tela" %}
-        <div class="reg-corpo">
-          <p class="v32-suave of-prestacao__texto">Confira o conteúdo do termo antes de gerar o documento.</p>
-          <a class="btn--secundaria" href="{% url 'viagens_termos:preview' t.pk %}">{% include "components/icon.html" with nome="chevron-right" %}Abrir prévia</a>
-        </div>
-      </section>
-
       {% if pode_editar %}
         <section class="reg reg--dg" id="cancelamento">
-          {% include "components/v32/section_card.html" with numero="7" titulo="Cancelamento e exclusão" subtitulo="Cancelar interrompe a emissão mantendo o histórico." %}
+          {% include "components/v32/section_card.html" with numero="6" titulo="Cancelamento e exclusão" subtitulo="Cancelar interrompe a emissão mantendo o histórico." %}
           <div class="reg-corpo">
             {% if t.cancelado %}
               <form method="post" action="{% url 'viagens_termos:acao' t.pk 'reativar' %}" class="enc-op">

@@ -27,7 +27,7 @@ from viagens_oficios.views import exigir_operador, resposta_documento, resposta_
 from . import abas as abas_de_termo
 from .forms import TermoAutorizacaoForm
 from .models import TermoAutorizacao
-from .presenters import artefatos_pdf_por_termo, documentos_do_termo, herdados_do_termo, linha_da_lista, selo_do_termo, titulo_do_termo
+from .presenters import artefatos_pdf_por_termo, documentos_do_termo, heranca_do_termo, herdados_do_termo, linha_da_lista, selo_do_termo, situacao_dos_documentos, titulo_do_termo
 from .selectors import get_termo_by_id, listar_termos
 from .services import build_termo_cadastro_payload, gerar_termo_cadastro_lote, gerar_termo_cadastro_um
 
@@ -93,6 +93,8 @@ def _contexto_form(form, termo, request):
         "adicionais": adicionais, "quantidade_destinos": str(form.quantidade_destinos),
         "oficio_escolhido": oficio_escolhido, "url_busca": reverse("viagens_termos:api_buscar_oficios"),
         "herdados": herdados_do_termo(termo) if termo.pk else [],
+        # A herança com os valores: o aviso mostra o que vem do ofício em cada campo.
+        "heranca": heranca_do_termo(termo) if termo.pk else [],
         "next": next_valido(request),
         # "Cancelar" volta para a lista (ou para de onde se veio): o termo não
         # tem mais tela de detalhe para onde voltar.
@@ -107,7 +109,8 @@ def _contexto_do_registro(termo, request):
     """As seções que só existem num termo já salvo, na mesma tela do cadastro.
 
     Vieram do antigo detalhe: os documentos para baixar (por servidor, o
-    genérico, o da viatura e os lotes), a anexação do assinado, o histórico de
+    genérico, o da viatura e os lotes), cada um com o seu estado — sem PDF,
+    PDF gerado ou assinado —, a anexação do assinado, o histórico de
     documentos gerados e o cancelamento/reativação/exclusão.
     """
     if not termo.pk:
@@ -117,6 +120,7 @@ def _contexto_do_registro(termo, request):
     return {
         "selo": selo, "selo_tom": tom,
         "documentos": documentos_do_termo(termo, artefatos_pdf),
+        "situacao_documentos": situacao_dos_documentos(termo, artefatos_pdf),
         "servidores_do_termo": list(termo.servidores_efetivos()),
         "viatura": termo.viatura_efetiva(),
         "artefatos": termo.artefatos.select_related("servidor").order_by("-criado_em")[:30],

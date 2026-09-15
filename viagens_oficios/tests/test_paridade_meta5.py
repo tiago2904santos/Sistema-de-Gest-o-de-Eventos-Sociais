@@ -1,11 +1,15 @@
 """Meta 5 — Termos de autorização: o app `termos` da origem.
 
-A lista com busca e situações combináveis, o cartão "DESTINO/PR · período" com
-o selo e a linha "Ofício: N · servidores · placa modelo", os quatro botões de
-ação, o cadastro por blocos (ofício vinculado, destino e período, servidores e
+A lista com busca e situações combináveis, os quatro botões de ação, o
+cadastro por blocos (ofício vinculado, destino e período, servidores e
 viatura, com herança do ofício), o detalhe com os documentos por servidor, o
 genérico, o da viatura, todos num PDF só ou em ZIP, a prévia em tela, as
 ações cancelar/reativar/excluir e o que o leitor não pode.
+
+O cartão da lista **não** é mais o da origem: o título ficou só com o destino
+e o selo temporal, o período saiu de dentro dele, a linha corrida "Ofício: N ·
+servidores · placa modelo" virou quatro fatos com ícone e entrou o andamento
+dos documentos. Os mesmos dados continuam cobertos aqui, na estrutura nova.
 """
 
 import io
@@ -13,6 +17,7 @@ import tempfile
 from datetime import timedelta
 from zipfile import ZipFile
 
+from django.core.files.base import ContentFile
 from django.test import override_settings
 from django.urls import reverse
 
@@ -52,16 +57,42 @@ class CenarioTermos(Cenario):
 
 
 class ListaTermosTests(CenarioTermos):
-    def test_cartao_mostra_titulo_selo_descricao_e_heranca(self):
+    def test_cartao_mostra_titulo_selo_fatos_e_heranca(self):
         o = self.oficio(dias=-20, protocolo="123456789", servidores=[self.janine, self.joao], viatura=self.duster)
         t = self.termo(oficio=o)
         r = self.lista()
         inicio, fim = t.periodo_efetivo()
-        self.assertContains(r, f"ANTONINA/PR · {inicio:%d/%m/%Y} a {fim:%d/%m/%Y}")
+        # O título é só o destino; o período virou um fato, com o seu ícone.
+        self.assertContains(r, f'id="termo-{t.pk}-titulo">ANTONINA/PR ')
         self.assertContains(r, 'class="st st--atendido">Realizado')
-        self.assertContains(r, f"Ofício: {o.numero_formatado} · JANINE LACERDA DO PRADO, JOÃO MARIO DE GOES · AAA-1234 DUSTER")
+        for fato in [f"{inicio:%d/%m/%Y} a {fim:%d/%m/%Y}", f"Ofício {o.numero_formatado}",
+                     "JANINE LACERDA DO PRADO, JOÃO MARIO DE GOES", "AAA-1234 DUSTER"]:
+            self.assertContains(r, f'<span class="sr-only">')
+            self.assertContains(r, fato)
         self.assertContains(r, "Herda do ofício: destino, período, servidores, viatura.")
         self.assertContains(r, "1 termo")
+
+    def test_cartao_nomeia_o_que_falta_em_vez_de_omitir(self):
+        """Termo avulso sem servidor nem viatura: os fatos aparecem vazios, não somem."""
+        self.termo(cidade=self.antonina, inicio=self.data(3))
+        r = self.lista()
+        for vazio in ["Termo avulso", "Sem servidores", "Sem viatura"]:
+            self.assertContains(r, vazio)
+        self.assertContains(r, "tm-fato--ausente")
+
+    def test_cartao_mostra_o_andamento_dos_documentos(self):
+        o = self.oficio(dias=3, servidores=[self.janine, self.joao])
+        t = self.termo(oficio=o)
+        self.assertContains(self.lista(), "Sem PDF gerado")
+        self.client.post(reverse("viagens_termos:gerar", args=[t.pk, self.janine.pk, "pdf"]))
+        self.assertContains(self.lista(), "1 de 2 em PDF")
+        self.client.post(reverse("viagens_termos:gerar", args=[t.pk, self.joao.pk, "pdf"]))
+        self.assertContains(self.lista(), "Todos em PDF")
+        art = DocumentoArtefato.objects.filter(termo=t, servidor=self.janine, formato="pdf").first()
+        art.arquivo_assinado.save("assinado.pdf", ContentFile(b"%PDF-1.4"), save=True)
+        r = self.lista()
+        self.assertContains(r, "1 de 2 assinados")
+        self.assertContains(r, "Assinado — enviar outra versão")
 
     def test_selos_de_situacao(self):
         so_uf = self.termo(estado=self.pr, servidores=[self.janine])
@@ -70,10 +101,13 @@ class ListaTermosTests(CenarioTermos):
         cancelado = self.termo(cidade=self.antonina, inicio=self.data(3), cancelar=True)
         r = self.lista()
         self.assertContains(r, f'id="termo-{so_uf.pk}-titulo">PR <span class="st st--neutro">Sem período</span>')
-        self.assertContains(r, f'id="termo-{previsto.pk}-titulo">ANTONINA/PR · {self.data(3):%d/%m/%Y} a {self.data(4):%d/%m/%Y} <span class="st st--aguardando">Previsto</span>')
-        self.assertContains(r, f'id="termo-{andamento.pk}-titulo">ANTONINA/PR · {self.data(-1):%d/%m/%Y} a {self.data(1):%d/%m/%Y} <span class="st st--em_andamento">Em andamento</span>')
-        self.assertContains(r, f'id="termo-{cancelado.pk}-titulo">ANTONINA/PR · {self.data(3):%d/%m/%Y} <span class="st st--cancelada">Cancelado</span>')
+        self.assertContains(r, f'id="termo-{previsto.pk}-titulo">ANTONINA/PR <span class="st st--aguardando">Previsto</span>')
+        self.assertContains(r, f'id="termo-{andamento.pk}-titulo">ANTONINA/PR <span class="st st--em_andamento">Em andamento</span>')
+        self.assertContains(r, f'id="termo-{cancelado.pk}-titulo">ANTONINA/PR <span class="st st--cancelada">Cancelado</span>')
         self.assertContains(r, "of-cartao--cancelado")
+        # O período saiu do título e virou fato do cartão.
+        self.assertContains(r, f"{self.data(3):%d/%m/%Y} a {self.data(4):%d/%m/%Y}")
+        self.assertContains(r, f"{self.data(-1):%d/%m/%Y} a {self.data(1):%d/%m/%Y}")
 
     def test_acoes_do_cartao(self):
         o = self.oficio(dias=3, servidores=[self.janine], viatura=self.duster)
