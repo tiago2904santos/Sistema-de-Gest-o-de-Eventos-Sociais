@@ -15,11 +15,14 @@
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with atual="Prestações de Contas" %}
 
+  {% comment %}
+    Cabeçalho no padrão da lista de roteiros: kicker junto do título e sem subtítulo.
+    A prestação não se cria aqui (nasce da equipe do ofício), então não há botão flutuante.
+  {% endcomment %}
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker">{{ modulo_ativo.nome }}</div>
+      <div class="kicker kicker--junto">{{ modulo_ativo.nome }}</div>
       <h1>Prestações de Contas</h1>
-      <p class="d-cabeca__sub">Uma prestação por servidor de cada ofício: diário de bordo, relatório técnico, documentos assinados e o PDF final.</p>
     </div>
     <div class="d-acoes">
       <a class="btn--secundaria" href="{% url 'viagens_prestacoes:modelos_index' %}">{% include "components/icon.html" with nome="document" %}Modelos de texto</a>
@@ -55,7 +58,7 @@
       </nav>
     {% endif %}
     <div class="of-lista pc-lista">
-      {% for c in cards %}{% include "viagens_prestacoes/_cartao.html" %}{% endfor %}
+      {% for c in cards %}{% include "pages/viagens_prestacoes/_cartao.html" %}{% endfor %}
     </div>
     {% if pagina.paginator.num_pages > 1 %}
       <nav class="of-paginacao of-paginacao--rodape" aria-label="Paginação">

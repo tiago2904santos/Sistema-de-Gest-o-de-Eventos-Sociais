@@ -1,4 +1,4 @@
-{% extends "viagens_prestacoes/base.html" %}{% load l10n %}
+{% extends "pages/viagens_prestacoes/base.html" %}{% load l10n %}
 {% comment %}
   Etapa 2 — Relatório técnico: custeio (diária, translado, combustível,
   passagem, com "Outro"), os cinco textos com modelo (descrição do evento,
@@ -12,6 +12,9 @@
     <a class="btn--secundaria" href="{{ servidor.download_docx_url }}">{% include "components/icon.html" with nome="document" %}Baixar DOCX</a>
     <a class="btn--secundaria" href="{{ servidor.download_pdf_url }}">{% include "components/icon.html" with nome="download" %}Baixar PDF</a>
   {% endfor %}
+{% endblock %}
+{% block pc_salvar_topo %}
+  <button type="submit" class="btn-primaria" form="form-prestacao" name="continuar" value="1">Salvar e continuar</button>
 {% endblock %}
 {% block prestacao_conteudo %}
   <p class="pc-fluxo__nota">O texto é compartilhado pela equipe. Cada relatório recebe a identificação e a diária do respectivo servidor.</p>
@@ -48,14 +51,16 @@
       <div class="g-form g-form--2">
         {% include "components/input.html" with name=diaria_name label="Diária recebida por este servidor" valor=diaria_recebida ajuda="Preencha quando o valor recebido diferir do liberado, por exemplo R$ 87,00 (saque)." autocomplete="off" %}
       </div>
+
+      {# Ações no fim do último cartão da etapa, como no roteiro. #}
+      <div class="frm-acoes-fim">
+        <a class="btn--secundaria" href="{{ diario_url }}">Voltar ao diário</a>
+        <span class="frm-acoes-fim__dir">
+          <button type="submit" class="btn--secundaria" form="form-prestacao">Salvar relatório</button>
+          <button type="submit" class="btn-primaria" form="form-prestacao" name="continuar" value="1">Salvar e continuar</button>
+        </span>
+      </div>
     </section>
   </form>
   {{ modelos_texto|json_script:"rt-modelos" }}
-{% endblock %}
-{% block prestacao_acoes %}
-  <footer class="editor-roteiro__rodape pc-fluxo__rodape">
-    <a class="btn--secundaria" href="{{ diario_url }}">Voltar ao diário</a>
-    <button type="submit" class="btn--secundaria" form="form-prestacao">Salvar relatório</button>
-    <button type="submit" class="btn-primaria" form="form-prestacao" name="continuar" value="1">Salvar e continuar</button>
-  </footer>
 {% endblock %}

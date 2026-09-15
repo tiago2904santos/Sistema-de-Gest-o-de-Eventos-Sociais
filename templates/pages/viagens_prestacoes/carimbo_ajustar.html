@@ -1,5 +1,8 @@
-{% extends "viagens_prestacoes/base.html" %}{% load l10n static %}
+{% extends "pages/viagens_prestacoes/base.html" %}{% load l10n static %}
 {% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/pdf-place.css' %}">{% endblock %}
+{% block pc_salvar_topo %}
+  <button type="submit" class="btn-primaria" form="carimbo-form">Salvar posição</button>
+{% endblock %}
 {% block prestacao_conteudo %}  <form method="post"
         id="carimbo-form"
         class="pdf-place"
@@ -9,7 +12,9 @@
         data-caixas="{{ caixas_json }}">
     {% csrf_token %}
 
-    <section class="section-card section-card__corpo"><h2>Ajustar carimbo</h2><p>Arraste o número para a linha do servidor. A alça ajusta o tamanho.</p>
+    <section class="reg">
+      <h2 class="reg__t">{% include "components/icon.html" with nome="pencil" %}Ajustar carimbo</h2>
+      <p class="pc-nota">Arraste o número para a linha do servidor. A alça ajusta o tamanho.</p>
       <div>
         <div class="pdf-place__pager">
           <button type="button" class="btn--secundaria" id="carimbo-prev">Página anterior</button>
@@ -65,9 +70,10 @@
         </ul>
       </div>
 
-      <div>
-        <button type="submit" class="btn-primaria">Salvar posição</button>
+      {# Ações no fim do cartão, como no roteiro: voltar à esquerda, salvar à direita. #}
+      <div class="frm-acoes-fim">
         <a class="btn--secundaria" href="{{ voltar_url }}">Voltar</a>
+        <button type="submit" class="btn-primaria">Salvar posição</button>
       </div>
     </section>
   </form>

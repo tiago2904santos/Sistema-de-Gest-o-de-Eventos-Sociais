@@ -119,7 +119,7 @@ def rt_servidor(request, ps_pk):
 
     return render(
         request,
-        "viagens_prestacoes/relatorio_tecnico_form.html",
+        "pages/viagens_prestacoes/relatorio_tecnico_form.html",
         {
             "page_title": f"Relatório Técnico — {ps.servidor.nome}",
             "form": form,

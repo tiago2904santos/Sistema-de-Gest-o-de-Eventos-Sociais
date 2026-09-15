@@ -1605,3 +1605,31 @@ form.btn-flutuante-form{margin:0;display:contents}
 .diarias-extenso__rotulo{display:inline-flex;align-items:center;gap:6px;flex:none;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--n-500)}
 .diarias-extenso__rotulo .ui-icon{width:13px;height:13px;color:var(--n-400)}
 .diarias-extenso__valor{min-width:0;overflow-wrap:anywhere}
+
+/* Prestações no padrão do roteiro (15/09/2026). Cabeçalho de cartão com a mesma faixa
+   branca e borda embaixo; o ícone faz o papel do número dourado, separado do título
+   pelo mesmo divisor fino. Escopo em .pc-fluxo: as etapas da prestação numeram o passo
+   (Etapa 1, 2, 3), então numerar as seções dentro delas competiria com isso. */
+.pc-fluxo .reg{--reg-py:16px;--reg-px:20px}
+.pc-fluxo .reg>.reg__t{margin:calc(-1 * var(--reg-py)) calc(-1 * var(--reg-px)) 16px;padding:10px var(--reg-px);min-height:56px;display:flex;align-items:center;gap:12px;background:var(--branco);border-bottom:1px solid var(--n-150);border-radius:11px 11px 0 0;font-size:15px;font-weight:600;letter-spacing:-.005em;color:var(--n-900)}
+.pc-fluxo .reg>.reg__t>.ui-icon{width:17px;height:17px;flex:none;box-sizing:content-box;padding-right:12px;border-right:1px solid var(--d-200);color:var(--d-600)}
+/* O título da etapa não herda o "Etapa N" em dourado forte: ele é o kicker do cabeçalho. */
+.pc-fluxo .frm-titulo .pc-fluxo__etapa{color:var(--n-450)}
+/* O cartão da prestação é uma grade; a linha do servidor (formulário largo) esticava a
+   coluna e empurrava o selo da situação para fora da borda direita. */
+.pc-cartao{grid-template-columns:minmax(0,1fr)}
+/* Modelos de texto: o cartão do formulário ganha a mesma faixa das etapas. */
+.pc-modelos .reg{--reg-py:16px;--reg-px:18px}
+.pc-modelos .reg>.reg__t{margin:calc(-1 * var(--reg-py)) calc(-1 * var(--reg-px)) 16px;padding:10px var(--reg-px);min-height:56px;display:flex;align-items:center;gap:12px;background:var(--branco);border-bottom:1px solid var(--n-150);border-radius:11px 11px 0 0;font-size:15px;font-weight:600;letter-spacing:-.005em;color:var(--n-900)}
+.pc-modelos .reg>.reg__t>.ui-icon{width:17px;height:17px;flex:none;box-sizing:content-box;padding-right:12px;border-right:1px solid var(--d-200);color:var(--d-600)}
+/* Deslocamentos do diário: no container estreito a tabela vira cartões, como os trechos
+   do roteiro. Antes ela rolava para o lado e escondia km e abastecimento. */
+@container(max-width:680px){
+  .pc-trechos,.pc-trechos .dt,.pc-trechos tbody{display:block;width:100%;min-width:0;overflow:visible}
+  .pc-trechos thead{display:none}
+  .pc-trechos tbody tr{display:grid;gap:4px;margin-bottom:12px;padding:8px;border:1px solid var(--n-200);border-radius:8px}
+  .pc-trechos td{display:block;padding:8px;border:0;white-space:normal}
+  .pc-trechos td[data-rotulo]::before{content:attr(data-rotulo);display:block;margin-bottom:6px;font-size:10px;color:var(--n-450)}
+  .pc-trechos .pc-trecho__n{display:none}
+  .pc-trechos .form-campo{min-width:0}
+}

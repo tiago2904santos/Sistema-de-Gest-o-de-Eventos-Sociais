@@ -49,7 +49,7 @@ def index(request):
     cards = marcar_agrupamento_cards([cartao_da_lista(ps, configuracao=configuracao) for ps in pagina])
     parametros = request.GET.copy()
     parametros.pop("page", None)
-    return render(request, "viagens_prestacoes/index.html", {
+    return render(request, "pages/viagens_prestacoes/index.html", {
         "page_title": "Prestações de contas", "page_obj": pagina, "pagina": pagina, "cards": cards,
         "prestacoes": pagina.object_list, "contagem": contagem,
         "q": filtros["q"] or "", "abas_selecionadas": abas,

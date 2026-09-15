@@ -1,4 +1,4 @@
-{% extends "viagens_prestacoes/base.html" %}{% load l10n %}
+{% extends "pages/viagens_prestacoes/base.html" %}{% load l10n %}
 {% comment %}
   Etapa 1 — Diário de bordo: o motorista e a viatura do diário (com a troca), o
   roteiro realizado (ajustável), a quilometragem e o abastecimento de cada
@@ -7,6 +7,9 @@
 {% block pc_acoes_topo %}
   <a class="btn--secundaria" href="{{ preview_inline_url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}Visualizar PDF</a>
   <a class="btn--secundaria" href="{{ preview_xlsx_url }}">{% include "components/icon.html" with nome="download" %}Baixar planilha</a>
+{% endblock %}
+{% block pc_salvar_topo %}
+  <button type="submit" class="btn-primaria" form="form-prestacao">Salvar e continuar</button>
 {% endblock %}
 {% block pc_avisos %}
   {% if diaria_info.alterada %}
@@ -40,13 +43,14 @@
             <tbody>
               {% for trecho in trechos %}
                 <tr>
+                  {# `data-rotulo`: no celular a linha vira cartão e cada campo se anuncia, como nos trechos do roteiro. #}
                   <td class="pc-trecho__n">{{ trecho.display.ordem }}</td>
-                  <td class="pc-trecho__rota"><b>{{ trecho.display.origem }}</b> → <b>{{ trecho.display.destino }}</b>{% for erro in trecho.form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}<input type="hidden" name="{{ trecho.form.id.html_name }}" value="{{ trecho.form.instance.pk|unlocalize }}"></td>
-                  <td class="pc-trecho__hora">{{ trecho.display.saida.data }}<small>{{ trecho.display.saida.hora }}</small></td>
-                  <td class="pc-trecho__hora">{{ trecho.display.chegada.data }}<small>{{ trecho.display.chegada.hora }}</small></td>
-                  <td class="pc-trecho__km">{% include "components/input.html" with name=trecho.form.km_inicial.html_name label="Km inicial" rotulo_oculto=True valor=trecho.form.km_inicial.value placeholder="0" inputmode="numeric" autocomplete="off" erros=trecho.form.km_inicial.errors %}</td>
-                  <td class="pc-trecho__km">{% include "components/input.html" with name=trecho.form.km_final.html_name label="Km final" rotulo_oculto=True valor=trecho.form.km_final.value placeholder="0" inputmode="numeric" autocomplete="off" erros=trecho.form.km_final.errors %}</td>
-                  <td class="pc-trecho__abast">{% include "components/select.html" with name=trecho.form.abastecimento.html_name label="Necessidade de abastecimento" rotulo_oculto=True opcoes=opcoes_abastecimento selecionado=trecho.form.abastecimento.value erros=trecho.form.abastecimento.errors %}</td>
+                  <td class="pc-trecho__rota" data-rotulo="Deslocamento"><b>{{ trecho.display.origem }}</b> → <b>{{ trecho.display.destino }}</b>{% for erro in trecho.form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}<input type="hidden" name="{{ trecho.form.id.html_name }}" value="{{ trecho.form.instance.pk|unlocalize }}"></td>
+                  <td class="pc-trecho__hora" data-rotulo="Saída">{{ trecho.display.saida.data }}<small>{{ trecho.display.saida.hora }}</small></td>
+                  <td class="pc-trecho__hora" data-rotulo="Chegada">{{ trecho.display.chegada.data }}<small>{{ trecho.display.chegada.hora }}</small></td>
+                  <td class="pc-trecho__km" data-rotulo="Km inicial">{% include "components/input.html" with name=trecho.form.km_inicial.html_name label="Km inicial" rotulo_oculto=True valor=trecho.form.km_inicial.value placeholder="0" inputmode="numeric" autocomplete="off" erros=trecho.form.km_inicial.errors %}</td>
+                  <td class="pc-trecho__km" data-rotulo="Km final">{% include "components/input.html" with name=trecho.form.km_final.html_name label="Km final" rotulo_oculto=True valor=trecho.form.km_final.value placeholder="0" inputmode="numeric" autocomplete="off" erros=trecho.form.km_final.errors %}</td>
+                  <td class="pc-trecho__abast" data-rotulo="Abastecimento">{% include "components/select.html" with name=trecho.form.abastecimento.html_name label="Necessidade de abastecimento" rotulo_oculto=True opcoes=opcoes_abastecimento selecionado=trecho.form.abastecimento.value erros=trecho.form.abastecimento.errors %}</td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -56,11 +60,11 @@
         <p class="texto-vazio">O roteiro ainda não possui trechos. Use “Ajustar roteiro realizado” para registrá-los.</p>
       {% endif %}
     </form>
+
+    {# Ações no fim do último cartão da etapa, como no roteiro. #}
+    <div class="frm-acoes-fim">
+      <a class="btn--secundaria" href="{% url 'viagens_prestacoes:index' %}">Voltar</a>
+      <button type="submit" class="btn-primaria" form="form-prestacao">Salvar e continuar para o RT</button>
+    </div>
   </section>
-{% endblock %}
-{% block prestacao_acoes %}
-  <footer class="editor-roteiro__rodape pc-fluxo__rodape">
-    <a class="btn--secundaria" href="{% url 'viagens_prestacoes:index' %}">Voltar</a>
-    <button type="submit" class="btn-primaria" form="form-prestacao">Salvar e continuar para o RT</button>
-  </footer>
 {% endblock %}
