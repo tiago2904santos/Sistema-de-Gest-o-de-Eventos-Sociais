@@ -17,28 +17,31 @@
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
 
-  <div class="frm-cabeca">
-    <div>
-      <a class="voltar" href="{% url 'solicitacoes:lista' %}">{% include "components/icon.html" with nome="chevron-left" %}Voltar para solicitações</a>
-      <div class="kicker">Eventos Sociais</div>
-      <h1>{% if solicitacao %}Editar solicitação #{{ solicitacao.pk }}{% else %}Nova solicitação{% endif %}<span class="frm-rasc">{% include "components/icon.html" with nome="document" %}{% if solicitacao %}{{ solicitacao.get_status_display }}{% else %}Rascunho{% endif %}</span></h1>
-      {% if solicitacao %}
-        <p class="frm-cabeca__sub">
-          <span>{% include "components/icon.html" with nome="calendar" %}{{ solicitacao.tipo_evento|default:"Tipo de evento não informado" }}</span>
-          <span>{% include "components/icon.html" with nome="map-pin" %}{{ solicitacao.municipio|default:"Município não informado" }}{% if solicitacao.data_inicio_evento %} · {{ solicitacao.data_inicio_evento|date:"d/m/Y" }}{% if solicitacao.data_fim_evento and solicitacao.data_fim_evento != solicitacao.data_inicio_evento %} a {{ solicitacao.data_fim_evento|date:"d/m/Y" }}{% endif %}{% endif %}</span>
-          <span>{% include "components/icon.html" with nome="user" %}{{ solicitacao.solicitante_nome|default:"Solicitante não informado" }}{% if solicitacao.solicitante_cargo_unidade %} — {{ solicitacao.solicitante_cargo_unidade }}{% endif %}</span>
-        </p>
-        {% if somente_leitura %}
-          <p class="frm-cabeca__sub">Somente leitura: esta solicitação não está mais editável no estado atual.</p>
-        {% else %}
-          <p class="frm-cabeca__sub">Edite as informações abaixo para atualizar a solicitação.</p>
-        {% endif %}
-      {% else %}
-        <p class="frm-cabeca__sub">Preencha os dados necessários para registrar a solicitação.</p>
-      {% endif %}
+  {# Cabeçalho no padrão do roteiro: ícone, "Nova solicitação" ou "Editar solicitação #N", situação ao lado, meta com ícones e Salvar no topo. #}
+  <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+    <div class="page-header d-cabeca__esq">
+      <div class="page-header__identificacao d-identificacao">
+        <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="calendar" %}</span>
+        <div>
+          <div class="frm-titulo">
+            <h1 class="page-header__titulo d-titulo-v32">{% if solicitacao %}Editar solicitação <span class="frm-ident">#{{ solicitacao.pk }}</span>{% else %}Nova solicitação{% endif %}</h1>
+            <span class="frm-rasc">{% include "components/icon.html" with nome="document" %}{% if solicitacao %}{{ solicitacao.get_status_display }}{% else %}Rascunho{% endif %}</span>
+          </div>
+          {% if solicitacao %}
+            <p class="page-header__subtitulo d-cabeca__sub frm-meta">
+              <span>{% include "components/icon.html" with nome="calendar" %}{{ solicitacao.tipo_evento|default:"Tipo de evento não informado" }}</span>
+              <span>{% include "components/icon.html" with nome="map-pin" %}{{ solicitacao.municipio|default:"Município não informado" }}{% if solicitacao.data_inicio_evento %} · {{ solicitacao.data_inicio_evento|date:"d/m/Y" }}{% if solicitacao.data_fim_evento and solicitacao.data_fim_evento != solicitacao.data_inicio_evento %} a {{ solicitacao.data_fim_evento|date:"d/m/Y" }}{% endif %}{% endif %}</span>
+              <span>{% include "components/icon.html" with nome="user" %}{{ solicitacao.solicitante_nome|default:"Solicitante não informado" }}{% if solicitacao.solicitante_cargo_unidade %} — {{ solicitacao.solicitante_cargo_unidade }}{% endif %}</span>
+            </p>
+          {% endif %}
+        </div>
+      </div>
     </div>
-    {% if solicitacao %}
-      <div class="d-acoes">
+    <div class="frm-topo__acoes">
+      {% if not solicitacao or acoes.editar_dados %}
+        <button type="submit" form="form-solicitacao" class="btn-primaria" name="acao" value="rascunho" formnovalidate>{% if solicitacao and solicitacao.status != "RASCUNHO" %}Salvar alterações{% else %}Salvar rascunho{% endif %}</button>
+      {% endif %}
+      {% if solicitacao %}
         {% if pode_gerenciar_anexos or acoes.excluir or acoes.despachar or acoes.concluir or acoes.cancelar %}
           <div class="dd" data-menu>
             <button type="button" class="ib" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações">{% include "components/icon.html" with nome="kebab" %}</button>
@@ -55,8 +58,8 @@
             </div>
           </div>
         {% endif %}
-      </div>
-    {% endif %}
+      {% endif %}
+    </div>
   </div>
 
   {% if form.errors %}
@@ -204,19 +207,22 @@
       {% else %}
         {% include "components/upload_anexos.html" with id="id_anexos_cadastro" name="anexos" multiple=True mensagem_vazio="Nenhum arquivo selecionado. Eles serão salvos junto com a solicitação." only %}
       {% endif %}
-    </section>
 
-    {% if not solicitacao or acoes.editar_dados or mostrar_enviar %}
-      <div class="frm-acoes">
-        <a class="btn--quieta" href="{% url 'solicitacoes:lista' %}">Cancelar</a>
-        {% if not solicitacao or acoes.editar_dados %}
-          <button type="submit" class="btn--secundaria" name="acao" value="rascunho" formnovalidate>{% if solicitacao and solicitacao.status != "RASCUNHO" %}Salvar alterações{% else %}Salvar rascunho{% endif %}</button>
-        {% endif %}
-        {% if mostrar_enviar %}
-          <button type="submit" class="btn-primaria" name="acao" value="enviar">{% include "components/icon.html" with nome="send" %}Enviar para a DG</button>
-        {% endif %}
-      </div>
-    {% endif %}
+      {# Ações no fim do último cartão do formulário, como no roteiro: voltar à esquerda, salvar/enviar à direita. #}
+      {% if not solicitacao or acoes.editar_dados or mostrar_enviar %}
+        <div class="frm-acoes-fim">
+          <a class="btn--secundaria" href="{% url 'solicitacoes:lista' %}">Voltar</a>
+          <span class="frm-acoes-fim__dir">
+            {% if not solicitacao or acoes.editar_dados %}
+              <button type="submit" class="{% if mostrar_enviar %}btn--secundaria{% else %}btn-primaria{% endif %}" name="acao" value="rascunho" formnovalidate>{% if solicitacao and solicitacao.status != "RASCUNHO" %}Salvar alterações{% else %}Salvar rascunho{% endif %}</button>
+            {% endif %}
+            {% if mostrar_enviar %}
+              <button type="submit" class="btn-primaria" name="acao" value="enviar">{% include "components/icon.html" with nome="send" %}Enviar para a DG</button>
+            {% endif %}
+          </span>
+        </div>
+      {% endif %}
+    </section>
   </form>
 
   {# ------------------------------------------------------------------ #}

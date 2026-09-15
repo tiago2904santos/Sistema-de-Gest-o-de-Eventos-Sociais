@@ -16,19 +16,17 @@
 
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker">{{ modulo_ativo.nome }}</div>
+      <div class="kicker kicker--junto">{{ modulo_ativo.nome }}</div>
       <h1>Ofícios</h1>
-      <p class="d-cabeca__sub">Autorizações de viagem e documentos da equipe</p>
     </div>
-    <div class="d-acoes">
-      {# Na origem "Novo ofício" é um POST: nasce o rascunho, já numerado, e o editor abre. #}
-      {% if pode_editar %}
-        <form method="post" action="{% url 'viagens_oficios:criar' %}">
-          {% csrf_token %}
-          <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="plus" %}Novo ofício</button>
-        </form>
-      {% endif %}
-    </div>
+    {# Na origem "Novo ofício" é um POST: nasce o rascunho, já numerado, e o editor abre. #}
+    {# Botão flutuante, como na lista de roteiros: fixo no canto inferior direito. #}
+    {% if pode_editar %}
+      <form method="post" action="{% url 'viagens_oficios:criar' %}" class="btn-flutuante-form">
+        {% csrf_token %}
+        <button type="submit" class="btn-primaria btn-flutuante">{% include "components/icon.html" with nome="plus" %}Novo ofício</button>
+      </form>
+    {% endif %}
   </div>
 
   <nav class="of-catalogos" aria-label="Cadastros de apoio dos ofícios">

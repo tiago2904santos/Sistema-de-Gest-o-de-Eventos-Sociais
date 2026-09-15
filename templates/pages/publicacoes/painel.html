@@ -9,13 +9,11 @@
 {% block conteudo %}
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker">{{ kicker }}</div>
+      <div class="kicker kicker--junto">{{ kicker }}</div>
       <h1>Painel</h1>
-      <p class="d-cabeca__sub">Visão geral das pautas e publicações da assessoria.</p>
     </div>
-    <div class="d-acoes">
-      <a class="btn-primaria" href="{% url 'publicacoes:nova' %}">{% include "components/icon.html" with nome="document-plus" %}Nova pauta</a>
-    </div>
+    {# Botão flutuante, como na lista de roteiros: fixo no canto inferior direito. #}
+    <a class="btn-primaria btn-flutuante" href="{% url 'publicacoes:nova' %}">{% include "components/icon.html" with nome="plus" %}Nova pauta</a>
   </div>
 
   <div class="db-kpis">

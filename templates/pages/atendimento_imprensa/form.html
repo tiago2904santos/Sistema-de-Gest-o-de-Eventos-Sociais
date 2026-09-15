@@ -15,24 +15,29 @@
   <form method="post" action="" id="form-atendimento">
     {% csrf_token %}
 
-    <div class="frm-cabeca">
-      <div>
-        <div class="kicker">{{ kicker }}</div>
-        <h1>{{ titulo_pagina }}<span class="frm-rasc">{% include "components/icon.html" with nome="mail" %}{% if atendimento %}{{ atendimento.get_situacao_display }}{% else %}Novo{% endif %}</span></h1>
-        <p class="frm-cabeca__sub">
-          {% if atendimento %}
-            {{ atendimento.jornalista }}{% if atendimento.veiculo %} — {{ atendimento.veiculo }}{% endif %} · {{ atendimento.data|date:"d/m/Y" }}{% if atendimento.horario %} às {{ atendimento.horario|time:"H:i" }}{% endif %}<br>
-            {% if atendimento.responsavel %}Atendido por {{ atendimento.responsavel }}{% else %}Sem responsável definido{% endif %}{% if atendimento.deadline %} · Deadline {{ atendimento.deadline|date:"d/m/Y" }}{% endif %}
-          {% else %}
-            Registre o pedido do jornalista assim que ele chegar; fontes e resposta podem ser completadas depois.
-          {% endif %}
-        </p>
+    {# Cabeçalho no padrão do roteiro: ícone, "Novo atendimento" ou "Editar atendimento #N", situação ao lado, meta com ícones e Salvar no topo. #}
+    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="mail" %}</span>
+          <div>
+            <div class="frm-titulo">
+              <h1 class="page-header__titulo d-titulo-v32">{% if atendimento %}Editar atendimento <span class="frm-ident">#{{ atendimento.pk }}</span>{% else %}Novo atendimento{% endif %}</h1>
+              <span class="frm-rasc">{% include "components/icon.html" with nome="mail" %}{% if atendimento %}{{ atendimento.get_situacao_display }}{% else %}Novo{% endif %}</span>
+            </div>
+            {% if atendimento %}
+              <p class="page-header__subtitulo d-cabeca__sub frm-meta">
+                <span>{% include "components/icon.html" with nome="user" %}{{ atendimento.jornalista }}{% if atendimento.veiculo %} — {{ atendimento.veiculo }}{% endif %}</span>
+                <span>{% include "components/icon.html" with nome="calendar" %}{{ atendimento.data|date:"d/m/Y" }}{% if atendimento.horario %} às {{ atendimento.horario|time:"H:i" }}{% endif %}</span>
+                <span>{% include "components/icon.html" with nome="users" %}{% if atendimento.responsavel %}{{ atendimento.responsavel }}{% else %}Sem responsável{% endif %}</span>
+                {% if atendimento.deadline %}<span>{% include "components/icon.html" with nome="hourglass" %}Deadline {{ atendimento.deadline|date:"d/m/Y" }}</span>{% endif %}
+              </p>
+            {% endif %}
+          </div>
+        </div>
       </div>
-      <div class="d-acoes">
-        <a class="btn--secundaria" href="{% url 'atendimento_imprensa:lista' %}">{% include "components/icon.html" with nome="chevron-left" %}Atendimentos</a>
-        {% if atendimento %}
-          <a class="btn--secundaria" href="{% url 'atendimento_imprensa:novo' %}">{% include "components/icon.html" with nome="plus" %}Novo atendimento</a>
-        {% endif %}
+      <div class="frm-topo__acoes">
+        <button type="submit" class="btn-primaria" form="form-atendimento">{% if atendimento %}Salvar alterações{% else %}Registrar atendimento{% endif %}</button>
       </div>
     </div>
 
@@ -181,6 +186,12 @@
               {% for erro in erros.resposta %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
             </label>
           </div>
+
+          {# Ações no fim do último cartão editável, como no roteiro: voltar à esquerda, salvar à direita. #}
+          <div class="frm-acoes-fim">
+            <a class="btn--secundaria" href="{% url 'atendimento_imprensa:lista' %}">Voltar</a>
+            <button type="submit" class="btn-primaria">{% if atendimento %}Salvar alterações{% else %}Registrar atendimento{% endif %}</button>
+          </div>
         </div>
       </section>
 
@@ -198,10 +209,6 @@
         </section>
       {% endif %}
 
-      <div class="frm-acoes">
-        <a class="frm-cancelar" href="{% url 'atendimento_imprensa:lista' %}">Cancelar</a>
-        <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check" %}{% if atendimento %}Salvar alterações{% else %}Registrar atendimento{% endif %}</button>
-      </div>
     </div>
   </form>
 {% endblock %}

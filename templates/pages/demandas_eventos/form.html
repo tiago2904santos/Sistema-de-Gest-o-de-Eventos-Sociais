@@ -2,11 +2,37 @@
 {% block title %}{{ titulo }} — ASCOM{% endblock %}
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
-  {% include "components/v32/page_header.html" with titulo=titulo subtitulo="Registre e acompanhe a demanda recebida pela ASCOM" icone="document" %}
-  <form method="post" class="v32-form-longo">{% csrf_token %}
+
+  {# Cabeçalho no padrão do roteiro: ícone, "Nova demanda" ou "Editar demanda #N", situação ao lado, meta com ícones e Salvar no topo. #}
+  <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+    <div class="page-header d-cabeca__esq">
+      <div class="page-header__identificacao d-identificacao">
+        <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
+        <div>
+          <div class="frm-titulo">
+            <h1 class="page-header__titulo d-titulo-v32">{% if instancia %}Editar demanda <span class="frm-ident">#{{ instancia.pk }}</span>{% else %}Nova demanda{% endif %}</h1>
+            {% if instancia %}{% include "components/v32/status_badge.html" with status=instancia.status label=instancia.get_status_display %}{% endif %}
+          </div>
+          {% if instancia %}
+            <p class="page-header__subtitulo d-cabeca__sub frm-meta">
+              <span>{% include "components/icon.html" with nome="calendar" %}{{ instancia.tipo_evento }}{% if instancia.periodo_evento_display %} · {{ instancia.periodo_evento_display }}{% endif %}</span>
+              {% if instancia.municipio or instancia.municipio_texto %}<span>{% include "components/icon.html" with nome="map-pin" %}{{ instancia.municipio|default:instancia.municipio_texto }}</span>{% endif %}
+              <span>{% include "components/icon.html" with nome="user" %}{{ instancia.solicitante }}</span>
+            </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="frm-topo__acoes">
+      <button type="submit" class="btn-primaria" form="form-demanda">Salvar demanda</button>
+    </div>
+  </div>
+
+  <form method="post" id="form-demanda" class="v32-form-longo">{% csrf_token %}
     <input type="hidden" name="versao" value="{{ valores.versao }}">
+    {# Erro geral fora do cartão, logo acima da seção, como no roteiro. #}
     {% if form.errors %}
-      <div class="aviso v32-aviso-texto aviso--erro resumo-erros" role="alert" tabindex="-1" data-resumo-erros>
+      <div class="aviso v32-aviso-texto aviso--erro resumo-erros frm-aviso" role="alert" tabindex="-1" data-resumo-erros>
         <strong>Revise os campos indicados antes de salvar.</strong>
         {% for erro in form.non_field_errors %}<p>{{ erro }}</p>{% endfor %}
       </div>
@@ -48,9 +74,11 @@
         {% include "components/textarea.html" with name="briefing" label="Briefing" largura="6" linhas="4" valor=valores.briefing erros=erros.briefing %}
         {% include "components/textarea.html" with name="materia_site" label="Matéria no site" largura="6" linhas="4" valor=valores.materia_site erros=erros.materia_site %}
         <fieldset class="form-campo form-campo--12 campo-e--bloco" id="id_setores"{% if erros.setores %} aria-invalid="true" aria-describedby="id_setores_erro"{% endif %}><legend class="form-label">Setores envolvidos <span class="form-label__obrigatorio">*</span></legend><div class="opc-cards">{% for item in opcoes_setores %}<label class="opc-card"><input type="checkbox" name="setores" value="{{ item.valor }}"{% if item.valor in setores_marcados %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ item.rotulo }}</label>{% endfor %}</div>{% for erro in erros.setores %}<p class="form-erro"{% if forloop.first %} id="id_setores_erro"{% endif %}>{{ erro }}</p>{% endfor %}</fieldset>
-      </div></div>
+      </div>
+      {# Ações no fim do último cartão do formulário, como no roteiro: voltar à esquerda, salvar à direita. #}
+      <div class="frm-acoes-fim"><a class="btn--secundaria" href="{% url 'demandas_eventos:lista' %}">Voltar</a>{% include "components/v32/button.html" with label="Salvar demanda" variante="dourado" tipo="submit" %}</div>
+      </div>
     </section>
-    <div class="frm-acoes"><a class=" btn--secundaria" href="{% url 'demandas_eventos:lista' %}">Cancelar</a>{% include "components/v32/button.html" with label="Salvar demanda" variante="dourado" tipo="submit" %}</div>
 </div>
   </form>
 

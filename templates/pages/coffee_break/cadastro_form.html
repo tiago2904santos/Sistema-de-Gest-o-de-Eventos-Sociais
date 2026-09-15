@@ -4,38 +4,65 @@
 
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
-  {% include "components/v32/page_header.html" with titulo=config.titulo subtitulo="As alterações ficam registradas na auditoria do sistema" icone="checklist" %}
 
-  <form method="post" class="pa-card pa-card--lista v32-bloco cad-frm">
-    {% csrf_token %}
-    {{ form.versao }}
-    <div class="v32-corpo">
-      {% if form.errors %}
-        <div class="aviso v32-aviso-texto aviso--erro form-error-summary" role="alert" tabindex="-1" data-error-summary data-resumo-erros>
-          <strong>Não foi possível salvar.</strong>
-          <p>Revise os campos destacados abaixo.</p>
-          {% for erro in form.non_field_errors %}<p>{{ erro }}</p>{% endfor %}
+  {# Cabeçalho no padrão do roteiro: ícone, "Novo X" / "Editar X <nome>" e Salvar no topo. #}
+  <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+    <div class="page-header d-cabeca__esq">
+      <div class="page-header__identificacao d-identificacao">
+        <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="checklist" %}</span>
+        <div>
+          <div class="frm-titulo">
+            <h1 class="page-header__titulo d-titulo-v32">{% if instancia %}Editar {{ config.singular }} <span class="frm-ident">{{ instancia }}</span>{% else %}Novo {{ config.singular }}{% endif %}</h1>
+          </div>
+          <p class="page-header__subtitulo d-cabeca__sub frm-meta">
+            <span>{% include "components/icon.html" with nome="columns" %}{{ config.titulo }}</span>
+          </p>
         </div>
-      {% endif %}
-      <div class="g-form v32-form-grid">
-        {% for campo in campos %}
-          {% if campo.tipo == 'select' %}
-            {% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes obrigatorio=campo.obrigatorio largura="6" selecionado=campo.valor erros=campo.erros pesquisavel=True ajuda=campo.ajuda %}
-          {% elif campo.tipo == 'textarea' %}
-            {% include "components/textarea.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio largura="12" linhas="5" valor=campo.valor erros=campo.erros ajuda=campo.ajuda %}
-          {% elif campo.tipo == 'multiplo' %}
-            {% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes multiplo=True marcados=campo.marcados obrigatorio=campo.obrigatorio largura="12" erros=campo.erros ajuda=campo.ajuda %}
-          {% elif campo.tipo == 'boolean' %}
-            <div class="form-campo form-campo--12"><label class="opc-card"><input type="checkbox" name="{{ campo.name }}" value="1"{% if campo.valor %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ campo.label }}</label></div>
-          {% else %}
-            {% include "components/input.html" with name=campo.name label=campo.label tipo=campo.tipo obrigatorio=campo.obrigatorio largura="6" valor=campo.valor erros=campo.erros ajuda=campo.ajuda %}
-          {% endif %}
-        {% endfor %}
-      </div>
-      <div class="cad-frm__acoes">
-        <a class=" btn--secundaria" href="{% url 'coffee_break:cadastro_lista' tipo %}">Cancelar</a>
-        {% include "components/v32/button.html" with label="Salvar" variante="dourado" tipo="submit" %}
       </div>
     </div>
+    <div class="frm-topo__acoes">
+      <button type="submit" class="btn-primaria" form="form-cadastro">Salvar</button>
+    </div>
+  </div>
+
+  <form method="post" id="form-cadastro" class="cad-frm">
+    {% csrf_token %}
+    {{ form.versao }}
+
+    {# Erro geral fora do cartão, logo acima da seção, como no roteiro. #}
+    {% if form.errors %}
+      <div class="aviso v32-aviso-texto aviso--erro form-error-summary frm-aviso" role="alert" tabindex="-1" data-error-summary data-resumo-erros>
+        <strong>Não foi possível salvar.</strong>
+        <p>Revise os campos destacados abaixo.</p>
+        {% for erro in form.non_field_errors %}<p>{{ erro }}</p>{% endfor %}
+      </div>
+    {% endif %}
+
+    <section class="reg">
+      {% include "components/v32/section_card.html" with numero="1" titulo=config.titulo %}
+      <div class="reg-corpo">
+        <div class="g-form v32-form-grid">
+          {% for campo in campos %}
+            {% if campo.tipo == 'select' %}
+              {% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes obrigatorio=campo.obrigatorio largura="6" selecionado=campo.valor erros=campo.erros pesquisavel=True ajuda=campo.ajuda %}
+            {% elif campo.tipo == 'textarea' %}
+              {% include "components/textarea.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio largura="12" linhas="5" valor=campo.valor erros=campo.erros ajuda=campo.ajuda %}
+            {% elif campo.tipo == 'multiplo' %}
+              {% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes multiplo=True marcados=campo.marcados obrigatorio=campo.obrigatorio largura="12" erros=campo.erros ajuda=campo.ajuda %}
+            {% elif campo.tipo == 'boolean' %}
+              <div class="form-campo form-campo--12"><label class="opc-card"><input type="checkbox" name="{{ campo.name }}" value="1"{% if campo.valor %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ campo.label }}</label></div>
+            {% else %}
+              {% include "components/input.html" with name=campo.name label=campo.label tipo=campo.tipo obrigatorio=campo.obrigatorio largura="6" valor=campo.valor erros=campo.erros ajuda=campo.ajuda %}
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        {# Ações no fim do cartão, como no roteiro: voltar à esquerda, salvar à direita. #}
+        <div class="frm-acoes-fim">
+          <a class="btn--secundaria" href="{% url 'coffee_break:cadastro_lista' tipo %}">Voltar</a>
+          {% include "components/v32/button.html" with label="Salvar" variante="dourado" tipo="submit" %}
+        </div>
+      </div>
+    </section>
   </form>
 {% endblock %}

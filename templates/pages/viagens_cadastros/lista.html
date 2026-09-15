@@ -15,22 +15,22 @@
 {% block title %}{{ titulo }} — Cadastros — Viagens{% endblock %}
 
 {% block conteudo %}
+  {# Cabeçalho no padrão da lista de roteiros: kicker junto do título, sem subtítulo, novo registro no botão flutuante. #}
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker">Viagens</div>
+      <div class="kicker kicker--junto">Viagens</div>
       <h1>Cadastros</h1>
-      <p class="d-cabeca__sub">Tabelas de apoio utilizadas pelos roteiros e documentos.</p>
     </div>
-    <div class="d-acoes">
-      {% if url_retorno %}<a class="btn--secundaria" href="{{ url_retorno }}">{{ rotulo_retorno|default:"Voltar" }}</a>{% endif %}
-      {% if pode_editar and url_novo %}
-        <a class="btn-primaria" href="{{ url_novo }}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}{{ novo }}</a>
-      {% endif %}
-    </div>
+    {% if url_retorno %}
+      <div class="d-acoes"><a class="btn--secundaria" href="{{ url_retorno }}">{{ rotulo_retorno|default:"Voltar" }}</a></div>
+    {% endif %}
+    {% if pode_editar and url_novo %}
+      <a class="btn-primaria btn-flutuante" href="{{ url_novo }}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}{{ novo }}</a>
+    {% endif %}
   </div>
 
-  <div class="cad-grade">
-    {% include "components/v32/cad_rail.html" with grupos=grupos slug_ativo=slug %}
+  <div class="cad-grade cad-grade--sem-folga">
+    {% include "components/v32/cad_rail.html" with grupos=grupos slug_ativo=slug sem_titulo=True %}
 
     <section class="pa-card pa-card--lista cad-lista">
       {% if aviso %}

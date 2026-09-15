@@ -26,13 +26,27 @@
     {% csrf_token %}
     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
-    <div class="frm-cabeca">
-      <div>
-        <div class="kicker">{{ modulo_ativo.nome }}</div>
-        <h1>{{ titulo }}
-          <span class="frm-rasc">{% include "components/icon.html" with nome="document" %}{% if oficio.cancelado %}Cancelado{% else %}{{ oficio.get_status_display }}{% endif %}</span>
-        </h1>
-        <p class="frm-cabeca__sub">{% if oficio.pk %}Ofício de autorização de viagem criado em {{ oficio.criado_em|date:"d/m/Y" }}.{% else %}Preencha as etapas para emitir o ofício de autorização de viagem.{% endif %}</p>
+    {# Cabeçalho no padrão do roteiro: "Novo ofício" ou "Editar ofício <número>", situação ao lado, meta com ícones e Salvar no topo. #}
+    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
+          <div>
+            <div class="frm-titulo">
+              <h1 class="page-header__titulo d-titulo-v32">{% if oficio.pk %}Editar ofício <span class="frm-ident">{{ oficio.numero_formatado }}</span>{% else %}Novo ofício{% endif %}</h1>
+              <span class="frm-rasc">{% include "components/icon.html" with nome="document" %}{% if oficio.cancelado %}Cancelado{% else %}{{ oficio.get_status_display }}{% endif %}</span>
+            </div>
+            {% if oficio.pk %}
+              <p class="page-header__subtitulo d-cabeca__sub frm-meta">
+                <span>{% include "components/icon.html" with nome="calendar" %}Criado em {{ oficio.criado_em|date:"d/m/Y" }}</span>
+                {% if oficio.protocolo %}<span>{% include "components/icon.html" with nome="checklist" %}Protocolo {{ oficio.protocolo }}</span>{% endif %}
+              </p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="frm-topo__acoes">
+        <button type="submit" class="btn-primaria" form="form-oficio" name="acao" value="continuar">Salvar ofício</button>
       </div>
     </div>
 
@@ -82,7 +96,6 @@
             <div class="bloco-split">
               <div class="bloco-split__rotulo">
                 <strong>Identificação</strong>
-                <p class="texto-suave v32-suave">Data do ofício, protocolo do eProtocolo e unidade que solicita a viagem.</p>
               </div>
               <div class="bloco-split__corpo g-form g-form--3">
                 {% include "components/input.html" with name="data_criacao" label="Data do ofício" tipo="date" obrigatorio=True valor=valores.data_criacao erros=erros.data_criacao %}
@@ -97,7 +110,6 @@
             <div class="bloco-split">
               <div class="bloco-split__rotulo">
                 <strong>Motivo</strong>
-                <p class="texto-suave v32-suave">Escolher um modelo preenche o texto; ele pode ser ajustado depois.</p>
               </div>
               <div class="bloco-split__corpo g-form g-form--1">
                 {% include "components/select.html" with name="modelo_motivo" label="Modelo de motivo" opcoes=opcoes_motivos placeholder="Sem modelo" permitir_vazio=True selecionado=valores.modelo_motivo erros=erros.modelo_motivo %}
@@ -108,7 +120,6 @@
             <div class="bloco-split">
               <div class="bloco-split__rotulo">
                 <strong>Custeio</strong>
-                <p class="texto-suave v32-suave">Quem paga as diárias. Outra instituição exige a observação.</p>
               </div>
               <div class="bloco-split__corpo g-form g-form--2">
                 {% include "components/select.html" with name="custeio" label="Custeio" opcoes=opcoes_custeio obrigatorio=True selecionado=valores.custeio erros=erros.custeio %}
@@ -122,7 +133,7 @@
             <div class="bloco-split">
               <div class="bloco-split__rotulo">
                 <strong>Equipe</strong>
-                <p class="texto-suave v32-suave">Marque quem viaja e, para cada viajante, se recebe o termo de autorização. <span data-equipe-contagem>0 viajantes</span>.</p>
+                <p class="texto-suave v32-suave" data-equipe-contagem>0 viajantes</p>
               </div>
               <div class="bloco-split__corpo">
                 <div class="form-campo of-equipe-busca">
@@ -162,7 +173,6 @@
             <div class="bloco-split">
               <div class="bloco-split__rotulo">
                 <strong>Viatura</strong>
-                <p class="texto-suave v32-suave">Do cadastro, ou uma não cadastrada informada à mão.</p>
               </div>
               <div class="bloco-split__corpo">
                 <fieldset class="campo-e form-campo campo-e--bloco">
@@ -187,7 +197,6 @@
             <div class="bloco-split">
               <div class="bloco-split__rotulo">
                 <strong>Motorista</strong>
-                <p class="texto-suave v32-suave">Um servidor da equipe, um servidor de fora dela ou um motorista externo. Quem não está na equipe precisa do ofício e do protocolo que o autorizam.</p>
               </div>
               <div class="bloco-split__corpo">
                 <div class="g-form g-form--2">
@@ -218,7 +227,6 @@
             <div class="bloco-split">
               <div class="bloco-split__rotulo">
                 <strong>Armamento</strong>
-                <p class="texto-suave v32-suave">Consta no ofício como autorização de porte e transporte.</p>
               </div>
               <div class="bloco-split__corpo">
                 <div class="form-campo viagens-opcao-padrao">
@@ -243,7 +251,6 @@
             <div class="bloco-split">
               <div class="bloco-split__rotulo">
                 <strong>Roteiro da viagem</strong>
-                <p class="texto-suave v32-suave">O ofício herda o percurso, as datas e o cálculo das diárias do roteiro escolhido.</p>
               </div>
               <div class="bloco-split__corpo">
                 {% include "components/select.html" with name="roteiro" label="Roteiro" opcoes=opcoes_roteiros pesquisavel=True placeholder="Buscar roteiro por sede ou destino..." permitir_vazio=True selecionado=valores.roteiro erros=erros.roteiro %}
@@ -278,7 +285,6 @@
             <div class="bloco-split">
               <div class="bloco-split__rotulo">
                 <strong>Regra de prazo</strong>
-                <p class="texto-suave v32-suave">A justificativa é obrigatória quando o ofício sai com menos de {{ regra.prazo_dias }} dias de antecedência da primeira saída.</p>
               </div>
               <div class="bloco-split__corpo">
                 <dl class="of-resumo-rota__lista of-regra">
@@ -293,12 +299,17 @@
             <div class="bloco-split">
               <div class="bloco-split__rotulo">
                 <strong>Texto</strong>
-                <p class="texto-suave v32-suave">Escolher um modelo preenche o texto; ajuste antes de salvar.</p>
               </div>
               <div class="bloco-split__corpo g-form g-form--1">
                 {% include "components/select.html" with name="justificativa-modelo" label="Modelo de justificativa" opcoes=justificativa.opcoes_modelo placeholder="Sem modelo" permitir_vazio=True selecionado=justificativa.modelo erros=justificativa.erros_modelo %}
                 {% include "components/textarea.html" with name="justificativa-texto" label="Justificativa" linhas="5" valor=justificativa.texto erros=justificativa.erros_texto obrigatorio=regra.obrigatoria placeholder="Por que a viagem não pôde ser solicitada no prazo" %}
               </div>
+            </div>
+
+            {# Ações no fim do último cartão do formulário, como no roteiro: voltar à esquerda, salvar à direita. #}
+            <div class="frm-acoes-fim">
+              <a class="btn--secundaria" href="{{ url_voltar }}">Voltar</a>
+              <button type="submit" class="btn-primaria" name="acao" value="continuar">Salvar ofício</button>
             </div>
           </div>
         </section>
@@ -468,15 +479,6 @@
     </div>
   {% endwith %}{% endif %}
 
-  {% comment %}
-    As ações fecham a página. Ficam fora do formulário, ligadas a ele pelo
-    atributo HTML5 `form`, para não sobrarem no meio da tela, antes dos blocos
-    de documentos, histórico e encerramento.
-  {% endcomment %}
-  <div class="frm-acoes of-form__acoes">
-    <a class="btn--secundaria frm-cancelar" href="{{ url_voltar }}">Voltar</a>
-    <button type="submit" class="btn-primaria" form="form-oficio" name="acao" value="continuar">Salvar ofício</button>
-  </div>
 {% endblock %}
 
 {% block extra_js %}

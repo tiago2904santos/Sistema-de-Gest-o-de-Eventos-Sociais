@@ -6,17 +6,15 @@
 {% block conteudo %}
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker">Eventos Sociais</div>
+      <div class="kicker kicker--junto">Eventos Sociais</div>
       <h1>Cadastros</h1>
-      <p class="d-cabeca__sub">Tabelas de apoio utilizadas pelas solicitações.</p>
     </div>
-    <div class="d-acoes">
-      <a class="btn-primaria" href="{% url 'cadastros:novo' slug %}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}{{ novo }}</a>
-    </div>
+    {# Botão flutuante, como na lista de roteiros: fixo no canto inferior direito. #}
+    <a class="btn-primaria btn-flutuante" href="{% url 'cadastros:novo' slug %}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}{{ novo }}</a>
   </div>
 
-  <div class="cad-grade">
-    {% include "components/v32/cad_rail.html" with grupos=grupos slug_ativo=slug %}
+  <div class="cad-grade cad-grade--sem-folga">
+    {% include "components/v32/cad_rail.html" with grupos=grupos slug_ativo=slug sem_titulo=True %}
 
     <section class="pa-card pa-card--lista cad-lista">
       <div class="cad-titulo">

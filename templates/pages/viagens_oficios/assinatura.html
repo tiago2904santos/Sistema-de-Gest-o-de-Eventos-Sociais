@@ -3,13 +3,48 @@
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/viagens-documentos.css' %}">{% endblock %}
 {% block title %}Documento assinado{% endblock %}
 {% block conteudo %}
-{% include "components/v32/page_header.html" with titulo="Documento assinado" subtitulo=artefato.nome_exibicao %}
-<form method="post" enctype="multipart/form-data" class="pa-card v32-corpo v32-bloco">
+{# Cabeçalho no padrão do roteiro: ícone, título, meta e a ação principal no topo. #}
+<div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+  <div class="page-header d-cabeca__esq">
+    <div class="page-header__identificacao d-identificacao">
+      <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="upload" %}</span>
+      <div>
+        <div class="frm-titulo">
+          <h1 class="page-header__titulo d-titulo-v32">Documento assinado</h1>
+          {% if artefato.esta_assinado %}<span class="st st--atendido">Assinado</span>{% endif %}
+        </div>
+        <p class="page-header__subtitulo d-cabeca__sub frm-meta">
+          <span>{% include "components/icon.html" with nome="document" %}{{ artefato.nome_exibicao }}</span>
+          {% if artefato.esta_assinado %}<span>{% include "components/icon.html" with nome="clock" %}{{ artefato.assinado_nome_original }} · {{ artefato.assinado_em|date:"d/m/Y H:i" }}</span>{% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="frm-topo__acoes">
+    <button class="btn-primaria" type="submit" form="form-assinatura">Anexar versão assinada</button>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" id="form-assinatura">
   {% csrf_token %}
-  <label for="id_arquivo">Documento assinado (PDF)</label>
-  <input type="file" name="arquivo" id="id_arquivo" accept="application/pdf,.pdf">
-  {% for erro in form.arquivo.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-  {% if artefato.esta_assinado %}<p>Versão vigente: {{ artefato.assinado_nome_original }} · {{ artefato.assinado_em|date:"d/m/Y H:i" }}</p>{% endif %}
-  <div class="v32-barra"><a class="btn--secundaria" href="{{ url_voltar }}">Voltar</a><button class="btn-primaria" type="submit">Anexar versão assinada</button>{% if artefato.esta_assinado %}<button class="btn--secundaria btn--destrutiva" name="acao" value="remover">Revogar versão vigente</button>{% endif %}</div>
+  {# Erros fora do cartão, logo acima da seção, como no roteiro. #}
+  {% for erro in form.arquivo.errors %}<p class="aviso aviso--erro frm-aviso" role="alert">{{ erro }}</p>{% endfor %}
+  <section class="reg">
+    {% include "components/v32/section_card.html" with numero="1" titulo="Versão assinada" %}
+    <div class="reg-corpo">
+      <div class="form-campo">
+        <label class="form-label" for="id_arquivo">Documento assinado (PDF)</label>
+        <input class="form-controle" type="file" name="arquivo" id="id_arquivo" accept="application/pdf,.pdf">
+      </div>
+      {# Ações no fim do cartão, como no roteiro: voltar à esquerda, ações à direita. #}
+      <div class="frm-acoes-fim">
+        <a class="btn--secundaria" href="{{ url_voltar }}">Voltar</a>
+        <span class="frm-acoes-fim__dir">
+          {% if artefato.esta_assinado %}<button class="btn--secundaria btn--destrutiva" name="acao" value="remover">Revogar versão vigente</button>{% endif %}
+          <button class="btn-primaria" type="submit">Anexar versão assinada</button>
+        </span>
+      </div>
+    </div>
+  </section>
 </form>
 {% endblock %}

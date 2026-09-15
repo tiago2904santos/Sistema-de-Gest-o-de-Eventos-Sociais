@@ -231,7 +231,6 @@ def lista(request):
     )
 
 
-@acesso_ao_modulo
 def _sede_inicial(request, roteiro):
     """Roteiro novo já nasce com a sede das configurações.
 
@@ -246,6 +245,7 @@ def _sede_inicial(request, roteiro):
     return {"origem_municipio": sede} if sede else None
 
 
+@acesso_ao_modulo
 def editar(request, pk=None):
     _exigir_edicao(request)
     from core.retorno import next_valido, com_next

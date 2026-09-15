@@ -21,11 +21,24 @@
   <form method="post" action="" id="form-configuracoes" class="of-form cfg-form" novalidate data-cep-url="{% url 'viagens_cadastros:api_consulta_cep' '00000000' %}">
     {% csrf_token %}
 
-    <div class="frm-cabeca">
-      <div>
-        <div class="kicker">Viagens</div>
-        <h1>{{ titulo }}</h1>
-        <p class="frm-cabeca__sub">{% if setor %}Dados de <b>{{ setor.nome }}</b>, a sua lotação: valem para os documentos de todos os usuários lotados nela.{% else %}Configuração geral, usada por quem não tem lotação no módulo.{% endif %} Os assinantes são os mesmos para todas as unidades.{% if atualizado_em %} Última alteração em {{ atualizado_em|date:"d/m/Y" }}.{% endif %}</p>
+    {# Cabeçalho no padrão do roteiro: ícone, título, meta com ícones e Salvar no topo. #}
+    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="settings" %}</span>
+          <div>
+            <div class="frm-titulo">
+              <h1 class="page-header__titulo d-titulo-v32">{{ titulo }}</h1>
+            </div>
+            <p class="page-header__subtitulo d-cabeca__sub frm-meta">
+              <span>{% include "components/icon.html" with nome="landmark" %}{% if setor %}{{ setor.nome }}{% else %}Configuração geral{% endif %}</span>
+              {% if atualizado_em %}<span>{% include "components/icon.html" with nome="clock" %}Alterado em {{ atualizado_em|date:"d/m/Y" }}</span>{% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="frm-topo__acoes">
+        <button type="submit" class="btn-primaria" form="form-configuracoes">Salvar configurações</button>
       </div>
     </div>
 
@@ -54,7 +67,6 @@
           <div class="bloco-split">
             <div class="bloco-split__rotulo">
               <strong>Cabeçalho</strong>
-              <p class="texto-suave v32-suave">Primeiras linhas do ofício e da justificativa: órgão, sigla e a unidade que emite.</p>
             </div>
             <div class="bloco-split__corpo g-form g-form--3">
               <div class="cfg-dupla">{% include "pages/viagens_cadastros/_campo.html" with campo=campos.nome_orgao %}</div>
@@ -74,7 +86,6 @@
           <div class="bloco-split">
             <div class="bloco-split__rotulo">
               <strong>Endereço</strong>
-              <p class="texto-suave v32-suave">Vai no rodapé das justificativas e dos termos. A cidade e a UF também definem a sede da unidade.</p>
             </div>
             <div class="bloco-split__corpo g-form g-form--3">
               {% include "pages/viagens_cadastros/_campo.html" with campo=campos.cep %}
@@ -88,7 +99,6 @@
           <div class="bloco-split">
             <div class="bloco-split__rotulo">
               <strong>Contato</strong>
-              <p class="texto-suave v32-suave">Telefone e e-mail da unidade para quem recebe o documento.</p>
             </div>
             <div class="bloco-split__corpo g-form g-form--3">
               {% include "pages/viagens_cadastros/_campo.html" with campo=campos.telefone %}
@@ -108,7 +118,6 @@
           <div class="bloco-split">
             <div class="bloco-split__rotulo">
               <strong>Servidor</strong>
-              <p class="texto-suave v32-suave">A quem o ofício é endereçado. A unidade dele vira o destino no cabeçalho.</p>
             </div>
             <div class="bloco-split__corpo g-form g-form--1">
               {% include "pages/viagens_cadastros/_campo.html" with campo=campos.destinatario_oficio %}
@@ -117,7 +126,6 @@
           <div class="bloco-split">
             <div class="bloco-split__rotulo">
               <strong>Como sai no ofício</strong>
-              <p class="texto-suave v32-suave">Em branco, cada campo usa o que está no cadastro do servidor escolhido.</p>
             </div>
             <div class="bloco-split__corpo g-form g-form--3">
               {% include "pages/viagens_cadastros/_campo.html" with campo=campos.destinatario_oficio_nome %}
@@ -137,7 +145,6 @@
           <div class="bloco-split">
             <div class="bloco-split__rotulo">
               <strong>Ofício e justificativa</strong>
-              <p class="texto-suave v32-suave">Nome e cargo de quem assina saem no fim de cada documento.</p>
             </div>
             <div class="bloco-split__corpo g-form g-form--2">
               {% include "pages/viagens_cadastros/_campo.html" with campo=campos.assina_oficio %}
@@ -156,19 +163,19 @@
           <div class="bloco-split">
             <div class="bloco-split__rotulo">
               <strong>Justificativa</strong>
-              <p class="texto-suave v32-suave">Ofício emitido com menos dias de antecedência que isto exige justificativa.</p>
             </div>
             <div class="bloco-split__corpo g-form g-form--3">
               {% include "pages/viagens_cadastros/_campo.html" with campo=campos.prazo_justificativa_dias %}
             </div>
           </div>
+
+          {# Ações no fim do último cartão, como no roteiro: voltar à esquerda, salvar à direita. #}
+          <div class="frm-acoes-fim">
+            <a class="btn--secundaria" href="{{ url_voltar }}">Voltar</a>
+            <button type="submit" class="btn-primaria">Salvar configurações</button>
+          </div>
         </div>
       </section>
-    </div>
-
-    <div class="frm-acoes">
-      <a class="btn--secundaria" href="{{ url_voltar }}">{% include "components/icon.html" with nome="chevron-left" %}Voltar aos ofícios</a>
-      <button type="submit" class="btn-primaria">Salvar configurações</button>
     </div>
   </form>
 {% endblock %}
