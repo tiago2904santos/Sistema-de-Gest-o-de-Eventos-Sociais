@@ -38,7 +38,10 @@ class JustificativasListaTests(Cenario):
         self.assertContains(r, f'aria-label="Ações da justificativa do ofício {exigido.numero_formatado}"')
         self.assertContains(r, reverse("viagens_oficios:justificativa_editar", args=[exigido.justificativa.pk]))
         self.assertContains(r, "Preencher justificativa")
-        self.assertContains(r, reverse("viagens_oficios:gerar", args=[folgado.pk, "justificativa", "pdf"]))
+        self.assertContains(r, reverse("viagens_oficios:justificativa_baixar", args=[folgado.justificativa.pk]))
+        self.assertContains(r, "Baixar documentos")
+        self.assertContains(r, "data-baixar-dialogo")
+        self.assertNotContains(r, "Visualizar PDF")
         self.assertContains(r, reverse("viagens_oficios:justificativa_excluir", args=[folgado.justificativa.pk]))
         self.assertNotContains(r, reverse("viagens_oficios:justificativa_excluir", args=[exigido.justificativa.pk]))
         self.assertContains(r, "Nova justificativa")
@@ -185,3 +188,76 @@ class JustificativaModalTests(Cenario):
         o = self.oficio(dias=3, justificativa="x", cancelar=True)
         url = reverse("viagens_oficios:justificativa_editar", args=[o.justificativa.pk])
         self.assertEqual(self.client.get(url, **MODAL).status_code, 404)
+
+
+class BaixarDocumentosDaJustificativaTests(Cenario):
+    def setUp(self):
+        super().setUp()
+        self.o = self.oficio(dias=20, justificativa="texto")
+        self.url = reverse("viagens_oficios:justificativa_baixar", args=[self.o.justificativa.pk])
+
+    def _pdf(self, titulo):
+        import io
+        from pypdf import PdfWriter
+        escritor = PdfWriter()
+        escritor.add_blank_page(width=100, height=100)
+        escritor.add_metadata({"/Title": titulo})
+        saida = io.BytesIO()
+        escritor.write(saida)
+        return saida.getvalue()
+
+    def _gerar_falso(self, chamadas):
+        from documentos.services.facade import DocumentoGerado
+        from documentos.services.types import DocumentoFormato
+
+        def gerar(oficio, formato, tipo, *, usar_assinado=True):
+            chamadas.append((tipo.value, formato.value, usar_assinado))
+            conteudo = self._pdf(tipo.value) if formato == DocumentoFormato.PDF else b"PK docx"
+            ctype = "application/pdf" if formato == DocumentoFormato.PDF else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            return DocumentoGerado(tipo=tipo, formato=formato, nome_arquivo=f"{tipo.value}.{formato.value}", content_type=ctype,
+                                   conteudo=conteudo, hash_sha256="x")
+        return gerar
+
+    def test_modal_recebe_justificativa_e_oficio(self):
+        import html as html_lib, json as json_lib
+        conteudo = self.client.get(reverse("viagens_oficios:justificativas")).content.decode()
+        inicio = conteudo.index('data-itens="') + len('data-itens="')
+        itens = json_lib.loads(html_lib.unescape(conteudo[inicio:conteudo.index('"', inicio)]))
+        self.assertEqual([(i["valor"], i["assinado"]) for i in itens], [("justificativa", False), ("oficio", False)])
+
+    def test_um_documento_dois_em_zip_ou_num_pdf_so(self):
+        from unittest import mock
+        chamadas = []
+        with mock.patch("viagens_oficios.document_generation.gerar_documento", side_effect=self._gerar_falso(chamadas)):
+            r = self.client.post(self.url, {"itens": ["justificativa"], "formato": "pdf"})
+            self.assertEqual(r["Content-Type"], "application/pdf")
+            r = self.client.post(self.url, {"itens": ["justificativa", "oficio"], "formato": "docx", "saida": "unico"})
+            self.assertEqual(r["Content-Type"], "application/zip")
+            self.assertIn("documentos.zip", r["Content-Disposition"])
+            r = self.client.post(self.url, {"itens": ["oficio", "justificativa"], "formato": "pdf", "saida": "unico", "versao": "original"})
+            self.assertEqual(r["Content-Type"], "application/pdf")
+            self.assertIn("documentos.pdf", r["Content-Disposition"])
+        self.assertEqual(chamadas[0], ("justificativa", "pdf", True))
+        # Ordem fixa (justificativa, ofício) e a versão original repassada.
+        self.assertEqual(chamadas[-2:], [("justificativa", "pdf", False), ("oficio", "pdf", False)])
+
+    def test_nada_marcado_ou_item_estranho(self):
+        origem = reverse("viagens_oficios:justificativas")
+        r = self.client.post(self.url, {"formato": "pdf", "next": origem}, follow=True)
+        self.assertContains(r, "Marque ao menos um documento para baixar.")
+        self.assertEqual(self.client.post(self.url, {"itens": ["termo"], "formato": "pdf"}).status_code, 404)
+        self.assertEqual(self.client.post(self.url, {"itens": ["oficio"], "formato": "xlsx"}).status_code, 404)
+
+    def test_erro_de_geracao_volta_com_mensagem(self):
+        from unittest import mock
+        from django.core.exceptions import ValidationError
+        origem = reverse("viagens_oficios:justificativas")
+        with mock.patch("viagens_oficios.document_generation.gerar_documento", side_effect=ValidationError(["Informe o motivo."])):
+            r = self.client.post(self.url, {"itens": ["oficio"], "formato": "pdf", "next": origem}, follow=True)
+        self.assertRedirects(r, origem)
+        self.assertContains(r, "Informe o motivo.")
+
+    def test_leitor_nao_baixa_por_aqui(self):
+        self.user.groups.clear()
+        self.assertEqual(self.client.post(self.url, {"itens": ["oficio"], "formato": "pdf"}).status_code, 403)
+

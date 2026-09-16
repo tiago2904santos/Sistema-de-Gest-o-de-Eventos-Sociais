@@ -8,16 +8,21 @@ situação. "Nova justificativa" e "Editar" abrem o modal; sem JavaScript, a
 própria lista abre com o modal aberto.
 """
 
+import json
+
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
 
 from core.listagens import ITENS_POR_PAGINA
 from core.retorno import daqui, voltar_para
+from documentos.services.exceptions import DocumentError
+from documentos.services.types import DocumentoFormato, DocumentoTipo
 from viagens_cadastros.permissions import acesso_ao_modulo, pode_editar_cadastros
 
 from .forms import JustificativaCadastroForm
@@ -26,7 +31,7 @@ from .models import Justificativa, ModeloJustificativa, Oficio
 from .presenters import destinos_resumidos, periodo_curto, subtitulo_do_cartao, titulo_do_cartao
 from .roteiro_context import periodo_roteiro
 from .selectors import _filtro_busca
-from .views import exigir_operador
+from .views import exigir_operador, resposta_documento, resposta_lote
 
 SITUACOES = (
     ("", "Todas", "checklist"),
@@ -60,6 +65,24 @@ def _regra(oficio):
     exigida = "Exigida" if regra["obrigatoria"] else "Não exigida"
     return {"texto": f"{exigida} · {regra['dias_antecedencia']} dias de antecedência (mínimo {regra['prazo_dias']})",
             "ausente": False, "regra": regra}
+
+
+DOCUMENTOS_BAIXAVEIS = {"justificativa": DocumentoTipo.JUSTIFICATIVA, "oficio": DocumentoTipo.OFICIO}
+
+
+def _itens_baixar(oficio):
+    """Os documentos do modal "Baixar documentos": a justificativa e o ofício,
+    cada um dizendo se já tem PDF assinado anexado."""
+    from documentos.services.assinados import versao_assinada_vigente
+
+    referencia = oficio.numero_formatado.replace("/", "-")
+    itens = []
+    for valor, nome, detalhe in (("justificativa", "Justificativa", "Justificativa de prazo do ofício"),
+                                 ("oficio", "Ofício", f"Ofício {oficio.numero_formatado}")):
+        assinado = versao_assinada_vigente(DOCUMENTOS_BAIXAVEIS[valor], oficio_id=oficio.pk, reference=referencia) is not None
+        itens.append({"valor": valor, "nome": nome, "detalhe": detalhe,
+                      "estado": "Assinado" if assinado else "", "assinado": assinado})
+    return json.dumps(itens, ensure_ascii=False)
 
 
 def linha_da_justificativa(justificativa):
@@ -96,8 +119,8 @@ def linha_da_justificativa(justificativa):
         "url_editar": reverse("viagens_oficios:justificativa_editar", args=[justificativa.pk]),
         "url_excluir": reverse("viagens_oficios:justificativa_excluir", args=[justificativa.pk]),
         "url_oficio": reverse("viagens_oficios:editar", args=[oficio.pk]),
-        "url_pdf": reverse("viagens_oficios:gerar", args=[oficio.pk, "justificativa", "pdf"]),
-        "url_docx": reverse("viagens_oficios:gerar", args=[oficio.pk, "justificativa", "docx"]),
+        "url_baixar": reverse("viagens_oficios:justificativa_baixar", args=[justificativa.pk]),
+        "itens_baixar": _itens_baixar(oficio) if texto else "",
     }
 
 
@@ -243,3 +266,43 @@ def excluir(request, pk):
     justificativa.save(update_fields=["texto", "modelo", "status", "atualizado_em"])
     messages.success(request, f"Justificativa do ofício {numero} excluída.")
     return redirect(voltar_para(request, reverse("viagens_oficios:justificativas")))
+
+
+@acesso_ao_modulo
+@require_POST
+def baixar(request, pk):
+    """Os documentos marcados no modal "Baixar documentos" da justificativa.
+
+    `itens`: `justificativa` e/ou `oficio`. `formato`: pdf ou docx. `saida`:
+    `separados` (um arquivo, ou ZIP quando são dois) ou `unico` (um PDF só).
+    `versao`: `assinado` (padrão; vale o PDF assinado anexado) ou `original`.
+    """
+    from viagens_termos.views import resposta_pdf_consolidado
+    from .document_generation import gerar_documento
+
+    exigir_operador(request)
+    justificativa = get_object_or_404(Justificativa.objects.select_related("oficio"), pk=pk)
+    oficio = justificativa.oficio
+    retorno = voltar_para(request, reverse("viagens_oficios:justificativas"))
+    formato = request.POST.get("formato", "pdf")
+    if formato not in ("pdf", "docx"):
+        raise Http404
+    pedidos = [v for v in ("justificativa", "oficio") if v in request.POST.getlist("itens")]
+    if set(request.POST.getlist("itens")) - set(DOCUMENTOS_BAIXAVEIS):
+        raise Http404
+    if not pedidos:
+        messages.error(request, "Marque ao menos um documento para baixar.")
+        return redirect(retorno)
+    fmt = DocumentoFormato(formato)
+    usar_assinado = request.POST.get("versao", "assinado") != "original"
+    try:
+        documentos = [gerar_documento(oficio, fmt, DOCUMENTOS_BAIXAVEIS[v], usar_assinado=usar_assinado) for v in pedidos]
+    except (ValidationError, DocumentError) as exc:
+        messages.error(request, "; ".join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
+        return redirect(retorno)
+    referencia = oficio.numero_formatado.replace("/", "-")
+    if len(documentos) == 1:
+        return resposta_documento(request, documentos[0])
+    if fmt == DocumentoFormato.PDF and request.POST.get("saida") == "unico":
+        return resposta_pdf_consolidado(documentos, f"oficio-{referencia}-documentos.pdf")
+    return resposta_lote(documentos, f"oficio-{referencia}-documentos.zip")

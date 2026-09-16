@@ -412,13 +412,13 @@ def termos(request, pk, formato, servidor_id=None):
         return redirect('viagens_oficios:editar', pk=pk)
 
 
-def resposta_lote(documentos):
+def resposta_lote(documentos, nome='termos.zip'):
     buffer = io.BytesIO()
     with ZipFile(buffer, 'w') as zipfile:
         for doc in documentos:
             zipfile.writestr(doc.nome_arquivo, doc.conteudo)
     response = HttpResponse(buffer.getvalue(), content_type='application/zip')
-    response['Content-Disposition'] = 'attachment; filename="termos.zip"'
+    response['Content-Disposition'] = f'attachment; filename="{nome}"'
     response['Cache-Control'] = 'no-store'
     return response
 

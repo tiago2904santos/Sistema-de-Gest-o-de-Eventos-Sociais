@@ -14,6 +14,7 @@ urlpatterns = [
     path('justificativas/nova/', justificativas_views.editar, name='justificativa_nova'),
     path('justificativas/<int:pk>/editar/', justificativas_views.editar, name='justificativa_editar'),
     path('justificativas/<int:pk>/excluir/', justificativas_views.excluir, name='justificativa_excluir'),
+    path('justificativas/<int:pk>/baixar/', justificativas_views.baixar, name='justificativa_baixar'),
     path('institucional/', catalogs.institucional, name='institucional'),
     path('catalogos/<str:tipo>/', catalogs.catalogo, name='catalogo'),
     path('catalogos/<str:tipo>/novo/', catalogs.catalogo, {'novo': True}, name='catalogo_novo'),

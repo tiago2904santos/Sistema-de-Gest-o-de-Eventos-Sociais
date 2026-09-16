@@ -112,6 +112,7 @@
   </div>
 
   {% if pode_editar %}
+    {% include "components/v32/dialogo_baixar.html" %}
     <dialog class="mo v32-cadastro-modal v32-cadastro-modal--larga" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{% url 'viagens_oficios:justificativas' %}"{% if modal %} data-cadastro-inicial{% endif %}>
       {% if modal %}{% include "pages/viagens_oficios/_justificativa_modal.html" with dados=modal %}{% endif %}
     </dialog>

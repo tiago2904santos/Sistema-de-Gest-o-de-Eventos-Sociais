@@ -9,7 +9,8 @@ from .documents import build_canonical_document_payload
 from .docxtpl_context import build_oficio_docxtpl_context, build_justificativa_docxtpl_context
 
 
-def gerar_documento(oficio, formato, tipo=DocumentoTipo.OFICIO):
+def gerar_documento(oficio, formato, tipo=DocumentoTipo.OFICIO, *, usar_assinado=True):
+    """`usar_assinado=False` pede o arquivo original mesmo com PDF assinado anexado."""
     if oficio.cancelado:
         raise ValidationError("Reative o ofício antes de emitir documentos.")
     avaliacao = validar_oficio_para_documento(oficio)
@@ -24,7 +25,7 @@ def gerar_documento(oficio, formato, tipo=DocumentoTipo.OFICIO):
                 else build_justificativa_docxtpl_context(oficio))
     resultado = DocumentoFacade().gerar(tipo=tipo, formato=formato, payload=payload,
         reference=oficio.numero_formatado.replace('/', '-'), docxtpl_context=contexto,
-        oficio_id=oficio.pk, roteiro_id=oficio.roteiro_id)
+        oficio_id=oficio.pk, roteiro_id=oficio.roteiro_id, usar_assinado=usar_assinado)
     if oficio.status == Oficio.STATUS_RASCUNHO:
         oficio.status = Oficio.STATUS_GERADO
         oficio.save(update_fields=['status', 'atualizado_em'])
