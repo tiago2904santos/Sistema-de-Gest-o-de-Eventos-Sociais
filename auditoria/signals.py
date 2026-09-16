@@ -82,20 +82,23 @@ def _snapshot(instancia):
 
 
 def _contexto_da_requisicao():
+    """Usuário, caminho e origem da alteração. Sem requisição é o sistema;
+    com requisição é o formulário, salvo quando a view se declara outra
+    origem em `request.auditoria_origem` (o editor documental faz isso)."""
     requisicao = obter_requisicao_atual()
     if requisicao is None:
-        return None, ""
+        return None, "", "sistema"
     usuario = getattr(requisicao, "user", None)
     if usuario is not None and not usuario.is_authenticated:
         usuario = None
-    rota = getattr(requisicao, "resolver_match", None)
-    return usuario, requisicao.path[:500]
+    origem = getattr(requisicao, "auditoria_origem", "") or "formulario"
+    return usuario, requisicao.path[:500], origem
 
 
 def _agendar_registro(instancia, acao, alteracoes):
     from .models import RegistroAuditoria
 
-    usuario, caminho = _contexto_da_requisicao()
+    usuario, caminho, origem = _contexto_da_requisicao()
     dados = {
         "usuario": usuario,
         "acao": acao,
@@ -104,6 +107,7 @@ def _agendar_registro(instancia, acao, alteracoes):
         "objeto_repr": str(instancia)[:255],
         "alteracoes": alteracoes,
         "caminho_requisicao": caminho,
+        "origem": origem,
     }
     transaction.on_commit(lambda: RegistroAuditoria.objects.create(**dados))
 

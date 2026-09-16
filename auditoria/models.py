@@ -15,6 +15,11 @@ class RegistroAuditoria(models.Model):
         ATUALIZACAO = "ATUALIZACAO", "Atualização"
         EXCLUSAO = "EXCLUSAO", "Exclusão"
 
+    class Origem(models.TextChoices):
+        FORMULARIO = "formulario", "Formulário"
+        EDITOR = "editor", "Editor documental"
+        SISTEMA = "sistema", "Sistema"
+
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         verbose_name="usuário",
@@ -30,6 +35,11 @@ class RegistroAuditoria(models.Model):
     alteracoes = models.JSONField("alterações", default=dict, blank=True)
     caminho_requisicao = models.CharField(
         "caminho da requisição", max_length=500, blank=True
+    )
+    # Por onde a alteração entrou: pelo formulário de cadastro, pelo editor
+    # documental (prévia A4) ou sem requisição (comando, rotina, sinal).
+    origem = models.CharField(
+        "origem", max_length=12, choices=Origem.choices, default=Origem.SISTEMA
     )
     criado_em = models.DateTimeField("criado em", auto_now_add=True, db_index=True)
 
