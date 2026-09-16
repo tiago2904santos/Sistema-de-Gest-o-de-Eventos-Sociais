@@ -23,7 +23,8 @@ from viagens_cadastros.permissions import acesso_ao_modulo, pode_editar_cadastro
 from .forms import JustificativaCadastroForm
 from .justificativas_services import avaliar_justificativa_oficio, salvar_justificativa
 from .models import Justificativa, ModeloJustificativa, Oficio
-from .presenters import selo_do_cartao, subtitulo_do_cartao, titulo_do_cartao
+from .presenters import destinos_resumidos, periodo_curto, subtitulo_do_cartao, titulo_do_cartao
+from .roteiro_context import periodo_roteiro
 from .selectors import _filtro_busca
 from .views import exigir_operador
 
@@ -52,7 +53,7 @@ def _filtrar_situacao(queryset, situacao):
 
 
 def _regra(oficio):
-    """A regra de prazo em palavras curtas, para o fato da linha."""
+    """A regra de prazo em palavras curtas (usada no modal)."""
     regra = avaliar_justificativa_oficio(oficio)
     if regra["status"] == "unknown":
         return {"texto": "Sem data de saída", "ausente": True, "regra": regra}
@@ -62,26 +63,37 @@ def _regra(oficio):
 
 
 def linha_da_justificativa(justificativa):
+    """Duas linhas, como nos termos: ofício e destino com o estado; embaixo,
+    período, antecedência e o começo do texto."""
     oficio = justificativa.oficio
-    selo, tom = selo_do_cartao(oficio)
     texto = (justificativa.texto or "").strip()
-    regra = _regra(oficio)
-    periodo_destinos = subtitulo_do_cartao(oficio)
+    regra = avaliar_justificativa_oficio(oficio)
+    periodo = destinos = ""
+    if oficio.roteiro_id:
+        periodo = periodo_curto(*periodo_roteiro(oficio.roteiro))
+        destinos = destinos_resumidos(oficio.roteiro)
+    periodo = "" if periodo == "—" else periodo
+    if texto:
+        estado, tom = "Preenchida", "atendido"
+    elif regra["obrigatoria"]:
+        estado, tom = "Pendente · exigida", "devolvida"
+    else:
+        estado, tom = "Pendente", "neutro"
+    antecedencia = regra["dias_antecedencia"]
     return {
         "justificativa": justificativa,
         "oficio": oficio,
-        "titulo": f"Ofício {titulo_do_cartao(oficio)}",
-        "selo": selo,
-        "selo_tom": tom,
+        "titulo": " · ".join(p for p in [f"Ofício {oficio.numero_formatado}", destinos] if p),
+        "estado": estado,
+        "estado_tom": tom,
         "preenchida": bool(texto),
-        "texto": texto,
-        "exigida": regra["regra"]["obrigatoria"],
         "fatos": [
-            {"icone": "calendar", "rotulo": "Período e destinos", "texto": periodo_destinos or "Sem roteiro", "ausente": not periodo_destinos},
-            {"icone": "clock", "rotulo": "Regra de prazo", "texto": regra["texto"], "ausente": regra["ausente"]},
-            {"icone": "document", "rotulo": "Modelo", "texto": justificativa.modelo.nome if justificativa.modelo_id else "Sem modelo",
-             "ausente": not justificativa.modelo_id},
+            {"icone": "calendar", "rotulo": "Período", "texto": periodo or "Sem período", "ausente": not periodo},
+            {"icone": "clock", "rotulo": "Antecedência",
+             "texto": f"{antecedencia} dias de antecedência" if antecedencia is not None else "Sem data de saída",
+             "ausente": antecedencia is None},
         ],
+        "texto": texto,
         "url_editar": reverse("viagens_oficios:justificativa_editar", args=[justificativa.pk]),
         "url_excluir": reverse("viagens_oficios:justificativa_excluir", args=[justificativa.pk]),
         "url_oficio": reverse("viagens_oficios:editar", args=[oficio.pk]),

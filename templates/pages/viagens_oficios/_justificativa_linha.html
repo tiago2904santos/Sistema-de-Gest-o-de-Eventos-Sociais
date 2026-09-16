@@ -1,12 +1,12 @@
 {% comment %}
-  O conteúdo de uma linha da lista de justificativas, numa célula só: o
-  ofício com o selo temporal e o estado do texto, os fatos com ícone (cada um
-  com o seu vazio nomeado) e o texto. Contexto: `l` (linha).
+  Uma linha da lista de justificativas em duas linhas, como nos termos: o
+  ofício e o destino com o estado; embaixo, período, antecedência e o começo
+  do texto (cortado; inteiro ao passar o mouse). Contexto: `l` (linha).
 {% endcomment %}
-<h2 class="of-cartao__titulo tm-titulo" id="justificativa-{{ l.justificativa.pk }}-titulo">{{ l.titulo }} <span class="st st--{{ l.selo_tom }}">{{ l.selo }}</span> {% if l.preenchida %}<span class="st st--atendido">Preenchida</span>{% elif l.exigida %}<span class="st st--devolvida">Pendente · exigida</span>{% else %}<span class="st st--neutro">Pendente</span>{% endif %}</h2>
-<ul class="tm-fatos" aria-label="Dados da justificativa do ofício {{ l.oficio.numero_formatado }}">
+<h2 class="of-cartao__titulo tm-titulo" id="justificativa-{{ l.justificativa.pk }}-titulo">{{ l.titulo }} <span class="st st--{{ l.estado_tom }}">{{ l.estado }}</span></h2>
+<ul class="tm-fatos jt-fatos" aria-label="Dados da justificativa do ofício {{ l.oficio.numero_formatado }}">
   {% for f in l.fatos %}
     <li class="tm-fato{% if f.ausente %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome=f.icone %}<span class="sr-only">{{ f.rotulo }}: </span>{{ f.texto }}</li>
   {% endfor %}
+  <li class="tm-fato jt-fato-texto{% if not l.texto %} tm-fato--ausente{% endif %}"{% if l.texto %} title="{{ l.texto }}"{% endif %}>{% include "components/icon.html" with nome="document" %}<span class="sr-only">Texto: </span><span class="jt-fato-texto__valor">{{ l.texto|default:"Sem texto" }}</span></li>
 </ul>
-{% if l.texto %}<p class="jt-texto" title="{{ l.texto }}">{{ l.texto }}</p>{% else %}<p class="jt-texto jt-texto--vazio">Nenhuma justificativa informada.</p>{% endif %}
