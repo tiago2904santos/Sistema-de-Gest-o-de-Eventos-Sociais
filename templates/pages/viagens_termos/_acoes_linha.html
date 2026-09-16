@@ -9,7 +9,6 @@
   <div class="dd of-menu cad-acoes" data-menu>
     <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações do termo #{{ t.pk }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
     <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
-      <div class="dd__t">Termo #{{ t.pk }}</div>
       {% if t.cancelado %}
         <span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="ban" %}<span><b>Termo cancelado</b><small>Reative para gerar documentos</small></span></span>
       {% else %}
