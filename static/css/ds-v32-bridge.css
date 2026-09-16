@@ -226,7 +226,7 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
 .d-cabeca--secao{align-items:flex-end;padding:var(--s5) 0 var(--s3)}
 .d-cabeca--secao h1{font-size:28px}
 .d-cabeca--form{align-items:flex-end;padding:var(--s4) 0 var(--s3)}
-.d-cabeca--form h1{font-size:26px;margin-top:var(--s2)}
+.d-cabeca--form h1{font-size:26px;margin-top:0}
 
 /* ---- Painel ---------------------------------------------------------- */
 .kpi{text-decoration:none}
