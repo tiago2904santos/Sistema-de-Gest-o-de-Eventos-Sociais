@@ -299,6 +299,7 @@ def documento(request, pk):
     shell não tocar no documento — a fidelidade tela ≈ PDF vem daí. Quem só
     consulta vê a prévia; emitir continua exigindo operador e ofício válido.
     """
+    from documentos.editor.campos import campos_do_tipo
     oficio = get_oficio_by_id(pk)
     avaliacao = validar_oficio_para_documento(oficio)
     return render(request, 'pages/viagens_oficios/documento.html', {
@@ -307,6 +308,9 @@ def documento(request, pk):
         'situacao': 'Cancelado' if oficio.cancelado else oficio.get_status_display(),
         'pendencias': avaliacao['pendencias'],
         'pode_emitir': pode_editar_cadastros(request.user) and not oficio.cancelado and not avaliacao['pendencias'],
+        'pode_editar': pode_editar_cadastros(request.user) and not oficio.cancelado,
+        'campos_editaveis': list(campos_do_tipo(DocumentoTipo.OFICIO).values()),
+        'versao': oficio.atualizado_em.isoformat() if oficio.atualizado_em else '',
         'url_voltar': reverse('viagens_oficios:editar', args=[oficio.pk]),
         'breadcrumb': [
             {'label': 'Ofícios', 'url': reverse('viagens_oficios:lista')},
@@ -321,10 +325,13 @@ def documento(request, pk):
 @xframe_options_sameorigin
 def documento_folha(request, pk):
     """O documento em si, no modo `editor`: o que o iframe da prévia mostra."""
+    from documentos.editor.campos import marcacao
     from documentos.services.document_context import contexto_do_oficio
     from documentos.services.pdf_renderer import renderizar_html
     oficio = get_oficio_by_id(pk)
-    html = renderizar_html(DocumentoTipo.OFICIO, contexto_do_oficio(oficio, modo='editor'), modo='editor')
+    # Só quem pode editar vê os trechos marcados; o registro decide quais.
+    campos = marcacao(DocumentoTipo.OFICIO) if pode_editar_cadastros(request.user) and not oficio.cancelado else {}
+    html = renderizar_html(DocumentoTipo.OFICIO, contexto_do_oficio(oficio, modo='editor', campos_editaveis=campos), modo='editor')
     response = HttpResponse(html)
     response['Cache-Control'] = 'no-store'
     return response

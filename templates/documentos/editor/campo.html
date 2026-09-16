@@ -1,0 +1,48 @@
+{% comment %}
+  Painel de um campo do editor documental. É o que a API devolve no GET e o
+  que a página da prévia encaixa ao lado da folha. Cada parte do campo usa o
+  componente global do seu tipo — o mesmo do formulário de cadastro —, e o
+  `documento-editor.js` cuida de enviar, mostrar erros e recarregar a folha.
+{% endcomment %}
+<form class="de-campo" method="post" action="{{ url }}" data-de-form data-de-chave="{{ campo.chave }}" novalidate>
+  <div class="de-campo__cabeca">
+    <h3 class="de-campo__titulo">{{ campo.rotulo }}</h3>
+    <button type="button" class="de-campo__fechar" data-de-fechar aria-label="Fechar o campo">{% include "components/icon.html" with nome="x" %}</button>
+  </div>
+  {% if campo.ajuda %}<p class="de-campo__ajuda">{{ campo.ajuda }}</p>{% endif %}
+  <div class="de-campo__erros" data-de-erros>{% for erro in erros_gerais %}<p class="form-erro">{{ erro }}</p>{% endfor %}</div>
+
+  <div class="de-campo__partes">
+    {% for parte in partes %}{% with d=parte.definicao %}
+      <div class="de-parte"{% if parte.quando %} data-de-quando="{{ parte.quando }}"{% endif %}>
+        {% if d.tipo == "texto_longo" %}
+          {% include "components/textarea.html" with name=d.nome label=d.rotulo valor=parte.valor linhas=d.linhas erros=parte.erros ajuda=d.ajuda %}
+        {% elif d.tipo == "data" %}
+          {% include "components/input.html" with name=d.nome label=d.rotulo tipo="date" valor=parte.valor erros=parte.erros ajuda=d.ajuda %}
+        {% elif d.tipo == "escolha" %}
+          {% include "components/select.html" with name=d.nome label=d.rotulo opcoes=parte.opcoes selecionado=parte.valor erros=parte.erros ajuda=d.ajuda %}
+        {% elif d.tipo == "escolha_multipla" %}
+          {% include "components/v32/multi_pick.html" with name=d.nome label=d.rotulo opcoes=parte.opcoes erros=parte.erros vazio_escolhidos="Os viajantes escolhidos aparecem aqui" %}
+        {% elif d.tipo == "booleano" %}
+          <div class="form-campo">
+            <label class="de-interruptor" for="id_{{ d.nome }}">
+              <span>{{ d.rotulo }}</span>
+              <span class="viagens-switch"><input type="checkbox" id="id_{{ d.nome }}" name="{{ d.nome }}" value="on"{% if parte.valor %} checked{% endif %}><span aria-hidden="true"></span></span>
+            </label>
+            {% for erro in parte.erros %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+          </div>
+        {% elif d.mascara == "protocolo" %}
+          {% include "components/input.html" with name=d.nome label=d.rotulo valor=parte.valor erros=parte.erros ajuda=d.ajuda placeholder="00.000.000-0" inputmode="numeric" maxlength="12" %}
+        {% else %}
+          {% include "components/input.html" with name=d.nome label=d.rotulo valor=parte.valor erros=parte.erros ajuda=d.ajuda %}
+        {% endif %}
+      </div>
+    {% endwith %}{% endfor %}
+  </div>
+
+  <div class="de-campo__rodape">
+    <span class="de-status" data-de-status aria-live="polite"></span>
+    <button type="button" class="btn--secundaria" data-de-fechar>Fechar</button>
+    <button type="submit" class="btn-primaria">Salvar</button>
+  </div>
+</form>

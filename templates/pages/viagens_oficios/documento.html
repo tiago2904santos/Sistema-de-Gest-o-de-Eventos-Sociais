@@ -52,9 +52,26 @@
     </div>
   {% endif %}
 
-  <div class="dc-palco">
-    <iframe class="dc-folha" id="dc-folha" src="{% url 'viagens_oficios:documento_folha' oficio.pk %}" title="Prévia do ofício {{ oficio.numero_formatado }}"></iframe>
+  {# Com permissão de edição a folha ganha, ao lado, o painel do campo aberto; sem ela é só a prévia. #}
+  <div class="dc-corpo{% if pode_editar %} dc-corpo--editor{% endif %}"{% if pode_editar %} data-de-editor data-de-url="{% url 'documentos:editor_campo' 'oficio' oficio.pk 'CHAVE' %}" data-de-versao="{{ versao }}"{% endif %}>
+    <div class="dc-palco">
+      <iframe class="dc-folha" id="dc-folha" src="{% url 'viagens_oficios:documento_folha' oficio.pk %}" title="Prévia do ofício {{ oficio.numero_formatado }}"></iframe>
+    </div>
+    {% if pode_editar %}
+      <aside class="de-lateral" aria-label="Editor do documento">
+        <div hidden>{% csrf_token %}</div>
+        <div class="de-painel de-painel--vazio" data-de-vazio>
+          <h3 class="de-campo__titulo">Editar pelo documento</h3>
+          <p class="de-campo__ajuda">Clique num trecho destacado da folha para alterar o campo de onde ele vem. O que muda aqui muda no ofício.</p>
+          <div class="de-chips">
+            {% for campo in campos_editaveis %}<button type="button" class="de-chip" data-de-abrir="{{ campo.chave }}">{{ campo.rotulo }}</button>{% endfor %}
+          </div>
+        </div>
+        <div class="de-painel" data-de-painel hidden></div>
+      </aside>
+    {% endif %}
   </div>
 
   <script src="{% estatico 'js/viagens-documento.js' %}" defer></script>
+  {% if pode_editar %}<script src="{% estatico 'js/multi-pick.js' %}" defer></script><script src="{% estatico 'js/documento-editor.js' %}" defer></script>{% endif %}
 {% endblock %}

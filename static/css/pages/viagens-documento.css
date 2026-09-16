@@ -3,6 +3,52 @@
    é só o palco em volta: fundo, aviso de pendências e o quadro que cresce
    com o conteúdo (viagens-documento.js). */
 
+.dc-corpo { margin-top: 16px; }
+.dc-corpo--editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 16px;
+  align-items: start;
+}
+.dc-corpo--editor .dc-palco { margin-top: 0; }
+@media (max-width: 1100px) {
+  .dc-corpo--editor { grid-template-columns: 1fr; }
+}
+
+/* Painel do editor: sempre à vista, ao lado da folha. */
+.de-lateral { position: sticky; top: 16px; display: grid; gap: 12px; }
+.de-painel {
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--n-100, #e5e5e5);
+  border-radius: 10px;
+}
+.de-campo__cabeca { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.de-campo__titulo { margin: 0; font-size: 15px; font-weight: 600; color: var(--grafite, #333); }
+.de-campo__fechar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px;
+  background: transparent; color: var(--n-500, #6b6b6b); cursor: pointer;
+}
+.de-campo__fechar:hover { background: var(--n-25, #f7f7f7); }
+.de-campo__fechar svg { width: 16px; height: 16px; }
+.de-campo__ajuda { margin: 0 0 12px; font-size: 12.5px; color: var(--n-500, #6b6b6b); }
+.de-campo__partes { display: grid; gap: 12px; }
+.de-campo__rodape { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.de-status { margin-right: auto; font-size: 12px; color: var(--n-500, #6b6b6b); }
+.de-status--ok { color: #2e7d32; }
+.de-status--erro { color: #b3261e; }
+.de-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.de-chip {
+  padding: 5px 11px; border: 1px solid var(--n-150, #d9d9d9); border-radius: 999px;
+  background: #fff; color: var(--grafite, #333); font: inherit; font-size: 12.5px; cursor: pointer;
+}
+.de-chip:hover { background: var(--n-25, #f7f7f7); }
+.de-interruptor {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px; border: 1px solid var(--n-200, #d1d3d4); border-radius: 8px; cursor: pointer;
+}
+
 .dc-palco {
   margin-top: 16px;
   padding: 8px 0;
