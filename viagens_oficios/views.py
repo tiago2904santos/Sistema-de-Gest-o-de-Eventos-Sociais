@@ -243,8 +243,8 @@ def editar(request, pk=None):
         'url_voltar': voltar_para(request, reverse('viagens_oficios:lista')),
         'url_novo_roteiro': reverse('viagens_roteiros:novo'),
         'modelos_texto': {
-            'modelo_motivo': dict(ModeloMotivoOficio.objects.filter(ativo=True).values_list('pk', 'texto')),
-            'justificativa-modelo': dict(ModeloJustificativa.objects.filter(ativo=True).values_list('pk', 'texto')),
+            'modelo_motivo': dict(ModeloMotivoOficio.objects.values_list('pk', 'texto')),
+            'justificativa-modelo': dict(ModeloJustificativa.objects.values_list('pk', 'texto')),
         },
     })
     if oficio.pk:

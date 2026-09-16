@@ -338,11 +338,11 @@ class ConferenciaNoFormularioTests(Cenario):
 class CatalogosTests(Cenario):
     def test_catalogos_no_padrao_dos_cadastros(self):
         ModeloMotivoOficio.objects.create(nome="COBERTURA", texto="Texto", is_padrao=True)
-        ModeloMotivoOficio.objects.create(nome="CAPACITAÇÃO", texto="Texto", ativo=False)
+        ModeloMotivoOficio.objects.create(nome="CAPACITAÇÃO", texto="Texto")
         r = self.client.get(reverse("viagens_oficios:catalogo", args=["motivos"]))
         self.assertEqual(r.status_code, 200)
         self.assertTemplateUsed(r, "pages/viagens_cadastros/lista.html")
-        for texto in ["Motivos de ofício", "COBERTURA", "CAPACITAÇÃO", "Inativo", "Definir padrão", "Excluir", "Novo modelo de motivo"]:
+        for texto in ["Motivos de ofício", "COBERTURA", "CAPACITAÇÃO", "Definir padrão", "Excluir", "Novo modelo de motivo"]:
             self.assertContains(r, texto)
         r = self.client.get(reverse("viagens_oficios:catalogo_novo", args=["motivos"]))
         self.assertEqual(r.status_code, 200)

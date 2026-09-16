@@ -6,7 +6,7 @@ from .models import Oficio, Justificativa, ModeloMotivoOficio, ModeloJustificati
 
 
 class OficioForm(forms.ModelForm):
-    modelo_motivo = forms.ModelChoiceField(queryset=ModeloMotivoOficio.objects.filter(ativo=True), required=False, label='Modelo de motivo')
+    modelo_motivo = forms.ModelChoiceField(queryset=ModeloMotivoOficio.objects.all(), required=False, label='Modelo de motivo')
 
     class Meta:
         model = Oficio
@@ -37,9 +37,15 @@ class OficioForm(forms.ModelForm):
         self._servidores_anteriores = set(self.instance.servidores.values_list('pk', flat=True)) if self.instance.pk else None
         self.fields['roteiro'].queryset = self.fields['roteiro'].queryset.filter(cancelado=False).prefetch_related('destinos__municipio')
         if not self.is_bound and not self.instance.motivo:
-            padrao = ModeloMotivoOficio.objects.filter(ativo=True, is_padrao=True).first()
+            padrao = ModeloMotivoOficio.objects.filter(is_padrao=True).first()
             if padrao:
                 self.initial.update(modelo_motivo=padrao.pk, motivo=padrao.texto)
+        # Combustível padrão já escolhido para a viatura não cadastrada.
+        if not self.is_bound and not self.instance.transporte_combustivel_manual_id:
+            from viagens_cadastros.models import Combustivel
+            combustivel = Combustivel.objects.filter(is_padrao=True).first()
+            if combustivel:
+                self.initial.setdefault('transporte_combustivel_manual', combustivel.pk)
 
     def clean_protocolo(self):
         valor = normalize_protocolo(self.cleaned_data.get('protocolo'))
@@ -99,7 +105,7 @@ class JustificativaForm(forms.ModelForm):
     def __init__(self, *args, obrigatoria=False, **kwargs):
         super().__init__(*args, **kwargs)
         self._obrigatoria = obrigatoria
-        self.fields['modelo'].queryset = ModeloJustificativa.objects.filter(ativo=True)
+        self.fields['modelo'].queryset = ModeloJustificativa.objects.all()
         if not self.is_bound and not self.instance.texto:
             padrao = self.fields['modelo'].queryset.filter(is_padrao=True).first()
             if padrao:
@@ -129,12 +135,16 @@ class JustificativaCadastroForm(forms.Form):
     def __init__(self, *args, justificativa=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.justificativa = justificativa
-        self.fields['modelo'].queryset = ModeloJustificativa.objects.filter(ativo=True).order_by('ordem', 'nome')
+        self.fields['modelo'].queryset = ModeloJustificativa.objects.order_by('nome')
         if justificativa is not None:
             del self.fields['oficio']
             if not self.is_bound:
                 self.initial.update(modelo=justificativa.modelo_id, texto=justificativa.texto)
         else:
+            # Nova: o modelo padrão já vem escolhido, com o texto dele.
+            padrao = self.fields['modelo'].queryset.filter(is_padrao=True).first()
+            if padrao and not self.is_bound:
+                self.initial.update(modelo=padrao.pk, texto=padrao.texto)
             self.fields['oficio'].queryset = (
                 Oficio.objects.filter(cancelado=False)
                 .exclude(justificativa__texto__gt='')
@@ -157,12 +167,10 @@ class ModeloMotivoOficioForm(forms.ModelForm):
 
     class Meta:
         model = ModeloMotivoOficio
-        fields = ['nome', 'texto', 'ativo', 'ordem', 'is_padrao']
-        labels = {'nome': 'Nome do modelo', 'texto': 'Texto', 'ordem': 'Ordem', 'ativo': 'Ativo', 'is_padrao': 'Usar como padrão'}
+        fields = ['nome', 'texto', 'is_padrao']
+        labels = {'nome': 'Nome do modelo', 'texto': 'Texto', 'is_padrao': 'Usar como padrão'}
         help_texts = {
-            'ativo': 'Inativo, o modelo some da escolha nos ofícios sem apagar o histórico.',
             'is_padrao': 'Será sugerido automaticamente nos ofícios novos.',
-            'ordem': 'Posição na lista de escolha; menor aparece primeiro.',
         }
         widgets = {
             'nome': forms.TextInput(attrs={'placeholder': 'Ex.: COBERTURA JORNALÍSTICA', 'data-uppercase': 'true'}),

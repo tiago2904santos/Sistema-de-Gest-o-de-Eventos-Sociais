@@ -139,7 +139,7 @@ def _contexto_modal(form, justificativa):
     editando = justificativa is not None
     oficio = justificativa.oficio if editando else None
     erros_gerais = [str(e) for e in form.non_field_errors()]
-    modelos = ModeloJustificativa.objects.filter(ativo=True).order_by("ordem", "nome")
+    modelos = ModeloJustificativa.objects.order_by("nome")
     dados = {
         "titulo": "Editar justificativa" if editando else "Nova justificativa",
         "url_acao": (reverse("viagens_oficios:justificativa_editar", args=[justificativa.pk]) if editando

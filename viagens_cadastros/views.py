@@ -215,15 +215,12 @@ CADASTROS = {
         "descricao": "Textos reutilizáveis para o motivo do ofício.",
         "exemplo": "Ex.: COBERTURA JORNALÍSTICA",
         "busca": ["nome__icontains", "texto__icontains"],
-        "situacao_ativo": True,
-        "colunas": [
-            {"rotulo": "Ordem", "attr": "ordem"},        ],
+        "colunas": [],
         "secoes": [
             {
                 "titulo": "Modelo de motivo",
-                "subtitulo": "Nome, texto e ordem de exibição; marque-o como padrão para ser sugerido nos novos ofícios.",
-                "campos": ["nome", "texto", "ordem", "ativo", "is_padrao"],
-                "larguras": {"nome": "8", "ordem": "4"},
+                "subtitulo": "Nome e texto; marque-o como padrão para ser sugerido nos novos ofícios.",
+                "campos": ["nome", "texto", "is_padrao"],
             }
         ],
     },
@@ -240,15 +237,12 @@ CADASTROS = {
         "descricao": "Textos reutilizáveis para a justificativa de prazo do ofício.",
         "exemplo": "Ex.: DEMANDA URGENTE",
         "busca": ["nome__icontains", "texto__icontains"],
-        "situacao_ativo": True,
-        "colunas": [
-            {"rotulo": "Ordem", "attr": "ordem"},        ],
+        "colunas": [],
         "secoes": [
             {
                 "titulo": "Modelo de justificativa",
-                "subtitulo": "Nome, texto e ordem de exibição; marque-o como padrão para ser sugerido nos ofícios que exigem justificativa.",
-                "campos": ["nome", "texto", "ordem", "ativo", "is_padrao"],
-                "larguras": {"nome": "8", "ordem": "4"},
+                "subtitulo": "Nome e texto; marque-o como padrão para ser sugerido nos ofícios que exigem justificativa.",
+                "campos": ["nome", "texto", "is_padrao"],
             }
         ],
     },
@@ -267,14 +261,12 @@ CADASTROS = {
         "busca": ["nome__icontains", "texto__icontains"],
         "colunas": [
             {"rotulo": "Campo", "attr": "get_campo_display"},
-            {"rotulo": "Ordem", "attr": "ordem"},
         ],
         "secoes": [
             {
                 "titulo": "Modelo de texto",
                 "subtitulo": "O campo do relatório em que o modelo entra, o nome e o texto.",
-                "campos": ["campo", "ordem", "nome", "texto"],
-                "larguras": {"campo": "8", "ordem": "4"},
+                "campos": ["campo", "nome", "texto"],
             }
         ],
     },
@@ -768,10 +760,9 @@ def _lista_catalogo(request, slug, modal=None):
     config = _config(slug)
     retorno = _retorno_cadastro(request)
     termo = request.GET.get("q", "").strip()
-    if slug in CATALOGOS_DE_OFICIO:
-        queryset = config["model"].objects.order_by("ordem", "nome")
-    elif slug == "modelos-texto-rt":
-        queryset = config["model"].objects.order_by("campo", "ordem", "nome")
+    # Ordem alfabética; os modelos do RT vêm agrupados pelo campo do relatório.
+    if slug == "modelos-texto-rt":
+        queryset = config["model"].objects.order_by("campo", "nome")
     else:
         queryset = config["model"].objects.order_by("nome")
     if termo:

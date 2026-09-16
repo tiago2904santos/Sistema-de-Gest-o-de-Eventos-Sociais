@@ -336,7 +336,7 @@ class RelatorioTecnicoForm(forms.ModelForm):
             self.fields[campo].widget = forms.Textarea(attrs={**{'class': 'campo__input'}, 'rows': rows.get(campo, 4), 'data-rt-textarea': campo})
         for campo, label in CAMPOS_COM_MODELO:
             field_name = f'modelo_{campo}'
-            field = forms.ModelChoiceField(label=f'Modelo de {label.lower()}', queryset=ModeloTextoRelatorioTecnico.objects.filter(campo=campo).order_by('ordem', 'nome'), required=False, empty_label='Selecione um modelo (opcional)', widget=ModeloTextoSelect(attrs={**{'class': 'campo__input'}, 'data-rt-modelo-select': 'true', 'data-rt-target': campo}))
+            field = forms.ModelChoiceField(label=f'Modelo de {label.lower()}', queryset=ModeloTextoRelatorioTecnico.objects.filter(campo=campo).order_by('nome'), required=False, empty_label='Selecione um modelo (opcional)', widget=ModeloTextoSelect(attrs={**{'class': 'campo__input'}, 'data-rt-modelo-select': 'true', 'data-rt-target': campo}))
             field.label_from_instance = lambda obj: obj.nome
             self.fields[field_name] = field
 
@@ -372,13 +372,6 @@ class ModeloTextoRelatorioTecnicoForm(forms.ModelForm):
     nome = forms.CharField(label='Nome', help_text='Use um nome curto para identificar o modelo.', widget=forms.TextInput(attrs={**{'class': 'campo__input'}}))
     texto = forms.CharField(label='Texto do modelo', help_text='Este texto será copiado para o campo do relatório e poderá ser editado antes de gerar.', widget=forms.Textarea(attrs={**{'class': 'campo__input'}, 'rows': 6}))
 
-    ordem = forms.IntegerField(label='Ordem', min_value=0, initial=100, required=False,
-                               help_text='Posição na lista de escolha; menor aparece primeiro.')
-
     class Meta:
         model = ModeloTextoRelatorioTecnico
-        fields = ['campo', 'nome', 'texto', 'ordem']
-
-    def clean_ordem(self):
-        ordem = self.cleaned_data.get('ordem')
-        return 100 if ordem is None else ordem
+        fields = ['campo', 'nome', 'texto']

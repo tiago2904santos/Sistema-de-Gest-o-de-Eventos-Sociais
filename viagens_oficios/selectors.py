@@ -109,4 +109,4 @@ def get_oficio_by_id(pk):
 
 
 def listar_modelos_motivo_ativos():
-    return ModeloMotivoOficio.objects.filter(ativo=True)
+    return ModeloMotivoOficio.objects.order_by('nome')

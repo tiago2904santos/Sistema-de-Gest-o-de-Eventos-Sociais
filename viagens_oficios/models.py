@@ -310,10 +310,6 @@ class ModeloMotivoOficio(ModeloTemporal, OrigemLegado):
 
     texto = models.TextField()
 
-    ativo = models.BooleanField(default=True)
-
-    ordem = models.PositiveIntegerField(default=100)
-
     is_padrao = models.BooleanField(default=False)
 
     def __str__(self):
@@ -330,7 +326,7 @@ class ModeloMotivoOficio(ModeloTemporal, OrigemLegado):
         super().save(*args, **kwargs)
 
     class Meta:
-        ordering = ["ordem", "nome"]
+        ordering = ["nome"]
         constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_modelomotivooficio_origem"),
             models.UniqueConstraint(fields=["nome"], name="viagens_motivo_nome_unico"),
             models.UniqueConstraint(fields=["is_padrao"], condition=Q(is_padrao=True), name="viagens_motivo_padrao_unico"),
@@ -343,10 +339,6 @@ class ModeloJustificativa(ModeloTemporal, OrigemLegado):
     nome = models.CharField(max_length=120)
 
     texto = models.TextField()
-
-    ativo = models.BooleanField(default=True)
-
-    ordem = models.PositiveIntegerField(default=100)
 
     is_padrao = models.BooleanField(default=False)
 
@@ -363,7 +355,7 @@ class ModeloJustificativa(ModeloTemporal, OrigemLegado):
         super().save(*args, **kwargs)
 
     class Meta:
-        ordering = ["ordem", "nome"]
+        ordering = ["nome"]
         constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_modelojustificativa_origem"),
             models.UniqueConstraint(fields=["nome"], name="viagens_justif_nome_unico"),
             models.UniqueConstraint(fields=["is_padrao"], condition=Q(is_padrao=True), name="viagens_justif_padrao_unico"),

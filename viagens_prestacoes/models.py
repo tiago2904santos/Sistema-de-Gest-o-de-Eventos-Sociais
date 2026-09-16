@@ -353,10 +353,9 @@ class ModeloTextoRelatorioTecnico(OrigemLegado):
     campo = models.CharField(max_length=30, choices=CAMPO_CHOICES, db_index=True)
     nome = models.CharField(max_length=120)
     texto = models.TextField()
-    ordem = models.PositiveIntegerField(default=100)
 
     class Meta:
-        ordering = ['campo', 'ordem', 'nome']
+        ordering = ['campo', 'nome']
         verbose_name = 'Modelo de texto do RT'
         verbose_name_plural = 'Modelos de texto do RT'
         constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_modelotextorelatoriotecnico_origem"), models.UniqueConstraint(fields=['campo', 'nome'], name='unique_modelo_texto_rt_campo_nome')]

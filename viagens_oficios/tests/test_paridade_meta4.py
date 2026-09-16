@@ -122,6 +122,17 @@ class JustificativaModalTests(Cenario):
         self.assertNotContains(r, "urgente </script>")
         self.assertEqual(r.context["dados"]["modelos_texto"][str(self.modelo.pk)], self.modelo.texto)
 
+    def test_nova_vem_com_o_modelo_padrao_e_o_texto_dele(self):
+        padrao = ModeloJustificativa.objects.create(nome="Padrão", texto="Texto padrão da justificativa.", is_padrao=True)
+        self.oficio(dias=3)
+        r = self.client.get(reverse("viagens_oficios:justificativa_nova"), **MODAL)
+        self.assertEqual(r.context["dados"]["modelo_valor"], str(padrao.pk))
+        self.assertEqual(r.context["dados"]["texto_valor"], "Texto padrão da justificativa.")
+        # Na edição vale o que está gravado, não o padrão.
+        o = self.oficio(dias=3, justificativa="gravado")
+        r = self.client.get(reverse("viagens_oficios:justificativa_editar", args=[o.justificativa.pk]), **MODAL)
+        self.assertEqual(r.context["dados"]["texto_valor"], "gravado")
+
     def test_nova_grava_e_responde_json(self):
         o = self.oficio(dias=3)
         r = self.client.post(reverse("viagens_oficios:justificativa_nova"),

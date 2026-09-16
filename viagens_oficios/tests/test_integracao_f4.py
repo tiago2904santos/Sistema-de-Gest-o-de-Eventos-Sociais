@@ -195,7 +195,7 @@ class IntegracaoF4Tests(CenarioOficioMixin, TestCase):
 
     def test_catalogo_troca_padrao(self):
         ModeloMotivoOficio.objects.create(nome='Primeiro', texto='A', is_padrao=True)
-        form = ModeloMotivoOficioForm({'nome':'Segundo','texto':'B','ativo':'on','is_padrao':'on','ordem':100})
+        form = ModeloMotivoOficioForm({'nome':'Segundo','texto':'B','is_padrao':'on'})
         self.assertTrue(form.is_valid(),form.errors)
         form.save()
         self.assertEqual(ModeloMotivoOficio.objects.get(is_padrao=True).nome,'SEGUNDO')

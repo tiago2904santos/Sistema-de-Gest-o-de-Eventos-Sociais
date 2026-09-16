@@ -59,14 +59,17 @@ class ModelosDeTextoRTTests(TestCase):
         self.assertTemplateUsed(r, "pages/viagens_cadastros/_modal_form.html")
         self.assertContains(r, 'name="campo"')
         self.assertContains(r, "Conclusão")
+        # Nada de ativo/inativo nem de ordem nos modelos.
+        self.assertNotContains(r, 'name="ordem"')
+        self.assertNotContains(r, 'name="ativo"')
         r = self.client.post(reverse("viagens_cadastros:novo", args=["modelos-texto-rt"]),
-                             {"campo": ModeloTextoRelatorioTecnico.CAMPO_CONCLUSAO, "nome": "Encerramento", "texto": "Concluiu-se.", "ordem": "5"},
+                             {"campo": ModeloTextoRelatorioTecnico.CAMPO_CONCLUSAO, "nome": "Encerramento", "texto": "Concluiu-se."},
                              HTTP_X_CADASTRO_MODAL="1")
         self.assertEqual(r.json(), {"ok": True})
         modelo = ModeloTextoRelatorioTecnico.objects.get(nome="Encerramento")
-        self.assertEqual((modelo.campo, modelo.ordem), (ModeloTextoRelatorioTecnico.CAMPO_CONCLUSAO, 5))
+        self.assertEqual(modelo.campo, ModeloTextoRelatorioTecnico.CAMPO_CONCLUSAO)
         r = self.client.post(reverse("viagens_cadastros:editar", args=["modelos-texto-rt", modelo.pk]),
-                             {"campo": modelo.campo, "nome": "Encerramento", "texto": "Concluiu-se, enfim.", "ordem": "5"},
+                             {"campo": modelo.campo, "nome": "Encerramento", "texto": "Concluiu-se, enfim."},
                              HTTP_X_CADASTRO_MODAL="1")
         self.assertEqual(r.json(), {"ok": True})
         modelo.refresh_from_db()
