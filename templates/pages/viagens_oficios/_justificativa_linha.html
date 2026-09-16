@@ -1,7 +1,7 @@
 {% comment %}
   Uma linha da lista de justificativas em duas linhas, como nos termos: o
-  ofício e o destino com o estado; embaixo, período, antecedência e o começo
-  do texto (cortado; inteiro ao passar o mouse). Contexto: `l` (linha).
+  ofício, o destino e o período com o estado; embaixo, antecedência e o
+  começo do texto (cortado; inteiro ao passar o mouse). Contexto: `l` (linha).
 {% endcomment %}
 <h2 class="of-cartao__titulo tm-titulo" id="justificativa-{{ l.justificativa.pk }}-titulo">{{ l.titulo }} <span class="st st--{{ l.estado_tom }}">{{ l.estado }}</span></h2>
 <ul class="tm-fatos jt-fatos" aria-label="Dados da justificativa do ofício {{ l.oficio.numero_formatado }}">

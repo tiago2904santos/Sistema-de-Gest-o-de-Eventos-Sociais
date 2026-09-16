@@ -24,7 +24,7 @@ class JustificativasListaTests(Cenario):
         folgado = self.oficio(dias=20, justificativa="teste 1")
         r = self.url()
         # Duas linhas: ofício e destino com o estado; período, antecedência e texto.
-        self.assertContains(r, f"Ofício {exigido.numero_formatado} · ANTONINA/PR")
+        self.assertContains(r, f"Ofício {exigido.numero_formatado} · ANTONINA/PR · ")
         self.assertNotContains(r, "Protocolo 12.345.678-9")
         self.assertContains(r, "3 dias de antecedência")
         self.assertContains(r, "20 dias de antecedência")

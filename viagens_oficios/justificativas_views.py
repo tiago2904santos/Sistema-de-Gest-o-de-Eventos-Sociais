@@ -63,8 +63,8 @@ def _regra(oficio):
 
 
 def linha_da_justificativa(justificativa):
-    """Duas linhas, como nos termos: ofício e destino com o estado; embaixo,
-    período, antecedência e o começo do texto."""
+    """Duas linhas, como nos termos: ofício, destino e período com o estado;
+    embaixo, antecedência e o começo do texto."""
     oficio = justificativa.oficio
     texto = (justificativa.texto or "").strip()
     regra = avaliar_justificativa_oficio(oficio)
@@ -83,12 +83,11 @@ def linha_da_justificativa(justificativa):
     return {
         "justificativa": justificativa,
         "oficio": oficio,
-        "titulo": " · ".join(p for p in [f"Ofício {oficio.numero_formatado}", destinos] if p),
+        "titulo": " · ".join(p for p in [f"Ofício {oficio.numero_formatado}", destinos, periodo] if p),
         "estado": estado,
         "estado_tom": tom,
         "preenchida": bool(texto),
         "fatos": [
-            {"icone": "calendar", "rotulo": "Período", "texto": periodo or "Sem período", "ausente": not periodo},
             {"icone": "clock", "rotulo": "Antecedência",
              "texto": f"{antecedencia} dias de antecedência" if antecedencia is not None else "Sem data de saída",
              "ausente": antecedencia is None},

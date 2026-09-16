@@ -1900,3 +1900,9 @@ form.btn-flutuante-form{margin:0;display:contents}
 .jt-escolha-oficio .of-equipe-busca{margin-bottom:0}
 .jt-escolha-oficio .of-equipe-busca .busca{width:100%;max-width:none}
 .jt-escolha-oficio .of-equipe-busca .busca input{height:38px}
+
+/* Ícone das listas (roteiros, termos, justificativas): o quadrado cinza das
+   linhas de escolha (`lista-escolha .of-av`), não o ícone solto. */
+.cad-lista .dt .tabela__col-icone{width:46px}
+.cad-lista .tabela__icone-doc{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--n-150);color:var(--n-800)}
+.cad-lista .tabela__icone-doc .ui-icon{width:15px;height:15px}
