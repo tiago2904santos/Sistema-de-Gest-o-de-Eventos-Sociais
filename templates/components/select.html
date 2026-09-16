@@ -9,6 +9,8 @@
   `erros`: lista de erros de validação do campo.
   `pesquisavel`: adiciona busca por texto para listas extensas.
   `permitir_vazio`: expõe a opção vazia no menu para permitir retirar uma escolha.
+  `opcao.dados`: dict que vira `data-*` na opção, para quem precisa de contexto
+    no navegador (ex.: a unidade e os motoristas de uma viatura).
   `unidade_gv`: pesquisa de lotação com sigla/nome, limpeza e teclado do GV.
   `desabilitado`: bloqueia a edição preservando o visual.
 {% endcomment %}
@@ -62,7 +64,7 @@
         {% for opcao in opcoes %}
           <button class="custom-select__opcao" type="button" role="option"
                   aria-selected="{% if selecionado and opcao.valor|default:opcao|stringformat:"s" == selecionado|stringformat:"s" %}true{% else %}false{% endif %}"
-                  data-value="{{ opcao.valor|default:opcao }}"{% if opcao.estado %} data-parent-value="{{ opcao.estado }}"{% endif %}{% if opcao.relacionados %} data-related-values="{{ opcao.relacionados }}"{% endif %}>
+                  data-value="{{ opcao.valor|default:opcao }}"{% if opcao.estado %} data-parent-value="{{ opcao.estado }}"{% endif %}{% if opcao.relacionados %} data-related-values="{{ opcao.relacionados }}"{% endif %}{% for chave, dado in opcao.dados.items %} data-{{ chave }}="{{ dado }}"{% endfor %}>
             <span{% if unidade_gv %} class="unidade-picker__texto"{% endif %}>{{ opcao.rotulo|default:opcao }}{% if unidade_gv and opcao.detalhes %}<small>{{ opcao.detalhes }}</small>{% endif %}</span>
             <span class="custom-select__check" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
           </button>

@@ -14,6 +14,7 @@ navegação — nada de cobertura foi descartado.
 from django.urls import NoReverseMatch, reverse
 
 from documentos.models import DocumentoArtefato
+from viagens_termos.models import TermoAutorizacao
 from viagens_oficios.tests.test_paridade_meta5 import CenarioTermos
 
 
@@ -115,12 +116,12 @@ class SecoesDoRegistroNoFormularioTests(CenarioTermos):
 
 
 class NavegacaoTests(CenarioTermos):
-    def test_salvar_continua_no_formulario(self):
+    def test_salvar_vai_para_a_lista(self):
         o = self.oficio(dias=3, servidores=[self.janine], viatura=self.duster)
         t = self.termo(oficio=o)
         r = self.client.post(reverse("viagens_termos:editar", args=[t.pk]),
                              {"oficio": o.pk, "viatura": "", "servidores": [str(self.janine.pk)]})
-        self.assertRedirects(r, reverse("viagens_termos:editar", args=[t.pk]))
+        self.assertRedirects(r, reverse("viagens_termos:lista"))
         t.refresh_from_db()
         self.assertEqual(list(t.servidores.all()), [self.janine])
 
@@ -182,7 +183,9 @@ class ColunaUnicaTests(CenarioTermos):
         for nome, r in self.paginas().items():
             with self.subTest(tela=nome):
                 self.assertEqual(r.status_code, 200)
-                for marca in ["<aside", 'class="sticky"', "frm-lateral", "frm-grade", "d-grade",
+                # `d-grade` é o nome exato da classe: `cad-grade`, a grade da trilha de
+                # situações da lista (a mesma dos roteiros), contém a mesma substring.
+                for marca in ["<aside", 'class="sticky"', "frm-lateral", "frm-grade", 'class="d-grade',
                               "frm-acoes--flut", "step-v"]:
                     self.assertNotContains(r, marca)
 
@@ -203,3 +206,46 @@ class ColunaUnicaTests(CenarioTermos):
         self.assertLess(topo, html.index('id="form-termo"'))
         self.assertIn('form="form-termo"', html[topo:topo + 400])
         self.assertContains(r, "Novo termo")
+
+
+class DestinosNoComponenteDoRoteiroTests(CenarioTermos):
+    """Os destinos adicionais usam o componente de destinos do editor de roteiro."""
+
+    def test_linhas_tem_alca_adicionar_e_remover(self):
+        r = self.client.get(reverse("viagens_termos:novo"))
+        for marca in ["destino-row", "data-destino-alca", "data-destino-adicionar",
+                      "data-destino-remover", "data-destinos", "data-destino-modelo"]:
+            self.assertContains(r, marca)
+        # Uma lista só: a primeira linha é o destino do termo, as outras os adicionais.
+        self.assertContains(r, 'name="destino_cidade"')
+        self.assertContains(r, "extra_estado___n__")
+
+    def test_ordem_gravada_segue_a_numeracao_que_vem_da_tela(self):
+        # O JS renumera as linhas no envio, na ordem em que ficaram na tela;
+        # aqui vale conferir que o servidor grava nessa mesma ordem.
+        r = self.client.post(reverse("viagens_termos:novo"), {
+            "destino_estado": self.pr.pk, "destino_cidade": self.antonina.pk,
+            "extra_estado_0": self.pr.pk, "extra_cidade_0": self.curitiba.pk,
+            "extra_estado_1": self.pr.pk, "extra_cidade_1": self.antonina.pk,
+            "quantidade_destinos": "2",
+            "data_evento_inicio": f"{self.data(3):%Y-%m-%d}", "servidores": [str(self.janine.pk)],
+        })
+        self.assertEqual(r.status_code, 302)
+        termo = TermoAutorizacao.objects.get()
+        self.assertEqual([d["cidade"] for d in termo.destinos_extras],
+                         [self.curitiba.nome, self.antonina.nome])
+
+    def test_linha_removida_na_tela_sai_do_termo(self):
+        termo = self.termo(cidade=self.antonina, inicio=self.data(3), servidores=[self.janine])
+        termo.destinos_extras = [{"cidade_id": self.curitiba.pk, "estado_id": self.pr.pk,
+                                  "cidade": self.curitiba.nome, "estado": self.pr.sigla}]
+        termo.save()
+        # A tela envia só as linhas que sobraram, renumeradas a partir do zero.
+        r = self.client.post(reverse("viagens_termos:editar", args=[termo.pk]), {
+            "destino_estado": self.pr.pk, "destino_cidade": self.antonina.pk,
+            "quantidade_destinos": "1",
+            "data_evento_inicio": f"{self.data(3):%Y-%m-%d}", "servidores": [str(self.janine.pk)],
+        })
+        self.assertEqual(r.status_code, 302)
+        termo.refresh_from_db()
+        self.assertEqual(termo.destinos_extras, [])

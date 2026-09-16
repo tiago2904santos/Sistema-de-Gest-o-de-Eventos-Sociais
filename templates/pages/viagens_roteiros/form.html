@@ -445,5 +445,7 @@
 {% block extra_js %}
   {{ block.super }}
   <script src="{% estatico 'vendor/leaflet/leaflet.js' %}" defer></script>
+  {# O arraste das linhas de destino vem antes: o editor o liga ao iniciar. #}
+  <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
   <script src="{% estatico 'js/roteiro-editor.js' %}" defer></script>
 {% endblock %}

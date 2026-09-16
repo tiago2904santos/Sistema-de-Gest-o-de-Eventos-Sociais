@@ -1,120 +1,127 @@
 {% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
 {% comment %}
-  Lista de termos de autorização — Meta 5, com o cartão reorganizado.
+  Lista de termos de autorização — Meta 5, na mesma composição da lista de
+  roteiros: situações na trilha à esquerda, busca na barra do cartão, tabela
+  do V3.2 no desktop e Data List no celular, um menu único de ações por linha.
+
+  O que não muda é o conteúdo da linha, que continua sendo o do cartão de
+  antes numa coluna só, sem se espalhar em colunas: o destino com o selo
+  temporal e o andamento dos documentos, os quatro fatos com ícone (período,
+  ofício, servidores, viatura — cada um com o seu vazio nomeado) e o que o
+  termo herda do ofício.
 
   Da origem vêm a busca (destino, ofício, protocolo, viatura ou servidor), o
-  filtro de situação e as quatro ações: escolher documentos para baixar,
-  anexar termo assinado, editar e excluir.
-
-  O cartão diverge da origem em três pontos, de propósito: o título é só o
-  destino (o período saiu de dentro dele), a linha corrida "Ofício: N ·
-  servidores · placa modelo" virou quatro fatos com ícone — período, ofício,
-  servidores e viatura, cada um com o seu vazio nomeado — e ao lado do selo
-  temporal entrou o andamento dos documentos ("3 de 5 assinados").
+  filtro de situação e as ações: baixar documentos, anexar termo assinado,
+  editar e excluir.
 {% endcomment %}
 
 {% block title %}Termos de Autorização — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% include "components/v32/breadcrumb.html" with atual="Termos de Autorização" %}
-
+  {# Cabeçalho idêntico ao da lista de roteiros. #}
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker kicker--junto">{{ modulo_ativo.nome }}</div>
+      <div class="kicker kicker--junto">Viagens</div>
       <h1>Termos de Autorização</h1>
     </div>
-    {# Botão flutuante, como na lista de roteiros: fixo no canto inferior direito. #}
-    {% if pode_editar %}<a class="btn-primaria btn-flutuante" href="{% url 'viagens_termos:novo' %}">{% include "components/icon.html" with nome="plus" %}Novo termo</a>{% endif %}
-  </div>
-
-  <div class="pa-card pa-card--lista v32-bloco v32-filtros">
-    <form method="get" class="v32-barra of-filtros" role="search" data-auto-enviar>
-      <div class="form-campo v32-busca">
-        <label class="form-label sr-only" for="id_q">Buscar termos</label>
-        <div class="busca">
-          <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
-          <input class="form-controle" type="search" name="q" id="id_q" value="{{ q }}" placeholder="Buscar por destino, ofício, protocolo, viatura ou servidor" aria-label="Buscar termos">
-        </div>
-      </div>
-      <fieldset class="v32-abas-situacao of-filtros__situacao">
-        <legend class="sr-only">Filtrar por situação</legend>
-        {% for aba in opcoes_situacao %}
-          <label class="v32-aba{% if aba.selecionado %} v32-aba--ativa{% endif %}"><input type="checkbox" name="situacao" value="{{ aba.valor }}"{% if aba.selecionado %} checked{% endif %}>{{ aba.rotulo }}</label>
-        {% endfor %}
-      </fieldset>
-      <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="search" %}Buscar</button>
-      {% if tem_filtros %}<a href="{% url 'viagens_termos:lista' %}" class="btn--secundaria">{% include "components/icon.html" with nome="x" %}Limpar</a>{% endif %}
-      <span class="v32-meta">{{ pagina.paginator.count }} termo{{ pagina.paginator.count|pluralize }}</span>
-    </form>
-  </div>
-
-  {% if linhas %}
-    <div class="of-lista tm-lista">
-      {% for l in linhas %}{% with t=l.termo d=l.documentos %}
-        <article class="of-cartao tm-cartao{% if t.cancelado %} of-cartao--cancelado{% endif %}" aria-labelledby="termo-{{ t.pk }}-titulo">
-          <div class="tm-cartao__corpo">
-            <div class="of-cartao__ident">
-              <h2 class="of-cartao__titulo" id="termo-{{ t.pk }}-titulo">{{ l.titulo }} <span class="st st--{{ l.selo_tom }}">{{ l.selo }}</span> <span class="st st--{{ l.situacao_documentos.tom }}" title="Andamento dos termos: {{ l.situacao_documentos.gerados }} de {{ l.situacao_documentos.total }} em PDF, {{ l.situacao_documentos.assinados }} assinado{{ l.situacao_documentos.assinados|pluralize }}">{% include "components/icon.html" with nome="checklist" %}{{ l.situacao_documentos.rotulo }}</span></h2>
-              <ul class="tm-fatos" aria-label="Dados do termo #{{ t.pk }}">
-                {% for f in l.fatos %}
-                  <li class="tm-fato{% if f.ausente %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome=f.icone %}<span class="sr-only">{{ f.rotulo }}: </span>{{ f.texto }}</li>
-                {% endfor %}
-              </ul>
-              {% if l.herdados %}<p class="of-cartao__sub tm-herdados">Herda do ofício: {{ l.herdados|join:", " }}.</p>{% endif %}
-            </div>
-            <div class="acoes tm-acoes">
-              {% if pode_editar %}
-                <div class="dd of-menu" data-menu>
-                  <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Escolher documentos para baixar" title="Escolher documentos para baixar">{% include "components/icon.html" with nome="download" %}</button>
-                  <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
-                    <div class="dd__t">Termo #{{ t.pk }}</div>
-                    {% if t.cancelado %}
-                      <span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="ban" %}<span><b>Termo cancelado</b><small>Reative para gerar documentos</small></span></span>
-                    {% else %}
-                      <form method="post" action="{{ d.url_todos_pdf }}">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Todos os termos num PDF só, prontos para assinatura</small></span></button></form>
-                      <form method="post" action="{{ d.url_lote_docx }}">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivos editáveis de todos os termos (ZIP)</small></span></button></form>
-                      <form method="post" action="{{ d.generico.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar termo genérico</b><small>Só destino e período, para preencher à mão</small></span></button></form>
-                      {% if d.viatura.viatura %}<form method="post" action="{{ d.viatura.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="truck" %}<span><b>Visualizar termo da viatura</b><small>{{ d.viatura.viatura.placa_formatada }} {{ d.viatura.viatura.modelo }}</small></span></button></form>{% endif %}
-                      <div class="dd__s"></div>
-                      <a class="dd__i of-item" href="{{ l.url_editar }}#documentos">{% include "components/icon.html" with nome="checklist" %}<span><b>Todos os documentos</b><small>Por servidor, genérico, viatura e anexos</small></span></a>
-                    {% endif %}
-                  </div>
-                </div>
-                <div class="dd of-menu" data-menu>
-                  <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Anexar termo assinado" title="Anexar termo assinado">{% include "components/icon.html" with nome="upload" %}</button>
-                  <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
-                    <div class="dd__t">Anexar termo assinado</div>
-                    {% for s in d.servidores %}
-                      {% if s.url_assinado %}<a class="dd__i of-item" href="{{ s.url_assinado }}">{% include "components/icon.html" with nome=s.assinado|yesno:"check-circle,upload" %}<span><b>{{ s.servidor.nome }}</b><small>{% if s.assinado %}Assinado — enviar outra versão{% else %}Enviar o PDF depois da assinatura{% endif %}</small></span></a>
-                      {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>{{ s.servidor.nome }}</b><small>Gere o PDF do termo primeiro</small></span></span>{% endif %}
-                    {% endfor %}
-                    {% if d.generico.url_assinado %}<a class="dd__i of-item" href="{{ d.generico.url_assinado }}">{% include "components/icon.html" with nome=d.generico.assinado|yesno:"check-circle,upload" %}<span><b>Termo genérico</b><small>{% if d.generico.assinado %}Assinado — enviar outra versão{% else %}Enviar o PDF depois da assinatura{% endif %}</small></span></a>
-                    {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>Termo genérico</b><small>Gere o PDF do termo primeiro</small></span></span>{% endif %}
-                  </div>
-                </div>
-                <a class="ib-linha" href="{{ l.url_editar }}?next={{ url_atual|urlencode }}" aria-label="Editar termo" title="Editar termo">{% include "components/icon.html" with nome="pencil" %}</a>
-                <form method="post" action="{{ l.url_excluir }}" data-confirmar="Confirmar exclusão?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
-                  <button type="submit" class="ib-linha ib-linha--perigo" aria-label="Excluir termo" title="Excluir termo">{% include "components/icon.html" with nome="trash" %}</button>
-                </form>
-              {% else %}
-                <a class="acao-linha" href="{{ l.url_previa }}">{% include "components/icon.html" with nome="eye" %}Abrir</a>
-              {% endif %}
-            </div>
-          </div>
-        </article>
-      {% endwith %}{% endfor %}
-    </div>
-    {% if pagina.paginator.num_pages > 1 %}
-      <nav class="of-paginacao of-paginacao--rodape" aria-label="Paginação">
-        <p class="of-paginacao__contagem">Mostrando <strong>{{ pagina.start_index }}–{{ pagina.end_index }}</strong> de <strong>{{ pagina.paginator.count }}</strong></p>
-        {% include "pages/viagens_cadastros/_paginacao_nav.html" %}
-      </nav>
+    {% if pode_editar %}
+      {# Botão flutuante: fixo no canto inferior direito, sempre à mão durante a rolagem. #}
+      <a class="btn-primaria btn-flutuante" href="{% url 'viagens_termos:novo' %}">{% include "components/icon.html" with nome="plus" %}Novo termo</a>
     {% endif %}
-  {% else %}
-    <div class="pa-card v32-bloco of-vazio">
-      <h2>Nenhum termo</h2>
-      <p>{% if tem_filtros %}Nenhum termo encontrado com os filtros aplicados.{% else %}Nenhum termo de autorização registrado ainda.{% endif %}</p>
-      {% if pode_editar %}<a class="btn-primaria" href="{% url 'viagens_termos:novo' %}">{% include "components/icon.html" with nome="plus" %}Novo termo</a>{% endif %}
+  </div>
+
+  <div class="cad-grade cad-grade--sem-folga">
+    {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_rotulo="Situação dos termos" sem_titulo=True %}
+
+  {# `cad-lista`: mesma pele da lista dos cadastros (barra no cartão, cabeçalho, hover, ações num menu). #}
+  <div class="pa-card pa-card--lista cad-lista">
+    {# A busca é do servidor (precisa achar o termo da página 3): envia 1 s depois de digitar. #}
+    <form method="get" class="cad-barra" role="search" data-cadastro-busca data-auto-enviar>
+      {# A situação escolhida na trilha sobrevive à busca. #}
+      {% for situacao in situacoes_escolhidas %}<input type="hidden" name="situacao" value="{{ situacao }}">{% endfor %}
+      <div class="busca">
+        {% include "components/icon.html" with nome="search" %}
+        <label class="sr-only" for="id_q">Buscar termos</label>
+        <input type="search" name="q" id="id_q" value="{{ q }}" placeholder="Buscar por destino, ofício, protocolo, viatura ou servidor" autocomplete="off">
+      </div>
+    </form>
+    <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Tabela de termos">
+      <table class="dt dt--responsiva">
+        <thead>
+          <tr>
+            <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
+            <th>Termo</th>
+            <th class="c-cad-acoes">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in linhas %}{% with t=l.termo d=l.documentos %}
+            <tr{% if t.cancelado %} class="tm-linha--cancelada"{% endif %}>
+              <td class="tabela__col-icone">
+                <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+                <span class="sr-only">Termo de autorização</span>
+              </td>
+              {# A célula única: o conteúdo do cartão de antes, sem se espalhar em colunas. #}
+              <td class="c-nome tm-celula" data-rotulo="Termo">
+                {% include "pages/viagens_termos/_conteudo_linha.html" %}
+              </td>
+              <td class="c-cad-acoes">{% include "pages/viagens_termos/_acoes_linha.html" %}</td>
+            </tr>
+          {% endwith %}{% empty %}
+            <tr>
+              <td colspan="3" class="v32-suave dt__vazio">
+                {% if tem_filtros %}Nenhum termo encontrado com os filtros aplicados.{% else %}Nenhum termo de autorização registrado ainda.{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-  {% endif %}
+
+    <div class="lista-mobile-v32"><div class="m-lista">
+      {% for l in linhas %}{% with t=l.termo d=l.documentos %}
+        <article class="m-item{% if t.cancelado %} tm-linha--cancelada{% endif %}">
+          <div class="m-item__topo">
+            <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+            <span class="sr-only">Termo de autorização</span>
+          </div>
+          <div class="m-item__tipo tm-celula">
+            {% include "pages/viagens_termos/_conteudo_linha.html" %}
+          </div>
+          <div class="m-item__rodape">{% include "pages/viagens_termos/_acoes_linha.html" %}</div>
+        </article>
+      {% endwith %}{% empty %}
+        <article class="m-item"><p class="m-vazio">{% if tem_filtros %}Nenhum termo encontrado com os filtros aplicados.{% else %}Nenhum termo de autorização registrado ainda.{% endif %}</p></article>
+      {% endfor %}
+    </div></div>
+
+    {% if pagina.paginator.num_pages > 1 %}
+      <div class="v32-corpo pag">
+        <span class="v32-suave">
+          Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }} termos
+        </span>
+        <nav class="pag__nav" aria-label="Paginação">
+          {% if pagina.has_previous %}
+            <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+          {% endif %}
+          {% for numero in paginas_visiveis %}
+            {% if numero == elipse %}
+              <span class="pag__el" aria-hidden="true">…</span>
+            {% elif numero == pagina.number %}
+              <span class="pag__n " aria-current="page">{{ numero }}</span>
+            {% else %}
+              <a class="pag__n" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
+            {% endif %}
+          {% endfor %}
+          {% if pagina.has_next %}
+            <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+          {% endif %}
+        </nav>
+      </div>
+    {% endif %}
+  </div>
+  </div>
 {% endblock %}
+
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>{% endblock %}

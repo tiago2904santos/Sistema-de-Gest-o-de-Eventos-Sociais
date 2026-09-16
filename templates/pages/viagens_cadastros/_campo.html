@@ -6,38 +6,8 @@
 {% if campo.tipo == "select" %}
   {% include "components/select.html" with name=campo.name label=campo.label largura=campo.largura opcoes=campo.opcoes obrigatorio=campo.obrigatorio selecionado=campo.valor erros=campo.erros ajuda=campo.ajuda placeholder=campo.placeholder pesquisavel=campo.pesquisavel permitir_vazio=True %}
 {% elif campo.tipo == "multiselect" %}
-  {# Combobox de escolha múltipla: digita-se no próprio campo para filtrar e cada escolhido sai da lista e vira uma linha abaixo. #}
-  <div class="form-campo{% if campo.largura %} form-campo--{{ campo.largura }}{% endif %} multi-pick">
-    <label class="form-label" id="id_{{ campo.name }}_label" for="id_{{ campo.name }}_busca">{{ campo.label }}{% if campo.obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}</label>
-    {# Sentinela: sem ela, "desmarquei todos" e "não enviei o campo" chegam iguais ao servidor. #}
-    <input type="hidden" name="{{ campo.name }}__enviado" value="1">
-    <div class="form-controle-wrapper form-controle-wrapper--select custom-select custom-select--pesquisavel{% if campo.erros %} is-invalid{% endif %}" data-multi-pick>
-      <input class="form-controle custom-select__trigger custom-select__combobox" type="text"
-             id="id_{{ campo.name }}_busca" data-multi-busca autocomplete="off" spellcheck="false"
-             role="combobox" aria-expanded="false" aria-autocomplete="list"
-             aria-controls="id_{{ campo.name }}_listbox" aria-labelledby="id_{{ campo.name }}_label"
-             placeholder="Buscar por nome, cargo ou unidade">
-      <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
-      <div class="custom-select__menu" data-custom-select-menu data-multi-menu>
-        <div class="custom-select__lista" role="listbox" aria-multiselectable="true"
-             id="id_{{ campo.name }}_listbox" aria-labelledby="id_{{ campo.name }}_label">
-          {% for opcao in campo.opcoes %}
-            <label class="custom-select__opcao multi-pick__opcao" data-multi-opcao data-nome="{{ opcao.rotulo }}" data-detalhes="{{ opcao.detalhes }}" data-busca="{{ opcao.rotulo }} {{ opcao.detalhes }}">
-              <input type="checkbox" name="{{ campo.name }}" value="{{ opcao.valor }}"{% if opcao.selecionado %} checked{% endif %}>
-              <span>{{ opcao.rotulo }}{% if opcao.detalhes %}<small>{{ opcao.detalhes }}</small>{% endif %}</span>
-              <span class="custom-select__check" aria-hidden="true">{% include "components/icon.html" with nome="plus" %}</span>
-            </label>
-          {% empty %}
-            <p class="custom-select__vazio">Nenhum registro disponível para vincular.</p>
-          {% endfor %}
-          <p class="custom-select__vazio" data-multi-vazio hidden>Nenhum registro corresponde à busca.</p>
-        </div>
-      </div>
-    </div>
-    <ul class="multi-pick__escolhidos" data-multi-escolhidos aria-live="polite"></ul>
-    {% for erro in campo.erros %}<p class="form-erro"{% if forloop.first %} id="id_{{ campo.name }}_erro"{% endif %}>{{ erro }}</p>{% endfor %}
-    {% if campo.ajuda %}<p class="form-ajuda" id="id_{{ campo.name }}_ajuda">{{ campo.ajuda }}</p>{% endif %}
-  </div>
+  {# A sentinela é daqui: o cadastro grava só o que veio no envio. #}
+  {% include "components/v32/multi_pick.html" with name=campo.name label=campo.label largura=campo.largura opcoes=campo.opcoes obrigatorio=campo.obrigatorio erros=campo.erros ajuda=campo.ajuda sentinela=True %}
 {% elif campo.tipo == "checkbox" %}
   {# Sentinela: caixa desmarcada não é enviada; sem ela, o servidor não distingue desmarcar de não editar. #}
   <input type="hidden" name="{{ campo.name }}__enviado" value="1">

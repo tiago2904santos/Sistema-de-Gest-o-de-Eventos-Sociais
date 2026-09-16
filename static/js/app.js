@@ -150,6 +150,13 @@
       instancia.opcoes = opcoes;
     }
 
+    // Quem reordena as opções por fora (as viaturas, no cadastro de termo)
+    // chama isto: as setas andam por esta lista, não pela ordem do DOM.
+    instancia.relerOpcoes = function () {
+      opcoes = Array.prototype.slice.call(wrapper.querySelectorAll(".custom-select__opcao"));
+      instancia.opcoes = opcoes;
+    };
+
     function mostrarLimpar(visivel) {
       if (!limpar) return;
       limpar.hidden = !visivel;
@@ -1020,6 +1027,12 @@
   // roteiro) pede o mesmo comportamento dos componentes já aprimorados.
   // DS.aprimorar(raiz) liga selects, datas e cascatas ainda crus na raiz.
   window.DS = window.DS || {};
+  // Depois de mexer na ordem das opções de um select aprimorado.
+  window.DS.relerOpcoesSelect = function (wrapper) {
+    seletoresAbertos.forEach(function (instancia) {
+      if (instancia.wrapper === wrapper && instancia.relerOpcoes) instancia.relerOpcoes();
+    });
+  };
   window.DS.aprimorar = function (raiz) {
     var alvo = raiz || document;
     alvo.querySelectorAll("[data-custom-select]").forEach(aprimorarSelect);
@@ -1036,8 +1049,12 @@
   document.querySelectorAll("[data-custom-date-range]").forEach(function (wrapper) {
     var inicio = wrapper.querySelector("[data-custom-date-range-start]");
     var fim = wrapper.querySelector("[data-custom-date-range-end]");
-    var trigger = wrapper.querySelector("[data-custom-date-range-trigger]");
-    var valor = wrapper.querySelector(".custom-date__valor");
+    // Um campo só ("de — até") ou dois, início e fim, com o mesmo calendário.
+    var gatilhos = Array.prototype.slice.call(wrapper.querySelectorAll("[data-custom-date-range-trigger]"));
+    var trigger = gatilhos[0];
+    var valor = trigger && trigger.querySelector(".custom-date__valor");
+    // Enquanto aberto pelo campo final, a próxima escolha é o fim, não um novo início.
+    var alvo = null;
     var calendario = wrapper.querySelector("[data-custom-date-range-calendar]");
     var tituloMes = wrapper.querySelector("[data-custom-date-range-month]");
     var instrucao = wrapper.querySelector("[data-custom-date-range-hint]");
@@ -1068,7 +1085,9 @@
     fim.tabIndex = -1;
     inicio.setAttribute("aria-hidden", "true");
     fim.setAttribute("aria-hidden", "true");
-    trigger.disabled = inicio.disabled || fim.disabled || inicio.readOnly || fim.readOnly;
+    gatilhos.forEach(function (gatilho) {
+      gatilho.disabled = inicio.disabled || fim.disabled || inicio.readOnly || fim.readOnly;
+    });
 
     function dataEstaIndisponivel(iso) {
       var minimo = inicio.min || fim.min;
@@ -1138,15 +1157,22 @@
     function sincronizar() {
       var dataInicio = dataPorIso(inicio.value);
       var dataFim = dataPorIso(fim.value);
-      if (dataInicio && dataFim) {
-        valor.textContent = dataFormatada(dataInicio) + " — " + dataFormatada(dataFim);
-      } else if (dataInicio) {
-        valor.textContent = dataFormatada(dataInicio) + " — selecione o fim";
-      } else {
-        valor.textContent = "dd/mm/aaaa — dd/mm/aaaa";
-      }
-      trigger.classList.toggle("has-value", Boolean(dataInicio));
-      trigger.removeAttribute("aria-invalid");
+      gatilhos.forEach(function (gatilho) {
+        var campo = gatilho.getAttribute("data-range-campo");
+        var texto = gatilho.querySelector(".custom-date__valor");
+        var propria = campo === "fim" ? dataFim : dataInicio;
+        if (campo) {
+          texto.textContent = propria ? dataFormatada(propria) : "dd/mm/aaaa";
+        } else if (dataInicio && dataFim) {
+          texto.textContent = dataFormatada(dataInicio) + " — " + dataFormatada(dataFim);
+        } else if (dataInicio) {
+          texto.textContent = dataFormatada(dataInicio) + " — selecione o fim";
+        } else {
+          texto.textContent = "dd/mm/aaaa — dd/mm/aaaa";
+        }
+        gatilho.classList.toggle("has-value", Boolean(campo ? propria : dataInicio));
+        gatilho.removeAttribute("aria-invalid");
+      });
       wrapper.classList.remove("is-invalid");
       if (dataInicio) mesVisivel = new Date(dataInicio.getFullYear(), dataInicio.getMonth(), 1);
       if (instancia.aberto) renderizar();
@@ -1155,6 +1181,15 @@
     function selecionarData(data) {
       var iso = isoDaData(data);
       if (dataEstaIndisponivel(iso)) return;
+
+      // Aberto pelo campo final: a escolha é o fim, desde que não anteceda o início.
+      if (alvo === "fim" && inicio.value && iso >= inicio.value) {
+        fim.value = iso;
+        sincronizar();
+        dispararAlteracao(fim);
+        fecharCalendario(instancia, true);
+        return;
+      }
 
       if (!inicio.value || fim.value) {
         inicio.value = iso;
@@ -1184,8 +1219,10 @@
       fecharCalendario(instancia, true);
     }
 
-    function abrirCalendario() {
+    function abrirCalendario(gatilho) {
       if (instancia.aberto || trigger.disabled) return;
+      alvo = gatilho ? gatilho.getAttribute("data-range-campo") : null;
+      instancia.trigger = gatilho || trigger;
       fecharOutrosSeletores(null);
       fecharOutrosCalendarios(instancia);
       instancia.aberto = true;
@@ -1209,15 +1246,17 @@
       focarData(isoDaData(destino));
     }
 
-    trigger.addEventListener("click", function () {
-      if (instancia.aberto) fecharCalendario(instancia, true);
-      else abrirCalendario();
-    });
-    trigger.addEventListener("keydown", function (event) {
-      if (["ArrowDown", "Enter", " "].indexOf(event.key) !== -1) {
-        event.preventDefault();
-        abrirCalendario();
-      }
+    gatilhos.forEach(function (gatilho) {
+      gatilho.addEventListener("click", function () {
+        if (instancia.aberto) fecharCalendario(instancia, true);
+        else abrirCalendario(gatilho);
+      });
+      gatilho.addEventListener("keydown", function (event) {
+        if (["ArrowDown", "Enter", " "].indexOf(event.key) !== -1) {
+          event.preventDefault();
+          abrirCalendario(gatilho);
+        }
+      });
     });
     anterior.addEventListener("click", function () { mudarMes(-1); });
     proximo.addEventListener("click", function () { mudarMes(1); });
@@ -1269,15 +1308,21 @@
       focarData(isoDaData(destino));
     });
 
+    function gatilhoDe(campo) {
+      var nome = campo === fim ? "fim" : "inicio";
+      return gatilhos.filter(function (g) { return g.getAttribute("data-range-campo") === nome; })[0] || trigger;
+    }
+
     inicio.addEventListener("change", sincronizar);
     fim.addEventListener("change", sincronizar);
-    inicio.addEventListener("focus", function () { trigger.focus(); });
-    fim.addEventListener("focus", function () { trigger.focus(); });
+    inicio.addEventListener("focus", function () { gatilhoDe(inicio).focus(); });
+    fim.addEventListener("focus", function () { gatilhoDe(fim).focus(); });
     [inicio, fim].forEach(function (campo) {
       campo.addEventListener("invalid", function () {
         wrapper.classList.add("is-invalid");
-        trigger.setAttribute("aria-invalid", "true");
-        trigger.focus();
+        var gatilho = gatilhoDe(campo);
+        gatilho.setAttribute("aria-invalid", "true");
+        gatilho.focus();
       });
     });
     sincronizar();

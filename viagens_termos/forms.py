@@ -18,8 +18,11 @@ class TermoAutorizacaoForm(forms.ModelForm):
         if not self.is_bound and self.instance.destino_cidade_id:
             self.initial['destino_estado'] = self.instance.destino_cidade.estado_id
         extras = self.instance.destinos_extras or []
-        solicitado = str(self.data.get('quantidade_destinos', '1')) if self.is_bound else '1'
-        self.quantidade_destinos = max(len(extras) + 1, min(100, int(solicitado)) if solicitado.isdigit() else 1)
+        # Quantos pares de destino adicional a tela tem. Sem linha de sobra: ao
+        # abrir, só os destinos que o termo já tem — quem quiser outro usa o "+".
+        enviado = str(self.data.get('quantidade_destinos', '')) if self.is_bound else ''
+        solicitado = min(100, int(enviado)) if enviado.isdigit() else 0
+        self.quantidade_destinos = max(len(extras), solicitado)
         if self.is_bound and self.data.get('acao') == 'adicionar_destino':
             self.quantidade_destinos = min(100, self.quantidade_destinos + 1)
         for i in range(self.quantidade_destinos):

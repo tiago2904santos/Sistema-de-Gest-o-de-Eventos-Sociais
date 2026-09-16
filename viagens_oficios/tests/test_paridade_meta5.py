@@ -70,7 +70,8 @@ class ListaTermosTests(CenarioTermos):
             self.assertContains(r, f'<span class="sr-only">')
             self.assertContains(r, fato)
         self.assertContains(r, "Herda do ofício: destino, período, servidores, viatura.")
-        self.assertContains(r, "1 termo")
+        # A contagem vive na trilha de situações, como na lista de roteiros.
+        self.assertEqual(r.context["situacoes"][0]["total"], 1)
 
     def test_cartao_nomeia_o_que_falta_em_vez_de_omitir(self):
         """Termo avulso sem servidor nem viatura: os fatos aparecem vazios, não somem."""
@@ -104,7 +105,7 @@ class ListaTermosTests(CenarioTermos):
         self.assertContains(r, f'id="termo-{previsto.pk}-titulo">ANTONINA/PR <span class="st st--aguardando">Previsto</span>')
         self.assertContains(r, f'id="termo-{andamento.pk}-titulo">ANTONINA/PR <span class="st st--em_andamento">Em andamento</span>')
         self.assertContains(r, f'id="termo-{cancelado.pk}-titulo">ANTONINA/PR <span class="st st--cancelada">Cancelado</span>')
-        self.assertContains(r, "of-cartao--cancelado")
+        self.assertContains(r, "tm-linha--cancelada")
         # O período saiu do título e virou fato do cartão.
         self.assertContains(r, f"{self.data(3):%d/%m/%Y} a {self.data(4):%d/%m/%Y}")
         self.assertContains(r, f"{self.data(-1):%d/%m/%Y} a {self.data(1):%d/%m/%Y}")
@@ -157,7 +158,6 @@ class ListaTermosTests(CenarioTermos):
         self.assertEqual(ids(q="JOÃO"), [avulso.pk])
         r = self.lista(q="ZZZ")
         self.assertContains(r, "Nenhum termo encontrado com os filtros aplicados.")
-        self.assertContains(r, "Limpar")
 
     def test_situacoes_combinaveis_com_contagem(self):
         futuro = self.termo(cidade=self.antonina, inicio=self.data(3))
@@ -165,7 +165,10 @@ class ListaTermosTests(CenarioTermos):
         sem_periodo = self.termo(estado=self.pr)
         cancelado = self.termo(cidade=self.antonina, inicio=self.data(3), cancelar=True)
         r = self.lista()
-        for rotulo in ["Que vão acontecer (1)", "Em andamento e realizados (2)", "Finalizados (0)", "Cancelados (1)"]:
+        # Título e contagem ficam em spans separados da trilha, como nos roteiros.
+        totais = {s["titulo"]: s["total"] for s in r.context["situacoes"]}
+        self.assertEqual(totais, {"Todas": 4, "Que vão acontecer": 1, "Em andamento e realizados": 2, "Finalizados": 0, "Cancelados": 1})
+        for rotulo in ["Que vão acontecer", "Em andamento e realizados", "Finalizados", "Cancelados"]:
             self.assertContains(r, rotulo)
         self.assertEqual(len(r.context["linhas"]), 4)
 
@@ -195,18 +198,31 @@ class ListaTermosTests(CenarioTermos):
 
 
 class FormTermoTests(CenarioTermos):
-    def test_novo_tem_os_tres_blocos(self):
+    def test_novo_tem_os_blocos(self):
         r = self.client.get(reverse("viagens_termos:novo"))
         self.assertEqual(r.status_code, 200)
-        for texto in ["Novo termo", "Ofício vinculado", "Buscar ofício por número, protocolo, viajante ou destino",
-                      "Termo avulso: deixe sem ofício e informe destino e período.", "Destino e período", "UF do destino",
-                      "Município do destino", "Destinos adicionais", "Adicionar destino", "Período do evento",
+        for texto in ["Novo termo", "Buscar ofício por número, protocolo, viajante ou destino",
+                      "Destino e período", "UF do destino",
+                      "Município do destino", "Destinos", "Adicionar destino",
                       "Servidores e viatura", "Buscar por nome, cargo ou unidade", "JANINE LACERDA DO PRADO",
                       "AGENTE DE POLÍCIA JUDICIÁRIA · ASCOM", "AAA-1234 — DUSTER", "Salvar termo"]:
             self.assertContains(r, texto)
-        self.assertContains(r, f'data-url-busca="{reverse("viagens_termos:api_buscar_oficios")}"')
-        self.assertContains(r, 'data-picker-unico')
+        # O ofício é um interruptor da seção 1, no select padrão: sem ofício o
+        # painel nasce fechado e o termo é avulso.
+        self.assertContains(r, "Sem ofício vinculado")
+        self.assertContains(r, 'data-lista-escolha="oficio"')
+        self.assertNotContains(r, "interruptor--ligado")
         self.assertNotContains(r, "_campos.html")
+
+    def test_lista_de_oficios_traz_contexto_e_busca_o_viajante(self):
+        o = self.oficio(dias=3, protocolo="123456789", servidores=[self.janine])
+        r = self.client.get(reverse("viagens_termos:novo"))
+        self.assertContains(r, f'<input class="sr-only" type="radio" name="oficio" value="{o.pk}">')
+        self.assertContains(r, f"Ofício {o.numero_formatado}")
+        # A segunda linha mostra período, destino e protocolo; o viajante não
+        # aparece, mas o data-busca do filtro alcança ele.
+        self.assertContains(r, "ANTONINA/PR · 123456789")
+        self.assertContains(r, "JANINE LACERDA DO PRADO")
 
     def test_cria_termo_avulso_e_volta_pelo_next(self):
         volta = reverse("viagens_termos:lista") + "?situacao=futuras"
@@ -234,11 +250,13 @@ class FormTermoTests(CenarioTermos):
         t = self.termo(oficio=o)
         r = self.client.get(reverse("viagens_termos:editar", args=[t.pk]))
         self.assertContains(r, f"Termo #{t.pk}")
-        self.assertContains(r, f'<input type="hidden" name="oficio" value="{o.pk}">')
-        self.assertContains(r, f"Ofício {o.numero_formatado}")
+        self.assertContains(r, f'<input class="sr-only" type="radio" name="oficio" value="{o.pk}" checked>')
+        # Com ofício, o interruptor da seção 1 abre ligado.
+        self.assertContains(r, "interruptor--ligado")
+        self.assertContains(r, "Vinculado a um ofício")
         self.assertContains(r, "Este termo herda do ofício: destino, período, servidores, viatura.")
         r = self.client.post(reverse("viagens_termos:editar", args=[t.pk]), {"oficio": o.pk, "viatura": "", "servidores": [str(self.janine.pk)]})
-        self.assertRedirects(r, reverse("viagens_termos:editar", args=[t.pk]))
+        self.assertRedirects(r, reverse("viagens_termos:lista"))
         t.refresh_from_db()
         self.assertEqual(list(t.servidores.all()), [self.janine])
 

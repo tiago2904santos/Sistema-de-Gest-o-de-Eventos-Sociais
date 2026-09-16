@@ -2,12 +2,18 @@
   Componente: intervalo de datas.
   Mantém dois inputs nativos para compatibilidade com o backend e oferece
   um único calendário visual quando o JavaScript está disponível.
+
+  `dois_campos`: em vez de um campo só ("de — até"), mostra dois — início e
+  fim, lado a lado. O calendário continua sendo um só: a primeira escolha vai
+  para o início e a segunda para o fim, e abrir pelo campo final vai direto
+  escolher o fim. `rotulo_oculto` esconde o título sem tirá-lo dos leitores
+  de tela.
 {% endcomment %}
 <div class="form-campo{% if largura %} form-campo--{{ largura }}{% endif %}">
-  <span class="form-label" id="id_{{ name }}_label">
+  <span class="form-label{% if rotulo_oculto %} sr-only{% endif %}" id="id_{{ name }}_label">
     {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
   </span>
-  <div class="form-controle-wrapper form-controle-wrapper--date custom-date custom-date--range{% if erros %} is-invalid{% endif %}"
+  <div class="form-controle-wrapper form-controle-wrapper--date custom-date custom-date--range{% if dois_campos %} custom-date--par{% endif %}{% if erros %} is-invalid{% endif %}"
        data-custom-date-range>
     <div class="custom-date__range-native">
       <input class="form-controle" type="date" id="id_{{ start_name }}" name="{{ start_name }}"
@@ -19,12 +25,29 @@
              {% if desabilitado %}disabled{% endif %}
              aria-label="Fim de {{ label|lower }}"{% if erros %} aria-invalid="true" aria-describedby="id_{{ name }}_erro"{% endif %} data-custom-date-range-end{% if obrigatorio %} required{% endif %}>
     </div>
-    <button class="form-controle custom-date__trigger" type="button"
-            aria-labelledby="id_{{ name }}_label" aria-haspopup="dialog" aria-expanded="false"
-            aria-controls="id_{{ name }}_calendar" data-custom-date-range-trigger>
-      <span class="custom-date__valor">dd/mm/aaaa — dd/mm/aaaa</span>
-      <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="calendar" %}</span>
-    </button>
+    {% if dois_campos %}
+      <div class="custom-date__par">
+        <button class="form-controle custom-date__trigger" type="button"
+                aria-label="Início de {{ label|lower }}" aria-haspopup="dialog" aria-expanded="false"
+                aria-controls="id_{{ name }}_calendar" data-custom-date-range-trigger data-range-campo="inicio">
+          <span class="custom-date__valor">dd/mm/aaaa</span>
+          <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="calendar" %}</span>
+        </button>
+        <button class="form-controle custom-date__trigger" type="button"
+                aria-label="Fim de {{ label|lower }}" aria-haspopup="dialog" aria-expanded="false"
+                aria-controls="id_{{ name }}_calendar" data-custom-date-range-trigger data-range-campo="fim">
+          <span class="custom-date__valor">dd/mm/aaaa</span>
+          <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="calendar" %}</span>
+        </button>
+      </div>
+    {% else %}
+      <button class="form-controle custom-date__trigger" type="button"
+              aria-labelledby="id_{{ name }}_label" aria-haspopup="dialog" aria-expanded="false"
+              aria-controls="id_{{ name }}_calendar" data-custom-date-range-trigger>
+        <span class="custom-date__valor">dd/mm/aaaa — dd/mm/aaaa</span>
+        <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="calendar" %}</span>
+      </button>
+    {% endif %}
     <div class="custom-date__calendar custom-date__calendar--range" id="id_{{ name }}_calendar"
          role="dialog" aria-label="Calendário de {{ label|lower }}"
          data-custom-date-range-calendar hidden>

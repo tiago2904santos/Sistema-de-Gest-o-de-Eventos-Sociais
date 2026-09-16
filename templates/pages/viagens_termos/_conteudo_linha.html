@@ -1,0 +1,14 @@
+{% comment %}
+  O conteúdo de uma linha da lista de termos, numa célula só: o destino com o
+  selo temporal, o andamento dos documentos (só no termo preso a um ofício; o
+  avulso não passa por esse fluxo), os quatro fatos com ícone e o que o termo
+  herda do ofício. É o mesmo miolo do cartão de antes — a decisão foi
+  não espalhar isso em colunas. Contexto: `l` (linha), `t` (termo).
+{% endcomment %}
+<h2 class="of-cartao__titulo tm-titulo" id="termo-{{ t.pk }}-titulo">{{ l.titulo }} <span class="st st--{{ l.selo_tom }}">{{ l.selo }}</span>{% if t.oficio_id %} <span class="st st--{{ l.situacao_documentos.tom }}" title="Andamento dos termos: {{ l.situacao_documentos.gerados }} de {{ l.situacao_documentos.total }} em PDF, {{ l.situacao_documentos.assinados }} assinado{{ l.situacao_documentos.assinados|pluralize }}">{% include "components/icon.html" with nome="checklist" %}{{ l.situacao_documentos.rotulo }}</span>{% endif %}</h2>
+<ul class="tm-fatos" aria-label="Dados do termo #{{ t.pk }}">
+  {% for f in l.fatos %}
+    <li class="tm-fato{% if f.ausente %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome=f.icone %}<span class="sr-only">{{ f.rotulo }}: </span>{{ f.texto }}</li>
+  {% endfor %}
+</ul>
+{% if l.herdados %}<p class="tm-herdados">Herda do ofício: {{ l.herdados|join:", " }}.</p>{% endif %}

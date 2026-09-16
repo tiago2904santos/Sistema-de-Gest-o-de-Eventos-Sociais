@@ -30,7 +30,7 @@ body{margin:0;background:var(--papel);color:var(--n-700);font:400 14px/1.5 var(-
 h1{margin:0;color:var(--n-900);font-weight:500;line-height:1.08}
 button{font:inherit;color:inherit}
 a{color:var(--link);text-decoration:none}
-:focus-visible{outline:none;box-shadow:0 0 7px 3px var(--foco);border-radius:4px}
+:focus-visible{outline:none}
 /* Barras de rolagem sem trilho colorido: só o polegar aparece. */
 *{scrollbar-color:var(--n-250) transparent}
 ::-webkit-scrollbar-track{background:transparent}
@@ -124,8 +124,7 @@ a{color:var(--link);text-decoration:none}
 .busca .ui-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--n-300);pointer-events:none;transition:color var(--motion)}
 .busca input{width:100%;height:var(--ctrl-h);padding:0 var(--s4) 0 40px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco);font:inherit;font-size:14px;color:var(--n-900);transition:border-color var(--motion),box-shadow var(--motion)}
 .busca input::placeholder{color:var(--n-300)}
-.busca input:focus{outline:none;box-shadow:0 0 7px 3px var(--foco)}
-.busca:focus-within .ui-icon{color:var(--sel-r)}
+.busca input:focus{outline:none}
 .risco-b{display:none}
 /* Filter control contornado */
 .fc{display:inline-flex;align-items:center;gap:var(--s2);height:var(--ctrl-h);padding:0 var(--s4);border:1px solid var(--n-200);border-radius:8px;background:var(--branco);font-size:13.5px;color:var(--n-900);cursor:pointer;white-space:nowrap;flex:1 1 0;min-width:0;width:100%;transition:border-color var(--motion),background var(--motion)}
@@ -153,7 +152,7 @@ a{color:var(--link);text-decoration:none}
 .campo{display:grid;gap:var(--s1);min-width:0}
 .campo__label{font-size:12.5px;color:var(--n-500)}
 .ctrl{height:38px;width:100%;padding:0 var(--s3);border:1px solid var(--n-200);border-radius:7px;background:var(--branco);color:var(--n-900);font:inherit;font-size:13.5px}
-.ctrl:focus{outline:none;box-shadow:0 0 7px 3px var(--foco)}
+.ctrl:focus{outline:none}
 select.ctrl{appearance:none;cursor:pointer;padding-right:28px;background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a8a29a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;background-size:14px}
 .fpanel__pe{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);margin-top:var(--s4);padding-top:var(--s3);border-top:1px solid var(--n-150);flex-wrap:wrap}
 .fpanel__dica{font-size:12.5px;color:var(--n-450)}
@@ -509,7 +508,7 @@ html[data-dourado=cerimonial] .dt th{background:var(--d-50);color:var(--d-800)}
 .decisao__op small{display:block;font-size:11.5px;color:var(--n-450);font-weight:400;margin-top:1px}
 .decisao__op:has(input:checked){border-color:var(--sel-f);background:var(--sel-b)}
 .ta{width:100%;min-height:84px;padding:10px var(--s3);border:1px solid var(--n-200);border-radius:8px;background:var(--branco);font:inherit;font-size:13.5px;color:var(--n-900);resize:vertical}
-.ta:focus{outline:none;box-shadow:0 0 7px 3px var(--foco)}
+.ta:focus{outline:none}
 .etapas{display:grid;gap:0;padding:var(--s2) 0}
 .etapa{display:flex;gap:var(--s3);padding:10px var(--s5);position:relative}
 .etapa__m{width:9px;height:9px;border-radius:99px;background:var(--n-250);flex:none;margin-top:5px;position:relative;z-index:1;box-shadow:0 0 0 3px var(--branco)}
@@ -651,7 +650,6 @@ html[data-dourado=cerimonial] .dt th{background:var(--d-50);color:var(--d-800)}
 .aviso--erro__lista a:hover{text-decoration:underline}
 .aviso--erro__lista span{font-weight:400;color:#8a4a3d}
 .ctrl--erro,.ctrl.ctrl--erro,select.ctrl--erro,textarea.ctrl--erro{border-color:var(--dg-t)!important}
-.ctrl--erro:focus{box-shadow:0 0 7px 3px var(--dg-b)!important}
 .msg-erro{display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--dg-t);margin-top:3px}
 .msg-erro .ui-icon{width:11px;height:11px;flex:none}
 .grupo-erro{border:1px solid var(--dg-r);border-radius:8px;padding:10px;margin:-2px -10px 0}

@@ -485,6 +485,6 @@
   {{ block.super }}
   {{ modelos_texto|json_script:"oficio-modelos-texto" }}
   {{ resumos_roteiros|json_script:"oficio-resumos-roteiros" }}
-  <script src="{% estatico 'js/viagens-cadastros.js' %}" defer></script>
+  <script src="{% estatico 'js/multi-pick.js' %}" defer></script><script src="{% estatico 'js/viagens-cadastros.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-oficios.js' %}" defer></script>
 {% endblock %}

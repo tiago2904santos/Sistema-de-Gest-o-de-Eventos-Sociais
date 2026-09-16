@@ -35,6 +35,60 @@ from .services import build_termo_cadastro_payload, gerar_termo_cadastro_lote, g
 api_buscar_oficios = buscar_oficios_para_picker
 
 
+def opcoes_de_viatura():
+    """Viaturas do seletor, com o contexto que a tela usa para ordená-las.
+
+    `unidade` e `motoristas` viajam em `data-*` porque a ordem muda enquanto se
+    escolhem os servidores, sem ida ao servidor: viatura de um servidor
+    escolhido vai para o topo, depois as da lotação deles.
+    """
+    from viagens_cadastros.models import Viatura
+
+    opcoes = []
+    for v in Viatura.objects.select_related("unidade").prefetch_related("motoristas").order_by("placa"):
+        motoristas = list(v.motoristas.all())
+        # O selo diz a quem a viatura está presa: o motorista é o vínculo mais
+        # estreito e prevalece sobre a lotação.
+        if motoristas:
+            chip = motoristas[0].nome if len(motoristas) == 1 else f"{motoristas[0].nome} +{len(motoristas) - 1}"
+        elif v.unidade_id:
+            chip = v.unidade.sigla or v.unidade.nome
+        else:
+            chip = ""
+        opcoes.append({
+            "valor": str(v.pk),
+            "rotulo": f"{v.placa_formatada} — {v.modelo}" if v.modelo else v.placa_formatada,
+            "chip": chip,
+            "busca": " ".join([m.nome for m in motoristas] + ([v.unidade.nome, v.unidade.sigla or ""] if v.unidade_id else [])),
+            "dados": {"unidade": str(v.unidade_id or ""),
+                      "motoristas": " ".join(str(m.pk) for m in motoristas)},
+        })
+    return opcoes
+
+
+def opcoes_de_oficio(termo):
+    """Ofícios do select da seção 1, no formato do `components/select.html`.
+
+    Só os que ainda valem, mais o do próprio termo — que pode ter sido
+    cancelado depois do vínculo e sumiria da lista, apagando a escolha em
+    qualquer salvamento seguinte. A segunda linha (`detalhes`) traz período,
+    destinos e protocolo; `busca` leva o que não aparece mas deve casar na
+    busca, como o nome dos viajantes.
+    """
+    from viagens_oficios.justificativas_views import _oficios_para_escolha, resumo_para_busca
+    from viagens_oficios.selectors import base_oficios
+
+    queryset = _oficios_para_escolha()
+    if termo.oficio_id:
+        queryset = queryset | base_oficios().filter(pk=termo.oficio_id)
+    opcoes = []
+    for oficio in queryset.distinct():
+        dados = opcao_do_oficio(oficio)
+        opcoes.append({"valor": str(oficio.pk), "rotulo": dados["main"], "detalhes": dados["meta"],
+                       "busca": resumo_para_busca(oficio)["search_text"]})
+    return opcoes
+
+
 @acesso_ao_modulo
 def lista(request):
     q = request.GET.get("q", "").strip()
@@ -45,16 +99,42 @@ def lista(request):
     base = listar_termos(q)
     queryset = listar_termos(q, situacoes=escolhidas)
     paginator = Paginator(queryset, ITENS_POR_PAGINA)
-    pagina = paginator.get_page(request.GET.get("page"))
+    pagina = paginator.get_page(request.GET.get("pagina"))
     parametros = request.GET.copy()
-    parametros.pop("page", None)
+    parametros.pop("pagina", None)
     artefatos = artefatos_pdf_por_termo(pagina.object_list)
     linhas = [linha_da_lista(t, artefatos_pdf=artefatos.get(t.pk, {})) for t in pagina]
+
+    # Situações como chips da trilha, iguais à lista de roteiros: cada chip
+    # troca só a situação e mantém a busca.
+    def url_da_situacao(aba=None):
+        destino = parametros.copy()
+        destino.pop("situacao", None)
+        destino.pop("cancelados", None)
+        if aba:
+            destino["situacao"] = aba
+        return "?" + destino.urlencode()
+
+    icones = {
+        abas_de_termo.ABA_FUTURAS: "calendar",
+        abas_de_termo.ABA_ATUAIS: "clock",
+        abas_de_termo.ABA_FINALIZADOS: "check-circle",
+        abas_de_termo.ABA_CANCELADOS: "ban",
+    }
+    situacoes = [{"slug": "todas", "titulo": "Todas", "total": base.count(), "icone": "checklist", "url": url_da_situacao()}] + [
+        {"slug": chave, "titulo": rotulo, "total": base.filter(abas_de_termo.q_da_aba(chave)).count(),
+         "icone": icones[chave], "url": url_da_situacao(chave)}
+        for chave, rotulo in abas_de_termo.ABA_ROTULOS
+    ]
+
     return render(request, "pages/viagens_termos/lista.html", {
         "linhas": linhas, "pagina": pagina, "querystring": parametros.urlencode(), "q": q,
         "paginas_visiveis": list(paginator.get_elided_page_range(pagina.number, on_each_side=1, on_ends=1)),
         "elipse": paginator.ELLIPSIS,
-        "opcoes_situacao": abas_de_termo.opcoes_de_aba(base, escolhidas),
+        "situacoes": situacoes,
+        "situacoes_escolhidas": escolhidas,
+        # Chip aceso: nenhuma situação é "Todas"; várias (link antigo) não acendem nenhum.
+        "situacao_ativa": "todas" if not escolhidas else escolhidas[0] if len(escolhidas) == 1 else "",
         "tem_filtros": bool(q or escolhidas), "url_atual": daqui(request),
         "pode_editar": pode_editar_cadastros(request.user),
     })
@@ -69,29 +149,26 @@ def _contexto_form(form, termo, request):
     servidores = []
     for s in Servidor.objects.select_related("cargo", "unidade").order_by("nome"):
         from viagens_oficios.presenters import iniciais
+        # A unidade vai junto: é por ela que a tela sobe as viaturas da lotação
+        # dos servidores escolhidos para o topo do seletor de viatura.
         servidores.append({"valor": str(s.pk), "rotulo": s.nome, "iniciais": iniciais(s.nome), "selecionado": str(s.pk) in escolhidos,
+                           "dados": {"unidade": str(s.unidade_id or "")},
                            "detalhes": " · ".join(p for p in [str(s.cargo) if s.cargo_id else "", (s.unidade.sigla or s.unidade.nome) if s.unidade_id else ""] if p)})
     estados = [{"valor": str(e.pk), "rotulo": f"{e.sigla} — {e.nome}"} for e in Estado.objects.order_by("sigla")]
     municipios = [{"valor": str(m.pk), "rotulo": m.nome, "estado": str(m.estado_id)} for m in Municipio.objects.select_related("estado").order_by("nome")]
     valor = lambda nome: (str(getattr(form[nome].value(), "pk", form[nome].value())) if form[nome].value() not in (None, "") else "")
     adicionais = []
     for i in range(form.quantidade_destinos):
-        adicionais.append({"i": i, "nome_estado": f"extra_estado_{i}", "nome_cidade": f"extra_cidade_{i}", "id_estado": f"id_extra_estado_{i}",
+        adicionais.append({"i": i, "indice": str(i), "nome_estado": f"extra_estado_{i}", "nome_cidade": f"extra_cidade_{i}", "id_estado": f"id_extra_estado_{i}",
                            "estado": valor(f"extra_estado_{i}"), "cidade": valor(f"extra_cidade_{i}"),
                            "erros_estado": form.errors.get(f"extra_estado_{i}"), "erros_cidade": form.errors.get(f"extra_cidade_{i}")})
-    oficio_escolhido = None
-    pk_oficio = valor("oficio")
-    if pk_oficio.isdigit():
-        from viagens_oficios.selectors import base_oficios
-        oficio = base_oficios().filter(pk=int(pk_oficio)).first()
-        if oficio:
-            oficio_escolhido = opcao_do_oficio(oficio)
+    oficios = opcoes_de_oficio(termo)
     return {
         "form": form, "termo": termo, "valores": {n: valor(n) for n in ["oficio", "destino_estado", "destino_cidade", "data_evento_inicio", "data_evento_fim", "viatura"]},
         "erros": {n: form.errors.get(n) for n in form.fields}, "servidores": servidores, "estados": estados, "municipios": municipios,
-        "viaturas": [{"valor": str(v.pk), "rotulo": f"{v.placa_formatada} — {v.modelo}" if v.modelo else v.placa_formatada} for v in Viatura.objects.order_by("placa")],
+        "viaturas": opcoes_de_viatura(),
         "adicionais": adicionais, "quantidade_destinos": str(form.quantidade_destinos),
-        "oficio_escolhido": oficio_escolhido, "url_busca": reverse("viagens_termos:api_buscar_oficios"),
+        "oficios": oficios,
         "herdados": herdados_do_termo(termo) if termo.pk else [],
         # A herança com os valores: o aviso mostra o que vem do ofício em cada campo.
         "heranca": heranca_do_termo(termo) if termo.pk else [],
@@ -142,7 +219,9 @@ def editar(request, pk=None):
         if form.is_valid():
             termo = form.save()
             messages.success(request, f"Termo #{termo.pk} salvo.")
-            return redirect(voltar_para(request, reverse("viagens_termos:editar", args=[termo.pk])))
+            # Salvou, acabou: a lista é para onde se volta. Quem chegou com
+            # `next` (de uma prestação, por exemplo) continua voltando para lá.
+            return redirect(voltar_para(request, reverse("viagens_termos:lista")))
         messages.error(request, "Não foi possível salvar o termo. Revise os campos indicados.")
     return render(request, "pages/viagens_termos/form.html", _contexto_form(form, termo, request))
 

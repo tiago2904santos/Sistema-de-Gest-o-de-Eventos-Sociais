@@ -201,7 +201,6 @@
 
 .viagens-pessoa-opcao:hover { border-color: color-mix(in srgb, var(--cor-acento) 70%, var(--cor-borda)); }
 .viagens-pessoa-opcao[hidden] { display: none; }
-.viagens-pessoa-opcao:has(input:focus-visible) { box-shadow: 0 0 0 3px color-mix(in srgb, var(--cor-acento) 30%, transparent); }
 .viagens-pessoa-opcao:has(input:checked) { border-color: var(--cor-acento); background: color-mix(in srgb, var(--cor-acento) 9%, var(--cor-superficie)); }
 .viagens-pessoa-opcao input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 
@@ -258,7 +257,6 @@
 .viagens-switch > span::after { content: ""; width: 20px; height: 20px; display: block; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .15s ease; }
 .viagens-switch input:checked + span { background: var(--cor-acento); }
 .viagens-switch input:checked + span::after { transform: translateX(20px); }
-.viagens-switch input:focus-visible + span { outline: 3px solid color-mix(in srgb, var(--cor-acento) 35%, transparent); outline-offset: 2px; }
 
 .viagens-diaria-preview {
   display: grid;

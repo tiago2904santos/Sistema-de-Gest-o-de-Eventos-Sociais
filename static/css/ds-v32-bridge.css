@@ -59,7 +59,6 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
 .fc__limpar .ui-icon{width:13px;height:13px}
 .fc--combo[data-ativo] .form-controle__icone{display:none}
 .fc--combo[data-ativo] .custom-select__trigger{padding-right:2px}
-.fc:focus-within{box-shadow:0 0 7px 3px var(--foco)}
 .fc[data-ativo] 
 .chips-v32{padding:0 0 var(--s4)}
 .semres .btn-primaria{display:inline-flex}
@@ -119,7 +118,7 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
 .form-label{font-size:12.5px;color:var(--n-600);font-weight:500}
 .form-erro{display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--dg-t);margin:3px 0 0}
 .form-controle{height:38px;width:100%;padding:0 var(--s3);border:1px solid var(--n-200);border-radius:7px;background:var(--branco);color:var(--n-900);font:inherit;font-size:13.5px}
-.form-controle:focus{outline:none;box-shadow:0 0 7px 3px var(--foco)}
+.form-controle:focus{outline:none}
 .form-controle-wrapper{position:relative}
 .form-controle__icone{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--n-300);pointer-events:none;display:grid;transition:transform var(--motion),color var(--motion)}
 .form-controle__icone .ui-icon{width:14px;height:14px}
@@ -129,11 +128,10 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
 /* Quantidades: um único contorno e foco para o conjunto, sem as setas nativas
    que apareciam sobre o número ao passar o mouse. */
 .stepper-n{height:36px;border-radius:8px;background:var(--branco);transition:border-color var(--motion),box-shadow var(--motion)}
-.stepper-n:has(input:enabled):focus-within{box-shadow:0 0 7px 3px var(--foco)}
 .stepper-n button{width:32px;height:34px;background:transparent;color:var(--n-500);transition:background var(--motion),color var(--motion)}
 .stepper-n button:hover{background:var(--hover-b);color:var(--n-900)}
 .stepper-n button:active{background:var(--n-150)}
-.stepper-n button:focus-visible{box-shadow:0 0 7px 3px var(--foco);border-radius:0}
+.stepper-n button:focus-visible{border-radius:0}
 .stepper-n input{width:44px;height:34px;padding:0 4px;border-color:var(--n-150);border-radius:0;background:var(--branco);font-variant-numeric:tabular-nums;appearance:textfield;-moz-appearance:textfield}
 .stepper-n input:focus{outline:0;box-shadow:none;border-radius:0}
 .stepper-n input::-webkit-inner-spin-button,.stepper-n input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
@@ -146,7 +144,7 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
 .an-add--zona.is-arrastando{border-color:var(--sel-r);background:var(--sel-b)}
 .upload-anexos{position:relative;display:flex;flex-direction:column;gap:8px;margin-top:10px;min-width:0}
 .upload-anexos__input{position:absolute;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none}
-.upload-anexos__input:focus-visible+.an-add--zona{outline:none;box-shadow:0 0 7px 3px var(--foco)}
+.upload-anexos__input:focus-visible+.an-add--zona{outline:none}
 .upload-anexos__enviar{align-self:flex-start}
 .upload-anexos [hidden]{display:none}
 .upload-anexos [data-upload-erro]{margin:0}
@@ -239,7 +237,7 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
 .pa-h--lista{padding:15px 18px 13px;margin:0;border-bottom:1px solid var(--n-150)}
 .pa-periodo{margin-left:auto}
 .pa-periodo select{height:30px;border:1px solid var(--n-200);border-radius:6px;background:var(--branco);font:inherit;font-size:12.5px;font-weight:500;color:var(--n-700);padding:0 8px;cursor:pointer}
-.pa-periodo select:focus{outline:none;box-shadow:0 0 7px 3px var(--foco)}
+.pa-periodo select:focus{outline:none}
 .pa-rodape{display:flex;align-items:center;gap:6px;margin:14px 0 0;font-size:11.5px;color:var(--n-450)}
 .pa-rodape .ui-icon{width:13px;height:13px;flex:none}
 .pa-dg--col{flex-direction:column;align-items:stretch;gap:16px;padding-bottom:16px;margin-bottom:12px}
@@ -375,7 +373,7 @@ body.m-sheet-aberto{overflow:hidden}
 .custom-date__range-native{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .custom-date.is-enhanced .custom-date__trigger{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--branco);color:var(--n-300);text-align:left;cursor:pointer}
 .custom-date__trigger.has-value{color:var(--n-900)}
-.custom-date.is-open .custom-date__trigger{box-shadow:0 0 7px 3px var(--foco)}
+
 .custom-date.is-open .form-controle__icone{color:var(--n-800)}
 .custom-date.is-invalid .custom-date__trigger{border-color:var(--dg-t)}
 .custom-date__calendar{position:absolute;z-index:60;top:calc(100% + 6px);left:0;width:min(300px,calc(100vw - 32px));padding:12px;border:1px solid var(--n-200);border-radius:10px;background:var(--branco);box-shadow:0 14px 30px rgba(26,25,23,.16)}
@@ -393,7 +391,7 @@ body.m-sheet-aberto{overflow:hidden}
 .custom-date__semana{margin-bottom:3px}
 .custom-date__semana span{height:26px;display:grid;place-items:center;color:var(--n-450);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 .custom-date__dia{position:relative;min-width:0;height:32px;display:grid;place-items:center;border:1px solid transparent;border-radius:7px;background:0;color:var(--n-800);font:inherit;font-size:12.5px;font-variant-numeric:tabular-nums;cursor:pointer}
-.custom-date__dia:hover,.custom-date__dia:focus-visible{outline:0;background:var(--n-100);color:var(--n-900)}
+.custom-date__dia:hover,.custom-date__dia:focus-visible{outline:0;border-radius:3px;background:var(--n-100);color:var(--n-900)}
 .custom-date__dia.is-outside{color:var(--n-300)}
 .custom-date__dia.is-today{border-color:var(--n-300);color:var(--n-900);font-weight:600}
 .custom-date__dia.is-selected,.custom-date__dia.is-range-start,.custom-date__dia.is-range-end{border-color:var(--n-800);background:var(--n-800);color:#fff;font-weight:600}
@@ -787,7 +785,7 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 /* Opção destacada pelo teclado (Enter escolhe). */
 .multi-pick__opcao.is-active{background:var(--hover-b)}
 .multi-pick__opcao.is-active .custom-select__check{opacity:1}
-.multi-pick__escolhidos{display:grid;gap:6px;margin:8px 0 0;padding:0;list-style:none}
+.multi-pick__escolhidos{display:grid;gap:4px;margin:4px 0 0;padding:0;list-style:none}
 .multi-pick__escolhidos:empty{display:none}
 .multi-pick__escolhido{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco);font-size:13px;color:var(--n-900)}
 .multi-pick__escolhido small{display:block;font-size:11px;color:var(--n-450)}
@@ -935,7 +933,7 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 .v32-aba:hover{background:var(--n-25)}
 .v32-aba input{width:14px;height:14px;margin:0;accent-color:var(--marcado)}
 .v32-aba--ativa{border-color:var(--sel-r);background:var(--sel-b);color:var(--d-800);font-weight:600}
-.v32-aba:focus-within{outline:none;box-shadow:0 0 7px 3px var(--foco)}
+.v32-aba:focus-within{outline:none}
 .acao-linha--perigo{color:var(--dg-t)}
 .acao-linha--perigo:hover{background:var(--dg-b)}
 .c-cad-acoes .acoes form{display:inline-flex;margin:0}
@@ -1226,7 +1224,6 @@ a.step-i{text-decoration:none;color:inherit}
 .ib-linha--perigo:hover{background:var(--dg-b)!important}
 .tm-cartao .acoes form{margin:0}
 .tm-form .editor-roteiro__rodape{grid-column:1/-1}
-.tm-adicional{margin-bottom:10px}
 .tm-form .aviso-rota{margin-top:12px}
 /* Herança do ofício: o nome do campo e o valor que vem dele, lado a lado. */
 .tm-heranca{align-items:flex-start}
@@ -1301,7 +1298,7 @@ a.step-i{text-decoration:none;color:inherit}
 .pc-download__versao:hover{background:var(--hover-b);color:var(--n-900)}
 .pc-anexar{margin:0}
 .pc-anexar__item{cursor:pointer;width:100%}
-.pc-anexar__item:focus-within{outline:none;box-shadow:0 0 7px 3px var(--foco)}
+.pc-anexar__item:focus-within{outline:none}
 .pc-anexar__ver{display:inline-flex;align-items:center;gap:6px;margin:-2px 10px 8px 42px;font-size:11.5px;color:var(--n-700)}
 @media (max-width:720px){.pc-servidor__solic{flex-basis:100%}.pc-servidor .of-pessoa__txt{flex-basis:100%}}
 /* Meta 6 · etapas da prestação */
@@ -1415,8 +1412,9 @@ a.step-i{text-decoration:none;color:inherit}
 @media (prefers-reduced-motion:reduce){.destinos.is-reordenando .destino-row{transition:none}}
 
 /* Mapa em camada própria: os controles do Leaflet não cobrem listas abertas acima. */
-/* Bloco de destinos encosta no fim do cartão. */
-.editor-roteiro .bloco-split:has([data-destinos]){padding-bottom:0}
+/* Bloco de destinos encosta no fim do cartão — só quando é mesmo o último:
+   no cadastro de termo vem o período embaixo, que precisa do respiro. */
+.editor-roteiro .bloco-split:last-child:has([data-destinos]){padding-bottom:0}
 /* Lixeira da linha de destino: fundo vermelho claro sólido, sem borda visível.
    `!important` porque .btn--destrutiva também usa, para cor e borda. */
 .editor-roteiro .destino-row__remover{background:var(--dg-b);border-color:var(--dg-b)!important;color:var(--dg-t)!important;box-shadow:none}
@@ -1443,7 +1441,7 @@ a.step-i{text-decoration:none;color:inherit}
 .custom-select__limpar[hidden]{display:none}
 .custom-select__limpar::before{content:"";width:12px;height:12px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E") center/contain no-repeat}
 .custom-select__limpar:hover{color:var(--n-800)}
-.custom-select__limpar:focus-visible{outline:0;box-shadow:0 0 7px 3px var(--foco)}
+.custom-select__limpar:focus-visible{outline:0}
 .custom-select.is-enhanced.tem-limpar .form-controle__icone{display:none}
 
 /* Trechos com a pele da lista de cadastros (cad-lista no invólucro): faixa cinza no
@@ -1661,3 +1659,137 @@ form.btn-flutuante-form{margin:0;display:contents}
   .pc-trechos .pc-trecho__n{display:none}
   .pc-trechos .form-campo{min-width:0}
 }
+
+/* Painel do interruptor "vincular a um ofício" (cadastro do termo): a mesma
+   caixa do bate-volta do roteiro, com a busca e a lista de ofícios dentro e a
+   herança logo abaixo. A lista fica branca para se destacar do fundo do painel;
+   mais baixa que a de servidores, que é o bloco principal da sua seção. */
+.tm-form .tm-oficio{margin-bottom:16px}
+.tm-form .tm-oficio .form-campo{margin:0}
+.tm-form .tm-oficio .busca{background:var(--branco)}
+/* Quatro linhas de 55px cabem; da quinta em diante a lista rola. */
+.lista-escolha{margin-top:8px;max-height:220px;background:var(--branco)}
+.tm-form .tm-oficio .tm-heranca{margin:12px 0 0}
+/* Sem a coluna do rádio: a linha inteira é o rótulo e o que marca a escolha é
+   o destaque do fundo. */
+.lista-escolha .of-membro{grid-template-columns:40px minmax(0,1fr) auto;cursor:pointer}
+.lista-escolha .of-membro:hover{background:var(--n-25)}
+/* Escolhido em cinza, mais escuro que o do hover. */
+.lista-escolha .of-membro--viaja,.lista-escolha .of-membro--viaja:hover{background:var(--n-150)}
+/* Intervalo em dois campos (`dois_campos`): início e fim lado a lado, mais
+   juntos que as colunas soltas do g-form, porque se leem como um par só. */
+.custom-date--par .custom-date__par{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+/* O ícone é posicionado contra o campo, não contra o wrapper: com dois campos
+   no mesmo wrapper os dois ícones caíam um sobre o outro, na borda direita. */
+.custom-date--par .custom-date__trigger{position:relative}
+/* O crachá não tem iniciais para destacar: fica cinza em repouso e grafite na
+   linha escolhida — é ele que marca a escolha, junto com o fundo da linha. */
+.lista-escolha .of-av{background:var(--n-150);color:var(--n-800)}
+/* Selo ao lado do nome: diz a quem o registro está preso (o motorista da
+   viatura, ou a unidade). Menor que o selo de situação das listagens e em
+   cinza — o `st--rascunho` daqui é azul e ia disputar atenção com a linha
+   escolhida. */
+.st--neutro{background:var(--n-100);color:var(--n-600);border:1px solid var(--n-200)}
+.lista-escolha__chip{height:20px;margin-left:8px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.lista-escolha .of-membro--viaja .of-av{background:var(--grafite);color:var(--branco)}
+/* A lista de ofícios abre a seção 1; o bloco de destinos que vem depois ganha
+   a mesma linha que separa um bloco do outro — só enquanto a lista está à
+   vista: com o interruptor desligado, destinos volta a ser o primeiro bloco. */
+.of-form .tm-oficio+.bloco-split{border-top:1px solid var(--n-150)}
+.of-form .tm-oficio[hidden]+.bloco-split{border-top:0;padding-top:0}
+/* Bloco sem coluna de rótulo: o campo toma a largura do cartão. Mesmo respiro
+   e mesma linha de separação de um `bloco-split`, para conviverem no cartão. */
+.of-form .tm-bloco{padding:16px 0}
+.of-form .tm-bloco:first-child{padding-top:0}
+.of-form .tm-bloco+.tm-bloco,.of-form .tm-bloco+.bloco-split,.of-form .bloco-split+.tm-bloco{border-top:1px solid var(--n-150)}
+
+/* Escolhidos em duas colunas; sobrando um, ele fecha a linha inteira. */
+.multi-pick__escolhidos{grid-template-columns:repeat(2,minmax(0,1fr))}
+.multi-pick__escolhidos>li:last-child:nth-child(odd){grid-column:1/-1}
+
+/* Escolher uma linha: o fundo entra e o crachá dá um pulinho. */
+@keyframes lista-escolhida{from{background:var(--n-25)}to{background:var(--n-150)}}
+@keyframes lista-cracha{0%{transform:scale(.82)}60%{transform:scale(1.07)}100%{transform:scale(1)}}
+.lista-escolha .of-membro--viaja{animation:lista-escolhida 240ms ease-out}
+.lista-escolha .of-membro--viaja .of-av{animation:lista-cracha 320ms cubic-bezier(.34,1.56,.64,1)}
+@media (prefers-reduced-motion:reduce){.lista-escolha .of-membro--viaja,.lista-escolha .of-membro--viaja .of-av{animation:none}}
+
+/* Cabeçalho de formulário: o ícone e o título ficam centrados um com o outro,
+   com ou sem subtítulo — encostado no topo o título subia e desencontrava do
+   ícone. Nas listagens o ícone segue alinhado à primeira linha. */
+.d-cabeca--form .d-identificacao{align-items:center}
+.d-cabeca--form .d-identificacao>.kpi__ic{margin-top:0}
+
+/* Campo de data não acende o brilho de foco, pela mesma razão do select: o
+   calendário aberto, com sombra própria, já diz qual campo está ativo. */
+.custom-date__trigger:focus,.custom-date__trigger:focus-visible,
+.custom-date.is-open .custom-date__trigger{outline:none;box-shadow:none}
+
+
+
+/* Nada de foco em lugar nenhum, a pedido de 15/09/2026: as regras que pintavam
+   o brilho foram apagadas na origem, aqui fica só o corte do contorno que o
+   navegador desenha sozinho. Quem navega pelo teclado deixa de ver onde está. */
+*:focus,*:focus-visible{outline:none}
+
+/* As buscas que comandam uma lista têm a mesma altura dos outros campos. */
+.tm-form .of-equipe-busca .busca input{height:38px}
+
+/* Lista de termos no molde da de roteiros. A célula única guarda o miolo do
+   cartão de antes: o título com os selos, os fatos com ícone e a herança —
+   o peso da célula `c-nome` fica só no título. */
+.cad-lista .dt td.tm-celula{font-weight:400;letter-spacing:0}
+.tm-celula .tm-titulo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0;font-size:13.5px;font-weight:600;color:var(--n-900)}
+.tm-celula .tm-titulo .st{margin-left:0;font-weight:500}
+.tm-celula .tm-titulo .st .ui-icon{width:13px;height:13px;margin-right:5px}
+.tm-celula .tm-fatos{margin-top:6px}
+.tm-celula .tm-herdados{margin:6px 0 0;font-size:12px}
+.m-item .tm-celula .tm-fatos{flex-direction:column;gap:4px}
+/* Cancelado: a linha apaga, o título risca. */
+.cad-lista .dt tbody tr.tm-linha--cancelada{background:var(--n-25)}
+.tm-linha--cancelada .tm-titulo{color:var(--n-500);text-decoration:line-through}
+/* O menu reúne o que eram quatro botões; precisa de largura para os títulos. */
+.tm-menu{min-width:320px}
+
+/* Seções do termo salvo (documentos, gerados, cancelamento): uma regra só —
+   tabela encostada no cartão, como a de trechos do roteiro, colunas de
+   largura fixa e ações em ícones de largura fixa. É o que põe tudo na mesma
+   coluna, linha após linha. */
+.tm-form .tm-tabela{margin:-16px -20px 0;width:calc(100% + 40px);max-width:none;border-top:0}
+.tm-form .tm-tabela--fim{margin-bottom:-16px}
+.tm-form .tm-tabela .dt{border:0;border-radius:0;table-layout:fixed}
+.tm-form .tm-tabela .dt th{background:var(--n-50)}
+.tm-form .tm-tabela .dt tbody td{vertical-align:middle}
+.tm-form .tm-tabela--fim .dt tbody tr:last-child td{border-bottom:0}
+.tm-form .tm-tabela--fim .dt tbody tr:last-child td:first-child{border-bottom-left-radius:12px}
+.tm-form .tm-tabela--fim .dt tbody tr:last-child td:last-child{border-bottom-right-radius:12px}
+.tm-form .tm-col-estado{width:150px}
+.tm-form .tm-col-servidor{width:200px}
+.tm-form .tm-col-data{width:140px}
+.tm-form .tm-col-formato{width:90px}
+/* A coluna de ações tem a largura exata de quatro ícones. */
+.tm-form .tm-tabela .dt .tm-col-acoes{width:172px}
+.tm-form .tm-icones{display:flex;justify-content:flex-end;gap:6px}
+.tm-form .tm-icones form{margin:0;display:inline-flex}
+.tm-form .tm-icones .ib-linha{width:32px;height:32px}
+.tm-form .tm-icones .of-item--inativo{opacity:.4;cursor:default}
+.tm-form .tm-icones__vago{visibility:hidden}
+/* Alvo do documento: crachá, nome e descrição. */
+.tm-form .tm-alvo{font-weight:600}
+.tm-form .tm-alvo__linha{display:flex;align-items:center;gap:10px}
+.tm-form .tm-alvo .of-av{flex:none;width:30px;height:30px;font-size:11px;background:var(--n-150);color:var(--n-800)}
+.tm-form .tm-alvo__txt{display:grid;gap:2px;min-width:0}
+.tm-form .tm-alvo__txt small{font-size:11px;font-weight:400;color:var(--n-450)}
+.tm-form .tm-arquivo__linha{display:flex;align-items:center;gap:8px;min-width:0}
+.tm-form .tm-arquivo__nome{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Rodapé do cartão, como Voltar/Salvar: linha de separação, uma coisa à
+   esquerda e os lotes à direita. */
+.tm-form .tm-rodape{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--n-150)}
+.tm-form .tm-rodape__lotes{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-left:auto}
+.tm-form .tm-rodape form{margin:0}
+.tm-form #cancelamento .tm-rodape{justify-content:flex-end}
+.tm-form #cancelamento .tm-rodape>:first-child{margin-right:auto}
+.tm-form #form-cancelar .ta{min-height:76px}
+.tm-form .tm-explica{margin:0;color:var(--n-600)}
+.tm-form .tm-contagem{font-size:12px;font-weight:500;color:var(--n-500)}
+@container(max-width:680px){.tm-form .tm-tabela{margin-left:-16px;margin-right:-16px;width:calc(100% + 32px)}.tm-form .tm-col-servidor,.tm-form .tm-col-data,.tm-form .tm-col-formato{display:none}}

@@ -1,0 +1,34 @@
+{% comment %}
+  Linha de destino do termo, no componente do editor de roteiro: alça para
+  reordenar, "+" para inserir abaixo e lixeira para remover.
+
+  A lista é uma só. A primeira linha é o destino do termo (`destino_estado` e
+  `destino_cidade`); as seguintes são os adicionais (`extra_estado_<i>` e
+  `extra_cidade_<i>`, criados pelo form a partir de `quantidade_destinos`).
+  Quem decide quem é quem é o viagens-termos.js, no envio, pela ordem em que as
+  linhas ficaram na tela — assim arrastar e remover não precisam mexer em
+  `name` e `id` de campo já aprimorado.
+
+  Espera no contexto: nome_estado, nome_cidade, id_estado, rotulo_estado,
+  rotulo_cidade, estados, municipios e, nas linhas já existentes, estado,
+  cidade, erros_estado e erros_cidade.
+{% endcomment %}
+<div class="destino-row" data-destino data-destino-linha>
+  <span class="destino-row__alca" data-destino-alca title="Arrastar para reordenar" aria-hidden="true">
+    {% include "components/icon.html" with nome="grip" %}
+  </span>
+  <button type="button" class="btn btn--dourado btn-primaria btn--compacto destino-row__adicionar" data-destino-adicionar
+          aria-label="Adicionar destino abaixo" title="Adicionar destino abaixo">
+    {% include "components/icon.html" with nome="plus" %}
+  </button>
+  <div class="destino-row__estado">
+    {% include "components/select.html" with name=nome_estado label=rotulo_estado rotulo_oculto=True opcoes=estados placeholder="Buscar estado..." pesquisavel=True selecionado=estado erros=erros_estado %}
+  </div>
+  <div class="destino-row__campo">
+    {% include "components/select.html" with name=nome_cidade label=rotulo_cidade rotulo_oculto=True opcoes=municipios placeholder="Buscar município..." pesquisavel=True dependente_de=id_estado selecionado=cidade erros=erros_cidade %}
+  </div>
+  <button type="button" class="btn btn--perigo btn--secundaria btn--destrutiva btn--compacto destino-row__remover" data-destino-remover
+          aria-label="Remover destino" title="Remover destino">
+    {% include "components/icon.html" with nome="trash" %}
+  </button>
+</div>

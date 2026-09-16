@@ -248,7 +248,7 @@ def _sede_inicial(request, roteiro):
 @acesso_ao_modulo
 def editar(request, pk=None):
     _exigir_edicao(request)
-    from core.retorno import next_valido, com_next
+    from core.retorno import next_valido
     retorno = next_valido(request)
     roteiro = get_object_or_404(Roteiro, pk=pk) if pk else None
 
@@ -298,10 +298,8 @@ def editar(request, pk=None):
                         "Roteiro salvo — diárias: "
                         f"R$ {totais['total_valor']} ({totais['resumo_diarias']}).",
                     )
-                if rascunho:
-                    # Rascunho continua em edição: quem salvou ainda está montando.
-                    return redirect(com_next(reverse("viagens_roteiros:editar", args=[salvo.pk]), retorno))
-                # Finalizado, o trabalho acabou: volta para a lista.
+                # Salvou, acabou: a lista é para onde se volta, rascunho ou não.
+                # Quem chegou com `next` continua voltando para lá.
                 return redirect(retorno or reverse("viagens_roteiros:lista"))
             if not pk:
                 # Trechos inválidos num roteiro recém-criado: ele já existe no
@@ -635,7 +633,7 @@ def autosave(request, pk=None):
     baixo delas as deixaria mentindo.
     """
     _exigir_edicao(request)
-    from core.retorno import next_valido, com_next
+    from core.retorno import next_valido
     retorno = next_valido(request)
     roteiro = get_object_or_404(Roteiro, pk=pk) if pk else None
     if roteiro and roteiro.status == Roteiro.Status.FINALIZADO:

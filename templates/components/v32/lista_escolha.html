@@ -1,0 +1,34 @@
+{% comment %}
+  Componente: lista de escolha única com busca — busca em cima, linhas embaixo,
+  no desenho da lista de servidores. Clicar em qualquer ponto da linha escolhe;
+  clicar na linha já escolhida desfaz. Quem liga é o `static/js/lista-escolha.js`.
+
+  Uso:
+    {% include "components/v32/lista_escolha.html" with name="oficio"
+       label="Ofícios" icone="document" opcoes=oficios selecionado=valores.oficio
+       placeholder="Buscar ofício..." erros=erros.oficio %}
+
+  `opcoes`: lista de dicts {"valor", "rotulo", "detalhes", "busca", "dados"}.
+  `busca` são termos que a linha não mostra mas o filtro deve alcançar; `dados`
+  vira `data-*` na linha, para quem precisa de contexto no navegador; `chip` é
+  um selo curto ao lado do nome (com `chip_tom` para o tom, padrão neutro).
+  O rádio fica fora da vista: o que marca a escolha é o destaque da linha.
+{% endcomment %}
+<div class="form-campo of-equipe-busca">
+  <label class="form-label sr-only" for="id_{{ name }}_busca">{{ rotulo_busca|default:label }}</label>
+  <div class="busca">
+    <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+    <input class="form-controle" type="search" id="id_{{ name }}_busca" placeholder="{{ placeholder }}" data-lista-busca="{{ name }}" autocomplete="off">
+  </div>
+</div>
+<div class="of-membros lista-escolha{% if erros %} grupo-erro{% endif %}" data-lista-escolha="{{ name }}" role="group" aria-label="{{ label }}">
+  {% for opcao in opcoes %}
+    <label class="of-membro{% if opcao.valor == selecionado %} of-membro--viaja{% endif %}" data-lista-item="{{ opcao.valor }}" data-busca="{{ opcao.rotulo }} {{ opcao.detalhes }} {{ opcao.busca }}"{% for chave, dado in opcao.dados.items %} data-{{ chave }}="{{ dado }}"{% endfor %}>
+      <input class="sr-only" type="radio" name="{{ name }}" value="{{ opcao.valor }}"{% if opcao.valor == selecionado %} checked{% endif %}>
+      <span class="of-av" aria-hidden="true">{% include "components/icon.html" with nome=icone|default:"document" %}</span>
+      <span class="of-pessoa__txt"><span class="of-pessoa__nome">{{ opcao.rotulo }}{% if opcao.chip %}<span class="st st--{{ opcao.chip_tom|default:"neutro" }} lista-escolha__chip">{{ opcao.chip }}</span>{% endif %}</span>{% if opcao.detalhes %}<span class="of-pessoa__desc">{{ opcao.detalhes }}</span>{% endif %}</span>
+      <span></span>
+    </label>
+  {% empty %}<p class="texto-vazio">{{ vazio|default:"Nenhum registro disponível." }}</p>{% endfor %}
+</div>
+{% for erro in erros %}<p class="form-erro">{{ erro }}</p>{% endfor %}
