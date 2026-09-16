@@ -112,26 +112,36 @@ class JustificativaForm(forms.ModelForm):
         return texto
 
 
-class JustificativaQuickAddForm(forms.Form):
-    """Inclusão rápida da origem: o mesmo texto para vários ofícios de uma vez."""
+class JustificativaCadastroForm(forms.Form):
+    """Cadastro e edição de uma justificativa, no modal da lista.
 
-    oficios = forms.ModelMultipleChoiceField(queryset=Oficio.objects.none(), label='Ofícios')
+    Nova: escolhe-se o ofício entre os que ainda não têm texto. Edição: o
+    ofício é o da justificativa e não muda; só modelo e texto.
+    """
+
+    oficio = forms.ModelChoiceField(queryset=Oficio.objects.none(), label='Ofício',
+                                    error_messages={'required': 'Escolha o ofício.',
+                                                    'invalid_choice': 'Escolha um ofício sem justificativa.'})
     modelo = forms.ModelChoiceField(queryset=ModeloJustificativa.objects.none(), required=False, label='Modelo de justificativa')
-    texto = forms.CharField(label='Justificativa', widget=forms.Textarea(attrs={'rows': 5}),
+    texto = forms.CharField(label='Justificativa', widget=forms.Textarea(attrs={'rows': 6}),
                             error_messages={'required': 'Informe o texto da justificativa.'})
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, justificativa=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['oficios'].queryset = Oficio.objects.filter(cancelado=False)
-        self.fields['modelo'].queryset = ModeloJustificativa.objects.filter(ativo=True)
-        self.fields['oficios'].error_messages['required'] = 'Escolha ao menos um ofício.'
-        # O seletor lista só o que já foi escolhido; a busca vem do servidor.
-        from .picker import renderizar_so_os_escolhidos
-        renderizar_so_os_escolhidos(self, 'oficios')
-
-    def oficios_escolhidos(self):
-        from .picker import oficios_ja_escolhidos
-        return oficios_ja_escolhidos(self, 'oficios').select_related('roteiro').prefetch_related('servidores', 'roteiro__destinos__municipio__estado')
+        self.justificativa = justificativa
+        self.fields['modelo'].queryset = ModeloJustificativa.objects.filter(ativo=True).order_by('ordem', 'nome')
+        if justificativa is not None:
+            del self.fields['oficio']
+            if not self.is_bound:
+                self.initial.update(modelo=justificativa.modelo_id, texto=justificativa.texto)
+        else:
+            self.fields['oficio'].queryset = (
+                Oficio.objects.filter(cancelado=False)
+                .exclude(justificativa__texto__gt='')
+                .select_related('roteiro')
+                .prefetch_related('roteiro__destinos__municipio__estado', 'roteiro__trechos')
+                .order_by('-ano', '-numero', '-pk')
+            )
 
     def clean_texto(self):
         texto = normalize_spaces(self.cleaned_data.get('texto') or '')

@@ -1,0 +1,25 @@
+{% comment %}
+  Ações de uma linha de justificativa num botão único, no padrão da lista de
+  termos: editar (abre o modal), documentos, abrir o ofício e excluir o texto.
+  Quem só consulta não vê o menu. Contexto: `l` (linha), `pode_editar`,
+  `url_atual`.
+{% endcomment %}
+{% if pode_editar %}
+  <div class="dd of-menu cad-acoes" data-menu>
+    <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações da justificativa do ofício {{ l.oficio.numero_formatado }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
+    <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
+      <a class="dd__i of-item" href="{{ l.url_editar }}" data-cadastro-modal>{% include "components/icon.html" with nome="pencil" %}<span><b>{% if l.preenchida %}Editar justificativa{% else %}Preencher justificativa{% endif %}</b><small>Modelo e texto</small></span></a>
+      {% if l.preenchida %}
+        <form method="post" action="{{ l.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar PDF</b><small>Abrir o documento no navegador</small></span></button></form>
+        <form method="post" action="{{ l.url_pdf }}">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Documento pronto para assinatura</small></span></button></form>
+        <form method="post" action="{{ l.url_docx }}">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivo editável</small></span></button></form>
+      {% endif %}
+      <a class="dd__i of-item" href="{{ l.url_oficio }}?next={{ url_atual|urlencode }}">{% include "components/icon.html" with nome="arrow-right" %}<span><b>Abrir ofício</b><small>Ofício {{ l.oficio.numero_formatado }}</small></span></a>
+      {% if l.preenchida %}
+        <form method="post" action="{{ l.url_excluir }}" data-confirmar="Excluir a justificativa do ofício {{ l.oficio.numero_formatado }}?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+          <button type="submit" class="dd__i dd__i--perigo of-item">{% include "components/icon.html" with nome="trash" %}<span><b>Excluir justificativa</b><small>Apaga o texto; a regra de prazo continua</small></span></button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}

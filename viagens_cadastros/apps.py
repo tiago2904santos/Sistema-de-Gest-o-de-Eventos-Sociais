@@ -34,7 +34,7 @@ class ViagensCadastrosConfig(AppConfig):
                                "catalogo", "catalogo_novo", "catalogo_editar", "numeracao",
                                "assinatura_artefato", "preview_artefato")},
                 {"rotulo": "Justificativas", "icone": "document", "url": "viagens_oficios:justificativas",
-                 "url_names": ("justificativas", "justificativa_excluir", "justificativas_buscar_oficios")},
+                 "url_names": ("justificativas", "justificativa_nova", "justificativa_editar", "justificativa_excluir")},
                 {"rotulo": "Termos", "icone": "file-text", "url": "viagens_termos:lista"},
                 {
                     "rotulo": "Roteiros",

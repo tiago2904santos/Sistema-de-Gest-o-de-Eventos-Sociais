@@ -1180,26 +1180,6 @@ a.step-i{text-decoration:none;color:inherit}
 
 /* Justificativas (Meta 4): inclusão rápida com seletor de ofícios que busca
    no servidor, e a lista das justificativas nos blocos do cartão de ofício. */
-.jt-rapida[hidden]{display:none}
-.jt-rapida .v32-secao-cabecalho{flex-direction:column;gap:2px;align-items:flex-start}
-.jt-rapida__grade{margin:0}
-.jt-picker{position:relative}
-.jt-picker .busca{width:100%;max-width:none}
-.jt-picker .busca .form-controle{border:0;background:transparent;box-shadow:none}
-.jt-picker.is-invalid .busca{border-color:var(--dg-t)}
-.jt-picker__menu{position:static;margin-top:6px;max-height:320px;overflow:auto}
-.jt-picker__menu[hidden]{display:none}
-.jt-opcao>span{display:grid;gap:2px;white-space:normal}
-.jt-opcao small{font-size:11px;color:var(--n-450)}
-.jt-escolhidos{margin-top:8px}
-.jt-escolhidos:empty{display:none}
-.jt-grade{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
-.jt-regra{grid-template-columns:repeat(2,minmax(0,1fr));align-content:start}
-.jt-texto{align-items:flex-start}
-.jt-texto__corpo{white-space:pre-line;font-size:12.5px;color:var(--n-700);line-height:1.5}
-.jt-texto .of-pessoa__nome .v32-suave{font-weight:400}
-@container(max-width:900px){.jt-grade{grid-template-columns:1fr}}
-@container(max-width:680px){.jt-regra{grid-template-columns:1fr}}
 
 /* Termos de autorização (Meta 5): o cartão — título com o destino, os dois
    selos (temporal e dos documentos), os fatos com ícone e quatro ações à
@@ -1900,3 +1880,13 @@ form.btn-flutuante-form{margin:0;display:contents}
 .hs__depois{color:var(--n-900)}
 .hs__nota{color:var(--n-500)}
 .hs__vazio{margin:0;padding:16px 14px;font-size:13px;color:var(--n-500)}
+
+/* Justificativas (pages/viagens_oficios/justificativas.html): o texto na linha
+   da lista, cortado em duas linhas, e o ofício fixo no modal de edição. */
+.jt-texto{margin:6px 0 0;max-width:72ch;font-size:12.5px;font-weight:400;line-height:1.5;color:var(--n-700);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line}
+.jt-texto--vazio{color:var(--n-400);font-style:italic}
+.v32-cadastro-modal .jt-oficio{grid-column:1/-1}
+.jt-oficio__cartao{display:grid;gap:2px;padding:10px 12px;border:1px solid var(--n-200);border-radius:8px;background:var(--n-50)}
+.jt-oficio__cartao b{font-size:13.5px;font-weight:600;color:var(--n-900)}
+.jt-oficio__cartao small{font-size:12px;color:var(--n-500)}
+.v32-cadastro-modal [data-jt-form] .g-form.v32-form-grid>.form-campo{grid-column:1/-1}

@@ -195,26 +195,19 @@ def atualizar_justificativa_oficio(oficio, form, action="save_draft"):
 
 
 @transaction.atomic
-def criar_justificativas_quick_add(form):
-    if not getattr(form, "is_bound", False) or not form.is_valid():
-        raise ValueError("Formulario de quick add de justificativa invalido.")
-
-    cd = form.cleaned_data
-    criadas = []
-    for oficio in cd["oficios"]:
-        j = get_or_create_justificativa_oficio(oficio)
-        j.modelo = cd.get("modelo")
-        j.texto = cd.get("texto") or ""
-
-        ev = avaliar_justificativa_oficio(oficio)
-        j.obrigatoria = ev["obrigatoria"]
-        j.dias_antecedencia = ev["dias_antecedencia"]
-        j.prazo_dias = ev["prazo_dias"]
-        j.primeira_saida_dt = ev["primeira_saida"]
-        j.status = Justificativa.STATUS_FINALIZADA
-        j.save()
-        criadas.append(j)
-    return criadas
+def salvar_justificativa(oficio, modelo, texto):
+    """Grava modelo e texto da justificativa do ofício, com a regra de prazo atualizada."""
+    j = get_or_create_justificativa_oficio(oficio)
+    j.modelo = modelo
+    j.texto = texto or ""
+    ev = avaliar_justificativa_oficio(oficio)
+    j.obrigatoria = ev["obrigatoria"]
+    j.dias_antecedencia = ev["dias_antecedencia"]
+    j.prazo_dias = ev["prazo_dias"]
+    j.primeira_saida_dt = ev["primeira_saida"]
+    j.status = Justificativa.STATUS_FINALIZADA
+    j.save()
+    return j
 
 
 def justificativa_oficio_esta_completa(oficio) -> bool:

@@ -9,9 +9,10 @@ urlpatterns = [
     path('novo/', views.editar, name='novo'),
     path('criar/', views.criar, name='criar'),
     path('numeracao/', views.numeracao, name='numeracao'),
-    # Justificativas (app próprio na origem): lista com inclusão rápida, busca de ofícios e exclusão.
+    # Justificativas: lista com cadastro e edição no modal, e exclusão do texto.
     path('justificativas/', justificativas_views.index, name='justificativas'),
-    path('justificativas/api/oficios/', justificativas_views.buscar_oficios, name='justificativas_buscar_oficios'),
+    path('justificativas/nova/', justificativas_views.editar, name='justificativa_nova'),
+    path('justificativas/<int:pk>/editar/', justificativas_views.editar, name='justificativa_editar'),
     path('justificativas/<int:pk>/excluir/', justificativas_views.excluir, name='justificativa_excluir'),
     path('institucional/', catalogs.institucional, name='institucional'),
     path('catalogos/<str:tipo>/', catalogs.catalogo, name='catalogo'),

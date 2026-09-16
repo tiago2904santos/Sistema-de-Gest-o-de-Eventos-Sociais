@@ -1,168 +1,121 @@
 {% extends "layouts/app_shell_v32.html" %}
-{% load static estaticos %}
+{% load estaticos %}
 {% comment %}
-  Justificativas — Meta 4 de paridade com o Gerenciador de Viagens.
+  Justificativas — na mesma composição das listas de cadastros, roteiros e
+  termos: situações na trilha à esquerda, busca na barra do cartão, tabela no
+  desktop e Data List no celular, um menu único de ações por linha.
 
-  A tela do app `justificativas` da origem: inclusão rápida (vários ofícios,
-  um modelo, um texto), e a lista das justificativas com a regra de prazo, o
-  estado do texto e as ações de editar, documentos e excluir. O seletor de
-  ofícios busca no servidor e devolve até 30 por vez, como o de lá.
+  A linha é uma célula só: o ofício com o selo temporal e o estado do texto,
+  os fatos com ícone (período e destinos, regra de prazo, modelo) e o texto.
+  "Nova justificativa" e "Editar" abrem o modal, como "Novo servidor" nos
+  cadastros; sem JavaScript, a lista abre com o modal já aberto.
 {% endcomment %}
 
 {% block title %}Justificativas — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% include "components/v32/breadcrumb.html" with atual="Justificativas" %}
-
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker kicker--junto">{{ modulo_ativo.nome }}</div>
+      <div class="kicker kicker--junto">Viagens</div>
       <h1>Justificativas</h1>
     </div>
     <div class="d-acoes">
       <a class="btn--secundaria" href="{% url 'viagens_oficios:catalogo' 'justificativas' %}?next={{ url_atual|urlencode }}">Modelos de justificativa</a>
     </div>
-    {# Ação principal no botão flutuante, como na lista de roteiros. #}
     {% if pode_editar %}
-      <button type="button" class="btn-primaria btn-flutuante" data-expande="#inclusao-rapida" aria-controls="inclusao-rapida" aria-expanded="{% if abrir_inclusao %}true{% else %}false{% endif %}">{% include "components/icon.html" with nome="plus" %}Inclusão rápida</button>
+      <a class="btn-primaria btn-flutuante" href="{% url 'viagens_oficios:justificativa_nova' %}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}Nova justificativa</a>
     {% endif %}
+  </div>
+
+  <div class="cad-grade cad-grade--sem-folga">
+    {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_rotulo="Situação das justificativas" sem_titulo=True %}
+
+    <div class="pa-card pa-card--lista cad-lista">
+      {# Busca no servidor, enviada 1 s depois de digitar; a situação da trilha sobrevive. #}
+      <form method="get" class="cad-barra" role="search" data-cadastro-busca data-auto-enviar>
+        {% if situacao %}<input type="hidden" name="situacao" value="{{ situacao }}">{% endif %}
+        <div class="busca">
+          {% include "components/icon.html" with nome="search" %}
+          <label class="sr-only" for="id_q">Buscar justificativas</label>
+          <input type="search" name="q" id="id_q" value="{{ q }}" placeholder="Buscar por ofício, protocolo, viajante, destino ou texto" autocomplete="off">
+        </div>
+      </form>
+
+      <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Tabela de justificativas">
+        <table class="dt dt--responsiva">
+          <thead>
+            <tr>
+              <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
+              <th>Justificativa</th>
+              <th class="c-cad-acoes">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in linhas %}
+              <tr>
+                <td class="tabela__col-icone">
+                  <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+                  <span class="sr-only">Justificativa</span>
+                </td>
+                <td class="c-nome tm-celula" data-rotulo="Justificativa">{% include "pages/viagens_oficios/_justificativa_linha.html" %}</td>
+                <td class="c-cad-acoes">{% include "pages/viagens_oficios/_justificativa_acoes.html" %}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="3" class="v32-suave dt__vazio">
+                  {% if tem_filtros %}Nenhuma justificativa encontrada com os filtros aplicados.{% else %}Nenhuma justificativa registrada ainda.{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="lista-mobile-v32"><div class="m-lista">
+        {% for l in linhas %}
+          <article class="m-item">
+            <div class="m-item__topo">
+              <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+              <span class="sr-only">Justificativa</span>
+            </div>
+            <div class="m-item__tipo tm-celula">{% include "pages/viagens_oficios/_justificativa_linha.html" %}</div>
+            <div class="m-item__rodape">{% include "pages/viagens_oficios/_justificativa_acoes.html" %}</div>
+          </article>
+        {% empty %}
+          <article class="m-item"><p class="m-vazio">{% if tem_filtros %}Nenhuma justificativa encontrada com os filtros aplicados.{% else %}Nenhuma justificativa registrada ainda.{% endif %}</p></article>
+        {% endfor %}
+      </div></div>
+
+      {% if pagina.paginator.num_pages > 1 %}
+        <div class="v32-corpo pag">
+          <span class="v32-suave">Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }} justificativas</span>
+          <nav class="pag__nav" aria-label="Paginação">
+            {% if pagina.has_previous %}
+              <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+            {% endif %}
+            {% for numero in paginas_visiveis %}
+              {% if numero == elipse %}
+                <span class="pag__el" aria-hidden="true">…</span>
+              {% elif numero == pagina.number %}
+                <span class="pag__n" aria-current="page">{{ numero }}</span>
+              {% else %}
+                <a class="pag__n" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
+              {% endif %}
+            {% endfor %}
+            {% if pagina.has_next %}
+              <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+            {% endif %}
+          </nav>
+        </div>
+      {% endif %}
+    </div>
   </div>
 
   {% if pode_editar %}
-    <section class="pa-card v32-bloco jt-rapida" id="inclusao-rapida"{% if not abrir_inclusao %} hidden{% endif %}>
-      <form method="post" class="v32-corpo" id="form-inclusao-rapida" novalidate data-jt-rapida>
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ url_atual }}">
-        <div class="v32-secao-cabecalho">
-          <h2 class="reg__t">Inclusão rápida</h2>
-          <p class="cad-frm__intro">Escolha os ofícios, um modelo que preenche o texto, e aplique a mesma justificativa a todos de uma vez.</p>
-        </div>
-        {% if form.non_field_errors %}{% for erro in form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}{% endif %}
-        <div class="g-form g-form--2 jt-rapida__grade">
-          <div class="form-campo cheia jt-picker{% if form.errors.oficios %} is-invalid{% endif %}" data-picker-oficios data-url-busca="{{ url_busca }}" data-limite="{{ limite_busca }}" data-nome="{{ form.oficios.html_name }}">
-            <label class="form-label" for="id_jt_busca">Ofícios <span class="form-label__obrigatorio">*</span></label>
-            <div class="busca">
-              <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
-              <input class="form-controle" type="search" id="id_jt_busca" placeholder="Buscar ofício por número, protocolo, viajante ou destino" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="jt-resultados" aria-autocomplete="list" data-picker-busca>
-            </div>
-            <div class="custom-select__menu jt-picker__menu" id="jt-resultados" role="listbox" aria-label="Ofícios encontrados" data-picker-resultados hidden></div>
-            <p class="form-ajuda">Digite para buscar. A busca devolve até {{ limite_busca }} ofícios; refine o termo se o que procura não aparecer.</p>
-            <ul class="multi-pick__escolhidos jt-escolhidos" data-picker-escolhidos aria-live="polite">
-              {% for o in escolhidos %}
-                <li class="multi-pick__escolhido" data-id="{{ o.id }}">
-                  <input type="hidden" name="{{ form.oficios.html_name }}" value="{{ o.id }}">
-                  <span>{{ o.main }}{% if o.meta %}<small>{{ o.meta }}</small>{% endif %}</span>
-                  <button type="button" class="multi-pick__remover" aria-label="Remover {{ o.main }}" data-picker-remover>×</button>
-                </li>
-              {% endfor %}
-            </ul>
-            {% for erro in form.errors.oficios %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-          </div>
-          {% include "components/select.html" with name=form.modelo.html_name label="Modelo de justificativa" opcoes=opcoes_modelo placeholder="Sem modelo" permitir_vazio=True selecionado=form.modelo.value erros=form.errors.modelo %}
-          <div class="cheia">
-            {% include "components/textarea.html" with name=form.texto.html_name label="Justificativa" obrigatorio=True linhas="5" valor=form.texto.value erros=form.errors.texto placeholder="Por que a viagem não pôde ser solicitada no prazo" %}
-          </div>
-        </div>
-        <div class="cad-frm__acoes">
-          <button type="button" class="btn--secundaria" data-expande="#inclusao-rapida" aria-controls="inclusao-rapida" aria-expanded="{% if abrir_inclusao %}true{% else %}false{% endif %}">Cancelar</button>
-          <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check" %}Aplicar aos ofícios</button>
-        </div>
-      </form>
-    </section>
-  {% endif %}
-
-  <div class="pa-card pa-card--lista v32-bloco v32-filtros">
-    <form method="get" class="v32-barra" role="search" data-auto-enviar>
-      <div class="form-campo v32-busca">
-        <label class="form-label sr-only" for="id_q">Buscar justificativas</label>
-        <div class="busca">
-          <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
-          <input class="form-controle" type="search" name="q" id="id_q" value="{{ q }}" placeholder="Buscar por ofício, protocolo, viajante, destino ou texto" aria-label="Buscar justificativas">
-        </div>
-      </div>
-      <fieldset class="v32-abas-situacao">
-        <legend class="sr-only">Filtrar por situação</legend>
-        {% for op in opcoes_situacao %}
-          <label class="v32-aba{% if op.valor == situacao %} v32-aba--ativa{% endif %}"><input type="radio" name="situacao" value="{{ op.valor }}"{% if op.valor == situacao %} checked{% endif %}>{{ op.rotulo }}</label>
-        {% endfor %}
-      </fieldset>
-      <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="search" %}Buscar</button>
-      {% if tem_filtros %}<a href="{% url 'viagens_oficios:justificativas' %}" class="btn--secundaria">{% include "components/icon.html" with nome="x" %}Limpar</a>{% endif %}
-      <span class="v32-meta">{{ pagina.paginator.count }} justificativa{{ pagina.paginator.count|pluralize }}</span>
-    </form>
-  </div>
-
-  {% if linhas %}
-    <div class="of-lista">
-      {% for l in linhas %}
-        <article class="of-cartao jt-cartao" aria-labelledby="just-{{ l.justificativa.pk }}-titulo">
-          <header class="of-cartao__cabeca">
-            <div class="of-cartao__ident">
-              <h2 class="of-cartao__titulo" id="just-{{ l.justificativa.pk }}-titulo">{{ l.titulo }}</h2>
-              {% if l.subtitulo %}<p class="of-cartao__sub">{{ l.subtitulo }}</p>{% endif %}
-            </div>
-            <span class="st st--{{ l.selo_tom }}">{{ l.selo }}</span>
-          </header>
-          <div class="of-grade jt-grade">
-            <dl class="of-bloco of-resumo-rota__lista jt-regra">
-              <div><dt>Regra de prazo</dt><dd>{% if l.regra.status == "required" %}<span class="st st--pendente">Obrigatória</span>{% elif l.regra.status == "not_applicable" %}<span class="st st--atendido">Não exigida</span>{% else %}<span class="st st--neutro">Regra pendente</span>{% endif %}</dd></div>
-              <div><dt>Antecedência</dt><dd>{% if l.regra.dias_antecedencia is not None %}{{ l.regra.dias_antecedencia }} dia{{ l.regra.dias_antecedencia|pluralize }}{% else %}—{% endif %}</dd></div>
-              <div><dt>Prazo mínimo</dt><dd>{{ l.regra.prazo_dias }} dias</dd></div>
-              <div><dt>Primeira saída</dt><dd>{% if l.regra.primeira_saida %}{{ l.regra.primeira_saida|date:"d/m/Y H:i" }}{% else %}—{% endif %}</dd></div>
-              <div class="of-resumo-rota__larga"><dt>Avaliação</dt><dd>{{ l.regra.motivo_regra }}</dd></div>
-            </dl>
-            <div class="of-just jt-texto">
-              <span class="of-av" aria-hidden="true">JU</span>
-              <span class="of-pessoa__txt">
-                <span class="of-pessoa__nome">Justificativa <span class="st {% if l.preenchida %}st--atendido{% else %}st--pendente{% endif %}">{% if l.preenchida %}Preenchida{% else %}Pendente{% endif %}</span>{% if l.modelo %}<span class="v32-suave">modelo {{ l.modelo }}</span>{% endif %}</span>
-                <span class="of-pessoa__desc jt-texto__corpo">{{ l.texto }}</span>
-              </span>
-            </div>
-          </div>
-          <footer class="of-cartao__rodape">
-            <div class="acoes">
-              <a class="acao-linha" href="{% url 'viagens_oficios:editar' l.oficio.pk %}">{% include "components/icon.html" with nome="eye" %}Ofício</a>
-            </div>
-            {% if pode_editar %}
-              <div class="acoes">
-                <a class="ib-linha" href="{{ l.editar_url }}" aria-label="Editar justificativa do ofício {{ l.oficio.numero_formatado }}" title="Editar justificativa">{% include "components/icon.html" with nome="pencil" %}</a>
-                <div class="dd of-menu" data-menu>
-                  <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Abrir documentos da justificativa do ofício {{ l.oficio.numero_formatado }}" title="Documentos da justificativa">{% include "components/icon.html" with nome="document" %}</button>
-                  <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
-                    <div class="dd__t">Justificativa do ofício {{ l.oficio.numero_formatado }}</div>
-                    <form method="post" action="{{ l.gerar_pdf_url }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar justificativa</b><small>Abrir o documento no navegador</small></span></button></form>
-                    <form method="post" action="{{ l.gerar_pdf_url }}">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Documento pronto para impressão</small></span></button></form>
-                    <form method="post" action="{{ l.gerar_docx_url }}">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivo editável da justificativa</small></span></button></form>
-                  </div>
-                </div>
-                {% if l.preenchida %}
-                  <form method="post" action="{{ l.excluir_url }}" data-confirmar="Confirmar exclusão?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
-                    <button type="submit" class="acao-linha acao-linha--perigo" aria-label="Excluir justificativa do ofício {{ l.oficio.numero_formatado }}">{% include "components/icon.html" with nome="trash" %}Excluir</button>
-                  </form>
-                {% endif %}
-              </div>
-            {% endif %}
-          </footer>
-        </article>
-      {% endfor %}
-    </div>
-    {% if pagina.paginator.num_pages > 1 %}
-      <nav class="of-paginacao of-paginacao--rodape" aria-label="Paginação">
-        <p class="of-paginacao__contagem">Mostrando <strong>{{ pagina.start_index }}–{{ pagina.end_index }}</strong> de <strong>{{ pagina.paginator.count }}</strong></p>
-        {% include "pages/viagens_cadastros/_paginacao_nav.html" %}
-      </nav>
-    {% endif %}
-  {% else %}
-    <div class="pa-card v32-bloco of-vazio">
-      <h2>Nenhuma justificativa</h2>
-      <p>{% if tem_filtros %}Nenhuma justificativa encontrada com os filtros aplicados.{% else %}As justificativas nascem com os ofícios; use a inclusão rápida para aplicar um texto a vários de uma vez.{% endif %}</p>
-    </div>
+    <dialog class="mo v32-cadastro-modal v32-cadastro-modal--larga" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{% url 'viagens_oficios:justificativas' %}"{% if modal %} data-cadastro-inicial{% endif %}>
+      {% if modal %}{% include "pages/viagens_oficios/_justificativa_modal.html" with dados=modal %}{% endif %}
+    </dialog>
   {% endif %}
 {% endblock %}
 
-{% block extra_js %}
-  {{ block.super }}
-  {{ modelos_texto|json_script:"oficio-modelos-texto" }}
-  <script src="{% estatico 'js/viagens-picker-oficios.js' %}" defer></script>
-  <script src="{% estatico 'js/viagens-justificativas.js' %}" defer></script>
-{% endblock %}
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script><script src="{% estatico 'js/viagens-justificativas.js' %}" defer></script>{% endblock %}

@@ -1,0 +1,48 @@
+{% comment %}
+  Modal de cadastro e edição de justificativa, no contrato dos cadastros:
+  `data-cadastro-form`, envio por fetch e `data-cadastro-falha` para o erro de
+  rede. Nova: escolhe-se o ofício (só os que ainda não têm texto). Edição: o
+  ofício aparece fixo, com a regra de prazo. O modelo escolhido preenche o
+  texto (`viagens-justificativas.js`, textos em `#jt-modelos-texto`).
+{% endcomment %}
+<form method="post" action="{{ dados.url_acao }}" data-cadastro-form data-jt-form novalidate>
+  {% csrf_token %}
+  <header class="mo__topo">
+    <h2 id="cadastro-modal-titulo">{{ dados.titulo }}</h2>
+    <button type="button" class="mo__fechar" data-cadastro-fechar aria-label="Fechar">{% include "components/icon.html" with nome="x" %}</button>
+  </header>
+  <div class="mo__corpo">
+    {% if dados.erros_total %}
+      <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
+        {% include "components/icon.html" with nome="alert" %}
+        <div><b>Corrija antes de continuar</b>
+          {% if dados.erros_total == 1 %}Um campo precisa ser corrigido.{% else %}{{ dados.erros_total }} campos precisam ser corrigidos.{% endif %}
+          {% for erro in dados.erros_gerais %}<span class="form-erro cad-frm__erro-geral">{{ erro }}</span>{% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="g-form v32-form-grid">
+      {% if dados.oficio %}
+        <div class="form-campo jt-oficio">
+          <span class="form-label">Ofício</span>
+          <div class="jt-oficio__cartao">
+            <b>{{ dados.oficio_titulo }}</b>
+            {% if dados.oficio_subtitulo %}<small>{{ dados.oficio_subtitulo }}</small>{% endif %}
+            <small>{{ dados.oficio_regra }}</small>
+          </div>
+        </div>
+      {% else %}
+        {% include "components/select.html" with name="oficio" label="Ofício" opcoes=dados.oficios selecionado=dados.oficio_valor erros=dados.erros.oficio obrigatorio=True pesquisavel=True placeholder="Buscar ofício pelo número ou destino..." %}
+      {% endif %}
+      {% include "components/select.html" with name="modelo" label="Modelo de justificativa" opcoes=dados.modelos selecionado=dados.modelo_valor erros=dados.erros.modelo permitir_vazio=True placeholder="Sem modelo" ajuda="Escolher um modelo preenche o texto." %}
+      {% include "components/textarea.html" with name="texto" label="Justificativa" valor=dados.texto_valor erros=dados.erros.texto obrigatorio=True linhas="7" %}
+    </div>
+    {{ dados.modelos_texto|json_script:"jt-modelos-texto" }}
+    <p class="form-erro" data-cadastro-falha role="alert" hidden></p>
+  </div>
+  <footer class="mo__rodape">
+    <button type="button" class="btn--secundaria" data-cadastro-fechar>Cancelar</button>
+    <button type="submit" class="btn-primaria">Salvar justificativa</button>
+  </footer>
+</form>

@@ -21,7 +21,7 @@ from core.retorno import daqui, next_valido, voltar_para
 from documentos.services.exceptions import DocumentError
 from documentos.services.types import DocumentoFormato
 from viagens_cadastros.permissions import acesso_ao_modulo, pode_editar_cadastros
-from viagens_oficios.justificativas_views import buscar_oficios as buscar_oficios_para_picker, opcao_do_oficio
+from viagens_oficios.busca_oficios import buscar_oficios as buscar_oficios_para_picker, opcao_do_oficio
 from viagens_oficios.views import exigir_operador, resposta_documento, resposta_lote
 
 from . import abas as abas_de_termo
@@ -78,7 +78,7 @@ def opcoes_de_oficio(termo):
     destinos e protocolo; `busca` leva o que não aparece mas deve casar na
     busca, como o nome dos viajantes.
     """
-    from viagens_oficios.justificativas_views import _oficios_para_escolha, resumo_para_busca
+    from viagens_oficios.busca_oficios import oficios_para_escolha as _oficios_para_escolha, resumo_para_busca
     from viagens_oficios.selectors import base_oficios
 
     queryset = _oficios_para_escolha()

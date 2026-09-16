@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from django.forms.models import ModelChoiceIteratorValue
-
 
 # Teto do que a busca devolve numa tacada. Não é paginação: o seletor é para
 # encontrar um ofício, e quem digita algo que casa com mais de 30 refina a busca
@@ -37,26 +35,6 @@ def pks_ja_escolhidos(form, nome_do_campo):
         bruto = form.initial.get(nome_do_campo)
         brutos = list(bruto) if isinstance(bruto, (list, tuple, set)) else [bruto]
     return [str(_como_pk(valor)) for valor in brutos if str(_como_pk(valor) or "").isdigit()]
-
-
-def oficios_ja_escolhidos(form, nome_do_campo):
-    """Ofícios selecionados, respeitando os filtros do campo."""
-    campo = form.fields[nome_do_campo]
-    pks = pks_ja_escolhidos(form, nome_do_campo)
-    return campo.queryset.filter(pk__in=pks) if pks else campo.queryset.none()
-
-
-def renderizar_so_os_escolhidos(form, nome_do_campo):
-    """Renderiza opções selecionadas preservando o queryset de validação."""
-    campo = form.fields[nome_do_campo]
-    escolhas = []
-    if getattr(campo, "empty_label", None) is not None:
-        escolhas.append(("", campo.empty_label))
-    escolhas += [
-        (ModelChoiceIteratorValue(oficio.pk, oficio), campo.label_from_instance(oficio))
-        for oficio in oficios_ja_escolhidos(form, nome_do_campo)
-    ]
-    campo.widget.choices = escolhas
 
 
 def dados_do_option(oficio, *, resumo, rotulo, decorar=False):

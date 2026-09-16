@@ -4,6 +4,18 @@
 **Destino:** `viagens_oficios:justificativas`, `justificativas_buscar_oficios` e `justificativa_excluir`, em `viagens_oficios/justificativas_views.py`, `forms.py::JustificativaQuickAddForm`, `pages/viagens_oficios/justificativas.html` e `static/js/viagens-justificativas.js`. Item "Justificativas" na navegação do módulo.
 **Data:** 14/09/2026.
 
+> **Atualização de 16/09/2026 — tela refeita a pedido do usuário.** A página
+> passou a seguir as listas de cadastros, roteiros e termos (situações na
+> trilha, busca na barra, uma célula de conteúdo e um menu de ações por linha).
+> A **inclusão rápida** (vários ofícios de uma vez) e a busca
+> `justificativas_buscar_oficios` foram **removidas**; `criar_justificativas_quick_add`
+> e `JustificativaQuickAddForm` saíram do código. Cadastro e edição acontecem
+> num modal, como "Novo servidor": rotas `justificativa_nova` e
+> `justificativa_editar`, formulário `JustificativaCadastroForm`, serviço
+> `salvar_justificativa`, template `_justificativa_modal.html`. A busca de
+> ofícios que o cadastro de termos usa mudou para `viagens_oficios/busca_oficios.py`.
+> O que segue abaixo descreve a tela de 14/09 e fica como registro.
+
 ## Como esta comparação foi feita
 
 A origem **não tem fotografia desta tela** neste repositório e o Gerenciador de Viagens não estava disponível no ambiente desta rodada. A régua foi o que a Fase 4 portou do app `justificativas` da origem e nunca ganhou tela: `criar_justificativas_quick_add(form)` (um texto e um modelo para vários ofícios), o seletor de ofícios em `picker.py` (busca no servidor, teto de 30 — "quem digita algo que casa com mais de 30 refina a busca em vez de rolar", opção com rótulo, `search_text`, e `main`/`meta` com protocolo e assunto), o modelo `Justificativa` (1:1 com o ofício, `status` Rascunho/Finalizada, snapshots da regra de prazo) e as três rotas do inventário. **A conferência lado a lado com a tela da origem continua devida** (P22).
