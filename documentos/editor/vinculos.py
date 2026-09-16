@@ -70,14 +70,21 @@ class VinculoOficio:
         """
         from django.db import transaction
 
-        objeto = form.save(commit=False)
+        validado = form.save(commit=False)
         campos = set(nomes)
         for nome in nomes:
             campos.update(self.DERIVADOS.get(nome, ()))
-        muitos = {campo.name for campo in objeto._meta.many_to_many}
-        simples = sorted(campos - muitos) + ["atualizado_em"]
+        muitos = {campo.name for campo in validado._meta.many_to_many}
+        simples = sorted(campos - muitos)
+        # A instância validada carrega, em memória, tudo o que o formulário
+        # recalculou (inclusive o que não se pede aqui). Grava-se a partir de
+        # uma cópia fresca do banco, com só o recorte copiado: o que vai ao
+        # banco e o que a auditoria vê são a mesma coisa.
+        objeto = type(validado)._base_manager.get(pk=validado.pk)
+        for nome in simples:
+            setattr(objeto, nome, getattr(validado, nome))
         with transaction.atomic():
-            objeto.save(update_fields=simples)
+            objeto.save(update_fields=simples + ["atualizado_em"])
             for nome in sorted(campos & muitos):
                 getattr(objeto, nome).set(form.cleaned_data.get(nome, []))
         return objeto

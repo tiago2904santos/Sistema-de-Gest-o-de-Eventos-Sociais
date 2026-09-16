@@ -110,10 +110,15 @@ class EditorDeCamposTests(CenarioOficioMixin, TestCase):
 
     def test_so_o_campo_pedido_e_os_derivados_vao_ao_banco(self):
         o = self.criar()
+        # Dado que o save() do formulário recalcularia (diárias sem valor): fica
+        # como está, e a trilha registra só o campo pedido.
+        type(o).objects.filter(pk=o.pk).update(diarias_quantidade_servidores=None)
         with self.captureOnCommitCallbacks(execute=True):
             self.patch(o, 'motivo', {'motivo': 'Diligência'})
         registro = RegistroAuditoria.objects.filter(modelo='viagens_oficios.oficio', objeto_id=str(o.pk), origem='editor').latest('criado_em')
         self.assertEqual(set(registro.alteracoes) - {'atualizado_em'}, {'motivo'})
+        o.refresh_from_db()
+        self.assertIsNone(o.diarias_quantidade_servidores)
 
     def test_regra_composta_do_formulario_vale_no_editor(self):
         o = self.criar()
