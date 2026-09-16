@@ -78,8 +78,11 @@ def _viaturas(form):
             "rotulo": " - ".join(p for p in [viatura.placa_formatada, viatura.modelo] if p),
             "detalhes": " - ".join(p for p in detalhes if p),
             "busca": viatura.placa,
-            "unidade": str(viatura.unidade_id or ""),
-            "unidade_sigla": (viatura.unidade.sigla or viatura.unidade.nome) if viatura.unidade_id else "",
+            # Para as sugestões pela unidade da equipe, no navegador.
+            "dados": {
+                "unidade": str(viatura.unidade_id or ""),
+                "sigla": (viatura.unidade.sigla or viatura.unidade.nome) if viatura.unidade_id else "",
+            },
         })
     return opcoes
 
@@ -107,6 +110,12 @@ def contexto_dados_viajantes(form, oficio):
         "opcoes_motivos": [{"valor": str(m.pk), "rotulo": m.nome} for m in form.fields["modelo_motivo"].queryset],
         "servidores": servidores,
         "equipe": equipe,
+        # O motorista do sistema é a lista de escolha, com a unidade para as sugestões de viatura.
+        "motoristas": [
+            {"valor": o["valor"], "rotulo": o["rotulo"], "detalhes": o["detalhes"], "busca": o["busca"],
+             "dados": {"unidade": o["unidade"]}}
+            for o in servidores
+        ],
         "motorista_equipe": motorista if motorista_na_equipe else "",
         "viaturas": _viaturas(form),
         "motorista_modo": modo,

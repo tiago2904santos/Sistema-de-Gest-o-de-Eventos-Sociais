@@ -1944,6 +1944,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .ofc-grupo__cabeca{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
 .ofc-grupo__cabeca strong{font-size:13px;color:var(--n-800)}
 .ofc-grupo__corpo{min-width:0}
+.ofc-grupo__corpo>.reg__st{margin-top:18px}
 
 /* Seletor com busca */
 .ofc-picker{display:grid;gap:8px}
@@ -1991,6 +1992,6 @@ form.btn-flutuante-form{margin:0;display:contents}
 }
 
 /* Lista de escolha com botão ao lado da busca (`acao_url`). */
-.lista-escolha__cabeca{display:flex;align-items:stretch;gap:8px;margin-bottom:8px}
+.lista-escolha__cabeca{display:flex;align-items:flex-end;gap:8px;margin-bottom:8px}
 .lista-escolha__cabeca>.form-campo{flex:1 1 auto;min-width:0;margin:0}
-.lista-escolha__cabeca>.lista-escolha__acao{height:auto;min-height:38px}
+.lista-escolha__cabeca>.lista-escolha__acao{width:44px;min-width:44px;height:44px}

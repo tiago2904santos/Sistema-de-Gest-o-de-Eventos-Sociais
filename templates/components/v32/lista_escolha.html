@@ -17,7 +17,10 @@
     a tela ainda não tem o que oferecer; quem liga e desliga é o script da página
     (classe `is-aguardando` no `.form-campo` da busca).
   `rotulo_oculto` esconde o rótulo da busca sem tirá-lo dos leitores de tela.
+  `acao_url` / `acao_rotulo`: botão quadrado ao lado da busca (ex.: cadastrar
+    um registro novo), aberto em outra aba.
 {% endcomment %}
+{% if acao_url %}<div class="lista-escolha__cabeca">{% endif %}
 <div class="form-campo of-equipe-busca" data-lista-campo="{{ name }}">
   <label class="form-label{% if rotulo_oculto %} sr-only{% endif %}" for="id_{{ name }}_busca">{{ rotulo_busca|default:label }}</label>
   <div class="busca">
@@ -25,6 +28,8 @@
     <input class="form-controle" type="search" id="id_{{ name }}_busca" placeholder="{{ placeholder }}" data-lista-busca="{{ name }}" autocomplete="off">
   </div>
 </div>
+{% if acao_url %}<a class="btn--secundaria btn--quadrado lista-escolha__acao" href="{{ acao_url }}" target="_blank" rel="noopener" aria-label="{{ acao_rotulo }}" title="{{ acao_rotulo }}">{% include "components/icon.html" with nome="plus" %}</a>
+</div>{% endif %}
 <div class="of-membros lista-escolha{% if erros %} grupo-erro{% endif %}" data-lista-escolha="{{ name }}" role="group" aria-label="{{ label }}">
   {% for opcao in opcoes %}
     <label class="of-membro{% if opcao.valor == selecionado %} of-membro--viaja{% endif %}" data-lista-item="{{ opcao.valor }}" data-busca="{{ opcao.rotulo }} {{ opcao.detalhes }} {{ opcao.busca }}"{% for chave, dado in opcao.dados.items %} data-{{ chave }}="{{ dado }}"{% endfor %}>
