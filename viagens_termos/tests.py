@@ -156,6 +156,90 @@ class SecoesDoRegistroNoFormularioTests(CenarioTermos):
         self.assertRedirects(r, reverse("viagens_termos:editar", args=[t.pk]), fetch_redirect_response=False)
 
 
+def pdf_assinado(texto="ASSINADO"):
+    """Um PDF de verdade (uma página em branco), com um marcador nos metadados."""
+    import io
+    from pypdf import PdfWriter
+    escritor = PdfWriter()
+    escritor.add_blank_page(width=200, height=200)
+    escritor.add_metadata({"/Title": texto})
+    saida = io.BytesIO()
+    escritor.write(saida)
+    return saida.getvalue()
+
+
+def corpo(resposta):
+    return b"".join(resposta.streaming_content) if resposta.streaming else resposta.content
+
+
+class AssinadoValeNoLugarDoGeradoTests(CenarioTermos):
+    def setUp(self):
+        super().setUp()
+        o = self.oficio(dias=3, servidores=[self.janine])
+        self.t = self.termo(oficio=o)
+        self.gerar_pdf = reverse("viagens_termos:gerar", args=[self.t.pk, self.janine.pk, "pdf"])
+        self.client.post(self.gerar_pdf)
+        self.art = DocumentoArtefato.objects.get(termo=self.t, servidor=self.janine, formato="pdf")
+        self.assinado = pdf_assinado()
+
+    def anexar(self, artefato=None, conteudo=None):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        url = reverse("viagens_oficios:assinatura_artefato", args=[(artefato or self.art).pk])
+        self.client.post(url, {"arquivo": SimpleUploadedFile("assinado.pdf", conteudo or self.assinado, content_type="application/pdf")})
+
+    def test_visualizar_e_baixar_entregam_o_anexado(self):
+        self.anexar()
+        for url in (self.gerar_pdf, self.gerar_pdf + "?inline=1"):
+            r = self.client.post(url)
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(corpo(r), self.assinado)
+        # Nenhum PDF novo foi gerado para servir o assinado.
+        self.assertEqual(DocumentoArtefato.objects.filter(termo=self.t, servidor=self.janine, formato="pdf").count(), 1)
+
+    def test_a_versao_mais_recente_vale(self):
+        self.anexar()
+        segunda = pdf_assinado("SEGUNDA")
+        self.anexar(conteudo=segunda)
+        self.assertEqual(corpo(self.client.post(self.gerar_pdf)), segunda)
+
+    def test_pdf_unico_e_zip_usam_o_anexado(self):
+        import io
+        from zipfile import ZipFile
+        from pypdf import PdfReader
+        self.anexar()
+        r = self.client.post(reverse("viagens_termos:todos_pdf", args=[self.t.pk]))
+        # Juntar PDFs descarta os metadados; o anexado se reconhece pela página 200x200.
+        self.assertEqual(float(PdfReader(io.BytesIO(r.content)).pages[0].mediabox.width), 200)
+        r = self.client.post(reverse("viagens_termos:lote", args=[self.t.pk, "pdf"]))
+        with ZipFile(io.BytesIO(r.content)) as z:
+            self.assertIn(self.assinado, [z.read(n) for n in z.namelist()])
+
+    def test_docx_continua_sendo_gerado(self):
+        self.anexar()
+        r = self.client.post(reverse("viagens_termos:gerar", args=[self.t.pk, self.janine.pk, "docx"]))
+        self.assertTrue(corpo(r).startswith(b"PK"))
+
+    def test_removido_o_assinado_volta_o_gerado(self):
+        self.anexar()
+        url = reverse("viagens_oficios:assinatura_artefato", args=[self.art.pk])
+        self.client.post(url, {"acao": "remover"})
+        conteudo = corpo(self.client.post(self.gerar_pdf))
+        self.assertNotEqual(conteudo, self.assinado)
+        self.assertTrue(conteudo.startswith(b"%PDF"))
+
+    def test_assinado_de_um_documento_nao_vale_para_outro(self):
+        self.anexar()
+        gerar_vazio = reverse("viagens_termos:gerar", args=[self.t.pk, 0, "pdf"])
+        gerar_viatura = reverse("viagens_termos:gerar_viatura", args=[self.t.pk, "pdf"])
+        self.assertNotEqual(corpo(self.client.post(gerar_vazio)), self.assinado)
+        # Termo vazio e termo da viatura têm os mesmos vínculos; a referência os separa.
+        art_vazio = DocumentoArtefato.objects.get(termo=self.t, servidor__isnull=True, formato="pdf")
+        vazio_assinado = pdf_assinado("VAZIO")
+        self.anexar(art_vazio, vazio_assinado)
+        self.assertEqual(corpo(self.client.post(gerar_vazio)), vazio_assinado)
+        self.assertNotIn(corpo(self.client.post(gerar_viatura)), (vazio_assinado, self.assinado))
+
+
 class NavegacaoTests(CenarioTermos):
     def test_salvar_vai_para_a_lista(self):
         o = self.oficio(dias=3, servidores=[self.janine], viatura=self.duster)

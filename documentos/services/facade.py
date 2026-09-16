@@ -93,6 +93,16 @@ class DocumentoFacade:
             actor = getattr(obter_requisicao_atual(), "user", None)
         actor_id = actor.pk if getattr(actor, "is_authenticated", False) else None
         should_persist = persistir and getattr(settings, "DOCUMENTOS_PERSIST_ARTEFATOS", True)
+        if should_persist and formato == DocumentoFormato.PDF:
+            # Documento com PDF assinado anexado: vale o anexado, não uma nova geração.
+            from documentos.services.assinados import documento_assinado
+
+            assinado = documento_assinado(
+                tipo, formato, reference=reference, oficio_id=oficio_id, termo_id=termo_id,
+                prestacao_id=prestacao_id, servidor_id=servidor_id,
+            )
+            if assinado is not None:
+                return assinado
         if should_persist:
             from documentos.services.document_cache import (
                 build_document_cache_key, build_template_cache_signature,
