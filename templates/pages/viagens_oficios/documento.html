@@ -1,0 +1,60 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load static estaticos %}
+{% comment %}
+  Prévia A4 do ofício: a folha institucional na tela, montada do mesmo HTML
+  que vira o PDF (documentos/pdf/oficio.html). A folha vive num iframe da
+  mesma origem (rota `documento_folha`), de propósito: o CSS do shell não
+  alcança o documento e a fidelidade tela ≈ PDF sai por construção. O que é
+  da aplicação — cabeçalho da página, ações, avisos, e depois o editor de
+  campos — fica aqui fora, com os componentes globais.
+{% endcomment %}
+
+{% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block css_principal %}{{ block.super }}
+  <link rel="stylesheet" href="{% estatico 'css/pages/viagens-documento.css' %}">
+{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+
+  <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+    <div class="page-header d-cabeca__esq">
+      <div class="page-header__identificacao d-identificacao">
+        <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
+        <div>
+          <div class="frm-titulo">
+            <h1 class="page-header__titulo d-titulo-v32">Ofício <span class="frm-ident">{{ oficio.numero_formatado }}</span></h1>
+            <span class="frm-rasc">{% include "components/icon.html" with nome="document" %}{{ situacao }}</span>
+          </div>
+          <p class="page-header__subtitulo d-cabeca__sub frm-meta">
+            <span>{% include "components/icon.html" with nome="eye" %}Prévia do documento, montada dos dados do ofício</span>
+            {% if oficio.protocolo %}<span>{% include "components/icon.html" with nome="checklist" %}Protocolo {{ oficio.protocolo }}</span>{% endif %}
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="frm-topo__acoes">
+      <a class="btn--secundaria" href="{{ url_voltar }}">{% include "components/icon.html" with nome="chevron-left" %}Voltar ao ofício</a>
+      {% if pode_emitir %}
+        <form method="post" action="{% url 'viagens_oficios:gerar' oficio.pk 'oficio' 'pdf' %}">{% csrf_token %}<button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="download" %}Baixar PDF</button></form>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if pendencias %}
+    <div class="dc-aviso" role="status">
+      {% include "components/icon.html" with nome="alert" %}
+      <div>
+        <strong>O PDF ainda não pode ser emitido.</strong>
+        <ul class="dc-aviso__lista">{% for p in pendencias %}<li>{{ p }}</li>{% endfor %}</ul>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="dc-palco">
+    <iframe class="dc-folha" id="dc-folha" src="{% url 'viagens_oficios:documento_folha' oficio.pk %}" title="Prévia do ofício {{ oficio.numero_formatado }}"></iframe>
+  </div>
+
+  <script src="{% estatico 'js/viagens-documento.js' %}" defer></script>
+{% endblock %}

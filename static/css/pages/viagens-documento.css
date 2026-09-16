@@ -1,0 +1,38 @@
+/* Página da prévia A4 do documento (viagens_oficios/documento.html). O
+   documento em si está no iframe, com o CSS próprio (documentos/pdf); aqui
+   é só o palco em volta: fundo, aviso de pendências e o quadro que cresce
+   com o conteúdo (viagens-documento.js). */
+
+.dc-palco {
+  margin-top: 16px;
+  padding: 8px 0;
+  background: var(--n-50, #f4f4f5);
+  border: 1px solid var(--n-100, #e5e5e5);
+  border-radius: 10px;
+  overflow-x: auto;
+}
+.dc-folha {
+  display: block;
+  width: 100%;
+  min-width: 22cm;
+  height: 31cm; /* até o JS medir o conteúdo */
+  border: 0;
+  background: transparent;
+}
+
+.dc-aviso {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--n-100, #e5e5e5);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--grafite, #333);
+  font-size: 13px;
+}
+.dc-aviso svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
+.dc-aviso strong { display: block; margin-bottom: 4px; }
+.dc-aviso__lista { margin: 0; padding-left: 18px; }
+.dc-aviso__lista li { margin: 2px 0; }

@@ -7,7 +7,8 @@ from django.db import transaction, IntegrityError
 from django.http import Http404, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
-from django.views.decorators.http import require_http_methods, require_POST
+from django.views.decorators.clickjacking import xframe_options_sameorigin
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from core.listagens import ITENS_POR_PAGINA, paginar, opcoes_choices
 from core.numeracao import bloquear_escopo_numeracao, NAMESPACE_OFICIO
@@ -288,6 +289,45 @@ def gerar(request, pk, tipo, formato):
         messages.error(request, '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
         return redirect('viagens_oficios:editar', pk=pk)
     return resposta_documento(request, doc)
+
+
+@acesso_ao_modulo
+@require_GET
+def documento(request, pk):
+    """Prévia A4 do ofício: a folha institucional na tela, do mesmo HTML que
+    vira o PDF. A folha entra por iframe (`documento_folha`) para o CSS do
+    shell não tocar no documento — a fidelidade tela ≈ PDF vem daí. Quem só
+    consulta vê a prévia; emitir continua exigindo operador e ofício válido.
+    """
+    oficio = get_oficio_by_id(pk)
+    avaliacao = validar_oficio_para_documento(oficio)
+    return render(request, 'pages/viagens_oficios/documento.html', {
+        'titulo': f'Documento do ofício {oficio.numero_formatado}',
+        'oficio': oficio,
+        'situacao': 'Cancelado' if oficio.cancelado else oficio.get_status_display(),
+        'pendencias': avaliacao['pendencias'],
+        'pode_emitir': pode_editar_cadastros(request.user) and not oficio.cancelado and not avaliacao['pendencias'],
+        'url_voltar': reverse('viagens_oficios:editar', args=[oficio.pk]),
+        'breadcrumb': [
+            {'label': 'Ofícios', 'url': reverse('viagens_oficios:lista')},
+            {'label': f'Ofício {oficio.numero_formatado}', 'url': reverse('viagens_oficios:editar', args=[oficio.pk])},
+            {'label': 'Documento'},
+        ],
+    })
+
+
+@acesso_ao_modulo
+@require_GET
+@xframe_options_sameorigin
+def documento_folha(request, pk):
+    """O documento em si, no modo `editor`: o que o iframe da prévia mostra."""
+    from documentos.services.document_context import contexto_do_oficio
+    from documentos.services.pdf_renderer import renderizar_html
+    oficio = get_oficio_by_id(pk)
+    html = renderizar_html(DocumentoTipo.OFICIO, contexto_do_oficio(oficio, modo='editor'), modo='editor')
+    response = HttpResponse(html)
+    response['Cache-Control'] = 'no-store'
+    return response
 
 
 @acesso_ao_modulo

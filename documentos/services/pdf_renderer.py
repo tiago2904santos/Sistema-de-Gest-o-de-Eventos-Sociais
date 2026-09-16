@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 CSS_COMUM = "documentos/pdf/documento.css"
 CSS_IMPRESSAO = "documentos/pdf/documento-impressao.css"
+CSS_EDITOR = "documentos/pdf/documento-editor.css"
 TEMPLATE_BASE = "documentos/pdf/base_institucional.html"
 
 
@@ -58,8 +59,9 @@ def renderizar_html(tipo, contexto: dict, *, modo: str) -> str:
     dados["modo"] = modo
     if modo == "editor":
         # Na tela o CSS comum entra inline, para a folha não depender do
-        # pipeline de estáticos e ficar idêntica ao que o PDF recebe.
-        dados["css_inline"] = caminho_css(CSS_COMUM).read_text(encoding="utf-8")
+        # pipeline de estáticos e ficar idêntica ao que o PDF recebe; o CSS
+        # de tela (folha sobre o fundo, marcação de editável) vai junto.
+        dados["css_inline"] = "\n".join(caminho_css(nome).read_text(encoding="utf-8") for nome in (CSS_COMUM, CSS_EDITOR))
     with measure_step("renderizar_html", {"tipo": getattr(tipo, "value", tipo), "modo": modo}):
         return render_to_string(template_do_tipo(tipo), dados)
 

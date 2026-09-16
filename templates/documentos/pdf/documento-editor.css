@@ -1,0 +1,60 @@
+/* Só na tela: a folha A4 sobre o fundo da página e a marcação do que se
+   edita. Entra inline no HTML do modo `editor`, junto com documento.css; o
+   PDF nunca a recebe.
+
+   Cabeçalho e rodapé ocupam as mesmas faixas que o PDF reserva nas margens
+   (4,6 cm em cima, 3,3 cm embaixo) e ficam centralizados nelas, como o
+   WeasyPrint faz com os `@top-center`/`@bottom-center`. Assim a tela e o
+   PDF partem da mesma geometria, não de duas. Na tela a folha é contínua:
+   um documento longo cresce para baixo e o rodapé acompanha o fim. */
+
+html, body.documento--editor { background: transparent; }
+body.documento--editor { padding: 16px 0 24px; }
+
+.folha {
+  position: relative;
+  box-sizing: border-box;
+  width: 21cm;
+  min-height: 29.7cm;
+  margin: 0 auto;
+  padding: 4.6cm 0.7cm 3.3cm 0.65cm;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 10px 28px rgba(0, 0, 0, .10);
+}
+.documento--editor .doc-cabecalho,
+.documento--editor .doc-rodape {
+  position: absolute;
+  left: 0.65cm;
+  right: 0.7cm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.documento--editor .doc-cabecalho { top: 0; height: 4.6cm; }
+.documento--editor .doc-rodape { bottom: 0; height: 3.3cm; }
+
+/* Campo editável: repouso invisível, cinza claro ao passar, dourado quando
+   é o campo aberto no editor. Sem anel de foco, como no resto do sistema. */
+.doc-editavel {
+  cursor: pointer;
+  border-radius: 2px;
+  box-decoration-break: clone;
+  transition: background-color .12s ease;
+}
+.doc-editavel:focus { outline: none; }
+.doc-editavel:hover { background: #f2f2f2; }
+.doc-editavel--ativo, .doc-editavel--ativo:hover { background: rgba(190, 164, 90, .22); }
+td.doc-editavel, p.doc-editavel { border-radius: 0; }
+
+/* Quebra de página: no PDF não aparece; na tela é uma linha tracejada com
+   o nome, para se saber onde o documento vira a página. */
+.documento--editor .doc-quebra {
+  height: auto;
+  margin: 8pt 0;
+  border-top: 1px dashed #9a9a9a;
+  text-align: center;
+  font-size: 7pt;
+  color: #7a7a7a;
+  line-height: 1;
+}
+.documento--editor .doc-quebra::after { content: "quebra de página"; position: relative; top: -5pt; padding: 0 4pt; background: #fff; }

@@ -334,6 +334,7 @@
           <div class="of-emitir">
             <div class="of-emitir__grupo">
               <strong>Ofício</strong>
+              <a class="btn--secundaria" href="{% url 'viagens_oficios:documento' o.pk %}">{% include "components/icon.html" with nome="pencil" %}Abrir documento</a>
               <form method="post" action="{% url 'viagens_oficios:gerar' o.pk 'oficio' 'pdf' %}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="eye" %}Visualizar ofício</button></form>
               <form method="post" action="{% url 'viagens_oficios:gerar' o.pk 'oficio' 'pdf' %}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="download" %}Baixar PDF</button></form>
               <form method="post" action="{% url 'viagens_oficios:gerar' o.pk 'oficio' 'docx' %}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="document" %}Baixar DOCX</button></form>

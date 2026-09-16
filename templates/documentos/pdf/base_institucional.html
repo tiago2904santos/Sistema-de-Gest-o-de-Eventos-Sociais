@@ -22,6 +22,7 @@
   {% block css %}{% endblock %}
 </head>
 <body class="documento documento--{{ modo|default:'pdf' }}">
+<div class="folha">
   <header class="doc-cabecalho" id="doc-cabecalho">
     <img class="doc-cabecalho__brasao" src="{{ imagens.brasao }}" alt="Brasão da Polícia Civil do Paraná">
     <p class="doc-cabecalho__secretaria">SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA</p>
@@ -43,5 +44,6 @@
   <main class="doc-corpo">
     {% block corpo %}{% endblock %}
   </main>
+</div>
 </body>
 </html>
