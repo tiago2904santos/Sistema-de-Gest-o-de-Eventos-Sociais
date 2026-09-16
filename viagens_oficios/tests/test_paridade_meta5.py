@@ -115,13 +115,13 @@ class ListaTermosTests(CenarioTermos):
         t = self.termo(oficio=o)
         r = self.lista()
         for texto in ["Escolher documentos para baixar", "Baixar PDF", "Todos os termos num PDF só, prontos para assinatura",
-                      "Baixar DOCX", "Arquivos editáveis de todos os termos (ZIP)", "Visualizar termo genérico",
-                      "Visualizar termo da viatura", "AAA-1234 DUSTER", "Todos os documentos", "Anexar termo assinado",
+                      "Baixar DOCX", "Arquivos editáveis de todos os termos (ZIP)", "Visualizar termo vazio",
+                      "AAA-1234 DUSTER", "Todos os documentos", "Anexar termo assinado",
                       "Gere o PDF do termo primeiro", "Editar termo", "Excluir termo", 'data-confirmar="Confirmar exclusão?"']:
             self.assertContains(r, texto)
         self.assertContains(r, reverse("viagens_termos:todos_pdf", args=[t.pk]))
         self.assertContains(r, reverse("viagens_termos:lote", args=[t.pk, "docx"]))
-        self.assertContains(r, reverse("viagens_termos:gerar_viatura", args=[t.pk, "pdf"]) + "?inline=1")
+        self.assertNotContains(r, reverse("viagens_termos:gerar_viatura", args=[t.pk, "pdf"]))  # termo da viatura saiu da tela
         self.assertContains(r, reverse("viagens_termos:editar", args=[t.pk]) + "?next=")
 
     def test_cartao_cancelado_nao_gera_documentos(self):
@@ -129,7 +129,7 @@ class ListaTermosTests(CenarioTermos):
         r = self.lista()
         self.assertContains(r, "Termo cancelado")
         self.assertContains(r, "Reative para gerar documentos")
-        self.assertNotContains(r, "Visualizar termo genérico")
+        self.assertNotContains(r, "Visualizar termo vazio")
 
     def test_anexar_assinado_quando_ja_ha_pdf(self):
         o = self.oficio(dias=3, servidores=[self.janine])
@@ -288,8 +288,8 @@ class DetalheEDocumentosTests(CenarioTermos):
         r = self.client.get(reverse("viagens_termos:editar", args=[t.pk]))
         for texto in [f"Termo #{t.pk}", "Realizado", "Destino e período", "Servidores e viatura", f"Ofício {o.numero_formatado}", "herda do ofício",
                       "Escolher documentos para baixar", "Termo por servidor", "JANINE LACERDA DO PRADO", "JOÃO MARIO DE GOES",
-                      "Visualizar", "Anexar assinado", "Termo genérico", "Só destino e período, semipreenchido",
-                      "Termo da viatura", "AAA-1234 DUSTER, campos do servidor em branco", "Todos os termos", "2 servidores",
+                      "Visualizar", "Anexar assinado", "Termo vazio", "Só destino e período, para preencher à mão",
+                      "Todos os termos", "2 servidores",
                       "PDF único", "ZIP de PDFs", "ZIP de DOCX",
                       "Prévia em tela", "Abrir prévia", "Salvar termo"]:
             self.assertContains(r, texto)

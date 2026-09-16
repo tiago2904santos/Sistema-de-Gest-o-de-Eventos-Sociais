@@ -15,17 +15,16 @@
       {% else %}
         <form method="post" action="{{ d.url_todos_pdf }}">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Todos os termos num PDF só, prontos para assinatura</small></span></button></form>
         <form method="post" action="{{ d.url_lote_docx }}">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivos editáveis de todos os termos (ZIP)</small></span></button></form>
-        <form method="post" action="{{ d.generico.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar termo genérico</b><small>Só destino e período, para preencher à mão</small></span></button></form>
-        {% if d.viatura.viatura %}<form method="post" action="{{ d.viatura.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="truck" %}<span><b>Visualizar termo da viatura</b><small>{{ d.viatura.viatura.placa_formatada }} {{ d.viatura.viatura.modelo }}</small></span></button></form>{% endif %}
-        <a class="dd__i of-item" href="{{ l.url_editar }}#documentos">{% include "components/icon.html" with nome="checklist" %}<span><b>Todos os documentos</b><small>Por servidor, genérico, viatura e anexos</small></span></a>
+        <form method="post" action="{{ d.generico.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar termo vazio</b><small>Só destino e período, para preencher à mão</small></span></button></form>
+        <a class="dd__i of-item" href="{{ l.url_editar }}#documentos">{% include "components/icon.html" with nome="checklist" %}<span><b>Todos os documentos</b><small>Termo vazio, por servidor e anexos</small></span></a>
         <div class="dd__s"></div>
         <div class="dd__t">Anexar termo assinado</div>
         {% for s in d.servidores %}
           {% if s.url_assinado %}<a class="dd__i of-item" href="{{ s.url_assinado }}">{% include "components/icon.html" with nome=s.assinado|yesno:"check-circle,upload" %}<span><b>{{ s.servidor.nome }}</b><small>{% if s.assinado %}Assinado — enviar outra versão{% else %}Enviar o PDF depois da assinatura{% endif %}</small></span></a>
           {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>{{ s.servidor.nome }}</b><small>Gere o PDF do termo primeiro</small></span></span>{% endif %}
         {% endfor %}
-        {% if d.generico.url_assinado %}<a class="dd__i of-item" href="{{ d.generico.url_assinado }}">{% include "components/icon.html" with nome=d.generico.assinado|yesno:"check-circle,upload" %}<span><b>Termo genérico</b><small>{% if d.generico.assinado %}Assinado — enviar outra versão{% else %}Enviar o PDF depois da assinatura{% endif %}</small></span></a>
-        {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>Termo genérico</b><small>Gere o PDF do termo primeiro</small></span></span>{% endif %}
+        {% if d.generico.url_assinado %}<a class="dd__i of-item" href="{{ d.generico.url_assinado }}">{% include "components/icon.html" with nome=d.generico.assinado|yesno:"check-circle,upload" %}<span><b>Termo vazio</b><small>{% if d.generico.assinado %}Assinado — enviar outra versão{% else %}Enviar o PDF depois da assinatura{% endif %}</small></span></a>
+        {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>Termo vazio</b><small>Gere o PDF do termo primeiro</small></span></span>{% endif %}
       {% endif %}
       <div class="dd__s"></div>
       <a class="dd__i of-item" href="{{ l.url_editar }}?next={{ url_atual|urlencode }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar termo</b><small>Destino, período, servidores e viatura</small></span></a>

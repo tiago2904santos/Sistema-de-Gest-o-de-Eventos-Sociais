@@ -1,8 +1,8 @@
 """Termos de autorização — a tela única e a coluna única.
 
 O termo deixou de ter tela de detalhe: a lista abre direto no formulário, e o
-que só existia no detalhe (documentos para baixar por servidor, o genérico, o
-da viatura, os lotes, a anexação do assinado e a prévia em tela) virou seção
+que só existia no detalhe (documentos para baixar: o termo vazio, os por servidor, os
+lotes, a anexação do assinado e a prévia em tela) virou seção
 do próprio formulário, visível só quando se edita um termo já salvo. A lista
 de arquivos gerados e o cancelamento saíram da tela.
 
@@ -60,14 +60,16 @@ class SecoesDoRegistroNoFormularioTests(CenarioTermos):
         r = self.client.get(reverse("viagens_termos:editar", args=[t.pk]))
         for texto in [f"Termo #{t.pk}", "Realizado", "Este termo herda do ofício",
                       "Escolher documentos para baixar", "Termo por servidor", "JANINE LACERDA DO PRADO",
-                      "JOÃO MARIO DE GOES", "Visualizar", "Anexar assinado", "Termo genérico",
-                      "Só destino e período, semipreenchido", "Termo da viatura",
-                      "AAA-1234 DUSTER, campos do servidor em branco", "Todos os termos", "2 servidores",
+                      "JOÃO MARIO DE GOES", "Visualizar", "Anexar assinado", "Termo vazio",
+                      "Só destino e período, para preencher à mão", "Todos os termos", "2 servidores",
                       "PDF único", "ZIP de PDFs", "ZIP de DOCX",
                       "Prévia em tela", "Abrir prévia"]:
             self.assertContains(r, texto)
-        for texto in ["Cancelamento e exclusão", "Cancelar termo", 'id="cancelamento"', "Documentos gerados", 'id="gerados"']:
+        for texto in ["Cancelamento e exclusão", "Cancelar termo", 'id="cancelamento"', "Documentos gerados", 'id="gerados"',
+                      "Termo genérico", "Termo da viatura"]:
             self.assertNotContains(r, texto)
+        html = r.content.decode()
+        self.assertLess(html.index("Termo vazio"), html.index("JANINE LACERDA DO PRADO", html.index('id="documentos"')))
         self.assertContains(r, reverse("viagens_termos:preview", args=[t.pk]))
         self.assertContains(r, reverse("viagens_termos:todos_pdf", args=[t.pk]))
         self.assertContains(r, reverse("viagens_termos:gerar", args=[t.pk, self.janine.pk, "pdf"]) + "?inline=1")

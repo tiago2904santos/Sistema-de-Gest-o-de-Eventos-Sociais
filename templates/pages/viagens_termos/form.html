@@ -188,6 +188,19 @@
               <caption class="sr-only">Termo por servidor — Escolher documentos para baixar{% if "servidores" in herdados %} — servidores com termo do ofício{% endif %}</caption>
               <thead><tr><th>Documento</th><th class="c-fixo tm-col-estado">Estado</th><th class="c-cad-acoes tm-col-acoes">Ações</th></tr></thead>
               <tbody>
+                {# Primeiro o termo vazio, depois um por servidor. #}
+                {% if pode_editar %}
+                  <tr>
+                    <td class="c-nome tm-alvo"><span class="tm-alvo__linha"><span class="of-av" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span><span class="tm-alvo__txt"><span>Termo vazio</span><small>Só destino e período, para preencher à mão</small></span></span></td>
+                    <td class="c-fixo tm-col-estado"><span class="st st--{{ d.generico.estado_tom }}">{{ d.generico.estado }}</span></td>
+                    <td class="c-cad-acoes tm-col-acoes"><div class="acoes cad-acoes tm-icones">
+                      <form method="post" action="{{ d.generico.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="ib-linha" aria-label="Visualizar" title="Visualizar">{% include "components/icon.html" with nome="eye" %}</button></form>
+                      <form method="post" action="{{ d.generico.url_pdf }}">{% csrf_token %}<button type="submit" class="ib-linha" aria-label="Baixar PDF" title="Baixar PDF">{% include "components/icon.html" with nome="download" %}</button></form>
+                      <form method="post" action="{{ d.generico.url_docx }}">{% csrf_token %}<button type="submit" class="ib-linha" aria-label="Baixar DOCX" title="Baixar DOCX">{% include "components/icon.html" with nome="document" %}</button></form>
+                      {% if d.generico.url_assinado %}<a class="ib-linha" href="{{ d.generico.url_assinado }}" aria-label="{% if d.generico.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}" title="{% if d.generico.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}">{% include "components/icon.html" with nome=d.generico.assinado|yesno:"check-circle,upload" %}</a>{% else %}<span class="ib-linha of-item--inativo" aria-label="Anexar assinado" title="Gere o PDF do termo primeiro">{% include "components/icon.html" with nome="upload" %}</span>{% endif %}
+                    </div></td>
+                  </tr>
+                {% endif %}
                 {% for s in d.servidores %}
                   <tr>
                     <td class="c-nome tm-alvo"><span class="tm-alvo__linha"><span class="of-av" aria-hidden="true">{{ s.iniciais }}</span><span class="tm-alvo__txt"><span>{{ s.servidor.nome }}</span>{% if s.descricao %}<small>{{ s.descricao }}</small>{% endif %}</span></span></td>
@@ -204,32 +217,8 @@
                     </div></td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="3" class="v32-suave dt__vazio">Nenhum servidor: o termo sai só na versão genérica, para preencher à mão.</td></tr>
+                  <tr><td colspan="3" class="v32-suave dt__vazio">Nenhum servidor escolhido: use o termo vazio.</td></tr>
                 {% endfor %}
-                {% if pode_editar %}
-                  <tr>
-                    <td class="c-nome tm-alvo"><span class="tm-alvo__linha"><span class="of-av" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span><span class="tm-alvo__txt"><span>Termo genérico</span><small>Só destino e período, semipreenchido</small></span></span></td>
-                    <td class="c-fixo tm-col-estado"><span class="st st--{{ d.generico.estado_tom }}">{{ d.generico.estado }}</span></td>
-                    <td class="c-cad-acoes tm-col-acoes"><div class="acoes cad-acoes tm-icones">
-                      <form method="post" action="{{ d.generico.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="ib-linha" aria-label="Visualizar" title="Visualizar">{% include "components/icon.html" with nome="eye" %}</button></form>
-                      <form method="post" action="{{ d.generico.url_pdf }}">{% csrf_token %}<button type="submit" class="ib-linha" aria-label="Baixar PDF" title="Baixar PDF">{% include "components/icon.html" with nome="download" %}</button></form>
-                      <form method="post" action="{{ d.generico.url_docx }}">{% csrf_token %}<button type="submit" class="ib-linha" aria-label="Baixar DOCX" title="Baixar DOCX">{% include "components/icon.html" with nome="document" %}</button></form>
-                      {% if d.generico.url_assinado %}<a class="ib-linha" href="{{ d.generico.url_assinado }}" aria-label="{% if d.generico.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}" title="{% if d.generico.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}">{% include "components/icon.html" with nome=d.generico.assinado|yesno:"check-circle,upload" %}</a>{% else %}<span class="ib-linha of-item--inativo" aria-label="Anexar assinado" title="Gere o PDF do termo primeiro">{% include "components/icon.html" with nome="upload" %}</span>{% endif %}
-                    </div></td>
-                  </tr>
-                  {% if d.viatura.viatura %}
-                    <tr>
-                      <td class="c-nome tm-alvo"><span class="tm-alvo__linha"><span class="of-av" aria-hidden="true">{% include "components/icon.html" with nome="truck" %}</span><span class="tm-alvo__txt"><span>Termo da viatura</span><small>{{ d.viatura.viatura.placa_formatada }} {{ d.viatura.viatura.modelo }}, campos do servidor em branco</small></span></span></td>
-                      <td class="c-fixo tm-col-estado"><span class="v32-suave">—</span></td>
-                      <td class="c-cad-acoes tm-col-acoes"><div class="acoes cad-acoes tm-icones">
-                        <form method="post" action="{{ d.viatura.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="ib-linha" aria-label="Visualizar" title="Visualizar">{% include "components/icon.html" with nome="eye" %}</button></form>
-                        <form method="post" action="{{ d.viatura.url_pdf }}">{% csrf_token %}<button type="submit" class="ib-linha" aria-label="Baixar PDF" title="Baixar PDF">{% include "components/icon.html" with nome="download" %}</button></form>
-                        <form method="post" action="{{ d.viatura.url_docx }}">{% csrf_token %}<button type="submit" class="ib-linha" aria-label="Baixar DOCX" title="Baixar DOCX">{% include "components/icon.html" with nome="document" %}</button></form>
-                        <span class="ib-linha tm-icones__vago" aria-hidden="true"></span>
-                      </div></td>
-                    </tr>
-                  {% endif %}
-                {% endif %}
               </tbody>
             </table></div>
           {% endif %}
