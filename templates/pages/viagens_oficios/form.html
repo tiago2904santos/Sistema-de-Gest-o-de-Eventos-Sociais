@@ -418,8 +418,9 @@
         <div class="linha-t">
           {% for registro in historico %}
             <div class="evento{% if forloop.first %} evento--ativo{% endif %}">
-              <div class="evento__topo"><span class="evento__t">{{ registro.get_acao_display }}</span><span class="evento__q">{{ registro.criado_em|date:"d/m/Y · H\hi" }}</span></div>
-              <p class="evento__d">{{ registro.usuario|default:"Sistema" }}</p>
+              <div class="evento__topo"><span class="evento__t">{{ registro.get_acao_display }}{% if registro.sobre_bloco %} de bloco documental{% endif %}</span><span class="evento__q">{{ registro.criado_em|date:"d/m/Y · H\hi" }}</span></div>
+              {# Quem, por onde (formulário, editor documental, sistema) e o que mudou. #}
+              <p class="evento__d">{{ registro.usuario|default:"Sistema" }} · {{ registro.get_origem_display }}{% if registro.campos_alterados %} · {{ registro.campos_alterados|join:", " }}{% endif %}</p>
             </div>
           {% empty %}
             <p class="texto-vazio">Nenhum registro no histórico.</p>

@@ -150,6 +150,28 @@ def criar(request):
     return redirect('viagens_oficios:editar', pk=oficio.pk)
 
 
+CAMPOS_FORA_DO_HISTORICO = {'atualizado_em', 'criado_em'}
+
+
+def historico_do_oficio(oficio, limite=20):
+    """Os últimos registros da trilha sobre este ofício — o ofício em si e os
+    blocos documentais dele (texto de parágrafo alterado, quebra de página).
+    Cada registro sai com a origem e os campos que mudaram, para a tela."""
+    from django.db.models import Q
+    from auditoria.models import RegistroAuditoria
+    blocos = list(oficio.blocos_documentais.values_list('pk', flat=True)) if oficio.pk else []
+    filtro = Q(modelo='viagens_oficios.oficio', objeto_id=str(oficio.pk))
+    if blocos:
+        filtro |= Q(modelo='documentos.documentobloco', objeto_id__in=[str(pk) for pk in blocos])
+    registros = list(RegistroAuditoria.objects.filter(filtro).select_related('usuario').order_by('-criado_em')[:limite])
+    for registro in registros:
+        registro.campos_alterados = sorted(
+            campo for campo in registro.alteracoes if campo not in CAMPOS_FORA_DO_HISTORICO and campo not in ('novo', 'antigo')
+        )
+        registro.sobre_bloco = registro.modelo == 'documentos.documentobloco'
+    return registros
+
+
 def contexto_operacao_do_oficio(request, oficio):
     """O que a tela de conferência montava e o formulário passou a mostrar.
 
@@ -172,7 +194,7 @@ def contexto_operacao_do_oficio(request, oficio):
             artefato_justificativa_pdf=artefatos.get((oficio.pk, DocumentoTipo.JUSTIFICATIVA.value, None)),
         ),
         'artefatos': oficio.artefatos.select_related('servidor').order_by('-criado_em')[:30],
-        'historico': RegistroAuditoria.objects.filter(modelo='viagens_oficios.oficio', objeto_id=str(oficio.pk)).order_by('-criado_em')[:20],
+        'historico': historico_do_oficio(oficio),
         'url_atual': url_atual,
         'tem_prestacao': hasattr(oficio, 'prestacao_contas'),
     }

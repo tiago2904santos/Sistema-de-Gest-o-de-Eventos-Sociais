@@ -72,6 +72,17 @@ class EditorDeCamposTests(CenarioOficioMixin, TestCase):
         registro = RegistroAuditoria.objects.filter(modelo='viagens_oficios.oficio', objeto_id=str(o.pk)).earliest('criado_em')
         self.assertEqual(registro.origem, 'formulario')
 
+    def test_historico_do_oficio_mostra_origem_e_campos_inclusive_de_blocos(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            o = self.criar()
+            self.patch(o, 'motivo', {'motivo': 'Diligência'})
+            url_bloco = reverse('documentos:editor_bloco', args=['oficio', o.pk, 'declaracao_cartao'])
+            self.client.patch(url_bloco, data=json.dumps({'versao': '', 'valores': {'conteudo': 'Parágrafo reescrito.'}}), content_type='application/json')
+        r = self.client.get(reverse('viagens_oficios:editar', args=[o.pk]))
+        self.assertContains(r, 'Editor documental · motivo')
+        self.assertContains(r, 'Criação de bloco documental')
+        self.assertContains(r, 'Formulário')  # a criação do ofício, pela tela
+
     def test_versao_antiga_e_409_e_nada_muda(self):
         o = self.criar()
         r = self.patch(o, 'motivo', {'motivo': 'Outro'}, versao='2020-01-01T00:00:00')
