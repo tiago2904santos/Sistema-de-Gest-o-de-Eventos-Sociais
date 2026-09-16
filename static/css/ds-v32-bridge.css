@@ -1765,6 +1765,8 @@ form.btn-flutuante-form{margin:0;display:contents}
 .tm-form .tm-tabela--fim .dt tbody tr:last-child td:first-child{border-bottom-left-radius:12px}
 .tm-form .tm-tabela--fim .dt tbody tr:last-child td:last-child{border-bottom-right-radius:12px}
 .tm-form .tm-col-estado{width:150px}
+/* Selo de estado com largura única ("Sem PDF", "PDF gerado", "Assinado"). */
+.tm-form .tm-col-estado .st{width:92px;justify-content:center}
 .tm-form .tm-col-servidor{width:200px}
 .tm-form .tm-col-data{width:140px}
 .tm-form .tm-col-formato{width:90px}
