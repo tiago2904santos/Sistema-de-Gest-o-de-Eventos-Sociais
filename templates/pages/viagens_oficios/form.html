@@ -400,7 +400,7 @@
                     <a class="acao-linha" href="{% url 'documentos:baixar' art.pk %}">{% include "components/icon.html" with nome="download" %}Baixar</a>
                     {% if art.formato == 'pdf' %}
                       <a class="acao-linha" href="{% url 'viagens_oficios:preview_artefato' art.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}Abrir</a>
-                      <a class="acao-linha" href="{% url 'viagens_oficios:assinatura_artefato' art.pk %}">{% include "components/icon.html" with nome="upload" %}{% if art.esta_assinado %}Assinado{% else %}Anexar assinado{% endif %}</a>
+                      <a class="acao-linha" href="{% url 'viagens_oficios:assinatura_artefato' art.pk %}" data-anexar-assinado data-anexar-nome="{{ art.nome_exibicao }}"{% if art.esta_assinado %} data-anexar-atual="1"{% endif %}>{% include "components/icon.html" with nome="upload" %}{% if art.esta_assinado %}Assinado{% else %}Anexar assinado{% endif %}</a>
                     {% endif %}
                   </div></td>
                 </tr>

@@ -20,10 +20,10 @@
         <div class="dd__s"></div>
         <div class="dd__t">Anexar termo assinado</div>
         {% for s in d.servidores %}
-          {% if s.url_assinado %}<a class="dd__i of-item" href="{{ s.url_assinado }}">{% include "components/icon.html" with nome=s.assinado|yesno:"check-circle,upload" %}<span><b>{{ s.servidor.nome }}</b><small>{% if s.assinado %}Assinado — enviar outra versão{% else %}Enviar o PDF depois da assinatura{% endif %}</small></span></a>
+          {% if s.url_assinado %}<a class="dd__i of-item" href="{{ s.url_assinado }}" data-anexar-assinado data-anexar-nome="{{ s.servidor.nome }}"{% if s.assinado %} data-anexar-atual="1"{% endif %}>{% include "components/icon.html" with nome=s.assinado|yesno:"check-circle,upload" %}<span><b>{{ s.servidor.nome }}</b><small>{% if s.assinado %}Assinado — enviar outra versão{% else %}Enviar o PDF depois da assinatura{% endif %}</small></span></a>
           {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>{{ s.servidor.nome }}</b><small>Gere o PDF do termo primeiro</small></span></span>{% endif %}
         {% endfor %}
-        {% if d.generico.url_assinado %}<a class="dd__i of-item" href="{{ d.generico.url_assinado }}">{% include "components/icon.html" with nome=d.generico.assinado|yesno:"check-circle,upload" %}<span><b>Termo vazio</b><small>{% if d.generico.assinado %}Assinado — enviar outra versão{% else %}Enviar o PDF depois da assinatura{% endif %}</small></span></a>
+        {% if d.generico.url_assinado %}<a class="dd__i of-item" href="{{ d.generico.url_assinado }}" data-anexar-assinado data-anexar-nome="Termo vazio"{% if d.generico.assinado %} data-anexar-atual="1"{% endif %}>{% include "components/icon.html" with nome=d.generico.assinado|yesno:"check-circle,upload" %}<span><b>Termo vazio</b><small>{% if d.generico.assinado %}Assinado — enviar outra versão{% else %}Enviar o PDF depois da assinatura{% endif %}</small></span></a>
         {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>Termo vazio</b><small>Gere o PDF do termo primeiro</small></span></span>{% endif %}
       {% endif %}
       <div class="dd__s"></div>

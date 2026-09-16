@@ -87,6 +87,7 @@
     <span>Sistema de Gestão de Eventos Sociais — versão 2.0</span>
   </footer>
 </div>
+{% if user.is_authenticated %}{% include "components/v32/dialogo_assinado.html" %}{% endif %}
 {% endblock %}
 
 {% block extra_js %}<script src="{% estatico 'js/ds-v32.js' %}" defer></script>{% endblock %}

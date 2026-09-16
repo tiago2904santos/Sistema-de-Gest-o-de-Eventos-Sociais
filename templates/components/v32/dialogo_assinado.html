@@ -1,0 +1,35 @@
+{% load estaticos %}{% comment %}
+  Modal "Anexar documento assinado", um por página (vem no shell V3.2).
+
+  Qualquer link para `viagens_oficios:assinatura_artefato` que leve
+  `data-anexar-assinado` abre este modal em vez de ir à página: o formulário
+  recebe o endereço do link, o nome do documento (`data-anexar-nome`) e, se
+  já houver versão assinada (`data-anexar-atual="1"`), o aviso e a opção de
+  remover. O envio é um POST comum; a view volta para a página de onde se
+  abriu (`next`). Sem JavaScript o link continua levando à página própria.
+{% endcomment %}
+<dialog class="an-dialogo" data-anexar-dialogo aria-labelledby="an-titulo" aria-describedby="an-texto">
+  <form method="post" enctype="multipart/form-data" class="an-form" data-anexar-form novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="" data-anexar-next>
+    <h2 class="an-titulo" id="an-titulo">Anexar documento assinado</h2>
+    <p class="an-texto" id="an-texto">Envie o PDF já assinado de <strong data-anexar-nome></strong>. Ele substituirá o arquivo gerado na tela.</p>
+    <p class="an-texto an-texto--atual" data-anexar-aviso hidden>Já existe uma versão assinada. A nova passa a valer e a anterior fica no histórico.</p>
+
+    <div class="an-caixa">
+      <label class="an-escolher">
+        <input type="file" name="arquivo" accept="application/pdf,.pdf" class="sr-only" data-anexar-arquivo required>
+        Escolher PDF
+      </label>
+      <div class="an-arquivo" data-anexar-rotulo aria-live="polite">Nenhum documento escolhido</div>
+      <p class="an-erro" data-anexar-erro hidden></p>
+    </div>
+
+    <div class="an-rodape">
+      <button type="submit" name="acao" value="remover" class="an-remover" data-anexar-remover formnovalidate hidden>Remover versão assinada</button>
+      <button type="button" class="btn--secundaria" data-anexar-fechar>Cancelar</button>
+      <button type="submit" class="btn-primaria" data-anexar-enviar disabled>Anexar PDF</button>
+    </div>
+  </form>
+</dialog>
+<script src="{% estatico 'js/anexar-assinado.js' %}" defer></script>

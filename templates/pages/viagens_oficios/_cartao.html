@@ -36,7 +36,7 @@
                 <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivo editável do termo</small></span></button>
               </form>
               {% if p.url_termo_assinado %}
-                <a class="dd__i of-item" href="{{ p.url_termo_assinado }}">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Enviar o PDF depois da assinatura</small></span></a>
+                <a class="dd__i of-item" href="{{ p.url_termo_assinado }}" data-anexar-assinado data-anexar-nome="{{ p.nome }}">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Enviar o PDF depois da assinatura</small></span></a>
               {% else %}
                 <span class="dd__i of-item of-item--inativo" aria-disabled="true" title="Gere o PDF do termo antes de anexar a versão assinada">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Gere o PDF do termo primeiro</small></span></span>
               {% endif %}

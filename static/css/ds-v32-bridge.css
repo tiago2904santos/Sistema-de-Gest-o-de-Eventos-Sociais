@@ -1814,3 +1814,26 @@ form.btn-flutuante-form{margin:0;display:contents}
 .lista-escolha .of-pessoa__nome,.lista-escolha .of-pessoa__desc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lista-escolha .of-pessoa__nome{display:block}
 .multi-pick__remover{flex:none}
+
+/* Modal "Anexar documento assinado" (components/v32/dialogo_assinado.html):
+   título forte, texto curto, caixa cinza com o botão de escolher e o nome do
+   arquivo, e o rodapé com Cancelar e Anexar PDF. */
+.an-dialogo{width:min(560px,calc(100vw - 32px));padding:0;border:0;border-radius:14px;background:var(--branco,#fff);color:var(--n-900);box-shadow:0 24px 60px -12px rgba(26,25,23,.35)}
+.an-dialogo::backdrop{background:rgba(26,25,23,.45)}
+.an-dialogo:focus,.an-dialogo :focus{outline:none}
+.an-form{display:flex;flex-direction:column;gap:14px;padding:24px 22px 20px}
+.an-titulo{margin:0;font-size:22px;font-weight:700;line-height:1.25;color:var(--n-950,#1a1917)}
+.an-texto{margin:0;font-size:14.5px;line-height:1.55;color:var(--n-700,#4d4d4d)}
+.an-texto strong{color:var(--n-900);font-weight:700}
+.an-texto--atual{font-size:13px;color:var(--n-500)}
+.an-caixa{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:12px;border-radius:10px;background:var(--n-100,#eff0f0)}
+.an-escolher{display:inline-flex;align-items:center;height:36px;padding:0 12px;border-radius:7px;background:var(--n-200,#e1e2e3);color:var(--n-900);font-size:13.5px;font-weight:600;cursor:pointer;transition:background-color var(--motion,.15s)}
+.an-escolher:hover{background:var(--n-250,#d1d3d4)}
+.an-arquivo{align-self:stretch;min-height:56px;display:flex;align-items:center;padding:0 14px;border-radius:8px;background:var(--branco,#fff);border:1px dashed var(--n-250,#d1d3d4);font-size:13.5px;font-weight:600;color:var(--n-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.an-arquivo--escolhido{border-style:solid;color:var(--n-900)}
+.an-erro{margin:0;font-size:12.5px;color:var(--erro-t,#b3261e)}
+.an-rodape{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:2px}
+.an-rodape .btn-primaria,.an-rodape .btn--secundaria{height:40px;padding:0 18px;border-radius:8px;font-size:14px}
+.an-rodape .btn-primaria:disabled{opacity:.45;cursor:not-allowed}
+.an-remover{margin-right:auto;padding:0;border:0;background:none;font:inherit;font-size:13px;font-weight:500;color:var(--erro-t,#b3261e);cursor:pointer}
+.an-remover:hover{text-decoration:underline}

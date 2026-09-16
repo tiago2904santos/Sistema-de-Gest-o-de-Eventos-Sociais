@@ -116,6 +116,46 @@ class SecoesDoRegistroNoFormularioTests(CenarioTermos):
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, reverse("viagens_termos:editar", args=[t.pk]))
 
+    def _pdf_do_janine(self):
+        o = self.oficio(dias=3, servidores=[self.janine])
+        t = self.termo(oficio=o)
+        self.client.post(reverse("viagens_termos:gerar", args=[t.pk, self.janine.pk, "pdf"]))
+        return t, DocumentoArtefato.objects.get(termo=t, servidor=self.janine, formato="pdf")
+
+    def test_links_de_anexar_abrem_o_modal(self):
+        t, art = self._pdf_do_janine()
+        r = self.client.get(reverse("viagens_termos:editar", args=[t.pk]))
+        self.assertContains(r, "data-anexar-dialogo")
+        self.assertContains(r, f'href="{reverse("viagens_oficios:assinatura_artefato", args=[art.pk])}" data-anexar-assinado data-anexar-nome="JANINE LACERDA DO PRADO"')
+        self.assertContains(r, "Anexar documento assinado")
+
+    def test_anexar_pelo_modal_volta_para_a_pagina_de_origem(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        t, art = self._pdf_do_janine()
+        url = reverse("viagens_oficios:assinatura_artefato", args=[art.pk])
+        origem = reverse("viagens_termos:lista")
+        r = self.client.post(url, {"next": origem, "arquivo": SimpleUploadedFile("assinado.pdf", b"%PDF-1.4 assinado", content_type="application/pdf")})
+        self.assertRedirects(r, origem, fetch_redirect_response=False)
+        art.refresh_from_db()
+        self.assertTrue(art.esta_assinado)
+        # Arquivo que não é PDF: volta para a origem com a mensagem, sem anexar outra versão.
+        r = self.client.post(url, {"next": origem, "arquivo": SimpleUploadedFile("nota.txt", b"texto", content_type="text/plain")}, follow=True)
+        self.assertRedirects(r, origem)
+        self.assertContains(r, "Envie um arquivo PDF.")
+        self.assertEqual(art.versoes_assinadas.count(), 1)
+        # Remover também volta para a origem.
+        r = self.client.post(url, {"next": origem, "acao": "remover"})
+        self.assertRedirects(r, origem, fetch_redirect_response=False)
+        art.refresh_from_db()
+        self.assertFalse(art.esta_assinado)
+
+    def test_next_de_fora_do_sistema_e_ignorado(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        t, art = self._pdf_do_janine()
+        url = reverse("viagens_oficios:assinatura_artefato", args=[art.pk])
+        r = self.client.post(url, {"next": "https://exemplo.com/", "arquivo": SimpleUploadedFile("assinado.pdf", b"%PDF-1.4 x", content_type="application/pdf")})
+        self.assertRedirects(r, reverse("viagens_termos:editar", args=[t.pk]), fetch_redirect_response=False)
+
 
 class NavegacaoTests(CenarioTermos):
     def test_salvar_vai_para_a_lista(self):

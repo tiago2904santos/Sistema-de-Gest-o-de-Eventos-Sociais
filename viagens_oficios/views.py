@@ -48,6 +48,7 @@ def assinatura_artefato(request, pk):
     from django import forms
     from documentos.services.access import obter_artefato_para_download
     from documentos.services.persistence import anexar_arquivo_assinado, remover_arquivo_assinado
+    from core.retorno import next_valido, voltar_para
     exigir_operador(request)
     artefato = obter_artefato_para_download(request.user, pk)
     if artefato.formato != 'pdf' or not (artefato.oficio_id or artefato.termo_id):
@@ -58,17 +59,25 @@ def assinatura_artefato(request, pk):
         arquivo = forms.FileField(label='Documento assinado (PDF)')
 
     form = UploadForm(request.POST or None, request.FILES or None)
+    # Pelo modal, o POST traz `next` (a página de onde se abriu): o retorno vai
+    # para lá, e um erro volta como mensagem em vez de abrir esta página.
+    do_modal = request.method == 'POST' and bool(next_valido(request))
+    retorno = voltar_para(request, voltar)
     if request.method == 'POST':
         try:
             if request.POST.get('acao') == 'remover':
                 remover_arquivo_assinado(artefato)
-                return redirect(voltar)
+                messages.success(request, 'Versão assinada removida. O PDF gerado volta a valer.')
+                return redirect(retorno)
             if form.is_valid():
                 anexar_arquivo_assinado(artefato, form.cleaned_data['arquivo'])
-                messages.success(request, 'Versão assinada anexada. A anterior permanece no histórico.')
-                return redirect(voltar)
+                messages.success(request, 'Documento assinado anexado. A versão anterior permanece no histórico.')
+                return redirect(retorno)
         except DocumentError as exc:
             form.add_error('arquivo', str(exc))
+        if do_modal:
+            messages.error(request, ' '.join(form.errors.get('arquivo', [])) or 'Não foi possível anexar o documento.')
+            return redirect(retorno)
     return render(request, 'pages/viagens_oficios/assinatura.html', {'form': form, 'artefato': artefato, 'url_voltar': voltar})
 
 
