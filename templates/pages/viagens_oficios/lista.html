@@ -1,106 +1,126 @@
 {% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
 {% comment %}
-  Lista de ofícios — Meta 3 de paridade com o Gerenciador de Viagens.
+  Lista de ofícios — na mesma composição das listas de cadastros, roteiros,
+  termos e justificativas: situações na trilha à esquerda, busca na barra do
+  cartão, tabela no desktop e Data List no celular, um menu único de ações
+  por linha.
 
-  O conteúdo é o da origem: busca por número, protocolo, motivo ou destino;
-  quatro situações combináveis com a contagem ao lado; seis ordenações;
-  período da viagem e período da criação com calendário; "Mostrando 1–20 de
-  N"; um cartão por ofício com equipe, transporte, trechos, valor e
-  justificativa, e os quatro menus de ação. A pele é a do V3.2.
+  A linha é uma célula só: número e protocolo com o selo temporal e o estado
+  da justificativa, e os fatos com ícone (viagem, servidores, viatura e
+  diárias). Os documentos saem pelo modal "Baixar documentos".
 {% endcomment %}
 
 {% block title %}Ofícios — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% include "components/v32/breadcrumb.html" with atual="Ofícios" %}
-
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker kicker--junto">{{ modulo_ativo.nome }}</div>
+      <div class="kicker kicker--junto">Viagens</div>
       <h1>Ofícios</h1>
     </div>
-    {# Na origem "Novo ofício" é um POST: nasce o rascunho, já numerado, e o editor abre. #}
-    {# Botão flutuante, como na lista de roteiros: fixo no canto inferior direito. #}
+    {% if gestor %}
+      <div class="d-acoes">
+        <a class="btn--secundaria" href="{% url 'viagens_oficios:numeracao' %}">Numeração</a>
+      </div>
+    {% endif %}
     {% if pode_editar %}
+      {# Como no Gerenciador de Viagens: "Novo ofício" cria o rascunho, já numerado, e abre o cadastro. #}
       <form method="post" action="{% url 'viagens_oficios:criar' %}" class="btn-flutuante-form">
         {% csrf_token %}
+        <input type="hidden" name="next" value="{{ url_atual }}">
         <button type="submit" class="btn-primaria btn-flutuante">{% include "components/icon.html" with nome="plus" %}Novo ofício</button>
       </form>
     {% endif %}
   </div>
 
-  <nav class="of-catalogos" aria-label="Cadastros de apoio dos ofícios">
-    <a class="btn--quieta" href="{% url 'viagens_oficios:catalogo' 'motivos' %}?next={{ url_atual|urlencode }}">Motivos</a>
-    <a class="btn--quieta" href="{% url 'viagens_oficios:catalogo' 'justificativas' %}?next={{ url_atual|urlencode }}">Modelos de justificativa</a>
-    {% if gestor %}
-      <a class="btn--quieta" href="{% url 'viagens_oficios:numeracao' %}">Numeração</a>
-      <a class="btn--quieta" href="{% url 'viagens_oficios:institucional' %}">Configuração institucional</a>
-    {% endif %}
-  </nav>
+  <div class="cad-grade cad-grade--sem-folga">
+    {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_rotulo="Situação dos ofícios" sem_titulo=True %}
 
-  <div class="pa-card pa-card--lista v32-bloco v32-filtros">
-    <form method="get" class="v32-barra of-filtros" role="search" data-auto-enviar>
-      <div class="form-campo v32-busca">
-        <label class="form-label sr-only" for="id_q">Buscar ofícios</label>
+    <div class="pa-card pa-card--lista cad-lista">
+      {# Busca no servidor, enviada 1 s depois de digitar; a situação da trilha sobrevive. #}
+      <form method="get" class="cad-barra" role="search" data-cadastro-busca data-auto-enviar>
+        {% for situacao in situacoes_escolhidas %}<input type="hidden" name="situacao" value="{{ situacao }}">{% endfor %}
         <div class="busca">
-          <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
-          <input class="form-controle" type="search" name="q" id="id_q" value="{{ q }}"
-                 placeholder="Buscar por número, protocolo, motivo ou destino" aria-label="Buscar ofícios">
+          {% include "components/icon.html" with nome="search" %}
+          <label class="sr-only" for="id_q">Buscar ofícios</label>
+          <input type="search" name="q" id="id_q" value="{{ q }}" placeholder="Buscar por número, protocolo, motivo ou destino" autocomplete="off">
         </div>
+      </form>
+
+      <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Tabela de ofícios">
+        <table class="dt dt--responsiva">
+          <thead>
+            <tr>
+              <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
+              <th>Ofício</th>
+              <th class="c-cad-acoes">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in linhas %}{% with o=l.oficio d=l.documentos %}
+              <tr{% if o.cancelado %} class="tm-linha--cancelada"{% endif %}>
+                <td class="tabela__col-icone">
+                  <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+                  <span class="sr-only">Ofício</span>
+                </td>
+                <td class="c-nome tm-celula" data-rotulo="Ofício">{% include "pages/viagens_oficios/_linha.html" %}</td>
+                <td class="c-cad-acoes">{% include "pages/viagens_oficios/_acoes_linha.html" %}</td>
+              </tr>
+            {% endwith %}{% empty %}
+              <tr>
+                <td colspan="3" class="v32-suave dt__vazio">
+                  {% if tem_filtros %}Nenhum ofício encontrado com os filtros aplicados.{% else %}Nenhum ofício registrado ainda.{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-      <fieldset class="v32-abas-situacao of-filtros__situacao">
-        <legend class="sr-only">Filtrar por situação</legend>
-        {% for aba in opcoes_situacao %}
-          <label class="v32-aba{% if aba.selecionado %} v32-aba--ativa{% endif %}">
-            <input type="checkbox" name="situacao" value="{{ aba.valor }}"{% if aba.selecionado %} checked{% endif %}>
-            {{ aba.rotulo }}
-          </label>
+
+      <div class="lista-mobile-v32"><div class="m-lista">
+        {% for l in linhas %}{% with o=l.oficio d=l.documentos %}
+          <article class="m-item{% if o.cancelado %} tm-linha--cancelada{% endif %}">
+            <div class="m-item__topo">
+              <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+              <span class="sr-only">Ofício</span>
+            </div>
+            <div class="m-item__tipo tm-celula">{% include "pages/viagens_oficios/_linha.html" %}</div>
+            <div class="m-item__rodape">{% include "pages/viagens_oficios/_acoes_linha.html" %}</div>
+          </article>
+        {% endwith %}{% empty %}
+          <article class="m-item"><p class="m-vazio">{% if tem_filtros %}Nenhum ofício encontrado com os filtros aplicados.{% else %}Nenhum ofício registrado ainda.{% endif %}</p></article>
         {% endfor %}
-      </fieldset>
-      <div class="of-filtros__ordem">
-        {% include "components/select.html" with name="sort" label="Ordenação" rotulo_oculto=True opcoes=opcoes_ordenacao selecionado=sort placeholder="Número: maior" %}
-      </div>
-      <div class="of-filtros__periodo">
-        {% include "components/date_range.html" with name="viagem" start_name="viagem_de" end_name="viagem_ate" label="Viagem" valor_inicio=datas.viagem_de valor_fim=datas.viagem_ate %}
-      </div>
-      <div class="of-filtros__periodo">
-        {% include "components/date_range.html" with name="criacao" start_name="criacao_de" end_name="criacao_ate" label="Criação" valor_inicio=datas.criacao_de valor_fim=datas.criacao_ate %}
-      </div>
-      <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="search" %}Buscar</button>
-      {% if tem_filtros %}
-        <a href="{{ url_limpar }}" class="btn--secundaria">{% include "components/icon.html" with nome="x" %}Limpar</a>
+      </div></div>
+
+      {% if pagina.paginator.num_pages > 1 %}
+        <div class="v32-corpo pag">
+          <span class="v32-suave">
+            Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }} ofícios
+          </span>
+          <nav class="pag__nav" aria-label="Paginação">
+            {% if pagina.has_previous %}
+              <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+            {% endif %}
+            {% for numero in paginas_visiveis %}
+              {% if numero == elipse %}
+                <span class="pag__el" aria-hidden="true">…</span>
+              {% elif numero == pagina.number %}
+                <span class="pag__n" aria-current="page">{{ numero }}</span>
+              {% else %}
+                <a class="pag__n" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
+              {% endif %}
+            {% endfor %}
+            {% if pagina.has_next %}
+              <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+            {% endif %}
+          </nav>
+        </div>
       {% endif %}
-    </form>
+    </div>
   </div>
+{% endblock %}
 
-  {% if cartoes %}
-    <nav class="of-paginacao" aria-label="Paginação">
-      <p class="of-paginacao__contagem">Mostrando <strong>{{ pagina.start_index }}–{{ pagina.end_index }}</strong> de <strong>{{ pagina.paginator.count }}</strong></p>
-      {% if pagina.paginator.num_pages > 1 %}{% include "pages/viagens_cadastros/_paginacao_nav.html" %}{% endif %}
-    </nav>
-
-    <div class="of-lista">
-      {% for cartao in cartoes %}
-        {% include "pages/viagens_oficios/_cartao.html" with c=cartao %}
-      {% endfor %}
-    </div>
-
-    {% if pagina.paginator.num_pages > 1 %}
-      <nav class="of-paginacao of-paginacao--rodape" aria-label="Paginação">
-        <p class="of-paginacao__contagem">Mostrando <strong>{{ pagina.start_index }}–{{ pagina.end_index }}</strong> de <strong>{{ pagina.paginator.count }}</strong></p>
-        {% include "pages/viagens_cadastros/_paginacao_nav.html" %}
-      </nav>
-    {% endif %}
-  {% else %}
-    <div class="pa-card v32-bloco of-vazio">
-      <h2>Nenhum ofício</h2>
-      <p>{% if tem_filtros %}Nenhum ofício encontrado com os filtros aplicados.{% else %}Nenhum ofício registrado ainda.{% endif %}</p>
-      {% if pode_editar %}
-        <form method="post" action="{% url 'viagens_oficios:criar' %}">
-          {% csrf_token %}
-          <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="plus" %}Novo ofício</button>
-        </form>
-      {% endif %}
-    </div>
-  {% endif %}
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>
+  {% if pode_editar %}{% include "components/v32/dialogo_baixar.html" %}{% endif %}
 {% endblock %}

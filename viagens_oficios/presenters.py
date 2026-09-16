@@ -195,3 +195,110 @@ def cartao_da_lista(oficio, *, editar_url, artefatos_termo=None, artefato_oficio
         "artefato_oficio_pdf": artefato_oficio_pdf,
         "artefato_justificativa_pdf": artefato_justificativa_pdf,
     }
+
+
+def artefatos_pdf_por_oficio(oficios):
+    """oficio_id → {(tipo, servidor_id): {"pk", "assinado"}} dos PDFs já gerados.
+
+    Mesma regra de `viagens_termos.presenters.artefatos_pdf_por_termo`: o PDF
+    apontado é o primeiro gerado (alvo de "Anexar assinado") e `assinado` vale
+    se qualquer PDF daquele documento tiver versão assinada, lido do banco.
+    """
+    from django.db.models import Exists, OuterRef
+    from documentos.models import DocumentoArtefato, DocumentoAssinaturaVersao
+    ids = [o.pk for o in oficios]
+    if not ids:
+        return {}
+    versao_viva = DocumentoAssinaturaVersao.objects.filter(artefato=OuterRef("pk"), revogada_em__isnull=True)
+    consulta = (
+        DocumentoArtefato.objects
+        .filter(oficio_id__in=ids, termo_id__isnull=True, formato="pdf")
+        .annotate(tem_versao=Exists(versao_viva))
+        .order_by("criado_em")
+        .values_list("oficio_id", "tipo", "servidor_id", "pk", "tem_versao", "arquivo_assinado")
+    )
+    mapa = {}
+    for oficio_id, tipo, servidor_id, pk, tem_versao, arquivo_assinado in consulta:
+        entrada = mapa.setdefault(oficio_id, {}).setdefault((tipo, servidor_id), {"pk": pk, "assinado": False})
+        entrada["assinado"] = entrada["assinado"] or bool(tem_versao) or bool(arquivo_assinado)
+    return mapa
+
+
+def fatos_do_oficio(oficio):
+    """Os dados da linha como itens com ícone; o que falta aparece apagado."""
+    subtitulo = subtitulo_do_cartao(oficio)
+    servidores = []
+    for s in oficio.servidores.all():
+        servidores.append(f"{s.nome} (motorista)" if oficio.motorista_id == s.pk else s.nome)
+    transporte = transporte_do_cartao(oficio)
+    viatura = " · ".join(p for p in [transporte["modelo"], transporte["placa"]] if p)
+    diarias = diarias_do_cartao(oficio)
+    valor = ""
+    if diarias:
+        valor = diarias["valor"] + (f" · {diarias['quantidade']}" if diarias["quantidade"] else "")
+    # Data e destino moram no título; aqui só o aviso quando faltam.
+    fatos = [] if subtitulo else [{"icone": "map-pin", "rotulo": "Viagem", "texto": "Sem roteiro", "ausente": True}]
+    return fatos + [
+        {"icone": "users", "rotulo": "Servidores", "texto": ", ".join(servidores) or "Sem servidores", "ausente": not servidores},
+        {"icone": "truck", "rotulo": "Viatura", "texto": viatura or "Sem viatura", "ausente": not viatura},
+        {"icone": "chart", "rotulo": "Diárias", "texto": valor or "Sem diárias", "ausente": not valor},
+    ]
+
+
+def documentos_do_oficio(oficio, artefatos_pdf):
+    """O que o modal "Baixar documentos" e o de "Anexar assinado" oferecem:
+    o ofício, a justificativa (quando há texto) e um termo por servidor."""
+    import json
+
+    from documentos.services.types import DocumentoTipo
+
+    def estado(chave):
+        artefato = artefatos_pdf.get(chave)
+        if artefato is None:
+            return {"estado": "Sem PDF", "assinado": False, "url_assinado": ""}
+        return {"estado": "Assinado" if artefato["assinado"] else "PDF gerado", "assinado": artefato["assinado"],
+                "url_assinado": reverse("viagens_oficios:assinatura_artefato", args=[artefato["pk"]])}
+
+    documentos = [("oficio", "Ofício", f"Ofício {oficio.numero_formatado}", estado((DocumentoTipo.OFICIO.value, None)))]
+    if justificativa_do_cartao(oficio)["preenchida"]:
+        documentos.append(("justificativa", "Justificativa", "Justificativa de prazo",
+                           estado((DocumentoTipo.JUSTIFICATIVA.value, None))))
+    for s in oficio.servidores_termo_autorizacao.all():
+        documentos.append((f"termo-{s.pk}", f"Termo · {s.nome}", _descricao_pessoa(s),
+                           estado((DocumentoTipo.TERMO_AUTORIZACAO.value, s.pk))))
+    return {
+        "url_baixar": reverse("viagens_oficios:baixar", args=[oficio.pk]),
+        "itens_baixar": json.dumps(
+            [{"valor": v, "nome": n, "detalhe": d, "estado": e["estado"], "assinado": e["assinado"]} for v, n, d, e in documentos],
+            ensure_ascii=False,
+        ),
+        "opcoes_anexar": json.dumps(
+            [{"nome": n, "url": e["url_assinado"], "atual": e["assinado"]} for _, n, _, e in documentos],
+            ensure_ascii=False,
+        ),
+        "algum_para_anexar": any(e["url_assinado"] for *_, e in documentos),
+    }
+
+
+def _destino_e_periodo(oficio):
+    """"GUARAPUAVA/PR · 09/11 a 10/11/2026", na ordem do título das justificativas."""
+    if oficio.roteiro_id is None:
+        return ""
+    periodo = periodo_curto(*periodo_roteiro(oficio.roteiro))
+    return " · ".join(p for p in [destinos_resumidos(oficio.roteiro), periodo] if p and p != "—")
+
+
+def linha_da_lista(oficio, *, artefatos_pdf=None):
+    """Uma linha da lista de ofícios, no padrão das listas de termos e justificativas."""
+    selo, tom = selo_do_cartao(oficio)
+    justificativa = justificativa_do_cartao(oficio)
+    return {
+        "oficio": oficio,
+        "titulo": " · ".join(p for p in [titulo_do_cartao(oficio), _destino_e_periodo(oficio)] if p),
+        "selo": selo,
+        "selo_tom": tom,
+        "justificativa_preenchida": justificativa["preenchida"],
+        "fatos": fatos_do_oficio(oficio),
+        "documentos": documentos_do_oficio(oficio, artefatos_pdf or {}),
+        "url_editar": reverse("viagens_oficios:editar", args=[oficio.pk]),
+    }

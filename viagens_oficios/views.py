@@ -98,65 +98,119 @@ def _artefatos_pdf_da_pagina(oficios):
 
 @acesso_ao_modulo
 def lista(request):
+    """Lista de ofícios no padrão das listas de termos, roteiros e
+    justificativas: situações na trilha à esquerda, busca na barra do cartão,
+    uma célula por ofício e um menu único de ações."""
     from django.core.paginator import Paginator
-    from core.retorno import com_next, daqui
+    from core.retorno import daqui
     from . import abas as abas_de_oficio
-    from .presenters import cartao_da_lista
-    from .selectors import ORDENACAO_PADRAO, normalizar_ordenacao, opcoes_de_ordenacao
+    from .presenters import artefatos_pdf_por_oficio, linha_da_lista
 
     q = request.GET.get('q', '').strip()
-    datas = {n: request.GET.get(n, '') for n in ['viagem_de', 'viagem_ate', 'criacao_de', 'criacao_ate']}
-    sort = normalizar_ordenacao(request.GET.get('sort', ''))
     escolhidas = abas_de_oficio.normalizar_abas(request.GET.getlist('situacao'))
-
-    # As contagens de situação valem para a busca e os períodos já aplicados,
-    # e não para a situação escolhida: é assim que "Cancelados (3)" continua
-    # dizendo quantos existem mesmo com outra situação marcada.
-    base = listar_oficios(q, **datas)
-    opcoes_situacao = abas_de_oficio.opcoes_de_aba(base, escolhidas)
-    queryset = listar_oficios(q, situacoes=escolhidas, sort=sort, **datas)
-
-    # A origem pagina com `page`, vinte por página.
+    base = listar_oficios(q)
+    queryset = listar_oficios(q, situacoes=escolhidas)
     paginator = Paginator(queryset, ITENS_POR_PAGINA)
-    pagina = paginator.get_page(request.GET.get('page'))
-    paginas_visiveis = list(paginator.get_elided_page_range(pagina.number, on_each_side=1, on_ends=1))
+    pagina = paginator.get_page(request.GET.get('pagina'))
     parametros = request.GET.copy()
-    parametros.pop('page', None)
+    parametros.pop('pagina', None)
+    artefatos = artefatos_pdf_por_oficio(pagina.object_list)
+    linhas = [linha_da_lista(o, artefatos_pdf=artefatos.get(o.pk, {})) for o in pagina]
 
-    volta = daqui(request)
-    artefatos = _artefatos_pdf_da_pagina(pagina.object_list)
-    cartoes = []
-    for oficio in pagina:
-        termos = {servidor_id: pk for (oficio_id, tipo, servidor_id), pk in artefatos.items()
-                  if oficio_id == oficio.pk and tipo == DocumentoTipo.TERMO_AUTORIZACAO.value and servidor_id}
-        cartoes.append(cartao_da_lista(
-            oficio,
-            editar_url=com_next(reverse('viagens_oficios:editar', args=[oficio.pk]), volta),
-            artefatos_termo=termos,
-            artefato_oficio_pdf=artefatos.get((oficio.pk, DocumentoTipo.OFICIO.value, None)),
-            artefato_justificativa_pdf=artefatos.get((oficio.pk, DocumentoTipo.JUSTIFICATIVA.value, None)),
-        ))
+    def url_da_situacao(aba=None):
+        destino = parametros.copy()
+        destino.pop('situacao', None)
+        if aba:
+            destino['situacao'] = aba
+        return '?' + destino.urlencode()
 
-    tem_filtros = bool(q or escolhidas or any(datas.values()) or sort != ORDENACAO_PADRAO)
+    icones = {
+        abas_de_oficio.ABA_FUTURAS: 'calendar',
+        abas_de_oficio.ABA_ATUAIS: 'clock',
+        abas_de_oficio.ABA_FINALIZADOS: 'check-circle',
+        abas_de_oficio.ABA_CANCELADOS: 'ban',
+    }
+    contagem = abas_de_oficio.contar_por_aba(base)
+    situacoes = [{'slug': 'todas', 'titulo': 'Todos', 'total': base.count(), 'icone': 'checklist', 'url': url_da_situacao()}] + [
+        {'slug': chave, 'titulo': rotulo, 'total': contagem[chave], 'icone': icones[chave], 'url': url_da_situacao(chave)}
+        for chave, rotulo in abas_de_oficio.ABA_ROTULOS
+    ]
+
     return render(request, 'pages/viagens_oficios/lista.html', {
-        'titulo': 'Ofícios', 'pagina': pagina, 'paginas_visiveis': paginas_visiveis,
-        'elipse': paginator.ELLIPSIS, 'querystring': parametros.urlencode(),
-        'cartoes': cartoes, 'q': q, 'sort': sort, 'datas': datas,
-        'opcoes_situacao': opcoes_situacao, 'opcoes_ordenacao': opcoes_de_ordenacao(),
-        'tem_filtros': tem_filtros, 'url_limpar': reverse('viagens_oficios:lista'),
-        'url_atual': volta,
+        'linhas': linhas, 'pagina': pagina, 'querystring': parametros.urlencode(), 'q': q,
+        'paginas_visiveis': list(paginator.get_elided_page_range(pagina.number, on_each_side=1, on_ends=1)),
+        'elipse': paginator.ELLIPSIS,
+        'situacoes': situacoes,
+        'situacoes_escolhidas': escolhidas,
+        'situacao_ativa': 'todas' if not escolhidas else escolhidas[0] if len(escolhidas) == 1 else '',
+        'tem_filtros': bool(q or escolhidas), 'url_atual': daqui(request),
         'pode_editar': pode_editar_cadastros(request.user), 'gestor': eh_gestor_viagens(request.user),
     })
 
 
 @acesso_ao_modulo
 @require_POST
+def baixar(request, pk):
+    """Os documentos marcados no modal "Baixar documentos" da lista.
+
+    `itens`: `oficio`, `justificativa` e `termo-<servidor>`. `formato`: pdf ou
+    docx. `saida`: `separados` (um arquivo, ou ZIP) ou `unico` (um PDF só, na
+    ordem da lista). `versao`: `assinado` (padrão) ou `original`.
+    """
+    from core.retorno import voltar_para
+    from viagens_termos.services import gerar_termo_um
+    from viagens_termos.views import resposta_pdf_consolidado
+
+    exigir_operador(request)
+    oficio = get_oficio_by_id(pk)
+    retorno = voltar_para(request, reverse('viagens_oficios:lista'))
+    if oficio.cancelado:
+        messages.error(request, 'Reative o ofício antes de baixar documentos.')
+        return redirect(retorno)
+    formato = request.POST.get('formato', 'pdf')
+    if formato not in ('pdf', 'docx'):
+        raise Http404
+    servidores = {f'termo-{s.pk}': s for s in oficio.servidores_termo_autorizacao.all()}
+    ordem = ['oficio', 'justificativa', *servidores]
+    marcados = request.POST.getlist('itens')
+    if set(marcados) - set(ordem):
+        raise Http404
+    pedidos = [v for v in ordem if v in marcados]
+    if not pedidos:
+        messages.error(request, 'Marque ao menos um documento para baixar.')
+        return redirect(retorno)
+    fmt = DocumentoFormato(formato)
+    usar_assinado = request.POST.get('versao', 'assinado') != 'original'
+    try:
+        documentos = []
+        for valor in pedidos:
+            if valor in servidores:
+                documentos.append(gerar_termo_um(oficio, servidores[valor], fmt, usar_assinado=usar_assinado))
+            else:
+                tipo = DocumentoTipo.OFICIO if valor == 'oficio' else DocumentoTipo.JUSTIFICATIVA
+                documentos.append(gerar_documento(oficio, fmt, tipo, usar_assinado=usar_assinado))
+    except (ValidationError, DocumentError) as exc:
+        messages.error(request, '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
+        return redirect(retorno)
+    referencia = oficio.numero_formatado.replace('/', '-')
+    if len(documentos) == 1:
+        return resposta_documento(request, documentos[0])
+    if fmt == DocumentoFormato.PDF and request.POST.get('saida') == 'unico':
+        return resposta_pdf_consolidado(documentos, f'oficio-{referencia}-documentos.pdf')
+    return resposta_lote(documentos, f'oficio-{referencia}-documentos.zip')
+
+
+@acesso_ao_modulo
+@require_POST
 def criar(request):
-    """"Novo ofício" da origem: cria o rascunho já numerado e abre o formulário."""
+    """"Novo ofício" da origem: cria o rascunho já numerado e abre o cadastro."""
+    from core.retorno import com_next, next_valido
     from .services import criar_oficio_rascunho
     exigir_operador(request)
     oficio = criar_oficio_rascunho()
-    return redirect('viagens_oficios:editar', pk=oficio.pk)
+    destino = reverse('viagens_oficios:editar', args=[oficio.pk])
+    retorno = next_valido(request)
+    return redirect(com_next(destino, retorno) if retorno else destino)
 
 
 CAMPOS_FORA_DO_HISTORICO = {'atualizado_em', 'criado_em'}
@@ -181,75 +235,158 @@ def historico_do_oficio(oficio, limite=20):
     return registros
 
 
-def contexto_operacao_do_oficio(request, oficio):
-    """O que a tela de conferência montava e o formulário passou a mostrar.
+def _editor_vazio(dados):
+    """O editor de roteiro veio sem nada: sem sede, sem destino e sem trecho."""
+    if dados.get('origem_municipio'):
+        return False
+    for chave, valor in dados.items():
+        if valor and (chave.endswith('-municipio') or chave.endswith('-destino_municipio')):
+            return False
+    return True
 
-    Equipe com os endereços dos termos, documentos gerados e histórico: as
-    seções "Documentos", "Histórico" e "Encerramento" do formulário do ofício
-    existente. Sem tela de detalhe, é aqui que esse contexto nasce.
+
+def _gravar_roteiro(request, oficio, *, finalizar):
+    """O editor de roteiro embutido, gravado como a tela de roteiros grava.
+
+    Sem o editor no POST, ou com ele vazio num ofício ainda sem roteiro, não
+    há o que gravar. O roteiro novo fica ligado ao ofício.
     """
-    from auditoria.models import RegistroAuditoria
-    from core.retorno import com_next, daqui
-    from .presenters import cartao_da_lista
-    artefatos = _artefatos_pdf_da_pagina([oficio])
-    termos = {servidor_id: art for (_, tipo, servidor_id), art in artefatos.items()
-              if tipo == DocumentoTipo.TERMO_AUTORIZACAO.value and servidor_id}
-    url_atual = daqui(request)
-    return {
-        'c': cartao_da_lista(
-            oficio, editar_url=com_next(reverse('viagens_oficios:editar', args=[oficio.pk]), url_atual),
-            artefatos_termo=termos,
-            artefato_oficio_pdf=artefatos.get((oficio.pk, DocumentoTipo.OFICIO.value, None)),
-            artefato_justificativa_pdf=artefatos.get((oficio.pk, DocumentoTipo.JUSTIFICATIVA.value, None)),
-        ),
-        'artefatos': oficio.artefatos.select_related('servidor').order_by('-criado_em')[:30],
-        'historico': historico_do_oficio(oficio),
-        'url_atual': url_atual,
-        'tem_prestacao': hasattr(oficio, 'prestacao_contas'),
-    }
+    from viagens_roteiros.models import Roteiro
+    from viagens_roteiros.views import gravar_editor
+    dados = request.POST
+    if 'trechos-TOTAL_FORMS' not in dados:
+        return None
+    roteiro = oficio.roteiro
+    if roteiro is None and _editor_vazio(dados):
+        return None
+    rascunho = not finalizar and (roteiro is None or roteiro.status == Roteiro.Status.RASCUNHO)
+    gravacao = gravar_editor(dados, roteiro, rascunho=rascunho, usuario=request.user)
+    if gravacao.roteiro is not None and gravacao.roteiro.pk and oficio.roteiro_id != gravacao.roteiro.pk:
+        oficio.roteiro = gravacao.roteiro
+        oficio.save(update_fields=['roteiro', 'atualizado_em'])
+    return gravacao
+
+
+def _contexto_roteiro(request, oficio, gravacao):
+    from viagens_roteiros.forms import DestinoFormSet, RoteiroForm, TrechoFormSet
+    from viagens_roteiros.views import _contexto_do_form, _sede_inicial
+    if gravacao is not None:
+        roteiro = gravacao.roteiro if gravacao.roteiro is not None and gravacao.roteiro.pk else oficio.roteiro
+        return _contexto_do_form(roteiro, gravacao.form, gravacao.formset, gravacao.destinos)
+    roteiro = oficio.roteiro
+    form = RoteiroForm(instance=roteiro, initial=_sede_inicial(request, roteiro))
+    return _contexto_do_form(roteiro, form, TrechoFormSet(instance=roteiro), DestinoFormSet(instance=roteiro))
 
 
 @acesso_ao_modulo
 @require_http_methods(['GET', 'POST'])
 def editar(request, pk=None):
+    """Cadastro de ofício: as quatro etapas do Gerenciador de Viagens numa página.
+
+    Dados e viajantes, roteiro e diárias (o editor da tela de roteiros),
+    justificativa e documentos. "Salvar rascunho" grava e volta para a lista;
+    "Finalizar Ofício" grava, confere as pendências e só finaliza sem elas.
+    """
+    from django.utils import timezone
     from core.retorno import next_valido, voltar_para
-    from .form_context import contexto_form_oficio
+    from .form_context import contexto_conferencia, contexto_dados_viajantes, contexto_justificativa
+    from .justificativas_services import get_or_create_justificativa_oficio, oficio_exige_justificativa
+    from .presenters import artefatos_pdf_por_oficio
+    from .services import criar_oficio_rascunho
     exigir_operador(request)
-    oficio = get_oficio_by_id(pk) if pk else Oficio()
+    if pk is None:
+        # O cadastro sempre edita um rascunho já numerado; sem ele, cria-se um.
+        if request.method != 'POST':
+            return redirect('viagens_oficios:lista')
+        oficio = get_oficio_by_id(criar_oficio_rascunho().pk)
+    else:
+        oficio = get_oficio_by_id(pk)
+    lista = voltar_para(request, reverse('viagens_oficios:lista'))
+    finalizar = request.POST.get('acao') == 'finalizar'
     form = OficioForm(request.POST or None, instance=oficio)
-    justificativa = oficio.justificativa if pk and hasattr(oficio, 'justificativa') else None
-    jform = JustificativaForm(request.POST or None, instance=justificativa, prefix='justificativa')
+    jform = JustificativaForm(
+        request.POST or None, instance=get_or_create_justificativa_oficio(oficio), prefix='justificativa',
+        obrigatoria=finalizar and oficio_exige_justificativa(oficio),
+    )
+    gravacao = None
     if request.method == 'POST':
-        valido, jvalido = form.is_valid(), jform.is_valid()
-        if valido and jvalido:
+        if form.is_valid() and jform.is_valid():
             with transaction.atomic():
                 oficio = form.save()
                 reservar_numero_oficio(oficio, ano=oficio.data_criacao.year)
-                atualizar_justificativa_oficio(oficio, jform, action='save_continue')
-            messages.success(request, f'Ofício {oficio.numero_formatado} salvo.')
-            # O ofício tem uma tela só: salvar recarrega o próprio formulário,
-            # já com a conferência e os documentos atualizados. "Salvar" volta
-            # para onde a pessoa estava, quando a tela foi aberta com ?next=.
-            if request.POST.get('acao') == 'salvar' and next_valido(request):
-                return redirect(voltar_para(request, reverse('viagens_oficios:editar', args=[oficio.pk])))
-            return redirect('viagens_oficios:editar', pk=oficio.pk)
-        messages.error(request, 'Não foi possível salvar o ofício. Revise os campos indicados.')
-    avaliacao = validar_oficio_para_documento(oficio) if pk else None
-    regra = avaliar_justificativa_oficio(oficio)
-    contexto = contexto_form_oficio(form, jform, oficio, avaliacao=avaliacao, regra=regra)
-    contexto.update({
-        'titulo': f'Ofício {oficio.numero_formatado}' if pk else 'Novo ofício', 'form': form, 'jform': jform,
-        'oficio': oficio, 'pode_editar': True, 'next': next_valido(request),
-        'url_voltar': voltar_para(request, reverse('viagens_oficios:lista')),
-        'url_novo_roteiro': reverse('viagens_roteiros:novo'),
+                gravacao = _gravar_roteiro(request, oficio, finalizar=finalizar)
+                atualizar_justificativa_oficio(oficio, jform, action='save_continue' if finalizar else 'save_draft')
+            for nivel, texto in (gravacao.mensagens if gravacao else []):
+                messages.add_message(request, nivel, texto)
+            if gravacao is not None and not gravacao.ok:
+                messages.error(request, 'Ofício salvo, mas o roteiro tem campos a corrigir.')
+            elif finalizar:
+                pendencias = validar_oficio_para_documento(oficio)['pendencias']
+                if pendencias:
+                    for pendencia in pendencias:
+                        messages.error(request, pendencia)
+                    return redirect('viagens_oficios:editar', pk=oficio.pk)
+                oficio.status = Oficio.STATUS_FINALIZADO
+                oficio.data_criacao = timezone.localdate()
+                oficio.save(update_fields=['status', 'data_criacao', 'atualizado_em'])
+                messages.success(request, 'Ofício finalizado com sucesso.')
+                return redirect(lista)
+            else:
+                messages.success(request, 'Rascunho salvo.')
+                return redirect(lista)
+        else:
+            messages.error(request, 'Não foi possível salvar o ofício. Revise os campos indicados.')
+    oficio = get_oficio_by_id(oficio.pk)
+    conferencia = contexto_conferencia(oficio, artefatos_pdf_por_oficio([oficio]).get(oficio.pk, {}))
+    return render(request, 'pages/viagens_oficios/form.html', {
+        'titulo': 'Cadastro de ofício',
+        'oficio': oficio, 'form': form, 'jform': jform,
+        'dados': contexto_dados_viajantes(form, oficio),
+        'rot': _contexto_roteiro(request, oficio, gravacao),
+        'justificativa': contexto_justificativa(jform),
+        'conferencia': conferencia,
+        'next': next_valido(request),
+        'url_voltar': lista,
+        'url_atual': request.get_full_path(),
         'modelos_texto': {
             'modelo_motivo': dict(ModeloMotivoOficio.objects.values_list('pk', 'texto')),
             'justificativa-modelo': dict(ModeloJustificativa.objects.values_list('pk', 'texto')),
         },
     })
-    if oficio.pk:
-        contexto.update(contexto_operacao_do_oficio(request, oficio))
-    return render(request, 'pages/viagens_oficios/form.html', contexto)
+
+
+@acesso_ao_modulo
+@require_GET
+@xframe_options_sameorigin
+def visualizar(request, pk, tipo):
+    """O PDF do ofício ou da justificativa dentro do cartão da conferência."""
+    if tipo not in ('oficio', 'justificativa'):
+        raise Http404
+    exigir_operador(request)
+    oficio = get_oficio_by_id(pk)
+    try:
+        doc = gerar_documento(oficio, DocumentoFormato.PDF, DocumentoTipo(tipo))
+    except (ValidationError, DocumentError) as exc:
+        return HttpResponse('; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc), status=409, content_type='text/plain; charset=utf-8')
+    return build_inline_pdf_response(request, content=doc.conteudo, tipo=doc.tipo, cache_hit=doc.cache_hit, x_document_sha256=doc.hash_sha256)
+
+
+@acesso_ao_modulo
+@require_GET
+@xframe_options_sameorigin
+def visualizar_termo(request, pk, servidor_id):
+    """O termo de um servidor dentro do cartão da conferência."""
+    from viagens_termos.services import gerar_termo_um
+    exigir_operador(request)
+    oficio = get_oficio_by_id(pk)
+    if oficio.cancelado:
+        raise Http404
+    servidor = get_object_or_404(oficio.servidores_termo_autorizacao, pk=servidor_id)
+    try:
+        doc = gerar_termo_um(oficio, servidor, DocumentoFormato.PDF)
+    except (ValidationError, DocumentError) as exc:
+        return HttpResponse('; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc), status=409, content_type='text/plain; charset=utf-8')
+    return build_inline_pdf_response(request, content=doc.conteudo, tipo=doc.tipo, cache_hit=doc.cache_hit, x_document_sha256=doc.hash_sha256)
 
 
 @acesso_ao_modulo
@@ -342,6 +479,7 @@ def documento(request, pk):
         'pode_editar': pode_editar_cadastros(request.user) and not oficio.cancelado,
         'campos_editaveis': list(campos_do_tipo(DocumentoTipo.OFICIO).values()),
         'versao': oficio.atualizado_em.isoformat() if oficio.atualizado_em else '',
+        'historico': historico_do_oficio(oficio),
         'url_voltar': reverse('viagens_oficios:editar', args=[oficio.pk]),
         'breadcrumb': [
             {'label': 'Ofícios', 'url': reverse('viagens_oficios:lista')},

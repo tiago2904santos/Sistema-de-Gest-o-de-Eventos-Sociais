@@ -62,4 +62,9 @@ class CenarioOficioMixin:
     def criar(self):
         response = self.client.post(reverse('viagens_oficios:novo'), self.payload())
         self.assertEqual(response.status_code, 302, response.content[:2000])
-        return Oficio.objects.latest('pk')
+        oficio = Oficio.objects.latest('pk')
+        # O cadastro liga o roteiro pelo editor embutido e não mostra a data;
+        # o cenário usa o roteiro pronto e a data fixa.
+        Oficio.objects.filter(pk=oficio.pk).update(roteiro=self.roteiro, data_criacao=datetime(2026, 9, 9).date())
+        oficio.refresh_from_db()
+        return oficio

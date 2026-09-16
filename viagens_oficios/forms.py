@@ -1,11 +1,150 @@
+import re
+
 from django import forms
 from django.db import transaction
+from django.utils import timezone
 from core.utils.masks import normalize_protocolo
 from core.normalizers import normalize_plate, normalize_spaces
 from .models import Oficio, Justificativa, ModeloMotivoOficio, ModeloJustificativa, ConfiguracaoNumeracaoOficio
 
 
+REFERENCIA_OFICIO = re.compile(r"^\s*(\d{1,6})\s*(?:/\s*(\d{4}))?\s*$")
+
+
 class OficioForm(forms.ModelForm):
+    """Dados e viajantes do cadastro de ofício, com os campos do Gerenciador de Viagens.
+
+    Identificação (número, protocolo, custeio e nome da instituição),
+    finalidade (modelo de motivo e descrição), equipe com termo e motorista,
+    viatura e o cartão do motorista quando ele não é da equipe. O que a
+    origem não mostra nesta tela (data, assunto, unidade solicitante, viatura
+    não cadastrada, porte de armas, documentos do motorista externo) fica fora
+    do formulário: o valor gravado é preservado.
+    """
+
+    modelo_motivo = forms.ModelChoiceField(queryset=ModeloMotivoOficio.objects.all(), required=False, label='Modelo de motivo')
+
+    class Meta:
+        model = Oficio
+        labels = {
+            'numero': 'N° do Ofício', 'protocolo': 'Protocolo', 'custeio': 'Custeio',
+            'custeio_observacao': 'Nome da Instituição', 'motivo': 'Descrição',
+            'servidores': 'Servidores', 'viatura': 'Viatura',
+            'motorista': 'Buscar motorista no sistema', 'motorista_manual_nome': 'Nome completo',
+            'motorista_oficio_referencia': 'N° do Ofício', 'motorista_protocolo_ref': 'Protocolo',
+        }
+        fields = ['numero', 'protocolo', 'custeio', 'custeio_observacao', 'modelo_motivo', 'motivo',
+                  'servidores', 'servidores_termo_autorizacao', 'viatura',
+                  'motorista_modo', 'motorista', 'motorista_manual_nome',
+                  'motorista_oficio_referencia', 'motorista_protocolo_ref']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._servidores_anteriores = set(self.instance.servidores.values_list('pk', flat=True)) if self.instance.pk else None
+        for nome in ('numero', 'protocolo', 'motivo', 'custeio', 'servidores', 'servidores_termo_autorizacao',
+                     'viatura', 'motorista', 'motorista_modo'):
+            self.fields[nome].required = False
+        self.fields['modelo_motivo'].queryset = ModeloMotivoOficio.objects.order_by('nome')
+        if not self.is_bound:
+            motivo = (self.instance.motivo or '').strip()
+            modelos = self.fields['modelo_motivo'].queryset
+            if not motivo:
+                padrao = modelos.filter(is_padrao=True).first()
+                if padrao:
+                    self.initial.update(modelo_motivo=padrao.pk, motivo=padrao.texto)
+            else:
+                correspondente = modelos.filter(texto=motivo).first()
+                if correspondente:
+                    self.initial['modelo_motivo'] = correspondente.pk
+            # Sem termo escolhido ainda, a origem marca toda a equipe.
+            if self.instance.pk and not self.instance.servidores_termo_autorizacao.exists():
+                self.initial['servidores_termo_autorizacao'] = list(self.instance.servidores.values_list('pk', flat=True))
+            if self.instance.motorista_oficio_referencia:
+                self.initial['motorista_oficio_referencia'] = self.instance.motorista_oficio_referencia.split('/')[0]
+
+    @property
+    def ano(self):
+        return self.instance.ano or timezone.localdate().year
+
+    def clean_numero(self):
+        """Em branco, mantém o número já reservado."""
+        numero = self.cleaned_data.get('numero')
+        if numero is None:
+            return self.instance.numero
+        if numero < 1:
+            raise forms.ValidationError('Informe um número de ofício válido (maior que zero).')
+        conflito = Oficio.objects.filter(ano=self.ano, numero=numero).exclude(pk=self.instance.pk)
+        if conflito.exists():
+            raise forms.ValidationError(f'Já existe um ofício com o número {numero} em {self.ano}.')
+        return numero
+
+    def clean_protocolo(self):
+        valor = normalize_protocolo(self.cleaned_data.get('protocolo'))
+        if valor and len(valor) != 9:
+            raise forms.ValidationError('Informe um protocolo válido com 9 dígitos.')
+        return valor
+
+    def clean_custeio(self):
+        return self.cleaned_data.get('custeio') or Oficio.CUSTEIO_UNIDADE_DPC
+
+    def clean_custeio_observacao(self):
+        return normalize_spaces(self.cleaned_data.get('custeio_observacao'))
+
+    def clean_motivo(self):
+        return normalize_spaces(self.cleaned_data.get('motivo'))
+
+    def clean_motorista_modo(self):
+        return self.cleaned_data.get('motorista_modo') or Oficio.MOTORISTA_MODO_SERVIDOR
+
+    def clean_motorista_oficio_referencia(self):
+        """"15" vira "15/<ano do ofício>", como o campo de número da origem."""
+        bruto = (self.cleaned_data.get('motorista_oficio_referencia') or '').strip()
+        if not bruto:
+            return ''
+        encontrado = REFERENCIA_OFICIO.match(bruto)
+        if encontrado:
+            return f"{int(encontrado.group(1))}/{encontrado.group(2) or self.ano}"
+        return bruto[:self.fields['motorista_oficio_referencia'].max_length]
+
+    def clean_motorista_protocolo_ref(self):
+        return normalize_protocolo(self.cleaned_data.get('motorista_protocolo_ref'))
+
+    def clean(self):
+        cd = super().clean()
+        servidores = list(cd.get('servidores') or [])
+        viajantes = {s.pk for s in servidores}
+        termos = list(cd.get('servidores_termo_autorizacao') or [])
+        # Sem o campo-sentinela, "desmarquei todos os termos" e "não enviei" chegam iguais.
+        if self.is_bound and 'servidores_termo_autorizacao_present' not in self.data:
+            termos = servidores
+        cd['servidores_termo_autorizacao'] = [s for s in termos if s.pk in viajantes]
+        if cd.get('motorista_modo') == Oficio.MOTORISTA_MODO_MANUAL:
+            cd['motorista'] = None
+            cd['motorista_manual_nome'] = normalize_spaces(cd.get('motorista_manual_nome')).upper()
+        else:
+            cd['motorista_manual_nome'] = ''
+            if cd.get('motorista') and cd['motorista'].pk in viajantes:
+                cd['motorista_oficio_referencia'] = ''
+                cd['motorista_protocolo_ref'] = ''
+        return cd
+
+    @transaction.atomic
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        selecionados = {s.pk for s in self.cleaned_data.get('servidores', [])}
+        if self._servidores_anteriores != selecionados or obj.diarias_quantidade_servidores is None:
+            obj.diarias_quantidade_servidores = len(selecionados)
+        if commit:
+            obj.save()
+            self.save_m2m()
+        return obj
+
+
+class OficioDocumentoForm(forms.ModelForm):
+    """Todos os campos do ofício que o documento mostra — o formulário do
+    editor documental (`documentos.editor.vinculos`), que edita o ofício pela
+    prévia A4. O cadastro usa `OficioForm`, só com os campos da origem."""
+
     modelo_motivo = forms.ModelChoiceField(queryset=ModeloMotivoOficio.objects.all(), required=False, label='Modelo de motivo')
 
     class Meta:

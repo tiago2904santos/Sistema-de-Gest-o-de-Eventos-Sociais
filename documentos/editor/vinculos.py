@@ -42,17 +42,17 @@ class VinculoOficio:
         return oficio.atualizado_em.isoformat() if oficio.atualizado_em else ""
 
     def form(self, oficio, dados=None):
-        from viagens_oficios.forms import OficioForm
+        from viagens_oficios.forms import OficioDocumentoForm
 
-        return OficioForm(dados, instance=oficio)
+        return OficioDocumentoForm(dados, instance=oficio)
 
     def dados_atuais(self, oficio) -> dict:
         """O ofício inteiro como o formulário o receberia: o PATCH troca só as
         partes pedidas e o resto vai como está, para as regras de `clean()`
         enxergarem o conjunto."""
-        from viagens_oficios.forms import OficioForm
+        from viagens_oficios.forms import OficioDocumentoForm
 
-        dados = model_to_dict(oficio, fields=OficioForm.Meta.fields)
+        dados = model_to_dict(oficio, fields=OficioDocumentoForm.Meta.fields)
         for nome, valor in list(dados.items()):
             if isinstance(valor, list):  # muitos-para-muitos vem como instâncias
                 dados[nome] = [getattr(item, "pk", item) for item in valor]

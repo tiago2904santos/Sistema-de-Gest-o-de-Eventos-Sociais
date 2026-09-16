@@ -1,0 +1,38 @@
+{% comment %}
+  Ações de uma linha de ofício num botão único, no padrão das listas de
+  termos e justificativas: abrir, baixar documentos e anexar assinado (cada
+  um com o seu modal), retificar, complementar, cancelar ou reativar, e
+  excluir. Quem só consulta não vê o menu.
+  Contexto: `l` (linha), `o` (ofício), `d` (documentos), `pode_editar`, `url_atual`.
+{% endcomment %}
+{% if pode_editar %}
+  <div class="dd of-menu cad-acoes" data-menu>
+    <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações do ofício {{ o.numero_formatado }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
+    <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
+      <a class="dd__i of-item" href="{{ l.url_editar }}?next={{ url_atual|urlencode }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Abrir ofício</b><small>Dados, equipe, roteiro e justificativa</small></span></a>
+      {% if o.cancelado %}
+        <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'reativar' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="undo" %}<span><b>Reativar ofício</b><small>Retomar o fluxo do documento</small></span></button>
+        </form>
+      {% else %}
+        <button type="button" class="dd__i of-item" data-baixar-documentos data-url="{{ d.url_baixar }}" data-titulo="{{ l.titulo }}" data-itens="{{ d.itens_baixar }}">{% include "components/icon.html" with nome="download" %}<span><b>Baixar documentos</b><small>Ofício, justificativa e termos</small></span></button>
+        {% if d.algum_para_anexar %}<button type="button" class="dd__i of-item" data-anexar-assinado data-anexar-opcoes="{{ d.opcoes_anexar }}">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Escolher o documento e enviar o PDF assinado</small></span></button>
+        {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Gere o PDF de um documento primeiro</small></span></span>{% endif %}
+        <div class="dd__s"></div>
+        <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'retificar' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="undo" %}<span><b>{% if o.retificado_documento %}Desfazer retificação{% else %}Retificar ofício{% endif %}</b><small>Atualizar o estado de retificação</small></span></button>
+        </form>
+        <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'complementar' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="plus" %}<span><b>{% if o.complementar_documento %}Deixar de ser complementar{% else %}Ofício complementar{% endif %}</b><small>Identificar o documento como complementar</small></span></button>
+        </form>
+        <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'cancelar' %}" data-confirmar="Cancelar o ofício {{ o.numero_formatado }}?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="ban" %}<span><b>Cancelar ofício</b><small>Interromper o fluxo mantendo o histórico</small></span></button>
+        </form>
+      {% endif %}
+      <div class="dd__s"></div>
+      <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'excluir' %}" data-confirmar-exclusao data-confirmar="Confirmar exclusão?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+        <button type="submit" class="dd__i dd__i--perigo of-item">{% include "components/icon.html" with nome="trash" %}<span><b>Excluir ofício</b><small>Remover permanentemente quando permitido</small></span></button>
+      </form>
+    </div>
+  </div>
+{% endif %}

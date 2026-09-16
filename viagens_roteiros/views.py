@@ -253,6 +253,75 @@ def historico_do_roteiro(roteiro):
     )
 
 
+class GravacaoDoEditor:
+    """O que sobrou de uma gravação do editor: o roteiro, os formulários
+    (com os erros, quando houver) e o que dizer ao operador."""
+
+    def __init__(self, roteiro, form, formset, destinos):
+        self.roteiro = roteiro
+        self.form = form
+        self.formset = formset
+        self.destinos = destinos
+        self.ok = False
+        self.mensagens = []  # (nível, texto)
+
+
+def gravar_editor(dados, roteiro, *, rascunho, usuario):
+    """Grava o POST do editor de roteiro: sede, destinos, trechos e a rota.
+
+    É o salvamento da tela de roteiros, também usado pelo cadastro de ofício,
+    que embute o mesmo editor. ``ok`` só é verdadeiro com trechos válidos; um
+    roteiro novo cujos trechos falharam já existe no banco e volta em
+    ``roteiro`` para a edição continuar nele.
+    """
+    dados = _sanear_ids(dados, roteiro)
+    form = RoteiroForm(dados, instance=roteiro)
+    formset = TrechoFormSet(dados, instance=roteiro)
+    destinos = DestinoFormSet(dados, instance=roteiro)
+    resultado = GravacaoDoEditor(roteiro, form, formset, destinos)
+    if not form.is_valid():
+        formset.is_valid()
+        return resultado
+    novo = not (roteiro and roteiro.pk)
+    salvo = form.save(commit=False)
+    # Rascunho é o roteiro em construção; salvar de vez o finaliza.
+    salvo.status = Roteiro.Status.RASCUNHO if rascunho else Roteiro.Status.FINALIZADO
+    # A rota que a tela calculou viaja em campos ocultos e fica
+    # gravada com o roteiro, para o mapa reabrir desenhado.
+    aplicar_rota_enviada(salvo, dados)
+    salvo.save()
+    # Os formsets só sabem a que roteiro pertencem depois que ele existe.
+    formset = TrechoFormSet(dados, instance=salvo)
+    destinos = DestinoFormSet(dados, instance=salvo)
+    with transaction.atomic(), _ordens_afastadas(salvo):
+        if destinos.is_valid():
+            destinos.save()
+        conferir_rota_gravada(salvo)
+        trechos_ok = formset.is_valid()
+        if trechos_ok:
+            formset.save()
+    resultado.roteiro, resultado.formset, resultado.destinos = salvo, formset, destinos
+    if not trechos_ok:
+        return resultado
+    resultado.ok = True
+    _registrar_auditoria(
+        usuario, "VIAGENS_ROTEIRO_CRIADO" if novo else "VIAGENS_ROTEIRO_ATUALIZADO", salvo
+    )
+    # O cálculo acompanha o salvamento, como no editor de referência: quem
+    # preencheu o percurso vê o valor na hora.
+    try:
+        calculo = recalcular_diarias(salvo)
+    except (SemTabelaDeDiarias, RoteiroIncalculavel) as erro:
+        resultado.mensagens.append((messages.INFO, f"Diárias ainda não calculadas: {erro}"))
+    else:
+        totais = calculo["totais"]
+        resultado.mensagens.append((
+            messages.SUCCESS,
+            f"Diárias: R$ {totais['total_valor']} ({totais['resumo_diarias']}).",
+        ))
+    return resultado
+
+
 @acesso_ao_modulo
 def editar(request, pk=None):
     _exigir_edicao(request)
@@ -261,67 +330,31 @@ def editar(request, pk=None):
     roteiro = get_object_or_404(Roteiro, pk=pk) if pk else None
 
     if request.method == "POST":
-        dados = _sanear_ids(request.POST, roteiro)
-        form = RoteiroForm(dados, instance=roteiro)
-        formset = TrechoFormSet(dados, instance=roteiro)
-        destinos = DestinoFormSet(dados, instance=roteiro)
-        rascunho = dados.get("acao") == "rascunho"
-        if form.is_valid():
-            salvo = form.save(commit=False)
-            # Rascunho é o roteiro em construção; salvar de vez o finaliza.
-            salvo.status = (
-                Roteiro.Status.RASCUNHO if rascunho else Roteiro.Status.FINALIZADO
+        gravacao = gravar_editor(
+            request.POST, roteiro, rascunho=request.POST.get("acao") == "rascunho", usuario=request.user
+        )
+        form, formset, destinos = gravacao.form, gravacao.formset, gravacao.destinos
+        if gravacao.ok:
+            calculado = [texto for nivel, texto in gravacao.mensagens if nivel == messages.SUCCESS]
+            if calculado:
+                messages.success(request, "Roteiro salvo — " + calculado[0][0].lower() + calculado[0][1:])
+            else:
+                messages.success(request, "Roteiro salvo com sucesso.")
+                for nivel, texto in gravacao.mensagens:
+                    messages.add_message(request, nivel, texto)
+            # Salvou, acabou: a lista é para onde se volta, rascunho ou não.
+            # Quem chegou com `next` continua voltando para lá.
+            return redirect(retorno or reverse("viagens_roteiros:lista"))
+        if form.is_valid() and not pk:
+            # Trechos inválidos num roteiro recém-criado: ele já existe no
+            # banco, então a tela continua a edição dele em vez de criar
+            # outro na próxima tentativa.
+            messages.error(request, "Corrija os trechos destacados para continuar.")
+            return render(
+                request,
+                "pages/viagens_roteiros/form.html",
+                _contexto_do_form(gravacao.roteiro, form, formset, destinos),
             )
-            # A rota que a tela calculou viaja em campos ocultos e fica
-            # gravada com o roteiro, para o mapa reabrir desenhado.
-            aplicar_rota_enviada(salvo, dados)
-            salvo.save()
-            # Os formsets só sabem a que roteiro pertencem depois que ele existe.
-            formset = TrechoFormSet(dados, instance=salvo)
-            destinos = DestinoFormSet(dados, instance=salvo)
-            with transaction.atomic(), _ordens_afastadas(salvo):
-                if destinos.is_valid():
-                    destinos.save()
-                conferir_rota_gravada(salvo)
-                trechos_ok = formset.is_valid()
-                if trechos_ok:
-                    formset.save()
-            if trechos_ok:
-                _registrar_auditoria(
-                    request.user,
-                    "VIAGENS_ROTEIRO_ATUALIZADO" if pk else "VIAGENS_ROTEIRO_CRIADO",
-                    salvo,
-                )
-                # O cálculo acompanha o salvamento, como no editor de
-                # referência: quem preencheu o percurso vê o valor na hora.
-                try:
-                    resultado = recalcular_diarias(salvo)
-                except (SemTabelaDeDiarias, RoteiroIncalculavel) as erro:
-                    messages.success(request, "Roteiro salvo com sucesso.")
-                    messages.info(request, f"Diárias ainda não calculadas: {erro}")
-                else:
-                    totais = resultado["totais"]
-                    messages.success(
-                        request,
-                        "Roteiro salvo — diárias: "
-                        f"R$ {totais['total_valor']} ({totais['resumo_diarias']}).",
-                    )
-                # Salvou, acabou: a lista é para onde se volta, rascunho ou não.
-                # Quem chegou com `next` continua voltando para lá.
-                return redirect(retorno or reverse("viagens_roteiros:lista"))
-            if not pk:
-                # Trechos inválidos num roteiro recém-criado: ele já existe no
-                # banco, então a tela continua a edição dele em vez de criar
-                # outro na próxima tentativa.
-                messages.error(request, "Corrija os trechos destacados para continuar.")
-                return render(
-                    request,
-                    "pages/viagens_roteiros/form.html",
-                    _contexto_do_form(salvo, form, formset, destinos),
-                )
-        else:
-            formset = TrechoFormSet(dados, instance=roteiro)
-            formset.is_valid()
         messages.error(request, "Corrija os campos destacados para continuar.")
     else:
         form = RoteiroForm(instance=roteiro, initial=_sede_inicial(request, roteiro))

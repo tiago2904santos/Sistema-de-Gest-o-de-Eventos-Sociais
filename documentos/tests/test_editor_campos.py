@@ -78,7 +78,8 @@ class EditorDeCamposTests(CenarioOficioMixin, TestCase):
             self.patch(o, 'motivo', {'motivo': 'Diligência'})
             url_bloco = reverse('documentos:editor_bloco', args=['oficio', o.pk, 'declaracao_cartao'])
             self.client.patch(url_bloco, data=json.dumps({'versao': '', 'valores': {'conteudo': 'Parágrafo reescrito.'}}), content_type='application/json')
-        r = self.client.get(reverse('viagens_oficios:editar', args=[o.pk]))
+        # O histórico mora na página do documento, que é onde o editor grava.
+        r = self.client.get(reverse('viagens_oficios:documento', args=[o.pk]))
         self.assertContains(r, 'Editor documental · motivo')
         self.assertContains(r, 'Criação de bloco documental')
         self.assertContains(r, 'Formulário')  # a criação do ofício, pela tela

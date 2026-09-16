@@ -22,7 +22,7 @@ class Oficio(ModeloTemporal, ModeloCancelavel, OrigemLegado):
     STATUS_CHOICES = [
         (STATUS_RASCUNHO, "Rascunho"),
         (STATUS_GERADO, "Gerado"),
-        (STATUS_FINALIZADO, "Finalizado (legado)"),
+        (STATUS_FINALIZADO, "Finalizado"),
         (STATUS_ARQUIVADO, "Arquivado"),
     ]
 

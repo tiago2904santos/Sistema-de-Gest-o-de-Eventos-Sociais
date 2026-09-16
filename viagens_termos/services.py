@@ -331,12 +331,12 @@ def _gerar(payload, formato, ref, *, oficio_id=None, termo_id=None, servidor_id=
     )
 
 
-def gerar_termo_um(oficio, servidor, formato, *, modo_semipreenchido=False, variante=None):
+def gerar_termo_um(oficio, servidor, formato, *, modo_semipreenchido=False, variante=None, usar_assinado=True):
     if not listar_servidores_com_termo(oficio).filter(pk=servidor.pk).exists():
         raise ValueError("Servidor não selecionado para termo neste ofício.")
     payload = build_termo_payload(oficio, servidor, modo_semipreenchido=modo_semipreenchido, variante=variante)
     return _gerar(payload, formato, f"{oficio.numero_formatado.replace('/', '-')}-termo-{servidor.pk}",
-        oficio_id=oficio.pk, servidor_id=servidor.pk, roteiro_id=oficio.roteiro_id)
+        oficio_id=oficio.pk, servidor_id=servidor.pk, roteiro_id=oficio.roteiro_id, usar_assinado=usar_assinado)
 
 
 def gerar_termo_lote(oficio, formato):

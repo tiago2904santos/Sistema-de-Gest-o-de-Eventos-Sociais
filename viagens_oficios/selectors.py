@@ -63,7 +63,8 @@ def base_oficios():
         Oficio.objects.select_related(
             "roteiro__origem_municipio__estado", "solicitante", "viatura", "motorista", "justificativa"
         ).prefetch_related(
-            "servidores__cargo", "servidores__unidade", "servidores_termo_autorizacao",
+            "servidores__cargo", "servidores__unidade",
+            "servidores_termo_autorizacao__cargo", "servidores_termo_autorizacao__unidade",
             "roteiro__destinos__municipio__estado",
             "roteiro__trechos__origem_municipio__estado", "roteiro__trechos__destino_municipio__estado",
         )

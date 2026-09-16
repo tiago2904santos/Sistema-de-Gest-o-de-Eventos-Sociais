@@ -30,7 +30,7 @@ class ViagensCadastrosConfig(AppConfig):
                 # Ofícios e Justificativas dividem o namespace: o nome da rota
                 # decide qual item fica aceso.
                 {"rotulo": "Ofícios", "icone": "file-text", "url": "viagens_oficios:lista",
-                 "url_names": ("lista", "novo", "criar", "editar", "detalhe", "acao", "gerar", "termos_lote", "termo",
+                 "url_names": ("lista", "novo", "criar", "editar", "visualizar", "visualizar_termo", "detalhe", "acao", "baixar", "gerar", "termos_lote", "termo",
                                "catalogo", "catalogo_novo", "catalogo_editar", "numeracao",
                                "assinatura_artefato", "preview_artefato")},
                 {"rotulo": "Justificativas", "icone": "document", "url": "viagens_oficios:justificativas",

@@ -72,6 +72,21 @@
     {% endif %}
   </div>
 
+  {# O que mudou no ofício e nos blocos do documento, por onde (formulário, editor documental, sistema) e quem. #}
+  <section class="reg sol-detalhe__historico" id="historico">
+    <h2 class="reg__t">{% include "components/icon.html" with nome="clock" %}Histórico<em>{{ historico|length }} registro{{ historico|length|pluralize }}</em></h2>
+    <div class="linha-t">
+      {% for registro in historico %}
+        <div class="evento{% if forloop.first %} evento--ativo{% endif %}">
+          <div class="evento__topo"><span class="evento__t">{{ registro.get_acao_display }}{% if registro.sobre_bloco %} de bloco documental{% endif %}</span><span class="evento__q">{{ registro.criado_em|date:"d/m/Y · H\hi" }}</span></div>
+          <p class="evento__d">{{ registro.usuario|default:"Sistema" }} · {{ registro.get_origem_display }}{% if registro.campos_alterados %} · {{ registro.campos_alterados|join:", " }}{% endif %}</p>
+        </div>
+      {% empty %}
+        <p class="texto-vazio">Nenhum registro no histórico.</p>
+      {% endfor %}
+    </div>
+  </section>
+
   <script src="{% estatico 'js/viagens-documento.js' %}" defer></script>
   {% if pode_editar %}<script src="{% estatico 'js/multi-pick.js' %}" defer></script><script src="{% estatico 'js/documento-editor.js' %}" defer></script>{% endif %}
 {% endblock %}

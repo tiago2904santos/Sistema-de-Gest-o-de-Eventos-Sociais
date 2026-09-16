@@ -1,0 +1,12 @@
+          {% comment %}
+            Ações do formulário no fim do bloco de Diárias: voltar à esquerda, salvar à direita.
+            O aviso de gravação automática fica só para leitor de tela.
+          {% endcomment %}
+          <div class="editor-roteiro__acoes-diarias">
+            <span class="sr-only" data-autosave-status role="status" aria-live="polite">
+              {% if autosave_ligado %}Rascunho salvo automaticamente enquanto você monta.{% else %}Roteiro finalizado: as mudanças só valem ao salvar.{% endif %}
+            </span>
+            {% include "components/v32/button.html" with label="Voltar" variante="secundario" href=url_voltar %}
+            <button type="submit" form="form-roteiro" name="acao" value="salvar"
+                    class="btn btn--dourado btn-primaria">Salvar roteiro</button>
+          </div>

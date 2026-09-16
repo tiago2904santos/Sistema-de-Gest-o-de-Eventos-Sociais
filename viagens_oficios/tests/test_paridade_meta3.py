@@ -1,9 +1,8 @@
 """Meta 3 — paridade das telas de ofícios com o Gerenciador de Viagens.
 
-Cobre o que a origem tem e a tela daqui passou a ter: busca por número,
-protocolo, motivo ou destino; as quatro situações combináveis com contagem;
-as seis ordenações; os dois períodos; o cartão com equipe, transporte,
-trechos, valor e justificativa; os menus de ação; o formulário por blocos, com
+Cobre a lista no padrão das listas de termos e justificativas (busca por
+número, protocolo, motivo ou destino; situações na trilha com contagem; uma
+célula por ofício; o menu único e o modal "Baixar documentos"); o formulário por blocos, com
 a conferência, os documentos, o histórico e o encerramento na mesma tela; e os
 catálogos no padrão dos cadastros.
 """
@@ -77,56 +76,48 @@ class Cenario(TestCase):
 
 
 class ListaOficiosTests(Cenario):
-    def test_cartao_mostra_o_que_a_origem_mostra(self):
+    def test_linha_no_padrao_das_listas_de_termos(self):
         o = self.oficio(dias=-20, protocolo="123456789", servidores=[self.janine, self.joao], motorista=self.joao, viatura=self.duster, justificativa="teste 1")
         r = self.lista()
+        self.assertTemplateUsed(r, "components/v32/cad_rail.html")
+        self.assertContains(r, 'class="pa-card pa-card--lista cad-lista"')
         self.assertContains(r, f"Nº {o.numero_formatado} · Protocolo 12.345.678-9")
         self.assertContains(r, "ANTONINA/PR")
         self.assertContains(r, "há 15 dias")
-        self.assertContains(r, "JANINE LACERDA DO PRADO")
-        self.assertContains(r, "AGENTE DE POLÍCIA JUDICIÁRIA · ASCOM")
-        self.assertContains(r, 'class="of-tag">Motorista')
-        self.assertContains(r, "AAA-1234")
-        self.assertContains(r, "DUSTER")
-        self.assertContains(r, "CURITIBA/PR → ANTONINA/PR")
-        self.assertContains(r, "R$ 4.358,25")
-        self.assertContains(r, "quatro mil trezentos e cinquenta e oito reais e vinte e cinco centavos")
-        self.assertContains(r, "5 x 100%")
-        self.assertContains(r, "Preenchida")
-        self.assertContains(r, "teste 1")
-        self.assertContains(r, "Mostrando <strong>1–1</strong> de <strong>1</strong>")
+        self.assertContains(r, "JANINE LACERDA DO PRADO, JOÃO MARIO DE GOES (motorista)")
+        self.assertContains(r, "DUSTER · AAA-1234")
+        self.assertContains(r, "R$ 4.358,25 · 5 x 100%")
+        self.assertContains(r, "Justificativa preenchida")
+        # O cartão e os filtros antigos saíram.
+        for marca in ["of-cartao__rodape", "of-catalogos", "Número: maior", 'name="viagem_de"', "Mostrando <strong>"]:
+            self.assertNotContains(r, marca)
 
-    def test_cartao_de_rascunho_vazio(self):
+    def test_linha_de_rascunho_vazio(self):
         self.oficio()
         r = self.lista()
-        self.assertContains(r, "Nenhum servidor informado")
-        self.assertContains(r, "Não informado")
-        self.assertContains(r, "Pendente")
-        self.assertContains(r, "Nenhuma justificativa informada.")
+        for texto in ["Sem roteiro", "Sem servidores", "Sem viatura", "Sem diárias", "Justificativa pendente"]:
+            self.assertContains(r, texto)
         self.assertContains(r, 'class="st st--rascunho">Rascunho')
 
-    def test_menus_do_cartao(self):
-        o = self.oficio(dias=3, servidores=[self.janine])
+    def test_menu_unico_da_linha(self):
+        o = self.oficio(dias=3, servidores=[self.janine], justificativa="texto")
         r = self.lista()
-        self.assertContains(r, "Ações do termo de JANINE LACERDA DO PRADO")
-        self.assertContains(r, f"Abrir documentos do ofício {o.numero_formatado}")
-        self.assertContains(r, "Mais ações do ofício")
-        self.assertContains(r, "Editar justificativa")
-        self.assertContains(r, "Abrir documentos da justificativa")
-        for texto in ["Visualizar termo", "Documento pronto para assinatura", "Arquivo editável do termo", "Anexar assinado",
-                      "Visualizar ofício", "Abrir o documento no navegador", "Documento pronto para impressão", "Arquivo editável do ofício",
-                      "Retificar ofício", "Atualizar o estado de retificação", "Ofício complementar", "Identificar o documento como complementar",
-                      "Cancelar ofício", "Interromper o fluxo mantendo o histórico", "Excluir ofício", "Remover permanentemente quando permitido",
-                      "Visualizar justificativa", "Arquivo editável da justificativa"]:
+        self.assertContains(r, f"Ações do ofício {o.numero_formatado}")
+        for texto in ["Abrir ofício", "Baixar documentos", "Anexar assinado", "Gere o PDF de um documento primeiro",
+                      "Retificar ofício", "Ofício complementar", "Cancelar ofício", "Excluir ofício"]:
             self.assertContains(r, texto)
+        self.assertContains(r, reverse("viagens_oficios:baixar", args=[o.pk]))
+        # O modal lista ofício, justificativa e o termo de cada servidor.
+        for valor in ["&quot;oficio&quot;", "&quot;justificativa&quot;", f"&quot;termo-{self.janine.pk}&quot;"]:
+            self.assertContains(r, valor)
+        self.assertContains(r, "data-baixar-dialogo")
 
     def test_leitor_nao_ve_menus_de_escrita(self):
         self.oficio(dias=3, servidores=[self.janine])
         self.user.groups.clear()
         r = self.lista()
         self.assertEqual(r.status_code, 200)
-        self.assertNotContains(r, "Mais ações do ofício")
-        self.assertNotContains(r, "Ações do termo de")
+        self.assertNotContains(r, "Ações do ofício")
         self.assertNotContains(r, "Novo ofício")
 
     def test_busca_por_numero_protocolo_motivo_e_destino(self):
@@ -144,80 +135,80 @@ class ListaOficiosTests(Cenario):
     def test_sem_resultado(self):
         self.oficio()
         r = self.lista(q="ZZZ_PARIDADE")
-        self.assertContains(r, "Nenhum ofício")
         self.assertContains(r, "Nenhum ofício encontrado com os filtros aplicados.")
-        self.assertContains(r, "Limpar")
 
-    def test_situacoes_combinaveis_com_contagem(self):
+    def test_situacoes_na_trilha_com_contagem(self):
         futuro = self.oficio(dias=10)
         atual = self.oficio(dias=-3)
         rascunho = self.oficio()
         cancelado = self.oficio(dias=20, cancelar=True)
-        r = self.lista()
-        self.assertContains(r, "Que vão acontecer (1)")
-        self.assertContains(r, "Em andamento e realizados (2)")
-        self.assertContains(r, "Finalizados (0)")
-        self.assertContains(r, "Cancelados (1)")
+        contagens = {s["slug"]: s["total"] for s in self.lista().context["situacoes"]}
+        self.assertEqual(contagens, {"todas": 4, "futuras": 1, "atuais": 2, "finalizados": 0, "cancelados": 1})
+        r = self.lista(situacao="atuais")
+        self.assertEqual(r.context["situacao_ativa"], "atuais")
+        self.assertContains(r, f"Nº {atual.numero_formatado}")
+        self.assertContains(r, f"Nº {rascunho.numero_formatado}")
+        self.assertNotContains(r, f"Nº {futuro.numero_formatado}")
+        # A busca carrega a situação escolhida.
+        self.assertContains(r, '<input type="hidden" name="situacao" value="atuais">')
+        # Link antigo com várias situações continua filtrando.
         r = self.lista(situacao=["futuras", "cancelados"])
         self.assertContains(r, f"Nº {futuro.numero_formatado}")
         self.assertContains(r, f"Nº {cancelado.numero_formatado}")
         self.assertNotContains(r, f"Nº {atual.numero_formatado}")
-        self.assertNotContains(r, f"Nº {rascunho.numero_formatado}")
-        r = self.lista(situacao="atuais")
-        self.assertContains(r, f"Nº {atual.numero_formatado}")
-        self.assertContains(r, f"Nº {rascunho.numero_formatado}")
-        # A contagem não muda com a situação marcada: continua dizendo quantos existem.
-        self.assertContains(r, "Cancelados (1)")
 
-    def test_ordenacoes(self):
-        primeiro = self.oficio(dias=30, data_criacao=self.hoje - timedelta(days=5))
-        segundo = self.oficio(dias=2, data_criacao=self.hoje)
-
-        def ordem(sort):
-            html = self.lista(sort=sort).content.decode()
-            return html.index(f"Nº {primeiro.numero_formatado}") < html.index(f"Nº {segundo.numero_formatado}")
-
-        self.assertFalse(ordem("numero_desc"))
-        self.assertTrue(ordem("numero_asc"))
-        self.assertFalse(ordem("criacao_desc"))
-        self.assertTrue(ordem("criacao_asc"))
-        self.assertFalse(ordem("viagem_asc"))
-        self.assertTrue(ordem("viagem_desc"))
-        r = self.lista()
-        for rotulo in ["Número: maior", "Número: menor", "Criação: mais recente", "Criação: mais antiga", "Viagem: mais próxima", "Viagem: mais distante"]:
-            self.assertContains(r, rotulo)
-
-    def test_periodos_de_viagem_e_criacao(self):
-        perto = self.oficio(dias=2, data_criacao=self.hoje)
-        longe = self.oficio(dias=40, data_criacao=self.hoje - timedelta(days=30))
-        de, ate = (self.hoje + timedelta(days=1)).isoformat(), (self.hoje + timedelta(days=10)).isoformat()
-        r = self.lista(viagem_de=de, viagem_ate=ate)
-        self.assertContains(r, f"Nº {perto.numero_formatado}")
-        self.assertNotContains(r, f"Nº {longe.numero_formatado}")
-        r = self.lista(criacao_de=(self.hoje - timedelta(days=40)).isoformat(), criacao_ate=(self.hoje - timedelta(days=20)).isoformat())
-        self.assertContains(r, f"Nº {longe.numero_formatado}")
-        self.assertNotContains(r, f"Nº {perto.numero_formatado}")
-
-    def test_paginacao_de_vinte_com_page(self):
+    def test_paginacao_com_pagina(self):
         for _ in range(21):
             self.oficio()
         r = self.lista()
-        self.assertContains(r, "Mostrando <strong>1–20</strong> de <strong>21</strong>")
-        self.assertContains(r, "Ir para a página 2")
-        r = self.lista(page=2)
-        self.assertContains(r, "Mostrando <strong>21–21</strong> de <strong>21</strong>")
+        self.assertContains(r, "Mostrando 1 a 20 de 21 ofícios")
+        r = self.lista(pagina=2)
+        self.assertContains(r, "Mostrando 21 a 21 de 21 ofícios")
+
+
+class BaixarDocumentosTests(Cenario):
+    def url(self, o):
+        return reverse("viagens_oficios:baixar", args=[o.pk])
+
+    def test_item_desconhecido_e_404(self):
+        o = self.oficio(dias=3, servidores=[self.janine])
+        r = self.client.post(self.url(o), {"itens": ["termo-999999"], "formato": "pdf"})
+        self.assertEqual(r.status_code, 404)
+
+    def test_sem_itens_volta_com_aviso(self):
+        o = self.oficio(dias=3)
+        volta = reverse("viagens_oficios:lista") + "?q=x"
+        r = self.client.post(self.url(o), {"formato": "pdf", "next": volta})
+        self.assertRedirects(r, volta)
+
+    def test_cancelado_nao_baixa(self):
+        o = self.oficio(dias=3, cancelar=True)
+        r = self.client.post(self.url(o), {"itens": ["oficio"], "formato": "pdf"})
+        self.assertRedirects(r, reverse("viagens_oficios:lista"))
+
+    def test_leitor_nao_baixa(self):
+        o = self.oficio(dias=3)
+        self.user.groups.clear()
+        r = self.client.post(self.url(o), {"itens": ["oficio"], "formato": "pdf"})
+        self.assertEqual(r.status_code, 403)
 
 
 class AcoesDaListaTests(Cenario):
-    def test_novo_oficio_cria_rascunho_numerado_e_abre_o_editor(self):
+    def test_novo_oficio_cria_rascunho_numerado_e_abre_o_cadastro(self):
+        r = self.lista()
+        self.assertContains(r, f'action="{reverse("viagens_oficios:criar")}"')
         r = self.client.post(reverse("viagens_oficios:criar"))
         o = Oficio.objects.get()
         self.assertRedirects(r, reverse("viagens_oficios:editar", args=[o.pk]))
         self.assertEqual(o.numero, 1)
+        self.assertEqual(o.status, Oficio.STATUS_RASCUNHO)
+        # Sem POST não se cria nada.
+        self.assertRedirects(self.client.get(reverse("viagens_oficios:novo")), reverse("viagens_oficios:lista"))
+        self.assertEqual(Oficio.objects.count(), 1)
 
     def test_acoes_voltam_para_a_lista_filtrada(self):
         o = self.oficio(dias=3)
-        volta = reverse("viagens_oficios:lista") + "?sort=numero_asc"
+        volta = reverse("viagens_oficios:lista") + "?situacao=futuras"
         r = self.client.post(reverse("viagens_oficios:acao", args=[o.pk, "retificar"]), {"next": volta})
         self.assertRedirects(r, volta)
         o.refresh_from_db()
@@ -241,98 +232,187 @@ class AcoesDaListaTests(Cenario):
         self.assertFalse(o.cancelado)
 
 
-class FormularioTests(Cenario):
+class CadastroTests(Cenario):
+    """O cadastro de ofício com os blocos e campos do Gerenciador de Viagens."""
+
     def payload(self, **extra):
-        dados = {"data_criacao": self.hoje.isoformat(), "protocolo": "12.345.678-9", "motivo": "Missão", "custeio": "UNIDADE_DPC",
-                 "servidores": [str(self.janine.pk)], "servidores_termo_autorizacao": [str(self.janine.pk)],
-                 "motorista_modo": "SERVIDOR", "motorista": self.janine.pk, "viatura": self.duster.pk,
-                 "transporte_placa_manual": "XYZ9A87", "transporte_modelo_manual": "SPIN"}
+        dados = {"numero": "", "protocolo": "12.345.678-9", "custeio": "UNIDADE_DPC", "motivo": "Missão",
+                 "servidores": [str(self.janine.pk), str(self.joao.pk)],
+                 "servidores_termo_autorizacao_present": "1",
+                 "servidores_termo_autorizacao": [str(self.janine.pk)],
+                 "viatura": self.duster.pk, "motorista_modo": "SERVIDOR", "motorista": self.janine.pk,
+                 "acao": "rascunho"}
         dados.update(extra)
         return dados
 
-    def test_blocos_proprios_sem_renderizador_generico(self):
+    def editar(self, o):
+        return self.client.get(reverse("viagens_oficios:editar", args=[o.pk]))
+
+    def test_quatro_etapas_com_os_campos_da_origem(self):
         o = self.oficio(dias=3, servidores=[self.janine])
-        r = self.client.get(reverse("viagens_oficios:editar", args=[o.pk]))
-        for texto in ["Dados e viajantes", "Identificação", "Motivo", "Custeio", "Equipe", "Termo de autorização",
-                      "Transporte", "Origem da viatura", "Cartão do motorista externo", "Ofício do motorista",
-                      "Porte/transporte de armas", "Roteiro", "Resumo da rota", "Justificativa", "Regra de prazo",
-                      "Documentos"]:
-            self.assertContains(r, texto)
-        self.assertNotContains(r, "viagem-campos")
-        self.assertTemplateNotUsed(r, "pages/viagens_oficios/_campos.html")
-        # Coluna única: nada de menu lateral flutuante em tela nenhuma.
-        for marca in ["<aside", "frm-lateral", 'class="sticky', "step-v", "frm-acoes--flut"]:
-            self.assertNotContains(r, marca)
+        r = self.editar(o)
+        self.assertContains(r, "<h1 class=\"page-header__titulo d-titulo-v32\">Cadastro de ofício</h1>", html=False)
+        for texto in ["Dados e viajantes", "Identificação", "N° do Ofício", "Protocolo", "Custeio", "Nome da Instituição",
+                      "Finalidade", "Modelo de motivo", "Descrição", "Servidores", "Adicionar à equipe",
+                      "Buscar por nome, CPF ou RG", "Definir motorista", "Com termo", "Viatura", "Escolher viatura",
+                      "Buscar por placa ou modelo", "Motorista", "Condutor da viatura", "No sistema", "Manual",
+                      "Buscar motorista no sistema", "Nome completo", "Ofício de origem",
+                      "Roteiro e diárias", "Origem e destinos", "Roteiro salvo", "Roteiro novo", "Trechos", "Diárias",
+                      "Justificativa", "Documentos e conferência", "Documentos para conferência",
+                      "Documento original (Ofício)", "Termos de Autorização"]:
+            with self.subTest(texto=texto):
+                self.assertContains(r, texto)
+        # O que a origem não tem nesta tela fica de fora.
+        for texto in ['name="data_criacao"', 'name="assunto"', 'name="solicitante"', 'name="porte_transporte_armas"',
+                      'name="transporte_placa_manual"', 'name="motorista_manual_cpf"', 'name="roteiro"',
+                      "Regra de prazo", "Encerramento", "Faltam informações",
+                      "Resumo do ofício", "Viatura e condução", "Equipe vinculada a este ofício"]:
+            with self.subTest(ausente=texto):
+                self.assertNotContains(r, texto)
 
-    def test_viatura_cadastrada_apaga_a_manual(self):
-        r = self.client.post(reverse("viagens_oficios:novo"), self.payload())
-        self.assertEqual(r.status_code, 302)
-        o = Oficio.objects.get()
-        self.assertEqual(o.viatura, self.duster)
-        self.assertEqual(o.transporte_placa_manual, "")
-        self.assertEqual(o.transporte_modelo_manual, "")
-
-    def test_custeio_de_outra_instituicao_exige_observacao(self):
-        r = self.client.post(reverse("viagens_oficios:novo"), self.payload(custeio="OUTRA_INSTITUICAO"))
-        self.assertEqual(r.status_code, 200)
-        self.assertContains(r, "Informe a observação de custeio")
-        self.assertContains(r, "Não foi possível salvar o ofício")
-        self.assertEqual(Oficio.objects.count(), 0)
-
-    def test_salvar_com_next_volta_para_a_lista(self):
-        o = self.oficio(dias=3)
+    def test_rascunho_grava_e_volta_para_a_lista(self):
+        o = self.oficio()
         volta = reverse("viagens_oficios:lista") + "?situacao=futuras"
-        r = self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(next=volta, acao="salvar"))
+        r = self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(next=volta))
         self.assertRedirects(r, volta)
-        r = self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload())
+        o.refresh_from_db()
+        self.assertEqual(o.protocolo, "123456789")
+        self.assertEqual(set(o.servidores.all()), {self.janine, self.joao})
+        self.assertEqual(list(o.servidores_termo_autorizacao.all()), [self.janine])
+        self.assertEqual(o.viatura, self.duster)
+        self.assertEqual(o.motorista, self.janine)
+        self.assertEqual(o.status, Oficio.STATUS_RASCUNHO)
+
+    def test_numero_editavel_sem_repetir(self):
+        a, b = self.oficio(), self.oficio()
+        r = self.client.post(reverse("viagens_oficios:editar", args=[b.pk]), self.payload(numero=str(a.numero)))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, f"Já existe um ofício com o número {a.numero}")
+        r = self.client.post(reverse("viagens_oficios:editar", args=[b.pk]), self.payload(numero="77"))
+        self.assertEqual(r.status_code, 302)
+        b.refresh_from_db()
+        self.assertEqual(b.numero, 77)
+
+    def test_motorista_de_fora_leva_o_oficio_de_origem(self):
+        o = self.oficio()
+        self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(
+            servidores=[str(self.janine.pk)], motorista=self.joao.pk,
+            motorista_oficio_referencia="15", motorista_protocolo_ref="11.222.333-4"))
+        o.refresh_from_db()
+        self.assertEqual(o.motorista, self.joao)
+        self.assertEqual(o.motorista_oficio_referencia, f"15/{o.ano}")
+        self.assertEqual(o.motorista_protocolo_ref, "112223334")
+        # Motorista da equipe dispensa a referência.
+        self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(
+            motorista_oficio_referencia="15", motorista_protocolo_ref="11.222.333-4"))
+        o.refresh_from_db()
+        self.assertEqual(o.motorista_oficio_referencia, "")
+
+    def test_motorista_manual(self):
+        o = self.oficio()
+        self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(
+            motorista_modo="MANUAL", motorista_manual_nome="fulano de tal"))
+        o.refresh_from_db()
+        self.assertIsNone(o.motorista)
+        self.assertEqual(o.motorista_manual_nome, "FULANO DE TAL")
+
+    def test_campos_fora_da_tela_sao_preservados(self):
+        o = self.oficio()
+        Oficio.objects.filter(pk=o.pk).update(assunto="Interno", porte_transporte_armas=False)
+        self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload())
+        o.refresh_from_db()
+        self.assertEqual(o.assunto, "Interno")
+        self.assertFalse(o.porte_transporte_armas)
+
+    def test_sem_sentinela_todos_tem_termo(self):
+        o = self.oficio()
+        dados = self.payload()
+        dados.pop("servidores_termo_autorizacao_present")
+        self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), dados)
+        self.assertEqual(set(o.servidores_termo_autorizacao.all()), {self.janine, self.joao})
+
+    def test_finalizar_com_pendencias_nao_finaliza(self):
+        o = self.oficio()
+        r = self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(acao="finalizar"), follow=True)
         self.assertRedirects(r, reverse("viagens_oficios:editar", args=[o.pk]))
+        # As pendências só aparecem depois de tentar finalizar.
+        self.assertContains(r, "Associe um roteiro ao ofício.")
+        o.refresh_from_db()
+        self.assertEqual(o.status, Oficio.STATUS_RASCUNHO)
+        self.assertContains(r, "Salvar rascunho")
+        self.assertNotContains(r, "Finalizar Ofício")
 
+    def test_finalizar_sem_pendencias(self):
+        o = self.oficio(dias=20, protocolo="123456789", servidores=[self.janine], motorista=self.janine, viatura=self.duster)
+        r = self.editar(o)
+        self.assertContains(r, "Finalizar Ofício")
+        r = self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(
+            servidores=[str(self.janine.pk)], servidores_termo_autorizacao=[str(self.janine.pk)], acao="finalizar"))
+        self.assertRedirects(r, reverse("viagens_oficios:lista"))
+        o.refresh_from_db()
+        self.assertEqual(o.status, Oficio.STATUS_FINALIZADO)
 
-class ConferenciaNoFormularioTests(Cenario):
-    """O que era a tela de detalhe agora é o fim do formulário do ofício."""
+    def test_roteiro_montado_no_cadastro_fica_ligado_ao_oficio(self):
+        o = self.oficio()
+        saida = self.hoje + timedelta(days=15)
+        dados = self.payload(**{
+            "origem_municipio": self.curitiba.pk,
+            "destinos-TOTAL_FORMS": "1", "destinos-INITIAL_FORMS": "0",
+            "destinos-MIN_NUM_FORMS": "0", "destinos-MAX_NUM_FORMS": "1000",
+            "destinos-0-municipio": self.antonina.pk, "destinos-0-ordem": "1",
+            "trechos-TOTAL_FORMS": "1", "trechos-INITIAL_FORMS": "0",
+            "trechos-MIN_NUM_FORMS": "0", "trechos-MAX_NUM_FORMS": "1000",
+            "trechos-0-ordem": "1", "trechos-0-origem_municipio": self.curitiba.pk,
+            "trechos-0-destino_municipio": self.antonina.pk,
+            "trechos-0-saida_data": saida.isoformat(), "trechos-0-saida_hora": "08:00",
+        })
+        self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), dados)
+        o.refresh_from_db()
+        self.assertIsNotNone(o.roteiro)
+        self.assertEqual(o.roteiro.origem_municipio, self.curitiba)
+        self.assertEqual([d.municipio for d in o.roteiro.destinos.all()], [self.antonina])
 
-    def test_conferencia_documentos_e_acoes(self):
+    def test_editor_vazio_nao_cria_roteiro(self):
+        o = self.oficio()
+        dados = self.payload(**{"origem_municipio": "", "trechos-TOTAL_FORMS": "0", "trechos-INITIAL_FORMS": "0",
+                                "destinos-TOTAL_FORMS": "1", "destinos-INITIAL_FORMS": "0", "destinos-0-municipio": ""})
+        self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), dados)
+        o.refresh_from_db()
+        self.assertIsNone(o.roteiro)
+
+    def test_conferencia(self):
         o = self.oficio(dias=-20, protocolo="123456789", servidores=[self.janine, self.joao], motorista=self.joao, viatura=self.duster, justificativa="teste 1")
-        r = self.client.get(reverse("viagens_oficios:editar", args=[o.pk]))
-        for texto in ["Dados e viajantes", "Documentos", "pronto para emissão",
-                      "Equipe", "Termos de autorização", "Todos num PDF", "Todos em PDF (ZIP)", "Todos em DOCX (ZIP)",
-                      "Transporte", "Roteiro", "Justificativa", "Visualizar ofício", "Visualizar justificativa",
-                      "Baixar DOCX", "Documentos gerados", "Encerramento", "Retificar ofício", "Ofício complementar",
-                      "Arquivar ofício", "Cancelamento", "Excluir ofício", "Histórico", "Abrir prestação de contas"]:
+        r = self.editar(o)
+        for texto in ["Termo de Autorização — JANINE LACERDA DO PRADO", "Visualizar documento", "Baixar PDF", "Baixar DOCX", "Baixar PDFs", "Baixar DOCXs",
+                      reverse("viagens_oficios:visualizar", args=[o.pk, "oficio"]),
+                      reverse("viagens_oficios:visualizar_termo", args=[o.pk, self.janine.pk]),
+                      reverse("viagens_oficios:documento", args=[o.pk])]:
             with self.subTest(texto=texto):
                 self.assertContains(r, texto)
 
-    def test_formularios_secundarios_ficam_fora_do_formulario_do_oficio(self):
-        """HTML aninhado não existe: os POSTs de documento e de estado vêm depois.
-
-        O formulário do ofício engloba a página; um <form> de emissão ou de
-        cancelamento dentro dele seria HTML inválido e os dois posts se
-        atrapalhariam.
-        """
-        o = self.oficio(dias=-20, servidores=[self.janine], motorista=self.janine, viatura=self.duster)
-        corpo = self.client.get(reverse("viagens_oficios:editar", args=[o.pk])).content.decode()
-        abertura = corpo.index('id="form-oficio"')
-        fim_do_formulario = corpo.index("</form>", abertura)
-        for rota, args in [("viagens_oficios:gerar", [o.pk, "oficio", "pdf"]),
-                           ("viagens_oficios:termos_todos_pdf", [o.pk]),
-                           ("viagens_oficios:termos_lote", [o.pk, "docx"]),
-                           ("viagens_oficios:acao", [o.pk, "cancelar"]),
-                           ("viagens_oficios:acao", [o.pk, "retificar"]),
-                           ("viagens_oficios:acao", [o.pk, "excluir"])]:
-            with self.subTest(rota=rota, args=args):
-                self.assertGreater(corpo.index(reverse(rota, args=args)), fim_do_formulario)
+    def test_documentos_indisponiveis_com_pendencia(self):
+        o = self.oficio()
+        r = self.editar(o)
+        self.assertContains(r, "Complete o ofício para gerar e consultar os documentos.")
+        self.assertNotContains(r, reverse("viagens_oficios:visualizar", args=[o.pk, "oficio"]))
 
     def test_acao_volta_para_o_formulario(self):
         o = self.oficio(dias=3, servidores=[self.janine])
         r = self.client.post(reverse("viagens_oficios:acao", args=[o.pk, "arquivar"]))
         self.assertRedirects(r, reverse("viagens_oficios:editar", args=[o.pk]))
 
-    def test_pendencias_no_rascunho(self):
+    def test_formulario_abre_sem_aviso(self):
+        # Tela de cadastro não abre com aviso: nem pendências, nem "pronto para emissão".
+        for o in (self.oficio(), self.oficio(dias=3, protocolo="123456789", servidores=[self.janine], viatura=self.duster, motorista=self.janine)):
+            r = self.editar(o)
+            for texto in ["Faltam informações para emitir o documento", "Completar o ofício", "pronto para emissão", "aviso--callout"]:
+                self.assertNotContains(r, texto)
+
+    def test_leitor_nao_abre_o_cadastro(self):
         o = self.oficio()
-        r = self.client.get(reverse("viagens_oficios:editar", args=[o.pk]))
-        self.assertContains(r, "Faltam informações para emitir o documento")
-        self.assertContains(r, "Selecione ao menos um viajante.")
-        self.assertContains(r, "Completar o ofício")
+        self.user.groups.clear()
+        self.assertEqual(self.editar(o).status_code, 403)
+        self.assertEqual(self.client.get(reverse("viagens_oficios:visualizar", args=[o.pk, "oficio"])).status_code, 403)
 
 
 class CatalogosTests(Cenario):

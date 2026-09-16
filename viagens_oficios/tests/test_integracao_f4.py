@@ -158,7 +158,9 @@ class IntegracaoF4Tests(CenarioOficioMixin, TestCase):
     def test_telas_operacionais(self):
         o = self.criar()
         t = TermoAutorizacao.objects.create(oficio=o)
-        rotas = [('viagens_oficios:lista', []), ('viagens_oficios:novo', []),
+        # `novo` sem POST volta para a lista: o cadastro nasce de um rascunho.
+        self.assertRedirects(self.client.get(reverse('viagens_oficios:novo')), reverse('viagens_oficios:lista'))
+        rotas = [('viagens_oficios:lista', []),
                  ('viagens_oficios:editar', [o.pk]),
                  ('viagens_oficios:catalogo', ['motivos']), ('viagens_oficios:catalogo_novo', ['motivos']),
                  ('viagens_oficios:catalogo', ['justificativas']), ('viagens_oficios:catalogo_novo', ['justificativas']),
