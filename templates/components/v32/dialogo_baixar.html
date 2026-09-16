@@ -5,7 +5,9 @@
   rota que gera), `data-titulo` e `data-itens` (JSON com valor, nome,
   detalhe e estado de cada documento). O envio é um POST comum que devolve o
   arquivo; a página fica onde está. Um PDF só (`saida=unico`) só existe
-  para PDF e com mais de um documento marcado.
+  para PDF e com mais de um documento marcado. "Versão" escolhe entre o PDF
+  assinado anexado e o arquivo original gerado pelo sistema; só aparece com
+  PDF e com algum documento assinado marcado.
 {% endcomment %}
 <dialog class="an-dialogo bx-dialogo" data-baixar-dialogo aria-labelledby="bx-titulo">
   <form method="post" class="an-form" data-baixar-form>
@@ -28,6 +30,13 @@
         <div class="bx-seg">
           <label><input type="radio" name="formato" value="pdf" checked><span>PDF</span></label>
           <label><input type="radio" name="formato" value="docx"><span>DOCX</span></label>
+        </div>
+      </fieldset>
+      <fieldset class="bx-grupo" data-baixar-versao>
+        <legend>Versão</legend>
+        <div class="bx-seg">
+          <label><input type="radio" name="versao" value="assinado" checked><span>Assinado</span></label>
+          <label><input type="radio" name="versao" value="original"><span>Arquivo original</span></label>
         </div>
       </fieldset>
       <fieldset class="bx-grupo" data-baixar-saida>

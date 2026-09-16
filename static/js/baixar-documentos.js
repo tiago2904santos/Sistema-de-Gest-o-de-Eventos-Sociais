@@ -19,6 +19,8 @@
   var proximo = dialogo.querySelector('[data-baixar-next]');
   var unico = form.querySelector('input[name="saida"][value="unico"]');
   var separados = form.querySelector('input[name="saida"][value="separados"]');
+  var grupoVersao = dialogo.querySelector('[data-baixar-versao]');
+  var original = form.querySelector('input[name="versao"][value="original"]');
 
   function marcados() {
     return lista.querySelectorAll('input[name="itens"]:checked').length;
@@ -28,20 +30,32 @@
     return form.querySelector('input[name="formato"]:checked').value;
   }
 
+  // Há assinado entre os marcados? Só então a escolha de versão faz sentido.
+  function assinadosMarcados() {
+    return lista.querySelectorAll('input[name="itens"][data-assinado]:checked').length;
+  }
+
   function atualizar() {
     var n = marcados();
     var total = lista.querySelectorAll('input[name="itens"]').length;
     var pdf = formato() === 'pdf';
+    grupoVersao.hidden = !pdf || assinadosMarcados() === 0;
+    var usaOriginal = !grupoVersao.hidden && original.checked;
     unico.disabled = !pdf || n < 2;
     unico.closest('label').classList.toggle('bx-seg__op--off', unico.disabled);
     if (unico.disabled && unico.checked) separados.checked = true;
     enviar.disabled = n === 0;
     todos.textContent = n === total ? 'Desmarcar todos' : 'Marcar todos';
     var ext = pdf ? 'PDF' : 'DOCX';
-    if (n === 0) resumo.textContent = 'Nenhum documento marcado.';
-    else if (n === 1) resumo.textContent = 'Sai 1 arquivo ' + ext + '.';
-    else if (unico.checked) resumo.textContent = 'Saem os ' + n + ' documentos num PDF só.';
-    else resumo.textContent = 'Saem ' + n + ' arquivos ' + ext + ' num ZIP.';
+    var texto;
+    if (n === 0) texto = 'Nenhum documento marcado.';
+    else if (n === 1) texto = 'Sai 1 arquivo ' + ext + '.';
+    else if (unico.checked) texto = 'Saem os ' + n + ' documentos num PDF só.';
+    else texto = 'Saem ' + n + ' arquivos ' + ext + ' num ZIP.';
+    if (n > 0 && !grupoVersao.hidden) {
+      texto += usaOriginal ? ' Todos no arquivo original, sem os assinados.' : ' Os assinados saem na versão assinada.';
+    }
+    resumo.textContent = texto;
   }
 
   function linha(item) {
@@ -53,6 +67,7 @@
     caixa.value = item.valor;
     caixa.checked = true;
     caixa.className = 'sr-only';
+    if (item.assinado) caixa.setAttribute('data-assinado', '');
     var marca = document.createElement('span');
     marca.className = 'bx-item__marca';
     marca.setAttribute('aria-hidden', 'true');

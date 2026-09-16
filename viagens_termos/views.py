@@ -291,8 +291,9 @@ def baixar(request, pk):
     `itens`: "0" é o termo vazio; os demais, ids de servidores do termo.
     `formato`: pdf ou docx. `saida`: `separados` (um arquivo, ou ZIP quando
     são vários) ou `unico` (um PDF só, na ordem da lista). DOCX não se junta:
-    vários DOCX saem sempre em ZIP. Vale a regra do assinado: o PDF de um
-    documento com versão assinada é o anexado.
+    vários DOCX saem sempre em ZIP. `versao`: `assinado` (padrão; o PDF de um
+    documento com versão assinada é o anexado) ou `original` (o gerado pelo
+    sistema, mesmo que haja assinado).
     """
     exigir_operador(request)
     termo = get_termo_by_id(pk)
@@ -318,7 +319,8 @@ def baixar(request, pk):
     ordem = ["0"] + list(servidores)
     pedidos.sort(key=ordem.index)
     try:
-        documentos = [gerar_termo_cadastro_um(termo, servidores.get(v), fmt) for v in pedidos]
+        usar_assinado = request.POST.get("versao", "assinado") != "original"
+        documentos = [gerar_termo_cadastro_um(termo, servidores.get(v), fmt, usar_assinado=usar_assinado) for v in pedidos]
     except (ValidationError, DocumentError) as exc:
         messages.error(request, "; ".join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
         return redirect(retorno)

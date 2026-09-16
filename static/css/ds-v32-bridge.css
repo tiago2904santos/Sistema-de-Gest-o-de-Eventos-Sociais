@@ -1862,6 +1862,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .bx-item__estado{flex:none;font-size:11.5px;font-weight:500;color:var(--n-500)}
 .bx-opcoes{display:flex;flex-wrap:wrap;gap:12px 24px;padding-top:14px;border-top:1px solid var(--n-150)}
 .bx-grupo{margin:0;padding:0;border:0;min-width:0}
+.bx-grupo[hidden]{display:none}
 .bx-grupo legend{padding:0;margin-bottom:6px;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--n-500)}
 .bx-seg{display:inline-flex;padding:3px;border-radius:9px;background:var(--n-100)}
 .bx-seg label{position:relative;cursor:pointer}

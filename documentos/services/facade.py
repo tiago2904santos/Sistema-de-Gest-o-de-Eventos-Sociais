@@ -71,6 +71,7 @@ class DocumentoFacade:
     prestacao_id: int | None = None,
         criado_por=None,
         persistir: bool = True,
+        usar_assinado: bool = True,
     ) -> DocumentoGerado:
         if not self._document_registry.has(tipo):
             from documentos.services.exceptions import UnsupportedDocumentType
@@ -93,7 +94,7 @@ class DocumentoFacade:
             actor = getattr(obter_requisicao_atual(), "user", None)
         actor_id = actor.pk if getattr(actor, "is_authenticated", False) else None
         should_persist = persistir and getattr(settings, "DOCUMENTOS_PERSIST_ARTEFATOS", True)
-        if should_persist and formato == DocumentoFormato.PDF:
+        if should_persist and usar_assinado and formato == DocumentoFormato.PDF:
             # Documento com PDF assinado anexado: vale o anexado, não uma nova geração.
             from documentos.services.assinados import documento_assinado
 

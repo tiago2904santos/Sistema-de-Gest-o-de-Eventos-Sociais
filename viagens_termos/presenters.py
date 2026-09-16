@@ -132,8 +132,10 @@ def documentos_do_termo(termo, artefatos_pdf):
     ]
     generico = acoes(None)
     # O modal "Baixar documentos" lista o termo vazio e um item por servidor.
-    itens_baixar = [{"valor": "0", "nome": "Termo vazio", "detalhe": "Só destino e período, para preencher à mão", "estado": generico["estado"]}]
-    itens_baixar += [{"valor": str(s["servidor"].pk), "nome": s["servidor"].nome, "detalhe": s["descricao"], "estado": s["estado"]} for s in servidores]
+    itens_baixar = [{"valor": "0", "nome": "Termo vazio", "detalhe": "Só destino e período, para preencher à mão",
+                     "estado": generico["estado"], "assinado": generico["assinado"]}]
+    itens_baixar += [{"valor": str(s["servidor"].pk), "nome": s["servidor"].nome, "detalhe": s["descricao"],
+                      "estado": s["estado"], "assinado": s["assinado"]} for s in servidores]
     return {
         "servidores": servidores,
         "generico": generico,

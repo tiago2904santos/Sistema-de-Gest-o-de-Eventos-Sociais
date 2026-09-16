@@ -321,13 +321,13 @@ def servidores_para_termo_cadastro(termo: TermoAutorizacao) -> list[Servidor | N
 
 
 
-def _gerar(payload, formato, ref, *, oficio_id=None, termo_id=None, servidor_id=None, roteiro_id=None):
+def _gerar(payload, formato, ref, *, oficio_id=None, termo_id=None, servidor_id=None, roteiro_id=None, usar_assinado=True):
     template = _TEMPLATE_DOCX_BY_VARIANTE[payload["termo"]["variante"]]
     return DocumentoFacade().gerar(
         tipo=DocumentoTipo.TERMO_AUTORIZACAO, formato=formato, payload=payload,
         reference=ref, docxtpl_context=_legacy_docx_context(payload),
         docx_template_path=template, oficio_id=oficio_id, termo_id=termo_id,
-        servidor_id=servidor_id, roteiro_id=roteiro_id,
+        servidor_id=servidor_id, roteiro_id=roteiro_id, usar_assinado=usar_assinado,
     )
 
 
@@ -343,14 +343,15 @@ def gerar_termo_lote(oficio, formato):
     return [gerar_termo_um(oficio, s, formato) for s in listar_servidores_com_termo(oficio)]
 
 
-def gerar_termo_cadastro_um(termo, servidor, formato, *, forcar_viatura=False):
+def gerar_termo_cadastro_um(termo, servidor, formato, *, forcar_viatura=False, usar_assinado=True):
+    """`usar_assinado=False` pede o arquivo original mesmo com versão assinada anexada."""
     if servidor is not None and not termo.servidores_efetivos().filter(pk=servidor.pk).exists():
         raise ValueError("Servidor não pertence a este termo.")
     payload = build_termo_cadastro_payload(termo, servidor, forcar_viatura=forcar_viatura)
     ref_servidor = servidor.pk if servidor else "viatura" if forcar_viatura else "sem-servidor"
     return _gerar(payload, formato, f"termo-{termo.pk}-cadastro-{ref_servidor}",
         oficio_id=termo.oficio_id, termo_id=termo.pk, servidor_id=servidor.pk if servidor else None,
-        roteiro_id=termo.oficio.roteiro_id if termo.oficio_id else None)
+        roteiro_id=termo.oficio.roteiro_id if termo.oficio_id else None, usar_assinado=usar_assinado)
 
 
 def gerar_termo_cadastro_lote(termo, formato):

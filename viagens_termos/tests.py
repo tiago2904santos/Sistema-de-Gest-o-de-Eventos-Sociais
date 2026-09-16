@@ -225,6 +225,27 @@ class AssinadoValeNoLugarDoGeradoTests(CenarioTermos):
         self.assertNotEqual(conteudo, self.assinado)
         self.assertTrue(conteudo.startswith(b"%PDF"))
 
+    def test_baixar_documentos_escolhe_entre_assinado_e_original(self):
+        url = reverse("viagens_termos:baixar", args=[self.t.pk])
+        self.anexar()
+        assinado = self.client.post(url, {"itens": [str(self.janine.pk)], "formato": "pdf", "versao": "assinado"})
+        self.assertEqual(corpo(assinado), self.assinado)
+        original = self.client.post(url, {"itens": [str(self.janine.pk)], "formato": "pdf", "versao": "original"})
+        conteudo = corpo(original)
+        self.assertTrue(conteudo.startswith(b"%PDF"))
+        self.assertNotEqual(conteudo, self.assinado)
+        # Sem `versao`, vale o assinado.
+        self.assertEqual(corpo(self.client.post(url, {"itens": [str(self.janine.pk)], "formato": "pdf"})), self.assinado)
+
+    def test_modal_sabe_quais_itens_estao_assinados(self):
+        import html as html_lib, json
+        self.anexar()
+        conteudo = self.lista().content.decode()
+        inicio = conteudo.index('data-itens="') + len('data-itens="')
+        itens = json.loads(html_lib.unescape(conteudo[inicio:conteudo.index('"', inicio)]))
+        self.assertEqual({i["nome"]: i["assinado"] for i in itens}, {"Termo vazio": False, "JANINE LACERDA DO PRADO": True})
+        self.assertIn('value="original"', conteudo)
+
     def test_assinado_de_um_documento_nao_vale_para_outro(self):
         self.anexar()
         gerar_vazio = reverse("viagens_termos:gerar", args=[self.t.pk, 0, "pdf"])
