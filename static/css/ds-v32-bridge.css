@@ -1825,6 +1825,12 @@ form.btn-flutuante-form{margin:0;display:contents}
 .an-escolher:hover{background:var(--n-250,#d1d3d4)}
 .an-arquivo{align-self:stretch;min-height:56px;display:flex;align-items:center;padding:0 14px;border-radius:8px;background:var(--branco,#fff);border:1px dashed var(--n-250,#d1d3d4);font-size:13.5px;font-weight:600;color:var(--n-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .an-arquivo--escolhido{border-style:solid;color:var(--n-900)}
+.an-arquivo{gap:10px}
+.an-arquivo__nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.an-limpar{flex:none;width:28px;height:28px;padding:0;border:0;border-radius:99px;background:var(--n-100);color:var(--n-600);display:grid;place-items:center;cursor:pointer;transition:background-color var(--motion,.15s)}
+.an-limpar:hover{background:var(--n-150);color:var(--n-900)}
+.an-limpar[hidden]{display:none}
+.an-limpar .ui-icon{width:14px;height:14px}
 .an-erro{margin:0;font-size:12.5px;color:var(--erro-t,#b3261e)}
 .an-rodape{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:2px}
 .an-rodape .btn-primaria,.an-rodape .btn--secundaria{height:40px;padding:0 18px;border-radius:8px;font-size:14px}

@@ -21,7 +21,10 @@
         <input type="file" name="arquivo" accept="application/pdf,.pdf" class="sr-only" data-anexar-arquivo required>
         Escolher PDF
       </label>
-      <div class="an-arquivo" data-anexar-rotulo aria-live="polite">Nenhum documento escolhido</div>
+      <div class="an-arquivo" data-anexar-quadro>
+        <span class="an-arquivo__nome" data-anexar-rotulo aria-live="polite">Nenhum documento escolhido</span>
+        <button type="button" class="an-limpar" data-anexar-limpar aria-label="Tirar o arquivo escolhido" title="Tirar o arquivo escolhido" hidden>{% include "components/icon.html" with nome="x" %}</button>
+      </div>
       <p class="an-erro" data-anexar-erro hidden></p>
     </div>
 

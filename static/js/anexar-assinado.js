@@ -13,6 +13,8 @@
   var form = dialogo.querySelector('[data-anexar-form]');
   var campo = dialogo.querySelector('[data-anexar-arquivo]');
   var rotulo = dialogo.querySelector('[data-anexar-rotulo]');
+  var quadro = dialogo.querySelector('[data-anexar-quadro]');
+  var limpar = dialogo.querySelector('[data-anexar-limpar]');
   var erro = dialogo.querySelector('[data-anexar-erro]');
   var enviar = dialogo.querySelector('[data-anexar-enviar]');
   var remover = dialogo.querySelector('[data-anexar-remover]');
@@ -31,12 +33,14 @@
     mostrarErro('');
     if (!arquivo) {
       rotulo.textContent = VAZIO;
-      rotulo.classList.remove('an-arquivo--escolhido');
+      quadro.classList.remove('an-arquivo--escolhido');
+      limpar.hidden = true;
       enviar.disabled = true;
       return;
     }
     rotulo.textContent = arquivo.name;
-    rotulo.classList.add('an-arquivo--escolhido');
+    quadro.classList.add('an-arquivo--escolhido');
+    limpar.hidden = false;
     var pdf = /\.pdf$/i.test(arquivo.name) || arquivo.type === 'application/pdf';
     if (!pdf) mostrarErro('Escolha um arquivo PDF.');
     enviar.disabled = !pdf;
@@ -65,6 +69,10 @@
   });
 
   campo.addEventListener('change', atualizar);
+  limpar.addEventListener('click', function () {
+    campo.value = '';
+    atualizar();
+  });
   dialogo.querySelectorAll('[data-anexar-fechar]').forEach(function (botao) {
     botao.addEventListener('click', function () { dialogo.close(); });
   });
