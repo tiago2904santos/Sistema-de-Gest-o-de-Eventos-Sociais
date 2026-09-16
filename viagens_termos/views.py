@@ -187,8 +187,7 @@ def _contexto_do_registro(termo, request):
 
     Vieram do antigo detalhe: os documentos para baixar (por servidor, o
     genérico, o da viatura e os lotes), cada um com o seu estado — sem PDF,
-    PDF gerado ou assinado —, a anexação do assinado, o histórico de
-    documentos gerados e o cancelamento/reativação/exclusão.
+    PDF gerado ou assinado — e a anexação do assinado.
     """
     if not termo.pk:
         return {}
@@ -200,7 +199,6 @@ def _contexto_do_registro(termo, request):
         "situacao_documentos": situacao_dos_documentos(termo, artefatos_pdf),
         "servidores_do_termo": list(termo.servidores_efetivos()),
         "viatura": termo.viatura_efetiva(),
-        "artefatos": termo.artefatos.select_related("servidor").order_by("-criado_em")[:30],
         "pode_editar": pode_editar_cadastros(request.user),
         "url_atual": daqui(request),
     }

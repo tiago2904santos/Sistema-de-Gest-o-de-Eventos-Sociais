@@ -10,10 +10,9 @@
   Num termo já salvo o fluxo continua na mesma tela, em coluna única. O que
   era quatro seções numeradas virou três: "Documentos" (3) junta o que baixar
   — por servidor, genérico, da viatura, todos num PDF ou em ZIP —, a anexação
-  do PDF assinado e a prévia em tela, que sozinha não valia uma seção; os
-  documentos gerados (4) seguem separados. Excluir fica no menu da linha da
-  lista. As âncoras `#documentos`, `#previa` e `#gerados` continuam valendo,
-  agora algumas dentro da seção 3.
+  do PDF assinado e a prévia em tela, que sozinha não valia uma seção. É a
+  última seção da tela; excluir fica no menu da linha da lista. As âncoras
+  `#documentos` e `#previa` continuam valendo.
 
   Os formulários dessas seções são independentes e ficam depois do `</form>`
   do cadastro — nunca aninhados.
@@ -246,37 +245,6 @@
               </div>
             {% endif %}
           </div>
-        </div>
-      </section>
-
-      <section class="section-card reg" id="gerados">
-        <header class="section-card__cabecalho reg__t">
-          <span class="section-card__numero reg-numero" aria-hidden="true">4</span>
-          <h2 class="section-card__titulo">Documentos gerados</h2>
-          <span class="section-card__acao tm-contagem">{{ artefatos|length }} arquivo{{ artefatos|length|pluralize }}</span>
-        </header>
-        <div class="section-card__corpo">
-          <div class="dt-w cad-lista tm-tabela tm-tabela--fim"><table class="dt">
-            <thead><tr><th>Documento</th><th class="c-fixo tm-col-servidor">Servidor</th><th class="c-fixo tm-col-data">Gerado em</th><th class="c-fixo tm-col-formato">Formato</th><th class="c-cad-acoes tm-col-acoes">Ações</th></tr></thead>
-            <tbody>
-              {% for art in artefatos %}
-                <tr>
-                  <td class="c-nome tm-arquivo" title="{{ art.nome_exibicao }}"><span class="tm-arquivo__linha"><span class="tm-arquivo__nome">{{ art.nome_exibicao }}</span>{% if art.esta_assinado %}<span class="st st--atendido">Assinado</span>{% endif %}</span></td>
-                  <td class="c-fixo tm-col-servidor">{{ art.servidor|default:"—" }}</td>
-                  <td class="c-fixo tm-col-data">{{ art.criado_em|date:"d/m/Y H:i" }}</td>
-                  <td class="c-fixo tm-col-formato">{{ art.formato|upper }}</td>
-                  <td class="c-cad-acoes tm-col-acoes"><div class="acoes cad-acoes tm-icones">
-                    <a class="ib-linha" href="{% url 'documentos:baixar' art.pk %}" aria-label="Baixar" title="Baixar">{% include "components/icon.html" with nome="download" %}</a>
-                    {% if art.formato == 'pdf' %}
-                      <a class="ib-linha" href="{% url 'viagens_oficios:preview_artefato' art.pk %}" target="_blank" rel="noopener" aria-label="Abrir" title="Abrir">{% include "components/icon.html" with nome="eye" %}</a>
-                      {% if pode_editar %}<a class="ib-linha" href="{% url 'viagens_oficios:assinatura_artefato' art.pk %}" aria-label="{% if art.esta_assinado %}Assinado — trocar{% else %}Anexar assinado{% endif %}" title="{% if art.esta_assinado %}Assinado — trocar{% else %}Anexar assinado{% endif %}">{% include "components/icon.html" with nome=art.esta_assinado|yesno:"check-circle,upload" %}</a>{% endif %}
-                    {% else %}
-                      <span class="ib-linha tm-icones__vago" aria-hidden="true"></span>{% if pode_editar %}<span class="ib-linha tm-icones__vago" aria-hidden="true"></span>{% endif %}
-                    {% endif %}
-                  </div></td>
-                </tr>
-              {% empty %}<tr><td colspan="5" class="v32-suave dt__vazio">Nenhum documento gerado.</td></tr>{% endfor %}
-            </tbody></table></div>
         </div>
       </section>
     {% endwith %}{% endif %}

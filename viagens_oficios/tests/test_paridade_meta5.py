@@ -290,7 +290,7 @@ class DetalheEDocumentosTests(CenarioTermos):
                       "Escolher documentos para baixar", "Termo por servidor", "JANINE LACERDA DO PRADO", "JOÃO MARIO DE GOES",
                       "Visualizar", "Anexar assinado", "Termo genérico", "Só destino e período, semipreenchido",
                       "Termo da viatura", "AAA-1234 DUSTER, campos do servidor em branco", "Todos os termos", "2 servidores",
-                      "PDF único", "ZIP de PDFs", "ZIP de DOCX", "Documentos gerados", "Nenhum documento gerado.",
+                      "PDF único", "ZIP de PDFs", "ZIP de DOCX",
                       "Prévia em tela", "Abrir prévia", "Salvar termo"]:
             self.assertContains(r, texto)
         self.assertContains(r, reverse("viagens_termos:preview", args=[t.pk]))
@@ -336,7 +336,6 @@ class DetalheEDocumentosTests(CenarioTermos):
                 self.assertTrue(all(z.read(n).startswith(assinatura) for n in nomes))
 
         r = self.client.get(reverse("viagens_termos:editar", args=[t.pk]))
-        self.assertNotContains(r, "Nenhum documento gerado.")
         self.assertContains(r, "JANINE LACERDA DO PRADO")
 
     def test_termo_cancelado_nao_gera(self):

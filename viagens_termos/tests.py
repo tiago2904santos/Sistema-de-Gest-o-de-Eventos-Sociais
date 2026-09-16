@@ -2,9 +2,9 @@
 
 O termo deixou de ter tela de detalhe: a lista abre direto no formulário, e o
 que só existia no detalhe (documentos para baixar por servidor, o genérico, o
-da viatura, os lotes, a anexação do assinado, os documentos já gerados, a
-prévia em tela e o cancelamento/reativação/exclusão) virou seção do próprio
-formulário, visível só quando se edita um termo já salvo.
+da viatura, os lotes, a anexação do assinado e a prévia em tela) virou seção
+do próprio formulário, visível só quando se edita um termo já salvo. A lista
+de arquivos gerados e o cancelamento saíram da tela.
 
 As asserções de conteúdo aqui são as mesmas que o detalhe garantia em
 `viagens_oficios/tests/test_paridade_meta5.py`, reapontadas para a nova
@@ -63,11 +63,10 @@ class SecoesDoRegistroNoFormularioTests(CenarioTermos):
                       "JOÃO MARIO DE GOES", "Visualizar", "Anexar assinado", "Termo genérico",
                       "Só destino e período, semipreenchido", "Termo da viatura",
                       "AAA-1234 DUSTER, campos do servidor em branco", "Todos os termos", "2 servidores",
-                      "PDF único", "ZIP de PDFs", "ZIP de DOCX", "Documentos gerados",
-                      "Nenhum documento gerado.",
+                      "PDF único", "ZIP de PDFs", "ZIP de DOCX",
                       "Prévia em tela", "Abrir prévia"]:
             self.assertContains(r, texto)
-        for texto in ["Cancelamento e exclusão", "Cancelar termo", 'id="cancelamento"']:
+        for texto in ["Cancelamento e exclusão", "Cancelar termo", 'id="cancelamento"', "Documentos gerados", 'id="gerados"']:
             self.assertNotContains(r, texto)
         self.assertContains(r, reverse("viagens_termos:preview", args=[t.pk]))
         self.assertContains(r, reverse("viagens_termos:todos_pdf", args=[t.pk]))
@@ -85,17 +84,16 @@ class SecoesDoRegistroNoFormularioTests(CenarioTermos):
         corpo = html[principal:fecha]
         self.assertNotIn("<form", corpo)
         # E as seções migradas vêm depois desse fechamento.
-        for ancora in ['id="documentos"', 'id="gerados"', 'id="previa"']:
+        for ancora in ['id="documentos"', 'id="previa"']:
             self.assertGreater(html.index(ancora), fecha)
 
-    def test_documentos_gerados_aparecem_na_mesma_tela(self):
+    def test_pdf_gerado_pode_receber_o_assinado_pela_secao_de_documentos(self):
         o = self.oficio(dias=3, servidores=[self.janine], viatura=self.duster)
         t = self.termo(oficio=o)
         self.client.post(reverse("viagens_termos:gerar", args=[t.pk, self.janine.pk, "pdf"]))
         art = DocumentoArtefato.objects.get(termo=t, servidor=self.janine, formato="pdf")
         r = self.client.get(reverse("viagens_termos:editar", args=[t.pk]))
-        self.assertNotContains(r, "Nenhum documento gerado.")
-        self.assertContains(r, reverse("documentos:baixar", args=[art.pk]))
+        self.assertNotContains(r, "Documentos gerados")  # a lista de arquivos saiu da tela
         self.assertContains(r, reverse("viagens_oficios:assinatura_artefato", args=[art.pk]))
 
     def test_termo_cancelado_mostra_motivo_e_reativacao(self):
