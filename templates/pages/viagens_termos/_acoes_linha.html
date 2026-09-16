@@ -1,7 +1,7 @@
 {% comment %}
   Ações de uma linha de termo num botão único, no padrão da lista de roteiros.
-  Os quatro botões de antes viraram grupos do mesmo menu: escolher documentos
-  para baixar, anexar termo assinado, editar e excluir. Excluir mantém a
+  Grupos do mesmo menu: baixar documentos (abre o modal de escolha), anexar
+  termo assinado, editar e excluir. Excluir mantém a
   confirmação em duas etapas do menu. Quem só consulta abre a prévia.
   Contexto: `l` (linha), `t` (termo), `d` (documentos), `pode_editar`, `url_atual`.
 {% endcomment %}
@@ -9,14 +9,11 @@
   <div class="dd of-menu cad-acoes" data-menu>
     <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações do termo #{{ t.pk }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
     <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
-      <div class="dd__t">Termo #{{ t.pk }} · Escolher documentos para baixar</div>
+      <div class="dd__t">Termo #{{ t.pk }}</div>
       {% if t.cancelado %}
         <span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="ban" %}<span><b>Termo cancelado</b><small>Reative para gerar documentos</small></span></span>
       {% else %}
-        <form method="post" action="{{ d.url_todos_pdf }}">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Todos os termos num PDF só, prontos para assinatura</small></span></button></form>
-        <form method="post" action="{{ d.url_lote_docx }}">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivos editáveis de todos os termos (ZIP)</small></span></button></form>
-        <form method="post" action="{{ d.generico.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar termo vazio</b><small>Só destino e período, para preencher à mão</small></span></button></form>
-        <a class="dd__i of-item" href="{{ l.url_editar }}#documentos">{% include "components/icon.html" with nome="checklist" %}<span><b>Todos os documentos</b><small>Termo vazio, por servidor e anexos</small></span></a>
+        <button type="button" class="dd__i of-item" data-baixar-documentos data-url="{{ d.url_baixar }}" data-titulo="Termo #{{ t.pk }} · {{ l.titulo }}" data-itens="{{ d.itens_baixar }}">{% include "components/icon.html" with nome="download" %}<span><b>Baixar documentos</b><small>Escolher termos, formato e saída</small></span></button>
         <div class="dd__s"></div>
         <div class="dd__t">Anexar termo assinado</div>
         {% for s in d.servidores %}

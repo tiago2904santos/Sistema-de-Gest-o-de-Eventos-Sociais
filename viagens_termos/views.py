@@ -283,6 +283,52 @@ def gerar(request, pk, formato, servidor_id=None, viatura=False, todos=False):
         return redirect("viagens_termos:editar", pk=pk)
 
 
+@acesso_ao_modulo
+@require_POST
+def baixar(request, pk):
+    """Os documentos marcados no modal "Baixar documentos".
+
+    `itens`: "0" é o termo vazio; os demais, ids de servidores do termo.
+    `formato`: pdf ou docx. `saida`: `separados` (um arquivo, ou ZIP quando
+    são vários) ou `unico` (um PDF só, na ordem da lista). DOCX não se junta:
+    vários DOCX saem sempre em ZIP. Vale a regra do assinado: o PDF de um
+    documento com versão assinada é o anexado.
+    """
+    exigir_operador(request)
+    termo = get_termo_by_id(pk)
+    retorno = voltar_para(request, reverse("viagens_termos:lista"))
+    if _bloqueado(termo):
+        messages.error(request, "Reative o termo e o ofício antes de baixar documentos.")
+        return redirect(retorno)
+    formato = request.POST.get("formato", "pdf")
+    if formato not in ("pdf", "docx"):
+        raise Http404
+    fmt = DocumentoFormato(formato)
+    servidores = {str(s.pk): s for s in termo.servidores_efetivos()}
+    pedidos = []
+    for valor in request.POST.getlist("itens"):
+        if valor != "0" and valor not in servidores:
+            raise Http404
+        if valor not in pedidos:
+            pedidos.append(valor)
+    if not pedidos:
+        messages.error(request, "Marque ao menos um documento para baixar.")
+        return redirect(retorno)
+    # Na ordem da tela: termo vazio primeiro, depois os servidores.
+    ordem = ["0"] + list(servidores)
+    pedidos.sort(key=ordem.index)
+    try:
+        documentos = [gerar_termo_cadastro_um(termo, servidores.get(v), fmt) for v in pedidos]
+    except (ValidationError, DocumentError) as exc:
+        messages.error(request, "; ".join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
+        return redirect(retorno)
+    if len(documentos) == 1:
+        return resposta_documento(request, documentos[0])
+    if fmt == DocumentoFormato.PDF and request.POST.get("saida") == "unico":
+        return resposta_pdf_consolidado(documentos, f"termo-{termo.pk}-documentos.pdf")
+    return resposta_lote(documentos)
+
+
 def gerar_viatura(request, pk, formato):
     return gerar(request, pk, formato, viatura=True)
 

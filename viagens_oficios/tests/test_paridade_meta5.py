@@ -116,13 +116,15 @@ class ListaTermosTests(CenarioTermos):
         o = self.oficio(dias=3, servidores=[self.janine], viatura=self.duster)
         t = self.termo(oficio=o)
         r = self.lista()
-        for texto in ["Escolher documentos para baixar", "Baixar PDF", "Todos os termos num PDF só, prontos para assinatura",
-                      "Baixar DOCX", "Arquivos editáveis de todos os termos (ZIP)", "Visualizar termo vazio",
-                      "AAA-1234 DUSTER", "Todos os documentos", "Anexar termo assinado",
+        for texto in ["Baixar documentos", "Escolher termos, formato e saída", "data-baixar-dialogo",
+                      "AAA-1234 DUSTER", "Anexar termo assinado",
                       "Gere o PDF do termo primeiro", "Editar termo", "Excluir termo", 'data-confirmar="Confirmar exclusão?"']:
             self.assertContains(r, texto)
-        self.assertContains(r, reverse("viagens_termos:todos_pdf", args=[t.pk]))
-        self.assertContains(r, reverse("viagens_termos:lote", args=[t.pk, "docx"]))
+        # As opções de baixar do menu viraram o modal.
+        for texto in ["Escolher documentos para baixar", "Visualizar termo vazio", "Todos os documentos"]:
+            self.assertNotContains(r, texto)
+        self.assertContains(r, reverse("viagens_termos:baixar", args=[t.pk]))
+        self.assertNotContains(r, reverse("viagens_termos:todos_pdf", args=[t.pk]))
         self.assertNotContains(r, reverse("viagens_termos:gerar_viatura", args=[t.pk, "pdf"]))  # termo da viatura saiu da tela
         self.assertContains(r, reverse("viagens_termos:editar", args=[t.pk]) + "?next=")
 

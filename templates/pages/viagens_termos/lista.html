@@ -124,4 +124,6 @@
   </div>
 {% endblock %}
 
-{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>{% endblock %}
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>
+  {% if pode_editar %}{% include "components/v32/dialogo_baixar.html" %}{% endif %}
+{% endblock %}

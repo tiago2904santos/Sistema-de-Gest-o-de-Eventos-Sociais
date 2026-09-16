@@ -32,8 +32,6 @@ class RotaDeDetalheTests(CenarioTermos):
         t = self.termo(oficio=o)
         r = self.lista()
         editar = reverse("viagens_termos:editar", args=[t.pk])
-        self.assertContains(r, f'href="{editar}#documentos"')
-        self.assertContains(r, "Todos os documentos")
         self.assertContains(r, editar + "?next=")
 
     def test_leitor_abre_a_previa(self):
@@ -271,6 +269,68 @@ class RodapeDoTermoTests(CenarioTermos):
         self.assertEqual(rodapes, 1)
         self.assertGreater(html.index('class="frm-acoes-fim tm-acoes-fim"'), html.index('id="documentos"'))
         self.assertIn('form="form-termo">Salvar termo', html)
+
+
+class BaixarDocumentosTests(CenarioTermos):
+    def setUp(self):
+        super().setUp()
+        o = self.oficio(dias=3, servidores=[self.janine, self.joao])
+        self.t = self.termo(oficio=o)
+        self.url = reverse("viagens_termos:baixar", args=[self.t.pk])
+
+    def baixar(self, itens, formato="pdf", saida="separados", **extra):
+        return self.client.post(self.url, {"itens": itens, "formato": formato, "saida": saida, **extra})
+
+    def test_modal_recebe_termo_vazio_e_servidores_na_ordem(self):
+        import html as html_lib
+        import json
+        r = self.lista()
+        conteudo = r.content.decode()
+        inicio = conteudo.index('data-itens="') + len('data-itens="')
+        itens = json.loads(html_lib.unescape(conteudo[inicio:conteudo.index('"', inicio)]))
+        self.assertEqual([i["nome"] for i in itens], ["Termo vazio", "JANINE LACERDA DO PRADO", "JOÃO MARIO DE GOES"])
+        self.assertEqual(itens[0]["valor"], "0")
+
+    def test_um_documento_sai_como_arquivo(self):
+        r = self.baixar([str(self.janine.pk)])
+        self.assertEqual(r["Content-Type"], "application/pdf")
+        r = self.baixar(["0"], formato="docx")
+        self.assertIn("wordprocessingml", r["Content-Type"])
+
+    def test_varios_separados_saem_em_zip(self):
+        import io
+        from zipfile import ZipFile
+        r = self.baixar(["0", str(self.janine.pk), str(self.joao.pk)])
+        self.assertEqual(r["Content-Type"], "application/zip")
+        with ZipFile(io.BytesIO(r.content)) as z:
+            self.assertEqual(len(z.namelist()), 3)
+
+    def test_varios_num_pdf_so(self):
+        import io
+        from pypdf import PdfReader
+        r = self.baixar([str(self.janine.pk), str(self.joao.pk)], saida="unico")
+        self.assertEqual(r["Content-Type"], "application/pdf")
+        self.assertIn("documentos.pdf", r["Content-Disposition"])
+        self.assertGreaterEqual(len(PdfReader(io.BytesIO(r.content)).pages), 2)
+
+    def test_docx_nao_se_junta(self):
+        r = self.baixar([str(self.janine.pk), str(self.joao.pk)], formato="docx", saida="unico")
+        self.assertEqual(r["Content-Type"], "application/zip")
+
+    def test_nada_marcado_volta_com_mensagem(self):
+        origem = reverse("viagens_termos:lista")
+        r = self.client.post(self.url, {"formato": "pdf", "next": origem}, follow=True)
+        self.assertRedirects(r, origem)
+        self.assertContains(r, "Marque ao menos um documento para baixar.")
+
+    def test_servidor_de_fora_ou_formato_estranho_e_404(self):
+        self.assertEqual(self.baixar(["999999"]).status_code, 404)
+        self.assertEqual(self.baixar(["0"], formato="xlsx").status_code, 404)
+
+    def test_so_via_post_e_so_operador(self):
+        self.assertEqual(self.client.get(self.url).status_code, 405)
+        self.user.groups.clear()
+        self.assertEqual(self.baixar(["0"]).status_code, 403)
 
 
 class NavegacaoTests(CenarioTermos):

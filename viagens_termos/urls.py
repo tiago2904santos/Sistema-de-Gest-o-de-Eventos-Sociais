@@ -10,6 +10,8 @@ urlpatterns = [
     path('<int:pk>/preview/', views.preview, name='preview'),
     path('<int:pk>/preview/<int:servidor_id>/', views.preview, name='preview_servidor'),
     # Todos os termos: um PDF só (`todos/pdf`) ou um ZIP por formato (`lote`).
+    # Baixar os documentos marcados no modal: um arquivo, um ZIP ou um PDF só.
+    path('<int:pk>/baixar/', views.baixar, name='baixar'),
     path('<int:pk>/todos/pdf/', views.gerar_todos_pdf, name='todos_pdf'),
     path('<int:pk>/gerar/<str:formato>/', views.gerar_lote, name='lote'),
     path('<int:pk>/gerar/viatura/<str:formato>/', views.gerar_viatura, name='gerar_viatura'),

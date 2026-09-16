@@ -1,0 +1,49 @@
+{% load estaticos %}{% comment %}
+  Modal "Baixar documentos": marcar o que baixar, o formato e a saída.
+
+  Aberto por um botão com `data-baixar-documentos`, que traz `data-url` (a
+  rota que gera), `data-titulo` e `data-itens` (JSON com valor, nome,
+  detalhe e estado de cada documento). O envio é um POST comum que devolve o
+  arquivo; a página fica onde está. Um PDF só (`saida=unico`) só existe
+  para PDF e com mais de um documento marcado.
+{% endcomment %}
+<dialog class="an-dialogo bx-dialogo" data-baixar-dialogo aria-labelledby="bx-titulo">
+  <form method="post" class="an-form" data-baixar-form>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="" data-baixar-next>
+    <div>
+      <h2 class="an-titulo" id="bx-titulo">Baixar documentos</h2>
+      <p class="an-texto bx-sub" data-baixar-sub></p>
+    </div>
+
+    <div class="bx-cabeca">
+      <span>Marque o que você quer baixar.</span>
+      <button type="button" class="bx-todos" data-baixar-todos>Desmarcar todos</button>
+    </div>
+    <div class="bx-lista" data-baixar-lista role="group" aria-label="Documentos"></div>
+
+    <div class="bx-opcoes">
+      <fieldset class="bx-grupo">
+        <legend>Formato</legend>
+        <div class="bx-seg">
+          <label><input type="radio" name="formato" value="pdf" checked><span>PDF</span></label>
+          <label><input type="radio" name="formato" value="docx"><span>DOCX</span></label>
+        </div>
+      </fieldset>
+      <fieldset class="bx-grupo" data-baixar-saida>
+        <legend>Saída</legend>
+        <div class="bx-seg">
+          <label><input type="radio" name="saida" value="separados" checked><span>Separados</span></label>
+          <label><input type="radio" name="saida" value="unico"><span>Um PDF só</span></label>
+        </div>
+      </fieldset>
+    </div>
+    <p class="bx-resumo" data-baixar-resumo aria-live="polite"></p>
+
+    <div class="an-rodape">
+      <button type="button" class="btn--secundaria" data-baixar-fechar>Fechar</button>
+      <button type="submit" class="btn-primaria" data-baixar-enviar>{% include "components/icon.html" with nome="download" %}Baixar</button>
+    </div>
+  </form>
+</dialog>
+<script src="{% estatico 'js/baixar-documentos.js' %}" defer></script>

@@ -8,6 +8,8 @@ destino; ao lado dele entrou o andamento dos documentos ("3 de 5 assinados"),
 que a origem não mostrava.
 """
 
+import json
+
 from django.urls import reverse
 from django.utils import timezone
 
@@ -128,9 +130,15 @@ def documentos_do_termo(termo, artefatos_pdf):
         {"servidor": s, "iniciais": iniciais(s.nome), "descricao": " · ".join(p for p in [str(s.cargo) if s.cargo_id else "", (s.unidade.sigla or s.unidade.nome) if s.unidade_id else ""] if p), **acoes(s.pk)}
         for s in termo.servidores_efetivos()
     ]
+    generico = acoes(None)
+    # O modal "Baixar documentos" lista o termo vazio e um item por servidor.
+    itens_baixar = [{"valor": "0", "nome": "Termo vazio", "detalhe": "Só destino e período, para preencher à mão", "estado": generico["estado"]}]
+    itens_baixar += [{"valor": str(s["servidor"].pk), "nome": s["servidor"].nome, "detalhe": s["descricao"], "estado": s["estado"]} for s in servidores]
     return {
         "servidores": servidores,
-        "generico": acoes(None),
+        "generico": generico,
+        "url_baixar": reverse("viagens_termos:baixar", args=[termo.pk]),
+        "itens_baixar": json.dumps(itens_baixar, ensure_ascii=False),
         "viatura": {
             "viatura": termo.viatura_efetiva(),
             "url_pdf": reverse("viagens_termos:gerar_viatura", args=[termo.pk, "pdf"]),
