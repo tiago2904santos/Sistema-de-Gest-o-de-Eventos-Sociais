@@ -1,0 +1,8 @@
+{% comment %}
+  Voltar e Salvar termo, no fim do último cartão da tela. Fora do `<form>` do
+  cadastro (no cartão Documentos), o Salvar chega a ele pelo atributo `form`.
+{% endcomment %}
+<div class="frm-acoes-fim tm-acoes-fim">
+  {% include "components/v32/button.html" with label="Voltar" variante="secundario" href=url_voltar %}
+  {% if pode_editar %}<button type="submit" name="acao" value="salvar" class="btn btn--dourado btn-primaria"{% if fora_do_form %} form="form-termo"{% endif %}>Salvar termo</button>{% endif %}
+</div>

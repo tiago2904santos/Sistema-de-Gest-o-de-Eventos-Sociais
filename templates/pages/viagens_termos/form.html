@@ -155,11 +155,8 @@
             {% include "components/v32/lista_escolha.html" with name="viatura" label="Viaturas" rotulo_busca="Viatura" icone="truck" aguardando="Escolha os servidores para ver as viaturas sugeridas" opcoes=viaturas selecionado=valores.viatura placeholder="Buscar por placa ou modelo..." erros=erros.viatura vazio="Nenhuma viatura cadastrada." %}
           </div>
 
-          {# Ações no fim do último cartão do formulário, como no roteiro: voltar à esquerda, salvar à direita. #}
-          <div class="frm-acoes-fim">
-            {% include "components/v32/button.html" with label="Voltar" variante="secundario" href=url_voltar %}
-            {% if pode_editar %}<button type="submit" name="acao" value="salvar" class="btn btn--dourado btn-primaria">Salvar termo</button>{% endif %}
-          </div>
+          {# Ações no fim do último cartão da tela: aqui só no termo novo; no termo salvo, no fim de Documentos. #}
+          {% if not termo.pk %}{% include "pages/viagens_termos/_acoes_fim.html" %}{% endif %}
         </div>
       </section>
 
@@ -184,7 +181,7 @@
           {% if t.cancelado or t.oficio_id and t.oficio.cancelado %}
             <p class="texto-vazio">Termo{% if t.oficio_id and t.oficio.cancelado %} ou ofício{% endif %} cancelado: reative para emitir documentos.</p>
           {% else %}
-            <div class="dt-w cad-lista tm-tabela tm-tabela--fim"><table class="dt">
+            <div class="dt-w cad-lista tm-tabela"><table class="dt">
               <caption class="sr-only">Termo por servidor — Escolher documentos para baixar{% if "servidores" in herdados %} — servidores com termo do ofício{% endif %}</caption>
               <thead><tr><th>Documento</th><th class="c-fixo tm-col-estado">Estado</th><th class="c-cad-acoes tm-col-acoes">Ações</th></tr></thead>
               <tbody>
@@ -222,6 +219,7 @@
               </tbody>
             </table></div>
           {% endif %}
+          {% include "pages/viagens_termos/_acoes_fim.html" with fora_do_form=True %}
         </div>
       </section>
     {% endwith %}{% endif %}

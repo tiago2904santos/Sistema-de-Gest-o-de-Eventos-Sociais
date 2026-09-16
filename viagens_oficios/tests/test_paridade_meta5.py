@@ -74,12 +74,14 @@ class ListaTermosTests(CenarioTermos):
         self.assertEqual(r.context["situacoes"][0]["total"], 1)
 
     def test_cartao_nomeia_o_que_falta_em_vez_de_omitir(self):
-        """Termo avulso sem servidor nem viatura: os fatos aparecem vazios, não somem."""
+        """Termo avulso sem servidor nem viatura: os fatos aparecem vazios, não somem.
+        A falta de ofício é a exceção: o item simplesmente não aparece."""
         self.termo(cidade=self.antonina, inicio=self.data(3))
         r = self.lista()
-        for vazio in ["Termo avulso", "Sem servidores", "Sem viatura"]:
+        for vazio in ["Sem servidores", "Sem viatura"]:
             self.assertContains(r, vazio)
         self.assertContains(r, "tm-fato--ausente")
+        self.assertNotContains(r, "Termo avulso")
 
     def test_cartao_mostra_o_andamento_dos_documentos(self):
         o = self.oficio(dias=3, servidores=[self.janine, self.joao])

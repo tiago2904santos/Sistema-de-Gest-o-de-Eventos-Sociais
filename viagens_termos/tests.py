@@ -240,6 +240,39 @@ class AssinadoValeNoLugarDoGeradoTests(CenarioTermos):
         self.assertNotIn(corpo(self.client.post(gerar_viatura)), (vazio_assinado, self.assinado))
 
 
+class ChipsDaViaturaTests(CenarioTermos):
+    def test_motorista_em_verde_unidade_em_azul(self):
+        from viagens_termos.views import opcoes_de_viatura
+        opcoes = {o["valor"]: o for o in opcoes_de_viatura()}
+        tons = {o["chip_tom"] for o in opcoes.values() if o["chip"]}
+        self.assertTrue(tons <= {"atendido", "em_andamento"})
+        for o in opcoes.values():
+            if not o["chip"]:
+                self.assertEqual(o["chip_tom"], "")
+            elif o["dados"]["motoristas"]:
+                self.assertEqual(o["chip_tom"], "atendido")
+            else:
+                self.assertEqual(o["chip_tom"], "em_andamento")
+
+
+class RodapeDoTermoTests(CenarioTermos):
+    def test_termo_novo_tem_os_botoes_no_cartao_do_formulario(self):
+        html = self.client.get(reverse("viagens_termos:novo")).content.decode()
+        fecha = html.index("</form>", html.index('id="form-termo"'))
+        self.assertLess(html.index("Salvar termo"), fecha)
+        self.assertNotIn('form="form-termo">Salvar termo', html)
+
+    def test_termo_salvo_tem_os_botoes_no_fim_de_documentos(self):
+        o = self.oficio(dias=3, servidores=[self.janine])
+        t = self.termo(oficio=o)
+        html = self.client.get(reverse("viagens_termos:editar", args=[t.pk])).content.decode()
+        # Além do Salvar do topo, só um: o do fim de Documentos.
+        rodapes = html.count('class="frm-acoes-fim tm-acoes-fim"')
+        self.assertEqual(rodapes, 1)
+        self.assertGreater(html.index('class="frm-acoes-fim tm-acoes-fim"'), html.index('id="documentos"'))
+        self.assertIn('form="form-termo">Salvar termo', html)
+
+
 class NavegacaoTests(CenarioTermos):
     def test_salvar_vai_para_a_lista(self):
         o = self.oficio(dias=3, servidores=[self.janine], viatura=self.duster)
@@ -320,7 +353,7 @@ class ColunaUnicaTests(CenarioTermos):
         principal = html.index('id="form-termo"')
         fecha = html.index("</form>", principal)
         # Como no roteiro: Voltar/Salvar no fim do último cartão do formulário.
-        acoes = html.index('<div class="frm-acoes-fim">', principal)
+        acoes = html.index('<div class="frm-acoes-fim tm-acoes-fim">', principal)
         self.assertLess(acoes, fecha)
         self.assertIn("Salvar termo", html[acoes:fecha])
 

@@ -69,14 +69,15 @@ def fatos_do_termo(termo):
     periodo = periodo_do_titulo(termo)
     servidores = ", ".join(s.nome for s in termo.servidores_efetivos())
     viatura = viatura_do_termo(termo)
-    return [
-        {"icone": "calendar", "rotulo": "Período", "texto": periodo or "Sem período", "ausente": not periodo},
-        {"icone": "document", "rotulo": "Ofício",
-         "texto": f"Ofício {termo.oficio.numero_formatado}" if termo.oficio_id else "Termo avulso",
-         "ausente": not termo.oficio_id},
+    fatos = [{"icone": "calendar", "rotulo": "Período", "texto": periodo or "Sem período", "ausente": not periodo}]
+    # Sem ofício, não há o que dizer: o item só aparece quando há vínculo.
+    if termo.oficio_id:
+        fatos.append({"icone": "document", "rotulo": "Ofício", "texto": f"Ofício {termo.oficio.numero_formatado}", "ausente": False})
+    fatos += [
         {"icone": "users", "rotulo": "Servidores", "texto": servidores or "Sem servidores", "ausente": not servidores},
         {"icone": "truck", "rotulo": "Viatura", "texto": viatura or "Sem viatura", "ausente": not viatura},
     ]
+    return fatos
 
 
 def herdados_do_termo(termo):

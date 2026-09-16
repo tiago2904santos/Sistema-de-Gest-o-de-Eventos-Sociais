@@ -49,16 +49,19 @@ def opcoes_de_viatura():
         motoristas = list(v.motoristas.all())
         # O selo diz a quem a viatura está presa: o motorista é o vínculo mais
         # estreito e prevalece sobre a lotação.
+        # Verde para motorista, azul para unidade.
         if motoristas:
             chip = motoristas[0].nome if len(motoristas) == 1 else f"{motoristas[0].nome} +{len(motoristas) - 1}"
+            tom = "atendido"
         elif v.unidade_id:
-            chip = v.unidade.sigla or v.unidade.nome
+            chip, tom = v.unidade.sigla or v.unidade.nome, "em_andamento"
         else:
-            chip = ""
+            chip, tom = "", ""
         opcoes.append({
             "valor": str(v.pk),
             "rotulo": f"{v.placa_formatada} — {v.modelo}" if v.modelo else v.placa_formatada,
             "chip": chip,
+            "chip_tom": tom,
             "busca": " ".join([m.nome for m in motoristas] + ([v.unidade.nome, v.unidade.sigla or ""] if v.unidade_id else [])),
             "dados": {"unidade": str(v.unidade_id or ""),
                       "motoristas": " ".join(str(m.pk) for m in motoristas)},

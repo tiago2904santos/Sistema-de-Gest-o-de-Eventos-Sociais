@@ -1756,6 +1756,9 @@ form.btn-flutuante-form{margin:0;display:contents}
    largura fixa e ações em ícones de largura fixa. É o que põe tudo na mesma
    coluna, linha após linha. */
 .tm-form #documentos{margin-top:16px}
+.tm-form .tm-acoes-fim{margin-top:0}
+/* No fim de Documentos, os botões ficam abaixo da tabela, com a mesma folga das linhas. */
+.tm-form #documentos .tm-acoes-fim{margin-top:16px}
 .tm-form .tm-tabela{margin:-16px -20px 0;width:calc(100% + 40px);max-width:none;border-top:0}
 .tm-form .tm-tabela--fim{margin-bottom:-16px}
 .tm-form .tm-tabela .dt{border:0;border-radius:0;table-layout:fixed}
