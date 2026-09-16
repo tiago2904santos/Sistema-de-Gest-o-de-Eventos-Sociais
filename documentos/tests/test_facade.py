@@ -58,6 +58,8 @@ class FacadeTests(SimpleTestCase):
         DOCUMENTOS_DEFAULT_PDF_ENGINE="auto",
         DOCUMENTOS_SIMPLE_PDF_FALLBACK=False,
         DOCUMENTOS_PDF_AUTO_FALLBACK=False,
+        # Cadeia antiga exercitada com o ofício: caminho HTML nativo desligado aqui.
+        DOCUMENTOS_PDF_HTML_NATIVO=(),
     )
     def test_oficio_pdf_com_docxtpl_usa_libreoffice_e_mesmo_contexto(self):
         facade = DocumentoFacade()

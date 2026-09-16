@@ -11,6 +11,10 @@ from documentos.services.types import DocumentoTipo
 
 
 @override_settings(DOCUMENTOS_LIBREOFFICE_BINARY="/fake/soffice")
+# A cadeia antiga (DOCX → conversor) continua valendo para os tipos ainda não
+# migrados; aqui ela é exercitada com o ofício, então o caminho HTML nativo é
+# desligado só neste teste.
+@override_settings(DOCUMENTOS_PDF_HTML_NATIVO=())
 class FacadePdfSingleDocxTests(SimpleTestCase):
     @mock.patch("documentos.services.facade.resolve_libreoffice_binary", return_value="/fake/soffice")
     @mock.patch("documentos.services.facade.convert_docx_to_pdf_libreoffice", return_value=b"%PDF-1 fake")

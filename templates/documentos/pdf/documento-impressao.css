@@ -1,0 +1,14 @@
+/* Camada de impressão: só o que o motor paginado (WeasyPrint) precisa e o
+   navegador não usa na prévia. Geometria do `oficio.docx`: A4, margens
+   estreitas nas laterais, cabeçalho e rodapé repetidos em toda página. */
+
+@page {
+  size: A4;
+  margin: 4.6cm 0.7cm 3.3cm 0.65cm;
+  @top-center { content: element(cabecalho); }
+  @bottom-center { content: element(rodape); }
+}
+
+.doc-cabecalho { position: running(cabecalho); }
+.doc-rodape { position: running(rodape); }
+.doc-corpo { orphans: 2; widows: 2; }

@@ -14,6 +14,10 @@ from documentos.tests.test_integracao import payload_exemplo
 
 
 @override_settings(DOCUMENTOS_PERSIST_ARTEFATOS=False, DOCUMENTOS_PDF_AUTO_FALLBACK=False)
+# A cadeia antiga (DOCX → conversor) continua valendo para os tipos ainda não
+# migrados; aqui ela é exercitada com o ofício, então o caminho HTML nativo é
+# desligado só neste teste.
+@override_settings(DOCUMENTOS_PDF_HTML_NATIVO=())
 class MotoresReaisTests(SimpleTestCase):
     def converter(self, engine):
         from pypdf import PdfReader

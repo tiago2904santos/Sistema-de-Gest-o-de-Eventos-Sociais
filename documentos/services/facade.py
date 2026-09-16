@@ -101,10 +101,18 @@ class DocumentoFacade:
 
             chain = None
             if formato == DocumentoFormato.PDF:
-                chain = resolve_pdf_engine(
-                    explicit_setting=getattr(settings, "DOCUMENTOS_DEFAULT_PDF_ENGINE", "auto"),
-                    prefer_docx_pipeline=docxtpl_context is not None,
-                ).attempt_chain
+                from documentos.services.pdf_renderer import tipo_e_html_nativo
+
+                if tipo_e_html_nativo(tipo):
+                    # Caminho HTML → PDF: a cadeia entra na chave para nenhum
+                    # artefato do caminho antigo (Word/LibreOffice) ser
+                    # servido no lugar do novo.
+                    chain = ("html_weasyprint",)
+                else:
+                    chain = resolve_pdf_engine(
+                        explicit_setting=getattr(settings, "DOCUMENTOS_DEFAULT_PDF_ENGINE", "auto"),
+                        prefer_docx_pipeline=docxtpl_context is not None,
+                    ).attempt_chain
             artifact_cache_key = build_document_cache_key(
                 tipo=tipo, formato=formato, reference=reference, payload=payload,
                 docxtpl_context=docxtpl_context, attempt_chain=chain,
@@ -242,6 +250,13 @@ class DocumentoFacade:
         docxtpl_context: Mapping[str, object] | None = None,
         docx_template_path: str | None = None,
     ) -> tuple[bytes, str]:
+        from documentos.services.pdf_renderer import tipo_e_html_nativo
+
+        if tipo_e_html_nativo(tipo):
+            resultado = self._render_pdf_html(tipo, payload, docxtpl_context=docxtpl_context)
+            if resultado is not None:
+                return resultado
+
         explicit = (getattr(settings, "DOCUMENTOS_DEFAULT_PDF_ENGINE", "auto") or "auto").strip().lower()
         if explicit not in (
             "auto",
@@ -340,6 +355,35 @@ class DocumentoFacade:
             if last_error is not None:
                 raise DocumentValidationError(msg) from last_error
             raise DocumentValidationError(msg)
+
+    def _render_pdf_html(
+        self,
+        tipo: DocumentoTipo,
+        payload: Mapping[str, object],
+        *,
+        docxtpl_context: Mapping[str, object] | None,
+    ) -> tuple[bytes, str] | None:
+        """PDF direto do HTML institucional, sem DOCX no caminho.
+
+        Devolve `None` só quando o motor não está disponível e a contingência
+        de desenvolvimento está ligada: aí a façade segue pela cadeia antiga,
+        avisando no log. Em produção a indisponibilidade é erro — o PDF nunca
+        deve nascer do DOCX por acidente.
+        """
+        from documentos.services.document_context import contexto_de_payload
+        from documentos.services.exceptions import DocumentRendererUnavailable
+        from documentos.services.pdf_renderer import render_pdf, renderizar_html
+
+        contexto = contexto_de_payload(tipo, payload, docxtpl_context, modo="pdf")
+        html = renderizar_html(tipo, contexto, modo="pdf")
+        try:
+            return render_pdf(html, tipo=tipo), "html_weasyprint"
+        except DocumentRendererUnavailable as exc:
+            contingencia = getattr(settings, "DOCUMENTOS_PDF_HTML_FALLBACK_DOCX", getattr(settings, "DEBUG", False))
+            if contingencia:
+                logger.warning("Motor HTML→PDF indisponível para %s (%s); seguindo pela cadeia antiga.", tipo.value, exc)
+                return None
+            raise DocumentValidationError(str(exc)) from exc
 
     def _pdf_via_libreoffice(
         self,

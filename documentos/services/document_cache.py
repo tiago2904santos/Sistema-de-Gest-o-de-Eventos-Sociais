@@ -88,11 +88,18 @@ def build_template_cache_signature(
         )
     )
     if formato == DocumentoFormato.PDF:
-        html_def = template_registry.get(tipo, DocumentoFormato.PDF)
-        base = Path(settings.BASE_DIR)
-        parts.append(_file_fp(_caminho_do_html(html_def.template_path)))
-        for rel in html_def.stylesheet_paths:
-            parts.append(_file_fp(base / rel))
+        from documentos.services.pdf_renderer import caminhos_dos_templates, tipo_e_html_nativo
+
+        if tipo_e_html_nativo(tipo):
+            # Caminho HTML → PDF: o template do tipo, a folha institucional e
+            # os dois CSS; mudou qualquer um, o artefato em cache cai.
+            parts.extend(_file_fp(p) for p in caminhos_dos_templates(tipo))
+        else:
+            html_def = template_registry.get(tipo, DocumentoFormato.PDF)
+            base = Path(settings.BASE_DIR)
+            parts.append(_file_fp(_caminho_do_html(html_def.template_path)))
+            for rel in html_def.stylesheet_paths:
+                parts.append(_file_fp(base / rel))
     return "|".join(parts)
 
 

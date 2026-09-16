@@ -1,0 +1,47 @@
+{% load static documento_tags %}{% comment %}
+  Folha institucional: o que todo documento da PCPR compartilha — A4, margens,
+  brasão, cabeçalho, rodapé com o destinatário e o endereço da unidade,
+  tipografia e regras de quebra. Cada documento só fornece o conteúdo, no
+  bloco `corpo`, e opcionalmente o `titulo` da aba e a assinatura.
+
+  O mesmo template serve a prévia A4 na tela (modo `editor`) e o PDF (modo
+  `pdf`). O que muda entre os dois é o CSS de impressão, que o motor de PDF
+  recebe à parte, e as marcações de campo editável, que a tag `editavel` só
+  emite no modo editor. Imagens chegam já resolvidas em `imagens` (caminho
+  `file://` para o motor de PDF, `/static/` para o navegador).
+
+  Textos do cabeçalho e do rodapé reproduzem o `oficio.docx` de origem: nome
+  da secretaria, do órgão e da unidade em cima; destinatário, cidade e
+  endereço embaixo.
+{% endcomment %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>{% block titulo %}Documento{% endblock %}</title>
+  {% if css_inline %}<style>{{ css_inline|safe }}</style>{% endif %}
+  {% block css %}{% endblock %}
+</head>
+<body class="documento documento--{{ modo|default:'pdf' }}">
+  <header class="doc-cabecalho" id="doc-cabecalho">
+    <img class="doc-cabecalho__brasao" src="{{ imagens.brasao }}" alt="Brasão da Polícia Civil do Paraná">
+    <p class="doc-cabecalho__secretaria">SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA</p>
+    <p class="doc-cabecalho__orgao">POLÍCIA CIVIL DO PARANÁ</p>
+    {% if institucional.unidade_cabecalho %}<p class="doc-cabecalho__unidade">{{ institucional.unidade_cabecalho }}</p>{% endif %}
+  </header>
+
+  <footer class="doc-rodape" id="doc-rodape">
+    <img class="doc-rodape__marca" src="{{ imagens.marca }}" alt="">
+    {% block rodape_destinatario %}
+      <p class="doc-rodape__linha">Exmo. Sr</p>
+      <p class="doc-rodape__linha">DR. {{ institucional.nome_destinatario }}</p>
+      <p class="doc-rodape__linha">MD. {{ institucional.cargo_destinatario }}</p>
+      <p class="doc-rodape__linha">{{ institucional.cidade_rodape|default:"Curitiba" }} – Pr.</p>
+    {% endblock %}
+    <p class="doc-rodape__endereco">{{ institucional.unidade_rodape }}{% if institucional.endereco %} - {{ institucional.endereco }}{% endif %}{% if institucional.telefone %} {{ institucional.telefone }}{% endif %}{% if institucional.email %} – {{ institucional.email }}{% endif %}</p>
+  </footer>
+
+  <main class="doc-corpo">
+    {% block corpo %}{% endblock %}
+  </main>
+</body>
+</html>

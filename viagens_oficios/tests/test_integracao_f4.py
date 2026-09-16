@@ -26,6 +26,10 @@ from documentos.models import DocumentoArtefato
 from documentos.services.types import DocumentoFormato
 
 
+# O ciclo completo gera o PDF do ofício pela view. Sem o runtime GTK do
+# WeasyPrint nesta máquina, o caminho HTML nativo cai na cadeia antiga só
+# neste teste; o caminho novo tem teste próprio em documentos/tests.
+@override_settings(DOCUMENTOS_PDF_HTML_FALLBACK_DOCX=True)
 class IntegracaoF4Tests(TestCase):
     def setUp(self):
         folder = tempfile.TemporaryDirectory()

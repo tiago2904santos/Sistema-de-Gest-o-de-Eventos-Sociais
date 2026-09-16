@@ -36,6 +36,10 @@ def payload_exemplo():
     }
 
 
+# A cadeia antiga (DOCX → conversor) continua valendo para os tipos ainda não
+# migrados; aqui ela é exercitada com o ofício, então o caminho HTML nativo é
+# desligado só neste teste.
+@override_settings(DOCUMENTOS_PDF_HTML_NATIVO=())
 class ArtefatosTests(TestCase):
     def setUp(self):
         folder = tempfile.TemporaryDirectory(prefix="eventos_f3_test_")

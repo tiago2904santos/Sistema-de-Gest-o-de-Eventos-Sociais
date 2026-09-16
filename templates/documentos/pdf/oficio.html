@@ -1,62 +1,96 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8">
-  <title>Ofício {{ oficio.numero_formatado }}</title>
-</head>
-<body>
-  <div class="doc-orgao">{{ institucional.nome_orgao }}</div>
-  {% if institucional.sigla_orgao %}<div class="doc-meta doc-muted doc-meta--center">{{ institucional.sigla_orgao|upper }}</div>{% endif %}
-  <div class="doc-unidade">{{ institucional.unidade }}</div>
+{% extends "documentos/pdf/base_institucional.html" %}{% load documento_tags %}{% comment %}
+  Ofício: o conteúdo do `oficio.docx` de origem, parágrafo por parágrafo, na
+  mesma ordem. Os textos calculados (assunto, órgão de destino, custeio,
+  motorista, roteiro de ida e volta, diárias por extenso) vêm prontos em `tx`,
+  das mesmas regras que alimentam o DOCX — uma regra só, dois formatos.
 
-  <div class="doc-title">Solicitação de autorização — Ofício nº {{ oficio.numero_formatado }} {{ oficio.assunto_oficio }}</div>
+  Cada trecho que nasce de um campo do ofício leva `{% editavel "campo" %}`:
+  no modo editor a tag emite os atributos que ligam o trecho ao campo; no PDF
+  não emite nada. O que é parágrafo fixo do modelo é bloco documental
+  (`{% bloco "chave" %}`), passível de override sem tocar em campo algum.
+{% endcomment %}
+{% block titulo %}Ofício {{ tx.oficio }}{% endblock %}
 
-  <div class="doc-meta">
-    <strong>Protocolo:</strong> {{ oficio.protocolo }} &nbsp;·&nbsp;
-    <strong>Data:</strong> {{ oficio.data_criacao|date:"d/m/Y" }}
+{% block corpo %}
+  <h1 class="doc-titulo">Ofício Nº {{ tx.oficio }} {{ tx.assunto_oficio }}</h1>
+
+  <p class="doc-linha"><strong>DATA:</strong> <span {% editavel "data_criacao" %}>{{ tx.data_do_oficio }}</span></p>
+  <p class="doc-linha"><strong>ORIGEM:</strong> {{ tx.unidade }}</p>
+  <p class="doc-linha"><strong>DESTINO:</strong> {{ tx.orgao_destino }}</p>
+  <p class="doc-linha"><strong>Protocolo Nº:</strong> <span {% editavel "protocolo" %}>{{ tx.protocolo }}</span></p>
+  <p class="doc-linha"><strong>Assunto:</strong> {{ tx.assunto_linha }}</p>
+
+  <p class="doc-paragrafo">Senhor Delegado, Através deste, solicito {{ tx.assunto_termo }} e medidas para a concessão de diárias e recursos para combustível, conforme cronograma abaixo:</p>
+
+  <table class="doc-tabela doc-tabela--equipe" {% editavel "servidores" %}>
+    <thead>
+      <tr><th>NOME</th><th>RG e CPF</th><th>CARGO</th><th>Nº SOLICITAÇÃO (Central de Viagens)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ tx.col_servidor|linhas }}</td>
+        <td>{{ tx.col_rgcpf|linhas }}</td>
+        <td>{{ tx.col_cargo|linhas }}</td>
+        <td>{{ tx.col_solicitacao|linhas }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="doc-linha"><strong>Destino da Viagem:</strong> <span {% editavel "roteiro" %}>{{ tx.destinos_bloco|linhas }}</span></p>
+
+  <table class="doc-tabela doc-tabela--diarias">
+    <tbody>
+      <tr>
+        <th>Nº de Diarias por Servidor:</th>
+        <td>{{ tx.diarias_x }} diárias</td>
+        <th>Valor total do Ofício:</th>
+        <td>{{ tx.diaria }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table class="doc-tabela doc-tabela--roteiro">
+    <thead>
+      <tr><th colspan="2">ROTEIRO DE IDA</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>{{ tx.col_ida_saida|linhas }}</td><td>{{ tx.col_ida_chegada|linhas }}</td></tr>
+    </tbody>
+    <thead>
+      <tr><th colspan="2">ROTEIRO DE RETORNO</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>{{ tx.col_volta_saida|linhas }}</td><td>{{ tx.col_volta_chegada|linhas }}</td></tr>
+    </tbody>
+  </table>
+
+  <table class="doc-tabela doc-tabela--transporte" {% editavel "transporte" %}>
+    <tbody>
+      <tr>
+        <td><strong>Meio de Transporte:</strong> {{ tx.viatura }}</td>
+        <td><strong>Placa Oficial:</strong> {{ tx.placa }}</td>
+      </tr>
+      <tr>
+        <td><strong>Motorista:</strong> <span {% editavel "motorista" %}>{{ tx.motorista_formatado|linhas }}</span></td>
+        <td><strong>Combustível:</strong> {{ tx.combustivel }}</td>
+      </tr>
+      <tr>
+        <td><strong>Viatura</strong> {{ tx.tipo_viatura }}</td>
+        <td><strong>Porte/Trânsito de arma:</strong> <span {% editavel "porte_transporte_armas" %}>{{ tx.armamento }}</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="doc-linha"><strong>Custos:</strong> Informar qual entidade custeará as diárias (hospedagem/alimentação) e deslocamento:</p>
+  <p class="doc-custeio" {% editavel "custeio" %}>{{ tx.custo|linhas }}</p>
+
+  <p class="doc-paragrafo"><strong>Motivo da Viagem:</strong> <span {% editavel "motivo" %}>{{ tx.motivo|linhas }}</span>.</p>
+
+  {% bloco "declaracao_cartao" %}Declaro que os servidores estão cientes da necessidade de estar na posse de cartão corporativo vigente e apto para uso, no período do deslocamento.{% endbloco %}
+
+  <div class="doc-assinatura">
+    <p>Respeitosamente,</p>
+    <p class="doc-assinatura__nome">{{ tx.nome_chefia }}</p>
+    <p class="doc-assinatura__cargo">{{ tx.cargo_chefia }}</p>
   </div>
-
-  <div class="doc-section">
-    <h2>Assunto</h2>
-    <p>{{ oficio.assunto }}</p>
-  </div>
-
-  <div class="doc-section">
-    <h2>Motivo</h2>
-    <p>{{ oficio.motivo|linebreaksbr }}</p>
-  </div>
-
-  <div class="doc-section">
-    <h2>Roteiro</h2>
-    <p>{{ oficio.roteiro_detalhe.destinos_texto|default:oficio.roteiro }}</p>
-    {% if oficio.roteiro_detalhe.saida %}
-      <p class="doc-muted"><strong>Primeira saída:</strong> {{ oficio.roteiro_detalhe.saida }}</p>
-    {% endif %}
-  </div>
-
-  <div class="doc-section">
-    <h2>Equipe</h2>
-    <ul>
-      {% for nome in oficio.servidores %}
-        <li>{{ nome }}</li>
-      {% empty %}
-        <li class="doc-muted">—</li>
-      {% endfor %}
-    </ul>
-  </div>
-
-  <div class="doc-section">
-    <h2>Transporte</h2>
-    <p><strong>Viatura:</strong> {{ oficio.viatura|default:"—" }} &nbsp;
-       <strong>Motorista:</strong> {{ oficio.motorista|default:"—" }}</p>
-    <p><strong>Custeio:</strong> {{ oficio.custeio }}</p>
-  </div>
-
-  {% if justificativa.exigida %}
-  <div class="doc-section">
-    <h2>Justificativa de prazo</h2>
-    <p>{{ justificativa.texto|linebreaksbr|default:"—" }}</p>
-  </div>
-  {% endif %}
-</body>
-</html>
+{% endblock %}
