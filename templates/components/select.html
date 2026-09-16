@@ -13,6 +13,7 @@
     no navegador (ex.: a unidade e os motoristas de uma viatura).
   `unidade_gv`: pesquisa de lotação com sigla/nome, limpeza e teclado do GV.
   `desabilitado`: bloqueia a edição preservando o visual.
+  `vazio`: texto que a lista aberta mostra quando não há opção nenhuma.
 {% endcomment %}
 {% if multiplo %}
   {% include "components/v32/select_multiple.html" %}
@@ -61,6 +62,7 @@
             <span class="custom-select__check" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
           </button>
         {% endif %}
+        {% if vazio and not opcoes %}<p class="custom-select__vazio">{{ vazio }}</p>{% endif %}
         {% for opcao in opcoes %}
           <button class="custom-select__opcao" type="button" role="option"
                   aria-selected="{% if selecionado and opcao.valor|default:opcao|stringformat:"s" == selecionado|stringformat:"s" %}true{% else %}false{% endif %}"

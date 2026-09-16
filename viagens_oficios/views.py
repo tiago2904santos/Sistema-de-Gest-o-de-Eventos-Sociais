@@ -269,13 +269,34 @@ def _gravar_roteiro(request, oficio, *, finalizar):
 
 def _contexto_roteiro(request, oficio, gravacao):
     from viagens_roteiros.forms import DestinoFormSet, RoteiroForm, TrechoFormSet
-    from viagens_roteiros.views import _contexto_do_form, _sede_inicial
+    from viagens_roteiros.views import _contexto_do_form, _opcoes_roteiros_base, _sede_inicial
     if gravacao is not None:
         roteiro = gravacao.roteiro if gravacao.roteiro is not None and gravacao.roteiro.pk else oficio.roteiro
-        return _contexto_do_form(roteiro, gravacao.form, gravacao.formset, gravacao.destinos)
-    roteiro = oficio.roteiro
-    form = RoteiroForm(instance=roteiro, initial=_sede_inicial(request, roteiro))
-    return _contexto_do_form(roteiro, form, TrechoFormSet(instance=roteiro), DestinoFormSet(instance=roteiro))
+        contexto = _contexto_do_form(roteiro, gravacao.form, gravacao.formset, gravacao.destinos)
+    else:
+        roteiro = oficio.roteiro
+        form = RoteiroForm(instance=roteiro, initial=_sede_inicial(request, roteiro))
+        contexto = _contexto_do_form(roteiro, form, TrechoFormSet(instance=roteiro), DestinoFormSet(instance=roteiro))
+    # O ofício com roteiro abre com o vínculo ligado; a busca inclui o atual.
+    if request.method == 'POST':
+        contexto['vinculado'] = request.POST.get('vincular_roteiro') == '1'
+    else:
+        contexto['vinculado'] = bool(oficio.roteiro_id)
+    contexto['opcoes_vinculo'] = _opcoes_roteiros_base(None)
+    return contexto
+
+
+def _vincular_roteiro(request, oficio):
+    """O roteiro existente escolhido na busca passa a ser o do ofício."""
+    from viagens_roteiros.models import Roteiro
+    valor = request.POST.get('roteiro_existente', '')
+    roteiro = Roteiro.objects.filter(pk=valor, cancelado=False).first() if valor.isdigit() else None
+    if roteiro is None:
+        return None
+    if oficio.roteiro_id != roteiro.pk:
+        oficio.roteiro = roteiro
+        oficio.save(update_fields=['roteiro', 'atualizado_em'])
+    return roteiro
 
 
 @acesso_ao_modulo
@@ -303,6 +324,7 @@ def editar(request, pk=None):
         oficio = get_oficio_by_id(pk)
     lista = voltar_para(request, reverse('viagens_oficios:lista'))
     finalizar = request.POST.get('acao') == 'finalizar'
+    vincular = request.POST.get('acao') == 'vincular_roteiro'
     form = OficioForm(request.POST or None, instance=oficio)
     jform = JustificativaForm(
         request.POST or None, instance=get_or_create_justificativa_oficio(oficio), prefix='justificativa',
@@ -314,8 +336,20 @@ def editar(request, pk=None):
             with transaction.atomic():
                 oficio = form.save()
                 reservar_numero_oficio(oficio, ano=oficio.data_criacao.year)
-                gravacao = _gravar_roteiro(request, oficio, finalizar=finalizar)
+                if vincular:
+                    # Escolher o roteiro na busca: grava o que já foi digitado e recarrega com ele.
+                    vinculado = _vincular_roteiro(request, oficio)
+                elif request.POST.get('vincular_roteiro') == '1' and not oficio.roteiro_id:
+                    pass  # vínculo ligado sem roteiro escolhido: nada a gravar no roteiro
+                else:
+                    gravacao = _gravar_roteiro(request, oficio, finalizar=finalizar)
                 atualizar_justificativa_oficio(oficio, jform, action='save_continue' if finalizar else 'save_draft')
+            if vincular:
+                if vinculado is not None:
+                    messages.success(request, f'Roteiro #{vinculado.pk} vinculado ao ofício. Rascunho salvo.')
+                else:
+                    messages.error(request, 'Escolha um roteiro existente para vincular.')
+                return redirect(reverse('viagens_oficios:editar', args=[oficio.pk]) + '#roteiro')
             for nivel, texto in (gravacao.mensagens if gravacao else []):
                 messages.add_message(request, nivel, texto)
             if gravacao is not None and not gravacao.ok:

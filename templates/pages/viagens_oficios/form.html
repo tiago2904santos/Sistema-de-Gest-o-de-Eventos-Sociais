@@ -1,19 +1,19 @@
 {% extends "layouts/app_shell_v32.html" %}
 {% load static estaticos %}
 {% comment %}
-  Cadastro de ofício — refeito sobre o do Gerenciador de Viagens.
+  Cadastro de ofício — os campos do Gerenciador de Viagens na pele do V3.2.
 
-  A origem é um assistente de quatro etapas; aqui as quatro são partes de uma
-  página só, na mesma ordem e com os mesmos blocos, campos e rótulos:
+  Do Gerenciador vêm os blocos, os campos, os rótulos e o comportamento: a
+  identificação (N° do Ofício, Protocolo, Custeio, Nome da Instituição), a
+  finalidade (Modelo de motivo, Descrição), a equipe com motorista e termo, a
+  viatura com sugestões, o motorista quando ninguém da equipe dirige, o
+  roteiro e diárias, a justificativa e os documentos para conferência, com
+  "Salvar rascunho" enquanto houver pendência e "Finalizar Ofício" quando não
+  houver.
 
-    1. Dados e viajantes — Identificação (N° do Ofício, Protocolo, Custeio,
-       Nome da Instituição), Finalidade (Modelo de motivo, Descrição),
-       Servidores (equipe com motorista e termo), Viatura (sugestões e
-       escolha) e Motorista (só com viatura e ninguém da equipe ao volante).
-    2. Roteiro e diárias — o editor da tela de roteiros, embutido.
-    3. Justificativa — Modelo e Justificativa.
-    4. Documentos — conferência dos arquivos; "Salvar rascunho" enquanto
-       houver pendência, "Finalizar Ofício" quando não houver.
+  Daqui vem o resto, como nas telas de roteiro e termo: cartões numerados,
+  Salvar no topo e as ações no fim do último cartão. Nos cartões 1, 6 e 7 os campos
+  não usam a coluna de rótulo: ocupam a largura toda.
 
   O editor de roteiro procura o próprio formulário DENTRO de
   `[data-roteiro-editor]`; por isso a marca fica em volta do formulário do
@@ -27,10 +27,9 @@
 {% endblock %}
 
 {% block conteudo %}
-  {% url 'viagens_oficios:lista' as url_lista %}
   {% include "components/v32/breadcrumb.html" with itens=None atual=titulo %}
 
-  <div class="editor-roteiro ofc" data-roteiro-editor
+  <div class="editor-roteiro of-form ofc" data-roteiro-editor
        data-estado-padrao="{{ rot.estado_padrao_destino }}"
        data-url-previa="{% url 'viagens_roteiros:previa_diarias' %}"
        data-url-rota="{% url 'viagens_roteiros:calcular_rota' %}"
@@ -39,18 +38,19 @@
        data-autosave="0">
     {% if rot.rota_inicial %}{{ rot.rota_inicial|json_script:"rota-inicial" }}{% endif %}
 
+    {# Cabeçalho no padrão do roteiro e do termo: título, situação ao lado e Salvar no topo. #}
     <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
       <div class="page-header d-cabeca__esq">
         <div class="page-header__identificacao d-identificacao">
           <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
           <div class="frm-titulo">
-            <h1 class="page-header__titulo d-titulo-v32">Cadastro de ofício</h1>
+            <h1 class="page-header__titulo d-titulo-v32">Cadastro de ofício <span class="frm-ident">{{ oficio.numero_formatado }}</span></h1>
             <span class="frm-rasc">{% include "components/icon.html" with nome="document" %}{% if oficio.cancelado %}Cancelado{% else %}{{ oficio.get_status_display }}{% endif %}</span>
           </div>
         </div>
       </div>
       <div class="frm-topo__acoes">
-        <a class="btn--secundaria" href="{{ url_voltar }}">{% include "components/icon.html" with nome="chevron-left" %}Voltar</a>
+        <button type="submit" form="form-oficio" name="acao" value="rascunho" class="btn btn--dourado btn-primaria">Salvar ofício</button>
       </div>
     </div>
 
@@ -60,7 +60,7 @@
       </div>
     {% endif %}
 
-    <form method="post" action="{% url 'viagens_oficios:editar' oficio.pk %}" id="form-oficio" class="of-form ofc__form editor-roteiro__principal" novalidate>
+    <form method="post" action="{% url 'viagens_oficios:editar' oficio.pk %}" id="form-oficio" class="editor-roteiro__principal" novalidate>
       {% csrf_token %}
       {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
@@ -82,234 +82,139 @@
         </div>
       {% endif %}
 
-      {# ============================================================= 1 #}
+      {# ------------------------------------------------------------- 1 #}
       {% with v=dados.valores e=dados.erros %}
-      <section class="ofc-etapa" id="dados" aria-labelledby="ofc-dados-titulo">
-        <header class="ofc-etapa__cabeca">
-          <span class="ofc-etapa__numero" aria-hidden="true">1</span>
-          <div>
-            <h2 class="ofc-etapa__titulo" id="ofc-dados-titulo">Dados e viajantes</h2>
-            <p class="ofc-etapa__descricao">Identificação, finalidade, equipe e transporte.</p>
-          </div>
+      <section class="section-card reg" id="dados">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+          <h2 class="section-card__titulo">Dados e viajantes</h2>
         </header>
+        <div class="section-card__corpo">
 
-        {# Identificação --------------------------------------------------- #}
-        <div class="section-card reg ofc-bloco">
-          <div class="section-card__corpo">
-            <div class="bloco-split">
-              <div class="bloco-split__rotulo">
-                <strong>Identificação</strong>
-                <p class="texto-suave v32-suave">Número, protocolo e custeio</p>
+          <div class="ofc-grupo">
+            <div class="ofc-grupo__corpo g-form g-form--3">
+              <div class="form-campo">
+                <label class="form-label" for="id_numero">N° do Ofício</label>
+                <div class="ofc-numero">
+                  <div class="form-controle-wrapper{% if e.numero %} is-invalid{% endif %}"><input class="form-controle" type="number" min="1" step="1" inputmode="numeric" id="id_numero" name="numero" value="{{ v.numero }}"{% if e.numero %} aria-invalid="true" aria-describedby="id_numero_erro"{% endif %}></div>
+                  <span class="ofc-numero__ano">/ {{ dados.ano }}</span>
+                </div>
+                {% for erro in e.numero %}<p class="form-erro" id="id_numero_erro">{{ erro }}</p>{% endfor %}
               </div>
-              <div class="bloco-split__corpo ofc-identificacao">
-                <div class="form-campo">
-                  <label class="form-label" for="id_numero">N° do Ofício</label>
-                  <div class="ofc-numero{% if e.numero %} is-invalid{% endif %}">
-                    <div class="form-controle-wrapper"><input class="form-controle" type="number" min="1" step="1" inputmode="numeric" id="id_numero" name="numero" value="{{ v.numero }}"{% if e.numero %} aria-invalid="true" aria-describedby="id_numero_erro"{% endif %}></div>
-                    <span class="ofc-numero__ano">/ {{ dados.ano }}</span>
+              {% include "components/input.html" with name="protocolo" label="Protocolo" inputmode="numeric" maxlength="12" autocomplete="off" valor=v.protocolo erros=e.protocolo %}
+              {% include "components/select.html" with name="custeio" label="Custeio" opcoes=dados.opcoes_custeio placeholder="Selecione..." selecionado=v.custeio erros=e.custeio %}
+              <div class="cheia" data-custeio-instituicao data-outra="{{ dados.outra_instituicao }}"{% if not dados.mostrar_instituicao %} hidden{% endif %}>
+                {% include "components/input.html" with name="custeio_observacao" label="Nome da Instituição" valor=v.custeio_observacao erros=e.custeio_observacao %}
+              </div>
+            </div>
+          </div>
+
+          <div class="ofc-grupo">
+            <div class="ofc-grupo__corpo g-form g-form--1">
+              <div class="ofc-com-acao">
+                {% if dados.opcoes_motivos %}
+                  {% include "components/select.html" with name="modelo_motivo" label="Modelo de motivo" opcoes=dados.opcoes_motivos placeholder="Sem modelo" permitir_vazio=True selecionado=v.modelo_motivo erros=e.modelo_motivo %}
+                {% else %}
+                  {# Sem modelo cadastrado, o aviso mora no próprio campo, não fora dele. #}
+                  {% include "components/select.html" with name="modelo_motivo" label="Modelo de motivo" opcoes=dados.opcoes_motivos placeholder="Nenhum modelo cadastrado" vazio="Nenhum modelo cadastrado — escreva a descrição abaixo ou abra o gerenciamento de modelos." erros=e.modelo_motivo %}
+                {% endif %}
+                <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ dados.url_modelos_motivo }}" aria-label="Gerenciar modelos" title="Gerenciar modelos">{% include "components/icon.html" with nome="settings" %}</a>
+              </div>
+              {% include "components/textarea.html" with name="motivo" label="Descrição" linhas="4" valor=v.motivo erros=e.motivo %}
+            </div>
+          </div>
+
+          {# Equipe: busca em cima; cada escolhido vira uma linha com Motorista e Termo. #}
+          <div class="ofc-grupo">
+            <div class="ofc-grupo__cabeca"><strong>Servidores</strong></div>
+            <div class="ofc-grupo__corpo">
+              <input type="hidden" name="servidores_termo_autorizacao_present" value="1">
+              <div class="ofc-picker" data-ofc-equipe data-motorista="{{ dados.motorista_equipe }}">
+                <div class="ofc-com-acao">
+                  <div class="form-campo ofc-picker__campo">
+                  <label class="form-label sr-only" for="id_equipe_busca">Adicionar à equipe</label>
+                  <div class="busca">
+                    <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+                    <input class="form-controle" type="search" id="id_equipe_busca" placeholder="Adicionar à equipe: buscar por nome, CPF ou RG" autocomplete="off"
+                           role="combobox" aria-expanded="false" aria-controls="ofc-equipe-resultados" data-ofc-busca>
                   </div>
-                  {% for erro in e.numero %}<p class="form-erro" id="id_numero_erro">{{ erro }}</p>{% endfor %}
-                </div>
-                {% include "components/input.html" with name="protocolo" label="Protocolo" inputmode="numeric" maxlength="12" autocomplete="off" valor=v.protocolo erros=e.protocolo %}
-                {% include "components/select.html" with name="custeio" label="Custeio" opcoes=dados.opcoes_custeio placeholder="Selecione..." selecionado=v.custeio erros=e.custeio %}
-                <div class="ofc-instituicao" data-custeio-instituicao data-outra="{{ dados.outra_instituicao }}"{% if not dados.mostrar_instituicao %} hidden{% endif %}>
-                  {% include "components/input.html" with name="custeio_observacao" label="Nome da Instituição" valor=v.custeio_observacao erros=e.custeio_observacao %}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {# Finalidade ------------------------------------------------------ #}
-        <div class="section-card reg ofc-bloco">
-          <div class="section-card__corpo">
-            <div class="ofc-bloco__cabeca">
-              <strong>Finalidade</strong>
-              <p class="texto-suave v32-suave">Motivo e descrição da viagem</p>
-            </div>
-            <div class="ofc-com-acao">
-              {% include "components/select.html" with name="modelo_motivo" label="Modelo de motivo" opcoes=dados.opcoes_motivos placeholder="Selecione um modelo (opcional)" permitir_vazio=True selecionado=v.modelo_motivo erros=e.modelo_motivo %}
-              <a class="ib-linha ofc-com-acao__botao" href="{{ dados.url_modelos_motivo }}" aria-label="Gerenciar modelos" title="Gerenciar modelos">{% include "components/icon.html" with nome="settings" %}</a>
-            </div>
-            {% if not dados.opcoes_motivos %}
-              <p class="aviso aviso--info" role="status">{% include "components/icon.html" with nome="info" %}<span>Nenhum modelo cadastrado — escreva a descrição abaixo ou abra o gerenciamento de modelos.</span></p>
-            {% endif %}
-            {% include "components/textarea.html" with name="motivo" label="Descrição" linhas="4" valor=v.motivo erros=e.motivo %}
-          </div>
-        </div>
-
-        {# Servidores ------------------------------------------------------ #}
-        <div class="section-card reg ofc-bloco">
-          <div class="section-card__corpo">
-            <input type="hidden" name="servidores_termo_autorizacao_present" value="1">
-            <div class="ofc-bloco__cabeca ofc-bloco__cabeca--acao">
-              <strong>Servidores</strong>
-              <a class="ib-linha" href="{{ dados.url_novo_servidor }}" target="_blank" rel="noopener" aria-label="Novo viajante" title="Novo viajante">{% include "components/icon.html" with nome="plus" %}</a>
-            </div>
-            <div class="ofc-picker" data-ofc-equipe data-motorista="{{ dados.motorista_equipe }}">
-              <label class="form-label" for="id_equipe_busca">Adicionar à equipe</label>
-              <div class="ofc-picker__campo">
-                <div class="busca">
-                  <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
-                  <input class="form-controle" type="search" id="id_equipe_busca" placeholder="Buscar por nome, CPF ou RG" autocomplete="off"
-                         role="combobox" aria-expanded="false" aria-controls="ofc-equipe-resultados" data-ofc-busca>
-                </div>
-                <ul class="ofc-picker__resultados" id="ofc-equipe-resultados" role="listbox" aria-label="Servidores encontrados" hidden data-ofc-resultados>
-                  {% for s in dados.servidores %}
-                    <li role="option" tabindex="-1" class="ofc-picker__resultado" data-valor="{{ s.valor }}" data-busca="{{ s.rotulo }} {{ s.detalhes }} {{ s.busca }}"{% if s.selecionado %} hidden{% endif %}>
-                      <span class="of-av" aria-hidden="true">{{ s.iniciais }}</span>
-                      <span class="of-pessoa__txt"><span class="of-pessoa__nome">{{ s.rotulo }}</span>{% if s.detalhes %}<span class="of-pessoa__desc">{{ s.detalhes }}</span>{% endif %}</span>
-                    </li>
-                  {% endfor %}
-                  <li class="ofc-picker__vazio" data-ofc-sem-resultado hidden>Nenhum servidor encontrado.</li>
-                </ul>
-              </div>
-              <ul class="ofc-pessoas{% if e.servidores %} grupo-erro{% endif %}" aria-label="Pessoas na equipe" data-ofc-escolhidos>
-                {% for s in dados.servidores %}
-                  <li class="ofc-pessoa{% if s.valor == dados.motorista_equipe %} ofc-pessoa--motorista{% endif %}" data-valor="{{ s.valor }}" data-unidade="{{ s.unidade }}" data-nome="{{ s.rotulo }}"{% if not s.selecionado %} hidden{% endif %}>
-                    <input type="checkbox" name="servidores" value="{{ s.valor }}" hidden{% if s.selecionado %} checked{% endif %}>
-                    <input type="checkbox" name="servidores_termo_autorizacao" value="{{ s.valor }}" hidden{% if s.termo %} checked{% endif %}>
-                    <span class="of-av" aria-hidden="true">{{ s.iniciais }}</span>
-                    <span class="of-pessoa__txt">
-                      <span class="of-pessoa__nome">{{ s.rotulo }}<span class="ofc-chip-motorista" data-ofc-chip-motorista>Motorista</span></span>
-                      {% if s.detalhes %}<span class="of-pessoa__desc">{{ s.detalhes }}</span>{% endif %}
-                    </span>
-                    <button type="button" class="ofc-pessoa__motorista" aria-pressed="{% if s.valor == dados.motorista_equipe %}true{% else %}false{% endif %}" data-ofc-motorista>{% if s.valor == dados.motorista_equipe %}Motorista{% else %}Definir motorista{% endif %}</button>
-                    <button type="button" class="ofc-pessoa__termo{% if s.termo %} is-ativo{% endif %}" aria-pressed="{% if s.termo %}true{% else %}false{% endif %}" data-ofc-termo>{% if s.termo %}Com termo{% else %}Sem termo{% endif %}</button>
-                    <button type="button" class="ofc-pessoa__remover" aria-label="Remover {{ s.rotulo }} da equipe" data-ofc-remover>{% include "components/icon.html" with nome="x" %}</button>
-                  </li>
-                {% endfor %}
-                <li class="ofc-pessoas__vazio" data-ofc-equipe-vazia{% if dados.equipe %} hidden{% endif %}>Nenhum viajante selecionado.</li>
-              </ul>
-              {% for erro in e.servidores %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-            </div>
-          </div>
-        </div>
-
-        {# Viatura --------------------------------------------------------- #}
-        <div class="section-card reg ofc-bloco">
-          <div class="section-card__corpo">
-            <div class="ofc-sugestoes" data-ofc-sugestoes hidden>
-              <span class="ofc-sugestoes__rotulo">Sugestões</span>
-              <div class="ofc-sugestoes__lista" data-ofc-sugestoes-lista></div>
-            </div>
-            <div class="ofc-bloco__cabeca ofc-bloco__cabeca--acao">
-              <strong>Viatura</strong>
-              <a class="ib-linha" href="{{ dados.url_nova_viatura }}" target="_blank" rel="noopener" aria-label="Nova viatura" title="Nova viatura">{% include "components/icon.html" with nome="plus" %}</a>
-            </div>
-            <div class="ofc-picker" data-ofc-viatura>
-              <label class="form-label" for="id_viatura_busca">Escolher viatura</label>
-              <div class="ofc-picker__campo">
-                <div class="busca">
-                  <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
-                  <input class="form-controle" type="search" id="id_viatura_busca" placeholder="Buscar por placa ou modelo" autocomplete="off"
-                         role="combobox" aria-expanded="false" aria-controls="ofc-viatura-resultados" data-ofc-busca>
-                </div>
-                <ul class="ofc-picker__resultados" id="ofc-viatura-resultados" role="listbox" aria-label="Viaturas encontradas" hidden data-ofc-resultados>
-                  {% for vt in dados.viaturas %}
-                    <li role="option" tabindex="-1" class="ofc-picker__resultado" data-valor="{{ vt.valor }}" data-busca="{{ vt.rotulo }} {{ vt.detalhes }} {{ vt.busca }}">
-                      <span class="of-av" aria-hidden="true">{{ vt.rotulo|slice:":2"|upper }}</span>
-                      <span class="of-pessoa__txt"><span class="of-pessoa__nome">{{ vt.rotulo }}</span>{% if vt.detalhes %}<span class="of-pessoa__desc">{{ vt.detalhes }}</span>{% endif %}</span>
-                    </li>
-                  {% endfor %}
-                  <li class="ofc-picker__vazio" data-ofc-sem-resultado hidden>Nenhuma viatura encontrada.</li>
-                </ul>
-              </div>
-              <ul class="ofc-pessoas{% if e.viatura %} grupo-erro{% endif %}" aria-label="Viatura selecionada" data-ofc-escolhidos>
-                {% for vt in dados.viaturas %}
-                  <li class="ofc-pessoa ofc-pessoa--viatura" data-valor="{{ vt.valor }}" data-unidade="{{ vt.unidade }}" data-rotulo="{{ vt.rotulo }}" data-sigla="{{ vt.unidade_sigla }}"{% if vt.valor != v.viatura %} hidden{% endif %}>
-                    <input type="radio" name="viatura" value="{{ vt.valor }}" hidden{% if vt.valor == v.viatura %} checked{% endif %}>
-                    <span class="of-av" aria-hidden="true">{{ vt.rotulo|slice:":2"|upper }}</span>
-                    <span class="of-pessoa__txt">
-                      <span class="of-pessoa__nome">{{ vt.rotulo }}<span class="ofc-chip-motorista">Viatura</span></span>
-                      {% if vt.detalhes %}<span class="of-pessoa__desc">{{ vt.detalhes }}</span>{% endif %}
-                    </span>
-                    <button type="button" class="ofc-pessoa__remover" aria-label="Remover a viatura {{ vt.rotulo }}" data-ofc-remover>{% include "components/icon.html" with nome="x" %}</button>
-                  </li>
-                {% endfor %}
-                <li class="ofc-pessoas__vazio" data-ofc-equipe-vazia{% if v.viatura %} hidden{% endif %}>Nenhuma viatura selecionada.</li>
-              </ul>
-              {% for erro in e.viatura %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-            </div>
-          </div>
-        </div>
-
-        {# Motorista (só com viatura e ninguém da equipe ao volante) ---------- #}
-        <div data-ofc-cartao-motorista{% if not dados.mostrar_motorista %} hidden{% endif %}>
-          <div class="section-card reg ofc-bloco">
-            <div class="section-card__corpo">
-              <input type="hidden" name="motorista_modo" value="{{ dados.motorista_modo }}" data-ofc-modo>
-              <div class="ofc-bloco__cabeca ofc-bloco__cabeca--acao">
-                <div>
-                  <strong>Motorista</strong>
-                  <p class="texto-suave v32-suave">Condutor da viatura</p>
-                </div>
-                <div class="seg-alternador" role="group" aria-label="Identificação do motorista">
-                  <button type="button" class="seg-alternador__opcao" aria-pressed="{% if dados.motorista_modo != 'MANUAL' %}true{% else %}false{% endif %}" data-ofc-modo-opcao="SERVIDOR">No sistema</button>
-                  <button type="button" class="seg-alternador__opcao" aria-pressed="{% if dados.motorista_modo == 'MANUAL' %}true{% else %}false{% endif %}" data-ofc-modo-opcao="MANUAL">Manual</button>
-                </div>
-              </div>
-
-              <div data-ofc-motorista-servidor{% if dados.motorista_modo == 'MANUAL' %} hidden{% endif %}>
-                <div class="ofc-picker" data-ofc-motorista-sistema>
-                  <label class="form-label" for="id_motorista_busca">Buscar motorista no sistema</label>
-                  <div class="ofc-picker__campo">
-                    <div class="busca">
-                      <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
-                      <input class="form-controle" type="search" id="id_motorista_busca" placeholder="Buscar por nome, CPF ou RG" autocomplete="off"
-                             role="combobox" aria-expanded="false" aria-controls="ofc-motorista-resultados" data-ofc-busca>
-                    </div>
-                    <ul class="ofc-picker__resultados" id="ofc-motorista-resultados" role="listbox" aria-label="Servidores encontrados" hidden data-ofc-resultados>
-                      {% for s in dados.servidores %}
-                        <li role="option" tabindex="-1" class="ofc-picker__resultado" data-valor="{{ s.valor }}" data-busca="{{ s.rotulo }} {{ s.detalhes }} {{ s.busca }}">
-                          <span class="of-av" aria-hidden="true">{{ s.iniciais }}</span>
-                          <span class="of-pessoa__txt"><span class="of-pessoa__nome">{{ s.rotulo }}</span>{% if s.detalhes %}<span class="of-pessoa__desc">{{ s.detalhes }}</span>{% endif %}</span>
-                        </li>
-                      {% endfor %}
-                      <li class="ofc-picker__vazio" data-ofc-sem-resultado hidden>Nenhum servidor encontrado.</li>
-                    </ul>
-                  </div>
-                  <ul class="ofc-pessoas{% if e.motorista %} grupo-erro{% endif %}" aria-label="Motorista selecionado" data-ofc-escolhidos>
+                  <ul class="ofc-picker__resultados" id="ofc-equipe-resultados" role="listbox" aria-label="Servidores encontrados" hidden data-ofc-resultados>
                     {% for s in dados.servidores %}
-                      <li class="ofc-pessoa" data-valor="{{ s.valor }}" data-unidade="{{ s.unidade }}"{% if s.valor != v.motorista or dados.motorista_equipe %} hidden{% endif %}>
-                        <input type="radio" name="motorista" value="{{ s.valor }}" hidden{% if s.valor == v.motorista %} checked{% endif %}>
+                      <li role="option" tabindex="-1" class="ofc-picker__resultado" data-valor="{{ s.valor }}" data-busca="{{ s.rotulo }} {{ s.detalhes }} {{ s.busca }}"{% if s.selecionado %} hidden{% endif %}>
                         <span class="of-av" aria-hidden="true">{{ s.iniciais }}</span>
-                        <span class="of-pessoa__txt">
-                          <span class="of-pessoa__nome">{{ s.rotulo }}<span class="ofc-chip-motorista">Motorista</span></span>
-                          {% if s.detalhes %}<span class="of-pessoa__desc">{{ s.detalhes }}</span>{% endif %}
-                        </span>
-                        <button type="button" class="ofc-pessoa__remover" aria-label="Remover {{ s.rotulo }} como motorista" data-ofc-remover>{% include "components/icon.html" with nome="x" %}</button>
+                        <span class="of-pessoa__txt"><span class="of-pessoa__nome">{{ s.rotulo }}</span>{% if s.detalhes %}<span class="of-pessoa__desc">{{ s.detalhes }}</span>{% endif %}</span>
                       </li>
                     {% endfor %}
+                    <li class="ofc-picker__vazio" data-ofc-sem-resultado hidden>Nenhum servidor encontrado.</li>
                   </ul>
-                  {% for erro in e.motorista %}<p class="form-erro">{{ erro }}</p>{% endfor %}
                 </div>
+                  <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ dados.url_novo_servidor }}" target="_blank" rel="noopener" aria-label="Novo viajante" title="Novo viajante">{% include "components/icon.html" with nome="plus" %}</a>
+                </div>
+                <div class="of-membros ofc-escolhidos{% if e.servidores %} grupo-erro{% endif %}" role="group" aria-label="Pessoas na equipe" data-ofc-escolhidos>
+                  {% for s in dados.servidores %}
+                    <div class="of-membro ofc-pessoa{% if s.valor == dados.motorista_equipe %} ofc-pessoa--motorista{% endif %}" data-valor="{{ s.valor }}" data-unidade="{{ s.unidade }}" data-nome="{{ s.rotulo }}"{% if not s.selecionado %} hidden{% endif %}>
+                      <input type="checkbox" name="servidores" value="{{ s.valor }}" hidden{% if s.selecionado %} checked{% endif %}>
+                      <span class="of-av" aria-hidden="true">{{ s.iniciais }}</span>
+                      <span class="of-pessoa__txt"><span class="of-pessoa__nome">{{ s.rotulo }}</span>{% if s.detalhes %}<span class="of-pessoa__desc">{{ s.detalhes }}</span>{% endif %}</span>
+                      <span class="ofc-pessoa__acoes">
+                        <label class="of-membro__termo"><input type="checkbox" data-ofc-motorista value="{{ s.valor }}"{% if s.valor == dados.motorista_equipe %} checked{% endif %}><span>Motorista</span></label>
+                        <label class="of-membro__termo"><input type="checkbox" name="servidores_termo_autorizacao" value="{{ s.valor }}"{% if s.termo %} checked{% endif %}><span>Termo</span></label>
+                        <button type="button" class="ib-linha" aria-label="Remover {{ s.rotulo }} da equipe" title="Remover" data-ofc-remover>{% include "components/icon.html" with nome="x" %}</button>
+                      </span>
+                    </div>
+                  {% endfor %}
+                </div>
+                <p class="lista-vazia" data-ofc-vazio{% if dados.equipe %} hidden{% endif %}>{% include "components/icon.html" with nome="users" %}<span>Nenhum viajante selecionado.</span></p>
+                {% for erro in e.servidores %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+              </div>
+            </div>
+          </div>
+
+          {# Viatura: sugestões pela unidade da equipe e do motorista, busca e a escolhida. #}
+          <div class="ofc-grupo">
+            <div class="ofc-grupo__cabeca"><strong>Viatura</strong></div>
+            <div class="ofc-grupo__corpo">
+              <div class="ofc-sugestoes" data-ofc-sugestoes hidden>
+                <span class="form-label">Sugestões</span>
+                <div class="ofc-sugestoes__lista" data-ofc-sugestoes-lista></div>
+              </div>
+              {# Lista como a dos ofícios no termo: busca em cima, viaturas embaixo; clicar escolhe e clicar de novo desfaz. #}
+              {% include "components/v32/lista_escolha.html" with name="viatura" label="Viaturas" rotulo_busca="Escolher viatura" rotulo_oculto=True icone="truck" opcoes=dados.viaturas selecionado=v.viatura placeholder="Buscar por placa ou modelo" erros=e.viatura vazio="Nenhuma viatura cadastrada." acao_url=dados.url_nova_viatura acao_rotulo="Nova viatura" %}
+            </div>
+          </div>
+
+          {# Motorista: só com viatura escolhida e ninguém da equipe ao volante. #}
+          <div class="ofc-grupo" data-ofc-cartao-motorista{% if not dados.mostrar_motorista %} hidden{% endif %}>
+            <div class="ofc-grupo__cabeca"><strong>Motorista</strong></div>
+            <div class="ofc-grupo__corpo">
+              <fieldset class="campo-e form-campo campo-e--bloco">
+                <legend><span>Condutor da viatura</span></legend>
+                <div class="unidade-sim-nao">
+                  <label class="seg2"><input type="radio" name="motorista_modo" value="SERVIDOR" data-ofc-modo{% if dados.motorista_modo != 'MANUAL' %} checked{% endif %}>No sistema</label>
+                  <label class="seg2"><input type="radio" name="motorista_modo" value="MANUAL" data-ofc-modo{% if dados.motorista_modo == 'MANUAL' %} checked{% endif %}>Manual</label>
+                </div>
+              </fieldset>
+
+              <div data-ofc-motorista-servidor{% if dados.motorista_modo == 'MANUAL' %} hidden{% endif %}>
+                {# Lista como a da viatura: busca em cima, servidores embaixo; clicar escolhe e clicar de novo desfaz. #}
+                {% include "components/v32/lista_escolha.html" with name="motorista" label="Servidores" rotulo_busca="Buscar motorista no sistema" icone="user" opcoes=dados.motoristas selecionado=v.motorista placeholder="Buscar por nome, CPF ou RG" erros=e.motorista vazio="Nenhum servidor cadastrado." acao_url=dados.url_novo_servidor acao_rotulo="Novo servidor" %}
               </div>
 
               <div data-ofc-motorista-manual{% if dados.motorista_modo != 'MANUAL' %} hidden{% endif %}>
                 {% include "components/input.html" with name="motorista_manual_nome" label="Nome completo" placeholder="Digite o nome do motorista" uppercase=True valor=v.motorista_manual_nome erros=e.motorista_manual_nome %}
               </div>
 
-              <div class="section-card reg ofc-bloco ofc-bloco--interno">
-                <div class="section-card__corpo">
-                  <div class="bloco-split">
-                    <div class="bloco-split__rotulo">
-                      <strong>Ofício de origem</strong>
-                      <p class="texto-suave v32-suave">Identifique o documento que autorizou este motorista.</p>
-                    </div>
-                    <div class="bloco-split__corpo ofc-origem">
-                      <div class="form-campo">
-                        <label class="form-label" for="id_motorista_oficio_referencia">N° do Ofício</label>
-                        <div class="ofc-numero{% if e.motorista_oficio_referencia %} is-invalid{% endif %}">
-                          <div class="form-controle-wrapper"><input class="form-controle" type="text" inputmode="numeric" autocomplete="off" id="id_motorista_oficio_referencia" name="motorista_oficio_referencia" value="{{ v.motorista_oficio_referencia }}"></div>
-                          <span class="ofc-numero__ano">/ {{ dados.ano }}</span>
-                        </div>
-                        {% for erro in e.motorista_oficio_referencia %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-                      </div>
-                      {% include "components/input.html" with name="motorista_protocolo_ref" label="Protocolo" inputmode="numeric" maxlength="12" autocomplete="off" valor=v.motorista_protocolo_ref erros=e.motorista_protocolo_ref %}
-                    </div>
+              <p class="reg__st">Ofício de origem</p>
+              <div class="g-form g-form--2">
+                <div class="form-campo">
+                  <label class="form-label" for="id_motorista_oficio_referencia">N° do Ofício</label>
+                  <div class="ofc-numero">
+                    <div class="form-controle-wrapper{% if e.motorista_oficio_referencia %} is-invalid{% endif %}"><input class="form-controle" type="text" inputmode="numeric" autocomplete="off" id="id_motorista_oficio_referencia" name="motorista_oficio_referencia" value="{{ v.motorista_oficio_referencia }}"></div>
+                    <span class="ofc-numero__ano">/ {{ dados.ano }}</span>
                   </div>
+                  {% for erro in e.motorista_oficio_referencia %}<p class="form-erro">{{ erro }}</p>{% endfor %}
                 </div>
+                {% include "components/input.html" with name="motorista_protocolo_ref" label="Protocolo" inputmode="numeric" maxlength="12" autocomplete="off" valor=v.motorista_protocolo_ref erros=e.motorista_protocolo_ref %}
               </div>
             </div>
           </div>
@@ -317,88 +222,71 @@
       </section>
       {% endwith %}
 
-      {# ============================================================= 2 #}
-      <section class="ofc-etapa" id="roteiro" aria-labelledby="ofc-roteiro-titulo">
-        <header class="ofc-etapa__cabeca">
-          <span class="ofc-etapa__numero" aria-hidden="true">2</span>
-          <div>
-            <h2 class="ofc-etapa__titulo" id="ofc-roteiro-titulo">Roteiro e diárias</h2>
-            <p class="ofc-etapa__descricao">Origem, percurso, deslocamentos e cálculo financeiro.</p>
-          </div>
-        </header>
-        {% include "pages/viagens_roteiros/_editor.html" with embutido=True form=rot.form formset=rot.formset destinos=rot.destinos destinos_cards=rot.destinos_cards trechos_cards=rot.trechos_cards opcoes_municipios=rot.opcoes_municipios opcoes_estados=rot.opcoes_estados opcoes_roteiros_base=rot.opcoes_roteiros_base valores=rot.valores roteiro=rot.roteiro rota_inicial=rot.rota_inicial autosave_ligado=False %}
-      </section>
+      {# ------------------------------------------------------- 2 a 5 #}
+      {% include "pages/viagens_roteiros/_editor.html" with embutido=True numero_inicial=2 form=rot.form formset=rot.formset destinos=rot.destinos destinos_cards=rot.destinos_cards trechos_cards=rot.trechos_cards opcoes_municipios=rot.opcoes_municipios opcoes_estados=rot.opcoes_estados opcoes_vinculo=rot.opcoes_vinculo vinculado=rot.vinculado valores=rot.valores roteiro=rot.roteiro rota_inicial=rot.rota_inicial autosave_ligado=False %}
 
-      {# ============================================================= 3 #}
-      <section class="ofc-etapa" id="justificativa" aria-labelledby="ofc-justificativa-titulo">
-        <header class="ofc-etapa__cabeca">
-          <span class="ofc-etapa__numero" aria-hidden="true">3</span>
-          <div>
-            <h2 class="ofc-etapa__titulo" id="ofc-justificativa-titulo">Justificativa</h2>
-            <p class="ofc-etapa__descricao">Use um modelo ou escreva o texto que fundamenta a necessidade da viagem.</p>
-          </div>
+      {# ------------------------------------------------------------- 6 #}
+      <section class="section-card reg" id="justificativa">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">6</span>
+          <h2 class="section-card__titulo">Justificativa</h2>
         </header>
-        <div class="section-card reg ofc-bloco">
-          <div class="section-card__corpo">
+        <div class="section-card__corpo">
+          <div class="g-form g-form--1">
             <div class="ofc-com-acao">
-              {% include "components/select.html" with name="justificativa-modelo" label="Modelo" opcoes=justificativa.opcoes_modelo placeholder="Selecione um modelo (opcional)" permitir_vazio=True selecionado=justificativa.modelo erros=justificativa.erros_modelo %}
-              <a class="ib-linha ofc-com-acao__botao" href="{{ justificativa.url_modelos }}" aria-label="Gerenciar modelos" title="Gerenciar modelos">{% include "components/icon.html" with nome="settings" %}</a>
+              {% if justificativa.opcoes_modelo %}
+                {% include "components/select.html" with name="justificativa-modelo" label="Modelo" opcoes=justificativa.opcoes_modelo placeholder="Sem modelo" permitir_vazio=True selecionado=justificativa.modelo erros=justificativa.erros_modelo %}
+              {% else %}
+                {% include "components/select.html" with name="justificativa-modelo" label="Modelo" opcoes=justificativa.opcoes_modelo placeholder="Nenhum modelo cadastrado" vazio="Nenhum modelo cadastrado — escreva a justificativa abaixo ou abra o gerenciamento de modelos." erros=justificativa.erros_modelo %}
+              {% endif %}
+              <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ justificativa.url_modelos }}" aria-label="Gerenciar modelos" title="Gerenciar modelos">{% include "components/icon.html" with nome="settings" %}</a>
             </div>
             {% include "components/textarea.html" with name="justificativa-texto" label="Justificativa" linhas="5" valor=justificativa.texto erros=justificativa.erros_texto %}
           </div>
         </div>
       </section>
 
-      {# ============================================================= 4 #}
+      {# ------------------------------------------------------------- 7 #}
       {% with c=conferencia %}
-      <section class="ofc-etapa" id="documentos" aria-labelledby="ofc-documentos-titulo">
-        <header class="ofc-etapa__cabeca">
-          <span class="ofc-etapa__numero" aria-hidden="true">4</span>
-          <div>
-            <h2 class="ofc-etapa__titulo" id="ofc-documentos-titulo">Documentos e conferência</h2>
-            <p class="ofc-etapa__descricao">Arquivos gerados para revisão final.</p>
-          </div>
+      <section class="section-card reg" id="documentos">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">7</span>
+          <h2 class="section-card__titulo">Documentos</h2>
         </header>
-
-        <div class="section-card reg ofc-bloco">
-          <div class="section-card__corpo">
-            <div class="ofc-bloco__cabeca">
-              <strong>Documentos para conferência</strong>
-              <p class="texto-suave v32-suave">Visualize e baixe os arquivos gerados.</p>
+        <div class="section-card__corpo">
+          <div class="ofc-docs">
+          {% url 'viagens_oficios:documento' oficio.pk as url_editar_documento %}{% include "pages/viagens_oficios/_documento_inline.html" with d=c.oficio menu_id="ofc-menu-oficio" url_editar=url_editar_documento %}
+          {% include "pages/viagens_oficios/_documento_inline.html" with d=c.justificativa menu_id="ofc-menu-justificativa" %}
+          <details class="ofc-doc">
+            <summary class="ofc-doc__cabeca">
+              <span class="ofc-doc__titulo">Termos de Autorização</span>
+              <span class="ofc-doc__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+            </summary>
+            <div class="ofc-doc__corpo">
+              {% if c.termos and c.completo and c.termos|length > 1 %}
+                <div class="ofc-doc__lote">
+                  <button type="submit" class="btn--secundaria btn--compacto" formaction="{{ c.url_termos_pdf }}" formtarget="_blank" formnovalidate>{% include "components/icon.html" with nome="download" %}Baixar PDFs</button>
+                  <button type="submit" class="btn--secundaria btn--compacto" formaction="{{ c.url_termos_docx }}" formnovalidate>{% include "components/icon.html" with nome="document" %}Baixar DOCXs</button>
+                </div>
+              {% endif %}
+              {% for t in c.termos %}
+                {% with n=forloop.counter|stringformat:"s" %}{% include "pages/viagens_oficios/_documento_inline.html" with d=t menu_id="ofc-menu-termo-"|add:n aninhado=True %}{% endwith %}
+              {% empty %}
+                <p class="ofc-doc__mensagem">Nenhum servidor selecionado para Termo de Autorização.</p>
+              {% endfor %}
             </div>
-            {% include "pages/viagens_oficios/_documento_inline.html" with d=c.oficio menu_id="ofc-menu-oficio" %}
-            {% if oficio.pk %}<p class="ofc-doc__extra"><a class="btn--quieta" href="{% url 'viagens_oficios:documento' oficio.pk %}">{% include "components/icon.html" with nome="pencil" %}Abrir documento para edição</a></p>{% endif %}
-            {% include "pages/viagens_oficios/_documento_inline.html" with d=c.justificativa menu_id="ofc-menu-justificativa" %}
-            <details class="ofc-doc ofc-doc--grupo">
-              <summary class="ofc-doc__cabeca">
-                <span class="ofc-doc__titulo">Termos de Autorização</span>
-                <span class="ofc-doc__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
-              </summary>
-              <div class="ofc-doc__corpo">
-                {% if c.termos and c.completo and c.termos|length > 1 %}
-                  <div class="ofc-doc__lote">
-                    <button type="submit" class="btn--secundaria btn--compacto" formaction="{{ c.url_termos_pdf }}" formtarget="_blank" formnovalidate>{% include "components/icon.html" with nome="download" %}Baixar PDFs</button>
-                    <button type="submit" class="btn--secundaria btn--compacto" formaction="{{ c.url_termos_docx }}" formnovalidate>{% include "components/icon.html" with nome="document" %}Baixar DOCXs</button>
-                  </div>
-                {% endif %}
-                {% for t in c.termos %}
-                  {% with n=forloop.counter|stringformat:"s" %}{% include "pages/viagens_oficios/_documento_inline.html" with d=t menu_id="ofc-menu-termo-"|add:n aninhado=True %}{% endwith %}
-                {% empty %}
-                  <p class="ofc-doc__mensagem">Nenhum servidor selecionado para Termo de Autorização.</p>
-                {% endfor %}
-              </div>
-            </details>
+          </details>
           </div>
-        </div>
 
-        {# Com pendências o botão principal salva o rascunho; sem elas, finaliza. #}
-        <div class="frm-acoes-fim ofc-rodape">
-          <a class="btn--secundaria" href="{{ url_voltar }}">{% include "components/icon.html" with nome="chevron-left" %}Voltar</a>
-          {% if c.pendencias %}
-            <button type="submit" class="btn-primaria" name="acao" value="rascunho">{% include "components/icon.html" with nome="document" %}Salvar rascunho</button>
-          {% else %}
-            <button type="submit" class="btn-primaria" name="acao" value="finalizar">{% include "components/icon.html" with nome="check" %}Finalizar Ofício</button>
-          {% endif %}
+          {# Ações no fim do último cartão, como no roteiro: voltar à esquerda, salvar à direita. Com pendência, o botão salva o rascunho; sem, finaliza. #}
+          <div class="frm-acoes-fim">
+            <a class="btn--secundaria" href="{{ url_voltar }}">Voltar</a>
+            {% if c.pendencias %}
+              <button type="submit" class="btn btn--dourado btn-primaria" name="acao" value="rascunho">Salvar rascunho</button>
+            {% else %}
+              <button type="submit" class="btn btn--dourado btn-primaria" name="acao" value="finalizar">Finalizar Ofício</button>
+            {% endif %}
+          </div>
         </div>
       </section>
       {% endwith %}
@@ -410,6 +298,7 @@
   {{ block.super }}
   {{ modelos_texto|json_script:"oficio-modelos-texto" }}
   <script src="{% estatico 'js/viagens-cadastros.js' %}" defer></script>
+  <script src="{% estatico 'js/lista-escolha.js' %}" defer></script>
   <script src="{% estatico 'vendor/leaflet/leaflet.js' %}" defer></script>
   <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
   <script src="{% estatico 'js/roteiro-editor.js' %}" defer></script>

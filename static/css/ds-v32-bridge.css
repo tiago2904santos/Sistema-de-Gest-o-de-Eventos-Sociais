@@ -1924,101 +1924,73 @@ form.btn-flutuante-form{margin:0;display:contents}
 .nav-mod .nav-mod__gaveta a[aria-current]{background:var(--n-100);color:var(--n-900);font-weight:600}
 .nav-mod__gaveta .ui-icon{width:15px;height:15px;color:var(--n-450)}
 
-/* Cadastro de ofício (pages/viagens_oficios/form.html): as quatro etapas do
-   Gerenciador de Viagens numa página. Cada etapa é um grupo com título, e os
-   blocos dela são cartões. Escolhido e ativo em dourado (--sel-*); repouso
-   e hover em cinza. */
-.ofc-etapa{display:grid;gap:12px;margin:0 0 28px}
-.ofc-etapa__cabeca{display:flex;align-items:flex-start;gap:12px;padding:0 2px}
-.ofc-etapa__numero{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:99px;background:var(--n-900);color:var(--branco);font-size:13px;font-weight:700}
-.ofc-etapa__titulo{margin:0;font-size:17px;font-weight:700;color:var(--n-900)}
-.ofc-etapa__descricao{margin:2px 0 0;font-size:12.5px;color:var(--n-500)}
-.ofc-etapa .section-card{margin:0}
+/* Cadastro de ofício (pages/viagens_oficios/form.html): os campos do
+   Gerenciador de Viagens nos cartões e linhas do V3.2 (roteiro, termo). O
+   que é só daqui: o número com o ano ao lado, o seletor com busca (a lista
+   de escolhidos é a `.of-membros` da equipe), as sugestões de viatura e os
+   documentos que abrem no próprio cartão. */
 .ofc [hidden]{display:none!important}
-.ofc-bloco .section-card__corpo{display:grid;gap:14px}
-.ofc-bloco--interno{background:var(--n-25);box-shadow:none}
-.ofc-bloco__cabeca{display:grid;gap:2px}
-.ofc-bloco__cabeca strong{font-size:14px;color:var(--n-900)}
-.ofc-bloco__cabeca p{margin:0;font-size:12px}
-.ofc-bloco__cabeca--acao{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.ofc-identificacao{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:start}
-.ofc-origem{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
 .ofc-numero{display:flex;align-items:center;gap:8px}
 .ofc-numero .form-controle-wrapper{flex:1 1 auto;min-width:0}
 .ofc-numero__ano{flex:none;font-size:13px;color:var(--n-500)}
 .ofc-com-acao{display:flex;align-items:flex-end;gap:8px}
 .ofc-com-acao>.form-campo{flex:1 1 auto;min-width:0}
-.ofc-com-acao__botao{flex:none;width:38px;height:38px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco);color:var(--n-600)}
-.ofc-bloco__cabeca--acao .ib-linha{width:32px;height:32px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco);color:var(--n-600)}
-.ofc-com-acao__botao:hover,.ofc-bloco__cabeca--acao .ib-linha:hover{background:var(--hover-b);color:var(--n-900)}
+.ofc-com-acao__botao{flex:none;margin-bottom:0}
+.ofc-com-acao:has(>.ofc-picker__campo){align-items:flex-start}
+.ofc-com-acao:has(>.ofc-picker__campo)>.ofc-com-acao__botao{width:44px;min-width:44px;height:44px}
+.ofc-grupo{padding:16px 0}
+.ofc-grupo:first-child{padding-top:0}
+.ofc-grupo+.ofc-grupo{border-top:1px solid var(--n-150)}
+.ofc-grupo__cabeca{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.ofc-grupo__cabeca strong{font-size:13px;color:var(--n-800)}
+.ofc-grupo__corpo{min-width:0}
 
-/* Seletores com busca */
+/* Seletor com busca */
 .ofc-picker{display:grid;gap:8px}
-.ofc-picker .form-label{margin:0}
-.ofc-picker__campo{position:relative}
-.ofc-picker__resultados{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 4px);max-height:280px;overflow:auto;margin:0;padding:4px;list-style:none;border:1px solid var(--n-200);border-radius:10px;background:var(--branco);box-shadow:0 8px 24px rgba(26,25,23,.12)}
-.ofc-picker__resultados[hidden]{display:none}
-.ofc-picker__resultado{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:7px;cursor:pointer}
-.ofc-picker__resultado[hidden]{display:none}
+.ofc-picker__campo{position:relative;margin:0}
+.ofc-picker__resultados{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 4px);max-height:280px;overflow:auto;margin:0;padding:4px;list-style:none;border:1px solid var(--n-200);border-radius:9px;background:var(--branco);box-shadow:0 8px 24px rgba(26,25,23,.10)}
+.ofc-picker__resultado{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:7px;cursor:pointer}
 .ofc-picker__resultado:hover,.ofc-picker__resultado:focus{background:var(--hover-b);outline:0}
 .ofc-picker__resultado .of-av{width:30px;height:30px;font-size:11px}
 .ofc-picker__vazio{padding:10px 8px;font-size:12.5px;color:var(--n-500)}
-.ofc-pessoas{display:grid;gap:8px;margin:0;padding:0;list-style:none}
-.ofc-pessoa{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--n-200);border-radius:10px;background:var(--branco)}
-.ofc-pessoa[hidden]{display:none}
-.ofc-pessoa--motorista,.ofc-pessoa--viatura{border-color:var(--sel-r);background:var(--sel-b);box-shadow:inset 3px 0 0 var(--sel-f)}
-.ofc-chip-motorista{display:none;height:20px;align-items:center;padding:0 8px;border-radius:99px;background:var(--sel-f);color:var(--branco);font-size:10.5px;font-weight:700;letter-spacing:.02em}
-.ofc-pessoa--motorista .ofc-chip-motorista,.ofc-pessoa--viatura .ofc-chip-motorista,[data-ofc-motorista-sistema] .ofc-chip-motorista{display:inline-flex}
-.ofc-pessoa__motorista,.ofc-pessoa__termo{flex:none;height:28px;padding:0 10px;border:1px solid var(--n-200);border-radius:99px;background:var(--branco);color:var(--n-600);font-size:12px;font-weight:600;cursor:pointer}
-.ofc-pessoa__motorista:hover,.ofc-pessoa__termo:hover{background:var(--hover-b);color:var(--n-900)}
-.ofc-pessoa__motorista[aria-pressed=true]{border-color:var(--sel-r);color:var(--n-900)}
-.ofc-pessoa__termo{color:var(--n-500)}
-.ofc-pessoa__termo.is-ativo{border-color:#cfe8d6;background:#e8f5ec;color:#1f6b3a}
-.ofc-pessoa__remover{flex:none;display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:6px;background:0;color:var(--n-400);cursor:pointer}
-.ofc-pessoa__remover:hover{background:var(--hover-b);color:var(--n-900)}
-.ofc-pessoa__remover .ui-icon{width:14px;height:14px}
-.ofc-pessoas__vazio{padding:12px;border:1px dashed var(--n-200);border-radius:10px;font-size:12.5px;color:var(--n-500);text-align:center}
-.ofc-pessoas__vazio[hidden]{display:none}
+.of-av .ui-icon{width:15px;height:15px}
+.ofc-escolhidos:not(:has(.of-membro:not([hidden]))){display:none}
+.ofc-escolhidos .of-membro{grid-template-columns:40px minmax(0,1fr) auto}
+.ofc-pessoa--motorista{background:var(--sel-b)}
+.ofc-pessoa__acoes{display:flex;align-items:center;gap:14px}
+.ofc-pessoa__acoes .ib-linha .ui-icon{width:14px;height:14px}
 
 /* Sugestões de viatura */
-.ofc-sugestoes{display:grid;gap:8px}
-.ofc-sugestoes[hidden]{display:none}
-.ofc-sugestoes__rotulo{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--n-500)}
+.ofc-sugestoes{display:grid;gap:6px;margin-bottom:10px}
 .ofc-sugestoes__lista{display:flex;flex-wrap:wrap;gap:8px}
-.ofc-sugestao{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 6px 0 12px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco);color:var(--n-700);font-size:12.5px;cursor:pointer}
+.ofc-sugestao{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 5px 0 12px;border:1px solid var(--n-200);border-radius:7px;background:var(--branco);color:var(--n-700);font-size:12.5px;cursor:pointer}
 .ofc-sugestao:hover{background:var(--hover-b);color:var(--n-900)}
-.ofc-sugestao[aria-pressed=true]{border-color:var(--sel-r);background:var(--sel-b);color:var(--n-900);font-weight:600}
-.ofc-sugestao__sigla{height:22px;display:inline-flex;align-items:center;padding:0 8px;border-radius:6px;background:var(--n-100);font-size:11px;font-weight:600;color:var(--n-600)}
+.ofc-sugestao[aria-pressed=true]{border-color:var(--sel-f);background:var(--sel-b);color:var(--n-900);font-weight:600}
+.ofc-sugestao__sigla{height:20px;display:inline-flex;align-items:center;padding:0 7px;border-radius:5px;background:var(--n-100);font-size:11px;font-weight:600;color:var(--n-600)}
 
-/* Alternador de dois estados (No sistema/Manual, Roteiro salvo/novo) */
-.seg-alternador{display:inline-flex;flex:none;padding:3px;border-radius:9px;background:var(--n-100)}
-.seg-alternador__opcao{height:28px;padding:0 12px;border:0;border-radius:7px;background:0;color:var(--n-600);font-size:12.5px;font-weight:500;cursor:pointer}
-.seg-alternador__opcao:hover{color:var(--n-900)}
-.seg-alternador__opcao[aria-pressed=true]{background:var(--branco);color:var(--n-900);font-weight:600;box-shadow:0 1px 2px rgba(26,25,23,.12)}
-.section-card__descricao{margin:2px 0 0;font-size:12px;color:var(--n-500)}
-
-/* Conferência */
-.ofc-doc{border:1px solid var(--n-200);border-radius:10px;background:var(--n-25)}
-.ofc-doc__cabeca{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 12px 8px 16px;cursor:pointer;list-style:none}
+/* Documentos para conferência */
+.ofc-docs{display:grid;gap:8px}
+.ofc-doc{border:1px solid var(--n-200);border-radius:9px;background:var(--branco)}
+.ofc-doc__cabeca{display:flex;align-items:center;gap:10px;min-height:46px;padding:6px 10px 6px 14px;cursor:pointer;list-style:none}
 .ofc-doc__cabeca::-webkit-details-marker{display:none}
-.ofc-doc__cabeca:hover{background:var(--hover-b);border-radius:10px}
-.ofc-doc__titulo{flex:1 1 auto;display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:var(--n-900)}
+.ofc-doc__cabeca:hover{background:var(--hover-b);border-radius:9px}
+.ofc-doc__titulo{flex:1 1 auto;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--n-900)}
 .ofc-doc__acoes .ib-linha{width:32px;height:32px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco);color:var(--n-600)}
 .ofc-doc__abrir{display:grid;place-items:center;color:var(--n-400);transition:transform var(--motion,.15s)}
 .ofc-doc[open]>.ofc-doc__cabeca .ofc-doc__abrir{transform:rotate(180deg)}
-.ofc-doc__corpo{padding:0 12px 12px;display:grid;gap:8px}
+.ofc-doc__corpo{display:grid;gap:8px;padding:0 10px 10px}
 .ofc-doc__quadro{width:100%;height:560px;border:1px solid var(--n-200);border-radius:8px;background:var(--branco)}
-.ofc-doc__mensagem{margin:0;padding:10px 4px;font-size:12.5px;color:var(--n-500)}
-.ofc-doc--aninhado{background:var(--branco)}
+.ofc-doc__mensagem{margin:0;padding:8px 4px;font-size:12.5px;color:var(--n-500)}
+.ofc-doc--aninhado{background:var(--n-25)}
 .ofc-doc__lote{display:flex;gap:8px;flex-wrap:wrap}
-.ofc-doc__extra{margin:-6px 0 0}
-.ofc-rodape{margin-top:4px}
 
-@media (max-width:900px){
-  .ofc-identificacao{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-@media (max-width:600px){
-  .ofc-identificacao,.ofc-origem{grid-template-columns:1fr}
-  .ofc-pessoa{flex-wrap:wrap}
+@container(max-width:680px){
+  .ofc-escolhidos .of-membro{grid-template-columns:36px minmax(0,1fr)}
+  .ofc-pessoa__acoes{grid-column:1/-1;justify-content:flex-end}
   .ofc-doc__quadro{height:420px}
 }
+
+/* Lista de escolha com botão ao lado da busca (`acao_url`). */
+.lista-escolha__cabeca{display:flex;align-items:stretch;gap:8px;margin-bottom:8px}
+.lista-escolha__cabeca>.form-campo{flex:1 1 auto;min-width:0;margin:0}
+.lista-escolha__cabeca>.lista-escolha__acao{height:auto;min-height:38px}

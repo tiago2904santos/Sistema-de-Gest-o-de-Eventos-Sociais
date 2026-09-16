@@ -1,10 +1,12 @@
 {% comment %}
   O editor de roteiro: sede e destinos, bate-volta e mapa, trechos e diárias.
   Usado pela tela de roteiros e embutido no cadastro de ofício, que o chama
-  com `embutido=True`: aí o primeiro cartão se chama "Roteiro e diárias",
-  "Repetir roteiro existente" vira o "Roteiro salvo" do Gerenciador de
-  Viagens, a numeração começa em `numero_inicial` e o histórico e as ações
-  do rodapé ficam com a página.
+  com `embutido=True`: aí o primeiro cartão se chama "Roteiro e diárias" e
+  ganha o interruptor "Vincular a um roteiro existente" (`vinculado`,
+  `opcoes_vinculo`) — ligado, só a busca do roteiro aparece e os outros
+  cartões mostram o escolhido; desligado, sede e destinos. A numeração
+  começa em `numero_inicial` e o histórico e as ações do rodapé ficam com a
+  página.
 
   Contexto: o de `viagens_roteiros.views._contexto_do_form` (form, formset,
   destinos, destinos_cards, trechos_cards, opcoes_*, valores, roteiro,
@@ -26,21 +28,31 @@
       {# Mensagens de erro ficam sempre fora dos cartões, logo acima da seção a que se referem. #}
       {% for erro in form.non_field_errors %}<p class="aviso aviso--erro editor-roteiro__erro" role="alert">{{ erro }}</p>{% endfor %}
       {% for erro in destinos.non_form_errors %}<p class="aviso aviso--erro editor-roteiro__erro" role="alert">{{ erro }}</p>{% endfor %}
-      <section class="section-card reg">
+      <section class="section-card reg"{% if embutido %} id="roteiro"{% endif %}>
         <header class="section-card__cabecalho reg__t">
           <span class="section-card__numero reg-numero" aria-hidden="true">{% if numero_inicial %}{{ numero_inicial|add:0 }}{% else %}1{% endif %}</span>
           <h2 class="section-card__titulo">{% if embutido %}Roteiro e diárias{% else %}Origem e destinos{% endif %}</h2>
+          {% if embutido %}
+            {# Ligado: o ofício usa um roteiro já montado e só a busca aparece; desligado: sede e destinos. #}
+            <div class="section-card__acao editor-roteiro__acoes-cabecalho">
+              <input type="hidden" name="vincular_roteiro" value="{% if vinculado %}1{% endif %}" data-roteiro-vincular-campo>
+              <button type="button" class="interruptor{% if vinculado %} interruptor--ligado{% endif %}" aria-pressed="{% if vinculado %}true{% else %}false{% endif %}" data-roteiro-vincular>
+                <span class="interruptor__trilho" aria-hidden="true"><span class="interruptor__botao"></span></span>
+                <span class="interruptor__rotulo">Vincular a um roteiro existente</span>
+              </button>
+            </div>
+          {% endif %}
         </header>
         <div class="section-card__corpo">
 
           {% if embutido %}
-          {# No ofício, um roteiro salvo serve de base; em branco, o roteiro é novo. #}
-          <div class="bloco-split">
+          {# Escolher um roteiro grava o ofício como rascunho e recarrega a tela com ele. #}
+          <div class="bloco-split" data-roteiro-vinculo{% if not vinculado %} hidden{% endif %}>
             <div class="bloco-split__rotulo">
-              <strong>Roteiro salvo</strong>
+              <strong>Roteiro existente</strong>
             </div>
             <div class="bloco-split__corpo">
-              {% include "components/select.html" with name="roteiro_base" label="Roteiro salvo" rotulo_oculto=True opcoes=opcoes_roteiros_base placeholder="Roteiro novo" pesquisavel=True %}
+              {% include "components/select.html" with name="roteiro_existente" label="Roteiro existente" rotulo_oculto=True opcoes=opcoes_vinculo placeholder="Buscar roteiro existente..." pesquisavel=True selecionado=roteiro.pk %}
             </div>
           </div>
           {% elif not roteiro.pk %}
@@ -59,7 +71,7 @@
           </div>
           {% endif %}
 
-          <div class="bloco-split">
+          <div class="bloco-split"{% if embutido %} data-roteiro-proprio{% if vinculado %} hidden{% endif %}{% endif %}>
             <div class="bloco-split__rotulo">
               <strong>Sede (origem da viagem)</strong>
             </div>
@@ -73,7 +85,7 @@
             </div>
           </div>
 
-          <div class="bloco-split">
+          <div class="bloco-split"{% if embutido %} data-roteiro-proprio{% if vinculado %} hidden{% endif %}{% endif %}>
             <div class="bloco-split__rotulo">
               <strong>Destinos (ordem da visita)</strong>
             </div>
@@ -96,7 +108,7 @@
       {# ------------------------------------------------------------- 2 #}
       <p class="aviso aviso--erro editor-roteiro__erro" data-bate-volta-erro role="alert" hidden></p>
       <p class="aviso aviso--erro editor-roteiro__erro" data-rota-erro role="alert" hidden></p>
-      <section class="section-card reg">
+      <section class="section-card reg"{% if embutido %} data-roteiro-dependente{% if vinculado and not roteiro.pk %} hidden{% endif %}{% endif %}>
         <header class="section-card__cabecalho reg__t">
           <span class="section-card__numero reg-numero" aria-hidden="true">{% if numero_inicial %}{{ numero_inicial|add:1 }}{% else %}2{% endif %}</span>
           <div class="section-card__identificacao">
@@ -240,7 +252,7 @@
       {# ------------------------------------------------------------- 3 #}
       {% for erro in formset.non_form_errors %}<p class="aviso aviso--erro editor-roteiro__erro" role="alert">{{ erro }}</p>{% endfor %}
       <p class="aviso aviso--erro editor-roteiro__erro" data-trechos-erro role="alert" hidden></p>
-      <section class="section-card reg">
+      <section class="section-card reg"{% if embutido %} data-roteiro-dependente{% if vinculado and not roteiro.pk %} hidden{% endif %}{% endif %}>
         <header class="section-card__cabecalho reg__t">
           <span class="section-card__numero reg-numero" aria-hidden="true">{% if numero_inicial %}{{ numero_inicial|add:2 }}{% else %}3{% endif %}</span>
           <div class="section-card__identificacao">
@@ -296,7 +308,7 @@
 
       {# ------------------------------------------------------------- 4 #}
       <p class="aviso aviso--erro editor-roteiro__erro" data-diarias-erro role="alert" hidden></p>
-      <section class="section-card reg">
+      <section class="section-card reg"{% if embutido %} data-roteiro-dependente{% if vinculado and not roteiro.pk %} hidden{% endif %}{% endif %}>
         <header class="section-card__cabecalho reg__t">
           <span class="section-card__numero reg-numero" aria-hidden="true">{% if numero_inicial %}{{ numero_inicial|add:3 }}{% else %}4{% endif %}</span>
           <div class="section-card__identificacao">

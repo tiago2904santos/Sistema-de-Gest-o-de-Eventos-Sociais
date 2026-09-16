@@ -4,12 +4,11 @@
  * - escolher um modelo preenche o texto (descrição e justificativa);
  * - custeio "Outra instituição" mostra o Nome da Instituição;
  * - protocolo com a máscara 00.000.000-0;
- * - seletores com busca: equipe (com "Definir motorista" e "Com termo"),
- *   viatura e motorista do sistema;
+ * - seletor com busca da equipe (com Motorista e Termo em cada pessoa);
+ *   viatura e motorista do sistema são a lista de escolha do termo;
  * - sugestões de viatura pela unidade da equipe e do motorista;
  * - o cartão do motorista aparece com viatura escolhida e ninguém da equipe
  *   ao volante; "No sistema" / "Manual" alterna o que ele pede;
- * - "Roteiro salvo" / "Roteiro novo" mostra ou esconde a busca de roteiros;
  * - o PDF da conferência só é pedido quando o cartão abre.
  */
 (function () {
@@ -25,7 +24,7 @@
   }
 
   function semAcento(texto) {
-    return (texto || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    return (texto || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   }
 
   function disparar(campo) {
@@ -83,7 +82,7 @@
     var lista = raiz.querySelector("[data-ofc-resultados]");
     var semResultado = raiz.querySelector("[data-ofc-sem-resultado]");
     var escolhidos = raiz.querySelector("[data-ofc-escolhidos]");
-    var vazio = escolhidos.querySelector("[data-ofc-equipe-vazia]");
+    var vazio = raiz.querySelector("[data-ofc-vazio]");
     var resultados = Array.prototype.slice.call(lista.querySelectorAll(".ofc-picker__resultado"));
     var linhas = Array.prototype.slice.call(escolhidos.querySelectorAll(".ofc-pessoa"));
 
@@ -186,10 +185,8 @@
 
   // 4a. Equipe: motorista e termo em cada pessoa
   var raizEquipe = form.querySelector("[data-ofc-equipe]");
-  var raizViatura = form.querySelector("[data-ofc-viatura]");
-  var raizMotorista = form.querySelector("[data-ofc-motorista-sistema]");
   var cartaoMotorista = form.querySelector("[data-ofc-cartao-motorista]");
-  var campoModo = form.querySelector("[data-ofc-modo]");
+  var camposModo = Array.prototype.slice.call(form.querySelectorAll("[data-ofc-modo]"));
   var motoristaEquipe = raizEquipe ? raizEquipe.getAttribute("data-motorista") : "";
 
   var equipe = raizEquipe && montarSeletor(raizEquipe, {
@@ -202,55 +199,41 @@
       if (motoristaEquipe === l.getAttribute("data-valor")) definirMotoristaEquipe("");
     },
   });
-  var viatura = raizViatura && montarSeletor(raizViatura, { unico: true });
-  var motorista = raizMotorista && montarSeletor(raizMotorista, { unico: true });
 
   function definirTermo(l, ativo) {
     var campo = l.querySelector('input[name="servidores_termo_autorizacao"]');
-    var botao = l.querySelector("[data-ofc-termo]");
     if (campo) campo.checked = ativo;
-    if (botao) {
-      botao.setAttribute("aria-pressed", ativo ? "true" : "false");
-      botao.classList.toggle("is-ativo", ativo);
-      botao.textContent = ativo ? "Com termo" : "Sem termo";
-    }
   }
 
-  function campoMotorista(valor) {
-    return form.querySelector('input[name="motorista"][value="' + valor + '"]');
+  // Marca (ou, com "", desmarca) o motorista na lista do cartão.
+  function marcarMotorista(valor) {
+    form.querySelectorAll('input[name="motorista"]').forEach(function (radio) {
+      var marcar = radio.value === valor;
+      if (radio.checked === marcar) return;
+      radio.checked = marcar;
+      radio.dispatchEvent(new Event("change", { bubbles: true }));
+    });
   }
 
   function definirMotoristaEquipe(valor) {
     motoristaEquipe = valor;
     equipe.linhas.forEach(function (l) {
       var ativo = l.getAttribute("data-valor") === valor;
-      var botao = l.querySelector("[data-ofc-motorista]");
       l.classList.toggle("ofc-pessoa--motorista", ativo);
-      botao.setAttribute("aria-pressed", ativo ? "true" : "false");
-      botao.textContent = ativo ? "Motorista" : "Definir motorista";
+      l.querySelector("[data-ofc-motorista]").checked = ativo;
     });
     // O motorista da equipe é o mesmo campo `motorista`, no modo servidor.
-    if (valor) {
-      if (motorista) motorista.escolher(valor);
-      if (campoModo) definirModo("SERVIDOR");
-    } else if (motorista) {
-      motorista.linhas.forEach(function (l) {
-        if (motorista.escolhido(l)) motorista.remover(l);
-      });
-    }
+    marcarMotorista(valor);
+    if (valor) definirModo("SERVIDOR");
     atualizarCartaoMotorista();
   }
 
   if (equipe) {
     equipe.linhas.forEach(function (l) {
-      var botaoTermo = l.querySelector("[data-ofc-termo]");
-      var botaoMotorista = l.querySelector("[data-ofc-motorista]");
-      if (botaoTermo) botaoTermo.addEventListener("click", function () {
-        definirTermo(l, botaoTermo.getAttribute("aria-pressed") !== "true");
-      });
-      if (botaoMotorista) botaoMotorista.addEventListener("click", function () {
-        var valor = l.getAttribute("data-valor");
-        definirMotoristaEquipe(motoristaEquipe === valor ? "" : valor);
+      var marcaMotorista = l.querySelector("[data-ofc-motorista]");
+      // Um motorista só: marcar um desmarca o anterior.
+      marcaMotorista.addEventListener("change", function () {
+        definirMotoristaEquipe(marcaMotorista.checked ? l.getAttribute("data-valor") : "");
       });
     });
   }
@@ -258,19 +241,14 @@
   // 4b. Cartão do motorista
   var painelServidor = form.querySelector("[data-ofc-motorista-servidor]");
   var painelManual = form.querySelector("[data-ofc-motorista-manual]");
-  var opcoesModo = Array.prototype.slice.call(form.querySelectorAll("[data-ofc-modo-opcao]"));
 
   function definirModo(modo) {
-    if (!campoModo) return;
-    campoModo.value = modo;
-    opcoesModo.forEach(function (b) {
-      b.setAttribute("aria-pressed", b.getAttribute("data-ofc-modo-opcao") === modo ? "true" : "false");
-    });
+    camposModo.forEach(function (r) { r.checked = r.value === modo; });
     if (painelServidor) painelServidor.hidden = modo === "MANUAL";
     if (painelManual) painelManual.hidden = modo !== "MANUAL";
   }
-  opcoesModo.forEach(function (b) {
-    b.addEventListener("click", function () { definirModo(b.getAttribute("data-ofc-modo-opcao")); });
+  camposModo.forEach(function (r) {
+    r.addEventListener("change", function () { if (r.checked) definirModo(r.value); });
   });
 
   function temViatura() {
@@ -284,22 +262,19 @@
     // Cartão escondido com motorista da equipe: o campo segue marcado por ela.
   }
 
-  if (raizMotorista) {
-    raizMotorista.addEventListener("ofc:mudou", function () {
+  form.addEventListener("change", function (evento) {
+    if (evento.target.name === "viatura") {
+      atualizarCartaoMotorista();
+      atualizarSugestoes();
+    } else if (evento.target.name === "motorista") {
       // Escolher no cartão alguém que já está na equipe é defini-lo como motorista da equipe.
       var marcado = form.querySelector('input[name="motorista"]:checked');
-      if (marcado && equipe) {
+      if (marcado && equipe && motoristaEquipe !== marcado.value) {
         var l = equipe.linhas.find(function (x) { return x.getAttribute("data-valor") === marcado.value; });
-        if (l && equipe.escolhido(l) && motoristaEquipe !== marcado.value) {
-          definirMotoristaEquipe(marcado.value);
-        }
+        if (l && equipe.escolhido(l)) definirMotoristaEquipe(marcado.value);
       }
       atualizarSugestoes();
-    });
-  }
-  if (raizViatura) raizViatura.addEventListener("ofc:mudou", function () {
-    atualizarCartaoMotorista();
-    atualizarSugestoes();
+    }
   });
   if (raizEquipe) raizEquipe.addEventListener("ofc:mudou", atualizarSugestoes);
 
@@ -308,52 +283,74 @@
   var listaSugestoes = form.querySelector("[data-ofc-sugestoes-lista]");
 
   function atualizarSugestoes() {
-    if (!sugestoes || !viatura) return;
+    var linhasViatura = Array.prototype.slice.call(form.querySelectorAll('[data-lista-escolha="viatura"] [data-lista-item]'));
+    if (!sugestoes || !linhasViatura.length) return;
     var unidades = new Set();
     if (equipe) equipe.linhas.forEach(function (l) {
       if (equipe.escolhido(l) && l.getAttribute("data-unidade")) unidades.add(l.getAttribute("data-unidade"));
     });
     var marcado = form.querySelector('input[name="motorista"]:checked');
-    if (marcado && motorista) {
-      var lm = motorista.linhas.find(function (x) { return x.getAttribute("data-valor") === marcado.value; });
+    if (marcado) {
+      var lm = form.querySelector('[data-lista-escolha="motorista"] [data-lista-item="' + marcado.value + '"]');
       if (lm && lm.getAttribute("data-unidade")) unidades.add(lm.getAttribute("data-unidade"));
     }
     listaSugestoes.innerHTML = "";
-    var atual = form.querySelector('input[name="viatura"]:checked');
-    viatura.linhas.forEach(function (l) {
+    linhasViatura.forEach(function (l) {
       if (!unidades.has(l.getAttribute("data-unidade"))) return;
+      var radio = l.querySelector('input[name="viatura"]');
       var chip = document.createElement("button");
       chip.type = "button";
       chip.className = "ofc-sugestao";
-      var ativo = atual && atual.value === l.getAttribute("data-valor");
-      chip.setAttribute("aria-pressed", ativo ? "true" : "false");
-      chip.textContent = l.getAttribute("data-rotulo");
+      chip.setAttribute("aria-pressed", radio.checked ? "true" : "false");
+      chip.textContent = l.querySelector(".of-pessoa__nome").textContent.trim();
       if (l.getAttribute("data-sigla")) {
         var sigla = document.createElement("span");
         sigla.className = "ofc-sugestao__sigla";
         sigla.textContent = l.getAttribute("data-sigla");
         chip.appendChild(sigla);
       }
-      chip.addEventListener("click", function () { viatura.escolher(l.getAttribute("data-valor")); });
+      chip.addEventListener("click", function () {
+        if (radio.checked) return;
+        radio.checked = true;
+        radio.dispatchEvent(new Event("change", { bubbles: true }));
+      });
       listaSugestoes.appendChild(chip);
     });
     sugestoes.hidden = !listaSugestoes.children.length;
   }
   atualizarSugestoes();
 
-  // 6. Roteiro salvo / Roteiro novo ------------------------------------------
-  var fonte = document.querySelector("[data-roteiro-fonte]");
-  var blocoSalvo = document.querySelector("[data-roteiro-salvo]");
-  if (fonte && blocoSalvo) {
-    fonte.querySelectorAll("[data-roteiro-fonte-opcao]").forEach(function (botao) {
-      botao.addEventListener("click", function () {
-        var salvo = botao.getAttribute("data-roteiro-fonte-opcao") === "salvo";
-        fonte.querySelectorAll("[data-roteiro-fonte-opcao]").forEach(function (b) {
-          b.setAttribute("aria-pressed", b === botao ? "true" : "false");
-        });
-        blocoSalvo.hidden = !salvo;
-      });
+  // 6. Vincular a um roteiro existente ---------------------------------------
+  // Ligado: só a busca do roteiro; os cartões do mapa, trechos e diárias ficam
+  // se já houver roteiro. Desligado: sede e destinos. Escolher um roteiro
+  // grava o ofício como rascunho e recarrega a tela com ele.
+  var vincular = document.querySelector("[data-roteiro-vincular]");
+  var campoVincular = document.querySelector("[data-roteiro-vincular-campo]");
+  var seletorExistente = form.querySelector('select[name="roteiro_existente"]');
+  if (vincular && campoVincular) {
+    var temRoteiro = !!(seletorExistente && seletorExistente.value);
+    var aplicarVinculo = function (ligado) {
+      campoVincular.value = ligado ? "1" : "";
+      vincular.classList.toggle("interruptor--ligado", ligado);
+      vincular.setAttribute("aria-pressed", ligado ? "true" : "false");
+      document.querySelectorAll("[data-roteiro-vinculo]").forEach(function (no) { no.hidden = !ligado; });
+      document.querySelectorAll("[data-roteiro-proprio]").forEach(function (no) { no.hidden = ligado; });
+      document.querySelectorAll("[data-roteiro-dependente]").forEach(function (no) { no.hidden = ligado && !temRoteiro; });
+    };
+    vincular.addEventListener("click", function () {
+      aplicarVinculo(vincular.getAttribute("aria-pressed") !== "true");
     });
+    if (seletorExistente) {
+      seletorExistente.addEventListener("change", function () {
+        if (!seletorExistente.value || campoVincular.value !== "1") return;
+        var acao = document.createElement("input");
+        acao.type = "hidden";
+        acao.name = "acao";
+        acao.value = "vincular_roteiro";
+        form.appendChild(acao);
+        form.submit();
+      });
+    }
   }
 
   // 7. Conferência: o PDF só é pedido quando o cartão abre ---------------------

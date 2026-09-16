@@ -8,18 +8,22 @@
   dentro ficaria aninhado no dele.
 
   Contexto: `d` (titulo, disponivel, mensagem, src, url_pdf, url_docx,
-  url_anexar, assinado), `menu_id`, `aninhado`.
+  url_anexar, assinado), `menu_id`, `aninhado` e `url_editar` (o editor
+  documental, só no ofício).
 {% endcomment %}
 <details class="ofc-doc{% if aninhado %} ofc-doc--aninhado{% endif %}" data-ofc-doc>
   <summary class="ofc-doc__cabeca">
     <span class="ofc-doc__titulo">{{ d.titulo }}{% if d.assinado %} <span class="st st--atendido">Assinado</span>{% endif %}</span>
-    {% if d.disponivel %}
+    {% if d.disponivel or url_editar %}
       <span class="dd of-menu ofc-doc__acoes" data-menu>
         <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações de {{ d.titulo }}" title="Visualizar e baixar">{% include "components/icon.html" with nome="document" %}</button>
         <span class="dd__c of-menu__corpo" hidden data-menu-corpo id="{{ menu_id }}">
+          {% if url_editar %}<a class="dd__i of-item" href="{{ url_editar }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar documento</b><small>Alterar o texto pela prévia A4</small></span></a>{% endif %}
+          {% if d.disponivel %}
           <a class="dd__i of-item" href="{{ d.src }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar documento</b><small>Abrir o PDF no navegador</small></span></a>
           <button type="submit" class="dd__i of-item" formaction="{{ d.url_pdf }}" formnovalidate>{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>{% if d.servidor %}Documento pronto para assinatura{% else %}Documento pronto para impressão{% endif %}</small></span></button>
           <button type="submit" class="dd__i of-item" formaction="{{ d.url_docx }}" formnovalidate>{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivo editável</small></span></button>
+          {% endif %}
           {% if d.url_anexar %}
             <a class="dd__i of-item" href="{{ d.url_anexar }}" data-anexar-assinado data-anexar-nome="{{ d.titulo }}"{% if d.assinado %} data-anexar-atual="1"{% endif %}>{% include "components/icon.html" with nome="upload" %}<span><b>{% if d.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}</b><small>Enviar o PDF depois da assinatura</small></span></a>
           {% endif %}

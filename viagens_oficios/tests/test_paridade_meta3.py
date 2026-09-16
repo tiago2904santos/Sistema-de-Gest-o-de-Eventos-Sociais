@@ -251,14 +251,14 @@ class CadastroTests(Cenario):
     def test_quatro_etapas_com_os_campos_da_origem(self):
         o = self.oficio(dias=3, servidores=[self.janine])
         r = self.editar(o)
-        self.assertContains(r, "<h1 class=\"page-header__titulo d-titulo-v32\">Cadastro de ofício</h1>", html=False)
-        for texto in ["Dados e viajantes", "Identificação", "N° do Ofício", "Protocolo", "Custeio", "Nome da Instituição",
-                      "Finalidade", "Modelo de motivo", "Descrição", "Servidores", "Adicionar à equipe",
-                      "Buscar por nome, CPF ou RG", "Definir motorista", "Com termo", "Viatura", "Escolher viatura",
-                      "Buscar por placa ou modelo", "Motorista", "Condutor da viatura", "No sistema", "Manual",
+        self.assertContains(r, f'Cadastro de ofício <span class="frm-ident">{o.numero_formatado}</span>')
+        for texto in ["Dados e viajantes", "N° do Ofício", "Protocolo", "Custeio", "Nome da Instituição",
+                      "Modelo de motivo", "Descrição", "Servidores", "Adicionar à equipe",
+                      "Buscar por nome, CPF ou RG", "Novo viajante", "Motorista", "Termo", "Viatura", "Escolher viatura",
+                      "Buscar por placa ou modelo", "data-lista-escolha=\"viatura\"", "Motorista", "Condutor da viatura", "No sistema", "Manual",
                       "Buscar motorista no sistema", "Nome completo", "Ofício de origem",
-                      "Roteiro e diárias", "Origem e destinos", "Roteiro salvo", "Roteiro novo", "Trechos", "Diárias",
-                      "Justificativa", "Documentos e conferência", "Documentos para conferência",
+                      "Roteiro e diárias", "Vincular a um roteiro existente", "Roteiro existente", "Trechos", "Diárias",
+                      "Justificativa", "Documentos", "Editar documento", "Novo viajante", "Nova viatura",
                       "Documento original (Ofício)", "Termos de Autorização"]:
             with self.subTest(texto=texto):
                 self.assertContains(r, texto)
@@ -371,6 +371,38 @@ class CadastroTests(Cenario):
         self.assertIsNotNone(o.roteiro)
         self.assertEqual(o.roteiro.origem_municipio, self.curitiba)
         self.assertEqual([d.municipio for d in o.roteiro.destinos.all()], [self.antonina])
+
+    def test_vincular_roteiro_existente(self):
+        o = self.oficio()
+        r = self.roteiro(10)
+        resposta = self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(
+            acao="vincular_roteiro", vincular_roteiro="1", roteiro_existente=str(r.pk), protocolo="98.765.432-1"))
+        self.assertRedirects(resposta, reverse("viagens_oficios:editar", args=[o.pk]) + "#roteiro", fetch_redirect_response=False)
+        o.refresh_from_db()
+        self.assertEqual(o.roteiro, r)
+        self.assertEqual(o.protocolo, "987654321")  # o que já estava digitado é gravado junto
+        # Reaberto, o vínculo vem ligado: só a busca, sem sede e destinos à vista.
+        pagina = self.client.get(reverse("viagens_oficios:editar", args=[o.pk])).content.decode()
+        self.assertIn('name="vincular_roteiro" value="1"', pagina)
+        self.assertIn('data-roteiro-proprio hidden', pagina)
+        self.assertIn(f'<option value="{r.pk}" selected', pagina)
+
+    def test_sem_roteiro_o_vinculo_vem_desligado(self):
+        o = self.oficio()
+        pagina = self.client.get(reverse("viagens_oficios:editar", args=[o.pk])).content.decode()
+        self.assertIn('name="vincular_roteiro" value=""', pagina)
+        self.assertIn('data-roteiro-vinculo hidden', pagina)
+        self.assertNotIn('data-roteiro-proprio hidden', pagina)
+
+    def test_vinculo_ligado_sem_escolha_nao_mexe_no_roteiro(self):
+        o = self.oficio()
+        dados = self.payload(vincular_roteiro="1", **{"origem_municipio": self.curitiba.pk,
+                             "trechos-TOTAL_FORMS": "0", "trechos-INITIAL_FORMS": "0",
+                             "destinos-TOTAL_FORMS": "1", "destinos-INITIAL_FORMS": "0",
+                             "destinos-0-municipio": self.antonina.pk})
+        self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), dados)
+        o.refresh_from_db()
+        self.assertIsNone(o.roteiro)
 
     def test_editor_vazio_nao_cria_roteiro(self):
         o = self.oficio()
