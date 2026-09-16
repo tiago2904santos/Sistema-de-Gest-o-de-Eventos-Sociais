@@ -33,7 +33,10 @@
           </div>
         </div>
       {% else %}
-        {% include "components/select.html" with name="oficio" label="Ofício" opcoes=dados.oficios selecionado=dados.oficio_valor erros=dados.erros.oficio obrigatorio=True pesquisavel=True placeholder="Buscar ofício pelo número ou destino..." %}
+        {# O mesmo componente do vínculo com ofício no termo: busca em cima, linhas clicáveis embaixo. #}
+        <div class="jt-escolha-oficio">
+          {% include "components/v32/lista_escolha.html" with name="oficio" label="Ofícios" rotulo_busca="Ofício" icone="document" opcoes=dados.oficios selecionado=dados.oficio_valor placeholder="Buscar ofício por número, protocolo, viajante ou destino" erros=dados.erros.oficio vazio="Todos os ofícios já têm justificativa." %}
+        </div>
       {% endif %}
       {% include "components/select.html" with name="modelo" label="Modelo de justificativa" opcoes=dados.modelos selecionado=dados.modelo_valor erros=dados.erros.modelo permitir_vazio=True placeholder="Sem modelo" ajuda="Escolher um modelo preenche o texto." %}
       {% include "components/textarea.html" with name="texto" label="Justificativa" valor=dados.texto_valor erros=dados.erros.texto obrigatorio=True linhas="7" %}

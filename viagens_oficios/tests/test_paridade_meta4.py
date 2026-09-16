@@ -107,6 +107,8 @@ class JustificativaModalTests(Cenario):
         r = self.client.get(reverse("viagens_oficios:justificativa_nova"), **MODAL)
         self.assertTemplateUsed(r, "pages/viagens_oficios/_justificativa_modal.html")
         self.assertContains(r, "Nova justificativa")
+        self.assertContains(r, 'data-lista-escolha="oficio"')
+        self.assertContains(r, 'data-lista-busca="oficio"')
         oficios = [o["valor"] for o in r.context["dados"]["oficios"]]
         self.assertIn(str(sem_texto.pk), oficios)
         self.assertNotIn(str(com_texto.pk), oficios)

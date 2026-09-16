@@ -90,9 +90,14 @@ def linha_da_justificativa(justificativa):
     }
 
 
-def _rotulo_oficio_para_escolha(oficio):
-    partes = [f"Ofício {oficio.numero_formatado}", subtitulo_do_cartao(oficio)]
-    return " — ".join(p for p in partes if p)
+def _opcao_de_oficio(oficio):
+    """Uma linha da lista de ofícios do modal, no formato de `lista_escolha`
+    (o mesmo do vínculo com ofício no termo)."""
+    from .busca_oficios import opcao_do_oficio, resumo_para_busca
+
+    dados = opcao_do_oficio(oficio)
+    return {"valor": str(oficio.pk), "rotulo": dados["main"], "detalhes": dados["meta"],
+            "busca": resumo_para_busca(oficio)["search_text"]}
 
 
 def _contexto_modal(form, justificativa):
@@ -118,7 +123,7 @@ def _contexto_modal(form, justificativa):
         "erros": {nome: form.errors.get(nome) for nome in ("oficio", "modelo", "texto")},
     }
     if not editando:
-        dados["oficios"] = [{"valor": str(o.pk), "rotulo": _rotulo_oficio_para_escolha(o)} for o in form.fields["oficio"].queryset]
+        dados["oficios"] = [_opcao_de_oficio(o) for o in form.fields["oficio"].queryset.prefetch_related("servidores")]
         dados["oficio_valor"] = str(form["oficio"].value() or "")
     return dados
 
