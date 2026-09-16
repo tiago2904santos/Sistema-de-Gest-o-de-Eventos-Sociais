@@ -1870,9 +1870,11 @@ form.btn-flutuante-form{margin:0;display:contents}
 .bx-seg .bx-seg__op--off span{color:var(--n-300)}
 .bx-dialogo .an-rodape .btn-primaria .ui-icon{width:15px;height:15px;margin-right:6px}
 
-/* Seletor de documento no modal de assinado: os nomes quebram em linhas. */
-.an-alvos .bx-seg{display:flex;flex-wrap:wrap;gap:2px;max-width:100%}
-.an-alvos .bx-seg span{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;line-height:30px}
+/* Seletor de documento no modal de assinado: colunas da mesma largura, uma
+   por opção (até três; com mais, a grade continua na linha de baixo). */
+.an-alvos .bx-seg{display:grid;grid-template-columns:repeat(var(--colunas,3),minmax(0,1fr));gap:3px;width:100%;box-sizing:border-box}
+.an-alvos .bx-seg label{display:block;min-width:0}
+.an-alvos .bx-seg span{display:block;width:100%;box-sizing:border-box;padding:0 12px;line-height:34px;height:34px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* Histórico de alterações (components/v32/historico_alteracoes.html): tabela
    com rolagem própria, rente às bordas como as outras tabelas de cartão. */

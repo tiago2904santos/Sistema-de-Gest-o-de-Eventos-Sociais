@@ -60,6 +60,7 @@
   function montarAlvos(opcoes) {
     alvosLista.innerHTML = '';
     alvos.hidden = opcoes.length < 2;
+    alvosLista.style.setProperty('--colunas', String(Math.min(opcoes.length, 3)));
     var marcada = false;
     opcoes.forEach(function (opcao, i) {
       var rotulo = document.createElement('label');
@@ -70,6 +71,7 @@
       radio.disabled = !opcao.url;
       var texto = document.createElement('span');
       texto.textContent = opcao.nome;
+      texto.title = opcao.nome;
       if (!opcao.url) {
         rotulo.classList.add('bx-seg__op--off');
         rotulo.title = 'Gere o PDF deste termo primeiro';
