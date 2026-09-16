@@ -386,43 +386,7 @@
             </div>
           </div>
 
-          {% comment %}
-            A composição do último cálculo GRAVADO — não a da prévia acima,
-            que muda a cada tecla. Cada parcela guarda a vigência que a
-            sustentou: é o que explica o pagamento depois, quando os valores
-            vigentes já forem outros.
-          {% endcomment %}
-          {% if parcelas %}
-            <details class="composicao" open>
-              <summary class="composicao__resumo">
-                <span>Composição gravada no último cálculo</span>
-                <strong>{{ total_formatado }}</strong>
-              </summary>
-              <div class="tabela-wrapper dt-w" tabindex="0" role="region" aria-label="Composição das diárias">
-                <table class="tabela dt tabela--compacta">
-                  <thead>
-                    <tr>
-                      <th>Faixa</th><th>Percentual</th><th>Qtde</th>
-                      <th>Valor unitário</th><th>Subtotal</th><th>Período</th><th>Vigência</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for parcela in parcelas %}
-                      <tr>
-                        <td data-rotulo="Faixa"><strong>{{ parcela.faixa }}</strong></td>
-                        <td data-rotulo="Percentual">{{ parcela.percentual }}%</td>
-                        <td data-rotulo="Qtde">{{ parcela.quantidade }}</td>
-                        <td data-rotulo="Valor unitário">R$ {{ parcela.valor_unitario }}</td>
-                        <td data-rotulo="Subtotal">R$ {{ parcela.subtotal }}</td>
-                        <td data-rotulo="Período">{{ parcela.periodo_inicio|date:"d/m H:i" }} — {{ parcela.periodo_fim|date:"d/m H:i" }}</td>
-                        <td data-rotulo="Vigência">{{ parcela.tabela_vigencia_inicio|date:"d/m/Y"|default:"—" }}</td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            </details>
-          {% endif %}
+          {% if roteiro.pk %}{% include "components/v32/historico_alteracoes.html" %}{% endif %}
 
           {% comment %}
             Ações do formulário no fim do bloco de Diárias: voltar à esquerda, salvar à direita.

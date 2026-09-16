@@ -39,7 +39,6 @@ from .services.rota import (
 from .services.diarias import (
     RoteiroIncalculavel,
     SemTabelaDeDiarias,
-    formatar_valor,
 )
 
 ITENS_POR_PAGINA = 20
@@ -243,6 +242,15 @@ def _sede_inicial(request, roteiro):
 
     sede = ConfiguracaoSistema.para_usuario(request.user).cidade_sede_padrao_id
     return {"origem_municipio": sede} if sede else None
+
+
+def historico_do_roteiro(roteiro):
+    from auditoria.historico import historico_de
+    return historico_de(
+        roteiro,
+        filhos=(("viagens_roteiros.roteirodestino", "roteiro"), ("viagens_roteiros.roteirotrecho", "roteiro")),
+        sobre_filhos={"viagens_roteiros.roteirodestino": "Destino", "viagens_roteiros.roteirotrecho": "Trecho"},
+    )
 
 
 @acesso_ao_modulo
@@ -453,19 +461,8 @@ def _contexto_do_form(roteiro, form, formset, destinos):
             if roteiro and roteiro.pk
             else ""
         ),
-        # A composição parcela a parcela do último cálculo gravado: é o que
-        # explica o valor depois, quando os valores vigentes já forem outros.
-        # Vive aqui desde que a tela de detalhe deixou de existir.
-        "parcelas": (
-            roteiro.componentes_diarias.select_related("tabela_diaria").all()
-            if roteiro and roteiro.pk
-            else []
-        ),
-        "total_formatado": (
-            f"R$ {formatar_valor(roteiro.valor_diarias)}"
-            if roteiro and roteiro.valor_diarias is not None
-            else "—"
-        ),
+        # Todas as alterações do roteiro, dos destinos e dos trechos.
+        "historico": historico_do_roteiro(roteiro),
         # A rota gravada, para o mapa reabrir desenhado; e os endereços que a
         # tela usa enquanto se monta o percurso.
         "rota_inicial": rota_para_tela(roteiro),

@@ -719,15 +719,15 @@ class CalculoPelaTelaTests(BaseTelaRoteiroTestCase):
         self.assertEqual(roteiro.valor_diarias, Decimal("773.19"))
         self.assertContains(resposta, "773,19")
 
-    def test_a_edicao_mostra_a_composicao_gravada_depois_do_calculo(self):
+    def test_a_edicao_mostra_o_historico_e_nao_a_composicao(self):
         roteiro = self.roteiro_curitiba_sp_abatia()
         recalcular_diarias(roteiro)
         resposta = self.client.get(
             reverse("viagens_roteiros:editar", args=[roteiro.pk])
         )
-        self.assertEqual(len(resposta.context["parcelas"]), 3)
-        self.assertContains(resposta, "CAPITAL")
-        self.assertContains(resposta, "Composição gravada no último cálculo")
+        self.assertNotContains(resposta, "Composição gravada no último cálculo")
+        self.assertNotIn("parcelas", resposta.context)
+        self.assertContains(resposta, "Histórico de alterações")
 
     def test_roteiro_sem_trecho_avisa_em_vez_de_quebrar(self):
         roteiro = Roteiro.objects.create(origem_municipio=self.curitiba)
@@ -1579,4 +1579,53 @@ class SedeDasConfiguracoesTests(BaseTelaRoteiroTestCase):
         roteiro = self.roteiro_curitiba_sp_abatia()
         resposta = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
         self.assertEqual(resposta.context["valores"]["origem_municipio"], str(self.curitiba.pk))
+
+
+class HistoricoDoRoteiroTests(BaseTelaRoteiroTestCase):
+    """O histórico na tela do roteiro: roteiro, destinos e trechos, campo a campo."""
+
+    def setUp(self):
+        from django.contrib.auth.models import Group
+        self.usuario = self.criar_usuario("historico")
+        self.usuario.groups.add(*Group.objects.filter(name__startswith="VIAGENS_"))
+        self.client.force_login(self.usuario)
+
+    def test_registra_criacao_edicao_e_exclusao_de_filhos(self):
+        from viagens_roteiros.views import historico_do_roteiro
+        with self.captureOnCommitCallbacks(execute=True):
+            roteiro = self.roteiro_curitiba_sp_abatia()
+            roteiro.quantidade_servidores = 3
+            roteiro.save()
+            trecho = roteiro.trechos.get(ordem=3)
+            trecho.delete()
+            RoteiroDestino.objects.create(roteiro=roteiro, municipio=self.sao_paulo, ordem=1)
+            roteiro.save()  # só carimbo: não aparece
+        itens = historico_do_roteiro(roteiro)
+        self.assertEqual(itens[0]["sobre"], f"Destino 1. {self.sao_paulo}")
+        self.assertEqual(itens[0]["acao"], "Criação")
+        self.assertTrue(any(i["acao"] == "Exclusão" and i["sobre"].startswith("Trecho 3.") for i in itens))
+        edicao = next(i for i in itens if i["sobre"] == "Roteiro" and i["mudancas"])
+        self.assertEqual([(m["antes"], m["depois"]) for m in edicao["mudancas"]], [("1", "3")])
+        # Criação do roteiro e dos três trechos, a edição, a exclusão e o destino.
+        self.assertEqual(len(itens), 1 + 3 + 1 + 1 + 1)
+
+    def test_valores_legiveis_e_tela(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            roteiro = self.roteiro_curitiba_sp_abatia()
+            roteiro.origem_municipio = self.sao_paulo
+            roteiro.save()
+        resposta = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
+        self.assertContains(resposta, "Histórico de alterações")
+        conteudo = resposta.content.decode()
+        self.assertIn(str(self.curitiba), conteudo)
+        self.assertIn(str(self.sao_paulo), conteudo)
+        self.assertIn("Registro criado", conteudo)
+
+    def test_parcelas_de_diaria_nao_entram(self):
+        from auditoria.models import RegistroAuditoria
+        with self.captureOnCommitCallbacks(execute=True):
+            roteiro = self.roteiro_curitiba_sp_abatia()
+            recalcular_diarias(roteiro)
+            recalcular_diarias(roteiro)
+        self.assertFalse(RegistroAuditoria.objects.filter(modelo="viagens_roteiros.roteirodiariacomponente").exists())
 

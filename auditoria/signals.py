@@ -25,6 +25,8 @@ APPS_AUDITADOS = {
     # dinheiro que vai para documento oficial, e alteração de valor sem rastro
     # é o tipo de coisa que só se descobre quando alguém contesta o pagamento.
     "viagens_cadastros",
+    # Roteiro, destinos e trechos: o histórico aparece na tela do roteiro.
+    "viagens_roteiros",
 }
 
 # Modelos com trilha própria ou que só gerariam ruído.
@@ -35,6 +37,9 @@ MODELOS_EXCLUIDOS = {
     "coffee_break.historicocoffeebreak",
     "demandas_eventos.historicodemanda",
     "core.notificacao",
+    # Parcelas de diária são refeitas a cada cálculo (apaga e recria em lote);
+    # o valor e o resumo resultantes já ficam registrados no roteiro.
+    "viagens_roteiros.roteirodiariacomponente",
 }
 
 # Nomes de campo que nunca entram em snapshot nem em delta: ou são segredo, ou

@@ -338,7 +338,9 @@ class PrestacaoAssinadoUploadTests(TestCase):
             ps_pk = card['servidores'][0]['ps_pk']
             documentos = self.client.get(reverse('viagens_prestacoes:documentos_servidor', args=[ps_pk]))
             self.assertEqual(len(documentos.context['uploads']), 5)
-            self.assertContains(documentos, 'type="file"', count=5)
+            import re
+            # Fora o modal de anexar assinado do shell, que existe em toda página.
+            self.assertEqual(re.sub(r'<dialog class="an-dialogo"[^>]*data-anexar-dialogo.*?</dialog>', '', documentos.content.decode(), flags=re.S).count('type="file"'), 5)
             self.assertContains(response, reverse('viagens_prestacoes:documentos_servidor', args=[ps_pk]))
 
 class RelatorioTecnicoDocumentoTests(TestCase):

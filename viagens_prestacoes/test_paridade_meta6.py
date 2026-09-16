@@ -179,7 +179,9 @@ class EtapasTests(CenarioPrestacoes):
                       "Pacote final e fechamento", "Falta para fechar o PDF final", "Informe o número da solicitação",
                       "Documentos de JANINE LACERDA DO PRADO", "Finalizar prestação", "Arquivar prestação"]:
             self.assertContains(r, texto)
-        self.assertContains(r, 'type="file"', count=5)
+        import re
+        # Fora o modal de anexar assinado do shell, que existe em toda página.
+        self.assertEqual(re.sub(r'<dialog class="an-dialogo"[^>]*data-anexar-dialogo.*?</dialog>', '', r.content.decode(), flags=re.S).count('type="file"'), 5)
         self.assertNotContains(r, "Baixar pacote (PDF final)")
         self.assertNotContains(r, "Etapa 4")
 

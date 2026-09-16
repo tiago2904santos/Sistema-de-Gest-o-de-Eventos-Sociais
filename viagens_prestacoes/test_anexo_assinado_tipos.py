@@ -66,7 +66,9 @@ class AnexoAssinadoTiposTests(PrestacaoFixturesMixin, TestCase):
                 self.assertFalse(kind['current_name'])
 
     def test_cinco_formularios_v32_de_upload_tem_csrf(self):
-        html = self._contexto().content.decode()
+        import re
+        # Fora o modal de anexar assinado do shell, que existe em toda página.
+        html = re.sub(r'<dialog class="an-dialogo"[^>]*data-anexar-dialogo.*?</dialog>', '', self._contexto().content.decode(), flags=re.S)
         self.assertEqual(html.count('enctype="multipart/form-data"'), 5)
         self.assertEqual(html.count('class="prestacao-upload"'), 5)
         self.assertGreaterEqual(html.count('name="csrfmiddlewaretoken"'), 5)
