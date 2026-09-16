@@ -71,7 +71,8 @@ def fatos_do_termo(termo):
     periodo = periodo_do_titulo(termo)
     servidores = ", ".join(s.nome for s in termo.servidores_efetivos())
     viatura = viatura_do_termo(termo)
-    fatos = [{"icone": "calendar", "rotulo": "Período", "texto": periodo or "Sem período", "ausente": not periodo}]
+    # O período mora no título; aqui só o que falta dizer.
+    fatos = [] if periodo else [{"icone": "calendar", "rotulo": "Período", "texto": "Sem período", "ausente": True}]
     # Sem ofício, não há o que dizer: o item só aparece quando há vínculo.
     if termo.oficio_id:
         fatos.append({"icone": "document", "rotulo": "Ofício", "texto": f"Ofício {termo.oficio.numero_formatado}", "ausente": False})
@@ -196,7 +197,7 @@ def linha_da_lista(termo, *, artefatos_pdf=None):
     artefatos_pdf = artefatos_pdf or {}
     return {
         "termo": termo,
-        "titulo": destino_do_titulo(termo),
+        "titulo": " · ".join(p for p in [destino_do_titulo(termo), periodo_do_titulo(termo)] if p),
         "selo": selo,
         "selo_tom": tom,
         "fatos": fatos_do_termo(termo),

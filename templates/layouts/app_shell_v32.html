@@ -58,7 +58,19 @@
     {% if nav_itens %}
       <div class="nav-mod">
         {% for item in nav_itens %}
-          <a href="{{ item.url }}"{% if item.ativo %} aria-current="page"{% endif %}>{{ item.rotulo }}</a>
+          {% if item.subitens %}
+            {# Item com gaveta: abre ao passar o mouse (ou ao focar pelo teclado). #}
+            <div class="nav-mod__grupo">
+              <a href="{{ item.url }}"{% if item.ativo %} aria-current="page"{% endif %} aria-haspopup="true">{{ item.rotulo }}</a>
+              <div class="nav-mod__gaveta" role="menu" aria-label="{{ item.rotulo }}">
+                {% for sub in item.subitens %}
+                  <a class="dd__i" role="menuitem" href="{{ sub.url }}"{% if sub.url == request.path %} aria-current="page"{% endif %}>{% include "components/icon.html" with nome=sub.icone %}{{ sub.rotulo }}</a>
+                {% endfor %}
+              </div>
+            </div>
+          {% else %}
+            <a href="{{ item.url }}"{% if item.ativo %} aria-current="page"{% endif %}>{{ item.rotulo }}</a>
+          {% endif %}
         {% endfor %}
       </div>
     {% endif %}

@@ -47,6 +47,12 @@ def modulos(request):
                     "url": reverse(item["url"], args=item.get("url_args", ())),
                     "ativo": namespace == ns_item
                     and (not url_names or url_name in url_names),
+                    # Gaveta do item: atalhos para as telas de dentro dele.
+                    "subitens": [
+                        {"rotulo": sub["rotulo"], "icone": sub["icone"],
+                         "url": reverse(sub["url"], args=sub.get("url_args", ()))}
+                        for sub in item.get("subitens", ())
+                    ],
                 }
             )
 

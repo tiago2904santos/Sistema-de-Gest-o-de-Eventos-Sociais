@@ -725,7 +725,8 @@ textarea.form-controle{height:auto;min-height:90px;line-height:1.5;padding:10px 
 .trechos-vazio{display:grid;justify-items:center;gap:6px;padding:24px;border:1px dashed var(--n-200);border-radius:8px;text-align:center;font-size:12px;color:var(--n-500)}.trechos-vazio strong{color:var(--n-800)}.trechos-vazio[hidden],[data-trechos-tabela][hidden],.trecho-linha[hidden],.trecho-linha__erros[hidden]{display:none}
 .etapas-roteiro{list-style:none;padding:0;margin:0}.etapa-roteiro{cursor:default}.etapa-roteiro__numero{display:grid;place-items:center;width:20px;height:20px;border:1.5px solid var(--n-250);border-radius:50%;font-size:10px;flex-shrink:0}.etapa-roteiro__texto{display:grid;gap:3px;flex:1}.etapa-roteiro__texto strong{font-size:12px;font-weight:500}.etapa-roteiro__texto small{font-size:11px;color:var(--n-450)}.etapa-roteiro__marca{visibility:hidden;color:var(--ok-t)}.etapa-roteiro--concluida .etapa-roteiro__marca{visibility:visible}.etapa-roteiro--concluida .etapa-roteiro__numero{background:var(--ok-t);border-color:var(--ok-t);color:var(--branco)}.etapa-roteiro--ativa .etapa-roteiro__numero{border-color:var(--d-500);color:var(--d-700);background:var(--d-50)}
 /* A navegação horizontal não precisa de uma segunda barra no Windows. */
-.nav-mod{overflow-y:hidden;scrollbar-width:none}
+.nav-mod{overflow:visible;scrollbar-width:none}
+@container(max-width:680px){.nav-mod{overflow-x:auto;overflow-y:hidden}.nav-mod__gaveta{display:none!important}}
 @container(max-width:1100px){.editor-roteiro .bloco-split{grid-template-columns:1fr}.rota-metricas{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @container(max-width:900px){.editor-roteiro.frm-grade{grid-template-columns:1fr}.editor-roteiro__acoes.frm-acoes{position:static}}
 @container(max-width:680px){.editor-roteiro .destino-row{grid-template-columns:22px 38px minmax(0,1fr) 38px}.destino-row__estado{grid-column:3/5}.destino-row__campo{grid-column:1/5}.destino-row--sede .destino-row__estado,.destino-row--sede .destino-row__campo{grid-column:1/5}.editor-roteiro .section-card__acao{margin-left:0}.editor-roteiro__acoes-cabecalho{justify-content:flex-start}.bate-volta__sentido,.diarias-metricas{grid-template-columns:1fr}.rota-metricas{grid-template-columns:1fr 1fr}.mapa__superficie{height:300px}.editor-roteiro .trechos-tabela,.trechos-tabela tbody{display:block;min-width:0;width:100%}.trechos-tabela thead{display:none}.trechos-tabela .trecho-linha{display:grid;gap:4px;border:1px solid var(--n-200);border-radius:8px;margin-bottom:12px;padding:8px}.trechos-tabela .trecho-linha[hidden]{display:none}.trechos-tabela td{display:block;padding:8px;border:0;white-space:normal}.trechos-tabela td[data-rotulo]::before{content:attr(data-rotulo);display:block;font-size:10px;color:var(--n-450);margin-bottom:6px}.trechos-tabela .form-campo{min-width:0}.editor-roteiro [data-trechos-tabela]{overflow:visible}.editor-roteiro__acoes.frm-acoes{padding-inline:0}}
@@ -1908,3 +1909,14 @@ form.btn-flutuante-form{margin:0;display:contents}
 /* No hover da linha, o quadrado fica como o da linha escolhida: grafite com ícone branco. */
 .cad-lista .dt tbody tr:hover .tabela__icone-doc,.cad-lista .m-item:hover .tabela__icone-doc{background:var(--grafite);color:var(--branco)}
 .cad-lista .tabela__icone-doc .ui-icon{width:15px;height:15px}
+
+/* Gaveta de um item da navegação do módulo (Cadastros): abre no hover ou no
+   foco, logo abaixo do item, com os atalhos das telas de dentro. */
+.nav-mod__grupo{position:relative;display:flex;align-items:stretch}
+.nav-mod__gaveta{position:absolute;left:-10px;top:100%;z-index:60;min-width:220px;padding:4px;background:var(--branco);border:1px solid var(--n-200);border-radius:8px;box-shadow:0 12px 28px -8px rgba(26,25,23,.22);opacity:0;visibility:hidden;transform:translateY(4px);transition:opacity var(--motion,.15s),transform var(--motion,.15s),visibility 0s linear .15s}
+.nav-mod__grupo:hover .nav-mod__gaveta,.nav-mod__grupo:focus-within .nav-mod__gaveta{opacity:1;visibility:visible;transform:none;transition-delay:0s}
+.nav-mod .nav-mod__gaveta a{height:auto;border-bottom:0;margin:0;font-size:13.5px;font-weight:400;color:var(--n-700)}
+.nav-mod .nav-mod__gaveta a::before{display:none}
+.nav-mod .nav-mod__gaveta a:hover{background:var(--n-50);color:var(--n-900)}
+.nav-mod .nav-mod__gaveta a[aria-current]{background:var(--n-100);color:var(--n-900);font-weight:600}
+.nav-mod__gaveta .ui-icon{width:15px;height:15px;color:var(--n-450)}

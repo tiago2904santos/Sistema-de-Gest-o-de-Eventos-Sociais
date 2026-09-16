@@ -26,6 +26,7 @@ from viagens_oficios.documents import VarianteTermo
 from viagens_termos.models import TermoAutorizacao
 
 from .test_paridade_meta3 import Cenario
+from viagens_termos.presenters import periodo_do_titulo
 
 
 class CenarioTermos(Cenario):
@@ -63,7 +64,7 @@ class ListaTermosTests(CenarioTermos):
         r = self.lista()
         inicio, fim = t.periodo_efetivo()
         # O título é só o destino; o período virou um fato, com o seu ícone.
-        self.assertContains(r, f'id="termo-{t.pk}-titulo">ANTONINA/PR ')
+        self.assertContains(r, f'id="termo-{t.pk}-titulo">ANTONINA/PR · ')  # período no título
         self.assertContains(r, 'class="st st--atendido">Realizado')
         for fato in [f"{inicio:%d/%m/%Y} a {fim:%d/%m/%Y}", f"Ofício {o.numero_formatado}",
                      "JANINE LACERDA DO PRADO, JOÃO MARIO DE GOES", "AAA-1234 DUSTER"]:
@@ -104,9 +105,9 @@ class ListaTermosTests(CenarioTermos):
         cancelado = self.termo(cidade=self.antonina, inicio=self.data(3), cancelar=True)
         r = self.lista()
         self.assertContains(r, f'id="termo-{so_uf.pk}-titulo">PR <span class="st st--neutro">Sem período</span>')
-        self.assertContains(r, f'id="termo-{previsto.pk}-titulo">ANTONINA/PR <span class="st st--aguardando">Previsto</span>')
-        self.assertContains(r, f'id="termo-{andamento.pk}-titulo">ANTONINA/PR <span class="st st--em_andamento">Em andamento</span>')
-        self.assertContains(r, f'id="termo-{cancelado.pk}-titulo">ANTONINA/PR <span class="st st--cancelada">Cancelado</span>')
+        self.assertContains(r, f'id="termo-{previsto.pk}-titulo">ANTONINA/PR · {periodo_do_titulo(previsto)} <span class="st st--aguardando">Previsto</span>')
+        self.assertContains(r, f'id="termo-{andamento.pk}-titulo">ANTONINA/PR · {periodo_do_titulo(andamento)} <span class="st st--em_andamento">Em andamento</span>')
+        self.assertContains(r, f'id="termo-{cancelado.pk}-titulo">ANTONINA/PR · {periodo_do_titulo(cancelado)} <span class="st st--cancelada">Cancelado</span>')
         self.assertContains(r, "tm-linha--cancelada")
         # O período saiu do título e virou fato do cartão.
         self.assertContains(r, f"{self.data(3):%d/%m/%Y} a {self.data(4):%d/%m/%Y}")

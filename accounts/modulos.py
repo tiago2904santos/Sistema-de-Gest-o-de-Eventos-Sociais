@@ -47,7 +47,8 @@ def registrar_modulo(
       os ``namespaces`` são registrados no middleware de autorização.
     - ``itens``: navegação do módulo — dicts com ``rotulo``, ``url`` (nome da
       rota), ``icone`` e opcionalmente ``url_args``, ``url_names`` (nomes de
-      rota que marcam o item como ativo), ``somente_admin`` e ``visivel_para``
+      rota que marcam o item como ativo), ``subitens`` (gaveta do item, com
+      ``rotulo``, ``icone``, ``url`` e ``url_args``), ``somente_admin`` e ``visivel_para``
       (função que recebe o usuário e decide se o item aparece).
     """
     if codigo:

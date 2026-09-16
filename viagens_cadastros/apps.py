@@ -49,6 +49,15 @@ class ViagensCadastrosConfig(AppConfig):
                     "icone": "checklist",
                     "url": "viagens_cadastros:lista",
                     "url_args": ("servidores",),
+                    # Gaveta ao passar o mouse: as seis tabelas da trilha.
+                    "subitens": [
+                        {"rotulo": "Servidores", "icone": "users", "url": "viagens_cadastros:lista", "url_args": ("servidores",)},
+                        {"rotulo": "Viaturas", "icone": "truck", "url": "viagens_cadastros:lista", "url_args": ("viaturas",)},
+                        {"rotulo": "Unidades", "icone": "landmark", "url": "viagens_cadastros:lista", "url_args": ("unidades",)},
+                        {"rotulo": "Cargos", "icone": "shield", "url": "viagens_cadastros:lista", "url_args": ("cargos",)},
+                        {"rotulo": "Combustíveis", "icone": "activity", "url": "viagens_cadastros:lista", "url_args": ("combustiveis",)},
+                        {"rotulo": "Diárias", "icone": "chart", "url": "viagens_cadastros:diarias"},
+                    ],
                 },
                 # Dados institucionais e assinaturas dos documentos: a tela é
                 # restrita ao gestor, então o item só aparece para ele.
