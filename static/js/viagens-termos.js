@@ -193,27 +193,31 @@
     ordenadas.forEach(function (linha) { lista.appendChild(linha); });
   }
 
-  // Sem servidor escolhido não há o que sugerir: busca e lista dão lugar ao
-  // cartão de espera. A viatura já gravada num termo continua à vista, para a
-  // escolha não parecer perdida.
+  // A busca de viatura fica sempre à vista. A lista só aparece quando há o que
+  // mostrar: servidor escolhido (as sugestões), viatura já marcada (a escolha
+  // não parece perdida) ou algo digitado na busca (o filtro). Fora disso, o
+  // cartão de espera ocupa o lugar dela.
   var campoBusca = form.querySelector('[data-lista-campo="viatura"]');
   var buscaViatura = campoBusca && campoBusca.querySelector(".busca");
+  var entradaBusca = form.querySelector('[data-lista-busca="viatura"]');
   var espera = form.querySelector('[data-lista-aguardando="viatura"]');
+  if (buscaViatura) buscaViatura.hidden = false;
 
   function atualizarEspera() {
     if (!espera) return;
     var temServidor = Boolean(form.querySelector('[data-multi-opcao] input[name="servidores"]:checked'));
     var temViatura = Boolean(lista.querySelector('input[name="viatura"]:checked'));
-    var aguardar = !temServidor && !temViatura;
+    var temBusca = Boolean(entradaBusca && entradaBusca.value.trim());
+    var aguardar = !temServidor && !temViatura && !temBusca;
     espera.hidden = !aguardar;
     lista.hidden = aguardar;
-    if (buscaViatura) buscaViatura.hidden = aguardar;
   }
 
   form.addEventListener("change", function (evento) {
     if (evento.target.name === "servidores") reordenar();
     if (evento.target.name === "servidores" || evento.target.name === "viatura") atualizarEspera();
   });
+  if (entradaBusca) entradaBusca.addEventListener("input", atualizarEspera);
   reordenar();
   atualizarEspera();
 })();
