@@ -1,4 +1,4 @@
-from core.legado import OrigemLegadoUUID
+from core.legado import OrigemLegado, OrigemLegadoUUID
 import uuid
 
 from django.core.exceptions import ValidationError
@@ -150,7 +150,7 @@ class DocumentoAssinaturaVersao(OrigemLegadoUUID):
         raise ValidationError("Versões documentais não podem ser excluídas.")
 
 
-class DocumentoBloco(models.Model):
+class DocumentoBloco(OrigemLegado):
     """Conteúdo documental de um documento: parágrafo do modelo com override,
     ou quebra de página num ponto que o template admite.
 
@@ -187,6 +187,10 @@ class DocumentoBloco(models.Model):
             models.UniqueConstraint(fields=["tipo_documento", "oficio", "chave"], condition=models.Q(oficio__isnull=False), name="documentobloco_oficio_chave"),
             models.UniqueConstraint(fields=["tipo_documento", "termo", "chave"], condition=models.Q(termo__isnull=False), name="documentobloco_termo_chave"),
             models.UniqueConstraint(fields=["tipo_documento", "prestacao", "chave"], condition=models.Q(prestacao__isnull=False), name="documentobloco_prestacao_chave"),
+            # Marca de origem do legado, como todo model de viagens (regra do
+            # esquema em migracao_legado); blocos não existem no legado, mas a
+            # marca é uniforme.
+            models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="documentobloco_origem"),
         ]
 
     def __str__(self) -> str:
