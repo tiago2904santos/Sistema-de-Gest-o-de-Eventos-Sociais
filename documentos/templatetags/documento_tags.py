@@ -6,9 +6,11 @@ não emite nada — o mesmo template serve aos dois. Só marca campos que estão
 em `campos_editaveis` (o registro explícito do backend decide, nunca o
 template).
 
-`{% bloco "chave" %}texto padrão{% endbloco %}` é um parágrafo documental: o
-texto padrão vem do template; se houver override gravado em `blocos`, vale o
-override. No modo editor o parágrafo leva a chave, para ser editado.
+`{% bloco "chave" %}` é um parágrafo documental: o texto padrão vem do
+registro (documentos/editor/blocos.py) já resolvido em `blocos`; se houver
+override gravado, vale o override. Com edição ligada, o parágrafo leva a
+chave, para ser editado. `{% ponto_de_quebra "chave" %}` é onde uma quebra
+de página pode existir; ativa em `quebras`, vira a quebra.
 
 `|linhas` troca quebras de linha por `<br>` com o texto escapado — os textos
 calculados do documento (colunas de servidor, custeio, roteiro) usam `\\n`.
@@ -31,35 +33,39 @@ def editavel(context, campo):
     return format_html('data-doc-campo="{}" class="doc-editavel" tabindex="0"', campo)
 
 
-@register.tag(name="bloco")
-def bloco_tag(parser, token):
-    try:
-        _, chave = token.split_contents()
-    except ValueError as exc:
-        raise template.TemplateSyntaxError("{% bloco %} exige a chave do bloco") from exc
-    nodelist = parser.parse(("endbloco",))
-    parser.delete_first_token()
-    return BlocoNode(chave.strip("\"'"), nodelist)
+def _editando(context):
+    return context.get("modo") == "editor" and bool(context.get("edicao"))
 
 
-class BlocoNode(template.Node):
-    def __init__(self, chave, nodelist):
-        self.chave = chave
-        self.nodelist = nodelist
+@register.simple_tag(takes_context=True)
+def bloco(context, chave):
+    """Parágrafo do modelo: texto padrão do registro (documentos/editor/blocos.py)
+    ou o override gravado. Chave fora do registro não rende nada."""
+    dados = (context.get("blocos") or {}).get(chave)
+    if dados is None:
+        return ""
+    texto = dados.get("conteudo")
+    if texto is None:
+        texto = dados.get("padrao", "")
+    if _editando(context):
+        atributos = format_html(' data-doc-bloco="{}" class="doc-bloco doc-editavel" tabindex="0"', chave)
+        if dados.get("editado"):
+            atributos += mark_safe(' data-doc-override="1"')
+    else:
+        atributos = mark_safe(' class="doc-bloco"')
+    return format_html("<p{}>{}</p>", atributos, linhas(texto))
 
-    def render(self, context):
-        padrao = self.nodelist.render(context).strip()
-        blocos = context.get("blocos") or {}
-        atual = blocos.get(self.chave)
-        texto = atual["conteudo"] if atual and atual.get("conteudo") is not None else padrao
-        atributos = ""
-        if context.get("modo") == "editor":
-            atributos = format_html(' data-doc-bloco="{}" class="doc-bloco doc-editavel" tabindex="0"', self.chave)
-            if atual and atual.get("editado"):
-                atributos += mark_safe(' data-doc-override="1"')
-        else:
-            atributos = mark_safe(' class="doc-bloco"')
-        return format_html("<p{}>{}</p>", atributos, linhas(texto))
+
+@register.simple_tag(takes_context=True)
+def ponto_de_quebra(context, chave):
+    """Onde o template admite uma quebra de página. Ativa, é a quebra (no PDF
+    vira página nova); no editor, inativa é uma fenda onde se pode inserir."""
+    ativa = chave in (context.get("quebras") or ())
+    if _editando(context):
+        if ativa:
+            return format_html('<div class="doc-quebra" data-doc-quebra="{}" data-doc-quebra-ativa="1" tabindex="0" title="Remover a quebra de página"></div>', chave)
+        return format_html('<div class="doc-quebra-slot" data-doc-quebra="{}" tabindex="0" title="Inserir quebra de página aqui"></div>', chave)
+    return mark_safe('<div class="doc-quebra"></div>') if ativa else ""
 
 
 @register.filter(name="linhas", is_safe=True)

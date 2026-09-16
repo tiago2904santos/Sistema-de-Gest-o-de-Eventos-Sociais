@@ -46,8 +46,25 @@ body.documento--editor { padding: 16px 0 24px; }
 .doc-editavel--ativo, .doc-editavel--ativo:hover { background: rgba(190, 164, 90, .22); }
 td.doc-editavel, p.doc-editavel { border-radius: 0; }
 
+/* Parágrafo do modelo com texto alterado: um fio dourado à esquerda. */
+.doc-bloco[data-doc-override="1"] { box-shadow: inset 2pt 0 0 #BEA45A; padding-left: 5pt; }
+
+/* Ponto de quebra sem quebra: uma fenda invisível que, ao passar o mouse,
+   mostra onde a quebra de página pode ser inserida. */
+.doc-quebra-slot { position: relative; height: 8pt; margin: -4pt 0; cursor: pointer; }
+.doc-quebra-slot:focus { outline: none; }
+.doc-quebra-slot::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dashed transparent; }
+.doc-quebra-slot:hover::before { border-color: #9a9a9a; }
+.doc-quebra-slot:hover::after {
+  content: "+ quebra de página"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  padding: 0 4pt; background: #fff; font-size: 7pt; color: #7a7a7a; line-height: 1; white-space: nowrap;
+}
+
 /* Quebra de página: no PDF não aparece; na tela é uma linha tracejada com
    o nome, para se saber onde o documento vira a página. */
+.documento--editor .doc-quebra[data-doc-quebra] { cursor: pointer; }
+.documento--editor .doc-quebra[data-doc-quebra]:focus { outline: none; }
+.documento--editor .doc-quebra[data-doc-quebra]:hover::after { content: "quebra de página — clique para remover"; }
 .documento--editor .doc-quebra {
   height: auto;
   margin: 8pt 0;

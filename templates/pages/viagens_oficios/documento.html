@@ -53,7 +53,7 @@
   {% endif %}
 
   {# Com permissão de edição a folha ganha, ao lado, o painel do campo aberto; sem ela é só a prévia. #}
-  <div class="dc-corpo{% if pode_editar %} dc-corpo--editor{% endif %}"{% if pode_editar %} data-de-editor data-de-url="{% url 'documentos:editor_campo' 'oficio' oficio.pk 'CHAVE' %}" data-de-versao="{{ versao }}"{% endif %}>
+  <div class="dc-corpo{% if pode_editar %} dc-corpo--editor{% endif %}"{% if pode_editar %} data-de-editor data-de-url="{% url 'documentos:editor_campo' 'oficio' oficio.pk 'CHAVE' %}" data-de-url-bloco="{% url 'documentos:editor_bloco' 'oficio' oficio.pk 'CHAVE' %}" data-de-url-quebra="{% url 'documentos:editor_quebra' 'oficio' oficio.pk 'CHAVE' %}" data-de-versao="{{ versao }}"{% endif %}>
     <div class="dc-palco">
       <iframe class="dc-folha" id="dc-folha" src="{% url 'viagens_oficios:documento_folha' oficio.pk %}" title="Prévia do ofício {{ oficio.numero_formatado }}"></iframe>
     </div>

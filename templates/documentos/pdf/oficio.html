@@ -7,7 +7,9 @@
   Cada trecho que nasce de um campo do ofício leva `{% editavel "campo" %}`:
   no modo editor a tag emite os atributos que ligam o trecho ao campo; no PDF
   não emite nada. O que é parágrafo fixo do modelo é bloco documental
-  (`{% bloco "chave" %}`), passível de override sem tocar em campo algum.
+  (`{% bloco "chave" %}`, texto padrão no registro documentos/editor/blocos.py),
+  passível de override sem tocar em campo algum. `{% ponto_de_quebra %}` marca
+  onde uma quebra de página pode ser inserida.
 {% endcomment %}
 {% block titulo %}Ofício {{ tx.oficio }}{% endblock %}
 
@@ -36,6 +38,7 @@
     </tbody>
   </table>
 
+  {% ponto_de_quebra "apos_equipe" %}
   <p class="doc-linha"><strong>Destino da Viagem:</strong> <span {% editavel "roteiro" %}>{{ tx.destinos_bloco|linhas }}</span></p>
 
   <table class="doc-tabela doc-tabela--diarias">
@@ -64,6 +67,7 @@
     </tbody>
   </table>
 
+  {% ponto_de_quebra "apos_roteiro" %}
   <table class="doc-tabela doc-tabela--transporte" {% editavel "transporte" %}>
     <tbody>
       <tr>
@@ -81,13 +85,15 @@
     </tbody>
   </table>
 
+  {% ponto_de_quebra "apos_transporte" %}
   <p class="doc-linha"><strong>Custos:</strong> Informar qual entidade custeará as diárias (hospedagem/alimentação) e deslocamento:</p>
   <p class="doc-custeio" {% editavel "custeio" %}>{{ tx.custo|linhas }}</p>
 
   <p class="doc-paragrafo"><strong>Motivo da Viagem:</strong> <span {% editavel "motivo" %}>{{ tx.motivo|linhas }}</span>.</p>
 
-  {% bloco "declaracao_cartao" %}Declaro que os servidores estão cientes da necessidade de estar na posse de cartão corporativo vigente e apto para uso, no período do deslocamento.{% endbloco %}
+  {% bloco "declaracao_cartao" %}
 
+  {% ponto_de_quebra "antes_assinatura" %}
   <div class="doc-assinatura">
     <p>Respeitosamente,</p>
     <p class="doc-assinatura__nome">{{ tx.nome_chefia }}</p>

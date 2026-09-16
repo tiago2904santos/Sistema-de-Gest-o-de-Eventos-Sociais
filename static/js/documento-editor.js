@@ -17,25 +17,38 @@
 
   var painel = editor.querySelector('[data-de-painel]');
   var vazio = editor.querySelector('[data-de-vazio]');
-  var urlBase = editor.getAttribute('data-de-url');
+  // Três espécies de trecho editável, cada uma com a sua rota: campo (nasce
+  // de um campo real), bloco (parágrafo do modelo) e quebra (ponto de quebra).
+  var urls = {
+    campo: editor.getAttribute('data-de-url'),
+    bloco: editor.getAttribute('data-de-url-bloco'),
+    quebra: editor.getAttribute('data-de-url-quebra')
+  };
   var versao = editor.getAttribute('data-de-versao') || '';
   var tokenCsrf = document.querySelector('input[name="csrfmiddlewaretoken"]');
   var ESPERA_DIGITACAO = 900;
 
   var chaveAberta = null;
+  var especieAberta = 'campo';
   var temporizador = null;
   var enviando = false;
   var reenviar = false;
 
-  function url(chave) { return urlBase.replace('CHAVE', encodeURIComponent(chave)); }
+  function url(especie, chave) { return (urls[especie] || '').replace('CHAVE', encodeURIComponent(chave)); }
   function documentoDaFolha() { return quadro.contentDocument; }
+  function cabecalhos(comCorpo) {
+    var h = { 'X-CSRFToken': tokenCsrf ? tokenCsrf.value : '', 'X-Requested-With': 'XMLHttpRequest' };
+    if (comCorpo) h['Content-Type'] = 'application/json';
+    return h;
+  }
 
-  function marcar(chave) {
+  function marcar(chave, especie) {
     var doc = documentoDaFolha();
     if (!doc) return;
     doc.querySelectorAll('.doc-editavel--ativo').forEach(function (el) { el.classList.remove('doc-editavel--ativo'); });
     if (!chave) return;
-    doc.querySelectorAll('[data-doc-campo="' + chave + '"]').forEach(function (el) { el.classList.add('doc-editavel--ativo'); });
+    var atributo = especie === 'bloco' ? 'data-doc-bloco' : 'data-doc-campo';
+    doc.querySelectorAll('[' + atributo + '="' + chave + '"]').forEach(function (el) { el.classList.add('doc-editavel--ativo'); });
   }
 
   function status(texto, classe) {
@@ -116,11 +129,7 @@
     fetch(form.getAttribute('action'), {
       method: 'PATCH',
       credentials: 'same-origin',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': tokenCsrf ? tokenCsrf.value : '',
-        'X-Requested-With': 'XMLHttpRequest'
-      },
+      headers: cabecalhos(true),
       body: JSON.stringify({ versao: versao, valores: valoresDe(form) })
     }).then(function (resposta) {
       return resposta.json().then(function (dados) { return { codigo: resposta.status, dados: dados }; }, function () { return { codigo: resposta.status, dados: {} }; });
@@ -131,6 +140,9 @@
         limparErros();
         status(res.dados.avisos && res.dados.avisos.length ? 'Salvo. O ofício ainda tem pendências em outros campos.' : 'Salvo', 'ok');
         recarregarFolha();
+        // Um bloco que acabou de ganhar (ou perder) override troca de painel:
+        // aparece ou some o "Restaurar". Reabre sem mexer no texto digitado.
+        if (form.getAttribute('data-de-especie') === 'bloco' && !temporizador) reabrirSeMudouEstado(form, res.dados.editado);
       } else if (res.codigo === 409) {
         status(res.dados.mensagem || 'O documento mudou em outro lugar.', 'erro');
         oferecerRecarga();
@@ -147,6 +159,33 @@
       enviando = false;
       status('Sem conexão. Tente de novo.', 'erro');
     });
+  }
+
+  function reabrirSeMudouEstado(form, editado) {
+    var tinhaRestaurar = !!form.querySelector('[data-de-restaurar]');
+    if (tinhaRestaurar === !!editado) return;
+    var texto = form.querySelector('textarea');
+    var valor = texto ? texto.value : null;
+    abrir(chaveAberta, 'bloco', function () {
+      var novo = painel.querySelector('textarea');
+      if (novo && valor !== null) novo.value = valor;
+      status('Salvo', 'ok');
+    });
+  }
+
+  function restaurar(form) {
+    status('Restaurando…', 'andamento');
+    fetch(form.getAttribute('action'), { method: 'DELETE', credentials: 'same-origin', headers: cabecalhos(false) })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function () { recarregarFolha(); abrir(chaveAberta, 'bloco'); })
+      .catch(function () { status('Não foi possível restaurar.', 'erro'); });
+  }
+
+  function alternarQuebra(chave, ativa) {
+    fetch(url('quebra', chave), { method: 'PATCH', credentials: 'same-origin', headers: cabecalhos(true), body: JSON.stringify({ ativa: ativa }) })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function () { recarregarFolha(); })
+      .catch(function () { window.alert('Não foi possível alterar a quebra de página.'); });
   }
 
   function oferecerRecarga() {
@@ -172,7 +211,7 @@
       if (alvo.closest('[data-multi-pick]')) return;  // a busca do multi-pick não é valor
       clearTimeout(temporizador);
       status('Digitando…');
-      temporizador = setTimeout(function () { salvar(form); }, ESPERA_DIGITACAO);
+      temporizador = setTimeout(function () { temporizador = null; salvar(form); }, ESPERA_DIGITACAO);
     });
     form.addEventListener('change', function (evento) {
       var alvo = evento.target;
@@ -184,6 +223,8 @@
       salvar(form);
     });
     painel.querySelectorAll('[data-de-fechar]').forEach(function (botao) { botao.addEventListener('click', fechar); });
+    var botaoRestaurar = form.querySelector('[data-de-restaurar]');
+    if (botaoRestaurar) botaoRestaurar.addEventListener('click', function () { restaurar(form); });
   }
 
   function montar(html) {
@@ -194,22 +235,26 @@
     ligarPainel();
   }
 
-  function abrir(chave) {
+  function abrir(chave, especie, depois) {
+    especie = especie || 'campo';
     chaveAberta = chave;
-    marcar(chave);
-    fetch(url(chave), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    especieAberta = especie;
+    marcar(chave, especie);
+    fetch(url(especie, chave), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function (dados) {
-        if (dados.versao) versao = dados.versao;
+        if (dados.versao !== undefined) versao = dados.versao;
         montar(dados.fragmento);
+        if (depois) depois();
         var primeiro = painel.querySelector('textarea, input[type="text"]:not([data-multi-busca]), select');
         if (primeiro && !primeiro.closest('.custom-select')) primeiro.focus();
       })
-      .catch(function () { montar('<p class="form-erro">Não foi possível abrir este campo.</p>'); });
+      .catch(function () { montar('<p class="form-erro">Não foi possível abrir este trecho.</p>'); });
   }
 
   function fechar() {
     clearTimeout(temporizador);
+    temporizador = null;
     chaveAberta = null;
     marcar(null);
     painel.hidden = true;
@@ -217,23 +262,33 @@
     if (vazio) vazio.hidden = false;
   }
 
+  // O que foi clicado (ou acionado pelo teclado) na folha: campo, bloco ou
+  // ponto de quebra. Devolve false quando não é nada editável.
+  function acionar(alvoInicial) {
+    if (!alvoInicial || !alvoInicial.closest) return false;
+    var quebra = alvoInicial.closest('[data-doc-quebra]');
+    if (quebra) {
+      alternarQuebra(quebra.getAttribute('data-doc-quebra'), !quebra.hasAttribute('data-doc-quebra-ativa'));
+      return true;
+    }
+    var bloco = alvoInicial.closest('[data-doc-bloco]');
+    if (bloco) { abrir(bloco.getAttribute('data-doc-bloco'), 'bloco'); return true; }
+    var campo = alvoInicial.closest('[data-doc-campo]');
+    if (campo) { abrir(campo.getAttribute('data-doc-campo'), 'campo'); return true; }
+    return false;
+  }
+
   function ligarFolha() {
     var doc = documentoDaFolha();
     if (!doc) return;
     doc.addEventListener('click', function (evento) {
-      var alvo = evento.target.closest('[data-doc-campo]');
-      if (!alvo) return;
-      evento.preventDefault();
-      abrir(alvo.getAttribute('data-doc-campo'));
+      if (acionar(evento.target)) evento.preventDefault();
     });
     doc.addEventListener('keydown', function (evento) {
       if (evento.key !== 'Enter' && evento.key !== ' ') return;
-      var alvo = evento.target.closest && evento.target.closest('[data-doc-campo]');
-      if (!alvo) return;
-      evento.preventDefault();
-      abrir(alvo.getAttribute('data-doc-campo'));
+      if (acionar(evento.target)) evento.preventDefault();
     });
-    marcar(chaveAberta);
+    marcar(chaveAberta, especieAberta);
   }
 
   quadro.addEventListener('load', ligarFolha);
@@ -241,7 +296,7 @@
 
   if (vazio) vazio.addEventListener('click', function (evento) {
     var chip = evento.target.closest('[data-de-abrir]');
-    if (chip) abrir(chip.getAttribute('data-de-abrir'));
+    if (chip) abrir(chip.getAttribute('data-de-abrir'), chip.getAttribute('data-de-especie') || 'campo');
   });
   document.addEventListener('keydown', function (evento) {
     if (evento.key === 'Escape' && chaveAberta) fechar();

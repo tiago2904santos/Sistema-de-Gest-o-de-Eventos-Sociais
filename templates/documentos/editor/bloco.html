@@ -1,0 +1,27 @@
+{% comment %}
+  Painel de um bloco documental (parágrafo do modelo). Texto livre, com
+  quebras de linha; apagar tudo ou "Restaurar" volta ao texto do modelo.
+  O `documento-editor.js` trata este formulário como o de um campo.
+{% endcomment %}
+<form class="de-campo" method="post" action="{{ url }}" data-de-form data-de-chave="{{ bloco.chave }}" data-de-especie="bloco" novalidate>
+  <div class="de-campo__cabeca">
+    <h3 class="de-campo__titulo">{{ bloco.rotulo }}</h3>
+    <button type="button" class="de-campo__fechar" data-de-fechar aria-label="Fechar o bloco">{% include "components/icon.html" with nome="x" %}</button>
+  </div>
+  {% if bloco.ajuda %}<p class="de-campo__ajuda">{{ bloco.ajuda }}</p>{% endif %}
+  <div class="de-campo__erros" data-de-erros></div>
+
+  <div class="de-campo__partes">
+    {% include "components/textarea.html" with name="conteudo" label="Texto do parágrafo" valor=conteudo linhas=7 ajuda="Apagar tudo volta ao texto do modelo." %}
+    {% if editado %}
+      <p class="de-campo__nota">Texto alterado{% if editado_por %} por {{ editado_por }}{% endif %}{% if editado_em %} em {{ editado_em|date:"d/m/Y H:i" }}{% endif %}.</p>
+      <button type="button" class="btn--secundaria de-restaurar" data-de-restaurar>{% include "components/icon.html" with nome="undo" %}Restaurar o texto do modelo</button>
+    {% endif %}
+  </div>
+
+  <div class="de-campo__rodape">
+    <span class="de-status" data-de-status aria-live="polite"></span>
+    <button type="button" class="btn--secundaria" data-de-fechar>Fechar</button>
+    <button type="submit" class="btn-primaria">Salvar</button>
+  </div>
+</form>

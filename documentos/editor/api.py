@@ -85,38 +85,55 @@ def _fragmento(request, vinculo, objeto, definicao, form, *, erros_gerais=()):
     }, request=request)
 
 
-@require_http_methods(["GET", "PATCH"])
-def campo(request, tipo, pk, chave):
+def _acesso(request, tipo, pk):
+    """Quem pode editar o quê: autenticado, tipo com vínculo, objeto
+    existente e permissão do domínio. Vale para campo, bloco e quebra."""
     if not request.user.is_authenticated:
         raise PermissionDenied
     vinculo = vinculo_do_tipo(tipo)
     if vinculo is None:
         raise Http404
-    definicao = registro.campo(vinculo.tipo, chave)
-    if definicao is None:
-        raise Http404("Campo fora do registro do editor.")
     objeto = vinculo.carregar(pk)
     if not vinculo.pode_editar(request.user, objeto):
         raise PermissionDenied
+    return vinculo, objeto
 
-    if request.method == "GET":
-        return JsonResponse({"ok": True, "versao": vinculo.versao(objeto), "fragmento": _fragmento(request, vinculo, objeto, definicao, None)})
 
+def _corpo(request):
     if len(request.body) > TAMANHO_MAXIMO_CORPO:
-        return JsonResponse({"ok": False, "mensagem": "Conteúdo grande demais."}, status=400)
+        return None, JsonResponse({"ok": False, "mensagem": "Conteúdo grande demais."}, status=400)
     try:
         corpo = json.loads(request.body or b"{}")
         if not isinstance(corpo, dict):
             raise ValueError
     except ValueError:
-        return JsonResponse({"ok": False, "mensagem": "Corpo inválido."}, status=400)
+        return None, JsonResponse({"ok": False, "mensagem": "Corpo inválido."}, status=400)
+    return corpo, None
 
+
+def _conflito(versao_atual):
+    return JsonResponse({
+        "ok": False, "conflito": True, "versao": versao_atual,
+        "mensagem": "Este documento foi alterado por outra pessoa desde que você o abriu. Recarregue para ver a versão atual.",
+    }, status=409)
+
+
+@require_http_methods(["GET", "PATCH"])
+def campo(request, tipo, pk, chave):
+    vinculo, objeto = _acesso(request, tipo, pk)
+    definicao = registro.campo(vinculo.tipo, chave)
+    if definicao is None:
+        raise Http404("Campo fora do registro do editor.")
+
+    if request.method == "GET":
+        return JsonResponse({"ok": True, "versao": vinculo.versao(objeto), "fragmento": _fragmento(request, vinculo, objeto, definicao, None)})
+
+    corpo, erro = _corpo(request)
+    if erro is not None:
+        return erro
     versao_lida = corpo.get("versao")
     if versao_lida is not None and versao_lida != vinculo.versao(objeto):
-        return JsonResponse({
-            "ok": False, "conflito": True, "versao": vinculo.versao(objeto),
-            "mensagem": "Este documento foi alterado por outra pessoa desde que você o abriu. Recarregue para ver a versão atual.",
-        }, status=409)
+        return _conflito(vinculo.versao(objeto))
 
     valores = corpo.get("valores")
     if not isinstance(valores, dict) or not valores or set(valores) - set(definicao.nomes):
@@ -145,3 +162,76 @@ def campo(request, tipo, pk, chave):
     objeto = vinculo.gravar(form, definicao.nomes)
     objeto = vinculo.carregar(objeto.pk)
     return JsonResponse({"ok": True, "versao": vinculo.versao(objeto), "avisos": outros})
+
+
+def _fragmento_bloco(request, vinculo, objeto, definicao):
+    from documentos.services.document_blocks import bloco_gravado
+
+    gravado = bloco_gravado(vinculo.tipo, objeto, definicao.chave)
+    editado = bool(gravado and gravado.editado_manualmente)
+    return render_to_string("documentos/editor/bloco.html", {
+        "bloco": definicao,
+        "conteudo": gravado.conteudo_atual if editado else definicao.padrao,
+        "editado": editado,
+        "editado_por": str(gravado.editado_por) if editado and gravado.editado_por_id else "",
+        "editado_em": gravado.editado_em if editado else None,
+        "url": reverse("documentos:editor_bloco", args=[vinculo.tipo.value, objeto.pk, definicao.chave]),
+    }, request=request)
+
+
+@require_http_methods(["GET", "PATCH", "DELETE"])
+def bloco(request, tipo, pk, chave):
+    """Parágrafo do modelo: GET devolve o painel, PATCH grava o override
+    (texto vazio ou igual ao modelo restaura), DELETE restaura."""
+    from documentos.editor import blocos as registro_blocos
+    from documentos.services.document_blocks import gravar_override, restaurar, versao_do_bloco
+
+    vinculo, objeto = _acesso(request, tipo, pk)
+    definicao = registro_blocos.bloco(vinculo.tipo, chave)
+    if definicao is None:
+        raise Http404("Bloco fora do registro do editor.")
+
+    if request.method == "GET":
+        return JsonResponse({"ok": True, "versao": versao_do_bloco(vinculo.tipo, objeto, chave), "fragmento": _fragmento_bloco(request, vinculo, objeto, definicao)})
+
+    request.auditoria_origem = "editor"
+    if request.method == "DELETE":
+        restaurar(vinculo.tipo, objeto, chave)
+        return JsonResponse({"ok": True, "versao": versao_do_bloco(vinculo.tipo, objeto, chave), "editado": False})
+
+    corpo, erro = _corpo(request)
+    if erro is not None:
+        return erro
+    versao_lida = corpo.get("versao")
+    if versao_lida is not None and versao_lida != versao_do_bloco(vinculo.tipo, objeto, chave):
+        return _conflito(versao_do_bloco(vinculo.tipo, objeto, chave))
+    valores = corpo.get("valores")
+    if not isinstance(valores, dict) or set(valores) != {"conteudo"} or isinstance(valores["conteudo"], (dict, list)):
+        return JsonResponse({"ok": False, "mensagem": "Esperava só o texto do parágrafo."}, status=400)
+    conteudo = str(valores["conteudo"] or "").replace("\r\n", "\n").strip()[:TAMANHO_MAXIMO_TEXTO]
+    if not conteudo or conteudo == definicao.padrao:
+        restaurar(vinculo.tipo, objeto, chave)
+        editado = False
+    else:
+        gravar_override(vinculo.tipo, objeto, chave, conteudo, request.user)
+        editado = True
+    return JsonResponse({"ok": True, "versao": versao_do_bloco(vinculo.tipo, objeto, chave), "editado": editado})
+
+
+@require_http_methods(["PATCH"])
+def quebra(request, tipo, pk, chave):
+    """Liga ou desliga a quebra de página num ponto registrado."""
+    from documentos.editor import blocos as registro_blocos
+    from documentos.services.document_blocks import definir_quebra
+
+    vinculo, objeto = _acesso(request, tipo, pk)
+    if registro_blocos.ponto_de_quebra(vinculo.tipo, chave) is None:
+        raise Http404("Ponto de quebra fora do registro.")
+    corpo, erro = _corpo(request)
+    if erro is not None:
+        return erro
+    if not isinstance(corpo.get("ativa"), bool):
+        return JsonResponse({"ok": False, "mensagem": "Informe se a quebra fica ativa."}, status=400)
+    request.auditoria_origem = "editor"
+    ativa = definir_quebra(vinculo.tipo, objeto, chave, corpo["ativa"], request.user)
+    return JsonResponse({"ok": True, "ativa": ativa})

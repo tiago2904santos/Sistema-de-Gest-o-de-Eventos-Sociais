@@ -8,4 +8,6 @@ urlpatterns = [
     path("<uuid:pk>/baixar/", views.baixar, name="baixar"),
     # Editor documental: GET devolve o painel do campo, PATCH grava.
     path("editor/<str:tipo>/<int:pk>/campos/<str:chave>/", editor_api.campo, name="editor_campo"),
+    path("editor/<str:tipo>/<int:pk>/blocos/<str:chave>/", editor_api.bloco, name="editor_bloco"),
+    path("editor/<str:tipo>/<int:pk>/quebras/<str:chave>/", editor_api.quebra, name="editor_quebra"),
 ]

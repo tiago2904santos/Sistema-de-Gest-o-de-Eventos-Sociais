@@ -71,7 +71,7 @@ class ContextoETemplateTests(SimpleTestCase):
 
     def test_bloco_documental_usa_override_e_escapa_html(self):
         blocos = {"declaracao_cartao": {"conteudo": "Texto <b>do</b> usuário\nsegunda linha", "editado": True}}
-        html = renderizar_html(DocumentoTipo.OFICIO, contexto_de_payload(DocumentoTipo.OFICIO, PAYLOAD, TX, modo="editor", blocos=blocos), modo="editor")
+        html = renderizar_html(DocumentoTipo.OFICIO, contexto_de_payload(DocumentoTipo.OFICIO, PAYLOAD, TX, modo="editor", blocos=blocos, edicao=True), modo="editor")
         self.assertIn("Texto &lt;b&gt;do&lt;/b&gt; usuário<br>segunda linha", html)
         self.assertIn('data-doc-override="1"', html)
         self.assertNotIn("cartão corporativo vigente", html)

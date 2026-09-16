@@ -1,5 +1,6 @@
 """Geração síncrona: contexto do GV e persistência/cache da façade da F3."""
 from django.core.exceptions import ValidationError
+from documentos.services.document_blocks import conteudo_documental
 from documentos.services.facade import DocumentoFacade
 from documentos.services.types import DocumentoTipo
 from .models import Oficio
@@ -16,6 +17,9 @@ def gerar_documento(oficio, formato, tipo=DocumentoTipo.OFICIO):
         raise ValidationError(avaliacao['pendencias'])
     reservar_numero_oficio(oficio, ano=oficio.data_criacao.year)
     payload = build_canonical_document_payload(oficio, tipo)
+    # Overrides de parágrafo e quebras de página são parte do documento: no
+    # payload eles entram na chave de cache e no snapshot do artefato.
+    payload["documento"] = conteudo_documental(tipo, oficio)
     contexto = (build_oficio_docxtpl_context(oficio) if tipo == DocumentoTipo.OFICIO
                 else build_justificativa_docxtpl_context(oficio))
     resultado = DocumentoFacade().gerar(tipo=tipo, formato=formato, payload=payload,

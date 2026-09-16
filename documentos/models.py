@@ -148,3 +148,46 @@ class DocumentoAssinaturaVersao(OrigemLegadoUUID):
 
     def delete(self, *args, **kwargs):
         raise ValidationError("Versões documentais não podem ser excluídas.")
+
+
+class DocumentoBloco(models.Model):
+    """Conteúdo documental de um documento: parágrafo do modelo com override,
+    ou quebra de página num ponto que o template admite.
+
+    O que nasce de campo do ofício não passa por aqui — continua vinculado ao
+    campo. Aqui fica o que é do documento e só dele: o texto reescrito de um
+    parágrafo fixo (`conteudo_atual`, com o `conteudo_original` do modelo ao
+    lado) e as quebras de página inseridas. Um bloco por chave e documento.
+    """
+
+    class Tipo(models.TextChoices):
+        PARAGRAFO = "paragrafo", "Parágrafo"
+        QUEBRA_PAGINA = "quebra_pagina", "Quebra de página"
+
+    tipo_documento = models.CharField(max_length=64, db_index=True)
+    oficio = models.ForeignKey("viagens_oficios.Oficio", on_delete=models.CASCADE, null=True, blank=True, related_name="blocos_documentais")
+    termo = models.ForeignKey("viagens_termos.TermoAutorizacao", on_delete=models.CASCADE, null=True, blank=True, related_name="blocos_documentais")
+    prestacao = models.ForeignKey("viagens_prestacoes.PrestacaoContas", on_delete=models.CASCADE, null=True, blank=True, related_name="blocos_documentais")
+    chave = models.CharField(max_length=64)
+    tipo = models.CharField(max_length=16, choices=Tipo.choices, default=Tipo.PARAGRAFO)
+    ordem = models.PositiveIntegerField(default=0)
+    conteudo_original = models.TextField(blank=True, default="")
+    conteudo_atual = models.TextField(blank=True, default="")
+    editado_manualmente = models.BooleanField(default=False)
+    editado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    editado_em = models.DateTimeField(null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["ordem", "chave"]
+        verbose_name = "Bloco documental"
+        verbose_name_plural = "Blocos documentais"
+        constraints = [
+            models.UniqueConstraint(fields=["tipo_documento", "oficio", "chave"], condition=models.Q(oficio__isnull=False), name="documentobloco_oficio_chave"),
+            models.UniqueConstraint(fields=["tipo_documento", "termo", "chave"], condition=models.Q(termo__isnull=False), name="documentobloco_termo_chave"),
+            models.UniqueConstraint(fields=["tipo_documento", "prestacao", "chave"], condition=models.Q(prestacao__isnull=False), name="documentobloco_prestacao_chave"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.tipo_documento}:{self.chave} ({self.get_tipo_display()})"

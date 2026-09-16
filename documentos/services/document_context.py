@@ -39,9 +39,24 @@ def imagens_para(modo: str) -> dict[str, str]:
     return {nome: static(rel) for nome, rel in IMAGENS.items()}
 
 
-def contexto_do_oficio(oficio=None, *, modo: str = "pdf", campos_editaveis=None, blocos=None, doc=None, tx=None) -> dict:
+def _conteudo_documental(tipo, doc, objeto, blocos):
+    """Blocos e quebras: do payload (`documento`, posto por quem gerou), do
+    banco (prévia na tela) ou do que o chamador passou explicitamente."""
+    from documentos.services.document_blocks import completar_blocos, conteudo_documental
+
+    documental = doc.get("documento")
+    if documental is None and objeto is not None and getattr(objeto, "pk", None):
+        documental = conteudo_documental(tipo, objeto)
+    documental = dict(documental or {})
+    finais = completar_blocos(tipo, blocos if blocos is not None else documental.get("blocos"))
+    return finais, set(documental.get("quebras") or ())
+
+
+def contexto_do_oficio(oficio=None, *, modo: str = "pdf", campos_editaveis=None, blocos=None, edicao=None, doc=None, tx=None) -> dict:
     """Contexto do ofício. Aceita `doc`/`tx` já calculados (a façade os recebe
-    prontos de quem pediu o documento) e só calcula o que faltar."""
+    prontos de quem pediu o documento) e só calcula o que faltar. `edicao`
+    liga as marcações de bloco e de ponto de quebra no modo editor; por
+    padrão acompanha a presença de campos editáveis."""
     if doc is None or tx is None:
         from viagens_oficios.documents import build_canonical_document_payload
         from viagens_oficios.docxtpl_context import build_oficio_docxtpl_context
@@ -61,13 +76,16 @@ def contexto_do_oficio(oficio=None, *, modo: str = "pdf", campos_editaveis=None,
         "telefone": tx.get("telefone", ""),
         "email": tx.get("email", ""),
     }
+    blocos_finais, quebras = _conteudo_documental(DocumentoTipo.OFICIO, doc, oficio, blocos)
     return {
         "doc": doc,
         "tx": tx,
         "institucional": institucional,
         "imagens": imagens_para(modo),
         "campos_editaveis": dict(campos_editaveis or {}),
-        "blocos": dict(blocos or {}),
+        "blocos": blocos_finais,
+        "quebras": quebras,
+        "edicao": bool(campos_editaveis) if edicao is None else bool(edicao),
         "modo": modo,
     }
 
