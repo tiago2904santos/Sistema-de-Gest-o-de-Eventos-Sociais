@@ -77,8 +77,6 @@
             {% empty %}
               <tr><td colspan="{{ colunas|length|add:3 }}">
                 <div class="semres">
-                  <span aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
-                  <h2>Nenhum registro cadastrado</h2>
                   <p>{{ texto_vazio }}{% if tem_filtros %} Revise o termo ou limpe os filtros.{% endif %}</p>
                   {% if pode_editar and url_novo %}<a class="btn-primaria" href="{{ url_novo }}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}{{ novo }}</a>{% endif %}
                 </div>

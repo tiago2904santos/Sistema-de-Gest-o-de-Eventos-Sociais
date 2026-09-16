@@ -68,7 +68,7 @@ class ParidadeViaturasTests(BaseViagensTestCase):
 
     def test_sem_resultado_preserva_mensagem_da_origem(self):
         response = self.client.get(self.lista, {"q": "zzsemresultado"})
-        self.assertContains(response, "Nenhum registro cadastrado")
+        self.assertNotContains(response, "Nenhum registro cadastrado")
         self.assertContains(response, "Nenhuma viatura cadastrada ainda.")
         self.assertContains(response, "Nova viatura")
 

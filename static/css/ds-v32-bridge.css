@@ -1915,7 +1915,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .nav-mod__grupo{position:relative;display:flex;align-items:stretch}
 .nav-mod__gaveta{position:absolute;left:-10px;top:100%;z-index:60;min-width:220px;padding:4px;background:var(--branco);border:1px solid var(--n-200);border-radius:8px;box-shadow:0 12px 28px -8px rgba(26,25,23,.22);opacity:0;visibility:hidden;transform:translateY(4px);transition:opacity var(--motion,.15s),transform var(--motion,.15s),visibility 0s linear .15s}
 .nav-mod__grupo:hover .nav-mod__gaveta,.nav-mod__grupo:focus-within .nav-mod__gaveta{opacity:1;visibility:visible;transform:none;transition-delay:0s}
-.nav-mod .nav-mod__gaveta a{height:auto;border-bottom:0;margin:0;font-size:13.5px;font-weight:400;color:var(--n-700)}
+.nav-mod .nav-mod__gaveta a{height:auto;padding:4px 12px;border-bottom:0;margin:0;font-size:13.5px;font-weight:400;color:var(--n-700)}
 .nav-mod .nav-mod__gaveta a::before{display:none}
 .nav-mod .nav-mod__gaveta a:hover{background:var(--n-50);color:var(--n-900)}
 .nav-mod .nav-mod__gaveta a[aria-current]{background:var(--n-100);color:var(--n-900);font-weight:600}
