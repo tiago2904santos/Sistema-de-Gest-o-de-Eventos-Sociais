@@ -1904,5 +1904,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 /* Ícone das listas (roteiros, termos, justificativas): o quadrado cinza das
    linhas de escolha (`lista-escolha .of-av`), não o ícone solto. */
 .cad-lista .dt .tabela__col-icone{width:46px}
-.cad-lista .tabela__icone-doc{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--n-150);color:var(--n-800)}
+.cad-lista .tabela__icone-doc{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--n-150);color:var(--n-800);transition:background-color var(--motion,.15s),color var(--motion,.15s)}
+/* No hover da linha, o quadrado fica como o da linha escolhida: grafite com ícone branco. */
+.cad-lista .dt tbody tr:hover .tabela__icone-doc,.cad-lista .m-item:hover .tabela__icone-doc{background:var(--grafite);color:var(--branco)}
 .cad-lista .tabela__icone-doc .ui-icon{width:15px;height:15px}
