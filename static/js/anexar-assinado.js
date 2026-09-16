@@ -21,6 +21,8 @@
   var aviso = dialogo.querySelector('[data-anexar-aviso]');
   var nome = dialogo.querySelector('[data-anexar-nome]');
   var proximo = dialogo.querySelector('[data-anexar-next]');
+  var alvos = dialogo.querySelector('[data-anexar-alvos]');
+  var alvosLista = dialogo.querySelector('[data-anexar-alvos-lista]');
   var VAZIO = 'Nenhum documento escolhido';
 
   function mostrarErro(texto) {
@@ -46,15 +48,63 @@
     enviar.disabled = !pdf;
   }
 
+  // Aponta o formulário para um documento: endereço, nome e se já há assinado.
+  function escolher(alvo) {
+    form.action = alvo.url;
+    nome.textContent = alvo.nome || 'este documento';
+    aviso.hidden = !alvo.atual;
+    remover.hidden = !alvo.atual;
+  }
+
+  // Várias opções: um seletor, com a primeira disponível marcada.
+  function montarAlvos(opcoes) {
+    alvosLista.innerHTML = '';
+    alvos.hidden = opcoes.length < 2;
+    var marcada = false;
+    opcoes.forEach(function (opcao, i) {
+      var rotulo = document.createElement('label');
+      var radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = 'anexar_alvo';
+      radio.value = String(i);
+      radio.disabled = !opcao.url;
+      var texto = document.createElement('span');
+      texto.textContent = opcao.nome;
+      if (!opcao.url) {
+        rotulo.classList.add('bx-seg__op--off');
+        rotulo.title = 'Gere o PDF deste termo primeiro';
+      }
+      if (opcao.url && !marcada) { radio.checked = true; marcada = true; escolher(opcao); }
+      radio.addEventListener('change', function () { escolher(opcao); });
+      rotulo.appendChild(radio);
+      rotulo.appendChild(texto);
+      alvosLista.appendChild(rotulo);
+    });
+  }
+
   function abrir(link) {
     form.reset();
-    form.action = link.getAttribute('href');
     proximo.value = window.location.pathname + window.location.search;
-    nome.textContent = link.getAttribute('data-anexar-nome') || 'este documento';
-    var atual = link.getAttribute('data-anexar-atual') === '1';
-    aviso.hidden = !atual;
-    remover.hidden = !atual;
+    var opcoes = null;
+    try { opcoes = JSON.parse(link.getAttribute('data-anexar-opcoes') || 'null'); } catch (e) { opcoes = null; }
+    if (opcoes && opcoes.length) {
+      montarAlvos(opcoes);
+    } else {
+      alvos.hidden = true;
+      alvosLista.innerHTML = '';
+      escolher({
+        url: link.getAttribute('href'),
+        nome: link.getAttribute('data-anexar-nome'),
+        atual: link.getAttribute('data-anexar-atual') === '1'
+      });
+    }
     atualizar();
+    var corpo = link.closest('[data-menu-corpo]');
+    if (corpo) {
+      corpo.hidden = true;
+      var gatilho = corpo.parentElement && corpo.parentElement.querySelector('[data-menu-gatilho]');
+      if (gatilho) gatilho.setAttribute('aria-expanded', 'false');
+    }
     // Um menu suspenso aberto por trás não deve ficar aberto.
     var menu = link.closest('details[open]');
     if (menu) menu.removeAttribute('open');
@@ -62,7 +112,7 @@
   }
 
   document.addEventListener('click', function (evento) {
-    var link = evento.target.closest && evento.target.closest('a[data-anexar-assinado]');
+    var link = evento.target.closest && evento.target.closest('[data-anexar-assinado]');
     if (!link || evento.defaultPrevented || evento.button !== 0 || evento.ctrlKey || evento.metaKey || evento.shiftKey) return;
     evento.preventDefault();
     abrir(link);

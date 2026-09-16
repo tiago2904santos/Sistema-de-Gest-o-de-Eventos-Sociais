@@ -1,7 +1,7 @@
 {% comment %}
   Ações de uma linha de termo num botão único, no padrão da lista de roteiros.
-  Grupos do mesmo menu: baixar documentos (abre o modal de escolha), anexar
-  termo assinado, editar e excluir. Excluir mantém a
+  Itens do menu: baixar documentos e anexar assinado (cada um abre o seu
+  modal de escolha), editar e excluir. Excluir mantém a
   confirmação em duas etapas do menu. Quem só consulta abre a prévia.
   Contexto: `l` (linha), `t` (termo), `d` (documentos), `pode_editar`, `url_atual`.
 {% endcomment %}
@@ -14,12 +14,8 @@
         <span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="ban" %}<span><b>Termo cancelado</b><small>Reative para gerar documentos</small></span></span>
       {% else %}
         <button type="button" class="dd__i of-item" data-baixar-documentos data-url="{{ d.url_baixar }}" data-titulo="Termo #{{ t.pk }} · {{ l.titulo }}" data-itens="{{ d.itens_baixar }}">{% include "components/icon.html" with nome="download" %}<span><b>Baixar documentos</b><small>Escolher termos, formato e saída</small></span></button>
-        {% for s in d.servidores %}
-          {% if s.url_assinado %}<a class="dd__i of-item" href="{{ s.url_assinado }}" data-anexar-assinado data-anexar-nome="{{ s.servidor.nome }}"{% if s.assinado %} data-anexar-atual="1"{% endif %}>{% include "components/icon.html" with nome=s.assinado|yesno:"check-circle,upload" %}<span><b>{{ s.servidor.nome }}</b><small>{% if s.assinado %}Assinado — enviar outra versão{% else %}Enviar o PDF depois da assinatura{% endif %}</small></span></a>
-          {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>{{ s.servidor.nome }}</b><small>Gere o PDF do termo primeiro</small></span></span>{% endif %}
-        {% endfor %}
-        {% if d.generico.url_assinado %}<a class="dd__i of-item" href="{{ d.generico.url_assinado }}" data-anexar-assinado data-anexar-nome="Termo vazio"{% if d.generico.assinado %} data-anexar-atual="1"{% endif %}>{% include "components/icon.html" with nome=d.generico.assinado|yesno:"check-circle,upload" %}<span><b>Termo vazio</b><small>{% if d.generico.assinado %}Assinado — enviar outra versão{% else %}Enviar o PDF depois da assinatura{% endif %}</small></span></a>
-        {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>Termo vazio</b><small>Gere o PDF do termo primeiro</small></span></span>{% endif %}
+        {% if d.algum_para_anexar %}<button type="button" class="dd__i of-item" data-anexar-assinado data-anexar-opcoes="{{ d.opcoes_anexar }}">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Escolher o termo e enviar o PDF assinado</small></span></button>
+        {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Gere o PDF do termo primeiro</small></span></span>{% endif %}
       {% endif %}
       <a class="dd__i of-item" href="{{ l.url_editar }}?next={{ url_atual|urlencode }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar termo</b><small>Destino, período, servidores e viatura</small></span></a>
       <form method="post" action="{{ l.url_excluir }}" data-confirmar-exclusao data-confirmar="Confirmar exclusão?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">

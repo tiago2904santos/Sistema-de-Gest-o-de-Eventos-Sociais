@@ -139,6 +139,13 @@ def documentos_do_termo(termo, artefatos_pdf):
         "generico": generico,
         "url_baixar": reverse("viagens_termos:baixar", args=[termo.pk]),
         "itens_baixar": json.dumps(itens_baixar, ensure_ascii=False),
+        # O modal de anexar escolhe entre estes; sem PDF gerado, a opção vem apagada.
+        "opcoes_anexar": json.dumps(
+            [{"nome": "Termo vazio", "url": generico["url_assinado"], "atual": generico["assinado"]}]
+            + [{"nome": s["servidor"].nome, "url": s["url_assinado"], "atual": s["assinado"]} for s in servidores],
+            ensure_ascii=False,
+        ),
+        "algum_para_anexar": bool(generico["url_assinado"]) or any(s["url_assinado"] for s in servidores),
         "viatura": {
             "viatura": termo.viatura_efetiva(),
             "url_pdf": reverse("viagens_termos:gerar_viatura", args=[termo.pk, "pdf"]),

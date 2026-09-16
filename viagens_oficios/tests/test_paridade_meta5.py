@@ -95,7 +95,7 @@ class ListaTermosTests(CenarioTermos):
         art.arquivo_assinado.save("assinado.pdf", ContentFile(b"%PDF-1.4"), save=True)
         r = self.lista()
         self.assertContains(r, "1 de 2 assinados")
-        self.assertContains(r, "Assinado — enviar outra versão")
+        self.assertContains(r, "&quot;atual&quot;: true")  # o seletor de anexar sabe que já há assinado
 
     def test_selos_de_situacao(self):
         so_uf = self.termo(estado=self.pr, servidores=[self.janine])
@@ -142,7 +142,23 @@ class ListaTermosTests(CenarioTermos):
         art = DocumentoArtefato.objects.get(termo=t, servidor=self.janine, formato="pdf")
         r = self.lista()
         self.assertContains(r, reverse("viagens_oficios:assinatura_artefato", args=[art.pk]))
-        self.assertContains(r, "Enviar o PDF depois da assinatura")
+        self.assertContains(r, "Escolher o termo e enviar o PDF assinado")
+        # Um item só no menu, com as opções do seletor: termo vazio (sem PDF ainda) e o servidor.
+        import html as html_lib, json
+        conteudo = r.content.decode()
+        inicio = conteudo.index('data-anexar-opcoes="') + len('data-anexar-opcoes="')
+        opcoes = json.loads(html_lib.unescape(conteudo[inicio:conteudo.index('"', inicio)]))
+        self.assertEqual([o["nome"] for o in opcoes], ["Termo vazio", "JANINE LACERDA DO PRADO"])
+        self.assertEqual(opcoes[0]["url"], "")
+        self.assertEqual(opcoes[1]["url"], reverse("viagens_oficios:assinatura_artefato", args=[art.pk]))
+        self.assertFalse(opcoes[1]["atual"])
+
+    def test_sem_pdf_nenhum_o_anexar_fica_apagado(self):
+        o = self.oficio(dias=3, servidores=[self.janine])
+        self.termo(oficio=o)
+        r = self.lista()
+        self.assertNotContains(r, "data-anexar-opcoes")
+        self.assertContains(r, "Gere o PDF do termo primeiro")
 
     def test_busca_por_destino_oficio_protocolo_viatura_e_servidor(self):
         o = self.oficio(dias=3, protocolo="123456789", servidores=[self.janine], viatura=self.duster)
