@@ -127,7 +127,7 @@ def rt_servidor(request, ps_pk):
             "campos_custeio": campos_custeio,
             "valor_diaria": form["diaria"].value() or "",
             "erros_diaria": form.errors.get("diaria"),
-            "modelos_url": reverse("viagens_prestacoes:modelos_index"),
+            "modelos_url": reverse("viagens_cadastros:lista", args=["modelos-texto-rt"]),
             "relatorio": relatorio,
             "prestacao": prestacao,
             "ps": ps,

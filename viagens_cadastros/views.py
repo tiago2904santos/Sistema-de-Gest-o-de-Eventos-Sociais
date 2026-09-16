@@ -27,6 +27,8 @@ from django.views.decorators.http import require_http_methods
 
 from auditoria.models import LogAuditoria
 from viagens_oficios.forms import ModeloJustificativaForm, ModeloMotivoOficioForm
+from viagens_prestacoes.forms import ModeloTextoRelatorioTecnicoForm
+from viagens_prestacoes.models import ModeloTextoRelatorioTecnico
 from viagens_oficios.models import ModeloJustificativa, ModeloMotivoOficio
 
 from .cep import CEPIndisponivel, CEPNaoEncontrado, consultar_cep
@@ -250,6 +252,32 @@ CADASTROS = {
             }
         ],
     },
+    "modelos-texto-rt": {
+        "model": ModeloTextoRelatorioTecnico,
+        "form": ModeloTextoRelatorioTecnicoForm,
+        "busca_rotulo": "Buscar modelo de texto pelo nome",
+        "vazio": "Nenhum modelo de texto cadastrado ainda.",
+        "intro_modal": "Escolha o campo do relatório técnico, dê um nome curto e escreva o texto que será copiado para o campo.",
+        "titulo": "Modelos de texto do RT",
+        "singular": "modelo de texto",
+        "novo": "Novo modelo de texto",
+        "icone": "document",
+        "descricao": "Textos reutilizáveis para os campos do relatório técnico.",
+        "exemplo": "Ex.: PARTICIPAÇÃO EM EVENTO",
+        "busca": ["nome__icontains", "texto__icontains"],
+        "colunas": [
+            {"rotulo": "Campo", "attr": "get_campo_display"},
+            {"rotulo": "Ordem", "attr": "ordem"},
+        ],
+        "secoes": [
+            {
+                "titulo": "Modelo de texto",
+                "subtitulo": "O campo do relatório em que o modelo entra, o nome e o texto.",
+                "campos": ["campo", "ordem", "nome", "texto"],
+                "larguras": {"campo": "8", "ordem": "4"},
+            }
+        ],
+    },
 }
 
 DIARIAS = {
@@ -291,6 +319,8 @@ DIARIAS["secoes"] = DIARIA_SECOES
 
 # Catálogos com "usar como padrão" no menu da linha.
 CATALOGOS_DE_OFICIO = {"motivos-oficio", "modelos-justificativa"}
+# Modelos de texto: vivem na seção "Modelos" da navegação, com trilha própria.
+CATALOGOS_DE_MODELO = ("motivos-oficio", "modelos-justificativa", "modelos-texto-rt")
 COM_PADRAO = {"cargos", "combustiveis", *CATALOGOS_DE_OFICIO}
 
 
@@ -323,6 +353,7 @@ CONTAGEM_CARTAO = {
     "diarias": ("vigência cadastrada", "vigências cadastradas"),
     "motivos-oficio": ("modelo cadastrado", "modelos cadastrados"),
     "modelos-justificativa": ("modelo cadastrado", "modelos cadastrados"),
+    "modelos-texto-rt": ("modelo cadastrado", "modelos cadastrados"),
 }
 
 
@@ -349,6 +380,20 @@ def _grupos():
         "url": reverse("viagens_cadastros:diarias"),
     })
     return grupos
+
+
+def _grupos_modelos():
+    """Trilha da seção Modelos: um item por catálogo de texto."""
+    return [
+        {
+            "slug": slug,
+            "titulo": CADASTROS[slug]["titulo"],
+            "icone": CADASTROS[slug]["icone"],
+            "total": CADASTROS[slug]["model"].objects.count(),
+            "url": reverse("viagens_cadastros:lista", args=[slug]),
+        }
+        for slug in CATALOGOS_DE_MODELO
+    ]
 
 
 def _exigir_edicao(request):
@@ -530,7 +575,8 @@ def _contexto_lista(request, slug, config, *, pagina, linhas, termo, parametros,
     ocultos = [{"nome": nome, "valor": valor} for nome, valor in parametros.items() if nome != "q"]
     return {
         "slug": slug,
-        "grupos": _grupos(),
+        "grupos": _grupos_modelos() if slug in CATALOGOS_DE_MODELO else _grupos(),
+        "secao_titulo": "Modelos" if slug in CATALOGOS_DE_MODELO else "Cadastros",
         "titulo": config["titulo"],
         "singular": config["singular"],
         "novo": config["novo"],
@@ -722,7 +768,12 @@ def _lista_catalogo(request, slug, modal=None):
     config = _config(slug)
     retorno = _retorno_cadastro(request)
     termo = request.GET.get("q", "").strip()
-    queryset = config["model"].objects.order_by("ordem", "nome") if slug in CATALOGOS_DE_OFICIO else config["model"].objects.order_by("nome")
+    if slug in CATALOGOS_DE_OFICIO:
+        queryset = config["model"].objects.order_by("ordem", "nome")
+    elif slug == "modelos-texto-rt":
+        queryset = config["model"].objects.order_by("campo", "ordem", "nome")
+    else:
+        queryset = config["model"].objects.order_by("nome")
     if termo:
         procurado = _texto_busca(termo)
         campos = ("pk", "nome", "sigla") if slug == "unidades" else ("pk", "nome")
@@ -749,6 +800,7 @@ def _lista_catalogo(request, slug, modal=None):
         "tem_padrao": tem_padrao,
         "url_lista": _url_catalogo(slug, retorno),
         "rotulo_retorno": ("Voltar aos ofícios" if slug in CATALOGOS_DE_OFICIO else
+                           "Voltar ao relatório técnico" if slug == "modelos-texto-rt" else
                            "Voltar à viatura" if slug == "combustiveis" else
                            "Voltar ao servidor" if slug == "unidades" else
                            "Voltar ao servidor" if retorno.startswith("/viagens/cadastros/servidores/") else

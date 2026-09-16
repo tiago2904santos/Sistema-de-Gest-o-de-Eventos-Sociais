@@ -360,4 +360,5 @@ class CatalogosTests(Cenario):
         self.client.post(reverse("viagens_cadastros:definir_padrao", args=["modelos-justificativa", m.pk]))
         m.refresh_from_db()
         self.assertTrue(m.is_padrao)
-        self.assertNotContains(self.client.get(reverse("viagens_cadastros:index"), follow=True), "Motivos de ofício")
+        # Fora da trilha de cadastros (o rótulo segue na gaveta "Modelos" da navegação).
+        self.assertNotContains(self.client.get(reverse("viagens_cadastros:index"), follow=True), 'class="cad-i__t">Motivos de ofício')

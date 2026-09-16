@@ -49,6 +49,9 @@ class ViagensCadastrosConfig(AppConfig):
                     "icone": "checklist",
                     "url": "viagens_cadastros:lista",
                     "url_args": ("servidores",),
+                    # Os catálogos de modelos moram no mesmo namespace, mas
+                    # acendem o item "Modelos".
+                    "slugs_fora": ("motivos-oficio", "modelos-justificativa", "modelos-texto-rt"),
                     # Gaveta ao passar o mouse: as seis tabelas da trilha.
                     "subitens": [
                         {"rotulo": "Servidores", "icone": "users", "url": "viagens_cadastros:lista", "url_args": ("servidores",)},
@@ -57,6 +60,20 @@ class ViagensCadastrosConfig(AppConfig):
                         {"rotulo": "Cargos", "icone": "shield", "url": "viagens_cadastros:lista", "url_args": ("cargos",)},
                         {"rotulo": "Combustíveis", "icone": "activity", "url": "viagens_cadastros:lista", "url_args": ("combustiveis",)},
                         {"rotulo": "Diárias", "icone": "chart", "url": "viagens_cadastros:diarias"},
+                    ],
+                },
+                # Modelos de texto: catálogos no padrão dos cadastros, com a
+                # gaveta listando cada um.
+                {
+                    "rotulo": "Modelos",
+                    "icone": "document",
+                    "url": "viagens_cadastros:lista",
+                    "url_args": ("motivos-oficio",),
+                    "slugs": ("motivos-oficio", "modelos-justificativa", "modelos-texto-rt"),
+                    "subitens": [
+                        {"rotulo": "Motivos de ofício", "icone": "document", "url": "viagens_cadastros:lista", "url_args": ("motivos-oficio",)},
+                        {"rotulo": "Modelos de justificativa", "icone": "document", "url": "viagens_cadastros:lista", "url_args": ("modelos-justificativa",)},
+                        {"rotulo": "Modelos de texto do RT", "icone": "document", "url": "viagens_cadastros:lista", "url_args": ("modelos-texto-rt",)},
                     ],
                 },
                 # Dados institucionais e assinaturas dos documentos: a tela é

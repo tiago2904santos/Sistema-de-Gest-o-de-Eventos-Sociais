@@ -12,14 +12,14 @@
   `querystring`), `termo`, `pode_editar` e os rótulos da tela.
 {% endcomment %}
 
-{% block title %}{{ titulo }} — Cadastros — Viagens{% endblock %}
+{% block title %}{{ titulo }} — {{ secao_titulo|default:"Cadastros" }} — Viagens{% endblock %}
 
 {% block conteudo %}
   {# Cabeçalho no padrão da lista de roteiros: kicker junto do título, sem subtítulo, novo registro no botão flutuante. #}
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
       <div class="kicker kicker--junto">Viagens</div>
-      <h1>Cadastros</h1>
+      <h1>{{ secao_titulo|default:"Cadastros" }}</h1>
     </div>
     {% if url_retorno %}
       <div class="d-acoes"><a class="btn--secundaria" href="{{ url_retorno }}">{{ rotulo_retorno|default:"Voltar" }}</a></div>

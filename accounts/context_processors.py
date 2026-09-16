@@ -30,6 +30,7 @@ def modulos(request):
         from solicitacoes.permissions import eh_administrador
 
         url_name = resolver.url_name if resolver else ""
+        slug_atual = (resolver.kwargs or {}).get("slug", "") if resolver else ""
         for item in ativo["itens"]:
             if item.get("somente_admin") and not eh_administrador(usuario):
                 continue
@@ -45,8 +46,12 @@ def modulos(request):
                     "rotulo": item["rotulo"],
                     "icone": item["icone"],
                     "url": reverse(item["url"], args=item.get("url_args", ())),
+                    # `slugs` / `slugs_fora`: itens do mesmo namespace que se
+                    # distinguem pelo `slug` da rota (Cadastros × Modelos).
                     "ativo": namespace == ns_item
-                    and (not url_names or url_name in url_names),
+                    and (not url_names or url_name in url_names)
+                    and (not item.get("slugs") or slug_atual in item["slugs"])
+                    and slug_atual not in item.get("slugs_fora", ()),
                     # Gaveta do item: atalhos para as telas de dentro dele.
                     "subitens": [
                         {"rotulo": sub["rotulo"], "icone": sub["icone"],

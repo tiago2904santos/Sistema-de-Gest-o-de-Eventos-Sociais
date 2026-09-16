@@ -1,61 +1,47 @@
+"""Modelos de texto do relatório técnico.
+
+A tela própria saiu: os modelos são um catálogo no padrão dos cadastros
+(`viagens_cadastros:lista` com o slug `modelos-texto-rt`, na seção Modelos).
+As rotas antigas continuam respondendo e levam para lá.
+"""
+
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
-from core.retorno import voltar_para, next_valido
-from urllib.parse import urlencode
+from django.views.decorators.http import require_POST
+
+from core.retorno import next_valido, voltar_para
+from viagens_cadastros.permissions import acesso_ao_modulo
+
 from .models import ModeloTextoRelatorioTecnico
-from .forms import ModeloTextoRelatorioTecnicoForm
 from .services import excluir_modelo_texto
-from .ui import render
+
+SLUG = "modelos-texto-rt"
 
 
-def modelos_index(request):
-    campos = dict(ModeloTextoRelatorioTecnico.CAMPO_CHOICES)
-    campo = request.POST.get("quick_add_campo") or request.GET.get("campo") or ModeloTextoRelatorioTecnico.CAMPO_MOTIVO
-    if campo not in campos:
-        campo = ModeloTextoRelatorioTecnico.CAMPO_MOTIVO
-    prefixo = f"modelo-{campo}" if request.POST.get("quick_add_campo") else None
-    form = ModeloTextoRelatorioTecnicoForm(request.POST or None, prefix=prefixo, initial={"campo": campo})
-    base = reverse("viagens_prestacoes:modelos_index")
-    if request.method == "POST" and form.is_valid():
-        modelo = form.save()
-        messages.success(request, "Modelo de texto salvo.")
-        return redirect(voltar_para(request, f"{base}?campo={modelo.campo}#grupo-{modelo.campo}"))
-    modelos = ModeloTextoRelatorioTecnico.objects.filter(campo=campo)
-    busca = request.GET.get("q") or ""
-    if busca:
-        modelos = modelos.filter(nome__icontains=busca)
+def _lista(request):
+    url = reverse("viagens_cadastros:lista", args=[SLUG])
     retorno = next_valido(request)
-    abas = []
-    for key,label in campos.items():
-        parametros = {"campo": key}
-        if busca: parametros["q"] = busca
-        if retorno: parametros["next"] = retorno
-        abas.append({"campo": key, "label": label, "url": f"{base}?{urlencode(parametros)}", "ativa": key==campo})
-    grupos = [{"campo": campo, "quick_add_form": form, "rows": [{"title": m.nome} for m in modelos]}]
-    return render(request, "pages/viagens_prestacoes/modelos.html", {**_contexto_form_modelo(form), "modelos": modelos, "campo": campo, "campo_rotulo": campos[campo], "abas": abas, "grupos": grupos, "q": busca, "page_title": "Modelos de texto do RT", "back_url": retorno, "back_label": "Voltar para o relatório técnico" if retorno else "", "next": retorno, "url_atual": request.get_full_path()})
+    return f"{url}?{urlencode({'next': retorno})}" if retorno else url
 
 
-def _contexto_form_modelo(form):
-    from .view_common import opcoes
-    valor = lambda nome: form[nome].value() or ""
-    return {"form": form, "valores": {n: valor(n) for n in form.fields}, "erros": {n: form.errors.get(n) for n in form.fields},
-            "opcoes_campo": opcoes(ModeloTextoRelatorioTecnico.CAMPO_CHOICES), "prefixo": (form.prefix + "-") if form.prefix else ""}
+@acesso_ao_modulo
+def modelos_index(request):
+    return redirect(_lista(request))
 
 
+@acesso_ao_modulo
 def modelo_editar(request, pk):
-    modelo = get_object_or_404(ModeloTextoRelatorioTecnico, pk=pk)
-    form = ModeloTextoRelatorioTecnicoForm(request.POST or None, instance=modelo)
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, "Modelo de texto salvo.")
-        return redirect(voltar_para(request, reverse("viagens_prestacoes:modelos_index") + f"?campo={modelo.campo}"))
-    campos = dict(ModeloTextoRelatorioTecnico.CAMPO_CHOICES)
-    return render(request, "pages/viagens_prestacoes/modelos.html", {**_contexto_form_modelo(form), "modelo": modelo, "campo": modelo.campo, "campo_rotulo": campos.get(modelo.campo, ""), "page_title": "Editar modelo de texto", "next": next_valido(request), "url_atual": request.get_full_path()})
+    get_object_or_404(ModeloTextoRelatorioTecnico, pk=pk)
+    return redirect(reverse("viagens_cadastros:editar", args=[SLUG, pk]))
 
 
+@acesso_ao_modulo
+@require_POST
 def modelo_excluir(request, pk):
     modelo = get_object_or_404(ModeloTextoRelatorioTecnico, pk=pk)
     excluir_modelo_texto(modelo)
     messages.success(request, "Modelo excluído.")
-    return redirect(voltar_para(request, reverse("viagens_prestacoes:modelos_index") + f"?campo={modelo.campo}"))
+    return redirect(voltar_para(request, reverse("viagens_cadastros:lista", args=[SLUG])))

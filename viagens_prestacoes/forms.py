@@ -372,6 +372,13 @@ class ModeloTextoRelatorioTecnicoForm(forms.ModelForm):
     nome = forms.CharField(label='Nome', help_text='Use um nome curto para identificar o modelo.', widget=forms.TextInput(attrs={**{'class': 'campo__input'}}))
     texto = forms.CharField(label='Texto do modelo', help_text='Este texto será copiado para o campo do relatório e poderá ser editado antes de gerar.', widget=forms.Textarea(attrs={**{'class': 'campo__input'}, 'rows': 6}))
 
+    ordem = forms.IntegerField(label='Ordem', min_value=0, initial=100, required=False,
+                               help_text='Posição na lista de escolha; menor aparece primeiro.')
+
     class Meta:
         model = ModeloTextoRelatorioTecnico
-        fields = ['campo', 'nome', 'texto']
+        fields = ['campo', 'nome', 'texto', 'ordem']
+
+    def clean_ordem(self):
+        ordem = self.cleaned_data.get('ordem')
+        return 100 if ordem is None else ordem

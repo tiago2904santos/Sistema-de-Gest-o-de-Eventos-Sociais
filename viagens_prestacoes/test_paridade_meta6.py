@@ -188,16 +188,20 @@ class EtapasTests(CenarioPrestacoes):
 
 class ModelosDeTextoTests(CenarioPrestacoes):
     def test_catalogo_por_campo(self):
+        """Os modelos do RT viraram um catálogo da seção Modelos (padrão dos
+        cadastros); as rotas das prestações levam para lá."""
         ModeloTextoRelatorioTecnico.objects.create(nome="Modelo A", texto="Texto A", campo=ModeloTextoRelatorioTecnico.CAMPO_MOTIVO)
-        r = self.client.get(reverse("viagens_prestacoes:modelos_index"))
-        for texto in ['aria-label="Campos do relatório"', "<h2>Modelo A</h2>", "Texto A", "Novo modelo de descrição do evento", "Salvar modelo", "Editar modelo Modelo A", "Excluir modelo Modelo A", 'data-confirmar="Confirmar exclusão?"']:
+        lista = reverse("viagens_cadastros:lista", args=["modelos-texto-rt"])
+        r = self.client.get(reverse("viagens_prestacoes:modelos_index"), follow=True)
+        self.assertRedirects(r, lista)
+        for texto in ["Modelo A", "Descrição do evento", "Novo modelo de texto"]:
             self.assertContains(r, texto)
-        r = self.client.post(reverse("viagens_prestacoes:modelos_index"), {"quick_add_campo": "conclusao", "modelo-conclusao-campo": "conclusao", "modelo-conclusao-nome": "Fecho", "modelo-conclusao-texto": "Concluímos."})
-        self.assertEqual(r.status_code, 302)
+        r = self.client.post(reverse("viagens_cadastros:novo", args=["modelos-texto-rt"]),
+                             {"campo": "conclusao", "nome": "Fecho", "texto": "Concluímos."}, HTTP_X_CADASTRO_MODAL="1")
+        self.assertEqual(r.json(), {"ok": True})
         modelo = ModeloTextoRelatorioTecnico.objects.get(nome="Fecho")
         self.assertEqual(modelo.campo, "conclusao")
-        r = self.client.get(reverse("viagens_prestacoes:modelo_update", args=[modelo.pk]))
-        self.assertContains(r, "Editar modelo")
+        r = self.client.get(reverse("viagens_cadastros:editar", args=["modelos-texto-rt", modelo.pk]), HTTP_X_CADASTRO_MODAL="1")
         self.assertContains(r, 'value="Fecho"')
         self.assertContains(r, "Concluímos.")
         r = self.client.post(reverse("viagens_prestacoes:modelo_delete", args=[modelo.pk]))
