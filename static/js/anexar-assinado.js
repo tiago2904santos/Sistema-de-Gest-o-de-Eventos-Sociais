@@ -18,7 +18,6 @@
   var erro = dialogo.querySelector('[data-anexar-erro]');
   var enviar = dialogo.querySelector('[data-anexar-enviar]');
   var remover = dialogo.querySelector('[data-anexar-remover]');
-  var aviso = dialogo.querySelector('[data-anexar-aviso]');
   var nome = dialogo.querySelector('[data-anexar-nome]');
   var proximo = dialogo.querySelector('[data-anexar-next]');
   var alvos = dialogo.querySelector('[data-anexar-alvos]');
@@ -48,11 +47,10 @@
     enviar.disabled = !pdf;
   }
 
-  // Aponta o formulário para um documento: endereço, nome e se já há assinado.
+  // Aponta o formulário para um documento: endereço, nome e se dá para remover o assinado.
   function escolher(alvo) {
     form.action = alvo.url;
     nome.textContent = alvo.nome || 'este documento';
-    aviso.hidden = !alvo.atual;
     remover.hidden = !alvo.atual;
   }
 

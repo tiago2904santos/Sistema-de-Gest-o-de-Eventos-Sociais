@@ -1816,7 +1816,6 @@ form.btn-flutuante-form{margin:0;display:contents}
 .an-titulo{margin:0;font-size:22px;font-weight:700;line-height:1.25;color:var(--n-950,#1a1917)}
 .an-texto{margin:0;font-size:14.5px;line-height:1.55;color:var(--n-700,#4d4d4d)}
 .an-texto strong{color:var(--n-900);font-weight:700}
-.an-texto--atual{font-size:13px;color:var(--n-500)}
 .an-caixa{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:12px;border-radius:10px;background:var(--n-100,#eff0f0)}
 .an-escolher{display:inline-flex;align-items:center;height:36px;padding:0 12px;border-radius:7px;background:var(--n-200,#e1e2e3);color:var(--n-900);font-size:13.5px;font-weight:600;cursor:pointer;transition:background-color var(--motion,.15s)}
 .an-escolher:hover{background:var(--n-250,#d1d3d4)}

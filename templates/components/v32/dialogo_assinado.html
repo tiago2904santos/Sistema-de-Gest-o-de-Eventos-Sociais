@@ -8,9 +8,9 @@
   Qualquer link para `viagens_oficios:assinatura_artefato` que leve
   `data-anexar-assinado` abre este modal em vez de ir à página: o formulário
   recebe o endereço do link, o nome do documento (`data-anexar-nome`) e, se
-  já houver versão assinada (`data-anexar-atual="1"`), o aviso e a opção de
-  remover. O envio é um POST comum; a view volta para a página de onde se
-  abriu (`next`). Sem JavaScript o link continua levando à página própria.
+  já houver versão assinada (`data-anexar-atual="1"`), a opção de remover.
+  O envio é um POST comum; a view volta para a página de onde se abriu
+  (`next`). Sem JavaScript o link continua levando à página própria.
 {% endcomment %}
 <dialog class="an-dialogo" data-anexar-dialogo aria-labelledby="an-titulo" aria-describedby="an-texto">
   <form method="post" enctype="multipart/form-data" class="an-form" data-anexar-form novalidate>
@@ -22,7 +22,6 @@
       <legend>Termo</legend>
       <div class="bx-seg an-alvos__seg" data-anexar-alvos-lista></div>
     </fieldset>
-    <p class="an-texto an-texto--atual" data-anexar-aviso hidden>Já existe uma versão assinada. A nova passa a valer e a anterior fica no histórico.</p>
 
     <div class="an-caixa">
       <label class="an-escolher">
