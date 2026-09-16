@@ -304,3 +304,92 @@ inteira ao fim do bloco.
   modos.
 - **Documentos inexistentes** (Ordem de Serviço, Plano de Trabalho, Roteiro)
   não entram nesta fase; o motor fica pronto para recebê-los.
+
+---
+
+## 8. Estado da implementação (16/09/2026, branch `feature/documentos-editor`)
+
+Passos 1 a 8 da ordem acima estão feitos para o Ofício. O que foi decidido
+na prática e difere (ou detalha) o plano:
+
+### 8.1 O que existe
+
+| Peça | Onde |
+|---|---|
+| Folha institucional + ofício em HTML | `templates/documentos/pdf/base_institucional.html`, `oficio.html`, `documento.css`, `documento-impressao.css`, `documento-editor.css` |
+| Contexto único (payload + textos + blocos) | `documentos/services/document_context.py` |
+| Motor HTML → PDF (WeasyPrint, memória) | `documentos/services/pdf_renderer.py`; encaixe em `DocumentoFacade._render_pdf_html` |
+| Prévia A4 na tela | `viagens_oficios:documento` (página) e `viagens_oficios:documento_folha` (a folha, num iframe da mesma origem) |
+| Registro de campos editáveis | `documentos/editor/campos.py` (data, protocolo, motivo, custeio+observação, viajantes, porte de arma) |
+| Ponte com o domínio | `documentos/editor/vinculos.py` (`VinculoOficio`: carregar, permissão, form, versão, opções, gravar) |
+| API do editor | `documentos/editor/api.py` — `campos/<chave>/` GET/PATCH, `blocos/<chave>/` GET/PATCH/DELETE, `quebras/<chave>/` PATCH |
+| Blocos e pontos de quebra | `documentos/editor/blocos.py` (registro), `documentos/services/document_blocks.py`, model `DocumentoBloco` |
+| Origem na auditoria | `RegistroAuditoria.origem` + `request.auditoria_origem` lido pelos signals |
+| Histórico do ofício | `viagens_oficios.views.historico_do_oficio`: ofício + blocos dele, com origem e campos alterados |
+| Editor na tela | `static/js/documento-editor.js`, painel `templates/documentos/editor/campo.html` e `bloco.html` |
+
+### 8.2 Decisões tomadas durante a implementação
+
+- **Folha em iframe da mesma origem.** O CSS do shell (resets, tabelas,
+  parágrafos) não alcança o documento; o HTML da folha é o mesmo que vai ao
+  WeasyPrint, com `documento-editor.css` inline por cima. A página em volta
+  (cabeçalho, ações, painel de edição) usa os componentes globais normalmente.
+- **Cabeçalho e rodapé nas faixas das margens.** Na tela ocupam 4,6 cm em
+  cima e 3,3 cm embaixo, centralizados — a mesma regra dos `@top-center` e
+  `@bottom-center` da folha de impressão. A folha é contínua na tela (um
+  documento longo cresce; o PDF pagina).
+- **Gravação parcial, validação inteira.** O PATCH monta o `OficioForm`
+  com o ofício inteiro e o valor novo, roda `is_valid()` (regras de `clean()`
+  incluídas), mas persiste só o campo pedido e os derivados declarados no
+  vínculo (`servidores` → `servidores_termo_autorizacao`,
+  `diarias_quantidade_servidores`). Erro em campo que não é o pedido
+  (dado antigo que a regra de hoje rejeita) volta como aviso, não bloqueia.
+  Erro no campo pedido é 400 com a mensagem do formulário.
+- **Texto padrão dos blocos vive em Python**, não no template
+  (`documentos/editor/blocos.py`). Assim a API sabe o original sem renderizar,
+  e `conteudo_original` do bloco é sempre o texto do registro.
+- **Quebra de página só em ponto registrado.** O template declara
+  `{% ponto_de_quebra "chave" %}` onde admite quebra; a quebra é um
+  `DocumentoBloco` do tipo `quebra_pagina` para essa chave. Chave fora do
+  registro é 404.
+- **Override entra no payload** (`payload["documento"]`), logo na chave de
+  cache e no `payload_snapshot` do artefato. O DOCX (docxtpl) não conhece
+  overrides — sai com o texto do modelo.
+- **Contingência sem GTK.** Sem o runtime nativo do WeasyPrint,
+  `render_pdf` levanta `DocumentRendererUnavailable`. Em produção é erro;
+  em desenvolvimento (`DOCUMENTOS_PDF_HTML_FALLBACK_DOCX`, padrão `DEBUG`)
+  a façade avisa e cai na cadeia antiga. Os testes da cadeia antiga desligam
+  o caminho novo com `override_settings(DOCUMENTOS_PDF_HTML_NATIVO=())`.
+- **Painel ao lado da folha, não contenteditable.** Clicar num trecho
+  marcado abre o painel do campo com o componente global do tipo; texto
+  grava com espera de digitação (900 ms), escolhas gravam na hora; a folha
+  recarrega depois de cada gravação e o campo continua aberto. 409 pede
+  recarga; erros aparecem no lugar sem redesenhar o painel.
+
+### 8.3 Medições (máquina de desenvolvimento, ofício de uma página)
+
+| Etapa | Mediana |
+|---|---|
+| PDF pela cadeia antiga (Word COM), frio | 7,66 s |
+| PDF pela cadeia antiga, em cache | 0,02 s |
+| Chrome headless `--print-to-pdf` (referência) | 0,9–1,1 s |
+| Contexto do ofício (payload + textos + blocos) | 27 ms |
+| HTML do documento (template já compilado) | 0,2 ms |
+| Folha do editor (contexto + HTML, modo editor) | 28 ms |
+| PDF pelo WeasyPrint | **não medido** — runtime GTK ausente nesta máquina |
+
+Os testes `PdfRealTests` ficam atrás de `skipUnless(weasyprint_disponivel())`
+e rodam assim que o GTK3 estiver instalado (`python -c "import weasyprint"`).
+
+### 8.4 Pendências
+
+- Instalar o runtime GTK3 (Windows) e medir o WeasyPrint; conferir a
+  paginação real contra a prévia.
+- Campos compostos ainda fora do registro: `roteiro`, `transporte`
+  (viatura/placa manual), `motorista` — marcados no template, sem painel.
+- O aviso de pendências acima da folha não se atualiza depois de uma
+  gravação pelo editor (só ao recarregar a página).
+- Migrar termo de autorização e justificativa para o mesmo caminho
+  (template HTML + registro de campos e blocos); prestação de contas depois.
+- Regeneração: quando o texto padrão de um bloco mudar no registro, avisar
+  na tela que o original mudou (o `conteudo_original` gravado permite).
