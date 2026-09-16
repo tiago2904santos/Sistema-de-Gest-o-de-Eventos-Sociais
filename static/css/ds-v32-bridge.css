@@ -1626,11 +1626,6 @@ form.btn-flutuante-form{margin:0;display:contents}
 /* Kicker ("VIAGENS", "EVENTOS SOCIAIS") em repouso fica no cinza da paleta, não no dourado escuro
    que saiu dela: dourado só marca o que está ativo ou selecionado. */
 .kicker{color:var(--n-450)}
-/* Diárias: o valor por extenso é uma linha sob os três cartões. */
-.diarias-extenso{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:12px 0 18px;font-size:13px;line-height:1.5;color:var(--n-800)}
-.diarias-extenso__rotulo{display:inline-flex;align-items:center;gap:6px;flex:none;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--n-500)}
-.diarias-extenso__rotulo .ui-icon{width:13px;height:13px;color:var(--n-400)}
-.diarias-extenso__valor{min-width:0;overflow-wrap:anywhere}
 
 /* Prestações no padrão do roteiro (15/09/2026). Cabeçalho de cartão com a mesma faixa
    branca e borda embaixo; o ícone faz o papel do número dourado, separado do título
