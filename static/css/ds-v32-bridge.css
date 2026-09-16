@@ -1755,6 +1755,7 @@ form.btn-flutuante-form{margin:0;display:contents}
    tabela encostada no cartão, como a de trechos do roteiro, colunas de
    largura fixa e ações em ícones de largura fixa. É o que põe tudo na mesma
    coluna, linha após linha. */
+.tm-form #documentos{margin-top:16px}
 .tm-form .tm-tabela{margin:-16px -20px 0;width:calc(100% + 40px);max-width:none;border-top:0}
 .tm-form .tm-tabela--fim{margin-bottom:-16px}
 .tm-form .tm-tabela .dt{border:0;border-radius:0;table-layout:fixed}
@@ -1782,15 +1783,6 @@ form.btn-flutuante-form{margin:0;display:contents}
 .tm-form .tm-alvo__txt small{font-size:11px;font-weight:400;color:var(--n-450)}
 .tm-form .tm-arquivo__linha{display:flex;align-items:center;gap:8px;min-width:0}
 .tm-form .tm-arquivo__nome{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* Rodapé do cartão, como Voltar/Salvar: linha de separação, uma coisa à
-   esquerda e os lotes à direita. */
-.tm-form .tm-rodape{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--n-150)}
-.tm-form .tm-rodape__lotes{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-left:auto}
-.tm-form .tm-rodape form{margin:0}
-.tm-form #cancelamento .tm-rodape{justify-content:flex-end}
-.tm-form #cancelamento .tm-rodape>:first-child{margin-right:auto}
-.tm-form #form-cancelar .ta{min-height:76px}
-.tm-form .tm-explica{margin:0;color:var(--n-600)}
 .tm-form .tm-contagem{font-size:12px;font-weight:500;color:var(--n-500)}
 @container(max-width:680px){.tm-form .tm-tabela{margin-left:-16px;margin-right:-16px;width:calc(100% + 32px)}.tm-form .tm-col-servidor,.tm-form .tm-col-data,.tm-form .tm-col-formato{display:none}}
 

@@ -184,7 +184,7 @@
           {% if t.cancelado or t.oficio_id and t.oficio.cancelado %}
             <p class="texto-vazio">Termo{% if t.oficio_id and t.oficio.cancelado %} ou ofício{% endif %} cancelado: reative para emitir documentos.</p>
           {% else %}
-            <div class="dt-w cad-lista tm-tabela"><table class="dt">
+            <div class="dt-w cad-lista tm-tabela tm-tabela--fim"><table class="dt">
               <caption class="sr-only">Termo por servidor — Escolher documentos para baixar{% if "servidores" in herdados %} — servidores com termo do ofício{% endif %}</caption>
               <thead><tr><th>Documento</th><th class="c-fixo tm-col-estado">Estado</th><th class="c-cad-acoes tm-col-acoes">Ações</th></tr></thead>
               <tbody>
