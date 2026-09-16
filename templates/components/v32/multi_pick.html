@@ -12,6 +12,8 @@
   `opcoes`: lista de dicts {"valor", "rotulo", "detalhes", "selecionado"}.
   `opcao.dados`: dict que vira `data-*` na opção, para quem precisa de contexto
     no navegador (ex.: a unidade de um servidor).
+  `vazio_escolhidos`: texto do cartão pontilhado que ocupa o lugar da lista
+    enquanto nada foi escolhido. Some sozinho com o primeiro escolhido.
   `sentinela`: envia um campo oculto `<name>__enviado` — sem ele, "desmarquei
     todos" e "não enviei o campo" chegam iguais ao servidor. Formulários que
     gravam o conjunto inteiro a cada envio (ModelForm) não precisam.
@@ -43,6 +45,7 @@
     </div>
   </div>
   <ul class="multi-pick__escolhidos" data-multi-escolhidos aria-live="polite"></ul>
+  {% if vazio_escolhidos %}<p class="lista-vazia">{% include "components/icon.html" with nome=icone_vazio|default:"users" %}<span>{{ vazio_escolhidos }}</span></p>{% endif %}
   {% for erro in erros %}<p class="form-erro"{% if forloop.first %} id="id_{{ name }}_erro"{% endif %}>{{ erro }}</p>{% endfor %}
   {% if ajuda %}<p class="form-ajuda" id="id_{{ name }}_ajuda">{{ ajuda }}</p>{% endif %}
 </div>

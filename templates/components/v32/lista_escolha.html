@@ -13,9 +13,13 @@
   vira `data-*` na linha, para quem precisa de contexto no navegador; `chip` é
   um selo curto ao lado do nome (com `chip_tom` para o tom, padrão neutro).
   O rádio fica fora da vista: o que marca a escolha é o destaque da linha.
+  `aguardando`: texto do cartão pontilhado que substitui busca e lista enquanto
+    a tela ainda não tem o que oferecer; quem liga e desliga é o script da página
+    (classe `is-aguardando` no `.form-campo` da busca).
+  `rotulo_oculto` esconde o rótulo da busca sem tirá-lo dos leitores de tela.
 {% endcomment %}
-<div class="form-campo of-equipe-busca">
-  <label class="form-label sr-only" for="id_{{ name }}_busca">{{ rotulo_busca|default:label }}</label>
+<div class="form-campo of-equipe-busca" data-lista-campo="{{ name }}">
+  <label class="form-label{% if rotulo_oculto %} sr-only{% endif %}" for="id_{{ name }}_busca">{{ rotulo_busca|default:label }}</label>
   <div class="busca">
     <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
     <input class="form-controle" type="search" id="id_{{ name }}_busca" placeholder="{{ placeholder }}" data-lista-busca="{{ name }}" autocomplete="off">
@@ -31,4 +35,5 @@
     </label>
   {% empty %}<p class="texto-vazio">{{ vazio|default:"Nenhum registro disponível." }}</p>{% endfor %}
 </div>
+{% if aguardando %}<p class="lista-vazia" data-lista-aguardando="{{ name }}" hidden>{% include "components/icon.html" with nome=icone|default:"document" %}<span>{{ aguardando }}</span></p>{% endif %}
 {% for erro in erros %}<p class="form-erro">{{ erro }}</p>{% endfor %}

@@ -90,7 +90,7 @@
         </header>
         <div class="section-card__corpo">
           <div class="tm-oficio" id="oficio-painel"{% if valores.oficio or erros.oficio %}{% else %} hidden{% endif %} data-oficio-painel>
-            {% include "components/v32/lista_escolha.html" with name="oficio" label="Ofícios" rotulo_busca="Buscar ofício" icone="document" opcoes=oficios selecionado=valores.oficio placeholder="Buscar ofício por número, protocolo, viajante ou destino" erros=erros.oficio vazio="Nenhum ofício disponível para vincular." %}
+            {% include "components/v32/lista_escolha.html" with name="oficio" label="Ofícios" rotulo_busca="Buscar ofício" rotulo_oculto=True icone="document" opcoes=oficios selecionado=valores.oficio placeholder="Buscar ofício por número, protocolo, viajante ou destino" erros=erros.oficio vazio="Nenhum ofício disponível para vincular." %}
             {% if heranca %}
               {# Dizer só "herda o destino" obriga a abrir o ofício para saber qual: o valor herdado vem junto. #}
               <div class="aviso-rota tm-heranca" role="status">
@@ -150,10 +150,10 @@
             componente de motoristas do cadastro de viatura.
           {% endcomment %}
           <div class="tm-bloco">
-            {% include "components/v32/multi_pick.html" with name="servidores" label="Servidores do termo" rotulo_oculto=True opcoes=servidores erros=erros.servidores vazio="Nenhum servidor cadastrado." %}
+            {% include "components/v32/multi_pick.html" with name="servidores" label="Servidores" vazio_escolhidos="Os servidores escolhidos aparecem aqui" opcoes=servidores erros=erros.servidores vazio="Nenhum servidor cadastrado." %}
           </div>
           <div class="tm-bloco">
-            {% include "components/v32/lista_escolha.html" with name="viatura" label="Viaturas" rotulo_busca="Buscar viatura" icone="truck" opcoes=viaturas selecionado=valores.viatura placeholder="Buscar por placa ou modelo..." erros=erros.viatura vazio="Nenhuma viatura cadastrada." %}
+            {% include "components/v32/lista_escolha.html" with name="viatura" label="Viaturas" rotulo_busca="Viatura" icone="truck" aguardando="Escolha os servidores para ver as viaturas sugeridas" opcoes=viaturas selecionado=valores.viatura placeholder="Buscar por placa ou modelo..." erros=erros.viatura vazio="Nenhuma viatura cadastrada." %}
           </div>
 
           {# Ações no fim do último cartão do formulário, como no roteiro: voltar à esquerda, salvar à direita. #}
