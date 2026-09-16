@@ -44,15 +44,7 @@
                 {% endif %}
               {% endif %}
             </div>
-            {% if roteiro.pk %}
-              {# O percurso está no título; aqui ficam período e valor gravados. #}
-              {% if roteiro.saida_dt or roteiro.valor_diarias is not None %}
-                <p class="page-header__subtitulo d-cabeca__sub editor-roteiro__meta">
-                  {% if roteiro.saida_dt %}<span>{% include "components/icon.html" with nome="calendar" %}{{ roteiro.saida_dt|date:"d/m/Y" }}{% if roteiro.retorno_chegada_dt and roteiro.retorno_chegada_dt|date:"d/m/Y" != roteiro.saida_dt|date:"d/m/Y" %} a {{ roteiro.retorno_chegada_dt|date:"d/m/Y" }}{% endif %}</span>{% endif %}
-                  {% if roteiro.valor_diarias is not None %}<span>{% include "components/icon.html" with nome="landmark" %}R$ {{ roteiro.valor_diarias }}</span>{% endif %}
-                </p>
-              {% endif %}
-            {% endif %}
+            {# Cabeçalho sem metadados: só o título e a situação. #}
           </div>
         </div>
       </div>

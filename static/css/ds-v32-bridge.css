@@ -1396,9 +1396,6 @@ a.step-i{text-decoration:none;color:inherit}
 /* Roteiro: cabeçalho com identificação do registro e Salvar no topo. */
 .editor-roteiro__topo{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .editor-roteiro__topo-acoes{display:flex;align-items:center;gap:10px;flex:none}
-.editor-roteiro__meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px}
-.editor-roteiro__meta>span{display:inline-flex;align-items:center;gap:6px;min-width:0;overflow-wrap:anywhere}
-.editor-roteiro__meta .ui-icon{width:13px;height:13px;color:var(--n-400);flex:none}
 /* Os totais da rota só entram quando há rota calculada ou gravada. */
 .rota-metricas[hidden]{display:none}
 
@@ -1751,6 +1748,8 @@ form.btn-flutuante-form{margin:0;display:contents}
    largura fixa e ações em ícones de largura fixa. É o que põe tudo na mesma
    coluna, linha após linha. */
 .tm-form #documentos{margin-top:16px}
+/* Documentos termina na tabela e, abaixo dela, nos botões: a última linha fecha com uma borda reta. */
+.tm-form #documentos .tm-tabela:not(.tm-tabela--fim) .dt tbody tr:last-child td{border-bottom:1px solid var(--n-100);border-radius:0}
 .tm-form .tm-acoes-fim{margin-top:0}
 /* No fim de Documentos, os botões ficam abaixo da tabela, com a mesma folga das linhas. */
 .tm-form #documentos .tm-acoes-fim{margin-top:16px}
@@ -1769,10 +1768,10 @@ form.btn-flutuante-form{margin:0;display:contents}
 .tm-form .tm-col-data{width:140px}
 .tm-form .tm-col-formato{width:90px}
 /* A coluna de ações tem a largura exata de quatro ícones. */
-.tm-form .tm-tabela .dt .tm-col-acoes{width:172px}
+.tm-form .tm-tabela .dt .tm-col-acoes{width:184px}
 .tm-form .tm-icones{display:flex;justify-content:flex-end;gap:6px}
 .tm-form .tm-icones form{margin:0;display:inline-flex}
-.tm-form .tm-icones .ib-linha{width:32px;height:32px}
+.tm-form .tm-icones .ib-linha{width:32px;height:32px;flex:none}
 .tm-form .tm-icones .of-item--inativo{opacity:.4;cursor:default}
 .tm-form .tm-icones__vago{visibility:hidden}
 /* Alvo do documento: crachá, nome e descrição. */
