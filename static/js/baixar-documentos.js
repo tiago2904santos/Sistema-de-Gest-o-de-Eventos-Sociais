@@ -1,9 +1,8 @@
 /* Modal "Baixar documentos" (components/v32/dialogo_baixar.html).
 
    Um botão com `data-baixar-documentos` abre o modal com os documentos do
-   termo (JSON em `data-itens`), todos marcados. O resumo diz o que vai sair:
-   um arquivo, um ZIP ou um PDF só. "Um PDF só" só vale para PDF com mais de
-   um marcado. O envio é um POST comum que devolve o arquivo. */
+   termo (JSON em `data-itens`), todos marcados. "Um PDF só" só vale para PDF
+   com mais de um marcado. O envio é um POST comum que devolve o arquivo. */
 (function () {
   'use strict';
 
@@ -14,13 +13,11 @@
   var lista = dialogo.querySelector('[data-baixar-lista]');
   var sub = dialogo.querySelector('[data-baixar-sub]');
   var todos = dialogo.querySelector('[data-baixar-todos]');
-  var resumo = dialogo.querySelector('[data-baixar-resumo]');
   var enviar = dialogo.querySelector('[data-baixar-enviar]');
   var proximo = dialogo.querySelector('[data-baixar-next]');
   var unico = form.querySelector('input[name="saida"][value="unico"]');
   var separados = form.querySelector('input[name="saida"][value="separados"]');
   var grupoVersao = dialogo.querySelector('[data-baixar-versao]');
-  var original = form.querySelector('input[name="versao"][value="original"]');
 
   function marcados() {
     return lista.querySelectorAll('input[name="itens"]:checked').length;
@@ -40,22 +37,11 @@
     var total = lista.querySelectorAll('input[name="itens"]').length;
     var pdf = formato() === 'pdf';
     grupoVersao.hidden = !pdf || assinadosMarcados() === 0;
-    var usaOriginal = !grupoVersao.hidden && original.checked;
     unico.disabled = !pdf || n < 2;
     unico.closest('label').classList.toggle('bx-seg__op--off', unico.disabled);
     if (unico.disabled && unico.checked) separados.checked = true;
     enviar.disabled = n === 0;
     todos.textContent = n === total ? 'Desmarcar todos' : 'Marcar todos';
-    var ext = pdf ? 'PDF' : 'DOCX';
-    var texto;
-    if (n === 0) texto = 'Nenhum documento marcado.';
-    else if (n === 1) texto = 'Sai 1 arquivo ' + ext + '.';
-    else if (unico.checked) texto = 'Saem os ' + n + ' documentos num PDF só.';
-    else texto = 'Saem ' + n + ' arquivos ' + ext + ' num ZIP.';
-    if (n > 0 && !grupoVersao.hidden) {
-      texto += usaOriginal ? ' Todos no arquivo original, sem os assinados.' : ' Os assinados saem na versão assinada.';
-    }
-    resumo.textContent = texto;
   }
 
   function linha(item) {
