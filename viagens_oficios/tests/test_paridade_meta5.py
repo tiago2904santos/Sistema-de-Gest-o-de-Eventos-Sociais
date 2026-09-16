@@ -117,11 +117,11 @@ class ListaTermosTests(CenarioTermos):
         t = self.termo(oficio=o)
         r = self.lista()
         for texto in ["Baixar documentos", "Escolher termos, formato e saída", "data-baixar-dialogo",
-                      "AAA-1234 DUSTER", "Anexar termo assinado",
+                      "AAA-1234 DUSTER",
                       "Gere o PDF do termo primeiro", "Editar termo", "Excluir termo", 'data-confirmar="Confirmar exclusão?"']:
             self.assertContains(r, texto)
         # As opções de baixar do menu viraram o modal.
-        for texto in ["Escolher documentos para baixar", "Visualizar termo vazio", "Todos os documentos"]:
+        for texto in ["Escolher documentos para baixar", "Visualizar termo vazio", "Todos os documentos", "Anexar termo assinado"]:
             self.assertNotContains(r, texto)
         self.assertContains(r, reverse("viagens_termos:baixar", args=[t.pk]))
         self.assertNotContains(r, reverse("viagens_termos:todos_pdf", args=[t.pk]))
