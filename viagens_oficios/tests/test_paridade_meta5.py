@@ -289,12 +289,11 @@ class DetalheEDocumentosTests(CenarioTermos):
         for texto in [f"Termo #{t.pk}", "Realizado", "Destino e período", "Servidores e viatura", f"Ofício {o.numero_formatado}", "herda do ofício",
                       "Escolher documentos para baixar", "Termo por servidor", "JANINE LACERDA DO PRADO", "JOÃO MARIO DE GOES",
                       "Visualizar", "Anexar assinado", "Termo vazio", "Só destino e período, para preencher à mão",
-                      "Todos os termos", "2 servidores",
-                      "PDF único", "ZIP de PDFs", "ZIP de DOCX",
-                      "Prévia em tela", "Abrir prévia", "Salvar termo"]:
+                      "2 servidores",
+                      "Salvar termo"]:
             self.assertContains(r, texto)
-        self.assertContains(r, reverse("viagens_termos:preview", args=[t.pk]))
-        self.assertContains(r, reverse("viagens_termos:todos_pdf", args=[t.pk]))
+        self.assertNotContains(r, reverse("viagens_termos:preview", args=[t.pk]))  # "Abrir prévia" saiu da tela
+        self.assertNotContains(r, reverse("viagens_termos:todos_pdf", args=[t.pk]))  # os lotes saíram da tela do termo
         self.assertContains(r, reverse("viagens_termos:gerar", args=[t.pk, self.janine.pk, "pdf"]) + "?inline=1")
 
     def test_gera_por_servidor_generico_viatura_consolidado_e_zip(self):

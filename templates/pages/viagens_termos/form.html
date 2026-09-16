@@ -12,7 +12,7 @@
   — por servidor, genérico, da viatura, todos num PDF ou em ZIP —, a anexação
   do PDF assinado e a prévia em tela, que sozinha não valia uma seção. É a
   última seção da tela; excluir fica no menu da linha da lista. As âncoras
-  `#documentos` e `#previa` continuam valendo.
+  `#documentos` continua valendo.
 
   Os formulários dessas seções são independentes e ficam depois do `</form>`
   do cadastro — nunca aninhados.
@@ -222,18 +222,6 @@
               </tbody>
             </table></div>
           {% endif %}
-          {# Rodapé do cartão, como Voltar/Salvar: a prévia à esquerda, os lotes à direita. #}
-          <div class="tm-rodape" id="previa">
-            <a class="btn--secundaria" href="{% url 'viagens_termos:preview' t.pk %}" title="Prévia em tela">{% include "components/icon.html" with nome="eye" %}Abrir prévia</a>
-            {% if pode_editar and not t.cancelado %}
-              <div class="tm-rodape__lotes">
-                <span class="st st--{{ situacao_documentos.tom }}" title="Todos os termos">{{ situacao_documentos.rotulo }}</span>
-                <form method="post" action="{{ d.url_lote_docx }}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="document" %}ZIP de DOCX</button></form>
-                <form method="post" action="{{ d.url_lote_pdf }}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="download" %}ZIP de PDFs</button></form>
-                <form method="post" action="{{ d.url_todos_pdf }}">{% csrf_token %}<button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="download" %}PDF único</button></form>
-              </div>
-            {% endif %}
-          </div>
         </div>
       </section>
     {% endwith %}{% endif %}

@@ -27,7 +27,7 @@ from viagens_oficios.views import exigir_operador, resposta_documento, resposta_
 from . import abas as abas_de_termo
 from .forms import TermoAutorizacaoForm
 from .models import TermoAutorizacao
-from .presenters import artefatos_pdf_por_termo, documentos_do_termo, heranca_do_termo, herdados_do_termo, linha_da_lista, selo_do_termo, situacao_dos_documentos, titulo_do_termo
+from .presenters import artefatos_pdf_por_termo, documentos_do_termo, heranca_do_termo, herdados_do_termo, linha_da_lista, selo_do_termo, titulo_do_termo
 from .selectors import get_termo_by_id, listar_termos
 from .services import build_termo_cadastro_payload, gerar_termo_cadastro_lote, gerar_termo_cadastro_um
 
@@ -185,9 +185,9 @@ def _contexto_form(form, termo, request):
 def _contexto_do_registro(termo, request):
     """As seções que só existem num termo já salvo, na mesma tela do cadastro.
 
-    Vieram do antigo detalhe: os documentos para baixar (por servidor, o
-    genérico, o da viatura e os lotes), cada um com o seu estado — sem PDF,
-    PDF gerado ou assinado — e a anexação do assinado.
+    Vieram do antigo detalhe: os documentos para baixar (o termo vazio e um
+    por servidor), cada um com o seu estado — sem PDF, PDF gerado ou
+    assinado — e a anexação do assinado.
     """
     if not termo.pk:
         return {}
@@ -196,7 +196,6 @@ def _contexto_do_registro(termo, request):
     return {
         "selo": selo, "selo_tom": tom,
         "documentos": documentos_do_termo(termo, artefatos_pdf),
-        "situacao_documentos": situacao_dos_documentos(termo, artefatos_pdf),
         "servidores_do_termo": list(termo.servidores_efetivos()),
         "viatura": termo.viatura_efetiva(),
         "pode_editar": pode_editar_cadastros(request.user),
