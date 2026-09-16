@@ -291,7 +291,7 @@ class DetalheEDocumentosTests(CenarioTermos):
                       "Visualizar", "Anexar assinado", "Termo genérico", "Só destino e período, semipreenchido",
                       "Termo da viatura", "AAA-1234 DUSTER, campos do servidor em branco", "Todos os termos", "2 servidores",
                       "PDF único", "ZIP de PDFs", "ZIP de DOCX", "Documentos gerados", "Nenhum documento gerado.",
-                      "Cancelamento", "Cancelar termo", "Prévia em tela", "Abrir prévia", "Salvar termo"]:
+                      "Prévia em tela", "Abrir prévia", "Salvar termo"]:
             self.assertContains(r, texto)
         self.assertContains(r, reverse("viagens_termos:preview", args=[t.pk]))
         self.assertContains(r, reverse("viagens_termos:todos_pdf", args=[t.pk]))
@@ -374,7 +374,7 @@ class DetalheEDocumentosTests(CenarioTermos):
         r = self.client.get(detalhe)
         self.assertContains(r, "Termo cancelado")
         self.assertContains(r, "Evento adiado")
-        self.assertContains(r, "Reativar termo")
+        self.assertNotContains(r, "Reativar termo")  # a seção de cancelamento saiu da tela
         r = self.client.post(reverse("viagens_termos:acao", args=[t.pk, "reativar"]))
         self.assertRedirects(r, detalhe)
         t.refresh_from_db()

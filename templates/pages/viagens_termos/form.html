@@ -10,10 +10,10 @@
   Num termo já salvo o fluxo continua na mesma tela, em coluna única. O que
   era quatro seções numeradas virou três: "Documentos" (3) junta o que baixar
   — por servidor, genérico, da viatura, todos num PDF ou em ZIP —, a anexação
-  do PDF assinado e a prévia em tela, que sozinha não valia uma seção; o
-  histórico (4) e o cancelamento/reativação/exclusão (5) seguem separados. As
-  âncoras `#documentos`, `#previa`, `#gerados` e `#cancelamento` continuam
-  valendo, agora algumas dentro da seção 3.
+  do PDF assinado e a prévia em tela, que sozinha não valia uma seção; os
+  documentos gerados (4) seguem separados. Excluir fica no menu da linha da
+  lista. As âncoras `#documentos`, `#previa` e `#gerados` continuam valendo,
+  agora algumas dentro da seção 3.
 
   Os formulários dessas seções são independentes e ficam depois do `</form>`
   do cadastro — nunca aninhados.
@@ -279,35 +279,6 @@
             </tbody></table></div>
         </div>
       </section>
-
-      {% if pode_editar %}
-        <section class="section-card reg" id="cancelamento">
-          <header class="section-card__cabecalho reg__t">
-            <span class="section-card__numero reg-numero" aria-hidden="true">5</span>
-            <h2 class="section-card__titulo">Cancelamento e exclusão</h2>
-          </header>
-          <div class="section-card__corpo">
-            {% if t.cancelado %}
-              <p class="tm-explica">Voltar a gerar documentos? Reativar o termo libera a emissão de novo; o histórico permanece.</p>
-              <div class="tm-rodape">
-                <form method="post" action="{% url 'viagens_termos:acao' t.pk 'excluir' %}" data-confirmar="Confirmar exclusão?">{% csrf_token %}<input type="hidden" name="next" value="{% url 'viagens_termos:lista' %}"><button type="submit" class="btn--secundaria btn--destrutiva">{% include "components/icon.html" with nome="trash" %}Excluir termo</button></form>
-                <form method="post" action="{% url 'viagens_termos:acao' t.pk 'reativar' %}">{% csrf_token %}<button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="undo" %}Reativar termo</button></form>
-              </div>
-            {% else %}
-              <form method="post" action="{% url 'viagens_termos:acao' t.pk 'cancelar' %}" id="form-cancelar" data-confirmar="Confirmar cancelamento?">{% csrf_token %}
-                <label class="form-label" for="id_motivo_cancelamento">Motivo do cancelamento</label>
-                <textarea class="ta" id="id_motivo_cancelamento" name="motivo" placeholder="Cancelar interrompe a emissão mantendo o histórico; dá para reativar depois."></textarea>
-              </form>
-              {# O excluir é outro form; entra no rodapé pelo atributo `form`, como o Salvar do topo. #}
-              <form method="post" action="{% url 'viagens_termos:acao' t.pk 'excluir' %}" id="form-excluir" data-confirmar="Confirmar exclusão?">{% csrf_token %}<input type="hidden" name="next" value="{% url 'viagens_termos:lista' %}"></form>
-              <div class="tm-rodape">
-                <button type="submit" form="form-excluir" class="btn--secundaria btn--destrutiva">{% include "components/icon.html" with nome="trash" %}Excluir termo</button>
-                <button type="submit" form="form-cancelar" class="btn--secundaria btn--destrutiva">{% include "components/icon.html" with nome="ban" %}Cancelar termo</button>
-              </div>
-            {% endif %}
-          </div>
-        </section>
-      {% endif %}
     {% endwith %}{% endif %}
   </div>
 {% endblock %}

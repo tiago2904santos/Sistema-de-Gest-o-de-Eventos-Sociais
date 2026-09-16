@@ -64,14 +64,16 @@ class SecoesDoRegistroNoFormularioTests(CenarioTermos):
                       "Só destino e período, semipreenchido", "Termo da viatura",
                       "AAA-1234 DUSTER, campos do servidor em branco", "Todos os termos", "2 servidores",
                       "PDF único", "ZIP de PDFs", "ZIP de DOCX", "Documentos gerados",
-                      "Nenhum documento gerado.", "Cancelamento", "Cancelar termo", "Excluir termo",
+                      "Nenhum documento gerado.",
                       "Prévia em tela", "Abrir prévia"]:
             self.assertContains(r, texto)
+        for texto in ["Cancelamento e exclusão", "Cancelar termo", 'id="cancelamento"']:
+            self.assertNotContains(r, texto)
         self.assertContains(r, reverse("viagens_termos:preview", args=[t.pk]))
         self.assertContains(r, reverse("viagens_termos:todos_pdf", args=[t.pk]))
         self.assertContains(r, reverse("viagens_termos:gerar", args=[t.pk, self.janine.pk, "pdf"]) + "?inline=1")
-        self.assertContains(r, reverse("viagens_termos:acao", args=[t.pk, "cancelar"]))
-        self.assertContains(r, reverse("viagens_termos:acao", args=[t.pk, "excluir"]))
+        self.assertNotContains(r, reverse("viagens_termos:acao", args=[t.pk, "cancelar"]))
+        self.assertNotContains(r, reverse("viagens_termos:acao", args=[t.pk, "excluir"]))  # excluir fica no menu da lista
 
     def test_formularios_secundarios_ficam_fora_do_form_principal(self):
         """HTML válido: nada de `<form>` aninhado no formulário do cadastro."""
@@ -83,7 +85,7 @@ class SecoesDoRegistroNoFormularioTests(CenarioTermos):
         corpo = html[principal:fecha]
         self.assertNotIn("<form", corpo)
         # E as seções migradas vêm depois desse fechamento.
-        for ancora in ['id="documentos"', 'id="gerados"', 'id="previa"', 'id="cancelamento"']:
+        for ancora in ['id="documentos"', 'id="gerados"', 'id="previa"']:
             self.assertGreater(html.index(ancora), fecha)
 
     def test_documentos_gerados_aparecem_na_mesma_tela(self):
@@ -101,7 +103,7 @@ class SecoesDoRegistroNoFormularioTests(CenarioTermos):
         r = self.client.get(reverse("viagens_termos:editar", args=[t.pk]))
         self.assertContains(r, "Termo cancelado")
         self.assertContains(r, "Adiado")
-        self.assertContains(r, "Reativar termo")
+        self.assertNotContains(r, "Reativar termo")  # a seção de cancelamento saiu da tela
         self.assertContains(r, "reative para emitir documentos.")
         self.assertNotContains(r, "PDF único")
 
@@ -141,7 +143,7 @@ class NavegacaoTests(CenarioTermos):
         r = self.client.get(editar)
         self.assertContains(r, "Termo cancelado")
         self.assertContains(r, "Evento adiado")
-        self.assertContains(r, "Reativar termo")
+        self.assertNotContains(r, "Reativar termo")  # a seção de cancelamento saiu da tela
         r = self.client.post(reverse("viagens_termos:acao", args=[t.pk, "reativar"]))
         self.assertRedirects(r, editar)
         t.refresh_from_db()
