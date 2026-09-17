@@ -6,6 +6,7 @@ do projeto (veja `.env.example`).
 """
 
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -263,6 +264,9 @@ OPENROUTESERVICE_API_KEY = os.environ.get("OPENROUTESERVICE_API_KEY", "")
 ROUTE_REQUEST_TIMEOUT_SECONDS = int(
     os.environ.get("ROUTE_REQUEST_TIMEOUT_SECONDS", "12")
 )
+# Município do percurso sem coordenadas é buscado no OpenStreetMap na hora.
+# Nos testes fica desligado: nada de rede durante a suíte.
+GEOCODIFICAR_SOB_DEMANDA = sys.argv[1:2] != ["test"]
 
 # Núcleo documental síncrono. Motores nativos são opcionais e sondados sob demanda.
 DOCUMENTOS_DEFAULT_PDF_ENGINE = os.environ.get("DOCUMENTOS_DEFAULT_PDF_ENGINE", "auto")

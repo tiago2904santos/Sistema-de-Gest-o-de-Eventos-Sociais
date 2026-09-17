@@ -4,7 +4,8 @@
   Cadastro de ofício — os campos do Gerenciador de Viagens na pele do V3.2.
 
   Do Gerenciador vêm os blocos, os campos, os rótulos e o comportamento: a
-  identificação (N° do Ofício, Protocolo, Custeio, Nome da Instituição), a
+  identificação (N° do Ofício, Data do ofício, Protocolo, Custeio, Nome da
+  Instituição — a data é daqui; o Gerenciador não a mostra), a
   finalidade (Modelo de motivo, Descrição), a equipe com motorista e termo, a
   viatura com sugestões, o motorista quando ninguém da equipe dirige, o
   roteiro e diárias, a justificativa e os documentos para conferência, com
@@ -92,7 +93,7 @@
         <div class="section-card__corpo">
 
           <div class="ofc-grupo">
-            <div class="ofc-grupo__corpo g-form g-form--3">
+            <div class="ofc-grupo__corpo g-form ofc-identificacao">
               <div class="form-campo">
                 <label class="form-label" for="id_numero">N° do Ofício</label>
                 <div class="ofc-numero">
@@ -103,6 +104,7 @@
               </div>
               {% include "components/input.html" with name="protocolo" label="Protocolo" inputmode="numeric" maxlength="12" autocomplete="off" valor=v.protocolo erros=e.protocolo %}
               {% include "components/select.html" with name="custeio" label="Custeio" opcoes=dados.opcoes_custeio placeholder="Selecione..." selecionado=v.custeio erros=e.custeio %}
+              {% include "components/input.html" with name="data_criacao" label="Data do ofício" tipo="date" valor=v.data_criacao erros=e.data_criacao %}
               <div class="cheia" data-custeio-instituicao data-outra="{{ dados.outra_instituicao }}"{% if not dados.mostrar_instituicao %} hidden{% endif %}>
                 {% include "components/input.html" with name="custeio_observacao" label="Nome da Instituição" valor=v.custeio_observacao erros=e.custeio_observacao %}
               </div>
@@ -124,12 +126,12 @@
             </div>
           </div>
 
-          {# Equipe: busca em cima; cada escolhido vira uma linha com Motorista e Termo. #}
+          {# Equipe: busca em cima; cada escolhido vira uma linha com Termo. Clicar na linha a define como motorista. #}
           <div class="ofc-grupo">
             <div class="ofc-grupo__cabeca"><strong>Servidores</strong></div>
             <div class="ofc-grupo__corpo">
               <input type="hidden" name="servidores_termo_autorizacao_present" value="1">
-              <div class="ofc-picker" data-ofc-equipe data-motorista="{{ dados.motorista_equipe }}">
+              <div class="ofc-picker" data-ofc-equipe data-motorista="{{ dados.motorista_equipe }}" data-unidade-emissora="{{ dados.unidade_emissora }}">
                 <div class="ofc-com-acao">
                   <div class="form-campo ofc-picker__campo">
                   <label class="form-label sr-only" for="id_equipe_busca">Adicionar à equipe</label>
@@ -150,15 +152,14 @@
                 </div>
                   <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ dados.url_novo_servidor }}" target="_blank" rel="noopener" aria-label="Novo viajante" title="Novo viajante">{% include "components/icon.html" with nome="plus" %}</a>
                 </div>
-                <div class="of-membros ofc-escolhidos{% if e.servidores %} grupo-erro{% endif %}" role="group" aria-label="Pessoas na equipe" data-ofc-escolhidos>
+                <div class="of-membros ofc-escolhidos ofc-equipe{% if e.servidores %} grupo-erro{% endif %}" role="group" aria-label="Pessoas na equipe" data-ofc-escolhidos>
                   {% for s in dados.servidores %}
-                    <div class="of-membro ofc-pessoa{% if s.valor == dados.motorista_equipe %} ofc-pessoa--motorista{% endif %}" data-valor="{{ s.valor }}" data-unidade="{{ s.unidade }}" data-nome="{{ s.rotulo }}"{% if not s.selecionado %} hidden{% endif %}>
+                    <div class="of-membro ofc-pessoa{% if s.valor == dados.motorista_equipe %} ofc-pessoa--motorista{% endif %}" data-valor="{{ s.valor }}" data-unidade="{{ s.unidade }}" data-nome="{{ s.rotulo }}" data-ofc-motorista role="button" tabindex="0" aria-pressed="{% if s.valor == dados.motorista_equipe %}true{% else %}false{% endif %}" title="Clique para definir como motorista"{% if not s.selecionado %} hidden{% endif %}>
                       <input type="checkbox" name="servidores" value="{{ s.valor }}" hidden{% if s.selecionado %} checked{% endif %}>
                       <span class="of-av" aria-hidden="true">{{ s.iniciais }}</span>
-                      <span class="of-pessoa__txt"><span class="of-pessoa__nome">{{ s.rotulo }}</span>{% if s.detalhes %}<span class="of-pessoa__desc">{{ s.detalhes }}</span>{% endif %}</span>
+                      <span class="of-pessoa__txt"><span class="of-pessoa__nome">{{ s.rotulo }}<span class="st ofc-chip-motorista">{% include "components/icon.html" with nome="volante" %}Motorista</span></span>{% if s.detalhes %}<span class="of-pessoa__desc">{{ s.detalhes }}</span>{% endif %}</span>
                       <span class="ofc-pessoa__acoes">
-                        <label class="of-membro__termo"><input type="checkbox" data-ofc-motorista value="{{ s.valor }}"{% if s.valor == dados.motorista_equipe %} checked{% endif %}><span>Motorista</span></label>
-                        <label class="of-membro__termo"><input type="checkbox" name="servidores_termo_autorizacao" value="{{ s.valor }}"{% if s.termo %} checked{% endif %}><span>Termo</span></label>
+                        <label class="ofc-termo" title="Gerar termo de autorização para {{ s.rotulo }}"><input class="sr-only" type="checkbox" name="servidores_termo_autorizacao" value="{{ s.valor }}"{% if s.termo %} checked{% endif %}><span class="ofc-termo__com">{% include "components/icon.html" with nome="check" %}Com termo</span><span class="ofc-termo__sem">Sem termo</span></label>
                         <button type="button" class="ib-linha" aria-label="Remover {{ s.rotulo }} da equipe" title="Remover" data-ofc-remover>{% include "components/icon.html" with nome="x" %}</button>
                       </span>
                     </div>
@@ -179,33 +180,33 @@
                 <div class="ofc-sugestoes__lista" data-ofc-sugestoes-lista></div>
               </div>
               {# Lista como a dos ofícios no termo: busca em cima, viaturas embaixo; clicar escolhe e clicar de novo desfaz. #}
-              {% include "components/v32/lista_escolha.html" with name="viatura" label="Viaturas" rotulo_busca="Escolher viatura" rotulo_oculto=True icone="truck" opcoes=dados.viaturas selecionado=v.viatura placeholder="Buscar por placa ou modelo" erros=e.viatura vazio="Nenhuma viatura cadastrada." acao_url=dados.url_nova_viatura acao_rotulo="Nova viatura" %}
+              {% include "components/v32/lista_escolha.html" with name="viatura" label="Viaturas" rotulo_busca="Escolher viatura" rotulo_oculto=True icone="truck" opcoes=dados.viaturas selecionado=v.viatura placeholder="Buscar por placa ou modelo" erros=e.viatura vazio="Nenhuma viatura cadastrada." sem_resultado="Nenhuma viatura encontrada para a busca." acao_url=dados.url_nova_viatura acao_rotulo="Nova viatura" %}
             </div>
           </div>
 
           {# Motorista: só com viatura escolhida e ninguém da equipe ao volante. #}
-          <div class="ofc-grupo" data-ofc-cartao-motorista{% if not dados.mostrar_motorista %} hidden{% endif %}>
-            <div class="ofc-grupo__cabeca"><strong>Motorista</strong></div>
+          <div class="ofc-grupo ofc-motorista" data-ofc-cartao-motorista{% if not dados.mostrar_motorista %} hidden{% endif %}>
+            {# Título à esquerda; à direita, de onde vem o condutor. #}
+            <div class="ofc-grupo__cabeca">
+              <strong>Motorista</strong>
+              <div class="bx-seg" role="radiogroup" aria-label="Condutor da viatura">
+                <label><input type="radio" name="motorista_modo" value="SERVIDOR" data-ofc-modo{% if dados.motorista_modo != 'MANUAL' %} checked{% endif %}><span>No sistema</span></label>
+                <label><input type="radio" name="motorista_modo" value="MANUAL" data-ofc-modo{% if dados.motorista_modo == 'MANUAL' %} checked{% endif %}><span>Manual</span></label>
+              </div>
+            </div>
             <div class="ofc-grupo__corpo">
-              <fieldset class="campo-e form-campo campo-e--bloco">
-                <legend><span>Condutor da viatura</span></legend>
-                <div class="unidade-sim-nao">
-                  <label class="seg2"><input type="radio" name="motorista_modo" value="SERVIDOR" data-ofc-modo{% if dados.motorista_modo != 'MANUAL' %} checked{% endif %}>No sistema</label>
-                  <label class="seg2"><input type="radio" name="motorista_modo" value="MANUAL" data-ofc-modo{% if dados.motorista_modo == 'MANUAL' %} checked{% endif %}>Manual</label>
-                </div>
-              </fieldset>
-
               <div data-ofc-motorista-servidor{% if dados.motorista_modo == 'MANUAL' %} hidden{% endif %}>
                 {# Lista como a da viatura: busca em cima, servidores embaixo; clicar escolhe e clicar de novo desfaz. #}
-                {% include "components/v32/lista_escolha.html" with name="motorista" label="Servidores" rotulo_busca="Buscar motorista no sistema" icone="user" opcoes=dados.motoristas selecionado=v.motorista placeholder="Buscar por nome, CPF ou RG" erros=e.motorista vazio="Nenhum servidor cadastrado." acao_url=dados.url_novo_servidor acao_rotulo="Novo servidor" %}
+                {% include "components/v32/lista_escolha.html" with name="motorista" label="Servidores" rotulo_busca="Buscar motorista no sistema" rotulo_oculto=True icone="user" opcoes=dados.motoristas selecionado=v.motorista placeholder="Buscar motorista por nome, CPF ou RG" erros=e.motorista vazio="Nenhum servidor cadastrado." sem_resultado="Nenhum servidor encontrado para a busca." acao_url=dados.url_novo_servidor acao_rotulo="Novo servidor" %}
               </div>
 
               <div data-ofc-motorista-manual{% if dados.motorista_modo != 'MANUAL' %} hidden{% endif %}>
-                {% include "components/input.html" with name="motorista_manual_nome" label="Nome completo" placeholder="Digite o nome do motorista" uppercase=True valor=v.motorista_manual_nome erros=e.motorista_manual_nome %}
+                {% include "components/input.html" with name="motorista_manual_nome" label="Nome completo" rotulo_oculto=True placeholder="Nome completo do motorista" uppercase=True valor=v.motorista_manual_nome erros=e.motorista_manual_nome %}
               </div>
 
-              <p class="reg__st">Ofício de origem</p>
-              <div class="g-form g-form--2">
+              {# O documento que autorizou esse motorista, numa caixa como a do bate-volta. #}
+              <div class="bate-volta ofc-origem">
+                <span class="bate-volta__rotulo ofc-origem__rotulo">Ofício de origem</span>
                 <div class="form-campo">
                   <label class="form-label" for="id_motorista_oficio_referencia">N° do Ofício</label>
                   <div class="ofc-numero">
@@ -223,7 +224,7 @@
       {% endwith %}
 
       {# ------------------------------------------------------- 2 a 5 #}
-      {% include "pages/viagens_roteiros/_editor.html" with embutido=True numero_inicial=2 form=rot.form formset=rot.formset destinos=rot.destinos destinos_cards=rot.destinos_cards trechos_cards=rot.trechos_cards opcoes_municipios=rot.opcoes_municipios opcoes_estados=rot.opcoes_estados opcoes_vinculo=rot.opcoes_vinculo vinculado=rot.vinculado valores=rot.valores roteiro=rot.roteiro rota_inicial=rot.rota_inicial autosave_ligado=False %}
+      {% include "pages/viagens_roteiros/_editor.html" with embutido=True numero_inicial=2 form=rot.form formset=rot.formset destinos=rot.destinos destinos_cards=rot.destinos_cards trechos_cards=rot.trechos_cards opcoes_municipios=rot.opcoes_municipios opcoes_estados=rot.opcoes_estados opcoes_vinculo=rot.opcoes_vinculo vinculado=rot.vinculado vinculo_atual=rot.vinculo_atual valores=rot.valores roteiro=rot.roteiro rota_inicial=rot.rota_inicial diarias_tela=rot.diarias_tela diarias_servidores=rot.diarias_servidores autosave_ligado=False %}
 
       {# ------------------------------------------------------------- 6 #}
       <section class="section-card reg" id="justificativa">

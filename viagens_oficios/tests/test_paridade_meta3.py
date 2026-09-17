@@ -143,11 +143,13 @@ class ListaOficiosTests(Cenario):
         rascunho = self.oficio()
         cancelado = self.oficio(dias=20, cancelar=True)
         contagens = {s["slug"]: s["total"] for s in self.lista().context["situacoes"]}
-        self.assertEqual(contagens, {"todas": 4, "futuras": 1, "atuais": 2, "finalizados": 0, "cancelados": 1})
+        # Sem data ainda não aconteceu: o rascunho conta entre os futuros.
+        self.assertEqual(contagens, {"todas": 4, "futuras": 2, "atuais": 1, "finalizados": 0, "cancelados": 1})
+        self.assertContains(self.lista(), "Contas prestadas")
         r = self.lista(situacao="atuais")
         self.assertEqual(r.context["situacao_ativa"], "atuais")
         self.assertContains(r, f"Nº {atual.numero_formatado}")
-        self.assertContains(r, f"Nº {rascunho.numero_formatado}")
+        self.assertNotContains(r, f"Nº {rascunho.numero_formatado}")
         self.assertNotContains(r, f"Nº {futuro.numero_formatado}")
         # A busca carrega a situação escolhida.
         self.assertContains(r, '<input type="hidden" name="situacao" value="atuais">')
@@ -206,6 +208,21 @@ class AcoesDaListaTests(Cenario):
         self.assertRedirects(self.client.get(reverse("viagens_oficios:novo")), reverse("viagens_oficios:lista"))
         self.assertEqual(Oficio.objects.count(), 1)
 
+    def test_novo_oficio_reaproveita_rascunho_vazio_abandonado(self):
+        self.client.post(reverse("viagens_oficios:criar"))
+        vazio = Oficio.objects.get()
+        # Recém-aberto: pode estar sendo preenchido por alguém, então não se reaproveita.
+        self.client.post(reverse("viagens_oficios:criar"))
+        self.assertEqual(Oficio.objects.count(), 2)
+        Oficio.objects.update(atualizado_em=timezone.now() - timedelta(hours=1))
+        r = self.client.post(reverse("viagens_oficios:criar"))
+        self.assertRedirects(r, reverse("viagens_oficios:editar", args=[vazio.pk]))
+        self.assertEqual(Oficio.objects.count(), 2)
+        # Com conteúdo, o rascunho é de alguém e não volta.
+        Oficio.objects.update(protocolo="123456789")
+        self.client.post(reverse("viagens_oficios:criar"))
+        self.assertEqual(Oficio.objects.count(), 3)
+
     def test_acoes_voltam_para_a_lista_filtrada(self):
         o = self.oficio(dias=3)
         volta = reverse("viagens_oficios:lista") + "?situacao=futuras"
@@ -252,18 +269,18 @@ class CadastroTests(Cenario):
         o = self.oficio(dias=3, servidores=[self.janine])
         r = self.editar(o)
         self.assertContains(r, f'Cadastro de ofício <span class="frm-ident">{o.numero_formatado}</span>')
-        for texto in ["Dados e viajantes", "N° do Ofício", "Protocolo", "Custeio", "Nome da Instituição",
+        for texto in ["Dados e viajantes", "N° do Ofício", "Data do ofício", "Protocolo", "Custeio", "Nome da Instituição",
                       "Modelo de motivo", "Descrição", "Servidores", "Adicionar à equipe",
-                      "Buscar por nome, CPF ou RG", "Novo viajante", "Motorista", "Termo", "Viatura", "Escolher viatura",
+                      "buscar por nome, CPF ou RG", "Novo viajante", "Motorista", "Termo", "Viatura", "Escolher viatura",
                       "Buscar por placa ou modelo", "data-lista-escolha=\"viatura\"", "Motorista", "Condutor da viatura", "No sistema", "Manual",
                       "Buscar motorista no sistema", "Nome completo", "Ofício de origem",
-                      "Roteiro e diárias", "Vincular a um roteiro existente", "Roteiro existente", "Trechos", "Diárias",
+                      "Roteiro e diárias", "Vincular a um roteiro existente", "Buscar roteiro existente", "Trechos", "Diárias",
                       "Justificativa", "Documentos", "Editar documento", "Novo viajante", "Nova viatura",
                       "Documento original (Ofício)", "Termos de Autorização"]:
             with self.subTest(texto=texto):
                 self.assertContains(r, texto)
         # O que a origem não tem nesta tela fica de fora.
-        for texto in ['name="data_criacao"', 'name="assunto"', 'name="solicitante"', 'name="porte_transporte_armas"',
+        for texto in ['name="assunto"', 'name="solicitante"', 'name="porte_transporte_armas"',
                       'name="transporte_placa_manual"', 'name="motorista_manual_cpf"', 'name="roteiro"',
                       "Regra de prazo", "Encerramento", "Faltam informações",
                       "Resumo do ofício", "Viatura e condução", "Equipe vinculada a este ofício"]:
@@ -282,6 +299,16 @@ class CadastroTests(Cenario):
         self.assertEqual(o.viatura, self.duster)
         self.assertEqual(o.motorista, self.janine)
         self.assertEqual(o.status, Oficio.STATUS_RASCUNHO)
+
+    def test_data_do_oficio_editavel(self):
+        o = self.oficio()
+        self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(data_criacao="2026-03-05"))
+        o.refresh_from_db()
+        self.assertEqual(str(o.data_criacao), "2026-03-05")
+        # Em branco, a data gravada fica.
+        self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(data_criacao=""))
+        o.refresh_from_db()
+        self.assertEqual(str(o.data_criacao), "2026-03-05")
 
     def test_numero_editavel_sem_repetir(self):
         a, b = self.oficio(), self.oficio()
@@ -329,6 +356,26 @@ class CadastroTests(Cenario):
         dados = self.payload()
         dados.pop("servidores_termo_autorizacao_present")
         self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), dados)
+        self.assertEqual(set(o.servidores_termo_autorizacao.all()), {self.janine, self.joao})
+
+    def test_servidor_da_unidade_emissora_entra_sem_termo(self):
+        from viagens_cadastros.models import ConfiguracaoSistema, Unidade
+        cfg = ConfiguracaoSistema.para_usuario(self.user)
+        cfg.unidade = self.ascom
+        cfg.save()
+        outra = Unidade.objects.create(nome="OUTRA UNIDADE", sigla="OUT")
+        self.joao.unidade = outra
+        self.joao.save()
+        o = self.oficio(servidores=[self.janine, self.joao])
+        o.servidores_termo_autorizacao.clear()
+        pagina = self.client.get(reverse("viagens_oficios:editar", args=[o.pk])).content.decode()
+        self.assertIn(f'data-unidade-emissora="{self.ascom.pk}"', pagina)
+        # Sem termo escolhido ainda, a tela abre com termo só para quem é de fora.
+        self.assertIn(f'name="servidores_termo_autorizacao" value="{self.joao.pk}" checked', pagina)
+        self.assertNotIn(f'name="servidores_termo_autorizacao" value="{self.janine.pk}" checked', pagina)
+        # Quem quiser ainda marca o termo à mão.
+        self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(
+            servidores_termo_autorizacao=[str(self.janine.pk), str(self.joao.pk)]))
         self.assertEqual(set(o.servidores_termo_autorizacao.all()), {self.janine, self.joao})
 
     def test_finalizar_com_pendencias_nao_finaliza(self):
@@ -385,7 +432,50 @@ class CadastroTests(Cenario):
         pagina = self.client.get(reverse("viagens_oficios:editar", args=[o.pk])).content.decode()
         self.assertIn('name="vincular_roteiro" value="1"', pagina)
         self.assertIn('data-roteiro-proprio hidden', pagina)
-        self.assertIn(f'<option value="{r.pk}" selected', pagina)
+        self.assertIn(f'name="roteiro_existente" value="{r.pk}" checked', pagina)
+
+    def test_protocolo_repetido_avisa_sem_impedir(self):
+        outro = self.oficio(protocolo="123456789")
+        o = self.oficio(dias=5)
+        r = self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(protocolo="12.345.678-9"), follow=True)
+        o.refresh_from_db()
+        self.assertEqual(o.protocolo, "123456789")
+        self.assertContains(r, f"também está no ofício {outro.numero_formatado}")
+
+    def test_previa_usa_o_tamanho_da_equipe(self):
+        from unittest import mock
+        with mock.patch("viagens_roteiros.views.previa_diarias") as previa:
+            previa.return_value = {"trechos": [], "totais": {
+                "total_valor": "1,00", "resumo_diarias": "", "valor_extenso": "", "quantidade_servidores": 3, "valor_por_servidor": ""}}
+            self.client.post(reverse("viagens_roteiros:previa_diarias"), {"diarias_servidores": "3"})
+        self.assertEqual(previa.call_args.args[2], 3)
+
+    def test_roteiro_trocado_na_tela_e_so_vinculado(self):
+        o = self.oficio(dias=5)
+        antigo = o.roteiro
+        novo = self.roteiro(12)
+        trechos_novo = novo.trechos.count()
+        # O editor chega com o percurso do escolhido como linhas novas (sem id).
+        dados = self.payload(vincular_roteiro="1", roteiro_trocado="1", roteiro_existente=str(novo.pk), **{
+            "origem_municipio": self.curitiba.pk,
+            "destinos-TOTAL_FORMS": "1", "destinos-INITIAL_FORMS": "0",
+            "destinos-0-municipio": self.antonina.pk, "destinos-0-ordem": "1",
+            "trechos-TOTAL_FORMS": "1", "trechos-INITIAL_FORMS": "0",
+            "trechos-0-ordem": "1", "trechos-0-origem_municipio": self.curitiba.pk,
+            "trechos-0-destino_municipio": self.antonina.pk,
+        })
+        self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), dados)
+        o.refresh_from_db()
+        self.assertEqual(o.roteiro, novo)
+        self.assertEqual(novo.trechos.count(), trechos_novo)  # nada duplicado no escolhido
+        self.assertTrue(type(antigo).objects.filter(pk=antigo.pk).exists())
+
+    def test_dados_do_roteiro_trazem_trechos_e_rota(self):
+        r = self.roteiro(7)
+        dados = self.client.get(reverse("viagens_roteiros:dados", args=[r.pk])).json()
+        self.assertEqual(len(dados["trechos"]), 1)
+        self.assertEqual(dados["trechos"][0]["saida_hora"], "08:00")
+        self.assertIn("rota", dados)
 
     def test_sem_roteiro_o_vinculo_vem_desligado(self):
         o = self.oficio()

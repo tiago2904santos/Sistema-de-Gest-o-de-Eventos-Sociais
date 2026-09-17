@@ -521,7 +521,7 @@ def _contexto_do_form(roteiro, form, formset, destinos):
 
 @acesso_ao_modulo
 def dados_do_roteiro(request, pk):
-    """Sede e destinos de um roteiro salvo, para reaproveitar na montagem.
+    """Sede, destinos, trechos e rota de um roteiro salvo, para reaproveitar na montagem.
 
     A tela usa isto quando se escolhe um roteiro como base: ela repete o
     percurso dele — sede e destinos, na ordem — e o operador ajusta datas e
@@ -531,8 +531,30 @@ def dados_do_roteiro(request, pk):
         Roteiro.objects.select_related("origem_municipio__estado"), pk=pk
     )
     destinos = roteiro.destinos.select_related("municipio__estado").all()
+
+    def local(valor):
+        return timezone.localtime(valor) if valor and timezone.is_aware(valor) else valor
+
+    trechos = []
+    for trecho in roteiro.trechos.order_by("ordem"):
+        saida = local(trecho.saida_dt)
+        trechos.append({
+            "sentido": trecho.sentido,
+            "origem": trecho.origem_municipio_id,
+            "destino": trecho.destino_municipio_id,
+            "saida_data": saida.date().isoformat() if saida else "",
+            "saida_hora": saida.strftime("%H:%M") if saida else "",
+            "tempo_viagem_min": trecho.tempo_viagem_min,
+            "tempo_adicional_min": trecho.tempo_adicional_min or 0,
+            "distancia_km": float(trecho.distancia_km) if trecho.distancia_km is not None else None,
+            "rota_fonte": trecho.rota_fonte or "",
+        })
     return JsonResponse(
         {
+            # Com os trechos e a rota, a tela do ofício mostra o roteiro
+            # escolhido inteiro sem recarregar; a de roteiros usa só sede e destinos.
+            "trechos": trechos,
+            "rota": rota_para_tela(roteiro),
             "sede": (
                 {
                     "municipio": roteiro.origem_municipio_id,
@@ -568,7 +590,11 @@ def previa(request):
     form = RoteiroForm(dados)
     formset = TrechoFormSet(dados)
     try:
-        resultado = previa_diarias(form, formset)
+        equipe = int(request.POST.get("diarias_servidores") or 0) or None
+    except ValueError:
+        equipe = None
+    try:
+        resultado = previa_diarias(form, formset, equipe)
     except (SemTabelaDeDiarias, RoteiroIncalculavel) as erro:
         return JsonResponse({"ok": False, "motivo": str(erro)})
     totais = resultado["totais"]
@@ -693,6 +719,13 @@ def autosave(request, pk=None):
                 ids.update(_ids_gravados(formset))
         if not pk:
             _registrar_auditoria(request.user, "VIAGENS_ROTEIRO_CRIADO", salvo)
+    if gravou["trechos"]:
+        # O rascunho gravado sozinho também leva as diárias: sem isso, a lista
+        # mostrava "Sem diárias" num roteiro que a tela já calculava.
+        try:
+            recalcular_diarias(salvo)
+        except (SemTabelaDeDiarias, RoteiroIncalculavel):
+            pass
     # O que não passou fica dito: a tela avisa que o rascunho está parcial.
     pendencias = []
     if not gravou["trechos"]:

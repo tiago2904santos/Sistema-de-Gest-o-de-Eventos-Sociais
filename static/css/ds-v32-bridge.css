@@ -1642,7 +1642,9 @@ form.btn-flutuante-form{margin:0;display:contents}
 .tm-form .tm-oficio .tm-heranca{margin:12px 0 0}
 /* Sem a coluna do rádio: a linha inteira é o rótulo e o que marca a escolha é
    o destaque do fundo. */
-.lista-escolha .of-membro{grid-template-columns:40px minmax(0,1fr) auto;cursor:pointer}
+/* A linha é o referencial do rádio escondido: sem isso ele fica fora dela e,
+   ao ser focado no clique, a página rola até ele e o clique se perde. */
+.lista-escolha .of-membro{position:relative;grid-template-columns:40px minmax(0,1fr) auto;cursor:pointer}
 .lista-escolha .of-membro:hover{background:var(--n-25)}
 /* Escolhido em cinza, mais escuro que o do hover. */
 .lista-escolha .of-membro--viaja,.lista-escolha .of-membro--viaja:hover{background:var(--n-150)}
@@ -1930,6 +1932,11 @@ form.btn-flutuante-form{margin:0;display:contents}
    de escolhidos é a `.of-membros` da equipe), as sugestões de viatura e os
    documentos que abrem no próprio cartão. */
 .ofc [hidden]{display:none!important}
+/* As buscas do cadastro têm a altura dos outros campos. */
+.ofc .busca .form-controle{height:38px}
+.ofc-identificacao{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:900px){.ofc-identificacao{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.ofc-identificacao{grid-template-columns:1fr}}
 .ofc-numero{display:flex;align-items:center;gap:8px}
 .ofc-numero .form-controle-wrapper{flex:1 1 auto;min-width:0}
 .ofc-numero__ano{flex:none;font-size:13px;color:var(--n-500)}
@@ -1937,7 +1944,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .ofc-com-acao>.form-campo{flex:1 1 auto;min-width:0}
 .ofc-com-acao__botao{flex:none;margin-bottom:0}
 .ofc-com-acao:has(>.ofc-picker__campo){align-items:flex-start}
-.ofc-com-acao:has(>.ofc-picker__campo)>.ofc-com-acao__botao{width:44px;min-width:44px;height:44px}
+.ofc-com-acao:has(>.ofc-picker__campo)>.ofc-com-acao__botao{width:38px;min-width:38px;height:38px}
 .ofc-grupo{padding:16px 0}
 .ofc-grupo:first-child{padding-top:0}
 .ofc-grupo+.ofc-grupo{border-top:1px solid var(--n-150)}
@@ -1957,7 +1964,18 @@ form.btn-flutuante-form{margin:0;display:contents}
 .of-av .ui-icon{width:15px;height:15px}
 .ofc-escolhidos:not(:has(.of-membro:not([hidden]))){display:none}
 .ofc-escolhidos .of-membro{grid-template-columns:40px minmax(0,1fr) auto}
-.ofc-pessoa--motorista{background:var(--sel-b)}
+/* Crachás cinza, como na lista de escolha; o motorista da equipe fica como a
+   linha escolhida dela: fundo cinza e crachá grafite, com o selo ao lado. */
+.ofc .of-av{background:var(--n-150);color:var(--n-800)}
+.ofc-escolhidos [data-ofc-motorista]{cursor:pointer}
+.ofc-escolhidos [data-ofc-motorista]:hover{background:var(--n-25)}
+.ofc-pessoa--motorista,.ofc-pessoa--motorista:hover{background:var(--n-150)!important}
+.ofc-pessoa--motorista .of-av{background:var(--grafite);color:var(--branco)}
+/* Na lista da busca, a linha sob o ponteiro (ou o teclado) ganha o crachá grafite. */
+.ofc-picker__resultado:hover .of-av,.ofc-picker__resultado:focus .of-av{background:var(--grafite);color:var(--branco)}
+.ofc-chip-motorista{display:none}
+.ofc-pessoa--motorista .ofc-chip-motorista{display:inline-flex}
+.ofc-vinculo{padding-bottom:16px}
 .ofc-pessoa__acoes{display:flex;align-items:center;gap:14px}
 .ofc-pessoa__acoes .ib-linha .ui-icon{width:14px;height:14px}
 
@@ -1994,4 +2012,74 @@ form.btn-flutuante-form{margin:0;display:contents}
 /* Lista de escolha com botão ao lado da busca (`acao_url`). */
 .lista-escolha__cabeca{display:flex;align-items:flex-end;gap:8px;margin-bottom:8px}
 .lista-escolha__cabeca>.form-campo{flex:1 1 auto;min-width:0;margin:0}
-.lista-escolha__cabeca>.lista-escolha__acao{width:44px;min-width:44px;height:44px}
+.lista-escolha__cabeca>.lista-escolha__acao{width:38px;min-width:38px;height:38px}
+
+/* Cadastro de ofício — Termo como pílula: "Com termo" em dourado (escolhido),
+   "Sem termo" em cinza (repouso). */
+.ofc-termo{position:relative;display:inline-flex;align-items:center;height:28px;padding:0 11px;border:1px solid var(--n-200);border-radius:99px;background:var(--branco);font-size:12px;font-weight:600;color:var(--n-500);cursor:pointer;white-space:nowrap}
+.ofc-termo:hover{background:var(--hover-b);color:var(--n-800)}
+.ofc-termo .ui-icon{width:13px;height:13px;margin-right:5px}
+.ofc-termo__com{display:none;align-items:center}
+.ofc-termo:has(input:checked){border-color:var(--sel-r);background:var(--sel-b);color:var(--n-900)}
+.ofc-termo:has(input:checked) .ofc-termo__com{display:inline-flex}
+.ofc-termo:has(input:checked) .ofc-termo__sem{display:none}
+.ofc-termo:has(input:focus-visible){outline:2px solid var(--foco,var(--sel-f));outline-offset:2px}
+
+/* Equipe em duas colunas: cada pessoa num cartão próprio. */
+.ofc-equipe{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:none;overflow:visible;border:0;border-radius:0;background:transparent}
+.ofc-equipe>.of-membro{border:1px solid var(--n-200);border-radius:9px;background:var(--branco)}
+.ofc-equipe>.of-membro+.of-membro{border-top:1px solid var(--n-200)}
+.ofc-equipe>.of-membro:hover{background:var(--n-25)}
+.ofc-equipe>.ofc-pessoa--motorista{border-color:var(--n-250)}
+@container(max-width:680px){.ofc-equipe{grid-template-columns:1fr}}
+
+/* Sede e destinos na caixa do bate-volta. */
+.ofc-percurso{display:grid;gap:12px;margin:0}
+.ofc-percurso__linha{display:grid;grid-template-columns:68px minmax(0,1fr);align-items:start;gap:12px}
+.ofc-percurso__rotulo{line-height:38px}
+@container(max-width:680px){.ofc-percurso__linha{grid-template-columns:1fr;gap:6px}.ofc-percurso__rotulo{line-height:1.4}}
+
+/* Sede e destinos: alça e + à esquerda, lixeira à direita. As linhas usam o
+   mesmo modelo de colunas, então a divisa estado | município e a borda
+   direita caem no mesmo lugar. A sede, sem botões, estende o estado sobre a
+   faixa da alça e do +. */
+.ofc-percurso .destino-row,.ofc-percurso .destino-row--unica{grid-template-columns:22px 38px minmax(0,1fr) minmax(0,2fr) 38px}
+.ofc-percurso .destino-row__alca{grid-column:1;grid-row:1}
+.ofc-percurso .destino-row__adicionar{grid-column:2;grid-row:1}
+.ofc-percurso .destino-row__estado{grid-column:3;grid-row:1}
+.ofc-percurso .destino-row__campo{grid-column:4;grid-row:1}
+.ofc-percurso .destino-row__remover{grid-column:5;grid-row:1}
+/* Um destino só: sem alça, o + encosta na borda e o estado cobre o espaço
+   dela (22px + o vão de 8px); o município cobre a lixeira. A divisa
+   estado | município não muda. */
+.ofc-percurso .destino-row--unica .destino-row__alca{display:none}
+.ofc-percurso .destino-row--unica .destino-row__adicionar{grid-column:1/3;justify-self:start}
+.ofc-percurso .destino-row--unica .destino-row__estado{margin-left:-30px}
+.ofc-percurso .destino-row--unica .destino-row__campo{grid-column:4/6}
+.ofc-percurso .destino-row--sede .destino-row__estado{grid-column:1/4}
+.ofc-percurso .destino-row--sede .destino-row__campo{grid-column:4/6}
+@container(max-width:680px){
+  .ofc-percurso .destino-row,.ofc-percurso .destino-row--unica{grid-template-columns:22px 38px minmax(0,1fr) 38px}
+  .ofc-percurso .destino-row__estado{grid-column:3;grid-row:1}
+  .ofc-percurso .destino-row__remover{grid-column:4;grid-row:1}
+  .ofc-percurso .destino-row__campo,.ofc-percurso .destino-row--unica .destino-row__campo{grid-column:3/5;grid-row:2}
+  .ofc-percurso .destino-row--unica .destino-row__estado{grid-column:3/5}
+  .ofc-percurso .destino-row--sede .destino-row__estado,.ofc-percurso .destino-row--sede .destino-row__campo{grid-column:1/5}
+}
+
+/* Selo do motorista da equipe: pílula grafite com o volante. */
+.ofc-equipe .ofc-chip-motorista{gap:4px;height:20px;margin-left:8px;padding:0 8px 0 6px;border:0;border-radius:99px;background:var(--grafite);color:var(--branco);font-size:10.5px;font-weight:600;letter-spacing:.02em;text-transform:none}
+.ofc-equipe .ofc-chip-motorista .ui-icon{width:12px;height:12px}
+
+/* O aviso de rota desatualizada não encosta no mapa logo abaixo. */
+.editor-roteiro [data-rota-desatualizada]{margin-bottom:12px}
+
+/* Motorista: alternador no título, lista logo abaixo e o ofício de origem
+   numa caixa de linha única. */
+.ofc-motorista .ofc-grupo__cabeca .bx-seg span{height:28px;padding:0 12px;font-size:12.5px}
+.ofc-motorista .ofc-grupo__corpo{display:grid;gap:12px}
+.ofc-motorista .lista-escolha{margin-top:0}
+.ofc-origem{display:grid;grid-template-columns:120px minmax(0,1fr) minmax(0,1fr);align-items:end;gap:12px;margin:0}
+.ofc-origem .form-campo{margin:0}
+.ofc-origem__rotulo{align-self:center;padding-top:20px}
+@container(max-width:680px){.ofc-origem{grid-template-columns:1fr}.ofc-origem__rotulo{padding-top:0}}

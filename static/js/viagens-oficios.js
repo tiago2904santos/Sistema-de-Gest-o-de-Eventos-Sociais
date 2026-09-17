@@ -144,9 +144,17 @@
       raiz.dispatchEvent(new CustomEvent("ofc:mudou", { bubbles: true }));
     }
 
+    // O Esc num campo de busca nativo também limpa o texto e dispara "input":
+    // esse input não pode reabrir a lista que o Esc acabou de fechar.
+    var fechadoPorEsc = false;
     busca.addEventListener("focus", function () { filtrar(); abrir(true); });
-    busca.addEventListener("input", function () { filtrar(); abrir(true); });
+    busca.addEventListener("input", function () {
+      filtrar();
+      if (fechadoPorEsc) { fechadoPorEsc = false; return; }
+      abrir(true);
+    });
     busca.addEventListener("keydown", function (evento) {
+      fechadoPorEsc = evento.key === "Escape";
       if (evento.key === "Escape") { abrir(false); return; }
       if (evento.key === "ArrowDown") {
         evento.preventDefault();
@@ -191,14 +199,28 @@
 
   var equipe = raizEquipe && montarSeletor(raizEquipe, {
     aoEscolher: function (l) {
-      // Quem entra na equipe entra com termo, como na origem.
-      definirTermo(l, true);
+      // Quem entra na equipe entra com termo, como na origem — menos quem é
+      // lotado na unidade que emite o ofício, que não precisa dele.
+      var emissora = raizEquipe.getAttribute("data-unidade-emissora");
+      definirTermo(l, !(emissora && l.getAttribute("data-unidade") === emissora));
     },
     aoRemover: function (l) {
       definirTermo(l, false);
       if (motoristaEquipe === l.getAttribute("data-valor")) definirMotoristaEquipe("");
     },
   });
+
+  // As diárias da tela são as da equipe: o tamanho dela vai junto na prévia.
+  if (raizEquipe) {
+    raizEquipe.addEventListener("ofc:mudou", function () {
+      var campoEquipe = document.querySelector("[data-diarias-servidores]");
+      if (!campoEquipe) return;
+      var total = equipe.linhas.filter(equipe.escolhido).length;
+      campoEquipe.value = String(Math.max(1, total));
+      var editorRoteiro = document.querySelector("[data-roteiro-editor]");
+      if (editorRoteiro) editorRoteiro.dispatchEvent(new CustomEvent("ds:recalcular-diarias"));
+    });
+  }
 
   function definirTermo(l, ativo) {
     var campo = l.querySelector('input[name="servidores_termo_autorizacao"]');
@@ -220,7 +242,7 @@
     equipe.linhas.forEach(function (l) {
       var ativo = l.getAttribute("data-valor") === valor;
       l.classList.toggle("ofc-pessoa--motorista", ativo);
-      l.querySelector("[data-ofc-motorista]").checked = ativo;
+      l.setAttribute("aria-pressed", ativo ? "true" : "false");
     });
     // O motorista da equipe é o mesmo campo `motorista`, no modo servidor.
     marcarMotorista(valor);
@@ -230,10 +252,18 @@
 
   if (equipe) {
     equipe.linhas.forEach(function (l) {
-      var marcaMotorista = l.querySelector("[data-ofc-motorista]");
-      // Um motorista só: marcar um desmarca o anterior.
-      marcaMotorista.addEventListener("change", function () {
-        definirMotoristaEquipe(marcaMotorista.checked ? l.getAttribute("data-valor") : "");
+      // Clicar em qualquer ponto da linha define (ou desfaz) o motorista;
+      // o Termo e o × continuam fazendo só o que é deles.
+      function alternar(evento) {
+        if (evento.target.closest("label, button, input, a")) return;
+        var valor = l.getAttribute("data-valor");
+        definirMotoristaEquipe(motoristaEquipe === valor ? "" : valor);
+      }
+      l.addEventListener("click", alternar);
+      l.addEventListener("keydown", function (evento) {
+        if (evento.target !== l || (evento.key !== "Enter" && evento.key !== " ")) return;
+        evento.preventDefault();
+        alternar(evento);
       });
     });
   }
@@ -326,9 +356,9 @@
   // grava o ofício como rascunho e recarrega a tela com ele.
   var vincular = document.querySelector("[data-roteiro-vincular]");
   var campoVincular = document.querySelector("[data-roteiro-vincular-campo]");
-  var seletorExistente = form.querySelector('select[name="roteiro_existente"]');
+  var existentes = form.querySelectorAll('input[name="roteiro_existente"]');
   if (vincular && campoVincular) {
-    var temRoteiro = !!(seletorExistente && seletorExistente.value);
+    var temRoteiro = !!form.querySelector('input[name="roteiro_existente"]:checked');
     var aplicarVinculo = function (ligado) {
       campoVincular.value = ligado ? "1" : "";
       vincular.classList.toggle("interruptor--ligado", ligado);
@@ -340,15 +370,25 @@
     vincular.addEventListener("click", function () {
       aplicarVinculo(vincular.getAttribute("aria-pressed") !== "true");
     });
-    if (seletorExistente) {
-      seletorExistente.addEventListener("change", function () {
-        if (!seletorExistente.value || campoVincular.value !== "1") return;
-        var acao = document.createElement("input");
-        acao.type = "hidden";
-        acao.name = "acao";
-        acao.value = "vincular_roteiro";
-        form.appendChild(acao);
-        form.submit();
+    if (existentes.length) {
+      var editorRoteiro = document.querySelector("[data-roteiro-editor]");
+      var trocado = document.querySelector("[data-roteiro-trocado]");
+      var original = (form.querySelector('input[name="roteiro_existente"]:checked') || {}).value || "";
+      form.addEventListener("change", function (evento) {
+        if (evento.target.name !== "roteiro_existente" || !evento.target.checked || campoVincular.value !== "1") return;
+        var pk = evento.target.value;
+        if (trocado) trocado.value = pk === original ? "" : "1";
+        if (!window.fetch || !editorRoteiro) return;
+        // Preenche o editor com o roteiro escolhido ali mesmo: a página não recarrega nem rola.
+        fetch("/viagens/roteiros/" + encodeURIComponent(pk) + "/dados/", { headers: { "X-Requested-With": "fetch" } })
+          .then(function (resposta) { return resposta.ok ? resposta.json() : null; })
+          .then(function (dados) {
+            if (!dados) return;
+            editorRoteiro.dispatchEvent(new CustomEvent("ds:aplicar-roteiro", { detail: dados }));
+            temRoteiro = true;
+            document.querySelectorAll("[data-roteiro-dependente]").forEach(function (no) { no.hidden = false; });
+          })
+          .catch(function () { /* sem rede, o vínculo ainda vale ao salvar */ });
       });
     }
   }

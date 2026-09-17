@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 from core.numeracao import NAMESPACE_OFICIO, reservar_numero
@@ -56,8 +57,36 @@ def reservar_numero_oficio(oficio, ano=None):
     )
     return oficio
 
+# Um rascunho aberto e abandonado não pode prender outro número: o próximo
+# "Novo ofício" o reaproveita. A folga evita entregar a outra pessoa o
+# rascunho que alguém acabou de abrir e ainda vai preencher.
+FOLGA_RASCUNHO_VAZIO = timedelta(minutes=30)
+
+
+def rascunho_vazio_disponivel(ano):
+    from django.db.models import Q
+    limite = timezone.now() - FOLGA_RASCUNHO_VAZIO
+    return (
+        Oficio.objects.filter(
+            status=Oficio.STATUS_RASCUNHO, cancelado=False, ano=ano, numero__isnull=False,
+            legado_pk__isnull=True, roteiro__isnull=True, viatura__isnull=True, motorista__isnull=True,
+            protocolo="", motivo="", motorista_manual_nome="", atualizado_em__lt=limite,
+        )
+        .exclude(Q(servidores__isnull=False) | Q(artefatos__isnull=False) | Q(justificativa__isnull=False))
+        .order_by("numero")
+        .first()
+    )
+
+
 @transaction.atomic
 def criar_oficio_rascunho():
+    hoje = timezone.localdate()
+    vazio = rascunho_vazio_disponivel(hoje.year)
+    if vazio is not None:
+        # Reaberto como novo: a data volta a ser a de hoje.
+        vazio.data_criacao = hoje
+        vazio.save(update_fields=["data_criacao", "atualizado_em"])
+        return vazio
     oficio = Oficio.objects.create()
     return reservar_numero_oficio(oficio, ano=oficio.data_criacao.year)
 

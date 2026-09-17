@@ -36,6 +36,7 @@
             {# Ligado: o ofício usa um roteiro já montado e só a busca aparece; desligado: sede e destinos. #}
             <div class="section-card__acao editor-roteiro__acoes-cabecalho">
               <input type="hidden" name="vincular_roteiro" value="{% if vinculado %}1{% endif %}" data-roteiro-vincular-campo>
+              <input type="hidden" name="roteiro_trocado" value="" data-roteiro-trocado>
               <button type="button" class="interruptor{% if vinculado %} interruptor--ligado{% endif %}" aria-pressed="{% if vinculado %}true{% else %}false{% endif %}" data-roteiro-vincular>
                 <span class="interruptor__trilho" aria-hidden="true"><span class="interruptor__botao"></span></span>
                 <span class="interruptor__rotulo">Vincular a um roteiro existente</span>
@@ -47,13 +48,8 @@
 
           {% if embutido %}
           {# Escolher um roteiro grava o ofício como rascunho e recarrega a tela com ele. #}
-          <div class="bloco-split" data-roteiro-vinculo{% if not vinculado %} hidden{% endif %}>
-            <div class="bloco-split__rotulo">
-              <strong>Roteiro existente</strong>
-            </div>
-            <div class="bloco-split__corpo">
-              {% include "components/select.html" with name="roteiro_existente" label="Roteiro existente" rotulo_oculto=True opcoes=opcoes_vinculo placeholder="Buscar roteiro existente..." pesquisavel=True selecionado=roteiro.pk %}
-            </div>
+          <div class="ofc-vinculo" data-roteiro-vinculo{% if not vinculado %} hidden{% endif %}>
+            {% include "components/v32/lista_escolha.html" with name="roteiro_existente" label="Roteiros" rotulo_busca="Buscar roteiro existente" icone="map-pin" opcoes=opcoes_vinculo selecionado=vinculo_atual placeholder="Buscar por sede ou destino" vazio="Nenhum roteiro cadastrado." sem_resultado="Nenhum roteiro encontrado para a busca." %}
           </div>
           {% elif not roteiro.pk %}
           {% comment %}
@@ -71,9 +67,11 @@
           </div>
           {% endif %}
 
-          <div class="bloco-split"{% if embutido %} data-roteiro-proprio{% if vinculado %} hidden{% endif %}{% endif %}>
-            <div class="bloco-split__rotulo">
-              <strong>Sede (origem da viagem)</strong>
+          {# No ofício, sede e destinos ficam numa caixa como a do bate-volta: rótulo curto à esquerda, campos à direita. #}
+          {% if embutido %}<div class="bate-volta ofc-percurso" data-roteiro-proprio{% if vinculado %} hidden{% endif %}>{% endif %}
+          <div class="{% if embutido %}ofc-percurso__linha{% else %}bloco-split{% endif %}">
+            <div class="{% if embutido %}bate-volta__rotulo ofc-percurso__rotulo{% else %}bloco-split__rotulo{% endif %}">
+              {% if embutido %}Sede{% else %}<strong>Sede (origem da viagem)</strong>{% endif %}
             </div>
             <div class="bloco-split__corpo destino-row destino-row--sede">
               <div class="destino-row__estado">
@@ -85,9 +83,9 @@
             </div>
           </div>
 
-          <div class="bloco-split"{% if embutido %} data-roteiro-proprio{% if vinculado %} hidden{% endif %}{% endif %}>
-            <div class="bloco-split__rotulo">
-              <strong>Destinos (ordem da visita)</strong>
+          <div class="{% if embutido %}ofc-percurso__linha{% else %}bloco-split{% endif %}">
+            <div class="{% if embutido %}bate-volta__rotulo ofc-percurso__rotulo{% else %}bloco-split__rotulo{% endif %}">
+              {% if embutido %}Destinos{% else %}<strong>Destinos (ordem da visita)</strong>{% endif %}
             </div>
             <div class="bloco-split__corpo">
               {{ destinos.management_form }}
@@ -101,6 +99,7 @@
               </template>
             </div>
           </div>
+          {% if embutido %}</div>{% endif %}
 
         </div>
       </section>
@@ -323,7 +322,8 @@
             <div class="metrica metrica--destaque">
               <span class="metrica__icone" aria-hidden="true">{% include "components/icon.html" with nome="landmark" %}</span>
               <span class="metrica__rotulo">Valor total</span>
-              <strong class="metrica__valor metrica__valor--grande" data-diarias-valor>{% if roteiro.valor_diarias is not None %}R$ {{ roteiro.valor_diarias }}{% else %}—{% endif %}</strong>
+              <strong class="metrica__valor metrica__valor--grande" data-diarias-valor>{% if embutido %}{% if diarias_tela %}R$ {{ diarias_tela.valor }}{% else %}—{% endif %}{% elif roteiro.valor_diarias is not None %}R$ {{ roteiro.valor_diarias }}{% else %}—{% endif %}</strong>{% if embutido %}
+              <input type="hidden" name="diarias_servidores" value="{{ diarias_servidores|default:1 }}" data-diarias-servidores>{% endif %}
             </div>
             <div class="metrica">
               <span class="metrica__icone" aria-hidden="true">{% include "components/icon.html" with nome="map-pin" %}</span>
@@ -339,7 +339,7 @@
             <div class="metrica metrica--larga">
               <span class="metrica__icone" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
               <span class="metrica__rotulo">Por extenso</span>
-              <strong class="metrica__valor" data-diarias-extenso>{{ roteiro.valor_diarias_extenso|default:"—" }}</strong>
+              <strong class="metrica__valor" data-diarias-extenso>{% if embutido %}{{ diarias_tela.extenso|default:"—" }}{% else %}{{ roteiro.valor_diarias_extenso|default:"—" }}{% endif %}</strong>
             </div>
           </div>
 

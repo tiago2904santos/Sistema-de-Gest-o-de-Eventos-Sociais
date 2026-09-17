@@ -269,7 +269,7 @@ def _gravar_roteiro(request, oficio, *, finalizar):
 
 def _contexto_roteiro(request, oficio, gravacao):
     from viagens_roteiros.forms import DestinoFormSet, RoteiroForm, TrechoFormSet
-    from viagens_roteiros.views import _contexto_do_form, _opcoes_roteiros_base, _sede_inicial
+    from viagens_roteiros.views import _contexto_do_form, _sede_inicial
     if gravacao is not None:
         roteiro = gravacao.roteiro if gravacao.roteiro is not None and gravacao.roteiro.pk else oficio.roteiro
         contexto = _contexto_do_form(roteiro, gravacao.form, gravacao.formset, gravacao.destinos)
@@ -282,8 +282,56 @@ def _contexto_roteiro(request, oficio, gravacao):
         contexto['vinculado'] = request.POST.get('vincular_roteiro') == '1'
     else:
         contexto['vinculado'] = bool(oficio.roteiro_id)
-    contexto['opcoes_vinculo'] = _opcoes_roteiros_base(None)
+    contexto['opcoes_vinculo'] = _opcoes_vinculo(oficio.roteiro_id)
+    contexto['vinculo_atual'] = str(oficio.roteiro_id or '')
+    # As diárias da tela são as do ofício: valor por servidor × equipe.
+    contexto['diarias_servidores'] = max(1, oficio.servidores.count())
+    contexto['diarias_tela'] = _diarias_do_oficio(oficio)
     return contexto
+
+
+def _diarias_do_oficio(oficio):
+    from django.core.exceptions import ValidationError
+    from viagens_roteiros.services.diarias import formatar_valor
+    try:
+        diarias = oficio.diarias_para_servidores()
+    except ValidationError:
+        return None
+    if not diarias:
+        return None
+    return {
+        'valor': formatar_valor(diarias['valor_decimal']),
+        'extenso': diarias['valor_extenso'],
+        'resumo': diarias['quantidade'],
+        'servidores': diarias['quantidade_servidores'],
+    }
+
+
+def _opcoes_vinculo(atual=None):
+    """Roteiros para vincular, como as linhas da lista de escolha: o percurso
+    no nome e, embaixo, o período e as diárias. O vinculado vem primeiro."""
+    from viagens_roteiros.models import Roteiro
+    from viagens_roteiros.presenters import periodo_display
+    opcoes = []
+    roteiros = (Roteiro.objects.select_related("origem_municipio")
+                .prefetch_related("destinos__municipio", "trechos").filter(cancelado=False).order_by("-atualizado_em")[:200])
+    for r in roteiros:
+        destinos = [d.municipio.nome for d in r.destinos.all() if d.municipio_id]
+        sede = r.origem_municipio.nome if r.origem_municipio_id else "Sem sede"
+        periodo = periodo_display(r)
+        detalhes = [f"#{r.pk}"]
+        if periodo and periodo != "—":
+            detalhes.append(periodo)
+        if r.resumo_diarias:
+            detalhes.append(r.resumo_diarias)
+        opcoes.append({
+            "valor": str(r.pk),
+            "rotulo": " → ".join([sede, *destinos]) if destinos else f"{sede} → sem destinos",
+            "detalhes": " · ".join(detalhes),
+            "busca": str(r.pk),
+        })
+    opcoes.sort(key=lambda o: o["valor"] != str(atual))
+    return opcoes
 
 
 def _vincular_roteiro(request, oficio):
@@ -325,7 +373,9 @@ def editar(request, pk=None):
     lista = voltar_para(request, reverse('viagens_oficios:lista'))
     finalizar = request.POST.get('acao') == 'finalizar'
     vincular = request.POST.get('acao') == 'vincular_roteiro'
-    form = OficioForm(request.POST or None, instance=oficio)
+    from viagens_cadastros.models import ConfiguracaoSistema
+    unidade_emissora = ConfiguracaoSistema.para_usuario(request.user).unidade_id
+    form = OficioForm(request.POST or None, instance=oficio, unidade_emissora=unidade_emissora)
     jform = JustificativaForm(
         request.POST or None, instance=get_or_create_justificativa_oficio(oficio), prefix='justificativa',
         obrigatoria=finalizar and oficio_exige_justificativa(oficio),
@@ -339,6 +389,9 @@ def editar(request, pk=None):
                 if vincular:
                     # Escolher o roteiro na busca: grava o que já foi digitado e recarrega com ele.
                     vinculado = _vincular_roteiro(request, oficio)
+                elif request.POST.get('vincular_roteiro') == '1' and request.POST.get('roteiro_trocado') == '1':
+                    # Roteiro escolhido na tela: o editor mostra uma cópia dele, então só se vincula.
+                    _vincular_roteiro(request, oficio)
                 elif request.POST.get('vincular_roteiro') == '1' and not oficio.roteiro_id:
                     pass  # vínculo ligado sem roteiro escolhido: nada a gravar no roteiro
                 else:
@@ -350,7 +403,25 @@ def editar(request, pk=None):
                 else:
                     messages.error(request, 'Escolha um roteiro existente para vincular.')
                 return redirect(reverse('viagens_oficios:editar', args=[oficio.pk]) + '#roteiro')
+            if oficio.protocolo:
+                # Mesmo protocolo em outro ofício pode ser engano de digitação: avisa sem impedir.
+                outros = (Oficio.objects.filter(protocolo=oficio.protocolo, cancelado=False)
+                          .exclude(pk=oficio.pk).order_by('ano', 'numero'))
+                if outros.exists():
+                    from core.utils.masks import format_protocolo
+                    nomes = ', '.join(o.numero_formatado for o in outros[:3])
+                    messages.warning(request, f'O protocolo {format_protocolo(oficio.protocolo)} também está no ofício {nomes}.'
+                                     if outros.count() == 1 else
+                                     f'O protocolo {format_protocolo(oficio.protocolo)} também está nos ofícios {nomes}.')
             for nivel, texto in (gravacao.mensagens if gravacao else []):
+                if texto.startswith('Diárias: R$'):
+                    # O roteiro calcula por servidor; o aviso fala do ofício inteiro.
+                    oficio.refresh_from_db()
+                    diarias = _diarias_do_oficio(oficio)
+                    if diarias:
+                        pessoas = diarias['servidores']
+                        texto = (f"Diárias: R$ {diarias['valor']} ({diarias['resumo']}) para "
+                                 f"{pessoas} servidor{'es' if pessoas != 1 else ''}.")
                 messages.add_message(request, nivel, texto)
             if gravacao is not None and not gravacao.ok:
                 messages.error(request, 'Ofício salvo, mas o roteiro tem campos a corrigir.')

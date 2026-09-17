@@ -271,7 +271,15 @@
   // Roda como estado aplicado (sem autosave): escolher o estado não é conteúdo.
   var estadoPadrao = editor.getAttribute("data-estado-padrao") || "";
 
+  // Sem sede nas configurações, vale o estado da sede escolhida no percurso.
+  function estadoDoDestinoNovo() {
+    if (estadoPadrao) return estadoPadrao;
+    var estadoSede = editor.querySelector('select[name="origem_estado"]');
+    return estadoSede ? estadoSede.value : "";
+  }
+
   function preencherEstadoPadrao(linha) {
+    var estadoPadrao = estadoDoDestinoNovo();
     if (!estadoPadrao || !linha) return;
     var municipio = selectDaLinha(linha);
     if (municipio && municipio.value) return;
@@ -840,12 +848,17 @@
     var segmentos = dados.segmentos || [];
     var idaKm = null;
     var idaMin = null;
+    var totalMin = dados.duracao_total_min;
     if (segmentos.length > 1) {
-      idaKm = 0; idaMin = 0;
+      idaKm = 0; idaMin = 0; totalMin = 0;
+      // Ida e total na mesma régua: o tempo de viagem de cada perna (o que
+      // vai para os trechos), e não a duração bruta do serviço de rotas.
       segmentos.forEach(function (segmento, indice) {
+        var minutos = segmento.tempo_viagem_min || segmento.duracao_min || 0;
+        totalMin += minutos;
         if (indice < segmentos.length - 1) {
           idaKm += segmento.distancia_km;
-          idaMin += segmento.tempo_viagem_min || segmento.duracao_min;
+          idaMin += minutos;
         }
       });
       idaKm = Math.round(idaKm * 100) / 100;
@@ -855,7 +868,7 @@
       idaMin = Math.floor((dados.duracao_total_min || 0) / 2);
     }
     escreverTexto("[data-rota-distancia-total]", km(dados.distancia_total_km));
-    escreverTexto("[data-rota-tempo-total]", humano(dados.duracao_total_min));
+    escreverTexto("[data-rota-tempo-total]", humano(totalMin));
     escreverTexto("[data-rota-distancia-ida]", km(idaKm));
     escreverTexto("[data-rota-tempo-ida]", humano(idaMin));
   }
@@ -1212,6 +1225,57 @@
     percursoManual = false;
     sincronizarTrechos();
   }
+
+  // O roteiro inteiro — sede, destinos, trechos com datas e tempos, e a rota
+  // gravada — posto na tela sem recarregar. Quem pede é o cadastro de ofício
+  // (evento `ds:aplicar-roteiro` no editor, com os dados de /dados/).
+  function aplicarRoteiroCompleto(dados) {
+    aplicarRoteiroBase(dados);
+    aplicandoEstado = true;
+    try {
+      trechosVisiveis().forEach(esconderTrecho);
+      (dados.trechos || []).forEach(function (trecho) {
+        var linha = criarTrecho();
+        if (!linha) return;
+        aplicarPerna(linha, trecho.origem || "", trecho.destino || "", trecho.sentido || "IDA");
+        definirCampo(campoDe(linha, "saida_data"), trecho.saida_data || "");
+        definirCampo(campoDe(linha, "saida_hora"), trecho.saida_hora || "");
+        if (trecho.tempo_viagem_min !== null && trecho.tempo_viagem_min !== undefined) {
+          definirViagem(linha, trecho.tempo_viagem_min, trecho.distancia_km, trecho.rota_fonte);
+          linha.setAttribute("data-viagem-manual", "1");
+        }
+        definirAdicional(linha, trecho.tempo_adicional_min || 0, true);
+        atualizarLinha(linha);
+        atualizarTempos(linha);
+      });
+      // Como um roteiro reaberto: os trechos gravados mandam na tabela.
+      percursoManual = (dados.trechos || []).length > 0;
+      renumerarTrechos();
+      if (dados.rota && dados.rota.geometria) {
+        rotaCalculada = dados.rota;
+        rotaCalculada.ids = (dados.rota.pontos || []).map(function (p) { return String(p.id); });
+        mostrarMetricas(dados.rota);
+        guardarRotaNoFormulario(dados.rota);
+        desenharRota(dados.rota);
+      } else {
+        rotaCalculada = null;
+        guardarRotaNoFormulario(null);
+        var blocoMetricas = editor.querySelector("[data-rota-metricas]");
+        if (blocoMetricas) blocoMetricas.hidden = true;
+        if (camadaRota) { camadaRota.remove(); camadaRota = null; }
+      }
+    } finally {
+      aplicandoEstado = false;
+    }
+    verificarRotaDesatualizada();
+    agendarPrevia();
+  }
+
+  editor.addEventListener("ds:recalcular-diarias", function () { agendarPrevia(); });
+
+  editor.addEventListener("ds:aplicar-roteiro", function (evento) {
+    if (evento.detail) aplicarRoteiroCompleto(evento.detail);
+  });
 
   if (seletorBase) {
     seletorBase.addEventListener("change", function () {

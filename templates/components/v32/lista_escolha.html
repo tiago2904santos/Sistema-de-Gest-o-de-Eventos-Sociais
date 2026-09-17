@@ -19,6 +19,8 @@
   `rotulo_oculto` esconde o rótulo da busca sem tirá-lo dos leitores de tela.
   `acao_url` / `acao_rotulo`: botão quadrado ao lado da busca (ex.: cadastrar
     um registro novo), aberto em outra aba.
+  `sem_resultado`: texto que substitui a lista quando a busca não encontra
+    nada (padrão: "Nenhum resultado encontrado para a busca.").
 {% endcomment %}
 {% if acao_url %}<div class="lista-escolha__cabeca">{% endif %}
 <div class="form-campo of-equipe-busca" data-lista-campo="{{ name }}">
@@ -40,5 +42,6 @@
     </label>
   {% empty %}<p class="texto-vazio">{{ vazio|default:"Nenhum registro disponível." }}</p>{% endfor %}
 </div>
+<p class="lista-vazia" data-lista-sem-resultado="{{ name }}" hidden>{% include "components/icon.html" with nome="search" %}<span>{{ sem_resultado|default:"Nenhum resultado encontrado para a busca." }}</span></p>
 {% if aguardando %}<p class="lista-vazia" data-lista-aguardando="{{ name }}" hidden>{% include "components/icon.html" with nome=icone|default:"document" %}<span>{{ aguardando }}</span></p>{% endif %}
 {% for erro in erros %}<p class="form-erro">{{ erro }}</p>{% endfor %}

@@ -11,45 +11,13 @@ Uso:
     python manage.py geocodificar_municipios --dry-run
 """
 
-import json
 import time
-import urllib.parse
-import urllib.request
 
 from django.core.management.base import BaseCommand
 
 from cadastros.models import Municipio
 
-NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
-USER_AGENT = "SistemaGestaoEventosSociais/1.0"
-# Nominatim exige no máximo 1 requisição por segundo.
-INTERVALO_SEGUNDOS = 1.1
-
-
-def _buscar_coordenadas(nome, uf):
-    parametros = urllib.parse.urlencode(
-        {
-            "q": f"{nome}, {uf}, Brasil",
-            "format": "json",
-            "limit": 1,
-            "countrycodes": "br",
-            "addressdetails": 0,
-        }
-    )
-    pedido = urllib.request.Request(
-        f"{NOMINATIM_URL}?{parametros}", headers={"User-Agent": USER_AGENT}
-    )
-    try:
-        with urllib.request.urlopen(pedido, timeout=15) as resposta:
-            resultados = json.load(resposta)
-    except Exception:
-        return None
-    if not resultados:
-        return None
-    try:
-        return float(resultados[0]["lat"]), float(resultados[0]["lon"])
-    except (KeyError, TypeError, ValueError):
-        return None
+from viagens_cadastros.geocodificacao import INTERVALO_SEGUNDOS, _buscar_coordenadas
 
 
 class Command(BaseCommand):

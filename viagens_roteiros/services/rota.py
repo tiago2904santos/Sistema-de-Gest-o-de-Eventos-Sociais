@@ -42,6 +42,10 @@ VIAGEM_MINIMA_PARA_ADICIONAL_MIN = 30
 CACHE_ESTIMATIVA_SEGUNDOS = 60 * 60 * 24
 
 
+# Buscas de coordenada por pedido: a API pede uma por segundo.
+BUSCAS_DE_COORDENADA = 3
+
+
 class RotaIndisponivel(Exception):
     """Erro de rota com mensagem pronta para o operador."""
 
@@ -49,7 +53,15 @@ class RotaIndisponivel(Exception):
 def _pontos_dos_municipios(municipios):
     pontos = []
     sem_coordenada = []
+    buscados = 0
     for municipio in municipios:
+        sem_ponto = municipio.latitude is None or municipio.longitude is None
+        if sem_ponto and buscados < BUSCAS_DE_COORDENADA and getattr(settings, "GEOCODIFICAR_SOB_DEMANDA", False):
+            # Município ainda sem coordenadas: busca na hora e grava, para o
+            # percurso não travar por falta de importação.
+            from viagens_cadastros.geocodificacao import geocodificar
+            buscados += 1
+            geocodificar(municipio)
         if municipio.latitude is None or municipio.longitude is None:
             sem_coordenada.append(str(municipio))
             continue

@@ -110,6 +110,7 @@ def contexto_dados_viajantes(form, oficio):
         "opcoes_motivos": [{"valor": str(m.pk), "rotulo": m.nome} for m in form.fields["modelo_motivo"].queryset],
         "servidores": servidores,
         "equipe": equipe,
+        "unidade_emissora": str(form.unidade_emissora or ""),
         # O motorista do sistema é a lista de escolha, com a unidade para as sugestões de viatura.
         "motoristas": [
             {"valor": o["valor"], "rotulo": o["rotulo"], "detalhes": o["detalhes"], "busca": o["busca"],

@@ -49,13 +49,21 @@
       if (evento.target.name === nome) destacar();
     });
 
+    // Busca sem resultado: a lista vazia vira uma borda solta; no lugar dela, a mensagem.
+    var semResultado = document.querySelector('[data-lista-sem-resultado="' + nome + '"]');
+
     if (busca) {
       busca.addEventListener("input", function () {
         var termo = busca.value.trim().toLowerCase();
+        var visiveis = 0;
         linhas().forEach(function (linha) {
           var texto = (linha.dataset.busca || "").toLowerCase();
           linha.hidden = termo !== "" && texto.indexOf(termo) === -1 && !radioDe(linha).checked;
+          if (!linha.hidden) visiveis += 1;
         });
+        var nada = termo !== "" && visiveis === 0 && linhas().length > 0;
+        lista.hidden = nada;
+        if (semResultado) semResultado.hidden = !nada;
       });
     }
 

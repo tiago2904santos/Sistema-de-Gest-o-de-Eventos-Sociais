@@ -44,7 +44,7 @@ def chegada_final(roteiro):
     return ultimo.chegada_dt if ultimo else None
 
 
-def previa_diarias(form, formset):
+def previa_diarias(form, formset, quantidade_servidores=None):
     """Roda o motor sobre o formulário como está, sem gravar nada.
 
     É a prévia da tela de montagem: o operador vê o valor enquanto preenche,
@@ -56,7 +56,8 @@ def previa_diarias(form, formset):
     formset.is_valid()
     dados_form = getattr(form, "cleaned_data", None) or {}
     sede = dados_form.get("origem_municipio")
-    quantidade = dados_form.get("quantidade_servidores") or 1
+    # O cadastro de ofício manda o tamanho da equipe: lá o valor é o do ofício.
+    quantidade = quantidade_servidores or dados_form.get("quantidade_servidores") or 1
 
     marcadores = []
     fim = None

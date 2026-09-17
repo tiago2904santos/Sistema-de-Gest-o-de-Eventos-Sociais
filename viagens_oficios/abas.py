@@ -19,10 +19,18 @@ from viagens_roteiros.abas import (  # noqa: F401 — mesmos rótulos e chaves d
     ABA_CANCELADOS,
     ABA_FINALIZADOS,
     ABA_FUTURAS,
-    ABA_ROTULOS,
     ABAS_VALIDAS,
     normalizar_abas,
 )
+
+# O ofício tem o próprio estado "Finalizado" (documento pronto); a aba das
+# prestações encerradas ganha outro nome para os dois não se confundirem.
+ABA_ROTULOS = [
+    (ABA_FUTURAS, "Que vão acontecer"),
+    (ABA_ATUAIS, "Em andamento e realizados"),
+    (ABA_FINALIZADOS, "Contas prestadas"),
+    (ABA_CANCELADOS, "Cancelados"),
+]
 
 CANCELADO_Q = Q(cancelado=True)
 FINALIZADO_Q = Q(_tem_prestacao=True) & Q(_tem_prestacao_pendente=False)
@@ -72,9 +80,9 @@ def q_da_aba(aba):
     pendente = ativo & ~FINALIZADO_Q
     limite = _fim_de_hoje()
     if aba == ABA_FUTURAS:
-        return pendente & Q(_saida__gt=limite)
-    # Atuais: já começou, ou ainda sem data — o rascunho também precisa de atenção.
-    return pendente & (Q(_saida__lte=limite) | Q(_saida__isnull=True))
+        # Sem data ainda não aconteceu: o rascunho fica entre os que vão acontecer.
+        return pendente & (Q(_saida__gt=limite) | Q(_saida__isnull=True))
+    return pendente & Q(_saida__lte=limite)
 
 
 def q_das_abas(abas):

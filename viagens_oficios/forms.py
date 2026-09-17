@@ -14,10 +14,10 @@ REFERENCIA_OFICIO = re.compile(r"^\s*(\d{1,6})\s*(?:/\s*(\d{4}))?\s*$")
 class OficioForm(forms.ModelForm):
     """Dados e viajantes do cadastro de ofício, com os campos do Gerenciador de Viagens.
 
-    Identificação (número, protocolo, custeio e nome da instituição),
+    Identificação (número, data, protocolo, custeio e nome da instituição),
     finalidade (modelo de motivo e descrição), equipe com termo e motorista,
     viatura e o cartão do motorista quando ele não é da equipe. O que a
-    origem não mostra nesta tela (data, assunto, unidade solicitante, viatura
+    origem não mostra nesta tela (assunto, unidade solicitante, viatura
     não cadastrada, porte de armas, documentos do motorista externo) fica fora
     do formulário: o valor gravado é preservado.
     """
@@ -27,21 +27,23 @@ class OficioForm(forms.ModelForm):
     class Meta:
         model = Oficio
         labels = {
-            'numero': 'N° do Ofício', 'protocolo': 'Protocolo', 'custeio': 'Custeio',
+            'numero': 'N° do Ofício', 'data_criacao': 'Data do ofício', 'protocolo': 'Protocolo', 'custeio': 'Custeio',
             'custeio_observacao': 'Nome da Instituição', 'motivo': 'Descrição',
             'servidores': 'Servidores', 'viatura': 'Viatura',
             'motorista': 'Buscar motorista no sistema', 'motorista_manual_nome': 'Nome completo',
             'motorista_oficio_referencia': 'N° do Ofício', 'motorista_protocolo_ref': 'Protocolo',
         }
-        fields = ['numero', 'protocolo', 'custeio', 'custeio_observacao', 'modelo_motivo', 'motivo',
+        fields = ['numero', 'data_criacao', 'protocolo', 'custeio', 'custeio_observacao', 'modelo_motivo', 'motivo',
                   'servidores', 'servidores_termo_autorizacao', 'viatura',
                   'motorista_modo', 'motorista', 'motorista_manual_nome',
                   'motorista_oficio_referencia', 'motorista_protocolo_ref']
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, unidade_emissora=None, **kwargs):
+        # Quem é lotado na unidade que emite o ofício não precisa de termo de autorização.
+        self.unidade_emissora = unidade_emissora
         super().__init__(*args, **kwargs)
         self._servidores_anteriores = set(self.instance.servidores.values_list('pk', flat=True)) if self.instance.pk else None
-        for nome in ('numero', 'protocolo', 'motivo', 'custeio', 'servidores', 'servidores_termo_autorizacao',
+        for nome in ('numero', 'data_criacao', 'protocolo', 'motivo', 'custeio', 'servidores', 'servidores_termo_autorizacao',
                      'viatura', 'motorista', 'motorista_modo'):
             self.fields[nome].required = False
         self.fields['modelo_motivo'].queryset = ModeloMotivoOficio.objects.order_by('nome')
@@ -56,11 +58,16 @@ class OficioForm(forms.ModelForm):
                 correspondente = modelos.filter(texto=motivo).first()
                 if correspondente:
                     self.initial['modelo_motivo'] = correspondente.pk
-            # Sem termo escolhido ainda, a origem marca toda a equipe.
+            # Sem termo escolhido ainda, a origem marca toda a equipe — menos quem é da unidade emissora.
             if self.instance.pk and not self.instance.servidores_termo_autorizacao.exists():
-                self.initial['servidores_termo_autorizacao'] = list(self.instance.servidores.values_list('pk', flat=True))
+                self.initial['servidores_termo_autorizacao'] = [
+                    s.pk for s in self.instance.servidores.all() if self.precisa_de_termo(s)
+                ]
             if self.instance.motorista_oficio_referencia:
                 self.initial['motorista_oficio_referencia'] = self.instance.motorista_oficio_referencia.split('/')[0]
+
+    def precisa_de_termo(self, servidor):
+        return not (self.unidade_emissora and servidor.unidade_id == self.unidade_emissora)
 
     @property
     def ano(self):
@@ -77,6 +84,10 @@ class OficioForm(forms.ModelForm):
         if conflito.exists():
             raise forms.ValidationError(f'Já existe um ofício com o número {numero} em {self.ano}.')
         return numero
+
+    def clean_data_criacao(self):
+        """Em branco, mantém a data já gravada."""
+        return self.cleaned_data.get('data_criacao') or self.instance.data_criacao or timezone.localdate()
 
     def clean_protocolo(self):
         valor = normalize_protocolo(self.cleaned_data.get('protocolo'))
