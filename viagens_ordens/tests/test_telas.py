@@ -143,14 +143,13 @@ class CadastroTests(CenarioOrdemMixin, TestCase):
         cancelado = self.oficio(cancelar=True)
         livre = self.oficio()
         ordem = self.ordem(oficios=[cancelado])
-        # Só a caixa de ofício conta: `value="1"` sozinho também casa com o
-        # estado, o município e o servidor de pk 1 que a tela oferece.
-        caixa = 'name="oficios" value="%s"'
+        # A busca é pela caixa do ofício: "value=1" solto casa com qualquer
+        # outro campo da página quando o id gerado é baixo.
         r = self.client.get(reverse("viagens_ordens:editar", args=[ordem.pk]))
-        self.assertContains(r, f"{caixa % cancelado.pk} checked")
-        self.assertContains(r, caixa % livre.pk)
+        self.assertContains(r, f'name="oficios" value="{cancelado.pk}" checked')
+        self.assertContains(r, f'name="oficios" value="{livre.pk}"')
         r = self.client.get(reverse("viagens_ordens:novo"))
-        self.assertNotContains(r, caixa % cancelado.pk)
+        self.assertNotContains(r, f'name="oficios" value="{cancelado.pk}"')
 
     def test_modelo_de_motivo_vai_para_a_tela(self):
         from viagens_oficios.models import ModeloMotivoOficio
