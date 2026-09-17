@@ -58,7 +58,10 @@ class MotoresReaisTests(SimpleTestCase):
             DOCUMENTOS_PDF_HTML_NATIVO=("oficio",), DOCUMENTOS_DEFAULT_PDF_ENGINE="weasyprint",
         ):
             doc = DocumentoFacade().gerar(
-                tipo=DocumentoTipo.OFICIO, formato=DocumentoFormato.PDF, payload=payload_exemplo(),
+                tipo=DocumentoTipo.OFICIO, formato=DocumentoFormato.PDF,
+                # No caminho nativo o texto da folha vem do contexto calculado,
+                # o mesmo que a façade passa em produção.
+                payload=payload_exemplo(), docxtpl_context={"oficio": "Teste F3"},
             )
         self.assertEqual(doc.pdf_engine_used, "html_weasyprint")
         self.assertTrue(doc.conteudo.startswith(b"%PDF"))
