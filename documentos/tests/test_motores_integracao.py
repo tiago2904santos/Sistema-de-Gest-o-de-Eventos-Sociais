@@ -47,7 +47,24 @@ class MotoresReaisTests(SimpleTestCase):
 
     @skipUnless(_weasy_import_ok(), "WeasyPrint sem bibliotecas nativas")
     def test_weasyprint(self):
-        self.converter("weasyprint")
+        """O WeasyPrint converte HTML, não DOCX: o caminho dele é o nativo.
+
+        Desligar o HTML nativo aqui mandaria o payload canônico direto ao
+        template, sem virar contexto, e o PDF sairia com os campos em branco.
+        """
+        from pypdf import PdfReader
+
+        with override_settings(
+            DOCUMENTOS_PDF_HTML_NATIVO=("oficio",), DOCUMENTOS_DEFAULT_PDF_ENGINE="weasyprint",
+        ):
+            doc = DocumentoFacade().gerar(
+                tipo=DocumentoTipo.OFICIO, formato=DocumentoFormato.PDF, payload=payload_exemplo(),
+            )
+        self.assertEqual(doc.pdf_engine_used, "html_weasyprint")
+        self.assertTrue(doc.conteudo.startswith(b"%PDF"))
+        paginas = PdfReader(io.BytesIO(doc.conteudo)).pages
+        self.assertGreater(len(paginas), 0)
+        self.assertIn("F3", " ".join(p.extract_text() for p in paginas))
 
     @skipUnless(_fpdf_ok(), "fpdf2 não disponível")
     def test_fallback_simples(self):

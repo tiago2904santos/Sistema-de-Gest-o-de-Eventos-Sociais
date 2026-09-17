@@ -100,8 +100,10 @@ class PdfRealTests(SimpleTestCase):
         self.assertTrue(pdf.startswith(b"%PDF"))
         leitor, texto = self._texto(pdf)
         self.assertEqual(len(leitor.pages), 1)
-        for trecho in ["POLÍCIA CIVIL DO PARANÁ", "Ofício Nº 023/2026", "Participação em reunião institucional", "Brasília/DF", "Beltrano"]:
-            self.assertIn(trecho, texto)
+        # O título sai em caixa alta pela folha do documento; a conferência é
+        # do conteúdo, não da caixa em que ele foi desenhado.
+        for trecho in ["POLÍCIA CIVIL DO PARANÁ", "OFÍCIO Nº 023/2026", "PARTICIPAÇÃO EM REUNIÃO INSTITUCIONAL", "BRASÍLIA/DF", "BELTRANO"]:
+            self.assertIn(trecho, texto.upper())
 
     def test_documento_longo_pagina_e_repete_cabecalho(self):
         tx = dict(TX, motivo="Linha de motivo. " * 700)
