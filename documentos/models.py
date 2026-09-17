@@ -29,6 +29,14 @@ class DocumentoArtefato(OrigemLegadoUUID):
         "viagens_roteiros.Roteiro", on_delete=models.SET_NULL,
         null=True, blank=True, related_name="documentos_gerados",
     )
+    ordem_servico = models.ForeignKey(
+        "viagens_ordens.OrdemServico", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="artefatos",
+    )
+    plano_trabalho = models.ForeignKey(
+        "viagens_planos.PlanoTrabalho", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="artefatos",
+    )
     criado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name="documentos_gerados",

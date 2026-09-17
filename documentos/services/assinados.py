@@ -20,13 +20,15 @@ from documentos.services.filenames import build_document_filename, slugify_filen
 logger = logging.getLogger(__name__)
 
 
-def _candidatos(tipo, *, oficio_id, termo_id, prestacao_id, servidor_id, reference):
+def _candidatos(tipo, *, oficio_id, termo_id, prestacao_id, servidor_id, reference,
+                ordem_servico_id=None, plano_trabalho_id=None):
     from documentos.models import DocumentoArtefato
 
     filtro = {
         "tipo": tipo.value, "formato": "pdf",
         "oficio_id": oficio_id, "termo_id": termo_id,
         "prestacao_id": prestacao_id, "servidor_id": servidor_id,
+        "ordem_servico_id": ordem_servico_id, "plano_trabalho_id": plano_trabalho_id,
     }
     consulta = DocumentoArtefato.objects.filter(**filtro)
     if reference:
@@ -34,7 +36,8 @@ def _candidatos(tipo, *, oficio_id, termo_id, prestacao_id, servidor_id, referen
     return consulta
 
 
-def versao_assinada_vigente(tipo, *, oficio_id=None, termo_id=None, prestacao_id=None, servidor_id=None, reference=None):
+def versao_assinada_vigente(tipo, *, oficio_id=None, termo_id=None, prestacao_id=None, servidor_id=None, reference=None,
+                            ordem_servico_id=None, plano_trabalho_id=None):
     """O arquivo assinado que vale para este documento, ou None.
 
     A versão viva mais recente entre todos os PDFs do documento; na falta
@@ -42,10 +45,11 @@ def versao_assinada_vigente(tipo, *, oficio_id=None, termo_id=None, prestacao_id
     """
     from documentos.models import DocumentoAssinaturaVersao
 
-    if not (oficio_id or termo_id or prestacao_id):
+    if not (oficio_id or termo_id or prestacao_id or ordem_servico_id or plano_trabalho_id):
         return None
     artefatos = _candidatos(tipo, oficio_id=oficio_id, termo_id=termo_id, prestacao_id=prestacao_id,
-                            servidor_id=servidor_id, reference=reference)
+                            servidor_id=servidor_id, reference=reference,
+                            ordem_servico_id=ordem_servico_id, plano_trabalho_id=plano_trabalho_id)
     versao = (DocumentoAssinaturaVersao.objects
               .filter(artefato__in=artefatos, revogada_em__isnull=True)
               .order_by("-criado_em").first())

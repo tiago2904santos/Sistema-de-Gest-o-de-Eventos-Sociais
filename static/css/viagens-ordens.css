@@ -1,0 +1,72 @@
+/* Ordens de serviço — o que só esta tela tem: os cartões de necessidade, o
+   painel de funções da equipe e os detalhes da linha da lista. O resto veste
+   as classes da casa (tm-*, of-*, ofc-*, bx-seg) sem mexer no bridge.
+   Paleta: dourado = escolhido; grafite = botão principal; cinza = repouso. */
+
+/* ---- lista ------------------------------------------------------------- */
+.os-celula .os-motivo{margin:6px 0 0;font-size:12.5px;line-height:1.4;color:var(--n-700);overflow-wrap:anywhere}
+.os-celula .os-motivo.tm-fato--ausente{color:var(--n-400);font-style:italic}
+.os-oficio-link{color:var(--link,var(--n-800));text-decoration:none;font-weight:500}
+.os-oficio-link:hover{text-decoration:underline}
+
+/* ---- formulário -------------------------------------------------------- */
+.os-descricao{margin:0 0 12px;font-size:12.5px;color:var(--n-500)}
+.os-form .multi-pick .form-campo{margin:0}
+
+/* Cartões de necessidade: rádio escondido, o cartão é a escolha. */
+.os-tipos{border:0;margin:0;padding:0;min-width:0}
+.os-tipos.grupo-erro .os-tipo{border-color:var(--dg-t)}
+.os-tipos__grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.os-tipo{position:relative;display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid var(--n-200);border-radius:9px;background:var(--branco);cursor:pointer;transition:border-color var(--motion,.15s),background-color var(--motion,.15s)}
+.os-tipo:hover{background:var(--hover-b,var(--n-50));border-color:var(--n-300)}
+.os-tipo:focus-within{outline:2px solid var(--foco,var(--n-700));outline-offset:2px}
+.os-tipo__marca{flex:none;width:16px;height:16px;margin-top:2px;border:2px solid var(--n-300);border-radius:50%;background:var(--branco);transition:border-color var(--motion,.15s),box-shadow var(--motion,.15s)}
+.os-tipo__corpo{display:grid;gap:3px;min-width:0}
+.os-tipo__titulo{font-size:13px;font-weight:600;color:var(--n-900)}
+.os-tipo__dica{font-size:11.5px;line-height:1.4;color:var(--n-500)}
+.os-tipo.is-escolhido{border-color:var(--sel-r,var(--d-500));background:var(--sel-b,var(--d-100))}
+.os-tipo.is-escolhido .os-tipo__marca{border-color:var(--sel-r,var(--d-600));box-shadow:inset 0 0 0 3px var(--branco);background:var(--sel-r,var(--d-600))}
+.os-tipo.is-escolhido .os-tipo__titulo{color:var(--sel-f,var(--d-900))}
+
+/* Período: os dois campos com os nomes da origem por cima. */
+.os-periodo__rotulos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:4px;font-size:12px;font-weight:600;color:var(--n-600)}
+
+/* Equipe: busca com o "+" ao lado; a lista de escolhidos ocupa a largura toda. */
+.os-equipe{flex-wrap:wrap}
+.os-equipe>.multi-pick{flex:1 1 auto;min-width:0}
+.os-equipe>.multi-pick .multi-pick__escolhidos,.os-equipe>.multi-pick .lista-vazia,.os-equipe>.multi-pick .form-ajuda,.os-equipe>.multi-pick .form-erro{flex:1 1 100%}
+/* O "+" fica ao lado da busca, não abaixo da lista de escolhidos: a caixa dos
+   escolhidos cresce e o botão desceria com ela. */
+.os-equipe{align-items:flex-start}
+.os-equipe>.multi-pick{display:grid}
+.os-equipe>.multi-pick>.form-label{grid-row:1}
+.os-equipe__novo{margin-top:22px;margin-bottom:0}
+
+/* Painel de funções: título e alternador em cima, os cartões da equipe embaixo. */
+.os-funcoes{margin-top:16px;padding-top:16px;border-top:1px solid var(--n-150)}
+.os-funcoes[hidden]{display:none}
+.os-funcoes__cabeca{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.os-funcoes__titulo{font-size:13px;color:var(--n-800)}
+.os-func-seg{display:inline-flex;padding:3px;border-radius:9px;background:var(--n-100)}
+.os-func-seg button{height:30px;padding:0 14px;border:0;border-radius:7px;background:transparent;color:var(--n-600);font:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:background-color var(--motion,.15s),color var(--motion,.15s)}
+.os-func-seg button:hover{color:var(--n-900)}
+.os-func-seg button[aria-pressed="true"]{background:var(--sel-b,var(--branco));color:var(--sel-f,var(--n-900));font-weight:600;box-shadow:0 1px 2px rgba(26,25,23,.12)}
+.os-funcoes__cartoes:empty{display:none}
+.os-funcoes__cartoes:not(:empty)+.lista-vazia{display:none}
+.os-func-cartao{cursor:pointer;grid-template-columns:40px minmax(0,1fr)}
+.os-func-cartao:hover{background:var(--hover-b,var(--n-25))}
+.os-func-cartao:focus-visible{outline:2px solid var(--foco,var(--n-700));outline-offset:-2px}
+.os-func-cartao.is-atribuido{border-color:var(--n-300)}
+/* O cartão com a função ativa é o escolhido: dourado, como manda a paleta. */
+.os-func-cartao.is-ativa,.os-func-cartao.is-ativa:hover{background:var(--sel-b,var(--d-100));border-color:var(--sel-r,var(--d-500))}
+.os-func-cartao.is-ativa .of-av{background:var(--sel-r,var(--d-600));color:var(--branco)}
+.os-func-selo{height:20px;padding:0 8px;border-radius:99px;border:1px solid var(--n-250);background:var(--n-100);color:var(--n-600);font-size:10.5px;font-weight:600;letter-spacing:.02em}
+.os-func-cartao.is-ativa .os-func-selo{background:var(--sel-r,var(--d-600));border-color:var(--sel-r,var(--d-600));color:var(--branco)}
+.os-func-selo--vazio{font-weight:500;font-style:italic;color:var(--n-500)}
+
+@media (max-width:640px){
+  .os-tipos__grade{grid-template-columns:1fr}
+  .os-funcoes__cabeca{align-items:flex-start;flex-direction:column}
+  .os-func-seg{display:flex}
+  .os-func-seg button{flex:1 1 0}
+}

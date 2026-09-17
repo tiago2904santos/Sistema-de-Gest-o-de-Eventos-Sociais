@@ -1,0 +1,112 @@
+{% comment %}
+  Etapa 1 do painel — o cadastro da viagem (`_detalhe_etapa1_body.html` da
+  origem): o que a viagem É (tipo e motivo), QUANDO e ONDE acontece, e QUAIS
+  documentos já existentes pertencem a ela. Cinco blocos na ordem em que se
+  preenche; identificação, data e destinos usam o modelo dividido (rótulo à
+  esquerda, controles à direita).
+
+  Os destinos são o mecanismo do termo: uma lista só, a primeira linha é o
+  destino principal e as seguintes os adicionais, nomeadas pela tela no
+  envio (viagens-viagem.js) na ordem em que ficaram.
+{% endcomment %}
+<form method="post" action="" id="form-viagem" class="editor-roteiro__principal" novalidate>
+  {% csrf_token %}
+  <input type="hidden" name="quantidade_destinos" value="{{ quantidade_destinos }}">
+  <fieldset class="frm-fieldset"{% if not pode_editar %} disabled{% endif %}>
+    {% if form.errors %}
+      <div class="aviso aviso--erro" role="alert" tabindex="-1">
+        {% include "components/icon.html" with nome="info" %}
+        <div><b>Não foi possível salvar a viagem</b>Revise os campos indicados antes de continuar.
+          <ul class="aviso--erro__lista">{% for campo, mensagens in form.errors.items %}{% for m in mensagens %}<li>{% if campo == "__all__" %}{{ m }}{% else %}<a href="#id_{{ campo }}">{{ m }}</a>{% endif %}</li>{% endfor %}{% endfor %}</ul>
+        </div>
+      </div>
+    {% endif %}
+
+    <section class="section-card reg" id="dados">
+      <header class="section-card__cabecalho reg__t">
+        <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+        <div class="section-card__identificacao">
+          <h2 class="section-card__titulo">Dados da viagem</h2>
+          <p class="section-card__descricao">Identificação, período, destinos e documentos vinculados.</p>
+        </div>
+      </header>
+      <div class="section-card__corpo vg-etapa1">
+
+        {# Identificação: o tipo, com o atalho para o catálogo (volta para cá pelo next). #}
+        <div class="bloco-split">
+          <div class="bloco-split__rotulo"><strong>Identificação</strong><span>Escolha o tipo desta atividade.</span></div>
+          <div class="bloco-split__corpo">
+            <div class="ofc-com-acao">
+              {% include "components/v32/multi_pick.html" with name="tipos" label="Tipo da viagem" opcoes=tipos placeholder="Selecione o(s) tipo(s)" erros=erros.tipos vazio="Nenhum tipo de viagem cadastrado." icone_vazio="map-pin" %}
+              <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_tipos }}" aria-label="Gerenciar tipos de viagem" title="Gerenciar tipos">{% include "components/icon.html" with nome="settings" %}</a>
+            </div>
+          </div>
+        </div>
+
+        {# Motivo: o modelo (com o atalho de gerenciar modelos ao lado) e o texto livre. #}
+        <div class="vg-bloco">
+          <div class="vg-bloco__rotulo"><strong>Motivo</strong><span>Contextualize a atividade com um modelo ou texto livre.</span></div>
+          <div class="g-form g-form--1">
+            <div class="ofc-com-acao">
+              {% if opcoes_motivos %}
+                {% include "components/select.html" with name="modelo_motivo" label="Modelo de motivo" opcoes=opcoes_motivos placeholder="Selecione um modelo (opcional)" permitir_vazio=True selecionado=valores.modelo_motivo erros=erros.modelo_motivo %}
+              {% else %}
+                {% include "components/select.html" with name="modelo_motivo" label="Modelo de motivo" opcoes=opcoes_motivos placeholder="Nenhum modelo cadastrado" vazio="Nenhum modelo cadastrado — escreva o motivo abaixo ou abra o gerenciamento de modelos." erros=erros.modelo_motivo %}
+              {% endif %}
+              <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_modelos_motivo }}" aria-label="Gerenciar modelos de motivo" title="Gerenciar modelos">{% include "components/icon.html" with nome="settings" %}</a>
+            </div>
+            {% include "components/textarea.html" with name="motivo" label="Motivo" linhas="4" placeholder="Contextualize a atividade…" valor=motivo erros=erros.motivo %}
+          </div>
+        </div>
+
+        {# Data: dois campos, um calendário só — a primeira escolha é o início e a segunda o fim. #}
+        <div class="bloco-split">
+          <div class="bloco-split__rotulo"><strong>Data da viagem</strong><span>Defina o início e o fim da atividade.</span></div>
+          <div class="bloco-split__corpo vg-datas">
+            <div class="vg-datas__rotulos" aria-hidden="true"><span>Data de início</span><span>Data de fim</span></div>
+            {% include "components/date_range.html" with name="periodo_viagem" start_name="data_inicio" end_name="data_fim" label="Período da viagem" rotulo_oculto=True dois_campos=True valor_inicio=valores.data_inicio valor_fim=valores.data_fim erros=erros.data_inicio|default:erros.data_fim %}
+          </div>
+        </div>
+
+        {# Destinos, no componente do termo: alça, "+" e lixeira. #}
+        <div class="bloco-split">
+          <div class="bloco-split__rotulo"><strong>Destinos</strong><span>Locais na ordem da visita.</span></div>
+          <div class="bloco-split__corpo">
+            <div class="destinos" data-destinos>
+              {% include "pages/viagens_termos/_destino_linha.html" with nome_estado="destino_estado" nome_cidade="destino_municipio" id_estado="id_destino_estado" rotulo_estado="UF do destino" rotulo_cidade="Município do destino" estado=valores.destino_estado cidade=valores.destino_municipio erros_estado=erros.destino_estado erros_cidade=erros.destino_municipio estados=estados municipios=municipios %}
+              {% for a in adicionais %}
+                {% include "pages/viagens_termos/_destino_linha.html" with nome_estado=a.nome_estado nome_cidade=a.nome_cidade id_estado=a.id_estado rotulo_estado="Estado adicional" rotulo_cidade="Município adicional" estado=a.estado cidade=a.cidade erros_estado=a.erros_estado erros_cidade=a.erros_cidade estados=estados municipios=municipios %}
+              {% endfor %}
+            </div>
+            <template data-destino-modelo>
+              {% include "pages/viagens_termos/_destino_linha.html" with nome_estado="extra_estado___n__" nome_cidade="extra_cidade___n__" id_estado="id_extra_estado___n__" rotulo_estado="Estado adicional" rotulo_cidade="Município adicional" estado="" cidade="" erros_estado=None erros_cidade=None estados=estados municipios=municipios %}
+            </template>
+            {# Sem JavaScript o "+" da linha não existe: este envio traz outra. #}
+            <noscript>
+              <button class="btn--secundaria btn--compacto btn--quadrado" type="submit" name="acao" value="adicionar_destino" formnovalidate aria-label="Adicionar destino" title="Adicionar destino">{% include "components/icon.html" with nome="plus" %}</button>
+            </noscript>
+          </div>
+        </div>
+
+        {# Documentos vinculados: cinco tipos, um seletor de busca cada, e o alternador por cima. #}
+        <div class="vg-bloco">
+          <div class="vg-bloco__rotulo"><strong>Documentos vinculados</strong><span>Reaproveite documentos existentes. Marque para vincular e desmarque para remover o vínculo.</span></div>
+          <div class="vg-docs" data-vg-docs>
+            <div class="bx-seg vg-docs__abas" role="radiogroup" aria-label="Tipo de documento">
+              {% for aba in abas_documentos %}
+                <label><input type="radio" name="vg_aba" value="{{ aba.chave }}" data-vg-aba{% if aba.ativa %} checked{% endif %}><span>{{ aba.rotulo }}{% if aba.vinculados %} <em class="vg-docs__n">{{ aba.vinculados }}</em>{% endif %}</span></label>
+              {% endfor %}
+            </div>
+            {% for aba in abas_documentos %}
+              <div class="vg-docs__painel" data-vg-painel="{{ aba.chave }}"{% if not aba.ativa %} hidden{% endif %}>
+                {% include "components/v32/multi_pick.html" with name=aba.campo label=aba.rotulo_seletor rotulo_oculto=True placeholder=aba.placeholder opcoes=aba.opcoes vazio=aba.vazio erros=aba.erros icone_vazio="document" %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        {% include "pages/viagens_viagem/_acoes_fim.html" %}
+      </div>
+    </section>
+  </fieldset>
+</form>

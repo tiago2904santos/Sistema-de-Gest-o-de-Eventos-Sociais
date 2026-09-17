@@ -1,0 +1,49 @@
+{% comment %}
+  O cartão de resumo de um evento gravado do plano de vários eventos — o
+  `resumo_evento_card` da origem: "Evento N de T", o número do plano com o
+  destino, a data por extenso com horário e programa, e os três assuntos
+  (coordenação, efetivo e diárias/atividades). Editar e Remover são
+  `formaction` do formulário do plano: o cartão vive dentro dele, e o que
+  está na tela é gravado antes de trocar de evento.
+
+  Contexto: `ev`, `numero`, `coordenador_adm_nome`, `coordenador_adm_cargo`,
+  `total_eventos`, `pode_editar`.
+{% endcomment %}
+<article class="pt-evento" aria-label="Evento {{ ev.ordem }} do plano">
+  <header class="pt-evento__cabeca">
+    <div>
+      <span class="pt-evento__kicker">Evento {{ ev.ordem }}{% if total_eventos %} de {{ total_eventos }}{% endif %}</span>
+      <h3 class="pt-evento__titulo">Nº {{ numero }} · {{ ev.destino }}</h3>
+      <p class="pt-evento__meta">{{ ev.data_evento_extenso|upper }} · {{ ev.horario }} · {{ ev.programa }}</p>
+    </div>
+    {% if pode_editar %}
+      <div class="pt-evento__acoes">
+        <button type="submit" class="ib-linha" formaction="{{ ev.editar_url }}" formnovalidate aria-label="Editar evento" title="Editar evento">{% include "components/icon.html" with nome="pencil" %}</button>
+        <button type="submit" class="ib-linha pt-evento__remover" formaction="{{ ev.excluir_url }}" formnovalidate data-pt-evento-remover data-confirmar="Remover este evento do plano?" aria-label="Remover evento" title="Remover evento">{% include "components/icon.html" with nome="trash" %}</button>
+      </div>
+    {% endif %}
+  </header>
+  <div class="pt-evento__corpo">
+    <dl class="pt-evento__bloco" aria-label="Coordenação do evento">
+      <div><dt>Solicitante</dt><dd>{{ ev.programa }}</dd></div>
+      <div><dt>Coordenador administrativo</dt><dd>{{ coordenador_adm_nome }}{% if coordenador_adm_cargo %} <small>{{ coordenador_adm_cargo }}</small>{% endif %}</dd></div>
+      {% if ev.coordenador_op_presente %}<div><dt>Coordenador operacional</dt><dd>{{ ev.coordenador_op }}{% if ev.coordenador_op_cargo %} <small>{{ ev.coordenador_op_cargo }}</small>{% endif %}</dd></div>{% endif %}
+    </dl>
+    <div class="pt-evento__bloco" aria-label="Efetivo do evento">
+      <dl><div><dt>Efetivo</dt><dd>{{ ev.efetivo_total }} servidor(es)</dd></div></dl>
+      <ul class="pt-evento__chips">
+        {% for it in ev.efetivo_itens %}<li class="st st--em_andamento">{{ it.quantidade }} · {{ it.cargo }}{% if it.unidade %} · {{ it.unidade }}{% endif %}</li>{% empty %}<li class="st st--neutro">Nenhum efetivo informado</li>{% endfor %}
+      </ul>
+    </div>
+    <div class="pt-evento__bloco" aria-label="Diárias e atividades do evento">
+      <dl>
+        <div><dt>Valor total</dt><dd><strong>{{ ev.valor_total_display }}</strong></dd></div>
+        <div><dt>Quantidade de diárias</dt><dd><strong>{{ ev.diarias_composicao }}</strong></dd></div>
+        <div><dt>Atividades</dt><dd>{{ ev.atividades_count }} selecionada(s)</dd></div>
+      </dl>
+      <ul class="pt-evento__atividades" aria-label="Atividades selecionadas">
+        {% for nome in ev.atividades %}<li>{{ nome }}</li>{% empty %}<li>Nenhuma atividade selecionada</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</article>

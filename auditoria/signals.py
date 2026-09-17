@@ -27,6 +27,11 @@ APPS_AUDITADOS = {
     "viagens_cadastros",
     # Roteiro, destinos e trechos: o histórico aparece na tela do roteiro.
     "viagens_roteiros",
+    # O agrupador e os dois documentos portados do GV: cancelamento em cascata
+    # e numeração precisam de trilha.
+    "viagens_viagem",
+    "viagens_ordens",
+    "viagens_planos",
 }
 
 # Modelos com trilha própria ou que só gerariam ruído.

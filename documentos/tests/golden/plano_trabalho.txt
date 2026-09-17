@@ -1,0 +1,25 @@
+PLANO DE TRABALHO Nº[[numero_plano_trabalho]]
+[[unidade]]
+BREVE CONTEXTUALIZAÇÃO
+[[contextualizacao]]
+METAS ESTABELECIDAS
+[[metas]]
+ATIVIDADES A SEREM DESENVOLVIDAS
+[[atividades]]
+ATUAÇÃO
+Datas: [[data_evento]];
+Local: [[destinos]];
+Horário de atendimento: [[horario_de_atendimento]];
+Efetivo total: [[efetivos]];
+[[unidade_movel]]
+VALOR TOTAL DO PLANO
+[[valor_do_plano]]
+RECURSOS NECESSÁRIOS
+[[recursos_necessarios]]
+COORDENADOR DO EVENTO
+[[coordenacao]]
+CONSIDERAÇÕES FINAIS
+[[consideracao_final]]
+[[sede]], [[data_extenso]]
+[[nome_chefia]]
+[[cargo_chefia]]

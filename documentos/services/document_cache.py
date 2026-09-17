@@ -140,6 +140,8 @@ def get_cached_document_artifact(
     oficio_id: int | None = None,
     termo_id: int | None = None,
     prestacao_id: int | None = None,
+    ordem_servico_id: int | None = None,
+    plano_trabalho_id: int | None = None,
     criado_por_id: int | None = None,
     servidor_id: int | None = None,
     tipo: DocumentoTipo,
@@ -157,6 +159,7 @@ def get_cached_document_artifact(
         }
         filters.update(
             roteiro_id=roteiro_id, oficio_id=oficio_id, termo_id=termo_id, prestacao_id=prestacao_id, servidor_id=servidor_id, criado_por_id=criado_por_id,
+            ordem_servico_id=ordem_servico_id, plano_trabalho_id=plano_trabalho_id,
         )
         art = DocumentoArtefato.objects.filter(**filters).order_by("-criado_em").first()
     except Exception:

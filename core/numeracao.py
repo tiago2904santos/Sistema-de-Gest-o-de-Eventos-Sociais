@@ -3,8 +3,8 @@
 Portado do Gerenciador de Viagens na Fase 4. Aqui mora a **mecânica** —
 serializar o escopo e repetir a escolha quando outro processo venceu a corrida.
 A **política** (reuso de lacuna, piso, contador) fica em cada documento, porque
-é diferente de propósito: hoje só o ofício numera; ordem de serviço e plano de
-trabalho estão fora do escopo desta unificação.
+é diferente de propósito: o ofício e a ordem de serviço reusam lacunas, o plano
+de trabalho tem contador na configuração.
 
 O escopo é **global por ano**: o sistema de origem numerava por área de trabalho
 e aqui não há área, então a unicidade é `(ano, numero)`, que é a versão mais
@@ -67,6 +67,8 @@ from django.db import transaction
 #: Os valores são os ASCII dos apelidos, mantidos como estavam para não mudar o
 #: comportamento de nenhum nó que esteja no ar durante o deploy.
 NAMESPACE_OFICIO = 0x4F464943  # "OFIC"
+NAMESPACE_ORDEM_SERVICO = 0x4F534E55  # "OSNU"
+NAMESPACE_PLANO_TRABALHO = 0x50544E55  # "PTNU"
 
 TENTATIVAS_PADRAO = 3
 

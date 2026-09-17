@@ -206,11 +206,20 @@ def criar(request):
     """"Novo ofício" da origem: cria o rascunho já numerado e abre o cadastro."""
     from core.retorno import com_next, next_valido
     from .services import criar_oficio_rascunho
+    from viagens_viagem.services import viagem_do_request
     exigir_operador(request)
-    oficio = criar_oficio_rascunho()
+    oficio = criar_oficio_rascunho(viagem=viagem_do_request(request))
     destino = reverse('viagens_oficios:editar', args=[oficio.pk])
     retorno = next_valido(request)
     return redirect(com_next(destino, retorno) if retorno else destino)
+
+
+def _url_de_volta(oficio, viagem_id=None):
+    """Para onde se volta ao sair do ofício: a etapa 3 da viagem dele, ou a lista."""
+    viagem_id = viagem_id or getattr(oficio, 'viagem_id', None)
+    if viagem_id:
+        return reverse('viagens_viagem:etapa', args=[viagem_id, 3])
+    return reverse('viagens_oficios:lista')
 
 
 CAMPOS_FORA_DO_HISTORICO = {'atualizado_em', 'criado_em'}
@@ -370,7 +379,7 @@ def editar(request, pk=None):
         oficio = get_oficio_by_id(criar_oficio_rascunho().pk)
     else:
         oficio = get_oficio_by_id(pk)
-    lista = voltar_para(request, reverse('viagens_oficios:lista'))
+    lista = voltar_para(request, _url_de_volta(oficio))
     finalizar = request.POST.get('acao') == 'finalizar'
     vincular = request.POST.get('acao') == 'vincular_roteiro'
     from viagens_cadastros.models import ConfiguracaoSistema
@@ -530,13 +539,14 @@ def acao(request, pk, acao):
             messages.success(request, f'Ofício {oficio.numero_formatado} identificado como complementar.')
     elif acao == 'excluir':
         numero = oficio.numero_formatado
+        volta = _url_de_volta(oficio)
         try:
             excluir_oficio(oficio)
         except OficioVinculadoError:
             messages.error(request, f'O ofício {numero} tem prestação de contas ou documentos vinculados e não pode ser excluído.')
             return redirect(destino)
         messages.success(request, f'Ofício {numero} excluído. O número volta para a sequência.')
-        return redirect(voltar_para(request, reverse('viagens_oficios:lista')))
+        return redirect(voltar_para(request, volta))
     else:
         raise Http404
     return redirect(destino)

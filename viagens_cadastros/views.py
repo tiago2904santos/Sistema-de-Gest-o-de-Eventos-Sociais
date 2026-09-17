@@ -30,6 +30,12 @@ from viagens_oficios.forms import ModeloJustificativaForm, ModeloMotivoOficioFor
 from viagens_prestacoes.forms import ModeloTextoRelatorioTecnicoForm
 from viagens_prestacoes.models import ModeloTextoRelatorioTecnico
 from viagens_oficios.models import ModeloJustificativa, ModeloMotivoOficio
+from viagens_planos.catalogos import (AtividadePlanoTrabalhoForm, HorarioAtendimentoForm,
+                                      PresetAtividadesForm, ProgramaSolicitanteForm)
+from viagens_planos.models import (AtividadePlanoTrabalho, HorarioAtendimento,
+                                   PresetAtividadesPlanoTrabalho, ProgramaSolicitante)
+from viagens_viagem.catalogos import TipoViagemForm
+from viagens_viagem.models import TipoViagem
 
 from .cep import CEPIndisponivel, CEPNaoEncontrado, consultar_cep
 from core.normalizers import normalize_digits
@@ -246,6 +252,96 @@ CADASTROS = {
             }
         ],
     },
+    # Catálogos do agrupador de viagens e do plano de trabalho (portados do GV).
+    "tipos-viagem": {
+        "model": TipoViagem,
+        "form": TipoViagemForm,
+        "busca_rotulo": "Buscar tipo de viagem pelo nome",
+        "vazio": "Nenhum tipo de viagem cadastrado ainda.",
+        "intro_modal": "Nome do tipo; uma viagem pode ter mais de um, e o título dela nasce deles.",
+        "titulo": "Tipos de viagem",
+        "singular": "tipo de viagem",
+        "novo": "Novo tipo de viagem",
+        "icone": "map-pin",
+        "descricao": "Tipos que classificam uma viagem (mais de um por viagem).",
+        "exemplo": "Ex.: PCPR na Comunidade",
+        "busca": ["nome__icontains"],
+        "colunas": [],
+        "secoes": [{"titulo": "Dados do tipo", "subtitulo": "Nome do tipo de viagem.", "campos": ["nome"]}],
+    },
+    "programas": {
+        "model": ProgramaSolicitante,
+        "form": ProgramaSolicitanteForm,
+        "busca_rotulo": "Buscar programa pelo nome",
+        "vazio": "Nenhum programa cadastrado ainda.",
+        "intro_modal": "Programa que solicitou a ação; entra na contextualização do plano de trabalho.",
+        "titulo": "Programas solicitantes",
+        "singular": "programa",
+        "novo": "Novo programa",
+        "icone": "landmark",
+        "descricao": "Programas exibidos na identificação do plano de trabalho.",
+        "exemplo": "Ex.: PCPR NA COMUNIDADE",
+        "busca": ["nome__icontains"],
+        "colunas": [],
+        "secoes": [{"titulo": "Dados do programa", "subtitulo": "Nome do programa.", "campos": ["nome"]}],
+    },
+    "horarios": {
+        "model": HorarioAtendimento,
+        "form": HorarioAtendimentoForm,
+        "busca_rotulo": "Buscar horário",
+        "vazio": "Nenhum horário cadastrado ainda.",
+        "intro_modal": "Início e fim da faixa de atendimento, como sai no plano de trabalho.",
+        "titulo": "Horários de atendimento",
+        "singular": "horário",
+        "novo": "Novo horário",
+        "icone": "clock",
+        "descricao": "Faixas exibidas na identificação do plano de trabalho.",
+        "exemplo": "Ex.: 09:00 até 17:00",
+        "busca": ["faixa__icontains"],
+        "attr_principal": "faixa",
+        "rotulo_principal": "Faixa",
+        "ordenar": ("faixa",),
+        "busca_campos": ("faixa",),
+        "colunas": [],
+        "secoes": [{"titulo": "Dados do horário", "subtitulo": "Início e fim da faixa de atendimento.",
+                    "campos": ["horario_inicio", "horario_fim"], "larguras": {"horario_inicio": "6", "horario_fim": "6"}}],
+    },
+    "atividades-pt": {
+        "model": AtividadePlanoTrabalho,
+        "form": AtividadePlanoTrabalhoForm,
+        "busca_rotulo": "Buscar atividade por nome, código ou meta",
+        "vazio": "Nenhuma atividade cadastrada ainda.",
+        "intro_modal": "Nome, recursos necessários e a meta que sai no documento. Planos já criados não mudam.",
+        "titulo": "Atividades do plano",
+        "singular": "atividade",
+        "novo": "Nova atividade",
+        "icone": "checklist",
+        "descricao": "Atividades com meta e recurso, escolhidas no plano de trabalho.",
+        "exemplo": "Ex.: Registro de Boletins de Ocorrência",
+        "busca": ["nome__icontains", "codigo__icontains", "meta__icontains"],
+        "busca_campos": ("nome", "codigo", "meta"),
+        "colunas": [{"rotulo": "Código", "attr": "codigo", "classe": "c-fixo"}],
+        "secoes": [{"titulo": "Dados da atividade", "subtitulo": "Nome, recurso necessário e meta.",
+                    "campos": ["nome", "recurso_necessario", "meta"]}],
+    },
+    "presets-pt": {
+        "model": PresetAtividadesPlanoTrabalho,
+        "form": PresetAtividadesForm,
+        "busca_rotulo": "Buscar preset pelo nome",
+        "vazio": "Nenhum preset cadastrado ainda.",
+        "intro_modal": "Conjunto de atividades para aplicar de uma vez no plano; o padrão vem escolhido em todo plano novo.",
+        "titulo": "Presets de atividades",
+        "singular": "preset",
+        "novo": "Novo preset",
+        "icone": "clipboard",
+        "descricao": "Conjuntos de atividades para aplicar de uma vez no plano de trabalho.",
+        "exemplo": "Ex.: PCPR NA COMUNIDADE",
+        "busca": ["nome__icontains"],
+        "prefetch_related": ["atividades"],
+        "colunas": [{"rotulo": "Atividades", "attr": "atividades", "nomes": True, "vazio": "Nenhuma atividade"}],
+        "secoes": [{"titulo": "Identificação", "subtitulo": "Nome do preset.", "campos": ["nome", "is_padrao"]},
+                   {"titulo": "Atividades previstas", "subtitulo": "Atividades incluídas no preset.", "campos": ["atividades"]}],
+    },
     "modelos-texto-rt": {
         "model": ModeloTextoRelatorioTecnico,
         "form": ModeloTextoRelatorioTecnicoForm,
@@ -313,7 +409,7 @@ DIARIAS["secoes"] = DIARIA_SECOES
 CATALOGOS_DE_OFICIO = {"motivos-oficio", "modelos-justificativa"}
 # Modelos de texto: vivem na seção "Modelos" da navegação, com trilha própria.
 CATALOGOS_DE_MODELO = ("motivos-oficio", "modelos-justificativa", "modelos-texto-rt")
-COM_PADRAO = {"cargos", "combustiveis", *CATALOGOS_DE_OFICIO}
+COM_PADRAO = {"cargos", "combustiveis", "presets-pt", *CATALOGOS_DE_OFICIO}
 
 
 def _config(slug):
@@ -331,6 +427,11 @@ RAIL = [
     ("unidades", "Unidades", "landmark"),
     ("cargos", "Cargos", "shield"),
     ("combustiveis", "Combustíveis", "activity"),
+    ("tipos-viagem", "Tipos de viagem", "map-pin"),
+    ("programas", "Programas", "landmark"),
+    ("horarios", "Horários", "clock"),
+    ("atividades-pt", "Atividades do plano", "checklist"),
+    ("presets-pt", "Presets", "clipboard"),
 ]
 
 
@@ -346,6 +447,11 @@ CONTAGEM_CARTAO = {
     "motivos-oficio": ("modelo cadastrado", "modelos cadastrados"),
     "modelos-justificativa": ("modelo cadastrado", "modelos cadastrados"),
     "modelos-texto-rt": ("modelo cadastrado", "modelos cadastrados"),
+    "tipos-viagem": ("tipo cadastrado", "tipos cadastrados"),
+    "programas": ("programa cadastrado", "programas cadastrados"),
+    "horarios": ("horário cadastrado", "horários cadastrados"),
+    "atividades-pt": ("atividade cadastrada", "atividades cadastradas"),
+    "presets-pt": ("preset cadastrado", "presets cadastrados"),
 }
 
 
@@ -764,10 +870,12 @@ def _lista_catalogo(request, slug, modal=None):
     if slug == "modelos-texto-rt":
         queryset = config["model"].objects.order_by("campo", "nome")
     else:
-        queryset = config["model"].objects.order_by("nome")
+        queryset = config["model"].objects.order_by(*config.get("ordenar", ("nome",)))
+    if config.get("prefetch_related"):
+        queryset = queryset.prefetch_related(*config["prefetch_related"])
     if termo:
         procurado = _texto_busca(termo)
-        campos = ("pk", "nome", "sigla") if slug == "unidades" else ("pk", "nome")
+        campos = ("pk", "nome", "sigla") if slug == "unidades" else ("pk", *config.get("busca_campos", ("nome",)))
         ids = [linha[0] for linha in queryset.values_list(*campos)
                if any(procurado in _texto_busca(valor) for valor in linha[1:])]
         queryset = queryset.filter(pk__in=ids)
@@ -885,7 +993,7 @@ def _mensagem_salvo(slug, config, objeto, editando):
     if getattr(objeto, "status", "") == "RASCUNHO" and slug in MENSAGEM_RASCUNHO:
         return MENSAGEM_RASCUNHO[slug]
     singular = config["singular"].capitalize()
-    concordancia = "a" if slug in {"viaturas", "unidades"} else "o"
+    concordancia = "a" if slug in {"viaturas", "unidades", "atividades-pt"} else "o"
     acao = "atualizad" if editando else "criad"
     return f"{singular} {acao}{concordancia} com sucesso."
 
@@ -1008,7 +1116,7 @@ def _excluir_catalogo(request, slug, objeto):
         LogAuditoria.objects.create(
             usuario=request.user, acao="VIAGENS_CADASTRO_EXCLUIDO", descricao=descricao,
         )
-        excluido = "excluída" if slug in {"unidades", "viaturas"} else "excluído"
+        excluido = "excluída" if slug in {"unidades", "viaturas", "atividades-pt"} else "excluído"
         messages.success(request, f"{CADASTROS[slug]['singular'].capitalize()} {excluido} com sucesso.")
     return redirect(voltar)
 

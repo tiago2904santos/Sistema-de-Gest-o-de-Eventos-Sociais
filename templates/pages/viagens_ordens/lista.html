@@ -1,0 +1,120 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
+{% comment %}
+  Lista de ordens de serviço, na mesma composição da lista de termos: situações
+  na trilha à esquerda, busca na barra do cartão, tabela do V3.2 no desktop e
+  lista no celular, um menu único de ações por linha.
+
+  O conteúdo da linha é o cartão da origem numa coluna só: número, destinos e
+  período no título com o selo temporal, os fatos com ícone (período, destinos,
+  servidores com o motorista marcado, ofícios vinculados, assinante) e o motivo
+  resumido. Da origem vêm a busca (número, motivo, destino ou servidor) e as
+  ações: visualizar, baixar PDF/DOCX, anexar assinado, editar, cancelar e excluir.
+{% endcomment %}
+
+{% block title %}Ordens de Serviço — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-ordens.css' %}">{% endblock %}
+
+{% block conteudo %}
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker kicker--junto">Viagens</div>
+      <h1>Ordens de Serviço</h1>
+    </div>
+    {% if pode_editar %}
+      <a class="btn-primaria btn-flutuante" href="{% url 'viagens_ordens:novo' %}">{% include "components/icon.html" with nome="plus" %}Nova OS</a>
+    {% endif %}
+  </div>
+
+  <div class="cad-grade cad-grade--sem-folga">
+    {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_rotulo="Situação das ordens de serviço" sem_titulo=True %}
+
+  <div class="pa-card pa-card--lista cad-lista">
+    <form method="get" class="cad-barra" role="search" data-cadastro-busca data-auto-enviar>
+      {% for situacao in situacoes_escolhidas %}<input type="hidden" name="situacao" value="{{ situacao }}">{% endfor %}
+      <div class="busca">
+        {% include "components/icon.html" with nome="search" %}
+        <label class="sr-only" for="id_q">Buscar ordens de serviço</label>
+        <input type="search" name="q" id="id_q" value="{{ q }}" placeholder="Buscar por número, motivo, destino ou servidor" autocomplete="off">
+      </div>
+    </form>
+    <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Tabela de ordens de serviço">
+      <table class="dt dt--responsiva">
+        <thead>
+          <tr>
+            <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
+            <th>Ordem de Serviço</th>
+            <th class="c-cad-acoes">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in linhas %}{% with o=l.ordem %}
+            <tr{% if o.cancelado %} class="tm-linha--cancelada"{% endif %}>
+              <td class="tabela__col-icone">
+                <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="clipboard" %}</span>
+                <span class="sr-only">Ordem de serviço</span>
+              </td>
+              <td class="c-nome tm-celula os-celula" data-rotulo="Ordem de Serviço">
+                {% include "pages/viagens_ordens/_conteudo_linha.html" %}
+              </td>
+              <td class="c-cad-acoes">{% include "pages/viagens_ordens/_acoes_linha.html" %}</td>
+            </tr>
+          {% endwith %}{% empty %}
+            <tr>
+              <td colspan="3" class="v32-suave dt__vazio">
+                {% if tem_filtros %}Nenhuma OS encontrada. Ajuste os filtros ou limpe a busca para ver a lista inteira.{% else %}Nenhuma OS cadastrada. As ordens de serviço cadastradas aparecem aqui.{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="lista-mobile-v32"><div class="m-lista">
+      {% for l in linhas %}{% with o=l.ordem %}
+        <article class="m-item{% if o.cancelado %} tm-linha--cancelada{% endif %}">
+          <div class="m-item__topo">
+            <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="clipboard" %}</span>
+            <span class="sr-only">Ordem de serviço</span>
+          </div>
+          <div class="m-item__tipo tm-celula os-celula">
+            {% include "pages/viagens_ordens/_conteudo_linha.html" %}
+          </div>
+          <div class="m-item__rodape">{% include "pages/viagens_ordens/_acoes_linha.html" %}</div>
+        </article>
+      {% endwith %}{% empty %}
+        <article class="m-item"><p class="m-vazio">{% if tem_filtros %}Nenhuma OS encontrada. Ajuste os filtros ou limpe a busca para ver a lista inteira.{% else %}Nenhuma OS cadastrada. As ordens de serviço cadastradas aparecem aqui.{% endif %}</p></article>
+      {% endfor %}
+    </div></div>
+
+    {% if pagina.paginator.num_pages > 1 %}
+      <div class="v32-corpo pag">
+        <span class="v32-suave">
+          Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }} ordens de serviço
+        </span>
+        <nav class="pag__nav" aria-label="Paginação">
+          {% if pagina.has_previous %}
+            <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+          {% endif %}
+          {% for numero in paginas_visiveis %}
+            {% if numero == elipse %}
+              <span class="pag__el" aria-hidden="true">…</span>
+            {% elif numero == pagina.number %}
+              <span class="pag__n " aria-current="page">{{ numero }}</span>
+            {% else %}
+              <a class="pag__n" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
+            {% endif %}
+          {% endfor %}
+          {% if pagina.has_next %}
+            <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+          {% endif %}
+        </nav>
+      </div>
+    {% endif %}
+  </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>  {% include "components/v32/dialogo_assinado.html" %}
+{% endblock %}

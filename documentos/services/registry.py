@@ -58,6 +58,16 @@ def build_default_registry() -> DocumentoRegistry:
         formatos_permitidos=(DocumentoFormato.DOCX, DocumentoFormato.PDF),
     ))
     registry.register(DocumentoTipoDefinicao(
+        tipo=DocumentoTipo.ORDEM_SERVICO, label="Ordem de serviço",
+        descricao="Designação da equipe para a atividade.",
+        formatos_permitidos=(DocumentoFormato.DOCX, DocumentoFormato.PDF),
+    ))
+    registry.register(DocumentoTipoDefinicao(
+        tipo=DocumentoTipo.PLANO_TRABALHO, label="Plano de trabalho",
+        descricao="Documento de planejamento operacional e financeiro.",
+        formatos_permitidos=(DocumentoFormato.DOCX, DocumentoFormato.PDF),
+    ))
+    registry.register(DocumentoTipoDefinicao(
         tipo=DocumentoTipo.DIARIO_BORDO, label="Diário de bordo",
         descricao="Diário do motorista, gerado da planilha oficial.",
         formatos_permitidos=(DocumentoFormato.XLSX, DocumentoFormato.PDF),

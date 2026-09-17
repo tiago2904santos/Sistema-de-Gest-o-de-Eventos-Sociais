@@ -1,0 +1,38 @@
+{% comment %}
+  Etapa 5 — os termos da viagem (diretos ou pelos ofícios dela; o genérico,
+  sem ofício, primeiro), cada um na linha da lista de termos com o menu de
+  baixar, anexar assinado, editar e excluir, e o botão flutuante "Novo termo"
+  já preso à viagem. Contexto: `termos` (linhas do presenter de termos).
+{% endcomment %}
+<section class="section-card reg vg-etapa">
+  <div class="section-card__corpo section-card__corpo--tabela">
+    <div class="dt-w cad-lista vg-tabela" tabindex="0" role="region" aria-label="Termos da viagem">
+      <table class="dt dt--responsiva">
+        <thead>
+          <tr>
+            <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
+            <th>Termo</th>
+            <th class="c-cad-acoes">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in termos %}{% with t=l.termo d=l.documentos %}
+            <tr{% if t.cancelado %} class="tm-linha--cancelada"{% endif %}>
+              <td class="tabela__col-icone">
+                <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+                <span class="sr-only">Termo de autorização</span>
+              </td>
+              <td class="c-nome tm-celula" data-rotulo="Termo">{% include "pages/viagens_termos/_conteudo_linha.html" %}</td>
+              <td class="c-cad-acoes">{% include "pages/viagens_termos/_acoes_linha.html" %}</td>
+            </tr>
+          {% endwith %}{% empty %}
+            <tr><td colspan="3" class="v32-suave dt__vazio">Nenhum termo vinculado a esta viagem.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% if pode_editar and not viagem.cancelado and url_novo_termo %}
+  <a class="btn-primaria btn-flutuante" href="{{ url_novo_termo }}">{% include "components/icon.html" with nome="plus" %}Novo termo</a>
+{% endif %}

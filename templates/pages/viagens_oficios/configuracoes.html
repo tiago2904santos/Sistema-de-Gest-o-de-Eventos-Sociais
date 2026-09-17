@@ -151,6 +151,24 @@
               {% include "pages/viagens_cadastros/_campo.html" with campo=campos.assina_justificativa %}
             </div>
           </div>
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Ordem de serviço e plano de trabalho</strong>
+            </div>
+            <div class="bloco-split__corpo g-form g-form--2">
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.assina_ordem_servico %}
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.assina_plano_trabalho %}
+            </div>
+          </div>
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Plano de trabalho</strong>
+            </div>
+            <div class="bloco-split__corpo g-form g-form--2">
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.coordenador_adm_plano_trabalho %}
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.pt_sufixo_numero %}
+            </div>
+          </div>
         </div>
       </section>
 

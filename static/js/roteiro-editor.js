@@ -568,6 +568,27 @@
   // comanda a tabela; os destinos deixam de regerar as linhas.
   var percursoManual = false;
 
+  // Roteiro nascido do painel da viagem: a ida sai no primeiro dia dela e o
+  // retorno no último. Sem sede nas configurações, o servidor não monta os
+  // trechos, e é aqui que a data chega quando a sede é escolhida na tela. Só
+  // preenche o que está em branco: data digitada não é sobrescrita.
+  var datasDaViagem = {
+    inicio: editor.getAttribute("data-viagem-inicio") || "",
+    fim: editor.getAttribute("data-viagem-fim") || "",
+    hora_inicio: editor.getAttribute("data-viagem-saida") || "",
+    hora_fim: editor.getAttribute("data-viagem-retorno") || "",
+  };
+
+  function semearDataDaViagem(linha, ponta) {
+    var data = datasDaViagem[ponta];
+    if (!data || !linha || valorDe(linha, "saida_data")) return;
+    definirCampo(campoDe(linha, "saida_data"), data);
+    if (!valorDe(linha, "saida_hora")) {
+      definirCampo(campoDe(linha, "saida_hora"), datasDaViagem["hora_" + ponta]);
+    }
+    atualizarTempos(linha);
+  }
+
   function sincronizarTrechos() {
     if (percursoManual) { atualizarPainelLateral(); return; }
     var origemSede = sede ? sede.value : "";
@@ -585,7 +606,10 @@
     });
     pernas.forEach(function (perna, indice) {
       var linha = idas[indice] || criarTrecho();
-      if (linha) aplicarPerna(linha, perna.origem, perna.destino, "IDA");
+      if (linha) {
+        aplicarPerna(linha, perna.origem, perna.destino, "IDA");
+        if (indice === 0) semearDataDaViagem(linha, "inicio");
+      }
     });
     idas.slice(pernas.length).forEach(esconderTrecho);
 
@@ -596,6 +620,7 @@
       if (!retorno) retorno = criarTrecho();
       if (retorno) {
         aplicarPerna(retorno, pontos[pontos.length - 1], origemSede, "RETORNO");
+        semearDataDaViagem(retorno, "fim");
         var erros = linhaDeErros(retorno);
         corpoTrechos.appendChild(retorno);
         if (erros) corpoTrechos.appendChild(erros);

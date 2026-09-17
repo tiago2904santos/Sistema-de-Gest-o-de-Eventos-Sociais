@@ -322,16 +322,79 @@ def gravar_editor(dados, roteiro, *, rascunho, usuario):
     return resultado
 
 
+def _url_de_volta(roteiro, viagem=None):
+    """Para onde se volta ao sair do roteiro: a etapa 2 da viagem dele, ou a lista."""
+    viagem_id = getattr(viagem, "pk", None) or getattr(roteiro, "viagem_id", None)
+    if viagem_id:
+        return reverse("viagens_viagem:etapa", args=[viagem_id, 2])
+    return reverse("viagens_roteiros:lista")
+
+
+def _iniciais_da_viagem(viagem, sede):
+    """O que um roteiro novo herda da viagem: os destinos (todos) e o percurso
+    com as datas — saída no primeiro dia (horário inicial ou 08:00) e retorno
+    no último (horário final ou 16:00). Devolve (destinos, trechos) para os
+    formsets; a tela mostra os trechos já datados e estima os tempos."""
+    from datetime import time
+
+    from viagens_viagem.services import destinos_para_formulario, semente_de_documentos
+
+    semente = semente_de_documentos(viagem)
+    destinos = [{"ordem": i + 1, "municipio": municipio_id} for i, (_, municipio_id) in enumerate(destinos_para_formulario(semente))]
+    if not destinos:
+        return [], []
+    inicio, fim = semente["data_inicio"], semente["data_fim"] or semente["data_inicio"]
+    saida = (viagem.horario_inicio or time(8, 0)).strftime("%H:%M") if inicio else ""
+    retorno = (viagem.horario_fim or time(16, 0)).strftime("%H:%M") if fim else ""
+    trechos, anterior = [], sede
+    for destino in destinos:
+        if anterior:
+            trechos.append({"ordem": len(trechos) + 1, "sentido": "IDA", "origem_municipio": anterior, "destino_municipio": destino["municipio"],
+                            "saida_data": inicio.isoformat() if inicio else "", "saida_hora": saida})
+        anterior = destino["municipio"]
+    if sede:
+        trechos.append({"ordem": len(trechos) + 1, "sentido": "RETORNO", "origem_municipio": anterior, "destino_municipio": sede,
+                        "saida_data": fim.isoformat() if fim else "", "saida_hora": retorno})
+    return destinos, trechos
+
+
+def _datas_da_viagem(viagem):
+    """As pontas da viagem para a tela: sem sede configurada o servidor não
+    monta os trechos, e é o editor que datará os que nascerem ali."""
+    from datetime import time
+
+    if viagem is None:
+        return {}
+    inicio, fim = viagem.data_inicio, viagem.data_fim or viagem.data_inicio
+    return {
+        "inicio": inicio.isoformat() if inicio else "",
+        "fim": fim.isoformat() if fim else "",
+        "hora_inicio": (viagem.horario_inicio or time(8, 0)).strftime("%H:%M") if inicio else "",
+        "hora_fim": (viagem.horario_fim or time(16, 0)).strftime("%H:%M") if fim else "",
+    }
+
+
+def _formset_com_iniciais(classe, iniciais):
+    """Um formset novo já com `iniciais` linhas preenchidas (uma extra por linha)."""
+    formset = classe(instance=None, initial=iniciais)
+    formset.extra = max(1, len(iniciais))
+    return formset
+
+
 @acesso_ao_modulo
 def editar(request, pk=None):
     _exigir_edicao(request)
     from core.retorno import next_valido
+    from viagens_viagem.services import viagem_do_request
     retorno = next_valido(request)
     roteiro = get_object_or_404(Roteiro, pk=pk) if pk else None
+    # Criado a partir do painel da viagem: nasce preso a ela e herda o percurso.
+    viagem = viagem_do_request(request) if not pk else None
 
     if request.method == "POST":
         gravacao = gravar_editor(
-            request.POST, roteiro, rascunho=request.POST.get("acao") == "rascunho", usuario=request.user
+            request.POST, roteiro if roteiro is not None else (Roteiro(viagem=viagem) if viagem else None),
+            rascunho=request.POST.get("acao") == "rascunho", usuario=request.user,
         )
         form, formset, destinos = gravacao.form, gravacao.formset, gravacao.destinos
         if gravacao.ok:
@@ -342,9 +405,9 @@ def editar(request, pk=None):
                 messages.success(request, "Roteiro salvo com sucesso.")
                 for nivel, texto in gravacao.mensagens:
                     messages.add_message(request, nivel, texto)
-            # Salvou, acabou: a lista é para onde se volta, rascunho ou não.
-            # Quem chegou com `next` continua voltando para lá.
-            return redirect(retorno or reverse("viagens_roteiros:lista"))
+            # Salvou, acabou: a lista (ou a etapa 2 da viagem) é para onde se
+            # volta, rascunho ou não. Quem chegou com `next` continua voltando para lá.
+            return redirect(retorno or _url_de_volta(gravacao.roteiro, viagem))
         if form.is_valid() and not pk:
             # Trechos inválidos num roteiro recém-criado: ele já existe no
             # banco, então a tela continua a edição dele em vez de criar
@@ -353,18 +416,24 @@ def editar(request, pk=None):
             return render(
                 request,
                 "pages/viagens_roteiros/form.html",
-                _contexto_do_form(gravacao.roteiro, form, formset, destinos),
+                _contexto_do_form(gravacao.roteiro, form, formset, destinos, viagem=viagem),
             )
         messages.error(request, "Corrija os campos destacados para continuar.")
     else:
-        form = RoteiroForm(instance=roteiro, initial=_sede_inicial(request, roteiro))
-        formset = TrechoFormSet(instance=roteiro)
-        destinos = DestinoFormSet(instance=roteiro)
+        sede = _sede_inicial(request, roteiro)
+        form = RoteiroForm(instance=roteiro, initial=sede)
+        if viagem is not None:
+            destinos_iniciais, trechos_iniciais = _iniciais_da_viagem(viagem, (sede or {}).get("origem_municipio"))
+            formset = _formset_com_iniciais(TrechoFormSet, trechos_iniciais)
+            destinos = _formset_com_iniciais(DestinoFormSet, destinos_iniciais)
+        else:
+            formset = TrechoFormSet(instance=roteiro)
+            destinos = DestinoFormSet(instance=roteiro)
 
     return render(
         request,
         "pages/viagens_roteiros/form.html",
-        _contexto_do_form(roteiro, form, formset, destinos),
+        _contexto_do_form(roteiro, form, formset, destinos, viagem=viagem),
     )
 
 
@@ -431,6 +500,9 @@ def _cards_de_trechos(formset):
     cards = []
     for form_trecho in formset.forms:
         visivel = bool(form_trecho.instance.pk) or bool(form_trecho.errors)
+        # Linha pré-preenchida (roteiro nascido de uma viagem) já aparece.
+        if not visivel and not form_trecho.is_bound:
+            visivel = bool(form_trecho.initial.get("destino_municipio"))
         if not visivel and form_trecho.is_bound:
             visivel = any(
                 form_trecho.data.get(f"{form_trecho.prefix}-{nome}")
@@ -445,6 +517,8 @@ def _cards_de_destinos(destinos):
     cards = []
     for form_destino in destinos.forms:
         visivel = bool(form_destino.instance.pk) or bool(form_destino.errors)
+        if not visivel and not form_destino.is_bound:
+            visivel = bool(form_destino.initial.get("municipio"))
         if not visivel and form_destino.is_bound:
             visivel = bool(
                 form_destino.data.get(f"{form_destino.prefix}-municipio")
@@ -464,7 +538,7 @@ def _estado_padrao_destino():
     return str(sede.estado_id) if sede else ""
 
 
-def _contexto_do_form(roteiro, form, formset, destinos):
+def _contexto_do_form(roteiro, form, formset, destinos, viagem=None):
     return {
         "roteiro": roteiro,
         "estado_padrao_destino": _estado_padrao_destino(),
@@ -511,7 +585,9 @@ def _contexto_do_form(roteiro, form, formset, destinos):
             roteiro and roteiro.pk and roteiro.status == Roteiro.Status.FINALIZADO
         ),
         "titulo": "Editar roteiro" if roteiro and roteiro.pk else "Novo roteiro",
-        "url_voltar": reverse("viagens_roteiros:lista"),
+        "url_voltar": _url_de_volta(roteiro, viagem),
+        "viagem_id": getattr(viagem, "pk", None),
+        "viagem_datas": _datas_da_viagem(viagem),
         "breadcrumb": [
             {"label": "Roteiros", "url": reverse("viagens_roteiros:lista")},
             {"label": "Editar roteiro" if roteiro and roteiro.pk else "Novo roteiro"},
@@ -690,8 +766,12 @@ def autosave(request, pk=None):
     """
     _exigir_edicao(request)
     from core.retorno import next_valido
+    from viagens_viagem.services import viagem_do_request
     retorno = next_valido(request)
     roteiro = get_object_or_404(Roteiro, pk=pk) if pk else None
+    # A primeira gravação automática de um roteiro do painel já o prende à viagem.
+    if roteiro is None and viagem_do_request(request) is not None:
+        roteiro = Roteiro(viagem=viagem_do_request(request))
     if roteiro and roteiro.status == Roteiro.Status.FINALIZADO:
         return JsonResponse(
             {"ok": False, "motivo": "Roteiro finalizado: grave pelo \u201cSalvar\u201d."}
@@ -803,6 +883,7 @@ def excluir(request, pk):
     _exigir_edicao(request)
     roteiro = get_object_or_404(Roteiro, pk=pk)
     descricao = f"roteiro {roteiro.pk} ({roteiro.sede_cidade or 'sem sede'})"
+    volta = _url_de_volta(roteiro)
     roteiro.delete()
     LogAuditoria.objects.create(
         usuario=request.user, acao="VIAGENS_ROTEIRO_EXCLUIDO", descricao=descricao
@@ -811,4 +892,4 @@ def excluir(request, pk):
     # Excluir da lista devolve à lista como ela estava, com busca e filtros.
     from core.retorno import voltar_para
 
-    return redirect(voltar_para(request, reverse("viagens_roteiros:lista")))
+    return redirect(voltar_para(request, volta))

@@ -1,0 +1,8 @@
+{% comment %}
+  Voltar à lista e Salvar e avançar, no fim do cartão da etapa 1. Salvar
+  grava a etapa e abre a 2 (Roteiros), como na origem.
+{% endcomment %}
+<div class="frm-acoes-fim vg-acoes-fim">
+  {% include "components/v32/button.html" with label="Voltar à lista" variante="secundario" href=url_lista %}
+  {% if pode_editar %}<button type="submit" name="acao" value="salvar" class="btn btn--dourado btn-primaria">{% include "components/icon.html" with nome="check" %}Salvar e avançar</button>{% endif %}
+</div>

@@ -1,0 +1,85 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
+{% comment %}
+  Painel da viagem — as cinco etapas do `eventos/detalhe.html` da origem.
+
+  Não é um wizard linear: é um hub. A viagem existe desde o primeiro clique
+  e cada etapa é um tipo de documento que pode ou não ganhar conteúdo — por
+  isso o stepper é navegável, com a etapa atual em dourado e as concluídas
+  com o check. A etapa 1 é o cadastro (tipo, motivo, período, destinos e
+  documentos vinculados); as etapas 2 a 5 listam roteiros, ofícios, PT/OS
+  (com os documentos de solicitação) e termos, cada uma com o botão
+  flutuante de criar o seu documento já preso à viagem.
+
+  Cabeçalho só com o título da viagem e o selo. O aviso de cancelada traz o
+  motivo e, na mesma faixa, o botão de reativar.
+{% endcomment %}
+
+{% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-viagem.css' %}">{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with atual=titulo %}
+
+  <div class="editor-roteiro of-form vg-painel">
+    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="volante" %}</span>
+          <div class="frm-titulo">
+            <h1 class="page-header__titulo d-titulo-v32">{{ titulo }}</h1>
+            <span class="st st--{{ selo_tom }}">{{ selo }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="frm-topo__acoes">
+        {% include "components/v32/button.html" with label="Voltar para lista" variante="secundario" href=url_lista %}
+      </div>
+    </div>
+
+    {# As cinco etapas, todas como links: a viagem é um hub, não um wizard. #}
+    <nav class="vg-stepper" aria-label="Etapas da viagem">
+      <ol class="vg-stepper__lista">
+        {% for e in etapas %}
+          <li class="vg-stepper__item{% if e.atual %} is-atual{% elif e.concluida %} is-concluida{% endif %}">
+            <a class="vg-stepper__passo" href="{{ e.url }}"{% if e.atual %} aria-current="step"{% endif %} title="{{ e.titulo }} — {{ e.estado }}">
+              <span class="vg-stepper__num" aria-hidden="true">{% if e.concluida %}{% include "components/icon.html" with nome="check" %}{% else %}{{ e.numero }}{% endif %}</span>
+              <span class="vg-stepper__rotulo">{{ e.titulo }}</span>
+              <span class="sr-only">— {{ e.estado }}</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ol>
+      <p class="vg-stepper__legenda">Etapa {{ etapa_atual }} de {{ total_etapas }} · {{ titulo_da_etapa }}</p>
+    </nav>
+
+    {% if viagem.cancelado %}
+      {# O aviso e a saída dele na mesma faixa: quem lê "cancelada" quer saber como desfazer. #}
+      <div class="aviso aviso--callout vg-cancelada" role="status">
+        <div class="aviso__txt">{% include "components/icon.html" with nome="ban" %}<div class="aviso__corpo"><b>Viagem cancelada</b><p>{{ viagem.motivo_cancelamento|default:"Sem motivo registrado." }}</p>{% if viagem.cancelado_em %}<div class="aviso__meta">{{ viagem.cancelado_em|date:"d/m/Y · H\hi" }}</div>{% endif %}</div></div>
+        {% if pode_editar %}
+          <form method="post" action="{{ url_reativar }}" data-confirmar="Reativar a viagem?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+            <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="undo" %}Reativar viagem</button>
+          </form>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if etapa_atual == 1 %}{% include "pages/viagens_viagem/_etapa_1.html" %}
+    {% elif etapa_atual == 2 %}{% include "pages/viagens_viagem/_etapa_2.html" %}
+    {% elif etapa_atual == 3 %}{% include "pages/viagens_viagem/_etapa_3.html" %}
+    {% elif etapa_atual == 4 %}{% include "pages/viagens_viagem/_etapa_4.html" %}
+    {% else %}{% include "pages/viagens_viagem/_etapa_5.html" %}{% endif %}
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+  {% if etapa_atual == 1 %}{{ modelos_texto|json_script:"viagem-modelos-texto" }}{% endif %}
+  <script src="{% estatico 'js/multi-pick.js' %}" defer></script>
+  <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
+  <script src="{% estatico 'js/viagens-viagem.js' %}" defer></script>
+  {% if pode_editar and etapa_atual == 3 or pode_editar and etapa_atual == 5 %}{% include "components/v32/dialogo_baixar.html" %}{% endif %}
+  {% include "components/v32/dialogo_assinado.html" %}
+{% endblock %}

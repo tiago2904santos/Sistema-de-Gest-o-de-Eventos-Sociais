@@ -79,15 +79,30 @@ def rascunho_vazio_disponivel(ano):
 
 
 @transaction.atomic
-def criar_oficio_rascunho():
+def criar_oficio_rascunho(viagem=None):
+    """O rascunho já numerado do "Novo ofício".
+
+    Com `viagem`, o ofício nasce preso a ela e herda só o motivo da semente
+    e a unidade responsável como solicitante — como na origem: servidores e
+    viatura não vêm de outros ofícios da mesma viagem, cada um tem a sua
+    equipe.
+    """
     hoje = timezone.localdate()
+    heranca = {}
+    if viagem is not None:
+        from viagens_viagem.services import semente_de_documentos
+
+        semente = semente_de_documentos(viagem)
+        heranca = {"viagem": viagem, "motivo": semente["motivo"] or "", "solicitante": viagem.unidade_responsavel}
     vazio = rascunho_vazio_disponivel(hoje.year)
     if vazio is not None:
         # Reaberto como novo: a data volta a ser a de hoje.
         vazio.data_criacao = hoje
-        vazio.save(update_fields=["data_criacao", "atualizado_em"])
+        for campo, valor in heranca.items():
+            setattr(vazio, campo, valor)
+        vazio.save(update_fields=["data_criacao", "atualizado_em", *heranca])
         return vazio
-    oficio = Oficio.objects.create()
+    oficio = Oficio.objects.create(**heranca)
     return reservar_numero_oficio(oficio, ano=oficio.data_criacao.year)
 
 

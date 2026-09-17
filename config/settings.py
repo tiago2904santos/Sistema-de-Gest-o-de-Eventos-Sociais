@@ -78,6 +78,9 @@ INSTALLED_APPS = [
     "documentos",
     "viagens_oficios",
     "viagens_termos",
+    "viagens_viagem",
+    "viagens_ordens",
+    "viagens_planos",
     "viagens_prestacoes",
     "migracao_legado",
 ]

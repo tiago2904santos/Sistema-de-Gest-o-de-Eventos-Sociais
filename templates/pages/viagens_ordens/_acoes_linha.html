@@ -1,0 +1,44 @@
+{% comment %}
+  Ações de uma linha de OS num botão único, no padrão da lista de termos:
+  visualizar, baixar PDF e DOCX (POSTs que devolvem o arquivo), anexar o PDF
+  assinado (modal), editar, cancelar ou reativar e excluir — os dois últimos
+  com a confirmação em duas etapas do menu. Quem só consulta abre a tela.
+  Contexto: `l` (linha), `o` (ordem), `pode_editar`, `url_atual`.
+{% endcomment %}
+{% if pode_editar %}
+  <div class="dd of-menu cad-acoes" data-menu>
+    <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações da {{ o.numero_formatado }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
+    <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
+      {% if o.cancelado %}
+        <span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="ban" %}<span><b>OS cancelada</b><small>Reative para gerar documentos</small></span></span>
+      {% else %}
+        <form method="post" action="{{ l.url_visualizar }}" target="_blank">{% csrf_token %}
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar</b><small>Abrir a Ordem de Serviço</small></span></button>
+        </form>
+        <form method="post" action="{{ l.url_pdf }}">{% csrf_token %}
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Ordem de Serviço em PDF</small></span></button>
+        </form>
+        <form method="post" action="{{ l.url_docx }}">{% csrf_token %}
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivo editável da Ordem de Serviço</small></span></button>
+        </form>
+        {% if l.url_assinado %}<a class="dd__i of-item" href="{{ l.url_assinado }}" data-anexar-assinado data-anexar-nome="{{ o.numero_formatado }}"{% if l.assinado %} data-anexar-atual="1"{% endif %}>{% include "components/icon.html" with nome=l.assinado|yesno:"check-circle,upload" %}<span><b>{% if l.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}</b><small>Enviar o PDF assinado da OS</small></span></a>
+        {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Gere o PDF da OS primeiro</small></span></span>{% endif %}
+      {% endif %}
+      <a class="dd__i of-item" href="{{ l.url_editar }}?next={{ url_atual|urlencode }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar</b><small>Ofícios, necessidade, período, destinos e equipe</small></span></a>
+      {% if o.cancelado %}
+        <form method="post" action="{{ l.url_reativar }}" data-confirmar="Reativar a OS?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="undo" %}<span><b>Reativar</b><small>Voltar a emitir documentos desta OS</small></span></button>
+        </form>
+      {% else %}
+        <form method="post" action="{{ l.url_cancelar }}" data-confirmar="Cancelar a OS?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="ban" %}<span><b>Cancelar</b><small>Mantém o histórico e o número</small></span></button>
+        </form>
+      {% endif %}
+      <form method="post" action="{{ l.url_excluir }}" data-confirmar-exclusao data-confirmar="Confirmar exclusão?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+        <button type="submit" class="dd__i dd__i--perigo of-item">{% include "components/icon.html" with nome="trash" %}<span><b>Excluir</b><small>Remover permanentemente; o número fica livre</small></span></button>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <a class="acao-linha" href="{{ l.url_editar }}">{% include "components/icon.html" with nome="eye" %}Abrir</a>
+{% endif %}

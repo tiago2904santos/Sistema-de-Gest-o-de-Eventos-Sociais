@@ -1,0 +1,37 @@
+{% comment %}
+  Ações de uma linha de viagem num botão único, no padrão das listas do
+  módulo: editar (etapa 1), abrir o painel (etapa 3, os ofícios), cancelar
+  com o motivo (obrigatório, como na origem) ou reativar, e excluir com a
+  confirmação em duas etapas. Quem só consulta abre o painel.
+  Contexto: `l` (linha), `v` (viagem), `pode_editar`, `url_atual`.
+{% endcomment %}
+{% if pode_editar %}
+  <div class="dd of-menu cad-acoes" data-menu>
+    <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações da viagem {{ l.titulo }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
+    <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
+      <a class="dd__i of-item" href="{{ l.url_editar }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar viagem</b><small>Tipo, motivo, período, destinos e documentos vinculados</small></span></a>
+      <a class="dd__i of-item" href="{{ l.url_painel }}">{% include "components/icon.html" with nome="columns" %}<span><b>Abrir painel</b><small>Roteiros, ofícios, PT/OS e termos da viagem</small></span></a>
+      <div class="dd__s"></div>
+      {% if v.cancelado %}
+        <form method="post" action="{{ l.url_reativar }}" data-confirmar="Reativar a viagem?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="undo" %}<span><b>Reativar viagem</b><small>Os documentos cancelados junto com ela também voltam</small></span></button>
+        </form>
+      {% else %}
+        {# O motivo é obrigatório: o item abre o campo e o envio fica no botão ao lado dele. #}
+        <button type="button" class="dd__i of-item" data-expande="#vg-cancelar-{{ v.pk }}" data-vg-cancelar aria-expanded="false" aria-controls="vg-cancelar-{{ v.pk }}">{% include "components/icon.html" with nome="ban" %}<span><b>Cancelar viagem</b><small>Interromper o fluxo mantendo o histórico</small></span></button>
+        <form method="post" action="{{ l.url_cancelar }}" class="vg-cancelar" id="vg-cancelar-{{ v.pk }}" hidden>{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+          <label class="form-label" for="vg-motivo-{{ v.pk }}">Motivo do cancelamento</label>
+          <input class="form-controle" type="text" id="vg-motivo-{{ v.pk }}" name="motivo" required placeholder="Informe o motivo do cancelamento" autocomplete="off">
+          <p class="vg-cancelar__ajuda">Todos os documentos vinculados também serão cancelados.</p>
+          <button type="submit" class="btn--secundaria btn--destrutiva btn--compacto">Confirmar cancelamento</button>
+        </form>
+      {% endif %}
+      <div class="dd__s"></div>
+      <form method="post" action="{{ l.url_excluir }}" data-confirmar-exclusao data-confirmar="Confirmar exclusão?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+        <button type="submit" class="dd__i dd__i--perigo of-item">{% include "components/icon.html" with nome="trash" %}<span><b>Excluir viagem</b><small>Remove também os documentos só dela</small></span></button>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <a class="acao-linha" href="{{ l.url_painel }}">{% include "components/icon.html" with nome="eye" %}Abrir</a>
+{% endif %}

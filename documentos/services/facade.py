@@ -69,6 +69,8 @@ class DocumentoFacade:
         oficio_id: int | None = None,
         termo_id: int | None = None,
     prestacao_id: int | None = None,
+        ordem_servico_id: int | None = None,
+        plano_trabalho_id: int | None = None,
         criado_por=None,
         persistir: bool = True,
         usar_assinado: bool = True,
@@ -101,6 +103,7 @@ class DocumentoFacade:
             assinado = documento_assinado(
                 tipo, formato, reference=reference, oficio_id=oficio_id, termo_id=termo_id,
                 prestacao_id=prestacao_id, servidor_id=servidor_id,
+                ordem_servico_id=ordem_servico_id, plano_trabalho_id=plano_trabalho_id,
             )
             if assinado is not None:
                 return assinado
@@ -134,7 +137,8 @@ class DocumentoFacade:
             )
             cached = get_cached_document_artifact(
                 tipo=tipo, formato=formato, cache_key=artifact_cache_key,
-                servidor_id=servidor_id, roteiro_id=roteiro_id, oficio_id=oficio_id, termo_id=termo_id, prestacao_id=prestacao_id, criado_por_id=actor_id,
+                servidor_id=servidor_id, roteiro_id=roteiro_id, oficio_id=oficio_id, termo_id=termo_id, prestacao_id=prestacao_id,
+                ordem_servico_id=ordem_servico_id, plano_trabalho_id=plano_trabalho_id, criado_por_id=actor_id,
             )
             if cached is not None:
                 return documento_gerado_from_artifact(
@@ -178,6 +182,7 @@ class DocumentoFacade:
 
             artifact = persist_geracao(
                 result, servidor_id=servidor_id, roteiro_id=roteiro_id, oficio_id=oficio_id, termo_id=termo_id, prestacao_id=prestacao_id,
+                ordem_servico_id=ordem_servico_id, plano_trabalho_id=plano_trabalho_id,
                 criado_por_id=actor_id, payload_snapshot=payload,
                 cache_key=artifact_cache_key,
             )

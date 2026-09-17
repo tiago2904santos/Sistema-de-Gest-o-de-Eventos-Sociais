@@ -1,0 +1,43 @@
+{% comment %}
+  Etapa 3 — os ofícios da viagem, cada um na linha da lista de ofícios (com
+  o menu de baixar, anexar assinado, retificar, cancelar e excluir), e o
+  botão flutuante "Novo ofício": é POST porque criar reserva numeração, e o
+  `viagem` no envio prende o rascunho a esta viagem.
+  Contexto: `oficios` (linhas do presenter de ofícios).
+{% endcomment %}
+<section class="section-card reg vg-etapa">
+  <div class="section-card__corpo section-card__corpo--tabela">
+    <div class="dt-w cad-lista vg-tabela" tabindex="0" role="region" aria-label="Ofícios da viagem">
+      <table class="dt dt--responsiva">
+        <thead>
+          <tr>
+            <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
+            <th>Ofício</th>
+            <th class="c-cad-acoes">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in oficios %}{% with o=l.oficio d=l.documentos %}
+            <tr{% if o.cancelado %} class="tm-linha--cancelada"{% endif %}>
+              <td class="tabela__col-icone">
+                <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+                <span class="sr-only">Ofício</span>
+              </td>
+              <td class="c-nome tm-celula" data-rotulo="Ofício">{% include "pages/viagens_oficios/_linha.html" %}</td>
+              <td class="c-cad-acoes">{% include "pages/viagens_oficios/_acoes_linha.html" %}</td>
+            </tr>
+          {% endwith %}{% empty %}
+            <tr><td colspan="3" class="v32-suave dt__vazio">Nenhum ofício vinculado a esta viagem.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% if pode_editar and not viagem.cancelado and url_novo_oficio %}
+  <form method="post" action="{{ url_novo_oficio }}" class="btn-flutuante-form">
+    {% csrf_token %}
+    <input type="hidden" name="viagem" value="{{ viagem.pk }}">
+    <button type="submit" class="btn-primaria btn-flutuante">{% include "components/icon.html" with nome="plus" %}Novo ofício</button>
+  </form>
+{% endif %}

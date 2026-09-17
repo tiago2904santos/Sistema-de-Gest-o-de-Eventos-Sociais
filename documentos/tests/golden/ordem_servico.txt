@@ -1,0 +1,8 @@
+ORDEM DE SERVIÇO [[ordem_de_servico]] - [[unidade_abreviado]]
+Ref.: Diligências
+Eu, [[nome_chefia]], [[cargo_chefia]] da Policia Civil do Paraná, no uso das atribuições que me foram conferidas pelo Delegado-Geral Silvio Jacob Rockembach, bem como pelo Conselho da Polícia Civil,
+DETERMINO
+O deslocamento [[equipe_deslocamento]] para o município de [[destino]], [[data_extenso]], para realizar [[motivo]].
+[[sede]], [[data_atual_extenso]]
+[[nome_chefia]]
+[[cargo_chefia]]

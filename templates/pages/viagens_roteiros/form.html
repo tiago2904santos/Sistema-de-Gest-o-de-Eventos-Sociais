@@ -21,6 +21,11 @@
        data-url-rota="{% url 'viagens_roteiros:calcular_rota' %}"
        data-url-estimar="{% url 'viagens_roteiros:estimar_trecho' %}"
        data-url-autosave="{{ url_autosave }}"
+       {# Datas da viagem: a ida sai no primeiro dia e o retorno no último. #}
+       data-viagem-inicio="{{ viagem_datas.inicio }}"
+       data-viagem-fim="{{ viagem_datas.fim }}"
+       data-viagem-saida="{{ viagem_datas.hora_inicio }}"
+       data-viagem-retorno="{{ viagem_datas.hora_fim }}"
        data-autosave="{% if autosave_ligado %}1{% else %}0{% endif %}">
 
     {# A rota gravada, para o mapa reabrir desenhado e com os totais. #}
@@ -65,6 +70,8 @@
 
     <form method="post" action="{{ url_acao }}" id="form-roteiro" class="editor-roteiro__principal" novalidate>
       {% csrf_token %}
+      {# Roteiro nascido do painel da viagem: o vínculo viaja no envio (e na gravação automática). #}
+      {% if viagem_id %}<input type="hidden" name="viagem" value="{{ viagem_id }}">{% endif %}
       {% firstof request.POST.next request.GET.next as retorno_prestacao %}<input type="hidden" name="next" value="{{ retorno_prestacao }}">
 
       {% include "pages/viagens_roteiros/_editor.html" %}

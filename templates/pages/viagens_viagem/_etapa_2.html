@@ -1,0 +1,41 @@
+{% comment %}
+  Etapa 2 — os roteiros da viagem (diretos ou pelos ofícios dela), na
+  tabela da lista de roteiros, e o botão flutuante "Novo roteiro" já preso
+  à viagem. Contexto: `roteiros` (linhas do presenter de roteiros).
+{% endcomment %}
+<section class="section-card reg vg-etapa">
+  <div class="section-card__corpo section-card__corpo--tabela">
+    <div class="dt-w cad-lista vg-tabela" tabindex="0" role="region" aria-label="Roteiros da viagem">
+      <table class="dt dt--responsiva">
+        <thead>
+          <tr>
+            <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
+            <th>Rota</th>
+            <th class="c-periodo">Período</th>
+            <th class="c-valor">Valor</th>
+            <th class="c-cad-acoes">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for linha in roteiros %}
+            <tr{% if linha.roteiro.cancelado %} class="tm-linha--cancelada"{% endif %}>
+              <td class="tabela__col-icone">
+                <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=linha.icone %}</span>
+                <span class="sr-only">{{ linha.roteiro.get_tipo_display }}</span>
+              </td>
+              <td class="c-nome" data-rotulo="Rota">{{ linha.titulo }}{% if linha.chip %}<span class="st st--{{ linha.selo_tom }}">{{ linha.chip }}</span>{% endif %}</td>
+              <td class="c-fixo c-periodo{% if linha.periodo == '—' %} c-vazio{% endif %}" data-rotulo="Período">{{ linha.periodo }}</td>
+              <td class="c-valor{% if linha.valor == '—' %} c-vazio{% endif %}" data-rotulo="Valor">{{ linha.valor }}{% if linha.resumo_diarias %}<span class="v32-suave">{{ linha.resumo_diarias }}</span>{% endif %}</td>
+              <td class="c-cad-acoes">{% include "pages/viagens_roteiros/_acoes_linha.html" %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="v32-suave dt__vazio">Nenhum roteiro vinculado a esta viagem.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% if pode_editar and not viagem.cancelado and url_novo_roteiro %}
+  <a class="btn-primaria btn-flutuante" href="{{ url_novo_roteiro }}">{% include "components/icon.html" with nome="plus" %}Novo roteiro</a>
+{% endif %}

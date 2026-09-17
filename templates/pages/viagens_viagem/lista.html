@@ -1,0 +1,119 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
+{% comment %}
+  Lista de viagens — o agrupador opcional dos documentos de um deslocamento
+  (o "evento" do Gerenciador de Viagens), na composição das listas do módulo:
+  situações na trilha à esquerda, busca na barra do cartão, tabela do V3.2
+  no desktop e Data List no celular, uma célula por viagem e um menu único
+  de ações.
+
+  O cartão da origem tinha três faixas (ofícios, documentos, quem viaja);
+  aqui viram fatos com ícone na mesma célula, e os dois selos ficam ao lado
+  do título: a situação do documento e o quando da viagem.
+{% endcomment %}
+
+{% block title %}Viagens — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-viagem.css' %}">{% endblock %}
+
+{% block conteudo %}
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker kicker--junto">Viagens</div>
+      <h1>Viagens</h1>
+    </div>
+    {% if pode_editar %}
+      {# Como na origem: "Nova viagem" cria o registro e abre a etapa 1 — por isso é POST. #}
+      <form method="post" action="{% url 'viagens_viagem:criar' %}" class="btn-flutuante-form">
+        {% csrf_token %}
+        <button type="submit" class="btn-primaria btn-flutuante">{% include "components/icon.html" with nome="plus" %}Nova viagem</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <div class="cad-grade cad-grade--sem-folga">
+    {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_rotulo="Situação das viagens" sem_titulo=True %}
+
+    <div class="pa-card pa-card--lista cad-lista">
+      <form method="get" class="cad-barra" role="search" data-cadastro-busca data-auto-enviar>
+        {% for situacao in situacoes_escolhidas %}<input type="hidden" name="situacao" value="{{ situacao }}">{% endfor %}
+        <div class="busca">
+          {% include "components/icon.html" with nome="search" %}
+          <label class="sr-only" for="id_q">Buscar viagens</label>
+          <input type="search" name="q" id="id_q" value="{{ q }}" placeholder="Buscar por título, destino ou responsável…" autocomplete="off">
+        </div>
+      </form>
+      <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Tabela de viagens">
+        <table class="dt dt--responsiva">
+          <thead>
+            <tr>
+              <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
+              <th>Viagem</th>
+              <th class="c-cad-acoes">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in linhas %}{% with v=l.viagem %}
+              <tr{% if v.cancelado %} class="tm-linha--cancelada"{% endif %}>
+                <td class="tabela__col-icone">
+                  <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="volante" %}</span>
+                  <span class="sr-only">Viagem</span>
+                </td>
+                <td class="c-nome tm-celula" data-rotulo="Viagem">{% include "pages/viagens_viagem/_conteudo_linha.html" %}</td>
+                <td class="c-cad-acoes">{% include "pages/viagens_viagem/_acoes_linha.html" %}</td>
+              </tr>
+            {% endwith %}{% empty %}
+              <tr>
+                <td colspan="3" class="v32-suave dt__vazio">
+                  {% if tem_filtros %}Nenhuma viagem encontrada com os filtros aplicados.{% else %}Nenhuma viagem registrada ainda.{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="lista-mobile-v32"><div class="m-lista">
+        {% for l in linhas %}{% with v=l.viagem %}
+          <article class="m-item{% if v.cancelado %} tm-linha--cancelada{% endif %}">
+            <div class="m-item__topo">
+              <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="volante" %}</span>
+              <span class="sr-only">Viagem</span>
+            </div>
+            <div class="m-item__tipo tm-celula">{% include "pages/viagens_viagem/_conteudo_linha.html" %}</div>
+            <div class="m-item__rodape">{% include "pages/viagens_viagem/_acoes_linha.html" %}</div>
+          </article>
+        {% endwith %}{% empty %}
+          <article class="m-item"><p class="m-vazio">{% if tem_filtros %}Nenhuma viagem encontrada com os filtros aplicados.{% else %}Nenhuma viagem registrada ainda.{% endif %}</p></article>
+        {% endfor %}
+      </div></div>
+
+      {% if pagina.paginator.num_pages > 1 %}
+        <div class="v32-corpo pag">
+          <span class="v32-suave">Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }} viagens</span>
+          <nav class="pag__nav" aria-label="Paginação">
+            {% if pagina.has_previous %}
+              <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+            {% endif %}
+            {% for numero in paginas_visiveis %}
+              {% if numero == elipse %}
+                <span class="pag__el" aria-hidden="true">…</span>
+              {% elif numero == pagina.number %}
+                <span class="pag__n " aria-current="page">{{ numero }}</span>
+              {% else %}
+                <a class="pag__n" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
+              {% endif %}
+            {% endfor %}
+            {% if pagina.has_next %}
+              <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+            {% endif %}
+          </nav>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>
+  <script src="{% estatico 'js/viagens-viagem.js' %}" defer></script>
+{% endblock %}

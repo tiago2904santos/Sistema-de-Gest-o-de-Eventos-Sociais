@@ -43,6 +43,10 @@ class Roteiro(ModeloTemporal, ModeloCancelavel, OrigemLegado):
         null=True,
         related_name="roteiros",
     )
+    viagem = models.ForeignKey(
+        "viagens_viagem.Viagem", verbose_name="viagem", on_delete=models.CASCADE,
+        blank=True, null=True, related_name="roteiros",
+    )
     tipo = models.CharField(
         "tipo", max_length=20, choices=Tipo.choices, default=Tipo.AVULSO
     )

@@ -1,0 +1,12 @@
+{% comment %}
+  O conteúdo de uma linha da lista de OS, numa célula só: número, destinos e
+  período no título com o selo temporal (e "Cancelada" quando for o caso), os
+  fatos com ícone e o motivo resumido. Contexto: `l` (linha), `o` (ordem).
+{% endcomment %}
+<h2 class="of-cartao__titulo tm-titulo" id="os-{{ o.pk }}-titulo">{{ l.titulo }}{% if l.selo %} <span class="st st--{{ l.selo_tom }}">{{ l.selo }}</span>{% endif %}{% if o.cancelado %} <span class="st st--cancelada">Cancelada</span>{% endif %}</h2>
+<ul class="tm-fatos" aria-label="Dados da {{ o.numero_formatado }}">
+  {% for f in l.fatos %}
+    <li class="tm-fato{% if f.ausente %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome=f.icone %}<span class="sr-only">{{ f.rotulo }}: </span>{% if f.oficios %}{% for of in f.oficios %}<a class="os-oficio-link" href="{{ of.url }}">Ofício {{ of.numero }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}{% elif f.rotulo == "Ofícios" %}Sem ofício vinculado{% else %}{{ f.texto }}{% endif %}</li>
+  {% endfor %}
+</ul>
+<p class="os-motivo{% if not l.motivo_resumido %} tm-fato--ausente{% endif %}"><span class="sr-only">Motivo: </span>{% if l.motivo_resumido %}{{ l.motivo_resumido }}{% else %}Nenhum motivo informado.{% endif %}</p>

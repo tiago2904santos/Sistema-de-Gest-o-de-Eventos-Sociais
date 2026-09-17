@@ -1,0 +1,9 @@
+{% comment %}
+  Voltar e o botão principal, no fim do último cartão. O rótulo do botão é a
+  régua da origem: "Finalizar Ordem de Serviço" com tudo preenchido, "Salvar
+  como rascunho" quando falta algo; o script refaz a conta a cada mudança.
+{% endcomment %}
+<div class="frm-acoes-fim os-acoes-fim">
+  {% include "components/v32/button.html" with label="Voltar" variante="secundario" href=url_voltar %}
+  {% if pode_editar %}<button type="submit" class="btn btn--dourado btn-primaria" data-os-enviar>{% if os_completa %}Finalizar Ordem de Serviço{% else %}Salvar como rascunho{% endif %}</button>{% endif %}
+</div>

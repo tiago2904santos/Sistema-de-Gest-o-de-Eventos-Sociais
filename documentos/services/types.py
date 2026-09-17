@@ -14,6 +14,8 @@ class DocumentoTipo(str, Enum):
     JUSTIFICATIVA = "justificativa"
     RELATORIO_TECNICO = "relatorio_tecnico"
     DIARIO_BORDO = "diario_bordo"
+    ORDEM_SERVICO = "ordem_servico"
+    PLANO_TRABALHO = "plano_trabalho"
 
 
 @dataclass(frozen=True)

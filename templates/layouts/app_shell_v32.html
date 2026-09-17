@@ -99,7 +99,9 @@
     <span>Sistema de Gestão de Eventos Sociais — versão 2.0</span>
   </footer>
 </div>
-{% if user.is_authenticated %}{% include "components/v32/dialogo_assinado.html" %}{% endif %}
+{# O modal de anexar assinado só entra onde existe o gatilho: ele carrega um
+   campo `arquivo` e o script dele, que nada fazem nas outras telas. #}
+{% if user.is_authenticated and usa_dialogo_assinado %}{% include "components/v32/dialogo_assinado.html" %}{% endif %}
 {% endblock %}
 
 {% block extra_js %}<script src="{% estatico 'js/ds-v32.js' %}" defer></script>{% endblock %}

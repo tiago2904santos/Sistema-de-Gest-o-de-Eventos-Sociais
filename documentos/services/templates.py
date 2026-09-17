@@ -87,6 +87,9 @@ def _required_for_tipo(tipo: DocumentoTipo) -> tuple[str, ...]:
     if tipo == DocumentoTipo.DIARIO_BORDO:
         return ("header", "trechos")
     base = ("institucional", "oficio")
+    if tipo in (DocumentoTipo.ORDEM_SERVICO, DocumentoTipo.PLANO_TRABALHO):
+        # Entidades próprias: não derivam de ofício.
+        return ("institucional",)
     if tipo == DocumentoTipo.JUSTIFICATIVA:
         return ("institucional", "oficio", "justificativa")
     if tipo == DocumentoTipo.TERMO_AUTORIZACAO:

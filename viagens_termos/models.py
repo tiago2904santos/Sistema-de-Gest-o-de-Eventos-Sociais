@@ -17,6 +17,11 @@ class TermoAutorizacao(ModeloTemporal, ModeloCancelavel, OrigemLegado):
         verbose_name="Oficio vinculado",
     )
 
+    viagem = models.ForeignKey(
+        "viagens_viagem.Viagem", on_delete=models.CASCADE, null=True, blank=True,
+        related_name="termos_autorizacao", verbose_name="Viagem",
+    )
+
     destino_estado = models.ForeignKey(
         Estado,
         on_delete=models.PROTECT,

@@ -1,0 +1,42 @@
+{% comment %}
+  Ações de uma linha de plano num botão único, no padrão da lista de termos:
+  visualizar, baixar PDF e DOCX (POST, bloqueados no plano cancelado), editar,
+  cancelar ou reativar, e excluir com a confirmação em duas etapas.
+  Quem só consulta abre a página do plano.
+  Contexto: `l` (linha), `p` (plano), `pode_editar`, `url_atual`.
+{% endcomment %}
+{% if pode_editar %}
+  <div class="dd of-menu cad-acoes" data-menu>
+    <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações do plano {{ p.numero_formatado }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
+    <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
+      {% if p.cancelado %}
+        <span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="ban" %}<span><b>Plano cancelado</b><small>Reative para gerar o documento</small></span></span>
+      {% else %}
+        <form method="post" action="{{ l.url_visualizar }}" target="_blank">{% csrf_token %}
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar plano</b><small>Abrir o PDF no navegador</small></span></button>
+        </form>
+        <form method="post" action="{{ l.url_pdf }}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Documento pronto para assinatura</small></span></button>
+        </form>
+        <form method="post" action="{{ l.url_docx }}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivo editável do plano</small></span></button>
+        </form>
+      {% endif %}
+      <a class="dd__i of-item" href="{{ l.url_editar }}?next={{ url_atual|urlencode }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar plano</b><small>Identificação, efetivo, diárias e atividades</small></span></a>
+      {% if p.cancelado %}
+        <form method="post" action="{{ l.url_reativar }}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="undo" %}<span><b>Reativar plano</b><small>Volta a valer com o mesmo número</small></span></button>
+        </form>
+      {% else %}
+        <form method="post" action="{{ l.url_cancelar }}" data-confirmar="Confirmar cancelamento?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="ban" %}<span><b>Cancelar plano</b><small>Mantém o histórico e o número</small></span></button>
+        </form>
+      {% endif %}
+      <form method="post" action="{{ l.url_excluir }}" data-confirmar-exclusao data-confirmar="Confirmar exclusão?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+        <button type="submit" class="dd__i dd__i--perigo of-item">{% include "components/icon.html" with nome="trash" %}<span><b>Excluir plano</b><small>Remover permanentemente quando permitido</small></span></button>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <a class="acao-linha" href="{{ l.url_editar }}">{% include "components/icon.html" with nome="eye" %}Abrir</a>
+{% endif %}

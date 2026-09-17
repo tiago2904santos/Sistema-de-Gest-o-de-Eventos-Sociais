@@ -57,6 +57,8 @@
     <form method="post" action="" id="form-termo" class="editor-roteiro__principal" novalidate>
       {% csrf_token %}
       {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      {# Termo nascido do painel da viagem: o vínculo viaja no envio. #}
+      {% if viagem_id %}<input type="hidden" name="viagem" value="{{ viagem_id }}">{% endif %}
       <input type="hidden" name="quantidade_destinos" value="{{ quantidade_destinos }}">
       {# Quem só consulta vê o termo inteiro, sem poder mexer. #}
       <fieldset class="frm-fieldset"{% if not pode_editar %} disabled{% endif %}>
@@ -233,4 +235,5 @@
   <script src="{% estatico 'js/multi-pick.js' %}" defer></script>
   <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-termos.js' %}" defer></script>
+  {% include "components/v32/dialogo_assinado.html" %}
 {% endblock %}

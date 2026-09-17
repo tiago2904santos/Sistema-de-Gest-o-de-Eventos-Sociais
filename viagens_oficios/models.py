@@ -52,6 +52,12 @@ class Oficio(ModeloTemporal, ModeloCancelavel, OrigemLegado):
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_RASCUNHO)
 
+    # A viagem que agrupa este ofício (opcional): apagá-la leva o ofício junto.
+    viagem = models.ForeignKey(
+        "viagens_viagem.Viagem", on_delete=models.CASCADE, null=True, blank=True,
+        related_name="oficios", verbose_name="Viagem",
+    )
+
     roteiro = models.ForeignKey(
         Roteiro,
         on_delete=models.SET_NULL,

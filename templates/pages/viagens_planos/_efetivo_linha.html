@@ -1,0 +1,27 @@
+{% comment %}
+  Uma linha de efetivo: unidade, cargo e quantidade, com "+" para inserir
+  abaixo e lixeira para remover. Só a primeira linha mostra os rótulos.
+
+  A linha removida não sai do DOM: marca `DELETE` e se esconde, senão o
+  TOTAL_FORMS ficaria maior que o número de prefixos enviados e o Django
+  montaria uma linha fantasma. O `<template>` do formulário usa `__prefix__`,
+  que o viagens-planos.js troca pelo índice ao clonar.
+
+  Contexto: `l` (prefixo, id, unidade, cargo, quantidade, apagar, erros_*),
+  `primeira`, `unidades`, `cargos_efetivo`.
+{% endcomment %}
+<div class="pt-efetivo-linha{% if not primeira %} pt-efetivo-linha--sem-rotulos{% endif %}" data-pt-efetivo-linha{% if l.apagar %} hidden{% endif %}>
+  <input type="hidden" name="{{ l.prefixo }}-id" value="{{ l.id }}">
+  <input type="checkbox" name="{{ l.prefixo }}-DELETE" class="sr-only" tabindex="-1" aria-hidden="true"{% if l.apagar %} checked{% endif %} data-pt-efetivo-apagar>
+  <div class="pt-efetivo-linha__unidade">
+    {% include "components/select.html" with name=l.prefixo|add:"-unidade" label="Unidade" rotulo_oculto=primeira|yesno:",1" opcoes=unidades placeholder="Buscar unidade..." pesquisavel=True permitir_vazio=True selecionado=l.unidade erros=l.erros_unidade %}
+  </div>
+  <div class="pt-efetivo-linha__cargo">
+    {% include "components/select.html" with name=l.prefixo|add:"-cargo" label="Cargo" rotulo_oculto=primeira|yesno:",1" opcoes=cargos_efetivo placeholder="Selecione o cargo" pesquisavel=True selecionado=l.cargo erros=l.erros_cargo %}
+  </div>
+  <div class="pt-efetivo-linha__quantidade">
+    {% include "components/input.html" with name=l.prefixo|add:"-quantidade" label="Quantidade" rotulo_oculto=primeira|yesno:",1" tipo="number" minimo=1 passo=1 inputmode="numeric" valor=l.quantidade erros=l.erros_quantidade %}
+  </div>
+  <button type="button" class="btn btn--dourado btn-primaria btn--compacto pt-efetivo-linha__adicionar" data-pt-efetivo-adicionar aria-label="Adicionar linha de efetivo abaixo" title="Adicionar linha abaixo">{% include "components/icon.html" with nome="plus" %}</button>
+  <button type="button" class="btn btn--perigo btn--secundaria btn--destrutiva btn--compacto pt-efetivo-linha__remover" data-pt-efetivo-remover aria-label="Remover linha de efetivo" title="Remover linha">{% include "components/icon.html" with nome="trash" %}</button>
+</div>

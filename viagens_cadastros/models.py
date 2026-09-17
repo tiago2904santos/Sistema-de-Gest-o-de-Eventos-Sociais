@@ -453,6 +453,16 @@ class ConfiguracaoSistema(ModeloTemporal, OrigemLegado):
 
     prazo_justificativa_dias = models.PositiveIntegerField(default=10)
 
+    # Plano de trabalho: numeração por contador anual e o coordenador
+    # administrativo sugerido em todo plano novo.
+    coordenador_adm_plano_trabalho = models.ForeignKey(
+        "viagens_cadastros.Servidor", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="+", verbose_name="Coordenador administrativo padrão (Plano de Trabalho)",
+    )
+    pt_ultimo_numero = models.PositiveIntegerField(default=0)
+    pt_ano = models.PositiveIntegerField(default=0)
+    pt_sufixo_numero = models.CharField(max_length=20, blank=True, default="ASCOM")
+
     nome_orgao = models.CharField(max_length=200, blank=True)
 
     sigla_orgao = models.CharField(max_length=20, blank=True)
@@ -609,9 +619,15 @@ class AssinaturaConfiguracao(ModeloTemporal, OrigemLegado):
 
     JUSTIFICATIVA = "JUSTIFICATIVA"
 
+    ORDEM_SERVICO = "ORDEM_SERVICO"
+
+    PLANO_TRABALHO = "PLANO_TRABALHO"
+
     TIPO_CHOICES = [
         (OFICIO, "Ofício"),
         (JUSTIFICATIVA, "Justificativa"),
+        (ORDEM_SERVICO, "Ordem de Serviço"),
+        (PLANO_TRABALHO, "Plano de Trabalho"),
     ]
 
     configuracao = models.ForeignKey(

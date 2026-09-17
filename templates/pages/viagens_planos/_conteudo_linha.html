@@ -1,0 +1,13 @@
+{% comment %}
+  O conteúdo de uma linha da lista de planos, numa célula só: o número com o
+  selo (Rascunho, Gerado ou Cancelado) e os fatos com ícone — período,
+  destino, programa, coordenador, efetivo, diárias e a viagem, quando há.
+  O que falta aparece nomeado, em tom apagado. Contexto: `l` (linha), `p` (plano).
+{% endcomment %}
+<h2 class="of-cartao__titulo tm-titulo" id="plano-{{ p.pk }}-titulo">{{ l.titulo }} <span class="st st--{{ l.selo_tom }}">{{ l.selo }}</span>{% if p.is_multi_evento %} <span class="st st--neutro">Vários eventos</span>{% endif %}</h2>
+<ul class="tm-fatos" aria-label="Dados do plano {{ p.numero_formatado }}">
+  {% for f in l.fatos %}
+    <li class="tm-fato{% if f.ausente %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome=f.icone %}<span class="sr-only">{{ f.rotulo }}: </span>{{ f.texto }}</li>
+  {% endfor %}
+</ul>
+{% if p.cancelado and p.motivo_cancelamento %}<p class="tm-herdados">Motivo do cancelamento: {{ p.motivo_cancelamento }}</p>{% endif %}

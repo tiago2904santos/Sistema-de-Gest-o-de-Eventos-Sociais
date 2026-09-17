@@ -178,7 +178,8 @@ def _contexto_form(form, termo, request):
         "next": next_valido(request),
         # "Cancelar" volta para a lista (ou para de onde se veio): o termo não
         # tem mais tela de detalhe para onde voltar.
-        "url_voltar": voltar_para(request, reverse("viagens_termos:lista")),
+        "url_voltar": voltar_para(request, _url_de_volta(termo)),
+        "viagem_id": termo.viagem_id if not termo.pk else None,
         "titulo": f"Termo #{termo.pk}" if termo.pk else "Novo termo",
         "pode_editar": pode_editar_cadastros(request.user),
         **_contexto_do_registro(termo, request),
@@ -206,22 +207,53 @@ def _contexto_do_registro(termo, request):
     }
 
 
+def _url_de_volta(termo):
+    """Para onde se volta ao sair do termo: a etapa 5 da viagem dele, ou a lista."""
+    if termo.viagem_id:
+        return reverse("viagens_viagem:etapa", args=[termo.viagem_id, 5])
+    return reverse("viagens_termos:lista")
+
+
+def _termo_da_viagem(viagem):
+    """Termo novo nascido do painel da viagem: herda ofício, destinos, datas,
+    servidores e viatura da semente — como o `novo` da origem."""
+    from viagens_viagem.services import destinos_para_formulario, semente_de_documentos
+
+    semente = semente_de_documentos(viagem)
+    termo = TermoAutorizacao(
+        viagem=viagem, oficio=semente["oficio"], destino_estado=semente["estado"], destino_cidade=semente["cidade"],
+        data_evento_inicio=semente["data_inicio"], data_evento_fim=semente["data_fim"] or semente["data_inicio"],
+        viatura=semente["viatura"],
+    )
+    # Do segundo destino em diante: o form monta as linhas adicionais por aqui.
+    termo.destinos_extras = [{"estado_id": e, "cidade_id": c} for e, c in destinos_para_formulario(semente)[1:]]
+    servidores = semente["servidores_termo"] or semente["servidores"]
+    initial = {"servidores": [s.pk for s in servidores]} if servidores else {}
+    return termo, initial
+
+
 @acesso_ao_modulo
 @require_http_methods(["GET", "POST"])
 def editar(request, pk=None):
+    from viagens_viagem.services import viagem_do_request
     # Sem tela de detalhe, esta é a única tela do termo: quem só consulta
     # precisa poder abri-la. Criar e gravar seguem exigindo operador.
     if request.method == "POST" or not pk:
         exigir_operador(request)
-    termo = get_termo_by_id(pk) if pk else TermoAutorizacao()
-    form = TermoAutorizacaoForm(request.POST or None, instance=termo)
+    initial = None
+    if pk:
+        termo = get_termo_by_id(pk)
+    else:
+        viagem = viagem_do_request(request)
+        termo, initial = _termo_da_viagem(viagem) if viagem is not None else (TermoAutorizacao(), None)
+    form = TermoAutorizacaoForm(request.POST or None, instance=termo, initial=initial)
     if request.method == "POST" and request.POST.get("acao") != "adicionar_destino":
         if form.is_valid():
             termo = form.save()
             messages.success(request, f"Termo #{termo.pk} salvo.")
-            # Salvou, acabou: a lista é para onde se volta. Quem chegou com
-            # `next` (de uma prestação, por exemplo) continua voltando para lá.
-            return redirect(voltar_para(request, reverse("viagens_termos:lista")))
+            # Salvou, acabou: a lista (ou a etapa 5 da viagem) é para onde se
+            # volta. Quem chegou com `next` continua voltando para lá.
+            return redirect(voltar_para(request, _url_de_volta(termo)))
         messages.error(request, "Não foi possível salvar o termo. Revise os campos indicados.")
     return render(request, "pages/viagens_termos/form.html", _contexto_form(form, termo, request))
 
@@ -358,9 +390,10 @@ def acao(request, pk, acao):
         messages.success(request, f"Termo #{termo.pk} reativado.")
     elif acao == "excluir":
         numero = termo.pk
+        volta = _url_de_volta(termo)
         excluir_termo(termo)
         messages.success(request, f"Termo #{numero} excluído.")
-        return redirect(voltar_para(request, reverse("viagens_termos:lista")))
+        return redirect(voltar_para(request, volta))
     else:
         raise Http404
     return redirect(destino)

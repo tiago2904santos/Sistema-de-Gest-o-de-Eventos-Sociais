@@ -23,9 +23,12 @@ class ViagensCadastrosConfig(AppConfig):
             entrada="viagens_roteiros:lista",
             # O módulo cobre os dois apps: o middleware protege ambos
             # os namespaces, e a navegação abaixo mistura as telas dos dois.
-            namespaces=["viagens_cadastros", "viagens_roteiros", "viagens_oficios", "viagens_termos", "viagens_prestacoes"],
+            namespaces=["viagens_cadastros", "viagens_roteiros", "viagens_oficios", "viagens_termos", "viagens_prestacoes",
+                        "viagens_viagem", "viagens_ordens", "viagens_planos"],
             ordem=40,
             itens=[
+                # A viagem agrupa os documentos de um deslocamento (o "evento" do GV).
+                {"rotulo": "Viagens", "icone": "volante", "url": "viagens_viagem:lista"},
                 {"rotulo": "Prestações", "icone": "checklist", "url": "viagens_prestacoes:index"},
                 # Ofícios e Justificativas dividem o namespace: o nome da rota
                 # decide qual item fica aceso.
@@ -41,6 +44,8 @@ class ViagensCadastrosConfig(AppConfig):
                     "icone": "map-pin",
                     "url": "viagens_roteiros:lista",
                 },
+                {"rotulo": "Planos de trabalho", "icone": "clipboard", "url": "viagens_planos:lista"},
+                {"rotulo": "Ordens de serviço", "icone": "gavel", "url": "viagens_ordens:lista"},
                 # Servidores, viaturas e diárias moram DENTRO de Cadastros:
                 # o item abre direto em Servidores e fica aceso em todo o
                 # namespace; a trilha lateral troca de tabela.
@@ -60,6 +65,11 @@ class ViagensCadastrosConfig(AppConfig):
                         {"rotulo": "Cargos", "icone": "shield", "url": "viagens_cadastros:lista", "url_args": ("cargos",)},
                         {"rotulo": "Combustíveis", "icone": "activity", "url": "viagens_cadastros:lista", "url_args": ("combustiveis",)},
                         {"rotulo": "Diárias", "icone": "chart", "url": "viagens_cadastros:diarias"},
+                        {"rotulo": "Tipos de viagem", "icone": "map-pin", "url": "viagens_cadastros:lista", "url_args": ("tipos-viagem",)},
+                        {"rotulo": "Programas", "icone": "landmark", "url": "viagens_cadastros:lista", "url_args": ("programas",)},
+                        {"rotulo": "Horários", "icone": "clock", "url": "viagens_cadastros:lista", "url_args": ("horarios",)},
+                        {"rotulo": "Atividades do plano", "icone": "checklist", "url": "viagens_cadastros:lista", "url_args": ("atividades-pt",)},
+                        {"rotulo": "Presets", "icone": "clipboard", "url": "viagens_cadastros:lista", "url_args": ("presets-pt",)},
                     ],
                 },
                 # Modelos de texto: catálogos no padrão dos cadastros, com a

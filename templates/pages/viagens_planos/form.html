@@ -1,0 +1,337 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
+{% comment %}
+  Cadastro do plano de trabalho — as quatro etapas do Gerenciador de Viagens
+  em quatro cartões numerados, numa página só, na pele do V3.2.
+
+  Do Gerenciador vêm os blocos, os campos, os rótulos, os textos de ajuda e
+  as mensagens: programa solicitante, coordenação, período e horário,
+  destinos, os três textos do documento (automáticos até alguém editar à mão),
+  o efetivo e o deslocamento com o cálculo ao vivo das diárias, as atividades
+  com preset e as listas de metas e recursos, e a prévia do documento.
+
+  Daqui vem a página única: um `<form>` só grava tudo ao clicar (sem
+  autosave). No plano de vários eventos, os cartões de cada evento gravado
+  vêm antes do cartão 1, com Editar e Remover. Os botões de gerar e de evento
+  são `formaction` do mesmo formulário — formulário aninhado o HTML não tem.
+{% endcomment %}
+
+{% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-planos.css' %}">{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with atual=titulo %}
+
+  <div class="editor-roteiro of-form pt-form" data-pt-form data-url-calcular="{{ url_calcular }}" data-programa-outro="{{ programa_outro_valor }}">
+    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="clipboard" %}</span>
+          <div class="frm-titulo">
+            <h1 class="page-header__titulo d-titulo-v32">Plano de trabalho <span class="frm-ident">{{ plano.numero_formatado }}</span></h1>
+            <span class="st st--{{ selo_tom }}">{{ selo }}</span>
+          </div>
+        </div>
+      </div>
+      {% if pode_editar %}
+        <div class="frm-topo__acoes">
+          <button type="submit" form="form-plano" name="acao" value="salvar" class="btn btn--dourado btn-primaria">Salvar plano</button>
+        </div>
+      {% endif %}
+    </div>
+
+    {% if plano.cancelado %}
+      <div class="aviso aviso--callout" role="status"><div class="aviso__txt">{% include "components/icon.html" with nome="ban" %}<div class="aviso__corpo"><b>Plano cancelado</b><p>{{ plano.motivo_cancelamento|default:"Sem motivo registrado." }}</p></div></div></div>
+    {% endif %}
+
+    <form method="post" action="{% url 'viagens_planos:editar' plano.pk %}" id="form-plano" class="editor-roteiro__principal" novalidate>
+      {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      <input type="hidden" name="quantidade_destinos" value="{{ quantidade_destinos }}">
+      <fieldset class="frm-fieldset"{% if not pode_editar %} disabled{% endif %}>
+
+      {% if tem_erros %}
+        <div class="aviso aviso--erro" role="alert" tabindex="-1">
+          {% include "components/icon.html" with nome="info" %}
+          <div><b>Não foi possível salvar o plano</b>Revise os campos indicados antes de continuar.
+            <ul class="aviso--erro__lista">
+              {% for campo, mensagens in form.errors.items %}{% for m in mensagens %}<li>{% if campo == "__all__" %}{{ m }}{% else %}<a href="#id_{{ campo }}">{{ m }}</a>{% endif %}</li>{% endfor %}{% endfor %}
+              {% for campo, mensagens in diarias_form.errors.items %}{% for m in mensagens %}<li>{% if campo == "__all__" %}{{ m }}{% else %}<a href="#id_{{ campo }}">{{ m }}</a>{% endif %}</li>{% endfor %}{% endfor %}
+              {% for m in formset.non_form_errors %}<li>{{ m }}</li>{% endfor %}
+              {% for f in formset.forms %}{% for campo, mensagens in f.errors.items %}{% for m in mensagens %}<li><a href="#id_{{ f.prefix }}-{{ campo }}">Efetivo: {{ m }}</a></li>{% endfor %}{% endfor %}{% endfor %}
+            </ul>
+          </div>
+        </div>
+      {% endif %}
+
+      {# ── Eventos já gravados (plano de vários eventos) ─────────────────── #}
+      {% if is_multi_evento %}
+        {% if em_edicao_evento %}
+          <div class="aviso aviso--info" role="status">{% include "components/icon.html" with nome="info" %}<div>Editando um evento existente — preencha os cartões e salve. Para criar um novo evento, finalize este e use “Adicionar evento ao plano” no último cartão.</div></div>
+        {% endif %}
+        {% for ev in eventos_resumo %}
+          {% include "pages/viagens_planos/_resumo_evento.html" with ev=ev numero=resumo_header.numero coordenador_adm_nome=resumo_header.coordenador_adm_nome coordenador_adm_cargo=resumo_header.coordenador_adm_cargo total_eventos=total_eventos pode_editar=pode_editar %}
+        {% empty %}
+          {% if not em_edicao_evento %}
+            <div class="aviso aviso--info" role="status">{% include "components/icon.html" with nome="info" %}<div>Nenhum outro evento ainda. Preencha os campos e use “Adicionar evento ao plano” no último cartão para salvar e começar o próximo.</div></div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+
+      {# ------------------------------------------------------------- 1 #}
+      {% with v=valores e=erros %}
+      <section class="section-card reg" id="identificacao">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+          <h2 class="section-card__titulo">Identificação e atuação</h2>
+        </header>
+        <div class="section-card__corpo">
+
+          <div class="ofc-grupo">
+            <div class="ofc-grupo__cabeca"><strong>Programa solicitante</strong><span class="pt-grupo__ajuda">Programa que solicitou a ação. Entra automaticamente na contextualização.</span></div>
+            <div class="ofc-grupo__corpo g-form pt-grade-2">
+              <div class="ofc-com-acao">
+                {% include "components/select.html" with name="programa" label="Programa" opcoes=programas placeholder="Selecione um programa (opcional)" permitir_vazio=True pesquisavel=True selecionado=v.programa erros=e.programa %}
+                <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_programas }}" aria-label="Gerenciar programas" title="Gerenciar programas">{% include "components/icon.html" with nome="settings" %}</a>
+              </div>
+              <div data-pt-programa-outros{% if not programa_outros_visivel %} hidden{% endif %}>
+                {% include "components/input.html" with name="programa_outros" label="Outro programa" placeholder="Informe o programa quando não estiver na lista" autocomplete="off" valor=v.programa_outros erros=e.programa_outros %}
+              </div>
+            </div>
+          </div>
+
+          <div class="ofc-grupo">
+            <div class="ofc-grupo__cabeca"><strong>Coordenação</strong><span class="pt-grupo__ajuda">Coordenadores administrativo e operacional do plano.</span></div>
+            <div class="ofc-grupo__corpo pt-coordenadores">
+              {% include "pages/viagens_planos/_coordenador.html" with papel="adm" rotulo="Coordenador administrativo" nome_campo="coordenador_adm" modo=v.coordenador_adm_modo servidor=v.coordenador_adm nome_manual=v.coordenador_adm_nome_manual cargo=v.coordenador_adm_cargo_manual genero=v.coordenador_adm_genero cargos_opcoes=cargos.adm erros_servidor=e.coordenador_adm erros_nome=e.coordenador_adm_nome_manual erros_cargo=e.coordenador_adm_cargo_manual erros_genero=e.coordenador_adm_genero %}
+              {% include "pages/viagens_planos/_coordenador.html" with papel="op" rotulo="Coordenador operacional (opcional)" nome_campo="coordenador_op" modo=v.coordenador_op_modo servidor=v.coordenador_op nome_manual=v.coordenador_op_nome_manual cargo=v.coordenador_op_cargo_manual genero=v.coordenador_op_genero cargos_opcoes=cargos.op erros_servidor=e.coordenador_op erros_nome=e.coordenador_op_nome_manual erros_cargo=e.coordenador_op_cargo_manual erros_genero=e.coordenador_op_genero %}
+            </div>
+          </div>
+
+          <div class="ofc-grupo">
+            <div class="ofc-grupo__cabeca"><strong>Período do evento</strong><span class="pt-grupo__ajuda">Data inicial e final, e o horário de atendimento.</span></div>
+            <div class="ofc-grupo__corpo g-form pt-grade-periodo">
+              <div class="pt-periodo">
+                <div class="pt-periodo__rotulos" aria-hidden="true"><span>Data de ida</span><span>Data de volta</span></div>
+                {% include "components/date_range.html" with name="periodo_evento" start_name="data_evento_inicio" end_name="data_evento_fim" label="Período do evento" rotulo_oculto=True dois_campos=True valor_inicio=v.data_evento_inicio valor_fim=v.data_evento_fim erros=e.data_evento_inicio|default:e.data_evento_fim %}
+              </div>
+              <div class="ofc-com-acao">
+                {% include "components/select.html" with name="horario_atendimento" label="Horário de atendimento" opcoes=horarios placeholder="Selecione um horário (opcional)" permitir_vazio=True selecionado=v.horario_atendimento erros=e.horario_atendimento %}
+                <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_horarios }}" aria-label="Gerenciar horários" title="Gerenciar horários">{% include "components/icon.html" with nome="settings" %}</a>
+              </div>
+            </div>
+          </div>
+
+          {# Destinos no componente do termo: a primeira linha é o destino do plano, as seguintes são adicionais. #}
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo"><strong>Destinos</strong><p>Locais na ordem da visita.</p></div>
+            <div class="bloco-split__corpo">
+              <div class="destinos" data-destinos>
+                {% include "pages/viagens_termos/_destino_linha.html" with nome_estado="destino_estado" nome_cidade="destino_cidade" id_estado="id_destino_estado" rotulo_estado="UF do destino" rotulo_cidade="Cidade do destino" estado=v.destino_estado cidade=v.destino_cidade erros_estado=e.destino_estado erros_cidade=e.destino_cidade estados=estados municipios=municipios %}
+                {% for a in adicionais %}
+                  {% include "pages/viagens_termos/_destino_linha.html" with nome_estado=a.nome_estado nome_cidade=a.nome_cidade id_estado=a.id_estado rotulo_estado="Estado adicional" rotulo_cidade="Cidade adicional" estado=a.estado cidade=a.cidade erros_estado=a.erros_estado erros_cidade=a.erros_cidade estados=estados municipios=municipios %}
+                {% endfor %}
+              </div>
+              <template data-destino-modelo>
+                {% include "pages/viagens_termos/_destino_linha.html" with nome_estado="extra_estado___n__" nome_cidade="extra_cidade___n__" id_estado="id_extra_estado___n__" rotulo_estado="Estado adicional" rotulo_cidade="Cidade adicional" estado="" cidade="" erros_estado=None erros_cidade=None estados=estados municipios=municipios %}
+              </template>
+              <noscript>
+                <button class="btn--secundaria btn--compacto btn--quadrado" type="submit" name="acao" value="adicionar_destino" formnovalidate aria-label="Adicionar destino" title="Adicionar destino">{% include "components/icon.html" with nome="plus" %}</button>
+              </noscript>
+            </div>
+          </div>
+
+          {% comment %}
+            Os três sinalizadores dizem se o texto ainda é o gerado ou se a pessoa o
+            editou. Enquanto vale 1, mudar programa, destino ou coordenador reescreve o
+            texto; a primeira edição à mão o zera e o texto para de ser substituído.
+          {% endcomment %}
+          <input type="hidden" name="contextualizacao_auto" value="{% if flags.contextualizacao_auto %}1{% else %}0{% endif %}" data-pt-texto-auto="contextualizacao">
+          <input type="hidden" name="coordenacao_auto" value="{% if flags.coordenacao_auto %}1{% else %}0{% endif %}" data-pt-texto-auto="coordenacao">
+          <input type="hidden" name="consideracao_auto" value="{% if flags.consideracao_auto %}1{% else %}0{% endif %}" data-pt-texto-auto="consideracao_final">
+
+          <div class="ofc-grupo">
+            <div class="ofc-grupo__cabeca"><strong>Breve contextualização</strong><span class="pt-grupo__ajuda">Texto que abre o documento a partir do programa e do destino.</span></div>
+            <div class="ofc-grupo__corpo g-form g-form--1">
+              {% include "components/textarea.html" with name="contextualizacao" label="Breve contextualização" rotulo_oculto=True linhas="4" placeholder="Deixe em branco para gerar automaticamente a partir do destino e do programa." valor=v.contextualizacao erros=e.contextualizacao %}
+            </div>
+          </div>
+          <div class="ofc-grupo">
+            <div class="ofc-grupo__cabeca"><strong>Coordenação do evento</strong><span class="pt-grupo__ajuda">Designação dos coordenadores (gerada e editável).</span></div>
+            <div class="ofc-grupo__corpo g-form g-form--1">
+              {% include "components/textarea.html" with name="coordenacao" label="Coordenação do evento" rotulo_oculto=True linhas="4" placeholder="Deixe em branco para gerar automaticamente a partir dos coordenadores." valor=v.coordenacao erros=e.coordenacao %}
+            </div>
+          </div>
+          <div class="ofc-grupo">
+            <div class="ofc-grupo__cabeca"><strong>Considerações finais</strong><span class="pt-grupo__ajuda">Fechamento do documento.</span></div>
+            <div class="ofc-grupo__corpo g-form g-form--1">
+              {% include "components/textarea.html" with name="consideracao_final" label="Considerações finais" rotulo_oculto=True linhas="4" placeholder="Deixe em branco para gerar automaticamente a partir do destino." valor=v.consideracao_final erros=e.consideracao_final %}
+            </div>
+          </div>
+        </div>
+      </section>
+      {% endwith %}
+
+      {# ------------------------------------------------------------- 2 #}
+      <section class="section-card reg" id="efetivo-diarias" data-pt-efetivo-diarias>
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+          <h2 class="section-card__titulo">Efetivo e diárias</h2>
+        </header>
+        <div class="section-card__corpo">
+          <div class="ofc-grupo">
+            <div class="ofc-grupo__cabeca"><strong>Efetivo</strong><span class="pt-grupo__ajuda">Composição da equipe por unidade, cargo e quantidade. O total entra no cálculo das diárias.</span></div>
+            <div class="ofc-grupo__corpo">
+              {{ formset.management_form }}
+              {% for m in formset.non_form_errors %}<p class="form-erro">{{ m }}</p>{% endfor %}
+              <div class="pt-efetivo" data-pt-efetivo-linhas aria-label="Efetivos adicionados">
+                {% for l in linhas_efetivo %}
+                  {% include "pages/viagens_planos/_efetivo_linha.html" with l=l primeira=forloop.first unidades=unidades cargos_efetivo=cargos_efetivo %}
+                {% endfor %}
+              </div>
+              <template data-pt-efetivo-modelo>
+                {% include "pages/viagens_planos/_efetivo_linha.html" with l=modelo_efetivo primeira=False unidades=unidades cargos_efetivo=cargos_efetivo %}
+              </template>
+            </div>
+          </div>
+
+          <div class="ofc-grupo">
+            <div class="ofc-grupo__cabeca"><strong>Deslocamento e diárias</strong><span class="pt-grupo__ajuda">Informe a saída e a chegada na sede — o sistema calcula a composição das diárias automaticamente.</span></div>
+            <div class="ofc-grupo__corpo">
+              {# Os erros do cálculo antecedem os campos a que se referem — e só depois de um envio. #}
+              <p class="aviso aviso--erro pt-diarias-erros" role="alert" data-pt-diarias-erros{% if not mostrar_erros_calculo %} hidden{% endif %}>{% if mostrar_erros_calculo %}{{ diarias_resultado.erros|join:" " }}{% endif %}</p>
+              {% with v=valores_diarias e=erros_diarias %}
+              <div class="g-form pt-grade-4">
+                {% include "components/input.html" with name="saida_sede_data" label="Data de saída da sede" tipo="date" valor=v.saida_sede_data erros=e.saida_sede_data %}
+                {% include "components/input.html" with name="saida_sede_hora" label="Hora de saída" tipo="time" valor=v.saida_sede_hora erros=e.saida_sede_hora %}
+                {% include "components/input.html" with name="chegada_sede_data" label="Data de chegada na sede" tipo="date" valor=v.chegada_sede_data erros=e.chegada_sede_data %}
+                {% include "components/input.html" with name="chegada_sede_hora" label="Hora de chegada" tipo="time" valor=v.chegada_sede_hora erros=e.chegada_sede_hora %}
+              </div>
+              {% endwith %}
+              {% with r=diarias_resultado %}
+              <div class="diarias-metricas pt-metricas" data-pt-diarias-resultado>
+                <div class="metrica metrica--destaque">
+                  <span class="metrica__icone" aria-hidden="true">{% include "components/icon.html" with nome="landmark" %}</span>
+                  <span class="metrica__rotulo">Valor total do plano</span>
+                  <strong class="metrica__valor metrica__valor--grande" data-pt-resultado-total>{% if r.ok %}R$ {{ r.valor_total_display }}{% else %}—{% endif %}</strong>
+                  <span class="pt-metrica__nota"><span class="metrica__rotulo">Valor por extenso</span> <span data-pt-resultado-total-extenso>{% if r.ok %}{{ r.valor_total_extenso }}{% else %}—{% endif %}</span></span>
+                </div>
+                <div class="metrica">
+                  <span class="metrica__icone" aria-hidden="true">{% include "components/icon.html" with nome="user" %}</span>
+                  <span class="metrica__rotulo">Valor por servidor</span>
+                  <strong class="metrica__valor" data-pt-resultado-unitario>{% if r.ok %}R$ {{ r.valor_unitario_display }}{% else %}—{% endif %}</strong>
+                  <span class="pt-metrica__nota"><span class="metrica__rotulo">Valor por extenso</span> <span data-pt-resultado-unitario-extenso>{% if r.ok %}{{ r.valor_unitario_extenso }}{% else %}—{% endif %}</span></span>
+                </div>
+                <div class="metrica">
+                  <span class="metrica__icone" aria-hidden="true">{% include "components/icon.html" with nome="checklist" %}</span>
+                  <span class="metrica__rotulo">Quantidade de diárias</span>
+                  <strong class="metrica__valor" data-pt-resultado-composicao>{% if r.ok %}{{ r.composicao }}{% else %}—{% endif %}</strong>
+                  <span class="pt-metrica__nota"><span class="metrica__rotulo">Efetivo total</span> <span data-pt-resultado-efetivo>{% if r.ok %}{{ r.quantidade_servidores }} servidor(es){% else %}—{% endif %}</span></span>
+                </div>
+              </div>
+              {% endwith %}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {# ------------------------------------------------------------- 3 #}
+      <section class="section-card reg" id="atividades" data-pt-atividades>
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
+          <h2 class="section-card__titulo">Atividades, metas e recursos</h2>
+          <div class="section-card__acao"><a class="btn--secundaria btn--compacto" href="{{ url_atividades }}">{% include "components/icon.html" with nome="settings" %}Gerenciar atividades</a></div>
+        </header>
+        <div class="section-card__corpo">
+          <div class="ofc-grupo">
+            <div class="ofc-grupo__cabeca"><strong>Atividades previstas</strong><span class="pt-grupo__ajuda">Clique nas atividades para selecioná-las — a meta e o recurso de cada uma entram automaticamente.</span></div>
+            <div class="ofc-grupo__corpo">
+              {% if atividades_catalogo %}
+                <div class="pt-atividades__barra">
+                  <div class="form-campo pt-atividades__busca">
+                    <label class="form-label sr-only" for="id_pt_atividade_busca">Filtrar atividades</label>
+                    <div class="busca"><span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span><input class="form-controle" type="search" id="id_pt_atividade_busca" placeholder="Filtrar atividades por nome" autocomplete="off" data-pt-atividade-busca></div>
+                  </div>
+                  <div class="ofc-com-acao pt-atividades__preset">
+                    {# `erros=None` de propósito: sem isso o include herda o dicionário de erros do contexto e imprime as chaves dele. #}
+                    {% include "components/select.html" with name="pt_atividade_preset" label="Preset de atividades" rotulo_oculto=True opcoes=presets placeholder="Aplicar preset…" permitir_vazio=True selecionado=preset_padrao_id erros=None %}
+                    <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_presets }}" aria-label="Gerenciar presets" title="Gerenciar presets">{% include "components/icon.html" with nome="settings" %}</a>
+                  </div>
+                  <button type="button" class="btn--secundaria btn--compacto" data-pt-atividade-limpar>{% include "components/icon.html" with nome="x" %}Limpar seleção</button>
+                </div>
+                <div class="pt-atividades__grade" role="group" aria-label="Atividades disponíveis">
+                  {% for a in atividades_catalogo %}
+                    <label class="pt-atividade{% if a.selecionada %} is-selected{% endif %}" data-pt-atividade data-filtro="{{ a.nome|lower }}">
+                      <input class="sr-only" type="checkbox" name="atividades_codigos" value="{{ a.codigo }}" id="pt-atividade-{{ a.codigo }}"{% if a.selecionada %} checked{% endif %} data-pt-atividade-caixa>
+                      <span class="pt-atividade__marca" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
+                      <span class="pt-atividade__nome">{{ a.nome }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+                <p class="lista-vazia" data-pt-atividade-vazio hidden>{% include "components/icon.html" with nome="search" %}<span>Nenhuma atividade encontrada para a busca informada.</span></p>
+              {% else %}
+                <div class="aviso aviso--info" role="status">{% include "components/icon.html" with nome="info" %}<div>Nenhuma atividade cadastrada. Use “Gerenciar atividades”, acima, para cadastrar a primeira.</div></div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="ofc-grupo">
+            <div class="ofc-grupo__cabeca"><strong>Metas e recursos</strong><span class="pt-grupo__ajuda">Gerados automaticamente pelas atividades selecionadas acima.</span></div>
+            <div class="ofc-grupo__corpo pt-listas">
+              <div class="pt-lista">
+                <div class="pt-lista__cabeca"><strong>Metas</strong><span class="st st--aguardando" data-pt-metas-total>{{ metas_preview|length }}</span></div>
+                <ul class="pt-lista__itens" data-pt-metas-lista>{% for m in metas_preview %}<li>{{ m }}</li>{% endfor %}</ul>
+                <p class="lista-vazia" data-pt-metas-vazio{% if metas_preview %} hidden{% endif %}>{% include "components/icon.html" with nome="checklist" %}<span><b>Sem metas ainda</b> Selecione uma atividade para ver a meta correspondente.</span></p>
+              </div>
+              <div class="pt-lista">
+                <div class="pt-lista__cabeca"><strong>Recursos</strong><span class="st st--em_andamento" data-pt-recursos-total>{{ recursos_preview|length }}</span></div>
+                <ul class="pt-lista__itens" data-pt-recursos-lista>{% for r in recursos_preview %}<li>{{ r }}</li>{% endfor %}</ul>
+                <p class="lista-vazia" data-pt-recursos-vazio{% if recursos_preview %} hidden{% endif %}>{% include "components/icon.html" with nome="clipboard" %}<span><b>Sem recursos ainda</b> O recurso é opcional — algumas atividades podem não ter um.</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {# ------------------------------------------------------------- 4 #}
+      <section class="section-card reg" id="documentos">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">4</span>
+          <h2 class="section-card__titulo">Resumo e documentos</h2>
+          {% if pode_editar and not plano.cancelado %}
+            <div class="section-card__acao"><button type="submit" class="btn--secundaria btn--compacto" formaction="{{ url_evento_adicionar }}" formnovalidate>{% include "components/icon.html" with nome="plus" %}Adicionar evento ao plano</button></div>
+          {% endif %}
+        </header>
+        <div class="section-card__corpo">
+          {% if mostrar_pendencias %}
+            <div class="aviso aviso--erro" role="alert" tabindex="-1">
+              {% include "components/icon.html" with nome="info" %}
+              <div><b>Corrija os itens abaixo antes de finalizar o plano ou gerar DOCX/PDF.</b>
+                <ul class="aviso--erro__lista">{% for p in pendencias %}<li>{{ p }}</li>{% endfor %}</ul>
+              </div>
+            </div>
+          {% endif %}
+          <div class="ofc-docs">
+            {% include "pages/viagens_oficios/_documento_inline.html" with d=documento menu_id="pt-menu-documento" %}
+          </div>
+          {% include "pages/viagens_planos/_acoes_fim.html" %}
+        </div>
+      </section>
+
+      </fieldset>
+    </form>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+  {{ textos_padrao|json_script:"pt-textos-padrao" }}
+  {{ atividades_data|json_script:"pt-atividades-data" }}
+  {{ presets_data|json_script:"pt-presets-data" }}
+  <script src="{% estatico 'js/viagens-cadastros.js' %}" defer></script>
+  <script src="{% estatico 'js/lista-escolha.js' %}" defer></script>
+  <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
+  <script src="{% estatico 'js/viagens-planos.js' %}" defer></script>
+  {% include "components/v32/dialogo_assinado.html" %}
+{% endblock %}

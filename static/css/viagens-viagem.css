@@ -1,0 +1,97 @@
+/* Viagens — a lista e o painel de cinco etapas (V3.2).
+   Tokens da casa: dourado = escolhido/identidade, grafite = botão principal,
+   cinza = repouso/hover. Nada de ds-v32-bridge.css aqui. */
+
+/* ---------- Lista ---------------------------------------------------- */
+.vg-fato__valor{min-width:0;overflow-wrap:anywhere}
+/* Cancelar pede o motivo: o campo abre dentro do menu, sem sair da lista. */
+.vg-cancelar{display:flex;flex-direction:column;gap:6px;padding:8px 12px 12px;border-top:1px solid var(--n-100)}
+.vg-cancelar[hidden]{display:none}
+.vg-cancelar .form-label{font-size:11.5px}
+.vg-cancelar .form-controle{height:36px;font-size:13px}
+.vg-cancelar__ajuda{margin:0;font-size:11.5px;color:var(--n-500)}
+.vg-cancelar button{align-self:flex-end}
+
+/* ---------- Painel: stepper ------------------------------------------ */
+.vg-stepper{margin:0 0 18px}
+.vg-stepper__lista{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:0;padding:0;list-style:none;counter-reset:none}
+.vg-stepper__passo{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 12px;border:1px solid var(--n-200);border-radius:10px;background:var(--branco);color:var(--n-600);text-decoration:none;transition:background-color var(--motion),border-color var(--motion),color var(--motion)}
+.vg-stepper__passo:hover{background:var(--hover-b);border-color:var(--n-250);color:var(--n-900)}
+.vg-stepper__passo:focus-visible{box-shadow:0 0 0 3px var(--foco)}
+.vg-stepper__num{display:inline-grid;place-items:center;width:26px;height:26px;flex:none;border-radius:99px;border:1px solid var(--n-250);background:var(--n-50);color:var(--n-600);font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.vg-stepper__num .ui-icon{width:14px;height:14px}
+.vg-stepper__rotulo{font-size:13px;font-weight:500;line-height:1.25;min-width:0;overflow-wrap:anywhere}
+/* A etapa atual é a escolhida: dourado. As concluídas levam o check. */
+.vg-stepper__item.is-atual .vg-stepper__passo{background:var(--sel-b);border-color:var(--sel-r);color:var(--n-900)}
+.vg-stepper__item.is-atual .vg-stepper__num{background:var(--d-500);border-color:var(--d-500);color:#fff}
+.vg-stepper__item.is-concluida .vg-stepper__num{background:var(--ok-b);border-color:var(--ok-r);color:var(--ok-t)}
+.vg-stepper__item.is-concluida .vg-stepper__rotulo{color:var(--n-800)}
+.vg-stepper__legenda{margin:8px 0 0;font-size:12px;color:var(--rotulo)}
+@container (max-width:900px){
+  .vg-stepper__lista{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@container (max-width:560px){
+  .vg-stepper__lista{grid-template-columns:1fr 1fr}
+  .vg-stepper__passo{min-height:44px}
+}
+
+/* Cancelada: aviso e o botão de reativar na mesma faixa. */
+.vg-cancelada>form{margin:0;flex:none}
+.vg-cancelada .btn--secundaria{display:inline-flex;align-items:center;gap:6px}
+
+/* ---------- Painel: cartões das etapas ------------------------------ */
+.vg-painel .section-card__identificacao{display:flex;flex-direction:column;min-width:0}
+.vg-painel .section-card__descricao{margin:2px 0 0;font-size:12px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--n-500)}
+.vg-painel .section-card__corpo--tabela{padding:0}
+.vg-tabela.cad-lista{border:0;border-radius:0}
+/* As etapas 2, 3 e 5 não têm lista mobile própria: a tabela fica em toda largura. */
+@container (max-width:680px){
+  .vg-painel .vg-tabela.dt-w{display:block}
+}
+.vg-etapa .dt tbody td{vertical-align:top}
+
+/* Etapa 1: os blocos de largura inteira (Motivo e Documentos vinculados)
+   levam o rótulo em cima; os divididos usam o bloco-split da casa. */
+.vg-bloco{padding:16px 0;border-top:1px solid var(--n-150)}
+.vg-bloco:first-child{border-top:0;padding-top:0}
+.vg-bloco+.bloco-split,.bloco-split+.vg-bloco{border-top:1px solid var(--n-150)}
+.vg-bloco__rotulo{display:flex;flex-direction:column;gap:2px;margin-bottom:12px}
+.vg-bloco__rotulo strong,.vg-painel .bloco-split__rotulo strong{font-size:13px;color:var(--n-800)}
+.vg-bloco__rotulo span,.vg-painel .bloco-split__rotulo span{font-size:11.5px;line-height:1.5;color:var(--n-500)}
+.vg-painel .bloco-split__rotulo{display:flex;flex-direction:column;gap:3px}
+.vg-etapa1 .bloco-split:last-of-type{border-bottom:0}
+
+/* Datas: os dois rótulos da origem sobre os dois gatilhos do calendário. */
+.vg-datas__rotulos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+.vg-datas__rotulos span{font-size:11.5px;font-weight:600;color:var(--rotulo)}
+
+/* Documentos vinculados: o alternador segmentado e o seletor da aba ativa. */
+.vg-docs__abas{display:flex;flex-wrap:wrap;margin-bottom:12px}
+.vg-docs__abas span{gap:6px}
+.vg-docs__n{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--d-500);color:#fff;font-size:11px;font-style:normal;font-weight:700}
+.vg-docs__painel[hidden]{display:none}
+.vg-docs .multi-pick__escolhido small{display:block;font-size:11.5px;color:var(--n-500)}
+
+/* Rodapé da etapa 1. */
+.vg-acoes-fim .btn-primaria{display:inline-flex;align-items:center;gap:6px}
+
+/* ---------- Etapa 4: arquivos, PT/OS e o "Novo" com menu -------------- */
+.vg-anexar{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;padding:14px 16px;border:1px dashed var(--n-250);border-radius:10px;background:var(--n-25)}
+.vg-anexar[hidden]{display:none}
+.vg-anexar__arquivo{height:auto;padding:9px 12px}
+.vg-anexar__acoes{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.vg-anexar__acoes .btn-primaria{display:inline-flex;align-items:center;gap:6px}
+.vg-arquivos{margin:0;padding:0;list-style:none}
+.vg-arquivo{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--n-100)}
+.vg-arquivo:first-child{border-top:0;padding-top:0}
+.vg-arquivo__icone{display:grid;place-items:center;width:30px;height:30px;flex:none;border-radius:8px;background:var(--n-150);color:var(--n-800)}
+.vg-arquivo__txt{display:flex;flex-direction:column;min-width:0;flex:1}
+.vg-arquivo__txt strong{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px;font-weight:600;color:var(--n-900);overflow-wrap:anywhere}
+.vg-arquivo__txt small{font-size:12px;color:var(--n-500)}
+.vg-arquivo__acoes{display:flex;align-items:center;gap:4px;flex:none}
+.vg-arquivo__acoes form{margin:0}
+.vg-arquivo.tm-linha--cancelada .vg-arquivo__txt{opacity:.6}
+/* O "Novo" flutuante abre o menu para cima, colado ao botão. */
+.vg-fab{position:fixed;right:max(24px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));z-index:30}
+.vg-fab .btn-flutuante{position:static}
+.vg-fab__menu{right:0;left:auto;min-width:300px}

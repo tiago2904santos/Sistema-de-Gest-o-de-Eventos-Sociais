@@ -13,7 +13,7 @@ from viagens_cadastros.models import AssinaturaConfiguracao, ConfiguracaoSistema
 from viagens_cadastros.permissions import acesso_ao_modulo, eh_gestor_viagens, pode_editar_cadastros  # noqa: F401
 from .view_helpers import campos_v32
 
-ConfiguracaoForm = forms.modelform_factory(ConfiguracaoSistema, exclude=['chave', 'setor', 'sede', 'cidade_sede_padrao', 'nome_chefia', 'cargo_chefia', 'legado_origem', 'legado_pk'])
+ConfiguracaoForm = forms.modelform_factory(ConfiguracaoSistema, exclude=['chave', 'setor', 'sede', 'cidade_sede_padrao', 'nome_chefia', 'cargo_chefia', 'legado_origem', 'legado_pk', 'pt_ultimo_numero', 'pt_ano'])
 
 
 class ConfiguracaoInstitucionalForm(ConfiguracaoForm):
@@ -27,8 +27,11 @@ class ConfiguracaoInstitucionalForm(ConfiguracaoForm):
     """
     assina_oficio = forms.ModelChoiceField(Servidor.objects.none(), required=False, label='Assina os ofícios')
     assina_justificativa = forms.ModelChoiceField(Servidor.objects.none(), required=False, label='Assina as justificativas')
+    assina_ordem_servico = forms.ModelChoiceField(Servidor.objects.none(), required=False, label='Assina as ordens de serviço')
+    assina_plano_trabalho = forms.ModelChoiceField(Servidor.objects.none(), required=False, label='Assina os planos de trabalho')
 
-    ASSINANTES = {'assina_oficio': AssinaturaConfiguracao.OFICIO, 'assina_justificativa': AssinaturaConfiguracao.JUSTIFICATIVA}
+    ASSINANTES = {'assina_oficio': AssinaturaConfiguracao.OFICIO, 'assina_justificativa': AssinaturaConfiguracao.JUSTIFICATIVA,
+                  'assina_ordem_servico': AssinaturaConfiguracao.ORDEM_SERVICO, 'assina_plano_trabalho': AssinaturaConfiguracao.PLANO_TRABALHO}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -93,6 +96,10 @@ CAMPOS_DA_CONFIGURACAO = {
     'destinatario_oficio_unidade': {'label': 'Unidade', 'uppercase': True},
     'assina_oficio': {'pesquisavel': True, 'placeholder': 'Buscar servidor...', 'ajuda': 'Sem assinante, o ofício sai sem nome no fim.'},
     'assina_justificativa': {'pesquisavel': True, 'placeholder': 'Buscar servidor...', 'ajuda': 'Sem assinante, a justificativa sai sem nome no fim.'},
+    'assina_ordem_servico': {'pesquisavel': True, 'placeholder': 'Buscar servidor...', 'ajuda': 'Sem assinante, a ordem de serviço sai sem nome no fim.'},
+    'assina_plano_trabalho': {'pesquisavel': True, 'placeholder': 'Buscar servidor...', 'ajuda': 'Sem assinante, o plano de trabalho sai sem nome no fim.'},
+    'coordenador_adm_plano_trabalho': {'label': 'Coordenador administrativo padrão', 'pesquisavel': True, 'placeholder': 'Buscar servidor...', 'ajuda': 'Sugerido em todo plano de trabalho novo.'},
+    'pt_sufixo_numero': {'label': 'Sufixo da numeração do plano', 'uppercase': True, 'maxlength': 20, 'ajuda': 'Ex.: 07/2026/ASCOM.'},
     'prazo_justificativa_dias': {'label': 'Antecedência mínima (dias)', 'tipo': 'number', 'min': 0, 'step': 1, 'obrigatorio': True},
 }
 
@@ -120,7 +127,8 @@ def _campos_da_configuracao(form):
         if campo['tipo'] == 'input':
             campo['tipo'] = campo.get('input_tipo') or 'text'
         campo.update(CAMPOS_DA_CONFIGURACAO.get(campo['name'], {}))
-        if campo['name'] in ('assina_oficio', 'assina_justificativa', 'destinatario_oficio'):
+        if campo['name'] in ('assina_oficio', 'assina_justificativa', 'assina_ordem_servico', 'assina_plano_trabalho',
+                             'destinatario_oficio', 'coordenador_adm_plano_trabalho'):
             servidores = form.fields[campo['name']].queryset
             campo['opcoes'] = [{'valor': str(s.pk), 'rotulo': f"{s.nome} — {s.cargo.nome}" if s.cargo_id else s.nome} for s in servidores]
         if campo['name'] == 'cep' and campo['valor'] and not form.is_bound:

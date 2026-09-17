@@ -1,0 +1,39 @@
+{% comment %}
+  Um plano de trabalho ou uma ordem de serviço na etapa 4, pelo contrato
+  `presenters.cartao_para_viagem` do módulo dele: título com selo, detalhes
+  e o menu com visualizar, baixar PDF/DOCX, editar e excluir. O documento
+  gera por POST ou GET conforme o módulo (`metodo_documento`).
+  Contexto: `c` (cartão), `tipo`, `pode_editar`, `url_atual`.
+{% endcomment %}
+<li class="vg-arquivo{% if c.cancelado %} tm-linha--cancelada{% endif %}">
+  <span class="tabela__icone-doc vg-arquivo__icone" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+  <span class="vg-arquivo__txt">
+    <strong>{{ c.titulo }}{% if c.selo %} <span class="st st--{{ c.selo_tom|default:'neutro' }}">{{ c.selo }}</span>{% endif %}</strong>
+    <small>{{ tipo }}{% if c.detalhes %} · {{ c.detalhes }}{% endif %}</small>
+  </span>
+  <span class="vg-arquivo__acoes">
+    <div class="dd of-menu cad-acoes" data-menu>
+      <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações de {{ c.titulo }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
+      <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
+        {% if c.cancelado %}
+          <span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="ban" %}<span><b>Documento cancelado</b><small>Reative para gerar documentos</small></span></span>
+        {% elif c.metodo_documento == "post" %}
+          {% if c.url_visualizar %}<form method="post" action="{{ c.url_visualizar }}" target="_blank">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar</b><small>Abrir o documento no navegador</small></span></button></form>{% endif %}
+          {% if c.url_pdf %}<form method="post" action="{{ c.url_pdf }}">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Documento pronto para impressão</small></span></button></form>{% endif %}
+          {% if c.url_docx %}<form method="post" action="{{ c.url_docx }}">{% csrf_token %}<button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivo editável do documento</small></span></button></form>{% endif %}
+        {% else %}
+          {% if c.url_visualizar %}<a class="dd__i of-item" href="{{ c.url_visualizar }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar</b><small>Abrir o documento no navegador</small></span></a>{% endif %}
+          {% if c.url_pdf %}<a class="dd__i of-item" href="{{ c.url_pdf }}">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Documento pronto para impressão</small></span></a>{% endif %}
+          {% if c.url_docx %}<a class="dd__i of-item" href="{{ c.url_docx }}">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivo editável do documento</small></span></a>{% endif %}
+        {% endif %}
+        {% if c.url_editar %}<a class="dd__i of-item" href="{{ c.url_editar }}?next={{ url_atual|urlencode }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar</b><small>Abrir o cadastro para alterações</small></span></a>{% endif %}
+        {% if pode_editar and c.url_excluir %}
+          <div class="dd__s"></div>
+          <form method="post" action="{{ c.url_excluir }}" data-confirmar-exclusao data-confirmar="Confirmar exclusão?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+            <button type="submit" class="dd__i dd__i--perigo of-item">{% include "components/icon.html" with nome="trash" %}<span><b>Excluir</b><small>Remover permanentemente quando permitido</small></span></button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </span>
+</li>

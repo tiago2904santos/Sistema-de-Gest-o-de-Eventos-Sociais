@@ -1,8 +1,12 @@
 {
   "justificativa.docx": "d50f151c5700cf0814f1d04ffbe729c0d4c966d5c30be75f0b0a7f85febbe666",
   "oficio.docx": "4b79e4ba8a124ea8482e6382557fd2adc5fa55458eb998fb5cb926006f0f158d",
+  "ordem_servico.docx": "aa113301de5d149ef0eeb61412b9e198d711a55e1d5910b8a081d5160076abc3",
+  "ordem_servico_modelos.docx": "22502b454e9d38e6dbbe18b58cce1ca280ea0ab8bae36ea60d4c884abfa3f307",
+  "plano_trabalho.docx": "b26373d07d487fcd967ea229313af989579e75667f5d591c3d1dbfdb29ee6d42",
+  "plano_trabalho_multievento.docx": "41255f23cf28b71fe21a46e0d19ef37ebf0f609d9d2c7ba4d8756704edae389a",
+  "relatorio-tecnico.docx": "f14abe57d82cf8d45af4f834c6852090f2fd43df901d3d7b976db81a4922db83",
   "termo_autorizacao.docx": "569aa555e6f315fdfcf4f219ca1883c5881340c980047abf65c2b6edbab0f41d",
   "termo_autorizacao_automatico.docx": "d06aee505d3212bae8e3d5457582a6f06fec66ecb90c577ec617a0b9ab03b586",
-  "termo_autorizacao_automatico_sem_viatura.docx": "0dd889636f6e82c5810e46709907bceeae18c948ec43cd0ab50453c687fdf7f1",
-  "relatorio-tecnico.docx": "f14abe57d82cf8d45af4f834c6852090f2fd43df901d3d7b976db81a4922db83"
+  "termo_autorizacao_automatico_sem_viatura.docx": "0dd889636f6e82c5810e46709907bceeae18c948ec43cd0ab50453c687fdf7f1"
 }
