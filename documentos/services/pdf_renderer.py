@@ -104,6 +104,62 @@ def weasyprint_disponivel() -> bool:
 # couber (texto longo demais pagina normalmente).
 CABER_EM_UMA_PAGINA = {"oficio": 2, "relatorio_tecnico": 2}
 
+# Documentos cujas tabelas saem com colunas de larguras iguais (o CSS não dá
+# `width` a coluna nenhuma, e o table-layout fixo reparte em partes iguais).
+# A simetria só cede onde ela apertaria o texto: as tabelas em que a coluna
+# forçou quebra de linha são refeitas com largura proporcional ao conteúdo.
+# Os demais tipos declaram as larguras que querem e não passam por aqui.
+COLUNAS_SIMETRICAS = {"oficio"}
+
+
+def _linhas_desenhadas(caixa) -> int:
+    """Quantas linhas de texto a caixa ocupou de fato."""
+    if type(caixa).__name__ == "LineBox":
+        return 1
+    return sum(_linhas_desenhadas(filho) for filho in getattr(caixa, "children", ()))
+
+
+def _linhas_pedidas(celula) -> int:
+    """Quantas linhas a célula teria se nada quebrasse por falta de largura:
+    uma por bloco (um `<p>`, ou o texto solto) mais uma por `<br>` explícito."""
+    elemento = getattr(celula, "element", None)
+    quebras = len(elemento.findall(".//br")) if elemento is not None else 0
+    filhos = [f for f in getattr(celula, "children", ()) if _linhas_desenhadas(f)]
+    blocos = 1 if any(type(f).__name__ == "LineBox" for f in filhos) else len(filhos)
+    return max(blocos, 1) + quebras
+
+
+def _seletor(tabela) -> str:
+    elemento = getattr(tabela, "element", None)
+    classes = (elemento.get("class", "") if elemento is not None else "").split()
+    return "." + ".".join(classes) if classes else ""
+
+
+def _tabelas_apertadas(documento) -> list[str]:
+    """Seletores das tabelas em que a largura da coluna forçou quebra de linha.
+
+    Anda na árvore de caixas já paginada — `_page_box` é interno do WeasyPrint,
+    mas é o único caminho para a medida depois do layout.
+    """
+    achados: list[str] = []
+    def anda(caixa, tabela=None):
+        if hasattr(caixa, "column_widths"):
+            tabela = caixa
+        if getattr(caixa, "element_tag", None) in ("td", "th"):
+            # Numa tabela de uma coluna só não há simetria a preservar.
+            if tabela is not None and len(tabela.column_widths) > 1:
+                if _linhas_desenhadas(caixa) > _linhas_pedidas(caixa):
+                    seletor = _seletor(tabela)
+                    if seletor and seletor not in achados:
+                        achados.append(seletor)
+            return
+        for filho in getattr(caixa, "children", ()):
+            anda(filho, tabela)
+
+    for pagina in documento.pages:
+        anda(pagina._page_box)
+    return achados
+
 
 def render_pdf(html: str, *, tipo=None) -> bytes:
     """PDF em memória a partir do HTML já renderizado (modo `pdf`)."""
@@ -116,6 +172,12 @@ def render_pdf(html: str, *, tipo=None) -> bytes:
         # HTML — os textos de campo são conteúdo do usuário, escapado, e o
         # visual é só do CSS institucional.
         documento = HTML(string=html, base_url=base_url).render(stylesheets=folhas, presentational_hints=False)
+        if str(getattr(tipo, "value", tipo) or "") in COLUNAS_SIMETRICAS:
+            apertadas = _tabelas_apertadas(documento)
+            if apertadas:
+                regra = "".join(f"{seletor}{{table-layout:auto}}" for seletor in apertadas)
+                html = html.replace("</head>", f"<style>{regra}</style></head>", 1)
+                documento = HTML(string=html, base_url=base_url).render(stylesheets=folhas, presentational_hints=False)
         for degrau in range(1, degraus + 1):
             if len(documento.pages) <= 1:
                 break
