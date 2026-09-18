@@ -55,12 +55,12 @@
         {% for servidor in tx.equipe %}
           <tr>
             <td>{{ servidor.nome }}</td>
-            <td>{{ servidor.cpf }}</td>
+            <td>CPF: {{ servidor.cpf }}</td>
             <td><strong>{{ servidor.cargo }}</strong></td>
             <td>{{ servidor.solicitacao }}</td>
           </tr>
         {% empty %}
-          <tr><td></td><td></td><td></td><td></td></tr>
+          <tr><td></td><td>CPF:</td><td></td><td></td></tr>
         {% endfor %}
       </tbody>
     </table>

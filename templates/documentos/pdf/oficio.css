@@ -56,6 +56,12 @@
 .doc-oficio__equipe th:nth-child(2) { width: 20%; }
 .doc-oficio__equipe th:nth-child(3) { width: 24%; }
 .doc-oficio__equipe td { vertical-align: middle; }
+/* Um servidor não é separado do seguinte por um traço: some só a divisória
+   entre as linhas do corpo. A moldura da tabela e a linha sob o cabeçalho
+   continuam — com border-collapse as duas bordas encostadas viram uma, então
+   é preciso tirar as duas. */
+.doc-oficio__equipe tbody tr:not(:last-child) td { border-bottom: 0; }
+.doc-oficio__equipe tbody tr + tr td { border-top: 0; }
 
 .doc-oficio__resumo td { text-align: center; vertical-align: middle; }
 
