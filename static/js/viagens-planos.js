@@ -143,11 +143,31 @@
     { nome: "coordenacao", flag: "coordenacao" },
     { nome: "consideracao_final", flag: "consideracao_final" }
   ];
+  // Os três textos são gerados e têm comprimento variável: em quatro linhas
+  // fixas a contextualização fica com o fim escondido e a linha de baixo
+  // cortada ao meio. A caixa passa a acompanhar o conteúdo, até um teto para
+  // um texto longo colado à mão não empurrar o resto da página para fora.
+  var ALTURA_MAXIMA_TEXTO = 520;
+
+  function ajustarAltura(area) {
+    if (!area) return;
+    area.style.height = "auto";
+    var necessaria = Math.min(area.scrollHeight, ALTURA_MAXIMA_TEXTO);
+    area.style.height = necessaria + "px";
+    area.style.overflowY = area.scrollHeight > ALTURA_MAXIMA_TEXTO ? "auto" : "hidden";
+  }
+
   textos.forEach(function (t) {
     t.area = form.querySelector('textarea[name="' + t.nome + '"]');
     t.sinal = form.querySelector('[data-pt-texto-auto="' + t.flag + '"]');
-    // Editar à mão desliga o automático daquele texto.
-    if (t.area) t.area.addEventListener("input", function () { if (!programatico && t.sinal) t.sinal.value = "0"; });
+    if (t.area) {
+      t.area.addEventListener("input", function () {
+        // Editar à mão desliga o automático daquele texto.
+        if (!programatico && t.sinal) t.sinal.value = "0";
+        ajustarAltura(t.area);
+      });
+      ajustarAltura(t.area);
+    }
   });
 
   function coordenacaoAtual() {
@@ -174,6 +194,7 @@
       programatico = true;
       t.area.value = valor;
       programatico = false;
+      ajustarAltura(t.area);
     });
   }
 
