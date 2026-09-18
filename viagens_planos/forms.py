@@ -30,7 +30,9 @@ class PlanoIdentificacaoForm(forms.ModelForm):
         fields = [
             "programa", "programa_outros", "destino_estado", "destino_cidade",
             "data_evento_inicio", "data_evento_fim", "horario_atendimento",
-            "contextualizacao", "coordenacao", "consideracao_final",
+            # Contextualização, coordenação e considerações finais ficam de fora:
+            # a tela não as oferece e quem as escreve é o `sincronizar_textos_padrao`,
+            # na gravação. No formulário, um POST sem elas gravaria vazio por cima.
             "coordenador_adm_modo", "coordenador_adm", "coordenador_adm_nome_manual", "coordenador_adm_cargo_manual", "coordenador_adm_genero",
             "coordenador_op_modo", "coordenador_op", "coordenador_op_nome_manual", "coordenador_op_cargo_manual", "coordenador_op_genero",
         ]

@@ -32,7 +32,7 @@ from viagens_viagem.services import viagem_do_request
 from . import abas as abas_de_plano
 from .efetivo_services import linhas_do_formset, salvar_efetivo_e_diarias
 from .forms import EfetivoPlanoFormSet, PlanoDiariasForm, PlanoIdentificacaoForm
-from .identificacao_services import flags_automaticas, salvar_identificacao
+from .identificacao_services import salvar_identificacao
 from .models import PlanoTrabalho
 from .presenters import apresentar_resumo_evento_card, apresentar_resumo_header, linha_da_lista, resumo_do_plano_para_tela, selo_do_plano
 from .selectors import get_evento_do_plano_by_id, get_plano_by_id, listar_planos, obter_intervalo_dos_oficios_da_viagem
@@ -54,10 +54,6 @@ from .services import (
     remover_evento,
     sincronizar_atividades,
     sincronizar_scratchpad,
-    texto_padrao_consideracao_final,
-    texto_padrao_contextualizacao,
-    texto_padrao_coordenacao,
-    textos_padrao_templates,
 )
 
 
@@ -154,14 +150,6 @@ def _formularios(request, plano):
     form = PlanoIdentificacaoForm(dados, instance=plano)
     diarias_form = PlanoDiariasForm(dados, instance=plano)
     formset = EfetivoPlanoFormSet(dados, instance=plano, prefix="efetivo")
-    if dados is None:
-        # Abrir mostra o texto padrão já preenchido enquanto o campo está no automático.
-        if plano.contextualizacao_auto:
-            form.initial["contextualizacao"] = texto_padrao_contextualizacao(plano)
-        if plano.coordenacao_auto:
-            form.initial["coordenacao"] = texto_padrao_coordenacao(plano)
-        if plano.consideracao_auto:
-            form.initial["consideracao_final"] = texto_padrao_consideracao_final(plano)
     return form, diarias_form, formset
 
 
@@ -173,7 +161,7 @@ def _gravar(request, plano):
     catalogo = atividades_catalogo()
     codigos = request.POST.getlist("atividades_codigos")
     with transaction.atomic():
-        plano = salvar_identificacao(form, flags=flags_automaticas(request.POST))
+        plano = salvar_identificacao(form)
         salvar_efetivo_e_diarias(plano, rows=linhas_do_formset(formset), diarias_form=diarias_form)
         plano.atividades_selecionadas.set([a for a in catalogo if a.codigo in codigos])
         sincronizar_atividades(plano)
@@ -208,9 +196,6 @@ def _contexto_identificacao(form, plano, request):
          "erros_estado": form.errors.get(f"extra_estado_{i}"), "erros_cidade": form.errors.get(f"extra_cidade_{i}")}
         for i in range(form.quantidade_destinos)
     ]
-    flags = flags_automaticas(request.POST) if request.method == "POST" else {
-        "contextualizacao_auto": plano.contextualizacao_auto, "coordenacao_auto": plano.coordenacao_auto, "consideracao_auto": plano.consideracao_auto,
-    }
     atual = daqui(request)
     return {
         "valores": {nome: valor(nome) for nome in form.fields},
@@ -223,8 +208,6 @@ def _contexto_identificacao(form, plano, request):
         "generos": [{"valor": v, "rotulo": r} for v, r in PlanoTrabalho.COORDENADOR_GENERO_CHOICES],
         "servidores": servidores,
         "estados": estados, "municipios": municipios, "adicionais": adicionais, "quantidade_destinos": str(form.quantidade_destinos),
-        "flags": flags,
-        "textos_padrao": textos_padrao_templates(),
         "url_programas": com_next(reverse("viagens_cadastros:lista", args=["programas"]), atual),
         "url_horarios": com_next(reverse("viagens_cadastros:lista", args=["horarios"]), atual),
         "url_cargos": com_next(reverse("viagens_cadastros:lista", args=["cargos"]), atual),

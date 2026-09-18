@@ -10,7 +10,6 @@
 .pt-grade-programa{grid-template-columns:minmax(0,1fr)}
 .pt-grade-programa:has([data-pt-programa-outros]:not([hidden])){grid-template-columns:repeat(2,minmax(0,1fr))}
 .pt-grade-4{grid-template-columns:repeat(4,minmax(0,1fr))}
-.pt-grade-periodo{grid-template-columns:minmax(0,2fr) minmax(0,1fr);align-items:end}
 .pt-form [data-pt-programa-outros][hidden],.pt-form [data-pt-coordenador-servidor][hidden],.pt-form [data-pt-coordenador-manual][hidden],.pt-form .pt-atividade[hidden],.pt-form [data-pt-efetivo-linha][hidden]{display:none}
 
 /* Período: os dois rótulos do Gerenciador ("Data de ida"/"Data de volta") sobre o par de campos. */
@@ -79,7 +78,7 @@
 .pt-evento__remover.is-armado{color:var(--dg-t);background:var(--dg-b)}
 
 @container (max-width:900px){
-  .pt-grade-2,.pt-grade-periodo,.pt-listas,.pt-evento__corpo,
+  .pt-grade-2,.pt-listas,.pt-evento__corpo,
   .pt-grade-programa,.pt-grade-programa:has([data-pt-programa-outros]:not([hidden])),
   .pt-coordenador__campos{grid-template-columns:1fr}
   .pt-grade-4{grid-template-columns:repeat(2,minmax(0,1fr))}

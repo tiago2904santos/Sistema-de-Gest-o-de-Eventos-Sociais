@@ -1,10 +1,12 @@
 /**
  * Página do plano de trabalho — os comportamentos do wizard do Gerenciador de
  * Viagens, sem autosave: "Outro programa" revela o campo, os coordenadores
- * trocam entre servidor e nome manual, os três textos padrão se reescrevem
- * enquanto estão no automático, as linhas de efetivo (+/−), o cálculo ao
- * vivo das diárias, o filtro/preset/limpar das atividades com a prévia de
+ * trocam entre servidor e nome manual, as linhas de efetivo (+/−), o cálculo
+ * ao vivo das diárias, o filtro/preset/limpar das atividades com a prévia de
  * metas e recursos, os destinos do termo e a prévia do documento.
+ *
+ * Contextualização, coordenação e considerações finais não estão na tela: o
+ * `sincronizar_textos_padrao` as escreve no servidor, a cada gravação.
  */
 (function () {
   "use strict";
@@ -52,160 +54,6 @@
   }
   if (programa) programa.addEventListener("change", aplicarPrograma);
   aplicarPrograma();
-
-  /* ── Textos padrão ao vivo ──────────────────────────────────────── */
-
-  var MENORES = { de: 1, da: 1, do: 1, das: 1, dos: 1, e: 1, a: 1, o: 1, no: 1, na: 1, em: 1, "à": 1 };
-
-  function titulo(valor) {
-    return String(valor || "").toLowerCase().split(/\s+/).map(function (palavra, i) {
-      if (!palavra) return palavra;
-      if (i > 0 && MENORES[palavra]) return palavra;
-      return palavra.charAt(0).toUpperCase() + palavra.slice(1);
-    }).join(" ");
-  }
-
-  function municipioAtual() {
-    var rotulos = [];
-    form.querySelectorAll("[data-destino-linha]").forEach(function (linha) {
-      var estado = linha.querySelector(".destino-row__estado select");
-      var cidade = linha.querySelector(".destino-row__campo select");
-      if (!cidade || !cidade.value) return;
-      var nome = cidade.options[cidade.selectedIndex] ? cidade.options[cidade.selectedIndex].text.trim() : "";
-      if (!nome) return;
-      var uf = "";
-      if (estado && estado.options[estado.selectedIndex]) uf = (estado.options[estado.selectedIndex].text.split("—")[0] || "").trim().toUpperCase();
-      var rotulo = titulo(nome) + (uf ? "/" + uf : "");
-      if (rotulos.indexOf(rotulo) < 0) rotulos.push(rotulo);
-    });
-    return rotulos.length ? rotulos.join(", ") : "________";
-  }
-
-  function programaAtual() {
-    if (!programa) return "________";
-    if (programa.value === outroValor) {
-      var entrada = form.querySelector('input[name="programa_outros"]');
-      var cru = entrada ? entrada.value.trim() : "";
-      return cru ? titulo(cru) : "________";
-    }
-    if (!programa.value) return "________";
-    var opcao = programa.options[programa.selectedIndex];
-    return opcao ? titulo(opcao.text.trim()) : "________";
-  }
-
-  function termosGenero(genero) {
-    var f = genero === "FEMININO";
-    return {
-      designado: f ? "designada" : "designado",
-      artigo: f ? "a" : "o",
-      coordenador_administrativo: f ? "Coordenadora Administrativa" : "Coordenador Administrativo",
-      coordenador_operacional: f ? "Coordenadora Operacional do Evento" : "Coordenador Operacional do Evento"
-    };
-  }
-
-  function dadosCoordenador(papel) {
-    var painel = form.querySelector('[data-pt-coordenador="' + papel + '"]');
-    if (!painel) return { nome: "", cargo: "", genero: "MASCULINO" };
-    var manual = painel.querySelector('input[name="coordenador_' + papel + '_modo"]:checked');
-    var genero = painel.querySelector('select[name="coordenador_' + papel + '_genero"]');
-    var cargo = painel.querySelector('select[name="coordenador_' + papel + '_cargo_manual"]');
-    var dados = { nome: "", cargo: (cargo && cargo.value) || "", genero: (genero && genero.value) || "MASCULINO" };
-    if (manual && manual.value === "MANUAL") {
-      var entrada = painel.querySelector('input[name="coordenador_' + papel + '_nome_manual"]');
-      dados.nome = entrada ? entrada.value.trim() : "";
-      return dados;
-    }
-    var escolha = painel.querySelector('select[name="coordenador_' + papel + '"]');
-    var opcao = escolha && escolha.value ? escolha.selectedOptions[0] : null;
-    if (opcao) {
-      dados.nome = opcao.textContent.trim();
-      dados.cargo = opcao.getAttribute("data-cargo") || dados.cargo;
-    }
-    return dados;
-  }
-
-  function textoCoordenador(modelo, dados, papel) {
-    var termos = termosGenero(dados.genero);
-    var chave = papel === "adm" ? "coordenador_administrativo" : "coordenador_operacional";
-    return String(modelo || "")
-      .replace(/\{cargo_nome\}/g, [titulo(dados.cargo), titulo(dados.nome)].filter(Boolean).join(" "))
-      .replace(/\{designado\}/g, termos.designado)
-      .replace(/\{artigo\}/g, termos.artigo)
-      .replace(/\{coordenador_administrativo\}/g, termos.coordenador_administrativo)
-      .replace(/\{coordenador_operacional\}/g, termos[chave]);
-  }
-
-  var modelos = lerJson("pt-textos-padrao", {});
-  var programatico = false;
-  var textos = [
-    { nome: "contextualizacao", flag: "contextualizacao" },
-    { nome: "coordenacao", flag: "coordenacao" },
-    { nome: "consideracao_final", flag: "consideracao_final" }
-  ];
-  // Os três textos são gerados e têm comprimento variável: em quatro linhas
-  // fixas a contextualização fica com o fim escondido e a linha de baixo
-  // cortada ao meio. A caixa passa a acompanhar o conteúdo, até um teto para
-  // um texto longo colado à mão não empurrar o resto da página para fora.
-  var ALTURA_MAXIMA_TEXTO = 520;
-
-  function ajustarAltura(area) {
-    if (!area) return;
-    area.style.height = "auto";
-    var necessaria = Math.min(area.scrollHeight, ALTURA_MAXIMA_TEXTO);
-    area.style.height = necessaria + "px";
-    area.style.overflowY = area.scrollHeight > ALTURA_MAXIMA_TEXTO ? "auto" : "hidden";
-  }
-
-  textos.forEach(function (t) {
-    t.area = form.querySelector('textarea[name="' + t.nome + '"]');
-    t.sinal = form.querySelector('[data-pt-texto-auto="' + t.flag + '"]');
-    if (t.area) {
-      t.area.addEventListener("input", function () {
-        // Editar à mão desliga o automático daquele texto.
-        if (!programatico && t.sinal) t.sinal.value = "0";
-        ajustarAltura(t.area);
-      });
-      ajustarAltura(t.area);
-    }
-  });
-
-  function coordenacaoAtual() {
-    var paragrafos = [];
-    var adm = dadosCoordenador("adm");
-    if (adm.nome) paragrafos.push(textoCoordenador(modelos.coordenacao_adm, adm, "adm"));
-    var op = dadosCoordenador("op");
-    if (op.nome) paragrafos.push(textoCoordenador(modelos.coordenacao_op, op, "op"));
-    return paragrafos.join("\n\n");
-  }
-
-  function regenerarTextos() {
-    var municipio = municipioAtual();
-    var prog = programaAtual();
-    textos.forEach(function (t) {
-      if (!t.area || !t.sinal || t.sinal.value !== "1") return;
-      var valor;
-      if (t.nome === "coordenacao") valor = coordenacaoAtual();
-      else {
-        var modelo = modelos[t.nome] || "";
-        if (!modelo) return;
-        valor = modelo.replace(/\{municipio\}/g, municipio).replace(/\{programa\}/g, prog);
-      }
-      programatico = true;
-      t.area.value = valor;
-      programatico = false;
-      ajustarAltura(t.area);
-    });
-  }
-
-  form.addEventListener("change", function (evento) {
-    var alvo = evento.target;
-    if (!alvo || !alvo.name) return;
-    if (alvo.name === "programa" || alvo.name === "programa_outros" || /^(destino|extra)_/.test(alvo.name) || /^coordenador_(adm|op)/.test(alvo.name)) regenerarTextos();
-  });
-  form.addEventListener("input", function (evento) {
-    var alvo = evento.target;
-    if (alvo && (alvo.name === "programa_outros" || /^coordenador_(adm|op)_nome_manual$/.test(alvo.name))) regenerarTextos();
-  });
 
   /* ── Coordenadores: servidor ↔ manual, cargo preenchido pelo servidor ── */
 
@@ -288,9 +136,8 @@
       if (linhas().length <= 1) { limpar(linha); return; }
       linha.remove();
       atualizarEstado();
-      regenerarTextos();
     });
-    if (window.DS && window.DS.arrastarDestinos) window.DS.arrastarDestinos(lista, regenerarTextos);
+    if (window.DS && window.DS.arrastarDestinos) window.DS.arrastarDestinos(lista, atualizarEstado);
     // A nomeação final sai no envio: a primeira linha é o destino do plano, as outras `extra_*_i`.
     form.addEventListener("submit", function () {
       var atuais = linhas();

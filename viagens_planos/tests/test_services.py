@@ -18,7 +18,6 @@ from viagens_planos.services import (
     salvar_plano_numerado,
     sincronizar_textos_padrao,
     texto_padrao_contextualizacao,
-    textos_padrao_templates,
 )
 
 from .fixtures import CenarioPlanoMixin
@@ -131,12 +130,6 @@ class TextosPadraoTests(CenarioPlanoMixin, TestCase):
         self.assertEqual(sincronizar_textos_padrao(plano), ["consideracao_final"])
         self.assertEqual(plano.contextualizacao, "Mantido pelo usuário.")
         self.assertIn("Maringá/PR", plano.consideracao_final)
-
-    def test_modelos_expostos_ao_cliente(self):
-        modelos = textos_padrao_templates()
-        self.assertIn("{municipio}", modelos["contextualizacao"])
-        self.assertIn("{cargo_nome}", modelos["coordenacao_adm"])
-        self.assertIn("{artigo}", modelos["coordenacao_op"])
 
 
 class CoordenacaoTests(CenarioPlanoMixin, TestCase):
