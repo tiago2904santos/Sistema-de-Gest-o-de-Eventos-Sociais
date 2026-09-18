@@ -34,7 +34,11 @@ TX = {
     "col_ida_saida": "Saída Curitiba/PR: 10/09/2026 08:00", "col_ida_chegada": "Chegada Brasília/DF: 10/09/2026 12:00",
     "col_volta_saida": "Saída Brasília/DF: 12/09/2026 15:00", "col_volta_chegada": "Chegada Curitiba/PR: 12/09/2026 19:00",
     "viatura": "Viatura oficial", "placa": "ABC-1D23", "motorista_formatado": "João Souza", "combustivel": "Gasolina", "tipo_viatura": "Caracterizada",
-    "armamento": "Sim", "custo": "( X ) UNIDADE - DPC\n(   ) OUTRA INSTITUIÇÃO", "motivo": "Participação em reunião institucional",
+    "armamento": "Sim",
+    # As três opções de custeio, como `_custeio_text` as emite — o documento
+    # sempre lista todas, com o marcador na escolhida.
+    "custo": "( X ) UNIDADE - DPC (diárias e combustível custeados pela DPC).\n(   ) OUTRA INSTITUIÇÃO\n(   ) ÔNUS LIMITADOS AOS PRÓPRIOS VENCIMENTOS",
+    "motivo": "Participação em reunião institucional",
     "nome_chefia": "Fulano de Tal", "cargo_chefia": "Delegado", "unidade_cabecalho": "ASSESSORIA DE COMUNICAÇÃO",
     "nome_destinatario": "Beltrano", "cargo_destinatario": "Delegado Geral Adjunto", "unidade_rodape": "ASCOM",
     "equipe": [
@@ -63,7 +67,7 @@ class ContextoETemplateTests(SimpleTestCase):
         html = renderizar_html(DocumentoTipo.OFICIO, contexto_de_payload(DocumentoTipo.OFICIO, PAYLOAD, TX, modo="pdf"), modo="pdf")
         for texto in ["SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA", "POLÍCIA CIVIL DO PARANÁ", "ASSESSORIA DE COMUNICAÇÃO",
                       "Ofício Nº <strong>023/2026</strong> (Autorização)", "solicito autorização e medidas",
-                      "<td>Maria da Silva</td>", "<td>987.654.321-00</td>",
+                      "<td>Maria da Silva</td>", "<td>CPF: 987.654.321-00</td>",
                       "Brasília/DF", "R$ 500,00 (quinhentos reais)", ">Roteiro de retorno<", "Participação em reunião institucional",
                       "cartão corporativo vigente", "Fulano de Tal", "DR. Beltrano", "Curitiba – Pr.", "ascom@pc.pr.gov.br",
                       "brasao-pcpr.png", "marca-pcpr.png"]:
@@ -124,6 +128,52 @@ class PdfRealTests(SimpleTestCase):
         self.assertGreater(len(leitor.pages), 1)
         for pagina in leitor.pages:
             self.assertIn("POLÍCIA CIVIL DO PARANÁ", pagina.extract_text())
+
+
+@skipUnless(weasyprint_disponivel(), "WeasyPrint sem runtime nativo nesta máquina")
+class ColunasSimetricasTests(SimpleTestCase):
+    """As colunas saem com a mesma largura; a simetria só cede na tabela cuja
+    coluna apertaria o texto a ponto de quebrá-lo em duas linhas."""
+
+    def _apertadas(self, tx):
+        from pathlib import Path
+
+        from django.conf import settings
+        from weasyprint import CSS, HTML
+
+        from documentos.services.pdf_renderer import (
+            CSS_COMUM,
+            CSS_IMPRESSAO,
+            _tabelas_apertadas,
+            caminho_css,
+            css_do_tipo,
+        )
+
+        html = renderizar_html(DocumentoTipo.OFICIO, contexto_de_payload(DocumentoTipo.OFICIO, PAYLOAD, tx, modo="pdf"), modo="pdf")
+        folhas = [CSS(filename=str(caminho_css(n))) for n in (CSS_COMUM, CSS_IMPRESSAO, *css_do_tipo(DocumentoTipo.OFICIO))]
+        base = Path(settings.BASE_DIR).resolve().as_uri() + "/"
+        documento = HTML(string=html, base_url=base).render(stylesheets=folhas, presentational_hints=False)
+        return _tabelas_apertadas(documento)
+
+    def test_conteudo_tipico_mantem_todas_as_colunas_iguais(self):
+        self.assertEqual(self._apertadas(TX), [])
+
+    def test_nome_longo_solta_so_a_tabela_da_equipe(self):
+        equipe = TX["equipe"] + [{"nome": "Maria Aparecida dos Santos Nascimento", "cpf": "123.456.789-00", "cargo": "Agente de Polícia Judiciária", "solicitacao": "108"}]
+        self.assertEqual(self._apertadas(dict(TX, equipe=equipe)), [".doc-oficio__tabela.doc-oficio__equipe"])
+
+    def test_destino_longo_solta_so_a_tabela_de_dados(self):
+        tx = dict(TX, orgao_destino="Gabinete do Delegado Geral Adjunto da Polícia Civil do Estado do Paraná")
+        self.assertEqual(self._apertadas(tx), [".doc-oficio__tabela.doc-oficio__dados"])
+
+    def test_nome_longo_nao_sai_partido_em_duas_linhas(self):
+        nome = "Maria Aparecida dos Santos Nascimento"
+        equipe = TX["equipe"] + [{"nome": nome, "cpf": "123.456.789-00", "cargo": "Agente de Polícia Judiciária", "solicitacao": "108"}]
+        pdf = render_pdf(renderizar_html(DocumentoTipo.OFICIO, contexto_de_payload(DocumentoTipo.OFICIO, PAYLOAD, dict(TX, equipe=equipe), modo="pdf"), modo="pdf"), tipo=DocumentoTipo.OFICIO)
+        from pypdf import PdfReader
+
+        linhas = PdfReader(io.BytesIO(pdf)).pages[0].extract_text().splitlines()
+        self.assertTrue(any(nome in linha for linha in linhas), "o nome saiu quebrado entre duas linhas")
 
 
 class FacadeCaminhoHtmlTests(TestCase):
