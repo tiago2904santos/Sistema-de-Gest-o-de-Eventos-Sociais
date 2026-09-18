@@ -90,7 +90,7 @@
 
           <div class="ofc-grupo">
             <div class="ofc-grupo__cabeca"><strong>Programa solicitante</strong><span class="pt-grupo__ajuda">Programa que solicitou a ação. Entra automaticamente na contextualização.</span></div>
-            <div class="ofc-grupo__corpo g-form pt-grade-2">
+            <div class="ofc-grupo__corpo g-form pt-grade-programa">
               <div class="ofc-com-acao">
                 {% include "components/select.html" with name="programa" label="Programa" opcoes=programas placeholder="Selecione um programa (opcional)" permitir_vazio=True pesquisavel=True selecionado=v.programa erros=e.programa %}
                 <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_programas }}" aria-label="Gerenciar programas" title="Gerenciar programas">{% include "components/icon.html" with nome="settings" %}</a>
@@ -330,7 +330,6 @@
   {{ atividades_data|json_script:"pt-atividades-data" }}
   {{ presets_data|json_script:"pt-presets-data" }}
   <script src="{% estatico 'js/viagens-cadastros.js' %}" defer></script>
-  <script src="{% estatico 'js/lista-escolha.js' %}" defer></script>
   <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-planos.js' %}" defer></script>
   {% include "components/v32/dialogo_assinado.html" %}

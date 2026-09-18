@@ -9,8 +9,9 @@
   `erros`: lista de erros de validação do campo.
   `pesquisavel`: adiciona busca por texto para listas extensas.
   `permitir_vazio`: expõe a opção vazia no menu para permitir retirar uma escolha.
-  `opcao.dados`: dict que vira `data-*` na opção, para quem precisa de contexto
-    no navegador (ex.: a unidade e os motoristas de uma viatura).
+  `opcao.dados`: dict que vira `data-*` na opção — tanto na nativa quanto na
+    do menu aprimorado —, para quem precisa de contexto no navegador (ex.: a
+    unidade e os motoristas de uma viatura, o cargo de um servidor).
   `unidade_gv`: pesquisa de lotação com sigla/nome, limpeza e teclado do GV.
   `desabilitado`: bloqueia a edição preservando o visual.
   `vazio`: texto que a lista aberta mostra quando não há opção nenhuma.
@@ -32,7 +33,7 @@
             {% if obrigatorio %}required{% endif %}{% if desabilitado %} disabled{% endif %}>
       <option value="">{{ placeholder|default:"Selecione..." }}</option>
       {% for opcao in opcoes %}
-        <option value="{{ opcao.valor|default:opcao }}"{% if opcao.estado %} data-parent-value="{{ opcao.estado }}"{% endif %}{% if opcao.relacionados %} data-related-values="{{ opcao.relacionados }}"{% endif %}{% if selecionado and opcao.valor|default:opcao|stringformat:"s" == selecionado|stringformat:"s" %} selected{% endif %}>{{ opcao.rotulo|default:opcao }}</option>
+        <option value="{{ opcao.valor|default:opcao }}"{% if opcao.estado %} data-parent-value="{{ opcao.estado }}"{% endif %}{% if opcao.relacionados %} data-related-values="{{ opcao.relacionados }}"{% endif %}{% for chave, dado in opcao.dados.items %} data-{{ chave }}="{{ dado }}"{% endfor %}{% if selecionado and opcao.valor|default:opcao|stringformat:"s" == selecionado|stringformat:"s" %} selected{% endif %}>{{ opcao.rotulo|default:opcao }}</option>
       {% endfor %}
     </select>
     {% if pesquisavel %}

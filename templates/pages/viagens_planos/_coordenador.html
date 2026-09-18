@@ -1,9 +1,13 @@
 {% comment %}
   Um painel de coordenador (administrativo ou operacional): o nome vem de um
-  servidor do sistema (lista de escolha) ou é digitado à mão, conforme o
-  interruptor "No sistema / Manual"; o cargo é um select com "Gerenciar
-  cargos" — preenchido sozinho pelo cargo do servidor escolhido — e o gênero
-  decide a concordância do texto de designação.
+  servidor do sistema (busca no molde da de estado e cidade) ou é digitado à
+  mão, conforme o interruptor "No sistema / Manual"; o cargo é um select com
+  "Gerenciar cargos" — preenchido sozinho pelo cargo do servidor escolhido —
+  e o gênero decide a concordância do texto de designação.
+
+  Nome, cargo e gênero dividem uma linha só. Os blocos do servidor e do nome
+  manual ocupam a mesma primeira coluna: o escondido sai do fluxo da grade
+  (`display:none`), então sobra sempre um deles.
 
   `data-pt-coordenador` é contrato do viagens-planos.js: por ele o script
   troca os modos e regenera o texto de coordenação.
@@ -19,13 +23,13 @@
       <label><input type="radio" name="{{ nome_campo }}_modo" value="MANUAL" data-pt-coordenador-modo{% if modo == 'MANUAL' %} checked{% endif %}><span>Manual</span></label>
     </div>
   </div>
-  <div data-pt-coordenador-servidor{% if modo == 'MANUAL' %} hidden{% endif %}>
-    {% include "components/v32/lista_escolha.html" with name=nome_campo label="Servidores" rotulo_busca="Nome" rotulo_oculto=True icone="user" opcoes=servidores selecionado=servidor placeholder="Buscar servidor por nome" erros=erros_servidor vazio="Nenhum servidor cadastrado." sem_resultado="Nenhum servidor encontrado para a busca." %}
-  </div>
-  <div data-pt-coordenador-manual{% if modo != 'MANUAL' %} hidden{% endif %}>
-    {% include "components/input.html" with name=nome_campo|add:"_nome_manual" label="Nome" placeholder="Nome completo" uppercase=True autocomplete="off" valor=nome_manual erros=erros_nome %}
-  </div>
-  <div class="g-form pt-grade-2">
+  <div class="g-form pt-coordenador__campos">
+    <div data-pt-coordenador-servidor{% if modo == 'MANUAL' %} hidden{% endif %}>
+      {% include "components/select.html" with name=nome_campo label="Nome" opcoes=servidores placeholder="Buscar servidor por nome" permitir_vazio=True pesquisavel=True selecionado=servidor erros=erros_servidor vazio="Nenhum servidor cadastrado." %}
+    </div>
+    <div data-pt-coordenador-manual{% if modo != 'MANUAL' %} hidden{% endif %}>
+      {% include "components/input.html" with name=nome_campo|add:"_nome_manual" label="Nome" placeholder="Nome completo" uppercase=True autocomplete="off" valor=nome_manual erros=erros_nome %}
+    </div>
     <div class="ofc-com-acao">
       {% include "components/select.html" with name=nome_campo|add:"_cargo_manual" label="Cargo" opcoes=cargos_opcoes placeholder="Selecione um cargo" permitir_vazio=True pesquisavel=True selecionado=cargo erros=erros_cargo %}
       <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_cargos }}" aria-label="Gerenciar cargos" title="Gerenciar cargos">{% include "components/icon.html" with nome="settings" %}</a>

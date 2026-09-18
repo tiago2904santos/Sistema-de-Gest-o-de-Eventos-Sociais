@@ -115,12 +115,11 @@
       dados.nome = entrada ? entrada.value.trim() : "";
       return dados;
     }
-    var marcado = painel.querySelector('input[name="coordenador_' + papel + '"]:checked');
-    if (marcado) {
-      var linha = marcado.closest("[data-lista-item]");
-      var nome = linha && linha.querySelector(".of-pessoa__nome");
-      dados.nome = nome ? nome.textContent.trim() : "";
-      dados.cargo = (linha && linha.getAttribute("data-cargo")) || dados.cargo;
+    var escolha = painel.querySelector('select[name="coordenador_' + papel + '"]');
+    var opcao = escolha && escolha.value ? escolha.selectedOptions[0] : null;
+    if (opcao) {
+      dados.nome = opcao.textContent.trim();
+      dados.cargo = opcao.getAttribute("data-cargo") || dados.cargo;
     }
     return dados;
   }
@@ -223,8 +222,7 @@
       if (blocoManual) blocoManual.hidden = !eManual;
       if (eManual) {
         // Em manual o servidor sai da escolha, senão continuaria indo no POST.
-        var marcado = painel.querySelector('input[name="coordenador_' + papel + '"]:checked');
-        if (marcado) { marcado.checked = false; disparar(marcado, "change"); }
+        definirSelect(painel.querySelector('select[name="coordenador_' + papel + '"]'), "");
         var entrada = blocoManual && blocoManual.querySelector("input");
         if (entrada) entrada.focus();
       }
@@ -234,8 +232,8 @@
       if (alvo.name === "coordenador_" + papel + "_modo") { aplicarModo(); return; }
       // Escolher um servidor traz o cargo dele; desfazer a escolha limpa o cargo.
       if (alvo.name === "coordenador_" + papel) {
-        var linha = alvo.closest("[data-lista-item]");
-        definirSelect(cargo, alvo.checked && linha ? linha.getAttribute("data-cargo") || "" : "");
+        var opcao = alvo.value ? alvo.selectedOptions[0] : null;
+        definirSelect(cargo, (opcao && opcao.getAttribute("data-cargo")) || "");
       }
     });
     aplicarModo();
