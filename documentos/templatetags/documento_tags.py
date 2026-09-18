@@ -25,11 +25,27 @@ register = template.Library()
 
 @register.simple_tag(takes_context=True)
 def editavel(context, campo):
+    """Marca o trecho para o editor. O que é texto sai como campo de digitação
+    da própria folha (`contenteditable`), para se escrever no documento como
+    num editor de texto; o que é escolha, alternância ou busca em registros
+    segue clicável, com o controle que o tipo pede."""
     if context.get("modo") != "editor":
         return ""
     campos = context.get("campos_editaveis") or {}
-    if campo not in campos:
+    dados = campos.get(campo)
+    if dados is None:
         return ""
+    if dados.get("digitavel"):
+        # `plaintext-only` mantém o texto sem formatação colada de fora; onde o
+        # navegador não o conhece, cai em `true` e a colagem é limpa no script.
+        return format_html(
+            'data-doc-campo="{}" data-doc-parte="{}" data-doc-digitavel="{}"'
+            ' class="doc-editavel doc-editavel--texto"'
+            ' contenteditable="plaintext-only" spellcheck="true"',
+            campo,
+            dados.get("parte") or campo,
+            "varias" if dados.get("multilinha") else "uma",
+        )
     return format_html('data-doc-campo="{}" class="doc-editavel" tabindex="0"', campo)
 
 
@@ -48,7 +64,13 @@ def bloco(context, chave):
     if texto is None:
         texto = dados.get("padrao", "")
     if _editando(context):
-        atributos = format_html(' data-doc-bloco="{}" class="doc-bloco doc-editavel" tabindex="0"', chave)
+        # Parágrafo do modelo é texto puro: escreve-se nele direto na folha.
+        atributos = format_html(
+            ' data-doc-bloco="{}" data-doc-digitavel="varias"'
+            ' class="doc-bloco doc-editavel doc-editavel--texto"'
+            ' contenteditable="plaintext-only" spellcheck="true"',
+            chave,
+        )
         if dados.get("editado"):
             atributos += mark_safe(' data-doc-override="1"')
     else:

@@ -49,6 +49,17 @@ class CampoEditavel:
     def nomes(self) -> tuple[str, ...]:
         return tuple(parte.nome for parte in self.partes)
 
+    @property
+    def digitavel(self) -> bool:
+        """O trecho se edita digitando na própria folha, como num editor de
+        texto: uma parte só, e de texto.
+
+        O resto precisa de escolha (custeio), de alternância (porte de arma)
+        ou de busca em registros do sistema (viajantes) — nada disso se
+        digita, e cada um segue pelo seu controle.
+        """
+        return len(self.partes) == 1 and self.partes[0].tipo in ("texto", "texto_longo")
+
 
 CAMPOS_OFICIO = (
     CampoEditavel("data_criacao", "Data do ofício", (Parte("data_criacao", "data", "Data do ofício"),)),
@@ -81,6 +92,16 @@ def campo(tipo, chave: str) -> CampoEditavel | None:
 
 
 def marcacao(tipo) -> dict[str, dict]:
-    """O que a folha recebe em `campos_editaveis`: só chave e rótulo — a tag
-    `{% editavel %}` decide pela presença da chave."""
-    return {chave: {"rotulo": definicao.rotulo} for chave, definicao in campos_do_tipo(tipo).items()}
+    """O que a folha recebe em `campos_editaveis`: chave, rótulo e se o trecho
+    se digita na folha — a tag `{% editavel %}` decide pela presença da chave e
+    marca o que é digitável para o navegador abrir o cursor ali."""
+    marcados = {}
+    for chave, definicao in campos_do_tipo(tipo).items():
+        dados = {"rotulo": definicao.rotulo, "digitavel": definicao.digitavel}
+        if definicao.digitavel:
+            # Qual campo o trecho grava e se aceita mais de uma linha: o
+            # navegador precisa dos dois para gravar sem adivinhar.
+            dados["parte"] = definicao.partes[0].nome
+            dados["multilinha"] = definicao.partes[0].tipo == "texto_longo"
+        marcados[chave] = dados
+    return marcados

@@ -608,14 +608,14 @@ def documento(request, pk):
 @require_GET
 @xframe_options_sameorigin
 def documento_folha(request, pk):
-    """O documento em si, no modo `editor`: o que o iframe da prévia mostra."""
-    from documentos.editor.campos import marcacao
-    from documentos.services.document_context import contexto_do_oficio
-    from documentos.services.pdf_renderer import renderizar_html
+    """O documento em si, no modo `editor`: o que o iframe da prévia mostra.
+
+    A montagem mora no vínculo do editor, que é a mesma usada na resposta de
+    gravação — a folha que abre e a que se atualiza saem do mesmo lugar.
+    """
+    from documentos.editor.vinculos import vinculo_do_tipo
     oficio = get_oficio_by_id(pk)
-    # Só quem pode editar vê os trechos marcados; o registro decide quais.
-    campos = marcacao(DocumentoTipo.OFICIO) if pode_editar_cadastros(request.user) and not oficio.cancelado else {}
-    html = renderizar_html(DocumentoTipo.OFICIO, contexto_do_oficio(oficio, modo='editor', campos_editaveis=campos), modo='editor')
+    html = vinculo_do_tipo(DocumentoTipo.OFICIO).folha(oficio, request.user)
     response = HttpResponse(html)
     response['Cache-Control'] = 'no-store'
     return response

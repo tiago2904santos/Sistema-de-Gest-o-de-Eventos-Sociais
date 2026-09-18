@@ -29,7 +29,7 @@ class ListaTests(CenarioOrdemMixin, TestCase):
         self.assertContains(r, reverse("viagens_oficios:editar", args=[o.pk]))
         self.assertContains(r, "BRUNO TESTE · INVESTIGADOR")  # assinante
         self.assertContains(r, "…")  # motivo cortado em 240
-        for texto in ["Visualizar", "Baixar PDF", "Baixar DOCX", "Anexar assinado", "Editar", "Cancelar", "Excluir"]:
+        for texto in ["Visualizar", "Baixar PDF", "Anexar assinado", "Editar", "Cancelar", "Excluir"]:
             self.assertContains(r, texto)
         self.assertContains(r, reverse("viagens_ordens:gerar", args=[ordem.pk, "pdf"]) + "?inline=1")
         self.assertEqual(r.context["situacoes"][0]["total"], 1)

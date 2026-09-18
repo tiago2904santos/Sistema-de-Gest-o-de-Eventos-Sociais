@@ -12,6 +12,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from auditoria.models import RegistroAuditoria
+from documentos.services.types import DocumentoTipo
 from viagens_oficios.tests.fixtures import CenarioOficioMixin
 
 
@@ -197,3 +198,88 @@ class EditorDeCamposTests(CenarioOficioMixin, TestCase):
         o.cancelado = True
         o.save(update_fields=['cancelado', 'atualizado_em'])
         self.assertEqual(self.patch(o, 'motivo', {'motivo': 'x'}).status_code, 403)
+
+
+class FolhaNaRespostaTests(CenarioOficioMixin, TestCase):
+    """A gravação já devolve a folha remontada, para o navegador trocar o
+    conteúdo no lugar em vez de recarregar o iframe."""
+
+    def url(self, oficio, chave, tipo='oficio'):
+        return reverse('documentos:editor_campo', args=[tipo, oficio.pk, chave])
+
+    def patch(self, oficio, chave, valores):
+        oficio.refresh_from_db()
+        corpo = {'valores': valores, 'versao': oficio.atualizado_em.isoformat()}
+        return self.client.patch(self.url(oficio, chave), data=json.dumps(corpo), content_type='application/json')
+
+    def test_gravar_campo_devolve_a_folha_com_o_texto_novo(self):
+        o = self.criar()
+        r = self.patch(o, 'motivo', {'motivo': 'Escolta de autoridade em evento'})
+        self.assertEqual(r.status_code, 200)
+        folha = r.json()['folha']
+        # Sai como o domínio grava: o motivo vai para caixa de título.
+        self.assertIn('Escolta de Autoridade em Evento', folha)
+        # É a folha do modo editor: vem marcada para receber clique.
+        self.assertIn('data-doc-campo="motivo"', folha)
+        self.assertIn('POLÍCIA CIVIL DO PARANÁ', folha)
+
+    def test_a_folha_da_resposta_e_a_mesma_da_rota_do_iframe(self):
+        o = self.criar()
+        da_gravacao = self.patch(o, 'motivo', {'motivo': 'Apoio a operação conjunta'}).json()['folha']
+        da_rota = self.client.get(reverse('viagens_oficios:documento_folha', args=[o.pk])).content.decode()
+        self.assertEqual(da_gravacao, da_rota)
+
+    def test_ligar_quebra_de_pagina_tambem_devolve_a_folha(self):
+        o = self.criar()
+        url = reverse('documentos:editor_quebra', args=['oficio', o.pk, 'apos_equipe'])
+        r = self.client.patch(url, data=json.dumps({'ativa': True}), content_type='application/json')
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json()['ativa'])
+        self.assertIn('POLÍCIA CIVIL DO PARANÁ', r.json()['folha'])
+
+
+class TrechoDigitavelTests(CenarioOficioMixin, TestCase):
+    """O que é texto sai da folha como campo de digitação; o que é escolha,
+    alternância ou busca em registros continua clicável."""
+
+    def folha(self, oficio):
+        return self.client.get(reverse('viagens_oficios:documento_folha', args=[oficio.pk])).content.decode()
+
+    def test_texto_livre_sai_editavel_na_folha(self):
+        folha = self.folha(self.criar())
+        # Motivo: texto longo, aceita mais de uma linha.
+        self.assertIn('data-doc-campo="motivo" data-doc-parte="motivo" data-doc-digitavel="varias"', folha)
+        # Protocolo: texto de uma linha só.
+        self.assertIn('data-doc-campo="protocolo" data-doc-parte="protocolo" data-doc-digitavel="uma"', folha)
+        # Parágrafo do modelo também é texto puro.
+        self.assertIn('data-doc-bloco="declaracao_cartao" data-doc-digitavel="varias"', folha)
+        self.assertEqual(folha.count('contenteditable="plaintext-only"'), 3)
+
+    def test_escolha_alternancia_e_relacao_seguem_clicaveis(self):
+        folha = self.folha(self.criar())
+        for chave in ('custeio', 'servidores', 'porte_transporte_armas', 'data_criacao'):
+            self.assertIn(f'data-doc-campo="{chave}" class="doc-editavel" tabindex="0"', folha)
+            self.assertNotIn(f'data-doc-campo="{chave}" data-doc-parte=', folha)
+
+    def test_a_folha_do_pdf_nao_recebe_nada_de_edicao(self):
+        from documentos.services.document_context import contexto_do_oficio
+        from documentos.services.pdf_renderer import renderizar_html
+
+        o = self.criar()
+        html = renderizar_html(DocumentoTipo.OFICIO, contexto_do_oficio(o, modo='pdf'), modo='pdf')
+        for marca in ('contenteditable', 'data-doc-digitavel', 'data-doc-campo', 'data-doc-bloco'):
+            self.assertNotIn(marca, html)
+
+
+class RegistroDigitavelTests(TestCase):
+    def test_so_uma_parte_de_texto_e_digitavel(self):
+        from documentos.editor.campos import campos_do_tipo
+
+        campos = campos_do_tipo(DocumentoTipo.OFICIO)
+        self.assertTrue(campos['motivo'].digitavel)
+        self.assertTrue(campos['protocolo'].digitavel)
+        # Escolha, booleano e data não se digitam.
+        self.assertFalse(campos['custeio'].digitavel)
+        self.assertFalse(campos['servidores'].digitavel)
+        self.assertFalse(campos['porte_transporte_armas'].digitavel)
+        self.assertFalse(campos['data_criacao'].digitavel)

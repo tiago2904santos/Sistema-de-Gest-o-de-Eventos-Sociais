@@ -505,7 +505,7 @@ class CadastroTests(Cenario):
     def test_conferencia(self):
         o = self.oficio(dias=-20, protocolo="123456789", servidores=[self.janine, self.joao], motorista=self.joao, viatura=self.duster, justificativa="teste 1")
         r = self.editar(o)
-        for texto in ["Termo de Autorização — JANINE LACERDA DO PRADO", "Visualizar documento", "Baixar PDF", "Baixar DOCX", "Baixar PDFs", "Baixar DOCXs",
+        for texto in ["Termo de Autorização — JANINE LACERDA DO PRADO", "Visualizar documento", "Baixar PDF", "Baixar PDFs",
                       reverse("viagens_oficios:visualizar", args=[o.pk, "oficio"]),
                       reverse("viagens_oficios:visualizar_termo", args=[o.pk, self.janine.pk]),
                       reverse("viagens_oficios:documento", args=[o.pk])]:

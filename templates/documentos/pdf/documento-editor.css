@@ -46,6 +46,15 @@ body.documento--editor { padding: 16px 0 24px; }
 .doc-editavel--ativo, .doc-editavel--ativo:hover { background: rgba(190, 164, 90, .22); }
 td.doc-editavel, p.doc-editavel { border-radius: 0; }
 
+/* Trecho que se escreve na própria folha: cursor de texto, e o realce só
+   enquanto se digita — em repouso o documento tem que parecer o documento,
+   não um formulário. O contorno do navegador sai; quem marca onde se está é
+   o fundo, como o resto do sistema. */
+.doc-editavel--texto { cursor: text; }
+.doc-editavel--texto:focus { background: rgba(190, 164, 90, .14); outline: none; }
+.doc-editavel--texto[data-doc-estado="erro"],
+.doc-editavel--texto[data-doc-estado="erro"]:focus { background: rgba(190, 70, 60, .16); }
+
 /* Parágrafo do modelo com texto alterado: um fio dourado à esquerda. */
 .doc-bloco[data-doc-override="1"] { box-shadow: inset 2pt 0 0 #BEA45A; padding-left: 5pt; }
 

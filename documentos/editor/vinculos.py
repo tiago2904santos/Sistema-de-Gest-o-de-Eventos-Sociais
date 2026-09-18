@@ -46,6 +46,22 @@ class VinculoOficio:
 
         return OficioDocumentoForm(dados, instance=oficio)
 
+    def folha(self, oficio, usuario) -> str:
+        """O documento no modo editor: o mesmo HTML que o iframe da prévia
+        mostra, e a única montagem dele (a rota da folha também passa aqui).
+
+        Volta junto da resposta de gravação, para a folha se atualizar sem uma
+        segunda viagem ao servidor e sem o piscar de recarregar o iframe.
+        """
+        from documentos.editor.campos import marcacao
+        from documentos.services.document_context import contexto_do_oficio
+        from documentos.services.pdf_renderer import renderizar_html
+
+        # Só quem pode editar vê os trechos marcados; o registro decide quais.
+        campos = marcacao(self.tipo) if self.pode_editar(usuario, oficio) else {}
+        contexto = contexto_do_oficio(oficio, modo="editor", campos_editaveis=campos)
+        return renderizar_html(self.tipo, contexto, modo="editor")
+
     def dados_atuais(self, oficio) -> dict:
         """O ofício inteiro como o formulário o receberia: o PATCH troca só as
         partes pedidas e o resto vai como está, para as regras de `clean()`

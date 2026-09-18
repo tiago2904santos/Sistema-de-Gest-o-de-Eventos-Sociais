@@ -24,7 +24,6 @@
           <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
             {% for servidor in servidores %}
               <a class="dd__i of-item" href="{{ servidor.preview_inline_url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar PDF</b><small>O relatório de {{ ps.servidor.nome }} em outra aba</small></span></a>
-              <a class="dd__i of-item" href="{{ servidor.download_docx_url }}">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivo editável</small></span></a>
               <a class="dd__i of-item" href="{{ servidor.download_pdf_url }}">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Relatório técnico em PDF</small></span></a>
             {% endfor %}
           </div>

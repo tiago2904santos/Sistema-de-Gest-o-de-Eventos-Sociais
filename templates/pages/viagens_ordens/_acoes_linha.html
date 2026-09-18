@@ -18,9 +18,6 @@
         <form method="post" action="{{ l.url_pdf }}">{% csrf_token %}
           <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Ordem de Serviço em PDF</small></span></button>
         </form>
-        <form method="post" action="{{ l.url_docx }}">{% csrf_token %}
-          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivo editável da Ordem de Serviço</small></span></button>
-        </form>
         {% if l.url_assinado %}<a class="dd__i of-item" href="{{ l.url_assinado }}" data-anexar-assinado data-anexar-nome="{{ o.numero_formatado }}"{% if l.assinado %} data-anexar-atual="1"{% endif %}>{% include "components/icon.html" with nome=l.assinado|yesno:"check-circle,upload" %}<span><b>{% if l.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}</b><small>Enviar o PDF assinado da OS</small></span></a>
         {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Gere o PDF da OS primeiro</small></span></span>{% endif %}
       {% endif %}

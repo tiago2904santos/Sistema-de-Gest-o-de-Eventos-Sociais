@@ -10,3 +10,5 @@ class ViagensPrestacoesConfig(AppConfig):
         registrar_namespace("viagens_prestacoes", "VIAGENS")
         from .signals import connect_signals
         connect_signals()
+        from .regeneracao import registrar_regeradores
+        registrar_regeradores()
