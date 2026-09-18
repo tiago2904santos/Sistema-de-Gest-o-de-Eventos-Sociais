@@ -196,9 +196,17 @@ def _contexto_identificacao(form, plano, request):
          "erros_estado": form.errors.get(f"extra_estado_{i}"), "erros_cidade": form.errors.get(f"extra_cidade_{i}")}
         for i in range(form.quantidade_destinos)
     ]
+    # O campo de nome é um só. Num plano com servidor escolhido o nome manual
+    # está vazio, e quem aparece na tela é o nome do cadastro; depois de um
+    # POST com erro, vale o que a pessoa digitou.
+    nomes_coordenador = {}
+    for papel in ("adm", "op"):
+        escolhido = getattr(plano, f"coordenador_{papel}", None)
+        nomes_coordenador[papel] = valor(f"coordenador_{papel}_nome_manual") or (escolhido.nome if escolhido else "")
     atual = daqui(request)
     return {
         "valores": {nome: valor(nome) for nome in form.fields},
+        "nomes_coordenador": nomes_coordenador,
         "erros": {nome: form.errors.get(nome) for nome in form.fields},
         "programas": [{"valor": v, "rotulo": r} for v, r in form.fields["programa"].choices if v],
         "programa_outro_valor": form.PROGRAMA_OUTRO_VALUE,

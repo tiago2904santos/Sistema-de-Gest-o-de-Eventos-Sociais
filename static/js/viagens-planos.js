@@ -1,7 +1,7 @@
 /**
  * Página do plano de trabalho — os comportamentos do wizard do Gerenciador de
- * Viagens, sem autosave: "Outro programa" revela o campo, os coordenadores
- * trocam entre servidor e nome manual, as linhas de efetivo (+/−), o cálculo
+ * Viagens, sem autosave: "Outro programa" revela o campo, o nome do
+ * coordenador puxa o cargo do servidor, as linhas de efetivo (+/−), o cálculo
  * ao vivo das diárias, o filtro/preset/limpar das atividades com a prévia de
  * metas e recursos, os destinos do termo e a prévia do documento.
  *
@@ -55,36 +55,33 @@
   if (programa) programa.addEventListener("change", aplicarPrograma);
   aplicarPrograma();
 
-  /* ── Coordenadores: servidor ↔ manual, cargo preenchido pelo servidor ── */
+  /* ── Coordenadores: o cargo vem do servidor de mesmo nome ────────── */
+
+  var sugestoes = document.getElementById("pt-servidores");
+
+  /** O cargo do servidor com esse nome, ou "" para um nome de fora do sistema. */
+  function cargoDoNome(nome) {
+    if (!sugestoes) return "";
+    var procurado = nome.trim().toLowerCase();
+    if (!procurado) return "";
+    var achada = Array.prototype.find.call(sugestoes.options, function (o) {
+      return o.value.trim().toLowerCase() === procurado;
+    });
+    return achada ? achada.getAttribute("data-cargo") || "" : "";
+  }
 
   form.querySelectorAll("[data-pt-coordenador]").forEach(function (painel) {
     var papel = painel.getAttribute("data-pt-coordenador");
-    var blocoServidor = painel.querySelector("[data-pt-coordenador-servidor]");
-    var blocoManual = painel.querySelector("[data-pt-coordenador-manual]");
+    var nome = painel.querySelector('input[name="coordenador_' + papel + '_nome_manual"]');
     var cargo = painel.querySelector('select[name="coordenador_' + papel + '_cargo_manual"]');
+    if (!nome) return;
 
-    function aplicarModo() {
-      var manual = painel.querySelector('input[name="coordenador_' + papel + '_modo"]:checked');
-      var eManual = Boolean(manual && manual.value === "MANUAL");
-      if (blocoServidor) blocoServidor.hidden = eManual;
-      if (blocoManual) blocoManual.hidden = !eManual;
-      if (eManual) {
-        // Em manual o servidor sai da escolha, senão continuaria indo no POST.
-        definirSelect(painel.querySelector('select[name="coordenador_' + papel + '"]'), "");
-        var entrada = blocoManual && blocoManual.querySelector("input");
-        if (entrada) entrada.focus();
-      }
-    }
-    painel.addEventListener("change", function (evento) {
-      var alvo = evento.target;
-      if (alvo.name === "coordenador_" + papel + "_modo") { aplicarModo(); return; }
-      // Escolher um servidor traz o cargo dele; desfazer a escolha limpa o cargo.
-      if (alvo.name === "coordenador_" + papel) {
-        var opcao = alvo.value ? alvo.selectedOptions[0] : null;
-        definirSelect(cargo, (opcao && opcao.getAttribute("data-cargo")) || "");
-      }
+    // Bateu com um servidor, o cargo dele entra. Um nome de fora não mexe no
+    // cargo: quem digita um nome que o sistema não tem escolhe o cargo à mão.
+    nome.addEventListener("input", function () {
+      var doServidor = cargoDoNome(nome.value);
+      if (doServidor) definirSelect(cargo, doServidor);
     });
-    aplicarModo();
   });
 
   /* ── Destinos (o mecanismo do termo) ────────────────────────────── */

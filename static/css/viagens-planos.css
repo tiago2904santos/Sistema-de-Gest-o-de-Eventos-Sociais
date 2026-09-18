@@ -10,12 +10,12 @@
 .pt-grade-programa{grid-template-columns:minmax(0,1fr)}
 .pt-grade-programa:has([data-pt-programa-outros]:not([hidden])){grid-template-columns:repeat(2,minmax(0,1fr))}
 .pt-grade-4{grid-template-columns:repeat(4,minmax(0,1fr))}
-.pt-form [data-pt-programa-outros][hidden],.pt-form [data-pt-coordenador-servidor][hidden],.pt-form [data-pt-coordenador-manual][hidden],.pt-form .pt-atividade[hidden],.pt-form [data-pt-efetivo-linha][hidden]{display:none}
+.pt-form [data-pt-programa-outros][hidden],.pt-form .pt-atividade[hidden],.pt-form [data-pt-efetivo-linha][hidden]{display:none}
 
 /* Período: os dois rótulos do Gerenciador ("Data de ida"/"Data de volta") sobre o par de campos. */
 .pt-periodo__rotulos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;font-size:12px;font-weight:600;color:var(--n-700)}
 
-/* Coordenadores: dois painéis empilhados, cada um com o interruptor no cabeçalho. */
+/* Coordenadores: dois painéis empilhados. */
 .pt-coordenadores{display:grid;gap:18px}
 .pt-coordenador{display:grid;gap:12px}
 .pt-coordenador__cabeca{margin-bottom:0}

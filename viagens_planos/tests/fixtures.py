@@ -89,9 +89,11 @@ class CenarioPlanoMixin:
             "programa": str(self.programa.pk), "programa_outros": "",
             "destino_estado": str(self.uf.pk), "destino_cidade": str(self.maringa.pk), "quantidade_destinos": "0",
             "data_evento_inicio": "2026-06-25", "data_evento_fim": "2026-06-27", "horario_atendimento": "09:00 até 17:00",
-            "coordenador_adm_modo": "SERVIDOR", "coordenador_adm": str(self.juliana.pk), "coordenador_adm_nome_manual": "",
+            # A tela manda só o nome: batendo com um servidor vale o cadastro
+            # dele (a Juliana), senão vale o nome digitado (o José, de fora).
+            "coordenador_adm_nome_manual": self.juliana.nome,
             "coordenador_adm_cargo_manual": "", "coordenador_adm_genero": "FEMININO",
-            "coordenador_op_modo": "MANUAL", "coordenador_op": "", "coordenador_op_nome_manual": "José Pereira",
+            "coordenador_op_nome_manual": "José Pereira",
             "coordenador_op_cargo_manual": "Policial Civil", "coordenador_op_genero": "MASCULINO",
             "contextualizacao": "", "coordenacao": "", "consideracao_final": "",
             "contextualizacao_auto": "1", "coordenacao_auto": "1", "consideracao_auto": "1",

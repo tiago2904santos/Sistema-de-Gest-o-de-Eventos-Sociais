@@ -7,6 +7,8 @@
   `largura`: colunas do grid (3, 4, 6, 9 ou vazio = 12).
   `erros`: lista de erros de validação do campo.
   `desabilitado`: bloqueia a edição preservando o visual.
+  `lista_sugestoes`: id de um `<datalist>` — o campo passa a sugerir enquanto
+    se digita, sem obrigar a escolher: o que for digitado vale do mesmo jeito.
 {% endcomment %}
 <div class="form-campo{% if largura %} form-campo--{{ largura }}{% endif %}">
   {# rotulo_oculto: label só para leitores de tela, sem ocupar layout. #}
@@ -28,6 +30,7 @@
       {# Atributos opcionais dos cadastros de viagens; os hooks existentes continuam no mesmo input. #}
       {% if inputmode %}inputmode="{{ inputmode }}"{% endif %}
       {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+      {% if lista_sugestoes %}list="{{ lista_sugestoes }}"{% endif %}
       {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
       {% if mascara_cadastro %}data-mask="{{ mascara_cadastro }}"{% endif %}
       {% if uppercase %}data-uppercase="true"{% endif %}

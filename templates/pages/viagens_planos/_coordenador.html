@@ -1,35 +1,29 @@
 {% comment %}
-  Um painel de coordenador (administrativo ou operacional): o nome vem de um
-  servidor do sistema (busca no molde da de estado e cidade) ou é digitado à
-  mão, conforme o interruptor "No sistema / Manual"; o cargo é um select com
-  "Gerenciar cargos" — preenchido sozinho pelo cargo do servidor escolhido —
-  e o gênero decide a concordância do texto de designação.
+  Um painel de coordenador (administrativo ou operacional): nome, cargo e
+  gênero numa linha só.
 
-  Nome, cargo e gênero dividem uma linha só. Os blocos do servidor e do nome
-  manual ocupam a mesma primeira coluna: o escondido sai do fluxo da grade
-  (`display:none`), então sobra sempre um deles.
+  O nome é um campo de texto com as sugestões do `<datalist>` de servidores:
+  digitar filtra, escolher preenche, mas nada obriga a escolher — um nome que
+  não está no sistema vale como foi digitado. Quem decide é a gravação, que
+  procura o servidor por nome (único no banco) e, achando, usa o cadastro
+  dele; não achando, guarda o nome digitado. Por isso não há mais interruptor
+  "No sistema / Manual": o próprio nome diz de onde ele vem.
 
-  `data-pt-coordenador` é contrato do viagens-planos.js: por ele o script
-  troca os modos e regenera o texto de coordenação.
+  O cargo é um select com "Gerenciar cargos", preenchido sozinho quando o
+  nome bate com um servidor, e o gênero decide a concordância do texto de
+  designação.
 
-  Contexto: papel, rotulo, nome_campo, modo, servidor, nome_manual, cargo,
-  genero, cargos_opcoes, erros_*; e do formulário: servidores, generos, url_cargos.
+  `data-pt-coordenador` é contrato do viagens-planos.js.
+
+  Contexto: papel, rotulo, nome_campo, nome_exibido, cargo, genero,
+  cargos_opcoes, erros_*; e do formulário: generos e url_cargos.
 {% endcomment %}
 <div class="pt-coordenador" data-pt-coordenador="{{ papel }}">
   <div class="ofc-grupo__cabeca pt-coordenador__cabeca">
     <strong>{{ rotulo }}</strong>
-    <div class="bx-seg" role="radiogroup" aria-label="Origem do {{ rotulo|lower }}">
-      <label><input type="radio" name="{{ nome_campo }}_modo" value="SERVIDOR" data-pt-coordenador-modo{% if modo != 'MANUAL' %} checked{% endif %}><span>No sistema</span></label>
-      <label><input type="radio" name="{{ nome_campo }}_modo" value="MANUAL" data-pt-coordenador-modo{% if modo == 'MANUAL' %} checked{% endif %}><span>Manual</span></label>
-    </div>
   </div>
   <div class="g-form pt-coordenador__campos">
-    <div data-pt-coordenador-servidor{% if modo == 'MANUAL' %} hidden{% endif %}>
-      {% include "components/select.html" with name=nome_campo label="Nome" opcoes=servidores placeholder="Buscar servidor por nome" permitir_vazio=True pesquisavel=True selecionado=servidor erros=erros_servidor vazio="Nenhum servidor cadastrado." %}
-    </div>
-    <div data-pt-coordenador-manual{% if modo != 'MANUAL' %} hidden{% endif %}>
-      {% include "components/input.html" with name=nome_campo|add:"_nome_manual" label="Nome" placeholder="Nome completo" uppercase=True autocomplete="off" valor=nome_manual erros=erros_nome %}
-    </div>
+    {% include "components/input.html" with name=nome_campo|add:"_nome_manual" label="Nome" placeholder="Buscar servidor ou digitar o nome" uppercase=True autocomplete="off" lista_sugestoes="pt-servidores" valor=nome_exibido erros=erros_nome %}
     <div class="ofc-com-acao">
       {% include "components/select.html" with name=nome_campo|add:"_cargo_manual" label="Cargo" opcoes=cargos_opcoes placeholder="Selecione um cargo" permitir_vazio=True pesquisavel=True selecionado=cargo erros=erros_cargo %}
       <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_cargos }}" aria-label="Gerenciar cargos" title="Gerenciar cargos">{% include "components/icon.html" with nome="settings" %}</a>

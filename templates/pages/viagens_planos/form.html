@@ -104,8 +104,15 @@
           <div class="ofc-grupo">
             <div class="ofc-grupo__cabeca"><strong>Coordenação</strong><span class="pt-grupo__ajuda">Coordenadores administrativo e operacional do plano.</span></div>
             <div class="ofc-grupo__corpo pt-coordenadores">
-              {% include "pages/viagens_planos/_coordenador.html" with papel="adm" rotulo="Coordenador administrativo" nome_campo="coordenador_adm" modo=v.coordenador_adm_modo servidor=v.coordenador_adm nome_manual=v.coordenador_adm_nome_manual cargo=v.coordenador_adm_cargo_manual genero=v.coordenador_adm_genero cargos_opcoes=cargos.adm erros_servidor=e.coordenador_adm erros_nome=e.coordenador_adm_nome_manual erros_cargo=e.coordenador_adm_cargo_manual erros_genero=e.coordenador_adm_genero %}
-              {% include "pages/viagens_planos/_coordenador.html" with papel="op" rotulo="Coordenador operacional (opcional)" nome_campo="coordenador_op" modo=v.coordenador_op_modo servidor=v.coordenador_op nome_manual=v.coordenador_op_nome_manual cargo=v.coordenador_op_cargo_manual genero=v.coordenador_op_genero cargos_opcoes=cargos.op erros_servidor=e.coordenador_op erros_nome=e.coordenador_op_nome_manual erros_cargo=e.coordenador_op_cargo_manual erros_genero=e.coordenador_op_genero %}
+              {% comment %}
+                Um datalist só para os dois painéis: o nome do servidor é único
+                no banco, então a mesma lista serve aos dois papéis.
+              {% endcomment %}
+              <datalist id="pt-servidores">
+                {% for s in servidores %}<option value="{{ s.rotulo }}" data-cargo="{{ s.dados.cargo }}"></option>{% endfor %}
+              </datalist>
+              {% include "pages/viagens_planos/_coordenador.html" with papel="adm" rotulo="Coordenador administrativo" nome_campo="coordenador_adm" nome_exibido=nomes_coordenador.adm cargo=v.coordenador_adm_cargo_manual genero=v.coordenador_adm_genero cargos_opcoes=cargos.adm erros_nome=e.coordenador_adm_nome_manual erros_cargo=e.coordenador_adm_cargo_manual erros_genero=e.coordenador_adm_genero %}
+              {% include "pages/viagens_planos/_coordenador.html" with papel="op" rotulo="Coordenador operacional (opcional)" nome_campo="coordenador_op" nome_exibido=nomes_coordenador.op cargo=v.coordenador_op_cargo_manual genero=v.coordenador_op_genero cargos_opcoes=cargos.op erros_nome=e.coordenador_op_nome_manual erros_cargo=e.coordenador_op_cargo_manual erros_genero=e.coordenador_op_genero %}
             </div>
           </div>
 
