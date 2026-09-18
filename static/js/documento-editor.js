@@ -145,6 +145,140 @@
     marcar(chaveAberta, especieAberta);
   }
 
+  /* ---- Digitar na própria folha -------------------------------------
+     Trechos de texto saem da folha como `contenteditable`: escreve-se neles
+     como num editor de texto. O que se digita já está na tela, então gravar
+     não remonta a folha — remontar tiraria o cursor do lugar. A folha da
+     resposta só é aplicada quando a edição veio de um controle (escolha,
+     alternância, seleção), que muda partes do documento que não estão sob o
+     cursor. */
+
+  var temporizadorTexto = null;
+  var digitando = null;        // elemento sendo escrito agora
+  var versaoDeBloco = {};      // versão por bloco, para o controle de concorrência
+
+  function alvoDigitavel(el) { return el && el.closest ? el.closest('[data-doc-digitavel]') : null; }
+
+  function textoDoTrecho(el) {
+    // <br> e <div> viram quebra de linha; o resto é o texto como está na tela.
+    var caixa = document.createElement('div');
+    caixa.innerHTML = el.innerHTML.replace(/<br\s*\/?>/gi, '\n').replace(/<\/div>/gi, '\n');
+    return (caixa.textContent || '').replace(/ /g, ' ').replace(/\n+$/, '');
+  }
+
+  function enderecoDoTrecho(el) {
+    if (el.hasAttribute('data-doc-bloco')) {
+      return { especie: 'bloco', chave: el.getAttribute('data-doc-bloco') };
+    }
+    return { especie: 'campo', chave: el.getAttribute('data-doc-campo'), parte: el.getAttribute('data-doc-parte') };
+  }
+
+  function marcarEstado(el, texto, classe) {
+    el.setAttribute('data-doc-estado', classe || '');
+    if (chaveAberta === null) status(texto, classe);
+  }
+
+  // O bloco guarda a versão do override, não a do objeto: busca-se uma vez,
+  // ao entrar no trecho, e depois a resposta da gravação a mantém em dia.
+  function versaoDoBloco(chave) {
+    if (versaoDeBloco[chave] !== undefined) return Promise.resolve(versaoDeBloco[chave]);
+    return fetch(url('bloco', chave), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (dados) { versaoDeBloco[chave] = dados.versao; return dados.versao; })
+      .catch(function () { return undefined; });
+  }
+
+  function gravarTrecho(el) {
+    var onde = enderecoDoTrecho(el);
+    var texto = textoDoTrecho(el);
+    var pedirVersao = onde.especie === 'bloco' ? versaoDoBloco(onde.chave) : Promise.resolve(versao);
+    marcarEstado(el, 'Salvando…', 'andamento');
+    return pedirVersao.then(function (versaoAtual) {
+      var corpo = { versao: versaoAtual };
+      corpo.valores = onde.especie === 'bloco' ? { conteudo: texto } : {};
+      if (onde.especie === 'campo') corpo.valores[onde.parte] = texto;
+      return fetch(url(onde.especie, onde.chave), {
+        method: 'PATCH', credentials: 'same-origin', headers: cabecalhos(true), body: JSON.stringify(corpo)
+      });
+    }).then(function (resposta) {
+      return resposta.json().then(function (dados) { return { codigo: resposta.status, dados: dados }; },
+                                  function () { return { codigo: resposta.status, dados: {} }; });
+    }).then(function (res) {
+      if (res.codigo === 200) {
+        if (onde.especie === 'bloco') versaoDeBloco[onde.chave] = res.dados.versao;
+        else versao = res.dados.versao || versao;
+        marcarEstado(el, 'Salvo', 'ok');
+        // O domínio pode normalizar o que foi gravado (o motivo vai para caixa
+        // de título, o protocolo ganha máscara). Só se ajusta o texto na tela
+        // quando ninguém está com o cursor ali — mexer sob o cursor o perderia.
+        if (el !== digitando) conciliarTrecho(el, onde, res.dados.folha);
+      } else if (res.codigo === 409) {
+        marcarEstado(el, res.dados.mensagem || 'O documento mudou em outro lugar.', 'erro');
+        oferecerRecarga();
+      } else {
+        var erros = res.dados.erros && res.dados.erros[onde.parte];
+        marcarEstado(el, (erros && erros[0]) || res.dados.mensagem || 'Não foi possível salvar este trecho.', 'erro');
+      }
+    }).catch(function () { marcarEstado(el, 'Não foi possível salvar este trecho.', 'erro'); });
+  }
+
+  // Traz da folha recém-montada o texto canônico deste mesmo trecho.
+  function conciliarTrecho(el, onde, folha) {
+    if (!folha) return;
+    var nova;
+    try { nova = new DOMParser().parseFromString(folha, 'text/html'); } catch (e) { return; }
+    var atributo = onde.especie === 'bloco' ? 'data-doc-bloco' : 'data-doc-campo';
+    var equivalente = nova && nova.querySelector('[' + atributo + '="' + onde.chave + '"]');
+    if (equivalente && equivalente.innerHTML !== el.innerHTML) el.innerHTML = equivalente.innerHTML;
+  }
+
+  function ligarDigitacao(doc) {
+    doc.addEventListener('input', function (evento) {
+      var el = alvoDigitavel(evento.target);
+      if (!el) return;
+      digitando = el;
+      marcarEstado(el, 'Digitando…');
+      clearTimeout(temporizadorTexto);
+      temporizadorTexto = setTimeout(function () { temporizadorTexto = null; gravarTrecho(el); }, ESPERA_DIGITACAO);
+    });
+    // Sair do trecho grava na hora o que ainda não foi.
+    doc.addEventListener('focusout', function (evento) {
+      var el = alvoDigitavel(evento.target);
+      if (!el) return;
+      if (digitando === el) digitando = null;
+      if (!temporizadorTexto) return;
+      clearTimeout(temporizadorTexto);
+      temporizadorTexto = null;
+      gravarTrecho(el);
+    });
+    doc.addEventListener('keydown', function (evento) {
+      var el = alvoDigitavel(evento.target);
+      if (!el) return;
+      // Num trecho de uma linha, Enter encerra a edição em vez de quebrar.
+      if (evento.key === 'Enter' && el.getAttribute('data-doc-digitavel') !== 'varias') {
+        evento.preventDefault();
+        el.blur();
+      }
+    });
+    // Colar entra como texto puro, mesmo onde plaintext-only não vale.
+    doc.addEventListener('paste', function (evento) {
+      var el = alvoDigitavel(evento.target);
+      if (!el || !evento.clipboardData) return;
+      evento.preventDefault();
+      var texto = evento.clipboardData.getData('text/plain');
+      if (doc.defaultView && doc.defaultView.getSelection) {
+        var selecao = doc.defaultView.getSelection();
+        if (selecao && selecao.rangeCount) {
+          var faixa = selecao.getRangeAt(0);
+          faixa.deleteContents();
+          faixa.insertNode(doc.createTextNode(texto));
+          selecao.collapseToEnd();
+        }
+      }
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+
   function salvar(form) {
     if (enviando) { reenviar = true; return; }
     clearTimeout(temporizador);
@@ -300,6 +434,8 @@
   // ponto de quebra. Devolve false quando não é nada editável.
   function acionar(alvoInicial) {
     if (!alvoInicial || !alvoInicial.closest) return false;
+    // Trecho que se digita: o clique põe o cursor no texto, e não abre painel.
+    if (alvoDigitavel(alvoInicial)) return false;
     var quebra = alvoInicial.closest('[data-doc-quebra]');
     if (quebra) {
       alternarQuebra(quebra.getAttribute('data-doc-quebra'), !quebra.hasAttribute('data-doc-quebra-ativa'));
@@ -322,6 +458,7 @@
       if (evento.key !== 'Enter' && evento.key !== ' ') return;
       if (acionar(evento.target)) evento.preventDefault();
     });
+    ligarDigitacao(doc);
     marcar(chaveAberta, especieAberta);
   }
 
