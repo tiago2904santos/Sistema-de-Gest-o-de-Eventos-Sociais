@@ -111,6 +111,23 @@ def _corpo(request):
     return corpo, None
 
 
+def _gravado(request, vinculo, objeto, *, versao=None, **extra):
+    """Resposta de gravação: além da versão, a folha já remontada.
+
+    Quem grava atualiza o documento na hora com esse HTML, em vez de mandar o
+    iframe recarregar. Vínculo sem `folha` devolve `None` e o navegador cai no
+    recarregamento de antes. `versao` entra explícita para o bloco, cuja versão
+    é a do override e não a do objeto.
+    """
+    montar = getattr(vinculo, "folha", None)
+    return JsonResponse({
+        "ok": True,
+        "versao": vinculo.versao(objeto) if versao is None else versao,
+        "folha": montar(objeto, request.user) if montar else None,
+        **extra,
+    })
+
+
 def _conflito(versao_atual):
     return JsonResponse({
         "ok": False, "conflito": True, "versao": versao_atual,
@@ -161,7 +178,7 @@ def campo(request, tipo, pk, chave):
             form.errors.pop(nome)
     objeto = vinculo.gravar(form, definicao.nomes)
     objeto = vinculo.carregar(objeto.pk)
-    return JsonResponse({"ok": True, "versao": vinculo.versao(objeto), "avisos": outros})
+    return _gravado(request, vinculo, objeto, avisos=outros)
 
 
 def _fragmento_bloco(request, vinculo, objeto, definicao):
@@ -197,7 +214,7 @@ def bloco(request, tipo, pk, chave):
     request.auditoria_origem = "editor"
     if request.method == "DELETE":
         restaurar(vinculo.tipo, objeto, chave)
-        return JsonResponse({"ok": True, "versao": versao_do_bloco(vinculo.tipo, objeto, chave), "editado": False})
+        return _gravado(request, vinculo, objeto, versao=versao_do_bloco(vinculo.tipo, objeto, chave), editado=False)
 
     corpo, erro = _corpo(request)
     if erro is not None:
@@ -215,7 +232,7 @@ def bloco(request, tipo, pk, chave):
     else:
         gravar_override(vinculo.tipo, objeto, chave, conteudo, request.user)
         editado = True
-    return JsonResponse({"ok": True, "versao": versao_do_bloco(vinculo.tipo, objeto, chave), "editado": editado})
+    return _gravado(request, vinculo, objeto, versao=versao_do_bloco(vinculo.tipo, objeto, chave), editado=editado)
 
 
 @require_http_methods(["PATCH"])
@@ -234,4 +251,4 @@ def quebra(request, tipo, pk, chave):
         return JsonResponse({"ok": False, "mensagem": "Informe se a quebra fica ativa."}, status=400)
     request.auditoria_origem = "editor"
     ativa = definir_quebra(vinculo.tipo, objeto, chave, corpo["ativa"], request.user)
-    return JsonResponse({"ok": True, "ativa": ativa})
+    return _gravado(request, vinculo, objeto, ativa=ativa)

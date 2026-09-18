@@ -4,10 +4,12 @@
    real levam `data-doc-campo`. Clicar num deles abre, ao lado da folha, o
    painel daquele campo — HTML que a API devolve, montado com os componentes
    globais. O painel grava por PATCH (JSON, com o token CSRF e a versão que
-   foi lida); texto tem espera de digitação, escolhas gravam na hora. Depois
-   de gravar, a folha recarrega e o campo continua aberto. Erros do
-   formulário voltam por nome e aparecem no lugar, sem redesenhar o painel;
-   409 avisa que outra pessoa mexeu e pede para recarregar. */
+   foi lida); texto tem uma espera curta de digitação e grava ao sair do
+   campo, escolhas gravam na hora. A resposta da gravação já traz a folha
+   remontada: troca-se o conteúdo dela no lugar, sem recarregar o iframe, e o
+   campo continua aberto. Erros do formulário voltam por nome e aparecem no
+   lugar, sem redesenhar o painel; 409 avisa que outra pessoa mexeu e pede
+   para recarregar. */
 (function () {
   'use strict';
 
@@ -26,7 +28,10 @@
   };
   var versao = editor.getAttribute('data-de-versao') || '';
   var tokenCsrf = document.querySelector('input[name="csrfmiddlewaretoken"]');
-  var ESPERA_DIGITACAO = 900;
+  /* Espera de digitação antes de gravar. Curta porque gravar já não recarrega
+     a folha: o documento se atualiza no lugar, então errar para menos custa
+     pouco. Sair do campo grava na hora, sem esperar o relógio. */
+  var ESPERA_DIGITACAO = 400;
 
   var chaveAberta = null;
   var especieAberta = 'campo';
@@ -121,6 +126,25 @@
     try { quadro.contentWindow.location.reload(); } catch (e) { quadro.src = quadro.src; }
   }
 
+  /* A folha já vem remontada na resposta da gravação: troca-se só o conteúdo
+     do <body>, sem recarregar o iframe. Isso evita a ida ao servidor e o
+     piscar da página, mantém o <head> (o CSS não é rebuscado, não há salto de
+     estilo) e preserva os handlers de clique, que vivem no documento e não
+     nos elementos. Sem a folha na resposta, recarrega como antes. */
+  function aplicarFolha(html) {
+    var doc = documentoDaFolha();
+    if (!doc || !doc.body || !html) { recarregarFolha(); return; }
+    var janela = quadro.contentWindow;
+    var rolagem = janela ? janela.pageYOffset : 0;
+    var nova;
+    try { nova = new DOMParser().parseFromString(html, 'text/html'); } catch (e) { recarregarFolha(); return; }
+    if (!nova || !nova.body) { recarregarFolha(); return; }
+    doc.body.className = nova.body.className;
+    doc.body.innerHTML = nova.body.innerHTML;
+    if (janela && rolagem) janela.scrollTo(0, rolagem);
+    marcar(chaveAberta, especieAberta);
+  }
+
   function salvar(form) {
     if (enviando) { reenviar = true; return; }
     clearTimeout(temporizador);
@@ -139,7 +163,7 @@
         versao = res.dados.versao || versao;
         limparErros();
         status(res.dados.avisos && res.dados.avisos.length ? 'Salvo. O ofício ainda tem pendências em outros campos.' : 'Salvo', 'ok');
-        recarregarFolha();
+        aplicarFolha(res.dados.folha);
         // Um bloco que acabou de ganhar (ou perder) override troca de painel:
         // aparece ou some o "Restaurar". Reabre sem mexer no texto digitado.
         if (form.getAttribute('data-de-especie') === 'bloco' && !temporizador) reabrirSeMudouEstado(form, res.dados.editado);
@@ -177,14 +201,14 @@
     status('Restaurando…', 'andamento');
     fetch(form.getAttribute('action'), { method: 'DELETE', credentials: 'same-origin', headers: cabecalhos(false) })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
-      .then(function () { recarregarFolha(); abrir(chaveAberta, 'bloco'); })
+      .then(function (dados) { aplicarFolha(dados && dados.folha); abrir(chaveAberta, 'bloco'); })
       .catch(function () { status('Não foi possível restaurar.', 'erro'); });
   }
 
   function alternarQuebra(chave, ativa) {
     fetch(url('quebra', chave), { method: 'PATCH', credentials: 'same-origin', headers: cabecalhos(true), body: JSON.stringify({ ativa: ativa }) })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
-      .then(function () { recarregarFolha(); })
+      .then(function (dados) { aplicarFolha(dados && dados.folha); })
       .catch(function () { window.alert('Não foi possível alterar a quebra de página.'); });
   }
 
@@ -220,6 +244,16 @@
         if (alvo.closest('[data-multi-pick]')) return;
         clearTimeout(temporizador);
       }
+      salvar(form);
+    });
+    // Sair do campo com gravação pendente grava na hora: quem terminou de
+    // escrever e foi para outro lugar não espera o relógio.
+    form.addEventListener('focusout', function (evento) {
+      if (!temporizador) return;
+      if (!evento.target.matches('textarea, input[type="text"], input[type="search"]')) return;
+      if (evento.target.closest('[data-multi-pick]')) return;
+      clearTimeout(temporizador);
+      temporizador = null;
       salvar(form);
     });
     painel.querySelectorAll('[data-de-fechar]').forEach(function (botao) { botao.addEventListener('click', fechar); });

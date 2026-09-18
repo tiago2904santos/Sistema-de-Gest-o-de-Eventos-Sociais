@@ -197,3 +197,41 @@ class EditorDeCamposTests(CenarioOficioMixin, TestCase):
         o.cancelado = True
         o.save(update_fields=['cancelado', 'atualizado_em'])
         self.assertEqual(self.patch(o, 'motivo', {'motivo': 'x'}).status_code, 403)
+
+
+class FolhaNaRespostaTests(CenarioOficioMixin, TestCase):
+    """A gravação já devolve a folha remontada, para o navegador trocar o
+    conteúdo no lugar em vez de recarregar o iframe."""
+
+    def url(self, oficio, chave, tipo='oficio'):
+        return reverse('documentos:editor_campo', args=[tipo, oficio.pk, chave])
+
+    def patch(self, oficio, chave, valores):
+        oficio.refresh_from_db()
+        corpo = {'valores': valores, 'versao': oficio.atualizado_em.isoformat()}
+        return self.client.patch(self.url(oficio, chave), data=json.dumps(corpo), content_type='application/json')
+
+    def test_gravar_campo_devolve_a_folha_com_o_texto_novo(self):
+        o = self.criar()
+        r = self.patch(o, 'motivo', {'motivo': 'Escolta de autoridade em evento'})
+        self.assertEqual(r.status_code, 200)
+        folha = r.json()['folha']
+        # Sai como o domínio grava: o motivo vai para caixa de título.
+        self.assertIn('Escolta de Autoridade em Evento', folha)
+        # É a folha do modo editor: vem marcada para receber clique.
+        self.assertIn('data-doc-campo="motivo"', folha)
+        self.assertIn('POLÍCIA CIVIL DO PARANÁ', folha)
+
+    def test_a_folha_da_resposta_e_a_mesma_da_rota_do_iframe(self):
+        o = self.criar()
+        da_gravacao = self.patch(o, 'motivo', {'motivo': 'Apoio a operação conjunta'}).json()['folha']
+        da_rota = self.client.get(reverse('viagens_oficios:documento_folha', args=[o.pk])).content.decode()
+        self.assertEqual(da_gravacao, da_rota)
+
+    def test_ligar_quebra_de_pagina_tambem_devolve_a_folha(self):
+        o = self.criar()
+        url = reverse('documentos:editor_quebra', args=['oficio', o.pk, 'apos_equipe'])
+        r = self.client.patch(url, data=json.dumps({'ativa': True}), content_type='application/json')
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json()['ativa'])
+        self.assertIn('POLÍCIA CIVIL DO PARANÁ', r.json()['folha'])
