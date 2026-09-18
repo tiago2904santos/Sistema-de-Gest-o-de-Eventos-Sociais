@@ -1,8 +1,9 @@
-/* Ofício: a estrutura do oficio.docx (tudo em tabelas com grade) com a letra
-   e o acabamento dos demais documentos — Arial 9 no corpo, cabeçalho em
-   negrito, margens laterais de 1,27 cm (o .docx usa Times 8 e 0,65 cm, o que
-   deixa a folha apertada). Entra por cima de documento.css e da camada do
-   modo; tudo aqui é escopado em `.doc-oficio`. */
+/* Ofício: a estrutura do oficio.docx (tudo em tabelas com grade) e a letra
+   dele — Times New Roman 8 no corpo, 9 no nome da chefia, cabeçalho em Arial
+   10,5 negrito e rodapé em Times 8/7, como no modelo. As margens laterais
+   ficam em 1,27 cm (o .docx usa 0,65 cm, que cola o texto na borda). Entra por
+   cima de documento.css e da camada do modo; tudo aqui é escopado em
+   `.doc-oficio`. */
 
 @page {
   margin: 4.85cm 1.27cm 3.4cm 1.27cm;
@@ -12,17 +13,22 @@
 }
 
 .doc-oficio {
-  font-family: Arial, "Liberation Sans", Helvetica, sans-serif;
-  font-size: 9pt;
+  font-family: "Times New Roman", "Liberation Serif", Times, serif;
+  font-size: 8pt;
   line-height: 1.3;
 }
 
-/* Cabeçalho: brasão e as linhas do órgão em Arial negrito. */
+/* Cabeçalho: brasão e as linhas do órgão em Arial negrito — é a única parte
+   do modelo que não é Times. */
 .doc-oficio .doc-cabecalho { line-height: 1.2; }
 .doc-oficio .doc-cabecalho__brasao { width: auto; height: 2.4cm; margin-bottom: 0.25cm; }
 .doc-oficio .doc-cabecalho__secretaria,
 .doc-oficio .doc-cabecalho__orgao,
-.doc-oficio .doc-cabecalho__unidade { font-size: 10.5pt; font-weight: 700; }
+.doc-oficio .doc-cabecalho__unidade {
+  font-family: Arial, "Liberation Sans", Helvetica, sans-serif;
+  font-size: 10.5pt;
+  font-weight: 700;
+}
 
 /* Rodapé: destinatário à esquerda, acima da marca; a linha da unidade. */
 .doc-oficio .doc-rodape { line-height: 1.2; }
@@ -40,9 +46,10 @@
 
 .doc-oficio__dados td { vertical-align: middle; }
 
-/* A abertura cabe numa linha só: corpo 7,3, sem quebra; só o vocativo em negrito. O termo
-   variável ("autorização" ou "convalidação") tem sempre o mesmo tamanho. */
-.doc-oficio__abertura { margin: 0.05cm 0 0.22cm; font-size: 7.3pt; white-space: nowrap; }
+/* A abertura cabe numa linha só: no corpo do modelo (Times 8), sem quebra; só
+   o vocativo em negrito. O termo variável ("autorização" ou "convalidação")
+   tem sempre o mesmo tamanho. */
+.doc-oficio__abertura { margin: 0.05cm 0 0.22cm; white-space: nowrap; }
 
 .doc-oficio__equipe th { font-weight: 700; text-align: center; vertical-align: middle; }
 .doc-oficio__equipe th:nth-child(1) { width: 34%; }
@@ -65,7 +72,7 @@
 
 .doc-oficio__assinatura { margin-top: 0.3cm; text-align: center; page-break-inside: avoid; }
 .doc-oficio__assinatura p { margin: 0; }
-.doc-oficio__chefia { margin-top: 0.75cm !important; font-size: 10pt; font-weight: 700; }
+.doc-oficio__chefia { margin-top: 0.75cm !important; font-size: 9pt; font-weight: 700; }
 .doc-oficio__cargo { font-weight: 700; }
 
 /* Caber numa página: se o PDF passar de uma, o motor o refaz com estes
@@ -74,10 +81,10 @@
 .doc-compacto-1 .doc-oficio__tabela { margin-bottom: 0.15cm; }
 .doc-compacto-1 .doc-oficio__tabela th, .doc-compacto-1 .doc-oficio__tabela td { padding: 2pt 5pt; }
 .doc-compacto-1 .doc-oficio__chefia { margin-top: 0.55cm !important; }
-.doc-compacto-2 .doc-corpo { font-size: 8pt; line-height: 1.2; }
+.doc-compacto-2 .doc-corpo { font-size: 7.5pt; line-height: 1.2; }
 .doc-compacto-2 .doc-oficio__tabela { margin-bottom: 0.1cm; }
 .doc-compacto-2 .doc-oficio__tabela th, .doc-compacto-2 .doc-oficio__tabela td { padding: 1.5pt 4pt; }
-.doc-compacto-2 .doc-oficio__chefia { margin-top: 0.45cm !important; font-size: 9pt; }
+.doc-compacto-2 .doc-oficio__chefia { margin-top: 0.45cm !important; font-size: 8.5pt; }
 
 /* Na tela: as margens deste modelo e as faixas de cabeçalho e rodapé com a
    altura das margens de impressão. */
