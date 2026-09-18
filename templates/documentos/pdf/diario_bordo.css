@@ -1,0 +1,44 @@
+/* Diário de Bordo: o diario_bordo.xlsx em A4 deitada. Cabeçalho curto
+   (brasão pequeno e as linhas do órgão), sem rodapé; tabelas com grade em
+   Arial 8 — a planilha sai com o corpo 11 encolhido para caber na largura,
+   o que no papel dá ~7; aqui é 8, legível, na mesma proporção. */
+
+@page {
+  size: A4 landscape;
+  margin: 4.2cm 1.8cm 1.5cm 1.8cm;
+  @top-center { vertical-align: top; padding-top: 0.9cm; }
+  @bottom-center { content: none; }
+}
+
+.doc-diario {
+  font-family: Arial, "Liberation Sans", Helvetica, sans-serif;
+  font-size: 8pt;
+  line-height: 1.2;
+}
+.doc-diario .doc-rodape { display: none; }
+
+/* Cabeçalho: brasão pequeno e as linhas do órgão em negrito. */
+.doc-diario .doc-cabecalho { line-height: 1.2; }
+.doc-diario .doc-cabecalho__brasao { width: auto; height: 1.75cm; margin-bottom: 0.3cm; }
+.doc-diario .doc-cabecalho__secretaria,
+.doc-diario .doc-cabecalho__orgao,
+.doc-diario .doc-cabecalho__unidade { font-size: 7.5pt; font-weight: 700; }
+
+.doc-diario__tabela { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.doc-diario__tabela td, .doc-diario__tabela th { border: 0.75pt solid #000; padding: 0 5pt; height: 0.62cm; vertical-align: middle; }
+
+/* Dados do ofício e da viatura: duas colunas, rótulos em negrito. */
+.doc-diario__dados td { font-weight: 700; } /* layout fixo: as duas colunas dividem a largura */
+
+/* Trechos: doze colunas iguais, cabeçalho em negrito centralizado. */
+.doc-diario__trechos { margin-top: 0.55cm; }
+.doc-diario__trechos th { font-weight: 700; text-align: center; }
+.doc-diario__trechos td { text-align: center; }
+/* "( X ) Sim   (   ) Não": os espaços marcam o quadrado vazio; não podem colapsar. */
+.doc-diario__abastecimento { white-space: pre; }
+.doc-diario__trechos tbody tr { page-break-inside: avoid; break-inside: avoid; }
+.doc-diario__motorista td { height: 1.3cm; font-weight: 700; text-align: left; }
+
+/* Na tela: a folha deitada, com a faixa de cabeçalho da impressão. */
+.documento--editor.doc-diario .folha { width: 29.7cm; min-height: 21cm; padding: 4.2cm 1.8cm 1.5cm 1.8cm; }
+.documento--editor.doc-diario .doc-cabecalho { left: 1.8cm; right: 1.8cm; height: 4.2cm; justify-content: flex-start; padding-top: 0.9cm; box-sizing: border-box; }

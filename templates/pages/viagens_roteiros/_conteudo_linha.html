@@ -1,0 +1,15 @@
+{% comment %}
+  O conteúdo de uma linha da lista de roteiros, numa célula só e em duas
+  linhas, no desenho das listas de ofícios, termos, PT e OS: a rota no
+  título com o selo temporal; embaixo, os fatos com ícone — período, trechos,
+  servidores e o valor das diárias com a composição. O vazio é nomeado.
+  Usado pela lista de roteiros e pela etapa 2 da viagem.
+  Contexto: `linha` (do `presenters.linha_da_lista`).
+{% endcomment %}
+<h2 class="of-cartao__titulo tm-titulo" id="roteiro-{{ linha.roteiro.pk }}-titulo">{{ linha.titulo }}{% if linha.chip %} <span class="st st--{{ linha.selo_tom }}">{{ linha.chip }}</span>{% endif %}</h2>
+<ul class="tm-fatos of-fatos" aria-label="Dados do roteiro">
+  <li class="tm-fato{% if linha.periodo == '—' %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome="calendar" %}<span class="sr-only">Período: </span><span class="of-fato__valor">{% if linha.periodo == '—' %}Sem período{% else %}{{ linha.periodo }}{% endif %}</span></li>
+  <li class="tm-fato">{% include "components/icon.html" with nome="map-pin" %}<span class="sr-only">Trechos: </span><span class="of-fato__valor">{{ linha.trechos }}</span></li>
+  <li class="tm-fato">{% include "components/icon.html" with nome="users" %}<span class="sr-only">Servidores: </span><span class="of-fato__valor">{{ linha.servidores }} servidor{{ linha.servidores|pluralize:"es" }}</span></li>
+  <li class="tm-fato{% if linha.valor == '—' %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome="chart" %}<span class="sr-only">Valor: </span><span class="of-fato__valor">{% if linha.valor == '—' %}Sem diárias calculadas{% else %}{{ linha.valor }}{% if linha.resumo_diarias %} · {{ linha.resumo_diarias }}{% endif %}{% endif %}</span></li>
+</ul>

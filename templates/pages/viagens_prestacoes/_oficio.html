@@ -1,0 +1,91 @@
+{% comment %}
+  Um ofício na lista de prestações: a linha do ofício, branca como a de
+  qualquer lista (número, protocolo, destino e o período da viagem) e,
+  embaixo, um cartão por servidor: crachá (o motorista do ofício leva o volante, em grafite),
+  solicitação, prazo de saque num campo só e o nome com os chips do que já
+  foi feito e a situação, com os campos da solicitação e do período do saque, que gravam
+  sozinhos (`data-autosave`, o mesmo endpoint do cartão de antes), e o menu
+  de ações dele. Contexto: `g`, `pode_editar`, `url_atual`.
+{% endcomment %}
+<section class="pc-oficio" aria-labelledby="pc-{{ g.prestacao_pk }}-titulo">
+  <header class="pc-oficio__linha">
+    <h2 class="pc-oficio__numero" id="pc-{{ g.prestacao_pk }}-titulo">Ofício {{ g.oficio.numero }}</h2>
+    <ul class="pc-oficio__dados">
+      <li><span class="pc-oficio__rotulo">Protocolo</span>{{ g.oficio.protocolo|default:"—" }}</li>
+      <li><span class="pc-oficio__rotulo">Destino</span>{{ g.oficio.destino|default:"—" }}</li>
+      <li><span class="pc-oficio__rotulo">Período</span>{{ g.oficio.periodo|default:"—" }}</li>
+      <li><span class="pc-oficio__rotulo">Por servidor</span>{% if g.valor_por_servidor %}{{ g.valor_por_servidor }}{% if g.quantidade_diarias %} <span class="pc-oficio__qtd">{{ g.quantidade_diarias }}</span>{% endif %}{% else %}—{% endif %}</li>
+    </ul>
+    {# Ações da prestação do ofício: abrir a prestação e o ofício, e finalizar ou arquivar a equipe toda. #}
+    <div class="pc-oficio__acoes dd of-menu cad-acoes" data-menu>
+      <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações da prestação do ofício {{ g.oficio.numero }}" title="Ações da prestação">{% include "components/icon.html" with nome="kebab" %}</button>
+      <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
+        {% with primeiro=g.cards.0 %}
+          <a class="dd__i of-item" href="{{ primeiro.diario_url }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Abrir prestação</b><small>Diário, relatório técnico e documentos</small></span></a>
+        {% endwith %}
+        <a class="dd__i of-item" href="{{ g.oficio_url }}">{% include "components/icon.html" with nome="document" %}<span><b>Abrir ofício</b><small>O cadastro do ofício {{ g.oficio.numero }}</small></span></a>
+        {% if pode_editar %}
+          <div class="dd__s"></div>
+          <form method="post" action="{% if g.todos_finalizados %}{{ g.acoes_url.reabrir }}{% else %}{{ g.acoes_url.finalizar }}{% endif %}" data-confirmar="{% if g.todos_finalizados %}Reabrir a prestação de toda a equipe?{% else %}Finalizar a prestação de toda a equipe?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+            <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome=g.todos_finalizados|yesno:"undo,check-circle" %}<span><b>{% if g.todos_finalizados %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</b><small>Todos os servidores do ofício</small></span></button>
+          </form>
+          <form method="post" action="{% if g.todos_arquivados %}{{ g.acoes_url.desarquivar }}{% else %}{{ g.acoes_url.arquivar }}{% endif %}" data-confirmar="{% if g.todos_arquivados %}Desarquivar a prestação de toda a equipe?{% else %}Arquivar a prestação de toda a equipe?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+            <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="lock" %}<span><b>{% if g.todos_arquivados %}Desarquivar prestação{% else %}Arquivar prestação{% endif %}</b><small>Todos os servidores do ofício</small></span></button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <div class="pc-cards">
+  {% for c in g.cards %}{% with s=c.servidores.0 %}
+    {# O cartão é a grade; o formulário (display: contents) guarda só os campos — o menu tem formulários próprios e não pode ficar dentro dele. #}
+    <div class="pc-linha{% if s.is_motorista %} pc-linha--motorista{% endif %}{% if c.arquivada %} pc-linha--arquivada{% endif %}">
+    <form method="post" action="{% url 'viagens_prestacoes:index' %}" class="pc-linha__form"
+          {% if pode_editar %}data-autosave data-autosave-url="{{ s.solicitacao_autosave_url }}" data-autosave-model="prestacao_servidor" data-autosave-id="{{ s.ps_pk }}"{% endif %}
+          aria-label="Prestação de {{ s.name }}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save_solicitacoes">
+      <input type="hidden" name="next" value="{{ url_atual }}">
+      {# 1. Crachá: iniciais; o motorista do ofício leva o volante. #}
+      <span class="pc-linha__av{% if s.is_motorista %} pc-linha__av--motorista{% endif %}" aria-hidden="true" title="{% if s.is_motorista %}Motorista do ofício{% endif %}">{% if s.is_motorista %}{% include "components/icon.html" with nome="volante" %}{% else %}{{ s.iniciais }}{% endif %}</span>
+      {% if pode_editar %}
+        {# 2. Solicitação (até 7 dígitos) e 3. o prazo de saque num campo só: liberação → prazo limite. #}
+        <div class="pc-linha__solic">
+          {% include "components/input.html" with name=s.nome_solicitacao label="Solicitação" valor=s.numero_solicitacao placeholder="0000000" erros=None %}
+        </div>
+        <div class="pc-linha__periodo">
+          {% include "components/date_range.html" with name="saque_"|add:s.nome_solicitacao start_name=s.nome_liberacao end_name=s.nome_prazo label="Prazo de saque" valor_inicio=s.data_liberacao_diarias valor_fim=s.prazo_limite_saque erros=None %}
+        </div>
+      {% else %}
+        <div class="pc-linha__leitura pc-linha__solic"><span class="pc-oficio__rotulo">Solicitação</span>{{ s.numero_solicitacao|default:"—" }}</div>
+        <div class="pc-linha__leitura pc-linha__periodo"><span class="pc-oficio__rotulo">Prazo de saque</span>{{ s.periodo|default:"—" }}</div>
+      {% endif %}
+      {# 4. Nome com o que já foi feito e a situação; embaixo, o resto do servidor. #}
+      <div class="pc-linha__pessoa">
+        <span class="pc-linha__nome-linha">
+          <span class="pc-linha__nome">{{ s.name }}</span>
+          {% if s.diario_pdf_url %}<span class="pc-chip pc-chip--feito">{% include "components/icon.html" with nome="check" %}Diário</span>{% endif %}
+          {% if c.tem_rt %}<span class="pc-chip pc-chip--feito">{% include "components/icon.html" with nome="check" %}Relatório</span>{% endif %}
+          {% if s.comprovante_ok %}<span class="pc-chip pc-chip--feito">{% include "components/icon.html" with nome="check" %}Comprovante</span>{% endif %}
+          {% if c.tem_documento_assinado %}<span class="pc-chip pc-chip--feito">{% include "components/icon.html" with nome="check" %}Assinados</span>{% endif %}
+          <span class="st st--pc-{{ c.status_value }}">{% if c.finalizada %}Finalizada{% else %}{{ c.status_label }}{% endif %}</span>
+          {% if c.arquivada %}<span class="st st--neutro">Arquivada</span>{% endif %}
+        </span>
+        <span class="pc-linha__info">
+          <span>{{ s.cargo|default:"Sem cargo" }}</span>
+          <span>CPF {{ s.cpf|default:"—" }}</span>
+          <span>{{ s.telefone|default:"Sem telefone" }}</span>
+          {% if pode_editar %}<span class="pc-autosave" data-autosave-estado aria-live="polite"></span>{% endif %}
+        </span>
+      </div>
+      {% if pode_editar %}
+        {# Sem JavaScript o autosave não existe: o botão grava pelo POST da lista. #}
+        <noscript><button type="submit" class="btn--secundaria btn--compacto">Salvar</button></noscript>
+      {% endif %}
+    </form>
+      <div class="pc-linha__acoes">{% include "pages/viagens_prestacoes/_acoes_linha.html" %}</div>
+    </div>
+  {% endwith %}{% endfor %}
+  </div>
+</section>

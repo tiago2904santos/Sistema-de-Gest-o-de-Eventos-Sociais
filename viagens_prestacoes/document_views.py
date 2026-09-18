@@ -231,6 +231,13 @@ def documentos_servidor(request, ps_pk):
             # desta etapa: a tela de PDF final deixou de existir.
             "pendencias": pendencias_consolidado(ps),
             "downloads": payload_downloads(ps)["itens"],
+            # O modal "Baixar documentos" (o mesmo da lista), no botão de ação do cartão.
+            "url_baixar": reverse("viagens_prestacoes:prestacao_baixar", args=[ps.pk]),
+            "itens_baixar": json.dumps([
+                {"valor": d["id"], "nome": d["titulo"], "detalhe": d["subtitulo"],
+                 "estado": "Assinado" if d["versoes"]["assinado"] else "Original", "assinado": bool(d["versoes"]["assinado"])}
+                for d in payload_downloads(ps)["itens"]
+            ], ensure_ascii=False),
         },
     )
 

@@ -97,6 +97,24 @@ def titulo_do_cartao(oficio):
     return " · ".join(p for p in partes if p)
 
 
+def dados_do_oficio(oficio):
+    """As partes do título, separadas, para a linha do ofício na lista agrupada."""
+    from core.utils.masks import format_protocolo
+    from viagens_oficios.presenters import destinos_resumidos
+    from viagens_oficios.roteiro_context import periodo_roteiro
+    roteiro = oficio.roteiro if oficio.roteiro_id else None
+    saida, retorno = periodo_roteiro(roteiro) if roteiro else (None, None)
+    from django.utils import timezone
+    inicio = timezone.localtime(saida).strftime("%d/%m/%Y") if saida else ""
+    fim = timezone.localtime(retorno).strftime("%d/%m/%Y") if retorno else ""
+    return {
+        "numero": oficio.numero_formatado,
+        "protocolo": format_protocolo(oficio.protocolo) or "",
+        "destino": destinos_resumidos(roteiro) if roteiro else "",
+        "periodo": f"{inicio} a {fim}" if inicio and fim and inicio != fim else inicio or fim,
+    }
+
+
 def moeda(texto):
     """"R$ 1.452,75" — o formatador dos documentos não põe o espaço; a tela da origem põe."""
     return texto.replace("R$", "R$ ").replace("R$  ", "R$ ") if texto else texto
@@ -105,14 +123,32 @@ def moeda(texto):
 def cartao_da_lista(ps, *, configuracao=None):
     card = apresentar_prestacao_servidor_card(ps, configuracao=configuracao)
     card["titulo"] = titulo_do_cartao(ps.prestacao.oficio)
+    card["oficio"] = dados_do_oficio(ps.prestacao.oficio)
     card["valor_diarias_display"] = moeda(card["valor_diarias_display"])
     servidor = card["servidores"][0]
     servidor["iniciais"] = _iniciais_nome_servidor(servidor["name"])
+    from core.utils.masks import format_cpf, format_telefone
+    servidor["cpf"] = format_cpf(ps.servidor.cpf) if ps.servidor.cpf else ""
+    servidor["telefone"] = format_telefone(ps.servidor.telefone) if ps.servidor.telefone else ""
+    servidor["nome_solicitacao"] = f"ps-{ps.pk}-numero_solicitacao"
     servidor["nome_liberacao"] = f"ps-{ps.pk}-data_liberacao_diarias"
     servidor["nome_prazo"] = f"ps-{ps.pk}-prazo_limite_saque"
     servidor["periodo"] = periodo_das_diarias(servidor)
     servidor["whatsapp_url"] = url_whatsapp(servidor, card)
     card["downloads"] = documentos_para_baixar(ps)
     card["anexos"] = anexos_do_cartao(card)
+    # Os dois modais da lista: "Baixar documentos" (os mesmos das outras listas) e "Anexar assinado".
+    import json
+    from django.urls import reverse
+    card["url_baixar"] = reverse("viagens_prestacoes:prestacao_baixar", args=[ps.pk])
+    card["itens_baixar"] = json.dumps([
+        {"valor": d["id"], "nome": d["titulo"], "detalhe": d["subtitulo"],
+         "estado": "Assinado" if any("Assinado" in v["rotulo"] for v in d["versoes"]) else "Original",
+         "assinado": any("Assinado" in v["rotulo"] for v in d["versoes"])}
+        for d in card["downloads"]
+    ], ensure_ascii=False)
+    # Sem "remover" aqui: o anexo da prestação só se substitui (a rota não remove).
+    card["opcoes_anexar"] = json.dumps(
+        [{"nome": a["option_label"], "url": a["url"], "atual": False} for a in card["anexos"]], ensure_ascii=False)
     card["rotulo_anexar"] = "Gerenciar documentos assinados" if card["tem_documento_assinado"] else "Anexar documentos assinados"
     return card

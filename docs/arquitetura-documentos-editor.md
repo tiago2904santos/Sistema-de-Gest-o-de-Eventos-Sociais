@@ -389,7 +389,111 @@ e rodam assim que o GTK3 estiver instalado (`python -c "import weasyprint"`).
   (viatura/placa manual), `motorista` — marcados no template, sem painel.
 - O aviso de pendências acima da folha não se atualiza depois de uma
   gravação pelo editor (só ao recarregar a página).
-- Migrar termo de autorização e justificativa para o mesmo caminho
-  (template HTML + registro de campos e blocos); prestação de contas depois.
+- Fora do caminho HTML: relatório técnico e diário de bordo (prestação de
+  contas).
+- Termo: prévia na tela (`viagens_termos/preview.html`) ainda é a antiga;
+  trocar pela folha HTML e, depois, registro de campos e blocos do editor.
 - Regeneração: quando o texto padrão de um bloco mudar no registro, avisar
   na tela que o original mudou (o `conteudo_original` gravado permite).
+
+### 8.5 Termo de autorização no caminho HTML (18/09/2026)
+
+- `DOCUMENTOS_PDF_HTML_NATIVO = ("oficio", "termo_autorizacao")`: o PDF do
+  termo nasce de `templates/documentos/pdf/termo_autorizacao.html`, sem DOCX.
+  O DOCX continua pelos três `.docx` de antes.
+- Um template para as três variantes (semipreenchido, completo com e sem
+  viatura). O que a variante deixa para preencher à mão vira lacuna
+  sublinhada (`doc-lacuna`); campo sem valor numa variante preenchida (termo
+  só da viatura, telefone vazio) vira lacuna curta no meio da frase.
+- Contexto: `document_context.contexto_do_termo(payload, tx)`, com `tx` =
+  `_legacy_docx_context` — a mesma regra de texto que o DOCX recebe.
+- CSS por tipo: `documentos/pdf/<tipo>.css`, quando existe, entra por último
+  no PDF e na tela e na assinatura de cache (`pdf_renderer.css_do_tipo`). O
+  termo usa isso para a geometria dele (margens de 1,5 cm, cabeçalho de 6,8 cm,
+  Arial 11 / 13 / 9 dos `.docx`). A base ganhou os blocos `classe` e `rodape`.
+
+### 8.6 Justificativa no caminho HTML e folha ASCOM (18/09/2026)
+
+- `DOCUMENTOS_PDF_HTML_NATIVO` inclui `justificativa`. Template
+  `documentos/pdf/justificativa.html`, contexto `contexto_da_justificativa`
+  sobre `build_justificativa_docxtpl_context` (cada linha do texto é um
+  parágrafo). O `.docx` é Carta; o HTML é A4, como os demais.
+- Termo e justificativa usam a mesma folha: classe `doc-folha-ascom` (cabeçalho
+  alto, rodapé só com a unidade — `_rodape_ascom.html`), com as regras em
+  `documento.css` e `documento-editor.css`. O `@page` fica no CSS de cada tipo,
+  porque não se escopa por classe.
+- Ajustes do termo pedidos pelo usuário: sem RG; data e destino em negrito;
+  rótulos de viatura em negrito; lacunas no pé da linha; rótulo e valor
+  inseparáveis; sem justificar quando há lacuna na frase; termo sem nenhum dado
+  do servidor usa as linhas do semipreenchido.
+
+### 8.7 Ordem de Serviço no caminho HTML (18/09/2026)
+
+- `DOCUMENTOS_PDF_HTML_NATIVO` inclui `ordem_servico`. Um template
+  (`documentos/pdf/ordem_servico.html`) para os dois `.docx`: o tipo padrão
+  (parágrafo único de deslocamento, entrelinha 1,5) e os demais tipos
+  (determinação, atribuições em marcadores, justificativas e finalidade,
+  entrelinha simples). Contexto `contexto_da_ordem_servico` sobre
+  `build_os_docxtpl_context`.
+- Folha ASCOM com margens laterais de 2,5 cm; rodapé com unidade, endereço,
+  telefone e e-mail numa linha, pulando o que faltar (`_linha_de_rodape`).
+
+### 8.8 Plano de Trabalho no caminho HTML (18/09/2026)
+
+- `DOCUMENTOS_PDF_HTML_NATIVO` inclui `plano_trabalho`. Um template para os
+  dois `.docx` (um evento; vários eventos, com metas, atividades, atuação e
+  recursos repetidos por evento). Contexto `contexto_do_plano_trabalho` sobre
+  `build_plano_docxtpl_context`; seções numeradas por contador CSS; número da
+  página em `@bottom-right`.
+- O valor do plano de vários eventos chegava ao DOCX só como `RichText`. Agora
+  `_valor_multi_blocos` gera os blocos (rótulo em negrito + texto) e o DOCX
+  monta o RichText a partir deles; o HTML lê `valor_blocos`. Corrigido o
+  "Valor total:: R$" (dois-pontos em dobro) nos dois formatos.
+- Ordem das seções pedida pelo usuário (difere dos `.docx`): 1 contextualização
+  (sozinha na primeira página, com a capa); 2 atuação, 3 atividades, 4 metas,
+  5 recursos, 6 valor — fluem por quantas páginas precisarem; 7 coordenador,
+  8 considerações e a assinatura sempre juntos, numa página própria, a última.
+  Na tela as quebras aparecem como a linha "quebra de página" do editor.
+- Plano de vários eventos com um evento só sai como o de um evento (sem a
+  data sobre cada lista e sem o "Valor do evento", só o "Valor total"); a
+  divisão por evento aparece a partir de dois. "Valor total:" sai em negrito
+  nos dois tipos.
+
+### 8.9 Relatório Técnico no caminho HTML (18/09/2026)
+
+- `DOCUMENTOS_PDF_HTML_NATIVO` inclui `relatorio_tecnico`. Template
+  `documentos/pdf/relatorio_tecnico.html` (folha ASCOM com faixa de cabeçalho
+  de 5,2 cm, três tabelas com grade), contexto `contexto_do_relatorio_tecnico`
+  sobre `build_relatorio_tecnico_context`. Combustível vem do campo do
+  relatório; o `.docx` tinha "Cartão Prime" fixo — agora é só o padrão.
+- Caber numa página: `pdf_renderer.CABER_EM_UMA_PAGINA` (tipo → degraus). Se o
+  PDF passar de uma página, é refeito com `.doc-compacto-1`, depois
+  `.doc-compacto-2` (espaços e corpo menores, no CSS do tipo); cabem ~3.700
+  caracteres de relato numa página. Acima disso, pagina normalmente.
+
+### 8.10 Diário de Bordo no caminho HTML (18/09/2026) — todos migrados
+
+- `DOCUMENTOS_PDF_HTML_NATIVO` inclui `diario_bordo`: com ele, os oito tipos
+  saem do HTML. O PDF do diário nasce de `documentos/pdf/diario_bordo.html`
+  (A4 deitada, tabela de dados e tabela de trechos de doze colunas iguais,
+  motorista fechando a tabela, cabeçalho da tabela repetido em cada página,
+  sem rodapé). O `.xlsx` continua saindo do modelo pela planilha.
+- A façade desvia o PDF do diário em `_render_diario_html_ou_planilha`; sem o
+  motor HTML em desenvolvimento, volta à conversão da planilha (Excel/LibreOffice).
+  A chave de cache do PDF do diário passa a incluir o template e os CSS.
+- A base ganhou a linha `institucional.divisao_cabecalho` no cabeçalho (o
+  diário mostra divisão e unidade).
+
+### 8.11 Ofício refeito (18/09/2026)
+
+- `oficio.html`/`oficio.css` seguem agora a estrutura do `oficio.docx` (tudo em
+  tabelas com grade) com a letra dos demais documentos (Arial 9, margens de
+  1,27 cm); destinatário no pé, à esquerda, acima da marca (bloco
+  `rodape_topo` da base). Marcações do editor preservadas, agora sempre em
+  elementos sem classe própria (antes a tabela da equipe perdia a classe
+  `doc-editavel` por atributo `class` duplicado).
+- Equipe sem RG: uma linha por servidor (nome, CPF, cargo, solicitação), pela
+  chave nova `equipe` do contexto do ofício; o DOCX segue com as colunas
+  empilhadas (`col_rgcpf` etc.).
+- A abertura "Senhor Delegado, …" sai numa linha só (7,3 pt, sem quebra).
+- Ofício também em `CABER_EM_UMA_PAGINA` (dois degraus de compactação).

@@ -579,7 +579,7 @@ def _campo_para_template(form, nome, *, detalhes_unidade=False):
         descricao["tipo"] = "data"
     elif isinstance(campo.widget, forms.Textarea):
         descricao["tipo"] = "textarea"
-        descricao["linhas"] = attrs.get("rows", "4")
+        descricao["linhas"] = attrs.get("rows", "3")
     else:
         descricao["tipo"] = getattr(campo.widget, "input_type", "text") or "text"
     return descricao

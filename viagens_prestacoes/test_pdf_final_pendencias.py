@@ -71,8 +71,9 @@ class PdfFinalPendenciasTests(PrestacaoFixturesMixin, TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['pendencias'])
-        self.assertContains(response, 'Falta para fechar o PDF final')
-        self.assertNotContains(response, 'Baixar pacote (PDF final)')
+        self.assertContains(response, 'Falta para o pacote final')
+        # Com pendência, o pacote final aparece no menu, mas apagado e sem link.
+        self.assertNotContains(response, reverse('viagens_prestacoes:consolidado_download', args=[self.ps.pk]))
 
     def test_fechamento_volta_a_oferecer_o_pacote_quando_nada_falta(self):
         with tempfile.TemporaryDirectory() as tmpdir, override_settings(MEDIA_ROOT=tmpdir):
@@ -80,8 +81,8 @@ class PdfFinalPendenciasTests(PrestacaoFixturesMixin, TestCase):
             response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['pendencias'], [])
-        self.assertContains(response, 'Baixar pacote (PDF final)')
-        self.assertNotContains(response, 'Falta para fechar o PDF final')
+        self.assertContains(response, reverse('viagens_prestacoes:consolidado_download', args=[self.ps.pk]))
+        self.assertNotContains(response, 'Falta para o pacote final')
 
     def test_download_com_pendencia_diz_o_motivo_em_vez_de_prometer_o_arquivo(self):
         response = self.client.get(reverse('viagens_prestacoes:consolidado_download', args=[self.ps.pk]))

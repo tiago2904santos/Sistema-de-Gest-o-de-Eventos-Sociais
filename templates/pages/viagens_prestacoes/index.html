@@ -1,27 +1,25 @@
 {% extends "layouts/app_shell_v32.html" %}
-{% load static %}
+{% load static estaticos %}
 {% comment %}
-  Lista de prestações de contas — Meta 6 de paridade com o Gerenciador de
-  Viagens. Um cartão por servidor, como a origem: cabeçalho do ofício, selo da
-  situação, linha do servidor com o número da solicitação (grava sozinho), o
-  período das diárias, motorista, comprovante, cargo e unidade e o aviso por
-  WhatsApp; placa e modelo; trechos; valor total e quantidade de diárias; e os
-  comandos abrir na etapa 1, escolher documentos para baixar, anexar documentos
-  assinados, finalizar e arquivar.
+  Lista de prestações de contas — na mesma composição das listas de ofícios,
+  termos, roteiros, PT e OS: situações na trilha à esquerda, busca na barra
+  do cartão, tabela no desktop e Data List no celular, um menu único de ações
+  por linha. Uma linha por ofício, com os servidores dele juntos (a prestação
+  nasce da equipe do ofício, então não há botão de criar); a paginação é
+  por ofício, para a equipe não se partir entre páginas.
+
+  Um bloco por ofício (`_oficio.html`): a linha do ofício — número,
+  protocolo, destino e período — e, embaixo, uma linha por servidor com a
+  solicitação e o período do saque, que gravam sozinhos, e o menu dele
+  (`_acoes_linha.html`).
 {% endcomment %}
 
 {% block title %}Prestações de Contas — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% include "components/v32/breadcrumb.html" with atual="Prestações de Contas" %}
-
-  {% comment %}
-    Cabeçalho no padrão da lista de roteiros: kicker junto do título e sem subtítulo.
-    A prestação não se cria aqui (nasce da equipe do ofício), então não há botão flutuante.
-  {% endcomment %}
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker kicker--junto">{{ modulo_ativo.nome }}</div>
+      <div class="kicker kicker--junto">{{ modulo_ativo.nome|default:"Viagens" }}</div>
       <h1>Prestações de Contas</h1>
     </div>
     <div class="d-acoes">
@@ -29,53 +27,59 @@
     </div>
   </div>
 
-  <div class="pa-card pa-card--lista v32-bloco v32-filtros">
-    <form method="get" class="v32-barra of-filtros" role="search" data-auto-enviar>
-      <div class="form-campo v32-busca">
-        <label class="form-label sr-only" for="id_q">Buscar prestações</label>
+  <div class="cad-grade cad-grade--sem-folga">
+    {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_rotulo="Situação das prestações" sem_titulo=True %}
+
+    <div class="pa-card pa-card--lista cad-lista">
+      {# Busca no servidor, enviada 1 s depois de digitar; a situação da trilha sobrevive. #}
+      <form method="get" class="cad-barra" role="search" data-cadastro-busca data-auto-enviar>
+        {% for aba in abas_selecionadas %}<input type="hidden" name="aba" value="{{ aba }}">{% endfor %}
         <div class="busca">
-          <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
-          <input class="form-controle" type="search" name="q" id="id_q" value="{{ q }}" placeholder="Buscar por servidor, ofício, protocolo ou solicitação…" aria-label="Buscar prestações">
+          {% include "components/icon.html" with nome="search" %}
+          <label class="sr-only" for="id_q">Buscar prestações</label>
+          <input type="search" name="q" id="id_q" value="{{ q }}" placeholder="Buscar por servidor, ofício, protocolo ou solicitação" autocomplete="off">
         </div>
-      </div>
-      <fieldset class="v32-abas-situacao of-filtros__situacao">
-        <legend class="sr-only">Filtrar por situação</legend>
-        {% for aba in opcoes_situacao %}
-          <label class="v32-aba{% if aba.selecionado %} v32-aba--ativa{% endif %}"><input type="checkbox" name="aba" value="{{ aba.valor }}"{% if aba.selecionado %} checked{% endif %}>{{ aba.rotulo }}</label>
+      </form>
+
+      {# Um bloco por ofício: a linha do ofício e, embaixo, a equipe com os campos de cada servidor. #}
+      <div class="pc-lista">
+        {% for g in grupos %}
+          {% include "pages/viagens_prestacoes/_oficio.html" %}
+        {% empty %}
+          <p class="v32-suave dt__vazio pc-lista__vazio">{{ empty_message }}{% if not has_filters %} As prestações nascem com a equipe de cada ofício.{% endif %}</p>
         {% endfor %}
-      </fieldset>
-      <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="search" %}Buscar</button>
-      {% if has_filters %}<a href="{% url 'viagens_prestacoes:index' %}" class="btn--secundaria">{% include "components/icon.html" with nome="x" %}Limpar</a>{% endif %}
-      <span class="v32-meta">{{ pagina.paginator.count }} prestaç{{ pagina.paginator.count|pluralize:"ão,ões" }}</span>
-    </form>
+      </div>
+
+      {% if pagina.paginator.num_pages > 1 %}
+        <div class="v32-corpo pag">
+          <span class="v32-suave">Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }} ofícios</span>
+          <nav class="pag__nav" aria-label="Paginação">
+            {% if pagina.has_previous %}
+              <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+            {% endif %}
+            {% for numero in paginas_visiveis %}
+              {% if numero == elipse %}
+                <span class="pag__el" aria-hidden="true">…</span>
+              {% elif numero == pagina.number %}
+                <span class="pag__n" aria-current="page">{{ numero }}</span>
+              {% else %}
+                <a class="pag__n" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ numero }}">{{ numero }}</a>
+              {% endif %}
+            {% endfor %}
+            {% if pagina.has_next %}
+              <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+            {% endif %}
+          </nav>
+        </div>
+      {% endif %}
+    </div>
   </div>
 
-  {% if cards %}
-    {% if pagina.paginator.num_pages > 1 %}
-      <nav class="of-paginacao" aria-label="Paginação">
-        <p class="of-paginacao__contagem">Mostrando <strong>{{ pagina.start_index }}–{{ pagina.end_index }}</strong> de <strong>{{ pagina.paginator.count }}</strong></p>
-        {% include "pages/viagens_cadastros/_paginacao_nav.html" %}
-      </nav>
-    {% endif %}
-    <div class="of-lista pc-lista">
-      {% for c in cards %}{% include "pages/viagens_prestacoes/_cartao.html" %}{% endfor %}
-    </div>
-    {% if pagina.paginator.num_pages > 1 %}
-      <nav class="of-paginacao of-paginacao--rodape" aria-label="Paginação">
-        <p class="of-paginacao__contagem">Mostrando <strong>{{ pagina.start_index }}–{{ pagina.end_index }}</strong> de <strong>{{ pagina.paginator.count }}</strong></p>
-        {% include "pages/viagens_cadastros/_paginacao_nav.html" %}
-      </nav>
-    {% endif %}
-  {% else %}
-    <div class="pa-card v32-bloco of-vazio">
-      <h2>Nenhuma prestação</h2>
-      <p>{{ empty_message }}{% if not has_filters %} As prestações nascem com a equipe de cada ofício.{% endif %}</p>
-      {% if has_filters %}<a class="btn--secundaria" href="{% url 'viagens_prestacoes:index' %}">{% include "components/icon.html" with nome="x" %}Limpar filtros</a>{% else %}<a class="btn--secundaria" href="{% url 'viagens_oficios:lista' %}">{% include "components/icon.html" with nome="chevron-right" %}Ir aos ofícios</a>{% endif %}
-    </div>
-  {% endif %}
 {% endblock %}
 
 {% block extra_js %}
   {{ block.super }}
-  <script src="{% static 'js/viagens-prestacoes.js' %}" defer></script>
+  <script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>
+  <script src="{% estatico 'js/viagens-prestacoes.js' %}" defer></script>
+  {% if pode_editar %}{% include "components/v32/dialogo_baixar.html" %}{% include "components/v32/dialogo_assinado.html" %}{% endif %}
 {% endblock %}

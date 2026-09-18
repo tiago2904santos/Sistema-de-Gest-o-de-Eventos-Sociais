@@ -199,14 +199,19 @@ def _contexto_identificacao(form, plano, request):
     # O campo de nome é um só. Num plano com servidor escolhido o nome manual
     # está vazio, e quem aparece na tela é o nome do cadastro; depois de um
     # POST com erro, vale o que a pessoa digitou.
-    nomes_coordenador = {}
+    nomes_coordenador, cargos_coordenador = {}, {}
     for papel in ("adm", "op"):
         escolhido = getattr(plano, f"coordenador_{papel}", None)
         nomes_coordenador[papel] = valor(f"coordenador_{papel}_nome_manual") or (escolhido.nome if escolhido else "")
+        # Servidor do cadastro: o cargo manual foi zerado na gravação, e o que
+        # vale (e sai no documento) é o do cadastro — é esse que a tela mostra.
+        cargos_coordenador[papel] = valor(f"coordenador_{papel}_cargo_manual") or (
+            escolhido.cargo.nome if escolhido and escolhido.cargo_id else "")
     atual = daqui(request)
     return {
         "valores": {nome: valor(nome) for nome in form.fields},
         "nomes_coordenador": nomes_coordenador,
+        "cargos_coordenador": cargos_coordenador,
         "erros": {nome: form.errors.get(nome) for nome in form.fields},
         "programas": [{"valor": v, "rotulo": r} for v, r in form.fields["programa"].choices if v],
         "programa_outro_valor": form.PROGRAMA_OUTRO_VALUE,
@@ -270,6 +275,7 @@ def _contexto_atividades(plano, request):
         "presets_data": [{"id": p.pk, "nome": p.nome, "codigos": [a.codigo for a in sorted(p.atividades.all(), key=lambda a: a.nome)]} for p in presets],
         "preset_padrao_id": str(padrao.pk) if padrao else "",
         "metas_preview": metas, "recursos_preview": recursos,
+        "atividades_selecionadas_total": sum(1 for a in catalogo if a.codigo in selecionados),
         "url_atividades": com_next(reverse("viagens_cadastros:lista", args=["atividades-pt"]), atual),
         "url_presets": com_next(reverse("viagens_cadastros:lista", args=["presets-pt"]), atual),
     }

@@ -33,6 +33,11 @@
       var menu = campo.querySelector("[data-multi-menu]");
       var vazio = campo.querySelector("[data-multi-vazio]");
       var escolhidos = campo.parentNode.querySelector("[data-multi-escolhidos]");
+      // Em etiquetas (`data-multi-chips`) os escolhidos moram dentro do campo:
+      // o texto de ajuda some quando já há escolha e o Backspace na busca
+      // vazia tira a última etiqueta.
+      var chips = campo.hasAttribute("data-multi-chips");
+      var textoAjuda = busca.getAttribute("placeholder") || "";
       var opcoes = Array.prototype.slice.call(campo.querySelectorAll("[data-multi-opcao]"));
       var ativa = null;
 
@@ -61,6 +66,9 @@
       function linhaEscolhida(opcao) {
         var item = document.createElement("li");
         item.className = "multi-pick__escolhido";
+        // Quem decora a linha (ex.: a função do servidor na OS) sabe de quem ela é.
+        item.dataset.valor = opcao.querySelector("input").value;
+        if (opcao.dataset.iniciais) item.dataset.iniciais = opcao.dataset.iniciais;
         var texto = document.createElement("span");
         texto.textContent = opcao.dataset.nome;
         if (opcao.dataset.detalhes) {
@@ -97,6 +105,7 @@
           else if (casa) disponiveis += 1;
         });
         if (vazio) vazio.hidden = disponiveis !== 0;
+        if (chips) busca.setAttribute("placeholder", escolhidos.children.length ? "" : textoAjuda);
         // Digitando, a primeira opção que casa já fica pronta para o Enter.
         destacar(termo ? visiveis()[0] : null);
       }
@@ -144,12 +153,24 @@
           if (evento.key === "ArrowDown") indice = indice < lista.length - 1 ? indice + 1 : 0;
           else indice = indice > 0 ? indice - 1 : lista.length - 1;
           destacar(lista[indice]);
+        } else if (chips && evento.key === "Backspace" && !busca.value && escolhidos.lastElementChild) {
+          var ultimo = escolhidos.lastElementChild.querySelector(".multi-pick__remover");
+          if (ultimo) ultimo.click();
         } else if (evento.key === "Enter" && !menu.hidden) {
           // Com a lista aberta o Enter escolhe; nunca envia o formulário.
           evento.preventDefault();
           if (ativa && !ativa.hidden) ativa.click();
         }
       });
+      // Etiquetas: clicar no vazio da caixa é clicar na busca.
+      if (chips) {
+        campo.addEventListener("mousedown", function (evento) {
+          if (evento.target === campo || evento.target === escolhidos) {
+            evento.preventDefault();
+            busca.focus();
+          }
+        });
+      }
       campo.addEventListener("keydown", function (evento) {
         if (evento.key === "Escape" && !menu.hidden) {
           evento.stopPropagation();

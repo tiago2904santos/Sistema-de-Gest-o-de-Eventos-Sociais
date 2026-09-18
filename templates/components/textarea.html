@@ -2,7 +2,7 @@
   Componente: textarea.
   Uso:
     {% include "components/textarea.html" with name="descricao_complementar"
-       label="Descrição complementar" linhas="4" placeholder="..." largura="" %}
+       label="Descrição complementar" linhas="3" placeholder="..." largura="" %}
 {% endcomment %}
 <div class="form-campo{% if largura %} form-campo--{{ largura }}{% endif %}">
   {# rotulo_oculto: label só para leitores de tela, sem ocupar layout. #}
@@ -13,7 +13,7 @@
     class="form-controle{% if erros %} is-invalid{% endif %}"
     id="id_{{ name }}"
     name="{{ name }}"
-    rows="{{ linhas|default:'4' }}"
+    rows="{{ linhas|default:'3' }}"
     {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
     {% if erros %}aria-invalid="true" aria-describedby="id_{{ name }}_erro{% if ajuda %} id_{{ name }}_ajuda{% endif %}"{% elif ajuda %}aria-describedby="id_{{ name }}_ajuda"{% endif %}
     {% if desabilitado %}disabled{% endif %}

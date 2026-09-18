@@ -1,0 +1,53 @@
+{% extends "documentos/pdf/base_institucional.html" %}{% load documento_tags %}{% comment %}
+  Relatório Técnico de Viagem: o `relatorio-tecnico.docx` de origem na folha
+  ASCOM, com a faixa de cabeçalho mais curta do modelo. Referência ao ofício
+  e local/data na mesma linha; as três tabelas (servidor, valores usados,
+  texto do relatório); a declaração e a linha de assinatura com o CPF.
+  Os textos vêm prontos de `viagens_prestacoes.services.build_relatorio_tecnico_context`
+  — a mesma regra que alimenta o DOCX.
+{% endcomment %}
+{% block titulo %}Relatório técnico – {{ rt.nome_servidor }}{% endblock %}
+{% block classe %} doc-folha-ascom doc-rt{% endblock %}
+
+{% block rodape %}
+  <p class="doc-rodape__unidade">{{ rt.rodape }}</p>
+{% endblock %}
+
+{% block corpo %}
+  <div class="doc-rt__ref">
+    <span>Ref. ao Ofício {{ rt.oficio }}</span>
+    <span>{% if rt.sede %}{{ rt.sede }}, {% endif %}{{ rt.data_atual_extenso }}</span>
+  </div>
+
+  <h1 class="doc-rt__titulo">Relatório técnico de viagem</h1>
+
+  <table class="doc-rt__tabela doc-rt__tabela--servidor">
+    <tr><th>Nome</th><td>{{ rt.nome_servidor }}</td></tr>
+    <tr><th>CPF</th><td>{{ rt.cpf_servidor }}</td></tr>
+  </table>
+
+  <h2 class="doc-rt__titulo">Valores utilizados na viagem:</h2>
+
+  <table class="doc-rt__tabela doc-rt__tabela--valores">
+    <tr><th>Diária:</th><td>{{ rt.diaria }}</td></tr>
+    <tr><th>Translado:</th><td>{{ rt.translado }}</td></tr>
+    <tr><th>Combustível:</th><td>{{ rt.combustivel }}</td></tr>
+    <tr><th>Passagem:</th><td>{{ rt.passagem }}</td></tr>
+  </table>
+
+  <table class="doc-rt__tabela doc-rt__tabela--relato">
+    {% for secao in rt.secoes %}
+      <tbody class="doc-rt__secao">
+        <tr><th>{{ secao.titulo }}</th></tr>
+        <tr><td>{{ secao.texto|linhas }}</td></tr>
+      </tbody>
+    {% endfor %}
+  </table>
+
+  <p class="doc-rt__declaracao">Declaramos que o trabalho previsto na programação de viagem foi realizado, assim como cumprido o período de realização da viagem e a documentação encaminhada ao setor responsável</p>
+
+  <div class="doc-rt__assinatura">
+    <p class="doc-rt__linha"></p>
+    <p>CPF {{ rt.cpf_servidor }}</p>
+  </div>
+{% endblock %}

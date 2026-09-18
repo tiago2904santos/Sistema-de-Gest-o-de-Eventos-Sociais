@@ -26,6 +26,19 @@
 .doc-rodape__linha { margin: 0; }
 .doc-rodape__endereco { margin: 2pt 0 0; font-size: 8pt; }
 
+/* Folha ASCOM (termo, justificativa): cabeçalho alto, com o brasão maior e as
+   três linhas em Arial 12 negrito; rodapé só com a marca e a unidade em
+   itálico miúdo. As margens da página ficam no CSS de cada tipo (@page não
+   se escopa por classe). */
+.doc-folha-ascom .doc-cabecalho { line-height: 1.15; }
+.doc-folha-ascom .doc-cabecalho__brasao { width: auto; height: 2.8cm; margin-bottom: 0.45cm; }
+.doc-folha-ascom .doc-cabecalho__secretaria,
+.doc-folha-ascom .doc-cabecalho__orgao,
+.doc-folha-ascom .doc-cabecalho__unidade { font-size: 12pt; font-weight: 700; }
+.doc-folha-ascom .doc-rodape { line-height: 1.15; }
+.doc-folha-ascom .doc-rodape__marca { margin-bottom: 3pt; }
+.doc-rodape__unidade { margin: 0; font-size: 7pt; font-weight: 700; font-style: italic; }
+
 /* Corpo. */
 .doc-titulo { margin: 0 0 6pt; font-size: 9pt; font-weight: 700; text-align: center; text-transform: uppercase; }
 .doc-linha { margin: 0 0 3pt; }

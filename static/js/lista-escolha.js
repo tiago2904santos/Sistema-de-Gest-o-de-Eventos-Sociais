@@ -36,8 +36,9 @@
       var radio = radioDe(linha);
       // O clique que o rótulo repassa ao próprio rádio já foi tratado aqui.
       if (evento.target === radio) return;
-      // Marcar é o comportamento normal do rótulo e não precisa de ajuda.
-      if (!radio.checked) return;
+      // Caixa (escolha múltipla) já alterna sozinha; marcar é o comportamento
+      // normal do rótulo e não precisa de ajuda.
+      if (radio.type === "checkbox" || !radio.checked) return;
       evento.preventDefault();
       radio.checked = false;
       radio.dispatchEvent(new Event("change", { bubbles: true }));

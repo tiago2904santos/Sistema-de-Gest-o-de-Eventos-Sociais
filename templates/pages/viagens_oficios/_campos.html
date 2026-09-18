@@ -2,7 +2,7 @@
   {% if campo.tipo == 'select' %}
     {% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes selecionado=campo.valor marcados=campo.marcados multiplo=campo.multiplo erros=campo.erros obrigatorio=campo.obrigatorio pesquisavel=True dependente_de=campo.dependente_de ajuda=campo.ajuda ajuda_multipla="Selecione os servidores que participarão." %}
   {% elif campo.tipo == 'textarea' %}
-    <div class="form-campo"><label class="form-label" for="id_{{ campo.name }}">{{ campo.label }}</label><textarea id="id_{{ campo.name }}" class="form-controle" name="{{ campo.name }}" rows="4">{{ campo.valor }}</textarea>{% for erro in campo.erros %}<p class="form-erro">{{ erro }}</p>{% endfor %}{% if campo.ajuda %}<p class="form-ajuda">{{ campo.ajuda }}</p>{% endif %}</div>
+    <div class="form-campo"><label class="form-label" for="id_{{ campo.name }}">{{ campo.label }}</label><textarea id="id_{{ campo.name }}" class="form-controle" name="{{ campo.name }}" rows="3">{{ campo.valor }}</textarea>{% for erro in campo.erros %}<p class="form-erro">{{ erro }}</p>{% endfor %}{% if campo.ajuda %}<p class="form-ajuda">{{ campo.ajuda }}</p>{% endif %}</div>
   {% elif campo.tipo == 'boolean' %}
     <div class="form-campo"><label class="form-label"><input type="checkbox" name="{{ campo.name }}" {% if campo.valor %}checked{% endif %}> {{ campo.label }}</label>{% for erro in campo.erros %}<p class="form-erro">{{ erro }}</p>{% endfor %}</div>
   {% elif campo.tipo == 'date' %}

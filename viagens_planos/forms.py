@@ -268,7 +268,9 @@ class EfetivoPlanoForm(forms.ModelForm):
         if cleaned.get("DELETE"):
             return cleaned
         unidade, cargo, quantidade = cleaned.get("unidade"), cleaned.get("cargo"), cleaned.get("quantidade")
-        if not any([unidade, cargo, quantidade]):
+        # A quantidade nasce com 1: sozinha ela não é conteúdo. Linha sem
+        # unidade e sem cargo é linha em branco e não trava o rascunho.
+        if not unidade and not cargo:
             return cleaned
         if not cargo:
             self.add_error("cargo", "Selecione o cargo.")

@@ -14,12 +14,13 @@
 {% block body %}
 <div class="pagina app-v32">
   <header class="ident"><div class="ident__in">
-    <a class="marca" href="{% url 'core:home' %}">
-      <span class="marca__moldura"><img src="{% static 'icons/favicon.svg' %}" alt="Brasão da Polícia Civil do Paraná"></span>
-      <span class="marca__org">Polícia Civil do Paraná</span>
+    {# No desenho da barra do login: brasão solto, a sigla, o divisor e o produto em duas linhas. #}
+    <a class="marca marca--login" href="{% url 'core:home' %}">
+      <img class="marca__brasao" src="{% static 'icons/favicon.svg' %}" alt="Brasão da Polícia Civil do Paraná">
+      <strong class="marca__sigla">PCPR</strong>
+      <span class="risco-i" aria-hidden="true"></span>
+      <span class="marca__produto"><span class="marca__titulo">Sistema de Gestão de Eventos Sociais</span><span class="marca__sub">Polícia Civil do Paraná</span></span>
     </a>
-    <span class="risco-i" aria-hidden="true"></span>
-    <span class="ident__sistema">Sistema de Gestão de Eventos Sociais</span>
     {% if user.is_authenticated %}
       <div class="ident__fim">
         <a class="ident-icone" href="{% url 'core:notificacoes' %}" aria-label="Notificações{% if notificacoes_nao_lidas %} ({{ notificacoes_nao_lidas }} não lidas){% endif %}">

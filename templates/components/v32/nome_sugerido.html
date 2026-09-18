@@ -1,0 +1,41 @@
+{% comment %}
+  Componente: nome com sugestões — texto livre que sugere os cadastrados.
+
+  Digitar filtra a lista (sem ligar para acento e caixa); escolher preenche o
+  nome; nada obriga a escolher: um nome que não está no cadastro vale como foi
+  digitado. É a versão da casa do `<datalist>`, com o menu dos outros
+  seletores e o detalhe (cargo · unidade) em cada opção. Quem liga é o
+  `static/js/nome-sugerido.js`; ao escolher, o campo dispara
+  `ds:nome-sugerido` com os `dados` da opção em `detail`.
+
+  Uso:
+    {% include "components/v32/nome_sugerido.html" with name="coordenador_adm_nome_manual"
+       label="Nome" opcoes=servidores valor=v.nome placeholder="Buscar servidor ou digitar o nome"
+       erros=erros.nome %}
+
+  `opcoes`: lista de dicts {"rotulo", "detalhes", "dados"}.
+{% endcomment %}
+<div class="form-campo{% if largura %} form-campo--{{ largura }}{% endif %} nome-sugerido">
+  <label class="form-label{% if rotulo_oculto %} sr-only{% endif %}" for="id_{{ name }}">{{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}</label>
+  <div class="form-controle-wrapper form-controle-wrapper--select custom-select custom-select--pesquisavel{% if erros %} is-invalid{% endif %}" data-nome-sugerido>
+    <input class="form-controle custom-select__combobox" type="text" id="id_{{ name }}" name="{{ name }}"
+           value="{{ valor|default:'' }}" placeholder="{{ placeholder|default:'Buscar ou digitar o nome' }}"
+           autocomplete="off" spellcheck="false" data-uppercase="true"
+           role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="id_{{ name }}_listbox"
+           {% if erros %}aria-invalid="true" aria-describedby="id_{{ name }}_erro"{% endif %} data-nome-sugerido-campo>
+    <span class="form-controle__icone" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+    <div class="custom-select__menu is-navegavel" data-nome-sugerido-menu hidden>
+      <div class="custom-select__lista" id="id_{{ name }}_listbox" role="listbox" aria-label="Sugestões de {{ label|lower }}">
+        {% for opcao in opcoes %}
+          <button class="custom-select__opcao nome-sugerido__opcao" type="button" role="option" tabindex="-1"
+                  data-nome-sugerido-opcao data-valor="{{ opcao.rotulo }}" data-busca="{{ opcao.rotulo }} {{ opcao.detalhes }}"{% for chave, dado in opcao.dados.items %} data-{{ chave }}="{{ dado }}"{% endfor %}>
+            <span>{{ opcao.rotulo }}{% if opcao.detalhes %}<small>{{ opcao.detalhes }}</small>{% endif %}</span>
+          </button>
+        {% endfor %}
+        {# Sem sugestão: o nome digitado vale mesmo assim — a mensagem diz isso. #}
+        <p class="custom-select__vazio" data-nome-sugerido-vazio hidden>Nenhum servidor com esse nome: o nome digitado será usado.</p>
+      </div>
+    </div>
+  </div>
+  {% for erro in erros %}<p class="form-erro"{% if forloop.first %} id="id_{{ name }}_erro"{% endif %}>{{ erro }}</p>{% endfor %}
+</div>

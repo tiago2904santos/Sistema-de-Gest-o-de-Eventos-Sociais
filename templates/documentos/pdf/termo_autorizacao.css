@@ -1,116 +1,53 @@
-.termo-documento {
-  background: #fff;
-  color: #111;
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 10.5pt;
-  line-height: 1.45;
+/* Termo de autorização: corpo dos termo_autorizacao*.docx. Entra por cima de
+   documento.css e da camada do modo (documento-impressao.css no PDF,
+   documento-editor.css na tela). Cabeçalho, rodapé e faixas da tela são da
+   folha ASCOM (`doc-folha-ascom`, em documento.css e documento-editor.css);
+   aqui ficam as margens da página e o corpo: Arial 11, entrelinha 1,5 no
+   parágrafo e 1,15 no resto. */
+
+@page {
+  margin: 6.8cm 1.5cm 3cm 1.5cm;
+  @top-center { vertical-align: top; padding-top: 1.25cm; }
+  @bottom-center { vertical-align: bottom; padding-bottom: 0.8cm; }
 }
 
-.termo-cabecalho {
-  text-align: center;
-  text-transform: uppercase;
-  margin-bottom: 22px;
-}
-
-.termo-cabecalho__orgao {
-  font-weight: 700;
+.doc-termo {
+  font-family: Arial, "Liberation Sans", Helvetica, sans-serif;
   font-size: 11pt;
+  line-height: 1.15;
 }
 
-.termo-cabecalho__linha,
-.termo-cabecalho__unidade {
-  font-weight: 600;
-  margin-top: 2px;
-}
-
-.termo-titulo {
-  font-size: 14pt;
-  letter-spacing: 0;
-  margin: 0 0 18px;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-.termo-secao {
-  margin: 0 0 14px;
-  page-break-inside: avoid;
-}
-
-.termo-secao h2 {
-  border-bottom: 1px solid #222;
-  font-size: 10.5pt;
-  margin: 0 0 6px;
-  padding-bottom: 3px;
-  text-transform: uppercase;
-}
-
-.termo-tabela {
-  border-collapse: collapse;
-  table-layout: fixed;
-  width: 100%;
-}
-
-.termo-tabela th,
-.termo-tabela td {
-  border: 1px solid #555;
-  padding: 5px 6px;
-  text-align: left;
-  vertical-align: top;
-  word-break: normal;
-}
-
-.termo-tabela th {
-  background: #f3f3f3;
-  font-weight: 700;
-  width: 18%;
-}
-
-.termo-tabela td {
-  width: 32%;
-}
-
-.termo-texto,
-.termo-secao--texto p {
-  margin: 8px 0 0;
-  text-align: justify;
-}
-
-.termo-assinaturas {
-  margin-top: 28px;
-  page-break-inside: avoid;
-}
-
-.termo-local-data {
-  margin: 0 0 34px;
-  text-align: right;
-}
-
-.termo-assinaturas__grid {
-  display: table;
-  table-layout: fixed;
-  width: 100%;
-}
-
-.termo-assinatura {
-  display: table-cell;
-  padding: 0 18px;
-  text-align: center;
-  vertical-align: top;
-}
-
-.termo-assinatura span {
-  border-top: 1px solid #111;
-  display: block;
-  margin-bottom: 6px;
-  min-height: 1px;
-}
-
-.termo-assinatura strong,
-.termo-assinatura small {
-  display: block;
-}
-
-.termo-assinatura small {
+/* Corpo. */
+.doc-termo .doc-titulo { margin: 0.6cm 0 0.85cm; font-size: 13pt; line-height: 1.2; }
+.doc-termo__texto { margin: 0; line-height: 1.5; text-align: justify; }
+/* Com lacuna no meio da frase, a justificação esticaria os espaços em volta
+   dela; o parágrafo fica alinhado à esquerda, com os espaços normais. */
+.doc-termo__texto--lacunas { text-align: left; }
+.doc-termo__preencher:not(.doc-termo__linha) { line-height: 1.5; }
+.doc-termo__declaracao {
+  margin: 0.45cm 0 0.75cm;
+  font-family: "Times New Roman", "Liberation Serif", Times, serif;
   font-size: 9pt;
-  margin-top: 2px;
+  font-weight: 700;
+  line-height: 1.15;
 }
+.doc-termo__linha { margin: 0 0 0.45cm; }
+
+/* Linha a preencher à mão: o rótulo e a lacuna ocupando o resto da linha. */
+.doc-termo__preencher { display: flex; align-items: baseline; margin: 0; white-space: nowrap; }
+.doc-termo__preencher.doc-termo__linha { margin-bottom: 0.45cm; }
+/* A lacuna leva um caractere invisível: assim tem linha de base própria,
+   alinha pela base do texto e o traço fica embaixo, como um sublinhado. */
+.doc-lacuna { flex: 1 1 auto; min-width: 1cm; border-bottom: 0.75pt solid #000; line-height: 1.15; }
+.doc-lacuna::before { content: "\200b"; }
+.doc-lacuna--cpf { flex: 0 0 3.6cm; }
+.doc-lacuna--telefone { flex: 0 0 3.4cm; }
+/* Lacuna no meio da frase (campo sem valor numa variante preenchida). */
+.doc-lacuna--curta { display: inline-block; width: 4cm; vertical-align: baseline; }
+.doc-lacuna--nome { width: 9cm; }
+.doc-lacuna--lotacao { width: 7cm; }
+.doc-junto { white-space: nowrap; }
+
+/* Assinaturas: o espaço em branco do modelo para assinar à mão. */
+.doc-termo__assinaturas { margin-top: 1.1cm; page-break-inside: avoid; }
+.doc-termo__assinatura { margin: 0 0 4.1cm; }

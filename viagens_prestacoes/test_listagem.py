@@ -65,8 +65,11 @@ class PrestacaoListagemAtualTests(PrestacaoFixturesMixin, TestCase):
         response = self.get_listagem()
         cards = response.context['cards']
         self.assertEqual([card['ps_pk'] for card in cards], [ps.pk for ps in fixture.prestacoes_servidor])
-        self.assertEqual([card['group_position'] for card in cards], ['start', 'end'])
         self.assertEqual([card['equipe_count'] for card in cards], [2, 2])
+        # Os dois servidores do mesmo ofício viram uma linha só, e a página conta ofícios.
+        grupos = response.context['grupos']
+        self.assertEqual([[c['ps_pk'] for c in g['cards']] for g in grupos], [[ps.pk for ps in fixture.prestacoes_servidor]])
+        self.assertEqual(response.context['page_obj'].paginator.count, 1)
 
     def test_ordenacao_padrao_usa_criacao_desc_e_desempata_por_prestacao_e_pk(self):
         agora = timezone.now()

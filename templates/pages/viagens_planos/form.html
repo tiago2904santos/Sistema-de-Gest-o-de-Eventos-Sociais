@@ -89,7 +89,6 @@
         <div class="section-card__corpo">
 
           <div class="ofc-grupo">
-            <div class="ofc-grupo__cabeca"><strong>Programa solicitante</strong><span class="pt-grupo__ajuda">Programa que solicitou a ação. Entra automaticamente na contextualização.</span></div>
             <div class="ofc-grupo__corpo g-form pt-grade-programa">
               <div class="ofc-com-acao">
                 {% include "components/select.html" with name="programa" label="Programa" opcoes=programas placeholder="Selecione um programa (opcional)" permitir_vazio=True pesquisavel=True selecionado=v.programa erros=e.programa %}
@@ -102,44 +101,39 @@
           </div>
 
           <div class="ofc-grupo">
-            <div class="ofc-grupo__cabeca"><strong>Coordenação</strong><span class="pt-grupo__ajuda">Coordenadores administrativo e operacional do plano.</span></div>
             <div class="ofc-grupo__corpo pt-coordenadores">
-              {% comment %}
-                Um datalist só para os dois painéis: o nome do servidor é único
-                no banco, então a mesma lista serve aos dois papéis.
-              {% endcomment %}
-              <datalist id="pt-servidores">
-                {% for s in servidores %}<option value="{{ s.rotulo }}" data-cargo="{{ s.dados.cargo }}"></option>{% endfor %}
-              </datalist>
-              {% include "pages/viagens_planos/_coordenador.html" with papel="adm" rotulo="Coordenador administrativo" nome_campo="coordenador_adm" nome_exibido=nomes_coordenador.adm cargo=v.coordenador_adm_cargo_manual genero=v.coordenador_adm_genero cargos_opcoes=cargos.adm erros_nome=e.coordenador_adm_nome_manual erros_cargo=e.coordenador_adm_cargo_manual erros_genero=e.coordenador_adm_genero %}
-              {% include "pages/viagens_planos/_coordenador.html" with papel="op" rotulo="Coordenador operacional (opcional)" nome_campo="coordenador_op" nome_exibido=nomes_coordenador.op cargo=v.coordenador_op_cargo_manual genero=v.coordenador_op_genero cargos_opcoes=cargos.op erros_nome=e.coordenador_op_nome_manual erros_cargo=e.coordenador_op_cargo_manual erros_genero=e.coordenador_op_genero %}
+              {% include "pages/viagens_planos/_coordenador.html" with papel="adm" rotulo="Coordenador administrativo" nome_campo="coordenador_adm" nome_exibido=nomes_coordenador.adm cargo=cargos_coordenador.adm genero=v.coordenador_adm_genero cargos_opcoes=cargos.adm erros_nome=e.coordenador_adm_nome_manual erros_cargo=e.coordenador_adm_cargo_manual erros_genero=e.coordenador_adm_genero %}
+              {% include "pages/viagens_planos/_coordenador.html" with papel="op" rotulo="Coordenador operacional (opcional)" nome_campo="coordenador_op" nome_exibido=nomes_coordenador.op cargo=cargos_coordenador.op genero=v.coordenador_op_genero cargos_opcoes=cargos.op erros_nome=e.coordenador_op_nome_manual erros_cargo=e.coordenador_op_cargo_manual erros_genero=e.coordenador_op_genero %}
             </div>
           </div>
 
-          <div class="bloco-split">
-            <div class="bloco-split__rotulo"><strong>Período do evento</strong><p>Data inicial e final da ação.</p></div>
-            <div class="bloco-split__corpo">
+          {% comment %}
+            Período e destinos na caixa do percurso do ofício: o rótulo pequeno
+            à esquerda de cada linha e os campos à direita. O período leva as
+            duas datas e o horário numa linha só, como no Gerenciador.
+          {% endcomment %}
+          <div class="bate-volta ofc-percurso pt-percurso">
+          <div class="ofc-percurso__linha pt-percurso__periodo">
+            <div class="bate-volta__rotulo ofc-percurso__rotulo">Período</div>
+            <div class="pt-periodo-linha">
               <div class="pt-periodo">
                 <div class="pt-periodo__rotulos" aria-hidden="true"><span>Data de ida</span><span>Data de volta</span></div>
                 {% include "components/date_range.html" with name="periodo_evento" start_name="data_evento_inicio" end_name="data_evento_fim" label="Período do evento" rotulo_oculto=True dois_campos=True valor_inicio=v.data_evento_inicio valor_fim=v.data_evento_fim erros=e.data_evento_inicio|default:e.data_evento_fim %}
               </div>
-            </div>
-          </div>
-
-          <div class="bloco-split">
-            <div class="bloco-split__rotulo"><strong>Horário de atendimento</strong><p>Atendimento ao público.</p></div>
-            <div class="bloco-split__corpo">
-              <div class="ofc-com-acao">
-                {% include "components/select.html" with name="horario_atendimento" label="Horário de atendimento" rotulo_oculto=True opcoes=horarios placeholder="Selecione um horário (opcional)" permitir_vazio=True selecionado=v.horario_atendimento erros=e.horario_atendimento %}
-                <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_horarios }}" aria-label="Gerenciar horários" title="Gerenciar horários">{% include "components/icon.html" with nome="settings" %}</a>
+              <div class="pt-periodo">
+                <div class="pt-periodo__rotulos pt-periodo__rotulos--um"><label for="id_horario_atendimento">Horário de atendimento</label></div>
+                <div class="ofc-com-acao">
+                  {% include "components/select.html" with name="horario_atendimento" label="Horário de atendimento" rotulo_oculto=True opcoes=horarios placeholder="Selecione um horário (opcional)" permitir_vazio=True selecionado=v.horario_atendimento erros=e.horario_atendimento %}
+                  <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_horarios }}" aria-label="Gerenciar horários" title="Gerenciar horários">{% include "components/icon.html" with nome="settings" %}</a>
+                </div>
               </div>
             </div>
           </div>
 
           {# Destinos no componente do termo: a primeira linha é o destino do plano, as seguintes são adicionais. #}
-          <div class="bloco-split">
-            <div class="bloco-split__rotulo"><strong>Destinos</strong><p>Locais na ordem da visita.</p></div>
-            <div class="bloco-split__corpo">
+          <div class="ofc-percurso__linha">
+            <div class="bate-volta__rotulo ofc-percurso__rotulo">Destinos</div>
+            <div>
               <div class="destinos" data-destinos>
                 {% include "pages/viagens_termos/_destino_linha.html" with nome_estado="destino_estado" nome_cidade="destino_cidade" id_estado="id_destino_estado" rotulo_estado="UF do destino" rotulo_cidade="Cidade do destino" estado=v.destino_estado cidade=v.destino_cidade erros_estado=e.destino_estado erros_cidade=e.destino_cidade estados=estados municipios=municipios %}
                 {% for a in adicionais %}
@@ -153,6 +147,7 @@
                 <button class="btn--secundaria btn--compacto btn--quadrado" type="submit" name="acao" value="adicionar_destino" formnovalidate aria-label="Adicionar destino" title="Adicionar destino">{% include "components/icon.html" with nome="plus" %}</button>
               </noscript>
             </div>
+          </div>
           </div>
 
           {% comment %}
@@ -172,7 +167,6 @@
         </header>
         <div class="section-card__corpo">
           <div class="ofc-grupo">
-            <div class="ofc-grupo__cabeca"><strong>Efetivo</strong><span class="pt-grupo__ajuda">Composição da equipe por unidade, cargo e quantidade. O total entra no cálculo das diárias.</span></div>
             <div class="ofc-grupo__corpo">
               {{ formset.management_form }}
               {% for m in formset.non_form_errors %}<p class="form-erro">{{ m }}</p>{% endfor %}
@@ -188,17 +182,11 @@
           </div>
 
           <div class="ofc-grupo">
-            <div class="ofc-grupo__cabeca"><strong>Deslocamento e diárias</strong><span class="pt-grupo__ajuda">Informe a saída e a chegada na sede — o sistema calcula a composição das diárias automaticamente.</span></div>
             <div class="ofc-grupo__corpo">
               {# Os erros do cálculo antecedem os campos a que se referem — e só depois de um envio. #}
               <p class="aviso aviso--erro pt-diarias-erros" role="alert" data-pt-diarias-erros{% if not mostrar_erros_calculo %} hidden{% endif %}>{% if mostrar_erros_calculo %}{{ diarias_resultado.erros|join:" " }}{% endif %}</p>
               {% with v=valores_diarias e=erros_diarias %}
-              <div class="g-form pt-grade-4">
-                {% include "components/input.html" with name="saida_sede_data" label="Data de saída da sede" tipo="date" valor=v.saida_sede_data erros=e.saida_sede_data %}
-                {% include "components/input.html" with name="saida_sede_hora" label="Hora de saída" tipo="time" valor=v.saida_sede_hora erros=e.saida_sede_hora %}
-                {% include "components/input.html" with name="chegada_sede_data" label="Data de chegada na sede" tipo="date" valor=v.chegada_sede_data erros=e.chegada_sede_data %}
-                {% include "components/input.html" with name="chegada_sede_hora" label="Hora de chegada" tipo="time" valor=v.chegada_sede_hora erros=e.chegada_sede_hora %}
-              </div>
+              {% include "pages/viagens_planos/_deslocamento.html" %}
               {% endwith %}
               {% with r=diarias_resultado %}
               <div class="diarias-metricas pt-metricas" data-pt-diarias-resultado>
@@ -232,54 +220,54 @@
         <header class="section-card__cabecalho reg__t">
           <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
           <h2 class="section-card__titulo">Atividades, metas e recursos</h2>
-          <div class="section-card__acao"><a class="btn--secundaria btn--compacto" href="{{ url_atividades }}">{% include "components/icon.html" with nome="settings" %}Gerenciar atividades</a></div>
-        </header>
-        <div class="section-card__corpo">
-          <div class="ofc-grupo">
-            <div class="ofc-grupo__cabeca"><strong>Atividades previstas</strong><span class="pt-grupo__ajuda">Clique nas atividades para selecioná-las — a meta e o recurso de cada uma entram automaticamente.</span></div>
-            <div class="ofc-grupo__corpo">
-              {% if atividades_catalogo %}
-                <div class="pt-atividades__barra">
-                  <div class="form-campo pt-atividades__busca">
-                    <label class="form-label sr-only" for="id_pt_atividade_busca">Filtrar atividades</label>
-                    <div class="busca"><span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span><input class="form-controle" type="search" id="id_pt_atividade_busca" placeholder="Filtrar atividades por nome" autocomplete="off" data-pt-atividade-busca></div>
-                  </div>
-                  <div class="ofc-com-acao pt-atividades__preset">
-                    {# `erros=None` de propósito: sem isso o include herda o dicionário de erros do contexto e imprime as chaves dele. #}
-                    {% include "components/select.html" with name="pt_atividade_preset" label="Preset de atividades" rotulo_oculto=True opcoes=presets placeholder="Aplicar preset…" permitir_vazio=True selecionado=preset_padrao_id erros=None %}
-                    <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_presets }}" aria-label="Gerenciar presets" title="Gerenciar presets">{% include "components/icon.html" with nome="settings" %}</a>
-                  </div>
-                  <button type="button" class="btn--secundaria btn--compacto" data-pt-atividade-limpar>{% include "components/icon.html" with nome="x" %}Limpar seleção</button>
-                </div>
-                <div class="pt-atividades__grade" role="group" aria-label="Atividades disponíveis">
-                  {% for a in atividades_catalogo %}
-                    <label class="pt-atividade{% if a.selecionada %} is-selected{% endif %}" data-pt-atividade data-filtro="{{ a.nome|lower }}">
-                      <input class="sr-only" type="checkbox" name="atividades_codigos" value="{{ a.codigo }}" id="pt-atividade-{{ a.codigo }}"{% if a.selecionada %} checked{% endif %} data-pt-atividade-caixa>
-                      <span class="pt-atividade__marca" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
-                      <span class="pt-atividade__nome">{{ a.nome }}</span>
-                    </label>
-                  {% endfor %}
-                </div>
-                <p class="lista-vazia" data-pt-atividade-vazio hidden>{% include "components/icon.html" with nome="search" %}<span>Nenhuma atividade encontrada para a busca informada.</span></p>
-              {% else %}
-                <div class="aviso aviso--info" role="status">{% include "components/icon.html" with nome="info" %}<div>Nenhuma atividade cadastrada. Use “Gerenciar atividades”, acima, para cadastrar a primeira.</div></div>
-              {% endif %}
+          {# Um botão só para os dois catálogos: atividades e presets moram em Cadastros. #}
+          <div class="section-card__acao dd pt-gerenciar" data-menu>
+            <button type="button" class="btn--secundaria btn--quadrado" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Gerenciar atividades e presets" title="Gerenciar atividades e presets">{% include "components/icon.html" with nome="settings" %}</button>
+            <div class="dd__c pt-gerenciar__menu" hidden data-menu-corpo>
+              <a class="dd__i" href="{{ url_atividades }}">{% include "components/icon.html" with nome="checklist" %}Gerenciar atividades</a>
+              <a class="dd__i" href="{{ url_presets }}">{% include "components/icon.html" with nome="clipboard" %}Gerenciar presets</a>
             </div>
           </div>
+        </header>
+        <div class="section-card__corpo">
+          {% if atividades_catalogo %}
+            {# Busca, preset e limpar numa barra só, na mesma altura. #}
+            <div class="pt-atividades__barra">
+              <div class="form-campo pt-atividades__busca">
+                <label class="form-label sr-only" for="id_pt_atividade_busca">Filtrar atividades</label>
+                <div class="busca"><span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span><input class="form-controle" type="search" id="id_pt_atividade_busca" placeholder="Filtrar atividades por nome" autocomplete="off" data-pt-atividade-busca></div>
+              </div>
+              <div class="pt-atividades__preset">
+                {# `erros=None` de propósito: sem isso o include herda o dicionário de erros do contexto e imprime as chaves dele. #}
+                {% include "components/select.html" with name="pt_atividade_preset" label="Preset" opcoes=presets placeholder="Aplicar preset…" permitir_vazio=True selecionado=preset_padrao_id erros=None %}
+              </div>
+              <button type="button" class="btn--secundaria btn--compacto pt-atividades__limpar" data-pt-atividade-limpar{% if not atividades_selecionadas_total %} disabled{% endif %}>{% include "components/icon.html" with nome="x" %}Limpar seleção</button>
+            </div>
+            <div class="pt-atividades__grade" role="group" aria-label="Atividades disponíveis">
+              {% for a in atividades_catalogo %}
+                <label class="pt-atividade{% if a.selecionada %} is-selected{% endif %}" data-pt-atividade data-filtro="{{ a.nome|lower }}">
+                  <input class="sr-only" type="checkbox" name="atividades_codigos" value="{{ a.codigo }}" id="pt-atividade-{{ a.codigo }}"{% if a.selecionada %} checked{% endif %} data-pt-atividade-caixa>
+                  <span class="pt-atividade__marca" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
+                  <span class="pt-atividade__nome">{{ a.nome }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            <p class="lista-vazia" data-pt-atividade-vazio hidden>{% include "components/icon.html" with nome="search" %}<span>Nenhuma atividade encontrada para a busca informada.</span></p>
+          {% else %}
+            <div class="aviso aviso--info" role="status">{% include "components/icon.html" with nome="info" %}<div>Nenhuma atividade cadastrada. Use a engrenagem, acima, para cadastrar a primeira.</div></div>
+          {% endif %}
 
-          <div class="ofc-grupo">
-            <div class="ofc-grupo__cabeca"><strong>Metas e recursos</strong><span class="pt-grupo__ajuda">Gerados automaticamente pelas atividades selecionadas acima.</span></div>
-            <div class="ofc-grupo__corpo pt-listas">
-              <div class="pt-lista">
-                <div class="pt-lista__cabeca"><strong>Metas</strong><span class="st st--aguardando" data-pt-metas-total>{{ metas_preview|length }}</span></div>
-                <ul class="pt-lista__itens" data-pt-metas-lista>{% for m in metas_preview %}<li>{{ m }}</li>{% endfor %}</ul>
-                <p class="lista-vazia" data-pt-metas-vazio{% if metas_preview %} hidden{% endif %}>{% include "components/icon.html" with nome="checklist" %}<span><b>Sem metas ainda</b> Selecione uma atividade para ver a meta correspondente.</span></p>
-              </div>
-              <div class="pt-lista">
-                <div class="pt-lista__cabeca"><strong>Recursos</strong><span class="st st--em_andamento" data-pt-recursos-total>{{ recursos_preview|length }}</span></div>
-                <ul class="pt-lista__itens" data-pt-recursos-lista>{% for r in recursos_preview %}<li>{{ r }}</li>{% endfor %}</ul>
-                <p class="lista-vazia" data-pt-recursos-vazio{% if recursos_preview %} hidden{% endif %}>{% include "components/icon.html" with nome="clipboard" %}<span><b>Sem recursos ainda</b> O recurso é opcional — algumas atividades podem não ter um.</span></p>
-              </div>
+          {# Metas e recursos saem das atividades marcadas: só leitura, numa faixa mais apagada. #}
+          <div class="pt-listas">
+            <div class="pt-lista">
+              <div class="pt-lista__cabeca"><strong>Metas</strong><span class="pt-lista__total" data-pt-metas-total>{{ metas_preview|length }}</span></div>
+              <ul class="pt-lista__itens" data-pt-metas-lista>{% for m in metas_preview %}<li>{{ m }}</li>{% endfor %}</ul>
+              <p class="lista-vazia" data-pt-metas-vazio{% if metas_preview %} hidden{% endif %}>{% include "components/icon.html" with nome="checklist" %}<span><b>Sem metas ainda</b> Selecione uma atividade para ver a meta correspondente.</span></p>
+            </div>
+            <div class="pt-lista">
+              <div class="pt-lista__cabeca"><strong>Recursos</strong><span class="pt-lista__total" data-pt-recursos-total>{{ recursos_preview|length }}</span></div>
+              <ul class="pt-lista__itens" data-pt-recursos-lista>{% for r in recursos_preview %}<li>{{ r }}</li>{% endfor %}</ul>
+              <p class="lista-vazia" data-pt-recursos-vazio{% if recursos_preview %} hidden{% endif %}>{% include "components/icon.html" with nome="clipboard" %}<span><b>Sem recursos ainda</b> O recurso é opcional — algumas atividades podem não ter um.</span></p>
             </div>
           </div>
         </div>
@@ -321,6 +309,7 @@
   {{ presets_data|json_script:"pt-presets-data" }}
   <script src="{% estatico 'js/viagens-cadastros.js' %}" defer></script>
   <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
+  <script src="{% estatico 'js/nome-sugerido.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-planos.js' %}" defer></script>
   {% include "components/v32/dialogo_assinado.html" %}
 {% endblock %}

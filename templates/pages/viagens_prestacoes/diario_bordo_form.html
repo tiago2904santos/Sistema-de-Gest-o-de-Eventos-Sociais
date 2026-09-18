@@ -1,13 +1,12 @@
 {% extends "pages/viagens_prestacoes/base.html" %}{% load l10n %}
 {% comment %}
-  Etapa 1 — Diário de bordo: o motorista e a viatura do diário (com a troca), o
-  roteiro realizado (ajustável), a quilometragem e o abastecimento de cada
-  deslocamento e o documento (PDF/planilha). Os campos gravam sozinhos; "Salvar e continuar" leva ao RT.
+  Etapa 1 — Diário de bordo, no desenho do editor de roteiro: um cartão só.
+  No cabeçalho, um botão de ação só (trocar motorista/viatura, que abre o
+  modal; ajustar o roteiro realizado; o PDF e a planilha); no corpo, o
+  motorista e a viatura na mesma linha e, embaixo, os trechos na tabela compacta do roteiro:
+  origem, destino, saída, km inicial, chegada, km final e abastecimento, que
+  gravam sozinhos. "Salvar e continuar" leva ao relatório técnico.
 {% endcomment %}
-{% block pc_acoes_topo %}
-  <a class="btn--secundaria" href="{{ preview_inline_url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}Visualizar PDF</a>
-  <a class="btn--secundaria" href="{{ preview_xlsx_url }}">{% include "components/icon.html" with nome="download" %}Baixar planilha</a>
-{% endblock %}
 {% block pc_salvar_topo %}
   <button type="submit" class="btn-primaria" form="form-prestacao">Salvar e continuar</button>
 {% endblock %}
@@ -17,54 +16,95 @@
   {% endif %}
 {% endblock %}
 {% block prestacao_conteudo %}
-  <section class="reg" id="motorista">
-    <h2 class="reg__t">{% include "components/icon.html" with nome="volante" %}Motorista e viatura{% if motorista_resumo.alterado or viatura_resumo.alterada %}<span class="st st--aguardando">Trocados neste diário</span>{% endif %}</h2>
-    <dl class="gc sol-detalhe__campos">
-      <div class="f"><dt>Motorista</dt><dd>{{ motorista_resumo.nome }}{% if motorista_resumo.cpf %}<small>CPF {{ motorista_resumo.cpf }}</small>{% endif %}<small>{{ motorista_resumo.origem }}</small></dd></div>
-      <div class="f"><dt>Viatura</dt><dd>{{ viatura_resumo.viatura }}{% if viatura_resumo.placa %}<small>Placa {{ viatura_resumo.placa }}{% if viatura_resumo.combustivel %} · {{ viatura_resumo.combustivel }}{% endif %}</small>{% endif %}{% if viatura_resumo.alterada %}<small>Viatura trocada neste diário</small>{% endif %}</dd></div>
-    </dl>
-    <div class="pc-acoes-linha">
-      <a class="btn--secundaria" href="{{ editar_motorista_url }}">{% include "components/icon.html" with nome="pencil" %}Trocar motorista / viatura</a>
-      <a class="btn--secundaria" href="{{ editar_roteiro_url }}">{% include "components/icon.html" with nome="map-pin" %}Ajustar roteiro realizado</a>
-    </div>
-    {% if alteracoes_roteiro %}<ul class="pc-alteracoes">{% for frase in alteracoes_roteiro %}<li>{{ frase }}</li>{% endfor %}</ul>{% endif %}
-  </section>
-
-  <section class="reg" id="deslocamentos">
-    <h2 class="reg__t">{% include "components/icon.html" with nome="truck" %}Deslocamentos <em>{{ trechos|length }} trecho{{ trechos|length|pluralize }}</em></h2>
-    <p class="pc-nota">Preencha a quilometragem de cada deslocamento e se houve necessidade de abastecimento. Os horários são os do roteiro realizado.</p>
-    <form method="post" id="form-prestacao" data-autosave data-autosave-url="{{ autosave_url }}" data-autosave-model="diario_bordo" data-autosave-id="{{ diario.pk|unlocalize }}">
-      {% csrf_token %}{{ formset.management_form }}
-      <span class="pc-autosave pc-autosave--form" data-autosave-estado aria-live="polite"></span>
-      {% if trechos %}
-        <div class="dt-w pc-trechos">
-          <table class="dt">
-            <thead><tr><th scope="col">#</th><th scope="col">Deslocamento</th><th scope="col">Saída</th><th scope="col">Chegada</th><th scope="col">Km inicial</th><th scope="col">Km final</th><th scope="col">Abastecimento</th></tr></thead>
-            <tbody>
-              {% for trecho in trechos %}
-                <tr>
-                  {# `data-rotulo`: no celular a linha vira cartão e cada campo se anuncia, como nos trechos do roteiro. #}
-                  <td class="pc-trecho__n">{{ trecho.display.ordem }}</td>
-                  <td class="pc-trecho__rota" data-rotulo="Deslocamento"><b>{{ trecho.display.origem }}</b> → <b>{{ trecho.display.destino }}</b>{% for erro in trecho.form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}<input type="hidden" name="{{ trecho.form.id.html_name }}" value="{{ trecho.form.instance.pk|unlocalize }}"></td>
-                  <td class="pc-trecho__hora" data-rotulo="Saída">{{ trecho.display.saida.data }}<small>{{ trecho.display.saida.hora }}</small></td>
-                  <td class="pc-trecho__hora" data-rotulo="Chegada">{{ trecho.display.chegada.data }}<small>{{ trecho.display.chegada.hora }}</small></td>
-                  <td class="pc-trecho__km" data-rotulo="Km inicial">{% include "components/input.html" with name=trecho.form.km_inicial.html_name label="Km inicial" rotulo_oculto=True valor=trecho.form.km_inicial.value placeholder="0" inputmode="numeric" autocomplete="off" erros=trecho.form.km_inicial.errors %}</td>
-                  <td class="pc-trecho__km" data-rotulo="Km final">{% include "components/input.html" with name=trecho.form.km_final.html_name label="Km final" rotulo_oculto=True valor=trecho.form.km_final.value placeholder="0" inputmode="numeric" autocomplete="off" erros=trecho.form.km_final.errors %}</td>
-                  <td class="pc-trecho__abast" data-rotulo="Abastecimento">{% include "components/select.html" with name=trecho.form.abastecimento.html_name label="Necessidade de abastecimento" rotulo_oculto=True opcoes=opcoes_abastecimento selecionado=trecho.form.abastecimento.value erros=trecho.form.abastecimento.errors %}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+<div class="editor-roteiro pc-diario">
+  <section class="section-card reg" id="motorista">
+    <header class="section-card__cabecalho reg__t">
+      <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+      <div class="section-card__identificacao"><h2 class="section-card__titulo">Diário de bordo</h2></div>
+      <div class="section-card__acao">
+        {% if motorista_resumo.alterado or viatura_resumo.alterada %}<span class="st st--aguardando">Trocados neste diário</span>{% endif %}
+        {# Um botão de ação só: a troca abre o modal; o resto são links. #}
+        <div class="dd of-menu" data-menu>
+          <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações do diário de bordo" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
+          <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
+            <a class="dd__i of-item" href="{{ editar_motorista_url }}" data-pc-modal="pc-dialogo-motorista">{% include "components/icon.html" with nome="volante" %}<span><b>Trocar motorista / viatura</b><small>Só neste diário; o ofício não muda</small></span></a>
+            <a class="dd__i of-item" href="{{ editar_roteiro_url }}">{% include "components/icon.html" with nome="map-pin" %}<span><b>Ajustar roteiro realizado</b><small>Trechos, datas e horários</small></span></a>
+            <div class="dd__s"></div>
+            <a class="dd__i of-item" href="{{ preview_inline_url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar PDF</b><small>O diário de bordo em outra aba</small></span></a>
+            <a class="dd__i of-item" href="{{ preview_pdf_url }}">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>O diário de bordo em PDF</small></span></a>
+            <a class="dd__i of-item" href="{{ preview_xlsx_url }}">{% include "components/icon.html" with nome="download" %}<span><b>Baixar planilha</b><small>O diário de bordo em XLSX</small></span></a>
+          </div>
         </div>
-      {% else %}
-        <p class="texto-vazio">O roteiro ainda não possui trechos. Use “Ajustar roteiro realizado” para registrá-los.</p>
-      {% endif %}
-    </form>
+      </div>
+    </header>
+    <div class="section-card__corpo">
+      {# Motorista e viatura em dois cartões lado a lado, no desenho do cartão da viatura do termo. #}
+      <div class="pc-diario__dupla">
+        <div class="pc-diario__cartao" title="Motorista{% if motorista_resumo.origem %} · {{ motorista_resumo.origem }}{% endif %}">
+          <span class="pc-diario__icone" aria-hidden="true">{% include "components/icon.html" with nome="volante" %}</span>
+          <span class="pc-diario__txt"><b>{{ motorista_resumo.nome }}</b><small>Motorista{% if motorista_resumo.cpf %} · CPF {{ motorista_resumo.cpf }}{% endif %}</small></span>
+        </div>
+        <div class="pc-diario__cartao" title="Viatura">
+          <span class="pc-diario__icone" aria-hidden="true">{% include "components/icon.html" with nome="truck" %}</span>
+          <span class="pc-diario__txt"><b>{% if viatura_resumo.placa %}{{ viatura_resumo.placa }} — {% endif %}{{ viatura_resumo.viatura }}</b><small>Viatura{% if viatura_resumo.combustivel %} · {{ viatura_resumo.combustivel }}{% endif %}</small></span>
+        </div>
+      </div>
+      {# Os trechos na largura inteira do cartão, abaixo do motorista e da viatura. #}
+      <div class="pc-diario__trechos" id="deslocamentos">
+        {% if alteracoes_roteiro %}<ul class="pc-alteracoes">{% for frase in alteracoes_roteiro %}<li>{{ frase }}</li>{% endfor %}</ul>{% endif %}
+        <form method="post" id="form-prestacao" data-autosave data-autosave-url="{{ autosave_url }}" data-autosave-model="diario_bordo" data-autosave-id="{{ diario.pk|unlocalize }}">
+          {% csrf_token %}{{ formset.management_form }}
+          <span class="pc-autosave pc-autosave--form" data-autosave-estado aria-live="polite"></span>
+          {% if trechos %}
+            <div class="tabela-wrapper dt-w cad-lista trechos-lista" tabindex="0" role="region" aria-label="Trechos do diário de bordo">
+              <table class="tabela dt tabela--compacta trechos-tabela pc-diario__tabela">
+                <thead>
+                  <tr><th>Origem</th><th>Destino</th><th>Saída</th><th>Km inicial</th><th>Chegada</th><th>Km final</th><th>Abastecimento</th></tr>
+                </thead>
+                <tbody>
+                  {% for trecho in trechos %}
+                    <tr class="trecho-linha">
+                      <td data-rotulo="Origem"><span class="trecho-linha__cidade">{{ trecho.display.origem }}</span><input type="hidden" name="{{ trecho.form.id.html_name }}" value="{{ trecho.form.instance.pk|unlocalize }}">{% for erro in trecho.form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}</td>
+                      <td data-rotulo="Destino"><span class="trecho-linha__cidade">{{ trecho.display.destino }}</span></td>
+                      <td data-rotulo="Saída" class="pc-diario__hora">{{ trecho.display.saida.data }}<small>{{ trecho.display.saida.hora }}</small></td>
+                      <td data-rotulo="Km inicial">{% include "components/input.html" with name=trecho.form.km_inicial.html_name label="Km inicial" rotulo_oculto=True valor=trecho.form.km_inicial.value placeholder="0" inputmode="numeric" autocomplete="off" erros=trecho.form.km_inicial.errors %}</td>
+                      <td data-rotulo="Chegada" class="pc-diario__hora">{{ trecho.display.chegada.data }}<small>{{ trecho.display.chegada.hora }}</small></td>
+                      <td data-rotulo="Km final">{% include "components/input.html" with name=trecho.form.km_final.html_name label="Km final" rotulo_oculto=True valor=trecho.form.km_final.value placeholder="0" inputmode="numeric" autocomplete="off" erros=trecho.form.km_final.errors %}</td>
+                      <td data-rotulo="Abastecimento">{% include "components/select.html" with name=trecho.form.abastecimento.html_name label="Necessidade de abastecimento" rotulo_oculto=True opcoes=opcoes_abastecimento selecionado=trecho.form.abastecimento.value erros=trecho.form.abastecimento.errors %}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="trechos-vazio">
+              <span class="trechos-vazio__icone" aria-hidden="true">{% include "components/icon.html" with nome="ordenar" %}</span>
+              <strong>O roteiro ainda não tem trechos</strong>
+              <span>Use "Ajustar roteiro realizado" para registrá-los.</span>
+            </div>
+          {% endif %}
+        </form>
+      </div>
 
-    {# Ações no fim do último cartão da etapa, como no roteiro. #}
-    <div class="frm-acoes-fim">
-      <a class="btn--secundaria" href="{% url 'viagens_prestacoes:index' %}">Voltar</a>
-      <button type="submit" class="btn-primaria" form="form-prestacao">Salvar e continuar para o RT</button>
+      <div class="frm-acoes-fim">
+        <a class="btn--secundaria" href="{% url 'viagens_prestacoes:index' %}">Voltar</a>
+        <button type="submit" class="btn-primaria" form="form-prestacao">Salvar e continuar</button>
+      </div>
     </div>
   </section>
+</div>
+
+{# Trocar motorista / viatura: o formulário da página própria num modal; com erro, a tela volta com ele aberto. #}
+<dialog class="an-dialogo pc-dialogo" id="pc-dialogo-motorista" aria-labelledby="pc-dialogo-motorista-titulo"{% if abrir_modal_motorista %} data-abrir{% endif %}>
+  <form method="post" action="{{ url_motorista }}" class="an-form" novalidate>
+    {% csrf_token %}
+    <h2 class="an-titulo" id="pc-dialogo-motorista-titulo">Trocar motorista / viatura</h2>
+    <p class="an-texto">Vale só para este diário de bordo; o ofício não muda.</p>
+    {% include "pages/viagens_prestacoes/_motorista_campos.html" %}
+    <div class="an-rodape">
+      <button type="button" class="btn--secundaria" data-pc-fechar>Cancelar</button>
+      <button type="submit" class="btn-primaria">Salvar motorista e viatura</button>
+    </div>
+  </form>
+</dialog>
 {% endblock %}

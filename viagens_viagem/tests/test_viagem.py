@@ -78,16 +78,15 @@ class CriarEPainelTests(CenarioViagem):
         r = self.client.get(self.etapa(v, 1))
         html = r.content.decode()
         for texto in ["Nova viagem", "Dados da viagem", "Identificação", "Tipo da viagem", "Gerenciar tipos", "Modelo de motivo",
-                      "Gerenciar modelos", "Contextualize a atividade…", "Data da viagem", "Data de início", "Data de fim",
+                      "Gerenciar modelos", "Contextualize a atividade…", "Período e destinos", "Período da viagem",
                       "Destinos", "Documentos vinculados", "Ofícios", "Roteiros", "Plano de Trabalho", "Ordem de Serviço", "Termos",
-                      "Nenhum ofício disponível para o período.", "Voltar à lista", "Salvar e avançar", "Etapa 1 de 5 · Dados da viagem"]:
+                      "Nenhum ofício disponível para o período.", "Voltar à lista", "Salvar e avançar"]:
             self.assertIn(texto, html)
         self.assertNotIn("aviso--erro", html)
         # A ordem dos blocos é a da origem.
         self.assertLess(html.index("Identificação"), html.index("Motivo</strong>"))
-        self.assertLess(html.index("Motivo</strong>"), html.index("Data da viagem"))
-        self.assertLess(html.index("Data da viagem"), html.index("Destinos</strong>"))
-        self.assertLess(html.index("Destinos</strong>"), html.index("Documentos vinculados"))
+        self.assertLess(html.index("Motivo</strong>"), html.index("Período e destinos"))
+        self.assertLess(html.index("Período e destinos"), html.index("Documentos vinculados"))
         # A UF nasce com a da sede das Configurações.
         self.assertEqual(r.context["valores"]["destino_estado"], str(self.pr.pk))
 
@@ -143,7 +142,7 @@ class CriarEPainelTests(CenarioViagem):
         self.assertTrue(etapas[2]["concluida"])
         self.assertTrue(etapas[3]["atual"])
         self.assertFalse(etapas[5]["concluida"])
-        self.assertContains(r, "Etapa 3 de 5 · Ofícios / Justificativas")
+        self.assertContains(r, 'aria-current="step" title="Ofícios / Justificativas — Atual"')
         self.assertContains(r, "Novo ofício")
 
     def test_etapas_2_e_5_listam_os_documentos_da_viagem(self):
@@ -176,9 +175,10 @@ class SolicitacaoTests(CenarioViagem):
     def test_etapa_4_anexa_ve_e_remove_documentos(self):
         v = self.viagem()
         r = self.client.get(self.etapa(v, 4))
-        for texto in ["Documentos de solicitação", "Ofícios solicitantes, convites, despachos ou imagens.", "Anexar documento",
+        for texto in ["Documentos de solicitação", "Anexar documento de solicitação", "Documento de solicitação",
                       "Escolher arquivos", "Anexar documentos", "Nenhum documento de solicitação anexado ainda.",
-                      "Planejamento e autorização", "Nenhum plano ou OS vinculado a esta viagem.", "Ordem de Serviço", "Plano de Trabalho"]:
+                      "Nenhum plano de trabalho vinculado a esta viagem.", "Nenhuma ordem de serviço vinculada a esta viagem.",
+                      "Ordem de Serviço", "Plano de Trabalho"]:
             self.assertContains(r, texto)
         url = reverse("viagens_viagem:solicitacao_anexar", args=[v.pk])
         r = self.client.post(url, {}, follow=True)
@@ -204,6 +204,67 @@ class SolicitacaoTests(CenarioViagem):
         self.assertEqual(ViagemDocumentoSolicitacao.objects.filter(viagem=v).count(), 1)
         # Com solicitação anexada e nenhum rascunho, a viagem está pronta.
         self.assertContains(self.client.get(reverse("viagens_viagem:lista")), 'class="st st--atendido">Pronto')
+
+
+class Etapa4ListasTests(CenarioViagem):
+    def test_pt_e_os_aparecem_nas_linhas_das_listas_dos_modulos(self):
+        from viagens_ordens.models import OrdemServico
+        from viagens_planos.models import PlanoTrabalho
+
+        v = self.viagem()
+        plano = PlanoTrabalho.objects.create(numero=7, ano=2026, viagem=v)
+        ordem = OrdemServico.objects.create(numero=9, ano=2026, viagem=v, motivo="Apoio ao evento")
+        r = self.client.get(self.etapa(v, 4))
+        self.assertEqual(r.status_code, 200)
+        # A mesma linha e o mesmo menu de ações das listas de PT e de OS.
+        self.assertContains(r, f'id="plano-{plano.pk}-titulo"')
+        self.assertContains(r, f'id="os-{ordem.pk}-titulo"')
+        self.assertContains(r, "Apoio ao evento")
+        self.assertContains(r, f"Ações da {ordem.numero_formatado}")
+        self.assertNotContains(r, "Nenhum plano de trabalho vinculado")
+        self.assertNotContains(r, "Nenhuma ordem de serviço vinculada")
+
+
+class BaixarDocumentosTests(CenarioViagem):
+    def _anexar(self, v, nome, conteudo=b"%PDF-1.4 x"):
+        from django.core.files.base import ContentFile
+
+        anexo = ViagemDocumentoSolicitacao(viagem=v, nome_original=nome)
+        anexo.arquivo.save(nome, ContentFile(conteudo), save=True)
+        return anexo
+
+    def test_modal_da_viagem_lista_os_documentos_e_baixa_os_marcados(self):
+        import json
+        import zipfile
+
+        from viagens_ordens.models import OrdemServico
+        from viagens_viagem.downloads import itens_para_baixar
+
+        v = self.viagem()
+        ordem = OrdemServico.objects.create(numero=9, ano=2026, viagem=v)
+        a = self._anexar(v, "convite.pdf")
+        b = self._anexar(v, "despacho.pdf")
+        valores = [i["valor"] for i in itens_para_baixar(v)]
+        self.assertEqual(valores, [f"os-{ordem.pk}", f"sol-{a.pk}", f"sol-{b.pk}"])
+
+        # O botão do cabeçalho leva os itens ao modal.
+        r = self.client.get(self.etapa(v, 2))
+        self.assertContains(r, "Baixar documentos")
+        self.assertContains(r, reverse("viagens_viagem:baixar", args=[v.pk]))
+        self.assertIn(f"sol-{a.pk}", json.dumps(valores))
+
+        url = reverse("viagens_viagem:baixar", args=[v.pk])
+        r = self.client.post(url, {"itens": [f"sol-{a.pk}"], "formato": "pdf"})
+        self.assertEqual(r["Content-Type"], "application/pdf")
+        self.assertIn("convite.pdf", r["Content-Disposition"])
+        r = self.client.post(url, {"itens": [f"sol-{a.pk}", f"sol-{b.pk}"], "formato": "pdf", "saida": "separados"})
+        self.assertEqual(r["Content-Type"], "application/zip")
+        with zipfile.ZipFile(io.BytesIO(r.content)) as z:
+            self.assertEqual(sorted(z.namelist()), ["convite.pdf", "despacho.pdf"])
+        # Item de outra viagem (ou inventado) não passa.
+        self.assertEqual(self.client.post(url, {"itens": ["sol-999999"], "formato": "pdf"}).status_code, 404)
+        r = self.client.post(url, {"formato": "pdf"}, follow=True)
+        self.assertContains(r, "Marque ao menos um documento para baixar.")
 
 
 class AcoesTests(CenarioViagem):

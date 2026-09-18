@@ -2,9 +2,10 @@
   Um painel de coordenador (administrativo ou operacional): nome, cargo e
   gênero numa linha só.
 
-  O nome é um campo de texto com as sugestões do `<datalist>` de servidores:
-  digitar filtra, escolher preenche, mas nada obriga a escolher — um nome que
-  não está no sistema vale como foi digitado. Quem decide é a gravação, que
+  O nome é texto livre com as sugestões dos servidores (o componente
+  `nome_sugerido`, no menu dos outros seletores, com cargo · unidade em cada
+  opção): digitar filtra, escolher preenche, mas nada obriga a escolher — um
+  nome que não está no sistema vale como foi digitado. Quem decide é a gravação, que
   procura o servidor por nome (único no banco) e, achando, usa o cadastro
   dele; não achando, guarda o nome digitado. Por isso não há mais interruptor
   "No sistema / Manual": o próprio nome diz de onde ele vem.
@@ -23,11 +24,11 @@
     <strong>{{ rotulo }}</strong>
   </div>
   <div class="g-form pt-coordenador__campos">
-    {% include "components/input.html" with name=nome_campo|add:"_nome_manual" label="Nome" placeholder="Buscar servidor ou digitar o nome" uppercase=True autocomplete="off" lista_sugestoes="pt-servidores" valor=nome_exibido erros=erros_nome %}
+    {% include "components/v32/nome_sugerido.html" with name=nome_campo|add:"_nome_manual" label="Nome" placeholder="Buscar servidor ou digitar o nome" opcoes=servidores valor=nome_exibido erros=erros_nome %}
     <div class="ofc-com-acao">
       {% include "components/select.html" with name=nome_campo|add:"_cargo_manual" label="Cargo" opcoes=cargos_opcoes placeholder="Selecione um cargo" permitir_vazio=True pesquisavel=True selecionado=cargo erros=erros_cargo %}
       <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_cargos }}" aria-label="Gerenciar cargos" title="Gerenciar cargos">{% include "components/icon.html" with nome="settings" %}</a>
     </div>
-    {% include "components/select.html" with name=nome_campo|add:"_genero" label="Gênero" opcoes=generos selecionado=genero erros=erros_genero %}
+    {% include "components/select.html" with name=nome_campo|add:"_genero" label="Gênero" opcoes=generos selecionado=genero sem_vazio=True erros=erros_genero %}
   </div>
 </div>

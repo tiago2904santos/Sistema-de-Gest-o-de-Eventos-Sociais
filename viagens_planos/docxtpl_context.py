@@ -33,36 +33,50 @@ def _destinos_unicos(plano):
     return ", ".join(rotulos)
 
 
-def _build_valor_multi_richtext(plano):
+def _valor_multi_blocos(plano):
+    """Os blocos de valor do plano de vários eventos: um por evento e o total.
+    `rotulo` sai em negrito nos dois formatos (DOCX e HTML); `texto` é o resto."""
+    blocos = []
+
+    def bloco(rotulo, sufixo, composicao, unitario_val, total_val):
+        if total_val is None or unitario_val is None:
+            return
+        total, unitario = Decimal(total_val), Decimal(unitario_val)
+        # O rótulo já termina em dois-pontos; o sufixo (a data do evento) ganha
+        # os dele. Sem sufixo, o valor vem logo depois ("Valor total: R$…").
+        abertura = f"{sufixo}: " if sufixo else " "
+        blocos.append({
+            "rotulo": rotulo,
+            "texto": (
+                f"{abertura}R${formatar_valor(total)} ({valor_por_extenso_ptbr(total)}).\n"
+                f"Valor correspondente a {composicao}, por servidor, no valor unitário "
+                f"de R${formatar_valor(unitario)} ({valor_por_extenso_ptbr(unitario)})."
+            ),
+        })
+
+    for evento in plano.eventos_ordenados:
+        curta, dia_unico = services._evento_data_curta(evento)
+        bloco(
+            f"Valor do evento {'dia' if dia_unico else 'dias'}:", f" {curta}" if curta else "",
+            evento.diarias_composicao, evento.diarias_valor_unitario, evento.diarias_valor_total,
+        )
+    bloco(
+        "Valor total:", "", plano.diarias_combinada_composicao,
+        plano.diarias_combinada_valor_unitario, plano.diarias_combinada_valor_total,
+    )
+    return blocos
+
+
+def _build_valor_multi_richtext(blocos):
     """Os blocos de valor, com "Valor do evento dia/dias:" e "Valor total:" em negrito."""
     from docxtpl import RichText
 
-    def bloco(rt, rotulo, sufixo, composicao, unitario_val, total_val, *, primeiro):
-        if total_val is None or unitario_val is None:
-            return primeiro
-        total, unitario = Decimal(total_val), Decimal(unitario_val)
-        if not primeiro:
-            rt.add("\n\n")
-        rt.add(rotulo, bold=True)
-        rt.add(
-            f"{sufixo}: R${formatar_valor(total)} ({valor_por_extenso_ptbr(total)}).\n"
-            f"Valor correspondente a {composicao}, por servidor, no valor unitário "
-            f"de R${formatar_valor(unitario)} ({valor_por_extenso_ptbr(unitario)})."
-        )
-        return False
-
     rt = RichText()
-    primeiro = True
-    for evento in plano.eventos_ordenados:
-        curta, dia_unico = services._evento_data_curta(evento)
-        primeiro = bloco(
-            rt, f"Valor do evento {'dia' if dia_unico else 'dias'}:", f" {curta}" if curta else "",
-            evento.diarias_composicao, evento.diarias_valor_unitario, evento.diarias_valor_total, primeiro=primeiro,
-        )
-    bloco(
-        rt, "Valor total:", "", plano.diarias_combinada_composicao,
-        plano.diarias_combinada_valor_unitario, plano.diarias_combinada_valor_total, primeiro=primeiro,
-    )
+    for indice, bloco in enumerate(blocos):
+        if indice:
+            rt.add("\n\n")
+        rt.add(bloco["rotulo"], bold=True)
+        rt.add(bloco["texto"])
     return rt
 
 
@@ -104,13 +118,15 @@ def build_plano_docxtpl_context(plano):
         # Metas, atividades, atuação e recursos saem do laço `eventos` do modelo.
         itens = services._atividades_combinadas_multi(plano)
         metas_txt = atividades_txt = recursos_txt = ""
-        valor_txt = _build_valor_multi_richtext(plano)
+        valor_blocos = _valor_multi_blocos(plano)
+        valor_txt = _build_valor_multi_richtext(valor_blocos)
     else:
         itens = services._atividades_selecionadas_ordenadas(plano)
         metas_txt = services.montar_metas_texto(itens)
         atividades_txt = _txt(plano.atividades) or services.montar_atividades_texto(itens)
         recursos_txt = services.montar_recursos_texto(itens)
         valor_txt = services.montar_valor_do_plano_texto(plano)
+        valor_blocos = []
 
     inst = build_configuracao_context()
     nome_chefia, cargo_chefia = _assinatura_nome_cargo(inst, "PLANO_TRABALHO", fallback_geral=False)
@@ -131,6 +147,8 @@ def build_plano_docxtpl_context(plano):
         "efetivos": services.montar_efetivo_texto(plano),
         "unidade_movel": services.montar_unidade_movel_texto(itens),
         "valor_do_plano": valor_txt,
+        # Os mesmos blocos do valor em texto simples, para o documento HTML.
+        "valor_blocos": valor_blocos,
         "recursos_necessarios": recursos_txt,
         # Automático regenera (e garante só o administrativo no de vários eventos); editado à mão vale o gravado.
         "coordenacao": services.montar_texto_coordenacao(plano) if plano.coordenacao_auto else _txt(plano.coordenacao),

@@ -1,66 +1,75 @@
 {% extends "pages/viagens_prestacoes/base.html" %}{% load l10n %}
 {% comment %}
-  Etapa 2 — Relatório técnico: custeio (diária, translado, combustível,
-  passagem, com "Outro"), os cinco textos com modelo (descrição do evento,
-  objetivo, conclusão, medidas, informações complementares), a diária recebida
-  por este servidor e o documento (DOCX/PDF). O texto
-  é compartilhado pela equipe; a identificação e a diária são de cada servidor.
+  Etapa 2 — Relatório técnico, no desenho do diário: um cartão só, com um
+  botão de ação (visualizar o PDF, baixar DOCX e PDF). Dentro, grupos leves
+  separados por um fio: o custeio numa linha (a diária deste servidor,
+  translado, combustível, passagem, com "Outro"); os cinco textos (descrição do evento, objetivo, conclusão,
+  medidas, informações complementares), cada um com o modelo ao lado do
+  título. O texto é da equipe; a diária do custeio é a deste servidor. Tudo
+  grava sozinho.
 {% endcomment %}
-{% block pc_acoes_topo %}
-  {% for servidor in servidores %}
-    <a class="btn--secundaria" href="{{ servidor.preview_inline_url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}Visualizar PDF</a>
-    <a class="btn--secundaria" href="{{ servidor.download_docx_url }}">{% include "components/icon.html" with nome="document" %}Baixar DOCX</a>
-    <a class="btn--secundaria" href="{{ servidor.download_pdf_url }}">{% include "components/icon.html" with nome="download" %}Baixar PDF</a>
-  {% endfor %}
-{% endblock %}
 {% block pc_salvar_topo %}
   <button type="submit" class="btn-primaria" form="form-prestacao" name="continuar" value="1">Salvar e continuar</button>
 {% endblock %}
 {% block prestacao_conteudo %}
-  <p class="pc-fluxo__nota">O texto é compartilhado pela equipe. Cada relatório recebe a identificação e a diária do respectivo servidor.</p>
-  <form method="post" id="form-prestacao" data-autosave data-autosave-url="{{ autosave_url }}" data-autosave-model="relatorio_tecnico" data-autosave-id="{{ relatorio.pk|unlocalize }}" novalidate>
-    {% csrf_token %}
-    <span class="pc-autosave pc-autosave--form" data-autosave-estado aria-live="polite"></span>
-    {% for erro in form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-
-    <section class="reg" id="custeio">
-      <h2 class="reg__t">{% include "components/icon.html" with nome="chart" %}Custeio</h2>
-      <div class="g-form g-form--2">
-        {% include "components/input.html" with name="diaria" label="Diária" valor=valor_diaria ajuda='Ex.: "R$ 150,00" ou "não houve"' autocomplete="off" erros=erros_diaria %}
-        {% for campo in campos_custeio %}{% if campo.uses_other %}
-          <div class="pc-custeio" data-rt-outro="{{ campo.campo }}">
-            {% include "components/select.html" with name=campo.campo label=campo.label opcoes=campo.opcoes selecionado=campo.valor erros=campo.erros %}
-            <div data-rt-outro-campo="{{ campo.campo }}">{% include "components/input.html" with name=campo.campo|add:"_outro" label=campo.label|add:" — outro" rotulo_oculto=True valor=campo.valor_outro placeholder="Informe o valor" erros=campo.erros_outro %}</div>
+<div class="editor-roteiro pc-diario pc-rt">
+  <section class="section-card reg" id="relatorio">
+    <header class="section-card__cabecalho reg__t">
+      <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+      <div class="section-card__identificacao"><h2 class="section-card__titulo">Relatório técnico</h2></div>
+      <div class="section-card__acao">
+        {% if ps.diaria_valor_override is not None or ps.diaria_valor_override_observacao %}<span class="st st--aguardando">Diária ajustada</span>{% endif %}
+        <div class="dd of-menu" data-menu>
+          <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações do relatório técnico" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
+          <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
+            {% for servidor in servidores %}
+              <a class="dd__i of-item" href="{{ servidor.preview_inline_url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar PDF</b><small>O relatório de {{ ps.servidor.nome }} em outra aba</small></span></a>
+              <a class="dd__i of-item" href="{{ servidor.download_docx_url }}">{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivo editável</small></span></a>
+              <a class="dd__i of-item" href="{{ servidor.download_pdf_url }}">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Relatório técnico em PDF</small></span></a>
+            {% endfor %}
           </div>
-        {% endif %}{% endfor %}
-      </div>
-    </section>
-
-    {% for campo in campos_modelo %}
-      <section class="reg pc-texto" id="grupo-{{ campo.campo }}">
-        <h2 class="reg__t" id="{{ campo.section_id }}">{% include "components/icon.html" with nome="document" %}{{ campo.label }}<a class="pc-texto__modelos" href="{{ campo.manage_url }}">{% include "components/icon.html" with nome="settings" %}Modelos de texto</a></h2>
-        <div class="g-form g-form--2">
-          {% include "components/select.html" with name="modelo_"|add:campo.campo label="Modelo" opcoes=campo.opcoes placeholder="Selecione um modelo (opcional)" permitir_vazio=True selecionado=campo.valor_modelo %}
         </div>
-        {% include "components/textarea.html" with name=campo.campo label=campo.label rotulo_oculto=True valor=campo.texto linhas="4" erros=campo.erros %}
-      </section>
-    {% endfor %}
-
-    <section class="reg" id="diaria-recebida">
-      <h2 class="reg__t">{% include "components/icon.html" with nome="user" %}Diária de {{ ps.servidor.nome }}{% if ps.diaria_valor_override is not None or ps.diaria_valor_override_observacao %}<span class="st st--aguardando">Diária ajustada</span>{% endif %}</h2>
-      <div class="g-form g-form--2">
-        {% include "components/input.html" with name=diaria_name label="Diária recebida por este servidor" valor=diaria_recebida ajuda="Preencha quando o valor recebido diferir do liberado, por exemplo R$ 87,00 (saque)." autocomplete="off" %}
       </div>
+    </header>
+    <div class="section-card__corpo">
+      <form method="post" id="form-prestacao" data-autosave data-autosave-url="{{ autosave_url }}" data-autosave-model="relatorio_tecnico" data-autosave-id="{{ relatorio.pk|unlocalize }}" novalidate>
+        {% csrf_token %}
+        {% for erro in form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
 
-      {# Ações no fim do último cartão da etapa, como no roteiro. #}
+        <div class="pc-rt__grupo" id="custeio">
+          {# Os quatro na mesma linha. A diária é a deste servidor (vazia = a liberada, que aparece de dica); a do relatório segue oculta para o envio não apagá-la. #}
+          <input type="hidden" name="diaria" value="{{ valor_diaria }}">
+          <div class="g-form pc-rt__custeio">
+            {% include "components/input.html" with name=diaria_name label="Diária" valor=diaria_recebida placeholder=valor_diaria|default:"Ex.: R$ 150,00" autocomplete="off" erros=erros_diaria %}
+            {% for campo in campos_custeio %}{% if campo.uses_other %}
+              <div class="pc-custeio" data-rt-outro="{{ campo.campo }}">
+                {% include "components/select.html" with name=campo.campo label=campo.label opcoes=campo.opcoes selecionado=campo.valor erros=campo.erros %}
+                <div data-rt-outro-campo="{{ campo.campo }}">{% include "components/input.html" with name=campo.campo|add:"_outro" label=campo.label|add:" — outro" rotulo_oculto=True valor=campo.valor_outro placeholder="Informe o valor" erros=campo.erros_outro %}</div>
+              </div>
+            {% endif %}{% endfor %}
+          </div>
+        </div>
+
+        {% for campo in campos_modelo %}
+          <div class="pc-rt__grupo pc-texto" id="grupo-{{ campo.campo }}">
+            <h3 class="pc-rt__titulo" id="{{ campo.section_id }}">{{ campo.label }}</h3>
+            {# O modelo na linha inteira; a engrenagem leva aos modelos de texto. #}
+            <div class="ofc-com-acao pc-rt__modelo">
+              {% include "components/select.html" with name="modelo_"|add:campo.campo label="Modelo" opcoes=campo.opcoes placeholder="Aplicar um modelo (opcional)" permitir_vazio=True selecionado=campo.valor_modelo %}
+              <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ campo.manage_url }}" aria-label="Modelos de texto de {{ campo.label|lower }}" title="Modelos de texto">{% include "components/icon.html" with nome="settings" %}</a>
+            </div>
+            {% include "components/textarea.html" with name=campo.campo label=campo.label rotulo_oculto=True valor=campo.texto linhas="3" erros=campo.erros %}
+          </div>
+        {% endfor %}
+
+      </form>
+
       <div class="frm-acoes-fim">
         <a class="btn--secundaria" href="{{ diario_url }}">Voltar ao diário</a>
-        <span class="frm-acoes-fim__dir">
-          <button type="submit" class="btn--secundaria" form="form-prestacao">Salvar relatório</button>
-          <button type="submit" class="btn-primaria" form="form-prestacao" name="continuar" value="1">Salvar e continuar</button>
-        </span>
+        <button type="submit" class="btn-primaria" form="form-prestacao" name="continuar" value="1">Salvar e continuar</button>
       </div>
-    </section>
-  </form>
-  {{ modelos_texto|json_script:"rt-modelos" }}
+    </div>
+  </section>
+</div>
+{{ modelos_texto|json_script:"rt-modelos" }}
 {% endblock %}

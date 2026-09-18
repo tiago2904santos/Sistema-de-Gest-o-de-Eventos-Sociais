@@ -12,7 +12,9 @@
 
   Textos do cabeçalho e do rodapé reproduzem o `oficio.docx` de origem: nome
   da secretaria, do órgão e da unidade em cima; destinatário, cidade e
-  endereço embaixo.
+  endereço embaixo. Documento com rodapé próprio troca o bloco `rodape`; a
+  geometria e a tipografia dele vêm do `<tipo>.css`, marcado pela classe que
+  o documento põe no bloco `classe`.
 {% endcomment %}<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -21,17 +23,20 @@
   {% if css_inline %}<style>{{ css_inline|safe }}</style>{% endif %}
   {% block css %}{% endblock %}
 </head>
-<body class="documento documento--{{ modo|default:'pdf' }}">
+<body class="documento documento--{{ modo|default:'pdf' }}{% block classe %}{% endblock %}">
 <div class="folha">
   <header class="doc-cabecalho" id="doc-cabecalho">
     <img class="doc-cabecalho__brasao" src="{{ imagens.brasao }}" alt="Brasão da Polícia Civil do Paraná">
     <p class="doc-cabecalho__secretaria">SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA</p>
     <p class="doc-cabecalho__orgao">POLÍCIA CIVIL DO PARANÁ</p>
+    {% if institucional.divisao_cabecalho %}<p class="doc-cabecalho__unidade">{{ institucional.divisao_cabecalho }}</p>{% endif %}
     {% if institucional.unidade_cabecalho %}<p class="doc-cabecalho__unidade">{{ institucional.unidade_cabecalho }}</p>{% endif %}
   </header>
 
   <footer class="doc-rodape" id="doc-rodape">
+    {% block rodape_topo %}{% endblock %}
     <img class="doc-rodape__marca" src="{{ imagens.marca }}" alt="">
+    {% block rodape %}
     {% block rodape_destinatario %}
       <p class="doc-rodape__linha">Exmo. Sr</p>
       <p class="doc-rodape__linha">DR. {{ institucional.nome_destinatario }}</p>
@@ -39,6 +44,7 @@
       <p class="doc-rodape__linha">{{ institucional.cidade_rodape|default:"Curitiba" }} – Pr.</p>
     {% endblock %}
     <p class="doc-rodape__endereco">{{ institucional.unidade_rodape }}{% if institucional.endereco %} - {{ institucional.endereco }}{% endif %}{% if institucional.telefone %} {{ institucional.telefone }}{% endif %}{% if institucional.email %} – {{ institucional.email }}{% endif %}</p>
+    {% endblock %}
   </footer>
 
   <main class="doc-corpo">

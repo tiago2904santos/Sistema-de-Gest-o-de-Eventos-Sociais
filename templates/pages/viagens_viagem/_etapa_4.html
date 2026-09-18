@@ -1,93 +1,122 @@
 {% comment %}
-  Etapa 4 — dois cartões, como na origem: os documentos de solicitação
-  (ofício solicitante, convite, despacho ou imagem, guardados sempre em PDF)
-  e o planejamento e autorização (os planos de trabalho e as ordens de
-  serviço da viagem, pelos cartões que cada módulo expõe em
-  `presenters.cartao_para_viagem`). O botão flutuante "Novo" abre o menu
-  com os dois documentos.
+  Etapa 4 — os documentos de solicitação (ofício solicitante, convite,
+  despacho ou imagem, guardados sempre em PDF) e as tabelas de planos de
+  trabalho e de ordens de serviço da viagem, iguais às listas de cada
+  módulo (mesma linha e mesmo menu de ações), só sem a barra de filtros.
+  O botão flutuante "Novo" abre o menu com os dois documentos.
 
-  Anexar não recarrega sozinho: "Anexar documento" abre o painel com o
-  campo de arquivo, e o envio fica no botão "Anexar documentos".
+  As três listas (solicitação, PT e OS) têm o desenho das listas dos
+  módulos. Anexar não recarrega sozinho: o item "Documento de solicitação"
+  do menu "Novo" abre o diálogo com o campo de arquivo, e o envio fica no
+  botão "Anexar documentos".
   Contexto: `solicitacoes`, `url_anexar`, `planos`, `ordens`,
   `url_nova_ordem`, `url_novo_plano`.
 {% endcomment %}
-<section class="section-card reg vg-etapa" id="solicitacao">
-  <header class="section-card__cabecalho reg__t">
-    <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
-    <div class="section-card__identificacao">
-      <h2 class="section-card__titulo">Documentos de solicitação</h2>
-      <p class="section-card__descricao">Ofícios solicitantes, convites, despachos ou imagens.</p>
-    </div>
-    {% if pode_editar and not viagem.cancelado %}
-      <div class="section-card__acao">
-        <button type="button" class="btn--secundaria btn--compacto btn--com-icone" data-expande="#vg-anexar" aria-expanded="false" aria-controls="vg-anexar">{% include "components/icon.html" with nome="upload" %}Anexar documento</button>
-      </div>
-    {% endif %}
-  </header>
-  <div class="section-card__corpo">
-    {% if pode_editar and not viagem.cancelado %}
-      <form method="post" action="{{ url_anexar }}" enctype="multipart/form-data" class="vg-anexar" id="vg-anexar" hidden>
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ url_atual }}">
-        <div class="form-campo">
-          <label class="form-label" for="id_arquivo">Escolher arquivos</label>
-          <input class="form-controle vg-anexar__arquivo" type="file" id="id_arquivo" name="arquivo" multiple accept="application/pdf,.pdf,image/*">
-          <p class="form-ajuda">Selecione um ou mais PDFs ou imagens. As imagens serão convertidas para PDF.</p>
-        </div>
-        <div class="vg-anexar__acoes">
-          <span class="v32-suave">Ele fica disponível na lista de documentos de solicitação.</span>
-          <button type="submit" class="btn btn--dourado btn-primaria btn--compacto">{% include "components/icon.html" with nome="upload" %}Anexar documentos</button>
-        </div>
-      </form>
-    {% endif %}
-    {% if solicitacoes %}
-      <ul class="vg-arquivos">
+<div class="pa-card pa-card--lista cad-lista vg-lista" id="solicitacao">
+  <div class="dt-w" tabindex="0" role="region" aria-label="Documentos de solicitação da viagem">
+    <table class="dt dt--responsiva">
+      <thead>
+        <tr>
+          <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
+          <th>Documento de solicitação</th>
+          <th class="c-cad-acoes">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
         {% for a in solicitacoes %}
-          <li class="vg-arquivo">
-            <span class="tabela__icone-doc vg-arquivo__icone" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
-            <span class="vg-arquivo__txt"><strong title="{{ a.nome }}">{{ a.nome }}</strong><small>Documento de solicitação</small></span>
-            <span class="acoes cad-acoes vg-arquivo__acoes">
-              <a class="ib-linha" href="{{ a.url }}" target="_blank" rel="noopener" aria-label="Visualizar arquivo" title="Visualizar">{% include "components/icon.html" with nome="eye" %}</a>
-              {% if pode_editar and not viagem.cancelado %}
-                <form method="post" action="{{ a.url_excluir }}" data-confirmar-exclusao data-confirmar="Excluir?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
-                  <button type="submit" class="ib-linha ib-linha--perigo" aria-label="Excluir arquivo" title="Excluir">{% include "components/icon.html" with nome="trash" %}</button>
-                </form>
-              {% endif %}
-            </span>
-          </li>
+          <tr>
+            <td class="tabela__col-icone">
+              <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+              <span class="sr-only">Documento de solicitação</span>
+            </td>
+            <td class="c-nome tm-celula" data-rotulo="Documento de solicitação">
+              <h2 class="of-cartao__titulo tm-titulo">{{ a.nome }}</h2>
+              <ul class="tm-fatos"><li class="tm-fato">{% include "components/icon.html" with nome="document" %}Ofício solicitante, convite, despacho ou imagem · PDF</li></ul>
+            </td>
+            <td class="c-cad-acoes">
+              <div class="dd of-menu cad-acoes" data-menu>
+                <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações de {{ a.nome }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
+                <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
+                  <a class="dd__i of-item" href="{{ a.url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar</b><small>Abrir o PDF em outra aba</small></span></a>
+                  {% if pode_editar and not viagem.cancelado %}
+                    <form method="post" action="{{ a.url_excluir }}" data-confirmar-exclusao data-confirmar="Confirmar exclusão?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+                      <button type="submit" class="dd__i dd__i--perigo of-item">{% include "components/icon.html" with nome="trash" %}<span><b>Excluir</b><small>Remover o arquivo desta viagem</small></span></button>
+                    </form>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="3" class="v32-suave dt__vazio">Nenhum documento de solicitação anexado ainda.</td></tr>
         {% endfor %}
-      </ul>
-    {% else %}
-      <p class="lista-vazia">{% include "components/icon.html" with nome="document" %}<span>Nenhum documento de solicitação anexado ainda.</span></p>
-    {% endif %}
+      </tbody>
+    </table>
   </div>
-</section>
+</div>
 
-<section class="section-card reg vg-etapa" id="planejamento">
-  <header class="section-card__cabecalho reg__t">
-    <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
-    <div class="section-card__identificacao">
-      <h2 class="section-card__titulo">Planejamento e autorização</h2>
-      <p class="section-card__descricao">Planos de trabalho e ordens de serviço da viagem.</p>
-    </div>
-  </header>
-  <div class="section-card__corpo">
-    {% if planos or ordens %}
-      <ul class="vg-arquivos">
-        {% for c in planos %}{% include "pages/viagens_viagem/_cartao_documento.html" with c=c tipo="Plano de trabalho" %}{% endfor %}
-        {% for c in ordens %}{% include "pages/viagens_viagem/_cartao_documento.html" with c=c tipo="Ordem de serviço" %}{% endfor %}
-      </ul>
-    {% else %}
-      <p class="lista-vazia">{% include "components/icon.html" with nome="clipboard" %}<span>Nenhum plano ou OS vinculado a esta viagem.</span></p>
-    {% endif %}
+<div class="pa-card pa-card--lista cad-lista vg-lista" id="planos">
+  <div class="dt-w" tabindex="0" role="region" aria-label="Planos de trabalho da viagem">
+      <table class="dt dt--responsiva">
+        <thead>
+          <tr>
+            <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
+            <th>Plano de trabalho</th>
+            <th class="c-cad-acoes">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in planos %}{% with p=l.plano %}
+            <tr{% if p.cancelado %} class="tm-linha--cancelada"{% endif %}>
+              <td class="tabela__col-icone">
+                <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="clipboard" %}</span>
+                <span class="sr-only">Plano de trabalho</span>
+              </td>
+              <td class="c-nome tm-celula" data-rotulo="Plano de trabalho">{% include "pages/viagens_planos/_conteudo_linha.html" %}</td>
+              <td class="c-cad-acoes">{% include "pages/viagens_planos/_acoes_linha.html" %}</td>
+            </tr>
+          {% endwith %}{% empty %}
+            <tr><td colspan="3" class="v32-suave dt__vazio">Nenhum plano de trabalho vinculado a esta viagem.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
   </div>
-</section>
+</div>
+
+<div class="pa-card pa-card--lista cad-lista vg-lista" id="ordens">
+  <div class="dt-w" tabindex="0" role="region" aria-label="Ordens de serviço da viagem">
+      <table class="dt dt--responsiva">
+        <thead>
+          <tr>
+            <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
+            <th>Ordem de Serviço</th>
+            <th class="c-cad-acoes">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in ordens %}{% with o=l.ordem %}
+            <tr{% if o.cancelado %} class="tm-linha--cancelada"{% endif %}>
+              <td class="tabela__col-icone">
+                <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="clipboard" %}</span>
+                <span class="sr-only">Ordem de serviço</span>
+              </td>
+              <td class="c-nome tm-celula os-celula" data-rotulo="Ordem de Serviço">{% include "pages/viagens_ordens/_conteudo_linha.html" %}</td>
+              <td class="c-cad-acoes">{% include "pages/viagens_ordens/_acoes_linha.html" %}</td>
+            </tr>
+          {% endwith %}{% empty %}
+            <tr><td colspan="3" class="v32-suave dt__vazio">Nenhuma ordem de serviço vinculada a esta viagem.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+  </div>
+</div>
 
 {% if pode_editar and not viagem.cancelado %}
   {# "Novo" abre o menu com os dois documentos; PT é POST porque criar reserva número. #}
   <div class="dd vg-fab" data-menu>
     <button type="button" class="btn-primaria btn-flutuante" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Criar planejamento ou autorização">{% include "components/icon.html" with nome="plus" %}Novo</button>
     <div class="dd__c of-menu__corpo dd__c--acima vg-fab__menu" hidden data-menu-corpo>
+      <button type="button" class="dd__i of-item" data-vg-anexar-abrir>{% include "components/icon.html" with nome="upload" %}<span><b>Documento de solicitação</b><small>Anexar PDFs ou imagens (viram PDF).</small></span></button>
       {% if url_nova_ordem %}
         <a class="dd__i of-item" href="{{ url_nova_ordem }}">{% include "components/icon.html" with nome="gavel" %}<span><b>Ordem de Serviço</b><small>Criar uma ordem de serviço para esta viagem.</small></span></a>
       {% else %}
@@ -102,4 +131,29 @@
       {% endif %}
     </div>
   </div>
+{% endif %}
+
+{% if pode_editar and not viagem.cancelado %}
+  {# Anexar é um diálogo, no desenho do "anexar assinado": escolhe e envia no botão — nada sobe sozinho. #}
+  <dialog class="an-dialogo" data-vg-anexar-dialogo aria-labelledby="vg-anexar-titulo">
+    <form method="post" action="{{ url_anexar }}" enctype="multipart/form-data" class="an-form" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ url_atual }}">
+      <h2 class="an-titulo" id="vg-anexar-titulo">Anexar documento de solicitação</h2>
+      <p class="an-texto">Ofício solicitante, convite, despacho ou imagem. As imagens são convertidas para PDF.</p>
+      <div class="an-caixa">
+        <label class="an-escolher">
+          <input type="file" name="arquivo" multiple accept="application/pdf,.pdf,image/*" class="sr-only" id="id_arquivo" data-vg-anexar-arquivo>
+          Escolher arquivos
+        </label>
+        <div class="an-arquivo">
+          <span class="an-arquivo__nome" data-vg-anexar-rotulo aria-live="polite">Nenhum arquivo escolhido</span>
+        </div>
+      </div>
+      <div class="an-rodape">
+        <button type="button" class="btn--secundaria" data-vg-anexar-fechar>Cancelar</button>
+        <button type="submit" class="btn-primaria" data-vg-anexar-enviar disabled>Anexar documentos</button>
+      </div>
+    </form>
+  </dialog>
 {% endif %}

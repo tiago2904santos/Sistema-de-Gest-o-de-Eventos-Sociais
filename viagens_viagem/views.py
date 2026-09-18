@@ -104,17 +104,6 @@ def _url_criar(nome, viagem, *, metodo="get"):
     return url if metodo == "post" else f"{url}?viagem={viagem.pk}"
 
 
-def _cartoes_de(modulo, relacao, viagem):
-    """Os cartões de PT ou OS pelo contrato `presenters.cartao_para_viagem`; vazio enquanto o módulo não existe."""
-    from importlib import import_module
-
-    try:
-        cartao = getattr(import_module(f"{modulo}.presenters"), "cartao_para_viagem")
-    except (ImportError, AttributeError):
-        return []
-    return [cartao(obj) for obj in getattr(viagem, relacao).all().order_by("-criado_em")]
-
-
 def _contexto_da_etapa_1(request, viagem, form):
     from cadastros.models import Estado, Municipio
     from viagens_oficios.models import ModeloMotivoOficio
@@ -170,6 +159,14 @@ def _contexto_da_etapa_3(request, viagem):
 
 
 def _contexto_da_etapa_4(request, viagem):
+    from viagens_ordens.presenters import artefatos_pdf_por_ordem, assinante_da_ordem, linha_da_lista as linha_de_ordem
+    from viagens_planos.presenters import linha_da_lista as linha_de_plano
+
+    # As linhas das listas de PT e de OS, as mesmas das telas de cada módulo.
+    planos = list(viagem.planos_trabalho.all().order_by("-criado_em"))
+    ordens = list(viagem.ordens_servico.all().order_by("-criado_em"))
+    assinante = assinante_da_ordem()
+    artefatos = artefatos_pdf_por_ordem(ordens)
     return {
         "solicitacoes": [{
             "pk": a.pk, "nome": a.nome_original or a.arquivo.name.split("/")[-1],
@@ -177,8 +174,8 @@ def _contexto_da_etapa_4(request, viagem):
             "url_excluir": reverse("viagens_viagem:solicitacao_excluir", args=[viagem.pk, a.pk]),
         } for a in viagem.documentos_solicitacao.all()],
         "url_anexar": reverse("viagens_viagem:solicitacao_anexar", args=[viagem.pk]),
-        "planos": _cartoes_de("viagens_planos", "planos_trabalho", viagem),
-        "ordens": _cartoes_de("viagens_ordens", "ordens_servico", viagem),
+        "planos": [linha_de_plano(p) for p in planos],
+        "ordens": [linha_de_ordem(o, assinante=assinante, artefato_pdf=artefatos.get(o.pk)) for o in ordens],
         "url_nova_ordem": _url_criar("viagens_ordens:novo", viagem),
         "url_novo_plano": _url_criar("viagens_planos:criar", viagem, metodo="post"),
     }
@@ -223,11 +220,92 @@ def etapa(request, pk, etapa):
         "url_reativar": reverse("viagens_viagem:acao", args=[viagem.pk, "reativar"]),
         **contexto_das_etapas(viagem, etapa),
     }
+    if contexto["pode_editar"] and not viagem.cancelado:
+        import json
+
+        from .downloads import itens_para_baixar
+
+        # "Baixar documentos" do cabeçalho: o mesmo modal das listas, com tudo o que a viagem reúne.
+        contexto["url_baixar"] = reverse("viagens_viagem:baixar", args=[viagem.pk])
+        contexto["itens_baixar"] = json.dumps(itens_para_baixar(viagem), ensure_ascii=False)
     if etapa == 1:
         contexto.update(_contexto_da_etapa_1(request, viagem, form))
     else:
         contexto.update({2: _contexto_da_etapa_2, 3: _contexto_da_etapa_3, 4: _contexto_da_etapa_4, 5: _contexto_da_etapa_5}[etapa](request, viagem))
     return render(request, "pages/viagens_viagem/painel.html", contexto)
+
+
+@acesso_ao_modulo
+@require_POST
+def baixar(request, pk):
+    """Os documentos marcados no modal "Baixar documentos" da viagem.
+
+    `itens`: os valores de `downloads.itens_para_baixar`. `formato`: pdf ou
+    docx. `saida`: `separados` (um arquivo, ou ZIP) ou `unico` (um PDF só, na
+    ordem do modal). `versao`: `assinado` (padrão) ou `original`. Os anexos
+    de solicitação já são PDF e vão como estão.
+    """
+    import io
+    from zipfile import ZipFile
+
+    from django.core.exceptions import ValidationError
+    from django.http import HttpResponse
+
+    from documentos.services.exceptions import DocumentError
+    from documentos.services.types import DocumentoFormato
+    from viagens_oficios.views import resposta_documento
+    from viagens_termos.views import resposta_pdf_consolidado
+
+    from .downloads import gerar_marcados
+
+    exigir_operador(request)
+    viagem = get_viagem_by_id(pk)
+    retorno = voltar_para(request, reverse("viagens_viagem:etapa", args=[pk, 1]))
+    if viagem.cancelado:
+        messages.error(request, "Reative a viagem antes de baixar documentos.")
+        return redirect(retorno)
+    formato = request.POST.get("formato", "pdf")
+    if formato not in ("pdf", "docx"):
+        raise Http404
+    fmt = DocumentoFormato(formato)
+    marcados = request.POST.getlist("itens")
+    if not marcados:
+        messages.error(request, "Marque ao menos um documento para baixar.")
+        return redirect(retorno)
+    try:
+        documentos = gerar_marcados(viagem, marcados, fmt, usar_assinado=request.POST.get("versao", "assinado") != "original")
+    except KeyError:
+        raise Http404
+    except (ValidationError, DocumentError) as exc:
+        messages.error(request, "; ".join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
+        return redirect(retorno)
+
+    referencia = f"viagem-{viagem.pk}"
+    if len(documentos) == 1:
+        doc = documentos[0]
+        if getattr(doc, "anexo", False):
+            resposta = HttpResponse(doc.conteudo, content_type="application/pdf")
+            resposta["Content-Disposition"] = f'attachment; filename="{doc.nome_arquivo}"'
+            resposta["Cache-Control"] = "no-store"
+            return resposta
+        return resposta_documento(request, doc)
+    if fmt == DocumentoFormato.PDF and request.POST.get("saida") == "unico":
+        return resposta_pdf_consolidado(documentos, f"{referencia}-documentos.pdf")
+    # Nomes repetidos no ZIP (dois termos do mesmo servidor, dois anexos iguais) ganham um sufixo.
+    buffer, usados = io.BytesIO(), set()
+    with ZipFile(buffer, "w") as zipfile:
+        for doc in documentos:
+            nome, n = doc.nome_arquivo, 2
+            base, ponto, ext = nome.rpartition(".")
+            while nome in usados:
+                nome = f"{base} ({n}).{ext}" if ponto else f"{doc.nome_arquivo} ({n})"
+                n += 1
+            usados.add(nome)
+            zipfile.writestr(nome, doc.conteudo)
+    resposta = HttpResponse(buffer.getvalue(), content_type="application/zip")
+    resposta["Content-Disposition"] = f'attachment; filename="{referencia}-documentos.zip"'
+    resposta["Cache-Control"] = "no-store"
+    return resposta
 
 
 @acesso_ao_modulo

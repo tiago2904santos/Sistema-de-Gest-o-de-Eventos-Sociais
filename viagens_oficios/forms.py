@@ -279,7 +279,7 @@ class JustificativaCadastroForm(forms.Form):
                                     error_messages={'required': 'Escolha o ofício.',
                                                     'invalid_choice': 'Escolha um ofício sem justificativa.'})
     modelo = forms.ModelChoiceField(queryset=ModeloJustificativa.objects.none(), required=False, label='Modelo de justificativa')
-    texto = forms.CharField(label='Justificativa', widget=forms.Textarea(attrs={'rows': 6}),
+    texto = forms.CharField(label='Justificativa', widget=forms.Textarea(attrs={'rows': 3}),
                             error_messages={'required': 'Informe o texto da justificativa.'})
 
     def __init__(self, *args, justificativa=None, **kwargs):
@@ -324,7 +324,7 @@ class ModeloMotivoOficioForm(forms.ModelForm):
         }
         widgets = {
             'nome': forms.TextInput(attrs={'placeholder': 'Ex.: COBERTURA JORNALÍSTICA', 'data-uppercase': 'true'}),
-            'texto': forms.Textarea(attrs={'rows': 5, 'placeholder': 'Texto que vai para o ofício ao escolher este modelo'}),
+            'texto': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Texto que vai para o ofício ao escolher este modelo'}),
         }
 
 

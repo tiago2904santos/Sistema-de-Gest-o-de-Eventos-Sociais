@@ -584,6 +584,12 @@ def _build_oficio_docxtpl_context_impl(
             [_txt(solicitacoes.get(v["id"], "")) for v in viajantes],
             blank_lines=2,
         ),
+        # A equipe linha a linha, para o documento HTML (uma linha da tabela por
+        # servidor, sem o RG). O DOCX segue com as colunas empilhadas acima.
+        "equipe": [
+            {"nome": v["nome"], "cpf": v["cpf"], "cargo": v["cargo"], "solicitacao": _txt(solicitacoes.get(v["id"], ""))}
+            for v in viajantes
+        ],
         "assunto_linha": assunto_doc["assunto_linha"],
         "assunto_oficio": assunto_doc["assunto_oficio"],
         "assunto_termo": assunto_doc["assunto_termo"],

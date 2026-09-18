@@ -1,3 +1,45 @@
-{% extends "documentos/pdf/base_institucional.html" %}
-{% comment %}Reserva: o PDF deste documento sai do DOCX. Esta folha só existe para o registro de templates.{% endcomment %}
-{% block corpo %}<h1>Ordem de serviço</h1>{% endblock %}
+{% extends "documentos/pdf/base_institucional.html" %}{% comment %}
+  Ordem de Serviço: os dois `.docx` de origem em um template só, na folha
+  ASCOM. O tipo padrão (`ordem_servico.docx`) determina o deslocamento num
+  parágrafo único; os demais tipos (`ordem_servico_modelos.docx`) trazem a
+  determinação, as atribuições da equipe, as justificativas e a finalidade.
+  Os textos vêm prontos de `viagens_ordens.docxtpl_context.build_os_docxtpl_context`
+  — a mesma regra que alimenta o DOCX.
+{% endcomment %}
+{% block titulo %}Ordem de Serviço {{ os.numero }}{% endblock %}
+{% block classe %} doc-folha-ascom doc-os{% if os.padrao %} doc-os--padrao{% endif %}{% endblock %}
+
+{% block rodape %}
+  <p class="doc-rodape__unidade">{{ os.rodape }}</p>
+{% endblock %}
+
+{% block corpo %}
+  <h1 class="doc-titulo">Ordem de Serviço {{ os.numero }}{% if os.unidade_abreviado %} - {{ os.unidade_abreviado }}{% endif %}</h1>
+
+  <p class="doc-os__ref">Ref.: {{ os.referencia }}</p>
+
+  <p class="doc-os__texto">Eu, {{ os.nome_chefia }}, {{ os.cargo_chefia }} da Polícia Civil do Paraná, no uso das atribuições que me foram conferidas pelo Delegado-Geral Silvio Jacob Rockembach, bem como pelo Conselho da Polícia Civil,</p>
+
+  <p class="doc-os__determino">Determino</p>
+
+  {% if os.padrao %}
+    <p class="doc-os__texto">O deslocamento {{ os.equipe_deslocamento }} para o município de <strong>{{ os.destino }}</strong>, <strong>{{ os.data_extenso }}</strong>, para realizar {{ os.motivo }}.</p>
+  {% else %}
+    <div class="doc-os__modelo">
+      <p class="doc-os__texto">{{ os.determinacao }}</p>
+      {% if os.competencias_equipe %}
+        <ul class="doc-os__competencias">
+          {% for item in os.competencias_equipe %}<li>{{ item }};</li>{% endfor %}
+        </ul>
+      {% endif %}
+      {% for justificativa in os.justificativas %}<p class="doc-os__texto">{{ justificativa }}</p>{% endfor %}
+      {% if os.finalidade %}<p class="doc-os__texto">{{ os.finalidade }}</p>{% endif %}
+    </div>
+  {% endif %}
+
+  <div class="doc-os__assinatura">
+    <p class="doc-os__local">{% if os.sede %}{{ os.sede }}, {% endif %}{{ os.data_atual_extenso }}</p>
+    <p class="doc-os__chefia">{{ os.nome_chefia }}</p>
+    <p class="doc-os__chefia">{{ os.cargo_chefia }}</p>
+  </div>
+{% endblock %}

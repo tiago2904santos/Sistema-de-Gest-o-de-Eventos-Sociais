@@ -37,6 +37,10 @@ TX = {
     "armamento": "Sim", "custo": "( X ) UNIDADE - DPC\n(   ) OUTRA INSTITUIÇÃO", "motivo": "Participação em reunião institucional",
     "nome_chefia": "Fulano de Tal", "cargo_chefia": "Delegado", "unidade_cabecalho": "ASSESSORIA DE COMUNICAÇÃO",
     "nome_destinatario": "Beltrano", "cargo_destinatario": "Delegado Geral Adjunto", "unidade_rodape": "ASCOM",
+    "equipe": [
+        {"nome": "Maria da Silva", "cpf": "123.456.789-00", "cargo": "APJ", "solicitacao": "10"},
+        {"nome": "João Souza", "cpf": "987.654.321-00", "cargo": "APJ", "solicitacao": "11"},
+    ],
     "endereco": "Rua X, 1 - Centro", "telefone": "(41) 3000-0000", "email": "ascom@pc.pr.gov.br",
 }
 
@@ -44,7 +48,12 @@ TX = {
 class ContextoETemplateTests(SimpleTestCase):
     def test_oficio_e_html_nativo(self):
         self.assertTrue(tipo_e_html_nativo(DocumentoTipo.OFICIO))
-        self.assertFalse(tipo_e_html_nativo(DocumentoTipo.TERMO_AUTORIZACAO))
+        self.assertTrue(tipo_e_html_nativo(DocumentoTipo.TERMO_AUTORIZACAO))
+        self.assertTrue(tipo_e_html_nativo(DocumentoTipo.JUSTIFICATIVA))
+        self.assertTrue(tipo_e_html_nativo(DocumentoTipo.ORDEM_SERVICO))
+        self.assertTrue(tipo_e_html_nativo(DocumentoTipo.PLANO_TRABALHO))
+        self.assertTrue(tipo_e_html_nativo(DocumentoTipo.RELATORIO_TECNICO))
+        self.assertTrue(tipo_e_html_nativo(DocumentoTipo.DIARIO_BORDO))
 
     def test_imagens_por_modo(self):
         self.assertTrue(imagens_para("pdf")["brasao"].startswith("file://"))
@@ -53,13 +62,16 @@ class ContextoETemplateTests(SimpleTestCase):
     def test_html_do_pdf_reproduz_o_documento_sem_marcacao_de_edicao(self):
         html = renderizar_html(DocumentoTipo.OFICIO, contexto_de_payload(DocumentoTipo.OFICIO, PAYLOAD, TX, modo="pdf"), modo="pdf")
         for texto in ["SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA", "POLÍCIA CIVIL DO PARANÁ", "ASSESSORIA DE COMUNICAÇÃO",
-                      "Ofício Nº 023/2026 (Autorização)", "solicito autorização e medidas", "Maria da Silva<br>João Souza",
-                      "Brasília/DF", "R$ 500,00 (quinhentos reais)", "ROTEIRO DE RETORNO", "Participação em reunião institucional",
+                      "Ofício Nº <strong>023/2026</strong> (Autorização)", "solicito autorização e medidas",
+                      "<td>Maria da Silva</td>", "<td>987.654.321-00</td>",
+                      "Brasília/DF", "R$ 500,00 (quinhentos reais)", ">Roteiro de retorno<", "Participação em reunião institucional",
                       "cartão corporativo vigente", "Fulano de Tal", "DR. Beltrano", "Curitiba – Pr.", "ascom@pc.pr.gov.br",
                       "brasao-pcpr.png", "marca-pcpr.png"]:
             self.assertIn(texto, html)
         self.assertNotIn("data-doc-campo", html)
         self.assertNotIn("data-doc-bloco", html)
+        self.assertNotIn("RG", html)  # o ofício não traz mais o RG da equipe
+        self.assertIn("<th>CPF</th>", html)
 
     def test_modo_editor_marca_so_os_campos_do_registro(self):
         ctx = contexto_de_payload(DocumentoTipo.OFICIO, PAYLOAD, TX, modo="editor", campos_editaveis={"motivo": {}})
@@ -84,7 +96,7 @@ class ContextoETemplateTests(SimpleTestCase):
 
     def test_assinatura_de_cache_enxerga_folha_base_e_css(self):
         nomes = [p.name for p in caminhos_dos_templates(DocumentoTipo.OFICIO)]
-        self.assertEqual(nomes, ["oficio.html", "base_institucional.html", "documento.css", "documento-impressao.css"])
+        self.assertEqual(nomes, ["oficio.html", "base_institucional.html", "documento.css", "documento-impressao.css", "oficio.css"])
 
 
 @skipUnless(weasyprint_disponivel(), "WeasyPrint sem runtime nativo nesta máquina")

@@ -1,5 +1,5 @@
 {% comment %}
-  Componente: lista de escolha única com busca — busca em cima, linhas embaixo,
+  Componente: lista de escolha (única ou, com `multipla`, de várias) com busca — busca em cima, linhas embaixo,
   no desenho da lista de servidores. Clicar em qualquer ponto da linha escolhe;
   clicar na linha já escolhida desfaz. Quem liga é o `static/js/lista-escolha.js`.
 
@@ -19,6 +19,8 @@
   `rotulo_oculto` esconde o rótulo da busca sem tirá-lo dos leitores de tela.
   `acao_url` / `acao_rotulo`: botão quadrado ao lado da busca (ex.: cadastrar
     um registro novo), aberto em outra aba.
+  `multipla`: escolha de vários — caixas no lugar do rádio; a linha marcada é
+    a que tem `opcao.selecionado`.
   `sem_resultado`: texto que substitui a lista quando a busca não encontra
     nada (padrão: "Nenhum resultado encontrado para a busca.").
 {% endcomment %}
@@ -34,8 +36,8 @@
 </div>{% endif %}
 <div class="of-membros lista-escolha{% if erros %} grupo-erro{% endif %}" data-lista-escolha="{{ name }}" role="group" aria-label="{{ label }}">
   {% for opcao in opcoes %}
-    <label class="of-membro{% if opcao.valor == selecionado %} of-membro--viaja{% endif %}" data-lista-item="{{ opcao.valor }}" data-busca="{{ opcao.rotulo }} {{ opcao.detalhes }} {{ opcao.busca }}"{% for chave, dado in opcao.dados.items %} data-{{ chave }}="{{ dado }}"{% endfor %}>
-      <input class="sr-only" type="radio" name="{{ name }}" value="{{ opcao.valor }}"{% if opcao.valor == selecionado %} checked{% endif %}>
+    <label class="of-membro{% if multipla and opcao.selecionado or not multipla and opcao.valor == selecionado %} of-membro--viaja{% endif %}" data-lista-item="{{ opcao.valor }}" data-busca="{{ opcao.rotulo }} {{ opcao.detalhes }} {{ opcao.busca }}"{% for chave, dado in opcao.dados.items %} data-{{ chave }}="{{ dado }}"{% endfor %}>
+      {% if multipla %}<input class="sr-only" type="checkbox" name="{{ name }}" value="{{ opcao.valor }}"{% if opcao.selecionado %} checked{% endif %}>{% else %}<input class="sr-only" type="radio" name="{{ name }}" value="{{ opcao.valor }}"{% if opcao.valor == selecionado %} checked{% endif %}>{% endif %}
       <span class="of-av" aria-hidden="true">{% include "components/icon.html" with nome=icone|default:"document" %}</span>
       <span class="of-pessoa__txt"><span class="of-pessoa__nome">{{ opcao.rotulo }}{% if opcao.chip %}<span class="st st--{{ opcao.chip_tom|default:"neutro" }} lista-escolha__chip">{{ opcao.chip }}</span>{% endif %}</span>{% if opcao.detalhes %}<span class="of-pessoa__desc">{{ opcao.detalhes }}</span>{% endif %}</span>
       <span></span>

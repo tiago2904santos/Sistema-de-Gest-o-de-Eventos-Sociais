@@ -1,0 +1,21 @@
+{% comment %}
+  Ações do servidor no cartão dele: só o que é deste servidor — os modais
+  "Baixar documentos" e "Anexar documento assinado" (os mesmos das outras
+  listas) e o aviso por WhatsApp. O que é da prestação do ofício (abrir,
+  documentos, pacote final, finalizar e arquivar) fica no menu da linha do
+  ofício (`_oficio.html`). Contexto: `c` (cartão), `s` (servidor), `pode_editar`.
+{% endcomment %}
+{% if pode_editar %}
+  <div class="dd of-menu cad-acoes" data-menu>
+    <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações de {{ s.name }}" title="Ações do servidor">{% include "components/icon.html" with nome="kebab" %}</button>
+    <div class="dd__c of-menu__corpo tm-menu pc-menu" hidden data-menu-corpo>
+      {% if c.downloads %}
+        <button type="button" class="dd__i of-item" data-baixar-documentos data-url="{{ c.url_baixar }}" data-titulo="{{ s.name }} · Ofício {{ c.numero_display }}" data-itens="{{ c.itens_baixar }}">{% include "components/icon.html" with nome="download" %}<span><b>Baixar documentos</b><small>Escolher documentos, formato e versão</small></span></button>
+      {% else %}
+        <span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="download" %}<span><b>Baixar documentos</b><small>Preencha o diário e o relatório técnico</small></span></span>
+      {% endif %}
+      <a class="dd__i of-item" href="{{ c.anexos.0.url }}" data-anexar-assinado data-anexar-nome="{{ c.anexos.0.option_label }}" data-anexar-opcoes="{{ c.opcoes_anexar }}">{% include "components/icon.html" with nome="upload" %}<span><b>{{ c.rotulo_anexar }}</b><small>Ofício, despacho, diário, relatório ou comprovante</small></span></a>
+      <a class="dd__i of-item" href="{{ s.whatsapp_url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="send" %}<span><b>Avisar por WhatsApp</b><small>Liberação das diárias de {{ s.name }}</small></span></a>
+    </div>
+  </div>
+{% endif %}

@@ -103,23 +103,26 @@ def motivo_resumido(ordem):
 
 
 def titulo_da_ordem(ordem):
-    return " · ".join(p for p in [ordem.numero_formatado, destinos_resumidos(ordem), periodo_curto(ordem)] if p)
+    # O vazio é nomeado também no título, que agora é o único lugar do período e do destino.
+    return " · ".join([ordem.numero_formatado, destinos_resumidos(ordem) or "Sem destino", periodo_curto(ordem) or "Sem período"])
 
 
 def fatos_da_ordem(ordem, equipe, oficios, assinante):
-    """Os dados da linha como itens separados, um ícone para cada; o vazio é nomeado, não omitido."""
-    periodo = ordem.periodo_display if ordem.data_evento_inicio else ""
-    destinos = destinos_resumidos(ordem)
+    """A segunda linha da lista, item a item com ícone; o vazio é nomeado, não omitido.
+
+    Período e destinos já estão no título: aqui ficam equipe, ofícios, o
+    assinante (quando há) e o motivo, que corta com reticências na tela.
+    """
     nomes = ", ".join(f"{s['nome']} (motorista)" if s["is_motorista"] else s["nome"] for s in equipe)
+    motivo = motivo_resumido(ordem)
     fatos = [
-        {"icone": "calendar", "rotulo": "Período", "texto": periodo or "Sem período", "ausente": not periodo},
-        {"icone": "map-pin", "rotulo": "Destinos", "texto": destinos or "Sem destino", "ausente": not destinos},
         {"icone": "users", "rotulo": "Servidores", "texto": nomes or "Nenhum servidor informado", "ausente": not nomes},
         {"icone": "document", "rotulo": "Ofícios", "texto": "", "oficios": oficios, "ausente": not oficios},
     ]
     if assinante:
         texto = assinante["nome"] + (f" · {assinante['cargo']}" if assinante["cargo"] else "")
         fatos.append({"icone": "pencil", "rotulo": "Assinante", "texto": texto, "ausente": False})
+    fatos.append({"icone": "clipboard", "rotulo": "Motivo", "texto": motivo or "Nenhum motivo informado", "ausente": not motivo, "motivo": True})
     return fatos
 
 
@@ -180,26 +183,4 @@ def linha_da_lista(ordem, *, assinante=None, artefato_pdf=None):
         "url_assinado": reverse("viagens_ordens:assinatura_artefato", args=[artefato_pdf["pk"]]) if artefato_pdf else "",
         "assinado": bool(artefato_pdf and artefato_pdf["assinado"]),
         **urls_da_ordem(ordem),
-    }
-
-
-def cartao_para_viagem(ordem):
-    """O contrato do painel da viagem (etapa 4)."""
-    selo, tom = selo_temporal(ordem)
-    if ordem.cancelado:
-        selo, tom = "Cancelada", "cancelada"
-    detalhes = " · ".join(p for p in [ordem.periodo_display if ordem.data_evento_inicio else "", destinos_resumidos(ordem), ordem.get_tipo_necessidade_display()] if p)
-    urls = urls_da_ordem(ordem)
-    return {
-        "pk": ordem.pk,
-        "titulo": ordem.numero_formatado,
-        "detalhes": detalhes,
-        "selo": selo, "selo_tom": tom,
-        "url_editar": urls["url_editar"],
-        "url_visualizar": urls["url_visualizar"],
-        "url_pdf": urls["url_pdf"],
-        "url_docx": urls["url_docx"],
-        "url_excluir": urls["url_excluir"],
-        "cancelado": ordem.cancelado,
-        "metodo_documento": "post",
     }

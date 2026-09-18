@@ -92,26 +92,6 @@ def linha_da_lista(plano):
     }
 
 
-def cartao_para_viagem(plano):
-    """O contrato que o painel da viagem consome."""
-    selo, tom = selo_do_plano(plano)
-    r = resumo_do_plano(plano)
-    return {
-        "pk": plano.pk,
-        "titulo": f"Plano de Trabalho {plano.numero_formatado}",
-        "detalhes": " · ".join(p for p in [r["periodo"], r["destino"], r["programa"]] if p),
-        "selo": selo,
-        "selo_tom": tom,
-        "url_editar": reverse("viagens_planos:editar", args=[plano.pk]),
-        "url_visualizar": reverse("viagens_planos:gerar", args=[plano.pk, "pdf"]) + "?inline=1",
-        "url_pdf": reverse("viagens_planos:gerar", args=[plano.pk, "pdf"]),
-        "url_docx": reverse("viagens_planos:gerar", args=[plano.pk, "docx"]),
-        "url_excluir": reverse("viagens_planos:acao", args=[plano.pk, "excluir"]),
-        "cancelado": plano.cancelado,
-        "metodo_documento": "post",
-    }
-
-
 # ── Cartões de evento (plano de vários eventos) ──────────────────────────────
 
 

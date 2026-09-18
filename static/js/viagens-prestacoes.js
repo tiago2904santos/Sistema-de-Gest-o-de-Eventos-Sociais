@@ -226,3 +226,30 @@
   })();
 
 })();
+
+/* Diário: "Trocar motorista / viatura" abre o modal em vez da página (o link segue valendo sem JS). */
+(function () {
+  "use strict";
+
+  document.addEventListener("click", function (evento) {
+    var link = evento.target.closest("[data-pc-modal]");
+    if (link) {
+      var dialogo = document.getElementById(link.getAttribute("data-pc-modal"));
+      if (!dialogo || evento.ctrlKey || evento.metaKey || evento.shiftKey) return;
+      evento.preventDefault();
+      var corpo = link.closest("[data-menu-corpo]");
+      if (corpo) {
+        corpo.hidden = true;
+        var gatilho = corpo.parentElement && corpo.parentElement.querySelector("[data-menu-gatilho]");
+        if (gatilho) gatilho.setAttribute("aria-expanded", "false");
+      }
+      dialogo.showModal();
+      return;
+    }
+    var fechar = evento.target.closest("[data-pc-fechar]");
+    if (fechar) fechar.closest("dialog").close();
+  });
+
+  // O envio do modal voltou com erro: a tela abre com ele aberto.
+  document.querySelectorAll("dialog[data-abrir]").forEach(function (dialogo) { dialogo.showModal(); });
+})();

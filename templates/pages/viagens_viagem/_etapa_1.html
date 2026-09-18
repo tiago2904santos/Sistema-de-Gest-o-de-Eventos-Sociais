@@ -37,7 +37,7 @@
           <div class="bloco-split__rotulo"><strong>Identificação</strong><span>Escolha o tipo desta atividade.</span></div>
           <div class="bloco-split__corpo">
             <div class="ofc-com-acao">
-              {% include "components/v32/multi_pick.html" with name="tipos" label="Tipo da viagem" opcoes=tipos placeholder="Selecione o(s) tipo(s)" erros=erros.tipos vazio="Nenhum tipo de viagem cadastrado." icone_vazio="map-pin" %}
+              {% include "components/v32/multi_pick.html" with name="tipos" label="Tipo da viagem" chips=True opcoes=tipos placeholder="Selecione o(s) tipo(s)" erros=erros.tipos vazio="Nenhum tipo de viagem cadastrado." icone_vazio="map-pin" %}
               <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_tipos }}" aria-label="Gerenciar tipos de viagem" title="Gerenciar tipos">{% include "components/icon.html" with nome="settings" %}</a>
             </div>
           </div>
@@ -55,51 +55,56 @@
               {% endif %}
               <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_modelos_motivo }}" aria-label="Gerenciar modelos de motivo" title="Gerenciar modelos">{% include "components/icon.html" with nome="settings" %}</a>
             </div>
-            {% include "components/textarea.html" with name="motivo" label="Motivo" linhas="4" placeholder="Contextualize a atividade…" valor=motivo erros=erros.motivo %}
+            {% include "components/textarea.html" with name="motivo" label="Motivo" linhas="3" placeholder="Contextualize a atividade…" valor=motivo erros=erros.motivo %}
           </div>
         </div>
 
-        {# Data: dois campos, um calendário só — a primeira escolha é o início e a segunda o fim. #}
+        {# Período e destinos agrupados na caixa do bate-volta, como no plano de trabalho. #}
         <div class="bloco-split">
-          <div class="bloco-split__rotulo"><strong>Data da viagem</strong><span>Defina o início e o fim da atividade.</span></div>
-          <div class="bloco-split__corpo vg-datas">
-            <div class="vg-datas__rotulos" aria-hidden="true"><span>Data de início</span><span>Data de fim</span></div>
-            {% include "components/date_range.html" with name="periodo_viagem" start_name="data_inicio" end_name="data_fim" label="Período da viagem" rotulo_oculto=True dois_campos=True valor_inicio=valores.data_inicio valor_fim=valores.data_fim erros=erros.data_inicio|default:erros.data_fim %}
-          </div>
-        </div>
-
-        {# Destinos, no componente do termo: alça, "+" e lixeira. #}
-        <div class="bloco-split">
-          <div class="bloco-split__rotulo"><strong>Destinos</strong><span>Locais na ordem da visita.</span></div>
+          <div class="bloco-split__rotulo"><strong>Período e destinos</strong><span>Início e fim da atividade e os locais na ordem da visita.</span></div>
           <div class="bloco-split__corpo">
-            <div class="destinos" data-destinos>
-              {% include "pages/viagens_termos/_destino_linha.html" with nome_estado="destino_estado" nome_cidade="destino_municipio" id_estado="id_destino_estado" rotulo_estado="UF do destino" rotulo_cidade="Município do destino" estado=valores.destino_estado cidade=valores.destino_municipio erros_estado=erros.destino_estado erros_cidade=erros.destino_municipio estados=estados municipios=municipios %}
-              {% for a in adicionais %}
-                {% include "pages/viagens_termos/_destino_linha.html" with nome_estado=a.nome_estado nome_cidade=a.nome_cidade id_estado=a.id_estado rotulo_estado="Estado adicional" rotulo_cidade="Município adicional" estado=a.estado cidade=a.cidade erros_estado=a.erros_estado erros_cidade=a.erros_cidade estados=estados municipios=municipios %}
-              {% endfor %}
+            <div class="bate-volta ofc-percurso">
+              <div class="ofc-percurso__linha">
+                <div class="bate-volta__rotulo ofc-percurso__rotulo">Período</div>
+                <div>
+                  {# Dois campos, um calendário só — a primeira escolha é o início e a segunda o fim. #}
+                  {% include "components/date_range.html" with name="periodo_viagem" start_name="data_inicio" end_name="data_fim" label="Período da viagem" rotulo_oculto=True dois_campos=True valor_inicio=valores.data_inicio valor_fim=valores.data_fim erros=erros.data_inicio|default:erros.data_fim %}
+                </div>
+              </div>
+              <div class="ofc-percurso__linha">
+                <div class="bate-volta__rotulo ofc-percurso__rotulo">Destinos</div>
+                <div>
+                  <div class="destinos" data-destinos>
+                    {% include "pages/viagens_termos/_destino_linha.html" with nome_estado="destino_estado" nome_cidade="destino_municipio" id_estado="id_destino_estado" rotulo_estado="UF do destino" rotulo_cidade="Município do destino" estado=valores.destino_estado cidade=valores.destino_municipio erros_estado=erros.destino_estado erros_cidade=erros.destino_municipio estados=estados municipios=municipios %}
+                    {% for a in adicionais %}
+                      {% include "pages/viagens_termos/_destino_linha.html" with nome_estado=a.nome_estado nome_cidade=a.nome_cidade id_estado=a.id_estado rotulo_estado="Estado adicional" rotulo_cidade="Município adicional" estado=a.estado cidade=a.cidade erros_estado=a.erros_estado erros_cidade=a.erros_cidade estados=estados municipios=municipios %}
+                    {% endfor %}
+                  </div>
+                  <template data-destino-modelo>
+                    {% include "pages/viagens_termos/_destino_linha.html" with nome_estado="extra_estado___n__" nome_cidade="extra_cidade___n__" id_estado="id_extra_estado___n__" rotulo_estado="Estado adicional" rotulo_cidade="Município adicional" estado="" cidade="" erros_estado=None erros_cidade=None estados=estados municipios=municipios %}
+                  </template>
+                  {# Sem JavaScript o "+" da linha não existe: este envio traz outra. #}
+                  <noscript>
+                    <button class="btn--secundaria btn--compacto btn--quadrado" type="submit" name="acao" value="adicionar_destino" formnovalidate aria-label="Adicionar destino" title="Adicionar destino">{% include "components/icon.html" with nome="plus" %}</button>
+                  </noscript>
+                </div>
+              </div>
             </div>
-            <template data-destino-modelo>
-              {% include "pages/viagens_termos/_destino_linha.html" with nome_estado="extra_estado___n__" nome_cidade="extra_cidade___n__" id_estado="id_extra_estado___n__" rotulo_estado="Estado adicional" rotulo_cidade="Município adicional" estado="" cidade="" erros_estado=None erros_cidade=None estados=estados municipios=municipios %}
-            </template>
-            {# Sem JavaScript o "+" da linha não existe: este envio traz outra. #}
-            <noscript>
-              <button class="btn--secundaria btn--compacto btn--quadrado" type="submit" name="acao" value="adicionar_destino" formnovalidate aria-label="Adicionar destino" title="Adicionar destino">{% include "components/icon.html" with nome="plus" %}</button>
-            </noscript>
           </div>
         </div>
 
-        {# Documentos vinculados: cinco tipos, um seletor de busca cada, e o alternador por cima. #}
+        {# Documentos vinculados: cinco tipos, cada um uma lista de escolha (a de vincular ofício na OS), e o alternador por cima. #}
         <div class="vg-bloco">
           <div class="vg-bloco__rotulo"><strong>Documentos vinculados</strong><span>Reaproveite documentos existentes. Marque para vincular e desmarque para remover o vínculo.</span></div>
           <div class="vg-docs" data-vg-docs>
-            <div class="bx-seg vg-docs__abas" role="radiogroup" aria-label="Tipo de documento">
+            <div class="vg-docs__abas vg-trilho sem-anim" data-vg-trilho role="radiogroup" aria-label="Tipo de documento">
               {% for aba in abas_documentos %}
-                <label><input type="radio" name="vg_aba" value="{{ aba.chave }}" data-vg-aba{% if aba.ativa %} checked{% endif %}><span>{{ aba.rotulo }}{% if aba.vinculados %} <em class="vg-docs__n">{{ aba.vinculados }}</em>{% endif %}</span></label>
+                <label><input type="radio" name="vg_aba" value="{{ aba.chave }}" data-vg-aba{% if aba.ativa %} checked{% endif %}><span>{% include "components/icon.html" with nome=aba.icone %}<b class="vg-docs__rotulo">{{ aba.rotulo }}</b>{% if aba.vinculados %}<em class="vg-docs__n">{{ aba.vinculados }}</em>{% endif %}</span></label>
               {% endfor %}
             </div>
             {% for aba in abas_documentos %}
               <div class="vg-docs__painel" data-vg-painel="{{ aba.chave }}"{% if not aba.ativa %} hidden{% endif %}>
-                {% include "components/v32/multi_pick.html" with name=aba.campo label=aba.rotulo_seletor rotulo_oculto=True placeholder=aba.placeholder opcoes=aba.opcoes vazio=aba.vazio erros=aba.erros icone_vazio="document" %}
+                {% include "components/v32/lista_escolha.html" with name=aba.campo multipla=True label=aba.rotulo rotulo_busca=aba.rotulo_seletor rotulo_oculto=True icone=aba.icone placeholder=aba.placeholder opcoes=aba.opcoes vazio=aba.vazio erros=aba.erros %}
               </div>
             {% endfor %}
           </div>

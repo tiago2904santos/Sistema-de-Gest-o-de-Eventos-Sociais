@@ -17,7 +17,7 @@
 
 {% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 
-{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-viagem.css' %}">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-viagem.css' %}">{# As linhas de PT e OS da etapa 4 são as das listas dos módulos. #}<link rel="stylesheet" href="{% estatico 'css/viagens-ordens.css' %}"><link rel="stylesheet" href="{% estatico 'css/viagens-planos.css' %}">{% endblock %}
 
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with atual=titulo %}
@@ -34,13 +34,17 @@
         </div>
       </div>
       <div class="frm-topo__acoes">
+        {% if url_baixar %}
+          {# O modal "Baixar documentos" das listas, com tudo o que a viagem reúne. #}
+          <button type="button" class="btn--secundaria btn--com-icone" data-baixar-documentos data-url="{{ url_baixar }}" data-titulo="{{ titulo }}" data-itens="{{ itens_baixar }}"{% if itens_baixar == "[]" %} disabled title="Nenhum documento para baixar ainda"{% endif %}>{% include "components/icon.html" with nome="download" %}Baixar documentos</button>
+        {% endif %}
         {% include "components/v32/button.html" with label="Voltar para lista" variante="secundario" href=url_lista %}
       </div>
     </div>
 
     {# As cinco etapas, todas como links: a viagem é um hub, não um wizard. #}
     <nav class="vg-stepper" aria-label="Etapas da viagem">
-      <ol class="vg-stepper__lista">
+      <ol class="vg-stepper__lista vg-trilho sem-anim" data-vg-trilho>
         {% for e in etapas %}
           <li class="vg-stepper__item{% if e.atual %} is-atual{% elif e.concluida %} is-concluida{% endif %}">
             <a class="vg-stepper__passo" href="{{ e.url }}"{% if e.atual %} aria-current="step"{% endif %} title="{{ e.titulo }} — {{ e.estado }}">
@@ -51,7 +55,6 @@
           </li>
         {% endfor %}
       </ol>
-      <p class="vg-stepper__legenda">Etapa {{ etapa_atual }} de {{ total_etapas }} · {{ titulo_da_etapa }}</p>
     </nav>
 
     {% if viagem.cancelado %}
@@ -78,8 +81,10 @@
   {{ block.super }}
   {% if etapa_atual == 1 %}{{ modelos_texto|json_script:"viagem-modelos-texto" }}{% endif %}
   <script src="{% estatico 'js/multi-pick.js' %}" defer></script>
+  <script src="{% estatico 'js/lista-escolha.js' %}" defer></script>
   <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-viagem.js' %}" defer></script>
-  {% if pode_editar and etapa_atual == 3 or pode_editar and etapa_atual == 5 %}{% include "components/v32/dialogo_baixar.html" %}{% endif %}
+  <script src="{% estatico 'js/trilho.js' %}" defer></script>
+  {% if url_baixar or pode_editar and etapa_atual == 3 or pode_editar and etapa_atual == 5 %}{% include "components/v32/dialogo_baixar.html" %}{% endif %}
   {% include "components/v32/dialogo_assinado.html" %}
 {% endblock %}

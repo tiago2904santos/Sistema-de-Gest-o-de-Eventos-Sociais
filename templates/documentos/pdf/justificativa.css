@@ -1,1 +1,25 @@
-/* Justificativa */
+/* Justificativa: corpo do justificativa.docx na folha ASCOM (cabeçalho,
+   rodapé e faixas da tela em documento.css e documento-editor.css). Arial 11
+   com entrelinha simples; o texto recua 2,1 cm à direita, como no modelo,
+   e o recuo da primeira linha é de 0,75 cm. O .docx é Carta; aqui é A4, como
+   os demais documentos. */
+
+@page {
+  margin: 6.8cm 1.5cm 3cm 1.5cm;
+  @top-center { vertical-align: top; padding-top: 1.25cm; }
+  @bottom-center { vertical-align: bottom; padding-bottom: 0.8cm; }
+}
+
+.doc-justificativa {
+  font-family: Arial, "Liberation Sans", Helvetica, sans-serif;
+  font-size: 11pt;
+  line-height: 1.15;
+}
+.doc-justificativa .doc-corpo { padding-right: 0.6cm; }
+
+.doc-justificativa__data { margin: 3.2cm 0 0; text-align: right; }
+.doc-justificativa .doc-titulo { margin: 2cm 0 1.9cm; font-size: 12pt; line-height: 1.2; }
+.doc-justificativa__texto p { margin: 0 0 6pt; text-align: justify; text-indent: 0.75cm; }
+.doc-justificativa__assinatura { margin-top: 2cm; text-align: center; page-break-inside: avoid; }
+.doc-justificativa__assinatura p { margin: 0; }
+.doc-justificativa__assinante { font-weight: 700; }

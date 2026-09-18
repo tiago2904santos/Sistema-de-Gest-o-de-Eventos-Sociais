@@ -882,7 +882,7 @@ html[data-dourado=cerimonial] .dt th{background:var(--d-50);color:var(--d-800)}
 .campo-e--datas label{display:flex;flex-direction:column;gap:4px}
 .campo-e--datas label span{font-size:10.5px;color:var(--n-450);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
 .campo-e small{font-size:11px;color:var(--n-450)}
-.g-form{display:grid;gap:14px 20px}
+.g-form{display:grid;gap:8px, 8px}
 .g-form--3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .g-form--2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .g-form .cheia{grid-column:1/-1}

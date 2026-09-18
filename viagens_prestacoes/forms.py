@@ -330,10 +330,9 @@ class RelatorioTecnicoForm(forms.ModelForm):
             self.fields[campo] = forms.ChoiceField(label=label, choices=get_custeio_choices(campo), required=False, widget=forms.Select(attrs={**{'class': 'campo__input'}, 'data-rt-other-select': campo, 'data-rt-other-value': OUTRO_VALUE}))
             self.fields[f'{campo}_outro'].widget.attrs.setdefault('placeholder', f'Informe {label.lower()}')
             self._set_initial_custeio_value(campo)
-        rows = {'motivo': 4, 'atividade': 4, 'conclusao': 4, 'medidas': 3, 'info_complementares': 3}
         for campo, _label in CAMPOS_COM_MODELO:
             self.fields[campo].required = False
-            self.fields[campo].widget = forms.Textarea(attrs={**{'class': 'campo__input'}, 'rows': rows.get(campo, 4), 'data-rt-textarea': campo})
+            self.fields[campo].widget = forms.Textarea(attrs={**{'class': 'campo__input'}, 'rows': 3, 'data-rt-textarea': campo})
         for campo, label in CAMPOS_COM_MODELO:
             field_name = f'modelo_{campo}'
             field = forms.ModelChoiceField(label=f'Modelo de {label.lower()}', queryset=ModeloTextoRelatorioTecnico.objects.filter(campo=campo).order_by('nome'), required=False, empty_label='Selecione um modelo (opcional)', widget=ModeloTextoSelect(attrs={**{'class': 'campo__input'}, 'data-rt-modelo-select': 'true', 'data-rt-target': campo}))
@@ -370,7 +369,7 @@ class RelatorioTecnicoForm(forms.ModelForm):
 class ModeloTextoRelatorioTecnicoForm(forms.ModelForm):
     campo = forms.ChoiceField(label='Campo do relatório', choices=ModeloTextoRelatorioTecnico.CAMPO_CHOICES, widget=forms.Select(attrs={**{'class': 'campo__input'}}))
     nome = forms.CharField(label='Nome', help_text='Use um nome curto para identificar o modelo.', widget=forms.TextInput(attrs={**{'class': 'campo__input'}}))
-    texto = forms.CharField(label='Texto do modelo', help_text='Este texto será copiado para o campo do relatório e poderá ser editado antes de gerar.', widget=forms.Textarea(attrs={**{'class': 'campo__input'}, 'rows': 6}))
+    texto = forms.CharField(label='Texto do modelo', help_text='Este texto será copiado para o campo do relatório e poderá ser editado antes de gerar.', widget=forms.Textarea(attrs={**{'class': 'campo__input'}, 'rows': 3}))
 
     class Meta:
         model = ModeloTextoRelatorioTecnico

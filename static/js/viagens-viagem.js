@@ -151,6 +151,26 @@
       if (aba.checked) mostrar(aba.value);
     });
   });
+  // O número da aba acompanha o que está marcado na lista dela.
+  paineis.forEach(function (painel) {
+    painel.addEventListener("change", function () {
+      var chave = painel.getAttribute("data-vg-painel");
+      var aba = abas.find(function (a) { return a.value === chave; });
+      if (!aba) return;
+      var total = painel.querySelectorAll("input[type=checkbox]:checked").length;
+      var rotulo = aba.nextElementSibling;
+      var n = rotulo.querySelector(".vg-docs__n");
+      if (!total) { if (n) n.remove(); return; }
+      if (!n) {
+        n = document.createElement("em");
+        n.className = "vg-docs__n";
+        rotulo.appendChild(n);
+      }
+      n.textContent = String(total);
+    });
+  });
+
   var marcada = abas.find(function (aba) { return aba.checked; }) || abas[0];
   if (marcada) mostrar(marcada.value);
 })();
+

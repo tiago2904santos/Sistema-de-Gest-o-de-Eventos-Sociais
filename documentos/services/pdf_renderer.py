@@ -53,6 +53,15 @@ def caminho_css(nome: str) -> Path:
     return Path(settings.BASE_DIR) / "templates" / nome
 
 
+def css_do_tipo(tipo) -> list[str]:
+    """Camada própria do documento (`documentos/pdf/<tipo>.css`: geometria e
+    tipografia do modelo), por cima do CSS comum. Opcional."""
+    if tipo is None:
+        return []
+    nome = f"documentos/pdf/{getattr(tipo, 'value', tipo)}.css"
+    return [nome] if caminho_css(nome).is_file() else []
+
+
 def renderizar_html(tipo, contexto: dict, *, modo: str) -> str:
     """HTML do documento. `modo` é `editor` (tela) ou `pdf`."""
     dados = dict(contexto)
@@ -60,8 +69,10 @@ def renderizar_html(tipo, contexto: dict, *, modo: str) -> str:
     if modo == "editor":
         # Na tela o CSS comum entra inline, para a folha não depender do
         # pipeline de estáticos e ficar idêntica ao que o PDF recebe; o CSS
-        # de tela (folha sobre o fundo, marcação de editável) vai junto.
-        dados["css_inline"] = "\n".join(caminho_css(nome).read_text(encoding="utf-8") for nome in (CSS_COMUM, CSS_EDITOR))
+        # de tela (folha sobre o fundo, marcação de editável) vai junto, e a
+        # camada do tipo por último, como no PDF.
+        nomes = (CSS_COMUM, CSS_EDITOR, *css_do_tipo(tipo))
+        dados["css_inline"] = "\n".join(caminho_css(nome).read_text(encoding="utf-8") for nome in nomes)
     with measure_step("renderizar_html", {"tipo": getattr(tipo, "value", tipo), "modo": modo}):
         return render_to_string(template_do_tipo(tipo), dados)
 
@@ -87,16 +98,30 @@ def weasyprint_disponivel() -> bool:
     return True
 
 
+# Documentos que devem caber numa página: quantos degraus de compactação o CSS
+# do tipo define (`.doc-compacto-1`, `.doc-compacto-2`, ...). Se o PDF passar de
+# uma página, é refeito com o degrau seguinte; esgotados os degraus, sai como
+# couber (texto longo demais pagina normalmente).
+CABER_EM_UMA_PAGINA = {"oficio": 2, "relatorio_tecnico": 2}
+
+
 def render_pdf(html: str, *, tipo=None) -> bytes:
     """PDF em memória a partir do HTML já renderizado (modo `pdf`)."""
     CSS, HTML = _weasyprint()
     base_url = Path(settings.BASE_DIR).resolve().as_uri() + "/"
-    folhas = [CSS(filename=str(caminho_css(CSS_COMUM))), CSS(filename=str(caminho_css(CSS_IMPRESSAO)))]
+    folhas = [CSS(filename=str(caminho_css(nome))) for nome in (CSS_COMUM, CSS_IMPRESSAO, *css_do_tipo(tipo))]
+    degraus = CABER_EM_UMA_PAGINA.get(str(getattr(tipo, "value", tipo) or ""), 0)
     with measure_step("render_pdf_html", {"tipo": getattr(tipo, "value", tipo) or "—"}):
         # `presentational_hints=False`: nada de cor/fundo vindos de atributos
         # HTML — os textos de campo são conteúdo do usuário, escapado, e o
         # visual é só do CSS institucional.
-        return HTML(string=html, base_url=base_url).write_pdf(stylesheets=folhas, presentational_hints=False)
+        documento = HTML(string=html, base_url=base_url).render(stylesheets=folhas, presentational_hints=False)
+        for degrau in range(1, degraus + 1):
+            if len(documento.pages) <= 1:
+                break
+            compacto = html.replace('class="documento ', f'class="documento doc-compacto-{degrau} ', 1)
+            documento = HTML(string=compacto, base_url=base_url).render(stylesheets=folhas, presentational_hints=False)
+        return documento.write_pdf()
 
 
 def caminhos_dos_templates(tipo) -> tuple[Path, ...]:
@@ -112,4 +137,5 @@ def caminhos_dos_templates(tipo) -> tuple[Path, ...]:
         caminhos.append(Path(origem) if origem else Path(settings.BASE_DIR) / "templates" / nome)
     caminhos.append(caminho_css(CSS_COMUM))
     caminhos.append(caminho_css(CSS_IMPRESSAO))
+    caminhos.extend(caminho_css(nome) for nome in css_do_tipo(tipo))
     return tuple(caminhos)

@@ -1,12 +1,11 @@
 {% extends "layouts/app_shell_v32.html" %}
 {% load static estaticos %}
 {% comment %}
-  Cadastro da ordem de serviço — os blocos do Gerenciador de Viagens, na ordem
-  do preenchimento real, em cartões numerados numa página só: 1 ofícios
-  vinculados (que, marcados, copiam datas, servidores, motivo e destino),
-  2 necessidade (os cinco cartões de rádio), 3 motivo (modelo + texto),
-  4 período, 5 destinos e 6 equipe, com o painel de funções que só existe no
-  caminhão, no micro-ônibus e no cerimonial antecipado.
+  Cadastro da ordem de serviço, no molde do termo de autorização: 1 destino
+  e período, com os ofícios num interruptor do cabeçalho (marcados, copiam
+  datas, servidores, motivo e destino); 2 necessidade (três cartões de rádio:
+  padrão, operação policial e cerimonial) e motivo; 3 equipe, com a função de cada servidor na própria linha
+  quando o tipo pede (caminhão, micro-ônibus e cerimonial antecipado).
 
   O botão principal muda de rótulo com o preenchimento — "Finalizar Ordem de
   Serviço" quando não falta nada, "Salvar como rascunho" quando falta — e é
@@ -24,7 +23,7 @@
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with atual=titulo %}
 
-  <div class="editor-roteiro of-form os-form">
+  <div class="editor-roteiro of-form tm-form os-form">
     <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
       <div class="page-header d-cabeca__esq">
         <div class="page-header__identificacao d-identificacao">
@@ -65,34 +64,75 @@
         </div>
       {% endif %}
 
-      {# ------------------------------------------------------------- 1 #}
+      {% comment %}
+        No molde do termo: os ofícios são um interruptor do cartão 1. Ligado,
+        abre a lista e os marcados copiam datas, destino, servidores e motivo
+        para o que estiver em branco; desligado, a OS é avulsa.
+      {% endcomment %}
       <section class="section-card reg" id="oficios">
         <header class="section-card__cabecalho reg__t">
           <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
-          <h2 class="section-card__titulo">Ofícios vinculados</h2>
+          <h2 class="section-card__titulo">Destino e período</h2>
+          <div class="section-card__acao editor-roteiro__acoes-cabecalho">
+            <button type="button" class="interruptor{% if oficios_vinculados or erros.oficios %} interruptor--ligado{% endif %}" data-expande="#oficio-painel"
+                    aria-expanded="{% if oficios_vinculados or erros.oficios %}true{% else %}false{% endif %}" aria-controls="oficio-painel" data-oficio-toggle>
+              <span class="interruptor__trilho" aria-hidden="true"><span class="interruptor__botao"></span></span>
+              <span class="interruptor__rotulo">{% if oficios_vinculados or erros.oficios %}Vinculada a ofícios{% else %}Sem ofício vinculado{% endif %}</span>
+            </button>
+          </div>
         </header>
         <div class="section-card__corpo">
-          <p class="os-descricao">Opcional. Reaproveite destino, período, servidores e motivo de um ou mais ofícios.</p>
-          <div data-os-oficios>
-            {% include "components/v32/multi_pick.html" with name="oficios" label="Buscar ofício vinculado" rotulo_oculto=True placeholder="Buscar por número, protocolo, destino, sede, viatura ou servidor" opcoes=oficios erros=erros.oficios vazio="Nenhum ofício encontrado para a busca." vazio_escolhidos="Nenhum ofício vinculado." icone_vazio="document" %}
+          <div class="tm-oficio" id="oficio-painel"{% if oficios_vinculados or erros.oficios %}{% else %} hidden{% endif %} data-oficio-painel data-os-oficios>
+            {% include "components/v32/lista_escolha.html" with name="oficios" multipla=True label="Ofícios" rotulo_busca="Buscar ofício" rotulo_oculto=True icone="document" opcoes=oficios placeholder="Buscar ofício por número, protocolo, destino, sede, viatura ou servidor" erros=erros.oficios vazio="Nenhum ofício disponível para vincular." %}
+          </div>
+          {% comment %}
+            Uma lista só, no componente do termo: a primeira linha é o destino
+            da OS e as seguintes são os adicionais. Quem está em qual posição
+            vira nome de campo no envio, pelo viagens-ordens.js. Sem JavaScript
+            os nomes já vêm certos do servidor e o "+" é um envio que volta
+            com mais uma linha.
+          {% endcomment %}
+          {# Período e destinos agrupados na caixa do bate-volta, como no plano de trabalho. #}
+          <div class="bate-volta ofc-percurso">
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">Período</div>
+              <div>
+                {% include "components/date_range.html" with name="periodo_atividade" start_name="data_evento_inicio" end_name="data_evento_fim" label="Período da atividade" rotulo_oculto=True dois_campos=True valor_inicio=valores.data_evento_inicio valor_fim=valores.data_evento_fim erros=erros.data_evento_inicio|default:erros.data_evento_fim %}
+              </div>
+            </div>
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">Destinos</div>
+              <div>
+                <div class="destinos" data-destinos>
+                  {% include "pages/viagens_termos/_destino_linha.html" with nome_estado="destino_estado" nome_cidade="destino_cidade" id_estado="id_destino_estado" rotulo_estado="Estado" rotulo_cidade="Cidade" estado=valores.destino_estado cidade=valores.destino_cidade erros_estado=erros.destino_estado erros_cidade=erros.destino_cidade estados=estados municipios=municipios %}
+                  {% for a in adicionais %}
+                    {% include "pages/viagens_termos/_destino_linha.html" with nome_estado=a.nome_estado nome_cidade=a.nome_cidade id_estado=a.id_estado rotulo_estado="Estado adicional" rotulo_cidade="Cidade adicional" estado=a.estado cidade=a.cidade erros_estado=a.erros_estado erros_cidade=a.erros_cidade estados=estados municipios=municipios %}
+                  {% endfor %}
+                </div>
+                <template data-destino-modelo>
+                  {% include "pages/viagens_termos/_destino_linha.html" with nome_estado="extra_estado___n__" nome_cidade="extra_cidade___n__" id_estado="id_extra_estado___n__" rotulo_estado="Estado adicional" rotulo_cidade="Cidade adicional" estado="" cidade="" erros_estado=None erros_cidade=None estados=estados municipios=municipios %}
+                </template>
+                <noscript>
+                  <button class="btn--secundaria btn--compacto btn--quadrado" type="submit" name="acao" value="adicionar_destino" formnovalidate aria-label="Adicionar destino" title="Adicionar destino">{% include "components/icon.html" with nome="plus" %}</button>
+                </noscript>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {# ------------------------------------------------------------- 2 #}
       <section class="section-card reg" id="necessidade">
         <header class="section-card__cabecalho reg__t">
           <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
-          <h2 class="section-card__titulo">Necessidade</h2>
+          <h2 class="section-card__titulo">Necessidade e motivo</h2>
         </header>
         <div class="section-card__corpo">
-          <p class="os-descricao">Escolha o tipo de OS.</p>
           <fieldset class="os-tipos{% if erros.tipo_necessidade %} grupo-erro{% endif %}" data-os-tipos aria-label="Tipo de necessidade">
             <div class="os-tipos__grade">
               {% for t in tipos_necessidade %}
-                <label class="os-tipo{% if t.marcado %} is-escolhido{% endif %}">
+                <label class="os-tipo{% if t.marcado %} is-escolhido{% endif %}" title="{{ t.rotulo }} — {{ t.dica }}">
                   <input class="sr-only" type="radio" name="tipo_necessidade" value="{{ t.valor }}"{% if t.marcado %} checked{% endif %}{% if forloop.first %} id="id_tipo_necessidade"{% endif %}>
-                  <span class="os-tipo__marca" aria-hidden="true"></span>
+                  <span class="os-tipo__icone" aria-hidden="true">{% include "components/icon.html" with nome=t.icone %}</span>
                   <span class="os-tipo__corpo">
                     <span class="os-tipo__titulo">{{ t.rotulo }}</span>
                     <span class="os-tipo__dica">{{ t.dica }}</span>
@@ -102,108 +142,37 @@
             </div>
             {% for erro in erros.tipo_necessidade %}<p class="form-erro">{{ erro }}</p>{% endfor %}
           </fieldset>
-        </div>
-      </section>
-
-      {# ------------------------------------------------------------- 3 #}
-      <section class="section-card reg" id="motivo">
-        <header class="section-card__cabecalho reg__t">
-          <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
-          <h2 class="section-card__titulo">Motivo</h2>
-        </header>
-        <div class="section-card__corpo">
-          <p class="os-descricao">Complemente com o motivo ou finalidade específica.</p>
-          <div class="g-form g-form--1">
+          <div class="g-form g-form--1 os-motivo-campos" id="motivo">
             <div class="ofc-com-acao">
               {% if opcoes_motivos %}
                 {% include "components/select.html" with name="modelo_motivo" label="Modelo de motivo" opcoes=opcoes_motivos placeholder="Selecione um modelo (opcional)" permitir_vazio=True selecionado=valores.modelo_motivo erros=erros.modelo_motivo %}
               {% else %}
-                {% include "components/select.html" with name="modelo_motivo" label="Modelo de motivo" opcoes=opcoes_motivos placeholder="Selecione um modelo (opcional)" vazio="Nenhum modelo cadastrado ainda." ajuda="Nenhum modelo cadastrado ainda." erros=erros.modelo_motivo %}
+                {% include "components/select.html" with name="modelo_motivo" label="Modelo de motivo" opcoes=opcoes_motivos placeholder="Nenhum modelo cadastrado" desabilitado=True erros=None %}
               {% endif %}
               <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_modelos_motivo }}" aria-label="Gerenciar modelos de motivo" title="Gerenciar modelos">{% include "components/icon.html" with nome="settings" %}</a>
             </div>
-            {% include "components/textarea.html" with name="motivo" label="Motivo" linhas="5" placeholder="Descreva o motivo ou finalidade desta ordem de serviço..." valor=valores.motivo erros=erros.motivo %}
+            {% include "components/textarea.html" with name="motivo" label="Motivo" linhas="3" placeholder="Descreva o motivo ou finalidade desta ordem de serviço..." valor=valores.motivo erros=erros.motivo %}
           </div>
         </div>
       </section>
 
-      {# ------------------------------------------------------------- 4 #}
-      <section class="section-card reg" id="periodo">
-        <header class="section-card__cabecalho reg__t">
-          <span class="section-card__numero reg-numero" aria-hidden="true">4</span>
-          <h2 class="section-card__titulo">Período</h2>
-        </header>
-        <div class="section-card__corpo">
-          {# Sem coluna de rótulo: o título do cartão já diz "Período". #}
-          <p class="os-descricao">Datas de ida e volta da atividade.</p>
-          <div class="os-periodo">
-            {# Dois campos, um calendário só: a primeira escolha é a ida e a segunda a volta. #}
-            <div class="os-periodo__rotulos" aria-hidden="true"><span>Data de ida</span><span>Data de volta</span></div>
-            {% include "components/date_range.html" with name="periodo_atividade" start_name="data_evento_inicio" end_name="data_evento_fim" label="Período da atividade" rotulo_oculto=True dois_campos=True valor_inicio=valores.data_evento_inicio valor_fim=valores.data_evento_fim erros=erros.data_evento_inicio|default:erros.data_evento_fim %}
-          </div>
-        </div>
-      </section>
-
-      {# ------------------------------------------------------------- 5 #}
-      <section class="section-card reg" id="destinos">
-        <header class="section-card__cabecalho reg__t">
-          <span class="section-card__numero reg-numero" aria-hidden="true">5</span>
-          <h2 class="section-card__titulo">Destinos</h2>
-        </header>
-        <div class="section-card__corpo">
-          {% comment %}
-            Uma lista só, no componente do termo: a primeira linha é o destino
-            da OS e as seguintes são os adicionais. Quem está em qual posição
-            vira nome de campo no envio, pelo viagens-ordens.js. Sem JavaScript
-            os nomes já vêm certos do servidor e o "+" é um envio que volta
-            com mais uma linha.
-          {% endcomment %}
-          <p class="os-descricao">Locais na ordem da visita.</p>
-          <div>
-            <div>
-              <div class="destinos" data-destinos>
-                {% include "pages/viagens_termos/_destino_linha.html" with nome_estado="destino_estado" nome_cidade="destino_cidade" id_estado="id_destino_estado" rotulo_estado="Estado" rotulo_cidade="Cidade" estado=valores.destino_estado cidade=valores.destino_cidade erros_estado=erros.destino_estado erros_cidade=erros.destino_cidade estados=estados municipios=municipios %}
-                {% for a in adicionais %}
-                  {% include "pages/viagens_termos/_destino_linha.html" with nome_estado=a.nome_estado nome_cidade=a.nome_cidade id_estado=a.id_estado rotulo_estado="Estado adicional" rotulo_cidade="Cidade adicional" estado=a.estado cidade=a.cidade erros_estado=a.erros_estado erros_cidade=a.erros_cidade estados=estados municipios=municipios %}
-                {% endfor %}
-              </div>
-              <template data-destino-modelo>
-                {% include "pages/viagens_termos/_destino_linha.html" with nome_estado="extra_estado___n__" nome_cidade="extra_cidade___n__" id_estado="id_extra_estado___n__" rotulo_estado="Estado adicional" rotulo_cidade="Cidade adicional" estado="" cidade="" erros_estado=None erros_cidade=None estados=estados municipios=municipios %}
-              </template>
-              <noscript>
-                <button class="btn--secundaria btn--compacto btn--quadrado" type="submit" name="acao" value="adicionar_destino" formnovalidate aria-label="Adicionar destino" title="Adicionar destino">{% include "components/icon.html" with nome="plus" %}</button>
-              </noscript>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {# ------------------------------------------------------------- 6 #}
       <section class="section-card reg" id="equipe">
         <header class="section-card__cabecalho reg__t">
-          <span class="section-card__numero reg-numero" aria-hidden="true">6</span>
-          <h2 class="section-card__titulo">Equipe da OS</h2>
+          <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
+          <h2 class="section-card__titulo">Equipe</h2>
         </header>
         <div class="section-card__corpo">
           <div class="ofc-com-acao os-equipe" data-os-equipe>
-            {% include "components/v32/multi_pick.html" with name="servidores" label="Adicionar à equipe" placeholder="Buscar por nome, CPF ou RG" opcoes=servidores erros=erros.servidores vazio="Nenhum servidor encontrado." vazio_escolhidos="Nenhum servidor selecionado." ajuda="Opcional. Se vazio e houver ofícios vinculados, usa os servidores desses ofícios." %}
+            {% include "components/v32/multi_pick.html" with name="servidores" label="Adicionar à equipe" placeholder="Buscar por nome, CPF ou RG" opcoes=servidores erros=erros.servidores vazio="Nenhum servidor encontrado." vazio_escolhidos="Nenhum servidor selecionado." %}
             <a class="btn--secundaria btn--quadrado ofc-com-acao__botao os-equipe__novo" href="{{ url_novo_servidor }}" target="_blank" rel="noopener" aria-label="Novo viajante" title="Novo viajante">{% include "components/icon.html" with nome="plus" %}</a>
           </div>
 
           {% comment %}
-            Painel de funções: só no caminhão, no micro-ônibus e no cerimonial
-            antecipado. O alternador escolhe a função ativa; clicar no cartão
-            do servidor a atribui (e clicar de novo a tira). As funções viajam
-            em `funcao_servidor_<id>`, montados pelo script.
+            Funções da equipe: só no caminhão, no micro-ônibus e no cerimonial
+            antecipado. Não há painel à parte — cada servidor escolhido ganha,
+            na própria linha, o seletor da função (clicar de novo a tira). As
+            funções viajam em `funcao_servidor_<id>`, montados pelo script.
           {% endcomment %}
-          <section class="os-funcoes" data-os-funcoes data-os-tipos-com-funcao="CAMINHAO MICROONIBUS CERIMONIAL_ANTECIPADO" hidden>
-            <div class="os-funcoes__cabeca">
-              <strong class="os-funcoes__titulo" data-os-funcoes-titulo>Função no caminhão</strong>
-              <div class="os-func-seg" role="group" aria-label="Função dos servidores no caminhão" data-os-funcoes-seg></div>
-            </div>
-            <div class="of-membros ofc-equipe os-funcoes__cartoes" role="group" aria-label="Função de cada servidor" data-os-funcoes-cartoes></div>
-            <p class="lista-vazia" data-os-funcoes-vazio>{% include "components/icon.html" with nome="users" %}<span>Nenhum servidor selecionado.</span></p>
-          </section>
 
           {% include "pages/viagens_ordens/_acoes_fim.html" %}
         </div>
@@ -219,6 +188,7 @@
   {{ modelos_texto|json_script:"os-modelos-texto" }}
   {{ funcoes_servidores|json_script:"os-funcoes-servidores" }}
   <script src="{% estatico 'js/multi-pick.js' %}" defer></script>
+  <script src="{% estatico 'js/lista-escolha.js' %}" defer></script>
   <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-ordens.js' %}" defer></script>
 {% endblock %}

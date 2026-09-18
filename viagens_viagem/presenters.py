@@ -245,6 +245,8 @@ ABAS_DE_DOCUMENTOS = [
     ("termos", "Termos", "termos_vinculados", "Adicionar termo", "Buscar por destino ou período", "Nenhum termo disponível para o período."),
 ]
 
+ICONES_DAS_ABAS = {"oficios": "document", "roteiros": "map-pin", "pt": "checklist", "os": "clipboard", "termos": "gavel"}
+
 
 def abas_de_documentos(form):
     opcoes = opcoes_de_documentos(form)
@@ -253,7 +255,7 @@ def abas_de_documentos(form):
         itens = opcoes[chave]
         abas.append({
             "chave": chave, "rotulo": rotulo, "campo": campo, "rotulo_seletor": rotulo_seletor,
-            "placeholder": placeholder, "vazio": vazio, "opcoes": itens,
+            "placeholder": placeholder, "vazio": vazio, "opcoes": itens, "icone": ICONES_DAS_ABAS[chave],
             "vinculados": sum(1 for o in itens if o["selecionado"]),
             "erros": form.errors.get(campo),
         })

@@ -4,8 +4,10 @@
    Paleta: dourado = escolhido; grafite = botão principal; cinza = repouso. */
 
 /* ---- lista ------------------------------------------------------------- */
-.os-celula .os-motivo{margin:6px 0 0;font-size:12.5px;line-height:1.4;color:var(--n-700);overflow-wrap:anywhere}
-.os-celula .os-motivo.tm-fato--ausente{color:var(--n-400);font-style:italic}
+/* Duas linhas: título e fatos. A célula ocupa o que sobra sem esticar a
+   tabela; o motivo é o último fato e toma o resto da linha, cortando. */
+.os-celula{width:100%;max-width:0}
+.os-fatos>.os-fato-motivo{flex:1 1 auto}
 .os-oficio-link{color:var(--link,var(--n-800));text-decoration:none;font-weight:500}
 .os-oficio-link:hover{text-decoration:underline}
 
@@ -13,60 +15,68 @@
 .os-descricao{margin:0 0 12px;font-size:12.5px;color:var(--n-500)}
 .os-form .multi-pick .form-campo{margin:0}
 
-/* Cartões de necessidade: rádio escondido, o cartão é a escolha. */
-.os-tipos{border:0;margin:0;padding:0;min-width:0}
-.os-tipos.grupo-erro .os-tipo{border-color:var(--dg-t)}
-.os-tipos__grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
-.os-tipo{position:relative;display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid var(--n-200);border-radius:9px;background:var(--branco);cursor:pointer;transition:border-color var(--motion,.15s),background-color var(--motion,.15s)}
-.os-tipo:hover{background:var(--hover-b,var(--n-50));border-color:var(--n-300)}
-.os-tipo:focus-within{outline:2px solid var(--foco,var(--n-700));outline-offset:2px}
-.os-tipo__marca{flex:none;width:16px;height:16px;margin-top:2px;border:2px solid var(--n-300);border-radius:50%;background:var(--branco);transition:border-color var(--motion,.15s),box-shadow var(--motion,.15s)}
-.os-tipo__corpo{display:grid;gap:3px;min-width:0}
-.os-tipo__titulo{font-size:13px;font-weight:600;color:var(--n-900)}
-.os-tipo__dica{font-size:11.5px;line-height:1.4;color:var(--n-500)}
-.os-tipo.is-escolhido{border-color:var(--sel-r,var(--d-500));background:var(--sel-b,var(--d-100))}
-.os-tipo.is-escolhido .os-tipo__marca{border-color:var(--sel-r,var(--d-600));box-shadow:inset 0 0 0 3px var(--branco);background:var(--sel-r,var(--d-600))}
-.os-tipo.is-escolhido .os-tipo__titulo{color:var(--sel-f,var(--d-900))}
+/* Cartões de necessidade, no desenho das atividades do plano: sem borda,
+   repouso em cinza bem claro, hover um tom acima, escolhido num cinza mais
+   firme com o ícone em grafite. Três por linha. */
+.os-tipos{border:0;margin:0 0 24px;padding:0;min-width:0}
+.os-tipos__grade{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.os-tipo{position:relative;display:flex;align-items:center;gap:12px;padding:14px;border:0;border-radius:12px;background:var(--n-50);cursor:pointer;transition:background .18s ease,transform .12s ease}
+.os-tipo:hover{background:var(--n-100)}
+.os-tipo:active{transform:scale(.985)}
+.os-tipo:focus-within{outline:0}
+.os-tipo__icone{display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:10px;background:var(--branco);color:var(--n-600);box-shadow:0 1px 2px rgba(26,25,23,.06);transition:background .18s ease,color .18s ease}
+.os-tipo__icone .ui-icon{width:18px;height:18px}
+.os-tipo__corpo{display:grid;gap:3px;min-width:0;padding-top:1px}
+.os-tipo__titulo{font-size:12.5px;font-weight:600;line-height:1.3;color:var(--n-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Uma linha só: o texto inteiro fica no title do cartão. */
+.os-tipo__dica{font-size:11.5px;line-height:1.45;color:var(--n-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.os-tipo.is-escolhido{background:var(--n-150)}
+.os-tipo.is-escolhido:hover{background:var(--n-200)}
+.os-tipo.is-escolhido .os-tipo__icone{background:var(--grafite);color:var(--branco);box-shadow:none;animation:os-marcar .28s ease}
+@keyframes os-marcar{0%{transform:scale(.88)}55%{transform:scale(1.08)}100%{transform:scale(1)}}
+.os-tipo.is-escolhido .os-tipo__titulo{color:var(--n-900)}
+.os-tipo.is-escolhido .os-tipo__dica{color:var(--n-600)}
+.os-tipos.grupo-erro .os-tipo{box-shadow:inset 0 0 0 1px var(--dg-t)}
+@media (prefers-reduced-motion:reduce){.os-tipo,.os-tipo__icone,.os-func-seg::before{transition:none;animation:none!important}}
 
-/* Período: os dois campos com os nomes da origem por cima. */
-.os-periodo__rotulos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:4px;font-size:12px;font-weight:600;color:var(--n-600)}
+/* Equipe: grade de duas colunas — busca e "+" em cima; escolhidos, vazio,
+   ajuda e erro embaixo, na largura inteira (inclusive sob o "+"). O campo
+   some da caixa (`display:contents`) para os filhos entrarem na grade; o
+   rótulo sobre a borda passa a se ancorar na própria grade. */
+.os-equipe{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;column-gap:8px;position:relative;margin-top:6px}
+.os-equipe>.multi-pick{display:contents}
+.os-equipe>.multi-pick>.form-controle-wrapper{grid-column:1;grid-row:1}
+.os-equipe>.os-equipe__novo{grid-column:2;grid-row:1;margin:0}
+.os-equipe>.multi-pick>.multi-pick__escolhidos,.os-equipe>.multi-pick>.lista-vazia,.os-equipe>.multi-pick>.form-ajuda,.os-equipe>.multi-pick>.form-erro{grid-column:1/-1}
 
-/* Equipe: busca com o "+" ao lado; a lista de escolhidos ocupa a largura toda. */
-.os-equipe{flex-wrap:wrap}
-.os-equipe>.multi-pick{flex:1 1 auto;min-width:0}
-.os-equipe>.multi-pick .multi-pick__escolhidos,.os-equipe>.multi-pick .lista-vazia,.os-equipe>.multi-pick .form-ajuda,.os-equipe>.multi-pick .form-erro{flex:1 1 100%}
-/* O "+" fica ao lado da busca, não abaixo da lista de escolhidos: a caixa dos
-   escolhidos cresce e o botão desceria com ela. */
-.os-equipe{align-items:flex-start}
-.os-equipe>.multi-pick{display:grid}
-.os-equipe>.multi-pick>.form-label{grid-row:1}
-.os-equipe__novo{margin-top:22px;margin-bottom:0}
-
-/* Painel de funções: título e alternador em cima, os cartões da equipe embaixo. */
-.os-funcoes{margin-top:16px;padding-top:16px;border-top:1px solid var(--n-150)}
-.os-funcoes[hidden]{display:none}
-.os-funcoes__cabeca{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
-.os-funcoes__titulo{font-size:13px;color:var(--n-800)}
-.os-func-seg{display:inline-flex;padding:3px;border-radius:9px;background:var(--n-100)}
-.os-func-seg button{height:30px;padding:0 14px;border:0;border-radius:7px;background:transparent;color:var(--n-600);font:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:background-color var(--motion,.15s),color var(--motion,.15s)}
-.os-func-seg button:hover{color:var(--n-900)}
-.os-func-seg button[aria-pressed="true"]{background:var(--sel-b,var(--branco));color:var(--sel-f,var(--n-900));font-weight:600;box-shadow:0 1px 2px rgba(26,25,23,.12)}
-.os-funcoes__cartoes:empty{display:none}
-.os-funcoes__cartoes:not(:empty)+.lista-vazia{display:none}
-.os-func-cartao{cursor:pointer;grid-template-columns:40px minmax(0,1fr)}
-.os-func-cartao:hover{background:var(--hover-b,var(--n-25))}
-.os-func-cartao:focus-visible{outline:2px solid var(--foco,var(--n-700));outline-offset:-2px}
-.os-func-cartao.is-atribuido{border-color:var(--n-300)}
-/* O cartão com a função ativa é o escolhido: dourado, como manda a paleta. */
-.os-func-cartao.is-ativa,.os-func-cartao.is-ativa:hover{background:var(--sel-b,var(--d-100));border-color:var(--sel-r,var(--d-500))}
-.os-func-cartao.is-ativa .of-av{background:var(--sel-r,var(--d-600));color:var(--branco)}
-.os-func-selo{height:20px;padding:0 8px;border-radius:99px;border:1px solid var(--n-250);background:var(--n-100);color:var(--n-600);font-size:10.5px;font-weight:600;letter-spacing:.02em}
-.os-func-cartao.is-ativa .os-func-selo{background:var(--sel-r,var(--d-600));border-color:var(--sel-r,var(--d-600));color:var(--branco)}
-.os-func-selo--vazio{font-weight:500;font-style:italic;color:var(--n-500)}
+/* Equipe na identidade nova: linhas sem borda em cinza bem claro, crachá
+   com as iniciais e, quando o tipo pede, o seletor da função na própria
+   linha — escolhida em grafite, repouso em cinza. Uma coluna quando há
+   função, para o seletor caber ao lado do nome. */
+.os-equipe .multi-pick__escolhido{height:auto;min-height:56px;padding:8px 10px 8px 8px;border:0;border-radius:10px;background:var(--n-50);gap:12px;justify-content:flex-start;transition:background .18s ease}
+.os-equipe .multi-pick__escolhido:hover{background:var(--n-100)}
+.os-equipe .multi-pick__escolhido>span:not(.of-av){flex:1 1 auto;font-weight:500;color:var(--n-800)}
+/* Crachá no desenho dos ícones dos cartões de necessidade: quadrado arredondado; escolhido = grafite. */
+.os-equipe .multi-pick__escolhido .of-av{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:10px;background:var(--grafite);color:var(--branco);font-size:11.5px;font-weight:600;letter-spacing:.02em;box-shadow:none}
+.os-equipe .multi-pick__remover{background:transparent}
+.os-equipe .multi-pick__remover:hover{background:var(--dg-b)}
+.os-equipe .lista-vazia{border-color:var(--n-200)}
+.os-equipe--funcoes .multi-pick__escolhidos{grid-template-columns:1fr}
+/* O realce grafite é um só e desliza até a função escolhida (posição e
+   largura em --x/--w, postas pelo script); sem escolha, ele some. */
+.os-func-seg{position:relative;display:inline-flex;flex:none;gap:2px;padding:3px;border-radius:9px;background:var(--branco);box-shadow:inset 0 0 0 1px var(--n-150)}
+.os-func-seg::before{content:"";position:absolute;top:3px;bottom:3px;left:0;width:var(--w,0);border-radius:7px;background:var(--grafite);opacity:0;transform:translateX(var(--x,0)) scale(.92);transition:transform .28s cubic-bezier(.3,.8,.25,1),width .28s cubic-bezier(.3,.8,.25,1),opacity .18s ease}
+.os-func-seg.tem-escolha::before{opacity:1;transform:translateX(var(--x,0))}
+.os-func-seg.sem-anim::before{transition:none}
+.os-func-seg button{position:relative;z-index:1;height:28px;padding:0 12px;border:0;border-radius:7px;background:transparent;color:var(--n-500);font:inherit;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .15s ease,color .2s ease}
+.os-func-seg button:hover{background:var(--n-100);color:var(--n-800)}
+.os-func-seg button[aria-pressed="true"],.os-func-seg button[aria-pressed="true"]:hover{background:transparent;color:var(--branco)}
+.os-func-seg button:focus-visible{outline:2px solid var(--foco,var(--n-700));outline-offset:1px}
 
 @media (max-width:640px){
-  .os-tipos__grade{grid-template-columns:1fr}
-  .os-funcoes__cabeca{align-items:flex-start;flex-direction:column}
-  .os-func-seg{display:flex}
+  .os-escolhido--funcao{flex-wrap:wrap}
+  .os-escolhido--funcao .os-func-seg{order:3;display:flex;width:100%}
   .os-func-seg button{flex:1 1 0}
 }
+
+@container (max-width:760px){.os-tipos__grade{grid-template-columns:1fr}}

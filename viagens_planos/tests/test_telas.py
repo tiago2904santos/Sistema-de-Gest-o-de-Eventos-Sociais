@@ -8,7 +8,6 @@ from django.urls import reverse
 from django.utils import timezone
 
 from viagens_planos.models import EfetivoPlano, PlanoTrabalho
-from viagens_planos.presenters import cartao_para_viagem
 from viagens_planos.selectors import listar_planos
 from viagens_planos.services import atualizar_snapshot_diarias
 
@@ -120,7 +119,7 @@ class PaginaUnicaTests(CenarioPlanoMixin, TestCase):
         self.assertEqual(r.status_code, 200)
         for titulo in ["Identificação e atuação", "Efetivo e diárias", "Atividades, metas e recursos", "Resumo e documentos"]:
             self.assertContains(r, titulo)
-        for rotulo in ["Programa solicitante", "Outro programa", "Coordenador administrativo", "Coordenador operacional (opcional)",
+        for rotulo in ["Outro programa", "Coordenador administrativo", "Coordenador operacional (opcional)",
                        "Período do evento", "Data de ida", "Data de volta", "Horário de atendimento", "Destinos",
                        "Data de saída da sede", "Hora de saída", "Data de chegada na sede",
                        "Hora de chegada", "Valor total do plano", "Valor por servidor", "Quantidade de diárias", "Efetivo total",
@@ -198,6 +197,12 @@ class PaginaUnicaTests(CenarioPlanoMixin, TestCase):
         r = self.client.post(self.url, self.payload(**{"efetivo-0-cargo": ""}))
         self.assertContains(r, "Selecione o cargo.")
 
+    def test_linha_de_efetivo_so_com_a_quantidade_padrao_nao_trava_o_rascunho(self):
+        # A linha vazia nasce com quantidade 1: salvar o rascunho não pode acusar cargo.
+        r = self.client.post(self.url, self.payload(**{"efetivo-0-unidade": "", "efetivo-0-cargo": "", "efetivo-0-quantidade": "1"}))
+        self.assertRedirects(r, self.url, fetch_redirect_response=False)
+        self.assertFalse(self.plano.efetivos.exists())
+
     def test_finalizar_com_pendencia_mostra_a_lista(self):
         r = self.client.post(self.url, self.payload(**{"efetivo-0-cargo": "", "efetivo-0-quantidade": "", "efetivo-0-unidade": ""}, acao="finalizar"), follow=True)
         self.assertContains(r, "Corrija os itens abaixo antes de finalizar o plano ou gerar DOCX/PDF.")
@@ -248,8 +253,9 @@ class EventosTests(CenarioPlanoMixin, TestCase):
         self.assertEqual(evento.total_efetivo, 6)
         self.assertIsNone(plano.destino_cidade)
         self.assertContains(r, "Evento 1 de 1")
-        self.assertContains(r, "Nº " + plano.numero_formatado + " · Maringá/PR")
-        self.assertContains(r, "6 · POLICIAL CIVIL · ASCOM")
+        # Resumo enxuto: o destino em destaque e o efetivo por cargo no detalhe do fato.
+        self.assertContains(r, '<strong class="pt-evento__destino">Maringá/PR</strong>')
+        self.assertContains(r, "6 POLICIAL CIVIL (ASCOM)")
 
         segundo = self.payload(destino_cidade=str(self.sarandi.pk), data_evento_inicio="2026-06-29", data_evento_fim="2026-06-29", **{"efetivo-0-quantidade": "4"})
         self.client.post(reverse("viagens_planos:evento_adicionar", args=[self.plano.pk]), segundo)
@@ -323,18 +329,6 @@ class AcoesTests(CenarioPlanoMixin, TestCase):
 
 
 class ContratoDaViagemTests(CenarioPlanoMixin, TestCase):
-    def test_cartao_para_viagem(self):
-        plano = self.criar_plano_maringa()
-        plano.programa = self.programa
-        plano.save()
-        atualizar_snapshot_diarias(plano)
-        cartao = cartao_para_viagem(plano)
-        self.assertEqual(cartao["titulo"], "Plano de Trabalho 20/2026/ASCOM")
-        self.assertEqual(cartao["detalhes"], "25/06/2026 a 27/06/2026 · Maringá/PR · PROGRAMA PARANÁ EM AÇÃO")
-        self.assertEqual((cartao["selo"], cartao["metodo_documento"], cartao["cancelado"]), ("Rascunho", "post", False))
-        for chave in ["pk", "url_editar", "url_visualizar", "url_pdf", "url_docx", "url_excluir", "selo_tom"]:
-            self.assertIn(chave, cartao)
-
     def test_listar_por_viagem(self):
         from viagens_viagem.models import Viagem
 

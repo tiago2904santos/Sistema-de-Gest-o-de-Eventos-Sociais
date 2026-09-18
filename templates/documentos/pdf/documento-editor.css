@@ -75,3 +75,11 @@ td.doc-editavel, p.doc-editavel { border-radius: 0; }
   line-height: 1;
 }
 .documento--editor .doc-quebra::after { content: "quebra de página"; position: relative; top: -5pt; padding: 0 4pt; background: #fff; }
+
+/* Folha ASCOM na tela: as margens da impressão (6,8 cm em cima, 1,5 cm dos
+   lados, 3 cm embaixo) e as faixas de cabeçalho e rodapé com a mesma altura. */
+.documento--editor.doc-folha-ascom .folha { padding: 6.8cm 1.5cm 3cm 1.5cm; }
+.documento--editor.doc-folha-ascom .doc-cabecalho,
+.documento--editor.doc-folha-ascom .doc-rodape { left: 1.5cm; right: 1.5cm; box-sizing: border-box; }
+.documento--editor.doc-folha-ascom .doc-cabecalho { height: 6.8cm; justify-content: flex-start; padding-top: 1.25cm; }
+.documento--editor.doc-folha-ascom .doc-rodape { height: 3cm; justify-content: flex-end; padding-bottom: 0.8cm; }

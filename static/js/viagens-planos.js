@@ -57,15 +57,12 @@
 
   /* ── Coordenadores: o cargo vem do servidor de mesmo nome ────────── */
 
-  var sugestoes = document.getElementById("pt-servidores");
-
   /** O cargo do servidor com esse nome, ou "" para um nome de fora do sistema. */
-  function cargoDoNome(nome) {
-    if (!sugestoes) return "";
+  function cargoDoNome(painel, nome) {
     var procurado = nome.trim().toLowerCase();
     if (!procurado) return "";
-    var achada = Array.prototype.find.call(sugestoes.options, function (o) {
-      return o.value.trim().toLowerCase() === procurado;
+    var achada = Array.prototype.find.call(painel.querySelectorAll("[data-nome-sugerido-opcao]"), function (o) {
+      return (o.getAttribute("data-valor") || "").trim().toLowerCase() === procurado;
     });
     return achada ? achada.getAttribute("data-cargo") || "" : "";
   }
@@ -78,11 +75,29 @@
 
     // Bateu com um servidor, o cargo dele entra. Um nome de fora não mexe no
     // cargo: quem digita um nome que o sistema não tem escolhe o cargo à mão.
-    nome.addEventListener("input", function () {
-      var doServidor = cargoDoNome(nome.value);
-      if (doServidor) definirSelect(cargo, doServidor);
-    });
+    function aplicar(doServidor) { if (doServidor) definirSelect(cargo, doServidor); }
+    nome.addEventListener("ds:nome-sugerido", function (evento) { aplicar((evento.detail || {}).cargo); });
+    nome.addEventListener("input", function () { aplicar(cargoDoNome(painel, nome.value)); });
   });
+
+  /* ── Deslocamento: o calendário abre embaixo do campo clicado ───── */
+
+  // As duas datas dividem um calendário, mas estão em colunas afastadas (a
+  // hora de saída fica entre elas): aberto pela chegada, ele não pode surgir
+  // lá embaixo da saída. Fica sob o campo, sem passar da borda da linha.
+  (function () {
+    var linha = form.querySelector(".pt-deslocamento");
+    if (!linha) return;
+    var calendario = linha.querySelector("[data-custom-date-range-calendar]");
+    linha.querySelectorAll("[data-custom-date-range-trigger]").forEach(function (gatilho) {
+      gatilho.addEventListener("click", function () {
+        if (!calendario) return;
+        var deslocamento = gatilho.getBoundingClientRect().left - linha.getBoundingClientRect().left;
+        var maximo = Math.max(0, linha.clientWidth - (calendario.offsetWidth || 300));
+        calendario.style.left = Math.min(Math.max(0, deslocamento), maximo) + "px";
+      });
+    });
+  })();
 
   /* ── Destinos (o mecanismo do termo) ────────────────────────────── */
 
@@ -259,12 +274,11 @@
       })
     }).then(function (r) { return r.json(); }).then(function (dados) {
       if (!dados || !dados.ok) {
+        // Enquanto se preenche, falta dado é o normal: os valores voltam ao
+        // traço e nada de aviso — ele empurraria os campos e a página andaria
+        // debaixo do cursor. O que falta é dito ao salvar.
         limparResultado();
-        if (erros) {
-          var lista = (dados && dados.erros) || [];
-          erros.textContent = lista.join(" ");
-          erros.hidden = !lista.length;
-        }
+        if (erros) { erros.textContent = ""; erros.hidden = true; }
         return;
       }
       if (erros) { erros.textContent = ""; erros.hidden = true; }
@@ -331,6 +345,11 @@
       });
       renderizar(secao.querySelector("[data-pt-metas-lista]"), secao.querySelector("[data-pt-metas-vazio]"), secao.querySelector("[data-pt-metas-total]"), metas);
       renderizar(secao.querySelector("[data-pt-recursos-lista]"), secao.querySelector("[data-pt-recursos-vazio]"), secao.querySelector("[data-pt-recursos-total]"), recursos);
+      // A linha de status: quantas estão marcadas, e o "Limpar" só vale com alguma.
+      var marcadas = caixas.filter(function (c) { return c.checked; }).length;
+      var contagem = secao.querySelector("[data-pt-atividades-contagem]");
+      if (contagem) contagem.textContent = marcadas + " de " + caixas.length + (marcadas === 1 ? " selecionada" : " selecionadas");
+      if (limpar) limpar.disabled = marcadas === 0;
     }
 
     function aplicarCodigos(codigos) {

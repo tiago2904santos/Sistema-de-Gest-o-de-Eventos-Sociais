@@ -1,9 +1,9 @@
 /**
  * Cadastro da ordem de serviço — o `ordens-servico-form.js` da origem na
  * pele da casa: os ofícios marcados copiam datas, equipe, motivo e destino
- * para a tela; o modelo de motivo preenche o texto; a necessidade escolhida
- * mostra o painel de funções (só caminhão, micro-ônibus e cerimonial); cada
- * função vira `funcao_servidor_<id>` no envio; e o botão principal diz se a
+ * para a tela; o modelo de motivo preenche o texto; na necessidade que pede
+ * funções (caminhão, micro-ônibus e cerimonial) cada servidor escolhido ganha
+ * o seletor na própria linha, e a função vira `funcao_servidor_<id>` no envio; e o botão principal diz se a
  * OS está completa. Tudo sem recarregar nem rolar a página. Sem autosave.
  *
  * As listas de ofícios e servidores são o `multi-pick.js`; os destinos, o
@@ -48,8 +48,9 @@
     return Array.prototype.slice.call(form.querySelectorAll('[data-multi-opcao] input[name="' + nome + '"]'));
   }
 
+  // Serve ao multi-pick (servidores) e à lista de escolha (ofícios).
   function marcados(nome) {
-    return opcoesDe(nome).filter(function (caixa) { return caixa.checked; });
+    return Array.prototype.slice.call(form.querySelectorAll('input[name="' + nome + '"]:checked'));
   }
 
   // Marca as caixas e pede ao multi-pick que refaça a lista de escolhidos: um
@@ -137,11 +138,25 @@
   form.addEventListener("change", function (evento) {
     if (evento.target.name === "oficios") aplicarOficios();
   });
-  // O "×" do escolhido desmarca sem disparar `change`: ouve-se o clique.
-  form.addEventListener("click", function (evento) {
-    var remover = evento.target.closest("[data-os-oficios] .multi-pick__remover");
-    if (remover) window.setTimeout(aplicarOficios, 0);
-  });
+
+  // Interruptor dos ofícios, no molde do termo: o `data-expande` do app.js
+  // abre e fecha o painel; desligar desmarca os ofícios, senão eles seguiriam
+  // no envio com o painel fechado.
+  var toggleOficios = form.querySelector("[data-oficio-toggle]");
+  if (toggleOficios) {
+    toggleOficios.addEventListener("click", function () {
+      window.setTimeout(function () {
+        var ligado = toggleOficios.getAttribute("aria-expanded") === "true";
+        toggleOficios.classList.toggle("interruptor--ligado", ligado);
+        var rotulo = toggleOficios.querySelector(".interruptor__rotulo");
+        if (rotulo) rotulo.textContent = ligado ? "Vinculada a ofícios" : "Sem ofício vinculado";
+        if (ligado) return;
+        var desmarcou = false;
+        marcados("oficios").forEach(function (caixa) { caixa.checked = false; desmarcou = true; });
+        if (desmarcou) disparar(form.querySelector('input[name="oficios"]'), "change");
+      }, 0);
+    });
+  }
 
   /* ---- 2. Modelo de motivo → texto ---------------------------------------- */
 
@@ -158,15 +173,12 @@
     });
   }
 
-  /* ---- 3. Necessidade e painel de funções -------------------------------- */
+  /* ---- 3. Necessidade e função de cada servidor ------------------------- */
 
   var funcoes = lerJson("os-funcoes-servidores");
-  var painel = form.querySelector("[data-os-funcoes]");
-  var tituloPainel = painel && painel.querySelector("[data-os-funcoes-titulo]");
-  var segmentos = painel && painel.querySelector("[data-os-funcoes-seg]");
-  var cartoes = painel && painel.querySelector("[data-os-funcoes-cartoes]");
+  var equipe = form.querySelector("[data-os-equipe]");
+  var escolhidos = equipe && equipe.querySelector("[data-multi-escolhidos]");
   var entradas = form.querySelector("[data-os-funcoes-inputs]");
-  var funcaoAtiva = "";
 
   function tipoEscolhido() {
     var marcado = form.querySelector('input[name="tipo_necessidade"]:checked');
@@ -184,57 +196,69 @@
     });
   }
 
-  function montarSegmentos() {
-    if (!segmentos) return;
-    var modos = funcoesDoTipo();
-    if (modos.indexOf(funcaoAtiva) === -1) funcaoAtiva = modos[0] || "";
-    segmentos.textContent = "";
-    modos.forEach(function (modo) {
-      var botao = document.createElement("button");
-      botao.type = "button";
-      botao.dataset.osFuncao = modo;
-      botao.setAttribute("aria-pressed", modo === funcaoAtiva ? "true" : "false");
-      botao.textContent = FUNCOES[modo];
-      segmentos.appendChild(botao);
+  // A linha do escolhido é do multi-pick, que a refaz a cada mudança; aqui
+  // ela só ganha o crachá e, quando o tipo pede, o seletor da função.
+  function decorarLinha(linha, modos, copia) {
+    var id = linha.dataset.valor;
+    if (!id) return;
+    if (!linha.querySelector(".of-av")) {
+      var avatar = document.createElement("span");
+      avatar.className = "of-av";
+      avatar.setAttribute("aria-hidden", "true");
+      avatar.textContent = linha.dataset.iniciais || "—";
+      linha.insertBefore(avatar, linha.firstChild);
+    }
+    var grupo = linha.querySelector("[data-os-funcoes-seg]");
+    // O grupo é reaproveitado enquanto as funções forem as mesmas: é o que
+    // deixa o realce deslizar de uma função para a outra.
+    if (grupo && grupo.dataset.modos !== modos.join(" ")) {
+      grupo.remove();
+      grupo = null;
+    }
+    linha.classList.toggle("os-escolhido--funcao", modos.length > 0);
+    if (!modos.length) return;
+    var novo = !grupo;
+    if (novo) {
+      grupo = document.createElement("div");
+      grupo.className = "os-func-seg sem-anim";
+      grupo.setAttribute("role", "group");
+      grupo.setAttribute("aria-label", (copia ? copia.aria : "Função") + " — " + (linha.querySelector("span:not(.of-av)") || linha).firstChild.textContent);
+      grupo.dataset.osFuncoesSeg = "";
+      grupo.dataset.modos = modos.join(" ");
+      modos.forEach(function (modo) {
+        var botao = document.createElement("button");
+        botao.type = "button";
+        botao.dataset.osFuncao = modo;
+        botao.dataset.osServidor = id;
+        botao.textContent = FUNCOES[modo];
+        grupo.appendChild(botao);
+      });
+      linha.insertBefore(grupo, linha.querySelector(".multi-pick__remover"));
+    }
+    var escolhido = null;
+    grupo.querySelectorAll("[data-os-funcao]").forEach(function (botao) {
+      var ativo = funcoes[id] === botao.dataset.osFuncao;
+      botao.setAttribute("aria-pressed", ativo ? "true" : "false");
+      if (ativo) escolhido = botao;
     });
+    if (escolhido) {
+      grupo.style.setProperty("--x", escolhido.offsetLeft + "px");
+      grupo.style.setProperty("--w", escolhido.offsetWidth + "px");
+    }
+    grupo.classList.toggle("tem-escolha", !!escolhido);
+    // Grupo recém-criado já nasce no lugar; só as trocas seguintes animam.
+    if (novo) window.requestAnimationFrame(function () { grupo.classList.remove("sem-anim"); });
   }
 
-  function cartaoDoServidor(caixa) {
-    var opcao = caixa.closest("[data-multi-opcao]");
-    var id = caixa.value;
-    var funcao = funcoes[id] || "";
-    var cartao = document.createElement("div");
-    cartao.className = "of-membro ofc-pessoa os-func-cartao";
-    cartao.dataset.osServidor = id;
-    cartao.setAttribute("role", "button");
-    cartao.tabIndex = 0;
-    cartao.title = "Clique para definir a função";
-    cartao.classList.toggle("is-atribuido", !!funcao);
-    cartao.classList.toggle("is-ativa", !!funcao && funcao === funcaoAtiva);
-    cartao.setAttribute("aria-pressed", funcao === funcaoAtiva ? "true" : "false");
-    var avatar = document.createElement("span");
-    avatar.className = "of-av";
-    avatar.setAttribute("aria-hidden", "true");
-    avatar.textContent = opcao.dataset.iniciais || "—";
-    var texto = document.createElement("span");
-    texto.className = "of-pessoa__txt";
-    var nome = document.createElement("span");
-    nome.className = "of-pessoa__nome";
-    nome.textContent = opcao.dataset.nome || "";
-    var selo = document.createElement("span");
-    selo.className = "st os-func-selo" + (funcao ? "" : " os-func-selo--vazio");
-    selo.textContent = funcao ? FUNCOES[funcao] : "Sem função - texto padrão";
-    nome.appendChild(selo);
-    texto.appendChild(nome);
-    if (opcao.dataset.detalhes) {
-      var desc = document.createElement("span");
-      desc.className = "of-pessoa__desc";
-      desc.textContent = opcao.dataset.detalhes;
-      texto.appendChild(desc);
-    }
-    cartao.appendChild(avatar);
-    cartao.appendChild(texto);
-    return cartao;
+  var decorando = false;
+  function decorar() {
+    if (!escolhidos || decorando) return;
+    decorando = true;
+    var modos = funcoesDoTipo();
+    var copia = PAINEL_POR_TIPO[tipoEscolhido()];
+    equipe.classList.toggle("os-equipe--funcoes", modos.length > 0);
+    escolhidos.querySelectorAll(".multi-pick__escolhido").forEach(function (linha) { decorarLinha(linha, modos, copia); });
+    decorando = false;
   }
 
   function montarEntradas() {
@@ -254,27 +278,19 @@
 
   function sincronizarFuncoes() {
     marcarCartaoDeTipo();
-    if (!painel) return;
     var modos = funcoesDoTipo();
-    var copia = PAINEL_POR_TIPO[tipoEscolhido()];
-    painel.hidden = !modos.length;
-    if (copia) {
-      if (tituloPainel) tituloPainel.textContent = copia.titulo;
-      if (segmentos) segmentos.setAttribute("aria-label", copia.aria);
-    }
     // Função de servidor que saiu da equipe, ou que não existe neste tipo, cai.
-    var equipe = marcados("servidores").map(function (caixa) { return caixa.value; });
+    var ids = marcados("servidores").map(function (caixa) { return caixa.value; });
     Object.keys(funcoes).forEach(function (id) {
-      if (equipe.indexOf(id) === -1 || (modos.length && modos.indexOf(funcoes[id]) === -1)) delete funcoes[id];
+      if (ids.indexOf(id) === -1 || (modos.length && modos.indexOf(funcoes[id]) === -1)) delete funcoes[id];
     });
-    montarSegmentos();
-    if (cartoes) {
-      cartoes.textContent = "";
-      if (modos.length) {
-        marcados("servidores").forEach(function (caixa) { cartoes.appendChild(cartaoDoServidor(caixa)); });
-      }
-    }
+    decorar();
     montarEntradas();
+  }
+
+  // O multi-pick refaz as linhas ao buscar, marcar e remover: redecora sempre.
+  if (escolhidos && window.MutationObserver) {
+    new MutationObserver(function () { if (!decorando) sincronizarFuncoes(); }).observe(escolhidos, { childList: true });
   }
 
   form.addEventListener("change", function (evento) {
@@ -287,36 +303,14 @@
   form.addEventListener("click", function (evento) {
     var remover = evento.target.closest("[data-os-equipe] .multi-pick__remover");
     if (remover) window.setTimeout(function () { sincronizarFuncoes(); atualizarRotulo(); }, 0);
-  });
-
-  if (painel) {
-    painel.addEventListener("click", function (evento) {
-      var botao = evento.target.closest("[data-os-funcao]");
-      if (botao) {
-        funcaoAtiva = botao.dataset.osFuncao;
-        sincronizarFuncoes();
-        return;
-      }
-      var cartao = evento.target.closest("[data-os-servidor]");
-      if (!cartao) return;
-      atribuir(cartao.dataset.osServidor);
-    });
-    painel.addEventListener("keydown", function (evento) {
-      if (evento.key !== "Enter" && evento.key !== " ") return;
-      var cartao = evento.target.closest("[data-os-servidor]");
-      if (!cartao) return;
-      evento.preventDefault();
-      atribuir(cartao.dataset.osServidor);
-    });
-  }
-
-  // Clicar no cartão aplica a função ativa; clicar de novo a tira.
-  function atribuir(id) {
-    if (!funcaoAtiva) return;
-    if (funcoes[id] === funcaoAtiva) delete funcoes[id];
-    else funcoes[id] = funcaoAtiva;
+    // Clicar numa função a aplica ao servidor da linha; clicar de novo a tira.
+    var botao = evento.target.closest("[data-os-funcao]");
+    if (!botao) return;
+    var id = botao.dataset.osServidor;
+    if (funcoes[id] === botao.dataset.osFuncao) delete funcoes[id];
+    else funcoes[id] = botao.dataset.osFuncao;
     sincronizarFuncoes();
-  }
+  });
 
   /* ---- 4. Rótulo do botão principal -------------------------------------- */
 

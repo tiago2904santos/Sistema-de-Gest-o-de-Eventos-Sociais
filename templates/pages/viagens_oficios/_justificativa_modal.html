@@ -44,7 +44,7 @@
         {# Sem modelos, nada de menu vazio: o campo diz o que falta. #}
         {% include "components/select.html" with name="modelo" label="Modelo de justificativa" opcoes=dados.modelos placeholder="Nenhum modelo cadastrado" desabilitado=True %}
       {% endif %}
-      {% include "components/textarea.html" with name="texto" label="Justificativa" valor=dados.texto_valor erros=dados.erros.texto obrigatorio=True linhas="4" %}
+      {% include "components/textarea.html" with name="texto" label="Justificativa" valor=dados.texto_valor erros=dados.erros.texto obrigatorio=True linhas="3" %}
     </div>
     {{ dados.modelos_texto|json_script:"jt-modelos-texto" }}
     <p class="form-erro" data-cadastro-falha role="alert" hidden></p>

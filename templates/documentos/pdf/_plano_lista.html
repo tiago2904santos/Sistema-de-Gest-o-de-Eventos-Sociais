@@ -1,0 +1,17 @@
+{% load documento_tags %}{% comment %}
+  Seção de lista do Plano de Trabalho (atividades, metas, recursos): no de
+  vários eventos, um grupo por evento — a data e a lista dele, sem se
+  separarem; no de um evento, a lista só. `chave` é o campo do evento.
+{% endcomment %}<section class="doc-plano__bloco">
+  <h2 class="doc-plano__secao">{{ titulo }}</h2>
+  {% if plano.multi %}
+    {% for ev in plano.eventos %}
+      <div class="doc-plano__grupo">
+        <p class="doc-plano__evento">{{ ev.data_header }}:</p>
+        <p class="doc-plano__lista doc-plano__lista--evento">{% if chave == "atividades" %}{{ ev.atividades|linhas }}{% elif chave == "metas" %}{{ ev.metas|linhas }}{% else %}{{ ev.recursos|linhas }}{% endif %}</p>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="doc-plano__lista">{{ texto|linhas }}</p>
+  {% endif %}
+</section>

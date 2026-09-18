@@ -163,7 +163,8 @@ class PrestacaoServidorDiariaOverrideTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Diária ajustada')
         self.assertContains(response, f'ps-{self.ps_b.pk}-diaria_valor_override')
-        self.assertContains(response, 'Diária recebida por este servidor')
+        # A diária do servidor mora no custeio, no lugar da diária do relatório.
+        self.assertContains(response, f'name="ps-{self.ps_b.pk}-diaria_valor_override"')
 
     def test_rt_autosave_salva_override_de_um_servidor_sem_afetar_o_outro(self):
         field_name = f'ps-{self.ps_b.pk}-diaria_valor_override'
@@ -216,8 +217,9 @@ class PrestacaoServidorDiariaOverrideTests(TestCase):
         card = apresentar_prestacao_servidor_card(self.ps_a)
         self.assertEqual(card['downloads_url'], reverse('viagens_prestacoes:prestacao_downloads', args=[self.ps_a.pk]))
         response = self.client.get(reverse('viagens_prestacoes:index'))
-        self.assertContains(response, 'Documentos e downloads')
-        self.assertContains(response, reverse('viagens_prestacoes:documentos_servidor', args=[self.ps_a.pk]))
+        # A lista abre a prestação (etapa 1); os documentos são uma etapa do fluxo.
+        self.assertContains(response, 'Abrir prestação')
+        self.assertContains(response, reverse('viagens_prestacoes:diario_servidor', args=[self.ps_a.pk]))
 
     def test_downloads_lista_origens_e_disponibilidade_por_documento(self):
         DiarioBordo.objects.create(prestacao=self.prestacao)
@@ -341,7 +343,12 @@ class PrestacaoAssinadoUploadTests(TestCase):
             import re
             # Fora o modal de anexar assinado do shell, que existe em toda página.
             self.assertEqual(re.sub(r'<dialog class="an-dialogo"[^>]*data-anexar-dialogo.*?</dialog>', '', documentos.content.decode(), flags=re.S).count('type="file"'), 5)
-            self.assertContains(response, reverse('viagens_prestacoes:documentos_servidor', args=[ps_pk]))
+        # O menu do ofício abre a prestação pelo primeiro servidor; a barra da equipe
+        # nas etapas leva aos outros sem sair delas.
+        primeiro, segundo = [c['servidores'][0]['ps_pk'] for c in response.context['cards']]
+        self.assertContains(response, reverse('viagens_prestacoes:diario_servidor', args=[primeiro]))
+        pagina = self.client.get(reverse('viagens_prestacoes:documentos_servidor', args=[primeiro]))
+        self.assertContains(pagina, reverse('viagens_prestacoes:documentos_servidor', args=[segundo]))
 
 class RelatorioTecnicoDocumentoTests(TestCase):
 
@@ -716,7 +723,10 @@ class PrestacaoPorServidorFluxoTests(TestCase):
         self.assertEqual(len(cards), 2)
         self.assertEqual({c['ps_pk'] for c in cards}, {self.ps_a.pk, self.ps_b.pk})
         self.assertEqual({c['prestacao_pk'] for c in cards}, {self.prestacao.pk})
-        self.assertEqual({c['group_position'] for c in cards}, {'start', 'end'})
+        grupos = response.context['grupos']
+        self.assertEqual(len(grupos), 1)
+        self.assertEqual({c['ps_pk'] for c in grupos[0]['cards']}, {self.ps_a.pk, self.ps_b.pk})
+        self.assertContains(response, f'id="pc-{self.prestacao.pk}-titulo"')
 
     def test_arquivar_apenas_um_servidor_nao_afeta_o_outro(self):
         from viagens_prestacoes import selectors

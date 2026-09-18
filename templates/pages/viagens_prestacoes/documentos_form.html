@@ -1,99 +1,98 @@
-{% extends "pages/viagens_prestacoes/base.html" %}{% load l10n %}
+{% extends "pages/viagens_prestacoes/base.html" %}{% load l10n estaticos %}
 {% comment %}
-  Etapa 3 — Documentos: o número da solicitação e as datas de liberação e
-  saque deste servidor, e os cinco documentos assinados — despacho e ofício
-  (compartilhados pelo ofício; o ofício assinado recebe o carimbo do número
-  de solicitação), comprovante de saque, relatório técnico e diário de bordo.
+  Etapa 3 — Documentos e fechamento, no desenho do diário e do relatório: um
+  cartão só, com um botão de ação (baixar documentos pelo modal da lista, o
+  pacote final e arquivar). Dentro: a solicitação e o prazo de saque numa
+  linha (gravam sozinhos, como na lista); os cinco documentos assinados em
+  linhas — despacho e ofício (do ofício; o ofício assinado recebe o carimbo
+  do número de solicitação), comprovante, relatório técnico e diário de
+  bordo —, cada um com o que já foi anexado e um botão de anexar (escolher o
+  arquivo já envia); e o que falta para o pacote final, só quando falta.
 {% endcomment %}
 {% block pc_salvar_topo %}
   <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn-primaria">{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
 {% endblock %}
 {% block prestacao_conteudo %}
-  <section class="reg" id="solicitacao">
-    <h2 class="reg__t">{% include "components/icon.html" with nome="clipboard" %}Solicitação e liberação das diárias</h2>
-    <form method="post" action="{% url 'viagens_prestacoes:index' %}" id="form-solicitacao" data-autosave data-autosave-url="{{ servidor.solicitacao_autosave_url }}" data-autosave-model="prestacao_servidor" data-autosave-id="{{ ps.pk|unlocalize }}">
-      {% csrf_token %}<input type="hidden" name="action" value="save_solicitacoes"><input type="hidden" name="next" value="{{ request.path }}">
-      <span class="pc-autosave pc-autosave--form" data-autosave-estado aria-live="polite"></span>
-      <div class="g-form g-form--3">
-        {% include "components/input.html" with name=numero_name label="Número da solicitação" valor=ps.numero_solicitacao placeholder="Número da solicitação" autocomplete="off" %}
-        {% include "components/input.html" with name=liberacao_name label="Data de liberação das diárias" tipo="date" valor=liberacao_iso %}
-        {% include "components/input.html" with name=prazo_name label="Prazo limite para saque" tipo="date" valor=prazo_iso %}
+<div class="editor-roteiro pc-diario pc-docs">
+  <section class="section-card reg" id="documentos">
+    <header class="section-card__cabecalho reg__t">
+      <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
+      <div class="section-card__identificacao"><h2 class="section-card__titulo">Documentos e fechamento</h2></div>
+      <div class="section-card__acao">
+        <div class="dd of-menu" data-menu>
+          <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações dos documentos" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
+          <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
+            {% if downloads %}
+              <button type="button" class="dd__i of-item" data-baixar-documentos data-url="{{ url_baixar }}" data-titulo="{{ ps.servidor.nome }} · Ofício {{ prestacao.oficio.numero_formatado }}" data-itens="{{ itens_baixar }}">{% include "components/icon.html" with nome="download" %}<span><b>Baixar documentos</b><small>Escolher documentos, formato e versão</small></span></button>
+            {% else %}
+              <span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="download" %}<span><b>Baixar documentos</b><small>Preencha o diário e o relatório técnico</small></span></span>
+            {% endif %}
+            {% if pendencias %}
+              <span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="document" %}<span><b>Pacote final (PDF)</b><small>Falta o que está indicado no cartão</small></span></span>
+            {% else %}
+              <a class="dd__i of-item" href="{% url 'viagens_prestacoes:consolidado_download' ps.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="document" %}<span><b>Pacote final (PDF)</b><small>Ofício, despacho, relatório, diário e comprovante</small></span></a>
+            {% endif %}
+            <div class="dd__s"></div>
+            <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_arquivar' ps.pk %}" data-confirmar="{% if ps.arquivada %}Desarquivar a prestação?{% else %}Arquivar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+              <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="lock" %}<span><b>{% if ps.arquivada %}Desarquivar{% else %}Arquivar prestação{% endif %}</b><small>{% if ps.arquivada %}Voltar para a lista ativa{% else %}Tirar da lista ativa, mantendo tudo{% endif %}</small></span></button>
+            </form>
+          </div>
+        </div>
       </div>
-      <div class="pc-acoes-linha"><button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="check" %}Salvar solicitação e datas</button></div>
-    </form>
-  </section>
+    </header>
+    <div class="section-card__corpo">
+      {# Solicitação e prazo de saque numa linha, como na lista; gravam sozinhos. #}
+      <form method="post" action="{% url 'viagens_prestacoes:index' %}" id="form-solicitacao" class="pc-docs__solicitacao" data-autosave data-autosave-url="{{ servidor.solicitacao_autosave_url }}" data-autosave-model="prestacao_servidor" data-autosave-id="{{ ps.pk|unlocalize }}">
+        {% csrf_token %}<input type="hidden" name="action" value="save_solicitacoes"><input type="hidden" name="next" value="{{ request.path }}">
+        {% include "components/input.html" with name=numero_name label="Número da solicitação" valor=ps.numero_solicitacao placeholder="0000000" autocomplete="off" %}
+        {% include "components/date_range.html" with name="saque_documentos" start_name=liberacao_name end_name=prazo_name label="Prazo de saque (liberação → prazo limite)" valor_inicio=liberacao_iso valor_fim=prazo_iso erros=None %}
+        <noscript><button type="submit" class="btn--secundaria btn--compacto">Salvar</button></noscript>
+      </form>
 
-  <section class="reg" id="documentos">
-    <h2 class="reg__t">{% include "components/icon.html" with nome="upload" %}Documentos assinados <em>PDF, PNG ou JPEG · até 10 MB</em></h2>
-    <div class="pc-uploads">
-      {% for item in uploads %}
-        <article class="pc-upload" id="doc-{{ item.id }}">
-          <div class="pc-upload__cabeca">
-            <span class="of-av" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
-            <span class="of-pessoa__txt">
-              <span class="of-pessoa__nome">{{ item.titulo }}{% if item.anexos %}<span class="st st--atendido">Anexado</span>{% else %}<span class="st st--pendente">Pendente</span>{% endif %}</span>
-              <span class="of-pessoa__desc">{% if item.id == "despacho" or item.id == "oficio" or item.id == "diario" %}Compartilhado pela equipe do ofício{% else %}Só de {{ ps.servidor.nome }}{% endif %}{% if item.multiplo %} · vários arquivos{% endif %}</span>
-            </span>
-          </div>
-          {% if item.anexos %}
-            <ul class="pc-upload__anexos">
-              {% for anexo in item.anexos %}
-                <li>
-                  <a href="{% url 'viagens_prestacoes:prestacao_documento_conteudo' prestacao.pk anexo.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}{{ anexo.nome_original|default:"Arquivo anexado" }}</a>
-                  <form data-excluir-anexo method="post" action="{% url 'viagens_prestacoes:prestacao_documento_delete' prestacao.pk anexo.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="acao-linha acao-linha--perigo">{% include "components/icon.html" with nome="trash" %}Remover</button></form>
-                </li>
-              {% endfor %}
-            </ul>
-            {% if item.id == "oficio" %}<a class="acao-linha" href="{% url 'viagens_prestacoes:prestacao_carimbo_ajustar' prestacao.pk %}?next={{ request.path|urlencode }}">{% include "components/icon.html" with nome="pencil" %}Ajustar posição do número de solicitação</a>{% endif %}
-          {% endif %}
-          <form method="post" enctype="multipart/form-data" action="{{ item.url }}" class="prestacao-upload" {% if item.multiplo %}data-anexar-multiplos{% endif %}>
-            {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
-            <label class="btn--secundaria btn--compacto pc-upload__escolher" for="upload-{{ item.id }}">{% include "components/icon.html" with nome="upload" %}{% if item.anexos %}{% if item.multiplo %}Anexar mais{% else %}Substituir{% endif %}{% else %}Escolher arquivo{% endif %}</label>
-            <input type="file" name="{{ item.campo }}" {% if item.multiplo %}multiple{% endif %} id="upload-{{ item.id }}" accept=".pdf,.png,.jpg,.jpeg" required class="sr-only" data-arquivo-nome="nome-{{ item.id }}">
-            <span class="pc-upload__nome" id="nome-{{ item.id }}"></span>
-            <button type="submit" class="btn--secundaria btn--compacto"><span class="sr-only">Anexar {{ item.titulo|lower }}</span><span aria-hidden="true">Anexar</span></button>
-          </form>
-        </article>
-      {% endfor %}
+      {# Os documentos assinados: um por linha, com o que já foi anexado e o botão de anexar. #}
+      <ul class="pc-docs__lista" aria-label="Documentos assinados">
+        {% for item in uploads %}
+          <li class="pc-doc{% if item.anexos %} pc-doc--ok{% endif %}" id="doc-{{ item.id }}">
+            <span class="pc-doc__icone" aria-hidden="true">{% if item.anexos %}{% include "components/icon.html" with nome="check" %}{% else %}{% include "components/icon.html" with nome="document" %}{% endif %}</span>
+            <div class="pc-doc__txt">
+              <span class="pc-doc__nome"><b>{{ item.titulo }}</b>{% if item.anexos %}<span class="st st--atendido">Anexado</span>{% else %}<span class="st st--pendente">Pendente</span>{% endif %}</span>
+              {% if item.anexos %}
+                <span class="pc-doc__anexos">
+                  {% for anexo in item.anexos %}
+                    <span class="pc-doc__anexo">
+                      <a href="{% url 'viagens_prestacoes:prestacao_documento_conteudo' prestacao.pk anexo.pk %}" target="_blank" rel="noopener" title="{{ anexo.nome_original|default:'Arquivo anexado' }}">{% include "components/icon.html" with nome="eye" %}<span class="pc-doc__arq">{{ anexo.nome_original|default:"Arquivo anexado" }}</span></a>
+                      <form data-excluir-anexo method="post" action="{% url 'viagens_prestacoes:prestacao_documento_delete' prestacao.pk anexo.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="pc-doc__remover" aria-label="Remover {{ anexo.nome_original|default:'arquivo' }}" title="Remover">{% include "components/icon.html" with nome="x" %}</button></form>
+                    </span>
+                  {% endfor %}
+                  {% if item.id == "oficio" %}<a class="pc-doc__ajuste" href="{% url 'viagens_prestacoes:prestacao_carimbo_ajustar' prestacao.pk %}?next={{ request.path|urlencode }}">{% include "components/icon.html" with nome="pencil" %}Ajustar posição do número</a>{% endif %}
+                </span>
+              {% endif %}
+            </div>
+            <form method="post" enctype="multipart/form-data" action="{{ item.url }}" class="prestacao-upload" data-anexar-cartao>
+              {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+              <label class="btn--secundaria btn--compacto btn--com-icone">
+                {% include "components/icon.html" with nome="upload" %}{% if item.anexos %}{% if item.multiplo %}Anexar mais{% else %}Substituir{% endif %}{% else %}Anexar{% endif %}
+                <input type="file" name="{{ item.campo }}" {% if item.multiplo %}multiple{% endif %} accept=".pdf,.png,.jpg,.jpeg" class="sr-only" aria-label="{{ item.titulo }}: escolher arquivo">
+              </label>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="pc-docs__nota">PDF, PNG ou JPEG, até 10 MB. Escolher o arquivo já anexa.</p>
+
+      {% if pendencias %}
+        <div class="pc-docs__falta" role="status">
+          <b>{% include "components/icon.html" with nome="alert" %}Falta para o pacote final</b>
+          <ul>{% for p in pendencias %}<li>{{ p }}</li>{% endfor %}</ul>
+        </div>
+      {% endif %}
+
+      <div class="frm-acoes-fim">
+        <a class="btn--secundaria" href="{{ rt_url }}">Voltar ao relatório</a>
+        <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn-primaria">{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
+      </div>
     </div>
   </section>
-  <section class="reg" id="pacote">
-    <h2 class="reg__t">{% include "components/icon.html" with nome="document-plus" %}Pacote final e fechamento</h2>
-    <p class="pc-nota">O PDF reúne: ofício, despacho, relatório técnico, diário de bordo e comprovantes.</p>
-    {% if pendencias %}
-      <div class="aviso aviso--callout" role="status"><div class="aviso__txt">{% include "components/icon.html" with nome="alert" %}<div class="aviso__corpo"><b>Falta para fechar o PDF final</b><ul class="pc-pendencias">{% for p in pendencias %}<li>{{ p }}</li>{% endfor %}</ul></div></div></div>
-    {% else %}
-      <p class="aviso aviso--ok">{% include "components/icon.html" with nome="check-circle" %}<span>Tudo pronto: o pacote de <strong>{{ ps.servidor.nome }}</strong> pode ser gerado.</span></p>
-      <div class="pc-acoes-linha"><a class="btn-primaria" href="{% url 'viagens_prestacoes:consolidado_download' ps.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="download" %}Baixar pacote (PDF final)</a></div>
-    {% endif %}
-  </section>
-
-  <section class="reg" id="downloads">
-    <h2 class="reg__t">{% include "components/icon.html" with nome="download" %}Documentos de {{ ps.servidor.nome }}</h2>
-    <div class="pc-uploads">
-      {% for item in downloads %}
-        <article class="pc-upload">
-          <div class="pc-upload__cabeca">
-            <span class="of-av" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
-            <span class="of-pessoa__txt"><span class="of-pessoa__nome">{{ item.titulo }}</span><span class="of-pessoa__desc">{{ item.subtitulo }}</span></span>
-          </div>
-          <div class="pc-download__versoes">
-            {% for formato, url in item.versoes.original.items %}<a class="pc-download__versao" href="{{ url }}">Original · {{ formato|upper }}</a>{% endfor %}
-            {% for formato, url in item.versoes.assinado.items %}<a class="pc-download__versao pc-download__versao--assinado" href="{{ url }}">{% include "components/icon.html" with nome="check" %}Assinado · {{ formato|upper }}</a>{% endfor %}
-          </div>
-        </article>
-      {% empty %}
-        <p class="texto-vazio">Nenhum documento disponível ainda. Preencha o diário de bordo e o relatório técnico.</p>
-      {% endfor %}
-    </div>
-
-    {# Ações no fim do último cartão da etapa, como no roteiro. #}
-    <div class="frm-acoes-fim">
-      <a class="btn--secundaria" href="{{ rt_url }}">Voltar ao RT</a>
-      <span class="frm-acoes-fim__dir">
-        <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_arquivar' ps.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="lock" %}{% if ps.arquivada %}Desarquivar{% else %}Arquivar prestação{% endif %}</button></form>
-        <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check-circle" %}{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
-      </span>
-    </div>
-  </section>
+</div>
 {% endblock %}
+{% block pc_js %}{% include "components/v32/dialogo_baixar.html" %}{% endblock %}

@@ -87,8 +87,12 @@ def diario_criar(request, pc_pk):
     return _redirect_primeiro_servidor(request, prestacao, "viagens_prestacoes:diario_servidor")
 
 
-def diario_servidor(request, ps_pk):
-    """Etapa 1 do wizard: diário compartilhado; navegação por servidor."""
+def diario_servidor(request, ps_pk, motorista_form=None):
+    """Etapa 1 do wizard: diário compartilhado; navegação por servidor.
+
+    A troca de motorista/viatura é um modal desta tela. `motorista_form` chega
+    quando o envio do modal volta com erro: a tela abre com o modal aberto.
+    """
     ps = _prestacao_servidor_full(ps_pk)
     prestacao = ps.prestacao
 
@@ -101,7 +105,7 @@ def diario_servidor(request, ps_pk):
         "trecho__destino_municipio__estado",
     ).order_by("ordem", "pk")
 
-    if request.method == "POST":
+    if request.method == "POST" and motorista_form is None:
         formset = DiarioBordoTrechoFormSet(request.POST, queryset=queryset)
         if formset.is_valid():
             salvar_linhas_do_diario(formset, ps)
@@ -146,6 +150,9 @@ def diario_servidor(request, ps_pk):
             "preview_inline_url": reverse("viagens_prestacoes:diario_download_formato", args=[diario.pk, "pdf"]) + "?inline=1",
             "preview_pdf_url": reverse("viagens_prestacoes:diario_download_formato", args=[diario.pk, "pdf"]),
             "preview_xlsx_url": reverse("viagens_prestacoes:diario_download_formato", args=[diario.pk, "xlsx"]),
+            # O modal "Trocar motorista / viatura" (o mesmo formulário da página própria).
+            **_contexto_motorista(ps, prestacao, diario, motorista_form or DiarioMotoristaForm(instance=diario, oficio=prestacao.oficio)),
+            "abrir_modal_motorista": motorista_form is not None,
         },
     )
 
@@ -285,8 +292,45 @@ def diario_motorista(request, pc_pk):
     return _redirect_primeiro_servidor(request, prestacao, "viagens_prestacoes:diario_servidor_motorista")
 
 
+def _contexto_motorista(ps, prestacao, diario, form):
+    """O que o formulário de motorista/viatura mostra — no modal do diário e na página própria."""
+    from viagens_cadastros.models import Viatura
+    from .view_common import opcoes
+
+    oficio_nome, oficio_cpf = motorista_do_oficio(prestacao.oficio)
+    oficios_prefill = [_oficio_prefill_dados(o) for o in oficios_para_prefill_de_motorista(prestacao.oficio)]
+    viatura_oficio = viatura_resumo_oficio(prestacao.oficio)
+    valor = lambda nome: (str(getattr(form[nome].value(), "pk", form[nome].value())) if form[nome].value() not in (None, "") else "")
+    return {
+        "form": form,
+        "url_motorista": reverse("viagens_prestacoes:diario_servidor_motorista", args=[ps.pk]),
+        "motorista_oficio_nome": oficio_nome or "—",
+        "motorista_oficio_cpf": oficio_cpf,
+        "motorista_oficio_sufixo_cpf": f" · CPF {oficio_cpf}" if oficio_cpf else "",
+        "viatura_oficio": viatura_oficio,
+        "viatura_oficio_sufixo_placa": (f" · {viatura_oficio['placa']}" if viatura_oficio.get("placa") else ""),
+        "oficios_prefill": oficios_prefill,
+        "opcoes_prefill": [{"valor": o["id"], "rotulo": o["label"]} for o in oficios_prefill],
+        # Blocos próprios da tela (sem laço genérico): as opções de cada seletor e os valores atuais.
+        "valores": {n: valor(n) for n in form.fields},
+        "erros": {n: form.errors.get(n) for n in form.fields},
+        "opcoes_motorista_modo": opcoes(DiarioBordo.MOTORISTA_MODO_CHOICES),
+        "opcoes_viatura_modo": opcoes(DiarioBordo.VIATURA_MODO_CHOICES),
+        "opcoes_servidores": [{"valor": str(s.pk), "rotulo": s.nome} for s in form.fields["motorista_servidor"].queryset],
+        "opcoes_viaturas": [{"valor": str(v.pk), "rotulo": f"{v.placa_formatada} — {v.modelo}" if v.modelo else v.placa_formatada} for v in form.fields["viatura"].queryset],
+        "opcoes_tipos": opcoes(Viatura.Tipo.choices),
+        "modo_motorista": valor("motorista_modo") or DiarioBordo.MOTORISTA_MODO_OFICIO,
+        "modo_viatura": valor("viatura_modo") or DiarioBordo.VIATURA_MODO_OFICIO,
+    }
+
+
 def diario_servidor_motorista(request, ps_pk):
-    """Etapa 2 — troca o motorista/viatura apenas deste diário, sem alterar o ofício."""
+    """Troca o motorista/viatura apenas deste diário, sem alterar o ofício.
+
+    Na tela, é o modal do diário: o envio grava e volta ao diário; com erro, o
+    diário reabre com o modal aberto e os campos marcados. O GET continua
+    servindo a página própria (link direto e quem não tem JavaScript).
+    """
     ps = get_object_or_404(
         _prestacao_servidor_queryset()
         .select_related("prestacao__oficio", "prestacao__oficio__viatura")
@@ -306,24 +350,9 @@ def diario_servidor_motorista(request, ps_pk):
             trocar_motorista_do_diario(form, prestacao, ps)
             messages.success(request, "Diário de bordo atualizado (motorista/viatura).")
             return redirect(diario_url)
-    else:
-        form = DiarioMotoristaForm(instance=diario, oficio=prestacao.oficio)
+        return diario_servidor(request, ps.pk, motorista_form=form)
 
-    oficio_nome, oficio_cpf = motorista_do_oficio(prestacao.oficio)
-
-    oficios_prefill = [
-        _oficio_prefill_dados(o)
-        for o in oficios_para_prefill_de_motorista(prestacao.oficio)
-    ]
-    oficios_prefill_options = [
-        {"value": "", "label": "Selecione um ofício…"},
-        *({"value": o["id"], "label": o["label"]} for o in oficios_prefill),
-    ]
-
-    viatura_oficio = viatura_resumo_oficio(prestacao.oficio)
-    from viagens_cadastros.models import Viatura
-    from .view_common import opcoes
-    valor = lambda nome: (str(getattr(form[nome].value(), "pk", form[nome].value())) if form[nome].value() not in (None, "") else "")
+    form = DiarioMotoristaForm(instance=diario, oficio=prestacao.oficio)
     return render(
         request,
         "pages/viagens_prestacoes/diario_motorista_form.html",
@@ -332,39 +361,11 @@ def diario_servidor_motorista(request, ps_pk):
             "prestacao": prestacao,
             "ps": ps,
             "diario": diario,
-            "form": form,
             "identificacao": _build_identificacao(prestacao),
-            **contexto_do_fluxo(
-                ps, "diario", back_label="Voltar ao diário", back_url=diario_url
-            ),
+            **contexto_do_fluxo(ps, "diario", back_label="Voltar ao diário", back_url=diario_url),
             "back_url": reverse("viagens_prestacoes:index"),
-            "motorista_oficio_nome": oficio_nome or "—",
-            "motorista_oficio_cpf": oficio_cpf,
-            # A dica do cartão de escolha é UMA frase, montada aqui.
-            #
-            # O template a compunha com `{% if %}` no meio do texto; o
-            # `c-v2.choice_card` recebe a dica pronta, e em atributo de
-            # componente Cotton não se pode compor — `:hint="a|add:b"` é busca de
-            # variável, não expressão, e chegaria vazio (contrato guardado por
-            # `AtributoDinamicoSemFiltroTests`).
-            "motorista_oficio_sufixo_cpf": f" · CPF {oficio_cpf}" if oficio_cpf else "",
-            "viatura_oficio": viatura_oficio,
-            "viatura_oficio_sufixo_placa": (
-                f" · {viatura_oficio['placa']}" if viatura_oficio.get("placa") else ""
-            ),
-            "oficios_prefill": oficios_prefill,
-            "oficios_prefill_options": oficios_prefill_options,
             "diario_url": diario_url,
-            # Blocos próprios da tela (sem laço genérico): as opções de cada seletor e os valores atuais.
-            "valores": {n: valor(n) for n in form.fields},
-            "erros": {n: form.errors.get(n) for n in form.fields},
-            "opcoes_motorista_modo": opcoes(DiarioBordo.MOTORISTA_MODO_CHOICES),
-            "opcoes_viatura_modo": opcoes(DiarioBordo.VIATURA_MODO_CHOICES),
-            "opcoes_servidores": [{"valor": str(s.pk), "rotulo": s.nome} for s in form.fields["motorista_servidor"].queryset],
-            "opcoes_viaturas": [{"valor": str(v.pk), "rotulo": f"{v.placa_formatada} — {v.modelo}" if v.modelo else v.placa_formatada} for v in form.fields["viatura"].queryset],
-            "opcoes_tipos": opcoes(Viatura.Tipo.choices),
-            "modo_motorista": valor("motorista_modo") or DiarioBordo.MOTORISTA_MODO_OFICIO,
-            "modo_viatura": valor("viatura_modo") or DiarioBordo.VIATURA_MODO_OFICIO,
+            **_contexto_motorista(ps, prestacao, diario, form),
         },
     )
 

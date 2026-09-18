@@ -4,9 +4,8 @@
   baixar, anexar assinado, editar e excluir, e o botão flutuante "Novo termo"
   já preso à viagem. Contexto: `termos` (linhas do presenter de termos).
 {% endcomment %}
-<section class="section-card reg vg-etapa">
-  <div class="section-card__corpo section-card__corpo--tabela">
-    <div class="dt-w cad-lista vg-tabela" tabindex="0" role="region" aria-label="Termos da viagem">
+<div class="pa-card pa-card--lista cad-lista vg-lista">
+  <div class="dt-w" tabindex="0" role="region" aria-label="Termos da viagem">
       <table class="dt dt--responsiva">
         <thead>
           <tr>
@@ -30,9 +29,8 @@
           {% endfor %}
         </tbody>
       </table>
-    </div>
   </div>
-</section>
+</div>
 {% if pode_editar and not viagem.cancelado and url_novo_termo %}
   <a class="btn-primaria btn-flutuante" href="{{ url_novo_termo }}">{% include "components/icon.html" with nome="plus" %}Novo termo</a>
 {% endif %}

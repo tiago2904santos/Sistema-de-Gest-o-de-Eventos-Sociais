@@ -1,49 +1,35 @@
 {% comment %}
-  O cartão de resumo de um evento gravado do plano de vários eventos — o
-  `resumo_evento_card` da origem: "Evento N de T", o número do plano com o
-  destino, a data por extenso com horário e programa, e os três assuntos
-  (coordenação, efetivo e diárias/atividades). Editar e Remover são
-  `formaction` do formulário do plano: o cartão vive dentro dele, e o que
-  está na tela é gravado antes de trocar de evento.
+  O resumo de um evento gravado do plano de vários eventos, em duas linhas:
+  o destino com a data e o horário, e embaixo os fatos que servem para
+  conferir — programa, coordenação, efetivo, valor com a composição das
+  diárias e quantas atividades. O detalhe (cargos, efetivo por cargo, nomes
+  das atividades) fica no `title` de cada fato: aparece ao passar o mouse,
+  sem ocupar a tela. Editar e Remover são `formaction` do formulário do
+  plano: o cartão vive dentro dele, e o que está na tela é gravado antes de
+  trocar de evento.
 
   Contexto: `ev`, `numero`, `coordenador_adm_nome`, `coordenador_adm_cargo`,
   `total_eventos`, `pode_editar`.
 {% endcomment %}
-<article class="pt-evento" aria-label="Evento {{ ev.ordem }} do plano">
-  <header class="pt-evento__cabeca">
-    <div>
-      <span class="pt-evento__kicker">Evento {{ ev.ordem }}{% if total_eventos %} de {{ total_eventos }}{% endif %}</span>
-      <h3 class="pt-evento__titulo">Nº {{ numero }} · {{ ev.destino }}</h3>
-      <p class="pt-evento__meta">{{ ev.data_evento_extenso|upper }} · {{ ev.horario }} · {{ ev.programa }}</p>
-    </div>
-    {% if pode_editar %}
-      <div class="pt-evento__acoes">
-        <button type="submit" class="ib-linha" formaction="{{ ev.editar_url }}" formnovalidate aria-label="Editar evento" title="Editar evento">{% include "components/icon.html" with nome="pencil" %}</button>
-        <button type="submit" class="ib-linha pt-evento__remover" formaction="{{ ev.excluir_url }}" formnovalidate data-pt-evento-remover data-confirmar="Remover este evento do plano?" aria-label="Remover evento" title="Remover evento">{% include "components/icon.html" with nome="trash" %}</button>
-      </div>
-    {% endif %}
-  </header>
-  <div class="pt-evento__corpo">
-    <dl class="pt-evento__bloco" aria-label="Coordenação do evento">
-      <div><dt>Solicitante</dt><dd>{{ ev.programa }}</dd></div>
-      <div><dt>Coordenador administrativo</dt><dd>{{ coordenador_adm_nome }}{% if coordenador_adm_cargo %} <small>{{ coordenador_adm_cargo }}</small>{% endif %}</dd></div>
-      {% if ev.coordenador_op_presente %}<div><dt>Coordenador operacional</dt><dd>{{ ev.coordenador_op }}{% if ev.coordenador_op_cargo %} <small>{{ ev.coordenador_op_cargo }}</small>{% endif %}</dd></div>{% endif %}
-    </dl>
-    <div class="pt-evento__bloco" aria-label="Efetivo do evento">
-      <dl><div><dt>Efetivo</dt><dd>{{ ev.efetivo_total }} servidor(es)</dd></div></dl>
-      <ul class="pt-evento__chips">
-        {% for it in ev.efetivo_itens %}<li class="st st--em_andamento">{{ it.quantidade }} · {{ it.cargo }}{% if it.unidade %} · {{ it.unidade }}{% endif %}</li>{% empty %}<li class="st st--neutro">Nenhum efetivo informado</li>{% endfor %}
-      </ul>
-    </div>
-    <div class="pt-evento__bloco" aria-label="Diárias e atividades do evento">
-      <dl>
-        <div><dt>Valor total</dt><dd><strong>{{ ev.valor_total_display }}</strong></dd></div>
-        <div><dt>Quantidade de diárias</dt><dd><strong>{{ ev.diarias_composicao }}</strong></dd></div>
-        <div><dt>Atividades</dt><dd>{{ ev.atividades_count }} selecionada(s)</dd></div>
-      </dl>
-      <ul class="pt-evento__atividades" aria-label="Atividades selecionadas">
-        {% for nome in ev.atividades %}<li>{{ nome }}</li>{% empty %}<li>Nenhuma atividade selecionada</li>{% endfor %}
-      </ul>
-    </div>
+<article class="pt-evento" aria-label="Evento {{ ev.ordem }}{% if total_eventos %} de {{ total_eventos }}{% endif %} do plano {{ numero }}">
+  <span class="pt-evento__ordem" aria-hidden="true">{{ ev.ordem }}</span>
+  <div class="pt-evento__texto">
+    <p class="pt-evento__linha">
+      <strong class="pt-evento__destino">{{ ev.destino }}</strong>
+      <span class="pt-evento__quando">{{ ev.data_evento_extenso }}{% if ev.horario %} · {{ ev.horario }}{% endif %}</span>
+    </p>
+    <ul class="pt-evento__fatos">
+      {% if ev.programa %}<li title="Solicitante">{% include "components/icon.html" with nome="landmark" %}{{ ev.programa }}</li>{% endif %}
+      <li title="Coordenador administrativo{% if coordenador_adm_cargo %}: {{ coordenador_adm_cargo }}{% endif %}{% if ev.coordenador_op_presente %} · Coordenador operacional: {{ ev.coordenador_op }}{% if ev.coordenador_op_cargo %} ({{ ev.coordenador_op_cargo }}){% endif %}{% endif %}">{% include "components/icon.html" with nome="user" %}{{ coordenador_adm_nome|default:"Sem coordenador" }}{% if ev.coordenador_op_presente %} e {{ ev.coordenador_op }}{% endif %}</li>
+      <li title="{% for it in ev.efetivo_itens %}{{ it.quantidade }} {{ it.cargo }}{% if it.unidade %} ({{ it.unidade }}){% endif %}{% if not forloop.last %} · {% endif %}{% empty %}Nenhum efetivo informado{% endfor %}">{% include "components/icon.html" with nome="users" %}{{ ev.efetivo_total }} servidor{{ ev.efetivo_total|pluralize:"es" }}</li>
+      <li title="Quantidade de diárias: {{ ev.diarias_composicao|default:'—' }}">{% include "components/icon.html" with nome="chart" %}<b>{{ ev.valor_total_display|default:"—" }}</b>{% if ev.diarias_composicao %} · {{ ev.diarias_composicao }}{% endif %}</li>
+      <li title="{% for nome in ev.atividades %}{{ nome }}{% if not forloop.last %} · {% endif %}{% empty %}Nenhuma atividade selecionada{% endfor %}">{% include "components/icon.html" with nome="checklist" %}{{ ev.atividades_count }} atividade{{ ev.atividades_count|pluralize }}</li>
+    </ul>
   </div>
+  {% if pode_editar %}
+    <div class="pt-evento__acoes">
+      <button type="submit" class="ib-linha" formaction="{{ ev.editar_url }}" formnovalidate aria-label="Editar evento" title="Editar evento">{% include "components/icon.html" with nome="pencil" %}</button>
+      <button type="submit" class="ib-linha pt-evento__remover" formaction="{{ ev.excluir_url }}" formnovalidate data-pt-evento-remover data-confirmar="Remover este evento do plano?" aria-label="Remover evento" title="Remover evento">{% include "components/icon.html" with nome="trash" %}</button>
+    </div>
+  {% endif %}
 </article>

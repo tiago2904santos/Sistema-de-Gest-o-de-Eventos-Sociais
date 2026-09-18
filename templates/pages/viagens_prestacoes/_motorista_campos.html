@@ -1,0 +1,50 @@
+{% comment %}
+  Os campos da troca de motorista e viatura só neste diário — o ofício não
+  muda. Usado no modal do diário e na página própria. Três modos para o
+  motorista (manter o do ofício, outro servidor deste ofício, motorista de
+  outro ofício) e três para a viatura (manter, do cadastro, manual), mais o
+  preenchimento a partir de outro ofício (`#dmv-oficios-source`, lido pelo
+  viagens-prestacoes.js). Contexto: o de `diario_views._contexto_motorista`.
+{% endcomment %}
+{{ oficios_prefill|json_script:"dmv-oficios-source" }}
+{% if form.errors %}
+  <div class="aviso aviso--erro" role="alert" tabindex="-1">{% include "components/icon.html" with nome="info" %}<div><b>Não foi possível salvar</b>Revise os campos indicados.<ul class="aviso--erro__lista">{% for campo, mensagens in form.errors.items %}{% for m in mensagens %}<li>{{ m }}</li>{% endfor %}{% endfor %}</ul></div></div>
+{% endif %}
+<div class="pc-mv">
+  <div class="pc-mv__grupo">
+    <h3 class="pc-mv__titulo">Preencher a partir de outro ofício</h3>
+    {% include "components/select.html" with name="dmv_oficio" label="Ofício de origem" opcoes=opcoes_prefill pesquisavel=True placeholder="Buscar ofício por número ou motorista..." permitir_vazio=True erros=None %}
+  </div>
+
+  <div class="pc-mv__grupo" data-modo-grupo="motorista_modo">
+    <h3 class="pc-mv__titulo">Motorista <small>No ofício: {{ motorista_oficio_nome }}{{ motorista_oficio_sufixo_cpf }}</small></h3>
+    {% include "components/select.html" with name="motorista_modo" label="Quem dirigiu" opcoes=opcoes_motorista_modo selecionado=modo_motorista erros=erros.motorista_modo sem_vazio=True %}
+    <div class="pc-modo" data-modo-quando="SERVIDOR" hidden>
+      {% include "components/select.html" with name="motorista_servidor" label="Servidor do ofício" opcoes=opcoes_servidores pesquisavel=True placeholder="Buscar servidor..." permitir_vazio=True selecionado=valores.motorista_servidor erros=erros.motorista_servidor %}
+    </div>
+    <div class="pc-modo" data-modo-quando="OUTRO_OFICIO" hidden>
+      <div class="g-form g-form--2">
+        {% include "components/input.html" with name="motorista_manual_nome" label="Nome do motorista" valor=valores.motorista_manual_nome placeholder="Nome do motorista" autocomplete="off" erros=erros.motorista_manual_nome %}
+        {% include "components/input.html" with name="motorista_manual_cpf" label="CPF" valor=valores.motorista_manual_cpf placeholder="000.000.000-00" inputmode="numeric" mascara_cadastro="cpf" autocomplete="off" erros=erros.motorista_manual_cpf %}
+        {% include "components/input.html" with name="motorista_oficio_referencia" label="Ofício do motorista" valor=valores.motorista_oficio_referencia placeholder="15/2026" autocomplete="off" erros=erros.motorista_oficio_referencia %}
+        {% include "components/input.html" with name="motorista_protocolo_ref" label="Protocolo do motorista" valor=valores.motorista_protocolo_ref placeholder="00.000.000-0" inputmode="numeric" mascara_cadastro="protocolo" autocomplete="off" erros=erros.motorista_protocolo_ref %}
+      </div>
+    </div>
+  </div>
+
+  <div class="pc-mv__grupo" data-modo-grupo="viatura_modo">
+    <h3 class="pc-mv__titulo">Viatura <small>No ofício: {{ viatura_oficio.viatura }}{{ viatura_oficio_sufixo_placa }}</small></h3>
+    {% include "components/select.html" with name="viatura_modo" label="Qual viatura foi usada" opcoes=opcoes_viatura_modo selecionado=modo_viatura erros=erros.viatura_modo sem_vazio=True %}
+    <div class="pc-modo" data-modo-quando="BANCO" hidden>
+      {% include "components/select.html" with name="viatura" label="Viatura do cadastro" opcoes=opcoes_viaturas pesquisavel=True placeholder="Buscar por placa ou modelo..." permitir_vazio=True selecionado=valores.viatura erros=erros.viatura %}
+    </div>
+    <div class="pc-modo" data-modo-quando="MANUAL" hidden>
+      <div class="g-form g-form--2">
+        {% include "components/input.html" with name="viatura_manual_modelo" label="Modelo" valor=valores.viatura_manual_modelo placeholder="Ex.: Onix" autocomplete="off" erros=erros.viatura_manual_modelo %}
+        {% include "components/input.html" with name="viatura_manual_placa" label="Placa" valor=valores.viatura_manual_placa placeholder="ABC-1D23" mascara_cadastro="placa" uppercase=True autocomplete="off" erros=erros.viatura_manual_placa %}
+        {% include "components/select.html" with name="viatura_manual_tipo" label="Tipo" opcoes=opcoes_tipos permitir_vazio=True selecionado=valores.viatura_manual_tipo erros=erros.viatura_manual_tipo %}
+        {% include "components/input.html" with name="viatura_manual_combustivel" label="Combustível" valor=valores.viatura_manual_combustivel placeholder="Ex.: Gasolina" autocomplete="off" erros=erros.viatura_manual_combustivel %}
+      </div>
+    </div>
+  </div>
+</div>

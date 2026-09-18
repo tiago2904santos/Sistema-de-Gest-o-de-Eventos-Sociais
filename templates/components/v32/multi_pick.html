@@ -14,6 +14,8 @@
     no navegador (ex.: a unidade de um servidor).
   `vazio_escolhidos`: texto do cartão pontilhado que ocupa o lugar da lista
     enquanto nada foi escolhido. Some sozinho com o primeiro escolhido.
+  `chips`: os escolhidos viram etiquetas dentro do próprio campo, antes da
+    busca, em vez de linhas abaixo dele (ex.: o tipo da viagem).
   `sentinela`: envia um campo oculto `<name>__enviado` — sem ele, "desmarquei
     todos" e "não enviei o campo" chegam iguais ao servidor. Formulários que
     gravam o conjunto inteiro a cada envio (ModelForm) não precisam.
@@ -21,7 +23,8 @@
 <div class="form-campo{% if largura %} form-campo--{{ largura }}{% endif %} multi-pick">
   <label class="form-label{% if rotulo_oculto %} sr-only{% endif %}" id="id_{{ name }}_label" for="id_{{ name }}_busca">{{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}</label>
   {% if sentinela %}<input type="hidden" name="{{ name }}__enviado" value="1">{% endif %}
-  <div class="form-controle-wrapper form-controle-wrapper--select custom-select custom-select--pesquisavel{% if erros %} is-invalid{% endif %}" data-multi-pick>
+  <div class="form-controle-wrapper form-controle-wrapper--select custom-select custom-select--pesquisavel{% if chips %} multi-pick--chips{% endif %}{% if erros %} is-invalid{% endif %}" data-multi-pick{% if chips %} data-multi-chips{% endif %}>
+    {% if chips %}<ul class="multi-pick__escolhidos" data-multi-escolhidos aria-live="polite"></ul>{% endif %}
     <input class="form-controle custom-select__trigger custom-select__combobox" type="text"
            id="id_{{ name }}_busca" data-multi-busca autocomplete="off" spellcheck="false"
            role="combobox" aria-expanded="false" aria-autocomplete="list"
@@ -44,8 +47,8 @@
       </div>
     </div>
   </div>
-  <ul class="multi-pick__escolhidos" data-multi-escolhidos aria-live="polite"></ul>
-  {% if vazio_escolhidos %}<p class="lista-vazia">{% include "components/icon.html" with nome=icone_vazio|default:"users" %}<span>{{ vazio_escolhidos }}</span></p>{% endif %}
+  {% if not chips %}<ul class="multi-pick__escolhidos" data-multi-escolhidos aria-live="polite"></ul>{% endif %}
+  {% if vazio_escolhidos and not chips %}<p class="lista-vazia">{% include "components/icon.html" with nome=icone_vazio|default:"users" %}<span>{{ vazio_escolhidos }}</span></p>{% endif %}
   {% for erro in erros %}<p class="form-erro"{% if forloop.first %} id="id_{{ name }}_erro"{% endif %}>{{ erro }}</p>{% endfor %}
   {% if ajuda %}<p class="form-ajuda" id="id_{{ name }}_ajuda">{{ ajuda }}</p>{% endif %}
 </div>

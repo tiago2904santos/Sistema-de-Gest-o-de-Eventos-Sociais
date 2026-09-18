@@ -34,24 +34,62 @@ def index(request):
         return _redirect_lista(request)
     filtros = {k: request.GET.get(k) or None for k in ("q", "status", "viagem_de", "viagem_ate", "sort")}
     from .cartoes import SITUACOES, cartao_da_lista
-    from .presenters import get_configuracao_sistema, marcar_agrupamento_cards
+    from .presenters import get_configuracao_sistema
     from .selectors import normalizar_abas
     from core.retorno import daqui
     from viagens_cadastros.permissions import pode_editar_cadastros
     abas = normalizar_abas(request.GET.getlist("aba")) if request.GET.getlist("aba") else []
     itens = listar_prestacoes(**filtros, aba=abas)
-    paginator = Paginator(itens, ITENS_POR_PAGINA)
+    # A lista agrupa os servidores do mesmo ofício numa linha só: a página é de
+    # prestações (ofícios), não de servidores, para a equipe nunca se partir
+    # entre duas páginas. A ordem é a da consulta.
+    ordem = list(itens.values_list("pk", "prestacao_id"))
+    paginator = Paginator(list(dict.fromkeys(p for _, p in ordem)), ITENS_POR_PAGINA)
     pagina = paginator.get_page(request.GET.get("page"))
+    da_pagina = set(pagina.object_list)
+    ids = [pk for pk, prestacao in ordem if prestacao in da_pagina]
+    por_pk = {ps.pk: ps for ps in itens.filter(pk__in=ids)}
     contagem = contar_por_aba(**{k:v for k,v in filtros.items() if k != "sort"})
     rotulos = dict(SITUACOES)
     vazias = {"nao_liberadas": "Nenhum servidor com diárias pendentes de liberação.", "liberadas": "Nenhum servidor com diárias já liberadas.", "arquivados": "Nenhuma prestação de servidor arquivada.", "finalizados": "Nenhuma prestação de servidor finalizada ainda."}
     configuracao = get_configuracao_sistema()
-    cards = marcar_agrupamento_cards([cartao_da_lista(ps, configuracao=configuracao) for ps in pagina])
+    cards = [cartao_da_lista(por_pk[pk], configuracao=configuracao) for pk in ids]
+    grupos = {}
+    for card in cards:
+        grupo = grupos.setdefault(card["prestacao_pk"], {
+            "prestacao_pk": card["prestacao_pk"], "oficio": card["oficio"], "cards": [],
+            # O valor do ofício por servidor (diárias do roteiro ÷ servidores) e a composição.
+            "valor_por_servidor": card["valor_diarias_display"], "quantidade_diarias": card["quantidade_diarias_display"],
+            "oficio_url": reverse("viagens_oficios:editar", args=[por_pk[card["ps_pk"]].prestacao.oficio_id]),
+            "acoes_url": {a: reverse("viagens_prestacoes:prestacao_equipe_acao", args=[card["prestacao_pk"], a])
+                          for a in ("finalizar", "reabrir", "arquivar", "desarquivar")},
+        })
+        grupo["cards"].append(card)
+    for grupo in grupos.values():
+        grupo["todos_finalizados"] = all(c["finalizada"] for c in grupo["cards"])
+        grupo["todos_arquivados"] = all(c["arquivada"] for c in grupo["cards"])
+    grupos = [grupos[p] for p in pagina.object_list if p in grupos]
     parametros = request.GET.copy()
     parametros.pop("page", None)
+
+    # A trilha de situações, no padrão das outras listas: "Todas" e uma por aba.
+    def url_da_aba(aba=None):
+        destino = parametros.copy()
+        destino.pop("aba", None)
+        if aba:
+            destino["aba"] = aba
+        return "?" + destino.urlencode()
+
+    icones = {"nao_liberadas": "hourglass", "liberadas": "check-circle", "arquivados": "lock", "finalizados": "checklist"}
+    total = listar_prestacoes(**{k: v for k, v in filtros.items() if k != "sort"}).count()
+    situacoes = [{"slug": "todas", "titulo": "Todas", "total": total, "icone": "chart", "url": url_da_aba()}] + [
+        {"slug": chave, "titulo": rotulo, "total": contagem[chave], "icone": icones[chave], "url": url_da_aba(chave)}
+        for chave, rotulo in SITUACOES
+    ]
     return render(request, "pages/viagens_prestacoes/index.html", {
-        "page_title": "Prestações de contas", "page_obj": pagina, "pagina": pagina, "cards": cards,
-        "prestacoes": pagina.object_list, "contagem": contagem,
+        "situacoes": situacoes,
+        "situacao_ativa": "todas" if not abas else abas[0] if len(abas) == 1 else "",
+        "page_title": "Prestações de contas", "page_obj": pagina, "pagina": pagina, "cards": cards, "grupos": grupos, "contagem": contagem,
         "q": filtros["q"] or "", "abas_selecionadas": abas,
         "has_filters": bool(abas or any(v for k,v in filtros.items() if k != "sort")),
         "situacao_options": [{"value": key, "label": f"{rotulos[key]} ({value})"} for key,value in contagem.items()],
@@ -115,6 +153,33 @@ def prestacao_servidor_finalizar(request, ps_pk):
     else:
         messages.success(request, f'Prestação de {ps.servidor.nome} reaberta.')
     return _redirect_lista(request)
+
+def prestacao_equipe_acao(request, pc_pk, acao):
+    """Finaliza, reabre, arquiva ou desarquiva a prestação da equipe inteira do ofício.
+
+    O menu da linha do ofício na lista. Diferente das rotas antigas por
+    ofício (que só tocam o primeiro servidor), aqui cada servidor recebe o
+    mesmo estado.
+    """
+    from django.http import Http404
+    acoes = {
+        "finalizar": ("definir_finalizada", True, "finalizada"),
+        "reabrir": ("definir_finalizada", False, "reaberta"),
+        "arquivar": ("definir_arquivada", True, "arquivada"),
+        "desarquivar": ("definir_arquivada", False, "desarquivada"),
+    }
+    if acao not in acoes:
+        raise Http404
+    metodo, valor, rotulo = acoes[acao]
+    prestacao = get_object_or_404(_prestacao_queryset(), pk=pc_pk)
+    servidores = list(prestacao.servidores_prestacao.all())
+    for ps in servidores:
+        getattr(ps, metodo)(valor)
+    total = len(servidores)
+    plural = "es" if total != 1 else ""
+    messages.success(request, f"Prestação de {total} servidor{plural} {rotulo}.")
+    return _redirect_lista(request)
+
 
 def prestacao_arquivar(request, pc_pk):
     """Compatibilidade: arquiva o primeiro servidor da prestação do ofício."""

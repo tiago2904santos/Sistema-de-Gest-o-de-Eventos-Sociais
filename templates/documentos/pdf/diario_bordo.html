@@ -1,0 +1,66 @@
+{% extends "documentos/pdf/base_institucional.html" %}{% comment %}
+  Diário de Bordo: o `diario_bordo.xlsx` de origem em página A4 deitada. Os
+  dados do ofício e da viatura numa tabela de duas colunas; os trechos numa
+  tabela de doze colunas iguais (saída e chegada com data, hora e km; origem,
+  destino e abastecimento com duas cada); o motorista (nome, CPF e assinatura)
+  fecha a tabela, como no modelo. O cabeçalho da tabela de trechos se repete
+  em cada página quando a viagem tem muitos trechos. Não tem rodapé.
+  Os dados vêm de `viagens_prestacoes.diario_services.build_diario_bordo_context`
+  — os mesmos que preenchem a planilha.
+{% endcomment %}
+{% block titulo %}Diário de bordo – Ofício {{ diario.oficio }}{% endblock %}
+{% block classe %} doc-diario{% endblock %}
+
+{% block rodape %}{% endblock %}
+
+{% block corpo %}
+  <table class="doc-diario__tabela doc-diario__dados">
+    <tr>
+      <td>Referente ao Ofício: {{ diario.oficio }}</td>
+      <td>E-protocolo: {{ diario.protocolo }}</td>
+    </tr>
+    <tr>
+      <td>Ficha individual do veículo (tipo): {{ diario.viatura }}</td>
+      <td>Combustível: {{ diario.combustivel }}</td>
+    </tr>
+    <tr>
+      <td>Placa oficial: {{ diario.placa }}</td>
+      <td>Placa reservada: {{ diario.placa_reservada }}</td>
+    </tr>
+  </table>
+
+  <table class="doc-diario__tabela doc-diario__trechos">
+    <colgroup>{% for _ in "............" %}<col>{% endfor %}</colgroup>
+    <thead>
+      <tr>
+        <th colspan="3">Saída</th>
+        <th colspan="3">Chegada</th>
+        <th colspan="2" rowspan="2">Origem</th>
+        <th colspan="2" rowspan="2">Destino</th>
+        <th colspan="2" rowspan="2">Necessidade de abastecimento</th>
+      </tr>
+      <tr>
+        <th>Data</th><th>Hora</th><th>KM (inicial)</th>
+        <th>Data</th><th>Hora</th><th>KM (final)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in diario.trechos %}
+        <tr>
+          <td>{{ t.data_saida }}</td><td>{{ t.hora_saida }}</td><td>{{ t.km_inicial }}</td>
+          <td>{{ t.data_chegada }}</td><td>{{ t.hora_chegada }}</td><td>{{ t.km_final }}</td>
+          <td colspan="2">{{ t.origem }}</td>
+          <td colspan="2">{{ t.destino }}</td>
+          <td colspan="2" class="doc-diario__abastecimento">{{ t.abastecimento }}</td>
+        </tr>
+      {% empty %}
+        <tr>{% for _ in "123456" %}<td></td>{% endfor %}<td colspan="2"></td><td colspan="2"></td><td colspan="2"></td></tr>
+      {% endfor %}
+      <tr class="doc-diario__motorista">
+        <td colspan="3">Nome: {{ diario.motorista }}</td>
+        <td colspan="3">CPF: {{ diario.cpf_motorista }}</td>
+        <td colspan="6">Assinatura:</td>
+      </tr>
+    </tbody>
+  </table>
+{% endblock %}

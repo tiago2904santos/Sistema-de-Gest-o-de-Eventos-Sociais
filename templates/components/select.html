@@ -15,6 +15,8 @@
   `unidade_gv`: pesquisa de lotação com sigla/nome, limpeza e teclado do GV.
   `desabilitado`: bloqueia a edição preservando o visual.
   `vazio`: texto que a lista aberta mostra quando não há opção nenhuma.
+  `sem_vazio`: não oferece a opção vazia — para escolhas que não podem
+    ficar em branco; sem ela também não aparece o "×" de limpar.
 {% endcomment %}
 {% if multiplo %}
   {% include "components/v32/select_multiple.html" %}
@@ -31,7 +33,7 @@
             {% if form_alvo %}form="{{ form_alvo }}"{% endif %}
             {% if erros %}aria-invalid="true" aria-describedby="id_{{ name }}_erro{% if ajuda %} id_{{ name }}_ajuda{% endif %}"{% elif ajuda %}aria-describedby="id_{{ name }}_ajuda"{% endif %}
             {% if obrigatorio %}required{% endif %}{% if desabilitado %} disabled{% endif %}>
-      <option value="">{{ placeholder|default:"Selecione..." }}</option>
+      {% if not sem_vazio %}<option value="">{{ placeholder|default:"Selecione..." }}</option>{% endif %}
       {% for opcao in opcoes %}
         <option value="{{ opcao.valor|default:opcao }}"{% if opcao.estado %} data-parent-value="{{ opcao.estado }}"{% endif %}{% if opcao.relacionados %} data-related-values="{{ opcao.relacionados }}"{% endif %}{% for chave, dado in opcao.dados.items %} data-{{ chave }}="{{ dado }}"{% endfor %}{% if selecionado and opcao.valor|default:opcao|stringformat:"s" == selecionado|stringformat:"s" %} selected{% endif %}>{{ opcao.rotulo|default:opcao }}</option>
       {% endfor %}

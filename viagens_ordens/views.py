@@ -44,6 +44,16 @@ DICAS_DE_NECESSIDADE = {
     OrdemServico.TIPO_MICROONIBUS: "Inclui motorista, técnico e apoios de montagem/escolta, sem regra de dois dias.",
     OrdemServico.TIPO_CERIMONIAL_ANTECIPADO: "Justifica ida antecipada da equipe de cerimonial para organizar a solenidade.",
 }
+# A tela oferece só estes três; caminhão e micro-ônibus continuam no modelo e
+# aparecem apenas na OS que já foi gravada com um deles, para não perder o valor.
+TIPOS_NA_TELA = [OrdemServico.TIPO_PADRAO, OrdemServico.TIPO_OPERACAO_RETORNO_POSTERIOR, OrdemServico.TIPO_CERIMONIAL_ANTECIPADO]
+ICONES_DE_NECESSIDADE = {
+    OrdemServico.TIPO_PADRAO: "document",
+    OrdemServico.TIPO_OPERACAO_RETORNO_POSTERIOR: "shield",
+    OrdemServico.TIPO_CAMINHAO: "truck",
+    OrdemServico.TIPO_MICROONIBUS: "volante",
+    OrdemServico.TIPO_CERIMONIAL_ANTECIPADO: "crown",
+}
 
 
 def _digitos(valor):
@@ -226,10 +236,13 @@ def _contexto_form(form, ordem, request):
         "valores": {n: _valor(form, n) for n in ["destino_estado", "destino_cidade", "data_evento_inicio", "data_evento_fim", "modelo_motivo", "motivo"]},
         "erros": {n: form.errors.get(n) for n in form.fields},
         "erros_gerais": form.non_field_errors(),
-        "tipos_necessidade": [{"valor": chave, "rotulo": rotulo, "dica": DICAS_DE_NECESSIDADE.get(chave, ""), "marcado": chave == tipo_atual}
-                              for chave, rotulo in OrdemServico.TIPO_NECESSIDADE_CHOICES],
+        "tipos_necessidade": [{"valor": chave, "rotulo": rotulo, "dica": DICAS_DE_NECESSIDADE.get(chave, ""), "marcado": chave == tipo_atual,
+                               "icone": ICONES_DE_NECESSIDADE.get(chave, "document")}
+                              for chave, rotulo in OrdemServico.TIPO_NECESSIDADE_CHOICES
+                              if chave in TIPOS_NA_TELA or chave == tipo_atual],
         "servidores": opcoes_de_servidor(form),
         "oficios": oficios, "resumos_oficios": resumos,
+        "oficios_vinculados": any(o["selecionado"] for o in oficios),
         "estados": estados, "municipios": municipios,
         "adicionais": adicionais, "quantidade_destinos": str(form.quantidade_destinos),
         "opcoes_motivos": [{"valor": str(m.pk), "rotulo": m.nome} for m in modelos],

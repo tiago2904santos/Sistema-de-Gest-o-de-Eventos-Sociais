@@ -287,7 +287,7 @@ DOCUMENTOS_ARTIFACT_CACHE = True
 DOCUMENTOS_GENERATOR_VERSION = "eventos-f3-1"
 # Tipos cujo PDF nasce do HTML institucional (WeasyPrint), sem DOCX no caminho.
 # Os demais seguem a cadeia antiga até migrarem.
-DOCUMENTOS_PDF_HTML_NATIVO = ("oficio",)
+DOCUMENTOS_PDF_HTML_NATIVO = ("oficio", "termo_autorizacao", "justificativa", "ordem_servico", "plano_trabalho", "relatorio_tecnico", "diario_bordo")
 # Contingência de desenvolvimento: sem o runtime GTK, o PDF de um tipo HTML nativo
 # cai na cadeia antiga em vez de falhar. Em produção fica desligada — o PDF não
 # deve nascer do DOCX por acidente.

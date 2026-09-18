@@ -443,30 +443,3 @@ def apresentar_prestacao_card(prestacao, solicitacao_forms=None):
         form = (solicitacao_forms or {}).get(ps.pk)
         cards.append(apresentar_prestacao_servidor_card(ps, group_position=position, solicitacao_form=form))
     return cards
-
-def marcar_agrupamento_cards(cards):
-    """Ajusta ``group_position`` em uma lista já ordenada de cards por servidor."""
-    if not cards:
-        return cards
-
-    i = 0
-    while i < len(cards):
-        j = i + 1
-        while j < len(cards) and cards[j]["prestacao_pk"] == cards[i]["prestacao_pk"]:
-            j += 1
-        tamanho = j - i
-        for offset in range(tamanho):
-            if tamanho == 1:
-                position = "alone"
-            elif offset == 0:
-                position = "start"
-            elif offset == tamanho - 1:
-                position = "end"
-            else:
-                position = "middle"
-            cards[i + offset]["group_position"] = position
-            cards[i + offset]["group_class"] = (
-                f"prestacao-card-group--{position}" if position != "alone" else ""
-            )
-        i = j
-    return cards

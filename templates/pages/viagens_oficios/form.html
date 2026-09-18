@@ -122,7 +122,7 @@
                 {% endif %}
                 <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ dados.url_modelos_motivo }}" aria-label="Gerenciar modelos" title="Gerenciar modelos">{% include "components/icon.html" with nome="settings" %}</a>
               </div>
-              {% include "components/textarea.html" with name="motivo" label="Descrição" linhas="4" valor=v.motivo erros=e.motivo %}
+              {% include "components/textarea.html" with name="motivo" label="Descrição" linhas="3" valor=v.motivo erros=e.motivo %}
             </div>
           </div>
 
@@ -242,7 +242,7 @@
               {% endif %}
               <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ justificativa.url_modelos }}" aria-label="Gerenciar modelos" title="Gerenciar modelos">{% include "components/icon.html" with nome="settings" %}</a>
             </div>
-            {% include "components/textarea.html" with name="justificativa-texto" label="Justificativa" linhas="5" valor=justificativa.texto erros=justificativa.erros_texto %}
+            {% include "components/textarea.html" with name="justificativa-texto" label="Justificativa" linhas="3" valor=justificativa.texto erros=justificativa.erros_texto %}
           </div>
         </div>
       </section>

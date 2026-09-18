@@ -1,0 +1,2 @@
+{% comment %}Rótulo e valor (ou a lacuna) sempre na mesma linha: com valor, o espaço entre
+eles é inseparável; sem valor, rótulo e lacuna formam um bloco só.{% endcomment %}{% if valor %}{% if rotulo %}{{ rotulo }}&nbsp;{% endif %}{{ valor }}{% else %}<span class="doc-junto">{% if rotulo %}{{ rotulo }} {% endif %}<span class="doc-lacuna doc-lacuna--curta{% if classe %} {{ classe }}{% endif %}"></span></span>{% endif %}

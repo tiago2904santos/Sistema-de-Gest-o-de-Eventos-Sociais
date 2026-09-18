@@ -152,7 +152,7 @@ class DocumentoFacade:
             {"tipo": tipo.value, "formato": formato.value, "reference": ref or "—"},
         ):
             if tipo == DocumentoTipo.DIARIO_BORDO:
-                conteudo, pdf_engine_used = self._render_diario(payload, formato)
+                conteudo, pdf_engine_used = self._render_diario_html_ou_planilha(payload, formato)
             elif formato == DocumentoFormato.DOCX:
                 conteudo = self._render_docx(
                     template_def, docx_ctx, template_path_override=docx_template_path
@@ -188,6 +188,18 @@ class DocumentoFacade:
             )
             result = replace(result, artefato_id=artifact.pk)
         return result
+
+    def _render_diario_html_ou_planilha(self, payload, formato):
+        """O PDF do diário nasce do HTML (como os demais documentos); a planilha
+        continua saindo do modelo .xlsx. Sem o motor HTML, em desenvolvimento,
+        o PDF volta a sair da planilha convertida."""
+        from documentos.services.pdf_renderer import tipo_e_html_nativo
+
+        if formato == DocumentoFormato.PDF and tipo_e_html_nativo(DocumentoTipo.DIARIO_BORDO):
+            resultado = self._render_pdf_html(DocumentoTipo.DIARIO_BORDO, payload, docxtpl_context=None)
+            if resultado is not None:
+                return resultado
+        return self._render_diario(payload, formato)
 
     def _render_diario(self, payload, formato):
         from pathlib import Path

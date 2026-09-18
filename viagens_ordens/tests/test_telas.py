@@ -7,7 +7,6 @@ from django.urls import NoReverseMatch, reverse
 
 from documentos.models import DocumentoArtefato
 from viagens_ordens.models import OrdemServico, OrdemServicoNumeroLacuna
-from viagens_ordens.presenters import cartao_para_viagem
 from viagens_ordens.selectors import listar_ordens
 
 from .fixtures import CenarioOrdemMixin
@@ -38,7 +37,7 @@ class ListaTests(CenarioOrdemMixin, TestCase):
     def test_vazios_nomeados_e_sem_data_vai_para_que_vao_acontecer(self):
         ordem = self.ordem(dias=None, destinos=[], motivo="")
         r = _lista(self.client)
-        for texto in ["Sem período", "Sem destino", "Nenhum servidor informado", "Sem ofício vinculado", "Nenhum motivo informado."]:
+        for texto in ["Sem período", "Sem destino", "Nenhum servidor informado", "Sem ofício vinculado", "Nenhum motivo informado"]:
             self.assertContains(r, texto)
         self.assertIn(ordem, listar_ordens(situacoes=["futuras"]))
         self.assertNotIn(ordem, listar_ordens(situacoes=["atuais"]))
@@ -71,21 +70,26 @@ class ListaTests(CenarioOrdemMixin, TestCase):
 
 
 class CadastroTests(CenarioOrdemMixin, TestCase):
-    def test_tela_nova_tem_os_seis_cartoes_na_ordem_e_sem_aviso(self):
+    def test_tela_nova_segue_o_molde_do_termo_e_sem_aviso(self):
         r = self.client.get(reverse("viagens_ordens:novo"))
         html = r.content.decode()
         self.assertContains(r, "Nova Ordem de Serviço")
-        posicoes = [html.index(t) for t in ["Ofícios vinculados", ">Necessidade<", ">Motivo<", ">Período<", ">Destinos<", "Equipe da OS"]]
+        posicoes = [html.index(t) for t in ["Destino e período", "Sem ofício vinculado", ">Período<", ">Destinos<", "Necessidade e motivo", "Modelo de motivo", ">Equipe<"]]
         self.assertEqual(posicoes, sorted(posicoes))
-        for texto in ["Padrão / texto livre", "Operação policial - um dia posterior", "Caminhão - dois dias antes e depois", "Micro-ônibus",
+        for texto in ["Padrão / texto livre", "Operação policial - um dia posterior",
                       "Cerimonial - ida antecipada", "Mantém o texto livre usado nas OS atuais.", "Modelo de motivo", "Gerenciar modelos",
-                      "Data de ida", "Data de volta", "Novo viajante", "Salvar como rascunho", "Voltar", 'name="funcao_servidor_', "Função no caminhão"]:
+                      "Novo viajante", "Salvar como rascunho", "Voltar", 'name="funcao_servidor_']:
             self.assertContains(r, texto) if not texto.startswith("name=") else self.assertNotContains(r, texto)
         self.assertNotContains(r, "aviso--erro")
         self.assertNotContains(r, "Finalizar Ordem de Serviço")
+        # Sem modelos, o seletor desabilitado não herda o dicionário de erros da página.
+        self.assertNotContains(r, "<p class=\"form-erro\">data_evento_inicio</p>")
         self.assertContains(r, reverse("viagens_cadastros:lista", args=["motivos-oficio"]))
         self.assertContains(r, reverse("viagens_cadastros:novo", args=["servidores"]))
         self.assertContains(r, 'value="PADRAO" checked')
+        # Só três necessidades na tela nova; caminhão e micro-ônibus ficam para as OS antigas.
+        self.assertNotContains(r, 'value="CAMINHAO"')
+        self.assertNotContains(r, 'value="MICROONIBUS"')
 
     def test_criar_pela_tela_com_destino_extra_e_funcoes(self):
         o = self.oficio(servidores=[self.a])
@@ -190,20 +194,6 @@ class ViagemTests(CenarioOrdemMixin, TestCase):
         self.assertEqual(ordem.viagem, viagem)
         self.assertEqual(list(listar_ordens(viagem=viagem)), [ordem])
         self.assertEqual(listar_ordens(viagem=self._viagem()).count(), 0)
-
-    def test_cartao_para_viagem(self):
-        ordem = self.ordem(servidores=[self.a])
-        cartao = cartao_para_viagem(ordem)
-        self.assertEqual(cartao["pk"], ordem.pk)
-        self.assertEqual(cartao["titulo"], ordem.numero_formatado)
-        self.assertIn("Londrina (PR)", cartao["detalhes"])
-        self.assertEqual(cartao["selo"], "faltam 3 dias")
-        self.assertEqual(cartao["metodo_documento"], "post")
-        self.assertFalse(cartao["cancelado"])
-        for chave in ["url_editar", "url_visualizar", "url_pdf", "url_docx", "url_excluir"]:
-            self.assertTrue(cartao[chave])
-        ordem.cancelar("x")
-        self.assertEqual(cartao_para_viagem(ordem)["selo"], "Cancelada")
 
 
 class AcoesTests(CenarioOrdemMixin, TestCase):

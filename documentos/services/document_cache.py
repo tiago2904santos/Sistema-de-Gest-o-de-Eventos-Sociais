@@ -77,7 +77,14 @@ def build_template_cache_signature(
 ) -> str:
     """DOCX + (para PDF) HTML e CSS registados — invalida cache quando o modelo muda."""
     if tipo == DocumentoTipo.DIARIO_BORDO:
-        return _file_fp(Path(settings.BASE_DIR) / "documentos/resources/diario_bordo.xlsx")
+        planilha = _file_fp(Path(settings.BASE_DIR) / "documentos/resources/diario_bordo.xlsx")
+        if formato == DocumentoFormato.PDF:
+            from documentos.services.pdf_renderer import caminhos_dos_templates, tipo_e_html_nativo
+
+            if tipo_e_html_nativo(tipo):
+                # O PDF do diário nasce do HTML: o template e os CSS entram na chave.
+                return "|".join([planilha, *(_file_fp(p) for p in caminhos_dos_templates(tipo))])
+        return planilha
     parts: list[str] = []
     docx_def = template_registry.get(tipo, DocumentoFormato.DOCX)
     parts.append(

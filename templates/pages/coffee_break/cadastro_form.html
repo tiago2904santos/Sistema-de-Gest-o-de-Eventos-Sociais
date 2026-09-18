@@ -46,7 +46,7 @@
             {% if campo.tipo == 'select' %}
               {% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes obrigatorio=campo.obrigatorio largura="6" selecionado=campo.valor erros=campo.erros pesquisavel=True ajuda=campo.ajuda %}
             {% elif campo.tipo == 'textarea' %}
-              {% include "components/textarea.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio largura="12" linhas="5" valor=campo.valor erros=campo.erros ajuda=campo.ajuda %}
+              {% include "components/textarea.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio largura="12" linhas="3" valor=campo.valor erros=campo.erros ajuda=campo.ajuda %}
             {% elif campo.tipo == 'multiplo' %}
               {% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes multiplo=True marcados=campo.marcados obrigatorio=campo.obrigatorio largura="12" erros=campo.erros ajuda=campo.ajuda %}
             {% elif campo.tipo == 'boolean' %}

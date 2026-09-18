@@ -1,15 +1,19 @@
 {% comment %}
-  Voltar e o botão de gravar, no fim do último cartão. Com pendência o botão
-  salva o rascunho; sem pendência, finaliza — a mesma régua do ofício.
+  Voltar e os botões de gravar, no fim do último cartão. "Salvar rascunho"
+  está sempre à mão; sem pendência aparece também "Finalizar plano", que é o
+  botão principal.
   Contexto: `url_voltar`, `pendencias`, `pode_editar`.
 {% endcomment %}
 <div class="frm-acoes-fim">
   {% include "components/v32/button.html" with label="Voltar" variante="secundario" href=url_voltar %}
   {% if pode_editar %}
-    {% if pendencias %}
-      <button type="submit" class="btn btn--dourado btn-primaria" name="acao" value="salvar">Salvar rascunho</button>
-    {% else %}
-      <button type="submit" class="btn btn--dourado btn-primaria" name="acao" value="finalizar">Finalizar plano</button>
-    {% endif %}
+    <div class="pt-acoes-fim__gravar">
+      {% if pendencias %}
+        <button type="submit" class="btn btn--dourado btn-primaria" name="acao" value="salvar">Salvar rascunho</button>
+      {% else %}
+        <button type="submit" class="btn--secundaria" name="acao" value="salvar">Salvar rascunho</button>
+        <button type="submit" class="btn btn--dourado btn-primaria" name="acao" value="finalizar">Finalizar plano</button>
+      {% endif %}
+    </div>
   {% endif %}
 </div>

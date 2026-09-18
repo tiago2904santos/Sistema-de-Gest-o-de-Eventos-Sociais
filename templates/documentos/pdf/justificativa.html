@@ -1,24 +1,30 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8">
-  <title>Justificativa — {{ oficio.numero_formatado }}</title>
-</head>
-<body>
-  <div class="doc-orgao">{{ institucional.nome_orgao }}</div>
-  <div class="doc-unidade">{{ institucional.unidade }}</div>
-  <div class="doc-title">Justificativa de prazo — Ofício {{ oficio.numero_formatado }}</div>
-  <div class="doc-meta"><strong>Protocolo:</strong> {{ oficio.protocolo }}</div>
+{% extends "documentos/pdf/base_institucional.html" %}{% comment %}
+  Justificativa: o conteúdo do `justificativa.docx` de origem, na folha ASCOM
+  (a mesma do termo). Local e data à direita, o título, o texto em parágrafos
+  justificados com recuo na primeira linha e o assinante centralizado.
 
-  <div class="doc-section">
-    <h2>Texto</h2>
-    <p>{{ justificativa.texto|linebreaksbr|default:"—" }}</p>
+  `justificativa` chega de `document_context.contexto_da_justificativa`, a
+  partir dos mesmos textos que o DOCX recebe
+  (`viagens_oficios.docxtpl_context.build_justificativa_docxtpl_context`).
+{% endcomment %}
+{% block titulo %}Justificativa{% endblock %}
+{% block classe %} doc-folha-ascom doc-justificativa{% endblock %}
+
+{% block rodape %}{% include "documentos/pdf/_rodape_ascom.html" %}{% endblock %}
+
+{% block corpo %}
+  <p class="doc-justificativa__data">{% if justificativa.sede %}{{ justificativa.sede }}, {% endif %}{{ justificativa.data_extenso }}</p>
+
+  <h1 class="doc-titulo">Justificativa</h1>
+
+  <div class="doc-justificativa__texto">
+    {% for paragrafo in justificativa.paragrafos %}<p>{{ paragrafo }}</p>{% endfor %}
   </div>
 
-  <div class="doc-section doc-muted">
-    <p><strong>Obrigatória pela regra vigente:</strong>
-      {% if justificativa.exigida %}sim{% else %}não{% endif %}
-    </p>
-  </div>
-</body>
-</html>
+  {% if justificativa.assinante %}
+    <div class="doc-justificativa__assinatura">
+      <p class="doc-justificativa__assinante">{{ justificativa.assinante }}</p>
+      {% if justificativa.cargo %}<p>{{ justificativa.cargo }}</p>{% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

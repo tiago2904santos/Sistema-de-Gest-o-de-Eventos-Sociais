@@ -1,102 +1,123 @@
 {% extends "documentos/pdf/base_institucional.html" %}{% load documento_tags %}{% comment %}
-  Ofício: o conteúdo do `oficio.docx` de origem, parágrafo por parágrafo, na
-  mesma ordem. Os textos calculados (assunto, órgão de destino, custeio,
-  motorista, roteiro de ida e volta, diárias por extenso) vêm prontos em `tx`,
-  das mesmas regras que alimentam o DOCX — uma regra só, dois formatos.
+  Ofício: o conteúdo do `oficio.docx` de origem, na estrutura dele — tudo em
+  tabelas com grade: dados do ofício, equipe, destino/diárias/valor, roteiro
+  de ida e de retorno, transporte e o bloco de custos, motivo e declaração.
+  O destinatário vai no pé da página, à esquerda, acima da marca. A equipe
+  sai uma linha por servidor (nome, CPF, cargo, solicitação), sem o RG. A letra
+  é a dos demais documentos (Arial), num corpo legível; o .docx usa Times 8.
 
-  Cada trecho que nasce de um campo do ofício leva `{% editavel "campo" %}`:
-  no modo editor a tag emite os atributos que ligam o trecho ao campo; no PDF
-  não emite nada. O que é parágrafo fixo do modelo é bloco documental
-  (`{% bloco "chave" %}`, texto padrão no registro documentos/editor/blocos.py),
-  passível de override sem tocar em campo algum. `{% ponto_de_quebra %}` marca
+  Os textos calculados vêm prontos em `tx`, das mesmas regras que alimentam
+  o DOCX. Cada trecho que nasce de um campo do ofício leva `{% editavel "campo" %}`
+  num elemento sem classe própria (a tag emite a classe dela): no modo
+  editor liga o trecho ao campo; no PDF não emite nada. A declaração do
+  cartão é bloco documental (`{% bloco %}`), e `{% ponto_de_quebra %}` marca
   onde uma quebra de página pode ser inserida.
 {% endcomment %}
 {% block titulo %}Ofício {{ tx.oficio }}{% endblock %}
+{% block classe %} doc-oficio{% endblock %}
+
+{% block rodape_topo %}
+  <div class="doc-oficio__destinatario">
+    <p>Exmo. Sr</p>
+    <p>DR. {{ institucional.nome_destinatario }}</p>
+    <p>MD. {{ institucional.cargo_destinatario }}</p>
+    <p>{{ institucional.cidade_rodape|default:"Curitiba" }} – Pr.</p>
+  </div>
+{% endblock %}
+{% block rodape %}
+  <p class="doc-rodape__unidade">{{ institucional.unidade_rodape }}{% if institucional.endereco %} - {{ institucional.endereco }}{% endif %}{% if institucional.telefone %} {{ institucional.telefone }}{% endif %}{% if institucional.email %} – {{ institucional.email }}{% endif %}</p>
+{% endblock %}
 
 {% block corpo %}
-  <h1 class="doc-titulo">Ofício Nº {{ tx.oficio }} {{ tx.assunto_oficio }}</h1>
-
-  <p class="doc-linha"><strong>DATA:</strong> <span {% editavel "data_criacao" %}>{{ tx.data_do_oficio }}</span></p>
-  <p class="doc-linha"><strong>ORIGEM:</strong> {{ tx.unidade }}</p>
-  <p class="doc-linha"><strong>DESTINO:</strong> {{ tx.orgao_destino }}</p>
-  <p class="doc-linha"><strong>Protocolo Nº:</strong> <span {% editavel "protocolo" %}>{{ tx.protocolo }}</span></p>
-  <p class="doc-linha"><strong>Assunto:</strong> {{ tx.assunto_linha }}</p>
-
-  <p class="doc-paragrafo">Senhor Delegado, Através deste, solicito {{ tx.assunto_termo }} e medidas para a concessão de diárias e recursos para combustível, conforme cronograma abaixo:</p>
-
-  <table class="doc-tabela doc-tabela--equipe" {% editavel "servidores" %}>
-    <thead>
-      <tr><th>NOME</th><th>RG e CPF</th><th>CARGO</th><th>Nº SOLICITAÇÃO (Central de Viagens)</th></tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>{{ tx.col_servidor|linhas }}</td>
-        <td>{{ tx.col_rgcpf|linhas }}</td>
-        <td>{{ tx.col_cargo|linhas }}</td>
-        <td>{{ tx.col_solicitacao|linhas }}</td>
-      </tr>
-    </tbody>
+  <table class="doc-oficio__tabela doc-oficio__dados">
+    <tr>
+      <td>Ofício Nº <strong>{{ tx.oficio }}</strong>{% if tx.assunto_oficio %} {{ tx.assunto_oficio }}{% endif %}</td>
+      <td>Data: <span {% editavel "data_criacao" %}>{{ tx.data_do_oficio }}</span></td>
+    </tr>
+    <tr>
+      <td>Origem: <strong>{{ tx.unidade }}</strong></td>
+      <td>Destino: <strong>{{ tx.orgao_destino }}</strong></td>
+    </tr>
+    <tr>
+      <td>Protocolo Nº: <span {% editavel "protocolo" %}>{{ tx.protocolo }}</span></td>
+      <td>Assunto: {{ tx.assunto_linha }}</td>
+    </tr>
   </table>
+
+  <p class="doc-oficio__abertura"><strong>Senhor Delegado,</strong> através deste, solicito {{ tx.assunto_termo }} e medidas para a concessão de diárias e recursos para combustível, conforme cronograma abaixo:</p>
+
+  <div {% editavel "servidores" %}>
+    <table class="doc-oficio__tabela doc-oficio__equipe">
+      <thead>
+        <tr><th>Nome</th><th>CPF</th><th>Cargo</th><th>Nº solicitação<br>(Central de Viagens)</th></tr>
+      </thead>
+      <tbody>
+        {% for servidor in tx.equipe %}
+          <tr>
+            <td>{{ servidor.nome }}</td>
+            <td>{{ servidor.cpf }}</td>
+            <td><strong>{{ servidor.cargo }}</strong></td>
+            <td>{{ servidor.solicitacao }}</td>
+          </tr>
+        {% empty %}
+          <tr><td></td><td></td><td></td><td></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 
   {% ponto_de_quebra "apos_equipe" %}
-  <p class="doc-linha"><strong>Destino da Viagem:</strong> <span {% editavel "roteiro" %}>{{ tx.destinos_bloco|linhas }}</span></p>
-
-  <table class="doc-tabela doc-tabela--diarias">
-    <tbody>
-      <tr>
-        <th>Nº de Diarias por Servidor:</th>
-        <td>{{ tx.diarias_x }} diárias</td>
-        <th>Valor total do Ofício:</th>
-        <td>{{ tx.diaria }}</td>
-      </tr>
-    </tbody>
+  <table class="doc-oficio__tabela doc-oficio__resumo">
+    <tr>
+      <td><strong>Destino da viagem:</strong><br><span {% editavel "roteiro" %}>{{ tx.destinos_bloco|linhas }}</span></td>
+      <td><strong>Nº de diárias por servidor:</strong><br>{{ tx.diarias_x }} diárias</td>
+      <td><strong>Valor total do ofício:</strong><br>{{ tx.diaria }}</td>
+    </tr>
   </table>
 
-  <table class="doc-tabela doc-tabela--roteiro">
-    <thead>
-      <tr><th colspan="2">ROTEIRO DE IDA</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>{{ tx.col_ida_saida|linhas }}</td><td>{{ tx.col_ida_chegada|linhas }}</td></tr>
-    </tbody>
-    <thead>
-      <tr><th colspan="2">ROTEIRO DE RETORNO</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>{{ tx.col_volta_saida|linhas }}</td><td>{{ tx.col_volta_chegada|linhas }}</td></tr>
-    </tbody>
+  <p class="doc-oficio__subtitulo">Roteiro de ida</p>
+  <table class="doc-oficio__tabela doc-oficio__roteiro">
+    <tr><td>{{ tx.col_ida_saida|linhas }}</td><td>{{ tx.col_ida_chegada|linhas }}</td></tr>
+  </table>
+  <p class="doc-oficio__subtitulo">Roteiro de retorno</p>
+  <table class="doc-oficio__tabela doc-oficio__roteiro">
+    <tr><td>{{ tx.col_volta_saida|linhas }}</td><td>{{ tx.col_volta_chegada|linhas }}</td></tr>
   </table>
 
   {% ponto_de_quebra "apos_roteiro" %}
-  <table class="doc-tabela doc-tabela--transporte" {% editavel "transporte" %}>
-    <tbody>
+  <div {% editavel "transporte" %}>
+    <table class="doc-oficio__tabela doc-oficio__transporte">
       <tr>
-        <td><strong>Meio de Transporte:</strong> {{ tx.viatura }}</td>
-        <td><strong>Placa Oficial:</strong> {{ tx.placa }}</td>
+        <td>
+          <p><strong>Meio de transporte:</strong> {{ tx.viatura }}</p>
+          <p><strong>Placa oficial:</strong> {{ tx.placa }}</p>
+          <p><strong>Motorista:</strong> <span {% editavel "motorista" %}>{{ tx.motorista_formatado|linhas }}</span></p>
+        </td>
+        <td>
+          <p><strong>Combustível:</strong> {{ tx.combustivel }}</p>
+          <p><strong>Viatura:</strong> {{ tx.tipo_viatura }}</p>
+        </td>
+        <td><p><strong>Porte/trânsito de arma:</strong> <span {% editavel "porte_transporte_armas" %}>{{ tx.armamento }}</span></p></td>
       </tr>
-      <tr>
-        <td><strong>Motorista:</strong> <span {% editavel "motorista" %}>{{ tx.motorista_formatado|linhas }}</span></td>
-        <td><strong>Combustível:</strong> {{ tx.combustivel }}</td>
-      </tr>
-      <tr>
-        <td><strong>Viatura</strong> {{ tx.tipo_viatura }}</td>
-        <td><strong>Porte/Trânsito de arma:</strong> <span {% editavel "porte_transporte_armas" %}>{{ tx.armamento }}</span></td>
-      </tr>
-    </tbody>
-  </table>
+    </table>
+  </div>
 
   {% ponto_de_quebra "apos_transporte" %}
-  <p class="doc-linha"><strong>Custos:</strong> Informar qual entidade custeará as diárias (hospedagem/alimentação) e deslocamento:</p>
-  <p class="doc-custeio" {% editavel "custeio" %}>{{ tx.custo|linhas }}</p>
-
-  <p class="doc-paragrafo"><strong>Motivo da Viagem:</strong> <span {% editavel "motivo" %}>{{ tx.motivo|linhas }}</span>.</p>
-
-  {% bloco "declaracao_cartao" %}
+  <table class="doc-oficio__tabela doc-oficio__fecho">
+    <tr>
+      <td>
+        <p><strong>Custos:</strong> informar qual entidade custeará as diárias (hospedagem/alimentação) e deslocamento:</p>
+        <p class="doc-oficio__custeio"><span {% editavel "custeio" %}>{{ tx.custo|linhas }}</span></p>
+      </td>
+    </tr>
+    <tr><td><strong>Motivo da viagem:</strong> <span {% editavel "motivo" %}>{{ tx.motivo|linhas }}</span>.</td></tr>
+    <tr><td class="doc-oficio__declaracao">{% bloco "declaracao_cartao" %}</td></tr>
+  </table>
 
   {% ponto_de_quebra "antes_assinatura" %}
-  <div class="doc-assinatura">
+  <div class="doc-oficio__assinatura">
     <p>Respeitosamente,</p>
-    <p class="doc-assinatura__nome">{{ tx.nome_chefia }}</p>
-    <p class="doc-assinatura__cargo">{{ tx.cargo_chefia }}</p>
+    <p class="doc-oficio__chefia">{{ tx.nome_chefia }}</p>
+    <p class="doc-oficio__cargo">{{ tx.cargo_chefia }}</p>
   </div>
 {% endblock %}

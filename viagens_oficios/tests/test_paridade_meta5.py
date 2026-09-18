@@ -343,7 +343,10 @@ class DetalheEDocumentosTests(CenarioTermos):
         r = self.client.post(reverse("viagens_termos:todos_pdf", args=[t.pk]))
         self.assertEqual(r["Content-Type"], "application/pdf")
         self.assertEqual(r["Content-Disposition"], f'attachment; filename="termo-{t.pk}-todos.pdf"')
-        paginas = [len(PdfReader(io.BytesIO(a.arquivo.read())).pages) for a in DocumentoArtefato.objects.filter(termo=t, servidor__isnull=False, formato="pdf")]
+        paginas = []
+        for a in DocumentoArtefato.objects.filter(termo=t, servidor__isnull=False, formato="pdf"):
+            with a.arquivo.open("rb") as arquivo:  # fechado: no Windows o arquivo aberto trava a limpeza da pasta
+                paginas.append(len(PdfReader(io.BytesIO(arquivo.read())).pages))
         self.assertEqual(len(paginas), 2)
         self.assertEqual(len(PdfReader(io.BytesIO(r.content)).pages), sum(paginas))
 

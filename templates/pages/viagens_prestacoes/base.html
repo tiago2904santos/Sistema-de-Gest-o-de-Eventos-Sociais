@@ -1,77 +1,83 @@
 {% extends "layouts/app_shell_v32.html" %}
-{% load static %}
+{% load static estaticos %}
 {% comment %}
-  Esqueleto das etapas da prestação de contas: cabeçalho com o servidor e o
-  ofício, os passos e a equipe em barras horizontais no topo, e o conteúdo da
-  etapa numa coluna só. O rodapé leva os comandos da etapa.
+  Esqueleto das etapas da prestação de contas, na identidade nova e enxuto:
+  a trilha leva à lista e ao ofício; o cabeçalho só tem o título e o selo
+  (com a ação principal à direita). Com equipe, o título é um seletor no
+  jeito de select box, que troca de servidor sem sair da etapa. Embaixo, a
+  barra das três etapas com o realce grafite deslizante do painel da viagem
+  (`js/trilho.js`). O conteúdo da etapa vem numa coluna só.
 {% endcomment %}
 {% block title %}{{ page_title|default:"Prestação de contas" }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 {% block extra_css %}{{ block.super }}{% block pc_css %}{% endblock %}{% endblock %}
 {% block conteudo %}
-{% include "components/v32/breadcrumb.html" with atual=flow_status_label|default:page_title %}
+<nav class="trilha-v32" aria-label="Trilha de navegação">
+  <a href="{% url 'viagens_prestacoes:index' %}">Prestações de Contas</a>
+  {% if prestacao %}<span aria-hidden="true">/</span><span>Ofício {{ prestacao.oficio.numero_formatado }}{% if identificacao.destino and identificacao.destino != "—" %} · {{ identificacao.destino }}{% endif %}</span>{% endif %}
+</nav>
 <div class="pc-fluxo">
-  {% comment %}
-    Cabeçalho no padrão do roteiro: ícone, "Etapa N — nome" com o selo ao lado,
-    meta com ícones e a ação da etapa no topo à direita.
-  {% endcomment %}
-  <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
-    <div class="page-header d-cabeca__esq">
-      <div class="page-header__identificacao d-identificacao">
-        <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="clipboard" %}</span>
-        <div>
-          <div class="frm-titulo">
-            <h1 class="page-header__titulo d-titulo-v32">{% if flow_numero %}<span class="pc-fluxo__etapa">Etapa {{ flow_numero }}</span> {% endif %}{{ flow_status_label|default:page_title }}</h1>
-            {% if ps %}<span class="st st--pc-{{ ps.status }}">{{ ps.status_display }}</span>{% if ps.finalizada %}<span class="st st--atendido">Finalizada</span>{% endif %}{% if ps.arquivada %}<span class="st st--neutro">Arquivada</span>{% endif %}{% endif %}
+  <div class="d-cabeca d-cabeca--form frm-topo">
+    <div class="frm-titulo">
+      {% if ps and identificacao.servidores_count > 1 %}
+        {# O servidor da prestação é o título e o seletor: troca de servidor sem sair da etapa. #}
+        <h1 class="sr-only">{{ ps.servidor.nome }}</h1>
+        <div class="dd pc-seletor" data-menu>
+          <button type="button" class="pc-seletor__gatilho" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Servidor da prestação: {{ ps.servidor.nome }}. Trocar de servidor">
+            <span class="pc-seletor__av{% if ps.is_motorista %} pc-seletor__av--motorista{% endif %}" aria-hidden="true">{% if ps.is_motorista %}{% include "components/icon.html" with nome="volante" %}{% else %}{% for servidor in identificacao.servidores %}{% if servidor.ps_pk == ps.pk %}{{ servidor.iniciais }}{% endif %}{% endfor %}{% endif %}</span>
+            <span class="pc-seletor__nome">{{ ps.servidor.nome }}</span>
+            {# A situação vai dentro da caixa, junto do nome. #}
+            {% if ps.finalizada %}<span class="st st--atendido">Finalizada</span>{% else %}<span class="st st--pc-{{ ps.status }}">{{ ps.status_display }}</span>{% endif %}
+            {% if ps.arquivada %}<span class="st st--neutro">Arquivada</span>{% endif %}
+            <span class="pc-seletor__seta" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+          </button>
+          <div class="dd__c of-menu__corpo pc-seletor__menu" hidden data-menu-corpo>
+            <div class="dd__t">Servidores do ofício</div>
+            {% for servidor in identificacao.servidores %}
+              <a class="dd__i of-item pc-seletor__opcao{% if servidor.ps_pk == ps.pk %} is-atual{% endif %}" href="{% url flow_view_name servidor.ps_pk %}"{% if servidor.ps_pk == ps.pk %} aria-current="true"{% endif %}>
+                <span class="pc-seletor__av{% if servidor.is_motorista %} pc-seletor__av--motorista{% endif %}" aria-hidden="true">{% if servidor.is_motorista %}{% include "components/icon.html" with nome="volante" %}{% else %}{{ servidor.iniciais }}{% endif %}</span>
+                <span><b>{{ servidor.nome_servidor }}</b>{% if servidor.is_motorista %}<small>Motorista do ofício</small>{% endif %}</span>
+                {% if servidor.ps_pk == ps.pk %}<span class="pc-seletor__check" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>{% endif %}
+              </a>
+            {% endfor %}
           </div>
-          <p class="page-header__subtitulo d-cabeca__sub frm-meta">
-            {% if ps %}<span>{% include "components/icon.html" with nome="user" %}{{ ps.servidor.nome }}{% if ps.is_motorista %} · motorista{% endif %}</span>{% endif %}
-            {% if prestacao %}<span>{% include "components/icon.html" with nome="document" %}Ofício {{ prestacao.oficio.numero_formatado }}{% if identificacao.protocolo and identificacao.protocolo != "—" %} · {{ identificacao.protocolo }}{% endif %}</span>{% endif %}
-            {% if identificacao.destino and identificacao.destino != "—" %}<span>{% include "components/icon.html" with nome="map-pin" %}{{ identificacao.destino }}{% if identificacao.periodo and identificacao.periodo != "—" %} · {{ identificacao.periodo }}{% endif %}</span>{% endif %}
-          </p>
         </div>
-      </div>
+      {% else %}
+        <h1 class="d-titulo-v32">{% if ps %}{{ ps.servidor.nome }}{% else %}{{ flow_status_label|default:page_title }}{% endif %}</h1>
+        {% if ps %}
+          {% if ps.finalizada %}<span class="st st--atendido">Finalizada</span>{% else %}<span class="st st--pc-{{ ps.status }}">{{ ps.status_display }}</span>{% endif %}
+          {% if ps.arquivada %}<span class="st st--neutro">Arquivada</span>{% endif %}
+        {% endif %}
+      {% endif %}
     </div>
     <div class="frm-topo__acoes">{% block pc_acoes_topo %}{% endblock %}{% block pc_salvar_topo %}{% endblock %}</div>
   </div>
 
   {% if ps %}
-    <nav class="pc-passos" aria-label="Etapas da prestação">
-      {% for step in wizard_page_steps %}
-        <a class="pc-passo{% if step.state == 'current' %} pc-passo--atual{% elif step.state == 'done' %} pc-passo--feito{% endif %}" href="{{ step.url }}"{% if step.aria_current %} aria-current="step"{% endif %}>
-          <span class="pc-passo__m">{% if step.state == 'done' %}{% include "components/icon.html" with nome="check" %}{% else %}{{ forloop.counter }}{% endif %}</span>
-          <span class="pc-passo__txt"><b>{{ step.title }}</b><small>{{ step.status }}</small></span>
-        </a>
-      {% endfor %}
-    </nav>
-
-    {# Com um servidor só não há para onde navegar: a barra seria ruído. #}
-    {% if identificacao.servidores_count > 1 or identificacao.servidores_removidos %}
-    <div class="pc-equipe-barra">
-      <span class="pc-equipe-barra__r">{% include "components/icon.html" with nome="users" %}Equipe <em>{{ identificacao.servidores_count }}</em></span>
-      <ul class="pc-equipe">
-        {% for servidor in identificacao.servidores %}
-          <li class="pc-equipe__item{% if servidor.ps_pk == ps.pk %} pc-equipe__item--atual{% endif %}">
-            <a href="{% url flow_view_name servidor.ps_pk %}"{% if servidor.ps_pk == ps.pk %} aria-current="true"{% endif %}>
-              <span class="of-av" aria-hidden="true">{{ servidor.iniciais }}</span>
-              <span class="pc-equipe__nome">{{ servidor.nome_servidor }}{% if servidor.is_motorista %} <span class="of-tag">Motorista</span>{% endif %}</span>
+    <nav class="vg-stepper pc-etapas" aria-label="Etapas da prestação">
+      <ol class="vg-stepper__lista vg-trilho sem-anim pc-etapas__lista" data-vg-trilho>
+        {% for step in wizard_page_steps %}
+          <li class="vg-stepper__item{% if step.state == 'current' %} is-atual{% elif step.state == 'done' %} is-concluida{% endif %}">
+            <a class="vg-stepper__passo" href="{{ step.url }}"{% if step.aria_current %} aria-current="step"{% endif %} title="{{ step.title }} — {{ step.status }}">
+              <span class="vg-stepper__num" aria-hidden="true">{% if step.state == 'done' %}{% include "components/icon.html" with nome="check" %}{% else %}{{ forloop.counter }}{% endif %}</span>
+              <span class="vg-stepper__rotulo">{{ step.title }}</span>
             </a>
           </li>
         {% endfor %}
-      </ul>
-      {% if identificacao.servidores_removidos %}
-        <details class="pc-removidos" id="prestacao-removidos-section">
-          <summary>Saíram da equipe · dados preservados</summary>
-          <ul>{% for servidor in identificacao.servidores_removidos %}<li><b>{{ servidor.nome_servidor }}</b><small>{% if servidor.removida_em %}Saiu em {{ servidor.removida_em|date:"d/m/Y" }} · {% endif %}guardados: {{ servidor.guardados }}</small></li>{% endfor %}</ul>
-        </details>
-      {% endif %}
-    </div>
-    {% endif %}
+      </ol>
+    </nav>
+
   {% endif %}
 
   {% block pc_avisos %}{% endblock %}
 
-  {# As ações de cada etapa ficam no fim do último cartão dela, como no roteiro. #}
   <main class="pc-fluxo__principal">{% block prestacao_conteudo %}{% endblock %}</main>
+
+  {% if identificacao.servidores_removidos %}
+    <details class="pc-removidos" id="prestacao-removidos-section">
+      <summary>Saíram da equipe · dados preservados</summary>
+      <ul>{% for servidor in identificacao.servidores_removidos %}<li><b>{{ servidor.nome_servidor }}</b><small>{% if servidor.removida_em %}Saiu em {{ servidor.removida_em|date:"d/m/Y" }} · {% endif %}guardados: {{ servidor.guardados }}</small></li>{% endfor %}</ul>
+    </details>
+  {% endif %}
 </div>
 {% endblock %}
-{% block extra_js %}{{ block.super }}<script src="{% static 'js/viagens-prestacoes.js' %}" defer></script>{% block pc_js %}{% endblock %}{% endblock %}
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-prestacoes.js' %}" defer></script><script src="{% estatico 'js/trilho.js' %}" defer></script>{% block pc_js %}{% endblock %}{% endblock %}
