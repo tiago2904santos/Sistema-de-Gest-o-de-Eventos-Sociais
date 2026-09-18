@@ -34,7 +34,11 @@ TX = {
     "col_ida_saida": "Saída Curitiba/PR: 10/09/2026 08:00", "col_ida_chegada": "Chegada Brasília/DF: 10/09/2026 12:00",
     "col_volta_saida": "Saída Brasília/DF: 12/09/2026 15:00", "col_volta_chegada": "Chegada Curitiba/PR: 12/09/2026 19:00",
     "viatura": "Viatura oficial", "placa": "ABC-1D23", "motorista_formatado": "João Souza", "combustivel": "Gasolina", "tipo_viatura": "Caracterizada",
-    "armamento": "Sim", "custo": "( X ) UNIDADE - DPC\n(   ) OUTRA INSTITUIÇÃO", "motivo": "Participação em reunião institucional",
+    "armamento": "Sim",
+    # As três opções de custeio, como `_custeio_text` as emite — o documento
+    # sempre lista todas, com o marcador na escolhida.
+    "custo": "( X ) UNIDADE - DPC (diárias e combustível custeados pela DPC).\n(   ) OUTRA INSTITUIÇÃO\n(   ) ÔNUS LIMITADOS AOS PRÓPRIOS VENCIMENTOS",
+    "motivo": "Participação em reunião institucional",
     "nome_chefia": "Fulano de Tal", "cargo_chefia": "Delegado", "unidade_cabecalho": "ASSESSORIA DE COMUNICAÇÃO",
     "nome_destinatario": "Beltrano", "cargo_destinatario": "Delegado Geral Adjunto", "unidade_rodape": "ASCOM",
     "equipe": [

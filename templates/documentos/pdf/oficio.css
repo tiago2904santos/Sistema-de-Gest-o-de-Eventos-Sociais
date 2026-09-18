@@ -44,7 +44,13 @@
 .doc-oficio__tabela p { margin: 0; }
 .doc-oficio__tabela td p + p { margin-top: 2pt; }
 
+/* Larguras de coluna: com table-layout fixo, sem `width` o motor reparte em
+   partes iguais — e aí uma coluna sobra vazia enquanto a vizinha quebra em
+   duas linhas. Os percentuais abaixo seguem a largura que cada coluna pede
+   pelo conteúdo (medida com table-layout: auto), puxados um pouco para o meio
+   para aguentar um texto mais curto ou mais longo que o do exemplo. */
 .doc-oficio__dados td { vertical-align: middle; }
+.doc-oficio__dados td:nth-child(1) { width: 42%; }
 
 /* A abertura cabe numa linha só: no corpo do modelo (Times 8), sem quebra; só
    o vocativo em negrito. O termo variável ("autorização" ou "convalidação")
@@ -52,9 +58,9 @@
 .doc-oficio__abertura { margin: 0.05cm 0 0.22cm; white-space: nowrap; }
 
 .doc-oficio__equipe th { font-weight: 700; text-align: center; vertical-align: middle; }
-.doc-oficio__equipe th:nth-child(1) { width: 34%; }
+.doc-oficio__equipe th:nth-child(1) { width: 32%; }
 .doc-oficio__equipe th:nth-child(2) { width: 20%; }
-.doc-oficio__equipe th:nth-child(3) { width: 24%; }
+.doc-oficio__equipe th:nth-child(3) { width: 28%; }
 .doc-oficio__equipe td { vertical-align: middle; }
 /* Um servidor não é separado do seguinte por um traço: some só a divisória
    entre as linhas do corpo. A moldura da tabela e a linha sob o cabeçalho
@@ -64,16 +70,21 @@
 .doc-oficio__equipe tbody tr + tr td { border-top: 0; }
 
 .doc-oficio__resumo td { text-align: center; vertical-align: middle; }
+.doc-oficio__resumo td:nth-child(1) { width: 30%; }
+.doc-oficio__resumo td:nth-child(2) { width: 34%; }
 
 .doc-oficio__subtitulo { margin: 0 0 3pt; font-weight: 700; text-align: center; text-transform: uppercase; page-break-after: avoid; break-after: avoid; }
 .doc-oficio__roteiro td { font-weight: 700; }
 
 .doc-oficio__transporte td { vertical-align: middle; }
-.doc-oficio__transporte td:nth-child(1) { width: 36%; }
-.doc-oficio__transporte td:nth-child(2) { width: 32%; }
+.doc-oficio__transporte td:nth-child(1) { width: 38%; }
+.doc-oficio__transporte td:nth-child(2) { width: 28%; }
 
 .doc-oficio__fecho td { text-align: justify; }
-.doc-oficio__custeio { margin-top: 3pt !important; white-space: pre-line; }
+/* `pre-wrap`, não `pre-line`: as opções não escolhidas vêm com o marcador
+   vazio "(   )", e `pre-line` junta os espaços — viravam "( )", desalinhadas
+   da opção marcada. As quebras já chegam como <br> pelo filtro `linhas`. */
+.doc-oficio__custeio { margin-top: 3pt !important; white-space: pre-wrap; }
 .doc-oficio__declaracao .doc-bloco { margin: 0; font-weight: 700; text-align: justify; }
 
 .doc-oficio__assinatura { margin-top: 0.3cm; text-align: center; page-break-inside: avoid; }
