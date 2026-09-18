@@ -7,9 +7,9 @@
   Os botões são do formulário do ofício (`formaction`): um `<form>` aqui
   dentro ficaria aninhado no dele.
 
-  Contexto: `d` (titulo, disponivel, mensagem, src, url_pdf, url_docx,
-  url_anexar, assinado), `menu_id`, `aninhado` e `url_editar` (o editor
-  documental, só no ofício).
+  Contexto: `d` (titulo, disponivel, mensagem, src, url_pdf, url_anexar,
+  assinado), `menu_id`, `aninhado` e `url_editar` (o editor documental, só
+  no ofício).
 {% endcomment %}
 <details class="ofc-doc{% if aninhado %} ofc-doc--aninhado{% endif %}" data-ofc-doc>
   <summary class="ofc-doc__cabeca">
@@ -22,7 +22,6 @@
           {% if d.disponivel %}
           <a class="dd__i of-item" href="{{ d.src }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar documento</b><small>Abrir o PDF no navegador</small></span></a>
           <button type="submit" class="dd__i of-item" formaction="{{ d.url_pdf }}" formnovalidate>{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>{% if d.servidor %}Documento pronto para assinatura{% else %}Documento pronto para impressão{% endif %}</small></span></button>
-          <button type="submit" class="dd__i of-item" formaction="{{ d.url_docx }}" formnovalidate>{% include "components/icon.html" with nome="document" %}<span><b>Baixar DOCX</b><small>Arquivo editável</small></span></button>
           {% endif %}
           {% if d.url_anexar %}
             <a class="dd__i of-item" href="{{ d.url_anexar }}" data-anexar-assinado data-anexar-nome="{{ d.titulo }}"{% if d.assinado %} data-anexar-atual="1"{% endif %}>{% include "components/icon.html" with nome="upload" %}<span><b>{% if d.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}</b><small>Enviar o PDF depois da assinatura</small></span></a>

@@ -226,7 +226,7 @@ class EtapasTests(CenarioPrestacoes):
         for texto in ['aria-current="step" title="Relatório Técnico', "Relatório Técnico", 'name="diaria"', 'name="translado"', 'name="translado_outro"', 'name="combustivel"', 'name="passagem"',
                       "Descrição do evento", "Objetivo da participação", "Conclusão", "Medidas a serem adotadas pelo órgão", "Informações complementares",
                       'name="modelo_motivo"', 'name="motivo"', "Modelos de texto", f'ps-{self.ps_janine.pk}-diaria_valor_override',
-                      "Visualizar PDF", "Baixar DOCX", "Baixar PDF", "Voltar ao diário", "Salvar e continuar", 'data-autosave-model="relatorio_tecnico"']:
+                      "Visualizar PDF", "Baixar PDF", "Voltar ao diário", "Salvar e continuar", 'data-autosave-model="relatorio_tecnico"']:
             self.assertContains(r, texto)
         r = self.client.post(reverse("viagens_prestacoes:rt_servidor", args=[self.ps_janine.pk]), {"diaria": "R$ 200,00", "translado": "Não houve", "combustivel": "__outro__", "combustivel_outro": "R$ 120,00",
                                                                                                      "passagem": "Não houve", "motivo": "Cobertura do evento", "atividade": "Registro fotográfico", "continuar": "1"})

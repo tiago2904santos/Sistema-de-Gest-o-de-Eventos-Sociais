@@ -267,7 +267,6 @@
               {% if c.termos and c.completo and c.termos|length > 1 %}
                 <div class="ofc-doc__lote">
                   <button type="submit" class="btn--secundaria btn--compacto" formaction="{{ c.url_termos_pdf }}" formtarget="_blank" formnovalidate>{% include "components/icon.html" with nome="download" %}Baixar PDFs</button>
-                  <button type="submit" class="btn--secundaria btn--compacto" formaction="{{ c.url_termos_docx }}" formnovalidate>{% include "components/icon.html" with nome="document" %}Baixar DOCXs</button>
                 </div>
               {% endif %}
               {% for t in c.termos %}
