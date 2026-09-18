@@ -1,10 +1,12 @@
 /**
  * Página do plano de trabalho — os comportamentos do wizard do Gerenciador de
- * Viagens, sem autosave: "Outro programa" revela o campo, os coordenadores
- * trocam entre servidor e nome manual, os três textos padrão se reescrevem
- * enquanto estão no automático, as linhas de efetivo (+/−), o cálculo ao
- * vivo das diárias, o filtro/preset/limpar das atividades com a prévia de
+ * Viagens, sem autosave: "Outro programa" revela o campo, o nome do
+ * coordenador puxa o cargo do servidor, as linhas de efetivo (+/−), o cálculo
+ * ao vivo das diárias, o filtro/preset/limpar das atividades com a prévia de
  * metas e recursos, os destinos do termo e a prévia do documento.
+ *
+ * Contextualização, coordenação e considerações finais não estão na tela: o
+ * `sincronizar_textos_padrao` as escreve no servidor, a cada gravação.
  */
 (function () {
   "use strict";
@@ -53,171 +55,33 @@
   if (programa) programa.addEventListener("change", aplicarPrograma);
   aplicarPrograma();
 
-  /* ── Textos padrão ao vivo ──────────────────────────────────────── */
+  /* ── Coordenadores: o cargo vem do servidor de mesmo nome ────────── */
 
-  var MENORES = { de: 1, da: 1, do: 1, das: 1, dos: 1, e: 1, a: 1, o: 1, no: 1, na: 1, em: 1, "à": 1 };
+  var sugestoes = document.getElementById("pt-servidores");
 
-  function titulo(valor) {
-    return String(valor || "").toLowerCase().split(/\s+/).map(function (palavra, i) {
-      if (!palavra) return palavra;
-      if (i > 0 && MENORES[palavra]) return palavra;
-      return palavra.charAt(0).toUpperCase() + palavra.slice(1);
-    }).join(" ");
-  }
-
-  function municipioAtual() {
-    var rotulos = [];
-    form.querySelectorAll("[data-destino-linha]").forEach(function (linha) {
-      var estado = linha.querySelector(".destino-row__estado select");
-      var cidade = linha.querySelector(".destino-row__campo select");
-      if (!cidade || !cidade.value) return;
-      var nome = cidade.options[cidade.selectedIndex] ? cidade.options[cidade.selectedIndex].text.trim() : "";
-      if (!nome) return;
-      var uf = "";
-      if (estado && estado.options[estado.selectedIndex]) uf = (estado.options[estado.selectedIndex].text.split("—")[0] || "").trim().toUpperCase();
-      var rotulo = titulo(nome) + (uf ? "/" + uf : "");
-      if (rotulos.indexOf(rotulo) < 0) rotulos.push(rotulo);
+  /** O cargo do servidor com esse nome, ou "" para um nome de fora do sistema. */
+  function cargoDoNome(nome) {
+    if (!sugestoes) return "";
+    var procurado = nome.trim().toLowerCase();
+    if (!procurado) return "";
+    var achada = Array.prototype.find.call(sugestoes.options, function (o) {
+      return o.value.trim().toLowerCase() === procurado;
     });
-    return rotulos.length ? rotulos.join(", ") : "________";
+    return achada ? achada.getAttribute("data-cargo") || "" : "";
   }
-
-  function programaAtual() {
-    if (!programa) return "________";
-    if (programa.value === outroValor) {
-      var entrada = form.querySelector('input[name="programa_outros"]');
-      var cru = entrada ? entrada.value.trim() : "";
-      return cru ? titulo(cru) : "________";
-    }
-    if (!programa.value) return "________";
-    var opcao = programa.options[programa.selectedIndex];
-    return opcao ? titulo(opcao.text.trim()) : "________";
-  }
-
-  function termosGenero(genero) {
-    var f = genero === "FEMININO";
-    return {
-      designado: f ? "designada" : "designado",
-      artigo: f ? "a" : "o",
-      coordenador_administrativo: f ? "Coordenadora Administrativa" : "Coordenador Administrativo",
-      coordenador_operacional: f ? "Coordenadora Operacional do Evento" : "Coordenador Operacional do Evento"
-    };
-  }
-
-  function dadosCoordenador(papel) {
-    var painel = form.querySelector('[data-pt-coordenador="' + papel + '"]');
-    if (!painel) return { nome: "", cargo: "", genero: "MASCULINO" };
-    var manual = painel.querySelector('input[name="coordenador_' + papel + '_modo"]:checked');
-    var genero = painel.querySelector('select[name="coordenador_' + papel + '_genero"]');
-    var cargo = painel.querySelector('select[name="coordenador_' + papel + '_cargo_manual"]');
-    var dados = { nome: "", cargo: (cargo && cargo.value) || "", genero: (genero && genero.value) || "MASCULINO" };
-    if (manual && manual.value === "MANUAL") {
-      var entrada = painel.querySelector('input[name="coordenador_' + papel + '_nome_manual"]');
-      dados.nome = entrada ? entrada.value.trim() : "";
-      return dados;
-    }
-    var marcado = painel.querySelector('input[name="coordenador_' + papel + '"]:checked');
-    if (marcado) {
-      var linha = marcado.closest("[data-lista-item]");
-      var nome = linha && linha.querySelector(".of-pessoa__nome");
-      dados.nome = nome ? nome.textContent.trim() : "";
-      dados.cargo = (linha && linha.getAttribute("data-cargo")) || dados.cargo;
-    }
-    return dados;
-  }
-
-  function textoCoordenador(modelo, dados, papel) {
-    var termos = termosGenero(dados.genero);
-    var chave = papel === "adm" ? "coordenador_administrativo" : "coordenador_operacional";
-    return String(modelo || "")
-      .replace(/\{cargo_nome\}/g, [titulo(dados.cargo), titulo(dados.nome)].filter(Boolean).join(" "))
-      .replace(/\{designado\}/g, termos.designado)
-      .replace(/\{artigo\}/g, termos.artigo)
-      .replace(/\{coordenador_administrativo\}/g, termos.coordenador_administrativo)
-      .replace(/\{coordenador_operacional\}/g, termos[chave]);
-  }
-
-  var modelos = lerJson("pt-textos-padrao", {});
-  var programatico = false;
-  var textos = [
-    { nome: "contextualizacao", flag: "contextualizacao" },
-    { nome: "coordenacao", flag: "coordenacao" },
-    { nome: "consideracao_final", flag: "consideracao_final" }
-  ];
-  textos.forEach(function (t) {
-    t.area = form.querySelector('textarea[name="' + t.nome + '"]');
-    t.sinal = form.querySelector('[data-pt-texto-auto="' + t.flag + '"]');
-    // Editar à mão desliga o automático daquele texto.
-    if (t.area) t.area.addEventListener("input", function () { if (!programatico && t.sinal) t.sinal.value = "0"; });
-  });
-
-  function coordenacaoAtual() {
-    var paragrafos = [];
-    var adm = dadosCoordenador("adm");
-    if (adm.nome) paragrafos.push(textoCoordenador(modelos.coordenacao_adm, adm, "adm"));
-    var op = dadosCoordenador("op");
-    if (op.nome) paragrafos.push(textoCoordenador(modelos.coordenacao_op, op, "op"));
-    return paragrafos.join("\n\n");
-  }
-
-  function regenerarTextos() {
-    var municipio = municipioAtual();
-    var prog = programaAtual();
-    textos.forEach(function (t) {
-      if (!t.area || !t.sinal || t.sinal.value !== "1") return;
-      var valor;
-      if (t.nome === "coordenacao") valor = coordenacaoAtual();
-      else {
-        var modelo = modelos[t.nome] || "";
-        if (!modelo) return;
-        valor = modelo.replace(/\{municipio\}/g, municipio).replace(/\{programa\}/g, prog);
-      }
-      programatico = true;
-      t.area.value = valor;
-      programatico = false;
-    });
-  }
-
-  form.addEventListener("change", function (evento) {
-    var alvo = evento.target;
-    if (!alvo || !alvo.name) return;
-    if (alvo.name === "programa" || alvo.name === "programa_outros" || /^(destino|extra)_/.test(alvo.name) || /^coordenador_(adm|op)/.test(alvo.name)) regenerarTextos();
-  });
-  form.addEventListener("input", function (evento) {
-    var alvo = evento.target;
-    if (alvo && (alvo.name === "programa_outros" || /^coordenador_(adm|op)_nome_manual$/.test(alvo.name))) regenerarTextos();
-  });
-
-  /* ── Coordenadores: servidor ↔ manual, cargo preenchido pelo servidor ── */
 
   form.querySelectorAll("[data-pt-coordenador]").forEach(function (painel) {
     var papel = painel.getAttribute("data-pt-coordenador");
-    var blocoServidor = painel.querySelector("[data-pt-coordenador-servidor]");
-    var blocoManual = painel.querySelector("[data-pt-coordenador-manual]");
+    var nome = painel.querySelector('input[name="coordenador_' + papel + '_nome_manual"]');
     var cargo = painel.querySelector('select[name="coordenador_' + papel + '_cargo_manual"]');
+    if (!nome) return;
 
-    function aplicarModo() {
-      var manual = painel.querySelector('input[name="coordenador_' + papel + '_modo"]:checked');
-      var eManual = Boolean(manual && manual.value === "MANUAL");
-      if (blocoServidor) blocoServidor.hidden = eManual;
-      if (blocoManual) blocoManual.hidden = !eManual;
-      if (eManual) {
-        // Em manual o servidor sai da escolha, senão continuaria indo no POST.
-        var marcado = painel.querySelector('input[name="coordenador_' + papel + '"]:checked');
-        if (marcado) { marcado.checked = false; disparar(marcado, "change"); }
-        var entrada = blocoManual && blocoManual.querySelector("input");
-        if (entrada) entrada.focus();
-      }
-    }
-    painel.addEventListener("change", function (evento) {
-      var alvo = evento.target;
-      if (alvo.name === "coordenador_" + papel + "_modo") { aplicarModo(); return; }
-      // Escolher um servidor traz o cargo dele; desfazer a escolha limpa o cargo.
-      if (alvo.name === "coordenador_" + papel) {
-        var linha = alvo.closest("[data-lista-item]");
-        definirSelect(cargo, alvo.checked && linha ? linha.getAttribute("data-cargo") || "" : "");
-      }
+    // Bateu com um servidor, o cargo dele entra. Um nome de fora não mexe no
+    // cargo: quem digita um nome que o sistema não tem escolhe o cargo à mão.
+    nome.addEventListener("input", function () {
+      var doServidor = cargoDoNome(nome.value);
+      if (doServidor) definirSelect(cargo, doServidor);
     });
-    aplicarModo();
   });
 
   /* ── Destinos (o mecanismo do termo) ────────────────────────────── */
@@ -269,9 +133,8 @@
       if (linhas().length <= 1) { limpar(linha); return; }
       linha.remove();
       atualizarEstado();
-      regenerarTextos();
     });
-    if (window.DS && window.DS.arrastarDestinos) window.DS.arrastarDestinos(lista, regenerarTextos);
+    if (window.DS && window.DS.arrastarDestinos) window.DS.arrastarDestinos(lista, atualizarEstado);
     // A nomeação final sai no envio: a primeira linha é o destino do plano, as outras `extra_*_i`.
     form.addEventListener("submit", function () {
       var atuais = linhas();

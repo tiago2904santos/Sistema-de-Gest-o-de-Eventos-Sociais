@@ -90,7 +90,7 @@
 
           <div class="ofc-grupo">
             <div class="ofc-grupo__cabeca"><strong>Programa solicitante</strong><span class="pt-grupo__ajuda">Programa que solicitou a ação. Entra automaticamente na contextualização.</span></div>
-            <div class="ofc-grupo__corpo g-form pt-grade-2">
+            <div class="ofc-grupo__corpo g-form pt-grade-programa">
               <div class="ofc-com-acao">
                 {% include "components/select.html" with name="programa" label="Programa" opcoes=programas placeholder="Selecione um programa (opcional)" permitir_vazio=True pesquisavel=True selecionado=v.programa erros=e.programa %}
                 <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_programas }}" aria-label="Gerenciar programas" title="Gerenciar programas">{% include "components/icon.html" with nome="settings" %}</a>
@@ -104,20 +104,33 @@
           <div class="ofc-grupo">
             <div class="ofc-grupo__cabeca"><strong>Coordenação</strong><span class="pt-grupo__ajuda">Coordenadores administrativo e operacional do plano.</span></div>
             <div class="ofc-grupo__corpo pt-coordenadores">
-              {% include "pages/viagens_planos/_coordenador.html" with papel="adm" rotulo="Coordenador administrativo" nome_campo="coordenador_adm" modo=v.coordenador_adm_modo servidor=v.coordenador_adm nome_manual=v.coordenador_adm_nome_manual cargo=v.coordenador_adm_cargo_manual genero=v.coordenador_adm_genero cargos_opcoes=cargos.adm erros_servidor=e.coordenador_adm erros_nome=e.coordenador_adm_nome_manual erros_cargo=e.coordenador_adm_cargo_manual erros_genero=e.coordenador_adm_genero %}
-              {% include "pages/viagens_planos/_coordenador.html" with papel="op" rotulo="Coordenador operacional (opcional)" nome_campo="coordenador_op" modo=v.coordenador_op_modo servidor=v.coordenador_op nome_manual=v.coordenador_op_nome_manual cargo=v.coordenador_op_cargo_manual genero=v.coordenador_op_genero cargos_opcoes=cargos.op erros_servidor=e.coordenador_op erros_nome=e.coordenador_op_nome_manual erros_cargo=e.coordenador_op_cargo_manual erros_genero=e.coordenador_op_genero %}
+              {% comment %}
+                Um datalist só para os dois painéis: o nome do servidor é único
+                no banco, então a mesma lista serve aos dois papéis.
+              {% endcomment %}
+              <datalist id="pt-servidores">
+                {% for s in servidores %}<option value="{{ s.rotulo }}" data-cargo="{{ s.dados.cargo }}"></option>{% endfor %}
+              </datalist>
+              {% include "pages/viagens_planos/_coordenador.html" with papel="adm" rotulo="Coordenador administrativo" nome_campo="coordenador_adm" nome_exibido=nomes_coordenador.adm cargo=v.coordenador_adm_cargo_manual genero=v.coordenador_adm_genero cargos_opcoes=cargos.adm erros_nome=e.coordenador_adm_nome_manual erros_cargo=e.coordenador_adm_cargo_manual erros_genero=e.coordenador_adm_genero %}
+              {% include "pages/viagens_planos/_coordenador.html" with papel="op" rotulo="Coordenador operacional (opcional)" nome_campo="coordenador_op" nome_exibido=nomes_coordenador.op cargo=v.coordenador_op_cargo_manual genero=v.coordenador_op_genero cargos_opcoes=cargos.op erros_nome=e.coordenador_op_nome_manual erros_cargo=e.coordenador_op_cargo_manual erros_genero=e.coordenador_op_genero %}
             </div>
           </div>
 
-          <div class="ofc-grupo">
-            <div class="ofc-grupo__cabeca"><strong>Período do evento</strong><span class="pt-grupo__ajuda">Data inicial e final, e o horário de atendimento.</span></div>
-            <div class="ofc-grupo__corpo g-form pt-grade-periodo">
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo"><strong>Período do evento</strong><p>Data inicial e final da ação.</p></div>
+            <div class="bloco-split__corpo">
               <div class="pt-periodo">
                 <div class="pt-periodo__rotulos" aria-hidden="true"><span>Data de ida</span><span>Data de volta</span></div>
                 {% include "components/date_range.html" with name="periodo_evento" start_name="data_evento_inicio" end_name="data_evento_fim" label="Período do evento" rotulo_oculto=True dois_campos=True valor_inicio=v.data_evento_inicio valor_fim=v.data_evento_fim erros=e.data_evento_inicio|default:e.data_evento_fim %}
               </div>
+            </div>
+          </div>
+
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo"><strong>Horário de atendimento</strong><p>Atendimento ao público.</p></div>
+            <div class="bloco-split__corpo">
               <div class="ofc-com-acao">
-                {% include "components/select.html" with name="horario_atendimento" label="Horário de atendimento" opcoes=horarios placeholder="Selecione um horário (opcional)" permitir_vazio=True selecionado=v.horario_atendimento erros=e.horario_atendimento %}
+                {% include "components/select.html" with name="horario_atendimento" label="Horário de atendimento" rotulo_oculto=True opcoes=horarios placeholder="Selecione um horário (opcional)" permitir_vazio=True selecionado=v.horario_atendimento erros=e.horario_atendimento %}
                 <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ url_horarios }}" aria-label="Gerenciar horários" title="Gerenciar horários">{% include "components/icon.html" with nome="settings" %}</a>
               </div>
             </div>
@@ -143,32 +156,10 @@
           </div>
 
           {% comment %}
-            Os três sinalizadores dizem se o texto ainda é o gerado ou se a pessoa o
-            editou. Enquanto vale 1, mudar programa, destino ou coordenador reescreve o
-            texto; a primeira edição à mão o zera e o texto para de ser substituído.
+            Contextualização, coordenação e considerações finais não aparecem na
+            tela: são sempre derivadas do programa, do destino e dos coordenadores.
+            Quem as escreve é o `sincronizar_textos_padrao`, a cada gravação.
           {% endcomment %}
-          <input type="hidden" name="contextualizacao_auto" value="{% if flags.contextualizacao_auto %}1{% else %}0{% endif %}" data-pt-texto-auto="contextualizacao">
-          <input type="hidden" name="coordenacao_auto" value="{% if flags.coordenacao_auto %}1{% else %}0{% endif %}" data-pt-texto-auto="coordenacao">
-          <input type="hidden" name="consideracao_auto" value="{% if flags.consideracao_auto %}1{% else %}0{% endif %}" data-pt-texto-auto="consideracao_final">
-
-          <div class="ofc-grupo">
-            <div class="ofc-grupo__cabeca"><strong>Breve contextualização</strong><span class="pt-grupo__ajuda">Texto que abre o documento a partir do programa e do destino.</span></div>
-            <div class="ofc-grupo__corpo g-form g-form--1">
-              {% include "components/textarea.html" with name="contextualizacao" label="Breve contextualização" rotulo_oculto=True linhas="4" placeholder="Deixe em branco para gerar automaticamente a partir do destino e do programa." valor=v.contextualizacao erros=e.contextualizacao %}
-            </div>
-          </div>
-          <div class="ofc-grupo">
-            <div class="ofc-grupo__cabeca"><strong>Coordenação do evento</strong><span class="pt-grupo__ajuda">Designação dos coordenadores (gerada e editável).</span></div>
-            <div class="ofc-grupo__corpo g-form g-form--1">
-              {% include "components/textarea.html" with name="coordenacao" label="Coordenação do evento" rotulo_oculto=True linhas="4" placeholder="Deixe em branco para gerar automaticamente a partir dos coordenadores." valor=v.coordenacao erros=e.coordenacao %}
-            </div>
-          </div>
-          <div class="ofc-grupo">
-            <div class="ofc-grupo__cabeca"><strong>Considerações finais</strong><span class="pt-grupo__ajuda">Fechamento do documento.</span></div>
-            <div class="ofc-grupo__corpo g-form g-form--1">
-              {% include "components/textarea.html" with name="consideracao_final" label="Considerações finais" rotulo_oculto=True linhas="4" placeholder="Deixe em branco para gerar automaticamente a partir do destino." valor=v.consideracao_final erros=e.consideracao_final %}
-            </div>
-          </div>
         </div>
       </section>
       {% endwith %}
@@ -326,11 +317,9 @@
 
 {% block extra_js %}
   {{ block.super }}
-  {{ textos_padrao|json_script:"pt-textos-padrao" }}
   {{ atividades_data|json_script:"pt-atividades-data" }}
   {{ presets_data|json_script:"pt-presets-data" }}
   <script src="{% estatico 'js/viagens-cadastros.js' %}" defer></script>
-  <script src="{% estatico 'js/lista-escolha.js' %}" defer></script>
   <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-planos.js' %}" defer></script>
   {% include "components/v32/dialogo_assinado.html" %}

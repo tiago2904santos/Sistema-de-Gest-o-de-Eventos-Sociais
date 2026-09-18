@@ -30,7 +30,9 @@ class PlanoIdentificacaoForm(forms.ModelForm):
         fields = [
             "programa", "programa_outros", "destino_estado", "destino_cidade",
             "data_evento_inicio", "data_evento_fim", "horario_atendimento",
-            "contextualizacao", "coordenacao", "consideracao_final",
+            # Contextualização, coordenação e considerações finais ficam de fora:
+            # a tela não as oferece e quem as escreve é o `sincronizar_textos_padrao`,
+            # na gravação. No formulário, um POST sem elas gravaria vazio por cima.
             "coordenador_adm_modo", "coordenador_adm", "coordenador_adm_nome_manual", "coordenador_adm_cargo_manual", "coordenador_adm_genero",
             "coordenador_op_modo", "coordenador_op", "coordenador_op_nome_manual", "coordenador_op_cargo_manual", "coordenador_op_genero",
         ]
@@ -75,8 +77,13 @@ class PlanoIdentificacaoForm(forms.ModelForm):
 
         for campo in ("coordenador_adm_genero", "coordenador_op_genero"):
             self.fields[campo].choices = PlanoTrabalho.COORDENADOR_GENERO_CHOICES
-        for campo in ("coordenador_adm_modo", "coordenador_op_modo"):
-            self.fields[campo].choices = PlanoTrabalho.COORDENADOR_MODO_CHOICES
+        # O modo e o servidor não vêm mais da tela: são deduzidos do nome
+        # digitado, em `_normalize_coordenador`. Ficam no formulário só para o
+        # que `clean()` grava neles chegar à instância.
+        for papel in ("adm", "op"):
+            self.fields[f"coordenador_{papel}_modo"].choices = PlanoTrabalho.COORDENADOR_MODO_CHOICES
+            self.fields[f"coordenador_{papel}_modo"].required = False
+            self.fields[f"coordenador_{papel}"].required = False
         cargo_choices = [("", "Selecione um cargo")] + [(c.nome, c.nome) for c in Cargo.objects.order_by("nome")]
         for campo in ("coordenador_adm_cargo_manual", "coordenador_op_cargo_manual"):
             atual = (self.data.get(campo) or "").strip() if self.is_bound else (getattr(instancia, campo, "") or "").strip() if instancia else ""
@@ -175,18 +182,20 @@ class PlanoIdentificacaoForm(forms.ModelForm):
         return cleaned
 
     def _normalize_coordenador(self, cleaned, papel):
-        """Servidor escolhido apaga o manual; sem servidor vale o nome digitado.
+        """Um campo só: o nome digitado diz se o coordenador é do sistema ou não.
 
-        O interruptor da tela manda: em MANUAL o servidor que ficou marcado
-        no painel escondido é ignorado.
+        A tela oferece os servidores como sugestão, mas aceita qualquer nome.
+        Bateu com um servidor, vale o cadastro dele — o nome e o cargo saem de
+        lá, então os manuais são zerados. Não bateu, vale o que foi digitado.
+
+        O nome do servidor é único no banco (`viagens_servidor_nome_unico`),
+        então a busca por nome não tem empate para desfazer.
         """
         servidor_key, modo_key = f"coordenador_{papel}", f"coordenador_{papel}_modo"
         nome_key, cargo_key = f"coordenador_{papel}_nome_manual", f"coordenador_{papel}_cargo_manual"
-        servidor = cleaned.get(servidor_key)
-        cleaned[nome_key] = normalize_upper(cleaned.get(nome_key) or "")
+        nome = normalize_upper(cleaned.get(nome_key) or "")
         cleaned[cargo_key] = (cleaned.get(cargo_key) or "").strip()
-        if cleaned.get(modo_key) == PlanoTrabalho.COORDENADOR_MODO_MANUAL:
-            servidor = None
+        servidor = Servidor.objects.filter(nome__iexact=nome).first() if nome else None
         if servidor:
             cleaned[modo_key] = PlanoTrabalho.COORDENADOR_MODO_SERVIDOR
             cleaned[servidor_key] = servidor
@@ -195,6 +204,7 @@ class PlanoIdentificacaoForm(forms.ModelForm):
             return
         cleaned[modo_key] = PlanoTrabalho.COORDENADOR_MODO_MANUAL
         cleaned[servidor_key] = None
+        cleaned[nome_key] = nome
 
     def save(self, commit=True):
         instancia = super().save(commit=False)

@@ -122,16 +122,6 @@ def texto_padrao_coordenacao(plano):
     return montar_texto_coordenacao(plano)
 
 
-def textos_padrao_templates():
-    """Os modelos crus (com {municipio}/{programa}) para a prévia ao vivo na tela."""
-    return {
-        "contextualizacao": TEXTO_PADRAO_CONTEXTUALIZACAO,
-        "coordenacao_adm": TEXTO_COORDENADOR_ADM,
-        "coordenacao_op": TEXTO_COORDENADOR_OP,
-        "consideracao_final": TEXTO_PADRAO_CONSIDERACAO_FINAL,
-    }
-
-
 def sincronizar_textos_padrao(plano):
     """Regenera os textos cujo `*_auto` está ligado; devolve os campos alterados."""
     alterados = []

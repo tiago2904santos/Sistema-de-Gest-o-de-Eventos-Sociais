@@ -8,26 +8,21 @@ from django.db import transaction
 
 from .services import atualizar_snapshot_diarias, sincronizar_textos_padrao
 
-#: Campo de texto → interruptor que diz se ele ainda está no modo automático.
-FLAGS_AUTOMATICAS = {
-    "contextualizacao": "contextualizacao_auto",
-    "coordenacao": "coordenacao_auto",
-    "consideracao_final": "consideracao_auto",
-}
-
-
-def flags_automaticas(post):
-    """Os três interruptores de texto automático; ausente conta como ligado."""
-    return {flag: (post.get(flag, "1") or "0").strip() != "0" for flag in FLAGS_AUTOMATICAS.values()}
+#: Os interruptores de texto automático. A tela não os oferece mais — os três
+#: textos são sempre derivados do programa, do destino e dos coordenadores —,
+#: então a gravação os religa em vez de ler o que veio no POST: um pedido
+#: forjado (ou guardado de uma versão antiga da tela) congelaria o texto num
+#: plano que já não tem tela para descongelá-lo.
+FLAGS_AUTOMATICAS = ("contextualizacao_auto", "coordenacao_auto", "consideracao_auto")
 
 
 @transaction.atomic
-def salvar_identificacao(form, *, flags):
+def salvar_identificacao(form):
     plano = form.save()
-    for flag, ligado in flags.items():
-        setattr(plano, flag, ligado)
+    for flag in FLAGS_AUTOMATICAS:
+        setattr(plano, flag, True)
     campos_texto = sincronizar_textos_padrao(plano)
-    plano.save(update_fields=[*{*campos_texto, *flags}, "atualizado_em"])
+    plano.save(update_fields=[*{*campos_texto, *FLAGS_AUTOMATICAS}, "atualizado_em"])
     if plano.saida_sede_data and plano.chegada_sede_data:
         atualizar_snapshot_diarias(plano)
     return plano

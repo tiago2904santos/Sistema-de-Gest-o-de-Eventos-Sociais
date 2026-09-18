@@ -121,8 +121,8 @@ class PaginaUnicaTests(CenarioPlanoMixin, TestCase):
         for titulo in ["Identificação e atuação", "Efetivo e diárias", "Atividades, metas e recursos", "Resumo e documentos"]:
             self.assertContains(r, titulo)
         for rotulo in ["Programa solicitante", "Outro programa", "Coordenador administrativo", "Coordenador operacional (opcional)",
-                       "Período do evento", "Data de ida", "Data de volta", "Horário de atendimento", "Destinos", "Breve contextualização",
-                       "Coordenação do evento", "Considerações finais", "Data de saída da sede", "Hora de saída", "Data de chegada na sede",
+                       "Período do evento", "Data de ida", "Data de volta", "Horário de atendimento", "Destinos",
+                       "Data de saída da sede", "Hora de saída", "Data de chegada na sede",
                        "Hora de chegada", "Valor total do plano", "Valor por servidor", "Quantidade de diárias", "Efetivo total",
                        "Filtrar atividades por nome", "Aplicar preset…", "Limpar seleção", "Gerenciar atividades", "Sem metas ainda",
                        "Sem recursos ainda", "Adicionar evento ao plano", "Salvar plano", "Salvar rascunho", "Voltar"]:
@@ -131,9 +131,10 @@ class PaginaUnicaTests(CenarioPlanoMixin, TestCase):
         self.assertNotContains(r, "Corrija os itens abaixo")
         self.assertNotContains(r, "Informe o coordenador administrativo")
         self.assertNotContains(r, "aviso aviso--erro\" role=\"alert\"")
-        # O preset padrão vem marcado no plano novo; o texto automático já preenchido.
+        # O preset padrão vem marcado no plano novo.
         self.assertContains(r, 'value="CIN" id="pt-atividade-CIN" checked')
-        self.assertContains(r, "no âmbito do")
+        # Os três textos gerados não estão na tela: quem os escreve é a gravação.
+        self.assertNotContains(r, "no âmbito do")
         self.assertContains(r, reverse("viagens_cadastros:lista", args=["programas"]))
         self.assertContains(r, reverse("viagens_cadastros:lista", args=["atividades-pt"]))
 
@@ -158,11 +159,25 @@ class PaginaUnicaTests(CenarioPlanoMixin, TestCase):
         self.assertContains(r, "R$ 7.234,68")
         self.assertContains(r, "Finalizar plano")
 
-    def test_texto_editado_a_mao_desliga_o_automatico(self):
+    def test_os_tres_textos_sao_sempre_gerados(self):
+        """A tela não os oferece: o que vier no POST é ignorado e o texto é regerado.
+
+        Vale também para um plano que já tenha sido editado à mão — o
+        interruptor volta ligado, senão o texto ficaria congelado sem tela
+        para mexer nele.
+        """
+        PlanoTrabalho.objects.filter(pk=self.plano.pk).update(
+            contextualizacao="Texto antigo.", contextualizacao_auto=False
+        )
         self.client.post(self.url, self.payload(contextualizacao="Texto meu.", contextualizacao_auto="0"))
         plano = PlanoTrabalho.objects.get(pk=self.plano.pk)
-        self.assertEqual(plano.contextualizacao, "Texto meu.")
-        self.assertFalse(plano.contextualizacao_auto)
+        self.assertNotIn("Texto meu.", plano.contextualizacao)
+        self.assertNotIn("Texto antigo.", plano.contextualizacao)
+        self.assertIn("Maringá/PR", plano.contextualizacao)
+        self.assertTrue(plano.contextualizacao_auto)
+        # Os outros dois seguem o mesmo caminho.
+        self.assertIn("Maringá/PR", plano.consideracao_final)
+        self.assertIn("Juliana Villela de Barros", plano.coordenacao)
 
     def test_destinos_extras_e_erros(self):
         dados = self.payload(quantidade_destinos="1", extra_estado_0=str(self.uf.pk), extra_cidade_0=str(self.sarandi.pk))
