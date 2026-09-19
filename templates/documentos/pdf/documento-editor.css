@@ -33,6 +33,11 @@ body.documento--editor { padding: 16px 0 24px; }
 .documento--editor .doc-cabecalho { top: 0; height: 4.6cm; }
 .documento--editor .doc-rodape { bottom: 0; height: 3.3cm; }
 
+/* Páginas separadas: o editor (viagens-documento.js) distribui o corpo em
+   folhas de altura fixa, cada uma com cabeçalho e rodapé; entre uma e outra,
+   o fundo aparece, como num editor de texto. */
+.folha + .folha { margin-top: 16px; }
+
 /* Campo editável: repouso invisível, cinza claro ao passar, dourado quando
    é o campo aberto no editor. Sem anel de foco, como no resto do sistema. */
 .doc-editavel {
@@ -55,16 +60,20 @@ td.doc-editavel, p.doc-editavel { border-radius: 0; }
 .doc-editavel--texto[data-doc-estado="erro"],
 .doc-editavel--texto[data-doc-estado="erro"]:focus { background: rgba(190, 70, 60, .16); }
 
+/* Dado que ainda não existe (unidade, destinatário...): só no editor, um
+   texto cinza para ter onde clicar e preencher. */
+.doc-vazio { color: #9a9a9a; font-style: italic; font-weight: 400; }
+
 /* Parágrafo do modelo com texto alterado: um fio dourado à esquerda. */
-.doc-bloco[data-doc-override="1"] { box-shadow: inset 2pt 0 0 #BEA45A; padding-left: 5pt; }
+[data-doc-override="1"] { box-shadow: inset 2pt 0 0 #BEA45A; padding-left: 5pt; }
 
 /* Ponto de quebra sem quebra: uma fenda invisível que, ao passar o mouse,
    mostra onde a quebra de página pode ser inserida. */
 .doc-quebra-slot { position: relative; height: 8pt; margin: -4pt 0; cursor: pointer; }
 .doc-quebra-slot:focus { outline: none; }
 .doc-quebra-slot::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dashed transparent; }
-.doc-quebra-slot:hover::before { border-color: #9a9a9a; }
-.doc-quebra-slot:hover::after {
+.doc-quebra-slot:hover::before, .mostrar-quebras .doc-quebra-slot::before { border-color: #9a9a9a; }
+.doc-quebra-slot:hover::after, .mostrar-quebras .doc-quebra-slot::after {
   content: "+ quebra de página"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   padding: 0 4pt; background: #fff; font-size: 7pt; color: #7a7a7a; line-height: 1; white-space: nowrap;
 }

@@ -54,7 +54,7 @@
             {% for l in linhas %}
               <tr>
                 <td class="tabela__col-icone">
-                  <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+                  {% url 'documentos:editor_pagina' 'justificativa' l.oficio.pk as url_editor %}{% include "components/icone_documento.html" with nome="document" url=url_editor rotulo="Editar a justificativa" %}
                   <span class="sr-only">Justificativa</span>
                 </td>
                 <td class="c-nome tm-celula" data-rotulo="Justificativa">{% include "pages/viagens_oficios/_justificativa_linha.html" %}</td>
@@ -75,7 +75,7 @@
         {% for l in linhas %}
           <article class="m-item">
             <div class="m-item__topo">
-              <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+              {% url 'documentos:editor_pagina' 'justificativa' l.oficio.pk as url_editor %}{% include "components/icone_documento.html" with nome="document" url=url_editor rotulo="Editar a justificativa" %}
               <span class="sr-only">Justificativa</span>
             </div>
             <div class="m-item__tipo tm-celula">{% include "pages/viagens_oficios/_justificativa_linha.html" %}</div>

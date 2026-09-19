@@ -67,9 +67,9 @@ class ContextoETemplateTests(SimpleTestCase):
         html = renderizar_html(DocumentoTipo.OFICIO, contexto_de_payload(DocumentoTipo.OFICIO, PAYLOAD, TX, modo="pdf"), modo="pdf")
         for texto in ["SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA", "POLÍCIA CIVIL DO PARANÁ", "ASSESSORIA DE COMUNICAÇÃO",
                       "Ofício Nº <strong>023/2026</strong> (Autorização)", "solicito autorização e medidas",
-                      "<td>Maria da Silva</td>", "<td>CPF: 987.654.321-00</td>",
+                      "Maria da Silva", "987.654.321-00",
                       "Brasília/DF", "R$ 500,00 (quinhentos reais)", ">Roteiro de retorno<", "Participação em reunião institucional",
-                      "cartão corporativo vigente", "Fulano de Tal", "DR. Beltrano", "Curitiba – Pr.", "ascom@pc.pr.gov.br",
+                      "cartão corporativo vigente", "Fulano de Tal", "Beltrano", "Curitiba</span> – Pr.", "ascom@pc.pr.gov.br",
                       "brasao-pcpr.png", "marca-pcpr.png"]:
             self.assertIn(texto, html)
         self.assertNotIn("data-doc-campo", html)

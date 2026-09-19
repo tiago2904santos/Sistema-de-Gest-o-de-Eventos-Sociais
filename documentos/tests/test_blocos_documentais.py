@@ -16,7 +16,7 @@ from documentos.services.pdf_renderer import renderizar_html
 from documentos.services.types import DocumentoTipo
 from viagens_oficios.tests.fixtures import CenarioOficioMixin
 
-PADRAO = BLOCOS_OFICIO[0].padrao
+PADRAO = next(b for b in BLOCOS_OFICIO if b.chave == "declaracao_cartao").padrao
 
 
 class BlocosDocumentaisTests(CenarioOficioMixin, TestCase):

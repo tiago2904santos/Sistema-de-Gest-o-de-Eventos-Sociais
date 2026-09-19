@@ -275,7 +275,7 @@ class CadastroTests(Cenario):
                       "Buscar por placa ou modelo", "data-lista-escolha=\"viatura\"", "Motorista", "Condutor da viatura", "No sistema", "Manual",
                       "Buscar motorista no sistema", "Nome completo", "Ofício de origem",
                       "Roteiro e diárias", "Vincular a um roteiro existente", "Buscar roteiro existente", "Trechos", "Diárias",
-                      "Justificativa", "Documentos", "Editar documento", "Novo viajante", "Nova viatura",
+                      "Justificativa", "Documentos", "data-de-embutir", "Novo viajante", "Nova viatura",
                       "Documento original (Ofício)", "Termos de Autorização"]:
             with self.subTest(texto=texto):
                 self.assertContains(r, texto)
@@ -508,15 +508,17 @@ class CadastroTests(Cenario):
         for texto in ["Termo de Autorização — JANINE LACERDA DO PRADO", "Visualizar documento", "Baixar PDF", "Baixar PDFs",
                       reverse("viagens_oficios:visualizar", args=[o.pk, "oficio"]),
                       reverse("viagens_oficios:visualizar_termo", args=[o.pk, self.janine.pk]),
-                      reverse("viagens_oficios:documento", args=[o.pk])]:
+                      reverse("documentos:editor_embutido", args=["oficio", o.pk]),
+                      reverse("documentos:editor_embutido", args=["termo_oficio", o.pk]) + f"?v={self.janine.pk}"]:
             with self.subTest(texto=texto):
                 self.assertContains(r, texto)
 
     def test_documentos_indisponiveis_com_pendencia(self):
         o = self.oficio()
         r = self.editar(o)
-        self.assertContains(r, "Complete o ofício para gerar e consultar os documentos.")
+        # Sem o PDF para visualizar; o cartão abre o editor, que mostra as pendências.
         self.assertNotContains(r, reverse("viagens_oficios:visualizar", args=[o.pk, "oficio"]))
+        self.assertContains(r, reverse("documentos:editor_embutido", args=["oficio", o.pk]))
 
     def test_acao_volta_para_o_formulario(self):
         o = self.oficio(dias=3, servidores=[self.janine])

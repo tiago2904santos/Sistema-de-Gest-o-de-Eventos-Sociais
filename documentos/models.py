@@ -176,6 +176,8 @@ class DocumentoBloco(OrigemLegado):
     oficio = models.ForeignKey("viagens_oficios.Oficio", on_delete=models.CASCADE, null=True, blank=True, related_name="blocos_documentais")
     termo = models.ForeignKey("viagens_termos.TermoAutorizacao", on_delete=models.CASCADE, null=True, blank=True, related_name="blocos_documentais")
     prestacao = models.ForeignKey("viagens_prestacoes.PrestacaoContas", on_delete=models.CASCADE, null=True, blank=True, related_name="blocos_documentais")
+    ordem_servico = models.ForeignKey("viagens_ordens.OrdemServico", on_delete=models.CASCADE, null=True, blank=True, related_name="blocos_documentais")
+    plano_trabalho = models.ForeignKey("viagens_planos.PlanoTrabalho", on_delete=models.CASCADE, null=True, blank=True, related_name="blocos_documentais")
     chave = models.CharField(max_length=64)
     tipo = models.CharField(max_length=16, choices=Tipo.choices, default=Tipo.PARAGRAFO)
     ordem = models.PositiveIntegerField(default=0)
@@ -195,6 +197,8 @@ class DocumentoBloco(OrigemLegado):
             models.UniqueConstraint(fields=["tipo_documento", "oficio", "chave"], condition=models.Q(oficio__isnull=False), name="documentobloco_oficio_chave"),
             models.UniqueConstraint(fields=["tipo_documento", "termo", "chave"], condition=models.Q(termo__isnull=False), name="documentobloco_termo_chave"),
             models.UniqueConstraint(fields=["tipo_documento", "prestacao", "chave"], condition=models.Q(prestacao__isnull=False), name="documentobloco_prestacao_chave"),
+            models.UniqueConstraint(fields=["tipo_documento", "ordem_servico", "chave"], condition=models.Q(ordem_servico__isnull=False), name="documentobloco_ordem_chave"),
+            models.UniqueConstraint(fields=["tipo_documento", "plano_trabalho", "chave"], condition=models.Q(plano_trabalho__isnull=False), name="documentobloco_plano_chave"),
             # Marca de origem do legado, como todo model de viagens (regra do
             # esquema em migracao_legado); blocos não existem no legado, mas a
             # marca é uniforme.

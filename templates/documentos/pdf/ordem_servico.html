@@ -1,4 +1,4 @@
-{% extends "documentos/pdf/base_institucional.html" %}{% comment %}
+{% extends "documentos/pdf/base_institucional.html" %}{% load documento_tags %}{% comment %}
   Ordem de Serviço: os dois `.docx` de origem em um template só, na folha
   ASCOM. O tipo padrão (`ordem_servico.docx`) determina o deslocamento num
   parágrafo único; os demais tipos (`ordem_servico_modelos.docx`) trazem a
@@ -10,36 +10,41 @@
 {% block classe %} doc-folha-ascom doc-os{% if os.padrao %} doc-os--padrao{% endif %}{% endblock %}
 
 {% block rodape %}
-  <p class="doc-rodape__unidade">{{ os.rodape }}</p>
+  <p class="doc-rodape__unidade">{% trecho "config_endereco" %}{{ os.rodape }}{% endtrecho %}</p>
 {% endblock %}
 
 {% block corpo %}
-  <h1 class="doc-titulo">Ordem de Serviço {{ os.numero }}{% if os.unidade_abreviado %} - {{ os.unidade_abreviado }}{% endif %}</h1>
+  <h1 class="doc-titulo">Ordem de Serviço {{ os.numero }}{% if os.unidade_abreviado %} - {% trecho "config_sigla" %}{{ os.unidade_abreviado }}{% endtrecho %}{% endif %}</h1>
 
-  <p class="doc-os__ref">Ref.: {{ os.referencia }}</p>
+  <p class="doc-os__ref">Ref.: {% trecho "os_tipo" %}{{ os.referencia }}{% endtrecho %}</p>
 
-  <p class="doc-os__texto">Eu, {{ os.nome_chefia }}, {{ os.cargo_chefia }} da Polícia Civil do Paraná, no uso das atribuições que me foram conferidas pelo Delegado-Geral Silvio Jacob Rockembach, bem como pelo Conselho da Polícia Civil,</p>
+  {% comment %}"Eu, <quem assina>, <cargo>" e o resto do parágrafo, que é do modelo.{% endcomment %}
+  <p class="doc-os__texto">Eu, {% trecho "config_assina_ordem_servico" %}{{ os.nome_chefia }}{% if not os.nome_chefia %}{% vazio "Quem assina" %}{% endif %}, {{ os.cargo_chefia }}{% endtrecho %} {% bloco "atribuicoes" elemento="span" base=False %}</p>
 
-  <p class="doc-os__determino">Determino</p>
+  {% bloco "determino" classe="doc-os__determino" base=False %}
 
   {% if os.padrao %}
-    <p class="doc-os__texto">O deslocamento {{ os.equipe_deslocamento }} para o município de <strong>{{ os.destino }}</strong>, <strong>{{ os.data_extenso }}</strong>, para realizar {{ os.motivo }}.</p>
+    <p class="doc-os__texto">O deslocamento {% trecho "os_equipe" %}{{ os.equipe_deslocamento }}{% endtrecho %} para o município de <strong{% editavel "os_destinos" %}>{{ os.destino }}</strong>, <strong{% editavel "os_periodo" %}>{{ os.data_extenso }}</strong>, para realizar {% trecho "os_motivo" %}{{ os.motivo }}{% endtrecho %}.</p>
   {% else %}
     <div class="doc-os__modelo">
-      <p class="doc-os__texto">{{ os.determinacao }}</p>
+      <p{% editavel "os_tipo" classe="doc-os__texto" %}>{{ os.determinacao }}</p>
       {% if os.competencias_equipe %}
-        <ul class="doc-os__competencias">
+        <ul{% editavel "os_funcoes" classe="doc-os__competencias" %}>
           {% for item in os.competencias_equipe %}<li>{{ item }};</li>{% endfor %}
         </ul>
       {% endif %}
-      {% for justificativa in os.justificativas %}<p class="doc-os__texto">{{ justificativa }}</p>{% endfor %}
-      {% if os.finalidade %}<p class="doc-os__texto">{{ os.finalidade }}</p>{% endif %}
+      <div{% editavel "os_tipo" %}>
+        {% for justificativa in os.justificativas %}<p class="doc-os__texto">{{ justificativa }}</p>{% endfor %}
+        {% if os.finalidade %}<p class="doc-os__texto">{{ os.finalidade }}</p>{% endif %}
+      </div>
     </div>
   {% endif %}
 
   <div class="doc-os__assinatura">
-    <p class="doc-os__local">{% if os.sede %}{{ os.sede }}, {% endif %}{{ os.data_atual_extenso }}</p>
-    <p class="doc-os__chefia">{{ os.nome_chefia }}</p>
-    <p class="doc-os__chefia">{{ os.cargo_chefia }}</p>
+    <p class="doc-os__local">{% if os.sede %}{% trecho "config_endereco" %}{{ os.sede }}{% endtrecho %}, {% endif %}{{ os.data_atual_extenso }}</p>
+    <div{% editavel "config_assina_ordem_servico" %}>
+      <p class="doc-os__chefia">{{ os.nome_chefia }}</p>
+      <p class="doc-os__chefia">{{ os.cargo_chefia }}</p>
+    </div>
   </div>
 {% endblock %}

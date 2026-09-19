@@ -1,4 +1,4 @@
-{% extends "documentos/pdf/base_institucional.html" %}{% comment %}
+{% extends "documentos/pdf/base_institucional.html" %}{% load documento_tags %}{% comment %}
   Justificativa: o conteúdo do `justificativa.docx` de origem, na folha ASCOM
   (a mesma do termo). Local e data à direita, o título, o texto em parágrafos
   justificados com recuo na primeira linha e o assinante centralizado.
@@ -13,17 +13,17 @@
 {% block rodape %}{% include "documentos/pdf/_rodape_ascom.html" %}{% endblock %}
 
 {% block corpo %}
-  <p class="doc-justificativa__data">{% if justificativa.sede %}{{ justificativa.sede }}, {% endif %}{{ justificativa.data_extenso }}</p>
+  <p class="doc-justificativa__data">{% if justificativa.sede %}{% trecho "config_endereco" %}{{ justificativa.sede }}{% endtrecho %}, {% endif %}{{ justificativa.data_extenso }}</p>
 
-  <h1 class="doc-titulo">Justificativa</h1>
+  {% bloco "titulo" classe="doc-titulo" elemento="h1" base=False %}
 
-  <div class="doc-justificativa__texto">
-    {% for paragrafo in justificativa.paragrafos %}<p>{{ paragrafo }}</p>{% endfor %}
+  <div{% editavel "justificativa_texto" classe="doc-justificativa__texto" %}>
+    {% for paragrafo in justificativa.paragrafos %}<p>{{ paragrafo }}</p>{% empty %}{% vazio "Texto da justificativa" %}{% endfor %}
   </div>
 
-  {% if justificativa.assinante %}
-    <div class="doc-justificativa__assinatura">
-      <p class="doc-justificativa__assinante">{{ justificativa.assinante }}</p>
+  {% if justificativa.assinante or campos_editaveis.config_assina_justificativa %}
+    <div{% editavel "config_assina_justificativa" classe="doc-justificativa__assinatura" %}>
+      <p class="doc-justificativa__assinante">{{ justificativa.assinante }}{% if not justificativa.assinante %}{% vazio "Quem assina" %}{% endif %}</p>
       {% if justificativa.cargo %}<p>{{ justificativa.cargo }}</p>{% endif %}
     </div>
   {% endif %}

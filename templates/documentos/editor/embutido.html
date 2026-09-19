@@ -1,0 +1,113 @@
+{% load static %}{% comment %}
+  Editor de documento embutido no fim do formulário, no desenho de um editor
+  de texto (Google Docs): barra de ferramentas e as páginas A4 separadas. É o
+  visualizador de documentos de todos os cadastros — ofício, justificativa,
+  termo, ordem de serviço, plano de trabalho, relatório técnico e diário de
+  bordo. Chega por fetch (`documentos:editor_embutido`) dentro do cartão do
+  documento e é ligado por `documento-embutido.js`.
+
+  A folha vive num iframe da mesma origem (`doc.url_folha`), de propósito: o
+  CSS da aplicação não alcança o documento e a fidelidade tela ≈ PDF sai por
+  construção. Nada aqui é <form>: o editor mora dentro do formulário do
+  cadastro. O PDF para imprimir sai por um formulário que o script monta no
+  <body> (`data-de-pdf`), e o balão do campo também é levado para lá.
+
+  O que é de cada documento vem em `doc`, de
+  `documentos.editor.pagina.contexto_da_pagina`.
+{% endcomment %}
+<div class="de-app de-app--embutido"{% if doc.pode_editar %} data-de-editor data-de-url="{{ doc.api.campo }}" data-de-url-bloco="{{ doc.api.bloco }}" data-de-url-quebra="{{ doc.api.quebra }}" data-de-versao="{{ doc.versao }}" data-de-principais="{{ doc.principais }}"{% endif %}>
+  {# Barra de ferramentas. Formatação não entra: a letra e o layout são os do modelo oficial. #}
+  <div class="de-barra" role="toolbar" aria-label="Ferramentas do documento">
+    {% if doc.pode_editar %}
+      <div class="de-barra__grupo">
+        <button type="button" class="de-icone" data-de-desfazer disabled title="Desfazer (Ctrl+Z)" aria-label="Desfazer">{% include "components/icon.html" with nome="undo" %}</button>
+        <button type="button" class="de-icone" data-de-refazer disabled title="Refazer (Ctrl+Y)" aria-label="Refazer">{% include "components/icon.html" with nome="redo" %}</button>
+      </div>
+      <span class="de-barra__sep" aria-hidden="true"></span>
+    {% endif %}
+    <div class="de-barra__grupo" data-de-zoom-grupo>
+      <button type="button" class="de-icone" data-de-zoom-menos title="Diminuir o zoom" aria-label="Diminuir o zoom">{% include "components/icon.html" with nome="minus" %}</button>
+      <select class="de-zoom" data-de-zoom aria-label="Zoom">
+        <option value="0.5">50%</option>
+        <option value="0.75">75%</option>
+        <option value="0.9">90%</option>
+        <option value="1" selected>100%</option>
+        <option value="1.25">125%</option>
+        <option value="1.5">150%</option>
+      </select>
+      <button type="button" class="de-icone" data-de-zoom-mais title="Aumentar o zoom" aria-label="Aumentar o zoom">{% include "components/icon.html" with nome="plus" %}</button>
+    </div>
+    {% if doc.pode_editar %}
+      <span class="de-barra__sep" aria-hidden="true"></span>
+      <div class="de-barra__grupo">
+        {% if doc.campos_menu %}
+          <div class="dd de-menu" data-de-menu>
+            <button type="button" class="de-texto-botao" data-de-menu-gatilho aria-haspopup="menu" aria-expanded="false">{% include "components/icon.html" with nome="pencil" %}Campos{% include "components/icon.html" with nome="chevron-down" %}</button>
+            <div class="dd__c de-menu__corpo" role="menu" hidden data-de-menu-corpo>
+              <div class="dd__t">Editar um campo</div>
+              {% for campo in doc.campos_menu %}<button type="button" class="dd__i" role="menuitem" data-de-abrir="{{ campo.chave }}" data-de-origem="{{ campo.origem }}">{{ campo.rotulo }}</button>{% endfor %}
+            </div>
+          </div>
+        {% endif %}
+        {% if doc.tem_quebras %}
+          <button type="button" class="de-texto-botao" data-de-alternar-quebras aria-pressed="false" title="Mostrar onde se pode inserir uma quebra de página">{% include "components/icon.html" with nome="page-break" %}Quebras de página</button>
+        {% endif %}
+      </div>
+    {% endif %}
+    <span class="de-barra__sep" aria-hidden="true"></span>
+    <div class="de-barra__grupo">
+      {% if doc.pode_emitir and doc.url_pdf %}
+        <button type="button" class="de-texto-botao" data-de-pdf="{{ doc.url_pdf }}{% if '?' in doc.url_pdf %}&{% else %}?{% endif %}inline=1" data-de-alvo="_blank" title="Abre o PDF numa aba nova, pronto para imprimir">{% include "components/icon.html" with nome="printer" %}Imprimir</button>
+      {% else %}
+        <button type="button" class="de-texto-botao" disabled title="O PDF ainda não pode ser emitido">{% include "components/icon.html" with nome="printer" %}Imprimir</button>
+      {% endif %}
+    </div>
+    <div class="de-barra__fim">
+      {% if doc.pode_editar %}
+        <span class="de-salvo" data-de-salvo aria-live="polite" title="As alterações são gravadas enquanto você edita">{% include "components/icon.html" with nome="cloud-check" %}<span data-de-salvo-texto>Tudo salvo</span></span>
+      {% endif %}
+      <button type="button" class="de-icone" data-de-alternar-historico aria-pressed="false" title="Histórico de alterações" aria-label="Histórico de alterações">{% include "components/icon.html" with nome="clock" %}</button>
+    </div>
+  </div>
+
+  {% if doc.pendencias %}
+    <div class="dc-aviso" role="status">
+      {% include "components/icon.html" with nome="alert" %}
+      <div>
+        <strong>O PDF ainda não pode ser emitido.</strong>
+        <ul class="dc-aviso__lista">{% for p in doc.pendencias %}<li>{{ p }}</li>{% endfor %}</ul>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="de-area">
+    <div class="de-palco" data-de-palco>
+      {# A caixa tem o tamanho da folha já com o zoom; o quadro dentro dela é escalado. #}
+      <div class="de-folha-caixa" data-de-folha-caixa>
+        <iframe class="dc-folha" src="{{ doc.url_folha }}" title="{{ doc.rotulo }}"></iframe>
+      </div>
+    </div>
+
+    {# O que mudou no documento, por onde (formulário, editor documental, sistema) e quem. #}
+    <aside class="de-historico" data-de-historico hidden aria-label="Histórico de alterações">
+      <div class="de-historico__cabeca">
+        <h2>Histórico<em>{{ doc.historico|length }} registro{{ doc.historico|length|pluralize }}</em></h2>
+        <button type="button" class="de-icone" data-de-alternar-historico aria-label="Fechar o histórico">{% include "components/icon.html" with nome="x" %}</button>
+      </div>
+      <div class="de-historico__lista">
+        {% for registro in doc.historico %}
+          <div class="de-historico__item{% if forloop.first %} de-historico__item--atual{% endif %}">
+            <span class="de-historico__quando">{{ registro.criado_em|date:"d/m/Y · H\hi" }}</span>
+            <strong>{{ registro.get_acao_display }}{% if registro.sobre_bloco %} de bloco documental{% endif %}</strong>
+            <span class="de-historico__quem">{{ registro.usuario|default:"Sistema" }} · {{ registro.get_origem_display }}{% if registro.campos_alterados %} · {{ registro.campos_alterados|join:", " }}{% endif %}</span>
+          </div>
+        {% empty %}
+          <p class="texto-vazio">Nenhum registro no histórico.</p>
+        {% endfor %}
+      </div>
+    </aside>
+  </div>
+
+  {# Balão do campo aberto: o script o leva para o <body> e o posiciona junto ao trecho clicado. #}
+  {% if doc.pode_editar %}<div class="de-balao" data-de-painel role="dialog" aria-label="Editar campo" hidden></div>{% endif %}
+</div>

@@ -45,6 +45,8 @@
 .doc-paragrafo { margin: 4pt 0; text-align: justify; }
 .doc-custeio { margin: 0 0 4pt 12pt; white-space: pre-line; }
 .doc-bloco { margin: 4pt 0; text-align: justify; }
+/* A linha da secretaria no cabeçalho também é bloco (texto do modelo): segue o cabeçalho. */
+.doc-cabecalho .doc-bloco { margin: 0; text-align: center; }
 
 /* Tabelas com grade, como no DOCX. */
 .doc-tabela { width: 100%; border-collapse: collapse; margin: 3pt 0 5pt; page-break-inside: avoid; }

@@ -1,4 +1,4 @@
-{% extends "pages/viagens_prestacoes/base.html" %}{% load l10n %}
+{% extends "pages/viagens_prestacoes/base.html" %}{% load l10n documento_tags %}
 {% comment %}
   Etapa 2 — Relatório técnico, no desenho do diário: um cartão só, com um
   botão de ação (visualizar o PDF, baixar DOCX e PDF). Dentro, grupos leves
@@ -22,6 +22,7 @@
         <div class="dd of-menu" data-menu>
           <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações do relatório técnico" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
           <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
+            <a class="dd__i of-item" href="#documento-relatorio_tecnico">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar documento</b><small>O relatório de {{ ps.servidor.nome }}, pela prévia A4</small></span></a>
             {% for servidor in servidores %}
               <a class="dd__i of-item" href="{{ servidor.preview_inline_url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar PDF</b><small>O relatório de {{ ps.servidor.nome }} em outra aba</small></span></a>
               <a class="dd__i of-item" href="{{ servidor.download_pdf_url }}">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Relatório técnico em PDF</small></span></a>
@@ -68,6 +69,12 @@
         <button type="submit" class="btn-primaria" form="form-prestacao" name="continuar" value="1">Salvar e continuar</button>
       </div>
     </div>
+  </section>
+  {# O documento: a folha A4 editável, fora do <form>. #}
+  {% documento_embutido "relatorio_tecnico" ps.pk "Relatório técnico" as documentos %}
+  <section class="section-card reg">
+    <header class="section-card__cabecalho reg__t"><h2 class="section-card__titulo">Documento</h2></header>
+    <div class="section-card__corpo">{% include "documentos/editor/_visualizador.html" %}</div>
   </section>
 </div>
 {{ modelos_texto|json_script:"rt-modelos" }}

@@ -292,7 +292,7 @@
             </div>
           {% endif %}
           <div class="ofc-docs">
-            {% include "pages/viagens_oficios/_documento_inline.html" with d=documento menu_id="pt-menu-documento" %}
+            {% include "pages/viagens_oficios/_documento_inline.html" with d=documento menu_id="pt-menu-documento" aberto=True %}
           </div>
           {% include "pages/viagens_planos/_acoes_fim.html" %}
         </div>
@@ -304,6 +304,7 @@
 {% endblock %}
 
 {% block extra_js %}
+  {% include "documentos/editor/_recursos.html" %}
   {{ block.super }}
   {{ atividades_data|json_script:"pt-atividades-data" }}
   {{ presets_data|json_script:"pt-presets-data" }}

@@ -1,0 +1,5 @@
+{% comment %}
+  Ícone de documento das listas (quadrado da primeira coluna). Com `url`, é o
+  atalho para o editor do documento; sem, só o ícone.
+  Contexto: `nome` (ícone), `url` (opcional), `rotulo` (o que o link abre).
+{% endcomment %}{% if url %}<a class="tabela__icone-doc tabela__icone-doc--link" href="{{ url }}" title="{{ rotulo|default:'Editar documento' }}" aria-label="{{ rotulo|default:'Editar documento' }}">{% include "components/icon.html" with nome=nome %}</a>{% else %}<span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=nome %}</span>{% endif %}

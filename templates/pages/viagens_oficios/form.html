@@ -256,7 +256,7 @@
         </header>
         <div class="section-card__corpo">
           <div class="ofc-docs">
-          {% url 'viagens_oficios:documento' oficio.pk as url_editar_documento %}{% include "pages/viagens_oficios/_documento_inline.html" with d=c.oficio menu_id="ofc-menu-oficio" url_editar=url_editar_documento %}
+          {% include "pages/viagens_oficios/_documento_inline.html" with d=c.oficio menu_id="ofc-menu-oficio" %}
           {% include "pages/viagens_oficios/_documento_inline.html" with d=c.justificativa menu_id="ofc-menu-justificativa" %}
           <details class="ofc-doc">
             <summary class="ofc-doc__cabeca">
@@ -303,5 +303,6 @@
   <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
   <script src="{% estatico 'js/roteiro-editor.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-oficios.js' %}" defer></script>
+  {% include "documentos/editor/_recursos.html" %}
   {% include "components/v32/dialogo_assinado.html" %}
 {% endblock %}

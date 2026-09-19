@@ -32,6 +32,22 @@ class PontoDeQuebra:
 
 BLOCOS_OFICIO = (
     BlocoDocumental(
+        "secretaria", "Linha da secretaria no cabeçalho",
+        "SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA",
+        ajuda="Texto do modelo. O texto alterado vale só para este documento.",
+    ),
+    BlocoDocumental(
+        "abertura", "Abertura do ofício",
+        "Senhor Delegado, através deste, solicito {assunto} e medidas para a concessão de diárias e recursos "
+        "para combustível, conforme cronograma abaixo:",
+        ajuda="Texto do modelo. {assunto} vira \"autorização\" ou \"convalidação\", conforme a data do ofício e a "
+              "primeira saída do roteiro. O texto alterado vale só para este documento.",
+    ),
+    BlocoDocumental(
+        "fecho", "Fecho", "Respeitosamente,",
+        ajuda="Texto do modelo. O texto alterado vale só para este documento.",
+    ),
+    BlocoDocumental(
         "declaracao_cartao", "Declaração do cartão corporativo",
         "Declaro que os servidores estão cientes da necessidade de estar na posse de cartão corporativo "
         "vigente e apto para uso, no período do deslocamento.",
@@ -46,8 +62,64 @@ QUEBRAS_OFICIO = (
     PontoDeQuebra("antes_assinatura", "Antes da assinatura"),
 )
 
+_SO_ESTE = "Texto do modelo. O texto alterado vale só para este documento."
+SECRETARIA = BLOCOS_OFICIO[0]
+
+
+def _blocos(*pares):
+    return (SECRETARIA,) + tuple(BlocoDocumental(chave, rotulo, padrao, ajuda=_SO_ESTE) for chave, rotulo, padrao in pares)
+
+
+BLOCOS_TERMO = _blocos(
+    ("titulo", "Título", "Termo de autorização para participação em eventos da ASCOM"),
+    ("declaracao", "Declaração do cartão corporativo",
+     "Declaro que estou ciente da necessidade de estar na posse de cartão corporativo vigente e apto para uso, "
+     "no período do deslocamento."),
+    ("assinatura_servidor", "Assinatura do servidor", "Assinatura servidor:"),
+    ("assinatura_chefia", "Autorização da chefia", "Autorização da Chefia:"),
+)
+
+BLOCOS_JUSTIFICATIVA = _blocos(("titulo", "Título", "Justificativa"))
+
+BLOCOS_ORDEM = _blocos(
+    ("atribuicoes", "Atribuições de quem determina",
+     "da Polícia Civil do Paraná, no uso das atribuições que me foram conferidas pelo Delegado-Geral "
+     "Silvio Jacob Rockembach, bem como pelo Conselho da Polícia Civil,"),
+    ("determino", "Determino", "Determino"),
+)
+
+BLOCOS_PLANO = _blocos(
+    ("secao_contextualizacao", "Título: contextualização", "Breve contextualização"),
+    ("secao_atuacao", "Título: atuação", "Atuação"),
+    ("secao_atividades", "Título: atividades", "Atividades a serem desenvolvidas"),
+    ("secao_metas", "Título: metas", "Metas estabelecidas"),
+    ("secao_recursos", "Título: recursos", "Recursos necessários"),
+    ("secao_valor", "Título: valor", "Valor total do plano"),
+    ("secao_coordenador", "Título: coordenador", "Coordenador do evento"),
+    ("secao_consideracoes", "Título: considerações", "Considerações finais"),
+)
+
+BLOCOS_RELATORIO = _blocos(
+    ("titulo", "Título", "Relatório técnico de viagem"),
+    ("titulo_valores", "Título dos valores", "Valores utilizados na viagem:"),
+    ("declaracao", "Declaração",
+     "Declaramos que o trabalho previsto na programação de viagem foi realizado, assim como cumprido o período "
+     "de realização da viagem e a documentação encaminhada ao setor responsável"),
+)
+
+BLOCOS_DIARIO = (SECRETARIA,)
+
 REGISTRO_BLOCOS: dict[DocumentoTipo, dict[str, BlocoDocumental]] = {
-    DocumentoTipo.OFICIO: {bloco.chave: bloco for bloco in BLOCOS_OFICIO},
+    tipo: {bloco.chave: bloco for bloco in blocos}
+    for tipo, blocos in (
+        (DocumentoTipo.OFICIO, BLOCOS_OFICIO),
+        (DocumentoTipo.TERMO_AUTORIZACAO, BLOCOS_TERMO),
+        (DocumentoTipo.JUSTIFICATIVA, BLOCOS_JUSTIFICATIVA),
+        (DocumentoTipo.ORDEM_SERVICO, BLOCOS_ORDEM),
+        (DocumentoTipo.PLANO_TRABALHO, BLOCOS_PLANO),
+        (DocumentoTipo.RELATORIO_TECNICO, BLOCOS_RELATORIO),
+        (DocumentoTipo.DIARIO_BORDO, BLOCOS_DIARIO),
+    )
 }
 REGISTRO_QUEBRAS: dict[DocumentoTipo, dict[str, PontoDeQuebra]] = {
     DocumentoTipo.OFICIO: {ponto.chave: ponto for ponto in QUEBRAS_OFICIO},

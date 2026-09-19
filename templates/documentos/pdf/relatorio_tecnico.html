@@ -10,44 +10,44 @@
 {% block classe %} doc-folha-ascom doc-rt{% endblock %}
 
 {% block rodape %}
-  <p class="doc-rodape__unidade">{{ rt.rodape }}</p>
+  <p class="doc-rodape__unidade">{% trecho "config_endereco" %}{{ rt.rodape }}{% endtrecho %}</p>
 {% endblock %}
 
 {% block corpo %}
   <div class="doc-rt__ref">
-    <span>Ref. ao Ofício {{ rt.oficio }}</span>
-    <span>{% if rt.sede %}{{ rt.sede }}, {% endif %}{{ rt.data_atual_extenso }}</span>
+    <span>Ref. ao Ofício {% trecho "rt_oficio" %}{{ rt.oficio }}{% endtrecho %}</span>
+    <span>{% if rt.sede %}{% trecho "config_endereco" %}{{ rt.sede }}{% endtrecho %}, {% endif %}{{ rt.data_atual_extenso }}</span>
   </div>
 
-  <h1 class="doc-rt__titulo">Relatório técnico de viagem</h1>
+  {% bloco "titulo" classe="doc-rt__titulo" elemento="h1" base=False %}
 
   <table class="doc-rt__tabela doc-rt__tabela--servidor">
-    <tr><th>Nome</th><td>{{ rt.nome_servidor }}</td></tr>
-    <tr><th>CPF</th><td>{{ rt.cpf_servidor }}</td></tr>
+    <tr><th>Nome</th><td{% editavel "servidor_nome" ids.servidor %}>{{ rt.nome_servidor }}</td></tr>
+    <tr><th>CPF</th><td{% editavel "servidor_cpf" ids.servidor %}>{{ rt.cpf_servidor }}</td></tr>
   </table>
 
-  <h2 class="doc-rt__titulo">Valores utilizados na viagem:</h2>
+  {% bloco "titulo_valores" classe="doc-rt__titulo" elemento="h2" base=False %}
 
   <table class="doc-rt__tabela doc-rt__tabela--valores">
-    <tr><th>Diária:</th><td>{{ rt.diaria }}</td></tr>
-    <tr><th>Translado:</th><td>{{ rt.translado }}</td></tr>
-    <tr><th>Combustível:</th><td>{{ rt.combustivel }}</td></tr>
-    <tr><th>Passagem:</th><td>{{ rt.passagem }}</td></tr>
+    <tr><th>Diária:</th><td{% editavel "rt_diaria" %}>{{ rt.diaria }}</td></tr>
+    <tr><th>Translado:</th><td{% editavel "rt_translado" %}>{{ rt.translado }}</td></tr>
+    <tr><th>Combustível:</th><td{% editavel "rt_combustivel" %}>{{ rt.combustivel }}</td></tr>
+    <tr><th>Passagem:</th><td{% editavel "rt_passagem" %}>{{ rt.passagem }}</td></tr>
   </table>
 
   <table class="doc-rt__tabela doc-rt__tabela--relato">
     {% for secao in rt.secoes %}
       <tbody class="doc-rt__secao">
         <tr><th>{{ secao.titulo }}</th></tr>
-        <tr><td>{{ secao.texto|linhas }}</td></tr>
+        <tr><td{% editavel secao.campo %}>{{ secao.texto|linhas }}</td></tr>
       </tbody>
     {% endfor %}
   </table>
 
-  <p class="doc-rt__declaracao">Declaramos que o trabalho previsto na programação de viagem foi realizado, assim como cumprido o período de realização da viagem e a documentação encaminhada ao setor responsável</p>
+  {% bloco "declaracao" classe="doc-rt__declaracao" base=False %}
 
   <div class="doc-rt__assinatura">
     <p class="doc-rt__linha"></p>
-    <p>CPF {{ rt.cpf_servidor }}</p>
+    <p>CPF {% trecho "servidor_cpf" ids.servidor %}{{ rt.cpf_servidor }}{% endtrecho %}</p>
   </div>
 {% endblock %}

@@ -76,7 +76,10 @@
 
 .doc-oficio__assinatura { margin-top: 0.3cm; text-align: center; page-break-inside: avoid; }
 .doc-oficio__assinatura p { margin: 0; }
-.doc-oficio__chefia { margin-top: 0.75cm !important; font-size: 9pt; font-weight: 700; }
+/* O fecho é bloco do modelo (texto editável): centralizado como o resto da assinatura. */
+.doc-oficio__assinatura .doc-bloco { text-align: center; }
+.doc-oficio__abertura.doc-bloco { text-align: left; }
+.doc-oficio__chefia { margin-top: 0.15cm !important; font-size: 9pt; font-weight: 700; }
 .doc-oficio__cargo { font-weight: 700; }
 
 /* Caber numa página: se o PDF passar de uma, o motor o refaz com estes
@@ -84,11 +87,11 @@
    também o corpo do texto. */
 .doc-compacto-1 .doc-oficio__tabela { margin-bottom: 0.15cm; }
 .doc-compacto-1 .doc-oficio__tabela th, .doc-compacto-1 .doc-oficio__tabela td { padding: 2pt 5pt; }
-.doc-compacto-1 .doc-oficio__chefia { margin-top: 0.55cm !important; }
+.doc-compacto-1 .doc-oficio__chefia { margin-top: 0.1cm !important; }
 .doc-compacto-2 .doc-corpo { font-size: 7.5pt; line-height: 1.2; }
 .doc-compacto-2 .doc-oficio__tabela { margin-bottom: 0.1cm; }
 .doc-compacto-2 .doc-oficio__tabela th, .doc-compacto-2 .doc-oficio__tabela td { padding: 1.5pt 4pt; }
-.doc-compacto-2 .doc-oficio__chefia { margin-top: 0.45cm !important; font-size: 8.5pt; }
+.doc-compacto-2 .doc-oficio__chefia { margin-top: 0.05cm !important; font-size: 8.5pt; }
 
 /* Na tela: as margens deste modelo e as faixas de cabeçalho e rodapé com a
    altura das margens de impressão. */

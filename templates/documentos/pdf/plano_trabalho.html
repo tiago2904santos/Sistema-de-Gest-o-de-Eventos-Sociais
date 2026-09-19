@@ -14,18 +14,18 @@
 {% block classe %} doc-folha-ascom doc-plano{% endblock %}
 
 {% block rodape %}
-  <p class="doc-rodape__unidade">{{ plano.rodape }}</p>
+  <p class="doc-rodape__unidade">{% trecho "config_endereco" %}{{ plano.rodape }}{% endtrecho %}</p>
 {% endblock %}
 
 {% block corpo %}
   <div class="doc-plano__capa">
     <h1 class="doc-titulo">Plano de Trabalho Nº {{ plano.numero }}</h1>
-    {% if plano.unidade %}<p class="doc-plano__unidade">{{ plano.unidade }}</p>{% endif %}
+    {% if plano.unidade %}<p class="doc-plano__unidade">{% trecho "config_unidade" %}{{ plano.unidade }}{% endtrecho %}</p>{% endif %}
   </div>
 
   <section class="doc-plano__bloco">
-    <h2 class="doc-plano__secao">Breve contextualização</h2>
-    {% for paragrafo in plano.contextualizacao %}<p class="doc-plano__texto">{{ paragrafo|linhas }}</p>{% endfor %}
+    {% bloco "secao_contextualizacao" classe="doc-plano__secao" elemento="h2" base=False %}
+    <div{% editavel "plano_contextualizacao" %}>{% for paragrafo in plano.contextualizacao %}<p class="doc-plano__texto">{{ paragrafo|linhas }}</p>{% empty %}{% vazio "Contextualização" %}{% endfor %}</div>
   </section>
 
   {# Na tela a folha é contínua: a linha mostra onde o PDF vira a página. #}
@@ -33,10 +33,10 @@
   {% comment %}Cada seção é um bloco que não se parte entre páginas (o que não
   cabe vai inteiro para a página seguinte); o grupo de cada evento, idem.{% endcomment %}
   <section class="doc-plano__bloco doc-plano__bloco--nova-pagina">
-    <h2 class="doc-plano__secao">Atuação</h2>
+    {% bloco "secao_atuacao" classe="doc-plano__secao" elemento="h2" base=False %}
     {% if plano.multi %}
       {% for ev in plano.eventos %}
-        <div class="doc-plano__grupo doc-plano__atuacao">
+        <div{% editavel "plano_eventos" classe="doc-plano__grupo doc-plano__atuacao" %}>
           <p class="doc-plano__evento">{{ ev.titulo }}</p>
           <div class="doc-plano__detalhes">
             <p><strong>Local:</strong> {{ ev.local }};</p>
@@ -48,36 +48,38 @@
       {% endfor %}
     {% else %}
       <div class="doc-plano__atuacao">
-        <p class="doc-plano__item"><strong>Datas:</strong> {{ plano.data_evento }};</p>
-        <p class="doc-plano__item"><strong>Local:</strong> {{ plano.destinos }};</p>
-        <p class="doc-plano__item"><strong>Horário de atendimento:</strong> {{ plano.horario_de_atendimento }};</p>
-        <p class="doc-plano__item"><strong>Efetivo total:</strong> {{ plano.efetivos|linhas }};</p>
-        {% if plano.unidade_movel %}<p class="doc-plano__item">{{ plano.unidade_movel|linhas }}</p>{% endif %}
+        <p class="doc-plano__item"><strong>Datas:</strong> {% trecho "plano_periodo" %}{{ plano.data_evento }}{% endtrecho %};</p>
+        <p class="doc-plano__item"><strong>Local:</strong> {% trecho "plano_local" %}{{ plano.destinos }}{% endtrecho %};</p>
+        <p class="doc-plano__item"><strong>Horário de atendimento:</strong> {% trecho "plano_horario" %}{{ plano.horario_de_atendimento }}{% endtrecho %};</p>
+        <p class="doc-plano__item"><strong>Efetivo total:</strong> {% trecho "plano_efetivo" %}{{ plano.efetivos|linhas }}{% endtrecho %};</p>
+        {% if plano.unidade_movel %}<p{% editavel "plano_atividades" classe="doc-plano__item" %}>{{ plano.unidade_movel|linhas }}</p>{% endif %}
       </div>
     {% endif %}
   </section>
 
-  {% include "documentos/pdf/_plano_lista.html" with titulo="Atividades a serem desenvolvidas" chave="atividades" texto=plano.atividades %}
-  {% include "documentos/pdf/_plano_lista.html" with titulo="Metas estabelecidas" chave="metas" texto=plano.metas %}
-  {% include "documentos/pdf/_plano_lista.html" with titulo="Recursos necessários" chave="recursos" texto=plano.recursos_necessarios %}
+  {% include "documentos/pdf/_plano_lista.html" with titulo="secao_atividades" chave="atividades" texto=plano.atividades %}
+  {% include "documentos/pdf/_plano_lista.html" with titulo="secao_metas" chave="metas" texto=plano.metas %}
+  {% include "documentos/pdf/_plano_lista.html" with titulo="secao_recursos" chave="recursos" texto=plano.recursos_necessarios %}
 
   <section class="doc-plano__bloco">
-    <h2 class="doc-plano__secao">Valor total do plano</h2>
-    {% for bloco in plano.valor_blocos %}<p class="doc-plano__texto doc-plano__valor"><strong>{{ bloco.rotulo }}</strong>{{ bloco.texto|linhas }}</p>{% empty %}{% if plano.valor_do_plano %}<p class="doc-plano__texto">{{ plano.valor_do_plano|linhas }}</p>{% endif %}{% endfor %}
+    {% bloco "secao_valor" classe="doc-plano__secao" elemento="h2" base=False %}
+    <div{% editavel "plano_valor" %}>{% for bloco in plano.valor_blocos %}<p class="doc-plano__texto doc-plano__valor"><strong>{{ bloco.rotulo }}</strong>{{ bloco.texto|linhas }}</p>{% empty %}{% if plano.valor_do_plano %}<p class="doc-plano__texto">{{ plano.valor_do_plano|linhas }}</p>{% endif %}{% endfor %}</div>
   </section>
 
   {% if modo == "editor" %}<div class="doc-quebra"></div>{% endif %}
   <div class="doc-plano__fim">
-    <h2 class="doc-plano__secao">Coordenador do evento</h2>
-    {% for paragrafo in plano.coordenacao %}<p class="doc-plano__texto">{{ paragrafo|linhas }}</p>{% endfor %}
+    {% bloco "secao_coordenador" classe="doc-plano__secao" elemento="h2" base=False %}
+    <div{% editavel "plano_coordenacao" %}>{% for paragrafo in plano.coordenacao %}<p class="doc-plano__texto">{{ paragrafo|linhas }}</p>{% empty %}{% vazio "Coordenador do evento" %}{% endfor %}</div>
 
-    <h2 class="doc-plano__secao">Considerações finais</h2>
-    {% for paragrafo in plano.consideracao_final %}<p class="doc-plano__texto">{{ paragrafo|linhas }}</p>{% endfor %}
+    {% bloco "secao_consideracoes" classe="doc-plano__secao" elemento="h2" base=False %}
+    <div{% editavel "plano_consideracoes" %}>{% for paragrafo in plano.consideracao_final %}<p class="doc-plano__texto">{{ paragrafo|linhas }}</p>{% empty %}{% vazio "Considerações finais" %}{% endfor %}</div>
 
     <div class="doc-plano__assinatura">
-      <p class="doc-plano__local">{% if plano.sede %}{{ plano.sede }}, {% endif %}{{ plano.data_extenso }}</p>
-      <p class="doc-plano__chefia">{{ plano.nome_chefia }}</p>
-      <p class="doc-plano__chefia">{{ plano.cargo_chefia }}</p>
+      <p class="doc-plano__local">{% if plano.sede %}{% trecho "config_endereco" %}{{ plano.sede }}{% endtrecho %}, {% endif %}{{ plano.data_extenso }}</p>
+      <div{% editavel "config_assina_plano_trabalho" %}>
+        <p class="doc-plano__chefia">{{ plano.nome_chefia }}{% if not plano.nome_chefia %}{% vazio "Quem assina" %}{% endif %}</p>
+        <p class="doc-plano__chefia">{{ plano.cargo_chefia }}</p>
+      </div>
     </div>
   </div>
 {% endblock %}

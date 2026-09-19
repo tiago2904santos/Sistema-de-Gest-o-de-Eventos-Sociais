@@ -922,7 +922,11 @@ def gerar_plano_documento(plano, formato, *, usar_assinado=True):
     from .docxtpl_context import build_plano_docxtpl_context
 
     contexto = build_plano_docxtpl_context(plano)
-    payload = {"institucional": build_configuracao_context(), "plano": contexto}
+    from documentos.services.document_blocks import conteudo_documental
+
+    # Os títulos reescritos no editor entram no PDF e na chave do cache.
+    payload = {"institucional": build_configuracao_context(), "plano": contexto,
+               "documento": conteudo_documental(DocumentoTipo.PLANO_TRABALHO, plano)}
     # O plano de vários eventos tem modelo próprio, com os laços por evento.
     docx_template = "plano_trabalho_multievento.docx" if plano.is_multi_evento else None
     return DocumentoFacade().gerar(

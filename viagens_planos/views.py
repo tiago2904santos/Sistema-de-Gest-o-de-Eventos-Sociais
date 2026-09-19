@@ -282,6 +282,8 @@ def _contexto_atividades(plano, request):
 
 
 def _contexto_documentos(plano, request, pendencias):
+    from documentos.editor.pagina import cartao
+
     disponivel = not pendencias and not plano.cancelado
     return {
         "pendencias": pendencias,
@@ -295,6 +297,8 @@ def _contexto_documentos(plano, request, pendencias):
             "url_docx": reverse("viagens_planos:gerar", args=[plano.pk, "docx"]),
             "url_anexar": "",
             "assinado": False,
+            # O corpo do cartão é o editor do documento (a folha A4 editável).
+            "embutido": cartao("plano_trabalho", plano.pk, f"Plano de Trabalho {plano.numero_formatado}"),
         },
         "url_evento_adicionar": reverse("viagens_planos:evento_adicionar", args=[plano.pk]),
         "resumo": resumo_do_plano_para_tela(plano),

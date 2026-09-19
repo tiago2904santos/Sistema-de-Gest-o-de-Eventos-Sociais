@@ -577,31 +577,10 @@ def gerar(request, pk, tipo, formato):
 @acesso_ao_modulo
 @require_GET
 def documento(request, pk):
-    """Prévia A4 do ofício: a folha institucional na tela, do mesmo HTML que
-    vira o PDF. A folha entra por iframe (`documento_folha`) para o CSS do
-    shell não tocar no documento — a fidelidade tela ≈ PDF vem daí. Quem só
-    consulta vê a prévia; emitir continua exigindo operador e ofício válido.
-    """
-    from documentos.editor.campos import campos_do_tipo
-    oficio = get_oficio_by_id(pk)
-    avaliacao = validar_oficio_para_documento(oficio)
-    return render(request, 'pages/viagens_oficios/documento.html', {
-        'titulo': f'Documento do ofício {oficio.numero_formatado}',
-        'oficio': oficio,
-        'situacao': 'Cancelado' if oficio.cancelado else oficio.get_status_display(),
-        'pendencias': avaliacao['pendencias'],
-        'pode_emitir': pode_editar_cadastros(request.user) and not oficio.cancelado and not avaliacao['pendencias'],
-        'pode_editar': pode_editar_cadastros(request.user) and not oficio.cancelado,
-        'campos_editaveis': list(campos_do_tipo(DocumentoTipo.OFICIO).values()),
-        'versao': oficio.atualizado_em.isoformat() if oficio.atualizado_em else '',
-        'historico': historico_do_oficio(oficio),
-        'url_voltar': reverse('viagens_oficios:editar', args=[oficio.pk]),
-        'breadcrumb': [
-            {'label': 'Ofícios', 'url': reverse('viagens_oficios:lista')},
-            {'label': f'Ofício {oficio.numero_formatado}', 'url': reverse('viagens_oficios:editar', args=[oficio.pk])},
-            {'label': 'Documento'},
-        ],
-    })
+    """Endereço antigo da tela do documento: o editor agora é o visualizador
+    no fim do formulário do ofício, no cartão do documento."""
+    get_oficio_by_id(pk)
+    return redirect(reverse('viagens_oficios:editar', args=[pk]) + '#documento-oficio')
 
 
 @acesso_ao_modulo

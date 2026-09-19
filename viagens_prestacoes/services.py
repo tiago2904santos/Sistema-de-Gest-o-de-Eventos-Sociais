@@ -437,9 +437,13 @@ def build_relatorio_tecnico_context(relatorio: RelatorioTecnico, servidor_presta
 
 def gerar_relatorio_tecnico_documento(relatorio, servidor_prestacao, formato):
     garantir_campos_padrao_relatorio_tecnico(relatorio)
+    from documentos.services.document_blocks import conteudo_documental
+
     context = build_relatorio_tecnico_context(relatorio, servidor_prestacao)
+    # Os textos do modelo reescritos no editor entram no PDF e na chave do cache.
+    payload = dict(context, documento=conteudo_documental(DocumentoTipo.RELATORIO_TECNICO, relatorio.prestacao))
     return build_default_facade().gerar(
-        tipo=DocumentoTipo.RELATORIO_TECNICO, formato=formato, payload=context,
+        tipo=DocumentoTipo.RELATORIO_TECNICO, formato=formato, payload=payload,
         docxtpl_context=context, docx_template_path="relatorio-tecnico.docx",
         reference=f"{relatorio.prestacao.oficio.numero_formatado.replace('/', '-')}_{servidor_prestacao.servidor_id}",
         prestacao_id=relatorio.prestacao_id, oficio_id=relatorio.prestacao.oficio_id,

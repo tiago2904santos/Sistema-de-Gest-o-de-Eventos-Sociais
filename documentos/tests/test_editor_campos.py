@@ -79,8 +79,8 @@ class EditorDeCamposTests(CenarioOficioMixin, TestCase):
             self.patch(o, 'motivo', {'motivo': 'Diligência'})
             url_bloco = reverse('documentos:editor_bloco', args=['oficio', o.pk, 'declaracao_cartao'])
             self.client.patch(url_bloco, data=json.dumps({'versao': '', 'valores': {'conteudo': 'Parágrafo reescrito.'}}), content_type='application/json')
-        # O histórico mora na página do documento, que é onde o editor grava.
-        r = self.client.get(reverse('viagens_oficios:documento', args=[o.pk]))
+        # O histórico mora no editor do documento, embutido no fim do formulário.
+        r = self.client.get(reverse('documentos:editor_embutido', args=['oficio', o.pk]))
         self.assertContains(r, 'Editor documental · motivo')
         self.assertContains(r, 'Criação de bloco documental')
         self.assertContains(r, 'Formulário')  # a criação do ofício, pela tela
@@ -180,7 +180,7 @@ class EditorDeCamposTests(CenarioOficioMixin, TestCase):
         self.assertEqual(self.patch(o, 'motivo', {'motivo': 'x'}).status_code, 403)
         folha = self.client.get(reverse('viagens_oficios:documento_folha', args=[o.pk])).content.decode()
         self.assertNotIn('data-doc-campo', folha)
-        pagina = self.client.get(reverse('viagens_oficios:documento', args=[o.pk]))
+        pagina = self.client.get(reverse('documentos:editor_embutido', args=['oficio', o.pk]))
         self.assertNotContains(pagina, 'data-de-editor')
 
     def test_operador_ve_a_folha_marcada_e_o_painel(self):
@@ -188,8 +188,8 @@ class EditorDeCamposTests(CenarioOficioMixin, TestCase):
         folha = self.client.get(reverse('viagens_oficios:documento_folha', args=[o.pk])).content.decode()
         for chave in ['motivo', 'protocolo', 'data_criacao', 'servidores', 'custeio', 'porte_transporte_armas']:
             self.assertIn(f'data-doc-campo="{chave}"', folha)
-        self.assertNotIn('data-doc-campo="roteiro"', folha)  # marcado no template, fora do registro
-        pagina = self.client.get(reverse('viagens_oficios:documento', args=[o.pk]))
+        self.assertIn('data-doc-campo="roteiro"', folha)  # o roteiro também: o balão leva ao editor de roteiros
+        pagina = self.client.get(reverse('documentos:editor_embutido', args=['oficio', o.pk]))
         self.assertContains(pagina, 'data-de-editor')
         self.assertContains(pagina, 'data-de-abrir="motivo"')
 
@@ -253,12 +253,16 @@ class TrechoDigitavelTests(CenarioOficioMixin, TestCase):
         self.assertIn('data-doc-campo="protocolo" data-doc-parte="protocolo" data-doc-digitavel="uma"', folha)
         # Parágrafo do modelo também é texto puro.
         self.assertIn('data-doc-bloco="declaracao_cartao" data-doc-digitavel="varias"', folha)
-        self.assertEqual(folha.count('contenteditable="plaintext-only"'), 3)
+        # Texto de uma parte só, de qualquer origem, se escreve na folha: além de
+        # motivo, protocolo e dos parágrafos do modelo, nome/CPF de cada servidor
+        # e o número da solicitação.
+        self.assertIn('data-doc-campo="servidor_cpf" data-doc-parte="cpf" data-doc-digitavel="uma" data-doc-origem="servidor"', folha)
+        self.assertNotIn('data-doc-campo="config_', folha)  # configuração é da gestão
 
     def test_escolha_alternancia_e_relacao_seguem_clicaveis(self):
         folha = self.folha(self.criar())
         for chave in ('custeio', 'servidores', 'porte_transporte_armas', 'data_criacao'):
-            self.assertIn(f'data-doc-campo="{chave}" class="doc-editavel" tabindex="0"', folha)
+            self.assertIn(f'data-doc-campo="{chave}" data-doc-origem="oficio" class="doc-editavel" tabindex="0"', folha)
             self.assertNotIn(f'data-doc-campo="{chave}" data-doc-parte=', folha)
 
     def test_a_folha_do_pdf_nao_recebe_nada_de_edicao(self):

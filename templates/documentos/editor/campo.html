@@ -4,7 +4,7 @@
   componente global do seu tipo — o mesmo do formulário de cadastro —, e o
   `documento-editor.js` cuida de enviar, mostrar erros e recarregar a folha.
 {% endcomment %}
-<form class="de-campo" method="post" action="{{ url }}" data-de-form data-de-chave="{{ campo.chave }}" novalidate>
+<form class="de-campo" method="post" action="{{ url }}" data-de-form data-de-chave="{{ campo.chave }}" data-de-origem="{{ campo.origem }}"{% if objeto_id %} data-de-objeto="{{ objeto_id }}"{% endif %} novalidate>
   <div class="de-campo__cabeca">
     <h3 class="de-campo__titulo">{{ campo.rotulo }}</h3>
     <button type="button" class="de-campo__fechar" data-de-fechar aria-label="Fechar o campo">{% include "components/icon.html" with nome="x" %}</button>
@@ -40,9 +40,15 @@
     {% endwith %}{% endfor %}
   </div>
 
+  {% if links %}
+    <div class="de-campo__links">
+      {% for link in links %}<a class="de-campo__link" href="{{ link.url }}" target="_blank" rel="noopener">{{ link.rotulo }}{% include "components/icon.html" with nome="arrow-right" %}</a>{% endfor %}
+    </div>
+  {% endif %}
+
   <div class="de-campo__rodape">
     <span class="de-status" data-de-status aria-live="polite"></span>
     <button type="button" class="btn--secundaria" data-de-fechar>Fechar</button>
-    <button type="submit" class="btn-primaria">Salvar</button>
+    {% if partes %}<button type="submit" class="btn-primaria">Salvar</button>{% endif %}
   </div>
 </form>

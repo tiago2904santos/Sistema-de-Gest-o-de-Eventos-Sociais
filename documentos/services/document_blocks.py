@@ -18,18 +18,29 @@ from django.utils import timezone
 from documentos.editor.blocos import blocos_do_tipo, quebras_do_tipo
 from documentos.services.types import DocumentoTipo
 
-CAMPO_DO_VINCULO = {
-    DocumentoTipo.OFICIO: "oficio",
-    DocumentoTipo.JUSTIFICATIVA: "oficio",
-    DocumentoTipo.TERMO_AUTORIZACAO: "termo",
+# Dono dos blocos de um documento, pelo model: o ofício (ofício, justificativa
+# e o termo tirado do ofício), o termo do cadastro, a prestação (relatório
+# técnico e diário de bordo), a ordem de serviço e o plano de trabalho. O
+# tipo do documento separa os blocos de documentos do mesmo dono.
+CAMPO_DO_MODELO = {
+    "viagens_oficios.oficio": "oficio",
+    "viagens_termos.termoautorizacao": "termo",
+    "viagens_prestacoes.prestacaocontas": "prestacao",
+    "viagens_ordens.ordemservico": "ordem_servico",
+    "viagens_planos.planotrabalho": "plano_trabalho",
 }
 
 
+def _campo_do_dono(objeto):
+    meta = getattr(objeto, "_meta", None)
+    return CAMPO_DO_MODELO.get(meta.label_lower) if meta is not None else None
+
+
 def _filtro(tipo, objeto) -> dict:
-    campo = CAMPO_DO_VINCULO.get(tipo)
+    campo = _campo_do_dono(objeto)
     if campo is None:
         raise ValueError(f"Sem vínculo de bloco para {getattr(tipo, 'value', tipo)}")
-    return {"tipo_documento": tipo.value, campo: objeto}
+    return {"tipo_documento": DocumentoTipo(tipo).value, campo: objeto}
 
 
 def blocos_gravados(tipo, objeto):
@@ -51,7 +62,7 @@ def conteudo_documental(tipo, objeto) -> dict:
     blocos = completar_blocos(tipo)
     pontos = quebras_do_tipo(tipo)
     quebras = []
-    if objeto is None or not getattr(objeto, "pk", None) or tipo not in CAMPO_DO_VINCULO:
+    if objeto is None or not getattr(objeto, "pk", None) or _campo_do_dono(objeto) is None:
         return {"blocos": blocos, "quebras": quebras}
     for gravado in blocos_gravados(tipo, objeto):
         if gravado.tipo == gravado.Tipo.QUEBRA_PAGINA:

@@ -1,4 +1,4 @@
-{% extends "documentos/pdf/base_institucional.html" %}{% comment %}
+{% extends "documentos/pdf/base_institucional.html" %}{% load documento_tags %}{% comment %}
   Diário de Bordo: o `diario_bordo.xlsx` de origem em página A4 deitada. Os
   dados do ofício e da viatura numa tabela de duas colunas; os trechos numa
   tabela de doze colunas iguais (saída e chegada com data, hora e km; origem,
@@ -16,15 +16,15 @@
 {% block corpo %}
   <table class="doc-diario__tabela doc-diario__dados">
     <tr>
-      <td>Referente ao Ofício: {{ diario.oficio }}</td>
-      <td>E-protocolo: {{ diario.protocolo }}</td>
+      <td>Referente ao Ofício: {% trecho "diario_motorista" %}{{ diario.oficio }}{% endtrecho %}</td>
+      <td>E-protocolo: {% trecho "diario_motorista" %}{{ diario.protocolo }}{% endtrecho %}</td>
     </tr>
     <tr>
-      <td>Ficha individual do veículo (tipo): {{ diario.viatura }}</td>
-      <td>Combustível: {{ diario.combustivel }}</td>
+      <td>Ficha individual do veículo (tipo): {% trecho "diario_viatura" %}{{ diario.viatura }}{% endtrecho %}</td>
+      <td>Combustível: {% trecho "diario_viatura" %}{{ diario.combustivel }}{% endtrecho %}</td>
     </tr>
     <tr>
-      <td>Placa oficial: {{ diario.placa }}</td>
+      <td>Placa oficial: {% trecho "diario_viatura" %}{{ diario.placa }}{% endtrecho %}</td>
       <td>Placa reservada: {{ diario.placa_reservada }}</td>
     </tr>
   </table>
@@ -47,18 +47,18 @@
     <tbody>
       {% for t in diario.trechos %}
         <tr>
-          <td>{{ t.data_saida }}</td><td>{{ t.hora_saida }}</td><td>{{ t.km_inicial }}</td>
-          <td>{{ t.data_chegada }}</td><td>{{ t.hora_chegada }}</td><td>{{ t.km_final }}</td>
-          <td colspan="2">{{ t.origem }}</td>
-          <td colspan="2">{{ t.destino }}</td>
-          <td colspan="2" class="doc-diario__abastecimento">{{ t.abastecimento }}</td>
+          <td{% editavel "diario_trechos" %}>{{ t.data_saida }}</td><td{% editavel "diario_trechos" %}>{{ t.hora_saida }}</td><td{% editavel "diario_km" t.id %}>{{ t.km_inicial }}</td>
+          <td{% editavel "diario_trechos" %}>{{ t.data_chegada }}</td><td{% editavel "diario_trechos" %}>{{ t.hora_chegada }}</td><td{% editavel "diario_km" t.id %}>{{ t.km_final }}</td>
+          <td colspan="2"{% editavel "diario_trechos" %}>{{ t.origem }}</td>
+          <td colspan="2"{% editavel "diario_trechos" %}>{{ t.destino }}</td>
+          <td colspan="2"{% editavel "diario_km" t.id classe="doc-diario__abastecimento" %}>{{ t.abastecimento }}</td>
         </tr>
       {% empty %}
         <tr>{% for _ in "123456" %}<td></td>{% endfor %}<td colspan="2"></td><td colspan="2"></td><td colspan="2"></td></tr>
       {% endfor %}
       <tr class="doc-diario__motorista">
-        <td colspan="3">Nome: {{ diario.motorista }}</td>
-        <td colspan="3">CPF: {{ diario.cpf_motorista }}</td>
+        <td colspan="3">Nome: {% trecho "diario_motorista" %}{{ diario.motorista }}{% endtrecho %}</td>
+        <td colspan="3">CPF: {% trecho "diario_motorista" %}{{ diario.cpf_motorista }}{% endtrecho %}</td>
         <td colspan="6">Assinatura:</td>
       </tr>
     </tbody>

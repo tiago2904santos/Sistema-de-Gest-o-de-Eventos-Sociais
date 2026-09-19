@@ -52,6 +52,19 @@ def _conteudo_documental(tipo, doc, objeto, blocos):
     return finais, set(documental.get("quebras") or ())
 
 
+def _do_editor(tipo, payload, campos_editaveis, edicao) -> dict:
+    """O que o editor acrescenta a qualquer documento: os trechos marcados, os
+    blocos do modelo (com os textos reescritos, que o payload traz em
+    `documento` — no PDF e na folha do editor) e as quebras de página."""
+    blocos, quebras = _conteudo_documental(tipo, dict(payload or {}), None, None)
+    return {
+        "campos_editaveis": dict(campos_editaveis or {}),
+        "blocos": blocos,
+        "quebras": quebras,
+        "edicao": bool(campos_editaveis) if edicao is None else bool(edicao),
+    }
+
+
 def contexto_do_oficio(oficio=None, *, modo: str = "pdf", campos_editaveis=None, blocos=None, edicao=None, doc=None, tx=None) -> dict:
     """Contexto do ofício. Aceita `doc`/`tx` já calculados (a façade os recebe
     prontos de quem pediu o documento) e só calcula o que faltar. `edicao`
@@ -68,6 +81,7 @@ def contexto_do_oficio(oficio=None, *, modo: str = "pdf", campos_editaveis=None,
                 tx = build_oficio_docxtpl_context(oficio)
     institucional = {
         "unidade_cabecalho": tx.get("unidade_cabecalho", ""),
+        "nome_orgao": tx.get("nome_orgao_cabecalho", ""),
         "nome_destinatario": tx.get("nome_destinatario", ""),
         "cargo_destinatario": tx.get("cargo_destinatario", ""),
         "cidade_rodape": doc.get("institucional", {}).get("cidade_endereco") or "",
@@ -100,7 +114,7 @@ def _valor(tx, chave) -> str:
     return "" if texto in _SEM_VALOR else texto
 
 
-def contexto_do_termo(payload, tx, *, modo: str = "pdf") -> dict:
+def contexto_do_termo(payload, tx, *, modo: str = "pdf", campos_editaveis=None, edicao=None) -> dict:
     """Contexto do termo de autorização. `payload` é o de `build_termo_payload`
     ou `build_termo_cadastro_payload`; `tx` são os textos planos que o DOCX
     também recebe (`viagens_termos.services._legacy_docx_context`), para as
@@ -136,15 +150,12 @@ def contexto_do_termo(payload, tx, *, modo: str = "pdf") -> dict:
             "unidade_rodape": tx.get("unidade_rodape", ""),
         },
         "imagens": imagens_para(modo),
-        "campos_editaveis": {},
-        "blocos": {},
-        "quebras": set(),
-        "edicao": False,
+        **_do_editor(DocumentoTipo.TERMO_AUTORIZACAO, payload, campos_editaveis, edicao),
         "modo": modo,
     }
 
 
-def contexto_da_justificativa(payload, tx, *, modo: str = "pdf") -> dict:
+def contexto_da_justificativa(payload, tx, *, modo: str = "pdf", campos_editaveis=None, edicao=None) -> dict:
     """Contexto da justificativa. `tx` são os textos que o DOCX também recebe
     (`build_justificativa_docxtpl_context`): sede, data por extenso, texto,
     assinante e cargo. Cada linha do texto é um parágrafo do documento."""
@@ -164,10 +175,7 @@ def contexto_da_justificativa(payload, tx, *, modo: str = "pdf") -> dict:
             "unidade_rodape": tx.get("unidade_rodape", ""),
         },
         "imagens": imagens_para(modo),
-        "campos_editaveis": {},
-        "blocos": {},
-        "quebras": set(),
-        "edicao": False,
+        **_do_editor(DocumentoTipo.JUSTIFICATIVA, payload, campos_editaveis, edicao),
         "modo": modo,
     }
 
@@ -195,7 +203,7 @@ def _linha_de_rodape(tx) -> str:
     return " - ".join(p for p in (unidade, " ".join(p for p in (endereco, contato) if p)) if p)
 
 
-def contexto_da_ordem_servico(payload, tx, *, modo: str = "pdf") -> dict:
+def contexto_da_ordem_servico(payload, tx, *, modo: str = "pdf", campos_editaveis=None, edicao=None) -> dict:
     """Contexto da Ordem de Serviço. `tx` são os textos que o DOCX também recebe
     (`viagens_ordens.docxtpl_context.build_os_docxtpl_context`); o tipo padrão
     usa o parágrafo único de deslocamento, os demais os textos do modelo."""
@@ -225,10 +233,7 @@ def contexto_da_ordem_servico(payload, tx, *, modo: str = "pdf") -> dict:
         "os": os_,
         "institucional": {"unidade_cabecalho": tx.get("unidade", ""), "unidade_rodape": tx.get("unidade_rodape", "")},
         "imagens": imagens_para(modo),
-        "campos_editaveis": {},
-        "blocos": {},
-        "quebras": set(),
-        "edicao": False,
+        **_do_editor(DocumentoTipo.ORDEM_SERVICO, payload, campos_editaveis, edicao),
         "modo": modo,
     }
 
@@ -240,7 +245,7 @@ def _paragrafos(texto) -> list[str]:
     return [bloco.strip("\n") for bloco in blocos if bloco.strip()]
 
 
-def contexto_do_plano_trabalho(payload, tx, *, modo: str = "pdf") -> dict:
+def contexto_do_plano_trabalho(payload, tx, *, modo: str = "pdf", campos_editaveis=None, edicao=None) -> dict:
     """Contexto do Plano de Trabalho. `tx` são os textos que o DOCX também
     recebe (`viagens_planos.docxtpl_context.build_plano_docxtpl_context`); o
     valor do plano de vários eventos chega em `valor_blocos`, texto simples,
@@ -291,24 +296,22 @@ def contexto_do_plano_trabalho(payload, tx, *, modo: str = "pdf") -> dict:
         "plano": plano,
         "institucional": {"unidade_cabecalho": tx.get("unidade", ""), "unidade_rodape": tx.get("unidade_rodape", "")},
         "imagens": imagens_para(modo),
-        "campos_editaveis": {},
-        "blocos": {},
-        "quebras": set(),
-        "edicao": False,
+        **_do_editor(DocumentoTipo.PLANO_TRABALHO, payload, campos_editaveis, edicao),
         "modo": modo,
     }
 
 
+# Título, campo do relatório e o trecho do editor que o altera.
 _SECOES_RELATORIO_TECNICO = (
-    ("Descrição do evento", "motivo"),
-    ("Objetivo da participação", "atividade"),
-    ("Conclusão", "conclusao"),
-    ("Medidas a serem adotadas pelo órgão", "medidas"),
-    ("Informações complementares", "info_complementares"),
+    ("Descrição do evento", "motivo", "rt_motivo"),
+    ("Objetivo da participação", "atividade", "rt_atividade"),
+    ("Conclusão", "conclusao", "rt_conclusao"),
+    ("Medidas a serem adotadas pelo órgão", "medidas", "rt_medidas"),
+    ("Informações complementares", "info_complementares", "rt_info"),
 )
 
 
-def contexto_do_relatorio_tecnico(payload, tx, *, modo: str = "pdf") -> dict:
+def contexto_do_relatorio_tecnico(payload, tx, *, modo: str = "pdf", campos_editaveis=None, edicao=None) -> dict:
     """Contexto do Relatório Técnico. `tx` é o mesmo contexto que o DOCX recebe
     (`viagens_prestacoes.services.build_relatorio_tecnico_context`). O .docx
     traz "Cartão Prime" escrito no lugar do combustível; aqui vale o campo
@@ -321,7 +324,7 @@ def contexto_do_relatorio_tecnico(payload, tx, *, modo: str = "pdf") -> dict:
     }
     rt.update(
         combustivel=texto("combustivel") or "Cartão Prime",
-        secoes=[{"titulo": titulo, "texto": texto(chave)} for titulo, chave in _SECOES_RELATORIO_TECNICO],
+        secoes=[{"titulo": titulo, "texto": texto(chave), "campo": campo} for titulo, chave, campo in _SECOES_RELATORIO_TECNICO],
         rodape=_linha_de_rodape(tx),
     )
     return {
@@ -329,15 +332,12 @@ def contexto_do_relatorio_tecnico(payload, tx, *, modo: str = "pdf") -> dict:
         "rt": rt,
         "institucional": {"unidade_cabecalho": tx.get("unidade_cabecalho", ""), "unidade_rodape": tx.get("unidade_rodape", "")},
         "imagens": imagens_para(modo),
-        "campos_editaveis": {},
-        "blocos": {},
-        "quebras": set(),
-        "edicao": False,
+        **_do_editor(DocumentoTipo.RELATORIO_TECNICO, payload, campos_editaveis, edicao),
         "modo": modo,
     }
 
 
-def contexto_do_diario_bordo(payload, *, modo: str = "pdf") -> dict:
+def contexto_do_diario_bordo(payload, *, modo: str = "pdf", campos_editaveis=None, edicao=None) -> dict:
     """Contexto do Diário de Bordo. O payload é o mesmo que preenche a planilha
     (`build_diario_bordo_context`): `header` com ofício, viatura e motorista e
     `trechos`, uma linha por trecho do roteiro."""
@@ -357,7 +357,7 @@ def contexto_do_diario_bordo(payload, *, modo: str = "pdf") -> dict:
             {chave: str(t.get(chave) if t.get(chave) is not None else "").strip() for chave in (
                 "data_saida", "hora_saida", "km_inicial", "data_chegada", "hora_chegada", "km_final",
                 "origem", "destino", "abastecimento",
-            )}
+            )} | {"id": t.get("id") or ""}
             for t in ((payload or {}).get("trechos") or [])
         ],
     }
@@ -366,10 +366,7 @@ def contexto_do_diario_bordo(payload, *, modo: str = "pdf") -> dict:
         "diario": diario,
         "institucional": {"divisao_cabecalho": texto("divisao"), "unidade_cabecalho": texto("unidade_cabecalho")},
         "imagens": imagens_para(modo),
-        "campos_editaveis": {},
-        "blocos": {},
-        "quebras": set(),
-        "edicao": False,
+        **_do_editor(DocumentoTipo.DIARIO_BORDO, payload, campos_editaveis, edicao),
         "modo": modo,
     }
 
@@ -380,17 +377,17 @@ def contexto_de_payload(tipo, payload, docxtpl_context, *, modo: str = "pdf", **
     if tipo == DocumentoTipo.OFICIO:
         return contexto_do_oficio(modo=modo, doc=dict(payload), tx=dict(docxtpl_context or {}), **opcoes)
     if tipo == DocumentoTipo.TERMO_AUTORIZACAO:
-        return contexto_do_termo(dict(payload), docxtpl_context, modo=modo)
+        return contexto_do_termo(dict(payload), docxtpl_context, modo=modo, **opcoes)
     if tipo == DocumentoTipo.JUSTIFICATIVA:
-        return contexto_da_justificativa(dict(payload), docxtpl_context, modo=modo)
+        return contexto_da_justificativa(dict(payload), docxtpl_context, modo=modo, **opcoes)
     if tipo == DocumentoTipo.ORDEM_SERVICO:
-        return contexto_da_ordem_servico(dict(payload), docxtpl_context, modo=modo)
+        return contexto_da_ordem_servico(dict(payload), docxtpl_context, modo=modo, **opcoes)
     if tipo == DocumentoTipo.PLANO_TRABALHO:
-        return contexto_do_plano_trabalho(dict(payload), docxtpl_context, modo=modo)
+        return contexto_do_plano_trabalho(dict(payload), docxtpl_context, modo=modo, **opcoes)
     if tipo == DocumentoTipo.RELATORIO_TECNICO:
-        return contexto_do_relatorio_tecnico(dict(payload), docxtpl_context, modo=modo)
+        return contexto_do_relatorio_tecnico(dict(payload), docxtpl_context, modo=modo, **opcoes)
     if tipo == DocumentoTipo.DIARIO_BORDO:
-        return contexto_do_diario_bordo(dict(payload), modo=modo)
+        return contexto_do_diario_bordo(dict(payload), modo=modo, **opcoes)
     raise NotImplementedError(f"Contexto HTML ainda não existe para {getattr(tipo, 'value', tipo)}")
 
 

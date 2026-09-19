@@ -1956,6 +1956,9 @@ form.btn-flutuante-form{margin:0;display:contents}
 /* No hover da linha, o quadrado fica como o da linha escolhida: grafite com ícone branco. */
 .cad-lista .dt tbody tr:hover .tabela__icone-doc,.cad-lista .m-item:hover .tabela__icone-doc{background:var(--grafite);color:var(--branco)}
 .cad-lista .tabela__icone-doc .ui-icon{width:15px;height:15px}
+/* O quadrado é o atalho para o editor do documento. */
+.cad-lista a.tabela__icone-doc--link{text-decoration:none;cursor:pointer}
+.cad-lista a.tabela__icone-doc--link:focus-visible{outline:2px solid var(--foco,var(--grafite));outline-offset:2px}
 
 /* Gaveta de um item da navegação do módulo (Cadastros): abre no hover ou no
    foco, logo abaixo do item, com os atalhos das telas de dentro. */
@@ -2073,6 +2076,9 @@ form.btn-flutuante-form{margin:0;display:contents}
 .ofc-equipe>.of-membro+.of-membro{border-top:1px solid var(--n-200)}
 .ofc-equipe>.of-membro:hover{background:var(--n-25)}
 .ofc-equipe>.ofc-pessoa--motorista{border-color:var(--n-250)}
+/* Quem sobra sozinho na última linha (1, 3, 5... escolhidos) ocupa a linha
+   toda. Conta só os visíveis: os não escolhidos ficam na lista, escondidos. */
+.ofc-equipe>.of-membro:nth-child(odd of .of-membro:not([hidden])):nth-last-child(1 of .of-membro:not([hidden])){grid-column:1/-1}
 @container(max-width:680px){.ofc-equipe{grid-template-columns:1fr}}
 
 /* Sede e destinos na caixa do bate-volta. */

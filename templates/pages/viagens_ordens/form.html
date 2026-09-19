@@ -1,5 +1,5 @@
 {% extends "layouts/app_shell_v32.html" %}
-{% load static estaticos %}
+{% load static estaticos documento_tags %}
 {% comment %}
   Cadastro da ordem de serviço, no molde do termo de autorização: 1 destino
   e período, com os ofícios num interruptor do cabeçalho (marcados, copiam
@@ -179,6 +179,17 @@
       </section>
       </fieldset>
     </form>
+
+    {# O documento: a folha A4 editável, fora do <form> do cadastro. #}
+    {% if ordem.pk %}{% documento_embutido "ordem_servico" ordem.pk "Ordem de Serviço" as documentos %}
+      <section class="section-card reg">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">4</span>
+          <h2 class="section-card__titulo">Documento</h2>
+        </header>
+        <div class="section-card__corpo">{% include "documentos/editor/_visualizador.html" %}</div>
+      </section>
+    {% endif %}
   </div>
 {% endblock %}
 

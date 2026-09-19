@@ -69,7 +69,7 @@
           {% for l in planos %}{% with p=l.plano %}
             <tr{% if p.cancelado %} class="tm-linha--cancelada"{% endif %}>
               <td class="tabela__col-icone">
-                <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="clipboard" %}</span>
+                {% url 'documentos:editor_pagina' 'plano_trabalho' p.pk as url_editor %}{% include "components/icone_documento.html" with nome="clipboard" url=url_editor rotulo="Editar o plano de trabalho" %}
                 <span class="sr-only">Plano de trabalho</span>
               </td>
               <td class="c-nome tm-celula" data-rotulo="Plano de trabalho">{% include "pages/viagens_planos/_conteudo_linha.html" %}</td>
@@ -97,7 +97,7 @@
           {% for l in ordens %}{% with o=l.ordem %}
             <tr{% if o.cancelado %} class="tm-linha--cancelada"{% endif %}>
               <td class="tabela__col-icone">
-                <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="clipboard" %}</span>
+                {% url 'documentos:editor_pagina' 'ordem_servico' o.pk as url_editor %}{% include "components/icone_documento.html" with nome="clipboard" url=url_editor rotulo="Editar a ordem de serviço" %}
                 <span class="sr-only">Ordem de serviço</span>
               </td>
               <td class="c-nome tm-celula os-celula" data-rotulo="Ordem de Serviço">{% include "pages/viagens_ordens/_conteudo_linha.html" %}</td>

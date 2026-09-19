@@ -27,10 +27,11 @@
 <div class="folha">
   <header class="doc-cabecalho" id="doc-cabecalho">
     <img class="doc-cabecalho__brasao" src="{{ imagens.brasao }}" alt="Brasão da Polícia Civil do Paraná">
-    <p class="doc-cabecalho__secretaria">SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA</p>
-    <p class="doc-cabecalho__orgao">POLÍCIA CIVIL DO PARANÁ</p>
+    {# No editor, cada linha leva a sua origem: o texto do modelo (bloco), o órgão e a unidade da configuração. #}
+    {% bloco "secretaria" classe="doc-cabecalho__secretaria" padrao="SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA" %}
+    <p class="doc-cabecalho__orgao"><span {% editavel "config_orgao" %}>{{ institucional.nome_orgao|default:"POLÍCIA CIVIL DO PARANÁ" }}</span></p>
     {% if institucional.divisao_cabecalho %}<p class="doc-cabecalho__unidade">{{ institucional.divisao_cabecalho }}</p>{% endif %}
-    {% if institucional.unidade_cabecalho %}<p class="doc-cabecalho__unidade">{{ institucional.unidade_cabecalho }}</p>{% endif %}
+    {% if institucional.unidade_cabecalho or campos_editaveis.config_unidade %}<p class="doc-cabecalho__unidade"><span {% editavel "config_unidade" %}>{{ institucional.unidade_cabecalho }}{% if not institucional.unidade_cabecalho %}{% vazio "Unidade emissora" %}{% endif %}</span></p>{% endif %}
   </header>
 
   <footer class="doc-rodape" id="doc-rodape">

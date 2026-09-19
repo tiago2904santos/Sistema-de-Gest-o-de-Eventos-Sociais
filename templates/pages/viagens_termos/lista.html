@@ -59,7 +59,7 @@
           {% for l in linhas %}{% with t=l.termo d=l.documentos %}
             <tr{% if t.cancelado %} class="tm-linha--cancelada"{% endif %}>
               <td class="tabela__col-icone">
-                <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+                {% url 'documentos:editor_pagina' 'termo_autorizacao' t.pk as url_editor %}{% include "components/icone_documento.html" with nome="document" url=url_editor rotulo="Editar o termo" %}
                 <span class="sr-only">Termo de autorização</span>
               </td>
               {# A célula única: o conteúdo do cartão de antes, sem se espalhar em colunas. #}
@@ -83,7 +83,7 @@
       {% for l in linhas %}{% with t=l.termo d=l.documentos %}
         <article class="m-item{% if t.cancelado %} tm-linha--cancelada{% endif %}">
           <div class="m-item__topo">
-            <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+            {% url 'documentos:editor_pagina' 'termo_autorizacao' t.pk as url_editor %}{% include "components/icone_documento.html" with nome="document" url=url_editor rotulo="Editar o termo" %}
             <span class="sr-only">Termo de autorização</span>
           </div>
           <div class="m-item__tipo tm-celula">

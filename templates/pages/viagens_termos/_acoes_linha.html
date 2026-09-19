@@ -16,6 +16,7 @@
         {% if d.algum_para_anexar %}<button type="button" class="dd__i of-item" data-anexar-assinado data-anexar-opcoes="{{ d.opcoes_anexar }}">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Escolher o termo e enviar o PDF assinado</small></span></button>
         {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Gere o PDF do termo primeiro</small></span></span>{% endif %}
       {% endif %}
+{% if not t.cancelado %}<a class="dd__i of-item" href="{% url 'documentos:editor_pagina' 'termo_autorizacao' t.pk %}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar documento</b><small>O termo do primeiro servidor, pela prévia A4</small></span></a>{% endif %}
       <a class="dd__i of-item" href="{{ l.url_editar }}?next={{ url_atual|urlencode }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar termo</b><small>Destino, período, servidores e viatura</small></span></a>
       <form method="post" action="{{ l.url_excluir }}" data-confirmar-exclusao data-confirmar="Confirmar exclusão?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
         <button type="submit" class="dd__i dd__i--perigo of-item">{% include "components/icon.html" with nome="trash" %}<span><b>Excluir termo</b><small>Remover permanentemente quando permitido</small></span></button>

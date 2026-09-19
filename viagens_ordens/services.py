@@ -61,7 +61,13 @@ def gerar_ordem_servico(ordem: OrdemServico, formato: DocumentoFormato, *, usar_
     """`usar_assinado=False` pede o arquivo original mesmo com PDF assinado anexado."""
     if ordem.cancelado:
         raise ValidationError("Reative a Ordem de Serviço antes de emitir documentos.")
-    payload = {"institucional": build_configuracao_context(), "ordem_servico": resumo_da_ordem(ordem)}
+    from documentos.services.document_blocks import conteudo_documental
+
+    payload = {
+        "institucional": build_configuracao_context(), "ordem_servico": resumo_da_ordem(ordem),
+        # Os textos do modelo reescritos no editor: entram no PDF e na chave do cache.
+        "documento": conteudo_documental(DocumentoTipo.ORDEM_SERVICO, ordem),
+    }
     return DocumentoFacade().gerar(
         tipo=DocumentoTipo.ORDEM_SERVICO, formato=formato, payload=payload,
         reference=referencia_da_ordem(ordem), docxtpl_context=build_os_docxtpl_context(ordem),

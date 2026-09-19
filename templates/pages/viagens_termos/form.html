@@ -195,6 +195,7 @@
                     <td class="c-nome tm-alvo"><span class="tm-alvo__linha"><span class="of-av" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span><span class="tm-alvo__txt"><span>Termo vazio</span><small>Só destino e período, para preencher à mão</small></span></span></td>
                     <td class="c-fixo tm-col-estado"><span class="st st--{{ d.generico.estado_tom }}">{{ d.generico.estado }}</span></td>
                     <td class="c-cad-acoes tm-col-acoes"><div class="acoes cad-acoes tm-icones">
+                      <a class="ib-linha" href="{{ d.generico.url_editor }}" aria-label="Editar documento" title="Editar documento">{% include "components/icon.html" with nome="pencil" %}</a>
                       <form method="post" action="{{ d.generico.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="ib-linha" aria-label="Visualizar" title="Visualizar">{% include "components/icon.html" with nome="eye" %}</button></form>
                       <form method="post" action="{{ d.generico.url_pdf }}">{% csrf_token %}<button type="submit" class="ib-linha" aria-label="Baixar PDF" title="Baixar PDF">{% include "components/icon.html" with nome="download" %}</button></form>
                       {% if d.generico.url_assinado %}<a class="ib-linha" href="{{ d.generico.url_assinado }}" data-anexar-assinado data-anexar-nome="Termo vazio"{% if d.generico.assinado %} data-anexar-atual="1"{% endif %} aria-label="{% if d.generico.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}" title="{% if d.generico.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}">{% include "components/icon.html" with nome=d.generico.assinado|yesno:"check-circle,upload" %}</a>{% else %}<span class="ib-linha of-item--inativo" aria-label="Anexar assinado" title="Gere o PDF do termo primeiro">{% include "components/icon.html" with nome="upload" %}</span>{% endif %}
@@ -207,6 +208,7 @@
                     <td class="c-fixo tm-col-estado"><span class="st st--{{ s.estado_tom }}">{{ s.estado }}</span></td>
                     <td class="c-cad-acoes tm-col-acoes"><div class="acoes cad-acoes tm-icones">
                       {% if pode_editar %}
+                        <a class="ib-linha" href="{{ s.url_editor }}" aria-label="Editar documento" title="Editar documento">{% include "components/icon.html" with nome="pencil" %}</a>
                         <form method="post" action="{{ s.url_pdf }}?inline=1" target="_blank">{% csrf_token %}<button type="submit" class="ib-linha" aria-label="Visualizar" title="Visualizar">{% include "components/icon.html" with nome="eye" %}</button></form>
                         <form method="post" action="{{ s.url_pdf }}">{% csrf_token %}<button type="submit" class="ib-linha" aria-label="Baixar PDF" title="Baixar PDF">{% include "components/icon.html" with nome="download" %}</button></form>
                         {% if s.url_assinado %}<a class="ib-linha" href="{{ s.url_assinado }}" data-anexar-assinado data-anexar-nome="{{ s.servidor.nome }}"{% if s.assinado %} data-anexar-atual="1"{% endif %} aria-label="{% if s.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}" title="{% if s.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}">{% include "components/icon.html" with nome=s.assinado|yesno:"check-circle,upload" %}</a>{% else %}<span class="ib-linha of-item--inativo" aria-label="Anexar assinado" title="Gere o PDF do termo primeiro">{% include "components/icon.html" with nome="upload" %}</span>{% endif %}
@@ -223,6 +225,12 @@
           {% endif %}
           {% include "pages/viagens_termos/_acoes_fim.html" with fora_do_form=True %}
         </div>
+      </section>
+
+      {# O documento: cada termo no editor (a folha A4 editável), um aberto por vez. #}
+      <section class="section-card reg">
+        <header class="section-card__cabecalho reg__t"><h2 class="section-card__titulo">Documento</h2></header>
+        <div class="section-card__corpo">{% include "documentos/editor/_visualizador.html" with documentos=d.cartoes %}</div>
       </section>
     {% endwith %}{% endif %}
   </div>

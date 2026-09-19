@@ -1,0 +1,23 @@
+{% comment %}
+  O visualizador de documentos no fim do formulário: um cartão por documento,
+  cada um com o editor dentro (abre quando o cartão abre, um por vez). Com um
+  documento só, o cartão já vem aberto.
+
+  Contexto: `documentos` — lista de {id, titulo, url} (url do editor
+  embutido, `documentos:editor_embutido`); `titulo` da seção (opcional).
+{% endcomment %}
+<section class="de-visualizador" id="documento">
+  {% if titulo %}<h2 class="de-visualizador__titulo">{{ titulo }}</h2>{% endif %}
+  {% for d in documentos %}
+    <details class="ofc-doc de-visualizador__doc" id="{{ d.id }}"{% if documentos|length == 1 %} open{% endif %}>
+      <summary class="ofc-doc__cabeca">
+        <span class="ofc-doc__titulo">{{ d.titulo }}</span>
+        <span class="ofc-doc__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+      </summary>
+      <div class="ofc-doc__corpo" data-de-embutir="{{ d.url }}"></div>
+    </details>
+  {% empty %}
+    <p class="texto-vazio">Nenhum documento para mostrar.</p>
+  {% endfor %}
+</section>
+{% include "documentos/editor/_recursos.html" %}

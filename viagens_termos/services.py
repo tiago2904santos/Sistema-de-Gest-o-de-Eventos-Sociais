@@ -321,6 +321,14 @@ def servidores_para_termo_cadastro(termo: TermoAutorizacao) -> list[Servidor | N
 
 
 
+def _conteudo_documental(dono):
+    """Os textos do modelo reescritos no editor (o termo do cadastro, ou o
+    ofício, para o termo tirado dele): entram no PDF e na chave do cache."""
+    from documentos.services.document_blocks import conteudo_documental
+
+    return conteudo_documental(DocumentoTipo.TERMO_AUTORIZACAO, dono)
+
+
 def _gerar(payload, formato, ref, *, oficio_id=None, termo_id=None, servidor_id=None, roteiro_id=None, usar_assinado=True):
     template = _TEMPLATE_DOCX_BY_VARIANTE[payload["termo"]["variante"]]
     return DocumentoFacade().gerar(
@@ -335,6 +343,7 @@ def gerar_termo_um(oficio, servidor, formato, *, modo_semipreenchido=False, vari
     if not listar_servidores_com_termo(oficio).filter(pk=servidor.pk).exists():
         raise ValueError("Servidor não selecionado para termo neste ofício.")
     payload = build_termo_payload(oficio, servidor, modo_semipreenchido=modo_semipreenchido, variante=variante)
+    payload["documento"] = _conteudo_documental(oficio)
     return _gerar(payload, formato, f"{oficio.numero_formatado.replace('/', '-')}-termo-{servidor.pk}",
         oficio_id=oficio.pk, servidor_id=servidor.pk, roteiro_id=oficio.roteiro_id, usar_assinado=usar_assinado)
 
@@ -348,6 +357,7 @@ def gerar_termo_cadastro_um(termo, servidor, formato, *, forcar_viatura=False, u
     if servidor is not None and not termo.servidores_efetivos().filter(pk=servidor.pk).exists():
         raise ValueError("Servidor não pertence a este termo.")
     payload = build_termo_cadastro_payload(termo, servidor, forcar_viatura=forcar_viatura)
+    payload["documento"] = _conteudo_documental(termo)
     ref_servidor = servidor.pk if servidor else "viatura" if forcar_viatura else "sem-servidor"
     return _gerar(payload, formato, f"termo-{termo.pk}-cadastro-{ref_servidor}",
         oficio_id=termo.oficio_id, termo_id=termo.pk, servidor_id=servidor.pk if servidor else None,

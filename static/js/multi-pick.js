@@ -12,6 +12,9 @@
 (function () {
   "use strict";
 
+  // Pode vir duas vezes na página (a tela e o editor de documento embutido).
+  if (window.DS && window.DS.ligarEscolhaMultipla) return;
+
   function semAcentos(valor) {
     return String(valor || "")
       .normalize("NFD")

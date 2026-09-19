@@ -52,7 +52,7 @@
           {% for l in linhas %}{% with o=l.ordem %}
             <tr{% if o.cancelado %} class="tm-linha--cancelada"{% endif %}>
               <td class="tabela__col-icone">
-                <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="clipboard" %}</span>
+                {% url 'documentos:editor_pagina' 'ordem_servico' o.pk as url_editor %}{% include "components/icone_documento.html" with nome="clipboard" url=url_editor rotulo="Editar a ordem de serviço" %}
                 <span class="sr-only">Ordem de serviço</span>
               </td>
               <td class="c-nome tm-celula os-celula" data-rotulo="Ordem de Serviço">
@@ -75,7 +75,7 @@
       {% for l in linhas %}{% with o=l.ordem %}
         <article class="m-item{% if o.cancelado %} tm-linha--cancelada{% endif %}">
           <div class="m-item__topo">
-            <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="clipboard" %}</span>
+            {% url 'documentos:editor_pagina' 'ordem_servico' o.pk as url_editor %}{% include "components/icone_documento.html" with nome="clipboard" url=url_editor rotulo="Editar a ordem de serviço" %}
             <span class="sr-only">Ordem de serviço</span>
           </div>
           <div class="m-item__tipo tm-celula os-celula">

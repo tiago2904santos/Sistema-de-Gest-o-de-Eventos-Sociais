@@ -497,3 +497,60 @@ e rodam assim que o GTK3 estiver instalado (`python -c "import weasyprint"`).
   empilhadas (`col_rgcpf` etc.).
 - A abertura "Senhor Delegado, …" sai numa linha só (7,3 pt, sem quebra).
 - Ofício também em `CABER_EM_UMA_PAGINA` (dois degraus de compactação).
+
+### 8.12 Editor em todos os documentos (18/09/2026)
+
+- Uma tela só para todos: `documentos:editor_pagina` / `editor_folha`
+  (`documentos/editor/pagina.py`, `templates/documentos/editor/pagina.html`),
+  por **vínculo** (`documentos/editor/vinculos.py`). A rota antiga do ofício
+  (`viagens_oficios:documento`) usa a mesma tela.
+- Vínculos (chave da URL → objeto): `oficio` (Oficio), `termo_autorizacao`
+  (TermoAutorizacao, `?v=` servidor, `0` em branco, `viatura`), `termo_oficio`
+  (Oficio, `?v=` servidor), `justificativa` (Oficio; o registro pode não
+  existir), `ordem_servico`, `plano_trabalho`, `relatorio_tecnico`
+  (PrestacaoServidor), `diario_bordo` (PrestacaoServidor; abrir cria o
+  diário, como a tela do diário). A variante vai em todas as chamadas da API.
+- Cada trecho tem origem, e cada vínculo entrega a fonte dela: `documento` (o
+  registro principal: termo, justificativa pelo `salvar_justificativa`, OS,
+  plano, relatório da prestação, diário pelo `trocar_motorista_do_diario`),
+  `servidor`, `viatura` (cadastros), `prestacao` (diária recebida, pelo
+  `aplicar_diaria_recebida`), `trecho` (km/abastecimento da linha do
+  diário), `configuracao` (gestão). Campos sem partes (`so_links`: destinos,
+  efetivo, funções, trechos do roteiro) abrem o balão só com a explicação e o
+  link para a tela que os edita.
+- Registro de campos por chave de vínculo (`REGISTRO["termo_oficio"]` etc.);
+  blocos (textos fixos do modelo) por tipo, gravados no dono: ofício
+  (ofício, justificativa, termo do ofício), termo, prestação (RT, diário),
+  OS e plano (FKs novas, migração `documentos.0008`). A geração de todos os
+  tipos põe `documento` (blocos) no payload: o PDF sai com o texto
+  reescrito e o cache distingue.
+- Plano: o texto escrito no documento desliga o `*_auto` do campo; apagar ou
+  voltar ao automático religa. `salvar_identificacao` não religa mais os
+  interruptores (antes religava sempre, porque não havia tela para mexer).
+- A tag `editavel` aceita `classe=` e emite as classes do elemento junto das
+  suas (nunca dois atributos `class`); `bloco` aceita `elemento=` (`span`,
+  `h1`, `h2`).
+- Links "Editar documento": cartões de documento do ofício (justificativa e
+  cada termo), linha de OS e de plano, termo (lista e cada documento),
+  justificativas, RT e diário.
+
+### 8.13 Editor embutido no fim dos formulários (18/09/2026)
+
+- Não há mais tela própria do editor: ele é o visualizador de documentos de
+  todos os cadastros, no fim do formulário (ofício — ofício, justificativa e
+  cada termo —, termo, OS, plano, RT e diário). `documentos:editor_embutido`
+  devolve o editor (barra de ferramentas, pendências, folha, histórico) como
+  fragmento HTML; o cartão do documento o busca quando abre, um por vez
+  (`static/js/documento-embutido.js`). `documentos:editor_pagina` e
+  `viagens_oficios:documento` redirecionam ao formulário com
+  `#documento-<chave>[-<variante>]`, que abre o cartão (atalhos das listas).
+- `viagens-documento.js` e `documento-editor.js` viraram instâncias
+  (`DocPalcoMontar(raiz)`, `DocEditorMontar(raiz, palco)`, com `desmontar`).
+  O fragmento não tem `<form>` (mora dentro do formulário do cadastro): o
+  balão vai para o `<body>` e "Imprimir" monta o POST no `<body>`
+  (`data-de-pdf`). O menu "Campos" tem abre-e-fecha próprio (`data-de-menu`),
+  porque os menus do sistema só são ligados na carga da página.
+- Recursos: `documentos/editor/_recursos.html` (uma vez por página);
+  cartões: `_documento_inline.html` com `d.embutido` (ofício, plano) ou
+  `documentos/editor/_visualizador.html` (termo, OS, RT, diário), com a tag
+  `{% documento_embutido %}` e `documentos.editor.pagina.cartao`.

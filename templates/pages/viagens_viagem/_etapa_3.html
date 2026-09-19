@@ -19,7 +19,7 @@
           {% for l in oficios %}{% with o=l.oficio d=l.documentos %}
             <tr{% if o.cancelado %} class="tm-linha--cancelada"{% endif %}>
               <td class="tabela__col-icone">
-                <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+                {% url 'documentos:editor_pagina' 'oficio' o.pk as url_editor %}{% include "components/icone_documento.html" with nome="document" url=url_editor rotulo="Editar o ofício" %}
                 <span class="sr-only">Ofício</span>
               </td>
               <td class="c-nome tm-celula" data-rotulo="Ofício">{% include "pages/viagens_oficios/_linha.html" %}</td>

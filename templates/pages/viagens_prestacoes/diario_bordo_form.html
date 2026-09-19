@@ -1,4 +1,4 @@
-{% extends "pages/viagens_prestacoes/base.html" %}{% load l10n %}
+{% extends "pages/viagens_prestacoes/base.html" %}{% load l10n documento_tags %}
 {% comment %}
   Etapa 1 — Diário de bordo, no desenho do editor de roteiro: um cartão só.
   No cabeçalho, um botão de ação só (trocar motorista/viatura, que abre o
@@ -29,6 +29,7 @@
           <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
             <a class="dd__i of-item" href="{{ editar_motorista_url }}" data-pc-modal="pc-dialogo-motorista">{% include "components/icon.html" with nome="volante" %}<span><b>Trocar motorista / viatura</b><small>Só neste diário; o ofício não muda</small></span></a>
             <a class="dd__i of-item" href="{{ editar_roteiro_url }}">{% include "components/icon.html" with nome="map-pin" %}<span><b>Ajustar roteiro realizado</b><small>Trechos, datas e horários</small></span></a>
+            <a class="dd__i of-item" href="#documento-diario_bordo">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar documento</b><small>Motorista, viatura e km pela prévia A4</small></span></a>
             <div class="dd__s"></div>
             <a class="dd__i of-item" href="{{ preview_inline_url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar PDF</b><small>O diário de bordo em outra aba</small></span></a>
             <a class="dd__i of-item" href="{{ preview_pdf_url }}">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>O diário de bordo em PDF</small></span></a>
@@ -91,6 +92,13 @@
         <button type="submit" class="btn-primaria" form="form-prestacao">Salvar e continuar</button>
       </div>
     </div>
+  </section>
+
+  {# O documento: a folha A4 editável, fora do <form>. #}
+  {% documento_embutido "diario_bordo" ps.pk "Diário de bordo" as documentos %}
+  <section class="section-card reg">
+    <header class="section-card__cabecalho reg__t"><h2 class="section-card__titulo">Documento</h2></header>
+    <div class="section-card__corpo">{% include "documentos/editor/_visualizador.html" %}</div>
   </section>
 </div>
 

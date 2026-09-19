@@ -115,10 +115,14 @@ def documentos_do_termo(termo, artefatos_pdf):
     gerado — `{"pk": ..., "assinado": bool}` —, para "Visualizar" o que já
     existe, "Anexar assinado" e marcar quem já saiu e quem já voltou assinado.
     """
+    from documentos.editor.pagina import cartao, id_do_cartao
+
     def acoes(servidor_id):
         artefato = artefatos_pdf.get(servidor_id)
         return {
             "url_pdf": reverse("viagens_termos:gerar", args=[termo.pk, servidor_id or 0, "pdf"]),
+            # O documento abre no editor, no fim da página (cartão do termo).
+            "url_editor": "#" + id_do_cartao("termo_autorizacao", servidor_id or 0),
             "url_docx": reverse("viagens_termos:gerar", args=[termo.pk, servidor_id or 0, "docx"]),
             "url_previa": reverse("viagens_termos:preview_servidor", args=[termo.pk, servidor_id]) if servidor_id else reverse("viagens_termos:preview", args=[termo.pk]),
             "url_assinado": reverse("viagens_oficios:assinatura_artefato", args=[artefato["pk"]]) if artefato else "",
@@ -140,6 +144,10 @@ def documentos_do_termo(termo, artefatos_pdf):
     return {
         "servidores": servidores,
         "generico": generico,
+        # O visualizador do fim da página: o termo vazio e o de cada servidor.
+        "cartoes": [cartao("termo_autorizacao", termo.pk, "Termo vazio", 0)] + [
+            cartao("termo_autorizacao", termo.pk, f"Termo de autorização — {s['servidor'].nome}", s["servidor"].pk) for s in servidores
+        ],
         "url_baixar": reverse("viagens_termos:baixar", args=[termo.pk]),
         "itens_baixar": json.dumps(itens_baixar, ensure_ascii=False),
         # O modal de anexar escolhe entre estes; sem PDF gerado, a opção vem apagada.

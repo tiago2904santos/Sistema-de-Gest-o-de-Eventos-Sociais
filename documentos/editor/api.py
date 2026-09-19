@@ -11,10 +11,9 @@ from __future__ import annotations
 
 import json
 
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404, JsonResponse
 from django.template.loader import render_to_string
-from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
 from . import campos as registro
@@ -57,31 +56,35 @@ def _erros_do_form(form, definicao):
     return proprios, outros
 
 
-def _fragmento(request, vinculo, objeto, definicao, form, *, erros_gerais=()):
-    erros_proprios = {}
-    if form is not None and form.is_bound:
-        erros_proprios, _ = _erros_do_form(form, definicao)
-        valores = {nome: form[nome].value() for nome in definicao.nomes}
-    else:
-        form = vinculo.form(objeto)
-        atuais = vinculo.dados_atuais(objeto)
-        valores = {nome: atuais.get(nome) for nome in definicao.nomes}
+def _url_do_campo(vinculo, objeto, definicao, objeto_id):
+    url = vinculo.url("campo", objeto, definicao.chave)
+    if not objeto_id:
+        return url
+    return f"{url}{'&' if '?' in url else '?'}objeto={objeto_id}"
+
+
+def _fragmento(request, vinculo, objeto, definicao, fonte, alvo, objeto_id, *, erros_gerais=()):
+    form = fonte.form(alvo)
+    atuais = fonte.dados_atuais(alvo)
+    valores = {nome: atuais.get(nome) for nome in definicao.nomes}
     partes = []
     for parte in definicao.partes:
         valor = _valor_para_painel(parte, valores.get(parte.nome))
         partes.append({
             "definicao": parte,
             "valor": valor,
-            "opcoes": vinculo.opcoes(parte, form, valor) if parte.tipo in ("escolha", "escolha_multipla") else None,
-            "erros": erros_proprios.get(parte.nome),
+            "opcoes": fonte.opcoes(parte, form, valor) if parte.tipo in ("escolha", "escolha_multipla") else None,
+            "erros": None,
             "quando": f"{parte.apenas_quando[0]}={parte.apenas_quando[1]}" if parte.apenas_quando else "",
         })
     return render_to_string("documentos/editor/campo.html", {
         "campo": definicao,
         "partes": partes,
         "erros_gerais": list(erros_gerais),
-        "versao": vinculo.versao(objeto),
-        "url": reverse("documentos:editor_campo", args=[vinculo.tipo.value, objeto.pk, definicao.chave]),
+        "versao": fonte.versao(alvo),
+        "links": fonte.links(definicao, objeto, alvo),
+        "objeto_id": objeto_id or "",
+        "url": _url_do_campo(vinculo, objeto, definicao, objeto_id),
     }, request=request)
 
 
@@ -93,7 +96,8 @@ def _acesso(request, tipo, pk):
     vinculo = vinculo_do_tipo(tipo)
     if vinculo is None:
         raise Http404
-    objeto = vinculo.carregar(pk)
+    # A variante (o servidor do termo) vem na URL de todas as chamadas.
+    objeto = vinculo.carregar(pk, request.GET.get("v", ""))
     if not vinculo.pode_editar(request.user, objeto):
         raise PermissionDenied
     return vinculo, objeto
@@ -138,24 +142,34 @@ def _conflito(versao_atual):
 @require_http_methods(["GET", "PATCH"])
 def campo(request, tipo, pk, chave):
     vinculo, objeto = _acesso(request, tipo, pk)
-    definicao = registro.campo(vinculo.tipo, chave)
+    definicao = registro.campo(vinculo.chave, chave)
     if definicao is None:
         raise Http404("Campo fora do registro do editor.")
+    # A origem do trecho decide o registro que muda (o ofício, o cadastro do
+    # servidor, a prestação, a configuração) e quem pode mudá-lo.
+
+    fonte = vinculo.fonte(definicao.origem)
+    if fonte is None:
+        raise Http404
+    if not fonte.pode_editar(request.user, objeto):
+        raise PermissionDenied
+    objeto_id = request.GET.get("objeto") or ""
+    alvo = fonte.alvo(objeto, objeto_id, request.user)
 
     if request.method == "GET":
-        return JsonResponse({"ok": True, "versao": vinculo.versao(objeto), "fragmento": _fragmento(request, vinculo, objeto, definicao, None)})
+        return JsonResponse({"ok": True, "versao": fonte.versao(alvo), "fragmento": _fragmento(request, vinculo, objeto, definicao, fonte, alvo, objeto_id)})
 
     corpo, erro = _corpo(request)
     if erro is not None:
         return erro
     versao_lida = corpo.get("versao")
-    if versao_lida is not None and versao_lida != vinculo.versao(objeto):
-        return _conflito(vinculo.versao(objeto))
+    if versao_lida is not None and versao_lida != fonte.versao(alvo):
+        return _conflito(fonte.versao(alvo))
 
     valores = corpo.get("valores")
     if not isinstance(valores, dict) or not valores or set(valores) - set(definicao.nomes):
         return JsonResponse({"ok": False, "mensagem": "Valores fora do campo pedido."}, status=400)
-    dados = vinculo.dados_atuais(objeto)
+    dados = fonte.dados_atuais(alvo)
     try:
         for parte in definicao.partes:
             if parte.nome in valores:
@@ -164,7 +178,7 @@ def campo(request, tipo, pk, chave):
         return JsonResponse({"ok": False, "mensagem": str(exc)}, status=400)
 
     request.auditoria_origem = "editor"
-    form = vinculo.form(objeto, dados)
+    form = fonte.form(alvo, dados)
     form.is_valid()
     proprios, outros = _erros_do_form(form, definicao)
     if proprios:
@@ -176,15 +190,22 @@ def campo(request, tipo, pk, chave):
     for nome in list(form.errors):
         if nome not in definicao.nomes:
             form.errors.pop(nome)
-    objeto = vinculo.gravar(form, definicao.nomes)
-    objeto = vinculo.carregar(objeto.pk)
-    return _gravado(request, vinculo, objeto, avisos=outros)
+    try:
+        fonte.gravar(form, definicao.nomes, alvo)
+    except ValidationError as exc:
+        # Regra do domínio que só o serviço conhece (a diária recebida acima
+        # do liberado): volta como erro do campo, como os do formulário.
+        erros = exc.message_dict if hasattr(exc, "error_dict") else {definicao.nomes[0]: exc.messages}
+        return JsonResponse({"ok": False, "erros": erros, "outros_erros": []}, status=400)
+    objeto = vinculo.carregar(objeto.pk, request.GET.get("v", ""))
+    alvo = fonte.alvo(objeto, objeto_id, request.user)
+    return _gravado(request, vinculo, objeto, versao=fonte.versao(alvo), avisos=outros)
 
 
 def _fragmento_bloco(request, vinculo, objeto, definicao):
     from documentos.services.document_blocks import bloco_gravado
 
-    gravado = bloco_gravado(vinculo.tipo, objeto, definicao.chave)
+    gravado = bloco_gravado(vinculo.tipo, vinculo.dono_dos_blocos(objeto), definicao.chave)
     editado = bool(gravado and gravado.editado_manualmente)
     return render_to_string("documentos/editor/bloco.html", {
         "bloco": definicao,
@@ -192,7 +213,7 @@ def _fragmento_bloco(request, vinculo, objeto, definicao):
         "editado": editado,
         "editado_por": str(gravado.editado_por) if editado and gravado.editado_por_id else "",
         "editado_em": gravado.editado_em if editado else None,
-        "url": reverse("documentos:editor_bloco", args=[vinculo.tipo.value, objeto.pk, definicao.chave]),
+        "url": vinculo.url("bloco", objeto, definicao.chave),
     }, request=request)
 
 
@@ -207,32 +228,36 @@ def bloco(request, tipo, pk, chave):
     definicao = registro_blocos.bloco(vinculo.tipo, chave)
     if definicao is None:
         raise Http404("Bloco fora do registro do editor.")
+    dono = vinculo.dono_dos_blocos(objeto)
 
     if request.method == "GET":
-        return JsonResponse({"ok": True, "versao": versao_do_bloco(vinculo.tipo, objeto, chave), "fragmento": _fragmento_bloco(request, vinculo, objeto, definicao)})
+        return JsonResponse({"ok": True, "versao": versao_do_bloco(vinculo.tipo, dono, chave), "fragmento": _fragmento_bloco(request, vinculo, objeto, definicao)})
 
     request.auditoria_origem = "editor"
     if request.method == "DELETE":
-        restaurar(vinculo.tipo, objeto, chave)
-        return _gravado(request, vinculo, objeto, versao=versao_do_bloco(vinculo.tipo, objeto, chave), editado=False)
+        restaurar(vinculo.tipo, dono, chave)
+        return _gravado(request, vinculo, objeto, versao=versao_do_bloco(vinculo.tipo, dono, chave), editado=False)
 
     corpo, erro = _corpo(request)
     if erro is not None:
         return erro
     versao_lida = corpo.get("versao")
-    if versao_lida is not None and versao_lida != versao_do_bloco(vinculo.tipo, objeto, chave):
-        return _conflito(versao_do_bloco(vinculo.tipo, objeto, chave))
+    if versao_lida is not None and versao_lida != versao_do_bloco(vinculo.tipo, dono, chave):
+        return _conflito(versao_do_bloco(vinculo.tipo, dono, chave))
     valores = corpo.get("valores")
     if not isinstance(valores, dict) or set(valores) != {"conteudo"} or isinstance(valores["conteudo"], (dict, list)):
         return JsonResponse({"ok": False, "mensagem": "Esperava só o texto do parágrafo."}, status=400)
     conteudo = str(valores["conteudo"] or "").replace("\r\n", "\n").strip()[:TAMANHO_MAXIMO_TEXTO]
-    if not conteudo or conteudo == definicao.padrao:
-        restaurar(vinculo.tipo, objeto, chave)
+    # O texto do modelo com o marcador já preenchido (como a folha o mostra e
+    # quem digita nela o devolve) também é o modelo: restaura, não grava.
+    iguais_ao_modelo = {definicao.padrao} | {definicao.padrao.replace("{assunto}", termo) for termo in ("autorização", "convalidação")}
+    if not conteudo or conteudo in iguais_ao_modelo:
+        restaurar(vinculo.tipo, dono, chave)
         editado = False
     else:
-        gravar_override(vinculo.tipo, objeto, chave, conteudo, request.user)
+        gravar_override(vinculo.tipo, dono, chave, conteudo, request.user)
         editado = True
-    return _gravado(request, vinculo, objeto, versao=versao_do_bloco(vinculo.tipo, objeto, chave), editado=editado)
+    return _gravado(request, vinculo, objeto, versao=versao_do_bloco(vinculo.tipo, dono, chave), editado=editado)
 
 
 @require_http_methods(["PATCH"])
@@ -250,5 +275,5 @@ def quebra(request, tipo, pk, chave):
     if not isinstance(corpo.get("ativa"), bool):
         return JsonResponse({"ok": False, "mensagem": "Informe se a quebra fica ativa."}, status=400)
     request.auditoria_origem = "editor"
-    ativa = definir_quebra(vinculo.tipo, objeto, chave, corpo["ativa"], request.user)
+    ativa = definir_quebra(vinculo.tipo, vinculo.dono_dos_blocos(objeto), chave, corpo["ativa"], request.user)
     return _gravado(request, vinculo, objeto, ativa=ativa)

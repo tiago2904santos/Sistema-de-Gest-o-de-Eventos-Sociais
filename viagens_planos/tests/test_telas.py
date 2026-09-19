@@ -159,24 +159,28 @@ class PaginaUnicaTests(CenarioPlanoMixin, TestCase):
         self.assertContains(r, "Finalizar plano")
 
     def test_os_tres_textos_sao_sempre_gerados(self):
-        """A tela não os oferece: o que vier no POST é ignorado e o texto é regerado.
-
-        Vale também para um plano que já tenha sido editado à mão — o
-        interruptor volta ligado, senão o texto ficaria congelado sem tela
-        para mexer nele.
-        """
-        PlanoTrabalho.objects.filter(pk=self.plano.pk).update(
-            contextualizacao="Texto antigo.", contextualizacao_auto=False
-        )
+        """A tela não os oferece: o que vier no POST é ignorado e o texto
+        automático é regerado."""
         self.client.post(self.url, self.payload(contextualizacao="Texto meu.", contextualizacao_auto="0"))
         plano = PlanoTrabalho.objects.get(pk=self.plano.pk)
         self.assertNotIn("Texto meu.", plano.contextualizacao)
-        self.assertNotIn("Texto antigo.", plano.contextualizacao)
         self.assertIn("Maringá/PR", plano.contextualizacao)
         self.assertTrue(plano.contextualizacao_auto)
         # Os outros dois seguem o mesmo caminho.
         self.assertIn("Maringá/PR", plano.consideracao_final)
         self.assertIn("Juliana Villela de Barros", plano.coordenacao)
+
+    def test_texto_escrito_no_documento_fica(self):
+        """O texto reescrito no editor documental (interruptor desligado) não
+        é refeito ao gravar a identificação; o POST não religa o interruptor."""
+        PlanoTrabalho.objects.filter(pk=self.plano.pk).update(
+            contextualizacao="Texto do documento.", contextualizacao_auto=False
+        )
+        self.client.post(self.url, self.payload(contextualizacao="Texto meu.", contextualizacao_auto="1"))
+        plano = PlanoTrabalho.objects.get(pk=self.plano.pk)
+        self.assertEqual(plano.contextualizacao, "Texto do documento.")
+        self.assertFalse(plano.contextualizacao_auto)
+        self.assertIn("Maringá/PR", plano.consideracao_final)
 
     def test_destinos_extras_e_erros(self):
         dados = self.payload(quantidade_destinos="1", extra_estado_0=str(self.uf.pk), extra_cidade_0=str(self.sarandi.pk))

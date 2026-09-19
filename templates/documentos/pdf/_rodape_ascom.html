@@ -1,1 +1,1 @@
-{% comment %}Rodapé da folha ASCOM (termo, justificativa): só a linha da unidade abaixo da marca.{% endcomment %}<p class="doc-rodape__unidade">{{ institucional.unidade_rodape }}</p>
+{% comment %}Rodapé da folha ASCOM (termo, justificativa): só a linha da unidade abaixo da marca.{% endcomment %}{% load documento_tags %}<p class="doc-rodape__unidade">{% trecho "config_endereco" %}{{ institucional.unidade_rodape }}{% endtrecho %}</p>

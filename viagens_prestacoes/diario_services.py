@@ -508,6 +508,7 @@ def build_diario_bordo_context(diario: DiarioBordo) -> tuple[dict, list[dict]]:
         chegada = _local(getattr(t, "chegada_dt", None)) if t else None
         linhas.append(
             {
+                "id": linha.pk,  # a linha do diário: o editor documental grava km e abastecimento nela
                 "data_saida": saida.strftime("%d/%m/%Y") if saida else "",
                 "hora_saida": saida.strftime("%H:%M") if saida else "",
                 "km_inicial": linha.km_inicial if linha.km_inicial is not None else "",
@@ -530,10 +531,11 @@ def _template_path() -> Path:
 def gerar_diario_bordo_documento(diario, formato):
     from documentos.services.facade import build_default_facade
     from documentos.services.types import DocumentoTipo
+    from documentos.services.document_blocks import conteudo_documental
     header, trechos = build_diario_bordo_context(diario)
     return build_default_facade().gerar(
         tipo=DocumentoTipo.DIARIO_BORDO, formato=formato,
-        payload={"header": header, "trechos": trechos},
+        payload={"header": header, "trechos": trechos, "documento": conteudo_documental(DocumentoTipo.DIARIO_BORDO, diario.prestacao)},
         reference=diario.prestacao.oficio.numero_formatado.replace("/", "-"),
         prestacao_id=diario.prestacao_id, oficio_id=diario.prestacao.oficio_id,
     )

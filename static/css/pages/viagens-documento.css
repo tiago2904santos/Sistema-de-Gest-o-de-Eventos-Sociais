@@ -1,86 +1,189 @@
-/* Página da prévia A4 do documento (viagens_oficios/documento.html). O
-   documento em si está no iframe, com o CSS próprio (documentos/pdf); aqui
-   é só o palco em volta: fundo, aviso de pendências e o quadro que cresce
-   com o conteúdo (viagens-documento.js). */
+/* Editor do documento (viagens_oficios/documento.html), no desenho de um editor
+   de texto: tela própria sem o menu do sistema — barra de título, barra de
+   ferramentas, as páginas A4 separadas sobre o fundo cinza, o balão do campo
+   junto ao trecho e o histórico num painel lateral. O documento em si está no
+   iframe, com o CSS próprio (templates/documentos/pdf).
 
-.dc-corpo { margin-top: 16px; }
-.dc-corpo--editor {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 16px;
-  align-items: start;
+   Paleta institucional: grafite e cinzas para repouso e hover; o dourado só
+   para o que está ativo (o campo aberto, o botão ligado). */
+
+html:has(body.de-pagina), body.de-pagina { height: 100%; }
+body.de-pagina { margin: 0; background: var(--n-100); color: var(--n-900); font-family: var(--f); }
+
+.de-app { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ---- Barra de título ---------------------------------------------------- */
+.de-topo {
+  position: sticky; top: 0; z-index: 30;
+  display: flex; align-items: center; gap: var(--s3);
+  padding: 10px var(--s5) 6px;
+  background: var(--branco);
 }
-.dc-corpo--editor .dc-palco { margin-top: 0; }
-@media (max-width: 1100px) {
-  .dc-corpo--editor { grid-template-columns: 1fr; }
+.de-topo__marca { display: inline-flex; flex: none; }
+.de-topo__marca img { width: 34px; height: 34px; }
+.de-topo__ident { min-width: 0; flex: 1 1 auto; }
+.de-topo__linha { display: flex; align-items: center; gap: var(--s3); min-width: 0; }
+.de-topo__titulo { margin: 0; font-size: 18px; font-weight: 600; color: var(--n-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.de-topo__selo {
+  flex: none; padding: 2px 9px; border-radius: 999px;
+  background: var(--n-100); color: var(--n-600); font-size: 12px; font-weight: 600;
+}
+.de-topo__sub { display: flex; align-items: center; gap: 6px; margin: 2px 0 0; font-size: 12.5px; color: var(--n-500); white-space: nowrap; overflow: hidden; }
+.de-topo__sub a { display: inline-flex; align-items: center; gap: 2px; color: var(--n-600); text-decoration: none; }
+.de-topo__sub a:hover { color: var(--n-900); text-decoration: underline; }
+.de-topo__sub .ui-icon { width: 14px; height: 14px; }
+.de-topo__acoes { display: flex; align-items: center; gap: var(--s2); flex: none; }
+.de-topo__acoes form { margin: 0; }
+.de-topo__acoes .btn-primaria { height: 38px; }
+
+/* Estado da gravação, como o "Todas as alterações foram salvas" do Docs. */
+.de-salvo { display: inline-flex; align-items: center; gap: 5px; flex: none; font-size: 12.5px; color: var(--n-500); }
+.de-salvo .ui-icon { width: 16px; height: 16px; }
+.de-salvo[data-estado="andamento"] { color: var(--n-600); }
+.de-salvo[data-estado="erro"] { color: var(--dg-t); }
+
+/* ---- Barra de ferramentas ------------------------------------------------ */
+.de-barra {
+  position: sticky; top: 62px; z-index: 25;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 2px;
+  margin: 0 var(--s5) 0; padding: 4px var(--s2);
+  background: var(--n-50); border: 1px solid var(--n-150); border-radius: 22px;
+}
+.de-barra__grupo { display: flex; align-items: center; gap: 2px; }
+.de-barra__sep { width: 1px; height: 20px; margin: 0 6px; background: var(--n-250); }
+.de-barra form { margin: 0; }
+
+.de-icone {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; padding: 0; border: 0; border-radius: 6px;
+  background: transparent; color: var(--n-700); cursor: pointer;
+}
+.de-icone .ui-icon { width: 18px; height: 18px; }
+.de-icone:hover:not(:disabled) { background: var(--n-150); }
+.de-icone:disabled { color: var(--n-300); cursor: default; }
+.de-icone[aria-pressed="true"] { background: var(--d-100); color: var(--d-800); }
+
+.de-texto-botao {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 32px; padding: 0 10px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--n-700); font: inherit; font-size: 13.5px; cursor: pointer; white-space: nowrap;
+}
+.de-texto-botao .ui-icon { width: 17px; height: 17px; }
+.de-texto-botao:hover:not(:disabled) { background: var(--n-150); }
+.de-texto-botao:disabled { color: var(--n-300); cursor: default; }
+.de-texto-botao[aria-pressed="true"] { background: var(--d-100); color: var(--d-800); }
+
+.de-zoom {
+  height: 30px; padding: 0 6px; border: 1px solid transparent; border-radius: 6px;
+  background: transparent; color: var(--n-800); font: inherit; font-size: 13.5px; cursor: pointer;
+}
+.de-zoom:hover { background: var(--n-150); }
+.de-zoom:focus { outline: none; border-color: var(--n-250); }
+
+.de-menu { flex: none; }
+.de-menu__corpo { left: 0; right: auto; max-height: 60vh; overflow-y: auto; }
+
+/* Pendências de emissão: faixa discreta sob as barras. */
+.dc-aviso {
+  display: flex; gap: 10px; align-items: flex-start;
+  margin: var(--s3) var(--s5) 0; padding: 10px 14px;
+  border: 1px solid var(--wn-r); border-radius: 10px;
+  background: var(--wn-b); color: var(--wn-t); font-size: 13px;
+}
+.dc-aviso svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
+.dc-aviso strong { display: block; margin-bottom: 2px; }
+.dc-aviso__lista { margin: 0; padding-left: 18px; }
+.dc-aviso__lista li { margin: 2px 0; }
+
+/* ---- Área das páginas e histórico ------------------------------------------ */
+.de-area { flex: 1 1 auto; display: flex; align-items: flex-start; min-height: 0; }
+.de-palco { flex: 1 1 auto; min-width: 0; padding: var(--s4) var(--s4) var(--s10); overflow-x: auto; }
+
+/* A caixa tem o tamanho visível da folha (largura e altura já com o zoom);
+   o quadro dentro dela é escalado a partir do canto — o JS mede e ajusta. */
+.de-folha-caixa { position: relative; margin: 0 auto; }
+.dc-folha {
+  position: absolute; left: 0; top: 0;
+  display: block; width: 23cm; height: 31cm;
+  border: 0; background: transparent;
+  transform-origin: 0 0;
 }
 
-/* Painel do editor: sempre à vista, ao lado da folha. */
-.de-lateral { position: sticky; top: 16px; display: grid; gap: 12px; }
-.de-painel {
-  padding: 16px;
-  background: #fff;
-  border: 1px solid var(--n-100, #e5e5e5);
-  border-radius: 10px;
+.de-historico {
+  position: sticky; top: 112px; flex: none;
+  width: 320px; max-height: calc(100vh - 128px); overflow-y: auto;
+  margin: var(--s4) var(--s4) 0 0; padding: var(--s4);
+  background: var(--branco); border: 1px solid var(--n-150); border-radius: 12px;
 }
+.de-historico[hidden] { display: none; }
+.de-historico__cabeca { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s3); }
+.de-historico__cabeca h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.de-historico__cabeca em { margin-left: 8px; font-style: normal; font-size: 12px; font-weight: 400; color: var(--n-500); }
+.de-historico__lista { display: grid; gap: 2px; }
+.de-historico__item { display: grid; gap: 1px; padding: 8px 10px; border-radius: 8px; font-size: 12.5px; color: var(--n-600); }
+.de-historico__item:hover { background: var(--n-50); }
+.de-historico__item strong { font-size: 13px; font-weight: 600; color: var(--n-900); }
+.de-historico__item--atual { box-shadow: inset 3px 0 0 var(--d-500); }
+.de-historico__quando { font-size: 12px; color: var(--n-500); }
+.de-historico__campos { color: var(--n-500); }
+
+/* ---- Balão do campo ----------------------------------------------------- */
+.de-balao {
+  position: absolute; z-index: 40;
+  width: 360px; max-width: calc(100vw - 24px);
+  padding: 14px 16px;
+  background: var(--branco); border: 1px solid var(--n-200); border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .08), 0 12px 32px rgba(0, 0, 0, .14);
+}
+.de-balao[hidden] { display: none; }
 .de-campo__cabeca { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-.de-campo__titulo { margin: 0; font-size: 15px; font-weight: 600; color: var(--grafite, #333); }
+.de-campo__titulo { margin: 0; font-size: 15px; font-weight: 600; color: var(--n-900); }
 .de-campo__fechar {
   display: inline-flex; align-items: center; justify-content: center;
   width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px;
-  background: transparent; color: var(--n-500, #6b6b6b); cursor: pointer;
+  background: transparent; color: var(--n-500); cursor: pointer;
 }
-.de-campo__fechar:hover { background: var(--n-25, #f7f7f7); }
+.de-campo__fechar:hover { background: var(--n-100); }
 .de-campo__fechar svg { width: 16px; height: 16px; }
-.de-campo__ajuda { margin: 0 0 12px; font-size: 12.5px; color: var(--n-500, #6b6b6b); }
+.de-campo__ajuda { margin: 0 0 12px; font-size: 12.5px; color: var(--n-500); }
 .de-campo__partes { display: grid; gap: 12px; }
-.de-campo__nota { margin: 0; font-size: 12px; color: var(--n-500, #6b6b6b); }
+.de-campo__nota { margin: 0; font-size: 12px; color: var(--n-500); }
 .de-restaurar { justify-self: start; }
+.de-campo__links { display: grid; gap: 4px; margin-top: 12px; }
+.de-campo__link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--n-800); text-decoration: none; }
+.de-campo__link:hover { color: var(--n-950); text-decoration: underline; }
+.de-campo__link .ui-icon { width: 14px; height: 14px; }
 .de-campo__rodape { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 14px; }
-.de-status { margin-right: auto; font-size: 12px; color: var(--n-500, #6b6b6b); }
-.de-status--ok { color: #2e7d32; }
-.de-status--erro { color: #b3261e; }
-.de-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.de-chip {
-  padding: 5px 11px; border: 1px solid var(--n-150, #d9d9d9); border-radius: 999px;
-  background: #fff; color: var(--grafite, #333); font: inherit; font-size: 12.5px; cursor: pointer;
-}
-.de-chip:hover { background: var(--n-25, #f7f7f7); }
+.de-campo__rodape .btn-primaria, .de-campo__rodape .btn--secundaria { height: 36px; }
+.de-status { margin-right: auto; font-size: 12px; color: var(--n-500); }
+.de-status--ok { color: var(--ok-t); }
+.de-status--erro { color: var(--dg-t); }
 .de-interruptor {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 10px 12px; border: 1px solid var(--n-200, #d1d3d4); border-radius: 8px; cursor: pointer;
+  padding: 10px 12px; border: 1px solid var(--n-250); border-radius: 8px; cursor: pointer;
 }
 
-.dc-palco {
-  margin-top: 16px;
-  padding: 8px 0;
-  background: var(--n-50, #f4f4f5);
-  border: 1px solid var(--n-100, #e5e5e5);
-  border-radius: 10px;
-  overflow-x: auto;
-}
-.dc-folha {
-  display: block;
-  width: 100%;
-  min-width: 22cm;
-  height: 31cm; /* até o JS medir o conteúdo */
-  border: 0;
-  background: transparent;
+@media (max-width: 900px) {
+  .de-topo__sub { display: none; }
+  .de-barra { top: 56px; margin: 0 var(--s2); }
+  .de-historico { position: fixed; right: 0; top: 0; bottom: 0; max-height: none; margin: 0; border-radius: 0; z-index: 45; }
 }
 
-.dc-aviso {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  margin-top: 16px;
-  padding: 12px 14px;
-  border: 1px solid var(--n-100, #e5e5e5);
-  border-radius: 10px;
-  background: #fff;
-  color: var(--grafite, #333);
-  font-size: 13px;
-}
-.dc-aviso svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
-.dc-aviso strong { display: block; margin-bottom: 4px; }
-.dc-aviso__lista { margin: 0; padding-left: 18px; }
-.dc-aviso__lista li { margin: 2px 0; }
+/* ---- Embutido no fim do formulário -----------------------------------------
+   O mesmo editor dentro do cartão do documento: sem barra de título (o cartão
+   dá o nome), a barra de ferramentas presa ao alto da janela enquanto se rola
+   o documento, e as páginas sobre o fundo cinza do cartão. */
+/* min-width 0: a folha A4 é mais larga que o cartão em telas estreitas; ela
+   rola dentro do palco, nunca empurra a página para o lado. */
+.de-app--embutido { min-width: 0; max-width: 100%; min-height: 0; border-radius: 10px; background: var(--n-100); overflow: clip; }
+.de-app--embutido .de-area, .de-app--embutido .de-palco { min-width: 0; }
+.ofc-doc__corpo[data-de-embutir] { min-width: 0; }
+.de-app--embutido .de-barra { top: 8px; margin: 10px 10px 0; }
+.de-app--embutido .dc-aviso { margin: 10px 10px 0; }
+.de-app--embutido .de-palco { padding: var(--s4) var(--s3) var(--s5); }
+.de-app--embutido .de-historico { top: 64px; max-height: calc(100vh - 80px); margin: var(--s4) var(--s3) 0 0; }
+.de-barra__fim { display: flex; align-items: center; gap: 6px; margin-left: auto; padding-left: 8px; }
+.de-carregando { margin: 0; padding: 18px 8px; font-size: 13px; color: var(--n-500); }
+.de-visualizador { display: grid; gap: 8px; }
+.de-visualizador__titulo { margin: 0 0 4px; font-size: 15px; font-weight: 600; color: var(--n-900); }
+.ofc-doc__corpo > .de-app--embutido { margin-top: 2px; }

@@ -141,6 +141,8 @@ def contexto_justificativa(jform):
 
 def contexto_conferencia(oficio, artefatos_pdf):
     """Etapa 4 da origem: os documentos para conferência."""
+    from documentos.editor.pagina import cartao
+
     from .services import validar_oficio_para_documento
 
     pendencias = list(validar_oficio_para_documento(oficio)["pendencias"])
@@ -159,12 +161,14 @@ def contexto_conferencia(oficio, artefatos_pdf):
         }
         if servidor is None:
             base.update(
+                embutido=cartao(rota_tipo, oficio.pk, titulo),
                 src=reverse("viagens_oficios:visualizar", args=[oficio.pk, rota_tipo]),
                 url_pdf=reverse("viagens_oficios:gerar", args=[oficio.pk, rota_tipo, "pdf"]),
                 url_docx=reverse("viagens_oficios:gerar", args=[oficio.pk, rota_tipo, "docx"]),
             )
         else:
             base.update(
+                embutido=cartao("termo_oficio", oficio.pk, titulo, servidor.pk),
                 src=reverse("viagens_oficios:visualizar_termo", args=[oficio.pk, servidor.pk]),
                 url_pdf=reverse("viagens_oficios:termo", args=[oficio.pk, servidor.pk, "pdf"]),
                 url_docx=reverse("viagens_oficios:termo", args=[oficio.pk, servidor.pk, "docx"]),

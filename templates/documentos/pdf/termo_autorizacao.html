@@ -1,4 +1,4 @@
-{% extends "documentos/pdf/base_institucional.html" %}{% comment %}
+{% extends "documentos/pdf/base_institucional.html" %}{% load documento_tags %}{% comment %}
   Termo de autorização: o conteúdo dos três `.docx` de origem
   (termo_autorizacao*.docx) em um template só. As variantes diferem apenas no
   que vem preenchido e no que fica em linha para preencher à mão:
@@ -9,7 +9,10 @@
   - completo sem viatura: servidor preenchido, viatura em branco.
 
   `termo` chega de `document_context.contexto_do_termo`; campo sem valor vira
-  lacuna (`doc-lacuna`), como a linha sublinhada do modelo impresso.
+  lacuna (`doc-lacuna`), como a linha sublinhada do modelo impresso. No
+  editor, `marcas` diz a origem de cada trecho (o termo e a viatura dele, ou,
+  no termo tirado do ofício, o roteiro e o transporte do ofício) e `ids` o
+  servidor e a viatura do documento.
 {% endcomment %}
 {% block titulo %}Termo de autorização{% if termo.nome_servidor %} – {{ termo.nome_servidor }}{% endif %}{% endblock %}
 {% block classe %} doc-folha-ascom doc-termo{% endblock %}
@@ -17,28 +20,30 @@
 {% block rodape %}{% include "documentos/pdf/_rodape_ascom.html" %}{% endblock %}
 
 {% block corpo %}
-  <h1 class="doc-titulo">Termo de autorização para participação em eventos da ASCOM</h1>
+  {% bloco "titulo" classe="doc-titulo" elemento="h1" base=False %}
 
   {% if termo.semipreenchido or termo.servidor_em_branco %}
     <p class="doc-termo__preencher"><span>Eu</span><span class="doc-lacuna"></span><span>,</span></p>
     <p class="doc-termo__preencher"><span>CPF:</span><span class="doc-lacuna doc-lacuna--cpf"></span><span>, telefone (&emsp;&ensp;)</span><span class="doc-lacuna doc-lacuna--telefone"></span><span>, lotado(a) na(o)</span><span class="doc-lacuna"></span><span>,</span></p>
-    <p class="doc-termo__texto">manifesto o interesse em participar do PCPR na Comunidade, <strong>{{ termo.data_do_evento }}</strong>, no município de <strong>{{ termo.destino }}</strong> para execução de atividades inerentes à Assessoria de Comunicação Social - ASCOM/PCPR.</p>
+    <p class="doc-termo__texto">manifesto o interesse em participar do PCPR na Comunidade, <strong{% editavel marcas.periodo %}>{{ termo.data_do_evento }}</strong>, no município de <strong{% editavel marcas.destino %}>{{ termo.destino }}</strong> para execução de atividades inerentes à Assessoria de Comunicação Social - ASCOM/PCPR.</p>
   {% else %}
-    <p class="doc-termo__texto{% if termo.tem_lacuna %} doc-termo__texto--lacunas{% endif %}">{% include "documentos/pdf/_lacuna.html" with valor=termo.nome_servidor rotulo="Eu" classe="doc-lacuna--nome" %}, {% include "documentos/pdf/_lacuna.html" with valor=termo.cpf_servidor rotulo="CPF:" %}, {% include "documentos/pdf/_lacuna.html" with valor=termo.telefone rotulo="telefone" %}, {% include "documentos/pdf/_lacuna.html" with valor=termo.lotacao rotulo="lotado(a) na(o)" classe="doc-lacuna--lotacao" %}, manifesto o interesse em participar do PCPR na Comunidade, <strong>{{ termo.data_do_evento }}</strong>, no município de <strong>{{ termo.destino }}</strong> para execução de atividades inerentes à Assessoria de Comunicação Social - ASCOM/PCPR.</p>
+    <p class="doc-termo__texto{% if termo.tem_lacuna %} doc-termo__texto--lacunas{% endif %}">{% include "documentos/pdf/_lacuna.html" with valor=termo.nome_servidor rotulo="Eu" classe="doc-lacuna--nome" campo="servidor_nome" objeto=ids.servidor %}, {% include "documentos/pdf/_lacuna.html" with valor=termo.cpf_servidor rotulo="CPF:" campo="servidor_cpf" objeto=ids.servidor %}, {% include "documentos/pdf/_lacuna.html" with valor=termo.telefone rotulo="telefone" campo="servidor_telefone" objeto=ids.servidor %}, {% include "documentos/pdf/_lacuna.html" with valor=termo.lotacao rotulo="lotado(a) na(o)" classe="doc-lacuna--lotacao" campo="servidor_lotacao" objeto=ids.servidor %}, manifesto o interesse em participar do PCPR na Comunidade, <strong{% editavel marcas.periodo %}>{{ termo.data_do_evento }}</strong>, no município de <strong{% editavel marcas.destino %}>{{ termo.destino }}</strong> para execução de atividades inerentes à Assessoria de Comunicação Social - ASCOM/PCPR.</p>
   {% endif %}
 
-  <p class="doc-termo__declaracao">Declaro que estou ciente da necessidade de estar na posse de cartão corporativo vigente e apto para uso, no período do deslocamento.</p>
+  {% bloco "declaracao" classe="doc-termo__declaracao" base=False %}
 
   {% if termo.com_viatura %}
-    <p class="doc-termo__linha"><strong>Viatura:</strong> {% include "documentos/pdf/_lacuna.html" with valor=termo.viatura %}</p>
-    <p class="doc-termo__linha"><strong>Placa / Combustível:</strong> {% include "documentos/pdf/_lacuna.html" with valor=termo.placa %} / {% include "documentos/pdf/_lacuna.html" with valor=termo.combustivel %}</p>
+    <p class="doc-termo__linha"><strong>Viatura:</strong> {% include "documentos/pdf/_lacuna.html" with valor=termo.viatura campo=marcas.modelo objeto=marcas.viatura %}</p>
+    <p class="doc-termo__linha"><strong>Placa / Combustível:</strong> {% include "documentos/pdf/_lacuna.html" with valor=termo.placa campo=marcas.placa objeto=marcas.viatura %} / {% include "documentos/pdf/_lacuna.html" with valor=termo.combustivel campo=marcas.combustivel objeto=marcas.viatura %}</p>
   {% else %}
-    <p class="doc-termo__preencher doc-termo__linha"><span><strong>Viatura:</strong> Modelo:</span><span class="doc-lacuna"></span></p>
-    <p class="doc-termo__preencher doc-termo__linha"><span><strong>Placa / Combustível:</strong>&nbsp;</span><span class="doc-lacuna"></span></p>
+    <div{% editavel marcas.escolher_viatura %}>
+      <p class="doc-termo__preencher doc-termo__linha"><span><strong>Viatura:</strong> Modelo:</span><span class="doc-lacuna"></span></p>
+      <p class="doc-termo__preencher doc-termo__linha"><span><strong>Placa / Combustível:</strong>&nbsp;</span><span class="doc-lacuna"></span></p>
+    </div>
   {% endif %}
 
   <div class="doc-termo__assinaturas">
-    <p class="doc-termo__assinatura">Assinatura servidor:</p>
-    <p class="doc-termo__assinatura">Autorização da Chefia:</p>
+    {% bloco "assinatura_servidor" classe="doc-termo__assinatura" base=False %}
+    {% bloco "assinatura_chefia" classe="doc-termo__assinatura" base=False %}
   </div>
 {% endblock %}
