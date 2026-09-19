@@ -6,6 +6,7 @@ from .models import (
     HistoricoDemanda,
     Palestrante,
     RespostaPadrao,
+    Subtema,
     Tema,
 )
 
@@ -36,6 +37,13 @@ class TemaAdmin(admin.ModelAdmin):
     list_display = ("nome", "ativo", "atualizado_em")
     list_filter = ("ativo",)
     search_fields = ("nome",)
+
+
+@admin.register(Subtema)
+class SubtemaAdmin(admin.ModelAdmin):
+    list_display = ("nome", "tema", "ativo", "atualizado_em")
+    list_filter = ("ativo", "tema")
+    search_fields = ("nome", "escopo", "tema__nome")
 
 
 @admin.register(Palestrante)

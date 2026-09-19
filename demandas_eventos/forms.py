@@ -4,7 +4,7 @@ from django.db import transaction
 
 from cadastros.models import Municipio, TipoEvento
 
-from .models import DemandaEvento, Palestrante, RespostaPadrao, Tema
+from .models import DemandaEvento, Palestrante, RespostaPadrao, Subtema, Tema
 from .permissions import setores_do_usuario_para_modulo
 
 
@@ -17,6 +17,7 @@ class DemandaEventoForm(forms.ModelForm):
             "data_solicitacao",
             "tipo_evento",
             "tema",
+            "subtema",
             "canal_solicitacao",
             "municipio",
             "data_inicio_evento",
@@ -52,6 +53,9 @@ class DemandaEventoForm(forms.ModelForm):
         self.usuario = usuario
         self.fields["tipo_evento"].queryset = TipoEvento.objects.filter(ativo=True)
         self.fields["tema"].queryset = Tema.objects.filter(ativo=True)
+        self.fields["subtema"].queryset = Subtema.objects.filter(
+            ativo=True, tema__ativo=True
+        ).select_related("tema")
         self.fields["municipio"].queryset = Municipio.objects.filter(ativo=True).select_related("estado")
         self.fields["palestrantes"].queryset = Palestrante.objects.filter(ativo=True)
         self.fields["setores"].queryset = setores_do_usuario_para_modulo(usuario)
@@ -85,6 +89,12 @@ class DemandaEventoForm(forms.ModelForm):
                 "responsavel_atendimento",
                 "O responsável precisa pertencer a um dos setores envolvidos.",
             )
+        tema = dados.get("tema")
+        subtema = dados.get("subtema")
+        if subtema and not tema:
+            self.add_error("subtema", "Selecione primeiro o tema principal.")
+        elif subtema and subtema.tema_id != tema.pk:
+            self.add_error("subtema", "O subtema precisa pertencer ao tema selecionado.")
         texto = (dados.get("periodo_evento_texto") or "").strip()
         campos_periodo = {
             "data_inicio_evento", "data_fim_evento", "periodo_evento_texto"
@@ -123,6 +133,13 @@ class TemaForm(forms.ModelForm):
     class Meta:
         model = Tema
         fields = ["nome", "ativo"]
+
+
+class SubtemaForm(forms.ModelForm):
+    class Meta:
+        model = Subtema
+        fields = ["tema", "nome", "escopo", "ativo"]
+        widgets = {"escopo": forms.Textarea}
 
 
 class PalestranteForm(forms.ModelForm):

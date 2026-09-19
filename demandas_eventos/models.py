@@ -28,6 +28,37 @@ class Tema(models.Model):
         return self.nome
 
 
+class Subtema(models.Model):
+    tema = models.ForeignKey(
+        Tema,
+        verbose_name="tema principal",
+        on_delete=models.PROTECT,
+        related_name="subtemas",
+    )
+    nome = models.CharField("subtema", max_length=200)
+    escopo = models.TextField(
+        "escopo da abordagem",
+        blank=True,
+        help_text="Explique o recorte que este subtema cobre.",
+    )
+    ativo = models.BooleanField("ativo", default=True)
+    criado_em = models.DateTimeField("criado em", auto_now_add=True)
+    atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
+
+    class Meta:
+        ordering = ["tema__nome", "nome"]
+        verbose_name = "subtema e escopo"
+        verbose_name_plural = "subtemas e escopos"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tema", "nome"], name="subtema_unico_por_tema"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.tema} — {self.nome}"
+
+
 class Palestrante(models.Model):
     nome = models.CharField("nome", max_length=200)
     municipio = models.ForeignKey(
@@ -95,6 +126,14 @@ class DemandaEvento(models.Model):
     tema = models.ForeignKey(
         Tema,
         verbose_name="tema",
+        on_delete=models.PROTECT,
+        related_name="demandas",
+        blank=True,
+        null=True,
+    )
+    subtema = models.ForeignKey(
+        Subtema,
+        verbose_name="subtema",
         on_delete=models.PROTECT,
         related_name="demandas",
         blank=True,

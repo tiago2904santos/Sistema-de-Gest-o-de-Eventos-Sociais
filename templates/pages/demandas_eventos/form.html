@@ -1,4 +1,5 @@
 {% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
 {% block title %}{{ titulo }} — ASCOM{% endblock %}
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
@@ -44,6 +45,8 @@
         {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True largura="4" valor=valores.data_solicitacao erros=erros.data_solicitacao %}
         {% include "components/select.html" with name="tipo_evento" label="Tipo de evento" opcoes=opcoes_tipos obrigatorio=True largura="4" selecionado=valores.tipo_evento erros=erros.tipo_evento %}
         {% include "components/select.html" with name="tema" label="Tema" opcoes=opcoes_temas largura="4" selecionado=valores.tema erros=erros.tema pesquisavel=True %}
+        {% include "components/select.html" with name="subtema" label="Subtema" opcoes=opcoes_subtemas largura="4" selecionado=valores.subtema erros=erros.subtema pesquisavel=True dependente_de="id_tema" cascata_obrigatoria=True placeholder="Selecione primeiro o tema" vazio="Nenhum subtema ativo para este tema." %}
+        <p class="form-ajuda form-campo--12" id="id_subtema_escopo" hidden></p>
         {% include "components/input.html" with name="canal_solicitacao" label="Solicitado via" largura="4" valor=valores.canal_solicitacao erros=erros.canal_solicitacao placeholder="E-mail, WhatsApp, protocolo..." %}
         {% include "components/select.html" with name="municipio" label="Município" opcoes=opcoes_municipios largura="4" selecionado=valores.municipio erros=erros.municipio pesquisavel=True %}
         <div class="form-campo form-campo--4"><label class="form-label" for="id_status_visual">Status</label><input class="form-controle form-controle--somente-leitura" id="id_status_visual" value="{% if instancia %}{{ instancia.get_status_display }}{% else %}Pendente{% endif %}" readonly><p class="form-ajuda">O status é alterado por ações rastreáveis na seção “Atualizar status” desta página.</p></div>
@@ -113,3 +116,4 @@
     </section>
   {% endif %}
 {% endblock %}
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/demandas-subtemas.js' %}" defer></script>{% endblock %}

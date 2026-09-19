@@ -988,21 +988,30 @@
     var opcoesMenu = Array.prototype.slice.call(
       wrapper.querySelectorAll(".custom-select__opcao")
     );
+    var exigePai = wrapper.hasAttribute("data-depends-on-required");
+
+    function definirDisponibilidade(disponivel) {
+      nativo.disabled = !disponivel;
+      var trigger = wrapper.querySelector("[data-custom-select-trigger]");
+      if (trigger) trigger.disabled = !disponivel;
+      wrapper.classList.toggle("is-disabled", !disponivel);
+    }
 
     function aplicar(limparSelecao) {
       var valorPai = pai.value;
+      definirDisponibilidade(!exigePai || Boolean(valorPai));
       Array.prototype.forEach.call(nativo.options, function (opcao) {
         if (!opcao.value) return;
         var dono = opcao.getAttribute("data-parent-value");
         // Sem pai escolhido, a lista inteira continua disponível.
-        var visivel = !valorPai || !dono || dono === valorPai;
+        var visivel = exigePai ? Boolean(valorPai) && (!dono || dono === valorPai) : (!valorPai || !dono || dono === valorPai);
         opcao.hidden = !visivel;
         if (visivel) opcao.removeAttribute("data-filtered-out");
         else opcao.setAttribute("data-filtered-out", "");
       });
       opcoesMenu.forEach(function (opcao) {
         var dono = opcao.getAttribute("data-parent-value");
-        var visivel = !valorPai || !dono || dono === valorPai;
+        var visivel = exigePai ? Boolean(valorPai) && (!dono || dono === valorPai) : (!valorPai || !dono || dono === valorPai);
         opcao.hidden = !visivel;
         if (visivel) opcao.removeAttribute("data-filtered-out");
         else opcao.setAttribute("data-filtered-out", "");

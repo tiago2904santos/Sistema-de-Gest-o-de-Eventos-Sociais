@@ -17,6 +17,7 @@ from .models import (
     Palestrante,
     RespostaPadrao,
     StatusDemanda,
+    Subtema,
     Tema,
 )
 from .permissions import CODIGO_MODULO
@@ -105,6 +106,31 @@ class FormulariosViewsTests(BaseDemandasTestCase):
         form = DemandaEventoForm(dados, usuario=self.usuario)
         self.assertFalse(form.is_valid())
         self.assertIn("data_fim_evento", form.errors)
+
+    def test_subtema_precisa_pertencer_ao_tema_selecionado(self):
+        outro_tema = Tema.objects.create(nome="Outro tema")
+        subtema = Subtema.objects.create(
+            tema=outro_tema,
+            nome="Recorte específico",
+            escopo="Público e conteúdo delimitados.",
+        )
+        dados = self.dados_post()
+        dados["subtema"] = subtema.pk
+        form = DemandaEventoForm(dados, usuario=self.usuario)
+        self.assertFalse(form.is_valid())
+        self.assertIn("subtema", form.errors)
+
+    def test_form_exibe_subtemas_do_tema_com_escopo(self):
+        subtema = Subtema.objects.create(
+            tema=self.tema,
+            nome="Uso seguro das redes",
+            escopo="Orientações para estudantes e famílias.",
+        )
+        self.client.force_login(self.usuario)
+        resposta = self.client.get(reverse("demandas_eventos:nova"))
+        self.assertContains(resposta, 'data-parent-value="%s"' % self.tema.pk)
+        self.assertContains(resposta, subtema.nome)
+        self.assertContains(resposta, "Orientações para estudantes e famílias.")
 
     def test_solicitante_com_texto_legado_extenso_e_preservado(self):
         self.assertEqual(DemandaEvento._meta.get_field("solicitante").max_length, 1000)

@@ -14,13 +14,20 @@ from django.views.decorators.http import require_POST
 
 from cadastros.models import Municipio, TipoEvento
 
-from .forms import DemandaEventoForm, PalestranteForm, RespostaPadraoForm, TemaForm
+from .forms import (
+    DemandaEventoForm,
+    PalestranteForm,
+    RespostaPadraoForm,
+    SubtemaForm,
+    TemaForm,
+)
 from .models import (
     AcaoHistoricoDemanda,
     DemandaEvento,
     Palestrante,
     RespostaPadrao,
     StatusDemanda,
+    Subtema,
     Tema,
 )
 from .permissions import pode_editar, queryset_visivel, setores_do_usuario_para_modulo
@@ -47,6 +54,18 @@ def _opcoes_responsaveis(iteravel):
             ),
         }
         for usuario in iteravel
+    ]
+
+
+def _opcoes_subtemas(iteravel):
+    return [
+        {
+            "valor": str(item.pk),
+            "rotulo": item.nome,
+            "estado": str(item.tema_id),
+            "dados": {"escopo": item.escopo},
+        }
+        for item in iteravel
     ]
 
 
@@ -82,7 +101,7 @@ def dashboard(request):
 def lista_demandas(request):
     queryset = queryset_visivel(
         request.user,
-        DemandaEvento.objects.select_related("tipo_evento", "tema", "municipio", "responsavel_atendimento"),
+        DemandaEvento.objects.select_related("tipo_evento", "tema", "subtema", "municipio", "responsavel_atendimento"),
     )
     q = request.GET.get("q", "").strip()
     status = request.GET.get("status", "").strip()
@@ -168,6 +187,7 @@ def _contexto_form(form, instancia):
         "erros": form.errors,
         "opcoes_tipos": _opcoes(form.fields["tipo_evento"].queryset),
         "opcoes_temas": _opcoes(form.fields["tema"].queryset),
+        "opcoes_subtemas": _opcoes_subtemas(form.fields["subtema"].queryset),
         "opcoes_municipios": _opcoes(form.fields["municipio"].queryset),
         "opcoes_responsaveis": _opcoes_responsaveis(
             form.fields["responsavel_atendimento"].queryset
@@ -247,7 +267,7 @@ def exportar_demandas(request):
     queryset = queryset_visivel(
         request.user,
         DemandaEvento.objects.select_related(
-            "tipo_evento", "tema", "municipio", "responsavel_atendimento"
+            "tipo_evento", "tema", "subtema", "municipio", "responsavel_atendimento"
         ).prefetch_related("setores"),
     )
     q = request.GET.get("q", "").strip()
@@ -277,11 +297,11 @@ def exportar_demandas(request):
     resposta["Content-Disposition"] = 'attachment; filename="demandas-ascom.csv"'
     resposta.write("﻿")
     escritor = csv.writer(resposta, delimiter=";", lineterminator="\r\n")
-    escritor.writerow(["Nº", "Solicitação", "Tipo", "Tema", "Evento", "Município", "Solicitante", "Responsável", "Setores", "Status"])
+    escritor.writerow(["Nº", "Solicitação", "Tipo", "Tema", "Subtema", "Evento", "Município", "Solicitante", "Responsável", "Setores", "Status"])
     for demanda in queryset.distinct():
         escritor.writerow([
             demanda.pk, demanda.data_solicitacao.strftime("%d/%m/%Y"),
-            demanda.tipo_evento, demanda.tema or "", demanda.periodo_evento_display,
+            demanda.tipo_evento, demanda.tema or "", demanda.subtema or "", demanda.periodo_evento_display,
             demanda.municipio or demanda.municipio_texto, demanda.solicitante,
             demanda.responsavel_atendimento or demanda.responsavel_atendimento_texto,
             ", ".join(str(setor) for setor in demanda.setores.all()),
@@ -313,6 +333,7 @@ def transicionar_demanda(request, pk):
 
 CADASTROS = {
     "temas": {"model": Tema, "form": TemaForm, "titulo": "Temas", "singular": "tema"},
+    "subtemas": {"model": Subtema, "form": SubtemaForm, "titulo": "Subtemas e escopos", "singular": "subtema"},
     "palestrantes": {"model": Palestrante, "form": PalestranteForm, "titulo": "Palestrantes", "singular": "palestrante"},
     "respostas": {"model": RespostaPadrao, "form": RespostaPadraoForm, "titulo": "Respostas padrão", "singular": "resposta padrão"},
 }
@@ -330,6 +351,8 @@ def lista_cadastro(request, tipo):
     config = _cadastro(tipo)
     q = request.GET.get("q", "").strip()
     queryset = config["model"].objects.all()
+    if tipo == "subtemas":
+        queryset = queryset.select_related("tema")
     campo_busca = "tipo" if tipo == "respostas" else "nome"
     if q:
         queryset = queryset.filter(**{f"{campo_busca}__icontains": q})

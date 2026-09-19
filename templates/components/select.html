@@ -27,7 +27,7 @@
     {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
   </label>
   <div class="form-controle-wrapper form-controle-wrapper--select custom-select{% if pesquisavel %} custom-select--pesquisavel{% endif %}{% if erros %} is-invalid{% endif %}"
-       {% if unidade_gv %}data-unidade-picker{% else %}data-custom-select{% endif %}{% if pesquisavel %} data-searchable{% endif %}{% if dependente_de %} data-depends-on="{{ dependente_de }}"{% endif %}>
+       {% if unidade_gv %}data-unidade-picker{% else %}data-custom-select{% endif %}{% if pesquisavel %} data-searchable{% endif %}{% if dependente_de %} data-depends-on="{{ dependente_de }}"{% endif %}{% if cascata_obrigatoria %} data-depends-on-required{% endif %}>
     {# form_alvo: campo fora do <form> que ainda é enviado com ele. #}
     <select class="form-controle custom-select__native" id="id_{{ name }}" name="{{ name }}"
             {% if form_alvo %}form="{{ form_alvo }}"{% endif %}

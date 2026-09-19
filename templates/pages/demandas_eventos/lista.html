@@ -36,7 +36,7 @@
           {% for demanda in pagina %}
             <tr>
               <td data-rotulo="Solicitação"><a href="{% url 'demandas_eventos:editar' demanda.pk %}" aria-label="Abrir demanda #{{ demanda.pk }}">#{{ demanda.pk }} · {{ demanda.data_solicitacao|date:"d/m/Y" }}</a></td>
-              <td data-rotulo="Tipo / tema"><strong>{{ demanda.tipo_evento }}</strong>{% if demanda.tema %}<br><span class="v32-suave">{{ demanda.tema }}</span>{% endif %}</td>
+              <td data-rotulo="Tipo / tema"><strong>{{ demanda.tipo_evento }}</strong>{% if demanda.tema %}<br><span class="v32-suave">{{ demanda.tema }}</span>{% endif %}{% if demanda.subtema %}<br><span class="v32-suave">{{ demanda.subtema.nome }}</span>{% endif %}</td>
               <td data-rotulo="Evento">{{ demanda.periodo_evento_display|default:"—" }}</td>
               <td data-rotulo="Município">{{ demanda.municipio|default:demanda.municipio_texto|default:"—" }}</td>
               <td data-rotulo="Solicitante">{{ demanda.solicitante|truncatechars:55 }}</td>
@@ -51,7 +51,7 @@
           {% for demanda in pagina %}
             <article class="m-item">
               <div class="m-item__campo" data-rotulo="Solicitação"><a href="{% url 'demandas_eventos:editar' demanda.pk %}" aria-label="Abrir demanda #{{ demanda.pk }}">#{{ demanda.pk }} · {{ demanda.data_solicitacao|date:"d/m/Y" }}</a></div>
-              <div class="m-item__campo" data-rotulo="Tipo / tema"><strong>{{ demanda.tipo_evento }}</strong>{% if demanda.tema %}<br><span class="v32-suave">{{ demanda.tema }}</span>{% endif %}</div>
+              <div class="m-item__campo" data-rotulo="Tipo / tema"><strong>{{ demanda.tipo_evento }}</strong>{% if demanda.tema %}<br><span class="v32-suave">{{ demanda.tema }}</span>{% endif %}{% if demanda.subtema %}<br><span class="v32-suave">{{ demanda.subtema.nome }}</span>{% endif %}</div>
               <div class="m-item__campo" data-rotulo="Evento">{{ demanda.periodo_evento_display|default:"—" }}</div>
               <div class="m-item__campo" data-rotulo="Município">{{ demanda.municipio|default:demanda.municipio_texto|default:"—" }}</div>
               <div class="m-item__campo" data-rotulo="Solicitante">{{ demanda.solicitante|truncatechars:55 }}</div>
