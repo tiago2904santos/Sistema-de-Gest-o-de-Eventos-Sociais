@@ -481,6 +481,13 @@ def _veiculo_bloco(oficio: Oficio) -> dict[str, str]:
     }
 
 
+def _valor_das_diarias(oficio: Oficio) -> str:
+    """Só o valor total ("R$ 853,90"), sem o extenso: o que a folha HTML do
+    ofício mostra. O DOCX segue com `diaria` (valor e extenso)."""
+    diarias = oficio.diarias_para_servidores() if oficio.roteiro else None
+    return format_currency_br(diarias["valor_decimal"]) if diarias else ""
+
+
 def _diarias(oficio: Oficio) -> tuple[str, str]:
     r = oficio.roteiro
     if not r:
@@ -572,6 +579,7 @@ def _build_oficio_docxtpl_context_impl(
         "diaria": diaria,
         # Alias para templates que evoluam o placeholder; mantém o mesmo texto que `diaria`.
         "valor_total_oficio": diaria,
+        "diaria_valor": _valor_das_diarias(oficio),
         "destinos_bloco": _destinos_bloco(oficio),
         "col_servidor": _build_column_lines([v["nome"] for v in viajantes], blank_lines=2),
         "col_rgcpf": _col_rgcpf(viajantes),

@@ -74,7 +74,7 @@
     <tr>
       <td><strong>Destino da viagem:</strong><br><span {% editavel "roteiro" %}>{{ tx.destinos_bloco|linhas }}</span></td>
       <td><strong>Nº de diárias por servidor:</strong><br><span {% editavel "roteiro" %}>{{ tx.diarias_x }} diárias</span></td>
-      <td><strong>Valor total do ofício:</strong><br><span {% editavel "roteiro" %}>{{ tx.diaria }}</span></td>
+      <td><strong>Valor total do ofício:</strong><br><span {% editavel "roteiro" %}>{{ tx.diaria_valor|default:tx.diaria }}</span></td>
     </tr>
   </table>
 

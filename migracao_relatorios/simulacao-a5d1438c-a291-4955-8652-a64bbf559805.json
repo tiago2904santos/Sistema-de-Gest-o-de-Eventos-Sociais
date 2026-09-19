@@ -1,0 +1,687 @@
+{
+  "auth_user": {
+    "criadas": 0,
+    "vinculadas": 1,
+    "atualizadas": 0,
+    "reprovadas": 4,
+    "motivos": [
+      {
+        "id": "1",
+        "motivo": "sem correspondente aqui (não se cria)"
+      },
+      {
+        "id": "3",
+        "motivo": "sem correspondente aqui (não se cria)"
+      },
+      {
+        "id": "4",
+        "motivo": "sem correspondente aqui (não se cria)"
+      },
+      {
+        "id": "23",
+        "motivo": "sem correspondente aqui (não se cria)"
+      }
+    ],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_estado": {
+    "criadas": 0,
+    "vinculadas": 1,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_cidade": {
+    "criadas": 0,
+    "vinculadas": 49,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_cargo": {
+    "criadas": 12,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 1,
+    "motivos": [
+      {
+        "id": "1",
+        "motivo": "duplicar valor da chave viola a restrição de unicidade \"viagens_cargo_padrao_unico\""
+      }
+    ],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_unidade": {
+    "criadas": 97,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_combustivel": {
+    "criadas": 5,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 1,
+    "motivos": [
+      {
+        "id": "9",
+        "motivo": "duplicar valor da chave viola a restrição de unicidade \"viagens_combustivel_padrao_unico\""
+      }
+    ],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_servidor": {
+    "criadas": 174,
+    "vinculadas": 1,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_viatura": {
+    "criadas": 9,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 6
+  },
+  "cadastros_tabeladiaria": {
+    "criadas": 3,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_configuracaosistema": {
+    "criadas": 0,
+    "vinculadas": 1,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_assinaturaconfiguracao": {
+    "criadas": 2,
+    "vinculadas": 2,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "eventos_tipoevento": {
+    "criadas": 0,
+    "vinculadas": 5,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "eventos_evento": {
+    "criadas": 35,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 13
+  },
+  "eventos_eventodocumentosolicitacao": {
+    "criadas": 9,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {
+      "a_copiar": 9
+    },
+    "vinculos_m2m": 0
+  },
+  "roteiros_roteiro": {
+    "criadas": 14,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "roteiros_roteirodestino": {
+    "criadas": 21,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "roteiros_roteirotrecho": {
+    "criadas": 48,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "roteiros_roteirodiariacomponente": {
+    "criadas": 12,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "oficios_configuracaonumeracaooficio": {
+    "criadas": 1,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "oficios_modelomotivooficio": {
+    "criadas": 3,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 1,
+    "motivos": [
+      {
+        "id": "3",
+        "motivo": "duplicar valor da chave viola a restrição de unicidade \"viagens_motivo_padrao_unico\""
+      }
+    ],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "justificativas_modelojustificativa": {
+    "criadas": 4,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "oficios_oficio": {
+    "criadas": 58,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 1,
+    "motivos": [
+      {
+        "id": "67",
+        "motivo": "duplicar valor da chave viola a restrição de unicidade \"viagens_oficio_ano_numero_unique\""
+      }
+    ],
+    "arquivos": {},
+    "vinculos_m2m": 86
+  },
+  "justificativas_justificativa": {
+    "criadas": 24,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "termos_termoautorizacao": {
+    "criadas": 13,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 4
+  },
+  "ordens_servico_ordemservico": {
+    "criadas": 4,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 2,
+    "motivos": [
+      {
+        "id": "1",
+        "motivo": "duplicar valor da chave viola a restrição de unicidade \"viagens_ordem_servico_ano_numero_unique\""
+      },
+      {
+        "id": "2",
+        "motivo": "duplicar valor da chave viola a restrição de unicidade \"viagens_ordem_servico_ano_numero_unique\""
+      }
+    ],
+    "arquivos": {},
+    "vinculos_m2m": 17
+  },
+  "ordens_servico_ordemserviconumerolacuna": {
+    "criadas": 1,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_programasolicitante": {
+    "criadas": 0,
+    "vinculadas": 3,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_horarioatendimento": {
+    "criadas": 0,
+    "vinculadas": 3,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_atividadeplanotrabalho": {
+    "criadas": 0,
+    "vinculadas": 11,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_presetatividadesplanotrabalho": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 1,
+    "motivos": [
+      {
+        "id": "1",
+        "motivo": "duplicar valor da chave viola a restrição de unicidade \"viagens_preset_padrao_unico\""
+      }
+    ],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_planotrabalho": {
+    "criadas": 21,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 4,
+    "motivos": [
+      {
+        "id": "2",
+        "motivo": "duplicar valor da chave viola a restrição de unicidade \"viagens_plano_trabalho_ano_numero_unique\""
+      },
+      {
+        "id": "3",
+        "motivo": "duplicar valor da chave viola a restrição de unicidade \"viagens_plano_trabalho_ano_numero_unique\""
+      },
+      {
+        "id": "4",
+        "motivo": "duplicar valor da chave viola a restrição de unicidade \"viagens_plano_trabalho_ano_numero_unique\""
+      },
+      {
+        "id": "26",
+        "motivo": "duplicar valor da chave viola a restrição de unicidade \"viagens_plano_trabalho_ano_numero_unique\""
+      }
+    ],
+    "arquivos": {},
+    "vinculos_m2m": 59
+  },
+  "planos_trabalho_eventoplano": {
+    "criadas": 3,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 9
+  },
+  "planos_trabalho_planodestino": {
+    "criadas": 6,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 2,
+    "motivos": [
+      {
+        "id": "67",
+        "motivo": "plano: planos_trabalho_planotrabalho #2 não foi trazido"
+      },
+      {
+        "id": "69",
+        "motivo": "plano: planos_trabalho_planotrabalho #4 não foi trazido"
+      }
+    ],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_efetivoplano": {
+    "criadas": 11,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 13,
+    "motivos": [
+      {
+        "id": "1",
+        "motivo": "cargo: cadastros_cargo #1 não foi trazido"
+      },
+      {
+        "id": "2",
+        "motivo": "plano: planos_trabalho_planotrabalho #2 não foi trazido"
+      },
+      {
+        "id": "11",
+        "motivo": "plano: planos_trabalho_planotrabalho #4 não foi trazido"
+      },
+      {
+        "id": "12",
+        "motivo": "cargo: cadastros_cargo #1 não foi trazido"
+      },
+      {
+        "id": "14",
+        "motivo": "cargo: cadastros_cargo #1 não foi trazido"
+      },
+      {
+        "id": "16",
+        "motivo": "cargo: cadastros_cargo #1 não foi trazido"
+      },
+      {
+        "id": "18",
+        "motivo": "cargo: cadastros_cargo #1 não foi trazido"
+      },
+      {
+        "id": "20",
+        "motivo": "cargo: cadastros_cargo #1 não foi trazido"
+      },
+      {
+        "id": "22",
+        "motivo": "cargo: cadastros_cargo #1 não foi trazido"
+      },
+      {
+        "id": "24",
+        "motivo": "cargo: cadastros_cargo #1 não foi trazido"
+      },
+      {
+        "id": "26",
+        "motivo": "cargo: cadastros_cargo #1 não foi trazido"
+      },
+      {
+        "id": "28",
+        "motivo": "cargo: cadastros_cargo #1 não foi trazido"
+      },
+      {
+        "id": "39",
+        "motivo": "cargo: cadastros_cargo #1 não foi trazido"
+      }
+    ],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_prestacaocontas": {
+    "criadas": 57,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 1,
+    "motivos": [
+      {
+        "id": "119",
+        "motivo": "oficio: oficios_oficio #67 não foi trazido"
+      }
+    ],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_prestacaoservidor": {
+    "criadas": 42,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_relatoriotecnico": {
+    "criadas": 14,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_diariobordo": {
+    "criadas": 10,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_diariobordotrecho": {
+    "criadas": 13,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_prestacaodocumentoanexo": {
+    "criadas": 35,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {
+      "a_copiar": 37
+    },
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_carimbosolicitacao": {
+    "criadas": 2,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "documentos_documentoartefato": {
+    "criadas": 219,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 5,
+    "motivos": [
+      {
+        "arquivo": "documentos/gerados/2026/08/oficio_153-2026_20260812-175128.pdf",
+        "motivo": "Arquivo de origem não encontrado."
+      },
+      {
+        "arquivo": "documentos/assinados/versoes/2026/07/assinado_3db33d62-62ec-43ca-a7a5-897672e844da_0f05c_Q9WWiYs.pdf",
+        "motivo": "Arquivo de origem não encontrado."
+      },
+      {
+        "arquivo": "documentos/gerados/2026/07/x.pdf",
+        "motivo": "O conteúdo não corresponde a um PDF válido."
+      },
+      {
+        "arquivo": "documentos/assinados/versoes/2026/07/assinado_47435f0e-0dc7-482d-9065-36d62419dda7_70880_RMM47eM.pdf",
+        "motivo": "Arquivo de origem não encontrado."
+      },
+      {
+        "arquivo": "documentos/gerados/2026/08/oficio_153-2026_20260812-175111.pdf",
+        "motivo": "Arquivo de origem não encontrado."
+      }
+    ],
+    "arquivos": {
+      "a_copiar": 225,
+      "quarentena": 5
+    },
+    "vinculos_m2m": 0
+  },
+  "documentos_documentoassinaturaversao": {
+    "criadas": 3,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 2,
+    "motivos": [
+      {
+        "arquivo": "documentos/assinados/versoes/2026/07/assinado_3db33d62-62ec-43ca-a7a5-897672e844da_0f05c_Q9WWiYs.pdf",
+        "motivo": "Arquivo de origem não encontrado."
+      },
+      {
+        "arquivo": "documentos/assinados/versoes/2026/07/assinado_47435f0e-0dc7-482d-9065-36d62419dda7_70880_RMM47eM.pdf",
+        "motivo": "Arquivo de origem não encontrado."
+      }
+    ],
+    "arquivos": {
+      "quarentena": 2,
+      "a_copiar": 1
+    },
+    "vinculos_m2m": 0
+  },
+  "_pendentes": {
+    "sem_destino": [
+      "cadastros_servidor#1.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#2.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#3.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#4.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#5.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#7.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#8.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#9.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#10.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#12.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#13.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#14.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#15.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#18.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#19.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#20.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#22.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#23.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#24.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#26.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#28.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#29.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#30.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#33.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#34.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#35.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#36.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#37.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#38.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#40.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#42.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#44.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#45.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#46.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#47.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#50.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#51.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#52.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#53.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#54.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#55.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#56.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#57.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#60.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#61.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#62.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#63.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#67.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#68.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#71.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#73.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#74.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#77.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#80.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#82.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#83.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#87.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#93.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#94.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#95.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#97.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#98.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#99.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#100.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#102.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#105.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#106.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#107.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#108.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#109.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#110.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#111.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#112.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#113.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#116.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#117.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#118.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#119.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#121.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#125.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#127.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#128.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#129.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#130.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#131.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#132.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#133.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#134.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#137.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#138.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#140.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#141.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#142.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#143.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#144.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#145.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#146.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#147.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#148.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#149.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#150.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#151.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#152.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#154.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#155.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#156.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#157.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#158.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#159.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#160.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#161.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#162.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#163.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#165.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#166.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#167.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#171.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#172.cargo_id → cadastros_cargo#1",
+      "cadastros_servidor#173.cargo_id → cadastros_cargo#1"
+    ]
+  }
+}

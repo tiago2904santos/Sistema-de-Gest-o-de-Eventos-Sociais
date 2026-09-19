@@ -12,6 +12,16 @@
       "autoPort": true
     },
     {
+      "name": "django-carga-gv",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "set POSTGRES_DB=eventos_sociais_carga&& set MEDIA_ROOT=C:\\Users\\tiago\\gv_carga\\media&& .venv\\Scripts\\python.exe manage.py runserver %PORT%"
+      ],
+      "port": 8023,
+      "autoPort": true
+    },
+    {
       "name": "render-v32",
       "runtimeExecutable": "cmd",
       "runtimeArgs": [

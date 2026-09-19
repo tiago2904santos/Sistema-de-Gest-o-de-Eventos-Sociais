@@ -208,6 +208,13 @@ def _nada(dados, linha, carga):
     dados.clear()
 
 
+def _ajustar_configuracao(dados, linha, carga):
+    # A configuração é uma só aqui: o GV preenche o que tem, e o que está
+    # vazio lá não apaga o que já está preenchido aqui (órgão, endereço...).
+    for campo in [k for k, v in dados.items() if v in (None, "")]:
+        dados.pop(campo)
+
+
 def _viagem(dados, linha, carga):
     uf = (linha.get("destino_uf") or "").upper()
     municipio = carga.municipio_por_nome(linha.get("destino_cidade"), uf)
@@ -241,7 +248,8 @@ TABELAS = [
     Tabela("cadastros_viatura", "viagens_cadastros.Viatura", existente=_viatura, ajustar=_ajustar_viatura, por_area=True,
            m2m=(("cadastros_viatura_motoristas", "motoristas"),)),
     Tabela("cadastros_tabeladiaria", "viagens_cadastros.TabelaDiaria", existente=_unicos),
-    Tabela("cadastros_configuracaosistema", "viagens_cadastros.ConfiguracaoSistema", existente=_configuracao, por_area=True),
+    Tabela("cadastros_configuracaosistema", "viagens_cadastros.ConfiguracaoSistema", existente=_configuracao, por_area=True,
+           ajustar=_ajustar_configuracao),
     Tabela("cadastros_assinaturaconfiguracao", "viagens_cadastros.AssinaturaConfiguracao", existente=_unicos),
     # Viagens (os "eventos" do GV).
     Tabela("eventos_tipoevento", "viagens_viagem.TipoViagem", existente=_por_nome(), por_area=True),
@@ -359,7 +367,7 @@ class Carga:
         from .models import Registro
 
         # O que já foi trazido antes: o diário é o mapa inicial.
-        for registro in Registro.objects.all():
+        for registro in Registro.objects.exclude(etapa="nativo"):
             self.mapa[registro.tabela][registro.origem_pk] = registro.destino_pk
         for linha in self.origem.linhas("cadastros_estado"):
             self.sigla_do_estado[linha["id"]] = (linha.get("sigla") or "").upper()
@@ -414,6 +422,7 @@ class Carga:
 
         timestamps = {k: v for k, v in dados.items() if k in TIMESTAMPS}
         if instancia is None:
+            self.abrir_espaco(tabela, modelo, dados)
             objeto = modelo(**{k: v for k, v in dados.items() if k not in TIMESTAMPS}, **self.marca_de_origem(modelo, linha["id"]))
             modelo._base_manager.bulk_create([objeto])
             if timestamps:
@@ -439,6 +448,39 @@ class Carga:
             "criado": criado, "antes": antes, "depois": {},
             "fingerprint": hashlib.sha256(json.dumps(linha, default=_json, sort_keys=True).encode()).hexdigest(),
         })
+
+    def abrir_espaco(self, tabela, modelo, dados):
+        """O que é do GV fica como era lá; o que já estava aqui cede:
+
+        - catálogo com um item padrão (cargo, combustível, modelo de motivo):
+          o padrão do GV passa a ser o padrão, e o daqui deixa de ser;
+        - número do ano (ofício, OS, plano): o registro daqui que ocupa o
+          número de um do GV vai para um número alto (+900000).
+
+        Cada mudança num registro daqui entra no diário (com o valor de
+        antes), para desfazer."""
+        nomes = {f.name for f in modelo._meta.concrete_fields}
+        if dados.get("is_padrao") and "is_padrao" in nomes:
+            for outro in modelo._base_manager.filter(is_padrao=True):
+                self.anotar_nativo(tabela, modelo, outro, {"is_padrao": True})
+                modelo._base_manager.filter(pk=outro.pk).update(is_padrao=False)
+        if {"numero", "ano"} <= nomes and dados.get("numero") and dados.get("ano"):
+            ocupante = modelo._base_manager.filter(numero=dados["numero"], ano=dados["ano"]).first()
+            if ocupante is not None:
+                self.anotar_nativo(tabela, modelo, ocupante, {"numero": ocupante.numero})
+                modelo._base_manager.filter(pk=ocupante.pk).update(numero=ocupante.numero + 900000)
+                self.relatorios.setdefault("_renumerados", []).append(
+                    f"{modelo._meta.label} #{ocupante.pk}: {ocupante.numero}/{ocupante.ano} -> {ocupante.numero + 900000}/{ocupante.ano}")
+
+    def anotar_nativo(self, tabela, modelo, instancia, antes):
+        """Mudança num registro que já estava aqui: o valor de antes, no diário."""
+        from .models import Registro
+
+        Registro.objects.get_or_create(
+            tabela=f"{tabela.nome}#nativo", origem_pk=f"{modelo._meta.label}:{instancia.pk}:{','.join(antes)}",
+            defaults={"lote": self.lote, "etapa": "nativo", "modelo": modelo._meta.label, "destino_pk": str(instancia.pk),
+                      "criado": False, "antes": antes, "depois": {}, "fingerprint": ""},
+        )
 
     @staticmethod
     def marca_de_origem(modelo, valor):

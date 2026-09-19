@@ -251,7 +251,9 @@ if not DEBUG:
 # diretamente no servidor web.
 MEDIA_URL = "media/"
 
-MEDIA_ROOT = BASE_DIR / "media"
+# Pasta dos arquivos enviados e gerados. Um ambiente de ensaio (a cópia da carga
+# do GV) aponta a sua com MEDIA_ROOT, para não misturar arquivos com o dev.
+MEDIA_ROOT = Path(os.environ["MEDIA_ROOT"]) if os.environ.get("MEDIA_ROOT") else BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

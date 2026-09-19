@@ -1,0 +1,414 @@
+{
+  "auth_user": {
+    "criadas": 0,
+    "vinculadas": 1,
+    "atualizadas": 0,
+    "reprovadas": 4,
+    "motivos": [
+      {
+        "id": "1",
+        "motivo": "sem correspondente aqui (não se cria)"
+      },
+      {
+        "id": "3",
+        "motivo": "sem correspondente aqui (não se cria)"
+      },
+      {
+        "id": "4",
+        "motivo": "sem correspondente aqui (não se cria)"
+      },
+      {
+        "id": "23",
+        "motivo": "sem correspondente aqui (não se cria)"
+      }
+    ],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_estado": {
+    "criadas": 0,
+    "vinculadas": 1,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_cidade": {
+    "criadas": 0,
+    "vinculadas": 49,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_cargo": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 13,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_unidade": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 97,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_combustivel": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 6,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_servidor": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 175,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_viatura": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 9,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_tabeladiaria": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 3,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_configuracaosistema": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 1,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_assinaturaconfiguracao": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 4,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "eventos_tipoevento": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 5,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "eventos_evento": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 35,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "eventos_eventodocumentosolicitacao": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 9,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {
+      "nao_copiados": 9
+    },
+    "vinculos_m2m": 0
+  },
+  "roteiros_roteiro": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 14,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "roteiros_roteirodestino": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 21,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "roteiros_roteirotrecho": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 48,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "roteiros_roteirodiariacomponente": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 12,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "oficios_configuracaonumeracaooficio": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 1,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "oficios_modelomotivooficio": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 4,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "justificativas_modelojustificativa": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 4,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "oficios_oficio": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 59,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "justificativas_justificativa": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 24,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "termos_termoautorizacao": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 13,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "ordens_servico_ordemservico": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 6,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "ordens_servico_ordemserviconumerolacuna": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 1,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_programasolicitante": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 3,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_horarioatendimento": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 3,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_atividadeplanotrabalho": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 11,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_presetatividadesplanotrabalho": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 1,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_planotrabalho": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 25,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_eventoplano": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 3,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_planodestino": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 8,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_efetivoplano": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 24,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_prestacaocontas": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 58,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_prestacaoservidor": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 42,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_relatoriotecnico": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 14,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_diariobordo": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 10,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_diariobordotrecho": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 13,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_prestacaodocumentoanexo": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 35,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {
+      "nao_copiados": 37
+    },
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_carimbosolicitacao": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 2,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "documentos_documentoartefato": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 219,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {
+      "nao_copiados": 230
+    },
+    "vinculos_m2m": 0
+  },
+  "documentos_documentoassinaturaversao": {
+    "criadas": 0,
+    "vinculadas": 0,
+    "atualizadas": 3,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {
+      "nao_copiados": 3
+    },
+    "vinculos_m2m": 0
+  }
+}

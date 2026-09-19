@@ -1,0 +1,455 @@
+{
+  "auth_user": {
+    "criadas": 0,
+    "vinculadas": 1,
+    "atualizadas": 0,
+    "reprovadas": 4,
+    "motivos": [
+      {
+        "id": "1",
+        "motivo": "sem correspondente aqui (não se cria)"
+      },
+      {
+        "id": "3",
+        "motivo": "sem correspondente aqui (não se cria)"
+      },
+      {
+        "id": "4",
+        "motivo": "sem correspondente aqui (não se cria)"
+      },
+      {
+        "id": "23",
+        "motivo": "sem correspondente aqui (não se cria)"
+      }
+    ],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_estado": {
+    "criadas": 0,
+    "vinculadas": 1,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_cidade": {
+    "criadas": 0,
+    "vinculadas": 49,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_cargo": {
+    "criadas": 13,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_unidade": {
+    "criadas": 97,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_combustivel": {
+    "criadas": 6,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_servidor": {
+    "criadas": 174,
+    "vinculadas": 1,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_viatura": {
+    "criadas": 9,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 6
+  },
+  "cadastros_tabeladiaria": {
+    "criadas": 3,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_configuracaosistema": {
+    "criadas": 0,
+    "vinculadas": 1,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "cadastros_assinaturaconfiguracao": {
+    "criadas": 2,
+    "vinculadas": 2,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "eventos_tipoevento": {
+    "criadas": 0,
+    "vinculadas": 5,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "eventos_evento": {
+    "criadas": 35,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 13
+  },
+  "eventos_eventodocumentosolicitacao": {
+    "criadas": 9,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {
+      "a_copiar": 9
+    },
+    "vinculos_m2m": 0
+  },
+  "roteiros_roteiro": {
+    "criadas": 14,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "roteiros_roteirodestino": {
+    "criadas": 21,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "roteiros_roteirotrecho": {
+    "criadas": 48,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "roteiros_roteirodiariacomponente": {
+    "criadas": 12,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "oficios_configuracaonumeracaooficio": {
+    "criadas": 1,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "oficios_modelomotivooficio": {
+    "criadas": 4,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "justificativas_modelojustificativa": {
+    "criadas": 4,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "_renumerados": [
+    "viagens_oficios.Oficio #1: 1/2026 -> 900001/2026",
+    "viagens_ordens.OrdemServico #1: 1/2026 -> 900001/2026",
+    "viagens_ordens.OrdemServico #2: 2/2026 -> 900002/2026",
+    "viagens_planos.PlanoTrabalho #2: 2/2026 -> 900002/2026",
+    "viagens_planos.PlanoTrabalho #3: 3/2026 -> 900003/2026",
+    "viagens_planos.PlanoTrabalho #4: 4/2026 -> 900004/2026",
+    "viagens_planos.PlanoTrabalho #1: 1/2026 -> 900001/2026"
+  ],
+  "oficios_oficio": {
+    "criadas": 59,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 86
+  },
+  "justificativas_justificativa": {
+    "criadas": 24,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "termos_termoautorizacao": {
+    "criadas": 13,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 4
+  },
+  "ordens_servico_ordemservico": {
+    "criadas": 6,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 27
+  },
+  "ordens_servico_ordemserviconumerolacuna": {
+    "criadas": 1,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_programasolicitante": {
+    "criadas": 0,
+    "vinculadas": 3,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_horarioatendimento": {
+    "criadas": 0,
+    "vinculadas": 3,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_atividadeplanotrabalho": {
+    "criadas": 0,
+    "vinculadas": 11,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_presetatividadesplanotrabalho": {
+    "criadas": 1,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 3
+  },
+  "planos_trabalho_planotrabalho": {
+    "criadas": 25,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 71
+  },
+  "planos_trabalho_eventoplano": {
+    "criadas": 3,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 9
+  },
+  "planos_trabalho_planodestino": {
+    "criadas": 8,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "planos_trabalho_efetivoplano": {
+    "criadas": 24,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_prestacaocontas": {
+    "criadas": 58,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_prestacaoservidor": {
+    "criadas": 42,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_relatoriotecnico": {
+    "criadas": 14,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_diariobordo": {
+    "criadas": 10,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_diariobordotrecho": {
+    "criadas": 13,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_prestacaodocumentoanexo": {
+    "criadas": 35,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {
+      "a_copiar": 37
+    },
+    "vinculos_m2m": 0
+  },
+  "prestacoes_contas_carimbosolicitacao": {
+    "criadas": 2,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 0,
+    "motivos": [],
+    "arquivos": {},
+    "vinculos_m2m": 0
+  },
+  "documentos_documentoartefato": {
+    "criadas": 219,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 5,
+    "motivos": [
+      {
+        "arquivo": "documentos/gerados/2026/08/oficio_153-2026_20260812-175128.pdf",
+        "motivo": "Arquivo de origem não encontrado."
+      },
+      {
+        "arquivo": "documentos/assinados/versoes/2026/07/assinado_3db33d62-62ec-43ca-a7a5-897672e844da_0f05c_Q9WWiYs.pdf",
+        "motivo": "Arquivo de origem não encontrado."
+      },
+      {
+        "arquivo": "documentos/gerados/2026/07/x.pdf",
+        "motivo": "O conteúdo não corresponde a um PDF válido."
+      },
+      {
+        "arquivo": "documentos/assinados/versoes/2026/07/assinado_47435f0e-0dc7-482d-9065-36d62419dda7_70880_RMM47eM.pdf",
+        "motivo": "Arquivo de origem não encontrado."
+      },
+      {
+        "arquivo": "documentos/gerados/2026/08/oficio_153-2026_20260812-175111.pdf",
+        "motivo": "Arquivo de origem não encontrado."
+      }
+    ],
+    "arquivos": {
+      "a_copiar": 225,
+      "quarentena": 5
+    },
+    "vinculos_m2m": 0
+  },
+  "documentos_documentoassinaturaversao": {
+    "criadas": 3,
+    "vinculadas": 0,
+    "atualizadas": 0,
+    "reprovadas": 2,
+    "motivos": [
+      {
+        "arquivo": "documentos/assinados/versoes/2026/07/assinado_3db33d62-62ec-43ca-a7a5-897672e844da_0f05c_Q9WWiYs.pdf",
+        "motivo": "Arquivo de origem não encontrado."
+      },
+      {
+        "arquivo": "documentos/assinados/versoes/2026/07/assinado_47435f0e-0dc7-482d-9065-36d62419dda7_70880_RMM47eM.pdf",
+        "motivo": "Arquivo de origem não encontrado."
+      }
+    ],
+    "arquivos": {
+      "quarentena": 2,
+      "a_copiar": 1
+    },
+    "vinculos_m2m": 0
+  }
+}
