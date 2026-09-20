@@ -65,11 +65,72 @@ Quatro garantias, e cada uma tem teste:
 | `orquestrador.py` | O laço da conversa |
 | `llm/` | Interpretadores plugáveis |
 
+## Canal WhatsApp
+
+Só de entrada: **você escreve, ele responde**. Não há mensagem proativa, o
+que mantém tudo dentro da janela de serviço de 24h — que é gratuita — e
+dispensa templates aprovados.
+
+```
+Meta ──POST──▶ /whatsapp/webhook/
+                 │ confere a assinatura HMAC
+                 │ grava e responde 200  (sem processar)
+                 ▼
+            MensagemRecebida (PENDENTE)
+                 │
+      manage.py processar_whatsapp
+                 │ número → vínculo → usuário
+                 │ áudio → transcrição local
+                 ▼
+            orquestrador  ← o MESMO do painel
+                 ▼
+            MensagemEnviada → Cloud API
+```
+
+### Por que gravar antes de processar
+
+A Meta espera 200 em segundos e reentrega o que não confirmou. Transcrever um
+áudio dentro do request estouraria o prazo, a Meta reentregaria, e a mesma
+fala viraria duas viagens. Gravar primeiro dá resposta rápida e idempotência
+(por `wa_message_id`) de uma vez só.
+
+### Decisões que não são óbvias
+
+- **Sem segredo configurado, o webhook recusa tudo.** Falha fechado: a
+  variável esquecida no `.env` do servidor é exatamente como um webhook chega
+  aberto em produção.
+- **Número sem vínculo é ignorado em silêncio.** Responder confirmaria que o
+  sistema existe e ainda abriria conversa paga.
+- **O nono dígito.** O `wa_id` brasileiro vem com e sem o 9 conforme a idade
+  do cadastro; `numeros.variantes()` tenta as duas formas. Sem isso o vínculo
+  não casa e o assistente parece quebrado só para algumas pessoas.
+- **A permissão continua sendo a do usuário vinculado.** O canal não afrouxa
+  nada — quem só consulta pelas telas também só consulta pelo WhatsApp.
+
+### Operação
+
+```bash
+manage.py processar_whatsapp             # uma passada
+manage.py processar_whatsapp --loop      # sob supervisor
+```
+
+Tarefa agendada de minuto em minuto serve: repetir é seguro, porque a
+idempotência está no banco.
+
+O vínculo número ↔ usuário é cadastrado no admin (`Vínculos de WhatsApp`), com
+registro de quem autorizou. Não é autoatendimento, de propósito.
+
+### Custo
+
+Entrada e resposta dentro da janela: **gratuito**. Transcrição:
+`pip install faster-whisper`, roda na CPU do próprio servidor — o áudio não
+sai da rede, e nem o texto precisa sair, já que o interpretador padrão também
+é local.
+
 ## Próximos passos
 
-- **WhatsApp**: só entrada (webhook + vínculo número ↔ usuário) e transcrição
-  de áudio com Whisper local. O orquestrador já é agnóstico de canal —
-  `Conversa.Canal.WHATSAPP` existe para isso.
 - **Ferramentas de outros módulos**: quando entrar a primeira fora de Viagens,
   o assistente ganha código de módulo próprio e o recorte passa a ser por
   ferramenta (ver o comentário em `apps.py`).
+- **Segundo canal** (Telegram, app próprio): o orquestrador não muda; só a
+  tradução de formato, como em `assistente/whatsapp/payload.py`.
