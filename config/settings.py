@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     "viagens_planos",
     "viagens_prestacoes",
     "migracao_legado",
+    "assistente",
 ]
 
 MIDDLEWARE = [
