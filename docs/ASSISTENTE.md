@@ -7,6 +7,9 @@ Ele não é um chat sobre o sistema: é uma porta para o sistema. O que ele faz,
 faz pelos mesmos `services`/`selectors` das telas, com as permissões de quem
 está conversando e com confirmação humana antes de qualquer gravação.
 
+Para conferir com as próprias mãos, o roteiro de testes práticos está em
+[`TESTES_PRATICOS.md`](TESTES_PRATICOS.md).
+
 ## O que já funciona
 
 | Você diz | Ele faz |
