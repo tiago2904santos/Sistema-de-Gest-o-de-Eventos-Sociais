@@ -32,4 +32,5 @@ urlpatterns = [
     path("viagens/cadastros/", include("viagens_cadastros.urls")),
     path("viagens/roteiros/", include("viagens_roteiros.urls")),
     path("documentos/", include("documentos.urls")),
+    path("assistente/", include("assistente.urls")),
 ]
