@@ -370,6 +370,7 @@ def editar(request, pk=None):
     from .form_context import contexto_conferencia, contexto_dados_viajantes, contexto_justificativa
     from .justificativas_services import get_or_create_justificativa_oficio, oficio_exige_justificativa
     from .presenters import artefatos_pdf_por_oficio
+    from .protocolo_services import abrir_protocolo_do_oficio, mensagens_do_protocolo
     from .services import criar_oficio_rascunho
     exigir_operador(request)
     if pk is None:
@@ -406,6 +407,12 @@ def editar(request, pk=None):
                 else:
                     gravacao = _gravar_roteiro(request, oficio, finalizar=finalizar)
                 atualizar_justificativa_oficio(oficio, jform, action='save_continue' if finalizar else 'save_draft')
+            # Fora da transação de propósito: abrir o protocolo é uma chamada
+            # a outro sistema e não pode segurar a gravação do ofício — se
+            # falhar, o ofício já está salvo e a tela explica o que houve.
+            resultado_protocolo = abrir_protocolo_do_oficio(oficio)
+            for nivel, texto in mensagens_do_protocolo(resultado_protocolo, finalizar=finalizar):
+                messages.add_message(request, nivel, texto)
             if vincular:
                 if vinculado is not None:
                     messages.success(request, f'Roteiro #{vinculado.pk} vinculado ao ofício. Rascunho salvo.')
