@@ -102,7 +102,7 @@
                 </div>
                 {% for erro in e.numero %}<p class="form-erro" id="id_numero_erro">{{ erro }}</p>{% endfor %}
               </div>
-              {% include "components/input.html" with name="protocolo" label="Protocolo" inputmode="numeric" maxlength="12" autocomplete="off" valor=v.protocolo erros=e.protocolo %}
+              {% include "components/input.html" with name="protocolo" label="Protocolo" inputmode="numeric" maxlength="12" autocomplete="off" ajuda=dados.ajuda_protocolo valor=v.protocolo erros=e.protocolo %}
               {% include "components/select.html" with name="custeio" label="Custeio" opcoes=dados.opcoes_custeio placeholder="Selecione..." selecionado=v.custeio erros=e.custeio %}
               {% include "components/input.html" with name="data_criacao" label="Data do ofício" tipo="date" valor=v.data_criacao erros=e.data_criacao %}
               <div class="cheia" data-custeio-instituicao data-outra="{{ dados.outra_instituicao }}"{% if not dados.mostrar_instituicao %} hidden{% endif %}>

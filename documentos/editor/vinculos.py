@@ -259,6 +259,10 @@ class VinculoOficio(VinculoBase):
     # campo pedido e estes; nada além.
     DERIVADOS = {
         "servidores": ("servidores_termo_autorizacao", "diarias_quantidade_servidores"),
+        # Trocar o protocolo aqui é trocá-lo à mão: a marca de quem o abriu
+        # (eProtocolo ou modo simulado) tem de ir junto, senão a ficha continua
+        # atribuindo ao barramento um número que a pessoa digitou.
+        "protocolo": ("protocolo_origem", "protocolo_situacao", "protocolo_criado_em"),
     }
 
     def montar_fontes(self):

@@ -295,3 +295,48 @@ DOCUMENTOS_PDF_HTML_NATIVO = ("oficio", "termo_autorizacao", "justificativa", "o
 # cai na cadeia antiga em vez de falhar. Em produção fica desligada — o PDF não
 # deve nascer do DOCX por acidente.
 DOCUMENTOS_PDF_HTML_FALLBACK_DOCX = os.environ.get("DOCUMENTOS_PDF_HTML_FALLBACK_DOCX", "1" if DEBUG else "0") == "1"
+
+# ---------------------------------------------------------------------------
+# eProtocolo (Paraná) — abertura automática do protocolo do ofício
+#
+# Sem as credenciais da Celepar o sistema opera 100% em modo simulado: o
+# ofício recebe um número no formato certo, marcado como simulado na ficha, e
+# nenhuma chamada sai da rede. Preenchidas as credenciais e aberta a trava de
+# gravação (EPROTOCOLO_REAL_READONLY=False), o mesmo caminho passa a abrir o
+# protocolo de verdade, no ambiente indicado por EPROTOCOLO_AMBIENTE.
+#
+# Diagnóstico, sem tocar a rede: python manage.py eprotocolo_check
+# Autenticação de verdade:        python manage.py eprotocolo_ping
+# ---------------------------------------------------------------------------
+
+def _flag_env(nome: str, padrao: str) -> bool:
+    return (os.environ.get(nome, padrao) or "").strip().lower() in {"1", "true", "sim", "yes", "on"}
+
+
+EPROTOCOLO = {
+    "AMBIENTE": (os.environ.get("EPROTOCOLO_AMBIENTE") or "mock").strip().lower(),
+    "BASE_URL": (os.environ.get("EPROTOCOLO_BASE_URL") or "").strip(),
+    "TOKEN_URL": (os.environ.get("EPROTOCOLO_TOKEN_URL") or "").strip(),
+    "CLIENT_ID": (os.environ.get("EPROTOCOLO_CLIENT_ID") or "").strip(),
+    "CLIENT_SECRET": (os.environ.get("EPROTOCOLO_CLIENT_SECRET") or "").strip(),
+    "CONSUMER_ID": (os.environ.get("EPROTOCOLO_CONSUMER_ID") or "").strip(),
+    "TIMEOUT": int(os.environ.get("EPROTOCOLO_TIMEOUT", "30") or "30"),
+    "VERIFY_SSL": _flag_env("EPROTOCOLO_VERIFY_SSL", "1"),
+    # Trava de gravação: aberta (False) é o que libera abrir protocolo de verdade.
+    "REAL_READONLY": _flag_env("EPROTOCOLO_REAL_READONLY", "1"),
+    # O ofício abre o protocolo sozinho ao ser gravado. Desligue para voltar ao
+    # preenchimento manual do campo.
+    "AUTO_PROTOCOLO_OFICIO": _flag_env("EPROTOCOLO_AUTO_PROTOCOLO_OFICIO", "1"),
+    # Códigos institucionais (não sensíveis) exigidos pelo barramento.
+    "COD_ORGAO_PADRAO": (os.environ.get("EPROTOCOLO_COD_ORGAO_PADRAO") or "").strip(),
+    "NOME_ORGAO_PADRAO": (os.environ.get("EPROTOCOLO_NOME_ORGAO_PADRAO") or "").strip(),
+    "COD_LOCAL_ORIGEM_PADRAO": (os.environ.get("EPROTOCOLO_COD_LOCAL_ORIGEM_PADRAO") or "").strip(),
+    "COD_LOCAL_DESTINO_PADRAO": (os.environ.get("EPROTOCOLO_COD_LOCAL_DESTINO_PADRAO") or "").strip(),
+    "COD_ASSUNTO_VIAGEM": (os.environ.get("EPROTOCOLO_COD_ASSUNTO_VIAGEM") or "").strip(),
+    "COD_ESPECIE_OFICIO": (os.environ.get("EPROTOCOLO_COD_ESPECIE_OFICIO") or "").strip(),
+    "COD_PALAVRA_CHAVE_VIAGEM": (os.environ.get("EPROTOCOLO_COD_PALAVRA_CHAVE_VIAGEM") or "").strip(),
+    "CPF_USUARIO_SISTEMA": (os.environ.get("EPROTOCOLO_CPF_USUARIO_SISTEMA") or "").strip(),
+}
+# Na suíte, nada de rede: o ambiente volta a mock mesmo com .env preenchido.
+if sys.argv[1:2] == ["test"]:
+    EPROTOCOLO["AMBIENTE"] = "mock"

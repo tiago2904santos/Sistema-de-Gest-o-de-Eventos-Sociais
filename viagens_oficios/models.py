@@ -38,6 +38,18 @@ class Oficio(ModeloTemporal, ModeloCancelavel, OrigemLegado):
         (CUSTEIO_ONUS_LIMITADO, "Ônus limitado"),
     ]
 
+    PROTOCOLO_ORIGEM_MANUAL = "MANUAL"
+
+    PROTOCOLO_ORIGEM_EPROTOCOLO = "EPROTOCOLO"
+
+    PROTOCOLO_ORIGEM_SIMULADO = "SIMULADO"
+
+    PROTOCOLO_ORIGEM_CHOICES = [
+        (PROTOCOLO_ORIGEM_MANUAL, "Informado manualmente"),
+        (PROTOCOLO_ORIGEM_EPROTOCOLO, "Aberto no eProtocolo"),
+        (PROTOCOLO_ORIGEM_SIMULADO, "Simulado (integração desligada)"),
+    ]
+
     numero = models.PositiveIntegerField(null=True, blank=True, db_index=True)
 
     ano = models.PositiveIntegerField(null=True, blank=True, db_index=True)
@@ -45,6 +57,21 @@ class Oficio(ModeloTemporal, ModeloCancelavel, OrigemLegado):
     data_criacao = models.DateField(default=timezone.localdate, db_index=True)
 
     protocolo = models.CharField(max_length=30, blank=True, default="", db_index=True)
+
+    # De onde veio o número acima. O campo continua editável: digitar por cima
+    # devolve a origem para MANUAL, e a ficha deixa de prometer que aquele
+    # número existe no eProtocolo.
+    protocolo_origem = models.CharField(
+        "origem do protocolo",
+        max_length=20,
+        choices=PROTOCOLO_ORIGEM_CHOICES,
+        default=PROTOCOLO_ORIGEM_MANUAL,
+    )
+
+    # Situação devolvida pelo eProtocolo na abertura (CRIADO, EM_TRAMITACAO…).
+    protocolo_situacao = models.CharField(max_length=40, blank=True, default="")
+
+    protocolo_criado_em = models.DateTimeField(null=True, blank=True, editable=False)
 
     assunto = models.CharField(max_length=255, blank=True, default="")
 
@@ -276,6 +303,13 @@ class Oficio(ModeloTemporal, ModeloCancelavel, OrigemLegado):
 
     def save(self, *args, **kwargs):
         self.protocolo = normalize_protocolo(self.protocolo)
+        if not self.protocolo:
+            # Sem número não há o que a integração prometa: a ficha volta a
+            # dizer "manual" em vez de exibir a marca de um protocolo que não
+            # existe mais.
+            self.protocolo_origem = self.PROTOCOLO_ORIGEM_MANUAL
+            self.protocolo_situacao = ""
+            self.protocolo_criado_em = None
         self.assunto = normalize_spaces(self.assunto)
         self.motivo = normalize_spaces(self.motivo)
         self.custeio_observacao = normalize_spaces(self.custeio_observacao)
