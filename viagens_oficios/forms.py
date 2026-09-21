@@ -11,7 +11,23 @@ from .models import Oficio, Justificativa, ModeloMotivoOficio, ModeloJustificati
 REFERENCIA_OFICIO = re.compile(r"^\s*(\d{1,6})\s*(?:/\s*(\d{4}))?\s*$")
 
 
-class OficioForm(forms.ModelForm):
+class ProtocoloManualMixin:
+    """Protocolo digitado à mão volta a ser "manual".
+
+    O sistema abre o protocolo sozinho e marca a origem; se a pessoa trocar o
+    número pelo do eProtocolo de verdade (ou por qualquer outro), a ficha não
+    pode continuar afirmando que aquele número veio do barramento.
+    """
+
+    def _marcar_protocolo_manual(self, obj):
+        if 'protocolo' in self.changed_data and (obj.protocolo or '').strip():
+            obj.protocolo_origem = Oficio.PROTOCOLO_ORIGEM_MANUAL
+            obj.protocolo_situacao = ''
+            obj.protocolo_criado_em = None
+        return obj
+
+
+class OficioForm(ProtocoloManualMixin, forms.ModelForm):
     """Dados e viajantes do cadastro de ofício, com os campos do Gerenciador de Viagens.
 
     Identificação (número, data, protocolo, custeio e nome da instituição),
@@ -141,7 +157,7 @@ class OficioForm(forms.ModelForm):
 
     @transaction.atomic
     def save(self, commit=True):
-        obj = super().save(commit=False)
+        obj = self._marcar_protocolo_manual(super().save(commit=False))
         selecionados = {s.pk for s in self.cleaned_data.get('servidores', [])}
         if self._servidores_anteriores != selecionados or obj.diarias_quantidade_servidores is None:
             obj.diarias_quantidade_servidores = len(selecionados)
@@ -151,7 +167,7 @@ class OficioForm(forms.ModelForm):
         return obj
 
 
-class OficioDocumentoForm(forms.ModelForm):
+class OficioDocumentoForm(ProtocoloManualMixin, forms.ModelForm):
     """Todos os campos do ofício que o documento mostra — o formulário do
     editor documental (`documentos.editor.vinculos`), que edita o ofício pela
     prévia A4. O cadastro usa `OficioForm`, só com os campos da origem."""
@@ -237,7 +253,7 @@ class OficioDocumentoForm(forms.ModelForm):
 
     @transaction.atomic
     def save(self, commit=True):
-        obj = super().save(commit=False)
+        obj = self._marcar_protocolo_manual(super().save(commit=False))
         selecionados = {s.pk for s in self.cleaned_data.get('servidores', [])}
         if self._servidores_anteriores != selecionados or obj.diarias_quantidade_servidores is None:
             obj.diarias_quantidade_servidores = len(selecionados)
