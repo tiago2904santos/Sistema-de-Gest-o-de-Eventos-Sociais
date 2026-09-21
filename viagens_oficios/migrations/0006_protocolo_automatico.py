@@ -22,6 +22,10 @@ class Migration(migrations.Migration):
                 choices=[
                     ("MANUAL", "Informado manualmente"),
                     ("EPROTOCOLO", "Aberto no eProtocolo"),
+                    (
+                        "TREINAMENTO",
+                        "Aberto no eProtocolo de treinamento (não oficial)",
+                    ),
                     ("SIMULADO", "Simulado (integração desligada)"),
                 ],
                 default="MANUAL",

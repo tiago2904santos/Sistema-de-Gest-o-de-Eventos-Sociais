@@ -45,6 +45,17 @@ def is_real() -> bool:
     return ambiente() in AMBIENTES_REAIS
 
 
+def numero_e_oficial() -> bool:
+    """O número aberto neste ambiente vale como protocolo oficial?
+
+    Só em produção. Treinamento e homologação abrem processo de verdade no
+    barramento de teste — número existe, mas não serve para protocolar; e o
+    modo simulado nem sai daqui. A distinção é do ambiente, não da chamada,
+    então mora aqui e não em quem chama.
+    """
+    return is_producao() and not em_modo_mock()
+
+
 def real_readonly() -> bool:
     """Trava de segurança: no modo real, só consulta (padrão)."""
     return bool(get("REAL_READONLY", True))
@@ -92,6 +103,8 @@ def descricao_ambiente() -> str:
     if eprotocolo_esta_configurado():
         if real_readonly():
             return f"Integração ativa ({ambiente()}, somente consulta)"
+        if not is_producao():
+            return f"Integração ativa ({ambiente()}) — números de teste, não oficiais"
         return f"Integração ativa ({ambiente()})"
     if ambiente() == AMBIENTE_MOCK:
         return "Modo simulado (sem integração real)"
@@ -130,6 +143,7 @@ def validar_configuracao() -> dict:
         "verify_ssl": bool(cfg.get("VERIFY_SSL", True)),
         "read_only": real_readonly(),
         "mutacao_liberada": mutacao_real_liberada(),
+        "numero_oficial": numero_e_oficial(),
         "auto_protocolo_oficio": auto_protocolo_oficio(),
         "campos_faltantes": faltantes,
         "ok": (not real) or not faltantes,

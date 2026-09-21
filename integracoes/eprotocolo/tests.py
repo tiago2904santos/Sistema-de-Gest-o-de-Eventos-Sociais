@@ -73,7 +73,26 @@ class ConfiguracaoTests(SimpleTestCase):
     def test_credencial_completa_com_trava_aberta_libera_a_gravacao(self):
         self.assertFalse(cfg.em_modo_mock())
         self.assertTrue(cfg.mutacao_real_liberada())
-        self.assertEqual(cfg.descricao_ambiente(), "Integração ativa (homologacao)")
+
+    @override_settings(EPROTOCOLO={**CONFIG_REAL, "AMBIENTE": "treinamento"})
+    def test_treinamento_grava_de_verdade_mas_o_numero_nao_e_oficial(self):
+        self.assertTrue(cfg.mutacao_real_liberada())
+        self.assertFalse(cfg.numero_e_oficial())
+        self.assertIn("não oficiais", cfg.descricao_ambiente())
+
+    @override_settings(EPROTOCOLO={**CONFIG_REAL, "AMBIENTE": "homologacao"})
+    def test_homologacao_tambem_nao_gera_numero_oficial(self):
+        self.assertFalse(cfg.numero_e_oficial())
+
+    @override_settings(EPROTOCOLO={**CONFIG_REAL, "AMBIENTE": "producao"})
+    def test_so_producao_gera_numero_oficial(self):
+        self.assertTrue(cfg.numero_e_oficial())
+        self.assertEqual(cfg.descricao_ambiente(), "Integração ativa (producao)")
+
+    @override_settings(EPROTOCOLO={"AMBIENTE": "producao"})
+    def test_producao_sem_credencial_continua_simulada(self):
+        self.assertTrue(cfg.em_modo_mock())
+        self.assertFalse(cfg.numero_e_oficial())
 
     @override_settings(EPROTOCOLO={**CONFIG_REAL, "REAL_READONLY": True})
     def test_trava_fechada_mantem_a_integracao_em_somente_consulta(self):
