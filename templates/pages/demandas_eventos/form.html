@@ -1,17 +1,16 @@
 {% extends "layouts/app_shell_v32.html" %}
-{% load estaticos %}
 {% comment %}
-  Tela única da demanda da ASCOM, na composição dos formulários do módulo de
-  Viagens: cabeçalho com ícone, título e selo (nada de metadados sob o
-  título), cartões numerados `section-card`, campos sempre pelos components
-  do design system — palestrantes e setores nos cartões de escolha — e as
-  ações no topo e no fim do último cartão editável.
+  Formulário de palestras da ASCOM: um campo para cada coluna da planilha
+  "Palestras e Eventos ASCOM" (aba do ano), com os mesmos nomes. As colunas
+  estão agrupadas em três cartões — o evento, quem pediu e o andamento —, na
+  composição dos formulários do módulo de Viagens: cabeçalho com ícone,
+  título e selo, cartões numerados `section-card`, campos sempre pelos
+  components do design system e as ações no topo e no fim do último cartão.
 
-  A mudança de status e o histórico ficam FORA do <form> principal: HTML não
-  permite formulário aninhado.
+  O "Mês" da planilha não é campo: sai da data do evento (ou da solicitação).
 {% endcomment %}
 
-{% block title %}{{ titulo }} — ASCOM{% endblock %}
+{% block title %}{% if instancia %}{{ instancia.get_evento_display }} #{{ instancia.pk }}{% else %}Nova palestra{% endif %} — ASCOM{% endblock %}
 
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
@@ -20,15 +19,15 @@
     <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
       <div class="page-header d-cabeca__esq">
         <div class="page-header__identificacao d-identificacao">
-          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="users" %}</span>
           <div class="frm-titulo">
-            <h1 class="page-header__titulo d-titulo-v32">{% if instancia %}Editar demanda <span class="frm-ident">#{{ instancia.pk }}</span>{% else %}Nova demanda{% endif %}</h1>
+            <h1 class="page-header__titulo d-titulo-v32">{% if instancia %}Editar {{ instancia.get_evento_display|lower }} <span class="frm-ident">#{{ instancia.pk }}</span>{% else %}Nova palestra{% endif %}</h1>
             <span class="st st--{% if instancia %}{{ instancia.status|lower }}{% else %}pendente{% endif %}">{% if instancia %}{{ instancia.get_status_display }}{% else %}Pendente{% endif %}</span>
           </div>
         </div>
       </div>
       <div class="frm-topo__acoes">
-        <button type="submit" class="btn-primaria" form="form-demanda">Salvar demanda</button>
+        <button type="submit" class="btn-primaria" form="form-demanda">Salvar</button>
       </div>
     </div>
 
@@ -37,122 +36,95 @@
       {% if form.errors %}
         <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
           {% include "components/icon.html" with nome="info" %}
-          <div><b>Não foi possível salvar a demanda</b>Revise os campos indicados antes de continuar.
+          <div><b>Não foi possível salvar</b>Revise os campos indicados antes de continuar.
             <ul class="aviso--erro__lista">{% for campo, mensagens in form.errors.items %}{% for mensagem in mensagens %}<li>{% if campo == "__all__" %}{{ mensagem }}{% else %}<a href="#id_{{ campo }}">{{ mensagem }}</a>{% endif %}</li>{% endfor %}{% endfor %}</ul>
           </div>
         </div>
       {% endif %}
 
-      <section class="section-card reg" id="sec-identificacao">
-        <header class="section-card__cabecalho reg__t">
-          <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
-          <h2 class="section-card__titulo">Identificação da demanda</h2>
-        </header>
-        <div class="section-card__corpo">
-          <div class="g-form g-form--3">
-            {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True valor=valores.data_solicitacao erros=erros.data_solicitacao %}
-            {% include "components/select.html" with name="tipo_evento" label="Tipo de evento" opcoes=opcoes_tipos obrigatorio=True selecionado=valores.tipo_evento erros=erros.tipo_evento %}
-            {% include "components/select.html" with name="tema" label="Tema" opcoes=opcoes_temas selecionado=valores.tema erros=erros.tema pesquisavel=True %}
-            {% include "components/select.html" with name="subtema" label="Subtema" opcoes=opcoes_subtemas selecionado=valores.subtema erros=erros.subtema pesquisavel=True dependente_de="id_tema" cascata_obrigatoria=True placeholder="Selecione primeiro o tema" vazio="Nenhum subtema ativo para este tema." %}
-            <p class="form-ajuda cheia" id="id_subtema_escopo" hidden></p>
-            {% include "components/input.html" with name="canal_solicitacao" label="Solicitado via" valor=valores.canal_solicitacao erros=erros.canal_solicitacao placeholder="E-mail, WhatsApp, protocolo..." %}
-            {% include "components/select.html" with name="municipio" label="Município" opcoes=opcoes_municipios selecionado=valores.municipio erros=erros.municipio pesquisavel=True %}
-            <div class="c2">
-              {% include "components/input.html" with name="solicitante" label="Solicitante" obrigatorio=True valor=valores.solicitante erros=erros.solicitante %}
-            </div>
-            {% include "components/input.html" with name="contato" label="Contato" valor=valores.contato erros=erros.contato %}
-            <div class="cheia">
-              {% include "components/input.html" with name="assunto_email" label="Assunto do e-mail" valor=valores.assunto_email erros=erros.assunto_email %}
-            </div>
-          </div>
-          <p class="form-ajuda">O status é alterado por ações rastreáveis, na seção “Atualizar status” desta página.</p>
-        </div>
-      </section>
-
       <section class="section-card reg" id="sec-evento">
         <header class="section-card__cabecalho reg__t">
-          <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+          <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
           <h2 class="section-card__titulo">Evento</h2>
         </header>
         <div class="section-card__corpo">
           <div class="g-form g-form--3">
-            <div class="c2">
-              {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Período estruturado" dois_campos=True valor_inicio=valores.data_inicio_evento valor_fim=valores.data_fim_evento erros=erros.data_fim_evento %}
+            <div class="cheia">
+              {% include "components/v32/cartoes_escolha.html" with name="evento" tipo="radio" label="Evento" obrigatorio=True opcoes=opcoes_eventos erros=erros.evento id_primeiro=True %}
             </div>
-            {% include "components/input.html" with name="periodo_evento_texto" label="Período em texto" valor=valores.periodo_evento_texto erros=erros.periodo_evento_texto placeholder="Ex.: 23 e 24/08, horário a definir" ajuda="Use somente quando não houver datas estruturadas." %}
-            {% include "components/input.html" with name="quantidade_publico" label="Quantidade de público" tipo="number" valor=valores.quantidade_publico erros=erros.quantidade_publico %}
-            {% include "components/input.html" with name="unidade" label="Unidade" valor=valores.unidade erros=erros.unidade %}
-            {% include "components/input.html" with name="responsavel_organizacao" label="Responsável pela organização" valor=valores.responsavel_organizacao erros=erros.responsavel_organizacao %}
+            {% if instancia and not instancia.municipio_id and instancia.municipio_texto %}
+              {% include "components/select.html" with name="municipio" label="Município" opcoes=opcoes_municipios selecionado=valores.municipio erros=erros.municipio pesquisavel=True ajuda="Na planilha: "|add:instancia.municipio_texto %}
+            {% else %}
+              {% include "components/select.html" with name="municipio" label="Município" opcoes=opcoes_municipios selecionado=valores.municipio erros=erros.municipio pesquisavel=True %}
+            {% endif %}
+            <div class="c2">
+              {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Data do evento" dois_campos=True valor_inicio=valores.data_inicio_evento valor_fim=valores.data_fim_evento erros=erros.data_fim_evento %}
+            </div>
+            {% include "components/input.html" with name="periodo_evento_texto" label="Hora (período)" valor=valores.periodo_evento_texto erros=erros.periodo_evento_texto placeholder="Ex.: 14h às 16h, manhã, à definir" %}
+            {% include "components/select.html" with name="tema" label="Tema" opcoes=opcoes_temas selecionado=valores.tema erros=erros.tema pesquisavel=True %}
+            {% include "components/input.html" with name="servidor" label="Servidor" valor=valores.servidor erros=erros.servidor lista_sugestoes="sugestoes-servidor" placeholder="Palestrante que vai atender" %}
+            {% include "components/input.html" with name="quantidade_publico" label="Quantidade de público" tipo="number" minimo=0 valor=valores.quantidade_publico erros=erros.quantidade_publico %}
             <div class="cheia">
               {% include "components/textarea.html" with name="descricao" label="Descrição" linhas="3" valor=valores.descricao erros=erros.descricao %}
             </div>
-            <div class="cheia">
-              {% include "components/textarea.html" with name="pedido_contato" label="Pedido / contato original" linhas="3" valor=valores.pedido_contato erros=erros.pedido_contato %}
-            </div>
           </div>
+          <datalist id="sugestoes-servidor">{% for p in palestrantes %}<option value="{{ p.nome }}">{% if p.lotacao %}{{ p.lotacao }}{% endif %}</option>{% endfor %}</datalist>
         </div>
       </section>
 
-      <section class="section-card reg" id="sec-atendimento">
+      <section class="section-card reg" id="sec-solicitacao">
         <header class="section-card__cabecalho reg__t">
-          <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
-          <h2 class="section-card__titulo">Atendimento e acompanhamento</h2>
+          <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+          <h2 class="section-card__titulo">Solicitação</h2>
         </header>
         <div class="section-card__corpo">
-          <div class="g-form g-form--2">
-            {% include "components/select.html" with name="responsavel_atendimento" label="Responsável pelo atendimento" opcoes=opcoes_responsaveis selecionado=valores.responsavel_atendimento erros=erros.responsavel_atendimento pesquisavel=True ajuda="As opções acompanham os setores envolvidos selecionados." %}
+          <div class="g-form g-form--3">
+            <div class="c2">
+              {% include "components/input.html" with name="solicitante" label="Solicitante" obrigatorio=True valor=valores.solicitante erros=erros.solicitante %}
+            </div>
+            {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True valor=valores.data_solicitacao erros=erros.data_solicitacao %}
+            <div class="c2">
+              {% include "components/input.html" with name="contato" label="Contato" valor=valores.contato erros=erros.contato placeholder="Telefone / e-mail" %}
+            </div>
+            {% include "components/input.html" with name="canal_solicitacao" label="Foi solicitado via" valor=valores.canal_solicitacao erros=erros.canal_solicitacao lista_sugestoes="sugestoes-canal" placeholder="E-mail, WhatsApp, protocolo…" %}
             <div class="cheia">
-              {% include "components/v32/cartoes_escolha.html" with name="setores" tipo="checkbox" label="Setores envolvidos" obrigatorio=True opcoes=opcoes_setores erros=erros.setores id_primeiro=True icone="users" %}
+              {% include "components/input.html" with name="assunto_email" label="Assunto e-mail" valor=valores.assunto_email erros=erros.assunto_email %}
             </div>
             <div class="cheia">
-              {% include "components/v32/cartoes_escolha.html" with name="palestrantes" tipo="checkbox" label="Palestrantes" opcoes=opcoes_palestrantes erros=erros.palestrantes id_primeiro=True icone="user" %}
+              {% include "components/textarea.html" with name="pedido_contato" label="Pedido/Contato" linhas="4" valor=valores.pedido_contato erros=erros.pedido_contato %}
             </div>
+          </div>
+          <datalist id="sugestoes-canal"><option value="E-MAIL"><option value="WPP"><option value="E-MAIL E WPP"><option value="PROTOCOLO Nº "><option value="TELEFONE"><option value="PRESENCIAL"></datalist>
+        </div>
+      </section>
+
+      <section class="section-card reg" id="sec-andamento">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
+          <h2 class="section-card__titulo">Status e andamento</h2>
+        </header>
+        <div class="section-card__corpo">
+          <div class="g-form g-form--3">
+            {% include "components/select.html" with name="status" label="Status da demanda" opcoes=opcoes_status obrigatorio=True sem_vazio=True selecionado=valores.status erros=erros.status %}
             <div class="cheia">
               {% include "components/textarea.html" with name="andamento" label="Andamento" linhas="3" valor=valores.andamento erros=erros.andamento %}
             </div>
             <div class="cheia">
               {% include "components/textarea.html" with name="informacoes_previas" label="Informações prévias" linhas="3" valor=valores.informacoes_previas erros=erros.informacoes_previas %}
             </div>
-            {% include "components/textarea.html" with name="briefing" label="Briefing" linhas="3" valor=valores.briefing erros=erros.briefing %}
-            {% include "components/textarea.html" with name="materia_site" label="Matéria no site" linhas="3" valor=valores.materia_site erros=erros.materia_site %}
           </div>
 
-          {# Ações no fim do último cartão editável: voltar à esquerda, salvar à direita. #}
+          {# Ações no fim do último cartão: voltar à esquerda, salvar à direita. #}
           <div class="frm-acoes-fim">
             <a class="btn--secundaria" href="{% url 'demandas_eventos:lista' %}">Voltar</a>
-            <button type="submit" class="btn-primaria">Salvar demanda</button>
+            <button type="submit" class="btn-primaria">Salvar</button>
           </div>
         </div>
       </section>
     </form>
 
     {% if instancia %}
-      {% if opcoes_transicao %}
-        <section class="section-card reg" id="sec-status">
-          <header class="section-card__cabecalho reg__t">
-            <span class="section-card__numero reg-numero" aria-hidden="true">4</span>
-            <h2 class="section-card__titulo">Atualizar status</h2>
-          </header>
-          <div class="section-card__corpo">
-            <p class="v32-suave sol-grupo">Cada mudança fica registrada no histórico.</p>
-            <form method="post" action="{% url 'demandas_eventos:transicionar' instancia.pk %}">
-              {% csrf_token %}
-              <div class="g-form g-form--2">
-                {% include "components/select.html" with name="novo_status" label="Próximo status" opcoes=opcoes_transicao obrigatorio=True erros=None %}
-                {% include "components/input.html" with name="justificativa" label="Justificativa" ajuda="Obrigatória para não atender ou cancelar." erros=None valor="" %}
-              </div>
-              <div class="frm-acoes-fim">
-                <span></span>
-                <button type="submit" class="btn-primaria">Atualizar status</button>
-              </div>
-            </form>
-          </div>
-        </section>
-      {% endif %}
-
       {% include "pages/demandas_eventos/_historico.html" %}
     {% endif %}
   </div>
 {% endblock %}
-
-{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/demandas-subtemas.js' %}" defer></script>{% endblock %}

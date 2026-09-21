@@ -1,0 +1,30 @@
+{% comment %}
+  Uma seção do relatório consolidado: título com ícone, a tabela com rolagem
+  própria (cabeçalho preso) e a nota de como o número foi contado.
+  Contexto: `secao` (ver `relatorios.consolidacao._secao`).
+{% endcomment %}
+<section class="section-card reg rel-secao" id="rel-{{ secao.slug }}">
+  <header class="section-card__cabecalho reg__t">
+    <h2 class="section-card__titulo rel-secao__titulo">{% include "components/icon.html" with nome=secao.icone %}{{ secao.titulo }}</h2>
+  </header>
+  <div class="section-card__corpo">
+    {% if secao.linhas %}
+      <div class="rel-tabela" tabindex="0" role="region" aria-label="{{ secao.titulo }}">
+        <table class="dt">
+          <thead><tr>{% for coluna in secao.colunas %}<th{% if forloop.counter0 in secao.numericas %} class="rel-num"{% endif %}>{{ coluna }}</th>{% endfor %}</tr></thead>
+          <tbody>
+            {% for linha in secao.linhas %}
+              <tr>{% for valor in linha %}<td{% if forloop.counter0 in secao.numericas %} class="rel-num"{% endif %}>{{ valor }}</td>{% endfor %}</tr>
+            {% endfor %}
+          </tbody>
+          {% if secao.totais %}
+            <tfoot><tr>{% for valor in secao.totais %}<td{% if forloop.counter0 in secao.numericas %} class="rel-num"{% endif %}>{{ valor }}</td>{% endfor %}</tr></tfoot>
+          {% endif %}
+        </table>
+      </div>
+    {% else %}
+      <p class="hs__vazio">Nada registrado no período.</p>
+    {% endif %}
+    {% if secao.nota %}<p class="rel-nota">{{ secao.nota }}</p>{% endif %}
+  </div>
+</section>

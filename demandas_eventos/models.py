@@ -4,18 +4,28 @@ from django.db import models
 
 
 class StatusDemanda(models.TextChoices):
+    """A coluna "Status da demanda" da planilha."""
+
     PENDENTE = "PENDENTE", "Pendente"
-    AGUARDANDO_RETORNO = "AGUARDANDO_RETORNO", "Aguardando retorno"
     EM_ANDAMENTO = "EM_ANDAMENTO", "Em andamento"
-    EVENTO_AGENDADO = "EVENTO_AGENDADO", "Evento agendado"
+    AGUARDANDO_RETORNO = "AGUARDANDO_RETORNO", "Aguardando retorno"
+    EVENTO_AGENDADO = "EVENTO_AGENDADO", "Agendada"
     ATENDIDA = "ATENDIDA", "Atendida"
-    NAO_ATENDER = "NAO_ATENDER", "Não atender"
     CANCELADA = "CANCELADA", "Cancelada"
 
 
+class TipoEventoPalestra(models.TextChoices):
+    """A coluna "Evento" da planilha: os três tipos que a ASCOM atende."""
+
+    PALESTRA = "PALESTRA", "Palestra"
+    PCPR_NA_COMUNIDADE = "PCPR_NA_COMUNIDADE", "PCPR na Comunidade"
+    EVENTO = "EVENTO", "Evento"
+
+
 class Tema(models.Model):
+    """A aba TEMAS da planilha — só os temas dela, nada além."""
+
     nome = models.CharField("nome", max_length=200, unique=True)
-    ativo = models.BooleanField("ativo", default=True)
     criado_em = models.DateTimeField("criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
 
@@ -28,39 +38,10 @@ class Tema(models.Model):
         return self.nome
 
 
-class Subtema(models.Model):
-    tema = models.ForeignKey(
-        Tema,
-        verbose_name="tema principal",
-        on_delete=models.PROTECT,
-        related_name="subtemas",
-    )
-    nome = models.CharField("subtema", max_length=200)
-    escopo = models.TextField(
-        "escopo da abordagem",
-        blank=True,
-        help_text="Explique o recorte que este subtema cobre.",
-    )
-    ativo = models.BooleanField("ativo", default=True)
-    criado_em = models.DateTimeField("criado em", auto_now_add=True)
-    atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
-
-    class Meta:
-        ordering = ["tema__nome", "nome"]
-        verbose_name = "subtema e escopo"
-        verbose_name_plural = "subtemas e escopos"
-        constraints = [
-            models.UniqueConstraint(
-                fields=["tema", "nome"], name="subtema_unico_por_tema"
-            )
-        ]
-
-    def __str__(self):
-        return f"{self.tema} — {self.nome}"
-
-
 class Palestrante(models.Model):
-    nome = models.CharField("nome", max_length=200)
+    """A aba PALESTRANTES da planilha."""
+
+    nome = models.CharField("servidor", max_length=200)
     municipio = models.ForeignKey(
         "cadastros.Municipio",
         verbose_name="município",
@@ -74,8 +55,7 @@ class Palestrante(models.Model):
     lotacao = models.CharField("lotação", max_length=150, blank=True)
     contato = models.CharField("contato", max_length=100, blank=True)
     email = models.EmailField("e-mail", blank=True)
-    temas = models.ManyToManyField(Tema, verbose_name="temas", related_name="palestrantes", blank=True)
-    ativo = models.BooleanField("ativo", default=True)
+    tema_abordagem = models.CharField("tema de abordagem", max_length=300, blank=True)
     criado_em = models.DateTimeField("criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
 
@@ -94,9 +74,10 @@ class Palestrante(models.Model):
 
 
 class RespostaPadrao(models.Model):
+    """A aba "Respostas Padrão" da planilha."""
+
     tipo = models.CharField("tipo", max_length=200, unique=True)
     mensagem = models.TextField("mensagem")
-    ativo = models.BooleanField("ativo", default=True)
     criado_em = models.DateTimeField("criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
 
@@ -110,36 +91,16 @@ class RespostaPadrao(models.Model):
 
 
 class DemandaEvento(models.Model):
-    status = models.CharField(
-        "status",
-        max_length=25,
-        choices=StatusDemanda.choices,
-        default=StatusDemanda.PENDENTE,
-    )
-    data_solicitacao = models.DateField("data da solicitação")
-    tipo_evento = models.ForeignKey(
-        "cadastros.TipoEvento",
-        verbose_name="tipo de evento",
-        on_delete=models.PROTECT,
-        related_name="demandas_ascom",
-    )
-    tema = models.ForeignKey(
-        Tema,
-        verbose_name="tema",
-        on_delete=models.PROTECT,
-        related_name="demandas",
-        blank=True,
-        null=True,
-    )
-    subtema = models.ForeignKey(
-        Subtema,
-        verbose_name="subtema",
-        on_delete=models.PROTECT,
-        related_name="demandas",
-        blank=True,
-        null=True,
-    )
-    canal_solicitacao = models.CharField("solicitado via", max_length=150, blank=True)
+    """Uma linha da planilha "Palestras e Eventos ASCOM".
+
+    Cada campo é uma coluna da aba do ano (2026): Município, Data do evento e
+    hora (período), Evento, Status da demanda, Andamento, Informações prévias,
+    Solicitante, Contato, Data da solicitação, Foi solicitado via, Descrição,
+    Quantidade de público, Assunto e-mail e Pedido/Contato — mais Tema e
+    Servidor, das abas dos anos anteriores. O "Mês" da planilha não é campo:
+    sai da data do evento (ou da solicitação, quando o evento não tem data).
+    """
+
     municipio = models.ForeignKey(
         "cadastros.Municipio",
         verbose_name="município",
@@ -149,36 +110,42 @@ class DemandaEvento(models.Model):
         null=True,
     )
     municipio_texto = models.CharField("município (texto original)", max_length=150, blank=True)
-    data_inicio_evento = models.DateField("início do evento", blank=True, null=True)
+    data_inicio_evento = models.DateField("data do evento", blank=True, null=True)
     data_fim_evento = models.DateField("fim do evento", blank=True, null=True)
-    periodo_evento_texto = models.CharField("período do evento", max_length=200, blank=True)
-    solicitante = models.CharField("solicitante", max_length=1000)
-    contato = models.CharField("contato", max_length=300, blank=True)
-    assunto_email = models.CharField("assunto do e-mail", max_length=300, blank=True)
-    pedido_contato = models.TextField("pedido / contato", blank=True)
-    descricao = models.TextField("descrição", blank=True)
+    periodo_evento_texto = models.CharField("hora (período)", max_length=200, blank=True)
+    evento = models.CharField(
+        "evento",
+        max_length=25,
+        choices=TipoEventoPalestra.choices,
+        default=TipoEventoPalestra.PALESTRA,
+    )
+    status = models.CharField(
+        "status da demanda",
+        max_length=25,
+        choices=StatusDemanda.choices,
+        default=StatusDemanda.PENDENTE,
+    )
     andamento = models.TextField("andamento", blank=True)
     informacoes_previas = models.TextField("informações prévias", blank=True)
-    responsavel_organizacao = models.CharField("responsável pela organização", max_length=200, blank=True)
-    responsavel_atendimento = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        verbose_name="responsável pelo atendimento",
-        on_delete=models.SET_NULL,
-        related_name="demandas_ascom_atribuidas",
+    solicitante = models.CharField("solicitante", max_length=1000)
+    contato = models.CharField("contato", max_length=300, blank=True)
+    data_solicitacao = models.DateField("data da solicitação")
+    canal_solicitacao = models.CharField("foi solicitado via", max_length=150, blank=True)
+    descricao = models.TextField("descrição", blank=True)
+    quantidade_publico = models.PositiveIntegerField("quantidade de público", blank=True, null=True)
+    assunto_email = models.CharField("assunto e-mail", max_length=300, blank=True)
+    pedido_contato = models.TextField("pedido/contato", blank=True)
+    tema = models.ForeignKey(
+        Tema,
+        verbose_name="tema",
+        on_delete=models.PROTECT,
+        related_name="demandas",
         blank=True,
         null=True,
     )
-    responsavel_atendimento_texto = models.CharField(
-        "responsável pelo atendimento (texto original)", max_length=200, blank=True
-    )
-    palestrantes = models.ManyToManyField(
-        Palestrante, verbose_name="palestrantes", related_name="demandas", blank=True
-    )
-    servidor_texto = models.CharField("servidor (texto original)", max_length=300, blank=True)
-    unidade = models.CharField("unidade", max_length=200, blank=True)
-    quantidade_publico = models.PositiveIntegerField("quantidade de público", blank=True, null=True)
-    briefing = models.TextField("briefing", blank=True)
-    materia_site = models.TextField("matéria no site", blank=True)
+    servidor = models.CharField("servidor", max_length=300, blank=True)
+    # Daqui para baixo nada é coluna da planilha: dizem quem enxerga a linha
+    # (o setor de quem a registrou) e de onde ela veio.
     setores = models.ManyToManyField(
         "accounts.Setor", verbose_name="setores envolvidos", related_name="demandas_eventos"
     )
@@ -199,8 +166,8 @@ class DemandaEvento(models.Model):
 
     class Meta:
         ordering = ["-data_solicitacao", "-pk"]
-        verbose_name = "demanda de evento"
-        verbose_name_plural = "demandas de eventos"
+        verbose_name = "palestra ou evento"
+        verbose_name_plural = "palestras e eventos"
         indexes = [
             models.Index(fields=["status", "data_solicitacao"], name="demanda_status_data_idx"),
             models.Index(fields=["data_inicio_evento"], name="demanda_evento_data_idx"),
@@ -217,7 +184,7 @@ class DemandaEvento(models.Model):
         ]
 
     def __str__(self):
-        return f"Demanda #{self.pk} — {self.tipo_evento}"
+        return f"{self.get_evento_display()} #{self.pk}"
 
     def clean(self):
         super().clean()
@@ -230,26 +197,35 @@ class DemandaEvento(models.Model):
 
     @property
     def finalizada(self):
-        return self.status in {
-            StatusDemanda.ATENDIDA,
-            StatusDemanda.NAO_ATENDER,
-            StatusDemanda.CANCELADA,
-        }
+        return self.status in {StatusDemanda.ATENDIDA, StatusDemanda.CANCELADA}
+
+    @property
+    def mes_referencia(self):
+        """O "Mês" da planilha: o do evento, senão o da solicitação."""
+        return self.data_inicio_evento or self.data_solicitacao
+
+    @property
+    def municipio_display(self):
+        return str(self.municipio) if self.municipio_id else self.municipio_texto
+
+    @property
+    def data_evento_display(self):
+        inicio, fim = self.data_inicio_evento, self.data_fim_evento
+        if inicio and fim and fim != inicio:
+            return f"{inicio:%d/%m/%Y} a {fim:%d/%m/%Y}"
+        return f"{inicio:%d/%m/%Y}" if inicio else ""
 
     @property
     def periodo_evento_display(self):
-        if self.data_inicio_evento and self.data_fim_evento:
-            if self.data_inicio_evento == self.data_fim_evento:
-                return f"{self.data_inicio_evento:%d/%m/%Y}"
-            return f"{self.data_inicio_evento:%d/%m/%Y} a {self.data_fim_evento:%d/%m/%Y}"
-        if self.data_inicio_evento:
-            return f"{self.data_inicio_evento:%d/%m/%Y}"
-        return self.periodo_evento_texto
+        """A coluna "Data do evento e hora (período)" como a planilha a lê."""
+        return " · ".join(
+            parte for parte in (self.data_evento_display, self.periodo_evento_texto) if parte
+        )
 
 
 class AcaoHistoricoDemanda(models.TextChoices):
-    CRIACAO = "CRIACAO", "Demanda criada"
-    ATUALIZACAO = "ATUALIZACAO", "Demanda atualizada"
+    CRIACAO = "CRIACAO", "Registro criado"
+    ATUALIZACAO = "ATUALIZACAO", "Registro atualizado"
     TRANSICAO = "TRANSICAO", "Status alterado"
 
 
@@ -278,8 +254,8 @@ class HistoricoDemanda(models.Model):
 
     class Meta:
         ordering = ["criado_em", "pk"]
-        verbose_name = "histórico de demanda ASCOM"
-        verbose_name_plural = "históricos de demandas ASCOM"
+        verbose_name = "histórico de palestra ou evento"
+        verbose_name_plural = "históricos de palestras e eventos"
 
     def __str__(self):
         return f"{self.demanda_id} — {self.get_acao_display()}"

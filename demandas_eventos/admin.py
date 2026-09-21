@@ -1,4 +1,3 @@
-from django import forms
 from django.contrib import admin
 
 from .models import (
@@ -6,21 +5,8 @@ from .models import (
     HistoricoDemanda,
     Palestrante,
     RespostaPadrao,
-    Subtema,
     Tema,
 )
-
-
-class DemandaEventoAdminForm(forms.ModelForm):
-    class Meta:
-        model = DemandaEvento
-        fields = "__all__"
-
-    def clean_setores(self):
-        setores = self.cleaned_data.get("setores")
-        if not setores:
-            raise forms.ValidationError("Selecione ao menos um setor envolvido.")
-        return setores
 
 
 class HistoricoDemandaInline(admin.TabularInline):
@@ -34,46 +20,35 @@ class HistoricoDemandaInline(admin.TabularInline):
 
 @admin.register(Tema)
 class TemaAdmin(admin.ModelAdmin):
-    list_display = ("nome", "ativo", "atualizado_em")
-    list_filter = ("ativo",)
+    list_display = ("nome", "atualizado_em")
     search_fields = ("nome",)
-
-
-@admin.register(Subtema)
-class SubtemaAdmin(admin.ModelAdmin):
-    list_display = ("nome", "tema", "ativo", "atualizado_em")
-    list_filter = ("ativo", "tema")
-    search_fields = ("nome", "escopo", "tema__nome")
 
 
 @admin.register(Palestrante)
 class PalestranteAdmin(admin.ModelAdmin):
-    list_display = ("nome", "municipio", "divisao", "lotacao", "ativo")
-    list_filter = ("ativo", "municipio", "divisao")
+    list_display = ("nome", "municipio", "divisao", "lotacao")
+    list_filter = ("municipio", "divisao")
     search_fields = ("nome", "lotacao", "contato", "email")
-    filter_horizontal = ("temas",)
 
 
 @admin.register(RespostaPadrao)
 class RespostaPadraoAdmin(admin.ModelAdmin):
-    list_display = ("tipo", "ativo", "atualizado_em")
-    list_filter = ("ativo",)
+    list_display = ("tipo", "atualizado_em")
     search_fields = ("tipo", "mensagem")
 
 
 @admin.register(DemandaEvento)
 class DemandaEventoAdmin(admin.ModelAdmin):
-    form = DemandaEventoAdminForm
     list_display = (
-        "id", "data_solicitacao", "tipo_evento", "municipio", "solicitante", "status"
+        "id", "data_solicitacao", "evento", "municipio", "solicitante", "status"
     )
-    list_filter = ("status", "tipo_evento", "tema", "setores")
+    list_filter = ("status", "evento", "tema", "setores")
     search_fields = (
         "solicitante", "contato", "descricao", "pedido_contato", "assunto_email"
     )
     date_hierarchy = "data_solicitacao"
-    filter_horizontal = ("palestrantes", "setores")
+    filter_horizontal = ("setores",)
     readonly_fields = (
-        "status", "origem_importacao", "chave_importacao", "criado_em", "atualizado_em"
+        "origem_importacao", "chave_importacao", "criado_em", "atualizado_em"
     )
     inlines = (HistoricoDemandaInline,)

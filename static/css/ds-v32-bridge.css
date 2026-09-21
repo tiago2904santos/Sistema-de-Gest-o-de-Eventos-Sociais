@@ -2427,3 +2427,26 @@ form.btn-flutuante-form{margin:0;display:contents}
 /* O ícone do selo respira do texto em qualquer lugar (lista, cabeçalho de
    formulário, painel) — antes a regra só valia dentro do cartão da lista. */
 .st .ui-icon{width:13px;height:13px;margin-right:5px}
+
+/* Palestras: duas trilhas empilhadas na coluna da esquerda (status e evento). */
+.cad-rail-pilha{display:flex;flex-direction:column;gap:14px;min-width:0}
+
+/* Relatório consolidado (relatorios:painel). */
+.rel-cabeca{align-items:flex-end}
+.rel-cabeca__acoes{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rel-periodo .form-campo{margin:0;min-width:170px}
+.rel-kpis .kpi small{color:var(--n-500)}
+.rel-secao{margin-bottom:16px}
+.rel-secao__titulo{display:flex;align-items:center;gap:8px}
+.rel-secao__titulo .ui-icon{color:var(--n-500)}
+.rel-tabela{max-height:580px;overflow:auto;border:1px solid var(--n-150);border-radius:7px}
+.rel-tabela .dt thead th{position:sticky;top:0;z-index:1}
+.rel-tabela .dt tbody tr{cursor:default}
+.rel-tabela .dt tfoot td{position:sticky;bottom:0;background:var(--n-50);font-weight:600;padding:var(--linha-y) var(--s4);border-top:1px solid var(--n-200);font-size:13.5px}
+.rel-tabela .dt tfoot td:first-child{padding-left:var(--s6)}
+.rel-num{text-align:right!important;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rel-nota{margin:10px 0 0;font-size:12.5px;color:var(--n-500)}
+@container (max-width:680px){.rel-cabeca__acoes{width:100%}.rel-periodo{flex:1}}
+.rel-tabela .dt td:first-child,.rel-tabela .dt th:first-child{white-space:nowrap}
+#rel-geral .rel-tabela .dt td:first-child,#rel-geral .rel-tabela .dt th:first-child{position:sticky;left:0;background:var(--branco);z-index:1}
+#rel-geral .rel-tabela .dt th:first-child{background:var(--n-50);z-index:2}

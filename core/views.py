@@ -100,7 +100,7 @@ def _metricas_demandas(usuario, hoje):
             ).count(),
         },
         {
-            "rotulo": "Eventos agendados",
+            "rotulo": "Agendadas",
             "valor": visiveis.filter(
                 status=StatusDemanda.EVENTO_AGENDADO
             ).count(),

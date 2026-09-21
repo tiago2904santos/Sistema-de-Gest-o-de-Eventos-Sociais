@@ -4,7 +4,7 @@ from django.apps import AppConfig
 class DemandasEventosConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "demandas_eventos"
-    verbose_name = "Demandas de eventos da ASCOM"
+    verbose_name = "Palestras e Eventos da ASCOM"
 
     def ready(self):
         from accounts.modulos import registrar_modulo
@@ -14,12 +14,12 @@ class DemandasEventosConfig(AppConfig):
         # Cataloga o módulo no portal; o middleware protege o namespace.
         registrar_modulo(
             "demandas_eventos",
-            nome="Demandas ASCOM",
+            nome="Palestras e Eventos",
             descricao=(
-                "Demandas de palestras e eventos da ASCOM: pedidos, "
-                "palestrantes, temas e respostas padrão."
+                "Palestras, PCPR na Comunidade e eventos da ASCOM, no desenho "
+                "da planilha: pedidos, palestrantes, temas e respostas padrão."
             ),
-            icone="calendar",
+            icone="users",
             codigo=CODIGO_MODULO,
             entrada="demandas_eventos:dashboard",
             namespaces=["demandas_eventos"],
@@ -32,8 +32,8 @@ class DemandasEventosConfig(AppConfig):
                     "url_names": ("dashboard",),
                 },
                 {
-                    "rotulo": "Demandas",
-                    "icone": "document",
+                    "rotulo": "Palestras",
+                    "icone": "users",
                     "url": "demandas_eventos:lista",
                     "url_names": ("lista", "nova", "detalhe", "editar"),
                 },
@@ -41,7 +41,7 @@ class DemandasEventosConfig(AppConfig):
                     "rotulo": "Cadastros",
                     "icone": "checklist",
                     "url": "demandas_eventos:cadastro_lista",
-                    "url_args": ("temas",),
+                    "url_args": ("palestrantes",),
                     "url_names": (
                         "cadastro_lista", "cadastro_novo", "cadastro_editar",
                     ),

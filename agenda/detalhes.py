@@ -615,7 +615,7 @@ def _coffee(usuario, pk) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Demanda da ASCOM
+# Palestra ou evento da ASCOM
 # ---------------------------------------------------------------------------
 
 
@@ -624,11 +624,7 @@ def _demanda(usuario, pk) -> dict:
     from demandas_eventos.models import DemandaEvento
 
     dm = (
-        DemandaEvento.objects.select_related(
-            "municipio", "tema", "subtema", "tipo_evento", "responsavel_organizacao",
-            "responsavel_atendimento", "unidade", "criado_por",
-        )
-        .prefetch_related("palestrantes", "setores")
+        DemandaEvento.objects.select_related("municipio", "tema", "criado_por")
         .filter(pk=pk)
         .first()
     )
@@ -637,56 +633,33 @@ def _demanda(usuario, pk) -> dict:
     if not permissions.pode_ver(usuario, dm):
         raise PermissionDenied
 
-    lugar = str(dm.municipio) if dm.municipio_id else (dm.municipio_texto or "Sem município")
+    lugar = dm.municipio_display or "Sem município"
     d = _base(
         fonte="demanda",
-        rotulo="Demanda da ASCOM",
+        rotulo=dm.get_evento_display(),
         titulo=lugar + (f" — {dm.tema}" if dm.tema_id else ""),
         subtitulo=_periodo(dm.data_inicio_evento, dm.data_fim_evento) or (dm.periodo_evento_texto or ""),
         situacao=dm.get_status_display(),
         situacao_slug=dm.status,
-        encerrado=dm.status in {"CANCELADA", "NAO_ATENDER"},
+        encerrado=dm.status == "CANCELADA",
         url_abrir=reverse("demandas_eventos:editar", args=[dm.pk]),
     )
+    # As colunas da planilha, na ordem dela.
     d["campos"] = _campos([
-        ("Tipo de evento", str(dm.tipo_evento) if dm.tipo_evento_id else ""),
-        ("Subtema / escopo", str(dm.subtema) if dm.subtema_id else ""),
-        ("Canal", dm.get_canal_solicitacao_display() if hasattr(dm, "get_canal_solicitacao_display") and dm.canal_solicitacao else dm.canal_solicitacao),
-        ("Data da solicitação", dm.data_solicitacao.strftime("%d/%m/%Y") if dm.data_solicitacao else ""),
-        ("Solicitante", dm.solicitante),
-        ("Contato", dm.contato),
-        ("Assunto do e-mail", dm.assunto_email),
-        ("Pedido", (dm.pedido_contato or "").strip()),
-        ("Descrição", (dm.descricao or "").strip()),
+        ("Hora (período)", dm.periodo_evento_texto),
         ("Andamento", (dm.andamento or "").strip()),
         ("Informações prévias", (dm.informacoes_previas or "").strip()),
-        ("Responsável pela organização", str(dm.responsavel_organizacao) if dm.responsavel_organizacao_id else ""),
-        ("Responsável pelo atendimento", str(dm.responsavel_atendimento) if dm.responsavel_atendimento_id else dm.responsavel_atendimento_texto),
-        ("Servidor", dm.servidor_texto),
-        ("Unidade", str(dm.unidade) if dm.unidade_id else ""),
-        ("Público previsto", str(dm.quantidade_publico or "")),
-        ("Briefing", (dm.briefing or "").strip()),
-        ("Matéria no site", dm.materia_site),
-        ("Setores", ", ".join(str(x) for x in dm.setores.all())),
+        ("Solicitante", dm.solicitante),
+        ("Contato", dm.contato),
+        ("Data da solicitação", dm.data_solicitacao.strftime("%d/%m/%Y") if dm.data_solicitacao else ""),
+        ("Foi solicitado via", dm.canal_solicitacao),
+        ("Descrição", (dm.descricao or "").strip()),
+        ("Quantidade de público", str(dm.quantidade_publico or "")),
+        ("Assunto e-mail", dm.assunto_email),
+        ("Pedido/Contato", (dm.pedido_contato or "").strip()),
+        ("Servidor", dm.servidor),
         ("Criada por", f"{dm.criado_por} em {dm.criado_em:%d/%m/%Y %H:%M}" if dm.criado_por_id and dm.criado_em else ""),
     ])
-    d["pessoas_rotulo"] = "Palestrantes"
-    d["pessoas"] = []
-    for p in dm.palestrantes.all():
-        pessoa = {
-            "pk": p.pk,
-            "nome": p.nome,
-            "cargo": p.divisao or "",
-            "unidade": p.lotacao or (str(p.municipio) if p.municipio_id else p.municipio_texto or ""),
-            "cpf": "",
-            "rg": "",
-            "telefone": " · ".join(x for x in [p.contato, p.email] if x),
-            "motorista": False,
-            "documentos": [],
-            "oficios": [],
-        }
-        pessoa["fatos"] = _fatos_da_pessoa(pessoa)
-        d["pessoas"].append(pessoa)
     d["historico"] = _historico(dm.historico.select_related("usuario"))
     return d
 

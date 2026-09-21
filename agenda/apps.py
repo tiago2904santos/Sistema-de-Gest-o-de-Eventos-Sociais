@@ -18,7 +18,7 @@ class AgendaConfig(AppConfig):
             "agenda",
             nome="Agenda",
             descricao=(
-                "Viagens, eventos, coffee break e demandas num calendário só, "
+                "Viagens, eventos, coffee break e palestras num calendário só, "
                 "com o que você tem acesso."
             ),
             icone="calendar",

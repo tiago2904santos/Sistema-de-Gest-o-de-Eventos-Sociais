@@ -1,11 +1,17 @@
 {% comment %}
-  Ações de uma linha dos cadastros de apoio das demandas num botão único, no
-  padrão dos cadastros de Viagens. Contexto: `l` (linha do presenter), `config`.
+  Ações de uma linha dos cadastros de apoio das palestras num botão único, no
+  padrão dos cadastros de Eventos: editar abre o modal e excluir pede o
+  segundo clique no mesmo menu. Contexto: `l` (linha do presenter), `config`,
+  `tipo`.
 {% endcomment %}
 <div class="dd of-menu cad-acoes" data-menu>
   <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações de {{ l.titulo }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
   <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
-    <div class="dd__t">{{ l.titulo }}</div>
-    <a class="dd__i of-item" href="{{ l.url_editar }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar {{ config.singular }}</b><small>Alterar os dados do cadastro</small></span></a>
+    <div class="dd__t">{{ l.titulo|truncatechars:60 }}</div>
+    <a class="dd__i of-item" href="{{ l.url_editar }}" data-cadastro-modal>{% include "components/icon.html" with nome="pencil" %}<span><b>Editar {{ config.singular }}</b><small>Alterar os dados do cadastro</small></span></a>
+    <div class="dd__s"></div>
+    <form method="post" action="{{ l.url_excluir }}" data-confirmar-exclusao data-confirmar="Confirmar exclusão?">{% csrf_token %}
+      <button type="submit" class="dd__i dd__i--perigo of-item">{% include "components/icon.html" with nome="trash" %}<span><b>Excluir {{ config.singular }}</b><small>Remover do cadastro</small></span></button>
+    </form>
   </div>
 </div>

@@ -189,7 +189,7 @@ class PortalTests(TestCase):
         self.assertContains(resposta, "Eventos Sociais")
         self.assertContains(resposta, reverse("dashboard:index"))
         self.assertNotContains(resposta, "Coffee Break")
-        self.assertNotContains(resposta, "Demandas ASCOM")
+        self.assertNotContains(resposta, "Palestras e Eventos")
 
     def test_ascom_ve_os_modulos_do_setor(self):
         self.client.force_login(self.ascom)
@@ -202,7 +202,7 @@ class PortalTests(TestCase):
         resposta = self.client.get(reverse("core:home"))
         self.assertContains(resposta, "Eventos Sociais")
         self.assertContains(resposta, "Coffee Break")
-        self.assertContains(resposta, "Demandas ASCOM")
+        self.assertContains(resposta, "Palestras e Eventos")
         self.assertContains(resposta, reverse("accounts:usuarios_lista"))
 
     def test_gestao_de_usuarios_so_para_quem_gerencia(self):

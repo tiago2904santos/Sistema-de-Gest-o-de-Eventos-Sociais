@@ -1,7 +1,6 @@
-<nav class="cad-rail" aria-label="Cadastros de Demandas ASCOM">
+<nav class="cad-rail" aria-label="Cadastros de Palestras e Eventos">
   {# Sem o rótulo acima dos itens, como na trilha da lista de roteiros. #}
   <a class="cad-i" href="{% url 'demandas_eventos:cadastro_lista' 'palestrantes' %}"{% if tipo == 'palestrantes' %} aria-current="page"{% endif %}><span class="cad-i__ic">{% include "components/icon.html" with nome="users" %}</span><span class="cad-i__t">Palestrantes</span></a>
   <a class="cad-i" href="{% url 'demandas_eventos:cadastro_lista' 'temas' %}"{% if tipo == 'temas' %} aria-current="page"{% endif %}><span class="cad-i__ic">{% include "components/icon.html" with nome="document" %}</span><span class="cad-i__t">Temas</span></a>
-  <a class="cad-i" href="{% url 'demandas_eventos:cadastro_lista' 'subtemas' %}"{% if tipo == 'subtemas' %} aria-current="page"{% endif %}><span class="cad-i__ic">{% include "components/icon.html" with nome="columns" %}</span><span class="cad-i__t">Subtemas e escopos</span></a>
   <a class="cad-i" href="{% url 'demandas_eventos:cadastro_lista' 'respostas' %}"{% if tipo == 'respostas' %} aria-current="page"{% endif %}><span class="cad-i__ic">{% include "components/icon.html" with nome="mail" %}</span><span class="cad-i__t">Respostas padrão</span></a>
 </nav>

@@ -1,30 +1,32 @@
 {% extends "layouts/app_shell_v32.html" %}
 {% load estaticos %}
 {% comment %}
-  Lista de demandas da ASCOM na composição das listas do módulo de Viagens:
-  as situações na trilha à esquerda, a busca na barra do cartão, a tabela do
-  V3.2 no desktop e a Data List no celular, uma célula por demanda e um menu
-  único de ações.
+  Lista de palestras da ASCOM na composição das listas do módulo de Viagens:
+  o status e o tipo de evento na trilha à esquerda, a busca na barra do
+  cartão, uma célula por linha da planilha e um menu único de ações.
 {% endcomment %}
 
-{% block title %}Demandas de eventos — ASCOM{% endblock %}
+{% block title %}Palestras e eventos — ASCOM{% endblock %}
 
 {% block conteudo %}
-  {% include "components/v32/breadcrumb.html" with itens=None atual="Demandas ASCOM" %}
+  {% include "components/v32/breadcrumb.html" with itens=None atual="Palestras" %}
 
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
-      <div class="kicker kicker--junto">Demandas ASCOM</div>
-      <h1>Demandas de eventos</h1>
+      <div class="kicker kicker--junto">Palestras e Eventos</div>
+      <h1>Palestras</h1>
     </div>
     {# Botão flutuante: fixo no canto inferior direito, sempre à mão durante a rolagem. #}
-    <a class="btn-primaria btn-flutuante" href="{% url 'demandas_eventos:nova' %}">{% include "components/icon.html" with nome="plus" %}Nova demanda</a>
+    <a class="btn-primaria btn-flutuante" href="{% url 'demandas_eventos:nova' %}">{% include "components/icon.html" with nome="plus" %}Nova palestra</a>
   </div>
 
   <div class="cad-grade cad-grade--sem-folga">
-    {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_rotulo="Situação das demandas" sem_titulo=True %}
+    <div class="cad-rail-pilha">
+      {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_rotulo="Status da demanda" sem_titulo=True %}
+      {% include "components/v32/cad_rail.html" with grupos=tipos_evento slug_ativo=evento_ativo rail_rotulo="Evento" rail_titulo="Evento" %}
+    </div>
 
-    {% include "components/v32/lista_registros.html" with icone="document" rotulo="Demanda" rotulo_plural="demandas" conteudo_linha="pages/demandas_eventos/_conteudo_linha.html" acoes_linha="pages/demandas_eventos/_acoes_linha.html" placeholder_busca="Buscar por solicitante, descrição ou assunto…" filtro_nome="status" filtro_valor=status vazio="Nenhuma demanda registrada ainda." vazio_filtrado="Nenhuma demanda encontrada com os filtros aplicados." %}
+    {% include "components/v32/lista_registros.html" with icone="document" rotulo="Palestra" rotulo_plural="palestras" conteudo_linha="pages/demandas_eventos/_conteudo_linha.html" acoes_linha="pages/demandas_eventos/_acoes_linha.html" placeholder_busca="Buscar por município, solicitante, servidor, tema…" filtro_nome="status" filtro_valor=status vazio="Nenhuma palestra registrada ainda." vazio_filtrado="Nada encontrado com os filtros aplicados." %}
   </div>
 {% endblock %}
 

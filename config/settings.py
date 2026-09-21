@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     "auditoria",
     "coffee_break",
     "demandas_eventos",
+    "relatorios",
     "publicacoes",
     "atendimento_imprensa",
     "viagens_cadastros",

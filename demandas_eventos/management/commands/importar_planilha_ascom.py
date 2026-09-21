@@ -3,7 +3,7 @@
 import hashlib
 import re
 import unicodedata
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
@@ -11,7 +11,7 @@ from django.db import transaction
 from openpyxl import load_workbook
 
 from accounts.models import Setor
-from cadastros.models import Municipio, TipoEvento
+from cadastros.models import Municipio
 from demandas_eventos.models import (
     AcaoHistoricoDemanda,
     DemandaEvento,
@@ -19,6 +19,7 @@ from demandas_eventos.models import (
     RespostaPadrao,
     StatusDemanda,
     Tema,
+    TipoEventoPalestra,
 )
 from demandas_eventos.services import registrar_historico
 
@@ -56,9 +57,80 @@ STATUS = {
     "PALESTRA AGENDADA": StatusDemanda.EVENTO_AGENDADO,
     "ATENDIDA": StatusDemanda.ATENDIDA,
     "SOL ATENDIDA": StatusDemanda.ATENDIDA,
-    "NAO ATENDER": StatusDemanda.NAO_ATENDER,
+    "NAO ATENDER": StatusDemanda.CANCELADA,
     "CANCELADA": StatusDemanda.CANCELADA,
 }
+
+
+def _evento(valor):
+    """A coluna "Evento" (ou "Tipo de Evento") nos três tipos da ASCOM."""
+    chave = _chave(valor)
+    if "PALESTRA" in chave:
+        return TipoEventoPalestra.PALESTRA
+    if "COMUNIDADE" in chave:
+        return TipoEventoPalestra.PCPR_NA_COMUNIDADE
+    return TipoEventoPalestra.EVENTO
+
+
+_DIA_MES = re.compile(r"\b(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?\b")
+_DIAS_MES = re.compile(r"(?<![/\d])\b(\d{1,2})\s*(?:a|à|e|até)\s*(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?\b", re.I)
+_HORA = re.compile(r"\b\d{1,2}\s*(?:h|:)\s*\d{0,2}", re.I)
+
+
+def _periodo(valor, referencia):
+    """(início, fim, texto) da coluna "Data do evento".
+
+    A planilha mistura datas de verdade com "13/05 e 14/05", "06/03 a 08/03"
+    ou "À definir". Dia/mês sem ano ganha o ano da solicitação (ou o
+    seguinte, quando a data cairia antes do pedido). O texto só fica quando
+    diz mais que as datas — um horário, "à definir".
+    """
+    data = _data(valor) if isinstance(valor, (date, datetime)) else None
+    if data:
+        return data, None, ""
+    texto = _texto(valor)
+    datas = []
+    # "27 à 31/07", "18 e 19/04/2023": o primeiro dia herda o mês do último.
+    achados = [
+        (primeiro, mes, ano) for primeiro, _, mes, ano in _DIAS_MES.findall(texto)
+    ] + _DIA_MES.findall(texto)
+    for dia, mes, ano in achados:
+        try:
+            ano_num = int(ano) if ano else referencia.year
+            if ano and ano_num < 100:
+                ano_num += 2000
+            candidata = date(ano_num, int(mes), int(dia))
+            if not ano and candidata < referencia - timedelta(days=60):
+                candidata = date(ano_num + 1, int(mes), int(dia))
+            datas.append(candidata)
+        except ValueError:
+            continue
+    if not datas:
+        return None, None, texto
+    inicio, fim = min(datas), max(datas)
+    # O que sobra sem as datas costuma ser o horário ("10h30 e 14h00"):
+    # fica só ele. Se sobrar outro número ("DE 12 A"), o texto inteiro fica,
+    # porque as datas não disseram tudo.
+    sobra = re.sub(r"^(?:[\s,;:\-–]|(?:às|as|a|e|das)\b)+", "", _DIA_MES.sub(" ", _DIAS_MES.sub(" ", texto)), flags=re.I)
+    sobra = re.sub(r"\s+", " ", sobra).strip(" ,;:-–")
+    if re.search(r"\d", _HORA.sub("", sobra)):
+        sobra = texto
+    return inicio, (fim if fim != inicio else None), sobra
+
+
+def _publico(valor):
+    """(quantidade, texto que sobrou) da coluna de público."""
+    texto = _texto(valor)
+    if not texto:
+        return None, ""
+    try:
+        numero = float(texto)
+        return (int(numero), "") if numero >= 0 else (None, texto)
+    except ValueError:
+        numeros = [int(n) for n in re.findall(r"\d+", texto)]
+        if numeros and "+" in texto:
+            return sum(numeros), texto
+        return None, texto
 
 
 MAPAS = {
@@ -142,14 +214,36 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(prefixo + ": " + ", ".join(f"{k}={v}" for k, v in resumo.items())))
 
     def _importar_temas(self, workbook, resumo):
+        """A aba TEMAS é a lista inteira: o que não está nela sai.
+
+        A aba não tem cabeçalho — a primeira linha já é um tema. Um tema que
+        sai e estava numa palestra deixa o nome em "Informações prévias".
+        """
+        self.temas = {}
         if "TEMAS" not in workbook.sheetnames:
+            self.temas = {_chave(t.nome): t for t in Tema.objects.all()}
             return
         for (valor,) in workbook["TEMAS"].iter_rows(values_only=True, max_col=1):
             nome = _texto(valor)
-            if not nome:
+            if not nome or _chave(nome) in self.temas:
                 continue
-            _, criado = Tema.objects.get_or_create(nome__iexact=nome, defaults={"nome": nome})
-            resumo["temas"] += int(criado)
+            tema = next((t for t in Tema.objects.all() if _chave(t.nome) == _chave(nome)), None)
+            if not tema:
+                tema = Tema.objects.create(nome=nome)
+                resumo["temas"] += 1
+            self.temas[_chave(nome)] = tema
+        if not self.temas:
+            return
+        manter = [t.pk for t in self.temas.values()]
+        for tema in Tema.objects.exclude(pk__in=manter):
+            for demanda in DemandaEvento.objects.filter(tema=tema):
+                demanda.informacoes_previas = "\n".join(
+                    parte for parte in [demanda.informacoes_previas.strip(), f"Tema: {tema.nome}"] if parte
+                )
+                demanda.tema = None
+                demanda.save(update_fields=["informacoes_previas", "tema", "atualizado_em"])
+            tema.delete()
+            resumo["temas_removidos"] = resumo.get("temas_removidos", 0) + 1
 
     def _importar_palestrantes(self, workbook, resumo):
         if "PALESTRANTES" not in workbook.sheetnames:
@@ -166,14 +260,10 @@ class Command(BaseCommand):
                 "divisao": _texto(valores[headers.get("DIVISAO", -1)]) if "DIVISAO" in headers else "",
                 "contato": _texto(valores[headers.get("CONTATO", -1)]) if "CONTATO" in headers else "",
                 "email": _texto(valores[headers.get("E MAIL", -1)]) if "E MAIL" in headers else "",
+                "tema_abordagem": (_texto(valores[headers.get("TEMA DE ABORDAGEM", -1)]) if "TEMA DE ABORDAGEM" in headers else "")[:300],
             }
             palestrante, criado = Palestrante.objects.update_or_create(nome=nome, lotacao=lotacao, defaults=defaults)
             resumo["palestrantes"] += int(criado)
-            tema_nome = _texto(valores[headers.get("TEMA DE ABORDAGEM", -1)]) if "TEMA DE ABORDAGEM" in headers else ""
-            if tema_nome:
-                tema, tema_criado = Tema.objects.get_or_create(nome__iexact=tema_nome, defaults={"nome": tema_nome})
-                palestrante.temas.add(tema)
-                resumo["temas"] += int(tema_criado)
 
     def _importar_respostas(self, workbook, resumo):
         nome_aba = next((n for n in workbook.sheetnames if _chave(n) == "REPOSTAS PADRAO"), None)
@@ -209,27 +299,14 @@ class Command(BaseCommand):
                     )
                 )
                 continue
-            tipo_nome = tipo_nome or "Evento"
-            tipo = TipoEvento.objects.filter(nome__iexact=tipo_nome).first()
-            if not tipo:
-                tipo = TipoEvento.objects.create(nome=tipo_nome)
+            # Só vale tema da aba TEMAS; o texto livre da coluna fica em
+            # "Informações prévias", para não virar tema novo.
             tema_nome = _texto(obter(valores, "tema"))
-            tema = None
-            if tema_nome:
-                tema = Tema.objects.filter(nome__iexact=tema_nome).first()
-                if not tema:
-                    tema = Tema.objects.create(nome=tema_nome)
-                    resumo["temas"] += 1
+            tema = self.temas.get(_chave(tema_nome)) if tema_nome else None
             municipio_nome = _texto(obter(valores, "municipio"))
             municipio = Municipio.objects.filter(nome__iexact=municipio_nome).first() if municipio_nome else None
-            periodo_original = obter(valores, "periodo")
-            data_evento = _data(periodo_original)
-            periodo_texto = "" if data_evento else _texto(periodo_original)
-            publico_texto = _texto(obter(valores, "publico"))
-            try:
-                publico = int(float(publico_texto)) if publico_texto and float(publico_texto) >= 0 else None
-            except ValueError:
-                publico = None
+            inicio, fim, periodo_texto = _periodo(obter(valores, "periodo"), data_solicitacao)
+            publico, publico_texto = _publico(obter(valores, "publico"))
             status_original = _chave(obter(valores, "status"))
             status = STATUS.get(status_original, StatusDemanda.PENDENTE)
             if status_original and status_original not in STATUS:
@@ -240,32 +317,46 @@ class Command(BaseCommand):
                         "importado como Pendente."
                     )
                 )
+            # Colunas dos anos anteriores que o formulário não tem mais: o
+            # conteúdo vai para "Informações prévias", com o nome da coluna.
+            sobras = [
+                ("Tema", tema_nome if tema_nome and not tema else ""),
+                ("Tipo de evento", tipo_nome if _evento(tipo_nome) == TipoEventoPalestra.EVENTO and _chave(tipo_nome) != "EVENTO" else ""),
+                ("Quantidade de público", publico_texto),
+                ("Responsável pela organização", _texto(obter(valores, "organizacao"))),
+                ("Responsável pelo atendimento", _texto(obter(valores, "responsavel"))),
+                ("Unidade", _texto(obter(valores, "unidade"))),
+                ("Briefing", _texto(obter(valores, "briefing"))),
+                ("Matéria no site", _texto(obter(valores, "materia"))),
+            ]
+            informacoes = "\n".join(
+                parte
+                for parte in [_texto(obter(valores, "informacoes"))]
+                + [f"{rotulo}: {valor}" for rotulo, valor in sobras if valor]
+                if parte
+            )
             identidade = "|".join([aba, str(numero), str(data_solicitacao), solicitante, tipo_nome, pedido[:100]])
             chave = hashlib.sha256(identidade.encode("utf-8")).hexdigest()
             defaults = {
-                "data_solicitacao": data_solicitacao,
-                "tipo_evento": tipo,
-                "tema": tema,
-                "canal_solicitacao": _texto(obter(valores, "canal")),
                 "municipio": municipio,
                 "municipio_texto": "" if municipio else municipio_nome,
-                "data_inicio_evento": data_evento,
-                "periodo_evento_texto": periodo_texto,
-                "solicitante": solicitante or "Não informado",
-                "contato": _texto(obter(valores, "contato")),
-                "assunto_email": _texto(obter(valores, "assunto")),
-                "pedido_contato": pedido,
-                "descricao": _texto(obter(valores, "descricao")),
+                "data_inicio_evento": inicio,
+                "data_fim_evento": fim,
+                "periodo_evento_texto": periodo_texto[:200],
+                "evento": _evento(tipo_nome),
                 "status": status,
                 "andamento": _texto(obter(valores, "andamento")),
-                "informacoes_previas": _texto(obter(valores, "informacoes")),
-                "responsavel_organizacao": _texto(obter(valores, "organizacao")),
-                "responsavel_atendimento_texto": _texto(obter(valores, "responsavel")),
-                "servidor_texto": _texto(obter(valores, "servidor")),
-                "unidade": _texto(obter(valores, "unidade")),
+                "informacoes_previas": informacoes,
+                "solicitante": solicitante or "Não informado",
+                "contato": _texto(obter(valores, "contato"))[:300],
+                "data_solicitacao": data_solicitacao,
+                "canal_solicitacao": _texto(obter(valores, "canal"))[:150],
+                "descricao": _texto(obter(valores, "descricao")),
                 "quantidade_publico": publico,
-                "briefing": _texto(obter(valores, "briefing")),
-                "materia_site": _texto(obter(valores, "materia")),
+                "assunto_email": _texto(obter(valores, "assunto"))[:300],
+                "pedido_contato": pedido,
+                "tema": tema,
+                "servidor": _texto(obter(valores, "servidor"))[:300],
                 "origem_importacao": f"{aba}:linha {numero}",
             }
             demanda, criada = DemandaEvento.objects.update_or_create(chave_importacao=chave, defaults=defaults)

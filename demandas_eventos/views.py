@@ -1,42 +1,39 @@
+import csv
+
 from django import forms
 from django.contrib import messages
-from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import ProtectedError, Q
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
-from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_POST
 
-from cadastros.models import Municipio, TipoEvento
+from core.listagens import trilha_de_situacoes
 
-from .forms import (
-    DemandaEventoForm,
-    PalestranteForm,
-    RespostaPadraoForm,
-    SubtemaForm,
-    TemaForm,
-)
+from . import services
+from .forms import DemandaEventoForm, PalestranteForm, RespostaPadraoForm, TemaForm
 from .models import (
     AcaoHistoricoDemanda,
     DemandaEvento,
     Palestrante,
     RespostaPadrao,
     StatusDemanda,
-    Subtema,
     Tema,
+    TipoEventoPalestra,
 )
-from core.listagens import trilha_de_situacoes
-
-from .permissions import pode_editar, queryset_visivel, setores_do_usuario_para_modulo
-from .presenters import ICONES_STATUS, linha_da_lista, linha_do_cadastro
-from . import services
+from .permissions import pode_editar, queryset_visivel
+from .presenters import ICONES_EVENTO, ICONES_STATUS, linha_da_lista, linha_do_cadastro
 
 ITENS_POR_PAGINA = 20
+
+MESES = [
+    "JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO",
+    "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO",
+]
 
 
 def _opcoes(iteravel):
@@ -47,38 +44,11 @@ def _opcoes_choices(choices):
     return [{"valor": valor, "rotulo": rotulo} for valor, rotulo in choices]
 
 
-def _opcoes_responsaveis(iteravel):
-    return [
-        {
-            "valor": str(usuario.pk),
-            "rotulo": str(usuario),
-            "relacionados": ",".join(
-                str(setor.pk) for setor in usuario.setores.all()
-            ),
-        }
-        for usuario in iteravel
-    ]
-
-
-def _opcoes_subtemas(iteravel):
-    return [
-        {
-            "valor": str(item.pk),
-            "rotulo": item.nome,
-            "estado": str(item.tema_id),
-            "dados": {"escopo": item.escopo},
-        }
-        for item in iteravel
-    ]
-
-
 def _demanda_visivel(request, pk):
     return get_object_or_404(
         queryset_visivel(
             request.user,
-            DemandaEvento.objects.select_related(
-                "tipo_evento", "tema", "municipio__estado", "responsavel_atendimento", "criado_por"
-            ).prefetch_related("setores", "palestrantes"),
+            DemandaEvento.objects.select_related("tema", "municipio__estado", "criado_por"),
         ),
         pk=pk,
     )
@@ -88,68 +58,68 @@ def _demanda_visivel(request, pk):
 def dashboard(request):
     visiveis = queryset_visivel(request.user, DemandaEvento.objects.all())
     hoje = timezone.localdate()
+    lista = reverse("demandas_eventos:lista")
     resumo = [
-        {"titulo": "Demandas abertas", "valor": visiveis.exclude(status__in=[StatusDemanda.ATENDIDA, StatusDemanda.CANCELADA, StatusDemanda.NAO_ATENDER]).count(), "icone": "document", "cor": "dourada", "url": reverse("demandas_eventos:lista")},
-        {"titulo": "Eventos agendados", "valor": visiveis.filter(status=StatusDemanda.EVENTO_AGENDADO).count(), "icone": "calendar", "cor": "info", "url": reverse("demandas_eventos:lista") + f"?status={StatusDemanda.EVENTO_AGENDADO}"},
-        {"titulo": "Atendidas no ano", "valor": visiveis.filter(status=StatusDemanda.ATENDIDA, data_solicitacao__year=hoje.year).count(), "icone": "check-circle", "cor": "sucesso", "url": reverse("demandas_eventos:lista") + f"?status={StatusDemanda.ATENDIDA}"},
-        {"titulo": "Aguardando retorno", "valor": visiveis.filter(status=StatusDemanda.AGUARDANDO_RETORNO).count(), "icone": "hourglass", "cor": "neutra", "url": reverse("demandas_eventos:lista") + f"?status={StatusDemanda.AGUARDANDO_RETORNO}"},
+        {"titulo": "Em aberto", "valor": visiveis.exclude(status__in=[StatusDemanda.ATENDIDA, StatusDemanda.CANCELADA]).count(), "icone": "document", "cor": "dourada", "url": lista},
+        {"titulo": "Agendadas", "valor": visiveis.filter(status=StatusDemanda.EVENTO_AGENDADO).count(), "icone": "calendar", "cor": "info", "url": f"{lista}?status={StatusDemanda.EVENTO_AGENDADO}"},
+        {"titulo": "Atendidas no ano", "valor": visiveis.filter(status=StatusDemanda.ATENDIDA, data_solicitacao__year=hoje.year).count(), "icone": "check-circle", "cor": "sucesso", "url": f"{lista}?status={StatusDemanda.ATENDIDA}"},
+        {"titulo": "Aguardando retorno", "valor": visiveis.filter(status=StatusDemanda.AGUARDANDO_RETORNO).count(), "icone": "hourglass", "cor": "neutra", "url": f"{lista}?status={StatusDemanda.AGUARDANDO_RETORNO}"},
     ]
     proximas = visiveis.filter(data_inicio_evento__gte=hoje).exclude(
-        status__in=[StatusDemanda.CANCELADA, StatusDemanda.NAO_ATENDER]
-    ).select_related("tipo_evento", "municipio").order_by("data_inicio_evento")[:8]
+        status=StatusDemanda.CANCELADA
+    ).select_related("tema", "municipio").order_by("data_inicio_evento")[:8]
     return render(
         request,
         "pages/demandas_eventos/dashboard.html",
         {
             "resumo": resumo,
-            "proximas": proximas,
             # A lista do painel usa a mesma linha da listagem.
             "linhas_proximas": [linha_da_lista(d) for d in proximas],
         },
     )
 
 
-@login_required
-def lista_demandas(request):
-    visiveis = queryset_visivel(
-        request.user,
-        DemandaEvento.objects.select_related("tipo_evento", "tema", "subtema", "municipio", "responsavel_atendimento"),
-    )
-    queryset = visiveis
+def _filtrar(request, queryset):
+    """Os filtros da lista, também usados pela exportação."""
     q = request.GET.get("q", "").strip()
-    status = request.GET.get("status", "").strip()
-    tipo = request.GET.get("tipo", "").strip()
-    municipio = request.GET.get("municipio", "").strip()
-    responsavel = request.GET.get("responsavel", "").strip()
-    setor = request.GET.get("setor", "").strip()
-    inicio = request.GET.get("inicio", "").strip()
-    fim = request.GET.get("fim", "").strip()
     if q:
         queryset = queryset.filter(
             Q(solicitante__icontains=q)
             | Q(descricao__icontains=q)
             | Q(pedido_contato__icontains=q)
             | Q(assunto_email__icontains=q)
+            | Q(servidor__icontains=q)
+            | Q(municipio__nome__icontains=q)
             | Q(municipio_texto__icontains=q)
+            | Q(tema__nome__icontains=q)
         )
+    status = request.GET.get("status", "").strip()
     if status in StatusDemanda.values:
         queryset = queryset.filter(status=status)
-    if tipo.isdigit():
-        queryset = queryset.filter(tipo_evento_id=tipo)
-    if municipio.isdigit():
-        queryset = queryset.filter(municipio_id=municipio)
-    if responsavel.isdigit():
-        queryset = queryset.filter(responsavel_atendimento_id=responsavel)
-    if setor.isdigit():
-        queryset = queryset.filter(setores__id=setor)
-    inicio_valido = parse_date(inicio) if inicio else None
-    fim_valido = parse_date(fim) if fim else None
-    if inicio_valido:
-        queryset = queryset.filter(data_solicitacao__gte=inicio_valido)
-    if fim_valido:
-        queryset = queryset.filter(data_solicitacao__lte=fim_valido)
-    queryset = queryset.distinct()
-    queryset = queryset.order_by("-data_solicitacao", "-pk")
+    evento = request.GET.get("evento", "").strip()
+    if evento in TipoEventoPalestra.values:
+        queryset = queryset.filter(evento=evento)
+    for parametro, campo in (("municipio", "municipio_id"), ("tema", "tema_id")):
+        valor = request.GET.get(parametro, "").strip()
+        if valor.isdigit():
+            queryset = queryset.filter(**{campo: valor})
+    inicio = parse_date(request.GET.get("inicio", "").strip() or "0")
+    fim = parse_date(request.GET.get("fim", "").strip() or "0")
+    if inicio:
+        queryset = queryset.filter(data_solicitacao__gte=inicio)
+    if fim:
+        queryset = queryset.filter(data_solicitacao__lte=fim)
+    return queryset.distinct()
+
+
+@login_required
+def lista_demandas(request):
+    visiveis = queryset_visivel(
+        request.user, DemandaEvento.objects.select_related("tema", "municipio")
+    )
+    queryset = _filtrar(request, visiveis).order_by("-data_solicitacao", "-pk")
+    status = request.GET.get("status", "").strip()
+    evento = request.GET.get("evento", "").strip()
     paginator = Paginator(queryset, ITENS_POR_PAGINA)
     pagina = paginator.get_page(request.GET.get("pagina"))
     parametros = request.GET.copy()
@@ -159,14 +129,9 @@ def lista_demandas(request):
         "pages/demandas_eventos/lista.html",
         {
             "pagina": pagina,
-            "q": q,
+            "q": request.GET.get("q", "").strip(),
             "status": status,
-            "tipo": tipo,
-            "municipio": municipio,
-            "responsavel": responsavel,
-            "setor": setor,
-            "inicio": inicio,
-            "fim": fim,
+            "evento": evento,
             "linhas": [linha_da_lista(d) for d in pagina],
             # As situações na trilha lateral, como nas listas de Viagens.
             "situacoes": trilha_de_situacoes(
@@ -183,29 +148,29 @@ def lista_demandas(request):
                 ICONES_STATUS,
                 parametro="status",
             ),
-            # Chip aceso: sem situação escolhida, "Todas".
             "situacao_ativa": status or "todas",
-            "opcoes_status": _opcoes_choices(StatusDemanda.choices),
-            "opcoes_tipos": _opcoes(TipoEvento.objects.filter(ativo=True)),
-            "opcoes_municipios": _opcoes(Municipio.objects.filter(demandas_ascom__isnull=False).distinct()),
-            "opcoes_responsaveis": _opcoes(
-                get_user_model().objects.filter(
-                    is_active=True,
-                    setores__in=setores_do_usuario_para_modulo(request.user),
-                ).distinct().order_by("first_name", "username")
-            ),
-            "opcoes_setores": _opcoes(setores_do_usuario_para_modulo(request.user)),
+            # O tipo de evento (a coluna "Evento") como segundo grupo da trilha.
+            "tipos_evento": trilha_de_situacoes(
+                request,
+                [
+                    {
+                        "chave": valor,
+                        "rotulo": rotulo,
+                        "total": visiveis.filter(evento=valor).count(),
+                    }
+                    for valor, rotulo in TipoEventoPalestra.choices
+                ],
+                visiveis.count(),
+                ICONES_EVENTO,
+                parametro="evento",
+            )[1:],
+            "evento_ativo": evento or "todas",
             "querystring": parametros.urlencode(),
             "paginas_visiveis": list(paginator.get_elided_page_range(pagina.number, on_each_side=2, on_ends=1)),
             "elipse": paginator.ELLIPSIS,
-            "tem_filtros": bool(q or status or tipo or municipio or responsavel or setor or inicio or fim),
+            "tem_filtros": bool(request.GET.get("q") or status or evento),
         },
     )
-
-
-def _com_marcados(opcoes, marcados):
-    """Marca as opções escolhidas, no contrato dos cartões de escolha."""
-    return [{**opcao, "marcado": opcao["valor"] in marcados} for opcao in opcoes]
 
 
 def _contexto_form(form, instancia):
@@ -213,30 +178,26 @@ def _contexto_form(form, instancia):
         value = form[nome].value()
         return "" if value is None else str(value)
 
-    def marcados(nome):
-        return [str(getattr(item, "pk", item)) for item in (form[nome].value() or [])]
-
+    evento_atual = valor("evento")
     return {
         "form": form,
         "instancia": instancia,
-        "valores": {nome: valor(nome) for nome in form.fields if nome not in {"palestrantes", "setores"}},
+        "valores": {nome: valor(nome) for nome in form.fields},
         "erros": form.errors,
-        "opcoes_tipos": _opcoes(form.fields["tipo_evento"].queryset),
+        "opcoes_eventos": [
+            {
+                "valor": chave,
+                "rotulo": rotulo,
+                "icone": ICONES_EVENTO[chave],
+                "marcado": chave == evento_atual,
+            }
+            for chave, rotulo in TipoEventoPalestra.choices
+        ],
+        "opcoes_status": _opcoes_choices(StatusDemanda.choices),
         "opcoes_temas": _opcoes(form.fields["tema"].queryset),
-        "opcoes_subtemas": _opcoes_subtemas(form.fields["subtema"].queryset),
         "opcoes_municipios": _opcoes(form.fields["municipio"].queryset),
-        "opcoes_responsaveis": _opcoes_responsaveis(
-            form.fields["responsavel_atendimento"].queryset
-        ),
-        # Os cartões de escolha já vêm sabendo o que está marcado.
-        "opcoes_palestrantes": _com_marcados(
-            _opcoes(form.fields["palestrantes"].queryset), marcados("palestrantes")
-        ),
-        "palestrantes_marcados": marcados("palestrantes"),
-        "opcoes_setores": _com_marcados(
-            _opcoes(form.fields["setores"].queryset), marcados("setores")
-        ),
-        "setores_marcados": marcados("setores"),
+        # A aba PALESTRANTES da planilha sugere o "Servidor" sem obrigar.
+        "palestrantes": Palestrante.objects.only("nome", "lotacao"),
     }
 
 
@@ -244,163 +205,130 @@ def _contexto_form(form, instancia):
 def editar_demanda(request, pk=None):
     instancia = _demanda_visivel(request, pk) if pk else None
     if instancia and not pode_editar(request.user, instancia):
-        raise PermissionDenied
+        raise Http404
+    status_anterior = instancia.status if instancia else ""
     if request.method == "POST":
         form = DemandaEventoForm(request.POST, instance=instancia, usuario=request.user)
         if form.is_valid():
             demanda = form.save(criado_por=request.user)
-            if instancia:
+            if not instancia:
+                services.registrar_historico(
+                    demanda, request.user, AcaoHistoricoDemanda.CRIACAO,
+                    "Registro criado no sistema.", status_novo=demanda.status,
+                )
+            else:
                 alterados = [
                     form.fields[nome].label
                     for nome in form.changed_data
-                    if nome in form.fields and nome != "versao"
+                    if nome in form.fields and nome not in {"versao", "status"}
                 ]
-                services.registrar_historico(
-                    demanda,
-                    request.user,
-                    AcaoHistoricoDemanda.ATUALIZACAO,
-                    "Campos atualizados: " + ", ".join(alterados)
-                    if alterados
-                    else "Demanda salva sem alteração de campos.",
-                    status_novo=demanda.status,
-                )
-            else:
-                services.registrar_historico(
-                    demanda,
-                    request.user,
-                    AcaoHistoricoDemanda.CRIACAO,
-                    "Demanda registrada no sistema.",
-                    status_novo=demanda.status,
-                )
-            messages.success(request, f"Demanda #{demanda.pk} salva com sucesso.")
+                if demanda.status != status_anterior:
+                    services.registrar_historico(
+                        demanda, request.user, AcaoHistoricoDemanda.TRANSICAO,
+                        "", status_anterior=status_anterior, status_novo=demanda.status,
+                    )
+                if alterados:
+                    services.registrar_historico(
+                        demanda, request.user, AcaoHistoricoDemanda.ATUALIZACAO,
+                        "Campos atualizados: " + ", ".join(alterados),
+                        status_novo=demanda.status,
+                    )
+            messages.success(request, f"{demanda.get_evento_display()} #{demanda.pk} salva com sucesso.")
             return redirect("demandas_eventos:editar", pk=demanda.pk)
         messages.error(request, "Corrija os campos destacados para continuar.")
     else:
         form = DemandaEventoForm(instance=instancia, usuario=request.user)
     contexto = _contexto_form(form, instancia)
-    contexto.update(
-        {
-            "titulo": f"Demanda #{instancia.pk}" if instancia else "Nova demanda de evento",
-            "breadcrumb": [
-                {"label": "Demandas ASCOM", "url": reverse("demandas_eventos:lista")},
-                {"label": f"Demanda #{instancia.pk}" if instancia else "Nova demanda"},
-            ],
-        }
-    )
+    contexto["breadcrumb"] = [
+        {"label": "Palestras", "url": reverse("demandas_eventos:lista")},
+        {"label": f"{instancia.get_evento_display()} #{instancia.pk}" if instancia else "Nova palestra"},
+    ]
     if instancia:
-        contexto.update(
-            {
-                "opcoes_transicao": services.opcoes_transicao(instancia),
-                "historico": instancia.historico.select_related("usuario"),
-            }
-        )
+        contexto["historico"] = instancia.historico.select_related("usuario")
     return render(request, "pages/demandas_eventos/form.html", contexto)
+
+
+# As colunas da aba do ano da planilha, na mesma ordem, e como sair de cada
+# registro para elas.
+COLUNAS_EXPORTACAO = [
+    ("MÊS", lambda d: MESES[d.mes_referencia.month - 1]),
+    ("MUNICIPIO", lambda d: d.municipio_display),
+    ("DATA DO EVENTO E HORA (PERÍODO)", lambda d: d.periodo_evento_display or "À definir"),
+    ("EVENTO", lambda d: d.get_evento_display().upper()),
+    ("STATUS DA DEMANDA", lambda d: d.get_status_display().upper()),
+    ("ANDAMENTO", lambda d: d.andamento),
+    ("INFORMAÇÕES PRÉVIAS", lambda d: d.informacoes_previas),
+    ("SOLICITANTE", lambda d: d.solicitante),
+    ("CONTATO", lambda d: d.contato),
+    ("DATA DA SOLICITAÇÃO", lambda d: f"{d.data_solicitacao:%d/%m/%Y}"),
+    ("FOI SOLICITADO VIA:", lambda d: d.canal_solicitacao),
+    ("DESCRIÇÃO", lambda d: d.descricao),
+    ("QUANTIDADE DE PÚBLICO", lambda d: d.quantidade_publico if d.quantidade_publico is not None else ""),
+    ("ASSUNTO E-MAIL", lambda d: d.assunto_email),
+    ("PEDIDO/CONTATO", lambda d: d.pedido_contato),
+    ("TEMA", lambda d: str(d.tema) if d.tema_id else ""),
+    ("SERVIDOR", lambda d: d.servidor),
+]
 
 
 @login_required
 def exportar_demandas(request):
-    import csv
-
-    from django.http import HttpResponse
-
-    # Reaproveita exatamente os mesmos parâmetros por uma requisição interna
-    # não seria seguro; aplica o recorte visível e os filtros básicos aqui.
-    queryset = queryset_visivel(
-        request.user,
-        DemandaEvento.objects.select_related(
-            "tipo_evento", "tema", "subtema", "municipio", "responsavel_atendimento"
-        ).prefetch_related("setores"),
-    )
-    q = request.GET.get("q", "").strip()
-    if q:
-        queryset = queryset.filter(
-            Q(solicitante__icontains=q) | Q(descricao__icontains=q)
-            | Q(pedido_contato__icontains=q) | Q(assunto_email__icontains=q)
-        )
-    filtros_simples = {
-        "status": "status",
-        "tipo": "tipo_evento_id",
-        "municipio": "municipio_id",
-        "responsavel": "responsavel_atendimento_id",
-        "setor": "setores__id",
-    }
-    for parametro, campo in filtros_simples.items():
-        valor = request.GET.get(parametro, "").strip()
-        if valor:
-            queryset = queryset.filter(**{campo: valor})
-    inicio = parse_date(request.GET.get("inicio", ""))
-    fim = parse_date(request.GET.get("fim", ""))
-    if inicio:
-        queryset = queryset.filter(data_solicitacao__gte=inicio)
-    if fim:
-        queryset = queryset.filter(data_solicitacao__lte=fim)
+    queryset = _filtrar(
+        request,
+        queryset_visivel(
+            request.user, DemandaEvento.objects.select_related("tema", "municipio")
+        ),
+    ).order_by("data_solicitacao", "pk")
     resposta = HttpResponse(content_type="text/csv; charset=utf-8")
-    resposta["Content-Disposition"] = 'attachment; filename="demandas-ascom.csv"'
+    resposta["Content-Disposition"] = 'attachment; filename="palestras-e-eventos-ascom.csv"'
     resposta.write("﻿")
     escritor = csv.writer(resposta, delimiter=";", lineterminator="\r\n")
-    escritor.writerow(["Nº", "Solicitação", "Tipo", "Tema", "Subtema", "Evento", "Município", "Solicitante", "Responsável", "Setores", "Status"])
-    for demanda in queryset.distinct():
-        escritor.writerow([
-            demanda.pk, demanda.data_solicitacao.strftime("%d/%m/%Y"),
-            demanda.tipo_evento, demanda.tema or "", demanda.subtema or "", demanda.periodo_evento_display,
-            demanda.municipio or demanda.municipio_texto, demanda.solicitante,
-            demanda.responsavel_atendimento or demanda.responsavel_atendimento_texto,
-            ", ".join(str(setor) for setor in demanda.setores.all()),
-            demanda.get_status_display(),
-        ])
+    escritor.writerow([titulo for titulo, _ in COLUNAS_EXPORTACAO])
+    for demanda in queryset:
+        escritor.writerow([extrair(demanda) for _, extrair in COLUNAS_EXPORTACAO])
     return resposta
 
 
-@login_required
-@require_POST
-def transicionar_demanda(request, pk):
-    demanda = _demanda_visivel(request, pk)
-    try:
-        services.transicionar(
-            demanda,
-            request.user,
-            request.POST.get("novo_status", ""),
-            request.POST.get("justificativa", ""),
-        )
-    except ValidationError as erro:
-        for mensagem in erro.messages:
-            messages.error(request, mensagem)
-    else:
-        messages.success(request, "Status da demanda atualizado com sucesso.")
-    if pode_editar(request.user, demanda):
-        return redirect("demandas_eventos:editar", pk=demanda.pk)
-    return redirect("demandas_eventos:lista")
-
-
 CADASTROS = {
-    "temas": {"model": Tema, "form": TemaForm, "titulo": "Temas", "singular": "tema"},
-    "subtemas": {"model": Subtema, "form": SubtemaForm, "titulo": "Subtemas e escopos", "singular": "subtema"},
-    "palestrantes": {"model": Palestrante, "form": PalestranteForm, "titulo": "Palestrantes", "singular": "palestrante"},
-    "respostas": {"model": RespostaPadrao, "form": RespostaPadraoForm, "titulo": "Respostas padrão", "singular": "resposta padrão"},
+    "palestrantes": {"model": Palestrante, "form": PalestranteForm, "titulo": "Palestrantes", "singular": "palestrante", "novo": "Novo palestrante", "busca": "nome"},
+    "temas": {"model": Tema, "form": TemaForm, "titulo": "Temas", "singular": "tema", "novo": "Novo tema", "busca": "nome"},
+    "respostas": {"model": RespostaPadrao, "form": RespostaPadraoForm, "titulo": "Respostas padrão", "singular": "resposta padrão", "novo": "Nova resposta padrão", "busca": "tipo"},
 }
 
 
 def _cadastro(tipo):
     if tipo not in CADASTROS:
-        from django.http import Http404
         raise Http404
     return CADASTROS[tipo]
 
 
 @login_required
-def lista_cadastro(request, tipo):
+def lista_cadastro(request, tipo, modal=None):
+    """A lista do cadastro; criar e editar abrem num modal sobre ela.
+
+    O protocolo é o dos cadastros de Eventos (`data-cadastro-modal`, cabeçalho
+    `X-Cadastro-Modal`, `{"ok": true}` no sucesso). Sem JavaScript, `?novo=1`
+    ou `?editar=<pk>` abrem a lista já com o modal aberto.
+    """
     config = _cadastro(tipo)
+    if modal is None and request.method == "GET":
+        editar = request.GET.get("editar", "")
+        if request.GET.get("novo"):
+            modal = _contexto_modal(tipo, config, config["form"](), None)
+        elif editar.isdigit():
+            instancia = get_object_or_404(config["model"], pk=editar)
+            modal = _contexto_modal(tipo, config, config["form"](instance=instancia), instancia)
     q = request.GET.get("q", "").strip()
     queryset = config["model"].objects.all()
-    if tipo == "subtemas":
-        queryset = queryset.select_related("tema")
-    campo_busca = "tipo" if tipo == "respostas" else "nome"
+    if tipo == "palestrantes":
+        queryset = queryset.select_related("municipio")
     if q:
-        queryset = queryset.filter(**{f"{campo_busca}__icontains": q})
+        queryset = queryset.filter(**{f"{config['busca']}__icontains": q})
     paginador = Paginator(queryset, ITENS_POR_PAGINA)
     pagina = paginador.get_page(request.GET.get("pagina"))
     parametros = request.GET.copy()
-    parametros.pop("pagina", None)
+    for chave in ("pagina", "novo", "editar"):
+        parametros.pop(chave, None)
     return render(
         request,
         "pages/demandas_eventos/cadastro_lista.html",
@@ -416,48 +344,103 @@ def lista_cadastro(request, tipo):
             "querystring": parametros.urlencode(),
             "q": q,
             "tem_filtros": bool(q),
+            "modal": modal,
         },
     )
+
+
+# Largura de cada campo no modal (colunas de uma grade de 12).
+LARGURAS = {"nome": "", "tipo": "", "mensagem": "", "tema_abordagem": "", "municipio": "4", "divisao": "4", "lotacao": "4", "contato": "6", "email": "6"}
 
 
 def _campos_cadastro(form):
     campos = []
     for nome, campo in form.fields.items():
         value = form[nome].value()
-        item = {"name": nome, "label": campo.label, "erros": form.errors.get(nome), "obrigatorio": campo.required, "valor": "" if value is None else str(value)}
-        if isinstance(campo, forms.ModelMultipleChoiceField):
-            marcados = [str(getattr(v, "pk", v)) for v in (value or [])]
-            opcoes = _opcoes(campo.queryset)
-            # Os cartões de escolha já vêm sabendo o que está marcado.
-            item.update({
-                "tipo": "multiplo",
-                "opcoes": opcoes,
-                "marcados": marcados,
-                "opcoes_marcadas": _com_marcados(opcoes, marcados),
-            })
-        elif isinstance(campo, forms.ModelChoiceField):
+        item = {
+            "name": nome,
+            "label": campo.label,
+            "erros": form.errors.get(nome),
+            "obrigatorio": campo.required,
+            "valor": "" if value is None else str(value),
+            "largura": LARGURAS.get(nome, ""),
+        }
+        if isinstance(campo, forms.ModelChoiceField):
             item.update({"tipo": "select", "opcoes": _opcoes(campo.queryset)})
         elif isinstance(campo.widget, forms.Textarea):
             item["tipo"] = "textarea"
-        elif isinstance(campo, forms.BooleanField):
-            item["tipo"] = "boolean"
-            item["valor"] = bool(value)
         else:
             item["tipo"] = "input"
         campos.append(item)
     return campos
 
 
+def _contexto_modal(tipo, config, form, instancia):
+    if tipo == "palestrantes":
+        # A aba PALESTRANTES é do Paraná: a lista não precisa dos 5.570 municípios.
+        from cadastros.models import Municipio
+
+        atual = instancia.municipio_id if instancia else None
+        form.fields["municipio"].queryset = Municipio.objects.filter(
+            Q(estado__sigla="PR") | Q(pk=atual)
+        ).order_by("nome")
+    campos = _campos_cadastro(form)
+    erros_gerais = list(form.non_field_errors())
+    return {
+        "url_acao": (
+            reverse("demandas_eventos:cadastro_editar", args=[tipo, instancia.pk])
+            if instancia
+            else reverse("demandas_eventos:cadastro_novo", args=[tipo])
+        ),
+        "titulo": f"Editar {config['singular']}" if instancia else config["novo"],
+        "singular": config["singular"],
+        "campos": campos,
+        "erros_gerais": erros_gerais,
+        "erros_total": sum(1 for campo in campos if campo["erros"]) + len(erros_gerais),
+        "municipio_planilha": (
+            instancia.municipio_texto
+            if tipo == "palestrantes" and instancia and not instancia.municipio_id
+            else ""
+        ),
+    }
+
+
 @login_required
 def editar_cadastro(request, tipo, pk=None):
     config = _cadastro(tipo)
     instancia = get_object_or_404(config["model"], pk=pk) if pk else None
+    via_modal = request.headers.get("X-Cadastro-Modal") == "1"
+    if request.method == "GET" and not via_modal:
+        destino = reverse("demandas_eventos:cadastro_lista", args=[tipo])
+        return redirect(f"{destino}?{'editar=' + str(pk) if pk else 'novo=1'}")
     if request.method == "POST":
         form = config["form"](request.POST, instance=instancia)
         if form.is_valid():
             form.save()
             messages.success(request, f"{config['singular'].capitalize()} salvo com sucesso.")
+            if via_modal:
+                return JsonResponse({"ok": True})
             return redirect("demandas_eventos:cadastro_lista", tipo=tipo)
     else:
         form = config["form"](instance=instancia)
-    return render(request, "pages/demandas_eventos/cadastro_form.html", {"tipo": tipo, "config": config, "instancia": instancia, "campos": _campos_cadastro(form), "breadcrumb": [{"label": config["titulo"], "url": reverse("demandas_eventos:cadastro_lista", args=[tipo])}, {"label": "Editar" if instancia else "Novo"}]})
+    modal = _contexto_modal(tipo, config, form, instancia)
+    if via_modal:
+        return render(request, "pages/demandas_eventos/_modal_cadastro.html", {"dados": modal})
+    return lista_cadastro(request, tipo, modal=modal)
+
+
+@login_required
+@require_POST
+def excluir_cadastro(request, tipo, pk):
+    config = _cadastro(tipo)
+    objeto = get_object_or_404(config["model"], pk=pk)
+    try:
+        objeto.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            f"Não é possível excluir: {config['singular']} está em uso em palestras registradas.",
+        )
+    else:
+        messages.success(request, f"{config['singular'].capitalize()} excluído.")
+    return redirect("demandas_eventos:cadastro_lista", tipo=tipo)

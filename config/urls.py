@@ -18,10 +18,11 @@ urlpatterns = [
     path("conta/", include("accounts.urls")),
     path("dashboard/", include("dashboard.urls")),
     path("agenda/", include("agenda.urls")),
+    path("relatorios/", include("relatorios.urls")),
     path("cadastros/", include("cadastros.urls")),
     path("solicitacoes/", include("solicitacoes.urls")),
     path("coffee-break/", include("coffee_break.urls")),
-    path("ascom/demandas/", include("demandas_eventos.urls")),
+    path("ascom/palestras/", include("demandas_eventos.urls")),
     path("ascom/publicacoes/", include("publicacoes.urls")),
     path("ascom/imprensa/", include("atendimento_imprensa.urls")),
     # Entrada amigável do módulo: /viagens/ leva à tela principal (Roteiros).

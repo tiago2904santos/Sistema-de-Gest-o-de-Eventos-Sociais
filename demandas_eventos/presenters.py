@@ -1,35 +1,37 @@
-"""Como a demanda da ASCOM se apresenta na lista.
+"""Como a palestra (ou evento) da ASCOM se apresenta na lista.
 
-A listagem deixou de espalhar a demanda por sete colunas (solicitação, tipo
-e tema, evento, município, solicitante, status, ações) em favor da
-composição das listas de Viagens: uma célula só, com o tipo e o município no
-título ao lado dos selos — a situação e o quando do evento — e os fatos com
-ícone logo abaixo.
+Composição das listas de Viagens: uma célula só, com o tipo de evento e o
+município no título ao lado dos selos — o status e o quando do evento — e
+as colunas da planilha que mais importam como fatos com ícone logo abaixo.
 """
 
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import StatusDemanda
+from .models import StatusDemanda, TipoEventoPalestra
 
 # Ícone de cada situação na trilha lateral.
 ICONES_STATUS = {
     StatusDemanda.PENDENTE: "hourglass",
-    StatusDemanda.AGUARDANDO_RETORNO: "clock",
     StatusDemanda.EM_ANDAMENTO: "activity",
+    StatusDemanda.AGUARDANDO_RETORNO: "clock",
     StatusDemanda.EVENTO_AGENDADO: "calendar",
     StatusDemanda.ATENDIDA: "check-circle",
-    StatusDemanda.NAO_ATENDER: "x",
     StatusDemanda.CANCELADA: "ban",
+}
+
+# Ícone de cada valor da coluna "Evento".
+ICONES_EVENTO = {
+    TipoEventoPalestra.PALESTRA: "users",
+    TipoEventoPalestra.PCPR_NA_COMUNIDADE: "landmark",
+    TipoEventoPalestra.EVENTO: "calendar",
 }
 
 
 def titulo_da_demanda(demanda):
-    """O tipo de evento e onde ele acontece — o que identifica a demanda."""
-    tipo = str(demanda.tipo_evento) if demanda.tipo_evento_id else "Demanda"
-    municipio = (
-        str(demanda.municipio) if demanda.municipio_id else demanda.municipio_texto
-    )
+    """O tipo de evento e onde ele acontece — o que identifica a linha."""
+    tipo = demanda.get_evento_display()
+    municipio = demanda.municipio_display
     return f"{tipo} · {municipio.upper()}" if municipio else tipo
 
 
@@ -47,48 +49,20 @@ def selo_temporal(demanda, hoje=None):
     return "Previsto", "aguardando"
 
 
+def _fato(icone, rotulo, texto, vazio):
+    return {"icone": icone, "rotulo": rotulo, "texto": texto or vazio, "ausente": not texto}
+
+
 def fatos_da_demanda(demanda):
-    """Os dados que estavam nas colunas, agora como itens com ícone."""
-    periodo = demanda.periodo_evento_display
-    tema = str(demanda.tema) if demanda.tema_id else ""
-    if tema and demanda.subtema_id:
-        tema = f"{tema} · {demanda.subtema.nome}"
-    responsavel = (
-        str(demanda.responsavel_atendimento)
-        if demanda.responsavel_atendimento_id
-        else ""
-    )
+    """As colunas da planilha que cabem na linha, como itens com ícone."""
+    publico = demanda.quantidade_publico
     return [
-        {
-            "icone": "calendar",
-            "rotulo": "Período do evento",
-            "texto": periodo or "Sem período",
-            "ausente": not periodo,
-        },
-        {
-            "icone": "checklist",
-            "rotulo": "Tema",
-            "texto": tema or "Sem tema",
-            "ausente": not tema,
-        },
-        {
-            "icone": "user",
-            "rotulo": "Solicitante",
-            "texto": demanda.solicitante or "Sem solicitante",
-            "ausente": not demanda.solicitante,
-        },
-        {
-            "icone": "users",
-            "rotulo": "Responsável",
-            "texto": responsavel or "Sem responsável",
-            "ausente": not responsavel,
-        },
-        {
-            "icone": "clock",
-            "rotulo": "Solicitada em",
-            "texto": f"Solicitada em {demanda.data_solicitacao:%d/%m/%Y}",
-            "ausente": False,
-        },
+        _fato("calendar", "Data do evento e hora", demanda.periodo_evento_display, "À definir"),
+        _fato("checklist", "Tema", str(demanda.tema) if demanda.tema_id else "", "Sem tema"),
+        _fato("user", "Solicitante", demanda.solicitante, "Sem solicitante"),
+        _fato("users", "Servidor", demanda.servidor, "Sem servidor"),
+        _fato("activity", "Quantidade de público", f"{publico} pessoas" if publico else "", "Público não informado"),
+        _fato("clock", "Data da solicitação", f"Solicitada em {demanda.data_solicitacao:%d/%m/%Y}", ""),
     ]
 
 
@@ -104,43 +78,36 @@ def linha_da_lista(demanda, hoje=None):
         "quando_tom": quando_tom,
         "fatos": fatos_da_demanda(demanda),
         "url_editar": reverse("demandas_eventos:editar", args=[demanda.pk]),
-        "cancelada": demanda.status
-        in (StatusDemanda.CANCELADA, StatusDemanda.NAO_ATENDER),
+        "cancelada": demanda.status == StatusDemanda.CANCELADA,
     }
 
 
 def linha_do_cadastro(item, tipo):
-    """A linha dos cadastros de apoio das demandas (palestrante, tema…).
+    """A linha dos cadastros de apoio (palestrantes, temas, respostas).
 
-    Os quatro cadastros moram na mesma tela e mudam só o que dizem de si.
+    Os três cadastros moram na mesma tela e mudam só o que dizem de si.
     """
     if tipo == "respostas":
         titulo = item.tipo
-        fatos = [
-            {"icone": "mail", "rotulo": "Resposta padrão", "texto": "Texto pronto de resposta", "ausente": False},
-        ]
+        primeira = (item.mensagem or "").strip().splitlines()
+        fatos = [_fato("mail", "Mensagem", primeira[0] if primeira else "", "Sem mensagem")]
     elif tipo == "palestrantes":
         titulo = item.nome
+        municipio = str(item.municipio) if item.municipio_id else item.municipio_texto
         fatos = [
-            {"icone": "landmark", "rotulo": "Lotação", "texto": item.lotacao or "Sem lotação", "ausente": not item.lotacao},
-        ]
-    elif tipo == "subtemas":
-        titulo = item.nome
-        fatos = [
-            {"icone": "document", "rotulo": "Tema", "texto": str(item.tema), "ausente": False},
-            {"icone": "checklist", "rotulo": "Escopo", "texto": item.escopo or "Sem escopo", "ausente": not item.escopo},
+            _fato("landmark", "Divisão e lotação", " · ".join(x for x in (item.divisao, item.lotacao) if x), "Sem lotação"),
+            _fato("map-pin", "Município", municipio, "Sem município"),
+            _fato("mail", "Contato", item.contato, "Sem contato"),
+            _fato("checklist", "Tema de abordagem", item.tema_abordagem, "Sem tema"),
         ]
     else:
         titulo = item.nome
-        fatos = [
-            {"icone": "document", "rotulo": "Tema", "texto": "Tema das demandas", "ausente": False},
-        ]
+        fatos = []
     return {
         "item": item,
         "titulo": titulo,
-        "selo": "Ativo" if item.ativo else "Inativo",
-        "selo_tom": "ativo" if item.ativo else "inativo",
         "fatos": fatos,
         "url_editar": reverse("demandas_eventos:cadastro_editar", args=[tipo, item.pk]),
-        "cancelada": not item.ativo,
+        "url_excluir": reverse("demandas_eventos:cadastro_excluir", args=[tipo, item.pk]),
+        "cancelada": False,
     }

@@ -253,7 +253,7 @@ def _coffee(usuario, inicio, fim) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Demandas da ASCOM
+# Palestras e eventos da ASCOM
 # ---------------------------------------------------------------------------
 
 
@@ -272,10 +272,10 @@ def _demandas(usuario, inicio, fim) -> list[dict]:
         permissions.queryset_visivel(usuario, DemandaEvento.objects.all())
         .filter(data_inicio_evento__isnull=False)
         .filter(_sobrepoe("data_inicio_evento", "data_fim_evento", inicio, fim))
-        .select_related("municipio", "tema", "tipo_evento")
+        .select_related("municipio", "tema")
         .order_by("data_inicio_evento", "id")
     )
-    encerrados = {StatusDemanda.CANCELADA, StatusDemanda.NAO_ATENDER}
+    encerrados = {StatusDemanda.CANCELADA}
     saida = []
     for d in consulta:
         lugar = str(d.municipio) if d.municipio_id else (d.municipio_texto or "Sem município")
@@ -284,7 +284,7 @@ def _demandas(usuario, inicio, fim) -> list[dict]:
             _evento(
                 fonte="demanda",
                 pk=d.pk,
-                titulo=lugar + (f" — {tema}" if tema else ""),
+                titulo=f"{d.get_evento_display()} · {lugar}" + (f" — {tema}" if tema else ""),
                 inicio=d.data_inicio_evento,
                 fim=d.data_fim_evento,
                 situacao=d.get_status_display(),
@@ -292,14 +292,16 @@ def _demandas(usuario, inicio, fim) -> list[dict]:
                 url=reverse("demandas_eventos:editar", args=[d.pk]),
                 encerrado=d.status in encerrados,
                 municipio=lugar,
-                tipo=tema,
+                tipo=d.get_evento_display(),
                 meu=d.criado_por_id == getattr(usuario, "pk", None),
                 detalhes=[
                     ("Município", lugar),
+                    ("Evento", d.get_evento_display()),
                     ("Tema", tema),
-                    ("Tipo de evento", str(d.tipo_evento) if d.tipo_evento_id else ""),
+                    ("Hora (período)", d.periodo_evento_texto),
+                    ("Servidor", d.servidor),
                     ("Solicitante", d.solicitante),
-                    ("Público previsto", str(d.quantidade_publico or "")),
+                    ("Quantidade de público", str(d.quantidade_publico or "")),
                 ],
             )
         )
@@ -312,7 +314,7 @@ FONTES: tuple[Fonte, ...] = (
     Fonte("viagem", "Viagens", _pode_viagens, _viagens),
     Fonte("solicitacao", "Solicitações de evento", _pode_solicitacoes, _solicitacoes),
     Fonte("coffee", "Coffee break", _pode_coffee, _coffee),
-    Fonte("demanda", "Demandas da ASCOM", _pode_demandas, _demandas),
+    Fonte("demanda", "Palestras e eventos", _pode_demandas, _demandas),
 )
 
 

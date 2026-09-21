@@ -1,72 +1,59 @@
 from django import forms
-from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.utils import timezone
 
-from cadastros.models import Municipio, TipoEvento
+from cadastros.models import Municipio
 
-from .models import DemandaEvento, Palestrante, RespostaPadrao, Subtema, Tema
+from .models import DemandaEvento, Palestrante, RespostaPadrao, Tema
 from .permissions import setores_do_usuario_para_modulo
 
 
 class DemandaEventoForm(forms.ModelForm):
+    """O formulário de palestras: um campo por coluna da planilha.
+
+    A ordem dos campos é a das colunas da aba 2026, com Tema e Servidor (das
+    abas anteriores) junto do evento. Os setores não aparecem: a linha
+    pertence aos setores de quem a registra, como antes.
+    """
+
     versao = forms.CharField(required=False, widget=forms.HiddenInput)
 
     class Meta:
         model = DemandaEvento
         fields = [
-            "data_solicitacao",
-            "tipo_evento",
-            "tema",
-            "subtema",
-            "canal_solicitacao",
             "municipio",
             "data_inicio_evento",
             "data_fim_evento",
             "periodo_evento_texto",
-            "solicitante",
-            "contato",
-            "assunto_email",
-            "pedido_contato",
-            "descricao",
+            "evento",
+            "status",
             "andamento",
             "informacoes_previas",
-            "responsavel_organizacao",
-            "responsavel_atendimento",
-            "palestrantes",
-            "unidade",
+            "solicitante",
+            "contato",
+            "data_solicitacao",
+            "canal_solicitacao",
+            "descricao",
             "quantidade_publico",
-            "briefing",
-            "materia_site",
-            "setores",
+            "assunto_email",
+            "pedido_contato",
+            "tema",
+            "servidor",
         ]
         widgets = {
-            "pedido_contato": forms.Textarea,
-            "descricao": forms.Textarea,
             "andamento": forms.Textarea,
             "informacoes_previas": forms.Textarea,
-            "briefing": forms.Textarea,
-            "materia_site": forms.Textarea,
+            "descricao": forms.Textarea,
+            "pedido_contato": forms.Textarea,
         }
 
     def __init__(self, *args, usuario=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.usuario = usuario
-        self.fields["tipo_evento"].queryset = TipoEvento.objects.filter(ativo=True)
-        self.fields["tema"].queryset = Tema.objects.filter(ativo=True)
-        self.fields["subtema"].queryset = Subtema.objects.filter(
-            ativo=True, tema__ativo=True
-        ).select_related("tema")
         self.fields["municipio"].queryset = Municipio.objects.filter(ativo=True).select_related("estado")
-        self.fields["palestrantes"].queryset = Palestrante.objects.filter(ativo=True)
-        self.fields["setores"].queryset = setores_do_usuario_para_modulo(usuario)
-        setores_elegiveis = self.fields["setores"].queryset
-        self.fields["responsavel_atendimento"].queryset = (
-            get_user_model().objects.filter(
-                is_active=True, setores__in=setores_elegiveis
-            ).prefetch_related("setores").distinct().order_by("first_name", "username")
-        )
+        self.fields["tema"].queryset = Tema.objects.all()
         if not self.is_bound and not self.instance.pk:
-            self.initial["setores"] = list(self.fields["setores"].queryset)
+            self.initial.setdefault("data_solicitacao", timezone.localdate())
         if self.instance.pk:
             self.initial["versao"] = str(
                 int(self.instance.atualizado_em.timestamp() * 1_000_000)
@@ -76,36 +63,10 @@ class DemandaEventoForm(forms.ModelForm):
         dados = super().clean()
         inicio = dados.get("data_inicio_evento")
         fim = dados.get("data_fim_evento")
+        if fim and not inicio:
+            self.add_error("data_fim_evento", "Informe a data inicial do evento.")
         if inicio and fim and fim < inicio:
             self.add_error("data_fim_evento", "A data final não pode ser anterior à inicial.")
-        if not dados.get("setores"):
-            self.add_error("setores", "Selecione ao menos um setor envolvido.")
-        responsavel = dados.get("responsavel_atendimento")
-        setores = dados.get("setores")
-        if responsavel and setores and not responsavel.setores.filter(
-            pk__in=[setor.pk for setor in setores]
-        ).exists():
-            self.add_error(
-                "responsavel_atendimento",
-                "O responsável precisa pertencer a um dos setores envolvidos.",
-            )
-        tema = dados.get("tema")
-        subtema = dados.get("subtema")
-        if subtema and not tema:
-            self.add_error("subtema", "Selecione primeiro o tema principal.")
-        elif subtema and subtema.tema_id != tema.pk:
-            self.add_error("subtema", "O subtema precisa pertencer ao tema selecionado.")
-        texto = (dados.get("periodo_evento_texto") or "").strip()
-        campos_periodo = {
-            "data_inicio_evento", "data_fim_evento", "periodo_evento_texto"
-        }
-        if texto and (inicio or fim) and (
-            not self.instance.pk or campos_periodo.intersection(self.changed_data)
-        ):
-            self.add_error(
-                "periodo_evento_texto",
-                "Use o período estruturado ou o período em texto, não os dois.",
-            )
         if self.instance.pk:
             atual = type(self.instance).objects.filter(pk=self.instance.pk).values_list(
                 "atualizado_em", flat=True
@@ -114,42 +75,40 @@ class DemandaEventoForm(forms.ModelForm):
                 int(atual.timestamp() * 1_000_000)
             ):
                 raise forms.ValidationError(
-                    "Esta demanda foi alterada por outra pessoa. Recarregue a página antes de salvar."
+                    "Este registro foi alterado por outra pessoa. Recarregue a página antes de salvar."
                 )
         return dados
 
     @transaction.atomic
     def save(self, criado_por=None):
         demanda = super().save(commit=False)
-        if not demanda.pk:
+        novo = not demanda.pk
+        if novo:
             demanda.criado_por = criado_por
+        if demanda.municipio_id:
+            # O texto original só serve enquanto o município não foi escolhido.
+            demanda.municipio_texto = ""
         demanda.full_clean(exclude=["setores"])
         demanda.save()
-        self.save_m2m()
+        if novo:
+            demanda.setores.set(setores_do_usuario_para_modulo(self.usuario))
         return demanda
 
 
 class TemaForm(forms.ModelForm):
     class Meta:
         model = Tema
-        fields = ["nome", "ativo"]
-
-
-class SubtemaForm(forms.ModelForm):
-    class Meta:
-        model = Subtema
-        fields = ["tema", "nome", "escopo", "ativo"]
-        widgets = {"escopo": forms.Textarea}
+        fields = ["nome"]
 
 
 class PalestranteForm(forms.ModelForm):
     class Meta:
         model = Palestrante
-        fields = ["nome", "municipio", "divisao", "lotacao", "contato", "email", "temas", "ativo"]
+        fields = ["municipio", "divisao", "lotacao", "nome", "contato", "email", "tema_abordagem"]
 
 
 class RespostaPadraoForm(forms.ModelForm):
     class Meta:
         model = RespostaPadrao
-        fields = ["tipo", "mensagem", "ativo"]
+        fields = ["tipo", "mensagem"]
         widgets = {"mensagem": forms.Textarea}

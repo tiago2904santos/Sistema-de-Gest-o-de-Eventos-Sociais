@@ -1,0 +1,40 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Relatório consolidado: os números de todos os módulos que a pessoa enxerga,
+  no desenho da planilha "PCPR NA COMUNIDADE - ASCOM" (Palestras, Eventos em
+  geral e PCPR na Comunidade) mais coffee break, publicações, imprensa e
+  viagens. Indicadores no topo, o quadro mês a mês e uma tabela por módulo;
+  a mesma coisa sai em planilha pelo botão Exportar.
+{% endcomment %}
+
+{% block title %}Relatório consolidado{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with atual="Relatório" %}
+
+  <div class="d-cabeca d-cabeca--secao rel-cabeca">
+    <div class="d-cabeca__esq">
+      <div class="kicker kicker--junto">Relatório</div>
+      <h1>Relatório consolidado</h1>
+    </div>
+    <div class="rel-cabeca__acoes">
+      <form method="get" class="rel-periodo" data-auto-enviar>
+        {% include "components/select.html" with name="ano" label="Período" rotulo_oculto=True opcoes=opcoes_ano selecionado=ano_valor sem_vazio=True %}
+      </form>
+      <a class="btn--secundaria" href="{% url 'relatorios:exportar' %}?ano={{ ano_valor }}">{% include "components/icon.html" with nome="download" %}Exportar planilha</a>
+    </div>
+  </div>
+
+  <div class="db-kpis rel-kpis">
+    {% for item in kpis %}
+      {% include "components/v32/summary_card.html" with titulo=item.titulo valor=item.valor icone=item.icone variacao=item.detalhe %}
+    {% endfor %}
+  </div>
+
+  {% include "pages/relatorios/_secao.html" with secao=quadro %}
+  {% for secao in secoes %}
+    {% include "pages/relatorios/_secao.html" %}
+  {% endfor %}
+
+  <p class="pa-rodape">{% include "components/icon.html" with nome="info" %}{{ periodo.rotulo }} · gerado em {{ gerado_em|date:"d/m/Y H:i" }}. Cada seção só aparece para quem tem acesso ao módulo de origem.</p>
+{% endblock %}

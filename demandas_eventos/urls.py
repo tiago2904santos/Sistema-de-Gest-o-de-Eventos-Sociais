@@ -6,12 +6,12 @@ app_name = "demandas_eventos"
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
-    path("demandas/", views.lista_demandas, name="lista"),
-    path("demandas/exportar/", views.exportar_demandas, name="exportar"),
-    path("demandas/nova/", views.editar_demanda, name="nova"),
-    path("demandas/<int:pk>/editar/", views.editar_demanda, name="editar"),
-    path("demandas/<int:pk>/status/", views.transicionar_demanda, name="transicionar"),
+    path("lista/", views.lista_demandas, name="lista"),
+    path("exportar/", views.exportar_demandas, name="exportar"),
+    path("nova/", views.editar_demanda, name="nova"),
+    path("<int:pk>/editar/", views.editar_demanda, name="editar"),
     path("cadastros/<slug:tipo>/", views.lista_cadastro, name="cadastro_lista"),
     path("cadastros/<slug:tipo>/novo/", views.editar_cadastro, name="cadastro_novo"),
     path("cadastros/<slug:tipo>/<int:pk>/editar/", views.editar_cadastro, name="cadastro_editar"),
+    path("cadastros/<slug:tipo>/<int:pk>/excluir/", views.excluir_cadastro, name="cadastro_excluir"),
 ]
