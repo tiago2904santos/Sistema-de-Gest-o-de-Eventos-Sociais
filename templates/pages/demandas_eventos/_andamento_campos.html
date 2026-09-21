@@ -1,0 +1,8 @@
+{% comment %}
+  Os campos do andamento — próximo status em cartões e a anotação —, iguais
+  na tela da palestra e no modal da lista. Contexto: `opcoes_andamento`,
+  `texto_andamento`, `erro_andamento`.
+{% endcomment %}
+{% include "components/v32/cartoes_escolha.html" with name="novo_status" label="Novo status" obrigatorio=True opcoes=opcoes_andamento colunas=colunas id_primeiro=True erros=None %}
+{% include "components/textarea.html" with name="andamento" label="Andamento" linhas="3" placeholder="O que aconteceu: contato feito, palestrante confirmado, motivo do cancelamento…" ajuda="Opcional. Fica no histórico e na coluna Andamento da planilha." valor=texto_andamento erros=None %}
+{% if erro_andamento %}<p class="form-erro" role="alert">{{ erro_andamento }}</p>{% endif %}

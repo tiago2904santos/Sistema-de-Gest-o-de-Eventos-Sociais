@@ -133,7 +133,7 @@ def _palestras_atendidas(usuario, periodo, evento):
     consulta = queryset_visivel(
         usuario,
         DemandaEvento.objects.filter(evento=evento, status=StatusDemanda.ATENDIDA),
-    ).select_related("municipio", "tema")
+    ).select_related("municipio").prefetch_related("temas")
     if periodo.ano:
         # O "Mês" da planilha é o do evento; sem data de evento, o da solicitação.
         from django.db.models import Q
@@ -326,7 +326,7 @@ def secao_eventos(usuario, periodo, solicitacoes, pode_palestras):
         linhas.append((s.data_inicio_evento, str(s.tipo_evento or "Evento"), descricao, _municipio(s), "Solicitação"))
     if pode_palestras:
         for d in _palestras_atendidas(usuario, periodo, TipoEventoPalestra.EVENTO):
-            descricao = d.assunto_email or (d.descricao or "").strip().split("\n")[0] or str(d.tema or "")
+            descricao = d.assunto_email or (d.descricao or "").strip().split("\n")[0] or d.temas_display
             linhas.append((d.mes_referencia, "Evento (ASCOM)", descricao, _municipio(d), "ASCOM"))
     linhas.sort(key=lambda linha: (linha[0], linha[1]))
     return _secao(

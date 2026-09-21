@@ -28,6 +28,8 @@
 
     {% include "components/v32/lista_registros.html" with icone="document" rotulo="Palestra" rotulo_plural="palestras" conteudo_linha="pages/demandas_eventos/_conteudo_linha.html" acoes_linha="pages/demandas_eventos/_acoes_linha.html" placeholder_busca="Buscar por município, solicitante, servidor, tema…" filtro_nome="status" filtro_valor=status vazio="Nenhuma palestra registrada ainda." vazio_filtrado="Nada encontrado com os filtros aplicados." %}
   </div>
+  {# O andamento abre em modal a partir do menu ⋮ de cada linha. #}
+  <dialog class="mo v32-cadastro-modal v32-cadastro-modal--larga" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{% url 'demandas_eventos:lista' %}"></dialog>
 {% endblock %}
 
 {% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>{% endblock %}

@@ -1,41 +1,38 @@
 {% comment %}
-  Histórico de alterações: tudo o que a trilha registrou sobre um registro,
-  do mais recente ao mais antigo. `historico` vem de
-  `auditoria.historico.historico_de`. Cada linha diz quando, quem (e por
-  onde: formulário, editor documental ou sistema), sobre o quê e, nas
-  atualizações, cada campo com o valor de antes e o de depois.
+  Histórico de alterações na linha do tempo: tudo o que a trilha registrou
+  sobre um registro, do mais recente ao mais antigo. `historico` vem de
+  `auditoria.historico.historico_de`. Cada marca diz o quê, quem (e por onde:
+  formulário, editor documental ou sistema), quando e, nas atualizações, cada
+  campo com o valor de antes e o de depois.
 {% endcomment %}
-<div class="hs">
-  <div class="hs__cabeca">
-    <span class="hs__titulo">{% include "components/icon.html" with nome="clock" %}Histórico de alterações</span>
-    <span class="hs__contagem">{{ historico|length }} registro{{ historico|length|pluralize }}</span>
-  </div>
+<section class="lt" aria-labelledby="lt-alteracoes-titulo">
+  <header class="lt__cabeca">
+    <h2 class="lt__titulo" id="lt-alteracoes-titulo">{% include "components/icon.html" with nome="clock" %}Histórico de alterações</h2>
+    <span class="lt__contagem">{{ historico|length }} registro{{ historico|length|pluralize }}</span>
+  </header>
   {% if historico %}
-    <div class="hs__rolagem" tabindex="0" role="region" aria-label="Histórico de alterações">
-      <table class="dt hs__tabela">
-        <thead><tr><th class="hs__col-quando">Quando</th><th class="hs__col-quem">Quem</th><th class="hs__col-sobre">O quê</th><th>Alteração</th></tr></thead>
-        <tbody>
-          {% for item in historico %}
-            <tr>
-              <td class="hs__col-quando">{{ item.quando|date:"d/m/Y" }}<small>{{ item.quando|date:"H:i" }}</small></td>
-              <td class="hs__col-quem">{{ item.usuario|default:"Sistema" }}<small>{{ item.origem }}</small></td>
-              <td class="hs__col-sobre">{{ item.sobre }}<small>{{ item.acao }}</small></td>
-              <td>
-                {% if item.mudancas %}
-                  <ul class="hs__mudancas">
-                    {% for m in item.mudancas %}
-                      <li><b>{{ m.campo }}</b>{% if m.antes %}<span class="hs__antes">{{ m.antes }}</span><span class="hs__seta" aria-label="para">→</span>{% endif %}<span class="hs__depois">{{ m.depois }}</span></li>
-                    {% endfor %}
-                  </ul>
-                {% elif item.acao_codigo == "CRIACAO" %}<span class="hs__nota">Registro criado</span>
-                {% else %}<span class="hs__nota">Registro excluído</span>{% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <ol class="lt__lista" tabindex="0" aria-label="Histórico de alterações">
+      {% for item in historico %}
+        <li class="lt__item">
+          <span class="lt__marca" aria-hidden="true"></span>
+          <div class="lt__corpo">
+            <div class="lt__linha">
+              <span class="lt__acao">{{ item.sobre }} — {{ item.acao|lower }}</span>
+              <span class="lt__meta">{{ item.usuario|default:"Sistema" }}{% if item.origem %} · {{ item.origem }}{% endif %} · {{ item.quando|date:"d/m/Y" }} às {{ item.quando|date:"H:i" }}</span>
+            </div>
+            {% if item.mudancas %}
+              <ul class="lt__mudancas">
+                {% for m in item.mudancas %}
+                  <li><b>{{ m.campo }}</b>{% if m.antes %}<span class="lt__antes">{{ m.antes }}</span><span class="lt__seta" aria-label="para">→</span>{% endif %}<span class="lt__depois">{{ m.depois }}</span></li>
+                {% endfor %}
+              </ul>
+            {% elif item.acao_codigo == "CRIACAO" %}<p class="lt__texto">Registro criado</p>
+            {% else %}<p class="lt__texto">Registro excluído</p>{% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ol>
   {% else %}
-    <p class="hs__vazio">Nenhuma alteração registrada ainda.</p>
+    <p class="lt__vazio">Nenhuma alteração registrada ainda.</p>
   {% endif %}
-</div>
+</section>

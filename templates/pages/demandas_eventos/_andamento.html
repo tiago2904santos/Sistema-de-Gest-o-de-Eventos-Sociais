@@ -1,0 +1,47 @@
+{% comment %}
+  Andamento da palestra, no topo da tela e no desenho das Solicitações de
+  evento: o stepper do acompanhamento, o aviso com a última anotação (ou do
+  cancelamento) e o cartão do próximo status. Fica fora do <form> principal:
+  HTML não permite formulário aninhado. O mesmo formulário abre em modal na
+  lista (`_modal_andamento.html`). Contexto: `instancia`, `etapas` e o de
+  `_andamento_campos`.
+{% endcomment %}
+<nav class="vg-stepper sol-stepper" aria-label="Acompanhamento da palestra">
+  <ol class="vg-stepper__lista vg-stepper__lista--auto vg-trilho sem-anim" data-vg-trilho>
+    {% for etapa in etapas %}
+      <li class="vg-stepper__item{% if etapa.estado == 'atual' %} is-atual{% elif etapa.estado == 'concluido' %} is-concluida{% endif %}">
+        <span class="vg-stepper__passo" title="{{ etapa.titulo }}">
+          <span class="vg-stepper__num" aria-hidden="true">{% if etapa.estado == "concluido" %}{% include "components/icon.html" with nome="check" %}{% else %}{{ forloop.counter }}{% endif %}</span>
+          <span class="vg-stepper__rotulo">{{ etapa.titulo }}</span>
+        </span>
+      </li>
+    {% endfor %}
+  </ol>
+</nav>
+
+{% if instancia.status == "CANCELADA" %}
+  <div class="aviso aviso--callout" role="status">
+    <div class="aviso__txt">{% include "components/icon.html" with nome="ban" %}<div class="aviso__corpo"><b>Cancelada</b><p>{{ ultima_anotacao|default:"Sem motivo registrado."|linebreaksbr }}</p></div></div>
+  </div>
+{% elif ultima_anotacao %}
+  <div class="aviso aviso--callout" role="status">
+    <div class="aviso__txt">{% include "components/icon.html" with nome="activity" %}<div class="aviso__corpo"><b>Andamento — {{ instancia.get_status_display }}</b><p>{{ ultima_anotacao|linebreaksbr }}</p></div></div>
+  </div>
+{% endif %}
+
+<section class="section-card reg" id="sec-andamento">
+  <header class="section-card__cabecalho reg__t">
+    <span class="section-card__numero reg-numero" aria-hidden="true">{% include "components/icon.html" with nome="activity" %}</span>
+    <h2 class="section-card__titulo">Andamento</h2>
+  </header>
+  <div class="section-card__corpo">
+    <form method="post" action="{% url 'demandas_eventos:andamento' instancia.pk %}">
+      {% csrf_token %}
+      {% include "pages/demandas_eventos/_andamento_campos.html" %}
+      <div class="frm-acoes-fim">
+        <span></span>
+        <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check" %}Registrar andamento</button>
+      </div>
+    </form>
+  </div>
+</section>

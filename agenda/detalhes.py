@@ -624,7 +624,7 @@ def _demanda(usuario, pk) -> dict:
     from demandas_eventos.models import DemandaEvento
 
     dm = (
-        DemandaEvento.objects.select_related("municipio", "tema", "criado_por")
+        DemandaEvento.objects.select_related("municipio", "criado_por").prefetch_related("temas", "palestrantes")
         .filter(pk=pk)
         .first()
     )
@@ -637,7 +637,7 @@ def _demanda(usuario, pk) -> dict:
     d = _base(
         fonte="demanda",
         rotulo=dm.get_evento_display(),
-        titulo=lugar + (f" — {dm.tema}" if dm.tema_id else ""),
+        titulo=lugar + (f" — {dm.temas_display}" if dm.temas_display else ""),
         subtitulo=_periodo(dm.data_inicio_evento, dm.data_fim_evento) or (dm.periodo_evento_texto or ""),
         situacao=dm.get_status_display(),
         situacao_slug=dm.status,
@@ -646,18 +646,19 @@ def _demanda(usuario, pk) -> dict:
     )
     # As colunas da planilha, na ordem dela.
     d["campos"] = _campos([
-        ("Hora (período)", dm.periodo_evento_texto),
+        ("Horário", dm.horario_display),
+        ("Observação do período", dm.periodo_evento_texto),
         ("Andamento", (dm.andamento or "").strip()),
         ("Informações prévias", (dm.informacoes_previas or "").strip()),
         ("Solicitante", dm.solicitante),
-        ("Contato", dm.contato),
+        ("Contato", dm.contato_display),
         ("Data da solicitação", dm.data_solicitacao.strftime("%d/%m/%Y") if dm.data_solicitacao else ""),
-        ("Foi solicitado via", dm.canal_solicitacao),
+        ("Foi solicitado via", dm.canal_display),
         ("Descrição", (dm.descricao or "").strip()),
         ("Quantidade de público", str(dm.quantidade_publico or "")),
         ("Assunto e-mail", dm.assunto_email),
         ("Pedido/Contato", (dm.pedido_contato or "").strip()),
-        ("Servidor", dm.servidor),
+        ("Servidor", dm.servidores_display),
         ("Criada por", f"{dm.criado_por} em {dm.criado_em:%d/%m/%Y %H:%M}" if dm.criado_por_id and dm.criado_em else ""),
     ])
     d["historico"] = _historico(dm.historico.select_related("usuario"))

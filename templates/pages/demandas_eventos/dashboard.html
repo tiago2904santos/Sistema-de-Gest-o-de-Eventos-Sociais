@@ -31,4 +31,6 @@
 
   {# Os cadastros de apoio, na mesma trilha da tela deles. #}
   {% include "components/v32/demandas_rail.html" %}
+  {# O andamento abre em modal a partir do menu ⋮ de cada linha. #}
+  <dialog class="mo v32-cadastro-modal v32-cadastro-modal--larga" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{% url 'demandas_eventos:lista' %}"></dialog>
 {% endblock %}

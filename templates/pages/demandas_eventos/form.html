@@ -1,4 +1,5 @@
 {% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
 {% comment %}
   Formulário de palestras da ASCOM: um campo para cada coluna da planilha
   "Palestras e Eventos ASCOM" (aba do ano), com os mesmos nomes. As colunas
@@ -11,6 +12,8 @@
 {% endcomment %}
 
 {% block title %}{% if instancia %}{{ instancia.get_evento_display }} #{{ instancia.pk }}{% else %}Nova palestra{% endif %} — ASCOM{% endblock %}
+
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% estatico 'css/viagens-planos.css' %}">{% endblock %}
 
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
@@ -27,9 +30,15 @@
         </div>
       </div>
       <div class="frm-topo__acoes">
+        {# A data da solicitação mora no cabeçalho; o atributo form a leva junto com o formulário. #}
+        <div class="pal-topo-data">
+          {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True valor=valores.data_solicitacao erros=erros.data_solicitacao form_alvo="form-demanda" %}
+        </div>
         <button type="submit" class="btn-primaria" form="form-demanda">Salvar</button>
       </div>
     </div>
+
+    {% if instancia %}{% include "pages/demandas_eventos/_andamento.html" %}{% endif %}
 
     <form method="post" id="form-demanda" class="editor-roteiro__principal">{% csrf_token %}
       <input type="hidden" name="versao" value="{{ valores.versao }}">
@@ -52,23 +61,74 @@
             <div class="cheia">
               {% include "components/v32/cartoes_escolha.html" with name="evento" tipo="radio" label="Evento" obrigatorio=True opcoes=opcoes_eventos erros=erros.evento id_primeiro=True %}
             </div>
-            {% if instancia and not instancia.municipio_id and instancia.municipio_texto %}
-              {% include "components/select.html" with name="municipio" label="Município" opcoes=opcoes_municipios selecionado=valores.municipio erros=erros.municipio pesquisavel=True ajuda="Na planilha: "|add:instancia.municipio_texto %}
-            {% else %}
-              {% include "components/select.html" with name="municipio" label="Município" opcoes=opcoes_municipios selecionado=valores.municipio erros=erros.municipio pesquisavel=True %}
-            {% endif %}
-            <div class="c2">
-              {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Data do evento" dois_campos=True valor_inicio=valores.data_inicio_evento valor_fim=valores.data_fim_evento erros=erros.data_fim_evento %}
+          </div>
+          {# Período e destino na caixa do cadastro de Ordem de Serviço. #}
+          <div class="bate-volta ofc-percurso">
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">Período</div>
+              <div>
+                {# Início, fim e o horário numa linha só. #}
+                <div class="pal-periodo">
+                  {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Data do evento" rotulo_oculto=True dois_campos=True valor_inicio=valores.data_inicio_evento valor_fim=valores.data_fim_evento erros=erros.data_fim_evento %}
+                  {% include "components/input.html" with name="hora_inicio" label="Horário" rotulo_oculto=True tipo="time" valor=valores.hora_inicio erros=erros.hora_inicio %}
+                </div>
+                {% if instancia.periodo_evento_texto %}<p class="form-ajuda">Na planilha: {{ instancia.periodo_evento_texto }}</p>{% endif %}
+              </div>
             </div>
-            {% include "components/input.html" with name="periodo_evento_texto" label="Hora (período)" valor=valores.periodo_evento_texto erros=erros.periodo_evento_texto placeholder="Ex.: 14h às 16h, manhã, à definir" %}
-            {% include "components/select.html" with name="tema" label="Tema" opcoes=opcoes_temas selecionado=valores.tema erros=erros.tema pesquisavel=True %}
-            {% include "components/input.html" with name="servidor" label="Servidor" valor=valores.servidor erros=erros.servidor lista_sugestoes="sugestoes-servidor" placeholder="Palestrante que vai atender" %}
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">Destino</div>
+              <div>
+                <div class="destinos">
+                  {% include "pages/viagens_termos/_destino_linha.html" with sem_acoes=True nome_estado="estado" nome_cidade="municipio" id_estado="id_estado" rotulo_estado="Estado" rotulo_cidade="Município" estado=valores.estado cidade=valores.municipio erros_estado=erros.estado erros_cidade=erros.municipio estados=estados municipios=municipios %}
+                </div>
+                {% if instancia and not instancia.municipio_id and instancia.municipio_texto %}<p class="form-ajuda">Na planilha: {{ instancia.municipio_texto }}</p>{% endif %}
+              </div>
+            </div>
+          </div>
+          {# Tema: mais de um, em cartões marcáveis como as atividades do plano de trabalho. #}
+          <div class="pal-bloco pal-temas" data-pal-temas>
+            <div class="pal-bloco__cabeca">
+              <span class="form-label">Tema</span>
+              <span class="pal-bloco__total" data-pal-temas-total>{{ temas_marcados_total }}</span>
+            </div>
+            <div class="pt-atividades__barra pal-temas__barra">
+              <div class="form-campo pt-atividades__busca">
+                <label class="form-label sr-only" for="id_pal_tema_busca">Filtrar temas</label>
+                <div class="busca"><span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span><input class="form-controle" type="search" id="id_pal_tema_busca" placeholder="Filtrar temas por nome" autocomplete="off" data-pal-tema-busca></div>
+              </div>
+              <button type="button" class="btn--secundaria btn--compacto pt-atividades__limpar" data-pal-tema-limpar{% if not temas_marcados_total %} disabled{% endif %}>{% include "components/icon.html" with nome="x" %}Limpar seleção</button>
+            </div>
+            <div class="pt-atividades__grade" role="group" aria-label="Temas" id="id_temas">
+              {% for t in opcoes_temas %}
+                <label class="pt-atividade{% if t.marcado %} is-selected{% endif %}" data-pal-tema data-filtro="{{ t.chave }}">
+                  <input class="sr-only" type="checkbox" name="temas" value="{{ t.valor }}"{% if t.marcado %} checked{% endif %} data-pal-tema-caixa>
+                  <span class="pt-atividade__marca" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
+                  <span class="pt-atividade__nome">{{ t.rotulo }}</span>
+                </label>
+              {% empty %}
+                <p class="texto-vazio">Nenhum tema cadastrado.</p>
+              {% endfor %}
+            </div>
+            <p class="lista-vazia" data-pal-tema-vazio hidden>{% include "components/icon.html" with nome="search" %}<span>Nenhum tema encontrado para a busca informada.</span></p>
+            {% for erro in erros.temas %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+          </div>
+
+          {# Servidor: os palestrantes como os ofícios vinculados da OS. A lista mostra só os recomendados pelo tema escolhido (e os já marcados); a busca alcança todos. #}
+          <div class="pal-bloco pal-servidores" data-pal-servidores>
+            <div class="pal-bloco__cabeca">
+              <span class="form-label">Servidor</span>
+              <span class="pal-bloco__dica" data-pal-recomendacao hidden></span>
+            </div>
+            {% include "components/v32/lista_escolha.html" with name="palestrantes" multipla=True label="Servidor" rotulo_busca="Buscar palestrante" rotulo_oculto=True icone="user" opcoes=opcoes_palestrantes placeholder="Buscar qualquer palestrante por nome, lotação, município ou tema" erros=erros.palestrantes vazio="Nenhum palestrante cadastrado." aguardando="Escolha um tema acima para ver os palestrantes recomendados — ou busque pelo nome." sem_resultado="Nenhum palestrante encontrado." %}
+            {% if instancia.servidor %}<p class="form-ajuda">Na planilha: {{ instancia.servidor }}</p>{% endif %}
+          </div>
+
+          <div class="g-form g-form--3">
             {% include "components/input.html" with name="quantidade_publico" label="Quantidade de público" tipo="number" minimo=0 valor=valores.quantidade_publico erros=erros.quantidade_publico %}
             <div class="cheia">
               {% include "components/textarea.html" with name="descricao" label="Descrição" linhas="3" valor=valores.descricao erros=erros.descricao %}
             </div>
           </div>
-          <datalist id="sugestoes-servidor">{% for p in palestrantes %}<option value="{{ p.nome }}">{% if p.lotacao %}{{ p.lotacao }}{% endif %}</option>{% endfor %}</datalist>
         </div>
       </section>
 
@@ -78,43 +138,32 @@
           <h2 class="section-card__titulo">Solicitação</h2>
         </header>
         <div class="section-card__corpo">
+          {# Os quatro primeiros numa linha só; o protocolo aparece ao lado do canal quando é por protocolo. #}
+          <div class="pal-linha1" data-pal-canal>
+            {% include "components/input.html" with name="solicitante" label="Solicitante" obrigatorio=True valor=valores.solicitante erros=erros.solicitante %}
+            {% include "components/input.html" with name="telefone" label="Telefone" tipo="tel" mascara="telefone" placeholder="(00) 00000-0000" valor=valores.telefone erros=erros.telefone %}
+            {% include "components/input.html" with name="email" label="E-mail" tipo="email" placeholder="nome@dominio.com" valor=valores.email erros=erros.email autocomplete="email" %}
+            <div class="pal-canal{% if valores.canal_solicitacao == 'PROTOCOLO' %} pal-canal--protocolo{% endif %}">
+              {% include "components/select.html" with name="canal_solicitacao" label="Foi solicitado via" opcoes=opcoes_canais selecionado=valores.canal_solicitacao erros=erros.canal_solicitacao %}
+              <div class="pal-canal__protocolo" data-pal-protocolo{% if valores.canal_solicitacao != 'PROTOCOLO' %} hidden{% endif %}>
+                {% include "components/input.html" with name="protocolo" label="Nº do protocolo" valor=valores.protocolo erros=erros.protocolo placeholder="00.000.000-0" inputmode="numeric" maxlength="12" autocomplete="off" %}
+              </div>
+            </div>
+          </div>
+          {% if instancia.contato %}<p class="form-ajuda">Contato na planilha: {{ instancia.contato }}</p>{% endif %}
           <div class="g-form g-form--3">
-            <div class="c2">
-              {% include "components/input.html" with name="solicitante" label="Solicitante" obrigatorio=True valor=valores.solicitante erros=erros.solicitante %}
-            </div>
-            {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True valor=valores.data_solicitacao erros=erros.data_solicitacao %}
-            <div class="c2">
-              {% include "components/input.html" with name="contato" label="Contato" valor=valores.contato erros=erros.contato placeholder="Telefone / e-mail" %}
-            </div>
-            {% include "components/input.html" with name="canal_solicitacao" label="Foi solicitado via" valor=valores.canal_solicitacao erros=erros.canal_solicitacao lista_sugestoes="sugestoes-canal" placeholder="E-mail, WhatsApp, protocolo…" %}
             <div class="cheia">
               {% include "components/input.html" with name="assunto_email" label="Assunto e-mail" valor=valores.assunto_email erros=erros.assunto_email %}
             </div>
             <div class="cheia">
               {% include "components/textarea.html" with name="pedido_contato" label="Pedido/Contato" linhas="4" valor=valores.pedido_contato erros=erros.pedido_contato %}
             </div>
-          </div>
-          <datalist id="sugestoes-canal"><option value="E-MAIL"><option value="WPP"><option value="E-MAIL E WPP"><option value="PROTOCOLO Nº "><option value="TELEFONE"><option value="PRESENCIAL"></datalist>
-        </div>
-      </section>
-
-      <section class="section-card reg" id="sec-andamento">
-        <header class="section-card__cabecalho reg__t">
-          <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
-          <h2 class="section-card__titulo">Status e andamento</h2>
-        </header>
-        <div class="section-card__corpo">
-          <div class="g-form g-form--3">
-            {% include "components/select.html" with name="status" label="Status da demanda" opcoes=opcoes_status obrigatorio=True sem_vazio=True selecionado=valores.status erros=erros.status %}
-            <div class="cheia">
-              {% include "components/textarea.html" with name="andamento" label="Andamento" linhas="3" valor=valores.andamento erros=erros.andamento %}
-            </div>
             <div class="cheia">
               {% include "components/textarea.html" with name="informacoes_previas" label="Informações prévias" linhas="3" valor=valores.informacoes_previas erros=erros.informacoes_previas %}
             </div>
           </div>
 
-          {# Ações no fim do último cartão: voltar à esquerda, salvar à direita. #}
+          {# Ações no fim do último cartão editável: voltar à esquerda, salvar à direita. #}
           <div class="frm-acoes-fim">
             <a class="btn--secundaria" href="{% url 'demandas_eventos:lista' %}">Voltar</a>
             <button type="submit" class="btn-primaria">Salvar</button>
@@ -127,4 +176,11 @@
       {% include "pages/demandas_eventos/_historico.html" %}
     {% endif %}
   </div>
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+  <script src="{% estatico 'js/lista-escolha.js' %}" defer></script>
+  <script src="{% estatico 'js/palestras-form.js' %}" defer></script>
+  <script src="{% estatico 'js/trilho.js' %}" defer></script>
 {% endblock %}

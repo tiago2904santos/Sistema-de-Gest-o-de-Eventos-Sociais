@@ -1837,29 +1837,6 @@ form.btn-flutuante-form{margin:0;display:contents}
 
 /* Histórico de alterações (components/v32/historico_alteracoes.html): tabela
    com rolagem própria, rente às bordas como as outras tabelas de cartão. */
-.hs{margin-top:16px;border:1px solid var(--n-200);border-radius:10px;overflow:hidden;background:var(--branco)}
-.hs__cabeca{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--n-50);border-bottom:1px solid var(--n-150)}
-.hs__titulo{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--n-900)}
-.hs__titulo .ui-icon{width:15px;height:15px;color:var(--n-450)}
-.hs__contagem{font-size:12px;font-weight:500;color:var(--n-500)}
-.hs__rolagem{max-height:420px;overflow:auto}
-.hs__tabela{width:100%;border:0;border-radius:0;table-layout:fixed}
-.hs__tabela thead th{position:sticky;top:0;z-index:1;background:var(--branco)}
-.hs__tabela td{vertical-align:top;font-size:13px}
-.hs__tabela td small{display:block;margin-top:2px;font-size:11.5px;color:var(--n-500)}
-.hs__tabela tbody tr:last-child td{border-bottom:0}
-.hs__col-quando{width:110px}
-.hs__col-quem{width:170px}
-.hs__col-sobre{width:230px;overflow-wrap:anywhere}
-.hs__mudancas{margin:0;padding:0;list-style:none;display:grid;gap:4px}
-.hs__mudancas li{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 6px;overflow-wrap:anywhere}
-.hs__mudancas b{font-weight:600;color:var(--n-800)}
-.hs__mudancas b::after{content:":"}
-.hs__antes{color:var(--n-500);text-decoration:line-through}
-.hs__seta{color:var(--n-400)}
-.hs__depois{color:var(--n-900)}
-.hs__nota{color:var(--n-500)}
-.hs__vazio{margin:0;padding:16px 14px;font-size:13px;color:var(--n-500)}
 
 /* Justificativas (pages/viagens_oficios/justificativas.html): a linha da lista
    em duas linhas e o ofício fixo no modal de edição. */
@@ -2408,7 +2385,6 @@ form.btn-flutuante-form{margin:0;display:contents}
 
 /* Acompanhamento e histórico da solicitação respiram como os cartões. */
 .sol-stepper{margin-top:16px}
-.sol-form .hs{margin-top:16px}
 /* Rótulo de um grupo de campos (as quantidades que a DG ajusta). */
 .sol-grupo{margin:0 0 8px}
 
@@ -2450,3 +2426,70 @@ form.btn-flutuante-form{margin:0;display:contents}
 .rel-tabela .dt td:first-child,.rel-tabela .dt th:first-child{white-space:nowrap}
 #rel-geral .rel-tabela .dt td:first-child,#rel-geral .rel-tabela .dt th:first-child{position:sticky;left:0;background:var(--branco);z-index:1}
 #rel-geral .rel-tabela .dt th:first-child{background:var(--n-50);z-index:2}
+
+/* Palestras: um destino só (estado e município), sem alça, "+" e lixeira. */
+.editor-roteiro .ofc-percurso .destino-row--unico{grid-template-columns:minmax(0,34fr) minmax(0,66fr)}
+.ofc-percurso .destino-row--unico .destino-row__estado{grid-column:1;grid-row:1;margin-left:0}
+.ofc-percurso .destino-row--unico .destino-row__campo{grid-column:2;grid-row:1}
+@container (max-width:680px){.editor-roteiro .ofc-percurso .destino-row--unico{grid-template-columns:minmax(0,1fr)}.ofc-percurso .destino-row--unico .destino-row__estado{grid-column:1;grid-row:1}.ofc-percurso .destino-row--unico .destino-row__campo{grid-column:1;grid-row:2}}
+.ofc-percurso__par{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ofc-percurso__par>.form-campo{margin:0}
+
+/* Palestras: blocos de Tema e Servidor, e a primeira linha da Solicitação. */
+.pal-bloco{margin:18px 0 0}
+.pal-bloco__cabeca{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.pal-bloco__cabeca .form-label{margin:0}
+.pal-bloco__total{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--n-150);font-size:11px;font-weight:600;color:var(--n-700);font-variant-numeric:tabular-nums}
+.pal-bloco__dica{font-size:12px;color:var(--n-500)}
+.pal-bloco__dica[hidden]{display:none}
+.pal-temas__barra{grid-template-columns:minmax(0,1fr) auto}
+.pal-temas .pt-atividade[hidden]{display:none}
+.pal-servidores .of-membros{max-height:340px;overflow:auto}
+.pal-bloco+.g-form{margin-top:18px}
+.pal-linha1{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(150px,.75fr) minmax(0,1fr) minmax(140px,.6fr) minmax(0,1.1fr);gap:12px;align-items:start;margin-bottom:12px}
+.pal-linha1>.form-campo,.pal-canal .form-campo{margin:0}
+.pal-canal{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0}
+.pal-canal--protocolo{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.pal-canal__protocolo[hidden]{display:none}
+@container (max-width:900px){.pal-linha1{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container (max-width:680px){.pal-linha1{grid-template-columns:minmax(0,1fr)}}
+
+/* Linha do tempo (histórico): um fio vertical, uma marca por acontecimento,
+   do mais recente ao mais antigo. Substituiu a tabela `hs` em 21/09/2026. */
+.lt{margin-top:16px;border:1px solid var(--n-200);border-radius:10px;background:var(--branco)}
+.lt__cabeca{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--n-150)}
+.lt__titulo{display:inline-flex;align-items:center;gap:8px;margin:0;font-size:13px;font-weight:600;color:var(--n-900)}
+.lt__titulo .ui-icon{width:15px;height:15px;color:var(--n-450)}
+.lt__contagem{font-size:12px;color:var(--n-500)}
+.lt__lista{list-style:none;margin:0;padding:14px 16px 6px;max-height:460px;overflow:auto}
+.lt__item{position:relative;display:grid;grid-template-columns:18px minmax(0,1fr);gap:12px;padding-bottom:16px}
+.lt__item::before{content:"";position:absolute;left:8px;top:18px;bottom:0;width:1px;background:var(--n-200)}
+.lt__item:last-child::before{display:none}
+.lt__marca{width:17px;height:17px;margin-top:1px;border-radius:99px;background:var(--branco);box-shadow:inset 0 0 0 2px var(--n-300)}
+.lt__item--status .lt__marca{background:var(--grafite);box-shadow:inset 0 0 0 4px var(--n-150)}
+.lt__item:first-child .lt__marca{box-shadow:inset 0 0 0 2px var(--d-400,#bea45a)}
+.lt__item--status:first-child .lt__marca{background:var(--d-400,#bea45a);box-shadow:inset 0 0 0 4px var(--branco),0 0 0 1px var(--d-400,#bea45a)}
+.lt__corpo{min-width:0}
+.lt__linha{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font-size:13px;line-height:1.4}
+.lt__acao{font-weight:600;color:var(--n-900)}
+.lt__meta{font-size:12px;color:var(--n-500)}
+.lt__texto{margin:4px 0 0;font-size:13px;color:var(--n-700);white-space:pre-line;overflow-wrap:anywhere}
+.lt__mudancas{margin:6px 0 0;padding:0;list-style:none;display:grid;gap:3px;font-size:12.5px}
+.lt__mudancas li{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:baseline}
+.lt__mudancas b{font-weight:600;color:var(--n-800)}
+.lt__mudancas b::after{content:":"}
+.lt__antes{color:var(--n-500);text-decoration:line-through}
+.lt__seta{color:var(--n-400)}
+.lt__depois{color:var(--n-900)}
+.lt__vazio{margin:0;padding:16px;font-size:13px;color:var(--n-500)}
+/* Palestras: período (início e fim) e horário numa linha; data da solicitação no cabeçalho. */
+.pal-periodo{display:grid;grid-template-columns:minmax(0,2fr) minmax(130px,1fr);gap:8px;align-items:start}
+.pal-periodo>.form-campo{margin:0}
+.pal-topo-data{width:180px}
+.pal-topo-data .form-campo{margin:0}
+.frm-topo__acoes:has(.pal-topo-data){display:flex;align-items:flex-end;gap:10px}
+.pal-linha1{grid-template-columns:minmax(0,1.3fr) minmax(150px,.8fr) minmax(0,1.1fr) minmax(0,1.1fr)}
+.pal-andamento__atual{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0 0 14px;font-size:13px;color:var(--n-600)}
+.pal-andamento__ultimo{flex-basis:100%;color:var(--n-700);white-space:pre-line}
+#sec-andamento{margin-top:14px}
+@container (max-width:680px){.pal-periodo{grid-template-columns:minmax(0,1fr)}.pal-topo-data{width:100%}.frm-topo__acoes:has(.pal-topo-data){flex-wrap:wrap}}

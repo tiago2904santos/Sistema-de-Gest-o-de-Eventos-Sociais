@@ -44,7 +44,6 @@ class BaseDemandasTestCase(TestCase):
         dados = {
             "data_solicitacao": date(2026, 8, 1),
             "evento": TipoEventoPalestra.PALESTRA,
-            "tema": self.tema,
             "solicitante": "Escola Municipal",
             "status": StatusDemanda.PENDENTE,
             "criado_por": self.usuario,
@@ -52,6 +51,7 @@ class BaseDemandasTestCase(TestCase):
         dados.update(kwargs)
         demanda = DemandaEvento.objects.create(**dados)
         demanda.setores.add(setor or self.ascom)
+        demanda.temas.add(self.tema)
         return demanda
 
 
@@ -90,15 +90,14 @@ class FormulariosViewsTests(BaseDemandasTestCase):
             "evento": TipoEventoPalestra.PALESTRA,
             "data_inicio_evento": "2026-09-10",
             "data_fim_evento": "2026-09-11",
-            "periodo_evento_texto": "14h às 16h",
-            "status": StatusDemanda.PENDENTE,
+            "hora_inicio": "14:00",
             "solicitante": "Colégio Estadual",
-            "contato": "colegio@example.org",
+            "telefone": "41999990000",
+            "email": "Colegio@Example.org",
             "data_solicitacao": "2026-08-20",
-            "canal_solicitacao": "E-MAIL",
+            "canal_solicitacao": "EMAIL",
             "quantidade_publico": "120",
-            "tema": self.tema.pk,
-            "servidor": "Dra. Teste",
+            "temas": [self.tema.pk],
         }
         dados.update(extra)
         return dados
@@ -106,13 +105,49 @@ class FormulariosViewsTests(BaseDemandasTestCase):
     def test_formulario_tem_um_campo_por_coluna_da_planilha(self):
         rotulos = {campo.label.lower() for campo in DemandaEventoForm(usuario=self.usuario).fields.values() if campo.label}
         for coluna in (
-            "município", "data do evento", "hora (período)", "evento", "status da demanda",
-            "andamento", "informações prévias", "solicitante", "contato", "data da solicitação",
+            "município", "data do evento", "horário", "evento",
+            "informações prévias", "solicitante", "telefone", "e-mail", "data da solicitação",
             "foi solicitado via", "descrição", "quantidade de público", "assunto e-mail",
-            "pedido/contato", "tema", "servidor",
+            "pedido/contato", "tema", "servidor", "nº do protocolo",
         ):
             self.assertIn(coluna, rotulos)
-        self.assertNotIn("setores", DemandaEventoForm(usuario=self.usuario).fields)
+        campos = DemandaEventoForm(usuario=self.usuario).fields
+        for fora in ("setores", "status", "andamento", "contato"):
+            self.assertNotIn(fora, campos)
+
+    def test_protocolo_so_quando_o_canal_e_protocolo_e_sai_com_mascara(self):
+        form = DemandaEventoForm(self.dados_post(canal_solicitacao="PROTOCOLO", protocolo=""), usuario=self.usuario)
+        self.assertFalse(form.is_valid())
+        self.assertIn("protocolo", form.errors)
+        form = DemandaEventoForm(self.dados_post(canal_solicitacao="PROTOCOLO", protocolo="251669899"), usuario=self.usuario)
+        self.assertTrue(form.is_valid(), form.errors)
+        demanda = form.save(criado_por=self.usuario)
+        self.assertEqual(demanda.protocolo, "25.166.989-9")
+        self.assertEqual(demanda.canal_display, "Protocolo Nº 25.166.989-9")
+        form = DemandaEventoForm(self.dados_post(canal_solicitacao="EMAIL", protocolo="251669899"), usuario=self.usuario)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["protocolo"], "")
+
+    def test_varios_temas_e_palestrantes(self):
+        outro = Tema.objects.create(nome="Bullying e cyberbulling")
+        palestrante = Palestrante.objects.create(nome="Dr. Thiago", tema_abordagem="Cyberbullying")
+        form = DemandaEventoForm(
+            self.dados_post(temas=[self.tema.pk, outro.pk], palestrantes=[palestrante.pk]), usuario=self.usuario
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        demanda = form.save(criado_por=self.usuario)
+        self.assertEqual(demanda.temas.count(), 2)
+        self.assertEqual(demanda.servidores_display, "Dr. Thiago")
+        self.client.force_login(self.usuario)
+        resposta = self.client.get(reverse("demandas_eventos:editar", args=[demanda.pk]))
+        self.assertContains(resposta, 'data-tema="cyberbullying"')
+        self.assertContains(resposta, 'name="temas" value="%s" checked' % outro.pk)
+
+    def test_formulario_usa_campos_de_horario(self):
+        self.client.force_login(self.usuario)
+        resposta = self.client.get(reverse("demandas_eventos:nova"))
+        self.assertContains(resposta, 'type="time"', count=1)
+        self.assertNotContains(resposta, 'name="periodo_evento_texto"')
 
     def test_form_rejeita_periodo_invertido(self):
         form = DemandaEventoForm(self.dados_post(data_fim_evento="2026-09-01"), usuario=self.usuario)
@@ -124,33 +159,61 @@ class FormulariosViewsTests(BaseDemandasTestCase):
         demanda = self.criar_demanda(solicitante="A" * 500)
         self.assertEqual(len(demanda.solicitante), 500)
 
-    def test_cria_edita_e_registra_status_no_historico(self):
+    def test_cria_edita_e_registra_andamento_no_historico(self):
         self.client.force_login(self.usuario)
         resposta = self.client.post(reverse("demandas_eventos:nova"), self.dados_post())
         demanda = DemandaEvento.objects.get(solicitante="Colégio Estadual")
         self.assertRedirects(resposta, reverse("demandas_eventos:editar", args=[demanda.pk]))
         # A linha fica com o setor de quem registrou, sem campo na tela.
         self.assertEqual(list(demanda.setores.all()), [self.ascom])
-        self.assertEqual(demanda.quantidade_publico, 120)
+        self.assertEqual(demanda.status, StatusDemanda.PENDENTE)
+        self.assertEqual(demanda.telefone, "(41) 99999-0000")
+        self.assertEqual(demanda.email, "colegio@example.org")
         resposta = self.client.get(reverse("demandas_eventos:editar", args=[demanda.pk]))
-        self.assertContains(resposta, "Colégio Estadual")
         self.assertContains(resposta, "Editar palestra")
-        self.assertContains(resposta, "Status da demanda")
-        self.assertContains(resposta, "Histórico")
-        self.assertNotContains(resposta, "<aside")
-        self.assertEqual(demanda.historico.count(), 1)
+        self.assertContains(resposta, 'name="novo_status"')
+        self.assertContains(resposta, "vg-stepper")
+        self.assertNotContains(resposta, 'name="status"')
 
-        dados = self.dados_post(status=StatusDemanda.ATENDIDA, andamento="Palestra realizada")
-        dados["versao"] = resposta.context["valores"]["versao"]
-        self.client.post(reverse("demandas_eventos:editar", args=[demanda.pk]), dados)
+        url = reverse("demandas_eventos:andamento", args=[demanda.pk])
+        resposta = self.client.post(url, {"novo_status": StatusDemanda.EVENTO_AGENDADO, "andamento": "Palestrante confirmado"})
+        self.assertRedirects(resposta, reverse("demandas_eventos:editar", args=[demanda.pk]) + "#sec-andamento", fetch_redirect_response=False)
         demanda.refresh_from_db()
-        self.assertEqual(demanda.status, StatusDemanda.ATENDIDA)
-        acoes = list(demanda.historico.values_list("acao", flat=True))
-        self.assertEqual(acoes, ["CRIACAO", "TRANSICAO", "ATUALIZACAO"])
+        self.assertEqual(demanda.status, StatusDemanda.EVENTO_AGENDADO)
+        self.assertEqual(demanda.andamento, "Palestrante confirmado")
+        ultimo = demanda.historico.last()
+        self.assertEqual((ultimo.acao, ultimo.status_anterior, ultimo.descricao), ("TRANSICAO", "PENDENTE", "Palestrante confirmado"))
         # Como na planilha, a linha atendida continua editável.
+        self.client.post(url, {"novo_status": StatusDemanda.ATENDIDA})
         self.assertEqual(
             self.client.get(reverse("demandas_eventos:editar", args=[demanda.pk])).status_code, 200
         )
+
+    def test_andamento_em_modal_a_partir_da_lista(self):
+        demanda = self.criar_demanda()
+        self.client.force_login(self.usuario)
+        resposta = self.client.get(reverse("demandas_eventos:lista"))
+        url = reverse("demandas_eventos:andamento", args=[demanda.pk])
+        self.assertContains(resposta, f'href="{url}" data-cadastro-modal')
+        self.assertContains(resposta, "data-cadastro-dialog")
+        modal = {"HTTP_X_CADASTRO_MODAL": "1"}
+        resposta = self.client.get(url, **modal)
+        self.assertTemplateUsed(resposta, "pages/demandas_eventos/_modal_andamento.html")
+        self.assertContains(resposta, 'name="novo_status"')
+        resposta = self.client.post(url, {"novo_status": "", "andamento": ""}, **modal)
+        self.assertContains(resposta, "Escolha o novo status.")
+        resposta = self.client.post(url, {"novo_status": "EM_ANDAMENTO", "andamento": "Contato feito"}, **modal)
+        self.assertEqual(resposta.json(), {"ok": True})
+        demanda.refresh_from_db()
+        self.assertEqual(demanda.status, "EM_ANDAMENTO")
+
+    def test_telefone_precisa_de_ddd(self):
+        form = DemandaEventoForm(self.dados_post(telefone="9999-0000"), usuario=self.usuario)
+        self.assertFalse(form.is_valid())
+        self.assertIn("telefone", form.errors)
+        form = DemandaEventoForm(self.dados_post(email="nao-e-email"), usuario=self.usuario)
+        self.assertFalse(form.is_valid())
+        self.assertIn("email", form.errors)
 
     def test_edicao_concorrente_e_rejeitada(self):
         demanda = self.criar_demanda()
@@ -311,7 +374,8 @@ class ImportacaoPlanilhaTests(BaseDemandasTestCase):
         self.assertEqual(demanda.evento, TipoEventoPalestra.PALESTRA)
         self.assertEqual(demanda.data_inicio_evento, date(2026, 9, 10))
         self.assertEqual(demanda.data_fim_evento, date(2026, 9, 11))
-        self.assertEqual(demanda.periodo_evento_texto, "14h")
+        self.assertEqual(str(demanda.hora_inicio), "14:00:00")
+        self.assertEqual(demanda.periodo_evento_texto, "")
         self.assertEqual(demanda.status, StatusDemanda.EVENTO_AGENDADO)
         self.assertEqual(demanda.quantidade_publico, 120)
         self.assertEqual(demanda.informacoes_previas, "Levar projetor")
@@ -332,18 +396,20 @@ class ImportacaoPlanilhaTests(BaseDemandasTestCase):
         call_command("importar_planilha_ascom", str(self.arquivo))
         self.assertEqual(list(Tema.objects.values_list("nome", flat=True)), ["Prevenção"])
         usado.refresh_from_db()
-        self.assertIsNone(usado.tema)
+        self.assertFalse(usado.temas.exists())
         self.assertIn("Tema: Crimes virtuais", usado.informacoes_previas)
         # O texto livre da coluna Tema não vira tema novo.
         antiga = DemandaEvento.objects.get(solicitante="Delegacia Teste")
-        self.assertIsNone(antiga.tema)
+        self.assertFalse(antiga.temas.exists())
         self.assertIn("Tema: Segurança", antiga.informacoes_previas)
 
     def test_colunas_dos_anos_anteriores_vao_para_informacoes_previas(self):
         call_command("importar_planilha_ascom", str(self.arquivo))
         antiga = DemandaEvento.objects.get(solicitante="Delegacia Teste")
         self.assertEqual(antiga.evento, TipoEventoPalestra.EVENTO)
+        # "Dr. Fulano" não está na aba PALESTRANTES: o nome fica como texto.
         self.assertEqual(antiga.servidor, "Dr. Fulano")
+        self.assertEqual(antiga.canal_solicitacao, "EMAIL")
         self.assertEqual(antiga.quantidade_publico, 80)
         for trecho in ("Tipo de evento: Inauguração", "Unidade: NUCIBER", "Briefing: Briefing antigo",
                        "Matéria no site: https://site", "Responsável pelo atendimento: Maria"):

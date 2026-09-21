@@ -1139,7 +1139,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.assertContains(resposta, solicitacao.solicitante_nome)
         # Seções migradas do antigo detalhe continuam na mesma tela.
         self.assertContains(resposta, 'aria-label="Acompanhamento da solicitação"', html=False)
-        self.assertContains(resposta, "Histórico</span>", html=False)
+        self.assertContains(resposta, "Histórico</h2>", html=False)
         self.assertContains(resposta, "Salvar rascunho")
         self.assertContains(resposta, "Enviar para a DG")
 

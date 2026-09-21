@@ -10,6 +10,7 @@ urlpatterns = [
     path("exportar/", views.exportar_demandas, name="exportar"),
     path("nova/", views.editar_demanda, name="nova"),
     path("<int:pk>/editar/", views.editar_demanda, name="editar"),
+    path("<int:pk>/andamento/", views.registrar_andamento, name="andamento"),
     path("cadastros/<slug:tipo>/", views.lista_cadastro, name="cadastro_lista"),
     path("cadastros/<slug:tipo>/novo/", views.editar_cadastro, name="cadastro_novo"),
     path("cadastros/<slug:tipo>/<int:pk>/editar/", views.editar_cadastro, name="cadastro_editar"),

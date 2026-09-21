@@ -21,6 +21,8 @@ from demandas_eventos.models import (
     Tema,
     TipoEventoPalestra,
 )
+from demandas_eventos.horarios import extrair_horarios
+from demandas_eventos.planilha import canal_e_protocolo, chave as chave_nome, palestrantes_do_texto, telefone_e_email
 from demandas_eventos.services import registrar_historico
 
 
@@ -236,14 +238,20 @@ class Command(BaseCommand):
             return
         manter = [t.pk for t in self.temas.values()]
         for tema in Tema.objects.exclude(pk__in=manter):
-            for demanda in DemandaEvento.objects.filter(tema=tema):
+            for demanda in DemandaEvento.objects.filter(temas=tema):
                 demanda.informacoes_previas = "\n".join(
                     parte for parte in [demanda.informacoes_previas.strip(), f"Tema: {tema.nome}"] if parte
                 )
-                demanda.tema = None
-                demanda.save(update_fields=["informacoes_previas", "tema", "atualizado_em"])
+                demanda.save(update_fields=["informacoes_previas", "atualizado_em"])
             tema.delete()
             resumo["temas_removidos"] = resumo.get("temas_removidos", 0) + 1
+
+    def palestrantes_por_nome(self):
+        if not hasattr(self, "_palestrantes_por_nome"):
+            self._palestrantes_por_nome = {}
+            for p in Palestrante.objects.all():
+                self._palestrantes_por_nome.setdefault(chave_nome(p.nome), p)
+        return self._palestrantes_por_nome
 
     def _importar_palestrantes(self, workbook, resumo):
         if "PALESTRANTES" not in workbook.sheetnames:
@@ -306,6 +314,10 @@ class Command(BaseCommand):
             municipio_nome = _texto(obter(valores, "municipio"))
             municipio = Municipio.objects.filter(nome__iexact=municipio_nome).first() if municipio_nome else None
             inicio, fim, periodo_texto = _periodo(obter(valores, "periodo"), data_solicitacao)
+            hora_inicio, hora_fim, periodo_texto = extrair_horarios(periodo_texto)
+            if hora_fim:
+                # Um horário só na tela: o término fica escrito na observação.
+                periodo_texto = " ".join(x for x in (f"até {hora_fim:%H:%M}", periodo_texto) if x)
             publico, publico_texto = _publico(obter(valores, "publico"))
             status_original = _chave(obter(valores, "status"))
             status = STATUS.get(status_original, StatusDemanda.PENDENTE)
@@ -329,6 +341,12 @@ class Command(BaseCommand):
                 ("Briefing", _texto(obter(valores, "briefing"))),
                 ("Matéria no site", _texto(obter(valores, "materia"))),
             ]
+            canal, protocolo, canal_sobra = canal_e_protocolo(_texto(obter(valores, "canal")))
+            if canal_sobra:
+                sobras.append(("Foi solicitado via", canal_sobra))
+            telefone, email, contato_sobra = telefone_e_email(_texto(obter(valores, "contato")))
+            servidor_texto = _texto(obter(valores, "servidor"))
+            palestrantes = palestrantes_do_texto(servidor_texto, self.palestrantes_por_nome())
             informacoes = "\n".join(
                 parte
                 for parte in [_texto(obter(valores, "informacoes"))]
@@ -342,25 +360,30 @@ class Command(BaseCommand):
                 "municipio_texto": "" if municipio else municipio_nome,
                 "data_inicio_evento": inicio,
                 "data_fim_evento": fim,
+                "hora_inicio": hora_inicio,
                 "periodo_evento_texto": periodo_texto[:200],
                 "evento": _evento(tipo_nome),
                 "status": status,
                 "andamento": _texto(obter(valores, "andamento")),
                 "informacoes_previas": informacoes,
                 "solicitante": solicitante or "Não informado",
-                "contato": _texto(obter(valores, "contato"))[:300],
+                "telefone": telefone,
+                "email": email,
+                "contato": contato_sobra[:300],
                 "data_solicitacao": data_solicitacao,
-                "canal_solicitacao": _texto(obter(valores, "canal"))[:150],
+                "canal_solicitacao": canal,
+                "protocolo": protocolo,
                 "descricao": _texto(obter(valores, "descricao")),
                 "quantidade_publico": publico,
                 "assunto_email": _texto(obter(valores, "assunto"))[:300],
                 "pedido_contato": pedido,
-                "tema": tema,
-                "servidor": _texto(obter(valores, "servidor"))[:300],
+                "servidor": "" if palestrantes else servidor_texto[:300],
                 "origem_importacao": f"{aba}:linha {numero}",
             }
             demanda, criada = DemandaEvento.objects.update_or_create(chave_importacao=chave, defaults=defaults)
             demanda.setores.set([ascom])
+            demanda.temas.set([tema] if tema else [])
+            demanda.palestrantes.set(palestrantes)
             if criada:
                 registrar_historico(
                     demanda,

@@ -272,14 +272,14 @@ def _demandas(usuario, inicio, fim) -> list[dict]:
         permissions.queryset_visivel(usuario, DemandaEvento.objects.all())
         .filter(data_inicio_evento__isnull=False)
         .filter(_sobrepoe("data_inicio_evento", "data_fim_evento", inicio, fim))
-        .select_related("municipio", "tema")
+        .select_related("municipio").prefetch_related("temas", "palestrantes")
         .order_by("data_inicio_evento", "id")
     )
     encerrados = {StatusDemanda.CANCELADA}
     saida = []
     for d in consulta:
         lugar = str(d.municipio) if d.municipio_id else (d.municipio_texto or "Sem município")
-        tema = str(d.tema) if d.tema_id else ""
+        tema = d.temas_display
         saida.append(
             _evento(
                 fonte="demanda",
@@ -298,8 +298,8 @@ def _demandas(usuario, inicio, fim) -> list[dict]:
                     ("Município", lugar),
                     ("Evento", d.get_evento_display()),
                     ("Tema", tema),
-                    ("Hora (período)", d.periodo_evento_texto),
-                    ("Servidor", d.servidor),
+                    ("Horário", d.horario_display),
+                    ("Servidor", d.servidores_display),
                     ("Solicitante", d.solicitante),
                     ("Quantidade de público", str(d.quantidade_publico or "")),
                 ],

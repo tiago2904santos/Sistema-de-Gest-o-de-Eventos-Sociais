@@ -3,6 +3,7 @@ import csv
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db.models import ProtectedError, Q
 from django.http import Http404, HttpResponse, JsonResponse
@@ -18,6 +19,7 @@ from . import services
 from .forms import DemandaEventoForm, PalestranteForm, RespostaPadraoForm, TemaForm
 from .models import (
     AcaoHistoricoDemanda,
+    CanalSolicitacao,
     DemandaEvento,
     Palestrante,
     RespostaPadrao,
@@ -26,6 +28,7 @@ from .models import (
     TipoEventoPalestra,
 )
 from .permissions import pode_editar, queryset_visivel
+from .planilha import chave
 from .presenters import ICONES_EVENTO, ICONES_STATUS, linha_da_lista, linha_do_cadastro
 
 ITENS_POR_PAGINA = 20
@@ -48,7 +51,7 @@ def _demanda_visivel(request, pk):
     return get_object_or_404(
         queryset_visivel(
             request.user,
-            DemandaEvento.objects.select_related("tema", "municipio__estado", "criado_por"),
+            DemandaEvento.objects.select_related("municipio__estado", "criado_por").prefetch_related("temas", "palestrantes"),
         ),
         pk=pk,
     )
@@ -67,7 +70,7 @@ def dashboard(request):
     ]
     proximas = visiveis.filter(data_inicio_evento__gte=hoje).exclude(
         status=StatusDemanda.CANCELADA
-    ).select_related("tema", "municipio").order_by("data_inicio_evento")[:8]
+    ).select_related("municipio").prefetch_related("temas", "palestrantes").order_by("data_inicio_evento")[:8]
     return render(
         request,
         "pages/demandas_eventos/dashboard.html",
@@ -89,9 +92,13 @@ def _filtrar(request, queryset):
             | Q(pedido_contato__icontains=q)
             | Q(assunto_email__icontains=q)
             | Q(servidor__icontains=q)
+            | Q(palestrantes__nome__icontains=q)
+            | Q(protocolo__icontains=q)
+            | Q(telefone__icontains=q)
+            | Q(email__icontains=q)
             | Q(municipio__nome__icontains=q)
             | Q(municipio_texto__icontains=q)
-            | Q(tema__nome__icontains=q)
+            | Q(temas__nome__icontains=q)
         )
     status = request.GET.get("status", "").strip()
     if status in StatusDemanda.values:
@@ -99,7 +106,7 @@ def _filtrar(request, queryset):
     evento = request.GET.get("evento", "").strip()
     if evento in TipoEventoPalestra.values:
         queryset = queryset.filter(evento=evento)
-    for parametro, campo in (("municipio", "municipio_id"), ("tema", "tema_id")):
+    for parametro, campo in (("municipio", "municipio_id"), ("tema", "temas__id")):
         valor = request.GET.get(parametro, "").strip()
         if valor.isdigit():
             queryset = queryset.filter(**{campo: valor})
@@ -115,7 +122,7 @@ def _filtrar(request, queryset):
 @login_required
 def lista_demandas(request):
     visiveis = queryset_visivel(
-        request.user, DemandaEvento.objects.select_related("tema", "municipio")
+        request.user, DemandaEvento.objects.select_related("municipio").prefetch_related("temas", "palestrantes")
     )
     queryset = _filtrar(request, visiveis).order_by("-data_solicitacao", "-pk")
     status = request.GET.get("status", "").strip()
@@ -176,13 +183,20 @@ def lista_demandas(request):
 def _contexto_form(form, instancia):
     def valor(nome):
         value = form[nome].value()
+        if hasattr(value, "strftime") and nome.startswith("hora_"):
+            return value.strftime("%H:%M")
         return "" if value is None else str(value)
 
+    def marcados(nome):
+        return {str(getattr(item, "pk", item)) for item in (form[nome].value() or [])}
+
     evento_atual = valor("evento")
+    temas_marcados = marcados("temas")
+    palestrantes_marcados = marcados("palestrantes")
     return {
         "form": form,
         "instancia": instancia,
-        "valores": {nome: valor(nome) for nome in form.fields},
+        "valores": {nome: valor(nome) for nome in form.fields if nome not in {"temas", "palestrantes"}},
         "erros": form.errors,
         "opcoes_eventos": [
             {
@@ -194,10 +208,34 @@ def _contexto_form(form, instancia):
             for chave, rotulo in TipoEventoPalestra.choices
         ],
         "opcoes_status": _opcoes_choices(StatusDemanda.choices),
-        "opcoes_temas": _opcoes(form.fields["tema"].queryset),
-        "opcoes_municipios": _opcoes(form.fields["municipio"].queryset),
-        # A aba PALESTRANTES da planilha sugere o "Servidor" sem obrigar.
-        "palestrantes": Palestrante.objects.only("nome", "lotacao"),
+        # Os temas como as atividades do plano de trabalho: cartões marcáveis.
+        "opcoes_temas": [
+            {"valor": str(t.pk), "rotulo": t.nome, "marcado": str(t.pk) in temas_marcados, "chave": chave(t.nome).lower()}
+            for t in form.fields["temas"].queryset
+        ],
+        "temas_marcados_total": len(temas_marcados),
+        # Os palestrantes como os ofícios vinculados da OS: busca e linhas.
+        # `tema` alimenta a recomendação pelo tema escolhido (palestras-form.js).
+        "opcoes_palestrantes": [
+            {
+                "valor": str(p.pk),
+                "rotulo": p.nome,
+                "detalhes": " · ".join(
+                    x for x in (p.tema_abordagem, p.lotacao, str(p.municipio) if p.municipio_id else p.municipio_texto) if x
+                ),
+                "busca": f"{p.divisao} {p.contato} {p.email}",
+                "dados": {"tema": chave(p.tema_abordagem).lower()},
+                "selecionado": str(p.pk) in palestrantes_marcados,
+            }
+            for p in form.fields["palestrantes"].queryset
+        ],
+        "opcoes_canais": _opcoes_choices(CanalSolicitacao.choices),
+        # O componente de destinos da OS: estado e, dependente dele, município.
+        "estados": [{"valor": str(e.pk), "rotulo": f"{e.sigla} — {e.nome}"} for e in form.fields["estado"].queryset],
+        "municipios": [
+            {"valor": str(m.pk), "rotulo": m.nome, "estado": str(m.estado_id)}
+            for m in form.fields["municipio"].queryset.order_by("nome")
+        ],
     }
 
 
@@ -206,7 +244,6 @@ def editar_demanda(request, pk=None):
     instancia = _demanda_visivel(request, pk) if pk else None
     if instancia and not pode_editar(request.user, instancia):
         raise Http404
-    status_anterior = instancia.status if instancia else ""
     if request.method == "POST":
         form = DemandaEventoForm(request.POST, instance=instancia, usuario=request.user)
         if form.is_valid():
@@ -222,11 +259,7 @@ def editar_demanda(request, pk=None):
                     for nome in form.changed_data
                     if nome in form.fields and nome not in {"versao", "status"}
                 ]
-                if demanda.status != status_anterior:
-                    services.registrar_historico(
-                        demanda, request.user, AcaoHistoricoDemanda.TRANSICAO,
-                        "", status_anterior=status_anterior, status_novo=demanda.status,
-                    )
+                alterados = [rotulo for rotulo in alterados if rotulo != "Estado"]
                 if alterados:
                     services.registrar_historico(
                         demanda, request.user, AcaoHistoricoDemanda.ATUALIZACAO,
@@ -244,8 +277,64 @@ def editar_demanda(request, pk=None):
         {"label": f"{instancia.get_evento_display()} #{instancia.pk}" if instancia else "Nova palestra"},
     ]
     if instancia:
-        contexto["historico"] = instancia.historico.select_related("usuario")
+        contexto.update({
+            "historico": instancia.historico.select_related("usuario"),
+            # O andamento como nas Solicitações: etapas no stepper e os
+            # cartões do próximo status, com a anotação que vai ao histórico.
+            **_contexto_andamento(instancia),
+        })
     return render(request, "pages/demandas_eventos/form.html", contexto)
+
+
+def _contexto_andamento(demanda, erro="", escolhido="", texto=""):
+    return {
+        "demanda": demanda,
+        "opcoes_andamento": [
+            {**opcao, "marcado": opcao["valor"] == escolhido}
+            for opcao in services.opcoes_de_status(demanda, ICONES_STATUS)
+        ],
+        "etapas": services.etapas(demanda),
+        # A anotação da última mudança de status (pode não ter): é ela que a
+        # faixa do topo mostra, para não apresentar um recado antigo como motivo.
+        "ultima_anotacao": services.ultima_anotacao(demanda),
+        "erro_andamento": erro,
+        "texto_andamento": texto,
+    }
+
+
+@login_required
+def registrar_andamento(request, pk):
+    """Registra o próximo status — na tela da palestra ou num modal da lista.
+
+    No modal vale o protocolo dos cadastros (`X-Cadastro-Modal`): o GET devolve
+    o trecho do formulário, o POST devolve `{"ok": true}` ou o trecho de novo,
+    com o erro. Sem o cabeçalho, volta para a palestra.
+    """
+    demanda = _demanda_visivel(request, pk)
+    via_modal = request.headers.get("X-Cadastro-Modal") == "1"
+    destino = reverse("demandas_eventos:editar", args=[demanda.pk]) + "#sec-andamento"
+    if request.method != "POST":
+        if not via_modal:
+            return redirect(destino)
+        return render(request, "pages/demandas_eventos/_modal_andamento.html", _contexto_andamento(demanda))
+    novo_status = request.POST.get("novo_status", "")
+    texto = request.POST.get("andamento", "")
+    try:
+        services.registrar_andamento(demanda, request.user, novo_status, texto)
+    except ValidationError as erro:
+        if via_modal:
+            return render(
+                request,
+                "pages/demandas_eventos/_modal_andamento.html",
+                _contexto_andamento(demanda, " ".join(erro.messages), novo_status, texto),
+            )
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+        return redirect(destino)
+    messages.success(request, f"Status atualizado para {demanda.get_status_display()}.")
+    if via_modal:
+        return JsonResponse({"ok": True})
+    return redirect(destino)
 
 
 # As colunas da aba do ano da planilha, na mesma ordem, e como sair de cada
@@ -259,15 +348,15 @@ COLUNAS_EXPORTACAO = [
     ("ANDAMENTO", lambda d: d.andamento),
     ("INFORMAÇÕES PRÉVIAS", lambda d: d.informacoes_previas),
     ("SOLICITANTE", lambda d: d.solicitante),
-    ("CONTATO", lambda d: d.contato),
+    ("CONTATO", lambda d: d.contato_display),
     ("DATA DA SOLICITAÇÃO", lambda d: f"{d.data_solicitacao:%d/%m/%Y}"),
-    ("FOI SOLICITADO VIA:", lambda d: d.canal_solicitacao),
+    ("FOI SOLICITADO VIA:", lambda d: d.canal_display.upper()),
     ("DESCRIÇÃO", lambda d: d.descricao),
     ("QUANTIDADE DE PÚBLICO", lambda d: d.quantidade_publico if d.quantidade_publico is not None else ""),
     ("ASSUNTO E-MAIL", lambda d: d.assunto_email),
     ("PEDIDO/CONTATO", lambda d: d.pedido_contato),
-    ("TEMA", lambda d: str(d.tema) if d.tema_id else ""),
-    ("SERVIDOR", lambda d: d.servidor),
+    ("TEMA", lambda d: d.temas_display),
+    ("SERVIDOR", lambda d: d.servidores_display),
 ]
 
 
@@ -276,7 +365,7 @@ def exportar_demandas(request):
     queryset = _filtrar(
         request,
         queryset_visivel(
-            request.user, DemandaEvento.objects.select_related("tema", "municipio")
+            request.user, DemandaEvento.objects.select_related("municipio").prefetch_related("temas", "palestrantes")
         ),
     ).order_by("data_solicitacao", "pk")
     resposta = HttpResponse(content_type="text/csv; charset=utf-8")
@@ -435,6 +524,10 @@ def excluir_cadastro(request, tipo, pk):
     config = _cadastro(tipo)
     objeto = get_object_or_404(config["model"], pk=pk)
     try:
+        # Tema e palestrante são escolhas múltiplas nas palestras: apagar um em
+        # uso sumiria com ele das linhas sem aviso. Em uso, não sai.
+        if tipo in {"temas", "palestrantes"} and objeto.demandas.exists():
+            raise ProtectedError("em uso", [objeto])
         objeto.delete()
     except ProtectedError:
         messages.error(

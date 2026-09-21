@@ -1,0 +1,22 @@
+{% comment %}
+  Modal do andamento, aberto direto da lista (menu ⋮ → Registrar andamento),
+  no protocolo dos cadastros: o `ds-v32.js` busca este trecho com
+  `X-Cadastro-Modal`, envia pelo mesmo cabeçalho e recarrega a lista quando a
+  resposta é `{"ok": true}`. Contexto: `demanda` e o de `_andamento_campos`.
+{% endcomment %}
+<form method="post" action="{% url 'demandas_eventos:andamento' demanda.pk %}" data-cadastro-form novalidate>
+  {% csrf_token %}
+  <header class="mo__topo">
+    <h2 id="cadastro-modal-titulo">Andamento — {{ demanda.get_evento_display }}{% if demanda.municipio_display %} · {{ demanda.municipio_display }}{% endif %}</h2>
+    <button type="button" class="mo__fechar" data-cadastro-fechar aria-label="Fechar">{% include "components/icon.html" with nome="x" %}</button>
+  </header>
+  <div class="mo__corpo">
+    <p class="pal-andamento__atual">Status atual <span class="st st--{{ demanda.status|lower }}">{{ demanda.get_status_display }}</span>{% if demanda.andamento %}<span class="pal-andamento__ultimo">{{ demanda.andamento }}</span>{% endif %}</p>
+    {% include "pages/demandas_eventos/_andamento_campos.html" with colunas="2" %}
+    <p class="form-erro" data-cadastro-falha role="alert" hidden></p>
+  </div>
+  <footer class="mo__rodape">
+    <button type="button" class="btn--secundaria" data-cadastro-fechar>Cancelar</button>
+    <button type="submit" class="btn-primaria">Registrar andamento</button>
+  </footer>
+</form>

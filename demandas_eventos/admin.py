@@ -42,7 +42,7 @@ class DemandaEventoAdmin(admin.ModelAdmin):
     list_display = (
         "id", "data_solicitacao", "evento", "municipio", "solicitante", "status"
     )
-    list_filter = ("status", "evento", "tema", "setores")
+    list_filter = ("status", "evento", "temas", "setores")
     search_fields = (
         "solicitante", "contato", "descricao", "pedido_contato", "assunto_email"
     )

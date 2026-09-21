@@ -58,9 +58,9 @@ def fatos_da_demanda(demanda):
     publico = demanda.quantidade_publico
     return [
         _fato("calendar", "Data do evento e hora", demanda.periodo_evento_display, "À definir"),
-        _fato("checklist", "Tema", str(demanda.tema) if demanda.tema_id else "", "Sem tema"),
+        _fato("checklist", "Tema", demanda.temas_display, "Sem tema"),
         _fato("user", "Solicitante", demanda.solicitante, "Sem solicitante"),
-        _fato("users", "Servidor", demanda.servidor, "Sem servidor"),
+        _fato("users", "Servidor", demanda.servidores_display, "Sem servidor"),
         _fato("activity", "Quantidade de público", f"{publico} pessoas" if publico else "", "Público não informado"),
         _fato("clock", "Data da solicitação", f"Solicitada em {demanda.data_solicitacao:%d/%m/%Y}", ""),
     ]
@@ -78,6 +78,7 @@ def linha_da_lista(demanda, hoje=None):
         "quando_tom": quando_tom,
         "fatos": fatos_da_demanda(demanda),
         "url_editar": reverse("demandas_eventos:editar", args=[demanda.pk]),
+        "url_andamento": reverse("demandas_eventos:andamento", args=[demanda.pk]),
         "cancelada": demanda.status == StatusDemanda.CANCELADA,
     }
 

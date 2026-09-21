@@ -1,30 +1,29 @@
 {% comment %}
-  Histórico da solicitação na casca do histórico de alterações do módulo de
-  Viagens: quando, quem e o quê, do mais recente ao mais antigo, numa tabela
-  com rolagem própria.
+  Histórico do coffee break na linha do tempo (a mesma de
+  `components/v32/historico_alteracoes.html`): o que aconteceu, quem, quando
+  e a descrição, do mais recente ao mais antigo.
 {% endcomment %}
-<div class="hs" id="sec-historico">
-  <div class="hs__cabeca">
-    <span class="hs__titulo">{% include "components/icon.html" with nome="clock" %}Histórico</span>
-    <span class="hs__contagem">{{ historico|length }} registro{{ historico|length|pluralize }}</span>
-  </div>
+<section class="lt" id="sec-historico" aria-labelledby="historico-titulo">
+  <header class="lt__cabeca">
+    <h2 class="lt__titulo" id="historico-titulo">{% include "components/icon.html" with nome="clock" %}Histórico</h2>
+    <span class="lt__contagem">{{ historico|length }} registro{{ historico|length|pluralize }}</span>
+  </header>
   {% if historico %}
-    <div class="hs__rolagem" tabindex="0" role="region" aria-label="Histórico da solicitação">
-      <table class="dt hs__tabela">
-        <thead><tr><th class="hs__col-quando">Quando</th><th class="hs__col-quem">Quem</th><th class="hs__col-sobre">O quê</th><th>Descrição</th></tr></thead>
-        <tbody>
-          {% for registro in historico %}
-            <tr>
-              <td class="hs__col-quando">{{ registro.criado_em|date:"d/m/Y" }}<small>{{ registro.criado_em|date:"H:i" }}</small></td>
-              <td class="hs__col-quem">{{ registro.usuario|default:"Sistema" }}</td>
-              <td class="hs__col-sobre">{{ registro.get_acao_display }}</td>
-              <td>{% if registro.descricao %}{{ registro.descricao }}{% else %}<span class="hs__nota">—</span>{% endif %}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <ol class="lt__lista" tabindex="0" aria-label="Histórico do coffee break">
+      {% for registro in historico reversed %}
+        <li class="lt__item">
+          <span class="lt__marca" aria-hidden="true"></span>
+          <div class="lt__corpo">
+            <div class="lt__linha">
+              <span class="lt__acao">{{ registro.get_acao_display }}</span>
+              <span class="lt__meta">{{ registro.usuario|default:"Sistema" }} · {{ registro.criado_em|date:"d/m/Y" }} às {{ registro.criado_em|date:"H:i" }}</span>
+            </div>
+            {% if registro.descricao %}<p class="lt__texto">{{ registro.descricao }}</p>{% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ol>
   {% else %}
-    <p class="hs__vazio">Nenhuma alteração registrada.</p>
+    <p class="lt__vazio">Nenhuma alteração registrada.</p>
   {% endif %}
-</div>
+</section>

@@ -22,6 +22,17 @@ class TipoEventoPalestra(models.TextChoices):
     EVENTO = "EVENTO", "Evento"
 
 
+class CanalSolicitacao(models.TextChoices):
+    """A coluna "Foi solicitado via" da planilha."""
+
+    EMAIL = "EMAIL", "E-mail"
+    WHATSAPP = "WHATSAPP", "WhatsApp"
+    PROTOCOLO = "PROTOCOLO", "Protocolo"
+    TELEFONE = "TELEFONE", "Telefone"
+    PRESENCIAL = "PRESENCIAL", "Presencial"
+    OUTRO = "OUTRO", "Outro"
+
+
 class Tema(models.Model):
     """A aba TEMAS da planilha — só os temas dela, nada além."""
 
@@ -112,7 +123,9 @@ class DemandaEvento(models.Model):
     municipio_texto = models.CharField("município (texto original)", max_length=150, blank=True)
     data_inicio_evento = models.DateField("data do evento", blank=True, null=True)
     data_fim_evento = models.DateField("fim do evento", blank=True, null=True)
-    periodo_evento_texto = models.CharField("hora (período)", max_length=200, blank=True)
+    hora_inicio = models.TimeField("horário", blank=True, null=True)
+    # O que a planilha dizia além de data e hora ("à definir", "manhã").
+    periodo_evento_texto = models.CharField("observação do período", max_length=200, blank=True)
     evento = models.CharField(
         "evento",
         max_length=25,
@@ -128,22 +141,25 @@ class DemandaEvento(models.Model):
     andamento = models.TextField("andamento", blank=True)
     informacoes_previas = models.TextField("informações prévias", blank=True)
     solicitante = models.CharField("solicitante", max_length=1000)
-    contato = models.CharField("contato", max_length=300, blank=True)
+    telefone = models.CharField("telefone", max_length=20, blank=True)
+    email = models.EmailField("e-mail", blank=True)
+    # O "Contato" como a planilha escreveu, quando não era telefone nem e-mail.
+    contato = models.CharField("contato (texto da planilha)", max_length=300, blank=True)
     data_solicitacao = models.DateField("data da solicitação")
-    canal_solicitacao = models.CharField("foi solicitado via", max_length=150, blank=True)
+    canal_solicitacao = models.CharField(
+        "foi solicitado via", max_length=20, choices=CanalSolicitacao.choices, blank=True
+    )
+    protocolo = models.CharField("nº do protocolo", max_length=20, blank=True)
     descricao = models.TextField("descrição", blank=True)
     quantidade_publico = models.PositiveIntegerField("quantidade de público", blank=True, null=True)
     assunto_email = models.CharField("assunto e-mail", max_length=300, blank=True)
     pedido_contato = models.TextField("pedido/contato", blank=True)
-    tema = models.ForeignKey(
-        Tema,
-        verbose_name="tema",
-        on_delete=models.PROTECT,
-        related_name="demandas",
-        blank=True,
-        null=True,
+    temas = models.ManyToManyField(Tema, verbose_name="tema", related_name="demandas", blank=True)
+    palestrantes = models.ManyToManyField(
+        Palestrante, verbose_name="servidor", related_name="demandas", blank=True
     )
-    servidor = models.CharField("servidor", max_length=300, blank=True)
+    # O "Servidor" como a planilha escreveu, quando não casou com um palestrante.
+    servidor = models.CharField("servidor (texto da planilha)", max_length=300, blank=True)
     # Daqui para baixo nada é coluna da planilha: dizem quem enxerga a linha
     # (o setor de quem a registrou) e de onde ela veio.
     setores = models.ManyToManyField(
@@ -216,10 +232,37 @@ class DemandaEvento(models.Model):
         return f"{inicio:%d/%m/%Y}" if inicio else ""
 
     @property
+    def temas_display(self):
+        return ", ".join(t.nome for t in self.temas.all())
+
+    @property
+    def servidores_display(self):
+        nomes = [p.nome for p in self.palestrantes.all()]
+        return ", ".join(nomes) or self.servidor
+
+    @property
+    def contato_display(self):
+        partes = [x for x in (self.telefone, self.email) if x]
+        return " / ".join(partes) or self.contato
+
+    @property
+    def canal_display(self):
+        canal = self.get_canal_solicitacao_display() if self.canal_solicitacao else ""
+        if self.canal_solicitacao == CanalSolicitacao.PROTOCOLO and self.protocolo:
+            return f"{canal} Nº {self.protocolo}"
+        return canal
+
+    @property
+    def horario_display(self):
+        return f"{self.hora_inicio:%H:%M}" if self.hora_inicio else ""
+
+    @property
     def periodo_evento_display(self):
         """A coluna "Data do evento e hora (período)" como a planilha a lê."""
         return " · ".join(
-            parte for parte in (self.data_evento_display, self.periodo_evento_texto) if parte
+            parte
+            for parte in (self.data_evento_display, self.horario_display, self.periodo_evento_texto)
+            if parte
         )
 
 
