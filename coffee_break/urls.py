@@ -24,6 +24,11 @@ urlpatterns = [
     path("solicitacoes/exportar/", views.exportar_solicitacoes, name="exportar"),
     path("solicitacoes/nova/", views.nova_solicitacao, name="nova"),
     path("solicitacoes/<int:pk>/editar/", views.editar_solicitacao, name="editar"),
+    path(
+        "solicitacoes/<int:pk>/certificado/",
+        views.certificado_solicitacao,
+        name="certificado",
+    ),
     # Mudanças de estado — somente POST, com CSRF.
     path(
         "solicitacoes/<int:pk>/cancelar/",

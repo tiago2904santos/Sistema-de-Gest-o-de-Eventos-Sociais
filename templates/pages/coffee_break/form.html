@@ -27,9 +27,14 @@
           </div>
         </div>
       </div>
-      {% if not somente_leitura %}
+      {% if solicitacao or not somente_leitura %}
         <div class="frm-topo__acoes">
-          <button type="submit" class="btn-primaria" form="form-coffee-break">Salvar solicitação</button>
+          {% if solicitacao %}
+            <a class="btn--secundaria" href="{% url 'coffee_break:certificado' solicitacao.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="download" %}Certificado em PDF</a>
+          {% endif %}
+          {% if not somente_leitura %}
+            <button type="submit" class="btn-primaria" form="form-coffee-break">Salvar solicitação</button>
+          {% endif %}
         </div>
       {% endif %}
     </div>
