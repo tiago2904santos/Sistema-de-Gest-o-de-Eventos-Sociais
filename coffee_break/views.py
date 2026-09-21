@@ -11,6 +11,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .forms import (
@@ -29,7 +30,10 @@ from .models import (
     SituacaoFinanceira,
     SolicitacaoCoffeeBreak,
 )
+from core.listagens import trilha_de_situacoes
+
 from .permissions import acesso_ao_modulo, gerenciamento_de_cadastros
+from .presenters import filas_de_situacao, linha_da_lista, linha_do_cadastro, linha_do_lote, selo_do_consumo
 from . import services
 
 ITENS_POR_PAGINA = 15
@@ -80,6 +84,7 @@ CADASTROS_COFFEE = {
         "form": FornecedorForm,
         "titulo": "Fornecedores",
         "singular": "fornecedor",
+        "icone": "landmark",
         "busca": ("razao_social", "cnpj", "contato", "email"),
     },
     "contratos": {
@@ -87,6 +92,7 @@ CADASTROS_COFFEE = {
         "form": ContratoCoffeeBreakForm,
         "titulo": "Contratos",
         "singular": "contrato",
+        "icone": "document",
         "busca": ("numero", "numero_gms", "fornecedor__razao_social"),
     },
     "lotes": {
@@ -94,6 +100,7 @@ CADASTROS_COFFEE = {
         "form": LoteCoffeeBreakForm,
         "titulo": "Lotes contratados",
         "singular": "lote",
+        "icone": "coffee",
         "busca": (
             "exercicio",
             "empenho",
@@ -277,9 +284,12 @@ def painel(request):
             "titulo_pagina": "Coffee Break",
             "resumo": resumo,
             "lotes": lotes_ativos,
+            # As duas listas do painel usam a mesma linha das listagens.
+            "linhas_lotes": [linha_do_lote(lote) for lote in lotes_ativos],
             "lotes_em_alerta": em_alerta,
             "limiar_alerta": services.LIMIAR_ALERTA_SALDO,
             "recentes": recentes,
+            "linhas_recentes": [linha_da_lista(s) for s in recentes],
             "url_lotes": url_lotes,
             "url_solicitacoes": url_solicitacoes,
         },
@@ -303,12 +313,13 @@ ORDENACOES_LOTES = {
 @acesso_ao_modulo
 def lista_lotes(request):
     filtros = FiltroLotesForm(request.GET or None)
-    pedido, campos_ordem = _ordenacao(request, ORDENACOES_LOTES, "-exercicio")
-    queryset = (
+    _pedido, campos_ordem = _ordenacao(request, ORDENACOES_LOTES, "-exercicio")
+    base = (
         LoteCoffeeBreak.objects.com_consumo()
         .select_related("contrato__fornecedor")
         .order_by(*campos_ordem, "numero")
     )
+    queryset = base
     if filtros.is_valid():
         dados = filtros.cleaned_data
         if dados.get("q"):
@@ -327,46 +338,39 @@ def lista_lotes(request):
             queryset = queryset.filter(ativo=False)
 
     pagina, paginas_visiveis, querystring = _paginar(request, queryset)
-    exercicios = (
-        LoteCoffeeBreak.objects.order_by("-exercicio")
-        .values_list("exercicio", flat=True)
-        .distinct()
-    )
-    colunas = _colunas_ordenaveis(
-        request,
-        pedido,
-        [
-            ("lote", "Lote"),
-            ("fornecedor", "Fornecedor"),
-            ("contrato", "Contrato"),
-            ("exercicio", "Exercício"),
-            ("capacidade", "Capacidade"),
-            ("restante", "Restante"),
-        ],
-        ORDENACOES_LOTES,
-    )
+    # A trilha lateral recorta por exercício, o agrupador natural dos lotes.
+    contagens = {}
+    for exercicio in LoteCoffeeBreak.objects.values_list("exercicio", flat=True):
+        contagens[exercicio] = contagens.get(exercicio, 0) + 1
+    filas = [
+        {"chave": exercicio, "rotulo": f"Exercício {exercicio}", "total": total}
+        for exercicio, total in sorted(contagens.items(), reverse=True)
+    ]
+    valores = _valores_filtro(filtros)
     return render(
         request,
         "pages/coffee_break/lotes_lista.html",
         {
             "breadcrumb": _breadcrumb({"label": "Lotes"}),
             "pagina": pagina,
+            "linhas": [linha_do_lote(lote) for lote in pagina],
             "paginas_visiveis": paginas_visiveis,
             "elipse": Paginator.ELLIPSIS,
             "querystring": querystring,
-            "colunas": colunas,
-            "valores_filtro": _valores_filtro(filtros),
-            "opcoes_exercicios": [
-                {"valor": e, "rotulo": e} for e in exercicios
-            ],
-            "opcoes_situacao": [
-                {"valor": "ativos", "rotulo": "Ativos"},
-                {"valor": "inativos", "rotulo": "Inativos"},
-            ],
+            "q": valores.get("q", ""),
+            "situacoes": trilha_de_situacoes(
+                request,
+                filas,
+                sum(contagens.values()),
+                {chave: "calendar" for chave in contagens},
+                parametro="exercicio",
+            ),
+            # Chip aceso: sem exercício escolhido, "Todas".
+            "situacao_ativa": valores.get("exercicio") or "todas",
+            "exercicio_escolhido": valores.get("exercicio", ""),
             "tem_filtros": any(
                 request.GET.get(nome) for nome in ("q", "exercicio", "situacao")
             ),
-            "total_resultados": pagina.paginator.count,
         },
     )
 
@@ -396,6 +400,10 @@ def detalhe_lote(request, pk):
             "fornecedor": lote.contrato.fornecedor,
             "municipios": lote.municipios.all(),
             "solicitacoes": solicitacoes,
+            # As solicitações do lote usam a mesma linha da listagem.
+            "linhas": [linha_da_lista(s) for s in solicitacoes],
+            "consumo": selo_do_consumo(lote)[0],
+            "consumo_tom": selo_do_consumo(lote)[1],
             "percentual": (
                 round(lote.consumido * 100 / lote.quantidade_total)
                 if lote.quantidade_total
@@ -470,49 +478,53 @@ def _filtrar_solicitacoes(request):
         ]
     else:
         itens = queryset
-    return itens, filtros, pedido
+    # `base` é o recorte do banco sem o filtro de situação: é dele que sai a
+    # contagem de cada item da trilha lateral.
+    return itens, list(queryset), filtros, pedido
+
+
+# Ícone de cada situação financeira na trilha lateral.
+ICONES_SITUACAO = {
+    SituacaoFinanceira.AGUARDANDO_NOTA_FISCAL: "document",
+    SituacaoFinanceira.AGUARDANDO_PROTOCOLO: "clipboard",
+    SituacaoFinanceira.AGUARDANDO_ATESTO: "check",
+    SituacaoFinanceira.AGUARDANDO_ORDEM_BANCARIA: "hourglass",
+    SituacaoFinanceira.AGUARDANDO_ENVIO_EMPRESA: "send",
+    SituacaoFinanceira.CONCLUIDA: "check-circle",
+    SituacaoFinanceira.CANCELADA: "ban",
+}
 
 
 @acesso_ao_modulo
 def lista_solicitacoes(request):
-    itens, filtros, pedido = _filtrar_solicitacoes(request)
+    itens, base, filtros, _pedido = _filtrar_solicitacoes(request)
     pagina, paginas_visiveis, querystring = _paginar(request, itens)
-    lotes = LoteCoffeeBreak.objects.select_related("contrato__fornecedor").order_by(
-        "-exercicio", "numero"
-    )
-    colunas = _colunas_ordenaveis(
-        request,
-        pedido,
-        [
-            ("numero", "Nº"),
-            ("lote", "Lote"),
-            ("descricao", "Evento"),
-            ("evento", "Data do evento"),
-            ("quantidade", "Qtde"),
-            ("data", "Solicitada em"),
-        ],
-        ORDENACOES_SOLICITACOES,
-    )
+    valores = _valores_filtro(filtros)
+    hoje = timezone.localdate()
     return render(
         request,
         "pages/coffee_break/solicitacoes_lista.html",
         {
             "breadcrumb": _breadcrumb({"label": "Solicitações"}),
             "pagina": pagina,
+            "linhas": [linha_da_lista(s, hoje) for s in pagina],
             "paginas_visiveis": paginas_visiveis,
             "elipse": Paginator.ELLIPSIS,
             "querystring": querystring,
-            "colunas": colunas,
-            "valores_filtro": _valores_filtro(filtros),
-            "opcoes_lotes": _opcoes(lotes),
-            "opcoes_fornecedores": _opcoes(
-                filtros.fields["fornecedor"].queryset
+            "q": valores.get("q", ""),
+            "situacoes": trilha_de_situacoes(
+                request,
+                filas_de_situacao(base),
+                len(base),
+                ICONES_SITUACAO,
+                parametro="situacao",
             ),
-            "opcoes_situacao": _opcoes_choices(SituacaoFinanceira.choices),
+            # Chip aceso: sem situação escolhida, "Todas".
+            "situacao_ativa": valores.get("situacao") or "todas",
+            "situacao_escolhida": valores.get("situacao", ""),
             "tem_filtros": any(
                 request.GET.get(nome) for nome in CAMPOS_FILTRO_SOLICITACOES
             ),
-            "total_resultados": pagina.paginator.count,
         },
     )
 
@@ -525,7 +537,7 @@ def exportar_solicitacoes(request):
     from django.http import HttpResponse
     from django.utils import timezone as tz
 
-    itens, _filtros, _pedido = _filtrar_solicitacoes(request)
+    itens, _base, _filtros, _pedido = _filtrar_solicitacoes(request)
     resposta = HttpResponse(content_type="text/csv; charset=utf-8")
     resposta["Content-Disposition"] = (
         f'attachment; filename="coffee-break-{tz.localdate():%Y-%m-%d}.csv"'
@@ -596,6 +608,9 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False)
         "dados_base_bloqueados": bool(
             solicitacao and (solicitacao.financeiro_iniciado or somente_leitura)
         ),
+        # Cabeçalho da tela de edição: só o título e o selo da situação.
+        "selo": solicitacao.situacao_financeira_display if solicitacao else "Nova",
+        "selo_tom": solicitacao.situacao_financeira_css if solicitacao else "pendente",
     }
     if solicitacao is not None:
         # O formulário é a única tela do registro: além dos campos editáveis ele
@@ -775,6 +790,18 @@ def lista_cadastro(request, tipo):
             busca |= Q(**{f"{campo}__icontains": q})
         queryset = queryset.filter(busca)
     pagina, paginas_visiveis, querystring = _paginar(request, queryset)
+    # Trilha lateral com os três cadastros do módulo, como nos cadastros de
+    # apoio de Viagens: um item por tabela, com o total de cada uma.
+    grupos = [
+        {
+            "slug": chave,
+            "titulo": outra["titulo"],
+            "total": outra["model"].objects.count(),
+            "icone": outra["icone"],
+            "url": reverse("coffee_break:cadastro_lista", args=[chave]),
+        }
+        for chave, outra in CADASTROS_COFFEE.items()
+    ]
     return render(
         request,
         "pages/coffee_break/cadastro_lista.html",
@@ -782,10 +809,13 @@ def lista_cadastro(request, tipo):
             "config": config,
             "tipo": tipo,
             "q": q,
+            "grupos": grupos,
             "pagina": pagina,
+            "linhas": [linha_do_cadastro(item, tipo) for item in pagina],
             "paginas_visiveis": paginas_visiveis,
             "elipse": Paginator.ELLIPSIS,
             "querystring": querystring,
+            "tem_filtros": bool(q),
             "breadcrumb": _breadcrumb({"label": "Cadastros"}, {"label": config["titulo"]}),
         },
     )

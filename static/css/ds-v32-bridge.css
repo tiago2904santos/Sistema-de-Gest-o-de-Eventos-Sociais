@@ -2334,3 +2334,96 @@ form.btn-flutuante-form{margin:0;display:contents}
    Tabelas com colunas de fato (trechos do diário, documentos do termo)
    continuam com o cabeçalho. */
 .dt > thead:has(> tr > th.tabela__col-icone:first-child + th + th.c-cad-acoes:last-child){display:none}
+
+/* ---- Cartões de escolha ------------------------------------------------
+   Vieram dos cartões de necessidade da Ordem de Serviço e passaram a ser o
+   jeito da casa de oferecer poucas opções com ícone e explicação: sem borda,
+   repouso em cinza bem claro, hover um tom acima, escolhido num cinza mais
+   firme com o ícone em grafite. Três por linha.
+
+   O estado escolhido vem do próprio `:checked` (sem script); a OS continua
+   marcando `.is-escolhido` pelo JS dela, e as duas formas valem. */
+.cartoes-escolha,.os-tipos{border:0;margin:0 0 24px;padding:0;min-width:0}
+.cartoes-escolha__grade,.os-tipos__grade{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.cartoes-escolha__grade--2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cartao-escolha,.os-tipo{position:relative;display:flex;align-items:center;gap:12px;padding:14px;border:0;border-radius:12px;background:var(--n-50);cursor:pointer;transition:background .18s ease,transform .12s ease}
+.cartao-escolha:hover,.os-tipo:hover{background:var(--n-100)}
+.cartao-escolha:active,.os-tipo:active{transform:scale(.985)}
+.cartao-escolha:focus-within,.os-tipo:focus-within{outline:0}
+.cartao-escolha:has(input:focus-visible){outline:2px solid var(--foco,var(--n-700));outline-offset:2px}
+.cartao-escolha__icone,.os-tipo__icone{display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:10px;background:var(--branco);color:var(--n-600);box-shadow:0 1px 2px rgba(26,25,23,.06);transition:background .18s ease,color .18s ease}
+.cartao-escolha__icone .ui-icon,.os-tipo__icone .ui-icon{width:18px;height:18px}
+.cartao-escolha__corpo,.os-tipo__corpo{display:grid;gap:3px;min-width:0;padding-top:1px}
+.cartao-escolha__titulo,.os-tipo__titulo{font-size:12.5px;font-weight:600;line-height:1.3;color:var(--n-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Uma linha só: o texto inteiro fica no title do cartão. */
+.cartao-escolha__dica,.os-tipo__dica{font-size:11.5px;line-height:1.45;color:var(--n-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cartao-escolha:has(input:checked),.os-tipo.is-escolhido{background:var(--n-150)}
+.cartao-escolha:has(input:checked):hover,.os-tipo.is-escolhido:hover{background:var(--n-200)}
+.cartao-escolha:has(input:checked) .cartao-escolha__icone,.os-tipo.is-escolhido .os-tipo__icone{background:var(--grafite);color:var(--branco);box-shadow:none;animation:os-marcar .28s ease}
+@keyframes os-marcar{0%{transform:scale(.88)}55%{transform:scale(1.08)}100%{transform:scale(1)}}
+.cartao-escolha:has(input:checked) .cartao-escolha__titulo,.os-tipo.is-escolhido .os-tipo__titulo{color:var(--n-900)}
+.cartao-escolha:has(input:checked) .cartao-escolha__dica,.os-tipo.is-escolhido .os-tipo__dica{color:var(--n-600)}
+.cartoes-escolha.grupo-erro .cartao-escolha,.os-tipos.grupo-erro .os-tipo{box-shadow:inset 0 0 0 1px var(--dg-t)}
+@media (prefers-reduced-motion:reduce){.cartao-escolha,.cartao-escolha__icone,.os-tipo,.os-tipo__icone{transition:none;animation:none!important}}
+@container (max-width:760px){.cartoes-escolha__grade,.cartoes-escolha__grade--2,.os-tipos__grade{grid-template-columns:1fr}}
+
+/* ---- Interruptor com caixa de seleção ---------------------------------
+   O interruptor do cabeçalho dos cartões nasceu como <button> comandado por
+   JS; quando o estado é um campo do formulário (a unidade móvel da
+   solicitação), ele é um <label> com a caixa escondida dentro. O desenho é
+   o mesmo, o `:checked` faz o papel do `--ligado`. */
+.interruptor:has(input:checked) .interruptor__trilho{background:var(--n-700);animation:interruptor-liga 420ms ease-out}
+.interruptor:has(input:checked) .interruptor__botao{transform:translateX(14px)}
+.interruptor:active:has(input:checked) .interruptor__botao{transform:translateX(10px)}
+.interruptor:has(input:focus-visible) .interruptor__trilho{outline:2px solid var(--foco,var(--n-700));outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.interruptor:has(input:checked) .interruptor__trilho{animation:none}}
+
+/* ---- Linhas com quantidade --------------------------------------------
+   Escolher itens e dizer quantos de cada (as equipes da solicitação), no
+   desenho das linhas escolhidas do multi-pick: sem borda, cinza bem claro,
+   marca quadrada que vira grafite quando a linha entra e o número num campo
+   da casa, à direita. */
+.linhas-quantidade{display:grid;gap:8px;border:0;margin:0 0 20px;padding:0;min-width:0}
+.linhas-quantidade>.form-label{margin-bottom:2px;padding:0}
+.linha-quantidade{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 10px 8px 8px;border-radius:10px;background:var(--n-50);transition:background .18s ease}
+.linha-quantidade:hover{background:var(--n-100)}
+.linha-quantidade:has(input[type="checkbox"]:checked){background:var(--n-150)}
+.linha-quantidade:has(input[type="checkbox"]:focus-visible){outline:2px solid var(--foco,var(--n-700));outline-offset:2px}
+.linha-quantidade__marca{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:10px;background:var(--branco);color:var(--n-400);cursor:pointer;box-shadow:0 1px 2px rgba(26,25,23,.06);transition:background .18s ease,color .18s ease}
+.linha-quantidade__marca .ui-icon{width:17px;height:17px;opacity:.3;transition:opacity .18s ease}
+.linha-quantidade:has(input[type="checkbox"]:checked) .linha-quantidade__marca .ui-icon{opacity:1}
+.linha-quantidade:has(input[type="checkbox"]:checked) .linha-quantidade__marca{background:var(--grafite);color:var(--branco);box-shadow:none;animation:os-marcar .28s ease}
+.linha-quantidade__n{flex:1 1 auto;min-width:0;font-size:12.5px;font-weight:500;color:var(--n-800);cursor:pointer}
+.linha-quantidade__q{flex:none;width:96px}
+.linha-quantidade__q .form-controle{height:36px;text-align:center}
+.linhas-quantidade.grupo-erro .linha-quantidade{box-shadow:inset 0 0 0 1px var(--dg-t)}
+@media (prefers-reduced-motion:reduce){.linha-quantidade,.linha-quantidade__marca{transition:none;animation:none!important}}
+
+/* ---- Stepper de fluxo variável ----------------------------------------
+   O painel da viagem tem sempre cinco etapas; o acompanhamento da
+   solicitação tem de duas a quatro. Aqui elas dividem a faixa em partes
+   iguais, quantas forem. */
+.vg-stepper__lista--auto{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+@media (max-width:760px){.vg-stepper__lista--auto{grid-auto-flow:row;grid-template-columns:1fr 1fr}}
+
+/* Acompanhamento e histórico da solicitação respiram como os cartões. */
+.sol-stepper{margin-top:16px}
+.sol-form .hs{margin-top:16px}
+/* Rótulo de um grupo de campos (as quantidades que a DG ajusta). */
+.sol-grupo{margin:0 0 8px}
+
+/* O motivo do cancelamento do evento e o botão dele, um sob o outro. */
+.sol-cancelar{display:flex;flex-direction:column;gap:10px;align-items:flex-start;margin-top:16px}
+.sol-cancelar .form-campo{width:100%}
+
+/* ---- Cabeçalho do cartão fora do editor ------------------------------
+   `section-card` nasceu dentro do formulário de roteiros (`.of-form`), onde
+   o cabeçalho é uma linha e a ação vai para a direita. Os painéis usam o
+   mesmo cartão sem aquele envelope: a regra passa a valer para todos. */
+.section-card__cabecalho{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.section-card__cabecalho .section-card__titulo{font:inherit;margin:0}
+.section-card__cabecalho>.section-card__acao{margin-left:auto}
+
+/* O ícone do selo respira do texto em qualquer lugar (lista, cabeçalho de
+   formulário, painel) — antes a regra só valia dentro do cartão da lista. */
+.st .ui-icon{width:13px;height:13px;margin-right:5px}

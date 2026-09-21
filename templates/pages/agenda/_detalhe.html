@@ -1,0 +1,240 @@
+{% comment %}
+  O dossiê de um compromisso, dentro do modal da agenda. Chega por fetch
+  (agenda:detalhe), por isso não estende o shell — é só o miolo.
+
+  Documentos e Servidores usam a **mesma composição das listagens do
+  sistema**: `pa-card--lista` com a tabela do V3.2, uma célula por registro
+  (título com selos + linha de fatos com ícone) e a coluna de ações à direita.
+  Quem conhece a lista de ofícios reconhece a lista aqui — e é o mesmo CSS,
+  então elas não divergem com o tempo.
+
+  Abas: só as que têm conteúdo aparecem. O que é link abre a tela do módulo em
+  outra aba: a agenda mostra, quem edita é o módulo.
+{% endcomment %}
+<div class="ag-m" data-fonte="{{ fonte }}">
+  <header class="ag-m__topo">
+    <div class="ag-m__id">
+      <span class="ag-m__rot">{{ fonte_rotulo }}</span>
+      <h2 class="ag-m__t" id="ag-modal-titulo">{{ titulo }}</h2>
+      <p class="ag-m__sub">
+        {% include "components/icon.html" with nome="calendar" %}{{ subtitulo }}
+        <span class="st st--{{ selo_tom }}">{{ situacao }}</span>
+      </p>
+      {% if origem %}
+        <a class="ag-m__origem" href="{{ origem.url }}" target="_blank" rel="noopener">
+          {% include "components/icon.html" with nome="arrow-right" %}{{ origem.rotulo }}
+        </a>
+      {% endif %}
+    </div>
+    <div class="ag-m__acoes">
+      <a class="btn-primaria" href="{{ url_abrir }}" target="_blank" rel="noopener">Abrir no sistema</a>
+      <button type="button" class="ag-m__x" data-ag-fechar aria-label="Fechar">&times;</button>
+    </div>
+  </header>
+
+  <nav class="ag-abas" role="tablist" aria-label="Seções do compromisso">
+    <button type="button" role="tab" data-aba="resumo" aria-selected="true">Resumo</button>
+    {% if pessoas %}<button type="button" role="tab" data-aba="pessoas" aria-selected="false">{{ pessoas_rotulo }} <span class="ag-n">{{ pessoas|length }}</span></button>{% endif %}
+    {% if documentos %}<button type="button" role="tab" data-aba="documentos" aria-selected="false">Documentos <span class="ag-n">{{ total_documentos }}</span></button>{% endif %}
+    {% if historico %}<button type="button" role="tab" data-aba="historico" aria-selected="false">Histórico <span class="ag-n">{{ historico|length }}</span></button>{% endif %}
+  </nav>
+
+  {# ---- Resumo: fatos com ícone, como a célula das listagens ---- #}
+  <section class="ag-painel" data-painel="resumo" role="tabpanel">
+    {% if campos %}
+      <ul class="ag-fatos" aria-label="Dados do compromisso">
+        {% for f in campos %}
+          <li class="ag-fato{% if f.longo %} ag-fato--longo{% endif %}">
+            {% include "components/icon.html" with nome=f.icone %}
+            <div><span class="ag-fato__r">{{ f.rotulo }}</span><span class="ag-fato__v">{{ f.texto|linebreaksbr }}</span></div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="ag-m__vazio">Sem mais dados além do título.</p>
+    {% endif %}
+
+    {% for secao in secoes %}
+      <section class="ag-bloco">
+        <h3 class="ag-bloco__t">{{ secao.titulo }}</h3>
+        {% if secao.campos %}
+          <ul class="ag-fatos">
+            {% for f in secao.campos %}
+              <li class="ag-fato{% if f.longo %} ag-fato--longo{% endif %}">
+                {% include "components/icon.html" with nome=f.icone %}
+                <div><span class="ag-fato__r">{{ f.rotulo }}</span><span class="ag-fato__v">{{ f.texto|linebreaksbr }}</span></div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        {% if secao.linhas %}
+          <ul class="ag-linhas">{% for linha in secao.linhas %}<li>{{ linha }}</li>{% endfor %}</ul>
+        {% endif %}
+      </section>
+    {% endfor %}
+  </section>
+
+  {# ---- Servidores: a lista do módulo, com a célula de sempre ---- #}
+  {% if pessoas %}
+  <section class="ag-painel" data-painel="pessoas" role="tabpanel" hidden>
+    <div class="pa-card pa-card--lista cad-lista ag-lista">
+      <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="{{ pessoas_rotulo }}">
+        <table class="dt dt--responsiva">
+          <thead>
+            <tr>
+              <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
+              <th>{{ pessoas_rotulo }}</th>
+              <th class="c-cad-acoes">Documentos</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in pessoas %}
+              <tr>
+                <td class="tabela__col-icone">
+                  <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="user" %}</span>
+                </td>
+                <td class="c-nome tm-celula">
+                  <h4 class="tm-titulo">{{ p.nome }}{% if p.motorista %} <span class="st st--rascunho">Motorista</span>{% endif %}</h4>
+                  <ul class="tm-fatos" aria-label="Dados de {{ p.nome }}">
+                    {% for f in p.fatos %}
+                      <li class="tm-fato" title="{{ f.rotulo }}: {{ f.texto }}">
+                        {% include "components/icon.html" with nome=f.icone %}<span class="sr-only">{{ f.rotulo }}: </span><span>{{ f.texto }}</span>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </td>
+                <td class="c-cad-acoes">
+                  {% for a in p.documentos %}
+                    <a class="ag-link-doc" href="{{ a.url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}{{ a.nome }}</a>
+                  {% empty %}
+                    <span class="v32-suave">—</span>
+                  {% endfor %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="lista-mobile-v32"><div class="m-lista">
+        {% for p in pessoas %}
+          <article class="m-item">
+            <div class="m-item__topo">
+              <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="user" %}</span>
+            </div>
+            <div class="m-item__tipo tm-celula">
+              <h4 class="tm-titulo">{{ p.nome }}{% if p.motorista %} <span class="st st--rascunho">Motorista</span>{% endif %}</h4>
+              <ul class="tm-fatos">
+                {% for f in p.fatos %}<li class="tm-fato">{% include "components/icon.html" with nome=f.icone %}<span>{{ f.texto }}</span></li>{% endfor %}
+              </ul>
+            </div>
+            {% if p.documentos %}
+              <div class="m-item__rodape">
+                {% for a in p.documentos %}<a class="ag-link-doc" href="{{ a.url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}{{ a.nome }}</a>{% endfor %}
+              </div>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </div></div>
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---- Documentos: uma lista por tipo, na composição das páginas ---- #}
+  {% if documentos %}
+  <section class="ag-painel" data-painel="documentos" role="tabpanel" hidden>
+    {% for grupo in documentos %}
+      <div class="pa-card pa-card--lista cad-lista ag-lista">
+        <div class="ag-lista__h">{{ grupo.titulo }} <span class="ag-n">{{ grupo.itens|length }}</span></div>
+
+        <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="{{ grupo.titulo }}">
+          <table class="dt dt--responsiva">
+            <thead>
+              <tr>
+                <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
+                <th>Documento</th>
+                <th class="c-cad-acoes">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in grupo.itens %}
+                <tr>
+                  <td class="tabela__col-icone">
+                    <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+                  </td>
+                  <td class="c-nome tm-celula">
+                    <h4 class="tm-titulo">
+                      <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.titulo }}</a>
+                      {% if item.situacao %}<span class="st st--neutro">{{ item.situacao }}</span>{% endif %}
+                    </h4>
+                    {% if item.fatos %}
+                      <ul class="tm-fatos">
+                        {% for f in item.fatos %}
+                          <li class="tm-fato" title="{{ f.rotulo }}: {{ f.texto }}">
+                            {% include "components/icon.html" with nome=f.icone %}<span class="sr-only">{{ f.rotulo }}: </span><span>{{ f.texto }}</span>
+                          </li>
+                        {% endfor %}
+                      </ul>
+                    {% endif %}
+                    {% for e in item.extras %}
+                      <p class="ag-extra">
+                        <a href="{{ e.url }}" target="_blank" rel="noopener">{{ e.rotulo }}</a>{% if e.texto %} — {{ e.texto }}{% endif %}{% if e.n %} <span class="ag-n">{{ e.n }}</span>{% endif %}
+                      </p>
+                    {% endfor %}
+                  </td>
+                  <td class="c-cad-acoes ag-acoes">
+                    {% for a in item.artefatos %}
+                      <span class="ag-art">
+                        <a class="ag-link-doc" href="{{ a.url }}" target="_blank" rel="noopener" title="{{ a.arquivo }}">{% include "components/icon.html" with nome="eye" %}Abrir PDF</a>
+                        <a class="ag-link-doc ag-link-doc--sec" href="{{ a.url_baixar }}" title="Baixar {{ a.nome }}">{% include "components/icon.html" with nome="download" %}<span class="sr-only">Baixar {{ a.nome }}</span></a>
+                        {% if a.assinado %}<span class="st st--atendido">Assinado</span>{% endif %}
+                      </span>
+                    {% empty %}
+                      <span class="v32-suave">Sem PDF</span>
+                    {% endfor %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="lista-mobile-v32"><div class="m-lista">
+          {% for item in grupo.itens %}
+            <article class="m-item">
+              <div class="m-item__topo">
+                <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="document" %}</span>
+              </div>
+              <div class="m-item__tipo tm-celula">
+                <h4 class="tm-titulo"><a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.titulo }}</a>{% if item.situacao %} <span class="st st--neutro">{{ item.situacao }}</span>{% endif %}</h4>
+                <ul class="tm-fatos">{% for f in item.fatos %}<li class="tm-fato">{% include "components/icon.html" with nome=f.icone %}<span>{{ f.texto }}</span></li>{% endfor %}</ul>
+              </div>
+              <div class="m-item__rodape ag-acoes">
+                {% for a in item.artefatos %}
+                  <a class="ag-link-doc" href="{{ a.url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}{{ a.nome }}</a>
+                {% empty %}<span class="v32-suave">Sem PDF</span>{% endfor %}
+              </div>
+            </article>
+          {% endfor %}
+        </div></div>
+      </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  {% if historico %}
+  <section class="ag-painel" data-painel="historico" role="tabpanel" hidden>
+    <ol class="ag-hist">
+      {% for h in historico %}
+        <li>
+          <time>{{ h.quando|date:"d/m/Y H:i" }}</time>
+          <div>
+            <strong>{{ h.acao }}</strong>{% if h.quem %} · {{ h.quem }}{% endif %}{% if h.transicao %} <span class="st st--neutro">{{ h.transicao }}</span>{% endif %}
+            {% if h.texto %}<p>{{ h.texto|linebreaksbr }}</p>{% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+</div>

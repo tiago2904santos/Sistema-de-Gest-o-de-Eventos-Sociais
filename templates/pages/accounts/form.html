@@ -1,148 +1,109 @@
 {% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Formulário do usuário, na composição dos formulários do módulo de Viagens:
+  cabeçalho com ícone, título e selo (nada de metadados sob o título),
+  cartões numerados `section-card`, campos sempre pelos components do design
+  system e as ações no topo e no fim do último cartão.
+
+  O perfil e os setores são cartões de escolha: o que cada perfil pode fazer
+  é a explicação do próprio cartão, no lugar do aviso ao lado do seletor.
+{% endcomment %}
 
 {% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  {% url 'accounts:usuarios_lista' as url_usuarios %}
   {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
 
-  {# Cabeçalho no padrão do roteiro: ícone, "Novo usuário" ou "Editar usuário <login>", meta e Salvar no topo. #}
-  <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
-    <div class="page-header d-cabeca__esq">
-      <div class="page-header__identificacao d-identificacao">
-        <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="users" %}</span>
-        <div>
+  <div class="editor-roteiro of-form">
+    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="users" %}</span>
           <div class="frm-titulo">
             <h1 class="page-header__titulo d-titulo-v32">{% if instancia %}Editar usuário <span class="frm-ident">{{ instancia.username }}</span>{% else %}Novo usuário{% endif %}</h1>
             {% if instancia %}<span class="st {% if instancia.is_active %}st--ativo{% else %}st--inativo{% endif %}">{% if instancia.is_active %}Ativo{% else %}Inativo{% endif %}</span>{% endif %}
           </div>
-          {% if instancia %}
-            <p class="page-header__subtitulo d-cabeca__sub frm-meta">
-              {% if instancia.get_full_name %}<span>{% include "components/icon.html" with nome="user" %}{{ instancia.get_full_name }}</span>{% endif %}
-              {% if instancia.email %}<span>{% include "components/icon.html" with nome="mail" %}{{ instancia.email }}</span>{% endif %}
-            </p>
-          {% endif %}
         </div>
+      </div>
+      <div class="frm-topo__acoes">
+        <button type="submit" class="btn-primaria" form="form-usuario">Salvar usuário</button>
       </div>
     </div>
-    <div class="frm-topo__acoes">
-      <button type="submit" class="btn-primaria" form="form-usuario">Salvar</button>
-    </div>
-  </div>
 
-  <form method="post" action="" id="form-usuario" class="cad-frm v32-conta-form">
-    {% csrf_token %}
-
-    {% if form.errors %}
-      <div class="aviso v32-aviso-texto aviso--erro resumo-erros" role="alert" tabindex="-1" data-resumo-erros>
-        <strong>Revise os campos indicados antes de salvar.</strong>
-      </div>
-    {% endif %}
-
-    <section class="reg">
-      {% include "components/v32/section_card.html" with numero="1" titulo="Dados do usuário" subtitulo="Informações cadastrais e de identificação" %}
-      <div class="reg-corpo">
-        <div class="g-form v32-form-grid">
-          {% include "components/input.html" with name="first_name" label="Nome" obrigatorio=True largura="6" valor=valores.first_name erros=erros.first_name placeholder="Digite o nome" %}
-          {% include "components/input.html" with name="last_name" label="Sobrenome" largura="6" valor=valores.last_name erros=erros.last_name placeholder="Digite o sobrenome" %}
-          {% include "components/input.html" with name="username" label="Usuário" obrigatorio=True largura="6" valor=valores.username erros=erros.username placeholder="Digite o nome de usuário" ajuda="Será utilizado para login no sistema." %}
-          {% include "components/input.html" with name="email" label="E-mail institucional" tipo="email" obrigatorio=form.email.field.required largura="6" valor=valores.email erros=erros.email placeholder="usuario@pc.pr.gov.br" ajuda="Informe um e-mail institucional válido." %}
-        </div>
-        <div class="usuario-form__linha">
-          <div>
-            {% include "components/select.html" with name="perfil" label="Perfil de acesso" opcoes=opcoes_perfil obrigatorio=True placeholder="Selecione o perfil de acesso" selecionado=valores.perfil erros=erros.perfil ajuda="Define o nível de permissões e funcionalidades disponíveis para o usuário." %}
+    <form method="post" action="" id="form-usuario" class="editor-roteiro__principal">
+      {% csrf_token %}
+      {% if form.errors %}
+        <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
+          {% include "components/icon.html" with nome="info" %}
+          <div><b>Não foi possível salvar o usuário</b>Revise os campos indicados antes de continuar.
+            <ul class="aviso--erro__lista">{% for campo, mensagens in form.errors.items %}{% for mensagem in mensagens %}<li>{% if campo == "__all__" %}{{ mensagem }}{% else %}<a href="#id_{{ campo }}">{{ mensagem }}</a>{% endif %}</li>{% endfor %}{% endfor %}</ul>
           </div>
-          <aside class="aviso aviso--info v32-dica">
-            <span class="painel-dica__icone" aria-hidden="true">{% include "components/icon.html" with nome="shield" %}</span>
-            <div>
-              <strong>Perfil selecionado</strong>
-              <p data-perfil-info="">Selecione um perfil para visualizar a descrição e permissões.</p>
-              <p data-perfil-info="SOLICITANTE" hidden>Registra e acompanha as próprias solicitações de eventos, edita rascunhos e reenvia as devolvidas para ajuste.</p>
-              <p data-perfil-info="GESTOR_DG" hidden>Despacha as solicitações enviadas à Diretoria-Geral: defere, devolve para ajuste ou registra o não atendimento.</p>
-              <p data-perfil-info="ADMINISTRADOR" hidden>Gerencia usuários e as tabelas de apoio (cadastros); não despacha solicitações.</p>
-            </div>
-          </aside>
         </div>
-      </div>
-    </section>
+      {% endif %}
 
-    <section class="reg">
-      {% include "components/v32/section_card.html" with numero="2" titulo="Setores e módulos" subtitulo="Defina as áreas institucionais que liberam os módulos do portal" %}
-      <div class="reg-corpo">
-        <fieldset class="form-campo campo-e--bloco" id="id_setores"{% if erros.setores %} aria-invalid="true" aria-describedby="id_setores_erro"{% endif %}>
-          <legend class="form-label">Setores autorizados</legend>
-          <p class="form-ajuda">Os módulos disponíveis serão derivados dos setores selecionados. Deixe vazio apenas para usuários sem acesso operacional.</p>
-          <div class="opc-cards">
-            {% for setor in opcoes_setores %}
-              <label class="opc-card">
-                <input type="checkbox" name="setores" value="{{ setor.valor }}"{% if setor.valor in setores_marcados %} checked{% endif %}>
-                <span aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>{{ setor.rotulo }}
-              </label>
-            {% empty %}
-              <p class="v32-suave">Nenhum setor ativo cadastrado.</p>
-            {% endfor %}
+      <section class="section-card reg">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+          <h2 class="section-card__titulo">Dados do usuário</h2>
+        </header>
+        <div class="section-card__corpo">
+          <div class="g-form g-form--2">
+            {% include "components/input.html" with name="first_name" label="Nome" obrigatorio=True valor=valores.first_name erros=erros.first_name placeholder="Digite o nome" %}
+            {% include "components/input.html" with name="last_name" label="Sobrenome" valor=valores.last_name erros=erros.last_name placeholder="Digite o sobrenome" %}
+            {% include "components/input.html" with name="username" label="Usuário" obrigatorio=True valor=valores.username erros=erros.username placeholder="Digite o nome de usuário" ajuda="Será utilizado para login no sistema." %}
+            {% include "components/input.html" with name="email" label="E-mail institucional" tipo="email" obrigatorio=form.email.field.required valor=valores.email erros=erros.email placeholder="usuario@pc.pr.gov.br" ajuda="Informe um e-mail institucional válido." %}
           </div>
-          {% for erro in erros.setores %}<p class="form-erro"{% if forloop.first %} id="id_setores_erro"{% endif %}>{{ erro }}</p>{% endfor %}
-        </fieldset>
-      </div>
-    </section>
+          {% include "components/v32/cartoes_escolha.html" with name="perfil" tipo="radio" label="Perfil de acesso" obrigatorio=True opcoes=opcoes_perfil erros=erros.perfil id_primeiro=True %}
+        </div>
+      </section>
 
-    <section class="reg">
-      {% include "components/v32/section_card.html" with numero="3" titulo="Acesso" subtitulo=instancia|yesno:"Redefinição de senha (opcional),Definição da senha inicial" %}
-      <div class="reg-corpo">
-        <div class="usuario-form__linha">
-          <div class="g-form v32-form-grid">
-            <div class="form-campo form-campo--6">
-              <label class="form-label" for="id_senha">
-                {% if instancia %}Nova senha{% else %}Senha inicial <span class="form-label__obrigatorio">*</span>{% endif %}
-              </label>
+      <section class="section-card reg">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+          <h2 class="section-card__titulo">Setores e módulos</h2>
+        </header>
+        <div class="section-card__corpo">
+          {% include "components/v32/cartoes_escolha.html" with name="setores" tipo="checkbox" label="Setores autorizados" opcoes=opcoes_setores erros=erros.setores id_primeiro=True %}
+          <p class="form-ajuda">Os módulos disponíveis são derivados dos setores selecionados. Deixe vazio apenas para usuários sem acesso operacional.</p>
+        </div>
+      </section>
+
+      <section class="section-card reg">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
+          <h2 class="section-card__titulo">Acesso</h2>
+        </header>
+        <div class="section-card__corpo">
+          <div class="g-form g-form--2">
+            <div class="form-campo">
+              <label class="form-label" for="id_senha">{% if instancia %}Nova senha{% else %}Senha inicial <span class="form-label__obrigatorio">*</span>{% endif %}</label>
               <div class="campo-senha campo-senha--simples{% if erros.senha %} is-invalid{% endif %}" data-campo-senha>
                 <input class="form-controle" type="password" name="senha" id="id_senha"
-                       autocomplete="new-password" placeholder="Digite a senha inicial"{% if not instancia %} required{% endif %}>
-                <button type="button" class="campo-senha__alternar" data-alternar-senha
-                        aria-label="Mostrar senha" aria-pressed="false">
-                  {% include "components/icon.html" with nome="eye" %}
-                </button>
+                       autocomplete="new-password" placeholder="Digite a senha"{% if not instancia %} required{% endif %}>
+                <button type="button" class="campo-senha__alternar" data-alternar-senha aria-label="Mostrar senha" aria-pressed="false">{% include "components/icon.html" with nome="eye" %}</button>
               </div>
               {% for erro in erros.senha %}<p class="form-erro">{{ erro }}</p>{% endfor %}
-              <p class="form-ajuda">{% if instancia %}Deixe em branco para manter a senha atual.{% else %}Informe a senha inicial que será utilizada no primeiro acesso.{% endif %}</p>
+              <p class="form-ajuda">{% if instancia %}Deixe em branco para manter a senha atual.{% else %}Mínimo de 8 caracteres, com letras, números e símbolos.{% endif %}</p>
             </div>
-            <div class="form-campo form-campo--6">
-              <label class="form-label" for="id_confirmacao_senha">
-                Confirmação da senha{% if not instancia %} <span class="form-label__obrigatorio">*</span>{% endif %}
-              </label>
+            <div class="form-campo">
+              <label class="form-label" for="id_confirmacao_senha">Confirmação da senha{% if not instancia %} <span class="form-label__obrigatorio">*</span>{% endif %}</label>
               <div class="campo-senha campo-senha--simples{% if erros.confirmacao_senha %} is-invalid{% endif %}" data-campo-senha>
                 <input class="form-controle" type="password" name="confirmacao_senha" id="id_confirmacao_senha"
-                       autocomplete="new-password" placeholder="Confirme a senha inicial">
-                <button type="button" class="campo-senha__alternar" data-alternar-senha
-                        aria-label="Mostrar senha" aria-pressed="false">
-                  {% include "components/icon.html" with nome="eye" %}
-                </button>
+                       autocomplete="new-password" placeholder="Repita a senha">
+                <button type="button" class="campo-senha__alternar" data-alternar-senha aria-label="Mostrar senha" aria-pressed="false">{% include "components/icon.html" with nome="eye" %}</button>
               </div>
               {% for erro in erros.confirmacao_senha %}<p class="form-erro">{{ erro }}</p>{% endfor %}
               <p class="form-ajuda">Repita a senha para confirmação.</p>
             </div>
           </div>
-          <aside class="aviso aviso--info v32-dica">
-            <span class="painel-dica__icone" aria-hidden="true">{% include "components/icon.html" with nome="lock" %}</span>
-            <div>
-              <strong>Dicas para uma senha segura</strong>
-              <ul>
-                <li>Mínimo de 8 caracteres</li>
-                <li>Use letras maiúsculas e minúsculas</li>
-                <li>Inclua números e símbolos</li>
-                <li>Evite dados pessoais</li>
-              </ul>
-            </div>
-          </aside>
-        </div>
 
-        {# Ações no fim do último cartão, como no roteiro: voltar à esquerda, salvar à direita. #}
-        <div class="frm-acoes-fim">
-          {% include "components/v32/button.html" with label="Voltar" variante="secundario" href=url_usuarios %}
-          {% include "components/v32/button.html" with label="Salvar" variante="dourado" tipo="submit" %}
+          {# Ações no fim do último cartão: voltar à esquerda, salvar à direita. #}
+          <div class="frm-acoes-fim">
+            <a class="btn--secundaria" href="{% url 'accounts:usuarios_lista' %}">Voltar</a>
+            <button type="submit" class="btn-primaria">Salvar usuário</button>
+          </div>
         </div>
-      </div>
-    </section>
-  </form>
+      </section>
+    </form>
+  </div>
 {% endblock %}

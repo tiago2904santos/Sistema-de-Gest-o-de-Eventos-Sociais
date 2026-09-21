@@ -1,0 +1,29 @@
+{% comment %}
+  Histórico da demanda na casca do histórico de alterações do módulo de
+  Viagens: quando, quem e o quê, numa tabela com rolagem própria.
+{% endcomment %}
+<div class="hs" id="sec-historico">
+  <div class="hs__cabeca">
+    <span class="hs__titulo">{% include "components/icon.html" with nome="clock" %}Histórico</span>
+    <span class="hs__contagem">{{ historico|length }} registro{{ historico|length|pluralize }}</span>
+  </div>
+  {% if historico %}
+    <div class="hs__rolagem" tabindex="0" role="region" aria-label="Histórico da demanda">
+      <table class="dt hs__tabela">
+        <thead><tr><th class="hs__col-quando">Quando</th><th class="hs__col-quem">Quem</th><th class="hs__col-sobre">O quê</th><th>Descrição</th></tr></thead>
+        <tbody>
+          {% for registro in historico %}
+            <tr>
+              <td class="hs__col-quando">{{ registro.criado_em|date:"d/m/Y" }}<small>{{ registro.criado_em|date:"H:i" }}</small></td>
+              <td class="hs__col-quem">{{ registro.usuario|default:"Sistema" }}</td>
+              <td class="hs__col-sobre">{{ registro.get_acao_display }}{% if registro.status_novo %}<small>{{ registro.status_novo_display }}</small>{% endif %}</td>
+              <td>{% if registro.descricao %}{{ registro.descricao }}{% else %}<span class="hs__nota">—</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="hs__vazio">Nenhuma alteração registrada.</p>
+  {% endif %}
+</div>

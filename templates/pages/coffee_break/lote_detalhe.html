@@ -1,120 +1,81 @@
 {% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Tela do lote na composição do painel da viagem: cabeçalho com ícone, título
+  e selos (situação e consumo), os dados contratuais como fatos com ícone em
+  cartões `section-card`, e as solicitações do lote na lista embutida do
+  módulo — a mesma linha e o mesmo menu de ações da listagem.
+{% endcomment %}
 
 {% block title %}{{ lote.rotulo_curto }} — Coffee Break — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
 
-  {% url 'coffee_break:nova' as url_nova %}
-  {% include "components/v32/page_header.html" with titulo=lote.rotulo_curto subtitulo=fornecedor.razao_social icone="coffee" acao_label="Nova solicitação" acao_url=url_nova acao_icone="plus" %}
-
-  <div class="db-kpis">
-    {% include "components/v32/summary_card.html" with titulo="Capacidade contratada" valor=lote.quantidade_total icone="coffee" cor="neutra" variacao=lote.exercicio %}
-    {% include "components/v32/summary_card.html" with titulo="Unidades consumidas" valor=lote.consumido icone="chart" cor="info" variacao=percentual|stringformat:"s"|add:"% da capacidade" %}
-    {% include "components/v32/summary_card.html" with titulo="Saldo restante" valor=lote.restante icone="check-circle" cor="sucesso" variacao="Disponível para novas solicitações" %}
-  </div>
-
-  <div class="db-2col">
-    <div class="pa-card pa-card--lista v32-bloco">
-      {% include "components/v32/card.html" with titulo="Dados contratuais" %}
-      <div class="v32-corpo">
-        <dl class="gc gc--3">
-          <div class="f"><dt>Fornecedor</dt><dd>{{ fornecedor.razao_social }}</dd></div>
-          <div class="f"><dt>CNPJ</dt><dd>{{ fornecedor.cnpj_formatado|default:"—" }}</dd></div>
-          <div class="f"><dt>Contato</dt><dd>{{ fornecedor.contato|default:"—" }}{% if fornecedor.telefone %} · {{ fornecedor.telefone }}{% endif %}</dd></div>
-          <div class="f"><dt>E-mail</dt><dd>{{ fornecedor.email|default:"—" }}</dd></div>
-          <div class="f"><dt>Contrato</dt><dd>{{ contrato.numero }}</dd></div>
-          <div class="f"><dt>GMS</dt><dd>{{ contrato.numero_gms|default:"—" }}</dd></div>
-          {% if contrato.termo_aditivo %}<div class="f"><dt>Termo aditivo</dt><dd>{{ contrato.termo_aditivo }}</dd></div>{% endif %}
-          <div class="f"><dt>Empenho</dt><dd>{{ lote.empenho|default:"—" }}</dd></div>
-          <div class="f"><dt>Fiscal responsável</dt><dd>{{ contrato.fiscal_responsavel|default:"—" }}</dd></div>
-          <div class="f cheia"><dt>Objeto</dt><dd class="corrido">{{ contrato.objeto|default:"—" }}</dd></div>
-        </dl>
+  <div class="editor-roteiro of-form">
+    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="coffee" %}</span>
+          <div class="frm-titulo">
+            <h1 class="page-header__titulo d-titulo-v32">{{ lote.rotulo_curto }}</h1>
+            <span class="st st--{% if lote.ativo %}ativo{% else %}inativo{% endif %}">{% if lote.ativo %}Ativo{% else %}Inativo{% endif %}</span>
+            <span class="st st--{{ consumo_tom }}">{% include "components/icon.html" with nome="coffee" %}{{ consumo }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="frm-topo__acoes">
+        <a class="btn-primaria" href="{% url 'coffee_break:nova' %}">{% include "components/icon.html" with nome="plus" %}Nova solicitação</a>
       </div>
     </div>
 
-    <div class="pa-card pa-card--lista v32-bloco">
-      {% include "components/v32/card.html" with titulo="Municípios abrangidos" %}
-      <div class="v32-corpo">
+    <section class="section-card reg">
+      <header class="section-card__cabecalho reg__t">
+        <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+        <h2 class="section-card__titulo">Capacidade e contrato</h2>
+      </header>
+      <div class="section-card__corpo">
+        <ul class="tm-fatos" aria-label="Capacidade e dados contratuais do lote">
+          <li class="tm-fato">{% include "components/icon.html" with nome="coffee" %}<span class="sr-only">Capacidade contratada: </span><span class="vg-fato__valor">{{ lote.quantidade_total }} unidades contratadas</span></li>
+          <li class="tm-fato">{% include "components/icon.html" with nome="chart" %}<span class="sr-only">Unidades consumidas: </span><span class="vg-fato__valor">{{ lote.consumido }} consumidas ({{ percentual }}%)</span></li>
+          <li class="tm-fato">{% include "components/icon.html" with nome="check-circle" %}<span class="sr-only">Saldo restante: </span><span class="vg-fato__valor">{{ lote.restante }} de saldo</span></li>
+          <li class="tm-fato">{% include "components/icon.html" with nome="calendar" %}<span class="sr-only">Exercício: </span><span class="vg-fato__valor">Exercício {{ lote.exercicio }}</span></li>
+          <li class="tm-fato">{% include "components/icon.html" with nome="landmark" %}<span class="sr-only">Fornecedor: </span><span class="vg-fato__valor">{{ fornecedor.razao_social }}</span></li>
+          <li class="tm-fato{% if not fornecedor.cnpj_formatado %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome="document" %}<span class="sr-only">CNPJ: </span><span class="vg-fato__valor">{{ fornecedor.cnpj_formatado|default:"Sem CNPJ" }}</span></li>
+          <li class="tm-fato{% if not fornecedor.contato %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome="user" %}<span class="sr-only">Contato: </span><span class="vg-fato__valor">{{ fornecedor.contato|default:"Sem contato" }}{% if fornecedor.telefone %} · {{ fornecedor.telefone }}{% endif %}</span></li>
+          <li class="tm-fato{% if not fornecedor.email %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome="mail" %}<span class="sr-only">E-mail: </span><span class="vg-fato__valor">{{ fornecedor.email|default:"Sem e-mail" }}</span></li>
+          <li class="tm-fato">{% include "components/icon.html" with nome="clipboard" %}<span class="sr-only">Contrato: </span><span class="vg-fato__valor">Contrato {{ contrato.numero }}{% if contrato.numero_gms %} · GMS {{ contrato.numero_gms }}{% endif %}{% if contrato.termo_aditivo %} · Termo aditivo {{ contrato.termo_aditivo }}{% endif %}</span></li>
+          <li class="tm-fato{% if not lote.empenho %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome="document" %}<span class="sr-only">Empenho: </span><span class="vg-fato__valor">{{ lote.empenho|default:"Sem empenho" }}</span></li>
+          <li class="tm-fato{% if not contrato.fiscal_responsavel %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome="shield" %}<span class="sr-only">Fiscal responsável: </span><span class="vg-fato__valor">{{ contrato.fiscal_responsavel|default:"Sem fiscal" }}</span></li>
+        </ul>
+        {% if contrato.objeto %}<p class="v32-suave">{{ contrato.objeto }}</p>{% endif %}
+      </div>
+    </section>
+
+    <section class="section-card reg">
+      <header class="section-card__cabecalho reg__t">
+        <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+        <h2 class="section-card__titulo">Municípios e orientações</h2>
+      </header>
+      <div class="section-card__corpo">
         {% if municipios %}
           <p>{% for municipio in municipios %}{{ municipio.nome }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
         {% endif %}
-        {% if lote.municipios_texto %}
-          <p class="v32-suave">{{ lote.municipios_texto }}</p>
-        {% elif not municipios %}
-          <p class="v32-suave">Nenhum município registrado para este lote.</p>
-        {% endif %}
+        {% if lote.municipios_texto %}<p class="v32-suave">{{ lote.municipios_texto }}</p>{% endif %}
+        {% if not municipios and not lote.municipios_texto %}<p class="v32-suave">Nenhum município registrado para este lote.</p>{% endif %}
+        {% if lote.orientacoes %}<p class="v32-suave">{{ lote.orientacoes|linebreaksbr }}</p>{% endif %}
+        {% if lote.especificacoes_tecnicas %}<p class="v32-suave">{{ lote.especificacoes_tecnicas|linebreaksbr }}</p>{% endif %}
+        {% if lote.observacoes %}<p class="v32-suave">{{ lote.observacoes|linebreaksbr }}</p>{% endif %}
       </div>
-    </div>
-  </div>
+    </section>
 
-  {% if lote.orientacoes %}
-    <div class="pa-card pa-card--lista v32-bloco">
-      {% include "components/v32/card.html" with titulo="Orientações" %}
-      <div class="v32-corpo"><p class="v32-suave">{{ lote.orientacoes|linebreaksbr }}</p></div>
-    </div>
-  {% endif %}
-
-  {% if lote.especificacoes_tecnicas %}
-    <div class="pa-card pa-card--lista v32-bloco">
-      {% include "components/v32/card.html" with titulo="Especificações técnicas" %}
-      <div class="v32-corpo"><p class="v32-suave">{{ lote.especificacoes_tecnicas|linebreaksbr }}</p></div>
-    </div>
-  {% endif %}
-
-  {% if lote.observacoes %}
-    <div class="pa-card pa-card--lista v32-bloco">
-      {% include "components/v32/card.html" with titulo="Observações" %}
-      <div class="v32-corpo"><p class="v32-suave">{{ lote.observacoes|linebreaksbr }}</p></div>
-    </div>
-  {% endif %}
-
-  <div class="pa-card pa-card--lista v32-bloco">
-    {% include "components/v32/card.html" with titulo="Solicitações do lote" %}
-    <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Solicitações do lote">
-      <table class="dt  dt--responsiva">
-        <thead>
-          <tr>
-            <th>Nº</th>
-            <th>Evento</th>
-            <th>Data do evento</th>
-            <th>Qtde</th>
-            <th>Nota fiscal</th>
-            <th>Situação</th>
-            <th><span class="sr-only">Abrir</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for s in solicitacoes %}
-            <tr data-linha-url="{% url 'coffee_break:editar' s.pk %}">
-              <td data-rotulo="Nº"><strong><a href="{% url 'coffee_break:editar' s.pk %}" aria-label="Abrir solicitação {{ s.numero|default:s.pk }}">{{ s.numero|default:"—" }}</a></strong></td>
-              <td data-rotulo="Evento">{{ s.descricao_evento|truncatechars:60 }}</td>
-              <td data-rotulo="Data do evento">{{ s.periodo_evento_display|default:"—" }}</td>
-              <td data-rotulo="Qtde">{{ s.quantidade }}</td>
-              <td data-rotulo="Nota fiscal">{{ s.numero_nota_fiscal|default:"—" }}</td>
-              <td data-rotulo="Situação">{% include "components/v32/status_badge.html" with status=s.situacao_financeira_css label=s.situacao_financeira_display %}</td>
-              <td class="dt-abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="7" class="v32-suave dt__vazio">Nenhuma solicitação registrada neste lote.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-<div class="lista-mobile-v32"><div class="m-lista">
-          {% for s in solicitacoes %}
-            <article class="m-item" data-linha-url="{% url 'coffee_break:editar' s.pk %}">
-              <div class="m-item__campo" data-rotulo="Nº"><strong><a href="{% url 'coffee_break:editar' s.pk %}" aria-label="Abrir solicitação {{ s.numero|default:s.pk }}">{{ s.numero|default:"—" }}</a></strong></div>
-              <div class="m-item__campo" data-rotulo="Evento">{{ s.descricao_evento|truncatechars:60 }}</div>
-              <div class="m-item__campo" data-rotulo="Data do evento">{{ s.periodo_evento_display|default:"—" }}</div>
-              <div class="m-item__campo" data-rotulo="Qtde">{{ s.quantidade }}</div>
-              <div class="m-item__campo" data-rotulo="Nota fiscal">{{ s.numero_nota_fiscal|default:"—" }}</div>
-              <div class="m-item__campo" data-rotulo="Situação">{% include "components/v32/status_badge.html" with status=s.situacao_financeira_css label=s.situacao_financeira_display %}</div>
-
-            </article>
-          {% empty %}
-            <article class="m-item"><p class="m-vazio">Nenhuma solicitação registrada neste lote.</p></article>
-          {% endfor %}
-        </div></div>
+    <section class="section-card reg">
+      <header class="section-card__cabecalho reg__t">
+        <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
+        <h2 class="section-card__titulo">Solicitações do lote</h2>
+      </header>
+      <div class="section-card__corpo">
+        {% include "components/v32/lista_embutida.html" with linhas=linhas icone="coffee" rotulo="Solicitação" rotulo_plural="solicitações" conteudo_linha="pages/coffee_break/_conteudo_linha.html" acoes_linha="pages/coffee_break/_acoes_linha.html" vazio="Nenhuma solicitação registrada neste lote." %}
+      </div>
+    </section>
   </div>
 {% endblock %}

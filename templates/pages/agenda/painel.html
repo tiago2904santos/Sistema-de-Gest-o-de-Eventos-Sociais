@@ -1,0 +1,124 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
+{% comment %}
+  Agenda — viagens, solicitações, coffee break e demandas num calendário só.
+
+  O cabeçalho do calendário é nosso, não o padrão do FullCalendar: título do
+  período em destaque, setas, "Hoje" e um controle segmentado de visões, como
+  numa agenda de verdade. À esquerda, os filtros: fonte, situação, município,
+  tipo, "só o que eu criei", busca e atalhos de período. Clicar num
+  compromisso abre um modal com o dossiê inteiro (agenda:detalhe).
+
+  Os compromissos chegam por JSON conforme o período visível (agenda:eventos);
+  trocar de mês não recarrega a página.
+{% endcomment %}
+
+{% block title %}Agenda — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/agenda.css' %}">{% endblock %}
+
+{% block conteudo %}
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker kicker--junto">Agenda</div>
+      <h1>Agenda</h1>
+    </div>
+  </div>
+
+  {# Cabeçalho do calendário: o que o FullCalendar desenharia, no nosso desenho. #}
+  <div class="ag-topo" role="toolbar" aria-label="Navegação do calendário">
+    <div class="ag-topo__nav">
+      <button type="button" class="ag-ico" data-ag="prev" aria-label="Período anterior">{% include "components/icon.html" with nome="chevron-left" %}</button>
+      <button type="button" class="ag-ico" data-ag="next" aria-label="Próximo período">{% include "components/icon.html" with nome="chevron-right" %}</button>
+      <button type="button" class="ag-btn" data-ag="hoje">Hoje</button>
+    </div>
+    <h2 class="ag-topo__titulo" id="ag-titulo" aria-live="polite">&nbsp;</h2>
+    <div class="ag-seg" role="group" aria-label="Visão">
+      <button type="button" data-view="dayGridMonth">Mês</button>
+      <button type="button" data-view="timeGridWeek" class="ag-seg--largo">Semana</button>
+      <button type="button" data-view="timeGridDay" class="ag-seg--largo">Dia</button>
+      <button type="button" data-view="listMonth">Lista</button>
+      <button type="button" data-view="list30">30 dias</button>
+    </div>
+    <button type="button" class="ag-btn ag-btn--filtros" data-ag="filtros" aria-expanded="false" aria-controls="ag-filtros">{% include "components/icon.html" with nome="filter" %}Filtros</button>
+  </div>
+
+  <div class="ag-grade">
+    <aside class="ag-filtros" id="ag-filtros" aria-label="Filtros da agenda">
+      <section class="ag-f">
+        <h3 class="ag-f__h">Fontes</h3>
+        <div class="ag-chips">
+          {% for fonte in fontes %}
+            <label class="ag-chip ag-chip--{{ fonte.slug }}">
+              <input type="checkbox" name="fonte" value="{{ fonte.slug }}" checked>
+              <span class="ag-chip__pt" aria-hidden="true"></span>
+              <span class="ag-chip__t" data-rotulo="{{ fonte.slug }}">{{ fonte.rotulo }}</span>
+              <span class="ag-chip__n" data-conta="{{ fonte.slug }}"></span>
+            </label>
+          {% empty %}
+            <p class="v32-suave">Você não tem acesso a nenhum módulo com compromissos.</p>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="ag-f">
+        <h3 class="ag-f__h">Situação</h3>
+        <div class="ag-chips" id="ag-situacoes" aria-live="polite"></div>
+        <p class="ag-f__dica">Cancelados e não atendidos começam desligados.</p>
+      </section>
+
+      <section class="ag-f">
+        <h3 class="ag-f__h"><label for="ag-municipio">Município</label></h3>
+        <select id="ag-municipio" class="ag-sel"><option value="">Todos</option></select>
+      </section>
+
+      <section class="ag-f">
+        <h3 class="ag-f__h"><label for="ag-tipo">Tipo / tema</label></h3>
+        <select id="ag-tipo" class="ag-sel"><option value="">Todos</option></select>
+      </section>
+
+      <section class="ag-f">
+        <label class="ag-toggle"><input type="checkbox" id="ag-meus"><span>Só o que eu criei</span></label>
+      </section>
+
+      <section class="ag-f">
+        <h3 class="ag-f__h"><label for="ag-busca">Buscar</label></h3>
+        <input type="search" id="ag-busca" class="ag-busca" placeholder="Município, motivo, tema, solicitante…" autocomplete="off">
+      </section>
+
+      <section class="ag-f">
+        <h3 class="ag-f__h">Ir para</h3>
+        <div class="ag-atalhos">
+          <button type="button" class="ag-btn ag-btn--peq" data-ir="hoje">Hoje</button>
+          <button type="button" class="ag-btn ag-btn--peq" data-ir="semana">Esta semana</button>
+          <button type="button" class="ag-btn ag-btn--peq" data-ir="mes">Este mês</button>
+          <button type="button" class="ag-btn ag-btn--peq" data-ir="30">Próximos 30 dias</button>
+        </div>
+      </section>
+
+      <button type="button" class="ag-link" id="ag-limpar">Limpar filtros</button>
+    </aside>
+
+    <section class="pa-card ag-cal-card">
+      <div id="agenda"
+           data-url-eventos="{{ url_eventos }}"
+           data-url-detalhe="{{ url_detalhe }}"
+           data-hoje="{{ hoje }}"></div>
+      <p class="ag-vazio" id="ag-vazio" hidden>Nada no período com os filtros atuais.</p>
+      <p class="ag-erro" id="ag-erro" hidden role="alert"></p>
+    </section>
+  </div>
+
+  {# O modal do dossiê: o miolo vem do servidor (agenda:detalhe) já desenhado. #}
+  <dialog class="an-dialogo ag-modal" id="ag-modal" aria-labelledby="ag-modal-titulo">
+    <div class="ag-modal__c" id="ag-modal-c">
+      <p class="ag-m__carregando">Carregando…</p>
+    </div>
+  </dialog>
+{% endblock %}
+
+{% block extra_js %}{{ block.super }}
+  <script src="{% estatico 'vendor/fullcalendar/index.global.min.js' %}"></script>
+  <script src="{% estatico 'vendor/fullcalendar/pt-br.global.min.js' %}"></script>
+  <script src="{% estatico 'js/agenda.js' %}" defer></script>
+{% endblock %}

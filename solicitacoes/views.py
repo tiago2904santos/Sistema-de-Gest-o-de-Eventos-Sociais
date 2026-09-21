@@ -23,6 +23,9 @@ from .models import (
     StatusSolicitacao,
     TipoOperacao,
 )
+from core.listagens import trilha_de_situacoes
+
+from .presenters import linha_da_lista
 from . import permissions, services
 
 ITENS_POR_PAGINA = 15
@@ -160,14 +163,26 @@ def _contexto_formulario(request, form, solicitacao=None):
                 **equipe,
                 "selecionada": equipe["valor"] in equipes_marcadas,
                 "nome_quantidade": nome_quantidade,
+                # A DG ajusta a mesma equipe num campo próprio, no despacho.
+                "nome_quantidade_dg": f"quantidade_dg_{equipe['valor']}",
                 "quantidade": "" if quantidade is None else str(quantidade),
             }
         )
+
+    servicos_marcados = marcados_de("servicos", servicos_salvos)
+    # Os serviços viram cartões de escolha: cada um já sabe se está marcado.
+    servicos_cartoes = [
+        {**servico, "marcado": servico["valor"] in servicos_marcados}
+        for servico in opcoes_de("servicos", servicos_salvos)
+    ]
 
     return {
         "form": form,
         "solicitacao": solicitacao,
         "acoes": acoes,
+        # Cabeçalho da tela de edição: só o título e o selo da situação.
+        "selo": solicitacao.get_status_display() if solicitacao else "Rascunho",
+        "selo_tom": solicitacao.status.lower() if solicitacao else "rascunho",
         "valores": valores,
         "erros": form.errors,
         "erro_periodo": form.errors.get("data_inicio_evento")
@@ -180,13 +195,13 @@ def _contexto_formulario(request, form, solicitacao=None):
         if solicitacao and solicitacao.municipio_id
         else [],
         "orgaos": opcoes_de("orgao_responsavel"),
-        "servicos": opcoes_de("servicos", servicos_salvos),
+        "servicos": servicos_cartoes,
         "equipes": equipes_disponiveis,
         "equipes_planejamento": equipes_planejamento,
         "motoristas": opcoes_de("motorista"),
         "unidades_moveis": opcoes_de("unidade_movel_designada"),
         "tipos_operacao": _opcoes_choices(TipoOperacao.choices),
-        "servicos_marcados": marcados_de("servicos", servicos_salvos),
+        "servicos_marcados": servicos_marcados,
         "equipes_marcadas": equipes_marcadas,
         "timeline": services.montar_timeline(solicitacao),
         "dados_desabilitado": bool(solicitacao) and not acoes["editar_dados"],
@@ -327,6 +342,8 @@ def editar_solicitacao(request, pk):
         if solicitacao.status == StatusSolicitacao.DEVOLVIDA
         else None
     )
+    # O despacho pendente sai da sessão ao ser lido: uma leitura só.
+    pendente = _despacho_pendente(request, solicitacao)
     contexto = _contexto_formulario(request, form, solicitacao)
     contexto.update(
         {
@@ -336,7 +353,8 @@ def editar_solicitacao(request, pk):
             "historico": solicitacao.historico.all(),
             "itens_equipe": list(solicitacao.itens_equipe.select_related("equipe")),
             "motivo_devolucao": devolucao,
-            "despacho_pendente": _despacho_pendente(request, solicitacao),
+            "despacho_pendente": pendente,
+            "decisoes_dg": _decisoes_dg(pendente),
         }
     )
     return render(request, "pages/solicitacoes/form.html", contexto)
@@ -407,7 +425,9 @@ def _filas_do_usuario(user, queryset):
     return resultado
 
 
-# Colunas ordenáveis da listagem: rótulo da URL -> campos do banco.
+# A ordenação não tem mais controles na tela (a lista segue a composição de
+# Viagens), mas `?ordem=` continua valendo para os links antigos e para a
+# exportação: rótulo da URL -> campos do banco.
 ORDENACOES = {
     "numero": ["pk"],
     "municipio": ["municipio__nome", "-data_solicitacao"],
@@ -418,16 +438,6 @@ ORDENACOES = {
     "status": ["status", "-data_solicitacao"],
 }
 ORDENACAO_PADRAO = "-data"
-
-# Ordenações oferecidas no bottom sheet mobile (mesmas chaves de ORDENACOES).
-ORDENACOES_MOBILE = [
-    {"valor": "-data", "rotulo": "Mais recentes primeiro"},
-    {"valor": "data", "rotulo": "Mais antigas primeiro"},
-    {"valor": "periodo", "rotulo": "Evento mais próximo"},
-    {"valor": "-numero", "rotulo": "Número (maior primeiro)"},
-    {"valor": "municipio", "rotulo": "Município (A–Z)"},
-    {"valor": "status", "rotulo": "Status (A–Z)"},
-]
 
 
 def _ordenacao(request):
@@ -490,41 +500,20 @@ def _queryset_filtrado(request):
 CAMPOS_FILTRO = ["q", "status", "municipio", "tipo_evento", "inicio", "fim"]
 
 
-def _colunas_ordenaveis(request, pedido):
-    """Cabeçalhos com o link e a seta da próxima ordenação."""
-    parametros = request.GET.copy()
-    parametros.pop("pagina", None)
-    parametros.pop("ordem", None)
-    base = parametros.urlencode()
-    atual = pedido.lstrip("-")
-    decrescente = pedido.startswith("-")
-
-    colunas = []
-    # Ordem e classes das colunas seguem o padrão de listagem V3.2 aprovado.
-    for chave, rotulo, classe in [
-        ("numero", "Nº", "c-id"), ("status", "Status", "c-status"),
-        ("tipo", "Tipo de evento", "c-tipo"), ("municipio", "Município", "c-mun"),
-        ("periodo", "Período do evento", "c-per"), ("solicitante", "Solicitante", "c-sol"),
-        ("data", "Data da solicitação", "c-data"),
-    ]:
-        ativa = chave == atual
-        # Clicar na coluna ativa inverte; numa nova coluna começa crescente.
-        proximo = f"-{chave}" if ativa and not decrescente else chave
-        colunas.append({
-            "chave": chave,
-            "rotulo": rotulo,
-            "classe": classe,
-            "ativa": ativa,
-            "descendente": ativa and decrescente,
-            "url": f"?{base}&ordem={proximo}" if base else f"?ordem={proximo}",
-        })
-    return colunas
+# Ícone de cada fila na trilha lateral das situações.
+ICONES_FILA = {
+    "despacho": "gavel",
+    "devolvidas": "undo",
+    "andamento": "check-circle",
+    "canceladas": "ban",
+    "rascunhos": "pencil",
+    "minhas": "user",
+}
 
 
 @login_required
 def lista_solicitacoes(request):
     queryset, base, filtros, fila = _queryset_filtrado(request)
-    pedido, _campos = _ordenacao(request)
 
     paginador = Paginator(queryset, ITENS_POR_PAGINA)
     pagina = paginador.get_page(request.GET.get("pagina"))
@@ -535,37 +524,26 @@ def lista_solicitacoes(request):
 
     parametros = request.GET.copy()
     parametros.pop("pagina", None)
+    total_geral = base.count()
 
     return render(
         request,
         "pages/solicitacoes/lista.html",
         {
             "pagina": pagina,
-            "filtros": filtros,
-            "valores_filtro": {
-                nome: ("" if filtros[nome].value() is None else str(filtros[nome].value()))
-                for nome in filtros.fields
-            },
-            "opcoes_status": _opcoes_choices(StatusSolicitacao.choices),
-            "opcoes_municipios": _opcoes(filtros.fields["municipio"].queryset),
-            "opcoes_tipos": _opcoes(filtros.fields["tipo_evento"].queryset),
+            "q": request.GET.get("q", ""),
             "querystring": parametros.urlencode(),
-            "filas": _filas_do_usuario(request.user, base),
-            "fila_ativa": fila,
-            "total_geral": base.count(),
-            "tem_filtros": any(request.GET.get(nome) for nome in CAMPOS_FILTRO),
-            # Filtros além da busca: contagem exibida no botão "Filtros" do mobile.
-            "filtros_ativos": sum(
-                1 for nome in CAMPOS_FILTRO if nome != "q" and request.GET.get(nome)
+            "situacoes": trilha_de_situacoes(
+                request, _filas_do_usuario(request.user, base), total_geral, ICONES_FILA
             ),
-            "ordenacoes_mobile": ORDENACOES_MOBILE,
-            "ordem_atual": pedido,
-            "total_resultados": paginador.count,
+            # Chip aceso: sem fila escolhida, "Todas".
+            "situacao_ativa": fila or "todas",
+            "fila_ativa": fila,
+            "tem_filtros": any(request.GET.get(nome) for nome in CAMPOS_FILTRO),
             "paginas_visiveis": paginas_visiveis,
             "elipse": Paginator.ELLIPSIS,
-            "colunas": _colunas_ordenaveis(request, pedido),
             "linhas": [
-                {"solicitacao": s, "acoes": permissions.acoes_permitidas(request.user, s)}
+                linha_da_lista(s, permissions.acoes_permitidas(request.user, s))
                 for s in pagina
             ],
         },
@@ -643,6 +621,24 @@ def exportar_solicitacoes(request):
             s.criado_por,
         ])
     return resposta
+
+
+DECISOES_DG = [
+    ("ATENDER", "Atender", "Deferida — em andamento; o solicitante confirma depois do evento", "check-circle"),
+    ("NAO_ATENDER", "Não atender", "Encerra como não atendida; observação obrigatória", "x"),
+    ("CANCELADO", "Evento cancelado", "Encerra como cancelada; observação obrigatória", "ban"),
+    ("DEVOLVER", "Devolver para ajuste", "Volta editável para o solicitante reenviar; informe o motivo", "undo"),
+]
+
+
+def _decisoes_dg(pendente):
+    """As decisões da DG no contrato dos cartões de escolha."""
+    escolhida = (pendente or {}).get("decisao", "")
+    return [
+        {"valor": valor, "rotulo": rotulo, "dica": dica, "icone": icone,
+         "marcado": escolhida == valor}
+        for valor, rotulo, dica, icone in DECISOES_DG
+    ]
 
 
 def _despacho_pendente(request, solicitacao):

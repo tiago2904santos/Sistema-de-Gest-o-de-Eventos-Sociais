@@ -1,0 +1,37 @@
+{% comment %}
+  Componente: cartões de escolha (V3.2).
+
+  Poucas opções com ícone e explicação, no desenho dos cartões de
+  necessidade da Ordem de Serviço: repouso em cinza bem claro, escolhido num
+  cinza mais firme com o ícone em grafite. Serve para escolha única (rádio)
+  e para múltipla (caixas).
+
+  Uso:
+    {% include "components/v32/cartoes_escolha.html" with name="servicos"
+       tipo="checkbox" label="Serviços solicitados" obrigatorio=True
+       opcoes=servicos erros=erros.servicos colunas="2" %}
+
+  `opcoes`: lista de {valor, rotulo, dica, icone, marcado}.
+  `tipo`: "radio" (padrão) ou "checkbox".
+  `colunas`: "2" para duas por linha; sem isso, três.
+  `icone`: ícone das opções que não trazem um próprio.
+  `id_primeiro`: dá ao primeiro controle o `id_<name>`, para o resumo de
+    erros conseguir levar o foco até aqui.
+{% endcomment %}
+<fieldset class="cartoes-escolha{% if erros %} grupo-erro{% endif %}"{% if id_primeiro %} id="id_{{ name }}"{% endif %}{% if erros %} aria-invalid="true"{% endif %}{% if desabilitado %} disabled{% endif %}>
+  {% if label %}<legend class="form-label">{{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}</legend>{% endif %}
+  <div class="cartoes-escolha__grade{% if colunas == '2' %} cartoes-escolha__grade--2{% endif %}">
+    {% for o in opcoes %}
+      <label class="cartao-escolha" title="{{ o.rotulo }}{% if o.dica %} — {{ o.dica }}{% endif %}">
+        <input class="sr-only" type="{{ tipo|default:'radio' }}" name="{{ name }}" value="{{ o.valor }}"{% if o.marcado %} checked{% endif %}{% if id_primeiro and forloop.first %} id="id_{{ name }}"{% endif %}>
+        {% firstof o.icone icone "checklist" as icone_do_cartao %}
+        <span class="cartao-escolha__icone" aria-hidden="true">{% include "components/icon.html" with nome=icone_do_cartao %}</span>
+        <span class="cartao-escolha__corpo">
+          <span class="cartao-escolha__titulo">{{ o.rotulo }}</span>
+          {% if o.dica %}<span class="cartao-escolha__dica">{{ o.dica }}</span>{% endif %}
+        </span>
+      </label>
+    {% endfor %}
+  </div>
+  {% for erro in erros %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+</fieldset>

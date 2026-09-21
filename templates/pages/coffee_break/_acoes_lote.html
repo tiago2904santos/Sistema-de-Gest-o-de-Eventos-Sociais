@@ -1,0 +1,11 @@
+{% comment %}
+  Ações de uma linha de lote num botão único, no padrão das listas de
+  Viagens: abrir o lote com o consumo e as solicitações dele.
+  Contexto: `l` (linha do presenter).
+{% endcomment %}
+<div class="dd of-menu cad-acoes" data-menu>
+  <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações do {{ l.titulo }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
+  <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
+    <a class="dd__i of-item" href="{{ l.url_detalhe }}">{% include "components/icon.html" with nome="eye" %}<span><b>Abrir lote</b><small>Capacidade, consumo e solicitações do lote</small></span></a>
+  </div>
+</div>

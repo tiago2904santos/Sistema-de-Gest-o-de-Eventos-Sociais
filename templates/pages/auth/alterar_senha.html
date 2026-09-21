@@ -10,15 +10,19 @@
     {% include "components/v32/page_header.html" with titulo="Alterar senha" subtitulo="Atualize a senha de acesso da sua conta" icone="settings" %}
   {% endif %}
 
-  <form method="post" action="" class="cad-frm">
+  <form method="post" action="" class="editor-roteiro of-form editor-roteiro__principal">
     {% csrf_token %}
 
-    <section class="reg senha-card">
-      {% include "components/v32/section_card.html" with numero="1" titulo="Nova senha" %}
-      <div class="reg-corpo senha-corpo">
+    <section class="section-card reg senha-card">
+      <header class="section-card__cabecalho reg__t">
+        <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+        <h2 class="section-card__titulo">Nova senha</h2>
+      </header>
+      <div class="section-card__corpo senha-corpo">
         {% if form.non_field_errors %}
-          <div class="aviso v32-aviso-texto aviso--erro mb-4">
-            {% for erro in form.non_field_errors %}{{ erro }}{% endfor %}
+          <div class="aviso aviso--erro" role="alert">
+            {% include "components/icon.html" with nome="info" %}
+            <div>{% for erro in form.non_field_errors %}{{ erro }}{% endfor %}</div>
           </div>
         {% endif %}
 
@@ -84,20 +88,20 @@
           </div>
         </div>
 
-        <div class="dica-seguranca">
-          <span class="dica-seguranca__icone" aria-hidden="true">{% include "components/icon.html" with nome="shield" %}</span>
-          <div>
-            <strong>Dica de segurança</strong>
-            <p>Use uma senha forte e exclusiva. Evite reutilizar senhas de outros serviços para proteger sua conta.</p>
-          </div>
+        <div class="aviso aviso--info" role="status">
+          {% include "components/icon.html" with nome="shield" %}
+          <div><b>Dica de segurança</b>Use uma senha forte e exclusiva. Evite reutilizar senhas de outros serviços para proteger sua conta.</div>
         </div>
-      </div>
-      <div class="cad-frm__acoes">
-        {% if not troca_obrigatoria %}
-          {% url 'core:home' as url_voltar %}
-          {% include "components/v32/button.html" with label="Cancelar" variante="secundario" href=url_voltar %}
-        {% endif %}
-        {% include "components/v32/button.html" with label="Alterar senha" variante="dourado" tipo="submit" %}
+
+        {# Ações no fim do cartão: voltar à esquerda, salvar à direita. #}
+        <div class="frm-acoes-fim">
+          {% if not troca_obrigatoria %}
+            <a class="btn--secundaria" href="{% url 'core:home' %}">Cancelar</a>
+          {% else %}
+            <span></span>
+          {% endif %}
+          <button type="submit" class="btn-primaria">Alterar senha</button>
+        </div>
       </div>
     </section>
   </form>

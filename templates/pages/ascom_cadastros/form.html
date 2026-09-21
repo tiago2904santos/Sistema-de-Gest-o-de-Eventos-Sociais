@@ -1,94 +1,62 @@
 {% extends "layouts/app_shell_v32.html" %}
 {% comment %}
-  Formulário genérico dos cadastros de apoio dos módulos da ASCOM (padrão
-  V3.2), na anatomia do formulário de roteiros: cabeçalho com ícone, título
-  "Novo X" / "Editar X <nome>" e Salvar no topo; seção numerada; Voltar e
-  Salvar no fim do cartão.
+  Formulário genérico dos cadastros de apoio dos módulos da ASCOM, na
+  composição dos formulários do módulo de Viagens: cabeçalho com ícone,
+  título e selo (nada de metadados sob o título), cartão numerado
+  `section-card`, campos sempre pelos components do design system e as ações
+  no topo e no fim do cartão.
 {% endcomment %}
 
 {% block title %}{{ cartao_titulo }} — {{ titulo }} — {{ modulo_titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
-    <div class="page-header d-cabeca__esq">
-      <div class="page-header__identificacao d-identificacao">
-        <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="checklist" %}</span>
-        <div>
+  {% include "components/v32/breadcrumb.html" with atual=cartao_titulo %}
+
+  <div class="editor-roteiro of-form">
+    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="checklist" %}</span>
           <div class="frm-titulo">
             <h1 class="page-header__titulo d-titulo-v32">{% if instancia %}Editar {{ singular|default:"registro" }} <span class="frm-ident">{{ instancia }}</span>{% else %}{{ cartao_titulo }}{% endif %}</h1>
             {% if instancia %}<span class="st {% if instancia.ativo %}st--ativo{% else %}st--inativo{% endif %}">{% if instancia.ativo %}Ativo{% else %}Inativo{% endif %}</span>{% endif %}
           </div>
-          <p class="page-header__subtitulo d-cabeca__sub frm-meta">
-            <span>{% include "components/icon.html" with nome="columns" %}{{ titulo }}</span>
-          </p>
         </div>
       </div>
-    </div>
-    <div class="frm-topo__acoes">
-      <button type="submit" class="btn-primaria" form="form-cadastro">Salvar {{ singular }}</button>
-    </div>
-  </div>
-
-  <form method="post" action="" id="form-cadastro" class="cad-frm">
-    {% csrf_token %}
-
-    {# Erro geral fora do cartão, logo acima da seção, como no roteiro. #}
-    {% if erros_total %}
-      <div class="aviso aviso--erro frm-aviso" role="alert" tabindex="-1" data-resumo-erros>
-        {% include "components/icon.html" with nome="alert" %}
-        <div>
-          <b>Não foi possível salvar {{ singular|default:"o registro" }}</b>
-          Encontramos {{ erros_total }} {% if erros_total == 1 %}campo que precisa ser corrigido{% else %}campos que precisam ser corrigidos{% endif %}.
-          {% for erro in erros_gerais %}<span class="form-erro cad-frm__erro-geral">{{ erro }}</span>{% endfor %}
-        </div>
+      <div class="frm-topo__acoes">
+        <button type="submit" class="btn-primaria" form="form-cadastro">Salvar {{ singular }}</button>
       </div>
-    {% endif %}
+    </div>
 
-    <section class="reg">
-      {% include "components/v32/section_card.html" with numero="1" titulo="Dados "|add:genitivo subtitulo=cartao_intro %}
-      <div class="reg-corpo">
-        <div class="g-form g-form--2">
-          {% for campo in campos %}
-            {% if campo.tipo == "select" %}
-              {% include "components/select.html" with name=campo.name label=campo.label|capfirst opcoes=campo.opcoes obrigatorio=campo.obrigatorio selecionado=campo.valor erros=campo.erros %}
-            {% elif campo.tipo == "boolean" %}
-              <label class="campo-e form-campo campo-e--check cheia">
-                <input type="checkbox" id="id_{{ campo.name }}" name="{{ campo.name }}" value="on"{% if campo.valor %} checked{% endif %}>
-                <span>{{ campo.label|capfirst }}</span>
-                {% if campo.erros %}<span class="msg-erro form-erro">{{ campo.erros|join:" " }}</span>{% endif %}
-              </label>
-            {% else %}
-              <label class="campo-e form-campo cheia{% if campo.erros %} campo-e--erro{% endif %}">
-                <span>{{ campo.label|capfirst }}{% if campo.obrigatorio %}<em>*</em>{% endif %}</span>
-                {% if campo.tipo == "textarea" %}
-                  <textarea class="ctrl ctrl--ta{% if campo.erros %} ctrl--erro{% endif %}" id="id_{{ campo.name }}" name="{{ campo.name }}" rows="3"
-                            {% if campo.obrigatorio %}required{% endif %}
-                            {% if campo.erros %}aria-invalid="true" aria-describedby="msg-{{ campo.name }}"{% endif %}>{{ campo.valor }}</textarea>
-                {% else %}
-                  <input class="ctrl{% if campo.erros %} ctrl--erro{% endif %}" type="text" id="id_{{ campo.name }}" name="{{ campo.name }}" value="{{ campo.valor }}"
-                         {% if campo.name == "nome" %}placeholder="{{ exemplo }}" autofocus{% endif %}
-                         {% if campo.obrigatorio %}required{% endif %}
-                         {% if campo.erros %}aria-invalid="true" aria-describedby="msg-{{ campo.name }}"{% endif %}>
-                {% endif %}
-                {% if campo.erros %}
-                  <span class="msg-erro form-erro" id="msg-{{ campo.name }}">{% include "components/icon.html" with nome="alert" %}{{ campo.erros|join:" " }}</span>
-                {% endif %}
-              </label>
-            {% endif %}
-          {% endfor %}
-        </div>
-
-        <p class="cad-frm__nota">
+    <form method="post" action="" id="form-cadastro" class="editor-roteiro__principal">
+      {% csrf_token %}
+      {% if erros_total %}
+        <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
           {% include "components/icon.html" with nome="info" %}
-          <span>Registros inativos deixam de aparecer nos formulários, mas continuam nos registros antigos.</span>
-        </p>
-
-        {# Ações no fim do cartão, como no roteiro: voltar à esquerda, salvar à direita. #}
-        <div class="frm-acoes-fim">
-          <a class="btn--secundaria" href="{% url url_lista slug %}">Voltar</a>
-          <button type="submit" class="btn-primaria">Salvar {{ singular }}</button>
+          <div><b>Não foi possível salvar {{ singular|default:"o registro" }}</b>Revise os campos indicados antes de continuar.
+            {% for erro in erros_gerais %}<span class="form-erro">{{ erro }}</span>{% endfor %}
+          </div>
         </div>
-      </div>
-    </section>
-  </form>
+      {% endif %}
+
+      <section class="section-card reg">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+          <h2 class="section-card__titulo">Dados {{ genitivo }}</h2>
+        </header>
+        <div class="section-card__corpo">
+          <div class="g-form g-form--2">
+            {% include "components/v32/campos_cadastro.html" %}
+          </div>
+          <p class="form-ajuda">Registros inativos deixam de aparecer nos formulários, mas continuam nos registros antigos.</p>
+
+          {# Ações no fim do cartão: voltar à esquerda, salvar à direita. #}
+          <div class="frm-acoes-fim">
+            <a class="btn--secundaria" href="{% url url_lista slug %}">Voltar</a>
+            <button type="submit" class="btn-primaria">Salvar {{ singular }}</button>
+          </div>
+        </div>
+      </section>
+    </form>
+  </div>
 {% endblock %}

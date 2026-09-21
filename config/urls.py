@@ -17,6 +17,7 @@ urlpatterns = [
     path("", include("core.urls")),
     path("conta/", include("accounts.urls")),
     path("dashboard/", include("dashboard.urls")),
+    path("agenda/", include("agenda.urls")),
     path("cadastros/", include("cadastros.urls")),
     path("solicitacoes/", include("solicitacoes.urls")),
     path("coffee-break/", include("coffee_break.urls")),
@@ -32,8 +33,6 @@ urlpatterns = [
     path("viagens/cadastros/", include("viagens_cadastros.urls")),
     path("viagens/roteiros/", include("viagens_roteiros.urls")),
     path("documentos/", include("documentos.urls")),
-    path("assistente/", include("assistente.urls")),
     # Webhook do WhatsApp: rota externa e anônima (quem chama é a Meta),
     # fora do prefixo do módulo para não esbarrar na autorização por setor.
-    path("whatsapp/", include("assistente.whatsapp.urls")),
 ]

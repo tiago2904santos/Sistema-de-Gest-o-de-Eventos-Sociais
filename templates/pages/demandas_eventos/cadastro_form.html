@@ -1,48 +1,83 @@
 {% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Formulário dos cadastros de apoio das demandas, na composição dos
+  formulários do módulo de Viagens: cabeçalho com ícone, título e selo (nada
+  de metadados sob o título), cartão numerado `section-card`, campos sempre
+  pelos components do design system e as ações no topo e no fim do cartão.
+{% endcomment %}
+
 {% block title %}{% if instancia %}Editar{% else %}Novo{% endif %} {{ config.singular }} — ASCOM{% endblock %}
+
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
 
-  {# Cabeçalho no padrão do roteiro: ícone, "Novo X" / "Editar X <nome>" e Salvar no topo. #}
-  <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
-    <div class="page-header d-cabeca__esq">
-      <div class="page-header__identificacao d-identificacao">
-        <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="checklist" %}</span>
-        <div>
+  <div class="editor-roteiro of-form">
+    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="checklist" %}</span>
           <div class="frm-titulo">
             <h1 class="page-header__titulo d-titulo-v32">{% if instancia %}Editar {{ config.singular }} <span class="frm-ident">{{ instancia }}</span>{% else %}Novo {{ config.singular }}{% endif %}</h1>
+            {% if instancia %}<span class="st {% if instancia.ativo %}st--ativo{% else %}st--inativo{% endif %}">{% if instancia.ativo %}Ativo{% else %}Inativo{% endif %}</span>{% endif %}
           </div>
-          <p class="page-header__subtitulo d-cabeca__sub frm-meta">
-            <span>{% include "components/icon.html" with nome="columns" %}{{ config.titulo }}</span>
-          </p>
         </div>
       </div>
+      <div class="frm-topo__acoes">
+        <button type="submit" class="btn-primaria" form="form-cadastro">Salvar {{ config.singular }}</button>
+      </div>
     </div>
-    <div class="frm-topo__acoes">
-      <button type="submit" class="btn-primaria" form="form-cadastro">Salvar</button>
-    </div>
+
+    <form method="post" id="form-cadastro" class="editor-roteiro__principal">{% csrf_token %}
+      {% if form.errors %}
+        <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
+          {% include "components/icon.html" with nome="info" %}
+          <div><b>Não foi possível salvar {{ config.singular }}</b>Revise os campos indicados antes de continuar.
+            <ul class="aviso--erro__lista">{% for campo, mensagens in form.errors.items %}{% for mensagem in mensagens %}<li>{% if campo == "__all__" %}{{ mensagem }}{% else %}<a href="#id_{{ campo }}">{{ mensagem }}</a>{% endif %}</li>{% endfor %}{% endfor %}</ul>
+          </div>
+        </div>
+      {% endif %}
+
+      <section class="section-card reg">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+          <h2 class="section-card__titulo">{{ config.titulo }}</h2>
+        </header>
+        <div class="section-card__corpo">
+          <div class="g-form g-form--2">
+            {% for campo in campos %}
+              {% if campo.tipo == "select" %}
+                {% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes obrigatorio=campo.obrigatorio selecionado=campo.valor erros=campo.erros pesquisavel=True %}
+              {% elif campo.tipo == "textarea" %}
+                <div class="cheia">
+                  {% include "components/textarea.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio linhas="3" valor=campo.valor erros=campo.erros %}
+                </div>
+              {% elif campo.tipo == "multiplo" %}
+                <div class="cheia">
+                  {% include "components/v32/cartoes_escolha.html" with name=campo.name tipo="checkbox" label=campo.label opcoes=campo.opcoes_marcadas erros=campo.erros %}
+                </div>
+              {% elif campo.tipo == "boolean" %}
+                {# Sim/não no interruptor do módulo. #}
+                <div class="form-campo cheia">
+                  <label class="interruptor">
+                    <input class="sr-only" type="checkbox" id="id_{{ campo.name }}" name="{{ campo.name }}" value="1"{% if campo.valor %} checked{% endif %}>
+                    <span class="interruptor__trilho" aria-hidden="true"><span class="interruptor__botao"></span></span>
+                    <span class="interruptor__rotulo">{{ campo.label }}</span>
+                  </label>
+                  {% for erro in campo.erros %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+                </div>
+              {% else %}
+                {% include "components/input.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio valor=campo.valor erros=campo.erros %}
+              {% endif %}
+            {% endfor %}
+          </div>
+
+          {# Ações no fim do cartão: voltar à esquerda, salvar à direita. #}
+          <div class="frm-acoes-fim">
+            <a class="btn--secundaria" href="{% url 'demandas_eventos:cadastro_lista' tipo %}">Voltar</a>
+            <button type="submit" class="btn-primaria">Salvar {{ config.singular }}</button>
+          </div>
+        </div>
+      </section>
+    </form>
   </div>
-
-  <form method="post" id="form-cadastro" class="cad-frm">{% csrf_token %}
-    <section class="reg">
-      {% include "components/v32/section_card.html" with numero="1" titulo=config.titulo %}
-      <div class="reg-corpo">
-        <div class="g-form v32-form-grid">
-          {% for campo in campos %}
-            {% if campo.tipo == 'select' %}{% include "components/select.html" with name=campo.name label=campo.label opcoes=campo.opcoes obrigatorio=campo.obrigatorio largura="6" selecionado=campo.valor erros=campo.erros pesquisavel=True %}
-            {% elif campo.tipo == 'textarea' %}{% include "components/textarea.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio largura="12" linhas="3" valor=campo.valor erros=campo.erros %}
-            {% elif campo.tipo == 'multiplo' %}<fieldset class="form-campo form-campo--12 campo-e--bloco"><legend class="form-label">{{ campo.label }}</legend><div class="opc-cards">{% for opcao in campo.opcoes %}<label class="opc-card"><input type="checkbox" name="{{ campo.name }}" value="{{ opcao.valor }}"{% if opcao.valor in campo.marcados %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ opcao.rotulo }}</label>{% endfor %}</div></fieldset>
-            {% elif campo.tipo == 'boolean' %}<label class="opc-card"><input type="checkbox" name="{{ campo.name }}" value="1"{% if campo.valor %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ campo.label }}</label>
-            {% else %}{% include "components/input.html" with name=campo.name label=campo.label obrigatorio=campo.obrigatorio largura="6" valor=campo.valor erros=campo.erros %}{% endif %}
-          {% endfor %}
-        </div>
-
-        {# Ações no fim do cartão, como no roteiro: voltar à esquerda, salvar à direita. #}
-        <div class="frm-acoes-fim">
-          <a class="btn--secundaria" href="{% url 'demandas_eventos:cadastro_lista' tipo %}">Voltar</a>
-          {% include "components/v32/button.html" with label="Salvar" variante="dourado" tipo="submit" %}
-        </div>
-      </div>
-    </section>
-  </form>
 {% endblock %}

@@ -1,0 +1,23 @@
+{% comment %}
+  Ações de uma linha de cadastro num botão único, no padrão dos cadastros de
+  Viagens: editar abre o modal, ativar/inativar e excluir ficam no mesmo
+  menu. Contexto: `objeto`, `slug`, `singular`.
+{% endcomment %}
+<div class="dd of-menu cad-acoes" data-menu>
+  <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações de {{ objeto.nome }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
+  <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
+    <div class="dd__t">{{ objeto.nome }}</div>
+    <a class="dd__i of-item" href="{% url 'cadastros:editar' slug objeto.pk %}" data-cadastro-modal>{% include "components/icon.html" with nome="pencil" %}<span><b>Editar {{ singular }}</b><small>Alterar os dados do cadastro</small></span></a>
+    <form method="post" action="{% url 'cadastros:alternar_ativo' slug objeto.pk %}">{% csrf_token %}
+      {% if objeto.ativo %}
+        <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="ban" %}<span><b>Inativar</b><small>Deixa de ser oferecido nos formulários</small></span></button>
+      {% else %}
+        <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="check-circle" %}<span><b>Ativar</b><small>Volta a ser oferecido nos formulários</small></span></button>
+      {% endif %}
+    </form>
+    <div class="dd__s"></div>
+    <form method="post" action="{% url 'cadastros:excluir' slug objeto.pk %}" data-confirmar-exclusao data-confirmar="Confirmar exclusão?">{% csrf_token %}
+      <button type="submit" class="dd__i dd__i--perigo of-item">{% include "components/icon.html" with nome="trash" %}<span><b>Excluir {{ singular }}</b><small>Remover permanentemente quando permitido</small></span></button>
+    </form>
+  </div>
+</div>

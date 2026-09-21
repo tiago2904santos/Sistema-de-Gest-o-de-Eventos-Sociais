@@ -1,0 +1,11 @@
+{% comment %}
+  O conteúdo de uma linha da central de notificações, numa célula só: o
+  título com o selo de nova ou lida e os fatos com ícone — quando chegou, de
+  onde veio e a mensagem. Contexto: `l` (linha do contexto da view).
+{% endcomment %}
+<h2 class="of-cartao__titulo tm-titulo">{{ l.titulo }} <span class="st st--{{ l.selo_tom }}">{{ l.selo }}</span></h2>
+<ul class="tm-fatos" aria-label="Dados da notificação">
+  {% for f in l.fatos %}
+    <li class="tm-fato{% if f.ausente %} tm-fato--ausente{% endif %}"{% if not f.ausente %} title="{{ f.texto }}"{% endif %}>{% include "components/icon.html" with nome=f.icone %}<span class="sr-only">{{ f.rotulo }}: </span><span class="vg-fato__valor">{{ f.texto }}</span></li>
+  {% endfor %}
+</ul>

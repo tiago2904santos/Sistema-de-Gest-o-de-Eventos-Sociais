@@ -1,0 +1,11 @@
+{% comment %}
+  O conteúdo de uma linha dos cadastros de Coffee Break, numa célula só: o
+  nome do registro com o selo da situação e os fatos com ícone que o tipo do
+  cadastro pede. Contexto: `l` (linha do presenter).
+{% endcomment %}
+<h2 class="of-cartao__titulo tm-titulo">{{ l.titulo }} <span class="st st--{{ l.selo_tom }}">{{ l.selo }}</span></h2>
+<ul class="tm-fatos" aria-label="Dados de {{ l.titulo }}">
+  {% for f in l.fatos %}
+    <li class="tm-fato{% if f.ausente %} tm-fato--ausente{% endif %}"{% if not f.ausente %} title="{{ f.texto }}"{% endif %}>{% include "components/icon.html" with nome=f.icone %}<span class="sr-only">{{ f.rotulo }}: </span><span class="vg-fato__valor">{{ f.texto }}</span></li>
+  {% endfor %}
+</ul>

@@ -68,33 +68,14 @@
   </div>
 
   <div class="db-linha2">
-    <section class="pa-card pa-card--lista">
-      <h2 class="pa-h pa-h--lista">Últimas pautas<em>8 mais recentes</em><a href="{{ url_lista }}">Ver todas</a></h2>
-      <div class="dt-w">
-        <table class="dt">
-          <thead>
-            <tr>
-              <th class="c-data">Data</th>
-              <th class="c-status">Status</th>
-              <th class="c-tipo">Título</th>
-              <th class="c-mun">Unidade</th>
-              <th class="c-per">Publicada</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for p in recentes %}
-              <tr data-linha-url="{% url 'publicacoes:editar' p.pk %}">
-                <td class="c-data"><a href="{% url 'publicacoes:editar' p.pk %}">{{ p.data|date:"d/m/Y" }}</a></td>
-                <td class="c-status"><span class="st st--{{ p.status_css }}">{{ p.get_status_display }}</span></td>
-                <td class="c-tipo c-tipo--quebra">{{ p.titulo|truncatechars:70 }}</td>
-                <td class="c-mun">{{ p.unidade|default:"—" }}</td>
-                <td class="c-per">{{ p.data_publicacao|date:"d/m/Y"|default:"—" }}</td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="5" class="dt__vazio">Nenhuma pauta registrada ainda.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <section class="section-card reg">
+      <header class="section-card__cabecalho reg__t">
+        <h2 class="section-card__titulo">Últimas pautas</h2>
+        <div class="section-card__acao"><a class="btn--secundaria btn--compacto" href="{{ url_lista }}">Ver todas</a></div>
+      </header>
+      <div class="section-card__corpo">
+        {# A mesma linha e o mesmo menu de ações da listagem. #}
+        {% include "components/v32/lista_embutida.html" with linhas=linhas_recentes icone="document" rotulo="Pauta" rotulo_plural="pautas" conteudo_linha="pages/publicacoes/_conteudo_linha.html" acoes_linha="pages/publicacoes/_acoes_linha.html" vazio="Nenhuma pauta registrada ainda." %}
       </div>
     </section>
 

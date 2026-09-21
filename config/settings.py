@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     "cadastros",
     "solicitacoes",
     "dashboard",
+    "agenda",
     "auditoria",
     "coffee_break",
     "demandas_eventos",
@@ -83,7 +84,6 @@ INSTALLED_APPS = [
     "viagens_planos",
     "viagens_prestacoes",
     "migracao_legado",
-    "assistente",
 ]
 
 MIDDLEWARE = [

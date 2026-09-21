@@ -6,6 +6,8 @@ o campo `status` diretamente, e transições inválidas levantam
 `TransicaoInvalida`.
 """
 
+import logging
+
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.urls import reverse
@@ -20,6 +22,8 @@ from .models import (
     SolicitacaoEvento,
     StatusSolicitacao,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class TransicaoInvalida(ValidationError):
@@ -269,7 +273,30 @@ def despachar(solicitacao, usuario, decisao, observacao="", quantidades=None):
         solicitacao=solicitacao,
         exceto=usuario,
     )
+    _gerar_viagem_do_despacho(solicitacao, usuario)
     return solicitacao
+
+
+def _gerar_viagem_do_despacho(solicitacao, usuario) -> None:
+    """Deferiu com atendimento? Então a viagem já nasce, em rascunho.
+
+    Roda **depois** da transação do despacho, e engole o próprio erro de
+    propósito: a decisão da DG é o ato administrativo e não pode se perder
+    porque o módulo de Viagens teve um problema. Se falhar, fica no log e a
+    viagem pode ser gerada pela tela da solicitação.
+    """
+    from solicitacoes import integracao_viagens
+
+    cabe, _motivo = integracao_viagens.pode_gerar(solicitacao)
+    if not cabe:
+        return
+    try:
+        integracao_viagens.gerar_viagem(solicitacao, usuario)
+    except Exception:  # noqa: BLE001 - o despacho não depende disto
+        logger.exception(
+            "Falha ao gerar viagem da solicitação %s; o despacho foi mantido.",
+            solicitacao.pk,
+        )
 
 
 @transaction.atomic

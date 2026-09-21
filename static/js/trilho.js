@@ -8,7 +8,9 @@
   "use strict";
 
   function ativoDe(trilho) {
-    return trilho.querySelector("input:checked + span") || trilho.querySelector(".is-atual > a");
+    // A etapa atual pode ser um link (painel da viagem) ou um texto
+    // (acompanhamento da solicitação, que não navega).
+    return trilho.querySelector("input:checked + span") || trilho.querySelector(".is-atual > a, .is-atual > .vg-stepper__passo");
   }
 
   function posicionar(trilho, alvo) {

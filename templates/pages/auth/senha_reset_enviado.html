@@ -15,7 +15,7 @@
       </p>
     </div>
     {% url 'accounts:login' as url_login %}
-    {% include "components/button.html" with label="Voltar para o acesso" variante="secundario" href=url_login bloco=True %}
+    <a class="btn btn--secundario btn--bloco" href="{{ url_login }}">Voltar para o acesso</a>
   </div>
 </div>
 {% endblock %}

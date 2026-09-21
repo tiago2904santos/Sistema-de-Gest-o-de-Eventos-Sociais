@@ -1,0 +1,31 @@
+{% comment %}
+  Paginação das listas (V3.2), como nas listas do módulo de Viagens: a
+  contagem à esquerda, os números com reticências à direita.
+
+  Uso:
+    {% include "components/v32/paginacao.html" with pagina=pagina
+       paginas_visiveis=paginas_visiveis elipse=elipse querystring=querystring
+       rotulo="pautas" %}
+{% endcomment %}
+{% if pagina.paginator.num_pages > 1 %}
+  <div class="v32-corpo pag">
+    <span class="v32-suave">Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }} {{ rotulo }}</span>
+    <nav class="pag__nav" aria-label="Paginação">
+      {% if pagina.has_previous %}
+        <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+      {% endif %}
+      {% for numero in paginas_visiveis %}
+        {% if numero == elipse %}
+          <span class="pag__el" aria-hidden="true">…</span>
+        {% elif numero == pagina.number %}
+          <span class="pag__n" aria-current="page">{{ numero }}</span>
+        {% else %}
+          <a class="pag__n" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
+        {% endif %}
+      {% endfor %}
+      {% if pagina.has_next %}
+        <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+      {% endif %}
+    </nav>
+  </div>
+{% endif %}

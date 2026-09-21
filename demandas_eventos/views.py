@@ -30,7 +30,10 @@ from .models import (
     Subtema,
     Tema,
 )
+from core.listagens import trilha_de_situacoes
+
 from .permissions import pode_editar, queryset_visivel, setores_do_usuario_para_modulo
+from .presenters import ICONES_STATUS, linha_da_lista, linha_do_cadastro
 from . import services
 
 ITENS_POR_PAGINA = 20
@@ -94,15 +97,25 @@ def dashboard(request):
     proximas = visiveis.filter(data_inicio_evento__gte=hoje).exclude(
         status__in=[StatusDemanda.CANCELADA, StatusDemanda.NAO_ATENDER]
     ).select_related("tipo_evento", "municipio").order_by("data_inicio_evento")[:8]
-    return render(request, "pages/demandas_eventos/dashboard.html", {"resumo": resumo, "proximas": proximas})
+    return render(
+        request,
+        "pages/demandas_eventos/dashboard.html",
+        {
+            "resumo": resumo,
+            "proximas": proximas,
+            # A lista do painel usa a mesma linha da listagem.
+            "linhas_proximas": [linha_da_lista(d) for d in proximas],
+        },
+    )
 
 
 @login_required
 def lista_demandas(request):
-    queryset = queryset_visivel(
+    visiveis = queryset_visivel(
         request.user,
         DemandaEvento.objects.select_related("tipo_evento", "tema", "subtema", "municipio", "responsavel_atendimento"),
     )
+    queryset = visiveis
     q = request.GET.get("q", "").strip()
     status = request.GET.get("status", "").strip()
     tipo = request.GET.get("tipo", "").strip()
@@ -154,6 +167,24 @@ def lista_demandas(request):
             "setor": setor,
             "inicio": inicio,
             "fim": fim,
+            "linhas": [linha_da_lista(d) for d in pagina],
+            # As situações na trilha lateral, como nas listas de Viagens.
+            "situacoes": trilha_de_situacoes(
+                request,
+                [
+                    {
+                        "chave": valor,
+                        "rotulo": rotulo,
+                        "total": visiveis.filter(status=valor).count(),
+                    }
+                    for valor, rotulo in StatusDemanda.choices
+                ],
+                visiveis.count(),
+                ICONES_STATUS,
+                parametro="status",
+            ),
+            # Chip aceso: sem situação escolhida, "Todas".
+            "situacao_ativa": status or "todas",
             "opcoes_status": _opcoes_choices(StatusDemanda.choices),
             "opcoes_tipos": _opcoes(TipoEvento.objects.filter(ativo=True)),
             "opcoes_municipios": _opcoes(Municipio.objects.filter(demandas_ascom__isnull=False).distinct()),
@@ -170,6 +201,11 @@ def lista_demandas(request):
             "tem_filtros": bool(q or status or tipo or municipio or responsavel or setor or inicio or fim),
         },
     )
+
+
+def _com_marcados(opcoes, marcados):
+    """Marca as opções escolhidas, no contrato dos cartões de escolha."""
+    return [{**opcao, "marcado": opcao["valor"] in marcados} for opcao in opcoes]
 
 
 def _contexto_form(form, instancia):
@@ -192,9 +228,14 @@ def _contexto_form(form, instancia):
         "opcoes_responsaveis": _opcoes_responsaveis(
             form.fields["responsavel_atendimento"].queryset
         ),
-        "opcoes_palestrantes": _opcoes(form.fields["palestrantes"].queryset),
+        # Os cartões de escolha já vêm sabendo o que está marcado.
+        "opcoes_palestrantes": _com_marcados(
+            _opcoes(form.fields["palestrantes"].queryset), marcados("palestrantes")
+        ),
         "palestrantes_marcados": marcados("palestrantes"),
-        "opcoes_setores": _opcoes(form.fields["setores"].queryset),
+        "opcoes_setores": _com_marcados(
+            _opcoes(form.fields["setores"].queryset), marcados("setores")
+        ),
         "setores_marcados": marcados("setores"),
     }
 
@@ -356,8 +397,27 @@ def lista_cadastro(request, tipo):
     campo_busca = "tipo" if tipo == "respostas" else "nome"
     if q:
         queryset = queryset.filter(**{f"{campo_busca}__icontains": q})
-    pagina = Paginator(queryset, ITENS_POR_PAGINA).get_page(request.GET.get("pagina"))
-    return render(request, "pages/demandas_eventos/cadastro_lista.html", {"tipo": tipo, "config": config, "pagina": pagina, "q": q})
+    paginador = Paginator(queryset, ITENS_POR_PAGINA)
+    pagina = paginador.get_page(request.GET.get("pagina"))
+    parametros = request.GET.copy()
+    parametros.pop("pagina", None)
+    return render(
+        request,
+        "pages/demandas_eventos/cadastro_lista.html",
+        {
+            "tipo": tipo,
+            "config": config,
+            "pagina": pagina,
+            "linhas": [linha_do_cadastro(item, tipo) for item in pagina],
+            "paginas_visiveis": list(
+                paginador.get_elided_page_range(pagina.number, on_each_side=1, on_ends=1)
+            ),
+            "elipse": Paginator.ELLIPSIS,
+            "querystring": parametros.urlencode(),
+            "q": q,
+            "tem_filtros": bool(q),
+        },
+    )
 
 
 def _campos_cadastro(form):
@@ -366,7 +426,15 @@ def _campos_cadastro(form):
         value = form[nome].value()
         item = {"name": nome, "label": campo.label, "erros": form.errors.get(nome), "obrigatorio": campo.required, "valor": "" if value is None else str(value)}
         if isinstance(campo, forms.ModelMultipleChoiceField):
-            item.update({"tipo": "multiplo", "opcoes": _opcoes(campo.queryset), "marcados": [str(getattr(v, "pk", v)) for v in (value or [])]})
+            marcados = [str(getattr(v, "pk", v)) for v in (value or [])]
+            opcoes = _opcoes(campo.queryset)
+            # Os cartões de escolha já vêm sabendo o que está marcado.
+            item.update({
+                "tipo": "multiplo",
+                "opcoes": opcoes,
+                "marcados": marcados,
+                "opcoes_marcadas": _com_marcados(opcoes, marcados),
+            })
         elif isinstance(campo, forms.ModelChoiceField):
             item.update({"tipo": "select", "opcoes": _opcoes(campo.queryset)})
         elif isinstance(campo.widget, forms.Textarea):

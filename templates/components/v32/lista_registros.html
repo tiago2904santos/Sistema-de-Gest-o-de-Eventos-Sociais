@@ -1,0 +1,80 @@
+{% comment %}
+  Lista de registros na composição das listas do módulo de Viagens: a busca
+  na barra do cartão, a tabela do V3.2 no desktop com uma célula só por
+  registro (ícone, conteúdo, menu de ações), a Data List no celular e a
+  paginação no pé.
+
+  O que muda de módulo para módulo são os dois trechos da linha, passados
+  pelo caminho do template:
+
+    {% include "components/v32/lista_registros.html" with
+       linhas=linhas icone="document" rotulo="Pauta" rotulo_plural="pautas"
+       conteudo_linha="pages/publicacoes/_conteudo_linha.html"
+       acoes_linha="pages/publicacoes/_acoes_linha.html"
+       placeholder_busca="Buscar por título, fonte ou unidade…"
+       filtro_nome="fila" filtro_valor=fila_ativa
+       vazio="Nenhuma pauta registrada ainda."
+       vazio_filtrado="Nenhuma pauta encontrada com os filtros aplicados." %}
+
+  Cada linha (`l`) vem pronta do presenter do módulo; `l.cancelada` risca a
+  linha, como nas listas de Viagens. O contexto da página (`q`, `pagina`,
+  `paginas_visiveis`, `elipse`, `querystring`, `tem_filtros`) continua valendo
+  dentro dos trechos incluídos.
+{% endcomment %}
+<div class="pa-card pa-card--lista cad-lista">
+  {# A busca é do servidor (precisa achar o registro da página 3): envia 1 s depois de digitar. #}
+  <form method="get" class="cad-barra" role="search" data-cadastro-busca data-auto-enviar>
+    {# A situação escolhida na trilha sobrevive à busca. #}
+    {% if filtro_nome and filtro_valor %}<input type="hidden" name="{{ filtro_nome }}" value="{{ filtro_valor }}">{% endif %}
+    <div class="busca">
+      {% include "components/icon.html" with nome="search" %}
+      <label class="sr-only" for="id_q">Buscar {{ rotulo_plural }}</label>
+      <input type="search" name="q" id="id_q" value="{{ q }}" placeholder="{{ placeholder_busca }}" autocomplete="off">
+    </div>
+  </form>
+
+  <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Tabela de {{ rotulo_plural }}">
+    <table class="dt dt--responsiva">
+      <thead>
+        <tr>
+          <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
+          <th>{{ rotulo }}</th>
+          <th class="c-cad-acoes">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in linhas %}
+          <tr{% if l.cancelada %} class="tm-linha--cancelada"{% endif %}>
+            <td class="tabela__col-icone">
+              <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=icone %}</span>
+              <span class="sr-only">{{ rotulo }}</span>
+            </td>
+            <td class="c-nome tm-celula" data-rotulo="{{ rotulo }}">{% include conteudo_linha %}</td>
+            <td class="c-cad-acoes">{% include acoes_linha %}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="3" class="v32-suave dt__vazio">{% if tem_filtros %}{{ vazio_filtrado }}{% else %}{{ vazio }}{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="lista-mobile-v32"><div class="m-lista">
+    {% for l in linhas %}
+      <article class="m-item{% if l.cancelada %} tm-linha--cancelada{% endif %}">
+        <div class="m-item__topo">
+          <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=icone %}</span>
+          <span class="sr-only">{{ rotulo }}</span>
+        </div>
+        <div class="m-item__tipo tm-celula">{% include conteudo_linha %}</div>
+        <div class="m-item__rodape">{% include acoes_linha %}</div>
+      </article>
+    {% empty %}
+      <article class="m-item"><p class="m-vazio">{% if tem_filtros %}{{ vazio_filtrado }}{% else %}{{ vazio }}{% endif %}</p></article>
+    {% endfor %}
+  </div></div>
+
+  {% include "components/v32/paginacao.html" with rotulo=rotulo_plural %}
+</div>

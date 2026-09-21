@@ -7,6 +7,7 @@ from .editor import pagina as editor_pagina
 app_name = "documentos"
 urlpatterns = [
     path("<uuid:pk>/baixar/", views.baixar, name="baixar"),
+    path("<uuid:pk>/abrir/", views.abrir, name="abrir"),
     # Editor documental: o editor embutido nos formulários, a folha e o
     # endereço antigo da tela (leva ao formulário).
     path("editor/<str:tipo>/<int:pk>/", editor_pagina.pagina, name="editor_pagina"),

@@ -30,6 +30,16 @@
       ],
       "port": 8022,
       "autoPort": true
+    },
+    {
+      "name": "django-whatsapp",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "set WHATSAPP_APP_SECRET=segredo-local&& set WHATSAPP_VERIFY_TOKEN=verify-local&& .venv\\Scripts\\python.exe manage.py runserver %PORT%"
+      ],
+      "port": 8765,
+      "autoPort": false
     }
   ]
 }

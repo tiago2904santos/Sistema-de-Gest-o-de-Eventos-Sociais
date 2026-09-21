@@ -1654,8 +1654,10 @@
 
   var formulario = document.querySelector("#form-solicitacao");
   if (!formulario) return;
-  var radios = formulario.querySelectorAll('input[name="unidade_movel"]');
-  if (!radios.length) return;
+  // O controle virou o interruptor do cabeçalho do cartão (uma caixa de
+  // seleção); os dois formatos continuam valendo.
+  var controles = formulario.querySelectorAll('input[name="unidade_movel"]');
+  if (!controles.length) return;
   var selects = ["unidade_movel_designada", "motorista"]
     .map(function (nome) {
       return formulario.querySelector('select[name="' + nome + '"]');
@@ -1663,9 +1665,13 @@
     .filter(Boolean);
   if (!selects.length) return;
 
+  // A caixa cinza dos dois campos some inteira: vazia, ela seria só uma borda.
+  var caixa = formulario.querySelector(".condicional");
+
   function aplicarRegra() {
     var marcado = formulario.querySelector('input[name="unidade_movel"]:checked');
     var ativo = Boolean(marcado && marcado.value === "1");
+    if (caixa) caixa.hidden = !ativo;
     selects.forEach(function (select) {
       var campo = select.closest(".form-campo");
       if (campo) campo.style.display = ativo ? "" : "none";
@@ -1676,8 +1682,8 @@
     });
   }
 
-  radios.forEach(function (radio) {
-    radio.addEventListener("change", aplicarRegra);
+  controles.forEach(function (controle) {
+    controle.addEventListener("change", aplicarRegra);
   });
   aplicarRegra();
 })();

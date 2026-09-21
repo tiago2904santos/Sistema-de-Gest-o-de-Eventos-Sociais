@@ -20,15 +20,16 @@ from django.views.decorators.http import require_POST
 
 from core.listagens import (
     campos_formulario,
-    colunas_ordenaveis,
     opcoes,
     opcoes_choices,
     ordenacao,
     paginar,
+    trilha_de_situacoes,
     valores_filtro,
 )
 
 from . import services
+from .presenters import linha_da_lista
 from .forms import (
     FiltroPublicacoesForm,
     PublicacaoForm,
@@ -53,6 +54,8 @@ FILAS = [
     ("canceladas", "Canceladas", [StatusPublicacao.CANCELADA]),
 ]
 
+# A ordenação não tem mais controles na tela (a lista segue a composição de
+# Viagens), mas `?ordem=` continua valendo para os links antigos.
 ORDENACOES = {
     "data": ["data", "inicio_pauta", "pk"],
     "titulo": ["titulo", "-data"],
@@ -61,23 +64,6 @@ ORDENACOES = {
     "status": ["status", "-data"],
     "publicacao": ["data_publicacao", "horario_publicacao", "-pk"],
 }
-
-COLUNAS = [
-    ("data", "Data", "c-data"),
-    ("status", "Status", "c-status"),
-    ("titulo", "Título", "c-sol"),
-    ("unidade", "Unidade", "c-mun"),
-    ("jornalista", "Jornalista", "c-tipo"),
-    ("publicacao", "Publicada em", "c-per"),
-]
-
-ORDENACOES_MOBILE = [
-    {"valor": "-data", "rotulo": "Mais recentes"},
-    {"valor": "data", "rotulo": "Mais antigas"},
-    {"valor": "titulo", "rotulo": "Título (A–Z)"},
-    {"valor": "unidade", "rotulo": "Unidade (A–Z)"},
-    {"valor": "-publicacao", "rotulo": "Publicadas por último"},
-]
 
 CAMPOS_FILTRO = ["q", "status", "jornalista", "unidade", "inicio", "fim"]
 
@@ -154,6 +140,8 @@ def painel(request):
             "por_unidade": services.por_unidade(inicio_mes),
             "grafico": services.serie_mensal(6, hoje),
             "recentes": recentes,
+            # A lista do painel usa a mesma linha da listagem.
+            "linhas_recentes": [linha_da_lista(p) for p in recentes],
             "url_lista": url_lista,
         },
     )
@@ -202,9 +190,18 @@ def _filtrar(request):
     return queryset, filtros, pedido, fila_ativa
 
 
+# Ícone de cada fila na trilha lateral das situações.
+ICONES_FILA = {
+    "pendentes": "hourglass",
+    "andamento": "activity",
+    "publicadas": "check-circle",
+    "canceladas": "ban",
+}
+
+
 @acesso_ao_modulo
 def lista(request):
-    queryset, filtros, pedido, fila_ativa = _filtrar(request)
+    queryset, filtros, _pedido, fila_ativa = _filtrar(request)
     pagina, paginas_visiveis, querystring = paginar(request, queryset)
     contagens = dict(
         Publicacao.objects.values_list("status").annotate(total=Count("pk"))
@@ -214,7 +211,6 @@ def lista(request):
             "chave": chave,
             "rotulo": rotulo,
             "total": sum(contagens.get(s, 0) for s in statuses),
-            "destaque": chave == "pendentes",
         }
         for chave, rotulo, statuses in FILAS
     ]
@@ -226,23 +222,18 @@ def lista(request):
         {
             "kicker": KICKER,
             "pagina": pagina,
-            "linhas": pagina.object_list,
+            "linhas": [linha_da_lista(p) for p in pagina.object_list],
             "paginas_visiveis": paginas_visiveis,
             "elipse": Paginator.ELLIPSIS,
             "querystring": querystring,
-            "colunas": colunas_ordenaveis(request, pedido, COLUNAS, ORDENACOES),
-            "ordem_atual": pedido,
-            "ordenacoes_mobile": ORDENACOES_MOBILE,
-            "valores_filtro": valores,
-            "opcoes_status": _opcoes_status(),
-            "opcoes_jornalistas": opcoes(Responsavel.objects.filter(ativo=True)),
-            "opcoes_unidades": opcoes(Unidade.objects.filter(ativo=True)),
-            "filas": filas,
+            "q": valores.get("q", ""),
+            "situacoes": trilha_de_situacoes(
+                request, filas, sum(contagens.values()), ICONES_FILA
+            ),
+            # Chip aceso: sem fila escolhida, "Todas".
+            "situacao_ativa": fila_ativa or "todas",
             "fila_ativa": fila_ativa,
-            "total_geral": sum(contagens.values()),
-            "total_resultados": pagina.paginator.count,
             "tem_filtros": filtros_ativos > 0,
-            "filtros_ativos": filtros_ativos,
         },
     )
 
@@ -362,6 +353,9 @@ def _contexto_formulario(form, publicacao=None):
         "form": form,
         "publicacao": publicacao,
         "etapas": _etapas(publicacao) if publicacao else [],
+        # Cabeçalho da tela de edição: só o título e o selo da situação.
+        "selo": publicacao.get_status_display() if publicacao else "Nova",
+        "selo_tom": publicacao.status_css if publicacao else "pendente",
         "erros": form.errors,
         "erros_gerais": form.non_field_errors(),
         "valores": _valores(form),

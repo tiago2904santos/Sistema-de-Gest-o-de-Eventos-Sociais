@@ -1,72 +1,49 @@
 {% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Central de notificações na composição das listas do módulo de Viagens: os
+  filtros na trilha à esquerda, a tabela do V3.2 no desktop e a Data List no
+  celular, uma célula por notificação e um menu único de ações. "Marcar todas
+  como lidas" fica no alto, junto do título.
+{% endcomment %}
 
 {% block title %}Notificações — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with atual="Notificações" %}
-  {% include "components/v32/page_header.html" with titulo="Notificações" subtitulo="Avisos sobre as suas solicitações e filas de trabalho" icone="bell" %}
 
-  <div class="pa-card pa-card--lista v32-bloco notificacoes-filtros">
-    <div class="filas notificacoes-filtros__chips">
-      <a class="fila"{% if not filtro %} aria-current="page"{% endif %} href="{% url 'core:notificacoes' %}">
-        Todas <strong class="fila__n">{{ total }}</strong>
-      </a>
-      <a class="fila"{% if filtro == 'nao-lidas' %} aria-current="page"{% endif %} href="?filtro=nao-lidas">
-        Não lidas <strong class="fila__n">{{ nao_lidas }}</strong>
-      </a>
-      <a class="fila"{% if filtro == 'lidas' %} aria-current="page"{% endif %} href="?filtro=lidas">
-        Lidas <strong class="fila__n">{{ lidas }}</strong>
-      </a>
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker kicker--junto">Avisos</div>
+      <h1>Notificações</h1>
     </div>
     {% if nao_lidas %}
-      <form method="post" action="{% url 'core:notificacoes_marcar_lidas' %}">
-        {% csrf_token %}
-        <button type="submit" class="btn--secundaria  notificacoes-filtros__marcar">
-          {% include "components/icon.html" with nome="check-circle" %}
-          Marcar todas como lidas
-        </button>
-      </form>
+      <div class="d-acoes">
+        <form method="post" action="{% url 'core:notificacoes_marcar_lidas' %}">{% csrf_token %}
+          <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="check-circle" %}Marcar todas como lidas</button>
+        </form>
+      </div>
     {% endif %}
   </div>
 
-  {% for grupo in grupos %}
-    <h2 class="notificacoes-grupo">{{ grupo.rotulo }}</h2>
-    {% for n in grupo.itens %}
-      <a class="m-item notificacao-cartao{% if not n.lida %} notificacao-cartao--nova{% endif %}"
-         href="{% url 'core:notificacao_abrir' n.pk %}">
-        <span class="m-item notificacao-cartao__icone" aria-hidden="true">{% include "components/icon.html" with nome="bell" %}</span>
-        <span class="m-item notificacao-cartao__ponto" aria-hidden="true"></span>
-        <span class="m-item notificacao-cartao__conteudo">
-          <strong>{{ n.titulo }}</strong>
-          {% if n.mensagem %}<span class="m-item notificacao-cartao__mensagem">{{ n.mensagem }}</span>{% endif %}
-          <span class="m-item notificacao-cartao__meta">
-            <span class="m-item notificacao-cartao__quando">{% include "components/icon.html" with nome="clock" %}{{ n.criada_em|date:"d/m/Y H:i" }}</span>
-            <span class="m-item notificacao-cartao__divisor" aria-hidden="true">|</span>
-            <span class="m-item notificacao-cartao__tag">{% if n.solicitacao_id %}Solicitação{% else %}Sistema{% endif %}</span>
-          </span>
-        </span>
-        <span class="m-item notificacao-cartao__seta" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</span>
-      </a>
-    {% endfor %}
-  {% empty %}
-    <div class="semres notificacoes-vazio">
-      <span class="notificacoes-vazio__icone" aria-hidden="true">{% include "components/icon.html" with nome="bell" %}</span>
-      <strong>Nenhuma notificação</strong>
-      <p>Quando houver novas atualizações, elas aparecerão aqui.</p>
-    </div>
-  {% endfor %}
+  <div class="cad-grade cad-grade--sem-folga">
+    {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_rotulo="Situação das notificações" sem_titulo=True %}
 
-  {% if pagina.paginator.num_pages > 1 %}
-    <div class="pa-card pa-card--lista v32-bloco"><div class="v32-corpo pag">
-      <span class="v32-suave">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
-      <nav class="pag__nav" aria-label="Paginação">
-        {% if pagina.has_previous %}
-          <a class="pag__passo" href="?{% if filtro %}filtro={{ filtro }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
-        {% endif %}
-        {% if pagina.has_next %}
-          <a class="pag__passo" href="?{% if filtro %}filtro={{ filtro }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
-        {% endif %}
-      </nav>
-    </div></div>
-  {% endif %}
+    <div>
+      {% include "components/v32/lista_embutida.html" with linhas=linhas icone="bell" rotulo="Notificação" rotulo_plural="notificações" conteudo_linha="pages/core/_conteudo_notificacao.html" acoes_linha="pages/core/_acoes_notificacao.html" vazio="Nenhuma notificação. Quando houver novidades, elas aparecem aqui." %}
+
+      {% if pagina.paginator.num_pages > 1 %}
+        <div class="v32-corpo pag">
+          <span class="v32-suave">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+          <nav class="pag__nav" aria-label="Paginação">
+            {% if pagina.has_previous %}
+              <a class="pag__passo" href="?{% if filtro %}filtro={{ filtro }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+            {% endif %}
+            {% if pagina.has_next %}
+              <a class="pag__passo" href="?{% if filtro %}filtro={{ filtro }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+            {% endif %}
+          </nav>
+        </div>
+      {% endif %}
+    </div>
+  </div>
 {% endblock %}

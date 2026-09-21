@@ -293,7 +293,7 @@ class ViewsTests(BaseAtendimentoTestCase):
         form_url = reverse("atendimento_imprensa:editar", args=[atendimento.pk])
         for nome in ("atendimento_imprensa:lista", "atendimento_imprensa:painel"):
             resposta = self.client.get(reverse(nome))
-            self.assertContains(resposta, f'data-linha-url="{form_url}"')
+            self.assertContains(resposta, form_url)
 
     def test_rota_de_detalhe_nao_existe_mais(self):
         with self.assertRaises(NoReverseMatch):

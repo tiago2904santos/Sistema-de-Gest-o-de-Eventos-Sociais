@@ -1,0 +1,30 @@
+# O site. Roda como o usuário `eventos`, que não tem shell e não enxerga o GV.
+[Unit]
+Description=Sistema de Gestão de Eventos Sociais (Django/gunicorn)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=notify
+User=eventos
+Group=eventos
+WorkingDirectory=/var/www/eventos-sociais/app
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/var/www/eventos-sociais/app/.venv/bin/gunicorn config.wsgi:application \
+    --bind 127.0.0.1:8100 \
+    --workers 3 \
+    --timeout 120 \
+    --access-logfile - \
+    --error-logfile -
+Restart=on-failure
+RestartSec=5
+
+# O processo só precisa escrever na mídia e nos backups. Se for comprometido,
+# o resto do disco continua fora de alcance.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/var/www/eventos-sociais/media /var/www/eventos-sociais/backups
+
+[Install]
+WantedBy=multi-user.target

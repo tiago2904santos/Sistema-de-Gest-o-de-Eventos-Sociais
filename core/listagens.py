@@ -95,6 +95,44 @@ def colunas_ordenaveis(request, pedido, colunas, ordenacoes):
     return resultado
 
 
+def trilha_de_situacoes(request, filas, total_geral, icones, parametro="fila"):
+    """As filas de uma listagem como itens da trilha lateral (`cad_rail`).
+
+    É a composição das listas do módulo de Viagens: cada item troca só a
+    situação e mantém o que foi digitado na busca. `filas` são dicts com
+    `chave`, `rotulo` e `total`; `icones` mapeia chave -> ícone.
+    """
+    parametros = request.GET.copy()
+    parametros.pop("pagina", None)
+    parametros.pop(parametro, None)
+
+    def url(chave=None):
+        destino = parametros.copy()
+        if chave:
+            destino[parametro] = chave
+        consulta = destino.urlencode()
+        return f"?{consulta}" if consulta else "?"
+
+    return [
+        {
+            "slug": "todas",
+            "titulo": "Todas",
+            "total": total_geral,
+            "icone": "checklist",
+            "url": url(),
+        }
+    ] + [
+        {
+            "slug": fila["chave"],
+            "titulo": fila["rotulo"],
+            "total": fila["total"],
+            "icone": icones.get(fila["chave"], "document"),
+            "url": url(fila["chave"]),
+        }
+        for fila in filas
+    ]
+
+
 def campos_formulario(form):
     """Descreve os campos do form para o template genérico de cadastro."""
     campos = []

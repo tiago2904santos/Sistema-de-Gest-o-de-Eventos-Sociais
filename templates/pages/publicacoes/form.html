@@ -1,179 +1,148 @@
 {% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
 {% comment %}
-  Tela única da pauta no padrão V3.2: o formulário É a tela do registro
-  (não existe mais uma tela de detalhe). Fluxo em coluna única, sem lateral
-  flutuante — acompanhamento, registro e atalhos de publicação entram como
-  seções normais quando a pauta já existe.
+  Tela única da pauta, na composição dos formulários do módulo de Viagens:
+  cabeçalho com ícone, título e selo (nada de metadados sob o título),
+  cartões numerados `section-card`, campos sempre pelos components do design
+  system e as ações no topo e no fim do último cartão editável.
+
+  O formulário É a tela do registro: acompanhamento e dados calculados
+  entram como seções normais quando a pauta já existe.
 {% endcomment %}
 
 {% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 
 {% block conteudo %}
-  <form method="post" action="" id="form-publicacao">
-    {% csrf_token %}
+  {% include "components/v32/breadcrumb.html" with atual=titulo_pagina %}
 
-    {# Cabeçalho no padrão do roteiro: ícone, "Nova pauta" ou "Editar pauta <título>", situação ao lado, meta com ícones e Salvar no topo. #}
+  <div class="editor-roteiro of-form">
     <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
       <div class="page-header d-cabeca__esq">
         <div class="page-header__identificacao d-identificacao">
           <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
-          <div>
-            <div class="frm-titulo">
-              <h1 class="page-header__titulo d-titulo-v32">{% if publicacao %}Editar pauta <span class="frm-ident">{{ publicacao.titulo }}</span>{% else %}Nova pauta{% endif %}</h1>
-              <span class="frm-rasc">{% include "components/icon.html" with nome="document" %}{% if publicacao %}{{ publicacao.get_status_display }}{% else %}Nova{% endif %}</span>
-            </div>
-            {% if publicacao %}
-              <p class="page-header__subtitulo d-cabeca__sub frm-meta">
-                <span>{% include "components/icon.html" with nome="landmark" %}{{ publicacao.unidade|default:"Unidade não informada" }}</span>
-                <span>{% include "components/icon.html" with nome="calendar" %}{{ publicacao.data|date:"d/m/Y" }}{% if publicacao.inicio_pauta %} às {{ publicacao.inicio_pauta|time:"H:i" }}{% endif %}</span>
-                <span>{% include "components/icon.html" with nome="user" %}{{ publicacao.jornalista }}</span>
-              </p>
-            {% endif %}
+          <div class="frm-titulo">
+            <h1 class="page-header__titulo d-titulo-v32">{% if publicacao %}Editar pauta <span class="frm-ident" title="{{ publicacao.titulo }}">{{ publicacao.titulo|truncatechars:70 }}</span>{% else %}Nova pauta{% endif %}</h1>
+            <span class="st st--{{ selo_tom }}">{{ selo }}</span>
           </div>
         </div>
       </div>
       <div class="frm-topo__acoes">
-        <button type="submit" class="btn-primaria" form="form-publicacao">{% if publicacao %}Salvar alterações{% else %}Registrar pauta{% endif %}</button>
-        {% if publicacao %}
-          {% if publicacao.link_site or publicacao.link_aen %}
-            <div class="dd" data-menu>
-              <button type="button" class="ib" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Mais ações">{% include "components/icon.html" with nome="kebab" %}</button>
-              <div class="dd__c" hidden data-menu-corpo>
-                <div class="dd__t">{{ titulo_pagina }}</div>
-                {% if publicacao.link_site %}<a class="dd__i" href="{{ publicacao.link_site }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="arrow-right" %}Abrir no site da PCPR</a>{% endif %}
-                {% if publicacao.link_aen %}<a class="dd__i" href="{{ publicacao.link_aen }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="arrow-right" %}Abrir na AEN</a>{% endif %}
-              </div>
-            </div>
-          {% endif %}
-        {% endif %}
+        <button type="submit" form="form-publicacao" class="btn-primaria">{% if publicacao %}Salvar alterações{% else %}Registrar pauta{% endif %}</button>
       </div>
     </div>
 
-    <div>
+    <form method="post" action="" id="form-publicacao" class="editor-roteiro__principal">
+      {% csrf_token %}
       {% if form.errors %}
         <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
           {% include "components/icon.html" with nome="info" %}
-          <div>
-            <b>Não foi possível salvar a pauta</b>
-            Revise os campos indicados antes de continuar.
-            <ul class="aviso--erro__lista">
-              {% for campo, mensagens in form.errors.items %}
-                {% for mensagem in mensagens %}
-                  <li>{% if campo == "__all__" %}{{ mensagem }}{% else %}<a href="#id_{{ campo }}">{{ mensagem }}</a>{% endif %}</li>
-                {% endfor %}
-              {% endfor %}
-            </ul>
+          <div><b>Não foi possível salvar a pauta</b>Revise os campos indicados antes de continuar.
+            <ul class="aviso--erro__lista">{% for campo, mensagens in form.errors.items %}{% for mensagem in mensagens %}<li>{% if campo == "__all__" %}{{ mensagem }}{% else %}<a href="#id_{{ campo }}">{{ mensagem }}</a>{% endif %}</li>{% endfor %}{% endfor %}</ul>
           </div>
         </div>
       {% endif %}
 
-      <section class="reg" id="sec-pauta">
-        {% include "components/v32/section_card.html" with numero="1" titulo="Pauta" subtitulo="Entrada, fonte e título" %}
-        <div class="reg-corpo">
+      <section class="section-card reg" id="sec-pauta">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+          <h2 class="section-card__titulo">Pauta</h2>
+        </header>
+        <div class="section-card__corpo">
           <div class="g-form g-form--3">
             {% include "components/input.html" with name="data" label="Data da pauta" tipo="date" obrigatorio=True valor=valores.data erros=erros.data %}
-            <label class="campo-e form-campo"><span>Início da pauta</span>
-              <input class="ctrl{% if erros.inicio_pauta %} ctrl--erro{% endif %}" type="text" id="id_inicio_pauta" name="inicio_pauta" value="{{ valores.inicio_pauta }}" placeholder="hh:mm" inputmode="numeric" autocomplete="off">
-              {% for erro in erros.inicio_pauta %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
-            </label>
+            {% include "components/input.html" with name="inicio_pauta" label="Início da pauta" placeholder="hh:mm" inputmode="numeric" autocomplete="off" valor=valores.inicio_pauta erros=erros.inicio_pauta %}
             {% include "components/select.html" with name="status" label="Status" opcoes=opcoes_status obrigatorio=True selecionado=valores.status erros=erros.status placeholder="Selecione..." %}
             {% include "components/select.html" with name="jornalista" label="Jornalista responsável" opcoes=opcoes_jornalistas obrigatorio=True selecionado=valores.jornalista erros=erros.jornalista %}
             {% include "components/select.html" with name="unidade" label="Unidade responsável" opcoes=opcoes_unidades pesquisavel=True selecionado=valores.unidade erros=erros.unidade placeholder="Buscar unidade..." %}
-            <label class="campo-e form-campo"><span>Outra unidade (não listada)</span>
-              <input class="ctrl{% if erros.unidade_nova %} ctrl--erro{% endif %}" type="text" id="id_unidade_nova" name="unidade_nova" value="{{ valores.unidade_nova }}" placeholder="Ex.: DP Nova Londrina">
-              {% for erro in erros.unidade_nova %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
-            </label>
-            <label class="campo-e form-campo cheia"><span>Título da pauta<em>*</em></span>
-              <input class="ctrl{% if erros.titulo %} ctrl--erro{% endif %}" type="text" id="id_titulo" name="titulo" value="{{ valores.titulo }}" required maxlength="300" placeholder="Ex.: PCPR prende homem por tráfico de drogas em Colombo">
-              {% for erro in erros.titulo %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
-            </label>
-            <label class="campo-e form-campo c2"><span>Fonte da pauta</span>
-              <input class="ctrl{% if erros.fonte %} ctrl--erro{% endif %}" type="text" id="id_fonte" name="fonte" value="{{ valores.fonte }}" maxlength="200" placeholder="Ex.: Del. Marcos Vinicius">
-              {% for erro in erros.fonte %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
-            </label>
-            <label class="campo-e form-campo cheia"><span>Andamento</span>
-              <textarea class="ta{% if erros.andamento %} ctrl--erro{% endif %}" id="id_andamento" name="andamento" placeholder="Ex.: aguardando fotos do delegado">{{ valores.andamento }}</textarea>
-              {% for erro in erros.andamento %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
-            </label>
+            {% include "components/input.html" with name="unidade_nova" label="Outra unidade (não listada)" placeholder="Ex.: DP Nova Londrina" valor=valores.unidade_nova erros=erros.unidade_nova %}
+            <div class="cheia">
+              {% include "components/input.html" with name="titulo" label="Título da pauta" obrigatorio=True maxlength="300" placeholder="Ex.: PCPR prende homem por tráfico de drogas em Colombo" valor=valores.titulo erros=erros.titulo %}
+            </div>
+            <div class="c2">
+              {% include "components/input.html" with name="fonte" label="Fonte da pauta" maxlength="200" placeholder="Ex.: Del. Marcos Vinicius" valor=valores.fonte erros=erros.fonte %}
+            </div>
+            <div class="cheia">
+              {% include "components/textarea.html" with name="andamento" label="Andamento" linhas="2" placeholder="Ex.: aguardando fotos do delegado" valor=valores.andamento erros=erros.andamento %}
+            </div>
           </div>
         </div>
       </section>
 
-      <section class="reg" id="sec-producao">
-        {% include "components/v32/section_card.html" with numero="2" titulo="Produção e publicação" subtitulo="Edição, revisão e horários" %}
-        <div class="reg-corpo">
+      <section class="section-card reg" id="sec-producao">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+          <h2 class="section-card__titulo">Produção e publicação</h2>
+        </header>
+        <div class="section-card__corpo">
           <div class="g-form g-form--3">
-            <label class="campo-e form-campo"><span>Colocada para edição</span>
-              <input class="ctrl{% if erros.colocada_edicao %} ctrl--erro{% endif %}" type="text" id="id_colocada_edicao" name="colocada_edicao" value="{{ valores.colocada_edicao }}" placeholder="hh:mm" inputmode="numeric" autocomplete="off">
-              {% for erro in erros.colocada_edicao %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
-            </label>
+            {% include "components/input.html" with name="colocada_edicao" label="Colocada para edição" placeholder="hh:mm" inputmode="numeric" autocomplete="off" valor=valores.colocada_edicao erros=erros.colocada_edicao %}
             {% include "components/input.html" with name="data_publicacao" label="Data de publicação" tipo="date" valor=valores.data_publicacao erros=erros.data_publicacao %}
-            <label class="campo-e form-campo"><span>Horário de publicação</span>
-              <input class="ctrl{% if erros.horario_publicacao %} ctrl--erro{% endif %}" type="text" id="id_horario_publicacao" name="horario_publicacao" value="{{ valores.horario_publicacao }}" placeholder="hh:mm" inputmode="numeric" autocomplete="off">
-              {% for erro in erros.horario_publicacao %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
-            </label>
+            {% include "components/input.html" with name="horario_publicacao" label="Horário de publicação" placeholder="hh:mm" inputmode="numeric" autocomplete="off" valor=valores.horario_publicacao erros=erros.horario_publicacao %}
             {% include "components/select.html" with name="revisao" label="Revisão" opcoes=opcoes_revisao selecionado=valores.revisao erros=erros.revisao placeholder="Quem revisou" %}
             {% include "components/select.html" with name="galeria_fotos" label="Galeria de fotos" opcoes=opcoes_revisao selecionado=valores.galeria_fotos erros=erros.galeria_fotos placeholder="Quem montou a galeria" %}
           </div>
         </div>
       </section>
 
-      <section class="reg" id="sec-distribuicao">
-        {% include "components/v32/section_card.html" with numero="3" titulo="Distribuição" subtitulo="Grupos, SESP, AEN e links" %}
-        <div class="reg-corpo">
+      <section class="section-card reg" id="sec-distribuicao">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
+          <h2 class="section-card__titulo">Distribuição</h2>
+        </header>
+        <div class="section-card__corpo">
           <div class="g-form g-form--3">
             {% include "components/select.html" with name="bitly_grupos" label="Bitly nos grupos" opcoes=opcoes_sim_nao selecionado=valores.bitly_grupos erros=erros.bitly_grupos placeholder="—" %}
             {% include "components/select.html" with name="enviado_sesp" label="Enviado para a SESP" opcoes=opcoes_sim_nao selecionado=valores.enviado_sesp erros=erros.enviado_sesp placeholder="—" %}
             {% include "components/select.html" with name="publicado_aen" label="Publicado na AEN" opcoes=opcoes_sim_nao selecionado=valores.publicado_aen erros=erros.publicado_aen placeholder="—" %}
-            <label class="campo-e form-campo cheia"><span>Link no site da PCPR</span>
-              <input class="ctrl{% if erros.link_site %} ctrl--erro{% endif %}" type="url" id="id_link_site" name="link_site" value="{{ valores.link_site }}" placeholder="https://www.policiacivil.pr.gov.br/Noticia/...">
-              {% for erro in erros.link_site %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
-            </label>
-            <label class="campo-e form-campo cheia"><span>Link na AEN</span>
-              <input class="ctrl{% if erros.link_aen %} ctrl--erro{% endif %}" type="url" id="id_link_aen" name="link_aen" value="{{ valores.link_aen }}" placeholder="https://www.aen.pr.gov.br/...">
-              {% for erro in erros.link_aen %}<span class="msg-erro form-erro">{{ erro }}</span>{% endfor %}
-            </label>
+            <div class="cheia">
+              {% include "components/input.html" with name="link_site" label="Link no site da PCPR" tipo="url" placeholder="https://www.policiacivil.pr.gov.br/Noticia/..." valor=valores.link_site erros=erros.link_site %}
+            </div>
+            <div class="cheia">
+              {% include "components/input.html" with name="link_aen" label="Link na AEN" tipo="url" placeholder="https://www.aen.pr.gov.br/..." valor=valores.link_aen erros=erros.link_aen %}
+            </div>
           </div>
 
-          {# Ações no fim do último cartão editável, como no roteiro: voltar à esquerda, salvar à direita. #}
+          {# Ações no fim do último cartão editável: voltar à esquerda, salvar à direita. #}
           <div class="frm-acoes-fim">
             <a class="btn--secundaria" href="{% url 'publicacoes:lista' %}">Voltar</a>
             <button type="submit" class="btn-primaria">{% if publicacao %}Salvar alterações{% else %}Registrar pauta{% endif %}</button>
           </div>
         </div>
       </section>
+    </form>
 
-      {% if publicacao %}
-        <section class="reg" id="sec-acompanhamento">
-          {% include "components/v32/section_card.html" with numero="4" titulo="Acompanhamento" subtitulo="Da entrada da pauta até a publicação" %}
-          <div class="reg-corpo">
-            <div class="etapas">
-              {% for etapa in etapas %}
-                <div class="etapa etapa--{{ etapa.estado }}">
-                  <span class="etapa__m"></span>
-                  <div>
-                    <div class="etapa__t">{{ etapa.titulo }}</div>
-                    <div class="etapa__s">{{ etapa.subtitulo }}</div>
-                  </div>
-                </div>
-              {% endfor %}
-            </div>
-          </div>
-        </section>
+    {% if publicacao %}
+      {# Acompanhamento no stepper do painel da viagem: da entrada da pauta à publicação. #}
+      <nav class="vg-stepper" aria-label="Acompanhamento da pauta">
+        <ol class="vg-stepper__lista vg-stepper__lista--auto vg-trilho sem-anim" data-vg-trilho>
+          {% for etapa in etapas %}
+            <li class="vg-stepper__item{% if etapa.estado == 'concluido' %} is-concluida{% elif etapa.estado == 'cancelado' %} is-atual{% endif %}">
+              <span class="vg-stepper__passo" title="{{ etapa.titulo }} — {{ etapa.subtitulo }}">
+                <span class="vg-stepper__num" aria-hidden="true">{% if etapa.estado == "concluido" %}{% include "components/icon.html" with nome="check" %}{% elif etapa.estado == "cancelado" %}{% include "components/icon.html" with nome="ban" %}{% else %}{{ forloop.counter }}{% endif %}</span>
+                <span class="vg-stepper__rotulo">{{ etapa.titulo }}</span>
+                <span class="sr-only">— {{ etapa.subtitulo }}</span>
+              </span>
+            </li>
+          {% endfor %}
+        </ol>
+      </nav>
 
-        <section class="reg" id="sec-registro">
-          {% include "components/v32/section_card.html" with numero="5" titulo="Registro" subtitulo="Dados calculados e histórico do cadastro" %}
-          <div class="reg-corpo">
-            <dl class="gc gc--3">
-              <div class="f"><dt>Status atual</dt><dd><span class="st st--{{ publicacao.status_css }}">{{ publicacao.get_status_display }}</span></dd></div>
-              <div class="f"><dt>Tempo até publicar</dt><dd>{{ publicacao.tempo_ate_publicacao_display|default:"—" }}</dd></div>
-              <div class="f"><dt>Registrada por</dt><dd>{{ publicacao.criado_por|default:"Importação" }}</dd></div>
-              <div class="f"><dt>Atualizada em</dt><dd>{{ publicacao.atualizado_em|date:"d/m/Y H:i" }}</dd></div>
-            </dl>
-          </div>
-        </section>
-      {% endif %}
-
-    </div>
-  </form>
+      <section class="section-card reg" id="sec-registro">
+        <header class="section-card__cabecalho reg__t">
+          <h2 class="section-card__titulo">Registro</h2>
+        </header>
+        <div class="section-card__corpo">
+          {# Os dados calculados como fatos com ícone, na linguagem das listas. #}
+          <ul class="tm-fatos" aria-label="Dados de registro da pauta">
+            <li class="tm-fato">{% include "components/icon.html" with nome="activity" %}<span class="sr-only">Status atual: </span><span class="vg-fato__valor"><span class="st st--{{ publicacao.status_css }}">{{ publicacao.get_status_display }}</span></span></li>
+            <li class="tm-fato{% if not publicacao.tempo_ate_publicacao_display %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome="hourglass" %}<span class="sr-only">Tempo até publicar: </span><span class="vg-fato__valor">{{ publicacao.tempo_ate_publicacao_display|default:"Sem tempo apurado" }}</span></li>
+            <li class="tm-fato">{% include "components/icon.html" with nome="user" %}<span class="sr-only">Registrada por: </span><span class="vg-fato__valor">{{ publicacao.criado_por|default:"Importação" }}</span></li>
+            <li class="tm-fato">{% include "components/icon.html" with nome="clock" %}<span class="sr-only">Atualizada em: </span><span class="vg-fato__valor">Atualizada em {{ publicacao.atualizado_em|date:"d/m/Y H:i" }}</span></li>
+          </ul>
+        </div>
+      </section>
+    {% endif %}
+  </div>
 {% endblock %}
+
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/trilho.js' %}" defer></script>{% endblock %}

@@ -1,4 +1,10 @@
 {% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Painel do módulo de Coffee Break: os indicadores do mês, os lotes no limite
+  e as duas listas do módulo — lotes ativos e solicitações recentes — na
+  lista embutida do padrão de Viagens, com a mesma linha e o mesmo menu de
+  ações das listagens.
+{% endcomment %}
 
 {% block title %}Coffee Break — Sistema de Gestão de Eventos Sociais{% endblock %}
 
@@ -6,7 +12,7 @@
   {% include "components/v32/breadcrumb.html" with atual="Coffee Break" %}
 
   {% url 'coffee_break:nova' as url_nova %}
-  {% include "components/v32/page_header.html" with titulo="Coffee Break — ASCOM" subtitulo="Controle dos lotes contratados e do consumo por solicitação" icone="coffee" acao_label="Nova solicitação" acao_url=url_nova acao_icone="plus" %}
+  {% include "components/v32/page_header.html" with titulo="Coffee Break" icone="coffee" acao_label="Nova solicitação" acao_url=url_nova acao_icone="plus" %}
 
   <div class="db-kpis">
     {% for item in resumo %}
@@ -15,123 +21,37 @@
   </div>
 
   {% if lotes_em_alerta %}
-    <div class="avisos-v32">
-      {% for lote in lotes_em_alerta %}
-        <div class="aviso v32-aviso-texto aviso--callout">
-          {{ lote.rotulo_curto }} — {{ lote.contrato.fornecedor.razao_social }}: restam
-          apenas <strong>{{ lote.restante }}</strong> de {{ lote.quantidade_total }} unidades
-          (limite de alerta: {{ limiar_alerta }}%).
+    {# Saldo no limite: a faixa de aviso do módulo, uma por lote. #}
+    {% for lote in lotes_em_alerta %}
+      <div class="aviso aviso--callout" role="status">
+        <div class="aviso__txt">
+          {% include "components/icon.html" with nome="alert" %}
+          <div class="aviso__corpo">
+            <b>{{ lote.rotulo_curto }} — {{ lote.contrato.fornecedor.razao_social }}</b>
+            <p>Restam apenas {{ lote.restante }} de {{ lote.quantidade_total }} unidades (limite de alerta: {{ limiar_alerta }}%).</p>
+          </div>
         </div>
-      {% endfor %}
-    </div>
+      </div>
+    {% endfor %}
   {% endif %}
 
-  <div class="db-2col v32-paineis-tabelas">
-    <div class="pa-card pa-card--lista v32-bloco">
-      {% include "components/v32/card.html" with titulo="Lotes ativos" acao_label="Ver todos" acao_url=url_lotes %}
-      <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Lotes ativos">
-        <table class="dt  ">
-          <thead>
-            <tr>
-              <th>Lote</th>
-              <th>Fornecedor</th>
-              <th>Consumo</th>
-              <th>Restante</th>
-              <th><span class="sr-only">Abrir</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for lote in lotes %}
-              <tr data-linha-url="{% url 'coffee_break:lote_detalhe' lote.pk %}">
-                <td><strong><a href="{% url 'coffee_break:lote_detalhe' lote.pk %}">{{ lote.rotulo_curto }}</a></strong></td>
-                <td>{{ lote.contrato.fornecedor.razao_social }}</td>
-                <td>
-                  {% widthratio lote.consumido lote.quantidade_total 100 as pct %}
-                  <div class="medidor" role="img" aria-label="{{ lote.consumido }} de {{ lote.quantidade_total }} unidades consumidas">
-                    <span class="medidor__preenchido{% if pct|add:0 >= 90 %} medidor__preenchido--critico{% elif pct|add:0 >= 70 %} medidor__preenchido--atencao{% endif %}" style="width: {{ pct }}%"></span>
-                  </div>
-                  <div class="medidor-legenda">
-                    <span>{{ lote.consumido }} / {{ lote.quantidade_total }}</span>
-                    <span>{{ pct }}%</span>
-                  </div>
-                </td>
-                <td><strong>{{ lote.restante }}</strong></td>
-                <td class="dt-abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="5" class="v32-suave dt__vazio">Nenhum lote ativo cadastrado.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-<div class="lista-mobile-v32"><div class="m-lista">
-            {% for lote in lotes %}
-              <article class="m-item" data-linha-url="{% url 'coffee_break:lote_detalhe' lote.pk %}">
-                <div class="m-item__campo" data-rotulo="Lote"><strong><a href="{% url 'coffee_break:lote_detalhe' lote.pk %}">{{ lote.rotulo_curto }}</a></strong></div>
-                <div class="m-item__campo" data-rotulo="Fornecedor">{{ lote.contrato.fornecedor.razao_social }}</div>
-                <div class="m-item__campo" data-rotulo="Consumo">
-                  {% widthratio lote.consumido lote.quantidade_total 100 as pct %}
-                  <div class="medidor" role="img" aria-label="{{ lote.consumido }} de {{ lote.quantidade_total }} unidades consumidas">
-                    <span class="medidor__preenchido{% if pct|add:0 >= 90 %} medidor__preenchido--critico{% elif pct|add:0 >= 70 %} medidor__preenchido--atencao{% endif %}" style="width: {{ pct }}%"></span>
-                  </div>
-                  <div class="medidor-legenda">
-                    <span>{{ lote.consumido }} / {{ lote.quantidade_total }}</span>
-                    <span>{{ pct }}%</span>
-                  </div>
-                </div>
-                <div class="m-item__campo" data-rotulo="Restante"><strong>{{ lote.restante }}</strong></div>
-
-              </article>
-            {% empty %}
-              <article class="m-item"><p class="m-vazio">Nenhum lote ativo cadastrado.</p></article>
-            {% endfor %}
-          </div></div>
+  <section class="section-card reg">
+    <header class="section-card__cabecalho reg__t">
+      <h2 class="section-card__titulo">Lotes ativos</h2>
+      <div class="section-card__acao"><a class="btn--secundaria btn--compacto" href="{{ url_lotes }}">Ver todos</a></div>
+    </header>
+    <div class="section-card__corpo">
+      {% include "components/v32/lista_embutida.html" with linhas=linhas_lotes icone="coffee" rotulo="Lote" rotulo_plural="lotes" conteudo_linha="pages/coffee_break/_conteudo_lote.html" acoes_linha="pages/coffee_break/_acoes_lote.html" vazio="Nenhum lote ativo cadastrado." %}
     </div>
+  </section>
 
-    <div class="pa-card pa-card--lista v32-bloco">
-      {% include "components/v32/card.html" with titulo="Solicitações recentes" acao_label="Ver todas" acao_url=url_solicitacoes %}
-      <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Solicitações recentes">
-        <table class="dt  ">
-          <thead>
-            <tr>
-              <th>Nº</th>
-              <th>Evento</th>
-              <th>Lote</th>
-              <th>Qtde</th>
-              <th>Situação</th>
-              <th><span class="sr-only">Abrir</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for s in recentes %}
-              <tr data-linha-url="{% url 'coffee_break:editar' s.pk %}">
-                <td><strong><a href="{% url 'coffee_break:editar' s.pk %}">{{ s.numero|default:"—" }}</a></strong></td>
-                <td>{{ s.descricao_evento|truncatechars:45 }}</td>
-                <td>{{ s.lote.rotulo_curto }}</td>
-                <td>{{ s.quantidade }}</td>
-                <td>{% include "components/v32/status_badge.html" with status=s.situacao_financeira_css label=s.situacao_financeira_display %}</td>
-                <td class="dt-abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-right" %}</td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="6" class="v32-suave dt__vazio">Nenhuma solicitação registrada ainda.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-<div class="lista-mobile-v32"><div class="m-lista">
-            {% for s in recentes %}
-              <article class="m-item" data-linha-url="{% url 'coffee_break:editar' s.pk %}">
-                <div class="m-item__campo" data-rotulo="Nº"><strong><a href="{% url 'coffee_break:editar' s.pk %}">{{ s.numero|default:"—" }}</a></strong></div>
-                <div class="m-item__campo" data-rotulo="Evento">{{ s.descricao_evento|truncatechars:45 }}</div>
-                <div class="m-item__campo" data-rotulo="Lote">{{ s.lote.rotulo_curto }}</div>
-                <div class="m-item__campo" data-rotulo="Qtde">{{ s.quantidade }}</div>
-                <div class="m-item__campo" data-rotulo="Situação">{% include "components/v32/status_badge.html" with status=s.situacao_financeira_css label=s.situacao_financeira_display %}</div>
-
-              </article>
-            {% empty %}
-              <article class="m-item"><p class="m-vazio">Nenhuma solicitação registrada ainda.</p></article>
-            {% endfor %}
-          </div></div>
+  <section class="section-card reg">
+    <header class="section-card__cabecalho reg__t">
+      <h2 class="section-card__titulo">Solicitações recentes</h2>
+      <div class="section-card__acao"><a class="btn--secundaria btn--compacto" href="{{ url_solicitacoes }}">Ver todas</a></div>
+    </header>
+    <div class="section-card__corpo">
+      {% include "components/v32/lista_embutida.html" with linhas=linhas_recentes icone="coffee" rotulo="Solicitação" rotulo_plural="solicitações" conteudo_linha="pages/coffee_break/_conteudo_linha.html" acoes_linha="pages/coffee_break/_acoes_linha.html" vazio="Nenhuma solicitação registrada ainda." %}
     </div>
-  </div>
+  </section>
 {% endblock %}

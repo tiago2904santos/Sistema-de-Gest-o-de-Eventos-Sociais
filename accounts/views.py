@@ -19,7 +19,23 @@ from django.views.decorators.http import require_POST
 from auditoria.models import LogAuditoria
 from solicitacoes.permissions import pode_gerenciar_usuarios
 
+from core.listagens import trilha_de_situacoes
+
 from .forms import PERFIS, AcessoForm, UsuarioForm, perfil_do_usuario
+
+# O que cada perfil pode fazer, dito no próprio cartão de escolha.
+DESCRICAO_PERFIL = {
+    "SOLICITANTE": "Registra e acompanha as próprias solicitações, edita rascunhos e reenvia as devolvidas",
+    "GESTOR_DG": "Despacha as solicitações enviadas à Diretoria-Geral: defere, devolve ou não atende",
+    "ADMINISTRADOR": "Gerencia usuários e as tabelas de apoio; não despacha solicitações",
+}
+
+# Ícone de cada perfil na trilha lateral.
+ICONES_PERFIL = {
+    "SOLICITANTE": "user",
+    "GESTOR_DG": "gavel",
+    "ADMINISTRADOR": "shield",
+}
 
 User = get_user_model()
 
@@ -58,6 +74,32 @@ def _ultimo_acesso(usuario):
     if momento.date() == hoje - timedelta(days=1):
         return f"Ontem às {momento:%H:%M}"
     return f"{momento:%d/%m/%Y} às {momento:%H:%M}"
+
+
+def _fatos_do_usuario(usuario):
+    """Os dados que estavam nas colunas, agora como itens com ícone."""
+    setores = ", ".join(str(setor) for setor in usuario.setores.all())
+    return [
+        {"icone": "user", "rotulo": "Usuário", "texto": usuario.username, "ausente": False},
+        {
+            "icone": "mail",
+            "rotulo": "E-mail",
+            "texto": usuario.email or "Sem e-mail",
+            "ausente": not usuario.email,
+        },
+        {
+            "icone": "landmark",
+            "rotulo": "Setores",
+            "texto": setores or "Sem setor",
+            "ausente": not setores,
+        },
+        {
+            "icone": "clock",
+            "rotulo": "Último acesso",
+            "texto": f"Último acesso: {_ultimo_acesso(usuario)}",
+            "ausente": not usuario.last_login,
+        },
+    ]
 
 
 def _perfil_slug(usuario):
@@ -108,6 +150,12 @@ def lista_usuarios(request):
             "perfil_slug": _perfil_slug(usuario),
             "iniciais": _iniciais(usuario),
             "ultimo_acesso": _ultimo_acesso(usuario),
+            # O que a célula única da lista mostra, no padrão de Viagens.
+            "titulo": usuario.get_full_name() or usuario.username,
+            "selo": "Ativo" if usuario.is_active else "Inativo",
+            "selo_tom": "ativo" if usuario.is_active else "inativo",
+            "fatos": _fatos_do_usuario(usuario),
+            "cancelada": not usuario.is_active,
         }
         for usuario in pagina
     ]
@@ -125,6 +173,7 @@ def lista_usuarios(request):
             "pagina": pagina,
             "linhas": linhas,
             "termo": termo,
+            "tem_filtros": bool(termo or perfil or situacao),
             "perfil_filtro": perfil,
             "situacao_filtro": situacao,
             "opcoes_perfil": [{"valor": valor, "rotulo": rotulo} for valor, rotulo in PERFIS],
@@ -133,6 +182,23 @@ def lista_usuarios(request):
                 {"valor": "inativos", "rotulo": "Inativos"},
             ],
             "querystring": urlencode(parametros),
+            # As situações na trilha lateral são os perfis, como nas listas de Viagens.
+            "situacoes": trilha_de_situacoes(
+                request,
+                [
+                    {
+                        "chave": valor,
+                        "rotulo": rotulo,
+                        "total": User.objects.filter(groups__name=valor).distinct().count(),
+                    }
+                    for valor, rotulo in PERFIS
+                ],
+                User.objects.count(),
+                ICONES_PERFIL,
+                parametro="perfil",
+            ),
+            # Chip aceso: sem perfil escolhido, "Todos".
+            "situacao_ativa": perfil or "todas",
             "paginas_visiveis": list(
                 paginator.get_elided_page_range(pagina.number, on_each_side=2, on_ends=1)
             ),
@@ -166,6 +232,10 @@ def editar_usuario(request, pk=None):
     for nome in ["first_name", "last_name", "username", "email", "perfil"]:
         valor = form[nome].value()
         valores[nome] = "" if valor is None else str(valor)
+    setores_marcados = [
+        str(getattr(setor, "pk", setor))
+        for setor in (form["setores"].value() or [])
+    ]
 
     return render(
         request,
@@ -175,15 +245,28 @@ def editar_usuario(request, pk=None):
             "instancia": instancia,
             "valores": valores,
             "erros": form.errors,
-            "opcoes_perfil": [{"valor": valor, "rotulo": rotulo} for valor, rotulo in PERFIS],
+            # Perfis e setores como cartões de escolha: o que cada perfil pode
+            # fazer vira a explicação do próprio cartão, e não um aviso ao lado.
+            "opcoes_perfil": [
+                {
+                    "valor": valor,
+                    "rotulo": rotulo,
+                    "dica": DESCRICAO_PERFIL.get(valor, ""),
+                    "icone": ICONES_PERFIL.get(valor, "user"),
+                    "marcado": valores.get("perfil") == valor,
+                }
+                for valor, rotulo in PERFIS
+            ],
             "opcoes_setores": [
-                {"valor": str(setor.pk), "rotulo": str(setor)}
+                {
+                    "valor": str(setor.pk),
+                    "rotulo": str(setor),
+                    "icone": "landmark",
+                    "marcado": str(setor.pk) in setores_marcados,
+                }
                 for setor in form.fields["setores"].queryset
             ],
-            "setores_marcados": [
-                str(getattr(setor, "pk", setor))
-                for setor in (form["setores"].value() or [])
-            ],
+            "setores_marcados": setores_marcados,
             "titulo_pagina": (
                 f"Editar usuário: {instancia.username}" if instancia else "Novo usuário"
             ),

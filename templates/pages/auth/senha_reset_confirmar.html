@@ -37,7 +37,7 @@
         {% if form.new_password2.errors %}<p class="form-erro">{{ form.new_password2.errors.0 }}</p>{% endif %}
       </div>
 
-      {% include "components/button.html" with label="Salvar nova senha" variante="dourado" tipo="submit" bloco=True %}
+      <button type="submit" class="btn btn--dourado btn--bloco">Salvar nova senha</button>
     </form>
   {% else %}
     <div class="auth-card__corpo">
@@ -50,7 +50,7 @@
         </p>
       </div>
       {% url 'accounts:senha_reset' as url_reset %}
-      {% include "components/button.html" with label="Solicitar novo link" variante="dourado" href=url_reset bloco=True %}
+      <a class="btn btn--dourado btn--bloco" href="{{ url_reset }}">Solicitar novo link</a>
     </div>
   {% endif %}
 </div>

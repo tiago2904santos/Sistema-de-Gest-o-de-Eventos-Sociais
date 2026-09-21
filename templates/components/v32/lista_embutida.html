@@ -1,0 +1,54 @@
+{% comment %}
+  Lista embutida numa tela que não é a listagem do módulo (o painel da
+  viagem, o detalhe do lote): o mesmo cartão das listas — ícone, conteúdo
+  numa célula só e menu de ações —, sem a barra de busca e sem paginação.
+
+  Uso:
+    {% include "components/v32/lista_embutida.html" with linhas=linhas
+       icone="coffee" rotulo="Solicitação" rotulo_plural="solicitações"
+       conteudo_linha="pages/coffee_break/_conteudo_linha.html"
+       acoes_linha="pages/coffee_break/_acoes_linha.html"
+       vazio="Nenhuma solicitação registrada neste lote." %}
+{% endcomment %}
+<div class="pa-card pa-card--lista cad-lista vg-lista">
+  <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Tabela de {{ rotulo_plural }}">
+    <table class="dt dt--responsiva">
+      <thead>
+        <tr>
+          <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
+          <th>{{ rotulo }}</th>
+          <th class="c-cad-acoes">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in linhas %}
+          <tr{% if l.cancelada %} class="tm-linha--cancelada"{% endif %}>
+            <td class="tabela__col-icone">
+              <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=icone %}</span>
+              <span class="sr-only">{{ rotulo }}</span>
+            </td>
+            <td class="c-nome tm-celula" data-rotulo="{{ rotulo }}">{% include conteudo_linha %}</td>
+            <td class="c-cad-acoes">{% include acoes_linha %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="3" class="v32-suave dt__vazio">{{ vazio }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="lista-mobile-v32"><div class="m-lista">
+    {% for l in linhas %}
+      <article class="m-item{% if l.cancelada %} tm-linha--cancelada{% endif %}">
+        <div class="m-item__topo">
+          <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=icone %}</span>
+          <span class="sr-only">{{ rotulo }}</span>
+        </div>
+        <div class="m-item__tipo tm-celula">{% include conteudo_linha %}</div>
+        <div class="m-item__rodape">{% include acoes_linha %}</div>
+      </article>
+    {% empty %}
+      <article class="m-item"><p class="m-vazio">{{ vazio }}</p></article>
+    {% endfor %}
+  </div></div>
+</div>

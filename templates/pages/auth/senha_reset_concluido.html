@@ -15,7 +15,7 @@
       </p>
     </div>
     {% url 'accounts:login' as url_login %}
-    {% include "components/button.html" with label="Ir para o acesso" variante="dourado" href=url_login bloco=True %}
+    <a class="btn btn--dourado btn--bloco" href="{{ url_login }}">Ir para o acesso</a>
   </div>
 </div>
 {% endblock %}

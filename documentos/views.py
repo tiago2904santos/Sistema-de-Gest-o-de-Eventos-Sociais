@@ -47,3 +47,42 @@ def baixar(request, pk):
     except FileNotFoundError as exc:
         raise Http404("Arquivo documental não encontrado.") from exc
     return _resposta(handle, nome=nome, formato=formato)
+
+
+@login_required
+@require_GET
+def abrir(request, pk):
+    """O PDF aberto no navegador, em vez de baixado.
+
+    Mesma checagem de acesso do download (``obter_artefato_para_download``) —
+    muda só o `Content-Disposition`: sem `as_attachment`, o navegador exibe.
+    Existe porque quem abre um documento pela agenda quer **ver** o que foi
+    gerado, e baixar um arquivo por conferência é atrito desnecessário.
+
+    Só PDF: DOCX o navegador baixaria de qualquer jeito, e aí o caminho certo
+    continua sendo `baixar`.
+    """
+    artefato = obter_artefato_para_download(request.user, pk)
+    arquivo = artefato.arquivo_efetivo
+    if not arquivo:
+        raise Http404("Arquivo documental não encontrado.")
+    assinado = arquivo.name != artefato.arquivo.name
+    if not assinado and artefato.formato != DocumentoFormato.PDF.value:
+        raise Http404("Só PDF é exibido no navegador.")
+
+    if precisa_regerar(artefato, assinado=assinado):
+        conteudo = regerar(artefato)
+        if conteudo is not None:
+            return _resposta_inline(BytesIO(conteudo))
+    try:
+        return _resposta_inline(arquivo.open("rb"))
+    except FileNotFoundError as exc:
+        raise Http404("Arquivo documental não encontrado.") from exc
+
+
+def _resposta_inline(handle):
+    response = FileResponse(handle, content_type="application/pdf")
+    response["Content-Disposition"] = "inline"
+    response["Cache-Control"] = "no-store, must-revalidate"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response

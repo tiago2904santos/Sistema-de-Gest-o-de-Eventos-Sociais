@@ -3,8 +3,11 @@ from datetime import timedelta
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+
+from .listagens import trilha_de_situacoes
 
 
 def erro_403(request, exception=None):
@@ -214,13 +217,59 @@ def lista_notificacoes(request):
             grupos.append({"rotulo": rotulo, "itens": []})
         grupos[-1]["itens"].append(item)
 
+    # As notificações na linha das listas do módulo de Viagens: título com o
+    # selo de lida/nova e os fatos com ícone (quando e de onde veio).
+    linhas = [
+        {
+            "notificacao": item,
+            "titulo": item.titulo,
+            "selo": "Lida" if item.lida else "Nova",
+            "selo_tom": "atendido" if item.lida else "aguardando",
+            "fatos": [
+                {
+                    "icone": "clock",
+                    "rotulo": "Quando",
+                    "texto": f"{timezone.localtime(item.criada_em):%d/%m/%Y %H:%M}",
+                    "ausente": False,
+                },
+                {
+                    "icone": "document" if item.solicitacao_id else "info",
+                    "rotulo": "Origem",
+                    "texto": "Solicitação" if item.solicitacao_id else "Sistema",
+                    "ausente": False,
+                },
+                {
+                    "icone": "bell",
+                    "rotulo": "Mensagem",
+                    "texto": item.mensagem or "Sem detalhes",
+                    "ausente": not item.mensagem,
+                },
+            ],
+            "url_abrir": reverse("core:notificacao_abrir", args=[item.pk]),
+        }
+        for item in pagina
+    ]
+    filas = [
+        {"chave": "nao-lidas", "rotulo": "Não lidas", "total": nao_lidas},
+        {"chave": "lidas", "rotulo": "Lidas", "total": total - nao_lidas},
+    ]
+
     return render(
         request,
         "pages/core/notificacoes.html",
         {
             "pagina": pagina,
+            "linhas": linhas,
             "grupos": grupos,
             "filtro": filtro,
+            "situacoes": trilha_de_situacoes(
+                request,
+                filas,
+                total,
+                {"nao-lidas": "bell", "lidas": "check-circle"},
+                parametro="filtro",
+            ),
+            "situacao_ativa": filtro or "todas",
             "total": total,
             "nao_lidas": nao_lidas,
             "lidas": total - nao_lidas,

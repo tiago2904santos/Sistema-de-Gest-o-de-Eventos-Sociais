@@ -69,33 +69,14 @@
   </div>
 
   <div class="db-linha2">
-    <section class="pa-card pa-card--lista">
-      <h2 class="pa-h pa-h--lista">Pendências por prazo<em>em aberto, deadline mais próximo primeiro</em><a href="{{ url_lista }}?fila=abertos&amp;ordem=deadline">Ver fila</a></h2>
-      <div class="dt-w">
-        <table class="dt">
-          <thead>
-            <tr>
-              <th class="c-per">Deadline</th>
-              <th class="c-status">Situação</th>
-              <th class="c-tipo">Jornalista</th>
-              <th class="c-mun">Veículo</th>
-              <th class="c-mun">Responsável</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for a in pendentes %}
-              <tr data-linha-url="{% url 'atendimento_imprensa:editar' a.pk %}">
-                <td class="c-per{% if a.deadline and a.deadline < hoje %} c-per--vencido{% endif %}"><a href="{% url 'atendimento_imprensa:editar' a.pk %}">{% if a.deadline %}{{ a.deadline|date:"d/m/Y" }}{% else %}—{% endif %}</a></td>
-                <td class="c-status"><span class="st st--{{ a.situacao_css }}">{{ a.get_situacao_display }}</span></td>
-                <td class="c-tipo">{{ a.jornalista }}</td>
-                <td class="c-mun">{{ a.veiculo|default:"—" }}</td>
-                <td class="c-mun">{{ a.responsavel|default:"—" }}</td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="5" class="dt__vazio">Nenhum pedido em aberto.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <section class="section-card reg">
+      <header class="section-card__cabecalho reg__t">
+        <h2 class="section-card__titulo">Pendências por prazo</h2>
+        <div class="section-card__acao"><a class="btn--secundaria btn--compacto" href="{{ url_lista }}?fila=abertos&amp;ordem=deadline">Ver fila</a></div>
+      </header>
+      <div class="section-card__corpo">
+        {# A mesma linha e o mesmo menu de ações da listagem. #}
+        {% include "components/v32/lista_embutida.html" with linhas=linhas_pendentes icone="mail" rotulo="Pedido" rotulo_plural="pedidos" conteudo_linha="pages/atendimento_imprensa/_conteudo_linha.html" acoes_linha="pages/atendimento_imprensa/_acoes_linha.html" vazio="Nenhum pedido em aberto." %}
       </div>
     </section>
 
@@ -116,33 +97,13 @@
   </div>
 
   <div class="db-linha2">
-    <section class="pa-card pa-card--lista pa-card--larga">
-      <h2 class="pa-h pa-h--lista">Últimos pedidos<em>8 mais recentes</em><a href="{{ url_lista }}">Ver todos</a></h2>
-      <div class="dt-w">
-        <table class="dt">
-          <thead>
-            <tr>
-              <th class="c-data">Data</th>
-              <th class="c-status">Situação</th>
-              <th class="c-tipo">Jornalista</th>
-              <th class="c-mun">Veículo</th>
-              <th class="c-pedido">Pedido</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for a in recentes %}
-              <tr data-linha-url="{% url 'atendimento_imprensa:editar' a.pk %}">
-                <td class="c-data"><a href="{% url 'atendimento_imprensa:editar' a.pk %}">{{ a.data|date:"d/m/Y" }}</a></td>
-                <td class="c-status"><span class="st st--{{ a.situacao_css }}">{{ a.get_situacao_display }}</span></td>
-                <td class="c-tipo">{{ a.jornalista }}</td>
-                <td class="c-mun">{{ a.veiculo|default:"—" }}</td>
-                <td class="c-pedido">{{ a.pedido_resumo }}</td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="5" class="dt__vazio">Nenhum pedido registrado ainda.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <section class="section-card reg">
+      <header class="section-card__cabecalho reg__t">
+        <h2 class="section-card__titulo">Últimos pedidos</h2>
+        <div class="section-card__acao"><a class="btn--secundaria btn--compacto" href="{{ url_lista }}">Ver todos</a></div>
+      </header>
+      <div class="section-card__corpo">
+        {% include "components/v32/lista_embutida.html" with linhas=linhas_recentes icone="mail" rotulo="Pedido" rotulo_plural="pedidos" conteudo_linha="pages/atendimento_imprensa/_conteudo_linha.html" acoes_linha="pages/atendimento_imprensa/_acoes_linha.html" vazio="Nenhum pedido registrado ainda." %}
       </div>
     </section>
   </div>

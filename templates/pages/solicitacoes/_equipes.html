@@ -1,0 +1,27 @@
+{% comment %}
+  Equipes e a quantidade de servidores de cada uma, no desenho das linhas
+  escolhidas do módulo de Viagens: linha sem borda em cinza claro, marca
+  quadrada que vira grafite quando a equipe entra e o número num campo do
+  design system, à direita.
+
+  Os ganchos do app.js (`data-equipe-alocacao`, `data-equipe-checkbox`,
+  `data-equipe-quantidade`) continuam onde estavam: o número só habilita com
+  a equipe marcada.
+{% endcomment %}
+<fieldset class="linhas-quantidade{% if erros.equipes %} grupo-erro{% endif %}" id="id_equipes"{% if erros.equipes %} aria-invalid="true"{% endif %}>
+  <legend class="form-label">Equipes e quantidade de servidores <span class="form-label__obrigatorio">*</span></legend>
+  {% for equipe in equipes_planejamento %}
+    <div class="linha-quantidade" data-equipe-alocacao>
+      <input class="sr-only" type="checkbox" id="id_equipe_{{ equipe.valor }}" name="equipes" value="{{ equipe.valor }}"{% if equipe.selecionada %} checked{% endif %}{% if planejamento_desabilitado %} disabled{% endif %} data-equipe-checkbox>
+      <label class="linha-quantidade__marca" for="id_equipe_{{ equipe.valor }}" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</label>
+      <label class="linha-quantidade__n" for="id_equipe_{{ equipe.valor }}">{{ equipe.rotulo }}</label>
+      <div class="linha-quantidade__q">
+        <label class="sr-only" for="id_{{ equipe.nome_quantidade }}">Quantidade de servidores da equipe {{ equipe.rotulo }}</label>
+        <input class="form-controle" type="number" min="1" step="1" id="id_{{ equipe.nome_quantidade }}" name="{{ equipe.nome_quantidade }}" value="{{ equipe.quantidade }}" placeholder="0"{% if planejamento_desabilitado or not equipe.selecionada %} disabled{% endif %} data-equipe-quantidade>
+      </div>
+    </div>
+  {% empty %}
+    <p class="lista-vazia">Nenhuma equipe cadastrada.</p>
+  {% endfor %}
+  {% for erro in erros.equipes %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+</fieldset>

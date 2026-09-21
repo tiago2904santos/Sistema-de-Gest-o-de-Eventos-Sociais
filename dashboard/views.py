@@ -14,7 +14,8 @@ from solicitacoes.models import (
     SolicitacaoEvento,
     StatusSolicitacao,
 )
-from solicitacoes.permissions import queryset_visivel
+from solicitacoes.permissions import acoes_permitidas, queryset_visivel
+from solicitacoes.presenters import linha_da_lista
 
 MESES_ABREVIADOS = [
     "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
@@ -264,6 +265,11 @@ def index(request):
             "grafico": grafico,
             "periodos_grafico": PERIODOS_GRAFICO,
             "ultimas_solicitacoes": ultimas_solicitacoes,
+            # A lista do painel usa a mesma linha da listagem de solicitações.
+            "linhas_ultimas": [
+                linha_da_lista(s, acoes_permitidas(request.user, s))
+                for s in ultimas_solicitacoes
+            ],
             "proximos_eventos": proximos_eventos,
             "despacho": despacho,
             "url_lista": lista,

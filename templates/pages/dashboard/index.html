@@ -73,33 +73,14 @@
   </div>
 
   <div class="db-linha2">
-    <section class="pa-card pa-card--lista">
-      <h2 class="pa-h pa-h--lista">Últimas solicitações{% if ultimas_solicitacoes %}<em>{{ ultimas_solicitacoes|length }} mais recentes</em>{% endif %}<a href="{{ url_lista }}">Ver todas</a></h2>
-      <div class="dt-w">
-        <table class="dt">
-          <thead>
-            <tr>
-              <th class="c-id">Nº</th>
-              <th class="c-status">Status</th>
-              <th class="c-tipo">Tipo de evento</th>
-              <th class="c-mun">Município</th>
-              <th class="c-per">Início do evento</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for s in ultimas_solicitacoes %}
-              <tr data-linha-url="{% url 'solicitacoes:editar' s.pk %}">
-                <td class="c-id"><a href="{% url 'solicitacoes:editar' s.pk %}"><i>#</i>{{ s.pk }}</a></td>
-                <td class="c-status"><span class="st st--{{ s.status|lower }}">{{ s.get_status_display }}</span></td>
-                <td class="c-tipo">{{ s.tipo_evento|default:"—" }}</td>
-                <td class="c-mun">{{ s.municipio|default:"—" }}</td>
-                <td class="c-per">{{ s.data_inicio_evento|date:"d/m/Y"|default:"—" }}</td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="5" class="dt__vazio">Nenhuma solicitação registrada ainda.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <section class="section-card reg">
+      <header class="section-card__cabecalho reg__t">
+        <h2 class="section-card__titulo">Últimas solicitações</h2>
+        <div class="section-card__acao"><a class="btn--secundaria btn--compacto" href="{{ url_lista }}">Ver todas</a></div>
+      </header>
+      <div class="section-card__corpo">
+        {# A mesma linha e o mesmo menu de ações da listagem. #}
+        {% include "components/v32/lista_embutida.html" with linhas=linhas_ultimas icone="users" rotulo="Solicitação" rotulo_plural="solicitações" conteudo_linha="pages/solicitacoes/_conteudo_linha.html" acoes_linha="pages/solicitacoes/_acoes_linha.html" vazio="Nenhuma solicitação registrada ainda." %}
       </div>
     </section>
 

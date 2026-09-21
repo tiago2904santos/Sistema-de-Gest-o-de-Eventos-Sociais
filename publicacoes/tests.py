@@ -257,7 +257,7 @@ class ViewsTests(BasePublicacoesTestCase):
         resposta = self.client.get(
             reverse("publicacoes:lista"), {"inicio": "2026-09-01"}
         )
-        self.assertContains(resposta, "Nenhuma pauta corresponde")
+        self.assertContains(resposta, "Nenhuma pauta encontrada")
 
     def test_ordenacao_segura(self):
         self.criar_pauta()
@@ -289,14 +289,16 @@ class ViewsTests(BasePublicacoesTestCase):
         self.assertContains(resposta, "Acompanhamento")
         self.assertContains(resposta, "Colocada para edição")
         self.assertContains(resposta, "Registrada por")
-        self.assertContains(resposta, "Abrir no site da PCPR")
+        # O link publicado fica no campo da seção de distribuição.
+        self.assertContains(resposta, pauta.link_site)
         self.assertEqual(self.client.get(reverse("publicacoes:painel")).status_code, 200)
 
     def test_listagem_abre_direto_no_formulario(self):
         pauta = self.criar_pauta()
         resposta = self.client.get(reverse("publicacoes:lista"))
         url_form = reverse("publicacoes:editar", args=[pauta.pk])
-        self.assertContains(resposta, f'data-linha-url="{url_form}"')
+        # A linha leva ao formulário pelo menu de ações da lista.
+        self.assertContains(resposta, url_form)
         self.assertNotContains(resposta, f"/pautas/{pauta.pk}/\"")
 
     def test_telas_sem_menu_lateral_flutuante(self):

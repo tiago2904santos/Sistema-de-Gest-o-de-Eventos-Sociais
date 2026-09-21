@@ -1,0 +1,200 @@
+/* Agenda — o FullCalendar vestido com o design system V3.2.
+
+   Cores por fonte seguem os tokens semânticos do DS: dourado é Viagens (o
+   módulo de referência), info é Solicitações, ok é Coffee, aviso é Demandas.
+   As faixas são sólidas, como numa agenda de verdade; cancelado/não atendido
+   fica apagado e riscado, nunca some sem aviso. */
+
+:root {
+  --ag-viagem: var(--d-500);      --ag-viagem-t: var(--grafite);
+  --ag-solicitacao: var(--in-t);  --ag-solicitacao-t: #fff;
+  --ag-coffee: var(--ok-t);       --ag-coffee-t: #fff;
+  --ag-demanda: var(--wn-t);      --ag-demanda-t: #fff;
+}
+
+/* Cabeçalho do calendário ------------------------------------------------ */
+.ag-topo { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 4px 0 16px; }
+.ag-topo__nav { display: flex; align-items: center; gap: 6px; }
+.ag-topo__titulo { margin: 0; font-size: 1.45rem; font-weight: 600; text-transform: capitalize; flex: 1; min-width: 12ch; }
+.ag-ico { width: 36px; height: 36px; border-radius: 999px; border: 1px solid var(--nt-r); background: var(--branco); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--grafite); }
+.ag-ico:hover { background: var(--hover-b); }
+.ag-ico .ui-icon { width: 18px; height: 18px; }
+.ag-btn { height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--nt-r); background: var(--branco); font: inherit; font-weight: 600; cursor: pointer; color: var(--grafite); display: inline-flex; align-items: center; gap: 6px; }
+.ag-btn:hover { background: var(--hover-b); }
+.ag-btn--peq { height: 30px; padding: 0 10px; font-size: .82rem; font-weight: 500; }
+.ag-btn--filtros { display: none; }
+.ag-btn .ui-icon { width: 16px; height: 16px; }
+.ag-seg { display: inline-flex; border: 1px solid var(--nt-r); border-radius: 999px; padding: 3px; background: var(--branco); }
+.ag-seg button { border: 0; background: none; font: inherit; font-weight: 600; font-size: .85rem; padding: 6px 14px; border-radius: 999px; cursor: pointer; color: var(--grafite); }
+.ag-seg button:hover { background: var(--hover-b); }
+.ag-seg button[aria-pressed="true"] { background: var(--d-500); color: var(--grafite); }
+.ag-ico:focus-visible, .ag-btn:focus-visible, .ag-seg button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--foco); }
+
+/* Grade: filtros à esquerda, calendário à direita ------------------------- */
+.ag-grade { display: grid; grid-template-columns: 272px minmax(0, 1fr); gap: 20px; align-items: start; }
+
+.ag-filtros { display: flex; flex-direction: column; gap: 14px; }
+.ag-f { background: var(--branco); border: 1px solid var(--nt-r); border-radius: 12px; padding: 12px 14px; }
+.ag-f__h { margin: 0 0 8px; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--rotulo); font-weight: 600; }
+.ag-f__dica { margin: 8px 0 0; font-size: .75rem; color: var(--rotulo); }
+.ag-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ag-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 8px; border-radius: 999px; border: 1px solid var(--nt-r); background: var(--branco); cursor: pointer; font-size: .83rem; line-height: 1; user-select: none; }
+.ag-chip input { position: absolute; opacity: 0; width: 0; height: 0; }
+.ag-chip__pt { width: 10px; height: 10px; border-radius: 50%; background: var(--nt-r); flex: none; }
+.ag-chip__n { color: var(--rotulo); font-size: .75rem; font-variant-numeric: tabular-nums; }
+.ag-chip:hover { background: var(--hover-b); }
+.ag-chip:has(input:checked) { border-color: var(--sel-r); background: var(--sel-b); }
+.ag-chip:has(input:focus-visible) { box-shadow: 0 0 0 3px var(--foco); }
+.ag-chip--viagem .ag-chip__pt { background: var(--ag-viagem); }
+.ag-chip--solicitacao .ag-chip__pt { background: var(--ag-solicitacao); }
+.ag-chip--coffee .ag-chip__pt { background: var(--ag-coffee); }
+.ag-chip--demanda .ag-chip__pt { background: var(--ag-demanda); }
+.ag-chip--enc .ag-chip__t { text-decoration: line-through; color: var(--rotulo); }
+.ag-chip:not(:has(input:checked)) .ag-chip__pt { opacity: .35; }
+.ag-sel, .ag-busca { width: 100%; height: 38px; border: 1px solid var(--nt-r); border-radius: 8px; padding: 0 10px; font: inherit; background: var(--branco); color: var(--grafite); }
+.ag-sel:focus, .ag-busca:focus { outline: none; border-color: var(--sel-r); box-shadow: 0 0 0 3px var(--foco); }
+.ag-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.ag-toggle input { accent-color: var(--d-500); width: 16px; height: 16px; }
+.ag-atalhos { display: flex; flex-wrap: wrap; gap: 6px; }
+.ag-link { border: 0; background: none; color: var(--link); font: inherit; font-size: .85rem; cursor: pointer; text-decoration: underline; align-self: flex-start; padding: 0 2px; }
+
+/* Calendário --------------------------------------------------------------- */
+.ag-cal-card { padding: 12px 14px 16px; }
+.ag-vazio, .ag-erro { color: var(--rotulo); text-align: center; margin: 14px 0 0; }
+.ag-erro { color: var(--dg-t); }
+
+.fc {
+  font-family: var(--f);
+  --fc-border-color: var(--nt-r);
+  --fc-page-bg-color: var(--branco);
+  --fc-neutral-bg-color: var(--papel);
+  --fc-today-bg-color: var(--d-50);
+  --fc-list-event-hover-bg-color: var(--hover-b);
+  --fc-more-link-bg-color: var(--nt-b);
+  --fc-more-link-text-color: var(--grafite);
+  --fc-now-indicator-color: var(--dg-t);
+}
+/* O tema do FullCalendar põe borda na tabela externa e fundo branco no `th`
+   que embrulha o cabeçalho — o efeito é uma moldura em volta dos dias da
+   semana que sobra para a direita e não encosta no corpo. A grade é uma só:
+   as bordas ficam nas células, e as duas tabelas externas somem. */
+.fc-theme-standard .fc-scrollgrid { border: 0; }
+.fc .fc-scrollgrid > tbody > tr > td,
+.fc .fc-scrollgrid > thead > tr > th { border: 0; background: none; }
+.fc .fc-scrollgrid-section-sticky > * { background: var(--branco); }
+.fc .fc-col-header, .fc .fc-daygrid-body, .fc .fc-daygrid-body table { width: 100% !important; }
+
+.fc .fc-col-header-cell-cushion { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--rotulo); padding: 10px 4px; text-decoration: none; font-weight: 600; }
+.fc .fc-daygrid-day-number { color: var(--grafite); text-decoration: none; font-size: .85rem; padding: 6px 8px; }
+.fc .fc-day-other .fc-daygrid-day-number { color: var(--rotulo); }
+.fc .fc-day-today .fc-daygrid-day-number { background: var(--d-500); color: var(--grafite); border-radius: 999px; min-width: 1.75em; height: 1.75em; display: inline-flex; align-items: center; justify-content: center; margin: 3px; font-weight: 700; padding: 0; }
+.fc .fc-daygrid-day-frame { min-height: 108px; }
+.fc .fc-list-day-cushion { background: var(--papel); }
+.fc .fc-list-day-text, .fc .fc-list-day-side-text { color: var(--grafite); text-decoration: none; font-weight: 600; }
+.fc .fc-more-link { font-size: .74rem; border-radius: 6px; padding: 1px 6px; font-weight: 600; }
+.fc .fc-timegrid-slot-label-cushion, .fc .fc-timegrid-axis-cushion { font-size: .72rem; color: var(--rotulo); }
+.fc .fc-popover { border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,.14); border-color: var(--nt-r); }
+.fc .fc-popover-header { background: var(--papel); }
+
+/* Compromissos: faixa sólida, texto claro, cor da fonte. */
+.fc .fc-event { border: 0; border-radius: 4px; padding: 2px 7px; font-size: .78rem; line-height: 1.35; cursor: pointer; box-shadow: none; }
+.fc .fc-event .fc-event-title, .fc .fc-event .fc-event-main { font-weight: 600; }
+.fc .fc-daygrid-block-event .fc-event-time { display: none; }
+.fc .ag-viagem { --fc-event-bg-color: var(--ag-viagem); --fc-event-border-color: var(--ag-viagem); --fc-event-text-color: var(--ag-viagem-t); }
+.fc .ag-solicitacao { --fc-event-bg-color: var(--ag-solicitacao); --fc-event-border-color: var(--ag-solicitacao); --fc-event-text-color: var(--ag-solicitacao-t); }
+.fc .ag-coffee { --fc-event-bg-color: var(--ag-coffee); --fc-event-border-color: var(--ag-coffee); --fc-event-text-color: var(--ag-coffee-t); }
+.fc .ag-demanda { --fc-event-bg-color: var(--ag-demanda); --fc-event-border-color: var(--ag-demanda); --fc-event-text-color: var(--ag-demanda-t); }
+.fc .fc-event:hover { filter: brightness(1.06); }
+.fc .ag-encerrado { --fc-event-bg-color: var(--nt-r); --fc-event-border-color: var(--nt-r); --fc-event-text-color: var(--nt-t); }
+.fc .ag-encerrado .fc-event-title, .fc .ag-encerrado .fc-list-event-title a { text-decoration: line-through; font-weight: 500; }
+.fc .fc-list-event-dot { border-color: var(--fc-event-border-color); border-width: 5px; }
+.fc .fc-list-event-title a { color: var(--grafite); text-decoration: none; font-weight: 500; }
+.fc .fc-list-event { cursor: pointer; }
+
+/* Modal do dossiê ----------------------------------------------------------- */
+.ag-modal { width: min(1120px, calc(100vw - 32px)); max-height: calc(100vh - 48px); border: 0; border-radius: 14px; padding: 0; background: var(--papel); color: var(--grafite); box-shadow: 0 24px 64px rgba(0,0,0,.28); }
+.ag-modal::backdrop { background: rgba(26, 25, 23, .5); }
+.ag-modal__c { max-height: calc(100vh - 48px); overflow: auto; }
+.ag-m__carregando { padding: 48px; text-align: center; color: var(--rotulo); }
+.ag-m { display: flex; flex-direction: column; min-height: 320px; }
+
+.ag-m__topo { position: sticky; top: 0; z-index: 3; background: var(--branco); padding: 20px 24px 14px; border-bottom: 1px solid var(--nt-r); display: flex; align-items: flex-start; gap: 20px; }
+.ag-m__id { flex: 1; min-width: 0; }
+.ag-m__rot { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--rotulo); font-weight: 700; }
+.ag-m__t { margin: 2px 0 6px; font-size: 1.4rem; line-height: 1.2; }
+.ag-m__sub { margin: 0; color: var(--nt-t); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .92rem; }
+.ag-m__sub .ui-icon { width: 15px; height: 15px; color: var(--rotulo); }
+.ag-m__origem { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: .86rem; color: var(--link); text-decoration: none; }
+.ag-m__origem:hover { text-decoration: underline; }
+.ag-m__origem .ui-icon { width: 14px; height: 14px; }
+.ag-m__acoes { display: flex; align-items: center; gap: 8px; flex: none; }
+.ag-m__x { border: 0; background: none; font-size: 1.8rem; line-height: 1; cursor: pointer; color: var(--rotulo); padding: 0 6px; }
+.ag-m__x:hover { color: var(--grafite); }
+
+.ag-abas { position: sticky; top: 0; z-index: 2; display: flex; gap: 2px; padding: 0 16px; background: var(--branco); border-bottom: 1px solid var(--nt-r); overflow-x: auto; }
+.ag-abas button { border: 0; background: none; font: inherit; font-weight: 600; font-size: .9rem; padding: 12px 14px; cursor: pointer; color: var(--rotulo); border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.ag-abas button[aria-selected="true"] { color: var(--grafite); border-bottom-color: var(--d-500); }
+.ag-abas button:hover { color: var(--grafite); }
+.ag-n { display: inline-block; min-width: 1.5em; padding: 0 6px; border-radius: 999px; background: var(--nt-b); color: var(--nt-t); font-size: .72rem; font-weight: 600; text-align: center; }
+.ag-painel { padding: 18px 20px 24px; }
+
+/* Resumo: fatos com ícone, em duas colunas quando cabe. */
+.ag-fatos { list-style: none; margin: 0; padding: 16px 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 14px 28px; background: var(--branco); border: 1px solid var(--nt-r); border-radius: 12px; }
+.ag-fato { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
+.ag-fato .ui-icon { width: 16px; height: 16px; flex: none; color: var(--d-600); margin-top: 2px; }
+.ag-fato__r { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--rotulo); font-weight: 600; }
+.ag-fato__v { display: block; margin-top: 1px; overflow-wrap: anywhere; }
+.ag-fato--longo { grid-column: 1 / -1; }
+.ag-fato--longo .ag-fato__v { font-size: .93rem; line-height: 1.55; color: var(--nt-t); }
+.ag-bloco { margin-top: 18px; }
+.ag-bloco__t { margin: 0 0 8px; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--rotulo); font-weight: 700; }
+.ag-linhas { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.ag-linhas li { background: var(--branco); border: 1px solid var(--nt-r); border-radius: 999px; padding: 4px 12px; font-size: .86rem; }
+.ag-m__vazio { color: var(--rotulo); margin: 6px 0; font-size: .9rem; }
+
+/* Listas: a mesma composição das páginas do módulo. */
+.ag-lista { margin-bottom: 16px; }
+.ag-lista__h { display: flex; align-items: center; gap: 8px; padding: 12px 16px 0; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--rotulo); font-weight: 700; }
+.ag-lista .tm-titulo a { color: var(--grafite); text-decoration: none; }
+.ag-lista .tm-titulo a:hover { color: var(--link); text-decoration: underline; }
+.ag-acoes { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+/* A coluna de ações precisa caber "Abrir PDF" + o ícone de baixar sem cortar;
+   a tabela das listagens dá pouca largura a ela por padrão. */
+.ag-lista .dt td.c-cad-acoes, .ag-lista .dt th.c-cad-acoes { width: 1%; white-space: nowrap; padding-left: 14px; }
+.ag-art { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ag-link-doc { display: inline-flex; align-items: center; gap: 5px; color: var(--link); text-decoration: none; font-size: .84rem; font-weight: 500; white-space: nowrap; }
+.ag-link-doc:hover { text-decoration: underline; }
+.ag-link-doc .ui-icon { width: 15px; height: 15px; }
+.ag-link-doc--sec { color: var(--rotulo); }
+.ag-extra { margin: 8px 0 0; font-size: .86rem; }
+.ag-extra a { color: var(--link); }
+
+.ag-hist { list-style: none; margin: 0; padding: 16px 18px; background: var(--branco); border: 1px solid var(--nt-r); border-radius: 12px; display: flex; flex-direction: column; gap: 12px; }
+.ag-hist li { display: grid; grid-template-columns: 130px 1fr; gap: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--nt-r); }
+.ag-hist li:last-child { border-bottom: 0; padding-bottom: 0; }
+.ag-hist time { color: var(--rotulo); font-size: .82rem; font-variant-numeric: tabular-nums; }
+.ag-hist p { margin: 4px 0 0; color: var(--nt-t); }
+
+.ag-selo { align-self: center; font-size: .74rem; padding: 2px 10px; border-radius: 999px; background: var(--nt-b); border: 1px solid var(--nt-r); color: var(--nt-t); white-space: nowrap; }
+
+/* Ícone da agenda no cabeçalho, ao lado do sino. */
+.ident-icone--agenda { margin-right: 4px; }
+
+/* Celular ------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .ag-grade { grid-template-columns: 1fr; }
+  .ag-btn--filtros { display: inline-flex; }
+  .ag-filtros { display: none; }
+  .ag-filtros.is-aberto { display: flex; }
+  .ag-topo__titulo { order: -1; width: 100%; flex: none; font-size: 1.2rem; }
+  .ag-seg--largo { display: none; }
+  .ag-modal { width: 100vw; max-height: 100vh; border-radius: 0; }
+  .ag-modal__c { max-height: 100vh; }
+  .ag-m__topo { flex-direction: column; gap: 10px; }
+  .ag-m__acoes { width: 100%; justify-content: space-between; }
+  .ag-fatos { grid-template-columns: 1fr; padding: 14px; }
+  .ag-painel { padding: 14px 12px 20px; }
+  .ag-hist li { grid-template-columns: 1fr; gap: 2px; }
+  .fc .fc-daygrid-day-frame { min-height: 72px; }
+  .fc .fc-event { font-size: .7rem; padding: 1px 4px; }
+}

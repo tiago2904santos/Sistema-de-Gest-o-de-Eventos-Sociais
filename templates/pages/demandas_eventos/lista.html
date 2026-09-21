@@ -1,71 +1,31 @@
 {% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
+{% comment %}
+  Lista de demandas da ASCOM na composição das listas do módulo de Viagens:
+  as situações na trilha à esquerda, a busca na barra do cartão, a tabela do
+  V3.2 no desktop e a Data List no celular, uma célula por demanda e um menu
+  único de ações.
+{% endcomment %}
+
 {% block title %}Demandas de eventos — ASCOM{% endblock %}
+
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with itens=None atual="Demandas ASCOM" %}
-  {% url 'demandas_eventos:nova' as url_nova %}
-  {% include "components/v32/page_header.html" with titulo="Demandas de eventos" subtitulo="Acompanhe palestras, eventos e ações da ASCOM" icone="document" acao_label="Nova demanda" acao_url=url_nova %}
 
-  <div class="pa-card pa-card--lista v32-bloco v32-filtros">
-    <form method="get" class="v32-barra" data-auto-enviar>
-      <div class="form-campo v32-busca">
-        <label class="form-label sr-only" for="id_q">Busca</label>
-        <div class="busca"><span class="busca-icone">{% include "components/icon.html" with nome="search" %}</span><input class="form-controle" type="search" name="q" id="id_q" value="{{ q }}" placeholder="Buscar solicitante, descrição ou assunto..."></div>
-      </div>
-      <button type="button" class=" btn--secundaria " data-expande="#filtros-demandas" aria-expanded="{% if tem_filtros %}true{% else %}false{% endif %}" aria-controls="filtros-demandas">{% include "components/icon.html" with nome="filter" %} Filtros</button>
-      <button type="submit" class=" btn-primaria ">{% include "components/icon.html" with nome="search" %}Buscar</button>
-      <span class="v32-meta">{{ pagina.paginator.count }} demanda{{ pagina.paginator.count|pluralize }}</span>
-      <div class="v32-filtros-painel" id="filtros-demandas" {% if not tem_filtros %}hidden{% endif %}>
-        {% include "components/select.html" with name="status" label="Status" opcoes=opcoes_status placeholder="Todos" selecionado=status %}
-        {% include "components/select.html" with name="tipo" label="Tipo de evento" opcoes=opcoes_tipos placeholder="Todos" selecionado=tipo %}
-        {% include "components/select.html" with name="municipio" label="Município" opcoes=opcoes_municipios placeholder="Todos" selecionado=municipio pesquisavel=True %}
-        {% include "components/select.html" with name="responsavel" label="Responsável" opcoes=opcoes_responsaveis placeholder="Todos" selecionado=responsavel pesquisavel=True %}
-        {% include "components/select.html" with name="setor" label="Setor" opcoes=opcoes_setores placeholder="Todos" selecionado=setor %}
-        {% include "components/input.html" with name="inicio" label="Solicitadas a partir de" tipo="date" valor=inicio %}
-        {% include "components/input.html" with name="fim" label="Solicitadas até" tipo="date" valor=fim %}
-        {% if tem_filtros %}<a class=" btn--secundaria" href="{% url 'demandas_eventos:lista' %}">Limpar filtros</a>{% endif %}
-      </div>
-    </form>
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker kicker--junto">Demandas ASCOM</div>
+      <h1>Demandas de eventos</h1>
+    </div>
+    {# Botão flutuante: fixo no canto inferior direito, sempre à mão durante a rolagem. #}
+    <a class="btn-primaria btn-flutuante" href="{% url 'demandas_eventos:nova' %}">{% include "components/icon.html" with nome="plus" %}Nova demanda</a>
   </div>
 
-  <div class="pa-card pa-card--lista v32-bloco">
-    <div class="cad-titulo "><h2 class="reg__t">Demandas</h2><a class=" btn--secundaria " href="{% url 'demandas_eventos:exportar' %}{% if querystring %}?{{ querystring }}{% endif %}">{% include "components/icon.html" with nome="download" %}Exportar CSV</a></div>
-    <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Demandas de eventos">
-      <table class="dt dt--responsiva">
-        <thead><tr><th>Solicitação</th><th>Tipo / tema</th><th>Evento</th><th>Município</th><th>Solicitante</th><th>Status</th><th>Ações</th></tr></thead>
-        <tbody>
-          {% for demanda in pagina %}
-            <tr>
-              <td data-rotulo="Solicitação"><a href="{% url 'demandas_eventos:editar' demanda.pk %}" aria-label="Abrir demanda #{{ demanda.pk }}">#{{ demanda.pk }} · {{ demanda.data_solicitacao|date:"d/m/Y" }}</a></td>
-              <td data-rotulo="Tipo / tema"><strong>{{ demanda.tipo_evento }}</strong>{% if demanda.tema %}<br><span class="v32-suave">{{ demanda.tema }}</span>{% endif %}{% if demanda.subtema %}<br><span class="v32-suave">{{ demanda.subtema.nome }}</span>{% endif %}</td>
-              <td data-rotulo="Evento">{{ demanda.periodo_evento_display|default:"—" }}</td>
-              <td data-rotulo="Município">{{ demanda.municipio|default:demanda.municipio_texto|default:"—" }}</td>
-              <td data-rotulo="Solicitante">{{ demanda.solicitante|truncatechars:55 }}</td>
-              <td data-rotulo="Status">{% include "components/v32/status_badge.html" with status=demanda.status label=demanda.get_status_display %}</td>
-              <td class="c-cad-acoes"><div class="acoes"><a class=" btn--secundaria " href="{% url 'demandas_eventos:editar' demanda.pk %}">Abrir</a></div></td>
-            </tr>
-          {% empty %}<tr><td colspan="7" class="v32-suave dt__vazio">Nenhuma demanda encontrada.</td></tr>{% endfor %}
-        </tbody>
-      </table>
-    </div>
-<div class="lista-mobile-v32"><div class="m-lista">
-          {% for demanda in pagina %}
-            <article class="m-item">
-              <div class="m-item__campo" data-rotulo="Solicitação"><a href="{% url 'demandas_eventos:editar' demanda.pk %}" aria-label="Abrir demanda #{{ demanda.pk }}">#{{ demanda.pk }} · {{ demanda.data_solicitacao|date:"d/m/Y" }}</a></div>
-              <div class="m-item__campo" data-rotulo="Tipo / tema"><strong>{{ demanda.tipo_evento }}</strong>{% if demanda.tema %}<br><span class="v32-suave">{{ demanda.tema }}</span>{% endif %}{% if demanda.subtema %}<br><span class="v32-suave">{{ demanda.subtema.nome }}</span>{% endif %}</div>
-              <div class="m-item__campo" data-rotulo="Evento">{{ demanda.periodo_evento_display|default:"—" }}</div>
-              <div class="m-item__campo" data-rotulo="Município">{{ demanda.municipio|default:demanda.municipio_texto|default:"—" }}</div>
-              <div class="m-item__campo" data-rotulo="Solicitante">{{ demanda.solicitante|truncatechars:55 }}</div>
-              <div class="m-item__campo" data-rotulo="Status">{% include "components/v32/status_badge.html" with status=demanda.status label=demanda.get_status_display %}</div>
-              <div class="m-item__campo" data-rotulo="Ações"><div class="acoes"><a class=" btn--secundaria " href="{% url 'demandas_eventos:editar' demanda.pk %}">Abrir</a></div></div>
-            </article>
-          {% empty %}<article class="m-item"><p class="m-vazio">Nenhuma demanda encontrada.</p></article>{% endfor %}
-        </div></div>
-    {% if pagina.paginator.num_pages > 1 %}
-      <div class="v32-corpo pag"><span class="v32-suave">Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }}</span><nav class="pag__nav" aria-label="Paginação">
-        {% if pagina.has_previous %}<a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">Anterior</a>{% endif %}
-        {% for numero in paginas_visiveis %}{% if numero == elipse %}<span class="pag__el">…</span>{% elif numero == pagina.number %}<span class="pag__n" aria-current="page">{{ numero }}</span>{% else %}<a class="pag__n" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>{% endif %}{% endfor %}
-        {% if pagina.has_next %}<a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima</a>{% endif %}
-      </nav></div>
-    {% endif %}
+  <div class="cad-grade cad-grade--sem-folga">
+    {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_rotulo="Situação das demandas" sem_titulo=True %}
+
+    {% include "components/v32/lista_registros.html" with icone="document" rotulo="Demanda" rotulo_plural="demandas" conteudo_linha="pages/demandas_eventos/_conteudo_linha.html" acoes_linha="pages/demandas_eventos/_acoes_linha.html" placeholder_busca="Buscar por solicitante, descrição ou assunto…" filtro_nome="status" filtro_valor=status vazio="Nenhuma demanda registrada ainda." vazio_filtrado="Nenhuma demanda encontrada com os filtros aplicados." %}
   </div>
 {% endblock %}
+
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>{% endblock %}

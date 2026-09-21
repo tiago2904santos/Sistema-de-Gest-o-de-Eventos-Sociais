@@ -441,7 +441,7 @@ class ViewsTests(BaseCoffeeBreakTestCase):
         self.assertContains(resposta, "Solicitação registrada no sistema.")
         self.assertContains(resposta, "Criada por")
         # Transições de estado, fora do formulário principal.
-        self.assertContains(resposta, "id_motivo_cancelamento")
+        self.assertContains(resposta, 'name="motivo"')
         self.assertContains(
             resposta, reverse("coffee_break:cancelar", args=[solicitacao.pk])
         )
@@ -577,7 +577,7 @@ class ViewsTests(BaseCoffeeBreakTestCase):
         self.criar_solicitacao(quantidade=90)
         resposta = self.client.get(reverse("coffee_break:painel"))
         self.assertContains(resposta, "Capacidade contratada")
-        self.assertContains(resposta, "restam")  # alerta de saldo baixo
+        self.assertContains(resposta, "Restam apenas")  # alerta de saldo baixo
 
     def test_cancelar_exige_post(self):
         solicitacao = self.criar_solicitacao()
@@ -621,8 +621,8 @@ class ViewsTests(BaseCoffeeBreakTestCase):
         formulario = self.client.get(
             reverse("coffee_break:editar", args=[solicitacao.pk])
         )
-        self.assertNotContains(formulario, "id_motivo_cancelamento")
-        self.assertContains(formulario, "Fluxo financeiro concluído")
+        self.assertNotContains(formulario, 'name="motivo"')
+        self.assertContains(formulario, "bloqueadas para edição")
 
 
 class CadastrosCoffeeBreakTests(BaseCoffeeBreakTestCase):
@@ -663,15 +663,21 @@ class CadastrosCoffeeBreakTests(BaseCoffeeBreakTestCase):
         painel = self.client.get(reverse("coffee_break:painel"))
         self.assertContains(painel, reverse("coffee_break:cadastros"))
 
-    def test_cadastros_sem_trilho_lateral(self):
-        """Regra estrutural: coluna única também no backoffice do módulo."""
+    def test_cadastros_na_composicao_dos_cadastros_de_viagens(self):
+        """Backoffice do módulo na mesma composição dos cadastros de apoio.
+
+        A lateral flutuante continua proibida; a navegação entre as tabelas é
+        a trilha do módulo (`cad_rail`), que no desenho do V3.2 aparece como
+        uma faixa de chips acima da lista.
+        """
         self.client.force_login(self.admin_modulo)
         conteudo = self.client.get(
             reverse("coffee_break:cadastro_lista", args=["fornecedores"])
         ).content.decode()
-        for marca in ("<aside", 'class="sticky"', "cad-grade", "cad-rail"):
+        for marca in ("<aside", 'class="sticky"'):
             self.assertNotIn(marca, conteudo, marca)
-        # A navegação entre cadastros continua existindo, agora em linha.
+        self.assertIn("cad-rail", conteudo)
+        # A navegação entre cadastros continua existindo.
         self.assertIn(reverse("coffee_break:cadastro_lista", args=["lotes"]), conteudo)
 
     def test_capacidade_do_lote_nao_pode_ficar_abaixo_do_consumido(self):

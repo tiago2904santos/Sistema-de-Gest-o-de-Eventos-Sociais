@@ -1,0 +1,33 @@
+{% comment %}
+  Histórico da solicitação na casca do histórico de alterações do módulo de
+  Viagens (`components/v32/historico_alteracoes.html`): quando, quem e o quê,
+  do mais recente ao mais antigo, numa tabela com rolagem própria.
+
+  Aqui a fonte é a trilha do próprio registro (`solicitacao.historico`), que
+  guarda a ação, o status que ela produziu e a observação de quem agiu.
+{% endcomment %}
+<div class="hs" id="historico">
+  <div class="hs__cabeca">
+    <span class="hs__titulo">{% include "components/icon.html" with nome="clock" %}Histórico</span>
+    <span class="hs__contagem">{{ historico|length }} movimentaç{{ historico|length|pluralize:"ão,ões" }}</span>
+  </div>
+  {% if historico %}
+    <div class="hs__rolagem" tabindex="0" role="region" aria-label="Histórico da solicitação">
+      <table class="dt hs__tabela">
+        <thead><tr><th class="hs__col-quando">Quando</th><th class="hs__col-quem">Quem</th><th class="hs__col-sobre">O quê</th><th>Observação</th></tr></thead>
+        <tbody>
+          {% for registro in historico reversed %}
+            <tr>
+              <td class="hs__col-quando">{{ registro.criado_em|date:"d/m/Y" }}<small>{{ registro.criado_em|date:"H:i" }}</small></td>
+              <td class="hs__col-quem">{{ registro.usuario|default:"Sistema" }}</td>
+              <td class="hs__col-sobre">{{ registro.get_acao_display }}{% if registro.status_novo %}<small>{{ registro.rotulo_status }}</small>{% endif %}</td>
+              <td>{% if registro.observacao %}{{ registro.observacao }}{% else %}<span class="hs__nota">—</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="hs__vazio">Nenhum registro no histórico.</p>
+  {% endif %}
+</div>

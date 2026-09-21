@@ -1,0 +1,36 @@
+{% comment %}
+  Os campos de um cadastro de apoio, descritos pela view
+  (`core.listagens.campos_formulario`) e renderizados sempre pelos components
+  do design system — texto, área de texto, escolha e o sim/não no
+  interruptor do módulo de Viagens.
+
+  Uso: {% include "components/v32/campos_cadastro.html" with campos=campos exemplo=exemplo %}
+{% endcomment %}
+{% for campo in campos %}
+  {% if campo.tipo == "select" %}
+    {% include "components/select.html" with name=campo.name label=campo.label|capfirst opcoes=campo.opcoes obrigatorio=campo.obrigatorio selecionado=campo.valor erros=campo.erros ajuda=campo.ajuda %}
+  {% elif campo.tipo == "boolean" %}
+    <div class="form-campo cheia">
+      <label class="interruptor">
+        <input class="sr-only" type="checkbox" id="id_{{ campo.name }}" name="{{ campo.name }}" value="on"{% if campo.valor %} checked{% endif %}>
+        <span class="interruptor__trilho" aria-hidden="true"><span class="interruptor__botao"></span></span>
+        <span class="interruptor__rotulo">{{ campo.label|capfirst }}</span>
+      </label>
+      {% for erro in campo.erros %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+      {% if campo.ajuda %}<p class="form-ajuda">{{ campo.ajuda }}</p>{% endif %}
+    </div>
+  {% elif campo.tipo == "textarea" %}
+    <div class="cheia">
+      {% include "components/textarea.html" with name=campo.name label=campo.label|capfirst linhas="3" obrigatorio=campo.obrigatorio valor=campo.valor erros=campo.erros ajuda=campo.ajuda %}
+    </div>
+  {% elif campo.name == "nome" %}
+    {# Só o nome ganha exemplo e o foco ao abrir. #}
+    <div class="cheia">
+      {% include "components/input.html" with name=campo.name label=campo.label|capfirst obrigatorio=campo.obrigatorio valor=campo.valor erros=campo.erros ajuda=campo.ajuda placeholder=exemplo %}
+    </div>
+  {% else %}
+    <div class="cheia">
+      {% include "components/input.html" with name=campo.name label=campo.label|capfirst obrigatorio=campo.obrigatorio valor=campo.valor erros=campo.erros ajuda=campo.ajuda %}
+    </div>
+  {% endif %}
+{% endfor %}

@@ -1,0 +1,13 @@
+{% comment %}
+  Ações de uma linha de demanda num botão único, no padrão das listas de
+  Viagens: abrir a demanda é o que há para fazer — o andamento, a resposta e
+  o status são campos do formulário. Contexto: `l` (linha do presenter).
+{% endcomment %}
+{% with d=l.demanda %}
+<div class="dd of-menu cad-acoes" data-menu>
+  <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações da demanda #{{ d.pk }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
+  <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
+    <a class="dd__i of-item" href="{{ l.url_editar }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Abrir demanda</b><small>Solicitação, evento, atendimento e encaminhamentos</small></span></a>
+  </div>
+</div>
+{% endwith %}

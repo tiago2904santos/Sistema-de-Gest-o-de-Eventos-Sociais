@@ -21,15 +21,16 @@ from django.views.decorators.http import require_POST
 
 from core.listagens import (
     campos_formulario,
-    colunas_ordenaveis,
     opcoes,
     opcoes_choices,
     ordenacao,
     paginar,
+    trilha_de_situacoes,
     valores_filtro,
 )
 
 from . import services
+from .presenters import linha_da_lista
 from .forms import (
     AtendimentoForm,
     FiltroAtendimentosForm,
@@ -54,6 +55,8 @@ FILAS = [
     ("nao_responder", "Não responder", [SituacaoAtendimento.NAO_RESPONDER]),
 ]
 
+# A ordenação não tem mais controles na tela (a lista segue a composição de
+# Viagens), mas `?ordem=` continua valendo para os links antigos.
 ORDENACOES = {
     "data": ["data", "horario", "pk"],
     "jornalista": ["jornalista", "-data"],
@@ -62,24 +65,6 @@ ORDENACOES = {
     "responsavel": ["responsavel__nome", "-data"],
     "deadline": ["deadline", "-data"],
 }
-
-COLUNAS = [
-    ("data", "Data", "c-data"),
-    ("situacao", "Situação", "c-status"),
-    ("jornalista", "Jornalista", "c-sol"),
-    ("veiculo", "Veículo", "c-tipo"),
-    ("pedido", "Pedido", "c-pedido"),
-    ("responsavel", "Responsável", "c-mun"),
-    ("deadline", "Deadline", "c-per"),
-]
-
-ORDENACOES_MOBILE = [
-    {"valor": "-data", "rotulo": "Mais recentes"},
-    {"valor": "data", "rotulo": "Mais antigos"},
-    {"valor": "deadline", "rotulo": "Deadline mais próximo"},
-    {"valor": "jornalista", "rotulo": "Jornalista (A–Z)"},
-    {"valor": "veiculo", "rotulo": "Veículo (A–Z)"},
-]
 
 CAMPOS_FILTRO = ["q", "situacao", "veiculo", "responsavel", "inicio", "fim"]
 
@@ -158,7 +143,10 @@ def painel(request):
             "por_responsavel": services.por_responsavel(inicio_mes),
             "grafico": services.serie_mensal(6, hoje),
             "recentes": recentes,
+            # As listas do painel usam a mesma linha da listagem.
+            "linhas_recentes": [linha_da_lista(a, hoje) for a in recentes],
             "pendentes": pendentes,
+            "linhas_pendentes": [linha_da_lista(a, hoje) for a in pendentes],
             "hoje": hoje,
             "url_lista": url_lista,
         },
@@ -212,9 +200,18 @@ def _filtrar(request):
     return queryset, filtros, pedido, fila_ativa
 
 
+# Ícone de cada fila na trilha lateral das situações.
+ICONES_FILA = {
+    "abertos": "activity",
+    "aguardando": "hourglass",
+    "atendidos": "check-circle",
+    "nao_responder": "ban",
+}
+
+
 @acesso_ao_modulo
 def lista(request):
-    queryset, filtros, pedido, fila_ativa = _filtrar(request)
+    queryset, filtros, _pedido, fila_ativa = _filtrar(request)
     pagina, paginas_visiveis, querystring = paginar(request, queryset)
     contagens = dict(
         Atendimento.objects.values_list("situacao").annotate(total=Count("pk"))
@@ -224,35 +221,31 @@ def lista(request):
             "chave": chave,
             "rotulo": rotulo,
             "total": sum(contagens.get(s, 0) for s in situacoes),
-            "destaque": chave == "abertos",
         }
         for chave, rotulo, situacoes in FILAS
     ]
+    valores = valores_filtro(filtros)
     filtros_ativos = sum(1 for nome in CAMPOS_FILTRO if request.GET.get(nome))
+    hoje = timezone.localdate()
     return render(
         request,
         "pages/atendimento_imprensa/lista.html",
         {
             "kicker": KICKER,
             "pagina": pagina,
-            "linhas": pagina.object_list,
+            "linhas": [linha_da_lista(a, hoje) for a in pagina.object_list],
             "paginas_visiveis": paginas_visiveis,
             "elipse": Paginator.ELLIPSIS,
             "querystring": querystring,
-            "colunas": colunas_ordenaveis(request, pedido, COLUNAS, ORDENACOES),
-            "ordem_atual": pedido,
-            "ordenacoes_mobile": ORDENACOES_MOBILE,
-            "valores_filtro": valores_filtro(filtros),
-            "opcoes_situacao": _opcoes_situacao(),
-            "opcoes_veiculos": opcoes(Veiculo.objects.filter(ativo=True)),
-            "opcoes_responsaveis": opcoes(Responsavel.objects.filter(ativo=True)),
-            "filas": filas,
+            "q": valores.get("q", ""),
+            "situacoes": trilha_de_situacoes(
+                request, filas, sum(contagens.values()), ICONES_FILA
+            ),
+            # Chip aceso: sem fila escolhida, "Todas".
+            "situacao_ativa": fila_ativa or "todas",
             "fila_ativa": fila_ativa,
-            "total_geral": sum(contagens.values()),
-            "total_resultados": pagina.paginator.count,
             "tem_filtros": filtros_ativos > 0,
-            "filtros_ativos": filtros_ativos,
-            "hoje": timezone.localdate(),
+            "hoje": hoje,
         },
     )
 
@@ -377,6 +370,9 @@ def _contexto_formulario(form, atendimento=None):
         "etapas": [],
         "fontes": [],
         "deadline_vencido": False,
+        # Cabeçalho da tela de edição: só o título e o selo da situação.
+        "selo": atendimento.get_situacao_display() if atendimento else "Novo",
+        "selo_tom": atendimento.situacao_css if atendimento else "pendente",
     }
     if atendimento and atendimento.pk:
         hoje = timezone.localdate()

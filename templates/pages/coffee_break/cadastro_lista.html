@@ -1,92 +1,30 @@
 {% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
+{% comment %}
+  Cadastros do módulo de Coffee Break na composição dos cadastros de apoio de
+  Viagens: as tabelas na trilha à esquerda, a busca na barra do cartão, a
+  tabela do V3.2 no desktop e a Data List no celular, uma célula por registro
+  e um menu único de ações.
+{% endcomment %}
 
 {% block title %}{{ config.titulo }} — Coffee Break{% endblock %}
 
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
-  {% url 'coffee_break:cadastro_novo' tipo as url_novo %}
-  {% include "components/v32/page_header.html" with titulo=config.titulo subtitulo="Dados contratuais do módulo de Coffee Break" icone="checklist" acao_label="Novo registro" acao_url=url_novo acao_icone="plus" %}
 
-  <div class="pa-card pa-card--lista v32-bloco">
-    <nav class="v32-barra" aria-label="Cadastros de Coffee Break">
-      <a class="btn--secundaria"{% if tipo == 'fornecedores' %} aria-current="page"{% endif %} href="{% url 'coffee_break:cadastro_lista' 'fornecedores' %}">Fornecedores</a>
-      <a class="btn--secundaria"{% if tipo == 'contratos' %} aria-current="page"{% endif %} href="{% url 'coffee_break:cadastro_lista' 'contratos' %}">Contratos</a>
-      <a class="btn--secundaria"{% if tipo == 'lotes' %} aria-current="page"{% endif %} href="{% url 'coffee_break:cadastro_lista' 'lotes' %}">Lotes</a>
-    </nav>
-  </div>
-  <div class="pa-card pa-card--lista v32-bloco v32-filtros">
-    <form method="get" class="v32-barra">
-      <div class="form-campo v32-busca">
-        <label class="sr-only" for="id_q">Buscar em {{ config.titulo|lower }}</label>
-        <div class="busca">
-          <span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
-          <input class="form-controle" type="search" id="id_q" name="q" value="{{ q }}" placeholder="Buscar em {{ config.titulo|lower }}...">
-        </div>
-      </div>
-      <button class=" btn-primaria" type="submit">Buscar</button>
-      {% if q %}<a class=" btn--secundaria" href="{% url 'coffee_break:cadastro_lista' tipo %}">Limpar</a>{% endif %}
-      <span class="v32-meta">{{ pagina.paginator.count }} registro{{ pagina.paginator.count|pluralize }}</span>
-    </form>
-  </div>
-
-  <div class="pa-card pa-card--lista v32-bloco">
-    <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="{{ config.titulo }}">
-      <table class="dt dt--responsiva">
-        <thead><tr><th>Registro</th><th>Informações</th><th>Situação</th><th>Ação</th></tr></thead>
-        <tbody>
-          {% for item in pagina %}
-            <tr>
-              <td data-rotulo="Registro"><strong>
-                {% if tipo == 'fornecedores' %}{{ item.razao_social }}
-                {% elif tipo == 'contratos' %}Contrato {{ item.numero }}
-                {% else %}{{ item.rotulo_curto }}{% endif %}
-              </strong></td>
-              <td data-rotulo="Informações">
-                {% if tipo == 'fornecedores' %}{{ item.cnpj_formatado|default:"CNPJ não informado" }}
-                {% elif tipo == 'contratos' %}{{ item.fornecedor.razao_social }}{% if item.numero_gms %} · GMS {{ item.numero_gms }}{% endif %}
-                {% else %}{{ item.contrato }} · {{ item.consumido }} consumidas · {{ item.restante }} restantes{% endif %}
-              </td>
-              <td data-rotulo="Situação">
-                {% if item.ativo %}<span class="st st--ativo">Ativo</span>{% else %}<span class="st st--inativo">Inativo</span>{% endif %}
-              </td>
-              <td data-rotulo="Ação"><a class=" btn--secundaria " href="{% url 'coffee_break:cadastro_editar' tipo item.pk %}">Editar</a></td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="4" class="v32-suave dt__vazio">Nenhum registro encontrado.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker kicker--junto">Coffee Break</div>
+      <h1>Cadastros</h1>
     </div>
-<div class="lista-mobile-v32"><div class="m-lista">
-          {% for item in pagina %}
-            <article class="m-item">
-              <div class="m-item__campo" data-rotulo="Registro"><strong>
-                {% if tipo == 'fornecedores' %}{{ item.razao_social }}
-                {% elif tipo == 'contratos' %}Contrato {{ item.numero }}
-                {% else %}{{ item.rotulo_curto }}{% endif %}
-              </strong></div>
-              <div class="m-item__campo" data-rotulo="Informações">
-                {% if tipo == 'fornecedores' %}{{ item.cnpj_formatado|default:"CNPJ não informado" }}
-                {% elif tipo == 'contratos' %}{{ item.fornecedor.razao_social }}{% if item.numero_gms %} · GMS {{ item.numero_gms }}{% endif %}
-                {% else %}{{ item.contrato }} · {{ item.consumido }} consumidas · {{ item.restante }} restantes{% endif %}
-              </div>
-              <div class="m-item__campo" data-rotulo="Situação">
-                {% if item.ativo %}<span class="st st--ativo">Ativo</span>{% else %}<span class="st st--inativo">Inativo</span>{% endif %}
-              </div>
-              <div class="m-item__campo" data-rotulo="Ação"><a class=" btn--secundaria " href="{% url 'coffee_break:cadastro_editar' tipo item.pk %}">Editar</a></div>
-            </article>
-          {% empty %}
-            <article class="m-item"><p class="m-vazio">Nenhum registro encontrado.</p></article>
-          {% endfor %}
-        </div></div>
-    {% if pagina.paginator.num_pages > 1 %}
-      <nav class="pag" aria-label="Paginação">
-        {% for numero in paginas_visiveis %}
-          {% if numero == elipse %}<span class="pag__el">…</span>
-          {% elif numero == pagina.number %}<span class="pag__n " aria-current="page">{{ numero }}</span>
-          {% else %}<a class="pag__n" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}pagina={{ numero }}">{{ numero }}</a>{% endif %}
-        {% endfor %}
-      </nav>
-    {% endif %}
+    <a class="btn-primaria btn-flutuante" href="{% url 'coffee_break:cadastro_novo' tipo %}">{% include "components/icon.html" with nome="plus" %}Novo {{ config.singular }}</a>
+  </div>
+
+  <div class="cad-grade cad-grade--sem-folga">
+    {% include "components/v32/cad_rail.html" with grupos=grupos slug_ativo=tipo sem_titulo=True %}
+
+    {% include "components/v32/lista_registros.html" with icone="checklist" rotulo=config.singular|capfirst rotulo_plural=config.titulo|lower conteudo_linha="pages/coffee_break/_conteudo_cadastro.html" acoes_linha="pages/coffee_break/_acoes_cadastro.html" placeholder_busca="Buscar em "|add:config.titulo vazio="Nenhum registro cadastrado ainda." vazio_filtrado="Nenhum registro encontrado com a busca." %}
   </div>
 {% endblock %}
+
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>{% endblock %}

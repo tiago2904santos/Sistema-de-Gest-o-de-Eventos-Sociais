@@ -857,7 +857,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         resposta = self.client.get(reverse("solicitacoes:lista"))
         self.assertContains(resposta, "Meus rascunhos")
         self.assertNotContains(resposta, "Aguardando despacho</a>")
-        self.assertContains(resposta, "Continuar</a>", html=False)
+        self.assertContains(resposta, "<b>Continuar</b>", html=False)
 
         resposta = self.client.get(
             reverse("solicitacoes:lista"), {"fila": "rascunhos"}
@@ -867,7 +867,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.client.force_login(self.gestor)
         resposta = self.client.get(reverse("solicitacoes:lista"))
         self.assertContains(resposta, "Aguardando despacho")
-        self.assertContains(resposta, "Despachar</a>", html=False)
+        self.assertContains(resposta, "<b>Despachar</b>", html=False)
         resposta = self.client.get(
             reverse("solicitacoes:lista"), {"fila": "despacho"}
         )
@@ -912,7 +912,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         )
         self.assertEqual(resposta.context["pagina"].paginator.count, 1)
         self.assertContains(resposta, "Devolvidas para ajuste")
-        self.assertContains(resposta, "Continuar</a>", html=False)
+        self.assertContains(resposta, "<b>Continuar</b>", html=False)
 
     def test_despacho_via_view(self):
         solicitacao = self.solicitacao_completa()
@@ -936,7 +936,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
             reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
         self.assertContains(resposta, f'name="quantidade_dg_{self.equipe.pk}"')
-        self.assertContains(resposta, "Proposta do solicitante")
+        self.assertContains(resposta, str(self.equipe))
 
         resposta = self.client.post(
             reverse("solicitacoes:despachar", args=[solicitacao.pk]),
@@ -1069,7 +1069,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         )
         self.assertEqual(resposta.context["pagina"].paginator.count, 1)
         self.assertContains(resposta, "Deferidas")
-        self.assertContains(resposta, "Confirmar</a>", html=False)
+        self.assertContains(resposta, "<b>Confirmar atendimento</b>", html=False)
 
     def test_pagina_do_dg_traz_o_despacho_na_tela_do_registro(self):
         """A DG despacha na mesma tela do registro, com os dados travados."""
@@ -1138,8 +1138,8 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.assertContains(resposta, 'name="municipio"')
         self.assertContains(resposta, solicitacao.solicitante_nome)
         # Seções migradas do antigo detalhe continuam na mesma tela.
-        self.assertContains(resposta, ">Acompanhamento<", html=False)
-        self.assertContains(resposta, ">Histórico<", html=False)
+        self.assertContains(resposta, 'aria-label="Acompanhamento da solicitação"', html=False)
+        self.assertContains(resposta, "Histórico</span>", html=False)
         self.assertContains(resposta, "Salvar rascunho")
         self.assertContains(resposta, "Enviar para a DG")
 
@@ -1272,7 +1272,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
             reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
 
-        self.assertContains(resposta, "aviso-devolucao")
+        self.assertContains(resposta, "Devolvida para ajuste pela Diretoria-Geral")
         self.assertContains(resposta, "Detalhe o local.")
         # Tela única: o usuário já está no formulário e reenvia daqui mesmo.
         self.assertFalse(resposta.context["somente_leitura"])
@@ -1550,3 +1550,120 @@ class AnexosTests(BaseSolicitacaoTestCase):
         # O form auxiliar do anexo fica fora do <form> principal.
         self.assertContains(resposta, 'id="form-anexo-upload"', count=1)
         self.assertContains(resposta, "PDF, imagens ou documentos de escritório.", count=0)
+
+
+class GeracaoDeViagemPeloDespacho(BaseSolicitacaoTestCase):
+    """O despacho da DG faz a viagem nascer — em rascunho, e só o que se sabe."""
+
+    def _deferir(self, solicitacao):
+        services.enviar(solicitacao, self.solicitante)
+        return services.despachar(
+            solicitacao, self.gestor, DecisaoDG.ATENDER, observacao="Autorizado"
+        )
+
+    def test_deferir_cria_a_viagem_ligada_a_solicitacao(self):
+        from solicitacoes import integracao_viagens as iv
+
+        solicitacao = self.solicitacao_completa()
+        self._deferir(solicitacao)
+
+        viagem = iv.viagem_da_solicitacao(solicitacao)
+        self.assertIsNotNone(viagem, "o despacho deveria ter gerado a viagem")
+        self.assertEqual(viagem.destino_municipio, solicitacao.municipio)
+        self.assertEqual(viagem.data_inicio, solicitacao.data_inicio_evento)
+        self.assertEqual(viagem.data_fim, solicitacao.data_fim_evento)
+        # A ligação existe no banco, não na memória de quem criou.
+        self.assertEqual(viagem.roteiros.first().solicitacao_id, solicitacao.pk)
+
+    def test_o_numero_da_solicitacao_fica_no_motivo(self):
+        """Seis meses depois, é o fio que liga a viagem ao pedido que a causou."""
+        from solicitacoes import integracao_viagens as iv
+
+        solicitacao = self.solicitacao_completa()
+        self._deferir(solicitacao)
+        viagem = iv.viagem_da_solicitacao(solicitacao)
+        self.assertIn(f"#{solicitacao.pk}", viagem.motivo)
+
+    def test_as_equipes_autorizadas_ficam_registradas_no_roteiro(self):
+        from solicitacoes import integracao_viagens as iv
+
+        solicitacao = self.solicitacao_completa()
+        self._deferir(solicitacao)
+        roteiro = iv.viagem_da_solicitacao(solicitacao).roteiros.first()
+        self.assertIn(str(self.equipe), roteiro.observacoes)
+        self.assertIn(f"#{solicitacao.pk}", roteiro.observacoes)
+
+    def test_equipe_sem_quantidade_aparece_mesmo_assim(self):
+        """O fluxo novo exige a quantidade para enviar; o histórico não tinha.
+
+        Das 101 solicitações reais, 98 têm equipe e só 6 têm o número — elas
+        vieram da importação do legado, antes da validação existir. Filtrar
+        pela quantidade esconderia de que setor chamar a equipe justamente
+        nesses casos, que são a maioria do que está no banco.
+        """
+        from solicitacoes import integracao_viagens as iv
+
+        solicitacao = self.criar_solicitacao()
+        solicitacao.itens_equipe.create(equipe=self.equipe)  # como o legado importou
+
+        resumo = iv.resumo_das_equipes(solicitacao)
+        self.assertIn(str(self.equipe), resumo)
+        self.assertIn("sem quantidade", resumo)
+
+    def test_nao_atender_nao_cria_viagem(self):
+        from solicitacoes import integracao_viagens as iv
+
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.despachar(
+            solicitacao, self.gestor, DecisaoDG.NAO_ATENDER, observacao="Sem efetivo"
+        )
+        self.assertIsNone(iv.viagem_da_solicitacao(solicitacao))
+
+    def test_nao_gera_viagem_duas_vezes(self):
+        from solicitacoes import integracao_viagens as iv
+        from viagens_viagem.models import Viagem
+
+        solicitacao = self.solicitacao_completa()
+        self._deferir(solicitacao)
+        antes = Viagem.objects.count()
+
+        cabe, motivo = iv.pode_gerar(solicitacao)
+        self.assertFalse(cabe)
+        self.assertIn("já tem viagem", motivo)
+        with self.assertRaises(ValueError):
+            iv.gerar_viagem(solicitacao, self.gestor)
+        self.assertEqual(Viagem.objects.count(), antes)
+
+    def test_falha_ao_gerar_viagem_nao_derruba_o_despacho(self):
+        """A decisão da DG é o ato administrativo; a viagem é consequência.
+
+        Perder um despacho porque o módulo vizinho falhou seria inaceitável —
+        então a geração engole o próprio erro e registra no log.
+        """
+        from unittest.mock import patch
+
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        with patch(
+            "solicitacoes.integracao_viagens.gerar_viagem",
+            side_effect=RuntimeError("banco fora do ar"),
+        ):
+            services.despachar(
+                solicitacao, self.gestor, DecisaoDG.ATENDER, observacao="Autorizado"
+            )
+
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.DEFERIDA_EM_ANDAMENTO)
+        self.assertEqual(solicitacao.decisao_dg, DecisaoDG.ATENDER)
+
+    def test_o_que_falta_lista_o_que_a_solicitacao_nao_sabia(self):
+        """Quem vai, com que viatura e com que motorista decide a diária."""
+        from solicitacoes import integracao_viagens as iv
+
+        solicitacao = self.solicitacao_completa()
+        self._deferir(solicitacao)
+        faltando = iv.o_que_falta(iv.viagem_da_solicitacao(solicitacao))
+
+        self.assertIn("Município de onde a equipe sai", faltando)
+        self.assertTrue(any("Ofício" in item for item in faltando))

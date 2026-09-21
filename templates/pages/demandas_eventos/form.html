@@ -1,119 +1,158 @@
 {% extends "layouts/app_shell_v32.html" %}
 {% load estaticos %}
+{% comment %}
+  Tela única da demanda da ASCOM, na composição dos formulários do módulo de
+  Viagens: cabeçalho com ícone, título e selo (nada de metadados sob o
+  título), cartões numerados `section-card`, campos sempre pelos components
+  do design system — palestrantes e setores nos cartões de escolha — e as
+  ações no topo e no fim do último cartão editável.
+
+  A mudança de status e o histórico ficam FORA do <form> principal: HTML não
+  permite formulário aninhado.
+{% endcomment %}
+
 {% block title %}{{ titulo }} — ASCOM{% endblock %}
+
 {% block conteudo %}
   {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
 
-  {# Cabeçalho no padrão do roteiro: ícone, "Nova demanda" ou "Editar demanda #N", situação ao lado, meta com ícones e Salvar no topo. #}
-  <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
-    <div class="page-header d-cabeca__esq">
-      <div class="page-header__identificacao d-identificacao">
-        <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
-        <div>
+  <div class="editor-roteiro of-form">
+    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
           <div class="frm-titulo">
             <h1 class="page-header__titulo d-titulo-v32">{% if instancia %}Editar demanda <span class="frm-ident">#{{ instancia.pk }}</span>{% else %}Nova demanda{% endif %}</h1>
-            {% if instancia %}{% include "components/v32/status_badge.html" with status=instancia.status label=instancia.get_status_display %}{% endif %}
+            <span class="st st--{% if instancia %}{{ instancia.status|lower }}{% else %}pendente{% endif %}">{% if instancia %}{{ instancia.get_status_display }}{% else %}Pendente{% endif %}</span>
           </div>
-          {% if instancia %}
-            <p class="page-header__subtitulo d-cabeca__sub frm-meta">
-              <span>{% include "components/icon.html" with nome="calendar" %}{{ instancia.tipo_evento }}{% if instancia.periodo_evento_display %} · {{ instancia.periodo_evento_display }}{% endif %}</span>
-              {% if instancia.municipio or instancia.municipio_texto %}<span>{% include "components/icon.html" with nome="map-pin" %}{{ instancia.municipio|default:instancia.municipio_texto }}</span>{% endif %}
-              <span>{% include "components/icon.html" with nome="user" %}{{ instancia.solicitante }}</span>
-            </p>
-          {% endif %}
         </div>
       </div>
+      <div class="frm-topo__acoes">
+        <button type="submit" class="btn-primaria" form="form-demanda">Salvar demanda</button>
+      </div>
     </div>
-    <div class="frm-topo__acoes">
-      <button type="submit" class="btn-primaria" form="form-demanda">Salvar demanda</button>
-    </div>
-  </div>
 
-  <form method="post" id="form-demanda" class="v32-form-longo">{% csrf_token %}
-    <input type="hidden" name="versao" value="{{ valores.versao }}">
-    {# Erro geral fora do cartão, logo acima da seção, como no roteiro. #}
-    {% if form.errors %}
-      <div class="aviso v32-aviso-texto aviso--erro resumo-erros frm-aviso" role="alert" tabindex="-1" data-resumo-erros>
-        <strong>Revise os campos indicados antes de salvar.</strong>
-        {% for erro in form.non_field_errors %}<p>{{ erro }}</p>{% endfor %}
-      </div>
-    {% endif %}
-<div class="v32-bloco">
-    <section class="reg" id="sec-identificacao">
-      {% include "components/v32/section_card.html" with numero="1" titulo="Identificação da demanda" %}
-      <div class="reg-corpo"><div class="g-form v32-form-grid">
-        {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True largura="4" valor=valores.data_solicitacao erros=erros.data_solicitacao %}
-        {% include "components/select.html" with name="tipo_evento" label="Tipo de evento" opcoes=opcoes_tipos obrigatorio=True largura="4" selecionado=valores.tipo_evento erros=erros.tipo_evento %}
-        {% include "components/select.html" with name="tema" label="Tema" opcoes=opcoes_temas largura="4" selecionado=valores.tema erros=erros.tema pesquisavel=True %}
-        {% include "components/select.html" with name="subtema" label="Subtema" opcoes=opcoes_subtemas largura="4" selecionado=valores.subtema erros=erros.subtema pesquisavel=True dependente_de="id_tema" cascata_obrigatoria=True placeholder="Selecione primeiro o tema" vazio="Nenhum subtema ativo para este tema." %}
-        <p class="form-ajuda form-campo--12" id="id_subtema_escopo" hidden></p>
-        {% include "components/input.html" with name="canal_solicitacao" label="Solicitado via" largura="4" valor=valores.canal_solicitacao erros=erros.canal_solicitacao placeholder="E-mail, WhatsApp, protocolo..." %}
-        {% include "components/select.html" with name="municipio" label="Município" opcoes=opcoes_municipios largura="4" selecionado=valores.municipio erros=erros.municipio pesquisavel=True %}
-        <div class="form-campo form-campo--4"><label class="form-label" for="id_status_visual">Status</label><input class="form-controle form-controle--somente-leitura" id="id_status_visual" value="{% if instancia %}{{ instancia.get_status_display }}{% else %}Pendente{% endif %}" readonly><p class="form-ajuda">O status é alterado por ações rastreáveis na seção “Atualizar status” desta página.</p></div>
-        {% include "components/input.html" with name="solicitante" label="Solicitante" obrigatorio=True largura="6" valor=valores.solicitante erros=erros.solicitante %}
-        {% include "components/input.html" with name="contato" label="Contato" largura="6" valor=valores.contato erros=erros.contato %}
-        {% include "components/input.html" with name="assunto_email" label="Assunto do e-mail" largura="12" valor=valores.assunto_email erros=erros.assunto_email %}
-      </div></div>
-    </section>
-    <section class="reg" id="sec-evento">
-      {% include "components/v32/section_card.html" with numero="2" titulo="Evento" %}
-      <div class="reg-corpo"><div class="g-form v32-form-grid">
-        {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Período estruturado" largura="6" valor_inicio=valores.data_inicio_evento valor_fim=valores.data_fim_evento erros=erros.data_fim_evento %}
-        {% include "components/input.html" with name="periodo_evento_texto" label="Período em texto" largura="6" valor=valores.periodo_evento_texto erros=erros.periodo_evento_texto placeholder="Ex.: 23 e 24/08, horário a definir" ajuda="Use somente quando não houver datas estruturadas." %}
-        {% include "components/textarea.html" with name="descricao" label="Descrição" largura="12" linhas="3" valor=valores.descricao erros=erros.descricao %}
-        {% include "components/textarea.html" with name="pedido_contato" label="Pedido / contato original" largura="12" linhas="3" valor=valores.pedido_contato erros=erros.pedido_contato %}
-        {% include "components/input.html" with name="quantidade_publico" label="Quantidade de público" tipo="number" largura="4" valor=valores.quantidade_publico erros=erros.quantidade_publico %}
-        {% include "components/input.html" with name="unidade" label="Unidade" largura="4" valor=valores.unidade erros=erros.unidade %}
-        {% include "components/input.html" with name="responsavel_organizacao" label="Responsável pela organização" largura="4" valor=valores.responsavel_organizacao erros=erros.responsavel_organizacao %}
-      </div></div>
-    </section>
-    <section class="reg" id="sec-atendimento">
-      {% include "components/v32/section_card.html" with numero="3" titulo="Atendimento e acompanhamento" %}
-      <div class="reg-corpo"><div class="g-form v32-form-grid">
-        {% include "components/select.html" with name="responsavel_atendimento" label="Responsável pelo atendimento" opcoes=opcoes_responsaveis largura="6" selecionado=valores.responsavel_atendimento erros=erros.responsavel_atendimento pesquisavel=True ajuda="As opções acompanham os setores envolvidos selecionados." %}
-        <fieldset class="form-campo form-campo--6 campo-e--bloco" id="id_palestrantes"{% if erros.palestrantes %} aria-invalid="true" aria-describedby="id_palestrantes_erro"{% endif %}><legend class="form-label">Palestrantes</legend><div class="opc-cards">{% for item in opcoes_palestrantes %}<label class="opc-card"><input type="checkbox" name="palestrantes" value="{{ item.valor }}"{% if item.valor in palestrantes_marcados %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ item.rotulo }}</label>{% empty %}<span class="v32-suave">Nenhum palestrante cadastrado.</span>{% endfor %}</div>{% for erro in erros.palestrantes %}<p class="form-erro"{% if forloop.first %} id="id_palestrantes_erro"{% endif %}>{{ erro }}</p>{% endfor %}</fieldset>
-        {% include "components/textarea.html" with name="andamento" label="Andamento" largura="12" linhas="3" valor=valores.andamento erros=erros.andamento %}
-        {% include "components/textarea.html" with name="informacoes_previas" label="Informações prévias" largura="12" linhas="3" valor=valores.informacoes_previas erros=erros.informacoes_previas %}
-        {% include "components/textarea.html" with name="briefing" label="Briefing" largura="6" linhas="3" valor=valores.briefing erros=erros.briefing %}
-        {% include "components/textarea.html" with name="materia_site" label="Matéria no site" largura="6" linhas="3" valor=valores.materia_site erros=erros.materia_site %}
-        <fieldset class="form-campo form-campo--12 campo-e--bloco" id="id_setores"{% if erros.setores %} aria-invalid="true" aria-describedby="id_setores_erro"{% endif %}><legend class="form-label">Setores envolvidos <span class="form-label__obrigatorio">*</span></legend><div class="opc-cards">{% for item in opcoes_setores %}<label class="opc-card"><input type="checkbox" name="setores" value="{{ item.valor }}"{% if item.valor in setores_marcados %} checked{% endif %}><span>{% include "components/icon.html" with nome="check" %}</span>{{ item.rotulo }}</label>{% endfor %}</div>{% for erro in erros.setores %}<p class="form-erro"{% if forloop.first %} id="id_setores_erro"{% endif %}>{{ erro }}</p>{% endfor %}</fieldset>
-      </div>
-      {# Ações no fim do último cartão do formulário, como no roteiro: voltar à esquerda, salvar à direita. #}
-      <div class="frm-acoes-fim"><a class="btn--secundaria" href="{% url 'demandas_eventos:lista' %}">Voltar</a>{% include "components/v32/button.html" with label="Salvar demanda" variante="dourado" tipo="submit" %}</div>
-      </div>
-    </section>
-</div>
-  </form>
+    <form method="post" id="form-demanda" class="editor-roteiro__principal">{% csrf_token %}
+      <input type="hidden" name="versao" value="{{ valores.versao }}">
+      {% if form.errors %}
+        <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
+          {% include "components/icon.html" with nome="info" %}
+          <div><b>Não foi possível salvar a demanda</b>Revise os campos indicados antes de continuar.
+            <ul class="aviso--erro__lista">{% for campo, mensagens in form.errors.items %}{% for mensagem in mensagens %}<li>{% if campo == "__all__" %}{{ mensagem }}{% else %}<a href="#id_{{ campo }}">{{ mensagem }}</a>{% endif %}</li>{% endfor %}{% endfor %}</ul>
+          </div>
+        </div>
+      {% endif %}
 
-  {% if instancia %}
-    {% if opcoes_transicao %}
-      <section class="reg v32-bloco" id="sec-status">
-        {% include "components/v32/section_card.html" with numero="4" titulo="Atualizar status" subtitulo="Cada mudança fica registrada no histórico" %}
-        <div class="reg-corpo">
-          <form method="post" action="{% url 'demandas_eventos:transicionar' instancia.pk %}" class="g-form v32-form-grid">
-            {% csrf_token %}
-            {% include "components/select.html" with name="novo_status" label="Próximo status" opcoes=opcoes_transicao obrigatorio=True largura="6" %}
-            {% include "components/input.html" with name="justificativa" label="Justificativa" largura="6" ajuda="Obrigatória para não atender ou cancelar." %}
-            <div class="cad-frm__acoes cheia"><button type="submit" class=" btn-primaria">Atualizar status</button></div>
-          </form>
+      <section class="section-card reg" id="sec-identificacao">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+          <h2 class="section-card__titulo">Identificação da demanda</h2>
+        </header>
+        <div class="section-card__corpo">
+          <div class="g-form g-form--3">
+            {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True valor=valores.data_solicitacao erros=erros.data_solicitacao %}
+            {% include "components/select.html" with name="tipo_evento" label="Tipo de evento" opcoes=opcoes_tipos obrigatorio=True selecionado=valores.tipo_evento erros=erros.tipo_evento %}
+            {% include "components/select.html" with name="tema" label="Tema" opcoes=opcoes_temas selecionado=valores.tema erros=erros.tema pesquisavel=True %}
+            {% include "components/select.html" with name="subtema" label="Subtema" opcoes=opcoes_subtemas selecionado=valores.subtema erros=erros.subtema pesquisavel=True dependente_de="id_tema" cascata_obrigatoria=True placeholder="Selecione primeiro o tema" vazio="Nenhum subtema ativo para este tema." %}
+            <p class="form-ajuda cheia" id="id_subtema_escopo" hidden></p>
+            {% include "components/input.html" with name="canal_solicitacao" label="Solicitado via" valor=valores.canal_solicitacao erros=erros.canal_solicitacao placeholder="E-mail, WhatsApp, protocolo..." %}
+            {% include "components/select.html" with name="municipio" label="Município" opcoes=opcoes_municipios selecionado=valores.municipio erros=erros.municipio pesquisavel=True %}
+            <div class="c2">
+              {% include "components/input.html" with name="solicitante" label="Solicitante" obrigatorio=True valor=valores.solicitante erros=erros.solicitante %}
+            </div>
+            {% include "components/input.html" with name="contato" label="Contato" valor=valores.contato erros=erros.contato %}
+            <div class="cheia">
+              {% include "components/input.html" with name="assunto_email" label="Assunto do e-mail" valor=valores.assunto_email erros=erros.assunto_email %}
+            </div>
+          </div>
+          <p class="form-ajuda">O status é alterado por ações rastreáveis, na seção “Atualizar status” desta página.</p>
         </div>
       </section>
-    {% endif %}
 
-    <section class="reg v32-bloco" id="sec-historico">
-      {% include "components/v32/section_card.html" with numero="5" titulo="Histórico" subtitulo="Alterações e transições da demanda" %}
-      <div class="reg-corpo">
-        <ol class="linha-t v32-historico">
-          {% for registro in historico %}
-            <li>
-              <strong>{{ registro.get_acao_display }}{% if registro.status_novo %} — {{ registro.status_novo_display }}{% endif %}</strong>
-              <span>{{ registro.criado_em|date:"d/m/Y H:i" }} · {{ registro.usuario|default:"Sistema" }}</span>
-              {% if registro.descricao %}<p>{{ registro.descricao }}</p>{% endif %}
-            </li>
-          {% empty %}<li class="v32-suave">Nenhuma alteração registrada.</li>{% endfor %}
-        </ol>
-      </div>
-    </section>
-  {% endif %}
+      <section class="section-card reg" id="sec-evento">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+          <h2 class="section-card__titulo">Evento</h2>
+        </header>
+        <div class="section-card__corpo">
+          <div class="g-form g-form--3">
+            <div class="c2">
+              {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Período estruturado" dois_campos=True valor_inicio=valores.data_inicio_evento valor_fim=valores.data_fim_evento erros=erros.data_fim_evento %}
+            </div>
+            {% include "components/input.html" with name="periodo_evento_texto" label="Período em texto" valor=valores.periodo_evento_texto erros=erros.periodo_evento_texto placeholder="Ex.: 23 e 24/08, horário a definir" ajuda="Use somente quando não houver datas estruturadas." %}
+            {% include "components/input.html" with name="quantidade_publico" label="Quantidade de público" tipo="number" valor=valores.quantidade_publico erros=erros.quantidade_publico %}
+            {% include "components/input.html" with name="unidade" label="Unidade" valor=valores.unidade erros=erros.unidade %}
+            {% include "components/input.html" with name="responsavel_organizacao" label="Responsável pela organização" valor=valores.responsavel_organizacao erros=erros.responsavel_organizacao %}
+            <div class="cheia">
+              {% include "components/textarea.html" with name="descricao" label="Descrição" linhas="3" valor=valores.descricao erros=erros.descricao %}
+            </div>
+            <div class="cheia">
+              {% include "components/textarea.html" with name="pedido_contato" label="Pedido / contato original" linhas="3" valor=valores.pedido_contato erros=erros.pedido_contato %}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card reg" id="sec-atendimento">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
+          <h2 class="section-card__titulo">Atendimento e acompanhamento</h2>
+        </header>
+        <div class="section-card__corpo">
+          <div class="g-form g-form--2">
+            {% include "components/select.html" with name="responsavel_atendimento" label="Responsável pelo atendimento" opcoes=opcoes_responsaveis selecionado=valores.responsavel_atendimento erros=erros.responsavel_atendimento pesquisavel=True ajuda="As opções acompanham os setores envolvidos selecionados." %}
+            <div class="cheia">
+              {% include "components/v32/cartoes_escolha.html" with name="setores" tipo="checkbox" label="Setores envolvidos" obrigatorio=True opcoes=opcoes_setores erros=erros.setores id_primeiro=True icone="users" %}
+            </div>
+            <div class="cheia">
+              {% include "components/v32/cartoes_escolha.html" with name="palestrantes" tipo="checkbox" label="Palestrantes" opcoes=opcoes_palestrantes erros=erros.palestrantes id_primeiro=True icone="user" %}
+            </div>
+            <div class="cheia">
+              {% include "components/textarea.html" with name="andamento" label="Andamento" linhas="3" valor=valores.andamento erros=erros.andamento %}
+            </div>
+            <div class="cheia">
+              {% include "components/textarea.html" with name="informacoes_previas" label="Informações prévias" linhas="3" valor=valores.informacoes_previas erros=erros.informacoes_previas %}
+            </div>
+            {% include "components/textarea.html" with name="briefing" label="Briefing" linhas="3" valor=valores.briefing erros=erros.briefing %}
+            {% include "components/textarea.html" with name="materia_site" label="Matéria no site" linhas="3" valor=valores.materia_site erros=erros.materia_site %}
+          </div>
+
+          {# Ações no fim do último cartão editável: voltar à esquerda, salvar à direita. #}
+          <div class="frm-acoes-fim">
+            <a class="btn--secundaria" href="{% url 'demandas_eventos:lista' %}">Voltar</a>
+            <button type="submit" class="btn-primaria">Salvar demanda</button>
+          </div>
+        </div>
+      </section>
+    </form>
+
+    {% if instancia %}
+      {% if opcoes_transicao %}
+        <section class="section-card reg" id="sec-status">
+          <header class="section-card__cabecalho reg__t">
+            <span class="section-card__numero reg-numero" aria-hidden="true">4</span>
+            <h2 class="section-card__titulo">Atualizar status</h2>
+          </header>
+          <div class="section-card__corpo">
+            <p class="v32-suave sol-grupo">Cada mudança fica registrada no histórico.</p>
+            <form method="post" action="{% url 'demandas_eventos:transicionar' instancia.pk %}">
+              {% csrf_token %}
+              <div class="g-form g-form--2">
+                {% include "components/select.html" with name="novo_status" label="Próximo status" opcoes=opcoes_transicao obrigatorio=True erros=None %}
+                {% include "components/input.html" with name="justificativa" label="Justificativa" ajuda="Obrigatória para não atender ou cancelar." erros=None valor="" %}
+              </div>
+              <div class="frm-acoes-fim">
+                <span></span>
+                <button type="submit" class="btn-primaria">Atualizar status</button>
+              </div>
+            </form>
+          </div>
+        </section>
+      {% endif %}
+
+      {% include "pages/demandas_eventos/_historico.html" %}
+    {% endif %}
+  </div>
 {% endblock %}
+
 {% block extra_js %}{{ block.super }}<script src="{% estatico 'js/demandas-subtemas.js' %}" defer></script>{% endblock %}
