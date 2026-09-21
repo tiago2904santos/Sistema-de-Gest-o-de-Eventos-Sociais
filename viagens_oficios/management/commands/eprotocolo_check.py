@@ -56,6 +56,12 @@ class Command(BaseCommand):
                 "de verdade: credenciais preenchidas, EPROTOCOLO_AMBIENTE diferente de "
                 "mock e EPROTOCOLO_REAL_READONLY=False."
             ))
+        elif info["auto_protocolo_oficio"] and not info["numero_oficial"]:
+            self.stdout.write(self.style.WARNING(
+                f"Ambiente de teste ({info['ambiente']}): os protocolos são abertos de "
+                "verdade no barramento, mas NÃO valem como protocolo oficial. A tela "
+                "avisa em cada ofício. Só EPROTOCOLO_AMBIENTE=producao gera número oficial."
+            ))
 
         if options.get("escopos"):
             self.stdout.write(self.style.NOTICE("\nEscopos OAuth2 esperados:"))

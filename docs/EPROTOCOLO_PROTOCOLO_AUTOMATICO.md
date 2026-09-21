@@ -10,6 +10,7 @@ o campo.
 | Situação | Comportamento |
 |---|---|
 | Campo vazio, ao salvar (rascunho ou finalizar) | O sistema abre o protocolo e preenche o campo. A tela mostra "Protocolo 12.345.678-9 aberto no eProtocolo." |
+| Campo vazio, com credencial **de treinamento** | O processo é aberto de verdade no barramento de teste, e o aviso diz: "aberto no eProtocolo de treinamento — é um processo de teste e NÃO vale como protocolo oficial." |
 | Campo preenchido à mão | Nada é aberto. O número informado é preservado e a ficha o marca como **manual**. |
 | Sem credenciais configuradas | O número é **simulado**, no formato certo, com aviso amarelo na tela e marca `SIMULADO` no banco. |
 | eProtocolo fora do ar, credencial vencida, código institucional faltando | **O ofício é salvo assim mesmo.** A falha vira aviso; a conferência continua cobrando "Informe o protocolo." antes de finalizar. |
@@ -18,6 +19,27 @@ o campo.
 O protocolo **não** é aberto na criação do rascunho — só na gravação. O
 "Novo ofício" reaproveita rascunhos vazios abandonados, e abrir processo ali
 dentro seria abrir processo para ofício que nunca existiu.
+
+## Treinamento não é produção
+
+Só `EPROTOCOLO_AMBIENTE=producao` gera protocolo **oficial**. Em
+`treinamento` e `homologacao` a chamada sai de verdade e o processo existe no
+barramento de teste — mas ninguém pode protocolar com aquele número. O
+sistema trata os três casos como três coisas distintas, e nunca deixa a
+diferença implícita:
+
+| `protocolo_origem` | Significado |
+|---|---|
+| `EPROTOCOLO` | Aberto em produção — vale como protocolo oficial |
+| `TREINAMENTO` | Aberto no barramento de teste (treinamento/homologação) — **não** vale |
+| `SIMULADO` | Gerado aqui, sem sair para a rede (sem credencial) — **não** vale |
+| `MANUAL` | Digitado por uma pessoa |
+
+Em todos os casos não oficiais o aviso aparece três vezes: na mensagem depois
+de salvar, na ajuda abaixo do campo Protocolo e na saída do
+`eprotocolo_check`. O número fica gravado no campo (é o que permite ensaiar o
+fluxo inteiro), e quem protocolar de fato digita o número real por cima — o
+que devolve a origem para `MANUAL`.
 
 ## Como sair do modo simulado
 

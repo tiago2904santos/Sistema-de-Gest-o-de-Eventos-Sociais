@@ -55,6 +55,11 @@ class ResultadoProtocolo:
     numero: str = ""
     criado: bool = False
     simulado: bool = False
+    #: O número vale como protocolo oficial? Só em produção: treinamento e
+    #: homologação abrem processo de verdade num barramento de teste.
+    oficial: bool = False
+    #: O ambiente que respondeu, para a frase da tela dizer qual foi.
+    ambiente: str = ""
     #: O ofício ainda não tem o que o eProtocolo exige (assunto, motivo,
     #: códigos institucionais). Não é erro de rascunho — é cedo demais.
     incompleto: bool = False
@@ -105,9 +110,7 @@ def abrir_protocolo_do_oficio(oficio: Oficio, *, forcar: bool = False) -> Result
         )
 
     oficio.protocolo = numero
-    oficio.protocolo_origem = (
-        Oficio.PROTOCOLO_ORIGEM_SIMULADO if resultado.mock else Oficio.PROTOCOLO_ORIGEM_EPROTOCOLO
-    )
+    oficio.protocolo_origem = _origem_do_numero(resultado)
     oficio.protocolo_situacao = str(resultado.dados.get("situacao") or "")[:40]
     oficio.protocolo_criado_em = timezone.now()
     oficio.save(update_fields=[
@@ -116,8 +119,21 @@ def abrir_protocolo_do_oficio(oficio: Oficio, *, forcar: bool = False) -> Result
     ])
     return ResultadoProtocolo(
         numero=numero, criado=True, simulado=resultado.mock,
+        oficial=cfg.numero_e_oficial(),
+        ambiente=cfg.ambiente(),
         detalhes=dict(resultado.dados or {}),
     )
+
+
+def _origem_do_numero(resultado) -> str:
+    """Três destinos possíveis, e a diferença entre eles é a que importa:
+    simulado (não saiu daqui), treinamento/homologação (existe, mas não vale
+    para protocolar) e produção (vale)."""
+    if resultado.mock:
+        return Oficio.PROTOCOLO_ORIGEM_SIMULADO
+    if not cfg.numero_e_oficial():
+        return Oficio.PROTOCOLO_ORIGEM_TREINAMENTO
+    return Oficio.PROTOCOLO_ORIGEM_EPROTOCOLO
 
 
 def _abrir(oficio: Oficio):
@@ -151,6 +167,13 @@ def mensagens_do_protocolo(resultado: ResultadoProtocolo, *, finalizar: bool = F
                  f"Protocolo {resultado.numero_formatado} gerado em modo simulado — "
                  "a integração com o eProtocolo ainda não está configurada. "
                  "Confirme o número real antes de protocolar.")]
+    if resultado.criado and not resultado.oficial:
+        # Processo aberto de verdade, mas no barramento de teste: dizer
+        # "aberto no eProtocolo" e pronto faria o número passar por oficial.
+        return [(messages.WARNING,
+                 f"Protocolo {resultado.numero_formatado} aberto no eProtocolo de "
+                 f"{resultado.ambiente or 'treinamento'} — é um processo de teste e "
+                 "NÃO vale como protocolo oficial.")]
     if resultado.criado:
         return [(messages.SUCCESS,
                  f"Protocolo {resultado.numero_formatado} aberto no eProtocolo.")]

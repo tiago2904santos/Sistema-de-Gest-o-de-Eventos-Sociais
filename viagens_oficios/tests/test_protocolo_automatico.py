@@ -12,14 +12,16 @@ O que estes testes protegem, em ordem de importância:
 
 from unittest import mock
 
+from django.contrib import messages
 from django.contrib.messages import get_messages
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from integracoes.eprotocolo.exceptions import EProtocoloUnavailableError, EProtocoloValidationError
 from integracoes.eprotocolo.schemas import ResultadoOperacao
+from viagens_oficios.form_context import ajuda_do_protocolo
 from viagens_oficios.models import Oficio
-from viagens_oficios.protocolo_services import abrir_protocolo_do_oficio
+from viagens_oficios.protocolo_services import abrir_protocolo_do_oficio, mensagens_do_protocolo
 
 from .fixtures import CenarioOficioMixin
 
@@ -153,7 +155,10 @@ class ProtocoloAutomaticoTests(CenarioOficioMixin, TestCase):
         self.assertEqual(oficio.protocolo, "")
 
 
-@override_settings(EPROTOCOLO=EPROTOCOLO_REAL)
+EPROTOCOLO_TREINAMENTO = {**EPROTOCOLO_REAL, "AMBIENTE": "treinamento"}
+
+
+@override_settings(EPROTOCOLO={**EPROTOCOLO_REAL, "AMBIENTE": "producao"})
 class ProtocoloModoRealTests(CenarioOficioMixin, TestCase):
     """Com credenciais, o número vem do barramento — e é marcado como tal."""
 
@@ -176,7 +181,7 @@ class ProtocoloModoRealTests(CenarioOficioMixin, TestCase):
         self.assertEqual(payload["codOrgao"], "10")
         self.assertIn("diárias", payload["assunto"])
 
-    @override_settings(EPROTOCOLO={**EPROTOCOLO_REAL, "COD_ASSUNTO_VIAGEM": ""})
+    @override_settings(EPROTOCOLO={**EPROTOCOLO_REAL, "AMBIENTE": "producao", "COD_ASSUNTO_VIAGEM": ""})
     def test_codigo_institucional_faltando_nao_sai_para_a_rede(self):
         oficio = Oficio.objects.create(numero=2, ano=2026, motivo="Missão real")
         with mock.patch("integracoes.eprotocolo.services.get_client") as fabrica:
@@ -187,7 +192,7 @@ class ProtocoloModoRealTests(CenarioOficioMixin, TestCase):
         oficio.refresh_from_db()
         self.assertEqual(oficio.protocolo, "")
 
-    @override_settings(EPROTOCOLO={**EPROTOCOLO_REAL, "REAL_READONLY": True})
+    @override_settings(EPROTOCOLO={**EPROTOCOLO_REAL, "AMBIENTE": "producao", "REAL_READONLY": True})
     def test_trava_de_somente_consulta_impede_abrir_protocolo(self):
         oficio = Oficio.objects.create(numero=3, ano=2026, motivo="Missão real")
         with mock.patch("integracoes.eprotocolo.services.get_client") as fabrica:
@@ -227,3 +232,55 @@ class ProtocoloNoEditorDocumentalTests(CenarioOficioMixin, TestCase):
         self.assertEqual(oficio.protocolo, "987654321")
         self.assertEqual(oficio.protocolo_origem, Oficio.PROTOCOLO_ORIGEM_MANUAL)
         self.assertIsNone(oficio.protocolo_criado_em)
+
+
+@override_settings(EPROTOCOLO=EPROTOCOLO_TREINAMENTO)
+class ProtocoloTreinamentoTests(CenarioOficioMixin, TestCase):
+    """O barramento de treinamento abre processo de verdade — que não vale.
+
+    É a situação da instalação hoje: há credencial de treinamento e nenhuma de
+    produção. O número existe lá dentro, mas ninguém pode protocolar com ele, e
+    o sistema não pode deixar isso implícito em lugar nenhum.
+    """
+
+    def _abrir(self, oficio):
+        with mock.patch("integracoes.eprotocolo.services.get_client") as fabrica:
+            fabrica.return_value.post.return_value = {"numero": "24.123.456-7", "situacao": "CRIADO"}
+            return abrir_protocolo_do_oficio(oficio)
+
+    def test_numero_de_treinamento_nao_e_marcado_como_oficial(self):
+        oficio = Oficio.objects.create(numero=10, ano=2026, motivo="Missão de treino")
+        resultado = self._abrir(oficio)
+        oficio.refresh_from_db()
+        self.assertTrue(resultado.criado)
+        self.assertFalse(resultado.simulado)  # a chamada saiu de verdade
+        self.assertFalse(resultado.oficial)   # e mesmo assim não vale
+        self.assertEqual(oficio.protocolo, "241234567")
+        self.assertEqual(oficio.protocolo_origem, Oficio.PROTOCOLO_ORIGEM_TREINAMENTO)
+        self.assertIn(oficio.protocolo_origem, Oficio.PROTOCOLO_ORIGENS_NAO_OFICIAIS)
+
+    def test_a_tela_avisa_que_o_numero_nao_e_oficial(self):
+        oficio = Oficio.objects.create(numero=11, ano=2026, motivo="Missão de treino")
+        resultado = self._abrir(oficio)
+        (nivel, texto), = mensagens_do_protocolo(resultado)
+        self.assertEqual(nivel, messages.WARNING)
+        self.assertIn("treinamento", texto)
+        self.assertIn("NÃO vale como protocolo oficial", texto)
+
+    def test_a_ajuda_do_campo_tambem_avisa(self):
+        oficio = Oficio.objects.create(numero=12, ano=2026, motivo="Missão de treino")
+        self._abrir(oficio)
+        oficio.refresh_from_db()
+        self.assertIn("NÃO vale como protocolo oficial", ajuda_do_protocolo(oficio))
+
+    def test_campo_vazio_ja_avisa_antes_de_abrir(self):
+        oficio = Oficio.objects.create(numero=13, ano=2026, motivo="Missão de treino")
+        self.assertIn("treinamento", ajuda_do_protocolo(oficio))
+
+    def test_homologacao_recebe_o_mesmo_tratamento_de_treinamento(self):
+        oficio = Oficio.objects.create(numero=14, ano=2026, motivo="Missão de treino")
+        with override_settings(EPROTOCOLO={**EPROTOCOLO_REAL, "AMBIENTE": "homologacao"}):
+            resultado = self._abrir(oficio)
+        oficio.refresh_from_db()
+        self.assertFalse(resultado.oficial)
+        self.assertEqual(oficio.protocolo_origem, Oficio.PROTOCOLO_ORIGEM_TREINAMENTO)

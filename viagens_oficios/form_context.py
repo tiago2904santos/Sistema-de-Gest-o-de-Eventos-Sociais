@@ -206,6 +206,12 @@ def ajuda_do_protocolo(oficio):
         quando = oficio.protocolo_criado_em
         data = f" em {timezone.localtime(quando):%d/%m/%Y}" if quando else ""
         return f"Aberto no eProtocolo{data}. Para usar outro número, digite por cima."
+    if oficio.protocolo_origem == Oficio.PROTOCOLO_ORIGEM_TREINAMENTO:
+        quando = oficio.protocolo_criado_em
+        data = f" em {timezone.localtime(quando):%d/%m/%Y}" if quando else ""
+        return (f"Aberto no eProtocolo de treinamento{data} — processo de teste, "
+                "NÃO vale como protocolo oficial. Digite por cima o número real "
+                "quando protocolar.")
     if oficio.protocolo_origem == Oficio.PROTOCOLO_ORIGEM_SIMULADO:
         return ("Número simulado — a integração com o eProtocolo não está configurada. "
                 "Confirme o protocolo real antes de protocolar.")
@@ -213,5 +219,9 @@ def ajuda_do_protocolo(oficio):
         return "Nove dígitos, com ou sem pontuação."
     if not cfg.auto_protocolo_oficio():
         return "Nove dígitos, com ou sem pontuação."
+    if not cfg.numero_e_oficial():
+        return ("Deixe em branco: ao salvar, o sistema abre o protocolo no eProtocolo "
+                "de treinamento — número de teste, que não vale para protocolar. "
+                "Para usar o número real, digite-o aqui.")
     return ("Deixe em branco: ao salvar, o sistema abre o protocolo no eProtocolo e "
             "traz o número. Para usar um número já existente, digite-o aqui.")

@@ -42,13 +42,26 @@ class Oficio(ModeloTemporal, ModeloCancelavel, OrigemLegado):
 
     PROTOCOLO_ORIGEM_EPROTOCOLO = "EPROTOCOLO"
 
+    #: Número aberto de verdade, mas num barramento de teste (treinamento ou
+    #: homologação): processo existe lá dentro e não vale como protocolo
+    #: oficial. Separado do de produção porque a diferença é a que importa
+    #: para quem vai protocolar.
+    PROTOCOLO_ORIGEM_TREINAMENTO = "TREINAMENTO"
+
     PROTOCOLO_ORIGEM_SIMULADO = "SIMULADO"
 
     PROTOCOLO_ORIGEM_CHOICES = [
         (PROTOCOLO_ORIGEM_MANUAL, "Informado manualmente"),
         (PROTOCOLO_ORIGEM_EPROTOCOLO, "Aberto no eProtocolo"),
+        (PROTOCOLO_ORIGEM_TREINAMENTO, "Aberto no eProtocolo de treinamento (não oficial)"),
         (PROTOCOLO_ORIGEM_SIMULADO, "Simulado (integração desligada)"),
     ]
+
+    #: As origens cujo número NÃO vale como protocolo oficial. Quem for
+    #: perguntar "posso protocolar com este número?" pergunta a este conjunto.
+    PROTOCOLO_ORIGENS_NAO_OFICIAIS = frozenset(
+        {PROTOCOLO_ORIGEM_TREINAMENTO, PROTOCOLO_ORIGEM_SIMULADO}
+    )
 
     numero = models.PositiveIntegerField(null=True, blank=True, db_index=True)
 
