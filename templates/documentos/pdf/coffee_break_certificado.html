@@ -61,7 +61,7 @@
   {% endif %}
 
   <div class="doc-cb__emissao">
-    <p>{% if institucional.sede %}{{ institucional.sede }}, {% endif %}{{ cb.emitido_em|date:"j \d\e F \d\e Y, \à\s H:i" }}.</p>
+    <p>{% if institucional.sede %}{{ institucional.sede }}, {% endif %}{{ cb.emitido_extenso }}.</p>
     <p class="doc-cb__nota">
       Documento gerado eletronicamente pelo Sistema de Gestão de Eventos Sociais a partir
       da solicitação registrada por {{ cb.criado_por }}{% if cb.emitido_por %}, emitido por {{ cb.emitido_por }}{% endif %}.

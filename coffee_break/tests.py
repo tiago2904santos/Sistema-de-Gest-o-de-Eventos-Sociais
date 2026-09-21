@@ -1028,6 +1028,23 @@ class CertificadoCoffeeBreakTests(BaseCoffeeBreakTestCase):
         self.assertIn("Evento adiado", html)
         self.assertIn("não consome o saldo do lote", html)
 
+    def test_cabecalho_nao_repete_o_orgao_sem_unidade(self):
+        """Sem unidade configurada, a linha da unidade some — não vira o órgão.
+
+        O atalho `unidade or nome_orgao` fazia o timbre imprimir o mesmo nome
+        duas vezes seguidas, porque o template já imprime o órgão acima.
+        """
+        contexto = documents.contexto(self.solicitacao)
+        institucional = contexto["institucional"]
+        self.assertEqual(institucional["unidade_cabecalho"], "")
+        html = self._html()
+        self.assertEqual(html.count("doc-cabecalho__unidade"), 0)
+
+    def test_data_de_emissao_com_mes_em_minuscula(self):
+        """A convenção institucional é "21 de setembro de 2026", não "Setembro"."""
+        extenso = documents.contexto(self.solicitacao)["cb"]["emitido_extenso"]
+        self.assertRegex(extenso, r"^\d{1,2} de [a-zç]+ de \d{4}, às \d{2}:\d{2}$")
+
     def test_contexto_nao_grava_nada(self):
         antes = SolicitacaoCoffeeBreak.objects.get(pk=self.solicitacao.pk).atualizado_em
         documents.contexto(self.solicitacao)

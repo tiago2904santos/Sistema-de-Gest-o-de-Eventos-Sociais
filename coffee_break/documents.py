@@ -36,16 +36,30 @@ def _institucional() -> dict:
     from viagens_cadastros.selectors import build_configuracao_context
 
     inst = build_configuracao_context()
-    unidade = _texto(inst.get("unidade")) or _texto(inst.get("nome_orgao"))
     cidade = _texto(inst.get("cidade_endereco"))
     return {
         # Caixa alta como nos demais cabeçalhos institucionais; o rodapé tem
         # regra própria (`format_institucional_rodape_linha`) e vem pronto.
         "nome_orgao": normalize_upper(_texto(inst.get("nome_orgao"))),
-        "unidade_cabecalho": normalize_upper(unidade),
+        # Só a unidade, sem cair para o órgão: o template já imprime o órgão na
+        # linha de cima, e o atalho fazia o cabeçalho repetir o mesmo nome.
+        "unidade_cabecalho": normalize_upper(_texto(inst.get("unidade"))),
         "unidade_rodape": format_institucional_rodape_linha(inst),
         "sede": format_document_display(cidade) if cidade else "",
     }
+
+
+def _por_extenso(momento) -> str:
+    """``21 de setembro de 2026, às 19:13``.
+
+    Mês em minúscula, como nos demais documentos institucionais — o filtro
+    ``date`` do Django capitaliza ("Setembro"), que não é a convenção. Os
+    nomes dos meses vêm da localização, sem tabela duplicada aqui.
+    """
+    from django.utils.formats import date_format
+
+    mes = date_format(momento, "F").lower()
+    return f"{momento.day} de {mes} de {momento.year}, às {momento:%H:%M}"
 
 
 def _marcos(solicitacao) -> list[dict]:
@@ -98,7 +112,7 @@ def contexto(solicitacao, *, usuario=None, modo: str = "pdf") -> dict:
             "marcos": _marcos(solicitacao),
             "observacoes": _texto(solicitacao.observacoes),
             "criado_por": _texto(solicitacao.criado_por),
-            "emitido_em": timezone.localtime(),
+            "emitido_extenso": _por_extenso(timezone.localtime()),
             "emitido_por": _texto(usuario) if usuario else "",
         },
     }
