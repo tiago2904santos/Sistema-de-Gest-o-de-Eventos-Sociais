@@ -2533,7 +2533,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 @container (max-width:680px){.ofc-percurso__par--4{grid-template-columns:minmax(0,1fr)}}
 /* Unidade móvel: a caixa condicional segue o desenho do bate-volta, sem a
    faixa cinza com barra à esquerda. */
-.of-form .bate-volta.condicional{margin:12px 0 0;padding:14px 16px;border-left:1px solid var(--n-200);background:var(--n-25)}
+.of-form .bate-volta.condicional{margin:12px 0 0;padding:14px 16px;border-left:1px solid var(--n-200);background:var(--n-25);grid-template-columns:minmax(0,1fr)}
 /* Solicitação: quatro campos por linha no cartão 1. */
 .g-form--4{grid-template-columns:repeat(4,minmax(0,1fr))}
 @container (max-width:1100px){.g-form--4{grid-template-columns:repeat(2,minmax(0,1fr))}}
