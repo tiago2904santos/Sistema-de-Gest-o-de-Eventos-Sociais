@@ -8,9 +8,11 @@
   <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
     <div class="dd__t">{{ l.titulo }}</div>
     <a class="dd__i of-item" href="{{ l.url_editar }}" data-cadastro-modal>{% include "components/icon.html" with nome="pencil" %}<span><b>Editar {{ config.singular }}</b><small>Alterar os dados do cadastro</small></span></a>
+    {% if l.excluivel %}
     <div class="dd__s"></div>
     <form method="post" action="{{ l.url_excluir }}" data-confirmar-exclusao data-confirmar="Confirmar exclusão?">{% csrf_token %}
       <button type="submit" class="dd__i dd__i--perigo of-item">{% include "components/icon.html" with nome="trash" %}<span><b>Excluir {{ config.singular }}</b><small>Só sai se não estiver em uso</small></span></button>
     </form>
+    {% endif %}
   </div>
 </div>

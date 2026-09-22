@@ -1,21 +1,39 @@
 {% extends "coffee_break/documentos/_base.html" %}
+{% comment %}
+  Certifico digital no modelo do processo 26.617.058-0 (CERTIFICO DIGITAL -
+  FAVO E MEL - NOVO): título em Arial 18 negrito, a nota em Arial 11
+  justificada (bases a cada 17,45 pt), e o atesto numa caixa de 158,6 pt de
+  altura com o texto em Arial 10,5 e a assinatura em Arial 11.
+{% endcomment %}
 {% block titulo %}Certifico digital — NF {{ s.numero_nota_fiscal }}{% endblock %}
+{% block topo %}199.31pt{% endblock %}
+{% block pagina_topo %}9.35pt{% endblock %}
+{% block geometria %}
+  /* Brasão visível de 22,7 a 78,5 pt; cabeçalho com bases a 112,5/126,3/140,1. */
+  .timbre-brasao { top: -176.61pt; height: 55.75pt; width: 42.4pt; margin-left: -21.2pt; }
+  .timbre-cabecalho { top: -97.87pt; }
+  .timbre-marca { top: 589.19pt; height: 15.7pt; }
+  .timbre-rodape { bottom: -63.1pt; }
+{% endblock %}
 {% block estilo %}
-  h1 { font-size: 18pt; text-align: center; margin: 1.6cm 0 2.2cm; }
-  .nota { text-align: justify; line-height: 1.6; }
-  .atesto { margin-top: 2.2cm; border: 1px solid #000; padding: 1.3cm 0.15cm 0.1cm; text-align: justify; }
-  .atesto .quem { margin-top: 1.8cm; text-align: center; }
-  .atesto .quem i { color: #555; }
-  .atesto .quem b { display: block; }
+  h1 { font-size: 18pt; line-height: 20.7pt; text-align: center; margin: 0; }
+  .nota { margin-top: 50.87pt; font-size: 11pt; line-height: 17.45pt; text-align: justify; }
+  /* A caixa vai de 366,9 a 525,5 pt, na largura da coluna. */
+  .atesto { margin-top: 43.68pt; height: 158.6pt; box-sizing: border-box; border: 0.5pt solid #000; padding: 30.1pt 2.4pt 0 2.4pt; page-break-inside: avoid; }
+  .atesto__texto { font-size: 10.5pt; line-height: 12.1pt; text-align: justify; }
+  .atesto__quem { margin-top: 41.83pt; text-align: center; font-size: 11pt; line-height: 14.5pt; }
+  .atesto__quem i { color: #7f7f7f; }
+  /* O Writer não quebra linha na barra; o navegador quebraria. */
+  .inteiro { white-space: nowrap; }
 {% endblock %}
 {% block corpo %}
   <h1>CERTIFICO DIGITAL</h1>
 
-  <p class="nota">Nota Fiscal nº {{ s.numero_nota_fiscal }}, emitida pela empresa {{ fornecedor.razao_social }}, inscrita no CNPJ nº {{ fornecedor.cnpj_formatado }} (CONTRATO {{ contrato.referencia_documental }}).</p>
+  <p class="nota">Nota Fiscal nº {{ s.numero_nota_fiscal }}, emitida pela empresa {{ fornecedor.razao_social }}, inscrita no CNPJ nº&nbsp; {{ fornecedor.cnpj_formatado }} (CONTRATO {{ contrato.referencia_documental }}).</p>
 
   <div class="atesto">
-    <p><b>ATESTO</b> que os serviços e/ou bens acima identificados foram devidamente executados/entregues e atendem às exigências especificadas no (Termo de Referência/Edital).</p>
-    <div class="quem">
+    <p class="atesto__texto"><b>ATESTO</b> que os serviços e/ou bens acima identificados foram devidamente <span class="inteiro">executados/entregues</span> e atendem às exigências especificadas no (Termo de Referência/Edital).</p>
+    <div class="atesto__quem">
       <p><i>(assinado e datado digitalmente)</i></p>
       <p>{{ contrato.fiscal_responsavel }}</p>
       <p><b>{{ contrato.cargo_fiscal }}</b></p>

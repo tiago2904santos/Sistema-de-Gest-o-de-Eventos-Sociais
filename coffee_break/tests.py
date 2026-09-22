@@ -416,7 +416,6 @@ class ViewsTests(BaseCoffeeBreakTestCase):
             reverse("coffee_break:editar", args=[solicitacao.pk]),
             self.dados_post(
                 quantidade="55",
-                numero_nota_fiscal="8046",
                 versao=str(int(solicitacao.atualizado_em.timestamp() * 1_000_000)),
             ),
         )
@@ -425,8 +424,21 @@ class ViewsTests(BaseCoffeeBreakTestCase):
             resposta, reverse("coffee_break:editar", args=[solicitacao.pk])
         )
         self.assertEqual(solicitacao.quantidade, 55)
-        self.assertEqual(solicitacao.numero_nota_fiscal, "8046")
         self.assertEqual(solicitacao.historico.count(), 1)
+        # A nota fiscal é da etapa 2: a etapa 1 nem tem o campo.
+        resposta = self.client.post(
+            reverse("coffee_break:etapa_nota", args=[solicitacao.pk]),
+            {
+                "numero_nota_fiscal": "8046",
+                "versao": str(int(solicitacao.atualizado_em.timestamp() * 1_000_000)),
+            },
+        )
+        self.assertRedirects(
+            resposta, reverse("coffee_break:etapa_nota", args=[solicitacao.pk])
+        )
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.numero_nota_fiscal, "8046")
+        self.assertEqual(solicitacao.quantidade, 55)
 
     def test_formulario_concentra_historico_vinculo_e_acoes(self):
         """A tela única traz o que antes só existia no detalhe."""
@@ -1070,8 +1082,9 @@ class DocumentosTests(BaseCoffeeBreakTestCase):
         s = self.criar_solicitacao(numero="05/2026", numero_nota_fiscal="8696")
         faltas = " ".join(documentos.pendencias_pacote(s))
         self.assertIn("PDF da nota fiscal", faltas)
-        self.assertIn("contrato 0762/2024", faltas)
-        self.assertIn("Certidão Federal não cadastrada", faltas)
+        self.assertIn("Contrato 0762/2024: Anexe o PDF", faltas)
+        self.assertIn("Certidão Federal: Certidão não cadastrada", faltas)
+        self.assertIn("número do ofício", faltas)
 
 
 class CertidoesTests(BaseCoffeeBreakTestCase):
@@ -1295,3 +1308,293 @@ class CertificadoCoffeeBreakTests(BaseCoffeeBreakTestCase):
         texto = "".join(pagina.extract_text() or "" for pagina in paginas)
         for esperado in ("02/2026", "Posse", "diretoria", "NF-4521", "Pendente"):
             self.assertIn(esperado, texto, esperado)
+
+
+# ---------------------------------------------------------------------------
+# Etapas da solicitação: pedido/OS, nota/ofício/certifico, protocolo/pagamento
+# ---------------------------------------------------------------------------
+
+def _pdf_em_branco(paginas=1):
+    from pypdf import PdfWriter
+
+    escritor = PdfWriter()
+    for _ in range(paginas):
+        escritor.add_blank_page(width=595, height=842)
+    saida = io.BytesIO()
+    escritor.write(saida)
+    return saida.getvalue()
+
+
+class EtapasTests(BaseCoffeeBreakTestCase):
+    def setUp(self):
+        import tempfile
+
+        from django.test import override_settings
+
+        pasta = tempfile.TemporaryDirectory(prefix="coffee-etapas-")
+        self.addCleanup(pasta.cleanup)
+        config = override_settings(MEDIA_ROOT=pasta.name)
+        config.enable()
+        self.addCleanup(config.disable)
+        self.client.force_login(self.ascom)
+        self.solicitacao = self.criar_solicitacao(
+            numero="41/2026",
+            descricao_evento="Ciclo de Palestras Saúde e Bem-Estar - 1DP Curitiba",
+            quantidade=40,
+            local_entrega="1DP",
+            responsavel_recebimento="Ana",
+        )
+
+    def _versao(self, s):
+        s.refresh_from_db()
+        return str(int(s.atualizado_em.timestamp() * 1_000_000))
+
+    def _completar_para_protocolo(self, s):
+        """Deixa tudo pronto para o anexo: NF, ofício, contrato, aditivo e certidões."""
+        from django.core.files.base import ContentFile
+
+        from .models import CertidaoFornecedor, TipoCertidao
+
+        s.numero_nota_fiscal = "8957"
+        s.numero_oficio = "124/2026"
+        s.data_oficio = dt.date(2026, 9, 21)
+        s.arquivo_nota_fiscal.save("nf.pdf", ContentFile(_pdf_em_branco()), save=False)
+        s.save()
+        self.contrato.termo_aditivo = "0355/2025"
+        self.contrato.arquivo_contrato.save("c.pdf", ContentFile(_pdf_em_branco(3)), save=False)
+        self.contrato.arquivo_termo_aditivo.save("a.pdf", ContentFile(_pdf_em_branco(2)), save=False)
+        self.contrato.save()
+        for tipo in TipoCertidao.values:
+            CertidaoFornecedor.objects.create(
+                fornecedor=self.fornecedor,
+                tipo=tipo,
+                validade=dt.date(2099, 1, 1),
+                arquivo=ContentFile(_pdf_em_branco(), name=f"{tipo}.pdf"),
+            )
+
+    # -- Telas ---------------------------------------------------------------
+
+    def test_as_tres_etapas_abrem_com_o_stepper(self):
+        for rota in ("editar", "etapa_nota", "etapa_protocolo"):
+            resposta = self.client.get(reverse(f"coffee_break:{rota}", args=[self.solicitacao.pk]))
+            self.assertEqual(resposta.status_code, 200, rota)
+            for titulo in ("Solicitação e OS", "Nota fiscal, ofício e certifico", "Protocolo e pagamento"):
+                self.assertContains(resposta, titulo)
+            self.assertContains(resposta, 'aria-current="step"')
+
+    def test_nova_solicitacao_so_tem_a_etapa_1_aberta(self):
+        resposta = self.client.get(reverse("coffee_break:nova"))
+        self.assertContains(resposta, 'aria-disabled="true"', count=2)
+
+    def test_cada_etapa_grava_so_os_seus_campos(self):
+        s = self.solicitacao
+        s.observacoes = "Não pode sumir"
+        s.save()
+        resposta = self.client.post(
+            reverse("coffee_break:etapa_nota", args=[s.pk]),
+            {"numero_nota_fiscal": "8957", "numero_oficio": "124/2026", "versao": self._versao(s)},
+        )
+        self.assertEqual(resposta.status_code, 302)
+        s.refresh_from_db()
+        self.assertEqual((s.numero_nota_fiscal, s.numero_oficio), ("8957", "124/2026"))
+        self.assertEqual(s.quantidade, 40)
+        self.assertEqual(s.descricao_evento, "Ciclo de Palestras Saúde e Bem-Estar - 1DP Curitiba")
+        self.assertEqual(s.observacoes, "Não pode sumir")
+
+        resposta = self.client.post(
+            reverse("coffee_break:etapa_protocolo", args=[s.pk]),
+            {"protocolo_pagamento": "26.617.058-0", "observacoes": "ok", "versao": self._versao(s)},
+        )
+        self.assertEqual(resposta.status_code, 302)
+        s.refresh_from_db()
+        self.assertEqual(s.protocolo_pagamento, "26.617.058-0")
+        self.assertEqual((s.numero_nota_fiscal, s.numero_oficio), ("8957", "124/2026"))
+
+    def test_salvar_e_seguir_leva_a_proxima_etapa(self):
+        s = self.solicitacao
+        resposta = self.client.post(
+            reverse("coffee_break:etapa_nota", args=[s.pk]),
+            {"numero_nota_fiscal": "8957", "seguir": "protocolo", "versao": self._versao(s)},
+        )
+        self.assertRedirects(resposta, reverse("coffee_break:etapa_protocolo", args=[s.pk]))
+
+    def test_nota_nao_fica_em_branco_depois_do_protocolo(self):
+        s = self.solicitacao
+        s.numero_nota_fiscal = "8957"
+        s.protocolo_pagamento = "26.617.058-0"
+        s.save()
+        resposta = self.client.post(
+            reverse("coffee_break:etapa_nota", args=[s.pk]),
+            {"numero_nota_fiscal": "", "versao": self._versao(s)},
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "a nota não pode ficar em branco")
+
+    def test_erro_do_modelo_em_campo_de_outra_etapa_vai_para_o_topo(self):
+        """O atesto sem protocolo é regra do modelo; na etapa 3 o erro aparece sem quebrar a tela."""
+        s = self.solicitacao
+        resposta = self.client.post(
+            reverse("coffee_break:etapa_protocolo", args=[s.pk]),
+            {"protocolo_pagamento": "26.617.058-0", "versao": self._versao(s)},
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Informe a nota fiscal antes do protocolo de pagamento.")
+
+    def test_etapa_1_nao_apaga_a_nota(self):
+        s = self.solicitacao
+        s.numero_nota_fiscal = "8957"
+        s.save()
+        dados = {
+            "municipio": self.curitiba.pk,
+            "data_solicitacao": "2026-08-01",
+            "local_entrega": "Outro local",
+            "responsavel_recebimento": "Ana",
+            "versao": self._versao(s),
+        }
+        resposta = self.client.post(reverse("coffee_break:editar", args=[s.pk]), dados)
+        self.assertEqual(resposta.status_code, 302)
+        s.refresh_from_db()
+        self.assertEqual(s.local_entrega, "Outro local")
+        self.assertEqual(s.numero_nota_fiscal, "8957")
+
+    def test_stepper_marca_as_etapas_feitas(self):
+        from . import views
+
+        s = self.solicitacao
+        self.assertEqual(views._etapas_concluidas(s), set())
+        s.data_envio_ordem_servico = dt.date(2026, 9, 11)
+        self.assertEqual(views._etapas_concluidas(s), {"pedido"})
+        self._completar_para_protocolo(s)
+        self.assertEqual(views._etapas_concluidas(s), {"pedido", "nota"})
+
+    def test_etapa_3_traz_os_textos_do_eprotocolo_e_o_anexo(self):
+        self.fornecedor.nome_curto = "Favo e Mel"
+        self.fornecedor.save()
+        self._completar_para_protocolo(self.solicitacao)
+        resposta = self.client.get(reverse("coffee_break:etapa_protocolo", args=[self.solicitacao.pk]))
+        self.assertContains(resposta, "ENVIO P/ PAGAMENTO DA NOTA FISCAL N 8957 - (FAVO E MEL)")
+        self.assertContains(resposta, "Encaminhamos o presente protocolado com as devidas informações para o pagamento da Nota fiscal n° 8957.")
+        self.assertContains(resposta, "LICITACAO")
+        self.assertContains(resposta, "REGISTRO DE PRECO")
+        self.assertContains(resposta, 'data-copiar-de="texto-detalhamento"')
+        self.assertContains(resposta, reverse("coffee_break:pacote_protocolo", args=[self.solicitacao.pk]))
+        self.assertContains(resposta, reverse("coffee_break:pacote_protocolo_zip", args=[self.solicitacao.pk]))
+
+    def test_andamento_volta_para_a_etapa_do_proximo_marco(self):
+        s = self.solicitacao
+        s.numero_nota_fiscal = "8957"
+        s.save()
+        resposta = self.client.post(
+            reverse("coffee_break:andamento", args=[s.pk]), {"valor": "26.617.058-0"}
+        )
+        self.assertRedirects(
+            resposta, reverse("coffee_break:etapa_protocolo", args=[s.pk]), fetch_redirect_response=False
+        )
+
+    # -- Documentos ----------------------------------------------------------
+
+    def test_anexo_segue_a_ordem_do_processo(self):
+        self._completar_para_protocolo(self.solicitacao)
+        chaves = [item["chave"] for item in documentos.itens_anexo(self.solicitacao)]
+        self.assertEqual(
+            chaves,
+            [
+                "oficio", "nota", "certifico",
+                "certidao-fgts", "certidao-trabalhista", "certidao-municipal",
+                "certidao-estadual", "certidao-federal",
+                "aditivo", "contrato",
+            ],
+        )
+        self.assertEqual(documentos.pendencias_pacote(self.solicitacao), [])
+
+    def test_sem_termo_aditivo_o_anexo_nao_pede_aditivo(self):
+        chaves = [item["chave"] for item in documentos.itens_anexo(self.solicitacao)]
+        self.assertNotIn("aditivo", chaves)
+
+    def test_certidao_vencida_barra_o_anexo(self):
+        from .models import CertidaoFornecedor
+
+        self._completar_para_protocolo(self.solicitacao)
+        CertidaoFornecedor.objects.filter(tipo="FGTS").update(validade=dt.date(2020, 1, 1))
+        faltas = " ".join(documentos.pendencias_pacote(self.solicitacao))
+        self.assertIn("Certidão FGTS: Vencida em 01/01/2020.", faltas)
+
+    def test_ofício_so_sai_com_nota_e_numero(self):
+        resposta = self.client.get(reverse("coffee_break:oficio", args=[self.solicitacao.pk]))
+        self.assertRedirects(resposta, reverse("coffee_break:etapa_nota", args=[self.solicitacao.pk]))
+
+    def test_nome_curto_do_fornecedor(self):
+        self.assertEqual(self.fornecedor.nome_curto_efetivo, "PADARIA E CONFEITARIA FAVO E MEL")
+        self.fornecedor.nome_curto = "favo e mel"
+        self.assertEqual(self.fornecedor.nome_curto_efetivo, "FAVO E MEL")
+
+    @skipUnless(weasyprint_disponivel(), "WeasyPrint sem as bibliotecas nativas")
+    def test_oficio_no_texto_do_modelo(self):
+        from pypdf import PdfReader
+
+        self.contrato.termo_aditivo = "0355/2025"
+        self.contrato.save()
+        s = self.solicitacao
+        s.numero_nota_fiscal = "8957"
+        s.numero_oficio = "124/2026"
+        s.data_oficio = dt.date(2026, 9, 21)
+        s.protocolo_pcpr_oficio = "2026.050880.000"
+        s.save()
+        paginas = PdfReader(io.BytesIO(documentos.oficio_pdf(s))).pages
+        self.assertEqual(len(paginas), 1)
+        texto = " ".join((paginas[0].extract_text() or "").split())
+        for esperado in (
+            "OFÍCIO 124/2026",
+            "PCPR Protocolo n.º: 2026.050880.000",
+            "Curitiba, 21 de Setembro de 2026",
+            "Excelentíssimo Senhor Delegado:",
+            "Coffee Break para 40 (quarenta) pessoas.",
+            "Nota Fiscal n° 8957",
+            "Cláusula Décima, item 10.2.6",
+            "TERMO ADITIVO Nº 0355/2025",
+            "JOÃO MÁRIO NUNES DE GOES",
+            "Grupo Auxiliar Financeiro - GAF",
+        ):
+            self.assertIn(esperado, texto, esperado)
+
+    @skipUnless(weasyprint_disponivel(), "WeasyPrint sem as bibliotecas nativas")
+    def test_anexo_completo_em_pdf_e_zip(self):
+        import zipfile
+
+        from pypdf import PdfReader
+
+        self._completar_para_protocolo(self.solicitacao)
+        resposta = self.client.get(
+            reverse("coffee_break:pacote_protocolo", args=[self.solicitacao.pk]) + "?baixar=1"
+        )
+        self.assertEqual(resposta["Content-Type"], "application/pdf")
+        # ofício 1 + NF 1 + certifico 1 + 5 certidões + aditivo 2 + contrato 3
+        self.assertEqual(len(PdfReader(io.BytesIO(resposta.content)).pages), 13)
+
+        resposta = self.client.get(
+            reverse("coffee_break:pacote_protocolo_zip", args=[self.solicitacao.pk])
+        )
+        self.assertEqual(resposta["Content-Type"], "application/zip")
+        self.assertIn("attachment", resposta["Content-Disposition"])
+        nomes = zipfile.ZipFile(io.BytesIO(resposta.content)).namelist()
+        self.assertEqual(len(nomes), 10)
+        self.assertTrue(nomes[0].startswith("01 - Of.124"))
+        self.assertTrue(nomes[-1].startswith("10 - Contrato 0762-2024"))
+
+
+class ConfiguracaoOficioTests(BaseCoffeeBreakTestCase):
+    def setUp(self):
+        self.client.force_login(self.admin_modulo)
+
+    def test_configuracao_aparece_nos_cadastros_e_nao_se_exclui(self):
+        from .models import ConfiguracaoCoffeeBreak
+
+        resposta = self.client.get(reverse("coffee_break:cadastro_lista", args=["oficio"]))
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "JOÃO MÁRIO NUNES DE GOES")
+        self.assertNotContains(resposta, reverse("coffee_break:cadastro_novo", args=["oficio"]))
+        resposta = self.client.post(reverse("coffee_break:cadastro_excluir", args=["oficio", 1]))
+        self.assertEqual(resposta.status_code, 302)
+        self.assertTrue(ConfiguracaoCoffeeBreak.objects.filter(pk=1).exists())
+        resposta = self.client.get(reverse("coffee_break:cadastro_novo", args=["oficio"]))
+        self.assertRedirects(resposta, reverse("coffee_break:cadastro_lista", args=["oficio"]))

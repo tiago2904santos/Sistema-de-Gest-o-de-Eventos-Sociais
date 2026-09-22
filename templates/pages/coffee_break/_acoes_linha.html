@@ -9,7 +9,9 @@
   <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações da solicitação {{ l.titulo }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
   <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
     {% if not s.cancelada and not s.concluida %}<a class="dd__i of-item" href="{{ l.url_andamento }}" data-cadastro-modal>{% include "components/icon.html" with nome="activity" %}<span><b>Registrar andamento</b><small>Próximo marco: OS, nota, protocolo, atesto, OB</small></span></a>{% endif %}
-    <a class="dd__i of-item" href="{{ l.url_editar }}">{% include "components/icon.html" with nome=l.editavel|yesno:"pencil,eye" %}<span><b>{% if l.editavel %}Editar solicitação{% else %}Abrir solicitação{% endif %}</b><small>Evento, lote, quantidade e marcos financeiros</small></span></a>
+    <a class="dd__i of-item" href="{{ l.url_editar }}">{% include "components/icon.html" with nome=l.editavel|yesno:"pencil,eye" %}<span><b>{% if l.editavel %}Editar solicitação{% else %}Abrir solicitação{% endif %}</b><small>Etapa 1 — evento, lote e ordem de serviço</small></span></a>
+    <a class="dd__i of-item" href="{% url 'coffee_break:etapa_nota' s.pk %}">{% include "components/icon.html" with nome="mail" %}<span><b>Nota fiscal, ofício e certifico</b><small>Etapa 2 — dados da nota e os dois documentos</small></span></a>
+    <a class="dd__i of-item" href="{% url 'coffee_break:etapa_protocolo' s.pk %}">{% include "components/icon.html" with nome="clipboard" %}<span><b>Protocolo e pagamento</b><small>Etapa 3 — textos do eProtocolo e anexo completo</small></span></a>
     <a class="dd__i of-item" href="{{ l.url_certificado }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="download" %}<span><b>Certificado em PDF</b><small>Espelho do pedido na folha institucional, para o processo</small></span></a>
   </div>
 </div>

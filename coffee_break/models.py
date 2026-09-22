@@ -38,6 +38,10 @@ class Fornecedor(models.Model):
         blank=True,
         help_text="Somente números; normalizado automaticamente.",
     )
+    nome_curto = models.CharField(
+        "nome curto", max_length=60, blank=True,
+        help_text="Como aparece no detalhamento do eProtocolo, ex.: FAVO E MEL.",
+    )
     contato = models.CharField("contato", max_length=150, blank=True)
     telefone = models.CharField("telefone", max_length=30, blank=True)
     email = models.EmailField("e-mail", blank=True)
@@ -67,6 +71,13 @@ class Fornecedor(models.Model):
     @property
     def cnpj_formatado(self):
         return formatar_cnpj(self.cnpj)
+
+    @property
+    def nome_curto_efetivo(self):
+        """O nome curto do cadastro, ou a razão social sem o "LTDA" do fim."""
+        if self.nome_curto.strip():
+            return self.nome_curto.strip().upper()
+        return re.sub(r"\s+(LTDA|EIRELI|ME|EPP|S/?A)\.?$", "", self.razao_social.strip().upper())
 
     def clean(self):
         super().clean()
@@ -107,6 +118,11 @@ class ContratoCoffeeBreak(models.Model):
         "termo aditivo (PDF)", upload_to="coffee_break/contratos/", blank=True,
         help_text="Se houver; vai no pacote logo depois do contrato.",
     )
+    clausula_pagamento = models.CharField(
+        "cláusula do pagamento", max_length=120, blank=True,
+        default="Cláusula Décima, item 10.2.6",
+        help_text="Citada no ofício que encaminha a nota para pagamento.",
+    )
     objeto = models.CharField("objeto", max_length=255, blank=True)
     observacoes = models.TextField("observações", blank=True)
     criado_em = models.DateTimeField("criado em", auto_now_add=True)
@@ -129,6 +145,64 @@ class ContratoCoffeeBreak(models.Model):
         if self.termo_aditivo:
             texto += f" - TERMO ADITIVO Nº {self.termo_aditivo}"
         return texto
+
+
+class ConfiguracaoCoffeeBreak(models.Model):
+    """O que o ofício e o eProtocolo repetem em todo pagamento.
+
+    Registro único (pk=1): quem assina o ofício, a quem ele vai e os campos
+    fixos do cadastro do protocolo. Os valores iniciais são os do processo
+    26.617.058-0.
+    """
+
+    oficio_vocativo = models.CharField(
+        "vocativo do ofício", max_length=120,
+        default="Excelentíssimo Senhor Delegado:",
+    )
+    oficio_assinante = models.CharField(
+        "quem assina o ofício", max_length=150, default="JOÃO MÁRIO NUNES DE GOES",
+    )
+    oficio_cargo_assinante = models.CharField(
+        "cargo de quem assina", max_length=150, default="Assessor de Comunicação Social",
+    )
+    oficio_destinatario = models.TextField(
+        "destinatário do ofício",
+        default=(
+            "Exm° Sr. Delegado\nDr. Marcos Maurício Pestano\n"
+            "Grupo Auxiliar Financeiro - GAF\nDepartamento da Polícia Civil\nCuritiba/PR"
+        ),
+        help_text="Uma linha por linha do bloco no pé do ofício.",
+    )
+    eprotocolo_assunto = models.CharField(
+        "assunto no eProtocolo", max_length=80, default="LICITACAO",
+    )
+    eprotocolo_palavras_chave = models.CharField(
+        "palavras-chave no eProtocolo", max_length=120, default="REGISTRO DE PRECO",
+    )
+    despacho_destino = models.CharField(
+        "despacho: a quem vai", max_length=80, default="Ao GAF,",
+    )
+    atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
+
+    class Meta:
+        verbose_name = "ofício e eProtocolo"
+        verbose_name_plural = "ofício e eProtocolo"
+
+    def __str__(self):
+        return "Ofício de pagamento e eProtocolo"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise models.ProtectedError(
+            "A configuração do ofício não se exclui; edite os campos.", [self]
+        )
+
+    @classmethod
+    def atual(cls):
+        return cls.objects.get_or_create(pk=1)[0]
 
 
 class LoteQuerySet(models.QuerySet):
@@ -296,6 +370,15 @@ class SolicitacaoCoffeeBreak(models.Model):
     )
     arquivo_nota_fiscal = models.FileField(
         "nota fiscal (PDF)", upload_to="coffee_break/notas/%Y/", blank=True
+    )
+    numero_oficio = models.CharField(
+        "número do ofício", max_length=20, blank=True,
+        help_text="O ofício que encaminha a nota ao GAF (ex.: 124/2026).",
+    )
+    data_oficio = models.DateField("data do ofício", blank=True, null=True)
+    protocolo_pcpr_oficio = models.CharField(
+        "PCPR protocolo n.º", max_length=40, blank=True,
+        help_text="Número que vai no alto do ofício (ex.: 2026.050880.000).",
     )
     protocolo_pagamento = models.CharField(
         "protocolo de pagamento", max_length=30, blank=True

@@ -43,6 +43,7 @@ class CoffeeBreakConfig(AppConfig):
                     "url": "coffee_break:solicitacoes",
                     "url_names": (
                         "solicitacoes", "nova", "detalhe", "editar",
+                        "etapa_nota", "etapa_protocolo",
                         "cancelar", "reativar",
                     ),
                 },
