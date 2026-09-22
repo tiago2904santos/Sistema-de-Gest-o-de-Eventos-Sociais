@@ -10,6 +10,10 @@ de lá — sem perder o vínculo com as solicitações já feitas, porque o regi
 Serviço que não tem correspondente no PT permanece e é apenas relatado: pode
 estar em uso numa solicitação antiga.
 
+No VPS as atividades vieram do GV TODAS EM MAIÚSCULAS. Nome de serviço é
+texto de tela, não grito: nome inteiro em maiúsculas vira frase normal, com
+as siglas preservadas (CIN, NOC).
+
     python manage.py sincronizar_servicos_pt [--commit]
 """
 
@@ -38,6 +42,27 @@ def _combina(chave_pt, chave_servico):
     return f" {menor} " in f" {maior} "
 
 
+SIGLAS = {"CIN", "NOC", "PCPR", "PC", "BO", "CNH", "ASCOM", "DP", "SESP"}
+
+
+def nome_apresentavel(nome):
+    """"UNIDADE MÓVEL (ÔNIBUS)" -> "Unidade móvel (ônibus)"; o resto passa igual."""
+    if any(c.islower() for c in nome):
+        return nome
+    palavras = []
+    for palavra in nome.split(" "):
+        nu = palavra.strip("()").strip(".,;:")
+        if nu in SIGLAS:
+            palavras.append(palavra)
+        else:
+            palavras.append(palavra.lower())
+    texto = " ".join(palavras)
+    for i, c in enumerate(texto):
+        if c.isalpha():
+            return texto[:i] + c.upper() + texto[i + 1:]
+    return texto
+
+
 class Command(BaseCommand):
     help = "Sincroniza os serviços da solicitação com as atividades do Plano de Trabalho."
 
@@ -53,17 +78,18 @@ class Command(BaseCommand):
         renomeados, criados, iguais = [], [], 0
 
         for atividade in AtividadePlanoTrabalho.objects.order_by("nome"):
-            alvo = chave(atividade.nome)
+            nome_pt = nome_apresentavel(atividade.nome)
+            alvo = chave(nome_pt)
             achado = next(
                 (s for s in servicos if s.pk in restantes and _combina(alvo, chave(s.nome))),
                 None,
             )
             if achado is None:
-                criados.append(atividade.nome)
+                criados.append(nome_pt)
                 continue
             restantes.pop(achado.pk)
-            if achado.nome != atividade.nome:
-                renomeados.append((achado.nome, atividade.nome, achado))
+            if achado.nome != nome_pt:
+                renomeados.append((achado.nome, nome_pt, achado))
             else:
                 iguais += 1
 
