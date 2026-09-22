@@ -2534,3 +2534,25 @@ form.btn-flutuante-form{margin:0;display:contents}
 /* Unidade móvel: a caixa condicional segue o desenho do bate-volta, sem a
    faixa cinza com barra à esquerda. */
 .of-form .bate-volta.condicional{margin:12px 0 0;padding:14px 16px;border-left:1px solid var(--n-200);background:var(--n-25)}
+/* Solicitação: quatro campos por linha no cartão 1. */
+.g-form--4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@container (max-width:1100px){.g-form--4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container (max-width:680px){.g-form--4{grid-template-columns:minmax(0,1fr)}}
+/* Equipes: a linha inteira, dividida em partes iguais pelo número de equipes. */
+.linhas-quantidade{grid-template-columns:repeat(var(--equipes,3),minmax(0,1fr))}
+@container (max-width:900px){.linhas-quantidade{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container (max-width:560px){.linhas-quantidade{grid-template-columns:minmax(0,1fr)}}
+/* Encerramento: uma linha de texto e a ação à direita, sem caixa dentro de caixa. */
+.sol-encerrar__linha{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.sol-encerrar__texto{margin:0;font-size:13px;color:var(--n-600)}
+.sol-encerrar__linha form{margin:0}
+.sol-cancelar-abre{margin-top:14px;padding-top:14px;border-top:1px solid var(--n-100)}
+.sol-cancelar-abre>summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--n-600);list-style:none}
+.sol-cancelar-abre>summary::-webkit-details-marker{display:none}
+.sol-cancelar-abre>summary::before{content:"+ ";color:var(--n-500)}
+.sol-cancelar-abre[open]>summary::before{content:"– "}
+.sol-cancelar-abre>summary:hover{color:var(--n-800)}
+.sol-cancelar-abre .sol-cancelar{margin-top:10px;display:grid;gap:10px;justify-items:start}
+/* Recado curto (despacho já registrado): faixa fina, não cartão. */
+.aviso--fino{padding:10px 14px;font-size:12.5px}
+.aviso--fino .aviso__meta{margin-top:2px}

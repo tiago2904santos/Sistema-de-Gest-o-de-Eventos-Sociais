@@ -116,15 +116,11 @@
               </div>
             </div>
           </div>
-          <div class="g-form g-form--3">
+          <div class="g-form g-form--4">
             {% include "components/select.html" with name="tipo_evento" label="Tipo do evento" opcoes=tipos_evento obrigatorio=True selecionado=valores.tipo_evento erros=erros.tipo_evento desabilitado=dados_desabilitado %}
-            <div class="c2">
-              {% include "components/input.html" with name="local_evento" label="Local do evento" placeholder="Ex.: Praça central, escola municipal..." valor=valores.local_evento erros=erros.local_evento desabilitado=dados_desabilitado %}
-            </div>
+            {% include "components/input.html" with name="local_evento" label="Local do evento" placeholder="Ex.: Praça central, escola..." valor=valores.local_evento erros=erros.local_evento desabilitado=dados_desabilitado %}
             {% include "components/select.html" with name="tipo_operacao" label="Tipo de operação" opcoes=tipos_operacao selecionado=valores.tipo_operacao erros=erros.tipo_operacao desabilitado=planejamento_desabilitado %}
-            <div class="c2">
-              {% include "components/input.html" with name="quantidade_cin" label="Quantidade de CIN agendadas" tipo="number" minimo=0 passo="1" valor=valores.quantidade_cin erros=erros.quantidade_cin desabilitado=planejamento_desabilitado %}
-            </div>
+            {% include "components/input.html" with name="quantidade_cin" label="Quantidade de CIN agendadas" tipo="number" minimo=0 passo="1" valor=valores.quantidade_cin erros=erros.quantidade_cin desabilitado=planejamento_desabilitado %}
             <div class="cheia">
               {% include "components/textarea.html" with name="descricao_complementar" label="Descrição complementar" linhas="2" placeholder="Detalhes adicionais sobre o evento, serviços e estrutura..." valor=valores.descricao_complementar erros=erros.descricao_complementar desabilitado=planejamento_desabilitado %}
             </div>
@@ -164,37 +160,36 @@
         <header class="section-card__cabecalho reg__t">
           <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
           <h2 class="section-card__titulo">Planejamento operacional</h2>
+          {% if solicitacao and pode_gerenciar_anexos %}
+            <div class="section-card__acao">
+              <a class="btn--secundaria btn--compacto" href="{% url 'solicitacoes:anexo_adicionar' solicitacao.pk %}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}Anexar arquivo</a>
+            </div>
+          {% endif %}
         </header>
         <div class="section-card__corpo">
           {% include "pages/solicitacoes/_equipes.html" %}
 
-          <h3 class="sol-subtitulo">Anexos</h3>
-
           {% if solicitacao %}
-            <div class="dt-w" role="region" aria-label="Arquivos anexados">
-              <table class="dt">
-                <thead><tr><th>Arquivo</th><th>Enviado por</th><th>Quando</th><th class="c-cad-acoes"><span class="sr-only">Ações</span></th></tr></thead>
-                <tbody>
-                  {% for anexo in anexos %}
-                    <tr>
-                      <td class="c-nome"><a href="{% url 'solicitacoes:anexo_baixar' solicitacao.pk anexo.pk %}">{{ anexo.nome_original }}</a><small class="v32-suave">{{ anexo.tamanho_legivel }}</small></td>
-                      <td>{{ anexo.enviado_por|default:"—" }}</td>
-                      <td>{{ anexo.criado_em|date:"d/m/Y" }}</td>
-                      <td class="c-cad-acoes">{% if pode_gerenciar_anexos %}<button type="submit" form="form-anexo-excluir-{{ anexo.pk }}" class="ib-linha" aria-label="Excluir {{ anexo.nome_original }}" data-confirmar="Excluir?">{% include "components/icon.html" with nome="trash" %}</button>{% endif %}</td>
-                    </tr>
-                  {% empty %}
-                    <tr><td colspan="4" class="v32-suave dt__vazio">Nenhum arquivo anexado.</td></tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-            {% if pode_gerenciar_anexos %}
-              {# Anexar abre o modal, como os cadastros: o cartão fica só com a lista. #}
-              <div class="frm-acoes-fim frm-acoes-fim--so-dir">
-                <a class="btn--secundaria" href="{% url 'solicitacoes:anexo_adicionar' solicitacao.pk %}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}Anexar arquivo</a>
+            {% if anexos %}
+              <h3 class="sol-subtitulo">Anexos</h3>
+              <div class="dt-w" role="region" aria-label="Arquivos anexados">
+                <table class="dt">
+                  <thead><tr><th>Arquivo</th><th>Enviado por</th><th>Quando</th><th class="c-cad-acoes"><span class="sr-only">Ações</span></th></tr></thead>
+                  <tbody>
+                    {% for anexo in anexos %}
+                      <tr>
+                        <td class="c-nome"><a href="{% url 'solicitacoes:anexo_baixar' solicitacao.pk anexo.pk %}">{{ anexo.nome_original }}</a><small class="v32-suave">{{ anexo.tamanho_legivel }}</small></td>
+                        <td>{{ anexo.enviado_por|default:"—" }}</td>
+                        <td>{{ anexo.criado_em|date:"d/m/Y" }}</td>
+                        <td class="c-cad-acoes">{% if pode_gerenciar_anexos %}<button type="submit" form="form-anexo-excluir-{{ anexo.pk }}" class="ib-linha" aria-label="Excluir {{ anexo.nome_original }}" data-confirmar="Excluir?">{% include "components/icon.html" with nome="trash" %}</button>{% endif %}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
               </div>
             {% endif %}
           {% else %}
+            <h3 class="sol-subtitulo">Anexos</h3>
             {% include "components/upload_anexos.html" with id="id_anexos_cadastro" name="anexos" multiple=True mensagem_vazio="Nenhum arquivo selecionado. Eles serão salvos junto com a solicitação." only %}
           {% endif %}
 
@@ -250,7 +245,7 @@
         </section>
       {% elif solicitacao.decisao_dg != "PENDENTE" or solicitacao.observacoes_dg %}
         {# Decisão já registrada: a faixa de aviso do módulo, não um formulário morto. #}
-        <div class="aviso aviso--callout" id="despacho-dg" role="status">
+        <div class="aviso aviso--callout aviso--fino" id="despacho-dg" role="status">
           <div class="aviso__txt">
             {% include "components/icon.html" with nome="gavel" %}
             <div class="aviso__corpo">
@@ -268,21 +263,24 @@
           <header class="section-card__cabecalho reg__t">
             <h2 class="section-card__titulo">Encerramento do evento</h2>
           </header>
-          <div class="section-card__corpo">
+          <div class="section-card__corpo sol-encerrar">
             {% if acoes.concluir %}
-              {# Como a faixa de "viagem cancelada": o aviso e a saída dele na mesma faixa. #}
-              <div class="aviso aviso--callout" role="status">
-                <div class="aviso__txt">{% include "components/icon.html" with nome="check-circle" %}<div class="aviso__corpo"><b>O evento já aconteceu?</b><p>Confirme o atendimento para encerrar a solicitação. Depois disso ela não aceita mais alterações.</p></div></div>
+              <div class="sol-encerrar__linha">
+                <p class="sol-encerrar__texto">Depois de confirmado o atendimento a solicitação não aceita mais alterações.</p>
                 <form method="post" action="{% url 'solicitacoes:concluir' solicitacao.pk %}" data-confirmar="Confirmar e encerrar?">{% csrf_token %}
                   <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check" %}Confirmar atendimento</button>
                 </form>
               </div>
             {% endif %}
             {% if acoes.cancelar %}
+              {# O cancelamento é exceção: fica recolhido até alguém precisar dele. #}
+              <details class="sol-cancelar-abre">
+                <summary>O evento foi cancelado?</summary>
               <form method="post" action="{% url 'solicitacoes:cancelar_evento' solicitacao.pk %}" class="sol-cancelar" data-confirmar-exclusao>{% csrf_token %}
-                {% include "components/textarea.html" with name="motivo_cancelamento" label="O evento foi cancelado?" linhas="2" obrigatorio=True placeholder="Informe o motivo do cancelamento do evento (obrigatório)." ajuda="Use quando o evento em si não vai mais acontecer, por exemplo quando o organizador desmarcou." erros=None valor="" %}
+                {% include "components/textarea.html" with name="motivo_cancelamento" label="Motivo do cancelamento" rotulo_oculto=True linhas="2" obrigatorio=True placeholder="Por que o evento não vai mais acontecer? (obrigatório)" ajuda="Use quando o evento em si foi desmarcado pelo organizador." erros=None valor="" %}
                 <button type="submit" class="btn--secundaria btn--destrutiva btn--compacto">{% include "components/icon.html" with nome="ban" %}Registrar cancelamento do evento</button>
               </form>
+              </details>
             {% endif %}
           </div>
         </section>

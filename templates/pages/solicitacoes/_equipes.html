@@ -8,7 +8,8 @@
   `data-equipe-quantidade`) continuam onde estavam: o número só habilita com
   a equipe marcada.
 {% endcomment %}
-<fieldset class="linhas-quantidade{% if erros.equipes %} grupo-erro{% endif %}" id="id_equipes"{% if erros.equipes %} aria-invalid="true"{% endif %}>
+{# `--equipes` divide a linha em colunas iguais: três equipes, três colunas. #}
+<fieldset class="linhas-quantidade{% if erros.equipes %} grupo-erro{% endif %}" id="id_equipes" style="--equipes: {{ equipes_planejamento|length }}"{% if erros.equipes %} aria-invalid="true"{% endif %}>
   <legend class="form-label">Equipes e quantidade de servidores <span class="form-label__obrigatorio">*</span></legend>
   {% for equipe in equipes_planejamento %}
     <div class="linha-quantidade" data-equipe-alocacao>
