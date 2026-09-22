@@ -190,8 +190,11 @@
             {% include "components/upload_anexos.html" with id="id_anexos_cadastro" name="anexos" multiple=True mensagem_vazio="Nenhum arquivo selecionado. Eles serão salvos junto com a solicitação." only %}
           {% endif %}
 
-          {# Ações no fim do último cartão editável: voltar à esquerda, salvar/enviar à direita. #}
-          {% if not solicitacao or acoes.editar_dados or mostrar_enviar %}
+          {# Uma barra só para tudo o que se faz aqui: voltar à esquerda; salvar,
+             enviar e confirmar o atendimento à direita. O botão de confirmar
+             manda no formulário próprio (`form-concluir`), que vive fora
+             daqui — HTML não permite formulário dentro de formulário. #}
+          {% if not solicitacao or acoes.editar_dados or mostrar_enviar or acoes.concluir %}
             <div class="frm-acoes-fim">
               <a class="btn--secundaria" href="{% url 'solicitacoes:lista' %}">Voltar</a>
               <span class="frm-acoes-fim__dir">
@@ -200,6 +203,9 @@
                 {% endif %}
                 {% if mostrar_enviar %}
                   <button type="submit" class="btn-primaria" name="acao" value="enviar">{% include "components/icon.html" with nome="send" %}Enviar para a DG</button>
+                {% endif %}
+                {% if acoes.concluir %}
+                  <button type="submit" form="form-concluir" class="btn-primaria">{% include "components/icon.html" with nome="check" %}Confirmar atendimento</button>
                 {% endif %}
               </span>
             </div>
@@ -262,12 +268,7 @@
           </header>
           <div class="section-card__corpo sol-encerrar">
             {% if acoes.concluir %}
-              <div class="sol-encerrar__linha">
-                <p class="sol-encerrar__texto">Depois de confirmado o atendimento a solicitação não aceita mais alterações.</p>
-                <form method="post" action="{% url 'solicitacoes:concluir' solicitacao.pk %}" data-confirmar="Confirmar e encerrar?">{% csrf_token %}
-                  <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check" %}Confirmar atendimento</button>
-                </form>
-              </div>
+              <p class="sol-encerrar__texto">Confirmar o atendimento (no fim do formulário) encerra a solicitação: depois disso ela não aceita mais alterações.</p>
             {% endif %}
             {% if acoes.cancelar %}
               {# O cancelamento é exceção: fica recolhido até alguém precisar dele. #}
@@ -287,6 +288,9 @@
 
       {% if acoes.excluir %}
         <form id="form-excluir-solicitacao" method="post" action="{% url 'solicitacoes:excluir' solicitacao.pk %}" data-confirmar-exclusao>{% csrf_token %}</form>
+      {% endif %}
+      {% if acoes.concluir %}
+        <form id="form-concluir" method="post" action="{% url 'solicitacoes:concluir' solicitacao.pk %}" data-confirmar="Confirmar e encerrar?">{% csrf_token %}</form>
       {% endif %}
       {% if pode_gerenciar_anexos %}
         {# Formulário auxiliar da exclusão: os botões da tabela apontam para cá via atributo form. #}

@@ -312,6 +312,11 @@ def editar_solicitacao(request, pk):
         if form.is_valid():
             redespachar = False
             try:
+                alterados = [
+                    str(form.fields[nome].label or nome)
+                    for nome in form.changed_data
+                    if nome in form.fields
+                ]
                 alterou = bool(form.changed_data)
                 with transaction.atomic():
                     solicitacao = form.save()
@@ -320,6 +325,11 @@ def editar_solicitacao(request, pk):
                         request.user,
                         AcaoHistorico.ATUALIZACAO,
                         status_novo=solicitacao.status,
+                        observacao=(
+                            "Campos alterados: " + ", ".join(alterados)
+                            if alterados
+                            else "Salva sem alteração de campos."
+                        ),
                     )
                     if acao == "enviar":
                         services.enviar(solicitacao, request.user)

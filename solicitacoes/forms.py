@@ -32,12 +32,25 @@ from .models import (
 from .services import CAMPOS_OBRIGATORIOS_ENVIO
 
 
+class _SimNao(forms.TypedChoiceField):
+    """Sim/Não com valores "1"/"0" — o booleano do banco de um lado, o texto
+    do formulário do outro.
+
+    `has_changed` precisa comparar os dois já convertidos: o valor inicial vem
+    do modelo como `True`, e o enviado como "1"; sem isto o campo aparece como
+    alterado em toda gravação.
+    """
+
+    def has_changed(self, initial, data):
+        return bool(initial) != (str(data) == "1")
+
+
 def _campo_sim_nao(rotulo):
     """Campo booleano para os controles segmentados Sim/Não (valores "1"/"0").
 
     forms.BooleanField com CheckboxInput interpretaria "0" como True.
     """
-    return forms.TypedChoiceField(
+    return _SimNao(
         label=rotulo,
         choices=[("1", "Sim"), ("0", "Não")],
         coerce=lambda valor: valor == "1",
@@ -181,6 +194,12 @@ class SolicitacaoForm(forms.ModelForm):
     def __init__(self, *args, enviar=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.enviar = enviar
+        # O Django liga `show_hidden_initial` em campo com default chamável
+        # (`data_solicitacao` usa `timezone.localdate`) e passa a comparar a
+        # alteração com um input escondido. A tela monta os campos pelos
+        # components e não tem esse input: sem desligar isto, o campo sai como
+        # alterado em toda gravação.
+        self.fields["data_solicitacao"].show_hidden_initial = False
         instancia = self.instance if self.instance.pk else None
         self.fields["estado"].queryset = _queryset_ativo(
             Estado,
