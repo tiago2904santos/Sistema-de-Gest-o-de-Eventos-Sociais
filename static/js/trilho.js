@@ -35,7 +35,8 @@
 
     trilho.addEventListener("click", function (evento) {
       var link = evento.target.closest(".vg-stepper__passo");
-      if (!link || evento.defaultPrevented || evento.button !== 0 || evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.altKey) return;
+      // Etapa que não navega (a solicitação usa <span>) não tem para onde ir.
+      if (!link || !link.href || evento.defaultPrevented || evento.button !== 0 || evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.altKey) return;
       var item = link.parentElement;
       if (item.classList.contains("is-atual")) return;
       evento.preventDefault();

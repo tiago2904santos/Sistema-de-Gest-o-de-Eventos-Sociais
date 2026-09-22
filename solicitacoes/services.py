@@ -399,6 +399,20 @@ def montar_timeline(solicitacao=None):
     deferida = status == StatusSolicitacao.DEFERIDA_EM_ANDAMENTO
     finalizada = bool(solicitacao) and solicitacao.finalizada
 
+    # Origem da etapa de envio: o envio em si ou, nas importadas da
+    # planilha, o registro de importação.
+    registro_envio = registro_de(
+        AcaoHistorico.ENVIO, AcaoHistorico.IMPORTACAO, AcaoHistorico.CRIACAO
+    )
+    registro_decisao = registro_de(AcaoHistorico.DECISAO)
+    registro_final = (
+        registro_de(AcaoHistorico.CONCLUSAO)
+        or registro_de(AcaoHistorico.CANCELAMENTO)
+        or registro_decisao
+    )
+
+    # As quatro etapas existem sempre, desde o rascunho: quem abre a tela vê o
+    # caminho inteiro e onde o pedido está. O que muda é o estado de cada uma.
     if devolvida:
         subtitulo_envio = "Devolvida para ajuste — revise e reenvie"
     elif rascunho:
@@ -406,11 +420,19 @@ def montar_timeline(solicitacao=None):
     else:
         subtitulo_envio = "Concluída"
 
-    # Origem da etapa de envio: o envio em si ou, nas importadas da
-    # planilha, o registro de importação.
-    registro_envio = registro_de(
-        AcaoHistorico.ENVIO, AcaoHistorico.IMPORTACAO, AcaoHistorico.CRIACAO
+    # A etapa do deferimento só se acende quando a DG deferiu de fato: pedido
+    # não atendido não passou por ela.
+    deferiu = bool(solicitacao) and (
+        deferida
+        or status == StatusSolicitacao.ATENDIDA
+        or solicitacao.decisao_dg == DecisaoDG.ATENDER
     )
+
+    rotulos_finais = {
+        StatusSolicitacao.ATENDIDA: "Atendida",
+        StatusSolicitacao.NAO_ATENDIDA: "Não atendida",
+        StatusSolicitacao.CANCELADA: "Cancelada",
+    }
 
     etapas = [
         {
@@ -421,60 +443,33 @@ def montar_timeline(solicitacao=None):
         },
         {
             "titulo": "Aguardando despacho DG",
-            "subtitulo": "Concluída" if finalizada or deferida else "Pendente",
-            "estado": "concluido"
-            if finalizada or deferida
-            else ("atual" if aguardando else "pendente"),
+            "subtitulo": "Concluída" if deferida or finalizada else "Pendente",
+            "estado": (
+                "concluido"
+                if deferida or finalizada
+                else ("atual" if aguardando else "pendente")
+            ),
             **(detalhes(registro_envio) if aguardando else {}),
         },
+        {
+            "titulo": "Deferida — em andamento",
+            "subtitulo": (
+                "Deferida pela DG" if deferiu else "Depende do despacho da DG"
+            ),
+            "estado": (
+                "atual" if deferida else ("concluido" if deferiu else "pendente")
+            ),
+            **(detalhes(registro_decisao) if deferiu else {}),
+        },
+        {
+            "titulo": (
+                rotulos_finais[status] if finalizada else "Atendimento do evento"
+            ),
+            "subtitulo": (
+                "Encerrada" if finalizada else "Confirme após o evento acontecer"
+            ),
+            "estado": "concluido" if finalizada else "pendente",
+            **(detalhes(registro_final) if finalizada else {}),
+        },
     ]
-
-    registro_decisao = registro_de(AcaoHistorico.DECISAO)
-
-    if deferida:
-        etapas.append(
-            {
-                "titulo": "Deferida — em andamento",
-                "subtitulo": "Deferida pela DG",
-                "estado": "atual",
-                **detalhes(registro_decisao),
-            }
-        )
-        etapas.append(
-            {
-                "titulo": "Atendimento do evento",
-                "subtitulo": "Confirme após o evento acontecer",
-                "estado": "pendente",
-            }
-        )
-
-    if finalizada:
-        # Atendida passou pela fase deferida; mostra o caminho completo.
-        if status == StatusSolicitacao.ATENDIDA and registro_decisao:
-            etapas.append(
-                {
-                    "titulo": "Deferida — em andamento",
-                    "subtitulo": "Deferida pela DG",
-                    "estado": "concluido",
-                    **detalhes(registro_decisao),
-                }
-            )
-        rotulos = {
-            StatusSolicitacao.ATENDIDA: "Atendida",
-            StatusSolicitacao.NAO_ATENDIDA: "Não atendida",
-            StatusSolicitacao.CANCELADA: "Cancelada",
-        }
-        registro_final = (
-            registro_de(AcaoHistorico.CONCLUSAO)
-            or registro_de(AcaoHistorico.CANCELAMENTO)
-            or registro_decisao
-        )
-        etapas.append(
-            {
-                "titulo": rotulos[solicitacao.status],
-                "subtitulo": "Encerrada",
-                "estado": "concluido",
-                **detalhes(registro_final),
-            }
-        )
     return etapas
