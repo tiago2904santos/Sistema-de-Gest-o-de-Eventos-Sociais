@@ -1,5 +1,6 @@
 import datetime as dt
 import io
+from unittest import mock, skipUnless
 
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
@@ -27,8 +28,10 @@ from .models import (
     SolicitacaoCoffeeBreak,
     normalizar_cnpj,
 )
+from documentos.services.pdf_renderer import weasyprint_disponivel
+
 from .permissions import CODIGO_MODULO
-from . import services
+from . import documents, services
 
 User = get_user_model()
 
@@ -107,6 +110,7 @@ class AutorizacaoModuloTests(BaseCoffeeBreakTestCase):
         rotas = [reverse(rota, args=args) for rota, args in self.ROTAS]
         rotas += [
             reverse("coffee_break:editar", args=[solicitacao.pk]),
+            reverse("coffee_break:certificado", args=[solicitacao.pk]),
             reverse("coffee_break:lote_detalhe", args=[self.lote.pk]),
         ]
         for url in rotas:
@@ -963,3 +967,165 @@ class AdminTests(BaseCoffeeBreakTestCase):
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, "acima do saldo")
         self.assertFalse(SolicitacaoCoffeeBreak.objects.exists())
+
+
+# ---------------------------------------------------------------------------
+# Certificado da solicitação (HTML → PDF)
+# ---------------------------------------------------------------------------
+
+class CertificadoCoffeeBreakTests(BaseCoffeeBreakTestCase):
+    """O certificado é o espelho do registro: o que está no banco, e só isso.
+
+    O HTML é testado sempre (é template Django puro); o PDF, só onde o
+    WeasyPrint carrega — como nos demais tipos documentais do projeto.
+    """
+
+    def setUp(self):
+        self.solicitacao = self.criar_solicitacao(
+            numero="02/2026",
+            descricao_evento="Posse da nova diretoria",
+            data_inicio_evento=dt.date(2026, 8, 20),
+            data_fim_evento=dt.date(2026, 8, 20),
+            numero_nota_fiscal="NF-4521",
+            observacoes="Servir às 9h no auditório.",
+        )
+
+    def _html(self):
+        from documentos.services.pdf_renderer import renderizar_html
+
+        return renderizar_html(
+            documents.TIPO, documents.contexto(self.solicitacao), modo="pdf"
+        )
+
+    def test_html_traz_o_pedido_o_lote_e_o_fornecedor(self):
+        html = self._html()
+        for texto in [
+            "02/2026",
+            "Posse da nova diretoria",
+            "20/08/2026",
+            "PADARIA E CONFEITARIA FAVO E MEL LTDA",
+            "35.014.719/0001-66",
+            "0762/2024",
+            "2026NE030208",
+            "Servir às 9h no auditório.",
+            "doc-folha-ascom",
+        ]:
+            self.assertIn(texto, html, texto)
+
+    def test_html_mostra_o_marco_cumprido_e_o_que_falta(self):
+        """O fluxo financeiro é o motivo do papel: o pendente tem de aparecer."""
+        html = self._html()
+        self.assertIn("NF-4521", html)
+        self.assertIn("Aguardando protocolo", html)
+        # Quatro marcos ainda sem registro — protocolo, atesto, OB e envio.
+        self.assertEqual(html.count("Pendente"), 4)
+
+    def test_html_de_cancelada_abre_com_o_motivo(self):
+        services.cancelar(self.solicitacao, self.ascom, "Evento adiado")
+        self.solicitacao.refresh_from_db()
+        html = self._html()
+        self.assertIn("Solicitação cancelada", html)
+        self.assertIn("Evento adiado", html)
+        self.assertIn("não consome o saldo do lote", html)
+
+    def test_cabecalho_nao_repete_o_orgao_sem_unidade(self):
+        """Sem unidade configurada, a linha da unidade some — não vira o órgão.
+
+        O atalho `unidade or nome_orgao` fazia o timbre imprimir o mesmo nome
+        duas vezes seguidas, porque o template já imprime o órgão acima.
+        """
+        contexto = documents.contexto(self.solicitacao)
+        institucional = contexto["institucional"]
+        self.assertEqual(institucional["unidade_cabecalho"], "")
+        html = self._html()
+        self.assertEqual(html.count("doc-cabecalho__unidade"), 0)
+
+    def test_data_de_emissao_com_mes_em_minuscula(self):
+        """A convenção institucional é "21 de setembro de 2026", não "Setembro"."""
+        extenso = documents.contexto(self.solicitacao)["cb"]["emitido_extenso"]
+        self.assertRegex(extenso, r"^\d{1,2} de [a-zç]+ de \d{4}, às \d{2}:\d{2}$")
+
+    def test_contexto_nao_grava_nada(self):
+        antes = SolicitacaoCoffeeBreak.objects.get(pk=self.solicitacao.pk).atualizado_em
+        documents.contexto(self.solicitacao)
+        depois = SolicitacaoCoffeeBreak.objects.get(pk=self.solicitacao.pk).atualizado_em
+        self.assertEqual(antes, depois)
+
+    def test_nome_do_arquivo_neutraliza_a_barra_do_numero(self):
+        nome = documents.nome_arquivo(self.solicitacao)
+        self.assertEqual(nome, "certificado-coffee-break-02_2026.pdf")
+        self.assertNotIn("/", nome.removeprefix("certificado-coffee-break-"))
+
+    def test_sem_numero_o_arquivo_usa_a_chave(self):
+        sem_numero = self.criar_solicitacao(numero="", quantidade=1)
+        self.assertEqual(
+            documents.nome_arquivo(sem_numero),
+            f"certificado-coffee-break-{sem_numero.pk}.pdf",
+        )
+
+    def test_motor_indisponivel_avisa_e_volta_para_a_solicitacao(self):
+        """Sem o runtime do WeasyPrint o pedido continua acessível."""
+        from documentos.services.exceptions import DocumentRendererUnavailable
+
+        self.client.force_login(self.ascom)
+        url = reverse("coffee_break:certificado", args=[self.solicitacao.pk])
+        with mock.patch.object(
+            documents, "gerar_pdf", side_effect=DocumentRendererUnavailable("Sem GTK.")
+        ):
+            resposta = self.client.get(url, follow=True)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Não foi possível gerar o certificado")
+
+    def test_lista_e_formulario_oferecem_o_certificado(self):
+        self.client.force_login(self.ascom)
+        url = reverse("coffee_break:certificado", args=[self.solicitacao.pk])
+        for pagina in (
+            reverse("coffee_break:solicitacoes"),
+            reverse("coffee_break:editar", args=[self.solicitacao.pk]),
+        ):
+            self.assertContains(self.client.get(pagina), url, msg_prefix=pagina)
+
+    def test_concluida_bloqueada_para_edicao_ainda_oferece_o_certificado(self):
+        """É justamente quando o pedido fecha que alguém precisa do papel."""
+        concluida = self.criar_solicitacao(
+            numero="03/2026",
+            quantidade=1,
+            numero_nota_fiscal="NF-9",
+            protocolo_pagamento="21.000.000-0",
+            data_atesto_gaf=dt.date(2026, 8, 25),
+            data_ordem_bancaria=dt.date(2026, 8, 26),
+            data_envio_empresa=dt.date(2026, 8, 27),
+        )
+        self.client.force_login(self.ascom)
+        resposta = self.client.get(reverse("coffee_break:editar", args=[concluida.pk]))
+        self.assertContains(
+            resposta, reverse("coffee_break:certificado", args=[concluida.pk])
+        )
+
+    @skipUnless(weasyprint_disponivel(), "WeasyPrint sem as bibliotecas nativas")
+    def test_view_devolve_pdf(self):
+        self.client.force_login(self.ascom)
+        resposta = self.client.get(
+            reverse("coffee_break:certificado", args=[self.solicitacao.pk])
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta["Content-Type"], "application/pdf")
+        self.assertIn(
+            "certificado-coffee-break-02_2026.pdf", resposta["Content-Disposition"]
+        )
+        self.assertTrue(resposta.content.startswith(b"%PDF-"))
+
+    @skipUnless(weasyprint_disponivel(), "WeasyPrint sem as bibliotecas nativas")
+    def test_pdf_leva_o_pedido_ao_papel(self):
+        """O que a tela mostra tem de chegar ao PDF — e num documento curto."""
+        from pypdf import PdfReader
+
+        paginas = PdfReader(
+            io.BytesIO(documents.gerar_pdf(self.solicitacao, usuario=self.ascom))
+        ).pages
+        self.assertLessEqual(len(paginas), 2)
+        # Palavras soltas, e não frases: o espaçamento do texto extraído de um
+        # PDF é posicional, e comparar frase inteira testaria o extrator.
+        texto = "".join(pagina.extract_text() or "" for pagina in paginas)
+        for esperado in ("02/2026", "Posse", "diretoria", "NF-4521", "Pendente"):
+            self.assertIn(esperado, texto, esperado)

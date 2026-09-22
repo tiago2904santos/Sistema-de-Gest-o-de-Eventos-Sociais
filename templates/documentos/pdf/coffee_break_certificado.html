@@ -1,0 +1,71 @@
+{% extends "documentos/pdf/base_institucional.html" %}{% comment %}
+  Certificado da solicitação de coffee break, na folha ASCOM (a mesma do termo
+  e da justificativa). O documento é uma leitura do registro, não um texto de
+  modelo: identificação do pedido, evento, lote/contrato/fornecedor e o fluxo
+  financeiro marco a marco, incluindo o que ainda falta.
+
+  `cb` e `institucional` vêm de `coffee_break.documents.contexto`. Não há
+  campos editáveis nem blocos documentais no corpo: o certificado sai do banco
+  e só de lá — não é um documento que se escreve, é um que se lê.
+{% endcomment %}
+{% block titulo %}Certificado de solicitação de coffee break {{ cb.numero }}{% endblock %}
+{% block classe %} doc-folha-ascom doc-cb{% endblock %}
+
+{% block rodape %}{% include "documentos/pdf/_rodape_ascom.html" %}{% endblock %}
+
+{% block corpo %}
+  <h1 class="doc-titulo doc-cb__titulo">Certificado de Solicitação de Coffee Break</h1>
+  <p class="doc-cb__ident">Solicitação {{ cb.numero }} — {{ cb.situacao }}</p>
+
+  {% if cb.cancelada %}
+    <p class="doc-cb__cancelada">
+      Solicitação cancelada{% if cb.cancelada_em %} em {{ cb.cancelada_em|date:"d/m/Y" }}{% endif %}.
+      {% if cb.motivo_cancelamento %}Motivo: {{ cb.motivo_cancelamento }}.{% endif %}
+      A quantidade não consome o saldo do lote.
+    </p>
+  {% endif %}
+
+  <h2 class="doc-cb__secao">Pedido</h2>
+  <table class="doc-tabela doc-tabela--cb">
+    <tr><th>Número</th><td>{{ cb.numero }}</td><th>Data da solicitação</th><td>{{ cb.data_solicitacao|date:"d/m/Y" }}</td></tr>
+    <tr><th>Quantidade</th><td>{{ cb.quantidade }} unidade{{ cb.quantidade|pluralize }}</td><th>Situação</th><td>{{ cb.situacao }}</td></tr>
+    <tr><th>Evento</th><td colspan="3">{{ cb.evento }}</td></tr>
+    <tr><th>Período do evento</th><td colspan="3">{{ cb.periodo|default:"Não informado" }}</td></tr>
+  </table>
+
+  <h2 class="doc-cb__secao">Lote, contrato e fornecedor</h2>
+  <table class="doc-tabela doc-tabela--cb">
+    <tr><th>Lote</th><td>{{ cb.lote }}</td><th>Exercício</th><td>{{ cb.exercicio }}</td></tr>
+    <tr><th>Contrato</th><td>{{ cb.contrato }}</td><th>Número GMS</th><td>{{ cb.gms|default:"—" }}</td></tr>
+    <tr><th>Empenho</th><td>{{ cb.empenho|default:"—" }}</td><th>Fiscal do contrato</th><td>{{ cb.fiscal|default:"—" }}</td></tr>
+    <tr><th>Fornecedor</th><td>{{ cb.fornecedor }}</td><th>CNPJ</th><td>{{ cb.cnpj|default:"—" }}</td></tr>
+    {% if cb.municipios %}<tr><th>Municípios do lote</th><td colspan="3">{{ cb.municipios }}</td></tr>{% endif %}
+  </table>
+
+  <h2 class="doc-cb__secao">Fluxo financeiro</h2>
+  <table class="doc-tabela doc-tabela--cb-marcos">
+    <thead><tr><th>Marco</th><th>Registro</th></tr></thead>
+    <tbody>
+      {% for marco in cb.marcos %}
+        <tr>
+          <td>{{ marco.rotulo }}</td>
+          <td>{% if marco.data %}{{ marco.data|date:"d/m/Y" }}{% elif marco.valor %}{{ marco.valor }}{% else %}<span class="doc-cb__pendente">Pendente</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if cb.observacoes %}
+    <h2 class="doc-cb__secao">Observações</h2>
+    <p class="doc-cb__observacoes">{{ cb.observacoes }}</p>
+  {% endif %}
+
+  <div class="doc-cb__emissao">
+    <p>{% if institucional.sede %}{{ institucional.sede }}, {% endif %}{{ cb.emitido_extenso }}.</p>
+    <p class="doc-cb__nota">
+      Documento gerado eletronicamente pelo Sistema de Gestão de Eventos Sociais a partir
+      da solicitação registrada por {{ cb.criado_por }}{% if cb.emitido_por %}, emitido por {{ cb.emitido_por }}{% endif %}.
+      Vale como espelho do registro na data da emissão; a situação corrente é sempre a do sistema.
+    </p>
+  </div>
+{% endblock %}

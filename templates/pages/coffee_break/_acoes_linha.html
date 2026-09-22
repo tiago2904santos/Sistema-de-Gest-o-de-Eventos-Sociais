@@ -8,6 +8,7 @@
   <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações da solicitação {{ l.titulo }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
   <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
     <a class="dd__i of-item" href="{{ l.url_editar }}">{% include "components/icon.html" with nome=l.editavel|yesno:"pencil,eye" %}<span><b>{% if l.editavel %}Editar solicitação{% else %}Abrir solicitação{% endif %}</b><small>Evento, lote, quantidade e marcos financeiros</small></span></a>
+    <a class="dd__i of-item" href="{{ l.url_certificado }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="download" %}<span><b>Certificado em PDF</b><small>Espelho do pedido na folha institucional, para o processo</small></span></a>
   </div>
 </div>
 {% endwith %}
