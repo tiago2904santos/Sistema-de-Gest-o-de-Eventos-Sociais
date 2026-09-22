@@ -2531,3 +2531,6 @@ form.btn-flutuante-form{margin:0;display:contents}
 .ofc-percurso__par--4{grid-template-columns:repeat(4,minmax(0,1fr))}
 @container (max-width:900px){.ofc-percurso__par--4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @container (max-width:680px){.ofc-percurso__par--4{grid-template-columns:minmax(0,1fr)}}
+/* Unidade móvel: a caixa condicional segue o desenho do bate-volta, sem a
+   faixa cinza com barra à esquerda. */
+.of-form .bate-volta.condicional{margin:12px 0 0;padding:14px 16px;border-left:1px solid var(--n-200);background:var(--n-25)}

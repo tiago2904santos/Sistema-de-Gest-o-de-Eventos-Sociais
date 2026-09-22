@@ -147,9 +147,15 @@
         </header>
         <div class="section-card__corpo">
           {% include "components/v32/cartoes_escolha.html" with name="servicos" tipo="checkbox" label="Serviços solicitados" obrigatorio=True opcoes=servicos erros=erros.servicos id_primeiro=True desabilitado=dados_desabilitado %}
-          <div class="g-form g-form--2 condicional">
-            {% include "components/select.html" with name="unidade_movel_designada" label="Qual unidade móvel" opcoes=unidades_moveis placeholder="Selecione a unidade..." selecionado=valores.unidade_movel_designada erros=erros.unidade_movel_designada desabilitado=planejamento_desabilitado %}
-            {% include "components/select.html" with name="motorista" label="Motorista" opcoes=motoristas selecionado=valores.motorista erros=erros.motorista desabilitado=planejamento_desabilitado %}
+          {# Aparece só com a unidade móvel ligada, na caixa do cartão 1. #}
+          <div class="bate-volta ofc-percurso condicional">
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">Veículo</div>
+              <div class="ofc-percurso__par">
+                {% include "components/select.html" with name="unidade_movel_designada" label="Qual unidade móvel" rotulo_oculto=True opcoes=unidades_moveis placeholder="Qual unidade móvel" selecionado=valores.unidade_movel_designada erros=erros.unidade_movel_designada desabilitado=planejamento_desabilitado %}
+                {% include "components/select.html" with name="motorista" label="Motorista" rotulo_oculto=True opcoes=motoristas placeholder="Quem dirige" selecionado=valores.motorista erros=erros.motorista desabilitado=planejamento_desabilitado %}
+              </div>
+            </div>
           </div>
         </div>
       </section>
