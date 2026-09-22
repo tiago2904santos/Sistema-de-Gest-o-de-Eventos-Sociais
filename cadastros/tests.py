@@ -233,7 +233,8 @@ class CrudCadastrosTests(TestCase):
         resposta = self.client.post(url, {"nome": "Duplicado"}, HTTP_X_CADASTRO_MODAL="1")
         self.assertContains(resposta, "form-erro")
         self.assertContains(resposta, 'value="Duplicado"')
-        self.assertEqual(TipoEvento.objects.count(), 1)
+        # O nome repetido não entrou uma segunda vez.
+        self.assertEqual(TipoEvento.objects.filter(nome="Duplicado").count(), 1)
         resposta = self.client.post(url, {"nome": "Corrigido"}, HTTP_X_CADASTRO_MODAL="1")
         self.assertEqual(resposta.json(), {"ok": True})
         self.assertTrue(TipoEvento.objects.filter(nome="Corrigido").exists())
@@ -249,7 +250,8 @@ class CrudCadastrosTests(TestCase):
         self.assertEqual(resposta.json(), {"ok": True})
         tipo.refresh_from_db()
         self.assertEqual(tipo.nome, "Atualizado")
-        self.assertEqual(TipoEvento.objects.count(), 1)
+        # Editar renomeia o registro, não cria outro.
+        self.assertFalse(TipoEvento.objects.filter(nome="Original").exists())
 
     def test_modal_mantem_restricao_de_acesso(self):
         self.client.force_login(self.comum)

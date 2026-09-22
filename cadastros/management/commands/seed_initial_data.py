@@ -28,12 +28,20 @@ from solicitacoes.permissions import (
     GRUPOS_PADRAO,
 )
 
+# A mesma lista de `cadastros.0011_tipos_de_evento_enxutos`: semeia o que a
+# migração mantém, para a semente não ressuscitar o que foi enxugado.
 TIPOS_EVENTO = [
-    "Ação social",
-    "Feira de serviços",
-    "Mutirão CIN",
-    "Evento institucional",
+    "PCPR na Comunidade",
+    "Justiça no Bairro",
     "Paraná em Ação",
+    "Demafe",
+    "Inauguração/Solenidade",
+    "Evento",
+    "Palestra",
+    "Reunião",
+    "Visita",
+    "Capacitação",
+    "Feira",
 ]
 
 SERVICOS = [

@@ -1,0 +1,22 @@
+{% comment %}
+  Modal de anexo da solicitação, no protocolo dos cadastros: o `ds-v32.js`
+  busca este trecho com `X-Cadastro-Modal`, envia o arquivo pelo mesmo
+  cabeçalho e recarrega a tela quando a resposta é `{"ok": true}`.
+  Contexto: `solicitacao`, `erro_anexo`.
+{% endcomment %}
+<form method="post" action="{% url 'solicitacoes:anexo_adicionar' solicitacao.pk %}" enctype="multipart/form-data" data-cadastro-form novalidate>
+  {% csrf_token %}
+  <header class="mo__topo">
+    <h2 id="cadastro-modal-titulo">Anexar arquivo</h2>
+    <button type="button" class="mo__fechar" data-cadastro-fechar aria-label="Fechar">{% include "components/icon.html" with nome="x" %}</button>
+  </header>
+  <div class="mo__corpo">
+    {% include "components/upload_anexos.html" with id="id_anexo_upload" name="arquivo" obrigatorio=True only %}
+    {% if erro_anexo %}<p class="form-erro" role="alert">{{ erro_anexo }}</p>{% endif %}
+    <p class="form-erro" data-cadastro-falha role="alert" hidden></p>
+  </div>
+  <footer class="mo__rodape">
+    <button type="button" class="btn--secundaria" data-cadastro-fechar>Cancelar</button>
+    <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="upload" %}Anexar arquivo</button>
+  </footer>
+</form>

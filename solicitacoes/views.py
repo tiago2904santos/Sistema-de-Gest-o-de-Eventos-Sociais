@@ -4,7 +4,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, Q
-from django.http import FileResponse
+from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
@@ -719,11 +719,25 @@ def cancelar_evento(request, pk):
 # ---------------------------------------------------------------------------
 
 @login_required
-@require_POST
 def adicionar_anexo(request, pk):
+    """Anexa um arquivo — pelo modal da tela ou por POST direto.
+
+    No modal vale o protocolo dos cadastros (`X-Cadastro-Modal`): o GET
+    devolve o trecho do formulário e o POST devolve `{"ok": true}` ou o
+    trecho de novo, com o erro.
+    """
     solicitacao = _obter_visivel(request, pk)
     if not permissions.pode_gerenciar_anexos(request.user, solicitacao):
         raise PermissionDenied
+    via_modal = request.headers.get("X-Cadastro-Modal") == "1"
+    if request.method != "POST":
+        if not via_modal:
+            return redirect("solicitacoes:editar", pk=solicitacao.pk)
+        return render(
+            request,
+            "pages/solicitacoes/_modal_anexo.html",
+            {"solicitacao": solicitacao},
+        )
     form = AnexoForm(request.POST, request.FILES)
     if form.is_valid():
         arquivo = form.cleaned_data["arquivo"]
@@ -740,10 +754,18 @@ def adicionar_anexo(request, pk):
             observacao=f"Anexo adicionado: {arquivo.name}",
         )
         messages.success(request, f"Arquivo {arquivo.name} anexado.")
+        if via_modal:
+            return JsonResponse({"ok": True})
     else:
-        for erros_campo in form.errors.values():
-            for erro in erros_campo:
-                messages.error(request, erro)
+        mensagens = [erro for erros in form.errors.values() for erro in erros]
+        if via_modal:
+            return render(
+                request,
+                "pages/solicitacoes/_modal_anexo.html",
+                {"solicitacao": solicitacao, "erro_anexo": " ".join(mensagens)},
+            )
+        for mensagem in mensagens:
+            messages.error(request, mensagem)
     return redirect("solicitacoes:editar", pk=solicitacao.pk)
 
 

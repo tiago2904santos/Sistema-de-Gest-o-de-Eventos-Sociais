@@ -48,7 +48,7 @@ class BaseSolicitacaoTestCase(TestCase):
             nome="Cidade Teste", estado=cls.estado, regiao=cls.regiao
         )
         cls.tipo = TipoEvento.objects.create(nome="Ação social")
-        cls.tipo_parana_em_acao = TipoEvento.objects.create(nome="Paraná em Ação")
+        cls.tipo_parana_em_acao = TipoEvento.objects.get_or_create(nome="Paraná em Ação")[0]
         cls.orgao = OrgaoResponsavel.objects.create(nome="Órgão Teste")
         cls.servico = Servico.objects.create(nome="Emissão de CIN")
         cls.outro_servico = Servico.objects.create(nome="Coleta de digitais")
@@ -1384,16 +1384,31 @@ class AnexosTests(BaseSolicitacaoTestCase):
         self.assertTemplateUsed(resposta, "components/upload_anexos.html")
         self.assertContains(resposta, 'data-upload-dropzone', count=1)
 
-    def test_edicao_reutiliza_upload_global_sem_enviar_o_formulario_principal(self):
+    def test_edicao_anexa_pelo_modal(self):
+        """Na edição, anexar abre o modal: o cartão fica só com a lista."""
         solicitacao = self.criar_solicitacao()
         self.client.force_login(self.solicitante)
+        url = reverse("solicitacoes:anexo_adicionar", args=[solicitacao.pk])
         resposta = self.client.get(reverse("solicitacoes:editar", args=[solicitacao.pk]))
-        self.assertTemplateUsed(resposta, "components/upload_anexos.html")
-        self.assertContains(resposta, 'data-upload-dropzone', count=1)
-        self.assertContains(resposta, 'form="form-anexo-upload"', count=2)
-        self.assertContains(resposta, 'name="arquivo"', count=1)
-        self.assertContains(resposta, "Anexar arquivo")
-        self.assertNotContains(resposta, "data-anexo-enviar-ao-selecionar")
+        self.assertContains(resposta, f'href="{url}" data-cadastro-modal')
+        self.assertNotContains(resposta, "data-upload-dropzone")
+        # O trecho do modal vem pelo mesmo endereço, com o cabeçalho dos cadastros.
+        modal = self.client.get(url, HTTP_X_CADASTRO_MODAL="1")
+        self.assertTemplateUsed(modal, "components/upload_anexos.html")
+        self.assertContains(modal, "data-upload-dropzone", count=1)
+        self.assertContains(modal, "data-cadastro-form")
+        self.assertNotContains(modal, "data-anexo-enviar-ao-selecionar")
+
+    def test_anexo_pelo_modal_responde_json(self):
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        resposta = self.client.post(
+            reverse("solicitacoes:anexo_adicionar", args=[solicitacao.pk]),
+            {"arquivo": self.arquivo()},
+            HTTP_X_CADASTRO_MODAL="1",
+        )
+        self.assertEqual(resposta.json(), {"ok": True})
+        self.assertEqual(solicitacao.anexos.count(), 1)
 
     def test_criador_anexa_no_rascunho(self):
         solicitacao = self.criar_solicitacao()
@@ -1541,15 +1556,15 @@ class AnexosTests(BaseSolicitacaoTestCase):
         )
         self.assertContains(resposta, "Anexos")
         self.assertContains(resposta, "oficio.pdf")
-        self.assertTemplateUsed(resposta, "components/upload_anexos.html")
-        self.assertContains(resposta, 'data-upload-dropzone', count=1)
-        self.assertContains(resposta, "Arraste arquivos aqui ou clique para selecionar")
+        self.assertContains(resposta, "Anexar arquivo")
+        # A zona de arrastar mora no modal, não no cartão.
+        self.assertNotContains(resposta, "Arraste arquivos aqui ou clique para selecionar")
         # Um envio explícito, para não competir com o salvamento do formulário.
         self.assertContains(resposta, "Anexar arquivo")
         self.assertNotContains(resposta, "data-anexo-enviar-ao-selecionar")
-        # O form auxiliar do anexo fica fora do <form> principal.
-        self.assertContains(resposta, 'id="form-anexo-upload"', count=1)
-        self.assertContains(resposta, "PDF, imagens ou documentos de escritório.", count=0)
+        # O envio acontece no modal, fora do <form> principal.
+        self.assertNotContains(resposta, 'id="form-anexo-upload"')
+        self.assertContains(resposta, "data-cadastro-dialog", count=1)
 
 
 class GeracaoDeViagemPeloDespacho(BaseSolicitacaoTestCase):

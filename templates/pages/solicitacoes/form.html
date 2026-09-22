@@ -111,6 +111,10 @@
             <div class="c2">
               {% include "components/input.html" with name="local_evento" label="Local do evento" placeholder="Ex.: Praça central, escola municipal..." valor=valores.local_evento erros=erros.local_evento desabilitado=dados_desabilitado %}
             </div>
+            {% include "components/select.html" with name="tipo_operacao" label="Tipo de operação" opcoes=tipos_operacao selecionado=valores.tipo_operacao erros=erros.tipo_operacao desabilitado=planejamento_desabilitado %}
+            <div class="c2">
+              {% include "components/input.html" with name="quantidade_cin" label="Quantidade de CIN agendadas" tipo="number" minimo=0 passo="1" valor=valores.quantidade_cin erros=erros.quantidade_cin desabilitado=planejamento_desabilitado %}
+            </div>
           </div>
         </div>
       </section>
@@ -164,10 +168,6 @@
         </header>
         <div class="section-card__corpo">
           {% include "pages/solicitacoes/_equipes.html" %}
-          <div class="g-form g-form--2">
-            {% include "components/select.html" with name="tipo_operacao" label="Tipo de operação" opcoes=tipos_operacao selecionado=valores.tipo_operacao erros=erros.tipo_operacao desabilitado=planejamento_desabilitado %}
-            {% include "components/input.html" with name="quantidade_cin" label="Quantidade de CIN agendadas" tipo="number" minimo=0 passo="1" valor=valores.quantidade_cin erros=erros.quantidade_cin desabilitado=planejamento_desabilitado %}
-          </div>
         </div>
       </section>
 
@@ -196,7 +196,10 @@
               </table>
             </div>
             {% if pode_gerenciar_anexos %}
-              {% include "components/upload_anexos.html" with id="id_anexo_upload" name="arquivo" formulario="form-anexo-upload" obrigatorio=True rotulo_enviar="Anexar arquivo" only %}
+              {# Anexar abre o modal, como os cadastros: o cartão fica só com a lista. #}
+              <div class="frm-acoes-fim frm-acoes-fim--so-dir">
+                <a class="btn--secundaria" href="{% url 'solicitacoes:anexo_adicionar' solicitacao.pk %}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}Anexar arquivo</a>
+              </div>
             {% endif %}
           {% else %}
             {% include "components/upload_anexos.html" with id="id_anexos_cadastro" name="anexos" multiple=True mensagem_vazio="Nenhum arquivo selecionado. Eles serão salvos junto com a solicitação." only %}
@@ -297,14 +300,15 @@
         <form id="form-excluir-solicitacao" method="post" action="{% url 'solicitacoes:excluir' solicitacao.pk %}" data-confirmar-exclusao>{% csrf_token %}</form>
       {% endif %}
       {% if pode_gerenciar_anexos %}
-        {# Formulários auxiliares dos anexos: os controles da seção apontam para cá via atributo form. #}
-        <form id="form-anexo-upload" method="post" action="{% url 'solicitacoes:anexo_adicionar' solicitacao.pk %}" enctype="multipart/form-data">{% csrf_token %}</form>
+        {# Formulário auxiliar da exclusão: os botões da tabela apontam para cá via atributo form. #}
         {% for anexo in anexos %}
           <form id="form-anexo-excluir-{{ anexo.pk }}" method="post" action="{% url 'solicitacoes:anexo_excluir' solicitacao.pk anexo.pk %}">{% csrf_token %}</form>
         {% endfor %}
       {% endif %}
     {% endif %}
   </div>
+  {# O anexo abre neste modal (protocolo dos cadastros). #}
+  <dialog class="mo v32-cadastro-modal" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{{ request.path }}"></dialog>
 {% endblock %}
 
 {% block extra_js %}{{ block.super }}<script src="{% estatico 'js/trilho.js' %}" defer></script>{% endblock %}

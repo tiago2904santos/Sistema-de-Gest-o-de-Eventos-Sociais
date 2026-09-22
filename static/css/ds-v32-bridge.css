@@ -2514,3 +2514,4 @@ form.btn-flutuante-form{margin:0;display:contents}
 /* Publicações e Imprensa: só os horários e prazos na caixa, como nas Palestras. */
 .ofc-percurso+.g-form,.g-form+.ofc-percurso{margin-top:14px}
 .cb-lote{margin-top:6px}
+.frm-acoes-fim--so-dir{justify-content:flex-end}
