@@ -107,15 +107,11 @@
             </div>
             <div class="ofc-percurso__linha">
               <div class="bate-volta__rotulo ofc-percurso__rotulo">Quem pede</div>
-              <div class="ofc-percurso__par">
+              {# Nome, contato, lotação e órgão numa linha só. #}
+              <div class="ofc-percurso__par ofc-percurso__par--4">
                 {% include "components/input.html" with name="solicitante_nome" label="Solicitante" rotulo_oculto=True obrigatorio=True placeholder="Nome de quem solicita" valor=valores.solicitante_nome erros=erros.solicitante_nome desabilitado=dados_desabilitado %}
                 {% include "components/input.html" with name="contato" label="Contato" rotulo_oculto=True tipo="tel" mascara="telefone" placeholder="(00) 00000-0000" valor=valores.contato erros=erros.contato desabilitado=dados_desabilitado %}
-              </div>
-            </div>
-            <div class="ofc-percurso__linha">
-              <div class="bate-volta__rotulo ofc-percurso__rotulo">Lotação</div>
-              <div class="ofc-percurso__par">
-                {% include "components/input.html" with name="solicitante_cargo_unidade" label="Cargo / unidade" rotulo_oculto=True obrigatorio=True placeholder="Cargo e unidade de quem solicita" valor=valores.solicitante_cargo_unidade erros=erros.solicitante_cargo_unidade desabilitado=dados_desabilitado %}
+                {% include "components/input.html" with name="solicitante_cargo_unidade" label="Cargo / unidade" rotulo_oculto=True obrigatorio=True placeholder="Cargo e unidade" valor=valores.solicitante_cargo_unidade erros=erros.solicitante_cargo_unidade desabilitado=dados_desabilitado %}
                 {% include "components/select.html" with name="orgao_responsavel" label="Órgão responsável" rotulo_oculto=True opcoes=orgaos obrigatorio=True selecionado=valores.orgao_responsavel erros=erros.orgao_responsavel desabilitado=dados_desabilitado placeholder="Órgão responsável" %}
               </div>
             </div>

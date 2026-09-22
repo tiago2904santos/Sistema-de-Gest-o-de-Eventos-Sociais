@@ -2528,3 +2528,6 @@ form.btn-flutuante-form{margin:0;display:contents}
 .linha-quantidade:has(input[type="checkbox"]:checked) .linha-quantidade__marca{border-color:var(--grafite)}
 .linha-quantidade__q{width:74px}
 .linha-quantidade__q .form-controle{height:32px;padding-left:6px;padding-right:6px}
+.ofc-percurso__par--4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@container (max-width:900px){.ofc-percurso__par--4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container (max-width:680px){.ofc-percurso__par--4{grid-template-columns:minmax(0,1fr)}}
