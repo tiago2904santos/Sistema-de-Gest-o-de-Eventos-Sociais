@@ -347,35 +347,6 @@
   });
 })();
 
-// Coffee Break: o lote sai do município. Cada opção do município traz o lote
-// que ele recebe (data-lote, data-saldo e, fora da lista do lote, data-perto);
-// a escolha real é refeita no servidor ao salvar.
-(function () {
-  var municipio = document.getElementById("id_municipio");
-  var caixa = document.querySelector("[data-lote-do-municipio]");
-  if (!municipio || !caixa) return;
-  var nome = caixa.querySelector("[data-lote-nome]");
-  var saldo = caixa.querySelector("[data-lote-saldo]");
-  function atualizar() {
-    var opcao = municipio.options[municipio.selectedIndex];
-    if (!opcao || !opcao.value) {
-      nome.textContent = caixa.dataset.loteAtual || "O lote sai do município";
-      saldo.textContent = caixa.dataset.saldoAtual ? "· Saldo: " + caixa.dataset.saldoAtual : "";
-      return;
-    }
-    if (!opcao.dataset.lote) {
-      nome.textContent = "Nenhum lote ativo atende este município";
-      saldo.textContent = "· Inclua o município na lista de um lote em Cadastros › Lotes.";
-      return;
-    }
-    nome.textContent = opcao.dataset.lote;
-    saldo.textContent = "· Saldo: " + opcao.dataset.saldo +
-      (opcao.dataset.perto ? " · pela sede mais próxima (" + opcao.dataset.perto + ")" : "");
-  }
-  municipio.addEventListener("change", atualizar);
-  atualizar();
-})();
-
 // Demandas ASCOM: opções de responsável conforme os setores, preservadas.
 (function () {
       var responsavel = document.getElementById("id_responsavel_atendimento");

@@ -142,6 +142,7 @@
           </div>
         </header>
         <div class="section-card__corpo">
+          {% include "pages/solicitacoes/_equipes.html" %}
           {% include "components/v32/cartoes_escolha.html" with name="servicos" tipo="checkbox" label="Serviços solicitados" obrigatorio=True opcoes=servicos erros=erros.servicos id_primeiro=True desabilitado=dados_desabilitado %}
           {# Aparece só com a unidade móvel ligada, na caixa do cartão 1. #}
           <div class="bate-volta ofc-percurso condicional">
@@ -159,7 +160,7 @@
       <section class="section-card reg" id="sec-planejamento">
         <header class="section-card__cabecalho reg__t">
           <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
-          <h2 class="section-card__titulo">Planejamento operacional</h2>
+          <h2 class="section-card__titulo">Anexos</h2>
           {% if solicitacao and pode_gerenciar_anexos %}
             <div class="section-card__acao">
               <a class="btn--secundaria btn--compacto" href="{% url 'solicitacoes:anexo_adicionar' solicitacao.pk %}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}Anexar arquivo</a>
@@ -167,11 +168,8 @@
           {% endif %}
         </header>
         <div class="section-card__corpo">
-          {% include "pages/solicitacoes/_equipes.html" %}
-
           {% if solicitacao %}
             {% if anexos %}
-              <h3 class="sol-subtitulo">Anexos</h3>
               <div class="dt-w" role="region" aria-label="Arquivos anexados">
                 <table class="dt">
                   <thead><tr><th>Arquivo</th><th>Enviado por</th><th>Quando</th><th class="c-cad-acoes"><span class="sr-only">Ações</span></th></tr></thead>
@@ -189,7 +187,6 @@
               </div>
             {% endif %}
           {% else %}
-            <h3 class="sol-subtitulo">Anexos</h3>
             {% include "components/upload_anexos.html" with id="id_anexos_cadastro" name="anexos" multiple=True mensagem_vazio="Nenhum arquivo selecionado. Eles serão salvos junto com a solicitação." only %}
           {% endif %}
 

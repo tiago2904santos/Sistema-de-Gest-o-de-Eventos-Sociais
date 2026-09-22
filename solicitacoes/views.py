@@ -310,7 +310,9 @@ def editar_solicitacao(request, pk):
             request.POST, instance=solicitacao, enviar=(acao == "enviar")
         )
         if form.is_valid():
+            redespachar = False
             try:
+                alterou = bool(form.changed_data)
                 with transaction.atomic():
                     solicitacao = form.save()
                     services.registrar_historico(
@@ -321,6 +323,12 @@ def editar_solicitacao(request, pk):
                     )
                     if acao == "enviar":
                         services.enviar(solicitacao, request.user)
+                    elif alterou:
+                        # O que a DG despachou deixou de ser o que está escrito:
+                        # o pedido volta para novo despacho antes de ser atendido.
+                        redespachar = services.reabrir_para_despacho(
+                            solicitacao, request.user
+                        )
             except ValidationError as erro:
                 for mensagem_erro in erro.messages:
                     messages.error(request, mensagem_erro)
@@ -328,6 +336,12 @@ def editar_solicitacao(request, pk):
                 if acao == "enviar":
                     messages.success(
                         request, f"Solicitação #{solicitacao.pk} enviada com sucesso."
+                    )
+                elif redespachar:
+                    messages.warning(
+                        request,
+                        f"Solicitação #{solicitacao.pk} atualizada depois do despacho: "
+                        "voltou para a Diretoria-Geral e só pode ser atendida com um novo despacho.",
                     )
                 else:
                     messages.success(request, f"Solicitação #{solicitacao.pk} atualizada.")

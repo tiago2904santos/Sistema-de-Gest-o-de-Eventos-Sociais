@@ -122,11 +122,7 @@
               <div class="bate-volta__rotulo ofc-percurso__rotulo">Município</div>
               <div>
                 {# O lote não se escolhe: sai do município (lista do lote ou, fora dela, a sede mais próxima). #}
-                {% include "components/select.html" with name="municipio" label="Município do evento" rotulo_oculto=True opcoes=municipios obrigatorio=form.fields.municipio.required pesquisavel=True selecionado=valores.municipio erros=erros.municipio desabilitado=dados_base_bloqueados placeholder="Buscar município..." %}
-                <div data-lote-do-municipio data-lote-atual="{% if lote %}{{ lote.rotulo_curto }} — {{ lote.contrato.fornecedor.razao_social }}{% endif %}" data-saldo-atual="{% if lote %}{{ lote.restante }} de {{ lote.quantidade_total }} unidades{% endif %}">
-                  <p class="form-ajuda cb-lote"><b data-lote-nome>{% if lote %}{{ lote.rotulo_curto }} — {{ lote.contrato.fornecedor.razao_social }}{% else %}O lote sai do município{% endif %}</b> <span data-lote-saldo>{% if lote %}· Saldo: {{ lote.restante }} de {{ lote.quantidade_total }} unidades{% endif %}</span></p>
-                </div>
-              </div>
+                {% include "components/select.html" with name="municipio" label="Município do evento" rotulo_oculto=True opcoes=municipios obrigatorio=form.fields.municipio.required pesquisavel=True selecionado=valores.municipio erros=erros.municipio desabilitado=dados_base_bloqueados placeholder="Buscar município..." %}              </div>
             </div>
           </div>
           <div class="g-form g-form--3">

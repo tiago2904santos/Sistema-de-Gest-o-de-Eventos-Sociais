@@ -633,9 +633,11 @@ class ViewsTests(BaseSolicitacaoTestCase):
         self.assertContains(resposta, "data-mask-telefone")
 
     def test_formulario_unico_tem_planejamento(self):
+        """As equipes ficam com os serviços; os anexos, no próprio cartão."""
         self.client.force_login(self.solicitante)
         resposta = self.client.get(reverse("solicitacoes:nova"))
-        self.assertContains(resposta, "Planejamento operacional")
+        self.assertContains(resposta, "Serviços e estrutura")
+        self.assertContains(resposta, "Anexos")
         self.assertContains(resposta, 'name="equipes"')
 
     def test_criar_e_enviar_para_dg(self):
@@ -1682,3 +1684,51 @@ class GeracaoDeViagemPeloDespacho(BaseSolicitacaoTestCase):
 
         self.assertIn("Município de onde a equipe sai", faltando)
         self.assertTrue(any("Ofício" in item for item in faltando))
+
+
+class RedespachoAposAlteracaoTests(BaseSolicitacaoTestCase):
+    """Mexer depois do despacho devolve o pedido à DG antes do atendimento."""
+
+    def setUp(self):
+        from . import permissions
+
+        self.perms = permissions
+
+    def _deferida(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER)
+        return solicitacao
+
+    def test_alteracao_volta_para_despacho_e_bloqueia_atendimento(self):
+        solicitacao = self._deferida()
+        self.assertTrue(self.perms.pode_concluir(self.solicitante, solicitacao))
+        voltou = services.reabrir_para_despacho(solicitacao, self.solicitante)
+        self.assertTrue(voltou)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
+        self.assertEqual(solicitacao.decisao_dg, DecisaoDG.PENDENTE)
+        self.assertIsNone(solicitacao.decidido_em)
+        # Sem despacho novo, ninguém marca como atendida.
+        self.assertFalse(self.perms.pode_concluir(self.solicitante, solicitacao))
+        self.assertTrue(self.perms.pode_despachar(self.gestor, solicitacao))
+        self.assertIn("novo despacho", solicitacao.historico.last().observacao)
+
+    def test_sem_deferimento_nada_muda(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.assertFalse(services.reabrir_para_despacho(solicitacao, self.solicitante))
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
+
+    def test_edicao_pela_tela_devolve_para_a_dg(self):
+        solicitacao = self._deferida()
+        self.client.force_login(self.superusuario)
+        dados = self.dados_completos_post(acao="rascunho")
+        dados["local_evento"] = "Outro local"
+        resposta = self.client.post(
+            reverse("solicitacoes:editar", args=[solicitacao.pk]), dados, follow=True
+        )
+        self.assertEqual(resposta.status_code, 200)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)

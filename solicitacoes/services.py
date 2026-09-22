@@ -365,6 +365,35 @@ def cancelar_evento(solicitacao, usuario, observacao):
     return solicitacao
 
 
+def reabrir_para_despacho(solicitacao, usuario):
+    """Alteração depois do deferimento devolve o pedido à DG.
+
+    O despacho vale para o que estava escrito quando ele foi dado: mudou o
+    evento, os serviços ou as equipes, a DG precisa despachar de novo — e até
+    lá a solicitação não pode ser marcada como atendida.
+    """
+    if solicitacao.status != StatusSolicitacao.DEFERIDA_EM_ANDAMENTO:
+        return False
+    solicitacao.status = StatusSolicitacao.AGUARDANDO_DESPACHO
+    solicitacao.decisao_dg = DecisaoDG.PENDENTE
+    solicitacao.decidido_em = None
+    solicitacao.decidido_por = None
+    solicitacao.save(
+        update_fields=[
+            "status", "decisao_dg", "decidido_em", "decidido_por", "atualizado_em"
+        ]
+    )
+    registrar_historico(
+        solicitacao,
+        usuario,
+        AcaoHistorico.ATUALIZACAO,
+        status_anterior=StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
+        status_novo=StatusSolicitacao.AGUARDANDO_DESPACHO,
+        observacao="Alterada depois do despacho: aguarda novo despacho da DG.",
+    )
+    return True
+
+
 def montar_timeline(solicitacao=None):
     """Etapas da timeline lateral a partir do status e histórico reais.
 
