@@ -21,8 +21,7 @@ class HistoricoCoffeeBreakInline(admin.TabularInline):
 
 @admin.register(Fornecedor)
 class FornecedorAdmin(admin.ModelAdmin):
-    list_display = ("razao_social", "cnpj_formatado", "contato", "telefone", "ativo")
-    list_filter = ("ativo",)
+    list_display = ("razao_social", "cnpj_formatado", "contato", "telefone")
     search_fields = ("razao_social", "cnpj", "contato", "email")
 
     @admin.display(description="CNPJ")
@@ -39,8 +38,8 @@ class LoteInline(admin.TabularInline):
 
 @admin.register(ContratoCoffeeBreak)
 class ContratoCoffeeBreakAdmin(admin.ModelAdmin):
-    list_display = ("numero", "fornecedor", "numero_gms", "fiscal_responsavel", "ativo")
-    list_filter = ("ativo", "fornecedor")
+    list_display = ("numero", "fornecedor", "numero_gms", "fiscal_responsavel")
+    list_filter = ("fornecedor",)
     search_fields = ("numero", "numero_gms", "fornecedor__razao_social")
     inlines = [LoteInline]
 

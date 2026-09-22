@@ -2486,6 +2486,8 @@ form.btn-flutuante-form{margin:0;display:contents}
 .pal-periodo{display:grid;grid-template-columns:minmax(0,2fr) minmax(130px,1fr);gap:8px;align-items:start}
 .pal-periodo>.form-campo{margin:0}
 .pal-topo-data{width:180px}
+.pal-publico{max-width:220px}
+.pal-publico>.form-campo{margin:0}
 .pal-topo-data .form-campo{margin:0}
 .frm-topo__acoes:has(.pal-topo-data){display:flex;align-items:flex-end;gap:10px}
 .pal-linha1{grid-template-columns:minmax(0,1.3fr) minmax(150px,.8fr) minmax(0,1.1fr) minmax(0,1.1fr)}
@@ -2493,3 +2495,22 @@ form.btn-flutuante-form{margin:0;display:contents}
 .pal-andamento__ultimo{flex-basis:100%;color:var(--n-700);white-space:pre-line}
 #sec-andamento{margin-top:14px}
 @container (max-width:680px){.pal-periodo{grid-template-columns:minmax(0,1fr)}.pal-topo-data{width:100%}.frm-topo__acoes:has(.pal-topo-data){flex-wrap:wrap}}
+/* Coffee Break: documentos da solicitação e certidões dos fornecedores. */
+.cb-docs .tm-fato{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:8px 0;border-bottom:1px solid var(--n-100)}
+.cb-docs .tm-fato:last-child{border-bottom:0}
+.cb-docs .vg-fato__valor{flex:1 1 260px;display:flex;flex-direction:column;gap:2px}
+.cb-docs small{font-size:12px;color:var(--n-500)}
+.cb-docs .cb-docs__falta{color:var(--wn-t)}
+.cb-cnpj{margin-left:8px;font-size:12px;font-weight:400;color:var(--n-500)}
+.cb-certidoes{list-style:none;margin:0;padding:0}
+.cb-certidao{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding:10px 0;border-bottom:1px solid var(--n-100)}
+.cb-certidao:last-child{border-bottom:0}
+.cb-certidao__info{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;min-width:220px}
+.cb-certidao__info b{min-width:130px}
+.cb-certidao__info a{font-size:12px}
+.cb-certidao__acoes{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.cb-certidao__envio{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.cb-certidao__envio .form-controle{width:auto;max-width:230px;padding-top:4px;padding-bottom:4px}
+/* Publicações e Imprensa: só os horários e prazos na caixa, como nas Palestras. */
+.ofc-percurso+.g-form,.g-form+.ofc-percurso{margin-top:14px}
+.cb-lote{margin-top:6px}

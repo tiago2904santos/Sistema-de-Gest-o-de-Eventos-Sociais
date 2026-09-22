@@ -1,0 +1,38 @@
+{% extends "coffee_break/documentos/_base.html" %}
+{% block titulo %}Ordem de Serviço {{ s.numero }}{% endblock %}
+{% block estilo %}
+  .data { text-align: right; margin-bottom: 1.1em; }
+  h1 { font-size: 12pt; text-align: center; margin: 0 0 1.1em; }
+  .contratada p { margin-bottom: 0.35em; }
+  .rotulo { font-weight: 700; }
+  .bloco { margin-top: 1.5em; }
+  .pedido { white-space: pre-line; margin-top: 1em; }
+  .assinatura { margin-top: 4.5em; text-align: center; page-break-inside: avoid; }
+  .assinatura .linha { width: 11.5cm; border-top: 1px solid #000; margin: 0 auto 0.1em; }
+  .assinatura b { display: block; }
+{% endblock %}
+{% block corpo %}
+  <p class="data">Curitiba, {{ data_extenso }}.</p>
+  <h1>ORDEM DE SERVIÇO {{ s.numero }}</h1>
+
+  <div class="contratada">
+    <p>{{ fornecedor.razao_social }}</p>
+    <p>Contrato: {{ contrato.referencia_documental }}</p>
+    {% if lote.empenho %}<p>Empenho: {{ lote.empenho }}</p>{% endif %}
+  </div>
+
+  <p class="bloco"><span class="rotulo">OBJETO:</span> {{ s.descricao_evento }}</p>
+  <p style="margin-top:0.35em"><span class="rotulo">DETALHAMENTO DO PEDIDO:</span></p>
+  <p class="pedido">{{ s.detalhamento_efetivo }}</p>
+
+  <p class="bloco"><span class="rotulo">LOCAL DE ENTREGA:</span></p>
+  <p style="margin-top:1em">{{ s.local_entrega|default:"—" }}</p>
+
+  <p style="margin-top:1em"><span class="rotulo">RESPONSÁVEL PELO RECEBIMENTO:</span> {{ s.responsavel_recebimento|default:"—" }}</p>
+
+  <div class="assinatura">
+    <div class="linha"></div>
+    <b>{{ contrato.fiscal_responsavel|upper }}</b>
+    <span>{{ contrato.cargo_fiscal }}</span>
+  </div>
+{% endblock %}

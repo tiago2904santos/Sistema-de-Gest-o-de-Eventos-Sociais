@@ -28,7 +28,7 @@ from .models import (
     normalizar_cnpj,
 )
 from .permissions import CODIGO_MODULO
-from . import services
+from . import certidoes, documentos, services
 
 User = get_user_model()
 
@@ -66,6 +66,13 @@ class BaseCoffeeBreakTestCase(TestCase):
             quantidade_total=100,
             empenho="2026NE030208",
         )
+        # O lote é escolhido pelo município: Curitiba está na lista do lote 1.
+        cls.estado_pr = Estado.objects.get(codigo_ibge=41)
+        cls.regiao = Regiao.objects.get_or_create(nome="Região Teste")[0]
+        cls.curitiba = Municipio.objects.get_or_create(
+            nome="Curitiba", estado=cls.estado_pr, defaults={"regiao": cls.regiao}
+        )[0]
+        cls.lote.municipios.add(cls.curitiba)
 
     def criar_solicitacao(self, **kwargs):
         dados = {
@@ -361,7 +368,7 @@ class ViewsTests(BaseCoffeeBreakTestCase):
 
     def dados_post(self, **kwargs):
         dados = {
-            "lote": self.lote.pk,
+            "municipio": self.curitiba.pk,
             "data_solicitacao": "2026-08-01",
             "numero": "05/2026",
             "descricao_evento": "Inauguração da Delegacia Cidadã",
@@ -507,8 +514,13 @@ class ViewsTests(BaseCoffeeBreakTestCase):
             quantidade_total=500,
             ativo=False,
         )
+        # Município só de lote inativo: não há lote para escolher.
+        so_do_inativo = Municipio.objects.create(
+            nome="Ponta Grossa", estado=self.estado_pr, regiao=self.regiao
+        )
+        lote_inativo.municipios.add(so_do_inativo)
         resposta = self.client.post(
-            reverse("coffee_break:nova"), self.dados_post(lote=lote_inativo.pk)
+            reverse("coffee_break:nova"), self.dados_post(municipio=so_do_inativo.pk)
         )
         self.assertEqual(resposta.status_code, 200)
         self.assertFalse(SolicitacaoCoffeeBreak.objects.exists())
@@ -963,3 +975,160 @@ class AdminTests(BaseCoffeeBreakTestCase):
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, "acima do saldo")
         self.assertFalse(SolicitacaoCoffeeBreak.objects.exists())
+
+
+# ---------------------------------------------------------------------------
+# Processo da OS ao protocolo: lote pelo município, numeração, documentos e
+# certidões
+# ---------------------------------------------------------------------------
+
+class LotePeloMunicipioTests(BaseCoffeeBreakTestCase):
+    def setUp(self):
+        self.client.force_login(self.ascom)
+
+    def _post(self, **kwargs):
+        dados = ViewsTests.dados_post(self, numero="", **kwargs)
+        return self.client.post(reverse("coffee_break:nova"), dados)
+
+    def test_municipio_da_lista_escolhe_o_lote_e_numera(self):
+        self.criar_solicitacao(numero="07/2026")
+        self._post()
+        nova = SolicitacaoCoffeeBreak.objects.exclude(numero="07/2026").get()
+        self.assertEqual(nova.lote, self.lote)
+        self.assertEqual(nova.municipio, self.curitiba)
+        self.assertEqual(nova.numero, "08/2026")
+
+    def test_numeracao_e_por_lote_e_por_ano(self):
+        self.criar_solicitacao(numero="40/2025")
+        self.assertEqual(services.proximo_numero(self.lote, 2026), "01/2026")
+
+    def test_municipio_fora_dos_lotes_sem_coordenadas_da_erro(self):
+        longe = Municipio.objects.create(
+            nome="Cidade Sem Lote", estado=self.estado_pr, regiao=self.regiao
+        )
+        resposta = self._post(municipio=longe.pk)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Nenhum lote ativo atende Cidade Sem Lote")
+        self.assertFalse(SolicitacaoCoffeeBreak.objects.exists())
+
+    def test_municipio_fora_dos_lotes_vai_para_a_sede_mais_proxima(self):
+        from decimal import Decimal
+
+        Municipio.objects.filter(pk=self.curitiba.pk).update(
+            latitude=Decimal("-25.4284"), longitude=Decimal("-49.2733")
+        )
+        outro_contrato = ContratoCoffeeBreak.objects.create(
+            fornecedor=self.fornecedor, numero="0130/2025"
+        )
+        cascavel = Municipio.objects.create(
+            nome="Cascavel", estado=self.estado_pr, regiao=self.regiao,
+            latitude=Decimal("-24.9555"), longitude=Decimal("-53.4552"),
+        )
+        lote_oeste = LoteCoffeeBreak.objects.create(
+            contrato=outro_contrato, numero=5, exercicio="2026", quantidade_total=50
+        )
+        lote_oeste.municipios.add(cascavel)
+        campo_largo = Municipio.objects.create(
+            nome="Campo Largo", estado=self.estado_pr, regiao=self.regiao,
+            latitude=Decimal("-25.4597"), longitude=Decimal("-49.5236"),
+        )
+        lote, distancia = services.escolher_lote(campo_largo, dt.date(2026, 9, 1))
+        self.assertEqual(lote, self.lote)
+        self.assertLess(distancia, 40)
+
+
+class DocumentosTests(BaseCoffeeBreakTestCase):
+    def setUp(self):
+        self.client.force_login(self.ascom)
+
+    def test_detalhamento_montado_dos_campos(self):
+        s = self.criar_solicitacao(
+            data_inicio_evento=dt.date(2026, 10, 1), quantidade=40
+        )
+        s.horario_evento = dt.time(9, 30)
+        self.assertEqual(
+            s.detalhamento_efetivo, "Solicito coffee para:\nDia 01/10 às 9h30 p/ 40 pessoas."
+        )
+
+    def test_referencia_documental_do_contrato(self):
+        self.contrato.termo_aditivo = "0355/2025"
+        self.assertEqual(
+            self.contrato.referencia_documental,
+            "0762/2024 – GMS 7339/2024 - TERMO ADITIVO Nº 0355/2025",
+        )
+
+    def test_os_sem_local_volta_com_o_que_falta(self):
+        s = self.criar_solicitacao(numero="05/2026")
+        resposta = self.client.get(reverse("coffee_break:ordem_servico", args=[s.pk]))
+        self.assertEqual(resposta.status_code, 302)
+
+    def test_pacote_lista_o_que_falta(self):
+        s = self.criar_solicitacao(numero="05/2026", numero_nota_fiscal="8696")
+        faltas = " ".join(documentos.pendencias_pacote(s))
+        self.assertIn("PDF da nota fiscal", faltas)
+        self.assertIn("contrato 0762/2024", faltas)
+        self.assertIn("Certidão Federal não cadastrada", faltas)
+
+
+class CertidoesTests(BaseCoffeeBreakTestCase):
+    def test_validade_lida_dos_textos_dos_portais(self):
+        casos = {
+            "Certidão emitida gratuitamente... Válida até 17/03/2027.": dt.date(2027, 3, 17),
+            "Validade: 16/03/2027 - 180 (cento e oitenta) dias, contados da data": dt.date(2027, 3, 16),
+            "Validade:14/09/2026 a 13/10/2026 Certificação Número:": dt.date(2026, 10, 13),
+            "Emitida em 01/09/2026. Esta certidão é válida por 90 (noventa) dias.": dt.date(2026, 11, 30),
+        }
+        for texto, esperado in casos.items():
+            self.assertEqual(certidoes.validade_do_texto(texto), esperado, texto)
+        self.assertIsNone(certidoes.validade_do_texto("sem data nenhuma"))
+
+    def test_quadro_classifica_por_validade(self):
+        from django.core.files.base import ContentFile
+
+        hoje = dt.date(2026, 9, 21)
+        for tipo, validade in (("FEDERAL", dt.date(2026, 9, 1)), ("FGTS", dt.date(2026, 9, 30))):
+            certidoes.registrar(self.fornecedor, tipo, ContentFile(b"%PDF-1.4", name="c.pdf"), validade)
+        situacoes = {l["tipo"]: l["situacao"] for l in certidoes.quadro(self.fornecedor, hoje)}
+        self.assertEqual(situacoes["FEDERAL"], "vencida")
+        self.assertEqual(situacoes["FGTS"], "vencendo")
+        self.assertEqual(situacoes["ESTADUAL"], "faltando")
+
+
+class AndamentoCoffeeTests(BaseCoffeeBreakTestCase):
+    def setUp(self):
+        self.client.force_login(self.ascom)
+
+    def test_marcos_em_ordem_pelo_modal(self):
+        s = self.criar_solicitacao(numero="05/2026")
+        url = reverse("coffee_break:andamento", args=[s.pk])
+        self.assertContains(self.client.get(url, headers={"X-Cadastro-Modal": "1"}), "OS enviada ao fornecedor em")
+        modal = {"X-Cadastro-Modal": "1"}
+        self.assertEqual(self.client.post(url, {"valor": "2026-08-02"}, headers=modal).json(), {"ok": True})
+        resposta = self.client.post(url, {"valor": "8696", "andamento": "NF chegou por e-mail."}, headers=modal)
+        self.assertEqual(resposta.json(), {"ok": True})
+        s.refresh_from_db()
+        self.assertEqual(s.data_envio_ordem_servico, dt.date(2026, 8, 2))
+        self.assertEqual(s.numero_nota_fiscal, "8696")
+        self.assertEqual(services.proximo_marco(s)["campo"], "protocolo_pagamento")
+        self.assertEqual(services.ultima_anotacao(s), "NF chegou por e-mail.")
+        estados = [e["estado"] for e in services.etapas(s)]
+        self.assertEqual(estados[:4], ["concluido", "concluido", "concluido", "atual"])
+        # Vazio não passa.
+        self.assertContains(self.client.post(url, {"valor": ""}, headers=modal), "Informe")
+
+    def test_marco_pulado_da_planilha_conta_como_feito(self):
+        s = self.criar_solicitacao(numero="05/2026", numero_nota_fiscal="1")
+        self.assertEqual(services.etapas(s)[1]["estado"], "concluido")
+
+    def test_cadastro_em_modal_e_exclusao_so_sem_uso(self):
+        self.client.force_login(self.admin_modulo)
+        resposta = self.client.get(
+            reverse("coffee_break:cadastro_editar", args=["fornecedores", self.fornecedor.pk]),
+            headers={"X-Cadastro-Modal": "1"},
+        )
+        self.assertContains(resposta, "data-cadastro-form")
+        self.client.post(reverse("coffee_break:cadastro_excluir", args=["fornecedores", self.fornecedor.pk]))
+        self.assertTrue(Fornecedor.objects.filter(pk=self.fornecedor.pk).exists())
+        livre = Fornecedor.objects.create(razao_social="SEM USO LTDA")
+        self.client.post(reverse("coffee_break:cadastro_excluir", args=["fornecedores", livre.pk]))
+        self.assertFalse(Fornecedor.objects.filter(pk=livre.pk).exists())

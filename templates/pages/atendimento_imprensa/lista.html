@@ -24,6 +24,8 @@
 
     {% include "components/v32/lista_registros.html" with icone="mail" rotulo="Pedido" rotulo_plural="pedidos" conteudo_linha="pages/atendimento_imprensa/_conteudo_linha.html" acoes_linha="pages/atendimento_imprensa/_acoes_linha.html" placeholder_busca="Buscar por jornalista, veículo, pedido ou fonte…" filtro_nome="fila" filtro_valor=fila_ativa vazio="Nenhum pedido registrado ainda." vazio_filtrado="Nenhum pedido encontrado com os filtros aplicados." %}
   </div>
+  {# O andamento abre em modal a partir do menu ⋮ de cada linha. #}
+  <dialog class="mo v32-cadastro-modal v32-cadastro-modal--larga" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{{ request.path }}"></dialog>
 {% endblock %}
 
 {% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>{% endblock %}

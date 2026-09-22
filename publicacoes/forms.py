@@ -6,7 +6,6 @@ campo "outra unidade" cria o cadastro na hora, sem passar pelo admin.
 """
 
 from django import forms
-from django.db.models import Q
 
 from core.planilhas import FORMATOS_HORA, limpa
 
@@ -44,10 +43,7 @@ class CampoSimNao(forms.NullBooleanField):
 
 
 def _queryset_responsaveis(atual_pk=None):
-    qs = Responsavel.objects.filter(ativo=True)
-    if atual_pk:
-        qs = qs | Responsavel.objects.filter(pk=atual_pk)
-    return qs.distinct().order_by("nome")
+    return Responsavel.objects.order_by("nome")
 
 
 class PublicacaoForm(forms.ModelForm):
@@ -73,8 +69,6 @@ class PublicacaoForm(forms.ModelForm):
             "fonte",
             "inicio_pauta",
             "titulo",
-            "status",
-            "andamento",
             "colocada_edicao",
             "data_publicacao",
             "horario_publicacao",
@@ -99,9 +93,7 @@ class PublicacaoForm(forms.ModelForm):
         self.fields["galeria_fotos"].queryset = _queryset_responsaveis(
             instancia and instancia.galeria_fotos_id
         )
-        self.fields["unidade"].queryset = Unidade.objects.filter(
-            Q(ativo=True) | Q(pk=instancia.unidade_id if instancia else None)
-        ).distinct().order_by("nome")
+        self.fields["unidade"].queryset = Unidade.objects.order_by("nome")
         self.fields["unidade"].required = False
         self.fields["titulo"].required = True
         self.fields["data"].required = True
@@ -116,9 +108,6 @@ class PublicacaoForm(forms.ModelForm):
         if nova:
             existente = Unidade.objects.filter(nome__iexact=nova).first()
             if existente:
-                if not existente.ativo:
-                    existente.ativo = True
-                    existente.save(update_fields=["ativo", "atualizado_em"])
                 dados["unidade"] = existente
             else:
                 dados["unidade"] = Unidade.objects.create(nome=nova)
@@ -126,7 +115,8 @@ class PublicacaoForm(forms.ModelForm):
             self.add_error(
                 "unidade", "Escolha a unidade responsável ou informe uma nova."
             )
-        status = dados.get("status")
+        # O status anda pelo registro de andamento; aqui só se confere o atual.
+        status = self.instance.status
         data_pub = dados.get("data_publicacao")
         data = dados.get("data")
         if status == StatusPublicacao.PUBLICADA and not data_pub:
@@ -164,10 +154,10 @@ class FiltroPublicacoesForm(forms.Form):
 class ResponsavelForm(forms.ModelForm):
     class Meta:
         model = Responsavel
-        fields = ("nome", "ativo")
+        fields = ("nome",)
 
 
 class UnidadeForm(forms.ModelForm):
     class Meta:
         model = Unidade
-        fields = ("nome", "ativo")
+        fields = ("nome",)

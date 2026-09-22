@@ -5,7 +5,6 @@ pode ser informado direto no atendimento (campo "outro veículo").
 """
 
 from django import forms
-from django.db.models import Q
 
 from core.planilhas import FORMATOS_HORA, limpa, limpa_multilinha
 
@@ -21,10 +20,7 @@ class CampoHora(forms.TimeField):
 
 
 def _queryset_responsaveis(atual_pk=None):
-    qs = Responsavel.objects.filter(ativo=True)
-    if atual_pk:
-        qs = qs | Responsavel.objects.filter(pk=atual_pk)
-    return qs.distinct().order_by("nome")
+    return Responsavel.objects.order_by("nome")
 
 
 class AtendimentoForm(forms.ModelForm):
@@ -46,7 +42,6 @@ class AtendimentoForm(forms.ModelForm):
             "veiculo",
             "contato",
             "pedido",
-            "situacao",
             "responsavel",
             "deadline",
             "horario_resposta",
@@ -54,7 +49,6 @@ class AtendimentoForm(forms.ModelForm):
             "fonte",
             "inicio_pedido",
             "final_pedido",
-            "andamento",
             "resposta",
         ]
 
@@ -67,9 +61,7 @@ class AtendimentoForm(forms.ModelForm):
         self.fields["responsavel_resposta"].queryset = _queryset_responsaveis(
             instancia and instancia.responsavel_resposta_id
         )
-        self.fields["veiculo"].queryset = Veiculo.objects.filter(
-            Q(ativo=True) | Q(pk=instancia.veiculo_id if instancia else None)
-        ).distinct().order_by("nome")
+        self.fields["veiculo"].queryset = Veiculo.objects.order_by("nome")
         self.fields["veiculo"].required = False
         self.fields["jornalista"].required = True
         self.fields["pedido"].required = True
@@ -84,9 +76,6 @@ class AtendimentoForm(forms.ModelForm):
         if nova:
             existente = Veiculo.objects.filter(nome__iexact=nova).first()
             if existente:
-                if not existente.ativo:
-                    existente.ativo = True
-                    existente.save(update_fields=["ativo", "atualizado_em"])
                 dados["veiculo"] = existente
             else:
                 dados["veiculo"] = Veiculo.objects.create(nome=nova)
@@ -96,8 +85,9 @@ class AtendimentoForm(forms.ModelForm):
             self.add_error(
                 "deadline", "O deadline não pode ser anterior à data do pedido."
             )
-        if dados.get("situacao") == SituacaoAtendimento.ATENDIDO and not (
-            dados.get("resposta") or dados.get("andamento")
+        # A situação anda pelo registro de andamento; aqui só se confere a atual.
+        if self.instance.situacao == SituacaoAtendimento.ATENDIDO and not (
+            dados.get("resposta") or self.instance.andamento
         ):
             self.add_error(
                 "resposta",
@@ -106,7 +96,7 @@ class AtendimentoForm(forms.ModelForm):
         for campo in ("jornalista", "contato"):
             if dados.get(campo):
                 dados[campo] = limpa(dados[campo])
-        for campo in ("pedido", "fonte", "inicio_pedido", "final_pedido", "andamento", "resposta"):
+        for campo in ("pedido", "fonte", "inicio_pedido", "final_pedido", "resposta"):
             if dados.get(campo):
                 dados[campo] = limpa_multilinha(dados[campo])
         return dados
@@ -132,10 +122,10 @@ class FiltroAtendimentosForm(forms.Form):
 class ResponsavelForm(forms.ModelForm):
     class Meta:
         model = Responsavel
-        fields = ("nome", "ativo")
+        fields = ("nome",)
 
 
 class VeiculoForm(forms.ModelForm):
     class Meta:
         model = Veiculo
-        fields = ("nome", "ativo")
+        fields = ("nome",)

@@ -1,0 +1,8 @@
+{% comment %}
+  O conteúdo de uma linha dos cadastros de apoio da ASCOM, numa célula só: o
+  nome e em quantos registros ele aparece. Contexto: `l` (linha).
+{% endcomment %}
+<h2 class="of-cartao__titulo tm-titulo">{{ l.titulo }}</h2>
+<ul class="tm-fatos" aria-label="Uso de {{ l.titulo }}">
+  <li class="tm-fato{% if not l.em_uso %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome=l.icone_uso %}<span class="vg-fato__valor">{% if l.em_uso %}Em {{ l.em_uso }} {{ l.uso_rotulo }}{% else %}Ainda sem uso{% endif %}</span></li>
+</ul>

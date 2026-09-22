@@ -5,15 +5,13 @@ from .models import Publicacao, Responsavel, Unidade
 
 @admin.register(Responsavel)
 class ResponsavelAdmin(admin.ModelAdmin):
-    list_display = ("nome", "ativo", "atualizado_em")
-    list_filter = ("ativo",)
+    list_display = ("nome", "atualizado_em")
     search_fields = ("nome",)
 
 
 @admin.register(Unidade)
 class UnidadeAdmin(admin.ModelAdmin):
-    list_display = ("nome", "ativo", "atualizado_em")
-    list_filter = ("ativo",)
+    list_display = ("nome", "atualizado_em")
     search_fields = ("nome",)
 
 

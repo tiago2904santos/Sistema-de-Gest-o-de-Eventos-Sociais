@@ -26,6 +26,8 @@
 
     {% include "components/v32/lista_registros.html" with icone="coffee" rotulo="Solicitação" rotulo_plural="solicitações" conteudo_linha="pages/coffee_break/_conteudo_linha.html" acoes_linha="pages/coffee_break/_acoes_linha.html" placeholder_busca="Buscar por evento, nº, nota fiscal ou protocolo…" filtro_nome="situacao" filtro_valor=situacao_escolhida vazio="Nenhuma solicitação registrada ainda." vazio_filtrado="Nenhuma solicitação encontrada com os filtros aplicados." %}
   </div>
+  {# O andamento abre em modal a partir do menu ⋮ de cada linha. #}
+  <dialog class="mo v32-cadastro-modal" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{{ request.path }}"></dialog>
 {% endblock %}
 
 {% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>{% endblock %}

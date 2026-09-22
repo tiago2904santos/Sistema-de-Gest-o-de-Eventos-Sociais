@@ -4,6 +4,8 @@ Todas as rotas exigem o módulo ASCOM_COFFEE_BREAK (decorator + middleware);
 ocultar o menu nunca é a única barreira.
 """
 
+from pathlib import Path
+
 from django import forms
 from django.contrib import messages
 from django.core.exceptions import ValidationError
@@ -13,8 +15,11 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django.db.models import ProtectedError
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 
 from .forms import (
+    CertidaoForm,
     ContratoCoffeeBreakForm,
     FiltroLotesForm,
     FiltroSolicitacoesCoffeeForm,
@@ -24,6 +29,7 @@ from .forms import (
 )
 from .models import (
     AcaoHistoricoCoffeeBreak,
+    CertidaoFornecedor,
     ContratoCoffeeBreak,
     Fornecedor,
     LoteCoffeeBreak,
@@ -34,7 +40,7 @@ from core.listagens import trilha_de_situacoes
 
 from .permissions import acesso_ao_modulo, gerenciamento_de_cadastros
 from .presenters import filas_de_situacao, linha_da_lista, linha_do_cadastro, linha_do_lote, selo_do_consumo
-from . import services
+from . import certidoes, documentos, services
 
 ITENS_POR_PAGINA = 15
 
@@ -134,7 +140,21 @@ def _campos_cadastro(form):
             "ajuda": campo.help_text,
             "valor": "" if valor is None else str(valor),
         }
-        if isinstance(campo, forms.ModelMultipleChoiceField):
+        if isinstance(campo, forms.FileField):
+            atual = getattr(form.instance, nome, None)
+            item.update(
+                {
+                    "tipo": "arquivo",
+                    "valor": Path(atual.name).name if atual else "",
+                    "url_atual": (
+                        reverse("coffee_break:contrato_arquivo", args=[form.instance.pk, nome])
+                        if atual and form.instance.pk
+                        and isinstance(form.instance, ContratoCoffeeBreak)
+                        else ""
+                    ),
+                }
+            )
+        elif isinstance(campo, forms.ModelMultipleChoiceField):
             item.update(
                 {
                     "tipo": "multiplo",
@@ -276,6 +296,7 @@ def painel(request):
         SolicitacaoCoffeeBreak.objects.select_related("lote__contrato__fornecedor")
         .order_by("-criado_em")[:5]
     )
+    alertas_certidoes = certidoes.fornecedores_com_alerta(_fornecedores_com_lote_ativo())
 
     return render(
         request,
@@ -292,6 +313,7 @@ def painel(request):
             "linhas_recentes": [linha_da_lista(s) for s in recentes],
             "url_lotes": url_lotes,
             "url_solicitacoes": url_solicitacoes,
+            "alertas_certidoes": alertas_certidoes,
         },
     )
 
@@ -574,22 +596,25 @@ def exportar_solicitacoes(request):
     return resposta
 
 
+def _opcoes_municipios(form):
+    """Municípios com o lote que cada um recebe, para a tela mostrar na hora."""
+    escolha = services.EscolhaDeLotes()
+    opcoes = []
+    for municipio in form.fields["municipio"].queryset:
+        lote, distancia = escolha.escolher(municipio)
+        dados = {}
+        if lote is not None:
+            dados = {
+                "lote": f"{lote.rotulo_curto} — {lote.contrato.fornecedor.razao_social}",
+                "saldo": f"{lote.restante} de {lote.quantidade_total} unidades",
+            }
+            if distancia:
+                dados["perto"] = f"{lote.sede_mais_proxima.nome}, a {distancia} km"
+        opcoes.append({"valor": str(municipio.pk), "rotulo": municipio.nome, "dados": dados})
+    return opcoes
+
+
 def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False):
-    lotes_com_saldo = (
-        LoteCoffeeBreak.objects.filter(
-            pk__in=[l.pk for l in form.fields["lote"].queryset]
-        )
-        .com_consumo()
-        .select_related("contrato__fornecedor")
-    )
-    saldos = {
-        str(lote.pk): {
-            "restante": lote.restante,
-            "total": lote.quantidade_total,
-            "rotulo": str(lote),
-        }
-        for lote in lotes_com_saldo
-    }
     valores = {}
     for nome in form.fields:
         valor = form[nome].value()
@@ -602,8 +627,7 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False)
         "erro_periodo": form.errors.get("data_inicio_evento")
         or form.errors.get("data_fim_evento"),
         "valores": valores,
-        "lotes": _opcoes(form.fields["lote"].queryset),
-        "saldos_lotes": saldos,
+        "municipios": _opcoes_municipios(form),
         "somente_leitura": somente_leitura,
         "dados_base_bloqueados": bool(
             solicitacao and (solicitacao.financeiro_iniciado or somente_leitura)
@@ -621,13 +645,16 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False)
             .get(pk=solicitacao.lote_id)
         )
         contexto["historico"] = solicitacao.historico.select_related("usuario")
+        contexto.update(_contexto_andamento(solicitacao))
+        contexto["pendencias_os"] = documentos.pendencias_ordem_servico(solicitacao)
+        contexto["pendencias_pacote"] = documentos.pendencias_pacote(solicitacao)
     return contexto
 
 
 @acesso_ao_modulo
 def nova_solicitacao(request):
     if request.method == "POST":
-        form = SolicitacaoCoffeeBreakForm(request.POST)
+        form = SolicitacaoCoffeeBreakForm(request.POST, request.FILES)
         if form.is_valid():
             try:
                 solicitacao = form.save(criado_por=request.user)
@@ -647,7 +674,8 @@ def nova_solicitacao(request):
                 )
                 messages.success(
                     request,
-                    f"Solicitação de coffee break registrada no {solicitacao.lote.rotulo_curto}.",
+                    f"Solicitação {solicitacao.numero} registrada no {solicitacao.lote.rotulo_curto}"
+                    f" ({solicitacao.lote.contrato.fornecedor.razao_social}).",
                 )
                 return redirect("coffee_break:editar", pk=solicitacao.pk)
         else:
@@ -693,7 +721,7 @@ def editar_solicitacao(request, pk):
         )
         return render(request, "pages/coffee_break/form.html", contexto)
     if request.method == "POST":
-        form = SolicitacaoCoffeeBreakForm(request.POST, instance=solicitacao)
+        form = SolicitacaoCoffeeBreakForm(request.POST, request.FILES, instance=solicitacao)
         if form.is_valid():
             try:
                 solicitacao = form.save()
@@ -731,6 +759,55 @@ def editar_solicitacao(request, pk):
         {"label": f"Editar #{solicitacao.pk}"},
     )
     return render(request, "pages/coffee_break/form.html", contexto)
+
+
+def _contexto_andamento(solicitacao, erro="", valor="", texto=""):
+    """O stepper dos marcos e o campo do próximo, como o andamento das Palestras."""
+    marco = services.proximo_marco(solicitacao)
+    if marco and not valor and marco["tipo"] == "date":
+        valor = f"{timezone.localdate():%Y-%m-%d}"
+    return {
+        "etapas": services.etapas(solicitacao),
+        "marco": marco,
+        "ultima_anotacao": services.ultima_anotacao(solicitacao),
+        "andamento_erro": erro,
+        "andamento_valor": valor,
+        "andamento_texto": texto,
+    }
+
+
+@acesso_ao_modulo
+def registrar_andamento(request, pk):
+    """Registra o próximo marco — na tela da solicitação ou num modal da lista.
+
+    No modal vale o protocolo dos cadastros (`X-Cadastro-Modal`): o GET
+    devolve o trecho, o POST devolve `{"ok": true}` ou o trecho com o erro.
+    """
+    solicitacao = _solicitacao_documental(pk)
+    via_modal = request.headers.get("X-Cadastro-Modal") == "1"
+    destino = reverse("coffee_break:editar", args=[solicitacao.pk]) + "#sec-andamento"
+
+    def modal(**extra):
+        return render(
+            request,
+            "pages/coffee_break/_modal_andamento.html",
+            {"solicitacao": solicitacao, **_contexto_andamento(solicitacao, **extra)},
+        )
+
+    if request.method != "POST":
+        return modal() if via_modal else redirect(destino)
+    valor = request.POST.get("valor", "")
+    texto = request.POST.get("andamento", "")
+    try:
+        services.registrar_marco(solicitacao, request.user, valor, texto)
+    except ValidationError as erro:
+        if via_modal:
+            return modal(erro=" ".join(erro.messages), valor=valor, texto=texto)
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+        return redirect(destino)
+    messages.success(request, f"Andamento registrado: {solicitacao.situacao_financeira_display}.")
+    return JsonResponse({"ok": True}) if via_modal else redirect(destino)
 
 
 @acesso_ao_modulo
@@ -776,8 +853,21 @@ def cadastros(request):
 
 
 @gerenciamento_de_cadastros
-def lista_cadastro(request, tipo):
+def lista_cadastro(request, tipo, modal=None):
+    """A lista do cadastro; criar e editar abrem num modal sobre ela.
+
+    Protocolo dos cadastros das Palestras (`data-cadastro-modal`, cabeçalho
+    `X-Cadastro-Modal`, `{"ok": true}` no sucesso). Sem JavaScript, `?novo=1`
+    ou `?editar=<pk>` abrem a lista já com o modal aberto.
+    """
     config = _config_cadastro(tipo)
+    if modal is None and request.method == "GET":
+        editar = request.GET.get("editar", "")
+        if request.GET.get("novo"):
+            modal = _contexto_modal(tipo, config, config["form"](), None)
+        elif editar.isdigit():
+            instancia = get_object_or_404(config["model"], pk=editar)
+            modal = _contexto_modal(tipo, config, config["form"](instance=instancia), instancia)
     q = request.GET.get("q", "").strip()
     queryset = config["model"].objects.all()
     if tipo == "contratos":
@@ -789,7 +879,10 @@ def lista_cadastro(request, tipo):
         for campo in config["busca"]:
             busca |= Q(**{f"{campo}__icontains": q})
         queryset = queryset.filter(busca)
-    pagina, paginas_visiveis, querystring = _paginar(request, queryset)
+    pagina, paginas_visiveis, _querystring = _paginar(request, queryset)
+    parametros = request.GET.copy()
+    for chave in ("pagina", "novo", "editar"):
+        parametros.pop(chave, None)
     # Trilha lateral com os três cadastros do módulo, como nos cadastros de
     # apoio de Viagens: um item por tabela, com o total de cada uma.
     grupos = [
@@ -814,50 +907,192 @@ def lista_cadastro(request, tipo):
             "linhas": [linha_do_cadastro(item, tipo) for item in pagina],
             "paginas_visiveis": paginas_visiveis,
             "elipse": Paginator.ELLIPSIS,
-            "querystring": querystring,
+            "querystring": parametros.urlencode(),
             "tem_filtros": bool(q),
+            "modal": modal,
             "breadcrumb": _breadcrumb({"label": "Cadastros"}, {"label": config["titulo"]}),
         },
     )
+
+
+def _contexto_modal(tipo, config, form, instancia):
+    campos = _campos_cadastro(form)
+    erros_gerais = list(form.non_field_errors())
+    return {
+        "url_acao": (
+            reverse("coffee_break:cadastro_editar", args=[tipo, instancia.pk])
+            if instancia
+            else reverse("coffee_break:cadastro_novo", args=[tipo])
+        ),
+        "titulo": f"Editar {config['singular']}" if instancia else f"Novo {config['singular']}",
+        "singular": config["singular"],
+        "versao": form["versao"].value() or "",
+        "campos": campos,
+        "erros_gerais": erros_gerais,
+        "erros_total": sum(1 for campo in campos if campo["erros"]) + len(erros_gerais),
+    }
 
 
 @gerenciamento_de_cadastros
 def editar_cadastro(request, tipo, pk=None):
     config = _config_cadastro(tipo)
     instancia = get_object_or_404(config["model"], pk=pk) if pk else None
+    via_modal = request.headers.get("X-Cadastro-Modal") == "1"
+    if request.method == "GET" and not via_modal:
+        destino = reverse("coffee_break:cadastro_lista", args=[tipo])
+        return redirect(f"{destino}?{'editar=' + str(pk) if pk else 'novo=1'}")
     if request.method == "POST":
-        form = config["form"](request.POST, instance=instancia)
+        form = config["form"](request.POST, request.FILES, instance=instancia)
         if form.is_valid():
             form.save()
-            messages.success(
-                request,
-                f"{config['singular'].capitalize()} salvo com sucesso.",
-            )
+            messages.success(request, f"{config['singular'].capitalize()} salvo com sucesso.")
+            if via_modal:
+                return JsonResponse({"ok": True})
             return redirect("coffee_break:cadastro_lista", tipo=tipo)
-        messages.error(request, "Corrija os campos destacados para continuar.")
     else:
         form = config["form"](instance=instancia)
+    modal = _contexto_modal(tipo, config, form, instancia)
+    if via_modal:
+        return render(request, "pages/coffee_break/_modal_cadastro.html", {"dados": modal, "tipo": tipo})
+    return lista_cadastro(request, tipo, modal=modal)
+
+
+@gerenciamento_de_cadastros
+@require_POST
+def excluir_cadastro(request, tipo, pk):
+    config = _config_cadastro(tipo)
+    objeto = get_object_or_404(config["model"], pk=pk)
+    try:
+        objeto.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            f"Não é possível excluir: {config['singular']} em uso (contratos, lotes ou solicitações).",
+        )
+    else:
+        messages.success(request, f"{config['singular'].capitalize()} excluído.")
+    return redirect("coffee_break:cadastro_lista", tipo=tipo)
+
+
+# ---------------------------------------------------------------------------
+# Documentos: ordem de serviço, certifico e pacote do protocolo
+# ---------------------------------------------------------------------------
+
+def _solicitacao_documental(pk):
+    return get_object_or_404(
+        SolicitacaoCoffeeBreak.objects.select_related("lote__contrato__fornecedor"),
+        pk=pk,
+    )
+
+
+def _pdf_ou_volta(request, solicitacao, gerar, prefixo):
+    try:
+        conteudo = gerar(solicitacao)
+    except ValidationError as erro:
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+        return redirect(f"{reverse('coffee_break:editar', args=[solicitacao.pk])}#sec-documentos")
+    resposta = HttpResponse(conteudo, content_type="application/pdf")
+    nome = documentos.nome_arquivo(prefixo, solicitacao)
+    disposicao = "attachment" if request.GET.get("baixar") else "inline"
+    resposta["Content-Disposition"] = f'{disposicao}; filename="{nome}"'
+    return resposta
+
+
+@acesso_ao_modulo
+def ordem_servico(request, pk):
+    return _pdf_ou_volta(
+        request, _solicitacao_documental(pk), documentos.ordem_servico_pdf, "Ordem de Servico"
+    )
+
+
+@acesso_ao_modulo
+def certifico(request, pk):
+    return _pdf_ou_volta(
+        request, _solicitacao_documental(pk), documentos.certifico_pdf, "Certifico"
+    )
+
+
+@acesso_ao_modulo
+def pacote_protocolo(request, pk):
+    return _pdf_ou_volta(
+        request, _solicitacao_documental(pk), documentos.pacote_protocolo_pdf, "Protocolo"
+    )
+
+
+def _arquivo(campo, nome=None):
+    if not campo:
+        raise Http404
+    try:
+        aberto = campo.open("rb")
+    except FileNotFoundError as exc:
+        raise Http404 from exc
+    return FileResponse(aberto, filename=nome or Path(campo.name).name, as_attachment=False)
+
+
+@acesso_ao_modulo
+def nota_fiscal(request, pk):
+    solicitacao = _solicitacao_documental(pk)
+    return _arquivo(solicitacao.arquivo_nota_fiscal)
+
+
+@acesso_ao_modulo
+def contrato_arquivo(request, pk, campo):
+    if campo not in ("arquivo_contrato", "arquivo_termo_aditivo"):
+        raise Http404
+    contrato = get_object_or_404(ContratoCoffeeBreak, pk=pk)
+    return _arquivo(getattr(contrato, campo))
+
+
+# ---------------------------------------------------------------------------
+# Certidões dos fornecedores
+# ---------------------------------------------------------------------------
+
+def _fornecedores_com_lote_ativo():
+    return Fornecedor.objects.filter(
+        contratos__lotes__ativo=True
+    ).distinct().prefetch_related("certidoes")
+
+
+@acesso_ao_modulo
+def lista_certidoes(request):
+    if request.method == "POST":
+        fornecedor = get_object_or_404(Fornecedor, pk=request.POST.get("fornecedor"))
+        form = CertidaoForm(request.POST, request.FILES)
+        if form.is_valid():
+            dados = form.cleaned_data
+            certidao = certidoes.registrar(
+                fornecedor, dados["tipo"], dados["arquivo"], dados["validade"], request.user
+            )
+            origem = " (lida do PDF)" if getattr(form, "validade_lida", False) else ""
+            messages.success(
+                request,
+                f"Certidão {certidao.get_tipo_display()} de {fornecedor.razao_social} "
+                f"registrada, válida até {certidao.validade:%d/%m/%Y}{origem}.",
+            )
+        else:
+            for mensagens in form.errors.values():
+                for mensagem in mensagens:
+                    messages.error(request, mensagem)
+        return redirect(f"{reverse('coffee_break:certidoes')}#fornecedor-{fornecedor.pk}")
+
+    hoje = timezone.localdate()
+    fornecedores = [
+        {"fornecedor": f, "linhas": certidoes.quadro(f, hoje)}
+        for f in _fornecedores_com_lote_ativo()
+    ]
     return render(
         request,
-        "pages/coffee_break/cadastro_form.html",
+        "pages/coffee_break/certidoes.html",
         {
-            "config": config,
-            "tipo": tipo,
-            "instancia": instancia,
-            "form": form,
-            "campos": _campos_cadastro(form),
-            "breadcrumb": _breadcrumb(
-                {
-                    "label": "Cadastros",
-                    "url": reverse("coffee_break:cadastro_lista", args=[tipo]),
-                },
-                {
-                    "label": (
-                        f"Editar {config['singular']}"
-                        if instancia
-                        else f"Novo {config['singular']}"
-                    )
-                },
-            ),
+            "breadcrumb": _breadcrumb({"label": "Certidões"}),
+            "fornecedores": fornecedores,
+            "dias_aviso": certidoes.DIAS_AVISO,
         },
     )
+
+
+@acesso_ao_modulo
+def certidao_arquivo(request, pk):
+    certidao = get_object_or_404(CertidaoFornecedor, pk=pk)
+    return _arquivo(certidao.arquivo)

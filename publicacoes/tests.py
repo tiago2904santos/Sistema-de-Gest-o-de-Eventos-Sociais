@@ -173,7 +173,9 @@ class FormularioTests(BasePublicacoesTestCase):
         self.assertIn("unidade", form.errors)
 
     def test_publicada_sem_data_falha_no_form(self):
-        form = PublicacaoForm(self.dados(status=StatusPublicacao.PUBLICADA))
+        # O status vem da pauta (anda pelo andamento): publicada não perde a data.
+        pauta = self.criar_pauta(status=StatusPublicacao.PUBLICADA)
+        form = PublicacaoForm(self.dados(data_publicacao=""), instance=pauta)
         self.assertFalse(form.is_valid())
         self.assertIn("data_publicacao", form.errors)
 
@@ -216,7 +218,6 @@ class ViewsTests(BasePublicacoesTestCase):
                 "jornalista": self.manoela.pk,
                 "unidade": self.dp.pk,
                 "titulo": pauta.titulo,
-                "status": StatusPublicacao.PUBLICADA,
                 "data_publicacao": "2026-08-10",
                 "horario_publicacao": "16:20",
                 "revisao": self.gabriela.pk,
@@ -226,10 +227,47 @@ class ViewsTests(BasePublicacoesTestCase):
         )
         self.assertRedirects(resposta, reverse("publicacoes:editar", args=[pauta.pk]))
         pauta.refresh_from_db()
-        self.assertEqual(pauta.status, StatusPublicacao.PUBLICADA)
+        # O status não é campo do formulário: continua o de antes.
+        self.assertEqual(pauta.status, StatusPublicacao.PENDENTE)
         self.assertEqual(pauta.horario_publicacao, dt.time(16, 20))
         self.assertEqual(pauta.revisao, self.gabriela)
         self.assertIs(pauta.enviado_sesp, True)
+        self.assertIn("Revisão", pauta.historico.get().descricao)
+
+    def test_andamento_muda_status_e_fica_no_historico(self):
+        pauta = self.criar_pauta(status=StatusPublicacao.PENDENTE, data_publicacao=None)
+        url = reverse("publicacoes:andamento", args=[pauta.pk])
+        # No modal da lista: o GET traz o trecho e o POST responde {"ok": true}.
+        trecho = self.client.get(url, headers={"X-Cadastro-Modal": "1"})
+        self.assertContains(trecho, "Registrar andamento")
+        resposta = self.client.post(
+            url,
+            {"novo_status": StatusPublicacao.PUBLICADA, "andamento": "Matéria no ar."},
+            headers={"X-Cadastro-Modal": "1"},
+        )
+        self.assertEqual(resposta.json(), {"ok": True})
+        pauta.refresh_from_db()
+        self.assertEqual(pauta.status, StatusPublicacao.PUBLICADA)
+        # Publicada sem data: fica com a do registro.
+        self.assertIsNotNone(pauta.data_publicacao)
+        self.assertEqual(pauta.andamento, "Matéria no ar.")
+        registro = pauta.historico.get()
+        self.assertEqual(
+            (registro.status_anterior, registro.status_novo),
+            (StatusPublicacao.PENDENTE, StatusPublicacao.PUBLICADA),
+        )
+        tela = self.client.get(reverse("publicacoes:editar", args=[pauta.pk]))
+        self.assertContains(tela, "Matéria no ar.")
+
+    def test_andamento_sem_status_volta_com_erro(self):
+        pauta = self.criar_pauta(status=StatusPublicacao.PENDENTE, data_publicacao=None)
+        resposta = self.client.post(
+            reverse("publicacoes:andamento", args=[pauta.pk]),
+            {"novo_status": "", "andamento": "x"},
+            headers={"X-Cadastro-Modal": "1"},
+        )
+        self.assertContains(resposta, "Escolha o novo status.")
+        self.assertFalse(pauta.historico.exists())
 
     def test_erro_de_validacao_volta_ao_formulario(self):
         resposta = self.client.post(
@@ -288,7 +326,7 @@ class ViewsTests(BasePublicacoesTestCase):
         self.assertContains(resposta, "2h30")
         self.assertContains(resposta, "Acompanhamento")
         self.assertContains(resposta, "Colocada para edição")
-        self.assertContains(resposta, "Registrada por")
+        self.assertContains(resposta, "Histórico")
         # O link publicado fica no campo da seção de distribuição.
         self.assertContains(resposta, pauta.link_site)
         self.assertEqual(self.client.get(reverse("publicacoes:painel")).status_code, 200)
@@ -321,15 +359,23 @@ class ViewsTests(BasePublicacoesTestCase):
 
     def test_cadastro_pela_interface(self):
         self.client.force_login(self.admin_modulo)
+        # Criar pelo modal: o POST com o cabeçalho responde {"ok": true}.
         resposta = self.client.post(
             reverse("publicacoes:cadastro_novo", args=["unidades"]),
-            {"nome": "DHPP", "ativo": "on"},
+            {"nome": "DHPP"},
+            headers={"X-Cadastro-Modal": "1"},
         )
-        self.assertRedirects(resposta, reverse("publicacoes:cadastro_lista", args=["unidades"]))
+        self.assertEqual(resposta.json(), {"ok": True})
         unidade = Unidade.objects.get(nome="DHPP")
-        self.client.post(reverse("publicacoes:cadastro_alternar", args=["unidades", unidade.pk]))
-        unidade.refresh_from_db()
-        self.assertFalse(unidade.ativo)
+        # Sem JavaScript, "novo" abre a lista com o modal aberto.
+        lista = self.client.get(reverse("publicacoes:cadastro_novo", args=["unidades"]), follow=True)
+        self.assertContains(lista, "data-cadastro-inicial")
+        # Em uso não sai; sem uso, apaga.
+        self.criar_pauta()
+        self.client.post(reverse("publicacoes:cadastro_excluir", args=["unidades", self.dp.pk]))
+        self.assertTrue(Unidade.objects.filter(pk=self.dp.pk).exists())
+        self.client.post(reverse("publicacoes:cadastro_excluir", args=["unidades", unidade.pk]))
+        self.assertFalse(Unidade.objects.filter(pk=unidade.pk).exists())
         self.assertEqual(
             self.client.get(reverse("publicacoes:cadastro_lista", args=["outro"])).status_code,
             404,

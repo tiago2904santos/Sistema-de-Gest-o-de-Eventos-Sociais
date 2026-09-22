@@ -30,12 +30,33 @@
           </div>
         </div>
       </div>
-      {% if not solicitacao or acoes.editar_dados %}
-        <div class="frm-topo__acoes">
-          <button type="submit" form="form-solicitacao" class="btn-primaria" name="acao" value="rascunho" formnovalidate>{% if solicitacao and solicitacao.status != "RASCUNHO" %}Salvar alterações{% else %}Salvar rascunho{% endif %}</button>
+      <div class="frm-topo__acoes">
+        {# A data da solicitação mora no cabeçalho; o atributo form a leva junto com o formulário. #}
+        <div class="pal-topo-data">
+          {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True valor=valores.data_solicitacao erros=erros.data_solicitacao desabilitado=dados_desabilitado form_alvo="form-solicitacao" %}
         </div>
+      {% if not solicitacao or acoes.editar_dados %}
+          <button type="submit" form="form-solicitacao" class="btn-primaria" name="acao" value="rascunho" formnovalidate>{% if solicitacao and solicitacao.status != "RASCUNHO" %}Salvar alterações{% else %}Salvar rascunho{% endif %}</button>
       {% endif %}
+      </div>
     </div>
+
+    {% if solicitacao %}
+    {# Acompanhamento no topo, como nas Palestras: onde o fluxo está. #}
+    <nav class="vg-stepper sol-stepper" aria-label="Acompanhamento da solicitação">
+      <ol class="vg-stepper__lista vg-stepper__lista--auto vg-trilho sem-anim" data-vg-trilho>
+        {% for etapa in timeline %}
+          <li class="vg-stepper__item{% if etapa.estado == 'atual' %} is-atual{% elif etapa.estado == 'concluido' %} is-concluida{% endif %}">
+            <span class="vg-stepper__passo" title="{{ etapa.titulo }} — {{ etapa.subtitulo }}{% if etapa.quando %} · {{ etapa.quando }}{% endif %}{% if etapa.usuario %} · {{ etapa.usuario }}{% endif %}">
+              <span class="vg-stepper__num" aria-hidden="true">{% if etapa.estado == "concluido" %}{% include "components/icon.html" with nome="check" %}{% else %}{{ forloop.counter }}{% endif %}</span>
+              <span class="vg-stepper__rotulo">{{ etapa.titulo }}</span>
+              <span class="sr-only">— {{ etapa.subtitulo }}</span>
+            </span>
+          </li>
+        {% endfor %}
+      </ol>
+    </nav>
+    {% endif %}
 
     {% if motivo_devolucao %}
       {# O aviso da devolução vem antes dos campos: é o que precisa ser resolvido. #}
@@ -68,16 +89,26 @@
           <h2 class="section-card__titulo">Dados da solicitação</h2>
         </header>
         <div class="section-card__corpo">
-          <div class="g-form g-form--3">
-            {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True valor=valores.data_solicitacao erros=erros.data_solicitacao desabilitado=dados_desabilitado %}
-            <div class="c2">
-              {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Período do evento" dois_campos=True obrigatorio=True valor_inicio=valores.data_inicio_evento valor_fim=valores.data_fim_evento erros=erro_periodo desabilitado=dados_desabilitado %}
+          {# Só o período e o destino na caixa, como nas Palestras. #}
+          <div class="bate-volta ofc-percurso">
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">Período</div>
+              <div>
+                {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Período do evento" rotulo_oculto=True dois_campos=True obrigatorio=True valor_inicio=valores.data_inicio_evento valor_fim=valores.data_fim_evento erros=erro_periodo desabilitado=dados_desabilitado %}
+              </div>
             </div>
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">Destino</div>
+              <div class="ofc-percurso__par">
+                {% include "components/select.html" with name="estado" label="Estado" rotulo_oculto=True opcoes=estados obrigatorio=True selecionado=valores.estado erros=erros.estado desabilitado=dados_desabilitado %}
+                {# Município: select pesquisável do app.js (lista extensa, filtrada pelo estado). #}
+                {% include "components/select.html" with name="municipio" label="Município" rotulo_oculto=True opcoes=municipios obrigatorio=True pesquisavel=True dependente_de="estado" selecionado=valores.municipio erros=erros.municipio desabilitado=dados_desabilitado placeholder="Buscar município..." %}
+              </div>
+            </div>
+          </div>
+          <div class="g-form g-form--3">
             {% include "components/select.html" with name="tipo_evento" label="Tipo do evento" opcoes=tipos_evento obrigatorio=True selecionado=valores.tipo_evento erros=erros.tipo_evento desabilitado=dados_desabilitado %}
-            {% include "components/select.html" with name="estado" label="Estado" opcoes=estados obrigatorio=True selecionado=valores.estado erros=erros.estado desabilitado=dados_desabilitado %}
-            {# Município: select pesquisável do app.js (lista extensa, filtrada pelo estado). #}
-            {% include "components/select.html" with name="municipio" label="Município" opcoes=municipios obrigatorio=True pesquisavel=True dependente_de="estado" selecionado=valores.municipio erros=erros.municipio desabilitado=dados_desabilitado placeholder="Buscar município..." %}
-            <div class="cheia">
+            <div class="c2">
               {% include "components/input.html" with name="local_evento" label="Local do evento" placeholder="Ex.: Praça central, escola municipal..." valor=valores.local_evento erros=erros.local_evento desabilitado=dados_desabilitado %}
             </div>
           </div>
@@ -259,21 +290,6 @@
           </div>
         </section>
       {% endif %}{% endif %}
-
-      {# Acompanhamento no stepper do painel da viagem: onde o fluxo está. #}
-      <nav class="vg-stepper sol-stepper" aria-label="Acompanhamento da solicitação">
-        <ol class="vg-stepper__lista vg-stepper__lista--auto vg-trilho sem-anim" data-vg-trilho>
-          {% for etapa in timeline %}
-            <li class="vg-stepper__item{% if etapa.estado == 'atual' %} is-atual{% elif etapa.estado == 'concluido' %} is-concluida{% endif %}">
-              <span class="vg-stepper__passo" title="{{ etapa.titulo }} — {{ etapa.subtitulo }}{% if etapa.quando %} · {{ etapa.quando }}{% endif %}{% if etapa.usuario %} · {{ etapa.usuario }}{% endif %}">
-                <span class="vg-stepper__num" aria-hidden="true">{% if etapa.estado == "concluido" %}{% include "components/icon.html" with nome="check" %}{% else %}{{ forloop.counter }}{% endif %}</span>
-                <span class="vg-stepper__rotulo">{{ etapa.titulo }}</span>
-                <span class="sr-only">— {{ etapa.subtitulo }}</span>
-              </span>
-            </li>
-          {% endfor %}
-        </ol>
-      </nav>
 
       {% include "pages/solicitacoes/_historico.html" %}
 

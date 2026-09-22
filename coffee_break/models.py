@@ -7,6 +7,7 @@ a partir das solicitações — nunca armazenados.
 """
 
 import re
+from pathlib import Path
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -40,7 +41,10 @@ class Fornecedor(models.Model):
     contato = models.CharField("contato", max_length=150, blank=True)
     telefone = models.CharField("telefone", max_length=30, blank=True)
     email = models.EmailField("e-mail", blank=True)
-    ativo = models.BooleanField("ativo", default=True)
+    url_certidao_municipal = models.URLField(
+        "portal da certidão municipal", max_length=300, blank=True,
+        help_text="Portal da prefeitura da sede do fornecedor (as demais certidões têm portal único).",
+    )
     criado_em = models.DateTimeField("criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
 
@@ -91,9 +95,20 @@ class ContratoCoffeeBreak(models.Model):
         "fiscal responsável", max_length=150, blank=True,
         help_text="Fiscal que atesta as notas fiscais.",
     )
+    cargo_fiscal = models.CharField(
+        "cargo do fiscal", max_length=100, blank=True,
+        default="Agente de Polícia Judiciária",
+    )
+    arquivo_contrato = models.FileField(
+        "contrato (PDF)", upload_to="coffee_break/contratos/", blank=True,
+        help_text="Vai no pacote do protocolo de pagamento.",
+    )
+    arquivo_termo_aditivo = models.FileField(
+        "termo aditivo (PDF)", upload_to="coffee_break/contratos/", blank=True,
+        help_text="Se houver; vai no pacote logo depois do contrato.",
+    )
     objeto = models.CharField("objeto", max_length=255, blank=True)
     observacoes = models.TextField("observações", blank=True)
-    ativo = models.BooleanField("ativo", default=True)
     criado_em = models.DateTimeField("criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
 
@@ -104,6 +119,16 @@ class ContratoCoffeeBreak(models.Model):
 
     def __str__(self):
         return f"Contrato {self.numero} — {self.fornecedor}"
+
+    @property
+    def referencia_documental(self):
+        """Como na OS e no certifico: "0762/2024 – GMS 7339/2024 - TERMO ADITIVO Nº 0355/2025"."""
+        texto = self.numero
+        if self.numero_gms:
+            texto += f" – GMS {self.numero_gms}"
+        if self.termo_aditivo:
+            texto += f" - TERMO ADITIVO Nº {self.termo_aditivo}"
+        return texto
 
 
 class LoteQuerySet(models.QuerySet):
@@ -153,7 +178,10 @@ class LoteCoffeeBreak(models.Model):
     orientacoes = models.TextField("orientações", blank=True)
     especificacoes_tecnicas = models.TextField("especificações técnicas", blank=True)
     observacoes = models.TextField("observações", blank=True)
-    ativo = models.BooleanField("ativo", default=True)
+    ativo = models.BooleanField(
+        "lote vigente", default=True,
+        help_text="Só lotes vigentes recebem solicitações pelo município.",
+    )
     criado_em = models.DateTimeField("criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
 
@@ -241,8 +269,33 @@ class SolicitacaoCoffeeBreak(models.Model):
     )
     descricao_evento = models.TextField("descrição do evento")
     quantidade = models.PositiveIntegerField("quantidade solicitada")
+    municipio = models.ForeignKey(
+        "cadastros.Municipio",
+        verbose_name="município do evento",
+        on_delete=models.PROTECT,
+        related_name="coffee_breaks",
+        blank=True,
+        null=True,
+        help_text="O lote é escolhido pelo município.",
+    )
+    horario_evento = models.TimeField("horário", blank=True, null=True)
+    detalhamento_pedido = models.TextField(
+        "detalhamento do pedido", blank=True,
+        help_text="Em branco, a OS monta o texto com as datas, o horário e a quantidade.",
+    )
+    local_entrega = models.CharField("local de entrega", max_length=255, blank=True)
+    responsavel_recebimento = models.CharField(
+        "responsável pelo recebimento", max_length=150, blank=True,
+        help_text="Nome e telefone de quem recebe no local.",
+    )
+    data_envio_ordem_servico = models.DateField(
+        "OS enviada ao fornecedor em", blank=True, null=True
+    )
     numero_nota_fiscal = models.CharField(
         "número da nota fiscal", max_length=30, blank=True
+    )
+    arquivo_nota_fiscal = models.FileField(
+        "nota fiscal (PDF)", upload_to="coffee_break/notas/%Y/", blank=True
     )
     protocolo_pagamento = models.CharField(
         "protocolo de pagamento", max_length=30, blank=True
@@ -403,6 +456,27 @@ class SolicitacaoCoffeeBreak(models.Model):
         return self.periodo_evento_texto
 
     @property
+    def detalhamento_efetivo(self):
+        """O pedido na OS: o texto escrito, ou "Dia 01/10 às 9h30 p/ 40 pessoas."."""
+        if self.detalhamento_pedido.strip():
+            return self.detalhamento_pedido.strip()
+        quando = ""
+        if self.data_inicio_evento:
+            if self.data_fim_evento and self.data_fim_evento != self.data_inicio_evento:
+                quando = f"Dias {self.data_inicio_evento:%d/%m} a {self.data_fim_evento:%d/%m}"
+            else:
+                quando = f"Dia {self.data_inicio_evento:%d/%m}"
+        elif self.periodo_evento_texto:
+            quando = f"Dia {self.periodo_evento_texto}"
+        if self.horario_evento:
+            hora = f"{self.horario_evento.hour}h"
+            if self.horario_evento.minute:
+                hora += f"{self.horario_evento.minute:02d}"
+            quando = f"{quando} às {hora}".strip()
+        pessoas = f"{self.quantidade} pessoas."
+        return f"Solicito coffee para:\n{quando} p/ {pessoas}" if quando else f"Solicito coffee para:\n{pessoas}"
+
+    @property
     def financeiro_iniciado(self):
         return any(
             (
@@ -454,3 +528,54 @@ class HistoricoCoffeeBreak(models.Model):
 
     def __str__(self):
         return f"{self.solicitacao_id} — {self.get_acao_display()}"
+
+
+class TipoCertidao(models.TextChoices):
+    FEDERAL = "FEDERAL", "Federal"
+    ESTADUAL = "ESTADUAL", "Estadual (Paraná)"
+    MUNICIPAL = "MUNICIPAL", "Municipal"
+    TRABALHISTA = "TRABALHISTA", "Trabalhista"
+    FGTS = "FGTS", "FGTS"
+
+
+def _certidao_upload_to(instance, filename):
+    extensao = Path(filename).suffix.lower() or ".pdf"
+    return (
+        f"coffee_break/certidoes/{instance.fornecedor_id}/"
+        f"{instance.tipo.lower()}-{instance.validade:%Y%m%d}{extensao}"
+    )
+
+
+class CertidaoFornecedor(models.Model):
+    """Certidão de regularidade de um fornecedor.
+
+    O histórico fica: a vigente de cada tipo é a de maior validade, e o pacote
+    do protocolo de pagamento só aceita certidão vigente.
+    """
+
+    fornecedor = models.ForeignKey(
+        Fornecedor,
+        verbose_name="fornecedor",
+        on_delete=models.CASCADE,
+        related_name="certidoes",
+    )
+    tipo = models.CharField("tipo", max_length=12, choices=TipoCertidao.choices)
+    arquivo = models.FileField("certidão (PDF)", upload_to=_certidao_upload_to)
+    validade = models.DateField("válida até")
+    enviada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="enviada por",
+        on_delete=models.SET_NULL,
+        related_name="certidoes_coffee_enviadas",
+        null=True,
+        blank=True,
+    )
+    criado_em = models.DateTimeField("criado em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "certidão de fornecedor"
+        verbose_name_plural = "certidões de fornecedores"
+        ordering = ["fornecedor", "tipo", "-validade", "-criado_em"]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} — {self.fornecedor} (até {self.validade:%d/%m/%Y})"

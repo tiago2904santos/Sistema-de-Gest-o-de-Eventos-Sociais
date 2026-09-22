@@ -70,5 +70,6 @@ def linha_da_lista(publicacao):
         "quando_tom": "publicada",
         "fatos": fatos_da_publicacao(publicacao),
         "url_editar": reverse("publicacoes:editar", args=[publicacao.pk]),
+        "url_andamento": reverse("publicacoes:andamento", args=[publicacao.pk]),
         "cancelada": publicacao.status == StatusPublicacao.CANCELADA,
     }

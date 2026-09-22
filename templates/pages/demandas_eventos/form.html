@@ -84,6 +84,12 @@
                 {% if instancia and not instancia.municipio_id and instancia.municipio_texto %}<p class="form-ajuda">Na planilha: {{ instancia.municipio_texto }}</p>{% endif %}
               </div>
             </div>
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">Público</div>
+              <div class="pal-publico">
+                {% include "components/input.html" with name="quantidade_publico" label="Quantidade de público" rotulo_oculto=True tipo="number" minimo=0 placeholder="Nº de pessoas" valor=valores.quantidade_publico erros=erros.quantidade_publico %}
+              </div>
+            </div>
           </div>
           {# Tema: mais de um, em cartões marcáveis como as atividades do plano de trabalho. #}
           <div class="pal-bloco pal-temas" data-pal-temas>
@@ -124,7 +130,6 @@
           </div>
 
           <div class="g-form g-form--3">
-            {% include "components/input.html" with name="quantidade_publico" label="Quantidade de público" tipo="number" minimo=0 valor=valores.quantidade_publico erros=erros.quantidade_publico %}
             <div class="cheia">
               {% include "components/textarea.html" with name="descricao" label="Descrição" linhas="3" valor=valores.descricao erros=erros.descricao %}
             </div>

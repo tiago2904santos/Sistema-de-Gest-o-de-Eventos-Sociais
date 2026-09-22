@@ -35,6 +35,20 @@
     {% endfor %}
   {% endif %}
 
+  {% for fornecedor, alertas in alertas_certidoes %}
+    {# Certidão vencida, vencendo ou faltando trava o pacote do protocolo. #}
+    <div class="aviso aviso--callout" role="status">
+      <div class="aviso__txt">
+        {% include "components/icon.html" with nome="alert" %}
+        <div class="aviso__corpo">
+          <b>Certidões — {{ fornecedor.razao_social }}</b>
+          <p>{% for linha in alertas %}{{ linha.rotulo }}: {% if linha.situacao == "faltando" %}não cadastrada{% elif linha.situacao == "vencida" %}vencida em {{ linha.certidao.validade|date:"d/m/Y" }}{% else %}vence em {{ linha.certidao.validade|date:"d/m/Y" }}{% endif %}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+        </div>
+      </div>
+      <a class="btn--secundaria" href="{% url 'coffee_break:certidoes' %}#fornecedor-{{ fornecedor.pk }}">Renovar</a>
+    </div>
+  {% endfor %}
+
   <section class="section-card reg">
     <header class="section-card__cabecalho reg__t">
       <h2 class="section-card__titulo">Lotes ativos</h2>
@@ -54,4 +68,6 @@
       {% include "components/v32/lista_embutida.html" with linhas=linhas_recentes icone="coffee" rotulo="Solicitação" rotulo_plural="solicitações" conteudo_linha="pages/coffee_break/_conteudo_linha.html" acoes_linha="pages/coffee_break/_acoes_linha.html" vazio="Nenhuma solicitação registrada ainda." %}
     </div>
   </section>
+  {# O andamento abre em modal a partir do menu ⋮ de cada linha. #}
+  <dialog class="mo v32-cadastro-modal" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{{ request.path }}"></dialog>
 {% endblock %}

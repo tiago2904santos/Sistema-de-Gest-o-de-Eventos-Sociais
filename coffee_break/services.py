@@ -4,6 +4,9 @@ Concentra o que precisa ser testável fora das views: a derivação da
 situação financeira e a validação transacional do saldo do lote.
 """
 
+import re
+from datetime import date
+
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
@@ -85,6 +88,9 @@ def salvar_com_saldo(solicitacao):
         )
         if not solicitacao.cancelada:
             validar_saldo(lote, solicitacao.quantidade, excluir_pk=solicitacao.pk)
+        if not solicitacao.numero:
+            # Com o lote travado, dois pedidos simultâneos não pegam o mesmo número.
+            solicitacao.numero = proximo_numero(lote, solicitacao.data_solicitacao.year)
         solicitacao.save()
     return solicitacao
 
@@ -180,3 +186,191 @@ def lotes_em_alerta(lotes_anotados):
         if percentual_restante <= LIMIAR_ALERTA_SALDO:
             em_alerta.append(lote)
     return em_alerta
+
+
+# ---------------------------------------------------------------------------
+# Lote pelo município
+# ---------------------------------------------------------------------------
+
+def _distancia_km(a, b):
+    """Distância em linha reta entre dois municípios com coordenadas."""
+    from math import asin, cos, radians, sin, sqrt
+
+    lat1, lon1, lat2, lon2 = map(
+        lambda v: radians(float(v)), (a.latitude, a.longitude, b.latitude, b.longitude)
+    )
+    h = sin((lat2 - lat1) / 2) ** 2 + cos(lat1) * cos(lat2) * sin((lon2 - lon1) / 2) ** 2
+    return 6371 * 2 * asin(sqrt(h))
+
+
+def _tem_coordenadas(municipio):
+    return municipio.latitude is not None and municipio.longitude is not None
+
+
+class EscolhaDeLotes:
+    """Escolhe o lote de cada município a partir dos lotes ativos.
+
+    1. o lote que lista o município (se houver mais de um, o do exercício da
+       data e, depois, o de maior saldo);
+    2. senão, o lote cuja cidade listada estiver mais perto (precisa das
+       coordenadas dos municípios).
+
+    Carrega os lotes uma vez só, para servir a lista inteira de municípios do
+    formulário.
+    """
+
+    def __init__(self, data=None, lotes=None):
+        self.ano = str((data or timezone.localdate()).year)
+        if lotes is None:
+            lotes = (
+                LoteCoffeeBreak.objects.filter(ativo=True)
+                .com_consumo()
+                .select_related("contrato__fornecedor")
+                .prefetch_related("municipios")
+            )
+        self.lotes = list(lotes)
+        self._por_municipio = {}
+        for lote in self.lotes:
+            for municipio in lote.municipios.all():
+                self._por_municipio.setdefault(municipio.pk, []).append(lote)
+
+    def _preferido(self, lotes):
+        return max(
+            lotes,
+            key=lambda l: (l.exercicio == self.ano, getattr(l, "restante", 0)),
+        )
+
+    def escolher(self, municipio):
+        """(lote, distância em km — 0 quando o lote lista o município) ou (None, None)."""
+        if municipio is None:
+            return None, None
+        exatos = self._por_municipio.get(municipio.pk)
+        if exatos:
+            return self._preferido(exatos), 0
+        if not _tem_coordenadas(municipio):
+            return None, None
+        melhor = None
+        for lote in self.lotes:
+            for sede in lote.municipios.all():
+                if not _tem_coordenadas(sede):
+                    continue
+                distancia = _distancia_km(municipio, sede)
+                chave = (round(distancia), lote.exercicio != self.ano)
+                if melhor is None or chave < melhor[0]:
+                    melhor = (chave, lote, distancia, sede)
+        if melhor is None:
+            return None, None
+        _chave, lote, distancia, sede = melhor
+        lote.sede_mais_proxima = sede
+        return lote, round(distancia)
+
+
+def escolher_lote(municipio, data=None):
+    return EscolhaDeLotes(data).escolher(municipio)
+
+
+# ---------------------------------------------------------------------------
+# Numeração da solicitação / ordem de serviço
+# ---------------------------------------------------------------------------
+
+_NUMERO = re.compile(r"^\s*(\d+)\s*/\s*(\d{4})\s*$")
+
+
+def proximo_numero(lote, ano):
+    """"NN/AAAA": a numeração corre por lote dentro do ano (a da OS)."""
+    maior = 0
+    for numero in lote.solicitacoes.exclude(numero="").values_list("numero", flat=True):
+        achado = _NUMERO.match(numero)
+        if achado and int(achado.group(2)) == ano:
+            maior = max(maior, int(achado.group(1)))
+    return f"{maior + 1:02d}/{ano}"
+
+
+# ---------------------------------------------------------------------------
+# Andamento: o próximo marco do fluxo, no desenho das Palestras
+# ---------------------------------------------------------------------------
+
+# Os marcos na ordem do fluxo real: (campo, etapa no stepper, rótulo do campo, tipo).
+MARCOS = [
+    ("data_envio_ordem_servico", "OS enviada", "OS enviada ao fornecedor em", "date"),
+    ("numero_nota_fiscal", "Nota fiscal", "Número da nota fiscal", "text"),
+    ("protocolo_pagamento", "Protocolo", "Protocolo de pagamento", "text"),
+    ("data_atesto_gaf", "Atesto", "Atesto e envio ao GAF em", "date"),
+    ("data_ordem_bancaria", "Ordem bancária", "Ordem bancária emitida em", "date"),
+    ("data_envio_empresa", "Paga", "OB enviada à empresa em", "date"),
+]
+
+
+def _preenchido(solicitacao, campo):
+    valor = getattr(solicitacao, campo)
+    return bool(valor.strip()) if isinstance(valor, str) else valor is not None
+
+
+def etapas(solicitacao):
+    """O stepper: um marco conta como feito quando ele ou um posterior está preenchido.
+
+    Registros da planilha não têm a data da OS, mas já andaram adiante: o
+    marco pulado aparece concluído, como o resto do caminho.
+    """
+    feitos = [_preenchido(solicitacao, campo) for campo, *_ in MARCOS]
+    ultimo = max((i for i, f in enumerate(feitos) if f), default=-1)
+    saida = [{"titulo": "Pedido", "estado": "concluido"}]
+    for i, (_campo, titulo, *_resto) in enumerate(MARCOS):
+        if i <= ultimo:
+            estado = "concluido"
+        elif i == ultimo + 1 and not solicitacao.cancelada:
+            estado = "atual"
+        else:
+            estado = "pendente"
+        saida.append({"titulo": titulo, "estado": estado})
+    return saida
+
+
+def proximo_marco(solicitacao):
+    """(campo, rótulo, tipo) do marco que falta, ou None quando acabou."""
+    if solicitacao.cancelada:
+        return None
+    feitos = [_preenchido(solicitacao, campo) for campo, *_ in MARCOS]
+    ultimo = max((i for i, f in enumerate(feitos) if f), default=-1)
+    if ultimo + 1 >= len(MARCOS):
+        return None
+    campo, _titulo, rotulo, tipo = MARCOS[ultimo + 1]
+    return {"campo": campo, "rotulo": rotulo, "tipo": tipo}
+
+
+def ultima_anotacao(solicitacao):
+    ultima = solicitacao.historico.filter(
+        acao=AcaoHistoricoCoffeeBreak.ATUALIZACAO, descricao__contains=" — "
+    ).order_by("-criado_em", "-pk").first()
+    return ultima.descricao.split(" — ", 1)[1] if ultima else ""
+
+
+@transaction.atomic
+def registrar_marco(solicitacao, usuario, valor, anotacao=""):
+    """Grava o próximo marco (com as regras de ordem do modelo) e o histórico."""
+    marco = proximo_marco(solicitacao)
+    if marco is None:
+        raise ValidationError("Esta solicitação não tem marco a registrar.")
+    valor = (valor or "").strip() if isinstance(valor, str) else valor
+    if not valor:
+        raise ValidationError(f"Informe: {marco['rotulo'].lower()}.")
+    if marco["tipo"] == "date" and isinstance(valor, str):
+        try:
+            valor = date.fromisoformat(valor)
+        except ValueError as exc:
+            raise ValidationError("Data inválida.") from exc
+    setattr(solicitacao, marco["campo"], valor)
+    try:
+        solicitacao.full_clean(exclude=["lote", "municipio", "criado_por"])
+    except ValidationError as erro:
+        raise ValidationError(
+            [m for mensagens in erro.message_dict.values() for m in mensagens]
+        ) from erro
+    solicitacao.save()
+    texto = f"{marco['rotulo']}: {valor:%d/%m/%Y}" if marco["tipo"] == "date" else f"{marco['rotulo']}: {valor}"
+    anotacao = (anotacao or "").strip()
+    registrar_historico(
+        solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO,
+        f"{texto} — {anotacao}" if anotacao else texto,
+    )
+    return solicitacao

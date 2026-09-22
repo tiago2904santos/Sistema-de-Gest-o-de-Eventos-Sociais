@@ -1,19 +1,16 @@
 {% comment %}
-  Ações de uma linha de cadastro da ASCOM num botão único, no padrão dos
-  cadastros de Viagens. Contexto: `objeto`, `slug`, `singular`, `url_editar`,
-  `url_alternar` (nomes de rota).
+  Ações de uma linha dos cadastros de apoio da ASCOM num botão único, no
+  padrão dos cadastros das Palestras: editar abre o modal e excluir pede o
+  segundo clique no mesmo menu. Contexto: `l` (linha), `singular`.
 {% endcomment %}
 <div class="dd of-menu cad-acoes" data-menu>
-  <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações de {{ objeto.nome }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
+  <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações de {{ l.titulo }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
   <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
-    <div class="dd__t">{{ objeto.nome }}</div>
-    <a class="dd__i of-item" href="{% url url_editar slug objeto.pk %}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar {{ singular }}</b><small>Alterar os dados do cadastro</small></span></a>
-    <form method="post" action="{% url url_alternar slug objeto.pk %}">{% csrf_token %}
-      {% if objeto.ativo %}
-        <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="ban" %}<span><b>Inativar</b><small>Deixa de ser oferecido nos formulários</small></span></button>
-      {% else %}
-        <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="check-circle" %}<span><b>Ativar</b><small>Volta a ser oferecido nos formulários</small></span></button>
-      {% endif %}
+    <div class="dd__t">{{ l.titulo|truncatechars:60 }}</div>
+    <a class="dd__i of-item" href="{{ l.url_editar }}" data-cadastro-modal>{% include "components/icon.html" with nome="pencil" %}<span><b>Editar {{ singular }}</b><small>Alterar o nome no cadastro</small></span></a>
+    <div class="dd__s"></div>
+    <form method="post" action="{{ l.url_excluir }}" data-confirmar-exclusao data-confirmar="Confirmar exclusão?">{% csrf_token %}
+      <button type="submit" class="dd__i dd__i--perigo of-item">{% include "components/icon.html" with nome="trash" %}<span><b>Excluir {{ singular }}</b>{% if l.em_uso %}<small>Em uso em {{ l.em_uso }} registro{{ l.em_uso|pluralize }}: não pode sair</small>{% else %}<small>Remover do cadastro</small>{% endif %}</span></button>
     </form>
   </div>
 </div>

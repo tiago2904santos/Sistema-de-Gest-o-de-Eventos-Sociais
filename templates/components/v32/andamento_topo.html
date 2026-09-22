@@ -1,0 +1,28 @@
+{% comment %}
+  Andamento no topo da tela do registro, no desenho das Palestras: o stepper
+  das etapas e a faixa com a última anotação (ou com o encerramento fora do
+  fluxo, como cancelada ou "não responder"). Contexto: `andamento`
+  (`core.andamento.contexto`) e `rotulo_aria`.
+{% endcomment %}
+<nav class="vg-stepper sol-stepper" aria-label="{{ rotulo_aria|default:'Acompanhamento' }}">
+  <ol class="vg-stepper__lista vg-stepper__lista--auto vg-trilho sem-anim" data-vg-trilho>
+    {% for etapa in andamento.etapas %}
+      <li class="vg-stepper__item{% if etapa.estado == 'atual' %} is-atual{% elif etapa.estado == 'concluido' %} is-concluida{% endif %}">
+        <span class="vg-stepper__passo" title="{{ etapa.titulo }}">
+          <span class="vg-stepper__num" aria-hidden="true">{% if etapa.estado == "concluido" %}{% include "components/icon.html" with nome="check" %}{% else %}{{ forloop.counter }}{% endif %}</span>
+          <span class="vg-stepper__rotulo">{{ etapa.titulo }}</span>
+        </span>
+      </li>
+    {% endfor %}
+  </ol>
+</nav>
+
+{% if andamento.encerrado %}
+  <div class="aviso aviso--callout" role="status">
+    <div class="aviso__txt">{% include "components/icon.html" with nome="ban" %}<div class="aviso__corpo"><b>{{ andamento.atual_rotulo }}</b><p>{{ andamento.ultima_anotacao|default:"Sem motivo registrado."|linebreaksbr }}</p></div></div>
+  </div>
+{% elif andamento.ultima_anotacao %}
+  <div class="aviso aviso--callout" role="status">
+    <div class="aviso__txt">{% include "components/icon.html" with nome="activity" %}<div class="aviso__corpo"><b>Andamento — {{ andamento.atual_rotulo }}</b><p>{{ andamento.ultima_anotacao|linebreaksbr }}</p></div></div>
+  </div>
+{% endif %}

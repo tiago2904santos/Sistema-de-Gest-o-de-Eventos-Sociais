@@ -1,0 +1,22 @@
+{% comment %}
+  Modal do andamento aberto da lista (menu ⋮ → Registrar andamento), no
+  protocolo dos cadastros: o `ds-v32.js` busca este trecho com
+  `X-Cadastro-Modal`, envia pelo mesmo cabeçalho e recarrega a lista quando a
+  resposta é `{"ok": true}`. Contexto: `andamento`, `titulo_modal`, `selo_tom`.
+{% endcomment %}
+<form method="post" action="{{ andamento.url }}" data-cadastro-form novalidate>
+  {% csrf_token %}
+  <header class="mo__topo">
+    <h2 id="cadastro-modal-titulo">{{ titulo_modal }}</h2>
+    <button type="button" class="mo__fechar" data-cadastro-fechar aria-label="Fechar">{% include "components/icon.html" with nome="x" %}</button>
+  </header>
+  <div class="mo__corpo">
+    <p class="pal-andamento__atual">Atual <span class="st st--{{ selo_tom }}">{{ andamento.atual_rotulo }}</span>{% if andamento.ultima_anotacao %}<span class="pal-andamento__ultimo">{{ andamento.ultima_anotacao }}</span>{% endif %}</p>
+    {% include "components/v32/andamento_campos.html" with colunas="2" %}
+    <p class="form-erro" data-cadastro-falha role="alert" hidden></p>
+  </div>
+  <footer class="mo__rodape">
+    <button type="button" class="btn--secundaria" data-cadastro-fechar>Cancelar</button>
+    <button type="submit" class="btn-primaria">Registrar andamento</button>
+  </footer>
+</form>

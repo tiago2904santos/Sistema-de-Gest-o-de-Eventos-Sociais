@@ -5,9 +5,14 @@ system; aqui mora a validação e a persistência.
 """
 
 from django import forms
-from django.db.models import Q, Sum
+from django.core.exceptions import ValidationError
+from django.db.models import Sum
+
+from cadastros.models import Municipio
+from core.uploads import validate_private_document_upload
 
 from .models import (
+    CertidaoFornecedor,
     ContratoCoffeeBreak,
     Fornecedor,
     LoteCoffeeBreak,
@@ -15,15 +20,18 @@ from .models import (
     SolicitacaoCoffeeBreak,
     normalizar_cnpj,
 )
-from . import services
+from . import certidoes, services
 
 
-def _queryset_lotes(instance_pk_lote=None):
-    """Lotes ativos + o lote já vinculado (histórico continua legível)."""
-    qs = LoteCoffeeBreak.objects.filter(ativo=True)
-    if instance_pk_lote:
-        qs = qs | LoteCoffeeBreak.objects.filter(pk=instance_pk_lote)
-    return qs.select_related("contrato__fornecedor").distinct()
+def validar_pdf(arquivo):
+    """Só PDF legível, até o limite de anexos privados do sistema."""
+    if not arquivo.name.lower().endswith(".pdf"):
+        raise ValidationError("Envie o arquivo em PDF.")
+    validate_private_document_upload(arquivo)
+
+
+def municipios_do_parana():
+    return Municipio.objects.filter(estado__sigla="PR").order_by("nome")
 
 
 class SolicitacaoCoffeeBreakForm(forms.ModelForm):
@@ -32,7 +40,7 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
     class Meta:
         model = SolicitacaoCoffeeBreak
         fields = [
-            "lote",
+            "municipio",
             "data_solicitacao",
             "numero",
             "descricao_evento",
@@ -40,7 +48,13 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
             "data_inicio_evento",
             "data_fim_evento",
             "periodo_evento_texto",
+            "horario_evento",
+            "detalhamento_pedido",
+            "local_entrega",
+            "responsavel_recebimento",
+            "data_envio_ordem_servico",
             "numero_nota_fiscal",
+            "arquivo_nota_fiscal",
             "protocolo_pagamento",
             "data_atesto_gaf",
             "data_ordem_bancaria",
@@ -51,9 +65,15 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         instancia = self.instance if self.instance.pk else None
-        self.fields["lote"].queryset = _queryset_lotes(
-            instancia and instancia.lote_id
-        )
+        municipios = municipios_do_parana()
+        if instancia and instancia.municipio_id:
+            municipios = municipios | Municipio.objects.filter(pk=instancia.municipio_id)
+        self.fields["municipio"].queryset = municipios.distinct()
+        # Registros antigos (da planilha) não têm município: continuam no lote
+        # em que estão até alguém informar o município.
+        self.fields["municipio"].required = not (instancia and not instancia.municipio_id)
+        self.fields["numero"].help_text = "Em branco, o sistema numera pelo lote (é o número da OS)."
+        self.fields["arquivo_nota_fiscal"].validators.append(validar_pdf)
         self.fields["descricao_evento"].required = True
         self.fields["quantidade"].required = True
         if instancia:
@@ -62,7 +82,7 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
             )
             if instancia.financeiro_iniciado:
                 for nome in (
-                    "lote",
+                    "municipio",
                     "data_solicitacao",
                     "numero",
                     "descricao_evento",
@@ -101,6 +121,7 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
                 "periodo_evento_texto",
                 "Use as datas estruturadas ou o período em texto, não os dois.",
             )
+        self._escolher_lote(dados)
         if self.instance.pk:
             atual = type(self.instance).objects.filter(pk=self.instance.pk).values_list(
                 "atualizado_em", flat=True
@@ -116,6 +137,29 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
             if dados.get(campo):
                 dados[campo] = dados[campo].strip()
         return dados
+
+    def _escolher_lote(self, dados):
+        """O lote sai do município; quem pede não escolhe lote."""
+        municipio = dados.get("municipio")
+        if municipio is None or self.fields["municipio"].disabled:
+            return
+        if self.instance.pk and self.instance.municipio_id == municipio.pk:
+            return
+        lote, _distancia = services.escolher_lote(
+            municipio, dados.get("data_inicio_evento") or dados.get("data_solicitacao")
+        )
+        if lote is None:
+            self.add_error(
+                "municipio",
+                f"Nenhum lote ativo atende {municipio.nome}. Inclua o município "
+                "na lista de um lote em Cadastros › Lotes.",
+            )
+            return
+        if self.instance.pk and lote.pk != self.instance.lote_id and "numero" not in self.changed_data:
+            # Mudou de lote: a numeração é do lote, então renumera.
+            dados["numero"] = ""
+        self.instance.lote = lote
+        self.lote_escolhido = lote
 
     def save(self, criado_por=None):
         solicitacao = super().save(commit=False)
@@ -197,7 +241,10 @@ class FornecedorForm(FormularioCadastroVersionado):
 
     class Meta:
         model = Fornecedor
-        fields = ("razao_social", "cnpj", "contato", "telefone", "email", "ativo")
+        fields = (
+            "razao_social", "cnpj", "contato", "telefone", "email",
+            "url_certidao_municipal",
+        )
 
     def clean_cnpj(self):
         cnpj = normalizar_cnpj(self.cleaned_data.get("cnpj"))
@@ -215,17 +262,18 @@ class ContratoCoffeeBreakForm(FormularioCadastroVersionado):
             "numero_gms",
             "termo_aditivo",
             "fiscal_responsavel",
+            "cargo_fiscal",
+            "arquivo_contrato",
+            "arquivo_termo_aditivo",
             "objeto",
             "observacoes",
-            "ativo",
         )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        fornecedor_atual = self.instance.fornecedor_id if self.instance.pk else None
-        self.fields["fornecedor"].queryset = Fornecedor.objects.filter(
-            Q(ativo=True) | Q(pk=fornecedor_atual)
-        ).distinct()
+        for nome in ("arquivo_contrato", "arquivo_termo_aditivo"):
+            self.fields[nome].validators.append(validar_pdf)
+        self.fields["fornecedor"].queryset = Fornecedor.objects.order_by("razao_social")
 
 
 class LoteCoffeeBreakForm(FormularioCadastroVersionado):
@@ -247,10 +295,9 @@ class LoteCoffeeBreakForm(FormularioCadastroVersionado):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        contrato_atual = self.instance.contrato_id if self.instance.pk else None
-        self.fields["contrato"].queryset = ContratoCoffeeBreak.objects.filter(
-            Q(ativo=True) | Q(pk=contrato_atual)
-        ).select_related("fornecedor").distinct()
+        self.fields["contrato"].queryset = ContratoCoffeeBreak.objects.select_related(
+            "fornecedor"
+        ).order_by("numero")
         self.fields["municipios"].queryset = self.fields["municipios"].queryset.select_related(
             "estado"
         ).order_by("nome", "estado__sigla")
@@ -266,3 +313,29 @@ class LoteCoffeeBreakForm(FormularioCadastroVersionado):
                     f"O lote já consumiu {consumido} unidades; a capacidade não pode ficar abaixo disso."
                 )
         return quantidade
+
+
+class CertidaoForm(forms.Form):
+    """Envio de uma certidão: o PDF e, se o sistema não conseguir ler, a validade."""
+
+    tipo = forms.ChoiceField(choices=CertidaoFornecedor._meta.get_field("tipo").choices)
+    arquivo = forms.FileField(label="Certidão (PDF)", validators=[validar_pdf])
+    validade = forms.DateField(
+        label="Válida até", required=False,
+        help_text="Em branco, o sistema lê a validade do PDF.",
+    )
+
+    def clean(self):
+        dados = super().clean()
+        arquivo = dados.get("arquivo")
+        if arquivo and not dados.get("validade"):
+            lida = certidoes.validade_do_pdf(arquivo)
+            if lida is None:
+                self.add_error(
+                    "validade",
+                    "Não consegui ler a validade neste PDF; informe a data.",
+                )
+            else:
+                dados["validade"] = lida
+                self.validade_lida = True
+        return dados

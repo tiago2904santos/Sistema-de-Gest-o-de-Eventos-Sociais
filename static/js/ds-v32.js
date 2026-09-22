@@ -347,27 +347,34 @@
   });
 })();
 
-// Coffee Break: saldo informativo do lote, sem alterar a validação no servidor.
-// Mostra o saldo do lote escolhido ao lado da quantidade — os dados vêm
-    // renderizados no atributo data-saldos; a validação real é no backend.
-    (function () {
-      var campoSaldo = document.querySelector("[data-saldo-lote]");
-      var seletorLote = document.getElementById("id_lote");
-      if (!campoSaldo || !seletorLote) return;
-      var saldos = {};
-      (campoSaldo.dataset.saldos || "").split(";").forEach(function (par) {
-        var partes = par.split(":");
-        if (partes.length === 2) saldos[partes[0]] = partes[1];
-      });
-      function atualizar() {
-        var info = saldos[seletorLote.value];
-        campoSaldo.value = info
-          ? info.split("/")[0] + " de " + info.split("/")[1] + " unidades"
-          : "—";
-      }
-      seletorLote.addEventListener("change", atualizar);
-      atualizar();
-    })();
+// Coffee Break: o lote sai do município. Cada opção do município traz o lote
+// que ele recebe (data-lote, data-saldo e, fora da lista do lote, data-perto);
+// a escolha real é refeita no servidor ao salvar.
+(function () {
+  var municipio = document.getElementById("id_municipio");
+  var caixa = document.querySelector("[data-lote-do-municipio]");
+  if (!municipio || !caixa) return;
+  var nome = caixa.querySelector("[data-lote-nome]");
+  var saldo = caixa.querySelector("[data-lote-saldo]");
+  function atualizar() {
+    var opcao = municipio.options[municipio.selectedIndex];
+    if (!opcao || !opcao.value) {
+      nome.textContent = caixa.dataset.loteAtual || "O lote sai do município";
+      saldo.textContent = caixa.dataset.saldoAtual ? "· Saldo: " + caixa.dataset.saldoAtual : "";
+      return;
+    }
+    if (!opcao.dataset.lote) {
+      nome.textContent = "Nenhum lote ativo atende este município";
+      saldo.textContent = "· Inclua o município na lista de um lote em Cadastros › Lotes.";
+      return;
+    }
+    nome.textContent = opcao.dataset.lote;
+    saldo.textContent = "· Saldo: " + opcao.dataset.saldo +
+      (opcao.dataset.perto ? " · pela sede mais próxima (" + opcao.dataset.perto + ")" : "");
+  }
+  municipio.addEventListener("change", atualizar);
+  atualizar();
+})();
 
 // Demandas ASCOM: opções de responsável conforme os setores, preservadas.
 (function () {

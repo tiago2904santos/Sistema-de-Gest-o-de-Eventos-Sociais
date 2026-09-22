@@ -1,0 +1,20 @@
+{% comment %}
+  Cartão "Andamento" da tela do registro: fica fora do <form> principal (HTML
+  não permite formulário aninhado). Contexto: `andamento`.
+{% endcomment %}
+<section class="section-card reg" id="sec-andamento">
+  <header class="section-card__cabecalho reg__t">
+    <span class="section-card__numero reg-numero" aria-hidden="true">{% include "components/icon.html" with nome="activity" %}</span>
+    <h2 class="section-card__titulo">Andamento</h2>
+  </header>
+  <div class="section-card__corpo">
+    <form method="post" action="{{ andamento.url }}">
+      {% csrf_token %}
+      {% include "components/v32/andamento_campos.html" %}
+      <div class="frm-acoes-fim">
+        <span></span>
+        <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check" %}Registrar andamento</button>
+      </div>
+    </form>
+  </div>
+</section>

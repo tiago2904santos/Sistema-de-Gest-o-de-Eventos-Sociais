@@ -15,7 +15,6 @@ class Responsavel(models.Model):
     """Integrante da equipe de atendimento à imprensa."""
 
     nome = models.CharField("nome", max_length=100, unique=True)
-    ativo = models.BooleanField("ativo", default=True)
     criado_em = models.DateTimeField("criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
 
@@ -32,7 +31,6 @@ class Veiculo(models.Model):
     """Veículo de imprensa (RIC, RPC, Band, G1...)."""
 
     nome = models.CharField("nome", max_length=150, unique=True)
-    ativo = models.BooleanField("ativo", default=True)
     criado_em = models.DateTimeField("criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
 
@@ -221,3 +219,49 @@ class Atendimento(models.Model):
                 }
             )
         return linhas
+
+
+class AcaoHistorico(models.TextChoices):
+    CRIACAO = "CRIACAO", "Registro criado"
+    ATUALIZACAO = "ATUALIZACAO", "Registro atualizado"
+    TRANSICAO = "TRANSICAO", "Situação alterada"
+
+
+class HistoricoAtendimento(models.Model):
+    """O que aconteceu com o atendimento: criação, edição e cada mudança de situação."""
+
+    atendimento = models.ForeignKey(
+        Atendimento,
+        on_delete=models.CASCADE,
+        related_name="historico",
+        verbose_name="atendimento",
+    )
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="historico_atendimentos_imprensa",
+        null=True,
+        blank=True,
+        verbose_name="usuário",
+    )
+    acao = models.CharField("ação", max_length=20, choices=AcaoHistorico.choices)
+    status_anterior = models.CharField("situação anterior", max_length=30, blank=True)
+    status_novo = models.CharField("situação nova", max_length=30, blank=True)
+    descricao = models.TextField("descrição", blank=True)
+    criado_em = models.DateTimeField("criado em", auto_now_add=True)
+
+    class Meta:
+        ordering = ["criado_em", "pk"]
+        verbose_name = "histórico de atendimentos à imprensa"
+        verbose_name_plural = "históricos de atendimentos à imprensa"
+
+    def __str__(self):
+        return f"{self.atendimento_id} — {self.get_acao_display()}"
+
+    @property
+    def status_novo_display(self):
+        return dict(SituacaoAtendimento.choices).get(self.status_novo, self.status_novo)
+
+    @property
+    def status_novo_css(self):
+        return CSS_SITUACAO.get(self.status_novo, "pendente")

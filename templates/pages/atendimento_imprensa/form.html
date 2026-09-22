@@ -6,10 +6,10 @@
   título), cartões numerados `section-card`, campos sempre pelos components
   do design system e as ações no topo e no fim do último cartão editável.
 
-  Ao editar um registro existente o formulário também mostra o que antes só
-  existia no detalhe: o aviso de deadline vencido, o acompanhamento (o
-  stepper do painel da viagem), a conferência das fontes alinhadas e os
-  dados de registro.
+  Como nas Palestras, a situação não é campo: anda pelo cartão "Andamento"
+  (stepper no topo, próxima situação e a anotação), e cada mudança fica no
+  histórico ao pé da tela. Ao editar, a tela também mostra o aviso de
+  deadline vencido e a conferência das fontes alinhadas.
 {% endcomment %}
 
 {% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
@@ -29,9 +29,15 @@
         </div>
       </div>
       <div class="frm-topo__acoes">
+        {# A data do pedido mora no cabeçalho; o atributo form a leva junto com o formulário. #}
+        <div class="pal-topo-data">
+          {% include "components/input.html" with name="data" label="Data do pedido" tipo="date" obrigatorio=True valor=valores.data erros=erros.data form_alvo="form-atendimento" %}
+        </div>
         <button type="submit" class="btn-primaria" form="form-atendimento">{% if atendimento %}Salvar alterações{% else %}Registrar atendimento{% endif %}</button>
       </div>
     </div>
+
+    {% if atendimento %}{% include "components/v32/andamento_topo.html" with rotulo_aria="Acompanhamento do pedido" %}{% endif %}
 
     {% if deadline_vencido %}
       <div class="aviso aviso--callout" role="status">
@@ -39,7 +45,7 @@
           {% include "components/icon.html" with nome="alert" %}
           <div class="aviso__corpo">
             <b>Deadline vencido</b>
-            <p>O prazo de veiculação ({{ atendimento.deadline|date:"d/m/Y" }}) já passou e o pedido continua em aberto. Atualize a situação abaixo e salve.</p>
+            <p>O prazo de veiculação ({{ atendimento.deadline|date:"d/m/Y" }}) já passou e o pedido continua em aberto. Registre o andamento abaixo.</p>
           </div>
         </div>
       </div>
@@ -62,18 +68,29 @@
           <h2 class="section-card__titulo">Pedido</h2>
         </header>
         <div class="section-card__corpo">
+          {# Só o horário e o prazo na caixa, como Período e Destino nas Palestras. #}
+          <div class="bate-volta ofc-percurso">
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">Pedido</div>
+              <div class="pal-publico">
+                {% include "components/input.html" with name="horario" label="Horário do pedido" rotulo_oculto=True placeholder="hh:mm" inputmode="numeric" autocomplete="off" valor=valores.horario erros=erros.horario %}
+              </div>
+            </div>
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">Deadline</div>
+              <div class="pal-publico">
+                {% include "components/input.html" with name="deadline" label="Deadline / veiculação" rotulo_oculto=True tipo="date" valor=valores.deadline erros=erros.deadline %}
+              </div>
+            </div>
+          </div>
           <div class="g-form g-form--3">
-            {% include "components/input.html" with name="data" label="Data do pedido" tipo="date" obrigatorio=True valor=valores.data erros=erros.data %}
-            {% include "components/input.html" with name="horario" label="Horário do pedido" placeholder="hh:mm" inputmode="numeric" autocomplete="off" valor=valores.horario erros=erros.horario %}
-            {% include "components/select.html" with name="situacao" label="Situação" opcoes=opcoes_situacao obrigatorio=True selecionado=valores.situacao erros=erros.situacao placeholder="Selecione..." %}
             {# Jornalista: sugere quem já pediu antes, sem obrigar a escolher da lista. #}
             {% include "components/input.html" with name="jornalista" label="Jornalista" obrigatorio=True maxlength="150" autocomplete="off" lista_sugestoes="lista-jornalistas" placeholder="Nome de quem pediu" valor=valores.jornalista erros=erros.jornalista %}
             <datalist id="lista-jornalistas">{% for nome in jornalistas_sugeridos %}<option value="{{ nome }}">{% endfor %}</datalist>
-            {% include "components/select.html" with name="veiculo" label="Veículo" opcoes=opcoes_veiculos pesquisavel=True selecionado=valores.veiculo erros=erros.veiculo placeholder="Buscar veículo..." %}
-            {% include "components/input.html" with name="veiculo_novo" label="Outro veículo (não listado)" placeholder="Ex.: Rádio Clube" valor=valores.veiculo_novo erros=erros.veiculo_novo %}
             {% include "components/input.html" with name="contato" label="Contato" maxlength="150" placeholder="Telefone ou e-mail" valor=valores.contato erros=erros.contato %}
             {% include "components/select.html" with name="responsavel" label="Responsável pelo atendimento" opcoes=opcoes_responsaveis selecionado=valores.responsavel erros=erros.responsavel placeholder="Quem atendeu" %}
-            {% include "components/input.html" with name="deadline" label="Deadline / veiculação" tipo="date" valor=valores.deadline erros=erros.deadline %}
+            {% include "components/select.html" with name="veiculo" label="Veículo" opcoes=opcoes_veiculos pesquisavel=True selecionado=valores.veiculo erros=erros.veiculo placeholder="Buscar veículo..." %}
+            {% include "components/input.html" with name="veiculo_novo" label="Outro veículo (não listado)" placeholder="Ex.: Rádio Clube" valor=valores.veiculo_novo erros=erros.veiculo_novo %}
             <div class="cheia">
               {% include "components/textarea.html" with name="pedido" label="Pedido" obrigatorio=True linhas="3" placeholder="O que o jornalista pediu, com os dados do caso." valor=valores.pedido erros=erros.pedido %}
             </div>
@@ -92,9 +109,6 @@
             {% include "components/textarea.html" with name="fonte" label="Fontes" linhas="3" placeholder="Del. Fulano&#10;&#10;Ascom DPCAP" valor=valores.fonte erros=erros.fonte %}
             {% include "components/textarea.html" with name="inicio_pedido" label="Início do pedido às fontes" linhas="3" placeholder="09h12&#10;&#10;09h40" valor=valores.inicio_pedido erros=erros.inicio_pedido %}
             {% include "components/textarea.html" with name="final_pedido" label="Retorno das fontes" linhas="3" placeholder="09h30&#10;&#10;10h05" valor=valores.final_pedido erros=erros.final_pedido %}
-            <div class="cheia">
-              {% include "components/textarea.html" with name="andamento" label="Andamento" linhas="3" placeholder="O que cada fonte respondeu, pendências, encaminhamentos." valor=valores.andamento erros=erros.andamento %}
-            </div>
           </div>
 
           {% if atendimento %}
@@ -143,35 +157,8 @@
     </form>
 
     {% if atendimento %}
-      {# Acompanhamento no stepper do painel da viagem: onde o pedido está. #}
-      <nav class="vg-stepper" aria-label="Acompanhamento do pedido">
-        <ol class="vg-stepper__lista vg-stepper__lista--auto vg-trilho sem-anim" data-vg-trilho>
-          {% for etapa in etapas %}
-            <li class="vg-stepper__item{% if etapa.estado == 'concluido' %} is-concluida{% elif etapa.estado == 'cancelado' %} is-atual{% endif %}">
-              <span class="vg-stepper__passo" title="{{ etapa.titulo }} — {{ etapa.subtitulo }}">
-                <span class="vg-stepper__num" aria-hidden="true">{% if etapa.estado == "concluido" %}{% include "components/icon.html" with nome="check" %}{% elif etapa.estado == "cancelado" %}{% include "components/icon.html" with nome="ban" %}{% else %}{{ forloop.counter }}{% endif %}</span>
-                <span class="vg-stepper__rotulo">{{ etapa.titulo }}</span>
-                <span class="sr-only">— {{ etapa.subtitulo }}</span>
-              </span>
-            </li>
-          {% endfor %}
-        </ol>
-      </nav>
-
-      <section class="section-card reg" id="sec-registro">
-        <header class="section-card__cabecalho reg__t">
-          <h2 class="section-card__titulo">Registro</h2>
-        </header>
-        <div class="section-card__corpo">
-          {# Os dados de controle como fatos com ícone, na linguagem das listas. #}
-          <ul class="tm-fatos" aria-label="Dados de registro do atendimento">
-            <li class="tm-fato">{% include "components/icon.html" with nome="mail" %}<span class="sr-only">Número do atendimento: </span><span class="vg-fato__valor">Atendimento #{{ atendimento.pk }}</span></li>
-            <li class="tm-fato">{% include "components/icon.html" with nome="user" %}<span class="sr-only">Registrado por: </span><span class="vg-fato__valor">{{ atendimento.criado_por|default:"Importação" }}</span></li>
-            <li class="tm-fato">{% include "components/icon.html" with nome="clock" %}<span class="sr-only">Atualizado em: </span><span class="vg-fato__valor">Atualizado em {{ atendimento.atualizado_em|date:"d/m/Y H:i" }}</span></li>
-            <li class="tm-fato{% if not fontes %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome="users" %}<span class="sr-only">Fontes registradas: </span><span class="vg-fato__valor">{{ fontes|length }} fonte{{ fontes|length|pluralize }} registrada{{ fontes|length|pluralize }}</span></li>
-          </ul>
-        </div>
-      </section>
+      {% include "components/v32/andamento_secao.html" %}
+      {% include "components/v32/historico_status.html" with rotulo_aria="Histórico do atendimento" %}
     {% endif %}
   </div>
 {% endblock %}

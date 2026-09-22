@@ -1,114 +1,36 @@
 {% extends "layouts/app_shell_v32.html" %}
-{% load consulta %}
+{% load estaticos %}
 {% comment %}
-  Cadastros de apoio dos módulos da ASCOM no padrão V3.2 (mesma composição
-  dos Cadastros de Eventos Sociais). Genérico: as views informam os nomes
-  de rota (`url_lista`, `url_novo`, `url_editar`, `url_alternar`) e a trilha
-  lateral (`grupos`, cada um com a própria URL).
+  Cadastros de apoio dos módulos da ASCOM (Publicações, Atendimento à
+  Imprensa), na composição dos cadastros das Palestras: as tabelas na trilha
+  à esquerda, a busca na barra do cartão, uma célula por registro e um menu
+  único de ações. Criar e editar abrem num modal sobre a lista; sem
+  JavaScript, `?novo=1` e `?editar=<pk>` abrem a lista com o modal aberto.
+  As views informam as rotas (`url_lista`, `url_novo`) e a trilha (`grupos`).
 {% endcomment %}
 
-{% block title %}{{ titulo }} — Cadastros — {{ modulo_titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+{% block title %}{{ titulo }} — Cadastros — {{ modulo_titulo }}{% endblock %}
 
 {% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with atual=titulo %}
+
   <div class="d-cabeca d-cabeca--secao">
     <div class="d-cabeca__esq">
       <div class="kicker kicker--junto">{{ kicker }}</div>
       <h1>Cadastros</h1>
     </div>
-    {# Botão flutuante, como na lista de roteiros: fixo no canto inferior direito. #}
-    <a class="btn-primaria btn-flutuante" href="{% url url_novo slug %}">{% include "components/icon.html" with nome="plus" %}{{ novo }}</a>
+    <a class="btn-primaria btn-flutuante" href="{% url url_novo slug %}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}{{ novo }}</a>
   </div>
 
   <div class="cad-grade cad-grade--sem-folga">
     {% include "components/v32/cad_rail.html" with grupos=grupos slug_ativo=slug sem_titulo=True %}
 
-    <section class="pa-card pa-card--lista cad-lista">
-      <form method="get" class="cad-barra" data-auto-enviar>
-        {% if situacao %}<input type="hidden" name="situacao" value="{{ situacao }}">{% endif %}
-        <div class="busca">
-          {% include "components/icon.html" with nome="search" %}
-          <label class="sr-only" for="id_q">Buscar {{ singular }} pelo nome</label>
-          <input type="search" name="q" id="id_q" value="{{ termo }}" placeholder="Buscar {{ singular }} pelo nome" autocomplete="off">
-        </div>
-      </form>
-
-      <div class="dt-w">
-        <table class="dt">
-          <thead>
-            <tr>
-              <th class="c-nome">Nome</th>
-              <th class="c-sit">Situação</th>
-              <th class="c-data">Atualizado em</th>
-              <th class="c-cad-acoes">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for objeto in pagina %}
-              <tr>
-                <td class="c-nome">{{ objeto.nome }}</td>
-                <td class="c-sit">{% if objeto.ativo %}<span class="st st--ativo">Ativo</span>{% else %}<span class="st st--inativo">Inativo</span>{% endif %}</td>
-                <td class="c-data">{{ objeto.atualizado_em|date:"d/m/Y H:i" }}</td>
-                <td class="c-cad-acoes">{% include "pages/ascom_cadastros/_acoes_linha.html" %}                </td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="4" class="dt__vazio">Nenhum registro encontrado.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-
-      {% if pagina.paginator.count %}
-        <div class="pag">
-          <span>Mostrando <b>{{ pagina.start_index }}–{{ pagina.end_index }}</b> de <b>{{ pagina.paginator.count }}</b> registro{{ pagina.paginator.count|pluralize }}</span>
-          {% if pagina.paginator.num_pages > 1 %}
-            <nav class="pag__nav" aria-label="Paginação">
-              {% if pagina.has_previous %}
-                <a class="pag__passo" href="{% qs_definir 'pagina' pagina.previous_page_number %}">{% include "components/icon.html" with nome="chevron-left" %}Anterior</a>
-              {% else %}
-                <span class="pag__passo" aria-disabled="true">{% include "components/icon.html" with nome="chevron-left" %}Anterior</span>
-              {% endif %}
-              {% for numero in paginas_visiveis %}
-                {% if numero == elipse %}
-                  <span class="pag__el" aria-hidden="true">…</span>
-                {% elif numero == pagina.number %}
-                  <span class="pag__n" aria-current="page">{{ numero }}</span>
-                {% else %}
-                  <a class="pag__n" href="{% qs_definir 'pagina' numero %}">{{ numero }}</a>
-                {% endif %}
-              {% endfor %}
-              {% if pagina.has_next %}
-                <a class="pag__passo" href="{% qs_definir 'pagina' pagina.next_page_number %}">Próxima{% include "components/icon.html" with nome="chevron-right" %}</a>
-              {% else %}
-                <span class="pag__passo" aria-disabled="true">Próxima{% include "components/icon.html" with nome="chevron-right" %}</span>
-              {% endif %}
-            </nav>
-          {% endif %}
-        </div>
-      {% endif %}
-
-      <div class="lista-mobile-v32">
-        <div class="m-lista">
-          {% for objeto in pagina %}
-            <div class="m-item">
-              <div class="m-item__topo">
-                <span class="m-item__tipo">{{ objeto.nome }}</span>
-                {% if objeto.ativo %}<span class="st st--ativo">Ativo</span>{% else %}<span class="st st--inativo">Inativo</span>{% endif %}
-              </div>
-              <div class="m-item__meta">Atualizado em {{ objeto.atualizado_em|date:"d/m/Y H:i" }}</div>
-              <div class="m-item__rodape">{% include "pages/ascom_cadastros/_acoes_linha.html" %}</div>
-            </div>
-          {% empty %}
-            <p class="dt__vazio">Nenhum registro encontrado.</p>
-          {% endfor %}
-        </div>
-        {% if pagina.paginator.num_pages > 1 %}
-          <div class="m-pag">
-            {% if pagina.has_previous %}<a href="{% qs_definir 'pagina' pagina.previous_page_number %}">{% include "components/icon.html" with nome="chevron-left" %}Anterior</a>{% else %}<span aria-disabled="true">{% include "components/icon.html" with nome="chevron-left" %}Anterior</span>{% endif %}
-            <span class="m-pag__meio">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
-            {% if pagina.has_next %}<a href="{% qs_definir 'pagina' pagina.next_page_number %}">Próxima{% include "components/icon.html" with nome="chevron-right" %}</a>{% else %}<span aria-disabled="true">Próxima{% include "components/icon.html" with nome="chevron-right" %}</span>{% endif %}
-          </div>
-        {% endif %}
-      </div>
-    </section>
+    {% include "components/v32/lista_registros.html" with icone="checklist" rotulo=singular|capfirst rotulo_plural=titulo|lower conteudo_linha="pages/ascom_cadastros/_conteudo_linha.html" acoes_linha="pages/ascom_cadastros/_acoes_linha.html" placeholder_busca="Buscar "|add:singular|add:" pelo nome" vazio="Nenhum registro cadastrado ainda." vazio_filtrado="Nenhum registro encontrado com a busca." %}
   </div>
+
+  <dialog class="mo v32-cadastro-modal" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{% url url_lista slug %}"{% if modal %} data-cadastro-inicial{% endif %}>
+    {% if modal %}{% include "pages/ascom_cadastros/_modal.html" with dados=modal %}{% endif %}
+  </dialog>
 {% endblock %}
+
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>{% endblock %}

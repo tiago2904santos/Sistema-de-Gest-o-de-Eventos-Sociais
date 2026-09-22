@@ -4,7 +4,7 @@
   Cadastros do módulo de Coffee Break na composição dos cadastros de apoio de
   Viagens: as tabelas na trilha à esquerda, a busca na barra do cartão, a
   tabela do V3.2 no desktop e a Data List no celular, uma célula por registro
-  e um menu único de ações.
+  e um menu único de ações. Criar e editar abrem num modal sobre a lista.
 {% endcomment %}
 
 {% block title %}{{ config.titulo }} — Coffee Break{% endblock %}
@@ -17,7 +17,7 @@
       <div class="kicker kicker--junto">Coffee Break</div>
       <h1>Cadastros</h1>
     </div>
-    <a class="btn-primaria btn-flutuante" href="{% url 'coffee_break:cadastro_novo' tipo %}">{% include "components/icon.html" with nome="plus" %}Novo {{ config.singular }}</a>
+    <a class="btn-primaria btn-flutuante" href="{% url 'coffee_break:cadastro_novo' tipo %}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}Novo {{ config.singular }}</a>
   </div>
 
   <div class="cad-grade cad-grade--sem-folga">
@@ -25,6 +25,11 @@
 
     {% include "components/v32/lista_registros.html" with icone="checklist" rotulo=config.singular|capfirst rotulo_plural=config.titulo|lower conteudo_linha="pages/coffee_break/_conteudo_cadastro.html" acoes_linha="pages/coffee_break/_acoes_cadastro.html" placeholder_busca="Buscar em "|add:config.titulo vazio="Nenhum registro cadastrado ainda." vazio_filtrado="Nenhum registro encontrado com a busca." %}
   </div>
+
+  {# Criar e editar em modal, como nos cadastros das Palestras. #}
+  <dialog class="mo v32-cadastro-modal{% if tipo != 'fornecedores' %} v32-cadastro-modal--larga{% endif %}" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{% url 'coffee_break:cadastro_lista' tipo %}"{% if modal %} data-cadastro-inicial{% endif %}>
+    {% if modal %}{% include "pages/coffee_break/_modal_cadastro.html" with dados=modal %}{% endif %}
+  </dialog>
 {% endblock %}
 
 {% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>{% endblock %}

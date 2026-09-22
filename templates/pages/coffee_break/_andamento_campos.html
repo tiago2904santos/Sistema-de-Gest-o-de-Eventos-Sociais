@@ -1,0 +1,12 @@
+{% comment %}
+  O campo do próximo marco do fluxo e a anotação, iguais na tela da
+  solicitação e no modal da lista. Contexto: `marco`, `andamento_valor`,
+  `andamento_texto`, `andamento_erro`.
+{% endcomment %}
+{% if marco.tipo == "date" %}
+  {% include "components/input.html" with name="valor" label=marco.rotulo tipo="date" obrigatorio=True valor=andamento_valor erros=None %}
+{% else %}
+  {% include "components/input.html" with name="valor" label=marco.rotulo obrigatorio=True valor=andamento_valor erros=None %}
+{% endif %}
+{% include "components/textarea.html" with name="andamento" label="Andamento" linhas="3" placeholder="Opcional: o que aconteceu (e-mail do fornecedor, observação do GAF…)" ajuda="Fica no histórico da solicitação." valor=andamento_texto erros=None %}
+{% if andamento_erro %}<p class="form-erro" role="alert">{{ andamento_erro }}</p>{% endif %}

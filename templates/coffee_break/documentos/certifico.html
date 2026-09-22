@@ -1,0 +1,25 @@
+{% extends "coffee_break/documentos/_base.html" %}
+{% block titulo %}Certifico digital — NF {{ s.numero_nota_fiscal }}{% endblock %}
+{% block estilo %}
+  h1 { font-size: 18pt; text-align: center; margin: 1.6cm 0 2.2cm; }
+  .nota { text-align: justify; line-height: 1.6; }
+  .atesto { margin-top: 2.2cm; border: 1px solid #000; padding: 1.3cm 0.15cm 0.1cm; text-align: justify; }
+  .atesto .quem { margin-top: 1.8cm; text-align: center; }
+  .atesto .quem i { color: #555; }
+  .atesto .quem b { display: block; }
+{% endblock %}
+{% block corpo %}
+  <h1>CERTIFICO DIGITAL</h1>
+
+  <p class="nota">Nota Fiscal nº {{ s.numero_nota_fiscal }}, emitida pela empresa {{ fornecedor.razao_social }}, inscrita no CNPJ nº {{ fornecedor.cnpj_formatado }} (CONTRATO {{ contrato.referencia_documental }}).</p>
+
+  <div class="atesto">
+    <p><b>ATESTO</b> que os serviços e/ou bens acima identificados foram devidamente executados/entregues e atendem às exigências especificadas no (Termo de Referência/Edital).</p>
+    <div class="quem">
+      <p><i>(assinado e datado digitalmente)</i></p>
+      <p>{{ contrato.fiscal_responsavel }}</p>
+      <p><b>{{ contrato.cargo_fiscal }}</b></p>
+      <p><b>Fiscal do Contrato n° {{ contrato.numero }}</b></p>
+    </div>
+  </div>
+{% endblock %}

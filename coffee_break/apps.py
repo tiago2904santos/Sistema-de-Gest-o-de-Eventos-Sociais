@@ -47,6 +47,12 @@ class CoffeeBreakConfig(AppConfig):
                     ),
                 },
                 {
+                    "rotulo": "Certidões",
+                    "icone": "check-circle",
+                    "url": "coffee_break:certidoes",
+                    "url_names": ("certidoes",),
+                },
+                {
                     "rotulo": "Cadastros",
                     "icone": "checklist",
                     "url": "coffee_break:cadastros",

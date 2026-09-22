@@ -6,8 +6,9 @@
   cartões numerados `section-card`, campos sempre pelos components do design
   system e as ações no topo e no fim do último cartão editável.
 
-  O formulário É a tela do registro: acompanhamento e dados calculados
-  entram como seções normais quando a pauta já existe.
+  O formulário É a tela do registro. Como nas Palestras, o status não é
+  campo: anda pelo cartão "Andamento" (stepper no topo, próximo status e a
+  anotação), e cada mudança fica no histórico ao pé da tela.
 {% endcomment %}
 
 {% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
@@ -27,9 +28,15 @@
         </div>
       </div>
       <div class="frm-topo__acoes">
+        {# A data da pauta mora no cabeçalho; o atributo form a leva junto com o formulário. #}
+        <div class="pal-topo-data">
+          {% include "components/input.html" with name="data" label="Data da pauta" tipo="date" obrigatorio=True valor=valores.data erros=erros.data form_alvo="form-publicacao" %}
+        </div>
         <button type="submit" form="form-publicacao" class="btn-primaria">{% if publicacao %}Salvar alterações{% else %}Registrar pauta{% endif %}</button>
       </div>
     </div>
+
+    {% if publicacao %}{% include "components/v32/andamento_topo.html" with rotulo_aria="Acompanhamento da pauta" %}{% endif %}
 
     <form method="post" action="" id="form-publicacao" class="editor-roteiro__principal">
       {% csrf_token %}
@@ -49,21 +56,18 @@
         </header>
         <div class="section-card__corpo">
           <div class="g-form g-form--3">
-            {% include "components/input.html" with name="data" label="Data da pauta" tipo="date" obrigatorio=True valor=valores.data erros=erros.data %}
-            {% include "components/input.html" with name="inicio_pauta" label="Início da pauta" placeholder="hh:mm" inputmode="numeric" autocomplete="off" valor=valores.inicio_pauta erros=erros.inicio_pauta %}
-            {% include "components/select.html" with name="status" label="Status" opcoes=opcoes_status obrigatorio=True selecionado=valores.status erros=erros.status placeholder="Selecione..." %}
-            {% include "components/select.html" with name="jornalista" label="Jornalista responsável" opcoes=opcoes_jornalistas obrigatorio=True selecionado=valores.jornalista erros=erros.jornalista %}
-            {% include "components/select.html" with name="unidade" label="Unidade responsável" opcoes=opcoes_unidades pesquisavel=True selecionado=valores.unidade erros=erros.unidade placeholder="Buscar unidade..." %}
-            {% include "components/input.html" with name="unidade_nova" label="Outra unidade (não listada)" placeholder="Ex.: DP Nova Londrina" valor=valores.unidade_nova erros=erros.unidade_nova %}
             <div class="cheia">
               {% include "components/input.html" with name="titulo" label="Título da pauta" obrigatorio=True maxlength="300" placeholder="Ex.: PCPR prende homem por tráfico de drogas em Colombo" valor=valores.titulo erros=erros.titulo %}
             </div>
+          </div>
+          <div class="g-form g-form--3">
+            {% include "components/select.html" with name="jornalista" label="Jornalista responsável" opcoes=opcoes_jornalistas obrigatorio=True selecionado=valores.jornalista erros=erros.jornalista %}
+            {% include "components/select.html" with name="unidade" label="Unidade responsável" opcoes=opcoes_unidades pesquisavel=True selecionado=valores.unidade erros=erros.unidade placeholder="Buscar unidade..." %}
+            {% include "components/input.html" with name="unidade_nova" label="Outra unidade (não listada)" placeholder="Ex.: DP Nova Londrina" valor=valores.unidade_nova erros=erros.unidade_nova %}
             <div class="c2">
               {% include "components/input.html" with name="fonte" label="Fonte da pauta" maxlength="200" placeholder="Ex.: Del. Marcos Vinicius" valor=valores.fonte erros=erros.fonte %}
             </div>
-            <div class="cheia">
-              {% include "components/textarea.html" with name="andamento" label="Andamento" linhas="2" placeholder="Ex.: aguardando fotos do delegado" valor=valores.andamento erros=erros.andamento %}
-            </div>
+            {% include "components/input.html" with name="inicio_pauta" label="Início da pauta" placeholder="hh:mm" inputmode="numeric" autocomplete="off" valor=valores.inicio_pauta erros=erros.inicio_pauta %}
           </div>
         </div>
       </section>
@@ -74,10 +78,27 @@
           <h2 class="section-card__titulo">Produção e publicação</h2>
         </header>
         <div class="section-card__corpo">
+          {# Só os horários da produção na caixa, como Período e Destino nas Palestras. #}
+          <div class="bate-volta ofc-percurso">
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">Edição</div>
+              <div class="pal-publico">
+                {% include "components/input.html" with name="colocada_edicao" label="Colocada para edição" rotulo_oculto=True placeholder="hh:mm" inputmode="numeric" autocomplete="off" valor=valores.colocada_edicao erros=erros.colocada_edicao %}
+              </div>
+            </div>
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">No ar</div>
+              <div>
+                {# Data e horário da publicação numa linha só. #}
+                <div class="pal-periodo">
+                  {% include "components/input.html" with name="data_publicacao" label="Data de publicação" rotulo_oculto=True tipo="date" valor=valores.data_publicacao erros=erros.data_publicacao %}
+                  {% include "components/input.html" with name="horario_publicacao" label="Horário de publicação" rotulo_oculto=True placeholder="hh:mm" inputmode="numeric" autocomplete="off" valor=valores.horario_publicacao erros=erros.horario_publicacao %}
+                </div>
+                {% if publicacao.tempo_ate_publicacao_display %}<p class="form-ajuda">Da entrada da pauta à publicação: {{ publicacao.tempo_ate_publicacao_display }}</p>{% endif %}
+              </div>
+            </div>
+          </div>
           <div class="g-form g-form--3">
-            {% include "components/input.html" with name="colocada_edicao" label="Colocada para edição" placeholder="hh:mm" inputmode="numeric" autocomplete="off" valor=valores.colocada_edicao erros=erros.colocada_edicao %}
-            {% include "components/input.html" with name="data_publicacao" label="Data de publicação" tipo="date" valor=valores.data_publicacao erros=erros.data_publicacao %}
-            {% include "components/input.html" with name="horario_publicacao" label="Horário de publicação" placeholder="hh:mm" inputmode="numeric" autocomplete="off" valor=valores.horario_publicacao erros=erros.horario_publicacao %}
             {% include "components/select.html" with name="revisao" label="Revisão" opcoes=opcoes_revisao selecionado=valores.revisao erros=erros.revisao placeholder="Quem revisou" %}
             {% include "components/select.html" with name="galeria_fotos" label="Galeria de fotos" opcoes=opcoes_revisao selecionado=valores.galeria_fotos erros=erros.galeria_fotos placeholder="Quem montou a galeria" %}
           </div>
@@ -112,35 +133,8 @@
     </form>
 
     {% if publicacao %}
-      {# Acompanhamento no stepper do painel da viagem: da entrada da pauta à publicação. #}
-      <nav class="vg-stepper" aria-label="Acompanhamento da pauta">
-        <ol class="vg-stepper__lista vg-stepper__lista--auto vg-trilho sem-anim" data-vg-trilho>
-          {% for etapa in etapas %}
-            <li class="vg-stepper__item{% if etapa.estado == 'concluido' %} is-concluida{% elif etapa.estado == 'cancelado' %} is-atual{% endif %}">
-              <span class="vg-stepper__passo" title="{{ etapa.titulo }} — {{ etapa.subtitulo }}">
-                <span class="vg-stepper__num" aria-hidden="true">{% if etapa.estado == "concluido" %}{% include "components/icon.html" with nome="check" %}{% elif etapa.estado == "cancelado" %}{% include "components/icon.html" with nome="ban" %}{% else %}{{ forloop.counter }}{% endif %}</span>
-                <span class="vg-stepper__rotulo">{{ etapa.titulo }}</span>
-                <span class="sr-only">— {{ etapa.subtitulo }}</span>
-              </span>
-            </li>
-          {% endfor %}
-        </ol>
-      </nav>
-
-      <section class="section-card reg" id="sec-registro">
-        <header class="section-card__cabecalho reg__t">
-          <h2 class="section-card__titulo">Registro</h2>
-        </header>
-        <div class="section-card__corpo">
-          {# Os dados calculados como fatos com ícone, na linguagem das listas. #}
-          <ul class="tm-fatos" aria-label="Dados de registro da pauta">
-            <li class="tm-fato">{% include "components/icon.html" with nome="activity" %}<span class="sr-only">Status atual: </span><span class="vg-fato__valor"><span class="st st--{{ publicacao.status_css }}">{{ publicacao.get_status_display }}</span></span></li>
-            <li class="tm-fato{% if not publicacao.tempo_ate_publicacao_display %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome="hourglass" %}<span class="sr-only">Tempo até publicar: </span><span class="vg-fato__valor">{{ publicacao.tempo_ate_publicacao_display|default:"Sem tempo apurado" }}</span></li>
-            <li class="tm-fato">{% include "components/icon.html" with nome="user" %}<span class="sr-only">Registrada por: </span><span class="vg-fato__valor">{{ publicacao.criado_por|default:"Importação" }}</span></li>
-            <li class="tm-fato">{% include "components/icon.html" with nome="clock" %}<span class="sr-only">Atualizada em: </span><span class="vg-fato__valor">Atualizada em {{ publicacao.atualizado_em|date:"d/m/Y H:i" }}</span></li>
-          </ul>
-        </div>
-      </section>
+      {% include "components/v32/andamento_secao.html" %}
+      {% include "components/v32/historico_status.html" with rotulo_aria="Histórico da pauta" %}
     {% endif %}
   </div>
 {% endblock %}

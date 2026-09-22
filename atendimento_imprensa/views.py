@@ -12,17 +12,17 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
-from django.http import Http404, HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateformat import format as formatar_data
 from django.views.decorators.http import require_POST
 
+from core import andamento as fluxo_andamento
+from core import cadastros_modal
 from core.listagens import (
-    campos_formulario,
     opcoes,
-    opcoes_choices,
     ordenacao,
     paginar,
     trilha_de_situacoes,
@@ -39,6 +39,7 @@ from .forms import (
 )
 from .models import (
     SITUACOES_ABERTAS,
+    AcaoHistorico,
     Atendimento,
     Responsavel,
     SituacaoAtendimento,
@@ -67,10 +68,6 @@ ORDENACOES = {
 }
 
 CAMPOS_FILTRO = ["q", "situacao", "veiculo", "responsavel", "inicio", "fim"]
-
-
-def _opcoes_situacao():
-    return opcoes_choices(SituacaoAtendimento.choices)
 
 
 # ---------------------------------------------------------------------------
@@ -295,50 +292,18 @@ def exportar(request):
 # Formulário (tela única do atendimento)
 # ---------------------------------------------------------------------------
 
-def _etapas(atendimento):
-    """Acompanhamento do pedido — antes exibido na lateral do detalhe."""
-    fontes = atendimento.fontes_alinhadas
-    return [
-        {
-            "titulo": "Pedido recebido",
-            "subtitulo": f"{atendimento.data:%d/%m/%Y}"
-            + (f" · {atendimento.horario:%H:%M}" if atendimento.horario else ""),
-            "estado": "concluido",
-        },
-        {
-            "titulo": "Fontes consultadas",
-            "subtitulo": (
-                f"{len(fontes)} fonte"
-                f"{'s' if len(fontes) != 1 else ''} acionada"
-                f"{'s' if len(fontes) != 1 else ''}"
-                if atendimento.fonte
-                else "Nenhuma fonte registrada"
-            ),
-            "estado": "concluido" if atendimento.fonte else "pendente",
-        },
-        {
-            "titulo": "Resposta enviada",
-            "subtitulo": (
-                (
-                    f"{atendimento.horario_resposta:%H:%M}"
-                    if atendimento.horario_resposta
-                    else "Horário não registrado"
-                )
-                + (
-                    f" · {atendimento.responsavel_resposta}"
-                    if atendimento.responsavel_resposta
-                    else ""
-                )
-                if atendimento.atendido
-                else atendimento.get_situacao_display()
-            ),
-            "estado": "concluido" if atendimento.atendido else (
-                "cancelado"
-                if atendimento.situacao == SituacaoAtendimento.NAO_RESPONDER
-                else "pendente"
-            ),
-        },
-    ]
+def _contexto_andamento(atendimento, erro="", escolhido="", texto=""):
+    return fluxo_andamento.contexto(
+        services.FLUXO,
+        atendimento.situacao,
+        url=reverse("atendimento_imprensa:andamento", args=[atendimento.pk]),
+        ultima_anotacao=services.ultima_anotacao(atendimento),
+        rotulo_status="Nova situação",
+        erro=erro,
+        escolhido=escolhido,
+        texto=texto,
+        placeholder="O que aconteceu: fonte acionada, aguardando o delegado, resposta enviada…",
+    )
 
 
 def _valores(form):
@@ -361,13 +326,11 @@ def _contexto_formulario(form, atendimento=None):
         "valores": _valores(form),
         "opcoes_veiculos": opcoes(form.fields["veiculo"].queryset),
         "opcoes_responsaveis": opcoes(form.fields["responsavel"].queryset),
-        "opcoes_situacao": _opcoes_situacao(),
         "jornalistas_sugeridos": list(
             Atendimento.objects.order_by("jornalista")
             .values_list("jornalista", flat=True)
             .distinct()[:400]
         ),
-        "etapas": [],
         "fontes": [],
         "deadline_vencido": False,
         # Cabeçalho da tela de edição: só o título e o selo da situação.
@@ -376,9 +339,10 @@ def _contexto_formulario(form, atendimento=None):
     }
     if atendimento and atendimento.pk:
         hoje = timezone.localdate()
+        contexto.update(_contexto_andamento(atendimento))
+        contexto["historico"] = atendimento.historico.select_related("usuario")
         contexto.update(
             {
-                "etapas": _etapas(atendimento),
                 "fontes": atendimento.fontes_alinhadas,
                 "deadline_vencido": bool(
                     atendimento.aberto
@@ -388,6 +352,25 @@ def _contexto_formulario(form, atendimento=None):
             }
         )
     return contexto
+
+
+def _registrar_edicao(request, form, atendimento, novo):
+    if novo:
+        services.registrar_historico(
+            atendimento, request.user, AcaoHistorico.CRIACAO,
+            "Atendimento registrado no sistema.", status_novo=atendimento.situacao,
+        )
+        return
+    alterados = [
+        form.fields[nome].label
+        for nome in form.changed_data
+        if nome in form.fields and nome != "veiculo_novo"
+    ]
+    if alterados:
+        services.registrar_historico(
+            atendimento, request.user, AcaoHistorico.ATUALIZACAO,
+            "Campos atualizados: " + ", ".join(alterados),
+        )
 
 
 def _salvar(request, form):
@@ -411,6 +394,7 @@ def novo(request):
                     for mensagem in mensagens:
                         form.add_error(campo if campo in form.fields else None, mensagem)
             else:
+                _registrar_edicao(request, form, atendimento, novo=True)
                 messages.success(request, "Atendimento registrado.")
                 return redirect("atendimento_imprensa:editar", pk=atendimento.pk)
         messages.error(request, "Corrija os campos destacados para continuar.")
@@ -442,6 +426,7 @@ def editar(request, pk):
                     for mensagem in mensagens:
                         form.add_error(campo if campo in form.fields else None, mensagem)
             else:
+                _registrar_edicao(request, form, atendimento, novo=False)
                 messages.success(request, "Atendimento atualizado.")
                 return redirect("atendimento_imprensa:editar", pk=atendimento.pk)
         messages.error(request, "Corrija os campos destacados para continuar.")
@@ -450,6 +435,45 @@ def editar(request, pk):
     contexto = _contexto_formulario(form, atendimento)
     contexto["titulo_pagina"] = f"Atendimento #{atendimento.pk}"
     return render(request, "pages/atendimento_imprensa/form.html", contexto)
+
+
+@acesso_ao_modulo
+def registrar_andamento(request, pk):
+    """Registra a próxima situação — na tela do atendimento ou num modal da lista.
+
+    No modal vale o protocolo dos cadastros (`X-Cadastro-Modal`): o GET
+    devolve o trecho, o POST devolve `{"ok": true}` ou o trecho com o erro.
+    """
+    atendimento = get_object_or_404(Atendimento.objects.select_related("veiculo"), pk=pk)
+    via_modal = request.headers.get("X-Cadastro-Modal") == "1"
+    destino = reverse("atendimento_imprensa:editar", args=[atendimento.pk]) + "#sec-andamento"
+
+    def modal(**extra):
+        veiculo = f" · {atendimento.veiculo}" if atendimento.veiculo_id else ""
+        return render(
+            request,
+            "components/v32/andamento_modal.html",
+            {
+                **_contexto_andamento(atendimento, **extra),
+                "titulo_modal": f"Andamento — {atendimento.jornalista}{veiculo}",
+                "selo_tom": atendimento.situacao_css,
+            },
+        )
+
+    if request.method != "POST":
+        return modal() if via_modal else redirect(destino)
+    nova = request.POST.get("novo_status", "")
+    texto = request.POST.get("andamento", "")
+    try:
+        services.registrar_andamento(atendimento, request.user, nova, texto)
+    except ValidationError as erro:
+        if via_modal:
+            return modal(erro=" ".join(erro.messages), escolhido=nova, texto=texto)
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+        return redirect(destino)
+    messages.success(request, f"Situação atualizada para {atendimento.get_situacao_display()}.")
+    return JsonResponse({"ok": True}) if via_modal else redirect(destino)
 
 
 # ---------------------------------------------------------------------------
@@ -462,63 +486,31 @@ CADASTROS = {
         "form": ResponsavelForm,
         "titulo": "Equipe",
         "singular": "integrante",
-        "genitivo": "do integrante",
         "novo": "Novo integrante",
         "exemplo": "Ex.: Mariana",
         "icone": "users",
         "intro": "Nome curto usado nas colunas de responsável pelo atendimento e pela resposta.",
+        "uso": lambda r: Atendimento.objects.filter(
+            Q(responsavel=r) | Q(responsavel_resposta=r)
+        ).count(),
+        "uso_rotulo": ("atendimento", "atendimentos"),
     },
     "veiculos": {
         "model": Veiculo,
         "form": VeiculoForm,
         "titulo": "Veículos",
         "singular": "veículo",
-        "genitivo": "do veículo",
         "novo": "Novo veículo",
         "exemplo": "Ex.: RPC",
         "icone": "mail",
         "intro": "Veículo de imprensa que fez o pedido (TV, rádio, portal, jornal).",
+        "uso": lambda v: v.atendimentos.count(),
+        "uso_rotulo": ("atendimento", "atendimentos"),
     },
 }
 
-
-def _config_cadastro(tipo):
-    config = CADASTROS.get(tipo)
-    if not config:
-        raise Http404
-    return config
-
-
-def _grupos():
-    return [
-        {
-            "slug": slug,
-            "titulo": config["titulo"],
-            "total": config["model"].objects.count(),
-            "icone": config["icone"],
-            "url": reverse("atendimento_imprensa:cadastro_lista", args=[slug]),
-        }
-        for slug, config in CADASTROS.items()
-    ]
-
-
-def _contexto_cadastros(tipo, config):
-    return {
-        "kicker": KICKER,
-        "modulo_titulo": "Atendimento à Imprensa",
-        "modulo_sub": "Tabelas de apoio usadas no registro dos atendimentos.",
-        "slug": tipo,
-        "titulo": config["titulo"],
-        "singular": config["singular"],
-        "genitivo": config["genitivo"],
-        "novo": config["novo"],
-        "exemplo": config["exemplo"],
-        "grupos": _grupos(),
-        "url_lista": "atendimento_imprensa:cadastro_lista",
-        "url_novo": "atendimento_imprensa:cadastro_novo",
-        "url_editar": "atendimento_imprensa:cadastro_editar",
-        "url_alternar": "atendimento_imprensa:cadastro_alternar",
-    }
+_CADASTRO = {"cadastros": CADASTROS, "ns": "atendimento_imprensa"}
+_CONTEXTO_CADASTRO = {"kicker": KICKER, "modulo_titulo": "Atendimento à Imprensa"}
 
 
 @gerenciamento_de_cadastros
@@ -528,76 +520,15 @@ def cadastros(request):
 
 @gerenciamento_de_cadastros
 def lista_cadastro(request, tipo):
-    config = _config_cadastro(tipo)
-    queryset = config["model"].objects.all()
-    termo = request.GET.get("q", "").strip()
-    if termo:
-        queryset = queryset.filter(nome__icontains=termo)
-    situacao = request.GET.get("situacao", "").strip()
-    if situacao == "ativos":
-        queryset = queryset.filter(ativo=True)
-    elif situacao == "inativos":
-        queryset = queryset.filter(ativo=False)
-    pagina, paginas_visiveis, querystring = paginar(request, queryset)
-    contexto = _contexto_cadastros(tipo, config)
-    contexto.update(
-        {
-            "total_registros": config["model"].objects.count(),
-            "total_ativos": config["model"].objects.filter(ativo=True).count(),
-            "pagina": pagina,
-            "paginas_visiveis": paginas_visiveis,
-            "elipse": Paginator.ELLIPSIS,
-            "querystring": querystring,
-            "termo": termo,
-            "situacao": situacao,
-            "tem_filtros": bool(termo or situacao),
-            "opcoes_situacao": [
-                {"valor": "ativos", "rotulo": "Ativos"},
-                {"valor": "inativos", "rotulo": "Inativos"},
-            ],
-        }
-    )
-    return render(request, "pages/ascom_cadastros/lista.html", contexto)
+    return cadastros_modal.lista(request, tipo, **_CADASTRO, **_CONTEXTO_CADASTRO)
 
 
 @gerenciamento_de_cadastros
 def editar_cadastro(request, tipo, pk=None):
-    config = _config_cadastro(tipo)
-    instancia = get_object_or_404(config["model"], pk=pk) if pk else None
-    if request.method == "POST":
-        form = config["form"](request.POST, instance=instancia)
-        if form.is_valid():
-            form.save()
-            messages.success(request, f"{config['titulo']}: registro salvo com sucesso.")
-            return redirect("atendimento_imprensa:cadastro_lista", tipo=tipo)
-        messages.error(request, "Corrija os campos destacados para continuar.")
-    else:
-        form = config["form"](instance=instancia)
-    campos = campos_formulario(form)
-    erros_gerais = list(form.non_field_errors())
-    contexto = _contexto_cadastros(tipo, config)
-    contexto.update(
-        {
-            "instancia": instancia,
-            "form": form,
-            "campos": campos,
-            "erros_gerais": erros_gerais,
-            "erros_total": sum(1 for c in campos if c["erros"]) + len(erros_gerais),
-            "cartao_titulo": f"Editar {config['singular']}" if pk else config["novo"],
-            "cartao_intro": config["intro"],
-        }
-    )
-    return render(request, "pages/ascom_cadastros/form.html", contexto)
+    return cadastros_modal.editar(request, tipo, pk, **_CADASTRO, **_CONTEXTO_CADASTRO)
 
 
 @gerenciamento_de_cadastros
 @require_POST
-def alternar_cadastro(request, tipo, pk):
-    config = _config_cadastro(tipo)
-    objeto = get_object_or_404(config["model"], pk=pk)
-    objeto.ativo = not objeto.ativo
-    objeto.save(update_fields=["ativo", "atualizado_em"])
-    messages.success(
-        request, f"{objeto.nome} {'ativado' if objeto.ativo else 'inativado'}."
-    )
-    return redirect("atendimento_imprensa:cadastro_lista", tipo=tipo)
+def excluir_cadastro(request, tipo, pk):
+    return cadastros_modal.excluir(request, tipo, pk, **_CADASTRO)

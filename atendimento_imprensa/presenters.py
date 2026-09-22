@@ -74,5 +74,6 @@ def linha_da_lista(atendimento, hoje=None):
         "quando_tom": quando_tom,
         "fatos": fatos_do_atendimento(atendimento),
         "url_editar": reverse("atendimento_imprensa:editar", args=[atendimento.pk]),
+        "url_andamento": reverse("atendimento_imprensa:andamento", args=[atendimento.pk]),
         "cancelada": atendimento.situacao == SituacaoAtendimento.NAO_RESPONDER,
     }

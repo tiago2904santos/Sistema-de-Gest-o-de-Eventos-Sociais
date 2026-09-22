@@ -1,0 +1,47 @@
+<!DOCTYPE html>{% comment %}
+  Folha dos documentos do Coffee Break (ordem de serviço, certifico): o
+  papel timbrado da ASCOM dos modelos .odt/.pdf em uso — brasão, as três
+  linhas cinza em Arial, e no rodapé a marca PCPR, o endereço e o número da
+  página. Cabeçalho e rodapé se repetem em toda página (running elements do
+  WeasyPrint).
+{% endcomment %}
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>{% block titulo %}{% endblock %}</title>
+<style>
+  @page {
+    size: A4;
+    margin: 6.2cm 2.2cm 3.4cm 2.5cm;
+    @top-center { content: element(cabecalho); vertical-align: bottom; padding-bottom: 0.4cm; }
+    @bottom-center { content: element(rodape); vertical-align: top; }
+    @bottom-right { content: counter(page); font: 11pt Arial, "Liberation Sans", sans-serif; vertical-align: top; padding-top: 0.1cm; }
+  }
+  body { margin: 0; font-family: Arial, "Liberation Sans", Helvetica, sans-serif; font-size: 12pt; line-height: 1.35; color: #000; }
+  .cabecalho { position: running(cabecalho); text-align: center; color: #595959; font-size: 12.5pt; line-height: 1.2; }
+  .cabecalho img { height: 3.1cm; display: block; margin: 0 auto 1.3cm; }
+  .cabecalho p { margin: 0; text-transform: uppercase; }
+  .cabecalho b { font-weight: 700; }
+  .rodape { position: running(rodape); text-align: center; color: #595959; font-size: 10.5pt; line-height: 1.25; }
+  .rodape img { height: 0.75cm; display: block; margin: 0 auto 0.1cm; }
+  .rodape p { margin: 0; }
+  p { margin: 0; }
+  .espaco { height: 1em; }
+  {% block estilo %}{% endblock %}
+</style>
+</head>
+<body>
+  <div class="cabecalho">
+    <img src="{{ imagens.brasao }}" alt="">
+    <p>Secretaria de Estado da Segurança Pública</p>
+    <p><b>Polícia Civil do Paraná</b></p>
+    <p>Assessoria de Comunicação Social</p>
+  </div>
+  <div class="rodape">
+    <img src="{{ imagens.marca }}" alt="">
+    <p>Avenida Iguaçu, 470 – Rebouças – Curitiba/PR—CEP: 80.230-020</p>
+    <p>Fone: (41) 3235-6477 – e-mail: comunicacao@pc.pr.gov.br</p>
+  </div>
+  {% block corpo %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,77 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Certidões dos fornecedores com lote ativo: um cartão por fornecedor, uma
+  linha por certidão, com a validade e o portal emissor. Os portais pedem
+  CAPTCHA, então a emissão é manual: "Emitir" copia o CNPJ e abre o portal;
+  o PDF baixado volta por "Enviar" e o sistema lê a validade dele.
+{% endcomment %}
+
+{% block title %}Certidões — Coffee Break{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+  {% include "components/v32/page_header.html" with titulo="Certidões dos fornecedores" icone="check-circle" %}
+
+  <div class="aviso aviso--info" role="status">
+    {% include "components/icon.html" with nome="info" %}
+    <div>“Emitir” copia o CNPJ e abre o portal (todos pedem a verificação “não sou um robô”). Baixe o PDF e envie-o aqui: o sistema lê a validade sozinho. Certidões que vencem em até {{ dias_aviso }} dias aparecem em amarelo, e o pacote do protocolo só usa certidões vigentes.</div>
+  </div>
+
+  {% for item in fornecedores %}
+    {% with f=item.fornecedor %}
+    <section class="section-card reg" id="fornecedor-{{ f.pk }}">
+      <header class="section-card__cabecalho reg__t">
+        <h2 class="section-card__titulo">{{ f.razao_social }} <small class="cb-cnpj">CNPJ {{ f.cnpj_formatado }}</small></h2>
+      </header>
+      <div class="section-card__corpo">
+        <ul class="cb-certidoes">
+          {% for linha in item.linhas %}
+            <li class="cb-certidao">
+              <div class="cb-certidao__info">
+                <b>{{ linha.rotulo }}</b>
+                {% if linha.situacao == "faltando" %}
+                  <span class="st st--pendente">Não cadastrada</span>
+                {% elif linha.situacao == "vencida" %}
+                  <span class="st st--cancelada">Vencida em {{ linha.certidao.validade|date:"d/m/Y" }}</span>
+                {% elif linha.situacao == "vencendo" %}
+                  <span class="st st--aguardando_despacho">Vence em {{ linha.certidao.validade|date:"d/m/Y" }} ({{ linha.dias }} dia{{ linha.dias|pluralize }})</span>
+                {% else %}
+                  <span class="st st--atendida">Válida até {{ linha.certidao.validade|date:"d/m/Y" }}</span>
+                {% endif %}
+                {% if linha.certidao %}<a href="{% url 'coffee_break:certidao_arquivo' linha.certidao.pk %}" target="_blank" rel="noopener">Ver PDF</a>{% endif %}
+              </div>
+              <div class="cb-certidao__acoes">
+                {% if linha.portal %}
+                  <a class="btn--secundaria btn--compacto" href="{{ linha.portal }}" target="_blank" rel="noopener" data-copiar-cnpj="{{ f.cnpj }}">{% include "components/icon.html" with nome="arrow-right" %}Emitir</a>
+                {% else %}
+                  <span class="form-ajuda">Portal municipal não cadastrado no fornecedor.</span>
+                {% endif %}
+                <form method="post" enctype="multipart/form-data" class="cb-certidao__envio">{% csrf_token %}
+                  <input type="hidden" name="fornecedor" value="{{ f.pk }}">
+                  <input type="hidden" name="tipo" value="{{ linha.tipo }}">
+                  <label class="sr-only" for="arq-{{ f.pk }}-{{ linha.tipo }}">PDF da certidão {{ linha.rotulo }}</label>
+                  <input type="file" name="arquivo" id="arq-{{ f.pk }}-{{ linha.tipo }}" accept=".pdf,application/pdf" required class="form-controle">
+                  <label class="sr-only" for="val-{{ f.pk }}-{{ linha.tipo }}">Válida até (opcional)</label>
+                  <input type="date" name="validade" id="val-{{ f.pk }}-{{ linha.tipo }}" class="form-controle" title="Válida até — em branco, o sistema lê do PDF">
+                  <button type="submit" class="btn-primaria btn--compacto">{% include "components/icon.html" with nome="upload" %}Enviar</button>
+                </form>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+    {% endwith %}
+  {% empty %}
+    <p>Nenhum fornecedor com lote ativo.</p>
+  {% endfor %}
+
+  <script>
+    // "Emitir": copia o CNPJ (só dígitos) antes de abrir o portal.
+    document.querySelectorAll("[data-copiar-cnpj]").forEach(function (link) {
+      link.addEventListener("click", function () {
+        if (navigator.clipboard) navigator.clipboard.writeText(link.dataset.copiarCnpj).catch(function () {});
+      });
+    });
+  </script>
+{% endblock %}

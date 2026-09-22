@@ -84,6 +84,7 @@ def linha_da_lista(solicitacao, hoje=None):
         "quando_tom": quando_tom,
         "fatos": fatos_da_solicitacao(solicitacao),
         "url_editar": reverse("coffee_break:editar", args=[solicitacao.pk]),
+        "url_andamento": reverse("coffee_break:andamento", args=[solicitacao.pk]),
         "cancelada": solicitacao.cancelada,
         # Quem já foi concluída ou cancelada só se abre para consulta.
         "editavel": not solicitacao.cancelada and not solicitacao.concluida,
@@ -176,9 +177,11 @@ def linha_do_cadastro(item, tipo):
     return {
         "item": item,
         "titulo": titulo,
-        "selo": "Ativo" if item.ativo else "Inativo",
-        "selo_tom": "ativo" if item.ativo else "inativo",
+        # Só o lote tem vigência (é ela que decide quem recebe pelo município).
+        "selo": ("Vigente" if item.ativo else "Encerrado") if tipo == "lotes" else "",
+        "selo_tom": ("ativo" if item.ativo else "inativo") if tipo == "lotes" else "",
         "fatos": fatos,
         "url_editar": reverse("coffee_break:cadastro_editar", args=[tipo, item.pk]),
-        "cancelada": not item.ativo,
+        "url_excluir": reverse("coffee_break:cadastro_excluir", args=[tipo, item.pk]),
+        "cancelada": tipo == "lotes" and not item.ativo,
     }

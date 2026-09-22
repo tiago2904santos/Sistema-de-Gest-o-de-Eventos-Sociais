@@ -1,12 +1,14 @@
 {% comment %}
   Ações de uma linha de pauta num botão único, no padrão das listas de
-  Viagens: abrir a pauta e, quando existem, os links publicados.
+  Viagens: registrar o andamento (em modal, sem sair da lista), abrir a
+  pauta e, quando existem, os links publicados.
   Contexto: `l` (linha do presenter).
 {% endcomment %}
 {% with p=l.publicacao %}
 <div class="dd of-menu cad-acoes" data-menu>
   <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações da pauta #{{ p.pk }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
   <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
+    <a class="dd__i of-item" href="{{ l.url_andamento }}" data-cadastro-modal>{% include "components/icon.html" with nome="activity" %}<span><b>Registrar andamento</b><small>Mudar o status sem abrir a pauta</small></span></a>
     <a class="dd__i of-item" href="{{ l.url_editar }}">{% include "components/icon.html" with nome="pencil" %}<span><b>{% if p.encerrada %}Abrir pauta{% else %}Atualizar pauta{% endif %}</b><small>Pauta, produção, distribuição e acompanhamento</small></span></a>
     {% if p.link_site or p.link_aen %}
       <div class="dd__s"></div>

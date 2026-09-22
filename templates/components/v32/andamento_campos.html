@@ -1,0 +1,7 @@
+{% comment %}
+  Os campos do andamento — próximo status em cartões e a anotação —, iguais
+  na tela do registro e no modal da lista. Contexto: `andamento`, `colunas`.
+{% endcomment %}
+{% include "components/v32/cartoes_escolha.html" with name="novo_status" label=andamento.rotulo_status obrigatorio=True opcoes=andamento.opcoes colunas=colunas id_primeiro=True erros=None %}
+{% include "components/textarea.html" with name="andamento" label="Andamento" linhas="3" placeholder=andamento.placeholder ajuda=andamento.ajuda|default:"Opcional. Fica no histórico e na coluna Andamento da planilha." valor=andamento.texto erros=None %}
+{% if andamento.erro %}<p class="form-erro" role="alert">{{ andamento.erro }}</p>{% endif %}

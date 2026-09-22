@@ -27,12 +27,35 @@
           </div>
         </div>
       </div>
-      {% if not somente_leitura %}
-        <div class="frm-topo__acoes">
-          <button type="submit" class="btn-primaria" form="form-coffee-break">Salvar solicitação</button>
+      <div class="frm-topo__acoes">
+        {# A data da solicitação mora no cabeçalho; o atributo form a leva junto com o formulário. #}
+        <div class="pal-topo-data">
+          {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True valor=valores.data_solicitacao erros=erros.data_solicitacao desabilitado=dados_base_bloqueados form_alvo="form-coffee-break" %}
+        </div>
+        {% if not somente_leitura %}<button type="submit" class="btn-primaria" form="form-coffee-break">Salvar solicitação</button>{% endif %}
+      </div>
+    </div>
+
+    {% if solicitacao %}
+      {# Os marcos do fluxo no stepper do topo, como o andamento das Palestras. #}
+      <nav class="vg-stepper sol-stepper" aria-label="Acompanhamento da solicitação">
+        <ol class="vg-stepper__lista vg-stepper__lista--auto vg-trilho sem-anim" data-vg-trilho>
+          {% for etapa in etapas %}
+            <li class="vg-stepper__item{% if etapa.estado == 'atual' %} is-atual{% elif etapa.estado == 'concluido' %} is-concluida{% endif %}">
+              <span class="vg-stepper__passo" title="{{ etapa.titulo }}">
+                <span class="vg-stepper__num" aria-hidden="true">{% if etapa.estado == "concluido" %}{% include "components/icon.html" with nome="check" %}{% else %}{{ forloop.counter }}{% endif %}</span>
+                <span class="vg-stepper__rotulo">{{ etapa.titulo }}</span>
+              </span>
+            </li>
+          {% endfor %}
+        </ol>
+      </nav>
+      {% if ultima_anotacao and not solicitacao.cancelada %}
+        <div class="aviso aviso--callout" role="status">
+          <div class="aviso__txt">{% include "components/icon.html" with nome="activity" %}<div class="aviso__corpo"><b>Andamento — {{ solicitacao.situacao_financeira_display }}</b><p>{{ ultima_anotacao }}</p></div></div>
         </div>
       {% endif %}
-    </div>
+    {% endif %}
 
     {% if solicitacao and solicitacao.cancelada %}
       {# Como a faixa de "viagem cancelada": o motivo e a saída dele na mesma faixa. #}
@@ -61,7 +84,7 @@
       </div>
     {% endif %}
 
-    <form method="post" action="" id="form-coffee-break" class="editor-roteiro__principal">
+    <form method="post" action="" id="form-coffee-break" class="editor-roteiro__principal" enctype="multipart/form-data">
       {% csrf_token %}
       <input type="hidden" name="versao" value="{{ valores.versao }}">
       {% if form.errors %}
@@ -76,40 +99,77 @@
       <section class="section-card reg" id="sec-lote">
         <header class="section-card__cabecalho reg__t">
           <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
-          <h2 class="section-card__titulo">Lote e evento</h2>
+          <h2 class="section-card__titulo">Evento e lote</h2>
+        </header>
+        <div class="section-card__corpo">
+          {# Só o período e o município (que decide o lote) na caixa, como nas Palestras. #}
+          <div class="bate-volta ofc-percurso">
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">Período</div>
+              <div>
+                {# Início, fim e o horário numa linha só. #}
+                <div class="pal-periodo">
+                  {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Data ou período do evento" rotulo_oculto=True dois_campos=True valor_inicio=valores.data_inicio_evento valor_fim=valores.data_fim_evento erros=erro_periodo desabilitado=dados_base_bloqueados %}
+                  {% include "components/input.html" with name="horario_evento" label="Horário" rotulo_oculto=True tipo="time" valor=valores.horario_evento erros=erros.horario_evento desabilitado=dados_base_bloqueados %}
+                </div>
+                {% if valores.periodo_evento_texto %}<p class="form-ajuda">Na planilha: {{ valores.periodo_evento_texto }}</p>{% endif %}
+              </div>
+            </div>
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">Município</div>
+              <div>
+                {# O lote não se escolhe: sai do município (lista do lote ou, fora dela, a sede mais próxima). #}
+                {% include "components/select.html" with name="municipio" label="Município do evento" rotulo_oculto=True opcoes=municipios obrigatorio=form.fields.municipio.required pesquisavel=True selecionado=valores.municipio erros=erros.municipio desabilitado=dados_base_bloqueados placeholder="Buscar município..." %}
+                <div data-lote-do-municipio data-lote-atual="{% if lote %}{{ lote.rotulo_curto }} — {{ lote.contrato.fornecedor.razao_social }}{% endif %}" data-saldo-atual="{% if lote %}{{ lote.restante }} de {{ lote.quantidade_total }} unidades{% endif %}">
+                  <p class="form-ajuda cb-lote"><b data-lote-nome>{% if lote %}{{ lote.rotulo_curto }} — {{ lote.contrato.fornecedor.razao_social }}{% else %}O lote sai do município{% endif %}</b> <span data-lote-saldo>{% if lote %}· Saldo: {{ lote.restante }} de {{ lote.quantidade_total }} unidades{% endif %}</span></p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="g-form g-form--3">
+            {% include "components/input.html" with name="quantidade" label="Quantidade solicitada" tipo="number" obrigatorio=True valor=valores.quantidade erros=erros.quantidade desabilitado=dados_base_bloqueados %}
+            {% include "components/input.html" with name="numero" label="Nº da solicitação / OS" placeholder="Automático" ajuda="Em branco, o sistema numera pelo lote." valor=valores.numero erros=erros.numero desabilitado=dados_base_bloqueados %}
+            <input type="hidden" name="periodo_evento_texto" value="{{ valores.periodo_evento_texto }}">
+            <div class="cheia">
+              {% include "components/textarea.html" with name="descricao_evento" label="Descrição do evento (objeto da OS)" obrigatorio=True linhas="2" valor=valores.descricao_evento erros=erros.descricao_evento desabilitado=dados_base_bloqueados %}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card reg" id="sec-os">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+          <h2 class="section-card__titulo">Ordem de serviço</h2>
         </header>
         <div class="section-card__corpo">
           <div class="g-form g-form--3">
             <div class="c2">
-              {% include "components/select.html" with name="lote" label="Lote" opcoes=lotes obrigatorio=True pesquisavel=True selecionado=valores.lote erros=erros.lote desabilitado=dados_base_bloqueados %}
+              {% include "components/input.html" with name="local_entrega" label="Local de entrega" placeholder="Ex.: Casa da Cultura - Rua do Centenário, 2011 - Centro - Campo Largo" valor=valores.local_entrega erros=erros.local_entrega desabilitado=somente_leitura %}
             </div>
-            <div class="form-campo">
-              <label class="form-label" for="id_saldo_lote">Saldo disponível</label>
-              <input class="form-controle" id="id_saldo_lote" value="—" readonly
-                     data-saldo-lote data-saldos="{% for pk, info in saldos_lotes.items %}{{ pk }}:{{ info.restante }}/{{ info.total }}{% if not forloop.last %};{% endif %}{% endfor %}">
-            </div>
-            {% include "components/input.html" with name="quantidade" label="Quantidade solicitada" tipo="number" obrigatorio=True valor=valores.quantidade erros=erros.quantidade desabilitado=dados_base_bloqueados %}
-            {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True valor=valores.data_solicitacao erros=erros.data_solicitacao desabilitado=dados_base_bloqueados %}
-            {% include "components/input.html" with name="numero" label="Nº da solicitação" placeholder="Ex.: 02/2026" ajuda="Identificador institucional — texto, não número." valor=valores.numero erros=erros.numero desabilitado=dados_base_bloqueados %}
+            {% include "components/input.html" with name="responsavel_recebimento" label="Responsável pelo recebimento" placeholder="Ex.: Tadeu 41 99988-6010" valor=valores.responsavel_recebimento erros=erros.responsavel_recebimento desabilitado=somente_leitura %}
             <div class="c2">
-              {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Data ou período do evento" dois_campos=True valor_inicio=valores.data_inicio_evento valor_fim=valores.data_fim_evento erros=erro_periodo desabilitado=dados_base_bloqueados %}
+              {% include "components/textarea.html" with name="detalhamento_pedido" label="Detalhamento do pedido" linhas="3" placeholder="Em branco: “Solicito coffee para: Dia 01/10 às 9h30 p/ 40 pessoas.”" ajuda="Em branco, a OS monta o texto com a data, o horário e a quantidade." valor=valores.detalhamento_pedido erros=erros.detalhamento_pedido desabilitado=somente_leitura %}
             </div>
-            {% include "components/input.html" with name="periodo_evento_texto" label="Período irregular (texto)" placeholder="Ex.: 23, 24 e 25/03" ajuda="Use somente quando não houver datas estruturadas." valor=valores.periodo_evento_texto erros=erros.periodo_evento_texto desabilitado=dados_base_bloqueados %}
-            <div class="cheia">
-              {% include "components/textarea.html" with name="descricao_evento" label="Descrição do evento" obrigatorio=True linhas="3" valor=valores.descricao_evento erros=erros.descricao_evento desabilitado=dados_base_bloqueados %}
-            </div>
+            {% include "components/input.html" with name="data_envio_ordem_servico" label="OS enviada ao fornecedor em" tipo="date" valor=valores.data_envio_ordem_servico erros=erros.data_envio_ordem_servico desabilitado=somente_leitura %}
           </div>
         </div>
       </section>
 
       <section class="section-card reg" id="sec-financeiro">
         <header class="section-card__cabecalho reg__t">
-          <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+          <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
           <h2 class="section-card__titulo">Informações fiscais e de pagamento</h2>
         </header>
         <div class="section-card__corpo">
           <div class="g-form g-form--3">
             {% include "components/input.html" with name="numero_nota_fiscal" label="Número da nota fiscal" valor=valores.numero_nota_fiscal erros=erros.numero_nota_fiscal desabilitado=somente_leitura %}
+            <div class="form-campo c2">
+              <label class="form-label" for="id_arquivo_nota_fiscal">Nota fiscal (PDF)</label>
+              {% if solicitacao.arquivo_nota_fiscal %}<p class="form-ajuda"><a href="{% url 'coffee_break:nota_fiscal' solicitacao.pk %}" target="_blank" rel="noopener">Ver a nota anexada</a> — enviar outra substitui.</p>{% endif %}
+              <input class="form-controle" type="file" id="id_arquivo_nota_fiscal" name="arquivo_nota_fiscal" accept=".pdf,application/pdf"{% if somente_leitura %} disabled{% endif %}>
+              {% for erro in erros.arquivo_nota_fiscal %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+            </div>
             {% include "components/input.html" with name="protocolo_pagamento" label="Protocolo de pagamento" valor=valores.protocolo_pagamento erros=erros.protocolo_pagamento desabilitado=somente_leitura %}
             {% include "components/input.html" with name="data_atesto_gaf" label="Atesto e envio ao GAF" tipo="date" valor=valores.data_atesto_gaf erros=erros.data_atesto_gaf desabilitado=somente_leitura %}
             {% include "components/input.html" with name="data_ordem_bancaria" label="Ordem bancária emitida em" tipo="date" valor=valores.data_ordem_bancaria erros=erros.data_ordem_bancaria desabilitado=somente_leitura %}
@@ -131,6 +191,63 @@
     </form>
 
     {% if solicitacao %}
+      {% if marco and not somente_leitura %}
+        {# Andamento: o próximo marco do fluxo, fora do <form> principal. #}
+        <section class="section-card reg" id="sec-andamento">
+          <header class="section-card__cabecalho reg__t">
+            <span class="section-card__numero reg-numero" aria-hidden="true">{% include "components/icon.html" with nome="activity" %}</span>
+            <h2 class="section-card__titulo">Andamento</h2>
+          </header>
+          <div class="section-card__corpo">
+            <form method="post" action="{% url 'coffee_break:andamento' solicitacao.pk %}">
+              {% csrf_token %}
+              {% include "pages/coffee_break/_andamento_campos.html" %}
+              <div class="frm-acoes-fim">
+                <span></span>
+                <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check" %}Registrar andamento</button>
+              </div>
+            </form>
+          </div>
+        </section>
+      {% endif %}
+
+      <section class="section-card reg" id="sec-documentos">
+        <header class="section-card__cabecalho reg__t">
+          <h2 class="section-card__titulo">Documentos</h2>
+        </header>
+        <div class="section-card__corpo">
+          <ul class="tm-fatos cb-docs">
+            <li class="tm-fato">
+              {% include "components/icon.html" with nome="document" %}
+              <span class="vg-fato__valor"><b>Ordem de serviço {{ solicitacao.numero }}</b>
+                {% if pendencias_os %}<small class="cb-docs__falta">{{ pendencias_os|join:" " }}</small>{% endif %}</span>
+              {% if not pendencias_os %}
+                <a class="btn--secundaria btn--compacto" href="{% url 'coffee_break:ordem_servico' solicitacao.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}Ver</a>
+                <a class="btn--secundaria btn--compacto" href="{% url 'coffee_break:ordem_servico' solicitacao.pk %}?baixar=1">{% include "components/icon.html" with nome="download" %}Baixar</a>
+              {% endif %}
+            </li>
+            <li class="tm-fato">
+              {% include "components/icon.html" with nome="check" %}
+              <span class="vg-fato__valor"><b>Certifico digital</b>
+                {% if not solicitacao.numero_nota_fiscal %}<small class="cb-docs__falta">Informe o número da nota fiscal.</small>{% endif %}</span>
+              {% if solicitacao.numero_nota_fiscal %}
+                <a class="btn--secundaria btn--compacto" href="{% url 'coffee_break:certifico' solicitacao.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}Ver</a>
+                <a class="btn--secundaria btn--compacto" href="{% url 'coffee_break:certifico' solicitacao.pk %}?baixar=1">{% include "components/icon.html" with nome="download" %}Baixar</a>
+              {% endif %}
+            </li>
+            <li class="tm-fato">
+              {% include "components/icon.html" with nome="clipboard" %}
+              <span class="vg-fato__valor"><b>Pacote do protocolo de pagamento</b>
+                <small>Nota fiscal → certifico → contrato → termo aditivo → certidões vigentes, num PDF só.</small>
+                {% if pendencias_pacote %}<small class="cb-docs__falta">Falta: {{ pendencias_pacote|join:" " }} <a href="{% url 'coffee_break:certidoes' %}">Certidões</a></small>{% endif %}</span>
+              {% if not pendencias_pacote %}
+                <a class="btn-primaria btn--compacto" href="{% url 'coffee_break:pacote_protocolo' solicitacao.pk %}?baixar=1">{% include "components/icon.html" with nome="download" %}Baixar pacote</a>
+              {% endif %}
+            </li>
+          </ul>
+        </div>
+      </section>
+
       <section class="section-card reg" id="sec-vinculo">
         <header class="section-card__cabecalho reg__t">
           <h2 class="section-card__titulo">Lote e contrato</h2>

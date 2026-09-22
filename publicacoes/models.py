@@ -17,7 +17,6 @@ class Responsavel(models.Model):
     """Integrante da equipe de comunicação (ou parceiro, como SESP e AEN)."""
 
     nome = models.CharField("nome", max_length=100, unique=True)
-    ativo = models.BooleanField("ativo", default=True)
     criado_em = models.DateTimeField("criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
 
@@ -34,7 +33,6 @@ class Unidade(models.Model):
     """Unidade policial responsável pela pauta (DP, DHPP, DPC...)."""
 
     nome = models.CharField("nome", max_length=150, unique=True)
-    ativo = models.BooleanField("ativo", default=True)
     criado_em = models.DateTimeField("criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
 
@@ -206,3 +204,49 @@ def formatar_duracao(delta):
     if dias:
         return f"{dias}d {horas}h"
     return f"{horas}h{minutos:02d}"
+
+
+class AcaoHistorico(models.TextChoices):
+    CRIACAO = "CRIACAO", "Registro criado"
+    ATUALIZACAO = "ATUALIZACAO", "Registro atualizado"
+    TRANSICAO = "TRANSICAO", "Status alterado"
+
+
+class HistoricoPublicacao(models.Model):
+    """O que aconteceu com a pauta: criação, edição e cada mudança de status."""
+
+    publicacao = models.ForeignKey(
+        Publicacao,
+        on_delete=models.CASCADE,
+        related_name="historico",
+        verbose_name="pauta",
+    )
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="historico_publicacoes",
+        null=True,
+        blank=True,
+        verbose_name="usuário",
+    )
+    acao = models.CharField("ação", max_length=20, choices=AcaoHistorico.choices)
+    status_anterior = models.CharField("status anterior", max_length=30, blank=True)
+    status_novo = models.CharField("status novo", max_length=30, blank=True)
+    descricao = models.TextField("descrição", blank=True)
+    criado_em = models.DateTimeField("criado em", auto_now_add=True)
+
+    class Meta:
+        ordering = ["criado_em", "pk"]
+        verbose_name = "histórico de pautas"
+        verbose_name_plural = "históricos de pautas"
+
+    def __str__(self):
+        return f"{self.publicacao_id} — {self.get_acao_display()}"
+
+    @property
+    def status_novo_display(self):
+        return dict(StatusPublicacao.choices).get(self.status_novo, self.status_novo)
+
+    @property
+    def status_novo_css(self):
+        return CSS_STATUS_PUBLICACAO.get(self.status_novo, "pendente")

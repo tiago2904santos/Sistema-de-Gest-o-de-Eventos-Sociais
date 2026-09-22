@@ -18,6 +18,7 @@ from .forms import AtendimentoForm
 from .management.commands.importar_atendimentos import situacao_da_planilha
 from .models import Atendimento, Responsavel, SituacaoAtendimento, Veiculo
 from .permissions import CODIGO_MODULO
+from . import services
 
 User = get_user_model()
 
@@ -166,9 +167,18 @@ class FormularioTests(BaseAtendimentoTestCase):
         self.assertIn("deadline", form.errors)
 
     def test_atendido_sem_resposta(self):
-        form = AtendimentoForm(self.dados(situacao=SituacaoAtendimento.ATENDIDO))
-        self.assertFalse(form.is_valid())
-        self.assertIn("resposta", form.errors)
+        # A situação anda pelo andamento: atendido não fica sem resposta nem anotação.
+        atendimento = self.criar_atendimento(
+            situacao=SituacaoAtendimento.EM_ANDAMENTO, resposta="", andamento=""
+        )
+        with self.assertRaises(ValidationError):
+            services.registrar_andamento(atendimento, None, SituacaoAtendimento.ATENDIDO)
+        services.registrar_andamento(
+            atendimento, None, SituacaoAtendimento.ATENDIDO, "Resposta enviada por e-mail."
+        )
+        atendimento.refresh_from_db()
+        self.assertEqual(atendimento.situacao, SituacaoAtendimento.ATENDIDO)
+        self.assertEqual(atendimento.historico.get().status_novo, SituacaoAtendimento.ATENDIDO)
 
 
 class ViewsTests(BaseAtendimentoTestCase):
@@ -209,7 +219,6 @@ class ViewsTests(BaseAtendimentoTestCase):
                 "jornalista": "Paola",
                 "veiculo": self.ric.pk,
                 "pedido": atendimento.pedido,
-                "situacao": SituacaoAtendimento.ATENDIDO,
                 "responsavel": self.joao.pk,
                 "horario_resposta": "11h40",
                 "responsavel_resposta": self.mariana.pk,
@@ -223,7 +232,9 @@ class ViewsTests(BaseAtendimentoTestCase):
             resposta, reverse("atendimento_imprensa:editar", args=[atendimento.pk])
         )
         atendimento.refresh_from_db()
-        self.assertEqual(atendimento.situacao, SituacaoAtendimento.ATENDIDO)
+        # A situação não é campo do formulário: continua a de antes.
+        self.assertEqual(atendimento.situacao, SituacaoAtendimento.AGUARDANDO_FONTE)
+        self.assertIn("Resposta enviada", atendimento.historico.get().descricao)
         self.assertEqual(atendimento.horario_resposta, dt.time(11, 40))
         self.assertEqual(atendimento.responsavel_resposta, self.mariana)
 
@@ -270,7 +281,7 @@ class ViewsTests(BaseAtendimentoTestCase):
         self.assertContains(resposta, "Acompanhamento")
         self.assertContains(resposta, "Pedido recebido")
         self.assertContains(resposta, "Del Fulano")
-        self.assertContains(resposta, "Registrado por")
+        self.assertContains(resposta, "Histórico")
         self.assertEqual(self.client.get(reverse("atendimento_imprensa:painel")).status_code, 200)
 
     def test_tela_unica_sem_lateral_flutuante(self):
@@ -303,12 +314,32 @@ class ViewsTests(BaseAtendimentoTestCase):
         self.client.force_login(self.admin_modulo)
         resposta = self.client.post(
             reverse("atendimento_imprensa:cadastro_novo", args=["equipe"]),
-            {"nome": "Natália", "ativo": "on"},
+            {"nome": "Natália"},
+            headers={"X-Cadastro-Modal": "1"},
         )
-        self.assertRedirects(
-            resposta, reverse("atendimento_imprensa:cadastro_lista", args=["equipe"])
+        self.assertEqual(resposta.json(), {"ok": True})
+        natalia = Responsavel.objects.get(nome="Natália")
+        # Em uso não sai; sem uso, apaga.
+        self.criar_atendimento()
+        self.client.post(reverse("atendimento_imprensa:cadastro_excluir", args=["veiculos", self.ric.pk]))
+        self.assertTrue(Veiculo.objects.filter(pk=self.ric.pk).exists())
+        self.client.post(reverse("atendimento_imprensa:cadastro_excluir", args=["equipe", natalia.pk]))
+        self.assertFalse(Responsavel.objects.filter(pk=natalia.pk).exists())
+
+    def test_andamento_pelo_modal_da_lista(self):
+        atendimento = self.criar_atendimento(situacao=SituacaoAtendimento.EM_ANDAMENTO)
+        url = reverse("atendimento_imprensa:andamento", args=[atendimento.pk])
+        self.assertContains(self.client.get(url, headers={"X-Cadastro-Modal": "1"}), "Nova situação")
+        resposta = self.client.post(
+            url,
+            {"novo_status": SituacaoAtendimento.AGUARDANDO_FONTE, "andamento": "Aguardando o delegado."},
+            headers={"X-Cadastro-Modal": "1"},
         )
-        self.assertTrue(Responsavel.objects.filter(nome="Natália").exists())
+        self.assertEqual(resposta.json(), {"ok": True})
+        atendimento.refresh_from_db()
+        self.assertEqual(atendimento.situacao, SituacaoAtendimento.AGUARDANDO_FONTE)
+        tela = self.client.get(reverse("atendimento_imprensa:editar", args=[atendimento.pk]))
+        self.assertContains(tela, "Aguardando o delegado.")
 
 
 def _planilha_atendimentos(caminho):

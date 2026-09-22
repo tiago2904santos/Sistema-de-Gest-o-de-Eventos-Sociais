@@ -1,12 +1,14 @@
 {% comment %}
   Ações de uma linha de coffee break num botão único, no padrão das listas de
-  Viagens: editar enquanto o pedido corre, abrir depois que ele fecha.
+  Viagens: registrar o próximo marco (em modal, sem sair da lista) e editar
+  enquanto o pedido corre, abrir depois que ele fecha.
   Contexto: `l` (linha do presenter).
 {% endcomment %}
 {% with s=l.solicitacao %}
 <div class="dd of-menu cad-acoes" data-menu>
   <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações da solicitação {{ l.titulo }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
   <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
+    {% if not s.cancelada and not s.concluida %}<a class="dd__i of-item" href="{{ l.url_andamento }}" data-cadastro-modal>{% include "components/icon.html" with nome="activity" %}<span><b>Registrar andamento</b><small>Próximo marco: OS, nota, protocolo, atesto, OB</small></span></a>{% endif %}
     <a class="dd__i of-item" href="{{ l.url_editar }}">{% include "components/icon.html" with nome=l.editavel|yesno:"pencil,eye" %}<span><b>{% if l.editavel %}Editar solicitação{% else %}Abrir solicitação{% endif %}</b><small>Evento, lote, quantidade e marcos financeiros</small></span></a>
   </div>
 </div>
