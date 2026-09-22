@@ -41,6 +41,11 @@ urlpatterns = [
         views.contrato_arquivo,
         name="contrato_arquivo",
     ),
+    path(
+        "solicitacoes/<int:pk>/certificado/",
+        views.certificado_solicitacao,
+        name="certificado",
+    ),
     # Mudanças de estado — somente POST, com CSRF.
     path(
         "solicitacoes/<int:pk>/cancelar/",

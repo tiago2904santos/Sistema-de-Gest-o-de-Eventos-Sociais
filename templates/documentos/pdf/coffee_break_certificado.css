@@ -1,0 +1,60 @@
+/* Certificado de solicitação de coffee break, na folha ASCOM (cabeçalho,
+   rodapé e faixas da tela ficam em documento.css e documento-editor.css).
+   A4, margens laterais de 2 cm, Arial 10 — um degrau abaixo dos documentos
+   de texto, porque aqui o corpo é tabela e o pedido comum cabe numa página.
+   As tabelas herdam `.doc-tabela`; o que muda é a largura das colunas de
+   rótulo e o tom de cinza do cabeçalho. Evento e observações são texto livre:
+   quando forem longos, o documento pagina normalmente. */
+
+@page {
+  margin: 6.8cm 2cm 3cm 2cm;
+  @top-center { vertical-align: top; padding-top: 1.25cm; }
+  @bottom-center { vertical-align: bottom; padding-bottom: 0.8cm; }
+}
+
+.doc-cb {
+  font-family: Arial, "Liberation Sans", Helvetica, sans-serif;
+  font-size: 10pt;
+  line-height: 1.25;
+}
+
+.doc-cb__titulo { margin: 0.9cm 0 4pt; font-size: 13pt; letter-spacing: 0.4pt; }
+.doc-cb__ident { margin: 0 0 0.7cm; text-align: center; font-size: 10pt; font-weight: 700; }
+
+.doc-cb__secao {
+  margin: 0.45cm 0 2pt;
+  font-size: 9pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3pt;
+  border-bottom: 0.5pt solid #000;
+  padding-bottom: 1pt;
+}
+
+/* Rótulo e valor em pares: o rótulo cinza-claro, estreito e sem quebra. */
+.doc-tabela--cb { table-layout: fixed; }
+.doc-tabela--cb th { width: 18%; background: #eee; font-size: 9pt; }
+.doc-tabela--cb td { width: 32%; }
+.doc-tabela--cb-marcos th { background: #eee; font-size: 9pt; }
+.doc-tabela--cb-marcos td:first-child { width: 45%; }
+
+/* O que falta no fluxo aparece, e aparece como falta. */
+.doc-cb__pendente { font-style: italic; color: #555; }
+
+/* Cancelamento: faixa acima de tudo, para não se ler o certificado sem ela. */
+.doc-cb__cancelada {
+  margin: 0 0 0.5cm;
+  padding: 4pt 6pt;
+  border: 1pt solid #000;
+  font-weight: 700;
+  text-align: center;
+}
+
+.doc-cb__observacoes { margin: 0; text-align: justify; white-space: pre-line; }
+
+.doc-cb__emissao { margin-top: 0.8cm; page-break-inside: avoid; }
+.doc-cb__emissao p { margin: 0; }
+.doc-cb__nota { margin-top: 6pt !important; font-size: 8pt; text-align: justify; }
+
+/* Na tela (prévia A4): as margens laterais deste modelo. */
+.documento--editor.doc-cb .folha { padding-left: 2cm; padding-right: 2cm; }

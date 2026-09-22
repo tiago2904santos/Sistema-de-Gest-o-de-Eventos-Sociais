@@ -32,6 +32,9 @@
         <div class="pal-topo-data">
           {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True valor=valores.data_solicitacao erros=erros.data_solicitacao desabilitado=dados_base_bloqueados form_alvo="form-coffee-break" %}
         </div>
+          {% if solicitacao %}
+            <a class="btn--secundaria" href="{% url 'coffee_break:certificado' solicitacao.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="download" %}Certificado em PDF</a>
+          {% endif %}
         {% if not somente_leitura %}<button type="submit" class="btn-primaria" form="form-coffee-break">Salvar solicitação</button>{% endif %}
       </div>
     </div>

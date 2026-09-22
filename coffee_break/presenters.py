@@ -85,6 +85,7 @@ def linha_da_lista(solicitacao, hoje=None):
         "fatos": fatos_da_solicitacao(solicitacao),
         "url_editar": reverse("coffee_break:editar", args=[solicitacao.pk]),
         "url_andamento": reverse("coffee_break:andamento", args=[solicitacao.pk]),
+        "url_certificado": reverse("coffee_break:certificado", args=[solicitacao.pk]),
         "cancelada": solicitacao.cancelada,
         # Quem já foi concluída ou cancelada só se abre para consulta.
         "editavel": not solicitacao.cancelada and not solicitacao.concluida,

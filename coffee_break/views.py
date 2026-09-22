@@ -40,7 +40,7 @@ from core.listagens import trilha_de_situacoes
 
 from .permissions import acesso_ao_modulo, gerenciamento_de_cadastros
 from .presenters import filas_de_situacao, linha_da_lista, linha_do_cadastro, linha_do_lote, selo_do_consumo
-from . import certidoes, documentos, services
+from . import certidoes, documentos, documents, services
 
 ITENS_POR_PAGINA = 15
 
@@ -808,6 +808,41 @@ def registrar_andamento(request, pk):
         return redirect(destino)
     messages.success(request, f"Andamento registrado: {solicitacao.situacao_financeira_display}.")
     return JsonResponse({"ok": True}) if via_modal else redirect(destino)
+
+
+@acesso_ao_modulo
+def certificado_solicitacao(request, pk):
+    """Certificado da solicitação em PDF: o espelho do registro, para o processo.
+
+    Sai sempre recalculado do banco — inclusive para cancelada ou concluída,
+    que é justamente quando alguém precisa do papel. Nada é gravado, então a
+    rota é um GET sem efeito colateral.
+    """
+    from django.http import HttpResponse
+
+    from documentos.services.exceptions import DocumentRendererUnavailable
+
+    solicitacao = get_object_or_404(
+        SolicitacaoCoffeeBreak.objects.select_related(
+            "lote__contrato__fornecedor", "criado_por"
+        ),
+        pk=pk,
+    )
+    try:
+        pdf = documents.gerar_pdf(solicitacao, usuario=request.user)
+    except DocumentRendererUnavailable as erro:
+        # Servidor sem o runtime do WeasyPrint: o pedido continua acessível,
+        # só o papel não sai. Dizer qual é a falta é o que permite corrigi-la.
+        messages.error(
+            request,
+            f"Não foi possível gerar o certificado agora. {erro}",
+        )
+        return redirect("coffee_break:editar", pk=solicitacao.pk)
+    resposta = HttpResponse(pdf, content_type="application/pdf")
+    resposta["Content-Disposition"] = (
+        f'inline; filename="{documents.nome_arquivo(solicitacao)}"'
+    )
+    return resposta
 
 
 @acesso_ao_modulo
