@@ -1,0 +1,118 @@
+{% extends "pages/coffee_break/solicitacao_base.html" %}
+{% load estaticos %}
+{% comment %}
+  Etapa 3 — Protocolo e pagamento, na ordem em que o trabalho acontece:
+
+  1. Os campos do cadastro no eProtocolo (interessado, assunto, palavras-
+     chave, nº/ano, detalhamento) e o texto do despacho, cada um com o botão
+     Copiar — como na capa e no despacho do processo 26.617.058-0.
+  2. O anexo, um documento por linha na ordem do processo (ofício, nota,
+     certifico, as cinco certidões, termo aditivo e contrato), com o PDF
+     completo e o ZIP dos arquivos separados.
+  3. O pagamento: o número do protocolo e os marcos até a OB chegar à empresa.
+{% endcomment %}
+
+{% block etapa %}
+  <section class="section-card reg" id="sec-eprotocolo">
+    <header class="section-card__cabecalho reg__t">
+      <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
+      <div class="section-card__identificacao"><h2 class="section-card__titulo">Dados para o eProtocolo</h2></div>
+    </header>
+    <div class="section-card__corpo">
+      <p class="cb-ajuda">Abra o protocolo com estes dados, anexe os documentos na ordem da lista abaixo e despache ao GAF.</p>
+
+      <dl class="cb-copiaveis">
+        {% for campo in eprotocolo.campos %}
+          <div class="cb-copiavel">
+            <dt>{{ campo.rotulo }}</dt>
+            <dd><span class="cb-copiavel__valor">{{ campo.valor }}</span>
+              {% if campo.copiar %}<button type="button" class="ib-linha cb-copiar-mini" data-copiar="{{ campo.copiar }}" aria-label="Copiar {{ campo.rotulo }}" title="Copiar">{% include "components/icon.html" with nome="copy" %}</button>{% endif %}
+            </dd>
+          </div>
+        {% endfor %}
+      </dl>
+
+      <div class="cb-caixa-copiar">
+        <div class="cb-caixa-copiar__topo">
+          <label class="form-label" for="texto-detalhamento">Detalhamento</label>
+          {% if not lote.contrato.fornecedor.nome_curto %}<a class="cb-dica" href="{% url 'coffee_break:cadastro_lista' 'fornecedores' %}?editar={{ lote.contrato.fornecedor.pk }}">Defina o nome curto do fornecedor (ex.: FAVO E MEL)</a>{% endif %}
+          <button type="button" class="btn-primaria btn--compacto" data-copiar-de="texto-detalhamento">{% include "components/icon.html" with nome="copy" %}<span data-copiar-rotulo>Copiar</span></button>
+        </div>
+        <textarea class="form-controle cb-caixa-copiar__texto" id="texto-detalhamento" rows="1" readonly>{{ eprotocolo.detalhamento }}</textarea>
+      </div>
+
+      <div class="cb-caixa-copiar">
+        <div class="cb-caixa-copiar__topo">
+          <label class="form-label" for="texto-despacho">Despacho</label>
+          <button type="button" class="btn--secundaria btn--compacto" data-copiar-de="texto-despacho">{% include "components/icon.html" with nome="copy" %}<span data-copiar-rotulo>Copiar</span></button>
+        </div>
+        <textarea class="form-controle cb-caixa-copiar__texto" id="texto-despacho" rows="3" readonly>{{ eprotocolo.despacho }}</textarea>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-card reg" id="sec-anexo">
+    <header class="section-card__cabecalho reg__t">
+      <div class="section-card__identificacao"><h2 class="section-card__titulo">Anexo do protocolo</h2></div>
+      <div class="section-card__acao cb-anexo__acoes">
+        {% if anexo_pronto %}
+          <a class="btn--secundaria btn--compacto" href="{% url 'coffee_break:pacote_protocolo_zip' solicitacao.pk %}">{% include "components/icon.html" with nome="download" %}Arquivos separados (ZIP)</a>
+          <a class="btn-primaria btn--compacto" href="{% url 'coffee_break:pacote_protocolo' solicitacao.pk %}?baixar=1">{% include "components/icon.html" with nome="download" %}Anexo completo (PDF)</a>
+        {% else %}
+          <span class="st st--pendente">Falta{{ anexo_faltando|pluralize:"m" }} {{ anexo_faltando }}</span>
+        {% endif %}
+      </div>
+    </header>
+    <div class="section-card__corpo">
+      <ol class="pc-docs__lista cb-anexo" aria-label="Documentos do anexo, na ordem do protocolo">
+        {% for item in itens_anexo %}
+          <li class="pc-doc{% if item.pronto %} pc-doc--ok{% endif %}" id="anexo-{{ item.chave }}">
+            <span class="pc-doc__icone cb-anexo__num" aria-hidden="true">{% if item.pronto %}{% include "components/icon.html" with nome="check" %}{% else %}{{ item.posicao }}{% endif %}</span>
+            <div class="pc-doc__txt cb-doc__txt">
+              <span class="pc-doc__nome"><b><span class="sr-only">{{ item.posicao }}. </span>{{ item.titulo }}</b>{% if item.pronto %}<span class="st st--atendido">Pronto</span>{% else %}<span class="st st--pendente">Falta</span>{% endif %}</span>
+              {% if item.pronto %}<small>{{ item.detalhe }}</small>{% else %}<small class="cb-doc__falta">{{ item.falta }}</small>{% endif %}
+            </div>
+            <div class="cb-doc__acoes">
+              {% if item.pronto %}
+                <a class="btn--secundaria btn--compacto" href="{{ item.url }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}Ver</a>
+              {% elif item.url_corrigir %}
+                <a class="btn--secundaria btn--compacto" href="{{ item.url_corrigir }}">{% include "components/icon.html" with nome="pencil" %}Resolver</a>
+              {% else %}
+                <a class="btn--secundaria btn--compacto" href="{% url 'coffee_break:etapa_nota' solicitacao.pk %}">{% include "components/icon.html" with nome="pencil" %}Resolver</a>
+              {% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ol>
+      <p class="pc-docs__nota">Esta é a ordem do processo: ofício, nota fiscal, certifico, certidões (FGTS, trabalhista, municipal, estadual e federal), termo aditivo e contrato. O PDF completo junta tudo nessa ordem; o ZIP traz um arquivo por documento, já numerado.</p>
+    </div>
+  </section>
+
+  <form method="post" action="" id="form-coffee-break" class="editor-roteiro__principal">
+    {% csrf_token %}
+    <input type="hidden" name="versao" value="{{ valores.versao }}">
+    {% include "pages/coffee_break/_erros_form.html" %}
+    <section class="section-card reg" id="sec-pagamento">
+      <header class="section-card__cabecalho reg__t">
+        <div class="section-card__identificacao"><h2 class="section-card__titulo">Pagamento</h2></div>
+      </header>
+      <div class="section-card__corpo">
+        <div class="g-form g-form--4 cb-pagamento">
+          {% include "components/input.html" with name="protocolo_pagamento" label="Protocolo de pagamento" placeholder="Ex.: 26.617.058-0" valor=valores.protocolo_pagamento erros=erros.protocolo_pagamento desabilitado=somente_leitura %}
+          {% include "components/input.html" with name="data_atesto_gaf" label="Atesto e envio ao GAF" tipo="date" valor=valores.data_atesto_gaf erros=erros.data_atesto_gaf desabilitado=somente_leitura %}
+          {% include "components/input.html" with name="data_ordem_bancaria" label="Ordem bancária emitida em" tipo="date" valor=valores.data_ordem_bancaria erros=erros.data_ordem_bancaria desabilitado=somente_leitura %}
+          {% include "components/input.html" with name="data_envio_empresa" label="OB enviada à empresa em" tipo="date" valor=valores.data_envio_empresa erros=erros.data_envio_empresa desabilitado=somente_leitura %}
+          <div class="cheia">
+            {% include "components/textarea.html" with name="observacoes" label="Observações" linhas="2" valor=valores.observacoes erros=erros.observacoes desabilitado=somente_leitura %}
+          </div>
+        </div>
+        <div class="frm-acoes-fim">
+          <a class="btn--secundaria" href="{% url 'coffee_break:etapa_nota' solicitacao.pk %}">Voltar à nota fiscal</a>
+          {% if not somente_leitura %}<button type="submit" class="btn-primaria">Salvar</button>{% endif %}
+        </div>
+      </div>
+    </section>
+  </form>
+{% endblock %}
+
+{% block etapa_js %}<script src="{% estatico 'js/coffee-break-copiar.js' %}" defer></script>{% endblock %}

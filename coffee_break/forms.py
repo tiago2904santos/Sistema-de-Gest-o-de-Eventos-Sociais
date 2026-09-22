@@ -5,7 +5,7 @@ system; aqui mora a validação e a persistência.
 """
 
 from django import forms
-from django.core.exceptions import ValidationError
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db.models import Sum
 
 from cadastros.models import Municipio
@@ -13,6 +13,7 @@ from core.uploads import validate_private_document_upload
 
 from .models import (
     CertidaoFornecedor,
+    ConfiguracaoCoffeeBreak,
     ContratoCoffeeBreak,
     Fornecedor,
     LoteCoffeeBreak,
@@ -68,14 +69,20 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
         municipios = municipios_do_parana()
         if instancia and instancia.municipio_id:
             municipios = municipios | Municipio.objects.filter(pk=instancia.municipio_id)
-        self.fields["municipio"].queryset = municipios.distinct()
-        # Registros antigos (da planilha) não têm município: continuam no lote
-        # em que estão até alguém informar o município.
-        self.fields["municipio"].required = not (instancia and not instancia.municipio_id)
-        self.fields["numero"].help_text = "Em branco, o sistema numera pelo lote (é o número da OS)."
-        self.fields["arquivo_nota_fiscal"].validators.append(validar_pdf)
-        self.fields["descricao_evento"].required = True
-        self.fields["quantidade"].required = True
+        # As etapas usam só uma parte dos campos: cada ajuste vale se o campo
+        # estiver no formulário.
+        if "municipio" in self.fields:
+            self.fields["municipio"].queryset = municipios.distinct()
+            # Registros antigos (da planilha) não têm município: continuam no
+            # lote em que estão até alguém informar o município.
+            self.fields["municipio"].required = not (instancia and not instancia.municipio_id)
+        if "numero" in self.fields:
+            self.fields["numero"].help_text = "Em branco, o sistema numera pelo lote (é o número da OS)."
+        if "arquivo_nota_fiscal" in self.fields:
+            self.fields["arquivo_nota_fiscal"].validators.append(validar_pdf)
+        for nome in ("descricao_evento", "quantidade"):
+            if nome in self.fields:
+                self.fields[nome].required = True
         if instancia:
             self.initial["versao"] = str(
                 int(instancia.atualizado_em.timestamp() * 1_000_000)
@@ -91,7 +98,8 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
                     "data_fim_evento",
                     "periodo_evento_texto",
                 ):
-                    self.fields[nome].disabled = True
+                    if nome in self.fields:
+                        self.fields[nome].disabled = True
 
     def clean_quantidade(self):
         quantidade = self.cleaned_data.get("quantidade")
@@ -133,7 +141,10 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
                 )
         # Identificadores institucionais são texto — nunca números coláveis
         # de datas: só normaliza espaços.
-        for campo in ("numero", "numero_nota_fiscal", "protocolo_pagamento"):
+        for campo in (
+            "numero", "numero_nota_fiscal", "protocolo_pagamento",
+            "numero_oficio", "protocolo_pcpr_oficio",
+        ):
             if dados.get(campo):
                 dados[campo] = dados[campo].strip()
         return dados
@@ -167,6 +178,86 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
             solicitacao.criado_por = criado_por
         # Trava o lote e revalida o saldo na mesma transação da escrita.
         return services.salvar_com_saldo(solicitacao)
+
+    def _update_errors(self, errors):
+        """Erro do modelo num campo de outra etapa sobe para o topo do formulário.
+
+        A validação do modelo olha o registro inteiro (a nota antes do
+        protocolo, o atesto antes da OB...), mas cada etapa só tem parte dos
+        campos — e o Django recusa erro em campo que o formulário não tem.
+        """
+        if hasattr(errors, "error_dict"):
+            proprios, alheios = {}, []
+            for campo, mensagens in errors.error_dict.items():
+                if campo == NON_FIELD_ERRORS or campo in self.fields:
+                    proprios[campo] = mensagens
+                else:
+                    alheios.extend(mensagens)
+            if alheios:
+                proprios.setdefault(NON_FIELD_ERRORS, []).extend(alheios)
+            errors = forms.ValidationError(proprios)
+        super()._update_errors(errors)
+
+
+# Cada etapa da solicitação grava só os seus campos: o resto fica como está.
+CAMPOS_PEDIDO = [
+    "municipio",
+    "data_solicitacao",
+    "numero",
+    "descricao_evento",
+    "quantidade",
+    "data_inicio_evento",
+    "data_fim_evento",
+    "periodo_evento_texto",
+    "horario_evento",
+    "detalhamento_pedido",
+    "local_entrega",
+    "responsavel_recebimento",
+    "data_envio_ordem_servico",
+]
+CAMPOS_NOTA = [
+    "numero_nota_fiscal",
+    "arquivo_nota_fiscal",
+    "numero_oficio",
+    "data_oficio",
+    "protocolo_pcpr_oficio",
+]
+CAMPOS_PROTOCOLO = [
+    "protocolo_pagamento",
+    "data_atesto_gaf",
+    "data_ordem_bancaria",
+    "data_envio_empresa",
+    "observacoes",
+]
+
+
+class PedidoCoffeeBreakForm(SolicitacaoCoffeeBreakForm):
+    """Etapa 1 — o pedido e a ordem de serviço."""
+
+    class Meta(SolicitacaoCoffeeBreakForm.Meta):
+        fields = CAMPOS_PEDIDO
+
+
+class NotaCoffeeBreakForm(SolicitacaoCoffeeBreakForm):
+    """Etapa 2 — a nota fiscal recebida e o ofício que a encaminha."""
+
+    class Meta(SolicitacaoCoffeeBreakForm.Meta):
+        fields = CAMPOS_NOTA
+
+    def clean_numero_nota_fiscal(self):
+        numero = (self.cleaned_data.get("numero_nota_fiscal") or "").strip()
+        if not numero and self.instance.protocolo_pagamento:
+            raise forms.ValidationError(
+                "O protocolo de pagamento já foi registrado: a nota não pode ficar em branco."
+            )
+        return numero
+
+
+class ProtocoloCoffeeBreakForm(SolicitacaoCoffeeBreakForm):
+    """Etapa 3 — o protocolo de pagamento e o que vem depois dele."""
+
+    class Meta(SolicitacaoCoffeeBreakForm.Meta):
+        fields = CAMPOS_PROTOCOLO
 
 
 class FiltroSolicitacoesCoffeeForm(forms.Form):
@@ -242,7 +333,7 @@ class FornecedorForm(FormularioCadastroVersionado):
     class Meta:
         model = Fornecedor
         fields = (
-            "razao_social", "cnpj", "contato", "telefone", "email",
+            "razao_social", "nome_curto", "cnpj", "contato", "telefone", "email",
             "url_certidao_municipal",
         )
 
@@ -263,6 +354,7 @@ class ContratoCoffeeBreakForm(FormularioCadastroVersionado):
             "termo_aditivo",
             "fiscal_responsavel",
             "cargo_fiscal",
+            "clausula_pagamento",
             "arquivo_contrato",
             "arquivo_termo_aditivo",
             "objeto",
@@ -274,6 +366,20 @@ class ContratoCoffeeBreakForm(FormularioCadastroVersionado):
         for nome in ("arquivo_contrato", "arquivo_termo_aditivo"):
             self.fields[nome].validators.append(validar_pdf)
         self.fields["fornecedor"].queryset = Fornecedor.objects.order_by("razao_social")
+
+
+class ConfiguracaoCoffeeBreakForm(FormularioCadastroVersionado):
+    class Meta:
+        model = ConfiguracaoCoffeeBreak
+        fields = (
+            "oficio_vocativo",
+            "oficio_assinante",
+            "oficio_cargo_assinante",
+            "oficio_destinatario",
+            "eprotocolo_assunto",
+            "eprotocolo_palavras_chave",
+            "despacho_destino",
+        )
 
 
 class LoteCoffeeBreakForm(FormularioCadastroVersionado):

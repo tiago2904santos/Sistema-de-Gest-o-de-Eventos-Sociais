@@ -17,7 +17,7 @@
       <div class="kicker kicker--junto">Coffee Break</div>
       <h1>Cadastros</h1>
     </div>
-    <a class="btn-primaria btn-flutuante" href="{% url 'coffee_break:cadastro_novo' tipo %}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}Novo {{ config.singular }}</a>
+    {% if not config.unico %}<a class="btn-primaria btn-flutuante" href="{% url 'coffee_break:cadastro_novo' tipo %}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}Novo {{ config.singular }}</a>{% endif %}
   </div>
 
   <div class="cad-grade cad-grade--sem-folga">

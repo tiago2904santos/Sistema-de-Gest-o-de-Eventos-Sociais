@@ -1,0 +1,77 @@
+<!DOCTYPE html>{% comment %}
+  Ofício que encaminha a nota fiscal ao GAF para pagamento — o do processo
+  26.617.058-0 (Of. 124/2026), medido no PDF: brasão no alto, as três linhas
+  em Arial 12, corpo em Times 12 justificado com recuo de 1,5 cm, a linha
+  miúda (Times 9) com o protocolo PCPR e a data, e no pé a marca PCPR com o
+  endereço separado por hífens. Margens de 3 cm à esquerda e 2 cm à direita (a
+  Times New Roman é um pouco mais larga que a Times do original; com 2 cm as
+  linhas quebram nos mesmos pontos).
+{% endcomment %}
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Ofício {{ s.numero_oficio }}</title>
+<style>
+  /* Posições do ofício do processo, em pontos a partir do alto da folha. Os
+     elementos fixos (timbre) são posicionados a partir da área de conteúdo,
+     que começa a 170,33 pt: cada `top` é a posição na folha menos isso. A
+     coluna vai de 85 pt a 538,6 pt, centrada em 311,8 pt como no original.
+     O endereço vai por `bottom` (a partir de 771,9 pt): por `top` a caixa
+     fixa que passa do fim da área de conteúdo perde a 2ª linha. */
+  @page { size: A4; margin: 170.33pt 2cm 70pt 3cm; }
+  body { margin: 0; font-family: "Times New Roman", "Liberation Serif", Times, serif; font-size: 12pt; line-height: 15pt; color: #000; }
+  p { margin: 0; }
+  /* Brasão de 54 × 71 pt a 17 pt do alto. */
+  .timbre-brasao { position: fixed; top: -153.33pt; left: 50%; width: 54pt; height: 71pt; margin-left: -27pt; }
+  /* Cabeçalho em Arial 12, bases a 116,5/131,5/146,5 pt. */
+  .timbre-cabecalho { position: fixed; top: -65.45pt; left: 0; right: 0; text-align: center; font-family: Arial, "Liberation Sans", Helvetica, sans-serif; font-size: 12pt; line-height: 15pt; }
+  /* Marca PCPR de 58,9 × 17 pt a 782,4 pt; endereço em Arial 10 com bases a 811,9 e 824,4 pt. */
+  .timbre-marca { position: fixed; top: 612.07pt; left: 50%; width: 58.9pt; height: 17pt; margin-left: -29.45pt; }
+  .timbre-rodape { position: fixed; bottom: -55.31pt; left: 0; right: 0; text-align: center; font-family: Arial, "Liberation Sans", Helvetica, sans-serif; font-size: 10pt; line-height: 12.5pt; }
+  h1 { font-size: 12pt; font-weight: 700; text-align: center; margin: 0; line-height: 15pt; }
+  .linha-miuda { display: flex; justify-content: space-between; margin-top: 10.24pt; font-size: 9pt; line-height: 11pt; }
+  .vocativo { margin-top: 8.39pt; }
+  .recuo { text-indent: 1.5cm; }
+  .corpo p { text-align: justify; margin-top: 15pt; }
+  .corpo p:first-child { margin-top: 60pt; }
+  .centro { text-align: center; }
+  .assinatura { margin-top: 30pt; page-break-inside: avoid; }
+  .assinatura .nome { margin-top: 30pt; }
+  .destinatario { margin-top: 60pt; white-space: pre-line; page-break-inside: avoid; }
+</style>
+</head>
+<body>
+  <img class="timbre-brasao" src="{{ imagens.brasao }}" alt="">
+  <div class="timbre-cabecalho">
+    <p>SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA</p>
+    <p><b>POLÍCIA CIVIL DO PARANÁ</b></p>
+    <p>ASSESSORIA DE COMUNICAÇÃO SOCIAL</p>
+  </div>
+  <img class="timbre-marca" src="{{ imagens.marca }}" alt="">
+  <div class="timbre-rodape">
+    <p>Avenida Iguaçu, 470 - Rebouças - Curitiba/PR - CEP: 80230-020</p>
+    <p>Fone: (41) 3235-6477 - e-mail: comunicacao@pc.pr.gov.br</p>
+  </div>
+
+  <h1>OFÍCIO {{ s.numero_oficio }}</h1>
+  <div class="linha-miuda">
+    <span>{% if s.protocolo_pcpr_oficio %}PCPR Protocolo n.º: {{ s.protocolo_pcpr_oficio }}{% endif %}</span>
+    <span>Curitiba, {{ data_extenso }}</span>
+  </div>
+  <p class="recuo vocativo">{{ config.oficio_vocativo }}</p>
+
+  <div class="corpo">
+    <p class="recuo">Venho, por meio deste, informar e certificar que os serviços de Coffee Break foram devidamente entregues, conforme solicitado, para o seguinte evento:</p>
+    <p class="recuo">• {{ s.descricao_evento }} - Coffee Break para {{ s.quantidade }} ({{ quantidade_extenso }}) pessoas.</p>
+    <p class="recuo">Encaminho, em anexo, a Nota Fiscal n° {{ s.numero_nota_fiscal }}, devidamente atestada, juntamente com os demais documentos necessários, para que seja efetuado o pagamento ao CONTRATADO, nos termos da {{ contrato.clausula_pagamento }}, do CONTRATO {{ contrato.referencia_documental }}.</p>
+  </div>
+
+  <div class="assinatura">
+    <p class="centro">Atenciosamente,</p>
+    <p class="centro nome"><b>{{ config.oficio_assinante }}</b></p>
+    <p class="centro">{{ config.oficio_cargo_assinante }}</p>
+  </div>
+
+  <p class="destinatario">{{ config.oficio_destinatario }}</p>
+</body>
+</html>

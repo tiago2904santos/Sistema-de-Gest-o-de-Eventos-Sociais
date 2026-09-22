@@ -1,0 +1,9 @@
+{% comment %}Resumo dos erros do formulário da etapa, com link para cada campo.{% endcomment %}
+{% if form.errors %}
+  <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
+    {% include "components/icon.html" with nome="info" %}
+    <div><b>Não foi possível salvar</b>Revise os campos indicados antes de continuar.
+      <ul class="aviso--erro__lista">{% for campo, mensagens in form.errors.items %}{% for mensagem in mensagens %}<li>{% if campo == "__all__" %}{{ mensagem }}{% else %}<a href="#id_{{ campo }}">{{ mensagem }}</a>{% endif %}</li>{% endfor %}{% endfor %}</ul>
+    </div>
+  </div>
+{% endif %}

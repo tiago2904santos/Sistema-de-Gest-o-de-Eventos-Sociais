@@ -168,6 +168,13 @@ def linha_do_cadastro(item, tipo):
             {"icone": "clipboard", "rotulo": "GMS", "texto": f"GMS {item.numero_gms}" if item.numero_gms else "Sem GMS", "ausente": not item.numero_gms},
             {"icone": "shield", "rotulo": "Fiscal", "texto": item.fiscal_responsavel or "Sem fiscal", "ausente": not item.fiscal_responsavel},
         ]
+    elif tipo == "oficio":
+        titulo = "Ofício de pagamento e eProtocolo"
+        fatos = [
+            {"icone": "user", "rotulo": "Assina", "texto": f"{item.oficio_assinante} · {item.oficio_cargo_assinante}", "ausente": False},
+            {"icone": "landmark", "rotulo": "Destinatário", "texto": " · ".join(item.oficio_destinatario.splitlines()[1:3]) or item.oficio_destinatario, "ausente": False},
+            {"icone": "clipboard", "rotulo": "eProtocolo", "texto": f"{item.eprotocolo_assunto} · {item.eprotocolo_palavras_chave}", "ausente": False},
+        ]
     else:
         titulo = item.rotulo_curto
         fatos = [
@@ -185,4 +192,5 @@ def linha_do_cadastro(item, tipo):
         "url_editar": reverse("coffee_break:cadastro_editar", args=[tipo, item.pk]),
         "url_excluir": reverse("coffee_break:cadastro_excluir", args=[tipo, item.pk]),
         "cancelada": tipo == "lotes" and not item.ativo,
+        "excluivel": tipo != "oficio",
     }

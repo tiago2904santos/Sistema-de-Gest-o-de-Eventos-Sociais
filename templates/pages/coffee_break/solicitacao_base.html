@@ -1,0 +1,93 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
+{% comment %}
+  Esqueleto das três etapas da solicitação de coffee break, no desenho das
+  etapas da prestação de contas: trilha, cabeçalho só com o título e o selo
+  (ações à direita), a barra das três etapas com o realce deslizante
+  (`js/trilho.js`) e o conteúdo da etapa numa coluna só.
+
+  1. Solicitação e OS — o pedido; dele sai a ordem de serviço.
+  2. Nota fiscal, ofício e certifico — a nota recebida e os dois documentos.
+  3. Protocolo e pagamento — os textos do eProtocolo, o anexo completo e os
+     marcos do pagamento.
+
+  Numa solicitação nova só a etapa 1 existe: as outras aparecem apagadas.
+{% endcomment %}
+
+{% block title %}{{ titulo_pagina }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+
+  <div class="editor-roteiro of-form cb-fluxo">
+    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="coffee" %}</span>
+          <div class="frm-titulo">
+            <h1 class="page-header__titulo d-titulo-v32">{% if solicitacao %}Solicitação <span class="frm-ident">{{ solicitacao.numero|default:solicitacao.pk }}</span>{% else %}Nova solicitação{% endif %}</h1>
+            <span class="st st--{{ selo_tom }}">{{ selo }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="frm-topo__acoes">
+        {% block topo_acoes %}{% endblock %}
+        {% if solicitacao %}
+          <a class="btn--secundaria" href="{% url 'coffee_break:certificado' solicitacao.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="download" %}Certificado em PDF</a>
+        {% endif %}
+        {% if not somente_leitura %}<button type="submit" class="btn-primaria" form="form-coffee-break">Salvar</button>{% endif %}
+      </div>
+    </div>
+
+    <nav class="vg-stepper pc-etapas" aria-label="Etapas da solicitação">
+      <ol class="vg-stepper__lista vg-trilho sem-anim pc-etapas__lista" data-vg-trilho>
+        {% for passo in stepper %}
+          <li class="vg-stepper__item{% if passo.estado == 'atual' %} is-atual{% elif passo.estado == 'concluido' %} is-concluida{% endif %}">
+            {% if passo.url %}
+              <a class="vg-stepper__passo" href="{{ passo.url }}"{% if passo.estado == 'atual' %} aria-current="step"{% endif %} title="{{ passo.titulo }}">
+                <span class="vg-stepper__num" aria-hidden="true">{% if passo.estado == 'concluido' %}{% include "components/icon.html" with nome="check" %}{% else %}{{ forloop.counter }}{% endif %}</span>
+                <span class="vg-stepper__rotulo">{{ passo.titulo }}</span>
+              </a>
+            {% else %}
+              <span class="vg-stepper__passo{% if passo.estado != 'atual' %} cb-passo--fechado{% endif %}"{% if passo.estado == 'atual' %} aria-current="step"{% else %} aria-disabled="true" title="Salve a solicitação para seguir"{% endif %}>
+                <span class="vg-stepper__num" aria-hidden="true">{{ forloop.counter }}</span>
+                <span class="vg-stepper__rotulo">{{ passo.titulo }}</span>
+              </span>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ol>
+    </nav>
+
+    {% if solicitacao and solicitacao.cancelada %}
+      {# Como a faixa de "viagem cancelada": o motivo e a saída dele na mesma faixa. #}
+      <div class="aviso aviso--callout" role="status">
+        <div class="aviso__txt">
+          {% include "components/icon.html" with nome="ban" %}
+          <div class="aviso__corpo">
+            <b>Solicitação cancelada</b>
+            <p>{{ solicitacao.motivo_cancelamento|default:"Sem motivo registrado." }} A quantidade não consome o saldo do lote.</p>
+            {% if solicitacao.cancelada_em %}<div class="aviso__meta">{{ solicitacao.cancelada_em|date:"d/m/Y · H\hi" }}{% if solicitacao.cancelada_por %} · {{ solicitacao.cancelada_por }}{% endif %}</div>{% endif %}
+          </div>
+        </div>
+        <form method="post" action="{% url 'coffee_break:reativar' solicitacao.pk %}" data-confirmar="Reativar a solicitação?">{% csrf_token %}
+          <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="undo" %}Reativar solicitação</button>
+        </form>
+      </div>
+    {% elif somente_leitura %}
+      <div class="aviso aviso--info" role="status">
+        {% include "components/icon.html" with nome="info" %}
+        <div>Solicitações concluídas ficam bloqueadas para edição. Os campos estão abertos apenas para consulta; os documentos continuam disponíveis.</div>
+      </div>
+    {% elif ultima_anotacao %}
+      <div class="aviso aviso--callout" role="status">
+        <div class="aviso__txt">{% include "components/icon.html" with nome="activity" %}<div class="aviso__corpo"><b>Andamento — {{ solicitacao.situacao_financeira_display }}</b><p>{{ ultima_anotacao }}</p></div></div>
+      </div>
+    {% endif %}
+    {% block avisos_etapa %}{% endblock %}
+
+    {% block etapa %}{% endblock %}
+  </div>
+{% endblock %}
+
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/trilho.js' %}" defer></script>{% block etapa_js %}{% endblock %}{% endblock %}

@@ -1,9 +1,21 @@
 <!DOCTYPE html>{% comment %}
-  Folha dos documentos do Coffee Break (ordem de serviço, certifico): o
-  papel timbrado da ASCOM dos modelos .odt/.pdf em uso — brasão, as três
-  linhas cinza em Arial, e no rodapé a marca PCPR, o endereço e o número da
-  página. Cabeçalho e rodapé se repetem em toda página (running elements do
-  WeasyPrint).
+  Papel timbrado da ASCOM dos documentos do Coffee Break (ordem de serviço e
+  certifico), medido nos modelos em uso — a OS 41/2026 e o certifico do
+  processo 26.617.058-0: brasão, as três linhas em Arial 12 cinza, e no pé o
+  número da página, a marca PCPR e o endereço em Arial 10.
+
+  As posições são as dos modelos, em pontos a partir do alto da folha. No
+  WeasyPrint um elemento `position: fixed` se repete em toda página e é
+  posicionado a partir da área de conteúdo — por isso cada `top` abaixo é a
+  posição na folha menos a margem de cima (bloco `topo`). O endereço vai por
+  `bottom` (a partir do fim da área de conteúdo, a 764,9 pt): por `top`, o
+  WeasyPrint corta a caixa fixa que passa do fim da área e some a 2ª linha. O `top` de uma linha
+  de texto é a linha de base do modelo menos o recuo da base na caixa da
+  linha: em Arial, (altura da linha − 1,117 × corpo) ÷ 2 + 0,905 × corpo.
+
+  Cada documento diz nos blocos `topo`, `pagina_topo` e `geometria` a margem
+  de cima, a altura do número da página e onde ficam o brasão, o cabeçalho, a
+  marca e o endereço (variam um pouco entre a OS e o certifico).
 {% endcomment %}
 <html lang="pt-BR">
 <head>
@@ -12,35 +24,35 @@
 <style>
   @page {
     size: A4;
-    margin: 6.2cm 2.2cm 3.4cm 2.5cm;
-    @top-center { content: element(cabecalho); vertical-align: bottom; padding-bottom: 0.4cm; }
-    @bottom-center { content: element(rodape); vertical-align: top; }
-    @bottom-right { content: counter(page); font: 11pt Arial, "Liberation Sans", sans-serif; vertical-align: top; padding-top: 0.1cm; }
+    /* Margens laterais de 2,5 cm (70,8 pt), as dos modelos. */
+    margin: {% block topo %}184.14pt{% endblock %} 70.8pt 77pt 70.8pt;
+    /* O número da página: Arial 12, alinhado à direita da coluna de texto; a
+       caixa começa a 764,9 pt, e o recuo põe a base onde está no modelo. */
+    @bottom-center { content: counter(page); width: 100%; text-align: right; vertical-align: top; font: 12pt/13.8pt Arial, "Liberation Sans", Helvetica, sans-serif; color: #000; padding-top: {% block pagina_topo %}5.25pt{% endblock %}; }
   }
-  body { margin: 0; font-family: Arial, "Liberation Sans", Helvetica, sans-serif; font-size: 12pt; line-height: 1.35; color: #000; }
-  .cabecalho { position: running(cabecalho); text-align: center; color: #595959; font-size: 12.5pt; line-height: 1.2; }
-  .cabecalho img { height: 3.1cm; display: block; margin: 0 auto 1.3cm; }
-  .cabecalho p { margin: 0; text-transform: uppercase; }
-  .cabecalho b { font-weight: 700; }
-  .rodape { position: running(rodape); text-align: center; color: #595959; font-size: 10.5pt; line-height: 1.25; }
-  .rodape img { height: 0.75cm; display: block; margin: 0 auto 0.1cm; }
-  .rodape p { margin: 0; }
+  body { margin: 0; font-family: Arial, "Liberation Sans", Helvetica, sans-serif; font-size: 12pt; line-height: 13.8pt; color: #000; }
   p { margin: 0; }
-  .espaco { height: 1em; }
+  .timbre-brasao { position: fixed; left: 50%; display: block; }
+  .timbre-cabecalho { position: fixed; left: 0; right: 0; text-align: center; color: #595959; font-size: 12pt; line-height: 13.8pt; }
+  .timbre-cabecalho b { font-weight: 700; }
+  .timbre-marca { position: fixed; left: 50%; width: 56pt; margin-left: -28pt; display: block; }
+  /* Endereço: Arial 10, bases a 814,3 e 825,8 pt (entrelinha 11,5 pt). */
+  .timbre-rodape { position: fixed; left: 0; right: 0; text-align: center; color: #595959; font-size: 10pt; line-height: 11.5pt; }
+  {% block geometria %}{% endblock %}
   {% block estilo %}{% endblock %}
 </style>
 </head>
 <body>
-  <div class="cabecalho">
-    <img src="{{ imagens.brasao }}" alt="">
-    <p>Secretaria de Estado da Segurança Pública</p>
-    <p><b>Polícia Civil do Paraná</b></p>
-    <p>Assessoria de Comunicação Social</p>
+  <img class="timbre-brasao" src="{{ imagens.brasao }}" alt="">
+  <div class="timbre-cabecalho">
+    <p>SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA</p>
+    <p><b>POLÍCIA CIVIL DO PARANÁ</b></p>
+    <p>ASSESSORIA DE COMUNICAÇÃO SOCIAL</p>
   </div>
-  <div class="rodape">
-    <img src="{{ imagens.marca }}" alt="">
+  <img class="timbre-marca" src="{{ imagens.marca }}" alt="">
+  <div class="timbre-rodape">
     <p>Avenida Iguaçu, 470 – Rebouças – Curitiba/PR—CEP: 80.230-020</p>
-    <p>Fone: (41) 3235-6477 – e-mail: comunicacao@pc.pr.gov.br</p>
+    <p>Fone: (41) 3235-6477 – e-mail:&nbsp; comunicacao@pc.pr.gov.br</p>
   </div>
   {% block corpo %}{% endblock %}
 </body>

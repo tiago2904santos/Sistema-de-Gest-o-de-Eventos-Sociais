@@ -1,38 +1,52 @@
 {% extends "coffee_break/documentos/_base.html" %}
+{% comment %}
+  Ordem de serviço no modelo da OS 41/2026 (Arial 12, entrelinha 13,8 pt).
+  Os espaços entre os blocos são os do modelo, medidos de base a base:
+  13,8 pt = uma linha em branco; 6,9 pt = meia linha (espaço de parágrafo).
+{% endcomment %}
 {% block titulo %}Ordem de Serviço {{ s.numero }}{% endblock %}
+{% block topo %}184.14pt{% endblock %}
+{% block pagina_topo %}5.25pt{% endblock %}
+{% block geometria %}
+  /* Brasão visível de 15,5 a 94,5 pt; cabeçalho com bases a 138,8/152,6/166,4. */
+  .timbre-brasao { top: -168.64pt; height: 79pt; width: 60.08pt; margin-left: -30.04pt; }
+  .timbre-cabecalho { top: -56.4pt; }
+  .timbre-marca { top: 601.66pt; height: 16.1pt; }
+  .timbre-rodape { bottom: -63.3pt; }
+{% endblock %}
 {% block estilo %}
-  .data { text-align: right; margin-bottom: 1.1em; }
-  h1 { font-size: 12pt; text-align: center; margin: 0 0 1.1em; }
-  .contratada p { margin-bottom: 0.35em; }
+  .data { text-align: right; }
+  h1 { font-size: 12pt; line-height: 13.8pt; text-align: center; margin: 13.8pt 0 0; }
+  .fornecedor { margin-top: 13.8pt; }
+  .contrato, .empenho { margin-top: 6.9pt; }
   .rotulo { font-weight: 700; }
-  .bloco { margin-top: 1.5em; }
-  .pedido { white-space: pre-line; margin-top: 1em; }
-  .assinatura { margin-top: 4.5em; text-align: center; page-break-inside: avoid; }
-  .assinatura .linha { width: 11.5cm; border-top: 1px solid #000; margin: 0 auto 0.1em; }
-  .assinatura b { display: block; }
+  .objeto { margin-top: 27.6pt; }
+  .detalhamento { margin-top: 6.9pt; }
+  .pedido { white-space: pre-line; margin-top: 13.8pt; }
+  .local { margin-top: 27.6pt; }
+  .local-texto, .responsavel { margin-top: 13.8pt; }
+  .assinatura { margin-top: 82.7pt; text-align: center; page-break-inside: avoid; }
 {% endblock %}
 {% block corpo %}
   <p class="data">Curitiba, {{ data_extenso }}.</p>
   <h1>ORDEM DE SERVIÇO {{ s.numero }}</h1>
 
-  <div class="contratada">
-    <p>{{ fornecedor.razao_social }}</p>
-    <p>Contrato: {{ contrato.referencia_documental }}</p>
-    {% if lote.empenho %}<p>Empenho: {{ lote.empenho }}</p>{% endif %}
-  </div>
+  <p class="fornecedor">{{ fornecedor.razao_social }}</p>
+  <p class="contrato">Contrato: {{ contrato.referencia_documental }}</p>
+  {% if lote.empenho %}<p class="empenho">Empenho: {{ lote.empenho }}</p>{% endif %}
 
-  <p class="bloco"><span class="rotulo">OBJETO:</span> {{ s.descricao_evento }}</p>
-  <p style="margin-top:0.35em"><span class="rotulo">DETALHAMENTO DO PEDIDO:</span></p>
+  <p class="objeto"><span class="rotulo">OBJETO:</span> {{ s.descricao_evento }}</p>
+  <p class="detalhamento"><span class="rotulo">DETALHAMENTO DO PEDIDO:</span></p>
   <p class="pedido">{{ s.detalhamento_efetivo }}</p>
 
-  <p class="bloco"><span class="rotulo">LOCAL DE ENTREGA:</span></p>
-  <p style="margin-top:1em">{{ s.local_entrega|default:"—" }}</p>
+  <p class="local"><span class="rotulo">LOCAL DE ENTREGA:</span></p>
+  <p class="local-texto">{{ s.local_entrega|default:"—" }}</p>
 
-  <p style="margin-top:1em"><span class="rotulo">RESPONSÁVEL PELO RECEBIMENTO:</span> {{ s.responsavel_recebimento|default:"—" }}</p>
+  <p class="responsavel"><span class="rotulo">RESPONSÁVEL PELO RECEBIMENTO:</span> {{ s.responsavel_recebimento|default:"—" }}</p>
 
   <div class="assinatura">
-    <div class="linha"></div>
-    <b>{{ contrato.fiscal_responsavel|upper }}</b>
-    <span>{{ contrato.cargo_fiscal }}</span>
+    <p>______________________________________________</p>
+    <p><b>{{ contrato.fiscal_responsavel|upper }}</b></p>
+    <p>{{ contrato.cargo_fiscal }}</p>
   </div>
 {% endblock %}

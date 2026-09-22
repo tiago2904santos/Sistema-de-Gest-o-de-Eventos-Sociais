@@ -20,6 +20,10 @@ from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 
 from .forms import (
     CertidaoForm,
+    ConfiguracaoCoffeeBreakForm,
+    NotaCoffeeBreakForm,
+    PedidoCoffeeBreakForm,
+    ProtocoloCoffeeBreakForm,
     ContratoCoffeeBreakForm,
     FiltroLotesForm,
     FiltroSolicitacoesCoffeeForm,
@@ -30,6 +34,7 @@ from .forms import (
 from .models import (
     AcaoHistoricoCoffeeBreak,
     CertidaoFornecedor,
+    ConfiguracaoCoffeeBreak,
     ContratoCoffeeBreak,
     Fornecedor,
     LoteCoffeeBreak,
@@ -113,6 +118,17 @@ CADASTROS_COFFEE = {
             "contrato__numero",
             "contrato__fornecedor__razao_social",
         ),
+    },
+    # Registro único: quem assina o ofício, a quem vai e os campos fixos do
+    # eProtocolo. Edita-se; não se cria nem se exclui.
+    "oficio": {
+        "model": ConfiguracaoCoffeeBreak,
+        "form": ConfiguracaoCoffeeBreakForm,
+        "titulo": "Ofício e eProtocolo",
+        "singular": "configuração",
+        "icone": "mail",
+        "busca": ("oficio_assinante",),
+        "unico": True,
     },
 }
 
@@ -614,47 +630,127 @@ def _opcoes_municipios(form):
     return opcoes
 
 
-def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False):
+# As três etapas da solicitação, como as da prestação de contas: cada uma
+# com a sua tela, o seu formulário e os documentos que nascem nela.
+ETAPAS = (
+    {"chave": "pedido", "titulo": "Solicitação e OS", "rota": "editar", "form": PedidoCoffeeBreakForm},
+    {"chave": "nota", "titulo": "Nota fiscal, ofício e certifico", "rota": "etapa_nota", "form": NotaCoffeeBreakForm},
+    {"chave": "protocolo", "titulo": "Protocolo e pagamento", "rota": "etapa_protocolo", "form": ProtocoloCoffeeBreakForm},
+)
+ETAPA_POR_CHAVE = {etapa["chave"]: etapa for etapa in ETAPAS}
+
+
+def _etapas_concluidas(solicitacao):
+    """Quais etapas já estão feitas — o que o stepper marca com o check."""
+    if solicitacao is None:
+        return set()
+    feitas = set()
+    if solicitacao.financeiro_iniciado or (
+        solicitacao.data_envio_ordem_servico
+        and not documentos.pendencias_ordem_servico(solicitacao)
+    ):
+        feitas.add("pedido")
+    if solicitacao.protocolo_pagamento or (
+        solicitacao.numero_nota_fiscal
+        and solicitacao.arquivo_nota_fiscal
+        and solicitacao.numero_oficio
+    ):
+        feitas.add("nota")
+    if solicitacao.concluida:
+        feitas.add("protocolo")
+    return feitas
+
+
+def _stepper(solicitacao, atual):
+    feitas = _etapas_concluidas(solicitacao)
+    return [
+        {
+            "titulo": etapa["titulo"],
+            "url": reverse(f"coffee_break:{etapa['rota']}", args=[solicitacao.pk]) if solicitacao else "",
+            "estado": "atual" if etapa["chave"] == atual else ("concluido" if etapa["chave"] in feitas else "pendente"),
+        }
+        for etapa in ETAPAS
+    ]
+
+
+def _etapa_do_marco(solicitacao):
+    """A tela onde se preenche o próximo marco do fluxo."""
+    marco = services.proximo_marco(solicitacao)
+    campo = marco["campo"] if marco else "data_envio_empresa"
+    if campo in ("data_envio_ordem_servico",):
+        return "editar"
+    if campo == "numero_nota_fiscal":
+        return "etapa_nota"
+    return "etapa_protocolo"
+
+
+def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False, etapa="pedido"):
     valores = {}
     for nome in form.fields:
         valor = form[nome].value()
         valores[nome] = "" if valor is None else str(valor)
     contexto = {
         "form": form,
+        "etapa": etapa,
         "solicitacao": solicitacao,
         "erros": form.errors,
         "erros_gerais": form.non_field_errors(),
         "erro_periodo": form.errors.get("data_inicio_evento")
         or form.errors.get("data_fim_evento"),
         "valores": valores,
-        "municipios": _opcoes_municipios(form),
         "somente_leitura": somente_leitura,
         "dados_base_bloqueados": bool(
             solicitacao and (solicitacao.financeiro_iniciado or somente_leitura)
         ),
+        "stepper": _stepper(solicitacao, etapa),
         # Cabeçalho da tela de edição: só o título e o selo da situação.
         "selo": solicitacao.situacao_financeira_display if solicitacao else "Nova",
         "selo_tom": solicitacao.situacao_financeira_css if solicitacao else "pendente",
     }
+    if "municipio" in form.fields:
+        contexto["municipios"] = _opcoes_municipios(form)
     if solicitacao is not None:
-        # O formulário é a única tela do registro: além dos campos editáveis ele
-        # carrega o vínculo com o lote, os dados de auditoria e o histórico.
         contexto["lote"] = (
             LoteCoffeeBreak.objects.com_consumo()
             .select_related("contrato__fornecedor")
             .get(pk=solicitacao.lote_id)
         )
         contexto["historico"] = solicitacao.historico.select_related("usuario")
-        contexto.update(_contexto_andamento(solicitacao))
+        contexto["ultima_anotacao"] = services.ultima_anotacao(solicitacao)
         contexto["pendencias_os"] = documentos.pendencias_ordem_servico(solicitacao)
-        contexto["pendencias_pacote"] = documentos.pendencias_pacote(solicitacao)
+        contexto["pendencias_oficio"] = documentos.pendencias_oficio(solicitacao)
+        contexto["pendencias_certifico"] = (
+            [] if solicitacao.numero_nota_fiscal.strip() else ["Informe o número da nota fiscal."]
+        )
+        if etapa == "protocolo":
+            itens = documentos.itens_anexo(solicitacao)
+            contexto["itens_anexo"] = itens
+            contexto["anexo_pronto"] = all(item["pronto"] for item in itens)
+            contexto["anexo_faltando"] = sum(1 for item in itens if not item["pronto"])
+            contexto["eprotocolo"] = documentos.textos_eprotocolo(solicitacao)
     return contexto
+
+
+def _titulo_e_trilha(contexto, solicitacao, etapa):
+    rotulo = solicitacao.numero or f"#{solicitacao.pk}"
+    contexto["titulo_pagina"] = f"Solicitação {rotulo} — {ETAPA_POR_CHAVE[etapa]['titulo']}"
+    contexto["breadcrumb"] = _breadcrumb(
+        {"label": "Solicitações", "url": reverse("coffee_break:solicitacoes")},
+        {"label": rotulo},
+    )
+
+
+TEMPLATES_ETAPA = {
+    "pedido": "pages/coffee_break/form.html",
+    "nota": "pages/coffee_break/etapa_nota.html",
+    "protocolo": "pages/coffee_break/etapa_protocolo.html",
+}
 
 
 @acesso_ao_modulo
 def nova_solicitacao(request):
     if request.method == "POST":
-        form = SolicitacaoCoffeeBreakForm(request.POST, request.FILES)
+        form = PedidoCoffeeBreakForm(request.POST, request.FILES)
         if form.is_valid():
             try:
                 solicitacao = form.save(criado_por=request.user)
@@ -675,13 +771,13 @@ def nova_solicitacao(request):
                 messages.success(
                     request,
                     f"Solicitação {solicitacao.numero} registrada no {solicitacao.lote.rotulo_curto}"
-                    f" ({solicitacao.lote.contrato.fornecedor.razao_social}).",
+                    f" ({solicitacao.lote.contrato.fornecedor.razao_social}). A ordem de serviço já pode ser gerada.",
                 )
                 return redirect("coffee_break:editar", pk=solicitacao.pk)
         else:
             messages.error(request, "Corrija os campos destacados para continuar.")
     else:
-        form = SolicitacaoCoffeeBreakForm()
+        form = PedidoCoffeeBreakForm()
     contexto = _contexto_formulario(request, form)
     contexto["titulo_pagina"] = "Nova Solicitação de Coffee Break"
     contexto["breadcrumb"] = _breadcrumb(
@@ -691,37 +787,32 @@ def nova_solicitacao(request):
     return render(request, "pages/coffee_break/form.html", contexto)
 
 
-@acesso_ao_modulo
-def editar_solicitacao(request, pk):
+def _tela_da_etapa(request, pk, etapa):
+    """Uma etapa da solicitação: mostra e grava só os campos dela."""
+    config = ETAPA_POR_CHAVE[etapa]
+    rota = f"coffee_break:{config['rota']}"
     solicitacao = get_object_or_404(
         SolicitacaoCoffeeBreak.objects.select_related(
             "lote__contrato__fornecedor", "criado_por", "cancelada_por"
         ),
         pk=pk,
     )
+    Formulario = config["form"]
     somente_leitura = solicitacao.cancelada or solicitacao.concluida
     if somente_leitura:
-        # O formulário é a única tela do registro: canceladas e concluídas
-        # continuam abrindo aqui, mas sem gravar — só para consulta, ações de
-        # situação e histórico.
-        messages.warning(
-            request,
-            "Solicitações canceladas ou concluídas ficam bloqueadas para edição. Use o histórico para consultar as alterações.",
-        )
+        # Canceladas e concluídas continuam abrindo, mas sem gravar — só para
+        # consulta, documentos, ações de situação e histórico.
         if request.method == "POST":
-            return redirect("coffee_break:editar", pk=solicitacao.pk)
-        form = SolicitacaoCoffeeBreakForm(instance=solicitacao)
-        contexto = _contexto_formulario(
-            request, form, solicitacao, somente_leitura=True
-        )
-        contexto["titulo_pagina"] = "Solicitação de Coffee Break"
-        contexto["breadcrumb"] = _breadcrumb(
-            {"label": "Solicitações", "url": reverse("coffee_break:solicitacoes")},
-            {"label": solicitacao.numero or f"#{solicitacao.pk}"},
-        )
-        return render(request, "pages/coffee_break/form.html", contexto)
-    if request.method == "POST":
-        form = SolicitacaoCoffeeBreakForm(request.POST, request.FILES, instance=solicitacao)
+            messages.warning(
+                request,
+                "Solicitações canceladas ou concluídas ficam bloqueadas para edição.",
+            )
+            return redirect(rota, pk=solicitacao.pk)
+        form = Formulario(instance=solicitacao)
+        for campo in form.fields.values():
+            campo.disabled = True
+    elif request.method == "POST":
+        form = Formulario(request.POST, request.FILES, instance=solicitacao)
         if form.is_valid():
             try:
                 solicitacao = form.save()
@@ -747,18 +838,37 @@ def editar_solicitacao(request, pk):
                     else "Solicitação salva sem alteração de campos.",
                 )
                 messages.success(request, "Solicitação de coffee break atualizada.")
-                return redirect("coffee_break:editar", pk=solicitacao.pk)
+                seguir = request.POST.get("seguir", "")
+                if seguir in ETAPA_POR_CHAVE:
+                    return redirect(f"coffee_break:{ETAPA_POR_CHAVE[seguir]['rota']}", pk=solicitacao.pk)
+                return redirect(rota, pk=solicitacao.pk)
         else:
             messages.error(request, "Corrija os campos destacados para continuar.")
     else:
-        form = SolicitacaoCoffeeBreakForm(instance=solicitacao)
-    contexto = _contexto_formulario(request, form, solicitacao)
-    contexto["titulo_pagina"] = "Editar Solicitação de Coffee Break"
-    contexto["breadcrumb"] = _breadcrumb(
-        {"label": "Solicitações", "url": reverse("coffee_break:solicitacoes")},
-        {"label": f"Editar #{solicitacao.pk}"},
+        form = Formulario(instance=solicitacao)
+    contexto = _contexto_formulario(
+        request, form, solicitacao, somente_leitura=somente_leitura, etapa=etapa
     )
-    return render(request, "pages/coffee_break/form.html", contexto)
+    _titulo_e_trilha(contexto, solicitacao, etapa)
+    return render(request, TEMPLATES_ETAPA[etapa], contexto)
+
+
+@acesso_ao_modulo
+def editar_solicitacao(request, pk):
+    """Etapa 1 — o pedido e a ordem de serviço."""
+    return _tela_da_etapa(request, pk, "pedido")
+
+
+@acesso_ao_modulo
+def etapa_nota(request, pk):
+    """Etapa 2 — a nota recebida; dela saem o ofício e o certifico."""
+    return _tela_da_etapa(request, pk, "nota")
+
+
+@acesso_ao_modulo
+def etapa_protocolo(request, pk):
+    """Etapa 3 — os textos do eProtocolo, o anexo completo e o pagamento."""
+    return _tela_da_etapa(request, pk, "protocolo")
 
 
 def _contexto_andamento(solicitacao, erro="", valor="", texto=""):
@@ -785,7 +895,7 @@ def registrar_andamento(request, pk):
     """
     solicitacao = _solicitacao_documental(pk)
     via_modal = request.headers.get("X-Cadastro-Modal") == "1"
-    destino = reverse("coffee_break:editar", args=[solicitacao.pk]) + "#sec-andamento"
+    destino = reverse(f"coffee_break:{_etapa_do_marco(solicitacao)}", args=[solicitacao.pk])
 
     def modal(**extra):
         return render(
@@ -896,6 +1006,8 @@ def lista_cadastro(request, tipo, modal=None):
     ou `?editar=<pk>` abrem a lista já com o modal aberto.
     """
     config = _config_cadastro(tipo)
+    if config.get("unico"):
+        ConfiguracaoCoffeeBreak.atual()
     if modal is None and request.method == "GET":
         editar = request.GET.get("editar", "")
         if request.GET.get("novo"):
@@ -971,6 +1083,8 @@ def _contexto_modal(tipo, config, form, instancia):
 @gerenciamento_de_cadastros
 def editar_cadastro(request, tipo, pk=None):
     config = _config_cadastro(tipo)
+    if config.get("unico") and not pk:
+        return redirect("coffee_break:cadastro_lista", tipo=tipo)
     instancia = get_object_or_404(config["model"], pk=pk) if pk else None
     via_modal = request.headers.get("X-Cadastro-Modal") == "1"
     if request.method == "GET" and not via_modal:
@@ -997,6 +1111,9 @@ def editar_cadastro(request, tipo, pk=None):
 def excluir_cadastro(request, tipo, pk):
     config = _config_cadastro(tipo)
     objeto = get_object_or_404(config["model"], pk=pk)
+    if config.get("unico"):
+        messages.error(request, "Esta configuração não se exclui; edite os campos.")
+        return redirect("coffee_break:cadastro_lista", tipo=tipo)
     try:
         objeto.delete()
     except ProtectedError:
@@ -1020,15 +1137,17 @@ def _solicitacao_documental(pk):
     )
 
 
-def _pdf_ou_volta(request, solicitacao, gerar, prefixo):
+def _pdf_ou_volta(request, solicitacao, gerar, prefixo, volta="editar", tipo="application/pdf", extensao=".pdf"):
     try:
         conteudo = gerar(solicitacao)
     except ValidationError as erro:
         for mensagem in erro.messages:
             messages.error(request, mensagem)
-        return redirect(f"{reverse('coffee_break:editar', args=[solicitacao.pk])}#sec-documentos")
-    resposta = HttpResponse(conteudo, content_type="application/pdf")
+        return redirect(f"coffee_break:{volta}", pk=solicitacao.pk)
+    resposta = HttpResponse(conteudo, content_type=tipo)
     nome = documentos.nome_arquivo(prefixo, solicitacao)
+    if extensao != ".pdf":
+        nome = nome[: -len(".pdf")] + extensao
     disposicao = "attachment" if request.GET.get("baixar") else "inline"
     resposta["Content-Disposition"] = f'{disposicao}; filename="{nome}"'
     return resposta
@@ -1042,16 +1161,34 @@ def ordem_servico(request, pk):
 
 
 @acesso_ao_modulo
+def oficio(request, pk):
+    return _pdf_ou_volta(
+        request, _solicitacao_documental(pk), documentos.oficio_pdf, "Oficio", volta="etapa_nota"
+    )
+
+
+@acesso_ao_modulo
 def certifico(request, pk):
     return _pdf_ou_volta(
-        request, _solicitacao_documental(pk), documentos.certifico_pdf, "Certifico"
+        request, _solicitacao_documental(pk), documentos.certifico_pdf, "Certifico", volta="etapa_nota"
     )
 
 
 @acesso_ao_modulo
 def pacote_protocolo(request, pk):
     return _pdf_ou_volta(
-        request, _solicitacao_documental(pk), documentos.pacote_protocolo_pdf, "Protocolo"
+        request, _solicitacao_documental(pk), documentos.pacote_protocolo_pdf,
+        "Anexo do protocolo", volta="etapa_protocolo",
+    )
+
+
+@acesso_ao_modulo
+def pacote_protocolo_zip(request, pk):
+    request.GET = request.GET.copy()
+    request.GET["baixar"] = "1"
+    return _pdf_ou_volta(
+        request, _solicitacao_documental(pk), documentos.pacote_protocolo_zip,
+        "Anexo do protocolo", volta="etapa_protocolo", tipo="application/zip", extensao=".zip",
     )
 
 

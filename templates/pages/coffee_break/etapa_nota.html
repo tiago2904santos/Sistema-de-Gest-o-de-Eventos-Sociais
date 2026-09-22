@@ -1,0 +1,60 @@
+{% extends "pages/coffee_break/solicitacao_base.html" %}
+{% comment %}
+  Etapa 2 — Nota fiscal, ofício e certifico. Chegou a nota do fornecedor:
+  o número e o PDF dela, e os dados do ofício que a encaminha ao GAF. Com
+  isso saem os dois documentos da etapa, nos modelos do processo
+  26.617.058-0: o ofício (assinado pelo Assessor) e o certifico digital
+  (assinado pela fiscal do contrato).
+{% endcomment %}
+
+{% block etapa %}
+  <form method="post" action="" id="form-coffee-break" class="editor-roteiro__principal" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="versao" value="{{ valores.versao }}">
+    {% include "pages/coffee_break/_erros_form.html" %}
+
+    <section class="section-card reg" id="sec-nota">
+      <header class="section-card__cabecalho reg__t">
+        <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+        <h2 class="section-card__titulo">Nota fiscal, ofício e certifico</h2>
+      </header>
+      <div class="section-card__corpo">
+        <h3 class="sol-subtitulo cb-subtitulo--primeiro">Nota fiscal recebida</h3>
+        <div class="g-form g-form--3">
+          {% include "components/input.html" with name="numero_nota_fiscal" label="Número da nota fiscal" placeholder="Ex.: 8957" valor=valores.numero_nota_fiscal erros=erros.numero_nota_fiscal desabilitado=somente_leitura %}
+          <div class="form-campo c2">
+            <label class="form-label" for="id_arquivo_nota_fiscal">Nota fiscal (PDF)</label>
+            <input class="form-controle" type="file" id="id_arquivo_nota_fiscal" name="arquivo_nota_fiscal" accept=".pdf,application/pdf"{% if somente_leitura %} disabled{% endif %}>
+            {% if solicitacao.arquivo_nota_fiscal %}<p class="form-ajuda"><a href="{% url 'coffee_break:nota_fiscal' solicitacao.pk %}" target="_blank" rel="noopener">Ver a nota anexada</a> — enviar outra substitui.</p>{% else %}<p class="form-ajuda">Vai no anexo do protocolo logo depois do ofício.</p>{% endif %}
+            {% for erro in erros.arquivo_nota_fiscal %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+          </div>
+        </div>
+
+        <h3 class="sol-subtitulo">Ofício ao GAF</h3>
+        <div class="g-form g-form--3">
+          {% include "components/input.html" with name="numero_oficio" label="Número do ofício" placeholder="Ex.: 124/2026" valor=valores.numero_oficio erros=erros.numero_oficio desabilitado=somente_leitura %}
+          {% include "components/input.html" with name="data_oficio" label="Data do ofício" tipo="date" ajuda="Em branco, sai com a data do dia." valor=valores.data_oficio erros=erros.data_oficio desabilitado=somente_leitura %}
+          {% include "components/input.html" with name="protocolo_pcpr_oficio" label="PCPR protocolo n.º" placeholder="Ex.: 2026.050880.000" ajuda="Opcional; vai no alto do ofício." valor=valores.protocolo_pcpr_oficio erros=erros.protocolo_pcpr_oficio desabilitado=somente_leitura %}
+        </div>
+
+        <h3 class="sol-subtitulo">Documentos da etapa</h3>
+        <ul class="pc-docs__lista cb-docs-gerados" aria-label="Documentos da etapa">
+          {% url 'coffee_break:oficio' solicitacao.pk as url_oficio %}
+          {% include "pages/coffee_break/_doc_gerado.html" with titulo="Ofício "|add:solicitacao.numero_oficio detalhe="Encaminha a nota ao GAF — assinado pelo Assessor de Comunicação" faltas=pendencias_oficio url=url_oficio icone="mail" %}
+          {% url 'coffee_break:certifico' solicitacao.pk as url_certifico %}
+          {% include "pages/coffee_break/_doc_gerado.html" with titulo="Certifico digital" detalhe="Atesto da nota — assinado pela fiscal do contrato" faltas=pendencias_certifico url=url_certifico icone="check-circle" %}
+        </ul>
+        <p class="pc-docs__nota">Salve a etapa para os documentos saírem com o que foi digitado. A assinatura é feita no eProtocolo.</p>
+
+        <div class="frm-acoes-fim">
+          <a class="btn--secundaria" href="{% url 'coffee_break:editar' solicitacao.pk %}">Voltar à solicitação</a>
+          {% if not somente_leitura %}
+            <button type="submit" class="btn-primaria" name="seguir" value="protocolo">Salvar e seguir para o protocolo{% include "components/icon.html" with nome="arrow-right" %}</button>
+          {% else %}
+            <a class="btn-primaria" href="{% url 'coffee_break:etapa_protocolo' solicitacao.pk %}">Protocolo{% include "components/icon.html" with nome="arrow-right" %}</a>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+  </form>
+{% endblock %}
