@@ -105,6 +105,20 @@
                 {% include "components/select.html" with name="municipio" label="Município" rotulo_oculto=True opcoes=municipios obrigatorio=True pesquisavel=True dependente_de="estado" selecionado=valores.municipio erros=erros.municipio desabilitado=dados_desabilitado placeholder="Buscar município..." %}
               </div>
             </div>
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">Quem pede</div>
+              <div class="ofc-percurso__par">
+                {% include "components/input.html" with name="solicitante_nome" label="Solicitante" rotulo_oculto=True obrigatorio=True placeholder="Nome de quem solicita" valor=valores.solicitante_nome erros=erros.solicitante_nome desabilitado=dados_desabilitado %}
+                {% include "components/input.html" with name="contato" label="Contato" rotulo_oculto=True tipo="tel" mascara="telefone" placeholder="(00) 00000-0000" valor=valores.contato erros=erros.contato desabilitado=dados_desabilitado %}
+              </div>
+            </div>
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">Lotação</div>
+              <div class="ofc-percurso__par">
+                {% include "components/input.html" with name="solicitante_cargo_unidade" label="Cargo / unidade" rotulo_oculto=True obrigatorio=True placeholder="Cargo e unidade de quem solicita" valor=valores.solicitante_cargo_unidade erros=erros.solicitante_cargo_unidade desabilitado=dados_desabilitado %}
+                {% include "components/select.html" with name="orgao_responsavel" label="Órgão responsável" rotulo_oculto=True opcoes=orgaos obrigatorio=True selecionado=valores.orgao_responsavel erros=erros.orgao_responsavel desabilitado=dados_desabilitado placeholder="Órgão responsável" %}
+              </div>
+            </div>
           </div>
           <div class="g-form g-form--3">
             {% include "components/select.html" with name="tipo_evento" label="Tipo do evento" opcoes=tipos_evento obrigatorio=True selecionado=valores.tipo_evento erros=erros.tipo_evento desabilitado=dados_desabilitado %}
@@ -115,32 +129,16 @@
             <div class="c2">
               {% include "components/input.html" with name="quantidade_cin" label="Quantidade de CIN agendadas" tipo="number" minimo=0 passo="1" valor=valores.quantidade_cin erros=erros.quantidade_cin desabilitado=planejamento_desabilitado %}
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section-card reg" id="sec-solicitante">
-        <header class="section-card__cabecalho reg__t">
-          <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
-          <h2 class="section-card__titulo">Solicitante</h2>
-        </header>
-        <div class="section-card__corpo">
-          <div class="g-form g-form--3">
-            <div class="c2">
-              {% include "components/input.html" with name="solicitante_nome" label="Solicitante" obrigatorio=True valor=valores.solicitante_nome erros=erros.solicitante_nome desabilitado=dados_desabilitado %}
+            <div class="cheia">
+              {% include "components/textarea.html" with name="descricao_complementar" label="Descrição complementar" linhas="2" placeholder="Detalhes adicionais sobre o evento, serviços e estrutura..." valor=valores.descricao_complementar erros=erros.descricao_complementar desabilitado=planejamento_desabilitado %}
             </div>
-            {% include "components/input.html" with name="contato" label="Contato" tipo="tel" mascara="telefone" placeholder="(00) 00000-0000" valor=valores.contato erros=erros.contato desabilitado=dados_desabilitado %}
-            <div class="c2">
-              {% include "components/input.html" with name="solicitante_cargo_unidade" label="Cargo / unidade" obrigatorio=True valor=valores.solicitante_cargo_unidade erros=erros.solicitante_cargo_unidade desabilitado=dados_desabilitado %}
-            </div>
-            {% include "components/select.html" with name="orgao_responsavel" label="Órgão responsável" opcoes=orgaos obrigatorio=True selecionado=valores.orgao_responsavel erros=erros.orgao_responsavel desabilitado=dados_desabilitado %}
           </div>
         </div>
       </section>
 
       <section class="section-card reg" id="sec-servicos">
         <header class="section-card__cabecalho reg__t">
-          <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
+          <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
           <h2 class="section-card__titulo">Serviços e estrutura</h2>
           {# A unidade móvel é um interruptor do cabeçalho, como o vínculo de ofícios da OS. #}
           <div class="section-card__acao editor-roteiro__acoes-cabecalho">
@@ -157,26 +155,19 @@
             {% include "components/select.html" with name="unidade_movel_designada" label="Qual unidade móvel" opcoes=unidades_moveis placeholder="Selecione a unidade..." selecionado=valores.unidade_movel_designada erros=erros.unidade_movel_designada desabilitado=planejamento_desabilitado %}
             {% include "components/select.html" with name="motorista" label="Motorista" opcoes=motoristas selecionado=valores.motorista erros=erros.motorista desabilitado=planejamento_desabilitado %}
           </div>
-          {% include "components/textarea.html" with name="descricao_complementar" label="Descrição complementar" linhas="3" placeholder="Detalhes adicionais sobre serviços e estrutura..." valor=valores.descricao_complementar erros=erros.descricao_complementar desabilitado=planejamento_desabilitado %}
         </div>
       </section>
 
       <section class="section-card reg" id="sec-planejamento">
         <header class="section-card__cabecalho reg__t">
-          <span class="section-card__numero reg-numero" aria-hidden="true">4</span>
+          <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
           <h2 class="section-card__titulo">Planejamento operacional</h2>
         </header>
         <div class="section-card__corpo">
           {% include "pages/solicitacoes/_equipes.html" %}
-        </div>
-      </section>
 
-      <section class="section-card reg" id="sec-anexos">
-        <header class="section-card__cabecalho reg__t">
-          <span class="section-card__numero reg-numero" aria-hidden="true">5</span>
-          <h2 class="section-card__titulo">Anexos</h2>
-        </header>
-        <div class="section-card__corpo">
+          <h3 class="sol-subtitulo">Anexos</h3>
+
           {% if solicitacao %}
             <div class="dt-w" role="region" aria-label="Arquivos anexados">
               <table class="dt">
@@ -219,8 +210,9 @@
               </span>
             </div>
           {% endif %}
-        </div>
+          </div>
       </section>
+
     </form>
 
     {# ------------------------------------------------------------------ #}
@@ -230,7 +222,7 @@
       {% if mostrar_despacho_dg %}
         <section class="section-card reg" id="despacho-dg">
           <header class="section-card__cabecalho reg__t">
-            <span class="section-card__numero reg-numero" aria-hidden="true">6</span>
+            <span class="section-card__numero reg-numero" aria-hidden="true">4</span>
             <h2 class="section-card__titulo">Despacho da DG</h2>
           </header>
           <div class="section-card__corpo">
