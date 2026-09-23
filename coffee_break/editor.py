@@ -2,9 +2,13 @@
 
 É o mesmo editor dos ofícios (`documentos/editor/`): a barra (desfazer,
 zoom, Campos, Imprimir, "Tudo salvo"), o aviso de pendências e a folha A4
-editável. Cada trecho editável da folha é um campo da solicitação — editar
-no documento muda a solicitação, e o PDF (o modelo da OS 41/2026, em
-`coffee_break/documentos/ordem_servico.html`) sai com o que foi editado.
+editável. Tudo na folha se edita, como no ofício: o que vem da solicitação
+(número, data, objeto, pedido, local, responsável) muda a solicitação; o que
+vem dos cadastros (fornecedor, contrato, fiscal, empenho) muda o cadastro —
+só para quem administra os cadastros; e o texto do modelo (cabeçalho,
+rótulos, rodapé) é bloco documental, que vale só para esta OS. O PDF (o
+modelo da OS 41/2026, em `coffee_break/documentos/ordem_servico.html`) sai
+com o que foi editado, inclusive as quebras de página.
 
 O tipo não entra em `DocumentoTipo`: a OS do Coffee Break não passa pela
 cadeia de geração de Viagens (DOCX, cache), só pelo editor. O registro é
@@ -17,6 +21,7 @@ from enum import Enum
 
 from django.urls import reverse
 
+from documentos.editor.blocos import BlocoDocumental, PontoDeQuebra
 from documentos.editor.campos import CampoEditavel, Parte
 from documentos.editor.vinculos import FonteBase, VinculoBase, _gravar_recorte, _historico
 
@@ -27,7 +32,12 @@ class TipoCoffee(str, Enum):
 
 CHAVE_OS = TipoCoffee.ORDEM_SERVICO.value
 
+_CADASTRO = "Muda o cadastro, em todas as OS deste {}."
+
 CAMPOS_OS = (
+    CampoEditavel("cb_numero", "Número da OS", (
+        Parte("numero", "texto", "Número da OS", ajuda="Só a sequência (42) ou com o ano (42/2026). Não se repete."),
+    ), origem="documento"),
     CampoEditavel("cb_data", "Data da OS", (Parte("data_solicitacao", "data", "Data da solicitação"),), origem="documento",
                   ajuda="É a data da solicitação; muda também na etapa 1."),
     CampoEditavel("cb_objeto", "Objeto", (Parte("descricao_evento", "texto", "Descrição do evento"),), origem="documento",
@@ -39,10 +49,51 @@ CAMPOS_OS = (
     CampoEditavel("cb_responsavel", "Responsável pelo recebimento", (
         Parte("responsavel_recebimento", "texto", "Responsável pelo recebimento"),
     ), origem="documento"),
+    CampoEditavel("cb_fornecedor", "Fornecedor", (Parte("razao_social", "texto", "Razão social"),), origem="fornecedor",
+                  ajuda=_CADASTRO.format("fornecedor")),
+    CampoEditavel("cb_contrato", "Contrato", (
+        Parte("numero", "texto", "Número do contrato"),
+        Parte("numero_gms", "texto", "Número GMS"),
+        Parte("termo_aditivo", "texto", "Termo aditivo"),
+    ), origem="contrato", ajuda=_CADASTRO.format("contrato")),
+    CampoEditavel("cb_fiscal", "Fiscal do contrato", (Parte("fiscal_responsavel", "texto", "Fiscal do contrato"),),
+                  origem="contrato", ajuda=_CADASTRO.format("contrato")),
+    CampoEditavel("cb_cargo_fiscal", "Cargo do fiscal", (Parte("cargo_fiscal", "texto", "Cargo do fiscal"),),
+                  origem="contrato", ajuda=_CADASTRO.format("contrato")),
+    CampoEditavel("cb_empenho", "Empenho", (Parte("empenho", "texto", "Empenho"),), origem="lote",
+                  ajuda=_CADASTRO.format("lote")),
+)
+
+_SO_ESTA = "Texto do modelo. O texto alterado vale só para esta OS."
+
+BLOCOS_OS = tuple(
+    BlocoDocumental(chave, rotulo, padrao, ajuda=_SO_ESTA)
+    for chave, rotulo, padrao in (
+        ("cb_secretaria", "Cabeçalho — secretaria", "SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA"),
+        ("cb_orgao", "Cabeçalho — órgão", "POLÍCIA CIVIL DO PARANÁ"),
+        ("cb_unidade", "Cabeçalho — unidade", "ASSESSORIA DE COMUNICAÇÃO SOCIAL"),
+        ("cb_cidade", "Cidade da data", "Curitiba"),
+        ("cb_titulo", "Título", "ORDEM DE SERVIÇO"),
+        ("cb_rotulo_contrato", "Rótulo do contrato", "Contrato:"),
+        ("cb_rotulo_empenho", "Rótulo do empenho", "Empenho:"),
+        ("cb_rotulo_objeto", "Rótulo do objeto", "OBJETO:"),
+        ("cb_rotulo_detalhamento", "Rótulo do detalhamento", "DETALHAMENTO DO PEDIDO:"),
+        ("cb_rotulo_local", "Rótulo do local de entrega", "LOCAL DE ENTREGA:"),
+        ("cb_rotulo_responsavel", "Rótulo do responsável", "RESPONSÁVEL PELO RECEBIMENTO:"),
+        ("cb_linha_assinatura", "Linha da assinatura", "______________________________________________"),
+        ("cb_rodape_endereco", "Rodapé — endereço", "Avenida Iguaçu, 470 – Rebouças – Curitiba/PR—CEP: 80.230-020"),
+        ("cb_rodape_contato", "Rodapé — contato", "Fone: (41) 3235-6477 – e-mail:\u00a0 comunicacao@pc.pr.gov.br"),
+    )
+)
+
+QUEBRAS_OS = (
+    PontoDeQuebra("antes_objeto", "Antes do objeto"),
+    PontoDeQuebra("antes_local", "Antes do local de entrega"),
+    PontoDeQuebra("antes_assinatura", "Antes da assinatura"),
 )
 
 # Dados do pedido que a nota fiscal trava (como na etapa 1).
-CAMPOS_BASE = ("data_solicitacao", "descricao_evento")
+CAMPOS_BASE = ("numero", "data_solicitacao", "descricao_evento")
 
 
 def versao_da_solicitacao(solicitacao) -> str:
@@ -53,7 +104,7 @@ def versao_da_solicitacao(solicitacao) -> str:
 
 
 class FonteSolicitacaoCoffee(FonteBase):
-    CAMPOS = ("data_solicitacao", "descricao_evento", "detalhamento_pedido", "local_entrega", "responsavel_recebimento")
+    CAMPOS = ("numero", "data_solicitacao", "descricao_evento", "detalhamento_pedido", "local_entrega", "responsavel_recebimento")
 
     def versao(self, alvo):
         return versao_da_solicitacao(alvo)
@@ -82,6 +133,24 @@ class FonteSolicitacaoCoffee(FonteBase):
                     raise forms.ValidationError("Informe a descrição do evento.")
                 return texto
 
+            def clean_numero(self):
+                from . import services
+
+                numero = " ".join((self.cleaned_data.get("numero") or "").split())
+                if not numero:
+                    raise forms.ValidationError("Informe o número da OS.")
+                if numero.isdigit():
+                    atual = services.partes_numero(alvo.numero)
+                    ano = atual[1] if atual else (alvo.data_solicitacao.year if alvo.data_solicitacao else None)
+                    if int(numero) < 1 or ano is None:
+                        raise forms.ValidationError("O número da OS deve ser 1 ou mais.")
+                    numero = services.formatar_numero(int(numero), ano)
+                if numero != alvo.numero and services.numero_em_uso(numero, excluir_pk=alvo.pk):
+                    partes = services.partes_numero(numero)
+                    livre = f" A próxima livre é {services.proxima_sequencia(partes[1])}." if partes else ""
+                    raise forms.ValidationError(f"A OS {numero} já existe.{livre}")
+                return numero
+
             def clean_local_entrega(self):
                 return " ".join((self.cleaned_data.get("local_entrega") or "").split())
 
@@ -107,12 +176,65 @@ class FonteSolicitacaoCoffee(FonteBase):
         return [{"rotulo": "Abrir a etapa 1", "url": reverse("coffee_break:editar", args=[solicitacao.pk])}]
 
 
+class FonteCadastroCoffee(FonteBase):
+    """Um cadastro que a OS mostra (o fornecedor, o contrato ou o lote da
+    solicitação): editar na folha muda o cadastro. Só quem administra os
+    cadastros do módulo, como na tela de Cadastros."""
+
+    def __init__(self, vinculo, caminho, campos):
+        super().__init__(vinculo)
+        self.caminho = caminho
+        self.campos = campos
+
+    def alvo(self, solicitacao, objeto_id, usuario):
+        from django.http import Http404
+
+        alvo = self.caminho(solicitacao)
+        if alvo is None:
+            raise Http404("A solicitação ainda não tem este cadastro.")
+        return alvo
+
+    def pode_editar(self, usuario, solicitacao):
+        from solicitacoes.permissions import eh_administrador
+
+        return eh_administrador(usuario) and self.vinculo.pode_editar(usuario, solicitacao)
+
+    def form(self, alvo, dados=None):
+        from django import forms
+
+        campos = self.campos
+
+        class Form(forms.ModelForm):
+            class Meta:
+                model = type(alvo)
+                fields = list(campos)
+
+            def clean(self):
+                dados = super().clean()
+                for nome in campos:
+                    if isinstance(dados.get(nome), str):
+                        dados[nome] = " ".join(dados[nome].split())
+                return dados
+
+        return Form(dados, instance=alvo)
+
+    def links(self, definicao, solicitacao, alvo):
+        return []
+
+
 class VinculoCoffeeOS(VinculoBase):
     tipo = TipoCoffee.ORDEM_SERVICO
     rotulo_voltar = "Voltar à solicitação"
 
     def montar_fontes(self):
-        return {"documento": FonteSolicitacaoCoffee(self)}
+        lote = lambda s: s.lote if s.lote_id else None  # noqa: E731
+        contrato = lambda s: s.lote.contrato if s.lote_id else None  # noqa: E731
+        return {
+            "documento": FonteSolicitacaoCoffee(self),
+            "fornecedor": FonteCadastroCoffee(self, lambda s: s.lote.contrato.fornecedor if s.lote_id else None, ("razao_social",)),
+            "contrato": FonteCadastroCoffee(self, contrato, ("numero", "numero_gms", "termo_aditivo", "fiscal_responsavel", "cargo_fiscal")),
+            "lote": FonteCadastroCoffee(self, lote, ("empenho",)),
+        }
 
     def carregar(self, pk, variante=""):
         from django.shortcuts import get_object_or_404
@@ -133,7 +255,10 @@ class VinculoCoffeeOS(VinculoBase):
         return self.pode_ver(usuario) and not self.cancelado(solicitacao)
 
     def origens_editaveis(self, usuario):
-        return set(self.fontes)
+        from solicitacoes.permissions import eh_administrador
+
+        # Os cadastros (fornecedor, contrato, lote) são da administração do módulo.
+        return set(self.fontes) if eh_administrador(usuario) else {"documento"}
 
     def versao(self, solicitacao):
         return versao_da_solicitacao(solicitacao)
@@ -168,7 +293,8 @@ class VinculoCoffeeOS(VinculoBase):
         return self.pode_ver(usuario) and not self.pendencias(solicitacao)
 
     def historico(self, solicitacao):
-        return _historico([("coffee_break.solicitacaocoffeebreak", [solicitacao.pk])])
+        blocos = list(solicitacao.blocos_documentais.values_list("pk", flat=True))
+        return _historico([("coffee_break.solicitacaocoffeebreak", [solicitacao.pk]), ("documentos.documentobloco", blocos)])
 
 
 def contexto_da_folha(solicitacao, *, modo="editor", campos_editaveis=None):
@@ -177,6 +303,7 @@ def contexto_da_folha(solicitacao, *, modo="editor", campos_editaveis=None):
     from django.templatetags.static import static
     from django.utils import timezone
 
+    from documentos.services.document_blocks import conteudo_documental
     from documentos.services.document_context import _do_editor
 
     from .documentos import data_extenso
@@ -191,7 +318,7 @@ def contexto_da_folha(solicitacao, *, modo="editor", campos_editaveis=None):
         "data_extenso": data_extenso(solicitacao.data_solicitacao or timezone.localdate()),
         "institucional": {"nome_orgao": "POLÍCIA CIVIL DO PARANÁ", "unidade_cabecalho": "ASSESSORIA DE COMUNICAÇÃO SOCIAL"},
         "imagens": {"brasao": static("img/brasao-pcpr-timbre.png"), "marca": static("img/marca-pcpr-timbre.png")},
-        **_do_editor(TipoCoffee.ORDEM_SERVICO, {}, campos_editaveis, None),
+        **_do_editor(TipoCoffee.ORDEM_SERVICO, {"documento": conteudo_documental(TipoCoffee.ORDEM_SERVICO, solicitacao)}, campos_editaveis, None),
         "modo": modo,
     }
 
@@ -222,11 +349,13 @@ def registrar():
     """Liga a OS ao editor: o vínculo, os campos e o módulo que dá acesso às
     rotas do editor para este tipo (as demais seguem sendo de Viagens)."""
     from accounts.modulos import registrar_documento
-    from documentos.editor import campos, vinculos
+    from documentos.editor import blocos, campos, vinculos
 
     from .permissions import CODIGO_MODULO
 
     vinculo = VinculoCoffeeOS()
     vinculos.VINCULOS[vinculo.chave] = vinculo
     campos.REGISTRO[vinculo.chave] = {campo.chave: campo for campo in CAMPOS_OS}
+    blocos.REGISTRO_BLOCOS[vinculo.tipo] = {bloco.chave: bloco for bloco in BLOCOS_OS}
+    blocos.REGISTRO_QUEBRAS[vinculo.tipo] = {ponto.chave: ponto for ponto in QUEBRAS_OS}
     registrar_documento("documentos", vinculo.chave, CODIGO_MODULO)

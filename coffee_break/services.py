@@ -325,7 +325,6 @@ def numero_em_uso(numero, excluir_pk=None):
 
 # Os marcos na ordem do fluxo real: (campo, etapa no stepper, rótulo do campo, tipo).
 MARCOS = [
-    ("data_envio_ordem_servico", "OS enviada", "OS enviada ao fornecedor em", "date"),
     ("numero_nota_fiscal", "Nota fiscal", "Número da nota fiscal", "text"),
     ("protocolo_pagamento", "Protocolo", "Protocolo de pagamento", "text"),
     ("data_atesto_gaf", "Atesto", "Atesto e envio ao GAF em", "date"),

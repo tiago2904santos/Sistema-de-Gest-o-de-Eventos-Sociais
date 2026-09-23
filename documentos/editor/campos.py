@@ -47,7 +47,11 @@ class Parte:
             raise ValueError(f"Tipo de parte desconhecido: {self.tipo}")
 
 
-ORIGENS = ("oficio", "marcacao", "servidor", "solicitacao", "configuracao", "documento", "viatura", "trecho", "prestacao")
+ORIGENS = (
+    "oficio", "marcacao", "servidor", "solicitacao", "configuracao", "documento", "viatura", "trecho", "prestacao",
+    # Cadastros do Coffee Break que a OS mostra (fornecedor, contrato, lote).
+    "fornecedor", "contrato", "lote",
+)
 
 # Origens de um registro entre vários: o trecho leva o id dele na folha e não
 # entra no menu "Campos" (edita-se na linha a que pertence).

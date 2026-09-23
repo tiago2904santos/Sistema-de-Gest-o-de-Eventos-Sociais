@@ -65,7 +65,10 @@
             </div>
           </div>
         </div>
-        <div class="g-form g-form--3">
+        <input type="hidden" name="periodo_evento_texto" value="{{ valores.periodo_evento_texto }}">
+        {% include "components/input.html" with name="descricao_evento" label="Descrição do evento (objeto da OS)" obrigatorio=True maxlength="255" placeholder="Ex.: Ciclo de Palestras Saúde e Bem-Estar - 1DP Curitiba" valor=valores.descricao_evento erros=erros.descricao_evento desabilitado=dados_base_bloqueados %}
+        {# A ordem de serviço numa linha: número, onde entregar e quem recebe. O resto se edita na própria folha. #}
+        <div class="cb-os-linha">
           {% if numero_livre %}
             {% include "components/input.html" with name="numero" label="Nº da OS" ajuda="Número antigo, fora do formato NN/AAAA." valor=valores.numero erros=erros.numero desabilitado=dados_base_bloqueados %}
           {% else %}
@@ -77,22 +80,10 @@
                 <span class="ofc-numero__ano">/ {{ numero_ano }}</span>
               </div>
               {% for erro in erros.numero %}<p class="form-erro" id="id_numero_erro">{{ erro }}</p>{% endfor %}
-              <p class="form-ajuda">{% if solicitacao %}Pode alterar.{% else %}A próxima da numeração; pode alterar.{% endif %}</p>
             </div>
           {% endif %}
-          <input type="hidden" name="periodo_evento_texto" value="{{ valores.periodo_evento_texto }}">
-          <div class="cheia">
-            {% include "components/input.html" with name="descricao_evento" label="Descrição do evento (objeto da OS)" obrigatorio=True maxlength="255" placeholder="Ex.: Ciclo de Palestras Saúde e Bem-Estar - 1DP Curitiba" valor=valores.descricao_evento erros=erros.descricao_evento desabilitado=dados_base_bloqueados %}
-          </div>
-          {# A ordem de serviço no mesmo bloco: onde entregar, quem recebe e o pedido. #}
-          <div class="c2">
-            {% include "components/input.html" with name="local_entrega" label="Local de entrega" placeholder="Ex.: Casa da Cultura - Rua do Centenário, 2011 - Centro - Campo Largo" valor=valores.local_entrega erros=erros.local_entrega desabilitado=somente_leitura %}
-          </div>
+          {% include "components/input.html" with name="local_entrega" label="Local de entrega" placeholder="Ex.: Casa da Cultura - Rua do Centenário, 2011 - Centro - Campo Largo" valor=valores.local_entrega erros=erros.local_entrega desabilitado=somente_leitura %}
           {% include "components/input.html" with name="responsavel_recebimento" label="Responsável pelo recebimento" placeholder="Ex.: Tadeu 41 99988-6010" valor=valores.responsavel_recebimento erros=erros.responsavel_recebimento desabilitado=somente_leitura %}
-          <div class="c2">
-            {% include "components/textarea.html" with name="detalhamento_pedido" label="Detalhamento do pedido" linhas="3" placeholder="Em branco: “Solicito coffee para: Dia 01/10 às 9h30 p/ 40 pessoas.”" ajuda="Em branco, a OS monta o texto com a data, o horário e a quantidade." valor=valores.detalhamento_pedido erros=erros.detalhamento_pedido desabilitado=somente_leitura %}
-          </div>
-          {% include "components/input.html" with name="data_envio_ordem_servico" label="OS enviada ao fornecedor em" tipo="date" valor=valores.data_envio_ordem_servico erros=erros.data_envio_ordem_servico desabilitado=somente_leitura %}
         </div>
 
         {% if solicitacao %}

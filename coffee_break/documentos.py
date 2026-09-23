@@ -61,13 +61,29 @@ def _previa(template, contexto):
     return render_to_string(template, {**contexto, "imagens": _imagens_web(), "previa": True})
 
 
+def _contexto_os(solicitacao):
+    """A OS com o que se editou no editor de documentos: os textos do modelo
+    reescritos (`b`, por chave) e as quebras de página."""
+    from documentos.services.document_blocks import conteudo_documental
+
+    from .editor import TipoCoffee
+
+    documental = conteudo_documental(TipoCoffee.ORDEM_SERVICO, solicitacao)
+    contexto = _contexto(solicitacao)
+    contexto["data_extenso"] = data_extenso(solicitacao.data_solicitacao)
+    contexto["b"] = {
+        chave: bloco["padrao"] if bloco["conteudo"] is None else bloco["conteudo"]
+        for chave, bloco in documental["blocos"].items()
+    }
+    contexto["quebras"] = set(documental["quebras"])
+    return contexto
+
+
 def ordem_servico_previa(solicitacao):
     faltas = pendencias_ordem_servico(solicitacao)
     if faltas:
         raise ValidationError(faltas)
-    contexto = _contexto(solicitacao)
-    contexto["data_extenso"] = data_extenso(solicitacao.data_solicitacao)
-    return _previa("coffee_break/documentos/ordem_servico.html", contexto)
+    return _previa("coffee_break/documentos/ordem_servico.html", _contexto_os(solicitacao))
 
 
 def _pdf(template, contexto):
@@ -107,9 +123,7 @@ def ordem_servico_pdf(solicitacao):
     faltas = pendencias_ordem_servico(solicitacao)
     if faltas:
         raise ValidationError(faltas)
-    contexto = _contexto(solicitacao)
-    contexto["data_extenso"] = data_extenso(solicitacao.data_solicitacao)
-    return _pdf("coffee_break/documentos/ordem_servico.html", contexto)
+    return _pdf("coffee_break/documentos/ordem_servico.html", _contexto_os(solicitacao))
 
 
 def certifico_pdf(solicitacao):

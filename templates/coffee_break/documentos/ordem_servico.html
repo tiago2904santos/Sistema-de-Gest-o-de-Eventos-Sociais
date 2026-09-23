@@ -1,4 +1,4 @@
-{% extends "coffee_break/documentos/_base.html" %}
+{% extends "coffee_break/documentos/_base.html" %}{% load documento_tags %}
 {% comment %}
   Ordem de serviço no modelo da OS 41/2026 (Arial 12, entrelinha 13,8 pt).
   Os espaços entre os blocos são os do modelo, medidos de base a base:
@@ -26,26 +26,40 @@
   .local { margin-top: 27.6pt; }
   .local-texto, .responsavel { margin-top: 13.8pt; }
   .assinatura { margin-top: 82.7pt; text-align: center; page-break-inside: avoid; }
+  /* Quebra de página posta no editor de documentos. */
+  .quebra { page-break-before: always; break-before: page; }
+{% endblock %}
+{% block cabecalho_linhas %}
+    <p>{{ b.cb_secretaria|linhas }}</p>
+    <p><b>{{ b.cb_orgao|linhas }}</b></p>
+    <p>{{ b.cb_unidade|linhas }}</p>
+{% endblock %}
+{% block rodape_linhas %}
+    <p>{{ b.cb_rodape_endereco|linhas }}</p>
+    <p>{{ b.cb_rodape_contato|linhas }}</p>
 {% endblock %}
 {% block corpo %}
-  <p class="data">Curitiba, {{ data_extenso }}.</p>
-  <h1>ORDEM DE SERVIÇO {{ s.numero }}</h1>
+  <p class="data">{{ b.cb_cidade|linhas }}, {{ data_extenso }}.</p>
+  <h1>{{ b.cb_titulo|linhas }} {{ s.numero }}</h1>
 
   <p class="fornecedor">{{ fornecedor.razao_social }}</p>
-  <p class="contrato">Contrato: {{ contrato.referencia_documental }}</p>
-  {% if lote.empenho %}<p class="empenho">Empenho: {{ lote.empenho }}</p>{% endif %}
+  <p class="contrato">{{ b.cb_rotulo_contrato|linhas }} {{ contrato.referencia_documental }}</p>
+  {% if lote.empenho %}<p class="empenho">{{ b.cb_rotulo_empenho|linhas }} {{ lote.empenho }}</p>{% endif %}
 
-  <p class="objeto"><span class="rotulo">OBJETO:</span> {{ s.descricao_evento }}</p>
-  <p class="detalhamento"><span class="rotulo">DETALHAMENTO DO PEDIDO:</span></p>
+  {% if "antes_objeto" in quebras %}<div class="quebra"></div>{% endif %}
+  <p class="objeto"><span class="rotulo">{{ b.cb_rotulo_objeto|linhas }}</span> {{ s.descricao_evento }}</p>
+  <p class="detalhamento"><span class="rotulo">{{ b.cb_rotulo_detalhamento|linhas }}</span></p>
   <p class="pedido">{{ s.detalhamento_efetivo }}</p>
 
-  <p class="local"><span class="rotulo">LOCAL DE ENTREGA:</span></p>
+  {% if "antes_local" in quebras %}<div class="quebra"></div>{% endif %}
+  <p class="local"><span class="rotulo">{{ b.cb_rotulo_local|linhas }}</span></p>
   <p class="local-texto">{{ s.local_entrega|default:"—" }}</p>
 
-  <p class="responsavel"><span class="rotulo">RESPONSÁVEL PELO RECEBIMENTO:</span> {{ s.responsavel_recebimento|default:"—" }}</p>
+  <p class="responsavel"><span class="rotulo">{{ b.cb_rotulo_responsavel|linhas }}</span> {{ s.responsavel_recebimento|default:"—" }}</p>
 
+  {% if "antes_assinatura" in quebras %}<div class="quebra"></div>{% endif %}
   <div class="assinatura">
-    <p>______________________________________________</p>
+    <p>{{ b.cb_linha_assinatura|linhas }}</p>
     <p><b>{{ contrato.fiscal_responsavel|upper }}</b></p>
     <p>{{ contrato.cargo_fiscal }}</p>
   </div>

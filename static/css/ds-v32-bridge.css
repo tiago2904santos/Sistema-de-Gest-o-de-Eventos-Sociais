@@ -2503,6 +2503,10 @@ form.btn-flutuante-form{margin:0;display:contents}
 .cb-data-linha{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(120px,1fr) minmax(150px,1fr);gap:8px;align-items:start}
 .cb-data-linha>.form-campo{margin:0}
 @container (max-width:680px){.cb-data-linha{grid-template-columns:minmax(0,1fr)}}
+/* Etapa 1: a OS numa linha (número, local de entrega, responsável). */
+.cb-os-linha{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(0,2fr) minmax(0,1.3fr);gap:12px;align-items:start;margin-top:12px}
+.cb-os-linha>.form-campo{margin:0}
+@container (max-width:680px){.cb-os-linha{grid-template-columns:minmax(0,1fr)}}
 .cb-passo--fechado{opacity:.5;cursor:not-allowed}
 .cb-docs-gerados{margin-top:18px}
 .cb-doc__txt{flex:1 1 0;flex-direction:column;align-items:flex-start;gap:3px}
