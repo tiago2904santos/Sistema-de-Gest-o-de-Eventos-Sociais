@@ -276,14 +276,29 @@ def escolher_lote(municipio, data=None):
 _NUMERO = re.compile(r"^\s*(\d+)\s*/\s*(\d{4})\s*$")
 
 
-def proximo_numero(lote, ano):
-    """"NN/AAAA": a numeração corre por lote dentro do ano (a da OS)."""
+def partes_numero(numero):
+    """(sequência, ano) de um "NN/AAAA"; None para texto em outro formato."""
+    achado = _NUMERO.match(numero or "")
+    return (int(achado.group(1)), int(achado.group(2))) if achado else None
+
+
+def formatar_numero(sequencia, ano):
+    return f"{sequencia:02d}/{ano}"
+
+
+def proxima_sequencia(lote, ano):
+    """A próxima sequência da OS no lote e no ano (a numeração é por lote)."""
     maior = 0
     for numero in lote.solicitacoes.exclude(numero="").values_list("numero", flat=True):
-        achado = _NUMERO.match(numero)
-        if achado and int(achado.group(2)) == ano:
-            maior = max(maior, int(achado.group(1)))
-    return f"{maior + 1:02d}/{ano}"
+        partes = partes_numero(numero)
+        if partes and partes[1] == ano:
+            maior = max(maior, partes[0])
+    return maior + 1
+
+
+def proximo_numero(lote, ano):
+    """"NN/AAAA": a numeração corre por lote dentro do ano (a da OS)."""
+    return formatar_numero(proxima_sequencia(lote, ano), ano)
 
 
 # ---------------------------------------------------------------------------

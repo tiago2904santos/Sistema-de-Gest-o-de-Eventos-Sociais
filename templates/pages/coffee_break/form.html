@@ -1,4 +1,5 @@
 {% extends "pages/coffee_break/solicitacao_base.html" %}
+{% load estaticos %}
 {% comment %}
   Etapa 1 — Solicitação e OS. O pedido (evento, município que decide o
   lote, quantidade) e os dados da ordem de serviço; a OS sai daqui em PDF, no
@@ -36,15 +37,22 @@
         <h2 class="section-card__titulo">Evento e lote</h2>
       </header>
       <div class="section-card__corpo">
-        {# Só o período e o município (que decide o lote) na caixa, como nas Palestras. #}
+        {# Na caixa, como nas Palestras: data, horário e quantidade numa linha; o município (que decide o lote) na outra. #}
         <div class="bate-volta ofc-percurso">
           <div class="ofc-percurso__linha">
-            <div class="bate-volta__rotulo ofc-percurso__rotulo">Período</div>
+            <div class="bate-volta__rotulo ofc-percurso__rotulo">Data</div>
             <div>
-              {# Início, fim e o horário numa linha só. #}
-              <div class="pal-periodo">
-                {% include "components/date_range.html" with name="periodo_evento" start_name="data_inicio_evento" end_name="data_fim_evento" label="Data ou período do evento" rotulo_oculto=True dois_campos=True valor_inicio=valores.data_inicio_evento valor_fim=valores.data_fim_evento erros=erro_periodo desabilitado=dados_base_bloqueados %}
+              <div class="cb-data-linha">
+                {% include "components/input.html" with name="data_inicio_evento" label="Data do evento" rotulo_oculto=True tipo="date" valor=valores.data_inicio_evento erros=erros.data_inicio_evento desabilitado=dados_base_bloqueados %}
                 {% include "components/input.html" with name="horario_evento" label="Horário" rotulo_oculto=True tipo="time" valor=valores.horario_evento erros=erros.horario_evento desabilitado=somente_leitura %}
+                <div class="form-campo">
+                  <label class="sr-only" for="id_quantidade">Quantidade solicitada</label>
+                  <div class="ofc-numero">
+                    <div class="form-controle-wrapper{% if erros.quantidade %} is-invalid{% endif %}"><input class="form-controle" type="number" min="1" step="1" inputmode="numeric" id="id_quantidade" name="quantidade" value="{{ valores.quantidade }}" placeholder="Quantidade" required{% if dados_base_bloqueados %} disabled{% endif %}{% if erros.quantidade %} aria-invalid="true" aria-describedby="id_quantidade_erro"{% endif %}></div>
+                    <span class="ofc-numero__ano">pessoas</span>
+                  </div>
+                  {% for erro in erros.quantidade %}<p class="form-erro" id="id_quantidade_erro">{{ erro }}</p>{% endfor %}
+                </div>
               </div>
               {% if valores.periodo_evento_texto %}<p class="form-ajuda">Na planilha: {{ valores.periodo_evento_texto }}</p>{% endif %}
             </div>
@@ -58,8 +66,20 @@
           </div>
         </div>
         <div class="g-form g-form--3">
-          {% include "components/input.html" with name="quantidade" label="Quantidade solicitada" tipo="number" obrigatorio=True valor=valores.quantidade erros=erros.quantidade desabilitado=dados_base_bloqueados %}
-          {% include "components/input.html" with name="numero" label="Nº da solicitação / OS" placeholder="Automático" ajuda="Em branco, o sistema numera pelo lote." valor=valores.numero erros=erros.numero desabilitado=dados_base_bloqueados %}
+          {% if numero_livre %}
+            {% include "components/input.html" with name="numero" label="Nº da OS" ajuda="Número antigo, fora do formato NN/AAAA." valor=valores.numero erros=erros.numero desabilitado=dados_base_bloqueados %}
+          {% else %}
+            {# Como o N° do Ofício de Viagens: a sequência no campo e o ano ao lado. #}
+            <div class="form-campo">
+              <label class="form-label" for="id_numero">Nº da OS</label>
+              <div class="ofc-numero">
+                <div class="form-controle-wrapper{% if erros.numero %} is-invalid{% endif %}"><input class="form-controle" type="number" min="1" step="1" inputmode="numeric" id="id_numero" name="numero" value="{{ valores.numero }}" placeholder="—" data-numero-os data-lote-atual="{{ lote_atual }}"{% if dados_base_bloqueados %} disabled{% endif %}{% if erros.numero %} aria-invalid="true" aria-describedby="id_numero_erro"{% endif %}></div>
+                <span class="ofc-numero__ano">/ {{ numero_ano }}</span>
+              </div>
+              {% for erro in erros.numero %}<p class="form-erro" id="id_numero_erro">{{ erro }}</p>{% endfor %}
+              <p class="form-ajuda">{% if solicitacao %}Pode alterar.{% else %}Sai do lote do município; pode alterar.{% endif %}</p>
+            </div>
+          {% endif %}
           <input type="hidden" name="periodo_evento_texto" value="{{ valores.periodo_evento_texto }}">
           <div class="cheia">
             {% include "components/textarea.html" with name="descricao_evento" label="Descrição do evento (objeto da OS)" obrigatorio=True linhas="2" valor=valores.descricao_evento erros=erros.descricao_evento desabilitado=dados_base_bloqueados %}
@@ -146,3 +166,5 @@
     {% include "pages/coffee_break/_historico.html" %}
   {% endif %}
 {% endblock %}
+
+{% block etapa_js %}<script src="{% estatico 'js/coffee-break-numero.js' %}" defer></script>{% endblock %}

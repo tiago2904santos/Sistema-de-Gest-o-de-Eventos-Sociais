@@ -615,14 +615,21 @@ def exportar_solicitacoes(request):
 def _opcoes_municipios(form):
     """Municípios com o lote que cada um recebe, para a tela mostrar na hora."""
     escolha = services.EscolhaDeLotes()
+    ano = _ano_do_numero(form)
+    proximos = {}
     opcoes = []
     for municipio in form.fields["municipio"].queryset:
         lote, distancia = escolha.escolher(municipio)
         dados = {}
         if lote is not None:
+            if lote.pk not in proximos:
+                proximos[lote.pk] = services.proxima_sequencia(lote, ano)
             dados = {
                 "lote": f"{lote.rotulo_curto} — {lote.contrato.fornecedor.razao_social}",
                 "saldo": f"{lote.restante} de {lote.quantidade_total} unidades",
+                # A tela sugere o número da OS assim que o município é escolhido.
+                "proximo": proximos[lote.pk],
+                "lote-id": lote.pk,
             }
             if distancia:
                 dados["perto"] = f"{lote.sede_mais_proxima.nome}, a {distancia} km"
@@ -684,6 +691,18 @@ def _etapa_do_marco(solicitacao):
     return "etapa_protocolo"
 
 
+def _ano_do_numero(form):
+    """O ano ao lado do número da OS: o do número atual, senão o da data."""
+    atual = services.partes_numero(form.instance.numero) if form.instance.pk else None
+    if atual:
+        return atual[1]
+    valor = form["data_solicitacao"].value() if "data_solicitacao" in form.fields else None
+    try:
+        return int(str(valor)[:4])
+    except (TypeError, ValueError):
+        return timezone.localdate().year
+
+
 def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False, etapa="pedido"):
     valores = {}
     for nome in form.fields:
@@ -709,6 +728,13 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
     }
     if "municipio" in form.fields:
         contexto["municipios"] = _opcoes_municipios(form)
+    if "numero" in form.fields:
+        contexto["numero_ano"] = _ano_do_numero(form)
+        # Número fora do "NN/AAAA" (texto antigo da planilha): campo de texto livre.
+        contexto["numero_livre"] = bool(
+            solicitacao and solicitacao.numero and not services.partes_numero(solicitacao.numero)
+        )
+        contexto["lote_atual"] = solicitacao.lote_id if solicitacao else ""
     if solicitacao is not None:
         contexto["lote"] = (
             LoteCoffeeBreak.objects.com_consumo()
