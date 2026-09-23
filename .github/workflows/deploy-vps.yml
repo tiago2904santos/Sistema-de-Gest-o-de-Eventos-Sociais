@@ -1,0 +1,85 @@
+name: Deploy VPS
+
+# Sobe o sistema na VPS depois que o CI passa no main. Também dá para
+# disparar à mão (Actions › Deploy VPS › Run workflow).
+#
+# Na VPS roda o scripts/deploy/vps/atualizar.sh, que faz backup do banco,
+# git pull, dependências, migrações, estáticos, checagem e reinício — e para
+# no primeiro erro.
+#
+# Secrets do repositório (Settings › Secrets and variables › Actions):
+#   VPS_HOST         IP ou domínio da VPS                       (obrigatório)
+#   VPS_SSH_KEY      chave privada SSH de deploy, inteira       (obrigatório)
+#   VPS_USER         usuário SSH (padrão: root)
+#   VPS_PORT         porta SSH (padrão: 22)
+#   VPS_KNOWN_HOSTS  linha(s) do known_hosts da VPS (recomendado; sem ela a
+#                    identidade do servidor é lida na hora com ssh-keyscan)
+# Sem VPS_HOST ou VPS_SSH_KEY o deploy é pulado com aviso, sem falhar.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+# Um deploy por vez; um novo espera o anterior terminar.
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Atualizar a VPS
+    runs-on: ubuntu-latest
+    # Só com o CI verde num push ao main (ou disparo manual).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    timeout-minutes: 20
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_PORT: ${{ secrets.VPS_PORT }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+    steps:
+      - name: Conferir configuração
+        id: config
+        run: |
+          if [ -z "$VPS_HOST" ] || [ -z "$VPS_SSH_KEY" ]; then
+            echo "::warning::Deploy pulado: cadastre os secrets VPS_HOST e VPS_SSH_KEY (ver docs/DEPLOY_AUTOMATICO.md)."
+            echo "pronto=nao" >> "$GITHUB_OUTPUT"
+          else
+            echo "pronto=sim" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Preparar SSH
+        if: steps.config.outputs.pronto == 'sim'
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          if [ -n "$VPS_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            echo "::warning::Sem VPS_KNOWN_HOSTS: a identidade da VPS foi lida agora com ssh-keyscan."
+            ssh-keyscan -p "${VPS_PORT:-22}" -T 15 "$VPS_HOST" > ~/.ssh/known_hosts
+          fi
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Rodar atualizar.sh na VPS
+        if: steps.config.outputs.pronto == 'sim'
+        run: |
+          ssh -i ~/.ssh/deploy -p "${VPS_PORT:-22}" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
+            "${VPS_USER:-root}@$VPS_HOST" \
+            /var/www/eventos-sociais/app/scripts/deploy/vps/atualizar.sh
+
+      - name: Limpar a chave
+        if: always()
+        run: rm -f ~/.ssh/deploy
