@@ -33,7 +33,13 @@ cat ~/.ssh/deploy_eventos.pub
 
 ### 2. Autorizar a chave na VPS
 
-No terminal da VPS (console web do painel ou `ssh root@IP`):
+**Hostinger (a VPS atual, `srv1775737.hstgr.cloud`):** hPanel › VPS ›
+Configurações › **Chaves SSH** › adicionar chave, com o nome
+`github-actions-deploy`, colando a linha do `.pub`. O painel instala a chave
+no `root`. Se já existir uma chave com esse nome e você não tiver a privada
+dela, apague a antiga e cadastre a nova.
+
+Em outro provedor, no terminal da VPS (console web do painel ou `ssh root@IP`):
 
 ```bash
 mkdir -p ~/.ssh && chmod 700 ~/.ssh
@@ -44,7 +50,7 @@ chmod 600 ~/.ssh/authorized_keys
 Conferir, do Mac:
 
 ```bash
-ssh -i ~/.ssh/deploy_eventos root@IP_DA_VPS echo ok
+ssh -i ~/.ssh/deploy_eventos root@srv1775737.hstgr.cloud echo ok
 ```
 
 Tem de responder `ok` sem pedir senha.
@@ -52,7 +58,7 @@ Tem de responder `ok` sem pedir senha.
 ### 3. Pegar a identidade da VPS (Mac)
 
 ```bash
-ssh-keyscan IP_DA_VPS
+ssh-keyscan srv1775737.hstgr.cloud
 ```
 
 Copie as linhas que aparecerem (começam com o IP). Elas garantem que o GitHub
@@ -65,7 +71,7 @@ repository secret**, um de cada vez:
 
 | Nome | Valor |
 | --- | --- |
-| `VPS_HOST` | o IP da VPS |
+| `VPS_HOST` | o IP ou o nome da VPS — hoje `srv1775737.hstgr.cloud` |
 | `VPS_SSH_KEY` | a chave **privada** inteira — saída de `cat ~/.ssh/deploy_eventos`, das linhas `-----BEGIN` até `-----END` |
 | `VPS_KNOWN_HOSTS` | as linhas do passo 3 |
 | `VPS_USER` | só se não for `root` |
