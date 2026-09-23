@@ -1672,3 +1672,18 @@ class DescricaoUmaLinhaTests(BaseCoffeeBreakTestCase):
         html = resposta.content.decode()
         self.assertRegex(html, r'<input[^>]*name="descricao_evento"')
         self.assertNotRegex(html, r'<textarea[^>]*name="descricao_evento"')
+
+
+class VisualizadorDaOSTests(BaseCoffeeBreakTestCase):
+    def test_etapa_1_traz_o_visualizador_e_o_pdf_pode_ser_embutido(self):
+        self.client.force_login(self.ascom)
+        s = self.criar_solicitacao(numero="41/2026", local_entrega="1DP", responsavel_recebimento="Ana")
+        url = reverse("coffee_break:ordem_servico", args=[s.pk])
+        resposta = self.client.get(reverse("coffee_break:editar", args=[s.pk]))
+        self.assertContains(resposta, "data-ofc-doc")
+        self.assertContains(resposta, f'data-src="{url}"')
+        self.assertNotContains(resposta, 'id="sec-os"')
+        # A OS sem pendência redireciona só quando falta dado; aqui vale o cabeçalho.
+        with mock.patch.object(documentos, "ordem_servico_pdf", return_value=b"%PDF-1.7"):
+            pdf = self.client.get(url)
+        self.assertEqual(pdf["X-Frame-Options"], "SAMEORIGIN")

@@ -14,6 +14,7 @@ from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.http import require_POST
 from django.db.models import ProtectedError
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
@@ -744,6 +745,15 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
         contexto["historico"] = solicitacao.historico.select_related("usuario")
         contexto["ultima_anotacao"] = services.ultima_anotacao(solicitacao)
         contexto["pendencias_os"] = documentos.pendencias_ordem_servico(solicitacao)
+        url_os = reverse("coffee_break:ordem_servico", args=[solicitacao.pk])
+        # No formato do `_documento_inline` de Viagens (título, PDF, baixar).
+        contexto["doc_os"] = {
+            "titulo": f"Ordem de serviço {solicitacao.numero}".strip(),
+            "disponivel": not contexto["pendencias_os"],
+            "mensagem": "Falta: " + " ".join(contexto["pendencias_os"]) + " Salve para gerar a OS.",
+            "src": url_os,
+            "url_pdf": url_os + "?baixar=1",
+        }
         contexto["pendencias_oficio"] = documentos.pendencias_oficio(solicitacao)
         contexto["pendencias_certifico"] = (
             [] if solicitacao.numero_nota_fiscal.strip() else ["Informe o número da nota fiscal."]
@@ -1179,6 +1189,8 @@ def _pdf_ou_volta(request, solicitacao, gerar, prefixo, volta="editar", tipo="ap
     return resposta
 
 
+# Mostrado no visualizador da própria tela (iframe), como os documentos de Viagens.
+@xframe_options_sameorigin
 @acesso_ao_modulo
 def ordem_servico(request, pk):
     return _pdf_ou_volta(
@@ -1186,6 +1198,8 @@ def ordem_servico(request, pk):
     )
 
 
+# Mostrado no visualizador da própria tela (iframe), como os documentos de Viagens.
+@xframe_options_sameorigin
 @acesso_ao_modulo
 def oficio(request, pk):
     return _pdf_ou_volta(
@@ -1193,6 +1207,8 @@ def oficio(request, pk):
     )
 
 
+# Mostrado no visualizador da própria tela (iframe), como os documentos de Viagens.
+@xframe_options_sameorigin
 @acesso_ao_modulo
 def certifico(request, pk):
     return _pdf_ou_volta(

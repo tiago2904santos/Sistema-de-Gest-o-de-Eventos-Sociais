@@ -34,7 +34,7 @@
     <section class="section-card reg" id="sec-lote">
       <header class="section-card__cabecalho reg__t">
         <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
-        <h2 class="section-card__titulo">Evento e lote</h2>
+        <h2 class="section-card__titulo">Evento e ordem de serviço</h2>
       </header>
       <div class="section-card__corpo">
         {# Na caixa, como nas Palestras: data, horário e quantidade numa linha; o município (que decide o lote) na outra. #}
@@ -84,17 +84,7 @@
           <div class="cheia">
             {% include "components/input.html" with name="descricao_evento" label="Descrição do evento (objeto da OS)" obrigatorio=True maxlength="255" placeholder="Ex.: Ciclo de Palestras Saúde e Bem-Estar - 1DP Curitiba" valor=valores.descricao_evento erros=erros.descricao_evento desabilitado=dados_base_bloqueados %}
           </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section-card reg" id="sec-os">
-      <header class="section-card__cabecalho reg__t">
-        <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
-        <h2 class="section-card__titulo">Ordem de serviço</h2>
-      </header>
-      <div class="section-card__corpo">
-        <div class="g-form g-form--3">
+          {# A ordem de serviço no mesmo bloco: onde entregar, quem recebe e o pedido. #}
           <div class="c2">
             {% include "components/input.html" with name="local_entrega" label="Local de entrega" placeholder="Ex.: Casa da Cultura - Rua do Centenário, 2011 - Centro - Campo Largo" valor=valores.local_entrega erros=erros.local_entrega desabilitado=somente_leitura %}
           </div>
@@ -106,10 +96,10 @@
         </div>
 
         {% if solicitacao %}
-          <ul class="pc-docs__lista cb-docs-gerados" aria-label="Documento da etapa">
-            {% url 'coffee_break:ordem_servico' solicitacao.pk as url_os %}
-            {% include "pages/coffee_break/_doc_gerado.html" with titulo="Ordem de serviço "|add:solicitacao.numero detalhe="No modelo da ASCOM, assinada pela fiscal do contrato" faltas=pendencias_os url=url_os icone="document" %}
-          </ul>
+          {# O visualizador do documento de Viagens: o PDF da OS aberto no próprio bloco. #}
+          <div class="ofc-docs cb-docs-gerados">
+            {% include "pages/viagens_oficios/_documento_inline.html" with d=doc_os menu_id="cb-menu-os" aberto=True %}
+          </div>
         {% else %}
           <p class="pc-docs__nota">Ao salvar, a ordem de serviço fica pronta para gerar em PDF.</p>
         {% endif %}
@@ -167,4 +157,4 @@
   {% endif %}
 {% endblock %}
 
-{% block etapa_js %}<script src="{% estatico 'js/coffee-break-numero.js' %}" defer></script>{% endblock %}
+{% block etapa_js %}<script src="{% estatico 'js/coffee-break-numero.js' %}" defer></script><script src="{% estatico 'js/coffee-break-documentos.js' %}" defer></script>{% endblock %}
