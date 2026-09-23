@@ -22,13 +22,17 @@
 <meta charset="utf-8">
 <title>{% block titulo %}{% endblock %}</title>
 <style>
+  /* A margem de cima e a altura do número da página variam por documento;
+     ficam em variáveis para o PDF (@page) e a visualização (.folha) usarem
+     o mesmo valor. */
+  :root { --topo: {% block topo %}184.14pt{% endblock %}; --pagina-topo: {% block pagina_topo %}5.25pt{% endblock %}; }
   @page {
     size: A4;
     /* Margens laterais de 2,5 cm (70,8 pt), as dos modelos. */
-    margin: {% block topo %}184.14pt{% endblock %} 70.8pt 77pt 70.8pt;
+    margin: var(--topo) 70.8pt 77pt 70.8pt;
     /* O número da página: Arial 12, alinhado à direita da coluna de texto; a
        caixa começa a 764,9 pt, e o recuo põe a base onde está no modelo. */
-    @bottom-center { content: counter(page); width: 100%; text-align: right; vertical-align: top; font: 12pt/13.8pt Arial, "Liberation Sans", Helvetica, sans-serif; color: #000; padding-top: {% block pagina_topo %}5.25pt{% endblock %}; }
+    @bottom-center { content: counter(page); width: 100%; text-align: right; vertical-align: top; font: 12pt/13.8pt Arial, "Liberation Sans", Helvetica, sans-serif; color: #000; padding-top: var(--pagina-topo); }
   }
   body { margin: 0; font-family: Arial, "Liberation Sans", Helvetica, sans-serif; font-size: 12pt; line-height: 13.8pt; color: #000; }
   p { margin: 0; }
@@ -40,9 +44,21 @@
   .timbre-rodape { position: fixed; left: 0; right: 0; text-align: center; color: #595959; font-size: 10pt; line-height: 11.5pt; }
   {% block geometria %}{% endblock %}
   {% block estilo %}{% endblock %}
+  {% if previa %}
+  /* Visualização na tela (sem PDF): a folha A4 desenhada pelo navegador.
+     A área de texto leva um transform para os elementos fixos do timbre se
+     posicionarem a partir dela — como no WeasyPrint, que os posiciona a
+     partir da área de conteúdo da página. */
+  html { background: #525659; }
+  body { padding: 16px 0; }
+  .folha { position: relative; width: 595.28pt; height: 841.89pt; margin: 0 auto; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.45); overflow: hidden; }
+  .folha__area { position: absolute; top: var(--topo); left: 70.8pt; right: 70.8pt; bottom: 77pt; transform: translateZ(0); }
+  .folha__pagina { position: absolute; left: 70.8pt; right: 70.8pt; top: calc(764.89pt + var(--pagina-topo)); text-align: right; font-size: 12pt; line-height: 13.8pt; }
+  {% endif %}
 </style>
 </head>
 <body>
+  {% if previa %}<div class="folha"><div class="folha__area">{% endif %}
   <img class="timbre-brasao" src="{{ imagens.brasao }}" alt="">
   <div class="timbre-cabecalho">
     <p>SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA</p>
@@ -55,5 +71,19 @@
     <p>Fone: (41) 3235-6477 – e-mail:&nbsp; comunicacao@pc.pr.gov.br</p>
   </div>
   {% block corpo %}{% endblock %}
+  {% if previa %}</div><div class="folha__pagina">1</div></div>
+  <script>
+    /* Em quadro estreito a folha diminui inteira para caber na largura, sem rolar para o lado. */
+    (function () {
+      var folha = document.querySelector(".folha");
+      function encaixar() {
+        folha.style.zoom = "";
+        var escala = Math.min(1, (document.documentElement.clientWidth - 16) / folha.offsetWidth);
+        if (escala < 1) folha.style.zoom = escala;
+      }
+      encaixar();
+      window.addEventListener("resize", encaixar);
+    })();
+  </script>{% endif %}
 </body>
 </html>

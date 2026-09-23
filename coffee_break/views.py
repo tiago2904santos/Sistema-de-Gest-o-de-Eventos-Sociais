@@ -751,6 +751,8 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
             "titulo": f"Ordem de serviço {solicitacao.numero}".strip(),
             "disponivel": not contexto["pendencias_os"],
             "mensagem": "Falta: " + " ".join(contexto["pendencias_os"]) + " Salve para gerar a OS.",
+            # O quadro mostra a folha em HTML; "Visualizar" e "Baixar" levam ao PDF.
+            "quadro": reverse("coffee_break:ordem_servico_previa", args=[solicitacao.pk]),
             "src": url_os,
             "url_pdf": url_os + "?baixar=1",
         }
@@ -1282,6 +1284,18 @@ def ordem_servico(request, pk):
     return _pdf_ou_volta(
         request, _solicitacao_documental(pk), documentos.ordem_servico_pdf, "Ordem de Servico"
     )
+
+
+@xframe_options_sameorigin
+@acesso_ao_modulo
+def ordem_servico_previa(request, pk):
+    """A OS desenhada em HTML para o visualizador da etapa 1."""
+    solicitacao = _solicitacao_documental(pk)
+    try:
+        html = documentos.ordem_servico_previa(solicitacao)
+    except ValidationError as erro:
+        html = "<p style='font:14px sans-serif;padding:16px'>" + " ".join(erro.messages) + "</p>"
+    return HttpResponse(html)
 
 
 # Mostrado no visualizador da própria tela (iframe), como os documentos de Viagens.

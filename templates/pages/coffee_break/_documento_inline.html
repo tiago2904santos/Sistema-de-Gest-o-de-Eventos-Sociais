@@ -1,0 +1,41 @@
+{% comment %}
+  O `_documento_inline` de Viagens para os documentos do Coffee Break: o
+  cartão com o título, o menu (visualizar e baixar o PDF) e o quadro. A
+  diferença é o quadro: ele mostra a folha em HTML (`d.quadro`), que abre em
+  qualquer navegador — o PDF dentro de um quadro depende do leitor de PDF do
+  navegador, e muitos (os de celular, por exemplo) não mostram.
+
+  Contexto: `d` (titulo, disponivel, mensagem, quadro, src, url_pdf),
+  `menu_id`, `aberto`.
+{% endcomment %}
+<details class="ofc-doc{% if aninhado %} ofc-doc--aninhado{% endif %}" data-ofc-doc{% if d.embutido %} id="{{ d.embutido.id }}"{% endif %}{% if aberto %} open{% endif %}>
+  <summary class="ofc-doc__cabeca">
+    <span class="ofc-doc__titulo">{{ d.titulo }}{% if d.assinado %} <span class="st st--atendido">Assinado</span>{% endif %}</span>
+    {% if d.disponivel %}
+      <span class="dd of-menu ofc-doc__acoes" data-menu>
+        <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações de {{ d.titulo }}" title="Visualizar e baixar">{% include "components/icon.html" with nome="document" %}</button>
+        <span class="dd__c of-menu__corpo" hidden data-menu-corpo id="{{ menu_id }}">
+          {% if d.disponivel %}
+          <a class="dd__i of-item" href="{{ d.src }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar documento</b><small>Abrir o PDF no navegador</small></span></a>
+          <button type="submit" class="dd__i of-item" formaction="{{ d.url_pdf }}" formnovalidate>{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>{% if d.servidor %}Documento pronto para assinatura{% else %}Documento pronto para impressão{% endif %}</small></span></button>
+          {% endif %}
+          {% if d.url_anexar %}
+            <a class="dd__i of-item" href="{{ d.url_anexar }}" data-anexar-assinado data-anexar-nome="{{ d.titulo }}"{% if d.assinado %} data-anexar-atual="1"{% endif %}>{% include "components/icon.html" with nome="upload" %}<span><b>{% if d.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}</b><small>Enviar o PDF depois da assinatura</small></span></a>
+          {% endif %}
+        </span>
+      </span>
+    {% endif %}
+    <span class="ofc-doc__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+  </summary>
+  {% if d.embutido %}
+  <div class="ofc-doc__corpo" data-de-embutir="{{ d.embutido.url }}"></div>
+  {% else %}
+  <div class="ofc-doc__corpo">
+    {% if d.disponivel %}
+      <iframe class="ofc-doc__quadro" title="Visualização de {{ d.titulo }}" data-src="{{ d.quadro }}" loading="lazy"></iframe>
+    {% else %}
+      <p class="ofc-doc__mensagem">{{ d.mensagem }}</p>
+    {% endif %}
+  </div>
+  {% endif %}
+</details>
