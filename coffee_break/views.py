@@ -1028,6 +1028,92 @@ def reativar_solicitacao(request, pk):
 # Cadastros contratuais — backoffice institucional, restrito a administradores
 # ---------------------------------------------------------------------------
 
+def _rodar_importacao(caminho, usuario, simular):
+    """Roda o importar_coffee_break e devolve (resumo, avisos) ou levanta o erro."""
+    import io
+
+    from django.core.management import call_command
+
+    from .management.commands.importar_coffee_break import Command
+
+    comando = Command(stdout=io.StringIO(), stderr=io.StringIO())
+    call_command(comando, str(caminho), usuario=usuario.get_username(), dry_run=simular)
+    return comando.resumo, comando.avisos
+
+
+@gerenciamento_de_cadastros
+def importar_planilha(request):
+    """A planilha "CONTROLE COFFE ASCOM" pelo navegador: simula e só depois grava.
+
+    O arquivo enviado fica numa pasta temporária do servidor, com o nome
+    guardado na sessão, até a confirmação (ou a próxima simulação). A
+    importação é idempotente: enviar a planilha de novo atualiza sem duplicar.
+    """
+    import tempfile
+    import uuid
+
+    from django.core.management.base import CommandError
+
+    pasta = Path(tempfile.gettempdir()) / "coffee-break-importacao"
+    pasta.mkdir(exist_ok=True)
+    contexto = {
+        "breadcrumb": _breadcrumb(
+            {"label": "Cadastros", "url": reverse("coffee_break:cadastros")},
+            {"label": "Importar planilha"},
+        ),
+        "simulacao": None,
+        "importado": None,
+        "avisos": [],
+        "original": "",
+    }
+    if request.method == "POST":
+        acao = request.POST.get("acao")
+        if acao == "simular":
+            arquivo = request.FILES.get("planilha")
+            if not arquivo or not arquivo.name.lower().endswith(".xlsx"):
+                messages.error(request, "Escolha a planilha em .xlsx.")
+                return redirect("coffee_break:importar_planilha")
+            if arquivo.size > 20 * 1024 * 1024:
+                messages.error(request, "A planilha passa de 20 MB.")
+                return redirect("coffee_break:importar_planilha")
+            anterior = request.session.pop("coffee_importacao", None)
+            if anterior:
+                (pasta / anterior["arquivo"]).unlink(missing_ok=True)
+            nome = f"{uuid.uuid4().hex}.xlsx"
+            with open(pasta / nome, "wb") as destino:
+                for pedaco in arquivo.chunks():
+                    destino.write(pedaco)
+            try:
+                resumo, avisos = _rodar_importacao(pasta / nome, request.user, simular=True)
+            except (CommandError, Exception) as erro:  # planilha fora do formato
+                (pasta / nome).unlink(missing_ok=True)
+                messages.error(request, f"Não foi possível ler a planilha: {erro}")
+                return redirect("coffee_break:importar_planilha")
+            request.session["coffee_importacao"] = {"arquivo": nome, "original": arquivo.name}
+            contexto.update({"simulacao": resumo, "avisos": avisos, "original": arquivo.name})
+        elif acao == "importar":
+            pendente = request.session.get("coffee_importacao")
+            caminho = pasta / pendente["arquivo"] if pendente else None
+            if not caminho or not caminho.exists():
+                messages.error(request, "Envie a planilha e simule de novo antes de importar.")
+                return redirect("coffee_break:importar_planilha")
+            try:
+                resumo, avisos = _rodar_importacao(caminho, request.user, simular=False)
+            except (CommandError, Exception) as erro:
+                messages.error(request, f"A importação não foi feita: {erro}")
+                return redirect("coffee_break:importar_planilha")
+            finally:
+                caminho.unlink(missing_ok=True)
+                request.session.pop("coffee_importacao", None)
+            messages.success(
+                request,
+                f"Planilha importada: {resumo['criados']} registros criados e "
+                f"{resumo['atualizados']} atualizados.",
+            )
+            contexto.update({"importado": resumo, "avisos": avisos, "original": pendente["original"]})
+    return render(request, "pages/coffee_break/importar_planilha.html", contexto)
+
+
 @gerenciamento_de_cadastros
 def cadastros(request):
     return redirect("coffee_break:cadastro_lista", tipo="fornecedores")

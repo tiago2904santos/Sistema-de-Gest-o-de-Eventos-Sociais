@@ -1,0 +1,81 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Importar a planilha "CONTROLE COFFE ASCOM" pelo navegador, em dois passos:
+  enviar e simular (nada é gravado; mostra quantos registros entram e as
+  inconsistências), depois confirmar. Enviar de novo atualiza sem duplicar.
+{% endcomment %}
+
+{% block title %}Importar planilha — Coffee Break{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker kicker--junto">Coffee Break</div>
+      <h1>Importar planilha</h1>
+    </div>
+  </div>
+
+  <div class="editor-roteiro cb-fluxo">
+    <section class="section-card reg">
+      <header class="section-card__cabecalho reg__t">
+        <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+        <h2 class="section-card__titulo">Enviar e simular</h2>
+      </header>
+      <div class="section-card__corpo">
+        <p class="cb-ajuda">A planilha "CONTROLE COFFE ASCOM" (.xlsx): fornecedores, contratos, lotes de cada aba, as solicitações e os marcos da aba "Controle de Ordem Bancária". A simulação não grava nada; enviar a planilha de novo depois atualiza os registros sem duplicar.</p>
+        <form method="post" enctype="multipart/form-data" class="cb-importar">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="simular">
+          <div class="form-campo">
+            <label class="form-label" for="id_planilha">Planilha (.xlsx)</label>
+            <input class="form-controle" type="file" id="id_planilha" name="planilha" accept=".xlsx" required>
+          </div>
+          <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="search" %}Simular importação</button>
+        </form>
+      </div>
+    </section>
+
+    {% if simulacao or importado %}
+      <section class="section-card reg">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+          <h2 class="section-card__titulo">{% if importado %}Importação feita{% else %}Resultado da simulação{% endif %}</h2>
+        </header>
+        <div class="section-card__corpo">
+          {% with r=importado|default:simulacao %}
+            <ul class="tm-fatos" aria-label="Resumo">
+              <li class="tm-fato">{% include "components/icon.html" with nome="document" %}<span class="vg-fato__valor">{{ original }}</span></li>
+              <li class="tm-fato">{% include "components/icon.html" with nome="plus" %}<span class="vg-fato__valor">{{ r.criados }} registro{{ r.criados|pluralize }} {% if importado %}criado{{ r.criados|pluralize }}{% else %}a criar{% endif %}</span></li>
+              <li class="tm-fato">{% include "components/icon.html" with nome="pencil" %}<span class="vg-fato__valor">{{ r.atualizados }} {% if importado %}atualizado{{ r.atualizados|pluralize }}{% else %}a atualizar{% endif %}</span></li>
+              <li class="tm-fato">{% include "components/icon.html" with nome="alert" %}<span class="vg-fato__valor">{{ avisos|length }} aviso{{ avisos|length|pluralize }}</span></li>
+            </ul>
+          {% endwith %}
+
+          {% if avisos %}
+            <details class="cb-avisos">
+              <summary>Ver os avisos</summary>
+              <p class="pc-docs__nota">Não impedem a importação. Município não reconhecido fica guardado só como texto; período fora do padrão fica como texto.</p>
+              <ul>{% for aviso in avisos %}<li>{{ aviso }}</li>{% endfor %}</ul>
+            </details>
+          {% endif %}
+
+          {% if simulacao %}
+            <form method="post" class="frm-acoes-fim" data-confirmar="Importar a planilha para o sistema?">
+              {% csrf_token %}
+              <input type="hidden" name="acao" value="importar">
+              <a class="btn--secundaria" href="{% url 'coffee_break:importar_planilha' %}">Cancelar</a>
+              <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="upload" %}Importar agora</button>
+            </form>
+          {% else %}
+            <div class="frm-acoes-fim">
+              <span></span>
+              <a class="btn-primaria" href="{% url 'coffee_break:solicitacoes' %}">Ver as solicitações{% include "components/icon.html" with nome="arrow-right" %}</a>
+            </div>
+          {% endif %}
+        </div>
+      </section>
+    {% endif %}
+  </div>
+{% endblock %}

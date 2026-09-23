@@ -7,6 +7,7 @@ app_name = "coffee_break"
 urlpatterns = [
     path("", views.painel, name="painel"),
     path("cadastros/", views.cadastros, name="cadastros"),
+    path("cadastros/importar-planilha/", views.importar_planilha, name="importar_planilha"),
     path("cadastros/<str:tipo>/", views.lista_cadastro, name="cadastro_lista"),
     path(
         "cadastros/<str:tipo>/novo/",
