@@ -210,11 +210,11 @@ def folha_da_nova(dados):
     for nome in ("descricao_evento", "local_entrega", "responsavel_recebimento", "detalhamento_pedido"):
         if not getattr(solicitacao, nome, "") and dados.get(nome):
             setattr(solicitacao, nome, " ".join(str(dados.get(nome)).split()) if nome != "detalhamento_pedido" else dados.get(nome).strip())
-    if solicitacao.lote_id and not solicitacao.numero:
+    if not solicitacao.numero:
         from django.utils import timezone
 
         ano = (solicitacao.data_solicitacao or timezone.localdate()).year
-        solicitacao.numero = services.proximo_numero(solicitacao.lote, ano)
+        solicitacao.numero = services.proximo_numero(ano)
     return renderizar_html(TipoCoffee.ORDEM_SERVICO, contexto_da_folha(solicitacao), modo="editor")
 
 

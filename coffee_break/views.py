@@ -619,21 +619,14 @@ def exportar_solicitacoes(request):
 def _opcoes_municipios(form):
     """Municípios com o lote que cada um recebe, para a tela mostrar na hora."""
     escolha = services.EscolhaDeLotes()
-    ano = _ano_do_numero(form)
-    proximos = {}
     opcoes = []
     for municipio in form.fields["municipio"].queryset:
         lote, distancia = escolha.escolher(municipio)
         dados = {}
         if lote is not None:
-            if lote.pk not in proximos:
-                proximos[lote.pk] = services.proxima_sequencia(lote, ano)
             dados = {
                 "lote": f"{lote.rotulo_curto} — {lote.contrato.fornecedor.razao_social}",
                 "saldo": f"{lote.restante} de {lote.quantidade_total} unidades",
-                # A tela sugere o número da OS assim que o município é escolhido.
-                "proximo": proximos[lote.pk],
-                "lote-id": lote.pk,
             }
             if distancia:
                 dados["perto"] = f"{lote.sede_mais_proxima.nome}, a {distancia} km"
@@ -738,7 +731,9 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
         contexto["numero_livre"] = bool(
             solicitacao and solicitacao.numero and not services.partes_numero(solicitacao.numero)
         )
-        contexto["lote_atual"] = solicitacao.lote_id if solicitacao else ""
+        if solicitacao is None and not valores.get("numero"):
+            # A nova OS já vem com o próximo número (numeração única, a maior + 1); pode alterar.
+            valores["numero"] = str(services.proxima_sequencia(contexto["numero_ano"]))
     if solicitacao is not None:
         contexto["lote"] = (
             LoteCoffeeBreak.objects.com_consumo()
