@@ -1896,6 +1896,136 @@ class OSDaNovaSolicitacaoTests(BaseCoffeeBreakTestCase):
         self.assertEqual(self.client.get(reverse("coffee_break:nova_os_folha")).status_code, 403)
 
 
+class Etapa2ComoEtapa1Tests(BaseCoffeeBreakTestCase):
+    """Etapa 2: ofício com número e data automáticos, NF pelo modal de anexo
+    e o ofício e o certifico no editor de documentos, tudo editável."""
+
+    def setUp(self):
+        import tempfile
+
+        from django.test import override_settings
+
+        pasta = tempfile.TemporaryDirectory(prefix="coffee-etapa2-")
+        self.addCleanup(pasta.cleanup)
+        config = override_settings(MEDIA_ROOT=pasta.name)
+        config.enable()
+        self.addCleanup(config.disable)
+        self.client.force_login(self.ascom)
+        self.s = self.criar_solicitacao(
+            numero="41/2026", quantidade=40, local_entrega="1DP", responsavel_recebimento="Ana",
+        )
+        self.url = reverse("coffee_break:etapa_nota", args=[self.s.pk])
+
+    def _versao(self):
+        self.s.refresh_from_db()
+        return str(int(self.s.atualizado_em.timestamp() * 1_000_000))
+
+    def test_numero_e_data_do_oficio_ja_vem_preenchidos(self):
+        outra = self.criar_solicitacao(numero="40/2026", numero_oficio="124/2026")
+        self.assertTrue(outra.pk)
+        resposta = self.client.get(self.url)
+        self.assertContains(resposta, 'name="numero_oficio" value="125"')
+        self.assertContains(resposta, f'value="{dt.date.today().isoformat()}"')
+        self.assertContains(resposta, "/ 2026")
+
+    def test_salvar_em_branco_numera_e_data_do_dia(self):
+        ano = dt.date.today().year
+        self.criar_solicitacao(numero="40/2026", numero_oficio=f"124/{ano}")
+        self.client.post(self.url, {"numero_nota_fiscal": "8957", "numero_oficio": "", "data_oficio": "", "versao": self._versao()})
+        self.s.refresh_from_db()
+        self.assertEqual(self.s.numero_oficio, f"125/{ano}")
+        self.assertEqual(self.s.data_oficio, dt.date.today())
+
+    def test_so_a_sequencia_vira_numero_e_nao_repete(self):
+        self.criar_solicitacao(numero="40/2026", numero_oficio="124/2026")
+        resposta = self.client.post(self.url, {
+            "numero_nota_fiscal": "8957", "numero_oficio": "124", "data_oficio": "2026-09-21", "versao": self._versao(),
+        })
+        self.assertContains(resposta, "O ofício 124/2026 já existe")
+        self.client.post(self.url, {
+            "numero_nota_fiscal": "8957", "numero_oficio": "130", "data_oficio": "2026-09-21", "versao": self._versao(),
+        })
+        self.s.refresh_from_db()
+        self.assertEqual(self.s.numero_oficio, "130/2026")
+
+    def test_nota_fiscal_pelo_modal_de_anexo(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        resposta = self.client.get(self.url)
+        self.assertContains(resposta, "data-anexar-dialogo")
+        self.assertContains(resposta, "Anexar nota fiscal")
+        self.assertNotContains(resposta, 'type="file" id="id_arquivo_nota_fiscal"')
+        url = reverse("coffee_break:anexar_nota", args=[self.s.pk])
+        pdf = SimpleUploadedFile("nf.pdf", _pdf_em_branco(), content_type="application/pdf")
+        volta = self.client.post(url, {"arquivo": pdf, "next": self.url})
+        self.assertRedirects(volta, self.url, fetch_redirect_response=False)
+        self.s.refresh_from_db()
+        self.assertTrue(self.s.arquivo_nota_fiscal)
+        self.assertContains(self.client.get(self.url), "Trocar")
+        # Só PDF.
+        texto = SimpleUploadedFile("nf.txt", b"oi", content_type="text/plain")
+        self.client.post(url, {"arquivo": texto, "next": self.url})
+        self.s.refresh_from_db()
+        self.assertTrue(self.s.arquivo_nota_fiscal.name.endswith(".pdf"))
+        # Remover.
+        self.client.post(url, {"acao": "remover", "next": self.url})
+        self.s.refresh_from_db()
+        self.assertFalse(self.s.arquivo_nota_fiscal)
+        # Endereço de volta de fora do sistema não vale.
+        fora = self.client.post(url, {"acao": "remover", "next": "https://exemplo.com/"})
+        self.assertRedirects(fora, self.url, fetch_redirect_response=False)
+
+    def test_oficio_e_certifico_no_editor_tudo_editavel(self):
+        resposta = self.client.get(self.url)
+        for chave in ("coffee_break_oficio", "coffee_break_certifico"):
+            embutido = reverse("documentos:editor_embutido", args=[chave, self.s.pk])
+            self.assertContains(resposta, f'data-de-embutir="{embutido}"')
+            editor = self.client.get(embutido)
+            self.assertContains(editor, "O PDF ainda não pode ser emitido.")
+            self.assertContains(editor, "Quebras de página")
+            folha = self.client.get(reverse("documentos:editor_folha", args=[chave, self.s.pk])).content.decode()
+            self.assertIn('data-doc-bloco="cb_secretaria"', folha)
+            self.assertIn('data-doc-campo="cb_nota"', folha)
+        oficio = self.client.get(reverse("documentos:editor_folha", args=["coffee_break_oficio", self.s.pk])).content.decode()
+        self.assertIn('data-doc-bloco="cb_paragrafo_entrega"', oficio)
+        self.assertIn('data-doc-campo="cb_oficio_numero"', oficio)
+        self.assertIn("40 (quarenta)", oficio)
+
+    def test_texto_editado_do_oficio_vai_para_o_pdf(self):
+        import json
+
+        from django.template.loader import render_to_string
+
+        from .editor import TipoCoffee, textos_do_documento
+
+        url = reverse("documentos:editor_bloco", args=["coffee_break_oficio", self.s.pk, "cb_fecho"])
+        resposta = self.client.patch(url, json.dumps({"valores": {"conteudo": "Respeitosamente,"}}), content_type="application/json")
+        self.assertEqual(resposta.status_code, 200, resposta.content)
+        b, quebras = textos_do_documento(TipoCoffee.OFICIO, self.s)
+        self.assertEqual(b["cb_fecho"], "Respeitosamente,")
+        # O texto do certifico não muda com o do ofício.
+        b_cert, _ = textos_do_documento(TipoCoffee.CERTIFICO, self.s)
+        self.assertEqual(b_cert["cb_titulo"], "CERTIFICO DIGITAL")
+        from .models import ConfiguracaoCoffeeBreak
+
+        html = render_to_string("coffee_break/documentos/oficio.html", {
+            "s": self.s, "contrato": self.contrato, "config": ConfiguracaoCoffeeBreak.atual(), "b": b,
+            "quebras": quebras, "imagens": {}, "data_extenso": "21 de Setembro de 2026", "quantidade_extenso": "quarenta",
+        })
+        self.assertIn("Respeitosamente,", html)
+        self.assertNotIn("Atenciosamente,", html)
+
+    def test_numero_da_nota_na_folha_grava_na_solicitacao(self):
+        import json
+
+        url = reverse("documentos:editor_campo", args=["coffee_break_certifico", self.s.pk, "cb_nota"])
+        versao = self.client.get(url).json()["versao"]
+        resposta = self.client.patch(url, json.dumps({"versao": versao, "valores": {"numero_nota_fiscal": " 8957 "}}), content_type="application/json")
+        self.assertEqual(resposta.status_code, 200, resposta.content)
+        self.s.refresh_from_db()
+        self.assertEqual(self.s.numero_nota_fiscal, "8957")
+
+
 class ImportarPlanilhaTelaTests(BaseCoffeeBreakTestCase):
     """A planilha pelo navegador: simula sem gravar, confirma e grava."""
 

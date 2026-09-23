@@ -1,0 +1,48 @@
+{% load documento_tags %}{% comment %}
+  Certifico digital do Coffee Break (etapa 2) no editor de documentos: a
+  folha do certifico do processo 26.617.058-0 (o mesmo texto de
+  `coffee_break/documentos/certifico.html`, que gera o PDF). Tudo se edita:
+  os dados da solicitação e dos cadastros (`editavel`/`trecho`), o texto do
+  modelo (`bloco`) e a quebra de página. Geometria em
+  `coffee_break_certifico.css`.
+{% endcomment %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Certifico digital — NF {{ s.numero_nota_fiscal }}</title>
+  {% if css_inline %}<style>{{ css_inline|safe }}</style>{% endif %}
+</head>
+<body class="documento documento--{{ modo|default:'pdf' }} doc-cb doc-cb-certifico">
+<div class="folha">
+  <header class="doc-cabecalho" id="doc-cabecalho">
+    <img class="doc-cabecalho__brasao" src="{{ imagens.brasao }}" alt="Brasão da Polícia Civil do Paraná">
+    {% bloco "cb_secretaria" classe="doc-cabecalho__secretaria" base=False %}
+    {% bloco "cb_orgao" classe="doc-cabecalho__orgao" base=False %}
+    {% bloco "cb_unidade" classe="doc-cabecalho__unidade" base=False %}
+  </header>
+
+  <footer class="doc-rodape" id="doc-rodape">
+    <img class="doc-rodape__marca" src="{{ imagens.marca }}" alt="">
+    {% bloco "cb_rodape_endereco" classe="doc-cb__endereco" base=False %}
+    {% bloco "cb_rodape_contato" classe="doc-cb__endereco" base=False %}
+  </footer>
+
+  <main class="doc-corpo">
+    {% bloco "cb_titulo" classe="doc-cb-certifico__titulo" elemento="h1" base=False %}
+
+    <p class="doc-cb-certifico__nota">{% bloco "cb_nota_rotulo" elemento="span" base=False %} {% trecho "cb_nota" %}{{ s.numero_nota_fiscal }}{% if not s.numero_nota_fiscal %}{% vazio "nº da nota" %}{% endif %}{% endtrecho %}{% bloco "cb_nota_emitida" elemento="span" base=False %} {% trecho "cb_fornecedor" %}{{ fornecedor.razao_social }}{% endtrecho %}{% bloco "cb_nota_cnpj" elemento="span" base=False %}&nbsp; {% trecho "cb_cnpj" %}{{ fornecedor.cnpj_formatado }}{% endtrecho %} {% bloco "cb_nota_contrato" elemento="span" base=False %} {% trecho "cb_contrato" %}{{ contrato.referencia_documental }}{% endtrecho %}{% bloco "cb_nota_fim" elemento="span" base=False %}</p>
+
+    {% ponto_de_quebra "antes_atesto" %}
+    <div class="doc-cb-certifico__atesto">
+      <p class="doc-cb-certifico__atesto-texto"><b>{% bloco "cb_atesto_rotulo" elemento="span" base=False %}</b> {% bloco "cb_atesto_texto" elemento="span" base=False %}</p>
+      <div class="doc-cb-certifico__quem">
+        <p><i>{% bloco "cb_assinado" elemento="span" base=False %}</i></p>
+        <p{% editavel "cb_fiscal" %}>{{ contrato.fiscal_responsavel }}</p>
+        <p><b{% editavel "cb_cargo_fiscal" %}>{{ contrato.cargo_fiscal }}</b></p>
+        <p><b>{% bloco "cb_fiscal_rotulo" elemento="span" base=False %} {% trecho "cb_contrato_numero" %}{{ contrato.numero }}{% endtrecho %}</b></p>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

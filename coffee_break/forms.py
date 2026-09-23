@@ -254,9 +254,9 @@ CAMPOS_PEDIDO = [
 ]
 CAMPOS_NOTA = [
     "numero_nota_fiscal",
-    "arquivo_nota_fiscal",
-    "numero_oficio",
+    # A data antes do número: o ano do número sai dela.
     "data_oficio",
+    "numero_oficio",
     "protocolo_pcpr_oficio",
 ]
 CAMPOS_PROTOCOLO = [
@@ -290,12 +290,47 @@ class NotaCoffeeBreakForm(SolicitacaoCoffeeBreakForm):
     class Meta(SolicitacaoCoffeeBreakForm.Meta):
         fields = CAMPOS_NOTA
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Como o Nº da OS: na tela só a sequência ("124"), com o "/ 2026" ao lado.
+        atual = services.partes_numero(self.instance.numero_oficio) if self.instance.pk else None
+        if atual:
+            self.initial["numero_oficio"] = str(atual[0])
+
     def clean_numero_nota_fiscal(self):
         numero = (self.cleaned_data.get("numero_nota_fiscal") or "").strip()
         if not numero and self.instance.protocolo_pagamento:
             raise forms.ValidationError(
                 "O protocolo de pagamento já foi registrado: a nota não pode ficar em branco."
             )
+        return numero
+
+    def ano_do_oficio(self):
+        """O ano do número do ofício: o do número atual, ou o da data do ofício."""
+        atual = services.partes_numero(self.instance.numero_oficio) if self.instance.pk else None
+        if atual:
+            return atual[1]
+        return (self.cleaned_data.get("data_oficio") or timezone.localdate()).year
+
+    def clean_data_oficio(self):
+        # Em branco, o ofício sai com a data do dia.
+        return self.cleaned_data.get("data_oficio") or timezone.localdate()
+
+    def clean_numero_oficio(self):
+        """ "125" vira "125/2026"; em branco, o próximo da numeração; não repete."""
+        numero = " ".join((self.cleaned_data.get("numero_oficio") or "").split())
+        ano = self.ano_do_oficio()
+        if not numero:
+            return services.formatar_numero(services.proxima_sequencia_oficio(ano), ano)
+        if numero.isdigit():
+            if int(numero) < 1:
+                raise forms.ValidationError("O número do ofício deve ser 1 ou mais.")
+            numero = services.formatar_numero(int(numero), ano)
+        if services.partes_numero(numero) and numero != self.instance.numero_oficio:
+            if services.oficio_em_uso(numero, excluir_pk=self.instance.pk):
+                raise forms.ValidationError(
+                    f"O ofício {numero} já existe. O próximo livre é {services.proxima_sequencia_oficio(ano)}."
+                )
         return numero
 
 

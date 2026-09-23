@@ -1,4 +1,4 @@
-{% extends "coffee_break/documentos/_base.html" %}
+{% extends "coffee_break/documentos/_base.html" %}{% load documento_tags %}
 {% comment %}
   Certifico digital no modelo do processo 26.617.058-0 (CERTIFICO DIGITAL -
   FAVO E MEL - NOVO): título em Arial 18 negrito, a nota em Arial 11
@@ -25,19 +25,31 @@
   .atesto__quem i { color: #7f7f7f; }
   /* O Writer não quebra linha na barra; o navegador quebraria. */
   .inteiro { white-space: nowrap; }
+  /* Quebra de página posta no editor de documentos. */
+  .quebra { page-break-before: always; break-before: page; }
+{% endblock %}
+{% block cabecalho_linhas %}
+    <p>{{ b.cb_secretaria|linhas }}</p>
+    <p><b>{{ b.cb_orgao|linhas }}</b></p>
+    <p>{{ b.cb_unidade|linhas }}</p>
+{% endblock %}
+{% block rodape_linhas %}
+    <p>{{ b.cb_rodape_endereco|linhas }}</p>
+    <p>{{ b.cb_rodape_contato|linhas }}</p>
 {% endblock %}
 {% block corpo %}
-  <h1>CERTIFICO DIGITAL</h1>
+  <h1>{{ b.cb_titulo|linhas }}</h1>
 
-  <p class="nota">Nota Fiscal nº {{ s.numero_nota_fiscal }}, emitida pela empresa {{ fornecedor.razao_social }}, inscrita no CNPJ nº&nbsp; {{ fornecedor.cnpj_formatado }} (CONTRATO {{ contrato.referencia_documental }}).</p>
+  <p class="nota">{{ b.cb_nota_rotulo|linhas }} {{ s.numero_nota_fiscal }}{{ b.cb_nota_emitida|linhas }} {{ fornecedor.razao_social }}{{ b.cb_nota_cnpj|linhas }}&nbsp; {{ fornecedor.cnpj_formatado }} {{ b.cb_nota_contrato|linhas }} {{ contrato.referencia_documental }}{{ b.cb_nota_fim|linhas }}</p>
 
+  {% if "antes_atesto" in quebras %}<div class="quebra"></div>{% endif %}
   <div class="atesto">
-    <p class="atesto__texto"><b>ATESTO</b> que os serviços e/ou bens acima identificados foram devidamente <span class="inteiro">executados/entregues</span> e atendem às exigências especificadas no (Termo de Referência/Edital).</p>
+    <p class="atesto__texto"><b>{{ b.cb_atesto_rotulo|linhas }}</b> {{ atesto_texto }}</p>
     <div class="atesto__quem">
-      <p><i>(assinado e datado digitalmente)</i></p>
+      <p><i>{{ b.cb_assinado|linhas }}</i></p>
       <p>{{ contrato.fiscal_responsavel }}</p>
       <p><b>{{ contrato.cargo_fiscal }}</b></p>
-      <p><b>Fiscal do Contrato n° {{ contrato.numero }}</b></p>
+      <p><b>{{ b.cb_fiscal_rotulo|linhas }} {{ contrato.numero }}</b></p>
     </div>
   </div>
 {% endblock %}

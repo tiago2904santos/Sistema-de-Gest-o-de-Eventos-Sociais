@@ -1,0 +1,57 @@
+{% load documento_tags %}{% comment %}
+  Ofício do Coffee Break (etapa 2) no editor de documentos: a folha do Of.
+  124/2026 do processo 26.617.058-0 (o mesmo texto de
+  `coffee_break/documentos/oficio.html`, que gera o PDF). Tudo se edita: os
+  dados da solicitação e dos cadastros (`editavel`/`trecho`), o texto do
+  modelo (`bloco`) e as quebras de página. Geometria em
+  `coffee_break_oficio.css`.
+{% endcomment %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Ofício {{ s.numero_oficio }}</title>
+  {% if css_inline %}<style>{{ css_inline|safe }}</style>{% endif %}
+</head>
+<body class="documento documento--{{ modo|default:'pdf' }} doc-cb doc-cb-oficio">
+<div class="folha">
+  <header class="doc-cabecalho" id="doc-cabecalho">
+    <img class="doc-cabecalho__brasao" src="{{ imagens.brasao }}" alt="Brasão da Polícia Civil do Paraná">
+    {% bloco "cb_secretaria" classe="doc-cabecalho__secretaria" base=False %}
+    {% bloco "cb_orgao" classe="doc-cabecalho__orgao" base=False %}
+    {% bloco "cb_unidade" classe="doc-cabecalho__unidade" base=False %}
+  </header>
+
+  <footer class="doc-rodape" id="doc-rodape">
+    <img class="doc-rodape__marca" src="{{ imagens.marca }}" alt="">
+    {% bloco "cb_rodape_endereco" classe="doc-cb__endereco" base=False %}
+    {% bloco "cb_rodape_contato" classe="doc-cb__endereco" base=False %}
+  </footer>
+
+  <main class="doc-corpo">
+    <h1 class="doc-cb-oficio__titulo">{% bloco "cb_titulo" elemento="span" base=False %} {% trecho "cb_oficio_numero" %}{% if s.numero_oficio %}{{ s.numero_oficio }}{% else %}<span class="doc-vazio">{{ numero_oficio_sugerido }}</span>{% endif %}{% endtrecho %}</h1>
+    <div class="doc-cb-oficio__miuda">
+      <span>{% bloco "cb_rotulo_protocolo" elemento="span" base=False %} {% trecho "cb_oficio_protocolo" %}{{ s.protocolo_pcpr_oficio }}{% if not s.protocolo_pcpr_oficio %}{% vazio "opcional" %}{% endif %}{% endtrecho %}</span>
+      <span>{% bloco "cb_cidade" elemento="span" base=False %}, <span{% editavel "cb_oficio_data" %}>{{ data_oficio_extenso }}</span></span>
+    </div>
+    <p class="doc-cb-oficio__recuo doc-cb-oficio__vocativo">{% trecho "cb_vocativo" %}{{ config.oficio_vocativo }}{% endtrecho %}</p>
+
+    <div class="doc-cb-oficio__corpo">
+      {% bloco "cb_paragrafo_entrega" classe="doc-cb-oficio__recuo doc-cb-oficio__primeiro" base=False %}
+      <p class="doc-cb-oficio__recuo">{% bloco "cb_item_marcador" elemento="span" base=False %} {% trecho "cb_objeto" %}{{ s.descricao_evento }}{% endtrecho %} {% bloco "cb_item_coffee" elemento="span" base=False %} {{ s.quantidade }} ({{ quantidade_extenso }}) {% bloco "cb_item_pessoas" elemento="span" base=False %}</p>
+      {% ponto_de_quebra "antes_encaminho" %}
+      <p class="doc-cb-oficio__recuo">{% bloco "cb_encaminho" elemento="span" base=False %} {% trecho "cb_nota" %}{{ s.numero_nota_fiscal }}{% if not s.numero_nota_fiscal %}{% vazio "nº da nota" %}{% endif %}{% endtrecho %}{% bloco "cb_encaminho_meio" elemento="span" base=False %} {% trecho "cb_clausula" %}{{ contrato.clausula_pagamento }}{% endtrecho %}{% bloco "cb_encaminho_contrato" elemento="span" base=False %} {% trecho "cb_contrato" %}{{ contrato.referencia_documental }}{% endtrecho %}.</p>
+    </div>
+
+    {% ponto_de_quebra "antes_assinatura" %}
+    <div class="doc-cb-oficio__assinatura">
+      {% bloco "cb_fecho" classe="doc-cb-oficio__centro" base=False %}
+      <p class="doc-cb-oficio__centro doc-cb-oficio__nome"><b{% editavel "cb_assinante" %}>{{ config.oficio_assinante }}</b></p>
+      <p{% editavel "cb_cargo_assinante" classe="doc-cb-oficio__centro" %}>{{ config.oficio_cargo_assinante }}</p>
+    </div>
+
+    {% ponto_de_quebra "antes_destinatario" %}
+    <p{% editavel "cb_destinatario" classe="doc-cb-oficio__destinatario" %}>{{ config.oficio_destinatario|linhas }}</p>
+  </main>
+</div>
+</body>
+</html>

@@ -25,8 +25,12 @@
     var detalhe = evento.detail || {};
     Object.keys(detalhe.valores || {}).forEach(function (nome) {
       var campo = form.elements.namedItem(nome);
-      if (!campo || campo.closest(".de-app") || campo.disabled) return;
-      campo.value = detalhe.valores[nome] == null ? "" : detalhe.valores[nome];
+      if (!campo || !campo.tagName || campo.closest(".de-app") || campo.disabled) return;
+      var valor = detalhe.valores[nome] == null ? "" : String(detalhe.valores[nome]);
+      // Nº da OS e do ofício: o campo tem só a sequência ("42"); o ano fica ao lado.
+      var numero = /^\s*(\d+)\s*\/\s*\d{4}\s*$/.exec(valor);
+      if (campo.type === "number" && numero) valor = String(parseInt(numero[1], 10));
+      campo.value = valor;
     });
     var versao = form.querySelector(":scope > input[name=versao]");
     if (versao && detalhe.versao) versao.value = detalhe.versao;

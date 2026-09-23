@@ -2506,6 +2506,14 @@ form.btn-flutuante-form{margin:0;display:contents}
 /* Etapa 1: a OS numa linha (número, local de entrega, responsável). */
 .cb-os-linha{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(0,2fr) minmax(0,1.3fr);gap:12px;align-items:start;margin-top:12px}
 .cb-os-linha>.form-campo{margin:0}
+.cb-nota-linha{grid-template-columns:minmax(150px,.8fr) minmax(0,2fr)}
+.cb-oficio-linha{grid-template-columns:minmax(150px,.8fr) minmax(0,1fr) minmax(0,1.5fr)}
+.cb-anexo{display:flex;align-items:center;gap:10px;min-height:40px;flex-wrap:wrap}
+.cb-anexo__arquivo{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--n-200,#e3e1dc);border-radius:10px;background:var(--n-50,#faf9f7);color:var(--n-900,#1a1917);font-weight:600;text-decoration:none}
+.cb-anexo__arquivo:hover{border-color:var(--n-300,#cfccc5)}
+.cb-anexo__arquivo svg{width:16px;height:16px}
+.cb-anexo__anexar svg,.cb-anexo .btn--compacto svg{width:16px;height:16px}
+.cb-anexo__vazio{color:var(--n-500,#7a776f)}
 @container (max-width:680px){.cb-os-linha{grid-template-columns:minmax(0,1fr)}}
 .cb-passo--fechado{opacity:.5;cursor:not-allowed}
 .cb-docs-gerados{margin-top:18px}

@@ -1,4 +1,4 @@
-<!DOCTYPE html>{% comment %}
+{% load documento_tags %}<!DOCTYPE html>{% comment %}
   Ofício que encaminha a nota fiscal ao GAF para pagamento — o do processo
   26.617.058-0 (Of. 124/2026), medido no PDF: brasão no alto, as três linhas
   em Arial 12, corpo em Times 12 justificado com recuo de 1,5 cm, a linha
@@ -38,40 +38,45 @@
   .assinatura { margin-top: 30pt; page-break-inside: avoid; }
   .assinatura .nome { margin-top: 30pt; }
   .destinatario { margin-top: 60pt; white-space: pre-line; page-break-inside: avoid; }
+  /* Quebra de página posta no editor de documentos. */
+  .quebra { page-break-before: always; break-before: page; }
 </style>
 </head>
 <body>
   <img class="timbre-brasao" src="{{ imagens.brasao }}" alt="">
   <div class="timbre-cabecalho">
-    <p>SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA</p>
-    <p><b>POLÍCIA CIVIL DO PARANÁ</b></p>
-    <p>ASSESSORIA DE COMUNICAÇÃO SOCIAL</p>
+    <p>{{ b.cb_secretaria|linhas }}</p>
+    <p><b>{{ b.cb_orgao|linhas }}</b></p>
+    <p>{{ b.cb_unidade|linhas }}</p>
   </div>
   <img class="timbre-marca" src="{{ imagens.marca }}" alt="">
   <div class="timbre-rodape">
-    <p>Avenida Iguaçu, 470 - Rebouças - Curitiba/PR - CEP: 80230-020</p>
-    <p>Fone: (41) 3235-6477 - e-mail: comunicacao@pc.pr.gov.br</p>
+    <p>{{ b.cb_rodape_endereco|linhas }}</p>
+    <p>{{ b.cb_rodape_contato|linhas }}</p>
   </div>
 
-  <h1>OFÍCIO {{ s.numero_oficio }}</h1>
+  <h1>{{ b.cb_titulo|linhas }} {{ s.numero_oficio }}</h1>
   <div class="linha-miuda">
-    <span>{% if s.protocolo_pcpr_oficio %}PCPR Protocolo n.º: {{ s.protocolo_pcpr_oficio }}{% endif %}</span>
-    <span>Curitiba, {{ data_extenso }}</span>
+    <span>{% if s.protocolo_pcpr_oficio %}{{ b.cb_rotulo_protocolo|linhas }} {{ s.protocolo_pcpr_oficio }}{% endif %}</span>
+    <span>{{ b.cb_cidade|linhas }}, {{ data_extenso }}</span>
   </div>
   <p class="recuo vocativo">{{ config.oficio_vocativo }}</p>
 
   <div class="corpo">
-    <p class="recuo">Venho, por meio deste, informar e certificar que os serviços de Coffee Break foram devidamente entregues, conforme solicitado, para o seguinte evento:</p>
-    <p class="recuo">• {{ s.descricao_evento }} - Coffee Break para {{ s.quantidade }} ({{ quantidade_extenso }}) pessoas.</p>
-    <p class="recuo">Encaminho, em anexo, a Nota Fiscal n° {{ s.numero_nota_fiscal }}, devidamente atestada, juntamente com os demais documentos necessários, para que seja efetuado o pagamento ao CONTRATADO, nos termos da {{ contrato.clausula_pagamento }}, do CONTRATO {{ contrato.referencia_documental }}.</p>
+    <p class="recuo">{{ b.cb_paragrafo_entrega|linhas }}</p>
+    <p class="recuo">{{ b.cb_item_marcador|linhas }} {{ s.descricao_evento }} {{ b.cb_item_coffee|linhas }} {{ s.quantidade }} ({{ quantidade_extenso }}) {{ b.cb_item_pessoas|linhas }}</p>
+    {% if "antes_encaminho" in quebras %}<div class="quebra"></div>{% endif %}
+    <p class="recuo">{{ b.cb_encaminho|linhas }} {{ s.numero_nota_fiscal }}{{ b.cb_encaminho_meio|linhas }} {{ contrato.clausula_pagamento }}{{ b.cb_encaminho_contrato|linhas }} {{ contrato.referencia_documental }}.</p>
   </div>
 
+  {% if "antes_assinatura" in quebras %}<div class="quebra"></div>{% endif %}
   <div class="assinatura">
-    <p class="centro">Atenciosamente,</p>
+    <p class="centro">{{ b.cb_fecho|linhas }}</p>
     <p class="centro nome"><b>{{ config.oficio_assinante }}</b></p>
     <p class="centro">{{ config.oficio_cargo_assinante }}</p>
   </div>
 
+  {% if "antes_destinatario" in quebras %}<div class="quebra"></div>{% endif %}
   <p class="destinatario">{{ config.oficio_destinatario }}</p>
 </body>
 </html>

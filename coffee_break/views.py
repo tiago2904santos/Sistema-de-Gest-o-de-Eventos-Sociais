@@ -21,7 +21,7 @@ from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 
 from documentos.editor.pagina import cartao
 
-from .editor import CHAVE_OS
+from .editor import CHAVE_CERTIFICO, CHAVE_OFICIO, CHAVE_OS
 from .forms import (
     CertidaoForm,
     ConfiguracaoCoffeeBreakForm,
@@ -753,9 +753,9 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
             "embutido": cartao(CHAVE_OS, solicitacao.pk, f"Ordem de serviço {solicitacao.numero}".strip()),
         }
         contexto["pendencias_oficio"] = documentos.pendencias_oficio(solicitacao)
-        contexto["pendencias_certifico"] = (
-            [] if solicitacao.numero_nota_fiscal.strip() else ["Informe o número da nota fiscal."]
-        )
+        contexto["pendencias_certifico"] = documentos.pendencias_certifico(solicitacao)
+        if etapa == "nota":
+            _contexto_da_nota(contexto, form, solicitacao)
         if etapa == "protocolo":
             itens = documentos.itens_anexo(solicitacao)
             contexto["itens_anexo"] = itens
@@ -763,6 +763,41 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
             contexto["anexo_faltando"] = sum(1 for item in itens if not item["pronto"])
             contexto["eprotocolo"] = documentos.textos_eprotocolo(solicitacao)
     return contexto
+
+
+def _contexto_da_nota(contexto, form, solicitacao):
+    """Etapa 2 como a etapa 1: o número e a data do ofício já vêm preenchidos
+    (o próximo da numeração e o dia de hoje; pode alterar), a nota fiscal se
+    anexa pelo modal de anexo de documentos, e o ofício e o certifico abrem no
+    editor de documentos, tudo editável."""
+    valores = contexto["valores"]
+    atual = services.partes_numero(solicitacao.numero_oficio)
+    data = solicitacao.data_oficio or timezone.localdate()
+    contexto["oficio_ano"] = atual[1] if atual else data.year
+    contexto["oficio_livre"] = bool(solicitacao.numero_oficio and not atual)
+    if not valores.get("numero_oficio") and not form.is_bound:
+        valores["numero_oficio"] = str(services.proxima_sequencia_oficio(contexto["oficio_ano"]))
+    if not valores.get("data_oficio") and not form.is_bound:
+        valores["data_oficio"] = data.isoformat()
+    contexto["usa_dialogo_assinado"] = True
+    contexto["url_anexar_nota"] = reverse("coffee_break:anexar_nota", args=[solicitacao.pk])
+    url_oficio = reverse("coffee_break:oficio", args=[solicitacao.pk])
+    url_certifico = reverse("coffee_break:certifico", args=[solicitacao.pk])
+    titulo_oficio = f"Ofício {solicitacao.numero_oficio}".strip()
+    contexto["doc_oficio"] = {
+        "titulo": titulo_oficio,
+        "disponivel": not contexto["pendencias_oficio"],
+        "src": url_oficio,
+        "url_pdf": url_oficio + "?baixar=1",
+        "embutido": cartao(CHAVE_OFICIO, solicitacao.pk, titulo_oficio),
+    }
+    contexto["doc_certifico"] = {
+        "titulo": "Certifico digital",
+        "disponivel": not contexto["pendencias_certifico"],
+        "src": url_certifico,
+        "url_pdf": url_certifico + "?baixar=1",
+        "embutido": cartao(CHAVE_CERTIFICO, solicitacao.pk, "Certifico digital"),
+    }
 
 
 def _titulo_e_trilha(contexto, solicitacao, etapa):
@@ -1372,6 +1407,53 @@ def _arquivo(campo, nome=None):
     except FileNotFoundError as exc:
         raise Http404 from exc
     return FileResponse(aberto, filename=nome or Path(campo.name).name, as_attachment=False)
+
+
+@require_POST
+@acesso_ao_modulo
+def anexar_nota(request, pk):
+    """A nota fiscal pelo modal de anexo de documentos (o de Viagens): envia o
+    PDF, troca ou remove. Volta para a tela de onde se abriu."""
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    from .forms import validar_pdf
+
+    solicitacao = get_object_or_404(SolicitacaoCoffeeBreak, pk=pk)
+    destino = request.POST.get("next") or reverse("coffee_break:etapa_nota", args=[pk])
+    if not url_has_allowed_host_and_scheme(destino, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        destino = reverse("coffee_break:etapa_nota", args=[pk])
+    if solicitacao.cancelada or solicitacao.concluida:
+        messages.warning(request, "Solicitações canceladas ou concluídas ficam bloqueadas para edição.")
+        return redirect(destino)
+    if request.POST.get("acao") == "remover":
+        if solicitacao.arquivo_nota_fiscal:
+            solicitacao.arquivo_nota_fiscal.delete(save=False)
+            solicitacao.arquivo_nota_fiscal = None
+            solicitacao.save(update_fields=["arquivo_nota_fiscal", "atualizado_em"])
+            services.registrar_historico(
+                solicitacao, request.user, AcaoHistoricoCoffeeBreak.ATUALIZACAO, "Nota fiscal (PDF) removida."
+            )
+            messages.success(request, "Nota fiscal removida.")
+        return redirect(destino)
+    arquivo = request.FILES.get("arquivo")
+    if arquivo is None:
+        messages.error(request, "Escolha o PDF da nota fiscal.")
+        return redirect(destino)
+    try:
+        validar_pdf(arquivo)
+    except ValidationError as erro:
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+        return redirect(destino)
+    trocou = bool(solicitacao.arquivo_nota_fiscal)
+    solicitacao.arquivo_nota_fiscal = arquivo
+    solicitacao.save(update_fields=["arquivo_nota_fiscal", "atualizado_em"])
+    services.registrar_historico(
+        solicitacao, request.user, AcaoHistoricoCoffeeBreak.ATUALIZACAO,
+        "Nota fiscal (PDF) substituída." if trocou else "Nota fiscal (PDF) anexada.",
+    )
+    messages.success(request, "Nota fiscal anexada.")
+    return redirect(destino)
 
 
 @acesso_ao_modulo

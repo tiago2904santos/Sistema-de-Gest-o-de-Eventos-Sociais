@@ -1,0 +1,46 @@
+/* Ofício do Coffee Break no editor: a geometria medida no Of. 124/2026 do
+   processo 26.617.058-0 (a mesma de coffee_break/documentos/oficio.html, que
+   gera o PDF), em pontos a partir do alto da folha. A4, margens de 170,33 pt
+   em cima, 3 cm à esquerda, 2 cm à direita e 70 pt embaixo; corpo em Times
+   12 com entrelinha de 15 pt. Brasão de 54 × 71 pt a 17 pt; cabeçalho em
+   Arial 12 com bases a 116,5/131,5/146,5 pt; marca de 58,9 × 17 pt a
+   782,4 pt e o endereço em Arial 10 com bases a 811,9/824,4 pt. */
+
+.doc-cb-oficio {
+  font-family: "Times New Roman", "Liberation Serif", Times, serif;
+  font-size: 12pt;
+  line-height: 15pt;
+  color: #000;
+}
+.doc-cb-oficio p { margin: 0; }
+
+.documento--editor.doc-cb-oficio .folha { width: 595.28pt; min-height: 841.89pt; padding: 170.33pt 56.69pt 70pt 85.04pt; }
+.documento--editor.doc-cb-oficio .doc-cabecalho,
+.documento--editor.doc-cb-oficio .doc-rodape { left: 0; right: 0; justify-content: flex-start; box-sizing: border-box; }
+
+/* Cabeçalho: brasão a 17 pt; a primeira linha começa a 104,84 pt (base a 116,5). */
+.documento--editor.doc-cb-oficio .doc-cabecalho { top: 0; height: 170.33pt; padding-top: 17pt; }
+.doc-cb-oficio .doc-cabecalho { font-family: Arial, "Liberation Sans", Helvetica, sans-serif; line-height: 15pt; }
+.doc-cb-oficio .doc-cabecalho__brasao { width: 54pt; height: 71pt; margin: 0 auto 16.84pt; }
+.doc-cb-oficio .doc-cabecalho__secretaria,
+.doc-cb-oficio .doc-cabecalho__orgao,
+.doc-cb-oficio .doc-cabecalho__unidade { margin: 0; font-size: 12pt; font-weight: 400; text-transform: none; text-align: center; }
+.doc-cb-oficio .doc-cabecalho__orgao { font-weight: 700; }
+
+/* Rodapé: a marca a 782,4 pt; o endereço começa a 802,2 pt. */
+.documento--editor.doc-cb-oficio .doc-rodape { top: auto; bottom: 0; height: 59.49pt; }
+.doc-cb-oficio .doc-rodape { font-family: Arial, "Liberation Sans", Helvetica, sans-serif; }
+.doc-cb-oficio .doc-rodape__marca { width: 58.9pt; height: 17pt; margin: 0 auto 2.79pt; }
+.doc-cb-oficio .doc-cb__endereco { margin: 0; font-size: 10pt; line-height: 12.5pt; text-align: center; }
+
+/* Corpo. */
+.doc-cb-oficio__titulo { margin: 0; font-size: 12pt; line-height: 15pt; font-weight: 700; text-align: center; }
+.doc-cb-oficio__miuda { display: flex; justify-content: space-between; margin-top: 10.24pt; font-size: 9pt; line-height: 11pt; }
+.doc-cb-oficio p.doc-cb-oficio__vocativo { margin-top: 8.39pt; }
+.doc-cb-oficio__recuo { text-indent: 1.5cm; }
+.doc-cb-oficio__corpo p { margin-top: 15pt; text-align: justify; }
+.doc-cb-oficio .doc-cb-oficio__corpo p.doc-cb-oficio__primeiro { margin-top: 60pt; }
+.doc-cb-oficio__centro { text-align: center; }
+.doc-cb-oficio__assinatura { margin-top: 30pt; page-break-inside: avoid; }
+.doc-cb-oficio p.doc-cb-oficio__nome { margin-top: 30pt; }
+.doc-cb-oficio p.doc-cb-oficio__destinatario { margin-top: 60pt; page-break-inside: avoid; }
