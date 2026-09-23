@@ -1,0 +1,37 @@
+{% extends "documentos/pdf/base_institucional.html" %}{% load documento_tags %}{% comment %}
+  Ordem de Serviço do Coffee Break no editor de documentos: a folha do modelo
+  da OS 41/2026 (o mesmo texto de `coffee_break/documentos/ordem_servico.html`,
+  que gera o PDF), com os trechos que vêm da solicitação marcados para editar
+  na própria folha. Geometria e tipografia em `coffee_break_ordem_servico.css`.
+{% endcomment %}
+{% block titulo %}Ordem de Serviço {{ s.numero }}{% endblock %}
+{% block classe %} doc-cb-os{% endblock %}
+
+{% block rodape %}
+  <p class="doc-cb-os__endereco">Avenida Iguaçu, 470 – Rebouças – Curitiba/PR—CEP: 80.230-020</p>
+  <p class="doc-cb-os__endereco">Fone: (41) 3235-6477 – e-mail:&nbsp; comunicacao@pc.pr.gov.br</p>
+{% endblock %}
+
+{% block corpo %}
+  <p class="doc-cb-os__data">Curitiba, <span{% editavel "cb_data" %}>{{ data_extenso }}</span>.</p>
+  <h1 class="doc-cb-os__titulo">ORDEM DE SERVIÇO {{ s.numero }}</h1>
+
+  <p class="doc-cb-os__fornecedor">{{ fornecedor.razao_social }}</p>
+  <p class="doc-cb-os__contrato">Contrato: {{ contrato.referencia_documental }}</p>
+  {% if lote.empenho %}<p class="doc-cb-os__empenho">Empenho: {{ lote.empenho }}</p>{% endif %}
+
+  <p class="doc-cb-os__objeto"><b>OBJETO:</b> {% trecho "cb_objeto" %}{{ s.descricao_evento }}{% endtrecho %}</p>
+  <p class="doc-cb-os__detalhamento"><b>DETALHAMENTO DO PEDIDO:</b></p>
+  <p{% editavel "cb_detalhamento" classe="doc-cb-os__pedido" %}>{{ s.detalhamento_efetivo|linhas }}</p>
+
+  <p class="doc-cb-os__local"><b>LOCAL DE ENTREGA:</b></p>
+  <p{% editavel "cb_local" classe="doc-cb-os__local-texto" %}>{{ s.local_entrega }}{% if not s.local_entrega %}{% vazio "Local de entrega" %}{% endif %}</p>
+
+  <p class="doc-cb-os__responsavel"><b>RESPONSÁVEL PELO RECEBIMENTO:</b> {% trecho "cb_responsavel" %}{{ s.responsavel_recebimento }}{% if not s.responsavel_recebimento %}{% vazio "Responsável" %}{% endif %}{% endtrecho %}</p>
+
+  <div class="doc-cb-os__assinatura">
+    <p>______________________________________________</p>
+    <p><b>{{ contrato.fiscal_responsavel|upper }}</b></p>
+    <p>{{ contrato.cargo_fiscal }}</p>
+  </div>
+{% endblock %}

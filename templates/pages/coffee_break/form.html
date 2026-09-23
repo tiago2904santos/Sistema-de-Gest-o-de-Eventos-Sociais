@@ -157,4 +157,4 @@
   {% endif %}
 {% endblock %}
 
-{% block etapa_js %}<script src="{% estatico 'js/coffee-break-numero.js' %}" defer></script><script src="{% estatico 'js/coffee-break-documentos.js' %}" defer></script>{% endblock %}
+{% block etapa_js %}{% include "documentos/editor/_recursos.html" %}<script src="{% estatico 'js/coffee-break-numero.js' %}" defer></script><script src="{% estatico 'js/coffee-break-documentos.js' %}" defer></script>{% endblock %}

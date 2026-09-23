@@ -19,6 +19,9 @@ from django.views.decorators.http import require_POST
 from django.db.models import ProtectedError
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 
+from documentos.editor.pagina import cartao
+
+from .editor import CHAVE_OS
 from .forms import (
     CertidaoForm,
     ConfiguracaoCoffeeBreakForm,
@@ -755,6 +758,8 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
             "quadro": reverse("coffee_break:ordem_servico_previa", args=[solicitacao.pk]),
             "src": url_os,
             "url_pdf": url_os + "?baixar=1",
+            # O editor de documentos de Viagens: barra, pendências e a folha editável.
+            "embutido": cartao(CHAVE_OS, solicitacao.pk, f"Ordem de serviço {solicitacao.numero}".strip()),
         }
         contexto["pendencias_oficio"] = documentos.pendencias_oficio(solicitacao)
         contexto["pendencias_certifico"] = (

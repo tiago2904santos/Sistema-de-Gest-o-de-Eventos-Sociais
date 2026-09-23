@@ -84,6 +84,14 @@
     if (daOficio(origem)) versao = valor || versao;
     else versoes[chaveDeVersao(chave, objeto)] = valor;
   }
+  /* Avisa a página que um campo foi gravado pelo documento: o formulário em
+     volta (o do cadastro) acompanha os valores e a versão nova, para salvar
+     depois sem desfazer o que se editou na folha. */
+  function avisarGravado(origem, valores, novaVersao) {
+    editor.dispatchEvent(new CustomEvent('documento:gravado', {
+      bubbles: true, detail: { origem: origem, valores: valores || {}, versao: novaVersao }
+    }));
+  }
   function versaoPara(origem, chave, objeto) {
     if (daOficio(origem)) return Promise.resolve(versao);
     var k = chaveDeVersao(chave, objeto);
@@ -276,7 +284,7 @@
         return false;
       }
       if (passo.especie === 'bloco') versaoDeBloco[passo.chave] = res.dados.versao;
-      else guardarVersao(passo.origem, passo.chave, passo.objeto, res.dados.versao);
+      else { guardarVersao(passo.origem, passo.chave, passo.objeto, res.dados.versao); avisarGravado(passo.origem, valores, res.dados.versao); }
       aplicarFolha(res.dados.folha);
       status('Salvo', 'ok');
       // O balão aberto no mesmo campo mostraria o valor velho: reabre.
@@ -396,7 +404,7 @@
     }).then(function (res) {
       if (res.codigo === 200) {
         if (onde.especie === 'bloco') versaoDeBloco[onde.chave] = res.dados.versao;
-        else guardarVersao(onde.origem, onde.chave, onde.objeto, res.dados.versao);
+        else { guardarVersao(onde.origem, onde.chave, onde.objeto, res.dados.versao); avisarGravado(onde.origem, valores, res.dados.versao); }
         marcarEstado(el, 'Salvo', 'ok');
         if (sessao) registrar({ especie: onde.especie, chave: onde.chave, objeto: onde.objeto, origem: onde.origem, antes: sessao.antes, depois: valores, sessao: sessao.id });
         // O domínio pode normalizar o que foi gravado (o motivo vai para caixa
@@ -506,7 +514,7 @@
       enviando = false;
       if (res.codigo === 200) {
         if (especie === 'bloco') versao = res.dados.versao || versao;
-        else guardarVersao(origem, chave, objeto, res.dados.versao);
+        else { guardarVersao(origem, chave, objeto, res.dados.versao); avisarGravado(origem, valores, res.dados.versao); }
         limparErros();
         status(res.dados.avisos && res.dados.avisos.length ? 'Salvo. O ofício ainda tem pendências em outros campos.' : 'Salvo', 'ok');
         if (sessao) registrar({ especie: especie, chave: chave, objeto: objeto, origem: origem, antes: sessao.antes, depois: valores, sessao: sessao.id });

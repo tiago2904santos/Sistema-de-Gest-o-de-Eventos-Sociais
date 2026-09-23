@@ -1675,21 +1675,112 @@ class DescricaoUmaLinhaTests(BaseCoffeeBreakTestCase):
 
 
 class VisualizadorDaOSTests(BaseCoffeeBreakTestCase):
-    def test_etapa_1_traz_o_visualizador_e_o_pdf_pode_ser_embutido(self):
+    """A OS da etapa 1 no editor de documentos de Viagens: barra, pendências
+    e a folha editável, gravando na própria solicitação."""
+
+    CHAVE = "coffee_break_ordem_servico"
+
+    def _url(self, nome, s, *args):
+        return reverse(f"documentos:editor_{nome}", args=[self.CHAVE, s.pk, *args])
+
+    def test_etapa_1_traz_o_editor_de_documentos(self):
         self.client.force_login(self.ascom)
         s = self.criar_solicitacao(numero="41/2026", local_entrega="1DP", responsavel_recebimento="Ana")
-        url = reverse("coffee_break:ordem_servico", args=[s.pk])
         resposta = self.client.get(reverse("coffee_break:editar", args=[s.pk]))
         self.assertContains(resposta, "data-ofc-doc")
-        # O quadro mostra a folha em HTML (abre em qualquer navegador); o menu leva ao PDF.
-        previa = reverse("coffee_break:ordem_servico_previa", args=[s.pk])
-        self.assertContains(resposta, f'data-src="{previa}"')
-        self.assertContains(resposta, f'href="{url}"')
+        self.assertContains(resposta, f'data-de-embutir="{self._url("embutido", s)}"')
+        self.assertContains(resposta, "js/documento-editor")
         self.assertNotContains(resposta, 'id="sec-os"')
-        # A OS sem pendência redireciona só quando falta dado; aqui vale o cabeçalho.
+        # O PDF continua abrindo no navegador (Imprimir e o menu do cartão).
+        url = reverse("coffee_break:ordem_servico", args=[s.pk])
+        self.assertContains(resposta, f'href="{url}"')
         with mock.patch.object(documentos, "ordem_servico_pdf", return_value=b"%PDF-1.7"):
-            pdf = self.client.get(url)
+            pdf = self.client.post(url + "?inline=1")
+        self.assertEqual(pdf.status_code, 200)
         self.assertEqual(pdf["X-Frame-Options"], "SAMEORIGIN")
+
+    def test_editor_mostra_a_barra_e_a_folha_marcada(self):
+        self.client.force_login(self.ascom)
+        s = self.criar_solicitacao(numero="41/2026", local_entrega="1DP", responsavel_recebimento="Ana")
+        editor = self.client.get(self._url("embutido", s))
+        self.assertEqual(editor.status_code, 200)
+        self.assertContains(editor, "Tudo salvo")
+        self.assertContains(editor, "Campos")
+        self.assertContains(editor, reverse("coffee_break:ordem_servico", args=[s.pk]))
+        self.assertNotContains(editor, "O PDF ainda não pode ser emitido.")
+        folha = self.client.get(self._url("folha", s))
+        self.assertEqual(folha.status_code, 200)
+        self.assertEqual(folha["X-Frame-Options"], "SAMEORIGIN")
+        texto = folha.content.decode()
+        self.assertIn("ORDEM DE SERVIÇO 41/2026", texto)
+        self.assertIn('data-doc-campo="cb_local"', texto)
+        self.assertIn('data-doc-campo="cb_objeto"', texto)
+        self.assertIn("Avenida Iguaçu, 470", texto)
+
+    def test_pendencias_aparecem_no_editor(self):
+        self.client.force_login(self.ascom)
+        s = self.criar_solicitacao(numero="41/2026")
+        editor = self.client.get(self._url("embutido", s))
+        self.assertContains(editor, "O PDF ainda não pode ser emitido.")
+        self.assertContains(editor, "Informe o local de entrega.")
+
+    def test_editar_na_folha_grava_na_solicitacao(self):
+        import json
+
+        self.client.force_login(self.ascom)
+        s = self.criar_solicitacao(numero="41/2026", local_entrega="1DP", responsavel_recebimento="Ana")
+        url = self._url("campo", s, "cb_local")
+        versao = self.client.get(url).json()["versao"]
+        resposta = self.client.patch(
+            url, json.dumps({"versao": versao, "valores": {"local_entrega": "  Casa da   Cultura "}}),
+            content_type="application/json",
+        )
+        self.assertEqual(resposta.status_code, 200, resposta.content)
+        s.refresh_from_db()
+        self.assertEqual(s.local_entrega, "Casa da Cultura")
+        # A versão é a mesma do formulário da etapa: salvar depois não acusa conflito.
+        self.assertEqual(resposta.json()["versao"], str(int(s.atualizado_em.timestamp() * 1_000_000)))
+        # Versão velha é conflito.
+        velha = self.client.patch(
+            url, json.dumps({"versao": versao, "valores": {"local_entrega": "Outro"}}),
+            content_type="application/json",
+        )
+        self.assertEqual(velha.status_code, 409)
+
+    def test_descricao_travada_depois_da_nota(self):
+        import json
+
+        self.client.force_login(self.ascom)
+        s = self.criar_solicitacao(numero="41/2026", local_entrega="1DP", responsavel_recebimento="Ana")
+        with mock.patch.object(SolicitacaoCoffeeBreak, "financeiro_iniciado", new_callable=mock.PropertyMock, return_value=True):
+            url = self._url("campo", s, "cb_objeto")
+            versao = self.client.get(url).json()["versao"]
+            resposta = self.client.patch(
+                url, json.dumps({"versao": versao, "valores": {"descricao_evento": "Outro"}}),
+                content_type="application/json",
+            )
+        self.assertEqual(resposta.status_code, 400)
+        s.refresh_from_db()
+        self.assertEqual(s.descricao_evento, "Evento de teste")
+
+    def test_cancelada_nao_edita_mas_ve(self):
+        import json
+
+        self.client.force_login(self.ascom)
+        s = self.criar_solicitacao(numero="41/2026", local_entrega="1DP", responsavel_recebimento="Ana")
+        SolicitacaoCoffeeBreak.objects.filter(pk=s.pk).update(cancelada=True)
+        self.assertEqual(self.client.get(self._url("embutido", s)).status_code, 200)
+        resposta = self.client.patch(
+            self._url("campo", s, "cb_local"), json.dumps({"valores": {"local_entrega": "X"}}),
+            content_type="application/json",
+        )
+        self.assertEqual(resposta.status_code, 403)
+
+    def test_sem_o_modulo_nao_abre(self):
+        s = self.criar_solicitacao(numero="41/2026")
+        self.client.force_login(self.sem_modulo)
+        self.assertEqual(self.client.get(self._url("embutido", s)).status_code, 403)
+        self.assertEqual(self.client.get(self._url("folha", s)).status_code, 403)
 
 
 class ImportarPlanilhaTelaTests(BaseCoffeeBreakTestCase):
