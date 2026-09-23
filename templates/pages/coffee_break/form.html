@@ -82,7 +82,7 @@
           {% endif %}
           <input type="hidden" name="periodo_evento_texto" value="{{ valores.periodo_evento_texto }}">
           <div class="cheia">
-            {% include "components/textarea.html" with name="descricao_evento" label="Descrição do evento (objeto da OS)" obrigatorio=True linhas="2" valor=valores.descricao_evento erros=erros.descricao_evento desabilitado=dados_base_bloqueados %}
+            {% include "components/input.html" with name="descricao_evento" label="Descrição do evento (objeto da OS)" obrigatorio=True maxlength="255" placeholder="Ex.: Ciclo de Palestras Saúde e Bem-Estar - 1DP Curitiba" valor=valores.descricao_evento erros=erros.descricao_evento desabilitado=dados_base_bloqueados %}
           </div>
         </div>
       </div>

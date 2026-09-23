@@ -1653,3 +1653,22 @@ class NumeroDaOSTests(BaseCoffeeBreakTestCase):
         s.refresh_from_db()
         self.assertEqual(s.numero, "41/2026")
         self.assertNotIn("número da solicitação", s.historico.last().descricao)
+
+
+class DescricaoUmaLinhaTests(BaseCoffeeBreakTestCase):
+    def test_descricao_vira_uma_linha(self):
+        self.client.force_login(self.ascom)
+        self.client.post(reverse("coffee_break:nova"), {
+            "municipio": self.curitiba.pk, "data_solicitacao": "2026-08-01",
+            "descricao_evento": "Ciclo de Palestras\r\n  1DP Curitiba", "quantidade": "10",
+        })
+        self.assertTrue(
+            SolicitacaoCoffeeBreak.objects.filter(descricao_evento="Ciclo de Palestras 1DP Curitiba").exists()
+        )
+
+    def test_campo_e_de_uma_linha(self):
+        self.client.force_login(self.ascom)
+        resposta = self.client.get(reverse("coffee_break:nova"))
+        html = resposta.content.decode()
+        self.assertRegex(html, r'<input[^>]*name="descricao_evento"')
+        self.assertNotRegex(html, r'<textarea[^>]*name="descricao_evento"')
