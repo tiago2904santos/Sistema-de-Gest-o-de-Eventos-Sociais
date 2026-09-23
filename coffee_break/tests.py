@@ -1598,3 +1598,58 @@ class ConfiguracaoOficioTests(BaseCoffeeBreakTestCase):
         self.assertTrue(ConfiguracaoCoffeeBreak.objects.filter(pk=1).exists())
         resposta = self.client.get(reverse("coffee_break:cadastro_novo", args=["oficio"]))
         self.assertRedirects(resposta, reverse("coffee_break:cadastro_lista", args=["oficio"]))
+
+
+class NumeroDaOSTests(BaseCoffeeBreakTestCase):
+    """O número da OS como o N° do Ofício de Viagens: sequência + "/ ano"."""
+
+    def setUp(self):
+        self.client.force_login(self.ascom)
+
+    def _post_nova(self, **extra):
+        dados = {
+            "municipio": self.curitiba.pk,
+            "data_solicitacao": "2026-08-01",
+            "descricao_evento": "Evento",
+            "quantidade": "10",
+        }
+        dados.update(extra)
+        return self.client.post(reverse("coffee_break:nova"), dados)
+
+    def test_so_a_sequencia_vira_numero_com_o_ano_da_data(self):
+        self._post_nova(numero="7")
+        self.assertTrue(SolicitacaoCoffeeBreak.objects.filter(numero="07/2026").exists())
+
+    def test_formato_completo_continua_valendo(self):
+        self._post_nova(numero="12/2026")
+        self.assertTrue(SolicitacaoCoffeeBreak.objects.filter(numero="12/2026").exists())
+
+    def test_em_branco_numera_pelo_lote(self):
+        self.criar_solicitacao(numero="04/2026")
+        self._post_nova(numero="")
+        self.assertTrue(SolicitacaoCoffeeBreak.objects.filter(numero="05/2026").exists())
+
+    def test_municipio_traz_o_proximo_numero_do_lote(self):
+        self.criar_solicitacao(numero="41/2026")
+        resposta = self.client.get(reverse("coffee_break:nova"))
+        self.assertContains(resposta, 'data-proximo="42"')
+        self.assertContains(resposta, "/ 2026")
+
+    def test_edicao_mostra_a_sequencia_e_nao_acusa_alteracao(self):
+        s = self.criar_solicitacao(numero="41/2026", local_entrega="1DP", responsavel_recebimento="Ana")
+        resposta = self.client.get(reverse("coffee_break:editar", args=[s.pk]))
+        self.assertContains(resposta, 'name="numero" value="41"')
+        s.refresh_from_db()
+        versao = str(int(s.atualizado_em.timestamp() * 1_000_000))
+        self.client.post(
+            reverse("coffee_break:editar", args=[s.pk]),
+            {
+                "municipio": self.curitiba.pk, "data_solicitacao": "2026-08-01",
+                "numero": "41", "descricao_evento": s.descricao_evento,
+                "quantidade": "30", "local_entrega": "1DP",
+                "responsavel_recebimento": "Ana", "versao": versao,
+            },
+        )
+        s.refresh_from_db()
+        self.assertEqual(s.numero, "41/2026")
+        self.assertNotIn("número da solicitação", s.historico.last().descricao)

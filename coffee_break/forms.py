@@ -7,6 +7,7 @@ system; aqui mora a validação e a persistência.
 from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db.models import Sum
+from django.utils import timezone
 
 from cadastros.models import Municipio
 from core.uploads import validate_private_document_upload
@@ -77,7 +78,13 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
             # lote em que estão até alguém informar o município.
             self.fields["municipio"].required = not (instancia and not instancia.municipio_id)
         if "numero" in self.fields:
-            self.fields["numero"].help_text = "Em branco, o sistema numera pelo lote (é o número da OS)."
+            self.fields["numero"].help_text = "Sugerido pelo lote do município; pode alterar."
+            # Na tela o número vai como no ofício de Viagens: só a sequência
+            # ("41"), com o "/ 2026" ao lado. O inicial segue o mesmo formato
+            # para a comparação de "mudou?" não acusar alteração à toa.
+            atual = services.partes_numero(instancia.numero) if instancia else None
+            if atual:
+                self.initial["numero"] = str(atual[0])
         if "arquivo_nota_fiscal" in self.fields:
             self.fields["arquivo_nota_fiscal"].validators.append(validar_pdf)
         for nome in ("descricao_evento", "quantidade"):
@@ -100,6 +107,28 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
                 ):
                     if nome in self.fields:
                         self.fields[nome].disabled = True
+
+    def clean_numero(self):
+        """ "41" vira "41/2026" (o ano do número atual ou o da solicitação).
+
+        O formato completo ("41/2026") e textos antigos da planilha passam
+        como vieram; em branco, o sistema numera ao salvar.
+        """
+        numero = (self.cleaned_data.get("numero") or "").strip()
+        if not numero.isdigit():
+            return numero
+        sequencia = int(numero)
+        if sequencia < 1:
+            raise forms.ValidationError("O número da OS deve ser 1 ou mais.")
+        return services.formatar_numero(sequencia, self.ano_do_numero())
+
+    def ano_do_numero(self):
+        """O ano que acompanha o número: o do número atual, ou o da data."""
+        atual = services.partes_numero(self.instance.numero) if self.instance.pk else None
+        if atual:
+            return atual[1]
+        data = self.cleaned_data.get("data_solicitacao") or self.instance.data_solicitacao
+        return (data or timezone.localdate()).year
 
     def clean_quantidade(self):
         quantidade = self.cleaned_data.get("quantidade")
@@ -207,7 +236,6 @@ CAMPOS_PEDIDO = [
     "descricao_evento",
     "quantidade",
     "data_inicio_evento",
-    "data_fim_evento",
     "periodo_evento_texto",
     "horario_evento",
     "detalhamento_pedido",
@@ -232,10 +260,19 @@ CAMPOS_PROTOCOLO = [
 
 
 class PedidoCoffeeBreakForm(SolicitacaoCoffeeBreakForm):
-    """Etapa 1 — o pedido e a ordem de serviço."""
+    """Etapa 1 — o pedido e a ordem de serviço.
+
+    O evento tem uma data só: a tela não pede mais o fim do período, e
+    salvar com a data aberta limpa um fim antigo.
+    """
 
     class Meta(SolicitacaoCoffeeBreakForm.Meta):
         fields = CAMPOS_PEDIDO
+
+    def save(self, criado_por=None):
+        if not self.fields["data_inicio_evento"].disabled:
+            self.instance.data_fim_evento = None
+        return super().save(criado_por=criado_por)
 
 
 class NotaCoffeeBreakForm(SolicitacaoCoffeeBreakForm):
