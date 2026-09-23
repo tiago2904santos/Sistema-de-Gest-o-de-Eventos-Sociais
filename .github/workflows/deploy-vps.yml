@@ -78,7 +78,7 @@ jobs:
           ssh -i ~/.ssh/deploy -p "${VPS_PORT:-22}" \
             -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
             "${VPS_USER:-root}@$VPS_HOST" \
-            /var/www/eventos-sociais/app/scripts/deploy/vps/atualizar.sh
+            bash /var/www/eventos-sociais/app/scripts/deploy/vps/atualizar.sh
 
       - name: Limpar a chave
         if: always()
