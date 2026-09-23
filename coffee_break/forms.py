@@ -249,10 +249,8 @@ CAMPOS_PEDIDO = [
     "data_inicio_evento",
     "periodo_evento_texto",
     "horario_evento",
-    "detalhamento_pedido",
     "local_entrega",
     "responsavel_recebimento",
-    "data_envio_ordem_servico",
 ]
 CAMPOS_NOTA = [
     "numero_nota_fiscal",

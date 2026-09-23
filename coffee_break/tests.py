@@ -1127,18 +1127,17 @@ class AndamentoCoffeeTests(BaseCoffeeBreakTestCase):
     def test_marcos_em_ordem_pelo_modal(self):
         s = self.criar_solicitacao(numero="05/2026")
         url = reverse("coffee_break:andamento", args=[s.pk])
-        self.assertContains(self.client.get(url, headers={"X-Cadastro-Modal": "1"}), "OS enviada ao fornecedor em")
+        # A OS enviada ao fornecedor saiu do fluxo: o primeiro marco é a nota fiscal.
+        self.assertContains(self.client.get(url, headers={"X-Cadastro-Modal": "1"}), "Número da nota fiscal")
         modal = {"X-Cadastro-Modal": "1"}
-        self.assertEqual(self.client.post(url, {"valor": "2026-08-02"}, headers=modal).json(), {"ok": True})
         resposta = self.client.post(url, {"valor": "8696", "andamento": "NF chegou por e-mail."}, headers=modal)
         self.assertEqual(resposta.json(), {"ok": True})
         s.refresh_from_db()
-        self.assertEqual(s.data_envio_ordem_servico, dt.date(2026, 8, 2))
         self.assertEqual(s.numero_nota_fiscal, "8696")
         self.assertEqual(services.proximo_marco(s)["campo"], "protocolo_pagamento")
         self.assertEqual(services.ultima_anotacao(s), "NF chegou por e-mail.")
         estados = [e["estado"] for e in services.etapas(s)]
-        self.assertEqual(estados[:4], ["concluido", "concluido", "concluido", "atual"])
+        self.assertEqual(estados[:3], ["concluido", "concluido", "atual"])
         # Vazio não passa.
         self.assertContains(self.client.post(url, {"valor": ""}, headers=modal), "Informe")
 
@@ -1470,9 +1469,11 @@ class EtapasTests(BaseCoffeeBreakTestCase):
         from . import views
 
         s = self.solicitacao
-        self.assertEqual(views._etapas_concluidas(s), set())
-        s.data_envio_ordem_servico = dt.date(2026, 9, 11)
+        # A OS sem pendências fecha a etapa 1.
         self.assertEqual(views._etapas_concluidas(s), {"pedido"})
+        s.local_entrega = ""
+        self.assertEqual(views._etapas_concluidas(s), set())
+        s.local_entrega = "1DP"
         self._completar_para_protocolo(s)
         self.assertEqual(views._etapas_concluidas(s), {"pedido", "nota"})
 
@@ -1730,8 +1731,13 @@ class VisualizadorDaOSTests(BaseCoffeeBreakTestCase):
         self.assertEqual(folha.status_code, 200)
         self.assertEqual(folha["X-Frame-Options"], "SAMEORIGIN")
         texto = folha.content.decode()
-        self.assertIn("ORDEM DE SERVIÇO 41/2026", texto)
+        self.assertIn(">ORDEM DE SERVIÇO</span>", texto)
+        self.assertIn(">41/2026</span>", texto)
         self.assertIn('data-doc-campo="cb_local"', texto)
+        # Tudo se edita: o texto do modelo é bloco, e há pontos de quebra.
+        self.assertIn('data-doc-bloco="cb_secretaria"', texto)
+        self.assertIn('data-doc-bloco="cb_rodape_endereco"', texto)
+        self.assertIn('data-doc-quebra="antes_assinatura"', texto)
         self.assertIn('data-doc-campo="cb_objeto"', texto)
         self.assertIn("Avenida Iguaçu, 470", texto)
 
@@ -1793,6 +1799,58 @@ class VisualizadorDaOSTests(BaseCoffeeBreakTestCase):
             content_type="application/json",
         )
         self.assertEqual(resposta.status_code, 403)
+
+    def test_texto_do_modelo_editado_vai_para_o_pdf(self):
+        import json
+
+        self.client.force_login(self.ascom)
+        s = self.criar_solicitacao(numero="41/2026", local_entrega="1DP", responsavel_recebimento="Ana")
+        url = self._url("bloco", s, "cb_rotulo_local")
+        resposta = self.client.patch(url, json.dumps({"valores": {"conteudo": "LOCAL DA ENTREGA:"}}), content_type="application/json")
+        self.assertEqual(resposta.status_code, 200, resposta.content)
+        quebra = self.client.patch(self._url("quebra", s, "antes_assinatura"), json.dumps({"ativa": True}), content_type="application/json")
+        self.assertEqual(quebra.status_code, 200, quebra.content)
+        contexto = documentos._contexto_os(s)
+        self.assertEqual(contexto["b"]["cb_rotulo_local"], "LOCAL DA ENTREGA:")
+        self.assertEqual(contexto["b"]["cb_titulo"], "ORDEM DE SERVIÇO")
+        self.assertIn("antes_assinatura", contexto["quebras"])
+        from django.template.loader import render_to_string
+
+        html = render_to_string("coffee_break/documentos/ordem_servico.html", {**contexto, "imagens": {}})
+        self.assertIn("LOCAL DA ENTREGA:", html)
+        self.assertIn('class="quebra"', html)
+
+    def test_numero_na_folha_segue_as_regras(self):
+        import json
+
+        self.client.force_login(self.ascom)
+        self.criar_solicitacao(numero="42/2026")
+        s = self.criar_solicitacao(numero="41/2026", local_entrega="1DP", responsavel_recebimento="Ana")
+        url = self._url("campo", s, "cb_numero")
+        versao = self.client.get(url).json()["versao"]
+        repetido = self.client.patch(url, json.dumps({"versao": versao, "valores": {"numero": "42"}}), content_type="application/json")
+        self.assertEqual(repetido.status_code, 400)
+        ok = self.client.patch(url, json.dumps({"versao": versao, "valores": {"numero": "45"}}), content_type="application/json")
+        self.assertEqual(ok.status_code, 200, ok.content)
+        s.refresh_from_db()
+        self.assertEqual(s.numero, "45/2026")
+
+    def test_cadastros_na_folha_sao_da_administracao(self):
+        import json
+
+        s = self.criar_solicitacao(numero="41/2026", local_entrega="1DP", responsavel_recebimento="Ana")
+        corpo = json.dumps({"valores": {"razao_social": "FAVO E MEL"}})
+        self.client.force_login(self.ascom)
+        self.assertNotIn('data-doc-campo="cb_fornecedor"', self.client.get(self._url("folha", s)).content.decode())
+        self.assertEqual(self.client.patch(self._url("campo", s, "cb_fornecedor"), corpo, content_type="application/json").status_code, 403)
+        self.client.force_login(self.admin_modulo)
+        self.assertIn('data-doc-campo="cb_fornecedor"', self.client.get(self._url("folha", s)).content.decode())
+        url = self._url("campo", s, "cb_fiscal")
+        versao = self.client.get(url).json()["versao"]
+        resposta = self.client.patch(url, json.dumps({"versao": versao, "valores": {"fiscal_responsavel": "Maria Souza"}}), content_type="application/json")
+        self.assertEqual(resposta.status_code, 200, resposta.content)
+        self.contrato.refresh_from_db()
+        self.assertEqual(self.contrato.fiscal_responsavel, "Maria Souza")
 
     def test_sem_o_modulo_nao_abre(self):
         s = self.criar_solicitacao(numero="41/2026")

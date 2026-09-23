@@ -61,14 +61,18 @@
   {% if previa %}<div class="folha"><div class="folha__area">{% endif %}
   <img class="timbre-brasao" src="{{ imagens.brasao }}" alt="">
   <div class="timbre-cabecalho">
+    {% block cabecalho_linhas %}
     <p>SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA</p>
     <p><b>POLÍCIA CIVIL DO PARANÁ</b></p>
     <p>ASSESSORIA DE COMUNICAÇÃO SOCIAL</p>
+    {% endblock %}
   </div>
   <img class="timbre-marca" src="{{ imagens.marca }}" alt="">
   <div class="timbre-rodape">
+    {% block rodape_linhas %}
     <p>Avenida Iguaçu, 470 – Rebouças – Curitiba/PR—CEP: 80.230-020</p>
     <p>Fone: (41) 3235-6477 – e-mail:&nbsp; comunicacao@pc.pr.gov.br</p>
+    {% endblock %}
   </div>
   {% block corpo %}{% endblock %}
   {% if previa %}</div><div class="folha__pagina">1</div></div>

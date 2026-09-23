@@ -16,7 +16,6 @@ from __future__ import annotations
 from django.utils import timezone
 
 from documentos.editor.blocos import blocos_do_tipo, quebras_do_tipo
-from documentos.services.types import DocumentoTipo
 
 # Dono dos blocos de um documento, pelo model: o ofício (ofício, justificativa
 # e o termo tirado do ofício), o termo do cadastro, a prestação (relatório
@@ -28,6 +27,7 @@ CAMPO_DO_MODELO = {
     "viagens_prestacoes.prestacaocontas": "prestacao",
     "viagens_ordens.ordemservico": "ordem_servico",
     "viagens_planos.planotrabalho": "plano_trabalho",
+    "coffee_break.solicitacaocoffeebreak": "coffee_break_solicitacao",
 }
 
 
@@ -40,7 +40,8 @@ def _filtro(tipo, objeto) -> dict:
     campo = _campo_do_dono(objeto)
     if campo is None:
         raise ValueError(f"Sem vínculo de bloco para {getattr(tipo, 'value', tipo)}")
-    return {"tipo_documento": DocumentoTipo(tipo).value, campo: objeto}
+    # Tipo de outro módulo (a OS do Coffee Break) não está em DocumentoTipo: vale o valor.
+    return {"tipo_documento": str(getattr(tipo, "value", tipo)), campo: objeto}
 
 
 def blocos_gravados(tipo, objeto):

@@ -649,10 +649,8 @@ def _etapas_concluidas(solicitacao):
     if solicitacao is None:
         return set()
     feitas = set()
-    if solicitacao.financeiro_iniciado or (
-        solicitacao.data_envio_ordem_servico
-        and not documentos.pendencias_ordem_servico(solicitacao)
-    ):
+    # A OS pronta (sem pendências) fecha a etapa 1.
+    if solicitacao.financeiro_iniciado or not documentos.pendencias_ordem_servico(solicitacao):
         feitas.add("pedido")
     if solicitacao.protocolo_pagamento or (
         solicitacao.numero_nota_fiscal
@@ -681,8 +679,6 @@ def _etapa_do_marco(solicitacao):
     """A tela onde se preenche o próximo marco do fluxo."""
     marco = services.proximo_marco(solicitacao)
     campo = marco["campo"] if marco else "data_envio_empresa"
-    if campo in ("data_envio_ordem_servico",):
-        return "editar"
     if campo == "numero_nota_fiscal":
         return "etapa_nota"
     return "etapa_protocolo"

@@ -1,42 +1,68 @@
-{% extends "documentos/pdf/base_institucional.html" %}{% load documento_tags %}{% comment %}
+{% load documento_tags %}{% comment %}
   Ordem de Serviço do Coffee Break no editor de documentos: a folha do modelo
   da OS 41/2026 (o mesmo texto de `coffee_break/documentos/ordem_servico.html`,
-  que gera o PDF), com os trechos que vêm da solicitação marcados para editar
-  na própria folha. Geometria e tipografia em `coffee_break_ordem_servico.css`.
-{% endcomment %}
-{% block titulo %}Ordem de Serviço {{ s.numero }}{% endblock %}
-{% block classe %} doc-cb-os{% endblock %}
+  que gera o PDF). Tudo se edita, como no ofício:
+  - `{% editavel %}`/`{% trecho %}`: dados da solicitação e dos cadastros
+    (fornecedor, contrato, lote), gravados no registro de origem;
+  - `{% bloco %}`: texto do modelo (cabeçalho, rótulos, rodapé), que vale só
+    para esta OS;
+  - `{% ponto_de_quebra %}`: onde se pode pôr uma quebra de página.
+  Mesma estrutura de `base_institucional.html` (.folha com cabeçalho, rodapé
+  e corpo), que o palco do editor pagina. Geometria em
+  `coffee_break_ordem_servico.css`.
+{% endcomment %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Ordem de Serviço {{ s.numero }}</title>
+  {% if css_inline %}<style>{{ css_inline|safe }}</style>{% endif %}
+</head>
+<body class="documento documento--{{ modo|default:'pdf' }} doc-cb-os">
+<div class="folha">
+  <header class="doc-cabecalho" id="doc-cabecalho">
+    <img class="doc-cabecalho__brasao" src="{{ imagens.brasao }}" alt="Brasão da Polícia Civil do Paraná">
+    {% bloco "cb_secretaria" classe="doc-cabecalho__secretaria" base=False %}
+    {% bloco "cb_orgao" classe="doc-cabecalho__orgao" base=False %}
+    {% bloco "cb_unidade" classe="doc-cabecalho__unidade" base=False %}
+  </header>
 
-{% block rodape %}
-  <p class="doc-cb-os__endereco">Avenida Iguaçu, 470 – Rebouças – Curitiba/PR—CEP: 80.230-020</p>
-  <p class="doc-cb-os__endereco">Fone: (41) 3235-6477 – e-mail:&nbsp; comunicacao@pc.pr.gov.br</p>
-{% endblock %}
+  <footer class="doc-rodape" id="doc-rodape">
+    <img class="doc-rodape__marca" src="{{ imagens.marca }}" alt="">
+    {% bloco "cb_rodape_endereco" classe="doc-cb-os__endereco" base=False %}
+    {% bloco "cb_rodape_contato" classe="doc-cb-os__endereco" base=False %}
+  </footer>
 
-{% block corpo %}
-  <p class="doc-cb-os__data">Curitiba, <span{% editavel "cb_data" %}>{{ data_extenso }}</span>.</p>
-  <h1 class="doc-cb-os__titulo">ORDEM DE SERVIÇO {% if s.numero %}{{ s.numero }}{% else %}<span class="doc-vazio">nº</span>{% endif %}</h1>
+  <main class="doc-corpo">
+    <p class="doc-cb-os__data">{% bloco "cb_cidade" elemento="span" base=False %}, <span{% editavel "cb_data" %}>{{ data_extenso }}</span>.</p>
+    <h1 class="doc-cb-os__titulo">{% bloco "cb_titulo" elemento="span" base=False %} {% trecho "cb_numero" %}{% if s.numero %}{{ s.numero }}{% else %}<span class="doc-vazio">nº</span>{% endif %}{% endtrecho %}</h1>
 
-  {# Na nova solicitação, fornecedor, contrato e empenho aparecem quando o município escolhe o lote. #}
-  <p class="doc-cb-os__fornecedor">{% if fornecedor %}{{ fornecedor.razao_social }}{% else %}<span class="doc-vazio">Fornecedor (sai do município do evento)</span>{% endif %}</p>
-  <p class="doc-cb-os__contrato">Contrato: {% if contrato %}{{ contrato.referencia_documental }}{% else %}<span class="doc-vazio">do lote</span>{% endif %}</p>
-  {% if lote and lote.empenho %}<p class="doc-cb-os__empenho">Empenho: {{ lote.empenho }}</p>{% endif %}
+    {# Na nova solicitação, fornecedor, contrato e empenho aparecem quando o município escolhe o lote. #}
+    <p class="doc-cb-os__fornecedor">{% if fornecedor %}{% trecho "cb_fornecedor" %}{{ fornecedor.razao_social }}{% endtrecho %}{% else %}<span class="doc-vazio">Fornecedor (sai do município do evento)</span>{% endif %}</p>
+    <p class="doc-cb-os__contrato">{% bloco "cb_rotulo_contrato" elemento="span" base=False %} {% if contrato %}{% trecho "cb_contrato" %}{{ contrato.referencia_documental }}{% endtrecho %}{% else %}<span class="doc-vazio">do lote</span>{% endif %}</p>
+    {% if lote and lote.empenho or lote and campos_editaveis.cb_empenho %}<p class="doc-cb-os__empenho">{% bloco "cb_rotulo_empenho" elemento="span" base=False %} {% trecho "cb_empenho" %}{{ lote.empenho }}{% if not lote.empenho %}{% vazio "Empenho" %}{% endif %}{% endtrecho %}</p>{% endif %}
 
-  <p class="doc-cb-os__objeto"><b>OBJETO:</b> {% trecho "cb_objeto" %}{{ s.descricao_evento }}{% endtrecho %}{% if not s.descricao_evento and not campos_editaveis %}<span class="doc-vazio">descrição do evento</span>{% endif %}</p>
-  <p class="doc-cb-os__detalhamento"><b>DETALHAMENTO DO PEDIDO:</b></p>
-  <p{% editavel "cb_detalhamento" classe="doc-cb-os__pedido" %}>{% if s.detalhamento_pedido or s.quantidade %}{{ s.detalhamento_efetivo|linhas }}{% else %}<span class="doc-vazio">Solicito coffee para: data, horário e quantidade</span>{% endif %}</p>
+    {% ponto_de_quebra "antes_objeto" %}
+    <p class="doc-cb-os__objeto"><b>{% bloco "cb_rotulo_objeto" elemento="span" base=False %}</b> {% trecho "cb_objeto" %}{{ s.descricao_evento }}{% endtrecho %}{% if not s.descricao_evento and not campos_editaveis %}<span class="doc-vazio">descrição do evento</span>{% endif %}</p>
+    <p class="doc-cb-os__detalhamento"><b>{% bloco "cb_rotulo_detalhamento" elemento="span" base=False %}</b></p>
+    <p{% editavel "cb_detalhamento" classe="doc-cb-os__pedido" %}>{% if s.detalhamento_pedido or s.quantidade %}{{ s.detalhamento_efetivo|linhas }}{% else %}<span class="doc-vazio">Solicito coffee para: data, horário e quantidade</span>{% endif %}</p>
 
-  <p class="doc-cb-os__local"><b>LOCAL DE ENTREGA:</b></p>
-  <p{% editavel "cb_local" classe="doc-cb-os__local-texto" %}>{{ s.local_entrega }}{% if not s.local_entrega %}{% if campos_editaveis %}{% vazio "Local de entrega" %}{% else %}<span class="doc-vazio">Local de entrega</span>{% endif %}{% endif %}</p>
+    {% ponto_de_quebra "antes_local" %}
+    <p class="doc-cb-os__local"><b>{% bloco "cb_rotulo_local" elemento="span" base=False %}</b></p>
+    <p{% editavel "cb_local" classe="doc-cb-os__local-texto" %}>{{ s.local_entrega }}{% if not s.local_entrega %}{% if campos_editaveis %}{% vazio "Local de entrega" %}{% else %}<span class="doc-vazio">Local de entrega</span>{% endif %}{% endif %}</p>
 
-  <p class="doc-cb-os__responsavel"><b>RESPONSÁVEL PELO RECEBIMENTO:</b> {% trecho "cb_responsavel" %}{{ s.responsavel_recebimento }}{% if not s.responsavel_recebimento %}{% if campos_editaveis %}{% vazio "Responsável" %}{% else %}<span class="doc-vazio">Responsável</span>{% endif %}{% endif %}{% endtrecho %}</p>
+    <p class="doc-cb-os__responsavel"><b>{% bloco "cb_rotulo_responsavel" elemento="span" base=False %}</b> {% trecho "cb_responsavel" %}{{ s.responsavel_recebimento }}{% if not s.responsavel_recebimento %}{% if campos_editaveis %}{% vazio "Responsável" %}{% else %}<span class="doc-vazio">Responsável</span>{% endif %}{% endif %}{% endtrecho %}</p>
 
-  <div class="doc-cb-os__assinatura">
-    <p>______________________________________________</p>
-    {% if contrato %}
-      <p><b>{{ contrato.fiscal_responsavel|upper }}</b></p>
-      <p>{{ contrato.cargo_fiscal }}</p>
-    {% else %}
-      <p><span class="doc-vazio">Fiscal do contrato</span></p>
-    {% endif %}
-  </div>
-{% endblock %}
+    {% ponto_de_quebra "antes_assinatura" %}
+    <div class="doc-cb-os__assinatura">
+      {% bloco "cb_linha_assinatura" base=False %}
+      {% if contrato %}
+        <p><b{% editavel "cb_fiscal" %}>{{ contrato.fiscal_responsavel|upper }}</b></p>
+        <p{% editavel "cb_cargo_fiscal" %}>{{ contrato.cargo_fiscal }}</p>
+      {% else %}
+        <p><span class="doc-vazio">Fiscal do contrato</span></p>
+      {% endif %}
+    </div>
+  </main>
+</div>
+</body>
+</html>
