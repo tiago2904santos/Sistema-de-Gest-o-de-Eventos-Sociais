@@ -108,6 +108,10 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
                     if nome in self.fields:
                         self.fields[nome].disabled = True
 
+    def clean_descricao_evento(self):
+        """Uma linha só: quebras de linha (de registros antigos) viram espaço."""
+        return " ".join((self.cleaned_data.get("descricao_evento") or "").split())
+
     def clean_numero(self):
         """ "41" vira "41/2026" (o ano do número atual ou o da solicitação).
 
