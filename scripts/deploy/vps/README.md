@@ -1,6 +1,8 @@
 # Subir o sistema no VPS (Ubuntu)
 
-Roteiro para pôr o sistema num servidor com HTTPS próprio.
+Roteiro para pôr o sistema num servidor com HTTPS próprio. Para as
+atualizações irem sozinhas a cada merge no `main`, veja
+`docs/DEPLOY_AUTOMATICO.md`.
 
 O VPS já hospeda o **GV legado**. Nada aqui encosta nele: o sistema novo tem
 diretório, banco, usuário de sistema, porta interna e bloco de nginx próprios.
