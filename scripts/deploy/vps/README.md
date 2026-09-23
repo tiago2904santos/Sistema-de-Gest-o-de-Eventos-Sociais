@@ -138,3 +138,30 @@ equivalente é um `pg_dump` no cron:
 
 **Não suba sem backup funcionando.** É a única coisa desta lista que não dá
 para consertar depois que faz falta.
+
+## Deploy automático (GitHub Actions)
+
+`.github/workflows/deploy.yml` roda o `atualizar.sh` por SSH toda vez que o CI
+passa na `main` (e à mão, em Actions > "Deploy no VPS" > Run workflow).
+Precisa, uma vez, de uma chave só para isso:
+
+```bash
+# no VPS
+ssh-keygen -t ed25519 -N '' -f ~/.ssh/deploy_github -C deploy-github
+cat ~/.ssh/deploy_github.pub >> ~/.ssh/authorized_keys
+cat ~/.ssh/deploy_github        # conteúdo vai no segredo VPS_SSH_KEY
+ssh-keyscan localhost | sed "s/^localhost/SEU_IP/"   # opcional: VPS_KNOWN_HOSTS
+```
+
+No GitHub, em Settings > Secrets and variables > Actions, crie `VPS_HOST`
+(o IP), `VPS_USER` (`root`) e `VPS_SSH_KEY`. Sem eles o job é pulado, não falha.
+
+## Prints das telas
+
+`scripts/prints/tirar_prints.py` entra no sistema com o Chromium do Playwright
+e salva um PNG por tela — útil para mostrar uma mudança sem abrir o sistema:
+
+```bash
+pip install playwright && playwright install chromium
+python scripts/prints/tirar_prints.py --usuario admin --senha ... /solicitacoes/
+```

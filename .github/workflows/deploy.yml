@@ -1,0 +1,79 @@
+name: Deploy no VPS
+
+# Publica no VPS depois que o CI passa na main. Também dá para disparar à mão
+# pela aba Actions ("Run workflow").
+#
+# Segredos do repositório (Settings > Secrets and variables > Actions):
+#   VPS_HOST         IP ou domínio do VPS
+#   VPS_USER         usuário do SSH (root, pelo roteiro de scripts/deploy/vps)
+#   VPS_SSH_KEY      chave privada cuja pública está no authorized_keys do VPS
+#   VPS_PORT         opcional; padrão 22
+#   VPS_KNOWN_HOSTS  opcional; saída de `ssh-keyscan SEU_IP`. Sem ele, a chave
+#                    do servidor é aceita na primeira conexão.
+#
+# Sem os segredos o job é pulado em vez de falhar.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Atualizar o VPS
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+
+    steps:
+      - name: Conferir segredos
+        id: segredos
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          if [ -z "$VPS_HOST" ] || [ -z "$VPS_SSH_KEY" ]; then
+            echo "::warning::Segredos VPS_HOST/VPS_SSH_KEY ausentes; deploy pulado."
+            echo "ok=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Preparar SSH
+        if: steps.segredos.outputs.ok == '1'
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          if [ -n "$VPS_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          fi
+
+      - name: Rodar atualizar.sh no VPS
+        if: steps.segredos.outputs.ok == '1'
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER || 'root' }}
+          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$VPS_PORT" \
+            -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
+            "$VPS_USER@$VPS_HOST" \
+            'bash /var/www/eventos-sociais/app/scripts/deploy/vps/atualizar.sh'
+
+      - name: Conferir que o site responde
+        if: steps.segredos.outputs.ok == '1'
+        run: |
+          curl -fsS -o /dev/null -w '%{http_code}\n' --retry 5 --retry-delay 3 \
+            https://eventos.gerenciadorviagens.tech/conta/entrar/
