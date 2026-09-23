@@ -119,12 +119,22 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
         como vieram; em branco, o sistema numera ao salvar.
         """
         numero = (self.cleaned_data.get("numero") or "").strip()
-        if not numero.isdigit():
+        if numero.isdigit():
+            sequencia = int(numero)
+            if sequencia < 1:
+                raise forms.ValidationError("O número da OS deve ser 1 ou mais.")
+            numero = services.formatar_numero(sequencia, self.ano_do_numero())
+        elif not services.partes_numero(numero):
             return numero
-        sequencia = int(numero)
-        if sequencia < 1:
-            raise forms.ValidationError("O número da OS deve ser 1 ou mais.")
-        return services.formatar_numero(sequencia, self.ano_do_numero())
+        # Uma numeração só para todos os lotes: o número não se repete.
+        # (Registro que já tinha este número fica como está, mesmo repetido na planilha.)
+        em_uso = None if numero == self.instance.numero else services.numero_em_uso(numero, excluir_pk=self.instance.pk)
+        if em_uso:
+            raise forms.ValidationError(
+                f"A OS {numero} já existe ({em_uso.descricao_evento[:60]}). "
+                f"A próxima livre é {services.proxima_sequencia(self.ano_do_numero())}."
+            )
+        return numero
 
     def ano_do_numero(self):
         """O ano que acompanha o número: o do número atual, ou o da data."""
@@ -199,9 +209,6 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
                 "na lista de um lote em Cadastros › Lotes.",
             )
             return
-        if self.instance.pk and lote.pk != self.instance.lote_id and "numero" not in self.changed_data:
-            # Mudou de lote: a numeração é do lote, então renumera.
-            dados["numero"] = ""
         self.instance.lote = lote
         self.lote_escolhido = lote
 

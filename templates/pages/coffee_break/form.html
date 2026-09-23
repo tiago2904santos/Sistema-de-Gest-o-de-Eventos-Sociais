@@ -73,11 +73,11 @@
             <div class="form-campo">
               <label class="form-label" for="id_numero">Nº da OS</label>
               <div class="ofc-numero">
-                <div class="form-controle-wrapper{% if erros.numero %} is-invalid{% endif %}"><input class="form-controle" type="number" min="1" step="1" inputmode="numeric" id="id_numero" name="numero" value="{{ valores.numero }}" placeholder="—" data-numero-os data-lote-atual="{{ lote_atual }}"{% if dados_base_bloqueados %} disabled{% endif %}{% if erros.numero %} aria-invalid="true" aria-describedby="id_numero_erro"{% endif %}></div>
+                <div class="form-controle-wrapper{% if erros.numero %} is-invalid{% endif %}"><input class="form-controle" type="number" min="1" step="1" inputmode="numeric" id="id_numero" name="numero" value="{{ valores.numero }}" placeholder="—"{% if dados_base_bloqueados %} disabled{% endif %}{% if erros.numero %} aria-invalid="true" aria-describedby="id_numero_erro"{% endif %}></div>
                 <span class="ofc-numero__ano">/ {{ numero_ano }}</span>
               </div>
               {% for erro in erros.numero %}<p class="form-erro" id="id_numero_erro">{{ erro }}</p>{% endfor %}
-              <p class="form-ajuda">{% if solicitacao %}Pode alterar.{% else %}Sai do lote do município; pode alterar.{% endif %}</p>
+              <p class="form-ajuda">{% if solicitacao %}Pode alterar.{% else %}A próxima da numeração; pode alterar.{% endif %}</p>
             </div>
           {% endif %}
           <input type="hidden" name="periodo_evento_texto" value="{{ valores.periodo_evento_texto }}">
@@ -160,4 +160,4 @@
   {% endif %}
 {% endblock %}
 
-{% block etapa_js %}{% include "documentos/editor/_recursos.html" %}<script src="{% estatico 'js/coffee-break-numero.js' %}" defer></script><script src="{% estatico 'js/coffee-break-documentos.js' %}" defer></script>{% endblock %}
+{% block etapa_js %}{% include "documentos/editor/_recursos.html" %}<script src="{% estatico 'js/coffee-break-documentos.js' %}" defer></script>{% endblock %}

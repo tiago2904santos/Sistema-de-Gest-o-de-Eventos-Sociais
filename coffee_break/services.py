@@ -89,8 +89,12 @@ def salvar_com_saldo(solicitacao):
         if not solicitacao.cancelada:
             validar_saldo(lote, solicitacao.quantidade, excluir_pk=solicitacao.pk)
         if not solicitacao.numero:
-            # Com o lote travado, dois pedidos simultâneos não pegam o mesmo número.
-            solicitacao.numero = proximo_numero(lote, solicitacao.data_solicitacao.year)
+            # A numeração é uma só para todos os lotes: trava a configuração
+            # (linha única) para dois pedidos simultâneos não pegarem o mesmo número.
+            from .models import ConfiguracaoCoffeeBreak
+
+            ConfiguracaoCoffeeBreak.objects.select_for_update().filter(pk=1).exists()
+            solicitacao.numero = proximo_numero(solicitacao.data_solicitacao.year)
         solicitacao.save()
     return solicitacao
 
@@ -286,19 +290,33 @@ def formatar_numero(sequencia, ano):
     return f"{sequencia:02d}/{ano}"
 
 
-def proxima_sequencia(lote, ano):
-    """A próxima sequência da OS no lote e no ano (a numeração é por lote)."""
+def proxima_sequencia(ano):
+    """A próxima sequência da OS no ano: uma numeração só, de todos os lotes
+    (1, 2, 3...). Vale a maior já usada + 1 — quem pula para 12 faz a
+    seguinte ser 13."""
+    from .models import SolicitacaoCoffeeBreak
+
     maior = 0
-    for numero in lote.solicitacoes.exclude(numero="").values_list("numero", flat=True):
+    for numero in SolicitacaoCoffeeBreak.objects.filter(numero__endswith=f"/{ano}").values_list("numero", flat=True):
         partes = partes_numero(numero)
         if partes and partes[1] == ano:
             maior = max(maior, partes[0])
     return maior + 1
 
 
-def proximo_numero(lote, ano):
-    """"NN/AAAA": a numeração corre por lote dentro do ano (a da OS)."""
-    return formatar_numero(proxima_sequencia(lote, ano), ano)
+def proximo_numero(ano):
+    """"NN/AAAA": a próxima OS do ano, na numeração única."""
+    return formatar_numero(proxima_sequencia(ano), ano)
+
+
+def numero_em_uso(numero, excluir_pk=None):
+    """A solicitação que já tem este número de OS (de qualquer lote), ou None."""
+    from .models import SolicitacaoCoffeeBreak
+
+    consulta = SolicitacaoCoffeeBreak.objects.filter(numero=numero)
+    if excluir_pk:
+        consulta = consulta.exclude(pk=excluir_pk)
+    return consulta.first()
 
 
 # ---------------------------------------------------------------------------

@@ -1014,9 +1014,18 @@ class LotePeloMunicipioTests(BaseCoffeeBreakTestCase):
         self.assertEqual(nova.municipio, self.curitiba)
         self.assertEqual(nova.numero, "08/2026")
 
-    def test_numeracao_e_por_lote_e_por_ano(self):
+    def test_numeracao_e_por_ano(self):
         self.criar_solicitacao(numero="40/2025")
-        self.assertEqual(services.proximo_numero(self.lote, 2026), "01/2026")
+        self.assertEqual(services.proximo_numero(2026), "01/2026")
+
+    def test_numeracao_unica_para_todos_os_lotes(self):
+        outro = LoteCoffeeBreak.objects.create(
+            contrato=self.contrato, numero=2, exercicio="2026", quantidade_total=100
+        )
+        self.criar_solicitacao(numero="10/2026")
+        self.criar_solicitacao(lote=outro, numero="12/2026")
+        # Vale a maior já usada + 1, de qualquer lote.
+        self.assertEqual(services.proximo_numero(2026), "13/2026")
 
     def test_municipio_fora_dos_lotes_sem_coordenadas_da_erro(self):
         longe = Municipio.objects.create(
@@ -1629,11 +1638,20 @@ class NumeroDaOSTests(BaseCoffeeBreakTestCase):
         self._post_nova(numero="")
         self.assertTrue(SolicitacaoCoffeeBreak.objects.filter(numero="05/2026").exists())
 
-    def test_municipio_traz_o_proximo_numero_do_lote(self):
+    def test_nova_ja_vem_com_o_proximo_numero(self):
         self.criar_solicitacao(numero="41/2026")
         resposta = self.client.get(reverse("coffee_break:nova"))
-        self.assertContains(resposta, 'data-proximo="42"')
+        self.assertContains(resposta, 'name="numero" value="42"')
         self.assertContains(resposta, "/ 2026")
+
+    def test_numero_repetido_de_outro_lote_da_erro(self):
+        outro = LoteCoffeeBreak.objects.create(
+            contrato=self.contrato, numero=2, exercicio="2026", quantidade_total=100
+        )
+        self.criar_solicitacao(lote=outro, numero="41/2026")
+        resposta = self._post_nova(numero="41")
+        self.assertContains(resposta, "A OS 41/2026 já existe")
+        self.assertEqual(SolicitacaoCoffeeBreak.objects.filter(numero="41/2026").count(), 1)
 
     def test_edicao_mostra_a_sequencia_e_nao_acusa_alteracao(self):
         s = self.criar_solicitacao(numero="41/2026", local_entrega="1DP", responsavel_recebimento="Ana")
