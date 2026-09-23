@@ -98,7 +98,7 @@
         {% if solicitacao %}
           {# O visualizador do documento de Viagens: o PDF da OS aberto no próprio bloco. #}
           <div class="ofc-docs cb-docs-gerados">
-            {% include "pages/viagens_oficios/_documento_inline.html" with d=doc_os menu_id="cb-menu-os" aberto=True %}
+            {% include "pages/coffee_break/_documento_inline.html" with d=doc_os menu_id="cb-menu-os" aberto=True %}
           </div>
         {% else %}
           <p class="pc-docs__nota">Ao salvar, a ordem de serviço fica pronta para gerar em PDF.</p>

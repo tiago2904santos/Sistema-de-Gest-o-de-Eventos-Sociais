@@ -34,6 +34,7 @@ urlpatterns = [
     path("solicitacoes/<int:pk>/protocolo/", views.etapa_protocolo, name="etapa_protocolo"),
     path("solicitacoes/<int:pk>/andamento/", views.registrar_andamento, name="andamento"),
     path("solicitacoes/<int:pk>/ordem-de-servico.pdf", views.ordem_servico, name="ordem_servico"),
+    path("solicitacoes/<int:pk>/ordem-de-servico/previa/", views.ordem_servico_previa, name="ordem_servico_previa"),
     path("solicitacoes/<int:pk>/oficio.pdf", views.oficio, name="oficio"),
     path("solicitacoes/<int:pk>/certifico.pdf", views.certifico, name="certifico"),
     path("solicitacoes/<int:pk>/protocolo.pdf", views.pacote_protocolo, name="pacote_protocolo"),

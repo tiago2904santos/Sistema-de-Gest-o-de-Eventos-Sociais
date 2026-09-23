@@ -1681,7 +1681,10 @@ class VisualizadorDaOSTests(BaseCoffeeBreakTestCase):
         url = reverse("coffee_break:ordem_servico", args=[s.pk])
         resposta = self.client.get(reverse("coffee_break:editar", args=[s.pk]))
         self.assertContains(resposta, "data-ofc-doc")
-        self.assertContains(resposta, f'data-src="{url}"')
+        # O quadro mostra a folha em HTML (abre em qualquer navegador); o menu leva ao PDF.
+        previa = reverse("coffee_break:ordem_servico_previa", args=[s.pk])
+        self.assertContains(resposta, f'data-src="{previa}"')
+        self.assertContains(resposta, f'href="{url}"')
         self.assertNotContains(resposta, 'id="sec-os"')
         # A OS sem pendência redireciona só quando falta dado; aqui vale o cabeçalho.
         with mock.patch.object(documentos, "ordem_servico_pdf", return_value=b"%PDF-1.7"):
@@ -1733,3 +1736,22 @@ class ImportarPlanilhaTelaTests(BaseCoffeeBreakTestCase):
     def test_operador_comum_nao_acessa(self):
         self.client.force_login(self.ascom)
         self.assertEqual(self.client.get(self.url).status_code, 403)
+
+
+class PreviaDaOSTests(BaseCoffeeBreakTestCase):
+    def test_previa_e_a_folha_em_html_e_pode_ser_embutida(self):
+        self.client.force_login(self.ascom)
+        s = self.criar_solicitacao(numero="41/2026", local_entrega="1DP", responsavel_recebimento="Ana")
+        resposta = self.client.get(reverse("coffee_break:ordem_servico_previa", args=[s.pk]))
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta["X-Frame-Options"], "SAMEORIGIN")
+        self.assertContains(resposta, 'class="folha"')
+        self.assertContains(resposta, "ORDEM DE SERVIÇO 41/2026")
+        self.assertContains(resposta, "/static/")  # imagens pelo endereço estático, não file://
+        self.assertNotContains(resposta, "file://")
+
+    def test_previa_com_pendencia_diz_o_que_falta(self):
+        self.client.force_login(self.ascom)
+        s = self.criar_solicitacao(numero="41/2026")
+        resposta = self.client.get(reverse("coffee_break:ordem_servico_previa", args=[s.pk]))
+        self.assertContains(resposta, "Informe o local de entrega.")

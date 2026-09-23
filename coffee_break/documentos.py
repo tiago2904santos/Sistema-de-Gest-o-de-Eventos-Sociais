@@ -42,6 +42,34 @@ def _imagens():
     }
 
 
+def _imagens_web():
+    """Os mesmos arquivos, pelo endereço estático (a tela não lê file://)."""
+    from django.templatetags.static import static
+
+    return {
+        "brasao": static("img/brasao-pcpr-timbre.png"),
+        "marca": static("img/marca-pcpr-timbre.png"),
+    }
+
+
+def _previa(template, contexto):
+    """A folha em HTML para o visualizador da tela: o mesmo modelo do PDF.
+
+    Não depende de leitor de PDF no navegador (há os que não mostram PDF
+    dentro de um quadro, como os de celular).
+    """
+    return render_to_string(template, {**contexto, "imagens": _imagens_web(), "previa": True})
+
+
+def ordem_servico_previa(solicitacao):
+    faltas = pendencias_ordem_servico(solicitacao)
+    if faltas:
+        raise ValidationError(faltas)
+    contexto = _contexto(solicitacao)
+    contexto["data_extenso"] = data_extenso(solicitacao.data_solicitacao)
+    return _previa("coffee_break/documentos/ordem_servico.html", contexto)
+
+
 def _pdf(template, contexto):
     try:
         from weasyprint import HTML
