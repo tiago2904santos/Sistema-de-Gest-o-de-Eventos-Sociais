@@ -74,11 +74,19 @@ jobs:
 
       - name: Rodar atualizar.sh na VPS
         if: steps.config.outputs.pronto == 'sim'
+        # A cópia do script na VPS chegou com fim de linha do Windows (CRLF) e
+        # o bash para em "set: pipefail\r: invalid option name". Tirar o \r
+        # numa cópia temporária roda o script do mesmo jeito com LF ou CRLF.
+        env:
+          COMANDO_REMOTO: >-
+            s=$(mktemp) &&
+            tr -d '\r' < /var/www/eventos-sociais/app/scripts/deploy/vps/atualizar.sh > "$s" &&
+            bash "$s"; r=$?; rm -f "$s"; exit $r
         run: |
           ssh -i ~/.ssh/deploy -p "${VPS_PORT:-22}" \
             -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
             "${VPS_USER:-root}@$VPS_HOST" \
-            bash /var/www/eventos-sociais/app/scripts/deploy/vps/atualizar.sh
+            "$COMANDO_REMOTO"
 
       - name: Limpar a chave
         if: always()
