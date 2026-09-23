@@ -12,6 +12,9 @@ sudo -u eventos pg_dump eventos_sociais > "$RAIZ/backups/pre-deploy-$(date +%F-%
 
 echo "== código"
 cd "$APP"
+# Mostra o que difere do repositório antes de puxar: se o pull recusar por
+# alteração local, o log já diz qual arquivo.
+sudo -u eventos git status --short | head -20
 sudo -u eventos git pull --ff-only
 
 echo "== dependências"

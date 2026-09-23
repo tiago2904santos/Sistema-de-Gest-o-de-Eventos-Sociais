@@ -48,6 +48,15 @@ jobs:
       VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
       VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
     steps:
+      # O script vai do repositório pela conexão SSH (bash -s), e não da cópia
+      # que está na VPS: essa cópia pode estar velha ou com quebras de linha
+      # do Windows (o primeiro deploy morreu em "set: pipefail\r").
+      - name: Baixar o script de deploy
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/deploy/vps
+          sparse-checkout-cone-mode: false
+
       - name: Conferir configuração
         id: config
         run: |
@@ -78,7 +87,7 @@ jobs:
           ssh -i ~/.ssh/deploy -p "${VPS_PORT:-22}" \
             -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
             "${VPS_USER:-root}@$VPS_HOST" \
-            bash /var/www/eventos-sociais/app/scripts/deploy/vps/atualizar.sh
+            'bash -s' < scripts/deploy/vps/atualizar.sh
 
       - name: Limpar a chave
         if: always()
