@@ -9,7 +9,11 @@ class CoffeeBreakConfig(AppConfig):
     def ready(self):
         from accounts.modulos import registrar_modulo
 
+        from .editor import registrar as registrar_editor
         from .permissions import CODIGO_MODULO
+
+        # A OS no editor de documentos de Viagens.
+        registrar_editor()
 
         # Cataloga o módulo no portal; o middleware protege o namespace.
         registrar_modulo(

@@ -25,8 +25,18 @@ NAMESPACES_MODULOS = {}
 MODULOS_PORTAL = {}
 
 
+# (namespace, tipo de documento) -> código do módulo. Rotas de um namespace
+# compartilhado (o editor de documentos) que, para um tipo, são de outro
+# módulo: a OS do Coffee Break no editor de Viagens.
+DOCUMENTOS_MODULOS = {}
+
+
 def registrar_namespace(namespace, codigo_modulo):
     NAMESPACES_MODULOS[namespace] = codigo_modulo
+
+
+def registrar_documento(namespace, tipo, codigo_modulo):
+    DOCUMENTOS_MODULOS[(namespace, tipo)] = codigo_modulo
 
 
 def registrar_modulo(
@@ -158,4 +168,7 @@ class AutorizacaoPorModuloMiddleware:
             rota = resolve(request.path_info)
         except Exception:
             return None
+        tipo = rota.kwargs.get("tipo")
+        if tipo and (rota.namespace, tipo) in DOCUMENTOS_MODULOS:
+            return DOCUMENTOS_MODULOS[(rota.namespace, tipo)]
         return NAMESPACES_MODULOS.get(rota.namespace)
