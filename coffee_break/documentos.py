@@ -64,18 +64,11 @@ def _previa(template, contexto):
 def _contexto_os(solicitacao):
     """A OS com o que se editou no editor de documentos: os textos do modelo
     reescritos (`b`, por chave) e as quebras de página."""
-    from documentos.services.document_blocks import conteudo_documental
+    from .editor import TipoCoffee, textos_do_documento
 
-    from .editor import TipoCoffee
-
-    documental = conteudo_documental(TipoCoffee.ORDEM_SERVICO, solicitacao)
     contexto = _contexto(solicitacao)
     contexto["data_extenso"] = data_extenso(solicitacao.data_solicitacao)
-    contexto["b"] = {
-        chave: bloco["padrao"] if bloco["conteudo"] is None else bloco["conteudo"]
-        for chave, bloco in documental["blocos"].items()
-    }
-    contexto["quebras"] = set(documental["quebras"])
+    contexto["b"], contexto["quebras"] = textos_do_documento(TipoCoffee.ORDEM_SERVICO, solicitacao)
     return contexto
 
 
@@ -126,10 +119,28 @@ def ordem_servico_pdf(solicitacao):
     return _pdf("coffee_break/documentos/ordem_servico.html", _contexto_os(solicitacao))
 
 
+def _sem_quebra(texto, trecho):
+    """O texto escapado, com `trecho` numa linha só (o Writer não quebra na
+    barra; o navegador quebraria)."""
+    from django.utils.html import escape
+    from django.utils.safestring import mark_safe
+
+    return mark_safe(escape(texto).replace(escape(trecho), f'<span class="inteiro">{escape(trecho)}</span>'))
+
+
+def pendencias_certifico(solicitacao):
+    return [] if solicitacao.numero_nota_fiscal.strip() else ["Informe o número da nota fiscal."]
+
+
 def certifico_pdf(solicitacao):
+    from .editor import TipoCoffee, textos_do_documento
+
     if not solicitacao.numero_nota_fiscal.strip():
         raise ValidationError(["Informe o número da nota fiscal antes do certifico."])
-    return _pdf("coffee_break/documentos/certifico.html", _contexto(solicitacao))
+    contexto = _contexto(solicitacao)
+    contexto["b"], contexto["quebras"] = textos_do_documento(TipoCoffee.CERTIFICO, solicitacao)
+    contexto["atesto_texto"] = _sem_quebra(contexto["b"]["cb_atesto_texto"], "executados/entregues")
+    return _pdf("coffee_break/documentos/certifico.html", contexto)
 
 
 def pendencias_oficio(solicitacao):
@@ -144,6 +155,7 @@ def pendencias_oficio(solicitacao):
 def oficio_pdf(solicitacao):
     from viagens_roteiros.services.valor_extenso import _numero_por_extenso
 
+    from .editor import TipoCoffee, textos_do_documento
     from .models import ConfiguracaoCoffeeBreak
 
     faltas = pendencias_oficio(solicitacao)
@@ -155,6 +167,7 @@ def oficio_pdf(solicitacao):
         solicitacao.data_oficio or timezone.localdate()
     )
     contexto["quantidade_extenso"] = _numero_por_extenso(solicitacao.quantidade)
+    contexto["b"], contexto["quebras"] = textos_do_documento(TipoCoffee.OFICIO, solicitacao)
     return _pdf("coffee_break/documentos/oficio.html", contexto)
 
 

@@ -23,6 +23,28 @@
   var alvos = dialogo.querySelector('[data-anexar-alvos]');
   var alvosLista = dialogo.querySelector('[data-anexar-alvos-lista]');
   var VAZIO = 'Nenhum documento escolhido';
+  // Textos do modal, para voltar a eles quando o link não pede outros.
+  var titulo = dialogo.querySelector('[data-anexar-titulo-alvo]');
+  var texto = dialogo.querySelector('[data-anexar-texto-alvo]');
+  var padrao = {
+    titulo: titulo ? titulo.textContent : '',
+    texto: texto ? texto.innerHTML : '',
+    acao: enviar.textContent,
+    remover: remover.textContent
+  };
+
+  function textosDo(link) {
+    if (titulo) titulo.textContent = link.getAttribute('data-anexar-titulo') || padrao.titulo;
+    if (texto) {
+      var proprio = link.getAttribute('data-anexar-texto');
+      if (proprio) texto.textContent = proprio; else texto.innerHTML = padrao.texto;
+      // O nome do documento mora dentro do texto padrão: reencontra.
+      nome = dialogo.querySelector('[data-anexar-nome]') || nome;
+    }
+    padrao.acaoAtual = link.getAttribute('data-anexar-acao') || padrao.acao;
+    enviar.textContent = padrao.acaoAtual;
+    remover.textContent = link.getAttribute('data-anexar-remover-rotulo') || padrao.remover;
+  }
 
   function mostrarErro(texto) {
     erro.textContent = texto || '';
@@ -50,7 +72,7 @@
   // Aponta o formulário para um documento: endereço, nome e se dá para remover o assinado.
   function escolher(alvo) {
     form.action = alvo.url;
-    nome.textContent = alvo.nome || 'este documento';
+    if (nome) nome.textContent = alvo.nome || 'este documento';
     remover.hidden = !alvo.atual;
   }
 
@@ -84,6 +106,7 @@
 
   function abrir(link) {
     form.reset();
+    textosDo(link);
     proximo.value = window.location.pathname + window.location.search;
     var opcoes = null;
     try { opcoes = JSON.parse(link.getAttribute('data-anexar-opcoes') || 'null'); } catch (e) { opcoes = null; }

@@ -309,6 +309,28 @@ def proximo_numero(ano):
     return formatar_numero(proxima_sequencia(ano), ano)
 
 
+def proxima_sequencia_oficio(ano):
+    """O próximo ofício do Coffee Break no ano: o maior já usado + 1."""
+    from .models import SolicitacaoCoffeeBreak
+
+    maior = 0
+    for numero in SolicitacaoCoffeeBreak.objects.filter(numero_oficio__endswith=f"/{ano}").values_list("numero_oficio", flat=True):
+        partes = partes_numero(numero)
+        if partes and partes[1] == ano:
+            maior = max(maior, partes[0])
+    return maior + 1
+
+
+def oficio_em_uso(numero, excluir_pk=None):
+    """A solicitação que já tem este número de ofício, ou None."""
+    from .models import SolicitacaoCoffeeBreak
+
+    consulta = SolicitacaoCoffeeBreak.objects.filter(numero_oficio=numero)
+    if excluir_pk:
+        consulta = consulta.exclude(pk=excluir_pk)
+    return consulta.first()
+
+
 def numero_em_uso(numero, excluir_pk=None):
     """A solicitação que já tem este número de OS (de qualquer lote), ou None."""
     from .models import SolicitacaoCoffeeBreak

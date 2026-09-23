@@ -1,0 +1,42 @@
+/* Certifico digital do Coffee Break no editor: a geometria medida no
+   certifico do processo 26.617.058-0 (a mesma de
+   coffee_break/documentos/certifico.html, que gera o PDF), em pontos a partir
+   do alto da folha. A4, margens de 199,31 pt em cima, 2,5 cm dos lados e
+   77 pt embaixo. Brasão visível de 22,7 a 78,5 pt; cabeçalho em Arial 12
+   cinza com as bases a 112,5/126,3/140,1 pt; marca a 788,5 pt e o endereço em
+   Arial 10. */
+
+.doc-cb-certifico {
+  font-family: Arial, "Liberation Sans", Helvetica, sans-serif;
+  font-size: 12pt;
+  line-height: 13.8pt;
+  color: #000;
+}
+.doc-cb-certifico p { margin: 0; }
+
+.documento--editor.doc-cb-certifico .folha { width: 595.28pt; min-height: 841.89pt; padding: 199.31pt 70.8pt 77pt 70.8pt; }
+.documento--editor.doc-cb-certifico .doc-cabecalho,
+.documento--editor.doc-cb-certifico .doc-rodape { left: 0; right: 0; justify-content: flex-start; box-sizing: border-box; }
+
+/* Cabeçalho: brasão a 22,7 pt; a primeira linha começa a 101,44 pt (base a 112,5). */
+.documento--editor.doc-cb-certifico .doc-cabecalho { top: 0; height: 199.31pt; padding-top: 22.7pt; }
+.doc-cb-certifico .doc-cabecalho { line-height: 13.8pt; color: #595959; }
+.doc-cb-certifico .doc-cabecalho__brasao { width: 42.4pt; height: 55.75pt; margin: 0 auto 22.99pt; }
+.doc-cb-certifico .doc-cabecalho__secretaria,
+.doc-cb-certifico .doc-cabecalho__orgao,
+.doc-cb-certifico .doc-cabecalho__unidade { margin: 0; font-size: 12pt; font-weight: 400; text-transform: none; text-align: center; }
+.doc-cb-certifico .doc-cabecalho__orgao { font-weight: 700; }
+
+/* Rodapé: a marca a 788,5 pt; o endereço logo abaixo. */
+.documento--editor.doc-cb-certifico .doc-rodape { top: auto; bottom: 0; height: 53.39pt; }
+.doc-cb-certifico .doc-rodape { color: #595959; }
+.doc-cb-certifico .doc-rodape__marca { width: 56pt; height: 15.7pt; margin: 0 auto 1.1pt; }
+.doc-cb-certifico .doc-cb__endereco { margin: 0; font-size: 10pt; line-height: 11.5pt; text-align: center; }
+
+/* Corpo: título em Arial 18, a nota em Arial 11 e o atesto numa caixa de 158,6 pt. */
+.doc-cb-certifico__titulo { margin: 0; font-size: 18pt; line-height: 20.7pt; font-weight: 700; text-align: center; }
+.doc-cb-certifico p.doc-cb-certifico__nota { margin-top: 50.87pt; font-size: 11pt; line-height: 17.45pt; text-align: justify; }
+.doc-cb-certifico__atesto { margin-top: 43.68pt; min-height: 158.6pt; box-sizing: border-box; border: 0.5pt solid #000; padding: 30.1pt 2.4pt 0 2.4pt; page-break-inside: avoid; }
+.doc-cb-certifico__atesto-texto { font-size: 10.5pt; line-height: 12.1pt; text-align: justify; }
+.doc-cb-certifico__quem { margin-top: 41.83pt; text-align: center; font-size: 11pt; line-height: 14.5pt; }
+.doc-cb-certifico__quem i { color: #7f7f7f; }

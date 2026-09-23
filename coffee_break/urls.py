@@ -42,6 +42,7 @@ urlpatterns = [
     path("solicitacoes/<int:pk>/protocolo.pdf", views.pacote_protocolo, name="pacote_protocolo"),
     path("solicitacoes/<int:pk>/protocolo.zip", views.pacote_protocolo_zip, name="pacote_protocolo_zip"),
     path("solicitacoes/<int:pk>/nota-fiscal/", views.nota_fiscal, name="nota_fiscal"),
+    path("solicitacoes/<int:pk>/nota-fiscal/anexar/", views.anexar_nota, name="anexar_nota"),
     path("certidoes/", views.lista_certidoes, name="certidoes"),
     path("certidoes/<int:pk>/arquivo/", views.certidao_arquivo, name="certidao_arquivo"),
     path(
