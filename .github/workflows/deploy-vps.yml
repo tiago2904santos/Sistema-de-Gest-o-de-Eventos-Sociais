@@ -48,14 +48,12 @@ jobs:
       VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
       VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
     steps:
-      # O script vai do repositório pela conexão SSH (bash -s), e não da cópia
-      # que está na VPS: essa cópia pode estar velha ou com quebras de linha
-      # do Windows (o primeiro deploy morreu em "set: pipefail\r").
-      - name: Baixar o script de deploy
+      # O código vai do repositório para o VPS pela conexão SSH — tanto o
+      # pacote do sistema quanto o próprio atualizar.sh (bash -s). A pasta do
+      # VPS não é um clone do Git (foi copiada à mão) e a cópia do script lá
+      # tinha quebras de linha do Windows.
+      - name: Baixar o código
         uses: actions/checkout@v4
-        with:
-          sparse-checkout: scripts/deploy/vps
-          sparse-checkout-cone-mode: false
 
       - name: Conferir configuração
         id: config
@@ -81,13 +79,21 @@ jobs:
           fi
           chmod 600 ~/.ssh/known_hosts
 
+      - name: Enviar o código para a VPS
+        if: steps.config.outputs.pronto == 'sim'
+        run: |
+          # Só os arquivos versionados: .env, media e banco nunca saem daqui.
+          git archive --format=tar.gz HEAD | ssh -i ~/.ssh/deploy -p "${VPS_PORT:-22}" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
+            "${VPS_USER:-root}@$VPS_HOST" 'cat > /tmp/eventos-sociais-codigo.tgz'
+
       - name: Rodar atualizar.sh na VPS
         if: steps.config.outputs.pronto == 'sim'
         run: |
           ssh -i ~/.ssh/deploy -p "${VPS_PORT:-22}" \
             -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
             "${VPS_USER:-root}@$VPS_HOST" \
-            'bash -s' < scripts/deploy/vps/atualizar.sh
+            'bash -s -- /tmp/eventos-sociais-codigo.tgz' < scripts/deploy/vps/atualizar.sh
 
       - name: Limpar a chave
         if: always()
