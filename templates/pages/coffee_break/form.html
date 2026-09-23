@@ -101,7 +101,10 @@
             {% include "pages/coffee_break/_documento_inline.html" with d=doc_os menu_id="cb-menu-os" aberto=True %}
           </div>
         {% else %}
-          <p class="pc-docs__nota">Ao salvar, a ordem de serviço fica pronta para gerar em PDF.</p>
+          {# A OS já abre na nova solicitação e acompanha o que se preenche acima. #}
+          <div class="ofc-docs cb-docs-gerados" data-cb-os-nova>
+            {% include "pages/coffee_break/_documento_inline.html" with d=doc_os_nova menu_id="cb-menu-os" aberto=True %}
+          </div>
         {% endif %}
 
         <div class="frm-acoes-fim">

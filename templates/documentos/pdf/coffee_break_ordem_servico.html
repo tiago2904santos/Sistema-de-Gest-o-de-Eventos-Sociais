@@ -14,24 +14,29 @@
 
 {% block corpo %}
   <p class="doc-cb-os__data">Curitiba, <span{% editavel "cb_data" %}>{{ data_extenso }}</span>.</p>
-  <h1 class="doc-cb-os__titulo">ORDEM DE SERVIÇO {{ s.numero }}</h1>
+  <h1 class="doc-cb-os__titulo">ORDEM DE SERVIÇO {% if s.numero %}{{ s.numero }}{% else %}<span class="doc-vazio">nº</span>{% endif %}</h1>
 
-  <p class="doc-cb-os__fornecedor">{{ fornecedor.razao_social }}</p>
-  <p class="doc-cb-os__contrato">Contrato: {{ contrato.referencia_documental }}</p>
-  {% if lote.empenho %}<p class="doc-cb-os__empenho">Empenho: {{ lote.empenho }}</p>{% endif %}
+  {# Na nova solicitação, fornecedor, contrato e empenho aparecem quando o município escolhe o lote. #}
+  <p class="doc-cb-os__fornecedor">{% if fornecedor %}{{ fornecedor.razao_social }}{% else %}<span class="doc-vazio">Fornecedor (sai do município do evento)</span>{% endif %}</p>
+  <p class="doc-cb-os__contrato">Contrato: {% if contrato %}{{ contrato.referencia_documental }}{% else %}<span class="doc-vazio">do lote</span>{% endif %}</p>
+  {% if lote and lote.empenho %}<p class="doc-cb-os__empenho">Empenho: {{ lote.empenho }}</p>{% endif %}
 
-  <p class="doc-cb-os__objeto"><b>OBJETO:</b> {% trecho "cb_objeto" %}{{ s.descricao_evento }}{% endtrecho %}</p>
+  <p class="doc-cb-os__objeto"><b>OBJETO:</b> {% trecho "cb_objeto" %}{{ s.descricao_evento }}{% endtrecho %}{% if not s.descricao_evento and not campos_editaveis %}<span class="doc-vazio">descrição do evento</span>{% endif %}</p>
   <p class="doc-cb-os__detalhamento"><b>DETALHAMENTO DO PEDIDO:</b></p>
-  <p{% editavel "cb_detalhamento" classe="doc-cb-os__pedido" %}>{{ s.detalhamento_efetivo|linhas }}</p>
+  <p{% editavel "cb_detalhamento" classe="doc-cb-os__pedido" %}>{% if s.detalhamento_pedido or s.quantidade %}{{ s.detalhamento_efetivo|linhas }}{% else %}<span class="doc-vazio">Solicito coffee para: data, horário e quantidade</span>{% endif %}</p>
 
   <p class="doc-cb-os__local"><b>LOCAL DE ENTREGA:</b></p>
-  <p{% editavel "cb_local" classe="doc-cb-os__local-texto" %}>{{ s.local_entrega }}{% if not s.local_entrega %}{% vazio "Local de entrega" %}{% endif %}</p>
+  <p{% editavel "cb_local" classe="doc-cb-os__local-texto" %}>{{ s.local_entrega }}{% if not s.local_entrega %}{% if campos_editaveis %}{% vazio "Local de entrega" %}{% else %}<span class="doc-vazio">Local de entrega</span>{% endif %}{% endif %}</p>
 
-  <p class="doc-cb-os__responsavel"><b>RESPONSÁVEL PELO RECEBIMENTO:</b> {% trecho "cb_responsavel" %}{{ s.responsavel_recebimento }}{% if not s.responsavel_recebimento %}{% vazio "Responsável" %}{% endif %}{% endtrecho %}</p>
+  <p class="doc-cb-os__responsavel"><b>RESPONSÁVEL PELO RECEBIMENTO:</b> {% trecho "cb_responsavel" %}{{ s.responsavel_recebimento }}{% if not s.responsavel_recebimento %}{% if campos_editaveis %}{% vazio "Responsável" %}{% else %}<span class="doc-vazio">Responsável</span>{% endif %}{% endif %}{% endtrecho %}</p>
 
   <div class="doc-cb-os__assinatura">
     <p>______________________________________________</p>
-    <p><b>{{ contrato.fiscal_responsavel|upper }}</b></p>
-    <p>{{ contrato.cargo_fiscal }}</p>
+    {% if contrato %}
+      <p><b>{{ contrato.fiscal_responsavel|upper }}</b></p>
+      <p>{{ contrato.cargo_fiscal }}</p>
+    {% else %}
+      <p><span class="doc-vazio">Fiscal do contrato</span></p>
+    {% endif %}
   </div>
 {% endblock %}

@@ -1783,6 +1783,43 @@ class VisualizadorDaOSTests(BaseCoffeeBreakTestCase):
         self.assertEqual(self.client.get(self._url("folha", s)).status_code, 403)
 
 
+class OSDaNovaSolicitacaoTests(BaseCoffeeBreakTestCase):
+    """A OS abre já na nova solicitação e acompanha o formulário, sem gravar."""
+
+    def test_nova_solicitacao_abre_o_editor_da_os(self):
+        self.client.force_login(self.ascom)
+        resposta = self.client.get(reverse("coffee_break:nova"))
+        self.assertContains(resposta, f'data-de-embutir="{reverse("coffee_break:nova_os_embutido")}"')
+        self.assertContains(resposta, "data-cb-os-nova")
+        editor = self.client.get(reverse("coffee_break:nova_os_embutido"))
+        self.assertContains(editor, "O PDF ainda não pode ser emitido.")
+        self.assertContains(editor, reverse("coffee_break:nova_os_folha"))
+
+    def test_folha_acompanha_o_formulario_sem_gravar(self):
+        self.client.force_login(self.ascom)
+        antes = SolicitacaoCoffeeBreak.objects.count()
+        vazia = self.client.get(reverse("coffee_break:nova_os_folha"))
+        self.assertEqual(vazia.status_code, 200)
+        self.assertNotContains(vazia, "None")
+        folha = self.client.get(reverse("coffee_break:nova_os_folha"), {
+            "data_solicitacao": "2026-08-01", "descricao_evento": "Palestra  na 1DP",
+            "municipio": self.curitiba.pk, "quantidade": "40", "data_inicio_evento": "2026-10-01",
+            "horario_evento": "09:30", "local_entrega": "Auditório",
+        })
+        self.assertEqual(folha["X-Frame-Options"], "SAMEORIGIN")
+        texto = folha.content.decode()
+        self.assertIn("ORDEM DE SERVIÇO 01/2026", texto)
+        self.assertIn("PADARIA E CONFEITARIA FAVO E MEL LTDA", texto)
+        self.assertIn("Palestra na 1DP", texto)
+        self.assertIn("Dia 01/10 às 9h30 p/ 40 pessoas.", texto)
+        self.assertIn("Auditório", texto)
+        self.assertEqual(SolicitacaoCoffeeBreak.objects.count(), antes)
+
+    def test_sem_o_modulo_nao_abre(self):
+        self.client.force_login(self.sem_modulo)
+        self.assertEqual(self.client.get(reverse("coffee_break:nova_os_folha")).status_code, 403)
+
+
 class ImportarPlanilhaTelaTests(BaseCoffeeBreakTestCase):
     """A planilha pelo navegador: simula sem gravar, confirma e grava."""
 

@@ -139,21 +139,7 @@ class VinculoCoffeeOS(VinculoBase):
         return versao_da_solicitacao(solicitacao)
 
     def contexto(self, solicitacao, *, modo, campos_editaveis):
-        from django.templatetags.static import static
-
-        from documentos.services.document_context import _do_editor
-
-        from .documentos import _contexto, data_extenso
-
-        contexto = _contexto(solicitacao)
-        contexto["data_extenso"] = data_extenso(solicitacao.data_solicitacao)
-        return {
-            **contexto,
-            "institucional": {"nome_orgao": "POLÍCIA CIVIL DO PARANÁ", "unidade_cabecalho": "ASSESSORIA DE COMUNICAÇÃO SOCIAL"},
-            "imagens": {"brasao": static("img/brasao-pcpr-timbre.png"), "marca": static("img/marca-pcpr-timbre.png")},
-            **_do_editor(self.tipo, {}, campos_editaveis, None),
-            "modo": modo,
-        }
+        return contexto_da_folha(solicitacao, modo=modo, campos_editaveis=campos_editaveis)
 
     def rotulo(self, solicitacao):
         return f"Ordem de Serviço {solicitacao.numero}".strip()
@@ -183,6 +169,53 @@ class VinculoCoffeeOS(VinculoBase):
 
     def historico(self, solicitacao):
         return _historico([("coffee_break.solicitacaocoffeebreak", [solicitacao.pk])])
+
+
+def contexto_da_folha(solicitacao, *, modo="editor", campos_editaveis=None):
+    """O que a folha da OS recebe; aceita solicitação ainda não salva (a nova
+    solicitação: sem lote enquanto o município não foi escolhido)."""
+    from django.templatetags.static import static
+    from django.utils import timezone
+
+    from documentos.services.document_context import _do_editor
+
+    from .documentos import data_extenso
+
+    lote = solicitacao.lote if solicitacao.lote_id else None
+    contrato = lote.contrato if lote else None
+    return {
+        "s": solicitacao,
+        "lote": lote,
+        "contrato": contrato,
+        "fornecedor": contrato.fornecedor if contrato else None,
+        "data_extenso": data_extenso(solicitacao.data_solicitacao or timezone.localdate()),
+        "institucional": {"nome_orgao": "POLÍCIA CIVIL DO PARANÁ", "unidade_cabecalho": "ASSESSORIA DE COMUNICAÇÃO SOCIAL"},
+        "imagens": {"brasao": static("img/brasao-pcpr-timbre.png"), "marca": static("img/marca-pcpr-timbre.png")},
+        **_do_editor(TipoCoffee.ORDEM_SERVICO, {}, campos_editaveis, None),
+        "modo": modo,
+    }
+
+
+def folha_da_nova(dados):
+    """A folha da OS de uma solicitação que ainda está sendo preenchida: o
+    formulário da nova solicitação, com os valores digitados, sem gravar."""
+    from documentos.services.pdf_renderer import renderizar_html
+
+    from . import services
+    from .forms import PedidoCoffeeBreakForm
+
+    form = PedidoCoffeeBreakForm(dados)
+    form.is_valid()  # só para montar a instância; erros não impedem a prévia
+    solicitacao = form.instance
+    for nome in ("descricao_evento", "local_entrega", "responsavel_recebimento", "detalhamento_pedido"):
+        if not getattr(solicitacao, nome, "") and dados.get(nome):
+            setattr(solicitacao, nome, " ".join(str(dados.get(nome)).split()) if nome != "detalhamento_pedido" else dados.get(nome).strip())
+    if solicitacao.lote_id and not solicitacao.numero:
+        from django.utils import timezone
+
+        ano = (solicitacao.data_solicitacao or timezone.localdate()).year
+        solicitacao.numero = services.proximo_numero(solicitacao.lote, ano)
+    return renderizar_html(TipoCoffee.ORDEM_SERVICO, contexto_da_folha(solicitacao), modo="editor")
 
 
 def registrar():
