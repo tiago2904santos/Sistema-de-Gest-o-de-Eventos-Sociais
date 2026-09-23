@@ -2530,6 +2530,11 @@ textarea.form-controle.cb-caixa-copiar__texto{width:100%;min-height:0;resize:ver
 .cb-pagamento{margin-bottom:0}
 @container (max-width:900px){.cb-copiaveis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @container (max-width:560px){.cb-copiaveis{grid-template-columns:minmax(0,1fr)}.cb-anexo__acoes{flex-wrap:wrap}.pc-doc .cb-doc__acoes{width:100%}}
+.cb-importar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px}
+.cb-importar .form-campo{flex:1 1 320px;margin:0}
+.cb-avisos{margin-top:12px;font-size:13px}
+.cb-avisos summary{cursor:pointer;font-weight:600;color:var(--n-800)}
+.cb-avisos ul{margin:6px 0 0;padding-left:20px;color:var(--n-600)}
 /* Coffee Break: certidões dos fornecedores. */
 .cb-cnpj{margin-left:8px;font-size:12px;font-weight:400;color:var(--n-500)}
 .cb-certidoes{list-style:none;margin:0;padding:0}

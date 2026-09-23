@@ -1687,3 +1687,49 @@ class VisualizadorDaOSTests(BaseCoffeeBreakTestCase):
         with mock.patch.object(documentos, "ordem_servico_pdf", return_value=b"%PDF-1.7"):
             pdf = self.client.get(url)
         self.assertEqual(pdf["X-Frame-Options"], "SAMEORIGIN")
+
+
+class ImportarPlanilhaTelaTests(BaseCoffeeBreakTestCase):
+    """A planilha pelo navegador: simula sem gravar, confirma e grava."""
+
+    def setUp(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.client.force_login(self.admin_modulo)
+        saida = io.BytesIO()
+        _planilha_de_teste().save(saida)
+        self.planilha = lambda: SimpleUploadedFile(
+            "CONTROLE COFFE ASCOM.xlsx", saida.getvalue(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        self.url = reverse("coffee_break:importar_planilha")
+
+    def test_simula_sem_gravar_e_depois_importa(self):
+        antes = SolicitacaoCoffeeBreak.objects.count()
+        resposta = self.client.post(self.url, {"acao": "simular", "planilha": self.planilha()})
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Resultado da simulação")
+        self.assertContains(resposta, "Importar agora")
+        self.assertEqual(SolicitacaoCoffeeBreak.objects.count(), antes)
+
+        resposta = self.client.post(self.url, {"acao": "importar"})
+        self.assertContains(resposta, "Importação feita")
+        self.assertGreater(SolicitacaoCoffeeBreak.objects.count(), antes)
+        # O arquivo temporário não fica para trás.
+        self.assertNotIn("coffee_importacao", self.client.session)
+
+    def test_importar_sem_simular_volta_com_aviso(self):
+        resposta = self.client.post(self.url, {"acao": "importar"})
+        self.assertRedirects(resposta, self.url)
+
+    def test_so_aceita_xlsx(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        resposta = self.client.post(
+            self.url, {"acao": "simular", "planilha": SimpleUploadedFile("dados.csv", b"a;b")}
+        )
+        self.assertRedirects(resposta, self.url)
+
+    def test_operador_comum_nao_acessa(self):
+        self.client.force_login(self.ascom)
+        self.assertEqual(self.client.get(self.url).status_code, 403)
