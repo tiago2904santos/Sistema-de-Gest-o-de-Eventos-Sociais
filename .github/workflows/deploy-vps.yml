@@ -92,3 +92,9 @@ jobs:
       - name: Limpar a chave
         if: always()
         run: rm -f ~/.ssh/deploy
+
+      - name: Conferir que o site responde
+        if: steps.config.outputs.pronto == 'sim'
+        run: |
+          curl -fsS -o /dev/null -w '%{http_code}\n' --retry 5 --retry-delay 3 \
+            https://eventos.gerenciadorviagens.tech/conta/entrar/
