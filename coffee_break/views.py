@@ -822,6 +822,11 @@ def nova_solicitacao(request):
     else:
         form = PedidoCoffeeBreakForm()
     contexto = _contexto_formulario(request, form)
+    # A OS abre já na nova solicitação, no editor de documentos, e acompanha o preenchimento.
+    contexto["doc_os_nova"] = {
+        "titulo": "Ordem de serviço",
+        "embutido": {"id": "documento-coffee-os-nova", "url": reverse("coffee_break:nova_os_embutido")},
+    }
     contexto["titulo_pagina"] = "Nova Solicitação de Coffee Break"
     contexto["breadcrumb"] = _breadcrumb(
         {"label": "Solicitações", "url": reverse("coffee_break:solicitacoes")},
@@ -1289,6 +1294,35 @@ def ordem_servico(request, pk):
     return _pdf_ou_volta(
         request, _solicitacao_documental(pk), documentos.ordem_servico_pdf, "Ordem de Servico"
     )
+
+
+@acesso_ao_modulo
+def nova_os_embutido(request):
+    """O editor de documentos de Viagens na nova solicitação: a mesma barra e
+    a folha da OS, que acompanha o formulário enquanto se preenche. Editar na
+    folha e imprimir vêm depois de salvar (a OS ainda não existe)."""
+    doc = {
+        "tipo": CHAVE_OS,
+        "rotulo": "Ordem de serviço",
+        "url_pdf": "",
+        "pode_emitir": False,
+        "pode_editar": False,
+        "pendencias": ["Salve a solicitação para emitir a OS em PDF e editar o texto na própria folha."],
+        "historico": [],
+        "url_folha": reverse("coffee_break:nova_os_folha"),
+    }
+    return render(request, "documentos/editor/embutido.html", {"doc": doc})
+
+
+@xframe_options_sameorigin
+@acesso_ao_modulo
+def nova_os_folha(request):
+    """A folha da OS com o que está no formulário da nova solicitação (GET), sem gravar."""
+    from .editor import folha_da_nova
+
+    resposta = HttpResponse(folha_da_nova(request.GET))
+    resposta["Cache-Control"] = "no-store"
+    return resposta
 
 
 @xframe_options_sameorigin
