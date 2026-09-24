@@ -398,9 +398,12 @@ class WorkflowTests(BaseSolicitacaoTestCase):
         self.assertEqual(item_alfa.quantidade_servidores, 3)
         self.assertEqual(solicitacao.quantidade_servidores, 7)
         registro = solicitacao.historico.get(acao=AcaoHistorico.AJUSTE_DG)
-        self.assertIn("Equipe Alfa: 5 → 3", registro.observacao)
+        self.assertIn(
+            {"campo": "Servidores — Equipe Alfa", "antes": "5", "depois": "3"},
+            registro.alteracoes,
+        )
         # A equipe aceita sem mudança não entra no registro.
-        self.assertNotIn("IIPR", registro.observacao)
+        self.assertNotIn("IIPR", str(registro.alteracoes))
 
     def test_despacho_sem_ajuste_nao_registra_ajuste(self):
         solicitacao = self.solicitacao_completa()
@@ -536,7 +539,7 @@ class WorkflowTests(BaseSolicitacaoTestCase):
         services.devolver(solicitacao, self.gestor, "Ajustar equipe.")
         etapas = services.montar_timeline(solicitacao)
         self.assertEqual(etapas[0]["estado"], "atual")
-        self.assertIn("Devolvida", etapas[0]["subtitulo"])
+        self.assertIn("correção", etapas[0]["subtitulo"])
 
     def test_historico_registrado_nas_transicoes(self):
         solicitacao = self.solicitacao_completa()
@@ -966,7 +969,11 @@ class ViewsTests(BaseSolicitacaoTestCase):
         resposta = self.client.get(
             reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
-        self.assertContains(resposta, "Salvar ajustes")
+        self.assertContains(resposta, "Salvar servidores")
+        # A quantidade é editada na própria linha da equipe, pelo form do despacho.
+        self.assertContains(
+            resposta, f'name="quantidade_dg_{self.equipe.pk}" form="form-despacho"'
+        )
 
         resposta = self.client.post(
             reverse("solicitacoes:despachar", args=[solicitacao.pk]),
@@ -1014,7 +1021,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         resposta = self.client.get(
             reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
-        self.assertContains(resposta, "Confirmar atendimento")
+        self.assertContains(resposta, "Marcar como atendida")
         self.assertContains(resposta, "Encerramento do evento")
 
         # Outro usuário não pode confirmar pelo criador.
@@ -1071,7 +1078,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
         )
         self.assertEqual(resposta.context["pagina"].paginator.count, 1)
         self.assertContains(resposta, "Deferidas")
-        self.assertContains(resposta, "<b>Confirmar atendimento</b>", html=False)
+        self.assertContains(resposta, "<b>Marcar como atendida</b>", html=False)
 
     def test_pagina_do_dg_traz_o_despacho_na_tela_do_registro(self):
         """A DG despacha na mesma tela do registro, com os dados travados."""
@@ -1274,7 +1281,7 @@ class ViewsTests(BaseSolicitacaoTestCase):
             reverse("solicitacoes:editar", args=[solicitacao.pk])
         )
 
-        self.assertContains(resposta, "Devolvida para ajuste pela Diretoria-Geral")
+        self.assertContains(resposta, "Enviada para correção pela Diretoria-Geral")
         self.assertContains(resposta, "Detalhe o local.")
         # Tela única: o usuário já está no formulário e reenvia daqui mesmo.
         self.assertFalse(resposta.context["somente_leitura"])
@@ -1703,8 +1710,11 @@ class RedespachoAposAlteracaoTests(BaseSolicitacaoTestCase):
     def test_alteracao_volta_para_despacho_e_bloqueia_atendimento(self):
         solicitacao = self._deferida()
         self.assertTrue(self.perms.pode_concluir(self.solicitante, solicitacao))
-        voltou = services.reabrir_para_despacho(solicitacao, self.solicitante)
-        self.assertTrue(voltou)
+        services.reenviar_apos_edicao(
+            solicitacao,
+            self.solicitante,
+            [{"campo": "Local do evento", "antes": "A", "depois": "B"}],
+        )
         solicitacao.refresh_from_db()
         self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
         self.assertEqual(solicitacao.decisao_dg, DecisaoDG.PENDENTE)
@@ -1712,23 +1722,81 @@ class RedespachoAposAlteracaoTests(BaseSolicitacaoTestCase):
         # Sem despacho novo, ninguém marca como atendida.
         self.assertFalse(self.perms.pode_concluir(self.solicitante, solicitacao))
         self.assertTrue(self.perms.pode_despachar(self.gestor, solicitacao))
-        self.assertIn("novo despacho", solicitacao.historico.last().observacao)
+        registro = solicitacao.historico.last()
+        self.assertEqual(registro.acao, AcaoHistorico.REENVIO)
+        self.assertIn("novo despacho", registro.observacao)
 
-    def test_sem_deferimento_nada_muda(self):
+    def test_rascunho_nao_se_reabre(self):
         solicitacao = self.solicitacao_completa()
-        services.enviar(solicitacao, self.solicitante)
-        self.assertFalse(services.reabrir_para_despacho(solicitacao, self.solicitante))
-        solicitacao.refresh_from_db()
-        self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
+        self.assertFalse(self.perms.pode_reabrir(self.solicitante, solicitacao))
+        with self.assertRaises(services.TransicaoInvalida):
+            services.reenviar_apos_edicao(solicitacao, self.solicitante, [])
 
-    def test_edicao_pela_tela_devolve_para_a_dg(self):
+    def test_enviada_fica_travada_ate_para_o_superusuario(self):
         solicitacao = self._deferida()
-        self.client.force_login(self.superusuario)
+        self.assertFalse(self.perms.pode_editar_dados(self.superusuario, solicitacao))
+        self.client.force_login(self.solicitante)
         dados = self.dados_completos_post(acao="rascunho")
         dados["local_evento"] = "Outro local"
         resposta = self.client.post(
-            reverse("solicitacoes:editar", args=[solicitacao.pk]), dados, follow=True
+            reverse("solicitacoes:editar", args=[solicitacao.pk]), dados
         )
+        self.assertEqual(resposta.status_code, 403)
+        # A tela mostra o botão Editar, não o de salvar.
+        resposta = self.client.get(reverse("solicitacoes:editar", args=[solicitacao.pk]))
+        self.assertContains(resposta, "?reabrir=1")
+        self.assertNotContains(resposta, "Salvar alterações")
+
+    def test_editar_pela_tela_devolve_para_a_dg_com_o_que_mudou(self):
+        solicitacao = self._deferida()
+        self.client.force_login(self.solicitante)
+        url = reverse("solicitacoes:editar", args=[solicitacao.pk])
+        resposta = self.client.get(url + "?reabrir=1")
+        self.assertContains(resposta, "Salvar e reenviar para a DG")
+        dados = self.dados_completos_post(acao="rascunho")
+        dados["reabrir"] = "1"
+        dados["local_evento"] = "Outro local"
+        dados[f"quantidade_equipe_{self.equipe.pk}"] = 5
+        resposta = self.client.post(url, dados, follow=True)
         self.assertEqual(resposta.status_code, 200)
         solicitacao.refresh_from_db()
         self.assertEqual(solicitacao.status, StatusSolicitacao.AGUARDANDO_DESPACHO)
+        registro = solicitacao.historico.last()
+        self.assertEqual(registro.acao, AcaoHistorico.REENVIO)
+        self.assertIn(
+            {"campo": "Local do evento", "antes": "Praça central", "depois": "Outro local"},
+            registro.alteracoes,
+        )
+        self.assertContains(resposta, "Outro local")
+
+    def test_editar_sem_mudar_nada_nao_reenvia(self):
+        solicitacao = self._deferida()
+        self.client.force_login(self.solicitante)
+        dados = self.dados_completos_post(acao="rascunho")
+        dados["reabrir"] = "1"
+        dados[f"quantidade_equipe_{self.equipe.pk}"] = 5
+        dados.pop("unidade_movel")
+        dados.pop("unidade_movel_designada")
+        self.client.post(reverse("solicitacoes:editar", args=[solicitacao.pk]), dados)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, StatusSolicitacao.DEFERIDA_EM_ANDAMENTO)
+
+    def test_atendida_so_depois_do_evento(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        hoje = timezone.localdate()
+        solicitacao = self.criar_solicitacao(
+            data_inicio_evento=hoje, data_fim_evento=hoje + timedelta(days=1)
+        )
+        solicitacao.itens_servico.create(servico=self.servico)
+        solicitacao.itens_equipe.create(equipe=self.equipe, quantidade_servidores=5)
+        services.enviar(solicitacao, self.solicitante)
+        services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER)
+        self.assertFalse(self.perms.pode_concluir(self.solicitante, solicitacao))
+        with self.assertRaises(ValidationError):
+            services.concluir_atendimento(solicitacao, self.solicitante)
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(reverse("solicitacoes:editar", args=[solicitacao.pk]))
+        self.assertContains(resposta, "Atendida só após")

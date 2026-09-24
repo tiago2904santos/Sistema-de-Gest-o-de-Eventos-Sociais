@@ -1,7 +1,8 @@
 {% comment %}
   Histórico da solicitação na linha do tempo (a mesma de
   `components/v32/historico_alteracoes.html`): o que aconteceu, quem, quando
-  e a observação de quem agiu, do mais recente ao mais antigo. A fonte é a
+  e a observação de quem agiu, do mais recente ao mais antigo. Alterações
+  trazem a lista do que mudou (`registro.alteracoes`: campo, antes, depois). A fonte é a
   trilha do próprio registro (`solicitacao.historico`).
 {% endcomment %}
 <section class="lt" id="historico" aria-labelledby="historico-titulo">
@@ -21,6 +22,14 @@
               <span class="lt__meta">{{ registro.usuario|default:"Sistema" }} · {{ registro.criado_em|date:"d/m/Y" }} às {{ registro.criado_em|date:"H:i" }}</span>
             </div>
             {% if registro.observacao %}<p class="lt__texto">{{ registro.observacao }}</p>{% endif %}
+            {% if registro.alteracoes %}
+              {# O que mudou, campo a campo: o valor antigo riscado, o novo em destaque. #}
+              <ul class="lt__mudancas">
+                {% for mudanca in registro.alteracoes %}
+                  <li><span class="lt__campo">{{ mudanca.campo }}</span>{% if mudanca.antes %}<del>{{ mudanca.antes|truncatechars:80 }}</del>{% else %}<em>vazio</em>{% endif %}<span class="lt__seta" aria-label="para">→</span>{% if mudanca.depois %}<ins>{{ mudanca.depois|truncatechars:80 }}</ins>{% else %}<em>vazio</em>{% endif %}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
           </div>
         </li>
       {% endfor %}

@@ -1478,6 +1478,8 @@
     var checkbox = alocacao.querySelector("[data-equipe-checkbox]");
     var quantidade = alocacao.querySelector("[data-equipe-quantidade]");
     if (!checkbox || !quantidade) return;
+    // A quantidade da DG fica livre mesmo com a equipe travada.
+    if (quantidade.hasAttribute("data-quantidade-dg")) return;
     var bloqueadoPorPermissao = checkbox.disabled;
 
     function sincronizarQuantidade(focar) {

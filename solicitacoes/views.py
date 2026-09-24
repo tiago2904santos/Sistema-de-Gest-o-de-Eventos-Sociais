@@ -103,9 +103,14 @@ def _breadcrumb(titulo):
     ]
 
 
-def _contexto_formulario(request, form, solicitacao=None):
+def _contexto_formulario(request, form, solicitacao=None, reabrindo=False):
     if solicitacao:
         acoes = permissions.acoes_permitidas(request.user, solicitacao)
+        if reabrindo:
+            # No "Editar" a tela é a da etapa 1; o único caminho é reenviar.
+            acoes = {**acoes, "editar_dados": True, "enviar": False,
+                     "despachar": False, "concluir": False,
+                     "aguarda_atendimento": False, "cancelar": False}
     else:
         acoes = {"editar_dados": True, "enviar": True, "despachar": False}
 
@@ -298,60 +303,61 @@ def editar_solicitacao(request, pk):
     (despacho da DG, encerramento, anexos). Só o POST exige alçada de edição.
     """
     solicitacao = _obter_visivel(request, pk)
-    pode_editar = permissions.pode_editar_dados(request.user, solicitacao)
+    # "Editar" de um pedido já enviado (`?reabrir=1`): a tela da etapa 1 abre
+    # editável, e salvar devolve o pedido para novo despacho da DG.
+    parametros = request.POST if request.method == "POST" else request.GET
+    reabrindo = parametros.get("reabrir") == "1" and permissions.pode_reabrir(
+        request.user, solicitacao
+    )
+    pode_editar = reabrindo or permissions.pode_editar_dados(request.user, solicitacao)
 
     if request.method == "POST":
         if not pode_editar:
             raise PermissionDenied
-        acao = request.POST.get("acao", "rascunho")
+        acao = "reenviar" if reabrindo else request.POST.get("acao", "rascunho")
+        # Antes do form: a validação já escreve os valores novos na instância.
+        antes = services.fotografia(solicitacao)
         if acao == "enviar" and not permissions.pode_enviar(request.user, solicitacao):
             raise PermissionDenied
         form = SolicitacaoForm(
-            request.POST, instance=solicitacao, enviar=(acao == "enviar")
+            request.POST, instance=solicitacao, enviar=acao in ("enviar", "reenviar")
         )
         if form.is_valid():
-            redespachar = False
             try:
-                alterados = [
-                    str(form.fields[nome].label or nome)
-                    for nome in form.changed_data
-                    if nome in form.fields
-                ]
-                alterou = bool(form.changed_data)
                 with transaction.atomic():
                     solicitacao = form.save()
-                    services.registrar_historico(
-                        solicitacao,
-                        request.user,
-                        AcaoHistorico.ATUALIZACAO,
-                        status_novo=solicitacao.status,
-                        observacao=(
-                            "Campos alterados: " + ", ".join(alterados)
-                            if alterados
-                            else "Salva sem alteração de campos."
-                        ),
+                    alteracoes = services.diferencas(
+                        antes, services.fotografia(solicitacao)
                     )
-                    if acao == "enviar":
-                        services.enviar(solicitacao, request.user)
-                    elif alterou:
-                        # O que a DG despachou deixou de ser o que está escrito:
-                        # o pedido volta para novo despacho antes de ser atendido.
-                        redespachar = services.reabrir_para_despacho(
-                            solicitacao, request.user
-                        )
+                    if acao == "reenviar":
+                        if alteracoes:
+                            services.reenviar_apos_edicao(
+                                solicitacao, request.user, alteracoes
+                            )
+                    else:
+                        if alteracoes:
+                            services.registrar_historico(
+                                solicitacao,
+                                request.user,
+                                AcaoHistorico.ATUALIZACAO,
+                                alteracoes=alteracoes,
+                            )
+                        if acao == "enviar":
+                            services.enviar(solicitacao, request.user)
             except ValidationError as erro:
                 for mensagem_erro in erro.messages:
                     messages.error(request, mensagem_erro)
             else:
-                if acao == "enviar":
+                if acao == "reenviar" and not alteracoes:
+                    messages.info(request, "Nada foi alterado: a solicitação continua como estava.")
+                elif acao == "reenviar":
+                    messages.success(
+                        request,
+                        f"Solicitação #{solicitacao.pk} alterada e reenviada para o despacho da DG.",
+                    )
+                elif acao == "enviar":
                     messages.success(
                         request, f"Solicitação #{solicitacao.pk} enviada com sucesso."
-                    )
-                elif redespachar:
-                    messages.warning(
-                        request,
-                        f"Solicitação #{solicitacao.pk} atualizada depois do despacho: "
-                        "voltou para a Diretoria-Geral e só pode ser atendida com um novo despacho.",
                     )
                 else:
                     messages.success(request, f"Solicitação #{solicitacao.pk} atualizada.")
@@ -368,10 +374,11 @@ def editar_solicitacao(request, pk):
     )
     # O despacho pendente sai da sessão ao ser lido: uma leitura só.
     pendente = _despacho_pendente(request, solicitacao)
-    contexto = _contexto_formulario(request, form, solicitacao)
+    contexto = _contexto_formulario(request, form, solicitacao, reabrindo=reabrindo)
     contexto.update(
         {
             "titulo_pagina": f"Solicitação #{solicitacao.pk}",
+            "reabrindo": reabrindo,
             "breadcrumb": _breadcrumb(f"Solicitação #{solicitacao.pk}"),
             "somente_leitura": not pode_editar,
             "historico": solicitacao.historico.all(),
@@ -651,7 +658,7 @@ DECISOES_DG = [
     ("ATENDER", "Atender", "Deferida — em andamento; o solicitante confirma depois do evento", "check-circle"),
     ("NAO_ATENDER", "Não atender", "Encerra como não atendida; observação obrigatória", "x"),
     ("CANCELADO", "Evento cancelado", "Encerra como cancelada; observação obrigatória", "ban"),
-    ("DEVOLVER", "Devolver para ajuste", "Volta editável para o solicitante reenviar; informe o motivo", "undo"),
+    ("DEVOLVER", "Enviar para correção", "Volta ao solicitante; diga brevemente o que ele deve mudar", "undo"),
 ]
 
 
@@ -891,7 +898,7 @@ def despachar(request, pk):
     try:
         if decisao == DespachoForm.DEVOLVER:
             services.devolver(solicitacao, request.user, observacao=observacao)
-            sucesso = f"Solicitação #{solicitacao.pk} devolvida para ajuste."
+            sucesso = f"Solicitação #{solicitacao.pk} enviada para correção."
         else:
             # A DG aceita as quantidades propostas ou informa novas por equipe.
             services.despachar(

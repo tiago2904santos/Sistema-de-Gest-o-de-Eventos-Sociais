@@ -117,8 +117,8 @@ def acao_principal(solicitacao, acoes):
         }
     if acoes.get("concluir"):
         return {
-            "rotulo": "Confirmar atendimento",
-            "ajuda": "Registrar o encerramento do evento",
+            "rotulo": "Marcar como atendida",
+            "ajuda": "O evento terminou: encerrar a solicitação",
             "icone": "check",
             "url": f"{url}#encerramento",
         }

@@ -79,6 +79,7 @@ def registrar_historico(
     status_anterior="",
     status_novo="",
     observacao="",
+    alteracoes=None,
 ):
     return HistoricoSolicitacao.objects.create(
         solicitacao=solicitacao,
@@ -87,7 +88,79 @@ def registrar_historico(
         status_anterior=status_anterior,
         status_novo=status_novo,
         observacao=observacao,
+        alteracoes=alteracoes or [],
     )
+
+
+# ---------------------------------------------------------------------------
+# O que mudou: fotografia antes e depois de salvar, campo a campo
+# ---------------------------------------------------------------------------
+
+# Campo do modelo -> rótulo no histórico, na ordem da tela.
+CAMPOS_FOTOGRAFIA = [
+    ("data_solicitacao", "Data da solicitação"),
+    ("data_inicio_evento", "Início do evento"),
+    ("data_fim_evento", "Fim do evento"),
+    ("municipio", "Município"),
+    ("solicitante_nome", "Solicitante"),
+    ("contato", "Contato"),
+    ("solicitante_cargo_unidade", "Cargo / unidade"),
+    ("orgao_responsavel", "Órgão responsável"),
+    ("tipo_evento", "Tipo do evento"),
+    ("local_evento", "Local do evento"),
+    ("tipo_operacao", "Tipo de operação"),
+    ("quantidade_cin", "CIN agendadas"),
+    ("descricao_complementar", "Descrição complementar"),
+    ("unidade_movel", "Unidade móvel"),
+    ("unidade_movel_designada", "Qual unidade móvel"),
+    ("motorista", "Motorista"),
+]
+
+
+def _texto(valor):
+    if valor is None or valor == "":
+        return ""
+    if isinstance(valor, bool):
+        return "Sim" if valor else "Não"
+    if hasattr(valor, "strftime"):
+        return valor.strftime("%d/%m/%Y")
+    return str(valor)
+
+
+def fotografia(solicitacao):
+    """Os valores legíveis do pedido, para comparar antes e depois."""
+    foto = {}
+    for campo, rotulo in CAMPOS_FOTOGRAFIA:
+        if campo == "tipo_operacao":
+            valor = solicitacao.get_tipo_operacao_display() if solicitacao.tipo_operacao else ""
+        else:
+            valor = getattr(solicitacao, campo)
+        foto[rotulo] = _texto(valor)
+    if solicitacao.pk:
+        foto["Serviços"] = ", ".join(
+            # filter(): consulta nova, sem o cache do prefetch da tela.
+            sorted(str(servico) for servico in solicitacao.servicos.filter())
+        )
+        for item in solicitacao.itens_equipe.select_related("equipe"):
+            foto[f"Servidores — {item.equipe}"] = _texto(item.quantidade_servidores)
+    return foto
+
+
+def diferencas(antes, depois):
+    """[{campo, antes, depois}] do que mudou entre duas fotografias."""
+    alteracoes = []
+    for campo in list(antes) + [c for c in depois if c not in antes]:
+        valor_antes, valor_depois = antes.get(campo, ""), depois.get(campo, "")
+        if valor_antes != valor_depois:
+            campo_rotulo = campo
+            if campo.startswith("Servidores — ") and campo not in antes:
+                campo_rotulo = campo.replace("Servidores — ", "Equipe incluída — ")
+            elif campo.startswith("Servidores — ") and campo not in depois:
+                campo_rotulo = campo.replace("Servidores — ", "Equipe retirada — ")
+            alteracoes.append(
+                {"campo": campo_rotulo, "antes": valor_antes, "depois": valor_depois}
+            )
+    return alteracoes
 
 
 def _transicionar(solicitacao, novo_status):
@@ -181,7 +254,7 @@ def devolver(solicitacao, usuario, observacao):
     )
     notificar(
         [solicitacao.criado_por],
-        f"Solicitação #{solicitacao.pk} devolvida para ajuste",
+        f"Solicitação #{solicitacao.pk} enviada para correção",
         observacao,
         link=reverse("solicitacoes:editar", args=[solicitacao.pk]),
         solicitacao=solicitacao,
@@ -198,6 +271,7 @@ def ajustar_quantidades_dg(solicitacao, usuario, quantidades):
     """
     itens = {item.equipe_id: item for item in solicitacao.itens_equipe.select_related("equipe")}
     mudancas = []
+    alteracoes = []
     for equipe_id, quantidade in (quantidades or {}).items():
         item = itens.get(equipe_id)
         if item is None:
@@ -210,6 +284,11 @@ def ajustar_quantidades_dg(solicitacao, usuario, quantidades):
             mudancas.append(
                 f"{item.equipe}: {item.quantidade_servidores or 0} → {quantidade}"
             )
+            alteracoes.append({
+                "campo": f"Servidores — {item.equipe}",
+                "antes": _texto(item.quantidade_servidores),
+                "depois": str(quantidade),
+            })
             item.quantidade_servidores = quantidade
             item.save(update_fields=["quantidade_servidores"])
     if mudancas:
@@ -218,8 +297,7 @@ def ajustar_quantidades_dg(solicitacao, usuario, quantidades):
             solicitacao,
             usuario,
             AcaoHistorico.AJUSTE_DG,
-            status_novo=solicitacao.status,
-            observacao="; ".join(mudancas),
+            alteracoes=alteracoes,
         )
     return mudancas
 
@@ -306,6 +384,12 @@ def concluir_atendimento(solicitacao, usuario):
         raise TransicaoInvalida(
             "Somente solicitações deferidas em andamento podem ser confirmadas."
         )
+    if not solicitacao.evento_encerrado:
+        ultimo = solicitacao.ultimo_dia_evento
+        raise ValidationError(
+            "A solicitação só pode ser marcada como atendida depois que o evento terminar"
+            + (f" (após {ultimo:%d/%m/%Y})." if ultimo else ".")
+        )
     anterior = _transicionar(solicitacao, StatusSolicitacao.ATENDIDA)
     solicitacao.save()
     registrar_historico(
@@ -365,33 +449,63 @@ def cancelar_evento(solicitacao, usuario, observacao):
     return solicitacao
 
 
-def reabrir_para_despacho(solicitacao, usuario):
-    """Alteração depois do deferimento devolve o pedido à DG.
+STATUS_REABRIVEIS = {
+    StatusSolicitacao.AGUARDANDO_DESPACHO,
+    StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
+}
+
+
+@transaction.atomic
+def reenviar_apos_edicao(solicitacao, usuario, alteracoes):
+    """Depois do envio, o pedido só muda pelo "Editar" — e volta para a DG.
 
     O despacho vale para o que estava escrito quando ele foi dado: mudou o
     evento, os serviços ou as equipes, a DG precisa despachar de novo — e até
     lá a solicitação não pode ser marcada como atendida.
     """
-    if solicitacao.status != StatusSolicitacao.DEFERIDA_EM_ANDAMENTO:
-        return False
+    if solicitacao.status not in STATUS_REABRIVEIS:
+        raise TransicaoInvalida(
+            "Somente solicitações enviadas e ainda em andamento podem ser editadas."
+        )
+    faltas = pendencias_para_envio(solicitacao)
+    if faltas:
+        raise ValidationError(
+            "Preencha os campos obrigatórios antes de enviar: " + ", ".join(faltas) + "."
+        )
+    anterior = solicitacao.status
     solicitacao.status = StatusSolicitacao.AGUARDANDO_DESPACHO
     solicitacao.decisao_dg = DecisaoDG.PENDENTE
+    solicitacao.observacoes_dg = ""
     solicitacao.decidido_em = None
     solicitacao.decidido_por = None
     solicitacao.save(
         update_fields=[
-            "status", "decisao_dg", "decidido_em", "decidido_por", "atualizado_em"
+            "status", "decisao_dg", "observacoes_dg", "decidido_em",
+            "decidido_por", "atualizado_em",
         ]
     )
     registrar_historico(
         solicitacao,
         usuario,
-        AcaoHistorico.ATUALIZACAO,
-        status_anterior=StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
-        status_novo=StatusSolicitacao.AGUARDANDO_DESPACHO,
-        observacao="Alterada depois do despacho: aguarda novo despacho da DG.",
+        AcaoHistorico.REENVIO,
+        status_anterior=anterior,
+        status_novo=solicitacao.status,
+        observacao=(
+            "Alterada depois do despacho: aguarda novo despacho da DG."
+            if anterior == StatusSolicitacao.DEFERIDA_EM_ANDAMENTO
+            else ""
+        ),
+        alteracoes=alteracoes,
     )
-    return True
+    notificar(
+        usuarios_do_grupo("GESTOR_DG"),
+        f"Solicitação #{solicitacao.pk} alterada: aguarda novo despacho",
+        "; ".join(a["campo"] for a in alteracoes)[:300],
+        link=reverse("solicitacoes:editar", args=[solicitacao.pk]) + "#despacho-dg",
+        solicitacao=solicitacao,
+        exceto=usuario,
+    )
+    return solicitacao
 
 
 def montar_timeline(solicitacao=None):
@@ -443,7 +557,7 @@ def montar_timeline(solicitacao=None):
     # As quatro etapas existem sempre, desde o rascunho: quem abre a tela vê o
     # caminho inteiro e onde o pedido está. O que muda é o estado de cada uma.
     if devolvida:
-        subtitulo_envio = "Devolvida para ajuste — revise e reenvie"
+        subtitulo_envio = "Enviada para correção — ajuste e reenvie"
     elif rascunho:
         subtitulo_envio = "Aguardando preenchimento"
     else:

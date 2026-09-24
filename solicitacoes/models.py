@@ -13,7 +13,7 @@ class StatusSolicitacao(models.TextChoices):
 
     RASCUNHO = "RASCUNHO", "Rascunho"
     AGUARDANDO_DESPACHO = "AGUARDANDO_DESPACHO", "Aguardando despacho"
-    DEVOLVIDA = "DEVOLVIDA", "Devolvida para ajuste"
+    DEVOLVIDA = "DEVOLVIDA", "Devolvida para correção"
     # A DG deferiu; o evento ainda vai acontecer. O solicitante confirma o
     # atendimento depois, levando ao status final ATENDIDA.
     DEFERIDA_EM_ANDAMENTO = "DEFERIDA_EM_ANDAMENTO", "Deferida — em andamento"
@@ -205,6 +205,16 @@ class SolicitacaoEvento(models.Model):
             StatusSolicitacao.CANCELADA,
         }
 
+    @property
+    def ultimo_dia_evento(self):
+        return self.data_fim_evento or self.data_inicio_evento
+
+    @property
+    def evento_encerrado(self):
+        """O evento já terminou: o último dia dele ficou para trás."""
+        ultimo = self.ultimo_dia_evento
+        return bool(ultimo) and ultimo < timezone.localdate()
+
     def clean(self):
         super().clean()
         errors = {}
@@ -364,8 +374,10 @@ class AcaoHistorico(models.TextChoices):
     INICIO_ANALISE = "INICIO_ANALISE", "Análise iniciada"
     PLANEJAMENTO = "PLANEJAMENTO", "Planejamento atualizado"
     ENCAMINHAMENTO_DESPACHO = "ENCAMINHAMENTO_DESPACHO", "Encaminhada para despacho"
-    DEVOLUCAO = "DEVOLUCAO", "Devolvida para ajuste"
-    AJUSTE_DG = "AJUSTE_DG", "Quantidade ajustada pela DG"
+    DEVOLUCAO = "DEVOLUCAO", "Enviada para correção"
+    # Depois do envio, só o botão "Editar" altera o pedido — e ele volta à DG.
+    REENVIO = "REENVIO", "Alterada e reenviada para a DG"
+    AJUSTE_DG = "AJUSTE_DG", "Servidores ajustados pela DG"
     DECISAO = "DECISAO", "Decisão da DG registrada"
     CONCLUSAO = "CONCLUSAO", "Atendimento confirmado"
     CANCELAMENTO = "CANCELAMENTO", "Evento cancelado"
@@ -393,6 +405,8 @@ class HistoricoSolicitacao(models.Model):
     status_anterior = models.CharField("status anterior", max_length=25, blank=True)
     status_novo = models.CharField("status novo", max_length=25, blank=True)
     observacao = models.TextField("observação", blank=True)
+    # O que mudou, campo a campo: [{"campo", "antes", "depois"}].
+    alteracoes = models.JSONField("alterações", default=list, blank=True)
     criado_em = models.DateTimeField("criado em", auto_now_add=True)
 
     class Meta:
