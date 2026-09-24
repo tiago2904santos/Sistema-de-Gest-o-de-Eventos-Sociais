@@ -2372,6 +2372,20 @@ class PagamentoConjuntoTests(EtapasBase):
         self.assertContains(tela, "Certifico digital — NF 8952")
         self.assertContains(tela, "Certifico digital — NF 8954")
 
+    def test_marcar_na_lista_ja_vincula(self):
+        url = reverse("coffee_break:vincular_pagamento", args=[self.a.pk])
+        self.assertEqual(self.client.post(url, {"vinculadas": [self.b.pk]}).json(), {"ok": True})
+        self.b.refresh_from_db()
+        self.assertEqual(self.b.pagamento_com_id, self.a.pk)
+        tela = self.client.get(reverse("coffee_break:etapa_nota", args=[self.a.pk]))
+        self.assertContains(tela, 'data-anexar-os="%d"' % self.b.pk)
+        self.assertEqual(self.client.post(url, {}).json(), {"ok": True})
+        self.b.refresh_from_db()
+        self.assertIsNone(self.b.pagamento_com_id)
+        outro_lote = LoteCoffeeBreak.objects.create(contrato=self.contrato, numero=2, exercicio="2026", quantidade_total=100)
+        fora = self.criar_solicitacao(lote=outro_lote, numero="43/2026")
+        self.assertEqual(self.client.post(url, {"vinculadas": [fora.pk]}).status_code, 400)
+
     def test_oficio_unico_e_textos_no_plural(self):
         services.definir_pagamento_conjunto(self.a, [self.b.pk])
         self.a.refresh_from_db()

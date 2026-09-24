@@ -27,11 +27,10 @@
       </header>
       <div class="section-card__corpo">
         {% if not somente_leitura %}
-          <div class="cb-vincular" id="cb-vincular" data-cb-vincular hidden>
+          <div class="cb-vincular" id="cb-vincular" data-cb-vincular data-cb-vincular-url="{% url 'coffee_break:vincular_pagamento' solicitacao.pk %}" hidden>
             <p class="cb-ajuda">Várias OS do mesmo lote num ofício e num protocolo: o ofício, o protocolo e o pagamento ficam iguais em todas (o que se fizer aqui vale para as outras); cada OS tem a sua nota e o seu certifico. Aparecem as OS do {{ lote.rotulo_curto }} que ainda não foram pagas nem protocoladas.</p>
-            <input type="hidden" name="vinculadas_enviado" value="1">
             {% include "components/v32/lista_escolha.html" with name="vinculadas" multipla=True label="OS no mesmo pagamento" rotulo_busca="Buscar OS" rotulo_oculto=True icone="document" opcoes=opcoes_vinculo placeholder="Buscar pelo número da OS, evento ou nota" vazio="Nenhuma outra OS do mesmo lote em aberto." sem_resultado="Nenhuma OS encontrada." %}
-            <p class="form-ajuda">Marque as OS e salve a etapa.</p>
+            <p class="form-ajuda" data-cb-vincular-estado>Marcou, vinculou: em seguida abre o anexo da nota dela.</p>
           </div>
         {% endif %}
         {% if pagamento_conjunto %}
@@ -93,7 +92,7 @@
                     <a class="cb-anexo__arquivo" href="{% url 'coffee_break:nota_fiscal' o.s.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="document" %}<span>Nota fiscal{% if o.s.numero_nota_fiscal %} {{ o.s.numero_nota_fiscal }}{% else %} (número não lido — informe na OS {{ o.s.numero }}){% endif %}</span></a>
                     <a class="btn--secundaria btn--compacto" href="{{ o.url_anexar }}" data-anexar-assinado data-anexar-atual="1" data-anexar-titulo="Trocar a nota fiscal da OS {{ o.s.numero }}" data-anexar-texto="Envie o PDF da nota fiscal da OS {{ o.s.numero }}. Ele substitui o que está anexado, e o número é lido de novo." data-anexar-acao="Anexar PDF" data-anexar-remover-rotulo="Remover nota fiscal">{% include "components/icon.html" with nome="upload" %}Trocar</a>
                   {% else %}
-                    <a class="btn-primaria btn--compacto" href="{{ o.url_anexar }}" data-anexar-assinado data-anexar-titulo="Anexar nota fiscal da OS {{ o.s.numero }}" data-anexar-texto="Envie o PDF da nota fiscal da OS {{ o.s.numero }}. O número é lido do próprio PDF." data-anexar-acao="Anexar PDF">{% include "components/icon.html" with nome="upload" %}Anexar nota fiscal</a>
+                    <a class="btn-primaria btn--compacto" href="{{ o.url_anexar }}" data-anexar-os="{{ o.s.pk }}" data-anexar-assinado data-anexar-titulo="Anexar nota fiscal da OS {{ o.s.numero }}" data-anexar-texto="Envie o PDF da nota fiscal da OS {{ o.s.numero }}. O número é lido do próprio PDF." data-anexar-acao="Anexar PDF">{% include "components/icon.html" with nome="upload" %}Anexar nota fiscal</a>
                   {% endif %}
                 </span>
               </li>

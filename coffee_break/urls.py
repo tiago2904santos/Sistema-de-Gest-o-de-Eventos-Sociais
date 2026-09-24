@@ -45,6 +45,7 @@ urlpatterns = [
     path("aditivos/<int:pk>/arquivo/", views.aditivo_arquivo, name="aditivo_arquivo"),
     path("solicitacoes/<int:pk>/nota-fiscal/", views.nota_fiscal, name="nota_fiscal"),
     path("solicitacoes/<int:pk>/nota-fiscal/anexar/", views.anexar_nota, name="anexar_nota"),
+    path("solicitacoes/<int:pk>/vincular/", views.vincular_pagamento, name="vincular_pagamento"),
     path("certidoes/", views.lista_certidoes, name="certidoes"),
     path("certidoes/<int:pk>/arquivo/", views.certidao_arquivo, name="certidao_arquivo"),
     path("certidoes/<int:fornecedor_pk>/<str:tipo>/anexar/", views.anexar_certidao, name="anexar_certidao"),

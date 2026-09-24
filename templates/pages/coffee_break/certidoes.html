@@ -68,11 +68,32 @@
     (function () {
       var toast = document.querySelector("[data-cb-toast]");
       var tempo = null;
+      // Sem HTTPS o navegador não dá a API de área de transferência: aí copia
+      // pela seleção de um campo escondido (execCommand), que funciona em HTTP.
+      function copiar(texto) {
+        var ok = false;
+        var campo = document.createElement("textarea");
+        campo.value = texto;
+        campo.setAttribute("readonly", "");
+        campo.style.position = "fixed";
+        campo.style.opacity = "0";
+        document.body.appendChild(campo);
+        campo.select();
+        try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+        document.body.removeChild(campo);
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(texto).catch(function () {});
+          ok = true;
+        }
+        return ok;
+      }
       document.querySelectorAll("[data-copiar-cnpj]").forEach(function (link) {
         link.addEventListener("click", function () {
-          if (navigator.clipboard) navigator.clipboard.writeText(link.dataset.copiarCnpj).catch(function () {});
+          var ok = copiar(link.dataset.copiarCnpj);
           if (!toast) return;
-          toast.textContent = "CNPJ " + link.dataset.cnpjFormatado + " copiado — no portal, é só colar no campo (Ctrl+V).";
+          toast.textContent = ok
+            ? "CNPJ " + link.dataset.cnpjFormatado + " copiado — no portal, é só colar no campo (Ctrl+V)."
+            : "Não deu para copiar: o CNPJ é " + link.dataset.cnpjFormatado + ".";
           toast.hidden = false;
           clearTimeout(tempo);
           tempo = setTimeout(function () { toast.hidden = true; }, 6000);
