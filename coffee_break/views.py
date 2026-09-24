@@ -777,6 +777,7 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
             contexto["anexo_faltando"] = sum(1 for item in itens if not item["pronto"])
             # O PDF único junta o que existe; a tela avisa vencida e o que falta.
             contexto["anexo_disponivel"] = any(item["disponivel"] for item in itens)
+            contexto["partes_anexo"] = documentos.partes_do_anexo(solicitacao)
             contexto["avisos_anexo"] = documentos.avisos_do_pacote(itens)
             contexto["eprotocolo"] = documentos.textos_eprotocolo(solicitacao)
     return contexto
@@ -1462,6 +1463,26 @@ def pacote_protocolo(request, pk):
 
 
 @acesso_ao_modulo
+def pacote_parte(request, pk, parte):
+    """Um dos quatro arquivos da etapa 3 (OS, ofício, notas e certificos,
+    contratos e certidões)."""
+    if parte not in documentos.PARTES:
+        raise Http404
+    nomes = {"os": "Ordem de servico", "oficio": "Oficio", "notas": "Notas e certificos", "contratos": "Contratos e certidoes"}
+    return _pdf_ou_volta(
+        request, _solicitacao_documental(pk), lambda s: documentos.parte_pdf(s, parte),
+        nomes[parte], volta="etapa_protocolo",
+    )
+
+
+@acesso_ao_modulo
+def aditivo_arquivo(request, pk):
+    from .models import AditivoContrato
+
+    return _arquivo(get_object_or_404(AditivoContrato, pk=pk).arquivo)
+
+
+@acesso_ao_modulo
 def pacote_protocolo_zip(request, pk):
     request.GET = request.GET.copy()
     request.GET["baixar"] = "1"
@@ -1664,12 +1685,23 @@ def anexar_contrato(request):
             contrato.vigencia_inicio = dados.get("vigencia_inicio")
             contrato.vigencia_fim = fim
             contrato.vigencia_estimada = bool(dados.get("vigencia_estimada"))
-        if dados["tipo"] == "aditivo":
-            contrato.termo_aditivo = dados["termo_aditivo"]
-            contrato.arquivo_termo_aditivo = arquivo
-        else:
+        if dados["tipo"] != "aditivo":
             contrato.arquivo_contrato = arquivo
         contrato.save()
+        if dados["tipo"] == "aditivo":
+            # Todos os aditivos ficam (o anexo leva todos); o contrato cita o de vigência mais longa.
+            from .models import AditivoContrato
+
+            aditivo, _ = AditivoContrato.objects.update_or_create(
+                contrato=contrato, numero=dados["termo_aditivo"],
+                defaults={"vigencia_inicio": dados.get("vigencia_inicio"), "vigencia_fim": dados.get("vigencia_fim")},
+            )
+            aditivo.arquivo = arquivo
+            aditivo.save()
+            vigente = contrato.aditivos.order_by("-vigencia_fim", "-criado_em").first()
+            contrato.termo_aditivo = vigente.numero
+            contrato.arquivo_termo_aditivo = vigente.arquivo.name
+            contrato.save(update_fields=["termo_aditivo", "arquivo_termo_aditivo", "atualizado_em"])
         # Sem lote ainda: nasce o do documento (número e quantidade); os municípios se escolhem no lote.
         lote_criado = None
         if not contrato.lotes.exists() and dados.get("numero_lote") and dados.get("quantidade"):

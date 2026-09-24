@@ -157,6 +157,35 @@ class ContratoCoffeeBreak(models.Model):
         return texto
 
 
+class AditivoContrato(models.Model):
+    """Cada termo aditivo do contrato, com o PDF e a vigência que ele dá.
+
+    O contrato guarda o aditivo em vigor (o de vigência mais longa, citado nos
+    documentos); aqui ficam todos, para o anexo levar os dois (ou mais) e não
+    só o último.
+    """
+
+    contrato = models.ForeignKey(
+        "ContratoCoffeeBreak", verbose_name="contrato", on_delete=models.CASCADE, related_name="aditivos",
+    )
+    numero = models.CharField("número do termo aditivo", max_length=50)
+    arquivo = models.FileField("termo aditivo (PDF)", upload_to="coffee_break/contratos/", blank=True)
+    vigencia_inicio = models.DateField("vigência — início", null=True, blank=True)
+    vigencia_fim = models.DateField("vigência — fim", null=True, blank=True)
+    criado_em = models.DateTimeField("criado em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "termo aditivo"
+        verbose_name_plural = "termos aditivos"
+        ordering = ["vigencia_inicio", "numero"]
+        constraints = [
+            models.UniqueConstraint(fields=["contrato", "numero"], name="coffee_aditivo_unico_por_contrato"),
+        ]
+
+    def __str__(self):
+        return f"Termo aditivo {self.numero}"
+
+
 class ConfiguracaoCoffeeBreak(models.Model):
     """O que o ofício e o eProtocolo repetem em todo pagamento.
 

@@ -306,7 +306,23 @@ def itens_anexo(solicitacao, hoje=None):
             "arquivo": f"Certidao {rotulos[tipo]} {fornecedor.nome_curto_efetivo}.pdf",
             "conteudo": (lambda c=certidao: _ler(c.arquivo)),
         })
-    if contrato.termo_aditivo:
+    # Todos os termos aditivos, do mais antigo ao mais novo (não só o último).
+    aditivos = list(contrato.aditivos.order_by("vigencia_inicio", "numero"))
+    if aditivos:
+        for aditivo in aditivos:
+            tem = bool(aditivo.arquivo)
+            itens.append({
+                "chave": f"aditivo-{aditivo.pk}",
+                "titulo": f"Termo aditivo {aditivo.numero}",
+                "detalhe": (f"Vigência até {aditivo.vigencia_fim:%d/%m/%Y}" if aditivo.vigencia_fim else f"Do contrato {contrato.numero}"),
+                "pronto": tem,
+                "falta": "" if tem else "Anexe o PDF do termo aditivo em Cadastros › Contratos.",
+                "url": _url("aditivo_arquivo", aditivo.pk) if tem else "",
+                "url_corrigir": _url("cadastro_lista", "contratos"),
+                "arquivo": f"Termo aditivo {aditivo.numero.replace('/', '-')} {fornecedor.nome_curto_efetivo}.pdf",
+                "conteudo": (lambda a=aditivo: _ler(a.arquivo)),
+            })
+    elif contrato.termo_aditivo:
         tem = bool(contrato.arquivo_termo_aditivo)
         itens.append({
             "chave": "aditivo",
@@ -355,6 +371,73 @@ def avisos_do_pacote(itens):
     vencidas = [f"{item['titulo']}: {item['falta']}" for item in itens if item["vencida"]]
     faltando = [f"{item['titulo']}: {item['falta']}" for item in itens if not item["disponivel"]]
     return {"vencidas": vencidas, "faltando": faltando}
+
+
+# Os quatro arquivos da etapa 3, como vão ao protocolo.
+PARTES = ("os", "oficio", "notas", "contratos")
+
+
+def partes_do_anexo(solicitacao, hoje=None):
+    """Os quatro arquivos para baixar: a OS (de todas as OS do pagamento), o
+    ofício, as notas com os certificos (nota, certifico, nota, certifico...) e
+    os contratos com todos os aditivos e as certidões."""
+    itens = itens_anexo(solicitacao, hoje)
+    grupo = solicitacao.grupo_pagamento()
+    os_itens = []
+    for membro in grupo:
+        faltas = pendencias_ordem_servico(membro)
+        os_itens.append({
+            "chave": f"os-{membro.pk}",
+            "titulo": f"Ordem de serviço {membro.numero}",
+            "pronto": not faltas,
+            "disponivel": not faltas,
+            "vencida": False,
+            "falta": " ".join(faltas),
+            "conteudo": (lambda m=membro: ordem_servico_pdf(m)),
+        })
+    notas = [i for i in itens if i["chave"].startswith(("nota", "certifico"))]
+    contratos = [i for i in itens if i["chave"].startswith(("contrato", "aditivo"))]
+    # Contrato primeiro, depois os aditivos, depois as certidões.
+    contratos.sort(key=lambda i: 0 if i["chave"] == "contrato" else 1)
+    contratos += [i for i in itens if i["chave"].startswith("certidao")]
+    partes = [
+        ("os", "Ordem de serviço" if len(grupo) == 1 else "Ordens de serviço", os_itens),
+        ("oficio", "Ofício", [i for i in itens if i["chave"] == "oficio"]),
+        ("notas", "Notas fiscais e certificos", notas),
+        ("contratos", "Contrato, aditivos e certidões", contratos),
+    ]
+    saida = []
+    for chave, titulo, lista in partes:
+        faltando = [i for i in lista if not i["disponivel"]]
+        saida.append({
+            "chave": chave,
+            "titulo": titulo,
+            "itens": lista,
+            "disponivel": any(i["disponivel"] for i in lista),
+            "pronto": bool(lista) and all(i["pronto"] for i in lista),
+            "vencida": any(i["vencida"] for i in lista),
+            "faltando": len(faltando),
+            "conteudo_texto": ", ".join(i["titulo"] for i in lista),
+        })
+    return saida
+
+
+def parte_pdf(solicitacao, chave, hoje=None):
+    """Um dos quatro arquivos: os documentos dele que existem, num PDF só."""
+    from pypdf import PdfWriter
+
+    if chave not in PARTES:
+        raise ValidationError(["Arquivo desconhecido."])
+    parte = next(p for p in partes_do_anexo(solicitacao, hoje) if p["chave"] == chave)
+    disponiveis = [i for i in parte["itens"] if i["disponivel"]]
+    if not disponiveis:
+        raise ValidationError([f"{parte['titulo']}: nenhum documento disponível ainda."])
+    escritor = PdfWriter()
+    for item in disponiveis:
+        _anexar(escritor, item["conteudo"]())
+    saida = io.BytesIO()
+    escritor.write(saida)
+    return saida.getvalue()
 
 
 def _disponiveis(solicitacao, hoje):

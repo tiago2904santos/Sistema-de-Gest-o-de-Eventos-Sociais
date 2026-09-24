@@ -1491,8 +1491,9 @@ class EtapasTests(EtapasBase):
         self.assertContains(resposta, "LICITACAO")
         self.assertContains(resposta, "REGISTRO DE PRECO")
         self.assertContains(resposta, 'data-copiar-de="texto-detalhamento"')
-        self.assertContains(resposta, reverse("coffee_break:pacote_protocolo", args=[self.solicitacao.pk]))
-        self.assertContains(resposta, reverse("coffee_break:pacote_protocolo_zip", args=[self.solicitacao.pk]))
+        # Os quatro arquivos para baixar.
+        for parte in ("os", "oficio", "notas", "contratos"):
+            self.assertContains(resposta, reverse("coffee_break:pacote_parte", args=[self.solicitacao.pk, parte]))
 
     def test_andamento_volta_para_a_etapa_do_proximo_marco(self):
         s = self.solicitacao
@@ -2085,18 +2086,49 @@ class Etapa3VisualizadorTests(EtapasBase):
     """Etapa 3: visualizador inline (sem editor), tudo fechado, PDF único com
     as certidões e aviso de certidão vencida."""
 
-    def test_documentos_no_visualizador_fechados(self):
+    def test_quatro_arquivos_no_visualizador_fechados(self):
         self._completar_para_protocolo(self.solicitacao)
         resposta = self.client.get(reverse("coffee_break:etapa_protocolo", args=[self.solicitacao.pk]))
         texto = resposta.content.decode()
-        self.assertIn('id="anexo-completo"', texto)
-        self.assertIn(f'data-cb-pdf="{reverse("coffee_break:pacote_protocolo", args=[self.solicitacao.pk])}"', texto)
-        self.assertIn('id="anexo-certidao-fgts"', texto)
-        self.assertEqual(texto.count("data-cb-pdf="), 11)  # o PDF único e os dez documentos
-        self.assertNotIn("<details class=\"ofc-doc cb-anexo-doc\" data-ofc-doc id=\"anexo-oficio\" open", texto)
+        for parte in ("os", "oficio", "notas", "contratos"):
+            self.assertIn(f'id="anexo-{parte}"', texto)
+            self.assertIn(f'data-cb-pdf="{reverse("coffee_break:pacote_parte", args=[self.solicitacao.pk, parte])}"', texto)
+        self.assertEqual(texto.count("data-cb-pdf="), 4)
         self.assertNotIn(" open>", texto.split('id="sec-anexo"')[1].split('id="sec-pagamento"')[0])
         self.assertNotIn("data-de-embutir", texto)  # sem editor
-        self.assertIn("pdf.min.js", texto)
+
+    def test_notas_e_certificos_intercalados_e_todos_os_aditivos(self):
+        from django.core.files.base import ContentFile
+
+        from .models import AditivoContrato
+
+        self._completar_para_protocolo(self.solicitacao)
+        for numero, inicio in (("0100/2024", dt.date(2024, 10, 31)), ("0355/2025", dt.date(2025, 10, 31))):
+            aditivo = AditivoContrato(contrato=self.contrato, numero=numero, vigencia_inicio=inicio)
+            aditivo.arquivo.save(f"{numero[:4]}.pdf", ContentFile(_pdf_em_branco()), save=True)
+        outra = self.criar_solicitacao(numero="42/2026", local_entrega="DP", responsavel_recebimento="Ana", numero_nota_fiscal="8954")
+        outra.arquivo_nota_fiscal.save("nf2.pdf", ContentFile(_pdf_em_branco()), save=True)
+        services.definir_pagamento_conjunto(self.solicitacao, [outra.pk])
+        self.solicitacao.refresh_from_db()
+        partes = {p["chave"]: p for p in documentos.partes_do_anexo(self.solicitacao)}
+        self.assertEqual(
+            [i["chave"] for i in partes["notas"]["itens"]],
+            [f"nota-{self.solicitacao.pk}", f"certifico-{self.solicitacao.pk}", f"nota-{outra.pk}", f"certifico-{outra.pk}"],
+        )
+        contratos = [i["titulo"] for i in partes["contratos"]["itens"]]
+        self.assertEqual(contratos[:3], ["Contrato 0762/2024", "Termo aditivo 0100/2024", "Termo aditivo 0355/2025"])
+        self.assertEqual(sum(1 for t in contratos if t.startswith("Certidão")), 5)
+        self.assertEqual(len(partes["os"]["itens"]), 2)
+        from pypdf import PdfReader
+
+        for parte in documentos.PARTES:
+            with mock.patch.object(documentos, "ordem_servico_pdf", return_value=_pdf_em_branco()), \
+                 mock.patch.object(documentos, "oficio_pdf", return_value=_pdf_em_branco()), \
+                 mock.patch.object(documentos, "certifico_pdf", return_value=_pdf_em_branco()):
+                pdf = PdfReader(io.BytesIO(documentos.parte_pdf(self.solicitacao, parte)))
+            self.assertGreaterEqual(len(pdf.pages), 1, parte)
+        resposta = self.client.get(reverse("coffee_break:pacote_parte", args=[self.solicitacao.pk, "contratos"]))
+        self.assertEqual(resposta["Content-Type"], "application/pdf")
 
     def test_certidao_vencida_entra_no_pdf_unico_com_aviso(self):
         from pypdf import PdfReader
@@ -2107,7 +2139,7 @@ class Etapa3VisualizadorTests(EtapasBase):
         CertidaoFornecedor.objects.filter(tipo=TipoCertidao.FGTS).update(validade=dt.date(2020, 1, 1))
         resposta = self.client.get(reverse("coffee_break:etapa_protocolo", args=[self.solicitacao.pk]))
         self.assertContains(resposta, "Certidão vencida.")
-        self.assertContains(resposta, "Com certidão vencida")
+        self.assertContains(resposta, 'cb-st--vencida">Certidão vencida')
         itens = documentos.itens_anexo(self.solicitacao)
         todas = sum(1 for item in itens if item["disponivel"])
         self.assertEqual(todas, len(itens))
