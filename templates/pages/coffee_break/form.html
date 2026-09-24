@@ -37,44 +37,51 @@
         <h2 class="section-card__titulo">Evento e ordem de serviço</h2>
       </header>
       <div class="section-card__corpo">
-        {# Na caixa, como nas Palestras: data, horário e quantidade numa linha; o município (que decide o lote) na outra. #}
-        <div class="bate-volta ofc-percurso">
-          <div class="ofc-percurso__linha">
-            <div class="bate-volta__rotulo ofc-percurso__rotulo">Data</div>
-            <div>
-              <div class="cb-data-linha">
-                {% include "components/input.html" with name="data_inicio_evento" label="Data do evento" rotulo_oculto=True tipo="date" valor=valores.data_inicio_evento erros=erros.data_inicio_evento desabilitado=dados_base_bloqueados %}
-                {% include "components/input.html" with name="horario_evento" label="Horário" rotulo_oculto=True tipo="time" valor=valores.horario_evento erros=erros.horario_evento desabilitado=somente_leitura %}
-                <div class="form-campo">
-                  <label class="sr-only" for="id_quantidade">Quantidade solicitada</label>
-                  <div class="ofc-numero">
-                    <div class="form-controle-wrapper{% if erros.quantidade %} is-invalid{% endif %}"><input class="form-controle" type="number" min="1" step="1" inputmode="numeric" id="id_quantidade" name="quantidade" value="{{ valores.quantidade }}" placeholder="Quantidade" required{% if dados_base_bloqueados %} disabled{% endif %}{% if erros.quantidade %} aria-invalid="true" aria-describedby="id_quantidade_erro"{% endif %}></div>
-                    <span class="ofc-numero__ano">pessoas</span>
-                  </div>
-                  {% for erro in erros.quantidade %}<p class="form-erro" id="id_quantidade_erro">{{ erro }}</p>{% endfor %}
-                </div>
-              </div>
-              {% if valores.periodo_evento_texto %}<p class="form-ajuda">Na planilha: {{ valores.periodo_evento_texto }}</p>{% endif %}
-            </div>
+        {# 1ª linha: data, horário, pessoas e município. #}
+        <div class="cb-evento-linha">
+          {% include "components/input.html" with name="data_inicio_evento" label="Data do evento" tipo="date" valor=valores.data_inicio_evento erros=erros.data_inicio_evento desabilitado=dados_base_bloqueados %}
+          {% include "components/input.html" with name="horario_evento" label="Horário" tipo="time" valor=valores.horario_evento erros=erros.horario_evento desabilitado=somente_leitura %}
+          <div class="form-campo">
+            <label class="form-label" for="id_quantidade">Pessoas</label>
+            <div class="form-controle-wrapper{% if erros.quantidade %} is-invalid{% endif %}"><input class="form-controle" type="number" min="1" step="1" inputmode="numeric" id="id_quantidade" name="quantidade" value="{{ valores.quantidade }}" placeholder="Quantidade" required{% if dados_base_bloqueados %} disabled{% endif %}{% if erros.quantidade %} aria-invalid="true" aria-describedby="id_quantidade_erro"{% endif %}></div>
+            {% for erro in erros.quantidade %}<p class="form-erro" id="id_quantidade_erro">{{ erro }}</p>{% endfor %}
           </div>
-          <div class="ofc-percurso__linha">
-            <div class="bate-volta__rotulo ofc-percurso__rotulo">Município</div>
-            <div>
-              {# O lote não se escolhe: sai do município (lista do lote ou, fora dela, a sede mais próxima). #}
-              {% include "components/select.html" with name="municipio" label="Município do evento" rotulo_oculto=True opcoes=municipios obrigatorio=form.fields.municipio.required pesquisavel=True selecionado=valores.municipio erros=erros.municipio desabilitado=dados_base_bloqueados placeholder="Buscar município..." %}
-            </div>
-          </div>
+          {# O lote não se escolhe: sai do município (lista do lote ou, fora dela, a sede mais próxima). #}
+          {% include "components/select.html" with name="municipio" label="Município do evento" opcoes=municipios obrigatorio=form.fields.municipio.required pesquisavel=True selecionado=valores.municipio erros=erros.municipio desabilitado=dados_base_bloqueados placeholder="Buscar município..." %}
+        </div>
+        {% if valores.periodo_evento_texto %}<p class="form-ajuda">Na planilha: {{ valores.periodo_evento_texto }}</p>{% endif %}
+
+        {# 2ª linha: o lote que o município recebe, com o que importa dele (preenchida por coffee-break-lote.js). #}
+        <div class="cb-lote-linha" data-cb-lote{% if not solicitacao %} hidden{% endif %}>
+          <ul class="tm-fatos" aria-label="Lote que atende o município">
+            {% if solicitacao %}
+              <li class="tm-fato">{% include "components/icon.html" with nome="clipboard" %}<span class="vg-fato__valor"><a href="{% url 'coffee_break:lote_detalhe' lote.pk %}">{{ lote.rotulo_curto }}</a></span></li>
+              <li class="tm-fato">{% include "components/icon.html" with nome="landmark" %}<span class="vg-fato__valor">{{ lote.contrato.fornecedor.razao_social }}</span></li>
+              <li class="tm-fato">{% include "components/icon.html" with nome="document" %}<span class="vg-fato__valor">Contrato {{ lote.contrato.numero }}{% if lote.contrato.termo_aditivo %} · Aditivo {{ lote.contrato.termo_aditivo }}{% endif %}</span></li>
+              {% if lote.contrato.vigencia_fim %}<li class="tm-fato">{% include "components/icon.html" with nome="clock" %}<span class="vg-fato__valor">{% if lote.contrato.vigencia_fim < hoje %}Vencido em{% else %}Vigente até{% endif %} {{ lote.contrato.vigencia_fim|date:"d/m/Y" }}</span></li>{% endif %}
+              <li class="tm-fato">{% include "components/icon.html" with nome="coffee" %}<span class="vg-fato__valor">Saldo {{ lote.restante }} de {{ lote.quantidade_total }}</span></li>
+              {% if lote.empenho %}<li class="tm-fato">{% include "components/icon.html" with nome="checklist" %}<span class="vg-fato__valor">Empenho {{ lote.empenho }}</span></li>{% endif %}
+            {% endif %}
+          </ul>
+          <template data-cb-lote-icones>
+            <span data-icone="clipboard">{% include "components/icon.html" with nome="clipboard" %}</span>
+            <span data-icone="landmark">{% include "components/icon.html" with nome="landmark" %}</span>
+            <span data-icone="document">{% include "components/icon.html" with nome="document" %}</span>
+            <span data-icone="clock">{% include "components/icon.html" with nome="clock" %}</span>
+            <span data-icone="coffee">{% include "components/icon.html" with nome="coffee" %}</span>
+            <span data-icone="checklist">{% include "components/icon.html" with nome="checklist" %}</span>
+            <span data-icone="map-pin">{% include "components/icon.html" with nome="map-pin" %}</span>
+          </template>
         </div>
         <input type="hidden" name="periodo_evento_texto" value="{{ valores.periodo_evento_texto }}">
-        {% include "components/input.html" with name="descricao_evento" label="Descrição do evento (objeto da OS)" obrigatorio=True maxlength="255" placeholder="Ex.: Ciclo de Palestras Saúde e Bem-Estar - 1DP Curitiba" valor=valores.descricao_evento erros=erros.descricao_evento desabilitado=dados_base_bloqueados %}
-        {# A ordem de serviço numa linha: número, onde entregar e quem recebe. O resto se edita na própria folha. #}
-        <div class="cb-os-linha">
+
+        <div class="cb-os-linha cb-os-linha--os">
           {% if numero_livre %}
             {% include "components/input.html" with name="numero" label="Nº da OS" ajuda="Número antigo, fora do formato NN/AAAA." valor=valores.numero erros=erros.numero desabilitado=dados_base_bloqueados %}
           {% else %}
             {# Como o N° do Ofício de Viagens: a sequência no campo e o ano ao lado. #}
             <div class="form-campo">
-              <label class="form-label" for="id_numero">Nº da OS</label>
+              <label class="form-label" for="id_numero">Nº OS</label>
               <div class="ofc-numero">
                 <div class="form-controle-wrapper{% if erros.numero %} is-invalid{% endif %}"><input class="form-controle" type="number" min="1" step="1" inputmode="numeric" id="id_numero" name="numero" value="{{ valores.numero }}" placeholder="—"{% if dados_base_bloqueados %} disabled{% endif %}{% if erros.numero %} aria-invalid="true" aria-describedby="id_numero_erro"{% endif %}></div>
                 <span class="ofc-numero__ano">/ {{ numero_ano }}</span>
@@ -82,6 +89,7 @@
               {% for erro in erros.numero %}<p class="form-erro" id="id_numero_erro">{{ erro }}</p>{% endfor %}
             </div>
           {% endif %}
+          {% include "components/input.html" with name="descricao_evento" label="Descrição do evento (objeto da OS)" obrigatorio=True maxlength="255" placeholder="Ex.: Ciclo de Palestras - 1DP Curitiba" valor=valores.descricao_evento erros=erros.descricao_evento desabilitado=dados_base_bloqueados %}
           {% include "components/input.html" with name="local_entrega" label="Local de entrega" placeholder="Ex.: Casa da Cultura - Rua do Centenário, 2011 - Centro - Campo Largo" valor=valores.local_entrega erros=erros.local_entrega desabilitado=somente_leitura %}
           {% include "components/input.html" with name="responsavel_recebimento" label="Responsável pelo recebimento" placeholder="Ex.: Tadeu 41 99988-6010" valor=valores.responsavel_recebimento erros=erros.responsavel_recebimento desabilitado=somente_leitura %}
         </div>
@@ -98,6 +106,7 @@
           </div>
         {% endif %}
 
+        {% if solicitacao %}<p class="pc-docs__nota">Criada por {{ solicitacao.criado_por }} em {{ solicitacao.criado_em|date:"d/m/Y" }} · atualizada em {{ solicitacao.atualizado_em|date:"d/m/Y H:i" }}.</p>{% endif %}
         <div class="frm-acoes-fim">
           <a class="btn--secundaria" href="{% url 'coffee_break:solicitacoes' %}">Voltar</a>
           {% if not somente_leitura %}
@@ -115,23 +124,6 @@
   </form>
 
   {% if solicitacao %}
-    <section class="section-card reg" id="sec-vinculo">
-      <header class="section-card__cabecalho reg__t">
-        <h2 class="section-card__titulo">Lote e contrato</h2>
-      </header>
-      <div class="section-card__corpo">
-        {# O vínculo contratual como fatos com ícone, na linguagem das listas. #}
-        <ul class="tm-fatos" aria-label="Vínculo contratual da solicitação">
-          <li class="tm-fato">{% include "components/icon.html" with nome="clipboard" %}<span class="sr-only">Lote: </span><span class="vg-fato__valor"><a href="{% url 'coffee_break:lote_detalhe' lote.pk %}">{{ lote.rotulo_curto }}</a></span></li>
-          <li class="tm-fato">{% include "components/icon.html" with nome="landmark" %}<span class="sr-only">Fornecedor: </span><span class="vg-fato__valor">{{ lote.contrato.fornecedor.razao_social }}</span></li>
-          <li class="tm-fato">{% include "components/icon.html" with nome="document" %}<span class="sr-only">Contrato: </span><span class="vg-fato__valor">Contrato {{ lote.contrato.numero }}</span></li>
-          <li class="tm-fato">{% include "components/icon.html" with nome="coffee" %}<span class="sr-only">Saldo atual do lote: </span><span class="vg-fato__valor">Saldo {{ lote.restante }} de {{ lote.quantidade_total }}</span></li>
-          <li class="tm-fato">{% include "components/icon.html" with nome="user" %}<span class="sr-only">Criada por: </span><span class="vg-fato__valor">{{ solicitacao.criado_por }} em {{ solicitacao.criado_em|date:"d/m/Y" }}</span></li>
-          <li class="tm-fato">{% include "components/icon.html" with nome="clock" %}<span class="sr-only">Atualizada em: </span><span class="vg-fato__valor">Atualizada em {{ solicitacao.atualizado_em|date:"d/m/Y H:i" }}</span></li>
-        </ul>
-      </div>
-    </section>
-
     {# Cancelar pede o motivo, como na lista de viagens: o campo e o envio juntos. #}
     {% if not solicitacao.cancelada and not solicitacao.concluida %}
       <section class="section-card reg" id="sec-acoes">
@@ -151,4 +143,4 @@
   {% endif %}
 {% endblock %}
 
-{% block etapa_js %}{% include "documentos/editor/_recursos.html" %}<script src="{% estatico 'js/coffee-break-documentos.js' %}" defer></script>{% endblock %}
+{% block etapa_js %}{% include "documentos/editor/_recursos.html" %}<script src="{% estatico 'js/coffee-break-documentos.js' %}" defer></script><script src="{% estatico 'js/coffee-break-lote.js' %}" defer></script>{% endblock %}
