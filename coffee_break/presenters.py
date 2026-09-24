@@ -148,6 +148,27 @@ def linha_do_lote(lote):
     }
 
 
+def _vigencia(contrato):
+    if not contrato.vigencia_fim:
+        return "Vigência não informada"
+    from django.utils import timezone
+
+    prefixo = "Vencido em" if contrato.vigencia_fim < timezone.localdate() else "Vigente até"
+    texto = f"{prefixo} {contrato.vigencia_fim:%d/%m/%Y}"
+    return f"{texto} (estimada)" if contrato.vigencia_estimada else texto
+
+
+def _selo_contrato(contrato, tom=False):
+    from django.utils import timezone
+
+    if not contrato.vigencia_fim:
+        return ""
+    vigente = contrato.vigencia_fim >= timezone.localdate()
+    if tom:
+        return "ativo" if vigente else "inativo"
+    return "Vigente" if vigente else "Vencido"
+
+
 def linha_do_cadastro(item, tipo):
     """A linha dos cadastros do módulo (fornecedor, contrato ou lote).
 
@@ -167,7 +188,12 @@ def linha_do_cadastro(item, tipo):
             {"icone": "landmark", "rotulo": "Fornecedor", "texto": item.fornecedor.razao_social, "ausente": False},
             {"icone": "clipboard", "rotulo": "GMS", "texto": f"GMS {item.numero_gms}" if item.numero_gms else "Sem GMS", "ausente": not item.numero_gms},
             {"icone": "shield", "rotulo": "Fiscal", "texto": item.fiscal_responsavel or "Sem fiscal", "ausente": not item.fiscal_responsavel},
+            {"icone": "clock", "rotulo": "Vigência", "texto": _vigencia(item), "ausente": not item.vigencia_fim},
         ]
+        if item.termo_aditivo:
+            fatos.insert(2, {"icone": "document", "rotulo": "Termo aditivo", "texto": f"Aditivo {item.termo_aditivo}", "ausente": False})
+        if item.quantidade_contratada:
+            fatos.append({"icone": "coffee", "rotulo": "Quantidade", "texto": f"{item.quantidade_contratada:,} unidades".replace(",", "."), "ausente": False})
     elif tipo == "oficio":
         titulo = "Ofício de pagamento e eProtocolo"
         fatos = [
@@ -186,8 +212,8 @@ def linha_do_cadastro(item, tipo):
         "item": item,
         "titulo": titulo,
         # Só o lote tem vigência (é ela que decide quem recebe pelo município).
-        "selo": ("Vigente" if item.ativo else "Encerrado") if tipo == "lotes" else "",
-        "selo_tom": ("ativo" if item.ativo else "inativo") if tipo == "lotes" else "",
+        "selo": ("Vigente" if item.ativo else "Encerrado") if tipo == "lotes" else _selo_contrato(item) if tipo == "contratos" else "",
+        "selo_tom": ("ativo" if item.ativo else "inativo") if tipo == "lotes" else _selo_contrato(item, tom=True) if tipo == "contratos" else "",
         "fatos": fatos,
         "url_editar": reverse("coffee_break:cadastro_editar", args=[tipo, item.pk]),
         "url_excluir": reverse("coffee_break:cadastro_excluir", args=[tipo, item.pk]),

@@ -3,7 +3,9 @@
   Certidões dos fornecedores com lote ativo: um cartão por fornecedor, uma
   linha por certidão, com a validade e o portal emissor. Os portais pedem
   CAPTCHA, então a emissão é manual: "Emitir" copia o CNPJ e abre o portal;
-  o PDF baixado volta por "Enviar" e o sistema lê a validade dele.
+  o PDF baixado volta por "Anexar" (o modal de anexo de documentos), e o
+  sistema confere se é a certidão certa, do CNPJ do fornecedor, e lê a
+  validade dele.
 {% endcomment %}
 
 {% block title %}Certidões — Coffee Break{% endblock %}
@@ -14,7 +16,7 @@
 
   <div class="aviso aviso--info" role="status">
     {% include "components/icon.html" with nome="info" %}
-    <div>“Emitir” copia o CNPJ e abre o portal (todos pedem a verificação “não sou um robô”). Baixe o PDF e envie-o aqui: o sistema lê a validade sozinho. Certidões que vencem em até {{ dias_aviso }} dias aparecem em amarelo, e o pacote do protocolo só usa certidões vigentes.</div>
+    <div>“Emitir” abre o portal com o CNPJ já copiado — é só colar no campo (Ctrl+V). Baixe o PDF e use “Anexar”: o sistema confere se é a certidão certa, do CNPJ do fornecedor, e lê até quando ela vale. Certidões que vencem em até {{ dias_aviso }} dias aparecem em amarelo.</div>
   </div>
 
   {% for item in fornecedores %}
@@ -28,7 +30,7 @@
           {% for linha in item.linhas %}
             <li class="cb-certidao">
               <div class="cb-certidao__info">
-                <b>{{ linha.rotulo }}</b>
+                {% if linha.certidao %}<a class="cb-certidao__nome" href="{% url 'coffee_break:certidao_arquivo' linha.certidao.pk %}" target="_blank" rel="noopener" title="Abrir o PDF">{{ linha.rotulo }}</a>{% else %}<b>{{ linha.rotulo }}</b>{% endif %}
                 {% if linha.situacao == "faltando" %}
                   <span class="st st--pendente">Não cadastrada</span>
                 {% elif linha.situacao == "vencida" %}
@@ -38,23 +40,15 @@
                 {% else %}
                   <span class="st st--atendida">Válida até {{ linha.certidao.validade|date:"d/m/Y" }}</span>
                 {% endif %}
-                {% if linha.certidao %}<a href="{% url 'coffee_break:certidao_arquivo' linha.certidao.pk %}" target="_blank" rel="noopener">Ver PDF</a>{% endif %}
               </div>
               <div class="cb-certidao__acoes">
+                {# Só os dois botões: anexar (o modal de anexo de documentos) e emitir (o portal, com o CNPJ copiado). #}
+                <a class="btn-primaria btn--compacto" href="{% url 'coffee_break:anexar_certidao' f.pk linha.tipo %}" data-anexar-assinado data-anexar-validade data-anexar-titulo="Anexar certidão {{ linha.rotulo }}" data-anexar-texto="Envie o PDF da certidão {{ linha.rotulo }} de {{ f.razao_social }}. O sistema confere se é a certidão certa, do CNPJ {{ f.cnpj_formatado }}, e lê até quando ela vale." data-anexar-acao="Anexar certidão">{% include "components/icon.html" with nome="upload" %}Anexar</a>
                 {% if linha.portal %}
-                  <a class="btn--secundaria btn--compacto" href="{{ linha.portal }}" target="_blank" rel="noopener" data-copiar-cnpj="{{ f.cnpj }}">{% include "components/icon.html" with nome="arrow-right" %}Emitir</a>
+                  <a class="btn--secundaria btn--compacto" href="{{ linha.portal }}" target="_blank" rel="noopener" data-copiar-cnpj="{{ f.cnpj }}" data-cnpj-formatado="{{ f.cnpj_formatado }}">{% include "components/icon.html" with nome="arrow-right" %}Emitir</a>
                 {% else %}
-                  <span class="form-ajuda">Portal municipal não cadastrado no fornecedor.</span>
+                  <a class="btn--secundaria btn--compacto" href="{% url 'coffee_break:cadastro_lista' 'fornecedores' %}?editar={{ f.pk }}" title="Cadastre o endereço do portal municipal no fornecedor">{% include "components/icon.html" with nome="arrow-right" %}Emitir</a>
                 {% endif %}
-                <form method="post" enctype="multipart/form-data" class="cb-certidao__envio">{% csrf_token %}
-                  <input type="hidden" name="fornecedor" value="{{ f.pk }}">
-                  <input type="hidden" name="tipo" value="{{ linha.tipo }}">
-                  <label class="sr-only" for="arq-{{ f.pk }}-{{ linha.tipo }}">PDF da certidão {{ linha.rotulo }}</label>
-                  <input type="file" name="arquivo" id="arq-{{ f.pk }}-{{ linha.tipo }}" accept=".pdf,application/pdf" required class="form-controle">
-                  <label class="sr-only" for="val-{{ f.pk }}-{{ linha.tipo }}">Válida até (opcional)</label>
-                  <input type="date" name="validade" id="val-{{ f.pk }}-{{ linha.tipo }}" class="form-controle" title="Válida até — em branco, o sistema lê do PDF">
-                  <button type="submit" class="btn-primaria btn--compacto">{% include "components/icon.html" with nome="upload" %}Enviar</button>
-                </form>
               </div>
             </li>
           {% endfor %}
@@ -66,12 +60,24 @@
     <p>Nenhum fornecedor com lote ativo.</p>
   {% endfor %}
 
+  <div class="cb-toast" data-cb-toast role="status" aria-live="polite" hidden></div>
   <script>
-    // "Emitir": copia o CNPJ (só dígitos) antes de abrir o portal.
-    document.querySelectorAll("[data-copiar-cnpj]").forEach(function (link) {
-      link.addEventListener("click", function () {
-        if (navigator.clipboard) navigator.clipboard.writeText(link.dataset.copiarCnpj).catch(function () {});
+    // "Emitir": copia o CNPJ (só dígitos) antes de abrir o portal e avisa.
+    // Os portais são de outros órgãos: o navegador não deixa um site
+    // preencher o campo de outro, então o CNPJ vai copiado para colar.
+    (function () {
+      var toast = document.querySelector("[data-cb-toast]");
+      var tempo = null;
+      document.querySelectorAll("[data-copiar-cnpj]").forEach(function (link) {
+        link.addEventListener("click", function () {
+          if (navigator.clipboard) navigator.clipboard.writeText(link.dataset.copiarCnpj).catch(function () {});
+          if (!toast) return;
+          toast.textContent = "CNPJ " + link.dataset.cnpjFormatado + " copiado — no portal, é só colar no campo (Ctrl+V).";
+          toast.hidden = false;
+          clearTimeout(tempo);
+          tempo = setTimeout(function () { toast.hidden = true; }, 6000);
+        });
       });
-    });
+    })();
   </script>
 {% endblock %}
