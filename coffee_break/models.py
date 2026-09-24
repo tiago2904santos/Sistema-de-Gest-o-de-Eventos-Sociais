@@ -419,6 +419,19 @@ class SolicitacaoCoffeeBreak(models.Model):
         "motivo do cancelamento", max_length=255, blank=True
     )
 
+    # Pagamento conjunto: várias OS do mesmo lote num ofício e num protocolo
+    # (como o 26.613.666-8, com as notas 8952 e 8954). As outras apontam para
+    # a principal; o ofício, o protocolo e os marcos do pagamento são os
+    # mesmos em todas (espelhados); a nota e o certifico são de cada uma.
+    pagamento_com = models.ForeignKey(
+        "self",
+        verbose_name="pagamento junto com",
+        on_delete=models.SET_NULL,
+        related_name="pagamento_junto",
+        blank=True,
+        null=True,
+    )
+
     criado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         verbose_name="criado por",
@@ -584,6 +597,25 @@ class SolicitacaoCoffeeBreak(models.Model):
     @property
     def concluida(self):
         return bool(self.data_envio_empresa) and not self.cancelada
+
+    # -- Pagamento conjunto ---------------------------------------------------
+
+    @property
+    def principal_do_pagamento(self):
+        return self.pagamento_com if self.pagamento_com_id else self
+
+    def grupo_pagamento(self):
+        """As solicitações que vão no mesmo ofício e protocolo, pela ordem da
+        OS (só esta, quando não há pagamento conjunto)."""
+        principal = self.principal_do_pagamento
+        if not principal.pk:
+            return [self]
+        membros = [principal, *principal.pagamento_junto.select_related("lote__contrato__fornecedor")]
+        return sorted(membros, key=lambda s: (s.numero or "", s.pk))
+
+    @property
+    def em_pagamento_conjunto(self):
+        return bool(self.pagamento_com_id) or (bool(self.pk) and self.pagamento_junto.exists())
 
 
 class AcaoHistoricoCoffeeBreak(models.TextChoices):

@@ -322,13 +322,94 @@ def proxima_sequencia_oficio(ano):
 
 
 def oficio_em_uso(numero, excluir_pk=None):
-    """A solicitação que já tem este número de ofício, ou None."""
+    """A solicitação de fora do pagamento conjunto que já tem este número de
+    ofício, ou None (as do mesmo pagamento dividem o ofício)."""
     from .models import SolicitacaoCoffeeBreak
 
     consulta = SolicitacaoCoffeeBreak.objects.filter(numero_oficio=numero)
     if excluir_pk:
-        consulta = consulta.exclude(pk=excluir_pk)
+        atual = SolicitacaoCoffeeBreak.objects.filter(pk=excluir_pk).first()
+        grupo = [s.pk for s in atual.grupo_pagamento()] if atual else [excluir_pk]
+        consulta = consulta.exclude(pk__in=grupo)
     return consulta.first()
+
+
+# ---------------------------------------------------------------------------
+# Pagamento conjunto: várias OS do mesmo lote num ofício e num protocolo
+# ---------------------------------------------------------------------------
+
+# O que é do pagamento (igual em todas as OS do grupo); a nota e o certifico
+# são de cada uma.
+CAMPOS_ESPELHADOS = (
+    "numero_oficio", "data_oficio", "protocolo_pcpr_oficio",
+    "protocolo_pagamento", "data_atesto_gaf", "data_ordem_bancaria", "data_envio_empresa",
+)
+
+
+def espelhar(solicitacao, campos=None):
+    """Copia os campos do pagamento para as outras OS do mesmo pagamento."""
+    from .models import SolicitacaoCoffeeBreak
+
+    campos = [c for c in (campos or CAMPOS_ESPELHADOS) if c in CAMPOS_ESPELHADOS]
+    outras = [s.pk for s in solicitacao.grupo_pagamento() if s.pk != solicitacao.pk]
+    if not campos or not outras:
+        return 0
+    valores = {campo: getattr(solicitacao, campo) for campo in campos}
+    return SolicitacaoCoffeeBreak.objects.filter(pk__in=outras).update(atualizado_em=timezone.now(), **valores)
+
+
+def candidatas_ao_pagamento(solicitacao):
+    """As OS que podem ir no mesmo ofício: do mesmo lote, sem pagamento
+    (sem protocolo, não pagas), não canceladas nem em outro pagamento."""
+    from .models import SolicitacaoCoffeeBreak
+
+    grupo = {s.pk for s in solicitacao.grupo_pagamento()}
+    return (
+        SolicitacaoCoffeeBreak.objects.filter(lote_id=solicitacao.lote_id, cancelada=False, data_envio_empresa__isnull=True)
+        .filter(protocolo_pagamento="")
+        .exclude(pk__in=grupo)
+        .filter(pagamento_com__isnull=True, pagamento_junto__isnull=True)
+        .order_by("numero")
+    )
+
+
+@transaction.atomic
+def definir_pagamento_conjunto(solicitacao, outras_pks, usuario=None):
+    """Deixa no mesmo pagamento de `solicitacao` exatamente as OS `outras_pks`.
+
+    A principal continua a mesma quando fica no grupo; se sai, esta passa a
+    ser a principal. Quem entra recebe o ofício, o protocolo e os marcos do
+    pagamento; quem sai volta a ter o pagamento próprio (com os mesmos
+    dados, para editar à parte).
+    """
+    from .models import SolicitacaoCoffeeBreak
+
+    atual = solicitacao.grupo_pagamento()
+    alvo = {solicitacao.pk} | {int(pk) for pk in outras_pks}
+    antigos = {s.pk for s in atual}
+    novos = alvo - antigos
+    validas = set(candidatas_ao_pagamento(solicitacao).filter(pk__in=novos).values_list("pk", flat=True))
+    if novos - validas:
+        raise ValidationError("Só entram OS do mesmo lote, sem protocolo de pagamento e fora de outro pagamento conjunto.")
+    principal_antigo = solicitacao.principal_do_pagamento
+    principal = principal_antigo if principal_antigo.pk in alvo else solicitacao
+    saem = antigos - alvo
+    if saem:
+        SolicitacaoCoffeeBreak.objects.filter(pk__in=saem).update(pagamento_com=None, atualizado_em=timezone.now())
+    SolicitacaoCoffeeBreak.objects.filter(pk=principal.pk).update(pagamento_com=None)
+    membros = alvo - {principal.pk}
+    if membros:
+        SolicitacaoCoffeeBreak.objects.filter(pk__in=membros).update(pagamento_com=principal, atualizado_em=timezone.now())
+    principal.refresh_from_db()
+    espelhar(principal)
+    for pk in novos | saem:
+        outra = SolicitacaoCoffeeBreak.objects.get(pk=pk)
+        registrar_historico(
+            outra, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO,
+            f"Pagamento junto com a OS {principal.numero} (mesmo ofício e protocolo)." if pk in novos
+            else "Saiu do pagamento conjunto: ofício e protocolo próprios.",
+        )
+    return principal
 
 
 def numero_em_uso(numero, excluir_pk=None):
@@ -421,6 +502,8 @@ def registrar_marco(solicitacao, usuario, valor, anotacao=""):
             [m for mensagens in erro.message_dict.values() for m in mensagens]
         ) from erro
     solicitacao.save()
+    # Marco do pagamento vale para todas as OS do mesmo pagamento.
+    espelhar(solicitacao, [marco["campo"]])
     texto = f"{marco['rotulo']}: {valor:%d/%m/%Y}" if marco["tipo"] == "date" else f"{marco['rotulo']}: {valor}"
     anotacao = (anotacao or "").strip()
     registrar_historico(

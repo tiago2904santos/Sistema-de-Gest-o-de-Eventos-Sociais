@@ -18,8 +18,28 @@
       <header class="section-card__cabecalho reg__t">
         <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
         <h2 class="section-card__titulo">Nota fiscal, ofício e certifico</h2>
+        {% if not somente_leitura %}
+          {# Pagamento conjunto: outra OS do mesmo lote no mesmo ofício e protocolo. #}
+          <div class="section-card__acao">
+            <button type="button" class="btn--secundaria btn--compacto" data-cb-vincular-abrir aria-expanded="false" aria-controls="cb-vincular">{% include "components/icon.html" with nome="link" %}Vincular outra OS</button>
+          </div>
+        {% endif %}
       </header>
       <div class="section-card__corpo">
+        {% if not somente_leitura %}
+          <div class="cb-vincular" id="cb-vincular" data-cb-vincular hidden>
+            <p class="cb-ajuda">Várias OS do mesmo lote num ofício e num protocolo: o ofício, o protocolo e o pagamento ficam iguais em todas (o que se fizer aqui vale para as outras); cada OS tem a sua nota e o seu certifico. Aparecem as OS do {{ lote.rotulo_curto }} que ainda não foram pagas nem protocoladas.</p>
+            <input type="hidden" name="vinculadas_enviado" value="1">
+            {% include "components/v32/lista_escolha.html" with name="vinculadas" multipla=True label="OS no mesmo pagamento" rotulo_busca="Buscar OS" rotulo_oculto=True icone="document" opcoes=opcoes_vinculo placeholder="Buscar pelo número da OS, evento ou nota" vazio="Nenhuma outra OS do mesmo lote em aberto." sem_resultado="Nenhuma OS encontrada." %}
+            <p class="form-ajuda">Marque as OS e salve a etapa.</p>
+          </div>
+        {% endif %}
+        {% if pagamento_conjunto %}
+          <div class="aviso aviso--info cb-conjunto" role="status">
+            {% include "components/icon.html" with nome="link" %}
+            <div><strong>Pagamento conjunto:</strong> esta OS vai no mesmo ofício e protocolo que {% for o in outras_do_pagamento %}<a href="{{ o.url_etapa }}">OS {{ o.s.numero }}</a>{% if not forloop.last %}{% if forloop.revcounter == 2 %} e {% else %}, {% endif %}{% endif %}{% endfor %}.</div>
+          </div>
+        {% endif %}
         {# Como a etapa 1: a nota e o ofício em duas linhas; o resto se edita na própria folha dos documentos. #}
         {# Basta anexar a nota: o número sai do próprio PDF (e também se corrige na folha do ofício e do certifico). #}
         {# Tudo numa linha: a nota (anexo), o nº e a data do ofício e o protocolo. #}
@@ -62,10 +82,31 @@
           {% include "components/input.html" with name="protocolo_pcpr_oficio" label="Protocolo (opcional)" placeholder="00.000.000-0" inputmode="numeric" maxlength="12" autocomplete="off" valor=valores.protocolo_pcpr_oficio erros=erros.protocolo_pcpr_oficio desabilitado=somente_leitura %}
         </div>
 
-        {# O visualizador de documentos de Viagens: o ofício e o certifico no editor, tudo editável. #}
+        {% if outras_do_pagamento %}
+          {# A nota de cada outra OS do pagamento: anexar ou trocar daqui mesmo. #}
+          <ul class="cb-outras-notas" aria-label="Notas das outras OS do pagamento">
+            {% for o in outras_do_pagamento %}
+              <li class="cb-outra-nota">
+                <span class="cb-outra-nota__os"><a href="{{ o.url_etapa }}">OS {{ o.s.numero }}</a> <small>{{ o.s.descricao_evento }}</small></span>
+                <span class="cb-anexo">
+                  {% if o.s.arquivo_nota_fiscal %}
+                    <a class="cb-anexo__arquivo" href="{% url 'coffee_break:nota_fiscal' o.s.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="document" %}<span>Nota fiscal{% if o.s.numero_nota_fiscal %} {{ o.s.numero_nota_fiscal }}{% else %} (número não lido — informe na OS {{ o.s.numero }}){% endif %}</span></a>
+                    <a class="btn--secundaria btn--compacto" href="{{ o.url_anexar }}" data-anexar-assinado data-anexar-atual="1" data-anexar-titulo="Trocar a nota fiscal da OS {{ o.s.numero }}" data-anexar-texto="Envie o PDF da nota fiscal da OS {{ o.s.numero }}. Ele substitui o que está anexado, e o número é lido de novo." data-anexar-acao="Anexar PDF" data-anexar-remover-rotulo="Remover nota fiscal">{% include "components/icon.html" with nome="upload" %}Trocar</a>
+                  {% else %}
+                    <a class="btn-primaria btn--compacto" href="{{ o.url_anexar }}" data-anexar-assinado data-anexar-titulo="Anexar nota fiscal da OS {{ o.s.numero }}" data-anexar-texto="Envie o PDF da nota fiscal da OS {{ o.s.numero }}. O número é lido do próprio PDF." data-anexar-acao="Anexar PDF">{% include "components/icon.html" with nome="upload" %}Anexar nota fiscal</a>
+                  {% endif %}
+                </span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+        {# O visualizador de documentos de Viagens: um ofício para o pagamento e um certifico por nota, tudo editável. #}
         <div class="ofc-docs cb-docs-gerados">
           {% include "pages/coffee_break/_documento_inline.html" with d=doc_oficio menu_id="cb-menu-oficio" aberto=True %}
-          {% include "pages/coffee_break/_documento_inline.html" with d=doc_certifico menu_id="cb-menu-certifico" %}
+          {% for d in docs_certifico %}
+            {% include "pages/coffee_break/_documento_inline.html" with d=d menu_id="cb-menu-certifico-"|add:forloop.counter %}
+          {% endfor %}
         </div>
         <p class="pc-docs__nota">A assinatura é feita no eProtocolo.</p>
 
@@ -82,4 +123,4 @@
   </form>
 {% endblock %}
 
-{% block etapa_js %}{% include "documentos/editor/_recursos.html" %}<script src="{% estatico 'js/coffee-break-documentos.js' %}" defer></script><script src="{% estatico 'js/coffee-break-protocolo.js' %}" defer></script>{% endblock %}
+{% block etapa_js %}{% include "documentos/editor/_recursos.html" %}<script src="{% estatico 'js/coffee-break-documentos.js' %}" defer></script><script src="{% estatico 'js/coffee-break-protocolo.js' %}" defer></script><script src="{% estatico 'js/lista-escolha.js' %}" defer></script><script src="{% estatico 'js/coffee-break-vincular.js' %}" defer></script>{% endblock %}

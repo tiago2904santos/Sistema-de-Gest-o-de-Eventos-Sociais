@@ -159,6 +159,7 @@ BLOCOS_OFICIO = _blocos(
     ("cb_item_coffee", "Texto do evento", "- Coffee Break para"),
     ("cb_item_pessoas", "Fim do item", "pessoas."),
     ("cb_encaminho", "Encaminhamento — começo", "Encaminho, em anexo, a Nota Fiscal n°"),
+    ("cb_encaminho_plural", "Encaminhamento — começo (várias notas)", "Encaminho, em anexo, as Notas Fiscais n°"),
     ("cb_encaminho_meio", "Encaminhamento — meio",
      ", devidamente atestada, juntamente com os demais documentos necessários, para que seja efetuado o pagamento "
      "ao CONTRATADO, nos termos da"),
@@ -343,7 +344,12 @@ class FonteSolicitacaoCoffee(FonteBase):
         return Form(dados, instance=alvo)
 
     def gravar(self, form, nomes, alvo):
-        return _gravar_recorte(form, nomes)
+        from . import services
+
+        gravado = _gravar_recorte(form, nomes)
+        # O ofício é de todas as OS do mesmo pagamento: o número, a data e o protocolo vão para todas.
+        services.espelhar(gravado, nomes)
+        return gravado
 
     def links(self, definicao, solicitacao, alvo):
         return []
@@ -518,6 +524,15 @@ class VinculoCoffeeOficio(VinculoCoffee):
     def rotulo(self, solicitacao):
         return f"Ofício {solicitacao.numero_oficio}".strip()
 
+    def dono_dos_blocos(self, solicitacao):
+        # O ofício é do pagamento: os textos reescritos moram na OS principal.
+        return solicitacao.principal_do_pagamento
+
+    def historico(self, solicitacao):
+        dono = self.dono_dos_blocos(solicitacao)
+        blocos = list(dono.blocos_documentais.filter(tipo_documento=self.tipo.value).values_list("pk", flat=True))
+        return _historico([("coffee_break.solicitacaocoffeebreak", [s.pk for s in solicitacao.grupo_pagamento()]), ("documentos.documentobloco", blocos)])
+
     def pendencias(self, solicitacao):
         from .documentos import pendencias_oficio
 
@@ -566,15 +581,27 @@ def contexto_da_folha(tipo, solicitacao, *, modo="editor", campos_editaveis=None
         "fornecedor": contrato.fornecedor if contrato else None,
         "data_extenso": data_extenso(solicitacao.data_solicitacao or timezone.localdate()),
         "imagens": {nome: static(caminho) for nome, caminho in IMAGENS.items()},
-        **_do_editor(tipo, {"documento": conteudo_documental(tipo, solicitacao)}, campos_editaveis, None),
+        # O ofício é do pagamento: os textos reescritos moram na OS principal.
+        **_do_editor(tipo, {"documento": conteudo_documental(
+            tipo, solicitacao.principal_do_pagamento if tipo == TipoCoffee.OFICIO and solicitacao.pk else solicitacao
+        )}, campos_editaveis, None),
         "modo": modo,
     }
     if tipo == TipoCoffee.OFICIO:
         from viagens_roteiros.services.valor_extenso import _numero_por_extenso
 
+        from .documentos import itens_do_oficio, juntar, notas_do_pagamento
+
         contexto["config"] = ConfiguracaoCoffeeBreak.atual()
         contexto["data_oficio_extenso"] = data_extenso_oficio(solicitacao.data_oficio or timezone.localdate())
         contexto["quantidade_extenso"] = _numero_por_extenso(solicitacao.quantidade or 0)
+        contexto["itens"] = itens_do_oficio(solicitacao) if solicitacao.pk else [
+            {"s": solicitacao, "quantidade_extenso": contexto["quantidade_extenso"]}
+        ]
+        notas = notas_do_pagamento(solicitacao) if solicitacao.pk else []
+        contexto["notas"] = juntar(notas)
+        contexto["varias_notas"] = len(notas) > 1
+        contexto["varias_os"] = len(contexto["itens"]) > 1
         if not solicitacao.numero_oficio:
             # Antes de salvar a etapa, o número que o ofício vai receber (em cinza).
             from . import services

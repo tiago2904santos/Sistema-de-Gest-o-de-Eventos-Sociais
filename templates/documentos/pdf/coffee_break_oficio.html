@@ -37,9 +37,12 @@
 
     <div class="doc-cb-oficio__corpo">
       {% bloco "cb_paragrafo_entrega" classe="doc-cb-oficio__recuo doc-cb-oficio__primeiro" base=False %}
-      <p class="doc-cb-oficio__recuo">{% bloco "cb_item_marcador" elemento="span" base=False %} {% trecho "cb_objeto" %}{{ s.descricao_evento }}{% endtrecho %} {% bloco "cb_item_coffee" elemento="span" base=False %} {{ s.quantidade }} ({{ quantidade_extenso }}) {% bloco "cb_item_pessoas" elemento="span" base=False %}</p>
+      {# Um item por OS do pagamento; o objeto desta OS se edita aqui, o das outras na tela delas. #}
+      {% for item in itens %}
+        <p class="doc-cb-oficio__recuo">{% bloco "cb_item_marcador" elemento="span" base=False %} {% if item.s.pk == s.pk %}{% trecho "cb_objeto" %}{{ item.s.descricao_evento }}{% endtrecho %}{% else %}{{ item.s.descricao_evento }}{% endif %} {% bloco "cb_item_coffee" elemento="span" base=False %} {{ item.s.quantidade }} ({{ item.quantidade_extenso }}) {% bloco "cb_item_pessoas" elemento="span" base=False %}</p>
+      {% endfor %}
       {% ponto_de_quebra "antes_encaminho" %}
-      <p class="doc-cb-oficio__recuo">{% bloco "cb_encaminho" elemento="span" base=False %} {% trecho "cb_nota" %}{{ s.numero_nota_fiscal }}{% if not s.numero_nota_fiscal %}{% vazio "nº da nota" %}{% endif %}{% endtrecho %}{% bloco "cb_encaminho_meio" elemento="span" base=False %} {% trecho "cb_clausula" %}{{ contrato.clausula_pagamento }}{% endtrecho %}{% bloco "cb_encaminho_contrato" elemento="span" base=False %} {% trecho "cb_contrato" %}{{ contrato.referencia_documental }}{% endtrecho %}.</p>
+      <p class="doc-cb-oficio__recuo">{% if varias_notas %}{% bloco "cb_encaminho_plural" elemento="span" base=False %} {{ notas }}{% else %}{% bloco "cb_encaminho" elemento="span" base=False %} {% if varias_os %}{{ notas }}{% else %}{% trecho "cb_nota" %}{{ s.numero_nota_fiscal }}{% if not s.numero_nota_fiscal %}{% vazio "nº da nota" %}{% endif %}{% endtrecho %}{% endif %}{% endif %}{% bloco "cb_encaminho_meio" elemento="span" base=False %} {% trecho "cb_clausula" %}{{ contrato.clausula_pagamento }}{% endtrecho %}{% bloco "cb_encaminho_contrato" elemento="span" base=False %} {% trecho "cb_contrato" %}{{ contrato.referencia_documental }}{% endtrecho %}.</p>
     </div>
 
     {% ponto_de_quebra "antes_assinatura" %}

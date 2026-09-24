@@ -2280,6 +2280,118 @@ class CertidaoConferidaTests(BaseCoffeeBreakTestCase):
         self.assertEqual(CertidaoFornecedor.objects.get(tipo="MUNICIPAL").validade, dt.date(2026, 12, 1))
 
 
+class PagamentoConjuntoTests(EtapasBase):
+    """Várias OS do mesmo lote num ofício e num protocolo, como o 26.613.666-8
+    (notas 8952 e 8954): ofício único, um certifico por nota, espelhadas."""
+
+    def setUp(self):
+        super().setUp()
+        LoteCoffeeBreak.objects.filter(pk=self.lote.pk).update(quantidade_total=500)
+        self.a = self.solicitacao
+        self.a.descricao_evento = "Encerramento do Curso Técnico Profissional"
+        self.a.quantidade = 80
+        self.a.numero_nota_fiscal = "8952"
+        self.a.save()
+        self.b = self.criar_solicitacao(
+            numero="42/2026", descricao_evento="Reunião da Delegacia de Fazenda Rio Grande", quantidade=40,
+            local_entrega="DP", responsavel_recebimento="Ana", numero_nota_fiscal="8954",
+        )
+
+    def _salvar_nota(self, s, **extra):
+        s.refresh_from_db()
+        dados = {
+            "numero_nota_fiscal": s.numero_nota_fiscal, "numero_oficio": "123", "data_oficio": "2026-09-21",
+            "versao": str(int(s.atualizado_em.timestamp() * 1_000_000)),
+        }
+        dados.update(extra)
+        return self.client.post(reverse("coffee_break:etapa_nota", args=[s.pk]), dados)
+
+    def test_lista_so_as_os_do_mesmo_lote_em_aberto(self):
+        outro_lote = LoteCoffeeBreak.objects.create(contrato=self.contrato, numero=2, exercicio="2026", quantidade_total=100)
+        fora = self.criar_solicitacao(lote=outro_lote, numero="43/2026")
+        protocolada = self.criar_solicitacao(numero="44/2026", numero_nota_fiscal="1", protocolo_pagamento="26.000.000-1")
+        candidatas = list(services.candidatas_ao_pagamento(self.a))
+        self.assertIn(self.b, candidatas)
+        self.assertNotIn(fora, candidatas)
+        self.assertNotIn(protocolada, candidatas)
+        tela = self.client.get(reverse("coffee_break:etapa_nota", args=[self.a.pk]))
+        self.assertContains(tela, "Vincular outra OS")
+        self.assertContains(tela, 'name="vinculadas" value="%d"' % self.b.pk)
+
+    def test_vincular_espelha_o_oficio_e_o_protocolo(self):
+        resposta = self._salvar_nota(self.a, vinculadas_enviado="1", vinculadas=[self.b.pk])
+        self.assertEqual(resposta.status_code, 302, resposta.context and resposta.context.get("erros"))
+        self.a.refresh_from_db()
+        self.b.refresh_from_db()
+        self.assertEqual(self.b.pagamento_com, self.a)
+        self.assertEqual([s.pk for s in self.b.grupo_pagamento()], [self.a.pk, self.b.pk])
+        self.assertEqual(self.b.numero_oficio, "123/2026")
+        self.assertEqual(self.b.data_oficio, dt.date(2026, 9, 21))
+        # O que se faz na etapa 2 da outra vale para as duas.
+        self._salvar_nota(self.b, numero_oficio="125", protocolo_pcpr_oficio="266136668")
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.numero_oficio, "125/2026")
+        self.assertEqual(self.a.protocolo_pcpr_oficio, "26.613.666-8")
+        # A tela das duas mostra o pagamento conjunto e um certifico por nota.
+        tela = self.client.get(reverse("coffee_break:etapa_nota", args=[self.b.pk]))
+        self.assertContains(tela, "Pagamento conjunto:")
+        self.assertContains(tela, "Certifico digital — NF 8952")
+        self.assertContains(tela, "Certifico digital — NF 8954")
+
+    def test_oficio_unico_e_textos_no_plural(self):
+        services.definir_pagamento_conjunto(self.a, [self.b.pk])
+        self.a.refresh_from_db()
+        self.b.refresh_from_db()
+        self.assertEqual(documentos.juntar(documentos.notas_do_pagamento(self.b)), "8952 e 8954")
+        itens = documentos.itens_do_oficio(self.b)
+        self.assertEqual([i["s"].pk for i in itens], [self.a.pk, self.b.pk])
+        self.assertEqual(itens[0]["quantidade_extenso"], "oitenta")
+        textos = documentos.textos_eprotocolo(self.b)
+        self.assertEqual(textos["detalhamento"], "ENVIO P/ PAGAMENTO DAS NOTAS FISCAIS N 8952 E 8954 - (PADARIA E CONFEITARIA FAVO E MEL)")
+        self.assertIn("o pagamento das Notas fiscais n° 8952 e 8954.", textos["despacho"])
+        from django.template.loader import render_to_string
+
+        from .editor import TipoCoffee, textos_do_documento
+        from .models import ConfiguracaoCoffeeBreak
+
+        b, quebras = textos_do_documento(TipoCoffee.OFICIO, self.a)
+        html = render_to_string("coffee_break/documentos/oficio.html", {
+            "s": self.a, "contrato": self.contrato, "config": ConfiguracaoCoffeeBreak.atual(), "b": b, "quebras": quebras,
+            "imagens": {}, "data_extenso": "21 de Setembro de 2026", "itens": itens, "notas": "8952 e 8954", "varias_notas": True,
+        })
+        self.assertIn("Encerramento do Curso Técnico Profissional - Coffee Break para 80 (oitenta)", html)
+        self.assertIn("Reunião da Delegacia de Fazenda Rio Grande - Coffee Break para 40 (quarenta)", html)
+        self.assertIn("Encaminho, em anexo, as Notas Fiscais n° 8952 e 8954, devidamente atestada", html)
+
+    def test_anexo_com_nota_e_certifico_de_cada_os(self):
+        services.definir_pagamento_conjunto(self.a, [self.b.pk])
+        chaves = [item["chave"] for item in documentos.itens_anexo(self.a)]
+        self.assertEqual(chaves[:5], ["oficio", f"nota-{self.a.pk}", f"certifico-{self.a.pk}", f"nota-{self.b.pk}", f"certifico-{self.b.pk}"])
+        self.assertEqual(chaves.count("certidao-fgts"), 1)
+
+    def test_marco_do_pagamento_vale_para_todas(self):
+        services.definir_pagamento_conjunto(self.a, [self.b.pk])
+        self.a.refresh_from_db()
+        services.registrar_marco(self.a, self.ascom, "26.613.666-8")
+        self.b.refresh_from_db()
+        self.assertEqual(self.b.protocolo_pagamento, "26.613.666-8")
+
+    def test_desvincular(self):
+        services.definir_pagamento_conjunto(self.a, [self.b.pk])
+        self._salvar_nota(self.a, vinculadas_enviado="1")
+        self.b.refresh_from_db()
+        self.assertIsNone(self.b.pagamento_com)
+        self.assertEqual(self.a.grupo_pagamento(), [self.a])
+
+    def test_so_entra_os_do_mesmo_lote(self):
+        from django.core.exceptions import ValidationError
+
+        outro_lote = LoteCoffeeBreak.objects.create(contrato=self.contrato, numero=2, exercicio="2026", quantidade_total=100)
+        fora = self.criar_solicitacao(lote=outro_lote, numero="43/2026")
+        with self.assertRaises(ValidationError):
+            services.definir_pagamento_conjunto(self.a, [fora.pk])
+
+
 class ImportarPlanilhaTelaTests(BaseCoffeeBreakTestCase):
     """A planilha pelo navegador: simula sem gravar, confirma e grava."""
 
