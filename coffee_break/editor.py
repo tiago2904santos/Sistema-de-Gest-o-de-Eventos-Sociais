@@ -326,7 +326,9 @@ class FonteSolicitacaoCoffee(FonteBase):
                 return _uma_linha(self.cleaned_data.get("responsavel_recebimento"))
 
             def clean_protocolo_pcpr_oficio(self):
-                return _uma_linha(self.cleaned_data.get("protocolo_pcpr_oficio"))
+                from core.utils.masks import format_protocolo
+
+                return format_protocolo(_uma_linha(self.cleaned_data.get("protocolo_pcpr_oficio")))
 
             def clean_detalhamento_pedido(self):
                 return (self.cleaned_data.get("detalhamento_pedido") or "").strip()

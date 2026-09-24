@@ -1952,6 +1952,18 @@ class Etapa2ComoEtapa1Tests(BaseCoffeeBreakTestCase):
         self.s.refresh_from_db()
         self.assertEqual(self.s.numero_oficio, "130/2026")
 
+    def test_tudo_numa_linha_e_protocolo_com_a_mascara_de_viagens(self):
+        resposta = self.client.get(self.url)
+        self.assertContains(resposta, "cb-nota-linha-unica")
+        self.assertContains(resposta, 'placeholder="00.000.000-0"')
+        self.assertContains(resposta, "coffee-break-protocolo.js")
+        self.client.post(self.url, {
+            "numero_nota_fiscal": "8957", "numero_oficio": "130", "data_oficio": "2026-09-21",
+            "protocolo_pcpr_oficio": "266170580", "versao": self._versao(),
+        })
+        self.s.refresh_from_db()
+        self.assertEqual(self.s.protocolo_pcpr_oficio, "26.617.058-0")
+
     def test_nota_fiscal_pelo_modal_de_anexo(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
 

@@ -2629,3 +2629,10 @@ textarea.form-controle.cb-caixa-copiar__texto{width:100%;min-height:0;resize:ver
 .cb-os-linha--os{grid-template-columns:minmax(96px,.45fr) minmax(0,2fr) minmax(0,1.6fr) minmax(0,1.3fr)}
 @container (max-width:680px){.cb-evento-linha,.cb-os-linha--os{grid-template-columns:minmax(0,1fr)}}
 .cb-os-linha--os .ofc-numero{gap:4px}.cb-os-linha--os .ofc-numero .form-controle{min-width:0;padding-left:10px;padding-right:6px}.cb-os-linha--os .ofc-numero__ano{white-space:nowrap}
+/* Etapa 2 numa linha: nota (anexo), nº e data do ofício e protocolo. */
+.cb-nota-linha-unica{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(130px,.7fr) minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:end}
+.cb-nota-linha-unica--com-numero{grid-template-columns:minmax(0,1.4fr) minmax(0,.8fr) minmax(130px,.7fr) minmax(0,1fr) minmax(0,1fr)}
+.cb-nota-linha-unica>.form-campo{margin:0}
+@container (max-width:680px){.cb-nota-linha-unica,.cb-nota-linha-unica--com-numero{grid-template-columns:minmax(0,1fr)}}
+/* O campo de validade do modal só aparece quando o link pede (certidões). */
+.an-validade[hidden]{display:none}
