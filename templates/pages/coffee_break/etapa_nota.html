@@ -79,7 +79,7 @@
           {% endif %}
           {% include "components/input.html" with name="data_oficio" label="Data do ofício" tipo="date" valor=valores.data_oficio erros=erros.data_oficio desabilitado=somente_leitura %}
           {# A máscara do protocolo de Viagens: 00.000.000-0. #}
-          {% include "components/input.html" with name="protocolo_pcpr_oficio" label="Protocolo (opcional)" placeholder="00.000.000-0" inputmode="numeric" maxlength="12" autocomplete="off" valor=valores.protocolo_pcpr_oficio erros=erros.protocolo_pcpr_oficio desabilitado=somente_leitura %}
+          {% include "components/input.html" with name="protocolo_pcpr_oficio" label="Protocolo" placeholder="00.000.000-0" inputmode="numeric" maxlength="12" autocomplete="off" valor=valores.protocolo_pcpr_oficio erros=erros.protocolo_pcpr_oficio desabilitado=somente_leitura %}
         </div>
 
         {% if outras_do_pagamento %}

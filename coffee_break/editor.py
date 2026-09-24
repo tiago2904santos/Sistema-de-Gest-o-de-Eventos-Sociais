@@ -349,6 +349,8 @@ class FonteSolicitacaoCoffee(FonteBase):
         gravado = _gravar_recorte(form, nomes)
         # O ofício é de todas as OS do mesmo pagamento: o número, a data e o protocolo vão para todas.
         services.espelhar(gravado, nomes)
+        # O protocolo do ofício é o do pagamento.
+        services.sincronizar_protocolo(gravado)
         return gravado
 
     def links(self, definicao, solicitacao, alvo):

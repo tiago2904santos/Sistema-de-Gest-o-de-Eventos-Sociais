@@ -86,6 +86,11 @@
     form.action = botao.getAttribute('data-url');
     proximo.value = window.location.pathname + window.location.search;
     sub.textContent = botao.getAttribute('data-titulo') || '';
+    // Só PDF (Coffee Break): sem a escolha de formato.
+    var soPdf = botao.hasAttribute('data-baixar-so-pdf');
+    var grupoFormato = form.querySelector('input[name="formato"]').closest('fieldset');
+    if (grupoFormato) grupoFormato.hidden = soPdf;
+    if (soPdf) form.querySelector('input[name="formato"][value="pdf"]').checked = true;
     lista.innerHTML = '';
     itens.forEach(function (item) { lista.appendChild(linha(item)); });
     var menu = botao.closest('[data-menu-corpo]');

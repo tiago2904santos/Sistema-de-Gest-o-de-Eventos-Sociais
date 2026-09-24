@@ -28,6 +28,8 @@
   </div>
   {# O andamento abre em modal a partir do menu ⋮ de cada linha. #}
   <dialog class="mo v32-cadastro-modal" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{{ request.path }}"></dialog>
+  {# "Baixar arquivos" do menu da linha: o modal "Baixar documentos" de Viagens. #}
+  {% include "components/v32/dialogo_baixar.html" %}
 {% endblock %}
 
 {% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>{% endblock %}

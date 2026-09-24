@@ -265,7 +265,7 @@ CAMPOS_NOTA = [
     "protocolo_pcpr_oficio",
 ]
 CAMPOS_PROTOCOLO = [
-    "protocolo_pagamento",
+    # O protocolo de pagamento é o do ofício (etapa 2): não se digita aqui.
     "data_atesto_gaf",
     "data_ordem_bancaria",
     "data_envio_empresa",

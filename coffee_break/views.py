@@ -4,6 +4,7 @@ Todas as rotas exigem o módulo ASCOM_COFFEE_BREAK (decorator + middleware);
 ocultar o menu nunca é a única barreira.
 """
 
+import io
 from pathlib import Path
 
 from django import forms
@@ -902,7 +903,7 @@ def nova_solicitacao(request):
                     f"Solicitação {solicitacao.numero} registrada no {solicitacao.lote.rotulo_curto}"
                     f" ({solicitacao.lote.contrato.fornecedor.razao_social}). A ordem de serviço já pode ser gerada.",
                 )
-                return redirect("coffee_break:editar", pk=solicitacao.pk)
+                return redirect("coffee_break:solicitacoes")
         else:
             messages.error(request, "Corrija os campos destacados para continuar.")
     else:
@@ -960,6 +961,8 @@ def _tela_da_etapa(request, pk, etapa):
             else:
                 # O que é do pagamento (ofício, protocolo, marcos) vale para as OS do mesmo pagamento.
                 services.espelhar(solicitacao, form.changed_data)
+                if etapa == "nota":
+                    services.sincronizar_protocolo(solicitacao, request.user)
                 if etapa == "nota" and "vinculadas_enviado" in request.POST and not somente_leitura:
                     try:
                         services.definir_pagamento_conjunto(
@@ -983,10 +986,10 @@ def _tela_da_etapa(request, pk, etapa):
                     else "Solicitação salva sem alteração de campos.",
                 )
                 messages.success(request, "Solicitação de coffee break atualizada.")
-                seguir = request.POST.get("seguir", "")
-                if seguir in ETAPA_POR_CHAVE:
-                    return redirect(f"coffee_break:{ETAPA_POR_CHAVE[seguir]['rota']}", pk=solicitacao.pk)
-                return redirect(rota, pk=solicitacao.pk)
+                # Etapa 2 segue para a etapa 3; as etapas 1 e 3 voltam para a lista.
+                if etapa == "nota":
+                    return redirect("coffee_break:etapa_protocolo", pk=solicitacao.pk)
+                return redirect("coffee_break:solicitacoes")
         else:
             messages.error(request, "Corrija os campos destacados para continuar.")
     else:
@@ -1100,15 +1103,25 @@ def certificado_solicitacao(request, pk):
     return resposta
 
 
+def _modal(request):
+    return request.headers.get("X-Cadastro-Modal") == "1"
+
+
 @acesso_ao_modulo
-@require_POST
 def cancelar_solicitacao(request, pk):
+    """Cancela com o motivo. Da lista, abre no modal (GET mostra o motivo)."""
     solicitacao = get_object_or_404(SolicitacaoCoffeeBreak, pk=pk)
+    if request.method != "POST":
+        if not _modal(request):
+            return redirect("coffee_break:editar", pk=solicitacao.pk)
+        return render(request, "pages/coffee_break/_modal_cancelar.html", {"solicitacao": solicitacao, "erro": ""})
     try:
         services.cancelar(
             solicitacao, request.user, request.POST.get("motivo", "")
         )
     except ValidationError as erro:
+        if _modal(request):
+            return render(request, "pages/coffee_break/_modal_cancelar.html", {"solicitacao": solicitacao, "erro": " ".join(erro.messages)})
         for mensagem in erro.messages:
             messages.error(request, mensagem)
     else:
@@ -1116,7 +1129,80 @@ def cancelar_solicitacao(request, pk):
             request,
             "Solicitação cancelada — a quantidade voltou ao saldo do lote.",
         )
+        if _modal(request):
+            return JsonResponse({"ok": True})
     return redirect("coffee_break:editar", pk=solicitacao.pk)
+
+
+@acesso_ao_modulo
+@require_POST
+def excluir_solicitacao(request, pk):
+    """Exclui a solicitação que ainda não entrou no pagamento (sem nota nem
+    protocolo); depois disso, o caminho é cancelar."""
+    solicitacao = get_object_or_404(SolicitacaoCoffeeBreak, pk=pk)
+    if solicitacao.financeiro_iniciado:
+        messages.error(request, f"A solicitação {solicitacao.numero} já tem nota ou protocolo: cancele em vez de excluir.")
+        return redirect("coffee_break:solicitacoes")
+    numero = solicitacao.numero or f"#{solicitacao.pk}"
+    with transaction.atomic():
+        # Se era a principal de um pagamento conjunto, a próxima assume.
+        junto = list(solicitacao.pagamento_junto.all())
+        if junto:
+            nova = junto[0]
+            SolicitacaoCoffeeBreak.objects.filter(pk=nova.pk).update(pagamento_com=None)
+            SolicitacaoCoffeeBreak.objects.filter(pk__in=[o.pk for o in junto[1:]]).update(pagamento_com=nova)
+        solicitacao.delete()
+    messages.success(request, f"Solicitação {numero} excluída — a quantidade voltou ao saldo do lote.")
+    return redirect("coffee_break:solicitacoes")
+
+
+@acesso_ao_modulo
+@require_POST
+def baixar_arquivos(request, pk):
+    """Da lista: o modal "Baixar documentos" de Viagens com os quatro
+    arquivos do protocolo. `itens`: os, oficio, notas, contratos; `saida`:
+    `separados` (um PDF, ou ZIP com um PDF cada) ou `unico` (um PDF só, na
+    ordem). Baixar conclui a etapa 3 (é o dia do atesto e do envio ao GAF)."""
+    import zipfile
+
+    from pypdf import PdfReader, PdfWriter
+
+    solicitacao = _solicitacao_documental(pk)
+    escolhidas = [p for p in documentos.PARTES if p in request.POST.getlist("itens")]
+    if not escolhidas:
+        messages.error(request, "Marque ao menos um arquivo para baixar.")
+        return redirect("coffee_break:solicitacoes")
+    nomes = {"os": "1 - Ordem de servico", "oficio": "2 - Oficio", "notas": "3 - Notas e certificos", "contratos": "4 - Contratos e certidoes"}
+    arquivos = []
+    for parte in escolhidas:
+        try:
+            arquivos.append((documentos.nome_arquivo(nomes[parte], solicitacao), documentos.parte_pdf(solicitacao, parte)))
+        except ValidationError as erro:
+            for mensagem in erro.messages:
+                messages.warning(request, mensagem)
+    if not arquivos:
+        return redirect("coffee_break:solicitacoes")
+    services.marcar_atesto(solicitacao, request.user)
+    if request.POST.get("saida") == "unico" and len(arquivos) > 1:
+        escritor = PdfWriter()
+        for _nome, conteudo in arquivos:
+            escritor.append(PdfReader(io.BytesIO(conteudo)))
+        saida = io.BytesIO()
+        escritor.write(saida)
+        nome = documentos.nome_arquivo("Arquivos do protocolo", solicitacao)
+        resposta = HttpResponse(saida.getvalue(), content_type="application/pdf")
+    elif len(arquivos) == 1:
+        nome, conteudo = arquivos[0]
+        resposta = HttpResponse(conteudo, content_type="application/pdf")
+    else:
+        saida = io.BytesIO()
+        with zipfile.ZipFile(saida, "w", zipfile.ZIP_DEFLATED) as pacote:
+            for nome_arquivo, conteudo in arquivos:
+                pacote.writestr(nome_arquivo, conteudo)
+        nome = documentos.nome_arquivo("Arquivos do protocolo", solicitacao)[: -len(".pdf")] + ".zip"
+        resposta = HttpResponse(saida.getvalue(), content_type="application/zip")
+    resposta["Content-Disposition"] = f'attachment; filename="{nome}"'
+    return resposta
 
 
 @acesso_ao_modulo
@@ -1469,10 +1555,14 @@ def pacote_parte(request, pk, parte):
     if parte not in documentos.PARTES:
         raise Http404
     nomes = {"os": "Ordem de servico", "oficio": "Oficio", "notas": "Notas e certificos", "contratos": "Contratos e certidoes"}
-    return _pdf_ou_volta(
-        request, _solicitacao_documental(pk), lambda s: documentos.parte_pdf(s, parte),
-        nomes[parte], volta="etapa_protocolo",
+    solicitacao = _solicitacao_documental(pk)
+    resposta = _pdf_ou_volta(
+        request, solicitacao, lambda s: documentos.parte_pdf(s, parte), nomes[parte], volta="etapa_protocolo",
     )
+    if request.GET.get("baixar") and resposta.get("Content-Type") == "application/pdf":
+        # Baixar os arquivos conclui a etapa 3: é o dia do atesto e do envio ao GAF.
+        services.marcar_atesto(solicitacao, request.user)
+    return resposta
 
 
 @acesso_ao_modulo
