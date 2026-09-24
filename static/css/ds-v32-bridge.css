@@ -2507,6 +2507,8 @@ form.btn-flutuante-form{margin:0;display:contents}
 .cb-os-linha{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(0,2fr) minmax(0,1.3fr);gap:12px;align-items:start;margin-top:12px}
 .cb-os-linha>.form-campo{margin:0}
 .cb-nota-linha{grid-template-columns:minmax(150px,.8fr) minmax(0,2fr)}
+.cb-nota-anexo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:end;margin-bottom:12px}
+.cb-nota-anexo>.form-campo{margin:0}
 .cb-oficio-linha{grid-template-columns:minmax(150px,.8fr) minmax(0,1fr) minmax(0,1.5fr)}
 .cb-anexo{display:flex;align-items:center;gap:10px;min-height:40px;flex-wrap:wrap}
 .cb-anexo__arquivo{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--n-200,#e3e1dc);border-radius:10px;background:var(--n-50,#faf9f7);color:var(--n-900,#1a1917);font-weight:600;text-decoration:none}
@@ -2602,3 +2604,16 @@ textarea.form-controle.cb-caixa-copiar__texto{width:100%;min-height:0;resize:ver
 /* Recado curto (despacho já registrado): faixa fina, não cartão. */
 .aviso--fino{padding:10px 14px;font-size:12.5px}
 .aviso--fino .aviso__meta{margin-top:2px}
+/* Coffee Break — etapa 3: o anexo no visualizador inline (pdf.js), sem editor. */
+.cb-pdf{display:grid;justify-items:center;gap:14px;padding:16px 12px;border-radius:10px;background:var(--n-100,#efeeea);max-height:78vh;overflow:auto}
+.cb-pdf__pagina{display:block;max-width:100%;height:auto;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08),0 10px 28px rgba(0,0,0,.10)}
+.cb-pdf__estado{margin:24px 0;color:var(--n-500,#7a776f)}
+.cb-anexo-doc__num{display:inline-grid;place-items:center;min-width:22px;height:22px;margin-right:8px;padding:0 5px;border-radius:999px;background:var(--n-100,#efeeea);font-size:12px;font-weight:700}
+.cb-anexo-doc__detalhe{display:block;margin-top:2px;font-weight:400;color:var(--n-500,#7a776f)}
+.cb-anexo-doc .ofc-doc__titulo .st{margin-left:8px;vertical-align:middle}
+.cb-anexo-doc--vencida .cb-anexo-doc__num{background:#f7d9d4;color:#8a2d1f}
+.cb-st--vencida{background:#f7d9d4;color:#8a2d1f}
+.cb-anexo-doc__aviso{margin:0}
+.cb-anexo-avisos{display:grid;gap:8px;margin-bottom:12px}
+.cb-anexo-avisos ul{margin:4px 0 0;padding-left:18px}
+.cb-anexo-unico .ofc-doc__titulo{font-weight:700}

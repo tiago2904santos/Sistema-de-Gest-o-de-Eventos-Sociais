@@ -1333,7 +1333,9 @@ def _pdf_em_branco(paginas=1):
     return saida.getvalue()
 
 
-class EtapasTests(BaseCoffeeBreakTestCase):
+class EtapasBase(BaseCoffeeBreakTestCase):
+    """A solicitação das etapas e o que a deixa pronta para o protocolo (sem testes)."""
+
     def setUp(self):
         import tempfile
 
@@ -1380,6 +1382,8 @@ class EtapasTests(BaseCoffeeBreakTestCase):
                 arquivo=ContentFile(_pdf_em_branco(), name=f"{tipo}.pdf"),
             )
 
+
+class EtapasTests(EtapasBase):
     # -- Telas ---------------------------------------------------------------
 
     def test_as_tres_etapas_abrem_com_o_stepper(self):
@@ -2024,6 +2028,89 @@ class Etapa2ComoEtapa1Tests(BaseCoffeeBreakTestCase):
         self.assertEqual(resposta.status_code, 200, resposta.content)
         self.s.refresh_from_db()
         self.assertEqual(self.s.numero_nota_fiscal, "8957")
+
+
+class NumeroDaNotaNoPDFTests(BaseCoffeeBreakTestCase):
+    """Etapa 2: basta anexar a nota; o número sai do PDF."""
+
+    def test_le_o_numero_do_danfe_e_da_chave(self):
+        from .nota_fiscal import numero_no_texto
+
+        # O DANFE da NF 8957 do processo 26.617.058-0.
+        self.assertEqual(numero_no_texto("NF-e\nNº 000.008.957\nSÉRIE 001"), "8957")
+        self.assertEqual(numero_no_texto("CHAVE DE ACESSO\n4126 0935 0147 1900 0166 5500 1000 0089 5715 7240 4356"), "8957")
+        self.assertEqual(numero_no_texto("Número da NFS-e\n00000456"), "456")
+        self.assertEqual(numero_no_texto("NFS-e Nº 1234"), "1234")
+        self.assertEqual(numero_no_texto("Documento sem número de nota 2026"), "")
+
+    def test_anexar_a_nota_preenche_o_numero(self):
+        import tempfile
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.test import override_settings
+
+        self.client.force_login(self.ascom)
+        s = self.criar_solicitacao(numero="41/2026", local_entrega="1DP", responsavel_recebimento="Ana")
+        url = reverse("coffee_break:anexar_nota", args=[s.pk])
+        with tempfile.TemporaryDirectory() as pasta, override_settings(MEDIA_ROOT=pasta):
+            with mock.patch("coffee_break.nota_fiscal.numero_da_nota", return_value="8957"):
+                self.client.post(url, {"arquivo": SimpleUploadedFile("nf.pdf", _pdf_em_branco(), content_type="application/pdf")})
+            s.refresh_from_db()
+            self.assertEqual(s.numero_nota_fiscal, "8957")
+            tela = self.client.get(reverse("coffee_break:etapa_nota", args=[s.pk]))
+            # Lido o número, a tela não pede para digitar.
+            self.assertContains(tela, 'type="hidden" name="numero_nota_fiscal" value="8957"')
+            # PDF sem número legível: a tela pede o número.
+            s.numero_nota_fiscal = ""
+            s.save()
+            with mock.patch("coffee_break.nota_fiscal.numero_da_nota", return_value=""):
+                resposta = self.client.post(url, {"arquivo": SimpleUploadedFile("nf.pdf", _pdf_em_branco(), content_type="application/pdf")}, follow=True)
+            self.assertContains(resposta, "não deu para ler o número")
+            self.assertContains(resposta, 'placeholder="Não foi lido do PDF — digite"')
+
+
+class Etapa3VisualizadorTests(EtapasBase):
+    """Etapa 3: visualizador inline (sem editor), tudo fechado, PDF único com
+    as certidões e aviso de certidão vencida."""
+
+    def test_documentos_no_visualizador_fechados(self):
+        self._completar_para_protocolo(self.solicitacao)
+        resposta = self.client.get(reverse("coffee_break:etapa_protocolo", args=[self.solicitacao.pk]))
+        texto = resposta.content.decode()
+        self.assertIn('id="anexo-completo"', texto)
+        self.assertIn(f'data-cb-pdf="{reverse("coffee_break:pacote_protocolo", args=[self.solicitacao.pk])}"', texto)
+        self.assertIn('id="anexo-certidao-fgts"', texto)
+        self.assertEqual(texto.count("data-cb-pdf="), 11)  # o PDF único e os dez documentos
+        self.assertNotIn("<details class=\"ofc-doc cb-anexo-doc\" data-ofc-doc id=\"anexo-oficio\" open", texto)
+        self.assertNotIn(" open>", texto.split('id="sec-anexo"')[1].split('id="sec-pagamento"')[0])
+        self.assertNotIn("data-de-embutir", texto)  # sem editor
+        self.assertIn("pdf.min.js", texto)
+
+    def test_certidao_vencida_entra_no_pdf_unico_com_aviso(self):
+        from pypdf import PdfReader
+
+        from .models import CertidaoFornecedor, TipoCertidao
+
+        self._completar_para_protocolo(self.solicitacao)
+        CertidaoFornecedor.objects.filter(tipo=TipoCertidao.FGTS).update(validade=dt.date(2020, 1, 1))
+        resposta = self.client.get(reverse("coffee_break:etapa_protocolo", args=[self.solicitacao.pk]))
+        self.assertContains(resposta, "Certidão vencida.")
+        self.assertContains(resposta, "Com certidão vencida")
+        itens = documentos.itens_anexo(self.solicitacao)
+        todas = sum(1 for item in itens if item["disponivel"])
+        self.assertEqual(todas, len(itens))
+        pdf = PdfReader(io.BytesIO(documentos.pacote_protocolo_pdf(self.solicitacao)))
+        self.assertGreater(len(pdf.pages), 10)
+
+    def test_pdf_unico_junta_o_que_existe(self):
+        from .models import CertidaoFornecedor
+
+        self._completar_para_protocolo(self.solicitacao)
+        CertidaoFornecedor.objects.all().delete()
+        avisos = documentos.avisos_do_pacote(documentos.itens_anexo(self.solicitacao))
+        self.assertEqual(len(avisos["faltando"]), 5)
+        resposta = self.client.get(reverse("coffee_break:pacote_protocolo", args=[self.solicitacao.pk]))
+        self.assertEqual(resposta["Content-Type"], "application/pdf")
 
 
 class ImportarPlanilhaTelaTests(BaseCoffeeBreakTestCase):
