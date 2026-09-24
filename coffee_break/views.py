@@ -1594,6 +1594,22 @@ def _arquivo(campo, nome=None):
 
 @require_POST
 @acesso_ao_modulo
+def vincular_pagamento(request, pk):
+    """Marcar ou desmarcar uma OS na lista "Vincular outra OS" já vincula,
+    sem salvar a etapa (JSON para a tela)."""
+    solicitacao = get_object_or_404(SolicitacaoCoffeeBreak, pk=pk)
+    if solicitacao.cancelada or solicitacao.concluida:
+        return JsonResponse({"ok": False, "mensagem": "Solicitações canceladas ou concluídas ficam bloqueadas."}, status=400)
+    try:
+        services.definir_pagamento_conjunto(solicitacao, request.POST.getlist("vinculadas"), request.user)
+    except (ValidationError, ValueError) as erro:
+        mensagem = " ".join(erro.messages) if isinstance(erro, ValidationError) else "OS inválida."
+        return JsonResponse({"ok": False, "mensagem": mensagem}, status=400)
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+@acesso_ao_modulo
 def anexar_nota(request, pk):
     """A nota fiscal pelo modal de anexo de documentos (o de Viagens): envia o
     PDF, troca ou remove. Volta para a tela de onde se abriu."""
