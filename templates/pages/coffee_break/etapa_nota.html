@@ -22,7 +22,8 @@
       <div class="section-card__corpo">
         {# Como a etapa 1: a nota e o ofício em duas linhas; o resto se edita na própria folha dos documentos. #}
         {# Basta anexar a nota: o número sai do próprio PDF (e também se corrige na folha do ofício e do certifico). #}
-        <div class="cb-nota-anexo">
+        {# Tudo numa linha: a nota (anexo), o nº e a data do ofício e o protocolo. #}
+        <div class="cb-nota-linha-unica{% if solicitacao.arquivo_nota_fiscal and not valores.numero_nota_fiscal or erros.numero_nota_fiscal %} cb-nota-linha-unica--com-numero{% endif %}">
           <div class="form-campo">
             <span class="form-label">Nota fiscal</span>
             {# O modal de anexo de documentos de Viagens (components/v32/dialogo_assinado.html). #}
@@ -43,9 +44,6 @@
           {% else %}
             <input type="hidden" name="numero_nota_fiscal" value="{{ valores.numero_nota_fiscal }}">
           {% endif %}
-        </div>
-
-        <div class="cb-os-linha cb-oficio-linha">
           {% if oficio_livre %}
             {% include "components/input.html" with name="numero_oficio" label="Nº do ofício" valor=valores.numero_oficio erros=erros.numero_oficio desabilitado=somente_leitura %}
           {% else %}
@@ -60,7 +58,8 @@
             </div>
           {% endif %}
           {% include "components/input.html" with name="data_oficio" label="Data do ofício" tipo="date" valor=valores.data_oficio erros=erros.data_oficio desabilitado=somente_leitura %}
-          {% include "components/input.html" with name="protocolo_pcpr_oficio" label="PCPR protocolo n.º (opcional)" placeholder="Ex.: 2026.050880.000" valor=valores.protocolo_pcpr_oficio erros=erros.protocolo_pcpr_oficio desabilitado=somente_leitura %}
+          {# A máscara do protocolo de Viagens: 00.000.000-0. #}
+          {% include "components/input.html" with name="protocolo_pcpr_oficio" label="Protocolo (opcional)" placeholder="00.000.000-0" inputmode="numeric" maxlength="12" autocomplete="off" valor=valores.protocolo_pcpr_oficio erros=erros.protocolo_pcpr_oficio desabilitado=somente_leitura %}
         </div>
 
         {# O visualizador de documentos de Viagens: o ofício e o certifico no editor, tudo editável. #}
@@ -83,4 +82,4 @@
   </form>
 {% endblock %}
 
-{% block etapa_js %}{% include "documentos/editor/_recursos.html" %}<script src="{% estatico 'js/coffee-break-documentos.js' %}" defer></script>{% endblock %}
+{% block etapa_js %}{% include "documentos/editor/_recursos.html" %}<script src="{% estatico 'js/coffee-break-documentos.js' %}" defer></script><script src="{% estatico 'js/coffee-break-protocolo.js' %}" defer></script>{% endblock %}

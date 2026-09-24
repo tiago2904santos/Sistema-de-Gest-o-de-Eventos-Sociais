@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from cadastros.models import Municipio
 from core.uploads import validate_private_document_upload
+from core.utils.masks import format_protocolo
 
 from .models import (
     CertidaoFornecedor,
@@ -190,6 +191,10 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
         ):
             if dados.get(campo):
                 dados[campo] = dados[campo].strip()
+        # Protocolo com a máscara do de Viagens (00.000.000-0); outro formato fica como veio.
+        for campo in ("protocolo_pagamento", "protocolo_pcpr_oficio"):
+            if dados.get(campo):
+                dados[campo] = format_protocolo(dados[campo])
         return dados
 
     def _escolher_lote(self, dados):
