@@ -2621,3 +2621,11 @@ textarea.form-controle.cb-caixa-copiar__texto{width:100%;min-height:0;resize:ver
 .cb-certidao__nome{font-weight:700;color:inherit}
 .cb-toast{position:fixed;left:50%;bottom:24px;z-index:60;transform:translateX(-50%);max-width:min(560px,calc(100vw - 32px));padding:12px 16px;border-radius:12px;background:var(--n-900,#1a1917);color:#fff;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.25)}
 .an-validade{margin:12px 0 0}
+/* Etapa 1 em três linhas: o evento (data, horário, pessoas, município), o lote que o município recebe e a OS. */
+.cb-evento-linha{display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,.7fr) minmax(100px,.6fr) minmax(0,1.6fr);gap:12px;align-items:start}
+.cb-evento-linha>.form-campo{margin:0}
+.cb-lote-linha{margin:12px 0 0;padding:10px 14px;border:1px solid var(--n-200,#e3e1dc);border-radius:12px;background:var(--n-50,#faf9f7)}
+.cb-lote-linha .tm-fatos{margin:0}
+.cb-os-linha--os{grid-template-columns:minmax(96px,.45fr) minmax(0,2fr) minmax(0,1.6fr) minmax(0,1.3fr)}
+@container (max-width:680px){.cb-evento-linha,.cb-os-linha--os{grid-template-columns:minmax(0,1fr)}}
+.cb-os-linha--os .ofc-numero{gap:4px}.cb-os-linha--os .ofc-numero .form-controle{min-width:0;padding-left:10px;padding-right:6px}.cb-os-linha--os .ofc-numero__ano{white-space:nowrap}

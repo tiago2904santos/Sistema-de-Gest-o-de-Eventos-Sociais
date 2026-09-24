@@ -626,10 +626,21 @@ def _opcoes_municipios(form):
         lote, distancia = escolha.escolher(municipio)
         dados = {}
         if lote is not None:
+            contrato = lote.contrato
+            # A 2ª linha da etapa 1 mostra o lote que o município recebe (coffee-break-lote.js).
             dados = {
-                "lote": f"{lote.rotulo_curto} — {lote.contrato.fornecedor.razao_social}",
+                "lote": f"{lote.rotulo_curto} — {contrato.fornecedor.razao_social}",
+                "lote-rotulo": lote.rotulo_curto,
+                "lote-url": reverse("coffee_break:lote_detalhe", args=[lote.pk]),
+                "fornecedor": contrato.fornecedor.razao_social,
+                "contrato": f"Contrato {contrato.numero}" + (f" · Aditivo {contrato.termo_aditivo}" if contrato.termo_aditivo else ""),
                 "saldo": f"{lote.restante} de {lote.quantidade_total} unidades",
             }
+            if lote.empenho:
+                dados["empenho"] = f"Empenho {lote.empenho}"
+            if contrato.vigencia_fim:
+                vencido = contrato.vigencia_fim < timezone.localdate()
+                dados["vigencia"] = f"{'Vencido em' if vencido else 'Vigente até'} {contrato.vigencia_fim:%d/%m/%Y}"
             if distancia:
                 dados["perto"] = f"{lote.sede_mais_proxima.nome}, a {distancia} km"
         opcoes.append({"valor": str(municipio.pk), "rotulo": municipio.nome, "dados": dados})
@@ -717,6 +728,7 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
             solicitacao and (solicitacao.financeiro_iniciado or somente_leitura)
         ),
         "stepper": _stepper(solicitacao, etapa),
+        "hoje": timezone.localdate(),
         # Cabeçalho da tela de edição: só o título e o selo da situação.
         "selo": solicitacao.situacao_financeira_display if solicitacao else "Nova",
         "selo_tom": solicitacao.situacao_financeira_css if solicitacao else "pendente",
