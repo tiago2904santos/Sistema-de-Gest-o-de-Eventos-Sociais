@@ -15,7 +15,8 @@
   O mesmo modal anexa outros documentos (a nota fiscal do Coffee Break): o
   link pode trocar o título (`data-anexar-titulo`), o texto
   (`data-anexar-texto`), o botão de envio (`data-anexar-acao`) e o de
-  remover (`data-anexar-remover-rotulo`).
+  remover (`data-anexar-remover-rotulo`), e pedir a validade opcional
+  (`data-anexar-validade`, para as certidões).
 {% endcomment %}
 <dialog class="an-dialogo" data-anexar-dialogo aria-labelledby="an-titulo" aria-describedby="an-texto">
   <form method="post" enctype="multipart/form-data" class="an-form" data-anexar-form novalidate>
@@ -38,6 +39,11 @@
         <button type="button" class="an-limpar" data-anexar-limpar aria-label="Tirar o arquivo escolhido" title="Tirar o arquivo escolhido" hidden>{% include "components/icon.html" with nome="x" %}</button>
       </div>
       <p class="an-erro" data-anexar-erro hidden></p>
+    </div>
+    {# Só quando o link pede (`data-anexar-validade`): a validade, para PDF que é imagem e não se lê. #}
+    <div class="form-campo an-validade" data-anexar-validade-campo hidden>
+      <label class="form-label" for="an-validade">Válida até <small>(só se o PDF for imagem — o sistema lê a validade sozinho)</small></label>
+      <input class="form-controle" type="date" name="validade" id="an-validade" disabled>
     </div>
 
     <div class="an-rodape">

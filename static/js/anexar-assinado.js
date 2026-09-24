@@ -44,6 +44,13 @@
     padrao.acaoAtual = link.getAttribute('data-anexar-acao') || padrao.acao;
     enviar.textContent = padrao.acaoAtual;
     remover.textContent = link.getAttribute('data-anexar-remover-rotulo') || padrao.remover;
+    // Validade opcional (certidões): o campo só vai no envio quando o link pede.
+    var validade = dialogo.querySelector('[data-anexar-validade-campo]');
+    if (validade) {
+      var pede = link.hasAttribute('data-anexar-validade');
+      validade.hidden = !pede;
+      validade.querySelector('input').disabled = !pede;
+    }
   }
 
   function mostrarErro(texto) {

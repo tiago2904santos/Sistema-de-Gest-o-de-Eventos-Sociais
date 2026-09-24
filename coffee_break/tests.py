@@ -2113,6 +2113,161 @@ class Etapa3VisualizadorTests(EtapasBase):
         self.assertEqual(resposta["Content-Type"], "application/pdf")
 
 
+TEXTO_CONTRATO = """SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA
+SETOR DE CONTRATOS E CONVÊNIOS – CONTRATO – Nº 0762/2024 – GMS Nº 7339/2024
+CONTRATANTE: O ESTADO DO PARANÁ, inscrito no CNPJ sob n. º 76.416.932/0001-81
+CONTRATADO(A): PADARIA E CONFEITARIA FAVO E MEL LTDA , CNPJ nº
+35.014.719/0001-66, com sede na Avenida Iguaçu
+LOTE - 01
+Item Descrição Qtd. Valor Unitário Valor Total
+10.000 R$ 20,0000 R$ 200.000,00
+3.2 O valor total do contrato é de R$ 200.000,00 (duzentos mil reais).
+8.1 O prazo de vigência do contrato é de 1 (um) ano, podendo ser prorrogado
+Inserido ao Protocolo 22.906.321-9 por Maria Fernanda Bauer Divino em: 29/10/2024 14:51."""
+
+TEXTO_ADITIVO = """CENTRO DE CONTRATOS E CONVÊNIOS – TERMO ADITIVO Nº 0355/2025
+Protocolo nº 24.740.746-4–Contrato nº 0762/2024–GMS 7339/2024–1º Termo Aditivo
+CONTRATANTE: O ESTADO DO PARANÁ, inscrito no CNPJ sob n. º 76.416.932/0001-81
+CONTRATADO(A): PADARIA E CONFEITARIA FAVO E MEL LTDA, CNPJ nº
+35.014.719/0001-66, com sede na Avenida Iguaçu
+Fica prorrogada a vigência do contrato pelo prazo de 01 (um) ano, a partir de
+31/10/2025 até 30/10/2026.
+passando de R$ 200.000,00 (duzentos mil reais) para R$ 210.700,00 (duzentos e dez mil)
+LOTE 01
+ITEM DESCRIÇÃO QTD. VALOR UNITÁRIO VALOR REPACTUADO
+TIPO: Coffee Break, 04 (quatro) tipos de 10.000 R$ 20,0000 R$ 21,07"""
+
+
+class ContratoLidoDoPDFTests(BaseCoffeeBreakTestCase):
+    """Contrato e termo aditivo: basta anexar; o sistema preenche tudo."""
+
+    def test_le_o_contrato(self):
+        from .contratos_pdf import ler
+
+        dados = ler(TEXTO_CONTRATO)
+        self.assertEqual(dados["tipo"], "contrato")
+        self.assertEqual((dados["numero"], dados["numero_gms"]), ("0762/2024", "7339/2024"))
+        self.assertEqual(dados["cnpj"], "35014719000166")
+        self.assertEqual(dados["razao_social"], "PADARIA E CONFEITARIA FAVO E MEL LTDA")
+        self.assertEqual((dados["numero_lote"], dados["quantidade"]), (1, 10000))
+        self.assertEqual(str(dados["valor_total"]), "200000.00")
+        self.assertEqual(dados["vigencia_fim"], dt.date(2025, 10, 28))
+        self.assertTrue(dados["vigencia_estimada"])
+
+    def test_le_o_aditivo(self):
+        from .contratos_pdf import ler
+
+        dados = ler(TEXTO_ADITIVO)
+        self.assertEqual(dados["tipo"], "aditivo")
+        self.assertEqual((dados["termo_aditivo"], dados["numero"]), ("0355/2025", "0762/2024"))
+        self.assertEqual((dados["vigencia_inicio"], dados["vigencia_fim"]), (dt.date(2025, 10, 31), dt.date(2026, 10, 30)))
+        self.assertFalse(dados["vigencia_estimada"])
+        self.assertEqual(str(dados["valor_unitario"]), "21.07")
+        self.assertEqual(str(dados["valor_total"]), "210700.00")
+
+    def _anexar(self, texto):
+        import tempfile
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.test import override_settings
+
+        pasta = tempfile.mkdtemp()
+        with override_settings(MEDIA_ROOT=pasta), mock.patch("coffee_break.contratos_pdf.texto_do_pdf", return_value=texto):
+            return self.client.post(
+                reverse("coffee_break:anexar_contrato"),
+                {"arquivo": SimpleUploadedFile("doc.pdf", _pdf_em_branco(), content_type="application/pdf")},
+                follow=True,
+            )
+
+    def test_anexar_contrato_e_aditivo_preenche_tudo(self):
+        self.client.force_login(self.admin_modulo)
+        resposta = self._anexar(TEXTO_CONTRATO)
+        self.assertContains(resposta, "anexado e conferido")
+        contrato = ContratoCoffeeBreak.objects.get(numero="0762/2024")
+        self.assertEqual(contrato.quantidade_contratada, 10000)
+        self.assertTrue(contrato.arquivo_contrato)
+        self.assertTrue(contrato.vigencia_estimada)
+        self._anexar(TEXTO_ADITIVO)
+        contrato.refresh_from_db()
+        self.assertEqual(contrato.termo_aditivo, "0355/2025")
+        self.assertTrue(contrato.arquivo_termo_aditivo)
+        self.assertEqual(contrato.vigencia_fim, dt.date(2026, 10, 30))
+        self.assertFalse(contrato.vigencia_estimada)
+        self.assertEqual(str(contrato.valor_unitario), "21.0700")
+
+    def test_documento_de_outro_fornecedor_e_recusado(self):
+        self.client.force_login(self.admin_modulo)
+        outro = Fornecedor.objects.create(razao_social="OUTRA EMPRESA LTDA", cnpj="11222333000181")
+        ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(numero="0762/2024", fornecedor=outro)
+        resposta = self._anexar(TEXTO_ADITIVO)
+        self.assertContains(resposta, "está cadastrado para OUTRA EMPRESA LTDA")
+
+    def test_pdf_que_nao_e_contrato(self):
+        self.client.force_login(self.admin_modulo)
+        resposta = self._anexar("Um ofício qualquer, sem contrato.")
+        self.assertContains(resposta, "não parece ser um contrato")
+
+    def test_so_a_administracao_anexa(self):
+        self.client.force_login(self.ascom)
+        self.assertEqual(self._anexar(TEXTO_CONTRATO).status_code, 403)
+
+
+class CertidaoConferidaTests(BaseCoffeeBreakTestCase):
+    """Certidão: basta anexar; o sistema confere e lê a validade."""
+
+    TRABALHISTA = (
+        "CERTIDÃO NEGATIVA DE DÉBITOS TRABALHISTAS Nome: PADARIA E CONFEITARIA FAVO E MEL LTDA "
+        "CNPJ: 35.014.719/0001-66 Validade: 15/02/2027 - 180 (cento e oitenta) dias"
+    )
+
+    def _anexar(self, tipo, texto, validade=""):
+        import tempfile
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.test import override_settings
+
+        pasta = tempfile.mkdtemp()
+        with override_settings(MEDIA_ROOT=pasta), mock.patch("coffee_break.certidoes.texto_do_pdf", return_value=texto):
+            return self.client.post(
+                reverse("coffee_break:anexar_certidao", args=[self.fornecedor.pk, tipo]),
+                {"arquivo": SimpleUploadedFile("c.pdf", _pdf_em_branco(), content_type="application/pdf"), "validade": validade},
+                follow=True,
+            )
+
+    def setUp(self):
+        self.client.force_login(self.ascom)
+
+    def test_tela_so_com_anexar_e_emitir(self):
+        resposta = self.client.get(reverse("coffee_break:certidoes"))
+        self.assertContains(resposta, "data-anexar-dialogo")
+        self.assertContains(resposta, "data-anexar-validade")
+        self.assertNotContains(resposta, 'type="file" name="arquivo" id="arq-')
+        self.assertContains(resposta, 'data-copiar-cnpj="35014719000166"')
+
+    def test_certidao_certa_entra_com_a_validade_lida(self):
+        from .models import CertidaoFornecedor
+
+        resposta = self._anexar("TRABALHISTA", self.TRABALHISTA)
+        self.assertContains(resposta, "conferida e anexada — válida até 15/02/2027")
+        self.assertEqual(CertidaoFornecedor.objects.get(tipo="TRABALHISTA").validade, dt.date(2027, 2, 15))
+
+    def test_certidao_de_outro_tipo_ou_cnpj_e_recusada(self):
+        from .models import CertidaoFornecedor
+
+        self.assertContains(self._anexar("FGTS", self.TRABALHISTA), "parece ser a certidão Trabalhista, não a FGTS")
+        outro = self.TRABALHISTA.replace("35.014.719/0001-66", "11.222.333/0001-81")
+        self.assertContains(self._anexar("TRABALHISTA", outro), "não é de PADARIA E CONFEITARIA FAVO E MEL LTDA")
+        self.assertFalse(CertidaoFornecedor.objects.exists())
+
+    def test_pdf_imagem_pede_a_validade(self):
+        from .models import CertidaoFornecedor
+
+        self.assertContains(self._anexar("MUNICIPAL", "Firefox https://cnd-cidadao.curitiba.pr.gov.br"), "parece uma imagem")
+        resposta = self._anexar("MUNICIPAL", "Firefox https://cnd-cidadao.curitiba.pr.gov.br", "2026-12-01")
+        self.assertContains(resposta, "vale a data informada")
+        self.assertEqual(CertidaoFornecedor.objects.get(tipo="MUNICIPAL").validade, dt.date(2026, 12, 1))
+
+
 class ImportarPlanilhaTelaTests(BaseCoffeeBreakTestCase):
     """A planilha pelo navegador: simula sem gravar, confirma e grava."""
 

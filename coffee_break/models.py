@@ -124,6 +124,16 @@ class ContratoCoffeeBreak(models.Model):
         help_text="Citada no ofício que encaminha a nota para pagamento.",
     )
     objeto = models.CharField("objeto", max_length=255, blank=True)
+    # Lidos do PDF ao anexar o contrato ou o termo aditivo (coffee_break/contratos_pdf.py).
+    vigencia_inicio = models.DateField("vigência — início", null=True, blank=True)
+    vigencia_fim = models.DateField(
+        "vigência — fim", null=True, blank=True,
+        help_text="Lida do termo aditivo; do contrato inicial, estimada pelo prazo.",
+    )
+    vigencia_estimada = models.BooleanField("vigência estimada", default=False)
+    quantidade_contratada = models.PositiveIntegerField("quantidade contratada", null=True, blank=True)
+    valor_unitario = models.DecimalField("valor unitário", max_digits=12, decimal_places=4, null=True, blank=True)
+    valor_total = models.DecimalField("valor total", max_digits=14, decimal_places=2, null=True, blank=True)
     observacoes = models.TextField("observações", blank=True)
     criado_em = models.DateTimeField("criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("atualizado em", auto_now=True)

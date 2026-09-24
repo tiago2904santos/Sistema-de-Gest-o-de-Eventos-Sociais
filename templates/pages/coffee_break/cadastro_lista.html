@@ -18,6 +18,10 @@
       <h1>Cadastros</h1>
     </div>
     <a class="btn--secundaria" href="{% url 'coffee_break:importar_planilha' %}">{% include "components/icon.html" with nome="upload" %}Importar planilha</a>
+    {% if tipo == "contratos" %}
+      {# Basta anexar: o sistema lê o PDF e preenche tudo (contrato ou aditivo, fornecedor, lote, quantidade, vigência). #}
+      <a class="btn-primaria" href="{% url 'coffee_break:anexar_contrato' %}" data-anexar-assinado data-anexar-titulo="Anexar contrato ou termo aditivo" data-anexar-texto="Envie o PDF do contrato ou do termo aditivo. O sistema confere o documento e preenche tudo sozinho: se é contrato ou aditivo, o fornecedor, o número, o GMS, o lote, a quantidade, os valores e a vigência." data-anexar-acao="Anexar e preencher">{% include "components/icon.html" with nome="upload" %}Anexar contrato ou aditivo</a>
+    {% endif %}
     {% if not config.unico %}<a class="btn-primaria btn-flutuante" href="{% url 'coffee_break:cadastro_novo' tipo %}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}Novo {{ config.singular }}</a>{% endif %}
   </div>
 

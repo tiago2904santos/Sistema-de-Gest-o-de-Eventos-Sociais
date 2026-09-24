@@ -16,6 +16,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.http import require_POST
+from django.db import transaction
 from django.db.models import ProtectedError
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 
@@ -44,6 +45,7 @@ from .models import (
     LoteCoffeeBreak,
     SituacaoFinanceira,
     SolicitacaoCoffeeBreak,
+    TipoCertidao,
 )
 from core.listagens import trilha_de_situacoes
 
@@ -1220,6 +1222,8 @@ def lista_cadastro(request, tipo, modal=None):
             "querystring": parametros.urlencode(),
             "tem_filtros": bool(q),
             "modal": modal,
+            # Contratos: "Anexar contrato ou aditivo" usa o modal de anexo de documentos.
+            "usa_dialogo_assinado": tipo == "contratos",
             "breadcrumb": _breadcrumb({"label": "Cadastros"}, {"label": config["titulo"]}),
         },
     )
@@ -1531,8 +1535,140 @@ def lista_certidoes(request):
             "breadcrumb": _breadcrumb({"label": "Certidões"}),
             "fornecedores": fornecedores,
             "dias_aviso": certidoes.DIAS_AVISO,
+            "usa_dialogo_assinado": True,
         },
     )
+
+
+@require_POST
+@gerenciamento_de_cadastros
+def anexar_contrato(request):
+    """Contrato ou termo aditivo pelo modal de anexo de documentos: basta
+    anexar o PDF. O sistema diz o que ele é, confere de quem é (o CNPJ do
+    contratado) e preenche tudo — fornecedor, número, GMS, aditivo, lote,
+    quantidade, valores e vigência (coffee_break/contratos_pdf.py)."""
+    from . import contratos_pdf
+    from .forms import validar_pdf
+
+    destino = reverse("coffee_break:cadastro_lista", args=["contratos"])
+    arquivo = request.FILES.get("arquivo")
+    if arquivo is None:
+        messages.error(request, "Escolha o PDF do contrato ou do termo aditivo.")
+        return redirect(destino)
+    try:
+        validar_pdf(arquivo)
+    except ValidationError as erro:
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+        return redirect(destino)
+    arquivo.seek(0)
+    dados = contratos_pdf.ler(contratos_pdf.texto_do_pdf(arquivo.read()))
+    arquivo.seek(0)
+    if not dados.get("tipo") or not dados.get("numero"):
+        messages.error(request, "Este PDF não parece ser um contrato nem um termo aditivo da SESP (não achei o número do contrato).")
+        return redirect(destino)
+    if not dados.get("cnpj"):
+        messages.error(request, f"Não achei o CNPJ do contratado no documento do contrato {dados['numero']}.")
+        return redirect(destino)
+    with transaction.atomic():
+        fornecedor = Fornecedor.objects.filter(cnpj=dados["cnpj"]).first()
+        if fornecedor is None:
+            fornecedor = Fornecedor.objects.create(razao_social=dados.get("razao_social") or dados["cnpj"], cnpj=dados["cnpj"])
+        contrato = ContratoCoffeeBreak.objects.select_for_update().filter(numero=dados["numero"]).first()
+        if contrato and contrato.fornecedor_id != fornecedor.pk:
+            messages.error(
+                request,
+                f"O contrato {contrato.numero} está cadastrado para {contrato.fornecedor.razao_social}, "
+                f"mas este documento é de {fornecedor.razao_social}.",
+            )
+            return redirect(destino)
+        novo = contrato is None
+        if novo:
+            contrato = ContratoCoffeeBreak(fornecedor=fornecedor, numero=dados["numero"])
+        contrato.numero_gms = dados.get("numero_gms") or contrato.numero_gms
+        for campo, chave in (("quantidade_contratada", "quantidade"), ("valor_unitario", "valor_unitario"), ("valor_total", "valor_total")):
+            if dados.get(chave) is not None:
+                setattr(contrato, campo, dados[chave])
+        # A vigência escrita (do aditivo) vale sobre a estimada; entre duas, a mais longa.
+        fim = dados.get("vigencia_fim")
+        if fim and (
+            not contrato.vigencia_fim
+            or (contrato.vigencia_estimada and not dados.get("vigencia_estimada"))
+            or (fim > contrato.vigencia_fim and not (dados.get("vigencia_estimada") and not contrato.vigencia_estimada))
+        ):
+            contrato.vigencia_inicio = dados.get("vigencia_inicio")
+            contrato.vigencia_fim = fim
+            contrato.vigencia_estimada = bool(dados.get("vigencia_estimada"))
+        if dados["tipo"] == "aditivo":
+            contrato.termo_aditivo = dados["termo_aditivo"]
+            contrato.arquivo_termo_aditivo = arquivo
+        else:
+            contrato.arquivo_contrato = arquivo
+        contrato.save()
+        # Sem lote ainda: nasce o do documento (número e quantidade); os municípios se escolhem no lote.
+        lote_criado = None
+        if not contrato.lotes.exists() and dados.get("numero_lote") and dados.get("quantidade"):
+            ano = (contrato.vigencia_inicio or timezone.localdate()).year
+            lote_criado = LoteCoffeeBreak.objects.create(
+                contrato=contrato, numero=dados["numero_lote"], exercicio=str(ano), quantidade_total=dados["quantidade"],
+            )
+    o_que = f"Termo aditivo {contrato.termo_aditivo} do contrato {contrato.numero}" if dados["tipo"] == "aditivo" else f"Contrato {contrato.numero}"
+    partes = [f"{o_que} ({fornecedor.razao_social}) anexado e conferido"]
+    if contrato.vigencia_fim:
+        partes.append(
+            f"vigente até {contrato.vigencia_fim:%d/%m/%Y}" + (" (estimada pelo prazo; o termo aditivo confirma)" if contrato.vigencia_estimada else "")
+        )
+    if contrato.quantidade_contratada:
+        partes.append(f"{contrato.quantidade_contratada:,} unidades".replace(",", "."))
+    if lote_criado:
+        partes.append(f"lote {lote_criado.numero} criado — escolha os municípios dele em Lotes")
+    vencido = contrato.vigencia_fim and contrato.vigencia_fim < timezone.localdate()
+    (messages.warning if vencido else messages.success)(request, "; ".join(partes) + ".")
+    return redirect(destino)
+
+
+@require_POST
+@acesso_ao_modulo
+def anexar_certidao(request, fornecedor_pk, tipo):
+    """A certidão pelo modal de anexo de documentos: basta anexar o PDF. O
+    sistema confere se é a certidão certa, do CNPJ do fornecedor, e lê até
+    quando vale (PDF só de imagem: vale a data informada no modal)."""
+    from datetime import date
+
+    from .forms import validar_pdf
+
+    fornecedor = get_object_or_404(Fornecedor, pk=fornecedor_pk)
+    if tipo not in TipoCertidao.values:
+        raise Http404
+    rotulo = dict(TipoCertidao.choices)[tipo]
+    destino = f"{reverse('coffee_break:certidoes')}#fornecedor-{fornecedor.pk}"
+    arquivo = request.FILES.get("arquivo")
+    if arquivo is None:
+        messages.error(request, "Escolha o PDF da certidão.")
+        return redirect(destino)
+    informada = None
+    try:
+        informada = date.fromisoformat(request.POST.get("validade") or "") if request.POST.get("validade") else None
+    except ValueError:
+        messages.error(request, "Data de validade inválida.")
+        return redirect(destino)
+    try:
+        validar_pdf(arquivo)
+        validade, aviso = certidoes.conferir(fornecedor, tipo, arquivo, informada)
+    except ValidationError as erro:
+        for mensagem in erro.messages:
+            messages.error(request, f"Certidão {rotulo}: {mensagem}")
+        return redirect(destino)
+    certidao = certidoes.registrar(fornecedor, tipo, arquivo, validade, request.user)
+    situacao = "vencida em" if validade < timezone.localdate() else "válida até"
+    texto = f"Certidão {rotulo} de {fornecedor.razao_social} conferida e anexada — {situacao} {certidao.validade:%d/%m/%Y}."
+    if aviso:
+        messages.warning(request, f"{texto} {aviso}")
+    elif validade < timezone.localdate():
+        messages.warning(request, texto)
+    else:
+        messages.success(request, texto)
+    return redirect(destino)
 
 
 @acesso_ao_modulo

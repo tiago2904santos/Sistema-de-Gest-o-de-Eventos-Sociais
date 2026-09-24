@@ -139,6 +139,76 @@ def validade_do_texto(texto):
     return None
 
 
+# O que identifica cada certidão no texto (sem acentos, minúsculo).
+MARCAS = {
+    TipoCertidao.FEDERAL: ("receita federal", "divida ativa da uniao", "tributos federais"),
+    TipoCertidao.ESTADUAL: ("receita estadual", "divida ativa estadual", "secretaria de estado da fazenda"),
+    TipoCertidao.MUNICIPAL: ("municip", "prefeitura", "cnd-cidadao"),
+    TipoCertidao.TRABALHISTA: ("debitos trabalhistas", "cndt"),
+    TipoCertidao.FGTS: ("fgts", "regularidade do empregador"),
+}
+
+
+def texto_do_pdf(arquivo, paginas=3):
+    """O texto das primeiras páginas do PDF ("" se for imagem ou não abrir)."""
+    from pypdf import PdfReader
+
+    posicao = arquivo.tell() if hasattr(arquivo, "tell") else 0
+    try:
+        arquivo.seek(0)
+        leitor = PdfReader(arquivo)
+        return "\n".join((pagina.extract_text() or "") for pagina in leitor.pages[:paginas])
+    except Exception:
+        return ""
+    finally:
+        arquivo.seek(posicao)
+
+
+def tipo_do_texto(texto):
+    """Os tipos de certidão cujas marcas aparecem no texto."""
+    limpo = _sem_acentos(texto)
+    return [tipo for tipo, marcas in MARCAS.items() if any(marca in limpo for marca in marcas)]
+
+
+def conferir(fornecedor, tipo, arquivo, validade_informada=None):
+    """Confere a certidão enviada e diz até quando vale.
+
+    Com texto no PDF: tem de ser do tipo pedido e do CNPJ do fornecedor, e a
+    validade sai do próprio documento. PDF só de imagem (um print da página
+    da prefeitura, por exemplo) não dá para conferir: vale a data informada.
+    Devolve (validade, aviso); erro vira ValidationError com o motivo.
+    """
+    from django.core.exceptions import ValidationError
+
+    rotulos = dict(TipoCertidao.choices)
+    texto = texto_do_pdf(arquivo)
+    # Sem o texto da certidão (só imagem, às vezes com o carimbo do protocolo por cima).
+    if not re.search(r"\bcertid[aã]o\b|\bcertifica", _sem_acentos(texto).replace("ã", "a")):
+        if validade_informada:
+            return validade_informada, "O PDF é uma imagem: não deu para conferir o conteúdo; vale a data informada."
+        raise ValidationError(
+            "Não deu para ler este PDF (parece uma imagem). Anexe de novo informando até quando ele é válido."
+        )
+    tipos = tipo_do_texto(texto)
+    if tipo not in tipos:
+        if tipos:
+            raise ValidationError(
+                f"Este PDF parece ser a certidão {rotulos[tipos[0]]}, não a {rotulos[tipo]}."
+            )
+        raise ValidationError(f"Este PDF não parece ser a certidão {rotulos[tipo]}.")
+    cnpj = re.sub(r"\D", "", fornecedor.cnpj or "")
+    if cnpj:
+        numeros = {re.sub(r"\D", "", achado) for achado in re.findall(r"\d{2}\.?\d{3}\.?\d{3}(?:/?\d{4}-?\d{2})?", texto)}
+        if cnpj not in numeros and cnpj[:8] not in numeros:
+            raise ValidationError(
+                f"Esta certidão não é de {fornecedor.razao_social}: o CNPJ {fornecedor.cnpj_formatado} não aparece nela."
+            )
+    validade = validade_do_texto(texto) or validade_informada
+    if validade is None:
+        raise ValidationError("Não achei a validade nesta certidão. Anexe de novo informando até quando ela é válida.")
+    return validade, ""
+
+
 def validade_do_pdf(arquivo):
     """Lê o texto do PDF enviado e procura a validade."""
     from pypdf import PdfReader

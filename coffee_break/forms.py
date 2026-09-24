@@ -438,6 +438,9 @@ class ContratoCoffeeBreakForm(FormularioCadastroVersionado):
             "clausula_pagamento",
             "arquivo_contrato",
             "arquivo_termo_aditivo",
+            "vigencia_fim",
+            "quantidade_contratada",
+            "valor_unitario",
             "objeto",
             "observacoes",
         )
