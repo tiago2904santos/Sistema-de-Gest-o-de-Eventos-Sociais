@@ -10,7 +10,9 @@ Modelo de perfis:
   pode despachar.
 - Superusuário ignora todas as restrições.
 
-Fluxo: RASCUNHO → (enviar) → AGUARDANDO_DESPACHO → decisão da DG.
+Fluxo: RASCUNHO → (enviar) → AGUARDANDO_DESPACHO → decisão da DG. A DG
+só mexe na quantidade de servidores das equipes; o resto ela manda para
+correção. Enviado, o pedido só muda pelo "Editar", que o devolve à DG.
 """
 
 from .models import StatusSolicitacao
@@ -69,14 +71,29 @@ def queryset_visivel(user, queryset):
 STATUS_EDITAVEIS = {StatusSolicitacao.RASCUNHO, StatusSolicitacao.DEVOLVIDA}
 
 
+def _autor(user, solicitacao):
+    return user.is_superuser or solicitacao.criado_por_id == user.pk
+
+
 def pode_editar_dados(user, solicitacao):
-    """Rascunhos e devolvidas são editáveis pelo criador (ou superusuário)."""
-    if solicitacao.finalizada:
-        return user.is_superuser
-    return user.is_superuser or (
-        solicitacao.criado_por_id == user.pk
-        and solicitacao.status in STATUS_EDITAVEIS
-    )
+    """Só o rascunho e a devolvida para correção se editam livremente.
+
+    Depois do envio os dados ficam travados para todos (inclusive o
+    superusuário): mudar exige o "Editar" (`pode_reabrir`), que devolve o
+    pedido para novo despacho da DG.
+    """
+    return solicitacao.status in STATUS_EDITAVEIS and _autor(user, solicitacao)
+
+
+STATUS_REABRIVEIS = {
+    StatusSolicitacao.AGUARDANDO_DESPACHO,
+    StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
+}
+
+
+def pode_reabrir(user, solicitacao):
+    """O "Editar" de um pedido já enviado: altera e volta para a DG."""
+    return solicitacao.status in STATUS_REABRIVEIS and _autor(user, solicitacao)
 
 
 def pode_editar(user, solicitacao):
@@ -115,9 +132,16 @@ def pode_gerenciar_anexos(user, solicitacao):
 
 
 def pode_concluir(user, solicitacao):
-    """Após o evento, o solicitante confirma que foi atendido."""
-    return solicitacao.status == StatusSolicitacao.DEFERIDA_EM_ANDAMENTO and (
-        user.is_superuser or solicitacao.criado_por_id == user.pk
+    """Terminado o evento, o solicitante confirma que foi atendido."""
+    return (
+        aguarda_atendimento(user, solicitacao) and solicitacao.evento_encerrado
+    )
+
+
+def aguarda_atendimento(user, solicitacao):
+    """Deferida e do usuário: só falta o evento acabar para confirmar."""
+    return solicitacao.status == StatusSolicitacao.DEFERIDA_EM_ANDAMENTO and _autor(
+        user, solicitacao
     )
 
 
@@ -146,6 +170,8 @@ def acoes_permitidas(user, solicitacao):
         "ver": pode_ver(user, solicitacao),
         "editar": pode_editar(user, solicitacao),
         "editar_dados": pode_editar_dados(user, solicitacao),
+        "reabrir": pode_reabrir(user, solicitacao),
+        "aguarda_atendimento": aguarda_atendimento(user, solicitacao),
         "enviar": pode_enviar(user, solicitacao),
         "excluir": pode_excluir(user, solicitacao),
         "despachar": pode_despachar(user, solicitacao),

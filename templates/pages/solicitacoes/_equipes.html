@@ -6,7 +6,8 @@
 
   Os ganchos do app.js (`data-equipe-alocacao`, `data-equipe-checkbox`,
   `data-equipe-quantidade`) continuam onde estavam: o número só habilita com
-  a equipe marcada.
+  a equipe marcada. No despacho, a DG edita só estes números
+  (`data-quantidade-dg`, enviados pelo `form-despacho`); o resto fica travado.
 {% endcomment %}
 {# `--equipes` divide a linha em colunas iguais: três equipes, três colunas. #}
 <fieldset class="linhas-quantidade{% if erros.equipes %} grupo-erro{% endif %}" id="id_equipes" style="--equipes: {{ equipes_planejamento|length }}"{% if erros.equipes %} aria-invalid="true"{% endif %}>
@@ -18,7 +19,12 @@
       <label class="linha-quantidade__n" for="id_equipe_{{ equipe.valor }}">{{ equipe.rotulo }}</label>
       <div class="linha-quantidade__q">
         <label class="sr-only" for="id_{{ equipe.nome_quantidade }}">Quantidade de servidores da equipe {{ equipe.rotulo }}</label>
-        <input class="form-controle" type="number" min="1" step="1" id="id_{{ equipe.nome_quantidade }}" name="{{ equipe.nome_quantidade }}" value="{{ equipe.quantidade }}" placeholder="0"{% if planejamento_desabilitado or not equipe.selecionada %} disabled{% endif %} data-equipe-quantidade>
+        {% if acoes.despachar and equipe.selecionada %}
+          {# A DG só mexe aqui: o número vai com o formulário do despacho. #}
+          <input class="form-controle" type="number" min="1" step="1" id="id_{{ equipe.nome_quantidade }}" name="{{ equipe.nome_quantidade_dg }}" form="form-despacho" value="{{ equipe.quantidade }}" placeholder="0" data-equipe-quantidade data-quantidade-dg>
+        {% else %}
+          <input class="form-controle" type="number" min="1" step="1" id="id_{{ equipe.nome_quantidade }}" name="{{ equipe.nome_quantidade }}" value="{{ equipe.quantidade }}" placeholder="0"{% if planejamento_desabilitado or not equipe.selecionada %} disabled{% endif %} data-equipe-quantidade>
+        {% endif %}
       </div>
     </div>
   {% empty %}

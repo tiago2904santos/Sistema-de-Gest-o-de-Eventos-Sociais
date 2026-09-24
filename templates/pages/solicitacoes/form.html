@@ -35,8 +35,14 @@
         <div class="pal-topo-data">
           {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True valor=valores.data_solicitacao erros=erros.data_solicitacao desabilitado=dados_desabilitado form_alvo="form-solicitacao" %}
         </div>
-      {% if not solicitacao or acoes.editar_dados %}
+      {% if reabrindo %}
+          <a class="btn--secundaria" href="{% url 'solicitacoes:editar' solicitacao.pk %}">Descartar</a>
+          <button type="submit" form="form-solicitacao" class="btn-primaria">{% include "components/icon.html" with nome="send" %}Salvar e reenviar para a DG</button>
+      {% elif not solicitacao or acoes.editar_dados %}
           <button type="submit" form="form-solicitacao" class="btn-primaria" name="acao" value="rascunho" formnovalidate>{% if solicitacao and solicitacao.status != "RASCUNHO" %}Salvar alterações{% else %}Salvar rascunho{% endif %}</button>
+      {% elif acoes.reabrir %}
+          {# Enviado, o pedido fica travado: mudar exige editar e passar de novo pela DG. #}
+          <a class="btn--secundaria" href="{% url 'solicitacoes:editar' solicitacao.pk %}?reabrir=1" title="Alterar a solicitação: ao salvar, ela volta para o despacho da DG">{% include "components/icon.html" with nome="pencil" %}Editar</a>
       {% endif %}
       </div>
     </div>
@@ -58,13 +64,25 @@
       </ol>
     </nav>
 
+    {% if reabrindo %}
+      <div class="aviso aviso--callout aviso--fino" role="status">
+        <div class="aviso__txt">
+          {% include "components/icon.html" with nome="pencil" %}
+          <div class="aviso__corpo">
+            <b>Editando uma solicitação já enviada</b>
+            <p>Ao salvar, as alterações ficam no histórico e a solicitação volta para o despacho da Diretoria-Geral{% if solicitacao.status == "DEFERIDA_EM_ANDAMENTO" %} — o despacho anterior deixa de valer{% endif %}.</p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
     {% if motivo_devolucao %}
       {# O aviso da devolução vem antes dos campos: é o que precisa ser resolvido. #}
       <div class="aviso aviso--callout" role="status">
         <div class="aviso__txt">
           {% include "components/icon.html" with nome="undo" %}
           <div class="aviso__corpo">
-            <b>Devolvida para ajuste pela Diretoria-Geral</b>
+            <b>Enviada para correção pela Diretoria-Geral</b>
             <p>{{ motivo_devolucao.observacao }}</p>
             <div class="aviso__meta">{{ motivo_devolucao.criado_em|date:"d/m/Y · H\hi" }} · {{ motivo_devolucao.usuario|default:"Diretoria-Geral" }}</div>
           </div>
@@ -74,6 +92,7 @@
 
     <form method="post" action="" id="form-solicitacao" class="editor-roteiro__principal" enctype="multipart/form-data">
       {% csrf_token %}
+      {% if reabrindo %}<input type="hidden" name="reabrir" value="1">{% endif %}
       {% if form.errors %}
         <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
           {% include "components/icon.html" with nome="info" %}
@@ -190,22 +209,27 @@
             {% include "components/upload_anexos.html" with id="id_anexos_cadastro" name="anexos" multiple=True mensagem_vazio="Nenhum arquivo selecionado. Eles serão salvos junto com a solicitação." only %}
           {% endif %}
 
-          {# Uma barra só para tudo o que se faz aqui: voltar à esquerda; salvar,
+          {% comment %}Uma barra só para tudo o que se faz aqui: voltar à esquerda; salvar,
              enviar e confirmar o atendimento à direita. O botão de confirmar
              manda no formulário próprio (`form-concluir`), que vive fora
-             daqui — HTML não permite formulário dentro de formulário. #}
-          {% if not solicitacao or acoes.editar_dados or mostrar_enviar or acoes.concluir %}
+             daqui — HTML não permite formulário dentro de formulário.{% endcomment %}
+          {% if not solicitacao or acoes.editar_dados or mostrar_enviar or acoes.aguarda_atendimento %}
             <div class="frm-acoes-fim">
-              <a class="btn--secundaria" href="{% url 'solicitacoes:lista' %}">Voltar</a>
+              <a class="btn--secundaria" href="{% if reabrindo %}{% url 'solicitacoes:editar' solicitacao.pk %}{% else %}{% url 'solicitacoes:lista' %}{% endif %}">{% if reabrindo %}Descartar{% else %}Voltar{% endif %}</a>
               <span class="frm-acoes-fim__dir">
-                {% if not solicitacao or acoes.editar_dados %}
+                {% if reabrindo %}
+                  <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="send" %}Salvar e reenviar para a DG</button>
+                {% elif not solicitacao or acoes.editar_dados %}
                   <button type="submit" class="{% if mostrar_enviar %}btn--secundaria{% else %}btn-primaria{% endif %}" name="acao" value="rascunho" formnovalidate>{% if solicitacao and solicitacao.status != "RASCUNHO" %}Salvar alterações{% else %}Salvar rascunho{% endif %}</button>
                 {% endif %}
                 {% if mostrar_enviar %}
                   <button type="submit" class="btn-primaria" name="acao" value="enviar">{% include "components/icon.html" with nome="send" %}Enviar para a DG</button>
                 {% endif %}
                 {% if acoes.concluir %}
-                  <button type="submit" form="form-concluir" class="btn-primaria">{% include "components/icon.html" with nome="check" %}Confirmar atendimento</button>
+                  <button type="submit" form="form-concluir" class="btn-primaria">{% include "components/icon.html" with nome="check" %}Marcar como atendida</button>
+                {% elif acoes.aguarda_atendimento %}
+                  {# Só depois do evento: até lá o botão aparece travado, dizendo quando libera. #}
+                  <button type="button" class="btn-primaria" disabled title="Só depois que o evento terminar">{% include "components/icon.html" with nome="clock" %}Atendida só após {{ solicitacao.ultimo_dia_evento|date:"d/m/Y" }}</button>
                 {% endif %}
               </span>
             </div>
@@ -226,21 +250,13 @@
             <h2 class="section-card__titulo">Despacho da DG</h2>
           </header>
           <div class="section-card__corpo">
-            <form method="post" action="{% url 'solicitacoes:despachar' solicitacao.pk %}">
+            {# As quantidades de servidores ficam no cartão 2, nas próprias linhas das equipes (form="form-despacho"). #}
+            <form method="post" action="{% url 'solicitacoes:despachar' solicitacao.pk %}" id="form-despacho">
               {% csrf_token %}
-              {% if solicitacao.itens_equipe.all %}
-                {# Proposta do solicitante: aceite ou ajuste as quantidades. #}
-                <p class="form-label sol-grupo">Servidores por equipe — proposta do solicitante</p>
-                <div class="g-form g-form--3">
-                  {% for equipe in equipes_planejamento %}{% if equipe.selecionada %}
-                    {% include "components/input.html" with name=equipe.nome_quantidade_dg label=equipe.rotulo tipo="number" minimo=1 passo="1" valor=equipe.quantidade erros=None %}
-                  {% endif %}{% endfor %}
-                </div>
-              {% endif %}
               {% include "components/v32/cartoes_escolha.html" with name="decisao" label="Decisão" obrigatorio=True opcoes=decisoes_dg colunas="2" id_primeiro=True erros=None %}
-              {% include "components/textarea.html" with name="observacao" label="Observações da decisão" linhas="3" placeholder="Obrigatórias para não atendimento, cancelamento ou devolução." valor=despacho_pendente.observacao erros=None %}
+              {% include "components/textarea.html" with name="observacao" label="Observações da decisão" linhas="3" placeholder="Obrigatórias para não atendimento, cancelamento ou correção — no caso da correção, diga brevemente o que deve mudar." valor=despacho_pendente.observacao erros=None %}
               <div class="frm-acoes-fim">
-                <button type="submit" class="btn--secundaria" name="acao_despacho" value="salvar_ajustes" formnovalidate>Salvar ajustes</button>
+                {% if solicitacao.itens_equipe.all %}<button type="submit" class="btn--secundaria" name="acao_despacho" value="salvar_ajustes" formnovalidate>Salvar servidores</button>{% endif %}
                 <button type="submit" class="btn-primaria">Registrar decisão</button>
               </div>
             </form>
@@ -252,7 +268,7 @@
           <div class="aviso__txt">
             {% include "components/icon.html" with nome="gavel" %}
             <div class="aviso__corpo">
-              <b>Despacho da DG — {% if solicitacao.status == "DEVOLVIDA" %}Devolver para ajuste{% else %}{{ solicitacao.get_decisao_dg_display }}{% endif %}</b>
+              <b>Despacho da DG — {% if solicitacao.status == "DEVOLVIDA" %}Enviar para correção{% else %}{{ solicitacao.get_decisao_dg_display }}{% endif %}</b>
               {% if solicitacao.observacoes_dg %}<p>{{ solicitacao.observacoes_dg|linebreaksbr }}</p>{% elif motivo_devolucao %}<p>{{ motivo_devolucao.observacao }}</p>{% endif %}
               {% if solicitacao.decidido_em %}<div class="aviso__meta">{{ solicitacao.decidido_em|date:"d/m/Y · H\hi" }}{% if solicitacao.decidido_por %} · {{ solicitacao.decidido_por }} (DG){% endif %}</div>{% elif motivo_devolucao %}<div class="aviso__meta">{{ motivo_devolucao.criado_em|date:"d/m/Y · H\hi" }} · {{ motivo_devolucao.usuario|default:"Diretoria-Geral" }} (DG)</div>{% endif %}
             </div>
@@ -261,14 +277,14 @@
       {% endif %}
 
       {# No despacho, a decisão "Evento cancelado" cobre o encerramento. #}
-      {% if not acoes.despachar %}{% if acoes.concluir or acoes.cancelar %}
+      {% if not acoes.despachar %}{% if acoes.concluir or acoes.cancelar %}{% if not reabrindo %}
         <section class="section-card reg" id="encerramento">
           <header class="section-card__cabecalho reg__t">
             <h2 class="section-card__titulo">Encerramento do evento</h2>
           </header>
           <div class="section-card__corpo sol-encerrar">
             {% if acoes.concluir %}
-              <p class="sol-encerrar__texto">Confirmar o atendimento (no fim do formulário) encerra a solicitação: depois disso ela não aceita mais alterações.</p>
+              <p class="sol-encerrar__texto">Marcar como atendida (no fim do formulário) encerra a solicitação: depois disso ela não aceita mais alterações.</p>
             {% endif %}
             {% if acoes.cancelar %}
               {# O cancelamento é exceção: fica recolhido até alguém precisar dele. #}
@@ -282,7 +298,7 @@
             {% endif %}
           </div>
         </section>
-      {% endif %}{% endif %}
+      {% endif %}{% endif %}{% endif %}
 
       {% include "pages/solicitacoes/_historico.html" %}
 
@@ -290,7 +306,7 @@
         <form id="form-excluir-solicitacao" method="post" action="{% url 'solicitacoes:excluir' solicitacao.pk %}" data-confirmar-exclusao>{% csrf_token %}</form>
       {% endif %}
       {% if acoes.concluir %}
-        <form id="form-concluir" method="post" action="{% url 'solicitacoes:concluir' solicitacao.pk %}" data-confirmar="Confirmar e encerrar?">{% csrf_token %}</form>
+        <form id="form-concluir" method="post" action="{% url 'solicitacoes:concluir' solicitacao.pk %}" data-confirmar="Marcar como atendida?">{% csrf_token %}</form>
       {% endif %}
       {% if pode_gerenciar_anexos %}
         {# Formulário auxiliar da exclusão: os botões da tabela apontam para cá via atributo form. #}

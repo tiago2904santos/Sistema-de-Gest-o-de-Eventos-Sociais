@@ -2474,6 +2474,14 @@ form.btn-flutuante-form{margin:0;display:contents}
 .lt__acao{font-weight:600;color:var(--n-900)}
 .lt__meta{font-size:12px;color:var(--n-500)}
 .lt__texto{margin:4px 0 0;font-size:13px;color:var(--n-700);white-space:pre-line;overflow-wrap:anywhere}
+/* Histórico: o que mudou, campo a campo (antes riscado → depois). */
+.lt__mudancas{list-style:none;margin:6px 0 0;padding:6px 10px;display:grid;gap:3px;background:var(--n-50,#f7f7f8);border-radius:6px;font-size:12.5px;color:var(--n-700)}
+.lt__mudancas li{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;overflow-wrap:anywhere}
+.lt__campo{font-weight:600;color:var(--n-800,#333);min-width:9em}
+.lt__mudancas del{color:var(--n-500);text-decoration:line-through}
+.lt__mudancas ins{text-decoration:none;font-weight:600;color:var(--n-900,#111)}
+.lt__mudancas em{color:var(--n-500);font-style:italic}
+.lt__seta{color:var(--n-500)}
 .lt__mudancas{margin:6px 0 0;padding:0;list-style:none;display:grid;gap:3px;font-size:12.5px}
 .lt__mudancas li{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:baseline}
 .lt__mudancas b{font-weight:600;color:var(--n-800)}

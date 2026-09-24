@@ -420,7 +420,7 @@ class DespachoForm(forms.Form):
             (DecisaoDG.ATENDER, "Atender"),
             (DecisaoDG.NAO_ATENDER, "Não atender"),
             (DecisaoDG.CANCELADO, "Evento cancelado"),
-            (DEVOLVER, "Devolver para ajuste"),
+            (DEVOLVER, "Enviar para correção"),
         ],
         error_messages={"required": "Selecione a decisão da DG."},
     )
@@ -438,7 +438,7 @@ class DespachoForm(forms.Form):
         if decisao == self.DEVOLVER and not observacao:
             self.add_error(
                 "observacao",
-                "Informe o motivo da devolução para o solicitante ajustar.",
+                "Informe brevemente o que o solicitante deve corrigir.",
             )
         dados["observacao"] = observacao
         return dados
