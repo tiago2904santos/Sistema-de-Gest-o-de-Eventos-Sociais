@@ -143,18 +143,43 @@ def certifico_pdf(solicitacao):
     return _pdf("coffee_break/documentos/certifico.html", contexto)
 
 
+def juntar(itens):
+    """"8952", "8952 e 8954", "8950, 8952 e 8954"."""
+    itens = [str(i) for i in itens if str(i).strip()]
+    if len(itens) <= 1:
+        return "".join(itens)
+    return ", ".join(itens[:-1]) + " e " + itens[-1]
+
+
+def notas_do_pagamento(solicitacao):
+    """Os números das notas de todas as OS do mesmo pagamento, na ordem da OS."""
+    return [s.numero_nota_fiscal.strip() for s in solicitacao.grupo_pagamento() if s.numero_nota_fiscal.strip()]
+
+
 def pendencias_oficio(solicitacao):
     faltas = []
-    if not solicitacao.numero_nota_fiscal.strip():
-        faltas.append("Informe o número da nota fiscal.")
+    for membro in solicitacao.grupo_pagamento():
+        if not membro.numero_nota_fiscal.strip():
+            quem = f" da OS {membro.numero}" if membro.pk != solicitacao.pk else ""
+            faltas.append(f"Informe o número da nota fiscal{quem}.")
     if not solicitacao.numero_oficio.strip():
         faltas.append("Informe o número do ofício.")
     return faltas
 
 
-def oficio_pdf(solicitacao):
+def itens_do_oficio(solicitacao):
+    """Um item por OS do pagamento: "• <evento> - Coffee Break para N (extenso) pessoas."."""
     from viagens_roteiros.services.valor_extenso import _numero_por_extenso
 
+    return [
+        {"s": membro, "quantidade_extenso": _numero_por_extenso(membro.quantidade or 0)}
+        for membro in solicitacao.grupo_pagamento()
+    ]
+
+
+def oficio_pdf(solicitacao):
+    """Um ofício para todas as OS do mesmo pagamento (um item por evento e as
+    notas no plural, como no Of. 123/2026 do processo 26.613.666-8)."""
     from .editor import TipoCoffee, textos_do_documento
     from .models import ConfiguracaoCoffeeBreak
 
@@ -166,8 +191,12 @@ def oficio_pdf(solicitacao):
     contexto["data_extenso"] = data_extenso_oficio(
         solicitacao.data_oficio or timezone.localdate()
     )
-    contexto["quantidade_extenso"] = _numero_por_extenso(solicitacao.quantidade)
-    contexto["b"], contexto["quebras"] = textos_do_documento(TipoCoffee.OFICIO, solicitacao)
+    contexto["itens"] = itens_do_oficio(solicitacao)
+    notas = notas_do_pagamento(solicitacao)
+    contexto["notas"] = juntar(notas)
+    contexto["varias_notas"] = len(notas) > 1
+    # O texto do ofício é do pagamento: mora na OS principal.
+    contexto["b"], contexto["quebras"] = textos_do_documento(TipoCoffee.OFICIO, solicitacao.principal_do_pagamento)
     return _pdf("coffee_break/documentos/oficio.html", contexto)
 
 
@@ -216,31 +245,41 @@ def itens_anexo(solicitacao, hoje=None):
         "arquivo": f"Of.{solicitacao.numero_oficio.split('/')[0]} coffee break {fornecedor.nome_curto_efetivo}.pdf",
         "conteudo": lambda: oficio_pdf(solicitacao),
     })
-    faltas = []
-    if not nf:
-        faltas.append("Informe o número da nota fiscal.")
-    if not solicitacao.arquivo_nota_fiscal:
-        faltas.append("Anexe o PDF da nota fiscal.")
-    itens.append({
-        "chave": "nota",
-        "titulo": f"Nota fiscal {nf}".strip(),
-        "detalhe": "PDF enviado pelo fornecedor",
-        "pronto": not faltas,
-        "falta": " ".join(faltas),
-        "url": _url("nota_fiscal", pk),
-        "arquivo": f"NF{nf} coffee break {fornecedor.nome_curto_efetivo}.pdf",
-        "conteudo": lambda: _ler(solicitacao.arquivo_nota_fiscal),
-    })
-    itens.append({
-        "chave": "certifico",
-        "titulo": "Certifico digital",
-        "detalhe": f"Atesto da fiscal {contrato.fiscal_responsavel}".strip(),
-        "pronto": bool(nf),
-        "falta": "" if nf else "Informe o número da nota fiscal.",
-        "url": _url("certifico", pk),
-        "arquivo": f"CERTIFICO DIGITAL {fornecedor.nome_curto_efetivo} {nf}.pdf",
-        "conteudo": lambda: certifico_pdf(solicitacao),
-    })
+    # Uma nota e um certifico por OS do pagamento (ofício único), na ordem do
+    # processo 26.613.666-8: NF 8952, certifico 8952, NF 8954, certifico 8954.
+    grupo = solicitacao.grupo_pagamento()
+    varias = len(grupo) > 1
+    for membro in grupo:
+        nf_m = membro.numero_nota_fiscal.strip()
+        sufixo = f"-{membro.pk}" if varias else ""
+        da_os = f" — OS {membro.numero}" if varias else ""
+        faltas = []
+        if not nf_m:
+            faltas.append("Informe o número da nota fiscal.")
+        if not membro.arquivo_nota_fiscal:
+            faltas.append("Anexe o PDF da nota fiscal.")
+        itens.append({
+            "chave": f"nota{sufixo}",
+            "titulo": f"Nota fiscal {nf_m}".strip() + da_os,
+            "detalhe": "PDF enviado pelo fornecedor",
+            "pronto": not faltas,
+            "falta": " ".join(faltas),
+            "url": _url("nota_fiscal", membro.pk),
+            "url_corrigir": _url("etapa_nota", membro.pk),
+            "arquivo": f"NF{nf_m} coffee break {fornecedor.nome_curto_efetivo}.pdf",
+            "conteudo": (lambda m=membro: _ler(m.arquivo_nota_fiscal)),
+        })
+        itens.append({
+            "chave": f"certifico{sufixo}",
+            "titulo": ("Certifico digital" + (f" — NF {nf_m}" if varias and nf_m else "")) + (da_os if varias and not nf_m else ""),
+            "detalhe": f"Atesto da fiscal {contrato.fiscal_responsavel}".strip(),
+            "pronto": bool(nf_m),
+            "falta": "" if nf_m else "Informe o número da nota fiscal.",
+            "url": _url("certifico", membro.pk),
+            "url_corrigir": _url("etapa_nota", membro.pk),
+            "arquivo": f"CERTIFICO DIGITAL {fornecedor.nome_curto_efetivo} {nf_m}.pdf",
+            "conteudo": (lambda m=membro: certifico_pdf(m)),
+        })
     atuais = certidoes.vigentes(fornecedor)
     rotulos = dict(TipoCertidao.choices)
     for tipo in ORDEM_CERTIDOES:
@@ -384,14 +423,19 @@ def textos_eprotocolo(solicitacao):
 
     config = ConfiguracaoCoffeeBreak.atual()
     fornecedor = solicitacao.lote.contrato.fornecedor
-    nf = solicitacao.numero_nota_fiscal.strip() or "____"
-    detalhamento = (
-        f"ENVIO P/ PAGAMENTO DA NOTA FISCAL N {nf} - ({fornecedor.nome_curto_efetivo})"
-    )
+    notas = notas_do_pagamento(solicitacao)
+    nf = juntar(notas) or "____"
+    if len(notas) > 1:
+        # Várias notas no mesmo protocolo, como o 26.613.666-8.
+        detalhamento = f"ENVIO P/ PAGAMENTO DAS NOTAS FISCAIS N {nf.replace(' e ', ' E ')} - ({fornecedor.nome_curto_efetivo})"
+        pagamento = f"o pagamento das Notas fiscais n° {nf}."
+    else:
+        detalhamento = f"ENVIO P/ PAGAMENTO DA NOTA FISCAL N {nf} - ({fornecedor.nome_curto_efetivo})"
+        pagamento = f"o pagamento da Nota fiscal n° {nf}."
     despacho = (
         f"{config.despacho_destino}\n"
         "Encaminhamos o presente protocolado com as devidas informações para "
-        f"o pagamento da Nota fiscal n° {nf}."
+        + pagamento
     )
     return {
         "detalhamento": detalhamento,

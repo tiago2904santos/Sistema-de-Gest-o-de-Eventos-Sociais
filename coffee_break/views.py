@@ -798,6 +798,35 @@ def _contexto_da_nota(contexto, form, solicitacao):
         valores["data_oficio"] = data.isoformat()
     contexto["usa_dialogo_assinado"] = True
     contexto["url_anexar_nota"] = reverse("coffee_break:anexar_nota", args=[solicitacao.pk])
+    # Pagamento conjunto: as OS do mesmo pagamento e as que podem entrar
+    # (mesmo lote, sem protocolo, não pagas), na lista de escolha do cabeçalho.
+    grupo = solicitacao.grupo_pagamento()
+    outras = [membro for membro in grupo if membro.pk != solicitacao.pk]
+    contexto["outras_do_pagamento"] = [
+        {
+            "s": membro,
+            "url_anexar": reverse("coffee_break:anexar_nota", args=[membro.pk]),
+            "url_etapa": reverse("coffee_break:etapa_nota", args=[membro.pk]),
+        }
+        for membro in outras
+    ]
+
+    def _opcao(membro, marcada):
+        quando = membro.data_inicio_evento.strftime("%d/%m/%Y") if membro.data_inicio_evento else (membro.periodo_evento_texto or "sem data")
+        nota = f"NF {membro.numero_nota_fiscal}" if membro.numero_nota_fiscal else "sem nota"
+        return {
+            "valor": str(membro.pk),
+            "rotulo": f"OS {membro.numero} — {membro.descricao_evento}",
+            "detalhes": f"{quando} · {membro.quantidade} pessoas · {nota}",
+            "selecionado": marcada,
+            "chip": "No pagamento" if marcada else "",
+            "chip_tom": "atendido",
+        }
+
+    contexto["opcoes_vinculo"] = [_opcao(m, True) for m in outras] + [
+        _opcao(m, False) for m in services.candidatas_ao_pagamento(solicitacao)
+    ]
+    contexto["pagamento_conjunto"] = bool(outras)
     url_oficio = reverse("coffee_break:oficio", args=[solicitacao.pk])
     url_certifico = reverse("coffee_break:certifico", args=[solicitacao.pk])
     titulo_oficio = f"Ofício {solicitacao.numero_oficio}".strip()
@@ -815,6 +844,19 @@ def _contexto_da_nota(contexto, form, solicitacao):
         "url_pdf": url_certifico + "?baixar=1",
         "embutido": cartao(CHAVE_CERTIFICO, solicitacao.pk, "Certifico digital"),
     }
+    # Um certifico por nota: com pagamento conjunto, um cartão por OS.
+    contexto["docs_certifico"] = []
+    for membro in grupo:
+        url_m = reverse("coffee_break:certifico", args=[membro.pk])
+        nf_m = membro.numero_nota_fiscal.strip()
+        titulo_m = "Certifico digital" + (f" — NF {nf_m}" if outras and nf_m else f" — OS {membro.numero}" if outras else "")
+        contexto["docs_certifico"].append({
+            "titulo": titulo_m,
+            "disponivel": bool(nf_m),
+            "src": url_m,
+            "url_pdf": url_m + "?baixar=1",
+            "embutido": cartao(CHAVE_CERTIFICO, membro.pk, titulo_m),
+        })
 
 
 def _titulo_e_trilha(contexto, solicitacao, etapa):
@@ -915,6 +957,17 @@ def _tela_da_etapa(request, pk, etapa):
                         )
                 messages.error(request, "Corrija os campos destacados para continuar.")
             else:
+                # O que é do pagamento (ofício, protocolo, marcos) vale para as OS do mesmo pagamento.
+                services.espelhar(solicitacao, form.changed_data)
+                if etapa == "nota" and "vinculadas_enviado" in request.POST and not somente_leitura:
+                    try:
+                        services.definir_pagamento_conjunto(
+                            solicitacao, request.POST.getlist("vinculadas"), request.user
+                        )
+                    except ValidationError as erro:
+                        for mensagem in erro.messages:
+                            messages.error(request, mensagem)
+                    solicitacao.refresh_from_db()
                 alterados = [
                     form.fields[nome].label
                     for nome in form.changed_data

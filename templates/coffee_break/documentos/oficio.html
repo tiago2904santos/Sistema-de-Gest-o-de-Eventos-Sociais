@@ -64,9 +64,9 @@
 
   <div class="corpo">
     <p class="recuo">{{ b.cb_paragrafo_entrega|linhas }}</p>
-    <p class="recuo">{{ b.cb_item_marcador|linhas }} {{ s.descricao_evento }} {{ b.cb_item_coffee|linhas }} {{ s.quantidade }} ({{ quantidade_extenso }}) {{ b.cb_item_pessoas|linhas }}</p>
+    {% for item in itens %}<p class="recuo">{{ b.cb_item_marcador|linhas }} {{ item.s.descricao_evento }} {{ b.cb_item_coffee|linhas }} {{ item.s.quantidade }} ({{ item.quantidade_extenso }}) {{ b.cb_item_pessoas|linhas }}</p>{% endfor %}
     {% if "antes_encaminho" in quebras %}<div class="quebra"></div>{% endif %}
-    <p class="recuo">{{ b.cb_encaminho|linhas }} {{ s.numero_nota_fiscal }}{{ b.cb_encaminho_meio|linhas }} {{ contrato.clausula_pagamento }}{{ b.cb_encaminho_contrato|linhas }} {{ contrato.referencia_documental }}.</p>
+    <p class="recuo">{% if varias_notas %}{{ b.cb_encaminho_plural|linhas }}{% else %}{{ b.cb_encaminho|linhas }}{% endif %} {{ notas }}{{ b.cb_encaminho_meio|linhas }} {{ contrato.clausula_pagamento }}{{ b.cb_encaminho_contrato|linhas }} {{ contrato.referencia_documental }}.</p>
   </div>
 
   {% if "antes_assinatura" in quebras %}<div class="quebra"></div>{% endif %}
