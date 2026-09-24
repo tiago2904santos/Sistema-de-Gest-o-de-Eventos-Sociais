@@ -63,7 +63,7 @@
             {% if avisos_anexo.vencidas %}
               <div class="aviso aviso--erro" role="alert">
                 {% include "components/icon.html" with nome="alert" %}
-                <div><strong>Certidão vencida.</strong> Entra no PDF único assim mesmo, mas troque antes de protocolar em <a href="{% url 'coffee_break:certidoes' %}#fornecedor-{{ lote.contrato.fornecedor.pk }}">Certidões</a>.
+                <div><strong>Certidão vencida.</strong> Entra no arquivo assim mesmo, mas troque antes de protocolar em <a href="{% url 'coffee_break:certidoes' %}#fornecedor-{{ lote.contrato.fornecedor.pk }}">Certidões</a>.
                   <ul>{% for aviso in avisos_anexo.vencidas %}<li>{{ aviso }}</li>{% endfor %}</ul>
                 </div>
               </div>
@@ -71,7 +71,7 @@
             {% if avisos_anexo.faltando %}
               <div class="aviso aviso--info" role="status">
                 {% include "components/icon.html" with nome="info" %}
-                <div><strong>Fica{{ avisos_anexo.faltando|length|pluralize:"m" }} de fora do PDF único:</strong>
+                <div><strong>Fica{{ avisos_anexo.faltando|length|pluralize:"m" }} de fora dos arquivos:</strong>
                   <ul>{% for aviso in avisos_anexo.faltando %}<li>{{ aviso }}</li>{% endfor %}</ul>
                 </div>
               </div>
@@ -79,41 +79,37 @@
           </div>
         {% endif %}
 
-        {# O visualizador de documentos de Viagens, sem editor; todos fechados. #}
+        {# Os quatro arquivos para baixar, no visualizador inline (sem editor), todos fechados. #}
         <div class="ofc-docs cb-docs-gerados" data-cb-pdf-worker="{% estatico 'vendor/pdfjs/pdf.worker.min.js' %}">
-          {% url 'coffee_break:pacote_protocolo' solicitacao.pk as url_pacote %}
-          {% url 'coffee_break:pacote_protocolo_zip' solicitacao.pk as url_zip %}
-          <details class="ofc-doc cb-anexo-doc cb-anexo-unico" data-ofc-doc id="anexo-completo">
-            <summary class="ofc-doc__cabeca">
-              <span class="ofc-doc__titulo">Anexo completo — PDF único
-                {% if anexo_pronto %}<span class="st st--atendido">Tudo pronto</span>{% elif avisos_anexo.vencidas %}<span class="st st--pendente cb-st--vencida">Com certidão vencida</span>{% else %}<span class="st st--pendente">Falta{{ anexo_faltando|pluralize:"m" }} {{ anexo_faltando }}</span>{% endif %}
-                <small class="cb-anexo-doc__detalhe">Todos os documentos num PDF só, com as certidões, na ordem do processo.</small>
-              </span>
-              {% if anexo_disponivel %}
-                <span class="dd of-menu ofc-doc__acoes" data-menu>
-                  <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações do anexo completo" title="Abrir e baixar">{% include "components/icon.html" with nome="document" %}</button>
-                  <span class="dd__c of-menu__corpo" hidden data-menu-corpo>
-                    <a class="dd__i of-item" href="{{ url_pacote }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}<span><b>Abrir em nova aba</b><small>O PDF único no navegador</small></span></a>
-                    <a class="dd__i of-item" href="{{ url_pacote }}?baixar=1">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF único</b><small>Todos os documentos juntos</small></span></a>
-                    <a class="dd__i of-item" href="{{ url_zip }}">{% include "components/icon.html" with nome="download" %}<span><b>Arquivos separados (ZIP)</b><small>Um PDF por documento, numerados</small></span></a>
-                  </span>
+          {% for parte in partes_anexo %}
+            {% url 'coffee_break:pacote_parte' solicitacao.pk parte.chave as url_parte %}
+            <details class="ofc-doc cb-anexo-doc cb-anexo-parte{% if parte.vencida %} cb-anexo-doc--vencida{% endif %}" data-ofc-doc id="anexo-{{ parte.chave }}">
+              <summary class="ofc-doc__cabeca">
+                <span class="ofc-doc__titulo"><span class="cb-anexo-doc__num">{{ forloop.counter }}</span>{{ parte.titulo }}
+                  {% if parte.vencida %}<span class="st st--pendente cb-st--vencida">Certidão vencida</span>{% elif parte.pronto %}<span class="st st--atendido">Pronto</span>{% elif parte.faltando %}<span class="st st--pendente">Falta{{ parte.faltando|pluralize:"m" }} {{ parte.faltando }}</span>{% endif %}
+                  <small class="cb-anexo-doc__detalhe">{{ parte.conteudo_texto }}</small>
                 </span>
-              {% endif %}
-              <span class="ofc-doc__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
-            </summary>
-            <div class="ofc-doc__corpo">
-              {% if anexo_disponivel %}
-                <div class="cb-pdf" data-cb-pdf="{{ url_pacote }}" aria-label="Páginas do anexo completo"><p class="cb-pdf__estado">O anexo abre aqui.</p></div>
-              {% else %}
-                <p class="ofc-doc__mensagem">Nenhum documento do anexo está disponível ainda.</p>
-              {% endif %}
-            </div>
-          </details>
-          {% for item in itens_anexo %}
-            {% include "pages/coffee_break/_documento_pdf.html" with d=item %}
+                {% if parte.disponivel %}
+                  <span class="dd of-menu ofc-doc__acoes" data-menu>
+                    <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações de {{ parte.titulo }}" title="Abrir e baixar">{% include "components/icon.html" with nome="download" %}</button>
+                    <span class="dd__c of-menu__corpo" hidden data-menu-corpo>
+                      <a class="dd__i of-item" href="{{ url_parte }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}<span><b>Abrir em nova aba</b><small>O PDF no navegador</small></span></a>
+                      <a class="dd__i of-item" href="{{ url_parte }}?baixar=1">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>{{ parte.titulo }}</small></span></a>
+                    </span>
+                  </span>
+                {% endif %}
+                <span class="ofc-doc__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+              </summary>
+              <div class="ofc-doc__corpo">
+                {% for item in parte.itens %}{% if not item.disponivel %}<p class="ofc-doc__mensagem">{{ item.titulo }}: {{ item.falta }}{% if item.url_corrigir %} <a href="{{ item.url_corrigir }}">Resolver</a>{% endif %}</p>{% endif %}{% endfor %}
+                {% if parte.disponivel %}
+                  <div class="cb-pdf" data-cb-pdf="{{ url_parte }}" aria-label="Páginas de {{ parte.titulo }}"><p class="cb-pdf__estado">O arquivo abre aqui.</p></div>
+                {% endif %}
+              </div>
+            </details>
           {% endfor %}
         </div>
-        <p class="pc-docs__nota">Ordem do processo: ofício, nota fiscal, certifico, certidões (FGTS, trabalhista, municipal, estadual e federal), termo aditivo e contrato.</p>
+        <p class="pc-docs__nota">Quatro arquivos: a OS; o ofício; as notas com os certificos (nota, certifico, nota, certifico…); e o contrato com todos os termos aditivos e as certidões (FGTS, trabalhista, municipal, estadual e federal).</p>
 
         <h3 class="sol-subtitulo" id="sec-pagamento">Pagamento</h3>
         <div class="g-form g-form--4 cb-pagamento">
