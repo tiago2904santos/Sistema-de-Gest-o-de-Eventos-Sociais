@@ -21,22 +21,28 @@
       </header>
       <div class="section-card__corpo">
         {# Como a etapa 1: a nota e o ofício em duas linhas; o resto se edita na própria folha dos documentos. #}
-        <div class="cb-os-linha cb-nota-linha">
-          {% include "components/input.html" with name="numero_nota_fiscal" label="Nº da nota fiscal" placeholder="Ex.: 8957" valor=valores.numero_nota_fiscal erros=erros.numero_nota_fiscal desabilitado=somente_leitura %}
+        {# Basta anexar a nota: o número sai do próprio PDF (e também se corrige na folha do ofício e do certifico). #}
+        <div class="cb-nota-anexo">
           <div class="form-campo">
-            <span class="form-label">Nota fiscal (PDF)</span>
+            <span class="form-label">Nota fiscal</span>
             {# O modal de anexo de documentos de Viagens (components/v32/dialogo_assinado.html). #}
             <div class="cb-anexo{% if solicitacao.arquivo_nota_fiscal %} cb-anexo--ok{% endif %}">
               {% if solicitacao.arquivo_nota_fiscal %}
-                <a class="cb-anexo__arquivo" href="{% url 'coffee_break:nota_fiscal' solicitacao.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="document" %}<span>Nota fiscal{% if solicitacao.numero_nota_fiscal %} {{ solicitacao.numero_nota_fiscal }}{% endif %}.pdf</span></a>
-                {% if not somente_leitura %}<a class="btn--secundaria btn--compacto" href="{{ url_anexar_nota }}" data-anexar-assinado data-anexar-atual="1" data-anexar-titulo="Trocar a nota fiscal" data-anexar-texto="Envie o PDF da nota fiscal do fornecedor. Ele substitui o que está anexado." data-anexar-acao="Anexar PDF" data-anexar-remover-rotulo="Remover nota fiscal">{% include "components/icon.html" with nome="upload" %}Trocar</a>{% endif %}
+                <a class="cb-anexo__arquivo" href="{% url 'coffee_break:nota_fiscal' solicitacao.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="document" %}<span>Nota fiscal{% if solicitacao.numero_nota_fiscal %} {{ solicitacao.numero_nota_fiscal }}{% endif %}</span></a>
+                {% if not somente_leitura %}<a class="btn--secundaria btn--compacto" href="{{ url_anexar_nota }}" data-anexar-assinado data-anexar-atual="1" data-anexar-titulo="Trocar a nota fiscal" data-anexar-texto="Envie o PDF da nota fiscal do fornecedor. Ele substitui o que está anexado, e o número é lido de novo." data-anexar-acao="Anexar PDF" data-anexar-remover-rotulo="Remover nota fiscal">{% include "components/icon.html" with nome="upload" %}Trocar</a>{% endif %}
               {% elif not somente_leitura %}
-                <a class="btn--secundaria cb-anexo__anexar" href="{{ url_anexar_nota }}" data-anexar-assinado data-anexar-titulo="Anexar nota fiscal" data-anexar-texto="Envie o PDF da nota fiscal do fornecedor. Ela vai no anexo do protocolo logo depois do ofício." data-anexar-acao="Anexar PDF">{% include "components/icon.html" with nome="upload" %}Anexar nota fiscal</a>
+                <a class="btn-primaria cb-anexo__anexar" href="{{ url_anexar_nota }}" data-anexar-assinado data-anexar-titulo="Anexar nota fiscal" data-anexar-texto="Envie o PDF da nota fiscal do fornecedor. O número da nota é lido do próprio PDF; ela vai no anexo do protocolo logo depois do ofício." data-anexar-acao="Anexar PDF">{% include "components/icon.html" with nome="upload" %}Anexar nota fiscal</a>
               {% else %}
                 <span class="cb-anexo__vazio">Sem nota anexada.</span>
               {% endif %}
             </div>
           </div>
+          {% if solicitacao.arquivo_nota_fiscal and not valores.numero_nota_fiscal or erros.numero_nota_fiscal %}
+            {# Não deu para ler o número no PDF (escaneado, sem texto): aí se digita. #}
+            {% include "components/input.html" with name="numero_nota_fiscal" label="Nº da nota fiscal" placeholder="Não foi lido do PDF — digite" valor=valores.numero_nota_fiscal erros=erros.numero_nota_fiscal desabilitado=somente_leitura %}
+          {% else %}
+            <input type="hidden" name="numero_nota_fiscal" value="{{ valores.numero_nota_fiscal }}">
+          {% endif %}
         </div>
 
         <div class="cb-os-linha cb-oficio-linha">

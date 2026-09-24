@@ -245,10 +245,12 @@ def itens_anexo(solicitacao, hoje=None):
     rotulos = dict(TipoCertidao.choices)
     for tipo in ORDEM_CERTIDOES:
         certidao = atuais.get(tipo)
+        vencida = False
         if certidao is None:
             pronto, falta, detalhe = False, "Certidão não cadastrada.", "Não cadastrada"
         elif certidao.validade < hoje:
-            pronto, falta = False, f"Vencida em {certidao.validade:%d/%m/%Y}."
+            # Vencida ainda entra no PDF único, mas com aviso: é para trocar.
+            pronto, falta, vencida = False, f"Vencida em {certidao.validade:%d/%m/%Y}.", True
             detalhe = f"Vencida em {certidao.validade:%d/%m/%Y}"
         else:
             pronto, falta, detalhe = True, "", f"Válida até {certidao.validade:%d/%m/%Y}"
@@ -260,6 +262,8 @@ def itens_anexo(solicitacao, hoje=None):
             "falta": falta,
             "url": _url("certidao_arquivo", certidao.pk) if certidao else "",
             "url_corrigir": _url("certidoes") + f"#fornecedor-{fornecedor.pk}",
+            "vencida": vencida,
+            "disponivel": certidao is not None and bool(certidao.arquivo),
             "arquivo": f"Certidao {rotulos[tipo]} {fornecedor.nome_curto_efetivo}.pdf",
             "conteudo": (lambda c=certidao: _ler(c.arquivo)),
         })
@@ -290,6 +294,9 @@ def itens_anexo(solicitacao, hoje=None):
     })
     for posicao, item in enumerate(itens, start=1):
         item["posicao"] = posicao
+        # Disponível: tem arquivo para mostrar e juntar (pronto, ou certidão vencida).
+        item.setdefault("disponivel", item["pronto"])
+        item.setdefault("vencida", False)
         item["arquivo"] = f"{posicao:02d} - {item['arquivo'].replace('/', '-')}"
     return itens
 
@@ -301,6 +308,21 @@ def pendencias_pacote(solicitacao, hoje=None):
         for item in itens_anexo(solicitacao, hoje)
         if not item["pronto"]
     ]
+
+
+def avisos_do_pacote(itens):
+    """O que a tela avisa sobre o PDF único: certidão vencida (entra, mas é
+    para trocar) e documento que falta (fica de fora)."""
+    vencidas = [f"{item['titulo']}: {item['falta']}" for item in itens if item["vencida"]]
+    faltando = [f"{item['titulo']}: {item['falta']}" for item in itens if not item["disponivel"]]
+    return {"vencidas": vencidas, "faltando": faltando}
+
+
+def _disponiveis(solicitacao, hoje):
+    itens = [item for item in itens_anexo(solicitacao, hoje) if item["disponivel"]]
+    if not itens:
+        raise ValidationError(["Nenhum documento do anexo está disponível ainda."])
+    return itens
 
 
 def _ler(origem):
@@ -318,14 +340,14 @@ def _anexar(escritor, dados):
 
 
 def pacote_protocolo_pdf(solicitacao, hoje=None):
-    """O anexo completo num PDF só, na ordem em que vai ao protocolo."""
+    """O anexo completo num PDF só, na ordem em que vai ao protocolo: todos os
+    documentos que existem, com as certidões (as vencidas também)."""
     from pypdf import PdfWriter
 
-    faltas = pendencias_pacote(solicitacao, hoje)
-    if faltas:
-        raise ValidationError(faltas)
+    # Junta tudo o que existe, na ordem do protocolo — certidão vencida
+    # inclusive; a tela avisa o que está vencido e o que ficou de fora.
     escritor = PdfWriter()
-    for item in itens_anexo(solicitacao, hoje):
+    for item in _disponiveis(solicitacao, hoje):
         _anexar(escritor, item["conteudo"]())
     saida = io.BytesIO()
     escritor.write(saida)
@@ -340,12 +362,9 @@ def pacote_protocolo_zip(solicitacao, hoje=None):
     """
     import zipfile
 
-    faltas = pendencias_pacote(solicitacao, hoje)
-    if faltas:
-        raise ValidationError(faltas)
     saida = io.BytesIO()
     with zipfile.ZipFile(saida, "w", zipfile.ZIP_DEFLATED) as pacote:
-        for item in itens_anexo(solicitacao, hoje):
+        for item in _disponiveis(solicitacao, hoje):
             pacote.writestr(item["arquivo"], item["conteudo"]())
     return saida.getvalue()
 

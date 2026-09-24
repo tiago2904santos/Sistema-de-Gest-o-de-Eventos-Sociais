@@ -761,6 +761,9 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
             contexto["itens_anexo"] = itens
             contexto["anexo_pronto"] = all(item["pronto"] for item in itens)
             contexto["anexo_faltando"] = sum(1 for item in itens if not item["pronto"])
+            # O PDF único junta o que existe; a tela avisa vencida e o que falta.
+            contexto["anexo_disponivel"] = any(item["disponivel"] for item in itens)
+            contexto["avisos_anexo"] = documentos.avisos_do_pacote(itens)
             contexto["eprotocolo"] = documentos.textos_eprotocolo(solicitacao)
     return contexto
 
@@ -1445,14 +1448,28 @@ def anexar_nota(request, pk):
         for mensagem in erro.messages:
             messages.error(request, mensagem)
         return redirect(destino)
+    from .nota_fiscal import numero_da_nota
+
+    # Basta anexar: o número da nota sai do próprio PDF.
+    arquivo.seek(0)
+    numero = numero_da_nota(arquivo.read())
+    arquivo.seek(0)
     trocou = bool(solicitacao.arquivo_nota_fiscal)
     solicitacao.arquivo_nota_fiscal = arquivo
-    solicitacao.save(update_fields=["arquivo_nota_fiscal", "atualizado_em"])
+    campos = ["arquivo_nota_fiscal", "atualizado_em"]
+    if numero:
+        solicitacao.numero_nota_fiscal = numero
+        campos.append("numero_nota_fiscal")
+    solicitacao.save(update_fields=campos)
     services.registrar_historico(
         solicitacao, request.user, AcaoHistoricoCoffeeBreak.ATUALIZACAO,
-        "Nota fiscal (PDF) substituída." if trocou else "Nota fiscal (PDF) anexada.",
+        ("Nota fiscal (PDF) substituída" if trocou else "Nota fiscal (PDF) anexada")
+        + (f"; número {numero} lido do PDF." if numero else "."),
     )
-    messages.success(request, "Nota fiscal anexada.")
+    if numero:
+        messages.success(request, f"Nota fiscal {numero} anexada — o número foi lido do PDF.")
+    else:
+        messages.warning(request, "Nota fiscal anexada, mas não deu para ler o número no PDF: informe-o no campo ao lado.")
     return redirect(destino)
 
 
