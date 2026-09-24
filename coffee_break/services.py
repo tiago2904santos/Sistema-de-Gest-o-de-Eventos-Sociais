@@ -358,6 +358,38 @@ def espelhar(solicitacao, campos=None):
     return SolicitacaoCoffeeBreak.objects.filter(pk__in=outras).update(atualizado_em=timezone.now(), **valores)
 
 
+def sincronizar_protocolo(solicitacao, usuario=None):
+    """O protocolo de pagamento é o do ofício (etapa 2): com a nota
+    registrada, o protocolo do ofício vira o do pagamento, em todas as OS do
+    mesmo pagamento."""
+    from .models import SolicitacaoCoffeeBreak
+
+    protocolo = (solicitacao.protocolo_pcpr_oficio or "").strip()
+    if not protocolo or not solicitacao.numero_nota_fiscal.strip() or solicitacao.protocolo_pagamento == protocolo:
+        return False
+    SolicitacaoCoffeeBreak.objects.filter(pk=solicitacao.pk).update(protocolo_pagamento=protocolo, atualizado_em=timezone.now())
+    solicitacao.protocolo_pagamento = protocolo
+    espelhar(solicitacao, ["protocolo_pagamento"])
+    registrar_historico(solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO, f"Protocolo de pagamento: {protocolo} (o do ofício).")
+    return True
+
+
+def marcar_atesto(solicitacao, usuario=None, dia=None):
+    """Atesto e envio ao GAF: o dia em que a etapa 3 se conclui — quando os
+    arquivos do protocolo são baixados. Só com o protocolo registrado, e
+    uma vez (a data da primeira vez fica)."""
+    from .models import SolicitacaoCoffeeBreak
+
+    if solicitacao.data_atesto_gaf or not solicitacao.protocolo_pagamento or solicitacao.cancelada:
+        return False
+    dia = dia or timezone.localdate()
+    SolicitacaoCoffeeBreak.objects.filter(pk=solicitacao.pk).update(data_atesto_gaf=dia, atualizado_em=timezone.now())
+    solicitacao.data_atesto_gaf = dia
+    espelhar(solicitacao, ["data_atesto_gaf"])
+    registrar_historico(solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO, f"Atesto e envio ao GAF: {dia:%d/%m/%Y} (arquivos do protocolo baixados).")
+    return True
+
+
 def candidatas_ao_pagamento(solicitacao):
     """As OS que podem ir no mesmo ofício: do mesmo lote, sem pagamento
     (sem protocolo, não pagas), não canceladas nem em outro pagamento."""

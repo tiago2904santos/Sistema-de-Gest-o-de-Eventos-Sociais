@@ -111,7 +111,7 @@
           <a class="btn--secundaria" href="{% url 'coffee_break:solicitacoes' %}">Voltar</a>
           {% if not somente_leitura %}
             {% if solicitacao %}
-              <button type="submit" class="btn-primaria" name="seguir" value="nota">Salvar e seguir para a nota fiscal{% include "components/icon.html" with nome="arrow-right" %}</button>
+              <button type="submit" class="btn-primaria">Salvar</button>
             {% else %}
               <button type="submit" class="btn-primaria">Salvar solicitação</button>
             {% endif %}

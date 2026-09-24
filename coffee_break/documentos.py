@@ -515,6 +515,12 @@ def textos_eprotocolo(solicitacao):
     else:
         detalhamento = f"ENVIO P/ PAGAMENTO DA NOTA FISCAL N {nf} - ({fornecedor.nome_curto_efetivo})"
         pagamento = f"o pagamento da Nota fiscal n° {nf}."
+    contrato = solicitacao.lote.contrato
+    assunto_despacho = f"CONTRATO {contrato.numero}"
+    if contrato.numero_gms:
+        assunto_despacho += f" - GMS {contrato.numero_gms}"
+    if contrato.termo_aditivo:
+        assunto_despacho += f" - TERMO ADITIVO No {contrato.termo_aditivo}"
     despacho = (
         f"{config.despacho_destino}\n"
         "Encaminhamos o presente protocolado com as devidas informações para "
@@ -523,8 +529,16 @@ def textos_eprotocolo(solicitacao):
     return {
         "detalhamento": detalhamento,
         "despacho": despacho,
+        # O despacho como o do processo 26.613.666-8: assunto com o contrato
+        # e o aditivo, o interessado e o texto.
+        "despacho_campos": [
+            {"rotulo": "Assunto do despacho", "valor": assunto_despacho, "copiar": assunto_despacho},
+            {"rotulo": "Interessado", "valor": fornecedor.razao_social, "copiar": fornecedor.razao_social},
+        ],
         "campos": [
-            {"rotulo": "Interessado", "valor": f"{fornecedor.cnpj_formatado} {fornecedor.razao_social}".strip(), "copiar": fornecedor.cnpj_formatado or fornecedor.razao_social},
+            # O interessado em dois: o CNPJ e o nome, cada um com o seu copiar.
+            {"rotulo": "CNPJ do interessado", "valor": fornecedor.cnpj_formatado or "—", "copiar": fornecedor.cnpj_formatado},
+            {"rotulo": "Nome do interessado", "valor": fornecedor.razao_social, "copiar": fornecedor.razao_social},
             {"rotulo": "Assunto", "valor": config.eprotocolo_assunto, "copiar": config.eprotocolo_assunto},
             {"rotulo": "Palavras-chave", "valor": config.eprotocolo_palavras_chave, "copiar": config.eprotocolo_palavras_chave},
             {"rotulo": "Nº/Ano", "valor": solicitacao.numero_oficio or "—", "copiar": solicitacao.numero_oficio},

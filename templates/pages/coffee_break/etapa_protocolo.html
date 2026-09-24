@@ -49,9 +49,21 @@
           <textarea class="form-controle cb-caixa-copiar__texto" id="texto-detalhamento" rows="1" readonly>{{ eprotocolo.detalhamento }}</textarea>
         </div>
 
+        <h3 class="sol-subtitulo">Despacho ao GAF</h3>
+        <dl class="cb-copiaveis cb-copiaveis--despacho">
+          <div class="cb-copiavel"><dt>Protocolo</dt><dd><span class="cb-copiavel__valor">{{ solicitacao.protocolo_pagamento|default:"—" }}</span>{% if solicitacao.protocolo_pagamento %}<button type="button" class="ib-linha cb-copiar-mini" data-copiar="{{ solicitacao.protocolo_pagamento }}" aria-label="Copiar protocolo" title="Copiar">{% include "components/icon.html" with nome="copy" %}</button>{% endif %}</dd></div>
+          {% for campo in eprotocolo.despacho_campos %}
+            <div class="cb-copiavel">
+              <dt>{{ campo.rotulo }}</dt>
+              <dd><span class="cb-copiavel__valor">{{ campo.valor }}</span>
+                {% if campo.copiar %}<button type="button" class="ib-linha cb-copiar-mini" data-copiar="{{ campo.copiar }}" aria-label="Copiar {{ campo.rotulo }}" title="Copiar">{% include "components/icon.html" with nome="copy" %}</button>{% endif %}
+              </dd>
+            </div>
+          {% endfor %}
+        </dl>
         <div class="cb-caixa-copiar">
           <div class="cb-caixa-copiar__topo">
-            <label class="form-label" for="texto-despacho">Despacho</label>
+            <label class="form-label" for="texto-despacho">Texto do despacho</label>
             <button type="button" class="btn--secundaria btn--compacto" data-copiar-de="texto-despacho">{% include "components/icon.html" with nome="copy" %}<span data-copiar-rotulo>Copiar</span></button>
           </div>
           <textarea class="form-controle cb-caixa-copiar__texto" id="texto-despacho" rows="3" readonly>{{ eprotocolo.despacho }}</textarea>
@@ -113,8 +125,9 @@
 
         <h3 class="sol-subtitulo" id="sec-pagamento">Pagamento</h3>
         <div class="g-form g-form--4 cb-pagamento">
-          {% include "components/input.html" with name="protocolo_pagamento" label="Protocolo de pagamento" placeholder="00.000.000-0" inputmode="numeric" maxlength="12" autocomplete="off" valor=valores.protocolo_pagamento erros=erros.protocolo_pagamento desabilitado=somente_leitura %}
-          {% include "components/input.html" with name="data_atesto_gaf" label="Atesto e envio ao GAF" tipo="date" valor=valores.data_atesto_gaf erros=erros.data_atesto_gaf desabilitado=somente_leitura %}
+          {# O protocolo de pagamento é o do ofício (etapa 2). #}
+          <div class="form-campo"><span class="form-label">Protocolo de pagamento</span><div class="cb-valor-fixo">{% if solicitacao.protocolo_pagamento %}{{ solicitacao.protocolo_pagamento }}{% else %}<a href="{% url 'coffee_break:etapa_nota' solicitacao.pk %}">Informe o protocolo na etapa 2</a>{% endif %}</div></div>
+          {% include "components/input.html" with name="data_atesto_gaf" label="Atesto e envio ao GAF" ajuda="Preenchido ao baixar os arquivos." tipo="date" valor=valores.data_atesto_gaf erros=erros.data_atesto_gaf desabilitado=somente_leitura %}
           {% include "components/input.html" with name="data_ordem_bancaria" label="Ordem bancária emitida em" tipo="date" valor=valores.data_ordem_bancaria erros=erros.data_ordem_bancaria desabilitado=somente_leitura %}
           {% include "components/input.html" with name="data_envio_empresa" label="OB enviada à empresa em" tipo="date" valor=valores.data_envio_empresa erros=erros.data_envio_empresa desabilitado=somente_leitura %}
           <div class="cheia">

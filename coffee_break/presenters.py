@@ -7,11 +7,20 @@ título ao lado dos selos — a situação financeira e o quando do evento — e
 fatos com ícone logo abaixo.
 """
 
+import json
 from django.urls import reverse
 from django.utils import timezone
 
 from .models import SituacaoFinanceira
 
+
+
+ITENS_BAIXAR = json.dumps([
+    {"valor": "os", "nome": "Ordem de serviço", "detalhe": "Todas as OS do pagamento"},
+    {"valor": "oficio", "nome": "Ofício", "detalhe": "O ofício ao GAF"},
+    {"valor": "notas", "nome": "Notas fiscais e certificos", "detalhe": "Nota, certifico, nota, certifico…"},
+    {"valor": "contratos", "nome": "Contrato, aditivos e certidões", "detalhe": "Todos os termos aditivos e as cinco certidões"},
+], ensure_ascii=False)
 
 def titulo_da_solicitacao(solicitacao):
     """O evento é o que identifica o pedido; o número vem colado nele."""
@@ -86,6 +95,9 @@ def linha_da_lista(solicitacao, hoje=None):
         "url_editar": reverse("coffee_break:editar", args=[solicitacao.pk]),
         "url_andamento": reverse("coffee_break:andamento", args=[solicitacao.pk]),
         "url_certificado": reverse("coffee_break:certificado", args=[solicitacao.pk]),
+        # O modal "Baixar documentos" de Viagens: os quatro arquivos do protocolo.
+        "url_baixar": reverse("coffee_break:baixar_arquivos", args=[solicitacao.pk]),
+        "itens_baixar": ITENS_BAIXAR,
         "cancelada": solicitacao.cancelada,
         # Quem já foi concluída ou cancelada só se abre para consulta.
         "editavel": not solicitacao.cancelada and not solicitacao.concluida,

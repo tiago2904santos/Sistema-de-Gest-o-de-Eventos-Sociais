@@ -395,9 +395,8 @@ class ViewsTests(BaseCoffeeBreakTestCase):
             reverse("coffee_break:nova"), self.dados_post()
         )
         solicitacao = SolicitacaoCoffeeBreak.objects.get(numero="05/2026")
-        self.assertRedirects(
-            resposta, reverse("coffee_break:editar", args=[solicitacao.pk])
-        )
+        # Salvar a etapa 1 volta para a lista.
+        self.assertRedirects(resposta, reverse("coffee_break:solicitacoes"))
         self.assertEqual(solicitacao.criado_por, self.ascom)
         self.assertEqual(solicitacao.quantidade, 40)
         self.assertEqual(solicitacao.historico.count(), 1)
@@ -420,9 +419,7 @@ class ViewsTests(BaseCoffeeBreakTestCase):
             ),
         )
         solicitacao.refresh_from_db()
-        self.assertRedirects(
-            resposta, reverse("coffee_break:editar", args=[solicitacao.pk])
-        )
+        self.assertRedirects(resposta, reverse("coffee_break:solicitacoes"))
         self.assertEqual(solicitacao.quantidade, 55)
         self.assertEqual(solicitacao.historico.count(), 1)
         # A nota fiscal é da etapa 2: a etapa 1 nem tem o campo.
@@ -433,8 +430,9 @@ class ViewsTests(BaseCoffeeBreakTestCase):
                 "versao": str(int(solicitacao.atualizado_em.timestamp() * 1_000_000)),
             },
         )
+        # A etapa 2 segue para a etapa 3.
         self.assertRedirects(
-            resposta, reverse("coffee_break:etapa_nota", args=[solicitacao.pk])
+            resposta, reverse("coffee_break:etapa_protocolo", args=[solicitacao.pk]), fetch_redirect_response=False
         )
         solicitacao.refresh_from_db()
         self.assertEqual(solicitacao.numero_nota_fiscal, "8046")
@@ -610,7 +608,11 @@ class ViewsTests(BaseCoffeeBreakTestCase):
     def test_cancelar_exige_post(self):
         solicitacao = self.criar_solicitacao()
         url = reverse("coffee_break:cancelar", args=[solicitacao.pk])
-        self.assertEqual(self.client.get(url).status_code, 405)
+        # GET só abre o modal do motivo (da lista); fora dele, volta à solicitação.
+        self.assertRedirects(self.client.get(url), reverse("coffee_break:editar", args=[solicitacao.pk]))
+        self.assertContains(self.client.get(url, headers={"X-Cadastro-Modal": "1"}), 'name="motivo"')
+        solicitacao.refresh_from_db()
+        self.assertFalse(solicitacao.cancelada)
         resposta = self.client.post(url, {"motivo": "Adiado"})
         self.assertRedirects(
             resposta, reverse("coffee_break:editar", args=[solicitacao.pk])
@@ -1266,10 +1268,7 @@ class CertificadoCoffeeBreakTests(BaseCoffeeBreakTestCase):
     def test_lista_e_formulario_oferecem_o_certificado(self):
         self.client.force_login(self.ascom)
         url = reverse("coffee_break:certificado", args=[self.solicitacao.pk])
-        for pagina in (
-            reverse("coffee_break:solicitacoes"),
-            reverse("coffee_break:editar", args=[self.solicitacao.pk]),
-        ):
+        for pagina in (reverse("coffee_break:editar", args=[self.solicitacao.pk]),):
             self.assertContains(self.client.get(pagina), url, msg_prefix=pagina)
 
     def test_concluida_bloqueada_para_edicao_ainda_oferece_o_certificado(self):
@@ -1404,7 +1403,7 @@ class EtapasTests(EtapasBase):
         s.save()
         resposta = self.client.post(
             reverse("coffee_break:etapa_nota", args=[s.pk]),
-            {"numero_nota_fiscal": "8957", "numero_oficio": "124/2026", "versao": self._versao(s)},
+            {"numero_nota_fiscal": "8957", "numero_oficio": "124/2026", "protocolo_pcpr_oficio": "266170580", "versao": self._versao(s)},
         )
         self.assertEqual(resposta.status_code, 302)
         s.refresh_from_db()
@@ -1413,11 +1412,14 @@ class EtapasTests(EtapasBase):
         self.assertEqual(s.descricao_evento, "Ciclo de Palestras Saúde e Bem-Estar - 1DP Curitiba")
         self.assertEqual(s.observacoes, "Não pode sumir")
 
+        # O protocolo de pagamento é o do ofício (etapa 2).
+        s.refresh_from_db()
+        self.assertEqual(s.protocolo_pagamento, "26.617.058-0")
         resposta = self.client.post(
             reverse("coffee_break:etapa_protocolo", args=[s.pk]),
-            {"protocolo_pagamento": "26.617.058-0", "observacoes": "ok", "versao": self._versao(s)},
+            {"observacoes": "ok", "versao": self._versao(s)},
         )
-        self.assertEqual(resposta.status_code, 302)
+        self.assertRedirects(resposta, reverse("coffee_break:solicitacoes"))
         s.refresh_from_db()
         self.assertEqual(s.protocolo_pagamento, "26.617.058-0")
         self.assertEqual((s.numero_nota_fiscal, s.numero_oficio), ("8957", "124/2026"))
@@ -1447,10 +1449,10 @@ class EtapasTests(EtapasBase):
         s = self.solicitacao
         resposta = self.client.post(
             reverse("coffee_break:etapa_protocolo", args=[s.pk]),
-            {"protocolo_pagamento": "26.617.058-0", "versao": self._versao(s)},
+            {"data_atesto_gaf": "2026-09-22", "versao": self._versao(s)},
         )
         self.assertEqual(resposta.status_code, 200)
-        self.assertContains(resposta, "Informe a nota fiscal antes do protocolo de pagamento.")
+        self.assertContains(resposta, "Informe o protocolo de pagamento antes do atesto.")
 
     def test_etapa_1_nao_apaga_a_nota(self):
         s = self.solicitacao
@@ -2422,6 +2424,73 @@ class PagamentoConjuntoTests(EtapasBase):
         fora = self.criar_solicitacao(lote=outro_lote, numero="43/2026")
         with self.assertRaises(ValidationError):
             services.definir_pagamento_conjunto(self.a, [fora.pk])
+
+
+class ListaEBaixarTests(EtapasBase):
+    """Menu da lista (editar, baixar arquivos, cancelar, excluir), o atesto
+    no dia em que se baixam os arquivos e o despacho do eProtocolo."""
+
+    def test_menu_da_lista(self):
+        resposta = self.client.get(reverse("coffee_break:solicitacoes"))
+        texto = resposta.content.decode()
+        self.assertIn(reverse("coffee_break:editar", args=[self.solicitacao.pk]), texto)
+        self.assertIn("data-baixar-documentos", texto)
+        self.assertIn(reverse("coffee_break:baixar_arquivos", args=[self.solicitacao.pk]), texto)
+        self.assertIn(reverse("coffee_break:cancelar", args=[self.solicitacao.pk]), texto)
+        self.assertIn(reverse("coffee_break:excluir", args=[self.solicitacao.pk]), texto)
+        self.assertIn("data-baixar-dialogo", texto)
+        self.assertNotIn("Registrar andamento", texto)
+
+    def test_baixar_arquivos_escolhidos_e_marca_o_atesto(self):
+        import zipfile
+
+        self._completar_para_protocolo(self.solicitacao)
+        self.solicitacao.protocolo_pagamento = "26.617.058-0"
+        self.solicitacao.save()
+        url = reverse("coffee_break:baixar_arquivos", args=[self.solicitacao.pk])
+        with mock.patch.object(documentos, "parte_pdf", return_value=_pdf_em_branco()):
+            um = self.client.post(url, {"itens": ["oficio"], "saida": "separados"})
+            self.assertEqual(um["Content-Type"], "application/pdf")
+            varios = self.client.post(url, {"itens": ["os", "oficio", "notas", "contratos"], "saida": "separados"})
+            self.assertEqual(varios["Content-Type"], "application/zip")
+            self.assertEqual(len(zipfile.ZipFile(io.BytesIO(varios.content)).namelist()), 4)
+            unico = self.client.post(url, {"itens": ["oficio", "notas"], "saida": "unico"})
+            self.assertEqual(unico["Content-Type"], "application/pdf")
+        self.solicitacao.refresh_from_db()
+        self.assertEqual(self.solicitacao.data_atesto_gaf, dt.date.today())
+
+    def test_sem_protocolo_nao_marca_atesto(self):
+        self._completar_para_protocolo(self.solicitacao)
+        with mock.patch.object(documentos, "parte_pdf", return_value=_pdf_em_branco()):
+            self.client.get(reverse("coffee_break:pacote_parte", args=[self.solicitacao.pk, "oficio"]) + "?baixar=1")
+        self.solicitacao.refresh_from_db()
+        self.assertIsNone(self.solicitacao.data_atesto_gaf)
+
+    def test_excluir_so_antes_da_nota(self):
+        livre = self.criar_solicitacao(numero="50/2026")
+        self.assertRedirects(self.client.post(reverse("coffee_break:excluir", args=[livre.pk])), reverse("coffee_break:solicitacoes"))
+        self.assertFalse(SolicitacaoCoffeeBreak.objects.filter(pk=livre.pk).exists())
+        com_nota = self.criar_solicitacao(numero="51/2026", numero_nota_fiscal="1")
+        self.client.post(reverse("coffee_break:excluir", args=[com_nota.pk]))
+        self.assertTrue(SolicitacaoCoffeeBreak.objects.filter(pk=com_nota.pk).exists())
+
+    def test_cancelar_pelo_modal(self):
+        url = reverse("coffee_break:cancelar", args=[self.solicitacao.pk])
+        resposta = self.client.post(url, {"motivo": "Evento adiado"}, headers={"X-Cadastro-Modal": "1"})
+        self.assertEqual(resposta.json(), {"ok": True})
+        self.solicitacao.refresh_from_db()
+        self.assertTrue(self.solicitacao.cancelada)
+
+    def test_despacho_e_interessado_separados(self):
+        self.contrato.termo_aditivo = "0355/2025"
+        self.contrato.save()
+        textos = documentos.textos_eprotocolo(self.solicitacao)
+        rotulos = {c["rotulo"]: c["valor"] for c in textos["campos"]}
+        self.assertEqual(rotulos["CNPJ do interessado"], "35.014.719/0001-66")
+        self.assertEqual(rotulos["Nome do interessado"], "PADARIA E CONFEITARIA FAVO E MEL LTDA")
+        despacho = {c["rotulo"]: c["valor"] for c in textos["despacho_campos"]}
+        self.assertEqual(despacho["Assunto do despacho"], "CONTRATO 0762/2024 - GMS 7339/2024 - TERMO ADITIVO No 0355/2025")
+        self.assertEqual(despacho["Interessado"], "PADARIA E CONFEITARIA FAVO E MEL LTDA")
 
 
 class ImportarPlanilhaTelaTests(BaseCoffeeBreakTestCase):
