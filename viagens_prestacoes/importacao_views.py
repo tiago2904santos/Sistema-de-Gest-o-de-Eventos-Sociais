@@ -80,9 +80,19 @@ def _recusar(request, destino, mensagem):
     return redirect(destino)
 
 
-def _ir(request, url):
+def _ir(request, url, importacao=None, *, situacao=""):
+    """Para o fetch (o envio em lote de vários arquivos), o resultado em JSON —
+    com as mensagens, que assim não sobram para a próxima página; senão, a tela."""
     if _xhr(request):
-        return JsonResponse({"ok": True, "url": url})
+        from django.contrib.messages import get_messages
+
+        mensagens = [str(m) for m in get_messages(request)]
+        if not situacao and importacao is not None:
+            situacao = importacao.situacao
+        destino = ""
+        if importacao is not None and importacao.prestacao_id:
+            destino = f"Ofício {importacao.prestacao.oficio.numero_formatado}"
+        return JsonResponse({"ok": True, "url": url, "situacao": situacao, "destino": destino, "mensagens": mensagens})
     return redirect(url)
 
 
@@ -160,7 +170,7 @@ def importacao_enviar(request, pc_pk=None, oficio_pk=None, termo_pk=None):
         destino = f" na prestação do Ofício {anterior.prestacao.oficio.numero_formatado}" if anterior.prestacao_id else ""
         situacao = "importado" if anterior.situacao == ImportacaoProcesso.SITUACAO_APLICADA else "enviado"
         messages.warning(request, f"Este mesmo arquivo já foi {situacao} em {quando}{destino}. Veja abaixo a importação anterior.")
-        return _ir(request, _url(anterior, request))
+        return _ir(request, _url(anterior, request), anterior, situacao="repetido")
 
     from core.errors import capture
     from core.leitura.pdf import ArquivoIlegivel
@@ -181,9 +191,10 @@ def importacao_enviar(request, pc_pk=None, oficio_pk=None, termo_pk=None):
             messages.error(request, str(exc))
         else:
             _mensagens_do_resultado(request, resultado)
-            return _ir(request, _url(importacao, request))
+            importacao.refresh_from_db()
+            return _ir(request, _url(importacao, request), importacao)
     messages.info(request, "Confira os documentos do processo e clique em “Aplicar”.")
-    return _ir(request, _url(importacao, request))
+    return _ir(request, _url(importacao, request), importacao)
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -262,6 +273,7 @@ def _contexto(request, importacao) -> dict:
             "destino_rotulo": ROTULO_DESTINO.get(item.destino, "A definir"),
             "folhas": descrever_paginas(item.paginas),
             "primeira": primeira,
+            "paginas_csv": ",".join(str(p) for p in item.paginas),
             "rotacao": item.rotacao_de(primeira) if item.paginas else 0,
             "rotacao_planejada": int(item.rotacoes.get(str(primeira), 0) or 0),
             "servidor_nome": nomes.get(item.servidor_prestacao_id, "") or nomes_termo.get(item.servidor_id, ""),

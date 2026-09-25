@@ -625,3 +625,35 @@ class ComprovanteDoCaixaTests(ImportacaoBase):
         plano = analisar(self._texto("ZULMIRA NINGUEM", "ZULMIRA NINGUEM DE"), "foto.pdf")
         self.assertIsNone(plano.prestacao_id)
         self.assertTrue(any("ZULMIRA NINGUEM" in a for a in plano.avisos), plano.avisos)
+
+
+class EnvioEmLoteTests(ImportacaoBase):
+    """Vários arquivos de uma vez: o JS manda um por vez e lê o JSON de cada um."""
+
+    def _enviar_xhr(self, pdf, nome):
+        return self.client.post(
+            reverse("viagens_prestacoes:importacao_enviar"),
+            {"arquivo": SimpleUploadedFile(nome, pdf, content_type="application/pdf"), "origem": "prestacoes"},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+    def test_cada_arquivo_vai_para_a_sua_prestacao_e_responde_json(self):
+        hoje = timezone.localdate().strftime("%d/%m/%Y")
+        r1 = self._enviar_xhr(f.comprovante("bb_saque", nome=NOMES[0], cpf=self.cpfs[0], valor="100,00", data=hoje), "a.pdf")
+        r2 = self._enviar_xhr(f.comprovante("bb_pix", nome=NOMES[1], cpf=self.cpfs[1], valor="90,00", data=hoje), "b.pdf")
+        for r in (r1, r2):
+            dados = r.json()
+            self.assertTrue(dados["ok"])
+            self.assertEqual(dados["situacao"], ImportacaoProcesso.SITUACAO_APLICADA)
+            self.assertEqual(dados["destino"], "Ofício 12/2026")
+            self.assertTrue(dados["mensagens"])
+        self.assertEqual(len(self.anexos(Anexo.TIPO_COMPROVANTE)), 2)
+        # As mensagens foram para o JSON: não sobram para a próxima página.
+        pagina = self.client.get(reverse("viagens_prestacoes:index"))
+        self.assertEqual(_mensagens(pagina), [])
+
+    def test_mesmo_arquivo_de_novo_responde_repetido(self):
+        pdf = f.comprovante("bb_saque", nome=NOMES[0], cpf=self.cpfs[0], valor="100,00",
+                            data=timezone.localdate().strftime("%d/%m/%Y"))
+        self._enviar_xhr(pdf, "a.pdf")
+        self.assertEqual(self._enviar_xhr(pdf, "a.pdf").json()["situacao"], "repetido")
