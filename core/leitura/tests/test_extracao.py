@@ -197,3 +197,15 @@ class DataDoComprovanteComErroDeOcrTests(SimpleTestCase):
         hoje = _date.today().strftime("%d/%m/%Y")
         texto = f"EMITIDO 01/01/2019\nCOMPROVANTE DE SAQUE\nDATA DO SAQUE {hoje}\nVALOR R$ 100,00\n"
         self.assertEqual(dados_do_documento(tipos.COMPROVANTE, texto)["data"], _date.today())
+
+
+class ValorDoComprovanteComOcrTests(SimpleTestCase):
+    """O OCR de foto separa os centavos: "958, 82"."""
+
+    def test_centavos_separados_por_espaco(self):
+        from core.leitura import classificacao as tipos
+        from core.leitura.extracao import dados_do_documento
+
+        for lido in ("958, 82", "958 ,82", "958,82"):
+            texto = f"COMPROVANTE DE TRANSFERENCIA\n* NR, DOCUMENTO 221,243,000,053.322\n& VALOR TOTAL {lido}\n"
+            self.assertEqual(str(dados_do_documento(tipos.COMPROVANTE, texto)["valor"]), "958.82", lido)

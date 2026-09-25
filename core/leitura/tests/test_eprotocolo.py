@@ -343,3 +343,26 @@ class AmostrasReaisTests(SimpleTestCase):
                 self.assertEqual(
                     [p.indice for p in processo.paginas if rotacao_para_ficar_em_pe(p) not in (None, p.rotacao)], []
                 )
+
+
+class SegundaLeituraDaFotoTests(SimpleTestCase):
+    """Foto de comprovante com valor faltando: lê de novo direto da imagem."""
+
+    def test_completa_o_valor_pela_segunda_leitura(self):
+        from io import BytesIO
+
+        from PIL import Image
+
+        from core.leitura import eprotocolo
+        from core.leitura.eprotocolo import Documento
+
+        saida = BytesIO()
+        Image.new("RGB", (40, 40), "white").save(saida, format="JPEG")
+        doc = Documento(ordem=1, paginas=[0], titulo="", codigo="", assinaturas=[], inserido_por="",
+                        inserido_em=None, folhas_assinatura=[], aninhado=False, tipo="comprovante",
+                        dados={"data": None, "nome": "FULANO DE TAL"})
+        texto = "COMPROVANTE DE TRANSFERENCIA\nDATA DA TRANSFERENCIA 23/09/2026\nVALOR TOTAL 958, 82\n"
+        with mock.patch("core.leitura.ocr.texto_de_foto", return_value=texto):
+            eprotocolo._completar_foto(saida.getvalue(), [doc])
+        self.assertEqual(str(doc.dados["valor"]), "958.82")
+        self.assertEqual(doc.dados["nome"], "FULANO DE TAL")

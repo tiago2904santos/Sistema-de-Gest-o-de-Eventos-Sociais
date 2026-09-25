@@ -666,6 +666,9 @@ def _nomes_de_pessoa(linhas: list[str]) -> list[str]:
 
 
 def _comprovante(texto: str) -> dict:
+    # OCR de foto separa os centavos ("958, 82", "958 ,82"): junta antes de ler o valor.
+    texto = re.sub(r"(\d)\s*([,.])\s+(\d{2})(?!\d)", r"\1\2\3", texto or "")
+    texto = re.sub(r"(\d)\s+([,.])(\d{2})(?!\d)", r"\1\2\3", texto)
     plano = normalizar(texto)
     linhas = [linha.strip() for linha in texto.splitlines() if linha.strip()]
     dados: dict = {}

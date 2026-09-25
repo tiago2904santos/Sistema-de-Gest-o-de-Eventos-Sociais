@@ -617,6 +617,30 @@ def _volume_e_protocolo(*nomes: str) -> tuple[str, int | None]:
     return "", None
 
 
+#: Dados do comprovante que, faltando, pedem a segunda leitura da foto.
+_ESSENCIAIS_COMPROVANTE = ("valor", "data", "nome")
+
+
+def _completar_foto(dados: bytes, documentos: list[Documento]) -> None:
+    """Foto de comprovante com dado faltando: lê de novo, direto da imagem, e completa."""
+    faltando = [
+        d for d in documentos
+        if d.tipo == tipos.COMPROVANTE and any(not d.dados.get(c) for c in _ESSENCIAIS_COMPROVANTE)
+    ]
+    if not faltando:
+        return
+    from . import ocr
+
+    texto = ocr.texto_de_foto(dados)
+    if not texto:
+        return
+    extra = dados_do_documento(tipos.COMPROVANTE, texto)
+    for doc in faltando:
+        for chave, valor in extra.items():
+            if valor and not doc.dados.get(chave):
+                doc.dados[chave] = valor
+
+
 def ler_processo(dados: bytes, nome_arquivo: str = "") -> Processo:
     """Lê o PDF do eProtocolo (ou PDF avulso, ou imagem PNG/JPG) e devolve os documentos.
 
@@ -670,6 +694,9 @@ def ler_processo(dados: bytes, nome_arquivo: str = "") -> Processo:
         for ordem, (indices, titulo) in enumerate(grupos, start=1)
         if indices
     ]
+
+    if not dados[:5].startswith(b"%PDF") and documentos:
+        _completar_foto(dados, documentos)
 
     if eh_eprotocolo:
         aviso = _aviso_de_folhas(molduras, volume)
