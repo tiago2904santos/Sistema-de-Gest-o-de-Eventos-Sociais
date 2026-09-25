@@ -15,6 +15,11 @@ docx2pdf>=0.1.8,<0.2; sys_platform == "win32"
 # Python 3.14 exige uma versão mais nova que a faixa do GV (306–307).
 pywin32>=311,<313; sys_platform == "win32"
 
+# Leitura de processos do eProtocolo e e-mails (core/leitura):
+# pypdfium2 desenha a página para OCR/miniatura; olefile lê o .msg do Outlook.
+pypdfium2>=4.30,<6.0
+olefile>=0.47,<0.48
+
 # Carimbo da prestação (faixas do GV).
 reportlab>=5.0,<6.0
 
