@@ -20,6 +20,7 @@ from django.views.decorators.http import require_POST
 
 from core import andamento as fluxo_andamento
 from core import cadastros_modal
+from core import preencher_por_email
 from core.listagens import (
     opcoes,
     ordenacao,
@@ -28,7 +29,7 @@ from core.listagens import (
     valores_filtro,
 )
 
-from . import services
+from . import preenchimento, services
 from .presenters import linha_da_lista
 from .forms import (
     FiltroPublicacoesForm,
@@ -38,6 +39,7 @@ from .forms import (
 )
 from .models import (
     AcaoHistorico,
+    HistoricoPublicacao,
     Publicacao,
     Responsavel,
     StatusPublicacao,
@@ -337,11 +339,14 @@ def _contexto_formulario(form, publicacao=None):
     return contexto
 
 
-def _registrar_edicao(request, form, publicacao, nova):
+def _registrar_edicao(request, form, publicacao, nova, origem=None):
     if nova:
+        descricao = "Pauta registrada no sistema."
+        if origem:
+            descricao += f" {preencher_por_email.texto_da_origem(origem)}."
         services.registrar_historico(
             publicacao, request.user, AcaoHistorico.CRIACAO,
-            "Pauta registrada no sistema.", status_novo=publicacao.status,
+            descricao, status_novo=publicacao.status,
         )
         return
     alterados = [
@@ -365,10 +370,47 @@ def _salvar(request, form):
     return publicacao
 
 
+def _duplicados_do_email(texto_origem):
+    """Pautas que já saíram do mesmo e-mail (pelo histórico)."""
+    historicos = (
+        HistoricoPublicacao.objects.filter(acao=AcaoHistorico.CRIACAO, descricao__contains=texto_origem)
+        .select_related("publicacao")
+        .order_by("-criado_em")[:5]
+    )
+    return [
+        {
+            "titulo": f"Pauta “{h.publicacao.titulo[:60]}”",
+            "url": reverse("publicacoes:editar", args=[h.publicacao.pk]),
+        }
+        for h in historicos
+    ]
+
+
+@acesso_ao_modulo
+@require_POST
+def ler_email(request):
+    """Lê o e-mail da pauta (arquivo ou texto colado) para a tela "Nova pauta".
+
+    Não grava nada: devolve as sugestões em JSON (`core.preencher_por_email`)
+    e guarda o original até a pauta ser salva, para o histórico dizer de
+    onde ela veio. Unidade nova nunca é criada aqui: só sugerida.
+    """
+    return preencher_por_email.responder_leitura(
+        request,
+        modulo="publicacoes",
+        sugerir=preenchimento.sugestoes,
+        formulario=PublicacaoForm,
+        duplicados=_duplicados_do_email,
+    )
+
+
 @acesso_ao_modulo
 def nova(request):
+    email_origem = None
     if request.method == "POST":
         form = PublicacaoForm(request.POST)
+        # O e-mail lido em "Preencher com um e-mail", se a pauta veio dele.
+        origem = preencher_por_email.origem_do_pedido(request, "publicacoes")
         if form.is_valid():
             try:
                 publicacao = _salvar(request, form)
@@ -377,13 +419,16 @@ def nova(request):
                     for mensagem in mensagens:
                         form.add_error(campo if campo in form.fields else None, mensagem)
             else:
-                _registrar_edicao(request, form, publicacao, nova=True)
+                _registrar_edicao(request, form, publicacao, nova=True, origem=origem)
+                preencher_por_email.concluir_origem(request, origem)
                 messages.success(request, "Pauta registrada.")
                 return redirect("publicacoes:editar", pk=publicacao.pk)
         messages.error(request, "Corrija os campos destacados para continuar.")
+        email_origem = preencher_por_email.origem_pendente(request, "publicacoes")
     else:
         form = PublicacaoForm(initial={"data": timezone.localdate()})
     contexto = _contexto_formulario(form)
+    contexto["email_origem"] = email_origem
     contexto["titulo_pagina"] = "Nova pauta"
     return render(request, "pages/publicacoes/form.html", contexto)
 

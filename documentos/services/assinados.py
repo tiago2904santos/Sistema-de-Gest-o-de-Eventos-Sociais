@@ -36,6 +36,20 @@ def _candidatos(tipo, *, oficio_id, termo_id, prestacao_id, servidor_id, referen
     return consulta
 
 
+def artefatos_do_documento(tipo, *, reference=None, oficio_id=None, termo_id=None, prestacao_id=None, servidor_id=None,
+                           ordem_servico_id=None, plano_trabalho_id=None):
+    """Os PDFs gerados de um documento: mesmo tipo, mesmos vínculos e mesma referência.
+
+    É o recorte com que `versao_assinada_vigente` procura a versão assinada; quem
+    anexa o assinado de fora da tela do artefato (o importador de processo) usa
+    este mesmo recorte para escolher onde anexar, e assim a versão anexada é a
+    que a geração devolve depois.
+    """
+    return _candidatos(tipo, oficio_id=oficio_id, termo_id=termo_id, prestacao_id=prestacao_id,
+                       servidor_id=servidor_id, reference=reference,
+                       ordem_servico_id=ordem_servico_id, plano_trabalho_id=plano_trabalho_id)
+
+
 def versao_assinada_vigente(tipo, *, oficio_id=None, termo_id=None, prestacao_id=None, servidor_id=None, reference=None,
                             ordem_servico_id=None, plano_trabalho_id=None):
     """O arquivo assinado que vale para este documento, ou None.

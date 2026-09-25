@@ -339,12 +339,23 @@ def _gerar(payload, formato, ref, *, oficio_id=None, termo_id=None, servidor_id=
     )
 
 
+def referencia_termo_do_oficio(oficio, servidor) -> str:
+    """A referência de geração do termo de um servidor tirado do ofício ("12-2026-termo-7")."""
+    return f"{oficio.numero_formatado.replace('/', '-')}-termo-{servidor.pk}"
+
+
+def referencia_termo_do_cadastro(termo, servidor=None, *, forcar_viatura=False) -> str:
+    """A referência de geração do termo do cadastro: por servidor, o da viatura ou o vazio."""
+    ref_servidor = servidor.pk if servidor else "viatura" if forcar_viatura else "sem-servidor"
+    return f"termo-{termo.pk}-cadastro-{ref_servidor}"
+
+
 def gerar_termo_um(oficio, servidor, formato, *, modo_semipreenchido=False, variante=None, usar_assinado=True):
     if not listar_servidores_com_termo(oficio).filter(pk=servidor.pk).exists():
         raise ValueError("Servidor não selecionado para termo neste ofício.")
     payload = build_termo_payload(oficio, servidor, modo_semipreenchido=modo_semipreenchido, variante=variante)
     payload["documento"] = _conteudo_documental(oficio)
-    return _gerar(payload, formato, f"{oficio.numero_formatado.replace('/', '-')}-termo-{servidor.pk}",
+    return _gerar(payload, formato, referencia_termo_do_oficio(oficio, servidor),
         oficio_id=oficio.pk, servidor_id=servidor.pk, roteiro_id=oficio.roteiro_id, usar_assinado=usar_assinado)
 
 
@@ -358,8 +369,7 @@ def gerar_termo_cadastro_um(termo, servidor, formato, *, forcar_viatura=False, u
         raise ValueError("Servidor não pertence a este termo.")
     payload = build_termo_cadastro_payload(termo, servidor, forcar_viatura=forcar_viatura)
     payload["documento"] = _conteudo_documental(termo)
-    ref_servidor = servidor.pk if servidor else "viatura" if forcar_viatura else "sem-servidor"
-    return _gerar(payload, formato, f"termo-{termo.pk}-cadastro-{ref_servidor}",
+    return _gerar(payload, formato, referencia_termo_do_cadastro(termo, servidor, forcar_viatura=forcar_viatura),
         oficio_id=termo.oficio_id, termo_id=termo.pk, servidor_id=servidor.pk if servidor else None,
         roteiro_id=termo.oficio.roteiro_id if termo.oficio_id else None, usar_assinado=usar_assinado)
 

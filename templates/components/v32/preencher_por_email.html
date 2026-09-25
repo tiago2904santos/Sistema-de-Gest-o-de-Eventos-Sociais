@@ -1,0 +1,60 @@
+{% load estaticos %}
+{% comment %}
+  Componente: preencher o formulário novo a partir de um e-mail (V3.2).
+
+  Uma faixa acima do formulário, no molde da zona de anexos: soltar o
+  arquivo do e-mail (.eml, .msg, PDF impresso ou .txt) ou colar o texto. O
+  `js/preencher-por-email.js` (carregado aqui mesmo) manda para o endpoint
+  do módulo, preenche só os campos vazios do formulário e destaca o que
+  preencheu para conferência; o resumo diz quantos campos, os avisos e as
+  sugestões que não entraram, com "Usar" e "Desfazer".
+
+  Fica FORA do <form>: os campos daqui não vão com o formulário. O único
+  que vai é o oculto `email_origem` (atributo form=), que liga o registro
+  ao e-mail lido — o módulo anexa o original e registra no histórico.
+
+  Uso:
+    {% url 'solicitacoes:ler_email' as url_ler_email %}
+    {% include "components/v32/preencher_por_email.html" with url=url_ler_email formulario="form-solicitacao" anexa_original=True substituir_padrao="data_solicitacao estado" origem=email_origem registro="solicitação" %}
+
+  `url`: o endpoint POST `.../ler-email/` do módulo (namespace do módulo).
+  `formulario`: id do <form> a preencher (campos com form= contam).
+  `anexa_original`: o módulo guarda o e-mail como anexo ao salvar (muda o texto).
+  `substituir_padrao`: campos que a tela já traz com um padrão (data de
+    hoje, estado PR) e que o e-mail pode trocar enquanto ninguém mexeu neles.
+  `origem`: {token, nome, assunto} do e-mail já lido quando a tela volta
+    com erro — o vínculo com o e-mail não se perde.
+  `registro`: como o texto chama o que vai ser criado ("solicitação").
+  Limite do arquivo no navegador: 25 MB (o servidor confere de novo).
+{% endcomment %}
+<section class="pe" data-preencher-email data-url="{{ url }}" data-formulario="{{ formulario }}" data-substituir-padrao="{{ substituir_padrao }}" data-registro="{{ registro|default:'solicitação' }}" data-max-bytes="26214400"{% if anexa_original %} data-anexa-original{% endif %} aria-labelledby="pe-titulo-{{ formulario }}">
+  <div class="pe__zona">
+    <input type="file" id="pe-arquivo-{{ formulario }}" class="pe__arquivo" accept=".eml,.msg,.pdf,.txt" aria-describedby="pe-ajuda-{{ formulario }}" data-pe-arquivo>
+    <label for="pe-arquivo-{{ formulario }}" class="pe__alvo">
+      <span class="pe__icone" aria-hidden="true">{% include "components/icon.html" with nome="mail" %}</span>
+      <span class="pe__textos">
+        <b id="pe-titulo-{{ formulario }}">Preencher com um e-mail</b>
+        <small id="pe-ajuda-{{ formulario }}">Arraste o e-mail do pedido para cá (.eml, .msg, PDF impresso ou .txt) ou clique para escolher. Só os campos vazios são preenchidos, e ficam destacados para você conferir.</small>
+      </span>
+    </label>
+    <button type="button" class="btn--secundaria pe__colar" aria-expanded="false" aria-controls="pe-texto-{{ formulario }}" data-pe-colar>{% include "components/icon.html" with nome="copy" %}Colar o texto</button>
+  </div>
+  <div class="pe__texto" id="pe-texto-{{ formulario }}" data-pe-texto hidden>
+    <label class="form-label" for="pe-texto-campo-{{ formulario }}">Texto do e-mail</label>
+    <textarea class="form-controle" id="pe-texto-campo-{{ formulario }}" rows="6" spellcheck="false" placeholder="Cole o e-mail inteiro — com De:, Enviado em: e Assunto:, se tiver." data-pe-texto-campo></textarea>
+    <div class="pe__texto-acoes">
+      <small class="pe__dica">Ctrl + Enter também lê.</small>
+      <button type="button" class="btn-primaria pe__ler" data-pe-ler-texto>Ler o texto</button>
+    </div>
+  </div>
+  {# O e-mail lido continua ligado ao que se vai salvar (tela que voltou com erro, página recarregada). #}
+  <p class="pe__vinculo" data-pe-vinculo{% if not origem %} hidden{% endif %}>
+    <span data-pe-vinculo-texto>{% if origem %}O e-mail “{{ origem.assunto|default:origem.nome }}” continua ligado a esta {{ registro|default:"solicitação" }}: ao salvar, {% if anexa_original %}ele fica anexado e {% endif %}o histórico registra de onde ela veio.{% endif %}</span>
+    <button type="button" class="pe__desligar" data-pe-desligar>Não ligar este e-mail</button>
+  </p>
+  <p class="pe__estado" role="status" aria-live="polite" data-pe-estado></p>
+  <p class="pe__erro msg-erro" role="alert" data-pe-erro hidden></p>
+  <div class="pe__resultado" data-pe-resultado hidden></div>
+  {% if origem %}<input type="hidden" name="email_origem" value="{{ origem.token }}" form="{{ formulario }}">{% endif %}
+</section>
+<script src="{% estatico 'js/preencher-por-email.js' %}" defer></script>

@@ -61,10 +61,12 @@ def prestacao_download_compilado(request, ps_pk):
 def prestacao_baixar(request, ps_pk):
     """Os documentos marcados no modal "Baixar documentos" da lista (POST).
 
-    `itens`: ids de `payload_downloads` (oficio, despacho, diario, rt,
+    `itens`: ids de `payload_downloads` (oficio, despacho, rt, diario,
     comprovante). `formato`: pdf ou docx. `versao`: `assinado` (padrão; usa o
     PDF assinado de quem tem) ou `original`. `saida`: `separados` (um arquivo,
-    ou ZIP) ou `unico` (um PDF só, na ordem do modal).
+    ou ZIP) ou `unico` (um PDF só). A ordem é sempre a da prestação
+    (`ORDEM_DOCUMENTOS_PRESTACAO`), e cada item leva todos os anexos dele — os
+    dois despachos, os três comprovantes (pela data da operação).
     """
     import io
     from zipfile import ZipFile

@@ -17,6 +17,11 @@
 {% endblock %}
 
 {% block avisos_etapa %}
+  {% if not solicitacao %}
+    {# Pedido que chegou por e-mail: soltar o e-mail (ou colar o texto) preenche os campos vazios. #}
+    {% url 'coffee_break:ler_email' as url_ler_email %}
+    {% include "components/v32/preencher_por_email.html" with url=url_ler_email formulario="form-coffee-break" substituir_padrao="data_solicitacao" origem=email_origem registro="solicitação" %}
+  {% endif %}
   {% if dados_base_bloqueados and not somente_leitura and not solicitacao.cancelada %}
     <div class="aviso aviso--info" role="status">
       {% include "components/icon.html" with nome="info" %}

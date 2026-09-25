@@ -1,7 +1,7 @@
 {% comment %}
   Ações de uma linha de termo num botão único, no padrão da lista de roteiros.
-  Itens do menu: baixar documentos e anexar assinado (cada um abre o seu
-  modal de escolha), editar e excluir. Excluir mantém a
+  Itens do menu: baixar documentos, anexar assinado e importar os termos
+  assinados (cada um abre o seu modal), editar e excluir. Excluir mantém a
   confirmação em duas etapas do menu. Quem só consulta abre a prévia.
   Contexto: `l` (linha), `t` (termo), `d` (documentos), `pode_editar`, `url_atual`.
 {% endcomment %}
@@ -15,6 +15,7 @@
         <button type="button" class="dd__i of-item" data-baixar-documentos data-url="{{ d.url_baixar }}" data-titulo="Termo #{{ t.pk }} · {{ l.titulo }}" data-itens="{{ d.itens_baixar }}">{% include "components/icon.html" with nome="download" %}<span><b>Baixar documentos</b><small>Escolher termos, formato e saída</small></span></button>
         {% if d.algum_para_anexar %}<button type="button" class="dd__i of-item" data-anexar-assinado data-anexar-opcoes="{{ d.opcoes_anexar }}">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Escolher o termo e enviar o PDF assinado</small></span></button>
         {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Gere o PDF do termo primeiro</small></span></span>{% endif %}
+        <button type="button" class="dd__i of-item" data-importar-processo data-url="{% url 'viagens_prestacoes:importacao_enviar_termo' t.pk %}" data-titulo="Termo #{{ t.pk }}">{% include "components/icon.html" with nome="upload" %}<span><b>Importar termos assinados</b><small>O processo do eProtocolo ou os termos escaneados</small></span></button>
       {% endif %}
 {% if not t.cancelado %}<a class="dd__i of-item" href="{% url 'documentos:editor_pagina' 'termo_autorizacao' t.pk %}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar documento</b><small>O termo do primeiro servidor, pela prévia A4</small></span></a>{% endif %}
       <a class="dd__i of-item" href="{{ l.url_editar }}?next={{ url_atual|urlencode }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar termo</b><small>Destino, período, servidores e viatura</small></span></a>

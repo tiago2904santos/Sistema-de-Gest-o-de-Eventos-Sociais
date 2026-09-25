@@ -13,14 +13,16 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_POST
 
+from core import preencher_por_email
 from core.listagens import trilha_de_situacoes
 
-from . import services
+from . import preenchimento, services
 from .forms import DemandaEventoForm, PalestranteForm, RespostaPadraoForm, TemaForm
 from .models import (
     AcaoHistoricoDemanda,
     CanalSolicitacao,
     DemandaEvento,
+    HistoricoDemanda,
     Palestrante,
     RespostaPadrao,
     StatusDemanda,
@@ -239,20 +241,68 @@ def _contexto_form(form, instancia):
     }
 
 
+def _duplicados_do_email(usuario):
+    """Palestras que este usuário vê e que já saíram do mesmo e-mail (pelo histórico)."""
+
+    def buscar(texto_origem):
+        visiveis = queryset_visivel(usuario, DemandaEvento.objects.all()).values("pk")
+        historicos = (
+            HistoricoDemanda.objects.filter(
+                acao=AcaoHistoricoDemanda.CRIACAO, descricao__contains=texto_origem, demanda__in=visiveis
+            )
+            .select_related("demanda")
+            .order_by("-criado_em")[:5]
+        )
+        return [
+            {
+                "titulo": f"{h.demanda.get_evento_display()} #{h.demanda.pk}",
+                "url": reverse("demandas_eventos:editar", args=[h.demanda.pk]),
+            }
+            for h in historicos
+        ]
+
+    return buscar
+
+
+@login_required
+@require_POST
+def ler_email(request):
+    """Lê o e-mail do pedido (arquivo ou texto colado) para a tela "Nova palestra".
+
+    Não grava nada: devolve as sugestões em JSON (`core.preencher_por_email`)
+    e guarda o original até a palestra ser salva, para o histórico dizer de
+    onde ela veio.
+    """
+    return preencher_por_email.responder_leitura(
+        request,
+        modulo="demandas_eventos",
+        sugerir=preenchimento.sugestoes,
+        formulario=DemandaEventoForm,
+        duplicados=_duplicados_do_email(request.user),
+    )
+
+
 @login_required
 def editar_demanda(request, pk=None):
     instancia = _demanda_visivel(request, pk) if pk else None
     if instancia and not pode_editar(request.user, instancia):
         raise Http404
+    email_origem = None
     if request.method == "POST":
         form = DemandaEventoForm(request.POST, instance=instancia, usuario=request.user)
+        # O e-mail lido em "Preencher com um e-mail", se a palestra nova veio dele.
+        origem = None if instancia else preencher_por_email.origem_do_pedido(request, "demandas_eventos")
         if form.is_valid():
             demanda = form.save(criado_por=request.user)
             if not instancia:
+                descricao = "Registro criado no sistema."
+                if origem:
+                    descricao += f" {preencher_por_email.texto_da_origem(origem)}."
                 services.registrar_historico(
                     demanda, request.user, AcaoHistoricoDemanda.CRIACAO,
-                    "Registro criado no sistema.", status_novo=demanda.status,
+                    descricao, status_novo=demanda.status,
                 )
+                preencher_por_email.concluir_origem(request, origem)
             else:
                 alterados = [
                     form.fields[nome].label
@@ -269,9 +319,12 @@ def editar_demanda(request, pk=None):
             messages.success(request, f"{demanda.get_evento_display()} #{demanda.pk} salva com sucesso.")
             return redirect("demandas_eventos:editar", pk=demanda.pk)
         messages.error(request, "Corrija os campos destacados para continuar.")
+        if not instancia:
+            email_origem = preencher_por_email.origem_pendente(request, "demandas_eventos")
     else:
         form = DemandaEventoForm(instance=instancia, usuario=request.user)
     contexto = _contexto_form(form, instancia)
+    contexto["email_origem"] = email_origem
     contexto["breadcrumb"] = [
         {"label": "Palestras", "url": reverse("demandas_eventos:lista")},
         {"label": f"{instancia.get_evento_display()} #{instancia.pk}" if instancia else "Nova palestra"},

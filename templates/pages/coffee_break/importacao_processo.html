@@ -1,0 +1,187 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Importar processo de pagamento — a conferência (antes de aplicar) e o
+  resultado (depois), na mesma tela e no desenho das etapas da solicitação:
+
+  1. o processo: arquivo, páginas, ofício, PCPR, despacho ao GAF e os avisos
+     da leitura (inclusive "este arquivo já foi importado");
+  2. antes: de quem é o processo — as solicitações (a identificada já
+     marcada; o pagamento conjunto entra inteiro), a nota de cada uma e o
+     botão Aplicar; depois: o que foi feito em cada solicitação e o que ficou
+     para a pessoa;
+  3. os documentos do processo, na ordem, com o que o sistema fez de cada um.
+
+  Contexto: ver `importacao_views.importacao_processo` (`tela` e `resultado`
+  são dicionários guardados na sessão).
+{% endcomment %}
+
+{% block title %}Importar processo de pagamento — Coffee Break{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker kicker--junto">Coffee Break · processo de pagamento</div>
+      <h1>Processo {{ tela.protocolo|default:"sem número lido" }}</h1>
+    </div>
+    <div class="d-acoes">
+      <span class="st {% if aplicada %}st--atendido{% else %}st--pendente{% endif %}">{% if aplicada %}Importado{% else %}Aguardando conferência{% endif %}</span>
+    </div>
+  </div>
+
+  <div class="editor-roteiro cb-fluxo cbi">
+
+    {# 1. O processo. #}
+    <section class="section-card reg" id="processo">
+      <header class="section-card__cabecalho reg__t">
+        <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+        <h2 class="section-card__titulo">O processo</h2>
+      </header>
+      <div class="section-card__corpo">
+        <ul class="tm-fatos cbi-fatos" aria-label="O que a leitura achou">
+          <li class="tm-fato">{% include "components/icon.html" with nome="document" %}<span>{{ tela.arquivo|default:"—" }} · {{ tela.paginas }} página{{ tela.paginas|pluralize }}{% if tela.volume %} · volume {{ tela.volume }}{% endif %}</span></li>
+          <li class="tm-fato">{% include "components/icon.html" with nome="clipboard" %}<span>Ofício {{ tela.oficio|default:"não achado" }}{% if tela.data_oficio %}, de {{ tela.data_oficio }}{% endif %}</span></li>
+          {% if tela.pcpr %}<li class="tm-fato">{% include "components/icon.html" with nome="landmark" %}<span>PCPR protocolo n.º {{ tela.pcpr }}</span></li>{% endif %}
+          <li class="tm-fato">{% include "components/icon.html" with nome="send" %}<span>{% if tela.despacho_gaf %}Despacho ao GAF em {{ tela.despacho_gaf }}{% else %}Sem despacho ao GAF{% endif %}</span></li>
+        </ul>
+        {% if not tela.eprotocolo %}
+          <p class="cbi-nota">O arquivo não tem a moldura do eProtocolo: foi lido como PDF avulso.</p>
+        {% endif %}
+
+        {% if tela.anterior %}
+          <div class="aviso aviso--info cbi-aviso" role="status">
+            {% include "components/icon.html" with nome="info" %}
+            <div>Este mesmo arquivo já foi importado em {{ tela.anterior.quando }}{% if tela.anterior.solicitacoes %} ({% for s in tela.anterior.solicitacoes %}<a href="{{ s.url }}">{{ s.rotulo }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}){% endif %}. Aplicar de novo não duplica nada: só completa o que ainda faltar.</div>
+          </div>
+        {% endif %}
+        {% if tela.avisos or tela.lidos %}
+          <details class="cb-avisos cbi-avisos"{% if tela.avisos %} open{% endif %}>
+            <summary>Avisos da leitura</summary>
+            <ul>
+              {% for aviso in tela.avisos %}<li>{{ aviso }}</li>{% endfor %}
+              {% for lido in tela.lidos %}<li>{{ lido }}</li>{% endfor %}
+            </ul>
+          </details>
+        {% endif %}
+      </div>
+    </section>
+
+    {% if aplicada %}
+      {# 2. O que foi feito. #}
+      <section class="section-card reg" id="resultado">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+          <h2 class="section-card__titulo">O que foi feito</h2>
+        </header>
+        <div class="section-card__corpo">
+          <p class="cbi-resumo" role="status">{% include "components/icon.html" with nome="check-circle" %}<span>{{ resultado.resumo }}</span></p>
+          <div class="cbi-sols">
+            {% for s in resultado.solicitacoes %}
+              <article class="cbi-sol">
+                <h3 class="cbi-sol__titulo"><a href="{{ s.url }}">{{ s.rotulo }}</a></h3>
+                {% if s.feito %}
+                  <ul class="cbi-itens cbi-itens--ok">{% for item in s.feito %}<li>{% include "components/icon.html" with nome="check" %}<span>{{ item }}</span></li>{% endfor %}</ul>
+                {% endif %}
+                {% if s.pendente %}
+                  <ul class="cbi-itens cbi-itens--pendente">{% for item in s.pendente %}<li>{% include "components/icon.html" with nome="alert" %}<span>{{ item }}</span></li>{% endfor %}</ul>
+                {% endif %}
+              </article>
+            {% endfor %}
+          </div>
+          {% if resultado.certidoes %}
+            <h3 class="sol-subtitulo">Certidões do fornecedor</h3>
+            <ul class="cbi-itens cbi-itens--ok">{% for item in resultado.certidoes %}<li>{% include "components/icon.html" with nome="check" %}<span>{{ item }}</span></li>{% endfor %}</ul>
+          {% endif %}
+          {% if resultado.pendencias %}
+            <h3 class="sol-subtitulo">Ficou para você</h3>
+            <ul class="cbi-itens cbi-itens--pendente">{% for item in resultado.pendencias %}<li>{% include "components/icon.html" with nome="alert" %}<span>{{ item }}</span></li>{% endfor %}</ul>
+          {% endif %}
+          <div class="frm-acoes-fim">
+            <a class="btn--secundaria" href="{% url 'coffee_break:solicitacoes' %}">Ver as solicitações</a>
+            {% with primeira=resultado.solicitacoes|first %}
+              {% if primeira %}<a class="btn-primaria" href="{{ primeira.url }}">Abrir a etapa 3{% include "components/icon.html" with nome="arrow-right" %}</a>{% endif %}
+            {% endwith %}
+          </div>
+        </div>
+      </section>
+    {% else %}
+      {# 2. De quem é o processo: a conferência. #}
+      <section class="section-card reg" id="conferencia">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+          <h2 class="section-card__titulo">De quem é o processo</h2>
+        </header>
+        <div class="section-card__corpo">
+          {% if tela.conferir %}
+            <div class="aviso aviso--info cbi-aviso" role="status">
+              {% include "components/icon.html" with nome="info" %}
+              <div><strong>Confira antes de aplicar.</strong>
+                <ul>{% for item in tela.conferir %}<li>{{ item }}</li>{% endfor %}</ul>
+              </div>
+            </div>
+          {% endif %}
+          {% if not arquivo_disponivel %}
+            <div class="aviso aviso--erro" role="alert">
+              {% include "components/icon.html" with nome="alert" %}
+              <div>O arquivo desta importação expirou. Envie o processo de novo pela lista de solicitações.</div>
+            </div>
+          {% endif %}
+
+          <form method="post" action="{% url 'coffee_break:aplicar_importacao_processo' token %}" id="cbi-form" class="cbi-form">
+            {% csrf_token %}
+            {% if opcoes_solicitacoes %}
+              {% include "components/v32/cartoes_escolha.html" with name="solicitacoes" tipo="checkbox" label="Solicitações deste processo" opcoes=opcoes_solicitacoes colunas="2" icone="coffee" %}
+            {% else %}
+              <p class="cbi-nota">Nenhuma solicitação aberta do fornecedor do processo. Informe abaixo o nº da OS.</p>
+            {% endif %}
+            <div class="g-form g-form--2 cbi-outras">
+              {% include "components/input.html" with name="outras" label="Outra solicitação" placeholder="Nº da OS, ex.: 41/2026" ajuda="Se a solicitação certa não está na lista. Várias, separadas por vírgula." %}
+            </div>
+            <p class="cbi-nota">Pagamento conjunto: marcar uma OS leva as outras do mesmo pagamento — o protocolo e o atesto são de todas.</p>
+
+            {% if tela.notas %}
+              <h3 class="sol-subtitulo">Notas fiscais do processo</h3>
+              <ul class="cbi-notas">
+                {% for n in tela.notas %}
+                  <li class="cbi-nota-linha">
+                    <span class="cbi-nota-linha__txt"><b>{{ n.rotulo }}</b><small>{{ n.paginas }}{% if n.valor %} · {{ n.valor }}{% endif %}{% if n.emissao %} · emitida em {{ n.emissao }}{% endif %}{% if n.como %} · {{ n.como }}{% endif %}</small></span>
+                    {% include "components/select.html" with name=n.campo label="Vai para" opcoes=opcoes_nota selecionado=n.solicitacao placeholder="Pelo número da nota" %}
+                  </li>
+                {% endfor %}
+              </ul>
+              <p class="cbi-nota">A nota só é anexada na solicitação que ainda não tem o PDF dela; número de nota diferente do já registrado não é trocado.</p>
+            {% endif %}
+
+            <div class="frm-acoes-fim">
+              <button type="submit" class="btn--secundaria" formaction="{% url 'coffee_break:descartar_importacao_processo' token %}" formnovalidate>Descartar</button>
+              {% if arquivo_disponivel %}<button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="check" %}Aplicar</button>{% endif %}
+            </div>
+          </form>
+        </div>
+      </section>
+    {% endif %}
+
+    {# 3. Os documentos do processo. #}
+    <section class="section-card reg" id="documentos">
+      <header class="section-card__cabecalho reg__t">
+        <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
+        <h2 class="section-card__titulo">Documentos do processo</h2>
+        <div class="section-card__acao"><span class="cbi-contagem">{{ tela.documentos|length }} documento{{ tela.documentos|length|pluralize }}</span></div>
+      </header>
+      <div class="section-card__corpo">
+        <ol class="cbi-docs">
+          {% for d in tela.documentos %}
+            <li class="cbi-doc">
+              <span class="cbi-doc__num" aria-hidden="true">{{ d.ordem }}</span>
+              <span class="cbi-doc__txt"><b>{{ d.rotulo }}</b><small>{{ d.paginas }}{% if d.resumo %} · {{ d.resumo }}{% endif %}{% if d.titulo %} · {{ d.titulo }}{% endif %}</small></span>
+              <span class="st {% if d.tom == 'ok' %}st--atendido{% elif d.tom == 'pendente' %}st--pendente{% else %}st--neutro{% endif %} cbi-doc__destino">{{ d.destino }}</span>
+            </li>
+          {% empty %}
+            <li class="cbi-nota">Nenhum documento reconhecido.</li>
+          {% endfor %}
+        </ol>
+      </div>
+    </section>
+  </div>
+{% endblock %}

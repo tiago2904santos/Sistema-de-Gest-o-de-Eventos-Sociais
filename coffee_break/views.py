@@ -40,6 +40,7 @@ from .forms import (
 from .models import (
     AcaoHistoricoCoffeeBreak,
     CertidaoFornecedor,
+    HistoricoCoffeeBreak,
     ConfiguracaoCoffeeBreak,
     ContratoCoffeeBreak,
     Fornecedor,
@@ -48,11 +49,12 @@ from .models import (
     SolicitacaoCoffeeBreak,
     TipoCertidao,
 )
+from core import preencher_por_email
 from core.listagens import trilha_de_situacoes
 
 from .permissions import acesso_ao_modulo, gerenciamento_de_cadastros
 from .presenters import filas_de_situacao, linha_da_lista, linha_do_cadastro, linha_do_lote, selo_do_consumo
-from . import certidoes, documentos, documents, services
+from . import certidoes, documentos, documents, preenchimento, services
 
 ITENS_POR_PAGINA = 15
 
@@ -877,10 +879,49 @@ TEMPLATES_ETAPA = {
 }
 
 
+def _duplicados_do_email(texto_origem):
+    """Solicitações de coffee break que já saíram do mesmo e-mail."""
+    historicos = (
+        HistoricoCoffeeBreak.objects.filter(
+            acao=AcaoHistoricoCoffeeBreak.CRIACAO, descricao__contains=texto_origem
+        )
+        .select_related("solicitacao")
+        .order_by("-criado_em")[:5]
+    )
+    return [
+        {
+            "titulo": f"Solicitação {h.solicitacao.numero or '#' + str(h.solicitacao.pk)}",
+            "url": reverse("coffee_break:editar", args=[h.solicitacao.pk]),
+        }
+        for h in historicos
+    ]
+
+
+@acesso_ao_modulo
+@require_POST
+def ler_email(request):
+    """Lê o e-mail do pedido (arquivo ou texto colado) para a tela "Nova solicitação".
+
+    Não grava nada: devolve as sugestões em JSON (`core.preencher_por_email`)
+    — com o aviso de lote e saldo do município — e guarda o original até a
+    solicitação ser salva, para o histórico dizer de onde ela veio.
+    """
+    return preencher_por_email.responder_leitura(
+        request,
+        modulo="coffee_break",
+        sugerir=preenchimento.sugestoes,
+        formulario=PedidoCoffeeBreakForm,
+        duplicados=_duplicados_do_email,
+    )
+
+
 @acesso_ao_modulo
 def nova_solicitacao(request):
+    email_origem = None
     if request.method == "POST":
         form = PedidoCoffeeBreakForm(request.POST, request.FILES)
+        # O e-mail lido em "Preencher com um e-mail", se a tela veio dele.
+        origem = preencher_por_email.origem_do_pedido(request, "coffee_break")
         if form.is_valid():
             try:
                 solicitacao = form.save(criado_por=request.user)
@@ -892,12 +933,16 @@ def nova_solicitacao(request):
                         )
                 messages.error(request, "Corrija os campos destacados para continuar.")
             else:
+                descricao = "Solicitação registrada no sistema."
+                if origem:
+                    descricao += f" {preencher_por_email.texto_da_origem(origem)}."
                 services.registrar_historico(
                     solicitacao,
                     request.user,
                     AcaoHistoricoCoffeeBreak.CRIACAO,
-                    "Solicitação registrada no sistema.",
+                    descricao,
                 )
+                preencher_por_email.concluir_origem(request, origem)
                 messages.success(
                     request,
                     f"Solicitação {solicitacao.numero} registrada no {solicitacao.lote.rotulo_curto}"
@@ -906,9 +951,11 @@ def nova_solicitacao(request):
                 return redirect("coffee_break:solicitacoes")
         else:
             messages.error(request, "Corrija os campos destacados para continuar.")
+        email_origem = preencher_por_email.origem_pendente(request, "coffee_break")
     else:
         form = PedidoCoffeeBreakForm()
     contexto = _contexto_formulario(request, form)
+    contexto["email_origem"] = email_origem
     # A OS abre já na nova solicitação, no editor de documentos, e acompanha o preenchimento.
     contexto["doc_os_nova"] = {
         "titulo": "Ordem de serviço",

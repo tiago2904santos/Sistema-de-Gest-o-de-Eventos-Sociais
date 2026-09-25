@@ -38,6 +38,7 @@ def index(request):
     from .selectors import normalizar_abas
     from core.retorno import daqui
     from viagens_cadastros.permissions import pode_editar_cadastros
+    from .importacao.entrada import limite_de_bytes
     abas = normalizar_abas(request.GET.getlist("aba")) if request.GET.getlist("aba") else []
     itens = listar_prestacoes(**filtros, aba=abas)
     # A lista agrupa os servidores do mesmo ofício numa linha só: a página é de
@@ -63,6 +64,7 @@ def index(request):
             "oficio_url": reverse("viagens_oficios:editar", args=[por_pk[card["ps_pk"]].prestacao.oficio_id]),
             "acoes_url": {a: reverse("viagens_prestacoes:prestacao_equipe_acao", args=[card["prestacao_pk"], a])
                           for a in ("finalizar", "reabrir", "arquivar", "desarquivar")},
+            "importar_url": reverse("viagens_prestacoes:importacao_enviar_prestacao", args=[card["prestacao_pk"]]),
         })
         grupo["cards"].append(card)
     for grupo in grupos.values():
@@ -100,6 +102,7 @@ def index(request):
         "elipse": paginator.ELLIPSIS,
         "url_atual": daqui(request),
         "pode_editar": pode_editar_cadastros(request.user),
+        "importacao_limite_mb": limite_de_bytes() // (1024 * 1024),
     })
 
 

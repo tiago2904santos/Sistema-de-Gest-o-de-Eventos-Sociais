@@ -124,6 +124,16 @@
         <p class="pc-docs__nota">Quatro arquivos: a OS; o ofício; as notas com os certificos (nota, certifico, nota, certifico…); e o contrato com todos os termos aditivos e as certidões (FGTS, trabalhista, municipal, estadual e federal).</p>
 
         <h3 class="sol-subtitulo" id="sec-pagamento">Pagamento</h3>
+        {% if not somente_leitura %}
+          {# O processo já protocolado: soltar o PDF do eProtocolo aqui preenche o protocolo, o atesto e a nota que faltar. #}
+          {% with titulo_solicitacao="solicitação "|add:solicitacao.numero %}
+          <div class="cbi-etapa" data-cb-importar-soltar data-solicitacao="{{ solicitacao.pk }}" data-titulo="{{ titulo_solicitacao }}">
+            <span class="cbi-etapa__icone" aria-hidden="true">{% include "components/icon.html" with nome="upload" %}</span>
+            <span class="cbi-etapa__texto"><b>Já protocolou? Importe o processo de pagamento</b><small>Solte aqui o PDF do processo baixado do eProtocolo: o protocolo de pagamento, o atesto (a data do despacho ao GAF) e a nota fiscal que faltar entram sozinhos{% if solicitacao.em_pagamento_conjunto %}, em todas as OS deste pagamento{% endif %}.</small></span>
+            <button type="button" class="btn--secundaria btn--compacto" data-cb-importar data-solicitacao="{{ solicitacao.pk }}" data-titulo="{{ titulo_solicitacao }}">{% include "components/icon.html" with nome="upload" %}Importar processo</button>
+          </div>
+          {% endwith %}
+        {% endif %}
         <div class="g-form g-form--4 cb-pagamento">
           {# O protocolo de pagamento é o do ofício (etapa 2). #}
           <div class="form-campo"><span class="form-label">Protocolo de pagamento</span><div class="cb-valor-fixo">{% if solicitacao.protocolo_pagamento %}{{ solicitacao.protocolo_pagamento }}{% else %}<a href="{% url 'coffee_break:etapa_nota' solicitacao.pk %}">Informe o protocolo na etapa 2</a>{% endif %}</div></div>
@@ -141,6 +151,7 @@
       </div>
     </section>
   </form>
+  {% if not somente_leitura %}{% include "pages/coffee_break/_importar_processo.html" %}{% endif %}
 {% endblock %}
 
 {% block etapa_js %}<script src="{% estatico 'vendor/pdfjs/pdf.min.js' %}"></script><script src="{% estatico 'js/coffee-break-pdf.js' %}" defer></script><script src="{% estatico 'js/coffee-break-documentos.js' %}" defer></script><script src="{% estatico 'js/coffee-break-copiar.js' %}" defer></script><script src="{% estatico 'js/coffee-break-protocolo.js' %}" defer></script>{% endblock %}

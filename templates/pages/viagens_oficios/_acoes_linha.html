@@ -1,8 +1,8 @@
 {% comment %}
   Ações de uma linha de ofício num botão único, no padrão das listas de
-  termos e justificativas: abrir, baixar documentos e anexar assinado (cada
-  um com o seu modal), retificar, complementar, cancelar ou reativar, e
-  excluir. Quem só consulta não vê o menu.
+  termos e justificativas: abrir, baixar documentos, anexar assinado e
+  importar o processo do eProtocolo (cada um com o seu modal), retificar,
+  complementar, cancelar ou reativar, e excluir. Quem só consulta não vê o menu.
   Contexto: `l` (linha), `o` (ofício), `d` (documentos), `pode_editar`, `url_atual`.
 {% endcomment %}
 {% if pode_editar %}
@@ -18,6 +18,7 @@
         <button type="button" class="dd__i of-item" data-baixar-documentos data-url="{{ d.url_baixar }}" data-titulo="{{ l.titulo }}" data-itens="{{ d.itens_baixar }}">{% include "components/icon.html" with nome="download" %}<span><b>Baixar documentos</b><small>Ofício, justificativa e termos</small></span></button>
         {% if d.algum_para_anexar %}<button type="button" class="dd__i of-item" data-anexar-assinado data-anexar-opcoes="{{ d.opcoes_anexar }}">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Escolher o documento e enviar o PDF assinado</small></span></button>
         {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Gere o PDF de um documento primeiro</small></span></span>{% endif %}
+        <button type="button" class="dd__i of-item" data-importar-processo data-url="{% url 'viagens_prestacoes:importacao_enviar_oficio' o.pk %}" data-titulo="Ofício {{ o.numero_formatado }}">{% include "components/icon.html" with nome="upload" %}<span><b>Importar processo</b><small>O PDF do eProtocolo: cada documento no seu lugar</small></span></button>
         <div class="dd__s"></div>
         <form method="post" action="{% url 'viagens_oficios:acao' o.pk 'retificar' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
           <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="undo" %}<span><b>{% if o.retificado_documento %}Desfazer retificação{% else %}Retificar ofício{% endif %}</b><small>Atualizar o estado de retificação</small></span></button>

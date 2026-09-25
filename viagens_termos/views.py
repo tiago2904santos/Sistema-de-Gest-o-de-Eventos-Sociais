@@ -130,6 +130,8 @@ def lista(request):
         for chave, rotulo in abas_de_termo.ABA_ROTULOS
     ]
 
+    from viagens_prestacoes.importacao.entrada import limite_de_bytes
+
     return render(request, "pages/viagens_termos/lista.html", {
         "linhas": linhas, "pagina": pagina, "querystring": parametros.urlencode(), "q": q,
         "paginas_visiveis": list(paginator.get_elided_page_range(pagina.number, on_each_side=1, on_ends=1)),
@@ -140,6 +142,8 @@ def lista(request):
         "situacao_ativa": "todas" if not escolhidas else escolhidas[0] if len(escolhidas) == 1 else "",
         "tem_filtros": bool(q or escolhidas), "url_atual": daqui(request),
         "pode_editar": pode_editar_cadastros(request.user),
+        # O modal "Importar processo do eProtocolo" (importador da prestação) diz o limite do arquivo.
+        "importacao_limite_mb": limite_de_bytes() // (1024 * 1024),
     })
 
 

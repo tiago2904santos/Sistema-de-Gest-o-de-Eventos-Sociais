@@ -11,7 +11,7 @@
     <button type="button" class="mo__fechar" data-cadastro-fechar aria-label="Fechar">{% include "components/icon.html" with nome="x" %}</button>
   </header>
   <div class="mo__corpo">
-    {% include "components/upload_anexos.html" with id="id_anexo_upload" name="arquivo" obrigatorio=True only %}
+    {% include "components/upload_anexos.html" with id="id_anexo_upload" name="arquivo" obrigatorio=True aceitar=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods,.eml,.msg,.txt" ajuda_tipos="Ofício, memorando, e-mail do pedido, foto do local. PDF, DOC, XLS, ODT, e-mail (EML ou MSG), TXT ou imagem, até 10 MB por arquivo." only %}
     {% if erro_anexo %}<p class="form-erro" role="alert">{{ erro_anexo }}</p>{% endif %}
     <p class="form-erro" data-cadastro-falha role="alert" hidden></p>
   </div>

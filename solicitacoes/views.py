@@ -1,6 +1,7 @@
 ﻿from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, Q
@@ -19,14 +20,16 @@ from .forms import (
 from .models import (
     AcaoHistorico,
     AnexoSolicitacao,
+    HistoricoSolicitacao,
     SolicitacaoEvento,
     StatusSolicitacao,
     TipoOperacao,
 )
+from core import preencher_por_email
 from core.listagens import trilha_de_situacoes
 
 from .presenters import linha_da_lista
-from . import permissions, services
+from . import permissions, preenchimento, services
 
 ITENS_POR_PAGINA = 15
 
@@ -255,9 +258,79 @@ def _criar_anexos_enviados(solicitacao, arquivos, usuario):
         )
 
 
+def _anexar_email_de_origem(solicitacao, origem, usuario):
+    """Anexa o e-mail de onde a solicitação saiu e os anexos dele (o ofício em PDF…).
+
+    Cada arquivo passa pela mesma validação do anexo comum (tipo real e
+    tamanho); o que não passar fica de fora e volta como aviso para a tela.
+    O texto colado entra como .txt: é o único registro do pedido.
+    """
+    arquivos = [(origem.nome, origem.dados, "O e-mail")]
+    mensagem = None if origem.colado else origem.mensagem()
+    if mensagem is not None:
+        arquivos += [(nome, dados, f"O anexo {nome} do e-mail") for nome, dados in mensagem.anexos]
+    avisos = []
+    for nome, dados, descricao in arquivos:
+        arquivo = ContentFile(dados, name=nome)
+        erro = validar_arquivo_anexo(arquivo)
+        if erro:
+            avisos.append(f"{descricao} não foi anexado — {erro}")
+            continue
+        AnexoSolicitacao.objects.create(
+            solicitacao=solicitacao,
+            arquivo=arquivo,
+            nome_original=nome[:255],
+            tamanho=len(dados),
+            enviado_por=usuario,
+        )
+    return avisos
+
+
+def _duplicados_do_email(usuario):
+    """Solicitações que este usuário vê e que já saíram do mesmo e-mail."""
+
+    def buscar(texto_origem):
+        historicos = (
+            HistoricoSolicitacao.objects.filter(
+                acao=AcaoHistorico.CRIACAO, observacao=texto_origem
+            )
+            .select_related("solicitacao")
+            .order_by("-criado_em")[:5]
+        )
+        return [
+            {
+                "titulo": f"Solicitação #{h.solicitacao.pk}",
+                "url": reverse("solicitacoes:editar", args=[h.solicitacao.pk]),
+            }
+            for h in historicos
+            if permissions.pode_ver(usuario, h.solicitacao)
+        ]
+
+    return buscar
+
+
+@login_required
+@require_POST
+def ler_email(request):
+    """Lê o e-mail do pedido (arquivo ou texto colado) para a tela "Nova solicitação".
+
+    Não grava nada: devolve as sugestões em JSON (`core.preencher_por_email`)
+    e guarda o original até a solicitação ser salva.
+    """
+    return preencher_por_email.responder_leitura(
+        request,
+        modulo="solicitacoes",
+        sugerir=preenchimento.sugestoes,
+        formulario=SolicitacaoForm,
+        anexa_original=True,
+        duplicados=_duplicados_do_email(request.user),
+    )
+
+
 @login_required
 def nova_solicitacao(request):
     """Tela "Nova Solicitação de Evento Social" com persistência real."""
+    email_origem = None
     if request.method == "POST":
         acao = request.POST.get("acao", "rascunho")
         form = SolicitacaoForm(request.POST, enviar=(acao == "enviar"))
@@ -269,16 +342,25 @@ def nova_solicitacao(request):
         ]
         for erro in erros_anexos:
             messages.error(request, erro)
+        # O e-mail lido em "Preencher com um e-mail", se a tela veio dele.
+        origem = preencher_por_email.origem_do_pedido(request, "solicitacoes")
         if form.is_valid() and not erros_anexos:
+            avisos_origem = []
             with transaction.atomic():
                 solicitacao = form.save(criado_por=request.user)
                 services.registrar_historico(
                     solicitacao, request.user, AcaoHistorico.CRIACAO,
                     status_novo=solicitacao.status,
+                    observacao=preencher_por_email.texto_da_origem(origem) if origem else "",
                 )
                 _criar_anexos_enviados(solicitacao, arquivos, request.user)
+                if origem:
+                    avisos_origem = _anexar_email_de_origem(solicitacao, origem, request.user)
                 if acao == "enviar":
                     services.enviar(solicitacao, request.user)
+            preencher_por_email.concluir_origem(request, origem)
+            for aviso in avisos_origem:
+                messages.warning(request, aviso)
             if acao == "enviar":
                 messages.success(request, f"Solicitação #{solicitacao.pk} enviada com sucesso.")
             else:
@@ -286,9 +368,11 @@ def nova_solicitacao(request):
             return redirect("solicitacoes:editar", pk=solicitacao.pk)
         else:
             messages.error(request, "Corrija os campos destacados para continuar.")
+            email_origem = preencher_por_email.origem_pendente(request, "solicitacoes")
     else:
         form = SolicitacaoForm()
     contexto = _contexto_formulario(request, form)
+    contexto["email_origem"] = email_origem
     contexto["titulo_pagina"] = "Nova Solicitação de Evento Social"
     contexto["breadcrumb"] = _breadcrumb("Nova solicitação")
     return render(request, "pages/solicitacoes/form.html", contexto)

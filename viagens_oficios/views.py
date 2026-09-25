@@ -105,6 +105,7 @@ def lista(request):
     from core.retorno import daqui
     from . import abas as abas_de_oficio
     from .presenters import artefatos_pdf_por_oficio, linha_da_lista
+    from viagens_prestacoes.importacao.entrada import limite_de_bytes
 
     q = request.GET.get('q', '').strip()
     escolhidas = abas_de_oficio.normalizar_abas(request.GET.getlist('situacao'))
@@ -145,6 +146,8 @@ def lista(request):
         'situacao_ativa': 'todas' if not escolhidas else escolhidas[0] if len(escolhidas) == 1 else '',
         'tem_filtros': bool(q or escolhidas), 'url_atual': daqui(request),
         'pode_editar': pode_editar_cadastros(request.user), 'gestor': eh_gestor_viagens(request.user),
+        # O modal "Importar processo do eProtocolo" (importador da prestação) diz o limite do arquivo.
+        'importacao_limite_mb': limite_de_bytes() // (1024 * 1024),
     })
 
 

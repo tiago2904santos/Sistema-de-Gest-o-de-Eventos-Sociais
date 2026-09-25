@@ -148,7 +148,9 @@ def cartao_da_lista(ps, *, configuracao=None):
         for d in card["downloads"]
     ], ensure_ascii=False)
     # Sem "remover" aqui: o anexo da prestação só se substitui (a rota não remove).
+    # O comprovante pode ser foto ou print do banco: o modal aceita imagem só nele.
     card["opcoes_anexar"] = json.dumps(
-        [{"nome": a["option_label"], "url": a["url"], "atual": False} for a in card["anexos"]], ensure_ascii=False)
+        [{"nome": a["option_label"], "url": a["url"], "atual": False, **({"imagem": True} if a["key"] == "comprovante" else {})}
+         for a in card["anexos"]], ensure_ascii=False)
     card["rotulo_anexar"] = "Gerenciar documentos assinados" if card["tem_documento_assinado"] else "Anexar documentos assinados"
     return card

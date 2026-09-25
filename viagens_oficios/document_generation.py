@@ -9,6 +9,12 @@ from .documents import build_canonical_document_payload
 from .docxtpl_context import build_oficio_docxtpl_context, build_justificativa_docxtpl_context
 
 
+def referencia_do_oficio(oficio):
+    """A referência de geração do ofício e da justificativa ("12-2026"): entra no
+    nome do arquivo e separa um documento do outro na busca do assinado."""
+    return oficio.numero_formatado.replace('/', '-')
+
+
 def gerar_documento(oficio, formato, tipo=DocumentoTipo.OFICIO, *, usar_assinado=True):
     """`usar_assinado=False` pede o arquivo original mesmo com PDF assinado anexado."""
     if oficio.cancelado:
@@ -24,7 +30,7 @@ def gerar_documento(oficio, formato, tipo=DocumentoTipo.OFICIO, *, usar_assinado
     contexto = (build_oficio_docxtpl_context(oficio) if tipo == DocumentoTipo.OFICIO
                 else build_justificativa_docxtpl_context(oficio))
     resultado = DocumentoFacade().gerar(tipo=tipo, formato=formato, payload=payload,
-        reference=oficio.numero_formatado.replace('/', '-'), docxtpl_context=contexto,
+        reference=referencia_do_oficio(oficio), docxtpl_context=contexto,
         oficio_id=oficio.pk, roteiro_id=oficio.roteiro_id, usar_assinado=usar_assinado)
     if oficio.status == Oficio.STATUS_RASCUNHO:
         oficio.status = Oficio.STATUS_GERADO

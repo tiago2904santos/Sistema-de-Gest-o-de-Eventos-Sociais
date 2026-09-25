@@ -152,7 +152,17 @@ def anexar_arquivo_assinado(artefato: DocumentoArtefato, upload: UploadedFile) -
 
     A partir daqui ela passa a ser a versão "oficial": preferida na exibição/
     download .
+
+    Tudo ou nada, como a geração (`persist_geracao`): a versão e o artefato são
+    gravados numa transação, e o arquivo novo fica registrado para compensação
+    (`viagens_prestacoes.arquivos`). Se a gravação falhar — aqui ou depois, na
+    operação maior que chamou esta (o importador de processo, que anexa vários
+    documentos de uma vez) —, o arquivo é apagado junto com o rollback, em vez
+    de ficar órfão em `documentos/assinados/versoes/`.
     """
+    from viagens_prestacoes.arquivos import registrar_arquivo_criado
+    from viagens_prestacoes.arquivos import transacao_de_arquivos
+
     _validar_upload_assinado(upload)
     raw = upload.read()
     request = None
@@ -165,24 +175,26 @@ def anexar_arquivo_assinado(artefato: DocumentoArtefato, upload: UploadedFile) -
     actor = getattr(request, "user", None)
     if not getattr(actor, "is_authenticated", False):
         actor = None
-    versao = DocumentoAssinaturaVersao(
-        artefato=artefato,
-        hash_sha256=hashlib.sha256(raw).hexdigest(),
-        nome_original=upload.name or "",
-        criado_por=actor,
-    )
-    versao.arquivo.save(
-        f"assinado_{artefato.pk}_{versao.pk}.pdf",
-        ContentFile(raw),
-        save=False,
-    )
-    versao.save()
-    # Compatibilidade de leitura para integrações antigas. O arquivo anterior
-    # não é apagado e permanece preservado na respectiva versão.
-    artefato.arquivo_assinado = versao.arquivo.name
-    artefato.assinado_em = timezone.now()
-    artefato.assinado_nome_original = upload.name or ""
-    artefato.save(update_fields=["arquivo_assinado", "assinado_em", "assinado_nome_original"])
+    with transacao_de_arquivos():
+        versao = DocumentoAssinaturaVersao(
+            artefato=artefato,
+            hash_sha256=hashlib.sha256(raw).hexdigest(),
+            nome_original=upload.name or "",
+            criado_por=actor,
+        )
+        versao.arquivo.save(
+            f"assinado_{artefato.pk}_{versao.pk}.pdf",
+            ContentFile(raw),
+            save=False,
+        )
+        registrar_arquivo_criado(versao.arquivo.storage, versao.arquivo.name)
+        versao.save()
+        # Compatibilidade de leitura para integrações antigas. O arquivo anterior
+        # não é apagado e permanece preservado na respectiva versão.
+        artefato.arquivo_assinado = versao.arquivo.name
+        artefato.assinado_em = timezone.now()
+        artefato.assinado_nome_original = upload.name or ""
+        artefato.save(update_fields=["arquivo_assinado", "assinado_em", "assinado_nome_original"])
     return artefato
 
 

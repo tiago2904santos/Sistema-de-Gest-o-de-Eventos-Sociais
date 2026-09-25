@@ -1,0 +1,254 @@
+{% extends "pages/viagens_prestacoes/base.html" %}{% load estaticos %}
+{% comment %}
+  Importar processo do eProtocolo — a conferência (antes de aplicar) e o
+  resultado (depois), na mesma tela e no desenho das etapas da prestação: um
+  cartão com o processo e a prestação a que ele pertence (com os candidatos,
+  quando a leitura não teve certeza) e um cartão com os documentos, cada um com
+  a miniatura da 1ª página (pdf.js), o tipo lido, o destino, o servidor e — no
+  comprovante — valor, data e operação. Os botões ↺ ↻ giram as páginas do
+  documento antes de gravar. Contexto: ver `importacao_views._contexto`.
+
+  A mesma tela serve às listas de Prestações, de Ofícios e de Termos (`origem`):
+  além dos anexos da prestação, justificativa, termos (um por servidor) e ordem
+  de serviço vão para a versão assinada do documento deles, e o ofício assinado
+  vai para os dois lugares. A trilha e a volta são as da lista de origem.
+{% endcomment %}
+{% block pc_trilha %}
+  {% if origem == "oficios" %}
+    <nav class="trilha-v32" aria-label="Trilha de navegação"><a href="{% url 'viagens_oficios:lista' %}">Ofícios</a><span aria-hidden="true">/</span><span>Importar processo</span></nav>
+  {% elif origem == "termos" %}
+    <nav class="trilha-v32" aria-label="Trilha de navegação"><a href="{% url 'viagens_termos:lista' %}">Termos de Autorização</a><span aria-hidden="true">/</span><span>Importar processo</span></nav>
+  {% else %}{{ block.super }}{% endif %}
+{% endblock %}
+{% block pc_salvar_topo %}
+  {% if editavel and not aplicada and plano.tem_registro %}
+    <button type="submit" class="btn-primaria" form="pc-imp-form" name="acao" value="aplicar">Aplicar</button>
+  {% endif %}
+{% endblock %}
+{% block prestacao_conteudo %}
+<div class="editor-roteiro pc-imp" data-importacao data-pdf-url="{{ pdf_url }}" data-worker-src="{% estatico 'vendor/pdfjs/pdf.worker.min.js' %}">
+
+  {# 1. O processo e a prestação. #}
+  <section class="section-card reg" id="processo">
+    <header class="section-card__cabecalho reg__t">
+      <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+      <div class="section-card__identificacao"><h2 class="section-card__titulo">Processo {{ protocolo_display|default:"sem número lido" }}</h2></div>
+      <div class="section-card__acao">
+        <span class="st {% if aplicada %}st--atendido{% elif descartada %}st--neutro{% else %}st--pendente{% endif %}">{{ importacao.get_situacao_display }}</span>
+      </div>
+    </header>
+    <div class="section-card__corpo">
+      <ul class="pc-imp__fatos">
+        <li><span class="pc-oficio__rotulo">Arquivo</span>{{ importacao.nome_original|default:"—" }}</li>
+        <li><span class="pc-oficio__rotulo">Folhas</span>{{ plano.total_paginas }}{% if plano.volume %} · volume {{ plano.volume }}{% endif %}</li>
+        <li><span class="pc-oficio__rotulo">Enviado</span>{{ importacao.criado_em|date:"d/m/Y H:i" }}{% if importacao.criado_por %} por {{ importacao.criado_por.get_full_name|default:importacao.criado_por.get_username }}{% endif %}</li>
+        {% if aplicada %}<li><span class="pc-oficio__rotulo">Aplicado</span>{{ importacao.aplicado_em|date:"d/m/Y H:i" }}</li>{% endif %}
+      </ul>
+
+      <div class="pc-imp__prestacao">
+        {% if prestacao_escolhida %}
+          <p class="pc-imp__destino">
+            {% include "components/icon.html" with nome="check-circle" %}
+            <span><b>Prestação do {{ plano.oficio_rotulo|default:prestacao_escolhida.oficio }}</b>
+            {% if plano.evidencias %}<small>{{ plano.evidencias|join:"; " }}</small>{% endif %}</span>
+            {% if prestacao_url %}<a class="pc-imp__abrir" href="{{ prestacao_url }}">Ver os documentos da prestação</a>{% endif %}
+          </p>
+        {% endif %}
+        {% if termo_escolhido %}
+          {# O termo do cadastro (lista de Termos): recebe os termos assinados de cada servidor. #}
+          <p class="pc-imp__destino">
+            {% include "components/icon.html" with nome="check-circle" %}
+            <span><b>{{ plano.termo_rotulo|default:termo_escolhido }}</b>
+            <small>{% if prestacao_escolhida %}Termos do cadastro preso a este ofício{% else %}Termo sem ofício: só os termos assinados entram{% if plano.evidencias %}; {{ plano.evidencias|join:"; " }}{% endif %}{% endif %}</small></span>
+            {% if termo_url %}<a class="pc-imp__abrir" href="{{ termo_url }}">Abrir o termo</a>{% endif %}
+          </p>
+        {% endif %}
+        {% if editavel and not aplicada and candidatos %}
+          {# A prestação pode ser trocada: o processo é relido com a escolhida (servidores, conferências). #}
+          {% if motivos_candidatos %}
+            <ul class="pc-imp__outros">{% for c in motivos_candidatos %}<li><b>{{ c.rotulo }}</b> — {{ c.motivos|join:"; " }}</li>{% endfor %}</ul>
+          {% endif %}
+          <details class="pc-imp__trocar"{% if perguntar_prestacao %} open{% endif %}>
+          <summary>{% if prestacao_escolhida %}Trocar a prestação{% else %}Escolher a prestação{% endif %}</summary>
+          <form method="post" action="{% url 'viagens_prestacoes:importacao_aplicar' importacao.pk %}" class="pc-imp__escolha">
+            {% csrf_token %}
+            {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+            {% if origem == "termos" %}
+              {% include "components/select.html" with name="prestacao" label="Ofício (ou termo) destes documentos" opcoes=candidatos selecionado=candidato_escolhido placeholder="Escolha o ofício ou o termo…" obrigatorio=True %}
+            {% else %}
+              {% include "components/select.html" with name="prestacao" label="Prestação de contas deste processo" opcoes=candidatos selecionado=candidato_escolhido placeholder="Escolha o ofício…" obrigatorio=True %}
+            {% endif %}
+            <button type="submit" class="btn--secundaria" name="acao" value="reanalisar">{% if prestacao_escolhida %}Trocar para esta prestação{% else %}Conferir com esta prestação{% endif %}</button>
+          </form>
+          </details>
+        {% elif not plano.tem_registro %}
+          <p class="pc-imp__destino pc-imp__destino--falta">{% include "components/icon.html" with nome="alert" %}<span><b>{% if origem == "termos" %}Termo não identificado{% else %}Prestação não identificada{% endif %}</b><small>{% if origem == "termos" %}Nenhum ofício nem termo combina com os termos do PDF. Importe pelo ⋮ do termo certo, na lista.{% else %}Nenhum ofício combina com o processo. Importe pelo ⋮ do ofício certo, na lista.{% endif %}</small></span></p>
+        {% endif %}
+      </div>
+
+      {% if aplicada and resultado.resumo %}
+        <div class="pc-imp__resultado" role="status">
+          {% include "components/icon.html" with nome="check-circle" %}<span>{{ resultado.resumo }}{% if resultado.resumo_documentos %} {{ resultado.resumo_documentos }}{% endif %}</span>
+        </div>
+      {% endif %}
+      {# Depois de aplicar, valem os avisos do resultado; os da leitura já foram conferidos. #}
+      {% if resultado.avisos or plano.avisos and not aplicada %}
+        <div class="pc-docs__falta pc-imp__avisos" role="status">
+          <b>{% include "components/icon.html" with nome="alert" %}Atenção</b>
+          <ul>
+            {% for aviso in resultado.avisos %}<li>{{ aviso }}</li>{% endfor %}
+            {% if not aplicada %}{% for aviso in plano.avisos %}<li>{{ aviso }}</li>{% endfor %}{% endif %}
+          </ul>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  {# 2. Os documentos. #}
+    <section class="section-card reg" id="documentos">
+      <header class="section-card__cabecalho reg__t">
+        <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+        <div class="section-card__identificacao"><h2 class="section-card__titulo">Documentos do processo</h2></div>
+        <div class="section-card__acao"><span class="pc-imp__contagem">{{ documentos|length }} documento{{ documentos|length|pluralize }}</span></div>
+      </header>
+      <div class="section-card__corpo">
+        <form method="post" id="pc-imp-form" action="{% url 'viagens_prestacoes:importacao_aplicar' importacao.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="prestacao" value="{{ candidato_escolhido }}">
+        {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+        <p class="pc-nota">Na ordem do processo. Entram na prestação: ofício, despacho(s) com a folha de assinatura, relatório técnico de cada servidor, diário de bordo (em pé, paisagem) e comprovantes. O ofício e a justificativa assinados, o termo de cada servidor e a ordem de serviço também ficam como a versão assinada do documento deles.</p>
+        <ol class="pc-imp__docs">
+          {% for d in documentos %}{% with item=d.item %}
+            <li class="pc-imp__doc{% if item.conferir and not aplicada %} pc-imp__doc--conferir{% endif %}{% if item.destino == 'ignorar' %} pc-imp__doc--fora{% endif %}" data-imp-doc="{{ d.ordem }}">
+              <div class="pc-imp__mini">
+                <canvas data-imp-canvas data-pagina="{{ d.primeira }}" data-rotacao="{{ d.rotacao_planejada }}" role="img" aria-label="Primeira página do documento {{ d.ordem }}"></canvas>
+                {% if editavel and not aplicada %}
+                  <div class="pc-imp__girar">
+                    <button type="button" data-imp-girar="-90" aria-label="Girar as páginas do documento {{ d.ordem }} para a esquerda" title="Girar para a esquerda">↺</button>
+                    <button type="button" data-imp-girar="90" aria-label="Girar as páginas do documento {{ d.ordem }} para a direita" title="Girar para a direita">↻</button>
+                  </div>
+                  <input type="hidden" name="doc-{{ d.ordem }}-giro" value="{{ item.giro }}" data-imp-giro>
+                {% else %}
+                  <input type="hidden" value="{{ item.giro }}" data-imp-giro disabled>
+                {% endif %}
+              </div>
+              <div class="pc-imp__info">
+                <div class="pc-imp__titulo">
+                  <span class="pc-imp__num" aria-hidden="true">{{ d.ordem }}</span>
+                  <b>{{ d.rotulo }}</b>
+                  {% if item.destino == "ignorar" %}<span class="st st--neutro">Não entra</span>{% elif item.destino %}<span class="st st--atendido">{{ d.destino_rotulo }}</span>{% else %}<span class="st st--pendente">A definir</span>{% endif %}
+                  {% if item.rotacao_incerta and not aplicada %}<span class="st st--pendente">Confira o lado</span>{% endif %}
+                </div>
+                <small class="pc-imp__meta">
+                  Folhas {{ d.folhas }}{% if item.titulo %} · {{ item.titulo }}{% endif %}{% if item.assinado_por %} · assinado por {{ item.assinado_por|join:", " }}{% endif %}{% if item.motivo and item.destino == "ignorar" %} · {{ item.motivo }}{% endif %}
+                </small>
+
+                {% if editavel and not aplicada %}
+                  <div class="pc-imp__campos">
+                    <div class="pc-imp__campo pc-imp__campo--destino" data-imp-destino>
+                      {% with campo_nome=d.nomes.destino %}
+                        {% include "components/select.html" with name=campo_nome label="Entra como" opcoes=opcoes_destino selecionado=item.destino placeholder="A definir" %}
+                      {% endwith %}
+                    </div>
+                    {% if opcoes_servidor %}
+                      <div class="pc-imp__campo" data-imp-quando="rt_assinado comprovante"{% if not item.individual %} hidden{% endif %}>
+                        {% with campo_nome=d.nomes.servidor escolhido=item.servidor_prestacao_id|default_if_none:""|stringformat:"s" %}
+                          {% include "components/select.html" with name=campo_nome label="Servidor" opcoes=opcoes_servidor selecionado=escolhido placeholder="Escolha o servidor" %}
+                        {% endwith %}
+                      </div>
+                    {% endif %}
+                    {% if opcoes_servidor_termo %}
+                      {# O termo é de um servidor com termo nesta viagem (no ofício ou no termo do cadastro). #}
+                      <div class="pc-imp__campo" data-imp-quando="termo_autorizacao"{% if item.destino != "termo_autorizacao" %} hidden{% endif %}>
+                        {% with campo_nome=d.nomes.termo_servidor escolhido=item.servidor_id|default_if_none:""|stringformat:"s" %}
+                          {% include "components/select.html" with name=campo_nome label="Termo de" opcoes=opcoes_servidor_termo selecionado=escolhido placeholder="Escolha o servidor" %}
+                        {% endwith %}
+                      </div>
+                    {% endif %}
+                    {% if opcoes_os %}
+                      <div class="pc-imp__campo" data-imp-quando="ordem_servico"{% if item.destino != "ordem_servico" %} hidden{% endif %}>
+                        {% with campo_nome=d.nomes.os escolhido=item.ordem_servico_id|default_if_none:""|stringformat:"s" %}
+                          {% include "components/select.html" with name=campo_nome label="Ordem de serviço" opcoes=opcoes_os selecionado=escolhido placeholder="Escolha a OS" %}
+                        {% endwith %}
+                      </div>
+                    {% endif %}
+                    <div class="pc-imp__campo pc-imp__campo--curto" data-imp-quando="comprovante"{% if item.destino != "comprovante" %} hidden{% endif %}>
+                      {% with campo_nome=d.nomes.valor %}
+                        {% include "components/input.html" with name=campo_nome label="Valor" valor=d.valor_br placeholder="R$ 0,00" %}
+                      {% endwith %}
+                    </div>
+                    <div class="pc-imp__campo pc-imp__campo--curto" data-imp-quando="comprovante"{% if item.destino != "comprovante" %} hidden{% endif %}>
+                      {% with campo_nome=d.nomes.data %}
+                        {% include "components/input.html" with name=campo_nome label="Data da operação" tipo="date" valor=item.data %}
+                      {% endwith %}
+                    </div>
+                    <div class="pc-imp__campo pc-imp__campo--curto" data-imp-quando="comprovante"{% if item.destino != "comprovante" %} hidden{% endif %}>
+                      {% with campo_nome=d.nomes.operacao %}
+                        {% include "components/select.html" with name=campo_nome label="Operação" opcoes=opcoes_operacao selecionado=item.operacao placeholder="—" %}
+                      {% endwith %}
+                    </div>
+                  </div>
+                {% elif item.destino != "ignorar" %}
+                  <p class="pc-imp__lido">
+                    {% if d.servidor_nome %}<span><span class="pc-oficio__rotulo">Servidor</span>{{ d.servidor_nome }}</span>{% endif %}
+                    {% if item.destino == "comprovante" %}
+                      <span><span class="pc-oficio__rotulo">Valor</span>{{ d.valor_br|default:"—" }}</span>
+                      <span><span class="pc-oficio__rotulo">Data</span>{{ d.data_br|default:"—" }}</span>
+                    {% endif %}
+                    {% if d.os_rotulo %}<span><span class="pc-oficio__rotulo">OS</span>{{ d.os_rotulo }}</span>{% endif %}
+                    {% if d.anexo and prestacao_escolhida %}<a href="{% url 'viagens_prestacoes:prestacao_documento_conteudo' prestacao_escolhida.pk d.anexo.id %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}Ver o anexo</a>{% endif %}
+                  </p>
+                {% endif %}
+                {% if d.assinados %}
+                  {# Onde o assinado ficou: o documento do ofício, o termo de cada servidor, a OS. #}
+                  <ul class="pc-imp__assinados">
+                    {% for a in d.assinados %}
+                      <li>{% include "components/icon.html" with nome="check" %}<span>{{ a.alvo }}{% if a.repetido %} <small>(já estava anexado)</small>{% elif a.gerado %} <small>(PDF gerado agora)</small>{% endif %}</span>
+                        {% if a.ver_url %}<a href="{{ a.ver_url }}" target="_blank" rel="noopener">Ver o assinado</a>{% endif %}
+                        {% if a.url %}<a href="{{ a.url }}">Abrir</a>{% endif %}
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
+
+                {% if item.conferir and not aplicada %}
+                  <ul class="pc-imp__conferir">{% for motivo in item.conferir %}<li>{{ motivo }}</li>{% endfor %}</ul>
+                {% endif %}
+                {# De quem é (RT, comprovante): o porquê ajuda a conferir. A pista do tipo só quando há dúvida. #}
+                {% if item.evidencias and item.destino != "ignorar" %}{% if item.individual or item.destino == "termo_autorizacao" or item.conferir and not aplicada %}<small class="pc-imp__evidencias">{{ item.evidencias|join:" · " }}</small>{% endif %}{% endif %}
+              </div>
+            </li>
+          {% endwith %}{% endfor %}
+        </ol>
+        </form>
+
+        {% if pendencias and not aplicada %}
+          <div class="pc-docs__falta" role="status">
+            <b>{% include "components/icon.html" with nome="alert" %}Falta para aplicar</b>
+            <ul>{% for p in pendencias %}<li>{{ p }}</li>{% endfor %}</ul>
+          </div>
+        {% endif %}
+
+        <div class="frm-acoes-fim">
+          <a class="btn--secundaria" href="{{ voltar_url }}">Voltar à lista</a>
+          {% if editavel %}
+            {% if not aplicada %}
+              <form method="post" action="{% url 'viagens_prestacoes:importacao_descartar' importacao.pk %}" data-confirmar="Descartar? Nada é gravado">
+                {% csrf_token %}<input type="hidden" name="next" value="{{ voltar_url }}">
+                <button type="submit" class="btn--secundaria">Descartar</button>
+              </form>
+              {% if plano.tem_registro %}<button type="submit" class="btn-primaria" form="pc-imp-form" name="acao" value="aplicar">Aplicar</button>{% endif %}
+            {% else %}
+              {# Refaz a gravação do mesmo plano: substitui de novo os documentos destes tipos. #}
+              <form method="post" action="{% url 'viagens_prestacoes:importacao_aplicar' importacao.pk %}" data-confirmar="Substituir de novo?">
+                {% csrf_token %}{% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+                <button type="submit" class="btn--secundaria" name="acao" value="aplicar">Aplicar de novo</button>
+              </form>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </section>
+</div>
+{% endblock %}
+{% block pc_js %}<script src="{% estatico 'vendor/pdfjs/pdf.min.js' %}"></script><script src="{% estatico 'js/prestacoes-importacao.js' %}" defer></script>{% endblock %}

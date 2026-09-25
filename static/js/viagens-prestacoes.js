@@ -96,6 +96,16 @@
     });
   });
 
+  /* O motivo da recusa, venha de onde vier. Ofício, RT e diário vão para as
+     rotas de anexar, que respondem `error`; despacho e comprovante (que aceitam
+     vários arquivos) vão para o autosave, que responde `message` genérica e o
+     motivo de verdade em `errors`, campo a campo. */
+  function motivoDaRecusa(dados) {
+    if (!dados) return "";
+    var erros = dados.errors ? Object.keys(dados.errors).map(function (k) { return [].concat(dados.errors[k]).join(" "); }).join(" ") : "";
+    return (erros || dados.error || dados.message || "").trim();
+  }
+
   /* ---------- anexar direto do cartão ---------- */
   document.querySelectorAll("[data-anexar-cartao] input[type=file]").forEach(function (campo) {
     campo.addEventListener("change", function () {
@@ -106,7 +116,7 @@
         .then(function (r) { return r.json().catch(function () { return {ok: r.ok}; }).then(function (d) { return {ok: r.ok && d.ok !== false, dados: d}; }); })
         .then(function (res) {
           if (res.ok) { window.location.reload(); return; }
-          window.alert((res.dados && res.dados.error) || "Não foi possível anexar o arquivo.");
+          window.alert(motivoDaRecusa(res.dados) || "Não foi possível anexar o arquivo.");
           campo.value = "";
         })
         .catch(function () { window.alert("Não foi possível anexar o arquivo."); campo.value = ""; });

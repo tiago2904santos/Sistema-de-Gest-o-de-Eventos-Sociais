@@ -165,7 +165,11 @@
     caixaProtocolo.closest(".pal-canal").classList.toggle("pal-canal--protocolo", ehProtocolo);
     // Escolheu Protocolo agora: o cursor já vai para o número. A lista
     // aprimorada devolve o foco ao próprio gatilho logo depois, por isso a espera.
-    if (evento && ehProtocolo && protocolo) setTimeout(function () { protocolo.focus(); }, 0);
+    // Só com o número ainda vazio: o "Preencher com um e-mail" troca o canal e
+    // já escreve o número em seguida, e aí o foco fica onde a pessoa está.
+    if (evento && ehProtocolo && protocolo) {
+      setTimeout(function () { if (!protocolo.value) protocolo.focus(); }, 0);
+    }
   }
 
   if (protocolo) {

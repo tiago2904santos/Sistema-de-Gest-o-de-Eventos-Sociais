@@ -17,6 +17,7 @@ from core.retorno import voltar_para
 from .forms import PrestacaoDespachoForm, PrestacaoServidorDocumentosForm, PrestacaoSolicitacaoForm
 from .models import PrestacaoDocumentoAnexo
 from .presenters import _anexo_assinado_info
+from .anexo_services import endireitar_diario_anexado
 from .anexo_services import excluir_anexo
 from .anexo_services import substituir_anexo_assinado
 from .carimbo_services import anexo_do_oficio_assinado
@@ -177,10 +178,11 @@ def documentos_servidor(request, ps_pk):
     # `H-03`: eram cinco chaves ordinais (`primary`…`quinary`) — nome que dizia a
     # POSIÇÃO, não o documento. Cada uma virava 6 atributos `data-*` planos no
     # gatilho, 30 no total. Ver `kinds_de_anexo_assinado`.
+    # Na ordem da prestação (`ORDEM_DOCUMENTOS_PRESTACAO`).
     attach_kinds = kinds_de_anexo_assinado(
         [
-            ("despacho", "Despacho", f"o despacho do ofício {numero}", despacho_assinado),
             ("oficio", "Ofício", f"o ofício {numero}", oficio_assinado),
+            ("despacho", "Despacho", f"o despacho do ofício {numero}", despacho_assinado),
             (
                 "rt",
                 "RT",
@@ -299,7 +301,10 @@ def _upload_recusado(request, destino, mensagens):
     comum continua sendo mensagem + redirect.
     """
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return JsonResponse({"ok": False, "error": " ".join(mensagens)}, status=400)
+        # `error` e `message` com o mesmo texto: o modal lê um, o cartão da Etapa 3
+        # (que também fala com o autosave) lê o outro.
+        texto = " ".join(mensagens)
+        return JsonResponse({"ok": False, "error": texto, "message": texto}, status=400)
     for mensagem in mensagens:
         messages.error(request, mensagem)
     return redirect(destino)
@@ -451,12 +456,21 @@ def prestacao_servidor_assinado_anexar(request, ps_pk, tipo):
     if tipo not in tipos_permitidos:
         return HttpResponse(status=404)
     diario_compartilhado = tipo == PrestacaoDocumentoAnexo.TIPO_DB_ASSINADO
+
+    def endireitar(anexo):
+        # O diário entra em pé (paisagem, nunca de cabeça para baixo), como pelo importador.
+        if endireitar_diario_anexado(anexo):
+            messages.success(request, "Diário de bordo anexado, com as páginas giradas para ficar em pé.")
+        else:
+            messages.success(request, "Documento assinado anexado.")
+
     return _prestacao_assinado_upload(
         request,
         prestacao=servidor_prestacao.prestacao,
         servidor_prestacao=None if diario_compartilhado else servidor_prestacao,
         tipo=tipo,
         substituir_todos_do_tipo=diario_compartilhado,
+        pos_anexo=endireitar if diario_compartilhado else None,
     )
 
 

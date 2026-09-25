@@ -7,7 +7,7 @@
   sozinhos (`data-autosave`, o mesmo endpoint do cartão de antes), e o menu
   de ações dele. Contexto: `g`, `pode_editar`, `url_atual`.
 {% endcomment %}
-<section class="pc-oficio" aria-labelledby="pc-{{ g.prestacao_pk }}-titulo">
+<section class="pc-oficio" aria-labelledby="pc-{{ g.prestacao_pk }}-titulo"{% if pode_editar %} data-importar-url="{{ g.importar_url }}" data-importar-titulo="Ofício {{ g.oficio.numero }}"{% endif %}>
   <header class="pc-oficio__linha">
     <h2 class="pc-oficio__numero" id="pc-{{ g.prestacao_pk }}-titulo">Ofício {{ g.oficio.numero }}</h2>
     <ul class="pc-oficio__dados">
@@ -25,6 +25,7 @@
         {% endwith %}
         <a class="dd__i of-item" href="{{ g.oficio_url }}">{% include "components/icon.html" with nome="document" %}<span><b>Abrir ofício</b><small>O cadastro do ofício {{ g.oficio.numero }}</small></span></a>
         {% if pode_editar %}
+          <button type="button" class="dd__i of-item" data-importar-processo data-url="{{ g.importar_url }}" data-titulo="Ofício {{ g.oficio.numero }}">{% include "components/icon.html" with nome="upload" %}<span><b>Importar processo</b><small>O PDF do eProtocolo, direto nesta prestação</small></span></button>
           <div class="dd__s"></div>
           <form method="post" action="{% if g.todos_finalizados %}{{ g.acoes_url.reabrir }}{% else %}{{ g.acoes_url.finalizar }}{% endif %}" data-confirmar="{% if g.todos_finalizados %}Reabrir a prestação de toda a equipe?{% else %}Finalizar a prestação de toda a equipe?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
             <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome=g.todos_finalizados|yesno:"undo,check-circle" %}<span><b>{% if g.todos_finalizados %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</b><small>Todos os servidores do ofício</small></span></button>
@@ -67,7 +68,7 @@
           <span class="pc-linha__nome">{{ s.name }}</span>
           {% if s.diario_pdf_url %}<span class="pc-chip pc-chip--feito">{% include "components/icon.html" with nome="check" %}Diário</span>{% endif %}
           {% if c.tem_rt %}<span class="pc-chip pc-chip--feito">{% include "components/icon.html" with nome="check" %}Relatório</span>{% endif %}
-          {% if s.comprovante_ok %}<span class="pc-chip pc-chip--feito">{% include "components/icon.html" with nome="check" %}Comprovante</span>{% endif %}
+          {% if s.comprovante_ok %}<span class="pc-chip pc-chip--feito"{% if s.comprovante_detalhe %} title="{{ s.comprovante_detalhe }}"{% endif %}>{% include "components/icon.html" with nome="check" %}{{ s.comprovante_rotulo }}{% if s.comprovante_resumo %}<span class="pc-chip__dado">{{ s.comprovante_resumo }}</span>{% endif %}</span>{% endif %}
           {% if c.tem_documento_assinado %}<span class="pc-chip pc-chip--feito">{% include "components/icon.html" with nome="check" %}Assinados</span>{% endif %}
           <span class="st st--pc-{{ c.status_value }}">{% if c.finalizada %}Finalizada{% else %}{{ c.status_label }}{% endif %}</span>
           {% if c.arquivada %}<span class="st st--neutro">Arquivada</span>{% endif %}

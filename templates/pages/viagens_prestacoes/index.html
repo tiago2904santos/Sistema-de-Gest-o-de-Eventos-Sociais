@@ -24,13 +24,24 @@
     </div>
     <div class="d-acoes">
       <a class="btn--secundaria" href="{% url 'viagens_cadastros:lista' 'modelos-texto-rt' %}">{% include "components/icon.html" with nome="document" %}Modelos de texto</a>
+      {% if pode_editar %}
+        {# O processo inteiro do eProtocolo: o sistema descobre a prestação e anexa os documentos. #}
+        <button type="button" class="btn-primaria" data-importar-processo data-url="{% url 'viagens_prestacoes:importacao_enviar' %}">{% include "components/icon.html" with nome="upload" %}Importar processo do eProtocolo</button>
+      {% endif %}
     </div>
   </div>
 
   <div class="cad-grade cad-grade--sem-folga">
     {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_rotulo="Situação das prestações" sem_titulo=True %}
 
-    <div class="pa-card pa-card--lista cad-lista">
+    <div class="pa-card pa-card--lista cad-lista"{% if pode_editar %} data-importar-soltar data-url="{% url 'viagens_prestacoes:importacao_enviar' %}"{% endif %}>
+      {% if pode_editar %}
+        {# Arrastar um arquivo sobre a lista: a faixa aparece; soltar importa (sobre um ofício, na prestação dele). #}
+        <div class="pc-soltar" data-importar-faixa hidden aria-hidden="true">
+          {% include "components/icon.html" with nome="upload" %}
+          <span><b>Solte o PDF do processo do eProtocolo para importar</b><small>Sobre um ofício, vai para a prestação dele; fora deles, o sistema descobre pelo conteúdo.</small></span>
+        </div>
+      {% endif %}
       {# Busca no servidor, enviada 1 s depois de digitar; a situação da trilha sobrevive. #}
       <form method="get" class="cad-barra" role="search" data-cadastro-busca data-auto-enviar>
         {% for aba in abas_selecionadas %}<input type="hidden" name="aba" value="{{ aba }}">{% endfor %}
@@ -81,5 +92,5 @@
   {{ block.super }}
   <script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-prestacoes.js' %}" defer></script>
-  {% if pode_editar %}{% include "components/v32/dialogo_baixar.html" %}{% include "components/v32/dialogo_assinado.html" %}{% endif %}
+  {% if pode_editar %}{% include "components/v32/dialogo_baixar.html" %}{% include "components/v32/dialogo_assinado.html" %}{% include "pages/viagens_prestacoes/_importar_dialogo.html" %}{% endif %}
 {% endblock %}

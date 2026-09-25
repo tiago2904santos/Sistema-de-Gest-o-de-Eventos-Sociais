@@ -65,6 +65,17 @@ class Fragmento:
     corpo: float
     largura_pagina: float
     altura_pagina: float
+    #: Onde a página começa em y. O eProtocolo acrescenta a faixa do rodapé embaixo
+    #: (mediabox a partir de −40), então "dentro da página" não é `0 ≤ y`.
+    base_pagina: float = 0.0
+
+    @property
+    def dentro_da_pagina(self) -> bool:
+        folga = 1.0
+        return (
+            -folga <= self.x <= self.largura_pagina + folga
+            and self.base_pagina - folga <= self.y <= self.base_pagina + self.altura_pagina + folga
+        )
 
 
 @dataclass
@@ -123,8 +134,9 @@ def ler_fragmentos(pdf_bytes: bytes) -> list[Fragmento]:
         for indice, page in enumerate(reader.pages):
             largura = float(page.mediabox.width)
             altura = float(page.mediabox.height)
+            base = float(page.mediabox.bottom)
 
-            def visitor(texto, cm, tm, _font_dict, corpo, _indice=indice, _l=largura, _a=altura):
+            def visitor(texto, cm, tm, _font_dict, corpo, _indice=indice, _l=largura, _a=altura, _b=base):
                 limpo = str(texto or "").strip()
                 if not limpo:
                     return
@@ -143,6 +155,7 @@ def ler_fragmentos(pdf_bytes: bytes) -> list[Fragmento]:
                         corpo=float(corpo or 0) * escala,
                         largura_pagina=_l,
                         altura_pagina=_a,
+                        base_pagina=_b,
                     )
                 )
 
@@ -239,7 +252,92 @@ def posicoes_automaticas(prestacao, pdf_assinado: bytes) -> dict[int, Posicao]:
 
     A chave é o `pk` do `PrestacaoServidor`. Servidor sem número, ou cujo número não foi
     achado na referência, fica de fora — quem chama trata isso como pendência, não como
-    falha.
+    falha. Âncora que não se acha (ou que não dá para confiar) levanta `CarimboError`:
+    nunca se copia coordenada às cegas. O upload usa `_posicoes_e_falhas`, que em vez
+    de recusar manda esses servidores para o ajuste manual.
+    """
+    posicoes, falhas = _posicoes_e_falhas(prestacao, pdf_assinado)
+    if falhas:
+        raise CarimboError(next(iter(falhas.values())))
+    return posicoes
+
+
+def _paginas_com_texto_em_form(pdf_bytes: bytes) -> set[int]:
+    """Páginas cujo texto (ou parte dele) está dentro de um Form XObject.
+
+    É como o eProtocolo "embrulha" a página que devolve. O pypdf lê o form com a
+    matriz zerada, então as coordenadas do texto de dentro não são as da página.
+    """
+    import re as _re
+
+    from pypdf import PdfReader
+
+    def tem_texto(recursos, profundidade) -> bool:
+        try:
+            recursos = recursos.get_object() if recursos is not None else None
+            xobjetos = recursos.get("/XObject") if recursos is not None else None
+            if xobjetos is None:
+                return False
+            for referencia in xobjetos.get_object().values():
+                objeto = referencia.get_object()
+                if objeto.get("/Subtype") != "/Form":
+                    continue
+                if _re.search(rb"(?<![A-Za-z])BT(?![A-Za-z])", objeto.get_data() or b""):
+                    return True
+                if profundidade < 3 and tem_texto(objeto.get("/Resources"), profundidade + 1):
+                    return True
+        except Exception:
+            return False
+        return False
+
+    try:
+        leitor = PdfReader(BytesIO(pdf_bytes))
+        if getattr(leitor, "is_encrypted", False):
+            leitor.decrypt("")
+        return {i for i, pagina in enumerate(leitor.pages) if tem_texto(pagina.get("/Resources"), 0)}
+    except Exception as exc:
+        capture(exc, "prestacoes.carimbo.forms")
+        return set()
+
+
+def _ocorrencias(linhas: list[Linha], pagina: int, nome: str) -> int:
+    alvo = _normalizar(nome)
+    return sum(
+        1
+        for linha in linhas
+        if linha.pagina == pagina
+        for frag in linha.fragmentos
+        if alvo in _normalizar(frag.texto)
+    )
+
+
+def _nome_dentro_de_bloco(linhas: list[Linha], pagina: int, nome: str) -> bool:
+    """O nome aparece, nesta página, dentro de um bloco de texto "achatado".
+
+    Página "embrulhada" pelo eProtocolo (o conteúdo num Form XObject com o Y
+    invertido — lacuna L2): o pypdf lê o form com a matriz zerada, então as
+    coordenadas de dentro saem trocadas, e depois devolve o texto inteiro do form
+    num fragmento só, de várias linhas. Achar o nome ali é o sinal de que nenhuma
+    coordenada desta página serve de âncora — a posição calculada cairia no lugar
+    errado sem erro nenhum.
+    """
+    alvo = _normalizar(nome)
+    for linha in linhas:
+        if linha.pagina != pagina:
+            continue
+        for frag in linha.fragmentos:
+            if ("\n" in frag.texto or len(frag.texto) > len(nome) + 160) and alvo in _normalizar(frag.texto):
+                return True
+    return False
+
+
+def _posicoes_e_falhas(prestacao, pdf_assinado: bytes) -> tuple[dict[int, Posicao], dict[int, str]]:
+    """(posições achadas, {ps.pk: motivo} dos que precisam de ajuste manual).
+
+    Falha é âncora não achada (PDF escaneado, nome grafado de outro jeito) ou achada
+    num lugar em que não dá para confiar: fora da página, ou dentro de página
+    embrulhada (`_nome_dentro_de_bloco`). Nos dois casos o servidor NÃO recebe
+    posição — o número não é desenhado — e vai para "Ajustar posição".
     """
     from .services import gerar_oficio_prestacao_pdf
 
@@ -249,20 +347,22 @@ def posicoes_automaticas(prestacao, pdf_assinado: bytes) -> dict[int, Posicao]:
         if str(ps.numero_solicitacao or "").strip()
     ]
     if not servidores:
-        return {}
+        return {}, {}
 
     try:
         referencia = gerar_oficio_prestacao_pdf(prestacao)
     except Exception as exc:
         capture(exc, "prestacoes.carimbo.referencia", prestacao_id=prestacao.pk)
-        return {}
+        return {}, {}
 
     linhas_ref = agrupar_em_linhas(ler_fragmentos(referencia))
     linhas_dest = agrupar_em_linhas(ler_fragmentos(pdf_assinado))
     if not linhas_ref:
-        return {}
+        return {}, {}
+    embrulhadas = _paginas_com_texto_em_form(pdf_assinado) if linhas_dest else set()
 
     posicoes: dict[int, Posicao] = {}
+    falhas: dict[int, str] = {}
     for ps in servidores:
         numero = str(ps.numero_solicitacao or "").strip()
         nome = getattr(ps.servidor, "nome", "") or ""
@@ -272,28 +372,42 @@ def posicoes_automaticas(prestacao, pdf_assinado: bytes) -> dict[int, Posicao]:
             continue
         alvo = _fragmento_do_texto(linha_numero, numero)
         if alvo is None:
-            raise CarimboError("Não foi possível localizar o início do número na referência.")
+            falhas[ps.pk] = "Não foi possível localizar o início do número na referência."
+            continue
 
         ancora_ref = _procurar(linhas_ref, nome)
         ancora_dest = _procurar(linhas_dest, nome) if linhas_dest else None
-
-        if ancora_ref is not None and ancora_dest is not None:
-            # O deslocamento entre a âncora e o número é o que se transporta. Se o
-            # eProtocolo empurrou a página inteira, os dois andaram junto.
-            dx = alvo.x - ancora_ref.inicio.x
-            dy = alvo.y - ancora_ref.inicio.y
-            base = ancora_dest.inicio
-            posicoes[ps.pk] = _para_posicao(
-                base,
-                x=base.x + dx,
-                y=base.y + dy,
-                incerta=False,
-            )
+        if ancora_ref is None or ancora_dest is None:
+            falhas[ps.pk] = f"Não foi possível localizar a âncora do servidor {nome} no PDF. O carimbo não foi aplicado."
             continue
 
-        raise CarimboError(f"Não foi possível localizar a âncora do servidor {nome} no PDF. O carimbo não foi aplicado.")
+        # O deslocamento entre a âncora e o número é o que se transporta. Se o
+        # eProtocolo empurrou a página inteira, os dois andaram junto.
+        dx = alvo.x - ancora_ref.inicio.x
+        dy = alvo.y - ancora_ref.inicio.y
+        base = ancora_dest.inicio
+        destino = Fragmento(
+            pagina=base.pagina, texto=numero, x=base.x + dx, y=base.y + dy, corpo=base.corpo,
+            largura_pagina=base.largura_pagina, altura_pagina=base.altura_pagina, base_pagina=base.base_pagina,
+        )
+        # Na página embrulhada, o texto de dentro do form aparece duas vezes (lido com a
+        # matriz errada e devolvido de novo, inteiro, na saída do form): o nome repetido
+        # ali é o sinal de que a âncora não serve.
+        embrulhada = base.pagina in embrulhadas and _ocorrencias(linhas_dest, base.pagina, nome) >= 2
+        if (
+            not base.dentro_da_pagina
+            or not destino.dentro_da_pagina
+            or embrulhada
+            or _nome_dentro_de_bloco(linhas_dest, base.pagina, nome)
+        ):
+            falhas[ps.pk] = (
+                f"A posição do número de {nome} não pôde ser conferida neste PDF "
+                "(página recomposta pelo eProtocolo). O carimbo não foi aplicado."
+            )
+            continue
+        posicoes[ps.pk] = _para_posicao(base, x=destino.x, y=destino.y, incerta=False)
 
-    return posicoes
+    return posicoes, falhas
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -409,7 +523,9 @@ def preparar_e_carimbar(anexo, *, prestacao) -> ResultadoCarimbo:
     """Caminho do upload: guarda o cru, descobre as posições e desenha.
 
     Posição ajustada à mão é preservada — o automático já errou naquele ponto uma vez, e
-    reescrever por cima devolveria o erro que o usuário corrigiu.
+    reescrever por cima devolveria o erro que o usuário corrigiu. Servidor cuja posição
+    não se descobre com segurança (PDF escaneado, página embrulhada pelo eProtocolo) sai
+    em `sem_posicao`, sem carimbo: o anexo fica, e a tela manda "Ajustar posição".
     """
     try:
         cru = _bytes_do_arquivo(anexo.arquivo)
@@ -421,7 +537,9 @@ def preparar_e_carimbar(anexo, *, prestacao) -> ResultadoCarimbo:
         anexo.arquivo_original.save(nome, ContentFile(cru), save=False)
         anexo.save(update_fields=["arquivo_original"])
 
-    posicoes = posicoes_automaticas(prestacao, cru)
+    # Âncora que não se acha (escaneado) ou não se confirma (página embrulhada) não
+    # recusa o upload: o servidor fica sem posição e o operador ajusta à mão.
+    posicoes, _falhas = _posicoes_e_falhas(prestacao, cru)
     manuais = {
         c.servidor_prestacao_id
         for c in anexo.carimbos.filter(ajustado_manualmente=True)

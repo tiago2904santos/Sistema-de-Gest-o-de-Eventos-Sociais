@@ -2661,3 +2661,230 @@ textarea.form-controle.cb-caixa-copiar__texto{width:100%;min-height:0;resize:ver
 .cb-baixar__txt .st{justify-self:start}
 .cb-baixar__txt small{color:var(--n-500,#7a776f)}
 .cb-copiavel__valor{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+
+/* =============================================================================
+   Preencher com um e-mail — components/v32/preencher_por_email.html
+   (+ js/preencher-por-email.js). Faixa tracejada no molde da zona de anexos,
+   acima do formulário novo; os campos preenchidos ficam em dourado claro
+   (.is-sugerido) até a pessoa mexer neles.
+   ========================================================================== */
+.pe{position:relative;margin:0 0 16px;border:1.5px dashed var(--n-250);border-radius:12px;background:var(--n-25);transition:border-color var(--motion),background var(--motion)}
+.pe.is-arrastando{border-color:var(--sel-r);background:var(--sel-b)}
+.pe.is-lendo{cursor:progress}
+.pe.is-lendo .pe__alvo{opacity:.7}
+.pe [hidden]{display:none!important}
+.pe__zona{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.pe__arquivo{position:absolute;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none}
+.pe__alvo{flex:1 1 auto;display:flex;align-items:center;gap:12px;min-width:0;padding:2px;border-radius:9px;cursor:pointer}
+.pe__arquivo:focus-visible+.pe__alvo{box-shadow:0 0 0 3px var(--d-200)}
+.pe__icone{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:9px;background:var(--d-50);border:1px solid var(--d-200);color:var(--d-700)}
+.pe__icone .ui-icon{width:18px;height:18px}
+.pe__textos{display:flex;flex-direction:column;gap:2px;min-width:0;overflow-wrap:anywhere}
+.pe__textos b{font-size:13.5px;font-weight:600;color:var(--n-900)}
+.pe__textos small{font-size:12px;color:var(--n-500)}
+.pe__colar{flex:none}
+.pe__colar[aria-expanded=true]{border-color:var(--sel-r);background:var(--sel-b)}
+.pe__colar:focus-visible,.pe__ler:focus-visible,.pe__usar:focus-visible,.pe__ir:focus-visible,.pe__desfazer:focus-visible,.pe__lista summary:focus-visible{box-shadow:0 0 0 3px var(--d-200)}
+.pe__texto{display:grid;gap:6px;padding:0 14px 14px}
+.pe__texto .form-controle{height:auto;min-height:132px;padding:10px 12px;line-height:1.45;resize:vertical}
+.pe__texto .form-controle:focus{border-color:var(--d-400)}
+.pe__texto-acoes{display:flex;align-items:center;justify-content:flex-end;gap:12px}
+.pe__dica{font-size:11.5px;color:var(--n-450)}
+.pe__ler{height:36px;padding:0 var(--s4);font-size:13.5px}
+.pe__estado{margin:0;padding:0 14px 12px;font-size:12.5px;color:var(--n-600)}
+.pe__estado:empty{display:none}
+.pe__erro{margin:0;padding:0 14px 12px;font-size:12.5px}
+.pe__resultado{display:grid;gap:10px;padding:12px 14px 14px;border-top:1px solid var(--n-150);border-radius:0 0 11px 11px;background:var(--branco)}
+.pe__resumo-titulo{margin:0;font-size:13.5px;color:var(--n-800)}
+.pe__resumo-titulo b{color:var(--n-900)}
+.pe__origem{margin:0;font-size:12.5px;color:var(--n-500);overflow-wrap:anywhere}
+.pe__avisos{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pe__aviso{padding:8px 10px;border:1px solid var(--wn-r);border-radius:8px;background:var(--wn-b);color:var(--wn-t);font-size:12.5px;line-height:1.45}
+.pe__aviso a{color:inherit;font-weight:600;text-decoration:underline}
+.pe__subtitulo{margin:0 0 6px;font-size:12.5px;font-weight:600;color:var(--n-600)}
+.pe__chips{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.pe__chip{display:inline-flex;align-items:center;gap:8px;max-width:100%;min-height:32px;padding:3px 3px 3px 10px;border:1px solid var(--n-200);border-radius:999px;background:var(--n-25);font-size:12.5px;color:var(--n-700)}
+.pe__chip-texto{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pe__chip-rotulo{color:var(--n-500)}
+.pe__chip-feito{padding-right:8px;color:var(--ok-t)}
+.pe__usar{flex:none;height:26px;padding:0 12px;border:1px solid var(--d-300);border-radius:999px;background:var(--d-50);color:var(--d-800);font-size:12px;font-weight:600;cursor:pointer}
+.pe__usar:hover{background:var(--d-100)}
+.pe__lista summary{display:inline-block;font-size:12.5px;font-weight:600;color:var(--n-600);cursor:pointer;border-radius:5px;list-style:none}
+.pe__lista summary::-webkit-details-marker{display:none}
+.pe__lista summary::before{content:"+ ";color:var(--n-500)}
+.pe__lista[open] summary::before{content:"– "}
+.pe__lista summary:hover{color:var(--n-900)}
+.pe__lista ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px;font-size:12.5px;color:var(--n-600)}
+.pe__lista li{overflow-wrap:anywhere}
+.pe__ir{padding:0;border:0;background:0;color:var(--link);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px;border-radius:4px}
+.pe__acoes{display:flex;justify-content:flex-start}
+.pe__desfazer{height:32px;font-size:12.5px}
+/* Campo preenchido pelo e-mail: dourado claro até a pessoa mexer nele. */
+.form-controle-wrapper.is-sugerido .form-controle,.form-controle-wrapper.is-sugerido .custom-select__trigger,.form-controle.is-sugerido{border-color:var(--d-400);background:var(--d-50)}
+.form-controle-wrapper.is-sugerido .custom-select__combobox{background:var(--d-50)}
+.cartao-escolha.is-sugerido{box-shadow:0 0 0 2px var(--d-300)}
+.interruptor.is-sugerido .interruptor__rotulo{padding:1px 6px;border-radius:5px;background:var(--d-50);box-shadow:0 0 0 1px var(--d-300)}
+@container (max-width:680px){.pe__zona{flex-wrap:wrap}.pe__colar{width:100%;justify-content:center}}
+@media (max-width:680px){.pe__zona{flex-wrap:wrap}.pe__colar{width:100%;justify-content:center}}
+/* Preencher com um e-mail — o vínculo com o e-mail lido (tela que voltou com erro ou recarregou). */
+.pe__vinculo{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0;padding:0 14px 12px;font-size:12.5px;color:var(--n-600)}
+.pe__desligar{padding:0;border:0;background:0;color:var(--link);font-size:12.5px;font-weight:600;text-decoration:underline;text-underline-offset:2px;cursor:pointer;border-radius:4px}
+.pe__desligar:focus-visible{box-shadow:0 0 0 3px var(--d-200)}
+
+/* ---------- Prestações — importar processo do eProtocolo (C1) ----------
+   O botão do topo e o ⋮ do ofício abrem o modal (moldura `an-*`); arrastar um
+   arquivo sobre a lista mostra a faixa "Solte para importar" e marca o ofício
+   de destino. A conferência/resultado segue as etapas da prestação: cartões
+   `section-card`, documentos em linhas cinza bem claro (como `pc-doc`), com a
+   miniatura da 1ª página e os botões ↺ ↻. No chip do comprovante, valor e data. */
+.pc-importar__nota{margin:0;font-size:12px;line-height:1.5;color:var(--n-500)}
+.pc-importar .an-arquivo.is-arrastando{border-color:var(--sel-r);background:var(--sel-b)}
+.pa-card--lista[data-importar-soltar]{position:relative}
+.pa-card--lista.is-soltando{outline:2px dashed var(--sel-r);outline-offset:-6px}
+/* A faixa fica no alto do cartão; o ofício sob o cursor se destaca (vai para a prestação dele). */
+.pc-soltar{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:12px;width:max-content;max-width:calc(100% - 32px);padding:10px 16px;border-radius:12px;background:var(--branco);color:var(--n-900);box-shadow:0 12px 30px -8px rgba(26,25,23,.35);pointer-events:none}
+.pc-soltar[hidden]{display:none}
+.pc-soltar .ui-icon{width:20px;height:20px;flex:none;color:var(--sel-f)}
+.pc-soltar span{display:grid;gap:2px;min-width:0}
+.pc-soltar b{font-size:13.5px;font-weight:600}
+.pc-soltar small{font-size:12px;color:var(--n-600)}
+.pc-oficio.is-alvo{border-radius:12px;box-shadow:inset 0 0 0 2px var(--sel-r);background:var(--sel-b)}
+.pc-chip__dado{margin-left:5px;font-weight:600;color:var(--n-800);font-variant-numeric:tabular-nums}
+/* Conferência / resultado */
+.pc-imp__fatos{display:flex;flex-wrap:wrap;gap:6px 22px;margin:0 0 14px;padding:0;list-style:none;font-size:13px;color:var(--n-800)}
+.pc-imp__fatos li{display:flex;align-items:baseline;gap:6px;min-width:0}
+.pc-imp__prestacao{display:grid;gap:12px;padding:12px 0 0;border-top:1px solid var(--n-150)}
+.pc-imp__destino{display:flex;align-items:center;gap:10px;margin:0;font-size:13.5px;color:var(--n-900)}
+.pc-imp__destino>.ui-icon{width:18px;height:18px;flex:none;color:var(--ok-t)}
+.pc-imp__destino span{display:grid;gap:2px;min-width:0}
+.pc-imp__destino small{font-size:12px;color:var(--n-500)}
+.pc-imp__destino--falta>.ui-icon{color:var(--av-t,#6b4e10)}
+.pc-imp__abrir{margin-left:auto;flex:none;font-size:12.5px;color:var(--link);white-space:nowrap}
+.pc-imp__escolha{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin:0}
+.pc-imp__escolha .form-campo{flex:1 1 360px;margin:0}
+.pc-imp__resultado{display:flex;align-items:center;gap:8px;margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--ok-b);color:var(--ok-t);font-size:13px;font-weight:500}
+.pc-imp__resultado .ui-icon{width:16px;height:16px;flex:none}
+.pc-imp__avisos{margin-top:12px}
+.pc-imp__contagem{font-size:12.5px;color:var(--n-500)}
+.pc-imp__docs{display:grid;gap:8px;margin:12px 0 0;padding:0;list-style:none}
+.pc-imp__doc{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:start;padding:12px;border-radius:10px;background:var(--n-50)}
+.pc-imp__doc--conferir{box-shadow:inset 3px 0 0 var(--av-t,#b7791f)}
+.pc-imp__doc--fora{opacity:.72}
+.pc-imp__mini{display:grid;justify-items:center;gap:6px;width:132px}
+.pc-imp__mini canvas{display:block;max-width:132px;min-height:60px;border-radius:4px;background:var(--branco);box-shadow:0 1px 2px rgba(0,0,0,.08),0 6px 16px rgba(0,0,0,.08)}
+.pc-imp__mini--falhou{visibility:hidden}
+.pc-imp__girar{display:flex;gap:4px}
+.pc-imp__girar button{width:32px;height:28px;padding:0;border:0;border-radius:7px;background:var(--n-150);color:var(--n-800);font-size:16px;line-height:1;cursor:pointer}
+.pc-imp__girar button:hover{background:var(--n-200)}
+.pc-imp__info{display:grid;gap:6px;min-width:0}
+.pc-imp__titulo{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px}
+.pc-imp__titulo b{font-size:13.5px;font-weight:600;color:var(--n-900)}
+.pc-imp__titulo .st{height:19px;padding:0 6px;border-radius:4px;font-size:10.5px}
+.pc-imp__num{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:999px;background:var(--branco);box-shadow:inset 0 0 0 1px var(--n-150);font-size:11.5px;font-weight:700;color:var(--n-600)}
+.pc-imp__meta,.pc-imp__evidencias{font-size:12px;color:var(--n-500);overflow-wrap:anywhere}
+.pc-imp__campos{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.5fr) repeat(3,minmax(0,1fr));gap:10px;align-items:end}
+.pc-imp__campo{min-width:0}
+.pc-imp__campo[hidden]{display:none}
+.pc-imp__campo .form-campo{margin:0}
+.pc-imp__lido{display:flex;flex-wrap:wrap;gap:6px 18px;margin:0;font-size:13px;color:var(--n-800)}
+.pc-imp__lido span{display:inline-flex;align-items:baseline;gap:6px}
+.pc-imp__lido a{display:inline-flex;align-items:center;gap:5px;color:var(--n-800)}
+.pc-imp__lido .ui-icon{width:13px;height:13px;color:var(--n-500)}
+.pc-imp__conferir{margin:0;padding-left:18px;font-size:12.5px;color:var(--av-t,#6b4e10)}
+@container (max-width:900px){.pc-imp__campos{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container (max-width:560px){.pc-imp__doc{grid-template-columns:minmax(0,1fr)}.pc-imp__mini{width:auto}.pc-imp__campos{grid-template-columns:minmax(0,1fr)}}
+.pc-imp__outros{margin:0;padding-left:18px;font-size:12.5px;color:var(--n-600)}
+.pc-imp__trocar>summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--n-600);list-style:none}
+.pc-imp__trocar>summary::-webkit-details-marker{display:none}
+.pc-imp__trocar>summary:hover{color:var(--n-900)}
+.pc-imp__trocar[open]>summary{margin-bottom:10px}
+
+/* =============================================================================
+   Preencher com um e-mail — Palestras (E2). A marca de "preenchido pelo
+   e-mail" (.is-sugerido, do preencher-por-email.js) nos cartões de tema e nas
+   linhas de palestrante, no mesmo dourado claro dos demais campos.
+   ========================================================================== */
+.pt-atividade.is-sugerido{box-shadow:0 0 0 2px var(--d-300)}
+.pt-atividade.is-sugerido:not(.is-selected){background:var(--d-50)}
+.lista-escolha .of-membro.is-sugerido{box-shadow:inset 0 0 0 2px var(--d-300)}
+.lista-escolha .of-membro.is-sugerido:not(.of-membro--viaja){background:var(--d-50)}
+
+/* =============================================================================
+   Coffee Break — importar processo de pagamento (C3).
+   pages/coffee_break/_importar_processo.html (modal na moldura `an-*`) +
+   js/coffee-break-importar.js: arrastar um PDF sobre a lista (.cbi-area) acende
+   a faixa; na etapa 3, a faixa tracejada (.cbi-etapa) recebe o arquivo. A tela
+   de conferência/resultado (pages/coffee_break/importacao_processo.html) usa
+   os cartões `section-card` e linhas em cinza bem claro, como as etapas.
+   ========================================================================== */
+.cbi-nota{margin:0;font-size:12px;line-height:1.5;color:var(--n-500)}
+.cbi-dialogo .an-arquivo.is-arrastando{border-color:var(--sel-r);background:var(--sel-b)}
+.cbi-area{position:relative;min-width:0}
+.cbi-area.is-soltando>.pa-card{outline:2px dashed var(--sel-r);outline-offset:-6px}
+.cbi-faixa{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:12px;width:max-content;max-width:calc(100% - 32px);padding:10px 16px;border-radius:12px;background:var(--branco);color:var(--n-900);box-shadow:0 12px 30px -8px rgba(26,25,23,.35);pointer-events:none}
+.cbi-faixa[hidden]{display:none}
+.cbi-faixa .ui-icon{width:20px;height:20px;flex:none;color:var(--sel-f)}
+.cbi-faixa span{display:grid;gap:2px;min-width:0}
+.cbi-faixa b{font-size:13.5px;font-weight:600}
+.cbi-faixa small{font-size:12px;color:var(--n-600)}
+/* Etapa 3: a faixa "Já protocolou?" acima dos marcos do pagamento. */
+.cbi-etapa{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:12px 14px;border:1.5px dashed var(--n-250);border-radius:12px;background:var(--n-25);transition:border-color var(--motion),background var(--motion)}
+.cbi-etapa.is-soltando{border-color:var(--sel-r);background:var(--sel-b)}
+.cbi-etapa__icone{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:9px;background:var(--branco);border:1px solid var(--n-200);color:var(--n-700)}
+.cbi-etapa__icone .ui-icon{width:18px;height:18px}
+.cbi-etapa__texto{flex:1 1 auto;display:grid;gap:2px;min-width:0;overflow-wrap:anywhere}
+.cbi-etapa__texto b{font-size:13.5px;font-weight:600;color:var(--n-900)}
+.cbi-etapa__texto small{font-size:12px;color:var(--n-500)}
+.cbi-etapa .btn--secundaria{flex:none}
+.cbi-etapa .btn--secundaria .ui-icon{width:15px;height:15px;margin-right:6px}
+@media (max-width:680px){.cbi-etapa{flex-wrap:wrap}.cbi-etapa .btn--secundaria{width:100%;justify-content:center}}
+/* Conferência e resultado */
+.cbi-fatos{margin:0 0 12px}
+.cbi-aviso{margin:12px 0 0}
+.cbi-aviso ul{margin:6px 0 0;padding-left:18px}
+.cbi-aviso a{color:inherit;font-weight:600;text-decoration:underline}
+.cbi-avisos{margin-top:12px}
+.cbi-form{display:grid;gap:14px;margin-top:14px}
+.cbi-outras{margin:0}
+.cbi-resumo{display:flex;align-items:center;gap:8px;margin:0 0 14px;padding:12px 14px;border-radius:10px;background:var(--ok-b);color:var(--ok-t);font-size:13px;font-weight:500}
+.cbi-resumo .ui-icon{width:16px;height:16px;flex:none}
+.cbi-sols{display:grid;gap:8px}
+.cbi-sol{display:grid;gap:6px;padding:12px 14px;border-radius:10px;background:var(--n-50)}
+.cbi-sol__titulo{margin:0;font-size:13.5px;font-weight:600}
+.cbi-sol__titulo a{color:var(--n-900)}
+.cbi-itens{display:grid;gap:4px;margin:0;padding:0;list-style:none;font-size:13px;line-height:1.45}
+.cbi-itens li{display:flex;align-items:flex-start;gap:8px;min-width:0;overflow-wrap:anywhere}
+.cbi-itens .ui-icon{width:15px;height:15px;flex:none;margin-top:2px}
+.cbi-itens--ok{color:var(--n-800)}
+.cbi-itens--ok .ui-icon{color:var(--ok-t)}
+.cbi-itens--pendente{color:var(--wn-t)}
+.cbi-notas{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.cbi-nota-linha{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,320px);gap:12px;align-items:end;padding:10px 12px;border-radius:10px;background:var(--n-50)}
+.cbi-nota-linha .form-campo{margin:0}
+.cbi-nota-linha__txt{display:grid;gap:2px;min-width:0;align-self:center}
+.cbi-nota-linha__txt b{font-size:13.5px;font-weight:600;color:var(--n-900)}
+.cbi-nota-linha__txt small{font-size:12px;color:var(--n-500);overflow-wrap:anywhere}
+.cbi-contagem{font-size:12.5px;color:var(--n-500)}
+.cbi-docs{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.cbi-doc{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:var(--n-50)}
+.cbi-doc__num{flex:none;display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:999px;background:var(--branco);box-shadow:inset 0 0 0 1px var(--n-150);font-size:11.5px;font-weight:700;color:var(--n-600)}
+.cbi-doc__txt{flex:1 1 auto;display:grid;gap:2px;min-width:0}
+.cbi-doc__txt b{font-size:13px;font-weight:600;color:var(--n-900)}
+.cbi-doc__txt small{font-size:12px;color:var(--n-500);overflow-wrap:anywhere}
+.cbi-doc__destino{flex:none;max-width:45%;height:auto;min-height:20px;padding:2px 7px;border-radius:5px;font-size:11px;line-height:1.35;white-space:normal;text-align:right}
+@media (max-width:680px){.cbi-nota-linha{grid-template-columns:minmax(0,1fr)}.cbi-doc{flex-wrap:wrap}.cbi-doc__destino{max-width:100%;text-align:left}}
+
+/* ---------- Importar processo do eProtocolo nas listas de Ofícios e Termos (C2) ----------
+   O mesmo modal e a mesma faixa "Solte para importar" da lista de Prestações;
+   aqui o alvo do arquivo solto é a linha do ofício ou do termo. Na conferência,
+   a lista de onde cada documento assinado ficou (ofício, termo de cada
+   servidor, OS), com o link para ver o assinado. */
+tr[data-importar-url].is-alvo>td{background:var(--sel-b)}
+tr[data-importar-url].is-alvo>td:first-child{box-shadow:inset 2px 0 0 var(--sel-r)}
+.m-item[data-importar-url].is-alvo{box-shadow:inset 0 0 0 2px var(--sel-r);background:var(--sel-b)}
+.pc-imp__assinados{display:grid;gap:4px;margin:0;padding:0;list-style:none;font-size:12.5px;color:var(--n-800)}
+.pc-imp__assinados li{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;min-width:0}
+.pc-imp__assinados li>.ui-icon{width:13px;height:13px;flex:none;color:var(--ok-t)}
+.pc-imp__assinados span{min-width:0;overflow-wrap:anywhere}
+.pc-imp__assinados small{color:var(--n-500)}
+.pc-imp__assinados a{color:var(--link);font-weight:600}
