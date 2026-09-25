@@ -144,7 +144,8 @@ _REGRAS: tuple[tuple[str, re.Pattern, float, str, str], ...] = (
     (DIARIO_BORDO, _r(r"PLACA (?:OFICIAL|RESERVADA):"), 0.4, "texto", "“Placa oficial / reservada”"),
     # Comprovante bancário.
     (COMPROVANTE,
-     _r(r"COMPROVANTE (?:DE |DO |DA )?(?:TRANSFERENCIA|PIX|SAQUE|PAGAMENTO|DEPOSITO|TED|DOC|OPERACAO|TRANSACAO)"),
+     # O "DE" pode vir estragado pelo OCR de foto ("COMPROVANTE DI TRANSFERENCIA").
+     _r(r"COMPROVANTE (?:[A-Z]{1,3} )?(?:TRANSFERENCIA|PIX|SAQUE|PAGAMENTO|DEPOSITO|TED|DOC|OPERACAO|TRANSACAO)"),
      0.9, "texto", "título “Comprovante de …”"),
     (COMPROVANTE, _r(r"RECIBO (?:DO |DE )?(?:SAQUE|TRANSFERENCIA|PAGAMENTO|DEPOSITO)"), 0.85, "texto",
      "título “Recibo de …”"),
@@ -158,6 +159,9 @@ _REGRAS: tuple[tuple[str, re.Pattern, float, str, str], ...] = (
      _r(r"TRANSFERENCIA (?:ENTRE CONTAS|REALIZADA|EFETUADA|ENVIADA|AGENDADA)"
         r"|\bTED\b.{0,40}(?:REALIZAD|EFETUAD|ENVIAD)|\bDOC\b.{0,40}(?:REALIZAD|EFETUAD)"),
      0.7, "texto", "transferência realizada"),
+    (COMPROVANTE,
+     _r(r"TRANSFERIDO PARA|DATA DA TRANSFERENCIA|DATA DO SAQUE|CARTAO DE CREDITO PARA CONTA"),
+     0.7, "texto", "transferência do cartão / data da operação"),
     (COMPROVANTE, _r(r"\bPIX\b.{0,200}(?:VALOR|CHAVE)|(?:VALOR|CHAVE).{0,200}\bPIX\b", re.S), 0.45, "texto",
      "Pix com valor/chave"),
     (COMPROVANTE,

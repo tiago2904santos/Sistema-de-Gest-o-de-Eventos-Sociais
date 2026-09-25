@@ -79,3 +79,20 @@ class ClassificarTests(SimpleTestCase):
     def test_rotulos_para_todos_os_tipos(self):
         self.assertEqual(set(c.TIPOS), set(c.ROTULOS))
         self.assertIn(c.DESCONHECIDO, c.TIPOS)
+
+
+class ComprovanteDeFotoTests(SimpleTestCase):
+    """Texto de OCR de foto do comprovante do caixa eletrônico do BB."""
+
+    def test_transferencia_do_cartao_para_conta_com_ocr_estragado(self):
+        from core.leitura.classificacao import COMPROVANTE, classificar
+
+        texto = (
+            "23/09/2020 BANCO DO BRAS 17:29:05\nCOMPROVANTE Di TRANSFERENCIA\n"
+            "DE CARTAO DE CREDITO PARA CONTA CORRENTE\nCLIENTE: FULANO DE TAL\n"
+            "DATA DA TRANSFERENCIA 23/09/202t\nVALOR TOTAL 871,65\n"
+            "TRANSFERIDO PARA:\nCLIENTE: FULANO DE TAL\nNR.AUTENTICACAO 0.CFF.B9C\n"
+        )
+        tipo, confianca, _ = classificar(texto)
+        self.assertEqual(tipo, COMPROVANTE)
+        self.assertGreaterEqual(confianca, 0.8)
