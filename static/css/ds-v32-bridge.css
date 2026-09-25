@@ -2888,3 +2888,27 @@ tr[data-importar-url].is-alvo>td:first-child{box-shadow:inset 2px 0 0 var(--sel-
 .pc-imp__assinados span{min-width:0;overflow-wrap:anywhere}
 .pc-imp__assinados small{color:var(--n-500)}
 .pc-imp__assinados a{color:var(--link);font-weight:600}
+
+/* ===== Prestações — importar vários arquivos de uma vez e ampliar na conferência ===== */
+.pc-lote{margin-top:12px;display:grid;gap:8px}
+.pc-lote__resumo{margin:0;font-size:13px;font-weight:600;color:var(--n-700)}
+.pc-lote__lista{list-style:none;margin:0;padding:0;display:grid;gap:4px;max-height:280px;overflow:auto;border:1px solid var(--n-200);border-radius:6px;padding:6px}
+.pc-lote__item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;align-items:center;padding:6px 8px;border-radius:4px;background:var(--n-50)}
+.pc-lote__arquivo{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-lote__detalhe{grid-column:1 / -1;font-size:12px;color:var(--n-600)}
+.pc-lote__detalhe a{font-weight:600}
+.pc-imp__ampliar{position:relative;display:block;padding:0;border:0;background:none;cursor:zoom-in;border-radius:4px}
+.pc-imp__ampliar:focus-visible{outline:2px solid var(--foco,#2d6fd6);outline-offset:2px}
+.pc-imp__lupa{position:absolute;right:6px;bottom:6px;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:rgba(20,24,30,.72);color:#fff;opacity:.85}
+.pc-imp__lupa svg{width:14px;height:14px}
+.pc-imp__ampliar:hover .pc-imp__lupa{opacity:1}
+.pc-zoom{width:min(1100px,96vw);height:92vh;max-height:92vh;padding:0;border:0;border-radius:10px;overflow:hidden;display:none;flex-direction:column}
+.pc-zoom[open]{display:flex}
+.pc-zoom::backdrop{background:rgba(10,14,20,.7)}
+.pc-zoom__barra{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 14px;border-bottom:1px solid var(--n-200);background:var(--branco)}
+.pc-zoom__barra b{font-size:15px}
+.pc-zoom__pagina{font-size:13px;color:var(--n-600)}
+.pc-zoom__acoes{margin-left:auto;display:flex;align-items:center;gap:6px}
+.pc-zoom__escala{min-width:48px;text-align:center;font-size:13px;font-variant-numeric:tabular-nums}
+.pc-zoom__area{flex:1;overflow:auto;padding:16px;background:var(--n-100,#eef0f2);text-align:center}
+.pc-zoom__area canvas{display:inline-block;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.18)}

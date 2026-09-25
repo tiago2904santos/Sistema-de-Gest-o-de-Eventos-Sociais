@@ -3,8 +3,9 @@
   assinado (`an-*`). Abre pelo botão do topo da lista (o registro é
   descoberto pelo conteúdo) ou pelo ⋮ de um ofício/termo (`data-url` do
   registro dele). Soltar o arquivo sobre a lista preenche este mesmo
-  formulário e envia. O envio é um POST comum: a view aplica sozinha quando a
-  leitura é segura, ou abre a conferência.
+  formulário e envia. Um arquivo: POST comum (a view aplica sozinha quando a
+  leitura é segura, ou abre a conferência). Vários: o JS manda um por vez
+  (fetch) e lista o resultado de cada um aqui mesmo (`data-importar-lote`).
 
   O mesmo modal serve às listas de Prestações, de Ofícios e de Termos:
   `importar_origem` ("prestacoes", o padrão; "oficios"; "termos") escolhe os
@@ -34,15 +35,20 @@
 
     <div class="an-caixa">
       <label class="an-escolher">
-        <input type="file" name="arquivo" accept="application/pdf,.pdf,image/png,image/jpeg,.png,.jpg,.jpeg" class="sr-only" data-importar-arquivo required>
-        {% if origem == "termos" %}Escolher o PDF{% else %}Escolher o PDF do processo{% endif %}
+        <input type="file" name="arquivo" accept="application/pdf,.pdf,image/png,image/jpeg,.png,.jpg,.jpeg" class="sr-only" data-importar-arquivo multiple required>
+        {% if origem == "termos" %}Escolher os PDFs{% else %}Escolher os arquivos{% endif %}
       </label>
       <div class="an-arquivo" data-importar-quadro>
-        <span class="an-arquivo__nome" data-importar-rotulo aria-live="polite">Nenhum arquivo escolhido — ou arraste o PDF para cá</span>
+        <span class="an-arquivo__nome" data-importar-rotulo aria-live="polite">Nenhum arquivo escolhido — ou arraste para cá (pode ser vários de uma vez)</span>
       </div>
       <p class="an-erro" data-importar-erro hidden></p>
     </div>
-    <p class="pc-importar__nota">PDF do eProtocolo (ou imagem PNG/JPG), até {{ importacao_limite_mb|default:25 }} MB. Quando a leitura é segura, os documentos entram sozinhos; senão, a conferência abre já preenchida.</p>
+    {# Vários arquivos: cada um é lido e vai para a sua prestação; o andamento aparece aqui. #}
+    <div class="pc-lote" data-importar-lote hidden>
+      <p class="pc-lote__resumo" data-importar-lote-resumo aria-live="polite"></p>
+      <ol class="pc-lote__lista" data-importar-lote-lista></ol>
+    </div>
+    <p class="pc-importar__nota">PDF do eProtocolo ou foto/print (PNG, JPG), até {{ importacao_limite_mb|default:25 }} MB cada. Pode mandar vários de uma vez — por exemplo, todos os comprovantes baixados do WhatsApp: cada um vai para a sua prestação. Quando a leitura é segura, entram sozinhos; senão, ficam para conferir.</p>
 
     <div class="an-rodape">
       <button type="button" class="btn--secundaria" data-importar-fechar>Cancelar</button>

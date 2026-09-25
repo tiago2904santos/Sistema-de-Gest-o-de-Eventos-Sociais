@@ -121,7 +121,10 @@
           {% for d in documentos %}{% with item=d.item %}
             <li class="pc-imp__doc{% if item.conferir and not aplicada %} pc-imp__doc--conferir{% endif %}{% if item.destino == 'ignorar' %} pc-imp__doc--fora{% endif %}" data-imp-doc="{{ d.ordem }}">
               <div class="pc-imp__mini">
-                <canvas data-imp-canvas data-pagina="{{ d.primeira }}" data-rotacao="{{ d.rotacao_planejada }}" role="img" aria-label="Primeira página do documento {{ d.ordem }}"></canvas>
+                <button type="button" class="pc-imp__ampliar" data-imp-ampliar data-paginas="{{ d.paginas_csv }}" data-titulo="{{ d.ordem }}. {{ d.rotulo }}" title="Ampliar para conferir" aria-label="Ampliar o documento {{ d.ordem }} para conferir">
+                  <canvas data-imp-canvas data-pagina="{{ d.primeira }}" data-rotacao="{{ d.rotacao_planejada }}" role="img" aria-label="Primeira página do documento {{ d.ordem }}"></canvas>
+                  <span class="pc-imp__lupa" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+                </button>
                 {% if editavel and not aplicada %}
                   <div class="pc-imp__girar">
                     <button type="button" data-imp-girar="-90" aria-label="Girar as páginas do documento {{ d.ordem }} para a esquerda" title="Girar para a esquerda">↺</button>
@@ -250,5 +253,21 @@
       </div>
     </section>
 </div>
+{# Visualizador ampliado: clique na miniatura; zoom e páginas do documento, no giro que vai ser gravado. #}
+<dialog class="pc-zoom" data-imp-zoom aria-labelledby="pc-zoom-titulo">
+  <div class="pc-zoom__barra">
+    <b id="pc-zoom-titulo" data-imp-zoom-titulo></b>
+    <span class="pc-zoom__pagina" data-imp-zoom-pagina></span>
+    <span class="pc-zoom__acoes">
+      <button type="button" class="btn--secundaria btn--compacto" data-imp-zoom-ir="-1" aria-label="Página anterior">‹</button>
+      <button type="button" class="btn--secundaria btn--compacto" data-imp-zoom-ir="1" aria-label="Próxima página">›</button>
+      <button type="button" class="btn--secundaria btn--compacto" data-imp-zoom-escala="-1" aria-label="Diminuir">−</button>
+      <span class="pc-zoom__escala" data-imp-zoom-escala-rotulo>100%</span>
+      <button type="button" class="btn--secundaria btn--compacto" data-imp-zoom-escala="1" aria-label="Aumentar">+</button>
+      <button type="button" class="btn-primaria btn--compacto" data-imp-zoom-fechar>Fechar</button>
+    </span>
+  </div>
+  <div class="pc-zoom__area" data-imp-zoom-area><canvas data-imp-zoom-canvas role="img" aria-label="Página ampliada"></canvas></div>
+</dialog>
 {% endblock %}
 {% block pc_js %}<script src="{% estatico 'vendor/pdfjs/pdf.min.js' %}"></script><script src="{% estatico 'js/prestacoes-importacao.js' %}" defer></script>{% endblock %}

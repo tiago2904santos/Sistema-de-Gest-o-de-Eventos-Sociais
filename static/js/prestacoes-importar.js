@@ -6,7 +6,10 @@
    - `[data-importar-soltar]` (o cartão da lista): arrastar um arquivo por cima
      mostra a faixa "Solte para importar"; soltar envia na hora. Soltado sobre o
      bloco de um ofício (`[data-importar-url]`), vai para a prestação dele.
-   - O envio é um POST comum: a resposta é a tela de resultado ou de conferência. */
+   - Um arquivo: POST comum (a resposta é a tela de resultado ou de conferência).
+   - Vários (ex.: os comprovantes baixados do WhatsApp): um fetch por arquivo,
+     em sequência — cada um vai para a sua prestação — e o andamento aparece
+     no próprio modal (`[data-importar-lote]`), com o link de cada resultado. */
 (function () {
   "use strict";
 
@@ -21,6 +24,10 @@
   var enviar = dialogo.querySelector("[data-importar-enviar]");
   var texto = dialogo.querySelector("[data-importar-texto]");
   var urlPadrao = form.getAttribute("data-url-padrao") || form.action;
+  var lote = dialogo.querySelector("[data-importar-lote]");
+  var loteResumo = dialogo.querySelector("[data-importar-lote-resumo]");
+  var loteLista = dialogo.querySelector("[data-importar-lote-lista]");
+  var emLote = false;
   var VAZIO = rotulo.textContent;
   var ACAO = enviar.textContent;
 
@@ -34,14 +41,123 @@
   }
 
   function atualizar() {
-    var arquivo = campo.files && campo.files[0];
+    var arquivos = Array.prototype.slice.call(campo.files || []);
     mostrarErro("");
-    quadro.classList.toggle("an-arquivo--escolhido", !!arquivo);
-    rotulo.textContent = arquivo ? arquivo.name : VAZIO;
-    var ok = !!arquivo && aceito(arquivo);
-    if (arquivo && !ok) mostrarErro("Escolha o PDF do processo (ou uma imagem PNG ou JPG).");
-    enviar.disabled = !ok;
+    quadro.classList.toggle("an-arquivo--escolhido", arquivos.length > 0);
+    if (!arquivos.length) rotulo.textContent = VAZIO;
+    else if (arquivos.length === 1) rotulo.textContent = arquivos[0].name;
+    else rotulo.textContent = arquivos.length + " arquivos: " + arquivos.map(function (a) { return a.name; }).join(", ");
+    var recusados = arquivos.filter(function (a) { return !aceito(a); });
+    var ok = arquivos.length > 0 && !recusados.length;
+    if (recusados.length) {
+      mostrarErro((recusados.length === 1 ? "Este arquivo não é PDF, PNG nem JPG: " : "Estes arquivos não são PDF, PNG nem JPG: ") +
+        recusados.map(function (a) { return a.name; }).join(", ") + ".");
+    }
+    enviar.disabled = !ok || emLote;
+    enviar.textContent = arquivos.length > 1 ? "Importar " + arquivos.length + " arquivos" : ACAO;
     return ok;
+  }
+
+  /* ---------- vários arquivos: um por vez, cada um para a sua prestação ---------- */
+  var ROTULOS = {
+    aplicada: ["Importado", "st--atendido"],
+    analisada: ["Conferir", "st--pendente"],
+    repetido: ["Já enviado", "st--neutro"],
+    erro: ["Não entrou", "st--cancelado"]
+  };
+
+  function linhaDoLote(nome) {
+    var li = document.createElement("li");
+    li.className = "pc-lote__item";
+    var arquivo = document.createElement("span");
+    arquivo.className = "pc-lote__arquivo";
+    arquivo.textContent = nome;
+    var selo = document.createElement("span");
+    selo.className = "st st--neutro";
+    selo.textContent = "Na fila";
+    var detalhe = document.createElement("span");
+    detalhe.className = "pc-lote__detalhe";
+    li.appendChild(arquivo);
+    li.appendChild(selo);
+    li.appendChild(detalhe);
+    loteLista.appendChild(li);
+    return { li: li, selo: selo, detalhe: detalhe };
+  }
+
+  function marcarLinha(linha, situacao, texto, url) {
+    var par = ROTULOS[situacao] || ROTULOS.erro;
+    linha.selo.className = "st " + par[1];
+    linha.selo.textContent = par[0];
+    linha.detalhe.textContent = texto || "";
+    if (url) {
+      var link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.textContent = situacao === "analisada" ? "Conferir" : "Ver";
+      linha.detalhe.appendChild(document.createTextNode(" "));
+      linha.detalhe.appendChild(link);
+    }
+  }
+
+  function enviarUm(arquivo) {
+    var dados = new FormData(form);
+    dados.set("arquivo", arquivo, arquivo.name);
+    return fetch(form.action, {
+      method: "POST",
+      body: dados,
+      credentials: "same-origin",
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    }).then(function (resposta) {
+      return resposta.json().catch(function () { return { ok: false, error: "Resposta inesperada do servidor (" + resposta.status + ")." }; });
+    }).catch(function () {
+      return { ok: false, error: "Sem conexão com o servidor." };
+    });
+  }
+
+  function importarVarios(arquivos) {
+    emLote = true;
+    lote.hidden = false;
+    loteLista.textContent = "";
+    enviar.disabled = true;
+    campo.disabled = true;
+    var contagem = { aplicada: 0, analisada: 0, repetido: 0, erro: 0 };
+    var linhas = arquivos.map(function (a) { return linhaDoLote(a.name); });
+    var feito = 0;
+
+    function resumir(fim) {
+      var partes = [];
+      if (contagem.aplicada) partes.push(contagem.aplicada + " importado" + (contagem.aplicada > 1 ? "s" : ""));
+      if (contagem.analisada) partes.push(contagem.analisada + " para conferir");
+      if (contagem.repetido) partes.push(contagem.repetido + " já enviado" + (contagem.repetido > 1 ? "s" : ""));
+      if (contagem.erro) partes.push(contagem.erro + " não entr" + (contagem.erro > 1 ? "aram" : "ou"));
+      loteResumo.textContent = (fim ? "Pronto: " : "Lendo " + (feito + 1) + " de " + arquivos.length + "… ") + partes.join(" · ");
+    }
+
+    var fila = Promise.resolve();
+    arquivos.forEach(function (arquivo, i) {
+      fila = fila.then(function () {
+        resumir(false);
+        linhas[i].selo.textContent = "Lendo…";
+        return enviarUm(arquivo).then(function (r) {
+          var situacao = r.ok ? (r.situacao || "analisada") : "erro";
+          if (!(situacao in contagem)) situacao = "analisada";
+          contagem[situacao] += 1;
+          var texto = r.ok ? (r.destino ? "→ " + r.destino : "") : (r.error || r.message || "Não foi possível ler.");
+          if (r.ok && situacao === "analisada" && !r.destino) texto = "prestação não identificada";
+          marcarLinha(linhas[i], situacao, texto, r.ok ? r.url : "");
+          feito += 1;
+        });
+      });
+    });
+    return fila.then(function () {
+      resumir(true);
+      emLote = false;
+      campo.disabled = false;
+      enviar.textContent = "Fechar e atualizar a lista";
+      enviar.disabled = false;
+      enviar.setAttribute("data-importar-recarregar", "");
+    });
   }
 
   function fecharMenu(origem) {
@@ -53,7 +169,11 @@
   }
 
   function abrir(url, titulo) {
+    if (emLote) { if (!dialogo.open) dialogo.showModal(); return; }
     form.reset();
+    lote.hidden = true;
+    loteLista.textContent = "";
+    enviar.removeAttribute("data-importar-recarregar");
     form.action = url || urlPadrao;
     if (texto) {
       // `data-texto-registro` é o texto de cada lista (Prestações, Ofícios, Termos), com {titulo}.
@@ -87,7 +207,18 @@
     if (evento.target === dialogo) dialogo.close();
   });
   form.addEventListener("submit", function (evento) {
+    if (enviar.hasAttribute("data-importar-recarregar")) {
+      evento.preventDefault();
+      window.location.reload();
+      return;
+    }
     if (!atualizar()) { evento.preventDefault(); return; }
+    var arquivos = Array.prototype.slice.call(campo.files || []);
+    if (arquivos.length > 1) {
+      evento.preventDefault();
+      importarVarios(arquivos);
+      return;
+    }
     enviando();
   });
 
@@ -106,6 +237,10 @@
       return;
     }
     if (!atualizar()) return;
+    if (arquivos.length > 1) {
+      importarVarios(Array.prototype.slice.call(arquivos));
+      return;
+    }
     enviando();
     form.submit();
   }
