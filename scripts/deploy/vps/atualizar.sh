@@ -35,6 +35,15 @@ else
   exit 1
 fi
 
+echo "== OCR (tesseract, só na primeira vez)"
+# Lê comprovantes que são foto ou print (core/leitura/ocr.py). Instala uma
+# vez só; se o apt falhar, o sistema segue sem OCR e pede os dados na tela.
+if ! command -v tesseract >/dev/null 2>&1 || ! tesseract --list-langs 2>/dev/null | grep -qx por; then
+  DEBIAN_FRONTEND=noninteractive apt-get install -y -q tesseract-ocr tesseract-ocr-por \
+    || { apt-get update -q && DEBIAN_FRONTEND=noninteractive apt-get install -y -q tesseract-ocr tesseract-ocr-por; } \
+    || echo "AVISO: não deu para instalar o tesseract; o OCR fica desligado."
+fi
+
 echo "== dependências"
 sudo -u eventos .venv/bin/pip install -q -r requirements.txt gunicorn
 

@@ -32,12 +32,17 @@ resolve, e sai de graça.
 apt update
 apt install -y python3.12-venv python3-pip postgresql nginx certbot \
   python3-certbot-nginx git \
-  libpango-1.0-0 libpangoft2-1.0-0 libcairo2 libgdk-pixbuf-2.0-0
+  libpango-1.0-0 libpangoft2-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 \
+  tesseract-ocr tesseract-ocr-por
 ```
 
 As quatro últimas são o GTK de que o WeasyPrint precisa para gerar PDF. Sem
 elas o sistema sobe e só quebra na hora de emitir documento — que é o pior
 momento para descobrir.
+
+O `tesseract-ocr` (com o português) lê os comprovantes que chegam como foto
+ou print. O `atualizar.sh` instala sozinho na primeira vez; sem ele o sistema
+funciona e pede o valor e a data na tela.
 
 ## 2. Usuário e diretórios
 
