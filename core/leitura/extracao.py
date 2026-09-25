@@ -646,6 +646,25 @@ def _banco(texto: str) -> str:
     return achados[0][2]
 
 
+_RX_NOME_ROTULADO = re.compile(
+    r"^(?:.*\b)?(?:CLIENTE|NOME|FAVORECIDO|TITULAR|DESTINATARIO|RECEBEDOR|BENEFICIARIO|PAGADOR|SACADOR|CORRENTISTA)"
+    r"\s*:?\s*([A-Z][A-Z ]{5,})$"
+)
+_NAO_E_PESSOA = re.compile(r"\b(?:CARTAO|CREDITO|DEBITO|CONTA|BANCO|AGENCIA|PAGAMENTOS|LTDA|S A|INSTITUICAO)\b")
+
+
+def _nomes_de_pessoa(linhas: list[str]) -> list[str]:
+    nomes = []
+    for linha in linhas:
+        m = _RX_NOME_ROTULADO.match(normalizar(linha))
+        if not m:
+            continue
+        nome = " ".join(m.group(1).split())
+        if len(nome.split()) >= 2 and not _NAO_E_PESSOA.search(nome) and nome not in nomes:
+            nomes.append(nome)
+    return nomes
+
+
 def _comprovante(texto: str) -> dict:
     plano = normalizar(texto)
     linhas = [linha.strip() for linha in texto.splitlines() if linha.strip()]
@@ -671,6 +690,12 @@ def _comprovante(texto: str) -> dict:
         escolhido = favorecido or titular or pagador
     if escolhido:
         dados["nome"] = escolhido[0]
+    # Todos os nomes de pessoa do comprovante: no caixa do BB, o cartão sai no
+    # nome curto ("CLIENTE: FULANA PEREIRA") e a conta em outro ("TRANSFERIDO
+    # PARA: CLIENTE: FULANA VILLELA DE"); qualquer um pode ser o do cadastro.
+    nomes = _nomes_de_pessoa(linhas)
+    if nomes:
+        dados["nomes"] = nomes
 
     # O CPF da pessoa escolhida: o mascarado mais próximo depois do nome;
     # sem isso, o primeiro do comprovante.

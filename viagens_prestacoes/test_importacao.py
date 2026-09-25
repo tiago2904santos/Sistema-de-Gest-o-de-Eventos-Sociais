@@ -584,3 +584,44 @@ class ComprovanteAvulsoTests(ImportacaoBase):
         self.ps[NOMES[0]].definir_finalizada(True)
         plano = analisar(self._comprovante(), "comprovante.pdf")
         self.assertNotEqual(plano.prestacao_id, self.prestacao.pk)
+
+
+class ComprovanteDoCaixaTests(ImportacaoBase):
+    """Caixa do BB: o cartão no nome curto e a conta em outro nome, sem CPF."""
+
+    def _texto(self, cartao, conta, valor="871,65"):
+        hoje = timezone.localdate().strftime("%d/%m/%Y")
+        return f.pagina([
+            f"{hoje} - BANCO DO BRASIL - 17:29:03",
+            "COMPROVANTE DE TRANSFERENCIA",
+            "DE CARTAO DE CREDITO PARA CONTA CORRENTE",
+            f"CLIENTE: {cartao}",
+            "CARTAO.: **** **** **** 8135",
+            f"DATA DA TRANSFERENCIA {hoje}",
+            f"VALOR TOTAL {valor}",
+            "****** TRANSFERIDO PARA:",
+            f"CLIENTE: {conta}",
+            "AGENCIA: 1243-2 CONTA: 53.322-X",
+            "NR.AUTENTICACAO 0.CFF.B9C.A2F.D9D.C3D",
+        ], fonte=11)
+
+    def test_acha_pelo_nome_da_conta_mesmo_com_valor_acima_do_calculado(self):
+        cargo = self.servidores[0].cargo
+        maria = Servidor.objects.create(nome="MARIA VILLELA DE SOUZA", cargo=cargo)
+        fixture = self.criar_prestacao(numero=30, ano=2026, servidores=[maria])
+        plano = analisar(self._texto("MARIA PEREIRA", "MARIA VILLELA DE", valor="9.871,65"), "foto.pdf")
+        self.assertEqual(plano.prestacao_id, fixture.prestacao.pk)
+        item = next(i for i in plano.itens if i.tipo_lido == "comprovante")
+        self.assertEqual(item.servidor_prestacao_id, fixture.prestacoes_servidor[0].pk)
+
+    def test_acha_pelo_nome_curto_do_cartao(self):
+        cargo = self.servidores[0].cargo
+        maria = Servidor.objects.create(nome="MARIA VILLELA DE SOUZA PEREIRA", cargo=cargo)
+        fixture = self.criar_prestacao(numero=31, ano=2026, servidores=[maria])
+        plano = analisar(self._texto("MARIA PEREIRA", "OUTRA CONTA QUALQUER"), "foto.pdf")
+        self.assertEqual(plano.prestacao_id, fixture.prestacao.pk)
+
+    def test_sem_servidor_com_o_nome_explica_quais_nomes_leu(self):
+        plano = analisar(self._texto("ZULMIRA NINGUEM", "ZULMIRA NINGUEM DE"), "foto.pdf")
+        self.assertIsNone(plano.prestacao_id)
+        self.assertTrue(any("ZULMIRA NINGUEM" in a for a in plano.avisos), plano.avisos)

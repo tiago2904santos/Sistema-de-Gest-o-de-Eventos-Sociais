@@ -151,6 +151,10 @@ def semelhanca_nome(lido: str, cadastrado: str) -> float:
     # Primeiro e último batem (nome do meio omitido).
     if len(a) >= 2 and a[0] == b[0] and a[-1] == b[-1]:
         return 0.88
+    # Nome curto do cartão: primeiro nome e um dos sobrenomes ("FULANA PEREIRA"
+    # para "FULANA VILLELA DE SOUZA PEREIRA LIMA").
+    if len(a) == 2 and a[0] == b[0] and len(a[1]) >= 3 and a[1] in b[1:]:
+        return 0.86
     return round(SequenceMatcher(None, " ".join(a), " ".join(b)).ratio(), 3)
 
 
@@ -342,7 +346,7 @@ def _donos_do_comprovante(comprovantes) -> list[tuple[object, float, list[str]]]
     melhores: dict[int, tuple[object, float, list[str]]] = {}
     for doc in comprovantes:
         dados = doc.dados or {}
-        nomes = [n for n in (dados.get("nome"), dados.get("favorecido")) if n]
+        nomes = list(dict.fromkeys(n for n in [dados.get("nome"), dados.get("favorecido"), *dados.get("nomes", [])] if n))
         meio, pontas = dados.get("cpf_meio", ""), dados.get("cpf_pontas", "")
         valor, dia = dados.get("valor"), dados.get("data")
         for ps in abertos:
@@ -358,27 +362,32 @@ def _donos_do_comprovante(comprovantes) -> list[tuple[object, float, list[str]]]
             if nota_nome >= NOME_CASA:
                 nota += 0.8 * nota_nome
                 motivos.append(f"nome no comprovante confere com {ps.servidor.nome}")
+            # Valor e data só pesam: o cadastro pode estar incompleto (diária
+            # não calculada, liberação não informada) e nem por isso o
+            # comprovante deixa de ser dele.
             if valor is not None:
                 try:
                     liberado = valor_diaria_liberado(ps)
                 except Exception:  # roteiro incompleto: sem teto
                     liberado = None
-                if liberado is not None:
+                if liberado:
                     if valor > liberado + Decimal("0.01"):
-                        continue  # ninguém saca mais do que foi liberado
-                    nota += 0.3
-                    if liberado - valor < 1:
-                        nota += 0.2
-                        motivos.append("valor igual ao da diária liberada")
+                        nota -= 0.4
+                        motivos.append("valor acima da diária liberada — confira")
                     else:
-                        motivos.append("valor dentro da diária liberada")
+                        nota += 0.3
+                        if liberado - valor < 1:
+                            nota += 0.2
+                            motivos.append("valor igual ao da diária liberada")
+                        else:
+                            motivos.append("valor dentro da diária liberada")
             if dia is not None:
                 criado = ps.prestacao.oficio.data_criacao
-                if criado and dia < criado - timedelta(days=30):
-                    continue  # comprovante de antes da viagem existir
+                if criado and dia < criado - timedelta(days=60):
+                    nota -= 0.5
                 if ps.data_liberacao_diarias:
                     if dia < ps.data_liberacao_diarias:
-                        nota -= 0.5
+                        nota -= 0.3
                     else:
                         nota += 0.3
                         if not ps.prazo_limite_saque or dia <= ps.prazo_limite_saque:
@@ -389,7 +398,7 @@ def _donos_do_comprovante(comprovantes) -> list[tuple[object, float, list[str]]]
                 motivos.append("ainda sem comprovante anexado")
             atual = melhores.get(ps.pk)
             if atual is None or nota > atual[1]:
-                melhores[ps.pk] = (ps, round(nota, 2), motivos)
+                melhores[ps.pk] = (ps, round(max(nota, 0.05), 2), motivos)
     return sorted(melhores.values(), key=lambda item: -item[1])
 
 
@@ -515,9 +524,19 @@ def _identificar(
         return resultado
 
     if not ranking or ranking[0].pontos <= 0:
-        resultado.avisos.append(
-            "Não foi possível descobrir de qual prestação é este processo: escolha o ofício."
-        )
+        nomes = [
+            n for d in processo.documentos if d.tipo == tipos.COMPROVANTE
+            for n in dict.fromkeys([(d.dados or {}).get("nome"), *(d.dados or {}).get("nomes", [])]) if n
+        ]
+        if nomes:
+            resultado.avisos.append(
+                "Nenhuma prestação aberta tem servidor com o nome do comprovante "
+                f"({', '.join(dict.fromkeys(nomes))}): escolha o ofício."
+            )
+        else:
+            resultado.avisos.append(
+                "Não foi possível descobrir de qual prestação é este processo: escolha o ofício."
+            )
         return resultado
 
     lider = ranking[0]
@@ -660,14 +679,17 @@ def _servidor_do_comprovante(doc, equipe) -> tuple[_Membro | None, list[str], bo
             notas[id(por_cpf[0])] += 0.6
             certeza[id(por_cpf[0])] = True
             motivos[id(por_cpf[0])].append("CPF mascarado confere")
-    nome = dados.get("nome", "")
-    if nome:
+    nomes = list(dict.fromkeys(n for n in [dados.get("nome"), dados.get("favorecido"), *dados.get("nomes", [])] if n))
+    if nomes:
+        def nota_do_nome(m):
+            return max(semelhanca_nome(n, m.nome) for n in nomes)
+
         for m in equipe:
-            nota = semelhanca_nome(nome, m.nome)
+            nota = nota_do_nome(m)
             if nota >= NOME_CASA:
                 notas[id(m)] += 0.4 * nota
                 motivos[id(m)].append("nome no comprovante confere")
-        casados = [m for m in equipe if semelhanca_nome(nome, m.nome) >= NOME_CASA]
+        casados = [m for m in equipe if nota_do_nome(m) >= NOME_CASA]
         if len(casados) == 1:
             certeza[id(casados[0])] = True
     # Na falta de CPF e nome: quem inseriu ou assinou o comprovante no eProtocolo.
@@ -680,7 +702,8 @@ def _servidor_do_comprovante(doc, equipe) -> tuple[_Membro | None, list[str], bo
     for m in equipe:
         if valor is not None and m.liberado is not None:
             if valor > m.liberado:
-                notas[id(m)] -= 0.3
+                # Só desempata: a diária calculada pode estar desatualizada.
+                notas[id(m)] -= 0.05
             elif notas[id(m)] > 0:
                 notas[id(m)] += 0.05
 
