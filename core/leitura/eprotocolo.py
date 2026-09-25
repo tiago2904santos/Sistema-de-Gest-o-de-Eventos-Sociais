@@ -617,28 +617,48 @@ def _volume_e_protocolo(*nomes: str) -> tuple[str, int | None]:
     return "", None
 
 
-#: Dados do comprovante que, faltando, pedem a segunda leitura da foto.
-_ESSENCIAIS_COMPROVANTE = ("valor", "data", "nome")
+#: Os que as duas leituras precisam dar igual para o comprovante valer sem conferência.
+_CONFERIDOS_COMPROVANTE = ("valor", "data")
 
 
-def _completar_foto(dados: bytes, documentos: list[Documento]) -> None:
-    """Foto de comprovante com dado faltando: lê de novo, direto da imagem, e completa."""
-    faltando = [
-        d for d in documentos
-        if d.tipo == tipos.COMPROVANTE and any(not d.dados.get(c) for c in _ESSENCIAIS_COMPROVANTE)
-    ]
-    if not faltando:
-        return
-    from . import ocr
+def _conferir_foto(dados: bytes, documentos: list[Documento]) -> bool:
+    """Foto de comprovante: lê de novo, direto da imagem, e compara com a primeira leitura.
 
+    A segunda leitura completa o que faltou e confere valor e data. Cada comprovante
+    fica com `dados["leituras"]`: "conferem" (as duas leituras deram o mesmo valor e
+    a mesma data), "divergem" (deram diferente — a divergência vai em
+    `dados["divergencias"]`) ou "" (só uma leitura achou). Devolve se alguma conferiu.
+    """
+    comprovantes = [d for d in documentos if d.tipo == tipos.COMPROVANTE]
+    if not comprovantes:
+        return False
     texto = ocr.texto_de_foto(dados)
     if not texto:
-        return
+        return False
     extra = dados_do_documento(tipos.COMPROVANTE, texto)
-    for doc in faltando:
+    algum = False
+    for doc in comprovantes:
+        divergencias = []
+        iguais = 0
+        for chave in _CONFERIDOS_COMPROVANTE:
+            primeira, segunda = doc.dados.get(chave), extra.get(chave)
+            if primeira and segunda:
+                if primeira == segunda:
+                    iguais += 1
+                else:
+                    divergencias.append((chave, primeira, segunda))
         for chave, valor in extra.items():
             if valor and not doc.dados.get(chave):
                 doc.dados[chave] = valor
+        if divergencias:
+            doc.dados["leituras"] = "divergem"
+            doc.dados["divergencias"] = divergencias
+        elif iguais == len(_CONFERIDOS_COMPROVANTE):
+            doc.dados["leituras"] = "conferem"
+            algum = True
+        else:
+            doc.dados["leituras"] = ""
+    return algum
 
 
 def ler_processo(dados: bytes, nome_arquivo: str = "") -> Processo:
@@ -695,14 +715,15 @@ def ler_processo(dados: bytes, nome_arquivo: str = "") -> Processo:
         if indices
     ]
 
+    conferida = False
     if not dados[:5].startswith(b"%PDF") and documentos:
-        _completar_foto(dados, documentos)
+        conferida = _conferir_foto(dados, documentos)
 
     if eh_eprotocolo:
         aviso = _aviso_de_folhas(molduras, volume)
         if aviso:
             avisos.append(aviso)
-    if sem_texto:
+    if sem_texto and not conferida:
         if lidas:
             avisos.append(f"{sem_texto} página(s) só de imagem; o OCR leu {lidas}. Confira os dados dessas páginas.")
         else:

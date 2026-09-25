@@ -627,6 +627,83 @@ class ComprovanteDoCaixaTests(ImportacaoBase):
         self.assertTrue(any("ZULMIRA NINGUEM" in a for a in plano.avisos), plano.avisos)
 
 
+class ComprovanteSemConferenciaTests(ImportacaoBase):
+    """A foto do comprovante entra sozinha quando não há dúvida, e não entra duas vezes."""
+
+    def _enviar(self, pdf, nome):
+        return self.client.post(
+            reverse("viagens_prestacoes:importacao_enviar"),
+            {"arquivo": SimpleUploadedFile(nome, pdf, content_type="application/pdf"), "origem": "prestacoes"},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        ).json()
+
+    def _comprovante(self, valor, *, extra=()):
+        hoje = timezone.localdate().strftime("%d/%m/%Y")
+        linhas = f.linhas_comprovante("bb_saque", nome=NOMES[0], cpf=self.cpfs[0], valor=valor, data=hoje)
+        return f.pagina([*linhas, *extra], fonte=11)
+
+    def _comprovantes(self):
+        return list(Anexo.objects.filter(tipo=Anexo.TIPO_COMPROVANTE, servidor_prestacao=self.ps[NOMES[0]]).order_by("valor"))
+
+    def test_segundo_comprovante_do_mesmo_servidor_soma_ao_primeiro(self):
+        for valor, nome in (("100,00", "a.pdf"), ("90,00", "b.pdf")):
+            self.assertEqual(self._enviar(self._comprovante(valor), nome)["situacao"], ImportacaoProcesso.SITUACAO_APLICADA)
+        self.assertEqual([a.valor for a in self._comprovantes()], [Decimal("90.00"), Decimal("100.00")])
+
+    def test_mesmo_comprovante_em_outro_arquivo_nao_entra_de_novo(self):
+        self._enviar(self._comprovante("100,00"), "a.pdf")
+        # O WhatsApp recomprime: outro arquivo, mesmo comprovante.
+        resposta = self._enviar(self._comprovante("100,00", extra=["ENVIADO PELO WHATSAPP"]), "a (1).pdf")
+        self.assertEqual(resposta["situacao"], "repetido")
+        self.assertIn("Já está na prestação", " ".join(resposta["mensagens"]))
+        self.assertEqual(len(self._comprovantes()), 1)
+        self.assertEqual(ImportacaoProcesso.objects.count(), 1)
+
+    def test_aplicar_de_novo_nao_duplica_o_comprovante(self):
+        url = self._enviar(self._comprovante("100,00"), "a.pdf")["url"]
+        importacao = ImportacaoProcesso.objects.get()
+        self.client.post(reverse("viagens_prestacoes:importacao_aplicar", args=[importacao.pk]), {"acao": "aplicar"})
+        self.assertTrue(url)
+        self.assertEqual(len(self._comprovantes()), 1)
+
+    def test_desfazer_tira_o_comprovante_e_volta_para_a_conferencia(self):
+        self._enviar(self._comprovante("100,00"), "a.pdf")
+        importacao = ImportacaoProcesso.objects.get()
+        tela = self.client.get(reverse("viagens_prestacoes:importacao_detalhe", args=[importacao.pk]))
+        self.assertContains(tela, reverse("viagens_prestacoes:importacao_desfazer", args=[importacao.pk]))
+        self.client.post(reverse("viagens_prestacoes:importacao_desfazer", args=[importacao.pk]))
+        importacao.refresh_from_db()
+        self.assertEqual(importacao.situacao, ImportacaoProcesso.SITUACAO_ANALISADA)
+        self.assertEqual(self._comprovantes(), [])
+
+    def test_nao_desfaz_o_que_substituiu_documentos(self):
+        from .importacao import pode_desfazer
+
+        importacao = ImportacaoProcesso(situacao=ImportacaoProcesso.SITUACAO_APLICADA,
+                                        resultado={"anexos": [{"id": 1}], "substituidos": 2})
+        self.assertFalse(pode_desfazer(importacao))
+        importacao.resultado = {"anexos": [{"id": 1}], "substituidos": 0}
+        self.assertTrue(pode_desfazer(importacao))
+
+    def test_homonimo_em_outra_prestacao_vai_para_conferencia(self):
+        cargo = self.servidores[0].cargo
+        hoje = timezone.localdate().strftime("%d/%m/%Y")
+        for numero, nome in ((40, "MARIA VILLELA DE SOUZA"), (41, "MARIA VILLELA DE SOUZA LIMA")):
+            outra = Servidor.objects.create(nome=nome, cargo=cargo)
+            self.criar_prestacao(numero=numero, ano=2026, servidores=[outra])
+        pdf = f.pagina(["COMPROVANTE DE TRANSFERENCIA", "CLIENTE: MARIA VILLELA DE SOUZA",
+                        f"DATA DA TRANSFERENCIA {hoje}", "VALOR TOTAL 100,00"], fonte=11)
+        plano = analisar(pdf, "foto.pdf")
+        self.assertFalse(plano.identificacao_segura)
+        self.assertTrue(any("também" in a for a in plano.avisos), plano.avisos)
+
+    def test_frase_da_divergencia_das_duas_leituras(self):
+        from .importacao.analise import _frase_da_divergencia
+
+        frase = _frase_da_divergencia([("valor", Decimal("958.82"), Decimal("358.82"))])
+        self.assertIn("R$ 958,82 ou R$ 358,82", frase)
+
+
 class EnvioEmLoteTests(ImportacaoBase):
     """Vários arquivos de uma vez: o JS manda um por vez e lê o JSON de cada um."""
 

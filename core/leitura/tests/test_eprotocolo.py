@@ -363,6 +363,46 @@ class SegundaLeituraDaFotoTests(SimpleTestCase):
                         dados={"data": None, "nome": "FULANO DE TAL"})
         texto = "COMPROVANTE DE TRANSFERENCIA\nDATA DA TRANSFERENCIA 23/09/2026\nVALOR TOTAL 958, 82\n"
         with mock.patch("core.leitura.ocr.texto_de_foto", return_value=texto):
-            eprotocolo._completar_foto(saida.getvalue(), [doc])
+            eprotocolo._conferir_foto(saida.getvalue(), [doc])
         self.assertEqual(str(doc.dados["valor"]), "958.82")
         self.assertEqual(doc.dados["nome"], "FULANO DE TAL")
+
+    def _doc(self, **dados):
+        from core.leitura.eprotocolo import Documento
+
+        return Documento(ordem=1, paginas=[0], titulo="", codigo="", assinaturas=[], inserido_por="",
+                         inserido_em=None, folhas_assinatura=[], aninhado=False, tipo="comprovante", dados=dados)
+
+    def _foto(self):
+        from io import BytesIO
+
+        from PIL import Image
+
+        saida = BytesIO()
+        Image.new("RGB", (40, 40), "white").save(saida, format="JPEG")
+        return saida.getvalue()
+
+    def test_duas_leituras_iguais_conferem(self):
+        from datetime import date
+        from decimal import Decimal
+
+        from core.leitura import eprotocolo
+
+        doc = self._doc(valor=Decimal("958.82"), data=date(2026, 9, 23), nome="FULANO DE TAL")
+        texto = "COMPROVANTE DE TRANSFERENCIA\nDATA DA TRANSFERENCIA 23/09/2026\nVALOR TOTAL 958,82\n"
+        with mock.patch("core.leitura.ocr.texto_de_foto", return_value=texto):
+            self.assertTrue(eprotocolo._conferir_foto(self._foto(), [doc]))
+        self.assertEqual(doc.dados["leituras"], "conferem")
+
+    def test_leituras_diferentes_divergem(self):
+        from datetime import date
+        from decimal import Decimal
+
+        from core.leitura import eprotocolo
+
+        doc = self._doc(valor=Decimal("958.82"), data=date(2026, 9, 23), nome="FULANO DE TAL")
+        texto = "COMPROVANTE DE TRANSFERENCIA\nDATA DA TRANSFERENCIA 23/09/2026\nVALOR TOTAL 358,82\n"
+        with mock.patch("core.leitura.ocr.texto_de_foto", return_value=texto):
+            self.assertFalse(eprotocolo._conferir_foto(self._foto(), [doc]))
+        self.assertEqual(doc.dados["leituras"], "divergem")
+        self.assertEqual(doc.dados["divergencias"][0][0], "valor")

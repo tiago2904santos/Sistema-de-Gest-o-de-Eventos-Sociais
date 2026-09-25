@@ -313,13 +313,15 @@ def _candidatos(processo: Processo, *, incluir: PrestacaoContas | None = None) -
     # ofício nem protocolo — quem transferiu ou sacou diz de qual prestação é.
     comprovantes = [d for d in processo.documentos if d.tipo == tipos.COMPROVANTE]
     if not pontos and comprovantes:
-        for ps, nota, motivos in _donos_do_comprovante(comprovantes):
+        for ps, nota, motivos, alertas in _donos_do_comprovante(comprovantes):
             c = candidato(ps.prestacao.oficio)
             if c is None:
                 continue
             if nota > c.pontos:
                 c.pontos = nota
                 c.motivos = motivos
+                c.servidor_id = ps.servidor_id
+                c.alertas = alertas
             if "comprovante" not in c.fontes:
                 c.fontes.append("comprovante")
 
@@ -328,13 +330,14 @@ def _candidatos(processo: Processo, *, incluir: PrestacaoContas | None = None) -
     return pontos
 
 
-def _donos_do_comprovante(comprovantes) -> list[tuple[object, float, list[str]]]:
+def _donos_do_comprovante(comprovantes) -> list[tuple[object, float, list[str], list[str]]]:
     """Servidores de prestações abertas que podem ter feito o comprovante, pontuados.
 
     Casa o CPF mascarado ou o nome (tolerante a truncado e sem acento) com os
     servidores das prestações não finalizadas; o valor não pode passar da diária
     liberada; a data deve caber na liberação/prazo de saque; quem ainda não tem
-    comprovante anexado ganha preferência.
+    comprovante anexado ganha preferência. Devolve (servidor da prestação, pontos,
+    motivos, alertas); os alertas são o que pesa contra e impede aplicar sozinho.
     """
     from ..models import PrestacaoServidor
     from ..services import valor_diaria_liberado
@@ -343,7 +346,7 @@ def _donos_do_comprovante(comprovantes) -> list[tuple[object, float, list[str]]]
         PrestacaoServidor.objects.filter(finalizada=False, prestacao__oficio__cancelado=False)
         .select_related("servidor", "prestacao__oficio")
     )
-    melhores: dict[int, tuple[object, float, list[str]]] = {}
+    melhores: dict[int, tuple[object, float, list[str], list[str]]] = {}
     for doc in comprovantes:
         dados = doc.dados or {}
         nomes = list(dict.fromkeys(n for n in [dados.get("nome"), dados.get("favorecido"), *dados.get("nomes", [])] if n))
@@ -355,7 +358,7 @@ def _donos_do_comprovante(comprovantes) -> list[tuple[object, float, list[str]]]
             nota_nome = max((semelhanca_nome(n, ps.servidor.nome) for n in nomes), default=0.0)
             if not por_cpf and nota_nome < NOME_CASA:
                 continue
-            nota, motivos = 0.0, []
+            nota, motivos, alertas = 0.0, [], []
             if por_cpf:
                 nota += 1.0
                 motivos.append(f"CPF mascarado do comprovante confere com {ps.servidor.nome}")
@@ -373,7 +376,7 @@ def _donos_do_comprovante(comprovantes) -> list[tuple[object, float, list[str]]]
                 if liberado:
                     if valor > liberado + Decimal("0.01"):
                         nota -= 0.4
-                        motivos.append("valor acima da diária liberada — confira")
+                        alertas.append("valor acima da diária liberada")
                     else:
                         nota += 0.3
                         if liberado - valor < 1:
@@ -385,9 +388,11 @@ def _donos_do_comprovante(comprovantes) -> list[tuple[object, float, list[str]]]
                 criado = ps.prestacao.oficio.data_criacao
                 if criado and dia < criado - timedelta(days=60):
                     nota -= 0.5
+                    alertas.append("data bem anterior ao ofício")
                 if ps.data_liberacao_diarias:
                     if dia < ps.data_liberacao_diarias:
                         nota -= 0.3
+                        alertas.append("data anterior à liberação das diárias")
                     else:
                         nota += 0.3
                         if not ps.prazo_limite_saque or dia <= ps.prazo_limite_saque:
@@ -398,7 +403,7 @@ def _donos_do_comprovante(comprovantes) -> list[tuple[object, float, list[str]]]
                 motivos.append("ainda sem comprovante anexado")
             atual = melhores.get(ps.pk)
             if atual is None or nota > atual[1]:
-                melhores[ps.pk] = (ps, round(max(nota, 0.05), 2), motivos)
+                melhores[ps.pk] = (ps, round(max(nota, 0.05), 2), motivos + [f"{a} — confira" for a in alertas], alertas)
     return sorted(melhores.values(), key=lambda item: -item[1])
 
 
@@ -568,14 +573,15 @@ def _identificar(
     conflitos = _conflitos(processo, resultado.prestacao.oficio)
     resultado.avisos.extend(conflitos)
     if "comprovante" in lider.fontes and not fortes:
-        # Só comprovante(s): vale sozinho quando um servidor se destaca com folga
-        # (nome ou CPF e mais um sinal: valor, prazo ou ainda sem comprovante).
+        # Só comprovante(s): aplica sozinho quando o dono não deixa dúvida.
         so_comprovantes = all(d.tipo == tipos.COMPROVANTE for d in processo.documentos)
         resultado.camada = "comprovante"
-        resultado.segura = so_comprovantes and lider.pontos >= 1.0 and folga >= 0.5 and not conflitos
+        motivo = _duvida_do_comprovante(lider, ranking[1:])
+        resultado.segura = so_comprovantes and not conflitos and not motivo
         if not resultado.segura:
             resultado.avisos.append(
-                "Achado pelo comprovante (nome, valor e data): confira a prestação antes de aplicar."
+                f"Achado pelo comprovante, mas {motivo}: confira a prestação antes de aplicar." if motivo
+                else "Achado pelo comprovante (nome, valor e data): confira a prestação antes de aplicar."
             )
         return resultado
     resultado.segura = (
@@ -591,6 +597,31 @@ def _identificar(
         elif len(independentes) < 2:
             resultado.avisos.append("Só um sinal aponta esta prestação: confira antes de aplicar.")
     return resultado
+
+
+#: Pontos mínimos do dono do comprovante: o nome sozinho, quando confere bem
+#: (0,8 × nota ≥ 0,7), ou o nome parcial somado a valor ou data que batem.
+DONO_MINIMO = 0.7
+#: Folga sobre outro servidor com nome parecido.
+FOLGA_OUTRO_SERVIDOR = 0.5
+#: Folga entre duas viagens abertas do mesmo servidor: precisa de valor ou data
+#: (só "ainda sem comprovante" não basta para escolher a viagem).
+FOLGA_MESMO_SERVIDOR = 0.4
+
+
+def _duvida_do_comprovante(lider: Candidato, outros: list[Candidato]) -> str:
+    """Por que não aplicar sozinho o comprovante no `lider` ("" = sem dúvida)."""
+    if lider.alertas:
+        return " e ".join(lider.alertas)
+    if lider.pontos < DONO_MINIMO:
+        return "o nome confere só em parte e nem valor nem data confirmam"
+    outro = next((c for c in outros if c.servidor_id != lider.servidor_id), None)
+    if outro is not None and lider.pontos - outro.pontos < FOLGA_OUTRO_SERVIDOR:
+        return f"o nome também combina com o {outro.rotulo}"
+    mesmo = next((c for c in outros if c.servidor_id == lider.servidor_id), None)
+    if mesmo is not None and lider.pontos - mesmo.pontos < FOLGA_MESMO_SERVIDOR:
+        return f"o servidor também tem o {mesmo.rotulo} aberto e valor e data não decidem"
+    return ""
 
 
 def _protocolo_para_gravar(processo: Processo, oficio) -> str:
@@ -754,11 +785,39 @@ def _data_plausivel(dia: date, oficio) -> bool:
     return not inicio or dia >= inicio - timedelta(days=120)
 
 
+def _reais(valor) -> str:
+    return "R$ " + f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _frase_da_divergencia(divergencias) -> str:
+    nomes = {"valor": "o valor", "data": "a data"}
+    partes = []
+    for chave, primeira, segunda in divergencias:
+        if chave == "valor":
+            partes.append(f"o valor ({_reais(primeira)} ou {_reais(segunda)})")
+        elif chave == "data":
+            partes.append(f"a data ({primeira:%d/%m/%Y} ou {segunda:%d/%m/%Y})")
+        else:
+            partes.append(nomes.get(chave, chave))
+    return "As duas leituras da foto não deram o mesmo resultado para " + " e ".join(partes) + ": confira."
+
+
+def _ja_anexado(ps, item) -> bool:
+    """O servidor já tem comprovante com este valor e esta data."""
+    valor, dia = item.valor_decimal, item.data_operacao
+    if valor is None or dia is None:
+        return False
+    return ps.documentos_anexos.filter(tipo=Anexo.TIPO_COMPROVANTE, valor=valor, data_operacao=dia).exists()
+
+
 def _itens(processo: Processo, prestacao) -> list[ItemPlano]:
     oficio = prestacao.oficio if prestacao is not None else None
     equipe = _equipe(prestacao)
     itens: list[ItemPlano] = []
     oficio_ja = False
+    # Só comprovantes (a foto do WhatsApp): eles se somam aos já anexados, então o
+    # que já está lá (mesmo servidor, valor e data) não entra de novo.
+    so_comprovantes = bool(processo.documentos) and all(d.tipo == tipos.COMPROVANTE for d in processo.documentos)
 
     for doc in processo.documentos:
         dados = doc.dados or {}
@@ -839,6 +898,13 @@ def _itens(processo: Processo, prestacao) -> list[ItemPlano]:
                     item.conferir.append("Data da operação fora do período esperado: confira.")
             if membro and valor is not None and membro.liberado is not None and valor > membro.liberado:
                 item.conferir.append(f"Valor maior que a diária liberada para {membro.nome}: confira.")
+            if dados.get("leituras") == "divergem":
+                item.conferir.append(_frase_da_divergencia(dados.get("divergencias") or []))
+            elif dados.get("leituras") == "conferem":
+                item.evidencias.append("valor e data iguais nas duas leituras da foto")
+            if so_comprovantes and membro and _ja_anexado(membro.ps, item):
+                item.destino, item.duplicado, item.conferir = IGNORAR, True, []
+                item.motivo = f"Já está na prestação: comprovante de {membro.nome} de {_reais(item.valor_decimal)} em {item.data_operacao:%d/%m/%Y}."
 
         if item.rotacao_incerta and item.destino != Anexo.TIPO_DB_ASSINADO and item.entra and item.sem_texto:
             item.conferir.append("Página só de imagem: confira a orientação (↺ ↻).")

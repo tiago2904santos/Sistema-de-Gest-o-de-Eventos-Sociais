@@ -15,9 +15,10 @@ urlpatterns = [path("oficio/<int:pk>/abrir/", views.abrir_oficio, name="abrir_of
     path('importacao/<int:pk>/', importacao_views.importacao_detalhe, name='importacao_detalhe'),
     path('importacao/<int:pk>/aplicar/', importacao_views.importacao_aplicar, name='importacao_aplicar'),
     path('importacao/<int:pk>/descartar/', importacao_views.importacao_descartar, name='importacao_descartar'),
+    path('importacao/<int:pk>/desfazer/', importacao_views.importacao_desfazer, name='importacao_desfazer'),
     path('importacao/<int:pk>/arquivo/', importacao_views.importacao_arquivo, name='importacao_arquivo')]
 # Todas as rotas internas exigem o módulo; mutações exigem operador/gestor.
-_POST_ONLY = {"prestacao_baixar", "prestacao_equipe_acao", "prestacao_servidor_arquivar", "prestacao_servidor_finalizar", "prestacao_arquivar", "prestacao_finalizar", "prestacao_documento_delete", "modelo_delete", "prestacao_despacho_assinado_anexar", "prestacao_oficio_assinado_anexar", "prestacao_servidor_assinado_anexar", "importacao_enviar", "importacao_enviar_prestacao", "importacao_enviar_oficio", "importacao_enviar_termo", "importacao_aplicar", "importacao_descartar"}
+_POST_ONLY = {"prestacao_baixar", "prestacao_equipe_acao", "prestacao_servidor_arquivar", "prestacao_servidor_finalizar", "prestacao_arquivar", "prestacao_finalizar", "prestacao_documento_delete", "modelo_delete", "prestacao_despacho_assinado_anexar", "prestacao_oficio_assinado_anexar", "prestacao_servidor_assinado_anexar", "importacao_enviar", "importacao_enviar_prestacao", "importacao_enviar_oficio", "importacao_enviar_termo", "importacao_aplicar", "importacao_descartar", "importacao_desfazer"}
 # Leem o processo antes de gravar: a leitura fica fora da transação, e cada gravação abre a sua.
 _SEM_TRANSACAO = {"importacao_enviar", "importacao_enviar_prestacao", "importacao_enviar_oficio", "importacao_enviar_termo", "importacao_aplicar"}
 for route in urlpatterns:

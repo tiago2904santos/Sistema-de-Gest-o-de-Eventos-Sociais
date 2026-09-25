@@ -32,9 +32,11 @@ from .aplicacao import ResultadoImportacao
 from .aplicacao import aplicar_importacao
 from .entrada import aplicar_escolhas
 from .entrada import descartar
+from .entrada import desfazer
 from .entrada import hash_do_arquivo
 from .entrada import importacao_do_mesmo_arquivo
 from .entrada import limite_de_bytes
+from .entrada import pode_desfazer
 from .entrada import reanalisar
 from .entrada import registrar_importacao
 from .entrada import validar_arquivo_do_processo
@@ -45,10 +47,12 @@ __all__ = [
     "aplicar_escolhas",
     "aplicar_importacao",
     "descartar",
+    "desfazer",
     "hash_do_arquivo",
     "importacao_do_mesmo_arquivo",
     "ImportacaoRecusada",
     "limite_de_bytes",
+    "pode_desfazer",
     "Plano",
     "reanalisar",
     "registrar_importacao",

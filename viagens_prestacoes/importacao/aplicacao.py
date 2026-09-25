@@ -55,6 +55,7 @@ from .montagem import recortar_documento
 from .plano import DESTINO_JUSTIFICATIVA
 from .plano import DESTINO_ORDEM_SERVICO
 from .plano import DESTINO_TERMO
+from .plano import IGNORAR
 from .plano import ROTULO_DESTINO
 from .plano import ItemPlano
 from .plano import Plano
@@ -83,6 +84,8 @@ class ResultadoImportacao:
     protocolo_gravado: str = ""
     documentos: list[dict] = field(default_factory=list)
     resumo_documentos: str = ""
+    #: Anexos que já existiam e foram trocados pelos do processo (desfazer não os devolve).
+    substituidos: int = 0
 
     def para_json(self) -> dict:
         return {
@@ -92,6 +95,7 @@ class ResultadoImportacao:
             "protocolo_gravado": self.protocolo_gravado,
             "documentos": list(self.documentos),
             "resumo_documentos": self.resumo_documentos,
+            "substituidos": self.substituidos,
         }
 
 
@@ -366,6 +370,25 @@ def _anexar_documentos(plano: Plano, pdf: bytes, *, prestacao, termo) -> tuple[l
     return documentos, avisos
 
 
+def _remover_da_importacao(importacao: ImportacaoProcesso) -> None:
+    from ..anexo_services import _apagar_arquivo_apos_commit
+
+    if importacao.pk is None:
+        return
+    anteriores = Anexo.objects.filter(importacao=importacao)
+    for anexo in anteriores:
+        for campo in (anexo.arquivo, anexo.arquivo_original):
+            if campo:
+                _apagar_arquivo_apos_commit(campo)
+    anteriores.delete()
+
+
+def so_comprovantes(plano: Plano) -> bool:
+    """O plano só grava comprovantes (a foto ou o PDF de um comprovante)."""
+    gravados = [item for item in plano.itens if item.destino != IGNORAR]
+    return bool(gravados) and all(item.destino == Anexo.TIPO_COMPROVANTE for item in gravados)
+
+
 def aplicar_importacao(importacao: ImportacaoProcesso, *, plano: Plano | None = None) -> ResultadoImportacao:
     """Grava o plano (o da importação, ou o editado na conferência): anexos da
     prestação e versões assinadas dos documentos gerados.
@@ -400,18 +423,25 @@ def aplicar_importacao(importacao: ImportacaoProcesso, *, plano: Plano | None = 
         if item.entra:
             grupos.setdefault((item.destino, item.servidor_prestacao_id if item.individual else None), []).append(item)
 
+    # Só comprovantes (fotos avulsas): somam-se aos que o servidor já tem. O
+    # processo inteiro traz todos, e aí substitui.
+    acrescentar = so_comprovantes(plano)
     resultado = ResultadoImportacao()
     with transacao_de_arquivos():
+        if acrescentar:
+            # "Aplicar de novo" troca só o que esta mesma importação tinha gravado.
+            _remover_da_importacao(importacao)
         criados: list[tuple[ItemPlano, Anexo]] = []
         for tipo in ORDEM_DOCUMENTOS_PRESTACAO:
             for (destino, ps_id), itens in grupos.items():
                 if destino != tipo:
                     continue
                 servidor_prestacao = equipe.get(ps_id) if ps_id else None
-                remover_anexos_do_tipo(
-                    prestacao, tipo=tipo, servidor_prestacao=servidor_prestacao,
-                    todos_do_tipo=servidor_prestacao is None,
-                )
+                if not (acrescentar and tipo == Anexo.TIPO_COMPROVANTE):
+                    resultado.substituidos += remover_anexos_do_tipo(
+                        prestacao, tipo=tipo, servidor_prestacao=servidor_prestacao,
+                        todos_do_tipo=servidor_prestacao is None,
+                    )
                 for item in itens:
                     anexo = _criar_anexo(
                         prestacao, importacao, item, pdf, servidor_prestacao=servidor_prestacao, protocolo=plano.protocolo,

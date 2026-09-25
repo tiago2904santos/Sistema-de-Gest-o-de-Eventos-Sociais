@@ -247,6 +247,12 @@
                 {% csrf_token %}{% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
                 <button type="submit" class="btn--secundaria" name="acao" value="aplicar">Aplicar de novo</button>
               </form>
+              {% if pode_desfazer %}
+                <form method="post" action="{% url 'viagens_prestacoes:importacao_desfazer' importacao.pk %}" data-confirmar="Desfazer? Os documentos desta importação saem da prestação">
+                  {% csrf_token %}{% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+                  <button type="submit" class="btn--secundaria">Desfazer</button>
+                </form>
+              {% endif %}
             {% endif %}
           {% endif %}
         </div>

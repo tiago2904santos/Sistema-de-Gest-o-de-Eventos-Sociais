@@ -8,7 +8,8 @@
 - `importacao_detalhe`: conferência (antes) e resultado (depois), na mesma tela;
 - `importacao_aplicar`: grava com as escolhas da conferência, ou relê o processo
   com a prestação escolhida;
-- `importacao_descartar`, `importacao_arquivo` (o PDF para as miniaturas).
+- `importacao_descartar`, `importacao_desfazer` (tira da prestação o que a
+  importação gravou, quando só acrescentou), `importacao_arquivo` (o PDF para as miniaturas).
 
 Permissões: as de anexar documento assinado (`ui.acesso`: módulo; operador para
 gravar). As rotas que analisam não abrem transação no `acesso`: a leitura roda
@@ -38,9 +39,11 @@ from .importacao import ImportacaoRecusada
 from .importacao import aplicar_escolhas
 from .importacao import aplicar_importacao
 from .importacao import descartar
+from .importacao import desfazer
 from .importacao import hash_do_arquivo
 from .importacao import importacao_do_mesmo_arquivo
 from .importacao import limite_de_bytes
+from .importacao import pode_desfazer
 from .importacao import reanalisar
 from .importacao import registrar_importacao
 from .importacao import validar_arquivo_do_processo
@@ -64,6 +67,7 @@ __all__ = [
     "importacao_detalhe",
     "importacao_aplicar",
     "importacao_descartar",
+    "importacao_desfazer",
     "importacao_arquivo",
 ]
 
@@ -182,6 +186,19 @@ def importacao_enviar(request, pc_pk=None, oficio_pk=None, termo_pk=None):
     except Exception as exc:  # PDF que a leitura não entende: recusa com frase, não 500
         capture(exc, "prestacoes.importacao.analisar")
         return _recusar(request, voltar, "Não foi possível ler este processo. Confira se é o PDF baixado do eProtocolo.")
+    duplicados = [item for item in plano.itens if item.duplicado]
+    if duplicados and all(item.duplicado or item.destino == IGNORAR for item in plano.itens):
+        # O mesmo comprovante em outro arquivo (o WhatsApp recomprime a foto): não grava de novo.
+        messages.warning(request, " ".join(item.motivo for item in duplicados))
+        destino = PrestacaoContas.objects.select_related("oficio").filter(pk=plano.prestacao_id).first()
+        url = voltar
+        if _xhr(request):
+            return JsonResponse({
+                "ok": True, "url": "", "situacao": "repetido",
+                "destino": f"Ofício {destino.oficio.numero_formatado}" if destino else "",
+                "mensagens": [str(m) for m in messages.get_messages(request)],
+            })
+        return redirect(url)
     importacao = registrar_importacao(dados, nome, plano, usuario=request.user)
 
     if plano.pronto:
@@ -324,6 +341,7 @@ def _contexto(request, importacao) -> dict:
         ][:4],
         "editavel": editavel,
         "aplicada": importacao.situacao == ImportacaoProcesso.SITUACAO_APLICADA,
+        "pode_desfazer": editavel and pode_desfazer(importacao),
         "descartada": importacao.situacao == ImportacaoProcesso.SITUACAO_DESCARTADA,
         "resultado": importacao.resultado or {},
         "pendencias": plano.pendencias,
@@ -443,6 +461,21 @@ def importacao_descartar(request, pk):
     descartar(importacao)
     messages.success(request, "Importação descartada. Nada foi gravado.")
     return redirect(voltar_para(request, _lista_da_origem(Plano.de_json(importacao.plano).origem)))
+
+
+def importacao_desfazer(request, pk):
+    """Tira da prestação o que a importação gravou; ela volta para a conferência."""
+    importacao = get_object_or_404(ImportacaoProcesso, pk=pk)
+    if not pode_desfazer(importacao):
+        messages.error(request, "Esta importação não pode ser desfeita: ela substituiu documentos que já estavam na prestação.")
+        return redirect(_url(importacao, request))
+    removidos = desfazer(importacao)
+    messages.success(
+        request,
+        f"Importação desfeita: {removidos} documento{'s' if removidos != 1 else ''} saíram da prestação. "
+        "Escolha a prestação certa e aplique de novo, ou descarte.",
+    )
+    return redirect(_url(importacao, request))
 
 
 def importacao_arquivo(request, pk):
