@@ -11,7 +11,13 @@ from documentos.services.types import DocumentoFormato
 from documentos.services.responses import get_content_type_for_format
 
 
-def acesso(view):
+def acesso(view, *, transacao=True):
+    """Módulo, operador para gravar e — por padrão — a view inteira numa transação de arquivos.
+
+    `transacao=False` é para a view que lê antes de gravar (o importador de
+    processo): a leitura de um volume do eProtocolo leva segundos e não pode segurar
+    a transação; cada gravação abre a sua.
+    """
     @wraps(view)
     @acesso_ao_modulo
     def wrapper(request, *args, **kwargs):
@@ -19,6 +25,8 @@ def acesso(view):
             exigir_operador(request)
         from .carimbo_services import CarimboError
         try:
+            if not transacao:
+                return view(request, *args, **kwargs)
             with transacao_de_arquivos():
                 return view(request, *args, **kwargs)
         except CarimboError as exc:
@@ -35,9 +43,10 @@ def render(request, template, context, **kwargs):
         from .models import PrestacaoDocumentoAnexo as Anexo
         ps = context["ps"]; pc = ps.prestacao
         context.update(numero_name=f"ps-{ps.pk}-numero_solicitacao", liberacao_name=f"ps-{ps.pk}-data_liberacao_diarias", prazo_name=f"ps-{ps.pk}-prazo_limite_saque", liberacao_iso=ps.data_liberacao_diarias.isoformat() if ps.data_liberacao_diarias else "", prazo_iso=ps.prazo_limite_saque.isoformat() if ps.prazo_limite_saque else "")
-        specs = [("despacho", "Despacho assinado", Anexo.TIPO_DESPACHO, "prestacao_despacho_assinado_anexar", [pc.pk]), ("oficio", "Ofício assinado", Anexo.TIPO_OFICIO_ASSINADO, "prestacao_oficio_assinado_anexar", [pc.pk]), ("comprovante", "Comprovante de saque ou transferência", Anexo.TIPO_COMPROVANTE, "prestacao_servidor_assinado_anexar", [ps.pk, "comprovante"]), ("rt", "Relatório técnico assinado", Anexo.TIPO_RT_ASSINADO, "prestacao_servidor_assinado_anexar", [ps.pk, Anexo.TIPO_RT_ASSINADO])]
-        specs.append(("diario", "Diário de bordo assinado", Anexo.TIPO_DB_ASSINADO, "prestacao_servidor_assinado_anexar", [ps.pk, Anexo.TIPO_DB_ASSINADO]))
-        context["uploads"] = [{"id": id_, "titulo": titulo, "url": reverse("viagens_prestacoes:"+rota, args=args), "anexos": pc.documentos_anexos.filter(tipo=tipo) if tipo in [Anexo.TIPO_DESPACHO, Anexo.TIPO_OFICIO_ASSINADO, Anexo.TIPO_DB_ASSINADO] else ps.documentos_anexos.filter(tipo=tipo)} for id_,titulo,tipo,rota,args in specs]
+        from .models import ORDEM_DOCUMENTOS_PRESTACAO, ordenacao_dos_anexos
+        specs = {Anexo.TIPO_DESPACHO: ("despacho", "Despacho assinado", "prestacao_despacho_assinado_anexar", [pc.pk]), Anexo.TIPO_OFICIO_ASSINADO: ("oficio", "Ofício assinado", "prestacao_oficio_assinado_anexar", [pc.pk]), Anexo.TIPO_COMPROVANTE: ("comprovante", "Comprovante de saque ou transferência", "prestacao_servidor_assinado_anexar", [ps.pk, "comprovante"]), Anexo.TIPO_RT_ASSINADO: ("rt", "Relatório técnico assinado", "prestacao_servidor_assinado_anexar", [ps.pk, Anexo.TIPO_RT_ASSINADO]), Anexo.TIPO_DB_ASSINADO: ("diario", "Diário de bordo assinado", "prestacao_servidor_assinado_anexar", [ps.pk, Anexo.TIPO_DB_ASSINADO])}
+        # Na ordem da prestação: ofício, despacho, RT, diário, comprovante (este pela data da operação).
+        context["uploads"] = [{"id": specs[tipo][0], "titulo": specs[tipo][1], "url": reverse("viagens_prestacoes:"+specs[tipo][2], args=specs[tipo][3]), "anexos": (pc.documentos_anexos.filter(tipo=tipo) if tipo in [Anexo.TIPO_DESPACHO, Anexo.TIPO_OFICIO_ASSINADO, Anexo.TIPO_DB_ASSINADO] else ps.documentos_anexos.filter(tipo=tipo)).order_by(*ordenacao_dos_anexos(tipo))} for tipo in ORDEM_DOCUMENTOS_PRESTACAO]
         for item in context["uploads"]:
             item["campo"] = "arquivo"
             if item["id"] in {"despacho", "comprovante"}:

@@ -364,8 +364,15 @@ def sincronizar_protocolo(solicitacao, usuario=None):
     mesmo pagamento."""
     from .models import SolicitacaoCoffeeBreak
 
+    from core.utils.masks import normalize_protocolo
+
     protocolo = (solicitacao.protocolo_pcpr_oficio or "").strip()
     if not protocolo or not solicitacao.numero_nota_fiscal.strip() or solicitacao.protocolo_pagamento == protocolo:
+        return False
+    # O "PCPR protocolo n.º" em outro formato (o número interno da PCPR,
+    # "2026.050880.000") não é o do eProtocolo: não troca o protocolo de
+    # pagamento já gravado (o do processo, vindo da importação).
+    if solicitacao.protocolo_pagamento.strip() and len(normalize_protocolo(protocolo)) != 9:
         return False
     SolicitacaoCoffeeBreak.objects.filter(pk=solicitacao.pk).update(protocolo_pagamento=protocolo, atualizado_em=timezone.now())
     solicitacao.protocolo_pagamento = protocolo

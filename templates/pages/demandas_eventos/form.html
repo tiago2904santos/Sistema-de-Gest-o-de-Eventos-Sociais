@@ -38,7 +38,13 @@
       </div>
     </div>
 
-    {% if instancia %}{% include "pages/demandas_eventos/_andamento.html" %}{% endif %}
+    {% if instancia %}
+      {% include "pages/demandas_eventos/_andamento.html" %}
+    {% else %}
+      {# Pedido que chegou por e-mail (ou WhatsApp): soltar o e-mail ou colar o texto preenche os campos vazios. #}
+      {% url 'demandas_eventos:ler_email' as url_ler_email %}
+      {% include "components/v32/preencher_por_email.html" with url=url_ler_email formulario="form-demanda" substituir_padrao="data_solicitacao estado evento" origem=email_origem registro="palestra" %}
+    {% endif %}
 
     <form method="post" id="form-demanda" class="editor-roteiro__principal">{% csrf_token %}
       <input type="hidden" name="versao" value="{{ valores.versao }}">

@@ -17,6 +17,10 @@
       <div class="kicker kicker--junto">Coffee Break</div>
       <h1>Solicitações</h1>
     </div>
+    <div class="d-acoes">
+      {# O processo de pagamento do eProtocolo: o sistema descobre a solicitação, grava o protocolo e anexa a nota. #}
+      <button type="button" class="btn--secundaria" data-cb-importar>{% include "components/icon.html" with nome="upload" %}Importar processo de pagamento</button>
+    </div>
     {# Botão flutuante: fixo no canto inferior direito, sempre à mão durante a rolagem. #}
     <a class="btn-primaria btn-flutuante" href="{% url 'coffee_break:nova' %}">{% include "components/icon.html" with nome="plus" %}Nova solicitação</a>
   </div>
@@ -24,12 +28,21 @@
   <div class="cad-grade cad-grade--sem-folga">
     {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_rotulo="Situação financeira" sem_titulo=True %}
 
-    {% include "components/v32/lista_registros.html" with icone="coffee" rotulo="Solicitação" rotulo_plural="solicitações" conteudo_linha="pages/coffee_break/_conteudo_linha.html" acoes_linha="pages/coffee_break/_acoes_linha.html" placeholder_busca="Buscar por evento, nº, nota fiscal ou protocolo…" filtro_nome="situacao" filtro_valor=situacao_escolhida vazio="Nenhuma solicitação registrada ainda." vazio_filtrado="Nenhuma solicitação encontrada com os filtros aplicados." %}
+    {# Arrastar um PDF sobre a lista acende a faixa; soltar importa o processo de pagamento. #}
+    <div class="cbi-area" data-cb-importar-soltar>
+      <div class="cbi-faixa" data-cb-importar-faixa hidden aria-hidden="true">
+        {% include "components/icon.html" with nome="upload" %}
+        <span><b>Solte o PDF do processo de pagamento para importar</b><small>O sistema descobre a solicitação pelo ofício, pelo protocolo e pelas notas.</small></span>
+      </div>
+      {% include "components/v32/lista_registros.html" with icone="coffee" rotulo="Solicitação" rotulo_plural="solicitações" conteudo_linha="pages/coffee_break/_conteudo_linha.html" acoes_linha="pages/coffee_break/_acoes_linha.html" placeholder_busca="Buscar por evento, nº, nota fiscal ou protocolo…" filtro_nome="situacao" filtro_valor=situacao_escolhida vazio="Nenhuma solicitação registrada ainda." vazio_filtrado="Nenhuma solicitação encontrada com os filtros aplicados." %}
+    </div>
   </div>
   {# O andamento abre em modal a partir do menu ⋮ de cada linha. #}
   <dialog class="mo v32-cadastro-modal" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{{ request.path }}"></dialog>
   {# "Baixar arquivos" do menu da linha: o modal "Baixar documentos" de Viagens. #}
   {% include "components/v32/dialogo_baixar.html" %}
+  {# "Importar processo de pagamento": o botão do topo, o ⋮ de cada linha e o soltar sobre a lista. #}
+  {% include "pages/coffee_break/_importar_processo.html" %}
 {% endblock %}
 
 {% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>{% endblock %}

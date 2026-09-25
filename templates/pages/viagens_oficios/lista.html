@@ -19,9 +19,13 @@
       <div class="kicker kicker--junto">Viagens</div>
       <h1>Ofícios</h1>
     </div>
-    {% if gestor %}
+    {% if gestor or pode_editar %}
       <div class="d-acoes">
-        <a class="btn--secundaria" href="{% url 'viagens_oficios:numeracao' %}">Numeração</a>
+        {% if gestor %}<a class="btn--secundaria" href="{% url 'viagens_oficios:numeracao' %}">Numeração</a>{% endif %}
+        {% if pode_editar %}
+          {# O processo do eProtocolo: ofício e justificativa assinados, termos e os documentos da prestação, cada um no seu lugar. #}
+          <button type="button" class="btn--secundaria" data-importar-processo data-url="{% url 'viagens_prestacoes:importacao_enviar' %}">{% include "components/icon.html" with nome="upload" %}Importar processo do eProtocolo</button>
+        {% endif %}
       </div>
     {% endif %}
     {% if pode_editar %}
@@ -37,7 +41,14 @@
   <div class="cad-grade cad-grade--sem-folga">
     {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_rotulo="Situação dos ofícios" sem_titulo=True %}
 
-    <div class="pa-card pa-card--lista cad-lista">
+    <div class="pa-card pa-card--lista cad-lista"{% if pode_editar %} data-importar-soltar data-url="{% url 'viagens_prestacoes:importacao_enviar' %}"{% endif %}>
+      {% if pode_editar %}
+        {# Arrastar um arquivo sobre a lista: a faixa aparece; soltar importa (sobre um ofício, direto nele). #}
+        <div class="pc-soltar" data-importar-faixa hidden aria-hidden="true">
+          {% include "components/icon.html" with nome="upload" %}
+          <span><b>Solte o PDF do processo do eProtocolo para importar</b><small>Sobre um ofício, vai para ele; fora deles, o sistema descobre pelo conteúdo.</small></span>
+        </div>
+      {% endif %}
       {# Busca no servidor, enviada 1 s depois de digitar; a situação da trilha sobrevive. #}
       <form method="get" class="cad-barra" role="search" data-cadastro-busca data-auto-enviar>
         {% for situacao in situacoes_escolhidas %}<input type="hidden" name="situacao" value="{{ situacao }}">{% endfor %}
@@ -59,7 +70,7 @@
           </thead>
           <tbody>
             {% for l in linhas %}{% with o=l.oficio d=l.documentos %}
-              <tr{% if o.cancelado %} class="tm-linha--cancelada"{% endif %}>
+              <tr{% if o.cancelado %} class="tm-linha--cancelada"{% elif pode_editar %} data-importar-url="{% url 'viagens_prestacoes:importacao_enviar_oficio' o.pk %}" data-importar-titulo="Ofício {{ o.numero_formatado }}"{% endif %}>
                 <td class="tabela__col-icone">
                   {% url 'documentos:editor_pagina' 'oficio' o.pk as url_editor %}{% include "components/icone_documento.html" with nome="document" url=url_editor rotulo="Editar o ofício" %}
                   <span class="sr-only">Ofício</span>
@@ -80,7 +91,7 @@
 
       <div class="lista-mobile-v32"><div class="m-lista">
         {% for l in linhas %}{% with o=l.oficio d=l.documentos %}
-          <article class="m-item{% if o.cancelado %} tm-linha--cancelada{% endif %}">
+          <article class="m-item{% if o.cancelado %} tm-linha--cancelada{% endif %}"{% if pode_editar and not o.cancelado %} data-importar-url="{% url 'viagens_prestacoes:importacao_enviar_oficio' o.pk %}" data-importar-titulo="Ofício {{ o.numero_formatado }}"{% endif %}>
             <div class="m-item__topo">
               {% url 'documentos:editor_pagina' 'oficio' o.pk as url_editor %}{% include "components/icone_documento.html" with nome="document" url=url_editor rotulo="Editar o ofício" %}
               <span class="sr-only">Ofício</span>
@@ -122,6 +133,6 @@
 {% endblock %}
 
 {% block extra_js %}{{ block.super }}<script src="{% estatico 'js/viagens-filtros-cadastros.js' %}" defer></script>
-  {% if pode_editar %}{% include "components/v32/dialogo_baixar.html" %}{% endif %}
+  {% if pode_editar %}{% include "components/v32/dialogo_baixar.html" %}{% include "pages/viagens_prestacoes/_importar_dialogo.html" with importar_origem="oficios" %}{% endif %}
   {% include "components/v32/dialogo_assinado.html" %}
 {% endblock %}

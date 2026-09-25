@@ -327,8 +327,22 @@ class SolicitacaoForm(forms.ModelForm):
 
 EXTENSOES_ANEXO = {
     "pdf", "png", "jpg", "jpeg", "doc", "docx", "xls", "xlsx", "odt", "ods",
+    # O e-mail do pedido (e o texto colado dele), guardado junto com a solicitação.
+    "eml", "msg", "txt",
 }
 TAMANHO_MAXIMO_ANEXO = 10 * 1024 * 1024
+MAGIC_OLE = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+# Stream que só existe em cada tipo de arquivo OLE: sem ele, um .msg
+# renomeado para .doc passava pela assinatura (a mesma dos três).
+_STREAMS_OLE = {
+    "doc": ("WordDocument",),
+    "xls": ("Workbook", "Book"),
+    "msg": ("__properties_version1.0",),
+}
+_CABECALHOS_EMAIL = (
+    "from", "to", "subject", "date", "message-id", "mime-version", "received",
+    "return-path", "content-type", "x-",
+)
 
 
 def validar_arquivo_anexo(arquivo):
@@ -362,8 +376,12 @@ def _conteudo_compativel_com_extensao(arquivo, extensao):
             return cabecalho.startswith(b"\x89PNG\r\n\x1a\n")
         if extensao in {"jpg", "jpeg"}:
             return cabecalho.startswith(b"\xff\xd8\xff")
-        if extensao in {"doc", "xls"}:
-            return cabecalho.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1")
+        if extensao in {"doc", "xls", "msg"}:
+            return cabecalho.startswith(MAGIC_OLE) and _ole_do_tipo(arquivo, extensao)
+        if extensao == "eml":
+            return _parece_email_mime(arquivo)
+        if extensao == "txt":
+            return _parece_texto(arquivo)
         if extensao in {"docx", "xlsx", "odt", "ods"}:
             if not zipfile.is_zipfile(arquivo):
                 return False
@@ -394,8 +412,58 @@ def _conteudo_compativel_com_extensao(arquivo, extensao):
         arquivo.seek(posicao)
 
 
+def _ole_do_tipo(arquivo, extensao):
+    """O arquivo OLE (.doc, .xls, .msg) tem o stream próprio do tipo."""
+    import olefile
+
+    arquivo.seek(0)
+    try:
+        with olefile.OleFileIO(arquivo) as ole:
+            return any(ole.exists(nome) for nome in _STREAMS_OLE[extensao])
+    except (OSError, ValueError, IndexError, TypeError):
+        return False
+    finally:
+        arquivo.seek(0)
+
+
+def _amostra_de_texto(arquivo, tamanho=8192):
+    """O começo do arquivo como texto, ou None se tiver cara de binário."""
+    arquivo.seek(0)
+    amostra = arquivo.read(tamanho)
+    arquivo.seek(0)
+    if not amostra or b"\x00" in amostra or amostra.startswith((MAGIC_OLE, b"%PDF-")):
+        return None
+    try:
+        return amostra.decode("utf-8")
+    except UnicodeDecodeError as erro:
+        if erro.start >= len(amostra) - 4:
+            return amostra[:erro.start].decode("utf-8")
+    texto = amostra.decode("cp1252", "replace")
+    imprimiveis = sum(c.isprintable() or c in "\r\n\t" for c in texto)
+    return texto if imprimiveis >= 0.95 * len(texto) else None
+
+
+def _parece_texto(arquivo):
+    return _amostra_de_texto(arquivo) is not None
+
+
+def _parece_email_mime(arquivo):
+    """.eml: texto que começa com cabeçalhos de e-mail ("From:", "Subject:"...)."""
+    texto = _amostra_de_texto(arquivo)
+    if texto is None:
+        return False
+    bloco = texto.replace("\r\n", "\n").split("\n\n", 1)[0]
+    rotulos = [
+        linha.split(":", 1)[0].strip().lower()
+        for linha in bloco.split("\n")
+        if ":" in linha and not linha[:1].isspace()
+    ]
+    conhecidos = [r for r in rotulos if r.startswith(_CABECALHOS_EMAIL)]
+    return len(conhecidos) >= 2
+
+
 class AnexoForm(forms.Form):
-    """Upload de anexo: tipos de documento comuns, até 10 MB."""
+    """Upload de anexo: tipos de documento comuns (e o e-mail do pedido), até 10 MB."""
 
     arquivo = forms.FileField(
         label="Arquivo",

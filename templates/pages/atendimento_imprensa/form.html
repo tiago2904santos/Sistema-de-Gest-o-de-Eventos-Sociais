@@ -37,7 +37,13 @@
       </div>
     </div>
 
-    {% if atendimento %}{% include "components/v32/andamento_topo.html" with rotulo_aria="Acompanhamento do pedido" %}{% endif %}
+    {% if atendimento %}
+      {% include "components/v32/andamento_topo.html" with rotulo_aria="Acompanhamento do pedido" %}
+    {% else %}
+      {# Pedido do jornalista por e-mail: soltar o e-mail ou colar o texto preenche os campos vazios. #}
+      {% url 'atendimento_imprensa:ler_email' as url_ler_email %}
+      {% include "components/v32/preencher_por_email.html" with url=url_ler_email formulario="form-atendimento" substituir_padrao="data horario" origem=email_origem registro="demanda" %}
+    {% endif %}
 
     {% if deadline_vencido %}
       <div class="aviso aviso--callout" role="status">

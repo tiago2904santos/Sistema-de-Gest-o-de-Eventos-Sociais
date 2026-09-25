@@ -147,6 +147,42 @@ def _whatsapp_phone(servidor):
     telefone = (getattr(servidor, "telefone", "") or "").strip()
     return f"55{telefone}" if len(telefone) == 11 and telefone.isdigit() else ""
 
+def comprovantes_do_servidor(anexos) -> dict:
+    """O chip "Comprovante" da linha do servidor: rótulo, valor/data e o detalhe de cada um.
+
+    Um comprovante: "R$ 580,00 · 21/09/2026". Vários: o total e o período
+    ("R$ 1.160,00 · 20/09 a 22/09/2026"), com cada um no `title`. Sem valor lido
+    (anexo à mão, foto sem OCR), só o rótulo — como antes.
+    """
+    from datetime import date
+
+    comprovantes = sorted(
+        (a for a in anexos if a.tipo == PrestacaoDocumentoAnexo.TIPO_COMPROVANTE),
+        key=lambda a: (a.data_operacao is None, a.data_operacao or date.min, a.pk or 0),
+    )
+    if not comprovantes:
+        return {"comprovante_rotulo": "", "comprovante_resumo": "", "comprovante_detalhe": ""}
+
+    def moeda(valor):
+        return format_currency_br(valor).replace("R$", "R$ ").replace("R$  ", "R$ ")
+
+    def uma_linha(anexo):
+        partes = [moeda(anexo.valor) if anexo.valor is not None else "", anexo.data_operacao.strftime("%d/%m/%Y") if anexo.data_operacao else "", anexo.get_operacao_display() if anexo.operacao else ""]
+        return " · ".join(p for p in partes if p)
+
+    if len(comprovantes) == 1:
+        return {"comprovante_rotulo": "Comprovante", "comprovante_resumo": uma_linha(comprovantes[0]), "comprovante_detalhe": ""}
+    valores = [a.valor for a in comprovantes if a.valor is not None]
+    datas = [a.data_operacao for a in comprovantes if a.data_operacao]
+    periodo = ""
+    if datas:
+        inicio, fim = min(datas), max(datas)
+        periodo = inicio.strftime("%d/%m/%Y") if inicio == fim else f"{inicio:%d/%m} a {fim:%d/%m/%Y}"
+    resumo = " · ".join(p for p in [moeda(sum(valores)) if valores else "", periodo] if p)
+    detalhe = "; ".join(uma_linha(a) or "sem valor lido" for a in comprovantes)
+    return {"comprovante_rotulo": f"{len(comprovantes)} comprovantes", "comprovante_resumo": resumo, "comprovante_detalhe": detalhe}
+
+
 def _servidor_row(ps, solicitacao_form=None, prestacao_anexos=None, diario_pdf_url=""):
     """Dados de um servidor no card: identificação + solicitação inline + status."""
     servidor = ps.servidor
@@ -179,6 +215,7 @@ def _servidor_row(ps, solicitacao_form=None, prestacao_anexos=None, diario_pdf_u
             "viagens_prestacoes:prestacao_servidor_solicitacao_autosave", args=[ps.pk]
         ),
         "comprovante_ok": comprovante_ok,
+        **comprovantes_do_servidor(anexos),
         "pacote_url": reverse("viagens_prestacoes:consolidado_download", args=[ps.pk]),
         "rt_download_url": reverse(
             "viagens_prestacoes:rt_download_servidor_formato", args=[ps.pk, "pdf"]
@@ -331,6 +368,7 @@ def apresentar_prestacao_servidor_card(
         ),
         prestacao_pk=prestacao.pk,
     )
+    # Na ordem da prestação (`ORDEM_DOCUMENTOS_PRESTACAO`): ofício, despacho, RT, diário, comprovante.
     attach_kinds = kinds_de_anexo_assinado(
         [
             (
@@ -346,16 +384,16 @@ def apresentar_prestacao_servidor_card(
                 despacho_assinado,
             ),
             (
-                "diario",
-                "Diário de bordo",
-                f"o diário de bordo do ofício {oficio.numero_formatado}",
-                servidor["diario_assinado"],
-            ),
-            (
                 "rt",
                 "Relatório técnico",
                 f"o relatório técnico de {servidor['name']}",
                 servidor["rt_assinado"],
+            ),
+            (
+                "diario",
+                "Diário de bordo",
+                f"o diário de bordo do ofício {oficio.numero_formatado}",
+                servidor["diario_assinado"],
             ),
             (
                 "comprovante",

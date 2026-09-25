@@ -483,15 +483,39 @@ def _pdf_bytes_from_file_field(field, label: str) -> bytes:
     raise DocumentValidationError(f"Formato inválido em {label}. Use PDF, PNG, JPG ou JPEG.")
 
 
+def pdf_do_anexo(anexo, label: str) -> bytes:
+    """O anexo como entra num pacote (pacote final, "Baixar documentos"): em PDF.
+
+    O diário de bordo sai sempre em pé — em paisagem quando o conteúdo é paisagem,
+    nunca de cabeça para baixo. O que passou pelo importador ou pelo anexo manual já
+    foi gravado girado (com o cru em `arquivo_original`); o anexo antigo, sem o cru,
+    é endireitado aqui, na saída, sem mexer no arquivo guardado.
+    """
+    conteudo = _pdf_bytes_from_file_field(anexo.arquivo, label)
+    if anexo.tipo == PrestacaoDocumentoAnexo.TIPO_DB_ASSINADO and not anexo.arquivo_original:
+        from .importacao.montagem import diario_em_pe
+
+        conteudo, _ = diario_em_pe(conteudo, ocr=False)
+    return conteudo
+
+
+def anexos_ordenados(anexos_qs, tipo):
+    """Os anexos do `tipo` na ordem do pacote (ver `models.ordenacao_dos_anexos`)."""
+    from .models import ordenacao_dos_anexos
+
+    return anexos_qs.filter(tipo=tipo).order_by(*ordenacao_dos_anexos(tipo))
+
+
 def _pdf_parts_from_anexos(anexos_qs, label: str, legacy_field=None) -> list[tuple[str, bytes]]:
+    """Todos os anexos do queryset, na ordem em que ele vem (ver `anexos_ordenados`)."""
     parts = []
     seen = set()
-    for index, anexo in enumerate(anexos_qs.order_by("criado_em", "pk"), start=1):
+    for index, anexo in enumerate(anexos_qs, start=1):
         name = str(getattr(anexo.arquivo, "name", "") or "")
         if not name or name in seen:
             continue
         seen.add(name)
-        parts.append((f"{label} {index}", _pdf_bytes_from_file_field(anexo.arquivo, label)))
+        parts.append((f"{label} {index}", pdf_do_anexo(anexo, label)))
 
     legacy_name = str(getattr(legacy_field, "name", "") or "") if legacy_field is not None else ""
     if legacy_name and legacy_name not in seen:
@@ -506,12 +530,12 @@ def _pdf_parts_from_anexos_opcional(anexos_qs, label: str) -> list[tuple[str, by
     """Como ``_pdf_parts_from_anexos``, mas retorna ``[]`` quando não há anexos."""
     parts = []
     seen = set()
-    for index, anexo in enumerate(anexos_qs.order_by("criado_em", "pk"), start=1):
+    for index, anexo in enumerate(anexos_qs, start=1):
         name = str(getattr(anexo.arquivo, "name", "") or "")
         if not name or name in seen:
             continue
         seen.add(name)
-        parts.append((f"{label} {index}", _pdf_bytes_from_file_field(anexo.arquivo, label)))
+        parts.append((f"{label} {index}", pdf_do_anexo(anexo, label)))
     return parts
 
 
@@ -650,48 +674,59 @@ def gerar_prestacao_consolidado_pdf(servidor_prestacao) -> bytes:
     diario, _ = DiarioBordo.objects.get_or_create(prestacao=prestacao)
     sincronizar_trechos(diario)
 
-    despacho_parts = _pdf_parts_from_anexos(
-        prestacao.documentos_anexos.filter(tipo=PrestacaoDocumentoAnexo.TIPO_DESPACHO),
-        "despacho assinado do ofício",
-        legacy_field=prestacao.despacho_assinado,
-    )
-    comprovante_parts = _pdf_parts_from_anexos(
-        servidor_prestacao.documentos_anexos.filter(tipo=PrestacaoDocumentoAnexo.TIPO_COMPROVANTE),
-        "comprovante de saque/transferência",
-    )
-
     from .documentos_oficiais import pdf_db_gerado
     from .documentos_oficiais import pdf_rt_gerado
+    from .models import ORDEM_DOCUMENTOS_PRESTACAO
 
-    oficio_upload_parts = _pdf_parts_from_anexos_opcional(
-        prestacao.documentos_anexos.filter(tipo=PrestacaoDocumentoAnexo.TIPO_OFICIO_ASSINADO),
-        "ofício assinado",
-    )
-    oficio_parts = oficio_upload_parts or [("ofício", gerar_oficio_prestacao_pdf(prestacao))]
+    compartilhados = prestacao.documentos_anexos.all()
+    individuais = servidor_prestacao.documentos_anexos.all()
 
-    # RT assinado anexado pelo servidor tem prioridade sobre a versão gerada.
-    rt_upload_parts = _pdf_parts_from_anexos_opcional(
-        servidor_prestacao.documentos_anexos.filter(tipo=PrestacaoDocumentoAnexo.TIPO_RT_ASSINADO),
-        "relatório técnico assinado",
-    )
-    rt_parts = rt_upload_parts or [("relatório técnico", pdf_rt_gerado(servidor_prestacao))]
+    def oficio_parts():
+        enviados = _pdf_parts_from_anexos_opcional(
+            anexos_ordenados(compartilhados, PrestacaoDocumentoAnexo.TIPO_OFICIO_ASSINADO),
+            "ofício assinado",
+        )
+        return enviados or [("ofício", gerar_oficio_prestacao_pdf(prestacao))]
 
-    # Diário de bordo assinado é anexado no card do motorista (nível ofício).
-    db_upload_parts = _pdf_parts_from_anexos_opcional(
-        prestacao.documentos_anexos.filter(tipo=PrestacaoDocumentoAnexo.TIPO_DB_ASSINADO),
-        "diário de bordo assinado",
-    )
-    db_parts = db_upload_parts or [("diário de bordo", pdf_db_gerado(prestacao))]
+    def despacho_parts():
+        # Todos os despachos, cada um com a sua folha de assinatura, na ordem do processo.
+        return _pdf_parts_from_anexos(
+            anexos_ordenados(compartilhados, PrestacaoDocumentoAnexo.TIPO_DESPACHO),
+            "despacho assinado do ofício",
+            legacy_field=prestacao.despacho_assinado,
+        )
 
-    return _merge_pdf_parts(
-        [
-            *oficio_parts,
-            *despacho_parts,
-            *rt_parts,
-            *db_parts,
-            *comprovante_parts,
-        ]
-    )
+    def rt_parts():
+        # RT assinado anexado pelo servidor tem prioridade sobre a versão gerada.
+        enviados = _pdf_parts_from_anexos_opcional(
+            anexos_ordenados(individuais, PrestacaoDocumentoAnexo.TIPO_RT_ASSINADO),
+            "relatório técnico assinado",
+        )
+        return enviados or [("relatório técnico", pdf_rt_gerado(servidor_prestacao))]
+
+    def db_parts():
+        # Diário de bordo assinado é anexado no card do motorista (nível ofício).
+        enviados = _pdf_parts_from_anexos_opcional(
+            anexos_ordenados(compartilhados, PrestacaoDocumentoAnexo.TIPO_DB_ASSINADO),
+            "diário de bordo assinado",
+        )
+        return enviados or [("diário de bordo", pdf_db_gerado(prestacao))]
+
+    def comprovante_parts():
+        # Todos os comprovantes do servidor, pela data da operação.
+        return _pdf_parts_from_anexos(
+            anexos_ordenados(individuais, PrestacaoDocumentoAnexo.TIPO_COMPROVANTE),
+            "comprovante de saque/transferência",
+        )
+
+    montadores = {
+        PrestacaoDocumentoAnexo.TIPO_OFICIO_ASSINADO: oficio_parts,
+        PrestacaoDocumentoAnexo.TIPO_DESPACHO: despacho_parts,
+        PrestacaoDocumentoAnexo.TIPO_RT_ASSINADO: rt_parts,
+        PrestacaoDocumentoAnexo.TIPO_DB_ASSINADO: db_parts,
+        PrestacaoDocumentoAnexo.TIPO_COMPROVANTE: comprovante_parts,
+    }
+    return _merge_pdf_parts([parte for tipo in ORDEM_DOCUMENTOS_PRESTACAO for parte in montadores[tipo]()])
 
 
 def nome_arquivo_prestacao_consolidado(servidor_prestacao) -> str:

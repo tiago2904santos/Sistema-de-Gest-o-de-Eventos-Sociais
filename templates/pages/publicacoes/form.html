@@ -36,7 +36,13 @@
       </div>
     </div>
 
-    {% if publicacao %}{% include "components/v32/andamento_topo.html" with rotulo_aria="Acompanhamento da pauta" %}{% endif %}
+    {% if publicacao %}
+      {% include "components/v32/andamento_topo.html" with rotulo_aria="Acompanhamento da pauta" %}
+    {% else %}
+      {# Release ou pedido de divulgação por e-mail: soltar o e-mail ou colar o texto preenche os campos vazios. #}
+      {% url 'publicacoes:ler_email' as url_ler_email %}
+      {% include "components/v32/preencher_por_email.html" with url=url_ler_email formulario="form-publicacao" substituir_padrao="data" origem=email_origem registro="pauta" %}
+    {% endif %}
 
     <form method="post" action="" id="form-publicacao" class="editor-roteiro__principal">
       {% csrf_token %}

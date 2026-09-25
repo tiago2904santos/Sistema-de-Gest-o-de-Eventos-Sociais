@@ -1,0 +1,54 @@
+{% load estaticos %}{% comment %}
+  Modal "Importar processo do eProtocolo", na moldura do modal de anexar
+  assinado (`an-*`). Abre pelo botão do topo da lista (o registro é
+  descoberto pelo conteúdo) ou pelo ⋮ de um ofício/termo (`data-url` do
+  registro dele). Soltar o arquivo sobre a lista preenche este mesmo
+  formulário e envia. O envio é um POST comum: a view aplica sozinha quando a
+  leitura é segura, ou abre a conferência.
+
+  O mesmo modal serve às listas de Prestações, de Ofícios e de Termos:
+  `importar_origem` ("prestacoes", o padrão; "oficios"; "termos") escolhe os
+  textos e vai no POST, para a tela de conferência voltar à lista certa.
+  Contexto: `importacao_limite_mb`, `url_atual`, `importar_origem`.
+{% endcomment %}
+{% with origem=importar_origem|default:"prestacoes" %}
+<dialog class="an-dialogo pc-importar" data-importar-dialogo aria-labelledby="pc-importar-titulo" aria-describedby="pc-importar-texto">
+  <form method="post" enctype="multipart/form-data" class="an-form" action="{% url 'viagens_prestacoes:importacao_enviar' %}" data-importar-form data-url-padrao="{% url 'viagens_prestacoes:importacao_enviar' %}" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ url_atual }}">
+    <input type="hidden" name="origem" value="{{ origem }}">
+    <h2 class="an-titulo" id="pc-importar-titulo">Importar processo do eProtocolo</h2>
+    {% if origem == "oficios" %}
+      <p class="an-texto" id="pc-importar-texto" data-importar-texto
+         data-texto-padrao="Envie o PDF inteiro do processo. O sistema descobre de qual ofício ele é e anexa o ofício e a justificativa assinados, o termo de cada servidor e, na prestação de contas, os despachos e os demais documentos."
+         data-texto-registro="Envie o PDF inteiro do processo do {titulo}. O ofício e a justificativa assinados e o termo de cada servidor entram nos documentos dele; despachos, relatórios, diário e comprovantes, na prestação de contas.">Envie o PDF inteiro do processo. O sistema descobre de qual ofício ele é e anexa o ofício e a justificativa assinados, o termo de cada servidor e, na prestação de contas, os despachos e os demais documentos.</p>
+    {% elif origem == "termos" %}
+      <p class="an-texto" id="pc-importar-texto" data-importar-texto
+         data-texto-padrao="Envie o PDF com os termos assinados — o processo do eProtocolo ou os termos escaneados juntos, um por servidor. O sistema separa os termos e anexa cada um no termo do servidor certo."
+         data-texto-registro="Envie o PDF com os termos assinados do {titulo} — o processo do eProtocolo ou os termos escaneados juntos. Cada termo vai para o servidor certo.">Envie o PDF com os termos assinados — o processo do eProtocolo ou os termos escaneados juntos, um por servidor. O sistema separa os termos e anexa cada um no termo do servidor certo.</p>
+    {% else %}
+      <p class="an-texto" id="pc-importar-texto" data-importar-texto
+         data-texto-padrao="Envie o PDF inteiro do processo. O sistema descobre de qual prestação ele é e anexa o ofício, os despachos, os relatórios técnicos, o diário de bordo e os comprovantes."
+         data-texto-registro="Envie o PDF inteiro do processo do {titulo}. Os documentos entram na prestação dele: ofício, despachos, relatórios técnicos, diário de bordo e comprovantes.">Envie o PDF inteiro do processo. O sistema descobre de qual prestação ele é e anexa o ofício, os despachos, os relatórios técnicos, o diário de bordo e os comprovantes.</p>
+    {% endif %}
+
+    <div class="an-caixa">
+      <label class="an-escolher">
+        <input type="file" name="arquivo" accept="application/pdf,.pdf,image/png,image/jpeg,.png,.jpg,.jpeg" class="sr-only" data-importar-arquivo required>
+        {% if origem == "termos" %}Escolher o PDF{% else %}Escolher o PDF do processo{% endif %}
+      </label>
+      <div class="an-arquivo" data-importar-quadro>
+        <span class="an-arquivo__nome" data-importar-rotulo aria-live="polite">Nenhum arquivo escolhido — ou arraste o PDF para cá</span>
+      </div>
+      <p class="an-erro" data-importar-erro hidden></p>
+    </div>
+    <p class="pc-importar__nota">PDF do eProtocolo (ou imagem PNG/JPG), até {{ importacao_limite_mb|default:25 }} MB. Quando a leitura é segura, os documentos entram sozinhos; senão, a conferência abre já preenchida.</p>
+
+    <div class="an-rodape">
+      <button type="button" class="btn--secundaria" data-importar-fechar>Cancelar</button>
+      <button type="submit" class="btn-primaria" data-importar-enviar disabled>Importar</button>
+    </div>
+  </form>
+</dialog>
+{% endwith %}
+<script src="{% estatico 'js/prestacoes-importar.js' %}" defer></script>

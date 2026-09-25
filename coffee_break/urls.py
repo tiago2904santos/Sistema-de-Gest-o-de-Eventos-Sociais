@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import importacao_views, views
 
 app_name = "coffee_break"
 
@@ -29,6 +29,8 @@ urlpatterns = [
     path("solicitacoes/", views.lista_solicitacoes, name="solicitacoes"),
     path("solicitacoes/exportar/", views.exportar_solicitacoes, name="exportar"),
     path("solicitacoes/nova/", views.nova_solicitacao, name="nova"),
+    # "Preencher com um e-mail" da tela nova: lê e sugere, não grava (POST, JSON).
+    path("solicitacoes/nova/ler-email/", views.ler_email, name="ler_email"),
     path("solicitacoes/nova/ordem-de-servico/", views.nova_os_embutido, name="nova_os_embutido"),
     path("solicitacoes/nova/ordem-de-servico/folha/", views.nova_os_folha, name="nova_os_folha"),
     path("solicitacoes/<int:pk>/editar/", views.editar_solicitacao, name="editar"),
@@ -46,6 +48,23 @@ urlpatterns = [
     path("solicitacoes/<int:pk>/nota-fiscal/", views.nota_fiscal, name="nota_fiscal"),
     path("solicitacoes/<int:pk>/nota-fiscal/anexar/", views.anexar_nota, name="anexar_nota"),
     path("solicitacoes/<int:pk>/vincular/", views.vincular_pagamento, name="vincular_pagamento"),
+    # "Importar processo de pagamento": o PDF do eProtocolo preenche protocolo, nota e atesto.
+    path("solicitacoes/importar-processo/", importacao_views.importar_processo, name="importar_processo"),
+    path(
+        "solicitacoes/importar-processo/<str:token>/",
+        importacao_views.importacao_processo,
+        name="importacao_processo",
+    ),
+    path(
+        "solicitacoes/importar-processo/<str:token>/aplicar/",
+        importacao_views.aplicar_importacao_processo,
+        name="aplicar_importacao_processo",
+    ),
+    path(
+        "solicitacoes/importar-processo/<str:token>/descartar/",
+        importacao_views.descartar_importacao_processo,
+        name="descartar_importacao_processo",
+    ),
     path("certidoes/", views.lista_certidoes, name="certidoes"),
     path("certidoes/<int:pk>/arquivo/", views.certidao_arquivo, name="certidao_arquivo"),
     path("certidoes/<int:fornecedor_pk>/<str:tipo>/anexar/", views.anexar_certidao, name="anexar_certidao"),

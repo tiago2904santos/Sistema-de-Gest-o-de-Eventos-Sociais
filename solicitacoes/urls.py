@@ -7,6 +7,8 @@ app_name = "solicitacoes"
 urlpatterns = [
     path("", views.lista_solicitacoes, name="lista"),
     path("nova/", views.nova_solicitacao, name="nova"),
+    # "Preencher com um e-mail" da tela nova: lê e sugere, não grava (POST, JSON).
+    path("nova/ler-email/", views.ler_email, name="ler_email"),
     path("exportar/", views.exportar_solicitacoes, name="exportar"),
     # Tela única do registro: o formulário. Não existe mais rota de detalhe.
     path("<int:pk>/editar/", views.editar_solicitacao, name="editar"),

@@ -1,4 +1,5 @@
 from core.legado import OrigemLegado
+from django.conf import settings
 from django.db import models
 from .arquivos import ArquivoPrivadoField
 from core.constraints import periodo_ordenado
@@ -24,6 +25,15 @@ def prestacao_anexo_original_upload_to(instance, filename):
     ajustar a posição desenharia por cima de um arquivo que já tem os números.
     """
     return f"viagens_prestacoes/{instance.prestacao_id or 'nova'}/originais/{filename}"
+
+def importacao_processo_upload_to(instance, filename):
+    """O processo inteiro do eProtocolo, como foi enviado para importar.
+
+    Fica fora da pasta de uma prestação porque, quando chega, ainda não se sabe de
+    qual ela é — e pode nem vir a ser de nenhuma (importação descartada).
+    """
+    from django.utils import timezone
+    return f"viagens_prestacoes/importacoes/{timezone.localdate():%Y/%m}/{filename}"
 
 class PrestacaoContas(OrigemLegado):
     STATUS_PENDENTE = 'pendente'
@@ -189,6 +199,9 @@ class PrestacaoServidor(OrigemLegado):
         self.removida_em = None
         self.save(update_fields=['removida_em', 'atualizado_em'])
 
+#: Como o dinheiro chegou ao servidor, lido do comprovante bancário.
+OPERACAO_CHOICES = [('saque', 'Saque'), ('transferencia', 'Transferência'), ('pix', 'Pix'), ('ted', 'TED'), ('doc', 'DOC'), ('deposito', 'Depósito')]
+
 class PrestacaoDocumentoAnexo(OrigemLegado):
     TIPO_DESPACHO = 'despacho'
     TIPO_OFICIO_ASSINADO = 'oficio_assinado'
@@ -202,6 +215,16 @@ class PrestacaoDocumentoAnexo(OrigemLegado):
     arquivo = ArquivoPrivadoField(upload_to=prestacao_documento_anexo_upload_to, validators=[validate_private_document_upload])
     arquivo_original = ArquivoPrivadoField(upload_to=prestacao_anexo_original_upload_to, blank=True, help_text='PDF como enviado, antes do carimbo. Origem de todo recarimbo.')
     nome_original = models.CharField(max_length=255, blank=True, default='')
+    #: De qual importação de processo o anexo saiu (vazio = anexado à mão).
+    importacao = models.ForeignKey('ImportacaoProcesso', on_delete=models.SET_NULL, null=True, blank=True, related_name='anexos')
+    #: Folhas do processo de onde o anexo foi recortado, na numeração do PDF ("3-4", "7, 9").
+    paginas_origem = models.CharField('páginas no processo', max_length=60, blank=True, default='')
+    #: Comprovante: quanto foi sacado/transferido, em que dia e como. Vários
+    #: comprovantes por servidor, cada um com os seus — por isso ficam no anexo, e
+    #: não em `PrestacaoServidor`.
+    valor = models.DecimalField('valor da operação', max_digits=10, decimal_places=2, null=True, blank=True)
+    data_operacao = models.DateField('data da operação', null=True, blank=True)
+    operacao = models.CharField('operação', max_length=20, choices=OPERACAO_CHOICES, blank=True, default='')
     criado_em = models.DateTimeField(auto_now_add=True)
 
     @property
@@ -218,7 +241,64 @@ class PrestacaoDocumentoAnexo(OrigemLegado):
         ordering = ['tipo', 'criado_em', 'pk']
         verbose_name = 'Anexo da prestação de contas'
         verbose_name_plural = 'Anexos da prestação de contas'
-        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_prestacaodocumentoanexo_origem")]
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_prestacaodocumentoanexo_origem"), positivo('valor', name='prest_anexo_valor_positivo')]
+
+    def __str__(self):
+        return self.nome_original or self.arquivo.name
+
+#: A ordem dos documentos da prestação, a mesma em todo lugar que os junta ou lista:
+#: pacote final, "Baixar documentos", modal de anexar e Etapa 3. Ofício → despacho(s)
+#: com a folha de assinatura → relatório técnico → diário de bordo → comprovante(s).
+ORDEM_DOCUMENTOS_PRESTACAO = (
+    PrestacaoDocumentoAnexo.TIPO_OFICIO_ASSINADO,
+    PrestacaoDocumentoAnexo.TIPO_DESPACHO,
+    PrestacaoDocumentoAnexo.TIPO_RT_ASSINADO,
+    PrestacaoDocumentoAnexo.TIPO_DB_ASSINADO,
+    PrestacaoDocumentoAnexo.TIPO_COMPROVANTE,
+)
+
+
+def ordenacao_dos_anexos(tipo) -> tuple:
+    """Como ordenar os anexos de um tipo dentro do pacote.
+
+    Comprovantes pela data da operação (o saque antes da transferência do dia
+    seguinte), os sem data no fim; o resto — e o desempate — pela ordem em que foram
+    anexados, que no importador é a ordem do processo.
+    """
+    if tipo == PrestacaoDocumentoAnexo.TIPO_COMPROVANTE:
+        return (models.F('data_operacao').asc(nulls_last=True), 'criado_em', 'pk')
+    return ('criado_em', 'pk')
+
+class ImportacaoProcesso(OrigemLegado):
+    """Um processo do eProtocolo enviado para importar na prestação de contas.
+
+    Guarda o PDF como veio (auditoria e "aplicar de novo"), o hash contra importar
+    o mesmo arquivo duas vezes, o que a leitura propôs (`plano`) e o que foi gravado
+    (`resultado`). O `plano` não leva texto do documento nem CPF: só tipo, páginas,
+    destino e os dados que vão para o anexo (valor, data, operação do comprovante).
+    """
+    SITUACAO_ANALISADA = 'analisada'
+    SITUACAO_APLICADA = 'aplicada'
+    SITUACAO_DESCARTADA = 'descartada'
+    SITUACAO_CHOICES = [(SITUACAO_ANALISADA, 'Aguardando conferência'), (SITUACAO_APLICADA, 'Aplicada'), (SITUACAO_DESCARTADA, 'Descartada')]
+    arquivo = ArquivoPrivadoField('processo enviado', upload_to=importacao_processo_upload_to)
+    nome_original = models.CharField(max_length=255, blank=True, default='')
+    hash_sha256 = models.CharField('SHA-256 do arquivo', max_length=64, db_index=True)
+    protocolo = models.CharField('protocolo lido', max_length=30, blank=True, default='')
+    oficio = models.ForeignKey(Oficio, on_delete=models.SET_NULL, null=True, blank=True, related_name='importacoes_processo')
+    prestacao = models.ForeignKey(PrestacaoContas, on_delete=models.SET_NULL, null=True, blank=True, related_name='importacoes')
+    situacao = models.CharField(max_length=20, choices=SITUACAO_CHOICES, default=SITUACAO_ANALISADA, db_index=True)
+    plano = models.JSONField(default=dict, blank=True)
+    resultado = models.JSONField(default=dict, blank=True)
+    criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    criado_em = models.DateTimeField(auto_now_add=True)
+    aplicado_em = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-criado_em', '-pk']
+        verbose_name = 'Importação de processo'
+        verbose_name_plural = 'Importações de processo'
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_importacaoprocesso_origem")]
 
     def __str__(self):
         return self.nome_original or self.arquivo.name

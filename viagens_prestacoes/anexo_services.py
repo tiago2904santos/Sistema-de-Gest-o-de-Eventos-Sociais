@@ -60,6 +60,31 @@ def _apagar_arquivo_apos_commit(campo_arquivo) -> None:
     transaction.on_commit(lambda: campo_arquivo.delete(save=False))
 
 
+def remover_anexos_do_tipo(prestacao, *, tipo, servidor_prestacao=None, todos_do_tipo=False) -> int:
+    """Apaga os anexos de um (tipo, escopo): as linhas agora, os arquivos depois do commit.
+
+    Escopo: os do `servidor_prestacao` (vazio = os compartilhados do ofício) ou,
+    com `todos_do_tipo`, todos os daquele tipo na prestação. Chamada dentro de uma
+    transação de quem vai criar os novos — sozinha, um rollback depois dela
+    devolveria as linhas, e os arquivos continuam lá porque só saem no commit.
+    """
+    anteriores = PrestacaoDocumentoAnexo.objects.filter(prestacao=prestacao, tipo=tipo)
+    if not todos_do_tipo:
+        anteriores = anteriores.filter(servidor_prestacao=servidor_prestacao)
+
+    arquivos_antigos = [
+        campo
+        for anexo in anteriores
+        for campo in (anexo.arquivo, anexo.arquivo_original)
+        if campo
+    ]
+    removidos = anteriores.count()
+    anteriores.delete()
+    for campo_arquivo in arquivos_antigos:
+        _apagar_arquivo_apos_commit(campo_arquivo)
+    return removidos
+
+
 @atomico_com_arquivos
 def substituir_anexo_assinado(
     prestacao,
@@ -81,18 +106,12 @@ def substituir_anexo_assinado(
     arquivo novo não pode custar o que já estava anexado, e esse era o motivo escrito no
     código antes desta fatia.
     """
-    anteriores = PrestacaoDocumentoAnexo.objects.filter(prestacao=prestacao, tipo=tipo)
-    if not substituir_todos_do_tipo:
-        anteriores = anteriores.filter(servidor_prestacao=servidor_prestacao)
-
-    arquivos_antigos = [
-        campo
-        for anexo in anteriores
-        for campo in (anexo.arquivo, anexo.arquivo_original)
-        if campo
-    ]
-    substituidos = anteriores.count()
-    anteriores.delete()
+    substituidos = remover_anexos_do_tipo(
+        prestacao,
+        tipo=tipo,
+        servidor_prestacao=servidor_prestacao,
+        todos_do_tipo=substituir_todos_do_tipo,
+    )
 
     anexo = PrestacaoDocumentoAnexo.objects.create(
         prestacao=prestacao,
@@ -101,8 +120,6 @@ def substituir_anexo_assinado(
         arquivo=arquivo,
         nome_original=nome_original,
     )
-    for campo_arquivo in arquivos_antigos:
-        _apagar_arquivo_apos_commit(campo_arquivo)
 
     if servidor_prestacao is not None:
         marcar_servidor_em_preenchimento(servidor_prestacao)
@@ -132,3 +149,37 @@ def excluir_anexo(anexo, prestacao) -> ResultadoAnexo:
     else:
         marcar_servidores_pendentes(prestacao)
     return ResultadoAnexo(substituidos=1)
+
+
+@atomico_com_arquivos
+def endireitar_diario_anexado(anexo) -> bool:
+    """Deixa em pé o diário de bordo anexado à mão; devolve se girou alguma página.
+
+    O diário é A4 deitado e costuma voltar do eProtocolo ou do scanner "achatado"
+    numa página retrato, de lado. Com texto, a direção dele decide o /Rotate — em
+    pé, em paisagem, nunca de cabeça para baixo. O PDF como veio fica em
+    `arquivo_original` (o mesmo par do ofício carimbado); o girado vira o `arquivo`.
+    Página só de imagem, sem OCR, fica como veio: aqui não há conferência para
+    perguntar o lado. Imagem (PNG/JPG) também fica: o pacote a converte como está.
+    """
+    from django.core.files.base import ContentFile
+
+    from .importacao.montagem import diario_em_pe
+
+    if anexo.tipo != PrestacaoDocumentoAnexo.TIPO_DB_ASSINADO or not anexo.arquivo:
+        return False
+    anexo.arquivo.open("rb")
+    try:
+        cru = anexo.arquivo.read()
+    finally:
+        anexo.arquivo.close()
+    girado, mudou = diario_em_pe(cru)
+    if not mudou:
+        return False
+    # O arquivo enviado passa a ser o cru (sem cópia); o girado entra no lugar dele.
+    # Num rollback, o girado recém-gravado sai com a transação de arquivos e a linha
+    # volta a apontar para o enviado.
+    anexo.arquivo_original.name = anexo.arquivo.name
+    anexo.arquivo.save(f"diario_de_bordo_{anexo.pk}.pdf", ContentFile(girado), save=False)
+    anexo.save(update_fields=["arquivo", "arquivo_original"])
+    return True

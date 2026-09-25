@@ -90,6 +90,12 @@
       </div>
     {% endif %}
 
+    {% if not solicitacao %}
+      {# Pedido que chegou por e-mail: soltar o e-mail (ou colar o texto) preenche os campos vazios. #}
+      {% url 'solicitacoes:ler_email' as url_ler_email %}
+      {% include "components/v32/preencher_por_email.html" with url=url_ler_email formulario="form-solicitacao" anexa_original=True substituir_padrao="data_solicitacao estado" origem=email_origem registro="solicitação" %}
+    {% endif %}
+
     <form method="post" action="" id="form-solicitacao" class="editor-roteiro__principal" enctype="multipart/form-data">
       {% csrf_token %}
       {% if reabrindo %}<input type="hidden" name="reabrir" value="1">{% endif %}
@@ -206,7 +212,7 @@
               </div>
             {% endif %}
           {% else %}
-            {% include "components/upload_anexos.html" with id="id_anexos_cadastro" name="anexos" multiple=True mensagem_vazio="Nenhum arquivo selecionado. Eles serão salvos junto com a solicitação." only %}
+            {% include "components/upload_anexos.html" with id="id_anexos_cadastro" name="anexos" multiple=True mensagem_vazio="Nenhum arquivo selecionado. Eles serão salvos junto com a solicitação." aceitar=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods,.eml,.msg,.txt" ajuda_tipos="Ofício, memorando, e-mail do pedido, foto do local. PDF, DOC, XLS, ODT, e-mail (EML ou MSG), TXT ou imagem, até 10 MB por arquivo." only %}
           {% endif %}
 
           {% comment %}Uma barra só para tudo o que se faz aqui: voltar à esquerda; salvar,

@@ -1,0 +1,37 @@
+{% load estaticos %}{% comment %}
+  Modal "Importar processo de pagamento", na moldura do modal de anexar
+  (`an-*`). Abre pelo botão da lista (o sistema descobre de quem é o
+  processo), pelo ⋮ de uma solicitação e pela etapa 3 — esses dois mandam a
+  solicitação (`data-solicitacao`), que vira a âncora da identificação.
+  Soltar o PDF numa área `[data-cb-importar-soltar]` (a lista, a faixa da
+  etapa 3) preenche este formulário e envia na hora. O envio é um POST comum:
+  a view aplica sozinha quando a identificação é segura, ou abre a
+  conferência. Contexto: `importacao_limite_mb` (opcional).
+{% endcomment %}
+<dialog class="an-dialogo cbi-dialogo" data-cb-importar-dialogo aria-labelledby="cbi-titulo" aria-describedby="cbi-texto">
+  <form method="post" enctype="multipart/form-data" class="an-form" action="{% url 'coffee_break:importar_processo' %}" data-cb-importar-form novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <input type="hidden" name="solicitacao" value="" data-cb-importar-solicitacao>
+    <h2 class="an-titulo" id="cbi-titulo">Importar processo de pagamento</h2>
+    <p class="an-texto" id="cbi-texto" data-cb-importar-texto data-texto-padrao="Envie o PDF inteiro do processo, baixado do eProtocolo. O sistema descobre de qual solicitação ele é (pelo ofício, pelo protocolo e pelas notas), grava o protocolo de pagamento e anexa a nota fiscal que faltar.">Envie o PDF inteiro do processo, baixado do eProtocolo. O sistema descobre de qual solicitação ele é (pelo ofício, pelo protocolo e pelas notas), grava o protocolo de pagamento e anexa a nota fiscal que faltar.</p>
+
+    <div class="an-caixa">
+      <label class="an-escolher">
+        <input type="file" name="arquivo" accept="application/pdf,.pdf" class="sr-only" data-cb-importar-arquivo required>
+        Escolher o PDF do processo
+      </label>
+      <div class="an-arquivo" data-cb-importar-quadro>
+        <span class="an-arquivo__nome" data-cb-importar-rotulo aria-live="polite">Nenhum arquivo escolhido — ou arraste o PDF para cá</span>
+      </div>
+      <p class="an-erro" data-cb-importar-erro hidden></p>
+    </div>
+    <p class="cbi-nota">O arquivo “Processo_00.000.000-0_1.pdf”, até {{ importacao_limite_mb|default:25 }} MB. Quando a identificação é segura, tudo entra sozinho; senão, a conferência abre já preenchida. Nada que já foi digitado é trocado.</p>
+
+    <div class="an-rodape">
+      <button type="button" class="btn--secundaria" data-cb-importar-fechar>Cancelar</button>
+      <button type="submit" class="btn-primaria" data-cb-importar-enviar disabled>Importar</button>
+    </div>
+  </form>
+</dialog>
+<script src="{% estatico 'js/coffee-break-importar.js' %}" defer></script>

@@ -21,6 +21,7 @@ from django.views.decorators.http import require_POST
 
 from core import andamento as fluxo_andamento
 from core import cadastros_modal
+from core import preencher_por_email
 from core.listagens import (
     opcoes,
     ordenacao,
@@ -29,7 +30,7 @@ from core.listagens import (
     valores_filtro,
 )
 
-from . import services
+from . import preenchimento, services
 from .presenters import linha_da_lista
 from .forms import (
     AtendimentoForm,
@@ -41,6 +42,7 @@ from .models import (
     SITUACOES_ABERTAS,
     AcaoHistorico,
     Atendimento,
+    HistoricoAtendimento,
     Responsavel,
     SituacaoAtendimento,
     Veiculo,
@@ -48,6 +50,9 @@ from .models import (
 from .permissions import acesso_ao_modulo, gerenciamento_de_cadastros
 
 KICKER = "Atendimento à Imprensa"
+
+# O histórico do atendimento que veio de e-mail: "Criado a partir do e-mail…".
+VERBO_ORIGEM = "Criado"
 
 FILAS = [
     ("abertos", "Em aberto", list(SITUACOES_ABERTAS)),
@@ -354,11 +359,14 @@ def _contexto_formulario(form, atendimento=None):
     return contexto
 
 
-def _registrar_edicao(request, form, atendimento, novo):
+def _registrar_edicao(request, form, atendimento, novo, origem=None):
     if novo:
+        descricao = "Atendimento registrado no sistema."
+        if origem:
+            descricao += f" {preencher_por_email.texto_da_origem(origem, verbo=VERBO_ORIGEM)}."
         services.registrar_historico(
             atendimento, request.user, AcaoHistorico.CRIACAO,
-            "Atendimento registrado no sistema.", status_novo=atendimento.situacao,
+            descricao, status_novo=atendimento.situacao,
         )
         return
     alterados = [
@@ -382,10 +390,48 @@ def _salvar(request, form):
     return atendimento
 
 
+def _duplicados_do_email(texto_origem):
+    """Atendimentos que já saíram do mesmo e-mail (pelo histórico)."""
+    historicos = (
+        HistoricoAtendimento.objects.filter(acao=AcaoHistorico.CRIACAO, descricao__contains=texto_origem)
+        .select_related("atendimento")
+        .order_by("-criado_em")[:5]
+    )
+    return [
+        {
+            "titulo": f"Atendimento #{h.atendimento.pk} ({h.atendimento.jornalista})",
+            "url": reverse("atendimento_imprensa:editar", args=[h.atendimento.pk]),
+        }
+        for h in historicos
+    ]
+
+
+@acesso_ao_modulo
+@require_POST
+def ler_email(request):
+    """Lê o e-mail do jornalista (arquivo ou texto colado) para a tela "Novo atendimento".
+
+    Não grava nada: devolve as sugestões em JSON (`core.preencher_por_email`)
+    e guarda o original até o atendimento ser salvo, para o histórico dizer
+    de onde ele veio. Veículo novo nunca é criado aqui: só sugerido.
+    """
+    return preencher_por_email.responder_leitura(
+        request,
+        modulo="atendimento_imprensa",
+        sugerir=preenchimento.sugestoes,
+        formulario=AtendimentoForm,
+        duplicados=_duplicados_do_email,
+        verbo=VERBO_ORIGEM,
+    )
+
+
 @acesso_ao_modulo
 def novo(request):
+    email_origem = None
     if request.method == "POST":
         form = AtendimentoForm(request.POST)
+        # O e-mail lido em "Preencher com um e-mail", se o atendimento veio dele.
+        origem = preencher_por_email.origem_do_pedido(request, "atendimento_imprensa")
         if form.is_valid():
             try:
                 atendimento = _salvar(request, form)
@@ -394,16 +440,19 @@ def novo(request):
                     for mensagem in mensagens:
                         form.add_error(campo if campo in form.fields else None, mensagem)
             else:
-                _registrar_edicao(request, form, atendimento, novo=True)
+                _registrar_edicao(request, form, atendimento, novo=True, origem=origem)
+                preencher_por_email.concluir_origem(request, origem)
                 messages.success(request, "Atendimento registrado.")
                 return redirect("atendimento_imprensa:editar", pk=atendimento.pk)
         messages.error(request, "Corrija os campos destacados para continuar.")
+        email_origem = preencher_por_email.origem_pendente(request, "atendimento_imprensa")
     else:
         agora = timezone.localtime()
         form = AtendimentoForm(
             initial={"data": agora.date(), "horario": agora.time().replace(second=0, microsecond=0)}
         )
     contexto = _contexto_formulario(form)
+    contexto["email_origem"] = email_origem
     contexto["titulo_pagina"] = "Novo atendimento"
     return render(request, "pages/atendimento_imprensa/form.html", contexto)
 

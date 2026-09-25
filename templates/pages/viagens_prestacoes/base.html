@@ -11,10 +11,10 @@
 {% block title %}{{ page_title|default:"Prestação de contas" }} — Sistema de Gestão de Eventos Sociais{% endblock %}
 {% block extra_css %}{{ block.super }}{% block pc_css %}{% endblock %}{% endblock %}
 {% block conteudo %}
-<nav class="trilha-v32" aria-label="Trilha de navegação">
+{% block pc_trilha %}<nav class="trilha-v32" aria-label="Trilha de navegação">
   <a href="{% url 'viagens_prestacoes:index' %}">Prestações de Contas</a>
   {% if prestacao %}<span aria-hidden="true">/</span><span>Ofício {{ prestacao.oficio.numero_formatado }}{% if identificacao.destino and identificacao.destino != "—" %} · {{ identificacao.destino }}{% endif %}</span>{% endif %}
-</nav>
+</nav>{% endblock %}
 <div class="pc-fluxo">
   <div class="d-cabeca d-cabeca--form frm-topo">
     <div class="frm-titulo">

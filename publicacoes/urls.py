@@ -9,6 +9,8 @@ urlpatterns = [
     path("pautas/", views.lista, name="lista"),
     path("pautas/exportar/", views.exportar, name="exportar"),
     path("pautas/nova/", views.nova, name="nova"),
+    # "Preencher com um e-mail" da tela nova: lê e sugere, não grava (POST, JSON).
+    path("pautas/nova/ler-email/", views.ler_email, name="ler_email"),
     path("pautas/<int:pk>/editar/", views.editar, name="editar"),
     path("pautas/<int:pk>/andamento/", views.registrar_andamento, name="andamento"),
     path("cadastros/", views.cadastros, name="cadastros"),
