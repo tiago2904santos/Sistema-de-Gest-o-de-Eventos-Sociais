@@ -34,6 +34,11 @@
  * o rascunho automático (app.js) já restaurou o que tinha — e o que ele
  * restaurou conta como preenchido, não é sobrescrito.
  *
+ * Com `data-anexos` (o id do seletor de anexos do formulário), a faixa também
+ * recebe os anexos: soltar vários arquivos lê o e-mail (ou, sem e-mail, o
+ * primeiro PDF) e manda o resto — ofício, fotos, documentos — para a lista de
+ * anexos, que vai junto ao salvar. PDF que não se lê como e-mail vira anexo.
+ *
  * O conteúdo do e-mail nunca entra como HTML: tudo vai por textContent.
  */
 (function () {
@@ -41,6 +46,13 @@
 
   var PRIMEIROS = ["estado", "tipo_evento", "canal_solicitacao", "unidade_movel", "evento"];
   var EXTENSOES = [".eml", ".msg", ".pdf", ".txt"];
+  var EMAILS = [".eml", ".msg", ".txt"];
+
+  function extensaoDe(arquivo) {
+    var nome = (arquivo.name || "").toLowerCase();
+    var ponto = nome.lastIndexOf(".");
+    return ponto === -1 ? "" : nome.slice(ponto);
+  }
 
   function el(tag, classe, texto) {
     var elemento = document.createElement(tag);
@@ -93,6 +105,8 @@
     var vinculoTexto = bloco.querySelector("[data-pe-vinculo-texto]");
     var botaoDesligar = bloco.querySelector("[data-pe-desligar]");
     var CHAVE = "preencher-email:" + window.location.pathname + "#" + form.id;
+    var seletorAnexos = bloco.getAttribute("data-anexos") ? document.getElementById(bloco.getAttribute("data-anexos")) : null;
+    var avisoAnexados = bloco.querySelector("[data-pe-anexados]");
 
     var aplicando = false;
     var marcados = [];
@@ -417,10 +431,15 @@
       if (m.enviado_em) partes[0] += " (" + m.enviado_em + ")";
       var texto = partes[0] + (m.assunto ? ": “" + m.assunto + "”." : ".");
       var arquivo = dados.arquivo || {};
+      // PDF que não é e-mail (o ofício): sem remetente nem assunto, vale o nome do arquivo.
+      var soArquivo = !m.remetente && !m.assunto && arquivo.nome;
+      if (soArquivo) texto = "Arquivo “" + arquivo.nome + "”.";
       if (arquivo.token) {
         if (anexaOriginal) {
-          var anexos = (arquivo.anexos || []).length;
-          texto += " Ao salvar, o e-mail" + (anexos ? " e " + plural(anexos, "anexo dele", "anexos dele") : "") +
+          var nomesAnexos = arquivo.anexos || [];
+          var anexos = nomesAnexos.length;
+          texto += " Ao salvar, " + (soArquivo ? "ele" : "o e-mail") + (anexos ? " e " + plural(anexos, "anexo dele", "anexos dele") +
+            " (" + nomesAnexos.join(", ") + ")" : "") +
             " fica" + (anexos ? "m" : "") + " anexado" + (anexos ? "s" : "") + " à " + registro +
             " e o histórico registra de onde ela veio.";
         } else {
@@ -534,7 +553,7 @@
       return campo ? campo.value : "";
     }
 
-    function enviar(corpo) {
+    function enviar(corpo, seNaoLer) {
       mostrarErro("");
       ocupado(true);
       anunciar("Lendo o e-mail…");
@@ -572,16 +591,15 @@
         })
         .catch(function (falha) {
           anunciar("");
+          if (seNaoLer && seNaoLer()) return;
           mostrarErro(falha && falha.message ? falha.message : "Não foi possível ler o e-mail.");
         })
         .then(function () { ocupado(false); });
     }
 
-    function lerArquivo(arquivo) {
+    function lerArquivo(arquivo, seNaoLer) {
       if (!arquivo) return;
-      var nome = (arquivo.name || "").toLowerCase();
-      var extensao = nome.slice(nome.lastIndexOf("."));
-      if (EXTENSOES.indexOf(extensao) === -1) {
+      if (EXTENSOES.indexOf(extensaoDe(arquivo)) === -1) {
         mostrarErro("Envie o e-mail em .eml, .msg, .pdf ou .txt — ou cole o texto.");
         return;
       }
@@ -591,7 +609,86 @@
       }
       var dados = new FormData();
       dados.append("arquivo", arquivo);
-      enviar(dados);
+      enviar(dados, seNaoLer);
+    }
+
+    // ------------------------------------------------------------------
+    // Anexos: o que não é o e-mail vai para o seletor de anexos do formulário
+    // ------------------------------------------------------------------
+
+    function aceitoComoAnexo(arquivo) {
+      var aceitos = (seletorAnexos.getAttribute("accept") || "").toLowerCase().split(",")
+        .map(function (t) { return t.trim(); }).filter(Boolean);
+      return !aceitos.length || aceitos.indexOf(extensaoDe(arquivo)) !== -1;
+    }
+
+    var lote = { aceitos: [], recusados: [] };
+
+    function anexar(arquivos) {
+      if (!seletorAnexos || !arquivos.length) return;
+      var novos = arquivos.filter(aceitoComoAnexo);
+      lote.aceitos = lote.aceitos.concat(novos);
+      lote.recusados = lote.recusados.concat(arquivos.filter(function (a) { return !aceitoComoAnexo(a); }));
+      var aceitos = lote.aceitos;
+      var recusados = lote.recusados;
+      if (novos.length) {
+        // O seletor soma o que chega no "change" à lista que já tinha.
+        var dt = new DataTransfer();
+        novos.forEach(function (a) { dt.items.add(a); });
+        seletorAnexos.files = dt.files;
+        seletorAnexos.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      if (avisoAnexados) {
+        var partes = [];
+        if (aceitos.length) {
+          partes.push(plural(aceitos.length, "arquivo foi para", "arquivos foram para") + " os anexos e vai" +
+            (aceitos.length > 1 ? "o" : "") + " junto ao salvar: " +
+            aceitos.map(function (a) { return a.name; }).join(", ") + ".");
+        }
+        if (recusados.length) {
+          partes.push("Não entra" + (recusados.length > 1 ? "m" : "") + " como anexo (tipo não aceito): " +
+            recusados.map(function (a) { return a.name; }).join(", ") + ".");
+        }
+        avisoAnexados.textContent = partes.join(" ");
+        avisoAnexados.hidden = !partes.length;
+      }
+      if (aceitos.length) anunciar(plural(aceitos.length, "arquivo anexado", "arquivos anexados") + ".");
+    }
+
+    function receber(lista) {
+      var arquivos = Array.prototype.slice.call(lista || []);
+      if (!arquivos.length) return;
+      lote = { aceitos: [], recusados: [] };
+      if (!seletorAnexos) {
+        if (arquivos.length > 1) {
+          mostrarErro("Solte um e-mail por vez.");
+          return;
+        }
+        lerArquivo(arquivos[0]);
+        return;
+      }
+      // O e-mail é lido; sem e-mail, o primeiro PDF (e-mail impresso ou ofício).
+      var ler = arquivos.filter(function (a) { return EMAILS.indexOf(extensaoDe(a)) !== -1; })[0] ||
+        arquivos.filter(function (a) { return extensaoDe(a) === ".pdf"; })[0];
+      var resto = arquivos.filter(function (a) { return a !== ler; });
+      if (!ler) {
+        mostrarErro("");
+        anexar(resto);
+        return;
+      }
+      var pdf = extensaoDe(ler) === ".pdf";
+      if (maximo && ler.size > maximo) {
+        resto.unshift(ler);
+        mostrarErro("");
+        anexar(resto);
+        return;
+      }
+      anexar(resto);
+      lerArquivo(ler, pdf ? function () {
+        // PDF que não é e-mail (um ofício escaneado, por exemplo): só anexa.
+        anexar([ler]);
+        return true;
+      } : null);
     }
 
     function lerTexto() {
@@ -627,8 +724,7 @@
 
     if (entrada) {
       entrada.addEventListener("change", function () {
-        var arquivo = entrada.files && entrada.files[0];
-        lerArquivo(arquivo);
+        receber(entrada.files);
         entrada.value = ""; // o mesmo arquivo pode ser escolhido de novo
       });
     }
@@ -673,13 +769,7 @@
       evento.preventDefault();
       profundidade = 0;
       bloco.classList.remove("is-arrastando");
-      var arquivos = evento.dataTransfer && evento.dataTransfer.files;
-      if (!arquivos || !arquivos.length) return;
-      if (arquivos.length > 1) {
-        mostrarErro("Solte um e-mail por vez.");
-        return;
-      }
-      lerArquivo(arquivos[0]);
+      receber(evento.dataTransfer && evento.dataTransfer.files);
     });
   }
 
