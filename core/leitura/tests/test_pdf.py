@@ -227,6 +227,22 @@ class ImagemTests(SimpleTestCase):
         self.assertTrue(dados.startswith(b"%PDF"))
         self.assertEqual(len(PdfReader(io.BytesIO(dados)).pages), 1)
 
+    def _medidas(self, dados):
+        caixa = PdfReader(io.BytesIO(dados)).pages[0].mediabox
+        return round(float(caixa.width)), round(float(caixa.height))
+
+    def test_foto_em_pe_vira_folha_a4_retrato(self):
+        dados = leitura_pdf.imagem_para_pdf(self._png(modo="RGB", tamanho=(900, 1600)))
+        self.assertEqual(self._medidas(dados), (595, 842))
+
+    def test_foto_deitada_vira_folha_a4_paisagem(self):
+        dados = leitura_pdf.imagem_para_pdf(self._png(modo="RGB", tamanho=(1600, 900)))
+        self.assertEqual(self._medidas(dados), (842, 595))
+
+    def test_sem_folha_a4_mantem_o_tamanho_da_imagem(self):
+        dados = leitura_pdf.imagem_para_pdf(self._png(modo="RGB", tamanho=(144, 72)), folha_a4=False)
+        self.assertNotEqual(self._medidas(dados), (595, 842))
+
     def test_conversor_antigo_da_prestacao_usa_o_novo(self):
         from viagens_prestacoes.services import _image_bytes_to_pdf
 

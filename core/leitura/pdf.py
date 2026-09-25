@@ -134,13 +134,39 @@ def eh_imagem(dados: bytes) -> bool:
     return cabeca.startswith(b"\x89PNG\r\n\x1a\n") or cabeca.startswith(b"\xff\xd8\xff")
 
 
-def imagem_para_pdf(dados: bytes, *, corrigir_exif: bool = False) -> bytes:
+#: Folha A4 em pontos e a resolução com que a imagem é posta nela.
+_A4_PT = (595.28, 841.89)
+_DPI_FOLHA = 200
+_MARGEM_PT = 28
+
+
+def _na_folha_a4(quadro):
+    """O quadro centralizado numa folha A4 branca (retrato ou paisagem, como a
+    imagem), com margem, sem esticar: foto de celular vira página do tamanho
+    das outras do pacote, e não um "cartaz" de 30 × 55 cm."""
+    from PIL import Image
+
+    largura_pt, altura_pt = _A4_PT if quadro.height >= quadro.width else _A4_PT[::-1]
+    escala_px = _DPI_FOLHA / 72.0
+    folha = Image.new("RGB", (round(largura_pt * escala_px), round(altura_pt * escala_px)), "white")
+    util_l = folha.width - 2 * round(_MARGEM_PT * escala_px)
+    util_a = folha.height - 2 * round(_MARGEM_PT * escala_px)
+    fator = min(util_l / quadro.width, util_a / quadro.height)
+    tamanho = (max(1, round(quadro.width * fator)), max(1, round(quadro.height * fator)))
+    if tamanho != quadro.size:
+        quadro = quadro.resize(tamanho, Image.LANCZOS)
+    folha.paste(quadro, ((folha.width - quadro.width) // 2, (folha.height - quadro.height) // 2))
+    return folha
+
+
+def imagem_para_pdf(dados: bytes, *, corrigir_exif: bool = False, folha_a4: bool = True) -> bytes:
     """PDF com uma página por quadro da imagem.
 
     Transparência vira fundo branco (o PDF não tem canal alfa). Com
     `corrigir_exif`, a foto de celular é desvirada pela etiqueta EXIF de
     orientação antes de virar página — sem isso, a foto aparece como o
-    sensor gravou, muitas vezes deitada.
+    sensor gravou, muitas vezes deitada. Com `folha_a4` (padrão), cada
+    quadro vai centralizado numa folha A4, como as demais do pacote.
     """
     from PIL import Image
     from PIL import ImageSequence
@@ -162,10 +188,13 @@ def imagem_para_pdf(dados: bytes, *, corrigir_exif: bool = False) -> bytes:
         raise ImagemInvalida("Não foi possível ler a imagem anexada.")
     if orientacao != 1:
         quadros[0] = _desvirar(quadros[0], orientacao)
+    if folha_a4:
+        quadros = [_na_folha_a4(q) for q in quadros]
 
     saida = BytesIO()
     primeiro, *resto = quadros
-    primeiro.save(saida, format="PDF", save_all=True, append_images=resto)
+    opcoes = {"resolution": float(_DPI_FOLHA)} if folha_a4 else {}
+    primeiro.save(saida, format="PDF", save_all=True, append_images=resto, **opcoes)
     return saida.getvalue()
 
 
