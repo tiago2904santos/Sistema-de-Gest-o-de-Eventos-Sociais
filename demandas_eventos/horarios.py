@@ -32,9 +32,11 @@ def extrair_horarios(texto):
     if len(achados) == 2 and _ATE.match(texto[achados[0][0].end():achados[1][0].start()]):
         fim = achados[1][1]
     usados = achados[:2] if fim else achados[:1]
-    sobra = texto
-    for m, _ in reversed(usados):
-        sobra = sobra[: m.start()] + " " + sobra[m.end():]
+    # O conector entre início e fim ("às", "-") sai junto com os horários:
+    # senão "das 9h às 12h" sobrava "das às" e "10h às 15h à definir",
+    # "às à definir".
+    primeiro, ultimo = usados[0][0], usados[-1][0]
+    sobra = texto[: primeiro.start()] + " " + texto[ultimo.end():]
     sobra = re.sub(r"\s+", " ", sobra).strip(" ,;:-–")
     if re.fullmatch(r"(?:às|as|a|até|ate|das|de|e)?", sobra, re.I):
         sobra = ""
