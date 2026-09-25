@@ -97,7 +97,7 @@
     {% if not solicitacao %}
       {# Pedido que chegou por e-mail: soltar o e-mail (ou colar o texto) preenche os campos vazios. #}
       {% url 'solicitacoes:ler_email' as url_ler_email %}
-      {% include "components/v32/preencher_por_email.html" with url=url_ler_email formulario="form-solicitacao" anexa_original=True substituir_padrao="data_solicitacao estado" origem=email_origem registro="solicitação" %}
+      {% include "components/v32/preencher_por_email.html" with url=url_ler_email formulario="form-solicitacao" anexa_original=True anexos="id_anexos_cadastro" substituir_padrao="data_solicitacao estado" origem=email_origem registro="solicitação" %}
     {% endif %}
 
     <form method="post" action="" id="form-solicitacao" class="editor-roteiro__principal" enctype="multipart/form-data">

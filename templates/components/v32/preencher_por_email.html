@@ -20,6 +20,9 @@
   `url`: o endpoint POST `.../ler-email/` do módulo (namespace do módulo).
   `formulario`: id do <form> a preencher (campos com form= contam).
   `anexa_original`: o módulo guarda o e-mail como anexo ao salvar (muda o texto).
+  `anexos`: id do seletor de anexos do formulário (components/upload_anexos.html).
+    Com ele, a faixa aceita vários arquivos: lê o e-mail (ou, sem e-mail, o
+    primeiro PDF) e manda os outros — ofício, fotos, documentos — para os anexos.
   `substituir_padrao`: campos que a tela já traz com um padrão (data de
     hoje, estado PR) e que o e-mail pode trocar enquanto ninguém mexeu neles.
   `origem`: {token, nome, assunto} do e-mail já lido quando a tela volta
@@ -27,14 +30,19 @@
   `registro`: como o texto chama o que vai ser criado ("solicitação").
   Limite do arquivo no navegador: 25 MB (o servidor confere de novo).
 {% endcomment %}
-<section class="pe" data-preencher-email data-url="{{ url }}" data-formulario="{{ formulario }}" data-substituir-padrao="{{ substituir_padrao }}" data-registro="{{ registro|default:'solicitação' }}" data-max-bytes="26214400"{% if anexa_original %} data-anexa-original{% endif %} aria-labelledby="pe-titulo-{{ formulario }}">
+<section class="pe" data-preencher-email data-url="{{ url }}" data-formulario="{{ formulario }}" data-substituir-padrao="{{ substituir_padrao }}" data-registro="{{ registro|default:'solicitação' }}" data-max-bytes="26214400"{% if anexa_original %} data-anexa-original{% endif %}{% if anexos %} data-anexos="{{ anexos }}"{% endif %} aria-labelledby="pe-titulo-{{ formulario }}">
   <div class="pe__zona">
-    <input type="file" id="pe-arquivo-{{ formulario }}" class="pe__arquivo" accept=".eml,.msg,.pdf,.txt" aria-describedby="pe-ajuda-{{ formulario }}" data-pe-arquivo>
+    <input type="file" id="pe-arquivo-{{ formulario }}" class="pe__arquivo" accept="{% if anexos %}.eml,.msg,.pdf,.txt,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods{% else %}.eml,.msg,.pdf,.txt{% endif %}" aria-describedby="pe-ajuda-{{ formulario }}" data-pe-arquivo{% if anexos %} multiple{% endif %}>
     <label for="pe-arquivo-{{ formulario }}" class="pe__alvo">
       <span class="pe__icone" aria-hidden="true">{% include "components/icon.html" with nome="mail" %}</span>
       <span class="pe__textos">
+        {% if anexos %}
+        <b id="pe-titulo-{{ formulario }}">Preencher com um e-mail e anexar arquivos</b>
+        <small id="pe-ajuda-{{ formulario }}">Arraste o e-mail do pedido (.eml, .msg, PDF impresso ou .txt) e os anexos — ofício, fotos, documentos — para cá, juntos ou separados, ou clique para escolher. O e-mail preenche só os campos vazios, que ficam destacados para você conferir; os outros arquivos vão para os anexos.</small>
+        {% else %}
         <b id="pe-titulo-{{ formulario }}">Preencher com um e-mail</b>
         <small id="pe-ajuda-{{ formulario }}">Arraste o e-mail do pedido para cá (.eml, .msg, PDF impresso ou .txt) ou clique para escolher. Só os campos vazios são preenchidos, e ficam destacados para você conferir.</small>
+        {% endif %}
       </span>
     </label>
     <button type="button" class="btn--secundaria pe__colar" aria-expanded="false" aria-controls="pe-texto-{{ formulario }}" data-pe-colar>{% include "components/icon.html" with nome="copy" %}Colar o texto</button>
@@ -54,6 +62,7 @@
   </p>
   <p class="pe__estado" role="status" aria-live="polite" data-pe-estado></p>
   <p class="pe__erro msg-erro" role="alert" data-pe-erro hidden></p>
+  {% if anexos %}<p class="pe__anexados" data-pe-anexados hidden></p>{% endif %}
   <div class="pe__resultado" data-pe-resultado hidden></div>
   {% if origem %}<input type="hidden" name="email_origem" value="{{ origem.token }}" form="{{ formulario }}">{% endif %}
 </section>
