@@ -35,6 +35,8 @@ __all__ = [
     "registrar_importacao",
     "reanalisar",
     "descartar",
+    "pode_desfazer",
+    "desfazer",
     "aplicar_escolhas",
 ]
 
@@ -129,6 +131,44 @@ def descartar(importacao: ImportacaoProcesso) -> None:
     """Marca como descartada. O arquivo fica (auditoria); os anexos já gravados, também."""
     importacao.situacao = ImportacaoProcesso.SITUACAO_DESCARTADA
     importacao.save(update_fields=["situacao"])
+
+
+def pode_desfazer(importacao: ImportacaoProcesso) -> bool:
+    """Dá para desfazer sem perder nada: só criou anexos na prestação.
+
+    Não se desfaz o que trocou anexos que já existiam (o processo inteiro substitui
+    os do mesmo tipo), gravou versão assinada de documento ou protocolo no ofício.
+    """
+    resultado = importacao.resultado or {}
+    return (
+        importacao.situacao == ImportacaoProcesso.SITUACAO_APLICADA
+        and bool(resultado.get("anexos"))
+        and not resultado.get("substituidos")
+        and not resultado.get("documentos")
+        and not resultado.get("protocolo_gravado")
+    )
+
+
+@atomico_com_arquivos
+def desfazer(importacao: ImportacaoProcesso) -> int:
+    """Tira da prestação os anexos que a importação criou e a devolve para a conferência.
+
+    Devolve quantos anexos saíram. A importação fica "aguardando conferência":
+    dá para escolher outra prestação e aplicar de novo.
+    """
+    from ..anexo_services import _apagar_arquivo_apos_commit
+
+    anexos = list(importacao.anexos.all())
+    for anexo in anexos:
+        for campo in (anexo.arquivo, anexo.arquivo_original):
+            if campo:
+                _apagar_arquivo_apos_commit(campo)
+    importacao.anexos.all().delete()
+    importacao.situacao = ImportacaoProcesso.SITUACAO_ANALISADA
+    importacao.aplicado_em = None
+    importacao.resultado = {}
+    importacao.save(update_fields=["situacao", "aplicado_em", "resultado"])
+    return len(anexos)
 
 
 def _valor_digitado(texto):

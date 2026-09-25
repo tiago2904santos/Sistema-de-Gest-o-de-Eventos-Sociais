@@ -108,6 +108,9 @@ class Candidato:
     motivos: list[str] = field(default_factory=list)
     fontes: list[str] = field(default_factory=list)
     termo_id: int | None = None
+    #: Achado pelo comprovante: de qual servidor e o que pesa contra (valor, data).
+    servidor_id: int | None = None
+    alertas: list[str] = field(default_factory=list)
 
     @property
     def valor(self) -> str:
@@ -155,6 +158,8 @@ class ItemPlano:
     conferir: list[str] = field(default_factory=list)
     servidor_id: int | None = None
     ordem_servico_id: int | None = None
+    #: Comprovante que já está na prestação (mesmo servidor, valor e data): não entra de novo.
+    duplicado: bool = False
 
     # -- leitura --------------------------------------------------------------
     @property
