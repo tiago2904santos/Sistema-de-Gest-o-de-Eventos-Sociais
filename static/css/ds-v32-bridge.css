@@ -2912,3 +2912,6 @@ tr[data-importar-url].is-alvo>td:first-child{box-shadow:inset 2px 0 0 var(--sel-
 .pc-zoom__escala{min-width:48px;text-align:center;font-size:13px;font-variant-numeric:tabular-nums}
 .pc-zoom__area{flex:1;overflow:auto;padding:16px;background:var(--n-100,#eef0f2);text-align:center}
 .pc-zoom__area canvas{display:inline-block;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.18)}
+
+/* Limpar a solicitação nova: só aparece com algo preenchido (o display do botão venceria o [hidden]). */
+[data-limpar-rascunho][hidden]{display:none}
