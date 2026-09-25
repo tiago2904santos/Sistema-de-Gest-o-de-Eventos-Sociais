@@ -1990,13 +1990,53 @@
     formulario.parentNode.insertBefore(aviso, formulario);
   }
 
+  // Preenchido = diferente do que a tela trouxe ao abrir (data de hoje, estado
+  // padrão): o navegador guarda esse valor inicial em default*.
+  function preenchido() {
+    return campos().some(function (campo) {
+      if (campo.type === "checkbox" || campo.type === "radio") return campo.checked !== campo.defaultChecked;
+      if (campo.tagName === "SELECT") {
+        // Sem opção marcada no HTML, o select abre na primeira.
+        var opcoes = Array.prototype.slice.call(campo.options);
+        var padrao = opcoes.filter(function (o) { return o.defaultSelected; });
+        if (!padrao.length && !campo.multiple && opcoes.length) padrao = [opcoes[0]];
+        return opcoes.some(function (o) { return o.selected !== (padrao.indexOf(o) !== -1); });
+      }
+      return campo.value !== campo.defaultValue;
+    });
+  }
+
+  var limpar = document.querySelector("[data-limpar-rascunho]");
+
+  function mostrarLimpar() {
+    if (limpar) limpar.hidden = !preenchido();
+  }
+
+  if (limpar) {
+    limpar.addEventListener("click", function () {
+      if (!window.confirm("Limpar a tela? Tudo o que foi preenchido e ainda não foi salvo será apagado.")) return;
+      formulario.removeEventListener("input", guardar);
+      formulario.removeEventListener("change", guardar);
+      try {
+        window.localStorage.removeItem(chave);
+      } catch (erro) {
+        /* Sem storage, recarregar já basta. */
+      }
+      // Recarrega sem nada: o servidor devolve a tela nova, só com os padrões.
+      window.location.replace(window.location.pathname);
+    });
+  }
+
   // Só recupera em formulário novo: editar já traz os dados salvos do banco.
   var ehNovo = !formulario.querySelector('[name="acao"]') ||
     window.location.pathname.indexOf("/nova/") !== -1;
   if (ehNovo && restaurar()) avisarRestauracao();
+  mostrarLimpar();
 
   formulario.addEventListener("input", guardar);
   formulario.addEventListener("change", guardar);
+  formulario.addEventListener("input", mostrarLimpar);
+  formulario.addEventListener("change", mostrarLimpar);
   formulario.addEventListener("submit", function () {
     // O envio pode falhar e recarregar esta mesma página; por isso a limpeza
     // só acontece quando o navegador chega a outro endereço.

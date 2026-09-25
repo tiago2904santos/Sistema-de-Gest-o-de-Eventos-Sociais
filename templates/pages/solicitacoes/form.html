@@ -39,6 +39,10 @@
           <a class="btn--secundaria" href="{% url 'solicitacoes:editar' solicitacao.pk %}">Descartar</a>
           <button type="submit" form="form-solicitacao" class="btn-primaria">{% include "components/icon.html" with nome="send" %}Salvar e reenviar para a DG</button>
       {% elif not solicitacao or acoes.editar_dados %}
+          {% if not solicitacao %}
+            {# Aparece quando algo foi preenchido (digitado, recuperado ou lido do e-mail). #}
+            <button type="button" class="btn--secundaria" data-limpar-rascunho hidden title="Apaga tudo o que foi preenchido nesta tela">{% include "components/icon.html" with nome="x" %}Limpar</button>
+          {% endif %}
           <button type="submit" form="form-solicitacao" class="btn-primaria" name="acao" value="rascunho" formnovalidate>{% if solicitacao and solicitacao.status != "RASCUNHO" %}Salvar alterações{% else %}Salvar rascunho{% endif %}</button>
       {% elif acoes.reabrir %}
           {# Enviado, o pedido fica travado: mudar exige editar e passar de novo pela DG. #}
