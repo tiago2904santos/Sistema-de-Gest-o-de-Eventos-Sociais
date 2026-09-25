@@ -48,6 +48,7 @@ __all__ = [
     "analisar_pagina",
     "texto_da_pagina",
     "orientacao_da_pagina",
+    "texto_de_foto",
 ]
 
 _LOG = logging.getLogger(__name__)
@@ -323,3 +324,35 @@ def texto_da_pagina(dados: bytes, indice: int, *, rotacao: int | None = None) ->
 def orientacao_da_pagina(dados: bytes, indice: int) -> int | None:
     """O /Rotate final que deixa a página em pé, pelo OCR; None se não souber."""
     return analisar_pagina(dados, indice).rotacao
+
+
+def texto_de_foto(dados: bytes) -> str:
+    """Segunda leitura de uma FOTO (JPG/PNG), direto da imagem original.
+
+    Para quando a primeira leitura (página renderizada) deixou de achar algum
+    dado: tons de cinza, o dobro do tamanho, contraste esticado e `--psm 6`
+    (bloco único de texto), que no papel térmico do caixa eletrônico lê
+    melhor os números. "" se não houver OCR ou der errado.
+    """
+    if not disponivel():
+        return ""
+    try:
+        from PIL import Image
+        from PIL import ImageOps
+
+        with Image.open(BytesIO(dados)) as original:
+            imagem = ImageOps.grayscale(ImageOps.exif_transpose(original))
+        fator = min(2.0, MAIOR_LADO / max(imagem.width, imagem.height, 1))
+        if fator > 1:
+            imagem = imagem.resize((int(imagem.width * fator), int(imagem.height * fator)), Image.LANCZOS)
+        imagem = ImageOps.autocontrast(imagem, cutoff=2)
+    except Exception as exc:
+        capture(exc, "leitura.ocr.foto", level=logging.WARNING)
+        return ""
+    idioma = _idioma()
+    argumentos = ["--psm", "6", "--dpi", "300"]
+    png = _png(imagem, 300)
+    saida = _tesseract(png, (["-l", idioma] if idioma else []) + argumentos, "foto")
+    if saida is None and idioma:
+        saida = _tesseract(png, argumentos, "foto")
+    return (saida or "").strip()
