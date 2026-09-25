@@ -554,3 +554,33 @@ class EnvioTests(ImportacaoBase):
         self.client.post(reverse("viagens_prestacoes:importacao_descartar", args=[importacao.pk]))
         importacao.refresh_from_db()
         self.assertEqual(importacao.situacao, ImportacaoProcesso.SITUACAO_DESCARTADA)
+
+
+class ComprovanteAvulsoTests(ImportacaoBase):
+    """Só o comprovante (foto ou PDF do banco), sem ofício nem protocolo."""
+
+    def _comprovante(self, **dados):
+        dados.setdefault("nome", NOMES[0])
+        dados.setdefault("cpf", self.cpfs[0])
+        dados.setdefault("valor", "100,00")
+        dados.setdefault("data", timezone.localdate().strftime("%d/%m/%Y"))
+        return f.comprovante("bb_saque", **dados)
+
+    def test_acha_a_prestacao_pelo_servidor_do_comprovante(self):
+        plano = analisar(self._comprovante(), "comprovante.pdf")
+        self.assertEqual(plano.prestacao_id, self.prestacao.pk)
+        self.assertEqual(plano.camada, "comprovante")
+        self.assertTrue(plano.identificacao_segura, plano.avisos)
+        item = next(i for i in plano.itens if i.tipo_lido == "comprovante")
+        self.assertEqual(item.servidor_prestacao_id, self.ps[NOMES[0]].pk)
+
+    def test_mesmo_servidor_em_duas_prestacoes_abertas_vai_para_conferencia(self):
+        self.criar_prestacao(numero=13, ano=2026, servidores=[self.servidores[0]])
+        plano = analisar(self._comprovante(), "comprovante.pdf")
+        self.assertFalse(plano.identificacao_segura)
+        self.assertGreaterEqual(len(plano.candidatos), 2)
+
+    def test_prestacao_finalizada_nao_recebe_comprovante_avulso(self):
+        self.ps[NOMES[0]].definir_finalizada(True)
+        plano = analisar(self._comprovante(), "comprovante.pdf")
+        self.assertNotEqual(plano.prestacao_id, self.prestacao.pk)

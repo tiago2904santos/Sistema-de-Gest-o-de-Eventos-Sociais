@@ -24,6 +24,7 @@ from __future__ import annotations
 import re
 from datetime import date
 from datetime import datetime
+from datetime import timedelta
 from decimal import Decimal
 
 from core.utils.masks import normalize_placa
@@ -560,7 +561,32 @@ def _valor_comprovante(plano: str) -> Decimal | None:
     return None
 
 
+def _data_plausivel_comprovante(dia: date) -> bool:
+    """Comprovante de diária é recente: nem futuro, nem de anos atrás."""
+    hoje = date.today()
+    return hoje - timedelta(days=730) <= dia <= hoje + timedelta(days=1)
+
+
+def _com_ano_corrigido(dia: date) -> date | None:
+    """O OCR troca dígitos do ano ("2026" vira "2020", "202t"): mesmo dia/mês,
+    no ano mais recente que não fique no futuro."""
+    hoje = date.today()
+    for ano in (hoje.year, hoje.year - 1):
+        try:
+            candidato = dia.replace(year=ano)
+        except ValueError:  # 29/02
+            continue
+        if _data_plausivel_comprovante(candidato):
+            return candidato
+    return None
+
+
 def _data_comprovante(plano: str) -> tuple[date | None, str]:
+    """(data da operação, hora). Prefere a data do rótulo ("DATA DA TRANSFERÊNCIA");
+    entre as lidas, a que faz sentido para um comprovante de diária. Uma data
+    de ano impossível (erro de OCR) vale com o ano corrigido se o dia e o mês
+    batem com outra data do comprovante — ou se é a única."""
+    rotuladas: list[tuple[date, str]] = []
     for m in _ROTULO_DATA.finditer(plano):
         trecho = plano[m.end():m.end() + 40]
         if re.match(r"(?:DE )?(?:NASCIMENTO|VALIDADE|VENCIMENTO)", trecho):
@@ -568,12 +594,22 @@ def _data_comprovante(plano: str) -> tuple[date | None, str]:
         datas = achar_datas(trecho)
         if datas:
             hora = re.search(r"(\d{2}:\d{2}(?::\d{2})?)", plano[m.end():m.end() + 60])
-            return datas[0], hora.group(1) if hora else ""
-    datas = achar_datas(plano)
-    if not datas:
+            rotuladas.append((datas[0], hora.group(1) if hora else ""))
+    hora_solta = re.search(r"\b(\d{2}:\d{2}(?::\d{2})?)\b", plano)
+    soltas = [(d, hora_solta.group(1) if hora_solta else "") for d in achar_datas(plano)]
+    todas = rotuladas + soltas
+    if not todas:
         return None, ""
-    hora = re.search(r"\b(\d{2}:\d{2}(?::\d{2})?)\b", plano)
-    return datas[0], hora.group(1) if hora else ""
+    for dia, hora in todas:
+        if _data_plausivel_comprovante(dia):
+            return dia, hora
+    # Nenhuma plausível: o ano foi mal lido. Dia e mês repetidos reforçam a leitura.
+    dias_meses = [(d.day, d.month) for d, _ in todas]
+    for dia, hora in todas:
+        corrigida = _com_ano_corrigido(dia)
+        if corrigida and (dias_meses.count((dia.day, dia.month)) > 1 or len(set(dias_meses)) == 1):
+            return corrigida, hora
+    return todas[0]
 
 
 def _operacao(plano: str) -> str:

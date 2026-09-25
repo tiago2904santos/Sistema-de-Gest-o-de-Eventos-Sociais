@@ -166,3 +166,34 @@ class PagamentoTests(SimpleTestCase):
         dados = dados_do_documento(c.CAPA, texto)
         self.assertEqual(dados["protocolo"], "266136668")
         self.assertEqual(dados["numero_ano"], "123/2026")
+
+
+class DataDoComprovanteComErroDeOcrTests(SimpleTestCase):
+    """O OCR de foto troca dígitos do ano: "2026" vira "2020" ou "202t"."""
+
+    def test_ano_mal_lido_e_corrigido_pelo_dia_e_mes(self):
+        from datetime import date as _date
+        from datetime import timedelta as _td
+
+        from core.leitura import classificacao as tipos
+        from core.leitura.extracao import dados_do_documento
+
+        ontem = _date.today() - _td(days=1)
+        errado = ontem.replace(year=ontem.year - 6).strftime("%d/%m/%Y")
+        texto = (
+            f"{errado} - BANCO DO BRASIL - 17:29:03\nCOMPROVANTE DE TRANSFERENCIA\n"
+            f"CLIENTE: FULANO DE TAL\nDATA DA TRANSFERENCIA {ontem.strftime('%d/%m')}/202t\n"
+            "VALOR TOTAL 871,65\n"
+        )
+        dados = dados_do_documento(tipos.COMPROVANTE, texto)
+        self.assertEqual(dados["data"], ontem)
+
+    def test_data_plausivel_rotulada_vence(self):
+        from datetime import date as _date
+
+        from core.leitura import classificacao as tipos
+        from core.leitura.extracao import dados_do_documento
+
+        hoje = _date.today().strftime("%d/%m/%Y")
+        texto = f"EMITIDO 01/01/2019\nCOMPROVANTE DE SAQUE\nDATA DO SAQUE {hoje}\nVALOR R$ 100,00\n"
+        self.assertEqual(dados_do_documento(tipos.COMPROVANTE, texto)["data"], _date.today())

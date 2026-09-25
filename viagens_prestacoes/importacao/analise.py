@@ -46,6 +46,7 @@ from dataclasses import dataclass
 from dataclasses import field
 from datetime import date
 from datetime import timedelta
+from decimal import Decimal
 from difflib import SequenceMatcher
 
 from django.utils import timezone
@@ -304,9 +305,92 @@ def _candidatos(processo: Processo, *, incluir: PrestacaoContas | None = None) -
                 c.fontes.append("periodo_termo")
                 c.motivos.append("a data dos termos cai no período da viagem")
 
+    # Camada do comprovante avulso: a foto ou o PDF só do comprovante não traz
+    # ofício nem protocolo — quem transferiu ou sacou diz de qual prestação é.
+    comprovantes = [d for d in processo.documentos if d.tipo == tipos.COMPROVANTE]
+    if not pontos and comprovantes:
+        for ps, nota, motivos in _donos_do_comprovante(comprovantes):
+            c = candidato(ps.prestacao.oficio)
+            if c is None:
+                continue
+            if nota > c.pontos:
+                c.pontos = nota
+                c.motivos = motivos
+            if "comprovante" not in c.fontes:
+                c.fontes.append("comprovante")
+
     if incluir is not None and incluir.oficio_id not in pontos:
         candidato(incluir.oficio)
     return pontos
+
+
+def _donos_do_comprovante(comprovantes) -> list[tuple[object, float, list[str]]]:
+    """Servidores de prestações abertas que podem ter feito o comprovante, pontuados.
+
+    Casa o CPF mascarado ou o nome (tolerante a truncado e sem acento) com os
+    servidores das prestações não finalizadas; o valor não pode passar da diária
+    liberada; a data deve caber na liberação/prazo de saque; quem ainda não tem
+    comprovante anexado ganha preferência.
+    """
+    from ..models import PrestacaoServidor
+    from ..services import valor_diaria_liberado
+
+    abertos = (
+        PrestacaoServidor.objects.filter(finalizada=False, prestacao__oficio__cancelado=False)
+        .select_related("servidor", "prestacao__oficio")
+    )
+    melhores: dict[int, tuple[object, float, list[str]]] = {}
+    for doc in comprovantes:
+        dados = doc.dados or {}
+        nomes = [n for n in (dados.get("nome"), dados.get("favorecido")) if n]
+        meio, pontas = dados.get("cpf_meio", ""), dados.get("cpf_pontas", "")
+        valor, dia = dados.get("valor"), dados.get("data")
+        for ps in abertos:
+            cpf = ps.servidor.cpf or ""
+            por_cpf = len(cpf) == 11 and ((meio and cpf[3:9] == meio) or (pontas and cpf[:3] + cpf[9:] == pontas))
+            nota_nome = max((semelhanca_nome(n, ps.servidor.nome) for n in nomes), default=0.0)
+            if not por_cpf and nota_nome < NOME_CASA:
+                continue
+            nota, motivos = 0.0, []
+            if por_cpf:
+                nota += 1.0
+                motivos.append(f"CPF mascarado do comprovante confere com {ps.servidor.nome}")
+            if nota_nome >= NOME_CASA:
+                nota += 0.8 * nota_nome
+                motivos.append(f"nome no comprovante confere com {ps.servidor.nome}")
+            if valor is not None:
+                try:
+                    liberado = valor_diaria_liberado(ps)
+                except Exception:  # roteiro incompleto: sem teto
+                    liberado = None
+                if liberado is not None:
+                    if valor > liberado + Decimal("0.01"):
+                        continue  # ninguém saca mais do que foi liberado
+                    nota += 0.3
+                    if liberado - valor < 1:
+                        nota += 0.2
+                        motivos.append("valor igual ao da diária liberada")
+                    else:
+                        motivos.append("valor dentro da diária liberada")
+            if dia is not None:
+                criado = ps.prestacao.oficio.data_criacao
+                if criado and dia < criado - timedelta(days=30):
+                    continue  # comprovante de antes da viagem existir
+                if ps.data_liberacao_diarias:
+                    if dia < ps.data_liberacao_diarias:
+                        nota -= 0.5
+                    else:
+                        nota += 0.3
+                        if not ps.prazo_limite_saque or dia <= ps.prazo_limite_saque:
+                            nota += 0.2
+                            motivos.append("data dentro do prazo de saque")
+            if not ps.documentos_anexos.filter(tipo=Anexo.TIPO_COMPROVANTE).exists():
+                nota += 0.3
+                motivos.append("ainda sem comprovante anexado")
+            atual = melhores.get(ps.pk)
+            if atual is None or nota > atual[1]:
+                melhores[ps.pk] = (ps, round(nota, 2), motivos)
+    return sorted(melhores.values(), key=lambda item: -item[1])
 
 
 def _candidatos_termo_avulso(processo: Processo) -> list[Candidato]:
@@ -464,6 +548,17 @@ def _identificar(
     )
     conflitos = _conflitos(processo, resultado.prestacao.oficio)
     resultado.avisos.extend(conflitos)
+    if "comprovante" in lider.fontes and not fortes:
+        # Só comprovante(s): vale sozinho quando um servidor se destaca com folga
+        # (nome ou CPF e mais um sinal: valor, prazo ou ainda sem comprovante).
+        so_comprovantes = all(d.tipo == tipos.COMPROVANTE for d in processo.documentos)
+        resultado.camada = "comprovante"
+        resultado.segura = so_comprovantes and lider.pontos >= 1.0 and folga >= 0.5 and not conflitos
+        if not resultado.segura:
+            resultado.avisos.append(
+                "Achado pelo comprovante (nome, valor e data): confira a prestação antes de aplicar."
+            )
+        return resultado
     resultado.segura = (
         (bool(fortes) and len(independentes) >= 2 and folga >= 1.0) or (so_termos and not fortes)
     ) and not conflitos
