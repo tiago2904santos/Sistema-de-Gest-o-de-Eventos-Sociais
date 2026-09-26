@@ -684,6 +684,9 @@ def editar(request, pk=None):
     return render(request, 'pages/viagens_oficios/form.html', {
         'titulo': 'Cadastro de ofício',
         'oficio': oficio, 'form': form, 'jform': jform,
+        # Rascunho que se salva sozinho (m050): só enquanto é rascunho.
+        'autosave_url': (reverse('viagens_oficios:autosalvar', args=[oficio.pk])
+                         if oficio.status == Oficio.STATUS_RASCUNHO and not oficio.cancelado else ''),
         'dados': contexto_dados_viajantes(form, oficio),
         'conflitos': _conflitos_da_tela(oficio, form),
         'conflitos_fixos': f'oficio={oficio.pk}',
@@ -701,6 +704,44 @@ def editar(request, pk=None):
             'justificativa-modelo': {pk: aplicar(texto, campos) for pk, texto in ModeloJustificativa.objects.values_list('pk', 'texto')},
         },
     })
+
+
+@acesso_ao_modulo
+@require_POST
+def autosalvar(request, pk):
+    """Grava o rascunho do ofício alguns segundos depois de cada alteração (m050).
+
+    O mesmo OficioForm e a mesma justificativa do "Salvar ofício", com três
+    diferenças deliberadas: não finaliza, não abre protocolo no eProtocolo
+    (um rascunho incompleto não pode virar processo) e não mexe no número nem
+    na data do ofício — o número fica o reservado, e a data digitada só vale
+    no envio, porque é ela que decide Autorização ou Convalidação ao
+    finalizar. O roteiro tem editor próprio e também fica de fora.
+    """
+    from core.autosave import AutosavePayloadError, autosave_json_response, dados_do_formulario, parse_autosave_payload
+    from viagens_cadastros.models import ConfiguracaoSistema
+    from .justificativas_services import get_or_create_justificativa_oficio
+    exigir_operador(request)
+    oficio = get_oficio_by_id(pk)
+    if oficio.cancelado or oficio.status != Oficio.STATUS_RASCUNHO:
+        return autosave_json_response(ok=False, message='Ofício fora de rascunho: salve pelo botão.')
+    try:
+        payload = parse_autosave_payload(request, expected_model='oficio')
+    except AutosavePayloadError as exc:
+        return autosave_json_response(ok=False, message=str(exc))
+    dados = dados_do_formulario(payload, fixos={
+        'numero': '', 'data_criacao': oficio.data_criacao.isoformat() if oficio.data_criacao else '',
+    })
+    form = OficioForm(dados, instance=oficio, unidade_emissora=ConfiguracaoSistema.para_usuario(request.user).unidade_id)
+    jform = JustificativaForm(dados, instance=get_or_create_justificativa_oficio(oficio), prefix='justificativa', obrigatoria=False)
+    if not (form.is_valid() and jform.is_valid()):
+        erros = {**form.errors.get_json_data(), **{f'justificativa-{k}': v for k, v in jform.errors.get_json_data().items()}}
+        return autosave_json_response(ok=False, message='Rascunho não salvo: revise os campos indicados.',
+                                      errors={k: [e['message'] for e in v] for k, v in erros.items()})
+    with transaction.atomic():
+        oficio = form.save()
+        atualizar_justificativa_oficio(oficio, jform, action='save_draft')
+    return autosave_json_response(ok=True, object_id=oficio.pk)
 
 
 @acesso_ao_modulo

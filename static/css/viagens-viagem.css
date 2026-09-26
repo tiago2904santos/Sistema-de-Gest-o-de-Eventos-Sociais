@@ -77,3 +77,31 @@
 .vg-fab{position:fixed;right:max(24px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));z-index:30}
 .vg-fab .btn-flutuante{position:static}
 .vg-fab__menu{right:0;left:auto;min-width:300px}
+
+/* ---------- Cabeçalho: "Baixar tudo" é um formulário ao lado dos botões -- */
+.vg-baixar-tudo{display:contents}
+
+/* ---------- "Gerar documentos": um cartão por ofício ------------------- */
+.vg-gerar .section-card__cabecalho{align-items:center}
+.vg-gerar .section-card__cabecalho > .btn--secundaria{margin-left:auto}
+.vg-gerar__adicionar{display:flex;justify-content:flex-start;margin:4px 0 16px}
+.vg-gerar__opcoes{display:grid;gap:10px}
+.vg-gerar__opcoes .form-label{display:flex;gap:8px;align-items:flex-start;font-weight:400}
+.vg-gerar__contador--falta{color:var(--wn-t)}
+.vg-gerar__fim{display:flex;justify-content:flex-end;margin:16px 0}
+
+/* ---------- O que falta (m066): semáforo por etapa ---------------------- */
+.vg-prontidao{margin:0 0 16px;padding:12px 16px}
+.vg-prontidao__resumo{cursor:pointer;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.vg-prontidao__etapas{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
+.vg-prontidao__etapa{display:flex;gap:10px;align-items:flex-start}
+.vg-prontidao__sinal{flex:none;display:inline-flex;width:22px;height:22px;border-radius:50%;align-items:center;justify-content:center}
+.vg-prontidao__etapa.is-ok .vg-prontidao__sinal{background:var(--ok-b);color:var(--ok-t)}
+.vg-prontidao__etapa.is-falta .vg-prontidao__sinal{background:var(--wn-b);color:var(--wn-t)}
+.vg-prontidao__sinal svg{width:14px;height:14px}
+.vg-prontidao__itens{margin:4px 0 0;padding-left:18px}
+.vg-prontidao__corpo{min-width:0;overflow-wrap:anywhere}
+
+/* ---------- Coerência (m071): o que não bate com a viagem --------------- */
+.vg-coerencia{margin:0 0 16px}
+.vg-coerencia__lista{margin:8px 0 12px;padding-left:18px;overflow-wrap:anywhere}

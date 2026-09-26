@@ -4,7 +4,8 @@
  * para a tela; o modelo de motivo preenche o texto; na necessidade que pede
  * funções (caminhão, micro-ônibus e cerimonial) cada servidor escolhido ganha
  * o seletor na própria linha, e a função vira `funcao_servidor_<id>` no envio; e o botão principal diz se a
- * OS está completa. Tudo sem recarregar nem rolar a página. Sem autosave.
+ * OS está completa. Tudo sem recarregar nem rolar a página. O rascunho se salva
+ * sozinho pelo `autosave-rascunho.js` (m050).
  *
  * As listas de ofícios e servidores são o `multi-pick.js`; os destinos, o
  * componente do termo com o `destinos-arraste.js`.
@@ -274,6 +275,8 @@
       oculto.value = funcao;
       entradas.appendChild(oculto);
     });
+    // A função escolhida na linha não dispara "change" no formulário: avisa o rascunho automático.
+    if (iniciado) form.dispatchEvent(new CustomEvent("autosave:alterado"));
   }
 
   function sincronizarFuncoes() {
@@ -412,7 +415,7 @@
 
     // A nomeação final sai daqui: a primeira linha é o destino da OS e as
     // outras viram `extra_*_0..n-1`, na ordem da tela.
-    form.addEventListener("submit", function () {
+    function nomearDestinos() {
       var atuais = linhas();
       atuais.forEach(function (linha, posicao) {
         var campos = selectsDe(linha);
@@ -420,13 +423,18 @@
         if (campos.cidade) campos.cidade.name = posicao === 0 ? "destino_cidade" : "extra_cidade_" + (posicao - 1);
       });
       quantidade.value = String(Math.max(0, atuais.length - 1));
-    });
+    }
+    form.addEventListener("submit", nomearDestinos);
+    // O rascunho automático (autosave-rascunho.js) também precisa dos nomes finais.
+    form.addEventListener("autosave:preparar", nomearDestinos);
 
     atualizarEstado();
   })();
 
   /* ---- arranque ----------------------------------------------------------- */
 
+  var iniciado = false;
   sincronizarFuncoes();
   atualizarRotulo();
+  iniciado = true;
 })();

@@ -30,6 +30,8 @@ class CanalSolicitacao(models.TextChoices):
     PROTOCOLO = "PROTOCOLO", "Protocolo"
     TELEFONE = "TELEFONE", "Telefone"
     PRESENCIAL = "PRESENCIAL", "Presencial"
+    # O formulário público do site (/pedido/): o próprio solicitante preenche.
+    PORTAL = "PORTAL", "Formulário público"
     OUTRO = "OUTRO", "Outro"
 
 
@@ -187,6 +189,16 @@ class DemandaEvento(models.Model):
         related_name="demanda_ascom",
         blank=True,
         null=True,
+    )
+    # O pedido que chegou pelo formulário público: o anexo que o solicitante
+    # mandou (validado por core.uploads, servido só a quem enxerga a linha) e
+    # o hash do token do link de acompanhamento — o token em si só existe no
+    # link entregue ao solicitante.
+    anexo_pedido = models.FileField(
+        "anexo do pedido", upload_to="demandas_eventos/pedidos/%Y/", blank=True
+    )
+    token_acompanhamento = models.CharField(
+        "token de acompanhamento (hash)", max_length=64, blank=True, db_index=True, editable=False
     )
     origem_importacao = models.CharField("origem da importação", max_length=100, blank=True)
     chave_importacao = models.CharField(

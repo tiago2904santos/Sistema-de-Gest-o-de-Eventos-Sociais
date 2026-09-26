@@ -116,6 +116,41 @@
           </ul>
         {% endif %}
 
+        {# Link seguro do fornecedor (m036): ele mesmo manda a nota e as certidões; nada entra sem a conferência. #}
+        <div class="cb-link-fornecedor" id="envios-fornecedor">
+          <div class="aviso aviso--info" role="status">
+            {% include "components/icon.html" with nome="link" %}
+            <div>
+              <strong>Envio pelo fornecedor:</strong>
+              {% if link_fornecedor %}link ativo, válido até {{ link_fornecedor.expira_em|date:"d/m/Y" }}.{% else %}nenhum link ativo.{% endif %}
+              {% if link_fornecedor_disponivel and not somente_leitura %}
+                <a href="{% url 'coffee_break:enviar_link_fornecedor' solicitacao.pk %}">{% if link_fornecedor %}Enviar um novo link{% else %}Enviar link ao fornecedor{% endif %}</a>
+                {% if link_fornecedor %} · <button type="submit" class="btn--secundaria btn--compacto" form="form-revogar-link" title="O link deixa de funcionar agora; dá para enviar outro depois">Revogar link</button>{% endif %}
+              {% endif %}
+            </div>
+          </div>
+          {% if envios_fornecedor %}
+            <ul class="cb-outras-notas" aria-label="Recebidos do fornecedor, aguardando conferência">
+              {% for e in envios_fornecedor %}
+                <li class="cb-outra-nota">
+                  <span class="cb-outra-nota__os">
+                    <a href="{% url 'coffee_break:envio_fornecedor_arquivo' e.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="document" %}{{ e.get_tipo_display }}{% if e.numero_nota %} {{ e.numero_nota }}{% endif %}</a>
+                    <small>{{ e.get_status_display }} · recebida em {{ e.criado_em|date:"d/m/Y H:i" }}{% if e.validade_certidao %} · válida até {{ e.validade_certidao|date:"d/m/Y" }}{% endif %}</small>
+                    {% for aviso in e.lista_avisos %}<small class="form-erro">{{ aviso }}</small>{% endfor %}
+                  </span>
+                  {% if not somente_leitura %}
+                    <span class="cb-anexo">
+                      <input class="form-controle" type="text" name="motivo" maxlength="255" placeholder="Motivo (se recusar)" form="form-envio-{{ e.pk }}" aria-label="Motivo da recusa">
+                      <button type="submit" class="btn--secundaria btn--compacto" form="form-envio-{{ e.pk }}" name="acao" value="recusar">Recusar</button>
+                      <button type="submit" class="btn-primaria btn--compacto" form="form-envio-{{ e.pk }}" name="acao" value="aceitar">Aceitar</button>
+                    </span>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+
         {# O visualizador de documentos de Viagens: um ofício para o pagamento e um certifico por nota, tudo editável. #}
         <div class="ofc-docs cb-docs-gerados">
           {% include "pages/coffee_break/_documento_inline.html" with d=doc_oficio menu_id="cb-menu-oficio" aberto=True %}
@@ -136,6 +171,9 @@
       </div>
     </section>
   </form>
+  {# Formulários das ações do link do fornecedor, fora do formulário da etapa. #}
+  {% if link_fornecedor %}<form method="post" action="{% url 'coffee_break:revogar_link_fornecedor' solicitacao.pk %}" id="form-revogar-link" hidden>{% csrf_token %}</form>{% endif %}
+  {% for e in envios_fornecedor %}<form method="post" action="{% url 'coffee_break:conferir_envio_fornecedor' e.pk %}" id="form-envio-{{ e.pk }}" hidden>{% csrf_token %}</form>{% endfor %}
 {% endblock %}
 
 {% block etapa_js %}{% include "documentos/editor/_recursos.html" %}<script src="{% estatico 'js/coffee-break-documentos.js' %}" defer></script><script src="{% estatico 'js/coffee-break-protocolo.js' %}" defer></script><script src="{% estatico 'js/lista-escolha.js' %}" defer></script><script src="{% estatico 'js/coffee-break-vincular.js' %}" defer></script>{% endblock %}

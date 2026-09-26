@@ -1,0 +1,7 @@
+{% comment %}Campo de formulário das páginas públicas: rótulo, controle, ajuda e erros.{% endcomment %}
+<div class="form-campo{% if largura %} form-campo--{{ largura }}{% endif %}">
+  <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}{% if campo.field.required %} <span class="form-label__obrigatorio">*</span>{% endif %}</label>
+  {{ campo }}
+  {% if campo.help_text %}<p class="form-ajuda">{{ campo.help_text }}</p>{% endif %}
+  {% for erro in campo.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+</div>

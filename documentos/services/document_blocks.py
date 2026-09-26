@@ -9,6 +9,11 @@ um artefato antigo.
 Conteúdo é texto simples com quebras de linha; a renderização escapa. O
 DOCX (renderizador à parte, pelo docxtpl) não conhece overrides: sai sempre
 com o texto do modelo.
+
+m057: o texto-base que a administração gravou para o modelo
+(`modelos_texto`) entra no lugar do padrão do registro, e a versão editada
+inteira do documento (`edicao_completa`), quando houver, vai junto em
+`versao_editada` — com ela, também o DOCX sai do que foi editado.
 """
 
 from __future__ import annotations
@@ -59,8 +64,24 @@ def completar_blocos(tipo, dados=None) -> dict[str, dict]:
     return blocos
 
 
-def conteudo_documental(tipo, objeto) -> dict:
-    blocos = completar_blocos(tipo)
+def _com_textos_do_modelo(tipo, blocos) -> dict:
+    """O texto que a administração gravou para o modelo (m057) no lugar do
+    padrão do sistema."""
+    from documentos.services.modelos_texto import textos_vigentes
+
+    for chave, texto in textos_vigentes(tipo).items():
+        if chave in blocos:
+            blocos[chave].update({"conteudo": texto, "padrao": texto})
+    return blocos
+
+
+def conteudo_documental(tipo, objeto, variante="") -> dict:
+    """Blocos, quebras e a versão editada do documento (m057).
+
+    `variante` separa os documentos do mesmo tipo e dono (o termo de cada
+    servidor); `None` diz que este documento não tem versão editada (o termo
+    semipreenchido, que o editor não abre)."""
+    blocos = _com_textos_do_modelo(tipo, completar_blocos(tipo))
     pontos = quebras_do_tipo(tipo)
     quebras = []
     if objeto is None or not getattr(objeto, "pk", None) or _campo_do_dono(objeto) is None:
@@ -76,7 +97,14 @@ def conteudo_documental(tipo, objeto) -> dict:
                 "editado_por": str(gravado.editado_por) if gravado.editado_por_id else "",
                 "editado_em": gravado.editado_em.isoformat() if gravado.editado_em else "",
             })
-    return {"blocos": blocos, "quebras": sorted(quebras)}
+    documental = {"blocos": blocos, "quebras": sorted(quebras)}
+    if variante is not None:
+        from documentos.services.edicao_completa import para_payload
+
+        editada = para_payload(tipo, objeto, variante)
+        if editada is not None:
+            documental["versao_editada"] = editada
+    return documental
 
 
 def bloco_gravado(tipo, objeto, chave):

@@ -18,7 +18,10 @@
 
   O editor de roteiro procura o próprio formulário DENTRO de
   `[data-roteiro-editor]`; por isso a marca fica em volta do formulário do
-  ofício inteiro, e a gravação automática fica desligada (`data-autosave="0"`).
+  ofício inteiro, e a gravação automática do roteiro fica desligada
+  (`data-autosave="0"`). O rascunho do ofício se salva sozinho pelo
+  `autosave-rascunho.js` (m050): o mesmo formulário, sem finalizar, sem abrir
+  protocolo e sem mexer no número nem na data.
 {% endcomment %}
 
 {% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
@@ -54,6 +57,7 @@
         </div>
       </div>
       <div class="frm-topo__acoes">
+        {% if autosave_url %}<span class="autosave-estado" data-autosave-estado data-autosave-de="form-oficio" role="status" aria-live="polite"></span>{% endif %}
         <button type="submit" form="form-oficio" name="acao" value="rascunho" class="btn btn--dourado btn-primaria">Salvar ofício</button>
       </div>
     </div>
@@ -64,7 +68,7 @@
       </div>
     {% endif %}
 
-    <form method="post" action="{% url 'viagens_oficios:editar' oficio.pk %}" id="form-oficio" class="editor-roteiro__principal" novalidate>
+    <form method="post" action="{% url 'viagens_oficios:editar' oficio.pk %}" id="form-oficio" class="editor-roteiro__principal" novalidate{% if autosave_url %} data-autosave-rascunho data-autosave-url="{{ autosave_url }}" data-autosave-model="oficio" data-autosave-id="{{ oficio.pk }}"{% endif %}>
       {% csrf_token %}
       {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
@@ -321,6 +325,7 @@
   <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
   <script src="{% estatico 'js/roteiro-editor.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-oficios.js' %}" defer></script>
+  <script src="{% estatico 'js/autosave-rascunho.js' %}" defer></script>
   <script src="{% estatico 'js/conflitos.js' %}" defer></script>
   <script src="{% estatico 'js/components/copiar.js' %}" defer></script>
   {% include "documentos/editor/_recursos.html" %}

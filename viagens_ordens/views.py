@@ -262,6 +262,9 @@ def _contexto_form(form, ordem, request):
         "selo": selo, "selo_tom": selo_tom,
         "pode_editar": pode_editar_cadastros(request.user),
         "url_atual": aqui,
+        # Rascunho que se salva sozinho (m050): só na OS já gravada e ativa.
+        "autosave_url": (reverse("viagens_ordens:autosalvar", args=[ordem.pk])
+                         if ordem.pk and not ordem.cancelado and pode_editar_cadastros(request.user) else ""),
     }
 
 
@@ -366,6 +369,33 @@ def editar(request, pk=None):
             return redirect(voltar_para(request, _url_da_lista(ordem)))
         messages.error(request, "Não foi possível salvar a Ordem de Serviço. Revise os campos indicados.")
     return render(request, "pages/viagens_ordens/form.html", _contexto_form(form, ordem, request))
+
+
+@acesso_ao_modulo
+@require_POST
+def autosalvar(request, pk):
+    """Grava a OS alguns segundos depois de cada alteração (m050).
+
+    O mesmo formulário do "Salvar", sem mexer no número: em branco, fica o
+    reservado (um número digitado pela metade renumeraria a OS). A OS nova,
+    ainda sem registro, só grava pelo botão.
+    """
+    from core.autosave import AutosavePayloadError, autosave_json_response, dados_do_formulario, parse_autosave_payload
+
+    exigir_operador(request)
+    ordem = get_ordem_by_id(pk)
+    if ordem.cancelado:
+        return autosave_json_response(ok=False, message="Ordem de Serviço cancelada: reative antes de editar.")
+    try:
+        payload = parse_autosave_payload(request, expected_model="ordem_servico")
+    except AutosavePayloadError as exc:
+        return autosave_json_response(ok=False, message=str(exc))
+    form = OrdemServicoForm(dados_do_formulario(payload, fixos={"numero": ""}), instance=ordem)
+    if not form.is_valid():
+        return autosave_json_response(ok=False, message="Rascunho não salvo: revise os campos indicados.",
+                                      errors={k: [e["message"] for e in v] for k, v in form.errors.get_json_data().items()})
+    ordem = form.save()
+    return autosave_json_response(ok=True, object_id=ordem.pk)
 
 
 @acesso_ao_modulo

@@ -13,6 +13,10 @@
   editor, `marcas` diz a origem de cada trecho (o termo e a viatura dele, ou,
   no termo tirado do ofício, o roteiro e o transporte do ofício) e `ids` o
   servidor e a viatura do documento.
+
+  O parágrafo da manifestação é o bloco `texto` do modelo (m057): a
+  administração o reescreve na tela de modelos, com {periodo}, {destino},
+  {servidor} e {unidade} preenchidos daqui.
 {% endcomment %}
 {% block titulo %}Termo de autorização{% if termo.nome_servidor %} – {{ termo.nome_servidor }}{% endif %}{% endblock %}
 {% block classe %} doc-folha-ascom doc-termo{% endblock %}
@@ -25,9 +29,9 @@
   {% if termo.semipreenchido or termo.servidor_em_branco %}
     <p class="doc-termo__preencher"><span>Eu</span><span class="doc-lacuna"></span><span>,</span></p>
     <p class="doc-termo__preencher"><span>CPF:</span><span class="doc-lacuna doc-lacuna--cpf"></span><span>, telefone (&emsp;&ensp;)</span><span class="doc-lacuna doc-lacuna--telefone"></span><span>, lotado(a) na(o)</span><span class="doc-lacuna"></span><span>,</span></p>
-    <p class="doc-termo__texto">manifesto o interesse em participar do PCPR na Comunidade, <strong{% editavel marcas.periodo %}>{{ termo.data_do_evento }}</strong>, no município de <strong{% editavel marcas.destino %}>{{ termo.destino }}</strong> para execução de atividades inerentes à Assessoria de Comunicação Social - ASCOM/PCPR.</p>
+    <p class="doc-termo__texto">{% texto_modelo "texto" destaque="periodo destino" periodo=termo.data_do_evento destino=termo.destino servidor=termo.nome_servidor unidade=institucional.unidade_cabecalho %}</p>
   {% else %}
-    <p class="doc-termo__texto{% if termo.tem_lacuna %} doc-termo__texto--lacunas{% endif %}">{% include "documentos/pdf/_lacuna.html" with valor=termo.nome_servidor rotulo="Eu" classe="doc-lacuna--nome" campo="servidor_nome" objeto=ids.servidor %}, {% include "documentos/pdf/_lacuna.html" with valor=termo.cpf_servidor rotulo="CPF:" campo="servidor_cpf" objeto=ids.servidor %}, {% include "documentos/pdf/_lacuna.html" with valor=termo.telefone rotulo="telefone" campo="servidor_telefone" objeto=ids.servidor %}, {% include "documentos/pdf/_lacuna.html" with valor=termo.lotacao rotulo="lotado(a) na(o)" classe="doc-lacuna--lotacao" campo="servidor_lotacao" objeto=ids.servidor %}, manifesto o interesse em participar do PCPR na Comunidade, <strong{% editavel marcas.periodo %}>{{ termo.data_do_evento }}</strong>, no município de <strong{% editavel marcas.destino %}>{{ termo.destino }}</strong> para execução de atividades inerentes à Assessoria de Comunicação Social - ASCOM/PCPR.</p>
+    <p class="doc-termo__texto{% if termo.tem_lacuna %} doc-termo__texto--lacunas{% endif %}">{% include "documentos/pdf/_lacuna.html" with valor=termo.nome_servidor rotulo="Eu" classe="doc-lacuna--nome" campo="servidor_nome" objeto=ids.servidor %}, {% include "documentos/pdf/_lacuna.html" with valor=termo.cpf_servidor rotulo="CPF:" campo="servidor_cpf" objeto=ids.servidor %}, {% include "documentos/pdf/_lacuna.html" with valor=termo.telefone rotulo="telefone" campo="servidor_telefone" objeto=ids.servidor %}, {% include "documentos/pdf/_lacuna.html" with valor=termo.lotacao rotulo="lotado(a) na(o)" classe="doc-lacuna--lotacao" campo="servidor_lotacao" objeto=ids.servidor %}, {% texto_modelo "texto" destaque="periodo destino" periodo=termo.data_do_evento destino=termo.destino servidor=termo.nome_servidor unidade=institucional.unidade_cabecalho %}</p>
   {% endif %}
 
   {% bloco "declaracao" classe="doc-termo__declaracao" base=False %}

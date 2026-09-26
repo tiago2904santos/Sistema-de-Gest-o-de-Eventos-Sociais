@@ -1,0 +1,97 @@
+"""Textos-base dos modelos de documento, editados pela administração (m057).
+
+Cada tipo de documento tem os seus blocos do modelo (documentos/editor/
+blocos.py): título, cabeçalho, parágrafos fixos. O texto que a administração
+grava aqui vale no lugar do padrão do sistema para todos os documentos desse
+tipo — o que o documento reescreveu só para si (`DocumentoBloco`) e a versão
+editada inteira continuam valendo por cima.
+
+O texto em vigor entra no payload por `document_blocks.conteudo_documental`:
+muda a chave de cache, então o próximo PDF já sai com o texto novo. O que já
+foi emitido fica guardado no artefato, e a via assinada nunca muda.
+"""
+
+from __future__ import annotations
+
+import re
+
+from documentos.editor.blocos import blocos_do_tipo
+
+TAMANHO_MAXIMO = 20_000
+MARCADOR = re.compile(r"\{(\w+)\}")
+
+# Os campos que os textos do modelo aceitam. Os de viagem usam os rótulos de
+# viagens_oficios/campos_modelo.py (os mesmos marcadores dos modelos de motivo
+# e de justificativa).
+_ROTULOS_PROPRIOS = {
+    "assunto": "\"autorização\" ou \"convalidação\", conforme a data do ofício",
+    "servidor": "nome do servidor do documento",
+    "unidade": "unidade emissora",
+}
+
+
+def rotulos_dos_campos() -> dict[str, str]:
+    from viagens_oficios.campos_modelo import CAMPOS
+
+    return {**dict(CAMPOS), **_ROTULOS_PROPRIOS}
+
+
+def campos_do_bloco(bloco) -> list[dict]:
+    rotulos = rotulos_dos_campos()
+    return [{"chave": c, "marcador": "{" + c + "}", "rotulo": rotulos.get(c, c)} for c in getattr(bloco, "campos", ())]
+
+
+def _tipo(tipo) -> str:
+    return str(getattr(tipo, "value", tipo))
+
+
+def linhas(tipo, chave=None):
+    from documentos.models import ModeloTextoDocumento
+
+    consulta = ModeloTextoDocumento.objects.filter(tipo_documento=_tipo(tipo)).select_related("criado_por")
+    if chave is not None:
+        consulta = consulta.filter(chave=chave)
+    return consulta.order_by("-criado_em", "-pk")
+
+
+def textos_vigentes(tipo) -> dict[str, str]:
+    """Chave → texto em vigor, só das chaves que a administração alterou."""
+    vistos, textos = set(), {}
+    for linha in linhas(tipo).select_related(None).only("chave", "texto", "padrao_sistema", "criado_em"):
+        if linha.chave in vistos:
+            continue
+        vistos.add(linha.chave)
+        if not linha.padrao_sistema:
+            textos[linha.chave] = linha.texto
+    return textos
+
+
+def texto_vigente(tipo, chave) -> str | None:
+    atual = linhas(tipo, chave).first()
+    return None if atual is None or atual.padrao_sistema else atual.texto
+
+
+def marcadores_desconhecidos(bloco, texto: str) -> list[str]:
+    aceitos = set(getattr(bloco, "campos", ()))
+    return sorted({m for m in MARCADOR.findall(texto or "") if m not in aceitos})
+
+
+def gravar(tipo, chave, texto: str, usuario):
+    """Grava o texto novo do bloco. Texto vazio ou igual ao do sistema volta
+    ao padrão do sistema."""
+    from documentos.models import ModeloTextoDocumento
+
+    bloco = blocos_do_tipo(tipo).get(chave)
+    if bloco is None:
+        raise ValueError("Bloco fora do modelo deste documento.")
+    texto = str(texto or "").replace("\r\n", "\n").strip()[:TAMANHO_MAXIMO]
+    padrao_sistema = not texto or texto == bloco.padrao
+    atual = linhas(tipo, chave).first()
+    if atual is not None and atual.padrao_sistema == padrao_sistema and (padrao_sistema or atual.texto == texto):
+        return atual  # nada mudou: não acumula linhas iguais
+    if atual is None and padrao_sistema:
+        return None
+    return ModeloTextoDocumento.objects.create(
+        tipo_documento=_tipo(tipo), chave=chave, texto="" if padrao_sistema else texto,
+        padrao_sistema=padrao_sistema, criado_por=usuario if getattr(usuario, "is_authenticated", False) else None,
+    )

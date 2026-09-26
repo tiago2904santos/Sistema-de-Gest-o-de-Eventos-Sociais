@@ -19,6 +19,7 @@ from core.constraints import periodo_ordenado
 from core.legado import OrigemLegado
 from core.models import ModeloCancelavel, ModeloTemporal
 from core.normalizers import normalize_spaces
+from core.uploads import validate_private_document_upload
 
 
 class TipoViagem(ModeloTemporal, OrigemLegado):
@@ -211,7 +212,8 @@ class ViagemDocumentoSolicitacao(ModeloTemporal, OrigemLegado):
     """Ofício solicitante, convite, despacho ou imagem anexados à viagem (sempre PDF)."""
 
     viagem = models.ForeignKey(Viagem, on_delete=models.CASCADE, related_name="documentos_solicitacao")
-    arquivo = models.FileField(upload_to=viagem_solicitacao_upload_to)
+    # A mesma política dos outros anexos (m070); a tela também confere antes de converter.
+    arquivo = models.FileField(upload_to=viagem_solicitacao_upload_to, validators=[validate_private_document_upload])
     nome_original = models.CharField(max_length=255, blank=True, default="")
 
     class Meta:

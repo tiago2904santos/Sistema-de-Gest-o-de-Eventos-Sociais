@@ -778,6 +778,7 @@ class AcaoHistoricoCoffeeBreak(models.TextChoices):
     CANCELAMENTO = "CANCELAMENTO", "Solicitação cancelada"
     REATIVACAO = "REATIVACAO", "Solicitação reativada"
     EMAIL = "EMAIL", "E-mail enviado"
+    FORNECEDOR = "FORNECEDOR", "Envio do fornecedor"
 
 
 class HistoricoCoffeeBreak(models.Model):
@@ -913,3 +914,107 @@ class CertidaoFornecedor(models.Model):
 
     def __str__(self):
         return f"{self.get_tipo_display()} — {self.fornecedor} (até {self.validade:%d/%m/%Y})"
+
+
+# ---------------------------------------------------------------------------
+# Link seguro do fornecedor (m036)
+# ---------------------------------------------------------------------------
+
+class LinkFornecedor(models.Model):
+    """Link sem login que o fornecedor recebe para mandar a nota fiscal da OS
+    e as certidões renovadas.
+
+    O token é aleatório (``secrets.token_urlsafe``) e só existe no e-mail
+    enviado: aqui fica o hash SHA-256. Um link ativo por solicitação — gerar
+    outro revoga o anterior —, com validade (``COFFEE_LINK_FORNECEDOR_DIAS``)
+    e revogável a qualquer momento. Regras em coffee_break/link_fornecedor.py.
+    """
+
+    solicitacao = models.ForeignKey(
+        SolicitacaoCoffeeBreak, verbose_name="solicitação", on_delete=models.CASCADE,
+        related_name="links_fornecedor",
+    )
+    token_hash = models.CharField("hash do token", max_length=64, unique=True, editable=False)
+    expira_em = models.DateTimeField("vale até")
+    revogado_em = models.DateTimeField("revogado em", blank=True, null=True)
+    revogado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, verbose_name="revogado por", on_delete=models.SET_NULL,
+        related_name="links_fornecedor_revogados", blank=True, null=True,
+    )
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, verbose_name="criado por", on_delete=models.SET_NULL,
+        related_name="links_fornecedor_criados", blank=True, null=True,
+    )
+    criado_em = models.DateTimeField("criado em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "link do fornecedor"
+        verbose_name_plural = "links do fornecedor"
+        ordering = ["-criado_em", "-pk"]
+
+    def __str__(self):
+        return f"Link do fornecedor — {self.solicitacao}"
+
+    @property
+    def expirado(self):
+        return self.expira_em <= timezone.now()
+
+    @property
+    def ativo(self):
+        return self.revogado_em is None and not self.expirado
+
+
+class StatusEnvioFornecedor(models.TextChoices):
+    RECEBIDO = "RECEBIDO", "Recebido, aguardando conferência"
+    ACEITO = "ACEITO", "Conferido e aceito"
+    RECUSADO = "RECUSADO", "Recusado"
+
+
+TIPO_ENVIO_NOTA = "NOTA"
+TIPOS_ENVIO = [(TIPO_ENVIO_NOTA, "Nota fiscal"), *[(v, f"Certidão {r}") for v, r in TipoCertidao.choices]]
+
+
+class EnvioFornecedor(models.Model):
+    """Um arquivo que o fornecedor mandou pelo link: fica "recebido,
+    aguardando conferência" até alguém da ASCOM aceitar (aí entra na OS ou
+    nas certidões do fornecedor) ou recusar."""
+
+    link = models.ForeignKey(
+        LinkFornecedor, verbose_name="link", on_delete=models.CASCADE, related_name="envios",
+    )
+    tipo = models.CharField("tipo", max_length=12, choices=TIPOS_ENVIO)
+    arquivo = models.FileField("arquivo", upload_to="coffee_break/envios_fornecedor/%Y/")
+    # Lidos do PDF da nota na chegada (a mesma leitura do anexo da etapa 2).
+    numero_nota = models.CharField("número da nota", max_length=30, blank=True)
+    valor_nota = models.DecimalField("valor da nota", max_digits=12, decimal_places=2, blank=True, null=True)
+    emissao_nota = models.DateField("emissão da nota", blank=True, null=True)
+    cnpj_nota = models.CharField("CNPJ do emitente", max_length=14, blank=True)
+    validade_certidao = models.DateField("certidão válida até", blank=True, null=True)
+    # O que a conferência apontou (um aviso por linha).
+    avisos = models.TextField("pontos a conferir", blank=True)
+    status = models.CharField(
+        "situação", max_length=10, choices=StatusEnvioFornecedor.choices, default=StatusEnvioFornecedor.RECEBIDO,
+    )
+    conferido_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, verbose_name="conferido por", on_delete=models.SET_NULL,
+        related_name="envios_fornecedor_conferidos", blank=True, null=True,
+    )
+    conferido_em = models.DateTimeField("conferido em", blank=True, null=True)
+    motivo_recusa = models.CharField("motivo da recusa", max_length=255, blank=True)
+    criado_em = models.DateTimeField("recebido em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "envio do fornecedor"
+        verbose_name_plural = "envios do fornecedor"
+        ordering = ["-criado_em", "-pk"]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} — {self.link.solicitacao}"
+
+    @property
+    def eh_nota(self):
+        return self.tipo == TIPO_ENVIO_NOTA
+
+    @property
+    def lista_avisos(self):
+        return [linha for linha in self.avisos.splitlines() if linha.strip()]

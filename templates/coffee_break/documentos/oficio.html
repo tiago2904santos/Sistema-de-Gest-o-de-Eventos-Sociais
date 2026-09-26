@@ -40,21 +40,27 @@
   .destinatario { margin-top: 60pt; white-space: pre-line; page-break-inside: avoid; }
   /* Quebra de página posta no editor de documentos. */
   .quebra { page-break-before: always; break-before: page; }
+  /* Tabela e quebra de página inseridas no editor completo (m057). */
+  .doc-tabela-livre { width: 100%; border-collapse: collapse; margin: 4pt 0; }
+  .doc-tabela-livre td, .doc-tabela-livre th { border: 0.5pt solid #000; padding: 2pt 4pt; vertical-align: top; }
+  .doc-quebra { page-break-after: always; break-after: page; height: 0; }
 </style>
 </head>
 <body>
   <img class="timbre-brasao" src="{{ imagens.brasao }}" alt="">
-  <div class="timbre-cabecalho">
+  <div class="timbre-cabecalho"><!--ed:cabecalho-->
     <p>{{ b.cb_secretaria|linhas }}</p>
     <p><b>{{ b.cb_orgao|linhas }}</b></p>
     <p>{{ b.cb_unidade|linhas }}</p>
-  </div>
+  <!--/ed:cabecalho--></div>
   <img class="timbre-marca" src="{{ imagens.marca }}" alt="">
-  <div class="timbre-rodape">
+  <div class="timbre-rodape"><!--ed:rodape-->
     <p>{{ b.cb_rodape_endereco|linhas }}</p>
     <p>{{ b.cb_rodape_contato|linhas }}</p>
-  </div>
+  <!--/ed:rodape--></div>
 
+  {# O corpo numa caixa própria: é a região que o editor completo edita (m057). #}
+  <div class="corpo-documento"><!--ed:corpo-->
   <h1>{{ b.cb_titulo|linhas }} {{ s.numero_oficio }}</h1>
   <div class="linha-miuda">
     <span>{% if s.protocolo_pcpr_oficio %}{{ b.cb_rotulo_protocolo|linhas }} {{ s.protocolo_pcpr_oficio }}{% endif %}</span>
@@ -78,5 +84,6 @@
 
   {% if "antes_destinatario" in quebras %}<div class="quebra"></div>{% endif %}
   <p class="destinatario">{{ config.oficio_destinatario }}</p>
+  <!--/ed:corpo--></div>
 </body>
 </html>

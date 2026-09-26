@@ -34,9 +34,19 @@
         </div>
       </div>
       <div class="frm-topo__acoes">
+        {% if url_gerar_documentos %}
+          {# m064: os ofícios (cada um com a sua equipe, motorista e viatura), termos, OS e plano de uma vez. #}
+          <a class="btn--secundaria btn--com-icone" href="{{ url_gerar_documentos }}">{% include "components/icon.html" with nome="document-plus" %}Gerar documentos</a>
+        {% endif %}
         {% if url_baixar %}
           {# O modal "Baixar documentos" das listas, com tudo o que a viagem reúne. #}
           <button type="button" class="btn--secundaria btn--com-icone" data-baixar-documentos data-url="{{ url_baixar }}" data-titulo="{{ titulo }}" data-itens="{{ itens_baixar }}"{% if itens_baixar == "[]" %} disabled title="Nenhum documento para baixar ainda"{% endif %}>{% include "components/icon.html" with nome="download" %}Baixar documentos</button>
+          {# "Baixar tudo" (m065): um ZIP, cada documento no seu arquivo e numerado — cada um é assinado à parte no eProtocolo. #}
+          {% if itens_baixar != "[]" %}
+            <form method="post" action="{{ url_baixar_tudo }}" class="vg-baixar-tudo">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+              <button type="submit" class="btn--secundaria btn--com-icone" title="Um arquivo .zip com cada documento da viagem em PDF separado, numerado na ordem do processo">{% include "components/icon.html" with nome="download" %}Baixar tudo (ZIP)</button>
+            </form>
+          {% endif %}
         {% endif %}
         {% include "components/v32/button.html" with label="Voltar para lista" variante="secundario" href=url_lista %}
       </div>
@@ -87,6 +97,9 @@
     {% endif %}
 
     {% include "components/v32/avisos_conflito.html" with conflitos=conflitos %}
+
+    {% if prontidao %}{% include "pages/viagens_viagem/_prontidao.html" %}{% endif %}
+    {% if coerencia %}{% include "pages/viagens_viagem/_coerencia.html" %}{% endif %}
 
     {% if etapa_atual == 1 %}{% include "pages/viagens_viagem/_etapa_1.html" %}
     {% elif etapa_atual == 2 %}{% include "pages/viagens_viagem/_etapa_2.html" %}

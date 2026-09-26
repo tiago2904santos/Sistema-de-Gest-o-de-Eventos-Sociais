@@ -52,15 +52,6 @@ def _imagens_web():
     }
 
 
-def _previa(template, contexto):
-    """A folha em HTML para o visualizador da tela: o mesmo modelo do PDF.
-
-    Não depende de leitor de PDF no navegador (há os que não mostram PDF
-    dentro de um quadro, como os de celular).
-    """
-    return render_to_string(template, {**contexto, "imagens": _imagens_web(), "previa": True})
-
-
 def _contexto_os(solicitacao):
     """A OS com o que se editou no editor de documentos: os textos do modelo
     reescritos (`b`, por chave) e as quebras de página."""
@@ -73,10 +64,14 @@ def _contexto_os(solicitacao):
 
 
 def ordem_servico_previa(solicitacao):
-    faltas = pendencias_ordem_servico(solicitacao)
-    if faltas:
-        raise ValidationError(faltas)
-    return _previa("coffee_break/documentos/ordem_servico.html", _contexto_os(solicitacao))
+    """A folha em HTML para o visualizador da tela: o mesmo modelo do PDF.
+
+    Não depende de leitor de PDF no navegador (há os que não mostram PDF
+    dentro de um quadro, como os de celular).
+    """
+    from .editor import TipoCoffee
+
+    return html_do_documento(TipoCoffee.ORDEM_SERVICO, solicitacao, previa=True)
 
 
 def _pdf_do_html(html):
@@ -94,13 +89,44 @@ def _pdf(template, contexto):
     return _pdf_do_html(render_to_string(template, {**contexto, "imagens": _imagens()}))
 
 
-def _emitir(tipo, solicitacao, template, contexto):
+def _emitir(tipo, solicitacao):
     """A OS, o ofício ou o certifico: a via assinada, se houver; senão o PDF
     gerado, que fica guardado como via emitida (coffee_break/vias.py)."""
     from . import vias
 
-    html = render_to_string(template, {**contexto, "imagens": _imagens()})
-    return vias.emitir(tipo, solicitacao, html, _pdf_do_html)
+    return vias.emitir(tipo, solicitacao, html_do_documento(tipo, solicitacao), _pdf_do_html)
+
+
+def versao_editada(tipo, solicitacao):
+    """A versão editada inteira do documento (m057), guardada na solicitação
+    que guarda as vias (a OS principal, no ofício), ou None."""
+    from documentos.services.edicao_completa import para_payload
+
+    from . import vias
+
+    if not solicitacao.pk:
+        return None
+    return para_payload(tipo, vias.dono(tipo, solicitacao), "")
+
+
+def html_do_documento(tipo, solicitacao, *, previa=False, com_edicao=True):
+    """A folha do documento em HTML: a do PDF, ou a prévia da tela
+    (`previa`). Com versão editada, as regiões dela no lugar das do modelo.
+    Levanta ValidationError com as pendências de emissão."""
+    from documentos.services.edicao_completa import aplicar_regioes
+
+    from .editor import TipoCoffee
+
+    tipo = TipoCoffee(tipo)
+    montar = {
+        TipoCoffee.ORDEM_SERVICO: _contexto_da_ordem,
+        TipoCoffee.OFICIO: _contexto_do_oficio,
+        TipoCoffee.CERTIFICO: _contexto_do_certifico,
+    }[tipo]
+    imagens = _imagens_web() if previa else _imagens()
+    html = render_to_string(TEMPLATES[tipo.value], {**montar(solicitacao), "imagens": imagens, "previa": previa})
+    editada = versao_editada(tipo, solicitacao) if com_edicao else None
+    return aplicar_regioes(html, editada["regioes"], imagens) if editada else html
 
 
 def _contexto(solicitacao):
@@ -124,13 +150,17 @@ def pendencias_ordem_servico(solicitacao):
     return faltas
 
 
-def ordem_servico_pdf(solicitacao):
+def _contexto_da_ordem(solicitacao):
     faltas = pendencias_ordem_servico(solicitacao)
     if faltas:
         raise ValidationError(faltas)
+    return _contexto_os(solicitacao)
+
+
+def ordem_servico_pdf(solicitacao):
     from .editor import TipoCoffee
 
-    return _emitir(TipoCoffee.ORDEM_SERVICO, solicitacao, "coffee_break/documentos/ordem_servico.html", _contexto_os(solicitacao))
+    return _emitir(TipoCoffee.ORDEM_SERVICO, solicitacao)
 
 
 def _sem_quebra(texto, trecho):
@@ -146,7 +176,7 @@ def pendencias_certifico(solicitacao):
     return [] if solicitacao.numero_nota_fiscal.strip() else ["Informe o número da nota fiscal."]
 
 
-def certifico_pdf(solicitacao):
+def _contexto_do_certifico(solicitacao):
     from .editor import TipoCoffee, textos_do_documento
 
     if not solicitacao.numero_nota_fiscal.strip():
@@ -154,7 +184,13 @@ def certifico_pdf(solicitacao):
     contexto = _contexto(solicitacao)
     contexto["b"], contexto["quebras"] = textos_do_documento(TipoCoffee.CERTIFICO, solicitacao)
     contexto["atesto_texto"] = _sem_quebra(contexto["b"]["cb_atesto_texto"], "executados/entregues")
-    return _emitir(TipoCoffee.CERTIFICO, solicitacao, "coffee_break/documentos/certifico.html", contexto)
+    return contexto
+
+
+def certifico_pdf(solicitacao):
+    from .editor import TipoCoffee
+
+    return _emitir(TipoCoffee.CERTIFICO, solicitacao)
 
 
 def juntar(itens):
@@ -194,6 +230,12 @@ def itens_do_oficio(solicitacao):
 def oficio_pdf(solicitacao):
     """Um ofício para todas as OS do mesmo pagamento (um item por evento e as
     notas no plural, como no Of. 123/2026 do processo 26.613.666-8)."""
+    from .editor import TipoCoffee
+
+    return _emitir(TipoCoffee.OFICIO, solicitacao)
+
+
+def _contexto_do_oficio(solicitacao):
     from .editor import TipoCoffee, textos_do_documento
     from .models import ConfiguracaoCoffeeBreak
 
@@ -211,7 +253,15 @@ def oficio_pdf(solicitacao):
     contexto["varias_notas"] = len(notas) > 1
     # O texto do ofício é do pagamento: mora na OS principal.
     contexto["b"], contexto["quebras"] = textos_do_documento(TipoCoffee.OFICIO, solicitacao.principal_do_pagamento)
-    return _emitir(TipoCoffee.OFICIO, solicitacao, "coffee_break/documentos/oficio.html", contexto)
+    return contexto
+
+
+# A folha de cada documento (o PDF e a prévia da tela).
+TEMPLATES = {
+    "coffee_break_ordem_servico": "coffee_break/documentos/ordem_servico.html",
+    "coffee_break_oficio": "coffee_break/documentos/oficio.html",
+    "coffee_break_certifico": "coffee_break/documentos/certifico.html",
+}
 
 
 # ---------------------------------------------------------------------------

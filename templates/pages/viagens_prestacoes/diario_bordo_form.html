@@ -28,6 +28,7 @@
           <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações do diário de bordo" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
           <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
             <a class="dd__i of-item" href="{{ editar_motorista_url }}" data-pc-modal="pc-dialogo-motorista">{% include "components/icon.html" with nome="volante" %}<span><b>Trocar motorista / viatura</b><small>Só neste diário; o ofício não muda</small></span></a>
+            <a class="dd__i of-item" href="#celular">{% include "components/icon.html" with nome="link" %}<span><b>Preencher no celular</b><small>Link do diário para o motorista, pelo WhatsApp</small></span></a>
             <a class="dd__i of-item" href="{{ editar_roteiro_url }}">{% include "components/icon.html" with nome="map-pin" %}<span><b>Ajustar roteiro realizado</b><small>Trechos, datas e horários</small></span></a>
             <a class="dd__i of-item" href="#documento-diario_bordo">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar documento</b><small>Motorista, viatura e km pela prévia A4</small></span></a>
             <div class="dd__s"></div>
@@ -48,6 +49,28 @@
         <div class="pc-diario__cartao" title="Viatura">
           <span class="pc-diario__icone" aria-hidden="true">{% include "components/icon.html" with nome="truck" %}</span>
           <span class="pc-diario__txt"><b>{% if viatura_resumo.placa %}{{ viatura_resumo.placa }} — {% endif %}{{ viatura_resumo.viatura }}</b><small>Viatura{% if viatura_resumo.combustivel %} · {{ viatura_resumo.combustivel }}{% endif %}</small>{% if hodometro.ultimo_km %}<small class="pc-diario__ultimo-km">Último km registrado desta viatura: <b>{{ hodometro.ultimo_km.km_label }}</b> (em {{ hodometro.ultimo_km.data_curta }}, Ofício {{ hodometro.ultimo_km.oficio }})</small>{% endif %}</span>
+        </div>
+      </div>
+      {# m096: o motorista preenche o diário no celular, mesmo sem internet, pelo link pessoal. #}
+      <div class="pc-celular" id="celular">
+        <span class="pc-diario__icone" aria-hidden="true">{% include "components/icon.html" with nome="link" %}</span>
+        <div class="pc-celular__txt">
+          <b>Preencher no celular</b>
+          {% if link_campo %}
+            <small>Link ativo até {{ link_campo.expira_em|date:"d/m/Y" }}{% if link_campo.ultimo_envio_em %} · último lançamento recebido em {{ link_campo.ultimo_envio_em|date:"d/m H:i" }}{% elif link_campo.ultimo_acesso_em %} · aberto em {{ link_campo.ultimo_acesso_em|date:"d/m H:i" }}{% else %} · ainda não foi aberto{% endif %}</small>
+            <input class="form-controle pc-celular__link" type="text" readonly value="{{ link_campo_url }}" aria-label="Link do diário para o motorista">
+          {% else %}
+            <small>Gere um link para o motorista lançar o km e o abastecimento de cada trecho durante a viagem, mesmo sem sinal. O link só dá acesso a este diário.</small>
+          {% endif %}
+        </div>
+        <div class="pc-celular__acoes">
+          {% if link_campo %}
+            <a class="btn-primaria" href="{{ link_campo_whatsapp }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="send" %} Enviar por WhatsApp</a>
+            <form method="post" action="{{ link_campo_gerar_url }}">{% csrf_token %}<button type="submit" class="btn--secundaria" title="Gera um link novo; o atual deixa de abrir">Gerar novo</button></form>
+            <form method="post" action="{{ link_campo_revogar_url }}">{% csrf_token %}<button type="submit" class="btn--secundaria" title="O link deixa de abrir o diário">Desativar</button></form>
+          {% else %}
+            <form method="post" action="{{ link_campo_gerar_url }}">{% csrf_token %}<button type="submit" class="btn-primaria">Gerar link para o motorista</button></form>
+          {% endif %}
         </div>
       </div>
       {# Os trechos na largura inteira do cartão, abaixo do motorista e da viatura. #}

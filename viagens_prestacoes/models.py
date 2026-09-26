@@ -484,3 +484,69 @@ class ModeloTextoRelatorioTecnico(OrigemLegado):
 
     def __str__(self):
         return f'{self.get_campo_display()} — {self.nome}'
+
+
+def _token_do_link() -> str:
+    import secrets
+    return secrets.token_urlsafe(32)
+
+
+class LinkDiarioCampo(OrigemLegado):
+    """Link pessoal para o motorista preencher o diário no celular (m096).
+
+    Quem tem o link grava km e abastecimento **só deste diário** — sem login, por
+    isso o token é longo e aleatório, vence alguns dias depois do retorno e pode
+    ser revogado. Um diário tem no máximo um link ativo: gerar outro revoga o
+    anterior (`campo_services.gerar_link`).
+    """
+    diario = models.ForeignKey(DiarioBordo, on_delete=models.CASCADE, related_name='links_campo')
+    token = models.CharField(max_length=64, unique=True, default=_token_do_link, editable=False)
+    expira_em = models.DateTimeField('vale até')
+    revogado_em = models.DateTimeField('revogado em', null=True, blank=True)
+    criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    criado_em = models.DateTimeField(auto_now_add=True)
+    ultimo_acesso_em = models.DateTimeField('último acesso', null=True, blank=True)
+    ultimo_envio_em = models.DateTimeField('último lançamento recebido', null=True, blank=True)
+
+    class Meta:
+        ordering = ['-criado_em', '-pk']
+        verbose_name = 'Link do diário no celular'
+        verbose_name_plural = 'Links do diário no celular'
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_linkdiariocampo_origem")]
+
+    def __str__(self):
+        return f'Link do diário {self.diario_id}'
+
+    def valido(self, agora=None) -> bool:
+        from django.utils import timezone as _tz
+        return self.revogado_em is None and self.expira_em > (agora or _tz.now())
+
+
+class LancamentoDiarioCampo(OrigemLegado):
+    """Um lançamento que chegou do celular, pelo id que o próprio celular gerou (m096).
+
+    É o que torna a sincronização idempotente: a fila do navegador reenvia até
+    receber resposta, e o mesmo lançamento pode chegar duas vezes (a conexão caiu
+    depois de gravar). O segundo encontra esta linha e devolve o mesmo resultado,
+    sem gravar de novo.
+    """
+    SITUACAO_GRAVADO = 'gravado'
+    SITUACAO_RECUSADO = 'recusado'
+    SITUACAO_CHOICES = [(SITUACAO_GRAVADO, 'Gravado'), (SITUACAO_RECUSADO, 'Recusado')]
+    diario = models.ForeignKey(DiarioBordo, on_delete=models.CASCADE, related_name='lancamentos_campo')
+    link = models.ForeignKey(LinkDiarioCampo, on_delete=models.SET_NULL, null=True, blank=True, related_name='lancamentos')
+    cliente_id = models.CharField('id gerado no celular', max_length=64)
+    linha = models.ForeignKey(DiarioBordoTrecho, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    dados = models.JSONField(default=dict, blank=True)
+    situacao = models.CharField(max_length=10, choices=SITUACAO_CHOICES)
+    mensagem = models.CharField(max_length=255, blank=True, default='')
+    recebido_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['recebido_em', 'pk']
+        verbose_name = 'Lançamento do diário no celular'
+        verbose_name_plural = 'Lançamentos do diário no celular'
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_lancamentodiariocampo_origem"), models.UniqueConstraint(fields=['diario', 'cliente_id'], name='lancamento_campo_unico_por_diario')]
+
+    def __str__(self):
+        return f'{self.cliente_id} ({self.situacao})'

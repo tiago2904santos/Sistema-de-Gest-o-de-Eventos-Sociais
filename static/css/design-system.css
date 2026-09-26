@@ -1115,6 +1115,39 @@ textarea.form-controle {
   line-height: 1.6;
 }
 
+/* Páginas públicas (sem login): o pedido de palestra e o envio do fornecedor
+   usam o mesmo card das telas de acesso, mais largo para caber o formulário. */
+.auth-card--largo { max-width: 760px; }
+.auth-card__corpo--formulario { text-align: left; }
+.publico-aviso {
+  padding: var(--esp-3) var(--esp-4);
+  border-left: 3px solid var(--cor-dourado-500);
+  background: var(--cor-fundo, #f5f5f4);
+  font-size: var(--texto-sm);
+  line-height: 1.5;
+  color: var(--cor-texto);
+}
+.publico-opcoes { display: flex; flex-wrap: wrap; gap: var(--esp-2) var(--esp-4); }
+.publico-opcoes label { display: flex; align-items: center; gap: var(--esp-2); font-size: var(--texto-sm); }
+.publico-numero {
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--cor-grafite-800);
+}
+.publico-dados { display: grid; grid-template-columns: max-content 1fr; gap: var(--esp-2) var(--esp-4); font-size: var(--texto-sm); }
+.publico-dados dt { font-weight: 700; color: var(--cor-grafite-600); }
+.publico-dados dd { margin: 0; }
+.publico-link { word-break: break-all; font-size: var(--texto-sm); }
+/* Campo isca contra robôs: fora da tela para pessoas e leitores de tela. */
+.campo-isca {
+  position: absolute !important;
+  left: -10000px !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 /* --------------------------------------------------------------------------
    14. Utilitários
    -------------------------------------------------------------------------- */

@@ -56,6 +56,11 @@
     {% endif %}
     <span class="de-barra__sep" aria-hidden="true"></span>
     <div class="de-barra__grupo">
+      {# Editor completo (m057): o documento inteiro, com textos fixos, cabeçalho, rodapé e tabelas. #}
+      <a class="de-texto-botao" href="{{ doc.url_completo }}" title="Editar livremente o documento inteiro, como num editor de texto">{% include "components/icon.html" with nome="document" %}Editar documento completo</a>
+    </div>
+    <span class="de-barra__sep" aria-hidden="true"></span>
+    <div class="de-barra__grupo">
       {% if doc.pode_emitir and doc.url_pdf %}
         <button type="button" class="de-texto-botao" data-de-pdf="{{ doc.url_pdf }}{% if '?' in doc.url_pdf %}&{% else %}?{% endif %}inline=1" data-de-alvo="_blank" title="Abre o PDF numa aba nova, pronto para imprimir">{% include "components/icon.html" with nome="printer" %}Imprimir</button>
       {% else %}
@@ -69,6 +74,22 @@
       <button type="button" class="de-icone" data-de-alternar-historico aria-pressed="false" title="Histórico de alterações" aria-label="Histórico de alterações">{% include "components/icon.html" with nome="clock" %}</button>
     </div>
   </div>
+
+  {% if doc.edicao_completa.vigente %}
+    <div class="dc-aviso" role="status">
+      {% include "components/icon.html" with nome=doc.edicao_completa.desatualizada|yesno:"alert,info" %}
+      <div>
+        {% if doc.edicao_completa.desatualizada %}
+          <strong>Os dados mudaram depois da edição completa deste documento.</strong>
+          O documento sai da versão editada à mão, que pode estar desatualizada.
+        {% else %}
+          <strong>Este documento foi editado por inteiro.</strong>
+          É a versão editada que sai no PDF, no DOCX, no pacote e nos envios; mudanças nos campos só entram voltando ao modelo.
+        {% endif %}
+        <a href="{{ doc.url_completo }}">Abrir a versão editada, regenerar ou ver as versões</a>
+      </div>
+    </div>
+  {% endif %}
 
   {% if doc.pendencias %}
     <div class="dc-aviso" role="status">

@@ -49,6 +49,8 @@ sudo -u eventos .venv/bin/pip install -q -r requirements.txt gunicorn
 
 echo "== migrações"
 sudo -u eventos "$PY" manage.py migrate --noinput
+# Cache compartilhado dos processos (limite das páginas públicas); não recria se já existe.
+sudo -u eventos "$PY" manage.py createcachetable
 
 echo "== estáticos"
 sudo -u eventos "$PY" manage.py collectstatic --noinput

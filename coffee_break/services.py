@@ -338,6 +338,55 @@ def lotes_em_alerta(lotes_anotados, hoje=None):
 # Conferência da nota fiscal
 # ---------------------------------------------------------------------------
 
+def ler_nota(conteudo):
+    """Número, valor, emissão e CNPJ do emitente lidos do PDF da nota."""
+    from .nota_fiscal import dados_da_nota, numero_da_nota
+
+    lidos = dados_da_nota(conteudo)
+    return {**lidos, "numero": numero_da_nota(conteudo) or ""}
+
+
+def aplicar_nota(solicitacao, arquivo, usuario, lidos=None, origem=""):
+    """Grava o PDF da nota na OS com o que foi lido dele e registra no
+    histórico. Usado pelo anexo da etapa 2 e pelo aceite do envio do
+    fornecedor (link seguro). Devolve o número lido ("" se não deu)."""
+    if lidos is None:
+        arquivo.seek(0)
+        lidos = ler_nota(arquivo.read())
+        arquivo.seek(0)
+    trocou = bool(solicitacao.arquivo_nota_fiscal)
+    solicitacao.arquivo_nota_fiscal = arquivo
+    solicitacao.valor_nota_fiscal = lidos["valor"]
+    solicitacao.data_emissao_nf = lidos["emissao"]
+    solicitacao.cnpj_emitente_nf = lidos["cnpj"]
+    campos = ["arquivo_nota_fiscal", "valor_nota_fiscal", "data_emissao_nf", "cnpj_emitente_nf", "atualizado_em"]
+    numero = lidos["numero"]
+    if numero:
+        solicitacao.numero_nota_fiscal = numero
+        campos.append("numero_nota_fiscal")
+    solicitacao.save(update_fields=campos)
+    registrar_historico(
+        solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO,
+        ("Nota fiscal (PDF) substituída" if trocou else "Nota fiscal (PDF) anexada")
+        + (f" {origem}" if origem else "")
+        + (f"; número {numero} lido do PDF." if numero else "."),
+    )
+    return numero
+
+
+def avisos_da_nota_lida(solicitacao, lidos):
+    """A conferência de ``avisos_da_nota`` sobre uma nota ainda não gravada
+    (a que o fornecedor mandou pelo link): numa cópia em memória da OS."""
+    import copy
+
+    simulada = copy.copy(solicitacao)
+    simulada.valor_nota_fiscal = lidos["valor"]
+    simulada.data_emissao_nf = lidos["emissao"]
+    simulada.cnpj_emitente_nf = lidos["cnpj"]
+    simulada.numero_nota_fiscal = lidos["numero"] or ""
+    return avisos_da_nota(simulada)
+
+
 def avisos_da_nota(solicitacao):
     """O que não bate na nota anexada: emitente, valor, data e número repetido.
 

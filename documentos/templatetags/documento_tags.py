@@ -162,6 +162,46 @@ def bloco(context, chave, classe="", assunto=None, negrito_ate="", padrao=None, 
     return format_html("<{}{}>{}</{}>", elemento, atributos, _texto_do_bloco(texto, negrito_ate), elemento)
 
 
+_MARCADOR = __import__("re").compile(r"\{(\w+)\}")
+
+
+@register.simple_tag(takes_context=True)
+def texto_modelo(context, chave, destaque="", **valores):
+    """Texto do modelo com campos automáticos (m057): o texto em vigor do bloco
+    (o da administração, ou o reescrito só para o documento) com cada
+    `{marcador}` trocado pelo valor dado na tag. Sai só o conteúdo, sem
+    elemento em volta — entra no meio de um parágrafo do template.
+
+    `destaque` lista os campos que saem em negrito. No editor, o valor de um
+    campo que tenha marca em `marcas` (a mesma chave) leva a marcação do
+    editor de campos, como antes. Marcador que a tag não conhece fica no
+    texto, à vista."""
+    dados = (context.get("blocos") or {}).get(chave) or {}
+    texto = dados.get("conteudo")
+    if texto is None:
+        texto = dados.get("padrao", "")
+    negrito = set(str(destaque or "").split())
+    marcas = context.get("marcas") or {}
+    partes, inicio = [], 0
+    for achado in _MARCADOR.finditer(texto):
+        partes.append(linhas(texto[inicio:achado.start()]))
+        inicio = achado.end()
+        nome = achado.group(1)
+        if nome not in valores:
+            partes.append(escape(achado.group(0)))
+            continue
+        valor = "" if valores[nome] is None else str(valores[nome])
+        atributos = editavel(context, marcas[nome]) if marcas.get(nome) else ""
+        if nome in negrito:
+            partes.append(format_html("<strong{}>{}</strong>", atributos, valor))
+        elif atributos:
+            partes.append(format_html("<span{}>{}</span>", atributos, valor))
+        else:
+            partes.append(escape(valor))
+    partes.append(linhas(texto[inicio:]))
+    return mark_safe("".join(str(p) for p in partes))
+
+
 @register.simple_tag(takes_context=True)
 def ponto_de_quebra(context, chave):
     """Onde o template admite uma quebra de página. Ativa, é a quebra (no PDF

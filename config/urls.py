@@ -8,6 +8,8 @@ handler403 = "core.views.erro_403"
 
 urlpatterns = [
     path("viagens/prestacoes/", include("viagens_prestacoes.urls")),
+    # m096: o diário de bordo no celular do motorista — acesso pelo link, sem login.
+    path("campo/diario/", include("viagens_prestacoes.campo_urls")),
     path("viagens/oficios/", include("viagens_oficios.urls")),
     path("viagens/termos/", include("viagens_termos.urls")),
     path("viagens/viagem/", include("viagens_viagem.urls")),
@@ -34,6 +36,13 @@ urlpatterns = [
     path("viagens/cadastros/", include("viagens_cadastros.urls")),
     path("viagens/roteiros/", include("viagens_roteiros.urls")),
     path("documentos/", include("documentos.urls")),
+    # Páginas públicas, sem login: o pedido de palestra/evento feito pelo
+    # próprio solicitante. Fora dos prefixos dos módulos (e dos namespaces
+    # que o middleware protege); a defesa contra abuso fica nas views.
+    path("pedido/", include("demandas_eventos.urls_publicas")),
+    # Link seguro (token) para o fornecedor do Coffee Break mandar a nota e
+    # as certidões.
+    path("fornecedor/", include("coffee_break.urls_publicas")),
     # Webhook do WhatsApp: rota externa e anônima (quem chama é a Meta),
     # fora do prefixo do módulo para não esbarrar na autorização por setor.
 ]

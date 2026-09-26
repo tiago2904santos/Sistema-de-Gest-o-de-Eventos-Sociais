@@ -14,6 +14,8 @@ urlpatterns = [
     # "Preencher com um e-mail" da tela nova: lê e sugere, não grava (POST, JSON).
     path("nova/ler-email/", views.ler_email, name="ler_email"),
     path("<int:pk>/editar/", views.editar_demanda, name="editar"),
+    # O anexo de um pedido feito pelo formulário público (/pedido/).
+    path("<int:pk>/anexo/", views.anexo_pedido, name="anexo_pedido"),
     path("<int:pk>/andamento/", views.registrar_andamento, name="andamento"),
     path("<int:pk>/responder/", views.responder, name="responder"),
     path("<int:pk>/encaminhar-dg/", views.encaminhar_dg, name="encaminhar_dg"),

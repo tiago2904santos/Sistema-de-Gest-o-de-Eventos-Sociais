@@ -159,8 +159,17 @@ class CriarEPainelTests(CenarioViagem):
         self.assertContains(r, "aviso--erro")
 
     def test_stepper_marca_concluidas(self):
+        from decimal import Decimal
+
         v = self.viagem()
-        Roteiro.objects.create(origem_municipio=self.sede, viagem=v)
+        roteiro = Roteiro.objects.create(origem_municipio=self.sede, viagem=v)
+        # m066: roteiro sem saída, destino e diárias existe, mas não está concluído.
+        r = self.client.get(self.etapa(v, 3))
+        self.assertFalse({e["numero"]: e for e in r.context["etapas"]}[2]["concluida"])
+        roteiro.saida_dt = timezone.make_aware(datetime(2026, 10, 5, 8, 0))
+        roteiro.valor_diarias = Decimal("100.00")
+        roteiro.save()
+        RoteiroDestino.objects.create(roteiro=roteiro, municipio=self.londrina)
         r = self.client.get(self.etapa(v, 3))
         etapas = {e["numero"]: e for e in r.context["etapas"]}
         self.assertTrue(etapas[1]["concluida"])
@@ -209,8 +218,9 @@ class SolicitacaoTests(CenarioViagem):
         r = self.client.post(url, {}, follow=True)
         self.assertContains(r, "Nenhum arquivo selecionado.")
         r = self.client.post(url, {"arquivo": SimpleUploadedFile("x.txt", b"nada", content_type="text/plain")}, follow=True)
-        self.assertContains(r, "Formato inválido. Envie um PDF ou arquivo de imagem.")
-        r = self.client.post(url, {"arquivo": [SimpleUploadedFile("oficio.pdf", b"%PDF-1.4", content_type="application/pdf"), self._imagem()]}, follow=True)
+        self.assertContains(r, "Arquivo recusado — x.txt")
+        pdf = _pdf_valido()
+        r = self.client.post(url, {"arquivo": [SimpleUploadedFile("oficio.pdf", pdf, content_type="application/pdf"), self._imagem()]}, follow=True)
         self.assertContains(r, "Documentos de solicitação anexados com sucesso.")
         anexos = list(ViagemDocumentoSolicitacao.objects.filter(viagem=v).order_by("pk"))
         self.assertEqual([a.nome_original for a in anexos], ["oficio.pdf", "convite.pdf"])
@@ -218,7 +228,7 @@ class SolicitacaoTests(CenarioViagem):
             self.assertTrue(arquivo.read().startswith(b"%PDF"))
         r = self.client.get(reverse("viagens_viagem:solicitacao_conteudo", args=[v.pk, anexos[0].pk]))
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(b"".join(r.streaming_content), b"%PDF-1.4")
+        self.assertEqual(b"".join(r.streaming_content), pdf)
         # Fecha só o arquivo servido (não a resposta: `close()` derrubaria a
         # conexão da transação do teste); no Windows o arquivo aberto impede a
         # limpeza da pasta temporária.
@@ -229,6 +239,31 @@ class SolicitacaoTests(CenarioViagem):
         self.assertEqual(ViagemDocumentoSolicitacao.objects.filter(viagem=v).count(), 1)
         # Com solicitação anexada e nenhum rascunho, a viagem está pronta.
         self.assertContains(self.client.get(reverse("viagens_viagem:lista")), 'class="st st--atendido">Pronto')
+
+
+    def test_anexo_disfarcado_ou_grande_demais_e_recusado(self):
+        """m070: o nome terminar em .pdf não basta; o tamanho tem limite."""
+        v = self.viagem()
+        url = reverse("viagens_viagem:solicitacao_anexar", args=[v.pk])
+        html = SimpleUploadedFile("oficio.pdf", b"<html><script>alert(1)</script></html>", content_type="application/pdf")
+        r = self.client.post(url, {"arquivo": [html, SimpleUploadedFile("bom.pdf", _pdf_valido(), content_type="application/pdf")]}, follow=True)
+        self.assertContains(r, "Arquivo recusado — oficio.pdf")
+        self.assertContains(r, "1 documento(s) anexado(s)")
+        self.assertEqual(list(ViagemDocumentoSolicitacao.objects.filter(viagem=v).values_list("nome_original", flat=True)), ["bom.pdf"])
+        with self.settings(PRIVATE_UPLOAD_MAX_BYTES=100):
+            r = self.client.post(url, {"arquivo": SimpleUploadedFile("grande.pdf", _pdf_valido(), content_type="application/pdf")}, follow=True)
+        self.assertContains(r, "excede o limite")
+        self.assertEqual(ViagemDocumentoSolicitacao.objects.filter(viagem=v).count(), 1)
+
+
+def _pdf_valido():
+    from pypdf import PdfWriter
+
+    buffer = io.BytesIO()
+    escritor = PdfWriter()
+    escritor.add_blank_page(width=72, height=72)
+    escritor.write(buffer)
+    return buffer.getvalue()
 
 
 class Etapa4ListasTests(CenarioViagem):
@@ -290,6 +325,38 @@ class BaixarDocumentosTests(CenarioViagem):
         self.assertEqual(self.client.post(url, {"itens": ["sol-999999"], "formato": "pdf"}).status_code, 404)
         r = self.client.post(url, {"formato": "pdf"}, follow=True)
         self.assertContains(r, "Marque ao menos um documento para baixar.")
+
+
+    def test_baixar_tudo_entrega_zip_com_cada_documento_separado_e_numerado(self):
+        """m065: um arquivo por documento (cada um é assinado à parte), numerados."""
+        import zipfile
+
+        from viagens_ordens.models import OrdemServico
+
+        v = self.viagem()
+        OrdemServico.objects.create(numero=9, ano=2026, viagem=v, motivo="Apoio")
+        self._anexar(v, "convite.pdf")
+        # Ofício incompleto (sem protocolo, equipe...) não impede o resto.
+        Oficio.objects.create(viagem=v, numero=21, ano=2026)
+        r = self.client.get(self.etapa(v, 1))
+        self.assertContains(r, "Baixar tudo (ZIP)")
+        r = self.client.post(reverse("viagens_viagem:baixar_tudo", args=[v.pk]))
+        self.assertEqual(r["Content-Type"], "application/zip")
+        with zipfile.ZipFile(io.BytesIO(r.content)) as z:
+            nomes = z.namelist()
+            leia = z.read("00 - LEIA-ME.txt").decode("utf-8")
+        self.assertEqual(nomes[0], "00 - LEIA-ME.txt")
+        self.assertTrue(any(n.startswith("01 - ") and "OS 009-2026" in n for n in nomes), nomes)
+        self.assertTrue(any(n.startswith("02 - ") and n.endswith(".pdf") and "convite" in n for n in nomes), nomes)
+        self.assertNotIn("/", "".join(nomes))
+        self.assertIn("Não entraram", leia)
+        self.assertIn("Ofício 21/2026", leia)
+        self.assertIn("Ainda sem a versão assinada", leia)
+
+    def test_baixar_tudo_sem_documento_pronto_avisa(self):
+        v = self.viagem()
+        r = self.client.post(reverse("viagens_viagem:baixar_tudo", args=[v.pk]), follow=True)
+        self.assertContains(r, "Nenhum documento pronto para baixar ainda.")
 
 
 class AcoesTests(CenarioViagem):

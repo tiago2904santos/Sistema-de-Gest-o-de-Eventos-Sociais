@@ -1,0 +1,121 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
+{% comment %}
+  "Gerar documentos" da viagem (m064): os ofícios montados numa tela só.
+
+  Cada cartão é um ofício com a SUA equipe, o seu motorista e a sua viatura
+  — "servidor 1 dirigindo a VTR 1 no ofício 1; servidores 2, 3 e 4, com o 4
+  dirigindo a VTR 2, no ofício 2". "Adicionar ofício" e "Remover" reenviam a
+  tela (sem JS dinâmico); o contador no topo soma, ao vivo, quem já está nos
+  ofícios da viagem e quem foi escolhido aqui contra a meta da DG
+  (viagens-gerar-documentos.js). Gerar cria tudo em rascunho e volta para a
+  etapa dos ofícios.
+{% endcomment %}
+
+{% block title %}Gerar documentos — {{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-viagem.css' %}">{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with atual="Gerar documentos" %}
+
+  <div class="editor-roteiro of-form vg-painel vg-gerar">
+    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
+          <div class="frm-titulo">
+            <h1 class="page-header__titulo d-titulo-v32">Gerar documentos</h1>
+            <span class="frm-ident">{{ titulo }} · {{ viagem.periodo_display }} · {{ viagem.destino_display }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="frm-topo__acoes">
+        {% include "components/v32/button.html" with label="Voltar para a viagem" variante="secundario" href=url_painel %}
+      </div>
+    </div>
+
+    <form method="post" action="" id="form-gerar-documentos" class="editor-roteiro__principal" novalidate
+          data-gerar-documentos data-meta="{{ meta_previstos }}" data-ja-em-oficios="{{ ja_em_oficios|join:',' }}">
+      {% csrf_token %}
+      <input type="hidden" name="quantidade_oficios" value="{{ quantidade }}">
+
+      {% if erros %}
+        <div class="aviso aviso--erro" role="alert" tabindex="-1">
+          {% include "components/icon.html" with nome="info" %}
+          <div><b>Não foi possível gerar os documentos</b>
+            <ul class="aviso--erro__lista">{% for e in erros %}<li>{{ e }}</li>{% endfor %}</ul>
+          </div>
+        </div>
+      {% endif %}
+
+      {# O contador de equipe: a meta da DG, o que os ofícios já têm e o que esta tela acrescenta. #}
+      <section class="section-card vg-meta-cartao" aria-labelledby="vg-gerar-meta">
+        <div class="section-card__corpo">
+          <p class="vg-meta__status" id="vg-gerar-meta" aria-live="polite" data-gerar-contador>
+            {% if meta_previstos %}A DG designou <b>{{ meta_previstos }}</b> servidor{{ meta_previstos|pluralize:"es" }}.{% else %}A DG não fixou quantidade de servidores.{% endif %}
+          </p>
+          {% include "pages/viagens_viagem/_contador_servidores.html" with contador=contador %}
+          {% if oficios_existentes %}
+            <p class="vg-meta__status">A viagem já tem: {% for o in oficios_existentes %}ofício {{ o.numero_formatado }} ({% for s in o.servidores.all %}{{ s.nome }}{% if not forloop.last %}, {% endif %}{% empty %}sem equipe{% endfor %}){% if not forloop.last %}; {% endif %}{% endfor %}. Os ofícios abaixo são novos.</p>
+          {% endif %}
+          {% if not tem_roteiro %}
+            <p class="vg-meta__status">{% include "components/icon.html" with nome="alert" %}A viagem ainda não tem roteiro: os ofícios sairão sem roteiro e sem diárias. <a href="{{ url_roteiro }}">Criar o roteiro primeiro</a>.</p>
+          {% endif %}
+        </div>
+      </section>
+
+      {% for b in blocos %}
+        <section class="section-card reg vg-gerar__oficio" data-gerar-oficio>
+          <header class="section-card__cabecalho reg__t">
+            <span class="section-card__numero reg-numero" aria-hidden="true">{{ b.numero }}</span>
+            <div class="section-card__identificacao">
+              <h2 class="section-card__titulo">Ofício {{ b.numero }}</h2>
+              <p class="section-card__descricao">A equipe que viaja neste ofício, quem dirige e em qual viatura.</p>
+            </div>
+            {% if quantidade > 1 %}
+              <button type="submit" name="acao" value="remover-{{ b.i }}" class="btn--secundaria btn--com-icone" formnovalidate>{% include "components/icon.html" with nome="trash" %}Remover</button>
+            {% endif %}
+          </header>
+          <div class="section-card__corpo g-form g-form--1">
+            {% include "components/v32/multi_pick.html" with name=b.nome_servidores label="Equipe" placeholder="Buscar por nome, cargo ou unidade" opcoes=b.servidores vazio="Nenhum servidor cadastrado." vazio_escolhidos="Os servidores deste ofício aparecem aqui." %}
+            <div class="g-form g-form--2">
+              {% include "components/select.html" with name=b.nome_motorista label="Motorista" opcoes=b.motoristas pesquisavel=True permitir_vazio=True placeholder="Quem dirige (opcional)" selecionado=b.motorista ajuda="Se não estiver em nenhuma equipe, entra na deste ofício. Se viaja em outro ofício, aquele vira a referência dele." %}
+              {% include "components/select.html" with name=b.nome_viatura label="Viatura" opcoes=b.viaturas pesquisavel=True permitir_vazio=True placeholder="Viatura (opcional)" selecionado=b.viatura %}
+            </div>
+          </div>
+        </section>
+      {% endfor %}
+
+      <div class="vg-gerar__adicionar">
+        <button type="submit" name="acao" value="adicionar" class="btn--secundaria btn--com-icone" formnovalidate>{% include "components/icon.html" with nome="plus" %}Adicionar ofício</button>
+      </div>
+
+      <section class="section-card reg" aria-labelledby="vg-gerar-docs">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</span>
+          <div class="section-card__identificacao">
+            <h2 class="section-card__titulo" id="vg-gerar-docs">Documentos a gerar</h2>
+            <p class="section-card__descricao">Tudo sai em rascunho, já vinculado à viagem, para revisar e finalizar. Nada é protocolado.</p>
+          </div>
+        </header>
+        <div class="section-card__corpo vg-gerar__opcoes">
+          <label class="form-label"><input type="checkbox" checked disabled> Um ofício para cada equipe acima, com o roteiro e o motivo da viagem</label>
+          <label class="form-label"><input type="checkbox" name="gerar_termos" value="1"{% if opcoes.termos %} checked{% endif %}> Termos de autorização de cada servidor (menos quem é da unidade emissora)</label>
+          <label class="form-label"><input type="checkbox" name="gerar_ordem" value="1"{% if opcoes.ordem %} checked{% endif %}{% if ordem_existente %} disabled{% endif %}> Ordem de serviço com toda a equipe e os ofícios{% if ordem_existente %} — a viagem já tem a {{ ordem_existente.numero_formatado }}{% endif %}</label>
+          <label class="form-label"><input type="checkbox" name="gerar_plano" value="1"{% if opcoes.plano %} checked{% endif %}{% if plano_existente %} disabled{% endif %}> Plano de trabalho{% if plano_existente %} — a viagem já tem o {{ plano_existente.numero_formatado }}{% endif %}</label>
+        </div>
+      </section>
+
+      <div class="vg-gerar__fim">
+        <button type="submit" name="acao" value="gerar" class="btn btn--dourado btn-primaria">Gerar documentos</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+  <script src="{% estatico 'js/multi-pick.js' %}" defer></script>
+  <script src="{% estatico 'js/viagens-gerar-documentos.js' %}" defer></script>
+{% endblock %}

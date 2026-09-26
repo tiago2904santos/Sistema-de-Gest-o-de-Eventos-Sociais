@@ -45,6 +45,7 @@ DA_EQUIPE = {
     "diario_servidor_editar_roteiro",
     "diario_motorista",
     "diario_servidor_motorista",
+    "diario_servidor_link_campo",
 }
 #: Remover/restaurar um anexo: depende de ele ser do servidor ou da equipe.
 DO_ANEXO = {"prestacao_documento_delete", "prestacao_documento_restaurar"}

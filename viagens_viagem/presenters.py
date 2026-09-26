@@ -103,6 +103,7 @@ def titulo_da_viagem(viagem):
 
 
 def linha_da_lista(viagem):
+    from .coerencia import verificar_coerencia
     from .meta_equipe import contador_de_servidores
 
     situacao, tom = selo_situacao(viagem)
@@ -118,6 +119,8 @@ def linha_da_lista(viagem):
         "fatos": fatos_da_viagem(viagem),
         # Designados pela DG x servidores nos ofícios (m063).
         "contador": contador_de_servidores(viagem),
+        # Documentos que não batem com a viagem (m071): período, destino, equipe, viatura.
+        "diferencas": [] if viagem.cancelado else verificar_coerencia(viagem),
         "url_editar": reverse("viagens_viagem:etapa", args=[viagem.pk, 1]),
         "url_painel": reverse("viagens_viagem:etapa", args=[viagem.pk, 3]),
         "url_cancelar": reverse("viagens_viagem:acao", args=[viagem.pk, "cancelar"]),
