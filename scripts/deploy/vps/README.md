@@ -146,6 +146,19 @@ equivalente é um `pg_dump` no cron:
 **Não suba sem backup funcionando.** É a única coisa desta lista que não dá
 para consertar depois que faz falta.
 
+## Lembretes diários das solicitações
+
+`manage.py enviar_lembretes_solicitacoes` avisa pelo sino (e por e-mail, com
+`EMAIL_HOST` configurado): o autor, no dia seguinte ao evento deferido, para
+marcar "Atendida"; a DG, quando um pedido aguarda despacho com o evento em até
+7 dias; e o autor da devolução parada há mais de 3 dias. Cada aviso sai uma
+vez só (fica gravado), então o comando pode rodar de novo sem repetir nada;
+`--simular` só conta. Para agendar uma vez por dia, por exemplo no cron:
+
+```cron
+15 7 * * * cd /var/www/eventos-sociais/app && sudo -u eventos .venv/bin/python manage.py enviar_lembretes_solicitacoes
+```
+
 ## Deploy automático (GitHub Actions)
 
 `.github/workflows/deploy-vps.yml` roda o `atualizar.sh` por SSH toda vez que o

@@ -36,7 +36,7 @@ from integracoes.eprotocolo.andamento import formatar_numero
 from core.listagens import trilha_de_situacoes
 
 from .presenters import linha_da_lista
-from . import integracao_viagens, permissions, preenchimento, services
+from . import integracao_viagens, lembretes, permissions, preenchimento, services
 
 ITENS_POR_PAGINA = 15
 
@@ -535,6 +535,12 @@ FILAS = {
         "rotulo": "Deferidas",
         "status": [StatusSolicitacao.DEFERIDA_EM_ANDAMENTO],
     },
+    # Deferida com o evento já realizado: falta o autor marcar "Atendida".
+    "confirmar": {
+        "rotulo": "Confirmar atendimento",
+        "status": [StatusSolicitacao.DEFERIDA_EM_ANDAMENTO],
+        "evento_encerrado": True,
+    },
     "canceladas": {
         "rotulo": "Canceladas",
         "status": [StatusSolicitacao.CANCELADA],
@@ -574,6 +580,8 @@ def _condicao_da_fila(config, user):
         condicao &= Q(status__in=config["status"])
     if config.get("apenas_do_usuario"):
         condicao &= Q(criado_por=user)
+    if config.get("evento_encerrado"):
+        condicao &= lembretes.condicao_evento_encerrado()
     if config.get("ano_corrente"):
         condicao &= Q(data_solicitacao__year=timezone.localdate().year)
     if config.get("proximos_dias"):
@@ -593,7 +601,9 @@ def _filas_do_usuario(user, queryset):
     filas = []
     if permissions.eh_gestor_dg(user):
         filas.append("despacho")
-    filas.extend(["devolvidas", "andamento", "canceladas", "rascunhos", "minhas"])
+    filas.extend(
+        ["devolvidas", "andamento", "confirmar", "canceladas", "rascunhos", "minhas"]
+    )
     agregacoes = {
         chave: Count("pk", filter=_condicao_da_fila(FILAS[chave], user))
         for chave in filas
@@ -705,6 +715,7 @@ ICONES_FILA = {
     "despacho": "gavel",
     "devolvidas": "undo",
     "andamento": "check-circle",
+    "confirmar": "check",
     "canceladas": "ban",
     "rascunhos": "pencil",
     "minhas": "user",
