@@ -2255,6 +2255,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .pc-hodometro__avisos{margin-top:10px}
 .pc-hodometro__avisos ul{margin:4px 0 0;padding-left:18px}
 .pc-hodometro [hidden],.pc-hodometro__avisos[hidden]{display:none}
+.pc-diario__ultimo-km b{font-size:inherit;font-weight:600;font-variant-numeric:tabular-nums;text-transform:none;color:var(--n-800)}
 .pc-removidos{margin-top:14px;font-size:12.5px;color:var(--n-600)}
 /* Relatório técnico: grupos leves dentro do cartão, separados por um fio; o
    modelo de cada texto fica ao lado do título. */

@@ -97,3 +97,48 @@ class HodometroDoDiarioTests(PrestacaoFixturesMixin, TestCase):
         self.assertEqual(registro.distancia_km, Decimal("120.50"))
         self.assertEqual(registro.fonte, DistanciaMunicipios.Fonte.MANUAL)
         self.assertEqual([i["prevista"] for i in self.abrir().context["hodometro"]["linhas"]], [120, 120])
+
+
+class UltimoKmDaViaturaTests(PrestacaoFixturesMixin, TestCase):
+    """m088: só a informação do último km da viatura; nada vem preenchido."""
+
+    def setUp(self):
+        super().setUp()
+        self.setUpPrestacaoFixtures()
+        from viagens_cadastros.models import Viatura
+
+        self.viatura = Viatura.objects.create(placa="TST1A23", modelo="SINTETICO")
+        self.anterior = self.criar_prestacao(numero=401)
+        self.atual = self.criar_prestacao(numero=402)
+        for fixture in (self.anterior, self.atual):
+            fixture.oficio.viatura = self.viatura
+            fixture.oficio.save(update_fields=["viatura", "atualizado_em"])
+        diario_anterior, _ = DiarioBordo.objects.get_or_create(prestacao=self.anterior.prestacao)
+        self.client.get(reverse("viagens_prestacoes:diario_servidor", args=[self.anterior.prestacoes_servidor[0].pk]))
+        diario_anterior.trechos.update(km_inicial=45000, km_final=45210)
+
+    def test_mostra_o_ultimo_km_sem_preencher(self):
+        resposta = self.client.get(reverse("viagens_prestacoes:diario_servidor", args=[self.atual.prestacoes_servidor[0].pk]))
+        ultimo = resposta.context["hodometro"]["ultimo_km"]
+        self.assertEqual(ultimo["km"], 45210)
+        self.assertEqual(ultimo["oficio"], self.anterior.oficio.numero_formatado)
+        self.assertContains(resposta, "Último km registrado desta viatura")
+        diario = DiarioBordo.objects.get(prestacao=self.atual.prestacao)
+        self.assertFalse(diario.trechos.filter(km_inicial__isnull=False).exists())
+
+    def test_saida_abaixo_do_ultimo_km_avisa(self):
+        from viagens_prestacoes.diario_services import conferir_hodometro
+
+        self.client.get(reverse("viagens_prestacoes:diario_servidor", args=[self.atual.prestacoes_servidor[0].pk]))
+        diario = DiarioBordo.objects.get(prestacao=self.atual.prestacao)
+        diario.trechos.update(km_inicial=44000, km_final=44100)
+        avisos = " ".join(conferir_hodometro(diario)["avisos"])
+        self.assertIn("menor que o último km registrado desta viatura", avisos)
+
+    def test_viatura_manual_nao_tem_historico(self):
+        from viagens_prestacoes.diario_services import ultimo_km_da_viatura
+
+        diario, _ = DiarioBordo.objects.get_or_create(prestacao=self.atual.prestacao)
+        diario.viatura_modo = DiarioBordo.VIATURA_MODO_MANUAL
+        diario.save()
+        self.assertIsNone(ultimo_km_da_viatura(diario))

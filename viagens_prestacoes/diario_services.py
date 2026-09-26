@@ -559,6 +559,60 @@ def _fmt_km(valor) -> str:
     return f"{int(valor):,}".replace(",", ".")
 
 
+def viatura_id_do_diario(diario: DiarioBordo):
+    """A viatura do cadastro usada neste diário (a trocada ou a do ofício); manual não conta."""
+    if diario.viatura_modo == DiarioBordo.VIATURA_MODO_BANCO:
+        return diario.viatura_id
+    if diario.viatura_modo == DiarioBordo.VIATURA_MODO_OFICIO:
+        return diario.prestacao.oficio.viatura_id
+    return None
+
+
+def ultimo_km_da_viatura(diario: DiarioBordo) -> dict | None:
+    """O último km de chegada registrado para a mesma viatura em outro diário (m088).
+
+    Só informação: nada é preenchido com ele. "Último" é o da viagem mais recente
+    que chegou antes da saída desta (quando a saída é conhecida), para uma viagem
+    lançada fora de ordem não comparar com o futuro.
+    """
+    from django.db.models import Q
+
+    viatura_id = viatura_id_do_diario(diario)
+    if not viatura_id:
+        return None
+    candidatas = (
+        DiarioBordoTrecho.objects.filter(km_final__isnull=False)
+        .exclude(diario=diario)
+        .filter(
+            Q(diario__viatura_modo=DiarioBordo.VIATURA_MODO_BANCO, diario__viatura_id=viatura_id)
+            | Q(diario__viatura_modo=DiarioBordo.VIATURA_MODO_OFICIO, diario__prestacao__oficio__viatura_id=viatura_id)
+        )
+    )
+    saida = (
+        diario.trechos.filter(trecho__saida_dt__isnull=False)
+        .order_by("trecho__saida_dt")
+        .values_list("trecho__saida_dt", flat=True)
+        .first()
+    )
+    if saida is not None:
+        candidatas = candidatas.filter(Q(trecho__chegada_dt__lte=saida) | Q(trecho__chegada_dt__isnull=True))
+    linha = (
+        candidatas.select_related("trecho", "diario__prestacao__oficio")
+        .order_by(F("trecho__chegada_dt").desc(nulls_last=True), "-km_final", "-pk")
+        .first()
+    )
+    if linha is None:
+        return None
+    quando = _local(getattr(linha.trecho, "chegada_dt", None)) or _local(linha.diario.atualizado_em)
+    return {
+        "km": linha.km_final,
+        "km_label": _fmt_km(linha.km_final),
+        "data": quando.strftime("%d/%m/%Y") if quando else "",
+        "data_curta": quando.strftime("%d/%m") if quando else "",
+        "oficio": linha.diario.prestacao.oficio.numero_formatado,
+    }
+
+
 def conferir_hodometro(diario: DiarioBordo, linhas=None) -> dict:
     """Distância prevista por trecho, rodado, totais e avisos do diário.
 
@@ -577,6 +631,13 @@ def conferir_hodometro(diario: DiarioBordo, linhas=None) -> dict:
         )
     itens = []
     avisos = []
+    ultimo = ultimo_km_da_viatura(diario)
+    primeira = linhas[0] if linhas else None
+    if ultimo and primeira is not None and primeira.km_inicial is not None and primeira.km_inicial < ultimo["km"]:
+        avisos.append(
+            f"O km de saída ({_fmt_km(primeira.km_inicial)}) é menor que o último km registrado desta "
+            f"viatura ({ultimo['km_label']}, em {ultimo['data']}, Ofício {ultimo['oficio']})."
+        )
     total_rodado = 0
     total_previsto = 0
     anterior = None
@@ -614,6 +675,7 @@ def conferir_hodometro(diario: DiarioBordo, linhas=None) -> dict:
         "total_rodado_label": _fmt_km(total_rodado),
         "total_previsto_label": _fmt_km(total_previsto),
         "avisos": avisos,
+        "ultimo_km": ultimo,
     }
 
 

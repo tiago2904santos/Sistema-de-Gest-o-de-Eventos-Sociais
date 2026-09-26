@@ -47,7 +47,7 @@
         </div>
         <div class="pc-diario__cartao" title="Viatura">
           <span class="pc-diario__icone" aria-hidden="true">{% include "components/icon.html" with nome="truck" %}</span>
-          <span class="pc-diario__txt"><b>{% if viatura_resumo.placa %}{{ viatura_resumo.placa }} — {% endif %}{{ viatura_resumo.viatura }}</b><small>Viatura{% if viatura_resumo.combustivel %} · {{ viatura_resumo.combustivel }}{% endif %}</small></span>
+          <span class="pc-diario__txt"><b>{% if viatura_resumo.placa %}{{ viatura_resumo.placa }} — {% endif %}{{ viatura_resumo.viatura }}</b><small>Viatura{% if viatura_resumo.combustivel %} · {{ viatura_resumo.combustivel }}{% endif %}</small>{% if hodometro.ultimo_km %}<small class="pc-diario__ultimo-km">Último km registrado desta viatura: <b>{{ hodometro.ultimo_km.km_label }}</b> (em {{ hodometro.ultimo_km.data_curta }}, Ofício {{ hodometro.ultimo_km.oficio }})</small>{% endif %}</span>
         </div>
       </div>
       {# Os trechos na largura inteira do cartão, abaixo do motorista e da viatura. #}
