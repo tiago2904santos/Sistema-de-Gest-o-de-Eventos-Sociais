@@ -182,6 +182,16 @@ def semente_de_documentos(viagem):
         if semente["viatura"] is None:
             semente["viatura"] = termo.viatura
 
+    # 6. Motorista designado na solicitação de origem, enquanto nenhum ofício
+    # tiver o seu (m063).
+    if semente["motorista"] is None:
+        origem = (
+            viagem.roteiros.filter(cancelado=False, solicitacao__motorista__isnull=False)
+            .select_related("solicitacao__motorista").order_by("id").first()
+        )
+        if origem is not None:
+            semente["motorista"] = origem.solicitacao.motorista
+
     if semente["data_fim"] is None:
         semente["data_fim"] = semente["data_inicio"]
     return semente

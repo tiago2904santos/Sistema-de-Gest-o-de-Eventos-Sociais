@@ -83,6 +83,7 @@
           {% include "components/icon.html" with nome="link" %}<span>Gerada a partir da <a href="{{ origem_solicitacao.url }}">Solicitação de evento #{{ origem_solicitacao.solicitacao.pk }}</a> ({{ origem_solicitacao.solicitacao.get_status_display|lower }}).</span>
         </div>
       {% endif %}
+      {% if not viagem.cancelado %}{% include "pages/viagens_viagem/_meta_da_solicitacao.html" with resumo=origem_solicitacao.resumo %}{% endif %}
     {% endif %}
 
     {% if etapa_atual == 1 %}{% include "pages/viagens_viagem/_etapa_1.html" %}

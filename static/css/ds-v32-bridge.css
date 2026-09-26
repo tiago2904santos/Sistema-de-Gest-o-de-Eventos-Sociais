@@ -2638,6 +2638,15 @@ textarea.form-controle.cb-caixa-copiar__texto{width:100%;min-height:0;resize:ver
 .sol-viagem__situacao b{color:var(--n-800)}
 .sol-viagem__falta{margin:0;padding-left:18px;font-size:13px}
 .sol-viagem form{margin:0}
+/* m063: contador de servidores designados x em ofícios (solicitação e viagem) */
+.sol-viagem__item{display:flex;flex-direction:column;gap:6px}
+.sol-viagem__item+.sol-viagem__item{border-top:1px solid var(--n-200);padding-top:10px}
+.sol-viagem__situacao .btn--compacto{margin-left:8px}
+.vg-meta{display:flex;flex-direction:column;gap:4px}
+.vg-meta__status{margin:0;font-size:13px;color:var(--n-700);display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.vg-meta__linhas{margin:0;padding-left:18px;font-size:13px;color:var(--n-600)}
+.vg-meta__linha--falta b{color:var(--n-800)}
+.vg-meta-cartao .section-card__corpo{display:flex;flex-direction:column;gap:8px}
 .sol-cancelar-abre{margin-top:14px;padding-top:14px;border-top:1px solid var(--n-100)}
 .sol-cancelar-abre>summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--n-600);list-style:none}
 .sol-cancelar-abre>summary::-webkit-details-marker{display:none}
