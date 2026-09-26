@@ -94,6 +94,17 @@ body.de-pagina { margin: 0; background: var(--n-100); color: var(--n-900); font-
 .dc-aviso strong { display: block; margin-bottom: 2px; }
 .dc-aviso__lista { margin: 0; padding-left: 18px; }
 .dc-aviso__lista li { margin: 2px 0; }
+/* Pendência que leva ao trecho na folha (m117). */
+.dc-aviso__ir {
+  display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0;
+  background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; text-decoration: underline dotted;
+}
+.dc-aviso__ir:hover { color: var(--d-700); text-decoration-style: solid; }
+.dc-aviso__ir .ui-icon { width: 14px; height: 14px; }
+.de-contador {
+  margin-left: 2px; padding: 1px 7px; border-radius: 999px;
+  background: var(--d-100); color: var(--d-800); font-style: normal; font-size: 12px; font-weight: 600;
+}
 
 /* ---- Área das páginas e histórico ------------------------------------------ */
 .de-area { flex: 1 1 auto; display: flex; align-items: flex-start; min-height: 0; }

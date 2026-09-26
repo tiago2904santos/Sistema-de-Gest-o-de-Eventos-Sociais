@@ -313,3 +313,24 @@ class RegistroDigitavelTests(TestCase):
         self.assertFalse(campos['servidores'].digitavel)
         self.assertFalse(campos['porte_transporte_armas'].digitavel)
         self.assertFalse(campos['data_criacao'].digitavel)
+
+
+class PendenciasNavegaveisTests(CenarioOficioMixin, TestCase):
+    """Cada pendência leva ao trecho que a resolve; as lacunas da folha são
+    marcadas para o atalho "Próximo campo vazio" (m117)."""
+
+    def test_pendencia_vira_botao_para_o_campo_e_lacuna_e_marcada(self):
+        from documentos.editor.vinculos import vinculo_do_tipo
+        o = self.criar()
+        type(o).objects.filter(pk=o.pk).update(motivo='', protocolo='')
+        o.refresh_from_db()
+        navegaveis = vinculo_do_tipo('oficio').pendencias_navegaveis(o)
+        self.assertEqual([(p['texto'], p['campo'], p['origem']) for p in navegaveis],
+                         [('Informe o protocolo.', 'protocolo', 'oficio'), ('Informe o motivo.', 'motivo', 'oficio')])
+        r = self.client.get(reverse('documentos:editor_embutido', args=['oficio', o.pk]))
+        self.assertContains(r, 'class="dc-aviso__ir" data-de-abrir="motivo" data-de-origem="oficio"')
+        self.assertContains(r, 'data-de-proximo-vazio')
+        # Sem quem assina, a folha traz a lacuna marcada para a navegação.
+        self.cfg.assinaturas.all().delete()
+        folha = self.client.get(reverse('documentos:editor_folha', args=['oficio', o.pk])).content.decode()
+        self.assertIn('data-doc-vazio="quem assina"', folha)

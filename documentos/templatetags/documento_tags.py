@@ -102,7 +102,8 @@ def vazio(context, rotulo):
     nada — o documento sai como sempre saiu."""
     if context.get("modo") != "editor" or not context.get("campos_editaveis"):
         return ""
-    return format_html('<span class="doc-vazio">{}</span>', rotulo)
+    # `data-doc-vazio` é o que "Próximo campo vazio" percorre (m117).
+    return format_html('<span class="doc-vazio" data-doc-vazio="{}">{}</span>', rotulo, rotulo)
 
 
 def _editando(context):

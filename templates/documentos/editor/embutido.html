@@ -52,6 +52,8 @@
         {% if doc.tem_quebras %}
           <button type="button" class="de-texto-botao" data-de-alternar-quebras aria-pressed="false" title="Mostrar onde se pode inserir uma quebra de página">{% include "components/icon.html" with nome="page-break" %}Quebras de página</button>
         {% endif %}
+        {# Percorre as lacunas em cinza da folha (quem assina, cargo, unidade...); some quando não há nenhuma (m117). #}
+        <button type="button" class="de-texto-botao" data-de-proximo-vazio hidden title="Ir ao próximo campo em branco do documento">{% include "components/icon.html" with nome="arrow-right" %}Próximo campo vazio<em class="de-contador" data-de-vazios-contador></em></button>
       </div>
     {% endif %}
     <span class="de-barra__sep" aria-hidden="true"></span>
@@ -96,7 +98,8 @@
       {% include "components/icon.html" with nome="alert" %}
       <div>
         <strong>O PDF ainda não pode ser emitido.</strong>
-        <ul class="dc-aviso__lista">{% for p in doc.pendencias %}<li>{{ p }}</li>{% endfor %}</ul>
+        {# Pendência com trecho na folha vira botão: leva até ele e o abre (m117). #}
+        <ul class="dc-aviso__lista">{% for p in doc.pendencias %}<li>{% if p.campo and doc.pode_editar %}<button type="button" class="dc-aviso__ir" data-de-abrir="{{ p.campo }}" data-de-origem="{{ p.origem }}" title="Ir ao trecho no documento">{{ p.texto }}{% include "components/icon.html" with nome="arrow-right" %}</button>{% else %}{{ p.texto }}{% endif %}</li>{% endfor %}</ul>
       </div>
     </div>
   {% endif %}

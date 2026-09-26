@@ -48,7 +48,8 @@ def contexto_da_pagina(request, vinculo, objeto) -> dict:
             "rotulo_voltar": vinculo.rotulo_voltar,
             "url_pdf": vinculo.url_pdf(objeto),
             "pode_emitir": vinculo.pode_emitir(request.user, objeto),
-            "pendencias": vinculo.pendencias(objeto),
+            # Cada pendência leva ao trecho que a resolve (m117).
+            "pendencias": vinculo.pendencias_navegaveis(objeto),
             # Em linguagem do documento, agrupado por digitação, com "Voltar" (m116).
             "historico": historico_legivel(vinculo, vinculo.historico(objeto), pode_editar=pode_editar),
             "url_folha": vinculo.url("folha", objeto),

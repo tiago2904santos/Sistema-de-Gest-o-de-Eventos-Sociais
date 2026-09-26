@@ -286,6 +286,26 @@ class VinculoBase:
     def pendencias(self, objeto) -> list:
         return []
 
+    # Para onde cada pendência leva na folha (m117): pares (expressão sobre o
+    # texto da pendência, chave do campo do editor), na ordem de teste. O
+    # texto das pendências é do domínio; o vínculo só o liga ao trecho.
+    DESTINOS_DE_PENDENCIAS: tuple = ()
+
+    def pendencias_navegaveis(self, objeto) -> list[dict]:
+        """As pendências com o campo do editor que as resolve (`campo` e a
+        origem dele), quando há um; senão só o texto."""
+        import re
+
+        from documentos.editor.campos import campos_do_tipo
+
+        campos = campos_do_tipo(self.chave)
+        saida = []
+        for texto in self.pendencias(objeto):
+            texto = str(texto)
+            campo = next((campos.get(chave) for padrao, chave in self.DESTINOS_DE_PENDENCIAS if re.search(padrao, texto, re.IGNORECASE)), None)
+            saida.append({"texto": texto, "campo": campo.chave if campo else "", "origem": campo.origem if campo else ""})
+        return saida
+
     def pode_emitir(self, usuario, objeto) -> bool:
         return self.pode_editar(usuario, objeto) and not self.pendencias(objeto)
 
@@ -364,6 +384,16 @@ class VinculoOficio(VinculoBase):
 
     def url_pdf(self, oficio):
         return reverse("viagens_oficios:gerar", args=[oficio.pk, "oficio", "pdf"])
+
+    DESTINOS_DE_PENDENCIAS = (
+        (r"motorista", "motorista"),
+        (r"protocolo", "protocolo"),
+        (r"motivo", "motivo"),
+        (r"custeio", "custeio"),
+        (r"viajante", "servidores"),
+        (r"transporte|viatura|placa", "transporte"),
+        (r"roteiro|saída|destino", "roteiro"),
+    )
 
     def pendencias(self, oficio):
         from viagens_oficios.services import validar_oficio_para_documento
@@ -581,6 +611,8 @@ class VinculoJustificativa(VinculoBase):
     def url_pdf(self, oficio):
         return reverse("viagens_oficios:gerar", args=[oficio.pk, "justificativa", "pdf"])
 
+    DESTINOS_DE_PENDENCIAS = ((r"justificativa", "justificativa_texto"),)
+
     def pendencias(self, oficio):
         from viagens_oficios.services import validar_oficio_para_documento
 
@@ -663,6 +695,14 @@ class VinculoPlano(VinculoBase):
 
     def url_pdf(self, plano):
         return reverse("viagens_planos:gerar", args=[plano.pk, "pdf"])
+
+    DESTINOS_DE_PENDENCIAS = (
+        (r"coordenador", "plano_coordenacao"),
+        (r"evento \d|ao menos um evento", "plano_eventos"),
+        (r"destino", "plano_local"),
+        (r"data", "plano_periodo"),
+        (r"efetivo|diárias", "plano_efetivo"),
+    )
 
     def pendencias(self, plano):
         from viagens_planos.services import avaliar_pendencias_documento

@@ -223,6 +223,7 @@
     marcar(chaveAberta, especieAberta, objetoAberto);
     if (palco()) palco().atualizar();
     posicionar();
+    atualizarVazios();
   }
 
   /* ---- Desfazer e refazer ------------------------------------------------
@@ -783,20 +784,76 @@
     ligarDigitacao(doc);
     marcar(chaveAberta, especieAberta, objetoAberto);
     aplicarModoQuebras();
+    atualizarVazios();
   }
 
-  quadro.addEventListener('load', ligarFolha);
-  if (quadro.contentDocument && quadro.contentDocument.readyState === 'complete' && quadro.contentDocument.body && quadro.contentDocument.body.children.length) ligarFolha();
+  /* Põe o cursor no fim de um trecho que se digita na folha. */
+  function focar(trecho) {
+    var doc = documentoDaFolha();
+    if (!doc || !doc.defaultView) return;
+    trecho.focus({ preventScroll: true });
+    try {
+      var faixa = doc.createRange();
+      faixa.selectNodeContents(trecho);
+      faixa.collapse(false);
+      var selecao = doc.defaultView.getSelection();
+      selecao.removeAllRanges();
+      selecao.addRange(faixa);
+    } catch (e) { /* sem seleção: o foco basta */ }
+  }
 
-  // Menu "Campos": abre o balão do campo junto ao trecho dele na folha.
+  /* Leva ao trecho de um campo e o abre: o que se digita ganha o cursor; o
+     resto abre o balão. Serve ao menu "Campos" e às pendências (m117). */
+  function irAoCampo(chave, especie, origem, objeto) {
+    var trecho = trechoNaFolha(chave, especie, objeto);
+    trazerParaVista(trecho);
+    if (trecho && alvoDigitavel(trecho)) { if (chaveAberta) fechar(); marcar(chave, especie, objeto); focar(trecho); return; }
+    abrir(chave, especie, null, false, objeto || '', origem || 'oficio');
+  }
+
+  // Menu "Campos" e pendências: levam ao trecho do campo na folha.
   ouvir(document, 'click', function (evento) {
     var item = evento.target.closest('[data-de-abrir]');
     if (!item || !raiz.contains(item)) return;
-    var chave = item.getAttribute('data-de-abrir');
-    var especie = item.getAttribute('data-de-especie') || 'campo';
-    trazerParaVista(trechoNaFolha(chave, especie));
-    abrir(chave, especie, null, false, "", item.getAttribute("data-de-origem") || "oficio");
+    irAoCampo(item.getAttribute('data-de-abrir'), item.getAttribute('data-de-especie') || 'campo', item.getAttribute('data-de-origem') || 'oficio', '');
   });
+
+  /* ---- Próximo campo vazio (m117) --------------------------------------
+     As lacunas em cinza da folha (`data-doc-vazio`) e as linhas para
+     preencher (`.doc-lacuna`) que estão num trecho editável. O botão da barra
+     mostra quantas faltam e, a cada clique, vai à próxima. */
+  var botaoVazio = raiz.querySelector('[data-de-proximo-vazio]');
+  var contadorVazios = raiz.querySelector('[data-de-vazios-contador]');
+  var indiceVazio = -1;
+  function vazios() {
+    var doc = documentoDaFolha();
+    if (!doc || !doc.body) return [];
+    return Array.prototype.filter.call(doc.querySelectorAll('[data-doc-vazio], .doc-lacuna'), function (el) {
+      return el.closest('[data-doc-campo]') && !el.closest('[aria-hidden="true"]');
+    });
+  }
+  function atualizarVazios() {
+    if (!botaoVazio) return;
+    var lista = vazios();
+    botaoVazio.hidden = !lista.length;
+    if (contadorVazios) contadorVazios.textContent = lista.length ? 'Faltam ' + lista.length : '';
+    if (lista.length === 1 && contadorVazios) contadorVazios.textContent = 'Falta 1';
+    if (indiceVazio >= lista.length) indiceVazio = -1;
+  }
+  function proximoVazio() {
+    var lista = vazios();
+    if (!lista.length) return;
+    indiceVazio = (indiceVazio + 1) % lista.length;
+    var lacuna = lista[indiceVazio];
+    var trecho = lacuna.closest('[data-doc-campo]');
+    trazerParaVista(trecho);
+    if (alvoDigitavel(trecho)) { if (chaveAberta) fechar(); marcar(trecho.getAttribute('data-doc-campo'), 'campo', trecho.getAttribute('data-doc-objeto') || ''); focar(trecho); return; }
+    acionar(trecho);
+  }
+  if (botaoVazio) botaoVazio.addEventListener('click', proximoVazio);
+
+  quadro.addEventListener('load', ligarFolha);
+  if (quadro.contentDocument && quadro.contentDocument.readyState === 'complete' && quadro.contentDocument.body && quadro.contentDocument.body.children.length) ligarFolha();
 
   // Clicar fora do balão (e fora de um menu) fecha; Escape também.
   ouvir(document, 'mousedown', function (evento) {
