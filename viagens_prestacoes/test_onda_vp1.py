@@ -3,8 +3,19 @@
 from __future__ import annotations
 
 import io
+from unittest import mock
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import SimpleTestCase
+from django.urls import reverse
+
+from .carimbo_services import ler_fragmentos
+from .models import PrestacaoDocumentoAnexo as Anexo
+from .solicitacao_services import salvar_solicitacao_do_autosave
+from .test_carimbo import pdf_do_oficio
+from .test_helpers import PrestacaoFixturesMixin
+from .test_helpers import PrestacaoTestCase
+from .test_helpers import pdf_minimo
 
 
 def _foto_deitada_com_exif_em_pe() -> bytes:
@@ -31,15 +42,6 @@ class FotoDoComprovanteEmPeTests(SimpleTestCase):
         largura, altura = float(pagina.mediabox.width), float(pagina.mediabox.height)
         self.assertGreater(altura, largura)
         self.assertAlmostEqual(largura, 595.28, delta=2)
-
-
-from django.core.files.uploadedfile import SimpleUploadedFile  # noqa: E402
-from django.urls import reverse  # noqa: E402
-
-from .models import PrestacaoDocumentoAnexo as Anexo  # noqa: E402
-from .test_helpers import PrestacaoFixturesMixin  # noqa: E402
-from .test_helpers import PrestacaoTestCase  # noqa: E402
-from .test_helpers import pdf_minimo  # noqa: E402
 
 
 class ComprovantePelaListaSomaTests(PrestacaoFixturesMixin, PrestacaoTestCase):
@@ -75,3 +77,54 @@ class ComprovantePelaListaSomaTests(PrestacaoFixturesMixin, PrestacaoTestCase):
         self._pela_lista("c1.pdf", igual)
         self._pela_lista("c1-de-novo.pdf", igual)
         self.assertEqual(self.ps.documentos_anexos.filter(tipo=Anexo.TIPO_COMPROVANTE).count(), 1)
+
+
+class NumeroPreenchidoDepoisDoAnexoTests(PrestacaoFixturesMixin, PrestacaoTestCase):
+    """m080: o número digitado depois de anexar o ofício assinado entra no PDF."""
+
+    def setUp(self):
+        super().setUp()
+        self.setUpPrestacaoFixtures()
+        self.fixture = self.criar_prestacao(numero=80, servidores=(self.criar_servidor("Joao Da Silva"), self.criar_servidor("Maria Souza")))
+        self.prestacao = self.fixture.prestacao
+        self.joao, self.maria = self.fixture.prestacoes_servidor
+        self.joao.numero_solicitacao = "2026001234"
+        self.joao.save(update_fields=["numero_solicitacao"])
+        referencia = pdf_do_oficio([("Joao Da Silva", "2026001234"), ("Maria Souza", "2026005678")])
+        patch = mock.patch("viagens_prestacoes.services.gerar_oficio_prestacao_pdf", return_value=referencia)
+        patch.start()
+        self.addCleanup(patch.stop)
+        cru = pdf_do_oficio([("Joao Da Silva", ""), ("Maria Souza", "")], com_numero=False)
+        self.client.post(
+            reverse("viagens_prestacoes:prestacao_oficio_assinado_anexar", args=[self.prestacao.pk]),
+            {"arquivo": SimpleUploadedFile("oficio.pdf", cru, content_type="application/pdf")},
+        )
+        self.anexo = self.prestacao.documentos_anexos.get(tipo=Anexo.TIPO_OFICIO_ASSINADO)
+
+    def _textos(self):
+        self.anexo.refresh_from_db()
+        with self.anexo.arquivo.open("rb") as arquivo:
+            return [f.texto for f in ler_fragmentos(arquivo.read())]
+
+    def test_pelo_autosave(self):
+        self.assertNotIn("2026005678", self._textos())
+        with self.captureOnCommitCallbacks(execute=True):
+            salvar_solicitacao_do_autosave(self.maria, numero="2026005678")
+        textos = self._textos()
+        self.assertIn("2026001234", textos)
+        self.assertIn("2026005678", textos)
+
+    def test_pelo_lote_da_lista(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(reverse("viagens_prestacoes:index"), {f"ps-{self.maria.pk}-numero_solicitacao": "2026005678"})
+        self.assertIn("2026005678", self._textos())
+
+    def test_oficio_anexado_antes_de_qualquer_numero(self):
+        """O caso mais comum: o ofício volta do eProtocolo antes das solicitações."""
+        self.anexo.carimbos.all().delete()
+        with self.captureOnCommitCallbacks(execute=True):
+            salvar_solicitacao_do_autosave(self.maria, numero="2026005678")
+        self.assertEqual(self.anexo.carimbos.count(), 2)
+        textos = self._textos()
+        self.assertIn("2026005678", textos)
+        self.assertEqual(textos.count("2026001234"), 1)

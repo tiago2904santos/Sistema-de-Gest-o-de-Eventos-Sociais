@@ -662,16 +662,59 @@ def anexo_do_oficio_assinado(prestacao):
     )
 
 
+@atomico_com_arquivos
+def _posicionar_pendentes(anexo, prestacao) -> int:
+    """Grava a posição de quem tem número e ainda não tem carimbo neste anexo.
+
+    Quem já tem carimbo (automático ou ajustado à mão) não é tocado: o recarimbo só
+    precisa redesenhar com o número novo. Devolve quantas posições gravou.
+    """
+    com_carimbo = set(anexo.carimbos.values_list("servidor_prestacao_id", flat=True))
+    pendentes = {
+        ps.pk
+        for ps in prestacao.servidores_prestacao.all()
+        if str(ps.numero_solicitacao or "").strip() and ps.pk not in com_carimbo
+    }
+    if not pendentes:
+        return 0
+    cru = _bytes_do_arquivo(anexo.arquivo_para_carimbar)
+    if not anexo.arquivo_original:
+        # Antes do primeiro carimbo o arquivo é o cru: guardá-lo é o que permite
+        # redesenhar depois sem empilhar números.
+        nome = Path(anexo.nome_original or anexo.arquivo.name or "oficio.pdf").name
+        anexo.arquivo_original.save(nome, ContentFile(cru), save=False)
+        anexo.save(update_fields=["arquivo_original"])
+    posicoes, _falhas = _posicoes_e_falhas(prestacao, cru)
+    gravadas = 0
+    for ps_pk, posicao in posicoes.items():
+        if ps_pk not in pendentes:
+            continue
+        CarimboSolicitacao.objects.get_or_create(
+            anexo=anexo,
+            servidor_prestacao_id=ps_pk,
+            defaults={"pagina": posicao.pagina, "x": posicao.x, "y": posicao.y, "tamanho": posicao.tamanho},
+        )
+        gravadas += 1
+    return gravadas
+
+
 def recarimbar_prestacao(prestacao) -> ResultadoCarimbo | None:
     """Redesenha o ofício assinado da prestação, se houver um anexado.
 
     Chamado depois que um número de solicitação muda. Sem anexo, não há o que fazer — e
     isso é o caso comum, então sai barato.
+
+    m080: o ofício costuma voltar do eProtocolo ANTES das solicitações, e aí o anexo
+    entra sem carimbo nenhum. O servidor que ganha número depois recebe a posição aqui
+    (`_posicionar_pendentes`); o que não se acha fica para o "Ajustar posição".
     """
     anexo = anexo_do_oficio_assinado(prestacao)
-    if anexo is None or not anexo.carimbos.exists():
+    if anexo is None:
         return None
     try:
+        _posicionar_pendentes(anexo, prestacao)
+        if not anexo.carimbos.exists():
+            return None
         return carimbar(anexo)
     except Exception as exc:
         capture(exc, "prestacoes.carimbo.recarimbar", prestacao_id=prestacao.pk)
