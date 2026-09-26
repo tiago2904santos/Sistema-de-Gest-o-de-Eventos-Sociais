@@ -11,6 +11,11 @@
 {% endcomment %}
 {% block title %}Editar documento completo — {{ doc.rotulo }}{% endblock %}
 {% block body_class %}de-pagina{% endblock %}
+{% block css_principal %}
+  {# Os tokens e componentes V3.2 (como no app_shell_v32): sem eles o topo fica transparente. #}
+  <link rel="stylesheet" href="{% estatico 'css/ds-v32.css' %}">
+  <link rel="stylesheet" href="{% estatico 'css/ds-v32-bridge.css' %}">
+{% endblock %}
 {% block extra_css %}
   <link rel="stylesheet" href="{% estatico 'css/pages/viagens-documento.css' %}">
   <link rel="stylesheet" href="{% estatico 'css/pages/documento-completo.css' %}">
