@@ -380,7 +380,7 @@ class RoteiroDiariaComponente(ModeloTemporal, OrigemLegado):
         return f"{self.quantidade} x {self.percentual}% ({self.faixa})"
 
 
-class DistanciaMunicipios(ModeloTemporal):
+class DistanciaMunicipios(ModeloTemporal, OrigemLegado):
     """Distância rodoviária entre dois municípios, guardada para sempre (m078).
 
     Alimentada por cada estimativa do serviço de rotas e pelos trechos já
@@ -420,6 +420,7 @@ class DistanciaMunicipios(ModeloTemporal):
         verbose_name = "distância entre municípios"
         verbose_name_plural = "distâncias entre municípios"
         constraints = [
+            models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_distanciamunicipios_origem"),
             models.UniqueConstraint(fields=["origem", "destino"], name="distancia_municipios_par_unico"),
             nao_negativo("distancia_km", name="distancia_municipios_km_nao_negativa"),
         ]
