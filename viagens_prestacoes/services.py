@@ -540,12 +540,17 @@ def _pdf_parts_from_anexos_opcional(anexos_qs, label: str) -> list[tuple[str, by
 
 
 def _image_bytes_to_pdf(content: bytes) -> bytes:
-    """A imagem anexada como PDF (a conversão mora em `core.leitura.pdf.imagem_para_pdf`)."""
+    """A imagem anexada como PDF (a conversão mora em `core.leitura.pdf.imagem_para_pdf`).
+
+    Numa folha A4 e em pé: a foto do celular é desvirada pela etiqueta EXIF, como o
+    importador já faz (`como_pdf`). Sem isso, o comprovante fotografado em pé entrava
+    deitado no pacote.
+    """
     from core.leitura.pdf import ImagemInvalida
     from core.leitura.pdf import imagem_para_pdf
 
     try:
-        return imagem_para_pdf(content)
+        return imagem_para_pdf(content, corrigir_exif=True)
     except ImagemInvalida as exc:
         raise DocumentValidationError(str(exc)) from exc
 
