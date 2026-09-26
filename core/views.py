@@ -169,6 +169,8 @@ def home(request):
     hoje = timezone.localdate()
     cartoes = []
     for modulo in modulos_do_portal(request.user):
+        if not modulo["na_central"]:
+            continue
         calcular = METRICAS_POR_MODULO.get(modulo["slug"])
         cartoes.append(
             {

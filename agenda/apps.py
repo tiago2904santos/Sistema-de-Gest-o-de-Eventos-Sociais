@@ -13,7 +13,8 @@ class AgendaConfig(AppConfig):
         # enxerga dentro dela é decidido fonte a fonte, pela permissão do
         # módulo de origem — ver `agenda.fontes`. Restringir a agenda inteira
         # a um módulo deixaria de fora quem só tem Solicitações, que é o
-        # núcleo do sistema.
+        # núcleo do sistema. Fora da central de módulos: entra-se pelo ícone
+        # do cabeçalho.
         registrar_modulo(
             "agenda",
             nome="Agenda",
@@ -25,5 +26,6 @@ class AgendaConfig(AppConfig):
             entrada="agenda:painel",
             namespaces=["agenda"],
             ordem=5,
+            na_central=False,
             itens=[{"rotulo": "Agenda", "icone": "calendar", "url": "agenda:painel"}],
         )

@@ -50,11 +50,14 @@ def registrar_modulo(
     descricao="",
     codigo=None,
     ordem=100,
+    na_central=True,
 ):
     """Cataloga um módulo no portal.
 
     - ``codigo`` None = módulo aberto a todo usuário autenticado; com código,
       os ``namespaces`` são registrados no middleware de autorização.
+    - ``na_central`` False = o módulo não ganha cartão na central de módulos
+      (entra-se por outro caminho, como um ícone do cabeçalho).
     - ``itens``: navegação do módulo — dicts com ``rotulo``, ``url`` (nome da
       rota), ``icone`` e opcionalmente ``url_args``, ``url_names`` (nomes de
       rota que marcam o item como ativo), ``slugs``/``slugs_fora`` (o item
@@ -75,6 +78,7 @@ def registrar_modulo(
         "namespaces": list(namespaces),
         "itens": list(itens),
         "ordem": ordem,
+        "na_central": na_central,
     }
 
 

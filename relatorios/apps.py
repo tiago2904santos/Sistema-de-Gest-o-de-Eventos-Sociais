@@ -11,7 +11,8 @@ class RelatoriosConfig(AppConfig):
 
         # Como a agenda: aberto a todo usuário autenticado (sem `codigo`), e
         # cada seção só aparece para quem tem o módulo de origem — ver
-        # `relatorios.consolidacao`.
+        # `relatorios.consolidacao`. Fora da central de módulos: entra-se pelo
+        # ícone do cabeçalho.
         registrar_modulo(
             "relatorios",
             nome="Relatório",
@@ -23,5 +24,6 @@ class RelatoriosConfig(AppConfig):
             entrada="relatorios:painel",
             namespaces=["relatorios"],
             ordem=6,
+            na_central=False,
             itens=[{"rotulo": "Relatório", "icone": "chart", "url": "relatorios:painel"}],
         )
