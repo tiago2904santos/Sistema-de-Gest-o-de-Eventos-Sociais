@@ -124,6 +124,10 @@ class ContratoCoffeeBreak(models.Model):
         help_text="Citada no ofício que encaminha a nota para pagamento.",
     )
     objeto = models.CharField("objeto", max_length=255, blank=True)
+    antecedencia_minima_dias = models.PositiveSmallIntegerField(
+        "antecedência mínima do pedido (dias)", default=2,
+        help_text="Pedido com menos dias até o evento aparece com aviso para ligar ao fornecedor.",
+    )
     # Lidos do PDF ao anexar o contrato ou o termo aditivo (coffee_break/contratos_pdf.py).
     vigencia_inicio = models.DateField("vigência — início", null=True, blank=True)
     vigencia_fim = models.DateField(

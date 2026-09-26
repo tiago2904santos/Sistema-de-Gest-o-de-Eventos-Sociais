@@ -1730,6 +1730,48 @@ class VigenciaDoContratoTests(BaseCoffeeBreakTestCase):
         self.assertEqual(services.contratos_perto_do_fim(hoje), [])
 
 
+class DataEAntecedenciaDoEventoTests(BaseCoffeeBreakTestCase):
+    """m039: evento anterior à solicitação só como registro retroativo; aviso de antecedência."""
+
+    def setUp(self):
+        self.client.force_login(self.ascom)
+
+    def _post_nova(self, **extra):
+        dados = {
+            "municipio": self.curitiba.pk, "data_solicitacao": "2026-08-10", "numero": "",
+            "descricao_evento": "Evento", "quantidade": "10", "data_inicio_evento": "2026-08-05",
+        }
+        dados.update(extra)
+        return self.client.post(reverse("coffee_break:nova"), dados, follow=True)
+
+    def test_evento_anterior_a_solicitacao_e_barrado(self):
+        resposta = self._post_nova()
+        self.assertContains(resposta, "O evento é anterior à data da solicitação")
+        self.assertContains(resposta, 'name="registro_retroativo"')
+        self.assertFalse(SolicitacaoCoffeeBreak.objects.exists())
+
+    def test_retroativo_pede_justificativa(self):
+        resposta = self._post_nova(registro_retroativo="1")
+        self.assertContains(resposta, "Justifique o registro retroativo.")
+        self.assertFalse(SolicitacaoCoffeeBreak.objects.exists())
+
+    def test_retroativo_justificado_grava_e_vai_para_o_historico(self):
+        self._post_nova(registro_retroativo="1", justificativa_retroativo="Pedido feito por telefone")
+        s = SolicitacaoCoffeeBreak.objects.get()
+        self.assertTrue(s.historico.filter(descricao__contains="Registro retroativo").exists())
+        self.assertTrue(s.historico.filter(descricao__contains="Pedido feito por telefone").exists())
+
+    def test_aviso_quando_falta_menos_que_a_antecedencia(self):
+        hoje = dt.date.today()
+        amanha = hoje + dt.timedelta(days=1)
+        resposta = self._post_nova(data_solicitacao=hoje.isoformat(), data_inicio_evento=amanha.isoformat())
+        self.assertTrue(SolicitacaoCoffeeBreak.objects.exists())
+        self.assertContains(resposta, "ligue para o fornecedor")
+        s = SolicitacaoCoffeeBreak.objects.get()
+        self.assertIn("amanhã", services.aviso_de_antecedencia(s, hoje))
+        self.assertEqual(services.aviso_de_antecedencia(s, hoje - dt.timedelta(days=5)), "")
+
+
 class DescricaoUmaLinhaTests(BaseCoffeeBreakTestCase):
     def test_descricao_vira_uma_linha(self):
         self.client.force_login(self.ascom)

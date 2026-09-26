@@ -274,6 +274,24 @@ def contratos_perto_do_fim(hoje=None):
     return sorted(saida, key=lambda item: item["fim"])
 
 
+def aviso_de_antecedencia(solicitacao, hoje=None):
+    """Aviso (não bloqueia) quando falta menos que a antecedência mínima do
+    contrato até o evento: é hora de ligar para o fornecedor. "" quando não há."""
+    inicio = solicitacao.data_inicio_evento
+    if not inicio or solicitacao.cancelada or not solicitacao.lote_id:
+        return ""
+    hoje = hoje or timezone.localdate()
+    minimo = solicitacao.lote.contrato.antecedencia_minima_dias or 0
+    dias = (inicio - hoje).days
+    if dias < 0 or dias >= minimo:
+        return ""
+    quando = "hoje" if dias == 0 else "amanhã" if dias == 1 else f"em {dias} dias"
+    return (
+        f"O evento é {quando} ({inicio:%d/%m/%Y}), com menos que os {minimo} dias de antecedência "
+        f"do contrato {solicitacao.lote.contrato.numero}: ligue para o fornecedor para confirmar o atendimento."
+    )
+
+
 # ---------------------------------------------------------------------------
 # Lote pelo município
 # ---------------------------------------------------------------------------

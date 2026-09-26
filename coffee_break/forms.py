@@ -315,8 +315,39 @@ class PedidoCoffeeBreakForm(SolicitacaoCoffeeBreakForm):
     salvar com a data aberta limpa um fim antigo.
     """
 
+    registro_retroativo = forms.BooleanField(label="Registro retroativo", required=False)
+    justificativa_retroativo = forms.CharField(
+        label="Justificativa do registro retroativo", required=False, max_length=255,
+    )
+
     class Meta(SolicitacaoCoffeeBreakForm.Meta):
         fields = CAMPOS_PEDIDO
+
+    def clean(self):
+        dados = super().clean()
+        self._conferir_data_do_evento(dados)
+        return dados
+
+    def _conferir_data_do_evento(self, dados):
+        """Evento anterior à data da solicitação só como registro retroativo justificado.
+
+        Vale para o pedido novo e quando a data muda: registro antigo segue editável.
+        """
+        inicio = dados.get("data_inicio_evento")
+        pedido = dados.get("data_solicitacao")
+        self.evento_retroativo = bool(inicio and pedido and inicio < pedido)
+        if not self.evento_retroativo:
+            return
+        if self.instance.pk and not {"data_inicio_evento", "data_solicitacao"}.intersection(self.changed_data):
+            return
+        if not dados.get("registro_retroativo"):
+            self.add_error(
+                "data_inicio_evento",
+                "O evento é anterior à data da solicitação. Confira a data ou marque "
+                "\"registro retroativo\" e justifique.",
+            )
+        elif not (dados.get("justificativa_retroativo") or "").strip():
+            self.add_error("justificativa_retroativo", "Justifique o registro retroativo.")
 
     def save(self, criado_por=None):
         if not self.fields["data_inicio_evento"].disabled:
@@ -489,6 +520,7 @@ class ContratoCoffeeBreakForm(FormularioCadastroVersionado):
             "vigencia_fim",
             "quantidade_contratada",
             "valor_unitario",
+            "antecedencia_minima_dias",
             "objeto",
             "observacoes",
         )

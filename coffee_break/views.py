@@ -742,6 +742,13 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
     }
     if "municipio" in form.fields:
         contexto["municipios"] = _opcoes_municipios(form)
+    if "registro_retroativo" in form.fields:
+        # O "registro retroativo" só aparece quando o evento vem antes da solicitação.
+        contexto["mostrar_retroativo"] = bool(
+            getattr(form, "evento_retroativo", False) or valores.get("registro_retroativo") in ("True", "on", "1")
+        )
+    if solicitacao is not None and etapa == "pedido":
+        contexto["aviso_antecedencia"] = services.aviso_de_antecedencia(solicitacao)
     if "numero" in form.fields:
         contexto["numero_ano"] = _ano_do_numero(form)
         # Número fora do "NN/AAAA" (texto antigo da planilha): campo de texto livre.
@@ -947,11 +954,13 @@ def nova_solicitacao(request):
                     descricao,
                 )
                 preencher_por_email.concluir_origem(request, origem)
+                _registrar_retroativo(form, solicitacao, request.user)
                 messages.success(
                     request,
                     f"Solicitação {solicitacao.numero} registrada no {solicitacao.lote.rotulo_curto}"
                     f" ({solicitacao.lote.contrato.fornecedor.razao_social}). A ordem de serviço já pode ser gerada.",
                 )
+                _avisar_antecedencia(request, solicitacao)
                 return redirect("coffee_break:solicitacoes")
         else:
             messages.error(request, "Corrija os campos destacados para continuar.")
@@ -971,6 +980,22 @@ def nova_solicitacao(request):
         {"label": "Nova solicitação"},
     )
     return render(request, "pages/coffee_break/form.html", contexto)
+
+
+def _registrar_retroativo(form, solicitacao, usuario):
+    """Evento anterior à solicitação, aceito como registro retroativo: a justificativa vai para o histórico."""
+    dados = getattr(form, "cleaned_data", {})
+    if getattr(form, "evento_retroativo", False) and dados.get("registro_retroativo"):
+        services.registrar_historico(
+            solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO,
+            f"Registro retroativo (evento anterior à data da solicitação): {dados.get('justificativa_retroativo', '').strip()}",
+        )
+
+
+def _avisar_antecedencia(request, solicitacao):
+    aviso = services.aviso_de_antecedencia(solicitacao)
+    if aviso:
+        messages.warning(request, aviso)
 
 
 def _tela_da_etapa(request, pk, etapa):
@@ -1026,7 +1051,7 @@ def _tela_da_etapa(request, pk, etapa):
                 alterados = [
                     form.fields[nome].label
                     for nome in form.changed_data
-                    if nome in form.fields and nome != "versao"
+                    if nome in form.fields and nome not in ("versao", "registro_retroativo", "justificativa_retroativo")
                 ]
                 services.registrar_historico(
                     solicitacao,
@@ -1036,7 +1061,11 @@ def _tela_da_etapa(request, pk, etapa):
                     if alterados
                     else "Solicitação salva sem alteração de campos.",
                 )
+                if etapa == "pedido":
+                    _registrar_retroativo(form, solicitacao, request.user)
                 messages.success(request, "Solicitação de coffee break atualizada.")
+                if etapa == "pedido" and {"data_inicio_evento", "municipio"}.intersection(form.changed_data):
+                    _avisar_antecedencia(request, solicitacao)
                 # Etapa 2 segue para a etapa 3; as etapas 1 e 3 voltam para a lista.
                 if etapa == "nota":
                     return redirect("coffee_break:etapa_protocolo", pk=solicitacao.pk)
