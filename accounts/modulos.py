@@ -168,7 +168,8 @@ class AutorizacaoPorModuloMiddleware:
             rota = resolve(request.path_info)
         except Exception:
             return None
-        tipo = rota.kwargs.get("tipo")
+        # O tipo do documento, ou o módulo da lista de modelos de documento.
+        tipo = rota.kwargs.get("tipo") or rota.kwargs.get("modulo")
         if tipo and (rota.namespace, tipo) in DOCUMENTOS_MODULOS:
             return DOCUMENTOS_MODULOS[(rota.namespace, tipo)]
         return NAMESPACES_MODULOS.get(rota.namespace)

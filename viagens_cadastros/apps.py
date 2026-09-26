@@ -99,7 +99,8 @@ class ViagensCadastrosConfig(AppConfig):
                 {
                     "rotulo": "Textos dos documentos",
                     "icone": "document",
-                    "url": "documentos:modelos",
+                    "url": "documentos:modelos_modulo",
+                    "url_args": ("viagens",),
                     "visivel_para": eh_gestor_viagens,
                 },
             ],

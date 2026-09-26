@@ -79,8 +79,8 @@ class CoffeeBreakConfig(AppConfig):
                 {
                     "rotulo": "Textos dos documentos",
                     "icone": "document",
-                    "url": "documentos:modelos_tipo",
-                    "url_args": ("coffee_break_ordem_servico",),
+                    "url": "documentos:modelos_modulo",
+                    "url_args": ("coffee_break",),
                     "somente_admin": True,
                 },
             ],

@@ -265,6 +265,77 @@ TEMPLATES = {
 
 
 # ---------------------------------------------------------------------------
+# A folha da tela de modelos (documentos/editor/modelo_folha.py)
+# ---------------------------------------------------------------------------
+
+
+def _html_com_marcas(tipo, contexto, marcas):
+    """A folha da prévia com as marcas de modelo_folha no lugar do texto de
+    cada bloco (`b`), sem quebras nem versão editada."""
+    contexto = dict(contexto, b=dict(marcas), quebras=set(), imagens=_imagens_web(), previa=True)
+    if "cb_atesto_texto" in marcas:
+        contexto["atesto_texto"] = marcas["cb_atesto_texto"]
+    return render_to_string(TEMPLATES[tipo.value], contexto)
+
+
+def _contexto_de_exemplo(tipo):
+    """Os dados de uma solicitação de exemplo, sem banco: nomes que dizem ser
+    de exemplo."""
+    from types import SimpleNamespace
+
+    s = SimpleNamespace(
+        pk=0, numero="00/2026", descricao_evento="Evento de exemplo", detalhamento_efetivo="Detalhamento de exemplo do pedido.",
+        local_entrega="Local de entrega de exemplo", responsavel_recebimento="RESPONSÁVEL DE EXEMPLO", numero_oficio="000/2026",
+        protocolo_pcpr_oficio="00.000.000-0", numero_nota_fiscal="0000", quantidade=50,
+    )
+    contrato = SimpleNamespace(
+        referencia_documental="Nº 000/2026 (exemplo)", fiscal_responsavel="Fiscal de Exemplo", cargo_fiscal="Cargo de exemplo",
+        clausula_pagamento="cláusula de exemplo", numero="000/2026",
+    )
+    return {
+        "s": s,
+        "lote": SimpleNamespace(empenho="0000NE000000"),
+        "contrato": contrato,
+        "fornecedor": SimpleNamespace(razao_social="FORNECEDOR DE EXEMPLO LTDA", cnpj_formatado="00.000.000/0000-00"),
+        "config": SimpleNamespace(
+            oficio_vocativo="Senhor(a) Exemplo,", oficio_assinante="ASSINANTE DE EXEMPLO",
+            oficio_cargo_assinante="Cargo de exemplo", oficio_destinatario="Destinatário de exemplo",
+        ),
+        "data_extenso": data_extenso_oficio(timezone.localdate()) if tipo.value == "coffee_break_oficio" else data_extenso(timezone.localdate()),
+        "itens": [{"s": s, "quantidade_extenso": "cinquenta"}],
+        "notas": s.numero_nota_fiscal,
+        "varias_notas": False,
+    }
+
+
+def folha_do_modelo(tipo, usuario, marcas):
+    """A folha do tipo para a tela de modelos: da solicitação mais recente
+    que monta o documento (quem administra vê todas), ou de um exemplo."""
+    from .editor import TipoCoffee
+    from .models import SolicitacaoCoffeeBreak
+    from .permissions import pode_acessar
+
+    tipo = TipoCoffee(tipo)
+    montar = {
+        TipoCoffee.ORDEM_SERVICO: _contexto_da_ordem,
+        TipoCoffee.OFICIO: _contexto_do_oficio,
+        TipoCoffee.CERTIFICO: _contexto_do_certifico,
+    }[tipo]
+    if pode_acessar(usuario):
+        recentes = (SolicitacaoCoffeeBreak.objects.filter(cancelada=False, lote__isnull=False)
+                    .select_related("lote__contrato__fornecedor").order_by("-atualizado_em", "-pk")[:5])
+        for solicitacao in recentes:
+            try:
+                contexto = montar(solicitacao)
+            except ValidationError:
+                continue
+            return {"html": _html_com_marcas(tipo, contexto, marcas), "sintetico": False,
+                    "origem": f"OS {solicitacao.numero} · {solicitacao.descricao_evento}"}
+    return {"html": _html_com_marcas(tipo, _contexto_de_exemplo(tipo), marcas), "sintetico": True,
+            "origem": "Exemplo com dados fictícios"}
+
+
+# ---------------------------------------------------------------------------
 # Anexo do protocolo de pagamento
 # ---------------------------------------------------------------------------
 

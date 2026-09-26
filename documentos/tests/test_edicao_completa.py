@@ -246,6 +246,9 @@ class EdicaoCompletaTests(CenarioOficioMixin, TestCase):
 
 
 class ModelosDeTextoTests(CenarioOficioMixin, TestCase):
+    """A tela de modelos: a lista dos tipos e, de cada um, o documento montado
+    com os textos do modelo editáveis no lugar (sem caixas de texto)."""
+
     def setUp(self):
         super().setUp()
         self.oficio = self.criar()
@@ -262,48 +265,179 @@ class ModelosDeTextoTests(CenarioOficioMixin, TestCase):
         contexto = contexto_de_payload(DocumentoTipo.TERMO_AUTORIZACAO, payload, _legacy_docx_context(payload))
         return renderizar_html(DocumentoTipo.TERMO_AUTORIZACAO, contexto, modo='pdf')
 
+    def salvar(self, tipo, blocos, estado=None):
+        from documentos.services import modelos_texto
+
+        if estado is None:
+            estado = modelos_texto.estado(tipo)
+        return self.client.post(reverse('documentos:modelos_salvar', args=[tipo]),
+                                data=json.dumps({'estado': estado, 'blocos': blocos}), content_type='application/json')
+
+    def folha(self, tipo):
+        r = self.client.get(reverse('documentos:modelos_folha', args=[tipo]))
+        self.assertEqual(r.status_code, 200)
+        return r.content.decode()
+
     def test_sem_alteracao_o_termo_sai_com_o_texto_de_sempre(self):
         html = self.html_termo()
         self.assertIn('manifesto o interesse em participar do PCPR na Comunidade, <strong>', html)
         self.assertIn('</strong> para execução de atividades inerentes à Assessoria de Comunicação Social - ASCOM/PCPR.', html)
 
-    def test_gestor_reescreve_o_texto_do_termo_com_campos_automaticos(self):
-        r = self.client.get(self.url)
+    def test_lista_dos_tipos_com_abrir_modelo(self):
+        r = self.client.get(reverse('documentos:modelos_modulo', args=['viagens']))
         self.assertEqual(r.status_code, 200)
-        self.assertContains(r, 'Texto da manifestação')
-        self.assertContains(r, '{periodo}')
-        r = self.client.post(self.url, {'texto__texto': 'declaro participar da Operação Verão em {destino}, {periodo}, lotado em {unidade}. {xyz}'})
-        self.assertEqual(r.status_code, 302)
-        linha = ModeloTextoDocumento.objects.get(chave='texto')
-        self.assertEqual((linha.tipo_documento, linha.criado_por), ('termo_autorizacao', self.user))
+        self.assertNotContains(r, '<textarea')
+        for rotulo in ('Ofício', 'Justificativa', 'Termo de autorização', 'Ordem de serviço', 'Plano de trabalho',
+                       'Relatório técnico', 'Diário de bordo'):
+            self.assertContains(r, rotulo)
+        self.assertContains(r, 'Abrir modelo', count=7)
+        self.assertContains(r, reverse('documentos:modelos_tipo', args=['termo_autorizacao']))
+        self.assertContains(r, 'Nunca alterado', count=7)
+        self.assertEqual(self.salvar('termo_autorizacao', {'titulo': 'Termo de autorização F4'}).status_code, 200)
+        r = self.client.get(reverse('documentos:modelos'))
+        self.assertContains(r, '<b>1 de 6</b> texto personalizado')
+        self.assertContains(r, 'Nunca alterado', count=6)
+        self.assertContains(r, 'operador-f4')
+
+    def test_oficio_abre_montado_do_documento_real_com_os_blocos_editaveis(self):
+        r = self.client.get(reverse('documentos:modelos_tipo', args=['oficio']))
+        self.assertEqual(r.status_code, 200)
+        self.assertNotContains(r, '<textarea')
+        self.assertContains(r, 'ds-v32-bridge.css')
+        self.assertContains(r, f'a partir de <b>Ofício {self.oficio.numero_formatado}')
+        self.assertContains(r, 'Salvar modelo')
+        self.assertContains(r, 'próximos documentos')
+        folha = self.folha('oficio')
+        # Cada bloco do modelo é um trecho editável; o resto (dados, tabela da equipe) sai como no documento.
+        for chave in ('secretaria', 'abertura', 'fecho', 'declaracao_cartao'):
+            self.assertIn(f'data-mod-bloco="{chave}"', folha)
+        self.assertEqual(folha.count('contenteditable="true"'), 4)
+        self.assertIn('<span class="mod-chip" contenteditable="false" data-mod-campo="assunto"', folha)
+        self.assertIn('>Assunto</span>', folha)
+        self.assertIn('Ana Teste', folha)
+        self.assertIn('brasao', folha)
+        self.assertNotIn('', folha)
+        self.assertNotIn('data-doc-campo', folha)
+
+    def test_termo_sem_documento_abre_com_exemplo_e_campos_em_negrito(self):
+        r = self.client.get(self.url)
+        self.assertContains(r, 'dados fictícios')
+        folha = self.folha('termo_autorizacao')
+        self.assertIn('SERVIDOR DE EXEMPLO', folha)
+        self.assertIn('data-mod-bloco="texto"', folha)
+        self.assertIn('class="mod-chip mod-chip--negrito" contenteditable="false" data-mod-campo="periodo"', folha)
+        self.assertIn('data-mod-campo="destino"', folha)
+        self.assertIn('>Período</span>', folha)
+
+    def test_salvar_grava_so_o_que_mudou_e_o_termo_sai_com_o_texto_novo(self):
+        from documentos.editor.blocos import bloco
+
+        novo = 'declaro participar da Operação Verão em {destino}, {periodo}, lotado em {unidade}.'
+        r = self.salvar('termo_autorizacao', {
+            'texto': novo + '\n',  # o que a folha manda: quebras e espaços sobrando saem
+            'titulo': bloco(DocumentoTipo.TERMO_AUTORIZACAO, 'titulo').padrao,  # igual ao de hoje: não grava
+        })
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.json()['gravados'], ['texto'])
+        linha = ModeloTextoDocumento.objects.get()
+        self.assertEqual((linha.tipo_documento, linha.chave, linha.texto, linha.criado_por),
+                         ('termo_autorizacao', 'texto', novo, self.user))
         html = self.html_termo()
         self.assertIn('declaro participar da Operação Verão em <strong>Londrina/PR</strong>, <strong>', html)
         self.assertIn('lotado em UNIDADE F4.', html)
-        self.assertIn('{xyz}', html)
         self.assertNotIn('PCPR na Comunidade', html)
-        self.assertContains(self.client.get(self.url), 'Marcador que este texto não preenche')
-        # Gravar de novo o mesmo texto não acumula linhas; voltar ao padrão, sim.
-        self.client.post(self.url, {'texto__texto': linha.texto})
+        # A folha mostra o texto novo com os campos como etiquetas e o bloco marcado como personalizado.
+        folha = self.folha('termo_autorizacao')
+        self.assertIn('data-mod-alterado="1"', folha)
+        self.assertIn('Operação Verão em <span class="mod-chip mod-chip--negrito"', folha)
+        # Mandar o mesmo texto de novo não grava nada.
+        self.assertEqual(self.salvar('termo_autorizacao', {'texto': novo}).json()['gravados'], [])
         self.assertEqual(ModeloTextoDocumento.objects.count(), 1)
-        self.client.post(self.url, {'padrao': 'texto'})
+
+    def test_campo_que_o_bloco_nao_aceita_e_recusado(self):
+        r = self.salvar('termo_autorizacao', {'texto': 'em {destino} e {xyz}', 'titulo': 'Termo novo'})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('{xyz}', r.json()['mensagem'])
+        self.assertIn('Destino', r.json()['mensagem'])
+        r = self.salvar('termo_autorizacao', {'titulo': 'Termo de {destino}'})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('aceita: nenhum', r.json()['mensagem'])
+        self.assertEqual(self.salvar('termo_autorizacao', {'nao_existe': 'x'}).status_code, 400)
+        self.assertEqual(self.salvar('termo_autorizacao', {'titulo': ['x']}).status_code, 400)
+        self.assertFalse(ModeloTextoDocumento.objects.exists())
+
+    def test_voltar_ao_padrao_e_usar_um_texto_do_historico(self):
+        from documentos.services import modelos_texto
+
+        self.salvar('termo_autorizacao', {'texto': 'declaro participar da Operação Verão em {destino}.'})
+        linha = ModeloTextoDocumento.objects.get()
+        r = self.client.get(self.url)
+        self.assertContains(r, 'Histórico')
+        self.assertContains(r, 'Texto da manifestação')
+        r = self.client.post(self.url, {'padrao': 'texto', 'estado': modelos_texto.estado('termo_autorizacao')})
+        self.assertEqual(r.status_code, 302)
         self.assertIn('PCPR na Comunidade', self.html_termo())
         self.assertEqual(ModeloTextoDocumento.objects.count(), 2)
-        self.client.post(self.url, {'usar': linha.pk})
+        self.assertNotIn('data-mod-alterado', self.folha('termo_autorizacao'))
+        self.assertContains(self.client.get(self.url), 'Usar este texto de novo')
+        self.client.post(self.url, {'usar': linha.pk, 'estado': modelos_texto.estado('termo_autorizacao')})
         self.assertIn('Operação Verão', self.html_termo())
+
+    def test_duas_pessoas_salvando_ao_mesmo_tempo(self):
+        from documentos.services import modelos_texto
+
+        lida = modelos_texto.estado('termo_autorizacao')
+        self.assertEqual(self.salvar('termo_autorizacao', {'titulo': 'Primeira pessoa'}, estado=lida).status_code, 200)
+        r = self.salvar('termo_autorizacao', {'titulo': 'Segunda pessoa'}, estado=lida)
+        self.assertEqual(r.status_code, 409)
+        self.assertTrue(r.json()['conflito'])
+        self.assertIn('Recarregue', r.json()['mensagem'])
+        self.assertEqual(modelos_texto.texto_vigente('termo_autorizacao', 'titulo'), 'Primeira pessoa')
+        # Voltar ao padrão com a tela velha também não passa.
+        self.client.post(self.url, {'padrao': 'titulo', 'estado': lida})
+        self.assertEqual(modelos_texto.texto_vigente('termo_autorizacao', 'titulo'), 'Primeira pessoa')
 
     def test_texto_do_modelo_nao_passa_por_cima_do_reescrito_no_documento_nem_da_versao_editada(self):
         from documentos.services.document_blocks import gravar_override
 
-        self.client.post(reverse('documentos:modelos_tipo', args=['oficio']), {'texto__fecho': 'Atenciosamente,'})
+        self.assertEqual(self.salvar('oficio', {'fecho': 'Atenciosamente,'}).status_code, 200)
         self.assertIn('Atenciosamente,', renderizar_html(DocumentoTipo.OFICIO, contexto_do_oficio(self.oficio, modo='pdf'), modo='pdf'))
         gravar_override(DocumentoTipo.OFICIO, self.oficio, 'fecho', 'Cordialmente,', self.user)
         html = renderizar_html(DocumentoTipo.OFICIO, contexto_do_oficio(self.oficio, modo='pdf'), modo='pdf')
         self.assertIn('Cordialmente,', html)
         self.assertNotIn('Atenciosamente,', html)
+        # A folha do modelo mostra o texto do modelo, não o reescrito só neste ofício.
+        folha = self.folha('oficio')
+        self.assertIn('Atenciosamente,', folha)
+        self.assertNotIn('Cordialmente,', folha)
+
+    def test_todos_os_tipos_de_viagens_abrem_com_todos_os_blocos(self):
+        from documentos.editor.blocos import REGISTRO_BLOCOS
+        from documentos.editor.modelos import tipos_do_usuario
+
+        tipos = tipos_do_usuario(self.user)
+        self.assertEqual({t['valor'] for t in tipos}, {'oficio', 'justificativa', 'termo_autorizacao', 'ordem_servico',
+                                                      'plano_trabalho', 'relatorio_tecnico', 'diario_bordo'})
+        for t in tipos:
+            with self.subTest(tipo=t['valor']):
+                pagina = self.client.get(t['url'])
+                self.assertEqual(pagina.status_code, 200)
+                self.assertNotContains(pagina, '<textarea')
+                folha = self.folha(t['valor'])
+                self.assertNotIn('', folha)
+                for chave in REGISTRO_BLOCOS[t['tipo']]:
+                    self.assertTrue(f'data-mod-bloco="{chave}"' in folha or f'data-mod-bloco="{chave}"' in pagina.content.decode(), chave)
 
     def test_so_o_gestor_administra_os_modelos(self):
         self.user.groups.remove(Group.objects.get(name='VIAGENS_GESTOR'))
+        self.assertEqual(self.client.get(reverse('documentos:modelos')).status_code, 403)
         self.assertEqual(self.client.get(self.url).status_code, 403)
-        self.assertEqual(self.client.post(self.url, {'texto__texto': 'x'}).status_code, 403)
+        self.assertEqual(self.client.get(reverse('documentos:modelos_folha', args=['termo_autorizacao'])).status_code, 403)
+        self.assertEqual(self.client.post(self.url, {'padrao': 'texto'}).status_code, 403)
+        self.assertEqual(self.salvar('termo_autorizacao', {'titulo': 'x'}).status_code, 403)
         self.assertFalse(ModeloTextoDocumento.objects.exists())
         self.assertEqual(self.client.get(reverse('documentos:modelos_tipo', args=['nao_existe'])).status_code, 404)
+        # Os do Coffee Break são da administração do Coffee Break.
+        self.user.groups.add(Group.objects.get(name='VIAGENS_GESTOR'))
+        self.assertEqual(self.client.get(reverse('documentos:modelos_tipo', args=['coffee_break_certifico'])).status_code, 403)
+        self.assertEqual(self.salvar('coffee_break_certifico', {'cb_titulo': 'x'}).status_code, 403)

@@ -689,8 +689,9 @@ def registrar():
     quebras e o módulo que dá acesso às rotas do editor para estes tipos (as
     demais seguem sendo de Viagens)."""
     from accounts.modulos import registrar_documento
-    from documentos.editor import blocos, campos, vinculos
+    from documentos.editor import blocos, campos, modelo_folha, vinculos
 
+    from . import documentos
     from .permissions import CODIGO_MODULO
 
     for classe, campos_do_tipo, blocos_do_tipo, quebras_do_tipo in DOCUMENTOS:
@@ -700,3 +701,7 @@ def registrar():
         blocos.REGISTRO_BLOCOS[vinculo.tipo] = {bloco.chave: bloco for bloco in blocos_do_tipo}
         blocos.REGISTRO_QUEBRAS[vinculo.tipo] = {ponto.chave: ponto for ponto in quebras_do_tipo}
         registrar_documento("documentos", vinculo.chave, CODIGO_MODULO)
+        # A folha da tela de modelos (m057): da solicitação ou de um exemplo.
+        modelo_folha.MONTADORES[vinculo.tipo.value] = documentos.folha_do_modelo
+    # A lista dos textos dos documentos do Coffee Break (documentos:modelos_modulo).
+    registrar_documento("documentos", "coffee_break", CODIGO_MODULO)

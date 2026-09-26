@@ -63,15 +63,47 @@ class EdicaoCompletaCoffeeTests(EtapasBase):
         self.assertEqual(r.status_code, 403)
         self.assertFalse(DocumentoVersaoEditada.objects.exists())
 
+    def salvar_modelo(self, tipo, blocos):
+        from documentos.services import modelos_texto
+
+        return self.client.post(reverse("documentos:modelos_salvar", args=[tipo.value]), content_type="application/json",
+                                data=json.dumps({"estado": modelos_texto.estado(tipo), "blocos": blocos}))
+
     def test_texto_do_modelo_do_certifico(self, _pdf):
         self._completar_para_protocolo(self.solicitacao)
         url = reverse("documentos:modelos_tipo", args=[TipoCoffee.CERTIFICO.value])
         # Quem só opera o módulo não mexe no modelo; a administração, sim.
-        self.assertEqual(self.client.post(url, {"texto__cb_titulo": "X"}).status_code, 403)
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.assertEqual(self.salvar_modelo(TipoCoffee.CERTIFICO, {"cb_titulo": "X"}).status_code, 403)
         self.client.force_login(self.admin_modulo)
-        self.assertEqual(self.client.get(url).status_code, 200)
-        resposta = self.client.post(url, {"texto__cb_titulo": "CERTIFICO DE ENTREGA"})
-        self.assertEqual(resposta.status_code, 302)
+        pagina = self.client.get(url)
+        self.assertEqual(pagina.status_code, 200)
+        self.assertNotContains(pagina, "<textarea")
+        self.assertContains(pagina, f"OS {self.solicitacao.numero}")  # montado da solicitação de verdade
+        folha = self.client.get(reverse("documentos:modelos_folha", args=[TipoCoffee.CERTIFICO.value])).content.decode()
+        self.assertIn('data-mod-bloco="cb_titulo"', folha)
+        self.assertIn('data-mod-bloco="cb_atesto_texto"', folha)
+        self.assertIn("timbre-cabecalho", folha)
+        resposta = self.salvar_modelo(TipoCoffee.CERTIFICO, {"cb_titulo": "CERTIFICO DE ENTREGA"})
+        self.assertEqual(resposta.status_code, 200, resposta.content)
         self.assertTrue(ModeloTextoDocumento.objects.filter(tipo_documento=TipoCoffee.CERTIFICO.value, chave="cb_titulo").exists())
         documentos.certifico_pdf(self.solicitacao)
         self.assertIn("CERTIFICO DE ENTREGA", _pdf.call_args.args[0])
+
+    def test_os_oficio_e_certifico_abrem_no_modelo_mesmo_sem_solicitacao(self, _pdf):
+        from coffee_break.models import SolicitacaoCoffeeBreak
+        from documentos.editor.blocos import REGISTRO_BLOCOS
+
+        SolicitacaoCoffeeBreak.objects.update(cancelada=True)  # sem nenhuma: exemplo com dados fictícios
+        self.client.force_login(self.admin_modulo)
+        lista = self.client.get(reverse("documentos:modelos_modulo", args=["coffee_break"]))
+        self.assertContains(lista, "Abrir modelo", count=3)
+        for tipo in TipoCoffee:
+            with self.subTest(tipo=tipo.value):
+                pagina = self.client.get(reverse("documentos:modelos_tipo", args=[tipo.value]))
+                self.assertContains(pagina, "dados fictícios")
+                folha = self.client.get(reverse("documentos:modelos_folha", args=[tipo.value])).content.decode()
+                self.assertIn("FORNECEDOR DE EXEMPLO" if tipo != TipoCoffee.OFICIO else "ASSINANTE DE EXEMPLO", folha)
+                texto = pagina.content.decode() + folha
+                for chave in REGISTRO_BLOCOS[tipo]:
+                    self.assertIn(f'data-mod-bloco="{chave}"', texto)
