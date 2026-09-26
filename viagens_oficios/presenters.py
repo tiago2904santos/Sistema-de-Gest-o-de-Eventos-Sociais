@@ -96,6 +96,62 @@ def selo_do_cartao(oficio):
     return oficio.get_status_display(), "rascunho" if oficio.status == oficio.STATUS_RASCUNHO else "neutro"
 
 
+def tipo_do_oficio(oficio, *, prazo=None):
+    """Autorização ou Convalidação, e por quê — a decisão que o documento toma.
+
+    A regra é a de `assunto_oficio.resolver_assunto_oficio` (data do ofício
+    contra a primeira saída do roteiro); a obrigatoriedade da justificativa
+    segue `avaliar_justificativa_oficio` (antecedência até o prazo, ou saída
+    antes do ofício). `prazo` evita reler a configuração em cada linha da lista.
+    """
+    from .assunto_oficio import resolver_assunto_oficio
+    from .justificativas_services import get_prazo_justificativa_dias, get_primeira_saida_oficio
+
+    assunto = resolver_assunto_oficio(oficio)
+    autorizacao = assunto["assunto_termo"] == "autorização"
+    marcador = assunto["assunto_rotulo"].strip("()") if assunto["assunto_rotulo"] in ("(Retificado)", "(Complementar)") else ""
+    prazo = prazo if prazo is not None else get_prazo_justificativa_dias()
+    data = oficio.data_criacao
+    primeira = None
+    saida_dt = get_primeira_saida_oficio(oficio)
+    if saida_dt is not None:
+        primeira = saida_dt.astimezone(timezone.get_current_timezone()).date()
+    if primeira is None:
+        motivo = "Sem data de saída no roteiro: por enquanto vale Autorização."
+        justificativa = ""
+        obrigatoria = False
+        dias = None
+    else:
+        dias = (primeira - data).days
+        if dias > 0:
+            motivo = f"A viagem começa em {primeira:%d/%m/%Y}, depois da data do ofício ({data:%d/%m/%Y})."
+        elif dias == 0:
+            motivo = f"A viagem começa no mesmo dia do ofício ({data:%d/%m/%Y})."
+        else:
+            motivo = f"A viagem começou em {primeira:%d/%m/%Y}, antes da data do ofício ({data:%d/%m/%Y})."
+        obrigatoria = dias <= prazo
+        if dias < 0:
+            justificativa = "Justificativa obrigatória: a saída é anterior ao ofício."
+        elif obrigatoria:
+            justificativa = (f"Justificativa obrigatória: {dias} dia{'s' if dias != 1 else ''} de antecedência, "
+                             f"o prazo mínimo é de {prazo}.")
+        else:
+            justificativa = (f"Justificativa dispensada: {dias} dias de antecedência, "
+                             f"acima do prazo mínimo de {prazo}.")
+    rotulo = "Autorização" if autorizacao else "Convalidação"
+    return {
+        "rotulo": rotulo,
+        "tom": "neutro" if autorizacao else "aguardando",
+        "marcador": marcador,
+        "motivo": motivo,
+        "justificativa": justificativa,
+        "justificativa_obrigatoria": obrigatoria,
+        "dias_antecedencia": dias,
+        "prazo_dias": prazo,
+        "explicacao": " ".join(p for p in [motivo, justificativa] if p),
+    }
+
+
 def _descricao_pessoa(servidor):
     cargo = str(servidor.cargo) if servidor.cargo_id else ""
     unidade = ""
@@ -288,7 +344,7 @@ def _destino_e_periodo(oficio):
     return " · ".join(p for p in [destinos_resumidos(oficio.roteiro), periodo] if p and p != "—")
 
 
-def linha_da_lista(oficio, *, artefatos_pdf=None):
+def linha_da_lista(oficio, *, artefatos_pdf=None, prazo=None):
     """Uma linha da lista de ofícios, no padrão das listas de termos e justificativas."""
     selo, tom = selo_do_cartao(oficio)
     justificativa = justificativa_do_cartao(oficio)
@@ -298,6 +354,7 @@ def linha_da_lista(oficio, *, artefatos_pdf=None):
         "selo": selo,
         "selo_tom": tom,
         "justificativa_preenchida": justificativa["preenchida"],
+        "tipo": tipo_do_oficio(oficio, prazo=prazo),
         "fatos": fatos_do_oficio(oficio),
         "documentos": documentos_do_oficio(oficio, artefatos_pdf or {}),
         "url_editar": reverse("viagens_oficios:editar", args=[oficio.pk]),

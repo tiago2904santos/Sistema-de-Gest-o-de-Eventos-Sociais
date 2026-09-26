@@ -47,6 +47,9 @@
           <div class="frm-titulo">
             <h1 class="page-header__titulo d-titulo-v32">Cadastro de ofício <span class="frm-ident">{{ oficio.numero_formatado }}</span></h1>
             <span class="frm-rasc">{% include "components/icon.html" with nome="document" %}{% if oficio.cancelado %}Cancelado{% else %}{{ oficio.get_status_display }}{% endif %}</span>
+            {# O tipo que o documento vai ter, com o porquê: sem precisar abrir o PDF. #}
+            <span class="st st--{{ tipo.tom }}" title="{{ tipo.explicacao }}" data-ofc-tipo>{{ tipo.rotulo }}{% if tipo.marcador %} · {{ tipo.marcador }}{% endif %}</span>
+            <p class="ofc-tipo__explicacao">{{ tipo.explicacao }}</p>
           </div>
         </div>
       </div>

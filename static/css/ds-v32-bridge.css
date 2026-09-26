@@ -1959,6 +1959,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .ofc-identificacao{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media (max-width:900px){.ofc-identificacao{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:600px){.ofc-identificacao{grid-template-columns:1fr}}
+.ofc-tipo__explicacao{flex-basis:100%;margin:0;font-size:13px;color:var(--n-500)}
 .ofc-numero{display:flex;align-items:center;gap:8px}
 .ofc-numero .form-controle-wrapper{flex:1 1 auto;min-width:0}
 .ofc-numero__ano{flex:none;font-size:13px;color:var(--n-500)}

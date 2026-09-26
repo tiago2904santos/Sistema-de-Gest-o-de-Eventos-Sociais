@@ -92,6 +92,12 @@ class ListaOficiosTests(Cenario):
         for marca in ["of-cartao__rodape", "of-catalogos", "Número: maior", 'name="viagem_de"', "Mostrando <strong>"]:
             self.assertNotContains(r, marca)
 
+    def test_linha_mostra_o_tipo_do_oficio(self):
+        self.oficio(dias=-2, servidores=[self.janine])
+        r = self.lista()
+        self.assertContains(r, ">Convalidação</span>")
+        self.assertContains(r, "antes da data do ofício")
+
     def test_linha_de_rascunho_vazio(self):
         self.oficio()
         r = self.lista()
@@ -398,6 +404,25 @@ class CadastroTests(Cenario):
         self.assertRedirects(r, reverse("viagens_oficios:lista"))
         o.refresh_from_db()
         self.assertEqual(o.status, Oficio.STATUS_FINALIZADO)
+
+    def test_cabecalho_mostra_autorizacao_ou_convalidacao_e_por_que(self):
+        o = self.oficio(dias=5)
+        r = self.editar(o)
+        self.assertContains(r, "data-ofc-tipo>Autorização</span>")
+        self.assertContains(r, "Justificativa obrigatória: 5 dias de antecedência, o prazo mínimo é de 10.")
+        o = self.oficio(dias=-3)
+        r = self.editar(o)
+        self.assertContains(r, "data-ofc-tipo>Convalidação</span>")
+        saida = self.hoje - timedelta(days=3)
+        self.assertContains(r, f"A viagem começou em {saida:%d/%m/%Y}, antes da data do ofício ({self.hoje:%d/%m/%Y}).")
+        o = self.oficio(dias=30)
+        o.retificado_documento = True
+        o.save()
+        r = self.editar(o)
+        self.assertContains(r, "data-ofc-tipo>Autorização · Retificado</span>")
+        self.assertContains(r, "Justificativa dispensada: 30 dias de antecedência")
+        r = self.editar(self.oficio())
+        self.assertContains(r, "Sem data de saída no roteiro: por enquanto vale Autorização.")
 
     def _finalizar(self, o, **extra):
         return self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(

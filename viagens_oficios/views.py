@@ -116,7 +116,9 @@ def lista(request):
     parametros = request.GET.copy()
     parametros.pop('pagina', None)
     artefatos = artefatos_pdf_por_oficio(pagina.object_list)
-    linhas = [linha_da_lista(o, artefatos_pdf=artefatos.get(o.pk, {})) for o in pagina]
+    from .justificativas_services import get_prazo_justificativa_dias
+    prazo = get_prazo_justificativa_dias()
+    linhas = [linha_da_lista(o, artefatos_pdf=artefatos.get(o.pk, {}), prazo=prazo) for o in pagina]
 
     def url_da_situacao(aba=None):
         destino = parametros.copy()
@@ -384,7 +386,7 @@ def editar(request, pk=None):
     from core.retorno import next_valido, voltar_para
     from .form_context import contexto_conferencia, contexto_dados_viajantes, contexto_justificativa
     from .justificativas_services import get_or_create_justificativa_oficio, oficio_exige_justificativa
-    from .presenters import artefatos_pdf_por_oficio
+    from .presenters import artefatos_pdf_por_oficio, tipo_do_oficio
     from .protocolo_services import abrir_protocolo_do_oficio, mensagens_do_protocolo
     from .services import criar_oficio_rascunho
     exigir_operador(request)
@@ -499,6 +501,7 @@ def editar(request, pk=None):
         'rot': _contexto_roteiro(request, oficio, gravacao),
         'justificativa': contexto_justificativa(jform),
         'conferencia': conferencia,
+        'tipo': tipo_do_oficio(oficio),
         'next': next_valido(request),
         'url_voltar': lista,
         'url_atual': request.get_full_path(),
