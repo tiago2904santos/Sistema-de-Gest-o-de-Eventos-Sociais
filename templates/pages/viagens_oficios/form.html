@@ -227,6 +227,8 @@
               </div>
             </div>
           </div>
+          {# Mesma pessoa ou viatura em outro ofício/evento no horário do roteiro: avisa, não impede. #}
+          {% include "components/v32/avisos_conflito.html" with conflitos=conflitos formulario="form-oficio" campos="servidores:servidores motorista:servidores viatura:viaturas" fixos=conflitos_fixos %}
         </div>
       </section>
       {% endwith %}
@@ -319,6 +321,7 @@
   <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
   <script src="{% estatico 'js/roteiro-editor.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-oficios.js' %}" defer></script>
+  <script src="{% estatico 'js/conflitos.js' %}" defer></script>
   <script src="{% estatico 'js/components/copiar.js' %}" defer></script>
   {% include "documentos/editor/_recursos.html" %}
   {% include "components/v32/dialogo_assinado.html" %}

@@ -85,6 +85,8 @@
       {% endif %}
     {% endif %}
 
+    {% include "components/v32/avisos_conflito.html" with conflitos=conflitos %}
+
     {% if etapa_atual == 1 %}{% include "pages/viagens_viagem/_etapa_1.html" %}
     {% elif etapa_atual == 2 %}{% include "pages/viagens_viagem/_etapa_2.html" %}
     {% elif etapa_atual == 3 %}{% include "pages/viagens_viagem/_etapa_3.html" %}

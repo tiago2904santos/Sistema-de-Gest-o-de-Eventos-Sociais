@@ -512,6 +512,33 @@ def _aviso_de_condutor(oficio):
             f'{oficio.viatura.placa_formatada}. Confira antes de emitir o ofício.')
 
 
+def _conflitos_da_tela(oficio, form):
+    """Conflitos de agenda do que está na tela (core/conflitos.py).
+
+    Com o formulário recusado, valem as escolhas enviadas; senão, as gravadas.
+    O período é sempre o do roteiro gravado.
+    """
+    from core.conflitos import conflitos_do_oficio
+    if form.is_bound:
+        dados = form.data
+        manual = dados.get('motorista_modo') == Oficio.MOTORISTA_MODO_MANUAL
+        return conflitos_do_oficio(
+            oficio, servidores=dados.getlist('servidores'), viatura=dados.get('viatura'),
+            motorista=None if manual else dados.get('motorista'),
+        )
+    return conflitos_do_oficio(oficio)
+
+
+def _avisos_de_conflito(oficio, limite=5):
+    """Os conflitos em texto para o aviso depois de salvar (sem bloquear)."""
+    from core.conflitos import conflitos_do_oficio
+    achados = conflitos_do_oficio(oficio)
+    textos = [f'Conflito de agenda: {c.mensagem}.' for c in achados[:limite]]
+    if len(achados) > limite:
+        textos.append(f'E mais {len(achados) - limite} conflito(s) de agenda: abra o ofício para ver todos.')
+    return textos
+
+
 def _data_final_do_oficio(form):
     """A data com que o ofício é finalizado e se ela foi posta pelo sistema.
 
@@ -613,6 +640,8 @@ def editar(request, pk=None):
             aviso_condutor = _aviso_de_condutor(oficio)
             if aviso_condutor:
                 messages.warning(request, aviso_condutor)
+            for texto in _avisos_de_conflito(oficio):
+                messages.warning(request, texto)
             for nivel, texto in (gravacao.mensagens if gravacao else []):
                 if texto.startswith('Diárias: R$'):
                     # O roteiro calcula por servidor; o aviso fala do ofício inteiro.
@@ -656,6 +685,8 @@ def editar(request, pk=None):
         'titulo': 'Cadastro de ofício',
         'oficio': oficio, 'form': form, 'jform': jform,
         'dados': contexto_dados_viajantes(form, oficio),
+        'conflitos': _conflitos_da_tela(oficio, form),
+        'conflitos_fixos': f'oficio={oficio.pk}',
         'rot': _contexto_roteiro(request, oficio, gravacao),
         'justificativa': contexto_justificativa(jform),
         'conferencia': conferencia,
