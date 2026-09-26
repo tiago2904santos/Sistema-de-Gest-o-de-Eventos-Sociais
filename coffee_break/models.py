@@ -293,6 +293,10 @@ class LoteCoffeeBreak(models.Model):
         "quantidade total contratada", validators=[MinValueValidator(1)]
     )
     empenho = models.CharField("empenho", max_length=30, blank=True)
+    valor_empenho = models.DecimalField(
+        "valor do empenho", max_digits=14, decimal_places=2, null=True, blank=True,
+        help_text="Quanto foi empenhado para o lote: o painel mostra o comprometido e o pago contra ele.",
+    )
     municipios = models.ManyToManyField(
         "cadastros.Municipio",
         verbose_name="municípios abrangidos",
@@ -392,6 +396,10 @@ class SolicitacaoCoffeeBreak(models.Model):
     )
     descricao_evento = models.TextField("descrição do evento")
     quantidade = models.PositiveIntegerField("quantidade solicitada")
+    valor_unitario = models.DecimalField(
+        "valor unitário", max_digits=12, decimal_places=4, null=True, blank=True,
+        help_text="Cópia do preço do contrato na data do pedido: reajuste depois não muda o valor da OS.",
+    )
     quantidade_faturada = models.PositiveIntegerField(
         "quantidade faturada", blank=True, null=True, validators=[MinValueValidator(1)],
         help_text="A da nota fiscal. Em branco, o lote desconta a quantidade pedida.",
@@ -632,6 +640,23 @@ class SolicitacaoCoffeeBreak(models.Model):
     def quantidade_efetiva(self):
         """O que desconta do lote: a faturada, quando registrada; senão a pedida."""
         return self.quantidade_faturada if self.quantidade_faturada is not None else self.quantidade
+
+    @property
+    def valor_unitario_efetivo(self):
+        """O preço guardado na OS; em registro antigo sem ele, o do contrato."""
+        if self.valor_unitario is not None:
+            return self.valor_unitario
+        return self.lote.contrato.valor_unitario if self.lote_id else None
+
+    @property
+    def valor(self):
+        """Valor da OS em reais: quantidade (a faturada, se houver) × preço unitário."""
+        unitario = self.valor_unitario_efetivo
+        if unitario is None or self.quantidade_efetiva is None:
+            return None
+        from decimal import ROUND_HALF_UP, Decimal
+
+        return (Decimal(self.quantidade_efetiva) * unitario).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
     @property
     def financeiro_iniciado(self):

@@ -279,6 +279,9 @@ def painel(request):
 
     url_lotes = reverse("coffee_break:lotes")
     url_solicitacoes = reverse("coffee_break:solicitacoes")
+    # Controle em reais: quantidade × preço unitário guardado na OS.
+    hoje = timezone.localdate()
+    gasto = services.gasto_no_ano(hoje.year)
     resumo = [
         {
             "titulo": "Capacidade contratada",
@@ -307,6 +310,14 @@ def painel(request):
             "cor": "sucesso",
             "variacao": "Somando todos os lotes ativos",
             "url": url_lotes,
+        },
+        {
+            "titulo": f"Gasto em {hoje.year}",
+            "valor": services.formatar_reais(gasto["total"]),
+            "icone": "chart",
+            "cor": "info",
+            "variacao": f"{services.formatar_reais(gasto['pago'])} com ordem bancária",
+            "url": url_solicitacoes,
         },
         {
             "titulo": "Pendências financeiras",
@@ -454,6 +465,11 @@ def detalhe_lote(request, pk):
             "solicitacoes": solicitacoes,
             # As solicitações do lote usam a mesma linha da listagem.
             "linhas": [linha_da_lista(s) for s in solicitacoes],
+            "valores": {
+                chave: services.formatar_reais(valor)
+                for chave, valor in services.valores_do_lote(lote).items()
+            },
+            "valor_empenho": services.formatar_reais(lote.valor_empenho),
             "consumo": selo_do_consumo(lote)[0],
             "consumo_tom": selo_do_consumo(lote)[1],
             "percentual": (
@@ -581,6 +597,11 @@ def lista_solicitacoes(request):
     )
 
 
+def _decimal_csv(valor):
+    """Número com vírgula decimal, como a planilha em português espera."""
+    return "" if valor is None else f"{valor:.2f}".replace(".", ",")
+
+
 @acesso_ao_modulo
 def exportar_solicitacoes(request):
     """Exporta o recorte atual para conciliação operacional e financeira."""
@@ -599,7 +620,8 @@ def exportar_solicitacoes(request):
     escritor.writerow(
         [
             "Nº", "Lote", "Fornecedor", "Data da solicitação", "Evento",
-            "Período", "Quantidade", "Nota fiscal", "Protocolo",
+            "Período", "Quantidade", "Quantidade faturada", "Valor unitário", "Valor",
+            "Nota fiscal", "Protocolo",
             "Atesto GAF", "Ordem bancária", "Envio à empresa", "Situação",
             "Criado por",
         ]
@@ -614,6 +636,9 @@ def exportar_solicitacoes(request):
                 solicitacao.descricao_evento,
                 solicitacao.periodo_evento_display,
                 solicitacao.quantidade,
+                "" if solicitacao.quantidade_faturada is None else solicitacao.quantidade_faturada,
+                _decimal_csv(solicitacao.valor_unitario_efetivo),
+                _decimal_csv(solicitacao.valor),
                 solicitacao.numero_nota_fiscal,
                 solicitacao.protocolo_pagamento,
                 solicitacao.data_atesto_gaf.strftime("%d/%m/%Y") if solicitacao.data_atesto_gaf else "",

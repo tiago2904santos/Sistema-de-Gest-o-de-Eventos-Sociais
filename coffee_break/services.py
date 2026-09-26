@@ -86,11 +86,19 @@ def salvar_com_saldo(solicitacao, numero=None, oficio=None):
     tratar o número da OS e o do ofício (ver `numerar_sob_trava`).
     """
     with transaction.atomic():
-        lote = LoteCoffeeBreak.objects.select_for_update().get(
+        lote = LoteCoffeeBreak.objects.select_for_update().select_related("contrato").get(
             pk=solicitacao.lote_id
         )
         if not solicitacao.cancelada:
             validar_saldo(lote, solicitacao.quantidade_efetiva, excluir_pk=solicitacao.pk)
+        lote_antes = (
+            type(solicitacao).objects.filter(pk=solicitacao.pk).values_list("lote_id", flat=True).first()
+            if solicitacao.pk else None
+        )
+        if solicitacao.valor_unitario is None or lote_antes != solicitacao.lote_id:
+            # O preço do contrato na data do pedido (ou da troca de lote) fica
+            # na OS: reajuste depois não muda o valor dela.
+            solicitacao.valor_unitario = lote.contrato.valor_unitario
         # A numeração da OS e a do ofício são as de Viagens (livro único),
         # escolhidas e conferidas sob a mesma trava de lá.
         numerar_sob_trava(solicitacao, numero=numero, oficio=oficio)
@@ -253,6 +261,48 @@ def lotes_em_alerta(lotes_anotados):
         if percentual_restante <= LIMIAR_ALERTA_SALDO:
             em_alerta.append(lote)
     return em_alerta
+
+
+# ---------------------------------------------------------------------------
+# Controle em reais
+# ---------------------------------------------------------------------------
+
+def formatar_reais(valor):
+    """"R$ 1.234,56"; "—" sem valor."""
+    if valor is None:
+        return "—"
+    from viagens_roteiros.services.diarias import formatar_valor
+
+    return f"R$ {formatar_valor(valor)}"
+
+
+def _soma_valores(solicitacoes):
+    from decimal import Decimal
+
+    return sum((s.valor for s in solicitacoes if s.valor is not None), Decimal("0.00"))
+
+
+def valores_do_lote(lote):
+    """Comprometido (OS não canceladas), pago (com ordem bancária) e o saldo do empenho."""
+    ativas = list(lote.solicitacoes.filter(cancelada=False).select_related("lote__contrato"))
+    comprometido = _soma_valores(ativas)
+    pago = _soma_valores(s for s in ativas if s.data_ordem_bancaria)
+    saldo = lote.valor_empenho - comprometido if lote.valor_empenho is not None else None
+    return {"comprometido": comprometido, "pago": pago, "saldo_empenho": saldo}
+
+
+def gasto_no_ano(ano):
+    """Valor das OS não canceladas com evento (ou pedido, sem data do evento) no ano, e quanto já foi pago."""
+    from django.db.models import Q
+
+    from .models import SolicitacaoCoffeeBreak
+
+    ativas = list(
+        SolicitacaoCoffeeBreak.objects.filter(cancelada=False)
+        .filter(Q(data_inicio_evento__year=ano) | Q(data_inicio_evento__isnull=True, data_solicitacao__year=ano))
+        .select_related("lote__contrato")
+    )
+    return {"total": _soma_valores(ativas), "pago": _soma_valores(s for s in ativas if s.data_ordem_bancaria)}
 
 
 # ---------------------------------------------------------------------------

@@ -557,6 +557,7 @@ class LoteCoffeeBreakForm(FormularioCadastroVersionado):
             "exercicio",
             "quantidade_total",
             "empenho",
+            "valor_empenho",
             "municipios",
             "municipios_texto",
             "orientacoes",

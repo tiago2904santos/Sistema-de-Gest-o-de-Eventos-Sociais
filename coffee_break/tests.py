@@ -1864,6 +1864,70 @@ class QuantidadeFaturadaTests(EtapasBase):
         self.assertIsNone(self.solicitacao.quantidade_faturada)
 
 
+class ControleEmReaisTests(BaseCoffeeBreakTestCase):
+    """m031: valor da OS (com o preço guardado), do lote, do empenho e do ano."""
+
+    def setUp(self):
+        from decimal import Decimal
+
+        self.client.force_login(self.ascom)
+        ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(valor_unitario=Decimal("21.07"))
+        LoteCoffeeBreak.objects.filter(pk=self.lote.pk).update(valor_empenho=Decimal("5000.00"))
+        self.lote.refresh_from_db()
+
+    def _nova(self, quantidade="40"):
+        self.client.post(reverse("coffee_break:nova"), {
+            "municipio": self.curitiba.pk, "data_solicitacao": "2026-08-01", "numero": "",
+            "descricao_evento": "Evento", "quantidade": quantidade, "data_inicio_evento": "2026-09-01",
+        })
+        return SolicitacaoCoffeeBreak.objects.latest("pk")
+
+    def test_valor_da_os_com_o_preco_guardado(self):
+        from decimal import Decimal
+
+        s = self._nova()
+        self.assertEqual(s.valor_unitario, Decimal("21.07"))
+        self.assertEqual(s.valor, Decimal("842.80"))
+        # Reajuste do contrato não muda a OS já registrada.
+        ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(valor_unitario=Decimal("25.00"))
+        s.refresh_from_db()
+        self.assertEqual(s.valor, Decimal("842.80"))
+        # Com a nota, vale a quantidade faturada.
+        s.quantidade_faturada = 30
+        self.assertEqual(s.valor, Decimal("632.10"))
+
+    def test_lote_painel_csv_e_relatorio(self):
+        from decimal import Decimal
+
+        from relatorios.consolidacao import secao_coffee
+
+        a = self._nova()
+        b = self._nova("10")
+        SolicitacaoCoffeeBreak.objects.filter(pk=b.pk).update(
+            numero_nota_fiscal="1", protocolo_pagamento="26.000.000-1",
+            data_atesto_gaf=dt.date(2026, 9, 2), data_ordem_bancaria=dt.date(2026, 9, 3),
+        )
+        valores = services.valores_do_lote(self.lote)
+        self.assertEqual(valores["comprometido"], Decimal("1053.50"))
+        self.assertEqual(valores["pago"], Decimal("210.70"))
+        self.assertEqual(valores["saldo_empenho"], Decimal("3946.50"))
+        self.assertEqual(services.formatar_reais(valores["comprometido"]), "R$ 1.053,50")
+        tela = self.client.get(reverse("coffee_break:lote_detalhe", args=[self.lote.pk]))
+        self.assertContains(tela, "R$ 1.053,50 comprometidos")
+        with mock.patch("django.utils.timezone.localdate", return_value=dt.date(2026, 9, 26)):
+            painel = self.client.get(reverse("coffee_break:painel"))
+        self.assertContains(painel, "Gasto em 2026")
+        self.assertContains(painel, "R$ 1.053,50")
+        csv = self.client.get(reverse("coffee_break:exportar")).content.decode("utf-8")
+        self.assertIn("Valor", csv.splitlines()[0])
+        self.assertIn("842,80", csv)
+        periodo = mock.Mock(ano=2026, contem=lambda d: True, chave=lambda d: d.month,
+                            chaves=lambda _c: [9], rotulo_da_chave=lambda c: "09/2026")
+        secao = secao_coffee(self.ascom, periodo)
+        self.assertEqual(secao["totais"][4], Decimal("1053.50"))
+        self.assertEqual(a.valor + b.valor, Decimal("1053.50"))
+
+
 class DescricaoUmaLinhaTests(BaseCoffeeBreakTestCase):
     def test_descricao_vira_uma_linha(self):
         self.client.force_login(self.ascom)

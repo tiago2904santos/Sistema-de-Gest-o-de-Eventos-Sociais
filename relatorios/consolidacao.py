@@ -351,23 +351,24 @@ def secao_coffee(usuario, periodo):
             Q(data_inicio_evento__year=periodo.ano)
             | Q(data_inicio_evento__isnull=True, data_solicitacao__year=periodo.ano)
         )
-    itens = list(consulta.only("data_inicio_evento", "data_solicitacao", "quantidade", "quantidade_faturada", "cancelada"))
+    itens = list(consulta.select_related("lote__contrato"))
     linhas, totais = _por_mes(
         periodo,
         itens,
         lambda s: s.data_inicio_evento or s.data_solicitacao,
-        lambda s: (0, 0, 1) if s.cancelada else (1, s.quantidade_efetiva, 0),
-        ["Solicitações", "Quantidade servida", "Canceladas"],
+        lambda s: (0, 0, 1, 0) if s.cancelada else (1, s.quantidade_efetiva, 0, s.valor),
+        ["Solicitações", "Quantidade servida", "Canceladas", "Valor (R$)"],
     )
     return _secao(
         "coffee",
         "Coffee break",
         "coffee",
-        ["Mês/ano" if periodo.ano else "Ano", "Solicitações", "Quantidade servida", "Canceladas"],
+        ["Mês/ano" if periodo.ano else "Ano", "Solicitações", "Quantidade servida", "Canceladas", "Valor (R$)"],
         linhas,
         totais,
-        "Solicitações de coffee break no mês do evento; a quantidade soma só as não canceladas.",
-        numericas=(1, 2, 3),
+        "Solicitações de coffee break no mês do evento; a quantidade e o valor (quantidade × preço "
+        "unitário do contrato guardado na OS) somam só as não canceladas.",
+        numericas=(1, 2, 3, 4),
     )
 
 
