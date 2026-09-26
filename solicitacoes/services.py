@@ -550,10 +550,13 @@ def montar_timeline(solicitacao=None):
     """
 
     def registro_de(*acoes):
+        """O registro **mais recente** destas ações: depois de um reenvio ou
+        de um novo despacho, a etapa mostra o último, não o primeiro."""
         if not solicitacao or not solicitacao.pk:
             return None
         return next(
-            (h for h in solicitacao.historico.all() if h.acao in acoes), None
+            (h for h in reversed(list(solicitacao.historico.all())) if h.acao in acoes),
+            None,
         )
 
     def detalhes(registro):
@@ -575,16 +578,19 @@ def montar_timeline(solicitacao=None):
     deferida = status == StatusSolicitacao.DEFERIDA_EM_ANDAMENTO
     finalizada = bool(solicitacao) and solicitacao.finalizada
 
-    # Origem da etapa de envio: o envio em si ou, nas importadas da
-    # planilha, o registro de importação.
-    registro_envio = registro_de(
-        AcaoHistorico.ENVIO, AcaoHistorico.IMPORTACAO, AcaoHistorico.CRIACAO
+    # Origem da etapa de envio, em ordem de preferência: o envio (ou o
+    # reenvio depois de alterada); nas importadas da planilha, a importação;
+    # só na falta dos dois, a criação do rascunho.
+    registro_envio = (
+        registro_de(AcaoHistorico.ENVIO, AcaoHistorico.REENVIO)
+        or registro_de(AcaoHistorico.IMPORTACAO)
+        or registro_de(AcaoHistorico.CRIACAO)
     )
     registro_decisao = registro_de(AcaoHistorico.DECISAO)
-    registro_final = (
-        registro_de(AcaoHistorico.CONCLUSAO)
-        or registro_de(AcaoHistorico.CANCELAMENTO)
-        or registro_decisao
+    # O que encerrou: a confirmação do atendimento, o cancelamento do evento
+    # ou a própria decisão — o que veio por último.
+    registro_final = registro_de(
+        AcaoHistorico.CONCLUSAO, AcaoHistorico.CANCELAMENTO, AcaoHistorico.DECISAO
     )
 
     # As quatro etapas existem sempre, desde o rascunho: quem abre a tela vê o

@@ -2070,6 +2070,50 @@ class ViagemNaTelaDaSolicitacaoTests(BaseSolicitacaoTestCase):
         )
 
 
+class TimelineComORegistroMaisRecenteTests(BaseSolicitacaoTestCase):
+    """A barra de etapas mostra o envio e a decisão que valem, não os primeiros."""
+
+    def _datar(self, solicitacao):
+        """Espaça o histórico em horas cheias, na ordem em que foi gravado."""
+        from datetime import datetime, timedelta
+
+        from django.utils import timezone
+
+        inicio = timezone.make_aware(datetime(2026, 8, 1, 9, 0))
+        for i, registro in enumerate(solicitacao.historico.order_by("pk")):
+            type(registro).objects.filter(pk=registro.pk).update(
+                criado_em=inicio + timedelta(hours=i)
+            )
+
+    def test_reenvio_e_novo_despacho(self):
+        solicitacao = self.solicitacao_completa()
+        services.registrar_historico(solicitacao, self.solicitante, AcaoHistorico.CRIACAO)
+        services.enviar(solicitacao, self.solicitante)                      # 10:00
+        services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER)     # 11:00
+        services.reenviar_apos_edicao(                                      # 12:00
+            solicitacao, self.solicitante,
+            [{"campo": "Local do evento", "antes": "A", "depois": "B"}],
+        )
+        services.despachar(solicitacao, self.superusuario, DecisaoDG.ATENDER)  # 13:00
+        self._datar(solicitacao)
+        solicitacao = SolicitacaoEvento.objects.prefetch_related("historico__usuario").get(
+            pk=solicitacao.pk
+        )
+        envio, _aguardando, deferida, _final = services.montar_timeline(solicitacao)
+        self.assertEqual(envio["quando"], "01/08/2026 12:00")
+        self.assertEqual(deferida["quando"], "01/08/2026 13:00")
+        self.assertEqual(deferida["usuario"], str(self.superusuario))
+
+    def test_envio_prefere_o_envio_a_criacao(self):
+        solicitacao = self.solicitacao_completa()
+        services.registrar_historico(solicitacao, self.solicitante, AcaoHistorico.CRIACAO)
+        services.enviar(solicitacao, self.solicitante)
+        self._datar(solicitacao)
+        solicitacao.refresh_from_db()
+        envio = services.montar_timeline(solicitacao)[0]
+        self.assertEqual(envio["quando"], "01/08/2026 10:00")
+
+
 class FiltrosVisiveisDaListaTests(BaseSolicitacaoTestCase):
     """Filtro que veio do Dashboard aparece, sai com um "x" e não se soma às filas."""
 
