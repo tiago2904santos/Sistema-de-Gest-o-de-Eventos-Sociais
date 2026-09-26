@@ -84,6 +84,13 @@ def fatos_da_solicitacao(solicitacao):
 def linha_da_lista(solicitacao, hoje=None):
     """Tudo o que a linha da lista precisa, montado fora do template."""
     quando, quando_tom = selo_temporal(solicitacao, hoje)
+    # "Parada há N dias": só quando a consulta trouxe o último registro do
+    # histórico (a lista anota; as demais telas não pagam a consulta).
+    parada = ""
+    if hasattr(solicitacao, "ultimo_historico"):
+        from .services import selo_parada
+
+        parada = selo_parada(solicitacao, hoje)
     return {
         "solicitacao": solicitacao,
         "titulo": titulo_da_solicitacao(solicitacao),
@@ -91,6 +98,7 @@ def linha_da_lista(solicitacao, hoje=None):
         "selo_tom": solicitacao.situacao_financeira_css,
         "quando": quando,
         "quando_tom": quando_tom,
+        "parada": parada,
         "fatos": fatos_da_solicitacao(solicitacao),
         "url_editar": reverse("coffee_break:editar", args=[solicitacao.pk]),
         "url_andamento": reverse("coffee_break:andamento", args=[solicitacao.pk]),
@@ -102,6 +110,41 @@ def linha_da_lista(solicitacao, hoje=None):
         # Quem já foi concluída ou cancelada só se abre para consulta.
         "editavel": not solicitacao.cancelada and not solicitacao.concluida,
     }
+
+
+def linha_da_acao(item, chave, hoje=None):
+    """A linha da fila "o que fazer hoje": a da lista, com o botão que resolve.
+
+    Na entrega da semana vão o local, o horário e quem recebe (o que se
+    confirma com o fornecedor); nos demais grupos, há quantos dias parada.
+    """
+    solicitacao = item["s"]
+    linha = linha_da_lista(solicitacao, hoje)
+    linha.update({"acao_url": item["url"], "acao_botao": item["botao"], "parada": ""})
+    if chave == "entrega":
+        horario = solicitacao.horario_evento
+        linha["fatos"] = [
+            {"icone": "calendar", "rotulo": "Data do evento", "texto": solicitacao.periodo_evento_display, "ausente": False},
+            {
+                "icone": "clock", "rotulo": "Horário",
+                "texto": f"{horario:%H:%M}" if horario else "Sem horário", "ausente": not horario,
+            },
+            {"icone": "coffee", "rotulo": "Quantidade", "texto": f"{solicitacao.quantidade} pessoas", "ausente": False},
+            {
+                "icone": "map-pin", "rotulo": "Local de entrega",
+                "texto": solicitacao.local_entrega or "Sem local de entrega", "ausente": not solicitacao.local_entrega,
+            },
+            {
+                "icone": "user", "rotulo": "Responsável pelo recebimento",
+                "texto": solicitacao.responsavel_recebimento or "Sem responsável",
+                "ausente": not solicitacao.responsavel_recebimento,
+            },
+            {"icone": "landmark", "rotulo": "Fornecedor", "texto": solicitacao.lote.contrato.fornecedor.razao_social, "ausente": False},
+        ]
+    else:
+        dias = item["dias"]
+        linha["parada"] = "Parada hoje" if dias == 0 else f"Parada há {dias} dia{'s' if dias != 1 else ''}"
+    return linha
 
 
 def filas_de_situacao(itens):

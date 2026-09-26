@@ -11,7 +11,7 @@ from django import forms
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.db.models import Q, Sum
+from django.db.models import Max, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -55,7 +55,7 @@ from core.listagens import trilha_de_situacoes
 from solicitacoes.permissions import eh_administrador
 
 from .permissions import acesso_ao_modulo, gerenciamento_de_cadastros
-from .presenters import filas_de_situacao, linha_da_lista, linha_do_cadastro, linha_do_lote, selo_do_consumo
+from .presenters import filas_de_situacao, linha_da_acao, linha_da_lista, linha_do_cadastro, linha_do_lote, selo_do_consumo
 from . import certidoes, documentos, documents, preenchimento, services
 
 ITENS_POR_PAGINA = 15
@@ -334,6 +334,10 @@ def painel(request):
         SolicitacaoCoffeeBreak.objects.select_related("lote__contrato__fornecedor")
         .order_by("-criado_em")[:5]
     )
+    # "O que fazer hoje": as OS que dependem da equipe, agrupadas pela próxima ação.
+    fila = services.fila_de_trabalho(hoje)
+    for grupo in fila:
+        grupo["linhas"] = [linha_da_acao(item, grupo["chave"], hoje) for item in grupo["itens"]]
     alertas_certidoes = certidoes.fornecedores_com_alerta(_fornecedores_com_lote_ativo())
     # Fim da vigência a 90, 60 e 30 dias: prazo para o aditivo de prorrogação.
     alertas_vigencia = services.contratos_perto_do_fim()
@@ -355,6 +359,7 @@ def painel(request):
             "url_solicitacoes": url_solicitacoes,
             "alertas_certidoes": alertas_certidoes,
             "alertas_vigencia": alertas_vigencia,
+            "fila": fila,
         },
     )
 
@@ -503,7 +508,10 @@ def _filtrar_solicitacoes(request):
     queryset = (
         SolicitacaoCoffeeBreak.objects.select_related(
             "lote__contrato__fornecedor", "criado_por"
-        ).order_by(*campos_ordem)
+        )
+        # O último registro do histórico: o "parada há N dias" da linha.
+        .annotate(ultimo_historico=Max("historico__criado_em"))
+        .order_by(*campos_ordem)
     )
     situacao = ""
     if filtros.is_valid():

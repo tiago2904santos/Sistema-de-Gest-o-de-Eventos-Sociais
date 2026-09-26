@@ -938,3 +938,142 @@ def registrar_marco(solicitacao, usuario, valor, anotacao=""):
         f"{texto} — {anotacao}" if anotacao else texto,
     )
     return solicitacao
+
+
+# ---------------------------------------------------------------------------
+# Painel "o que fazer hoje": a próxima ação de cada OS
+# ---------------------------------------------------------------------------
+
+# Os grupos da fila de trabalho, na ordem do fluxo: (chave, título, ajuda).
+GRUPOS_DE_ACAO = (
+    ("entrega", "Entregas desta semana", "Confirme com o fornecedor o local, o horário e quem recebe."),
+    ("sem_nota", "Eventos realizados sem nota fiscal", "Cobre a nota do fornecedor e anexe na etapa 2."),
+    ("sem_oficio", "Notas sem ofício", "Gere o ofício ao GAF na etapa 2."),
+    ("sem_protocolo", "Ofícios sem protocolo", "Protocole o ofício no eProtocolo e informe o número."),
+    ("sem_ob", "Protocolos sem ordem bancária", "Acompanhe o pagamento no GAF e registre a ordem bancária."),
+    ("ob_nao_enviada", "Ordens bancárias não enviadas à empresa", "Envie o comprovante da OB ao fornecedor."),
+)
+
+# O que resolve cada grupo: (rótulo do botão, rota da tela).
+BOTAO_DA_ACAO = {
+    "entrega": ("Abrir a OS", "coffee_break:editar"),
+    "sem_nota": ("Anexar a nota", "coffee_break:etapa_nota"),
+    "sem_oficio": ("Gerar o ofício", "coffee_break:etapa_nota"),
+    "sem_protocolo": ("Informar o protocolo", "coffee_break:etapa_nota"),
+    "sem_ob": ("Registrar a OB", "coffee_break:etapa_protocolo"),
+    "ob_nao_enviada": ("Enviar a OB", "coffee_break:etapa_protocolo"),
+}
+
+# Janela das "Entregas desta semana" (dias a partir de hoje).
+DIAS_ENTREGAS_PROXIMAS = 7
+# A partir de quantos dias sem movimento a lista mostra "parada há N dias".
+LIMIAR_PARADA_DIAS = 7
+
+
+def proxima_acao(solicitacao, hoje=None):
+    """A chave do grupo da fila de trabalho em que a OS está, ou "" quando não
+    depende da equipe agora (cancelada, concluída ou evento ainda distante).
+
+    Segue os marcos do pagamento (a `situacao_financeira`) e, antes da nota,
+    a data do evento: realizado sem nota, ou com entrega nos próximos dias.
+    """
+    from datetime import timedelta
+
+    if solicitacao.cancelada or solicitacao.data_envio_empresa:
+        return ""
+    hoje = hoje or timezone.localdate()
+    if solicitacao.data_ordem_bancaria:
+        return "ob_nao_enviada"
+    if solicitacao.protocolo_pagamento.strip():
+        return "sem_ob"
+    if solicitacao.numero_nota_fiscal.strip():
+        return "sem_protocolo" if solicitacao.numero_oficio.strip() else "sem_oficio"
+    inicio = solicitacao.data_inicio_evento
+    if not inicio:
+        return ""
+    fim = solicitacao.data_fim_evento or inicio
+    if fim < hoje:
+        return "sem_nota"
+    if hoje <= inicio <= hoje + timedelta(days=DIAS_ENTREGAS_PROXIMAS):
+        return "entrega"
+    return ""
+
+
+def dias_parada(solicitacao, hoje=None):
+    """Há quantos dias a OS não anda: desde o último registro do histórico
+    (ou a criação) e, para evento já realizado, desde o fim do evento.
+
+    Usa a anotação `ultimo_historico` quando a consulta a trouxe; sem ela,
+    lê o histórico.
+    """
+    hoje = hoje or timezone.localdate()
+    if hasattr(solicitacao, "ultimo_historico"):
+        ultimo = solicitacao.ultimo_historico
+    else:
+        ultimo = solicitacao.historico.order_by("-criado_em").values_list("criado_em", flat=True).first()
+    referencia = timezone.localtime(ultimo or solicitacao.criado_em).date()
+    fim = solicitacao.data_fim_evento or solicitacao.data_inicio_evento
+    if fim and referencia < fim <= hoje:
+        referencia = fim
+    return max((hoje - referencia).days, 0)
+
+
+def selo_parada(solicitacao, hoje=None):
+    """"Parada há N dias" para a OS que depende da equipe e não anda há o
+    limiar ou mais (a entrega da semana não conta: ainda não aconteceu)."""
+    acao = proxima_acao(solicitacao, hoje)
+    if not acao or acao == "entrega":
+        return ""
+    dias = dias_parada(solicitacao, hoje)
+    return f"Parada há {dias} dias" if dias >= LIMIAR_PARADA_DIAS else ""
+
+
+def fila_de_trabalho(hoje=None):
+    """Os grupos do painel, na ordem do fluxo, cada um com as OS dele.
+
+    Cada grupo: chave, título, ajuda, itens (a OS, a rota e o botão que
+    resolvem, os dias parada) e o maior tempo parado. Grupos vazios ficam de
+    fora.
+    """
+    from datetime import time
+
+    from django.urls import reverse
+
+    from .models import SolicitacaoCoffeeBreak
+
+    hoje = hoje or timezone.localdate()
+    abertas = (
+        SolicitacaoCoffeeBreak.objects.filter(cancelada=False, data_envio_empresa__isnull=True)
+        .select_related("lote__contrato__fornecedor")
+        .annotate(ultimo_historico=models.Max("historico__criado_em"))
+    )
+    por_grupo = {chave: [] for chave, *_ in GRUPOS_DE_ACAO}
+    for solicitacao in abertas:
+        chave = proxima_acao(solicitacao, hoje)
+        if not chave:
+            continue
+        rotulo, rota = BOTAO_DA_ACAO[chave]
+        por_grupo[chave].append({
+            "s": solicitacao,
+            "dias": dias_parada(solicitacao, hoje),
+            "url": reverse(rota, args=[solicitacao.pk]),
+            "botao": rotulo,
+        })
+    grupos = []
+    for chave, titulo, ajuda in GRUPOS_DE_ACAO:
+        itens = por_grupo[chave]
+        if not itens:
+            continue
+        if chave == "entrega":
+            itens.sort(key=lambda i: (i["s"].data_inicio_evento, i["s"].horario_evento or time.min))
+        else:
+            itens.sort(key=lambda i: -i["dias"])
+        grupos.append({
+            "chave": chave,
+            "titulo": titulo,
+            "ajuda": ajuda,
+            "itens": itens,
+            "total": len(itens),
+            "max_dias": max(i["dias"] for i in itens),
+        })
+    return grupos
