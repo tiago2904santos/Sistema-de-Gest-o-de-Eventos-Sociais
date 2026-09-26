@@ -12,6 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .models import SituacaoFinanceira
+from .services import entrega_liberada, resumo_do_fornecedor, texto_do_resumo
 
 
 
@@ -107,6 +108,9 @@ def linha_da_lista(solicitacao, hoje=None):
         "url_baixar": reverse("coffee_break:baixar_arquivos", args=[solicitacao.pk]),
         "itens_baixar": ITENS_BAIXAR,
         "cancelada": solicitacao.cancelada,
+        # A entrega e as ocorrências: a partir do dia do evento.
+        "url_entrega": reverse("coffee_break:entrega", args=[solicitacao.pk]),
+        "entrega_liberada": entrega_liberada(solicitacao, hoje),
         # Quem já foi concluída ou cancelada só se abre para consulta.
         "editavel": not solicitacao.cancelada and not solicitacao.concluida,
     }
@@ -237,6 +241,10 @@ def linha_do_cadastro(item, tipo):
             {"icone": "user", "rotulo": "Contato", "texto": item.contato or "Sem contato", "ausente": not item.contato},
             {"icone": "mail", "rotulo": "E-mail", "texto": item.email or "Sem e-mail", "ausente": not item.email},
         ]
+        # O histórico das entregas: base para notificação e sanção do contrato.
+        entregas = texto_do_resumo(resumo_do_fornecedor(item))
+        if entregas:
+            fatos.append({"icone": "check-circle", "rotulo": "Entregas", "texto": entregas, "ausente": False})
     elif tipo == "contratos":
         titulo = f"Contrato {item.numero}"
         fatos = [

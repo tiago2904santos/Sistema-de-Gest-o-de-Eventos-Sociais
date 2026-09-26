@@ -37,6 +37,8 @@ urlpatterns = [
     path("solicitacoes/<int:pk>/nota/", views.etapa_nota, name="etapa_nota"),
     path("solicitacoes/<int:pk>/protocolo/", views.etapa_protocolo, name="etapa_protocolo"),
     path("solicitacoes/<int:pk>/andamento/", views.registrar_andamento, name="andamento"),
+    path("solicitacoes/<int:pk>/entrega/", views.registrar_entrega, name="entrega"),
+    path("ocorrencias/<int:pk>/arquivo/", views.ocorrencia_arquivo, name="ocorrencia_arquivo"),
     path("solicitacoes/<int:pk>/ordem-de-servico.pdf", views.ordem_servico, name="ordem_servico"),
     path("solicitacoes/<int:pk>/ordem-de-servico/previa/", views.ordem_servico_previa, name="ordem_servico_previa"),
     # E-mail ao fornecedor: mostra o e-mail pronto e só envia com a confirmação (POST).

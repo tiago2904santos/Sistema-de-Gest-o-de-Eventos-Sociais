@@ -1262,6 +1262,56 @@ def registrar_andamento(request, pk):
 
 
 @acesso_ao_modulo
+def registrar_entrega(request, pk):
+    """A entrega e as ocorrências com o fornecedor, depois do evento.
+
+    Da lista abre em modal (protocolo dos cadastros, `X-Cadastro-Modal`); sem
+    ele, é uma página com as entregas já registradas e o formulário.
+    """
+    from .forms import OcorrenciaEntregaForm
+
+    solicitacao = _solicitacao_documental(pk)
+    via_modal = _modal(request)
+    liberada = services.entrega_liberada(solicitacao)
+    form = OcorrenciaEntregaForm(request.POST or None, request.FILES or None)
+    erro = ""
+    if request.method == "POST":
+        if not liberada:
+            erro = "A entrega se registra a partir do dia do evento."
+        elif form.is_valid():
+            ocorrencia = services.registrar_entrega(solicitacao, request.user, form)
+            messages.success(request, f"Entrega registrada: {ocorrencia.get_tipo_display().lower()}.")
+            if via_modal:
+                return JsonResponse({"ok": True})
+            return redirect("coffee_break:entrega", pk=solicitacao.pk)
+    contexto = {
+        "solicitacao": solicitacao,
+        "form": form,
+        "valores": {nome: "" if form[nome].value() is None else str(form[nome].value()) for nome in form.fields},
+        "tipos": _opcoes_choices(form.fields["tipo"].choices),
+        "liberada": liberada,
+        "erro": erro,
+        "ocorrencias": solicitacao.ocorrencias.select_related("registrada_por"),
+    }
+    if via_modal:
+        return render(request, "pages/coffee_break/_modal_entrega.html", contexto)
+    rotulo = solicitacao.numero or f"#{solicitacao.pk}"
+    contexto["breadcrumb"] = _breadcrumb(
+        {"label": "Solicitações", "url": reverse("coffee_break:solicitacoes")},
+        {"label": rotulo, "url": reverse("coffee_break:editar", args=[solicitacao.pk])},
+        {"label": "Entrega"},
+    )
+    return render(request, "pages/coffee_break/entrega.html", contexto)
+
+
+@acesso_ao_modulo
+def ocorrencia_arquivo(request, pk):
+    from .models import OcorrenciaEntrega
+
+    return _arquivo(get_object_or_404(OcorrenciaEntrega, pk=pk).foto)
+
+
+@acesso_ao_modulo
 def certificado_solicitacao(request, pk):
     """Certificado da solicitação em PDF: o espelho do registro, para o processo.
 

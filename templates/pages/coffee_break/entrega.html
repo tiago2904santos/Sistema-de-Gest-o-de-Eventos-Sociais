@@ -1,0 +1,58 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  A entrega do coffee break e as ocorrências com o fornecedor: o que já foi
+  registrado (com quem registrou e quando) e o formulário de um novo registro.
+  Contexto: o de `registrar_entrega`.
+{% endcomment %}
+
+{% block title %}Entrega — OS {{ solicitacao.numero|default:solicitacao.pk }} — Coffee Break{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker kicker--junto">OS {{ solicitacao.numero|default:solicitacao.pk }} · {{ solicitacao.lote.contrato.fornecedor.razao_social }}</div>
+      <h1>Entrega e ocorrências</h1>
+    </div>
+  </div>
+
+  <div class="editor-roteiro cb-fluxo">
+    <section class="section-card reg">
+      <header class="section-card__cabecalho reg__t">
+        <h2 class="section-card__titulo">Registros</h2>
+      </header>
+      <div class="section-card__corpo">
+        <p class="cb-ajuda">{{ solicitacao.descricao_evento }} · {{ solicitacao.periodo_evento_display|default:"sem data" }}{% if solicitacao.local_entrega %} · {{ solicitacao.local_entrega }}{% endif %}</p>
+        <ul class="tm-fatos">
+          {% for o in ocorrencias %}
+            <li class="tm-fato">{% include "components/icon.html" with nome=o.com_problema|yesno:"alert,check-circle" %}<span class="vg-fato__valor"><b>{{ o.get_tipo_display }}</b>{% if o.avaliacao %} · nota {{ o.avaliacao }}/5{% endif %}{% if o.recebido_por %} · recebido por {{ o.recebido_por }}{% endif %}{% if o.descricao %} — {{ o.descricao }}{% endif %}{% if o.foto %} · <a href="{% url 'coffee_break:ocorrencia_arquivo' o.pk %}" target="_blank" rel="noopener">anexo</a>{% endif %} <small>({{ o.criado_em|date:"d/m/Y H:i" }}{% if o.registrada_por %}, {{ o.registrada_por }}{% endif %})</small></span></li>
+          {% empty %}
+            <li class="tm-fato tm-fato--ausente">Nenhuma entrega registrada.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    {% if liberada %}
+      <form method="post" action="" enctype="multipart/form-data">
+        {% csrf_token %}
+        <section class="section-card reg">
+          <header class="section-card__cabecalho reg__t">
+            <h2 class="section-card__titulo">Registrar</h2>
+          </header>
+          <div class="section-card__corpo">
+            {% if erro %}<div class="aviso aviso--erro" role="alert">{% include "components/icon.html" with nome="alert" %}<div>{{ erro }}</div></div>{% endif %}
+            {% include "pages/coffee_break/_entrega_campos.html" %}
+            <div class="frm-acoes-fim">
+              <a class="btn--secundaria" href="{% url 'coffee_break:editar' solicitacao.pk %}">Voltar à solicitação</a>
+              <button type="submit" class="btn-primaria">Registrar entrega</button>
+            </div>
+          </div>
+        </section>
+      </form>
+    {% else %}
+      <div class="aviso aviso--info" role="status">{% include "components/icon.html" with nome="info" %}<div>A entrega se registra a partir do dia do evento{% if solicitacao.cancelada %} (esta solicitação está cancelada){% endif %}.</div></div>
+    {% endif %}
+  </div>
+{% endblock %}

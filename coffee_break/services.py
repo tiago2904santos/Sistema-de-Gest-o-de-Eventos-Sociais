@@ -1029,6 +1029,79 @@ def avisos_da_ob(solicitacao):
 
 
 # ---------------------------------------------------------------------------
+# Entrega e ocorrências com o fornecedor
+# ---------------------------------------------------------------------------
+
+def entrega_liberada(solicitacao, hoje=None):
+    """A entrega se registra a partir do dia do evento (registro antigo sem
+    data também), e não na OS cancelada."""
+    if solicitacao.cancelada:
+        return False
+    inicio = solicitacao.data_inicio_evento
+    return inicio is None or inicio <= (hoje or timezone.localdate())
+
+
+def registrar_entrega(solicitacao, usuario, form):
+    """Grava a entrega (ou a ocorrência) do formulário e o histórico da OS."""
+    if not entrega_liberada(solicitacao):
+        raise ValidationError("A entrega se registra a partir do dia do evento.")
+    ocorrencia = form.save(commit=False)
+    ocorrencia.solicitacao = solicitacao
+    ocorrencia.registrada_por = usuario
+    ocorrencia.save()
+    partes = [ocorrencia.get_tipo_display()]
+    if ocorrencia.avaliacao:
+        partes.append(f"avaliação {ocorrencia.avaliacao}/5")
+    if ocorrencia.recebido_por:
+        partes.append(f"recebido por {ocorrencia.recebido_por}")
+    texto = "Entrega registrada: " + "; ".join(partes) + "."
+    if ocorrencia.descricao.strip():
+        texto += f" {ocorrencia.descricao.strip()}"
+    registrar_historico(solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO, texto)
+    return ocorrencia
+
+
+def resumo_de_entregas(ocorrencias):
+    """Entregas registradas, OS com a entrega confirmada, média das notas e
+    as ocorrências por tipo (sem o "entregue sem ocorrência")."""
+    from .models import TipoOcorrencia
+
+    ocorrencias = list(ocorrencias)
+    notas = [o.avaliacao for o in ocorrencias if o.avaliacao]
+    por_tipo = {}
+    for o in ocorrencias:
+        if o.tipo != TipoOcorrencia.ENTREGUE:
+            por_tipo[o.get_tipo_display()] = por_tipo.get(o.get_tipo_display(), 0) + 1
+    return {
+        "registros": len(ocorrencias),
+        "os": len({o.solicitacao_id for o in ocorrencias}),
+        "media": round(sum(notas) / len(notas), 1) if notas else None,
+        "problemas": sum(por_tipo.values()),
+        "por_tipo": sorted(por_tipo.items(), key=lambda item: -item[1]),
+    }
+
+
+def resumo_do_fornecedor(fornecedor):
+    from .models import OcorrenciaEntrega
+
+    return resumo_de_entregas(
+        OcorrenciaEntrega.objects.filter(solicitacao__lote__contrato__fornecedor=fornecedor)
+    )
+
+
+def texto_do_resumo(resumo):
+    """"12 entregas registradas · nota média 4,5 · 2 ocorrências" (ou "")."""
+    if not resumo["registros"]:
+        return ""
+    partes = [f"{resumo['os']} entrega{'s' if resumo['os'] != 1 else ''} registrada{'s' if resumo['os'] != 1 else ''}"]
+    if resumo["media"] is not None:
+        partes.append(f"nota média {str(resumo['media']).replace('.', ',')}")
+    problemas = resumo["problemas"]
+    partes.append(f"{problemas} ocorrência{'s' if problemas != 1 else ''}" if problemas else "sem ocorrências")
+    return " · ".join(partes)
+
+
+# ---------------------------------------------------------------------------
 # Painel "o que fazer hoje": a próxima ação de cada OS
 # ---------------------------------------------------------------------------
 

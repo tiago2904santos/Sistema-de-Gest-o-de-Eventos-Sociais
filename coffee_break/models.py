@@ -11,7 +11,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.functions import Coalesce
 from django.utils import timezone
@@ -808,6 +808,60 @@ class HistoricoCoffeeBreak(models.Model):
 
     def __str__(self):
         return f"{self.solicitacao_id} — {self.get_acao_display()}"
+
+
+class TipoOcorrencia(models.TextChoices):
+    ENTREGUE = "ENTREGUE", "Entregue sem ocorrência"
+    ATRASO = "ATRASO", "Atraso na entrega"
+    FALTA = "FALTA", "Falta de itens"
+    QUALIDADE = "QUALIDADE", "Problema de qualidade"
+    NAO_ENTREGUE = "NAO_ENTREGUE", "Não entregue"
+    OUTRO = "OUTRO", "Outra ocorrência"
+
+
+class OcorrenciaEntrega(models.Model):
+    """A entrega do coffee break registrada depois do evento: a confirmação
+    de quem recebeu, a nota de 1 a 5 e, se houve, a ocorrência (atraso, falta
+    de itens, qualidade). É a base do atesto da fiscal e o histórico do
+    fornecedor para notificações e sanções do contrato."""
+
+    solicitacao = models.ForeignKey(
+        SolicitacaoCoffeeBreak, verbose_name="solicitação", on_delete=models.CASCADE, related_name="ocorrencias",
+    )
+    tipo = models.CharField("o que aconteceu", max_length=15, choices=TipoOcorrencia.choices, default=TipoOcorrencia.ENTREGUE)
+    avaliacao = models.PositiveSmallIntegerField(
+        "avaliação (1 a 5)", blank=True, null=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
+    recebido_por = models.CharField("quem recebeu", max_length=150, blank=True)
+    descricao = models.TextField("observação", blank=True)
+    foto = models.FileField(
+        "foto ou documento", upload_to="coffee_break/ocorrencias/%Y/", blank=True,
+        help_text="Opcional: PDF, PNG ou JPG.",
+    )
+    registrada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, verbose_name="registrada por", on_delete=models.SET_NULL,
+        related_name="ocorrencias_coffee", blank=True, null=True,
+    )
+    criado_em = models.DateTimeField("registrada em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "entrega e ocorrência"
+        verbose_name_plural = "entregas e ocorrências"
+        ordering = ["-criado_em", "-pk"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(avaliacao__isnull=True) | models.Q(avaliacao__gte=1, avaliacao__lte=5),
+                name="coffee_avaliacao_1_a_5",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} — {self.solicitacao}"
+
+    @property
+    def com_problema(self):
+        return self.tipo != TipoOcorrencia.ENTREGUE
 
 
 class TipoCertidao(models.TextChoices):

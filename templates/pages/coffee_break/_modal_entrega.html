@@ -1,0 +1,25 @@
+{% comment %}
+  Modal "Registrar entrega" da lista (menu ⋮), no protocolo dos cadastros:
+  `{"ok": true}` recarrega a lista. Contexto: o de `registrar_entrega`.
+{% endcomment %}
+<form method="post" action="{% url 'coffee_break:entrega' solicitacao.pk %}" enctype="multipart/form-data" data-cadastro-form novalidate>
+  {% csrf_token %}
+  <header class="mo__topo">
+    <h2 id="cadastro-modal-titulo">Entrega — OS {{ solicitacao.numero|default:solicitacao.pk }}</h2>
+    <button type="button" class="mo__fechar" data-cadastro-fechar aria-label="Fechar">{% include "components/icon.html" with nome="x" %}</button>
+  </header>
+  <div class="mo__corpo">
+    <p class="cb-ajuda">{{ solicitacao.descricao_evento }} · {{ solicitacao.periodo_evento_display|default:"sem data" }} · {{ solicitacao.lote.contrato.fornecedor.razao_social }}</p>
+    {% if liberada %}
+      {% include "pages/coffee_break/_entrega_campos.html" %}
+    {% else %}
+      <p>A entrega se registra a partir do dia do evento.</p>
+    {% endif %}
+    {% if ocorrencias %}<p class="cb-ajuda">Já registrado: {% for o in ocorrencias %}{{ o.get_tipo_display }} ({{ o.criado_em|date:"d/m/Y" }}){% if not forloop.last %}; {% endif %}{% endfor %}.</p>{% endif %}
+    <p class="form-erro" data-cadastro-falha role="alert"{% if not erro %} hidden{% endif %}>{{ erro }}</p>
+  </div>
+  <footer class="mo__rodape">
+    <button type="button" class="btn--secundaria" data-cadastro-fechar>Cancelar</button>
+    {% if liberada %}<button type="submit" class="btn-primaria">Registrar entrega</button>{% endif %}
+  </footer>
+</form>
