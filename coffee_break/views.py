@@ -816,6 +816,10 @@ def _contexto_da_nota(contexto, form, solicitacao):
     if not valores.get("data_oficio") and not form.is_bound:
         valores["data_oficio"] = data.isoformat()
     contexto["usa_dialogo_assinado"] = True
+    contexto["ajuda_faturada"] = (
+        f"Pedido: {solicitacao.quantidade}. Em branco, o lote desconta o pedido; "
+        "com a nota, desconta o faturado e a diferença volta ao saldo."
+    )
     contexto["url_anexar_nota"] = reverse("coffee_break:anexar_nota", args=[solicitacao.pk])
     # Pagamento conjunto: as OS do mesmo pagamento e as que podem entrar
     # (mesmo lote, sem protocolo, não pagas), na lista de escolha do cabeçalho.
@@ -1013,6 +1017,23 @@ def _registrar_correcao(form, anterior, solicitacao, usuario):
         )
 
 
+def _registrar_faturada(solicitacao, usuario):
+    """A quantidade da nota no histórico, com a diferença que voltou (ou saiu) do lote."""
+    faturada = solicitacao.quantidade_faturada
+    if faturada is None:
+        texto = f"Quantidade faturada removida: o lote volta a descontar as {solicitacao.quantidade} pedidas."
+    else:
+        diferenca = solicitacao.quantidade - faturada
+        texto = f"Quantidade faturada: {faturada} de {solicitacao.quantidade} pedidas"
+        if diferenca > 0:
+            texto += f"; {diferenca} voltaram ao saldo do lote."
+        elif diferenca < 0:
+            texto += f"; {-diferenca} a mais saíram do saldo do lote."
+        else:
+            texto += "."
+    services.registrar_historico(solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO, texto)
+
+
 def _avisar_antecedencia(request, solicitacao):
     aviso = services.aviso_de_antecedencia(solicitacao)
     if aviso:
@@ -1089,6 +1110,8 @@ def _tela_da_etapa(request, pk, etapa):
                 )
                 if anterior is not None:
                     _registrar_correcao(form, anterior, solicitacao, request.user)
+                if "quantidade_faturada" in form.changed_data:
+                    _registrar_faturada(solicitacao, request.user)
                 if etapa == "pedido":
                     _registrar_retroativo(form, solicitacao, request.user)
                 messages.success(request, "Solicitação de coffee break atualizada.")

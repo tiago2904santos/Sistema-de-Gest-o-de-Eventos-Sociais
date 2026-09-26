@@ -351,12 +351,12 @@ def secao_coffee(usuario, periodo):
             Q(data_inicio_evento__year=periodo.ano)
             | Q(data_inicio_evento__isnull=True, data_solicitacao__year=periodo.ano)
         )
-    itens = list(consulta.only("data_inicio_evento", "data_solicitacao", "quantidade", "cancelada"))
+    itens = list(consulta.only("data_inicio_evento", "data_solicitacao", "quantidade", "quantidade_faturada", "cancelada"))
     linhas, totais = _por_mes(
         periodo,
         itens,
         lambda s: s.data_inicio_evento or s.data_solicitacao,
-        lambda s: (0, 0, 1) if s.cancelada else (1, s.quantidade, 0),
+        lambda s: (0, 0, 1) if s.cancelada else (1, s.quantidade_efetiva, 0),
         ["Solicitações", "Quantidade servida", "Canceladas"],
     )
     return _secao(

@@ -248,12 +248,23 @@ class ConfiguracaoCoffeeBreak(models.Model):
         return cls.objects.get_or_create(pk=1)[0]
 
 
+def quantidade_efetiva(prefixo=""):
+    """O que a OS desconta do lote: a quantidade faturada (a da nota), quando
+    registrada; senão a pedida."""
+    return Coalesce(f"{prefixo}quantidade_faturada", f"{prefixo}quantidade")
+
+
+def soma_consumida(consulta):
+    """Soma o consumo (quantidade efetiva) de um queryset de solicitações."""
+    return consulta.aggregate(total=models.Sum(quantidade_efetiva()))["total"] or 0
+
+
 class LoteQuerySet(models.QuerySet):
     def com_consumo(self):
         """Anota consumido e restante calculados das solicitações ativas."""
         consumido = Coalesce(
             models.Sum(
-                "solicitacoes__quantidade",
+                quantidade_efetiva("solicitacoes__"),
                 filter=models.Q(solicitacoes__cancelada=False),
             ),
             0,
@@ -324,12 +335,7 @@ class LoteCoffeeBreak(models.Model):
 
     @property
     def quantidade_consumida(self):
-        return (
-            self.solicitacoes.filter(cancelada=False).aggregate(
-                total=models.Sum("quantidade")
-            )["total"]
-            or 0
-        )
+        return soma_consumida(self.solicitacoes.filter(cancelada=False))
 
     @property
     def saldo_restante(self):
@@ -386,6 +392,10 @@ class SolicitacaoCoffeeBreak(models.Model):
     )
     descricao_evento = models.TextField("descrição do evento")
     quantidade = models.PositiveIntegerField("quantidade solicitada")
+    quantidade_faturada = models.PositiveIntegerField(
+        "quantidade faturada", blank=True, null=True, validators=[MinValueValidator(1)],
+        help_text="A da nota fiscal. Em branco, o lote desconta a quantidade pedida.",
+    )
     municipio = models.ForeignKey(
         "cadastros.Municipio",
         verbose_name="município do evento",
@@ -617,6 +627,11 @@ class SolicitacaoCoffeeBreak(models.Model):
             quando = f"{quando} às {hora}".strip()
         pessoas = f"{self.quantidade} pessoas."
         return f"Solicito coffee para:\n{quando} p/ {pessoas}" if quando else f"Solicito coffee para:\n{pessoas}"
+
+    @property
+    def quantidade_efetiva(self):
+        """O que desconta do lote: a faturada, quando registrada; senão a pedida."""
+        return self.quantidade_faturada if self.quantidade_faturada is not None else self.quantidade
 
     @property
     def financeiro_iniciado(self):

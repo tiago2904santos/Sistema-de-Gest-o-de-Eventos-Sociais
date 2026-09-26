@@ -59,10 +59,12 @@ def validar_saldo(lote, quantidade, excluir_pk=None):
     (``select_for_update``) para não haver corrida entre solicitações
     simultâneas — use :func:`salvar_com_saldo`.
     """
+    from .models import soma_consumida
+
     consumo = lote.solicitacoes.filter(cancelada=False)
     if excluir_pk:
         consumo = consumo.exclude(pk=excluir_pk)
-    consumido = consumo.aggregate(total=models.Sum("quantidade"))["total"] or 0
+    consumido = soma_consumida(consumo)
     restante = lote.quantidade_total - consumido
     if quantidade > restante:
         raise ValidationError(
@@ -88,7 +90,7 @@ def salvar_com_saldo(solicitacao, numero=None, oficio=None):
             pk=solicitacao.lote_id
         )
         if not solicitacao.cancelada:
-            validar_saldo(lote, solicitacao.quantidade, excluir_pk=solicitacao.pk)
+            validar_saldo(lote, solicitacao.quantidade_efetiva, excluir_pk=solicitacao.pk)
         # A numeração da OS e a do ofício são as de Viagens (livro único),
         # escolhidas e conferidas sob a mesma trava de lá.
         numerar_sob_trava(solicitacao, numero=numero, oficio=oficio)
@@ -214,7 +216,7 @@ def reativar(solicitacao, usuario=None):
         lote = LoteCoffeeBreak.objects.select_for_update().get(
             pk=solicitacao.lote_id
         )
-        validar_saldo(lote, solicitacao.quantidade, excluir_pk=solicitacao.pk)
+        validar_saldo(lote, solicitacao.quantidade_efetiva, excluir_pk=solicitacao.pk)
         solicitacao.cancelada = False
         solicitacao.cancelada_em = None
         solicitacao.cancelada_por = None

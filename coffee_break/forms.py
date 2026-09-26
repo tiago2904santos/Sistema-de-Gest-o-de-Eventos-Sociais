@@ -6,7 +6,6 @@ system; aqui mora a validação e a persistência.
 
 from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.db.models import Sum
 from django.utils import timezone
 
 from cadastros.models import Municipio
@@ -57,6 +56,7 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
             "responsavel_recebimento",
             "data_envio_ordem_servico",
             "numero_nota_fiscal",
+            "quantidade_faturada",
             "arquivo_nota_fiscal",
             "protocolo_pagamento",
             "data_atesto_gaf",
@@ -294,6 +294,8 @@ CAMPOS_PEDIDO = [
 ]
 CAMPOS_NOTA = [
     "numero_nota_fiscal",
+    # O que a nota cobrou: o lote passa a descontar isso, e não o pedido.
+    "quantidade_faturada",
     # A data antes do número: o ano do número sai dela.
     "data_oficio",
     "numero_oficio",
@@ -575,9 +577,9 @@ class LoteCoffeeBreakForm(FormularioCadastroVersionado):
     def clean_quantidade_total(self):
         quantidade = self.cleaned_data["quantidade_total"]
         if self.instance.pk:
-            consumido = self.instance.solicitacoes.filter(cancelada=False).aggregate(
-                total=Sum("quantidade")
-            )["total"] or 0
+            from .models import soma_consumida
+
+            consumido = soma_consumida(self.instance.solicitacoes.filter(cancelada=False))
             if quantidade < consumido:
                 raise forms.ValidationError(
                     f"O lote já consumiu {consumido} unidades; a capacidade não pode ficar abaixo disso."

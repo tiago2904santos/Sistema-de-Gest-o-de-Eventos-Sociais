@@ -1828,6 +1828,42 @@ class ReabrirParaCorrecaoTests(BaseCoffeeBreakTestCase):
         self.assertTrue(self.s.bloqueada_para_edicao)
 
 
+class QuantidadeFaturadaTests(EtapasBase):
+    """m032: o lote desconta o que a nota faturou, e a diferença volta ao saldo."""
+
+    def test_saldo_desconta_a_quantidade_faturada(self):
+        self.assertEqual(self.lote.quantidade_consumida, 40)
+        self.solicitacao.refresh_from_db()
+        resposta = self.client.post(reverse("coffee_break:etapa_nota", args=[self.solicitacao.pk]), {
+            "numero_nota_fiscal": "8957", "quantidade_faturada": "30", "numero_oficio": "124",
+            "data_oficio": "2026-09-21", "protocolo_pcpr_oficio": "", "versao": self._versao(self.solicitacao),
+        })
+        self.assertEqual(resposta.status_code, 302)
+        self.solicitacao.refresh_from_db()
+        self.assertEqual(self.solicitacao.quantidade_faturada, 30)
+        self.assertEqual(self.lote.quantidade_consumida, 30)
+        anotado = LoteCoffeeBreak.objects.com_consumo().get(pk=self.lote.pk)
+        self.assertEqual((anotado.consumido, anotado.restante), (30, 70))
+        self.assertTrue(
+            self.solicitacao.historico.filter(descricao__contains="30 de 40 pedidas; 10 voltaram ao saldo").exists()
+        )
+        # O saldo que voltou serve a um novo pedido.
+        services.validar_saldo(self.lote, 70)
+        with self.assertRaises(ValidationError):
+            services.validar_saldo(self.lote, 71)
+
+    def test_faturada_acima_do_saldo_e_recusada(self):
+        self.criar_solicitacao(numero="42/2026", quantidade=55)
+        self.solicitacao.refresh_from_db()
+        resposta = self.client.post(reverse("coffee_break:etapa_nota", args=[self.solicitacao.pk]), {
+            "numero_nota_fiscal": "8957", "quantidade_faturada": "50", "numero_oficio": "124",
+            "data_oficio": "2026-09-21", "protocolo_pcpr_oficio": "", "versao": self._versao(self.solicitacao),
+        })
+        self.assertEqual(resposta.status_code, 200)
+        self.solicitacao.refresh_from_db()
+        self.assertIsNone(self.solicitacao.quantidade_faturada)
+
+
 class DescricaoUmaLinhaTests(BaseCoffeeBreakTestCase):
     def test_descricao_vira_uma_linha(self):
         self.client.force_login(self.ascom)

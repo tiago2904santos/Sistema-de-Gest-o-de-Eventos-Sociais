@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 from django.core.exceptions import ValidationError
-from django.db.models import Sum
+from .models import soma_consumida
 
 from .models import (
     ContratoCoffeeBreak,
@@ -53,12 +53,7 @@ class LoteCoffeeBreakAdminForm(forms.ModelForm):
         """Impede reduzir a capacidade abaixo do que já foi consumido."""
         quantidade = self.cleaned_data["quantidade_total"]
         if self.instance.pk:
-            consumido = (
-                self.instance.solicitacoes.filter(cancelada=False).aggregate(
-                    total=Sum("quantidade")
-                )["total"]
-                or 0
-            )
+            consumido = soma_consumida(self.instance.solicitacoes.filter(cancelada=False))
             if quantidade < consumido:
                 raise ValidationError(
                     f"O lote já consumiu {consumido} unidades; a capacidade "
@@ -106,12 +101,14 @@ class SolicitacaoCoffeeBreakAdminForm(forms.ModelForm):
         dados = super().clean()
         lote = dados.get("lote")
         quantidade = dados.get("quantidade")
+        if dados.get("quantidade_faturada") is not None:
+            quantidade = dados.get("quantidade_faturada")
         cancelada = dados.get("cancelada")
         if lote and quantidade and not cancelada:
             consumo = lote.solicitacoes.filter(cancelada=False)
             if self.instance.pk:
                 consumo = consumo.exclude(pk=self.instance.pk)
-            consumido = consumo.aggregate(total=Sum("quantidade"))["total"] or 0
+            consumido = soma_consumida(consumo)
             restante = lote.quantidade_total - consumido
             if quantidade > restante:
                 self.add_error(
