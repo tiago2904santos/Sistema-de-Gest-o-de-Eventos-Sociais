@@ -2114,6 +2114,37 @@ class TimelineComORegistroMaisRecenteTests(BaseSolicitacaoTestCase):
         self.assertEqual(envio["quando"], "01/08/2026 10:00")
 
 
+class ConsultasDaListaTests(BaseSolicitacaoTestCase):
+    """O perfil do usuário é lido uma vez por requisição, não uma por linha."""
+
+    def test_lista_da_dg_nao_consulta_grupos_por_linha(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        for _ in range(15):
+            self.criar_solicitacao(unidade_movel=True, unidade_movel_designada=self.van)
+        self.client.force_login(self.gestor)
+        with CaptureQueriesContext(connection) as consultas:
+            resposta = self.client.get(reverse("solicitacoes:lista"))
+        self.assertEqual(resposta.status_code, 200)
+        de_grupo = [c for c in consultas.captured_queries if '"auth_group"' in c["sql"]]
+        self.assertLessEqual(len(de_grupo), 3)
+        de_unidade = [
+            c for c in consultas.captured_queries
+            if 'FROM "cadastros_unidademovel"' in c["sql"]
+        ]
+        self.assertEqual(de_unidade, [])
+
+    def test_cache_de_grupos_vale_para_o_objeto(self):
+        from . import permissions
+
+        usuario = User.objects.create_user("sem-grupo", password="x")
+        self.assertFalse(permissions.eh_gestor_dg(usuario))
+        with self.assertNumQueries(0):
+            permissions.eh_gestor_dg(usuario)
+            permissions.eh_administrador(usuario)
+
+
 class FiltrosVisiveisDaListaTests(BaseSolicitacaoTestCase):
     """Filtro que veio do Dashboard aparece, sai com um "x" e não se soma às filas."""
 

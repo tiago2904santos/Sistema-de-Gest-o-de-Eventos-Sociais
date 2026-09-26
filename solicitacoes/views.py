@@ -643,7 +643,9 @@ def _queryset_filtrado(request):
     base = permissions.queryset_visivel(
         request.user,
         SolicitacaoEvento.objects.select_related(
-            "municipio", "tipo_evento", "regiao", "criado_por"
+            "municipio", "tipo_evento", "regiao", "criado_por",
+            # A linha mostra qual unidade móvel vai ao evento.
+            "unidade_movel_designada",
         ),
     )
     _pedido, campos_ordem = _ordenacao(request)

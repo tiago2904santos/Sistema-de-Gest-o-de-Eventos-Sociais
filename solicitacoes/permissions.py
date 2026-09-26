@@ -33,8 +33,26 @@ STATUS_FINAIS = {
 }
 
 
+def _grupos(user):
+    """Nomes dos grupos do usuário, lidos uma vez e guardados nele.
+
+    A lista chama várias verificações de perfil por linha; uma consulta por
+    verificação somava dezenas por página. O `request.user` vive uma
+    requisição só, então o cache não atravessa mudanças de grupo.
+    """
+    grupos = getattr(user, "_grupos_cache", None)
+    if grupos is None:
+        grupos = (
+            frozenset(user.groups.values_list("name", flat=True))
+            if user.pk
+            else frozenset()
+        )
+        user._grupos_cache = grupos
+    return grupos
+
+
 def _pertence(user, *grupos):
-    return user.groups.filter(name__in=grupos).exists()
+    return not _grupos(user).isdisjoint(grupos)
 
 
 def eh_administrador(user):
