@@ -491,7 +491,7 @@ def _token_do_link() -> str:
     return secrets.token_urlsafe(32)
 
 
-class LinkDiarioCampo(models.Model):
+class LinkDiarioCampo(OrigemLegado):
     """Link pessoal para o motorista preencher o diário no celular (m096).
 
     Quem tem o link grava km e abastecimento **só deste diário** — sem login, por
@@ -512,6 +512,7 @@ class LinkDiarioCampo(models.Model):
         ordering = ['-criado_em', '-pk']
         verbose_name = 'Link do diário no celular'
         verbose_name_plural = 'Links do diário no celular'
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_linkdiariocampo_origem")]
 
     def __str__(self):
         return f'Link do diário {self.diario_id}'
@@ -521,7 +522,7 @@ class LinkDiarioCampo(models.Model):
         return self.revogado_em is None and self.expira_em > (agora or _tz.now())
 
 
-class LancamentoDiarioCampo(models.Model):
+class LancamentoDiarioCampo(OrigemLegado):
     """Um lançamento que chegou do celular, pelo id que o próprio celular gerou (m096).
 
     É o que torna a sincronização idempotente: a fila do navegador reenvia até
@@ -545,7 +546,7 @@ class LancamentoDiarioCampo(models.Model):
         ordering = ['recebido_em', 'pk']
         verbose_name = 'Lançamento do diário no celular'
         verbose_name_plural = 'Lançamentos do diário no celular'
-        constraints = [models.UniqueConstraint(fields=['diario', 'cliente_id'], name='lancamento_campo_unico_por_diario')]
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_lancamentodiariocampo_origem"), models.UniqueConstraint(fields=['diario', 'cliente_id'], name='lancamento_campo_unico_por_diario')]
 
     def __str__(self):
         return f'{self.cliente_id} ({self.situacao})'
