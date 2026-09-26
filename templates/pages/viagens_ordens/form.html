@@ -36,6 +36,7 @@
       </div>
       {% if pode_editar %}
         <div class="frm-topo__acoes">
+          {% if autosave_url %}<span class="autosave-estado" data-autosave-estado data-autosave-de="form-os" role="status" aria-live="polite"></span>{% endif %}
           <button type="submit" form="form-os" class="btn btn--dourado btn-primaria" data-os-enviar>{% if os_completa %}Finalizar Ordem de Serviço{% else %}Salvar como rascunho{% endif %}</button>
         </div>
       {% endif %}
@@ -45,7 +46,7 @@
       <div class="aviso aviso--callout" role="status"><div class="aviso__txt">{% include "components/icon.html" with nome="ban" %}<div class="aviso__corpo"><b>Ordem de Serviço cancelada</b><p>{{ ordem.motivo_cancelamento|default:"Sem motivo registrado." }}</p></div></div></div>
     {% endif %}
 
-    <form method="post" action="" id="form-os" class="editor-roteiro__principal" novalidate data-os-form>
+    <form method="post" action="" id="form-os" class="editor-roteiro__principal" novalidate data-os-form{% if autosave_url %} data-autosave-rascunho data-autosave-url="{{ autosave_url }}" data-autosave-model="ordem_servico" data-autosave-id="{{ ordem.pk }}"{% endif %}>
       {% csrf_token %}
       {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
       {% if ordem.viagem_id %}<input type="hidden" name="viagem" value="{{ ordem.viagem_id }}">{% endif %}
@@ -213,4 +214,5 @@
   <script src="{% estatico 'js/lista-escolha.js' %}" defer></script>
   <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-ordens.js' %}" defer></script>
+  <script src="{% estatico 'js/autosave-rascunho.js' %}" defer></script>
 {% endblock %}

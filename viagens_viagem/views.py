@@ -218,6 +218,10 @@ def etapa(request, pk, etapa):
     elif request.method == "POST":
         raise Http404
     selo, tom = selo_situacao(viagem)
+    # O que falta, etapa por etapa (m066): o quadro do painel e o "Concluída" do stepper.
+    from .prontidao import etapas_do_painel_prontas, quadro_de_prontidao
+
+    prontidao = None if viagem.cancelado else quadro_de_prontidao(viagem)
     contexto = {
         "viagem": viagem, "titulo": titulo_da_viagem(viagem), "selo": selo, "selo_tom": tom,
         "pode_editar": pode_editar_cadastros(request.user), "url_atual": daqui(request),
@@ -228,7 +232,8 @@ def etapa(request, pk, etapa):
         # A equipe, o motorista ou a viatura dos ofícios já estão em outro
         # compromisso no mesmo horário (core/conflitos.py): só aviso.
         "conflitos": [] if viagem.cancelado else conflitos_da_viagem(viagem),
-        **contexto_das_etapas(viagem, etapa),
+        "prontidao": prontidao,
+        **contexto_das_etapas(viagem, etapa, etapas_do_painel_prontas(prontidao) if prontidao else None),
     }
     if contexto["pode_editar"] and not viagem.cancelado:
         import json
@@ -237,9 +242,19 @@ def etapa(request, pk, etapa):
 
         # "Baixar documentos" do cabeçalho: o mesmo modal das listas, com tudo o que a viagem reúne.
         contexto["url_baixar"] = reverse("viagens_viagem:baixar", args=[viagem.pk])
+        contexto["url_baixar_tudo"] = reverse("viagens_viagem:baixar_tudo", args=[viagem.pk])
+    if contexto["pode_editar"] and not viagem.cancelado:
+        contexto["url_gerar_documentos"] = reverse("viagens_viagem:gerar_documentos", args=[viagem.pk])
         contexto["itens_baixar"] = json.dumps(itens_para_baixar(viagem), ensure_ascii=False)
     if etapa == 1:
         contexto.update(_contexto_da_etapa_1(request, viagem, form))
+        if not viagem.cancelado:
+            from .coerencia import verificar_coerencia
+
+            # O que não bate entre a viagem e os documentos dela (m071).
+            contexto["coerencia"] = verificar_coerencia(viagem)
+            contexto["coerencia_aplicaveis"] = any(d["aplicavel"] for d in contexto["coerencia"])
+            contexto["url_coerencia"] = reverse("viagens_viagem:coerencia", args=[viagem.pk])
     else:
         contexto.update({2: _contexto_da_etapa_2, 3: _contexto_da_etapa_3, 4: _contexto_da_etapa_4, 5: _contexto_da_etapa_5}[etapa](request, viagem))
     return render(request, "pages/viagens_viagem/painel.html", contexto)
@@ -318,6 +333,177 @@ def baixar(request, pk):
     return resposta
 
 
+def _ler_equipes(post, quantidade):
+    """As equipes do formulário "Gerar documentos": uma por ofício, na ordem da tela."""
+    from viagens_cadastros.models import Servidor, Viatura
+
+    from .pacote import EquipeDoOficio
+
+    equipes = []
+    for i in range(quantidade):
+        pks = [v for v in post.getlist(f"oficio-{i}-servidores") if v.isdigit()]
+        por_pk = {s.pk: s for s in Servidor.objects.filter(pk__in=pks)}
+        servidores = [por_pk[int(v)] for v in dict.fromkeys(pks) if int(v) in por_pk]
+        motorista_pk = post.get(f"oficio-{i}-motorista", "")
+        viatura_pk = post.get(f"oficio-{i}-viatura", "")
+        motorista = Servidor.objects.filter(pk=motorista_pk).first() if motorista_pk.isdigit() else None
+        viatura = Viatura.objects.filter(pk=viatura_pk).first() if viatura_pk.isdigit() else None
+        equipes.append(EquipeDoOficio(servidores=servidores, motorista=motorista, viatura=viatura))
+    return equipes
+
+
+def _contexto_gerar_documentos(viagem, equipes, opcoes, erros):
+    from viagens_cadastros.models import Servidor, Viatura
+    from viagens_oficios.presenters import iniciais
+
+    from .meta_equipe import contador_de_servidores
+    from .pacote import servidores_ja_em_oficios
+
+    servidores = list(Servidor.objects.select_related("cargo", "unidade").order_by("nome"))
+    viaturas = list(Viatura.objects.order_by("placa"))
+    ja_em_oficios = servidores_ja_em_oficios(viagem)
+
+    def detalhes(s):
+        partes = [str(s.cargo) if s.cargo_id else "", (s.unidade.sigla or s.unidade.nome) if s.unidade_id else ""]
+        if s.pk in ja_em_oficios:
+            partes.append(f"já no ofício {ja_em_oficios[s.pk].numero_formatado}")
+        return " · ".join(p for p in partes if p)
+
+    blocos = []
+    for i, equipe in enumerate(equipes):
+        escolhidos = {s.pk for s in equipe.servidores}
+        blocos.append({
+            "i": i, "numero": i + 1,
+            "nome_servidores": f"oficio-{i}-servidores", "nome_motorista": f"oficio-{i}-motorista", "nome_viatura": f"oficio-{i}-viatura",
+            "servidores": [{"valor": str(s.pk), "rotulo": s.nome, "detalhes": detalhes(s), "selecionado": s.pk in escolhidos,
+                            "dados": {"iniciais": iniciais(s.nome)}} for s in servidores],
+            "motoristas": [{"valor": str(s.pk), "rotulo": s.nome} for s in servidores],
+            "viaturas": [{"valor": str(v.pk), "rotulo": " — ".join(p for p in [v.placa_formatada, v.modelo] if p)} for v in viaturas],
+            "motorista": str(equipe.motorista.pk) if equipe.motorista else "",
+            "viatura": str(equipe.viatura.pk) if equipe.viatura else "",
+        })
+    contador = contador_de_servidores(viagem)
+    return {
+        "viagem": viagem, "titulo": titulo_da_viagem(viagem), "blocos": blocos, "quantidade": len(blocos),
+        "opcoes": opcoes, "erros": erros, "contador": contador,
+        # Para o contador ao vivo: quantos já estão em ofícios e a meta da DG.
+        "meta_previstos": contador["previstos"] if contador else 0,
+        "ja_em_oficios": sorted(ja_em_oficios),
+        "oficios_existentes": list(viagem.oficios.filter(cancelado=False).prefetch_related("servidores").order_by("pk")),
+        "tem_roteiro": viagem.roteiros.filter(cancelado=False).exists(),
+        "ordem_existente": viagem.ordens_servico.filter(cancelado=False).first(),
+        "plano_existente": viagem.planos_trabalho.filter(cancelado=False).first(),
+        "url_painel": reverse("viagens_viagem:etapa", args=[viagem.pk, 3]),
+        "url_roteiro": reverse("viagens_viagem:etapa", args=[viagem.pk, 2]),
+    }
+
+
+@acesso_ao_modulo
+@require_http_methods(["GET", "POST"])
+def gerar_documentos(request, pk):
+    """"Gerar documentos" (m064): monta os ofícios, cada um com a sua equipe, e cria tudo em rascunho."""
+    from viagens_cadastros.models import ConfiguracaoSistema
+
+    from .pacote import EquipeDoOficio, PacoteInvalido, gerar_pacote
+    from .services import semente_de_documentos
+
+    exigir_operador(request)
+    viagem = get_viagem_by_id(pk)
+    if viagem.cancelado:
+        messages.error(request, "Reative a viagem antes de gerar documentos.")
+        return redirect("viagens_viagem:etapa", pk=pk, etapa=1)
+    erros = []
+    if request.method == "GET":
+        # Um ofício para começar; o motorista designado na solicitação já vem nele.
+        semente = semente_de_documentos(viagem)
+        motorista = semente["motorista"] if not viagem.oficios.filter(cancelado=False).exists() else None
+        equipes = [EquipeDoOficio(servidores=[motorista] if motorista else [], motorista=motorista)]
+        opcoes = {"termos": True, "ordem": True, "plano": True}
+    else:
+        try:
+            quantidade = max(1, min(int(request.POST.get("quantidade_oficios", 1)), 20))
+        except (TypeError, ValueError):
+            quantidade = 1
+        equipes = _ler_equipes(request.POST, quantidade)
+        opcoes = {chave: bool(request.POST.get(f"gerar_{chave}")) for chave in ("termos", "ordem", "plano")}
+        acao = request.POST.get("acao", "")
+        if acao == "adicionar":
+            equipes.append(EquipeDoOficio(servidores=[]))
+        elif acao.startswith("remover-") and acao[8:].isdigit() and len(equipes) > 1:
+            equipes.pop(min(int(acao[8:]), len(equipes) - 1))
+        elif acao == "gerar":
+            try:
+                resultado = gerar_pacote(
+                    viagem, equipes, gerar_ordem=opcoes["ordem"], gerar_plano=opcoes["plano"], gerar_termos=opcoes["termos"],
+                    unidade_emissora=ConfiguracaoSistema.para_usuario(request.user).unidade_id,
+                )
+            except PacoteInvalido as exc:
+                erros = exc.erros
+            else:
+                partes = [f"{len(resultado.oficios)} ofício{'s' if len(resultado.oficios) != 1 else ''} ("
+                          + ", ".join(o.numero_formatado for o in resultado.oficios) + ")"]
+                if resultado.ordem is not None:
+                    partes.append(resultado.ordem.numero_formatado)
+                if resultado.plano is not None:
+                    partes.append(f"Plano de Trabalho {resultado.plano.numero_formatado}")
+                messages.success(request, "Documentos gerados em rascunho: " + ", ".join(partes)
+                                 + ". Revise e finalize cada um no seu módulo.")
+                for aviso in resultado.avisos:
+                    messages.warning(request, aviso)
+                return redirect("viagens_viagem:etapa", pk=pk, etapa=3)
+    return render(request, "pages/viagens_viagem/gerar_documentos.html",
+                  _contexto_gerar_documentos(viagem, equipes, opcoes, erros))
+
+
+@acesso_ao_modulo
+@require_POST
+def coerencia(request, pk):
+    """"Aplicar em todos" do cartão de coerência (m071): leva a viagem aos documentos não assinados."""
+    from .coerencia import aplicar_coerencia
+
+    exigir_operador(request)
+    viagem = get_viagem_by_id(pk)
+    retorno = voltar_para(request, reverse("viagens_viagem:etapa", args=[pk, 1]))
+    if viagem.cancelado:
+        messages.error(request, "Reative a viagem antes de corrigir os documentos.")
+        return redirect(retorno)
+    chaves = request.POST.getlist("chave") or None
+    aplicadas, puladas = aplicar_coerencia(viagem, chaves)
+    if aplicadas:
+        documentos = sorted({d["documento"] for d in aplicadas})
+        messages.success(request, f"Documentos atualizados com os dados da viagem: {', '.join(documentos)}.")
+    for d in puladas:
+        messages.warning(request, f"{d['documento']} já tem versão assinada e não foi alterado ({d['campo'].lower()}). "
+                                  "Corrija e assine de novo, se for o caso.")
+    if not aplicadas and not puladas:
+        messages.info(request, "Nada a corrigir: os documentos já batem com a viagem.")
+    return redirect(retorno)
+
+
+@acesso_ao_modulo
+@require_POST
+def baixar_tudo(request, pk):
+    """"Baixar tudo" (m065): um ZIP com cada documento da viagem em arquivo separado."""
+    from django.http import HttpResponse
+
+    from .downloads import pacote_do_processo
+
+    exigir_operador(request)
+    viagem = get_viagem_by_id(pk)
+    retorno = voltar_para(request, reverse("viagens_viagem:etapa", args=[pk, 1]))
+    if viagem.cancelado:
+        messages.error(request, "Reative a viagem antes de baixar documentos.")
+        return redirect(retorno)
+    conteudo, quantos = pacote_do_processo(viagem, usar_assinado=request.POST.get("versao", "assinado") != "original")
+    if not quantos:
+        messages.error(request, "Nenhum documento pronto para baixar ainda.")
+        return redirect(retorno)
+    resposta = HttpResponse(conteudo, content_type="application/zip")
+    resposta["Content-Disposition"] = f'attachment; filename="viagem-{viagem.pk}-processo.zip"'
+    resposta["Cache-Control"] = "no-store"
+    return resposta
+
+
 @acesso_ao_modulo
 @require_POST
 def repetir(request, pk):
@@ -391,7 +577,10 @@ def acao(request, pk, acao):
 @acesso_ao_modulo
 @require_POST
 def solicitacao_anexar(request, pk):
+    from django.core.exceptions import ValidationError
     from PIL import UnidentifiedImageError
+
+    from core.uploads import validate_private_document_upload
 
     exigir_operador(request)
     viagem = get_viagem_by_id(pk)
@@ -400,13 +589,25 @@ def solicitacao_anexar(request, pk):
     if not arquivos:
         messages.error(request, "Nenhum arquivo selecionado.")
         return redirect(retorno)
-    try:
-        convertidos = [converter_para_pdf_se_necessario(arquivo) for arquivo in arquivos]
-    except (UnidentifiedImageError, OSError, ValueError):
-        messages.error(request, "Formato inválido. Envie um PDF ou arquivo de imagem.")
-        return redirect(retorno)
-    anexar_documentos_solicitacao(viagem, convertidos)
-    messages.success(request, "Documentos de solicitação anexados com sucesso.")
+    # A política central de anexos (m070): PDF de verdade ou imagem legível,
+    # dentro do limite. O nome terminar em ".pdf" não basta. Cada recusado
+    # ganha a sua mensagem; os bons entram mesmo assim.
+    convertidos, recusados = [], []
+    for arquivo in arquivos:
+        nome = arquivo.name
+        try:
+            validate_private_document_upload(arquivo)
+            convertidos.append(converter_para_pdf_se_necessario(arquivo))
+        except ValidationError as exc:
+            recusados.append(f"{nome}: {' '.join(exc.messages)}")
+        except (UnidentifiedImageError, OSError, ValueError):
+            recusados.append(f"{nome}: formato inválido. Envie um PDF ou arquivo de imagem.")
+    for texto in recusados:
+        messages.error(request, f"Arquivo recusado — {texto}")
+    if convertidos:
+        anexar_documentos_solicitacao(viagem, convertidos)
+        messages.success(request, "Documentos de solicitação anexados com sucesso." if not recusados
+                         else f"{len(convertidos)} documento(s) anexado(s); os demais foram recusados.")
     return redirect(retorno)
 
 

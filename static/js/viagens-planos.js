@@ -1,6 +1,6 @@
 /**
  * Página do plano de trabalho — os comportamentos do wizard do Gerenciador de
- * Viagens, sem autosave: "Outro programa" revela o campo, o nome do
+ * Viagens (o rascunho se salva sozinho pelo `autosave-rascunho.js`, m050): "Outro programa" revela o campo, o nome do
  * coordenador puxa o cargo do servidor, as linhas de efetivo (+/−), o cálculo
  * ao vivo das diárias, o filtro/preset/limpar das atividades com a prévia de
  * metas e recursos, os destinos do termo e a prévia do documento.
@@ -151,7 +151,7 @@
     });
     if (window.DS && window.DS.arrastarDestinos) window.DS.arrastarDestinos(lista, atualizarEstado);
     // A nomeação final sai no envio: a primeira linha é o destino do plano, as outras `extra_*_i`.
-    form.addEventListener("submit", function () {
+    function nomearDestinos() {
       var atuais = linhas();
       atuais.forEach(function (linha, posicao) {
         var campos = selectsDe(linha);
@@ -159,7 +159,10 @@
         if (campos.cidade) campos.cidade.name = posicao === 0 ? "destino_cidade" : "extra_cidade_" + (posicao - 1);
       });
       quantidade.value = String(Math.max(0, atuais.length - 1));
-    });
+    }
+    form.addEventListener("submit", nomearDestinos);
+    // O rascunho automático (autosave-rascunho.js) também precisa dos nomes finais.
+    form.addEventListener("autosave:preparar", nomearDestinos);
     atualizarEstado();
   })();
 

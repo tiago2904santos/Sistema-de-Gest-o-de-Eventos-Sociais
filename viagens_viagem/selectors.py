@@ -24,6 +24,9 @@ def base_viagens():
             "ordens_servico__destinos__estado", "documentos_solicitacao",
             # O contador de servidores da lista (m063).
             "equipes_previstas__equipe", "oficios__servidores__unidade",
+            # O selo de coerência da lista (m071).
+            "oficios__viatura", "ordens_servico__servidores", "planos_trabalho__destinos",
+            "termos_autorizacao__servidores", "termos_autorizacao__oficio__viatura", "termos_autorizacao__viatura",
         )
     )
 

@@ -145,21 +145,25 @@ def _sugerir_deslocamento(plano):
             setattr(plano, campo, valor)
 
 
-def _formularios(request, plano):
-    dados = request.POST if request.method == "POST" else None
+def _formularios(request, plano, dados=None):
+    if dados is None:
+        dados = request.POST if request.method == "POST" else None
     form = PlanoIdentificacaoForm(dados, instance=plano)
     diarias_form = PlanoDiariasForm(dados, instance=plano)
     formset = EfetivoPlanoFormSet(dados, instance=plano, prefix="efetivo")
     return form, diarias_form, formset
 
 
-def _gravar(request, plano):
-    """Os quatro cartões numa transação. Devolve (ok, form, diarias_form, formset)."""
-    form, diarias_form, formset = _formularios(request, plano)
+def _gravar(request, plano, dados=None):
+    """Os quatro cartões numa transação. Devolve (ok, form, diarias_form, formset).
+
+    `dados`: outro QueryDict no lugar do `request.POST` (o autosave).
+    """
+    form, diarias_form, formset = _formularios(request, plano, dados)
     if not (form.is_valid() and diarias_form.is_valid() and formset.is_valid()):
         return False, form, diarias_form, formset
     catalogo = atividades_catalogo()
-    codigos = request.POST.getlist("atividades_codigos")
+    codigos = (dados if dados is not None else request.POST).getlist("atividades_codigos")
     with transaction.atomic():
         plano = salvar_identificacao(form)
         salvar_efetivo_e_diarias(plano, rows=linhas_do_formset(formset), diarias_form=diarias_form)
@@ -330,6 +334,9 @@ def _contexto_form(request, plano, form, diarias_form, formset):
         "url_voltar": voltar_para(request, _url_lista(plano)),
         "url_atual": daqui(request),
         "pode_editar": pode_editar_cadastros(request.user),
+        # Rascunho que se salva sozinho (m050): só enquanto é rascunho.
+        "autosave_url": (reverse("viagens_planos:autosalvar", args=[plano.pk])
+                         if plano.status == plano.STATUS_RASCUNHO and not plano.cancelado and pode_editar_cadastros(request.user) else ""),
         **_contexto_identificacao(form, plano, request),
         **_contexto_efetivo(formset, plano),
         **_contexto_atividades(plano, request),
@@ -367,6 +374,35 @@ def editar(request, pk):
     _sugerir_deslocamento(plano)
     form, diarias_form, formset = _formularios(request, plano)
     return _render_form(request, plano, form, diarias_form, formset)
+
+
+@acesso_ao_modulo
+@require_POST
+def autosalvar(request, pk):
+    """Grava o rascunho do plano alguns segundos depois de cada alteração (m050).
+
+    A mesma gravação do "Salvar" (os quatro cartões), sem finalizar e sem
+    mexer no número — em branco, fica o reservado. Plano já finalizado só
+    grava pelo botão.
+    """
+    from core.autosave import AutosavePayloadError, autosave_json_response, dados_do_formulario, parse_autosave_payload
+
+    exigir_operador(request)
+    plano = get_plano_by_id(pk)
+    if plano.cancelado or plano.status != plano.STATUS_RASCUNHO:
+        return autosave_json_response(ok=False, message="Plano fora de rascunho: salve pelo botão.")
+    try:
+        payload = parse_autosave_payload(request, expected_model="plano_trabalho")
+    except AutosavePayloadError as exc:
+        return autosave_json_response(ok=False, message=str(exc))
+    ok, form, diarias_form, formset = _gravar(request, plano, dados_do_formulario(payload, fixos={"numero": ""}))
+    if not ok:
+        erros = {**form.errors.get_json_data(), **diarias_form.errors.get_json_data()}
+        mensagens = {k: [e["message"] for e in v] for k, v in erros.items()}
+        if formset.total_error_count():
+            mensagens["efetivo"] = ["Revise as linhas do efetivo."]
+        return autosave_json_response(ok=False, message="Rascunho não salvo: revise os campos indicados.", errors=mensagens)
+    return autosave_json_response(ok=True, object_id=plano.pk)
 
 
 @acesso_ao_modulo

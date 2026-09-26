@@ -322,17 +322,29 @@ def _dados_completos(viagem):
     return bool(viagem.titulo and viagem.data_inicio and (viagem.destino_municipio_id or viagem.destino_estado_id))
 
 
-def contexto_das_etapas(viagem, etapa_atual=1):
-    """As cinco etapas do painel, todas navegáveis: a viagem é um hub, não um wizard."""
+def contexto_das_etapas(viagem, etapa_atual=1, prontas=None):
+    """As cinco etapas do painel, todas navegáveis: a viagem é um hub, não um wizard.
+
+    `prontas` ({número: bool}, de `prontidao.etapas_do_painel_prontas`) é o
+    critério de "Concluída" (m066): a etapa sem nada faltando, e não só com
+    algum documento. Sem ele, vale a regra antiga (existe documento).
+    """
     from django.urls import reverse
 
     etapa_atual = normalizar_etapa(etapa_atual)
+    if prontas is None:
+        prontas = {
+            2: viagem.roteiros.exists(),
+            3: viagem.oficios.exists(),
+            4: viagem.planos_trabalho.exists() or viagem.ordens_servico.exists(),
+            5: viagem.termos_autorizacao.exists(),
+        }
     definicao = [
         (1, "Dados da viagem", _dados_completos(viagem)),
-        (2, "Roteiros", viagem.roteiros.exists()),
-        (3, "Ofícios / Justificativas", viagem.oficios.exists()),
-        (4, "PT / OS", viagem.planos_trabalho.exists() or viagem.ordens_servico.exists()),
-        (5, "Termos", viagem.termos_autorizacao.exists()),
+        (2, "Roteiros", prontas.get(2, False)),
+        (3, "Ofícios / Justificativas", prontas.get(3, False)),
+        (4, "PT / OS", prontas.get(4, False)),
+        (5, "Termos", prontas.get(5, False)),
     ]
     etapas = []
     for numero, titulo, concluida in definicao:

@@ -1,0 +1,32 @@
+{% comment %}
+  O que falta para a viagem ficar pronta (m066): um quadro só, na ordem do
+  processo — dados, roteiro, ofícios, equipe x meta, OS, plano, termos,
+  assinaturas e protocolo —, cada etapa com o semáforo (feito/falta) e cada
+  pendência com o link de onde se resolve. Aberto na etapa 1; nas outras,
+  fechado, só com o resumo. Contexto: `prontidao`
+  (viagens_viagem.prontidao.quadro_de_prontidao) e `etapa_atual`.
+{% endcomment %}
+<details class="section-card vg-prontidao" data-prontidao{% if etapa_atual == 1 %} open{% endif %}>
+  <summary class="vg-prontidao__resumo">
+    {% if prontidao.pronta %}
+      <span class="st st--atendido">{% include "components/icon.html" with nome="check-circle" %}Pronta</span> Nada falta: roteiro, documentos, assinaturas e protocolo em dia.
+    {% else %}
+      <span class="st st--pendente">{% include "components/icon.html" with nome="checklist" %}{{ prontidao.resolvidas }} de {{ prontidao.quantidade }}</span> O que falta para a viagem ficar pronta: {{ prontidao.total }} {{ prontidao.total|pluralize:"item,itens" }}.
+    {% endif %}
+  </summary>
+  <ol class="vg-prontidao__etapas">
+    {% for e in prontidao.etapas %}
+      <li class="vg-prontidao__etapa{% if e.ok %} is-ok{% else %} is-falta{% endif %}" data-prontidao-etapa="{{ e.chave }}">
+        <span class="vg-prontidao__sinal" aria-hidden="true">{% if e.ok %}{% include "components/icon.html" with nome="check" %}{% else %}{% include "components/icon.html" with nome="alert" %}{% endif %}</span>
+        <div class="vg-prontidao__corpo">
+          <b>{{ e.titulo }}</b><span class="sr-only"> — {% if e.ok %}feito{% else %}falta{% endif %}</span>
+          {% if e.itens %}
+            <ul class="vg-prontidao__itens">
+              {% for i in e.itens %}<li>{% if i.url %}<a href="{{ i.url }}">{{ i.texto }}</a>{% else %}{{ i.texto }}{% endif %}</li>{% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      </li>
+    {% endfor %}
+  </ol>
+</details>

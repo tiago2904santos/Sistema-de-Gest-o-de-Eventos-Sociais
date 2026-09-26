@@ -3080,3 +3080,8 @@ tr[data-importar-url].is-alvo>td:first-child{box-shadow:inset 2px 0 0 var(--sel-
 .conflitos-agenda[hidden]{display:none}
 .conflitos-agenda__lista{margin:4px 0 0;padding-left:18px;display:grid;gap:2px;font-size:13px}
 .conflitos-agenda__lista a{color:inherit;font-weight:600}
+
+/* Indicador do rascunho que se salva sozinho (ofício, OS e plano — m050). */
+.autosave-estado{font-size:.8125rem;color:var(--n-500);max-width:28ch;line-height:1.2}
+.autosave-estado--erro{color:var(--dg-t)}
+.autosave-estado--ok{color:var(--ok-t)}

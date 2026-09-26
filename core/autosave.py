@@ -77,6 +77,26 @@ def filter_allowed_fields(payload_fields, dirty_fields, allowed_fields):
     return safe
 
 
+def dados_do_formulario(payload, *, fixos=None):
+    """O retrato do formulário inteiro (`fields`, com listas nos campos
+    múltiplos) como QueryDict, para ligar o mesmo Form do envio normal.
+
+    É o modo dos rascunhos de ofício, OS e plano: em vez de gravar campo a
+    campo, o autosave passa o formulário todo pelo mesmo Form (mesma
+    validação) — só não finaliza nem chama integrações. `fixos` sobrepõe
+    campos que o autosave nunca grava (o número do documento, por exemplo).
+    """
+    from django.http import QueryDict
+
+    dados = QueryDict(mutable=True)
+    for nome, valor in (payload.fields or {}).items():
+        valores = valor if isinstance(valor, list) else [valor]
+        dados.setlist(str(nome), ["" if v is None else str(v) for v in valores])
+    for nome, valor in (fixos or {}).items():
+        dados[nome] = valor
+    return dados
+
+
 def autosave_json_response(*, ok, object_id=None, created=False, message="", errors=None, version=0, extra=None):
     """Resposta padrão do autosave. `extra` acrescenta chaves próprias da tela
     (ex.: a conferência do hodômetro do diário de bordo) sem mudar as de sempre."""
