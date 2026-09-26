@@ -55,6 +55,26 @@
           {% include "components/select.html" with name="municipio" label="Município do evento" opcoes=municipios obrigatorio=form.fields.municipio.required pesquisavel=True selecionado=valores.municipio erros=erros.municipio desabilitado=dados_base_bloqueados placeholder="Buscar município..." %}
         </div>
         {% if valores.periodo_evento_texto %}<p class="form-ajuda">Na planilha: {{ valores.periodo_evento_texto }}</p>{% endif %}
+        {% if mostrar_retroativo and not dados_base_bloqueados %}
+          {# Evento anterior à data da solicitação: só como registro retroativo, com justificativa. #}
+          <div class="cb-evento-linha">
+            <div class="form-campo">
+              <label class="interruptor">
+                <input class="sr-only" type="checkbox" id="id_registro_retroativo" name="registro_retroativo" value="1"{% if valores.registro_retroativo == "True" %} checked{% endif %}>
+                <span class="interruptor__trilho" aria-hidden="true"><span class="interruptor__botao"></span></span>
+                <span class="interruptor__rotulo">Registro retroativo</span>
+              </label>
+              {% for erro in erros.registro_retroativo %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+            </div>
+            {% include "components/input.html" with name="justificativa_retroativo" label="Justificativa do registro retroativo" maxlength="255" placeholder="Ex.: pedido feito por telefone e registrado depois do evento" valor=valores.justificativa_retroativo erros=erros.justificativa_retroativo %}
+          </div>
+        {% endif %}
+        {% if aviso_antecedencia %}
+          <div class="aviso aviso--info" role="status">
+            {% include "components/icon.html" with nome="alert" %}
+            <div>{{ aviso_antecedencia }}</div>
+          </div>
+        {% endif %}
 
         {# 2ª linha: o lote que o município recebe, com o que importa dele (preenchida por coffee-break-lote.js). #}
         <div class="cb-lote-linha" data-cb-lote{% if not solicitacao %} hidden{% endif %}>

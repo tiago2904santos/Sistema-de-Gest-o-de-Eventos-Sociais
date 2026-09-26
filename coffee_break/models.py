@@ -124,6 +124,10 @@ class ContratoCoffeeBreak(models.Model):
         help_text="Citada no ofício que encaminha a nota para pagamento.",
     )
     objeto = models.CharField("objeto", max_length=255, blank=True)
+    antecedencia_minima_dias = models.PositiveSmallIntegerField(
+        "antecedência mínima do pedido (dias)", default=2,
+        help_text="Pedido com menos dias até o evento aparece com aviso para ligar ao fornecedor.",
+    )
     # Lidos do PDF ao anexar o contrato ou o termo aditivo (coffee_break/contratos_pdf.py).
     vigencia_inicio = models.DateField("vigência — início", null=True, blank=True)
     vigencia_fim = models.DateField(
@@ -244,12 +248,23 @@ class ConfiguracaoCoffeeBreak(models.Model):
         return cls.objects.get_or_create(pk=1)[0]
 
 
+def quantidade_efetiva(prefixo=""):
+    """O que a OS desconta do lote: a quantidade faturada (a da nota), quando
+    registrada; senão a pedida."""
+    return Coalesce(f"{prefixo}quantidade_faturada", f"{prefixo}quantidade")
+
+
+def soma_consumida(consulta):
+    """Soma o consumo (quantidade efetiva) de um queryset de solicitações."""
+    return consulta.aggregate(total=models.Sum(quantidade_efetiva()))["total"] or 0
+
+
 class LoteQuerySet(models.QuerySet):
     def com_consumo(self):
         """Anota consumido e restante calculados das solicitações ativas."""
         consumido = Coalesce(
             models.Sum(
-                "solicitacoes__quantidade",
+                quantidade_efetiva("solicitacoes__"),
                 filter=models.Q(solicitacoes__cancelada=False),
             ),
             0,
@@ -278,6 +293,10 @@ class LoteCoffeeBreak(models.Model):
         "quantidade total contratada", validators=[MinValueValidator(1)]
     )
     empenho = models.CharField("empenho", max_length=30, blank=True)
+    valor_empenho = models.DecimalField(
+        "valor do empenho", max_digits=14, decimal_places=2, null=True, blank=True,
+        help_text="Quanto foi empenhado para o lote: o painel mostra o comprometido e o pago contra ele.",
+    )
     municipios = models.ManyToManyField(
         "cadastros.Municipio",
         verbose_name="municípios abrangidos",
@@ -320,12 +339,7 @@ class LoteCoffeeBreak(models.Model):
 
     @property
     def quantidade_consumida(self):
-        return (
-            self.solicitacoes.filter(cancelada=False).aggregate(
-                total=models.Sum("quantidade")
-            )["total"]
-            or 0
-        )
+        return soma_consumida(self.solicitacoes.filter(cancelada=False))
 
     @property
     def saldo_restante(self):
@@ -382,6 +396,14 @@ class SolicitacaoCoffeeBreak(models.Model):
     )
     descricao_evento = models.TextField("descrição do evento")
     quantidade = models.PositiveIntegerField("quantidade solicitada")
+    valor_unitario = models.DecimalField(
+        "valor unitário", max_digits=12, decimal_places=4, null=True, blank=True,
+        help_text="Cópia do preço do contrato na data do pedido: reajuste depois não muda o valor da OS.",
+    )
+    quantidade_faturada = models.PositiveIntegerField(
+        "quantidade faturada", blank=True, null=True, validators=[MinValueValidator(1)],
+        help_text="A da nota fiscal. Em branco, o lote desconta a quantidade pedida.",
+    )
     municipio = models.ForeignKey(
         "cadastros.Municipio",
         verbose_name="município do evento",
@@ -410,6 +432,13 @@ class SolicitacaoCoffeeBreak(models.Model):
     arquivo_nota_fiscal = models.FileField(
         "nota fiscal (PDF)", upload_to="coffee_break/notas/%Y/", blank=True
     )
+    # Lidos do PDF da nota ao anexar (coffee_break/nota_fiscal.py), para a
+    # conferência com o fornecedor, o contrato e a data do evento.
+    valor_nota_fiscal = models.DecimalField(
+        "valor da nota fiscal", max_digits=12, decimal_places=2, blank=True, null=True
+    )
+    data_emissao_nf = models.DateField("emissão da nota fiscal", blank=True, null=True)
+    cnpj_emitente_nf = models.CharField("CNPJ do emitente da nota", max_length=14, blank=True)
     numero_oficio = models.CharField(
         "número do ofício", max_length=20, blank=True,
         help_text="O ofício que encaminha a nota ao GAF (ex.: 124/2026).",
@@ -447,6 +476,9 @@ class SolicitacaoCoffeeBreak(models.Model):
     motivo_cancelamento = models.CharField(
         "motivo do cancelamento", max_length=255, blank=True
     )
+    # Concluída reaberta por um administrador do módulo para corrigir um dado
+    # (com o motivo no histórico); volta a ser só consulta ao encerrar.
+    em_correcao = models.BooleanField("reaberta para correção", default=False)
 
     # Pagamento conjunto: várias OS do mesmo lote num ofício e num protocolo
     # (como o 26.613.666-8, com as notas 8952 e 8954). As outras apontam para
@@ -612,6 +644,28 @@ class SolicitacaoCoffeeBreak(models.Model):
         return f"Solicito coffee para:\n{quando} p/ {pessoas}" if quando else f"Solicito coffee para:\n{pessoas}"
 
     @property
+    def quantidade_efetiva(self):
+        """O que desconta do lote: a faturada, quando registrada; senão a pedida."""
+        return self.quantidade_faturada if self.quantidade_faturada is not None else self.quantidade
+
+    @property
+    def valor_unitario_efetivo(self):
+        """O preço guardado na OS; em registro antigo sem ele, o do contrato."""
+        if self.valor_unitario is not None:
+            return self.valor_unitario
+        return self.lote.contrato.valor_unitario if self.lote_id else None
+
+    @property
+    def valor(self):
+        """Valor da OS em reais: quantidade (a faturada, se houver) × preço unitário."""
+        unitario = self.valor_unitario_efetivo
+        if unitario is None or self.quantidade_efetiva is None:
+            return None
+        from decimal import ROUND_HALF_UP, Decimal
+
+        return (Decimal(self.quantidade_efetiva) * unitario).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    @property
     def financeiro_iniciado(self):
         return any(
             (
@@ -627,6 +681,11 @@ class SolicitacaoCoffeeBreak(models.Model):
     def concluida(self):
         return bool(self.data_envio_empresa) and not self.cancelada
 
+    @property
+    def bloqueada_para_edicao(self):
+        """Cancelada, ou concluída sem ter sido reaberta para correção."""
+        return self.cancelada or (self.concluida and not self.em_correcao)
+
     # -- Pagamento conjunto ---------------------------------------------------
 
     @property
@@ -639,7 +698,8 @@ class SolicitacaoCoffeeBreak(models.Model):
         principal = self.principal_do_pagamento
         if not principal.pk:
             return [self]
-        membros = [principal, *principal.pagamento_junto.select_related("lote__contrato__fornecedor")]
+        # OS cancelada não vai no ofício nem no anexo do pagamento.
+        membros = [principal, *principal.pagamento_junto.filter(cancelada=False).select_related("lote__contrato__fornecedor")]
         return sorted(membros, key=lambda s: (s.numero or "", s.pk))
 
     @property

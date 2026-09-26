@@ -52,6 +52,8 @@ from .models import (
 from core import preencher_por_email
 from core.listagens import trilha_de_situacoes
 
+from solicitacoes.permissions import eh_administrador
+
 from .permissions import acesso_ao_modulo, gerenciamento_de_cadastros
 from .presenters import filas_de_situacao, linha_da_lista, linha_do_cadastro, linha_do_lote, selo_do_consumo
 from . import certidoes, documentos, documents, preenchimento, services
@@ -277,6 +279,9 @@ def painel(request):
 
     url_lotes = reverse("coffee_break:lotes")
     url_solicitacoes = reverse("coffee_break:solicitacoes")
+    # Controle em reais: quantidade × preço unitário guardado na OS.
+    hoje = timezone.localdate()
+    gasto = services.gasto_no_ano(hoje.year)
     resumo = [
         {
             "titulo": "Capacidade contratada",
@@ -307,6 +312,14 @@ def painel(request):
             "url": url_lotes,
         },
         {
+            "titulo": f"Gasto em {hoje.year}",
+            "valor": services.formatar_reais(gasto["total"]),
+            "icone": "chart",
+            "cor": "info",
+            "variacao": f"{services.formatar_reais(gasto['pago'])} com ordem bancária",
+            "url": url_solicitacoes,
+        },
+        {
             "titulo": "Pendências financeiras",
             "valor": pendencias,
             "icone": "hourglass",
@@ -322,6 +335,8 @@ def painel(request):
         .order_by("-criado_em")[:5]
     )
     alertas_certidoes = certidoes.fornecedores_com_alerta(_fornecedores_com_lote_ativo())
+    # Fim da vigência a 90, 60 e 30 dias: prazo para o aditivo de prorrogação.
+    alertas_vigencia = services.contratos_perto_do_fim()
 
     return render(
         request,
@@ -339,6 +354,7 @@ def painel(request):
             "url_lotes": url_lotes,
             "url_solicitacoes": url_solicitacoes,
             "alertas_certidoes": alertas_certidoes,
+            "alertas_vigencia": alertas_vigencia,
         },
     )
 
@@ -449,6 +465,11 @@ def detalhe_lote(request, pk):
             "solicitacoes": solicitacoes,
             # As solicitações do lote usam a mesma linha da listagem.
             "linhas": [linha_da_lista(s) for s in solicitacoes],
+            "valores": {
+                chave: services.formatar_reais(valor)
+                for chave, valor in services.valores_do_lote(lote).items()
+            },
+            "valor_empenho": services.formatar_reais(lote.valor_empenho),
             "consumo": selo_do_consumo(lote)[0],
             "consumo_tom": selo_do_consumo(lote)[1],
             "percentual": (
@@ -576,6 +597,11 @@ def lista_solicitacoes(request):
     )
 
 
+def _decimal_csv(valor):
+    """Número com vírgula decimal, como a planilha em português espera."""
+    return "" if valor is None else f"{valor:.2f}".replace(".", ",")
+
+
 @acesso_ao_modulo
 def exportar_solicitacoes(request):
     """Exporta o recorte atual para conciliação operacional e financeira."""
@@ -594,7 +620,8 @@ def exportar_solicitacoes(request):
     escritor.writerow(
         [
             "Nº", "Lote", "Fornecedor", "Data da solicitação", "Evento",
-            "Período", "Quantidade", "Nota fiscal", "Protocolo",
+            "Período", "Quantidade", "Quantidade faturada", "Valor unitário", "Valor",
+            "Nota fiscal", "Protocolo",
             "Atesto GAF", "Ordem bancária", "Envio à empresa", "Situação",
             "Criado por",
         ]
@@ -609,6 +636,9 @@ def exportar_solicitacoes(request):
                 solicitacao.descricao_evento,
                 solicitacao.periodo_evento_display,
                 solicitacao.quantidade,
+                "" if solicitacao.quantidade_faturada is None else solicitacao.quantidade_faturada,
+                _decimal_csv(solicitacao.valor_unitario_efetivo),
+                _decimal_csv(solicitacao.valor),
                 solicitacao.numero_nota_fiscal,
                 solicitacao.protocolo_pagamento,
                 solicitacao.data_atesto_gaf.strftime("%d/%m/%Y") if solicitacao.data_atesto_gaf else "",
@@ -641,9 +671,10 @@ def _opcoes_municipios(form):
             }
             if lote.empenho:
                 dados["empenho"] = f"Empenho {lote.empenho}"
-            if contrato.vigencia_fim:
-                vencido = contrato.vigencia_fim < timezone.localdate()
-                dados["vigencia"] = f"{'Vencido em' if vencido else 'Vigente até'} {contrato.vigencia_fim:%d/%m/%Y}"
+            fim = services.fim_da_vigencia(contrato)
+            if fim:
+                vencido = fim < timezone.localdate()
+                dados["vigencia"] = f"{'Vencido em' if vencido else 'Vigente até'} {fim:%d/%m/%Y}"
             if distancia:
                 dados["perto"] = f"{lote.sede_mais_proxima.nome}, a {distancia} km"
         opcoes.append({"valor": str(municipio.pk), "rotulo": municipio.nome, "dados": dados})
@@ -731,6 +762,8 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
             solicitacao and (solicitacao.financeiro_iniciado or somente_leitura)
         ),
         "stepper": _stepper(solicitacao, etapa),
+        # Reabrir a concluída para correção: só administrador do módulo.
+        "pode_reabrir": bool(solicitacao and solicitacao.concluida and eh_administrador(request.user)),
         "hoje": timezone.localdate(),
         # Cabeçalho da tela de edição: só o título e o selo da situação.
         "selo": solicitacao.situacao_financeira_display if solicitacao else "Nova",
@@ -738,6 +771,13 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
     }
     if "municipio" in form.fields:
         contexto["municipios"] = _opcoes_municipios(form)
+    if "registro_retroativo" in form.fields:
+        # O "registro retroativo" só aparece quando o evento vem antes da solicitação.
+        contexto["mostrar_retroativo"] = bool(
+            getattr(form, "evento_retroativo", False) or valores.get("registro_retroativo") in ("True", "on", "1")
+        )
+    if solicitacao is not None and etapa == "pedido":
+        contexto["aviso_antecedencia"] = services.aviso_de_antecedencia(solicitacao)
     if "numero" in form.fields:
         contexto["numero_ano"] = _ano_do_numero(form)
         # Número fora do "NN/AAAA" (texto antigo da planilha): campo de texto livre.
@@ -801,6 +841,12 @@ def _contexto_da_nota(contexto, form, solicitacao):
     if not valores.get("data_oficio") and not form.is_bound:
         valores["data_oficio"] = data.isoformat()
     contexto["usa_dialogo_assinado"] = True
+    # Conferência da nota anexada (fornecedor, valor, data e duplicidade).
+    contexto["avisos_nota"] = services.avisos_da_nota(solicitacao) if solicitacao.numero_nota_fiscal else []
+    contexto["ajuda_faturada"] = (
+        f"Pedido: {solicitacao.quantidade}. Em branco, o lote desconta o pedido; "
+        "com a nota, desconta o faturado e a diferença volta ao saldo."
+    )
     contexto["url_anexar_nota"] = reverse("coffee_break:anexar_nota", args=[solicitacao.pk])
     # Pagamento conjunto: as OS do mesmo pagamento e as que podem entrar
     # (mesmo lote, sem protocolo, não pagas), na lista de escolha do cabeçalho.
@@ -943,11 +989,13 @@ def nova_solicitacao(request):
                     descricao,
                 )
                 preencher_por_email.concluir_origem(request, origem)
+                _registrar_retroativo(form, solicitacao, request.user)
                 messages.success(
                     request,
                     f"Solicitação {solicitacao.numero} registrada no {solicitacao.lote.rotulo_curto}"
                     f" ({solicitacao.lote.contrato.fornecedor.razao_social}). A ordem de serviço já pode ser gerada.",
                 )
+                _avisar_antecedencia(request, solicitacao)
                 return redirect("coffee_break:solicitacoes")
         else:
             messages.error(request, "Corrija os campos destacados para continuar.")
@@ -969,6 +1017,56 @@ def nova_solicitacao(request):
     return render(request, "pages/coffee_break/form.html", contexto)
 
 
+def _registrar_retroativo(form, solicitacao, usuario):
+    """Evento anterior à solicitação, aceito como registro retroativo: a justificativa vai para o histórico."""
+    dados = getattr(form, "cleaned_data", {})
+    if getattr(form, "evento_retroativo", False) and dados.get("registro_retroativo"):
+        services.registrar_historico(
+            solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO,
+            f"Registro retroativo (evento anterior à data da solicitação): {dados.get('justificativa_retroativo', '').strip()}",
+        )
+
+
+def _registrar_correcao(form, anterior, solicitacao, usuario):
+    """Na solicitação reaberta, cada campo corrigido: o valor anterior e o novo."""
+    mudancas = []
+    for nome in form.changed_data:
+        if nome not in form._meta.fields:
+            continue
+        antes, depois = getattr(anterior, nome), getattr(solicitacao, nome)
+        if antes != depois:
+            mudancas.append(
+                f"{form.fields[nome].label}: {services._valor_legivel(antes)} → {services._valor_legivel(depois)}"
+            )
+    if mudancas:
+        services.registrar_historico(
+            solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO, "Correção — " + "; ".join(mudancas) + "."
+        )
+
+
+def _registrar_faturada(solicitacao, usuario):
+    """A quantidade da nota no histórico, com a diferença que voltou (ou saiu) do lote."""
+    faturada = solicitacao.quantidade_faturada
+    if faturada is None:
+        texto = f"Quantidade faturada removida: o lote volta a descontar as {solicitacao.quantidade} pedidas."
+    else:
+        diferenca = solicitacao.quantidade - faturada
+        texto = f"Quantidade faturada: {faturada} de {solicitacao.quantidade} pedidas"
+        if diferenca > 0:
+            texto += f"; {diferenca} voltaram ao saldo do lote."
+        elif diferenca < 0:
+            texto += f"; {-diferenca} a mais saíram do saldo do lote."
+        else:
+            texto += "."
+    services.registrar_historico(solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO, texto)
+
+
+def _avisar_antecedencia(request, solicitacao):
+    aviso = services.aviso_de_antecedencia(solicitacao)
+    if aviso:
+        messages.warning(request, aviso)
+
+
 def _tela_da_etapa(request, pk, etapa):
     """Uma etapa da solicitação: mostra e grava só os campos dela."""
     config = ETAPA_POR_CHAVE[etapa]
@@ -980,7 +1078,12 @@ def _tela_da_etapa(request, pk, etapa):
         pk=pk,
     )
     Formulario = config["form"]
-    somente_leitura = solicitacao.cancelada or solicitacao.concluida
+    somente_leitura = solicitacao.bloqueada_para_edicao
+    # Reaberta para correção: o histórico guarda o valor anterior e o novo.
+    anterior = (
+        SolicitacaoCoffeeBreak.objects.get(pk=solicitacao.pk)
+        if solicitacao.em_correcao and request.method == "POST" else None
+    )
     if somente_leitura:
         # Canceladas e concluídas continuam abrindo, mas sem gravar — só para
         # consulta, documentos, ações de situação e histórico.
@@ -1007,7 +1110,7 @@ def _tela_da_etapa(request, pk, etapa):
                 messages.error(request, "Corrija os campos destacados para continuar.")
             else:
                 # O que é do pagamento (ofício, protocolo, marcos) vale para as OS do mesmo pagamento.
-                services.espelhar(solicitacao, form.changed_data)
+                services.espelhar(solicitacao, form.changed_data, request.user)
                 if etapa == "nota":
                     services.sincronizar_protocolo(solicitacao, request.user)
                 if etapa == "nota" and "vinculadas_enviado" in request.POST and not somente_leitura:
@@ -1022,7 +1125,7 @@ def _tela_da_etapa(request, pk, etapa):
                 alterados = [
                     form.fields[nome].label
                     for nome in form.changed_data
-                    if nome in form.fields and nome != "versao"
+                    if nome in form.fields and nome not in ("versao", "registro_retroativo", "justificativa_retroativo")
                 ]
                 services.registrar_historico(
                     solicitacao,
@@ -1032,7 +1135,15 @@ def _tela_da_etapa(request, pk, etapa):
                     if alterados
                     else "Solicitação salva sem alteração de campos.",
                 )
+                if anterior is not None:
+                    _registrar_correcao(form, anterior, solicitacao, request.user)
+                if "quantidade_faturada" in form.changed_data:
+                    _registrar_faturada(solicitacao, request.user)
+                if etapa == "pedido":
+                    _registrar_retroativo(form, solicitacao, request.user)
                 messages.success(request, "Solicitação de coffee break atualizada.")
+                if etapa == "pedido" and {"data_inicio_evento", "municipio"}.intersection(form.changed_data):
+                    _avisar_antecedencia(request, solicitacao)
                 # Etapa 2 segue para a etapa 3; as etapas 1 e 3 voltam para a lista.
                 if etapa == "nota":
                     return redirect("coffee_break:etapa_protocolo", pk=solicitacao.pk)
@@ -1193,11 +1304,9 @@ def excluir_solicitacao(request, pk):
     numero = solicitacao.numero or f"#{solicitacao.pk}"
     with transaction.atomic():
         # Se era a principal de um pagamento conjunto, a próxima assume.
-        junto = list(solicitacao.pagamento_junto.all())
-        if junto:
-            nova = junto[0]
-            SolicitacaoCoffeeBreak.objects.filter(pk=nova.pk).update(pagamento_com=None)
-            SolicitacaoCoffeeBreak.objects.filter(pk__in=[o.pk for o in junto[1:]]).update(pagamento_com=nova)
+        services.sair_do_pagamento_conjunto(
+            solicitacao, request.user, f"A OS {numero} foi excluída e saiu do pagamento conjunto."
+        )
         solicitacao.delete()
     messages.success(request, f"Solicitação {numero} excluída — a quantidade voltou ao saldo do lote.")
     return redirect("coffee_break:solicitacoes")
@@ -1250,6 +1359,24 @@ def baixar_arquivos(request, pk):
         resposta = HttpResponse(saida.getvalue(), content_type="application/zip")
     resposta["Content-Disposition"] = f'attachment; filename="{nome}"'
     return resposta
+
+
+@gerenciamento_de_cadastros
+@require_POST
+def reabrir_solicitacao(request, pk):
+    """Reabre a concluída para correção (ou encerra a correção), só para administradores do módulo."""
+    solicitacao = get_object_or_404(SolicitacaoCoffeeBreak, pk=pk)
+    try:
+        if request.POST.get("acao") == "encerrar":
+            services.encerrar_correcao(solicitacao, request.user)
+            messages.success(request, "Correção encerrada: a solicitação voltou a ficar só para consulta.")
+        else:
+            services.reabrir_para_correcao(solicitacao, request.user, request.POST.get("motivo", ""))
+            messages.success(request, "Solicitação reaberta para correção. O que mudar fica no histórico.")
+    except ValidationError as erro:
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+    return redirect("coffee_break:editar", pk=solicitacao.pk)
 
 
 @acesso_ao_modulo
@@ -1645,7 +1772,7 @@ def vincular_pagamento(request, pk):
     """Marcar ou desmarcar uma OS na lista "Vincular outra OS" já vincula,
     sem salvar a etapa (JSON para a tela)."""
     solicitacao = get_object_or_404(SolicitacaoCoffeeBreak, pk=pk)
-    if solicitacao.cancelada or solicitacao.concluida:
+    if solicitacao.bloqueada_para_edicao:
         return JsonResponse({"ok": False, "mensagem": "Solicitações canceladas ou concluídas ficam bloqueadas."}, status=400)
     try:
         services.definir_pagamento_conjunto(solicitacao, request.POST.getlist("vinculadas"), request.user)
@@ -1668,14 +1795,20 @@ def anexar_nota(request, pk):
     destino = request.POST.get("next") or reverse("coffee_break:etapa_nota", args=[pk])
     if not url_has_allowed_host_and_scheme(destino, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
         destino = reverse("coffee_break:etapa_nota", args=[pk])
-    if solicitacao.cancelada or solicitacao.concluida:
+    if solicitacao.bloqueada_para_edicao:
         messages.warning(request, "Solicitações canceladas ou concluídas ficam bloqueadas para edição.")
         return redirect(destino)
     if request.POST.get("acao") == "remover":
         if solicitacao.arquivo_nota_fiscal:
             solicitacao.arquivo_nota_fiscal.delete(save=False)
             solicitacao.arquivo_nota_fiscal = None
-            solicitacao.save(update_fields=["arquivo_nota_fiscal", "atualizado_em"])
+            # O que foi lido da nota removida não se confere mais.
+            solicitacao.valor_nota_fiscal = None
+            solicitacao.data_emissao_nf = None
+            solicitacao.cnpj_emitente_nf = ""
+            solicitacao.save(update_fields=[
+                "arquivo_nota_fiscal", "valor_nota_fiscal", "data_emissao_nf", "cnpj_emitente_nf", "atualizado_em",
+            ])
             services.registrar_historico(
                 solicitacao, request.user, AcaoHistoricoCoffeeBreak.ATUALIZACAO, "Nota fiscal (PDF) removida."
             )
@@ -1691,15 +1824,21 @@ def anexar_nota(request, pk):
         for mensagem in erro.messages:
             messages.error(request, mensagem)
         return redirect(destino)
-    from .nota_fiscal import numero_da_nota
+    from .nota_fiscal import dados_da_nota, numero_da_nota
 
-    # Basta anexar: o número da nota sai do próprio PDF.
+    # Basta anexar: o número da nota sai do próprio PDF (e, para a
+    # conferência, o emitente, o valor e a data de emissão).
     arquivo.seek(0)
-    numero = numero_da_nota(arquivo.read())
+    conteudo = arquivo.read()
+    numero = numero_da_nota(conteudo)
+    lidos = dados_da_nota(conteudo)
     arquivo.seek(0)
     trocou = bool(solicitacao.arquivo_nota_fiscal)
     solicitacao.arquivo_nota_fiscal = arquivo
-    campos = ["arquivo_nota_fiscal", "atualizado_em"]
+    solicitacao.valor_nota_fiscal = lidos["valor"]
+    solicitacao.data_emissao_nf = lidos["emissao"]
+    solicitacao.cnpj_emitente_nf = lidos["cnpj"]
+    campos = ["arquivo_nota_fiscal", "valor_nota_fiscal", "data_emissao_nf", "cnpj_emitente_nf", "atualizado_em"]
     if numero:
         solicitacao.numero_nota_fiscal = numero
         campos.append("numero_nota_fiscal")
@@ -1713,6 +1852,9 @@ def anexar_nota(request, pk):
         messages.success(request, f"Nota fiscal {numero} anexada — o número foi lido do PDF.")
     else:
         messages.warning(request, "Nota fiscal anexada, mas não deu para ler o número no PDF: informe-o no campo ao lado.")
+    # Conferência: fornecedor, valor, data e duplicidade (só avisa).
+    for aviso in services.avisos_da_nota(solicitacao):
+        messages.warning(request, aviso)
     return redirect(destino)
 
 

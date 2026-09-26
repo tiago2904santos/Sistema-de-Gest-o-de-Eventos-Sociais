@@ -87,6 +87,7 @@ urlpatterns = [
     ),
     path("solicitacoes/<int:pk>/excluir/", views.excluir_solicitacao, name="excluir"),
     path("solicitacoes/<int:pk>/baixar/", views.baixar_arquivos, name="baixar_arquivos"),
+    path("solicitacoes/<int:pk>/reabrir/", views.reabrir_solicitacao, name="reabrir"),
     path(
         "solicitacoes/<int:pk>/reativar/",
         views.reativar_solicitacao,

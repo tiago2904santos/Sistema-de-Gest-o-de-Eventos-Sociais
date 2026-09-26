@@ -15,6 +15,15 @@ class CoffeeBreakConfig(AppConfig):
         # A OS no editor de documentos de Viagens.
         registrar_editor()
 
+        # O ofício e a OS do Coffee Break saem da mesma numeração dos de
+        # Viagens: os números daqui contam como ocupados lá.
+        from core.numeracao import NAMESPACE_OFICIO, NAMESPACE_ORDEM_SERVICO, registrar_numeros_externos
+
+        from . import services
+
+        registrar_numeros_externos(NAMESPACE_OFICIO, services.sequencias_oficio_no_ano)
+        registrar_numeros_externos(NAMESPACE_ORDEM_SERVICO, services.sequencias_os_no_ano)
+
         # Cataloga o módulo no portal; o middleware protege o namespace.
         registrar_modulo(
             "coffee_break",

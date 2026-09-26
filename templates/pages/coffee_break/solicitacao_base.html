@@ -79,6 +79,38 @@
         {% include "components/icon.html" with nome="info" %}
         <div>Solicitações concluídas ficam bloqueadas para edição. Os campos estão abertos apenas para consulta; os documentos continuam disponíveis.</div>
       </div>
+      {% if pode_reabrir %}
+        {# Erro de digitação depois da OB enviada: o administrador reabre, com o motivo. #}
+        <div class="aviso aviso--callout" role="status">
+          <div class="aviso__txt">
+            {% include "components/icon.html" with nome="undo" %}
+            <div class="aviso__corpo">
+              <b>Reabrir para correção</b>
+              <p>Libera a edição desta solicitação concluída. O motivo e cada valor alterado (o anterior e o novo) ficam no histórico.</p>
+            </div>
+          </div>
+          <form method="post" action="{% url 'coffee_break:reabrir' solicitacao.pk %}" class="sol-cancelar">{% csrf_token %}
+            {% include "components/input.html" with name="motivo" label="Motivo da correção" obrigatorio=True maxlength="255" placeholder="Ex.: data da ordem bancária digitada errada" erros=None valor="" %}
+            <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="undo" %}Reabrir para correção</button>
+          </form>
+        </div>
+      {% endif %}
+    {% elif solicitacao and solicitacao.em_correcao %}
+      <div class="aviso aviso--callout" role="status">
+        <div class="aviso__txt">
+          {% include "components/icon.html" with nome="alert" %}
+          <div class="aviso__corpo">
+            <b>Aberta para correção</b>
+            <p>A solicitação já foi concluída e foi reaberta por um administrador. Cada alteração fica no histórico com o valor anterior.</p>
+          </div>
+        </div>
+        {% if pode_reabrir %}
+          <form method="post" action="{% url 'coffee_break:reabrir' solicitacao.pk %}">{% csrf_token %}
+            <input type="hidden" name="acao" value="encerrar">
+            <button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="check" %}Encerrar correção</button>
+          </form>
+        {% endif %}
+      </div>
     {% elif ultima_anotacao %}
       <div class="aviso aviso--callout" role="status">
         <div class="aviso__txt">{% include "components/icon.html" with nome="activity" %}<div class="aviso__corpo"><b>Andamento — {{ solicitacao.situacao_financeira_display }}</b><p>{{ ultima_anotacao }}</p></div></div>
