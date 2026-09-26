@@ -1,0 +1,16 @@
+{% load static estaticos %}<!DOCTYPE html>
+{% comment %}m096 — o link do diário não abre (não existe, revogado, vencido ou viagem cancelada).{% endcomment %}
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Diário de bordo</title>
+  <link rel="stylesheet" href="{% estatico 'css/pages/diario-campo.css' %}">
+</head>
+<body class="dc">
+  <header class="dc-topo"><p class="dc-topo__rotulo">Diário de bordo</p><h1 class="dc-topo__titulo">Link indisponível</h1></header>
+  <main class="dc-corpo"><div class="dc-aviso dc-aviso--perigo">{{ mensagem }}</div></main>
+</body>
+</html>
