@@ -435,11 +435,19 @@ def lista_lotes(request):
             # Chip aceso: sem exercício escolhido, "Todas".
             "situacao_ativa": valores.get("exercicio") or "todas",
             "exercicio_escolhido": valores.get("exercicio", ""),
+            "proximo_exercicio": _proximo_exercicio(),
             "tem_filtros": any(
                 request.GET.get(nome) for nome in ("q", "exercicio", "situacao")
             ),
         },
     )
+
+
+def _proximo_exercicio():
+    from .virada import exercicio_de_origem
+
+    origem = exercicio_de_origem()
+    return origem + 1 if origem else None
 
 
 @acesso_ao_modulo
@@ -481,6 +489,78 @@ def detalhe_lote(request, pk):
                 if lote.quantidade_total
                 else 0
             ),
+        },
+    )
+
+
+@gerenciamento_de_cadastros
+def virada_exercicio(request):
+    """"Abrir exercício N+1": copia os lotes vigentes de N, pedindo só a
+    quantidade e o empenho de cada um (administradores do módulo)."""
+    from . import virada
+
+    origem = request.GET.get("de") or request.POST.get("de") or ""
+    origem = int(origem) if origem.isdigit() else virada.exercicio_de_origem()
+    if origem is None:
+        messages.info(request, "Não há lotes vigentes para copiar.")
+        return redirect("coffee_break:lotes")
+    destino = origem + 1
+    lotes = virada.lotes_de_origem(origem)
+    por_pk = {lote.pk: lote for lote in lotes}
+    if request.method == "POST":
+        formset = virada.ViradaFormSet(request.POST)
+        if formset.is_valid():
+            linhas = [
+                (por_pk[f.cleaned_data["lote"]], f.cleaned_data)
+                for f in formset.forms
+                if f.cleaned_data.get("criar") and f.cleaned_data.get("lote") in por_pk
+            ]
+            if not linhas:
+                messages.error(request, "Marque ao menos um lote para abrir o exercício.")
+            else:
+                try:
+                    criados = virada.abrir_exercicio(linhas, destino, request.POST.get("desativar") == "1")
+                except ValidationError as erro:
+                    for mensagem in erro.messages:
+                        messages.error(request, mensagem)
+                else:
+                    messages.success(
+                        request,
+                        f"Exercício {destino} aberto: {len(criados)} lote{'s' if len(criados) != 1 else ''} criado"
+                        f"{'s' if len(criados) != 1 else ''} com os municípios, orientações e especificações de {origem}."
+                        + (f" Os lotes de {origem} copiados foram encerrados." if request.POST.get("desativar") == "1" else ""),
+                    )
+                    return redirect(f"{reverse('coffee_break:lotes')}?exercicio={destino}")
+        else:
+            messages.error(request, "Corrija as linhas destacadas.")
+    else:
+        formset = virada.ViradaFormSet(initial=virada.iniciais(lotes, destino))
+    linhas = []
+    for form in formset.forms:
+        pk = form["lote"].value()
+        lote = por_pk.get(int(pk)) if str(pk).isdigit() else None
+        if lote is None:
+            continue
+        linhas.append({
+            "form": form,
+            "lote": lote,
+            "impedimento": virada.impedimento(lote, destino),
+            "aviso": virada.aviso_de_vigencia(lote, destino),
+            "marcado": bool(form["criar"].value()),
+        })
+    return render(
+        request,
+        "pages/coffee_break/virada_exercicio.html",
+        {
+            "breadcrumb": _breadcrumb(
+                {"label": "Lotes", "url": reverse("coffee_break:lotes")},
+                {"label": f"Abrir exercício {destino}"},
+            ),
+            "origem": origem,
+            "destino": destino,
+            "formset": formset,
+            "linhas": linhas,
+            "desativar": request.POST.get("desativar") == "1",
         },
     )
 
