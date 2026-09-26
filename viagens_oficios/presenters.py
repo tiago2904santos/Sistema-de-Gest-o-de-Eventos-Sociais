@@ -181,6 +181,7 @@ def cartao_da_lista(oficio, *, editar_url, artefatos_termo=None, artefato_oficio
     selo, tom = selo_do_cartao(oficio)
     return {
         "oficio": oficio,
+        "cancelada": oficio.cancelado,
         "titulo": titulo_do_cartao(oficio),
         "subtitulo": subtitulo_do_cartao(oficio),
         "selo": selo,
@@ -294,6 +295,7 @@ def linha_da_lista(oficio, *, artefatos_pdf=None):
     justificativa = justificativa_do_cartao(oficio)
     return {
         "oficio": oficio,
+        "cancelada": oficio.cancelado,
         "titulo": " · ".join(p for p in [titulo_do_cartao(oficio), _destino_e_periodo(oficio)] if p),
         "selo": selo,
         "selo_tom": tom,

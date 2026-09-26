@@ -1,0 +1,2 @@
+{# Alvo de arrastar arquivo: soltar o PDF sobre a linha importa direto neste termo. #}
+{% if pode_editar and not l.cancelada %} data-importar-url="{% url 'viagens_prestacoes:importacao_enviar_termo' l.termo.pk %}" data-importar-titulo="Termo #{{ l.termo.pk }}"{% endif %}

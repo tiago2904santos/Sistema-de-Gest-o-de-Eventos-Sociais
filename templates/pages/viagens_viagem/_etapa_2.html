@@ -3,33 +3,7 @@
   tabela da lista de roteiros, e o botão flutuante "Novo roteiro" já preso
   à viagem. Contexto: `roteiros` (linhas do presenter de roteiros).
 {% endcomment %}
-<div class="pa-card pa-card--lista cad-lista vg-lista">
-  <div class="dt-w" tabindex="0" role="region" aria-label="Roteiros da viagem">
-      <table class="dt dt--responsiva">
-        <thead>
-          <tr>
-            <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
-            <th>Roteiro</th>
-            <th class="c-cad-acoes">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for linha in roteiros %}
-            <tr{% if linha.roteiro.cancelado %} class="tm-linha--cancelada"{% endif %}>
-              <td class="tabela__col-icone">
-                <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=linha.icone %}</span>
-                <span class="sr-only">{{ linha.roteiro.get_tipo_display }}</span>
-              </td>
-              <td class="c-nome tm-celula" data-rotulo="Roteiro">{% include "pages/viagens_roteiros/_conteudo_linha.html" %}</td>
-              <td class="c-cad-acoes">{% include "pages/viagens_roteiros/_acoes_linha.html" %}</td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="3" class="v32-suave dt__vazio">Nenhum roteiro vinculado a esta viagem.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-  </div>
-</div>
+{% include "components/v32/lista_embutida.html" with linhas=roteiros rotulo="Roteiro" rotulo_plural="roteiros da viagem" icone_linha="pages/viagens_roteiros/_icone_linha.html" conteudo_linha="pages/viagens_roteiros/_conteudo_linha.html" acoes_linha="pages/viagens_roteiros/_acoes_linha.html" vazio="Nenhum roteiro vinculado a esta viagem." %}
 {% if pode_editar and not viagem.cancelado and url_novo_roteiro %}
   <a class="btn-primaria btn-flutuante" href="{{ url_novo_roteiro }}">{% include "components/icon.html" with nome="plus" %}Novo roteiro</a>
 {% endif %}

@@ -1,3 +1,4 @@
+{% with t=l.termo d=l.documentos %}
 {% comment %}
   O conteúdo de uma linha da lista de termos, numa célula só: o destino com o
   selo temporal, o andamento dos documentos (só no termo preso a um ofício; o
@@ -12,3 +13,4 @@
   {% endfor %}
 </ul>
 {% if l.herdados %}<p class="tm-herdados">Herda do ofício: {{ l.herdados|join:", " }}.</p>{% endif %}
+{% endwith %}

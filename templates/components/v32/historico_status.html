@@ -1,8 +1,13 @@
 {% comment %}
-  Histórico do registro na linha do tempo (a mesma das Palestras): o que
+  Histórico do registro na linha do tempo — a única do sistema (Solicitações,
+  Coffee Break, Palestras, Publicações, Atendimento à Imprensa): o que
   aconteceu, o status que a ação produziu, quem, quando e a anotação, do mais
-  recente ao mais antigo. Contexto: `historico` (com `status_novo_display` e
-  `status_novo_css`), `rotulo_aria`.
+  recente ao mais antigo. Alterações de campo, quando o registro as traz
+  (`registro.alteracoes`: campo, antes, depois), aparecem campo a campo.
+
+  Contexto: `historico` (registros com `get_acao_display`, `criado_em`,
+  `usuario`; opcionalmente `status_novo` + `status_novo_display`/`rotulo_status`
+  + `status_novo_css`, `descricao`/`observacao`, `alteracoes`) e `rotulo_aria`.
 {% endcomment %}
 <section class="lt" id="sec-historico" aria-labelledby="historico-titulo">
   <header class="lt__cabeca">
@@ -12,15 +17,23 @@
   {% if historico %}
     <ol class="lt__lista" tabindex="0" aria-label="{{ rotulo_aria|default:'Histórico' }}">
       {% for registro in historico reversed %}
-        <li class="lt__item{% if registro.acao == 'TRANSICAO' %} lt__item--status{% endif %}">
+        <li class="lt__item{% if registro.status_novo %} lt__item--status{% endif %}">
           <span class="lt__marca" aria-hidden="true"></span>
           <div class="lt__corpo">
             <div class="lt__linha">
               <span class="lt__acao">{{ registro.get_acao_display }}</span>
-              {% if registro.status_novo %}<span class="st st--{{ registro.status_novo_css }}">{{ registro.status_novo_display }}</span>{% endif %}
+              {% if registro.status_novo %}<span class="st st--{% firstof registro.status_novo_css registro.status_novo|lower %}">{% firstof registro.status_novo_display registro.rotulo_status %}</span>{% endif %}
               <span class="lt__meta">{{ registro.usuario|default:"Sistema" }} · {{ registro.criado_em|date:"d/m/Y" }} às {{ registro.criado_em|date:"H:i" }}</span>
             </div>
-            {% if registro.descricao %}<p class="lt__texto">{{ registro.descricao }}</p>{% endif %}
+            {% firstof registro.descricao registro.observacao as texto %}{% if texto %}<p class="lt__texto">{{ texto }}</p>{% endif %}
+            {% if registro.alteracoes %}
+              {# O que mudou, campo a campo: o valor antigo riscado, o novo em destaque. #}
+              <ul class="lt__mudancas">
+                {% for mudanca in registro.alteracoes %}
+                  <li><span class="lt__campo">{{ mudanca.campo }}</span>{% if mudanca.antes %}<del>{{ mudanca.antes|truncatechars:80 }}</del>{% else %}<em>vazio</em>{% endif %}<span class="lt__seta" aria-label="para">→</span>{% if mudanca.depois %}<ins>{{ mudanca.depois|truncatechars:80 }}</ins>{% else %}<em>vazio</em>{% endif %}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
           </div>
         </li>
       {% endfor %}

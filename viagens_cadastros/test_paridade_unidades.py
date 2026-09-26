@@ -82,8 +82,9 @@ class ParidadeUnidadesTests(BaseViagensTestCase):
                 response = self.client.get(self.lista, {"q": "paginacao", "page": numero, "next": "/viagens/"})
                 self.assertEqual(response.context["paginas_visiveis"], esperadas)
                 self.assertContains(response, "q=paginacao&amp;next=%2Fviagens%2F&amp;page=")
-                if numero in [1, 7]:
-                    self.assertContains(response, 'aria-disabled="true"', count=1)
+                # Na primeira e na última página só existe um dos passos (a paginação do
+                # sistema esconde o passo que não há, em vez de mostrá-lo desabilitado).
+                self.assertContains(response, 'class="pag__passo"', count=1 if numero in [1, 7] else 2)
         # Com uma única página, o GV não mostra régua nem setas.
         response = self.client.get(self.lista, {"q": "PAGINAÇÃO 096"})
         self.assertNotContains(response, 'aria-label="Paginação"')

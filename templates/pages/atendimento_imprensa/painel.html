@@ -19,14 +19,7 @@
 
   <div class="db-kpis">
     {% for item in resumo %}
-      <a class="kpi{% if item.destaque %} kpi--destaque{% endif %}" href="{{ item.url }}">
-        <span class="kpi__ic">{% include "components/icon.html" with nome=item.icone %}</span>
-        <span>
-          <b>{{ item.valor }}</b>
-          <span>{{ item.titulo }}</span>
-          <small>{{ item.variacao }}</small>
-        </span>
-      </a>
+      {% include "components/v32/summary_card.html" with url=item.url destaque=item.destaque icone=item.icone valor=item.valor titulo=item.titulo variacao=item.variacao tendencia=item.tendencia %}
     {% endfor %}
   </div>
 

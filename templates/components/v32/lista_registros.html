@@ -2,10 +2,8 @@
   Lista de registros na composição das listas do módulo de Viagens: a busca
   na barra do cartão, a tabela do V3.2 no desktop com uma célula só por
   registro (ícone, conteúdo, menu de ações), a Data List no celular e a
-  paginação no pé.
-
-  O que muda de módulo para módulo são os dois trechos da linha, passados
-  pelo caminho do template:
+  paginação no pé. É a única lista do sistema; cada módulo só fornece os
+  trechos da linha.
 
     {% include "components/v32/lista_registros.html" with
        linhas=linhas icone="document" rotulo="Pauta" rotulo_plural="pautas"
@@ -17,15 +15,32 @@
        vazio_filtrado="Nenhuma pauta encontrada com os filtros aplicados." %}
 
   Cada linha (`l`) vem pronta do presenter do módulo; `l.cancelada` risca a
-  linha, como nas listas de Viagens. O contexto da página (`q`, `pagina`,
-  `paginas_visiveis`, `elipse`, `querystring`, `tem_filtros`) continua valendo
-  dentro dos trechos incluídos.
+  linha. Opcionais:
+  - `icone_linha`: trecho que desenha o ícone e o rótulo oculto da linha,
+    quando o ícone é um link (editor do documento) ou varia por linha;
+  - `linha_attrs`: trecho com atributos extras da linha (alvo de arrastar
+    arquivo, por exemplo);
+  - `celula_classe` / `tabela_classe`: classes extras da célula e da tabela;
+  - `q`: valor da busca (padrão `q` do contexto);
+  - `filtro_nome` com `filtro_valor` (um) ou `filtro_valores` (lista): a
+    situação escolhida na trilha sobrevive à busca;
+  - `soltar_url`, `soltar_titulo`, `soltar_sub`: a faixa "solte para
+    importar" e o alvo de arquivo do cartão;
+  - `param`: nome do parâmetro de página (padrão "pagina").
+  O contexto da página (`pagina`, `paginas_visiveis`, `elipse`, `querystring`,
+  `tem_filtros`, `pode_editar`) continua valendo dentro dos trechos incluídos.
 {% endcomment %}
-<div class="pa-card pa-card--lista cad-lista">
+<div class="pa-card pa-card--lista cad-lista"{% if soltar_url %} data-importar-soltar data-url="{{ soltar_url }}"{% endif %}>
+  {% if soltar_url %}
+    {# Arrastar um arquivo sobre a lista: a faixa aparece; soltar importa (sobre uma linha, direto nela). #}
+    <div class="pc-soltar" data-importar-faixa hidden aria-hidden="true">
+      {% include "components/icon.html" with nome="upload" %}
+      <span><b>{{ soltar_titulo }}</b><small>{{ soltar_sub }}</small></span>
+    </div>
+  {% endif %}
   {# A busca é do servidor (precisa achar o registro da página 3): envia 1 s depois de digitar. #}
   <form method="get" class="cad-barra" role="search" data-cadastro-busca data-auto-enviar>
-    {# A situação escolhida na trilha sobrevive à busca. #}
-    {% if filtro_nome and filtro_valor %}<input type="hidden" name="{{ filtro_nome }}" value="{{ filtro_valor }}">{% endif %}
+    {% if filtro_nome %}{% if filtro_valores %}{% for valor in filtro_valores %}<input type="hidden" name="{{ filtro_nome }}" value="{{ valor }}">{% endfor %}{% elif filtro_valor %}<input type="hidden" name="{{ filtro_nome }}" value="{{ filtro_valor }}">{% endif %}{% endif %}
     <div class="busca">
       {% include "components/icon.html" with nome="search" %}
       <label class="sr-only" for="id_q">Buscar {{ rotulo_plural }}</label>
@@ -34,7 +49,7 @@
   </form>
 
   <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Tabela de {{ rotulo_plural }}">
-    <table class="dt dt--responsiva">
+    <table class="dt dt--responsiva{% if tabela_classe %} {{ tabela_classe }}{% endif %}">
       <thead>
         <tr>
           <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
@@ -44,12 +59,11 @@
       </thead>
       <tbody>
         {% for l in linhas %}
-          <tr{% if l.cancelada %} class="tm-linha--cancelada"{% endif %}>
+          <tr{% if l.cancelada %} class="tm-linha--cancelada"{% endif %}{% if linha_attrs %}{% include linha_attrs %}{% endif %}>
             <td class="tabela__col-icone">
-              <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=icone %}</span>
-              <span class="sr-only">{{ rotulo }}</span>
+              {% if icone_linha %}{% include icone_linha %}{% else %}<span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=icone %}</span><span class="sr-only">{{ rotulo }}</span>{% endif %}
             </td>
-            <td class="c-nome tm-celula" data-rotulo="{{ rotulo }}">{% include conteudo_linha %}</td>
+            <td class="c-nome tm-celula{% if celula_classe %} {{ celula_classe }}{% endif %}" data-rotulo="{{ rotulo }}">{% include conteudo_linha %}</td>
             <td class="c-cad-acoes">{% include acoes_linha %}</td>
           </tr>
         {% empty %}
@@ -63,12 +77,11 @@
 
   <div class="lista-mobile-v32"><div class="m-lista">
     {% for l in linhas %}
-      <article class="m-item{% if l.cancelada %} tm-linha--cancelada{% endif %}">
+      <article class="m-item{% if l.cancelada %} tm-linha--cancelada{% endif %}"{% if linha_attrs %}{% include linha_attrs %}{% endif %}>
         <div class="m-item__topo">
-          <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=icone %}</span>
-          <span class="sr-only">{{ rotulo }}</span>
+          {% if icone_linha %}{% include icone_linha %}{% else %}<span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=icone %}</span><span class="sr-only">{{ rotulo }}</span>{% endif %}
         </div>
-        <div class="m-item__tipo tm-celula">{% include conteudo_linha %}</div>
+        <div class="m-item__tipo tm-celula{% if celula_classe %} {{ celula_classe }}{% endif %}">{% include conteudo_linha %}</div>
         <div class="m-item__rodape">{% include acoes_linha %}</div>
       </article>
     {% empty %}

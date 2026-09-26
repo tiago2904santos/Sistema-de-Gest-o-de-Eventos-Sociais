@@ -1,0 +1,2 @@
+{# Alvo de arrastar arquivo: soltar o PDF sobre a linha importa direto neste ofício. #}
+{% if pode_editar and not l.cancelada %} data-importar-url="{% url 'viagens_prestacoes:importacao_enviar_oficio' l.oficio.pk %}" data-importar-titulo="Ofício {{ l.oficio.numero_formatado }}"{% endif %}

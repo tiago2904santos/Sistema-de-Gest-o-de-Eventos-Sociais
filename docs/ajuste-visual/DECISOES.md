@@ -150,3 +150,58 @@ requisito e não são rediscutidas aqui.
   vazaria sobre os vizinhos, nem a campos.
 - **Conflito resolvido**: `linha-quantidade__q` tinha 96px/36px e 74px/32px;
   ficou a última decisão (74/32) com o `text-align:center` da primeira.
+
+## Fase 3 — Viagens (a referência) e a casca
+
+- **Casca**: o título do sistema vazava por cima dos ícones no celular (a
+  trilha da grade `marca__produto` não estava limitada; agora `minmax(0,1fr)`);
+  no celular fica só o avatar do usuário. A navegação do módulo rola dentro
+  da própria faixa até 1100px de contêiner (Viagens tem 11 itens e empurrava
+  a página até 1300px no tablet); a gaveta de hover só existe com espaço.
+  Ações de cabeçalho (lista e formulário) e a barra de ações do fim do cartão
+  quebram linha no celular. A grade das listas e do painel usa `minmax(0,1fr)`
+  no celular: com `1fr` puro a coluna crescia até o conteúdo mais largo.
+- **Uma lista só**: as sete listas do Viagens (Ofícios, Justificativas,
+  Ordens, Planos, Termos, Roteiros, Viagens) e as etapas 2–5 do painel da
+  viagem passaram a usar `lista_registros.html` / `lista_embutida.html`. O
+  componente ganhou o que a referência precisava: `icone_linha` (ícone que é
+  link para o editor ou varia por linha), `linha_attrs` (alvo de arrastar
+  arquivo), `filtro_valores` (várias situações), `soltar_url/titulo/sub`
+  (faixa "solte para importar"), `celula_classe`, `tabela_classe`, `q` e
+  `param`. As parciais de linha passaram a receber `l` e fazem o próprio
+  `with` (`o=l.oficio` etc.), e os presenters expõem `cancelada`, que é o
+  que risca a linha. Ganho colateral: as listas embutidas do painel e a de
+  roteiros no celular passam a ter a mesma Data List das outras. **Armadilha
+  registrada**: o Django não reconhece uma tag `{% include %}` quebrada em
+  várias linhas — a página renderiza sem erro e sem a lista.
+- **Uma paginação só**: `paginacao.html` reescreve a querystring com
+  `qs_definir` (busca e filtros sobrevivem) e aceita `param` ("page" nos
+  cadastros de Viagens). As paginações próprias dos cadastros de Eventos e de
+  Viagens (com Anterior/Próxima desabilitados, "Mostrando" mesmo com uma
+  página e a `m-pag` do celular) saíram; `_paginacao_nav.html` foi apagada.
+- **Menu ⋮**: todas as parciais de ações da linha usam `tm-menu` (Roteiros,
+  Justificativas e os cadastros ficavam mais estreitos sem motivo).
+- **Cabeçalho de seção**: `section_card.html` passou a produzir a marcação
+  canônica (`section-card__cabecalho reg__t` + número + título); as duas
+  telas que o usavam (`assinatura.html`, `form_simples.html`) trocaram
+  `reg`/`reg-corpo` por `section-card reg`/`section-card__corpo`.
+- **KPIs**: os quatro laços de `.kpi` escritos à mão (Dashboard, Publicações,
+  Imprensa e o índice de Cadastros) passaram ao `summary_card.html`; o índice
+  de cadastros ganhou a legenda ("N registros cadastrados") no presenter, que
+  o componente mostra no `small`.
+- **Histórico**: `historico_status.html` virou a única linha do tempo. Ele
+  aceita os três formatos de registro que existiam (`status_novo_css` ou o
+  status em minúsculas como tom; `status_novo_display` ou `rotulo_status`;
+  `descricao` ou `observacao`; `alteracoes` campo a campo), com `firstof`
+  porque `default:` com variável inexistente derruba a página. As cópias de
+  Solicitações, Coffee e Palestras foram apagadas. O contador virou
+  "N registro(s)" em todos (Solicitações dizia "movimentações") e o vazio,
+  "Nenhuma alteração registrada.".
+- **Não unificado, de propósito**: o andamento do Coffee Break (`_andamento_campos`,
+  `_modal_andamento`) é outro mecanismo — marcos com data/valor, não escolha de
+  status — e o das Palestras usa contexto próprio (`etapas`, `opcoes_andamento`)
+  em vez do `core.andamento.contexto`; trocar exige refazer o fluxo em Python.
+  Visualmente já são iguais aos componentes. Fica registrado como pendência.
+- **Teste ajustado**: `viagens_cadastros.test_paridade_unidades` esperava o
+  passo Anterior/Próxima desabilitado nas pontas; a paginação do sistema
+  esconde o passo que não há.

@@ -5,7 +5,7 @@
 {% endcomment %}
 <div class="dd of-menu cad-acoes" data-menu>
   <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações de {{ l.titulo }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
-  <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
+  <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
     <div class="dd__t">{{ l.titulo }}</div>
     <a class="dd__i of-item" href="{{ l.url_editar }}" data-cadastro-modal>{% include "components/icon.html" with nome="pencil" %}<span><b>Editar {{ config.singular }}</b><small>Alterar os dados do cadastro</small></span></a>
     {% if l.excluivel %}

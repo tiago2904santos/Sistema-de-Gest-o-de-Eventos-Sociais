@@ -1,3 +1,4 @@
+{% with linha=l %}
 {% comment %}
   O conteúdo de uma linha da lista de roteiros, numa célula só e em duas
   linhas, no desenho das listas de ofícios, termos, PT e OS: a rota no
@@ -13,3 +14,4 @@
   <li class="tm-fato">{% include "components/icon.html" with nome="users" %}<span class="sr-only">Servidores: </span><span class="of-fato__valor">{{ linha.servidores }} servidor{{ linha.servidores|pluralize:"es" }}</span></li>
   <li class="tm-fato{% if linha.valor == '—' %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome="chart" %}<span class="sr-only">Valor: </span><span class="of-fato__valor">{% if linha.valor == '—' %}Sem diárias calculadas{% else %}{{ linha.valor }}{% if linha.resumo_diarias %} · {{ linha.resumo_diarias }}{% endif %}{% endif %}</span></li>
 </ul>
+{% endwith %}

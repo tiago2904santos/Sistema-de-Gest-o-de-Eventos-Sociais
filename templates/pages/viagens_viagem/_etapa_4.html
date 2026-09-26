@@ -55,61 +55,9 @@
   </div>
 </div>
 
-<div class="pa-card pa-card--lista cad-lista vg-lista" id="planos">
-  <div class="dt-w" tabindex="0" role="region" aria-label="Planos de trabalho da viagem">
-      <table class="dt dt--responsiva">
-        <thead>
-          <tr>
-            <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
-            <th>Plano de trabalho</th>
-            <th class="c-cad-acoes">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for l in planos %}{% with p=l.plano %}
-            <tr{% if p.cancelado %} class="tm-linha--cancelada"{% endif %}>
-              <td class="tabela__col-icone">
-                {% url 'documentos:editor_pagina' 'plano_trabalho' p.pk as url_editor %}{% include "components/icone_documento.html" with nome="clipboard" url=url_editor rotulo="Editar o plano de trabalho" %}
-                <span class="sr-only">Plano de trabalho</span>
-              </td>
-              <td class="c-nome tm-celula" data-rotulo="Plano de trabalho">{% include "pages/viagens_planos/_conteudo_linha.html" %}</td>
-              <td class="c-cad-acoes">{% include "pages/viagens_planos/_acoes_linha.html" %}</td>
-            </tr>
-          {% endwith %}{% empty %}
-            <tr><td colspan="3" class="v32-suave dt__vazio">Nenhum plano de trabalho vinculado a esta viagem.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-  </div>
-</div>
+{% include "components/v32/lista_embutida.html" with id="planos" linhas=planos rotulo="Plano de trabalho" rotulo_plural="planos de trabalho da viagem" icone_linha="pages/viagens_planos/_icone_linha.html" conteudo_linha="pages/viagens_planos/_conteudo_linha.html" acoes_linha="pages/viagens_planos/_acoes_linha.html" vazio="Nenhum plano de trabalho vinculado a esta viagem." %}
 
-<div class="pa-card pa-card--lista cad-lista vg-lista" id="ordens">
-  <div class="dt-w" tabindex="0" role="region" aria-label="Ordens de serviço da viagem">
-      <table class="dt dt--responsiva">
-        <thead>
-          <tr>
-            <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
-            <th>Ordem de Serviço</th>
-            <th class="c-cad-acoes">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for l in ordens %}{% with o=l.ordem %}
-            <tr{% if o.cancelado %} class="tm-linha--cancelada"{% endif %}>
-              <td class="tabela__col-icone">
-                {% url 'documentos:editor_pagina' 'ordem_servico' o.pk as url_editor %}{% include "components/icone_documento.html" with nome="clipboard" url=url_editor rotulo="Editar a ordem de serviço" %}
-                <span class="sr-only">Ordem de serviço</span>
-              </td>
-              <td class="c-nome tm-celula os-celula" data-rotulo="Ordem de Serviço">{% include "pages/viagens_ordens/_conteudo_linha.html" %}</td>
-              <td class="c-cad-acoes">{% include "pages/viagens_ordens/_acoes_linha.html" %}</td>
-            </tr>
-          {% endwith %}{% empty %}
-            <tr><td colspan="3" class="v32-suave dt__vazio">Nenhuma ordem de serviço vinculada a esta viagem.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-  </div>
-</div>
+{% include "components/v32/lista_embutida.html" with id="ordens" linhas=ordens rotulo="Ordem de Serviço" rotulo_plural="ordens de serviço da viagem" celula_classe="os-celula" icone_linha="pages/viagens_ordens/_icone_linha.html" conteudo_linha="pages/viagens_ordens/_conteudo_linha.html" acoes_linha="pages/viagens_ordens/_acoes_linha.html" vazio="Nenhuma ordem de serviço vinculada a esta viagem." %}
 
 {% if pode_editar and not viagem.cancelado %}
   {# "Novo" abre o menu com os dois documentos; PT é POST porque criar reserva número. #}

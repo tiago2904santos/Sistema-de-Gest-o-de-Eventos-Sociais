@@ -5,33 +5,7 @@
   `viagem` no envio prende o rascunho a esta viagem.
   Contexto: `oficios` (linhas do presenter de ofícios).
 {% endcomment %}
-<div class="pa-card pa-card--lista cad-lista vg-lista">
-  <div class="dt-w" tabindex="0" role="region" aria-label="Ofícios da viagem">
-      <table class="dt dt--responsiva">
-        <thead>
-          <tr>
-            <th class="tabela__col-icone"><span class="sr-only">Tipo</span></th>
-            <th>Ofício</th>
-            <th class="c-cad-acoes">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for l in oficios %}{% with o=l.oficio d=l.documentos %}
-            <tr{% if o.cancelado %} class="tm-linha--cancelada"{% endif %}>
-              <td class="tabela__col-icone">
-                {% url 'documentos:editor_pagina' 'oficio' o.pk as url_editor %}{% include "components/icone_documento.html" with nome="document" url=url_editor rotulo="Editar o ofício" %}
-                <span class="sr-only">Ofício</span>
-              </td>
-              <td class="c-nome tm-celula" data-rotulo="Ofício">{% include "pages/viagens_oficios/_linha.html" %}</td>
-              <td class="c-cad-acoes">{% include "pages/viagens_oficios/_acoes_linha.html" %}</td>
-            </tr>
-          {% endwith %}{% empty %}
-            <tr><td colspan="3" class="v32-suave dt__vazio">Nenhum ofício vinculado a esta viagem.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-  </div>
-</div>
+{% include "components/v32/lista_embutida.html" with linhas=oficios rotulo="Ofício" rotulo_plural="ofícios da viagem" icone_linha="pages/viagens_oficios/_icone_linha.html" conteudo_linha="pages/viagens_oficios/_linha.html" acoes_linha="pages/viagens_oficios/_acoes_linha.html" vazio="Nenhum ofício vinculado a esta viagem." %}
 {% if pode_editar and not viagem.cancelado and url_novo_oficio %}
   <form method="post" action="{{ url_novo_oficio }}" class="btn-flutuante-form">
     {% csrf_token %}

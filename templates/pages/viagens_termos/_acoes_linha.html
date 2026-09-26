@@ -1,3 +1,4 @@
+{% with t=l.termo d=l.documentos %}
 {% comment %}
   Ações de uma linha de termo num botão único, no padrão da lista de roteiros.
   Itens do menu: baixar documentos, anexar assinado e importar os termos
@@ -27,3 +28,4 @@
 {% else %}
   <a class="acao-linha" href="{{ l.url_previa }}">{% include "components/icon.html" with nome="eye" %}Abrir</a>
 {% endif %}
+{% endwith %}

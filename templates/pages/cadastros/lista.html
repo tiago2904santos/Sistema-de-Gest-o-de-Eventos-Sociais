@@ -56,34 +56,7 @@
         </table>
       </div>
 
-      {% if pagina.paginator.count %}
-        <div class="pag">
-          <span>Mostrando <b>{{ pagina.start_index }}–{{ pagina.end_index }}</b> de <b>{{ pagina.paginator.count }}</b> registro{{ pagina.paginator.count|pluralize }}</span>
-          {% if pagina.paginator.num_pages > 1 %}
-            <nav class="pag__nav" aria-label="Paginação">
-              {% if pagina.has_previous %}
-                <a class="pag__passo" href="{% qs_definir 'pagina' pagina.previous_page_number %}">{% include "components/icon.html" with nome="chevron-left" %}Anterior</a>
-              {% else %}
-                <span class="pag__passo" aria-disabled="true">{% include "components/icon.html" with nome="chevron-left" %}Anterior</span>
-              {% endif %}
-              {% for numero in paginas_visiveis %}
-                {% if numero == elipse %}
-                  <span class="pag__el" aria-hidden="true">…</span>
-                {% elif numero == pagina.number %}
-                  <span class="pag__n" aria-current="page">{{ numero }}</span>
-                {% else %}
-                  <a class="pag__n" href="{% qs_definir 'pagina' numero %}">{{ numero }}</a>
-                {% endif %}
-              {% endfor %}
-              {% if pagina.has_next %}
-                <a class="pag__passo" href="{% qs_definir 'pagina' pagina.next_page_number %}">Próxima{% include "components/icon.html" with nome="chevron-right" %}</a>
-              {% else %}
-                <span class="pag__passo" aria-disabled="true">Próxima{% include "components/icon.html" with nome="chevron-right" %}</span>
-              {% endif %}
-            </nav>
-          {% endif %}
-        </div>
-      {% endif %}
+      {% include "components/v32/paginacao.html" with rotulo="registros" %}
 
       {# Data List mobile: substitui a tabela no container estreito. #}
       <div class="lista-mobile-v32">
@@ -101,13 +74,6 @@
             <p class="dt__vazio">Nenhum registro encontrado.</p>
           {% endfor %}
         </div>
-        {% if pagina.paginator.num_pages > 1 %}
-          <div class="m-pag">
-            {% if pagina.has_previous %}<a href="{% qs_definir 'pagina' pagina.previous_page_number %}">{% include "components/icon.html" with nome="chevron-left" %}Anterior</a>{% else %}<span aria-disabled="true">{% include "components/icon.html" with nome="chevron-left" %}Anterior</span>{% endif %}
-            <span class="m-pag__meio">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
-            {% if pagina.has_next %}<a href="{% qs_definir 'pagina' pagina.next_page_number %}">Próxima{% include "components/icon.html" with nome="chevron-right" %}</a>{% else %}<span aria-disabled="true">Próxima{% include "components/icon.html" with nome="chevron-right" %}</span>{% endif %}
-          </div>
-        {% endif %}
       </div>
     </section>
   </div>

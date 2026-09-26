@@ -108,6 +108,7 @@ def linha_da_lista(viagem):
     destino = viagem.destino_display
     return {
         "viagem": viagem,
+        "cancelada": viagem.cancelado,
         "titulo": " · ".join(p for p in [titulo_da_viagem(viagem), destino if destino != "Destino não informado" else ""] if p),
         "selo": situacao,
         "selo_tom": tom,

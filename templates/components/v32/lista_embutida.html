@@ -9,8 +9,11 @@
        conteudo_linha="pages/coffee_break/_conteudo_linha.html"
        acoes_linha="pages/coffee_break/_acoes_linha.html"
        vazio="Nenhuma solicitação registrada neste lote." %}
+
+  Opcionais, como na lista de registros: `icone_linha`, `linha_attrs`,
+  `celula_classe` e `id` (âncora do cartão).
 {% endcomment %}
-<div class="pa-card pa-card--lista cad-lista vg-lista">
+<div class="pa-card pa-card--lista cad-lista vg-lista"{% if id %} id="{{ id }}"{% endif %}>
   <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Tabela de {{ rotulo_plural }}">
     <table class="dt dt--responsiva">
       <thead>
@@ -22,12 +25,11 @@
       </thead>
       <tbody>
         {% for l in linhas %}
-          <tr{% if l.cancelada %} class="tm-linha--cancelada"{% endif %}>
+          <tr{% if l.cancelada %} class="tm-linha--cancelada"{% endif %}{% if linha_attrs %}{% include linha_attrs %}{% endif %}>
             <td class="tabela__col-icone">
-              <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=icone %}</span>
-              <span class="sr-only">{{ rotulo }}</span>
+              {% if icone_linha %}{% include icone_linha %}{% else %}<span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=icone %}</span><span class="sr-only">{{ rotulo }}</span>{% endif %}
             </td>
-            <td class="c-nome tm-celula" data-rotulo="{{ rotulo }}">{% include conteudo_linha %}</td>
+            <td class="c-nome tm-celula{% if celula_classe %} {{ celula_classe }}{% endif %}" data-rotulo="{{ rotulo }}">{% include conteudo_linha %}</td>
             <td class="c-cad-acoes">{% include acoes_linha %}</td>
           </tr>
         {% empty %}
@@ -39,12 +41,11 @@
 
   <div class="lista-mobile-v32"><div class="m-lista">
     {% for l in linhas %}
-      <article class="m-item{% if l.cancelada %} tm-linha--cancelada{% endif %}">
+      <article class="m-item{% if l.cancelada %} tm-linha--cancelada{% endif %}"{% if linha_attrs %}{% include linha_attrs %}{% endif %}>
         <div class="m-item__topo">
-          <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=icone %}</span>
-          <span class="sr-only">{{ rotulo }}</span>
+          {% if icone_linha %}{% include icone_linha %}{% else %}<span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=icone %}</span><span class="sr-only">{{ rotulo }}</span>{% endif %}
         </div>
-        <div class="m-item__tipo tm-celula">{% include conteudo_linha %}</div>
+        <div class="m-item__tipo tm-celula{% if celula_classe %} {{ celula_classe }}{% endif %}">{% include conteudo_linha %}</div>
         <div class="m-item__rodape">{% include acoes_linha %}</div>
       </article>
     {% empty %}

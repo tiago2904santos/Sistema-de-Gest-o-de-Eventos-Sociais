@@ -1,0 +1,3 @@
+{# Ícone da linha do ofício: link para o editor do documento e o rótulo oculto da coluna. #}
+{% url 'documentos:editor_pagina' 'oficio' l.oficio.pk as url_editor %}{% include "components/icone_documento.html" with nome="document" url=url_editor rotulo="Editar o ofício" %}
+<span class="sr-only">Ofício</span>

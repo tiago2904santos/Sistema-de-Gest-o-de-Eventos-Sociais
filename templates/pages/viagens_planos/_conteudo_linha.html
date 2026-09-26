@@ -1,3 +1,4 @@
+{% with p=l.plano %}
 {% comment %}
   O conteúdo de uma linha da lista de planos, numa célula só: o número com o
   selo (Rascunho, Gerado ou Cancelado) e os fatos com ícone — período,
@@ -11,3 +12,4 @@
   {% endfor %}
 </ul>
 {% if p.cancelado and p.motivo_cancelamento %}<p class="tm-herdados">Motivo do cancelamento: {{ p.motivo_cancelamento }}</p>{% endif %}
+{% endwith %}

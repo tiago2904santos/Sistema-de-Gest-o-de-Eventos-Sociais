@@ -1,3 +1,4 @@
+{% with v=l.viagem %}
 {% comment %}
   Ações de uma linha de viagem num botão único, no padrão das listas do
   módulo: editar (etapa 1), abrir o painel (etapa 3, os ofícios), cancelar
@@ -35,3 +36,4 @@
 {% else %}
   <a class="acao-linha" href="{{ l.url_painel }}">{% include "components/icon.html" with nome="eye" %}Abrir</a>
 {% endif %}
+{% endwith %}

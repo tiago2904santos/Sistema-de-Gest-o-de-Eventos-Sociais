@@ -174,6 +174,7 @@ def linha_da_lista(ordem, *, assinante=None, artefato_pdf=None):
     oficios = oficios_vinculados(ordem)
     return {
         "ordem": ordem,
+        "cancelada": ordem.cancelado,
         "titulo": titulo_da_ordem(ordem),
         "selo": selo, "selo_tom": tom,
         "fatos": fatos_da_ordem(ordem, equipe, oficios, assinante),

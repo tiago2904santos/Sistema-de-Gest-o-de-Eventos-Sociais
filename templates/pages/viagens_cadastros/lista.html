@@ -86,13 +86,7 @@
         </table>
       </div>
 
-      {# Uma página só: o total já está na trilha; o rodapé aparece para navegar. #}
-      {% if pagina.paginator.num_pages > 1 %}
-        <div class="pag">
-          <span>Mostrando <b>{{ pagina.start_index }}–{{ pagina.end_index }}</b> de <b>{{ pagina.paginator.count }}</b> registro{{ pagina.paginator.count|pluralize }}</span>
-          {% include "pages/viagens_cadastros/_paginacao_nav.html" %}
-        </div>
-      {% endif %}
+      {% include "components/v32/paginacao.html" with rotulo="registros" param="page" %}
 
       {# Data List mobile: substitui a tabela no container estreito. #}
       <div class="lista-mobile-v32">
@@ -112,13 +106,6 @@
             <p class="dt__vazio">{{ texto_vazio }}</p>
           {% endfor %}
         </div>
-        {% if pagina.paginator.num_pages > 1 %}
-          <div class="m-pag">
-            {% if pagina.has_previous %}<a href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %}Anterior</a>{% else %}<span></span>{% endif %}
-            <span class="m-pag__meio">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
-            {% if pagina.has_next %}<a href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ pagina.next_page_number }}">Próxima{% include "components/icon.html" with nome="chevron-right" %}</a>{% else %}<span></span>{% endif %}
-          </div>
-        {% endif %}
       </div>
     </section>
   </div>

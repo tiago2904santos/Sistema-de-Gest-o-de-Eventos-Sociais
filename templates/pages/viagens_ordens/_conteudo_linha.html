@@ -1,3 +1,4 @@
+{% with o=l.ordem %}
 {% comment %}
   O conteúdo de uma linha da lista de OS, numa célula só e em duas linhas:
   número, destinos e período no título com o selo temporal (e "Cancelada"
@@ -11,3 +12,4 @@
     <li class="tm-fato{% if f.ausente %} tm-fato--ausente{% endif %}{% if f.motivo %} os-fato-motivo{% endif %}"{% if f.motivo and not f.ausente %} title="{{ o.motivo }}"{% endif %}>{% include "components/icon.html" with nome=f.icone %}<span class="sr-only">{{ f.rotulo }}: </span><span class="of-fato__valor">{% if f.oficios %}{% for of in f.oficios %}<a class="os-oficio-link" href="{{ of.url }}">Ofício {{ of.numero }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}{% elif f.rotulo == "Ofícios" %}Sem ofício vinculado{% else %}{{ f.texto }}{% endif %}</span></li>
   {% endfor %}
 </ul>
+{% endwith %}

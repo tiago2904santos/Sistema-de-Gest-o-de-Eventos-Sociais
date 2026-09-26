@@ -78,6 +78,7 @@ def linha_da_lista(plano):
     selo, tom = selo_do_plano(plano)
     return {
         "plano": plano,
+        "cancelada": plano.cancelado,
         "titulo": f"Plano de Trabalho {plano.numero_formatado}",
         "selo": selo,
         "selo_tom": tom,

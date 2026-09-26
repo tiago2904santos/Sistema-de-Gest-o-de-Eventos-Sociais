@@ -1,3 +1,4 @@
+{% with o=l.ordem %}
 {% comment %}
   Ações de uma linha de OS num botão único, no padrão da lista de termos:
   visualizar, baixar PDF e DOCX (POSTs que devolvem o arquivo), anexar o PDF
@@ -40,3 +41,4 @@
 {% else %}
   <a class="acao-linha" href="{{ l.url_editar }}">{% include "components/icon.html" with nome="eye" %}Abrir</a>
 {% endif %}
+{% endwith %}

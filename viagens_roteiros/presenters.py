@@ -136,6 +136,7 @@ def linha_da_lista(roteiro, *, editar_url, excluir_url):
         selo, tom = "Cancelado", "cancelada"
     return {
         "roteiro": roteiro,
+        "cancelada": roteiro.cancelado,
         "titulo": titulo_da_rota(roteiro),
         "selo": selo,
         "selo_tom": tom,

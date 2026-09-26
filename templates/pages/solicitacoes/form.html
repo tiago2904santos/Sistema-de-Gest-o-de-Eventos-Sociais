@@ -306,7 +306,7 @@
         </section>
       {% endif %}{% endif %}{% endif %}
 
-      {% include "pages/solicitacoes/_historico.html" %}
+      {% include "components/v32/historico_status.html" with rotulo_aria="Histórico da solicitação" %}
 
       {% if acoes.excluir %}
         <form id="form-excluir-solicitacao" method="post" action="{% url 'solicitacoes:excluir' solicitacao.pk %}" data-confirmar-exclusao>{% csrf_token %}</form>

@@ -157,12 +157,14 @@ def _grupos():
         {
             "slug": slug,
             "titulo": config["titulo"],
-            "total": config["model"].objects.count(),
+            "total": total,
+            "legenda": f"{total} registro{'s' if total != 1 else ''} cadastrado{'s' if total != 1 else ''}",
             "icone": config["icone"],
             "cor": config["cor"],
             "novo": config["novo"],
         }
         for slug, config in CADASTROS.items()
+        for total in [config["model"].objects.count()]
     ]
 
 

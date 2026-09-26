@@ -1,0 +1,3 @@
+{# Ícone da linha da justificativa: link para o editor do documento e o rótulo oculto da coluna. #}
+{% url 'documentos:editor_pagina' 'justificativa' l.oficio.pk as url_editor %}{% include "components/icone_documento.html" with nome="document" url=url_editor rotulo="Editar a justificativa" %}
+<span class="sr-only">Justificativa</span>

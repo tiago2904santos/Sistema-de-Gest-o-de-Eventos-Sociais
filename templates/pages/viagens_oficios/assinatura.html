@@ -29,9 +29,9 @@
   {% csrf_token %}
   {# Erros fora do cartão, logo acima da seção, como no roteiro. #}
   {% for erro in form.arquivo.errors %}<p class="aviso aviso--erro frm-aviso" role="alert">{{ erro }}</p>{% endfor %}
-  <section class="reg">
+  <section class="section-card reg">
     {% include "components/v32/section_card.html" with numero="1" titulo="Versão assinada" %}
-    <div class="reg-corpo">
+    <div class="section-card__corpo">
       <div class="form-campo">
         <label class="form-label" for="id_arquivo">Documento assinado (PDF)</label>
         <input class="form-controle" type="file" name="arquivo" id="id_arquivo" accept="application/pdf,.pdf">

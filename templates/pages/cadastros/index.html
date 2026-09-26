@@ -20,10 +20,7 @@
       </div>
       <div class="cad-visao">
         {% for grupo in grupos %}
-          <a class="kpi" href="{% url 'cadastros:lista' grupo.slug %}">
-            <span class="kpi__ic">{% include "components/icon.html" with nome=grupo.icone %}</span>
-            <span><b>{{ grupo.total }}</b><span>{{ grupo.titulo }}</span><small>{{ grupo.total }} registro{{ grupo.total|pluralize }} cadastrado{{ grupo.total|pluralize }}</small></span>
-          </a>
+          {% url 'cadastros:lista' grupo.slug as url_grupo %}{% include "components/v32/summary_card.html" with url=url_grupo icone=grupo.icone valor=grupo.total titulo=grupo.titulo variacao=grupo.legenda %}
         {% endfor %}
       </div>
     </section>

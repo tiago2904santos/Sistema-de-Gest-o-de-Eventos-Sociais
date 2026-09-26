@@ -1,18 +1,22 @@
-{% comment %}
-  Paginação das listas (V3.2), como nas listas do módulo de Viagens: a
-  contagem à esquerda, os números com reticências à direita.
+{% load consulta %}{% comment %}
+  Paginação das listas (V3.2): a contagem à esquerda, os números com
+  reticências à direita. Só aparece com mais de uma página, e é a única
+  paginação do sistema (listas, cadastros de Eventos e de Viagens).
 
   Uso:
     {% include "components/v32/paginacao.html" with pagina=pagina
-       paginas_visiveis=paginas_visiveis elipse=elipse querystring=querystring
-       rotulo="pautas" %}
+       paginas_visiveis=paginas_visiveis elipse=elipse rotulo="pautas" %}
+
+  Os links reescrevem a querystring atual (`qs_definir`), então busca e
+  filtros sobrevivem à troca de página. `param` é o nome do parâmetro de
+  página na URL (padrão "pagina"; os cadastros de Viagens leem "page").
 {% endcomment %}
-{% if pagina.paginator.num_pages > 1 %}
+{% if pagina.paginator.num_pages > 1 %}{% with p=param|default:"pagina" %}
   <div class="v32-corpo pag">
     <span class="v32-suave">Mostrando {{ pagina.start_index }} a {{ pagina.end_index }} de {{ pagina.paginator.count }} {{ rotulo }}</span>
     <nav class="pag__nav" aria-label="Paginação">
       {% if pagina.has_previous %}
-        <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.previous_page_number }}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
+        <a class="pag__passo" href="{% qs_definir p pagina.previous_page_number %}">{% include "components/icon.html" with nome="chevron-left" %} Anterior</a>
       {% endif %}
       {% for numero in paginas_visiveis %}
         {% if numero == elipse %}
@@ -20,12 +24,12 @@
         {% elif numero == pagina.number %}
           <span class="pag__n" aria-current="page">{{ numero }}</span>
         {% else %}
-          <a class="pag__n" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
+          <a class="pag__n" href="{% qs_definir p numero %}" aria-label="Ir para a página {{ numero }}">{{ numero }}</a>
         {% endif %}
       {% endfor %}
       {% if pagina.has_next %}
-        <a class="pag__passo" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
+        <a class="pag__passo" href="{% qs_definir p pagina.next_page_number %}">Próxima {% include "components/icon.html" with nome="chevron-right" %}</a>
       {% endif %}
     </nav>
   </div>
-{% endif %}
+{% endwith %}{% endif %}

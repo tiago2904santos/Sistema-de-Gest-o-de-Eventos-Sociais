@@ -1,3 +1,4 @@
+{% with o=l.oficio d=l.documentos %}
 {% comment %}
   O conteúdo de uma linha da lista de ofícios, em duas linhas, como nos termos
   e nas justificativas: número, protocolo, destino e período com o selo
@@ -11,3 +12,4 @@
     <li class="tm-fato{% if f.ausente %} tm-fato--ausente{% endif %}"{% if not f.ausente %} title="{{ f.texto }}"{% endif %}>{% include "components/icon.html" with nome=f.icone %}<span class="sr-only">{{ f.rotulo }}: </span><span class="of-fato__valor">{{ f.texto }}</span></li>
   {% endfor %}
 </ul>
+{% endwith %}

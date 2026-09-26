@@ -205,6 +205,7 @@ def linha_da_lista(termo, *, artefatos_pdf=None):
     artefatos_pdf = artefatos_pdf or {}
     return {
         "termo": termo,
+        "cancelada": termo.cancelado,
         "titulo": " · ".join(p for p in [destino_do_titulo(termo), periodo_do_titulo(termo)] if p),
         "selo": selo,
         "selo_tom": tom,

@@ -1,3 +1,4 @@
+{% with p=l.plano %}
 {% comment %}
   Ações de uma linha de plano num botão único, no padrão da lista de termos:
   visualizar, baixar PDF e DOCX (POST, bloqueados no plano cancelado), editar,
@@ -38,3 +39,4 @@
 {% else %}
   <a class="acao-linha" href="{{ l.url_editar }}">{% include "components/icon.html" with nome="eye" %}Abrir</a>
 {% endif %}
+{% endwith %}
