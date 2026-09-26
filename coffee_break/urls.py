@@ -54,6 +54,9 @@ urlpatterns = [
     path("solicitacoes/<int:pk>/ordem-bancaria/anexar/", views.anexar_ob, name="anexar_ob"),
     path("solicitacoes/<int:pk>/oficio.pdf", views.oficio, name="oficio"),
     path("solicitacoes/<int:pk>/certifico.pdf", views.certifico, name="certifico"),
+    # A via assinada da OS, do ofício ou do certifico (os, oficio, certifico); as vias guardadas.
+    path("solicitacoes/<int:pk>/<str:documento>/assinado/", views.anexar_assinado, name="anexar_assinado"),
+    path("vias/<uuid:pk>/", views.via_arquivo, name="via_arquivo"),
     path("solicitacoes/<int:pk>/protocolo/<str:parte>.pdf", views.pacote_parte, name="pacote_parte"),
     path("aditivos/<int:pk>/arquivo/", views.aditivo_arquivo, name="aditivo_arquivo"),
     path("solicitacoes/<int:pk>/nota-fiscal/", views.nota_fiscal, name="nota_fiscal"),

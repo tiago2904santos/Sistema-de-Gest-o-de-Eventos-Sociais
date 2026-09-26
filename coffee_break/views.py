@@ -936,7 +936,10 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
             "url_pdf": url_os + "?baixar=1",
             # O editor de documentos de Viagens: barra, pendências e a folha editável.
             "embutido": cartao(CHAVE_OS, solicitacao.pk, f"Ordem de serviço {solicitacao.numero}".strip()),
+            # A via emitida e a assinada (anexar assinado no menu do cartão).
+            **_vias_do_documento("os", solicitacao),
         }
+        contexto["usa_dialogo_assinado"] = True
         contexto["pendencias_oficio"] = documentos.pendencias_oficio(solicitacao)
         contexto["pendencias_certifico"] = documentos.pendencias_certifico(solicitacao)
         if etapa == "nota":
@@ -956,6 +959,40 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
             contexto["url_anexar_ob"] = reverse("coffee_break:anexar_ob", args=[solicitacao.pk])
             contexto["avisos_ob"] = services.avisos_da_ob(solicitacao)
     return contexto
+
+
+def _vias_do_documento(documento, solicitacao):
+    """O que o cartão do documento mostra das vias guardadas (coffee_break/vias.py):
+    a assinada, se houver, a última emitida e o anexar assinado."""
+    from . import vias
+
+    tipo = vias.TIPOS[documento]
+    lista = list(vias.vias(tipo, solicitacao)[:10])
+    versoes = {}
+    if lista:
+        from documentos.models import DocumentoAssinaturaVersao
+
+        for versao in DocumentoAssinaturaVersao.objects.filter(artefato__in=lista).select_related("criado_por"):
+            versoes.setdefault(versao.artefato_id, []).append(versao)
+    vigente = vias.assinada(tipo, solicitacao)
+    return {
+        "assinado": vigente is not None,
+        "assinatura": vigente,
+        "url_anexar": "" if solicitacao.bloqueada_para_edicao else reverse(
+            "coffee_break:anexar_assinado", args=[solicitacao.pk, documento]
+        ),
+        "vias": [
+            {
+                "via": via,
+                "url": reverse("coffee_break:via_arquivo", args=[via.pk]),
+                "assinadas": [
+                    {"versao": v, "url": reverse("coffee_break:via_arquivo", args=[via.pk]) + f"?assinada={v.pk}"}
+                    for v in versoes.get(via.pk, [])
+                ],
+            }
+            for via in lista
+        ],
+    }
 
 
 def _contexto_da_nota(contexto, form, solicitacao):
@@ -1018,6 +1055,7 @@ def _contexto_da_nota(contexto, form, solicitacao):
         "src": url_oficio,
         "url_pdf": url_oficio + "?baixar=1",
         "embutido": cartao(CHAVE_OFICIO, solicitacao.pk, titulo_oficio),
+        **_vias_do_documento("oficio", solicitacao),
     }
     contexto["doc_certifico"] = {
         "titulo": "Certifico digital",
@@ -1038,6 +1076,7 @@ def _contexto_da_nota(contexto, form, solicitacao):
             "src": url_m,
             "url_pdf": url_m + "?baixar=1",
             "embutido": cartao(CHAVE_CERTIFICO, membro.pk, titulo_m),
+            **_vias_do_documento("certifico", membro),
         })
 
 
@@ -1997,6 +2036,85 @@ def pacote_parte(request, pk, parte):
         # Baixar os arquivos conclui a etapa 3: é o dia do atesto e do envio ao GAF.
         services.marcar_atesto(solicitacao, request.user)
     return resposta
+
+
+# ---------------------------------------------------------------------------
+# Vias guardadas: a emitida e a assinada da OS, do ofício e do certifico
+# ---------------------------------------------------------------------------
+
+@require_POST
+@acesso_ao_modulo
+def anexar_assinado(request, pk, documento):
+    """A via assinada da OS, do ofício ou do certifico, pelo modal de anexo de
+    documentos: anexa (ou troca) e passa a valer no lugar da gerada; remover
+    revoga a assinada (o arquivo fica guardado) e a gerada volta a valer."""
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    from documentos.services.exceptions import DocumentError
+    from documentos.services.persistence import anexar_arquivo_assinado, remover_arquivo_assinado
+
+    from . import vias
+
+    if documento not in vias.TIPOS:
+        raise Http404
+    tipo = vias.TIPOS[documento]
+    solicitacao = _solicitacao_documental(pk)
+    tela = "coffee_break:editar" if documento == "os" else "coffee_break:etapa_nota"
+    destino = request.POST.get("next") or reverse(tela, args=[pk])
+    if not url_has_allowed_host_and_scheme(destino, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        destino = reverse(tela, args=[pk])
+    if solicitacao.bloqueada_para_edicao:
+        messages.warning(request, "Solicitações canceladas ou concluídas ficam bloqueadas para edição.")
+        return redirect(destino)
+    rotulo = {"os": "da ordem de serviço", "oficio": "do ofício", "certifico": "do certifico"}[documento]
+    dono = vias.dono(tipo, solicitacao)
+    if request.POST.get("acao") == "remover":
+        versao = vias.assinada(tipo, solicitacao)
+        if versao is not None:
+            remover_arquivo_assinado(versao.artefato)
+            services.registrar_historico(
+                dono, request.user, AcaoHistoricoCoffeeBreak.ATUALIZACAO,
+                f"Via assinada {rotulo} removida; o PDF gerado volta a valer.",
+            )
+            messages.success(request, "Versão assinada removida. O PDF gerado volta a valer.")
+        return redirect(destino)
+    arquivo = request.FILES.get("arquivo")
+    if arquivo is None:
+        messages.error(request, "Escolha o PDF assinado.")
+        return redirect(destino)
+    gerar = {"os": documentos.ordem_servico_pdf, "oficio": documentos.oficio_pdf, "certifico": documentos.certifico_pdf}[documento]
+    via = vias.ultima_via(tipo, solicitacao)
+    try:
+        if via is None:
+            # Ainda não saiu nenhuma via: a gerada agora é a que se assinou.
+            gerar(solicitacao)
+            via = vias.ultima_via(tipo, solicitacao)
+        if via is None:
+            raise ValidationError("Não foi possível guardar a via emitida deste documento.")
+        anexar_arquivo_assinado(via, arquivo)
+    except (ValidationError, DocumentError) as erro:
+        for mensagem in getattr(erro, "messages", [str(erro)]):
+            messages.error(request, mensagem)
+        return redirect(destino)
+    services.registrar_historico(
+        dono, request.user, AcaoHistoricoCoffeeBreak.ATUALIZACAO,
+        f"Via assinada {rotulo} anexada ({arquivo.name}); passa a valer nos downloads e no pagamento.",
+    )
+    messages.success(request, "Documento assinado anexado. Ele passa a valer no lugar do gerado; a versão anterior fica guardada.")
+    return redirect(destino)
+
+
+@acesso_ao_modulo
+def via_arquivo(request, pk):
+    """Uma via guardada (a emitida) ou, com `?assinada=<id>`, uma versão assinada dela."""
+    from documentos.models import DocumentoArtefato
+
+    via = get_object_or_404(DocumentoArtefato, pk=pk, coffee_break_solicitacao__isnull=False)
+    assinada = request.GET.get("assinada")
+    if assinada:
+        versao = get_object_or_404(via.versoes_assinadas, pk=assinada)
+        return _arquivo(versao.arquivo, nome=versao.nome_original or None)
+    return _arquivo(via.arquivo, nome=via.nome_exibicao or None)
 
 
 # ---------------------------------------------------------------------------

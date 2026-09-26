@@ -79,16 +79,28 @@ def ordem_servico_previa(solicitacao):
     return _previa("coffee_break/documentos/ordem_servico.html", _contexto_os(solicitacao))
 
 
-def _pdf(template, contexto):
+def _pdf_do_html(html):
     try:
         from weasyprint import HTML
     except OSError as exc:  # GTK/Pango ausentes
         raise ValidationError(
             "O gerador de PDF (WeasyPrint) não está disponível neste servidor."
         ) from exc
-    html = render_to_string(template, {**contexto, "imagens": _imagens()})
     base = Path(settings.BASE_DIR).resolve().as_uri() + "/"
     return HTML(string=html, base_url=base).write_pdf(presentational_hints=False)
+
+
+def _pdf(template, contexto):
+    return _pdf_do_html(render_to_string(template, {**contexto, "imagens": _imagens()}))
+
+
+def _emitir(tipo, solicitacao, template, contexto):
+    """A OS, o ofício ou o certifico: a via assinada, se houver; senão o PDF
+    gerado, que fica guardado como via emitida (coffee_break/vias.py)."""
+    from . import vias
+
+    html = render_to_string(template, {**contexto, "imagens": _imagens()})
+    return vias.emitir(tipo, solicitacao, html, _pdf_do_html)
 
 
 def _contexto(solicitacao):
@@ -116,7 +128,9 @@ def ordem_servico_pdf(solicitacao):
     faltas = pendencias_ordem_servico(solicitacao)
     if faltas:
         raise ValidationError(faltas)
-    return _pdf("coffee_break/documentos/ordem_servico.html", _contexto_os(solicitacao))
+    from .editor import TipoCoffee
+
+    return _emitir(TipoCoffee.ORDEM_SERVICO, solicitacao, "coffee_break/documentos/ordem_servico.html", _contexto_os(solicitacao))
 
 
 def _sem_quebra(texto, trecho):
@@ -140,7 +154,7 @@ def certifico_pdf(solicitacao):
     contexto = _contexto(solicitacao)
     contexto["b"], contexto["quebras"] = textos_do_documento(TipoCoffee.CERTIFICO, solicitacao)
     contexto["atesto_texto"] = _sem_quebra(contexto["b"]["cb_atesto_texto"], "executados/entregues")
-    return _pdf("coffee_break/documentos/certifico.html", contexto)
+    return _emitir(TipoCoffee.CERTIFICO, solicitacao, "coffee_break/documentos/certifico.html", contexto)
 
 
 def juntar(itens):
@@ -197,7 +211,7 @@ def oficio_pdf(solicitacao):
     contexto["varias_notas"] = len(notas) > 1
     # O texto do ofício é do pagamento: mora na OS principal.
     contexto["b"], contexto["quebras"] = textos_do_documento(TipoCoffee.OFICIO, solicitacao.principal_do_pagamento)
-    return _pdf("coffee_break/documentos/oficio.html", contexto)
+    return _emitir(TipoCoffee.OFICIO, solicitacao, "coffee_break/documentos/oficio.html", contexto)
 
 
 # ---------------------------------------------------------------------------

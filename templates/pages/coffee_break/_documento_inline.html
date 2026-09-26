@@ -5,8 +5,9 @@
   qualquer navegador — o PDF dentro de um quadro depende do leitor de PDF do
   navegador, e muitos (os de celular, por exemplo) não mostram.
 
-  Contexto: `d` (titulo, disponivel, mensagem, quadro, src, url_pdf),
-  `menu_id`, `aberto`.
+  Contexto: `d` (titulo, disponivel, mensagem, quadro, src, url_pdf; e,
+  da OS, do ofício e do certifico, assinado, assinatura, url_anexar e vias —
+  as vias guardadas, de `_vias_do_documento`), `menu_id`, `aberto`.
 {% endcomment %}
 <details class="ofc-doc{% if aninhado %} ofc-doc--aninhado{% endif %}" data-ofc-doc{% if d.embutido %} id="{{ d.embutido.id }}"{% endif %}{% if aberto %} open{% endif %}>
   <summary class="ofc-doc__cabeca">
@@ -39,3 +40,19 @@
   </div>
   {% endif %}
 </details>
+{% if d.vias %}
+  {# As vias guardadas: cada PDF emitido (data e quem emitiu) e as assinadas anexadas a ele. #}
+  <details class="cb-vias">
+    <summary>{% if d.assinatura %}Vale a via assinada, anexada em {{ d.assinatura.criado_em|date:"d/m/Y H:i" }}{% if d.assinatura.criado_por %} por {{ d.assinatura.criado_por }}{% endif %}{% else %}Última via emitida em {{ d.vias.0.via.criado_em|date:"d/m/Y H:i" }}{% if d.vias.0.via.criado_por %} por {{ d.vias.0.via.criado_por }}{% endif %}{% endif %} · vias guardadas ({{ d.vias|length }})</summary>
+    <ul class="cb-vias__lista">
+      {% for v in d.vias %}
+        <li>
+          <a href="{{ v.url }}" target="_blank" rel="noopener">Emitida em {{ v.via.criado_em|date:"d/m/Y H:i" }}</a>{% if v.via.criado_por %} por {{ v.via.criado_por }}{% endif %}
+          {% for a in v.assinadas %}
+            <br><a href="{{ a.url }}" target="_blank" rel="noopener">Assinada anexada em {{ a.versao.criado_em|date:"d/m/Y H:i" }}</a>{% if a.versao.criado_por %} por {{ a.versao.criado_por }}{% endif %}{% if a.versao.revogada_em %} <small>(removida em {{ a.versao.revogada_em|date:"d/m/Y H:i" }})</small>{% endif %}
+          {% endfor %}
+        </li>
+      {% endfor %}
+    </ul>
+  </details>
+{% endif %}

@@ -37,6 +37,12 @@ class DocumentoArtefato(OrigemLegadoUUID):
         "viagens_planos.PlanoTrabalho", on_delete=models.SET_NULL,
         null=True, blank=True, related_name="artefatos",
     )
+    # A OS, o ofício e o certifico do Coffee Break: a via emitida fica guardada
+    # (e a assinada, em DocumentoAssinaturaVersao), como nos documentos de Viagens.
+    coffee_break_solicitacao = models.ForeignKey(
+        "coffee_break.SolicitacaoCoffeeBreak", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="artefatos",
+    )
     criado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name="documentos_gerados",

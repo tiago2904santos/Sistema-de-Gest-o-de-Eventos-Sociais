@@ -38,6 +38,25 @@ User = get_user_model()
 
 class BaseCoffeeBreakTestCase(TestCase):
     @classmethod
+    def setUpClass(cls):
+        # As vias emitidas da OS, do ofício e do certifico ficam guardadas
+        # (coffee_break/vias.py): nos testes, numa pasta temporária.
+        import tempfile
+
+        from django.test import override_settings
+
+        cls._pasta_media = tempfile.TemporaryDirectory(prefix="coffee-media-")
+        cls._media = override_settings(MEDIA_ROOT=cls._pasta_media.name)
+        cls._media.enable()
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        cls._media.disable()
+        cls._pasta_media.cleanup()
+
+    @classmethod
     def setUpTestData(cls):
         cls.setor_ascom = Setor.objects.get(nome="ASCOM")
         cls.modulo = Modulo.objects.get(codigo=CODIGO_MODULO)
