@@ -489,7 +489,7 @@ PALAVRAS_PESSOAS = (
 _NUMERO = r"(?<![\d.,/])(?P<n>\d{1,3}(?:\.\d{3})+|\d{1,6})(?![\d/]|[.,:]\d|\s*h\b|\s*(?:%|reais|anos|dias|horas))"
 _R_QUANTIDADE_ANCORADA = re.compile(
     r"\b(?:publico(?:\s+(?:estimado|previsto|esperado|alvo|total))?|quantidade(?:\s+de\s+(?:pessoas|participantes|publico))?|"
-    r"numero\s+de\s+(?:participantes|pessoas|alunos|convidados)|total\s+de\s+(?:participantes|pessoas)|"
+    r"(?:numero|n[o.]?|qtde?\.?)\s+de\s+(?:participantes|pessoas|alunos|convidados|publico)|total\s+de\s+(?:participantes|pessoas)|"
     r"estimativa(?:\s+de\s+publico)?)\s*(?:de|:|-|=|e\s+de)?\s*"
     r"(?:cerca\s+de|aproximadamente|aprox\.?|em\s+torno\s+de|ate|mais\s+de|uns|umas)?\s*" + _NUMERO
 )

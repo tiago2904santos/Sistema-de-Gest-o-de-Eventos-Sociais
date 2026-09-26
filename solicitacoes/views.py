@@ -371,7 +371,8 @@ def solicitantes_anteriores(request):
 @login_required
 def nova_solicitacao(request):
     """Tela "Nova Solicitação de Evento Social" com persistência real."""
-    email_origem = None
+    # O e-mail da triagem da página inicial (?email_origem=) ou o do formulário que voltou com erro.
+    email_origem = preencher_por_email.origem_da_tela(request, "solicitacoes")
     if request.method == "POST":
         acao = request.POST.get("acao", "rascunho")
         form = SolicitacaoForm(request.POST, enviar=(acao == "enviar"))
@@ -399,6 +400,9 @@ def nova_solicitacao(request):
                     avisos_origem = _anexar_email_de_origem(solicitacao, origem, request.user)
                 if acao == "enviar":
                     services.enviar(solicitacao, request.user)
+            preencher_por_email.registrar_cadastro(
+                request, origem, "solicitacoes", form, preenchimento.CAMPOS_APRENDIDOS,
+            )
             preencher_por_email.concluir_origem(request, origem)
             for aviso in avisos_origem:
                 messages.warning(request, aviso)
@@ -409,7 +413,7 @@ def nova_solicitacao(request):
             return redirect("solicitacoes:editar", pk=solicitacao.pk)
         else:
             messages.error(request, "Corrija os campos destacados para continuar.")
-            email_origem = preencher_por_email.origem_pendente(request, "solicitacoes")
+            email_origem = preencher_por_email.origem_da_tela(request, "solicitacoes")
     else:
         form = SolicitacaoForm()
     contexto = _contexto_formulario(request, form)

@@ -48,10 +48,30 @@
   var EXTENSOES = [".eml", ".msg", ".pdf", ".txt"];
   var EMAILS = [".eml", ".msg", ".txt"];
 
+  // Pelo nome; sem extensão (o celular às vezes manda "document"), pelo tipo.
+  var TIPOS = { "application/pdf": ".pdf", "message/rfc822": ".eml", "text/plain": ".txt", "application/vnd.ms-outlook": ".msg" };
   function extensaoDe(arquivo) {
     var nome = (arquivo.name || "").toLowerCase();
     var ponto = nome.lastIndexOf(".");
-    return ponto === -1 ? "" : nome.slice(ponto);
+    if (ponto !== -1 && ponto < nome.length - 1) return nome.slice(ponto);
+    return TIPOS[(arquivo.type || "").toLowerCase()] || "";
+  }
+
+  // O celular entrega o arquivo como uma referência que às vezes expira antes
+  // do envio (Drive, Gmail, "Recentes") — o fetch morre com "Failed to fetch".
+  // Ler o conteúdo já, na hora da escolha, e mandar a cópia evita isso; se
+  // nem a leitura der, a mensagem explica o que fazer.
+  var MSG_LEITURA = "Não consegui abrir o arquivo no aparelho. Salve-o no telefone (pasta Downloads) e escolha de novo pelo app Arquivos — ou use o computador.";
+  var MSG_REDE = "A conexão caiu no envio do arquivo. Confira a internet e tente de novo; se continuar, salve o arquivo no aparelho e escolha de novo.";
+  function copiaDe(arquivo) {
+    if (!arquivo.arrayBuffer) return Promise.resolve(arquivo);
+    return arquivo.arrayBuffer().then(function (conteudo) {
+      return new File([conteudo], arquivo.name || "arquivo", { type: arquivo.type || "application/octet-stream" });
+    });
+  }
+  function mensagemDeFalha(falha) {
+    if (falha && falha.name === "TypeError") return MSG_REDE;
+    return falha && falha.message ? falha.message : "Não foi possível ler o e-mail.";
   }
 
   function el(tag, classe, texto) {
@@ -464,6 +484,20 @@
       resultado.appendChild(titulo);
       resultado.appendChild(el("p", "pe__origem", descreverOrigem(dados)));
 
+      // Veio da triagem da página inicial: os outros módulos a um clique.
+      var outros = dados.outros_modulos || [];
+      if (outros.length) {
+        var troca = el("p", "pe__outros");
+        troca.appendChild(document.createTextNode("Não é uma " + registro + "? Abrir este e-mail como: "));
+        outros.forEach(function (o, i) {
+          if (i) troca.appendChild(document.createTextNode(" · "));
+          var link = el("a", "pe__outro", o.rotulo);
+          link.href = o.url;
+          troca.appendChild(link);
+        });
+        resultado.appendChild(troca);
+      }
+
       var avisos = (dados.avisos || []).slice();
       efeito.recusados.forEach(function (item) {
         avisos.push(rotulo(item) + ": “" + item.sugestao.exibir + "” não está entre as opções do campo; escolha à mão.");
@@ -592,7 +626,7 @@
         .catch(function (falha) {
           anunciar("");
           if (seNaoLer && seNaoLer()) return;
-          mostrarErro(falha && falha.message ? falha.message : "Não foi possível ler o e-mail.");
+          mostrarErro(mensagemDeFalha(falha));
         })
         .then(function () { ocupado(false); });
     }
@@ -607,9 +641,17 @@
         mostrarErro("O arquivo passa do limite de " + Math.round(maximo / 1048576) + " MB.");
         return;
       }
-      var dados = new FormData();
-      dados.append("arquivo", arquivo);
-      enviar(dados, seNaoLer);
+      ocupado(true);
+      anunciar("Abrindo o arquivo…");
+      copiaDe(arquivo).then(function (copia) {
+        var dados = new FormData();
+        dados.append("arquivo", copia, copia.name);
+        enviar(dados, seNaoLer);
+      }, function () {
+        ocupado(false);
+        anunciar("");
+        mostrarErro(MSG_LEITURA);
+      });
     }
 
     // ------------------------------------------------------------------
@@ -710,9 +752,21 @@
       if (abrir && campoTexto) campoTexto.focus();
     }
 
+    // Veio da triagem da página inicial (?email_origem=): lê o e-mail sozinha.
+    var tokenAuto = bloco.getAttribute("data-pe-auto");
+    if (tokenAuto) {
+      var dadosAuto = new FormData();
+      dadosAuto.append("token", tokenAuto);
+      enviar(dadosAuto);
+      if (window.history && window.history.replaceState) {
+        // O token sai da URL: recarregar a página não lê de novo por cima do que a pessoa digitou.
+        try { window.history.replaceState(null, "", window.location.pathname); } catch (e) { /* sem histórico */ }
+      }
+    }
+
     // Página recarregada: o vínculo volta (o servidor confere se o e-mail ainda vale).
     var tokenDaTela = campoToken(false);
-    if (!tokenDaTela || !tokenDaTela.value) {
+    if (!tokenAuto && (!tokenDaTela || !tokenDaTela.value)) {
       var salvo = lembrado();
       if (salvo && salvo.token) {
         campoToken(true).value = salvo.token;

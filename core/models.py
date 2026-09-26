@@ -73,6 +73,50 @@ class Notificacao(models.Model):
         return f"{self.usuario} — {self.titulo}"
 
 
+class MemoriaLeitura(models.Model):
+    """O que o sistema aprendeu dos pedidos salvos a partir de um e-mail.
+
+    Cada linha é uma contagem: quantas vezes um remetente (ou o domínio dele,
+    ou uma palavra do assunto) levou a um módulo, e — com `campo` — que valor
+    o formulário salvo tinha naquele campo. É daqui que a triagem da página
+    inicial e o "Preencher com um e-mail" tiram as sugestões que o texto do
+    e-mail não dá: "o pedido anterior desta escola foi em Ponta Grossa, com a
+    professora Fulana". Ver `core.aprendizado`.
+    """
+
+    TIPO_REMETENTE = "remetente"
+    TIPO_DOMINIO = "dominio"
+    TIPO_PALAVRA = "palavra"
+    TIPOS = (
+        (TIPO_REMETENTE, "Remetente"),
+        (TIPO_DOMINIO, "Domínio do remetente"),
+        (TIPO_PALAVRA, "Palavra do assunto"),
+    )
+
+    tipo = models.CharField("tipo", max_length=12, choices=TIPOS)
+    chave = models.CharField("chave", max_length=200)
+    modulo = models.CharField("módulo", max_length=40)
+    campo = models.CharField("campo", max_length=60, blank=True)
+    valor = models.CharField("valor", max_length=500, blank=True)
+    exibir = models.CharField("como mostrar", max_length=300, blank=True)
+    vezes = models.PositiveIntegerField("vezes", default=1)
+    atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
+
+    class Meta:
+        verbose_name = "memória de leitura"
+        verbose_name_plural = "memórias de leitura"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tipo", "chave", "modulo", "campo", "valor"], name="core_memoria_leitura_unica"
+            ),
+        ]
+        indexes = [models.Index(fields=["tipo", "chave"])]
+
+    def __str__(self):
+        alvo = f"{self.modulo}.{self.campo}={self.exibir or self.valor}" if self.campo else self.modulo
+        return f"{self.get_tipo_display()} {self.chave} → {alvo} ({self.vezes}×)"
+
+
 class Feriado(models.Model):
     """Feriado estadual, municipal ou ponto facultativo local (m094).
 
