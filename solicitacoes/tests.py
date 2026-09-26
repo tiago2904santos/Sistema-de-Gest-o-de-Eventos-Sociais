@@ -2114,6 +2114,56 @@ class TimelineComORegistroMaisRecenteTests(BaseSolicitacaoTestCase):
         self.assertEqual(envio["quando"], "01/08/2026 10:00")
 
 
+class EdicaoSimultaneaTests(BaseSolicitacaoTestCase):
+    """Salvar a tela velha não desfaz o ajuste ou a decisão de outra pessoa."""
+
+    def _versao_da_tela(self, url):
+        resposta = self.client.get(url)
+        versao = resposta.context["valores"]["versao"]
+        self.assertContains(resposta, f'name="versao" value="{versao}"')
+        return versao
+
+    def test_ajuste_da_dg_no_meio_barra_o_salvar_do_solicitante(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.client.force_login(self.solicitante)
+        url = reverse("solicitacoes:editar", args=[solicitacao.pk])
+        versao = self._versao_da_tela(url + "?reabrir=1")
+        self.assertTrue(versao)
+
+        # Enquanto a tela está aberta, a DG ajusta os servidores.
+        services.salvar_ajustes_dg(solicitacao, self.gestor, {self.equipe.pk: 9})
+
+        dados = self.dados_completos_post(acao="rascunho")
+        dados.update({"reabrir": "1", "versao": versao, "local_evento": "Outro local"})
+        resposta = self.client.post(url, dados)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "alterada por outra pessoa")
+        item = solicitacao.itens_equipe.get()
+        self.assertEqual(item.quantidade_servidores, 9)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.local_evento, "Praça central")
+
+    def test_versao_em_dia_salva_normalmente(self):
+        solicitacao = self.solicitacao_completa()
+        self.client.force_login(self.solicitante)
+        url = reverse("solicitacoes:editar", args=[solicitacao.pk])
+        dados = self.dados_completos_post(acao="rascunho")
+        dados.update({"versao": self._versao_da_tela(url), "local_evento": "Ginásio"})
+        resposta = self.client.post(url, dados)
+        self.assertEqual(resposta.status_code, 302)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.local_evento, "Ginásio")
+
+    def test_ajuste_da_dg_muda_a_versao(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        antes = SolicitacaoEvento.objects.get(pk=solicitacao.pk).atualizado_em
+        services.salvar_ajustes_dg(solicitacao, self.gestor, {self.equipe.pk: 7})
+        depois = SolicitacaoEvento.objects.get(pk=solicitacao.pk).atualizado_em
+        self.assertGreater(depois, antes)
+
+
 class ConsultasDaListaTests(BaseSolicitacaoTestCase):
     """O perfil do usuário é lido uma vez por requisição, não uma por linha."""
 

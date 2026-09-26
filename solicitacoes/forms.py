@@ -153,6 +153,10 @@ def _sincronizar_equipes(solicitacao, selecionadas, quantidades):
     solicitacao.recalcular_quantidade_servidores()
 
 
+def _versao(atualizado_em):
+    return str(int(atualizado_em.timestamp() * 1_000_000)) if atualizado_em else ""
+
+
 class SolicitacaoForm(forms.ModelForm):
     """Formulário único da solicitação: dados, serviços e planejamento.
 
@@ -169,6 +173,10 @@ class SolicitacaoForm(forms.ModelForm):
         queryset=Equipe.objects.none(), required=False, label="Equipes"
     )
     unidade_movel = _campo_sim_nao("Unidade móvel")
+    # Versão do registro quando a tela abriu (o `atualizado_em`, em
+    # microssegundos). Se mudou até o salvar, outra pessoa mexeu no meio —
+    # a DG ajustando servidores ou decidindo — e salvar desfaria isso.
+    versao = forms.CharField(required=False, widget=forms.HiddenInput)
 
     class Meta:
         model = SolicitacaoEvento
@@ -229,6 +237,7 @@ class SolicitacaoForm(forms.ModelForm):
             | (instancia.equipes.all() if instancia else Equipe.objects.none())
         ).distinct()
         if instancia:
+            self.initial["versao"] = _versao(instancia.atualizado_em)
             if instancia.municipio_id:
                 self.initial.setdefault("estado", instancia.municipio.estado_id)
             self.initial.setdefault("servicos", list(instancia.servicos.all()))
@@ -240,6 +249,7 @@ class SolicitacaoForm(forms.ModelForm):
 
     def clean(self):
         dados = super().clean()
+        self._conferir_versao(dados.get("versao"))
         dados["tipo_operacao"] = dados.get("tipo_operacao") or TipoOperacao.DIARIA
         tipo_evento = dados.get("tipo_evento")
         estado = dados.get("estado")
@@ -299,6 +309,26 @@ class SolicitacaoForm(forms.ModelForm):
                     + " para enviar à DG.",
                 )
         return dados
+
+    def _conferir_versao(self, versao):
+        """Barra o salvar quando o registro mudou depois que a tela abriu.
+
+        Só confere quando a tela mandou a versão: POST sem ela (integrações
+        e telas antigas) segue como antes.
+        """
+        if not self.instance.pk or not versao:
+            return
+        atual = (
+            type(self.instance)
+            .objects.filter(pk=self.instance.pk)
+            .values_list("atualizado_em", flat=True)
+            .first()
+        )
+        if atual and versao != _versao(atual):
+            raise forms.ValidationError(
+                "Esta solicitação foi alterada por outra pessoa depois que você "
+                "abriu a tela. Recarregue a página antes de salvar."
+            )
 
     def clean_motorista(self):
         motorista = self.cleaned_data.get("motorista")

@@ -103,6 +103,8 @@
     <form method="post" action="" id="form-solicitacao" class="editor-roteiro__principal" enctype="multipart/form-data">
       {% csrf_token %}
       {% if reabrindo %}<input type="hidden" name="reabrir" value="1">{% endif %}
+      {# Versão do registro ao abrir: salvar por cima da mudança de outra pessoa é barrado. #}
+      {% if solicitacao %}<input type="hidden" name="versao" value="{{ valores.versao }}">{% endif %}
       {% if form.errors %}
         <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
           {% include "components/icon.html" with nome="info" %}

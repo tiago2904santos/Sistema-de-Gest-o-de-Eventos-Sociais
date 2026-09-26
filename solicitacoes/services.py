@@ -293,6 +293,12 @@ def ajustar_quantidades_dg(solicitacao, usuario, quantidades):
             item.save(update_fields=["quantidade_servidores"])
     if mudancas:
         solicitacao.recalcular_quantidade_servidores()
+        # A solicitação mudou, ainda que só nos itens: quem estiver com o
+        # "Editar" aberto precisa recarregar antes de salvar por cima.
+        solicitacao.atualizado_em = timezone.now()
+        type(solicitacao).objects.filter(pk=solicitacao.pk).update(
+            atualizado_em=solicitacao.atualizado_em
+        )
         registrar_historico(
             solicitacao,
             usuario,
