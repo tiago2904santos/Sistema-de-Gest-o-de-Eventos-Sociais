@@ -8,6 +8,8 @@ handler403 = "core.views.erro_403"
 
 urlpatterns = [
     path("viagens/prestacoes/", include("viagens_prestacoes.urls")),
+    # m096: o diário de bordo no celular do motorista — acesso pelo link, sem login.
+    path("campo/diario/", include("viagens_prestacoes.campo_urls")),
     path("viagens/oficios/", include("viagens_oficios.urls")),
     path("viagens/termos/", include("viagens_termos.urls")),
     path("viagens/viagem/", include("viagens_viagem.urls")),

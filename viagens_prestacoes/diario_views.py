@@ -161,8 +161,44 @@ def diario_servidor(request, ps_pk, motorista_form=None):
             # O modal "Trocar motorista / viatura" (o mesmo formulário da página própria).
             **_contexto_motorista(ps, prestacao, diario, motorista_form or DiarioMotoristaForm(instance=diario, oficio=prestacao.oficio)),
             "abrir_modal_motorista": motorista_form is not None,
+            # m096: o link do diário no celular do motorista.
+            **_contexto_link_campo(request, ps, diario),
         },
     )
+
+
+def _contexto_link_campo(request, ps, diario) -> dict:
+    """O cartão "Preencher no celular": link ativo, validade e o botão do WhatsApp."""
+    from .campo_services import link_ativo, url_whatsapp
+
+    link = link_ativo(diario)
+    contexto = {
+        "link_campo": link,
+        "link_campo_gerar_url": reverse("viagens_prestacoes:diario_servidor_link_campo", args=[ps.pk, "gerar"]),
+        "link_campo_revogar_url": reverse("viagens_prestacoes:diario_servidor_link_campo", args=[ps.pk, "revogar"]),
+    }
+    if link is not None:
+        url = request.build_absolute_uri(reverse("campo_diario:pagina", args=[link.token]))
+        contexto["link_campo_url"] = url
+        contexto["link_campo_whatsapp"] = url_whatsapp(link, url)
+    return contexto
+
+
+def diario_servidor_link_campo(request, ps_pk, acao):
+    """Gera (ou troca) e revoga o link do diário no celular do motorista (m096)."""
+    from .campo_services import gerar_link, revogar_links
+
+    ps = get_object_or_404(_prestacao_servidor_queryset().select_related("prestacao"), pk=ps_pk)
+    diario = obter_ou_criar_diario(ps.prestacao)
+    if acao == "gerar":
+        gerar_link(diario, request.user)
+        messages.success(request, "Link do diário gerado. Envie ao motorista pelo WhatsApp; o link anterior, se havia, deixou de abrir.")
+    elif acao == "revogar":
+        if revogar_links(diario):
+            messages.success(request, "Link desativado: ele não abre mais o diário.")
+    else:
+        messages.error(request, "Ação desconhecida.")
+    return redirect(reverse("viagens_prestacoes:diario_servidor", args=[ps.pk]) + "#celular")
 
 
 def diario_servidor_autosave(request, ps_pk):

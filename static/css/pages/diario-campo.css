@@ -1,0 +1,45 @@
+/* m096 — Diário de bordo no celular do motorista (página do link, sem o shell).
+   Mobile-first; mesmas cores e tipografia do design system V3.2 (ds-v32.css). */
+:root{
+  --dc-grafite:#333333;--dc-texto:#262626;--dc-suave:#5e5e5e;--dc-borda:#d1d3d4;
+  --dc-papel:#fafafa;--dc-branco:#fff;--dc-dourado:#bea45a;
+  --dc-ok-t:#1c7040;--dc-ok-b:#e9f2ec;--dc-wn-t:#7d5a00;--dc-wn-b:#fdf3dd;--dc-dg-t:#a32b22;--dc-dg-b:#fdeeec;
+  --dc-f:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",sans-serif;
+}
+*{box-sizing:border-box}
+body.dc{margin:0;background:var(--dc-papel);color:var(--dc-texto);font-family:var(--dc-f);font-size:16px;line-height:1.4}
+.dc-topo{background:var(--dc-grafite);color:var(--dc-branco);padding:16px 16px 14px;border-bottom:3px solid var(--dc-dourado)}
+.dc-topo__rotulo{margin:0;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;opacity:.8}
+.dc-topo__titulo{margin:2px 0 0;font-size:1.3rem}
+.dc-topo__meta{margin:4px 0 0;font-size:.9rem;opacity:.9}
+.dc-corpo{padding:12px 12px 32px;max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.dc-estado{margin:0;padding:8px 12px;border-radius:8px;background:var(--dc-wn-b);color:var(--dc-wn-t);font-weight:600;font-size:.9rem}
+.dc-estado[data-tom="ok"]{background:var(--dc-ok-b);color:var(--dc-ok-t)}
+.dc-cartao{background:var(--dc-branco);border:1px solid var(--dc-borda);border-radius:12px;padding:12px}
+.dc-viatura{display:grid;gap:8px}
+.dc-viatura small,.dc-campo span{display:block;font-size:.8rem;color:var(--dc-suave)}
+.dc-ajuda summary{font-weight:600;cursor:pointer}
+.dc-ajuda ol{padding-left:20px;margin:8px 0}
+.dc-ajuda p{margin:0;font-size:.85rem;color:var(--dc-suave)}
+.dc-trechos{display:flex;flex-direction:column;gap:12px}
+.dc-trecho__topo{display:flex;gap:8px;align-items:baseline}
+.dc-trecho__ordem{flex:none;width:24px;height:24px;border-radius:50%;background:var(--dc-grafite);color:var(--dc-branco);font-size:.8rem;display:inline-flex;align-items:center;justify-content:center}
+.dc-trecho__datas{margin:4px 0 8px;font-size:.85rem;color:var(--dc-suave)}
+.dc-trecho__campos{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dc-campo input{width:100%;height:48px;font-size:1.2rem;padding:0 10px;border:1px solid var(--dc-borda);border-radius:8px;background:var(--dc-branco);color:var(--dc-texto);font-variant-numeric:tabular-nums}
+.dc-campo input:focus{outline:2px solid var(--dc-dourado);outline-offset:1px}
+.dc-sugestao{margin-top:4px;border:0;background:none;color:#17548a;font-size:.85rem;padding:4px 0;text-decoration:underline;cursor:pointer}
+.dc-abastecer{border:0;margin:10px 0 0;padding:0;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.dc-abastecer legend{float:left;margin-right:8px;font-size:.9rem;color:var(--dc-suave)}
+.dc-abastecer label{display:inline-flex;gap:6px;align-items:center;min-height:44px;font-size:1rem}
+.dc-abastecer input{width:22px;height:22px}
+.dc-trecho__estado{margin:6px 0 0;font-size:.85rem;color:var(--dc-suave);min-height:1.2em}
+.dc-trecho__estado[data-tom="ok"]{color:var(--dc-ok-t)}
+.dc-trecho__estado[data-tom="pendente"]{color:var(--dc-wn-t)}
+.dc-trecho__estado[data-tom="erro"]{color:var(--dc-dg-t);font-weight:600}
+.dc-aviso{padding:10px 12px;border-radius:8px;background:var(--dc-wn-b);color:var(--dc-wn-t);font-size:.9rem}
+.dc-aviso ul{margin:6px 0 0;padding-left:18px}
+.dc-aviso--perigo{background:var(--dc-dg-b);color:var(--dc-dg-t);font-weight:600}
+.dc-total{margin:0;font-size:.9rem;color:var(--dc-suave);text-align:center}
+.dc-botao{height:48px;border:0;border-radius:8px;background:var(--dc-grafite);color:var(--dc-branco);font-size:1rem;font-weight:600;cursor:pointer}
+.dc-botao:disabled{opacity:.5}

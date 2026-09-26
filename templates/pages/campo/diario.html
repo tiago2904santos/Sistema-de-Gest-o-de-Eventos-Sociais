@@ -1,0 +1,87 @@
+{% load static estaticos %}<!DOCTYPE html>
+{% comment %}
+  m096 — O diário de bordo no celular do motorista, aberto pelo link pessoal.
+  Página sem login e sem o shell do sistema: só a viagem, a viatura e os trechos.
+  O JS (diario-campo.js) guarda cada lançamento no celular (IndexedDB) e envia
+  quando há internet; o service worker guarda a página para abrir sem sinal.
+{% endcomment %}
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#333333">
+  <title>Diário de bordo — Ofício {{ dados.oficio }}</title>
+  <link rel="icon" href="{% static 'icons/favicon.svg' %}" type="image/svg+xml">
+  <link rel="manifest" href="{{ url_manifest }}">
+  <link rel="stylesheet" href="{% estatico 'css/pages/diario-campo.css' %}" data-dc-guardar>
+</head>
+<body class="dc" data-token="{{ token }}" data-url-enviar="{{ url_enviar }}" data-url-sw="{{ url_sw }}">
+  <header class="dc-topo">
+    <p class="dc-topo__rotulo">Diário de bordo</p>
+    <h1 class="dc-topo__titulo">Ofício {{ dados.oficio }}</h1>
+    <p class="dc-topo__meta">{% if dados.saida %}Saída {{ dados.saida }}{% endif %}{% if dados.retorno %} · volta {{ dados.retorno }}{% endif %}</p>
+  </header>
+
+  <main class="dc-corpo">
+    <p class="dc-estado" data-dc-estado role="status" aria-live="polite">Carregando…</p>
+    <div class="dc-aviso dc-aviso--perigo" data-dc-bloqueio hidden></div>
+
+    <section class="dc-cartao dc-viatura" aria-label="Viatura e motorista">
+      <div><small>Viatura</small><b>{% if dados.placa %}{{ dados.placa }} — {% endif %}{{ dados.viatura }}</b></div>
+      {% if dados.motorista %}<div><small>Motorista</small><b>{{ dados.motorista }}</b></div>{% endif %}
+      {% if dados.ultimo_km %}<div><small>Último km registrado desta viatura</small><b>{{ dados.ultimo_km.km }} (em {{ dados.ultimo_km.data }})</b></div>{% endif %}
+    </section>
+
+    <details class="dc-cartao dc-ajuda">
+      <summary>Como preencher</summary>
+      <ol>
+        <li>Em cada trecho, digite o km do painel na <b>saída</b> e na <b>chegada</b>.</li>
+        <li>Marque se precisou <b>abastecer</b>.</li>
+        <li>Sem sinal? Pode continuar: fica <b>salvo no celular</b> e é enviado sozinho quando a internet voltar.</li>
+        <li>O km de saída de um trecho vem sugerido pela chegada do anterior, e o de chegada pela distância do trecho.</li>
+      </ol>
+      <p>Este link é pessoal e vale até {{ dados.validade }}.</p>
+    </details>
+
+    <div class="dc-trechos" data-dc-trechos></div>
+
+    <div class="dc-aviso" data-dc-avisos hidden><b>Confira o hodômetro</b><ul data-dc-avisos-lista></ul></div>
+
+    <p class="dc-total" data-dc-total></p>
+    <button type="button" class="dc-botao" data-dc-enviar>Enviar agora</button>
+  </main>
+
+  <template id="dc-modelo-trecho">
+    <article class="dc-cartao dc-trecho" data-dc-linha>
+      <header class="dc-trecho__topo">
+        <span class="dc-trecho__ordem" data-dc-ordem></span>
+        <b class="dc-trecho__rota" data-dc-rota></b>
+      </header>
+      <p class="dc-trecho__datas" data-dc-datas></p>
+      <div class="dc-trecho__campos">
+        <label class="dc-campo">
+          <span>Km na saída</span>
+          <input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="7" data-dc-campo="km_inicial">
+          <button type="button" class="dc-sugestao" data-dc-sugerir="km_inicial" hidden></button>
+        </label>
+        <label class="dc-campo">
+          <span>Km na chegada</span>
+          <input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="7" data-dc-campo="km_final">
+          <button type="button" class="dc-sugestao" data-dc-sugerir="km_final" hidden></button>
+        </label>
+      </div>
+      <fieldset class="dc-abastecer">
+        <legend>Precisou abastecer?</legend>
+        <label><input type="radio" value="sim" data-dc-campo="abastecimento"> Sim</label>
+        <label><input type="radio" value="nao" data-dc-campo="abastecimento"> Não</label>
+      </fieldset>
+      <p class="dc-trecho__estado" data-dc-linha-estado aria-live="polite"></p>
+    </article>
+  </template>
+
+  {{ dados|json_script:"dc-dados" }}
+  <script src="{% estatico 'js/diario-campo.js' %}" defer data-dc-guardar></script>
+</body>
+</html>
