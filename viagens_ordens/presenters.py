@@ -145,14 +145,19 @@ def artefatos_pdf_por_ordem(ordens):
         .filter(ordem_servico_id__in=ids, formato="pdf", tipo=DocumentoTipo.ORDEM_SERVICO.value)
         .annotate(tem_versao=Exists(versao_viva))
         .order_by("criado_em")
-        .values_list("ordem_servico_id", "pk", "tem_versao", "arquivo_assinado")
+        .values_list("ordem_servico_id", "pk", "tem_versao", "arquivo_assinado", "versao_emitida", "emitida_em")
     )
     mapa = {}
-    for ordem_id, pk, tem_versao, arquivo_assinado in consulta:
+    for ordem_id, pk, tem_versao, arquivo_assinado, versao_emitida, emitida_em in consulta:
         assinado = bool(tem_versao) or bool(arquivo_assinado)
         # O mais recente é o alvo; se qualquer um já voltou assinado, a OS está assinada.
-        anterior = mapa.get(ordem_id)
-        mapa[ordem_id] = {"pk": pk, "assinado": assinado or bool(anterior and anterior["assinado"])}
+        # Com via emitida (m113), o alvo é a via de maior versão.
+        anterior = mapa.get(ordem_id) or {"versao": None, "emitida_em": None}
+        entrada = {"assinado": assinado or bool(anterior.get("assinado")), "versao": anterior["versao"], "emitida_em": anterior["emitida_em"],
+                   "pk": pk if not anterior["versao"] else anterior["pk"]}
+        if versao_emitida and versao_emitida >= (anterior["versao"] or 0):
+            entrada.update(pk=pk, versao=versao_emitida, emitida_em=emitida_em)
+        mapa[ordem_id] = entrada
     return mapa
 
 
@@ -182,5 +187,8 @@ def linha_da_lista(ordem, *, assinante=None, artefato_pdf=None):
         "oficios": oficios,
         "url_assinado": reverse("viagens_ordens:assinatura_artefato", args=[artefato_pdf["pk"]]) if artefato_pdf else "",
         "assinado": bool(artefato_pdf and artefato_pdf["assinado"]),
+        # A via emitida (m113): "Versão 1 emitida em dd/mm" e "Emitir nova versão".
+        "versao": artefato_pdf.get("versao") if artefato_pdf else None,
+        "emitida_em": artefato_pdf.get("emitida_em") if artefato_pdf else None,
         **urls_da_ordem(ordem),
     }

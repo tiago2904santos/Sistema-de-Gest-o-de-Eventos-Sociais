@@ -26,7 +26,7 @@ from viagens_cadastros.permissions import acesso_ao_modulo, pode_editar_cadastro
 from viagens_oficios.picker import LIMITE_BUSCA, pks_ja_escolhidos
 from viagens_oficios.presenters import iniciais
 from viagens_oficios.roteiro_context import periodo_roteiro
-from viagens_oficios.views import exigir_operador, resposta_documento
+from viagens_oficios.views import exigir_operador, nova_versao_pedida, resposta_documento
 from viagens_viagem.services import destinos_para_formulario, semente_de_documentos, viagem_do_request
 
 from . import abas as abas_de_ordem
@@ -409,7 +409,7 @@ def gerar(request, pk, formato):
         messages.error(request, "Reative a Ordem de Serviço antes de gerar documentos.")
         return redirect(voltar_para(request, reverse("viagens_ordens:editar", args=[pk])))
     try:
-        return resposta_documento(request, gerar_ordem_servico(ordem, DocumentoFormato(formato)))
+        return resposta_documento(request, gerar_ordem_servico(ordem, DocumentoFormato(formato), nova_versao=nova_versao_pedida(request)))
     except (ValidationError, DocumentError) as exc:
         messages.error(request, "; ".join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
         return redirect(voltar_para(request, reverse("viagens_ordens:editar", args=[pk])))

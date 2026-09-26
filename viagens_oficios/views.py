@@ -842,6 +842,12 @@ def acao(request, pk, acao):
     return redirect(destino)
 
 
+def nova_versao_pedida(request) -> bool:
+    """"Emitir nova versão" (m113): o botão manda `nova_versao=1`; sem ele, o
+    PDF que volta é a via emitida, mesmo que os dados tenham mudado."""
+    return request.POST.get('nova_versao') == '1'
+
+
 def resposta_documento(request, doc):
     if request.GET.get('inline') == '1' and doc.formato == DocumentoFormato.PDF:
         return build_inline_pdf_response(request, content=doc.conteudo, tipo=doc.tipo,
@@ -857,7 +863,7 @@ def gerar(request, pk, tipo, formato):
         raise Http404
     oficio = get_oficio_by_id(pk)
     try:
-        doc = gerar_documento(oficio, DocumentoFormato(formato), DocumentoTipo(tipo))
+        doc = gerar_documento(oficio, DocumentoFormato(formato), DocumentoTipo(tipo), nova_versao=nova_versao_pedida(request))
     except (ValidationError, DocumentError) as exc:
         messages.error(request, '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
         return redirect('viagens_oficios:editar', pk=pk)
@@ -927,7 +933,7 @@ def termos(request, pk, formato, servidor_id=None):
     try:
         if servidor_id:
             servidor = get_object_or_404(oficio.servidores_termo_autorizacao, pk=servidor_id)
-            return resposta_documento(request, gerar_termo_um(oficio, servidor, fmt))
+            return resposta_documento(request, gerar_termo_um(oficio, servidor, fmt, nova_versao=nova_versao_pedida(request)))
         return resposta_lote(gerar_termo_lote(oficio, fmt))
     except (ValidationError, DocumentError) as exc:
         messages.error(request, '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc))

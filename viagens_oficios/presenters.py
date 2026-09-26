@@ -271,12 +271,16 @@ def artefatos_pdf_por_oficio(oficios):
         .filter(oficio_id__in=ids, termo_id__isnull=True, formato="pdf")
         .annotate(tem_versao=Exists(versao_viva))
         .order_by("criado_em")
-        .values_list("oficio_id", "tipo", "servidor_id", "pk", "tem_versao", "arquivo_assinado")
+        .values_list("oficio_id", "tipo", "servidor_id", "pk", "tem_versao", "arquivo_assinado", "versao_emitida", "emitida_em")
     )
     mapa = {}
-    for oficio_id, tipo, servidor_id, pk, tem_versao, arquivo_assinado in consulta:
-        entrada = mapa.setdefault(oficio_id, {}).setdefault((tipo, servidor_id), {"pk": pk, "assinado": False})
+    for oficio_id, tipo, servidor_id, pk, tem_versao, arquivo_assinado, versao_emitida, emitida_em in consulta:
+        entrada = mapa.setdefault(oficio_id, {}).setdefault((tipo, servidor_id), {"pk": pk, "assinado": False, "versao": None, "emitida_em": None})
         entrada["assinado"] = entrada["assinado"] or bool(tem_versao) or bool(arquivo_assinado)
+        # A via emitida (m113) é o que foi impresso e assinado: é o alvo de
+        # "Anexar assinado" e o que a tela nomeia ("Versão 2 emitida em...").
+        if versao_emitida and versao_emitida >= (entrada["versao"] or 0):
+            entrada.update(pk=pk, versao=versao_emitida, emitida_em=emitida_em)
     return mapa
 
 

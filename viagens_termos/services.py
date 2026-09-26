@@ -335,14 +335,22 @@ def variante_do_termo_cadastro(servidor=None, *, forcar_viatura=False) -> str:
     return str(servidor.pk) if servidor else ("viatura" if forcar_viatura else "0")
 
 
-def _gerar(payload, formato, ref, *, oficio_id=None, termo_id=None, servidor_id=None, roteiro_id=None, usar_assinado=True):
-    template = _TEMPLATE_DOCX_BY_VARIANTE[payload["termo"]["variante"]]
-    return DocumentoFacade().gerar(
-        tipo=DocumentoTipo.TERMO_AUTORIZACAO, formato=formato, payload=payload,
-        reference=ref, docxtpl_context=_legacy_docx_context(payload),
-        docx_template_path=template, oficio_id=oficio_id, termo_id=termo_id,
-        servidor_id=servidor_id, roteiro_id=roteiro_id, usar_assinado=usar_assinado,
-    )
+def _gerar(payload, formato, ref, *, oficio_id=None, termo_id=None, servidor_id=None, roteiro_id=None, usar_assinado=True, nova_versao=False):
+    """O PDF é a via emitida (m113): a primeira geração fica guardada e volta
+    nos pedidos seguintes; `nova_versao` refaz e numera a versão seguinte."""
+    from documentos.services.emissao import emitir
+
+    def gerar():
+        template = _TEMPLATE_DOCX_BY_VARIANTE[payload["termo"]["variante"]]
+        return DocumentoFacade().gerar(
+            tipo=DocumentoTipo.TERMO_AUTORIZACAO, formato=formato, payload=payload,
+            reference=ref, docxtpl_context=_legacy_docx_context(payload),
+            docx_template_path=template, oficio_id=oficio_id, termo_id=termo_id,
+            servidor_id=servidor_id, roteiro_id=roteiro_id, usar_assinado=usar_assinado,
+        )
+
+    return emitir(DocumentoTipo.TERMO_AUTORIZACAO, formato, gerar, reference=ref, usar_assinado=usar_assinado,
+                  nova_versao=nova_versao, oficio_id=oficio_id, termo_id=termo_id, servidor_id=servidor_id)
 
 
 def referencia_termo_do_oficio(oficio, servidor) -> str:
@@ -356,7 +364,7 @@ def referencia_termo_do_cadastro(termo, servidor=None, *, forcar_viatura=False) 
     return f"termo-{termo.pk}-cadastro-{ref_servidor}"
 
 
-def gerar_termo_um(oficio, servidor, formato, *, modo_semipreenchido=False, variante=None, usar_assinado=True):
+def gerar_termo_um(oficio, servidor, formato, *, modo_semipreenchido=False, variante=None, usar_assinado=True, nova_versao=False):
     if not listar_servidores_com_termo(oficio).filter(pk=servidor.pk).exists():
         raise ValueError("Servidor não selecionado para termo neste ofício.")
     payload = build_termo_payload(oficio, servidor, modo_semipreenchido=modo_semipreenchido, variante=variante)
@@ -365,14 +373,15 @@ def gerar_termo_um(oficio, servidor, formato, *, modo_semipreenchido=False, vari
     editavel = not modo_semipreenchido and variante is None
     payload["documento"] = _conteudo_documental(oficio, str(servidor.pk) if editavel else None)
     return _gerar(payload, formato, referencia_termo_do_oficio(oficio, servidor),
-        oficio_id=oficio.pk, servidor_id=servidor.pk, roteiro_id=oficio.roteiro_id, usar_assinado=usar_assinado)
+        oficio_id=oficio.pk, servidor_id=servidor.pk, roteiro_id=oficio.roteiro_id, usar_assinado=usar_assinado,
+        nova_versao=nova_versao)
 
 
 def gerar_termo_lote(oficio, formato):
     return [gerar_termo_um(oficio, s, formato) for s in listar_servidores_com_termo(oficio)]
 
 
-def gerar_termo_cadastro_um(termo, servidor, formato, *, forcar_viatura=False, usar_assinado=True):
+def gerar_termo_cadastro_um(termo, servidor, formato, *, forcar_viatura=False, usar_assinado=True, nova_versao=False):
     """`usar_assinado=False` pede o arquivo original mesmo com versão assinada anexada."""
     if servidor is not None and not termo.servidores_efetivos().filter(pk=servidor.pk).exists():
         raise ValueError("Servidor não pertence a este termo.")
@@ -380,7 +389,8 @@ def gerar_termo_cadastro_um(termo, servidor, formato, *, forcar_viatura=False, u
     payload["documento"] = _conteudo_documental(termo, variante_do_termo_cadastro(servidor, forcar_viatura=forcar_viatura))
     return _gerar(payload, formato, referencia_termo_do_cadastro(termo, servidor, forcar_viatura=forcar_viatura),
         oficio_id=termo.oficio_id, termo_id=termo.pk, servidor_id=servidor.pk if servidor else None,
-        roteiro_id=termo.oficio.roteiro_id if termo.oficio_id else None, usar_assinado=usar_assinado)
+        roteiro_id=termo.oficio.roteiro_id if termo.oficio_id else None, usar_assinado=usar_assinado,
+        nova_versao=nova_versao)
 
 
 def gerar_termo_cadastro_lote(termo, formato):

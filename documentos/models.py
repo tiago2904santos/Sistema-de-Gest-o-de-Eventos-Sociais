@@ -71,6 +71,16 @@ class DocumentoArtefato(OrigemLegadoUUID):
         default="",
         help_text="Nome do arquivo enviado pelo usuário, para exibição.",
     )
+    # A via emitida (m113): o PDF que saiu do sistema na emissão do documento
+    # e que se reimprime igual depois, mesmo que os dados mudem. Numerada por
+    # documento (1 na primeira emissão; "Emitir nova versão" dá a seguinte).
+    # Nula nas gerações que não são via (prévia, cache, DOCX).
+    versao_emitida = models.PositiveIntegerField(null=True, blank=True)
+    emitida_em = models.DateTimeField(null=True, blank=True)
+    emitida_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="+",
+    )
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:

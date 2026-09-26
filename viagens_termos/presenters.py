@@ -128,6 +128,9 @@ def documentos_do_termo(termo, artefatos_pdf):
             "url_assinado": reverse("viagens_oficios:assinatura_artefato", args=[artefato["pk"]]) if artefato else "",
             "tem_pdf": artefato is not None,
             "assinado": bool(artefato and artefato["assinado"]),
+            # A via emitida (m113): "Versão 1 emitida em dd/mm" e "Emitir nova versão".
+            "versao": artefato.get("versao") if artefato else None,
+            "emitida_em": artefato.get("emitida_em") if artefato else None,
             **estado_do_documento(artefato),
         }
 
@@ -243,11 +246,14 @@ def artefatos_pdf_por_termo(termos):
         .filter(termo_id__in=ids, formato="pdf", tipo=DocumentoTipo.TERMO_AUTORIZACAO.value)
         .annotate(tem_versao=Exists(versao_viva))
         .order_by("criado_em")
-        .values_list("termo_id", "servidor_id", "pk", "tem_versao", "arquivo_assinado")
+        .values_list("termo_id", "servidor_id", "pk", "tem_versao", "arquivo_assinado", "versao_emitida", "emitida_em")
     )
     mapa = {}
-    for termo_id, servidor_id, pk, tem_versao, arquivo_assinado in consulta:
+    for termo_id, servidor_id, pk, tem_versao, arquivo_assinado, versao_emitida, emitida_em in consulta:
         por_servidor = mapa.setdefault(termo_id, {})
-        entrada = por_servidor.setdefault(servidor_id, {"pk": pk, "assinado": False})
+        entrada = por_servidor.setdefault(servidor_id, {"pk": pk, "assinado": False, "versao": None, "emitida_em": None})
         entrada["assinado"] = entrada["assinado"] or bool(tem_versao) or bool(arquivo_assinado)
+        # A via emitida (m113) é o alvo de "Anexar assinado" e o que a tela nomeia.
+        if versao_emitida and versao_emitida >= (entrada["versao"] or 0):
+            entrada.update(pk=pk, versao=versao_emitida, emitida_em=emitida_em)
     return mapa
