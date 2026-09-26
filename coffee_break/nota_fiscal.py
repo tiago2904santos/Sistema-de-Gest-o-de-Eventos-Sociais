@@ -54,13 +54,91 @@ def numero_no_texto(texto: str) -> str:
     return ""
 
 
-def numero_da_nota(dados: bytes, paginas: int = 3) -> str:
-    """O número da nota no PDF (bytes); "" se não der para ler."""
+def _texto_do_pdf(dados: bytes, paginas: int = 3) -> str:
     try:
         from pypdf import PdfReader
 
         leitor = PdfReader(io.BytesIO(dados))
-        texto = "\n".join((pagina.extract_text() or "") for pagina in leitor.pages[:paginas])
+        return "\n".join((pagina.extract_text() or "") for pagina in leitor.pages[:paginas])
     except Exception:  # PDF quebrado ou protegido: a tela pede o número
         return ""
-    return numero_no_texto(texto)
+
+
+def numero_da_nota(dados: bytes, paginas: int = 3) -> str:
+    """O número da nota no PDF (bytes); "" se não der para ler."""
+    return numero_no_texto(_texto_do_pdf(dados, paginas))
+
+
+# ---------------------------------------------------------------------------
+# Conferência: emitente, valor e data de emissão
+# ---------------------------------------------------------------------------
+
+_DINHEIRO = r"(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})"
+_VALOR_TOTAL = (
+    # DANFE: "VALOR TOTAL DA NOTA 842,80".
+    re.compile(r"VALOR\s+TOTAL\s+DA\s+NOTA[^\d]{0,40}?" + _DINHEIRO, re.IGNORECASE),
+    # NFS-e: "Valor Total da NFS-e", "Valor Líquido da NFS-e", "Valor Total do Serviço".
+    re.compile(
+        r"VALOR\s+(?:TOTAL|L[ÍI]QUIDO)\s+D[AO]\s+(?:NFS-?e|NOTA(?:\s+FISCAL)?|SERVI[ÇC]OS?)[^\d]{0,40}?" + _DINHEIRO,
+        re.IGNORECASE,
+    ),
+)
+_EMISSAO = re.compile(
+    r"(?:DATA\s+D[AE]\s+EMISS[ÃA]O|DATA\s+E\s+HORA\s+D[AE]\s+EMISS[ÃA]O|EMITIDA\s+EM)[^\d]{0,40}?(\d{2}/\d{2}/\d{4})",
+    re.IGNORECASE,
+)
+_CNPJ_PRESTADOR = re.compile(
+    r"PRESTADOR[\s\S]{0,300}?CNPJ[^\d]{0,20}(\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2})", re.IGNORECASE
+)
+
+
+def _chave_de_acesso(texto: str) -> str:
+    for achado in _CHAVE.finditer(texto or ""):
+        chave = re.sub(r"\D", "", achado.group(1))
+        if len(chave) == 44 and chave[20:22] in ("55", "65"):
+            return chave
+    return ""
+
+
+def dados_no_texto(texto: str) -> dict:
+    """O que a conferência usa, lido do texto da nota (cada item pode faltar):
+
+    - ``cnpj``: o do emitente (da chave de acesso, posições 7 a 20; na NFS-e,
+      o CNPJ do prestador);
+    - ``ano_mes``: (ano, mês) da emissão, da chave de acesso (posições 3 a 6);
+    - ``valor``: o valor total da nota (Decimal);
+    - ``emissao``: a data de emissão (date).
+    """
+    from datetime import date
+    from decimal import Decimal
+
+    texto = texto or ""
+    saida = {"numero": numero_no_texto(texto), "cnpj": "", "ano_mes": None, "valor": None, "emissao": None}
+    chave = _chave_de_acesso(texto)
+    if chave:
+        saida["cnpj"] = chave[6:20]
+        ano, mes = 2000 + int(chave[2:4]), int(chave[4:6])
+        if 1 <= mes <= 12:
+            saida["ano_mes"] = (ano, mes)
+    else:
+        achado = _CNPJ_PRESTADOR.search(texto)
+        if achado:
+            saida["cnpj"] = re.sub(r"\D", "", achado.group(1))
+    for padrao in _VALOR_TOTAL:
+        achado = padrao.search(texto)
+        if achado:
+            saida["valor"] = Decimal(achado.group(1).replace(".", "").replace(",", "."))
+            break
+    achado = _EMISSAO.search(texto)
+    if achado:
+        dia, mes, ano = (int(p) for p in achado.group(1).split("/"))
+        try:
+            saida["emissao"] = date(ano, mes, dia)
+        except ValueError:
+            pass
+    return saida
+
+
+def dados_da_nota(dados: bytes, paginas: int = 3) -> dict:
+    """`dados_no_texto` do PDF (bytes); tudo vazio se não der para ler."""
+    return dados_no_texto(_texto_do_pdf(dados, paginas))

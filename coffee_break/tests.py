@@ -2331,6 +2331,78 @@ class NumeroDaNotaNoPDFTests(BaseCoffeeBreakTestCase):
             self.assertContains(resposta, 'placeholder="Não foi lido do PDF — digite"')
 
 
+class ConferenciaDaNotaTests(BaseCoffeeBreakTestCase):
+    """m026: ao anexar, a nota é conferida (emitente, valor, data e duplicidade)."""
+
+    DANFE = (
+        "DANFE\nNº 000.008.957\nSÉRIE 001\nCHAVE DE ACESSO\n"
+        "4126 0935 0147 1900 0166 5500 1000 0089 5715 7240 4356\n"
+        "DATA DA EMISSÃO\n21/09/2026\nVALOR TOTAL DA NOTA\n842,80\n"
+    )
+
+    def test_le_emitente_valor_e_emissao(self):
+        from decimal import Decimal
+
+        from .nota_fiscal import dados_no_texto
+
+        dados = dados_no_texto(self.DANFE)
+        self.assertEqual(dados["numero"], "8957")
+        self.assertEqual(dados["cnpj"], "35014719000166")
+        self.assertEqual(dados["ano_mes"], (2026, 9))
+        self.assertEqual(dados["valor"], Decimal("842.80"))
+        self.assertEqual(dados["emissao"], dt.date(2026, 9, 21))
+        nfse = dados_no_texto(
+            "Número da NFS-e 456\nData e Hora de Emissão 02/10/2026 10:00\n"
+            "PRESTADOR DE SERVIÇOS\nCNPJ: 11.222.333/0001-81\nValor Líquido da NFS-e R$ 1.053,50"
+        )
+        self.assertEqual((nfse["numero"], nfse["cnpj"], nfse["valor"]), ("456", "11222333000181", Decimal("1053.50")))
+        self.assertEqual(nfse["emissao"], dt.date(2026, 10, 2))
+        self.assertEqual(dados_no_texto("sem nada")["valor"], None)
+
+    def test_avisos_ao_anexar(self):
+        import tempfile
+        from decimal import Decimal
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.test import override_settings
+
+        from .nota_fiscal import dados_no_texto
+
+        ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(valor_unitario=Decimal("21.07"))
+        self.criar_solicitacao(numero="40/2026", numero_nota_fiscal="8957")
+        s = self.criar_solicitacao(
+            numero="41/2026", quantidade=40, data_inicio_evento=dt.date(2026, 9, 25),
+            valor_unitario=Decimal("21.07"),
+        )
+        self.client.force_login(self.ascom)
+        url = reverse("coffee_break:anexar_nota", args=[s.pk])
+        lidos = dados_no_texto(self.DANFE)
+        with tempfile.TemporaryDirectory() as pasta, override_settings(MEDIA_ROOT=pasta):
+            with mock.patch("coffee_break.nota_fiscal.numero_da_nota", return_value="8957"), \
+                    mock.patch("coffee_break.nota_fiscal.dados_da_nota", return_value=lidos):
+                resposta = self.client.post(
+                    url, {"arquivo": SimpleUploadedFile("nf.pdf", _pdf_em_branco(), content_type="application/pdf")},
+                    follow=True,
+                )
+        s.refresh_from_db()
+        self.assertEqual(s.valor_nota_fiscal, Decimal("842.80"))
+        self.assertEqual(s.cnpj_emitente_nf, "35014719000166")
+        # O valor bate (40 × 21,07); a emissão é anterior ao evento e o número já foi usado.
+        self.assertNotContains(resposta, "não bate com")
+        self.assertContains(resposta, "antes do evento (25/09/2026)")
+        self.assertContains(resposta, "já está na OS 40/2026")
+        # Emitente e valor divergentes.
+        s.cnpj_emitente_nf = "11222333000181"
+        s.valor_nota_fiscal = Decimal("900.00")
+        avisos = " ".join(services.avisos_da_nota(s))
+        self.assertIn("11.222.333/0001-81", avisos)
+        self.assertIn("R$ 900,00", avisos)
+        self.assertIn("40 pessoas × R$ 21,07 = R$ 842,80", avisos)
+        # A tela da etapa 2 mostra a conferência.
+        tela = self.client.get(reverse("coffee_break:etapa_nota", args=[s.pk]))
+        self.assertContains(tela, "Confira a nota fiscal")
+
+
 class Etapa3VisualizadorTests(EtapasBase):
     """Etapa 3: visualizador inline (sem editor), tudo fechado, PDF único com
     as certidões e aviso de certidão vencida."""

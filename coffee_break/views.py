@@ -841,6 +841,8 @@ def _contexto_da_nota(contexto, form, solicitacao):
     if not valores.get("data_oficio") and not form.is_bound:
         valores["data_oficio"] = data.isoformat()
     contexto["usa_dialogo_assinado"] = True
+    # Conferência da nota anexada (fornecedor, valor, data e duplicidade).
+    contexto["avisos_nota"] = services.avisos_da_nota(solicitacao) if solicitacao.numero_nota_fiscal else []
     contexto["ajuda_faturada"] = (
         f"Pedido: {solicitacao.quantidade}. Em branco, o lote desconta o pedido; "
         "com a nota, desconta o faturado e a diferença volta ao saldo."
@@ -1800,7 +1802,13 @@ def anexar_nota(request, pk):
         if solicitacao.arquivo_nota_fiscal:
             solicitacao.arquivo_nota_fiscal.delete(save=False)
             solicitacao.arquivo_nota_fiscal = None
-            solicitacao.save(update_fields=["arquivo_nota_fiscal", "atualizado_em"])
+            # O que foi lido da nota removida não se confere mais.
+            solicitacao.valor_nota_fiscal = None
+            solicitacao.data_emissao_nf = None
+            solicitacao.cnpj_emitente_nf = ""
+            solicitacao.save(update_fields=[
+                "arquivo_nota_fiscal", "valor_nota_fiscal", "data_emissao_nf", "cnpj_emitente_nf", "atualizado_em",
+            ])
             services.registrar_historico(
                 solicitacao, request.user, AcaoHistoricoCoffeeBreak.ATUALIZACAO, "Nota fiscal (PDF) removida."
             )
@@ -1816,15 +1824,21 @@ def anexar_nota(request, pk):
         for mensagem in erro.messages:
             messages.error(request, mensagem)
         return redirect(destino)
-    from .nota_fiscal import numero_da_nota
+    from .nota_fiscal import dados_da_nota, numero_da_nota
 
-    # Basta anexar: o número da nota sai do próprio PDF.
+    # Basta anexar: o número da nota sai do próprio PDF (e, para a
+    # conferência, o emitente, o valor e a data de emissão).
     arquivo.seek(0)
-    numero = numero_da_nota(arquivo.read())
+    conteudo = arquivo.read()
+    numero = numero_da_nota(conteudo)
+    lidos = dados_da_nota(conteudo)
     arquivo.seek(0)
     trocou = bool(solicitacao.arquivo_nota_fiscal)
     solicitacao.arquivo_nota_fiscal = arquivo
-    campos = ["arquivo_nota_fiscal", "atualizado_em"]
+    solicitacao.valor_nota_fiscal = lidos["valor"]
+    solicitacao.data_emissao_nf = lidos["emissao"]
+    solicitacao.cnpj_emitente_nf = lidos["cnpj"]
+    campos = ["arquivo_nota_fiscal", "valor_nota_fiscal", "data_emissao_nf", "cnpj_emitente_nf", "atualizado_em"]
     if numero:
         solicitacao.numero_nota_fiscal = numero
         campos.append("numero_nota_fiscal")
@@ -1838,6 +1852,9 @@ def anexar_nota(request, pk):
         messages.success(request, f"Nota fiscal {numero} anexada — o número foi lido do PDF.")
     else:
         messages.warning(request, "Nota fiscal anexada, mas não deu para ler o número no PDF: informe-o no campo ao lado.")
+    # Conferência: fornecedor, valor, data e duplicidade (só avisa).
+    for aviso in services.avisos_da_nota(solicitacao):
+        messages.warning(request, aviso)
     return redirect(destino)
 
 

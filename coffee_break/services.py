@@ -264,6 +264,53 @@ def lotes_em_alerta(lotes_anotados):
 
 
 # ---------------------------------------------------------------------------
+# Conferência da nota fiscal
+# ---------------------------------------------------------------------------
+
+def avisos_da_nota(solicitacao):
+    """O que não bate na nota anexada: emitente, valor, data e número repetido.
+
+    Só avisa (a nota pode ter sido lida mal); o que não foi lido do PDF não
+    se confere.
+    """
+    from .models import SolicitacaoCoffeeBreak, formatar_cnpj
+
+    avisos = []
+    fornecedor = solicitacao.lote.contrato.fornecedor
+    if solicitacao.cnpj_emitente_nf and fornecedor.cnpj and solicitacao.cnpj_emitente_nf != fornecedor.cnpj:
+        avisos.append(
+            f"A nota foi emitida pelo CNPJ {formatar_cnpj(solicitacao.cnpj_emitente_nf)}, e não pelo do "
+            f"fornecedor do lote ({fornecedor.razao_social}, {fornecedor.cnpj_formatado})."
+        )
+    esperado = solicitacao.valor
+    if solicitacao.valor_nota_fiscal is not None and esperado is not None and solicitacao.valor_nota_fiscal != esperado:
+        avisos.append(
+            f"O valor da nota ({formatar_reais(solicitacao.valor_nota_fiscal)}) não bate com "
+            f"{solicitacao.quantidade_efetiva} pessoas × {formatar_reais(solicitacao.valor_unitario_efetivo)} = "
+            f"{formatar_reais(esperado)}. Se a nota cobrou outra quantidade, informe as pessoas faturadas."
+        )
+    inicio = solicitacao.data_inicio_evento
+    if solicitacao.data_emissao_nf and inicio and solicitacao.data_emissao_nf < inicio:
+        avisos.append(
+            f"A nota foi emitida em {solicitacao.data_emissao_nf:%d/%m/%Y}, antes do evento ({inicio:%d/%m/%Y})."
+        )
+    numero = solicitacao.numero_nota_fiscal.strip()
+    if numero:
+        repetida = (
+            SolicitacaoCoffeeBreak.objects.filter(
+                numero_nota_fiscal=numero, lote__contrato__fornecedor=fornecedor, cancelada=False,
+            )
+            .exclude(pk=solicitacao.pk)
+            .first()
+        )
+        if repetida:
+            avisos.append(
+                f"A nota {numero} do {fornecedor.razao_social} já está na OS {repetida.numero or '#' + str(repetida.pk)}."
+            )
+    return avisos
+
+
+# ---------------------------------------------------------------------------
 # Controle em reais
 # ---------------------------------------------------------------------------
 

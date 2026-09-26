@@ -432,6 +432,13 @@ class SolicitacaoCoffeeBreak(models.Model):
     arquivo_nota_fiscal = models.FileField(
         "nota fiscal (PDF)", upload_to="coffee_break/notas/%Y/", blank=True
     )
+    # Lidos do PDF da nota ao anexar (coffee_break/nota_fiscal.py), para a
+    # conferência com o fornecedor, o contrato e a data do evento.
+    valor_nota_fiscal = models.DecimalField(
+        "valor da nota fiscal", max_digits=12, decimal_places=2, blank=True, null=True
+    )
+    data_emissao_nf = models.DateField("emissão da nota fiscal", blank=True, null=True)
+    cnpj_emitente_nf = models.CharField("CNPJ do emitente da nota", max_length=14, blank=True)
     numero_oficio = models.CharField(
         "número do ofício", max_length=20, blank=True,
         help_text="O ofício que encaminha a nota ao GAF (ex.: 124/2026).",

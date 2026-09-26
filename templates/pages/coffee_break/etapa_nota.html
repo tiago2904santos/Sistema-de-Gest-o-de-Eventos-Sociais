@@ -80,6 +80,18 @@
           {# A máscara do protocolo de Viagens: 00.000.000-0. #}
           {% include "components/input.html" with name="protocolo_pcpr_oficio" label="Protocolo" placeholder="00.000.000-0" inputmode="numeric" maxlength="12" autocomplete="off" valor=valores.protocolo_pcpr_oficio erros=erros.protocolo_pcpr_oficio desabilitado=somente_leitura %}
         </div>
+        {% if avisos_nota %}
+          {# A conferência da nota: só avisa, antes de gerar o ofício. #}
+          <div class="aviso aviso--callout" role="status">
+            <div class="aviso__txt">
+              {% include "components/icon.html" with nome="alert" %}
+              <div class="aviso__corpo">
+                <b>Confira a nota fiscal</b>
+                {% for aviso in avisos_nota %}<p>{{ aviso }}</p>{% endfor %}
+              </div>
+            </div>
+          </div>
+        {% endif %}
         {# O lote desconta o que a nota cobrou; em branco, o que foi pedido. #}
         <div class="cb-evento-linha">
           {% include "components/input.html" with name="quantidade_faturada" label="Pessoas faturadas na nota" tipo="number" minimo=1 passo=1 inputmode="numeric" placeholder=solicitacao.quantidade ajuda=ajuda_faturada valor=valores.quantidade_faturada erros=erros.quantidade_faturada desabilitado=somente_leitura %}
