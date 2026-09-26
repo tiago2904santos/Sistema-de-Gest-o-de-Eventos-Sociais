@@ -61,7 +61,7 @@ def selo_situacao(viagem):
         return "Finalizado", "atendido"
     if _viagem_pronta(viagem):
         return "Pronto", "atendido"
-    return "Rascunho", "pendente"
+    return "Rascunho", "neutro"
 
 
 def selo_quando(viagem):

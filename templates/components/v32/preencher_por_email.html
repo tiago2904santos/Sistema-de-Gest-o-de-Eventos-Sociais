@@ -53,7 +53,7 @@
     <button type="button" class="pe__desligar" data-pe-desligar>Não ligar este e-mail</button>
   </p>
   <p class="pe__estado" role="status" aria-live="polite" data-pe-estado></p>
-  <p class="pe__erro msg-erro" role="alert" data-pe-erro hidden></p>
+  <p class="pe__erro form-erro" role="alert" data-pe-erro hidden></p>
   <div class="pe__resultado" data-pe-resultado hidden></div>
   {% if origem %}<input type="hidden" name="email_origem" value="{{ origem.token }}" form="{{ formulario }}">{% endif %}
 </section>

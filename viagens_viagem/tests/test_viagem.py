@@ -25,7 +25,7 @@ class ListaTests(CenarioViagem):
         self.assertContains(r, "Nova viagem")
         self.assertContains(r, "Contas prestadas")
         self.assertContains(r, "Que vão acontecer")
-        self.assertContains(r, 'class="st st--pendente">Rascunho')
+        self.assertContains(r, 'class="st st--neutro">Rascunho')
         self.assertContains(r, 'class="st st--cancelada">Cancelado')
         self.assertContains(r, reverse("viagens_viagem:etapa", args=[futura.pk, 1]))
         self.assertContains(r, reverse("viagens_viagem:etapa", args=[futura.pk, 3]))

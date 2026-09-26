@@ -13,7 +13,7 @@
     <span><b>Arraste arquivos aqui ou clique para selecionar</b><small id="{{ id }}_ajuda">{{ ajuda_tipos|default:"Ofício, memorando, foto do local. PDF, DOC, XLS, ODT ou imagem, até 10 MB por arquivo." }}{% if not multiple %} Selecione um arquivo por vez.{% endif %}</small></span>
   </label>
   {% if mensagem_vazio %}<span class="upload-anexos__vazio">{{ mensagem_vazio }}</span>{% endif %}
-  <p class="msg-erro" data-upload-erro role="alert" hidden></p>
+  <p class="form-erro" data-upload-erro role="alert" hidden></p>
   <ul class="upload-anexos__lista" aria-live="polite" aria-label="Arquivos selecionados"></ul>
   {% if rotulo_enviar %}<button type="submit"{% if formulario %} form="{{ formulario }}"{% endif %} class="btn--secundaria upload-anexos__enviar">{{ rotulo_enviar }}</button>{% endif %}
 </div>

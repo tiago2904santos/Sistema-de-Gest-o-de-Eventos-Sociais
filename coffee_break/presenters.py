@@ -126,7 +126,7 @@ def selo_do_consumo(lote):
         return "Sem capacidade", "neutro"
     pct = round(lote.consumido * 100 / lote.quantidade_total)
     if pct >= 90:
-        return f"{pct}% consumido", "cancelada"
+        return f"{pct}% consumido", "perigo"
     if pct >= 70:
         return f"{pct}% consumido", "aguardando"
     return f"{pct}% consumido", "atendido"

@@ -40,12 +40,12 @@
     {% if rot.rota_inicial %}{{ rot.rota_inicial|json_script:"rota-inicial" }}{% endif %}
 
     {# Cabeçalho no padrão do roteiro e do termo: título, situação ao lado e Salvar no topo. #}
-    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
-      <div class="page-header d-cabeca__esq">
-        <div class="page-header__identificacao d-identificacao">
-          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
+    <div class="d-cabeca d-cabeca--form frm-topo">
+      <div class="d-cabeca__esq">
+        <div class="d-identificacao">
+          <span class="kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
           <div class="frm-titulo">
-            <h1 class="page-header__titulo d-titulo-v32">Cadastro de ofício <span class="frm-ident">{{ oficio.numero_formatado }}</span></h1>
+            <h1 class="d-titulo-v32">Cadastro de ofício <span class="frm-ident">{{ oficio.numero_formatado }}</span></h1>
             <span class="frm-rasc">{% include "components/icon.html" with nome="document" %}{% if oficio.cancelado %}Cancelado{% else %}{{ oficio.get_status_display }}{% endif %}</span>
           </div>
         </div>

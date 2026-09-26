@@ -24,7 +24,7 @@
         <h2 class="section-card__titulo">Enviar e simular</h2>
       </header>
       <div class="section-card__corpo">
-        <p class="cb-ajuda">A planilha "CONTROLE COFFE ASCOM" (.xlsx): fornecedores, contratos, lotes de cada aba, as solicitações e os marcos da aba "Controle de Ordem Bancária". A simulação não grava nada; enviar a planilha de novo depois atualiza os registros sem duplicar.</p>
+        <p class="form-ajuda">A planilha "CONTROLE COFFE ASCOM" (.xlsx): fornecedores, contratos, lotes de cada aba, as solicitações e os marcos da aba "Controle de Ordem Bancária". A simulação não grava nada; enviar a planilha de novo depois atualiza os registros sem duplicar.</p>
         <form method="post" enctype="multipart/form-data" class="cb-importar">
           {% csrf_token %}
           <input type="hidden" name="acao" value="simular">

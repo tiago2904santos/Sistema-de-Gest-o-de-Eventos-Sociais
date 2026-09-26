@@ -120,9 +120,10 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
 .enc-op b{font-size:var(--fs-base);color:var(--n-900)}
 .enc-op p{margin:0 0 var(--s1);font-size:var(--fs-meta);color:var(--n-600);line-height:1.5}
 .enc-op .btn-primaria,.enc-op .btn--secundaria{align-self:flex-start;height:36px}
-.btn--destrutiva{color:var(--dg-t)!important;border-color:var(--dg-r)!important}
-.btn--destrutiva:hover{background:var(--dg-b)!important}
-.texto-vazio{margin:0;font-size:var(--fs-meta);color:var(--n-450)}
+/* Destrutiva é sempre a secundária em vermelho: texto e borda, fundo só no hover. */
+.btn--secundaria.btn--destrutiva{color:var(--dg-t);border-color:var(--dg-r)}
+.btn--secundaria.btn--destrutiva:hover{background:var(--dg-b);color:var(--dg-t)}
+.texto-vazio{margin:0;font-size:var(--fs-texto);color:var(--n-500)}
 .etapas--lateral{padding:0}
 .etapas--lateral .etapa{padding-left:0}
 .etapas--lateral .etapa:not(:last-child)::before{left:4px}
@@ -447,9 +448,6 @@ body.m-sheet-aberto{overflow:hidden}
 .pa-h>h2{font:inherit;margin:0;flex:1;min-width:0}
 .pa-h>a{margin-left:auto;flex:none}
 .reg-cabecalho{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--s3)}
-/* Seção numerada: número em círculo dourado, título normal e escuro ao lado. */
-.reg-numero{display:inline-grid;place-items:center;width:22px;height:22px;margin:0;border-radius:var(--raio-pilula);background:var(--d-500);color:var(--branco);font-size:var(--fs-apoio);font-weight:700;letter-spacing:0;text-transform:none;flex:none;font-variant-numeric:tabular-nums}
-.reg__t:has(.reg-numero){display:flex;align-items:center;gap:var(--s2-5);font-size:var(--fs-destaque);font-weight:600;letter-spacing:-.01em;text-transform:none;color:var(--n-900)}
 .reg__t:has(.reg-numero) .section-card__titulo{color:inherit}
 .v32-corpo{padding:var(--s4) var(--s4-5)}
 .v32-bloco{margin-bottom:var(--s4);min-width:0}
@@ -474,9 +472,17 @@ body.m-sheet-aberto{overflow:hidden}
 .v32-resumo-bloco+.v32-resumo-bloco{margin-top:var(--s4-5);padding-top:var(--s4-5);border-top:1px solid var(--n-150)}
 .v32-resumo-bloco>.reg__t{display:flex;gap:var(--s2);align-items:center}
 .v32-resumo-bloco>.reg__t .ui-icon{width:16px;height:16px;color:var(--n-450)}
-.st--pendente,.st--aguardando_retorno{background:var(--wn-b);color:var(--wn-t);border:1px solid var(--wn-r)}
-.st--em_andamento,.st--evento_agendado{background:var(--in-b);color:var(--in-t);border:1px solid var(--in-r)}
-.st--nao_atender{background:var(--dg-b);color:var(--dg-t);border:1px solid var(--dg-r)}
+/* ---------- Selos: seis tons por significado -------------------------------
+   O CSS conhece só o tom (neutro, aviso, info, ok, perigo, dourado). Os nomes
+   de domínio que os presenters ainda emitem são apelidos do tom e moram aqui,
+   num lugar só. Rascunho é neutro (o desenho aprovado do ds-v32), não azul. */
+.st--neutro,.st--rascunho,.st--inativo,.st--cancelada,.st--cancelado{background:var(--nt-b);color:var(--nt-t);border:1px solid var(--nt-r)}
+.st--cancelada,.st--cancelado,.st--inativo{color:var(--n-500)}
+.st--aviso,.st--pendente,.st--aguardando,.st--aguardando_despacho,.st--aguardando_retorno,.st--devolvida,.st--pc-pendente{background:var(--wn-b);color:var(--wn-t);border:1px solid var(--wn-r)}
+.st--info,.st--em_andamento,.st--evento_agendado,.st--deferida_em_andamento,.st--pc-em_preenchimento{background:var(--in-b);color:var(--in-t);border:1px solid var(--in-r)}
+.st--ok,.st--atendido,.st--atendida,.st--publicada,.st--ativo,.st--pc-aprovada{background:var(--ok-b);color:var(--ok-t);border:1px solid var(--ok-r)}
+.st--perigo,.st--nao_atendida,.st--nao_atender,.st--nao_responder,.st--pc-reprovada,.st--vencida{background:var(--dg-b);color:var(--dg-t);border:1px solid var(--dg-r)}
+.st--dourado,.st--padrao,.st--pc-enviada{background:var(--d-50);color:var(--d-800);border:1px solid var(--d-200)}
 
 /* Portal sem piloto próprio: cartões e métricas usam a escala dos pa-card/kpi.
    Mantém a grade dos módulos autorizados e suas entradas fornecidas pela view. */
@@ -694,11 +700,6 @@ textarea.form-controle{height:auto;min-height:calc(3 * 1.5em + 22px);line-height
    Módulos da ASCOM (Publicações e Atendimento à Imprensa) — complementos
    sobre os tokens V3.2: status próprios, ranking do painel, colunas extras.
    --------------------------------------------------------------------------- */
-.st--pendente{background:var(--wn-b);color:var(--wn-t);border:1px solid var(--wn-r)}
-.st--em_andamento{background:var(--in-b);color:var(--in-t);border:1px solid var(--in-r)}
-.st--publicada,.st--atendido{background:var(--ok-b);color:var(--ok-t);border:1px solid var(--ok-r)}
-.st--aguardando{background:var(--wn-b);color:var(--wn-t);border:1px solid var(--wn-r)}
-.st--nao_responder{background:var(--dg-b);color:var(--dg-t);border:1px solid var(--dg-r)}
 .etapa--cancelado .etapa__m{background:var(--dg-t)}
 .etapa--cancelado .etapa__t{color:var(--dg-t)}
 .dt__sub{display:block;font-size:var(--fs-rotulo);color:var(--n-450);margin-top:var(--s0)}
@@ -733,7 +734,7 @@ textarea.form-controle{height:auto;min-height:calc(3 * 1.5em + 22px);line-height
 /* Viagens: cadastros mantêm seus hooks de máscaras/vínculos, com composição e tokens V3.2. */
 .viagens-eyebrow{display:block;color:var(--rotulo);font-size:var(--fs-rotulo);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:var(--s2)}
 .v32-acao-perigo{color:var(--dg-t)}.v32-secao-cabecalho{display:flex;gap:var(--s2-5);align-items:baseline;margin-bottom:var(--s4)}.v32-secao-cabecalho .reg__t{margin-bottom:var(--s1)}.v32-secao-cabecalho .cad-frm__intro{margin:0}
-.viagens-opcao-padrao{grid-column:1/-1}.viagens-opcao-padrao>label{display:flex;justify-content:space-between;gap:var(--s4);padding:var(--s3-5);border:1px solid var(--n-200);border-radius:var(--raio-bloco)}.viagens-opcao-padrao label>span:first-child{display:grid;gap:var(--s1)}.viagens-opcao-padrao small{color:var(--n-500)}.viagens-switch input{width:18px;height:18px;accent-color:var(--marcado)}
+.viagens-opcao-padrao{grid-column:1/-1}.viagens-opcao-padrao>label{display:flex;justify-content:space-between;gap:var(--s4);padding:var(--s3-5);border:1px solid var(--n-200);border-radius:var(--raio-bloco)}.viagens-opcao-padrao>label.interruptor{font-size:inherit;align-items:center}.viagens-opcao-padrao label>span:first-child{display:grid;gap:var(--s1)}.viagens-opcao-padrao small{color:var(--n-500)}
 .viagens-exclusao{max-width:720px;margin:0 auto;text-align:center}.viagens-exclusao h2{font-size:var(--fs-titulo-2)}.viagens-exclusao p{color:var(--n-500);line-height:1.7}.viagens-exclusao__icone{display:grid;place-items:center;width:56px;height:56px;background:var(--dg-b);color:var(--dg-t);border-radius:var(--raio-cartao);margin:0 auto var(--s4)}.viagens-exclusao__icone--bloqueada{background:var(--wn-b);color:var(--wn-t)}
 .viagens-exclusao__resumo,.viagens-dependencias>div{display:flex;gap:var(--s3);padding:var(--s4);background:var(--nt-b);border-radius:var(--raio-bloco);text-align:left;margin:var(--s4) 0}.viagens-exclusao__resumo div,.viagens-dependencias>div{display:grid;gap:var(--s1)}.viagens-exclusao__resumo small,.viagens-dependencias span{color:var(--n-500)}.viagens-exclusao .cad-frm__acoes{justify-content:center}
 /* Editor de roteiro: classes funcionais permanecem; aparência, métricas e etapas seguem V3.2. */
@@ -746,8 +747,6 @@ textarea.form-controle{height:auto;min-height:calc(3 * 1.5em + 22px);line-height
 .editor-roteiro .destinos{display:grid;gap:var(--s2-5)}.editor-roteiro .destino-row{display:grid;grid-template-columns:22px 38px minmax(0,34fr) minmax(0,66fr) 38px;gap:var(--s2);align-items:center}.editor-roteiro .destino-row[hidden]{display:none}.destino-row__estado,.destino-row__campo{min-width:0}.destino-row__adicionar,.destino-row__remover{width:38px;min-width:38px;height:38px;padding:0;justify-content:center;flex:none;border-radius:var(--raio-bloco)}.destino-row__alca{display:flex;align-items:center;justify-content:center;width:22px;height:38px;border-radius:var(--raio-controle);cursor:grab;color:var(--n-300);touch-action:none;transition:color var(--motion),background var(--motion)}.destino-row__alca:hover{color:var(--n-700);background:transparent}.destino-row--sede .destino-row__estado{grid-column:1/4}.destino-row--sede .destino-row__campo{grid-column:4/6}
 .destino-row--unica .destino-row__remover,.destino-row--unica .destino-row__alca{visibility:hidden}.is-arrastando-destino,.is-arrastando-destino *{user-select:none}
 /* O JS original substitui className dos chips; estes aliases preservam seus estados e os tokens aprovados. */
-.editor-roteiro .status-badge{display:inline-flex;align-items:center;min-height:24px;padding:var(--s0) var(--s2);border-radius:var(--raio-selo);font-size:var(--fs-apoio);font-weight:500;white-space:nowrap;background:var(--nt-b);color:var(--nt-t);border:1px solid var(--nt-r)}
-.editor-roteiro .status-badge--atendida{color:var(--ok-t);background:var(--ok-b);border-color:var(--ok-r)}.editor-roteiro .status-badge--pendente{color:var(--wn-t);background:var(--wn-b);border-color:var(--wn-r)}.editor-roteiro .status-badge--em_andamento{color:var(--in-t);background:var(--in-b);border-color:var(--in-r)}.editor-roteiro .status-badge--nao_atendida{color:var(--dg-t);background:var(--dg-b);border-color:var(--dg-r)}
 .interruptor{display:inline-flex;align-items:center;gap:var(--s2);background:0;border:0;padding:0;cursor:pointer;font-size:var(--fs-apoio)}.interruptor__trilho{width:34px;height:20px;padding:var(--s1);background:var(--n-250);border-radius:var(--raio-pilula);flex-shrink:0}.interruptor__botao{display:block;width:14px;height:14px;background:var(--branco);border-radius:var(--raio-circulo)}.interruptor--ligado .interruptor__trilho{background:var(--n-700)}.interruptor--ligado .interruptor__botao{transform:translateX(14px)}
 .bate-volta{margin-bottom:var(--s4-5);padding:var(--s4);border:1px solid var(--n-200);border-radius:var(--raio-bloco);background:var(--n-25)}.bate-volta[hidden]{display:none}.bate-volta__sentidos{position:relative;display:grid;gap:var(--s3)}.bate-volta__sentido{display:grid;grid-template-columns:45px repeat(3,minmax(0,1fr));align-items:center;gap:var(--s3)}.bate-volta__rotulo{font-size:var(--fs-rotulo);color:var(--n-600);font-weight:600}.bate-volta__resumo{font-size:var(--fs-rotulo);margin:var(--s3) 0 0}
 .rota-metricas,.diarias-metricas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s3);margin-bottom:var(--s4-5)}.diarias-metricas{grid-template-columns:repeat(3,minmax(0,1fr))}.metrica{position:relative;min-width:0;display:grid;gap:var(--s2);align-content:start;padding:var(--s4);border:1px solid var(--n-200);border-radius:var(--raio-bloco);background:var(--branco)}.metrica__icone{display:flex;color:var(--n-400)}.metrica__rotulo{font-size:var(--fs-rotulo);color:var(--n-500)}.metrica__valor{font-size:var(--fs-titulo-2);color:var(--n-800);font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.metrica--destaque{background:var(--d-50);border-color:var(--d-200)}.metrica--destaque .metrica__valor{color:var(--d-700)}.metrica--larga{grid-column:1/-1}.metrica__valor--texto{font-size:var(--fs-texto);font-weight:400}
@@ -765,7 +764,7 @@ textarea.form-controle{height:auto;min-height:calc(3 * 1.5em + 22px);line-height
 @container(max-width:900px){.editor-roteiro.frm-grade{grid-template-columns:1fr}.editor-roteiro__acoes.frm-acoes{position:static}}
 @container(max-width:680px){.editor-roteiro .destino-row{grid-template-columns:22px 38px minmax(0,1fr) 38px}.destino-row__estado{grid-column:3/5}.destino-row__campo{grid-column:1/5}.destino-row--sede .destino-row__estado,.destino-row--sede .destino-row__campo{grid-column:1/5}.editor-roteiro .section-card__acao{margin-left:0}.editor-roteiro__acoes-cabecalho{justify-content:flex-start}.bate-volta__sentido,.diarias-metricas{grid-template-columns:1fr}.rota-metricas{grid-template-columns:1fr 1fr}.mapa__superficie{height:300px}.editor-roteiro .trechos-tabela,.trechos-tabela tbody{display:block;min-width:0;width:100%}.trechos-tabela thead{display:none}.trechos-tabela .trecho-linha{display:grid;gap:var(--s1);border:1px solid var(--n-200);border-radius:var(--raio-bloco);margin-bottom:var(--s3);padding:var(--s2)}.trechos-tabela .trecho-linha[hidden]{display:none}.trechos-tabela td{display:block;padding:var(--s2);border:0;white-space:normal}.trechos-tabela td[data-rotulo]::before{content:attr(data-rotulo);display:block;font-size:var(--fs-rotulo);color:var(--n-450);margin-bottom:var(--s1-5)}.trechos-tabela .form-campo{min-width:0}.editor-roteiro [data-trechos-tabela]{overflow:visible}.editor-roteiro__acoes.frm-acoes{padding-inline:0}}
 /* Cabeçalhos e lateral do editor: números alinhados e ações de ciclo de vida disponíveis também no celular. */
-.editor-roteiro .section-card__cabecalho,.editor-roteiro .side-card__cabecalho{display:flex;align-items:center;gap:var(--s2-5)}
+.editor-roteiro .side-card__cabecalho{display:flex;align-items:center;gap:var(--s2-5)}
 .editor-roteiro .frm-lateral>.sticky{display:block}
 .editor-roteiro .step-i{cursor:default}
 /* Calendário sequencial do roteiro mantém ordem das datas e abre acima do mapa. */
@@ -926,7 +925,7 @@ textarea.form-controle{height:auto;min-height:calc(3 * 1.5em + 22px);line-height
 /* Inclusão rápida do GV: grupo nomeado para acessibilidade, sem título visual duplicado. */
 .catalogo-paridade__dialog{width:min(520px,calc(100vw - 32px));padding:var(--s7);border:1px solid var(--n-200);border-radius:var(--raio-cartao);background:var(--branco);color:var(--n-900);box-shadow:var(--sombra-3)}
 .catalogo-paridade__dialog::backdrop{background:var(--veu)}
-.catalogo-paridade__dialog h2{margin:0 0 var(--s4);font-size:var(--fs-titulo-1)}
+.catalogo-paridade__dialog h2{margin:0 0 var(--s4);font-size:var(--fs-titulo);font-weight:600;color:var(--n-900)}
 .catalogo-paridade__dialog p{line-height:1.6}
 .catalogo-paridade__acoes{display:flex;justify-content:flex-end;gap:var(--s3);padding-top:var(--s5)}
 /* O resumo de erro da inclusão usa o alerta V3.2, com respiro no painel. */
@@ -1092,8 +1091,6 @@ textarea.form-controle{height:auto;min-height:calc(3 * 1.5em + 22px);line-height
 .of-vazio{padding:var(--s10) var(--s6);text-align:center;display:grid;justify-items:center;gap:var(--s2)}
 .of-vazio h2{margin:0;font-size:var(--fs-titulo-1)}
 .of-vazio p{margin:0 0 var(--s2);font-size:var(--fs-controle);color:var(--n-500)}
-.st--rascunho{background:var(--in-b);color:var(--in-t);border:1px solid var(--in-r)}
-.st--neutro{background:var(--nt-b);color:var(--nt-t);border:1px solid var(--nt-r)}
 @container(max-width:1100px){.of-grade{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.of-valor{grid-column:1/-1}}
 @container(max-width:680px){
   .of-grade,.of-equipe{grid-template-columns:1fr}
@@ -1115,9 +1112,6 @@ textarea.form-controle{height:auto;min-height:calc(3 * 1.5em + 22px);line-height
 .of-form .frm-grade{padding-top:0}
 .of-form__principal{min-width:0}
 .of-form__principal>.reg{margin-bottom:var(--s4)}
-.of-form .section-card__cabecalho{display:flex;align-items:center;gap:var(--s2-5);flex-wrap:wrap}
-.of-form .section-card__titulo{font:inherit;margin:0}
-.of-form .section-card__acao{margin-left:auto}
 .of-form .bloco-split{display:grid;grid-template-columns:200px minmax(0,1fr);gap:var(--s4-5);padding:var(--s4) 0}
 .of-form .bloco-split+.bloco-split{border-top:1px solid var(--n-150)}
 .of-form .bloco-split:first-child{padding-top:0}
@@ -1232,8 +1226,8 @@ a.step-i{text-decoration:none;color:inherit}
 .tm-fato--ausente .ui-icon{color:var(--n-300)}
 .tm-herdados{color:var(--n-600)}
 .tm-acoes{flex:none}
-.ib-linha--perigo{color:var(--dg-t)!important}
-.ib-linha--perigo:hover{background:var(--dg-b)!important}
+.ib-linha.ib-linha--perigo{color:var(--dg-t)}
+.ib-linha.ib-linha--perigo:hover{background:var(--dg-b)}
 .tm-cartao .acoes form{margin:0}
 .tm-form .editor-roteiro__rodape{grid-column:1/-1}
 .tm-form .aviso-rota{margin-top:var(--s3)}
@@ -1270,11 +1264,6 @@ a.step-i{text-decoration:none;color:inherit}
 .prestacao-card-group--start{border-bottom-left-radius:var(--raio-selo);border-bottom-right-radius:var(--raio-selo)}
 .prestacao-card-group--middle{border-radius:var(--raio-selo);margin-top:-8px}
 .prestacao-card-group--end{border-top-left-radius:var(--raio-selo);border-top-right-radius:var(--raio-selo);margin-top:-8px}
-.st--pc-pendente{background:var(--wn-b);color:var(--wn-t);border:1px solid var(--wn-r)}
-.st--pc-em_preenchimento{background:var(--in-b);color:var(--in-t);border:1px solid var(--in-r)}
-.st--pc-enviada{background:var(--d-50);color:var(--d-800);border:1px solid var(--d-200)}
-.st--pc-aprovada{background:var(--ok-b);color:var(--ok-t);border:1px solid var(--ok-r)}
-.st--pc-reprovada{background:var(--dg-b);color:var(--dg-t);border:1px solid var(--dg-r)}
 .pc-solic.form-controle{height:34px;padding:0 var(--s2-5);font-size:var(--fs-texto);font-weight:600;font-variant-numeric:tabular-nums}
 .pc-solic--leitura{display:inline-flex;align-items:center;height:34px;padding:0 var(--s2-5);border:1px dashed var(--n-200);border-radius:var(--raio-bloco);font-size:var(--fs-meta);color:var(--n-600)}
 .pc-autosave{position:absolute;right:0;top:100%;font-size:var(--fs-rotulo);color:var(--n-500);white-space:nowrap}
@@ -1404,10 +1393,10 @@ a.step-i{text-decoration:none;color:inherit}
 /* Bloco de destinos encosta no fim do cartão — só quando é mesmo o último:
    no cadastro de termo vem o período embaixo, que precisa do respiro. */
 .editor-roteiro .bloco-split:last-child:has([data-destinos]){padding-bottom:0}
-/* Lixeira da linha de destino: fundo vermelho claro sólido, sem borda visível.
-   `!important` porque .btn--destrutiva também usa, para cor e borda. */
-.editor-roteiro .destino-row__remover{background:var(--dg-b);border-color:var(--dg-b)!important;color:var(--dg-t)!important;box-shadow:none}
-.editor-roteiro .destino-row__remover:hover{background:var(--dg-r);border-color:var(--dg-r)!important;color:var(--dg-t)!important}
+/* Lixeira da linha de destino: fundo vermelho claro sólido, sem borda visível
+   (vem depois da .btn--destrutiva, por isso vence sem !important). */
+.editor-roteiro .destino-row__remover{background:var(--dg-b);border-color:var(--dg-b);color:var(--dg-t);box-shadow:none}
+.editor-roteiro .destino-row__remover:hover{background:var(--dg-r);border-color:var(--dg-r);color:var(--dg-t)}
 /* Percurso no título da edição: quebra em nomes longos. */
 .editor-roteiro__percurso{overflow-wrap:anywhere}
 
@@ -1582,10 +1571,10 @@ a.step-i{text-decoration:none;color:inherit}
    =========================================================================== */
 /* Mesmo respiro do roteiro entre o cabeçalho e o primeiro cartão (lá vem do gap da grade). */
 .frm-topo{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s4);flex-wrap:wrap;padding-bottom:0;margin-bottom:var(--s5)}
-.frm-topo .page-header{flex:1;min-width:0;margin:0;padding:0;border:0}
+.frm-topo .d-cabeca__esq{flex:1;min-width:0;margin:0;padding:0;border:0}
 .frm-topo__acoes{display:flex;align-items:center;gap:var(--s2-5);flex:none}
 .frm-titulo{display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap}
-.frm-titulo .page-header__titulo{margin:0}
+.frm-titulo .d-titulo-v32{margin:0}
 .frm-ident{overflow-wrap:anywhere}
 .frm-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s1-5) var(--s4)}
 .frm-meta>span{display:inline-flex;align-items:center;gap:var(--s1-5);min-width:0;overflow-wrap:anywhere}
@@ -1674,7 +1663,6 @@ form.btn-flutuante-form{margin:0;display:contents}
    viatura, ou a unidade). Menor que o selo de situação das listagens e em
    cinza — o `st--rascunho` daqui é azul e ia disputar atenção com a linha
    escolhida. */
-.st--neutro{background:var(--n-100);color:var(--n-600);border:1px solid var(--n-200)}
 .lista-escolha__chip{height:20px;margin-left:var(--s2);font-size:var(--fs-rotulo);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
 .lista-escolha .of-membro--viaja .of-av{background:var(--grafite);color:var(--branco)}
 /* A lista de ofícios abre a seção 1; o bloco de destinos que vem depois ganha
@@ -1712,10 +1700,15 @@ form.btn-flutuante-form{margin:0;display:contents}
 
 
 
-/* Nada de foco em lugar nenhum, a pedido de 15/09/2026: as regras que pintavam
-   o brilho foram apagadas na origem, aqui fica só o corte do contorno que o
-   navegador desenha sozinho. Quem navega pelo teclado deixa de ver onde está. */
-*:focus,*:focus-visible{outline:none}
+/* Foco (ajuste visual de 26/09/2026): o clique do mouse não desenha nada
+   (:focus), mas quem chega pelo teclado vê a sombra aprovada (:focus-visible),
+   sem contorno e sem mudar a cor da borda. Campos de texto mostram a sombra
+   também ao receber o cursor, porque aí o foco é a informação de onde se
+   está digitando. Erro troca a sombra pela vermelha. */
+*:focus{outline:none}
+:focus-visible{outline:none;box-shadow:var(--sombra-foco)}
+.form-controle:focus,.busca input:focus{box-shadow:var(--sombra-foco)}
+.is-invalid .form-controle:focus,.is-invalid.form-controle:focus,.is-invalid :focus-visible{box-shadow:var(--sombra-foco-erro)}
 
 /* As buscas que comandam uma lista têm a mesma altura dos outros campos. */
 .tm-form .of-equipe-busca .busca input{height:38px}
@@ -1806,7 +1799,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .an-dialogo::backdrop{background:var(--veu)}
 .an-dialogo:focus,.an-dialogo :focus{outline:none}
 .an-form{display:flex;flex-direction:column;gap:var(--s3-5);padding:var(--s6) var(--s6) var(--s5)}
-.an-titulo{margin:0;font-size:var(--fs-titulo-1);font-weight:700;line-height:1.25;color:var(--n-950)}
+.an-titulo{margin:0;font-size:var(--fs-titulo);font-weight:600;line-height:1.3;color:var(--n-900)}
 .an-texto{margin:0;font-size:var(--fs-base);line-height:1.55;color:var(--n-700)}
 .an-texto strong{color:var(--n-900);font-weight:700}
 .an-caixa{display:flex;flex-direction:column;align-items:flex-start;gap:var(--s2-5);padding:var(--s3);border-radius:var(--raio-bloco);background:var(--n-100)}
@@ -1820,9 +1813,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .an-limpar:hover{background:var(--n-150);color:var(--n-900)}
 .an-limpar[hidden]{display:none}
 .an-limpar .ui-icon{width:14px;height:14px}
-.an-erro{margin:0;font-size:var(--fs-meta);color:var(--dg-t)}
 .an-rodape{display:flex;align-items:center;justify-content:flex-end;gap:var(--s2-5);margin-top:var(--s0)}
-.an-rodape .btn-primaria,.an-rodape .btn--secundaria{height:40px;padding:0 var(--s4-5);border-radius:var(--raio-bloco);font-size:var(--fs-base)}
 .an-rodape .btn-primaria:disabled{opacity:.45;cursor:not-allowed}
 .an-remover{margin-right:auto;padding:0;border:0;background:none;font:inherit;font-size:var(--fs-texto);font-weight:500;color:var(--dg-t);cursor:pointer}
 .an-remover:hover{text-decoration:underline}
@@ -1968,7 +1959,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .cad-lista .tabela__icone-doc .ui-icon{width:15px;height:15px}
 /* O quadrado é o atalho para o editor do documento. */
 .cad-lista a.tabela__icone-doc--link{text-decoration:none;cursor:pointer}
-.cad-lista a.tabela__icone-doc--link:focus-visible{outline:2px solid var(--foco,var(--grafite));outline-offset:2px}
+.cad-lista a.tabela__icone-doc--link:focus-visible{box-shadow:var(--sombra-foco)}
 
 /* Gaveta de um item da navegação do módulo (Cadastros): abre no hover ou no
    foco, logo abaixo do item, com os atalhos das telas de dentro. */
@@ -2078,7 +2069,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .ofc-termo:has(input:checked){border-color:var(--sel-r);background:var(--sel-b);color:var(--n-900)}
 .ofc-termo:has(input:checked) .ofc-termo__com{display:inline-flex}
 .ofc-termo:has(input:checked) .ofc-termo__sem{display:none}
-.ofc-termo:has(input:focus-visible){outline:2px solid var(--foco,var(--sel-f));outline-offset:2px}
+.ofc-termo:has(input:focus-visible){box-shadow:var(--sombra-foco)}
 
 /* Equipe em duas colunas: cada pessoa num cartão próprio. */
 .ofc-equipe{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s2);max-height:none;overflow:visible;border:0;border-radius:0;background:transparent}
@@ -2187,7 +2178,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .vg-stepper__item{position:relative;z-index:1;min-width:0}
 .vg-stepper__passo{display:flex;align-items:center;gap:var(--s2-5);min-height:44px;padding:var(--s1-5) var(--s3);border-radius:var(--raio-bloco);color:var(--n-700);text-decoration:none;transition:background .18s ease,color .2s ease}
 .vg-stepper__passo:hover{background:var(--n-150);color:var(--n-900)}
-.vg-stepper__passo:focus-visible{outline:2px solid var(--foco,var(--n-700));outline-offset:1px}
+.vg-stepper__passo:focus-visible{box-shadow:var(--sombra-foco)}
 .vg-stepper__num{display:inline-grid;place-items:center;width:24px;height:24px;flex:none;border-radius:var(--raio-controle);background:var(--branco);color:var(--n-700);font-size:var(--fs-apoio);font-weight:600;font-variant-numeric:tabular-nums;box-shadow:inset 0 0 0 1px var(--n-250);transition:background .2s ease,color .2s ease,box-shadow .2s ease}
 .vg-stepper__num .ui-icon{width:13px;height:13px;stroke-width:2.4}
 .vg-stepper__rotulo{font-size:var(--fs-meta);font-weight:500;line-height:1.25;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -2360,7 +2351,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .cartao-escolha:hover,.os-tipo:hover{background:var(--n-100)}
 .cartao-escolha:active,.os-tipo:active{transform:scale(.985)}
 .cartao-escolha:focus-within,.os-tipo:focus-within{outline:0}
-.cartao-escolha:has(input:focus-visible){outline:2px solid var(--foco,var(--n-700));outline-offset:2px}
+.cartao-escolha:has(input:focus-visible){box-shadow:var(--sombra-foco)}
 .cartao-escolha__icone,.os-tipo__icone{display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:var(--raio-bloco);background:var(--branco);color:var(--n-600);box-shadow:var(--sombra-1);transition:background .18s ease,color .18s ease}
 .cartao-escolha__icone .ui-icon,.os-tipo__icone .ui-icon{width:18px;height:18px}
 .cartao-escolha__corpo,.os-tipo__corpo{display:grid;gap:var(--s1);min-width:0;padding-top:var(--s0)}
@@ -2385,7 +2376,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .interruptor:has(input:checked) .interruptor__trilho{background:var(--n-700);animation:interruptor-liga 420ms ease-out}
 .interruptor:has(input:checked) .interruptor__botao{transform:translateX(14px)}
 .interruptor:active:has(input:checked) .interruptor__botao{transform:translateX(10px)}
-.interruptor:has(input:focus-visible) .interruptor__trilho{outline:2px solid var(--foco,var(--n-700));outline-offset:2px}
+.interruptor:has(input:focus-visible) .interruptor__trilho{box-shadow:var(--sombra-foco)}
 @media (prefers-reduced-motion:reduce){.interruptor:has(input:checked) .interruptor__trilho{animation:none}}
 
 /* ---- Linhas com quantidade --------------------------------------------
@@ -2398,14 +2389,12 @@ form.btn-flutuante-form{margin:0;display:contents}
 .linha-quantidade{display:flex;align-items:center;gap:var(--s3);min-height:56px;padding:var(--s2) var(--s2-5) var(--s2) var(--s2);border-radius:var(--raio-bloco);background:var(--n-50);transition:background .18s ease}
 .linha-quantidade:hover{background:var(--n-100)}
 .linha-quantidade:has(input[type="checkbox"]:checked){background:var(--n-150)}
-.linha-quantidade:has(input[type="checkbox"]:focus-visible){outline:2px solid var(--foco,var(--n-700));outline-offset:2px}
+.linha-quantidade:has(input[type="checkbox"]:focus-visible){box-shadow:var(--sombra-foco)}
 .linha-quantidade__marca{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:var(--raio-bloco);background:var(--branco);color:var(--n-400);cursor:pointer;box-shadow:var(--sombra-1);transition:background .18s ease,color .18s ease}
 .linha-quantidade__marca .ui-icon{width:17px;height:17px;opacity:.3;transition:opacity .18s ease}
 .linha-quantidade:has(input[type="checkbox"]:checked) .linha-quantidade__marca .ui-icon{opacity:1}
 .linha-quantidade:has(input[type="checkbox"]:checked) .linha-quantidade__marca{background:var(--grafite);color:var(--branco);box-shadow:none;animation:os-marcar .28s ease}
 .linha-quantidade__n{flex:1 1 auto;min-width:0;font-size:var(--fs-meta);font-weight:500;color:var(--n-800);cursor:pointer}
-.linha-quantidade__q{flex:none;width:96px}
-.linha-quantidade__q .form-controle{height:36px;text-align:center}
 .linhas-quantidade.grupo-erro .linha-quantidade{box-shadow:inset 0 0 0 1px var(--dg-t)}
 @media (prefers-reduced-motion:reduce){.linha-quantidade,.linha-quantidade__marca{transition:none;animation:none!important}}
 
@@ -2565,7 +2554,6 @@ form.btn-flutuante-form{margin:0;display:contents}
 .cb-doc__txt .cb-doc__falta{color:var(--wn-t)}
 .cb-doc__acoes{display:flex;flex:none;align-items:center;gap:var(--s1-5)}
 .cb-subtitulo--primeiro{margin-top:0}
-.cb-ajuda{margin:0 0 var(--s3-5);font-size:var(--fs-texto);color:var(--n-600)}
 .cb-copiaveis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s2);margin:0 0 var(--s4)}
 .cb-copiavel{min-width:0;padding:var(--s2-5) var(--s2-5) var(--s2-5) var(--s3);border-radius:var(--raio-bloco);background:var(--n-50)}
 .cb-copiavel dt{margin:0 0 var(--s0);font-size:var(--fs-rotulo);font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--n-450)}
@@ -2615,8 +2603,8 @@ textarea.form-controle.cb-caixa-copiar__texto{width:100%;min-height:0;resize:ver
 .linha-quantidade:has(input[type="checkbox"]:checked){background:var(--n-50);border-color:var(--n-300)}
 .linha-quantidade__marca{width:30px;height:30px;border-radius:var(--raio-bloco);border:1px solid var(--n-200)}
 .linha-quantidade:has(input[type="checkbox"]:checked) .linha-quantidade__marca{border-color:var(--grafite)}
-.linha-quantidade__q{width:74px}
-.linha-quantidade__q .form-controle{height:32px;padding-left:var(--s1-5);padding-right:var(--s1-5)}
+.linha-quantidade__q{flex:none;width:74px}
+.linha-quantidade__q .form-controle{height:32px;padding-left:var(--s1-5);padding-right:var(--s1-5);text-align:center}
 .ofc-percurso__par--4{grid-template-columns:repeat(4,minmax(0,1fr))}
 @container (max-width:900px){.ofc-percurso__par--4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @container (max-width:680px){.ofc-percurso__par--4{grid-template-columns:minmax(0,1fr)}}
@@ -2653,7 +2641,6 @@ textarea.form-controle.cb-caixa-copiar__texto{width:100%;min-height:0;resize:ver
 .cb-anexo-doc__detalhe{display:block;margin-top:var(--s0);font-weight:400;color:var(--n-500)}
 .cb-anexo-doc .ofc-doc__titulo .st{margin-left:var(--s2);vertical-align:middle}
 .cb-anexo-doc--vencida .cb-anexo-doc__num{background:var(--dg-r);color:var(--dg-t)}
-.cb-st--vencida{background:var(--dg-r);color:var(--dg-t)}
 .cb-anexo-doc__aviso{margin:0}
 .cb-anexo-avisos{display:grid;gap:var(--s2);margin-bottom:var(--s3)}
 .cb-anexo-avisos ul{margin:var(--s1) 0 0;padding-left:var(--s4-5)}
@@ -2720,7 +2707,6 @@ textarea.form-controle.cb-caixa-copiar__texto{width:100%;min-height:0;resize:ver
 .pe__colar:focus-visible,.pe__ler:focus-visible,.pe__usar:focus-visible,.pe__ir:focus-visible,.pe__desfazer:focus-visible,.pe__lista summary:focus-visible{box-shadow:var(--sombra-foco)}
 .pe__texto{display:grid;gap:var(--s1-5);padding:0 var(--s3-5) var(--s3-5)}
 .pe__texto .form-controle{height:auto;min-height:132px;padding:var(--s2-5) var(--s3);line-height:1.45;resize:vertical}
-.pe__texto .form-controle:focus{border-color:var(--d-400)}
 .pe__texto-acoes{display:flex;align-items:center;justify-content:flex-end;gap:var(--s3)}
 .pe__dica{font-size:var(--fs-apoio);color:var(--n-450)}
 .pe__ler{height:36px;padding:0 var(--s4);font-size:var(--fs-controle)}
@@ -2931,11 +2917,11 @@ tr[data-importar-url].is-alvo>td:first-child{box-shadow:inset 2px 0 0 var(--sel-
 .pc-lote__detalhe{grid-column:1 / -1;font-size:var(--fs-apoio);color:var(--n-600)}
 .pc-lote__detalhe a{font-weight:600}
 .pc-imp__ampliar{position:relative;display:block;padding:0;border:0;background:none;cursor:zoom-in;border-radius:var(--raio-selo)}
-.pc-imp__ampliar:focus-visible{outline:2px solid var(--foco);outline-offset:2px}
+.pc-imp__ampliar:focus-visible{box-shadow:var(--sombra-foco)}
 .pc-imp__lupa{position:absolute;right:6px;bottom:6px;display:grid;place-items:center;width:26px;height:26px;border-radius:var(--raio-circulo);background:rgba(var(--sombra-rgb),.72);color:var(--branco);opacity:.85}
 .pc-imp__lupa svg{width:14px;height:14px}
 .pc-imp__ampliar:hover .pc-imp__lupa{opacity:1}
-.pc-zoom{width:min(1100px,96vw);height:92vh;max-height:92vh;padding:0;border:0;border-radius:var(--raio-bloco);overflow:hidden;display:none;flex-direction:column}
+.pc-zoom{width:min(1100px,96vw);height:92vh;max-height:92vh;padding:0;border:0;border-radius:var(--raio-cartao);overflow:hidden;display:none;flex-direction:column}
 .pc-zoom[open]{display:flex}
 .pc-zoom::backdrop{background:var(--veu)}
 .pc-zoom__barra{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2) var(--s3-5);padding:var(--s2-5) var(--s3-5);border-bottom:1px solid var(--n-200);background:var(--branco)}
@@ -2945,3 +2931,8 @@ tr[data-importar-url].is-alvo>td:first-child{box-shadow:inset 2px 0 0 var(--sel-
 .pc-zoom__escala{min-width:48px;text-align:center;font-size:var(--fs-texto);font-variant-numeric:tabular-nums}
 .pc-zoom__area{flex:1;overflow:auto;padding:var(--s4);background:var(--n-100);text-align:center}
 .pc-zoom__area canvas{display:inline-block;background:var(--branco);box-shadow:var(--sombra-2)}
+
+/* ---------- Halo de hover do sistema (regra de 15/09/2026) -----------------
+   Somado ao que cada controle já faz no hover (fundo, cor). Só em controles
+   soltos: dentro de menus e listas o halo vazaria sobre os vizinhos. */
+.btn-primaria:hover,.btn--secundaria:hover,.btn--quieta:hover,.ib-linha:hover,.acao-linha:hover,.cad-i:hover,.pag__n:hover,.pag__passo:hover,.ident-icone:hover,.kpi:hover{box-shadow:var(--sombra-hover)}

@@ -25,17 +25,17 @@
 
   <div class="editor-roteiro of-form tm-form">
     {# Cabeçalho no padrão do roteiro: "Novo termo" ou "Editar termo <destino>", período e ofício na linha de meta, Salvar no topo. #}
-    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
-      <div class="page-header d-cabeca__esq">
-        <div class="page-header__identificacao d-identificacao">
-          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
+    <div class="d-cabeca d-cabeca--form frm-topo">
+      <div class="d-cabeca__esq">
+        <div class="d-identificacao">
+          <span class="kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
           <div>
             <div class="frm-titulo">
-              <h1 class="page-header__titulo d-titulo-v32">{% if termo.pk %}Editar termo <span class="frm-ident">{{ termo.destino_display }}</span>{% else %}Novo termo{% endif %}</h1>
+              <h1 class="d-titulo-v32">{% if termo.pk %}Editar termo <span class="frm-ident">{{ termo.destino_display }}</span>{% else %}Novo termo{% endif %}</h1>
               {% if termo.pk and selo %}<span class="st st--{{ selo_tom }}">{{ selo }}</span>{% endif %}
             </div>
             {% if termo.pk %}
-              <p class="page-header__subtitulo d-cabeca__sub frm-meta">
+              <p class="d-cabeca__sub frm-meta">
                 <span>{% include "components/icon.html" with nome="calendar" %}{{ termo.periodo_display }}</span>
                 {% if termo.oficio_id %}<span>{% include "components/icon.html" with nome="document" %}Ofício {{ termo.oficio.numero_formatado }}</span>{% endif %}
               </p>

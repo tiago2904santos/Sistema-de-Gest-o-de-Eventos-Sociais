@@ -158,8 +158,9 @@ body.de-pagina { margin:0; background: var(--n-100); color: var(--n-900); font-f
 .de-status { margin-right:auto; font-size: 12px; color: var(--n-500); }
 .de-status--ok { color: var(--ok-t); }
 .de-status--erro { color: var(--dg-t); }
-.de-interruptor {
-  display: flex; align-items: center; justify-content: space-between; gap:var(--s3);
+/* Caixa do sim/não do documento; o controle em si é o .interruptor do sistema. */
+.de-interruptor.interruptor {
+  display: flex; align-items: center; justify-content: space-between; gap:var(--s3); font-size: inherit;
   padding:var(--s2-5) var(--s3); border: 1px solid var(--n-250); border-radius:var(--raio-bloco); cursor: pointer;
 }
 

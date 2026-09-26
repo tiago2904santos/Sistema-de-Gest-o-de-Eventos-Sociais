@@ -6,13 +6,13 @@
 {% include "components/v32/breadcrumb.html" with atual=titulo %}
 
 {# Cabeçalho no padrão do roteiro: ícone, título e Salvar no topo. #}
-<div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
-  <div class="page-header d-cabeca__esq">
-    <div class="page-header__identificacao d-identificacao">
-      <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
+<div class="d-cabeca d-cabeca--form frm-topo">
+  <div class="d-cabeca__esq">
+    <div class="d-identificacao">
+      <span class="kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
       <div>
-        <div class="frm-titulo"><h1 class="page-header__titulo d-titulo-v32">{{ titulo }}</h1></div>
-        {% if ajuda %}<p class="page-header__subtitulo d-cabeca__sub frm-meta"><span>{% include "components/icon.html" with nome="info" %}{{ ajuda }}</span></p>{% endif %}
+        <div class="frm-titulo"><h1 class="d-titulo-v32">{{ titulo }}</h1></div>
+        {% if ajuda %}<p class="d-cabeca__sub frm-meta"><span>{% include "components/icon.html" with nome="info" %}{{ ajuda }}</span></p>{% endif %}
       </div>
     </div>
   </div>

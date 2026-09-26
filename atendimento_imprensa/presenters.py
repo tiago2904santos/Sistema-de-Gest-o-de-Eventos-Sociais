@@ -19,7 +19,7 @@ def selo_do_deadline(atendimento, hoje=None):
         return "", ""
     hoje = hoje or timezone.localdate()
     if atendimento.deadline < hoje:
-        return f"Deadline vencido em {atendimento.deadline:%d/%m}", "cancelada"
+        return f"Deadline vencido em {atendimento.deadline:%d/%m}", "perigo"
     if atendimento.deadline == hoje:
         return "Deadline hoje", "aguardando"
     return f"Deadline {atendimento.deadline:%d/%m/%Y}", "neutro"

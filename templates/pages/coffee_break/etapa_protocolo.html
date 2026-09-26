@@ -27,7 +27,7 @@
       </header>
       <div class="section-card__corpo">
         <h3 class="sol-subtitulo cb-subtitulo--primeiro" id="sec-eprotocolo">Dados para o eProtocolo</h3>
-        <p class="cb-ajuda">Abra o protocolo com estes dados, anexe os documentos na ordem da lista abaixo e despache ao GAF.</p>
+        <p class="form-ajuda">Abra o protocolo com estes dados, anexe os documentos na ordem da lista abaixo e despache ao GAF.</p>
 
         <dl class="cb-copiaveis">
           {% for campo in eprotocolo.campos %}
@@ -98,7 +98,7 @@
             <details class="ofc-doc cb-anexo-doc cb-anexo-parte{% if parte.vencida %} cb-anexo-doc--vencida{% endif %}" data-ofc-doc id="anexo-{{ parte.chave }}">
               <summary class="ofc-doc__cabeca">
                 <span class="ofc-doc__titulo"><span class="cb-anexo-doc__num">{{ forloop.counter }}</span>{{ parte.titulo }}
-                  {% if parte.vencida %}<span class="st st--pendente cb-st--vencida">Certidão vencida</span>{% elif parte.pronto %}<span class="st st--atendido">Pronto</span>{% elif parte.faltando %}<span class="st st--pendente">Falta{{ parte.faltando|pluralize:"m" }} {{ parte.faltando }}</span>{% endif %}
+                  {% if parte.vencida %}<span class="st st--pendente st--perigo">Certidão vencida</span>{% elif parte.pronto %}<span class="st st--atendido">Pronto</span>{% elif parte.faltando %}<span class="st st--pendente">Falta{{ parte.faltando|pluralize:"m" }} {{ parte.faltando }}</span>{% endif %}
                   <small class="cb-anexo-doc__detalhe">{{ parte.conteudo_texto }}</small>
                 </span>
                 {% if parte.disponivel %}

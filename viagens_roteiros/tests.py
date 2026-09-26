@@ -1480,7 +1480,7 @@ class SemTelaDeDetalheTests(BaseTelaRoteiroTestCase):
         self.assertContains(resposta, "Rascunho")
         roteiro.cancelar("Evento adiado")
         resposta = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
-        self.assertContains(resposta, "status-badge--cancelada")
+        self.assertContains(resposta, "st--cancelada")
 
     def test_roteiro_novo_nao_oferece_cancelar_nem_excluir(self):
         resposta = self.client.get(reverse("viagens_roteiros:novo"))

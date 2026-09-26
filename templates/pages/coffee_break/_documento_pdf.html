@@ -11,7 +11,7 @@
 <details class="ofc-doc cb-anexo-doc{% if d.vencida %} cb-anexo-doc--vencida{% elif not d.disponivel %} cb-anexo-doc--falta{% endif %}" data-ofc-doc id="anexo-{{ d.chave }}">
   <summary class="ofc-doc__cabeca">
     <span class="ofc-doc__titulo">{% if d.posicao %}<span class="cb-anexo-doc__num">{{ d.posicao }}</span>{% endif %}{{ d.titulo }}
-      {% if d.vencida %}<span class="st st--pendente cb-st--vencida">Vencida</span>{% elif d.pronto %}<span class="st st--atendido">Pronto</span>{% elif not d.disponivel %}<span class="st st--pendente">Falta</span>{% endif %}
+      {% if d.vencida %}<span class="st st--pendente st--perigo">Vencida</span>{% elif d.pronto %}<span class="st st--atendido">Pronto</span>{% elif not d.disponivel %}<span class="st st--pendente">Falta</span>{% endif %}
       {% if d.detalhe %}<small class="cb-anexo-doc__detalhe">{{ d.detalhe }}</small>{% endif %}
     </span>
     {% if d.disponivel %}

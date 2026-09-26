@@ -31,21 +31,21 @@
     {# A rota gravada, para o mapa reabrir desenhado e com os totais. #}
     {% if rota_inicial %}{{ rota_inicial|json_script:"rota-inicial" }}{% endif %}
 
-    <div class="solicitacao-intro d-cabeca d-cabeca--form editor-roteiro__topo">
-      <div class="page-header d-cabeca__esq">
-        <div class="page-header__identificacao d-identificacao">
-          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="map-pin" %}</span>
+    <div class="d-cabeca d-cabeca--form editor-roteiro__topo">
+      <div class="d-cabeca__esq">
+        <div class="d-identificacao">
+          <span class="kpi__ic">{% include "components/icon.html" with nome="map-pin" %}</span>
           <div>
             {# A situação do roteiro fica ao lado do título: é o que vale para a tela inteira. #}
             <div class="editor-roteiro__titulo">
-              <h1 class="page-header__titulo d-titulo-v32">{% if roteiro.pk %}Editar roteiro <span class="editor-roteiro__percurso" data-titulo-percurso>{{ roteiro.origem_municipio.nome|default:"Sede não informada" }}{% for destino in roteiro.destinos.all %} › {{ destino.municipio.nome }}{% endfor %}</span>{% else %}Novo roteiro{% endif %}</h1>
+              <h1 class="d-titulo-v32">{% if roteiro.pk %}Editar roteiro <span class="editor-roteiro__percurso" data-titulo-percurso>{{ roteiro.origem_municipio.nome|default:"Sede não informada" }}{% for destino in roteiro.destinos.all %} › {{ destino.municipio.nome }}{% endfor %}</span>{% else %}Novo roteiro{% endif %}</h1>
               {% if roteiro.pk %}
                 {% if roteiro.cancelado %}
-                  <span class="status-badge status-badge--cancelada">Cancelado</span>
+                  <span class="st st--cancelada">Cancelado</span>
                 {% elif roteiro.status == "FINALIZADO" %}
-                  <span class="status-badge status-badge--atendida">Finalizado</span>
+                  <span class="st st--ok">Finalizado</span>
                 {% else %}
-                  <span class="status-badge status-badge--rascunho">Rascunho</span>
+                  <span class="st st--neutro">Rascunho</span>
                 {% endif %}
               {% endif %}
             </div>

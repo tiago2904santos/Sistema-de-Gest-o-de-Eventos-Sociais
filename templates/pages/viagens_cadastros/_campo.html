@@ -12,15 +12,13 @@
   {# Sentinela: caixa desmarcada não é enviada; sem ela, o servidor não distingue desmarcar de não editar. #}
   <input type="hidden" name="{{ campo.name }}__enviado" value="1">
   <div class="form-campo viagens-opcao-padrao">
-    <label for="id_{{ campo.name }}">
+    <label class="interruptor" for="id_{{ campo.name }}">
       <span>
         <strong>{{ campo.label }}</strong>
         {% if campo.ajuda %}<small id="id_{{ campo.name }}_ajuda">{{ campo.ajuda }}</small>{% endif %}
       </span>
-      <span class="viagens-switch">
-        <input type="checkbox" id="id_{{ campo.name }}" name="{{ campo.name }}" value="1"{% if campo.marcado %} checked{% endif %}>
-        <span aria-hidden="true"></span>
-      </span>
+      <input class="sr-only" type="checkbox" id="id_{{ campo.name }}" name="{{ campo.name }}" value="1"{% if campo.marcado %} checked{% endif %}>
+      <span class="interruptor__trilho" aria-hidden="true"><span class="interruptor__botao"></span></span>
     </label>
     {% for erro in campo.erros %}<p class="form-erro"{% if forloop.first %} id="id_{{ campo.name }}_erro"{% endif %}>{{ erro }}</p>{% endfor %}
   </div>

@@ -24,12 +24,12 @@
   {% include "components/v32/breadcrumb.html" with atual=titulo %}
 
   <div class="editor-roteiro of-form pt-form" data-pt-form data-url-calcular="{{ url_calcular }}" data-programa-outro="{{ programa_outro_valor }}">
-    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
-      <div class="page-header d-cabeca__esq">
-        <div class="page-header__identificacao d-identificacao">
-          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="clipboard" %}</span>
+    <div class="d-cabeca d-cabeca--form frm-topo">
+      <div class="d-cabeca__esq">
+        <div class="d-identificacao">
+          <span class="kpi__ic">{% include "components/icon.html" with nome="clipboard" %}</span>
           <div class="frm-titulo">
-            <h1 class="page-header__titulo d-titulo-v32">Plano de trabalho <span class="frm-ident">{{ plano.numero_formatado }}</span></h1>
+            <h1 class="d-titulo-v32">Plano de trabalho <span class="frm-ident">{{ plano.numero_formatado }}</span></h1>
             <span class="st st--{{ selo_tom }}">{{ selo }}</span>
           </div>
         </div>

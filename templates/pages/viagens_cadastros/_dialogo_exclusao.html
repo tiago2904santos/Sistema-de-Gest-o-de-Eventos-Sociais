@@ -3,5 +3,5 @@
   <h2 id="catalogo-excluir-titulo">Excluir {{ singular }}?</h2>
   <p>Você está prestes a excluir <strong data-catalogo-nome></strong>. Se houver vínculos com outros registros, a exclusão será bloqueada.</p>
   <p>Esta ação é permanente e não poderá ser desfeita.</p>
-  <form method="post" data-catalogo-delete-form>{% csrf_token %}<div class="catalogo-paridade__acoes"><button class="btn--secundaria" type="button" data-catalogo-fechar>Voltar</button><button class="btn-primaria" type="submit">Excluir</button></div></form>
+  <form method="post" data-catalogo-delete-form>{% csrf_token %}<div class="catalogo-paridade__acoes"><button class="btn--secundaria" type="button" data-catalogo-fechar>Voltar</button><button class="btn--secundaria btn--destrutiva" type="submit">Excluir</button></div></form>
 </dialog>

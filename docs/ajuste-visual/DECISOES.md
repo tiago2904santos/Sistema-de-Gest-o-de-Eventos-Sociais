@@ -98,3 +98,55 @@ requisito e não são rediscutidas aqui.
   (`:focus-visible`) volta com a sombra aprovada (`--sombra-foco`), porque sem
   ela quem navega por teclado não vê onde está; foco por clique (`:focus`)
   continua sem desenho. Fica registrado como ponto a confirmar no relatório.
+
+## Fase 2 — um componente por função (primeira leva)
+
+- **Selos**: o CSS passa a conhecer seis tons — `st--neutro`, `st--aviso`,
+  `st--info`, `st--ok`, `st--perigo`, `st--dourado` — num bloco único do
+  bridge. Os 25 nomes de domínio que os presenters ainda emitem (`pendente`,
+  `atendido`, `pc-enviada`…) viraram apelidos desses tons no mesmo bloco; as
+  definições espalhadas (bridge 477, 697, 1095, 1273, 1677 e a `cb-st--vencida`)
+  saíram. Conflitos resolvidos: `st--rascunho` volta a ser **cinza** (o
+  desenho aprovado do `ds-v32`; o azul do bridge era sobreposição posterior) e
+  `st--neutro` tem uma definição só. Tons trocados no presenter porque o
+  significado pedia: Viagem "Rascunho" âmbar→neutro (como Planos e Roteiros),
+  Atendimento "Deadline vencido" cinza→perigo, Coffee "≥ x% consumido"
+  cinza→perigo. O `status-badge` do editor de roteiro (templates e
+  `roteiro-editor.js`) virou `st` com tom. Três testes que citavam as classes
+  antigas foram atualizados (`viagens_viagem`, `viagens_roteiros`,
+  `coffee_break`).
+- **Botão destrutivo**: só existe a secundária em vermelho
+  (`btn--secundaria btn--destrutiva`), sem `!important` (o seletor composto dá
+  a especificidade). O "Cancelar solicitação" do Coffee, que era primária
+  vermelha, e os dois "Excluir" em `btn-primaria` dos cadastros de Viagens
+  passaram para ela. `ib-linha--perigo` idem.
+- **Cabeçalho numerado da seção**: ficou só a versão em texto dourado com
+  divisor (regra de 15/09); a versão em círculo, que ela sobrepunha, saiu. As
+  três definições de `.section-card__cabecalho` viraram a global.
+- **Cabeçalho de formulário**: as classes sem CSS no shell (`solicitacao-intro`,
+  `page-header`, `page-header__identificacao/__icone/__titulo/__subtitulo`)
+  saíram de 27 templates; o que vale é `d-cabeca d-cabeca--form frm-topo` +
+  `d-cabeca__esq` + `d-identificacao` + `kpi__ic` + `frm-titulo` + `d-titulo-v32`.
+- **Modais**: `an-dialogo`, `catalogo-paridade__dialog`, `pc-zoom` e `ag-modal`
+  passam a usar as medidas do `.mo` (título 16px/600, botões de 36px, raio de
+  cartão, véu `--veu`). A estrutura HTML e os scripts de cada diálogo foram
+  preservados; o X de fechar nos `an-dialogo` fica para uma segunda leva.
+- **Sim/não**: `viagens-switch` (cadastros de Viagens e editor de documentos)
+  virou o `interruptor` canônico — antes aparecia como caixa de seleção crua,
+  porque o CSS dele estava num arquivo órfão.
+- **Erro e ajuda de campo**: `msg-erro`, `an-erro` → `form-erro`;
+  `field__help`, `cb-ajuda` → `form-ajuda`. `ag-erro` da Agenda ficou, porque
+  é mensagem de estado do painel, não erro de campo; `grupo-erro` também, porque
+  é a caixa que envolve um grupo inválido.
+- **Estado vazio**: `texto-vazio` alinhado ao `dt__vazio`/`lt__vazio`
+  (`--fs-texto`, `--n-500`).
+- **Foco e hover**: `*:focus{outline:none}` continua (clique não desenha);
+  `:focus-visible` ganha `--sombra-foco`; campos de texto mostram a sombra
+  também no `:focus`; `.is-invalid` troca pela vermelha. Os sete
+  `outline:2px solid var(--foco…)` e o `border-color` de foco do
+  "preencher por e-mail" viraram a mesma sombra. Halo de hover
+  (`--sombra-hover`) aplicado a botões, botão de ícone, item da trilha,
+  paginação, ícones do cabeçalho e KPI — não a itens dentro de menus, onde
+  vazaria sobre os vizinhos, nem a campos.
+- **Conflito resolvido**: `linha-quantidade__q` tinha 96px/36px e 74px/32px;
+  ficou a última decisão (74/32) com o `text-align:center` da primeira.

@@ -28,7 +28,7 @@
       <div class="section-card__corpo">
         {% if not somente_leitura %}
           <div class="cb-vincular" id="cb-vincular" data-cb-vincular data-cb-vincular-url="{% url 'coffee_break:vincular_pagamento' solicitacao.pk %}" hidden>
-            <p class="cb-ajuda">Várias OS do mesmo lote num ofício e num protocolo: o ofício, o protocolo e o pagamento ficam iguais em todas (o que se fizer aqui vale para as outras); cada OS tem a sua nota e o seu certifico. Aparecem as OS do {{ lote.rotulo_curto }} que ainda não foram pagas nem protocoladas.</p>
+            <p class="form-ajuda">Várias OS do mesmo lote num ofício e num protocolo: o ofício, o protocolo e o pagamento ficam iguais em todas (o que se fizer aqui vale para as outras); cada OS tem a sua nota e o seu certifico. Aparecem as OS do {{ lote.rotulo_curto }} que ainda não foram pagas nem protocoladas.</p>
             {% include "components/v32/lista_escolha.html" with name="vinculadas" multipla=True label="OS no mesmo pagamento" rotulo_busca="Buscar OS" rotulo_oculto=True icone="document" opcoes=opcoes_vinculo placeholder="Buscar pelo número da OS, evento ou nota" vazio="Nenhuma outra OS do mesmo lote em aberto." sem_resultado="Nenhuma OS encontrada." %}
             <p class="form-ajuda" data-cb-vincular-estado>Marcou, vinculou: em seguida abre o anexo da nota dela.</p>
           </div>

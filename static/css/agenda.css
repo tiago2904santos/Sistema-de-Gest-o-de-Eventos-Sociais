@@ -28,7 +28,7 @@
 .ag-seg button { border: 0; background: none; font: inherit; font-weight: 600; font-size: .85rem; padding: 6px 14px; border-radius: 999px; cursor: pointer; color: var(--grafite); }
 .ag-seg button:hover { background: var(--hover-b); }
 .ag-seg button[aria-pressed="true"] { background: var(--d-500); color: var(--grafite); }
-.ag-ico:focus-visible, .ag-btn:focus-visible, .ag-seg button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--foco); }
+.ag-ico:focus-visible, .ag-btn:focus-visible, .ag-seg button:focus-visible { outline: none; box-shadow: var(--sombra-foco); }
 
 /* Grade: filtros à esquerda, calendário à direita ------------------------- */
 .ag-grade { display: grid; grid-template-columns: 272px minmax(0, 1fr); gap: 20px; align-items: start; }
@@ -44,7 +44,7 @@
 .ag-chip__n { color: var(--rotulo); font-size: .75rem; font-variant-numeric: tabular-nums; }
 .ag-chip:hover { background: var(--hover-b); }
 .ag-chip:has(input:checked) { border-color: var(--sel-r); background: var(--sel-b); }
-.ag-chip:has(input:focus-visible) { box-shadow: 0 0 0 3px var(--foco); }
+.ag-chip:has(input:focus-visible) { box-shadow: var(--sombra-foco); }
 .ag-chip--viagem .ag-chip__pt { background: var(--ag-viagem); }
 .ag-chip--solicitacao .ag-chip__pt { background: var(--ag-solicitacao); }
 .ag-chip--coffee .ag-chip__pt { background: var(--ag-coffee); }
@@ -52,7 +52,7 @@
 .ag-chip--enc .ag-chip__t { text-decoration: line-through; color: var(--rotulo); }
 .ag-chip:not(:has(input:checked)) .ag-chip__pt { opacity: .35; }
 .ag-sel, .ag-busca { width: 100%; height: 38px; border: 1px solid var(--nt-r); border-radius: 8px; padding: 0 10px; font: inherit; background: var(--branco); color: var(--grafite); }
-.ag-sel:focus, .ag-busca:focus { outline: none; border-color: var(--sel-r); box-shadow: 0 0 0 3px var(--foco); }
+.ag-sel:focus, .ag-busca:focus { outline: none; border-color: var(--sel-r); box-shadow: var(--sombra-foco); }
 .ag-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 .ag-toggle input { accent-color: var(--d-500); width: 16px; height: 16px; }
 .ag-atalhos { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -112,8 +112,8 @@
 .fc .fc-list-event { cursor: pointer; }
 
 /* Modal do dossiê ----------------------------------------------------------- */
-.ag-modal { width: min(1120px, calc(100vw - 32px)); max-height: calc(100vh - 48px); border: 0; border-radius: 14px; padding: 0; background: var(--papel); color: var(--grafite); box-shadow: 0 24px 64px rgba(0,0,0,.28); }
-.ag-modal::backdrop { background: rgba(26, 25, 23, .5); }
+.ag-modal { width: min(1120px, calc(100vw - 32px)); max-height: calc(100vh - 48px); border: 0; border-radius: var(--raio-cartao); padding: 0; background: var(--papel); color: var(--grafite); box-shadow: 0 24px 64px rgba(0,0,0,.28); }
+.ag-modal::backdrop { background: var(--veu); }
 .ag-modal__c { max-height: calc(100vh - 48px); overflow: auto; }
 .ag-m__carregando { padding: 48px; text-align: center; color: var(--rotulo); }
 .ag-m { display: flex; flex-direction: column; min-height: 320px; }

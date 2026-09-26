@@ -25,9 +25,10 @@
           {% include "components/v32/multi_pick.html" with name=d.nome label=d.rotulo opcoes=parte.opcoes erros=parte.erros vazio_escolhidos="Os viajantes escolhidos aparecem aqui" %}
         {% elif d.tipo == "booleano" %}
           <div class="form-campo">
-            <label class="de-interruptor" for="id_{{ d.nome }}">
+            <label class="de-interruptor interruptor" for="id_{{ d.nome }}">
               <span>{{ d.rotulo }}</span>
-              <span class="viagens-switch"><input type="checkbox" id="id_{{ d.nome }}" name="{{ d.nome }}" value="on"{% if parte.valor %} checked{% endif %}><span aria-hidden="true"></span></span>
+              <input class="sr-only" type="checkbox" id="id_{{ d.nome }}" name="{{ d.nome }}" value="on"{% if parte.valor %} checked{% endif %}>
+              <span class="interruptor__trilho" aria-hidden="true"><span class="interruptor__botao"></span></span>
             </label>
             {% for erro in parte.erros %}<p class="form-erro">{{ erro }}</p>{% endfor %}
           </div>

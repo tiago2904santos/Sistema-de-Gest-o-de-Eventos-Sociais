@@ -918,9 +918,9 @@
   }
 
   var ROTULOS_ROTA = {
-    PENDENTE: ["Rota pendente", "status-badge--rascunho", "Pendente"],
-    CALCULADA: ["Rota calculada", "status-badge--atendida", "Calculada"],
-    DESATUALIZADA: ["Rota desatualizada", "status-badge--pendente", "Desatualizada — recalcule"],
+    PENDENTE: ["Rota pendente", "st--neutro", "Pendente"],
+    CALCULADA: ["Rota calculada", "st--ok", "Calculada"],
+    DESATUALIZADA: ["Rota desatualizada", "st--aviso", "Desatualizada — recalcule"],
   };
 
   function definirStatusRota(status) {
@@ -929,7 +929,7 @@
     var dados = ROTULOS_ROTA[status] || ROTULOS_ROTA.PENDENTE;
     if (chip) {
       chip.textContent = dados[0];
-      chip.className = "status-badge " + dados[1];
+      chip.className = "st " + dados[1];
     }
     if (aviso) aviso.hidden = status !== "DESATUALIZADA";
     var rotuloBotao = editor.querySelector("[data-rota-calcular-rotulo]");
@@ -1326,18 +1326,18 @@
   var temResultadoDiarias = false;
 
   var CHIPS_DIARIAS = {
-    pendente: ["status-badge--rascunho", "Aguardando dados"],
-    calculando: ["status-badge--em_andamento", "Calculando diárias…"],
-    desatualizado: ["status-badge--pendente", "Cálculo desatualizado"],
-    atualizado: ["status-badge--atendida", "Cálculo atualizado"],
-    erro: ["status-badge--nao_atendida", "Falha no cálculo"],
+    pendente: ["st--neutro", "Aguardando dados"],
+    calculando: ["st--info", "Calculando diárias…"],
+    desatualizado: ["st--aviso", "Cálculo desatualizado"],
+    atualizado: ["st--ok", "Cálculo atualizado"],
+    erro: ["st--perigo", "Falha no cálculo"],
   };
 
   function definirEstadoDiarias(estado, texto) {
     var chip = editor.querySelector("[data-diarias-chip]");
     var dados = CHIPS_DIARIAS[estado] || CHIPS_DIARIAS.pendente;
     if (chip) {
-      chip.className = "status-badge section-card__acao " + dados[0];
+      chip.className = "st section-card__acao " + dados[0];
       chip.textContent = texto || dados[1];
       chip.setAttribute("data-estado", estado);
     }

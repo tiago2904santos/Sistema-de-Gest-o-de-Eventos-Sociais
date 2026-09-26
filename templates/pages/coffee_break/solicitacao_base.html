@@ -20,12 +20,12 @@
   {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
 
   <div class="editor-roteiro of-form cb-fluxo">
-    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
-      <div class="page-header d-cabeca__esq">
-        <div class="page-header__identificacao d-identificacao">
-          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="coffee" %}</span>
+    <div class="d-cabeca d-cabeca--form frm-topo">
+      <div class="d-cabeca__esq">
+        <div class="d-identificacao">
+          <span class="kpi__ic">{% include "components/icon.html" with nome="coffee" %}</span>
           <div class="frm-titulo">
-            <h1 class="page-header__titulo d-titulo-v32">{% if solicitacao %}Solicitação <span class="frm-ident">{{ solicitacao.numero|default:solicitacao.pk }}</span>{% else %}Nova solicitação{% endif %}</h1>
+            <h1 class="d-titulo-v32">{% if solicitacao %}Solicitação <span class="frm-ident">{{ solicitacao.numero|default:solicitacao.pk }}</span>{% else %}Nova solicitação{% endif %}</h1>
             <span class="st st--{{ selo_tom }}">{{ selo }}</span>
           </div>
         </div>

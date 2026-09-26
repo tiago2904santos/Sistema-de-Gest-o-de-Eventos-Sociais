@@ -4,16 +4,16 @@
 {% block title %}Documento assinado{% endblock %}
 {% block conteudo %}
 {# Cabeçalho no padrão do roteiro: ícone, título, meta e a ação principal no topo. #}
-<div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
-  <div class="page-header d-cabeca__esq">
-    <div class="page-header__identificacao d-identificacao">
-      <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="upload" %}</span>
+<div class="d-cabeca d-cabeca--form frm-topo">
+  <div class="d-cabeca__esq">
+    <div class="d-identificacao">
+      <span class="kpi__ic">{% include "components/icon.html" with nome="upload" %}</span>
       <div>
         <div class="frm-titulo">
-          <h1 class="page-header__titulo d-titulo-v32">Documento assinado</h1>
+          <h1 class="d-titulo-v32">Documento assinado</h1>
           {% if artefato.esta_assinado %}<span class="st st--atendido">Assinado</span>{% endif %}
         </div>
-        <p class="page-header__subtitulo d-cabeca__sub frm-meta">
+        <p class="d-cabeca__sub frm-meta">
           <span>{% include "components/icon.html" with nome="document" %}{{ artefato.nome_exibicao }}</span>
           {% if artefato.esta_assinado %}<span>{% include "components/icon.html" with nome="clock" %}{{ artefato.assinado_nome_original }} · {{ artefato.assinado_em|date:"d/m/Y H:i" }}</span>{% endif %}
         </p>

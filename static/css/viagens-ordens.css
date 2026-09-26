@@ -50,7 +50,7 @@
 .os-func-seg button{position:relative;z-index:1;height:28px;padding:0 var(--s3);border:0;border-radius:var(--raio-controle);background:transparent;color:var(--n-500);font:inherit;font-size:var(--fs-meta);font-weight:500;cursor:pointer;transition:background .15s ease,color .2s ease}
 .os-func-seg button:hover{background:var(--n-100);color:var(--n-800)}
 .os-func-seg button[aria-pressed="true"],.os-func-seg button[aria-pressed="true"]:hover{background:transparent;color:var(--branco)}
-.os-func-seg button:focus-visible{outline:2px solid var(--foco,var(--n-700));outline-offset:1px}
+.os-func-seg button:focus-visible{box-shadow:var(--sombra-foco)}
 
 @media (prefers-reduced-motion:reduce){.os-func-seg::before{transition:none}}
 

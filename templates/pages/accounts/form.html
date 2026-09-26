@@ -15,12 +15,12 @@
   {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
 
   <div class="editor-roteiro of-form">
-    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
-      <div class="page-header d-cabeca__esq">
-        <div class="page-header__identificacao d-identificacao">
-          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="users" %}</span>
+    <div class="d-cabeca d-cabeca--form frm-topo">
+      <div class="d-cabeca__esq">
+        <div class="d-identificacao">
+          <span class="kpi__ic">{% include "components/icon.html" with nome="users" %}</span>
           <div class="frm-titulo">
-            <h1 class="page-header__titulo d-titulo-v32">{% if instancia %}Editar usuário <span class="frm-ident">{{ instancia.username }}</span>{% else %}Novo usuário{% endif %}</h1>
+            <h1 class="d-titulo-v32">{% if instancia %}Editar usuário <span class="frm-ident">{{ instancia.username }}</span>{% else %}Novo usuário{% endif %}</h1>
             {% if instancia %}<span class="st {% if instancia.is_active %}st--ativo{% else %}st--inativo{% endif %}">{% if instancia.is_active %}Ativo{% else %}Inativo{% endif %}</span>{% endif %}
           </div>
         </div>

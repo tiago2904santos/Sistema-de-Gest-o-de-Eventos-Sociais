@@ -2141,7 +2141,7 @@ class Etapa3VisualizadorTests(EtapasBase):
         CertidaoFornecedor.objects.filter(tipo=TipoCertidao.FGTS).update(validade=dt.date(2020, 1, 1))
         resposta = self.client.get(reverse("coffee_break:etapa_protocolo", args=[self.solicitacao.pk]))
         self.assertContains(resposta, "Certidão vencida.")
-        self.assertContains(resposta, 'cb-st--vencida">Certidão vencida')
+        self.assertContains(resposta, 'st--perigo">Certidão vencida')
         itens = documentos.itens_anexo(self.solicitacao)
         todas = sum(1 for item in itens if item["disponivel"])
         self.assertEqual(todas, len(itens))
