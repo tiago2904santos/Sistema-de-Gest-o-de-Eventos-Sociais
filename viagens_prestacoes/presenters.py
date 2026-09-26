@@ -198,8 +198,9 @@ def _servidor_row(ps, solicitacao_form=None, prestacao_anexos=None, diario_pdf_u
     if solicitacao_form is None:
         solicitacao_form = PrestacaoSolicitacaoForm(instance=ps, prefix=f"ps-{ps.pk}")
 
-    from .prazos import selo_da_prestacao
+    from .prazos import saque_depois_do_prazo, selo_da_prestacao, selo_do_saque
     selo_prestacao = selo_da_prestacao(ps)
+    comprovantes = [a for a in anexos if a.tipo == PrestacaoDocumentoAnexo.TIPO_COMPROVANTE]
 
     # m091: "✓" só com o assinado anexado; "Gerado" quando preenchido e sem o assinado.
     from .completude import situacao_diario, situacao_rt
@@ -208,6 +209,9 @@ def _servidor_row(ps, solicitacao_form=None, prestacao_anexos=None, diario_pdf_u
         "diario_situacao": situacao_diario(ps.prestacao),
         "rt_situacao": situacao_rt(ps),
         "selo_prestacao": selo_prestacao,
+        # m085: lembrete do saque para quem não tem comprovante; e saque lido depois do prazo.
+        "selo_saque": selo_do_saque(ps, tem_comprovante=comprovante_ok),
+        "saque_depois_do_prazo": saque_depois_do_prazo(ps, comprovantes),
         "ps_pk": ps.pk,
         "name": servidor.nome,
         "cargo": cargo_nome,

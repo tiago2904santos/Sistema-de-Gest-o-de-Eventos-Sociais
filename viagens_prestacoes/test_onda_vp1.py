@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import io
 from unittest import mock
 
@@ -269,6 +270,78 @@ class SelosDoDiarioEDoRelatorioTests(PrestacaoFixturesMixin, PrestacaoTestCase):
         resposta = self.client.get(reverse("viagens_prestacoes:index"))
         self.assertNotContains(resposta, "Diário gerado")
         self.assertNotContains(resposta, 'title="Relatório técnico assinado anexado"')
+
+
+class AvisosNoSinoTests(PrestacaoFixturesMixin, PrestacaoTestCase):
+    """m085/m090: selo e aba do saque; avisos no sino (liberadas, vencendo, vencidas, documentos)."""
+
+    def setUp(self):
+        super().setUp()
+        import datetime
+
+        from django.contrib.auth import get_user_model
+
+        from .test_helpers import autorizar_viagens
+
+        self.D = datetime.date
+        self.setUpPrestacaoFixtures()
+        self.colega = get_user_model().objects.create_user(username="colega_viagens", password="x")
+        autorizar_viagens(self.colega)
+        self.ps = self.criar_prestacao(numero=85).prestacoes_servidor[0]
+
+    def _titulos(self, usuario):
+        return list(usuario.notificacoes.values_list("titulo", flat=True))
+
+    def test_diarias_liberadas_avisa_os_colegas_e_nao_o_autor(self):
+        from .solicitacao_services import salvar_solicitacao_do_autosave
+
+        with self.captureOnCommitCallbacks(execute=True):
+            salvar_solicitacao_do_autosave(self.ps, datas={"data_liberacao_diarias": "2026-08-10", "prazo_limite_saque": "2026-08-24"}, autor=self.user)
+        self.assertTrue(any(t.startswith("Diárias liberadas") for t in self._titulos(self.colega)))
+        self.assertFalse(self._titulos(self.user))
+
+    def test_saque_vencendo_vencido_e_prestacao_vencida_uma_vez_so(self):
+        from .avisos import avisar_prazos
+
+        self.ps.data_liberacao_diarias = self.D(2026, 8, 20)
+        self.ps.prazo_limite_saque = self.D(2026, 9, 4)
+        self.ps.save()
+        avisar_prazos(hoje=self.D(2026, 9, 2))
+        self.assertTrue(any(t.startswith("Saque vence em 2 dias") for t in self._titulos(self.colega)))
+        avisar_prazos(hoje=self.D(2026, 9, 2))
+        self.assertEqual(len(self._titulos(self.colega)), 1)
+        avisar_prazos(hoje=self.D(2026, 9, 11))
+        titulos = self._titulos(self.colega)
+        self.assertTrue(any(t.startswith("Prazo de saque vencido") for t in titulos))
+        self.assertTrue(any(t.startswith("Prestação vencida") for t in titulos))
+
+    def test_selo_e_aba_do_saque(self):
+        from .prazos import selo_do_saque
+        from .selectors import listar_prestacoes
+
+        self.ps.prazo_limite_saque = timezone_hoje() + datetime.timedelta(days=2)
+        self.ps.data_liberacao_diarias = timezone_hoje()
+        self.ps.save()
+        self.assertEqual(selo_do_saque(self.ps, tem_comprovante=False).texto, "Saque vence em 2 dias")
+        self.assertIsNone(selo_do_saque(self.ps, tem_comprovante=True))
+        self.assertIn(self.ps.pk, set(listar_prestacoes(aba="saque_vencendo").values_list("pk", flat=True)))
+        Anexo.objects.create(prestacao=self.ps.prestacao, servidor_prestacao=self.ps, tipo=Anexo.TIPO_COMPROVANTE, arquivo=SimpleUploadedFile("c.pdf", pdf_minimo()))
+        self.assertNotIn(self.ps.pk, set(listar_prestacoes(aba="saque_vencendo").values_list("pk", flat=True)))
+
+    def test_comando_diario(self):
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        saida = StringIO()
+        call_command("avisar_prazos_prestacao", stdout=saida)
+        self.assertIn("aviso(s)", saida.getvalue())
+
+
+def timezone_hoje():
+    from django.utils import timezone
+
+    return timezone.localdate()
 
 
 class VersoesAnterioresTests(PrestacaoFixturesMixin, PrestacaoTestCase):

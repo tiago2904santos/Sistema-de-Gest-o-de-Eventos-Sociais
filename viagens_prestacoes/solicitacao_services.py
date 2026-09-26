@@ -125,8 +125,22 @@ def valores_do_lote(post) -> dict[int, dict[str, str]]:
     return por_servidor
 
 
+def _avisar_liberacao(servidores, *, autor=None) -> None:
+    """m090: "Diárias liberadas" no sino, depois do commit (o aviso não desfaz)."""
+    if not servidores:
+        return
+
+    from .avisos import avisar_diarias_liberadas
+
+    def rodar():
+        for ps in servidores:
+            avisar_diarias_liberadas(ps, autor=autor)
+
+    transaction.on_commit(rodar)
+
+
 @transaction.atomic
-def salvar_solicitacoes_em_lote(servidores, valores) -> ResultadoSolicitacao:
+def salvar_solicitacoes_em_lote(servidores, valores, *, autor=None) -> ResultadoSolicitacao:
     """Grava os três campos de N servidores, um `UPDATE` por servidor.
 
     Atômica porque grava **em laço**: sem ela, uma falha no meio deixa parte da lista com
@@ -155,7 +169,9 @@ def salvar_solicitacoes_em_lote(servidores, valores) -> ResultadoSolicitacao:
     # Um recarimbo por prestação, não por servidor: o lote costuma ser a equipe inteira
     # do mesmo ofício, e redesenhar N vezes o mesmo PDF é trabalho jogado fora.
     recarimbo: dict[int, object] = {}
+    liberados = []
     for servidor_prestacao, campos, datas in preparados:
+        liberava = servidor_prestacao.data_liberacao_diarias
         update_fields = []
         if "numero_solicitacao" in campos:
             novo = campos["numero_solicitacao"]
@@ -172,13 +188,16 @@ def salvar_solicitacoes_em_lote(servidores, valores) -> ResultadoSolicitacao:
             gravados += 1
             if "numero_solicitacao" in update_fields:
                 recarimbo[servidor_prestacao.prestacao_id] = servidor_prestacao.prestacao
+            if not liberava and servidor_prestacao.data_liberacao_diarias:
+                liberados.append(servidor_prestacao)
     _agendar_recarimbo(list(recarimbo.values()))
+    _avisar_liberacao(liberados, autor=autor)
     return ResultadoSolicitacao(servidores_gravados=gravados)
 
 
 @transaction.atomic
 def salvar_solicitacao_do_autosave(
-    servidor_prestacao, *, numero=None, datas=None
+    servidor_prestacao, *, numero=None, datas=None, autor=None
 ) -> ResultadoSolicitacao:
     """Valida e grava em conjunto o que veio sujo do autosave.
 
@@ -194,6 +213,7 @@ def salvar_solicitacao_do_autosave(
         return ResultadoSolicitacao(erro=erro)
 
     gravados: list[str] = []
+    liberava = servidor_prestacao.data_liberacao_diarias
     if numero is not None and servidor_prestacao.numero_solicitacao != numero:
         servidor_prestacao.numero_solicitacao = numero
         gravados.append("numero_solicitacao")
@@ -208,5 +228,7 @@ def salvar_solicitacao_do_autosave(
         marcar_servidor_em_preenchimento(servidor_prestacao)
         if "numero_solicitacao" in gravados:
             _agendar_recarimbo([servidor_prestacao.prestacao])
+        if not liberava and servidor_prestacao.data_liberacao_diarias:
+            _avisar_liberacao([servidor_prestacao], autor=autor)
 
     return ResultadoSolicitacao(campos_gravados=tuple(gravados))

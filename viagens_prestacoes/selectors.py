@@ -13,9 +13,11 @@ ABA_ARQUIVADOS = 'arquivados'
 ABA_FINALIZADOS = 'finalizados'
 #: m094: prazo para prestar contas vencido. Diferente das de estado, cruza com elas.
 ABA_PRESTACAO_VENCIDA = 'prestacao_vencida'
+#: m085: prazo de saque vencendo (ou vencido) sem comprovante. Também cruza.
+ABA_SAQUE_VENCENDO = 'saque_vencendo'
 ABA_PADRAO = ABA_NAO_LIBERADAS
-ABAS_VALIDAS = {ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_ARQUIVADOS, ABA_FINALIZADOS, ABA_PRESTACAO_VENCIDA}
-ORDEM_ABAS = (ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_ARQUIVADOS, ABA_FINALIZADOS, ABA_PRESTACAO_VENCIDA)
+ABAS_VALIDAS = {ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_ARQUIVADOS, ABA_FINALIZADOS, ABA_SAQUE_VENCENDO, ABA_PRESTACAO_VENCIDA}
+ORDEM_ABAS = (ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_ARQUIVADOS, ABA_FINALIZADOS, ABA_SAQUE_VENCENDO, ABA_PRESTACAO_VENCIDA)
 
 def normalizar_aba(aba: str | None) -> str:
     aba = (aba or '').strip()
@@ -44,6 +46,15 @@ def _q_das_abas(abas) -> Q:
 
 def _q_da_aba(aba: str) -> Q:
     """Filtro que define quais servidores pertencem a cada aba (as de estado são mutuamente exclusivas)."""
+    if aba == ABA_SAQUE_VENCENDO:
+        import datetime
+        from django.db.models import Exists, OuterRef
+        from django.utils import timezone
+        from .models import PrestacaoDocumentoAnexo
+        from .prazos import DIAS_AVISO_SAQUE
+        comprovante = PrestacaoDocumentoAnexo.objects.filter(servidor_prestacao=OuterRef('pk'), tipo=PrestacaoDocumentoAnexo.TIPO_COMPROVANTE)
+        limite = timezone.localdate() + datetime.timedelta(days=DIAS_AVISO_SAQUE)
+        return Q(finalizada=False, arquivada=False, prazo_limite_saque__lte=limite) & ~Q(Exists(comprovante))
     if aba == ABA_PRESTACAO_VENCIDA:
         from .prazos import ultimo_saque_com_prestacao_vencida
         return Q(finalizada=False, arquivada=False, prazo_limite_saque__lte=ultimo_saque_com_prestacao_vencida())

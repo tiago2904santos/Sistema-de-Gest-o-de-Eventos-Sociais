@@ -26,7 +26,7 @@ def _redirect_lista(request, _obj=None):
 def index(request):
     if request.method == "POST":
         valores = valores_do_lote(request.POST)
-        resultado = salvar_solicitacoes_em_lote(_prestacao_servidor_queryset().filter(pk__in=valores), valores)
+        resultado = salvar_solicitacoes_em_lote(_prestacao_servidor_queryset().filter(pk__in=valores), valores, autor=request.user)
         if resultado.erro:
             messages.error(request, resultado.erro)
         else:
@@ -52,7 +52,7 @@ def index(request):
     por_pk = {ps.pk: ps for ps in itens.filter(pk__in=ids)}
     contagem = contar_por_aba(**{k:v for k,v in filtros.items() if k != "sort"})
     rotulos = dict(SITUACOES)
-    vazias = {"nao_liberadas": "Nenhum servidor com diárias pendentes de liberação.", "liberadas": "Nenhum servidor com diárias já liberadas.", "arquivados": "Nenhuma prestação de servidor arquivada.", "finalizados": "Nenhuma prestação de servidor finalizada ainda.", "prestacao_vencida": "Nenhuma prestação com o prazo vencido."}
+    vazias = {"nao_liberadas": "Nenhum servidor com diárias pendentes de liberação.", "liberadas": "Nenhum servidor com diárias já liberadas.", "arquivados": "Nenhuma prestação de servidor arquivada.", "finalizados": "Nenhuma prestação de servidor finalizada ainda.", "saque_vencendo": "Nenhum saque perto do prazo sem comprovante.", "prestacao_vencida": "Nenhuma prestação com o prazo vencido."}
     configuracao = get_configuracao_sistema()
     cards = [cartao_da_lista(por_pk[pk], configuracao=configuracao) for pk in ids]
     grupos = {}
@@ -82,7 +82,7 @@ def index(request):
             destino["aba"] = aba
         return "?" + destino.urlencode()
 
-    icones = {"nao_liberadas": "hourglass", "liberadas": "check-circle", "arquivados": "lock", "finalizados": "checklist", "prestacao_vencida": "alert"}
+    icones = {"nao_liberadas": "hourglass", "liberadas": "check-circle", "arquivados": "lock", "finalizados": "checklist", "saque_vencendo": "clock", "prestacao_vencida": "alert"}
     total = listar_prestacoes(**{k: v for k, v in filtros.items() if k != "sort"}).count()
     situacoes = [{"slug": "todas", "titulo": "Todas", "total": total, "icone": "chart", "url": url_da_aba()}] + [
         {"slug": chave, "titulo": rotulo, "total": contagem[chave], "icone": icones[chave], "url": url_da_aba(chave)}
@@ -225,7 +225,7 @@ def prestacao_servidor_solicitacao_autosave(request, ps_pk):
         payload = parse_autosave_payload(request, expected_model='prestacao_servidor')
     except AutosavePayloadError as exc:
         return autosave_json_response(ok=False, message=str(exc))
-    resultado = salvar_solicitacao_do_autosave(ps, numero=_solicitacao_autosave_value(payload), datas={campo: _date_autosave_value(payload, campo) for campo in ('data_liberacao_diarias', 'prazo_limite_saque')})
+    resultado = salvar_solicitacao_do_autosave(ps, numero=_solicitacao_autosave_value(payload), datas={campo: _date_autosave_value(payload, campo) for campo in ('data_liberacao_diarias', 'prazo_limite_saque')}, autor=request.user)
     if resultado.erro:
         return autosave_json_response(ok=False, message=resultado.erro)
     return autosave_json_response(ok=True, object_id=ps.pk, version=_autosave_version(ps))

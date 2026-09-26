@@ -24,6 +24,7 @@ SITUACOES = [
     ("liberadas", "Liberadas"),
     ("arquivados", "Arquivados"),
     ("finalizados", "Finalizados"),
+    ("saque_vencendo", "Saque vencendo"),
     ("prestacao_vencida", "Prestação vencida"),
 ]
 
