@@ -2502,6 +2502,13 @@ form.btn-flutuante-form{margin:0;display:contents}
 .pal-andamento__atual{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0 0 14px;font-size:13px;color:var(--n-600)}
 .pal-andamento__ultimo{flex-basis:100%;color:var(--n-700);white-space:pre-line}
 #sec-andamento{margin-top:14px}
+/* Palestras: o "Responder" — cada resposta padrão já preenchida, com os atalhos de e-mail e WhatsApp. */
+.pal-respostas{border:0;margin:0 0 14px;padding:0;display:grid;gap:10px}
+.pal-resposta{border:1px solid var(--n-200);border-radius:8px;padding:10px 12px;background:var(--n-50)}
+.pal-resposta:has(input:checked){border-color:var(--n-500);background:#fff}
+.pal-resposta__cabeca{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+.pal-resposta__texto{margin:6px 0 8px;font-size:13px;color:var(--n-700);white-space:pre-line;overflow-wrap:anywhere;max-height:180px;overflow:auto}
+.pal-resposta__acoes{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 @container (max-width:680px){.pal-periodo{grid-template-columns:minmax(0,1fr)}.pal-topo-data{width:100%}.frm-topo__acoes:has(.pal-topo-data){flex-wrap:wrap}}
 /* Coffee Break: as três etapas da solicitação, no desenho das etapas da
    prestação de contas — os documentos gerados em linhas `pc-doc`, os textos

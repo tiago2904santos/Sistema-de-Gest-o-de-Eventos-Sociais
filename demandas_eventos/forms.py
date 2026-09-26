@@ -159,3 +159,7 @@ class RespostaPadraoForm(forms.ModelForm):
         model = RespostaPadrao
         fields = ["tipo", "mensagem"]
         widgets = {"mensagem": forms.Textarea}
+        help_texts = {
+            "mensagem": "No Responder da palestra, {solicitante}, {data}, {horario}, {municipio}, "
+            "{palestrante} e {tema} viram os dados dela.",
+        }

@@ -30,6 +30,7 @@
         </div>
       </div>
       <div class="frm-topo__acoes">
+        {% if instancia %}<a class="btn--secundaria" href="{% url 'demandas_eventos:responder' instancia.pk %}" data-cadastro-modal>{% include "components/icon.html" with nome="mail" %}Responder</a>{% endif %}
         {# A data da solicitação mora no cabeçalho; o atributo form a leva junto com o formulário. #}
         <div class="pal-topo-data">
           {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True valor=valores.data_solicitacao erros=erros.data_solicitacao form_alvo="form-demanda" %}
@@ -187,6 +188,10 @@
       {% include "pages/demandas_eventos/_historico.html" %}
     {% endif %}
   </div>
+  {% if instancia %}
+    {# O "Responder" do topo abre aqui, no protocolo dos cadastros (ds-v32.js). #}
+    <dialog class="mo v32-cadastro-modal v32-cadastro-modal--larga" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{{ request.path }}"></dialog>
+  {% endif %}
 {% endblock %}
 
 {% block extra_js %}

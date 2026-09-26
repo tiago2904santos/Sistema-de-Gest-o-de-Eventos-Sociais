@@ -85,7 +85,12 @@ class Palestrante(models.Model):
 
 
 class RespostaPadrao(models.Model):
-    """A aba "Respostas Padrão" da planilha."""
+    """A aba "Respostas Padrão" da planilha.
+
+    A mensagem aceita marcadores ({solicitante}, {data}, {horario},
+    {municipio}, {palestrante}, {tema}) que o "Responder" da palestra troca
+    pelos dados dela (`services.preencher_resposta`).
+    """
 
     tipo = models.CharField("tipo", max_length=200, unique=True)
     mensagem = models.TextField("mensagem")
@@ -270,6 +275,7 @@ class AcaoHistoricoDemanda(models.TextChoices):
     CRIACAO = "CRIACAO", "Registro criado"
     ATUALIZACAO = "ATUALIZACAO", "Registro atualizado"
     TRANSICAO = "TRANSICAO", "Status alterado"
+    RESPOSTA = "RESPOSTA", "Resposta enviada"
 
 
 class HistoricoDemanda(models.Model):

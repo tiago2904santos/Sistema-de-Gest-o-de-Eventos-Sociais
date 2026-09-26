@@ -79,6 +79,7 @@ def linha_da_lista(demanda, hoje=None):
         "fatos": fatos_da_demanda(demanda),
         "url_editar": reverse("demandas_eventos:editar", args=[demanda.pk]),
         "url_andamento": reverse("demandas_eventos:andamento", args=[demanda.pk]),
+        "url_responder": reverse("demandas_eventos:responder", args=[demanda.pk]),
         "cancelada": demanda.status == StatusDemanda.CANCELADA,
     }
 

@@ -1,0 +1,21 @@
+{% comment %}
+  Modal do "Responder", aberto da lista (menu ⋮ → Responder) e da tela da
+  palestra, no protocolo dos cadastros: o `ds-v32.js` busca este trecho com
+  `X-Cadastro-Modal`, envia pelo mesmo cabeçalho e recarrega a página quando
+  a resposta é `{"ok": true}`. Contexto: o de `_responder_campos`.
+{% endcomment %}
+<form method="post" action="{% url 'demandas_eventos:responder' demanda.pk %}" data-cadastro-form novalidate>
+  {% csrf_token %}
+  <header class="mo__topo">
+    <h2 id="cadastro-modal-titulo">Responder — {{ demanda.solicitante|truncatechars:60 }}</h2>
+    <button type="button" class="mo__fechar" data-cadastro-fechar aria-label="Fechar">{% include "components/icon.html" with nome="x" %}</button>
+  </header>
+  <div class="mo__corpo">
+    {% include "pages/demandas_eventos/_responder_campos.html" %}
+    <p class="form-erro" data-cadastro-falha role="alert" hidden></p>
+  </div>
+  <footer class="mo__rodape">
+    <button type="button" class="btn--secundaria" data-cadastro-fechar>Cancelar</button>
+    {% if respostas %}<button type="submit" class="btn-primaria">Registrar resposta enviada</button>{% endif %}
+  </footer>
+</form>

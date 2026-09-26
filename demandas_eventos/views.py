@@ -390,6 +390,76 @@ def registrar_andamento(request, pk):
     return redirect(destino)
 
 
+# Para onde a palestra costuma ir depois de respondida.
+STATUS_APOS_RESPOSTA = [StatusDemanda.EM_ANDAMENTO, StatusDemanda.AGUARDANDO_RETORNO]
+
+
+def _contexto_resposta(demanda, erro="", escolhida="", status=""):
+    respostas = []
+    for resposta in RespostaPadrao.objects.all():
+        texto = services.preencher_resposta(resposta, demanda)
+        respostas.append({
+            "valor": str(resposta.pk),
+            "rotulo": resposta.tipo,
+            "texto": texto,
+            "link_email": services.link_email(demanda, texto),
+            "link_whatsapp": services.link_whatsapp(demanda, texto),
+            "marcado": str(resposta.pk) == escolhida,
+        })
+    return {
+        "demanda": demanda,
+        "respostas": respostas,
+        "opcoes_status_resposta": [
+            {"valor": valor, "rotulo": StatusDemanda(valor).label}
+            for valor in STATUS_APOS_RESPOSTA
+            if valor != demanda.status
+        ],
+        "status_resposta": status,
+        "erro_resposta": erro,
+        "breadcrumb": [
+            {"label": "Palestras", "url": reverse("demandas_eventos:lista")},
+            {"label": f"{demanda.get_evento_display()} #{demanda.pk}", "url": reverse("demandas_eventos:editar", args=[demanda.pk])},
+            {"label": "Responder"},
+        ],
+    }
+
+
+@login_required
+def responder(request, pk):
+    """Responde o pedido com uma resposta padrão preenchida com os dados da palestra.
+
+    A tela mostra cada resposta já preenchida, com o e-mail (com assunto) e
+    o WhatsApp do contato prontos para abrir; o POST registra no histórico a
+    que foi enviada e, se pedido, muda o status. Mesmo protocolo de modal do
+    andamento (`X-Cadastro-Modal`).
+    """
+    demanda = _demanda_visivel(request, pk)
+    if not pode_editar(request.user, demanda):
+        raise Http404
+    via_modal = request.headers.get("X-Cadastro-Modal") == "1"
+    modelo = "pages/demandas_eventos/_modal_responder.html" if via_modal else "pages/demandas_eventos/responder.html"
+    destino = reverse("demandas_eventos:editar", args=[demanda.pk])
+    if request.method != "POST":
+        return render(request, modelo, _contexto_resposta(demanda))
+    escolhida = request.POST.get("resposta", "")
+    status = request.POST.get("novo_status", "")
+    resposta = RespostaPadrao.objects.filter(pk=escolhida).first() if escolhida.isdigit() else None
+    try:
+        if resposta is None:
+            raise ValidationError("Escolha a resposta enviada.")
+        if status and status not in STATUS_APOS_RESPOSTA:
+            raise ValidationError("Escolha um status válido.")
+        services.registrar_resposta(
+            demanda, request.user, resposta, services.preencher_resposta(resposta, demanda), status
+        )
+    except ValidationError as erro:
+        return render(request, modelo, _contexto_resposta(demanda, " ".join(erro.messages), escolhida, status))
+    messages.success(request, f"Resposta \"{resposta.tipo}\" registrada no histórico.")
+    if via_modal:
+        return JsonResponse({"ok": True})
+    return redirect(destino)
+
+
 # As colunas da aba do ano da planilha, na mesma ordem, e como sair de cada
 # registro para elas.
 COLUNAS_EXPORTACAO = [
@@ -506,6 +576,7 @@ def _campos_cadastro(form):
             "obrigatorio": campo.required,
             "valor": "" if value is None else str(value),
             "largura": LARGURAS.get(nome, ""),
+            "ajuda": campo.help_text,
         }
         if isinstance(campo, forms.ModelChoiceField):
             item.update({"tipo": "select", "opcoes": _opcoes(campo.queryset)})

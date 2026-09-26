@@ -29,7 +29,7 @@
             {% include "components/select.html" with name=campo.name label=campo.label|capfirst opcoes=campo.opcoes obrigatorio=campo.obrigatorio selecionado=campo.valor erros=campo.erros pesquisavel=True largura=campo.largura %}
           {% endif %}
         {% elif campo.tipo == "textarea" %}
-          {% include "components/textarea.html" with name=campo.name label=campo.label|capfirst obrigatorio=campo.obrigatorio valor=campo.valor erros=campo.erros linhas="8" %}
+          {% include "components/textarea.html" with name=campo.name label=campo.label|capfirst obrigatorio=campo.obrigatorio valor=campo.valor erros=campo.erros linhas="8" ajuda=campo.ajuda %}
         {% else %}
           {% include "components/input.html" with name=campo.name label=campo.label|capfirst obrigatorio=campo.obrigatorio valor=campo.valor erros=campo.erros largura=campo.largura %}
         {% endif %}
