@@ -20,6 +20,23 @@
 
   var EXTENSOES = [".eml", ".msg", ".pdf", ".txt"];
 
+  // O celular entrega o arquivo como uma referência que às vezes expira antes
+  // do envio (Drive, Gmail, "Recentes") — o fetch morre com "Failed to fetch".
+  // Ler o conteúdo já, na hora da escolha, e mandar a cópia evita isso; se
+  // nem a leitura der, a mensagem explica o que fazer.
+  var MSG_LEITURA = "Não consegui abrir o arquivo no aparelho. Salve-o no telefone (pasta Downloads) e escolha de novo pelo app Arquivos — ou use o computador.";
+  var MSG_REDE = "A conexão caiu no envio do arquivo. Confira a internet e tente de novo; se continuar, salve o arquivo no aparelho e escolha de novo.";
+  function copiaDe(arquivo) {
+    if (!arquivo.arrayBuffer) return Promise.resolve(arquivo);
+    return arquivo.arrayBuffer().then(function (conteudo) {
+      return new File([conteudo], arquivo.name || "arquivo", { type: arquivo.type || "application/octet-stream" });
+    });
+  }
+  function mensagemDeFalha(falha) {
+    if (falha && falha.name === "TypeError") return MSG_REDE;
+    return falha && falha.message ? falha.message : "Não foi possível ler o e-mail.";
+  }
+
   function el(tag, classe, texto) {
     var elemento = document.createElement(tag);
     if (classe) elemento.className = classe;
@@ -159,7 +176,7 @@
         })
         .catch(function (falha) {
           anunciar("");
-          mostrarErro(falha && falha.message ? falha.message : "Não foi possível ler o e-mail.");
+          mostrarErro(mensagemDeFalha(falha));
         })
         .then(function () { ocupado(false); });
     }
@@ -174,9 +191,17 @@
         mostrarErro("O arquivo passa do limite de " + Math.round(maximo / 1048576) + " MB.");
         return;
       }
-      var dados = new FormData();
-      dados.append("arquivo", arquivo);
-      enviar(dados);
+      ocupado(true);
+      anunciar("Abrindo o arquivo…");
+      copiaDe(arquivo).then(function (copia) {
+        var dados = new FormData();
+        dados.append("arquivo", copia, copia.name);
+        enviar(dados);
+      }, function () {
+        ocupado(false);
+        anunciar("");
+        mostrarErro(MSG_LEITURA);
+      });
     }
 
     function lerTexto() {
