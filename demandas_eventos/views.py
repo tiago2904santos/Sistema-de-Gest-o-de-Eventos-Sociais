@@ -67,7 +67,8 @@ def dashboard(request):
     resumo = [
         {"titulo": "Em aberto", "valor": visiveis.exclude(status__in=[StatusDemanda.ATENDIDA, StatusDemanda.CANCELADA]).count(), "icone": "document", "cor": "dourada", "url": lista},
         {"titulo": "Agendadas", "valor": visiveis.filter(status=StatusDemanda.EVENTO_AGENDADO).count(), "icone": "calendar", "cor": "info", "url": f"{lista}?status={StatusDemanda.EVENTO_AGENDADO}"},
-        {"titulo": "Atendidas no ano", "valor": visiveis.filter(status=StatusDemanda.ATENDIDA, data_solicitacao__year=hoje.year).count(), "icone": "check-circle", "cor": "sucesso", "url": f"{lista}?status={StatusDemanda.ATENDIDA}"},
+        # Pelo ano do evento; sem data do evento, pelo da solicitação (o "Mês" da planilha).
+        {"titulo": "Atendidas no ano", "valor": visiveis.filter(Q(data_inicio_evento__year=hoje.year) | Q(data_inicio_evento__isnull=True, data_solicitacao__year=hoje.year), status=StatusDemanda.ATENDIDA).count(), "icone": "check-circle", "cor": "sucesso", "url": f"{lista}?status={StatusDemanda.ATENDIDA}"},
         {"titulo": "Aguardando retorno", "valor": visiveis.filter(status=StatusDemanda.AGUARDANDO_RETORNO).count(), "icone": "hourglass", "cor": "neutra", "url": f"{lista}?status={StatusDemanda.AGUARDANDO_RETORNO}"},
     ]
     proximas = visiveis.filter(data_inicio_evento__gte=hoje).exclude(
@@ -339,9 +340,22 @@ def editar_demanda(request, pk=None):
     return render(request, "pages/demandas_eventos/form.html", contexto)
 
 
-def _contexto_andamento(demanda, erro="", escolhido="", texto=""):
+def _contexto_andamento(demanda, erro="", escolhido="", texto="", extras=None):
+    faltas = services.faltas_do_andamento(demanda)
     return {
         "demanda": demanda,
+        # O que Agendada e Atendida pedem e a palestra ainda não tem: só isso
+        # aparece no formulário do andamento.
+        "faltas_andamento": faltas,
+        "extras_andamento": extras or {},
+        "opcoes_palestrante_andamento": (
+            [
+                {"valor": str(p.pk), "rotulo": p.nome}
+                for p in Palestrante.objects.only("pk", "nome")
+            ]
+            if faltas["palestrante"]
+            else []
+        ),
         "opcoes_andamento": [
             {**opcao, "marcado": opcao["valor"] == escolhido}
             for opcao in services.opcoes_de_status(demanda, ICONES_STATUS)
@@ -353,6 +367,30 @@ def _contexto_andamento(demanda, erro="", escolhido="", texto=""):
         "erro_andamento": erro,
         "texto_andamento": texto,
     }
+
+
+def _extras_do_andamento(extras):
+    """Data, palestrante e público que o formulário do andamento pediu, já convertidos."""
+    texto_data, texto_palestrante, texto_publico = (
+        extras["andamento_data"], extras["andamento_palestrante"], extras["andamento_publico"]
+    )
+    try:
+        data_evento = parse_date(texto_data) if texto_data else None
+    except ValueError:
+        data_evento = None
+    if texto_data and data_evento is None:
+        raise ValidationError("Informe a data do evento no formato dd/mm/aaaa.")
+    palestrante = None
+    if texto_palestrante:
+        palestrante = Palestrante.objects.filter(pk=texto_palestrante).first() if texto_palestrante.isdigit() else None
+        if palestrante is None:
+            raise ValidationError("Escolha um palestrante da lista.")
+    publico = None
+    if texto_publico:
+        if not texto_publico.isdigit():
+            raise ValidationError("A quantidade de público é um número inteiro.")
+        publico = int(texto_publico)
+    return {"data_evento": data_evento, "palestrante": palestrante, "quantidade_publico": publico}
 
 
 @login_required
@@ -372,14 +410,17 @@ def registrar_andamento(request, pk):
         return render(request, "pages/demandas_eventos/_modal_andamento.html", _contexto_andamento(demanda))
     novo_status = request.POST.get("novo_status", "")
     texto = request.POST.get("andamento", "")
+    extras = {nome: request.POST.get(nome, "").strip() for nome in ("andamento_data", "andamento_palestrante", "andamento_publico")}
     try:
-        services.registrar_andamento(demanda, request.user, novo_status, texto)
+        services.registrar_andamento(demanda, request.user, novo_status, texto, **_extras_do_andamento(extras))
     except ValidationError as erro:
+        # A palestra pode ter ficado com dados da tentativa: volta ao banco.
+        demanda.refresh_from_db()
         if via_modal:
             return render(
                 request,
                 "pages/demandas_eventos/_modal_andamento.html",
-                _contexto_andamento(demanda, " ".join(erro.messages), novo_status, texto),
+                _contexto_andamento(demanda, " ".join(erro.messages), novo_status, texto, extras),
             )
         for mensagem in erro.messages:
             messages.error(request, mensagem)

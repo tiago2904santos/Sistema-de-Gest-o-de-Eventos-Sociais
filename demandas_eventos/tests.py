@@ -176,7 +176,8 @@ class FormulariosViewsTests(BaseDemandasTestCase):
         self.assertNotContains(resposta, 'name="status"')
 
         url = reverse("demandas_eventos:andamento", args=[demanda.pk])
-        resposta = self.client.post(url, {"novo_status": StatusDemanda.EVENTO_AGENDADO, "andamento": "Palestrante confirmado"})
+        palestrante = Palestrante.objects.create(nome="Servidor Exemplo")
+        resposta = self.client.post(url, {"novo_status": StatusDemanda.EVENTO_AGENDADO, "andamento": "Palestrante confirmado", "andamento_palestrante": palestrante.pk})
         self.assertRedirects(resposta, reverse("demandas_eventos:editar", args=[demanda.pk]) + "#sec-andamento", fetch_redirect_response=False)
         demanda.refresh_from_db()
         self.assertEqual(demanda.status, StatusDemanda.EVENTO_AGENDADO)

@@ -1,8 +1,29 @@
 {% comment %}
   Os campos do andamento — próximo status em cartões e a anotação —, iguais
-  na tela da palestra e no modal da lista. Contexto: `opcoes_andamento`,
-  `texto_andamento`, `erro_andamento`.
+  na tela da palestra e no modal da lista. Abaixo, só o que Agendada (data e
+  palestrante) e Atendida (data e público) pedem e a palestra ainda não tem:
+  vai gravado junto com a mudança. Contexto: `demanda`, `opcoes_andamento`,
+  `texto_andamento`, `erro_andamento`, `faltas_andamento`,
+  `extras_andamento`, `opcoes_palestrante_andamento`.
 {% endcomment %}
 {% include "components/v32/cartoes_escolha.html" with name="novo_status" label="Novo status" obrigatorio=True opcoes=opcoes_andamento colunas=colunas id_primeiro=True erros=None %}
+{% with pede_palestrante=faltas_andamento.palestrante pede_publico=faltas_andamento.publico %}
+  {% if faltas_andamento.data or pede_palestrante and demanda.status != "EVENTO_AGENDADO" or pede_publico and demanda.status != "ATENDIDA" %}
+    <div class="pal-andamento__faltas">
+      <p class="form-ajuda">Preencha só se for mudar para o status indicado em cada campo.</p>
+      <div class="g-form g-form--3">
+        {% if faltas_andamento.data %}
+          {% include "components/input.html" with name="andamento_data" label="Data do evento" tipo="date" valor=extras_andamento.andamento_data ajuda="Para Agendada ou Atendida." erros=None %}
+        {% endif %}
+        {% if pede_palestrante and demanda.status != "EVENTO_AGENDADO" %}
+          {% include "components/select.html" with name="andamento_palestrante" label="Palestrante" opcoes=opcoes_palestrante_andamento selecionado=extras_andamento.andamento_palestrante pesquisavel=True ajuda="Para Agendada." vazio="Nenhum palestrante cadastrado." erros=None %}
+        {% endif %}
+        {% if pede_publico and demanda.status != "ATENDIDA" %}
+          {% include "components/input.html" with name="andamento_publico" label="Quantidade de público" tipo="number" minimo=0 valor=extras_andamento.andamento_publico ajuda="Para Atendida." erros=None %}
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+{% endwith %}
 {% include "components/textarea.html" with name="andamento" label="Andamento" linhas="3" placeholder="O que aconteceu: contato feito, palestrante confirmado, motivo do cancelamento…" ajuda="Opcional. Fica no histórico e na coluna Andamento da planilha." valor=texto_andamento erros=None %}
 {% if erro_andamento %}<p class="form-erro" role="alert">{{ erro_andamento }}</p>{% endif %}

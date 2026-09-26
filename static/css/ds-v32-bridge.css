@@ -2501,6 +2501,9 @@ form.btn-flutuante-form{margin:0;display:contents}
 .pal-linha1{grid-template-columns:minmax(0,1.3fr) minmax(150px,.8fr) minmax(0,1.1fr) minmax(0,1.1fr)}
 .pal-andamento__atual{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0 0 14px;font-size:13px;color:var(--n-600)}
 .pal-andamento__ultimo{flex-basis:100%;color:var(--n-700);white-space:pre-line}
+/* O que Agendada e Atendida pedem e a palestra ainda não tem, entre o status e a anotação. */
+.pal-andamento__faltas{margin:12px 0;padding:10px 12px;border:1px dashed var(--n-300);border-radius:8px}
+.pal-andamento__faltas>.form-ajuda{margin:0 0 8px}
 #sec-andamento{margin-top:14px}
 /* Palestras: o "Responder" — cada resposta padrão já preenchida, com os atalhos de e-mail e WhatsApp. */
 .pal-respostas{border:0;margin:0 0 14px;padding:0;display:grid;gap:10px}
