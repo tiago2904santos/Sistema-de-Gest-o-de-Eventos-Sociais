@@ -316,6 +316,40 @@ def baixar(request, pk):
 
 @acesso_ao_modulo
 @require_POST
+def repetir(request, pk):
+    """Repete a viagem em outra data (e cidade), com os documentos em rascunho."""
+    from datetime import date
+
+    from cadastros.models import Municipio
+
+    from .duplicar import ViagemSemData, repetir_viagem
+
+    exigir_operador(request)
+    viagem = get_viagem_by_id(pk)
+    volta = voltar_para(request, reverse("viagens_viagem:lista"))
+    try:
+        nova_data = date.fromisoformat((request.POST.get("nova_data") or "").strip())
+    except ValueError:
+        messages.error(request, "Informe a data da nova edição.")
+        return redirect(volta)
+    # Na lista, cada linha nomeia o campo com o id da viagem (ids únicos na página).
+    cidade_id = (request.POST.get(f"nova_cidade_{pk}") or request.POST.get("nova_cidade") or "").strip()
+    nova_cidade = Municipio.objects.filter(pk=cidade_id).first() if cidade_id.isdigit() else None
+    try:
+        nova = repetir_viagem(viagem, nova_data, nova_cidade)
+    except ViagemSemData as erro:
+        messages.error(request, str(erro))
+        return redirect(volta)
+    messages.success(
+        request,
+        "Viagem repetida em rascunho, com roteiro, ofícios, plano, ordem de serviço e termos. "
+        "Números e protocolos são novos; confira os documentos antes de emitir.",
+    )
+    return redirect("viagens_viagem:etapa", nova.pk, 1)
+
+
+@acesso_ao_modulo
+@require_POST
 def acao(request, pk, acao):
     exigir_operador(request)
     viagem = get_viagem_by_id(pk)

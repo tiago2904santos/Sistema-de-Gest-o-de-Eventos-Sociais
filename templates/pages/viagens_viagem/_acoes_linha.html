@@ -11,6 +11,18 @@
     <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
       <a class="dd__i of-item" href="{{ l.url_editar }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar viagem</b><small>Tipo, motivo, período, destinos e documentos vinculados</small></span></a>
       <a class="dd__i of-item" href="{{ l.url_painel }}">{% include "components/icon.html" with nome="columns" %}<span><b>Abrir painel</b><small>Roteiros, ofícios, PT/OS e termos da viagem</small></span></a>
+      {# Repetir: nova data (obrigatória) e, se mudar, a cidade; os documentos vêm em rascunho. #}
+      <button type="button" class="dd__i of-item" data-expande="#vg-repetir-{{ v.pk }}" aria-expanded="false" aria-controls="vg-repetir-{{ v.pk }}">{% include "components/icon.html" with nome="copy" %}<span><b>Repetir viagem</b><small>Mesma equipe, roteiro e documentos em outra data</small></span></button>
+      <form method="post" action="{{ l.url_repetir }}" class="vg-cancelar vg-repetir" id="vg-repetir-{{ v.pk }}" hidden>{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
+        <label class="form-label" for="vg-repetir-data-{{ v.pk }}">Data da nova edição</label>
+        <input class="form-controle" type="date" id="vg-repetir-data-{{ v.pk }}" name="nova_data" required>
+        {% url "cadastros:municipios_buscar" as url_busca_municipios %}
+        {% with pk_txt=v.pk|stringformat:"s" %}{% with nome_cidade="nova_cidade_"|add:pk_txt %}
+          {% include "components/select.html" with name=nome_cidade label="Nova cidade (se mudar)" placeholder="Mesma cidade" pesquisavel=True remoto=url_busca_municipios %}
+        {% endwith %}{% endwith %}
+        <p class="vg-cancelar__ajuda">Números, protocolos e assinaturas não são copiados.</p>
+        <button type="submit" class="btn btn--dourado btn-primaria btn--compacto">Repetir</button>
+      </form>
       <div class="dd__s"></div>
       {% if v.cancelado %}
         <form method="post" action="{{ l.url_reativar }}" data-confirmar="Reativar a viagem?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">

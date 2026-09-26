@@ -119,6 +119,7 @@ def linha_da_lista(viagem):
         "url_cancelar": reverse("viagens_viagem:acao", args=[viagem.pk, "cancelar"]),
         "url_reativar": reverse("viagens_viagem:acao", args=[viagem.pk, "reativar"]),
         "url_excluir": reverse("viagens_viagem:acao", args=[viagem.pk, "excluir"]),
+        "url_repetir": reverse("viagens_viagem:repetir", args=[viagem.pk]),
     }
 
 
