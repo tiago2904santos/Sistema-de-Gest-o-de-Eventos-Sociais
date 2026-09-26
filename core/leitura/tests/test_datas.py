@@ -207,3 +207,55 @@ class ExtrairHorariosDaPlanilhaTests(SimpleTestCase):
 
     def test_recado_continua_na_sobra(self):
         self.assertEqual(extrair_horarios("10h00 às 15h00 à definir"), (time(10, 0), time(15, 0), "à definir"))
+
+
+class DataDeDocumentoNaoEDoEventoTests(SimpleTestCase):
+    """A data de envio, a linha de data do ofício e os carimbos nunca viram data do evento."""
+
+    def test_data_do_email_sem_ancora_de_evento_nao_vale(self):
+        texto = "Curitiba, 25 de setembro de 2026.\nPedimos a emissão de identidades para 10 pacientes acamados."
+        self.assertIsNone(quando_do_evento(texto, REFERENCIA))
+
+    def test_linha_de_data_do_oficio_perde_para_a_data_do_evento(self):
+        texto = ("Curitiba, 22 de setembro de 2026.\nExcelentíssimo Senhor,\n"
+                 "O evento terá lugar no dia 07 de novembro de 2026 (sábado), das 13h00 às 17h00.")
+        q = quando_do_evento(texto, date(2026, 9, 22))
+        self.assertEqual((q.inicio, q.hora_inicio, q.confianca), (date(2026, 11, 7), time(13, 0), "A"))
+
+    def test_carimbo_de_assinatura_do_eprotocolo_nao_conta(self):
+        texto = ("Solicito coffee break para 60 policiais.\nData do Missão: 28/09/2026\n"
+                 "Assinatura Avançada realizada por: Izaias Exemplo (XXX.033.259-XX) em 24/09/2026 11:13 Local: DPC.\n"
+                 "Inserido ao protocolo 26.635.814-8 por: Jose Exemplo em: 24/09/2026 10:25.")
+        q = quando_do_evento(texto, date(2026, 9, 24))
+        self.assertEqual(q.inicio, date(2026, 9, 28))
+
+    def test_so_carimbos_nao_dao_data(self):
+        texto = "Assinatura Avançada realizada por: Fulano em 16/09/2026 11:15.\nInserido ao protocolo por: Beltrano em: 16/09/2026 11:13."
+        self.assertIsNone(quando_do_evento(texto, date(2026, 9, 16)))
+
+    def test_em_escreveu_nao_conta(self):
+        texto = "Em qui., 10 de set. de 2026 às 15:25, Escola Exemplo escreveu:\nA palestra será no dia 25 de setembro."
+        q = quando_do_evento(texto, date(2026, 9, 17))
+        self.assertEqual(q.inicio, date(2026, 9, 25))
+
+    def test_data_com_espacos(self):
+        q = quando_do_evento("Este ano será no dia 14 11 2026, no horário das 13 às 18 horas.", date(2026, 9, 21))
+        self.assertEqual((q.inicio, q.hora_inicio, q.hora_fim, q.confianca), (date(2026, 11, 14), time(13, 0), time(18, 0), "A"))
+
+    def test_sempre_no_sabado_nao_e_data(self):
+        texto = "Não conseguimos atender, pois o evento sempre é realizado no sábado. Será no dia 14 11 2026."
+        q = quando_do_evento(texto, date(2026, 9, 21))
+        self.assertEqual(q.inicio, date(2026, 11, 14))
+        self.assertEqual([d.tipo for d in datas_do_texto(texto, date(2026, 9, 21))], ["data"])
+
+    def test_datas_alternativas_com_ou(self):
+        texto = "Palestra em uma das seguintes datas: 05 de outubro ou 07 de outubro ou 09 de outubro de 2026, às 14h."
+        q = quando_do_evento(texto, date(2026, 9, 3))
+        self.assertEqual(q.inicio, date(2026, 10, 5))
+        self.assertIsNone(q.fim)
+        self.assertEqual(q.alternativas, (date(2026, 10, 5), date(2026, 10, 7), date(2026, 10, 9)))
+        self.assertEqual(q.confianca, "M")
+
+    def test_rotulo_data_continua_ancora(self):
+        q = quando_do_evento("Data: 17/10/2026 - (período vespertino)\nLocal: Escola", date(2026, 9, 23))
+        self.assertEqual((q.inicio, q.turno, q.confianca), (date(2026, 10, 17), "tarde", "A"))

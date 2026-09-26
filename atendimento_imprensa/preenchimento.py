@@ -56,6 +56,11 @@ _R_NOME_PROPRIO = re.compile(r"[A-ZÀ-Ý0-9][\wÀ-ÿ&'.-]*(?:\s+(?:d[aeo]s?\s+)?
 _R_LIGACAO = re.compile(r"^(?:\s*[|/,:·•–—-]\s*|\s+(?:d[aeo]s?|n[ao]s?|em)\s+)", re.IGNORECASE)
 _R_CONTATO = re.compile(r"@|https?://|www\.|\d{4}[-.\s]?\d{4}|\b(?:tel|fone|telefone|celular|cel|whats?app|ramal)\b")
 
+#: Campos que a memória guarda por remetente ao salvar (`core.aprendizado`):
+#: o que o próximo e-mail da mesma origem provavelmente repete.
+CAMPOS_APRENDIDOS = ["veiculo", "jornalista", "contato", "responsavel"]
+
+
 
 def _chave(texto: str) -> str:
     return " ".join(re.findall(r"[a-z0-9]+", dobrar(texto or "")))

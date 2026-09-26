@@ -69,6 +69,11 @@ _R_FONTE_NO_TEXTO = re.compile(
 )
 _EXTENSOES_FOTO = frozenset({".jpg", ".jpeg", ".png", ".gif", ".heic", ".heif", ".webp", ".bmp", ".tif", ".tiff"})
 
+#: Campos que a memória guarda por remetente ao salvar (`core.aprendizado`):
+#: o que o próximo e-mail da mesma origem provavelmente repete.
+CAMPOS_APRENDIDOS = ["unidade", "fonte", "jornalista"]
+
+
 
 def _chave(texto: str) -> str:
     return " ".join(re.findall(r"[a-z0-9]+", dobrar(texto or "")))

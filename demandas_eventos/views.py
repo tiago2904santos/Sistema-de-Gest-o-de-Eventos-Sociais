@@ -302,7 +302,8 @@ def editar_demanda(request, pk=None):
     instancia = _demanda_visivel(request, pk) if pk else None
     if instancia and not pode_editar(request.user, instancia):
         raise Http404
-    email_origem = None
+    # O e-mail da triagem da página inicial (?email_origem=) ou o do formulário que voltou com erro.
+    email_origem = None if instancia else preencher_por_email.origem_da_tela(request, "demandas_eventos")
     if request.method == "POST":
         form = DemandaEventoForm(request.POST, instance=instancia, usuario=request.user)
         # O e-mail lido em "Preencher com um e-mail", se a palestra nova veio dele.
@@ -316,6 +317,14 @@ def editar_demanda(request, pk=None):
                 services.registrar_historico(
                     demanda, request.user, AcaoHistoricoDemanda.CRIACAO,
                     descricao, status_novo=demanda.status,
+                )
+                quando = f" — evento em {demanda.data_inicio_evento:%d/%m/%Y}" if demanda.data_inicio_evento else ""
+                preencher_por_email.registrar_cadastro(
+                    request, origem, "demandas_eventos", form, preenchimento.CAMPOS_APRENDIDOS,
+                    titulo=f"Pedido por e-mail cadastrado: {demanda.get_evento_display()} #{demanda.pk}",
+                    mensagem=f"{demanda.solicitante or 'Solicitante'} ({demanda.municipio_display}){quando}. "
+                             f"Cadastrado por {request.user.get_full_name() or request.user.get_username()}.",
+                    link=reverse("demandas_eventos:editar", args=[demanda.pk]),
                 )
                 preencher_por_email.concluir_origem(request, origem)
             else:
@@ -335,7 +344,7 @@ def editar_demanda(request, pk=None):
             return redirect("demandas_eventos:editar", pk=demanda.pk)
         messages.error(request, "Corrija os campos destacados para continuar.")
         if not instancia:
-            email_origem = preencher_por_email.origem_pendente(request, "demandas_eventos")
+            email_origem = preencher_por_email.origem_da_tela(request, "demandas_eventos")
     else:
         form = DemandaEventoForm(instance=instancia, usuario=request.user)
     contexto = _contexto_form(form, instancia)
