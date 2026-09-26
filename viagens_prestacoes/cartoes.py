@@ -17,7 +17,7 @@ from urllib.parse import quote
 from django.urls import reverse
 
 from .download_services import payload_downloads
-from .presenters import _iniciais_nome_servidor, apresentar_prestacao_servidor_card, kinds_de_anexo_assinado
+from .presenters import _data_evento_display_oficio, _destino_display_oficio, _iniciais_nome_servidor, apresentar_prestacao_servidor_card, kinds_de_anexo_assinado
 
 SITUACOES = [
     ("nao_liberadas", "Não liberadas"),
@@ -98,21 +98,15 @@ def anexos_do_cartao(card):
     return json.loads(card["attach_kinds_json"])
 
 
-def titulo_do_cartao(oficio):
-    """"161/2026 · 12.345.678-9 · ALMIRANTE TAMANDARÉ/PR, ANTONINA/PR · 25/08 a 30/08/2026", como a origem."""
+def dados_do_oficio(oficio):
+    """As partes do título, separadas, para a linha do ofício na lista agrupada.
+
+    m101: destino e período são calculados aqui uma vez só; o título do cartão
+    sai destas partes, e `views.index` guarda o resultado por ofício para a
+    equipe inteira (`titulo_do_cartao` e `cartao_da_lista` recebem o pronto).
+    """
     from core.utils.masks import format_protocolo
     from viagens_oficios.presenters import destinos_resumidos, periodo_curto
-    from viagens_oficios.roteiro_context import periodo_roteiro
-    roteiro = oficio.roteiro if oficio.roteiro_id else None
-    saida, retorno = periodo_roteiro(roteiro) if roteiro else (None, None)
-    partes = [oficio.numero_formatado, format_protocolo(oficio.protocolo) or "", destinos_resumidos(roteiro), periodo_curto(saida, retorno)]
-    return " · ".join(p for p in partes if p)
-
-
-def dados_do_oficio(oficio):
-    """As partes do título, separadas, para a linha do ofício na lista agrupada."""
-    from core.utils.masks import format_protocolo
-    from viagens_oficios.presenters import destinos_resumidos
     from viagens_oficios.roteiro_context import periodo_roteiro
     roteiro = oficio.roteiro if oficio.roteiro_id else None
     saida, retorno = periodo_roteiro(roteiro) if roteiro else (None, None)
@@ -124,7 +118,18 @@ def dados_do_oficio(oficio):
         "protocolo": format_protocolo(oficio.protocolo) or "",
         "destino": destinos_resumidos(roteiro) if roteiro else "",
         "periodo": f"{inicio} a {fim}" if inicio and fim and inicio != fim else inicio or fim,
+        "periodo_curto": periodo_curto(saida, retorno),
+        # O cabeçalho do cartão (`apresentar_prestacao_servidor_card`) usa estes dois.
+        "destino_display": _destino_display_oficio(oficio),
+        "data_evento_display": _data_evento_display_oficio(oficio),
     }
+
+
+def titulo_do_cartao(oficio, dados=None):
+    """"161/2026 · 12.345.678-9 · ALMIRANTE TAMANDARÉ/PR, ANTONINA/PR · 25/08 a 30/08/2026", como a origem."""
+    dados = dados or dados_do_oficio(oficio)
+    partes = [dados["numero"], dados["protocolo"], dados["destino"], dados["periodo_curto"]]
+    return " · ".join(p for p in partes if p)
 
 
 def moeda(texto):
@@ -132,10 +137,11 @@ def moeda(texto):
     return texto.replace("R$", "R$ ").replace("R$  ", "R$ ") if texto else texto
 
 
-def cartao_da_lista(ps, *, configuracao=None):
-    card = apresentar_prestacao_servidor_card(ps, configuracao=configuracao)
-    card["titulo"] = titulo_do_cartao(ps.prestacao.oficio)
-    card["oficio"] = dados_do_oficio(ps.prestacao.oficio)
+def cartao_da_lista(ps, *, configuracao=None, dados_oficio=None):
+    """`dados_oficio` é o `dados_do_oficio` já calculado para a equipe (m101)."""
+    card = apresentar_prestacao_servidor_card(ps, configuracao=configuracao, dados_oficio=dados_oficio)
+    card["oficio"] = dados_oficio or dados_do_oficio(ps.prestacao.oficio)
+    card["titulo"] = titulo_do_cartao(ps.prestacao.oficio, card["oficio"])
     card["valor_diarias_display"] = moeda(card["valor_diarias_display"])
     servidor = card["servidores"][0]
     servidor["iniciais"] = _iniciais_nome_servidor(servidor["name"])
