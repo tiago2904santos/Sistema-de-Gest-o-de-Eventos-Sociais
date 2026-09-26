@@ -7,9 +7,19 @@ class DemandasEventosConfig(AppConfig):
     verbose_name = "Palestras e Eventos da ASCOM"
 
     def ready(self):
+        from django.db.models.signals import post_save
+
         from accounts.modulos import registrar_modulo
 
+        from .encaminhamento import acompanhar_solicitacao
         from .permissions import CODIGO_MODULO
+
+        # O que a DG faz na solicitação encaminhada volta ao histórico da palestra.
+        post_save.connect(
+            acompanhar_solicitacao,
+            sender="solicitacoes.HistoricoSolicitacao",
+            dispatch_uid="demandas_eventos_acompanhar_solicitacao",
+        )
 
         # Cataloga o módulo no portal; o middleware protege o namespace.
         registrar_modulo(

@@ -178,6 +178,16 @@ class DemandaEvento(models.Model):
         blank=True,
         null=True,
     )
+    # A solicitação de evento criada pelo "Encaminhar à DG": o mesmo evento
+    # nos dois cadastros, ligado aqui (o app de solicitações não muda).
+    solicitacao_dg = models.OneToOneField(
+        "solicitacoes.SolicitacaoEvento",
+        verbose_name="solicitação de evento (DG)",
+        on_delete=models.SET_NULL,
+        related_name="demanda_ascom",
+        blank=True,
+        null=True,
+    )
     origem_importacao = models.CharField("origem da importação", max_length=100, blank=True)
     chave_importacao = models.CharField(
         "chave da importação", max_length=64, unique=True, blank=True, null=True
@@ -276,6 +286,8 @@ class AcaoHistoricoDemanda(models.TextChoices):
     ATUALIZACAO = "ATUALIZACAO", "Registro atualizado"
     TRANSICAO = "TRANSICAO", "Status alterado"
     RESPOSTA = "RESPOSTA", "Resposta enviada"
+    ENCAMINHAMENTO_DG = "ENCAMINHAMENTO_DG", "Encaminhada à DG"
+    ANDAMENTO_DG = "ANDAMENTO_DG", "Andamento na DG"
 
 
 class HistoricoDemanda(models.Model):

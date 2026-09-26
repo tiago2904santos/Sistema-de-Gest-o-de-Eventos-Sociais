@@ -80,6 +80,8 @@
       </div>
     {% endif %}
 
+    {% if solicitacao %}{% include "pages/demandas_eventos/_origem_na_solicitacao.html" %}{% endif %}
+
     {% if motivo_devolucao %}
       {# O aviso da devolução vem antes dos campos: é o que precisa ser resolvido. #}
       <div class="aviso aviso--callout" role="status">

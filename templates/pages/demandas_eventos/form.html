@@ -31,6 +31,7 @@
       </div>
       <div class="frm-topo__acoes">
         {% if instancia %}<a class="btn--secundaria" href="{% url 'demandas_eventos:responder' instancia.pk %}" data-cadastro-modal>{% include "components/icon.html" with nome="mail" %}Responder</a>{% endif %}
+        {% if instancia and not solicitacao_dg %}<button type="submit" class="btn--secundaria" form="form-encaminhar-dg" title="Cria a solicitação de evento já preenchida, para o despacho da DG">{% include "components/icon.html" with nome="send" %}Encaminhar à DG</button>{% endif %}
         {# A data da solicitação mora no cabeçalho; o atributo form a leva junto com o formulário. #}
         <div class="pal-topo-data">
           {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True valor=valores.data_solicitacao erros=erros.data_solicitacao form_alvo="form-demanda" %}
@@ -40,6 +41,14 @@
     </div>
 
     {% if instancia %}
+      {% if solicitacao_dg %}
+        {# O mesmo evento na Solicitação de evento: a situação dela no despacho da DG. #}
+        <div class="aviso aviso--callout aviso--fino" role="status">
+          <div class="aviso__txt">{% include "components/icon.html" with nome="send" %}<div class="aviso__corpo"><b>Encaminhada à DG</b><p>{% if solicitacao_dg.url %}<a href="{{ solicitacao_dg.url }}">Solicitação de evento #{{ solicitacao_dg.numero }}</a>{% else %}Solicitação de evento #{{ solicitacao_dg.numero }}{% endif %} <span class="st st--{{ solicitacao_dg.status_tom }}">{{ solicitacao_dg.status }}</span></p></div></div>
+        </div>
+      {% else %}
+        <form method="post" action="{% url 'demandas_eventos:encaminhar_dg' instancia.pk %}" id="form-encaminhar-dg" hidden>{% csrf_token %}</form>
+      {% endif %}
       {% include "pages/demandas_eventos/_andamento.html" %}
     {% else %}
       {# Pedido que chegou por e-mail (ou WhatsApp): soltar o e-mail ou colar o texto preenche os campos vazios. #}

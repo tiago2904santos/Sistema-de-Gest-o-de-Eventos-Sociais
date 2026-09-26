@@ -16,7 +16,9 @@ from django.views.decorators.http import require_POST
 from core import preencher_por_email
 from core.listagens import trilha_de_situacoes
 
-from . import preenchimento, services
+from solicitacoes import permissions as permissoes_solicitacoes
+
+from . import encaminhamento, preenchimento, services
 from .forms import DemandaEventoForm, PalestranteForm, RespostaPadraoForm, TemaForm
 from .models import (
     AcaoHistoricoDemanda,
@@ -53,7 +55,7 @@ def _demanda_visivel(request, pk):
     return get_object_or_404(
         queryset_visivel(
             request.user,
-            DemandaEvento.objects.select_related("municipio__estado", "criado_por").prefetch_related("temas", "palestrantes"),
+            DemandaEvento.objects.select_related("municipio__estado", "criado_por", "solicitacao_dg").prefetch_related("temas", "palestrantes"),
         ),
         pk=pk,
     )
@@ -333,11 +335,49 @@ def editar_demanda(request, pk=None):
     if instancia:
         contexto.update({
             "historico": instancia.historico.select_related("usuario"),
+            "solicitacao_dg": _solicitacao_dg(request.user, instancia),
             # O andamento como nas Solicitações: etapas no stepper e os
             # cartões do próximo status, com a anotação que vai ao histórico.
             **_contexto_andamento(instancia),
         })
     return render(request, "pages/demandas_eventos/form.html", contexto)
+
+
+def _solicitacao_dg(usuario, demanda):
+    """A solicitação de evento ligada pelo "Encaminhar à DG", como a tela a mostra."""
+    solicitacao = demanda.solicitacao_dg
+    if solicitacao is None:
+        return None
+    return {
+        "numero": solicitacao.pk,
+        "status": solicitacao.get_status_display(),
+        "status_tom": solicitacao.status.lower(),
+        # Quem não enxerga a solicitação (não criou e não é da DG) vê só a situação.
+        "url": reverse("solicitacoes:editar", args=[solicitacao.pk])
+        if permissoes_solicitacoes.pode_ver(usuario, solicitacao)
+        else "",
+    }
+
+
+@login_required
+@require_POST
+def encaminhar_dg(request, pk):
+    """Cria a solicitação de evento da palestra (rascunho) e abre para completar."""
+    demanda = _demanda_visivel(request, pk)
+    if not pode_editar(request.user, demanda):
+        raise Http404
+    try:
+        solicitacao = encaminhamento.encaminhar_a_dg(demanda, request.user)
+    except ValidationError as erro:
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+        return redirect("demandas_eventos:editar", pk=demanda.pk)
+    messages.success(
+        request,
+        f"Solicitação #{solicitacao.pk} criada a partir da {demanda.get_evento_display().lower()}. "
+        "Complete o que falta e envie à DG.",
+    )
+    return redirect("solicitacoes:editar", pk=solicitacao.pk)
 
 
 def _contexto_andamento(demanda, erro="", escolhido="", texto="", extras=None):
