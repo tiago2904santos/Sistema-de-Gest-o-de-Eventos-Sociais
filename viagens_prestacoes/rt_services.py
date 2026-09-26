@@ -238,3 +238,119 @@ def salvar_rt_do_formulario(
         texto_gravado=True,
         servidores_gravados=diarias.servidores_gravados,
     )
+
+
+# ---------------------------------------------------------------------------
+# m097 — o RT começa com o que o sistema já tem.
+# ---------------------------------------------------------------------------
+
+#: Os textos do RT que se sugerem, copiam e viram modelo.
+CAMPOS_TEXTO_RT = ("motivo", "atividade", "conclusao", "medidas", "info_complementares")
+
+
+def _juntar(*textos) -> str:
+    return "\n\n".join(t.strip() for t in textos if (t or "").strip())
+
+
+def plano_da_prestacao(prestacao):
+    """O plano de trabalho da mesma viagem do ofício (o mais recente, não cancelado)."""
+    viagem_id = getattr(prestacao.oficio, "viagem_id", None)
+    if not viagem_id:
+        return None
+    from viagens_planos.models import PlanoTrabalho
+
+    return (
+        PlanoTrabalho.objects.filter(viagem_id=viagem_id, cancelado=False)
+        .order_by("-atualizado_em", "-pk")
+        .first()
+    )
+
+
+def sugestoes_iniciais_rt(prestacao) -> dict[str, str]:
+    """Textos sugeridos para o RT a partir do ofício, da viagem e do plano de trabalho.
+
+    - descrição do evento: o motivo do ofício; sem ele, a contextualização do plano;
+    - objetivo da participação: o objetivo da viagem; sem ele, metas e atividades do plano;
+    - conclusão: as considerações finais do plano.
+
+    Só sugestão: a tela usa como valor inicial dos campos vazios, e nada é gravado
+    até o operador salvar ou editar.
+    """
+    oficio = prestacao.oficio
+    viagem = oficio.viagem if getattr(oficio, "viagem_id", None) else None
+    plano = plano_da_prestacao(prestacao)
+    sugestoes = {
+        "motivo": (oficio.motivo or "").strip() or (plano.contextualizacao.strip() if plano else ""),
+        "atividade": ((viagem.descricao or "").strip() if viagem else "")
+        or (_juntar(plano.metas, plano.atividades) if plano else ""),
+        "conclusao": (plano.consideracao_final or "").strip() if plano else "",
+    }
+    return {campo: texto for campo, texto in sugestoes.items() if texto}
+
+
+def rts_para_copiar(prestacao, limite: int = 10) -> list[dict]:
+    """RTs de outras prestações do mesmo evento (viagem) ou do mesmo destino, com texto.
+
+    Os do mesmo evento vêm primeiro; depois os que dividem algum município de
+    destino, dos mais recentes para os mais antigos.
+    """
+    from django.db.models import Q
+
+    oficio = prestacao.oficio
+    filtro = Q()
+    viagem_id = getattr(oficio, "viagem_id", None)
+    if viagem_id:
+        filtro |= Q(prestacao__oficio__viagem_id=viagem_id)
+    destinos = []
+    if getattr(oficio, "roteiro_id", None):
+        destinos = list(oficio.roteiro.destinos.values_list("municipio_id", flat=True))
+    if destinos:
+        filtro |= Q(prestacao__oficio__roteiro__destinos__municipio_id__in=destinos)
+    if not filtro:
+        return []
+    tem_texto = Q()
+    for campo in CAMPOS_TEXTO_RT:
+        tem_texto |= ~Q(**{campo: ""})
+    candidatos = (
+        RelatorioTecnico.objects.filter(filtro)
+        .filter(tem_texto)
+        .exclude(prestacao=prestacao)
+        .select_related("prestacao__oficio")
+        .distinct()
+        .order_by("-atualizado_em", "-pk")[: limite * 3]
+    )
+    mesmos_evento = []
+    mesmo_destino = []
+    for rt in candidatos:
+        outro = rt.prestacao.oficio
+        mesmo = bool(viagem_id) and outro.viagem_id == viagem_id
+        item = {
+            "id": rt.pk,
+            "rotulo": f"Ofício {outro.numero_formatado} · {'mesmo evento' if mesmo else 'mesmo destino'}",
+            "textos": {campo: getattr(rt, campo) or "" for campo in CAMPOS_TEXTO_RT},
+        }
+        (mesmos_evento if mesmo else mesmo_destino).append(item)
+    return (mesmos_evento + mesmo_destino)[:limite]
+
+
+def criar_modelo_do_campo(campo: str, nome: str, texto: str):
+    """Grava o texto atual de um campo do RT como modelo reutilizável (m097).
+
+    O nome repetido no mesmo campo ganha um número, em vez de sobrescrever o
+    modelo de outra pessoa. Levanta `ValueError` com a mensagem para o operador.
+    """
+    from .models import ModeloTextoRelatorioTecnico
+
+    campos = dict(ModeloTextoRelatorioTecnico.CAMPO_CHOICES)
+    if campo not in campos:
+        raise ValueError("Campo do relatório inválido.")
+    texto = (texto or "").strip()
+    if not texto:
+        raise ValueError("Escreva o texto antes de salvar como modelo.")
+    base = normalize_spaces(nome or "")[:110] or f"Modelo de {campos[campo].lower()}"
+    nome_final = base
+    sufixo = 2
+    while ModeloTextoRelatorioTecnico.objects.filter(campo=campo, nome=nome_final).exists():
+        nome_final = f"{base} ({sufixo})"
+        sufixo += 1
+    return ModeloTextoRelatorioTecnico.objects.create(campo=campo, nome=nome_final, texto=texto)

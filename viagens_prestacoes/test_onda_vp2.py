@@ -217,3 +217,67 @@ class PacotesDaEquipeZipTests(PrestacaoFixturesMixin, TestCase):
         from viagens_prestacoes.download_views import _sufixo_servidor
 
         self.assertEqual(_sufixo_servidor(self.ps_ana), "_Ana")
+
+
+class RelatorioTecnicoPreenchidoTests(PrestacaoFixturesMixin, TestCase):
+    """m097: o RT começa com o ofício, a viagem e o plano; copia de outra prestação; salva modelo."""
+
+    def setUp(self):
+        super().setUp()
+        self.setUpPrestacaoFixtures()
+        from viagens_planos.models import PlanoTrabalho
+        from viagens_viagem.models import Viagem
+
+        self.viagem = Viagem.objects.create(titulo="Evento sintético", descricao="Atender a comunidade no evento sintético.")
+        PlanoTrabalho.objects.create(
+            viagem=self.viagem, contextualizacao="Contexto sintético.", metas="Meta sintética.",
+            atividades="Atividade sintética.", consideracao_final="Considerações sintéticas.",
+        )
+        self.fixture = self.criar_prestacao(numero=701)
+        self.fixture.oficio.viagem = self.viagem
+        self.fixture.oficio.motivo = ""
+        self.fixture.oficio.save()
+        self.ps = self.fixture.prestacoes_servidor[0]
+
+    def test_campos_vazios_vem_do_plano_e_da_viagem(self):
+        resposta = self.client.get(reverse("viagens_prestacoes:rt_servidor", args=[self.ps.pk]))
+        self.assertEqual(resposta.status_code, 200)
+        form = resposta.context["form"]
+        self.assertEqual(form["motivo"].value(), "Contexto sintético.")
+        self.assertEqual(form["atividade"].value(), "Atender a comunidade no evento sintético.")
+        self.assertEqual(form["conclusao"].value(), "Considerações sintéticas.")
+
+    def test_texto_ja_escrito_nao_e_trocado(self):
+        from viagens_prestacoes.rt_services import obter_ou_criar_relatorio_tecnico
+
+        relatorio = obter_ou_criar_relatorio_tecnico(self.fixture.prestacao)
+        relatorio.conclusao = "Conclusão do operador."
+        relatorio.save()
+        resposta = self.client.get(reverse("viagens_prestacoes:rt_servidor", args=[self.ps.pk]))
+        self.assertEqual(resposta.context["form"]["conclusao"].value(), "Conclusão do operador.")
+
+    def test_copiar_de_outra_prestacao_do_mesmo_evento(self):
+        from viagens_prestacoes.models import RelatorioTecnico
+
+        outra = self.criar_prestacao(numero=702)
+        outra.oficio.viagem = self.viagem
+        outra.oficio.save()
+        RelatorioTecnico.objects.create(prestacao=outra.prestacao, conclusao="Conclusão anterior.")
+        resposta = self.client.get(reverse("viagens_prestacoes:rt_servidor", args=[self.ps.pk]))
+        opcoes = resposta.context["rts_copiar"]
+        self.assertEqual(len(opcoes), 1)
+        self.assertIn("mesmo evento", opcoes[0]["rotulo"])
+        self.assertEqual(opcoes[0]["textos"]["conclusao"], "Conclusão anterior.")
+        self.assertContains(resposta, 'id="rt-copiar"')
+
+    def test_salvar_como_modelo(self):
+        from viagens_prestacoes.models import ModeloTextoRelatorioTecnico
+
+        url = reverse("viagens_prestacoes:modelo_criar_do_campo")
+        dados = {"campo": "conclusao", "nome": "Padrão sintético", "texto": "Texto do modelo."}
+        primeira = self.client.post(url, dados).json()
+        segunda = self.client.post(url, dados).json()
+        self.assertTrue(primeira["ok"])
+        self.assertEqual(segunda["nome"], "Padrão sintético (2)")
+        self.assertEqual(ModeloTextoRelatorioTecnico.objects.filter(campo="conclusao").count(), 2)
+        self.assertEqual(self.client.post(url, {"campo": "conclusao", "texto": ""}).status_code, 400)

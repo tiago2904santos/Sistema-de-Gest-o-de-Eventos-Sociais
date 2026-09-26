@@ -268,8 +268,8 @@
 
   /* ---------- modelos de texto do RT ---------- */
   var fonte = document.getElementById("rt-modelos");
+  var modelos = fonte ? JSON.parse(fonte.textContent) : {};
   if (fonte) {
-    var modelos = JSON.parse(fonte.textContent);
     document.querySelectorAll('select[name^="modelo_"]').forEach(function (select) {
       select.addEventListener("change", function () {
         var campo = select.name.slice(7);
@@ -281,6 +281,56 @@
       });
     });
   }
+
+  /* ---------- RT: copiar de outra prestação e salvar como modelo (m097) ---------- */
+  var fonteCopiar = document.getElementById("rt-copiar");
+  var blocoCopiar = document.querySelector("[data-rt-copiar]");
+  if (fonteCopiar && blocoCopiar) {
+    var anteriores = JSON.parse(fonteCopiar.textContent);
+    blocoCopiar.hidden = false;
+    blocoCopiar.querySelector("[data-rt-copiar-aplicar]").addEventListener("click", function () {
+      var escolha = blocoCopiar.querySelector('select[name="rt_copiar_de"]');
+      var rt = anteriores.filter(function (r) { return String(r.id) === (escolha && escolha.value); })[0];
+      if (!rt) return;
+      var campos = Object.keys(rt.textos).filter(function (c) { return rt.textos[c]; });
+      var cheios = campos.filter(function (c) { var t = document.querySelector('[name="' + c + '"]'); return t && t.value.trim() && t.value !== rt.textos[c]; });
+      if (cheios.length && !window.confirm("Substituir os textos já escritos pelos da prestação escolhida?")) return;
+      campos.forEach(function (c) {
+        var texto = document.querySelector('[name="' + c + '"]');
+        if (!texto) return;
+        texto.value = rt.textos[c];
+        texto.dispatchEvent(new Event("input", {bubbles: true}));
+      });
+    });
+  }
+  var marcaModelo = document.querySelector("[data-rt-modelo-criar-url]");
+  var urlModelo = marcaModelo ? marcaModelo.getAttribute("data-rt-modelo-criar-url") : "";
+  document.querySelectorAll("[data-rt-salvar-modelo]").forEach(function (botao) {
+    if (!urlModelo) return;
+    botao.hidden = false;
+    botao.addEventListener("click", function () {
+      var campo = botao.getAttribute("data-rt-salvar-modelo");
+      var texto = document.querySelector('[name="' + campo + '"]');
+      if (!texto || !texto.value.trim()) { window.alert("Escreva o texto antes de salvar como modelo."); return; }
+      var nome = window.prompt("Nome do modelo de " + (botao.getAttribute("data-rotulo") || "texto").toLowerCase() + ":");
+      if (nome === null) return;
+      var dados = new FormData();
+      dados.append("campo", campo);
+      dados.append("nome", nome);
+      dados.append("texto", texto.value);
+      fetch(urlModelo, {method: "POST", body: dados, credentials: "same-origin", headers: {"X-CSRFToken": csrf(), "X-Requested-With": "XMLHttpRequest"}})
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          if (!res.ok) { window.alert(res.message || "Não foi possível salvar o modelo."); return; }
+          // O modelo novo já aparece no seletor do campo, sem recarregar.
+          modelos[res.id] = texto.value;
+          var select = document.querySelector('select[name="modelo_' + campo + '"]');
+          if (select) { var opcao = document.createElement("option"); opcao.value = res.id; opcao.textContent = res.nome; select.appendChild(opcao); }
+          window.alert("Modelo \u201c" + res.nome + "\u201d salvo.");
+        })
+        .catch(function () { window.alert("Não foi possível salvar o modelo."); });
+    });
+  });
 
   /* ---------- custeio: "Outro" abre o campo de texto ---------- */
   document.querySelectorAll("[data-rt-outro]").forEach(function (bloco) {

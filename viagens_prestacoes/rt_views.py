@@ -18,6 +18,9 @@ from .rt_services import ESCOPO_SERVIDOR
 from .rt_services import obter_ou_criar_relatorio_tecnico
 from .rt_services import salvar_rt_do_autosave
 from .rt_services import salvar_rt_do_formulario
+from .rt_services import criar_modelo_do_campo
+from .rt_services import rts_para_copiar
+from .rt_services import sugestoes_iniciais_rt
 from .services import (
     diaria_inicial_da_prestacao,
     garantir_campos_padrao_relatorio_tecnico,
@@ -95,8 +98,10 @@ def rt_servidor(request, ps_pk):
         initial = {}
         if not relatorio.diaria:
             initial["diaria"] = diaria_inicial_da_prestacao(prestacao)
-        if not relatorio.motivo:
-            initial["motivo"] = prestacao.oficio.motivo or ""
+        # m097: os textos vazios começam com o que o ofício, a viagem e o plano já dizem.
+        for campo, texto in sugestoes_iniciais_rt(prestacao).items():
+            if not (getattr(relatorio, campo) or "").strip():
+                initial[campo] = texto
         form = RelatorioTecnicoForm(instance=relatorio, relatorio=relatorio, initial=initial)
 
     servidores_ctx = [_servidor_rt_ctx(ps)]
@@ -140,8 +145,24 @@ def rt_servidor(request, ps_pk):
             "diario_url": reverse("viagens_prestacoes:diario_servidor", args=[ps.pk]),
             "autosave_url": reverse("viagens_prestacoes:rt_servidor_autosave", args=[ps.pk]),
             "preview_inline_url": servidores_ctx[0]["preview_inline_url"],
+            # m097: copiar os textos de outra prestação do mesmo evento ou destino, e salvar um texto como modelo.
+            "rts_copiar": rts_para_copiar(prestacao),
+            "modelo_criar_url": reverse("viagens_prestacoes:modelo_criar_do_campo"),
         },
     )
+
+
+def modelo_criar_do_campo(request):
+    """"Salvar como modelo" ao lado de um texto do RT (m097): grava e devolve o modelo novo."""
+    from django.http import JsonResponse
+
+    try:
+        modelo = criar_modelo_do_campo(
+            request.POST.get("campo", ""), request.POST.get("nome", ""), request.POST.get("texto", "")
+        )
+    except ValueError as exc:
+        return JsonResponse({"ok": False, "message": str(exc)}, status=400)
+    return JsonResponse({"ok": True, "id": modelo.pk, "nome": modelo.nome, "campo": modelo.campo})
 
 
 def rt_servidor_autosave(request, ps_pk):
