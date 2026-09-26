@@ -123,11 +123,17 @@ def rt_servidor(request, ps_pk):
             campo["erros_outro"] = form.errors.get(f"{campo['campo']}_outro")
         campo["erros"] = form.errors.get(campo["campo"])
     campos_modelo = _build_campos_modelo(form, return_url=rt_url)
+    from .rt_services import CAMPOS_SUGERIR_RT
     for campo in campos_modelo:
         campo["opcoes"] = [{"valor": str(m.pk), "rotulo": m.nome} for m in campo["select"].field.queryset]
         campo["valor_modelo"] = form[f"modelo_{campo['campo']}"].value() or ""
         campo["texto"] = form[campo["campo"]].value() or ""
         campo["erros"] = form.errors.get(campo["campo"])
+        # m103: "Sugerir texto" só na conclusão e nas medidas.
+        campo["sugerir_url"] = (
+            reverse("viagens_prestacoes:rt_servidor_sugerir", args=[ps.pk, campo["campo"]])
+            if campo["campo"] in CAMPOS_SUGERIR_RT else ""
+        )
 
     return render(
         request,
@@ -170,6 +176,37 @@ def modelo_criar_do_campo(request):
     except ValueError as exc:
         return JsonResponse({"ok": False, "message": str(exc)}, status=400)
     return JsonResponse({"ok": True, "id": modelo.pk, "nome": modelo.nome, "campo": modelo.campo})
+
+
+def rt_servidor_sugerir(request, ps_pk, campo):
+    """"Sugerir texto" da conclusão ou das medidas do RT (m103).
+
+    Regra local (`rt_services.sugerir_texto_rt`): devolve o rascunho em JSON e não
+    grava nada — o texto entra no campo para o operador revisar, e é o autosave ou
+    o "Salvar" dele que persiste. O POST traz o que está na tela agora, para o
+    rascunho considerar o que já foi escrito e ainda não salvo.
+    """
+    from django.http import JsonResponse
+
+    from auditoria.models import LogAuditoria
+
+    from .rt_services import CAMPOS_TEXTO_RT, sugerir_texto_rt
+
+    ps = get_object_or_404(
+        _prestacao_servidor_queryset().select_related("prestacao__oficio__roteiro", "prestacao__oficio__viagem", "servidor"),
+        pk=ps_pk,
+    )
+    rascunho = {c: request.POST.get(c) for c in CAMPOS_TEXTO_RT if c in request.POST}
+    try:
+        texto = sugerir_texto_rt(ps.prestacao, campo, rascunho=rascunho)
+    except ValueError as exc:
+        return JsonResponse({"ok": False, "message": str(exc)}, status=400)
+    LogAuditoria.objects.create(
+        usuario=request.user if request.user.is_authenticated else None,
+        acao="rt_texto_sugerido",
+        descricao=f"{ps} — rascunho sugerido para o campo {campo} do relatório técnico",
+    )
+    return JsonResponse({"ok": True, "campo": campo, "texto": texto})
 
 
 def rt_servidor_autosave(request, ps_pk):

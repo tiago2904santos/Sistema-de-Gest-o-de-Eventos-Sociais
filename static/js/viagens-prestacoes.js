@@ -332,6 +332,37 @@
     });
   });
 
+  /* ---------- RT: "Sugerir texto" (m103) ----------
+     Regra local do servidor: devolve um rascunho a partir do evento, destino,
+     período, atividades do plano e do que já está escrito. Só preenche o campo —
+     sem disparar o autosave — para o operador revisar antes de gravar. */
+  document.querySelectorAll("[data-rt-sugerir]").forEach(function (botao) {
+    botao.addEventListener("click", function () {
+      var campo = botao.getAttribute("data-rt-sugerir");
+      var url = botao.getAttribute("data-rt-sugerir-url");
+      var texto = document.querySelector('[name="' + campo + '"]');
+      if (!texto || !url) return;
+      var dados = new FormData();
+      ["motivo", "atividade", "conclusao", "medidas", "info_complementares"].forEach(function (c) {
+        var outro = document.querySelector('[name="' + c + '"]');
+        if (outro) dados.append(c, outro.value);
+      });
+      botao.disabled = true;
+      fetch(url, {method: "POST", body: dados, credentials: "same-origin", headers: {"X-CSRFToken": csrf(), "X-Requested-With": "XMLHttpRequest"}})
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          if (!res.ok || !res.texto) { window.alert(res.message || "Não foi possível montar o rascunho."); return; }
+          if (texto.value.trim() && texto.value.trim() !== res.texto && !window.confirm("Substituir o texto já escrito em " + (botao.getAttribute("data-rotulo") || "").toLowerCase() + " pelo rascunho sugerido?")) return;
+          texto.value = res.texto;
+          var aviso = document.querySelector('[data-rt-sugerido-aviso="' + campo + '"]');
+          if (aviso) aviso.hidden = false;
+          texto.focus();
+        })
+        .catch(function () { window.alert("Não foi possível montar o rascunho."); })
+        .finally(function () { botao.disabled = false; });
+    });
+  });
+
   /* ---------- custeio: "Outro" abre o campo de texto ---------- */
   document.querySelectorAll("[data-rt-outro]").forEach(function (bloco) {
     var nome = bloco.getAttribute("data-rt-outro");

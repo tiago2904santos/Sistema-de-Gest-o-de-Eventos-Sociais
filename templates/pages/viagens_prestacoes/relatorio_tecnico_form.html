@@ -68,8 +68,13 @@
               {% include "components/select.html" with name="modelo_"|add:campo.campo label="Modelo" opcoes=campo.opcoes placeholder="Aplicar um modelo (opcional)" permitir_vazio=True selecionado=campo.valor_modelo %}
               <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ campo.manage_url }}" aria-label="Modelos de texto de {{ campo.label|lower }}" title="Modelos de texto">{% include "components/icon.html" with nome="settings" %}</a>
               <button type="button" class="btn--secundaria btn--quadrado ofc-com-acao__botao" data-rt-salvar-modelo="{{ campo.campo }}" data-rotulo="{{ campo.label }}" aria-label="Salvar o texto de {{ campo.label|lower }} como modelo" title="Salvar como modelo" hidden>{% include "components/icon.html" with nome="document-plus" %}</button>
+              {% if campo.sugerir_url %}
+                {# m103: rascunho montado pelo sistema (evento, destino, período, atividades do plano e o que já está escrito). Só preenche o campo; nada é salvo até o operador revisar. #}
+                <button type="button" class="btn--secundaria ofc-com-acao__botao" data-rt-sugerir="{{ campo.campo }}" data-rt-sugerir-url="{{ campo.sugerir_url }}" data-rotulo="{{ campo.label }}" aria-describedby="sugerido-{{ campo.campo }}" title="Montar um rascunho a partir dos dados da viagem">{% include "components/icon.html" with nome="pencil" %} Sugerir texto</button>
+              {% endif %}
             </div>
             {% include "components/textarea.html" with name=campo.campo label=campo.label rotulo_oculto=True valor=campo.texto linhas="3" erros=campo.erros %}
+            {% if campo.sugerir_url %}<p class="form-ajuda" id="sugerido-{{ campo.campo }}" data-rt-sugerido-aviso="{{ campo.campo }}" role="status" hidden>Rascunho montado a partir dos dados da viagem. Revise e ajuste: ele só é gravado quando você editar o texto ou clicar em Salvar.</p>{% endif %}
           </div>
         {% endfor %}
 
