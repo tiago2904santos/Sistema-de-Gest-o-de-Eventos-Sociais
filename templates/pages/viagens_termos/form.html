@@ -45,7 +45,7 @@
       </div>
       {% if pode_editar %}
         <div class="frm-topo__acoes">
-          <button type="submit" form="form-termo" name="acao" value="salvar" class="btn btn--dourado btn-primaria">Salvar termo</button>
+          <button type="submit" form="form-termo" name="acao" value="salvar" class="btn-primaria">Salvar termo</button>
         </div>
       {% endif %}
     </div>
@@ -136,7 +136,7 @@
                 </template>
                 {# Sem JavaScript o "+" da linha não existe: este envio traz outra. #}
                 <noscript>
-                  <button class="btn--secundaria btn--compacto btn--quadrado" type="submit" name="acao" value="adicionar_destino" formnovalidate aria-label="Adicionar destino" title="Adicionar destino">{% include "components/icon.html" with nome="plus" %}</button>
+                  <button class="btn--secundaria btn--quadrado" type="submit" name="acao" value="adicionar_destino" formnovalidate aria-label="Adicionar destino" title="Adicionar destino">{% include "components/icon.html" with nome="plus" %}</button>
                 </noscript>
               </div>
             </div>

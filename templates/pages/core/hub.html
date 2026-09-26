@@ -26,7 +26,7 @@
           </dl>
         {% endif %}
         <div class="portal-card__acoes">
-          <a href="{{ cartao.url }}" class="btn-primaria ">
+          <a href="{{ cartao.url }}" class="btn-primaria">
             Entrar no módulo
             {% include "components/icon.html" with nome="arrow-right" %}
           </a>
@@ -48,7 +48,7 @@
           <p class="v32-suave">Cadastre usuários, defina perfis e vincule setores.</p>
         </div>
       </div>
-      <a href="{% url 'accounts:usuarios_lista' %}" class="btn--secundaria ">
+      <a href="{% url 'accounts:usuarios_lista' %}" class="btn--secundaria">
         {% include "components/icon.html" with nome="users" %}Gerenciar usuários
       </a>
     </div>

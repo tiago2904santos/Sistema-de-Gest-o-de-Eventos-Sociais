@@ -4,7 +4,7 @@
 .pt-novo{margin:0}
 
 /* Cabeçalho de grupo com a frase de ajuda ao lado do título. */
-.pt-grupo__ajuda{font-size:11.5px;color:var(--n-500);text-align:right}
+.pt-grupo__ajuda{font-size:var(--fs-apoio);color:var(--n-500);text-align:right}
 .pt-grade-2{grid-template-columns:repeat(2,minmax(0,1fr))}
 /* Programa ocupa a linha inteira; com "Outros" à vista, reparte em duas colunas. */
 .pt-grade-programa{grid-template-columns:minmax(0,1fr)}
@@ -13,29 +13,29 @@
 .pt-form [data-pt-programa-outros][hidden],.pt-form .pt-atividade[hidden],.pt-form [data-pt-efetivo-linha][hidden]{display:none}
 
 /* Período: os dois rótulos do Gerenciador ("Data de ida"/"Data de volta") sobre o par de campos. */
-.pt-periodo__rotulos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;font-size:12px;font-weight:600;color:var(--n-700)}
+.pt-periodo__rotulos{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2-5);margin-bottom:var(--s1);font-size:var(--fs-apoio);font-weight:600;color:var(--n-700)}
 
 /* Coordenadores: dois painéis empilhados. */
-.pt-coordenadores{display:grid;gap:18px}
-.pt-coordenador{display:grid;gap:12px}
+.pt-coordenadores{display:grid;gap:var(--s4-5)}
+.pt-coordenador{display:grid;gap:var(--s3)}
 .pt-coordenador__cabeca{margin-bottom:0}
 /* Nome, cargo e gênero na mesma linha. O nome é busca, então leva mais largura;
    o gênero é uma escolha de duas palavras e se contenta com a menor coluna. */
 .pt-coordenador__campos{grid-template-columns:minmax(0,2fr) minmax(0,2fr) minmax(0,1fr)}
 
 /* Efetivo: uma linha por cargo — unidade, cargo, quantidade, "+" e lixeira. */
-.pt-efetivo{display:grid;gap:10px}
-.pt-efetivo-linha{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 110px 38px 38px;gap:8px;align-items:end}
+.pt-efetivo{display:grid;gap:var(--s2-5)}
+.pt-efetivo-linha{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 110px 38px 38px;gap:var(--s2);align-items:end}
 .pt-efetivo-linha .form-campo{min-width:0}
-.pt-efetivo-linha__adicionar,.pt-efetivo-linha__remover{width:38px;min-width:38px;height:38px;padding:0;justify-content:center;flex:none;border-radius:8px;margin-bottom:0}
+.pt-efetivo-linha__adicionar,.pt-efetivo-linha__remover{width:38px;min-width:38px;height:38px;padding:0;justify-content:center;flex:none;border-radius:var(--raio-bloco);margin-bottom:0}
 .pt-efetivo-linha--unica{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 110px 38px}
 .pt-efetivo-linha--unica .pt-efetivo-linha__remover{display:none}
 
 /* Diárias: os erros antes dos campos; a faixa de resultado com a nota por extenso. */
-.pt-diarias-erros{margin:0 0 14px}
+.pt-diarias-erros{margin:0 0 var(--s3-5)}
 .pt-diarias-erros[hidden]{display:none}
-.pt-metricas{margin-top:16px;margin-bottom:0}
-.pt-metrica__nota{grid-column:1/-1;font-size:12px;color:var(--n-600);line-height:1.5}
+.pt-metricas{margin-top:var(--s4);margin-bottom:0}
+.pt-metrica__nota{grid-column:1/-1;font-size:var(--fs-apoio);color:var(--n-600);line-height:1.5}
 .pt-metrica__nota .metrica__rotulo{display:block}
 
 /* Atividades: filtro, preset e limpar na mesma faixa; a grade de cartões escolhíveis. */
@@ -44,16 +44,16 @@
    dourado, repouso em branco, hover em cinza. */
 .section-card__cabecalho>.pt-gerenciar{position:relative;flex:none;margin-left:auto}
 .pt-gerenciar__menu{right:0;left:auto;min-width:210px}
-.pt-atividades__barra{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,300px) auto;gap:10px;align-items:end}
+.pt-atividades__barra{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,300px) auto;gap:var(--s2-5);align-items:end}
 .pt-atividades__busca .form-controle{height:38px}
 .pt-atividades__busca,.pt-atividades__preset .form-campo{margin:0}
-.pt-atividades__limpar{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 12px;font-size:13px}
+.pt-atividades__limpar{display:inline-flex;align-items:center;gap:var(--s1-5);height:38px;padding:0 var(--s3);font-size:var(--fs-texto)}
 .pt-atividades__limpar .ui-icon{width:13px;height:13px}
 .pt-atividades__limpar:disabled{opacity:.45;cursor:default}
 /* No máximo três por linha (seis trilhas, duas por atividade). A última linha
    não fica com buraco: duas atividades dividem a linha ao meio, uma sozinha
    ocupa a linha inteira. */
-.pt-atividades__grade{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:14px}
+.pt-atividades__grade{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--s2);margin-top:var(--s3-5)}
 .pt-atividades__grade>.pt-atividade{grid-column:span 2}
 .pt-atividades__grade>.pt-atividade:nth-child(3n+1):nth-last-child(2),
 .pt-atividades__grade>.pt-atividade:nth-child(3n+1):nth-last-child(2)+.pt-atividade{grid-column:span 3}
@@ -62,15 +62,15 @@
 /* Cada atividade é um cartão escolhível: repouso em cinza bem claro, sem
    borda; hover um tom acima; escolhida num cinza mais firme, com a marca
    redonda preenchida em grafite. Altura igual em toda a grade. */
-.pt-atividade{display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 14px;border:0;border-radius:10px;background:var(--n-50);cursor:pointer;font-size:13px;line-height:1.35;color:var(--n-700);transition:background .18s ease,color .18s ease,transform .12s ease}
+.pt-atividade{display:flex;align-items:center;gap:var(--s3);min-height:52px;padding:var(--s2-5) var(--s3-5);border:0;border-radius:var(--raio-bloco);background:var(--n-50);cursor:pointer;font-size:var(--fs-texto);line-height:1.35;color:var(--n-700);transition:background .18s ease,color .18s ease,transform .12s ease}
 .pt-atividade:hover{background:var(--n-100)}
 .pt-atividade:active{transform:scale(.985)}
 .pt-atividade__nome{min-width:0}
-.pt-atividade__marca{display:grid;place-items:center;width:20px;height:20px;flex:none;border-radius:99px;background:var(--branco);box-shadow:inset 0 0 0 1.5px var(--n-300);color:transparent;transition:background var(--motion,.15s),box-shadow var(--motion,.15s)}
+.pt-atividade__marca{display:grid;place-items:center;width:20px;height:20px;flex:none;border-radius:var(--raio-pilula);background:var(--branco);box-shadow:inset 0 0 0 1.5px var(--n-300);color:transparent;transition:background var(--motion,.15s),box-shadow var(--motion,.15s)}
 .pt-atividade__marca .ui-icon{width:12px;height:12px;stroke-width:2.6;transform:scale(.4);opacity:0;transition:transform .2s ease,opacity .15s ease}
 .pt-atividade.is-selected{background:var(--n-150);color:var(--n-900);font-weight:500}
 .pt-atividade.is-selected:hover{background:var(--n-200)}
-.pt-atividade.is-selected .pt-atividade__marca{background:var(--grafite);box-shadow:none;color:#fff;animation:pt-marcar .28s ease}
+.pt-atividade.is-selected .pt-atividade__marca{background:var(--grafite);box-shadow:none;color:var(--branco);animation:pt-marcar .28s ease}
 .pt-atividade.is-selected .pt-atividade__marca .ui-icon{transform:scale(1);opacity:1}
 /* Ao marcar, a bolinha dá um pulo curto e o ✓ cresce no lugar. */
 @keyframes pt-marcar{0%{transform:scale(.8)}55%{transform:scale(1.18)}100%{transform:scale(1)}}
@@ -78,30 +78,30 @@
 /* Sem contorno de foco: o estado já se vê no cartão. */
 .pt-atividade:focus-within{outline:0}
 /* Metas e recursos: leitura, numa faixa separada por um fio. */
-.pt-listas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px;padding-top:18px;border-top:1px solid var(--n-150)}
-.pt-lista{min-width:0;padding:12px 14px;border:1px solid var(--n-150);border-radius:9px;background:var(--n-25)}
-.pt-lista__cabeca{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.pt-lista__cabeca strong{font-size:12.5px;color:var(--n-800)}
-.pt-lista__total{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--n-150);font-size:11px;font-weight:600;color:var(--n-700);font-variant-numeric:tabular-nums}
-.pt-lista__itens{margin:0;padding-left:18px;display:grid;gap:6px;font-size:12.5px;color:var(--n-700);line-height:1.5}
+.pt-listas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3);margin-top:var(--s4-5);padding-top:var(--s4-5);border-top:1px solid var(--n-150)}
+.pt-lista{min-width:0;padding:var(--s3) var(--s3-5);border:1px solid var(--n-150);border-radius:var(--raio-bloco);background:var(--n-25)}
+.pt-lista__cabeca{display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s2)}
+.pt-lista__cabeca strong{font-size:var(--fs-meta);color:var(--n-800)}
+.pt-lista__total{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 var(--s1-5);border-radius:var(--raio-pilula);background:var(--n-150);font-size:var(--fs-rotulo);font-weight:600;color:var(--n-700);font-variant-numeric:tabular-nums}
+.pt-lista__itens{margin:0;padding-left:var(--s4-5);display:grid;gap:var(--s1-5);font-size:var(--fs-meta);color:var(--n-700);line-height:1.5}
 .pt-lista__itens:empty{display:none}
-.pt-lista .lista-vazia{margin:0;background:transparent;border:0;padding:4px 0}
+.pt-lista .lista-vazia{margin:0;background:transparent;border:0;padding:var(--s1) 0}
 .pt-lista .lista-vazia[hidden]{display:none}
 
 /* Cartão de um evento gravado (plano de vários eventos), antes do cartão 1. */
 /* Resumo de um evento gravado, em duas linhas: destino com data e horário, e
    os fatos com ícone embaixo. O detalhe fica no `title` de cada fato. */
-.pt-evento{display:flex;align-items:center;gap:14px;margin-bottom:12px;padding:14px 16px;border:1px solid var(--n-200);border-radius:12px;background:var(--branco)}
-.pt-evento__ordem{display:grid;place-items:center;width:30px;height:30px;flex:none;border-radius:99px;background:var(--grafite);color:#fff;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.pt-evento{display:flex;align-items:center;gap:var(--s3-5);margin-bottom:var(--s3);padding:var(--s3-5) var(--s4);border:1px solid var(--n-200);border-radius:var(--raio-cartao);background:var(--branco)}
+.pt-evento__ordem{display:grid;place-items:center;width:30px;height:30px;flex:none;border-radius:var(--raio-pilula);background:var(--grafite);color:var(--branco);font-size:var(--fs-texto);font-weight:600;font-variant-numeric:tabular-nums}
 .pt-evento__texto{flex:1;min-width:0}
-.pt-evento__linha{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0}
-.pt-evento__destino{font-size:14.5px;font-weight:600;color:var(--n-900)}
-.pt-evento__quando{font-size:12.5px;color:var(--n-500)}
-.pt-evento__fatos{display:flex;flex-wrap:wrap;gap:4px 16px;margin:6px 0 0;padding:0;list-style:none;font-size:12.5px;color:var(--n-700)}
-.pt-evento__fatos li{display:inline-flex;align-items:center;gap:6px;cursor:default}
+.pt-evento__linha{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--s1) var(--s2-5);margin:0}
+.pt-evento__destino{font-size:var(--fs-base);font-weight:600;color:var(--n-900)}
+.pt-evento__quando{font-size:var(--fs-meta);color:var(--n-500)}
+.pt-evento__fatos{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s4);margin:var(--s1-5) 0 0;padding:0;list-style:none;font-size:var(--fs-meta);color:var(--n-700)}
+.pt-evento__fatos li{display:inline-flex;align-items:center;gap:var(--s1-5);cursor:default}
 .pt-evento__fatos .ui-icon{width:14px;height:14px;flex:none;color:var(--n-450)}
 .pt-evento__fatos b{font-weight:600;color:var(--n-900)}
-.pt-evento__acoes{display:flex;gap:4px;flex:none}
+.pt-evento__acoes{display:flex;gap:var(--s1);flex:none}
 .pt-evento__remover.is-armado{color:var(--dg-t);background:var(--dg-b)}
 
 @container (max-width:900px){
@@ -118,19 +118,19 @@
 
 /* Nome do coordenador com sugestões: o detalhe (cargo · unidade) embaixo do
    nome, como nos outros seletores; a lista rola dentro do menu. */
-.nome-sugerido__opcao small{display:block;font-size:11px;font-weight:400;color:var(--n-450)}
+.nome-sugerido__opcao small{display:block;font-size:var(--fs-rotulo);font-weight:400;color:var(--n-450)}
 .nome-sugerido .custom-select__lista{max-height:260px;overflow-y:auto}
-.nome-sugerido .custom-select__vazio{margin:0;padding:8px 10px;font-size:12.5px;color:var(--n-500)}
+.nome-sugerido .custom-select__vazio{margin:0;padding:var(--s2) var(--s2-5);font-size:var(--fs-meta);color:var(--n-500)}
 
 /* Período do evento: as duas datas ocupam dois terços e o horário o resto;
    cada coluna com o seu rótulo, na mesma altura. */
-.pt-periodo-linha{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:8px;align-items:start}
+.pt-periodo-linha{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:var(--s2);align-items:start}
 .pt-periodo__rotulos--um{grid-template-columns:1fr}
 .pt-periodo__rotulos label{font:inherit;color:inherit}
 
 /* Deslocamento: data de saída, hora, data de chegada, hora — as duas datas
    num calendário de intervalo só, que continua preso à linha. */
-.pt-deslocamento{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 12px;align-items:end}
+.pt-deslocamento{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s2) var(--s3);align-items:end}
 .pt-deslocamento .custom-date__trigger{position:relative;width:100%}
 .pt-deslocamento .form-campo{margin:0}
 .pt-deslocamento .custom-date__calendar--range{top:calc(100% + 6px)}
@@ -147,8 +147,8 @@
    do rótulo é metade o da caixa (em cima) e metade o do campo (embaixo). As
    colunas do rótulo repetem as dos campos (as duas datas lado a lado). */
 .pt-percurso .pt-periodo{position:relative}
-.pt-percurso .pt-periodo__rotulos{position:absolute;z-index:4;top:-7px;left:0;right:0;margin:0;pointer-events:none;gap:8px;font-size:10.5px;font-weight:500;line-height:14px;color:var(--n-450)}
-.pt-percurso .pt-periodo__rotulos>*{justify-self:start;margin-left:9px;padding:0 4px;background:linear-gradient(to bottom,var(--n-25) 50%,var(--branco) 50%)}
+.pt-percurso .pt-periodo__rotulos{position:absolute;z-index:4;top:-7px;left:0;right:0;margin:0;pointer-events:none;gap:var(--s2);font-size:var(--fs-rotulo);font-weight:500;line-height:14px;color:var(--n-450)}
+.pt-percurso .pt-periodo__rotulos>*{justify-self:start;margin-left:var(--s2-5);padding:0 var(--s1);background:linear-gradient(to bottom,var(--n-25) 50%,var(--branco) 50%)}
 
 /* Salvar rascunho e Finalizar lado a lado, à direita do Voltar. */
-.pt-acoes-fim__gravar{display:flex;gap:8px;margin-left:auto}
+.pt-acoes-fim__gravar{display:flex;gap:var(--s2);margin-left:auto}

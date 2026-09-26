@@ -5,42 +5,42 @@
 /* ---------- Lista ---------------------------------------------------- */
 .vg-fato__valor{min-width:0;overflow-wrap:anywhere}
 /* Cancelar pede o motivo: o campo abre dentro do menu, sem sair da lista. */
-.vg-cancelar{display:flex;flex-direction:column;gap:6px;padding:8px 12px 12px;border-top:1px solid var(--n-100)}
+.vg-cancelar{display:flex;flex-direction:column;gap:var(--s1-5);padding:var(--s2) var(--s3) var(--s3);border-top:1px solid var(--n-100)}
 .vg-cancelar[hidden]{display:none}
-.vg-cancelar .form-label{font-size:11.5px}
-.vg-cancelar .form-controle{height:36px;font-size:13px}
-.vg-cancelar__ajuda{margin:0;font-size:11.5px;color:var(--n-500)}
+.vg-cancelar .form-label{font-size:var(--fs-apoio)}
+.vg-cancelar .form-controle{height:36px;font-size:var(--fs-texto)}
+.vg-cancelar__ajuda{margin:0;font-size:var(--fs-apoio);color:var(--n-500)}
 .vg-cancelar button{align-self:flex-end}
 
 /* ---------- Painel: stepper ------------------------------------------ */
 /* Cancelada: aviso e o botão de reativar na mesma faixa. */
 .vg-cancelada>form{margin:0;flex:none}
-.vg-cancelada .btn--secundaria{display:inline-flex;align-items:center;gap:6px}
+.vg-cancelada .btn--secundaria{display:inline-flex;align-items:center;gap:var(--s1-5)}
 
 /* ---------- Painel: cartões das etapas ------------------------------ */
 .vg-painel .section-card__identificacao{display:flex;flex-direction:column;min-width:0}
-.vg-painel .section-card__descricao{margin:2px 0 0;font-size:12px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--n-500)}
+.vg-painel .section-card__descricao{margin:var(--s0) 0 0;font-size:var(--fs-apoio);font-weight:400;letter-spacing:0;text-transform:none;color:var(--n-500)}
 /* As listas das etapas 2 a 5 são as das telas dos módulos (`pa-card--lista`),
    sem a barra de filtros; duas seguidas (PT e OS) ganham respiro entre si. */
-.vg-lista+.vg-lista{margin-top:16px}
+.vg-lista+.vg-lista{margin-top:var(--s4)}
 /* Sem a barra de busca, o cabeçalho cinza encosta no topo do cartão. O
    cartão não corta (overflow visível, para os menus de ações abrirem), então
    as quinas do cabeçalho se arredondam por conta própria. */
 .vg-lista .dt{border-collapse:separate;border-spacing:0}
-.vg-lista .dt thead th:first-child{border-top-left-radius:8px}
-.vg-lista .dt thead th:last-child{border-top-right-radius:8px}
+.vg-lista .dt thead th:first-child{border-top-left-radius:var(--raio-bloco)}
+.vg-lista .dt thead th:last-child{border-top-right-radius:var(--raio-bloco)}
 
 /* Etapa 1: os blocos de largura inteira (Motivo e Documentos vinculados)
    levam o rótulo em cima; os divididos usam o bloco-split da casa. */
-.vg-bloco{padding:16px 0;border-top:1px solid var(--n-150)}
+.vg-bloco{padding:var(--s4) 0;border-top:1px solid var(--n-150)}
 /* Documentos vinculados é o último bloco: a lista encosta nos botões do fim, sem respiro extra. */
 .vg-bloco:has(.vg-docs){padding-bottom:0}
 .vg-bloco:first-child{border-top:0;padding-top:0}
 .vg-bloco+.bloco-split,.bloco-split+.vg-bloco{border-top:1px solid var(--n-150)}
-.vg-bloco__rotulo{display:flex;flex-direction:column;gap:2px;margin-bottom:12px}
-.vg-bloco__rotulo strong,.vg-painel .bloco-split__rotulo strong{font-size:13px;color:var(--n-800)}
-.vg-bloco__rotulo span,.vg-painel .bloco-split__rotulo span{font-size:11.5px;line-height:1.5;color:var(--n-500)}
-.vg-painel .bloco-split__rotulo{display:flex;flex-direction:column;gap:3px}
+.vg-bloco__rotulo{display:flex;flex-direction:column;gap:var(--s0);margin-bottom:var(--s3)}
+.vg-bloco__rotulo strong,.vg-painel .bloco-split__rotulo strong{font-size:var(--fs-texto);color:var(--n-800)}
+.vg-bloco__rotulo span,.vg-painel .bloco-split__rotulo span{font-size:var(--fs-apoio);line-height:1.5;color:var(--n-500)}
+.vg-painel .bloco-split__rotulo{display:flex;flex-direction:column;gap:var(--s1)}
 .vg-etapa1 .bloco-split:last-of-type{border-bottom:0}
 
 /* Datas: os dois rótulos da origem sobre os dois gatilhos do calendário. */
@@ -49,23 +49,23 @@
 /* Abas dos documentos no desenho do stepper: trilho cinza com as cinco
    abas em partes iguais, ícone e nome; a aberta ganha o realce grafite que
    desliza (`.vg-trilho`). O número de vinculados é um selo à direita. */
-.vg-docs__abas{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:0 0 12px;padding:4px;border-radius:12px;background:var(--n-100)}
+.vg-docs__abas{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--s1);margin:0 0 var(--s3);padding:var(--s1);border-radius:var(--raio-cartao);background:var(--n-100)}
 .vg-docs__abas label{position:relative;z-index:1;min-width:0;cursor:pointer}
 .vg-docs__abas input{position:absolute;opacity:0;pointer-events:none}
-.vg-docs__abas span{display:flex;align-items:center;justify-content:center;gap:8px;height:38px;padding:0 10px;border-radius:9px;color:var(--n-700);font-size:12.5px;font-weight:500;transition:background .18s ease,color .2s ease}
+.vg-docs__abas span{display:flex;align-items:center;justify-content:center;gap:var(--s2);height:38px;padding:0 var(--s2-5);border-radius:var(--raio-bloco);color:var(--n-700);font-size:var(--fs-meta);font-weight:500;transition:background .18s ease,color .2s ease}
 .vg-docs__abas span .ui-icon{width:15px;height:15px;flex:none;color:currentColor}
 .vg-docs__rotulo{min-width:0;font-weight:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vg-docs__abas label:hover span{background:var(--n-150);color:var(--n-900)}
 .vg-docs__abas input:checked+span,.vg-docs__abas label:hover input:checked+span{background:transparent;color:var(--branco)}
 .vg-docs__abas input:focus-visible+span{outline:2px solid var(--foco,var(--n-700));outline-offset:1px}
-.vg-docs__n{display:inline-grid;place-items:center;flex:none;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--n-250);color:var(--n-900);font-size:10.5px;font-style:normal;font-weight:700;transition:background .2s ease,color .2s ease}
+.vg-docs__n{display:inline-grid;place-items:center;flex:none;min-width:18px;height:18px;padding:0 var(--s1-5);border-radius:var(--raio-pilula);background:var(--n-250);color:var(--n-900);font-size:var(--fs-rotulo);font-style:normal;font-weight:700;transition:background .2s ease,color .2s ease}
 .vg-docs__abas input:checked+span .vg-docs__n{background:rgba(255,255,255,.22);color:var(--branco)}
 @container (max-width:760px){.vg-docs__abas{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .vg-docs__painel[hidden]{display:none}
-.vg-docs .multi-pick__escolhido small{display:block;font-size:11.5px;color:var(--n-500)}
+.vg-docs .multi-pick__escolhido small{display:block;font-size:var(--fs-apoio);color:var(--n-500)}
 
 /* Rodapé da etapa 1. */
-.vg-acoes-fim .btn-primaria{display:inline-flex;align-items:center;gap:6px}
+.vg-acoes-fim .btn-primaria{display:inline-flex;align-items:center;gap:var(--s1-5)}
 
 /* ---------- Etapa 4: arquivos, PT/OS e o "Novo" com menu -------------- */
 /* O "Novo" flutuante abre o menu para cima, colado ao botão. */

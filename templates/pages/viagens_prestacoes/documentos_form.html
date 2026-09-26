@@ -46,7 +46,7 @@
         {% csrf_token %}<input type="hidden" name="action" value="save_solicitacoes"><input type="hidden" name="next" value="{{ request.path }}">
         {% include "components/input.html" with name=numero_name label="Número da solicitação" valor=ps.numero_solicitacao placeholder="0000000" autocomplete="off" %}
         {% include "components/date_range.html" with name="saque_documentos" start_name=liberacao_name end_name=prazo_name label="Prazo de saque (liberação → prazo limite)" valor_inicio=liberacao_iso valor_fim=prazo_iso erros=None %}
-        <noscript><button type="submit" class="btn--secundaria btn--compacto">Salvar</button></noscript>
+        <noscript><button type="submit" class="btn--secundaria">Salvar</button></noscript>
       </form>
 
       {# Os documentos assinados: um por linha, com o que já foi anexado e o botão de anexar. #}
@@ -70,7 +70,7 @@
             </div>
             <form method="post" enctype="multipart/form-data" action="{{ item.url }}" class="prestacao-upload" data-anexar-cartao>
               {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
-              <label class="btn--secundaria btn--compacto btn--com-icone">
+              <label class="btn--secundaria">
                 {% include "components/icon.html" with nome="upload" %}{% if item.anexos %}{% if item.multiplo %}Anexar mais{% else %}Substituir{% endif %}{% else %}Anexar{% endif %}
                 <input type="file" name="{{ item.campo }}" {% if item.multiplo %}multiple{% endif %} accept=".pdf,.png,.jpg,.jpeg" class="sr-only" aria-label="{{ item.titulo }}: escolher arquivo">
               </label>

@@ -21,7 +21,7 @@
         {% if not somente_leitura %}
           {# Pagamento conjunto: outra OS do mesmo lote no mesmo ofício e protocolo. #}
           <div class="section-card__acao">
-            <button type="button" class="btn--secundaria btn--compacto" data-cb-vincular-abrir aria-expanded="false" aria-controls="cb-vincular">{% include "components/icon.html" with nome="link" %}Vincular outra OS</button>
+            <button type="button" class="btn--secundaria" data-cb-vincular-abrir aria-expanded="false" aria-controls="cb-vincular">{% include "components/icon.html" with nome="link" %}Vincular outra OS</button>
           </div>
         {% endif %}
       </header>
@@ -49,7 +49,7 @@
             <div class="cb-anexo{% if solicitacao.arquivo_nota_fiscal %} cb-anexo--ok{% endif %}">
               {% if solicitacao.arquivo_nota_fiscal %}
                 <a class="cb-anexo__arquivo" href="{% url 'coffee_break:nota_fiscal' solicitacao.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="document" %}<span>Nota fiscal{% if solicitacao.numero_nota_fiscal %} {{ solicitacao.numero_nota_fiscal }}{% endif %}</span></a>
-                {% if not somente_leitura %}<a class="btn--secundaria btn--compacto" href="{{ url_anexar_nota }}" data-anexar-assinado data-anexar-atual="1" data-anexar-titulo="Trocar a nota fiscal" data-anexar-texto="Envie o PDF da nota fiscal do fornecedor. Ele substitui o que está anexado, e o número é lido de novo." data-anexar-acao="Anexar PDF" data-anexar-remover-rotulo="Remover nota fiscal">{% include "components/icon.html" with nome="upload" %}Trocar</a>{% endif %}
+                {% if not somente_leitura %}<a class="btn--secundaria" href="{{ url_anexar_nota }}" data-anexar-assinado data-anexar-atual="1" data-anexar-titulo="Trocar a nota fiscal" data-anexar-texto="Envie o PDF da nota fiscal do fornecedor. Ele substitui o que está anexado, e o número é lido de novo." data-anexar-acao="Anexar PDF" data-anexar-remover-rotulo="Remover nota fiscal">{% include "components/icon.html" with nome="upload" %}Trocar</a>{% endif %}
               {% elif not somente_leitura %}
                 <a class="btn-primaria cb-anexo__anexar" href="{{ url_anexar_nota }}" data-anexar-assinado data-anexar-titulo="Anexar nota fiscal" data-anexar-texto="Envie o PDF da nota fiscal do fornecedor. O número da nota é lido do próprio PDF; ela vai no anexo do protocolo logo depois do ofício." data-anexar-acao="Anexar PDF">{% include "components/icon.html" with nome="upload" %}Anexar nota fiscal</a>
               {% else %}
@@ -90,9 +90,9 @@
                 <span class="cb-anexo">
                   {% if o.s.arquivo_nota_fiscal %}
                     <a class="cb-anexo__arquivo" href="{% url 'coffee_break:nota_fiscal' o.s.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="document" %}<span>Nota fiscal{% if o.s.numero_nota_fiscal %} {{ o.s.numero_nota_fiscal }}{% else %} (número não lido — informe na OS {{ o.s.numero }}){% endif %}</span></a>
-                    <a class="btn--secundaria btn--compacto" href="{{ o.url_anexar }}" data-anexar-assinado data-anexar-atual="1" data-anexar-titulo="Trocar a nota fiscal da OS {{ o.s.numero }}" data-anexar-texto="Envie o PDF da nota fiscal da OS {{ o.s.numero }}. Ele substitui o que está anexado, e o número é lido de novo." data-anexar-acao="Anexar PDF" data-anexar-remover-rotulo="Remover nota fiscal">{% include "components/icon.html" with nome="upload" %}Trocar</a>
+                    <a class="btn--secundaria" href="{{ o.url_anexar }}" data-anexar-assinado data-anexar-atual="1" data-anexar-titulo="Trocar a nota fiscal da OS {{ o.s.numero }}" data-anexar-texto="Envie o PDF da nota fiscal da OS {{ o.s.numero }}. Ele substitui o que está anexado, e o número é lido de novo." data-anexar-acao="Anexar PDF" data-anexar-remover-rotulo="Remover nota fiscal">{% include "components/icon.html" with nome="upload" %}Trocar</a>
                   {% else %}
-                    <a class="btn-primaria btn--compacto" href="{{ o.url_anexar }}" data-anexar-os="{{ o.s.pk }}" data-anexar-assinado data-anexar-titulo="Anexar nota fiscal da OS {{ o.s.numero }}" data-anexar-texto="Envie o PDF da nota fiscal da OS {{ o.s.numero }}. O número é lido do próprio PDF." data-anexar-acao="Anexar PDF">{% include "components/icon.html" with nome="upload" %}Anexar nota fiscal</a>
+                    <a class="btn-primaria" href="{{ o.url_anexar }}" data-anexar-os="{{ o.s.pk }}" data-anexar-assinado data-anexar-titulo="Anexar nota fiscal da OS {{ o.s.numero }}" data-anexar-texto="Envie o PDF da nota fiscal da OS {{ o.s.numero }}. O número é lido do próprio PDF." data-anexar-acao="Anexar PDF">{% include "components/icon.html" with nome="upload" %}Anexar nota fiscal</a>
                   {% endif %}
                 </span>
               </li>

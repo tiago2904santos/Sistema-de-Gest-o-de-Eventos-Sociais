@@ -12,7 +12,7 @@
 .os-oficio-link:hover{text-decoration:underline}
 
 /* ---- formulário -------------------------------------------------------- */
-.os-descricao{margin:0 0 12px;font-size:12.5px;color:var(--n-500)}
+.os-descricao{margin:0 0 var(--s3);font-size:var(--fs-meta);color:var(--n-500)}
 .os-form .multi-pick .form-campo{margin:0}
 
 /* Os cartões de necessidade são os cartões de escolha do sistema
@@ -22,7 +22,7 @@
    ajuda e erro embaixo, na largura inteira (inclusive sob o "+"). O campo
    some da caixa (`display:contents`) para os filhos entrarem na grade; o
    rótulo sobre a borda passa a se ancorar na própria grade. */
-.os-equipe{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;column-gap:8px;position:relative;margin-top:6px}
+.os-equipe{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;column-gap:var(--s2);position:relative;margin-top:var(--s1-5)}
 .os-equipe>.multi-pick{display:contents}
 .os-equipe>.multi-pick>.form-controle-wrapper{grid-column:1;grid-row:1}
 .os-equipe>.os-equipe__novo{grid-column:2;grid-row:1;margin:0}
@@ -32,22 +32,22 @@
    com as iniciais e, quando o tipo pede, o seletor da função na própria
    linha — escolhida em grafite, repouso em cinza. Uma coluna quando há
    função, para o seletor caber ao lado do nome. */
-.os-equipe .multi-pick__escolhido{height:auto;min-height:56px;padding:8px 10px 8px 8px;border:0;border-radius:10px;background:var(--n-50);gap:12px;justify-content:flex-start;transition:background .18s ease}
+.os-equipe .multi-pick__escolhido{height:auto;min-height:56px;padding:var(--s2) var(--s2-5) var(--s2) var(--s2);border:0;border-radius:var(--raio-bloco);background:var(--n-50);gap:var(--s3);justify-content:flex-start;transition:background .18s ease}
 .os-equipe .multi-pick__escolhido:hover{background:var(--n-100)}
 .os-equipe .multi-pick__escolhido>span:not(.of-av){flex:1 1 auto;font-weight:500;color:var(--n-800)}
 /* Crachá no desenho dos ícones dos cartões de necessidade: quadrado arredondado; escolhido = grafite. */
-.os-equipe .multi-pick__escolhido .of-av{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:10px;background:var(--grafite);color:var(--branco);font-size:11.5px;font-weight:600;letter-spacing:.02em;box-shadow:none}
+.os-equipe .multi-pick__escolhido .of-av{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:var(--raio-bloco);background:var(--grafite);color:var(--branco);font-size:var(--fs-apoio);font-weight:600;letter-spacing:.02em;box-shadow:none}
 .os-equipe .multi-pick__remover{background:transparent}
 .os-equipe .multi-pick__remover:hover{background:var(--dg-b)}
 .os-equipe .lista-vazia{border-color:var(--n-200)}
 .os-equipe--funcoes .multi-pick__escolhidos{grid-template-columns:1fr}
 /* O realce grafite é um só e desliza até a função escolhida (posição e
    largura em --x/--w, postas pelo script); sem escolha, ele some. */
-.os-func-seg{position:relative;display:inline-flex;flex:none;gap:2px;padding:3px;border-radius:9px;background:var(--branco);box-shadow:inset 0 0 0 1px var(--n-150)}
-.os-func-seg::before{content:"";position:absolute;top:3px;bottom:3px;left:0;width:var(--w,0);border-radius:7px;background:var(--grafite);opacity:0;transform:translateX(var(--x,0)) scale(.92);transition:transform .28s cubic-bezier(.3,.8,.25,1),width .28s cubic-bezier(.3,.8,.25,1),opacity .18s ease}
+.os-func-seg{position:relative;display:inline-flex;flex:none;gap:var(--s0);padding:var(--s1);border-radius:var(--raio-bloco);background:var(--branco);box-shadow:inset 0 0 0 1px var(--n-150)}
+.os-func-seg::before{content:"";position:absolute;top:3px;bottom:3px;left:0;width:var(--w,0);border-radius:var(--raio-controle);background:var(--grafite);opacity:0;transform:translateX(var(--x,0)) scale(.92);transition:transform .28s cubic-bezier(.3,.8,.25,1),width .28s cubic-bezier(.3,.8,.25,1),opacity .18s ease}
 .os-func-seg.tem-escolha::before{opacity:1;transform:translateX(var(--x,0))}
 .os-func-seg.sem-anim::before{transition:none}
-.os-func-seg button{position:relative;z-index:1;height:28px;padding:0 12px;border:0;border-radius:7px;background:transparent;color:var(--n-500);font:inherit;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .15s ease,color .2s ease}
+.os-func-seg button{position:relative;z-index:1;height:28px;padding:0 var(--s3);border:0;border-radius:var(--raio-controle);background:transparent;color:var(--n-500);font:inherit;font-size:var(--fs-meta);font-weight:500;cursor:pointer;transition:background .15s ease,color .2s ease}
 .os-func-seg button:hover{background:var(--n-100);color:var(--n-800)}
 .os-func-seg button[aria-pressed="true"],.os-func-seg button[aria-pressed="true"]:hover{background:transparent;color:var(--branco)}
 .os-func-seg button:focus-visible{outline:2px solid var(--foco,var(--n-700));outline-offset:1px}

@@ -23,7 +23,7 @@
             </div>
           {% endfor %}
         </div>
-        <div class="cad-frm__acoes"><a class=" btn-primaria" href="{{ url_voltar }}">Voltar para a lista</a></div>
+        <div class="cad-frm__acoes"><a class="btn-primaria" href="{{ url_voltar }}">Voltar para a lista</a></div>
       {% else %}
         <span class="viagens-eyebrow">Ação permanente</span>
         <h2 id="exclusao-titulo">Excluir “{{ objeto }}”?</h2>
@@ -34,8 +34,8 @@
         </div>
         <form method="post" class="cad-frm__acoes">
           {% csrf_token %}
-          <a class=" btn--secundaria" href="{{ url_voltar }}">Cancelar</a>
-          <button class=" btn--secundaria btn--destrutiva " type="submit">{% include "components/icon.html" with nome="trash" %}Excluir definitivamente</button>
+          <a class="btn--secundaria" href="{{ url_voltar }}">Cancelar</a>
+          <button class="btn--secundaria btn--destrutiva" type="submit">{% include "components/icon.html" with nome="trash" %}Excluir definitivamente</button>
         </form>
       {% endif %}
     </div>

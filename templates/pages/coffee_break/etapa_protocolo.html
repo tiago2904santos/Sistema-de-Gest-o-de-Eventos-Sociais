@@ -44,7 +44,7 @@
           <div class="cb-caixa-copiar__topo">
             <label class="form-label" for="texto-detalhamento">Detalhamento</label>
             {% if not lote.contrato.fornecedor.nome_curto %}<a class="cb-dica" href="{% url 'coffee_break:cadastro_lista' 'fornecedores' %}?editar={{ lote.contrato.fornecedor.pk }}">Defina o nome curto do fornecedor (ex.: FAVO E MEL)</a>{% endif %}
-            <button type="button" class="btn-primaria btn--compacto" data-copiar-de="texto-detalhamento">{% include "components/icon.html" with nome="copy" %}<span data-copiar-rotulo>Copiar</span></button>
+            <button type="button" class="btn-primaria" data-copiar-de="texto-detalhamento">{% include "components/icon.html" with nome="copy" %}<span data-copiar-rotulo>Copiar</span></button>
           </div>
           <textarea class="form-controle cb-caixa-copiar__texto" id="texto-detalhamento" rows="1" readonly>{{ eprotocolo.detalhamento }}</textarea>
         </div>
@@ -64,7 +64,7 @@
         <div class="cb-caixa-copiar">
           <div class="cb-caixa-copiar__topo">
             <label class="form-label" for="texto-despacho">Texto do despacho</label>
-            <button type="button" class="btn--secundaria btn--compacto" data-copiar-de="texto-despacho">{% include "components/icon.html" with nome="copy" %}<span data-copiar-rotulo>Copiar</span></button>
+            <button type="button" class="btn--secundaria" data-copiar-de="texto-despacho">{% include "components/icon.html" with nome="copy" %}<span data-copiar-rotulo>Copiar</span></button>
           </div>
           <textarea class="form-controle cb-caixa-copiar__texto" id="texto-despacho" rows="3" readonly>{{ eprotocolo.despacho }}</textarea>
         </div>
@@ -130,7 +130,7 @@
           <div class="cbi-etapa" data-cb-importar-soltar data-solicitacao="{{ solicitacao.pk }}" data-titulo="{{ titulo_solicitacao }}">
             <span class="cbi-etapa__icone" aria-hidden="true">{% include "components/icon.html" with nome="upload" %}</span>
             <span class="cbi-etapa__texto"><b>Já protocolou? Importe o processo de pagamento</b><small>Solte aqui o PDF do processo baixado do eProtocolo: o protocolo de pagamento, o atesto (a data do despacho ao GAF) e a nota fiscal que faltar entram sozinhos{% if solicitacao.em_pagamento_conjunto %}, em todas as OS deste pagamento{% endif %}.</small></span>
-            <button type="button" class="btn--secundaria btn--compacto" data-cb-importar data-solicitacao="{{ solicitacao.pk }}" data-titulo="{{ titulo_solicitacao }}">{% include "components/icon.html" with nome="upload" %}Importar processo</button>
+            <button type="button" class="btn--secundaria" data-cb-importar data-solicitacao="{{ solicitacao.pk }}" data-titulo="{{ titulo_solicitacao }}">{% include "components/icon.html" with nome="upload" %}Importar processo</button>
           </div>
           {% endwith %}
         {% endif %}

@@ -138,7 +138,7 @@
         <div class="section-card__corpo">
           <form method="post" action="{% url 'coffee_break:cancelar' solicitacao.pk %}" class="sol-cancelar" data-confirmar-exclusao>{% csrf_token %}
             {% include "components/input.html" with name="motivo" label="Motivo do cancelamento" obrigatorio=True maxlength="255" placeholder="Explique por que o pedido foi cancelado" ajuda="O cancelamento devolve a quantidade ao saldo do lote." erros=None valor="" %}
-            <button type="submit" class="btn--secundaria btn--destrutiva btn--compacto">{% include "components/icon.html" with nome="ban" %}Cancelar solicitação</button>
+            <button type="submit" class="btn--secundaria btn--destrutiva">{% include "components/icon.html" with nome="ban" %}Cancelar solicitação</button>
           </form>
         </div>
       </section>

@@ -43,11 +43,11 @@
               </div>
               <div class="cb-certidao__acoes">
                 {# Só os dois botões: anexar (o modal de anexo de documentos) e emitir (o portal, com o CNPJ copiado). #}
-                <a class="btn-primaria btn--compacto" href="{% url 'coffee_break:anexar_certidao' f.pk linha.tipo %}" data-anexar-assinado data-anexar-validade data-anexar-titulo="Anexar certidão {{ linha.rotulo }}" data-anexar-texto="Envie o PDF da certidão {{ linha.rotulo }} de {{ f.razao_social }}. O sistema confere se é a certidão certa, do CNPJ {{ f.cnpj_formatado }}, e lê até quando ela vale." data-anexar-acao="Anexar certidão">{% include "components/icon.html" with nome="upload" %}Anexar</a>
+                <a class="btn-primaria" href="{% url 'coffee_break:anexar_certidao' f.pk linha.tipo %}" data-anexar-assinado data-anexar-validade data-anexar-titulo="Anexar certidão {{ linha.rotulo }}" data-anexar-texto="Envie o PDF da certidão {{ linha.rotulo }} de {{ f.razao_social }}. O sistema confere se é a certidão certa, do CNPJ {{ f.cnpj_formatado }}, e lê até quando ela vale." data-anexar-acao="Anexar certidão">{% include "components/icon.html" with nome="upload" %}Anexar</a>
                 {% if linha.portal %}
-                  <a class="btn--secundaria btn--compacto" href="{{ linha.portal }}" target="_blank" rel="noopener" data-copiar-cnpj="{{ f.cnpj }}" data-cnpj-formatado="{{ f.cnpj_formatado }}">{% include "components/icon.html" with nome="arrow-right" %}Emitir</a>
+                  <a class="btn--secundaria" href="{{ linha.portal }}" target="_blank" rel="noopener" data-copiar-cnpj="{{ f.cnpj }}" data-cnpj-formatado="{{ f.cnpj_formatado }}">{% include "components/icon.html" with nome="arrow-right" %}Emitir</a>
                 {% else %}
-                  <a class="btn--secundaria btn--compacto" href="{% url 'coffee_break:cadastro_lista' 'fornecedores' %}?editar={{ f.pk }}" title="Cadastre o endereço do portal municipal no fornecedor">{% include "components/icon.html" with nome="arrow-right" %}Emitir</a>
+                  <a class="btn--secundaria" href="{% url 'coffee_break:cadastro_lista' 'fornecedores' %}?editar={{ f.pk }}" title="Cadastre o endereço do portal municipal no fornecedor">{% include "components/icon.html" with nome="arrow-right" %}Emitir</a>
                 {% endif %}
               </div>
             </li>

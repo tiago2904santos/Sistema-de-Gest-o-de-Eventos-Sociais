@@ -188,7 +188,7 @@
           <h2 class="section-card__titulo">Anexos</h2>
           {% if solicitacao and pode_gerenciar_anexos %}
             <div class="section-card__acao">
-              <a class="btn--secundaria btn--compacto" href="{% url 'solicitacoes:anexo_adicionar' solicitacao.pk %}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}Anexar arquivo</a>
+              <a class="btn--secundaria" href="{% url 'solicitacoes:anexo_adicionar' solicitacao.pk %}" data-cadastro-modal>{% include "components/icon.html" with nome="plus" %}Anexar arquivo</a>
             </div>
           {% endif %}
         </header>
@@ -298,7 +298,7 @@
                 <summary>O evento foi cancelado?</summary>
               <form method="post" action="{% url 'solicitacoes:cancelar_evento' solicitacao.pk %}" class="sol-cancelar" data-confirmar-exclusao>{% csrf_token %}
                 {% include "components/textarea.html" with name="motivo_cancelamento" label="Motivo do cancelamento" rotulo_oculto=True linhas="2" obrigatorio=True placeholder="Por que o evento não vai mais acontecer? (obrigatório)" ajuda="Use quando o evento em si foi desmarcado pelo organizador." erros=None valor="" %}
-                <button type="submit" class="btn--secundaria btn--destrutiva btn--compacto">{% include "components/icon.html" with nome="ban" %}Registrar cancelamento do evento</button>
+                <button type="submit" class="btn--secundaria btn--destrutiva">{% include "components/icon.html" with nome="ban" %}Registrar cancelamento do evento</button>
               </form>
               </details>
             {% endif %}

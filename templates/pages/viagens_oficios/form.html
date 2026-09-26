@@ -51,7 +51,7 @@
         </div>
       </div>
       <div class="frm-topo__acoes">
-        <button type="submit" form="form-oficio" name="acao" value="rascunho" class="btn btn--dourado btn-primaria">Salvar ofício</button>
+        <button type="submit" form="form-oficio" name="acao" value="rascunho" class="btn-primaria">Salvar ofício</button>
       </div>
     </div>
 
@@ -266,7 +266,7 @@
             <div class="ofc-doc__corpo">
               {% if c.termos and c.completo and c.termos|length > 1 %}
                 <div class="ofc-doc__lote">
-                  <button type="submit" class="btn--secundaria btn--compacto" formaction="{{ c.url_termos_pdf }}" formtarget="_blank" formnovalidate>{% include "components/icon.html" with nome="download" %}Baixar PDFs</button>
+                  <button type="submit" class="btn--secundaria" formaction="{{ c.url_termos_pdf }}" formtarget="_blank" formnovalidate>{% include "components/icon.html" with nome="download" %}Baixar PDFs</button>
                 </div>
               {% endif %}
               {% for t in c.termos %}
@@ -282,9 +282,9 @@
           <div class="frm-acoes-fim">
             <a class="btn--secundaria" href="{{ url_voltar }}">Voltar</a>
             {% if c.pendencias %}
-              <button type="submit" class="btn btn--dourado btn-primaria" name="acao" value="rascunho">Salvar rascunho</button>
+              <button type="submit" class="btn-primaria" name="acao" value="rascunho">Salvar rascunho</button>
             {% else %}
-              <button type="submit" class="btn btn--dourado btn-primaria" name="acao" value="finalizar">Finalizar Ofício</button>
+              <button type="submit" class="btn-primaria" name="acao" value="finalizar">Finalizar Ofício</button>
             {% endif %}
           </div>
         </div>

@@ -22,7 +22,7 @@
   <section class="section-card reg">
     <header class="section-card__cabecalho reg__t">
       <h2 class="section-card__titulo">Próximos eventos</h2>
-      <div class="section-card__acao"><a class="btn--secundaria btn--compacto" href="{% url 'demandas_eventos:lista' %}">Ver todas</a></div>
+      <div class="section-card__acao"><a class="btn--secundaria" href="{% url 'demandas_eventos:lista' %}">Ver todas</a></div>
     </header>
     <div class="section-card__corpo">
       {% include "components/v32/lista_embutida.html" with linhas=linhas_proximas icone="document" rotulo="Palestra" rotulo_plural="palestras" conteudo_linha="pages/demandas_eventos/_conteudo_linha.html" acoes_linha="pages/demandas_eventos/_acoes_linha.html" vazio="Nenhum evento futuro agendado." %}

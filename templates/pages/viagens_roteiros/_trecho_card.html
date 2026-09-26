@@ -22,7 +22,7 @@
     <span class="trecho-card__numero" data-trecho-numero>Trecho</span>
     <span class="trecho-card__rota" data-trecho-rota></span>
     <span class="trecho-card__km" data-trecho-km-chip hidden></span>
-    <button type="button" class="btn btn--secundario btn--compacto btn--com-icone" data-trecho-remover>
+    <button type="button" class="" data-trecho-remover>
       {% include "components/icon.html" with nome="trash" %}Remover
     </button>
   </header>
@@ -69,10 +69,10 @@
       <div class="form-campo">
         <label class="form-label">Tempo adicional</label>
         <div class="tempo-stepper">
-          <button type="button" class="btn btn--secundario btn--compacto" data-tempo-menos aria-label="Reduzir 15 minutos">−</button>
+          <button type="button" class="" data-tempo-menos aria-label="Reduzir 15 minutos">−</button>
           <input class="form-controle" type="text" value="00:00" readonly tabindex="-1"
                  aria-readonly="true" data-trecho-tempo-adicional>
-          <button type="button" class="btn btn--secundario btn--compacto" data-tempo-mais aria-label="Acrescentar 15 minutos">+</button>
+          <button type="button" class="" data-tempo-mais aria-label="Acrescentar 15 minutos">+</button>
         </div>
       </div>
       <div class="form-campo">
@@ -85,6 +85,6 @@
 
   <div class="trecho-card__removido" data-trecho-removido hidden>
     <span>Trecho marcado para remoção — será excluído ao salvar.</span>
-    <button type="button" class="btn btn--secundario btn--compacto" data-trecho-desfazer>Desfazer</button>
+    <button type="button" class="" data-trecho-desfazer>Desfazer</button>
   </div>
 </section>

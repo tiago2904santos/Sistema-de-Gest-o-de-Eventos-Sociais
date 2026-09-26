@@ -36,7 +36,7 @@
       </div>
       {% if pode_editar %}
         <div class="frm-topo__acoes">
-          <button type="submit" form="form-plano" name="acao" value="salvar" class="btn btn--dourado btn-primaria">Salvar plano</button>
+          <button type="submit" form="form-plano" name="acao" value="salvar" class="btn-primaria">Salvar plano</button>
         </div>
       {% endif %}
     </div>
@@ -144,7 +144,7 @@
                 {% include "pages/viagens_termos/_destino_linha.html" with nome_estado="extra_estado___n__" nome_cidade="extra_cidade___n__" id_estado="id_extra_estado___n__" rotulo_estado="Estado adicional" rotulo_cidade="Cidade adicional" estado="" cidade="" erros_estado=None erros_cidade=None estados=estados municipios=municipios %}
               </template>
               <noscript>
-                <button class="btn--secundaria btn--compacto btn--quadrado" type="submit" name="acao" value="adicionar_destino" formnovalidate aria-label="Adicionar destino" title="Adicionar destino">{% include "components/icon.html" with nome="plus" %}</button>
+                <button class="btn--secundaria btn--quadrado" type="submit" name="acao" value="adicionar_destino" formnovalidate aria-label="Adicionar destino" title="Adicionar destino">{% include "components/icon.html" with nome="plus" %}</button>
               </noscript>
             </div>
           </div>
@@ -241,7 +241,7 @@
                 {# `erros=None` de propósito: sem isso o include herda o dicionário de erros do contexto e imprime as chaves dele. #}
                 {% include "components/select.html" with name="pt_atividade_preset" label="Preset" opcoes=presets placeholder="Aplicar preset…" permitir_vazio=True selecionado=preset_padrao_id erros=None %}
               </div>
-              <button type="button" class="btn--secundaria btn--compacto pt-atividades__limpar" data-pt-atividade-limpar{% if not atividades_selecionadas_total %} disabled{% endif %}>{% include "components/icon.html" with nome="x" %}Limpar seleção</button>
+              <button type="button" class="btn--secundaria pt-atividades__limpar" data-pt-atividade-limpar{% if not atividades_selecionadas_total %} disabled{% endif %}>{% include "components/icon.html" with nome="x" %}Limpar seleção</button>
             </div>
             <div class="pt-atividades__grade" role="group" aria-label="Atividades disponíveis">
               {% for a in atividades_catalogo %}
@@ -279,7 +279,7 @@
           <span class="section-card__numero reg-numero" aria-hidden="true">4</span>
           <h2 class="section-card__titulo">Resumo e documentos</h2>
           {% if pode_editar and not plano.cancelado %}
-            <div class="section-card__acao"><button type="submit" class="btn--secundaria btn--compacto" formaction="{{ url_evento_adicionar }}" formnovalidate>{% include "components/icon.html" with nome="plus" %}Adicionar evento ao plano</button></div>
+            <div class="section-card__acao"><button type="submit" class="btn--secundaria" formaction="{{ url_evento_adicionar }}" formnovalidate>{% include "components/icon.html" with nome="plus" %}Adicionar evento ao plano</button></div>
           {% endif %}
         </header>
         <div class="section-card__corpo">

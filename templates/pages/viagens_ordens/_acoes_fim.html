@@ -5,5 +5,5 @@
 {% endcomment %}
 <div class="frm-acoes-fim os-acoes-fim">
   {% include "components/v32/button.html" with label="Voltar" variante="secundario" href=url_voltar %}
-  {% if pode_editar %}<button type="submit" class="btn btn--dourado btn-primaria" data-os-enviar>{% if os_completa %}Finalizar Ordem de Serviço{% else %}Salvar como rascunho{% endif %}</button>{% endif %}
+  {% if pode_editar %}<button type="submit" class="btn-primaria" data-os-enviar>{% if os_completa %}Finalizar Ordem de Serviço{% else %}Salvar como rascunho{% endif %}</button>{% endif %}
 </div>

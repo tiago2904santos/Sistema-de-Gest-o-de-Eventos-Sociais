@@ -108,7 +108,7 @@
                 <label class="form-label sr-only" for="id_pal_tema_busca">Filtrar temas</label>
                 <div class="busca"><span class="busca-icone" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span><input class="form-controle" type="search" id="id_pal_tema_busca" placeholder="Filtrar temas por nome" autocomplete="off" data-pal-tema-busca></div>
               </div>
-              <button type="button" class="btn--secundaria btn--compacto pt-atividades__limpar" data-pal-tema-limpar{% if not temas_marcados_total %} disabled{% endif %}>{% include "components/icon.html" with nome="x" %}Limpar seleção</button>
+              <button type="button" class="btn--secundaria pt-atividades__limpar" data-pal-tema-limpar{% if not temas_marcados_total %} disabled{% endif %}>{% include "components/icon.html" with nome="x" %}Limpar seleção</button>
             </div>
             <div class="pt-atividades__grade" role="group" aria-label="Temas" id="id_temas">
               {% for t in opcoes_temas %}

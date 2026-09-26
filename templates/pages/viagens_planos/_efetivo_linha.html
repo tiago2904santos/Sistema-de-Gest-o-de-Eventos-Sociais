@@ -22,6 +22,6 @@
   <div class="pt-efetivo-linha__quantidade">
     {% include "components/input.html" with name=l.prefixo|add:"-quantidade" label="Quantidade" rotulo_oculto=primeira|yesno:",1" tipo="number" minimo=1 passo=1 inputmode="numeric" valor=l.quantidade erros=l.erros_quantidade %}
   </div>
-  <button type="button" class="btn btn--dourado btn-primaria btn--compacto pt-efetivo-linha__adicionar" data-pt-efetivo-adicionar aria-label="Adicionar linha de efetivo abaixo" title="Adicionar linha abaixo">{% include "components/icon.html" with nome="plus" %}</button>
-  <button type="button" class="btn btn--perigo btn--secundaria btn--destrutiva btn--compacto pt-efetivo-linha__remover" data-pt-efetivo-remover aria-label="Remover linha de efetivo" title="Remover linha">{% include "components/icon.html" with nome="trash" %}</button>
+  <button type="button" class="btn-primaria pt-efetivo-linha__adicionar" data-pt-efetivo-adicionar aria-label="Adicionar linha de efetivo abaixo" title="Adicionar linha abaixo">{% include "components/icon.html" with nome="plus" %}</button>
+  <button type="button" class="btn--secundaria btn--destrutiva pt-efetivo-linha__remover" data-pt-efetivo-remover aria-label="Remover linha de efetivo" title="Remover linha">{% include "components/icon.html" with nome="trash" %}</button>
 </div>

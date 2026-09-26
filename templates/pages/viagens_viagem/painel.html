@@ -36,7 +36,7 @@
       <div class="frm-topo__acoes">
         {% if url_baixar %}
           {# O modal "Baixar documentos" das listas, com tudo o que a viagem reúne. #}
-          <button type="button" class="btn--secundaria btn--com-icone" data-baixar-documentos data-url="{{ url_baixar }}" data-titulo="{{ titulo }}" data-itens="{{ itens_baixar }}"{% if itens_baixar == "[]" %} disabled title="Nenhum documento para baixar ainda"{% endif %}>{% include "components/icon.html" with nome="download" %}Baixar documentos</button>
+          <button type="button" class="btn--secundaria" data-baixar-documentos data-url="{{ url_baixar }}" data-titulo="{{ titulo }}" data-itens="{{ itens_baixar }}"{% if itens_baixar == "[]" %} disabled title="Nenhum documento para baixar ainda"{% endif %}>{% include "components/icon.html" with nome="download" %}Baixar documentos</button>
         {% endif %}
         {% include "components/v32/button.html" with label="Voltar para lista" variante="secundario" href=url_lista %}
       </div>

@@ -101,7 +101,7 @@
             {% if numero == elipse %}
               <span class="pag__el" aria-hidden="true">…</span>
             {% elif numero == pagina.number %}
-              <span class="pag__n " aria-current="page">{{ numero }}</span>
+              <span class="pag__n" aria-current="page">{{ numero }}</span>
             {% else %}
               <a class="pag__n" href="?{% if querystring %}{{ querystring }}&{% endif %}pagina={{ numero }}">{{ numero }}</a>
             {% endif %}
