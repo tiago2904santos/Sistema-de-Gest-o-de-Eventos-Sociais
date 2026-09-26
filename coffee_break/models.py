@@ -639,7 +639,8 @@ class SolicitacaoCoffeeBreak(models.Model):
         principal = self.principal_do_pagamento
         if not principal.pk:
             return [self]
-        membros = [principal, *principal.pagamento_junto.select_related("lote__contrato__fornecedor")]
+        # OS cancelada não vai no ofício nem no anexo do pagamento.
+        membros = [principal, *principal.pagamento_junto.filter(cancelada=False).select_related("lote__contrato__fornecedor")]
         return sorted(membros, key=lambda s: (s.numero or "", s.pk))
 
     @property

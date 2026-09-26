@@ -119,26 +119,62 @@ def cancelar(solicitacao, usuario, motivo=""):
     motivo = (motivo or "").strip()
     if not motivo:
         raise ValidationError("Informe o motivo do cancelamento.")
-    solicitacao.cancelada = True
-    solicitacao.cancelada_em = timezone.now()
-    solicitacao.cancelada_por = usuario
-    solicitacao.motivo_cancelamento = motivo[:255]
-    solicitacao.save(
-        update_fields=[
-            "cancelada",
-            "cancelada_em",
-            "cancelada_por",
-            "motivo_cancelamento",
-            "atualizado_em",
-        ]
-    )
-    registrar_historico(
-        solicitacao,
-        usuario,
-        AcaoHistoricoCoffeeBreak.CANCELAMENTO,
-        motivo,
-    )
+    with transaction.atomic():
+        # Evento cancelado não vai no ofício nem no anexo de um pagamento conjunto.
+        sair_do_pagamento_conjunto(
+            solicitacao, usuario,
+            f"A OS {solicitacao.numero or '#' + str(solicitacao.pk)} foi cancelada e saiu do pagamento conjunto.",
+        )
+        solicitacao.cancelada = True
+        solicitacao.cancelada_em = timezone.now()
+        solicitacao.cancelada_por = usuario
+        solicitacao.motivo_cancelamento = motivo[:255]
+        solicitacao.save(
+            update_fields=[
+                "cancelada",
+                "cancelada_em",
+                "cancelada_por",
+                "motivo_cancelamento",
+                "atualizado_em",
+            ]
+        )
+        registrar_historico(
+            solicitacao,
+            usuario,
+            AcaoHistoricoCoffeeBreak.CANCELAMENTO,
+            motivo,
+        )
     return solicitacao
+
+
+def sair_do_pagamento_conjunto(solicitacao, usuario=None, aviso=""):
+    """Tira a OS do pagamento conjunto em que estiver.
+
+    Se ela era a principal, a próxima do grupo assume (as demais passam a
+    apontar para a nova principal). Com ``aviso``, o histórico das que ficam
+    registra a saída. Devolve as OS que continuaram no pagamento.
+    """
+    from .models import SolicitacaoCoffeeBreak
+
+    if solicitacao.pagamento_com_id:
+        ficam = [m for m in solicitacao.grupo_pagamento() if m.pk != solicitacao.pk]
+        solicitacao.pagamento_com = None
+        solicitacao.save(update_fields=["pagamento_com", "atualizado_em"])
+    else:
+        ficam = list(
+            SolicitacaoCoffeeBreak.objects.filter(pagamento_com=solicitacao).order_by("numero", "pk")
+        )
+        if ficam:
+            nova, *demais = ficam
+            nova.pagamento_com = None
+            nova.save(update_fields=["pagamento_com", "atualizado_em"])
+            for outra in demais:
+                outra.pagamento_com = nova
+                outra.save(update_fields=["pagamento_com", "atualizado_em"])
+    if aviso:
+        for outra in ficam:
+            registrar_historico(outra, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO, aviso)
+    return ficam
 
 
 def reativar(solicitacao, usuario=None):

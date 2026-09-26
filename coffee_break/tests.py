@@ -2473,6 +2473,31 @@ class PagamentoConjuntoTests(EtapasBase):
         )
         self.assertTrue(any("numero_oficio" in r.alteracoes for r in trilha))
 
+    def test_os_cancelada_sai_do_oficio_e_do_anexo(self):
+        """m025: a OS cancelada deixa o pagamento conjunto; a principal cancelada passa a vez."""
+        c = self.criar_solicitacao(
+            numero="43/2026", descricao_evento="Palestra C", quantidade=10,
+            local_entrega="DP", responsavel_recebimento="Ana", numero_nota_fiscal="8960",
+        )
+        services.definir_pagamento_conjunto(self.a, [self.b.pk, c.pk])
+        self.b.refresh_from_db()
+        services.cancelar(self.b, self.ascom, "Evento desmarcado")
+        self.b.refresh_from_db()
+        self.assertIsNone(self.b.pagamento_com_id)
+        self.assertEqual([s.pk for s in self.a.grupo_pagamento()], [self.a.pk, c.pk])
+        self.assertEqual(documentos.juntar(documentos.notas_do_pagamento(self.a)), "8952 e 8960")
+        self.assertNotIn(f"nota-{self.b.pk}", [i["chave"] for i in documentos.itens_anexo(self.a)])
+        self.assertTrue(self.a.historico.filter(descricao__contains="42/2026 foi cancelada").exists())
+        # Cancelar a principal: a próxima assume o pagamento.
+        self.a.refresh_from_db()
+        services.cancelar(self.a, self.ascom, "Evento desmarcado")
+        c.refresh_from_db()
+        self.assertIsNone(c.pagamento_com_id)
+        self.assertEqual([s.pk for s in c.grupo_pagamento()], [c.pk])
+        # Mesmo que algum registro antigo ainda aponte para o grupo, cancelada não entra.
+        SolicitacaoCoffeeBreak.objects.filter(pk=self.b.pk).update(pagamento_com=c)
+        self.assertEqual([s.pk for s in c.grupo_pagamento()], [c.pk])
+
     def test_so_entra_os_do_mesmo_lote(self):
         from django.core.exceptions import ValidationError
 

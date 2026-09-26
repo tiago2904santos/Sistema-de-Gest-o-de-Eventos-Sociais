@@ -1193,11 +1193,9 @@ def excluir_solicitacao(request, pk):
     numero = solicitacao.numero or f"#{solicitacao.pk}"
     with transaction.atomic():
         # Se era a principal de um pagamento conjunto, a próxima assume.
-        junto = list(solicitacao.pagamento_junto.all())
-        if junto:
-            nova = junto[0]
-            SolicitacaoCoffeeBreak.objects.filter(pk=nova.pk).update(pagamento_com=None)
-            SolicitacaoCoffeeBreak.objects.filter(pk__in=[o.pk for o in junto[1:]]).update(pagamento_com=nova)
+        services.sair_do_pagamento_conjunto(
+            solicitacao, request.user, f"A OS {numero} foi excluída e saiu do pagamento conjunto."
+        )
         solicitacao.delete()
     messages.success(request, f"Solicitação {numero} excluída — a quantidade voltou ao saldo do lote.")
     return redirect("coffee_break:solicitacoes")
