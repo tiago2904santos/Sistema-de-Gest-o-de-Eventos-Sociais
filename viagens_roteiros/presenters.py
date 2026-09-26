@@ -148,4 +148,7 @@ def linha_da_lista(roteiro, *, editar_url, excluir_url):
         "icone": "document" if roteiro.solicitacao_id else "map-pin",
         "editar_url": editar_url,
         "excluir_url": excluir_url,
+        # Anotado em `abas.anotar_finalizacao`; sem a anotação, deixa o menu
+        # oferecer e a própria exclusão recusa.
+        "em_uso": bool(getattr(roteiro, "_em_uso", False)),
     }

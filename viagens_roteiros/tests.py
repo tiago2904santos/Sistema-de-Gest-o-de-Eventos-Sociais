@@ -781,6 +781,39 @@ class CicloDeVidaPelaTelaTests(BaseTelaRoteiroTestCase):
         self.assertFalse(Roteiro.objects.filter(pk=roteiro.pk).exists())
         self.assertEqual(RoteiroDiariaComponente.objects.count(), 0)
 
+    def test_excluir_recusa_roteiro_usado_por_oficio(self):
+        from viagens_oficios.models import Oficio
+
+        roteiro = self.roteiro_curitiba_sp_abatia()
+        oficio = Oficio.objects.create(ano=2026, numero=15, roteiro=roteiro)
+        resposta = self.client.post(
+            reverse("viagens_roteiros:excluir", args=[roteiro.pk]), follow=True
+        )
+        self.assertTrue(Roteiro.objects.filter(pk=roteiro.pk).exists())
+        self.assertContains(resposta, "não pode ser excluído")
+        self.assertContains(resposta, reverse("viagens_oficios:editar", args=[oficio.pk]))
+        self.assertContains(resposta, "Ofício 15/2026")
+
+    def test_excluir_recusa_roteiro_ajustado_de_prestacao(self):
+        from viagens_oficios.models import Oficio
+        from viagens_prestacoes.models import PrestacaoContas
+
+        roteiro = self.roteiro_curitiba_sp_abatia()
+        PrestacaoContas.objects.update_or_create(
+            oficio=Oficio.objects.create(), defaults={"roteiro_ajustado": roteiro}
+        )
+        self.client.post(reverse("viagens_roteiros:excluir", args=[roteiro.pk]))
+        self.assertTrue(Roteiro.objects.filter(pk=roteiro.pk).exists())
+
+    def test_lista_nao_oferece_excluir_roteiro_em_uso(self):
+        from viagens_oficios.models import Oficio
+
+        roteiro = self.roteiro_curitiba_sp_abatia()
+        Oficio.objects.create(roteiro=roteiro)
+        resposta = self.client.get(reverse("viagens_roteiros:lista"))
+        self.assertNotContains(resposta, reverse("viagens_roteiros:excluir", args=[roteiro.pk]))
+        self.assertContains(resposta, "Em uso por ofício")
+
 
 class DefeitosEncontradosNoSmokeTests(BaseTelaRoteiroTestCase):
     """Cada teste aqui reproduz algo que só apareceu ao abrir a tela de verdade.

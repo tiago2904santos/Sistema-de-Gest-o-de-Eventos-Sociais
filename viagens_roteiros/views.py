@@ -877,6 +877,32 @@ def reativar(request, pk):
     return redirect("viagens_roteiros:editar", pk=roteiro.pk)
 
 
+def _recusa_de_exclusao(roteiro):
+    """Mensagem de recusa quando o roteiro está em uso, ou None.
+
+    Apagar um roteiro usado tiraria destino, período e diárias do ofício (a
+    chave é SET_NULL) e o "roteiro ajustado" da prestação, sem aviso.
+    """
+    from django.utils.html import format_html, format_html_join
+
+    from viagens_prestacoes.models import PrestacaoContas
+
+    oficios = list(roteiro.oficios.order_by("ano", "numero", "pk"))
+    prestacoes = PrestacaoContas.objects.filter(roteiro_ajustado=roteiro).select_related("oficio")
+    oficios += [p.oficio for p in prestacoes if p.oficio not in oficios]
+    if not oficios:
+        return None
+    links = format_html_join(
+        ", ", '<a href="{}">Ofício {}</a>',
+        ((reverse("viagens_oficios:editar", args=[o.pk]), o.numero_formatado if o.numero else f"sem número (#{o.pk})") for o in oficios),
+    )
+    return format_html(
+        "Este roteiro não pode ser excluído: está em uso por {}. "
+        "Se a viagem não vai mais acontecer, cancele o ofício.",
+        links,
+    )
+
+
 @acesso_ao_modulo
 @require_POST
 def excluir(request, pk):
@@ -884,12 +910,16 @@ def excluir(request, pk):
     roteiro = get_object_or_404(Roteiro, pk=pk)
     descricao = f"roteiro {roteiro.pk} ({roteiro.sede_cidade or 'sem sede'})"
     volta = _url_de_volta(roteiro)
+    from core.retorno import voltar_para
+
+    recusa = _recusa_de_exclusao(roteiro)
+    if recusa:
+        messages.error(request, recusa)
+        return redirect(voltar_para(request, volta))
     roteiro.delete()
     LogAuditoria.objects.create(
         usuario=request.user, acao="VIAGENS_ROTEIRO_EXCLUIDO", descricao=descricao
     )
     messages.success(request, "Roteiro excluído.")
     # Excluir da lista devolve à lista como ela estava, com busca e filtros.
-    from core.retorno import voltar_para
-
     return redirect(voltar_para(request, volta))

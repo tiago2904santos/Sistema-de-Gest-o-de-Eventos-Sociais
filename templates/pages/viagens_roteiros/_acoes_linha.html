@@ -9,7 +9,9 @@
   <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
     <div class="dd__t">{{ linha.titulo }}</div>
     <a class="dd__i of-item" href="{{ linha.editar_url }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar roteiro</b><small>Trechos, servidores e diárias</small></span></a>
-    {% if pode_editar %}
+    {% if pode_editar and linha.em_uso %}
+      <span class="dd__i of-item" aria-disabled="true">{% include "components/icon.html" with nome="lock" %}<span><b>Em uso por ofício</b><small>Não pode ser excluído enquanto um ofício ou prestação o usar</small></span></span>
+    {% elif pode_editar %}
       <form method="post" action="{{ linha.excluir_url }}" data-confirmar-exclusao data-confirmar="Confirmar exclusão?">
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ request.get_full_path }}">
