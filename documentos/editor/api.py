@@ -132,10 +132,10 @@ def _gravado(request, vinculo, objeto, *, versao=None, **extra):
     })
 
 
-def _conflito(versao_atual):
+def _conflito(versao_atual, mensagem=None):
     return JsonResponse({
         "ok": False, "conflito": True, "versao": versao_atual,
-        "mensagem": "Este documento foi alterado por outra pessoa desde que você o abriu. Recarregue para ver a versão atual.",
+        "mensagem": mensagem or "Este documento foi alterado por outra pessoa desde que você o abriu. Recarregue para ver a versão atual.",
     }, status=409)
 
 
@@ -162,13 +162,19 @@ def campo(request, tipo, pk, chave):
     corpo, erro = _corpo(request)
     if erro is not None:
         return erro
-    versao_lida = corpo.get("versao")
-    if versao_lida is not None and versao_lida != fonte.versao(alvo):
-        return _conflito(fonte.versao(alvo))
-
     valores = corpo.get("valores")
     if not isinstance(valores, dict) or not valores or set(valores) - set(definicao.nomes):
         return JsonResponse({"ok": False, "mensagem": "Valores fora do campo pedido."}, status=400)
+    # Versão antiga só é conflito se o que mudou desde então foi este mesmo
+    # campo (m125): outra pessoa mexendo em outro trecho não trava ninguém.
+    from .concorrencia import conflito, mensagem_do_conflito, registrar_mudanca
+
+    versao_lida = corpo.get("versao")
+    versao_antes = fonte.versao(alvo)
+    if versao_lida is not None:
+        detalhe = conflito(alvo, versao_lida, versao_antes, valores)
+        if detalhe is not None:
+            return _conflito(versao_antes, mensagem_do_conflito(detalhe, definicao.rotulo))
     dados = fonte.dados_atuais(alvo)
     try:
         for parte in definicao.partes:
@@ -199,6 +205,7 @@ def campo(request, tipo, pk, chave):
         return JsonResponse({"ok": False, "erros": erros, "outros_erros": []}, status=400)
     objeto = vinculo.carregar(objeto.pk, request.GET.get("v", ""))
     alvo = fonte.alvo(objeto, objeto_id, request.user)
+    registrar_mudanca(alvo, versao_antes, fonte.versao(alvo), list(valores), request.user)
     return _gravado(request, vinculo, objeto, versao=fonte.versao(alvo), avisos=outros)
 
 
@@ -265,6 +272,21 @@ def bloco(request, tipo, pk, chave):
         gravar_override(vinculo.tipo, dono, chave, conteudo, request.user)
         editado = True
     return _gravado(request, vinculo, objeto, versao=versao_do_bloco(vinculo.tipo, dono, chave), editado=editado)
+
+
+@require_http_methods(["POST"])
+def presenca(request, tipo, pk):
+    """Quem está no documento (m125): o navegador avisa a cada 30 s que a
+    pessoa continua nele (`{"sair": true}` ao fechar) e recebe os nomes dos
+    outros que também estão, para a barra dizer "Fulana também está editando"."""
+    from .concorrencia import marcar_presenca
+
+    vinculo, objeto = _acesso(request, tipo, pk)
+    corpo, erro = _corpo(request)
+    if erro is not None:
+        return erro
+    outros = marcar_presenca(vinculo.chave, objeto.pk, request.user, variante=request.GET.get("v", ""), sair=bool(corpo.get("sair")))
+    return JsonResponse({"ok": True, "outros": outros})
 
 
 @require_http_methods(["PATCH"])

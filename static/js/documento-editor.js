@@ -44,6 +44,7 @@
     quebra: editor.getAttribute('data-de-url-quebra')
   };
   var versao = editor.getAttribute('data-de-versao') || '';
+  var urlPresenca = editor.getAttribute('data-de-url-presenca') || '';
   /* Origens do registro principal do documento (o ofício, o termo, a ordem de
      serviço...): usam a versão da página. As demais guardam a própria. */
   var principais = (editor.getAttribute('data-de-principais') || 'oficio marcacao').split(' ');
@@ -572,6 +573,40 @@
       .catch(function () { status('Não foi possível alterar a quebra de página.', 'erro'); });
   }
 
+  /* ---- Quem mais está no documento (m125) -----------------------------
+     A cada 30 s o navegador avisa que a pessoa continua aqui e recebe os
+     nomes dos outros que também estão; ao desmontar, avisa que saiu. */
+  var INTERVALO_PRESENCA = 30000;
+  var relogioPresenca = null;
+  var presenca = raiz.querySelector('[data-de-presenca]');
+  var presencaTexto = raiz.querySelector('[data-de-presenca-texto]');
+
+  function mostrarPresenca(outros) {
+    if (!presenca) return;
+    outros = outros || [];
+    presenca.hidden = !outros.length;
+    if (!outros.length) return;
+    var texto = outros.length === 1 ? outros[0] + ' também está editando'
+      : outros.slice(0, -1).join(', ') + ' e ' + outros[outros.length - 1] + ' também estão editando';
+    if (presencaTexto) presencaTexto.textContent = texto;
+    presenca.title = 'Quem mais está com este documento aberto agora. Se as duas pessoas mudarem o mesmo trecho, a segunda gravação é avisada.';
+  }
+
+  function avisarPresenca(sair) {
+    if (!urlPresenca) return;
+    var pedido = { method: 'POST', credentials: 'same-origin', headers: cabecalhos(true), body: JSON.stringify(sair ? { sair: true } : {}) };
+    if (sair) pedido.keepalive = true;
+    fetch(urlPresenca, pedido)
+      .then(function (r) { return r.ok && !sair ? r.json() : null; })
+      .then(function (dados) { if (dados) mostrarPresenca(dados.outros); })
+      .catch(function () {});
+  }
+
+  if (urlPresenca) {
+    avisarPresenca(false);
+    relogioPresenca = setInterval(function () { if (!document.hidden) avisarPresenca(false); }, INTERVALO_PRESENCA);
+  }
+
   function oferecerRecarga() {
     var rodape = painel.querySelector('.de-campo__rodape');
     if (!rodape || rodape.querySelector('[data-de-recarregar]')) return;
@@ -795,6 +830,7 @@
   return {
     desmontar: function () {
       fechar();
+      if (relogioPresenca) { clearInterval(relogioPresenca); relogioPresenca = null; avisarPresenca(true); }
       ouvintes.forEach(function (o) { o[0].removeEventListener(o[1], o[2]); });
       ouvintes = [];
       if (painel && painel.parentNode) painel.parentNode.removeChild(painel);

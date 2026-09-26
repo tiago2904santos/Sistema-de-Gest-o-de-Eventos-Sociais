@@ -15,7 +15,7 @@
   O que é de cada documento vem em `doc`, de
   `documentos.editor.pagina.contexto_da_pagina`.
 {% endcomment %}
-<div class="de-app de-app--embutido"{% if doc.pode_editar %} data-de-editor data-de-url="{{ doc.api.campo }}" data-de-url-bloco="{{ doc.api.bloco }}" data-de-url-quebra="{{ doc.api.quebra }}" data-de-versao="{{ doc.versao }}" data-de-principais="{{ doc.principais }}"{% endif %}>
+<div class="de-app de-app--embutido"{% if doc.pode_editar %} data-de-editor data-de-url="{{ doc.api.campo }}" data-de-url-bloco="{{ doc.api.bloco }}" data-de-url-quebra="{{ doc.api.quebra }}" data-de-url-presenca="{{ doc.url_presenca }}" data-de-versao="{{ doc.versao }}" data-de-principais="{{ doc.principais }}"{% endif %}>
   {# Barra de ferramentas. Formatação não entra: a letra e o layout são os do modelo oficial. #}
   <div class="de-barra" role="toolbar" aria-label="Ferramentas do documento">
     {% if doc.pode_editar %}
@@ -69,6 +69,8 @@
     </div>
     <div class="de-barra__fim">
       {% if doc.pode_editar %}
+        {# Quem mais está no documento (m125): preenchido pelo aviso de presença. #}
+        <span class="de-presenca" data-de-presenca aria-live="polite" hidden>{% include "components/icon.html" with nome="users" %}<span data-de-presenca-texto></span></span>
         <span class="de-salvo" data-de-salvo aria-live="polite" title="As alterações são gravadas enquanto você edita">{% include "components/icon.html" with nome="cloud-check" %}<span data-de-salvo-texto>Tudo salvo</span></span>
       {% endif %}
       <button type="button" class="de-icone" data-de-alternar-historico aria-pressed="false" title="Histórico de alterações" aria-label="Histórico de alterações">{% include "components/icon.html" with nome="clock" %}</button>

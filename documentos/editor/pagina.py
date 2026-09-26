@@ -51,6 +51,7 @@ def contexto_da_pagina(request, vinculo, objeto) -> dict:
             "historico": vinculo.historico(objeto),
             "url_folha": vinculo.url("folha", objeto),
             "api": {especie: vinculo.url(especie, objeto, "CHAVE") for especie in ("campo", "bloco", "quebra")},
+            "url_presenca": vinculo.url("presenca", objeto),
             "principais": " ".join(vinculo.principais),
             "versao": vinculo.versao(objeto),
             "pode_editar": pode_editar,

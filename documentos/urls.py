@@ -19,6 +19,8 @@ urlpatterns = [
     path("editor/<str:tipo>/<int:pk>/campos/<str:chave>/", editor_api.campo, name="editor_campo"),
     path("editor/<str:tipo>/<int:pk>/blocos/<str:chave>/", editor_api.bloco, name="editor_bloco"),
     path("editor/<str:tipo>/<int:pk>/quebras/<str:chave>/", editor_api.quebra, name="editor_quebra"),
+    # Quem mais está no documento (m125): aviso periódico do navegador.
+    path("editor/<str:tipo>/<int:pk>/presenca/", editor_api.presenca, name="editor_presenca"),
     # Editor completo (m057): o documento inteiro editado à mão, com histórico.
     path("editor/<str:tipo>/<int:pk>/completo/", editor_completo.pagina, name="editor_completo"),
     path("editor/<str:tipo>/<int:pk>/completo/folha/", editor_completo.folha, name="editor_completo_folha"),
