@@ -29,16 +29,7 @@
         <h3 class="sol-subtitulo cb-subtitulo--primeiro" id="sec-eprotocolo">Dados para o eProtocolo</h3>
         <p class="cb-ajuda">Abra o protocolo com estes dados, anexe os documentos na ordem da lista abaixo e despache ao GAF.</p>
 
-        <dl class="cb-copiaveis">
-          {% for campo in eprotocolo.campos %}
-            <div class="cb-copiavel">
-              <dt>{{ campo.rotulo }}</dt>
-              <dd><span class="cb-copiavel__valor">{{ campo.valor }}</span>
-                {% if campo.copiar %}<button type="button" class="ib-linha cb-copiar-mini" data-copiar="{{ campo.copiar }}" aria-label="Copiar {{ campo.rotulo }}" title="Copiar">{% include "components/icon.html" with nome="copy" %}</button>{% endif %}
-              </dd>
-            </div>
-          {% endfor %}
-        </dl>
+        {% include "components/v32/copiaveis.html" with campos=eprotocolo.campos %}
 
         <div class="cb-caixa-copiar">
           <div class="cb-caixa-copiar__topo">
@@ -176,4 +167,4 @@
   {% if not somente_leitura %}{% include "pages/coffee_break/_importar_processo.html" %}{% endif %}
 {% endblock %}
 
-{% block etapa_js %}<script src="{% estatico 'vendor/pdfjs/pdf.min.js' %}"></script><script src="{% estatico 'js/coffee-break-pdf.js' %}" defer></script><script src="{% estatico 'js/coffee-break-documentos.js' %}" defer></script><script src="{% estatico 'js/coffee-break-copiar.js' %}" defer></script><script src="{% estatico 'js/coffee-break-protocolo.js' %}" defer></script>{% endblock %}
+{% block etapa_js %}<script src="{% estatico 'vendor/pdfjs/pdf.min.js' %}"></script><script src="{% estatico 'js/coffee-break-pdf.js' %}" defer></script><script src="{% estatico 'js/coffee-break-documentos.js' %}" defer></script><script src="{% estatico 'js/components/copiar.js' %}" defer></script><script src="{% estatico 'js/coffee-break-protocolo.js' %}" defer></script>{% endblock %}

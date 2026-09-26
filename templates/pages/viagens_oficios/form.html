@@ -47,6 +47,9 @@
           <div class="frm-titulo">
             <h1 class="page-header__titulo d-titulo-v32">Cadastro de ofício <span class="frm-ident">{{ oficio.numero_formatado }}</span></h1>
             <span class="frm-rasc">{% include "components/icon.html" with nome="document" %}{% if oficio.cancelado %}Cancelado{% else %}{{ oficio.get_status_display }}{% endif %}</span>
+            {# O tipo que o documento vai ter, com o porquê: sem precisar abrir o PDF. #}
+            <span class="st st--{{ tipo.tom }}" title="{{ tipo.explicacao }}" data-ofc-tipo>{{ tipo.rotulo }}{% if tipo.marcador %} · {{ tipo.marcador }}{% endif %}</span>
+            <p class="ofc-tipo__explicacao">{{ tipo.explicacao }}</p>
           </div>
         </div>
       </div>
@@ -205,7 +208,8 @@
               </div>
 
               {# O documento que autorizou esse motorista, numa caixa como a do bate-volta. #}
-              <div class="bate-volta ofc-origem">
+              {# Escolhido o motorista, o sistema procura o ofício em que ele viaja e preenche os dois campos. #}
+              <div class="bate-volta ofc-origem" data-ofc-origem data-url="{% url 'viagens_oficios:oficios_do_motorista' oficio.pk %}" data-ano="{{ dados.ano }}">
                 <span class="bate-volta__rotulo ofc-origem__rotulo">Ofício de origem</span>
                 <div class="form-campo">
                   <label class="form-label" for="id_motorista_oficio_referencia">N° do Ofício</label>
@@ -216,6 +220,10 @@
                   {% for erro in e.motorista_oficio_referencia %}<p class="form-erro">{{ erro }}</p>{% endfor %}
                 </div>
                 {% include "components/input.html" with name="motorista_protocolo_ref" label="Protocolo" inputmode="numeric" maxlength="12" autocomplete="off" valor=v.motorista_protocolo_ref erros=e.motorista_protocolo_ref %}
+                <div class="ofc-origem__opcoes" data-ofc-origem-opcoes hidden>
+                  <span class="form-label">Ofícios em que o motorista viaja</span>
+                  <div class="ofc-sugestoes__lista" data-ofc-origem-lista></div>
+                </div>
               </div>
             </div>
           </div>
@@ -276,6 +284,14 @@
               {% endfor %}
             </div>
           </details>
+          {# Os campos do cadastro do processo no eProtocolo, cada um com Copiar (a peça do Coffee Break). #}
+          <details class="ofc-doc" id="eprotocolo">
+            <summary class="ofc-doc__cabeca">
+              <span class="ofc-doc__titulo">Dados para o eProtocolo</span>
+              <span class="ofc-doc__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+            </summary>
+            <div class="ofc-doc__corpo">{% include "components/v32/copiaveis.html" with campos=eprotocolo.campos textos=eprotocolo.textos %}</div>
+          </details>
           </div>
 
           {# Ações no fim do último cartão, como no roteiro: voltar à esquerda, salvar à direita. Com pendência, o botão salva o rascunho; sem, finaliza. #}
@@ -303,6 +319,7 @@
   <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
   <script src="{% estatico 'js/roteiro-editor.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-oficios.js' %}" defer></script>
+  <script src="{% estatico 'js/components/copiar.js' %}" defer></script>
   {% include "documentos/editor/_recursos.html" %}
   {% include "components/v32/dialogo_assinado.html" %}
 {% endblock %}

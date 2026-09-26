@@ -89,8 +89,52 @@ class ListaOficiosTests(Cenario):
         self.assertContains(r, "R$ 4.358,25 · 5 x 100%")
         self.assertContains(r, "Justificativa preenchida")
         # O cartão e os filtros antigos saíram.
-        for marca in ["of-cartao__rodape", "of-catalogos", "Número: maior", 'name="viagem_de"', "Mostrando <strong>"]:
+        for marca in ["of-cartao__rodape", "of-catalogos", "Mostrando <strong>"]:
             self.assertNotContains(r, marca)
+
+    def test_linha_mostra_o_tipo_do_oficio(self):
+        self.oficio(dias=-2, servidores=[self.janine])
+        r = self.lista()
+        self.assertContains(r, ">Convalidação</span>")
+        self.assertContains(r, "antes da data do ofício")
+
+    def test_filtros_prontos_e_ordenacao(self):
+        perto = self.oficio(dias=3)
+        longe = self.oficio(dias=40)
+        antigo = self.oficio(dias=-30)
+        de = (self.hoje + timedelta(days=1)).isoformat()
+        ate = (self.hoje + timedelta(days=15)).isoformat()
+        r = self.lista(viagem_de=de, viagem_ate=ate)
+        self.assertEqual([l["oficio"].pk for l in r.context["linhas"]], [perto.pk])
+        self.assertContains(r, f"Viagem a partir de: {(self.hoje + timedelta(days=1)):%d/%m/%Y}")
+        self.assertContains(r, 'name="viagem_de"')
+        r = self.lista(sort="viagem_asc")
+        self.assertEqual([l["oficio"].pk for l in r.context["linhas"]], [antigo.pk, perto.pk, longe.pk])
+        self.assertContains(r, "Ordem: Viagem: mais próxima")
+        # Filtro inválido é ignorado, não derruba a página.
+        r = self.lista(viagem_de="31/02", ano="abc")
+        self.assertEqual(len(r.context["linhas"]), 3)
+        # A exportação leva o mesmo recorte.
+        self.assertContains(r, reverse("viagens_oficios:exportar"))
+
+    def test_exportar_excel_com_o_recorte(self):
+        import io
+        from openpyxl import load_workbook
+        perto = self.oficio(dias=3, protocolo="123456789", servidores=[self.janine])
+        self.oficio(dias=40)
+        de = (self.hoje + timedelta(days=1)).isoformat()
+        ate = (self.hoje + timedelta(days=15)).isoformat()
+        r = self.client.get(reverse("viagens_oficios:exportar"), {"viagem_de": de, "viagem_ate": ate})
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("spreadsheetml", r["Content-Type"])
+        aba = load_workbook(io.BytesIO(r.content)).active
+        linhas = list(aba.iter_rows(values_only=True))
+        self.assertEqual(linhas[0][:5], ("Nº", "Data do ofício", "Protocolo", "Situação", "Tipo"))
+        self.assertEqual(len(linhas), 2)
+        self.assertEqual(linhas[1][0], perto.numero_formatado)
+        self.assertEqual(linhas[1][2], "12.345.678-9")
+        self.assertEqual(linhas[1][4], "Autorização")
+        self.assertEqual(linhas[1][8], "JANINE LACERDA DO PRADO")
 
     def test_linha_de_rascunho_vazio(self):
         self.oficio()
@@ -398,6 +442,138 @@ class CadastroTests(Cenario):
         self.assertRedirects(r, reverse("viagens_oficios:lista"))
         o.refresh_from_db()
         self.assertEqual(o.status, Oficio.STATUS_FINALIZADO)
+
+    def test_cabecalho_mostra_autorizacao_ou_convalidacao_e_por_que(self):
+        o = self.oficio(dias=5)
+        r = self.editar(o)
+        self.assertContains(r, "data-ofc-tipo>Autorização</span>")
+        self.assertContains(r, "Justificativa obrigatória: 5 dias de antecedência, o prazo mínimo é de 10.")
+        o = self.oficio(dias=-3)
+        r = self.editar(o)
+        self.assertContains(r, "data-ofc-tipo>Convalidação</span>")
+        saida = self.hoje - timedelta(days=3)
+        self.assertContains(r, f"A viagem começou em {saida:%d/%m/%Y}, antes da data do ofício ({self.hoje:%d/%m/%Y}).")
+        o = self.oficio(dias=30)
+        o.retificado_documento = True
+        o.save()
+        r = self.editar(o)
+        self.assertContains(r, "data-ofc-tipo>Autorização · Retificado</span>")
+        self.assertContains(r, "Justificativa dispensada: 30 dias de antecedência")
+        r = self.editar(self.oficio())
+        self.assertContains(r, "Sem data de saída no roteiro: por enquanto vale Autorização.")
+
+    def test_condutores_autorizados_da_viatura(self):
+        self.duster.motoristas.set([self.joao])
+        o = self.oficio()
+        r = self.editar(o)
+        self.assertContains(r, f'data-motoristas="{self.joao.pk}"')
+        # Motorista fora dos autorizados: grava, mas avisa.
+        r = self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(), follow=True)
+        o.refresh_from_db()
+        self.assertEqual(o.motorista, self.janine)
+        self.assertContains(r, "não está entre os condutores autorizados da viatura AAA-1234")
+        r = self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(motorista=self.joao.pk), follow=True)
+        self.assertNotContains(r, "condutores autorizados")
+        # Viatura sem condutores cadastrados não tem restrição.
+        self.duster.motoristas.clear()
+        r = self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(), follow=True)
+        self.assertNotContains(r, "condutores autorizados")
+
+    def test_oficio_do_motorista_de_fora_e_sugerido(self):
+        from viagens_oficios.services import pendencias_motorista_documento
+        # O ofício em que João viaja, com período que se sobrepõe.
+        dele = self.oficio(dias=10, protocolo="112223334", servidores=[self.joao])
+        antigo = self.oficio(servidores=[self.joao])
+        self.oficio(dias=10, servidores=[self.joao], cancelar=True)
+        o = self.oficio(dias=10, servidores=[self.janine])
+        url = reverse("viagens_oficios:oficios_do_motorista", args=[o.pk])
+        dados = self.client.get(url, {"motorista": self.joao.pk}).json()["oficios"]
+        self.assertEqual([d["id"] for d in dados], [dele.pk, antigo.pk])
+        self.assertEqual(dados[0]["referencia"], f"{dele.numero}/{dele.ano}")
+        self.assertEqual(dados[0]["protocolo"], "11.222.333-4")
+        self.assertEqual(dados[0]["motivo"], "Período que se sobrepõe")
+        self.assertTrue(dados[0]["provavel"])
+        self.assertFalse(dados[1]["provavel"])
+        self.assertEqual(self.client.get(url, {"motorista": "x"}).json(), {"oficios": []})
+        # O cartão sabe onde buscar.
+        self.assertContains(self.editar(o), f'data-url="{url}"')
+        # Ofício de número com 4 dígitos passa na conferência.
+        o.motorista, o.motorista_oficio_referencia, o.motorista_protocolo_ref = self.joao, "1000/2026", "112223334"
+        o.save()
+        self.assertEqual(pendencias_motorista_documento(o), [])
+
+    def test_campos_automaticos_nos_modelos(self):
+        from viagens_oficios.campos_modelo import aplicar
+        modelo = ModeloMotivoOficio.objects.create(nome="COBERTURA", texto="Cobertura em {destino} de {periodo}, com {servidores}. {desconhecido}")
+        ModeloJustificativa.objects.create(nome="URGENTE", texto="Pedido feito {dias_antecedencia} dias antes (prazo {prazo}).")
+        o = self.oficio(dias=5, servidores=[self.janine, self.joao])
+        r = self.editar(o)
+        saida = self.hoje + timedelta(days=5)
+        volta = saida + timedelta(days=5)
+        esperado = (f"Cobertura em ANTONINA/PR de {saida:%d/%m/%Y} a {volta:%d/%m/%Y}, "
+                    "com JANINE LACERDA DO PRADO e JOÃO MARIO DE GOES. {desconhecido}")
+        textos = r.context["modelos_texto"]
+        self.assertEqual(textos["modelo_motivo"][modelo.pk], esperado)
+        self.assertIn("Pedido feito 5 dias antes (prazo 10).", textos["justificativa-modelo"].values())
+        # Sem roteiro, o marcador fica à vista e é preenchido na gravação.
+        vazio = self.oficio(servidores=[self.janine])
+        self.assertIn("{destino}", self.editar(vazio).context["modelos_texto"]["modelo_motivo"][modelo.pk])
+        self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(motivo="Em {destino} por {evento}."))
+        o.refresh_from_db()
+        self.assertEqual(o.motivo, "Em ANTONINA/PR por {evento}.")
+        # Chave solta não derruba nada.
+        self.assertEqual(aplicar("texto { solto", {"destino": "X"}), "texto { solto")
+
+    def test_dados_para_o_eprotocolo_com_copiar(self):
+        o = self.oficio(dias=20, protocolo="123456789", servidores=[self.janine])
+        r = self.editar(o)
+        self.assertContains(r, "Dados para o eProtocolo")
+        self.assertContains(r, 'data-copiar="JANINE LACERDA DO PRADO"')
+        self.assertContains(r, 'data-copiar="Solicitação de autorização e concessão de diárias. (Autorização)"')
+        self.assertContains(r, f'data-copiar="{o.numero_formatado}"')
+        self.assertContains(r, 'data-copiar="12.345.678-9"')
+        self.assertContains(r, f"OFÍCIO Nº {o.numero_formatado} - SOLICITAÇÃO DE AUTORIZAÇÃO E CONCESSÃO DE DIÁRIAS - DESTINO: ANTONINA/PR")
+        self.assertContains(r, "js/components/copiar")
+
+    def _finalizar(self, o, **extra):
+        return self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(
+            servidores=[str(self.janine.pk)], servidores_termo_autorizacao=[str(self.janine.pk)], acao="finalizar", **extra),
+            follow=True)
+
+    def test_finalizar_confere_com_a_data_de_hoje(self):
+        # Rascunho antigo: pela data dele a saída tinha folga; pela de hoje, não.
+        o = self.oficio(dias=5, protocolo="123456789", servidores=[self.janine], motorista=self.janine,
+                        viatura=self.duster, data_criacao=self.hoje - timedelta(days=20))
+        r = self._finalizar(o)
+        o.refresh_from_db()
+        self.assertEqual(o.status, Oficio.STATUS_RASCUNHO)
+        self.assertContains(r, "Informe o texto da justificativa.")
+        # O rascunho continua com a data que tinha.
+        self.assertEqual(o.data_criacao, self.hoje - timedelta(days=20))
+        # Com a justificativa, finaliza com a data de hoje — e o PDF pode sair.
+        self._finalizar(o, **{"justificativa-texto": "Convite recebido em cima da hora."})
+        o.refresh_from_db()
+        self.assertEqual(o.status, Oficio.STATUS_FINALIZADO)
+        self.assertEqual(o.data_criacao, self.hoje)
+        from viagens_oficios.services import validar_oficio_para_documento
+        self.assertEqual(validar_oficio_para_documento(o)["pendencias"], [])
+
+    def test_finalizar_mantem_a_data_digitada(self):
+        o = self.oficio(dias=30, protocolo="123456789", servidores=[self.janine], motorista=self.janine, viatura=self.duster)
+        digitada = self.hoje - timedelta(days=2)
+        self._finalizar(o, data_criacao=digitada.isoformat())
+        o.refresh_from_db()
+        self.assertEqual(o.status, Oficio.STATUS_FINALIZADO)
+        self.assertEqual(o.data_criacao, digitada)
+
+    def test_finalizar_em_outro_ano_avisa(self):
+        o = self.oficio(dias=30, protocolo="123456789", servidores=[self.janine], motorista=self.janine, viatura=self.duster)
+        Oficio.objects.filter(pk=o.pk).update(ano=self.hoje.year - 1)
+        o.refresh_from_db()
+        r = self._finalizar(o)
+        o.refresh_from_db()
+        self.assertEqual(o.status, Oficio.STATUS_FINALIZADO)
+        self.assertContains(r, "Confira se ele deve ser renumerado")
 
     def test_roteiro_montado_no_cadastro_fica_ligado_ao_oficio(self):
         o = self.oficio()

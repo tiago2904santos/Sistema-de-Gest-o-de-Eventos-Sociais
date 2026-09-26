@@ -8,7 +8,9 @@
 
   A linha é uma célula só: número e protocolo com o selo temporal e o estado
   da justificativa, e os fatos com ícone (viagem, servidores, viatura e
-  diárias). Os documentos saem pelo modal "Baixar documentos".
+  diárias). Os documentos saem pelo modal "Baixar documentos". Em "Filtros
+  e ordem", os períodos da viagem e do ofício, o ano e as seis ordenações; o
+  "Exportar Excel" leva o mesmo recorte para a planilha.
 {% endcomment %}
 
 {% block title %}Ofícios — Sistema de Gestão de Eventos Sociais{% endblock %}
@@ -19,15 +21,15 @@
       <div class="kicker kicker--junto">Viagens</div>
       <h1>Ofícios</h1>
     </div>
-    {% if gestor or pode_editar %}
-      <div class="d-acoes">
+    <div class="d-acoes">
+        {# O recorte que a lista mostra (busca, situação, filtros e ordem), em planilha. #}
+        <a class="btn--secundaria" href="{{ url_exportar }}">{% include "components/icon.html" with nome="download" %}Exportar Excel</a>
         {% if gestor %}<a class="btn--secundaria" href="{% url 'viagens_oficios:numeracao' %}">Numeração</a>{% endif %}
         {% if pode_editar %}
           {# O processo do eProtocolo: ofício e justificativa assinados, termos e os documentos da prestação, cada um no seu lugar. #}
           <button type="button" class="btn--secundaria" data-importar-processo data-url="{% url 'viagens_prestacoes:importacao_enviar' %}">{% include "components/icon.html" with nome="upload" %}Importar processo do eProtocolo</button>
         {% endif %}
-      </div>
-    {% endif %}
+    </div>
     {% if pode_editar %}
       {# Como no Gerenciador de Viagens: "Novo ofício" cria o rascunho, já numerado, e abre o cadastro. #}
       <form method="post" action="{% url 'viagens_oficios:criar' %}" class="btn-flutuante-form">
@@ -50,7 +52,7 @@
         </div>
       {% endif %}
       {# Busca no servidor, enviada 1 s depois de digitar; a situação da trilha sobrevive. #}
-      <form method="get" class="cad-barra" role="search" data-cadastro-busca data-auto-enviar>
+      <form method="get" class="cad-barra" role="search" id="form-busca-oficios" data-cadastro-busca data-auto-enviar>
         {% for situacao in situacoes_escolhidas %}<input type="hidden" name="situacao" value="{{ situacao }}">{% endfor %}
         <div class="busca">
           {% include "components/icon.html" with nome="search" %}
@@ -58,6 +60,27 @@
           <input type="search" name="q" id="id_q" value="{{ q }}" placeholder="Buscar por número, protocolo, motivo ou destino" autocomplete="off">
         </div>
       </form>
+
+      {# Os filtros prontos da lista: fazem parte da busca (form_alvo) e aplicam ao mudar. #}
+      <details class="of-filtros"{% if filtros_ativos %} open{% endif %}>
+        <summary class="of-filtros__cabeca">{% include "components/icon.html" with nome="filter" %}Filtros e ordem{% if filtros_ativos %} <span class="st st--neutro">{{ filtros_ativos|length }}</span>{% endif %}</summary>
+        <div class="of-filtros__corpo g-form">
+          {% include "components/input.html" with name="viagem_de" label="Viagem a partir de" tipo="date" valor=filtros.viagem_de form_alvo="form-busca-oficios" %}
+          {% include "components/input.html" with name="viagem_ate" label="Viagem até" tipo="date" valor=filtros.viagem_ate form_alvo="form-busca-oficios" %}
+          {% include "components/input.html" with name="criacao_de" label="Ofício a partir de" tipo="date" valor=filtros.criacao_de form_alvo="form-busca-oficios" %}
+          {% include "components/input.html" with name="criacao_ate" label="Ofício até" tipo="date" valor=filtros.criacao_ate form_alvo="form-busca-oficios" %}
+          {% include "components/select.html" with name="ano" label="Ano" opcoes=opcoes_ano placeholder="Todos os anos" permitir_vazio=True selecionado=filtros.ano form_alvo="form-busca-oficios" %}
+          {% include "components/select.html" with name="sort" label="Ordenar por" opcoes=opcoes_ordenacao placeholder="Número: maior" permitir_vazio=True selecionado=sort form_alvo="form-busca-oficios" %}
+        </div>
+      </details>
+
+      {% if filtros_ativos %}
+        <div class="chips filtros-ativos" aria-label="Filtros ativos">
+          {% for f in filtros_ativos %}
+            <span class="chip" data-filtro-ativo>{{ f.rotulo }}<a href="{{ f.url_remover }}" aria-label="Remover filtro {{ f.rotulo }}" title="Remover filtro">{% include "components/icon.html" with nome="x" %}</a></span>
+          {% endfor %}
+        </div>
+      {% endif %}
 
       <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Tabela de ofícios">
         <table class="dt dt--responsiva">

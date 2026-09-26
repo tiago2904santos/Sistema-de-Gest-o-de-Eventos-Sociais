@@ -29,7 +29,7 @@ from .forms import TermoAutorizacaoForm
 from .models import TermoAutorizacao
 from .presenters import artefatos_pdf_por_termo, documentos_do_termo, heranca_do_termo, herdados_do_termo, linha_da_lista, selo_do_termo, titulo_do_termo
 from .selectors import get_termo_by_id, listar_termos
-from .services import build_termo_cadastro_payload, gerar_termo_cadastro_lote, gerar_termo_cadastro_um
+from .services import build_termo_cadastro_payload, dados_eprotocolo_termo, gerar_termo_cadastro_lote, gerar_termo_cadastro_um
 
 
 api_buscar_oficios = buscar_oficios_para_picker
@@ -204,6 +204,7 @@ def _contexto_do_registro(termo, request):
     return {
         "selo": selo, "selo_tom": tom,
         "documentos": documentos_do_termo(termo, artefatos_pdf),
+        "eprotocolo": dados_eprotocolo_termo(termo),
         "servidores_do_termo": list(termo.servidores_efetivos()),
         "viatura": termo.viatura_efetiva(),
         "pode_editar": pode_editar_cadastros(request.user),

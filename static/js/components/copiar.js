@@ -1,4 +1,5 @@
-/* Coffee Break — botões Copiar da etapa do protocolo.
+/* Botões Copiar — peça comum (Coffee Break e Viagens: "Dados para o
+   eProtocolo"; ver components/v32/copiaveis.html).
    `data-copiar-de="<id>"` copia o texto da caixa; `data-copiar="<texto>"`
    copia o próprio valor. O botão diz "Copiado" por um instante. Sem a API do
    navegador (HTTP sem TLS), cai para a seleção + execCommand. */

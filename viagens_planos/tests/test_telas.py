@@ -158,6 +158,17 @@ class PaginaUnicaTests(CenarioPlanoMixin, TestCase):
         self.assertContains(r, "R$ 7.234,68")
         self.assertContains(r, "Finalizar plano")
 
+    def test_numero_editavel_como_o_do_oficio(self):
+        outro = self.criar_pela_tela()
+        r = self.client.post(self.url, self.payload(numero=str(outro.numero)))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, f"Já existe um Plano de Trabalho com o número {outro.numero}")
+        self.client.post(self.url, self.payload(numero="40"))
+        self.assertEqual(PlanoTrabalho.objects.get(pk=self.plano.pk).numero, 40)
+        # Em branco, mantém o número.
+        self.client.post(self.url, self.payload(numero=""))
+        self.assertEqual(PlanoTrabalho.objects.get(pk=self.plano.pk).numero, 40)
+
     def test_os_tres_textos_sao_sempre_gerados(self):
         """A tela não os oferece: o que vier no POST é ignorado e o texto
         automático é regerado."""

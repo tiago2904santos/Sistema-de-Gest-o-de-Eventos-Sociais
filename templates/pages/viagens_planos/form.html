@@ -88,6 +88,20 @@
         </header>
         <div class="section-card__corpo">
 
+          {# O número como o do ofício: o reservado, editável, sem repetir outro do ano. #}
+          <div class="ofc-grupo">
+            <div class="ofc-grupo__corpo g-form ofc-identificacao">
+              <div class="form-campo">
+                <label class="form-label" for="id_numero">N° do Plano</label>
+                <div class="ofc-numero">
+                  <div class="form-controle-wrapper{% if e.numero %} is-invalid{% endif %}"><input class="form-controle" type="number" min="1" step="1" inputmode="numeric" id="id_numero" name="numero" value="{{ v.numero }}"{% if e.numero %} aria-invalid="true" aria-describedby="id_numero_erro"{% endif %}></div>
+                  <span class="ofc-numero__ano">/ {{ plano.ano|default:"" }}{% if plano.sufixo_numero %}/{{ plano.sufixo_numero }}{% endif %}</span>
+                </div>
+                {% for erro in e.numero %}<p class="form-erro" id="id_numero_erro">{{ erro }}</p>{% endfor %}
+              </div>
+            </div>
+          </div>
+
           <div class="ofc-grupo">
             <div class="ofc-grupo__corpo g-form pt-grade-programa">
               <div class="ofc-com-acao">

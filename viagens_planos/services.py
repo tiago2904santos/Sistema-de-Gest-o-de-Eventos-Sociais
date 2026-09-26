@@ -38,8 +38,15 @@ from .models import (
 )
 
 
+@transaction.atomic
 def excluir_plano(plano):
+    """Exclui o plano e libera o número para o próximo do ano, como no ofício."""
+    from .models import PlanoTrabalhoNumeroLacuna
+
+    numero, ano = plano.numero, plano.ano
     excluir_com_protecao(plano)
+    if numero and ano:
+        PlanoTrabalhoNumeroLacuna.objects.get_or_create(ano=ano, numero=numero)
 
 
 _MESES_PT = (
@@ -947,7 +954,7 @@ def marcar_plano_gerado(plano):
 
 @transaction.atomic
 def salvar_plano_numerado(plano):
-    """Reserva e grava o número com a mecânica comum; a política é o contador da configuração."""
+    """Reserva e grava o número com a mecânica comum e a política do número de ofício."""
     if plano.numero and plano.ano:
         plano.save()
         return plano

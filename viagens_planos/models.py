@@ -11,7 +11,6 @@ esse rascunho para um `EventoPlano` e limpa os campos para o próximo.
 """
 
 from django.db import models, transaction
-from django.db.models import Max
 from django.utils import timezone
 from django.utils.text import slugify
 
@@ -311,19 +310,16 @@ class PlanoTrabalho(ModeloTemporal, ModeloCancelavel, OrigemLegado):
 
     @classmethod
     def proximo_numero(cls):
-        """Contador anual da configuração global, com o piso no maior número do banco."""
+        """(número, ano, sufixo) na regra do número de ofício (`core.numeracao.proximo_do_livro`):
+        a menor lacuna liberada por exclusão, senão o maior número do ano mais um."""
+        from core.numeracao import proximo_do_livro
         from viagens_cadastros.models import ConfiguracaoSistema
 
-        with transaction.atomic():
-            config = ConfiguracaoSistema.objects.select_for_update().get(pk=ConfiguracaoSistema.get_singleton().pk)
-            ano = timezone.localdate().year
-            if config.pt_ano != ano:
-                config.pt_ano = ano
-                config.pt_ultimo_numero = 0
-            piso = cls.objects.filter(ano=ano).aggregate(m=Max("numero"))["m"] or 0
-            config.pt_ultimo_numero = max(config.pt_ultimo_numero, piso) + 1
-            config.save(update_fields=["pt_ano", "pt_ultimo_numero", "atualizado_em"])
-            return config.pt_ultimo_numero, ano, (config.pt_sufixo_numero or "").strip()
+        ano = timezone.localdate().year
+        usados = cls.objects.filter(ano=ano).exclude(numero__isnull=True).values_list("numero", flat=True)
+        lacunas = PlanoTrabalhoNumeroLacuna.objects.filter(ano=ano).values_list("numero", flat=True)
+        sufixo = (ConfiguracaoSistema.get_singleton().pt_sufixo_numero or "").strip()
+        return proximo_do_livro(usados=usados, lacunas=lacunas), ano, sufixo
 
     def save(self, *args, **kwargs):
         self.programa_outros = normalize_spaces(self.programa_outros)
@@ -333,6 +329,26 @@ class PlanoTrabalho(ModeloTemporal, ModeloCancelavel, OrigemLegado):
             setattr(self, f"coordenador_{papel}_cargo_manual", normalize_spaces(getattr(self, f"coordenador_{papel}_cargo_manual")))
             setattr(self, f"coordenador_{papel}_genero", self.coordenador_genero(papel))
         super().save(*args, **kwargs)
+        if self.numero and self.ano:
+            # O número voltou a ser usado (reservado ou digitado): deixa de ser lacuna.
+            PlanoTrabalhoNumeroLacuna.objects.filter(ano=self.ano, numero=self.numero).delete()
+
+
+class PlanoTrabalhoNumeroLacuna(models.Model):
+    """Número de plano liberado por exclusão; saltos manuais não entram aqui."""
+
+    ano = models.PositiveIntegerField(db_index=True)
+    numero = models.PositiveIntegerField()
+    liberado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["ano", "numero"]
+        verbose_name = "Número de Plano de Trabalho liberado"
+        verbose_name_plural = "Números de Plano de Trabalho liberados"
+        constraints = [models.UniqueConstraint(fields=["ano", "numero"], name="plano_lacuna_ano_numero_unique")]
+
+    def __str__(self):
+        return f"{self.numero:02d}/{self.ano}"
 
 
 class PlanoDestino(ModeloTemporal, OrigemLegado):
