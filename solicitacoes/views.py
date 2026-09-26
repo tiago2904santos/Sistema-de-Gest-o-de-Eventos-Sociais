@@ -1,4 +1,5 @@
 ﻿import logging
+from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -10,6 +11,7 @@ from django.db.models import Count, Q
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .forms import (
@@ -541,7 +543,43 @@ FILAS = {
         "rotulo": "Minhas",
         "apenas_do_usuario": True,
     },
+    # Destinos dos cartões do Dashboard: fora da trilha, mas com o mesmo
+    # recorte do número clicado. Aparecem como filtro ativo acima da lista.
+    "deferidas_ano": {
+        "rotulo": "Deferidas no ano",
+        "status": [
+            StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
+            StatusSolicitacao.ATENDIDA,
+        ],
+        "ano_corrente": True,
+        "oculta": True,
+    },
+    "proximos": {
+        "rotulo": "Eventos nos próximos 30 dias",
+        "proximos_dias": 30,
+        "oculta": True,
+    },
 }
+
+
+def _condicao_da_fila(config, user):
+    """O recorte de uma fila como Q, o mesmo na contagem e na lista."""
+    condicao = Q()
+    if config.get("status"):
+        condicao &= Q(status__in=config["status"])
+    if config.get("apenas_do_usuario"):
+        condicao &= Q(criado_por=user)
+    if config.get("ano_corrente"):
+        condicao &= Q(data_solicitacao__year=timezone.localdate().year)
+    if config.get("proximos_dias"):
+        hoje = timezone.localdate()
+        condicao &= Q(
+            data_inicio_evento__gte=hoje,
+            data_inicio_evento__lte=hoje + timedelta(days=config["proximos_dias"]),
+        ) & ~Q(
+            status__in=[StatusSolicitacao.CANCELADA, StatusSolicitacao.NAO_ATENDIDA]
+        )
+    return condicao
 
 
 def _filas_do_usuario(user, queryset):
@@ -551,15 +589,10 @@ def _filas_do_usuario(user, queryset):
     if permissions.eh_gestor_dg(user):
         filas.append("despacho")
     filas.extend(["devolvidas", "andamento", "canceladas", "rascunhos", "minhas"])
-    agregacoes = {}
-    for chave in filas:
-        config = FILAS[chave]
-        condicao = Q()
-        if config.get("status"):
-            condicao &= Q(status__in=config["status"])
-        if config.get("apenas_do_usuario"):
-            condicao &= Q(criado_por=user)
-        agregacoes[chave] = Count("pk", filter=condicao)
+    agregacoes = {
+        chave: Count("pk", filter=_condicao_da_fila(FILAS[chave], user))
+        for chave in filas
+    }
     totais = queryset.aggregate(**agregacoes)
     resultado = []
     for chave in filas:
@@ -618,10 +651,9 @@ def _queryset_filtrado(request):
 
     fila = request.GET.get("fila", "")
     if fila in FILAS:
-        if FILAS[fila].get("status"):
-            queryset = queryset.filter(status__in=FILAS[fila]["status"])
-        if FILAS[fila].get("apenas_do_usuario"):
-            queryset = queryset.filter(criado_por=request.user)
+        queryset = queryset.filter(_condicao_da_fila(FILAS[fila], request.user))
+    else:
+        fila = ""
 
     if filtros.is_valid():
         dados = filtros.cleaned_data
@@ -660,6 +692,60 @@ ICONES_FILA = {
 }
 
 
+def _filtros_ativos(request, filtros, fila, filas_da_trilha):
+    """Os filtros que a trilha não mostra, cada um com o "x" que o remove.
+
+    Quem chega por um cartão do Dashboard (ou por um link salvo) traz status,
+    período ou uma fila fora da trilha: sem isto o filtro ficava invisível e
+    a lista parecia vazia ou errada.
+    """
+    base = request.GET.copy()
+    base.pop("pagina", None)
+
+    def sem(*nomes):
+        destino = base.copy()
+        for nome in nomes:
+            destino.pop(nome, None)
+        consulta = destino.urlencode()
+        return f"?{consulta}" if consulta else "?"
+
+    ativos = []
+    if fila and fila not in filas_da_trilha:
+        ativos.append({"rotulo": FILAS[fila]["rotulo"], "url_remover": sem("fila")})
+    dados = filtros.cleaned_data if filtros.is_valid() else {}
+    if dados.get("status"):
+        ativos.append({
+            "rotulo": f"Situação: {StatusSolicitacao(dados['status']).label}",
+            "url_remover": sem("status"),
+        })
+    if dados.get("municipio"):
+        ativos.append({
+            "rotulo": f"Município: {dados['municipio']}",
+            "url_remover": sem("municipio"),
+        })
+    if dados.get("tipo_evento"):
+        ativos.append({
+            "rotulo": f"Tipo: {dados['tipo_evento']}",
+            "url_remover": sem("tipo_evento"),
+        })
+    if dados.get("inicio"):
+        ativos.append({
+            "rotulo": f"Eventos a partir de {dados['inicio']:%d/%m/%Y}",
+            "url_remover": sem("inicio"),
+        })
+    if dados.get("fim"):
+        ativos.append({
+            "rotulo": f"Eventos até {dados['fim']:%d/%m/%Y}",
+            "url_remover": sem("fim"),
+        })
+    return ativos
+
+
+# Filtros que a busca carrega escondidos: buscar não pode descartar o
+# período ou a situação que vieram do Dashboard.
+CAMPOS_OCULTOS_NA_BUSCA = ["status", "municipio", "tipo_evento", "inicio", "fim", "ordem"]
+
+
 @login_required
 def lista_solicitacoes(request):
     queryset, base, filtros, fila = _queryset_filtrado(request)
@@ -674,6 +760,10 @@ def lista_solicitacoes(request):
     parametros = request.GET.copy()
     parametros.pop("pagina", None)
     total_geral = base.count()
+    filas = _filas_do_usuario(request.user, base)
+    filtros_ativos = _filtros_ativos(
+        request, filtros, fila, {item["chave"] for item in filas}
+    )
 
     return render(
         request,
@@ -682,13 +772,25 @@ def lista_solicitacoes(request):
             "pagina": pagina,
             "q": request.GET.get("q", ""),
             "querystring": parametros.urlencode(),
+            # Trocar de situação na trilha substitui o status que veio do
+            # Dashboard, em vez de somar os dois e esvaziar a lista.
             "situacoes": trilha_de_situacoes(
-                request, _filas_do_usuario(request.user, base), total_geral, ICONES_FILA
+                request, filas, total_geral, ICONES_FILA, descartar=("status",)
             ),
-            # Chip aceso: sem fila escolhida, "Todas".
-            "situacao_ativa": fila or "todas",
+            # Item aceso: a fila escolhida; "Todas" só quando nada filtra a
+            # situação — com status na URL, "Todas" mentiria.
+            "situacao_ativa": fila
+            or ("" if request.GET.get("status") else "todas"),
             "fila_ativa": fila,
-            "tem_filtros": any(request.GET.get(nome) for nome in CAMPOS_FILTRO),
+            "filtros_ativos": filtros_ativos,
+            "campos_ocultos_busca": [
+                {"nome": nome, "valor": request.GET[nome]}
+                for nome in CAMPOS_OCULTOS_NA_BUSCA
+                if request.GET.get(nome)
+            ],
+            "tem_filtros": bool(fila) or any(
+                request.GET.get(nome) for nome in CAMPOS_FILTRO
+            ),
             "paginas_visiveis": paginas_visiveis,
             "elipse": Paginator.ELLIPSIS,
             "linhas": [

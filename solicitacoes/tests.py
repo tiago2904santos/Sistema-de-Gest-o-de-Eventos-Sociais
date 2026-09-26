@@ -2070,6 +2070,89 @@ class ViagemNaTelaDaSolicitacaoTests(BaseSolicitacaoTestCase):
         )
 
 
+class FiltrosVisiveisDaListaTests(BaseSolicitacaoTestCase):
+    """Filtro que veio do Dashboard aparece, sai com um "x" e não se soma às filas."""
+
+    def setUp(self):
+        from django.utils import timezone
+
+        self.hoje = timezone.localdate()
+        # Deferida deste ano, deferida de ano passado e uma aguardando despacho.
+        self.deste_ano = self.criar_solicitacao(
+            status=StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
+            data_solicitacao=self.hoje,
+        )
+        self.antiga = self.criar_solicitacao(
+            status=StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
+            data_solicitacao=date(self.hoje.year - 1, 3, 1),
+        )
+        self.aguardando = self.criar_solicitacao(
+            status=StatusSolicitacao.AGUARDANDO_DESPACHO,
+            data_solicitacao=self.hoje,
+        )
+        self.client.force_login(self.gestor)
+
+    def _ids(self, resposta):
+        return {s.pk for s in resposta.context["pagina"].object_list}
+
+    def test_fila_deferidas_no_ano_bate_com_o_cartao(self):
+        resposta = self.client.get(reverse("solicitacoes:lista"), {"fila": "deferidas_ano"})
+        self.assertEqual(self._ids(resposta), {self.deste_ano.pk})
+        self.assertContains(resposta, "Deferidas no ano")
+        self.assertContains(resposta, "data-filtro-ativo")
+        # A fila é oculta: "Todas" não fica aceso.
+        self.assertEqual(resposta.context["situacao_ativa"], "deferidas_ano")
+
+    def test_fila_proximos_30_dias(self):
+        from datetime import timedelta
+
+        proxima = self.criar_solicitacao(
+            status=StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
+            data_inicio_evento=self.hoje + timedelta(days=5),
+            data_fim_evento=self.hoje + timedelta(days=5),
+        )
+        self.criar_solicitacao(
+            status=StatusSolicitacao.CANCELADA,
+            data_inicio_evento=self.hoje + timedelta(days=5),
+            data_fim_evento=self.hoje + timedelta(days=5),
+        )
+        resposta = self.client.get(reverse("solicitacoes:lista"), {"fila": "proximos"})
+        self.assertEqual(self._ids(resposta), {proxima.pk})
+
+    def test_status_da_url_aparece_com_x_e_nao_acende_todas(self):
+        resposta = self.client.get(
+            reverse("solicitacoes:lista"), {"status": StatusSolicitacao.AGUARDANDO_DESPACHO}
+        )
+        self.assertEqual(self._ids(resposta), {self.aguardando.pk})
+        self.assertContains(resposta, "Situação: Aguardando despacho")
+        self.assertNotEqual(resposta.context["situacao_ativa"], "todas")
+        [filtro] = resposta.context["filtros_ativos"]
+        self.assertNotIn("status=", filtro["url_remover"])
+
+    def test_trocar_de_fila_substitui_o_status(self):
+        resposta = self.client.get(
+            reverse("solicitacoes:lista"), {"status": StatusSolicitacao.DEFERIDA_EM_ANDAMENTO}
+        )
+        despacho = next(i for i in resposta.context["situacoes"] if i["slug"] == "despacho")
+        self.assertNotIn("status=", despacho["url"])
+
+    def test_busca_mantem_o_periodo(self):
+        resposta = self.client.get(
+            reverse("solicitacoes:lista"), {"inicio": "2026-01-01", "fim": "2026-12-31"}
+        )
+        self.assertContains(resposta, 'type="hidden" name="inicio" value="2026-01-01"')
+        self.assertContains(resposta, 'type="hidden" name="fim" value="2026-12-31"')
+        self.assertContains(resposta, "Eventos a partir de 01/01/2026")
+
+    def test_cartoes_do_dashboard_usam_as_filas(self):
+        resposta = self.client.get(reverse("dashboard:index"))
+        urls = [cartao["url"] for cartao in resposta.context["resumo"]]
+        self.assertIn(reverse("solicitacoes:lista") + "?fila=despacho", urls)
+        self.assertIn(reverse("solicitacoes:lista") + "?fila=deferidas_ano", urls)
+        self.assertIn(reverse("solicitacoes:lista") + "?fila=proximos", urls)
+        self.assertFalse(any("status=" in url for url in urls))
+
+
 class ObservacaoLongaTests(BaseSolicitacaoTestCase):
     """Observação longa da DG não pode derrubar o despacho (aviso do sino tem limite)."""
 

@@ -2602,6 +2602,11 @@ textarea.form-controle.cb-caixa-copiar__texto{width:100%;min-height:0;resize:ver
 .sol-encerrar__linha{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 .sol-encerrar__texto{margin:0;font-size:13px;color:var(--n-600)}
 .sol-encerrar__linha form{margin:0}
+/* Filtros ativos acima da lista (os que a trilha não mostra), com o "x". */
+.filtros-ativos{padding:10px 18px;border-bottom:1px solid var(--n-150)}
+.filtros-ativos .chip a{width:18px;height:18px;display:grid;place-items:center;border-radius:4px;color:var(--d-700)}
+.filtros-ativos .chip a:hover{background:var(--d-200)}
+.filtros-ativos .chip .ui-icon{width:12px;height:12px}
 /* Cartão "Viagem" da solicitação: situação, o que falta e o "Gerar viagem". */
 .sol-viagem{display:flex;flex-direction:column;gap:8px}
 .sol-viagem__situacao,.sol-viagem__texto{margin:0;font-size:13px;color:var(--n-600)}

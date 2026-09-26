@@ -157,7 +157,7 @@ def index(request):
             "destaque": True,
             "sparkline": _sparkline(serie_aguardando),
             "variacao": "Pendentes de decisão da DG",
-            "url": f"{lista}?status={StatusSolicitacao.AGUARDANDO_DESPACHO}",
+            "url": f"{lista}?fila=despacho",
         },
         {
             "titulo": "Deferidas no ano",
@@ -170,7 +170,8 @@ def index(request):
                 if decididas_ano
                 else "Nenhuma decisão registrada ainda"
             ),
-            "url": f"{lista}?status={StatusSolicitacao.DEFERIDA_EM_ANDAMENTO}",
+            # A fila tem o mesmo recorte do número: deferidas e atendidas do ano.
+            "url": f"{lista}?fila=deferidas_ano",
         },
         {
             "titulo": "Eventos nos próximos 30 dias",
@@ -181,10 +182,7 @@ def index(request):
             "variacao": (
                 f"{proximos_unidade_movel} com unidade móvel" if proximos_total else "Nenhum evento agendado"
             ),
-            "url": (
-                f"{lista}?inicio={hoje:%Y-%m-%d}"
-                f"&fim={hoje + timedelta(days=30):%Y-%m-%d}"
-            ),
+            "url": f"{lista}?fila=proximos",
         },
     ]
 

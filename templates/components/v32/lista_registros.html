@@ -26,12 +26,23 @@
   <form method="get" class="cad-barra" role="search" data-cadastro-busca data-auto-enviar>
     {# A situação escolhida na trilha sobrevive à busca. #}
     {% if filtro_nome and filtro_valor %}<input type="hidden" name="{{ filtro_nome }}" value="{{ filtro_valor }}">{% endif %}
+    {# Os demais filtros ativos (período, status…) também: buscar não os descarta. #}
+    {% for campo in campos_ocultos_busca %}<input type="hidden" name="{{ campo.nome }}" value="{{ campo.valor }}">{% endfor %}
     <div class="busca">
       {% include "components/icon.html" with nome="search" %}
       <label class="sr-only" for="id_q">Buscar {{ rotulo_plural }}</label>
       <input type="search" name="q" id="id_q" value="{{ q }}" placeholder="{{ placeholder_busca }}" autocomplete="off">
     </div>
   </form>
+
+  {% if filtros_ativos %}
+    {# Filtro que a trilha não mostra fica à vista, com o "x" que o tira. #}
+    <div class="chips filtros-ativos" aria-label="Filtros ativos">
+      {% for f in filtros_ativos %}
+        <span class="chip" data-filtro-ativo>{{ f.rotulo }}<a href="{{ f.url_remover }}" aria-label="Remover filtro {{ f.rotulo }}" title="Remover filtro">{% include "components/icon.html" with nome="x" %}</a></span>
+      {% endfor %}
+    </div>
+  {% endif %}
 
   <div class="dt-w v32-tabela-desktop" tabindex="0" role="region" aria-label="Tabela de {{ rotulo_plural }}">
     <table class="dt dt--responsiva">
