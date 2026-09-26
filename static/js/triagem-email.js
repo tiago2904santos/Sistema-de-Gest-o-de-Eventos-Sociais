@@ -27,10 +27,13 @@
     return elemento;
   }
 
+  // Pelo nome; sem extensão (o celular às vezes manda "document"), pelo tipo.
+  var TIPOS = { "application/pdf": ".pdf", "message/rfc822": ".eml", "text/plain": ".txt", "application/vnd.ms-outlook": ".msg" };
   function extensaoDe(arquivo) {
     var nome = (arquivo.name || "").toLowerCase();
     var ponto = nome.lastIndexOf(".");
-    return ponto === -1 ? "" : nome.slice(ponto);
+    if (ponto !== -1 && ponto < nome.length - 1) return nome.slice(ponto);
+    return TIPOS[(arquivo.type || "").toLowerCase()] || "";
   }
 
   function iniciar(bloco) {
