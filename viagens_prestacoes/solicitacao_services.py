@@ -90,6 +90,22 @@ def _datas_validadas(campos) -> tuple[dict[str, datetime.date | None], str]:
     return validadas, ""
 
 
+MENSAGEM_PRAZO_ANTES_DA_LIBERACAO = "O prazo limite de saque não pode ser anterior à liberação."
+
+
+def _erro_de_ordem(servidor_prestacao, datas) -> str:
+    """As datas novas combinadas com as gravadas não podem ficar invertidas (m090).
+
+    A constraint `prest_serv_prazo_apos_liberacao` do banco já recusa, mas como
+    IntegrityError — um "Erro 500" na tela e, no lote, a lista inteira perdida.
+    """
+    liberacao = datas.get("data_liberacao_diarias", servidor_prestacao.data_liberacao_diarias)
+    prazo = datas.get("prazo_limite_saque", servidor_prestacao.prazo_limite_saque)
+    if liberacao and prazo and prazo < liberacao:
+        return MENSAGEM_PRAZO_ANTES_DA_LIBERACAO
+    return ""
+
+
 def valores_do_lote(post) -> dict[int, dict[str, str]]:
     """Lê `ps-<pk>-<campo>` do POST e agrupa por servidor.
 
@@ -128,6 +144,11 @@ def salvar_solicitacoes_em_lote(servidores, valores) -> ResultadoSolicitacao:
         datas, erro = _datas_validadas(campos)
         if erro:
             return ResultadoSolicitacao(erro=erro)
+        erro = _erro_de_ordem(servidor_prestacao, datas)
+        if erro:
+            # No lote, dizer de quem é a linha errada.
+            nome = getattr(servidor_prestacao.servidor, "nome", "")
+            return ResultadoSolicitacao(erro=f"{nome}: {erro}" if nome else erro)
         preparados.append((servidor_prestacao, campos, datas))
 
     gravados = 0
@@ -168,6 +189,7 @@ def salvar_solicitacao_do_autosave(
     nunca convive com número ou outra data parcialmente persistidos.
     """
     datas_validadas, erro = _datas_validadas(datas or {})
+    erro = erro or _erro_de_ordem(servidor_prestacao, datas_validadas)
     if erro:
         return ResultadoSolicitacao(erro=erro)
 

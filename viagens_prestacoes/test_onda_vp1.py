@@ -168,6 +168,38 @@ class FinalizarSemInverterTests(PrestacaoFixturesMixin, PrestacaoTestCase):
         self.assertFalse(self.ps.arquivada)
 
 
+class LiberacaoDepoisDoPrazoTests(PrestacaoFixturesMixin, PrestacaoTestCase):
+    """m090: liberação depois do prazo vira mensagem, não Erro 500."""
+
+    def setUp(self):
+        super().setUp()
+        import datetime
+
+        self.setUpPrestacaoFixtures()
+        self.fixture = self.criar_prestacao(numero=90, servidores=(self.criar_servidor("Ana"), self.criar_servidor("Bia")))
+        self.ana, self.bia = self.fixture.prestacoes_servidor
+        for ps in (self.ana, self.bia):
+            ps.data_liberacao_diarias = datetime.date(2026, 8, 10)
+            ps.prazo_limite_saque = datetime.date(2026, 8, 24)
+            ps.save()
+
+    def test_autosave(self):
+        from .solicitacao_services import MENSAGEM_PRAZO_ANTES_DA_LIBERACAO
+
+        resultado = salvar_solicitacao_do_autosave(self.ana, datas={"data_liberacao_diarias": "2026-08-30"})
+        self.assertEqual(resultado.erro, MENSAGEM_PRAZO_ANTES_DA_LIBERACAO)
+        self.ana.refresh_from_db()
+        self.assertEqual(str(self.ana.data_liberacao_diarias), "2026-08-10")
+
+    def test_lote_nao_derruba_a_lista(self):
+        resposta = self.client.post(reverse("viagens_prestacoes:index"), {
+            f"ps-{self.ana.pk}-data_liberacao_diarias": "2026-08-30",
+            f"ps-{self.bia.pk}-numero_solicitacao": "123",
+        }, follow=True)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "não pode ser anterior à liberação")
+
+
 class VersoesAnterioresTests(PrestacaoFixturesMixin, PrestacaoTestCase):
     """m084: remover e substituir guardam o anterior, que se restaura."""
 
