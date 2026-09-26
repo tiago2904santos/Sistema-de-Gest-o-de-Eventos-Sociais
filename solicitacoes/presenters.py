@@ -39,8 +39,25 @@ def selo_da_solicitacao(solicitacao):
     return solicitacao.get_status_display(), solicitacao.status.lower()
 
 
+# Evento a até tantos dias: selo vermelho (urgente) ou âmbar (próximo).
+DIAS_PRAZO_URGENTE = 3
+DIAS_PRAZO_PROXIMO = 7
+# Pedido feito com menos que isto de antecedência é marcado "em cima da hora".
+ANTECEDENCIA_MINIMA_DIAS = 10
+
+STATUS_COM_PRAZO = {
+    StatusSolicitacao.RASCUNHO,
+    StatusSolicitacao.AGUARDANDO_DESPACHO,
+    StatusSolicitacao.DEVOLVIDA,
+}
+
+
 def selo_temporal(solicitacao):
-    """Quando o evento acontece — a mesma régua dos termos e dos roteiros."""
+    """Quando o evento acontece — a mesma régua dos termos e dos roteiros.
+
+    Enquanto o pedido ainda não foi decidido, o evento próximo vira prazo:
+    "Evento em 3 dias" em vermelho (até 3 dias) ou âmbar (até 7).
+    """
     inicio = solicitacao.data_inicio_evento
     if not inicio:
         return "", ""
@@ -50,7 +67,29 @@ def selo_temporal(solicitacao):
         return "Realizado", "atendido"
     if inicio <= hoje:
         return "Acontecendo", "em_andamento"
+    faltam = (inicio - hoje).days
+    if solicitacao.status in STATUS_COM_PRAZO and faltam <= DIAS_PRAZO_PROXIMO:
+        texto = "Evento amanhã" if faltam == 1 else f"Evento em {faltam} dias"
+        tom = "prazo_urgente" if faltam <= DIAS_PRAZO_URGENTE else "prazo_proximo"
+        return texto, tom
     return "Previsto", "aguardando"
+
+
+def antecedencia_do_pedido(solicitacao):
+    """Dias entre o pedido e o início do evento, ou None sem as duas datas."""
+    if not solicitacao.data_inicio_evento or not solicitacao.data_solicitacao:
+        return None
+    return (solicitacao.data_inicio_evento - solicitacao.data_solicitacao).days
+
+
+def em_cima_da_hora(solicitacao):
+    """Pedido ainda por decidir, feito com pouca antecedência do evento."""
+    dias = antecedencia_do_pedido(solicitacao)
+    return (
+        dias is not None
+        and 0 <= dias < ANTECEDENCIA_MINIMA_DIAS
+        and solicitacao.status in STATUS_COM_PRAZO
+    )
 
 
 def fatos_da_solicitacao(solicitacao):
@@ -102,6 +141,19 @@ def fatos_da_solicitacao(solicitacao):
             "ausente": False,
         }
     )
+    if em_cima_da_hora(solicitacao):
+        dias = antecedencia_do_pedido(solicitacao)
+        fatos.append(
+            {
+                "icone": "alert",
+                "rotulo": "Antecedência",
+                "texto": "Pedido em cima da hora ("
+                + ("no dia do evento" if dias == 0 else f"{dias} dia{'s' if dias != 1 else ''} antes")
+                + ")",
+                "ausente": False,
+                "alerta": True,
+            }
+        )
     return fatos
 
 
@@ -148,5 +200,6 @@ def linha_da_lista(solicitacao, acoes):
         "principal": acao_principal(solicitacao, acoes),
         "url_editar": reverse("solicitacoes:editar", args=[solicitacao.pk]),
         "url_excluir": reverse("solicitacoes:excluir", args=[solicitacao.pk]),
+        "url_duplicar": reverse("solicitacoes:duplicar", args=[solicitacao.pk]),
         "cancelada": solicitacao.status == StatusSolicitacao.CANCELADA,
     }

@@ -1,0 +1,73 @@
+{% comment %}
+  O conteúdo do relatório do contrato, igual na tela e no PDF: o saldo e a
+  projeção, os valores, o consumo por mês e por município, os lotes e as
+  entregas. Contexto: o de `relatorio_contrato.montar`.
+{% endcomment %}
+{% if projecao.acaba_antes %}
+  <div class="aviso aviso--erro" role="alert"><div><strong>O saldo acaba antes do fim do contrato.</strong> No ritmo dos últimos {{ meses_do_ritmo }} meses ({{ projecao.ritmo }} por mês), os {{ restante }} restantes acabam por volta de {{ projecao.acaba_em|date:"d/m/Y" }}; a vigência vai até {{ fim_vigencia|date:"d/m/Y" }}{% if projecao.falta %} — faltam cerca de {{ projecao.falta }} unidades{% endif %}.</div></div>
+{% endif %}
+
+<h2 class="sol-subtitulo">Saldo e projeção</h2>
+<table class="dt resumo">
+  <tbody>
+    <tr><td>Fim da vigência (com aditivos)</td><td>{{ fim_vigencia|date:"d/m/Y"|default:"não informado" }}</td></tr>
+    <tr><td>Capacidade dos lotes vigentes</td><td>{{ capacidade }} unidades</td></tr>
+    <tr><td>Consumido / saldo restante</td><td>{{ consumido }} / {{ restante }} unidades</td></tr>
+    <tr><td>Ritmo: média dos últimos {{ meses_do_ritmo }} meses completos</td><td>{{ projecao.ritmo }} unidades por mês</td></tr>
+    <tr><td>Média por mês com consumo (todo o período)</td><td>{{ media_geral }} unidades</td></tr>
+    <tr><td>No ritmo atual, o saldo acaba em</td><td>{% if projecao.acaba_em %}{{ projecao.acaba_em|date:"d/m/Y" }}{% else %}sem consumo recente para projetar{% endif %}</td></tr>
+    <tr><td>Sobra (ou falta) no fim da vigência</td><td>{% if projecao.sobra is None %}—{% elif projecao.falta %}faltam {{ projecao.falta }} unidades{% else %}sobram {{ projecao.sobra }} unidades{% endif %}</td></tr>
+  </tbody>
+</table>
+
+<h2 class="sol-subtitulo">Valores</h2>
+<table class="dt resumo">
+  <tbody>
+    <tr><td>Valor gasto (OS não canceladas)</td><td>{{ reais.gasto }}</td></tr>
+    <tr><td>Valor pago (com ordem bancária)</td><td>{{ reais.pago }}</td></tr>
+    <tr><td>Empenhado nos lotes vigentes / saldo do empenho</td><td>{{ reais.empenhado }} / {{ reais.saldo_empenho }}</td></tr>
+    <tr><td>Tempo médio entre a nota e a ordem bancária</td><td>{% if prazo_medio_pagamento is not None %}{{ prazo_medio_pagamento }} dias ({{ pagamentos_medidos }} pagamento{{ pagamentos_medidos|pluralize }}){% else %}—{% endif %}</td></tr>
+    <tr><td>Solicitações / unidades no contrato</td><td>{{ total_os }} / {{ total_quantidade }}</td></tr>
+  </tbody>
+</table>
+
+<h2 class="sol-subtitulo">Consumo por mês</h2>
+<table class="dt">
+  <thead><tr><th>Mês</th><th class="n">OS</th><th class="n">Unidades</th><th class="n">Valor</th></tr></thead>
+  <tbody>
+    {% for item in por_mes %}
+      <tr><td>{{ item.mes }}</td><td class="n">{{ item.os }}</td><td class="n">{{ item.quantidade }}</td><td class="n">{{ item.valor_fmt }}</td></tr>
+    {% empty %}
+      <tr><td colspan="4">Nenhuma solicitação no contrato.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2 class="sol-subtitulo">Consumo por município</h2>
+<table class="dt">
+  <thead><tr><th>Município</th><th class="n">OS</th><th class="n">Unidades</th></tr></thead>
+  <tbody>
+    {% for item in por_municipio %}
+      <tr><td>{{ item.municipio }}</td><td class="n">{{ item.os }}</td><td class="n">{{ item.quantidade }}</td></tr>
+    {% empty %}
+      <tr><td colspan="3">Nenhuma solicitação no contrato.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2 class="sol-subtitulo">Lotes</h2>
+<table class="dt">
+  <thead><tr><th>Lote</th><th>Situação</th><th class="n">Capacidade</th><th class="n">Consumido</th><th class="n">Restante</th><th>Empenho</th></tr></thead>
+  <tbody>
+    {% for item in lotes %}
+      <tr><td>{{ item.lote.rotulo_curto }}</td><td>{{ item.lote.ativo|yesno:"Vigente,Encerrado" }}</td><td class="n">{{ item.lote.quantidade_total }}</td><td class="n">{{ item.lote.consumido }} ({{ item.percentual }}%)</td><td class="n">{{ item.lote.restante }}</td><td>{{ item.lote.empenho|default:"—" }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2 class="sol-subtitulo">Entregas e ocorrências</h2>
+{% if entregas.registros %}
+  <p>{{ entregas_texto }}.{% if entregas.por_tipo %} Ocorrências: {% for tipo, total in entregas.por_tipo %}{{ tipo }} ({{ total }}){% if not forloop.last %}, {% endif %}{% endfor %}.{% endif %}</p>
+{% else %}
+  <p>Nenhuma entrega registrada neste contrato.</p>
+{% endif %}

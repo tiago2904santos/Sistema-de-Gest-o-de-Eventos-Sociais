@@ -134,6 +134,28 @@
           </div>
           {% endwith %}
         {% endif %}
+        {# A ordem bancária: anexar o PDF (número, data e valor lidos dele) e enviá-lo ao fornecedor, que encerra o pagamento. #}
+        <div class="cbi-etapa">
+          <span class="cbi-etapa__icone" aria-hidden="true">{% include "components/icon.html" with nome="landmark" %}</span>
+          <span class="cbi-etapa__texto">
+            {% if solicitacao.arquivo_ordem_bancaria %}
+              <b><a href="{% url 'coffee_break:ordem_bancaria_arquivo' solicitacao.pk %}" target="_blank" rel="noopener">Ordem bancária{% if solicitacao.numero_ordem_bancaria %} {{ solicitacao.numero_ordem_bancaria }}{% endif %}</a></b>
+              <small>{% if solicitacao.valor_ordem_bancaria is not None %}Valor lido: R$ {{ solicitacao.valor_ordem_bancaria|floatformat:"2g" }}. {% endif %}{% if solicitacao.data_envio_empresa %}Enviada à empresa em {{ solicitacao.data_envio_empresa|date:"d/m/Y" }}.{% else %}Envie ao fornecedor por e-mail: o pagamento se encerra{% if solicitacao.em_pagamento_conjunto %} em todas as OS dele{% endif %}.{% endif %}</small>
+            {% else %}
+              <b>Ordem bancária</b>
+              <small>Anexe o PDF da OB: o número, a data e o valor são lidos do arquivo{% if solicitacao.em_pagamento_conjunto %}, e ele vale para todas as OS do pagamento{% endif %}.</small>
+            {% endif %}
+          </span>
+          {% if not somente_leitura and solicitacao.numero_nota_fiscal %}
+            <a class="btn--secundaria btn--compacto" href="{{ url_anexar_ob }}" data-anexar-assinado{% if solicitacao.arquivo_ordem_bancaria %} data-anexar-atual="1" data-anexar-remover-rotulo="Remover ordem bancária"{% endif %} data-anexar-titulo="{% if solicitacao.arquivo_ordem_bancaria %}Trocar a ordem bancária{% else %}Anexar ordem bancária{% endif %}" data-anexar-texto="Envie o PDF da ordem bancária. O número, a data e o valor são lidos do próprio arquivo." data-anexar-acao="Anexar PDF">{% include "components/icon.html" with nome="upload" %}{% if solicitacao.arquivo_ordem_bancaria %}Trocar{% else %}Anexar OB{% endif %}</a>
+          {% endif %}
+          {% if solicitacao.arquivo_ordem_bancaria and solicitacao.data_ordem_bancaria and not solicitacao.cancelada %}
+            <a class="btn-primaria btn--compacto" href="{% url 'coffee_break:enviar_ob' solicitacao.pk %}">{% include "components/icon.html" with nome="send" %}{% if solicitacao.data_envio_empresa %}Reenviar OB{% else %}Enviar OB ao fornecedor{% endif %}</a>
+          {% endif %}
+        </div>
+        {% for aviso in avisos_ob %}
+          <div class="aviso aviso--info" role="status">{% include "components/icon.html" with nome="alert" %}<div>{{ aviso }}</div></div>
+        {% endfor %}
         <div class="g-form g-form--4 cb-pagamento">
           {# O protocolo de pagamento é o do ofício (etapa 2). #}
           <div class="form-campo"><span class="form-label">Protocolo de pagamento</span><div class="cb-valor-fixo">{% if solicitacao.protocolo_pagamento %}{{ solicitacao.protocolo_pagamento }}{% else %}<a href="{% url 'coffee_break:etapa_nota' solicitacao.pk %}">Informe o protocolo na etapa 2</a>{% endif %}</div></div>

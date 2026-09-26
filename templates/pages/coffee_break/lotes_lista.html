@@ -20,6 +20,10 @@
       <div class="kicker kicker--junto">Coffee Break</div>
       <h1>Lotes</h1>
     </div>
+    {% if usuario_eh_administrador and proximo_exercicio %}
+      {# Virada de exercício: copia os lotes vigentes para o ano seguinte, pedindo só quantidade e empenho. #}
+      <a class="btn--secundaria" href="{% url 'coffee_break:virada_exercicio' %}">{% include "components/icon.html" with nome="calendar" %}Abrir exercício {{ proximo_exercicio }}</a>
+    {% endif %}
   </div>
 
   <div class="cad-grade cad-grade--sem-folga">

@@ -7,7 +7,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.db import DatabaseError, transaction
-from django.db.models import Count, Q
+from django.db.models import Count, F, Q
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -36,7 +36,14 @@ from integracoes.eprotocolo.andamento import formatar_numero
 from core.listagens import trilha_de_situacoes
 
 from .presenters import linha_da_lista
-from . import integracao_viagens, permissions, preenchimento, services
+from . import (
+    integracao_viagens,
+    lembretes,
+    permissions,
+    preenchimento,
+    services,
+    sugestoes,
+)
 
 ITENS_POR_PAGINA = 15
 
@@ -337,6 +344,21 @@ def ler_email(request):
 
 
 @login_required
+def sugestao_do_tipo(request):
+    """Serviços, equipes e solicitante sugeridos para o tipo (só leitura)."""
+    tipo = request.GET.get("tipo", "")
+    return JsonResponse(sugestoes.sugestao_do_tipo(int(tipo) if tipo.isdigit() else None))
+
+
+@login_required
+def solicitantes_anteriores(request):
+    """Solicitantes que já pediram, para sugerir ao digitar o nome (só leitura)."""
+    return JsonResponse(
+        {"resultados": sugestoes.solicitantes_anteriores(request.user, request.GET.get("q", ""))}
+    )
+
+
+@login_required
 def nova_solicitacao(request):
     """Tela "Nova Solicitação de Evento Social" com persistência real."""
     email_origem = None
@@ -479,13 +501,31 @@ def editar_solicitacao(request, pk):
             "motivo_devolucao": devolucao,
             "despacho_pendente": pendente,
             "decisoes_dg": _decisoes_dg(pendente),
+            **_contexto_despacho(request.user, solicitacao),
             "cartao_viagem": None if reabrindo else _cartao_viagem(request.user, solicitacao),
+            "responsaveis": _opcoes_responsaveis(solicitacao)
+            if permissions.pode_transferir(request.user, solicitacao) and not reabrindo
+            else [],
             "andamento_protocolo": andamento_eprotocolo.andamento_guardado(
                 request, "solicitacoes", solicitacao.pk
             ),
         }
     )
     return render(request, "pages/solicitacoes/form.html", contexto)
+
+
+def _contexto_despacho(user, solicitacao):
+    """Posição na fila ("3 de 7") e os textos prontos, só para quem despacha."""
+    if not permissions.pode_despachar(user, solicitacao):
+        return {}
+    from cadastros.models import TextoDespacho
+
+    fila = _fila_de_despacho(user)
+    posicao = fila.index(solicitacao.pk) + 1 if solicitacao.pk in fila else None
+    return {
+        "fila_despacho": {"posicao": posicao, "total": len(fila)},
+        "textos_despacho": list(TextoDespacho.objects.filter(ativo=True)),
+    }
 
 
 def _cartao_viagem(user, solicitacao):
@@ -535,6 +575,12 @@ FILAS = {
         "rotulo": "Deferidas",
         "status": [StatusSolicitacao.DEFERIDA_EM_ANDAMENTO],
     },
+    # Deferida com o evento já realizado: falta o autor marcar "Atendida".
+    "confirmar": {
+        "rotulo": "Confirmar atendimento",
+        "status": [StatusSolicitacao.DEFERIDA_EM_ANDAMENTO],
+        "evento_encerrado": True,
+    },
     "canceladas": {
         "rotulo": "Canceladas",
         "status": [StatusSolicitacao.CANCELADA],
@@ -574,6 +620,8 @@ def _condicao_da_fila(config, user):
         condicao &= Q(status__in=config["status"])
     if config.get("apenas_do_usuario"):
         condicao &= Q(criado_por=user)
+    if config.get("evento_encerrado"):
+        condicao &= lembretes.condicao_evento_encerrado()
     if config.get("ano_corrente"):
         condicao &= Q(data_solicitacao__year=timezone.localdate().year)
     if config.get("proximos_dias"):
@@ -593,7 +641,9 @@ def _filas_do_usuario(user, queryset):
     filas = []
     if permissions.eh_gestor_dg(user):
         filas.append("despacho")
-    filas.extend(["devolvidas", "andamento", "canceladas", "rascunhos", "minhas"])
+    filas.extend(
+        ["devolvidas", "andamento", "confirmar", "canceladas", "rascunhos", "minhas"]
+    )
     agregacoes = {
         chave: Count("pk", filter=_condicao_da_fila(FILAS[chave], user))
         for chave in filas
@@ -625,6 +675,23 @@ ORDENACOES = {
     "status": ["status", "-data_solicitacao"],
 }
 ORDENACAO_PADRAO = "-data"
+# Na fila de despacho o que vence primeiro vem primeiro: o evento mais
+# próximo no topo, os sem data no fim.
+ORDEM_DESPACHO = [F("data_inicio_evento").asc(nulls_last=True), "pk"]
+
+
+def _fila_de_despacho(user):
+    """As solicitações aguardando despacho, na ordem de trabalho da DG."""
+    return list(
+        permissions.queryset_visivel(
+            user,
+            SolicitacaoEvento.objects.filter(
+                status=StatusSolicitacao.AGUARDANDO_DESPACHO
+            ),
+        )
+        .order_by(*ORDEM_DESPACHO)
+        .values_list("pk", flat=True)
+    )
 
 
 def _ordenacao(request):
@@ -661,6 +728,8 @@ def _queryset_filtrado(request):
         queryset = queryset.filter(_condicao_da_fila(FILAS[fila], request.user))
     else:
         fila = ""
+    if fila == "despacho" and not request.GET.get("ordem"):
+        queryset = queryset.order_by(*ORDEM_DESPACHO)
 
     if filtros.is_valid():
         dados = filtros.cleaned_data
@@ -671,7 +740,13 @@ def _queryset_filtrado(request):
                 | Q(local_evento__icontains=termo)
                 | Q(municipio__nome__icontains=termo)
                 | Q(protocolo__icontains=termo)
+                | Q(tipo_evento__nome__icontains=termo)
+                | Q(orgao_responsavel__nome__icontains=termo)
             )
+            # "#123" ou "123": o número da solicitação.
+            numero_solicitacao = termo.strip().lstrip("#").strip()
+            if numero_solicitacao.isdigit() and len(numero_solicitacao) <= 9:
+                condicao |= Q(pk=int(numero_solicitacao))
             # O número digitado sem pontos também acha o protocolo.
             numero = formatar_numero(termo)
             if numero:
@@ -699,6 +774,7 @@ ICONES_FILA = {
     "despacho": "gavel",
     "devolvidas": "undo",
     "andamento": "check-circle",
+    "confirmar": "check",
     "canceladas": "ban",
     "rascunhos": "pencil",
     "minhas": "user",
@@ -758,6 +834,33 @@ def _filtros_ativos(request, filtros, fila, filas_da_trilha):
 # período ou a situação que vieram do Dashboard.
 CAMPOS_OCULTOS_NA_BUSCA = ["status", "municipio", "tipo_evento", "inicio", "fim", "ordem"]
 
+# Os campos do painel "Filtros"; o resto da querystring vai escondido nele.
+CAMPOS_DO_PAINEL = ["inicio", "fim", "municipio", "tipo_evento"]
+
+
+def _painel_filtros(request, filtros):
+    """O painel recolhível de período, município e tipo, pronto para a tela."""
+    valores = {nome: request.GET.get(nome, "") for nome in CAMPOS_DO_PAINEL}
+    total = sum(1 for valor in valores.values() if valor)
+    ocultos = [
+        {"nome": nome, "valor": valor}
+        for nome, valor in request.GET.items()
+        if nome not in CAMPOS_DO_PAINEL and nome != "pagina" and valor
+    ]
+    limpar = request.GET.copy()
+    for nome in [*CAMPOS_DO_PAINEL, "pagina"]:
+        limpar.pop(nome, None)
+    consulta = limpar.urlencode()
+    return {
+        "valores": valores,
+        "total": total,
+        "aberto": bool(total),
+        "ocultos": ocultos,
+        "url_limpar": f"?{consulta}" if consulta else "?",
+        "municipios": _opcoes(filtros.fields["municipio"].queryset),
+        "tipos": _opcoes(filtros.fields["tipo_evento"].queryset.order_by("nome")),
+    }
+
 
 @login_required
 def lista_solicitacoes(request):
@@ -806,6 +909,8 @@ def lista_solicitacoes(request):
             ),
             "paginas_visiveis": paginas_visiveis,
             "elipse": Paginator.ELLIPSIS,
+            "painel": _painel_filtros(request, filtros),
+            "url_exportar": reverse("solicitacoes:exportar"),
             "linhas": [
                 linha_da_lista(s, permissions.acoes_permitidas(request.user, s))
                 for s in pagina
@@ -814,78 +919,140 @@ def lista_solicitacoes(request):
     )
 
 
-@login_required
-def exportar_solicitacoes(request):
-    """Exporta a listagem filtrada em CSV legível pelo Excel (pt-BR)."""
-    import csv
+COLUNAS_EXPORTACAO = [
+    ("Nº", 8), ("Status", 22), ("Data da solicitação", 14), ("Início do evento", 14),
+    ("Fim do evento", 14), ("Município", 22), ("Região", 18), ("Tipo de evento", 24),
+    ("Local", 30), ("Protocolo", 14), ("Solicitante", 28), ("Cargo / unidade", 28),
+    ("Contato", 16), ("Órgão responsável", 24), ("Serviços", 36),
+    ("Equipes (servidores)", 36), ("Total de servidores", 12), ("Tipo de operação", 14),
+    ("Unidade móvel", 10), ("Qtde CIN", 10), ("Motorista", 22), ("Decisão DG", 16),
+    ("Observações DG", 40), ("Decidido por", 20), ("Decidido em", 17), ("Criado por", 20),
+]
+# Colunas de data (índice a partir de 0) e a data/hora da decisão.
+COLUNAS_DATA = {2, 3, 4}
+COLUNA_DATA_HORA = 24
 
-    from django.http import HttpResponse
+
+def _linhas_exportacao(queryset):
+    """Uma linha por solicitação, nos tipos de verdade (data é data, número é número)."""
     from django.utils import timezone as tz
-
-    queryset, _base, _filtros, _fila = _queryset_filtrado(request)
-    queryset = queryset.select_related(
-        "orgao_responsavel", "motorista", "decidido_por"
-    ).prefetch_related("servicos", "itens_equipe__equipe")
-
-    hoje = tz.localdate().strftime("%Y-%m-%d")
-    resposta = HttpResponse(content_type="text/csv; charset=utf-8")
-    resposta["Content-Disposition"] = (
-        f'attachment; filename="solicitacoes-{hoje}.csv"'
-    )
-    # BOM para o Excel reconhecer UTF-8; ponto e vírgula para o Excel pt-BR.
-    resposta.write("﻿")
-    escritor = csv.writer(resposta, delimiter=";", lineterminator="\r\n")
-    escritor.writerow([
-        "Nº", "Status", "Data da solicitação", "Início do evento", "Fim do evento",
-        "Município", "Região", "Tipo de evento", "Local", "Protocolo", "Solicitante",
-        "Cargo / unidade", "Contato", "Órgão responsável", "Serviços",
-        "Equipes (servidores)", "Total de servidores", "Tipo de operação",
-        "Unidade móvel", "Qtde CIN", "Motorista",
-        "Decisão DG", "Observações DG", "Decidido por", "Decidido em",
-        "Criado por",
-    ])
-
-    def data(valor, formato="%d/%m/%Y"):
-        if not valor:
-            return ""
-        if hasattr(valor, "astimezone"):
-            valor = tz.localtime(valor)
-        return valor.strftime(formato)
 
     for s in queryset:
         equipes = "; ".join(
             f"{item.equipe} ({item.quantidade_servidores or '-'})"
             for item in s.itens_equipe.all()
         )
-        escritor.writerow([
+        yield [
             s.pk,
             s.get_status_display(),
-            data(s.data_solicitacao),
-            data(s.data_inicio_evento),
-            data(s.data_fim_evento),
-            s.municipio or "",
-            s.regiao or "",
-            s.tipo_evento or "",
+            s.data_solicitacao,
+            s.data_inicio_evento,
+            s.data_fim_evento,
+            str(s.municipio or ""),
+            str(s.regiao or ""),
+            str(s.tipo_evento or ""),
             s.local_evento,
             s.protocolo,
             s.solicitante_nome,
             s.solicitante_cargo_unidade,
             s.contato,
-            s.orgao_responsavel or "",
+            str(s.orgao_responsavel or ""),
             "; ".join(str(servico) for servico in s.servicos.all()),
             equipes,
-            s.quantidade_servidores or "",
+            s.quantidade_servidores,
             s.get_tipo_operacao_display() if s.tipo_operacao else "",
             "Sim" if s.unidade_movel else "Não",
-            s.quantidade_cin or "",
-            s.motorista or "",
+            s.quantidade_cin,
+            str(s.motorista or ""),
             s.get_decisao_dg_display(),
             s.observacoes_dg,
-            s.decidido_por or "",
-            data(s.decidido_em, "%d/%m/%Y %H:%M"),
-            s.criado_por,
+            str(s.decidido_por or ""),
+            tz.localtime(s.decidido_em).replace(tzinfo=None) if s.decidido_em else None,
+            str(s.criado_por),
+        ]
+
+
+def _exportar_csv(linhas, nome):
+    import csv
+
+    from django.http import HttpResponse
+
+    resposta = HttpResponse(content_type="text/csv; charset=utf-8")
+    resposta["Content-Disposition"] = f'attachment; filename="{nome}.csv"'
+    # BOM para o Excel reconhecer UTF-8; ponto e vírgula para o Excel pt-BR.
+    resposta.write("\ufeff")
+    escritor = csv.writer(resposta, delimiter=";", lineterminator="\r\n")
+    escritor.writerow([titulo for titulo, _largura in COLUNAS_EXPORTACAO])
+    for linha in linhas:
+        escritor.writerow([
+            ""
+            if valor is None
+            else valor.strftime("%d/%m/%Y %H:%M" if indice == COLUNA_DATA_HORA else "%d/%m/%Y")
+            if hasattr(valor, "strftime")
+            else valor
+            for indice, valor in enumerate(linha)
         ])
     return resposta
+
+
+def _exportar_xlsx(linhas, nome):
+    """Planilha formatada: cabeçalho fixo com filtro, datas como datas."""
+    from io import BytesIO
+
+    from django.http import HttpResponse
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    livro = Workbook()
+    aba = livro.active
+    aba.title = "Solicitações"
+    aba.append([titulo for titulo, _largura in COLUNAS_EXPORTACAO])
+    for celula in aba[1]:
+        celula.font = Font(bold=True)
+        celula.fill = PatternFill("solid", fgColor="D1D3D4")
+        celula.alignment = Alignment(vertical="center", wrap_text=True)
+    for linha in linhas:
+        aba.append(linha)
+        # Texto que começa com "=" viraria fórmula: fica texto.
+        for celula in aba[aba.max_row]:
+            if celula.data_type == "f":
+                celula.data_type = "s"
+    for indice, (_titulo, largura) in enumerate(COLUNAS_EXPORTACAO):
+        letra = get_column_letter(indice + 1)
+        aba.column_dimensions[letra].width = largura
+        if indice in COLUNAS_DATA or indice == COLUNA_DATA_HORA:
+            formato = "DD/MM/YYYY HH:MM" if indice == COLUNA_DATA_HORA else "DD/MM/YYYY"
+            for (celula,) in aba.iter_rows(min_row=2, min_col=indice + 1, max_col=indice + 1):
+                celula.number_format = formato
+    aba.freeze_panes = "B2"
+    aba.auto_filter.ref = aba.dimensions
+    saida = BytesIO()
+    livro.save(saida)
+    resposta = HttpResponse(
+        saida.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    resposta["Content-Disposition"] = f'attachment; filename="{nome}.xlsx"'
+    return resposta
+
+
+@login_required
+def exportar_solicitacoes(request):
+    """Exporta a lista com a fila, a busca e os filtros da tela.
+
+    Sai em .xlsx formatado; `?formato=csv` mantém o CSV de antes (links e
+    rotinas que já o usavam).
+    """
+    queryset, _base, _filtros, _fila = _queryset_filtrado(request)
+    queryset = queryset.select_related(
+        "orgao_responsavel", "motorista", "decidido_por"
+    ).prefetch_related("servicos", "itens_equipe__equipe")
+    nome = f"solicitacoes-{timezone.localdate():%Y-%m-%d}"
+    linhas = _linhas_exportacao(queryset)
+    if request.GET.get("formato") == "csv":
+        return _exportar_csv(linhas, nome)
+    return _exportar_xlsx(linhas, nome)
 
 
 DECISOES_DG = [
@@ -977,6 +1144,68 @@ def cancelar_evento(request, pk):
         f"Evento da solicitação #{solicitacao.pk} registrado como cancelado.",
         observacao=request.POST.get("motivo_cancelamento", ""),
     )
+
+
+@login_required
+@require_POST
+def duplicar_solicitacao(request, pk):
+    """"Duplicar": um rascunho novo a partir desta, faltando só as datas."""
+    solicitacao = _obter_visivel(request, pk)
+    if not permissions.pode_duplicar(request.user, solicitacao):
+        raise PermissionDenied
+    nova = services.duplicar(solicitacao, request.user)
+    messages.success(
+        request,
+        f"Rascunho #{nova.pk} criado a partir da solicitação #{solicitacao.pk}. "
+        "Informe as datas do evento e envie.",
+    )
+    return redirect("solicitacoes:editar", pk=nova.pk)
+
+
+def _opcoes_responsaveis(solicitacao):
+    """Usuários ativos que podem assumir a solicitação (menos o atual)."""
+    from django.contrib.auth import get_user_model
+
+    usuarios = (
+        get_user_model()
+        .objects.filter(is_active=True)
+        .exclude(pk=solicitacao.criado_por_id)
+        .order_by("first_name", "last_name", "username")
+    )
+    return [{"valor": str(u.pk), "rotulo": str(u)} for u in usuarios]
+
+
+@login_required
+@require_POST
+def transferir_solicitacao(request, pk):
+    """Passa a solicitação para outro responsável (histórico e aviso no sino)."""
+    from django.contrib.auth import get_user_model
+
+    solicitacao = _obter_visivel(request, pk)
+    if not permissions.pode_transferir(request.user, solicitacao):
+        raise PermissionDenied
+    escolhido = str(request.POST.get("responsavel", "")).strip()
+    novo = (
+        get_user_model().objects.filter(pk=escolhido).first()
+        if escolhido.isdigit()
+        else None
+    )
+    try:
+        services.transferir(
+            solicitacao, request.user, novo, request.POST.get("motivo_transferencia", "")
+        )
+    except ValidationError as erro:
+        for mensagem_erro in erro.messages:
+            messages.error(request, mensagem_erro)
+        url = reverse("solicitacoes:editar", args=[solicitacao.pk])
+        return redirect(f"{url}#responsavel")
+    messages.success(
+        request, f"Solicitação #{solicitacao.pk} transferida para {novo}."
+    )
+    # Quem passou adiante pode deixar de enxergar o pedido.
+    if not permissions.pode_ver(request.user, solicitacao):
+        return redirect("solicitacoes:lista")
+    return redirect("solicitacoes:editar", pk=solicitacao.pk)
 
 
 @login_required
@@ -1180,6 +1409,9 @@ def despachar(request, pk):
 
     decisao = form.cleaned_data["decisao"]
     observacao = form.cleaned_data["observacao"]
+    # "Registrar e abrir a próxima": a ordem é a de antes da decisão.
+    seguir = request.POST.get("seguir") == "proxima"
+    fila = _fila_de_despacho(request.user) if seguir else []
     try:
         if decisao == DespachoForm.DEVOLVER:
             services.devolver(solicitacao, request.user, observacao=observacao)
@@ -1210,4 +1442,23 @@ def despachar(request, pk):
         return _voltar_ao_despacho(request, solicitacao, decisao, observacao)
 
     messages.success(request, sucesso)
+    if seguir:
+        return _abrir_proxima_do_despacho(request, solicitacao.pk, fila)
     return redirect("solicitacoes:editar", pk=solicitacao.pk)
+
+
+def _abrir_proxima_do_despacho(request, atual, fila):
+    """Depois da decisão, a próxima da fila (a que vinha depois da atual)."""
+    depois = fila[fila.index(atual) + 1:] if atual in fila else fila
+    antes = fila[:fila.index(atual)] if atual in fila else []
+    ainda_pendentes = set(
+        SolicitacaoEvento.objects.filter(
+            pk__in=fila, status=StatusSolicitacao.AGUARDANDO_DESPACHO
+        ).values_list("pk", flat=True)
+    )
+    proxima = next((pk for pk in depois + antes if pk in ainda_pendentes), None)
+    if proxima is None:
+        messages.info(request, "Não há mais solicitações aguardando despacho.")
+        return redirect(f"{reverse('solicitacoes:lista')}?fila=despacho")
+    url = reverse("solicitacoes:editar", args=[proxima])
+    return redirect(f"{url}#despacho-dg")

@@ -49,6 +49,7 @@
           <li class="tm-fato{% if not contrato.fiscal_responsavel %} tm-fato--ausente{% endif %}">{% include "components/icon.html" with nome="shield" %}<span class="sr-only">Fiscal responsável: </span><span class="vg-fato__valor">{{ contrato.fiscal_responsavel|default:"Sem fiscal" }}</span></li>
         </ul>
         {% if contrato.objeto %}<p class="v32-suave">{{ contrato.objeto }}</p>{% endif %}
+        <p><a class="btn--secundaria btn--compacto" href="{% url 'coffee_break:relatorio_contrato' contrato.pk %}">{% include "components/icon.html" with nome="chart" %}Relatório do contrato</a></p>
       </div>
     </section>
 

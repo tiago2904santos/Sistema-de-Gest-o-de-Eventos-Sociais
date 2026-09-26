@@ -26,7 +26,7 @@
   <div class="cad-grade cad-grade--sem-folga">
     {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_rotulo="Situação das solicitações" sem_titulo=True %}
 
-    {% include "components/v32/lista_registros.html" with icone="users" rotulo="Solicitação" rotulo_plural="solicitações" conteudo_linha="pages/solicitacoes/_conteudo_linha.html" acoes_linha="pages/solicitacoes/_acoes_linha.html" placeholder_busca="Buscar por solicitante, local ou município…" filtro_nome="fila" filtro_valor=fila_ativa vazio="Nenhuma solicitação registrada ainda." vazio_filtrado="Nenhuma solicitação encontrada com os filtros aplicados." %}
+    {% include "components/v32/lista_registros.html" with icone="users" rotulo="Solicitação" rotulo_plural="solicitações" conteudo_linha="pages/solicitacoes/_conteudo_linha.html" acoes_linha="pages/solicitacoes/_acoes_linha.html" placeholder_busca="Buscar por nº, solicitante, local, município, tipo ou órgão…" url_exportar=url_exportar painel_filtros="pages/solicitacoes/_painel_filtros.html" filtro_nome="fila" filtro_valor=fila_ativa vazio="Nenhuma solicitação registrada ainda." vazio_filtrado="Nenhuma solicitação encontrada com os filtros aplicados." %}
   </div>
 {% endblock %}
 

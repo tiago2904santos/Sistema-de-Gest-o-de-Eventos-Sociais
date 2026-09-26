@@ -586,6 +586,23 @@ COLUNAS_EXPORTACAO = [
 
 
 @login_required
+def solicitantes_anteriores(request):
+    """Solicitantes de palestras anteriores, para sugerir ao digitar (só leitura)."""
+    from solicitacoes.sugestoes import ultimos_por_nome
+
+    achados = ultimos_por_nome(
+        queryset_visivel(request.user, DemandaEvento.objects.all()),
+        "solicitante",
+        request.GET.get("q", ""),
+        {"telefone": "telefone", "email": "email"},
+        ordem=["-data_solicitacao", "-pk"],
+    )
+    for achado in achados:
+        achado["detalhe"] = " · ".join(v for v in achado["campos"].values() if v)
+    return JsonResponse({"resultados": achados})
+
+
+@login_required
 def exportar_demandas(request):
     queryset = _filtrar(
         request,

@@ -1,0 +1,20 @@
+{% comment %}
+  Os campos da entrega (modal da lista e página própria): o que aconteceu,
+  a nota de 1 a 5, quem recebeu, a observação e a foto opcional.
+  Contexto: `form`, `valores`, `tipos`.
+{% endcomment %}
+<div class="g-form g-form--2">
+  {% include "components/select.html" with name="tipo" label="O que aconteceu" opcoes=tipos selecionado=valores.tipo obrigatorio=True sem_vazio=True erros=form.errors.tipo %}
+  {% include "components/input.html" with name="avaliacao" label="Nota do atendimento (1 a 5)" tipo="number" minimo=1 passo=1 inputmode="numeric" valor=valores.avaliacao erros=form.errors.avaliacao ajuda="5 = ótimo. Opcional." %}
+  <div class="cheia">
+    {% include "components/input.html" with name="recebido_por" label="Quem recebeu" maxlength="150" valor=valores.recebido_por erros=form.errors.recebido_por placeholder="Ex.: Ana, da 1ª SDP, confirmou por telefone" %}
+  </div>
+  <div class="cheia">
+    {% include "components/textarea.html" with name="descricao" label="Observação" linhas="3" valor=valores.descricao erros=form.errors.descricao ajuda="Obrigatória quando há ocorrência: horário da chegada, itens em falta, o problema de qualidade." %}
+  </div>
+  <div class="cheia form-campo">
+    <label class="form-label" for="id_foto">Foto ou documento (opcional)</label>
+    <input class="form-controle" type="file" id="id_foto" name="foto" accept=".pdf,.png,.jpg,.jpeg">
+    {% for erro in form.errors.foto %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+  </div>
+</div>

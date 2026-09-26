@@ -1,0 +1,5 @@
+{% comment %}
+  Ação de uma linha da fila "o que fazer hoje": o botão que resolve o que
+  falta (abre a etapa certa da solicitação). Contexto: `l` (linha_da_acao).
+{% endcomment %}
+<a class="btn--secundaria btn--compacto" href="{{ l.acao_url }}">{{ l.acao_botao }}{% include "components/icon.html" with nome="arrow-right" %}</a>

@@ -49,6 +49,7 @@
       {% else %}
         <form method="post" action="{% url 'demandas_eventos:encaminhar_dg' instancia.pk %}" id="form-encaminhar-dg" hidden>{% csrf_token %}</form>
       {% endif %}
+      {% include "pages/coffee_break/_pedir_coffee_break.html" with evento=instancia parametro="demanda" %}
       {% include "pages/demandas_eventos/_andamento.html" %}
     {% else %}
       {# Pedido que chegou por e-mail (ou WhatsApp): soltar o e-mail ou colar o texto preenche os campos vazios. #}
@@ -171,6 +172,8 @@
               </div>
             </div>
           </div>
+          {# Quem já pediu antes: um clique traz o telefone e o e-mail do último pedido. #}
+          <div class="sugestao-solicitante" data-sugestao-solicitante data-url="{% url 'demandas_eventos:solicitantes' %}" data-campo-nome="solicitante" hidden></div>
           {% if instancia.contato %}<p class="form-ajuda">Contato na planilha: {{ instancia.contato }}</p>{% endif %}
           {% if instancia.protocolo %}
             {# Formulário próprio (fora do principal): o botão aponta para ele pelo atributo form. #}
@@ -216,4 +219,5 @@
   <script src="{% estatico 'js/lista-escolha.js' %}" defer></script>
   <script src="{% estatico 'js/palestras-form.js' %}" defer></script>
   <script src="{% estatico 'js/trilho.js' %}" defer></script>
+  <script src="{% estatico 'js/sugestao-solicitante.js' %}" defer></script>
 {% endblock %}

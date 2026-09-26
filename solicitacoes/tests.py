@@ -210,7 +210,8 @@ class FormsTests(BaseSolicitacaoTestCase):
 
         self.assertTrue(form.is_valid(), form.errors)
 
-    def test_parana_em_acao_define_solicitante_e_cargo_unidade(self):
+    def test_parana_em_acao_nao_sobrescreve_o_solicitante(self):
+        """O solicitante do Paraná em Ação é sugestão (modelo do tipo), não regra fixa."""
         dados = self.dados_completos_post()
         dados["tipo_evento"] = self.tipo_parana_em_acao.pk
         dados["solicitante_nome"] = "Outro solicitante"
@@ -219,8 +220,8 @@ class FormsTests(BaseSolicitacaoTestCase):
         form = SolicitacaoForm(dados, enviar=True)
 
         self.assertTrue(form.is_valid(), form.errors)
-        self.assertEqual(form.cleaned_data["solicitante_nome"], "Paraná em Ação")
-        self.assertEqual(form.cleaned_data["solicitante_cargo_unidade"], "SEJU")
+        self.assertEqual(form.cleaned_data["solicitante_nome"], "Outro solicitante")
+        self.assertEqual(form.cleaned_data["solicitante_cargo_unidade"], "Outro cargo")
 
     def test_municipio_deve_pertencer_ao_estado(self):
         dados = self.dados_completos_post()
@@ -1319,7 +1320,7 @@ class ExportacaoCsvTests(BaseSolicitacaoTestCase):
         outra = self.criar_solicitacao(local_evento="Escola municipal")
         self.client.force_login(self.solicitante)
 
-        resposta = self.client.get(reverse("solicitacoes:exportar"))
+        resposta = self.client.get(reverse("solicitacoes:exportar"), {"formato": "csv"})
         self.assertEqual(resposta.status_code, 200)
         self.assertEqual(resposta["Content-Type"], "text/csv; charset=utf-8")
         self.assertIn("attachment", resposta["Content-Disposition"])
@@ -1331,7 +1332,7 @@ class ExportacaoCsvTests(BaseSolicitacaoTestCase):
         # O filtro de status vale também na exportação.
         resposta = self.client.get(
             reverse("solicitacoes:exportar"),
-            {"status": StatusSolicitacao.RASCUNHO},
+            {"status": StatusSolicitacao.RASCUNHO, "formato": "csv"},
         )
         conteudo = resposta.content.decode("utf-8-sig")
         self.assertIn("Escola municipal", conteudo)
@@ -1340,7 +1341,7 @@ class ExportacaoCsvTests(BaseSolicitacaoTestCase):
     def test_exportacao_respeita_visibilidade(self):
         rascunho_alheio = self.criar_solicitacao()
         self.client.force_login(self.outro_solicitante)
-        resposta = self.client.get(reverse("solicitacoes:exportar"))
+        resposta = self.client.get(reverse("solicitacoes:exportar"), {"formato": "csv"})
         conteudo = resposta.content.decode("utf-8-sig")
         # Só o cabeçalho: rascunho de outro usuário não sai no CSV.
         self.assertEqual(len(conteudo.strip().splitlines()), 1)

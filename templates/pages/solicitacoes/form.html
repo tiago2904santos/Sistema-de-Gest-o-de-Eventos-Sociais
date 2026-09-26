@@ -31,6 +31,10 @@
         </div>
       </div>
       <div class="frm-topo__acoes">
+        {% if solicitacao and acoes.duplicar and not reabrindo %}
+          {# Evento que se repete: rascunho novo com os mesmos dados, sem datas. #}
+          <button type="submit" form="form-duplicar" class="btn--secundaria" title="Cria um rascunho novo com os mesmos dados, serviços e equipes; faltam só as datas">{% include "components/icon.html" with nome="copy" %}Duplicar</button>
+        {% endif %}
         {# A data da solicitação mora no cabeçalho; o atributo form a leva junto com o formulário. #}
         <div class="pal-topo-data">
           {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True valor=valores.data_solicitacao erros=erros.data_solicitacao desabilitado=dados_desabilitado form_alvo="form-solicitacao" %}
@@ -81,6 +85,7 @@
     {% endif %}
 
     {% if solicitacao %}{% include "pages/demandas_eventos/_origem_na_solicitacao.html" %}{% endif %}
+    {% if solicitacao %}{% include "pages/coffee_break/_pedir_coffee_break.html" with evento=solicitacao parametro="solicitacao" %}{% endif %}
 
     {% if motivo_devolucao %}
       {# O aviso da devolução vem antes dos campos: é o que precisa ser resolvido. #}
@@ -148,6 +153,10 @@
                 {% include "components/select.html" with name="orgao_responsavel" label="Órgão responsável" rotulo_oculto=True opcoes=orgaos obrigatorio=True selecionado=valores.orgao_responsavel erros=erros.orgao_responsavel desabilitado=dados_desabilitado placeholder="Órgão responsável" %}
               </div>
             </div>
+            {% if not dados_desabilitado %}
+              {# Quem já pediu antes: ao digitar o nome, um clique traz cargo, contato e órgão do último pedido. #}
+              <div class="sugestao-solicitante" data-sugestao-solicitante data-url="{% url 'solicitacoes:solicitantes' %}" data-campo-nome="solicitante_nome" hidden></div>
+            {% endif %}
           </div>
           <div class="g-form g-form--4">
             {% include "components/select.html" with name="tipo_evento" label="Tipo do evento" opcoes=tipos_evento obrigatorio=True selecionado=valores.tipo_evento erros=erros.tipo_evento desabilitado=dados_desabilitado %}
@@ -163,6 +172,10 @@
             </div>
             {% if andamento_protocolo %}
               <div class="cheia">{% include "components/v32/andamento_protocolo.html" with andamento=andamento_protocolo %}</div>
+            {% endif %}
+            {% if not dados_desabilitado %}
+              {# Sugestão do tipo de evento: aparece ao escolher o tipo e só preenche com o clique em "Usar sugestão". #}
+              <div class="cheia aviso aviso--callout aviso--fino sol-sugestao" data-sugestao-tipo data-url="{% url 'solicitacoes:sugestao_tipo' %}" role="status" hidden></div>
             {% endif %}
             <div class="cheia">
               {% include "components/textarea.html" with name="descricao_complementar" label="Descrição complementar" linhas="2" placeholder="Detalhes adicionais sobre o evento, serviços e estrutura..." valor=valores.descricao_complementar erros=erros.descricao_complementar desabilitado=planejamento_desabilitado %}
@@ -272,15 +285,27 @@
           <header class="section-card__cabecalho reg__t">
             <span class="section-card__numero reg-numero" aria-hidden="true">4</span>
             <h2 class="section-card__titulo">Despacho da DG</h2>
+            {% if fila_despacho.posicao %}
+              <div class="section-card__acao"><span class="sol-fila-despacho" title="Posição na fila de despacho, do evento mais próximo ao mais distante">{{ fila_despacho.posicao }} de {{ fila_despacho.total }} na fila</span></div>
+            {% endif %}
           </header>
           <div class="section-card__corpo">
             {# As quantidades de servidores ficam no cartão 2, nas próprias linhas das equipes (form="form-despacho"). #}
             <form method="post" action="{% url 'solicitacoes:despachar' solicitacao.pk %}" id="form-despacho">
               {% csrf_token %}
               {% include "components/v32/cartoes_escolha.html" with name="decisao" label="Decisão" obrigatorio=True opcoes=decisoes_dg colunas="2" id_primeiro=True erros=None %}
+              {# Textos prontos: um clique acrescenta o texto à observação, que continua editável. #}
+              <div class="sol-textos-prontos" role="group" aria-label="Textos prontos da observação">
+                <span class="sol-textos-prontos__rotulo">Textos prontos</span>
+                {% for texto in textos_despacho %}<button type="button" class="chip sol-texto-pronto" data-texto-pronto="{{ texto.texto }}" data-texto-alvo="id_observacao" title="{{ texto.texto }}">{% include "components/icon.html" with nome="plus" %}{{ texto.nome }}</button>{% empty %}<span class="v32-suave">Nenhum cadastrado.</span>{% endfor %}
+                <a class="sol-textos-prontos__editar" href="{% url 'cadastros:lista' 'textos-despacho' %}">Editar textos</a>
+              </div>
               {% include "components/textarea.html" with name="observacao" label="Observações da decisão" linhas="3" placeholder="Obrigatórias para não atendimento, cancelamento ou correção — no caso da correção, diga brevemente o que deve mudar." valor=despacho_pendente.observacao erros=None %}
               <div class="frm-acoes-fim">
                 {% if solicitacao.itens_equipe.all %}<button type="submit" class="btn--secundaria" name="acao_despacho" value="salvar_ajustes" formnovalidate>Salvar servidores</button>{% endif %}
+                {% if fila_despacho.total > 1 %}
+                  <button type="submit" class="btn--secundaria" name="seguir" value="proxima" title="Registra esta decisão e abre a próxima solicitação da fila">Registrar e abrir a próxima</button>
+                {% endif %}
                 <button type="submit" class="btn-primaria">Registrar decisão</button>
               </div>
             </form>
@@ -356,10 +381,35 @@
         </section>
       {% endif %}{% endif %}{% endif %}
 
+      {# Responsável: quem edita, envia e confirma. Passar adiante fica no histórico e avisa a pessoa. #}
+      <section class="section-card reg" id="responsavel">
+        <header class="section-card__cabecalho reg__t">
+          <h2 class="section-card__titulo">Responsável</h2>
+        </header>
+        <div class="section-card__corpo sol-responsavel">
+          <p class="sol-responsavel__atual">{% include "components/icon.html" with nome="user" %}<b>{{ solicitacao.criado_por }}</b> <span class="v32-suave">edita, envia e confirma o atendimento desta solicitação.</span></p>
+          {% if acoes.transferir and responsaveis %}
+            <details class="sol-cancelar-abre">
+              <summary>Transferir para outro responsável</summary>
+              <form method="post" action="{% url 'solicitacoes:transferir' solicitacao.pk %}" class="sol-transferir" data-confirmar="Transferir a solicitação?">{% csrf_token %}
+                <div class="g-form g-form--2">
+                  {% include "components/select.html" with name="responsavel" label="Novo responsável" opcoes=responsaveis obrigatorio=True pesquisavel=True placeholder="Escolha quem assume" erros=None %}
+                  {% include "components/input.html" with name="motivo_transferencia" label="Motivo (opcional)" placeholder="Ex.: férias, mudança de setor" erros=None %}
+                </div>
+                <button type="submit" class="btn--secundaria btn--compacto">{% include "components/icon.html" with nome="arrow-right" %}Transferir</button>
+              </form>
+            </details>
+          {% endif %}
+        </div>
+      </section>
+
       {% include "pages/solicitacoes/_historico.html" %}
 
       {% if solicitacao.protocolo %}
         <form id="form-consultar-protocolo" method="post" action="{% url 'solicitacoes:consultar_protocolo' solicitacao.pk %}">{% csrf_token %}</form>
+      {% endif %}
+      {% if acoes.duplicar %}
+        <form id="form-duplicar" method="post" action="{% url 'solicitacoes:duplicar' solicitacao.pk %}" data-confirmar="Criar um rascunho novo a partir desta solicitação?">{% csrf_token %}</form>
       {% endif %}
       {% if acoes.excluir %}
         <form id="form-excluir-solicitacao" method="post" action="{% url 'solicitacoes:excluir' solicitacao.pk %}" data-confirmar-exclusao>{% csrf_token %}</form>
@@ -379,4 +429,4 @@
   <dialog class="mo v32-cadastro-modal" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{{ request.path }}"></dialog>
 {% endblock %}
 
-{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/trilho.js' %}" defer></script>{% endblock %}
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/trilho.js' %}" defer></script><script src="{% estatico 'js/solicitacoes-form.js' %}" defer></script><script src="{% estatico 'js/sugestao-solicitante.js' %}" defer></script>{% endblock %}

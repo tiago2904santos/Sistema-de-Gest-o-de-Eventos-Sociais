@@ -1,0 +1,16 @@
+{% comment %}
+  "Pedir coffee break" na tela do evento (Solicitações de evento) e da
+  palestra (Palestras e eventos): o botão abre a nova solicitação de coffee
+  break já preenchida (coffee_break/origem.py), e as OS ligadas aparecem com
+  o número e a situação do pagamento. Só para quem tem o módulo de Coffee
+  Break. Contexto: `evento` (o objeto) e `parametro` ("solicitacao" ou
+  "demanda").
+{% endcomment %}
+{% if "ASCOM_COFFEE_BREAK" in modulos_usuario %}
+  <div class="aviso aviso--callout aviso--fino" role="status">
+    <div class="aviso__txt">{% include "components/icon.html" with nome="coffee" %}<div class="aviso__corpo"><b>Coffee break</b>
+      <p>{% for cb in evento.coffee_breaks.all %}<a href="{% url 'coffee_break:editar' cb.pk %}">OS {{ cb.numero|default:cb.pk }}</a> <span class="st st--{{ cb.situacao_financeira_css }}">{{ cb.situacao_financeira_display }}</span>{% if not forloop.last %} · {% endif %}{% empty %}Nenhum pedido de coffee break para este evento.{% endfor %}</p>
+    </div></div>
+    <a class="btn--secundaria btn--compacto" href="{% url 'coffee_break:nova' %}?{{ parametro }}={{ evento.pk }}">{% include "components/icon.html" with nome="plus" %}Pedir coffee break</a>
+  </div>
+{% endif %}

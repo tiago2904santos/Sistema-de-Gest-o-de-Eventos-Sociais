@@ -1,0 +1,23 @@
+{% comment %}
+  Painel "Filtros" da lista de solicitações: período do evento, município e
+  tipo. Recolhido por padrão; abre sozinho quando algum destes filtros está
+  valendo. Formulário GET próprio que carrega a fila, a busca e a situação da
+  tela — filtrar não descarta o recorte que já estava na lista.
+  Contexto: `painel` (montado pela view).
+{% endcomment %}
+<details class="filtros-painel"{% if painel.aberto %} open{% endif %}>
+  <summary class="filtros-painel__gatilho">{% include "components/icon.html" with nome="filter" %}Filtros<small>período do evento, município e tipo</small>{% if painel.total %}<span class="filtros-painel__total">{{ painel.total }}</span>{% endif %}</summary>
+  <form method="get" class="filtros-painel__form" aria-label="Filtros da lista">
+    {% for campo in painel.ocultos %}<input type="hidden" name="{{ campo.nome }}" value="{{ campo.valor }}">{% endfor %}
+    <div class="g-form g-form--4">
+      {% include "components/input.html" with name="inicio" label="Eventos a partir de" tipo="date" valor=painel.valores.inicio erros=None %}
+      {% include "components/input.html" with name="fim" label="Eventos até" tipo="date" valor=painel.valores.fim erros=None %}
+      {% include "components/select.html" with name="municipio" label="Município" opcoes=painel.municipios selecionado=painel.valores.municipio pesquisavel=True placeholder="Todos os municípios" permitir_vazio=True erros=None %}
+      {% include "components/select.html" with name="tipo_evento" label="Tipo do evento" opcoes=painel.tipos selecionado=painel.valores.tipo_evento placeholder="Todos os tipos" permitir_vazio=True erros=None %}
+    </div>
+    <div class="filtros-painel__acoes">
+      {% if painel.total %}<a class="btn--secundaria btn--compacto" href="{{ painel.url_limpar }}">Limpar filtros</a>{% endif %}
+      <button type="submit" class="btn-primaria btn--compacto">{% include "components/icon.html" with nome="filter" %}Aplicar</button>
+    </div>
+  </form>
+</details>

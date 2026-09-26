@@ -10,6 +10,10 @@ urlpatterns = [
     # "Preencher com um e-mail" da tela nova: lê e sugere, não grava (POST, JSON).
     path("nova/ler-email/", views.ler_email, name="ler_email"),
     path("exportar/", views.exportar_solicitacoes, name="exportar"),
+    # Sugestão (JSON) do que acompanha o tipo de evento; a tela aplica com um clique.
+    path("sugestao-do-tipo/", views.sugestao_do_tipo, name="sugestao_tipo"),
+    # Quem já pediu antes (JSON): nome, cargo, contato e órgão do último pedido.
+    path("solicitantes/", views.solicitantes_anteriores, name="solicitantes"),
     # Tela única do registro: o formulário. Não existe mais rota de detalhe.
     path("<int:pk>/editar/", views.editar_solicitacao, name="editar"),
     # Transições de workflow — somente POST.
@@ -30,6 +34,9 @@ urlpatterns = [
     path("<int:pk>/despachar/", views.despachar, name="despachar"),
     path("<int:pk>/concluir/", views.concluir_solicitacao, name="concluir"),
     path("<int:pk>/cancelar-evento/", views.cancelar_evento, name="cancelar_evento"),
+    path("<int:pk>/transferir/", views.transferir_solicitacao, name="transferir"),
+    # Rascunho novo com os mesmos dados, serviços e equipes (eventos recorrentes).
+    path("<int:pk>/duplicar/", views.duplicar_solicitacao, name="duplicar"),
     # Viagem em Viagens a partir da solicitação deferida (quando não nasceu sozinha).
     path("<int:pk>/gerar-viagem/", views.gerar_viagem, name="gerar_viagem"),
     # Última movimentação do protocolo no eProtocolo (só leitura).

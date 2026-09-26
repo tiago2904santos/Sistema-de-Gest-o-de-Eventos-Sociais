@@ -1501,32 +1501,10 @@
     dataSolicitacao.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
-  var tipoEvento = campo("tipo_evento");
+  // O solicitante e o que acompanha cada tipo de evento vêm como sugestão,
+  // aplicada com um clique (js/solicitacoes-form.js) — nada é preenchido sozinho.
   var estadoEvento = campo("estado");
   var municipioEvento = campo("municipio");
-  var solicitanteNome = campo("solicitante_nome");
-  var solicitanteCargoUnidade = campo("solicitante_cargo_unidade");
-
-  function normalizarNomeEvento(valor) {
-    return String(valor || "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLocaleLowerCase("pt-BR")
-      .trim();
-  }
-
-  function preencherSolicitanteParanaEmAcao() {
-    if (!tipoEvento || normalizarNomeEvento(textoSelecionado("tipo_evento")) !== "parana em acao") {
-      return;
-    }
-    if (solicitanteNome) solicitanteNome.value = "Paraná em Ação";
-    if (solicitanteCargoUnidade) solicitanteCargoUnidade.value = "SEJU";
-  }
-
-  if (tipoEvento) {
-    tipoEvento.addEventListener("change", preencherSolicitanteParanaEmAcao);
-    preencherSolicitanteParanaEmAcao();
-  }
 
   function filtrarMunicipiosPorEstado() {
     if (!estadoEvento || !municipioEvento) return;

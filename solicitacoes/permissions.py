@@ -190,6 +190,30 @@ def pode_cancelar(user, solicitacao):
     )
 
 
+def pode_transferir(user, solicitacao):
+    """Passar a solicitação para outro responsável.
+
+    Qualquer solicitante que enxerga o pedido (na prática, o responsável
+    atual), a DG e a administração — para o pedido não travar quando o
+    responsável sai de férias, muda de setor ou é desativado. Pedido
+    encerrado não muda mais de dono.
+    """
+    if solicitacao.finalizada or not pode_ver(user, solicitacao):
+        return False
+    return (
+        user.is_superuser
+        or solicitacao.criado_por_id == user.pk
+        or eh_gestor_dg(user)
+        or eh_administrador(user)
+        or _pertence(user, GRUPO_SOLICITANTE)
+    )
+
+
+def pode_duplicar(user, solicitacao):
+    """Quem enxerga a solicitação pode usá-la de base para um rascunho novo."""
+    return pode_ver(user, solicitacao)
+
+
 def acoes_permitidas(user, solicitacao):
     """Mapa de ações para os templates decidirem o que exibir."""
     return {
@@ -204,4 +228,6 @@ def acoes_permitidas(user, solicitacao):
         "concluir": pode_concluir(user, solicitacao),
         "cancelar": pode_cancelar(user, solicitacao),
         "gerenciar_anexos": pode_gerenciar_anexos(user, solicitacao),
+        "transferir": pode_transferir(user, solicitacao),
+        "duplicar": pode_duplicar(user, solicitacao),
     }

@@ -1,0 +1,82 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Virada de exercício: os lotes vigentes do ano que termina, um por linha,
+  com a quantidade e o empenho do ano novo. Os municípios, a lista original,
+  as orientações e as especificações técnicas vêm copiados. Lote de contrato
+  vencido antes do ano novo não entra (falta o aditivo).
+  Contexto: `origem`, `destino`, `formset`, `linhas`, `desativar`.
+{% endcomment %}
+
+{% block title %}Abrir exercício {{ destino }} — Coffee Break{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker kicker--junto">Coffee Break · Lotes</div>
+      <h1>Abrir exercício {{ destino }}</h1>
+    </div>
+  </div>
+
+  <form method="post" class="editor-roteiro cb-fluxo" data-confirmar="Criar os lotes marcados para {{ destino }}?">
+    {% csrf_token %}
+    <input type="hidden" name="de" value="{{ origem }}">
+    {{ formset.management_form }}
+    <section class="section-card reg">
+      <header class="section-card__cabecalho reg__t">
+        <h2 class="section-card__titulo">Lotes vigentes de {{ origem }}</h2>
+      </header>
+      <div class="section-card__corpo">
+        <p class="cb-ajuda">Cada lote marcado ganha o de {{ destino }} com os mesmos municípios, orientações e especificações técnicas. Informe a quantidade contratada e o empenho do ano novo. Enquanto os dois anos estiverem vigentes, o pedido vai para o lote do ano da data do evento.</p>
+        {% for erro in formset.non_form_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+        <div class="dt-w" tabindex="0" role="region" aria-label="Lotes a copiar">
+          <table class="dt">
+            <thead>
+              <tr><th>Criar</th><th>Lote de {{ origem }}</th><th>Quantidade em {{ destino }}</th><th>Empenho</th><th>Valor do empenho</th></tr>
+            </thead>
+            <tbody>
+              {% for linha in linhas %}
+                {% with f=linha.form lote=linha.lote %}
+                <tr>
+                  <td>
+                    {{ f.lote }}
+                    <input type="checkbox" name="{{ f.criar.html_name }}" id="{{ f.criar.id_for_label }}" aria-label="Criar o lote {{ lote.numero }} de {{ destino }}"{% if linha.marcado and not linha.impedimento %} checked{% endif %}{% if linha.impedimento %} disabled{% endif %}>
+                  </td>
+                  <td>
+                    <b>{{ lote.rotulo_curto }}</b> — Contrato {{ lote.contrato.numero }} · {{ lote.contrato.fornecedor.razao_social }}
+                    <br><small class="v32-suave">{{ lote.quantidade_total }} unidades em {{ origem }}{% if lote.empenho %} · empenho {{ lote.empenho }}{% endif %} · {{ lote.municipios.all|length }} município{{ lote.municipios.all|length|pluralize }}</small>
+                    {% if linha.impedimento %}<p class="form-erro">{{ linha.impedimento }}</p>{% elif linha.aviso %}<p class="form-ajuda">{{ linha.aviso }}</p>{% endif %}
+                  </td>
+                  <td>
+                    <input class="form-controle" type="number" min="1" step="1" inputmode="numeric" name="{{ f.quantidade_total.html_name }}" value="{{ f.quantidade_total.value|default_if_none:'' }}" aria-label="Quantidade do lote {{ lote.numero }} em {{ destino }}"{% if linha.impedimento %} disabled{% endif %}>
+                    {% for erro in f.quantidade_total.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+                  </td>
+                  <td>
+                    <input class="form-controle" type="text" maxlength="30" name="{{ f.empenho.html_name }}" value="{{ f.empenho.value|default_if_none:'' }}" placeholder="{{ destino }}NE…" aria-label="Empenho do lote {{ lote.numero }} em {{ destino }}"{% if linha.impedimento %} disabled{% endif %}>
+                  </td>
+                  <td>
+                    <input class="form-controle" type="number" min="0" step="0.01" name="{{ f.valor_empenho.html_name }}" value="{{ f.valor_empenho.value|default_if_none:'' }}" aria-label="Valor do empenho do lote {{ lote.numero }} em {{ destino }}"{% if linha.impedimento %} disabled{% endif %}>
+                    {% for erro in f.valor_empenho.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+                  </td>
+                </tr>
+                {% endwith %}
+              {% empty %}
+                <tr><td colspan="5" class="v32-suave">Nenhum lote vigente em {{ origem }}.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <label class="interruptor">
+          <input class="sr-only" type="checkbox" name="desativar" value="1"{% if desativar %} checked{% endif %}>
+          <span class="interruptor__trilho" aria-hidden="true"><span class="interruptor__botao"></span></span>
+          <span class="interruptor__rotulo">Encerrar agora os lotes de {{ origem }} copiados (em branco, eles continuam recebendo os eventos de {{ origem }}; encerre depois em Cadastros › Lotes)</span>
+        </label>
+        <div class="frm-acoes-fim">
+          <a class="btn--secundaria" href="{% url 'coffee_break:lotes' %}">Voltar</a>
+          {% if linhas %}<button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="plus" %}Abrir exercício {{ destino }}</button>{% endif %}
+        </div>
+      </div>
+    </section>
+  </form>
+{% endblock %}

@@ -12,6 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .models import SituacaoFinanceira
+from .services import entrega_liberada, resumo_do_fornecedor, texto_do_resumo
 
 
 
@@ -84,6 +85,13 @@ def fatos_da_solicitacao(solicitacao):
 def linha_da_lista(solicitacao, hoje=None):
     """Tudo o que a linha da lista precisa, montado fora do template."""
     quando, quando_tom = selo_temporal(solicitacao, hoje)
+    # "Parada há N dias": só quando a consulta trouxe o último registro do
+    # histórico (a lista anota; as demais telas não pagam a consulta).
+    parada = ""
+    if hasattr(solicitacao, "ultimo_historico"):
+        from .services import selo_parada
+
+        parada = selo_parada(solicitacao, hoje)
     return {
         "solicitacao": solicitacao,
         "titulo": titulo_da_solicitacao(solicitacao),
@@ -91,6 +99,7 @@ def linha_da_lista(solicitacao, hoje=None):
         "selo_tom": solicitacao.situacao_financeira_css,
         "quando": quando,
         "quando_tom": quando_tom,
+        "parada": parada,
         "fatos": fatos_da_solicitacao(solicitacao),
         "url_editar": reverse("coffee_break:editar", args=[solicitacao.pk]),
         "url_andamento": reverse("coffee_break:andamento", args=[solicitacao.pk]),
@@ -99,9 +108,47 @@ def linha_da_lista(solicitacao, hoje=None):
         "url_baixar": reverse("coffee_break:baixar_arquivos", args=[solicitacao.pk]),
         "itens_baixar": ITENS_BAIXAR,
         "cancelada": solicitacao.cancelada,
+        # A entrega e as ocorrências: a partir do dia do evento.
+        "url_entrega": reverse("coffee_break:entrega", args=[solicitacao.pk]),
+        "entrega_liberada": entrega_liberada(solicitacao, hoje),
         # Quem já foi concluída ou cancelada só se abre para consulta.
         "editavel": not solicitacao.cancelada and not solicitacao.concluida,
     }
+
+
+def linha_da_acao(item, chave, hoje=None):
+    """A linha da fila "o que fazer hoje": a da lista, com o botão que resolve.
+
+    Na entrega da semana vão o local, o horário e quem recebe (o que se
+    confirma com o fornecedor); nos demais grupos, há quantos dias parada.
+    """
+    solicitacao = item["s"]
+    linha = linha_da_lista(solicitacao, hoje)
+    linha.update({"acao_url": item["url"], "acao_botao": item["botao"], "parada": ""})
+    if chave == "entrega":
+        horario = solicitacao.horario_evento
+        linha["fatos"] = [
+            {"icone": "calendar", "rotulo": "Data do evento", "texto": solicitacao.periodo_evento_display, "ausente": False},
+            {
+                "icone": "clock", "rotulo": "Horário",
+                "texto": f"{horario:%H:%M}" if horario else "Sem horário", "ausente": not horario,
+            },
+            {"icone": "coffee", "rotulo": "Quantidade", "texto": f"{solicitacao.quantidade} pessoas", "ausente": False},
+            {
+                "icone": "map-pin", "rotulo": "Local de entrega",
+                "texto": solicitacao.local_entrega or "Sem local de entrega", "ausente": not solicitacao.local_entrega,
+            },
+            {
+                "icone": "user", "rotulo": "Responsável pelo recebimento",
+                "texto": solicitacao.responsavel_recebimento or "Sem responsável",
+                "ausente": not solicitacao.responsavel_recebimento,
+            },
+            {"icone": "landmark", "rotulo": "Fornecedor", "texto": solicitacao.lote.contrato.fornecedor.razao_social, "ausente": False},
+        ]
+    else:
+        dias = item["dias"]
+        linha["parada"] = "Parada hoje" if dias == 0 else f"Parada há {dias} dia{'s' if dias != 1 else ''}"
+    return linha
 
 
 def filas_de_situacao(itens):
@@ -194,6 +241,10 @@ def linha_do_cadastro(item, tipo):
             {"icone": "user", "rotulo": "Contato", "texto": item.contato or "Sem contato", "ausente": not item.contato},
             {"icone": "mail", "rotulo": "E-mail", "texto": item.email or "Sem e-mail", "ausente": not item.email},
         ]
+        # O histórico das entregas: base para notificação e sanção do contrato.
+        entregas = texto_do_resumo(resumo_do_fornecedor(item))
+        if entregas:
+            fatos.append({"icone": "check-circle", "rotulo": "Entregas", "texto": entregas, "ausente": False})
     elif tipo == "contratos":
         titulo = f"Contrato {item.numero}"
         fatos = [
@@ -229,6 +280,10 @@ def linha_do_cadastro(item, tipo):
         "fatos": fatos,
         "url_editar": reverse("coffee_break:cadastro_editar", args=[tipo, item.pk]),
         "url_excluir": reverse("coffee_break:cadastro_excluir", args=[tipo, item.pk]),
+        "url_relatorio": (
+            reverse("coffee_break:relatorio_contrato", args=[item.pk]) if tipo == "contratos"
+            else reverse("coffee_break:relatorio_contrato", args=[item.contrato_id]) if tipo == "lotes" else ""
+        ),
         "cancelada": tipo == "lotes" and not item.ativo,
         "excluivel": tipo != "oficio",
     }

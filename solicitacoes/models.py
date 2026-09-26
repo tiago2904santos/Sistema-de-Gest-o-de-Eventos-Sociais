@@ -401,6 +401,8 @@ class AcaoHistorico(models.TextChoices):
     DECISAO = "DECISAO", "Decisão da DG registrada"
     CONCLUSAO = "CONCLUSAO", "Atendimento confirmado"
     CANCELAMENTO = "CANCELAMENTO", "Evento cancelado"
+    # A solicitação passou para outro responsável (quem edita, envia e confirma).
+    TRANSFERENCIA = "TRANSFERENCIA", "Responsável transferido"
 
 
 class HistoricoSolicitacao(models.Model):
@@ -451,3 +453,42 @@ class HistoricoSolicitacao(models.Model):
                 return rotulo
         rotulos = {**dict(StatusSolicitacao.choices), **STATUS_LEGADOS}
         return rotulos.get(self.status_novo, self.status_novo)
+
+
+class TipoLembrete(models.TextChoices):
+    CONFIRMAR_ATENDIMENTO = "CONFIRMAR_ATENDIMENTO", "Confirmar o atendimento"
+    DESPACHO_PROXIMO = "DESPACHO_PROXIMO", "Despacho com evento próximo"
+    DEVOLUCAO_PARADA = "DEVOLUCAO_PARADA", "Devolução parada"
+
+
+class LembreteSolicitacao(models.Model):
+    """Lembrete automático já enviado — o que impede avisar duas vezes.
+
+    `referencia` é a data que motivou o aviso (o fim do evento, o início dele
+    ou o dia da devolução): se a data muda, o lembrete vale de novo.
+    Gravado pelo comando `enviar_lembretes_solicitacoes`.
+    """
+
+    solicitacao = models.ForeignKey(
+        SolicitacaoEvento,
+        verbose_name="solicitação",
+        on_delete=models.CASCADE,
+        related_name="lembretes",
+    )
+    tipo = models.CharField("tipo", max_length=30, choices=TipoLembrete.choices)
+    referencia = models.DateField("data de referência")
+    enviado_em = models.DateTimeField("enviado em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "lembrete da solicitação"
+        verbose_name_plural = "lembretes da solicitação"
+        ordering = ["-enviado_em"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["solicitacao", "tipo", "referencia"],
+                name="lembrete_unico_por_referencia",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.solicitacao_id} — {self.get_tipo_display()} ({self.referencia:%d/%m/%Y})"

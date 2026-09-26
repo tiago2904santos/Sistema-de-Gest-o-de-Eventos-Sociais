@@ -14,6 +14,8 @@ from core.utils.masks import format_protocolo
 
 from .models import (
     CertidaoFornecedor,
+    OcorrenciaEntrega,
+    TipoOcorrencia,
     ConfiguracaoCoffeeBreak,
     ContratoCoffeeBreak,
     Fornecedor,
@@ -545,6 +547,11 @@ class ConfiguracaoCoffeeBreakForm(FormularioCadastroVersionado):
             "eprotocolo_assunto",
             "eprotocolo_palavras_chave",
             "despacho_destino",
+            "email_copia",
+            "email_os_assunto",
+            "email_os_texto",
+            "email_ob_assunto",
+            "email_ob_texto",
         )
 
 
@@ -611,4 +618,23 @@ class CertidaoForm(forms.Form):
             else:
                 dados["validade"] = lida
                 self.validade_lida = True
+        return dados
+
+
+class OcorrenciaEntregaForm(forms.ModelForm):
+    """A entrega registrada depois do evento: o que aconteceu, a nota, quem
+    recebeu e, havendo ocorrência, o que foi (obrigatório)."""
+
+    class Meta:
+        model = OcorrenciaEntrega
+        fields = ("tipo", "avaliacao", "recebido_por", "descricao", "foto")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["foto"].validators.append(validate_private_document_upload)
+
+    def clean(self):
+        dados = super().clean()
+        if dados.get("tipo") and dados["tipo"] != TipoOcorrencia.ENTREGUE and not (dados.get("descricao") or "").strip():
+            self.add_error("descricao", "Descreva a ocorrência: é a base de uma notificação ao fornecedor.")
         return dados

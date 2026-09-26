@@ -488,6 +488,102 @@ def cancelar_evento(solicitacao, usuario, observacao):
     return solicitacao
 
 
+@transaction.atomic
+def transferir(solicitacao, usuario, novo_responsavel, motivo=""):
+    """Passa a solicitação para outro responsável, com histórico e aviso.
+
+    O responsável é quem a criou (`criado_por`): é ele quem edita, envia,
+    reenvia e confirma o atendimento. O rascunho original continua no
+    histórico ("Rascunho criado" por quem criou).
+    """
+    from .permissions import pode_transferir
+
+    if not pode_transferir(usuario, solicitacao):
+        raise PermissionDenied("Você não pode transferir esta solicitação.")
+    if novo_responsavel is None or not novo_responsavel.is_active:
+        raise ValidationError("Escolha um usuário ativo para ser o novo responsável.")
+    anterior = solicitacao.criado_por
+    if novo_responsavel.pk == anterior.pk:
+        raise ValidationError("Essa pessoa já é a responsável pela solicitação.")
+    motivo = (motivo or "").strip()
+    solicitacao.criado_por = novo_responsavel
+    solicitacao.save(update_fields=["criado_por", "atualizado_em"])
+    # De quem e para quem nas alterações; por quem no usuário; o motivo no texto.
+    registrar_historico(
+        solicitacao,
+        usuario,
+        AcaoHistorico.TRANSFERENCIA,
+        observacao=f"Motivo: {motivo}" if motivo else "",
+        alteracoes=[
+            {"campo": "Responsável", "antes": str(anterior), "depois": str(novo_responsavel)}
+        ],
+    )
+    link = reverse("solicitacoes:editar", args=[solicitacao.pk])
+    notificar(
+        [novo_responsavel],
+        f"Solicitação #{solicitacao.pk} transferida para você",
+        f"{usuario} passou a solicitação para você"
+        + (f": {motivo}" if motivo else ".")
+        + " Agora é você quem edita, envia e confirma o atendimento.",
+        link=link,
+        solicitacao=solicitacao,
+        exceto=usuario,
+    )
+    notificar(
+        [anterior],
+        f"Solicitação #{solicitacao.pk} transferida para {novo_responsavel}",
+        motivo or f"{usuario} registrou a transferência.",
+        link=link,
+        solicitacao=solicitacao,
+        exceto=usuario,
+    )
+    return solicitacao
+
+
+# O que a cópia leva: o evento que se repete, sem datas, protocolo, decisão
+# nem anexos (esses são de cada pedido).
+CAMPOS_DUPLICADOS = [
+    "municipio", "tipo_evento", "local_evento", "solicitante_nome",
+    "solicitante_cargo_unidade", "contato", "orgao_responsavel", "unidade_movel",
+    "unidade_movel_designada", "descricao_complementar", "tipo_operacao",
+    "quantidade_cin", "motorista",
+]
+
+
+@transaction.atomic
+def duplicar(solicitacao, usuario):
+    """Rascunho novo com os dados, serviços e equipes de uma solicitação.
+
+    Para eventos que se repetem: falta só ajustar as datas e enviar.
+    """
+    nova = SolicitacaoEvento(
+        criado_por=usuario,
+        **{campo: getattr(solicitacao, campo) for campo in CAMPOS_DUPLICADOS},
+    )
+    nova.save()
+    for item in solicitacao.itens_servico.all():
+        nova.itens_servico.create(servico_id=item.servico_id, observacao=item.observacao)
+    equipes = [
+        nova.itens_equipe.model(
+            solicitacao=nova,
+            equipe_id=item.equipe_id,
+            quantidade_servidores=item.quantidade_servidores,
+            observacao=item.observacao,
+        )
+        for item in solicitacao.itens_equipe.all()
+    ]
+    nova.itens_equipe.model.objects.bulk_create(equipes)
+    nova.recalcular_quantidade_servidores()
+    registrar_historico(
+        nova,
+        usuario,
+        AcaoHistorico.CRIACAO,
+        status_novo=nova.status,
+        observacao=f"Copiada da #{solicitacao.pk}",
+    )
+    return nova
+
+
 STATUS_REABRIVEIS = {
     StatusSolicitacao.AGUARDANDO_DESPACHO,
     StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,

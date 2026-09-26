@@ -19,9 +19,43 @@ class CadastroBase(models.Model):
 
 
 class TipoEvento(CadastroBase):
+    """Tipo de evento e o modelo da solicitação desse tipo.
+
+    O modelo (serviços, equipes com quantidade, solicitante, cargo e órgão
+    padrão) é só sugestão: a tela da solicitação mostra e o usuário aplica
+    com um clique — nada é preenchido sozinho.
+    """
+
+    servicos_sugeridos = models.ManyToManyField(
+        "Servico",
+        verbose_name="serviços sugeridos",
+        related_name="tipos_evento_sugeridos",
+        blank=True,
+    )
+    solicitante_padrao = models.CharField("solicitante padrão", max_length=150, blank=True)
+    cargo_padrao = models.CharField("cargo / unidade padrão", max_length=255, blank=True)
+    orgao_padrao = models.ForeignKey(
+        "OrgaoResponsavel",
+        verbose_name="órgão responsável padrão",
+        on_delete=models.SET_NULL,
+        related_name="tipos_evento_padrao",
+        blank=True,
+        null=True,
+    )
+
     class Meta(CadastroBase.Meta):
         verbose_name = "tipo de evento"
         verbose_name_plural = "tipos de evento"
+
+    @property
+    def tem_modelo(self):
+        return bool(
+            self.solicitante_padrao
+            or self.cargo_padrao
+            or self.orgao_padrao_id
+            or self.servicos_sugeridos.exists()
+            or self.equipes_sugeridas.exists()
+        )
 
 
 class Servico(CadastroBase):
@@ -100,3 +134,47 @@ class UnidadeMovel(CadastroBase):
     class Meta(CadastroBase.Meta):
         verbose_name = "unidade móvel"
         verbose_name_plural = "unidades móveis"
+
+
+class TextoDespacho(CadastroBase):
+    """Texto pronto da observação do despacho da DG, inserido com um clique.
+
+    O `nome` é o rótulo curto do botão; o `texto` é o que entra no campo.
+    """
+
+    texto = models.TextField("texto")
+
+    class Meta(CadastroBase.Meta):
+        verbose_name = "texto pronto do despacho"
+        verbose_name_plural = "textos prontos do despacho"
+
+
+class TipoEventoEquipe(models.Model):
+    """Equipe que costuma acompanhar um tipo de evento, com a quantidade usual."""
+
+    tipo_evento = models.ForeignKey(
+        TipoEvento,
+        verbose_name="tipo de evento",
+        on_delete=models.CASCADE,
+        related_name="equipes_sugeridas",
+    )
+    equipe = models.ForeignKey(
+        Equipe,
+        verbose_name="equipe",
+        on_delete=models.CASCADE,
+        related_name="tipos_evento_sugeridos",
+    )
+    quantidade = models.PositiveIntegerField("quantidade de servidores", blank=True, null=True)
+
+    class Meta:
+        verbose_name = "equipe sugerida do tipo de evento"
+        verbose_name_plural = "equipes sugeridas do tipo de evento"
+        ordering = ["equipe__nome"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tipo_evento", "equipe"], name="equipe_sugerida_unica_por_tipo"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.tipo_evento} — {self.equipe}"

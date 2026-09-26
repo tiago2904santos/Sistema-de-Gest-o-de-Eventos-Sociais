@@ -11,7 +11,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.functions import Coalesce
 from django.utils import timezone
@@ -225,6 +225,44 @@ class ConfiguracaoCoffeeBreak(models.Model):
     despacho_destino = models.CharField(
         "despacho: a quem vai", max_length=80, default="Ao GAF,",
     )
+    # E-mails ao fornecedor enviados do sistema (OS e ordem bancária).
+    email_copia = models.CharField(
+        "e-mail da ASCOM em cópia", max_length=300, blank=True,
+        help_text="Vai em cópia nos e-mails ao fornecedor. Mais de um: separe por vírgula.",
+    )
+    email_os_assunto = models.CharField(
+        "assunto do e-mail da OS", max_length=200,
+        default="Ordem de Serviço {numero} – Coffee Break – {evento}",
+        help_text="Pode usar {numero}, {evento}, {data}, {horario}, {local}, {responsavel}, {quantidade} e {fornecedor}.",
+    )
+    email_os_texto = models.TextField(
+        "texto do e-mail da OS",
+        default=(
+            "Prezados,\n\n"
+            "Segue em anexo a Ordem de Serviço {numero}, referente ao coffee break para "
+            "{quantidade} pessoas no evento \"{evento}\".\n\n"
+            "Data: {data}\nHorário: {horario}\nLocal de entrega: {local}\n"
+            "Responsável pelo recebimento: {responsavel}\n\n"
+            "Por favor, confirmem o recebimento desta mensagem.\n\n"
+            "Atenciosamente,\nAssessoria de Comunicação Social – PCPR"
+        ),
+        help_text="Os mesmos campos do assunto, entre chaves.",
+    )
+    email_ob_assunto = models.CharField(
+        "assunto do e-mail da ordem bancária", max_length=200,
+        default="Ordem bancária {ordem_bancaria} – pagamento da nota fiscal {nota} – Coffee Break",
+        help_text="Além dos campos da OS: {nota}, {ordem_bancaria} e {data_ordem_bancaria}.",
+    )
+    email_ob_texto = models.TextField(
+        "texto do e-mail da ordem bancária",
+        default=(
+            "Prezados,\n\n"
+            "Informamos que foi emitida a ordem bancária {ordem_bancaria}, de {data_ordem_bancaria}, "
+            "referente ao pagamento da nota fiscal {nota} (coffee break do evento \"{evento}\"). "
+            "Segue o comprovante em anexo.\n\n"
+            "Atenciosamente,\nAssessoria de Comunicação Social – PCPR"
+        ),
+    )
     atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
 
     class Meta:
@@ -414,6 +452,24 @@ class SolicitacaoCoffeeBreak(models.Model):
         help_text="O lote é escolhido pelo município.",
     )
     horario_evento = models.TimeField("horário", blank=True, null=True)
+    # De onde o pedido veio, quando foi aberto pelo "Pedir coffee break" do
+    # evento (Solicitações de evento) ou da palestra (Palestras e eventos).
+    solicitacao_evento = models.ForeignKey(
+        "solicitacoes.SolicitacaoEvento",
+        verbose_name="solicitação de evento",
+        on_delete=models.SET_NULL,
+        related_name="coffee_breaks",
+        blank=True,
+        null=True,
+    )
+    demanda_evento = models.ForeignKey(
+        "demandas_eventos.DemandaEvento",
+        verbose_name="palestra ou evento da ASCOM",
+        on_delete=models.SET_NULL,
+        related_name="coffee_breaks",
+        blank=True,
+        null=True,
+    )
     detalhamento_pedido = models.TextField(
         "detalhamento do pedido", blank=True,
         help_text="Em branco, a OS monta o texto com as datas, o horário e a quantidade.",
@@ -459,6 +515,15 @@ class SolicitacaoCoffeeBreak(models.Model):
     )
     data_envio_empresa = models.DateField(
         "ordem bancária enviada à empresa em", blank=True, null=True
+    )
+    # O comprovante da OB anexado na etapa 3 (número e valor lidos do PDF,
+    # coffee_break/ordem_bancaria.py); vai por e-mail ao fornecedor.
+    arquivo_ordem_bancaria = models.FileField(
+        "ordem bancária (PDF)", upload_to="coffee_break/ordens_bancarias/%Y/", blank=True
+    )
+    numero_ordem_bancaria = models.CharField("número da ordem bancária", max_length=30, blank=True)
+    valor_ordem_bancaria = models.DecimalField(
+        "valor da ordem bancária", max_digits=12, decimal_places=2, blank=True, null=True
     )
     observacoes = models.TextField("observações", blank=True)
 
@@ -712,6 +777,7 @@ class AcaoHistoricoCoffeeBreak(models.TextChoices):
     ATUALIZACAO = "ATUALIZACAO", "Solicitação atualizada"
     CANCELAMENTO = "CANCELAMENTO", "Solicitação cancelada"
     REATIVACAO = "REATIVACAO", "Solicitação reativada"
+    EMAIL = "EMAIL", "E-mail enviado"
 
 
 class HistoricoCoffeeBreak(models.Model):
@@ -742,6 +808,60 @@ class HistoricoCoffeeBreak(models.Model):
 
     def __str__(self):
         return f"{self.solicitacao_id} — {self.get_acao_display()}"
+
+
+class TipoOcorrencia(models.TextChoices):
+    ENTREGUE = "ENTREGUE", "Entregue sem ocorrência"
+    ATRASO = "ATRASO", "Atraso na entrega"
+    FALTA = "FALTA", "Falta de itens"
+    QUALIDADE = "QUALIDADE", "Problema de qualidade"
+    NAO_ENTREGUE = "NAO_ENTREGUE", "Não entregue"
+    OUTRO = "OUTRO", "Outra ocorrência"
+
+
+class OcorrenciaEntrega(models.Model):
+    """A entrega do coffee break registrada depois do evento: a confirmação
+    de quem recebeu, a nota de 1 a 5 e, se houve, a ocorrência (atraso, falta
+    de itens, qualidade). É a base do atesto da fiscal e o histórico do
+    fornecedor para notificações e sanções do contrato."""
+
+    solicitacao = models.ForeignKey(
+        SolicitacaoCoffeeBreak, verbose_name="solicitação", on_delete=models.CASCADE, related_name="ocorrencias",
+    )
+    tipo = models.CharField("o que aconteceu", max_length=15, choices=TipoOcorrencia.choices, default=TipoOcorrencia.ENTREGUE)
+    avaliacao = models.PositiveSmallIntegerField(
+        "avaliação (1 a 5)", blank=True, null=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
+    recebido_por = models.CharField("quem recebeu", max_length=150, blank=True)
+    descricao = models.TextField("observação", blank=True)
+    foto = models.FileField(
+        "foto ou documento", upload_to="coffee_break/ocorrencias/%Y/", blank=True,
+        help_text="Opcional: PDF, PNG ou JPG.",
+    )
+    registrada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, verbose_name="registrada por", on_delete=models.SET_NULL,
+        related_name="ocorrencias_coffee", blank=True, null=True,
+    )
+    criado_em = models.DateTimeField("registrada em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "entrega e ocorrência"
+        verbose_name_plural = "entregas e ocorrências"
+        ordering = ["-criado_em", "-pk"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(avaliacao__isnull=True) | models.Q(avaliacao__gte=1, avaliacao__lte=5),
+                name="coffee_avaliacao_1_a_5",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} — {self.solicitacao}"
+
+    @property
+    def com_problema(self):
+        return self.tipo != TipoOcorrencia.ENTREGUE
 
 
 class TipoCertidao(models.TextChoices):

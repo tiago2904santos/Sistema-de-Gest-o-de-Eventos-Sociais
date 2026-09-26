@@ -27,8 +27,8 @@
         <div class="aviso__txt">
           {% include "components/icon.html" with nome="alert" %}
           <div class="aviso__corpo">
-            <b>{{ lote.rotulo_curto }} — {{ lote.contrato.fornecedor.razao_social }}</b>
-            <p>Restam apenas {{ lote.restante }} de {{ lote.quantidade_total }} unidades (limite de alerta: {{ limiar_alerta }}%).</p>
+            <b>{{ lote.rotulo_curto }} — {{ lote.contrato.fornecedor.razao_social }}</b> <a href="{% url 'coffee_break:relatorio_contrato' lote.contrato_id %}">Relatório do contrato</a>
+            <p>{{ lote.motivo_alerta }}</p>
           </div>
         </div>
       </div>
@@ -65,6 +65,22 @@
       <a class="btn--secundaria" href="{% url 'coffee_break:certidoes' %}#fornecedor-{{ fornecedor.pk }}">Renovar</a>
     </div>
   {% endfor %}
+
+  {# A fila de trabalho: o que depende da equipe, agrupado pela próxima ação, com o botão que resolve. #}
+  <section class="section-card reg" id="o-que-fazer">
+    <header class="section-card__cabecalho reg__t">
+      <h2 class="section-card__titulo">O que fazer hoje</h2>
+    </header>
+    <div class="section-card__corpo">
+      {% for grupo in fila %}
+        <h3 class="sol-subtitulo{% if forloop.first %} cb-subtitulo--primeiro{% endif %}" id="fila-{{ grupo.chave }}">{{ grupo.titulo }} <span class="st st--{% if grupo.chave == 'entrega' %}aguardando{% else %}pendente{% endif %}">{{ grupo.total }}</span>{% if grupo.chave != "entrega" and grupo.max_dias %} <small class="cb-ajuda">a mais antiga parada há {{ grupo.max_dias }} dia{{ grupo.max_dias|pluralize }}</small>{% endif %}</h3>
+        <p class="cb-ajuda">{{ grupo.ajuda }}</p>
+        {% include "components/v32/lista_embutida.html" with linhas=grupo.linhas icone="coffee" rotulo="Solicitação" rotulo_plural="solicitações" conteudo_linha="pages/coffee_break/_conteudo_linha.html" acoes_linha="pages/coffee_break/_acoes_acao.html" vazio="" %}
+      {% empty %}
+        <p class="v32-suave">Nada pendente com a equipe: nenhuma entrega nos próximos dias e nenhum pagamento parado.</p>
+      {% endfor %}
+    </div>
+  </section>
 
   <section class="section-card reg">
     <header class="section-card__cabecalho reg__t">

@@ -11,7 +11,7 @@ from django import forms
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.db.models import Q, Sum
+from django.db.models import Max, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -55,7 +55,7 @@ from core.listagens import trilha_de_situacoes
 from solicitacoes.permissions import eh_administrador
 
 from .permissions import acesso_ao_modulo, gerenciamento_de_cadastros
-from .presenters import filas_de_situacao, linha_da_lista, linha_do_cadastro, linha_do_lote, selo_do_consumo
+from .presenters import filas_de_situacao, linha_da_acao, linha_da_lista, linha_do_cadastro, linha_do_lote, selo_do_consumo
 from . import certidoes, documentos, documents, preenchimento, services
 
 ITENS_POR_PAGINA = 15
@@ -334,6 +334,10 @@ def painel(request):
         SolicitacaoCoffeeBreak.objects.select_related("lote__contrato__fornecedor")
         .order_by("-criado_em")[:5]
     )
+    # "O que fazer hoje": as OS que dependem da equipe, agrupadas pela próxima ação.
+    fila = services.fila_de_trabalho(hoje)
+    for grupo in fila:
+        grupo["linhas"] = [linha_da_acao(item, grupo["chave"], hoje) for item in grupo["itens"]]
     alertas_certidoes = certidoes.fornecedores_com_alerta(_fornecedores_com_lote_ativo())
     # Fim da vigência a 90, 60 e 30 dias: prazo para o aditivo de prorrogação.
     alertas_vigencia = services.contratos_perto_do_fim()
@@ -348,13 +352,13 @@ def painel(request):
             # As duas listas do painel usam a mesma linha das listagens.
             "linhas_lotes": [linha_do_lote(lote) for lote in lotes_ativos],
             "lotes_em_alerta": em_alerta,
-            "limiar_alerta": services.LIMIAR_ALERTA_SALDO,
             "recentes": recentes,
             "linhas_recentes": [linha_da_lista(s) for s in recentes],
             "url_lotes": url_lotes,
             "url_solicitacoes": url_solicitacoes,
             "alertas_certidoes": alertas_certidoes,
             "alertas_vigencia": alertas_vigencia,
+            "fila": fila,
         },
     )
 
@@ -431,11 +435,19 @@ def lista_lotes(request):
             # Chip aceso: sem exercício escolhido, "Todas".
             "situacao_ativa": valores.get("exercicio") or "todas",
             "exercicio_escolhido": valores.get("exercicio", ""),
+            "proximo_exercicio": _proximo_exercicio(),
             "tem_filtros": any(
                 request.GET.get(nome) for nome in ("q", "exercicio", "situacao")
             ),
         },
     )
+
+
+def _proximo_exercicio():
+    from .virada import exercicio_de_origem
+
+    origem = exercicio_de_origem()
+    return origem + 1 if origem else None
 
 
 @acesso_ao_modulo
@@ -481,6 +493,116 @@ def detalhe_lote(request, pk):
     )
 
 
+@gerenciamento_de_cadastros
+def virada_exercicio(request):
+    """"Abrir exercício N+1": copia os lotes vigentes de N, pedindo só a
+    quantidade e o empenho de cada um (administradores do módulo)."""
+    from . import virada
+
+    origem = request.GET.get("de") or request.POST.get("de") or ""
+    origem = int(origem) if origem.isdigit() else virada.exercicio_de_origem()
+    if origem is None:
+        messages.info(request, "Não há lotes vigentes para copiar.")
+        return redirect("coffee_break:lotes")
+    destino = origem + 1
+    lotes = virada.lotes_de_origem(origem)
+    por_pk = {lote.pk: lote for lote in lotes}
+    if request.method == "POST":
+        formset = virada.ViradaFormSet(request.POST)
+        if formset.is_valid():
+            linhas = [
+                (por_pk[f.cleaned_data["lote"]], f.cleaned_data)
+                for f in formset.forms
+                if f.cleaned_data.get("criar") and f.cleaned_data.get("lote") in por_pk
+            ]
+            if not linhas:
+                messages.error(request, "Marque ao menos um lote para abrir o exercício.")
+            else:
+                try:
+                    criados = virada.abrir_exercicio(linhas, destino, request.POST.get("desativar") == "1")
+                except ValidationError as erro:
+                    for mensagem in erro.messages:
+                        messages.error(request, mensagem)
+                else:
+                    messages.success(
+                        request,
+                        f"Exercício {destino} aberto: {len(criados)} lote{'s' if len(criados) != 1 else ''} criado"
+                        f"{'s' if len(criados) != 1 else ''} com os municípios, orientações e especificações de {origem}."
+                        + (f" Os lotes de {origem} copiados foram encerrados." if request.POST.get("desativar") == "1" else ""),
+                    )
+                    return redirect(f"{reverse('coffee_break:lotes')}?exercicio={destino}")
+        else:
+            messages.error(request, "Corrija as linhas destacadas.")
+    else:
+        formset = virada.ViradaFormSet(initial=virada.iniciais(lotes, destino))
+    linhas = []
+    for form in formset.forms:
+        pk = form["lote"].value()
+        lote = por_pk.get(int(pk)) if str(pk).isdigit() else None
+        if lote is None:
+            continue
+        linhas.append({
+            "form": form,
+            "lote": lote,
+            "impedimento": virada.impedimento(lote, destino),
+            "aviso": virada.aviso_de_vigencia(lote, destino),
+            "marcado": bool(form["criar"].value()),
+        })
+    return render(
+        request,
+        "pages/coffee_break/virada_exercicio.html",
+        {
+            "breadcrumb": _breadcrumb(
+                {"label": "Lotes", "url": reverse("coffee_break:lotes")},
+                {"label": f"Abrir exercício {destino}"},
+            ),
+            "origem": origem,
+            "destino": destino,
+            "formset": formset,
+            "linhas": linhas,
+            "desativar": request.POST.get("desativar") == "1",
+        },
+    )
+
+
+@acesso_ao_modulo
+def relatorio_contrato(request, pk):
+    """Relatório do contrato na tela, em PDF (`?formato=pdf`) ou planilha (`?formato=csv`)."""
+    import csv
+
+    from django.template.loader import render_to_string
+
+    from . import relatorio_contrato as relatorio
+
+    contrato = get_object_or_404(ContratoCoffeeBreak.objects.select_related("fornecedor"), pk=pk)
+    dados = relatorio.montar(contrato)
+    nome = f"Relatorio do contrato {contrato.numero}".replace("/", "-")
+    formato = request.GET.get("formato")
+    if formato == "csv":
+        resposta = HttpResponse(content_type="text/csv; charset=utf-8")
+        resposta["Content-Disposition"] = f'attachment; filename="{nome}.csv"'
+        resposta.write("﻿")
+        escritor = csv.writer(resposta, delimiter=";", lineterminator="\r\n")
+        for linha in relatorio.linhas_csv(dados):
+            escritor.writerow(linha)
+        return resposta
+    if formato == "pdf":
+        try:
+            pdf = documentos._pdf("coffee_break/documentos/relatorio_contrato.html", dados)
+        except ValidationError as erro:
+            for mensagem in erro.messages:
+                messages.error(request, mensagem)
+            return redirect("coffee_break:relatorio_contrato", pk=contrato.pk)
+        resposta = HttpResponse(pdf, content_type="application/pdf")
+        resposta["Content-Disposition"] = f'inline; filename="{nome}.pdf"'
+        return resposta
+    dados["breadcrumb"] = _breadcrumb(
+        {"label": "Lotes", "url": reverse("coffee_break:lotes")},
+        {"label": f"Relatório do contrato {contrato.numero}"},
+    )
+    return render(request, "pages/coffee_break/relatorio_contrato.html", dados)
+
+
 # ---------------------------------------------------------------------------
 # Solicitações
 # ---------------------------------------------------------------------------
@@ -503,7 +625,10 @@ def _filtrar_solicitacoes(request):
     queryset = (
         SolicitacaoCoffeeBreak.objects.select_related(
             "lote__contrato__fornecedor", "criado_por"
-        ).order_by(*campos_ordem)
+        )
+        # O último registro do histórico: o "parada há N dias" da linha.
+        .annotate(ultimo_historico=Max("historico__criado_em"))
+        .order_by(*campos_ordem)
     )
     situacao = ""
     if filtros.is_valid():
@@ -778,6 +903,10 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
         )
     if solicitacao is not None and etapa == "pedido":
         contexto["aviso_antecedencia"] = services.aviso_de_antecedencia(solicitacao)
+        from . import origem as origem_evento
+
+        # Pedida do evento ou da palestra: o link de lá e o aviso de remarcação.
+        contexto["origem_evento"] = origem_evento.cartao(solicitacao, request.user)
     if "numero" in form.fields:
         contexto["numero_ano"] = _ano_do_numero(form)
         # Número fora do "NN/AAAA" (texto antigo da planilha): campo de texto livre.
@@ -823,6 +952,10 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
             contexto["partes_anexo"] = documentos.partes_do_anexo(solicitacao)
             contexto["avisos_anexo"] = documentos.avisos_do_pacote(itens)
             contexto["eprotocolo"] = documentos.textos_eprotocolo(solicitacao)
+            # O comprovante da OB: anexar (modal de anexo de documentos) e enviar ao fornecedor.
+            contexto["usa_dialogo_assinado"] = True
+            contexto["url_anexar_ob"] = reverse("coffee_break:anexar_ob", args=[solicitacao.pk])
+            contexto["avisos_ob"] = services.avisos_da_ob(solicitacao)
     return contexto
 
 
@@ -963,12 +1096,20 @@ def ler_email(request):
 
 @acesso_ao_modulo
 def nova_solicitacao(request):
+    from . import origem as origem_evento
+
     email_origem = None
+    # "Pedir coffee break" do evento ou da palestra: ?solicitacao=<pk> ou ?demanda=<pk>.
+    campo_origem, evento_origem = origem_evento.origem_do_pedido(
+        request.POST if request.method == "POST" else request.GET, request.user
+    )
     if request.method == "POST":
         form = PedidoCoffeeBreakForm(request.POST, request.FILES)
         # O e-mail lido em "Preencher com um e-mail", se a tela veio dele.
         origem = preencher_por_email.origem_do_pedido(request, "coffee_break")
         if form.is_valid():
+            if evento_origem is not None:
+                setattr(form.instance, campo_origem, evento_origem)
             try:
                 solicitacao = form.save(criado_por=request.user)
             except ValidationError as erro:
@@ -980,6 +1121,8 @@ def nova_solicitacao(request):
                 messages.error(request, "Corrija os campos destacados para continuar.")
             else:
                 descricao = "Solicitação registrada no sistema."
+                if evento_origem is not None:
+                    descricao += f" Pedida a partir de: {origem_evento.rotulo(campo_origem, evento_origem)}."
                 if origem:
                     descricao += f" {preencher_por_email.texto_da_origem(origem)}."
                 services.registrar_historico(
@@ -1001,9 +1144,18 @@ def nova_solicitacao(request):
             messages.error(request, "Corrija os campos destacados para continuar.")
         email_origem = preencher_por_email.origem_pendente(request, "coffee_break")
     else:
-        form = PedidoCoffeeBreakForm()
+        iniciais = origem_evento.valores_iniciais(campo_origem, evento_origem) if evento_origem is not None else {}
+        form = PedidoCoffeeBreakForm(initial=iniciais)
     contexto = _contexto_formulario(request, form)
     contexto["email_origem"] = email_origem
+    if evento_origem is not None:
+        parametro = "solicitacao" if campo_origem == "solicitacao_evento" else "demanda"
+        contexto["origem_evento"] = {
+            "rotulo": origem_evento.rotulo(campo_origem, evento_origem),
+            "url": origem_evento.url(campo_origem, evento_origem),
+            "parametro": parametro,
+            "pk": evento_origem.pk,
+        }
     # A OS abre já na nova solicitação, no editor de documentos, e acompanha o preenchimento.
     contexto["doc_os_nova"] = {
         "titulo": "Ordem de serviço",
@@ -1224,6 +1376,56 @@ def registrar_andamento(request, pk):
         return redirect(destino)
     messages.success(request, f"Andamento registrado: {solicitacao.situacao_financeira_display}.")
     return JsonResponse({"ok": True}) if via_modal else redirect(destino)
+
+
+@acesso_ao_modulo
+def registrar_entrega(request, pk):
+    """A entrega e as ocorrências com o fornecedor, depois do evento.
+
+    Da lista abre em modal (protocolo dos cadastros, `X-Cadastro-Modal`); sem
+    ele, é uma página com as entregas já registradas e o formulário.
+    """
+    from .forms import OcorrenciaEntregaForm
+
+    solicitacao = _solicitacao_documental(pk)
+    via_modal = _modal(request)
+    liberada = services.entrega_liberada(solicitacao)
+    form = OcorrenciaEntregaForm(request.POST or None, request.FILES or None)
+    erro = ""
+    if request.method == "POST":
+        if not liberada:
+            erro = "A entrega se registra a partir do dia do evento."
+        elif form.is_valid():
+            ocorrencia = services.registrar_entrega(solicitacao, request.user, form)
+            messages.success(request, f"Entrega registrada: {ocorrencia.get_tipo_display().lower()}.")
+            if via_modal:
+                return JsonResponse({"ok": True})
+            return redirect("coffee_break:entrega", pk=solicitacao.pk)
+    contexto = {
+        "solicitacao": solicitacao,
+        "form": form,
+        "valores": {nome: "" if form[nome].value() is None else str(form[nome].value()) for nome in form.fields},
+        "tipos": _opcoes_choices(form.fields["tipo"].choices),
+        "liberada": liberada,
+        "erro": erro,
+        "ocorrencias": solicitacao.ocorrencias.select_related("registrada_por"),
+    }
+    if via_modal:
+        return render(request, "pages/coffee_break/_modal_entrega.html", contexto)
+    rotulo = solicitacao.numero or f"#{solicitacao.pk}"
+    contexto["breadcrumb"] = _breadcrumb(
+        {"label": "Solicitações", "url": reverse("coffee_break:solicitacoes")},
+        {"label": rotulo, "url": reverse("coffee_break:editar", args=[solicitacao.pk])},
+        {"label": "Entrega"},
+    )
+    return render(request, "pages/coffee_break/entrega.html", contexto)
+
+
+@acesso_ao_modulo
+def ocorrencia_arquivo(request, pk):
+    from .models import OcorrenciaEntrega
+
+    return _arquivo(get_object_or_404(OcorrenciaEntrega, pk=pk).foto)
 
 
 @acesso_ao_modulo
@@ -1737,6 +1939,203 @@ def pacote_parte(request, pk, parte):
         # Baixar os arquivos conclui a etapa 3: é o dia do atesto e do envio ao GAF.
         services.marcar_atesto(solicitacao, request.user)
     return resposta
+
+
+# ---------------------------------------------------------------------------
+# E-mails ao fornecedor (a OS; a ordem bancária)
+# ---------------------------------------------------------------------------
+
+def _tela_de_email(request, solicitacao, envio, modelo_assunto, modelo_texto, gerar_anexos, depois):
+    """Mostra o e-mail pronto (editável) e, no POST confirmado, envia.
+
+    `envio`: titulo, o_que (como o histórico chama o documento), ja_enviado,
+    anexos (nome e url, para a tela), volta, pendencias. `gerar_anexos()`
+    devolve [(nome, bytes, tipo)] na hora de enviar; `depois(solicitacao)`
+    grava o que o envio conclui (a data) e devolve a mensagem de sucesso.
+    """
+    from smtplib import SMTPException
+
+    from . import emails
+
+    fornecedor = solicitacao.lote.contrato.fornecedor
+    envio.setdefault(
+        "url_fornecedor",
+        reverse("coffee_break:cadastro_lista", args=["fornecedores"]) + f"?editar={fornecedor.pk}"
+        if eh_administrador(request.user) else "",
+    )
+    valores = emails.rascunho(solicitacao, modelo_assunto, modelo_texto)
+    erro = ""
+    if request.method == "POST" and not envio["pendencias"]:
+        valores = {chave: request.POST.get(chave, "") for chave in ("para", "copia", "assunto", "texto")}
+        try:
+            anexos = gerar_anexos()
+            emails.enviar(
+                solicitacao, request.user, anexos=anexos, o_que=envio["o_que"],
+                tambem_em=envio.get("tambem_em", ()), **{
+                    "para": valores["para"], "copia": valores["copia"],
+                    "assunto": valores["assunto"], "texto": valores["texto"],
+                },
+            )
+        except ValidationError as exc:
+            erro = " ".join(exc.messages)
+        except (SMTPException, OSError) as exc:
+            erro = f"O e-mail não foi enviado: o servidor de e-mail recusou ou não respondeu ({exc}). Tente de novo."
+        else:
+            messages.success(request, depois(solicitacao))
+            return redirect(envio["volta"])
+    rotulo = solicitacao.numero or f"#{solicitacao.pk}"
+    return render(
+        request,
+        "pages/coffee_break/enviar_email.html",
+        {
+            "solicitacao": solicitacao,
+            "envio": envio,
+            "valores": valores,
+            "erro": erro,
+            "breadcrumb": _breadcrumb(
+                {"label": "Solicitações", "url": reverse("coffee_break:solicitacoes")},
+                {"label": rotulo, "url": envio["volta"]},
+                {"label": envio["titulo"]},
+            ),
+        },
+    )
+
+
+@acesso_ao_modulo
+def enviar_os(request, pk):
+    """"Enviar ao fornecedor": a OS em PDF, com o texto padrão, para o e-mail
+    do cadastro do fornecedor e cópia para a ASCOM. Grava a data do envio."""
+    solicitacao = _solicitacao_documental(pk)
+    config = ConfiguracaoCoffeeBreak.atual()
+    nome = documentos.nome_arquivo("Ordem de Servico", solicitacao)
+    pendencias = list(documentos.pendencias_ordem_servico(solicitacao))
+    if solicitacao.cancelada:
+        pendencias.insert(0, "A solicitação está cancelada.")
+    enviada = solicitacao.data_envio_ordem_servico
+    envio = {
+        "titulo": f"Enviar a OS {solicitacao.numero} ao fornecedor".replace("  ", " "),
+        "o_que": f"Ordem de serviço {solicitacao.numero}".strip(),
+        "ja_enviado": f"A OS já foi enviada ao fornecedor em {enviada:%d/%m/%Y}." if enviada else "",
+        "anexos": [{"nome": nome, "url": reverse("coffee_break:ordem_servico", args=[solicitacao.pk])}],
+        "volta": reverse("coffee_break:editar", args=[solicitacao.pk]),
+        "pendencias": pendencias,
+    }
+
+    def anexos():
+        return [(nome, documentos.ordem_servico_pdf(solicitacao), "application/pdf")]
+
+    def depois(s):
+        s.data_envio_ordem_servico = timezone.localdate()
+        s.save(update_fields=["data_envio_ordem_servico", "atualizado_em"])
+        return f"OS {s.numero} enviada ao fornecedor por e-mail. O envio ficou no histórico."
+
+    return _tela_de_email(request, solicitacao, envio, config.email_os_assunto, config.email_os_texto, anexos, depois)
+
+
+@acesso_ao_modulo
+def enviar_ob(request, pk):
+    """"Enviar OB ao fornecedor": o comprovante da ordem bancária por e-mail.
+    Enviado, registra o envio à empresa (o último marco) em todas as OS do
+    mesmo pagamento, e o pagamento se encerra."""
+    solicitacao = _solicitacao_documental(pk)
+    config = ConfiguracaoCoffeeBreak.atual()
+    arquivo = solicitacao.arquivo_ordem_bancaria
+    nome = f"Ordem bancaria {solicitacao.numero_ordem_bancaria or solicitacao.numero}".replace("/", "-").strip() + ".pdf"
+    pendencias = []
+    if solicitacao.cancelada:
+        pendencias.append("A solicitação está cancelada.")
+    if not arquivo:
+        pendencias.append("Anexe o PDF da ordem bancária na etapa 3.")
+    if not solicitacao.data_ordem_bancaria:
+        pendencias.append("Registre a data da ordem bancária (o atesto vem antes).")
+    grupo = solicitacao.grupo_pagamento()
+    outras = [m for m in grupo if m.pk != solicitacao.pk]
+    enviada = solicitacao.data_envio_empresa
+    os_do_pagamento = ", ".join(m.numero or f"#{m.pk}" for m in grupo)
+    envio = {
+        "titulo": "Enviar a ordem bancária ao fornecedor",
+        "o_que": f"Ordem bancária {solicitacao.numero_ordem_bancaria}".strip()
+        + (f" (pagamento das OS {os_do_pagamento})" if outras else ""),
+        "ja_enviado": f"A ordem bancária já foi enviada à empresa em {enviada:%d/%m/%Y}." if enviada else "",
+        "anexos": [{"nome": nome, "url": reverse("coffee_break:ordem_bancaria_arquivo", args=[solicitacao.pk])}] if arquivo else [],
+        "volta": reverse("coffee_break:etapa_protocolo", args=[solicitacao.pk]),
+        "pendencias": pendencias,
+        "tambem_em": outras,
+    }
+
+    def anexos():
+        with arquivo.open("rb") as aberto:
+            return [(nome, aberto.read(), "application/pdf")]
+
+    def depois(s):
+        marco = services.proximo_marco(s)
+        if marco and marco["campo"] == "data_envio_empresa":
+            services.registrar_marco(s, request.user, timezone.localdate(), "por e-mail, do sistema")
+            return "Ordem bancária enviada ao fornecedor. O pagamento foi concluído" + (
+                " em todas as OS dele." if outras else "."
+            )
+        return "Ordem bancária enviada ao fornecedor. O envio ficou no histórico."
+
+    return _tela_de_email(request, solicitacao, envio, config.email_ob_assunto, config.email_ob_texto, anexos, depois)
+
+
+@require_POST
+@acesso_ao_modulo
+def anexar_ob(request, pk):
+    """O PDF da ordem bancária pelo modal de anexo de documentos (etapa 3):
+    lê número, data e valor, guarda em todas as OS do pagamento e registra a
+    data da OB quando ela é o próximo marco. Também troca ou remove."""
+    from .forms import validar_pdf
+    from .ordem_bancaria import dados_da_ob
+
+    solicitacao = get_object_or_404(SolicitacaoCoffeeBreak, pk=pk)
+    destino = reverse("coffee_break:etapa_protocolo", args=[pk])
+    if solicitacao.bloqueada_para_edicao:
+        messages.warning(request, "Solicitações canceladas ou concluídas ficam bloqueadas para edição.")
+        return redirect(destino)
+    if not solicitacao.numero_nota_fiscal.strip():
+        messages.error(request, "Registre a nota fiscal antes da ordem bancária.")
+        return redirect(destino)
+    if request.POST.get("acao") == "remover":
+        if services.remover_ordem_bancaria(solicitacao, request.user):
+            messages.success(request, "Ordem bancária removida.")
+        return redirect(destino)
+    arquivo = request.FILES.get("arquivo")
+    if arquivo is None:
+        messages.error(request, "Escolha o PDF da ordem bancária.")
+        return redirect(destino)
+    try:
+        validar_pdf(arquivo)
+    except ValidationError as erro:
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+        return redirect(destino)
+    arquivo.seek(0)
+    lidos = dados_da_ob(arquivo.read())
+    arquivo.seek(0)
+    try:
+        dia = services.anexar_ordem_bancaria(solicitacao, request.user, arquivo, lidos)
+    except ValidationError as erro:
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+        return redirect(destino)
+    texto = "Ordem bancária anexada"
+    if lidos.get("numero"):
+        texto += f" — nº {lidos['numero']} lido do PDF"
+    if dia:
+        texto += f"; OB emitida em {dia:%d/%m/%Y}" + (" (data lida do PDF)" if lidos.get("data") == dia else "")
+    elif not solicitacao.data_ordem_bancaria:
+        texto += "; registre o atesto para a data da OB entrar"
+    messages.success(request, texto + ".")
+    solicitacao.refresh_from_db()
+    for aviso in services.avisos_da_ob(solicitacao):
+        messages.warning(request, aviso)
+    return redirect(destino)
+
+
+@acesso_ao_modulo
+def ordem_bancaria_arquivo(request, pk):
+    return _arquivo(_solicitacao_documental(pk).arquivo_ordem_bancaria)
 
 
 @acesso_ao_modulo
