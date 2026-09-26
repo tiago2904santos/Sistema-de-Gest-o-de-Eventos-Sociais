@@ -300,6 +300,7 @@ def gravar_editor(dados, roteiro, *, rascunho, usuario):
         trechos_ok = formset.is_valid()
         if trechos_ok:
             formset.save()
+            salvo.sincronizar_periodo()
     resultado.roteiro, resultado.formset, resultado.destinos = salvo, formset, destinos
     if not trechos_ok:
         return resultado
@@ -797,6 +798,7 @@ def autosave(request, pk=None):
             if gravou["trechos"]:
                 formset.save()
                 ids.update(_ids_gravados(formset))
+                salvo.sincronizar_periodo()
         if not pk:
             _registrar_auditoria(request.user, "VIAGENS_ROTEIRO_CRIADO", salvo)
     if gravou["trechos"]:

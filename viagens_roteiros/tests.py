@@ -550,6 +550,40 @@ class MontagemPelaTelaTests(BaseTelaRoteiroTestCase):
         self.assertEqual(roteiro.trechos.count(), 1)
         self.assertEqual(roteiro.trechos.get().destino_municipio, self.sao_paulo)
 
+    def test_salvar_grava_o_periodo_no_proprio_roteiro(self):
+        """m062: lista de viagens, documentos e prestação leem o cabeçalho."""
+        dados = self.dados(**{
+            "trechos-TOTAL_FORMS": "2",
+            "trechos-1-ordem": "2",
+            "trechos-1-sentido": "RETORNO",
+            "trechos-1-origem_municipio": self.sao_paulo.pk,
+            "trechos-1-destino_municipio": self.curitiba.pk,
+            "trechos-1-saida_data": "2026-08-14",
+            "trechos-1-saida_hora": "08:00",
+            "trechos-1-chegada_data": "2026-08-14",
+            "trechos-1-chegada_hora": "18:00",
+            "trechos-1-distancia_km": "",
+        })
+        self.client.post(reverse("viagens_roteiros:novo"), dados)
+        roteiro = Roteiro.objects.latest("pk")
+        self.assertEqual(roteiro.saida_dt, dt(2026, 8, 12, 8, 0))
+        self.assertEqual(roteiro.chegada_dt, dt(2026, 8, 12, 18, 0))
+        self.assertEqual(roteiro.retorno_saida_dt, dt(2026, 8, 14, 8, 0))
+        self.assertEqual(roteiro.retorno_chegada_dt, dt(2026, 8, 14, 18, 0))
+
+    def test_sem_trecho_de_retorno_nao_inventa_volta(self):
+        self.client.post(reverse("viagens_roteiros:novo"), self.dados())
+        roteiro = Roteiro.objects.latest("pk")
+        self.assertEqual(roteiro.saida_dt, dt(2026, 8, 12, 8, 0))
+        self.assertEqual(roteiro.chegada_dt, dt(2026, 8, 12, 18, 0))
+        self.assertIsNone(roteiro.retorno_saida_dt)
+        self.assertIsNone(roteiro.retorno_chegada_dt)
+
+    def test_autosave_tambem_grava_o_periodo(self):
+        resposta = self.client.post(reverse("viagens_roteiros:autosave_novo"), self.dados())
+        roteiro = Roteiro.objects.get(pk=resposta.json()["pk"])
+        self.assertEqual(roteiro.saida_dt, dt(2026, 8, 12, 8, 0))
+
     def test_salvar_ja_calcula_as_diarias(self):
         """O cálculo acompanha o salvamento — sem passo extra de "calcular"."""
         resposta = self.client.post(

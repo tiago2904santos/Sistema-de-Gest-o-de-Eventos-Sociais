@@ -82,11 +82,12 @@ def _aplicar_roteiro(semente, roteiro):
     primeiro = roteiro.destinos.select_related("municipio__estado").order_by("ordem", "pk").first()
     if primeiro is not None and primeiro.municipio_id and semente["cidade"] is None:
         semente["cidade"], semente["estado"] = primeiro.municipio, primeiro.municipio.estado
+    # Data no fuso local: o banco devolve UTC, e 22h de um dia vira o seguinte.
     if semente["data_inicio"] is None and roteiro.saida_dt:
-        semente["data_inicio"] = roteiro.saida_dt.date()
+        semente["data_inicio"] = timezone.localdate(roteiro.saida_dt)
     fim = roteiro.retorno_chegada_dt or roteiro.retorno_saida_dt or roteiro.chegada_dt
     if semente["data_fim"] is None and fim:
-        semente["data_fim"] = fim.date()
+        semente["data_fim"] = timezone.localdate(fim)
 
 
 def semente_de_documentos(viagem):
