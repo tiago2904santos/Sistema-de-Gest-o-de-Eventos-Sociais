@@ -80,3 +80,12 @@
 
 /* ---------- Cabeçalho: "Baixar tudo" é um formulário ao lado dos botões -- */
 .vg-baixar-tudo{display:contents}
+
+/* ---------- "Gerar documentos": um cartão por ofício ------------------- */
+.vg-gerar .section-card__cabecalho{align-items:center}
+.vg-gerar .section-card__cabecalho > .btn--secundaria{margin-left:auto}
+.vg-gerar__adicionar{display:flex;justify-content:flex-start;margin:4px 0 16px}
+.vg-gerar__opcoes{display:grid;gap:10px}
+.vg-gerar__opcoes .form-label{display:flex;gap:8px;align-items:flex-start;font-weight:400}
+.vg-gerar__contador--falta{color:var(--wn-t)}
+.vg-gerar__fim{display:flex;justify-content:flex-end;margin:16px 0}
