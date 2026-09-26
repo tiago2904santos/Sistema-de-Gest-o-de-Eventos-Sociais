@@ -1,0 +1,31 @@
+{% comment %}
+  "Como foi calculado": as parcelas das diárias, uma por linha — faixa, período,
+  percentual, quantidade, valor unitário, subtotal e a vigência da tabela.
+  Vem das parcelas gravadas ao abrir; a prévia do roteiro-editor.js reescreve
+  o corpo a cada cálculo (`como_calculado` no JSON). Contexto: `como_calculado`.
+{% endcomment %}
+<details class="ofc-doc" data-como-calculado{% if not como_calculado %} hidden{% endif %}>
+  <summary class="ofc-doc__cabeca">
+    <span class="ofc-doc__titulo">{% include "components/icon.html" with nome="checklist" %}Como foi calculado</span>
+    <span class="ofc-doc__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+  </summary>
+  <div class="ofc-doc__corpo">
+    <div class="dt-w" tabindex="0" role="region" aria-label="Composição das diárias">
+      <table class="dt">
+        <thead>
+          <tr>
+            <th>Faixa</th><th>Início</th><th>Fim</th><th>Diária</th><th>Qtd.</th><th>Valor unitário</th><th>Subtotal</th><th>Tabela de</th>
+          </tr>
+        </thead>
+        <tbody data-como-calculado-linhas>
+          {% for linha in como_calculado %}
+            <tr>
+              <td>{{ linha.faixa }}</td><td>{{ linha.inicio }}</td><td>{{ linha.fim }}</td><td>{{ linha.percentual }}</td>
+              <td>{{ linha.quantidade }}</td><td>{{ linha.valor_unitario }}</td><td>{{ linha.subtotal }}</td><td>{{ linha.vigencia }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>

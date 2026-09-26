@@ -343,6 +343,8 @@
             </div>
           </div>
 
+          {% include "pages/viagens_roteiros/_como_calculado.html" %}
+
           {% if roteiro.pk and not embutido %}{% include "components/v32/historico_alteracoes.html" %}{% endif %}
 
           {% if not embutido %}{% include "pages/viagens_roteiros/_acoes_editor.html" %}{% endif %}

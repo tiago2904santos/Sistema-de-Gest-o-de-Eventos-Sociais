@@ -27,6 +27,7 @@ from cadastros.models import Estado, Municipio
 from .forms import DestinoFormSet, RoteiroForm, TrechoFormSet
 from .models import Roteiro
 from .permissions import acesso_ao_modulo, pode_editar_roteiros
+from .presenters import linhas_do_calculo
 from .services.calculo import previa_diarias, recalcular_diarias
 from .services.rota import (
     RotaIndisponivel,
@@ -585,6 +586,8 @@ def _contexto_do_form(roteiro, form, formset, destinos, viagem=None):
         "autosave_ligado": not (
             roteiro and roteiro.pk and roteiro.status == Roteiro.Status.FINALIZADO
         ),
+        # Parcela a parcela, como o valor gravado foi composto (m074).
+        "como_calculado": linhas_do_calculo(roteiro.componentes_diarias.all()) if roteiro and roteiro.pk else [],
         "titulo": "Editar roteiro" if roteiro and roteiro.pk else "Novo roteiro",
         "url_voltar": _url_de_volta(roteiro, viagem),
         "viagem_id": getattr(viagem, "pk", None),
@@ -691,6 +694,7 @@ def previa(request):
                 "valor_por_servidor": totais["valor_por_servidor"],
                 "tipo_destino": " + ".join(faixas),
             },
+            "como_calculado": linhas_do_calculo(getattr(resultado, "componentes", [])),
         }
     )
 

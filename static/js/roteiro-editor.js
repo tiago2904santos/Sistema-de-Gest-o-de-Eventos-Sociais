@@ -1353,11 +1353,30 @@
     });
   }
 
+  // "Como foi calculado": uma linha por parcela, montada com textContent.
+  function escreverComoCalculado(linhas) {
+    var quadro = editor.querySelector("[data-como-calculado]");
+    var corpo = editor.querySelector("[data-como-calculado-linhas]");
+    if (!quadro || !corpo) return;
+    corpo.textContent = "";
+    (linhas || []).forEach(function (linha) {
+      var tr = document.createElement("tr");
+      ["faixa", "inicio", "fim", "percentual", "quantidade", "valor_unitario", "subtotal", "vigencia"].forEach(function (chave) {
+        var td = document.createElement("td");
+        td.textContent = linha[chave] == null ? "—" : String(linha[chave]);
+        tr.appendChild(td);
+      });
+      corpo.appendChild(tr);
+    });
+    quadro.hidden = !(linhas && linhas.length);
+  }
+
   function limparDiarias() {
     escreverTexto("[data-diarias-valor]", "—");
     escreverTexto("[data-diarias-extenso]", "—");
     escreverTexto("[data-diarias-tipo]", "—");
     escreverTexto("[data-diarias-composicao]", "—");
+    escreverComoCalculado([]);
     tipoDestino = "";
     temResultadoDiarias = false;
     mostrarErro("[data-diarias-erro]", "");
@@ -1370,6 +1389,7 @@
       escreverTexto("[data-diarias-extenso]", dados.totais.valor_extenso || "—");
       escreverTexto("[data-diarias-tipo]", dados.totais.tipo_destino || "—");
       escreverTexto("[data-diarias-composicao]", dados.totais.resumo_diarias || "—");
+      escreverComoCalculado(dados.como_calculado);
       tipoDestino = dados.totais.tipo_destino || "";
       temResultadoDiarias = true;
       mostrarErro("[data-diarias-erro]", "");
@@ -1379,6 +1399,7 @@
     } else {
       tipoDestino = "";
       temResultadoDiarias = false;
+      escreverComoCalculado([]);
       mostrarErro("[data-diarias-erro]", dados.motivo || "Erro ao calcular as diárias.");
       definirEstadoDiarias("erro");
     }

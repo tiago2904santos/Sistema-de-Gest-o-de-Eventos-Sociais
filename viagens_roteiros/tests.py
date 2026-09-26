@@ -675,6 +675,20 @@ class MontagemPelaTelaTests(BaseTelaRoteiroTestCase):
         self.assertIn("total_valor", dados["totais"])
         self.assertEqual(Roteiro.objects.count(), antes)
 
+    def test_como_foi_calculado_na_previa_e_na_tela(self):
+        """m074: parcela a parcela, com faixa, período, unitário e vigência."""
+        resposta = self.client.post(reverse("viagens_roteiros:previa_diarias"), self.dados())
+        linhas = resposta.json()["como_calculado"]
+        self.assertTrue(linhas)
+        self.assertEqual(linhas[0]["faixa"], "Capital")
+        self.assertEqual(linhas[0]["inicio"], "12/08/2026 08:00")
+        self.assertEqual(linhas[0]["vigencia"], "01/01/2026")
+        self.client.post(reverse("viagens_roteiros:novo"), self.dados())
+        roteiro = Roteiro.objects.latest("pk")
+        tela = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
+        self.assertContains(tela, "Como foi calculado")
+        self.assertContains(tela, "<td>R$ 111,38</td>", html=False)
+
     def test_previa_incompleta_explica_o_que_falta(self):
         incompleto = self.dados(
             **{"trechos-0-saida_data": "", "trechos-0-saida_hora": ""}
