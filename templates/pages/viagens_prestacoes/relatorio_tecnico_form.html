@@ -50,6 +50,16 @@
           </div>
         </div>
 
+        {% if rts_copiar %}
+          {# m097: os textos de outra prestação do mesmo evento ou do mesmo destino, de uma vez. #}
+          <div class="pc-rt__grupo pc-rt__copiar" data-rt-copiar hidden>
+            <h3 class="pc-rt__titulo">Copiar de outra prestação</h3>
+            <div class="ofc-com-acao">
+              {% include "components/select.html" with name="rt_copiar_de" label="Prestação" rotulo_oculto=True opcoes=rts_copiar_opcoes placeholder="Escolha uma prestação do mesmo evento ou destino" permitir_vazio=True %}
+              <button type="button" class="btn--secundaria ofc-com-acao__botao" data-rt-copiar-aplicar>Copiar textos</button>
+            </div>
+          </div>
+        {% endif %}
         {% for campo in campos_modelo %}
           <div class="pc-rt__grupo pc-texto" id="grupo-{{ campo.campo }}">
             <h3 class="pc-rt__titulo" id="{{ campo.section_id }}">{{ campo.label }}</h3>
@@ -57,6 +67,7 @@
             <div class="ofc-com-acao pc-rt__modelo">
               {% include "components/select.html" with name="modelo_"|add:campo.campo label="Modelo" opcoes=campo.opcoes placeholder="Aplicar um modelo (opcional)" permitir_vazio=True selecionado=campo.valor_modelo %}
               <a class="btn--secundaria btn--quadrado ofc-com-acao__botao" href="{{ campo.manage_url }}" aria-label="Modelos de texto de {{ campo.label|lower }}" title="Modelos de texto">{% include "components/icon.html" with nome="settings" %}</a>
+              <button type="button" class="btn--secundaria btn--quadrado ofc-com-acao__botao" data-rt-salvar-modelo="{{ campo.campo }}" data-rotulo="{{ campo.label }}" aria-label="Salvar o texto de {{ campo.label|lower }} como modelo" title="Salvar como modelo" hidden>{% include "components/icon.html" with nome="document-plus" %}</button>
             </div>
             {% include "components/textarea.html" with name=campo.campo label=campo.label rotulo_oculto=True valor=campo.texto linhas="3" erros=campo.erros %}
           </div>
@@ -78,4 +89,6 @@
   </section>
 </div>
 {{ modelos_texto|json_script:"rt-modelos" }}
+{% if rts_copiar %}{{ rts_copiar|json_script:"rt-copiar" }}{% endif %}
+<div hidden data-rt-modelo-criar-url="{{ modelo_criar_url }}"></div>
 {% endblock %}

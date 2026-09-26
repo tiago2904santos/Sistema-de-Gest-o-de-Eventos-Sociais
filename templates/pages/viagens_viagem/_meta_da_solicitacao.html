@@ -1,0 +1,17 @@
+{% comment %}
+  No painel da viagem gerada pela solicitação: o ambiente, a meta de
+  servidores que a DG designou (e quantos os ofícios já somam) e até quando o
+  ofício dispensa justificativa. Contexto: `resumo`
+  (solicitacoes.integracao_viagens.resumo_da_viagem).
+{% endcomment %}
+{% if resumo.contador or resumo.data_limite or resumo.ambiente %}
+  <section class="section-card vg-meta-cartao" data-meta-da-solicitacao>
+    <div class="section-card__corpo">
+      {% if resumo.ambiente %}<p class="vg-meta__status">Ambiente <b>{{ resumo.ambiente }}</b></p>{% endif %}
+      {% include "pages/viagens_viagem/_contador_servidores.html" with contador=resumo.contador %}
+      {% if resumo.data_limite %}
+        <p class="vg-meta__status">{% include "components/icon.html" with nome="calendar" %}{% if resumo.limite_vencido %}O prazo para o ofício sem justificativa terminou em {{ resumo.data_limite|date:"d/m/Y" }}.{% else %}Ofício sem justificativa até <b>{{ resumo.data_limite|date:"d/m/Y" }}</b>.{% endif %}</p>
+      {% endif %}
+    </div>
+  </section>
+{% endif %}

@@ -14,6 +14,7 @@ from django.shortcuts import redirect, render
 from django.urls import NoReverseMatch, reverse
 from django.views.decorators.http import require_POST, require_http_methods
 
+from core.conflitos import conflitos_da_viagem
 from core.deletion import DelecaoProtegidaError
 from core.listagens import ITENS_POR_PAGINA
 from core.private_media import private_file_response
@@ -224,6 +225,9 @@ def etapa(request, pk, etapa):
         "url_reativar": reverse("viagens_viagem:acao", args=[viagem.pk, "reativar"]),
         # De qual solicitação a viagem veio e se ela mudou depois.
         "origem_solicitacao": aviso_para_o_painel(viagem),
+        # A equipe, o motorista ou a viatura dos ofícios já estão em outro
+        # compromisso no mesmo horário (core/conflitos.py): só aviso.
+        "conflitos": [] if viagem.cancelado else conflitos_da_viagem(viagem),
         **contexto_das_etapas(viagem, etapa),
     }
     if contexto["pode_editar"] and not viagem.cancelado:

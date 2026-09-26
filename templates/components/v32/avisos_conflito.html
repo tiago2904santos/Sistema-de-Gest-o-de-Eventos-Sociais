@@ -1,0 +1,23 @@
+{% comment %}
+  Aviso amarelo de conflito de agenda (core/conflitos.py): a mesma pessoa,
+  viatura, unidade móvel ou palestrante em outro compromisso no mesmo horário,
+  ou pedido repetido. Só avisa — a tela continua salvando.
+
+  Uso: {% include "components/v32/avisos_conflito.html" with conflitos=conflitos %}
+  Para atualizar ao escolher (js/conflitos.js), acrescente:
+    formulario="<id do form>"  campos="<campo do form>:<parâmetro> ..."
+    fixos="<query string fixa>" (ex.: "oficio=5" ou "pedido=solicitacao&excluir_solicitacao=3")
+  Parâmetros do endpoint: servidores, viaturas, unidades_moveis, palestrantes,
+  municipios, inicio, fim, oficio, pedido, excluir_<fonte>.
+{% endcomment %}
+{% if conflitos or formulario %}
+<div class="aviso{% if conflitos %} aviso--callout{% endif %} conflitos-agenda" role="status" data-conflitos{% if formulario %} data-url="{% url 'core:conflitos' %}" data-formulario="{{ formulario }}" data-campos="{{ campos }}" data-fixos="{{ fixos }}"{% endif %}{% if not conflitos %} hidden{% endif %}>
+  <div class="aviso__txt">{% include "components/icon.html" with nome="alert" %}<div class="aviso__corpo">
+    <b>Conflito de agenda</b>
+    <ul class="conflitos-agenda__lista" data-conflitos-lista>
+      {% for c in conflitos %}<li>{% if c.url %}<a href="{{ c.url }}">{{ c.mensagem }}</a>{% else %}{{ c.mensagem }}{% endif %}</li>{% endfor %}
+    </ul>
+    <div class="aviso__meta">É só um aviso: confira com a outra equipe; dá para salvar assim mesmo.</div>
+  </div></div>
+</div>
+{% endif %}

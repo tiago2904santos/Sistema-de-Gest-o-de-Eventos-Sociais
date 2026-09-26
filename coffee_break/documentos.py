@@ -79,16 +79,28 @@ def ordem_servico_previa(solicitacao):
     return _previa("coffee_break/documentos/ordem_servico.html", _contexto_os(solicitacao))
 
 
-def _pdf(template, contexto):
+def _pdf_do_html(html):
     try:
         from weasyprint import HTML
     except OSError as exc:  # GTK/Pango ausentes
         raise ValidationError(
             "O gerador de PDF (WeasyPrint) não está disponível neste servidor."
         ) from exc
-    html = render_to_string(template, {**contexto, "imagens": _imagens()})
     base = Path(settings.BASE_DIR).resolve().as_uri() + "/"
     return HTML(string=html, base_url=base).write_pdf(presentational_hints=False)
+
+
+def _pdf(template, contexto):
+    return _pdf_do_html(render_to_string(template, {**contexto, "imagens": _imagens()}))
+
+
+def _emitir(tipo, solicitacao, template, contexto):
+    """A OS, o ofício ou o certifico: a via assinada, se houver; senão o PDF
+    gerado, que fica guardado como via emitida (coffee_break/vias.py)."""
+    from . import vias
+
+    html = render_to_string(template, {**contexto, "imagens": _imagens()})
+    return vias.emitir(tipo, solicitacao, html, _pdf_do_html)
 
 
 def _contexto(solicitacao):
@@ -116,7 +128,9 @@ def ordem_servico_pdf(solicitacao):
     faltas = pendencias_ordem_servico(solicitacao)
     if faltas:
         raise ValidationError(faltas)
-    return _pdf("coffee_break/documentos/ordem_servico.html", _contexto_os(solicitacao))
+    from .editor import TipoCoffee
+
+    return _emitir(TipoCoffee.ORDEM_SERVICO, solicitacao, "coffee_break/documentos/ordem_servico.html", _contexto_os(solicitacao))
 
 
 def _sem_quebra(texto, trecho):
@@ -140,7 +154,7 @@ def certifico_pdf(solicitacao):
     contexto = _contexto(solicitacao)
     contexto["b"], contexto["quebras"] = textos_do_documento(TipoCoffee.CERTIFICO, solicitacao)
     contexto["atesto_texto"] = _sem_quebra(contexto["b"]["cb_atesto_texto"], "executados/entregues")
-    return _pdf("coffee_break/documentos/certifico.html", contexto)
+    return _emitir(TipoCoffee.CERTIFICO, solicitacao, "coffee_break/documentos/certifico.html", contexto)
 
 
 def juntar(itens):
@@ -197,7 +211,7 @@ def oficio_pdf(solicitacao):
     contexto["varias_notas"] = len(notas) > 1
     # O texto do ofício é do pagamento: mora na OS principal.
     contexto["b"], contexto["quebras"] = textos_do_documento(TipoCoffee.OFICIO, solicitacao.principal_do_pagamento)
-    return _pdf("coffee_break/documentos/oficio.html", contexto)
+    return _emitir(TipoCoffee.OFICIO, solicitacao, "coffee_break/documentos/oficio.html", contexto)
 
 
 # ---------------------------------------------------------------------------
@@ -440,13 +454,6 @@ def parte_pdf(solicitacao, chave, hoje=None):
     return saida.getvalue()
 
 
-def _disponiveis(solicitacao, hoje):
-    itens = [item for item in itens_anexo(solicitacao, hoje) if item["disponivel"]]
-    if not itens:
-        raise ValidationError(["Nenhum documento do anexo está disponível ainda."])
-    return itens
-
-
 def _ler(origem):
     origem.open("rb")
     try:
@@ -459,36 +466,6 @@ def _anexar(escritor, dados):
     from pypdf import PdfReader
 
     escritor.append(PdfReader(io.BytesIO(dados)))
-
-
-def pacote_protocolo_pdf(solicitacao, hoje=None):
-    """O anexo completo num PDF só, na ordem em que vai ao protocolo: todos os
-    documentos que existem, com as certidões (as vencidas também)."""
-    from pypdf import PdfWriter
-
-    # Junta tudo o que existe, na ordem do protocolo — certidão vencida
-    # inclusive; a tela avisa o que está vencido e o que ficou de fora.
-    escritor = PdfWriter()
-    for item in _disponiveis(solicitacao, hoje):
-        _anexar(escritor, item["conteudo"]())
-    saida = io.BytesIO()
-    escritor.write(saida)
-    return saida.getvalue()
-
-
-def pacote_protocolo_zip(solicitacao, hoje=None):
-    """Os mesmos documentos, um arquivo cada, numerados na ordem do protocolo.
-
-    O eProtocolo recebe um documento por vez (cada um é assinado à parte):
-    o ZIP poupa baixar um por um.
-    """
-    import zipfile
-
-    saida = io.BytesIO()
-    with zipfile.ZipFile(saida, "w", zipfile.ZIP_DEFLATED) as pacote:
-        for item in _disponiveis(solicitacao, hoje):
-            pacote.writestr(item["arquivo"], item["conteudo"]())
-    return saida.getvalue()
 
 
 # ---------------------------------------------------------------------------

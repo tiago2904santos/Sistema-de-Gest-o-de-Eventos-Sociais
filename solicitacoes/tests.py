@@ -1719,7 +1719,7 @@ class GeracaoDeViagemPeloDespacho(BaseSolicitacaoTestCase):
         solicitacao = self.solicitacao_completa()
         services.enviar(solicitacao, self.solicitante)
         with patch(
-            "solicitacoes.integracao_viagens.gerar_viagem",
+            "solicitacoes.integracao_viagens.gerar_viagens",
             side_effect=RuntimeError("banco fora do ar"),
         ):
             self.efetivar(services.despachar,
@@ -1998,7 +1998,7 @@ class ViagemNaTelaDaSolicitacaoTests(BaseSolicitacaoTestCase):
         solicitacao = self.solicitacao_completa()
         services.enviar(solicitacao, self.solicitante)
         with patch(
-            "solicitacoes.integracao_viagens.gerar_viagem",
+            "solicitacoes.integracao_viagens.gerar_viagens",
             side_effect=RuntimeError("falhou"),
         ):
             self.efetivar(services.despachar, solicitacao, self.gestor, DecisaoDG.ATENDER)

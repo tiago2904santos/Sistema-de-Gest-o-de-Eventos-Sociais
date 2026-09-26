@@ -380,7 +380,7 @@ def _acompanhar_viagem(solicitacao, usuario, observacao="") -> None:
     Roda depois da transação do despacho e engole o próprio erro de
     propósito: a decisão da DG é o ato administrativo e não pode se perder
     porque o módulo de Viagens teve um problema. Se falhar, fica no log,
-    quem despachou é avisado e a viagem pode ser gerada pela tela da
+    quem despachou é avisado e a geração pode ser repetida pela tela da
     solicitação.
     """
     from solicitacoes import integracao_viagens
@@ -391,7 +391,7 @@ def _acompanhar_viagem(solicitacao, usuario, observacao="") -> None:
                 if integracao_viagens.viagem_da_solicitacao(solicitacao) is not None:
                     integracao_viagens.sincronizar_viagem(solicitacao, usuario)
                 elif integracao_viagens.pode_gerar(solicitacao)[0]:
-                    integracao_viagens.gerar_viagem(solicitacao, usuario)
+                    integracao_viagens.gerar_viagens(solicitacao, usuario)
             elif solicitacao.status in {
                 StatusSolicitacao.NAO_ATENDIDA,
                 StatusSolicitacao.CANCELADA,
@@ -407,7 +407,7 @@ def _acompanhar_viagem(solicitacao, usuario, observacao="") -> None:
             [usuario],
             f"Solicitação #{solicitacao.pk}: a viagem não foi atualizada",
             "A decisão foi registrada, mas a viagem em Viagens não pôde ser "
-            "gerada ou atualizada. Use \"Gerar viagem\" na solicitação ou "
+            "gerada ou atualizada. Use \"Tentar de novo\" no cartão Viagem da solicitação ou "
             "confira a viagem pelo módulo de Viagens.",
             link=reverse("solicitacoes:editar", args=[solicitacao.pk]) + "#viagem",
             solicitacao=solicitacao,

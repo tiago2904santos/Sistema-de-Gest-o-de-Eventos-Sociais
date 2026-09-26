@@ -555,3 +555,38 @@ def acao(request, pk, acao):
     else:
         raise Http404
     return redirect(destino)
+
+
+@acesso_ao_modulo
+@require_http_methods(["GET", "POST"])
+def resultados(request, pk):
+    """Resultados do evento: o realizado de cada atividade e o relatório final (m073)."""
+    from .resultados import linhas_de_resultado, salvar_resultados, texto_do_relatorio
+
+    plano = get_plano_by_id(pk)
+    url_editar = reverse("viagens_planos:editar", args=[plano.pk])
+    if request.method == "POST":
+        exigir_operador(request)
+        dados = {}
+        for chave, valor in request.POST.items():
+            if chave.startswith("realizado_"):
+                try:
+                    atividade_pk = int(chave.removeprefix("realizado_"))
+                except ValueError:
+                    continue
+                dados[atividade_pk] = (valor, request.POST.get(f"observacao_{atividade_pk}", ""))
+        erros = salvar_resultados(plano, dados)
+        for erro in erros:
+            messages.error(request, erro)
+        if not erros:
+            messages.success(request, "Resultados salvos.")
+        return redirect(com_next(reverse("viagens_planos:resultados", args=[plano.pk]), next_valido(request)))
+    return render(request, "pages/viagens_planos/resultados.html", {
+        "titulo": f"Resultados do plano {plano.numero_formatado}",
+        "plano": plano,
+        "linhas": linhas_de_resultado(plano),
+        "relatorio": texto_do_relatorio(plano),
+        "pode_editar": pode_editar_cadastros(request.user) and not plano.cancelado,
+        "url_voltar": voltar_para(request, url_editar),
+        "next": next_valido(request),
+    })

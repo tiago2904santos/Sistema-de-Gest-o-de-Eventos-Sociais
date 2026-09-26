@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Roteiro, RoteiroDestino, RoteiroDiariaComponente, RoteiroTrecho
+from .models import DistanciaMunicipios, Roteiro, RoteiroDestino, RoteiroDiariaComponente, RoteiroTrecho
 
 
 class RoteiroDestinoInline(admin.TabularInline):
@@ -35,3 +35,12 @@ class RoteiroAdmin(admin.ModelAdmin):
     search_fields = ("observacoes",)
     list_select_related = ("origem_municipio",)
     inlines = [RoteiroDestinoInline, RoteiroTrechoInline, ComponenteInline]
+
+
+@admin.register(DistanciaMunicipios)
+class DistanciaMunicipiosAdmin(admin.ModelAdmin):
+    list_display = ("origem", "destino", "distancia_km", "fonte", "atualizado_em")
+    list_filter = ("fonte",)
+    search_fields = ("origem__nome", "destino__nome")
+    list_select_related = ("origem", "destino")
+    raw_id_fields = ("origem", "destino")

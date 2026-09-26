@@ -34,11 +34,13 @@
           </div>
         </div>
       </div>
-      {% if pode_editar %}
-        <div class="frm-topo__acoes">
+      <div class="frm-topo__acoes">
+        {# Depois do evento: o realizado de cada atividade (m073). #}
+        <a class="btn--secundaria" href="{% url 'viagens_planos:resultados' plano.pk %}" data-link-resultados>{% include "components/icon.html" with nome="chart" %}Resultados</a>
+        {% if pode_editar %}
           <button type="submit" form="form-plano" name="acao" value="salvar" class="btn btn--dourado btn-primaria">Salvar plano</button>
-        </div>
-      {% endif %}
+        {% endif %}
+      </div>
     </div>
 
     {% if plano.cancelado %}

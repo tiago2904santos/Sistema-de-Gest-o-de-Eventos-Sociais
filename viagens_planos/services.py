@@ -1052,6 +1052,12 @@ def criar_plano_rascunho(viagem=None):
     # não o parágrafo de abertura. Fica automática até alguém editar à mão.
     plano = salvar_plano_numerado(plano)
     _semear_destinos_da_viagem(plano, semente)
+    if viagem is not None:
+        # Viagem que veio de solicitação: atividades, programa, unidade móvel
+        # e efetivo já saem do que a DG deferiu (m072).
+        from .semente_solicitacao import semear_da_solicitacao
+
+        semear_da_solicitacao(plano, viagem)
     return plano
 
 

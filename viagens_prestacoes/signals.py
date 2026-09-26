@@ -1,4 +1,5 @@
 from django.db.models.signals import m2m_changed
+from django.db.models.signals import post_delete
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -34,6 +35,15 @@ def _sincronizar_prestacao_servidores(oficio):
 
 def connect_signals():
     from viagens_oficios.models import Oficio
+    from .models import PrestacaoDocumentoAnexo
+
+    def descartar_ajuste_do_pacote(sender, instance, **kwargs):
+        # m099: anexo novo, substituído, removido ou restaurado muda o pacote final.
+        from .services import descartar_ajustes_do_pacote
+        descartar_ajustes_do_pacote(instance.prestacao_id, instance.servidor_prestacao_id)
+
+    post_save.connect(descartar_ajuste_do_pacote, sender=PrestacaoDocumentoAnexo, dispatch_uid='prestacoes_contas.descartar_ajuste_ao_gravar_anexo', weak=False)
+    post_delete.connect(descartar_ajuste_do_pacote, sender=PrestacaoDocumentoAnexo, dispatch_uid='prestacoes_contas.descartar_ajuste_ao_apagar_anexo', weak=False)
 
     @receiver(post_save, sender=Oficio, dispatch_uid='prestacoes_contas.criar_ao_gerar_oficio', weak=False)
     def criar_prestacoes_para_oficio_gerado(sender, instance, **kwargs):

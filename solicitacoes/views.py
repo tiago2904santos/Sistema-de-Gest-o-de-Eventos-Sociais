@@ -31,6 +31,7 @@ from .models import (
     TipoOperacao,
 )
 from core import preencher_por_email
+from core.conflitos import conflitos_da_solicitacao
 from integracoes.eprotocolo import andamento as andamento_eprotocolo
 from integracoes.eprotocolo.andamento import formatar_numero
 from core.listagens import trilha_de_situacoes
@@ -200,10 +201,19 @@ def _contexto_formulario(request, form, solicitacao=None, reabrindo=False):
         for servico in opcoes_de("servicos", servicos_salvos)
     ]
 
+    # Conflitos de agenda (core/conflitos.py): com o formulário recusado,
+    # valem os valores enviados, que a validação já escreveu na instância.
+    alvo = form.instance if form.is_bound else solicitacao
+    encerrada = solicitacao is not None and solicitacao.finalizada
+    conflitos = [] if alvo is None or encerrada else conflitos_da_solicitacao(alvo)
+    conflitos_fixos = "pedido=solicitacao" + (f"&excluir_solicitacao={solicitacao.pk}" if solicitacao else "")
+
     return {
         "form": form,
         "solicitacao": solicitacao,
         "acoes": acoes,
+        "conflitos": conflitos,
+        "conflitos_fixos": conflitos_fixos,
         # Cabeçalho da tela de edição: só o título e o selo da situação.
         "selo": solicitacao.get_status_display() if solicitacao else "Rascunho",
         "selo_tom": solicitacao.status.lower() if solicitacao else "rascunho",
@@ -534,23 +544,19 @@ def _cartao_viagem(user, solicitacao):
     Só aparece depois do deferimento (ou quando já existe viagem): antes
     disso não há logística a acompanhar.
     """
-    from viagens_cadastros.permissions import pode_acessar
-
-    viagem = integracao_viagens.viagem_da_solicitacao(solicitacao)
-    if viagem is None and solicitacao.decisao_dg != DecisaoDG.ATENDER:
+    viagens = integracao_viagens.viagens_da_solicitacao(solicitacao)
+    if not viagens and solicitacao.decisao_dg != DecisaoDG.ATENDER:
         return None
-    if viagem is not None:
+    if viagens:
+        # Uma por ambiente (ASCOM, ...), cada uma com o contador de servidores.
         return {
-            "viagem": viagem,
-            # Quem não tem o módulo vê a situação, mas não o link.
-            "url": reverse("viagens_viagem:painel", args=[viagem.pk])
-            if pode_acessar(user)
-            else "",
-            "falta": integracao_viagens.o_que_falta(viagem),
+            "viagens": [integracao_viagens.resumo_da_viagem(v, user) for v in viagens],
         }
+    # A geração é automática no deferimento; chegar aqui sem viagem quer dizer
+    # que faltava dado ou que ela falhou — daí o "Tentar de novo".
     cabe, motivo = integracao_viagens.pode_gerar(solicitacao)
     return {
-        "viagem": None,
+        "viagens": [],
         "pode_gerar": cabe and permissions.pode_gerar_viagem(user),
         "motivo": motivo,
     }
@@ -1231,27 +1237,30 @@ def consultar_protocolo(request, pk):
 @login_required
 @require_POST
 def gerar_viagem(request, pk):
-    """"Gerar viagem": para a deferida que ficou sem viagem.
+    """"Tentar de novo": a deferida que ficou sem viagem.
 
-    Vale para as deferidas antes da geração automática e para quando ela
-    falhou no despacho. Liberado à DG e a quem opera Viagens — este último
-    pode não enxergar a solicitação, e então vai direto para a viagem criada.
+    A geração é automática no deferimento; este POST cobre as deferidas antes
+    dela e as vezes em que ela falhou no despacho. Liberado à DG e a quem
+    opera Viagens — este último pode não enxergar a solicitação, e então vai
+    direto para a viagem criada.
     """
     solicitacao = get_object_or_404(SolicitacaoEvento, pk=pk)
     if not permissions.pode_gerar_viagem(request.user):
         raise PermissionDenied
     ve_a_solicitacao = permissions.pode_ver(request.user, solicitacao)
     try:
-        viagem = integracao_viagens.gerar_viagem(solicitacao, request.user)
+        viagens = integracao_viagens.gerar_viagens(solicitacao, request.user)
     except ValueError as erro:
         messages.error(request, f"Não foi possível gerar a viagem: {erro}")
         if not ve_a_solicitacao:
             return redirect("viagens_viagem:lista")
     else:
+        viagem = viagens[0]
+        numeros = ", ".join(f"#{v.pk}" for v in viagens)
         messages.success(
             request,
-            f"Viagem #{viagem.pk} gerada em rascunho. Complete sede, horário, "
-            "servidores, viatura e motorista em Viagens.",
+            f"Viagem {numeros} gerada em rascunho. Complete os servidores, a "
+            "viatura e o que mais faltar em Viagens.",
         )
         if not ve_a_solicitacao:
             return redirect("viagens_viagem:painel", pk=viagem.pk)

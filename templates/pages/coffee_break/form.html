@@ -26,6 +26,12 @@
       <div class="aviso aviso--erro" role="alert">{% include "components/icon.html" with nome="alert" %}<div>{{ origem_evento.aviso }}</div></div>
     {% endif %}
   {% endif %}
+  {% if copia_de %}
+    {# "Duplicar" da lista: o evento veio da solicitação anterior; a data e o número são da nova. #}
+    <div class="aviso aviso--callout aviso--fino" role="status">
+      <div class="aviso__txt">{% include "components/icon.html" with nome="copy" %}<div class="aviso__corpo"><b>Copiada de</b><p><a href="{{ copia_de.url }}">{{ copia_de.rotulo }}</a> — informe a data do novo evento e confira os campos antes de salvar.</p></div></div>
+    </div>
+  {% endif %}
   {% if not solicitacao %}
     {# Pedido que chegou por e-mail: soltar o e-mail (ou colar o texto) preenche os campos vazios. #}
     {% url 'coffee_break:ler_email' as url_ler_email %}
@@ -43,6 +49,7 @@
   <form method="post" action="" id="form-coffee-break" class="editor-roteiro__principal" enctype="multipart/form-data">
     {% csrf_token %}
     <input type="hidden" name="versao" value="{{ valores.versao }}">
+    {% if copia_de %}<input type="hidden" name="duplicar" value="{{ copia_de.pk }}">{% endif %}
     {% if origem_evento.parametro %}<input type="hidden" name="{{ origem_evento.parametro }}" value="{{ origem_evento.pk }}">{% endif %}
     {% include "pages/coffee_break/_erros_form.html" %}
 
@@ -128,6 +135,10 @@
           {% include "components/input.html" with name="local_entrega" label="Local de entrega" placeholder="Ex.: Casa da Cultura - Rua do Centenário, 2011 - Centro - Campo Largo" valor=valores.local_entrega erros=erros.local_entrega desabilitado=somente_leitura %}
           {% include "components/input.html" with name="responsavel_recebimento" label="Responsável pelo recebimento" placeholder="Ex.: Tadeu 41 99988-6010" valor=valores.responsavel_recebimento erros=erros.responsavel_recebimento desabilitado=somente_leitura %}
         </div>
+        {% if not somente_leitura %}
+          {# Ao escolher o município: local e responsável já usados ali (coffee-break-lote.js). Só o clique preenche. #}
+          <div class="sugestao-solicitante" data-cb-locais data-url="{% url 'coffee_break:locais_entrega' %}" hidden></div>
+        {% endif %}
 
         {% if solicitacao %}
           {# O visualizador do documento de Viagens: o PDF da OS aberto no próprio bloco. #}

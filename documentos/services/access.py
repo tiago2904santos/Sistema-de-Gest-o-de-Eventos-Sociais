@@ -14,4 +14,5 @@ def usuario_pode_baixar_documento(usuario) -> bool:
 def obter_artefato_para_download(usuario, pk) -> DocumentoArtefato:
     if not usuario_pode_baixar_documento(usuario):
         raise PermissionDenied
-    return get_object_or_404(DocumentoArtefato, pk=pk)
+    # As vias do Coffee Break são do módulo Coffee Break (coffee_break:via_arquivo).
+    return get_object_or_404(DocumentoArtefato.objects.exclude(tipo__startswith="coffee_break_"), pk=pk)

@@ -35,6 +35,10 @@ urlpatterns = [
     path("solicitacoes/nova/ler-email/", views.ler_email, name="ler_email"),
     path("solicitacoes/nova/ordem-de-servico/", views.nova_os_embutido, name="nova_os_embutido"),
     path("solicitacoes/nova/ordem-de-servico/folha/", views.nova_os_folha, name="nova_os_folha"),
+    # "Duplicar": a nova solicitação com o evento copiado, pedindo só a data.
+    path("solicitacoes/<int:pk>/duplicar/", views.duplicar_solicitacao, name="duplicar"),
+    # Local e responsável já usados no município (JSON): a tela sugere, o clique preenche.
+    path("solicitacoes/locais-de-entrega/", views.locais_entrega, name="locais_entrega"),
     path("solicitacoes/<int:pk>/editar/", views.editar_solicitacao, name="editar"),
     path("solicitacoes/<int:pk>/nota/", views.etapa_nota, name="etapa_nota"),
     path("solicitacoes/<int:pk>/protocolo/", views.etapa_protocolo, name="etapa_protocolo"),
@@ -50,8 +54,9 @@ urlpatterns = [
     path("solicitacoes/<int:pk>/ordem-bancaria/anexar/", views.anexar_ob, name="anexar_ob"),
     path("solicitacoes/<int:pk>/oficio.pdf", views.oficio, name="oficio"),
     path("solicitacoes/<int:pk>/certifico.pdf", views.certifico, name="certifico"),
-    path("solicitacoes/<int:pk>/protocolo.pdf", views.pacote_protocolo, name="pacote_protocolo"),
-    path("solicitacoes/<int:pk>/protocolo.zip", views.pacote_protocolo_zip, name="pacote_protocolo_zip"),
+    # A via assinada da OS, do ofício ou do certifico (os, oficio, certifico); as vias guardadas.
+    path("solicitacoes/<int:pk>/<str:documento>/assinado/", views.anexar_assinado, name="anexar_assinado"),
+    path("vias/<uuid:pk>/", views.via_arquivo, name="via_arquivo"),
     path("solicitacoes/<int:pk>/protocolo/<str:parte>.pdf", views.pacote_parte, name="pacote_parte"),
     path("aditivos/<int:pk>/arquivo/", views.aditivo_arquivo, name="aditivo_arquivo"),
     path("solicitacoes/<int:pk>/nota-fiscal/", views.nota_fiscal, name="nota_fiscal"),

@@ -22,6 +22,8 @@ def base_viagens():
             "oficios__roteiro__trechos__destino_municipio__estado",
             "roteiros__trechos", "planos_trabalho__programa", "planos_trabalho__destino_cidade__estado",
             "ordens_servico__destinos__estado", "documentos_solicitacao",
+            # O contador de servidores da lista (m063).
+            "equipes_previstas__equipe", "oficios__servidores__unidade",
         )
     )
 

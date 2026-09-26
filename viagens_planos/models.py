@@ -492,3 +492,31 @@ class EfetivoEvento(ModeloTemporal, OrigemLegado):
 
     def __str__(self):
         return f"{self.evento_id}: {self.quantidade} x {self.cargo} / {self.unidade}"
+
+
+class ResultadoAtividade(ModeloTemporal):
+    """O que foi realizado de uma atividade prevista no plano (m073).
+
+    O texto do plano já diz que o coordenador consolida os números depois do
+    evento; aqui é onde eles ficam. Lançados uma vez, alimentam o relatório
+    final e a sugestão dos campos "objetivo" e "conclusão" do RT das
+    prestações de contas dos ofícios da mesma viagem.
+    """
+
+    plano = models.ForeignKey(PlanoTrabalho, on_delete=models.CASCADE, related_name="resultados")
+    atividade = models.ForeignKey(
+        AtividadePlanoTrabalho, on_delete=models.PROTECT, related_name="resultados", verbose_name="Atividade",
+    )
+    realizado = models.PositiveIntegerField("Realizado", null=True, blank=True)
+    observacao = models.TextField("Observação", blank=True, default="")
+
+    class Meta:
+        ordering = ["atividade__nome"]
+        verbose_name = "Resultado de atividade do plano"
+        verbose_name_plural = "Resultados das atividades do plano"
+        constraints = [
+            models.UniqueConstraint(fields=["plano", "atividade"], name="plano_resultado_atividade_unico"),
+        ]
+
+    def __str__(self):
+        return f"{self.atividade.nome}: {self.realizado if self.realizado is not None else '—'}"

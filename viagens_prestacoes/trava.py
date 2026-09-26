@@ -25,6 +25,7 @@ DO_SERVIDOR = {
     "prestacao_servidor_solicitacao_autosave",
     "prestacao_servidor_arquivo_autosave",
     "prestacao_servidor_assinado_anexar",
+    "pacote_revisar",
 }
 #: Rotas do que a equipe compartilha: travam com todos finalizados.
 DA_EQUIPE = {

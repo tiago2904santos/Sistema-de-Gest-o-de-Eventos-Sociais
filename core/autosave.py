@@ -77,11 +77,14 @@ def filter_allowed_fields(payload_fields, dirty_fields, allowed_fields):
     return safe
 
 
-def autosave_json_response(*, ok, object_id=None, created=False, message="", errors=None, version=0):
+def autosave_json_response(*, ok, object_id=None, created=False, message="", errors=None, version=0, extra=None):
+    """Resposta padrão do autosave. `extra` acrescenta chaves próprias da tela
+    (ex.: a conferência do hodômetro do diário de bordo) sem mudar as de sempre."""
     if ok:
         now = timezone.localtime()
         return JsonResponse(
             {
+                **(extra or {}),
                 "ok": True,
                 "object_id": object_id,
                 "created": bool(created),

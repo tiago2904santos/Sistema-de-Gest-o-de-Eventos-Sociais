@@ -1,0 +1,42 @@
+{% comment %}
+  O cartão "Viagem" da solicitação deferida: a logística do evento sem trocar
+  de módulo. A viagem nasce sozinha no deferimento da DG — uma por ambiente
+  (a equipe designada que é setor de Viagens, ex.: ASCOM) — e cada uma mostra
+  o contador de servidores, a data-limite do ofício sem justificativa e o que
+  falta completar. O botão só aparece quando a geração automática não
+  aconteceu (faltava dado ou falhou): é o "tentar de novo".
+  Contexto: `cartao_viagem`, `solicitacao`.
+{% endcomment %}
+<section class="section-card reg" id="viagem">
+  <header class="section-card__cabecalho reg__t">
+    <h2 class="section-card__titulo">{% if cartao_viagem.viagens|length > 1 %}Viagens{% else %}Viagem{% endif %}</h2>
+  </header>
+  <div class="section-card__corpo sol-viagem">
+    {% for r in cartao_viagem.viagens %}
+      <div class="sol-viagem__item" data-viagem="{{ r.viagem.pk }}">
+        <p class="sol-viagem__situacao"><b>Viagem #{{ r.viagem.pk }}</b> — {{ r.viagem.titulo }} · <span class="st st--{{ r.viagem.status }}">{{ r.viagem.get_status_display }}</span>{% if r.ambiente %} · Ambiente {{ r.ambiente }}{% endif %}
+          {% if r.url %}<a class="btn--secundaria btn--compacto" href="{{ r.url }}">{% include "components/icon.html" with nome="volante" %}Abrir viagem</a>{% endif %}
+        </p>
+        {% include "pages/viagens_viagem/_contador_servidores.html" with contador=r.contador %}
+        {% if r.data_limite %}
+          <p class="sol-viagem__texto">{% if r.limite_vencido %}O prazo para o ofício sem justificativa terminou em {{ r.data_limite|date:"d/m/Y" }}: o ofício vai precisar de justificativa.{% else %}Faça o ofício até <b>{{ r.data_limite|date:"d/m/Y" }}</b> para não precisar de justificativa.{% endif %}</p>
+        {% endif %}
+        {% if r.falta %}
+          <p class="sol-viagem__texto">Falta completar em Viagens:</p>
+          <ul class="sol-viagem__falta">{% for item in r.falta %}<li>{{ item }}</li>{% endfor %}</ul>
+        {% else %}
+          <p class="sol-viagem__texto">Nada pendente: a viagem tem sede, horário, servidores, viatura e motorista.</p>
+        {% endif %}
+      </div>
+    {% empty %}
+      {% if cartao_viagem.pode_gerar %}
+        <p class="sol-viagem__texto">A viagem não foi gerada automaticamente no deferimento.</p>
+        <form method="post" action="{% url 'solicitacoes:gerar_viagem' solicitacao.pk %}">{% csrf_token %}
+          <button type="submit" class="btn-primaria btn--compacto">{% include "components/icon.html" with nome="refresh" %}Tentar de novo</button>
+        </form>
+      {% else %}
+        <p class="sol-viagem__texto">Sem viagem gerada.{% if cartao_viagem.motivo %} {{ cartao_viagem.motivo }}{% endif %}</p>
+      {% endif %}
+    {% endfor %}
+  </div>
+</section>

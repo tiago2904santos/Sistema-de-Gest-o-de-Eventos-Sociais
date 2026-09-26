@@ -17,6 +17,7 @@ from .diario_views import *
 from .document_views import *
 from .download_views import *
 from .model_views import *
+from .pacote_views import *
 
 
 def _redirect_lista(request, _obj=None):
@@ -57,7 +58,7 @@ def index(request):
     por_pk = {ps.pk: ps for ps in itens.filter(pk__in=ids)}
     contagem = contar_por_aba(**{k:v for k,v in filtros.items() if k != "sort"})
     rotulos = dict(SITUACOES)
-    vazias = {"nao_liberadas": "Nenhum servidor com diárias pendentes de liberação.", "liberadas": "Nenhum servidor com diárias já liberadas.", "arquivados": "Nenhuma prestação de servidor arquivada.", "finalizados": "Nenhuma prestação de servidor finalizada ainda.", "devolvidas": "Nenhuma prestação devolvida para correção.", "saque_vencendo": "Nenhum saque perto do prazo sem comprovante.", "prestacao_vencida": "Nenhuma prestação com o prazo vencido."}
+    vazias = {"nao_liberadas": "Nenhum servidor com diárias pendentes de liberação.", "liberadas": "Nenhum servidor com diárias já liberadas.", "arquivados": "Nenhuma prestação de servidor arquivada.", "finalizados": "Nenhuma prestação de servidor finalizada ainda.", "devolvidas": "Nenhuma prestação devolvida para correção.", "saque_vencendo": "Nenhum saque perto do prazo sem comprovante.", "prestacao_vencida": "Nenhuma prestação com o prazo vencido.", "sem_solicitacao": "Nenhuma prestação em aberto sem número de solicitação.", "sem_despacho": "Nenhuma prestação em aberto sem despacho.", "sem_comprovante": "Nenhuma diária liberada sem comprovante.", "comprovante_divergente": "Nenhum comprovante diferente da diária.", "finalizadas_mes": "Nenhuma prestação finalizada neste mês."}
     configuracao = get_configuracao_sistema()
     cards = [cartao_da_lista(por_pk[pk], configuracao=configuracao) for pk in ids]
     grupos = {}
@@ -70,6 +71,7 @@ def index(request):
             "acoes_url": {a: reverse("viagens_prestacoes:prestacao_equipe_acao", args=[card["prestacao_pk"], a])
                           for a in ("finalizar", "reabrir", "arquivar", "desarquivar")},
             "importar_url": reverse("viagens_prestacoes:importacao_enviar_prestacao", args=[card["prestacao_pk"]]),
+            "pacotes_url": reverse("viagens_prestacoes:prestacao_pacotes_zip", args=[card["prestacao_pk"]]),
         })
         grupo["cards"].append(card)
     for grupo in grupos.values():
@@ -87,19 +89,27 @@ def index(request):
             destino["aba"] = aba
         return "?" + destino.urlencode()
 
-    icones = {"nao_liberadas": "hourglass", "liberadas": "check-circle", "arquivados": "lock", "finalizados": "checklist", "devolvidas": "undo", "saque_vencendo": "clock", "prestacao_vencida": "alert"}
+    icones = {"nao_liberadas": "hourglass", "liberadas": "check-circle", "arquivados": "lock", "finalizados": "checklist", "devolvidas": "undo", "saque_vencendo": "clock", "prestacao_vencida": "alert", "sem_solicitacao": "clipboard", "sem_despacho": "gavel", "sem_comprovante": "document", "comprovante_divergente": "ban", "finalizadas_mes": "calendar"}
     total = listar_prestacoes(**{k: v for k, v in filtros.items() if k != "sort"}).count()
     situacoes = [{"slug": "todas", "titulo": "Todas", "total": total, "icone": "chart", "url": url_da_aba()}] + [
         {"slug": chave, "titulo": rotulo, "total": contagem[chave], "icone": icones[chave], "url": url_da_aba(chave)}
         for chave, rotulo in SITUACOES
     ]
+    # m100: contadores de pendência, clicáveis como as situações.
+    from .cartoes import PENDENCIAS
+    pendencias_rail = [
+        {"slug": chave, "titulo": rotulo, "total": contagem[chave], "icone": icones[chave], "url": url_da_aba(chave)}
+        for chave, rotulo in PENDENCIAS
+    ]
     return render(request, "pages/viagens_prestacoes/index.html", {
         "situacoes": situacoes,
+        "pendencias_rail": pendencias_rail,
+        "exportar_url": reverse("viagens_prestacoes:exportar_xlsx") + ("?" + request.GET.urlencode() if request.GET else ""),
         "situacao_ativa": "todas" if not abas else abas[0] if len(abas) == 1 else "",
         "page_title": "Prestações de contas", "page_obj": pagina, "pagina": pagina, "cards": cards, "grupos": grupos, "contagem": contagem,
         "q": filtros["q"] or "", "abas_selecionadas": abas,
         "has_filters": bool(abas or any(v for k,v in filtros.items() if k != "sort")),
-        "situacao_options": [{"value": key, "label": f"{rotulos[key]} ({value})"} for key,value in contagem.items()],
+        "situacao_options": [{"value": key, "label": f"{rotulos[key]} ({contagem[key]})"} for key in rotulos],
         "opcoes_situacao": [{"valor": key, "rotulo": f"{rotulo} ({contagem[key]})", "selecionado": key in abas} for key, rotulo in SITUACOES],
         "empty_message": vazias.get(abas[0], "Nenhuma prestação encontrada.") if len(abas) == 1 else "Nenhuma prestação encontrada.",
         "querystring": parametros.urlencode(),
@@ -115,6 +125,18 @@ def consolidado(request, pc_pk):
     pc = get_object_or_404(_prestacao_queryset(), pk=pc_pk)
     ps = _primeiro_servidor(pc)
     return redirect("viagens_prestacoes:documentos_servidor", ps_pk=ps.pk) if ps else _redirect_lista(request)
+
+
+def exportar_xlsx(request):
+    """m100: a planilha de saques e pendências com os mesmos filtros da lista."""
+    from django.utils import timezone
+    from .selectors import normalizar_abas
+    from .services import planilha_de_prestacoes
+    filtros = {k: request.GET.get(k) or None for k in ("q", "status", "viagem_de", "viagem_ate", "sort")}
+    abas = normalizar_abas(request.GET.getlist("aba")) if request.GET.getlist("aba") else []
+    conteudo = planilha_de_prestacoes(listar_prestacoes(**filtros, aba=abas))
+    nome = f"prestacoes_{timezone.localdate():%Y-%m-%d}.xlsx"
+    return resposta_bytes(request, conteudo, nome, "xlsx")
 
 
 def consolidado_download(request, ps_pk):

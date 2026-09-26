@@ -294,3 +294,18 @@ def abrir_notificacao(request, pk):
     if notificacao.link:
         return redirect(notificacao.link)
     return redirect("core:notificacoes")
+
+
+@login_required
+def conflitos_de_agenda(request):
+    """JSON dos conflitos de agenda para o aviso das telas (core/conflitos.py).
+
+    Só aviso: a tela mostra e deixa salvar. Cruza todas as unidades de
+    propósito — a pergunta é se o recurso está livre, não de quem é o registro.
+    """
+    from django.http import JsonResponse
+
+    from .conflitos import conflitos, consulta_do_pedido
+
+    achados = conflitos(consulta_do_pedido(request.GET))
+    return JsonResponse({"conflitos": [c.como_dict() for c in achados]})

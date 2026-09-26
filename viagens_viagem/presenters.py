@@ -103,6 +103,8 @@ def titulo_da_viagem(viagem):
 
 
 def linha_da_lista(viagem):
+    from .meta_equipe import contador_de_servidores
+
     situacao, tom = selo_situacao(viagem)
     quando = selo_quando(viagem)
     destino = viagem.destino_display
@@ -114,6 +116,8 @@ def linha_da_lista(viagem):
         "quando": quando[0] if quando else "",
         "quando_tom": quando[1] if quando else "",
         "fatos": fatos_da_viagem(viagem),
+        # Designados pela DG x servidores nos ofícios (m063).
+        "contador": contador_de_servidores(viagem),
         "url_editar": reverse("viagens_viagem:etapa", args=[viagem.pk, 1]),
         "url_painel": reverse("viagens_viagem:etapa", args=[viagem.pk, 3]),
         "url_cancelar": reverse("viagens_viagem:acao", args=[viagem.pk, "cancelar"]),

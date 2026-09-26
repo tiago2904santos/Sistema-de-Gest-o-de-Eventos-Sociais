@@ -24,6 +24,10 @@ from .diario_services import (
     viatura_resumo_diario,
     viatura_resumo_oficio,
     alteracoes_datas_horarios_roteiro,
+    TOLERANCIA_KM_MINIMA,
+    TOLERANCIA_KM_PERCENTUAL,
+    conferir_hodometro,
+    corrigir_distancia_da_linha,
 )
 from .forms import DiarioBordoTrechoFormSet, DiarioMotoristaForm
 from .models import DiarioBordo
@@ -118,9 +122,10 @@ def diario_servidor(request, ps_pk, motorista_form=None):
         formset = DiarioBordoTrechoFormSet(queryset=queryset)
 
     linhas = list(queryset)
+    hodometro = conferir_hodometro(diario, linhas)
     trechos = [
-        {"form": form, "display": _trecho_display(linha)}
-        for form, linha in zip(formset.forms, linhas, strict=True)
+        {"form": form, "display": _trecho_display(linha), "linha": linha, "prevista": item["prevista"]}
+        for form, linha, item in zip(formset.forms, linhas, hodometro["linhas"], strict=True)
     ]
 
     return render(
@@ -133,6 +138,9 @@ def diario_servidor(request, ps_pk, motorista_form=None):
             "diario": diario,
             "formset": formset,
             "trechos": trechos,
+            "hodometro": hodometro,
+            "tolerancia_percentual": TOLERANCIA_KM_PERCENTUAL,
+            "tolerancia_minima": TOLERANCIA_KM_MINIMA,
             "opcoes_abastecimento": [{"valor": "sim", "rotulo": "Sim"}, {"valor": "nao", "rotulo": "Não"}],
             "identificacao": _build_identificacao(prestacao),
             **contexto_do_fluxo(ps, "diario"),
@@ -182,6 +190,8 @@ def diario_servidor_autosave(request, ps_pk):
         ok=True,
         object_id=diario.pk,
         version=_autosave_version(diario),
+        # m095: a conferência do hodômetro volta junto, para a tela atualizar os avisos.
+        extra={"hodometro": conferir_hodometro(diario)},
     )
 
 
@@ -207,7 +217,27 @@ def diario_autosave(request, pk):
         ok=True,
         object_id=diario.pk,
         version=_autosave_version(diario),
+        # m095: a conferência do hodômetro volta junto, para a tela atualizar os avisos.
+        extra={"hodometro": conferir_hodometro(diario)},
     )
+
+
+def diario_servidor_distancia(request, ps_pk, linha_pk):
+    """Corrige a distância entre os municípios de um trecho do diário (m078).
+
+    A correção vai para a tabela permanente de distâncias: vale para os
+    próximos roteiros e diários, não só para esta prestação.
+    """
+    ps = get_object_or_404(_prestacao_servidor_queryset().select_related("prestacao"), pk=ps_pk)
+    diario = get_object_or_404(_diario_queryset(), prestacao=ps.prestacao)
+    linha = get_object_or_404(diario.trechos.select_related("trecho"), pk=linha_pk)
+    try:
+        corrigir_distancia_da_linha(linha, request.POST.get("distancia_km"))
+    except ValueError as exc:
+        messages.error(request, str(exc))
+    else:
+        messages.success(request, "Distância corrigida. Ela vale para os próximos roteiros e diários.")
+    return redirect(reverse("viagens_prestacoes:diario_servidor", args=[ps.pk]) + "#deslocamentos")
 
 
 def diario_editar_roteiro(request, pc_pk):
