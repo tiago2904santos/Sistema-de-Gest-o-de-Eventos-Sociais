@@ -18,6 +18,7 @@ from core.deletion import DelecaoProtegidaError
 from core.listagens import ITENS_POR_PAGINA
 from core.private_media import private_file_response
 from core.retorno import com_next, daqui, voltar_para
+from solicitacoes.integracao_viagens import aviso_para_o_painel
 from viagens_cadastros.permissions import acesso_ao_modulo, pode_editar_cadastros
 from viagens_oficios.views import exigir_operador
 
@@ -218,6 +219,8 @@ def etapa(request, pk, etapa):
         "pode_editar": pode_editar_cadastros(request.user), "url_atual": daqui(request),
         "url_lista": reverse("viagens_viagem:lista"),
         "url_reativar": reverse("viagens_viagem:acao", args=[viagem.pk, "reativar"]),
+        # De qual solicitação a viagem veio e se ela mudou depois.
+        "origem_solicitacao": aviso_para_o_painel(viagem),
         **contexto_das_etapas(viagem, etapa),
     }
     if contexto["pode_editar"] and not viagem.cancelado:

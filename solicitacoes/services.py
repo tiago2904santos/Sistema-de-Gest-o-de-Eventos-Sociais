@@ -351,28 +351,42 @@ def despachar(solicitacao, usuario, decisao, observacao="", quantidades=None):
         solicitacao=solicitacao,
         exceto=usuario,
     )
-    _gerar_viagem_do_despacho(solicitacao, usuario)
+    _acompanhar_viagem(solicitacao, usuario, observacao)
     return solicitacao
 
 
-def _gerar_viagem_do_despacho(solicitacao, usuario) -> None:
-    """Deferiu com atendimento? Então a viagem já nasce, em rascunho.
+def _acompanhar_viagem(solicitacao, usuario, observacao="") -> None:
+    """A viagem segue a solicitação: nasce, se atualiza ou é cancelada.
 
-    Roda **depois** da transação do despacho, e engole o próprio erro de
-    propósito: a decisão da DG é o ato administrativo e não pode se perder
-    porque o módulo de Viagens teve um problema. Se falhar, fica no log e a
-    viagem pode ser gerada pela tela da solicitação.
+    Deferiu com atendimento? A viagem nasce em rascunho — ou, se já existia
+    de um despacho anterior, é atualizada com o que foi deferido agora. Não
+    atendida ou cancelada? A viagem gerada é cancelada (ou o operador de
+    Viagens é avisado, se ela já tem documentos).
+
+    Engole o próprio erro de propósito: a decisão da DG é o ato
+    administrativo e não pode se perder porque o módulo de Viagens teve um
+    problema. Se falhar, fica no log e a viagem pode ser gerada pela tela da
+    solicitação.
     """
     from solicitacoes import integracao_viagens
 
-    cabe, _motivo = integracao_viagens.pode_gerar(solicitacao)
-    if not cabe:
-        return
     try:
-        integracao_viagens.gerar_viagem(solicitacao, usuario)
+        # Savepoint: no PostgreSQL, um erro aqui sem ele deixaria a transação
+        # do despacho inutilizável.
+        with transaction.atomic():
+            if solicitacao.status == StatusSolicitacao.DEFERIDA_EM_ANDAMENTO:
+                if integracao_viagens.viagem_da_solicitacao(solicitacao) is not None:
+                    integracao_viagens.sincronizar_viagem(solicitacao, usuario)
+                elif integracao_viagens.pode_gerar(solicitacao)[0]:
+                    integracao_viagens.gerar_viagem(solicitacao, usuario)
+            elif solicitacao.status in {
+                StatusSolicitacao.NAO_ATENDIDA,
+                StatusSolicitacao.CANCELADA,
+            }:
+                integracao_viagens.encerrar_viagem(solicitacao, usuario, observacao)
     except Exception:  # noqa: BLE001 - o despacho não depende disto
         logger.exception(
-            "Falha ao gerar viagem da solicitação %s; o despacho foi mantido.",
+            "Falha ao atualizar a viagem da solicitação %s; o despacho foi mantido.",
             solicitacao.pk,
         )
 
@@ -446,6 +460,8 @@ def cancelar_evento(solicitacao, usuario, observacao):
         solicitacao=solicitacao,
         exceto=usuario,
     )
+    # Evento cancelado depois do deferimento: a viagem gerada não vai acontecer.
+    _acompanhar_viagem(solicitacao, usuario, observacao)
     return solicitacao
 
 

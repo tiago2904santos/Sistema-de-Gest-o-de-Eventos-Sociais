@@ -16,6 +16,11 @@
 /* Cancelada: aviso e o botão de reativar na mesma faixa. */
 .vg-cancelada>form{margin:0;flex:none}
 .vg-cancelada .btn--secundaria{display:inline-flex;align-items:center;gap:6px}
+/* Solicitação de origem: o vínculo e, quando ela mudou, o que mudou. */
+.vg-origem{margin-bottom:14px}
+.vg-origem.aviso--fino{display:flex;align-items:center;gap:8px}
+.vg-origem>.btn--secundaria{flex:none;text-decoration:none}
+.vg-origem__mudancas{margin:6px 0 0;padding-left:18px;font-size:12.5px}
 
 /* ---------- Painel: cartões das etapas ------------------------------ */
 .vg-painel .section-card__identificacao{display:flex;flex-direction:column;min-width:0}

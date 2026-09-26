@@ -1802,6 +1802,128 @@ class RedespachoAposAlteracaoTests(BaseSolicitacaoTestCase):
         self.assertContains(resposta, "Atendida só após")
 
 
+class ViagemAcompanhaSolicitacaoTests(BaseSolicitacaoTestCase):
+    """Depois de gerada, a viagem segue a solicitação: muda, cancela ou avisa."""
+
+    def _deferida_com_viagem(self):
+        from solicitacoes import integracao_viagens as iv
+
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER, observacao="Ok")
+        viagem = iv.viagem_da_solicitacao(solicitacao)
+        self.assertIsNotNone(viagem)
+        return solicitacao, viagem
+
+    def _operador_viagens(self):
+        operador = User.objects.create_user("operador-vg", password="x")
+        operador.groups.add(Group.objects.get_or_create(name="VIAGENS_OPERADOR")[0])
+        return operador
+
+    def test_roteiro_nasce_do_tipo_solicitacao_de_evento(self):
+        from viagens_roteiros.models import Roteiro
+
+        _solicitacao, viagem = self._deferida_com_viagem()
+        self.assertEqual(viagem.roteiros.get().tipo, Roteiro.Tipo.EVENTO)
+
+    def test_cancelar_evento_cancela_a_viagem_sem_documentos(self):
+        solicitacao, viagem = self._deferida_com_viagem()
+        services.cancelar_evento(solicitacao, self.solicitante, "Chuva forte")
+        viagem.refresh_from_db()
+        self.assertTrue(viagem.cancelado)
+        self.assertIn(f"Solicitação #{solicitacao.pk}", viagem.motivo_cancelamento)
+        self.assertIn("Chuva forte", viagem.motivo_cancelamento)
+        # O roteiro vai junto, em cascata.
+        self.assertTrue(viagem.roteiros.get().cancelado)
+
+    def test_nao_atender_no_novo_despacho_cancela_a_viagem(self):
+        solicitacao, viagem = self._deferida_com_viagem()
+        services.reenviar_apos_edicao(
+            solicitacao, self.solicitante,
+            [{"campo": "Local do evento", "antes": "A", "depois": "B"}],
+        )
+        services.despachar(
+            solicitacao, self.gestor, DecisaoDG.NAO_ATENDER, observacao="Sem efetivo"
+        )
+        viagem.refresh_from_db()
+        self.assertTrue(viagem.cancelado)
+
+    def test_com_documento_emitido_avisa_o_operador_em_vez_de_cancelar(self):
+        from core.models import Notificacao
+        from viagens_oficios.models import Oficio
+
+        operador = self._operador_viagens()
+        solicitacao, viagem = self._deferida_com_viagem()
+        Oficio.objects.create(motivo="Da viagem", viagem=viagem)
+        services.cancelar_evento(solicitacao, self.solicitante, "Evento adiado")
+        viagem.refresh_from_db()
+        self.assertFalse(viagem.cancelado)
+        aviso = Notificacao.objects.get(usuario=operador)
+        self.assertIn(f"Viagem #{viagem.pk}", aviso.titulo)
+        self.assertIn(reverse("viagens_viagem:painel", args=[viagem.pk]), aviso.link)
+
+    def test_novo_deferimento_atualiza_a_viagem(self):
+        novo_municipio = Municipio.objects.create(
+            nome="Outra Cidade", estado=self.estado, regiao=self.regiao
+        )
+        solicitacao, viagem = self._deferida_com_viagem()
+        solicitacao.local_evento = "Ginásio municipal"
+        solicitacao.municipio = novo_municipio
+        solicitacao.data_inicio_evento = date(2026, 9, 20)
+        solicitacao.data_fim_evento = date(2026, 9, 21)
+        solicitacao.save()
+        services.reenviar_apos_edicao(
+            solicitacao, self.solicitante,
+            [{"campo": "Local do evento", "antes": "Praça central", "depois": "Ginásio municipal"}],
+        )
+        services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER, observacao="Ok")
+        viagem.refresh_from_db()
+        self.assertEqual(viagem.destino_municipio, novo_municipio)
+        self.assertEqual(viagem.data_inicio, date(2026, 9, 20))
+        self.assertEqual(viagem.data_fim, date(2026, 9, 21))
+        self.assertIn("Ginásio municipal", viagem.motivo)
+        roteiro = viagem.roteiros.get()
+        self.assertIn("Ginásio municipal", roteiro.observacoes)
+        self.assertEqual(roteiro.destinos.get().municipio, novo_municipio)
+
+    def test_novo_deferimento_com_documento_nao_mexe_e_avisa(self):
+        from core.models import Notificacao
+        from viagens_oficios.models import Oficio
+
+        operador = self._operador_viagens()
+        solicitacao, viagem = self._deferida_com_viagem()
+        Oficio.objects.create(motivo="Da viagem", viagem=viagem)
+        solicitacao.local_evento = "Ginásio municipal"
+        solicitacao.save()
+        services.reenviar_apos_edicao(
+            solicitacao, self.solicitante,
+            [{"campo": "Local do evento", "antes": "Praça central", "depois": "Ginásio municipal"}],
+        )
+        services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER)
+        viagem.refresh_from_db()
+        self.assertNotIn("Ginásio municipal", viagem.motivo)
+        self.assertTrue(Notificacao.objects.filter(usuario=operador).exists())
+
+    def test_painel_mostra_viagem_desatualizada_com_o_que_mudou(self):
+        solicitacao, viagem = self._deferida_com_viagem()
+        services.reenviar_apos_edicao(
+            solicitacao, self.solicitante,
+            [{"campo": "Local do evento", "antes": "Praça central", "depois": "Ginásio municipal"}],
+        )
+        self.client.force_login(self.superusuario)
+        resposta = self.client.get(reverse("viagens_viagem:etapa", args=[viagem.pk, 1]))
+        self.assertContains(resposta, "Viagem desatualizada")
+        self.assertContains(resposta, "Ginásio municipal")
+        self.assertContains(resposta, reverse("solicitacoes:editar", args=[solicitacao.pk]))
+
+    def test_painel_mostra_de_qual_solicitacao_veio(self):
+        solicitacao, viagem = self._deferida_com_viagem()
+        self.client.force_login(self.superusuario)
+        resposta = self.client.get(reverse("viagens_viagem:etapa", args=[viagem.pk, 1]))
+        self.assertContains(resposta, f"Solicitação de evento #{solicitacao.pk}")
+        self.assertNotContains(resposta, "Viagem desatualizada")
+
+
 class ObservacaoLongaTests(BaseSolicitacaoTestCase):
     """Observação longa da DG não pode derrubar o despacho (aviso do sino tem limite)."""
 
