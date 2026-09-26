@@ -1581,22 +1581,31 @@ class EtapasTests(EtapasBase):
         from pypdf import PdfReader
 
         self._completar_para_protocolo(self.solicitacao)
-        resposta = self.client.get(
-            reverse("coffee_break:pacote_protocolo", args=[self.solicitacao.pk]) + "?baixar=1"
-        )
+        url = reverse("coffee_break:baixar_arquivos", args=[self.solicitacao.pk])
+        itens = ["oficio", "notas", "contratos"]
+        resposta = self.client.post(url, {"itens": itens, "saida": "unico"})
         self.assertEqual(resposta["Content-Type"], "application/pdf")
         # ofício 1 + NF 1 + certifico 1 + 5 certidões + aditivo 2 + contrato 3
         self.assertEqual(len(PdfReader(io.BytesIO(resposta.content)).pages), 13)
 
-        resposta = self.client.get(
-            reverse("coffee_break:pacote_protocolo_zip", args=[self.solicitacao.pk])
-        )
+        resposta = self.client.post(url, {"itens": itens, "saida": "separados"})
         self.assertEqual(resposta["Content-Type"], "application/zip")
         self.assertIn("attachment", resposta["Content-Disposition"])
         nomes = zipfile.ZipFile(io.BytesIO(resposta.content)).namelist()
-        self.assertEqual(len(nomes), 10)
-        self.assertTrue(nomes[0].startswith("01 - Of.124"))
-        self.assertTrue(nomes[-1].startswith("10 - Contrato 0762-2024"))
+        self.assertEqual(len(nomes), 3)
+        self.assertTrue(nomes[0].startswith("2 - Oficio"))
+        self.assertTrue(nomes[-1].startswith("4 - Contratos e certidoes"))
+
+    def test_caminhos_antigos_sem_conferencia_nao_existem_mais(self):
+        """O pacote antigo (PDF único e ZIP) e o envio de certidão pela lista,
+        que não conferia o CNPJ, saíram: anexar é só pelo modal que confere."""
+        from django.urls import NoReverseMatch
+
+        for nome in ("pacote_protocolo", "pacote_protocolo_zip"):
+            with self.assertRaises(NoReverseMatch):
+                reverse(f"coffee_break:{nome}", args=[self.solicitacao.pk])
+        resposta = self.client.post(reverse("coffee_break:certidoes"), {"fornecedor": self.fornecedor.pk, "tipo": "FGTS"})
+        self.assertEqual(resposta.status_code, 405)
 
 
 class ConfiguracaoOficioTests(BaseCoffeeBreakTestCase):
@@ -2464,8 +2473,8 @@ class Etapa3VisualizadorTests(EtapasBase):
         itens = documentos.itens_anexo(self.solicitacao)
         todas = sum(1 for item in itens if item["disponivel"])
         self.assertEqual(todas, len(itens))
-        pdf = PdfReader(io.BytesIO(documentos.pacote_protocolo_pdf(self.solicitacao)))
-        self.assertGreater(len(pdf.pages), 10)
+        pdf = PdfReader(io.BytesIO(documentos.parte_pdf(self.solicitacao, "contratos")))
+        self.assertGreaterEqual(len(pdf.pages), 10)
 
     def test_pdf_unico_junta_o_que_existe(self):
         from .models import CertidaoFornecedor
@@ -2474,7 +2483,10 @@ class Etapa3VisualizadorTests(EtapasBase):
         CertidaoFornecedor.objects.all().delete()
         avisos = documentos.avisos_do_pacote(documentos.itens_anexo(self.solicitacao))
         self.assertEqual(len(avisos["faltando"]), 5)
-        resposta = self.client.get(reverse("coffee_break:pacote_protocolo", args=[self.solicitacao.pk]))
+        resposta = self.client.post(
+            reverse("coffee_break:baixar_arquivos", args=[self.solicitacao.pk]),
+            {"itens": ["oficio", "notas", "contratos"], "saida": "unico"},
+        )
         self.assertEqual(resposta["Content-Type"], "application/pdf")
 
 

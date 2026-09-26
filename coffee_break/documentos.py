@@ -440,13 +440,6 @@ def parte_pdf(solicitacao, chave, hoje=None):
     return saida.getvalue()
 
 
-def _disponiveis(solicitacao, hoje):
-    itens = [item for item in itens_anexo(solicitacao, hoje) if item["disponivel"]]
-    if not itens:
-        raise ValidationError(["Nenhum documento do anexo está disponível ainda."])
-    return itens
-
-
 def _ler(origem):
     origem.open("rb")
     try:
@@ -459,36 +452,6 @@ def _anexar(escritor, dados):
     from pypdf import PdfReader
 
     escritor.append(PdfReader(io.BytesIO(dados)))
-
-
-def pacote_protocolo_pdf(solicitacao, hoje=None):
-    """O anexo completo num PDF só, na ordem em que vai ao protocolo: todos os
-    documentos que existem, com as certidões (as vencidas também)."""
-    from pypdf import PdfWriter
-
-    # Junta tudo o que existe, na ordem do protocolo — certidão vencida
-    # inclusive; a tela avisa o que está vencido e o que ficou de fora.
-    escritor = PdfWriter()
-    for item in _disponiveis(solicitacao, hoje):
-        _anexar(escritor, item["conteudo"]())
-    saida = io.BytesIO()
-    escritor.write(saida)
-    return saida.getvalue()
-
-
-def pacote_protocolo_zip(solicitacao, hoje=None):
-    """Os mesmos documentos, um arquivo cada, numerados na ordem do protocolo.
-
-    O eProtocolo recebe um documento por vez (cada um é assinado à parte):
-    o ZIP poupa baixar um por um.
-    """
-    import zipfile
-
-    saida = io.BytesIO()
-    with zipfile.ZipFile(saida, "w", zipfile.ZIP_DEFLATED) as pacote:
-        for item in _disponiveis(solicitacao, hoje):
-            pacote.writestr(item["arquivo"], item["conteudo"]())
-    return saida.getvalue()
 
 
 # ---------------------------------------------------------------------------

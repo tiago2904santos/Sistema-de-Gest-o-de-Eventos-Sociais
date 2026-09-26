@@ -16,7 +16,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.clickjacking import xframe_options_sameorigin
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django.db import transaction
 from django.db.models import ProtectedError
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
@@ -25,7 +25,6 @@ from documentos.editor.pagina import cartao
 
 from .editor import CHAVE_CERTIFICO, CHAVE_OFICIO, CHAVE_OS
 from .forms import (
-    CertidaoForm,
     ConfiguracaoCoffeeBreakForm,
     NotaCoffeeBreakForm,
     PedidoCoffeeBreakForm,
@@ -1917,14 +1916,6 @@ def certifico(request, pk):
 
 
 @acesso_ao_modulo
-def pacote_protocolo(request, pk):
-    return _pdf_ou_volta(
-        request, _solicitacao_documental(pk), documentos.pacote_protocolo_pdf,
-        "Anexo do protocolo", volta="etapa_protocolo",
-    )
-
-
-@acesso_ao_modulo
 def pacote_parte(request, pk, parte):
     """Um dos quatro arquivos da etapa 3 (OS, ofício, notas e certificos,
     contratos e certidões)."""
@@ -2145,16 +2136,6 @@ def aditivo_arquivo(request, pk):
     return _arquivo(get_object_or_404(AditivoContrato, pk=pk).arquivo)
 
 
-@acesso_ao_modulo
-def pacote_protocolo_zip(request, pk):
-    request.GET = request.GET.copy()
-    request.GET["baixar"] = "1"
-    return _pdf_ou_volta(
-        request, _solicitacao_documental(pk), documentos.pacote_protocolo_zip,
-        "Anexo do protocolo", volta="etapa_protocolo", tipo="application/zip", extensao=".zip",
-    )
-
-
 def _arquivo(campo, nome=None):
     if not campo:
         raise Http404
@@ -2281,28 +2262,11 @@ def _fornecedores_com_lote_ativo():
     ).distinct().prefetch_related("certidoes")
 
 
+@require_GET
 @acesso_ao_modulo
 def lista_certidoes(request):
-    if request.method == "POST":
-        fornecedor = get_object_or_404(Fornecedor, pk=request.POST.get("fornecedor"))
-        form = CertidaoForm(request.POST, request.FILES)
-        if form.is_valid():
-            dados = form.cleaned_data
-            certidao = certidoes.registrar(
-                fornecedor, dados["tipo"], dados["arquivo"], dados["validade"], request.user
-            )
-            origem = " (lida do PDF)" if getattr(form, "validade_lida", False) else ""
-            messages.success(
-                request,
-                f"Certidão {certidao.get_tipo_display()} de {fornecedor.razao_social} "
-                f"registrada, válida até {certidao.validade:%d/%m/%Y}{origem}.",
-            )
-        else:
-            for mensagens in form.errors.values():
-                for mensagem in mensagens:
-                    messages.error(request, mensagem)
-        return redirect(f"{reverse('coffee_break:certidoes')}#fornecedor-{fornecedor.pk}")
-
+    """O quadro das certidões. Anexar é só pelo modal (anexar_certidao),
+    que confere se o PDF é a certidão certa, do CNPJ do fornecedor."""
     hoje = timezone.localdate()
     fornecedores = [
         {"fornecedor": f, "linhas": certidoes.quadro(f, hoje)}

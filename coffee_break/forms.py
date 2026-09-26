@@ -13,7 +13,6 @@ from core.uploads import validate_private_document_upload
 from core.utils.masks import format_protocolo
 
 from .models import (
-    CertidaoFornecedor,
     OcorrenciaEntrega,
     TipoOcorrencia,
     ConfiguracaoCoffeeBreak,
@@ -24,7 +23,7 @@ from .models import (
     SolicitacaoCoffeeBreak,
     normalizar_cnpj,
 )
-from . import certidoes, services
+from . import services
 
 
 def validar_pdf(arquivo):
@@ -593,32 +592,6 @@ class LoteCoffeeBreakForm(FormularioCadastroVersionado):
                     f"O lote já consumiu {consumido} unidades; a capacidade não pode ficar abaixo disso."
                 )
         return quantidade
-
-
-class CertidaoForm(forms.Form):
-    """Envio de uma certidão: o PDF e, se o sistema não conseguir ler, a validade."""
-
-    tipo = forms.ChoiceField(choices=CertidaoFornecedor._meta.get_field("tipo").choices)
-    arquivo = forms.FileField(label="Certidão (PDF)", validators=[validar_pdf])
-    validade = forms.DateField(
-        label="Válida até", required=False,
-        help_text="Em branco, o sistema lê a validade do PDF.",
-    )
-
-    def clean(self):
-        dados = super().clean()
-        arquivo = dados.get("arquivo")
-        if arquivo and not dados.get("validade"):
-            lida = certidoes.validade_do_pdf(arquivo)
-            if lida is None:
-                self.add_error(
-                    "validade",
-                    "Não consegui ler a validade neste PDF; informe a data.",
-                )
-            else:
-                dados["validade"] = lida
-                self.validade_lida = True
-        return dados
 
 
 class OcorrenciaEntregaForm(forms.ModelForm):
