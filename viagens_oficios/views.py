@@ -540,7 +540,7 @@ def editar(request, pk=None):
     from .campos_modelo import aplicar, preencher_marcadores_do_oficio, valores_do_oficio
     from .presenters import artefatos_pdf_por_oficio, tipo_do_oficio
     from .protocolo_services import abrir_protocolo_do_oficio, mensagens_do_protocolo
-    from .services import criar_oficio_rascunho
+    from .services import criar_oficio_rascunho, dados_eprotocolo
     exigir_operador(request)
     if pk is None:
         # O cadastro sempre edita um rascunho já numerado; sem ele, cria-se um.
@@ -660,6 +660,7 @@ def editar(request, pk=None):
         'justificativa': contexto_justificativa(jform),
         'conferencia': conferencia,
         'tipo': tipo_do_oficio(oficio),
+        'eprotocolo': dados_eprotocolo(oficio),
         'next': next_valido(request),
         'url_voltar': lista,
         'url_atual': request.get_full_path(),

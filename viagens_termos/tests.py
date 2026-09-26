@@ -73,6 +73,17 @@ class SecoesDoRegistroNoFormularioTests(CenarioTermos):
         self.assertNotContains(r, reverse("viagens_termos:acao", args=[t.pk, "cancelar"]))
         self.assertNotContains(r, reverse("viagens_termos:acao", args=[t.pk, "excluir"]))  # excluir fica no menu da lista
 
+    def test_dados_para_o_eprotocolo_com_copiar(self):
+        o = self.oficio(dias=10, protocolo="123456789", servidores=[self.janine], viatura=self.duster)
+        t = self.termo(oficio=o)
+        r = self.client.get(reverse("viagens_termos:editar", args=[t.pk]))
+        self.assertContains(r, "Dados para o eProtocolo")
+        self.assertContains(r, 'data-copiar="JANINE LACERDA DO PRADO"')
+        self.assertContains(r, f'data-copiar="{o.numero_formatado}"')
+        self.assertContains(r, f"TERMO DE AUTORIZAÇÃO - OFÍCIO Nº {o.numero_formatado}")
+        # Termo novo ainda não tem o painel.
+        self.assertNotContains(self.client.get(reverse("viagens_termos:novo")), "Dados para o eProtocolo")
+
     def test_formularios_secundarios_ficam_fora_do_form_principal(self):
         """HTML válido: nada de `<form>` aninhado no formulário do cadastro."""
         o = self.oficio(dias=3, servidores=[self.janine], viatura=self.duster)

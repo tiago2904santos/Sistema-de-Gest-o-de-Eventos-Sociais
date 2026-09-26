@@ -404,3 +404,43 @@ def oficios_do_motorista(oficio, motorista_id, limite=10):
             "provavel": motivo < 2,
         })
     return resultado
+
+
+def dados_eprotocolo(oficio):
+    """Os dados para abrir o processo do ofício no eProtocolo, prontos para colar.
+
+    No molde do Coffee Break (`coffee_break.documentos.textos_eprotocolo`):
+    campos curtos com Copiar e o detalhamento numa caixa. O assunto é a
+    linha que o documento resolve por data (autorização ou convalidação),
+    a mesma que a integração envia.
+    """
+    from .campos_modelo import valores_do_oficio
+
+    assunto = resolver_assunto_oficio(oficio)
+    assunto_texto = f"{assunto['assunto_linha']} {assunto['assunto_rotulo']}".strip()
+    valores = valores_do_oficio(oficio)
+    servidores = [s.nome for s in oficio.servidores.order_by("nome")]
+    interessados = ", ".join(servidores)
+    protocolo = format_protocolo(oficio.protocolo)
+    numero = oficio.numero_formatado if oficio.numero else ""
+    partes = [f"OFÍCIO Nº {numero}" if numero else "OFÍCIO", assunto["assunto_linha"].rstrip(".").upper()]
+    if valores["destino"]:
+        partes.append(f"DESTINO: {valores['destino']}")
+    if valores["periodo"]:
+        partes.append(f"PERÍODO: {valores['periodo']}")
+    if servidores:
+        partes.append(f"SERVIDORES: {interessados}")
+    detalhamento = " - ".join(partes)
+    if oficio.motivo:
+        detalhamento += f"\n{oficio.motivo}"
+    return {
+        "campos": [
+            {"rotulo": "Interessados", "valor": interessados, "copiar": interessados},
+            {"rotulo": "Assunto", "valor": assunto_texto, "copiar": assunto_texto},
+            {"rotulo": "Nº/Ano do ofício", "valor": numero, "copiar": numero},
+            {"rotulo": "Protocolo", "valor": protocolo, "copiar": protocolo},
+        ],
+        "textos": [
+            {"id": "eprotocolo-detalhamento", "rotulo": "Detalhamento", "texto": detalhamento, "linhas": 3},
+        ],
+    }

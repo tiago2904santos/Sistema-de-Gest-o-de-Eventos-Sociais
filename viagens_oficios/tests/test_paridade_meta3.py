@@ -524,6 +524,17 @@ class CadastroTests(Cenario):
         # Chave solta não derruba nada.
         self.assertEqual(aplicar("texto { solto", {"destino": "X"}), "texto { solto")
 
+    def test_dados_para_o_eprotocolo_com_copiar(self):
+        o = self.oficio(dias=20, protocolo="123456789", servidores=[self.janine])
+        r = self.editar(o)
+        self.assertContains(r, "Dados para o eProtocolo")
+        self.assertContains(r, 'data-copiar="JANINE LACERDA DO PRADO"')
+        self.assertContains(r, 'data-copiar="Solicitação de autorização e concessão de diárias. (Autorização)"')
+        self.assertContains(r, f'data-copiar="{o.numero_formatado}"')
+        self.assertContains(r, 'data-copiar="12.345.678-9"')
+        self.assertContains(r, f"OFÍCIO Nº {o.numero_formatado} - SOLICITAÇÃO DE AUTORIZAÇÃO E CONCESSÃO DE DIÁRIAS - DESTINO: ANTONINA/PR")
+        self.assertContains(r, "js/components/copiar")
+
     def _finalizar(self, o, **extra):
         return self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(
             servidores=[str(self.janine.pk)], servidores_termo_autorizacao=[str(self.janine.pk)], acao="finalizar", **extra),

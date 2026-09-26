@@ -376,3 +376,34 @@ def gerar_termo_cadastro_um(termo, servidor, formato, *, forcar_viatura=False, u
 
 def gerar_termo_cadastro_lote(termo, formato):
     return [gerar_termo_cadastro_um(termo, s, formato) for s in servidores_para_termo_cadastro(termo)]
+
+
+def dados_eprotocolo_termo(termo):
+    """Os dados para protocolar o termo de autorização, prontos para colar —
+    no molde do painel do ofício (`viagens_oficios.services.dados_eprotocolo`)."""
+    servidores = [s.nome for s in termo.servidores_efetivos()]
+    interessados = ", ".join(servidores)
+    assunto = "Termo de autorização de viagem."
+    oficio = termo.oficio if termo.oficio_id else None
+    numero_oficio = oficio.numero_formatado if oficio and oficio.numero else ""
+    partes = ["TERMO DE AUTORIZAÇÃO"]
+    if numero_oficio:
+        partes.append(f"OFÍCIO Nº {numero_oficio}")
+    destino = termo.destino_efetivo()
+    if destino:
+        partes.append(f"DESTINO: {destino.upper()}")
+    inicio, _fim = termo.periodo_efetivo()
+    if inicio:
+        partes.append(f"PERÍODO: {termo.periodo_display}")
+    if servidores:
+        partes.append(f"SERVIDORES: {interessados}")
+    return {
+        "campos": [
+            {"rotulo": "Interessados", "valor": interessados, "copiar": interessados},
+            {"rotulo": "Assunto", "valor": assunto, "copiar": assunto},
+            {"rotulo": "Ofício vinculado", "valor": numero_oficio, "copiar": numero_oficio},
+        ],
+        "textos": [
+            {"id": "eprotocolo-detalhamento", "rotulo": "Detalhamento", "texto": " - ".join(partes), "linhas": 2},
+        ],
+    }
