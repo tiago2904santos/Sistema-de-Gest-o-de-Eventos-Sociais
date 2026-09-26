@@ -13,12 +13,11 @@ from __future__ import annotations
 
 import re
 
-from django.utils import timezone
 
-from core.leitura.casamento import municipio_no_texto, quantidade_de_pessoas
-from core.leitura.datas import dobrar, horarios_do_texto, quando_do_evento
+from core.leitura.casamento import quantidade_de_pessoas
+from core.leitura.datas import dobrar, horarios_do_texto
 from core.leitura.mensagem import Mensagem
-from core.preencher_por_email import Sugestao, Sugestoes, data_do_email, local_no_texto, quem_pede
+from core.preencher_por_email import Sugestao, Sugestoes, data_do_email, local_no_texto, municipio_do_pedido, quando_do_pedido, quem_pede
 
 from . import services
 
@@ -46,6 +45,11 @@ _R_RESPONSAVEL = re.compile(
     r"quem\s+(?:vai\s+)?receber(?:a)?|recebedor[a]?|contato\s+(?:no|do)\s+local|receber\s+no\s+local)"
     r"\s*(?:[:–-]|sera|e)?\s*(?P<valor>[^\n;]{3,150})"
 )
+
+#: Campos que a memória guarda por remetente ao salvar (`core.aprendizado`):
+#: o que o próximo e-mail da mesma origem provavelmente repete.
+CAMPOS_APRENDIDOS = ["municipio", "local_entrega", "responsavel_recebimento"]
+
 
 
 def _nome_do_evento(corpo: str, municipio) -> Sugestao | None:
@@ -152,22 +156,23 @@ def sugestoes(mensagem: Mensagem, usuario=None) -> Sugestoes:
 
     s = Sugestoes()
     texto = mensagem.texto_para_busca
-    referencia = mensagem.data_referencia or timezone.localdate()
     data_email = data_do_email(mensagem)
     s.por("data_solicitacao", data_email)
 
     pessoa = quem_pede(mensagem)
     ddd = pessoa.telefone.detalhes.get("digitos", "")[:2] if pessoa and pessoa.telefone else ""
-    municipio = municipio_no_texto(texto, municipios_do_parana().select_related("estado"), ddd=ddd)
+    municipio = municipio_do_pedido(mensagem, municipios_do_parana().select_related("estado"), ddd=ddd)
     s.por("municipio", Sugestao.de_achado(municipio))
 
     s.por("descricao_evento", _descricao_do_evento(mensagem, municipio.valor if municipio else None))
     quantidade = _quantidade(mensagem.corpo)
     s.por("quantidade", quantidade)
 
-    quando = quando_do_evento(texto, referencia)
+    quando, avisos_da_data = quando_do_pedido(mensagem)
+    for aviso in avisos_da_data:
+        s.avisar(aviso)
     if quando is not None:
-        confianca = quando.confianca if mensagem.data_referencia else "M"
+        confianca = quando.confianca
         if len(quando.dias) > 1 or (quando.fim and quando.fim != quando.inicio):
             fim = quando.fim or quando.dias[-1]
             confianca = "M"
@@ -176,8 +181,6 @@ def sugestoes(mensagem: Mensagem, usuario=None) -> Sugestoes:
                 f"preenchi o primeiro dia. Para os outros dias, registre uma solicitação por dia."
             )
         s.por("data_inicio_evento", Sugestao(quando.inicio, f"{quando.inicio:%d/%m/%Y}", confianca, quando.trecho))
-        if quando.inicio < timezone.localdate():
-            s.avisar(f"A data do evento lida ({quando.inicio:%d/%m/%Y}) já passou: confira.")
     s.por("horario_evento", _horario(texto, quando))
 
     s.por("local_entrega", Sugestao.de_achado(local_no_texto(mensagem.corpo)))

@@ -104,6 +104,8 @@ MIDDLEWARE = [
     "accounts.middleware.TrocaDeSenhaObrigatoriaMiddleware",
     # Bloqueio de módulos restritos (Setor ↔ Modulo) direto no backend.
     "accounts.modulos.AutorizacaoPorModuloMiddleware",
+    # Lembretes e resumo do dia no primeiro acesso de cada dia (sem cron).
+    "core.rotinas.RotinasDiariasMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -360,6 +362,9 @@ if not DEBUG and sys.argv[1:2] != ["test"]:
 # Validade, em dias, do link que o fornecedor do Coffee Break recebe para
 # enviar a nota fiscal e as certidões (coffee_break/link_fornecedor.py).
 COFFEE_LINK_FORNECEDOR_DIAS = int(os.environ.get("COFFEE_LINK_FORNECEDOR_DIAS", "30") or "30")
+# As rotinas diárias (core/rotinas.py) disparam sozinhas no primeiro acesso
+# do dia; na suíte, cada teste chama o que quer testar.
+ROTINAS_DIARIAS_AUTOMATICAS = sys.argv[1:2] != ["test"] and os.environ.get("ROTINAS_DIARIAS_AUTOMATICAS", "1") != "0"
 # Na suíte, nada de rede: o ambiente volta a mock mesmo com .env preenchido.
 if sys.argv[1:2] == ["test"]:
     EPROTOCOLO["AMBIENTE"] = "mock"

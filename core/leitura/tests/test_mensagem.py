@@ -621,3 +621,143 @@ class AuxiliaresTests(SimpleTestCase):
         self.assertNotIn("99999", texto)
         self.assertNotIn("maria@", texto)
         self.assertIn("m***@escola", texto)
+
+
+class GmailImpressoRealTests(SimpleTestCase):
+    """Os jeitos de o Gmail imprimir que os e-mails de verdade trouxeram."""
+
+    def test_assunto_e_para_em_mais_de_uma_linha_e_anexos_no_fim(self):
+        dados = pdf_de_linhas([
+            "POLICIA CIVIL DO PARANA - ASSESSORIA DE COMUNICACAO SOCIAL",
+            "<ascom@exemplo.pr.gov.br>",
+            "Fwd: Proposta de Parceria e Sediamento de Evento – Programa na Comunidade e",
+            "Centro Universitário Exemplo",
+            "1 mensagem",
+            "Ana Coordenadora <ana@universidade.exemplo> 21 de setembro de 2026 às 20:56",
+            "Para: PCPR - ASSESSORIA <ascom@exemplo.pr.gov.br>, Thiago Monitor",
+            "<monitor@exemplo.com>, Wilson Apoio <wilson@universidade.exemplo>",
+            "Prezados, boa noite.",
+            "Gostaríamos de sediar uma edição do evento no nosso campus, no dia 20/11/2026.",
+            "Atenciosamente,",
+            "Ana Coordenadora",
+            "Coordenadora do curso de Direito",
+            "OFÍCIO CONVITE.docx",
+            "15K",
+            "23/09/2026, 10:09 E-mail de PR - Polícia Civil - Fwd: Proposta de Parceria",
+            "https://mail.google.com/mail/u/0/?ik=abc&view=pt 1/1",
+        ])
+        mensagem = ler_mensagem("gmail.pdf", dados)
+        self.assertEqual(
+            mensagem.assunto_limpo,
+            "Proposta de Parceria e Sediamento de Evento – Programa na Comunidade e Centro Universitário Exemplo",
+        )
+        self.assertEqual(mensagem.remetente_email, "ana@universidade.exemplo")
+        self.assertTrue(mensagem.corpo.startswith("Prezados, boa noite."), mensagem.corpo)
+        self.assertNotIn("monitor@exemplo.com", mensagem.corpo)
+        self.assertEqual(mensagem.anexos_citados, ["OFÍCIO CONVITE.docx"])
+        self.assertNotIn("15K", mensagem.corpo + mensagem.assinatura)
+        self.assertEqual(mensagem.assinatura, "Ana Coordenadora\nCoordenadora do curso de Direito")
+
+    def test_rodape_legal_sem_linha_em_branco_nao_apaga_o_corpo(self):
+        dados = pdf_de_linhas([
+            "ASSESSORIA <ascom@exemplo.pr.gov.br>",
+            "Solicitação de Coffee Break",
+            "1 mensagem",
+            "ADRIANA EXEMPLO <ass.exemplo@exemplo.pr.gov.br> 22 de setembro de 2026 às 13:26",
+            "Para: ASSESSORIA <ascom@exemplo.pr.gov.br>",
+            "Prezado(s),",
+            "Solicito a disponibilidade de coffee break para:",
+            "Data: 28 de setembro de 2026 (segunda-feira)",
+            "Horário: 15h30min",
+            "Local: Delegacia Cidadã - Auditório",
+            "Quantidade de pessoas: 100",
+            "At.te,",
+            "--",
+            "ADRIANA EXEMPLO",
+            "Assessora da 15ª SDP",
+            "(45) 99999-0000 | ass.exemplo@exemplo.pr.gov.br",
+            "Esta mensagem pode conter informações confidenciais e/ou privilegiadas. É vedado o uso",
+            "destinatários. Em caso de recebimento por engano, por favor, avise o remetente.",
+        ])
+        mensagem = ler_mensagem("gmail.pdf", dados)
+        self.assertIn("Data: 28 de setembro de 2026", mensagem.corpo)
+        self.assertIn("Quantidade de pessoas: 100", mensagem.corpo)
+        self.assertNotIn("confidenciais", mensagem.corpo + mensagem.assinatura)
+        self.assertEqual(mensagem.assinatura.split("\n")[0], "ADRIANA EXEMPLO")
+
+    def test_obrigado_pela_atencao_nao_vira_assinatura(self):
+        corpo, assinatura = separar_assinatura(
+            "Segue o pedido.\nObrigado pela sua atenção\nMarcos Exemplo\nCoordenador\n041 999999999"
+        )
+        self.assertEqual(corpo, "Segue o pedido.")
+        self.assertEqual(assinatura, "Marcos Exemplo\nCoordenador\n041 999999999")
+
+    def test_despacho_do_eprotocolo_nao_e_whatsapp(self):
+        texto = (
+            "DEPARTAMENTO DE POLICIA CIVIL\nProtocolo: 26.635.814-8\nAssunto: Solicitação de coffee break\n"
+            "SÉTIMA SUBDIVISÃOInteressado:\n24/09/2026 10:25Data:\nSolicito coffee break para 60 policiais.\n"
+            "24/09/2026 15:29Data:\nEncaminhe-se à ASCOM."
+        )
+        mensagem = ler_texto_colado(texto)
+        self.assertNotEqual(mensagem.origem, "whatsapp")
+        self.assertNotEqual(mensagem.remetente_nome, "Data")
+
+    def test_pdf_com_uma_palavra_por_linha_reflui(self):
+        palavras = ("Ofício n.º 450/2026 Curitiba, 17 de setembro de 2026. Assunto: Solicitação de unidade móvel. "
+                    "Senhor Delegado, solicito a unidade móvel para a operação que será deflagrada no dia "
+                    "06/10/2026, às 06h00min, no município de Rio Branco do Ivaí. Atenciosamente, Taís Exemplo "
+                    "Delegada de Polícia").split()
+        linhas = []
+        for palavra in palavras:
+            linhas.extend([palavra, " "])
+        mensagem = ler_mensagem("oficio.pdf", pdf_de_linhas(linhas[:60], linhas[60:]))
+        self.assertIn("deflagrada no dia 06/10/2026, às 06h00min", mensagem.corpo)
+
+
+class ProcessoEprotocoloTests(SimpleTestCase):
+    """O PDF do processo do eProtocolo lido como pedido (ofício ou despacho que veio pelo protocolo)."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        from core.leitura.tests import fabrica as f
+
+        oficio = f.pagina([
+            "SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA",
+            "POLÍCIA CIVIL DO PARANÁ",
+            "3.ª DELEGACIA REGIONAL DE POLÍCIA DE CIDADE EXEMPLO",
+            "OFÍCIO 1532/2026",
+            "Cidade Exemplo, 16 de Setembro de 2026",
+            "Assunto: Solicitação de Coffee Break",
+            "Senhor(a) Delegado(a),",
+            "Cumprimentando-o cordialmente, venho solicitar a disponibilização de coffee break",
+            "destinado a aproximadamente 40 pessoas, a ser servido durante reunião agendada",
+            "para o dia 01 de outubro de 2026, as 10:00, nas dependências desta Unidade Policial.",
+            "Atenciosamente,",
+            "Gessica Exemplo",
+            "Delegada de Polícia",
+        ])
+        cls.pdf = f.processo_eprotocolo(
+            [f.Doc(pdf=oficio, arquivo="Protocolo_2026_049934_000.pdf", assinantes=[("Gessica Exemplo", "52998224725")])],
+            protocolo="26.591.587-6", numero_ano="1532/2026", assunto="ALIMENTACAO", cidade="CIDADE EXEMPLO / PR",
+            palavras_chave="PEDIDO DE AUXILIO E/OU RECURSOS", detalhamento="SOLICITAÇÃO DE COFFEE BREAK",
+            interessados=("DELEGACIA DE CIDADE EXEMPLO",), inserido_em="16/09/2026 10:23",
+        )
+
+    def test_capa_da_assunto_interessado_data_e_extras(self):
+        mensagem = ler_mensagem("Processo_26.591.587-6_1.pdf", self.pdf)
+        self.assertEqual(mensagem.origem, "eprotocolo")
+        self.assertEqual(mensagem.assunto, "SOLICITAÇÃO DE COFFEE BREAK")
+        self.assertEqual(mensagem.remetente_nome, "DELEGACIA DE CIDADE EXEMPLO")
+        self.assertEqual(mensagem.enviado_em.date(), date(2026, 9, 16))
+        self.assertEqual(mensagem.extras["protocolo"], "265915876")
+        self.assertEqual(mensagem.extras["cidade"], "CIDADE EXEMPLO / PR")
+        self.assertEqual(mensagem.extras["numero_ano"], "1532/2026")
+        self.assertTrue(any("eProtocolo" in aviso for aviso in mensagem.avisos))
+
+    def test_corpo_e_o_oficio_sem_a_moldura(self):
+        mensagem = ler_mensagem("Processo_26.591.587-6_1.pdf", self.pdf)
+        self.assertIn("reunião agendada", mensagem.corpo)
+        self.assertIn("01 de outubro de 2026", mensagem.corpo)
+        for ruido in ("Assinatura Avançada", "Inserido ao protocolo", "validarDocumento", "Órgão Cadastro"):
+            self.assertNotIn(ruido, mensagem.corpo + mensagem.assinatura, ruido)
