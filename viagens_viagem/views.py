@@ -248,6 +248,13 @@ def etapa(request, pk, etapa):
         contexto["itens_baixar"] = json.dumps(itens_para_baixar(viagem), ensure_ascii=False)
     if etapa == 1:
         contexto.update(_contexto_da_etapa_1(request, viagem, form))
+        if not viagem.cancelado:
+            from .coerencia import verificar_coerencia
+
+            # O que não bate entre a viagem e os documentos dela (m071).
+            contexto["coerencia"] = verificar_coerencia(viagem)
+            contexto["coerencia_aplicaveis"] = any(d["aplicavel"] for d in contexto["coerencia"])
+            contexto["url_coerencia"] = reverse("viagens_viagem:coerencia", args=[viagem.pk])
     else:
         contexto.update({2: _contexto_da_etapa_2, 3: _contexto_da_etapa_3, 4: _contexto_da_etapa_4, 5: _contexto_da_etapa_5}[etapa](request, viagem))
     return render(request, "pages/viagens_viagem/painel.html", contexto)
@@ -446,6 +453,31 @@ def gerar_documentos(request, pk):
                 return redirect("viagens_viagem:etapa", pk=pk, etapa=3)
     return render(request, "pages/viagens_viagem/gerar_documentos.html",
                   _contexto_gerar_documentos(viagem, equipes, opcoes, erros))
+
+
+@acesso_ao_modulo
+@require_POST
+def coerencia(request, pk):
+    """"Aplicar em todos" do cartão de coerência (m071): leva a viagem aos documentos não assinados."""
+    from .coerencia import aplicar_coerencia
+
+    exigir_operador(request)
+    viagem = get_viagem_by_id(pk)
+    retorno = voltar_para(request, reverse("viagens_viagem:etapa", args=[pk, 1]))
+    if viagem.cancelado:
+        messages.error(request, "Reative a viagem antes de corrigir os documentos.")
+        return redirect(retorno)
+    chaves = request.POST.getlist("chave") or None
+    aplicadas, puladas = aplicar_coerencia(viagem, chaves)
+    if aplicadas:
+        documentos = sorted({d["documento"] for d in aplicadas})
+        messages.success(request, f"Documentos atualizados com os dados da viagem: {', '.join(documentos)}.")
+    for d in puladas:
+        messages.warning(request, f"{d['documento']} já tem versão assinada e não foi alterado ({d['campo'].lower()}). "
+                                  "Corrija e assine de novo, se for o caso.")
+    if not aplicadas and not puladas:
+        messages.info(request, "Nada a corrigir: os documentos já batem com a viagem.")
+    return redirect(retorno)
 
 
 @acesso_ao_modulo

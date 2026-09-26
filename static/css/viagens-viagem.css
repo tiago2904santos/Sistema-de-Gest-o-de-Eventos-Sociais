@@ -101,3 +101,7 @@
 .vg-prontidao__sinal svg{width:14px;height:14px}
 .vg-prontidao__itens{margin:4px 0 0;padding-left:18px}
 .vg-prontidao__corpo{min-width:0;overflow-wrap:anywhere}
+
+/* ---------- Coerência (m071): o que não bate com a viagem --------------- */
+.vg-coerencia{margin:0 0 16px}
+.vg-coerencia__lista{margin:8px 0 12px;padding-left:18px;overflow-wrap:anywhere}
