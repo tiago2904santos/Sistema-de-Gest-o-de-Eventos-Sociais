@@ -12,6 +12,14 @@ from .download_services import pdf_assinado
 from .view_common import _prestacao_servidor_full
 
 
+def _sufixo_servidor(ps) -> str:
+    """m098: o primeiro nome do servidor no arquivo avulso, para os da equipe não se sobrescreverem."""
+    from .filenames import nome_arquivo_ascii, primeiro_nome
+
+    nome = primeiro_nome(ps.servidor)
+    return f"_{nome_arquivo_ascii(nome)}" if nome else ""
+
+
 @require_GET
 def prestacao_downloads(request, ps_pk):
     return JsonResponse(payload_downloads(_prestacao_servidor_full(ps_pk)))
@@ -26,7 +34,7 @@ def prestacao_download_assinado(request, ps_pk, item_id, formato):
         conteudo = pdf_assinado(ps, item_id)
     except DocumentValidationError as exc:
         raise Http404(str(exc)) from exc
-    nome = f"{item_id}_{ps.prestacao.oficio.numero_formatado.replace('/', '-')}.pdf"
+    nome = f"{item_id}_{ps.prestacao.oficio.numero_formatado.replace('/', '-')}{_sufixo_servidor(ps)}.pdf"
     response = HttpResponse(conteudo, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{nome}"'
     response["X-Content-Type-Options"] = "nosniff"
@@ -52,7 +60,7 @@ def prestacao_download_compilado(request, ps_pk):
         return JsonResponse({"error": str(exc)}, status=400)
     tipo = "application/pdf" if formato == "pdf" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     response = HttpResponse(conteudo, content_type=tipo)
-    response["Content-Disposition"] = f'attachment; filename="documentos_prestacao_{ps.pk}.{formato}"'
+    response["Content-Disposition"] = f'attachment; filename="documentos_prestacao_{ps.prestacao.oficio.numero_formatado.replace('/', '-')}{_sufixo_servidor(ps)}.{formato}"'
     response["X-Content-Type-Options"] = "nosniff"
     return response
 
@@ -92,7 +100,7 @@ def prestacao_baixar(request, ps_pk):
         messages.error(request, "Marque ao menos um documento para baixar.")
         return redirect(retorno)
     usar_assinado = request.POST.get("versao", "assinado") != "original"
-    referencia = ps.prestacao.oficio.numero_formatado.replace("/", "-")
+    referencia = ps.prestacao.oficio.numero_formatado.replace("/", "-") + _sufixo_servidor(ps)
 
     def origem_de(item):
         # O assinado só existe em PDF; sem ele, vai o original do sistema.
@@ -116,7 +124,7 @@ def prestacao_baixar(request, ps_pk):
                 escritor.append(io.BytesIO(conteudo))
             buffer = io.BytesIO()
             escritor.write(buffer)
-            conteudo, nome, tipo = buffer.getvalue(), f"prestacao_{referencia}_{ps.pk}.pdf", "application/pdf"
+            conteudo, nome, tipo = buffer.getvalue(), f"prestacao_{referencia}.pdf", "application/pdf"
         elif len(partes) == 1:
             item, conteudo = partes[0]
             nome = f"{item}_{referencia}.{formato}"
@@ -126,12 +134,28 @@ def prestacao_baixar(request, ps_pk):
             with ZipFile(buffer, "w") as arquivo_zip:
                 for item, dados in partes:
                     arquivo_zip.writestr(f"{item}_{referencia}.{formato}", dados)
-            conteudo, nome, tipo = buffer.getvalue(), f"prestacao_{referencia}_{ps.pk}.zip", "application/zip"
+            conteudo, nome, tipo = buffer.getvalue(), f"prestacao_{referencia}.zip", "application/zip"
     except DocumentValidationError as exc:
         messages.error(request, str(exc))
         return redirect(retorno)
     response = HttpResponse(conteudo, content_type=tipo)
     response["Content-Disposition"] = f'attachment; filename="{nome}"'
+    response["X-Content-Type-Options"] = "nosniff"
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+def prestacao_pacotes_zip(request, pc_pk):
+    """m098: os pacotes finais da equipe inteira num ZIP, com o que falta em PENDENCIAS.txt."""
+    from django.shortcuts import get_object_or_404
+
+    from .services import nome_arquivo_pacotes_da_equipe, pacotes_da_equipe_zip
+    from .view_common import _prestacao_queryset
+
+    prestacao = get_object_or_404(_prestacao_queryset(), pk=pc_pk)
+    conteudo, _ = pacotes_da_equipe_zip(prestacao)
+    response = HttpResponse(conteudo, content_type="application/zip")
+    response["Content-Disposition"] = f'attachment; filename="{nome_arquivo_pacotes_da_equipe(prestacao)}"'
     response["X-Content-Type-Options"] = "nosniff"
     response["Cache-Control"] = "no-store"
     return response

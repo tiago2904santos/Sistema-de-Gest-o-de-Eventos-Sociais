@@ -171,3 +171,49 @@ class DadosEprotocoloDaPrestacaoTests(PrestacaoFixturesMixin, TestCase):
         detalhamento = resposta.context["eprotocolo"]["textos"][0]["texto"]
         self.assertIn("SOLICITAÇÃO Nº 7654321", detalhamento)
         self.assertIn(self.ps.servidor.nome.upper(), detalhamento)
+
+
+class PacotesDaEquipeZipTests(PrestacaoFixturesMixin, TestCase):
+    """m098: os pacotes finais da equipe num ZIP, com PENDENCIAS.txt."""
+
+    def setUp(self):
+        super().setUp()
+        self.setUpPrestacaoFixtures()
+        self.ana = self.criar_servidor("Ana Sintetica")
+        self.bruno = self.criar_servidor("Bruno Sintetico")
+        self.fixture = self.criar_prestacao(numero=601, servidores=[self.ana, self.bruno])
+        self.ps_ana, self.ps_bruno = self.fixture.prestacoes_servidor
+
+    def test_zip_com_um_pdf_por_servidor_pronto_e_pendencias(self):
+        import io
+        from unittest import mock
+        from zipfile import ZipFile
+
+        from viagens_prestacoes import services
+
+        def pendencias(ps):
+            return [] if ps.pk == self.ps_ana.pk else ["Anexe o comprovante de saque/transferência deste servidor, acima."]
+
+        with mock.patch.object(services, "pendencias_consolidado", side_effect=pendencias), \
+                mock.patch.object(services, "gerar_prestacao_consolidado_pdf", return_value=b"%PDF-1.4 sintetico"):
+            resposta = self.client.get(reverse("viagens_prestacoes:prestacao_pacotes_zip", args=[self.fixture.prestacao.pk]))
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta["Content-Type"], "application/zip")
+        with ZipFile(io.BytesIO(resposta.content)) as arquivo:
+            nomes = arquivo.namelist()
+            self.assertIn("PENDENCIAS.txt", nomes)
+            pdfs = [n for n in nomes if n.endswith(".pdf")]
+            self.assertEqual(len(pdfs), 1)
+            self.assertIn("Ana", pdfs[0])
+            texto = arquivo.read("PENDENCIAS.txt").decode()
+        self.assertIn("BRUNO SINTETICO", texto.upper())
+        self.assertIn("comprovante", texto)
+
+    def test_menu_do_oficio_tem_o_zip(self):
+        resposta = self.get_listagem()
+        self.assertContains(resposta, reverse("viagens_prestacoes:prestacao_pacotes_zip", args=[self.fixture.prestacao.pk]))
+
+    def test_arquivo_avulso_leva_o_primeiro_nome(self):
+        from viagens_prestacoes.download_views import _sufixo_servidor
+
+        self.assertEqual(_sufixo_servidor(self.ps_ana), "_Ana")

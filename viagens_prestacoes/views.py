@@ -70,6 +70,7 @@ def index(request):
             "acoes_url": {a: reverse("viagens_prestacoes:prestacao_equipe_acao", args=[card["prestacao_pk"], a])
                           for a in ("finalizar", "reabrir", "arquivar", "desarquivar")},
             "importar_url": reverse("viagens_prestacoes:importacao_enviar_prestacao", args=[card["prestacao_pk"]]),
+            "pacotes_url": reverse("viagens_prestacoes:prestacao_pacotes_zip", args=[card["prestacao_pk"]]),
         })
         grupo["cards"].append(card)
     for grupo in grupos.values():

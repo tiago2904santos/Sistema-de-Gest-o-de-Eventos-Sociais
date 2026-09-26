@@ -878,3 +878,53 @@ def dados_eprotocolo_prestacao(servidor_prestacao) -> dict:
             {"id": "eprotocolo-prestacao-detalhamento", "rotulo": "Detalhamento", "texto": " - ".join(partes), "linhas": 3},
         ],
     }
+
+
+def pacotes_da_equipe_zip(prestacao) -> tuple[bytes, int]:
+    """Os pacotes finais de toda a equipe do ofício num ZIP (m098).
+
+    Um PDF por servidor pronto, com o nome combinado
+    (`nome_arquivo_prestacao_consolidado`); quem ainda não está pronto entra em
+    `PENDENCIAS.txt` com o que falta (`pendencias_consolidado`), e o erro de
+    montagem de um servidor não derruba o dos outros. Devolve o ZIP e quantos
+    pacotes entraram.
+    """
+    import io
+    from zipfile import ZIP_DEFLATED, ZipFile
+
+    buffer = io.BytesIO()
+    pendentes = []
+    gerados = 0
+    usados = set()
+    with ZipFile(buffer, "w", ZIP_DEFLATED) as arquivo_zip:
+        for ps in prestacao.servidores_prestacao.select_related("servidor").order_by("servidor__nome", "pk"):
+            falta = pendencias_consolidado(ps)
+            if not falta:
+                try:
+                    conteudo = gerar_prestacao_consolidado_pdf(ps)
+                except DocumentValidationError as exc:
+                    falta = [str(exc)]
+                else:
+                    nome = nome_arquivo_prestacao_consolidado(ps)
+                    if nome in usados:
+                        nome = f"{nome[:-4]} {ps.pk}.pdf"
+                    usados.add(nome)
+                    arquivo_zip.writestr(nome, conteudo)
+                    gerados += 1
+            if falta:
+                pendentes.append((ps.servidor.nome, falta))
+        if pendentes:
+            linhas = [f"Pendências da prestação do ofício {prestacao.oficio.numero_formatado}", ""]
+            for nome, itens in pendentes:
+                linhas.append(nome)
+                linhas.extend(f"  - {item}" for item in itens)
+                linhas.append("")
+            arquivo_zip.writestr("PENDENCIAS.txt", "\n".join(linhas))
+    return buffer.getvalue(), gerados
+
+
+def nome_arquivo_pacotes_da_equipe(prestacao) -> str:
+    from . import filenames as naming
+
+    oficio = prestacao.oficio.numero_formatado.replace("/", "-")
+    return f"{naming.nome_arquivo_ascii(f'Pacotes da equipe Ofício {oficio}')}.zip"
