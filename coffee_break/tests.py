@@ -2637,3 +2637,133 @@ class PreviaDaOSTests(BaseCoffeeBreakTestCase):
         s = self.criar_solicitacao(numero="41/2026")
         resposta = self.client.get(reverse("coffee_break:ordem_servico_previa", args=[s.pk]))
         self.assertContains(resposta, "Informe o local de entrega.")
+
+
+class NumeracaoConjuntaComViagensTests(BaseCoffeeBreakTestCase):
+    """m041: o ofício e a OS do Coffee Break saem da mesma sequência dos
+    ofícios e das ordens de serviço de Viagens, sem repetição."""
+
+    def setUp(self):
+        self.client.force_login(self.ascom)
+
+    def _oficio_viagens(self, numero, ano=2026):
+        from viagens_oficios.models import Oficio
+
+        return Oficio.objects.create(numero=numero, ano=ano)
+
+    def _os_viagens(self, numero, ano=2026):
+        from viagens_ordens.models import OrdemServico
+
+        return OrdemServico.objects.create(numero=numero, ano=ano)
+
+    def test_oficio_segue_o_maior_dos_dois_modulos(self):
+        from viagens_oficios.models import Oficio
+
+        self.criar_solicitacao(numero="01/2026", numero_oficio="124/2026")
+        self._oficio_viagens(130)
+        self.assertEqual(services.proxima_sequencia_oficio(2026), 131)
+        self.criar_solicitacao(numero="02/2026", numero_oficio="140/2026")
+        # E Viagens enxerga os ofícios do Coffee Break.
+        self.assertEqual(Oficio.get_next_available_numero(2026), 141)
+        # Números de outro ano não contam.
+        self._oficio_viagens(900, ano=2025)
+        self.assertEqual(services.proxima_sequencia_oficio(2026), 141)
+
+    def test_os_segue_o_maior_dos_dois_modulos(self):
+        from viagens_ordens.models import OrdemServico
+
+        self.criar_solicitacao(numero="10/2026")
+        self._os_viagens(15)
+        self.assertEqual(services.proximo_numero(2026), "16/2026")
+        self.criar_solicitacao(numero="20/2026")
+        self.assertEqual(OrdemServico.proximo_numero_livre(2026), (21, None))
+
+    def test_lacuna_de_viagens_ocupada_pelo_coffee_nao_e_reusada(self):
+        from viagens_ordens.models import OrdemServico, OrdemServicoNumeroLacuna
+
+        self._os_viagens(8)
+        OrdemServicoNumeroLacuna.objects.create(ano=2026, numero=3)
+        self.criar_solicitacao(numero="03/2026")
+        self.assertEqual(OrdemServico.proximo_numero_livre(2026), (9, None))
+
+    def test_nova_os_em_branco_reserva_na_sequencia_conjunta(self):
+        self._os_viagens(30)
+        dados = {
+            "municipio": self.curitiba.pk, "data_solicitacao": "2026-08-01",
+            "descricao_evento": "Evento", "quantidade": "10", "numero": "",
+        }
+        self.client.post(reverse("coffee_break:nova"), dados)
+        self.assertTrue(SolicitacaoCoffeeBreak.objects.filter(numero="31/2026").exists())
+
+    def test_numero_de_os_de_viagens_nao_pode_ser_repetido(self):
+        self._os_viagens(5)
+        dados = {
+            "municipio": self.curitiba.pk, "data_solicitacao": "2026-08-01",
+            "descricao_evento": "Evento", "quantidade": "10", "numero": "5",
+        }
+        resposta = self.client.post(reverse("coffee_break:nova"), dados)
+        self.assertContains(resposta, "ordem de serviço de Viagens")
+        self.assertFalse(SolicitacaoCoffeeBreak.objects.filter(numero="05/2026").exists())
+
+    def _form_nota(self, s, numero_oficio):
+        from .forms import NotaCoffeeBreakForm
+
+        return NotaCoffeeBreakForm(
+            {
+                "numero_nota_fiscal": "8957", "numero_oficio": numero_oficio, "data_oficio": "2026-09-21",
+                "protocolo_pcpr_oficio": "", "versao": str(int(s.atualizado_em.timestamp() * 1_000_000)),
+            },
+            instance=s,
+        )
+
+    def test_oficio_de_viagens_nao_pode_ser_repetido(self):
+        s = self.criar_solicitacao(numero="41/2026")
+        self._oficio_viagens(125)
+        form = self._form_nota(s, "125")
+        self.assertFalse(form.is_valid())
+        self.assertIn("ofício de Viagens", form.errors["numero_oficio"][0])
+
+    def test_sugerido_que_outro_usou_antes_de_gravar_pega_o_seguinte(self):
+        s = self.criar_solicitacao(numero="41/2026")
+        self._oficio_viagens(124)
+        form = self._form_nota(s, "125")  # o sugerido na tela
+        self.assertTrue(form.is_valid(), form.errors)
+        # Entre a tela e o salvar, Viagens emitiu o 125.
+        self._oficio_viagens(125)
+        form.save()
+        s.refresh_from_db()
+        self.assertEqual(s.numero_oficio, "126/2026")
+
+    def test_digitado_que_outro_usou_antes_de_gravar_e_recusado(self):
+        s = self.criar_solicitacao(numero="41/2026")
+        form = self._form_nota(s, "200")
+        self.assertTrue(form.is_valid(), form.errors)
+        self._oficio_viagens(200)
+        with self.assertRaises(ValidationError):
+            form.save()
+        s.refresh_from_db()
+        self.assertEqual(s.numero_oficio, "")
+
+    def test_numero_usado_deixa_de_ser_lacuna_em_viagens(self):
+        from viagens_oficios.models import Oficio, OficioNumeroLacuna
+
+        self._oficio_viagens(9)
+        OficioNumeroLacuna.objects.create(ano=2026, numero=4)
+        s = self.criar_solicitacao(numero="41/2026")
+        form = self._form_nota(s, "4")
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+        self.assertFalse(OficioNumeroLacuna.objects.filter(ano=2026, numero=4).exists())
+        self.assertEqual(Oficio.get_next_available_numero(2026), 10)
+
+    def test_formulario_de_viagens_recusa_numero_do_coffee(self):
+        from django import forms as dj_forms
+
+        from viagens_oficios.forms import OficioForm
+
+        self.criar_solicitacao(numero="41/2026", numero_oficio="77/2026")
+        oficio = self._oficio_viagens(10)
+        form = OficioForm(instance=oficio)
+        form.cleaned_data = {"numero": 77}
+        with self.assertRaises(dj_forms.ValidationError):
+            form.clean_numero()

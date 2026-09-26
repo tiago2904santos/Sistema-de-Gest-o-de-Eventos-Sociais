@@ -75,12 +75,13 @@ def validar_saldo(lote, quantidade, excluir_pk=None):
         )
 
 
-def salvar_com_saldo(solicitacao):
+def salvar_com_saldo(solicitacao, numero=None, oficio=None):
     """Salva a solicitação consumindo saldo com trava no lote.
 
     Trava a linha do lote, revalida o saldo já com concorrentes
     serializados e só então persiste — a validação e a escrita ficam na
-    mesma transação.
+    mesma transação. `numero` e `oficio` (RESERVAR ou CONFERIR) dizem como
+    tratar o número da OS e o do ofício (ver `numerar_sob_trava`).
     """
     with transaction.atomic():
         lote = LoteCoffeeBreak.objects.select_for_update().get(
@@ -88,13 +89,9 @@ def salvar_com_saldo(solicitacao):
         )
         if not solicitacao.cancelada:
             validar_saldo(lote, solicitacao.quantidade, excluir_pk=solicitacao.pk)
-        if not solicitacao.numero:
-            # A numeração é uma só para todos os lotes: trava a configuração
-            # (linha única) para dois pedidos simultâneos não pegarem o mesmo número.
-            from .models import ConfiguracaoCoffeeBreak
-
-            ConfiguracaoCoffeeBreak.objects.select_for_update().filter(pk=1).exists()
-            solicitacao.numero = proximo_numero(solicitacao.data_solicitacao.year)
+        # A numeração da OS e a do ofício são as de Viagens (livro único),
+        # escolhidas e conferidas sob a mesma trava de lá.
+        numerar_sob_trava(solicitacao, numero=numero, oficio=oficio)
         solicitacao.save()
     return solicitacao
 
@@ -326,18 +323,37 @@ def formatar_numero(sequencia, ano):
     return f"{sequencia:02d}/{ano}"
 
 
-def proxima_sequencia(ano):
-    """A próxima sequência da OS no ano: uma numeração só, de todos os lotes
-    (1, 2, 3...). Vale a maior já usada + 1 — quem pula para 12 faz a
-    seguinte ser 13."""
+def _sequencias_no_ano(campo, ano):
     from .models import SolicitacaoCoffeeBreak
 
-    maior = 0
-    for numero in SolicitacaoCoffeeBreak.objects.filter(numero__endswith=f"/{ano}").values_list("numero", flat=True):
+    usados = set()
+    for numero in SolicitacaoCoffeeBreak.objects.filter(**{f"{campo}__endswith": f"/{ano}"}).values_list(campo, flat=True):
         partes = partes_numero(numero)
         if partes and partes[1] == ano:
-            maior = max(maior, partes[0])
-    return maior + 1
+            usados.add(partes[0])
+    return usados
+
+
+def sequencias_os_no_ano(ano):
+    """As sequências de OS do Coffee Break já usadas no ano (livro conjunto
+    com as ordens de serviço de Viagens: ver `core.numeracao`)."""
+    return _sequencias_no_ano("numero", ano)
+
+
+def sequencias_oficio_no_ano(ano):
+    """As sequências de ofício do Coffee Break já usadas no ano (livro
+    conjunto com os ofícios de Viagens)."""
+    return _sequencias_no_ano("numero_oficio", ano)
+
+
+def proxima_sequencia(ano):
+    """A próxima sequência da OS no ano: uma numeração só, de todos os lotes
+    e junto com as ordens de serviço de Viagens (a mesma regra de lá: a
+    menor lacuna liberada por exclusão, senão o maior número usado nos dois
+    módulos + 1 — quem pula para 12 faz a seguinte ser 13)."""
+    from viagens_ordens.models import OrdemServico
+
+    return OrdemServico.proximo_numero_livre(ano)[0]
 
 
 def proximo_numero(ano):
@@ -346,15 +362,103 @@ def proximo_numero(ano):
 
 
 def proxima_sequencia_oficio(ano):
-    """O próximo ofício do Coffee Break no ano: o maior já usado + 1."""
-    from .models import SolicitacaoCoffeeBreak
+    """O próximo ofício no ano, na numeração conjunta com os ofícios de
+    Viagens (piso e lacunas de lá; senão o maior dos dois módulos + 1)."""
+    from viagens_oficios.models import Oficio
 
-    maior = 0
-    for numero in SolicitacaoCoffeeBreak.objects.filter(numero_oficio__endswith=f"/{ano}").values_list("numero_oficio", flat=True):
-        partes = partes_numero(numero)
-        if partes and partes[1] == ano:
-            maior = max(maior, partes[0])
-    return maior + 1
+    return Oficio.get_next_available_numero(ano)
+
+
+def numero_ocupado(numero, excluir_pk=None):
+    """Quem já usa este número de OS — uma OS do Coffee Break (de qualquer
+    lote) ou uma ordem de serviço de Viagens do mesmo ano —, em texto; ou ""."""
+    em_uso = numero_em_uso(numero, excluir_pk=excluir_pk)
+    if em_uso:
+        return f"A OS {numero} já existe ({em_uso.descricao_evento[:60]})."
+    partes = partes_numero(numero)
+    if partes:
+        from viagens_ordens.models import OrdemServico
+
+        if OrdemServico.objects.filter(ano=partes[1], numero=partes[0]).exists():
+            return f"O número {numero} já é de uma ordem de serviço de Viagens (a numeração é conjunta)."
+    return ""
+
+
+def oficio_ocupado(numero, excluir_pk=None):
+    """Quem já usa este número de ofício — outra OS do Coffee Break fora do
+    mesmo pagamento ou um ofício de Viagens do mesmo ano —, em texto; ou ""."""
+    if oficio_em_uso(numero, excluir_pk=excluir_pk):
+        return f"O ofício {numero} já existe."
+    partes = partes_numero(numero)
+    if partes:
+        from viagens_oficios.models import Oficio
+
+        if Oficio.objects.filter(ano=partes[1], numero=partes[0]).exists():
+            return f"O número {numero} já é de um ofício de Viagens (a numeração é conjunta)."
+    return ""
+
+
+def _travar_livro_os(ano):
+    from core.numeracao import NAMESPACE_ORDEM_SERVICO, bloquear_escopo_numeracao
+    from viagens_ordens.models import OrdemServico
+
+    bloquear_escopo_numeracao(namespace=NAMESPACE_ORDEM_SERVICO, ano=ano, modelo=OrdemServico)
+
+
+def _travar_livro_oficio(ano):
+    from core.numeracao import NAMESPACE_OFICIO, bloquear_escopo_numeracao
+    from viagens_oficios.models import Oficio
+
+    bloquear_escopo_numeracao(namespace=NAMESPACE_OFICIO, ano=ano, modelo=Oficio)
+
+
+def _liberar_lacunas(numero, modelo_lacuna):
+    """O número usado aqui deixa de ser lacuna no livro de Viagens."""
+    partes = partes_numero(numero)
+    if partes:
+        modelo_lacuna.objects.filter(ano=partes[1], numero=partes[0]).delete()
+
+
+# Como o número chega ao salvar: "reservar" (em branco ou o próximo sugerido:
+# o sistema escolhe sob a trava, e pode ser outro se alguém acabou de usar) ou
+# "conferir" (digitado: confere sob a trava e recusa se já foi usado).
+RESERVAR, CONFERIR = "reservar", "conferir"
+
+
+def numerar_sob_trava(solicitacao, numero=None, oficio=None):
+    """Aplica a numeração conjunta da OS e do ofício, com a trava do livro.
+
+    Roda dentro da transação que grava a solicitação: o lock do livro (o
+    mesmo de Viagens) fica até o commit, então dois pedidos — daqui ou de
+    Viagens — não saem com o mesmo número.
+    """
+    from viagens_oficios.models import OficioNumeroLacuna
+    from viagens_ordens.models import OrdemServicoNumeroLacuna
+
+    if not solicitacao.numero:
+        numero = RESERVAR
+    if numero:
+        partes = partes_numero(solicitacao.numero)
+        ano = partes[1] if partes else solicitacao.data_solicitacao.year
+        _travar_livro_os(ano)
+        if numero == RESERVAR:
+            solicitacao.numero = proximo_numero(ano)
+        else:
+            ocupado = numero_ocupado(solicitacao.numero, excluir_pk=solicitacao.pk)
+            if ocupado:
+                raise ValidationError({"numero": f"{ocupado} A próxima livre é {proxima_sequencia(ano)}."})
+        _liberar_lacunas(solicitacao.numero, OrdemServicoNumeroLacuna)
+    if oficio:
+        partes = partes_numero(solicitacao.numero_oficio)
+        ano = partes[1] if partes else (solicitacao.data_oficio or timezone.localdate()).year
+        _travar_livro_oficio(ano)
+        if oficio == RESERVAR:
+            solicitacao.numero_oficio = formatar_numero(proxima_sequencia_oficio(ano), ano)
+        else:
+            ocupado = oficio_ocupado(solicitacao.numero_oficio, excluir_pk=solicitacao.pk)
+            if ocupado:
+                raise ValidationError({"numero_oficio": f"{ocupado} O próximo livre é {proxima_sequencia_oficio(ano)}."})
+        _liberar_lacunas(solicitacao.numero_oficio, OficioNumeroLacuna)
 
 
 def oficio_em_uso(numero, excluir_pk=None):

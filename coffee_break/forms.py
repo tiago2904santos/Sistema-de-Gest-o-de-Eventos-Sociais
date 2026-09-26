@@ -127,14 +127,19 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
             numero = services.formatar_numero(sequencia, self.ano_do_numero())
         elif not services.partes_numero(numero):
             return numero
-        # Uma numeração só para todos os lotes: o número não se repete.
-        # (Registro que já tinha este número fica como está, mesmo repetido na planilha.)
-        em_uso = None if numero == self.instance.numero else services.numero_em_uso(numero, excluir_pk=self.instance.pk)
-        if em_uso:
-            raise forms.ValidationError(
-                f"A OS {numero} já existe ({em_uso.descricao_evento[:60]}). "
-                f"A próxima livre é {services.proxima_sequencia(self.ano_do_numero())}."
-            )
+        # Uma numeração só para todos os lotes e para as ordens de serviço de
+        # Viagens: o número não se repete. (Registro que já tinha este número
+        # fica como está, mesmo repetido na planilha.)
+        if numero == self.instance.numero:
+            return numero
+        ano = services.partes_numero(numero)[1]
+        proxima = services.proxima_sequencia(ano)
+        ocupado = services.numero_ocupado(numero, excluir_pk=self.instance.pk)
+        if ocupado:
+            raise forms.ValidationError(f"{ocupado} A próxima livre é {proxima}.")
+        # O próximo sugerido é reservado ao gravar (sob a trava do livro); o
+        # digitado é conferido de novo lá.
+        self.modo_numero = services.RESERVAR if numero == services.formatar_numero(proxima, ano) else services.CONFERIR
         return numero
 
     def ano_do_numero(self):
@@ -222,7 +227,11 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
         if not solicitacao.pk:
             solicitacao.criado_por = criado_por
         # Trava o lote e revalida o saldo na mesma transação da escrita.
-        return services.salvar_com_saldo(solicitacao)
+        return services.salvar_com_saldo(
+            solicitacao,
+            numero=getattr(self, "modo_numero", None),
+            oficio=getattr(self, "modo_oficio", None),
+        )
 
     def _update_errors(self, errors):
         """Erro do modelo num campo de outra etapa sobe para o topo do formulário.
@@ -322,20 +331,28 @@ class NotaCoffeeBreakForm(SolicitacaoCoffeeBreakForm):
         return self.cleaned_data.get("data_oficio") or timezone.localdate()
 
     def clean_numero_oficio(self):
-        """ "125" vira "125/2026"; em branco, o próximo da numeração; não repete."""
+        """ "125" vira "125/2026"; em branco, o próximo da numeração; não repete.
+
+        A numeração é a dos ofícios de Viagens (livro único). Em branco ou o
+        próximo sugerido, o número é reservado ao gravar, sob a trava do
+        livro; o digitado é conferido de novo lá.
+        """
         numero = " ".join((self.cleaned_data.get("numero_oficio") or "").split())
         ano = self.ano_do_oficio()
         if not numero:
-            return services.formatar_numero(services.proxima_sequencia_oficio(ano), ano)
+            self.modo_oficio = services.RESERVAR
+            return ""
         if numero.isdigit():
             if int(numero) < 1:
                 raise forms.ValidationError("O número do ofício deve ser 1 ou mais.")
             numero = services.formatar_numero(int(numero), ano)
-        if services.partes_numero(numero) and numero != self.instance.numero_oficio:
-            if services.oficio_em_uso(numero, excluir_pk=self.instance.pk):
-                raise forms.ValidationError(
-                    f"O ofício {numero} já existe. O próximo livre é {services.proxima_sequencia_oficio(ano)}."
-                )
+        partes = services.partes_numero(numero)
+        if partes and numero != self.instance.numero_oficio:
+            proximo = services.proxima_sequencia_oficio(partes[1])
+            ocupado = services.oficio_ocupado(numero, excluir_pk=self.instance.pk)
+            if ocupado:
+                raise forms.ValidationError(f"{ocupado} O próximo livre é {proximo}.")
+            self.modo_oficio = services.RESERVAR if partes[0] == proximo else services.CONFERIR
         return numero
 
 
