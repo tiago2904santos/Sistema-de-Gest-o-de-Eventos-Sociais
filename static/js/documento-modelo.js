@@ -89,9 +89,26 @@
     salvo.parentNode.setAttribute('data-estado', tipo || '');
   }
 
+  function recemSalvo() {
+    try {
+      var chave = 'modelo-salvo:' + window.location.pathname;
+      var quando = Number(window.sessionStorage.getItem(chave));
+      window.sessionStorage.removeItem(chave);
+      if (quando && Date.now() - quando < 60000) {
+        var h = new Date(quando);
+        return 'Salvo às ' + ('0' + h.getHours()).slice(-2) + ':' + ('0' + h.getMinutes()).slice(-2);
+      }
+    } catch (e) { /* sem storage */ }
+    return '';
+  }
+  var avisoSalvo = recemSalvo();
+  if (avisoSalvo) marcar(avisoSalvo, 'ok');
+
   function atualizarSituacao() {
     var n = Object.keys(mudados()).length;
     alterado = n > 0;
+    if (!n && avisoSalvo) { marcar(avisoSalvo, 'ok'); return; }
+    if (n) avisoSalvo = '';
     marcar(n ? (n === 1 ? '1 texto alterado, não salvo' : n + ' textos alterados, não salvos') : 'Sem alterações', n ? 'andamento' : '');
   }
 
@@ -235,7 +252,11 @@
       var chave = el.getAttribute('data-mod-bloco');
       if (vistos[chave]) return;
       vistos[chave] = true;
-      var caixa = el.getClientRects()[0] || el.getBoundingClientRect();
+      // Na margem do parágrafo: o bloco pode começar no meio da linha
+      // (depois de um dado), e o indicador não pode cobrir o texto.
+      var linha = el.getClientRects()[0] || el.getBoundingClientRect();
+      var paragrafo = el.closest('p, div, td, th, li, h1, h2, h3, h4') || el;
+      var caixa = { left: paragrafo.getBoundingClientRect().left, top: linha.top, height: linha.height };
       var botao = d.createElement('button');
       botao.type = 'button';
       botao.className = 'mod-indicador';
@@ -243,7 +264,7 @@
       var rotulo = (info[chave] || {}).rotulo || chave;
       botao.title = '“' + rotulo + '” está personalizado. Clique para voltar ao padrão do sistema.';
       botao.setAttribute('aria-label', botao.title);
-      botao.style.left = Math.max(caixa.left - base.left - 22, 0) + 'px';
+      botao.style.left = Math.max(caixa.left - base.left - 20, 0) + 'px';
       botao.style.top = (caixa.top - base.top + Math.max((caixa.height - 16) / 2, 0)) + 'px';
       botao.addEventListener('mousedown', function (ev) { ev.preventDefault(); });
       botao.addEventListener('click', function () { voltarAoPadrao(chave); });
@@ -359,6 +380,7 @@
       estado = String(dados.estado || '');
       alterado = false;
       // Recarrega para a folha, os indicadores e o histórico mostrarem o que foi gravado.
+      try { window.sessionStorage.setItem('modelo-salvo:' + window.location.pathname, String(Date.now())); } catch (e) { /* sem storage */ }
       window.location.reload();
     }).catch(function () {
       if (gravar) gravar.disabled = false;

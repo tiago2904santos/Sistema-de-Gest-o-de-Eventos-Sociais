@@ -33,3 +33,6 @@
 .mod-chip { display: inline-block; padding: 0 .35em; margin: 0 .08em; border: 1px solid #c7d2fe; border-radius: 4px;
   background: #e0e7ff; color: #1e3a8a; font-size: .92em; line-height: 1.25; white-space: nowrap; cursor: default; user-select: all; }
 .mod-chip--negrito { font-weight: 700; }
+
+/* O aviso de erro só aparece quando há erro (o display da classe venceria o [hidden]). */
+[data-mdl-erro][hidden]{display:none}
