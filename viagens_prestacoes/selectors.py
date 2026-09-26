@@ -11,8 +11,11 @@ ABA_NAO_LIBERADAS = 'nao_liberadas'
 ABA_LIBERADAS = 'liberadas'
 ABA_ARQUIVADOS = 'arquivados'
 ABA_FINALIZADOS = 'finalizados'
+#: m094: prazo para prestar contas vencido. Diferente das de estado, cruza com elas.
+ABA_PRESTACAO_VENCIDA = 'prestacao_vencida'
 ABA_PADRAO = ABA_NAO_LIBERADAS
-ABAS_VALIDAS = {ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_ARQUIVADOS, ABA_FINALIZADOS}
+ABAS_VALIDAS = {ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_ARQUIVADOS, ABA_FINALIZADOS, ABA_PRESTACAO_VENCIDA}
+ORDEM_ABAS = (ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_ARQUIVADOS, ABA_FINALIZADOS, ABA_PRESTACAO_VENCIDA)
 
 def normalizar_aba(aba: str | None) -> str:
     aba = (aba or '').strip()
@@ -28,8 +31,7 @@ def normalizar_abas(valores) -> list[str]:
     if isinstance(valores, str):
         valores = [valores]
     escolhidas = {(valor or '').strip() for valor in valores or []}
-    ordem = (ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_ARQUIVADOS, ABA_FINALIZADOS)
-    normalizadas = [chave for chave in ordem if chave in escolhidas]
+    normalizadas = [chave for chave in ORDEM_ABAS if chave in escolhidas]
     return normalizadas or [ABA_PADRAO]
 
 def _q_das_abas(abas) -> Q:
@@ -41,7 +43,10 @@ def _q_das_abas(abas) -> Q:
     return combinado
 
 def _q_da_aba(aba: str) -> Q:
-    """Filtro que define quais servidores pertencem a cada aba (mutuamente exclusivas)."""
+    """Filtro que define quais servidores pertencem a cada aba (as de estado são mutuamente exclusivas)."""
+    if aba == ABA_PRESTACAO_VENCIDA:
+        from .prazos import ultimo_saque_com_prestacao_vencida
+        return Q(finalizada=False, arquivada=False, prazo_limite_saque__lte=ultimo_saque_com_prestacao_vencida())
     if aba == ABA_FINALIZADOS:
         return Q(finalizada=True)
     if aba == ABA_ARQUIVADOS:
@@ -118,7 +123,7 @@ def listar_prestacoes(q: str | None=None, status: str | None=None, aba=None, via
 def contar_por_aba(q: str | None=None, status: str | None=None, viagem_de: str | None=None, viagem_ate: str | None=None) -> dict:
     """Total de servidores em cada aba, respeitando os filtros de busca ativos."""
     base = _base_servidores(q=q, status=status, viagem_de=viagem_de, viagem_ate=viagem_ate)
-    return {aba: base.filter(_q_da_aba(aba)).count() for aba in (ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_ARQUIVADOS, ABA_FINALIZADOS)}
+    return {aba: base.filter(_q_da_aba(aba)).count() for aba in ORDEM_ABAS}
 LIMITE_OFICIOS_PREFILL = 200
 
 def oficios_para_prefill_de_motorista(oficio_atual):

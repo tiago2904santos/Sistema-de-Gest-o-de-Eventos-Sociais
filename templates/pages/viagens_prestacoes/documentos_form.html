@@ -41,6 +41,7 @@
       </div>
     </header>
     <div class="section-card__corpo">
+      {% if selo_prestacao %}<p class="pc-docs__prazo"><span class="st st--pc-prazo-{{ selo_prestacao.tom }}"{% if selo_prestacao.detalhe %} title="{{ selo_prestacao.detalhe }}"{% endif %}>{% include "components/icon.html" with nome="clock" %}{{ selo_prestacao.texto }}</span></p>{% endif %}
       {# Solicitação e prazo de saque numa linha, como na lista; gravam sozinhos. #}
       <form method="post" action="{% url 'viagens_prestacoes:index' %}" id="form-prestacao-solicitacao" class="pc-docs__solicitacao" data-autosave data-autosave-url="{{ servidor.solicitacao_autosave_url }}" data-autosave-model="prestacao_servidor" data-autosave-id="{{ ps.pk|unlocalize }}">
         {% csrf_token %}<input type="hidden" name="action" value="save_solicitacoes"><input type="hidden" name="next" value="{{ request.path }}">

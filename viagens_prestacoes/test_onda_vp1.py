@@ -200,6 +200,40 @@ class LiberacaoDepoisDoPrazoTests(PrestacaoFixturesMixin, PrestacaoTestCase):
         self.assertContains(resposta, "não pode ser anterior à liberação")
 
 
+class PrazoParaPrestarTests(PrestacaoFixturesMixin, PrestacaoTestCase):
+    """m094: 3 dias úteis depois do FIM DO PRAZO DE SAQUE, contando feriados."""
+
+    def setUp(self):
+        super().setUp()
+        import datetime
+
+        self.D = datetime.date
+        self.setUpPrestacaoFixtures()
+        self.ps = self.criar_prestacao(numero=94, data_liberacao_diarias=self.D(2026, 8, 20)).prestacoes_servidor[0]
+        self.ps.prazo_limite_saque = self.D(2026, 9, 4)
+        self.ps.save()
+
+    def test_prazo_pula_o_sete_de_setembro(self):
+        from .prazos import prazo_para_prestar
+
+        self.assertEqual(prazo_para_prestar(self.D(2026, 9, 4)), self.D(2026, 9, 10))
+
+    def test_selo_faltam_e_vencida(self):
+        from .prazos import selo_da_prestacao
+
+        self.assertIn("faltam 2 dias úteis", selo_da_prestacao(self.ps, hoje=self.D(2026, 9, 8)).texto)
+        vencida = selo_da_prestacao(self.ps, hoje=self.D(2026, 9, 11))
+        self.assertEqual(vencida.tom, "vencido")
+
+    def test_aba_prestacao_vencida(self):
+        from .selectors import listar_prestacoes
+
+        with mock.patch("django.utils.timezone.localdate", return_value=self.D(2026, 9, 11)):
+            self.assertIn(self.ps.pk, set(listar_prestacoes(aba="prestacao_vencida").values_list("pk", flat=True)))
+        with mock.patch("django.utils.timezone.localdate", return_value=self.D(2026, 9, 10)):
+            self.assertNotIn(self.ps.pk, set(listar_prestacoes(aba="prestacao_vencida").values_list("pk", flat=True)))
+
+
 class VersoesAnterioresTests(PrestacaoFixturesMixin, PrestacaoTestCase):
     """m084: remover e substituir guardam o anterior, que se restaura."""
 

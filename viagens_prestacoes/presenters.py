@@ -198,7 +198,11 @@ def _servidor_row(ps, solicitacao_form=None, prestacao_anexos=None, diario_pdf_u
     if solicitacao_form is None:
         solicitacao_form = PrestacaoSolicitacaoForm(instance=ps, prefix=f"ps-{ps.pk}")
 
+    from .prazos import selo_da_prestacao
+    selo_prestacao = selo_da_prestacao(ps)
+
     row = {
+        "selo_prestacao": selo_prestacao,
         "ps_pk": ps.pk,
         "name": servidor.nome,
         "cargo": cargo_nome,

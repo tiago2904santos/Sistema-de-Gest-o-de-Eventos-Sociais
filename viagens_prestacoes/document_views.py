@@ -31,6 +31,7 @@ from .download_services import payload_downloads
 from .services import marcar_servidor_em_preenchimento
 from .services import marcar_servidores_pendentes
 from .services import pendencias_consolidado
+from .prazos import selo_da_prestacao
 from .view_common import (
     _autosave_form_errors,
     _autosave_version,
@@ -234,6 +235,8 @@ def documentos_servidor(request, ps_pk):
             # O fechamento (pacote final, downloads e finalização) virou o fim
             # desta etapa: a tela de PDF final deixou de existir.
             "pendencias": pendencias_consolidado(ps),
+            # m094: 3 dias úteis depois do fim do prazo de saque, contando feriados.
+            "selo_prestacao": selo_da_prestacao(ps),
             "downloads": payload_downloads(ps)["itens"],
             # O modal "Baixar documentos" (o mesmo da lista), no botão de ação do cartão.
             "url_baixar": reverse("viagens_prestacoes:prestacao_baixar", args=[ps.pk]),

@@ -100,13 +100,10 @@ def _data_retorno_oficio(oficio):
 
 
 def _add_dias_uteis(data, quantidade: int):
-    atual = data
-    restantes = quantidade
-    while restantes > 0:
-        atual += timedelta(days=1)
-        if atual.weekday() < 5:
-            restantes -= 1
-    return atual
+    """Dias úteis pulando fins de semana e feriados (m094: `core.feriados`)."""
+    from core.feriados import somar_dias_uteis
+
+    return somar_dias_uteis(data, quantidade)
 
 
 def _data_relatorio_tecnico(oficio):

@@ -52,7 +52,7 @@ def index(request):
     por_pk = {ps.pk: ps for ps in itens.filter(pk__in=ids)}
     contagem = contar_por_aba(**{k:v for k,v in filtros.items() if k != "sort"})
     rotulos = dict(SITUACOES)
-    vazias = {"nao_liberadas": "Nenhum servidor com diárias pendentes de liberação.", "liberadas": "Nenhum servidor com diárias já liberadas.", "arquivados": "Nenhuma prestação de servidor arquivada.", "finalizados": "Nenhuma prestação de servidor finalizada ainda."}
+    vazias = {"nao_liberadas": "Nenhum servidor com diárias pendentes de liberação.", "liberadas": "Nenhum servidor com diárias já liberadas.", "arquivados": "Nenhuma prestação de servidor arquivada.", "finalizados": "Nenhuma prestação de servidor finalizada ainda.", "prestacao_vencida": "Nenhuma prestação com o prazo vencido."}
     configuracao = get_configuracao_sistema()
     cards = [cartao_da_lista(por_pk[pk], configuracao=configuracao) for pk in ids]
     grupos = {}
@@ -82,7 +82,7 @@ def index(request):
             destino["aba"] = aba
         return "?" + destino.urlencode()
 
-    icones = {"nao_liberadas": "hourglass", "liberadas": "check-circle", "arquivados": "lock", "finalizados": "checklist"}
+    icones = {"nao_liberadas": "hourglass", "liberadas": "check-circle", "arquivados": "lock", "finalizados": "checklist", "prestacao_vencida": "alert"}
     total = listar_prestacoes(**{k: v for k, v in filtros.items() if k != "sort"}).count()
     situacoes = [{"slug": "todas", "titulo": "Todas", "total": total, "icone": "chart", "url": url_da_aba()}] + [
         {"slug": chave, "titulo": rotulo, "total": contagem[chave], "icone": icones[chave], "url": url_da_aba(chave)}

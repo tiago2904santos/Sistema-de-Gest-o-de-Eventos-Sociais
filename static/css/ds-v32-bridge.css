@@ -2952,3 +2952,9 @@ tr[data-importar-url].is-alvo>td:first-child{box-shadow:inset 2px 0 0 var(--sel-
 .pc-doc__versoes li{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .pc-doc__versoes form{display:inline}
 .pc-doc__remover.is-armado{width:auto;padding:0 6px;font-size:12px;background:var(--dg-b);color:var(--dg-t)}
+/* m085/m094: selos de prazo (saque e prestação de contas) na lista e na Etapa 3. */
+.st--pc-prazo-ok{background:var(--nt-b);color:var(--n-600);border:1px solid var(--nt-r)}
+.st--pc-prazo-alerta{background:var(--wn-b);color:var(--wn-t);border:1px solid var(--wn-r)}
+.st--pc-prazo-vencido{background:var(--dg-b);color:var(--dg-t);border:1px solid var(--dg-r)}
+.st--pc-prazo-ok .ui-icon,.st--pc-prazo-alerta .ui-icon,.st--pc-prazo-vencido .ui-icon{width:12px;height:12px;margin-right:4px}
+.pc-docs__prazo{margin:0 0 12px}

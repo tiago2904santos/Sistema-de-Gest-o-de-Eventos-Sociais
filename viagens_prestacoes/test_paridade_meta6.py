@@ -47,7 +47,7 @@ class ListaPrestacoesTests(CenarioPrestacoes):
                       'class="st st--pc-pendente">Pendente', 'placeholder="0000000"']:
             self.assertContains(r, texto)
         self.assertEqual({g["slug"]: g["total"] for g in r.context["situacoes"]},
-                         {"todas": 2, "nao_liberadas": 2, "liberadas": 0, "arquivados": 0, "finalizados": 0})
+                         {"todas": 2, "nao_liberadas": 2, "liberadas": 0, "arquivados": 0, "finalizados": 0, "prestacao_vencida": 0})
         self.assertContains(r, reverse("viagens_prestacoes:diario_servidor", args=[self.ps_janine.pk]))
         # Finalizar e arquivar são da prestação do ofício (a equipe toda), no menu da linha do ofício.
         self.assertContains(r, reverse("viagens_prestacoes:prestacao_equipe_acao", args=[self.fixture.prestacao.pk, "finalizar"]))

@@ -24,6 +24,7 @@ SITUACOES = [
     ("liberadas", "Liberadas"),
     ("arquivados", "Arquivados"),
     ("finalizados", "Finalizados"),
+    ("prestacao_vencida", "Prestação vencida"),
 ]
 
 TITULOS_DOWNLOAD = {"oficio": "Ofício", "despacho": "Despacho", "diario": "Diário de bordo", "rt": "Relatório técnico", "comprovante": "Comprovante"}
