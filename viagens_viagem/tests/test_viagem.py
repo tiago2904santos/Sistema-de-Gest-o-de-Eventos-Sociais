@@ -159,8 +159,17 @@ class CriarEPainelTests(CenarioViagem):
         self.assertContains(r, "aviso--erro")
 
     def test_stepper_marca_concluidas(self):
+        from decimal import Decimal
+
         v = self.viagem()
-        Roteiro.objects.create(origem_municipio=self.sede, viagem=v)
+        roteiro = Roteiro.objects.create(origem_municipio=self.sede, viagem=v)
+        # m066: roteiro sem saída, destino e diárias existe, mas não está concluído.
+        r = self.client.get(self.etapa(v, 3))
+        self.assertFalse({e["numero"]: e for e in r.context["etapas"]}[2]["concluida"])
+        roteiro.saida_dt = timezone.make_aware(datetime(2026, 10, 5, 8, 0))
+        roteiro.valor_diarias = Decimal("100.00")
+        roteiro.save()
+        RoteiroDestino.objects.create(roteiro=roteiro, municipio=self.londrina)
         r = self.client.get(self.etapa(v, 3))
         etapas = {e["numero"]: e for e in r.context["etapas"]}
         self.assertTrue(etapas[1]["concluida"])

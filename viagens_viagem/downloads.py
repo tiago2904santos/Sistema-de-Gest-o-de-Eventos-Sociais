@@ -27,7 +27,8 @@ def itens_para_baixar(viagem):
 
     from viagens_oficios.presenters import artefatos_pdf_por_oficio, documentos_do_oficio
     from viagens_ordens.presenters import artefatos_pdf_por_ordem
-    from viagens_planos.services import avaliar_pendencias_documento
+    from documentos.services.assinados import versao_assinada_vigente
+    from viagens_planos.services import avaliar_pendencias_documento, referencia_do_plano
     from viagens_termos.presenters import artefatos_pdf_por_termo, documentos_do_termo
 
     itens = []
@@ -44,8 +45,10 @@ def itens_para_baixar(viagem):
     for plano in viagem.planos_trabalho.filter(cancelado=False).order_by("criado_em"):
         if avaliar_pendencias_documento(plano):
             continue
+        assinado = versao_assinada_vigente(
+            DocumentoTipo.PLANO_TRABALHO, plano_trabalho_id=plano.pk, reference=referencia_do_plano(plano)) is not None
         itens.append({"valor": f"pt-{plano.pk}", "nome": f"Plano de Trabalho {plano.numero_formatado}",
-                      "detalhe": "Plano de trabalho", "estado": "", "assinado": False})
+                      "detalhe": "Plano de trabalho", "estado": "Assinado" if assinado else "", "assinado": assinado})
 
     ordens = list(viagem.ordens_servico.filter(cancelado=False).order_by("criado_em"))
     artefatos = artefatos_pdf_por_ordem(ordens)

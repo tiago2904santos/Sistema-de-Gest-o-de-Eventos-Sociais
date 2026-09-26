@@ -89,3 +89,15 @@
 .vg-gerar__opcoes .form-label{display:flex;gap:8px;align-items:flex-start;font-weight:400}
 .vg-gerar__contador--falta{color:var(--wn-t)}
 .vg-gerar__fim{display:flex;justify-content:flex-end;margin:16px 0}
+
+/* ---------- O que falta (m066): semáforo por etapa ---------------------- */
+.vg-prontidao{margin:0 0 16px;padding:12px 16px}
+.vg-prontidao__resumo{cursor:pointer;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.vg-prontidao__etapas{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
+.vg-prontidao__etapa{display:flex;gap:10px;align-items:flex-start}
+.vg-prontidao__sinal{flex:none;display:inline-flex;width:22px;height:22px;border-radius:50%;align-items:center;justify-content:center}
+.vg-prontidao__etapa.is-ok .vg-prontidao__sinal{background:var(--ok-b);color:var(--ok-t)}
+.vg-prontidao__etapa.is-falta .vg-prontidao__sinal{background:var(--wn-b);color:var(--wn-t)}
+.vg-prontidao__sinal svg{width:14px;height:14px}
+.vg-prontidao__itens{margin:4px 0 0;padding-left:18px}
+.vg-prontidao__corpo{min-width:0;overflow-wrap:anywhere}

@@ -218,6 +218,10 @@ def etapa(request, pk, etapa):
     elif request.method == "POST":
         raise Http404
     selo, tom = selo_situacao(viagem)
+    # O que falta, etapa por etapa (m066): o quadro do painel e o "Concluída" do stepper.
+    from .prontidao import etapas_do_painel_prontas, quadro_de_prontidao
+
+    prontidao = None if viagem.cancelado else quadro_de_prontidao(viagem)
     contexto = {
         "viagem": viagem, "titulo": titulo_da_viagem(viagem), "selo": selo, "selo_tom": tom,
         "pode_editar": pode_editar_cadastros(request.user), "url_atual": daqui(request),
@@ -228,7 +232,8 @@ def etapa(request, pk, etapa):
         # A equipe, o motorista ou a viatura dos ofícios já estão em outro
         # compromisso no mesmo horário (core/conflitos.py): só aviso.
         "conflitos": [] if viagem.cancelado else conflitos_da_viagem(viagem),
-        **contexto_das_etapas(viagem, etapa),
+        "prontidao": prontidao,
+        **contexto_das_etapas(viagem, etapa, etapas_do_painel_prontas(prontidao) if prontidao else None),
     }
     if contexto["pode_editar"] and not viagem.cancelado:
         import json
