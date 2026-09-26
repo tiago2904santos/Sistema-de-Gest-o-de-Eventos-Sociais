@@ -671,7 +671,13 @@ def _queryset_filtrado(request):
                 | Q(local_evento__icontains=termo)
                 | Q(municipio__nome__icontains=termo)
                 | Q(protocolo__icontains=termo)
+                | Q(tipo_evento__nome__icontains=termo)
+                | Q(orgao_responsavel__nome__icontains=termo)
             )
+            # "#123" ou "123": o número da solicitação.
+            numero_solicitacao = termo.strip().lstrip("#").strip()
+            if numero_solicitacao.isdigit() and len(numero_solicitacao) <= 9:
+                condicao |= Q(pk=int(numero_solicitacao))
             # O número digitado sem pontos também acha o protocolo.
             numero = formatar_numero(termo)
             if numero:
@@ -758,6 +764,33 @@ def _filtros_ativos(request, filtros, fila, filas_da_trilha):
 # período ou a situação que vieram do Dashboard.
 CAMPOS_OCULTOS_NA_BUSCA = ["status", "municipio", "tipo_evento", "inicio", "fim", "ordem"]
 
+# Os campos do painel "Filtros"; o resto da querystring vai escondido nele.
+CAMPOS_DO_PAINEL = ["inicio", "fim", "municipio", "tipo_evento"]
+
+
+def _painel_filtros(request, filtros):
+    """O painel recolhível de período, município e tipo, pronto para a tela."""
+    valores = {nome: request.GET.get(nome, "") for nome in CAMPOS_DO_PAINEL}
+    total = sum(1 for valor in valores.values() if valor)
+    ocultos = [
+        {"nome": nome, "valor": valor}
+        for nome, valor in request.GET.items()
+        if nome not in CAMPOS_DO_PAINEL and nome != "pagina" and valor
+    ]
+    limpar = request.GET.copy()
+    for nome in [*CAMPOS_DO_PAINEL, "pagina"]:
+        limpar.pop(nome, None)
+    consulta = limpar.urlencode()
+    return {
+        "valores": valores,
+        "total": total,
+        "aberto": bool(total),
+        "ocultos": ocultos,
+        "url_limpar": f"?{consulta}" if consulta else "?",
+        "municipios": _opcoes(filtros.fields["municipio"].queryset),
+        "tipos": _opcoes(filtros.fields["tipo_evento"].queryset.order_by("nome")),
+    }
+
 
 @login_required
 def lista_solicitacoes(request):
@@ -806,6 +839,8 @@ def lista_solicitacoes(request):
             ),
             "paginas_visiveis": paginas_visiveis,
             "elipse": Paginator.ELLIPSIS,
+            "painel": _painel_filtros(request, filtros),
+            "url_exportar": reverse("solicitacoes:exportar"),
             "linhas": [
                 linha_da_lista(s, permissions.acoes_permitidas(request.user, s))
                 for s in pagina
@@ -814,78 +849,140 @@ def lista_solicitacoes(request):
     )
 
 
-@login_required
-def exportar_solicitacoes(request):
-    """Exporta a listagem filtrada em CSV legível pelo Excel (pt-BR)."""
-    import csv
+COLUNAS_EXPORTACAO = [
+    ("Nº", 8), ("Status", 22), ("Data da solicitação", 14), ("Início do evento", 14),
+    ("Fim do evento", 14), ("Município", 22), ("Região", 18), ("Tipo de evento", 24),
+    ("Local", 30), ("Protocolo", 14), ("Solicitante", 28), ("Cargo / unidade", 28),
+    ("Contato", 16), ("Órgão responsável", 24), ("Serviços", 36),
+    ("Equipes (servidores)", 36), ("Total de servidores", 12), ("Tipo de operação", 14),
+    ("Unidade móvel", 10), ("Qtde CIN", 10), ("Motorista", 22), ("Decisão DG", 16),
+    ("Observações DG", 40), ("Decidido por", 20), ("Decidido em", 17), ("Criado por", 20),
+]
+# Colunas de data (índice a partir de 0) e a data/hora da decisão.
+COLUNAS_DATA = {2, 3, 4}
+COLUNA_DATA_HORA = 24
 
-    from django.http import HttpResponse
+
+def _linhas_exportacao(queryset):
+    """Uma linha por solicitação, nos tipos de verdade (data é data, número é número)."""
     from django.utils import timezone as tz
-
-    queryset, _base, _filtros, _fila = _queryset_filtrado(request)
-    queryset = queryset.select_related(
-        "orgao_responsavel", "motorista", "decidido_por"
-    ).prefetch_related("servicos", "itens_equipe__equipe")
-
-    hoje = tz.localdate().strftime("%Y-%m-%d")
-    resposta = HttpResponse(content_type="text/csv; charset=utf-8")
-    resposta["Content-Disposition"] = (
-        f'attachment; filename="solicitacoes-{hoje}.csv"'
-    )
-    # BOM para o Excel reconhecer UTF-8; ponto e vírgula para o Excel pt-BR.
-    resposta.write("﻿")
-    escritor = csv.writer(resposta, delimiter=";", lineterminator="\r\n")
-    escritor.writerow([
-        "Nº", "Status", "Data da solicitação", "Início do evento", "Fim do evento",
-        "Município", "Região", "Tipo de evento", "Local", "Protocolo", "Solicitante",
-        "Cargo / unidade", "Contato", "Órgão responsável", "Serviços",
-        "Equipes (servidores)", "Total de servidores", "Tipo de operação",
-        "Unidade móvel", "Qtde CIN", "Motorista",
-        "Decisão DG", "Observações DG", "Decidido por", "Decidido em",
-        "Criado por",
-    ])
-
-    def data(valor, formato="%d/%m/%Y"):
-        if not valor:
-            return ""
-        if hasattr(valor, "astimezone"):
-            valor = tz.localtime(valor)
-        return valor.strftime(formato)
 
     for s in queryset:
         equipes = "; ".join(
             f"{item.equipe} ({item.quantidade_servidores or '-'})"
             for item in s.itens_equipe.all()
         )
-        escritor.writerow([
+        yield [
             s.pk,
             s.get_status_display(),
-            data(s.data_solicitacao),
-            data(s.data_inicio_evento),
-            data(s.data_fim_evento),
-            s.municipio or "",
-            s.regiao or "",
-            s.tipo_evento or "",
+            s.data_solicitacao,
+            s.data_inicio_evento,
+            s.data_fim_evento,
+            str(s.municipio or ""),
+            str(s.regiao or ""),
+            str(s.tipo_evento or ""),
             s.local_evento,
             s.protocolo,
             s.solicitante_nome,
             s.solicitante_cargo_unidade,
             s.contato,
-            s.orgao_responsavel or "",
+            str(s.orgao_responsavel or ""),
             "; ".join(str(servico) for servico in s.servicos.all()),
             equipes,
-            s.quantidade_servidores or "",
+            s.quantidade_servidores,
             s.get_tipo_operacao_display() if s.tipo_operacao else "",
             "Sim" if s.unidade_movel else "Não",
-            s.quantidade_cin or "",
-            s.motorista or "",
+            s.quantidade_cin,
+            str(s.motorista or ""),
             s.get_decisao_dg_display(),
             s.observacoes_dg,
-            s.decidido_por or "",
-            data(s.decidido_em, "%d/%m/%Y %H:%M"),
-            s.criado_por,
+            str(s.decidido_por or ""),
+            tz.localtime(s.decidido_em).replace(tzinfo=None) if s.decidido_em else None,
+            str(s.criado_por),
+        ]
+
+
+def _exportar_csv(linhas, nome):
+    import csv
+
+    from django.http import HttpResponse
+
+    resposta = HttpResponse(content_type="text/csv; charset=utf-8")
+    resposta["Content-Disposition"] = f'attachment; filename="{nome}.csv"'
+    # BOM para o Excel reconhecer UTF-8; ponto e vírgula para o Excel pt-BR.
+    resposta.write("\ufeff")
+    escritor = csv.writer(resposta, delimiter=";", lineterminator="\r\n")
+    escritor.writerow([titulo for titulo, _largura in COLUNAS_EXPORTACAO])
+    for linha in linhas:
+        escritor.writerow([
+            ""
+            if valor is None
+            else valor.strftime("%d/%m/%Y %H:%M" if indice == COLUNA_DATA_HORA else "%d/%m/%Y")
+            if hasattr(valor, "strftime")
+            else valor
+            for indice, valor in enumerate(linha)
         ])
     return resposta
+
+
+def _exportar_xlsx(linhas, nome):
+    """Planilha formatada: cabeçalho fixo com filtro, datas como datas."""
+    from io import BytesIO
+
+    from django.http import HttpResponse
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    livro = Workbook()
+    aba = livro.active
+    aba.title = "Solicitações"
+    aba.append([titulo for titulo, _largura in COLUNAS_EXPORTACAO])
+    for celula in aba[1]:
+        celula.font = Font(bold=True)
+        celula.fill = PatternFill("solid", fgColor="D1D3D4")
+        celula.alignment = Alignment(vertical="center", wrap_text=True)
+    for linha in linhas:
+        aba.append(linha)
+        # Texto que começa com "=" viraria fórmula: fica texto.
+        for celula in aba[aba.max_row]:
+            if celula.data_type == "f":
+                celula.data_type = "s"
+    for indice, (_titulo, largura) in enumerate(COLUNAS_EXPORTACAO):
+        letra = get_column_letter(indice + 1)
+        aba.column_dimensions[letra].width = largura
+        if indice in COLUNAS_DATA or indice == COLUNA_DATA_HORA:
+            formato = "DD/MM/YYYY HH:MM" if indice == COLUNA_DATA_HORA else "DD/MM/YYYY"
+            for (celula,) in aba.iter_rows(min_row=2, min_col=indice + 1, max_col=indice + 1):
+                celula.number_format = formato
+    aba.freeze_panes = "B2"
+    aba.auto_filter.ref = aba.dimensions
+    saida = BytesIO()
+    livro.save(saida)
+    resposta = HttpResponse(
+        saida.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    resposta["Content-Disposition"] = f'attachment; filename="{nome}.xlsx"'
+    return resposta
+
+
+@login_required
+def exportar_solicitacoes(request):
+    """Exporta a lista com a fila, a busca e os filtros da tela.
+
+    Sai em .xlsx formatado; `?formato=csv` mantém o CSV de antes (links e
+    rotinas que já o usavam).
+    """
+    queryset, _base, _filtros, _fila = _queryset_filtrado(request)
+    queryset = queryset.select_related(
+        "orgao_responsavel", "motorista", "decidido_por"
+    ).prefetch_related("servicos", "itens_equipe__equipe")
+    nome = f"solicitacoes-{timezone.localdate():%Y-%m-%d}"
+    linhas = _linhas_exportacao(queryset)
+    if request.GET.get("formato") == "csv":
+        return _exportar_csv(linhas, nome)
+    return _exportar_xlsx(linhas, nome)
 
 
 DECISOES_DG = [

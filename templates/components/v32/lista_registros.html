@@ -20,6 +20,13 @@
   linha, como nas listas de Viagens. O contexto da página (`q`, `pagina`,
   `paginas_visiveis`, `elipse`, `querystring`, `tem_filtros`) continua valendo
   dentro dos trechos incluídos.
+
+  Opcionais:
+    `url_exportar`: botão "Exportar planilha" ao lado da busca; leva a
+      querystring da tela (fila, busca, filtros), então a planilha sai com o
+      mesmo recorte da lista.
+    `painel_filtros`: caminho de um trecho com o painel "Filtros" recolhível,
+      logo abaixo da barra (formulário próprio: não cabe dentro da busca).
 {% endcomment %}
 <div class="pa-card pa-card--lista cad-lista">
   {# A busca é do servidor (precisa achar o registro da página 3): envia 1 s depois de digitar. #}
@@ -33,7 +40,11 @@
       <label class="sr-only" for="id_q">Buscar {{ rotulo_plural }}</label>
       <input type="search" name="q" id="id_q" value="{{ q }}" placeholder="{{ placeholder_busca }}" autocomplete="off">
     </div>
+    {% if url_exportar %}
+      <a class="btn--secundaria btn--compacto" href="{{ url_exportar }}{% if querystring %}?{{ querystring }}{% endif %}" data-exportar-planilha title="Baixa a planilha com a fila, a busca e os filtros desta tela">{% include "components/icon.html" with nome="download" %}Exportar planilha</a>
+    {% endif %}
   </form>
+  {% if painel_filtros %}{% include painel_filtros %}{% endif %}
 
   {% if filtros_ativos %}
     {# Filtro que a trilha não mostra fica à vista, com o "x" que o tira. #}

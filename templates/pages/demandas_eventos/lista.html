@@ -26,7 +26,8 @@
       {% include "components/v32/cad_rail.html" with grupos=tipos_evento slug_ativo=evento_ativo rail_rotulo="Evento" rail_titulo="Evento" %}
     </div>
 
-    {% include "components/v32/lista_registros.html" with icone="document" rotulo="Palestra" rotulo_plural="palestras" conteudo_linha="pages/demandas_eventos/_conteudo_linha.html" acoes_linha="pages/demandas_eventos/_acoes_linha.html" placeholder_busca="Buscar por município, solicitante, servidor, tema…" filtro_nome="status" filtro_valor=status vazio="Nenhuma palestra registrada ainda." vazio_filtrado="Nada encontrado com os filtros aplicados." %}
+    {% url 'demandas_eventos:exportar' as url_exportar %}
+    {% include "components/v32/lista_registros.html" with url_exportar=url_exportar icone="document" rotulo="Palestra" rotulo_plural="palestras" conteudo_linha="pages/demandas_eventos/_conteudo_linha.html" acoes_linha="pages/demandas_eventos/_acoes_linha.html" placeholder_busca="Buscar por município, solicitante, servidor, tema…" filtro_nome="status" filtro_valor=status vazio="Nenhuma palestra registrada ainda." vazio_filtrado="Nada encontrado com os filtros aplicados." %}
   </div>
   {# O andamento abre em modal a partir do menu ⋮ de cada linha. #}
   <dialog class="mo v32-cadastro-modal v32-cadastro-modal--larga" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{% url 'demandas_eventos:lista' %}"></dialog>
