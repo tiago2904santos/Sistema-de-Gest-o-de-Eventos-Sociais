@@ -98,6 +98,10 @@ class PrestacaoServidor(OrigemLegado):
     decidida_em = models.DateTimeField('Aprovada ou devolvida em', null=True, blank=True)
     motivo_devolucao = models.TextField('Motivo da devolução', blank=True, default='')
     removida_em = models.DateTimeField('Removida da equipe em', null=True, blank=True)
+    #: m099: ajuste manual do pacote final — ordem, giro e páginas ocultas. Vale só
+    #: enquanto a `assinatura` (documentos e número de páginas) bater; mudou um
+    #: anexo, o ajuste é descartado. Formato em `services.aplicar_ajuste_do_pacote`.
+    ajuste_pacote = models.JSONField('Ajuste manual do pacote final', default=dict, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
     objects = PrestacaoServidorAtivosManager()

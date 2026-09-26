@@ -1,0 +1,41 @@
+{% extends "pages/viagens_prestacoes/base.html" %}{% load static %}
+{% comment %}
+  m099 — Revisar o pacote final página por página. As miniaturas de todas as
+  páginas, na ordem oficial (ofício, despacho, RT, diário, comprovantes) ou na
+  do ajuste já gravado, com o documento de cada uma. Arrastar muda a ordem
+  (‹ › fazem o mesmo pelo teclado), ↻ gira 90° e "Ocultar" tira a página do
+  pacote. O ajuste vale até um anexo mudar; "Voltar à ordem oficial" descarta.
+{% endcomment %}
+{% block pc_salvar_topo %}
+  <button type="submit" class="btn-primaria" form="pacote-form">Salvar ajuste</button>
+{% endblock %}
+{% block prestacao_conteudo %}
+<div class="editor-roteiro pc-diario pc-pacote">
+  <section class="section-card reg">
+    <header class="section-card__cabecalho reg__t">
+      <span class="section-card__numero reg-numero" aria-hidden="true">3</span>
+      <div class="section-card__identificacao"><h2 class="section-card__titulo">Revisar pacote final</h2></div>
+      <div class="section-card__acao">{% if ajustado %}<span class="st st--aguardando">Ajustado manualmente</span>{% endif %}</div>
+    </header>
+    <div class="section-card__corpo">
+      <p class="pc-pacote__nota">Arraste as páginas para mudar a ordem (ou use ‹ ›), gire com ↻ e oculte o que não deve ir, como uma folha em branco. {{ mapa|length }} documento{{ mapa|length|pluralize }} no pacote. O ajuste vale até um anexo mudar.</p>
+      <form method="post" id="pacote-form" data-pacote-revisar data-pdf-url="{{ pdf_url }}" data-worker-src="{% static 'vendor/pdfjs/pdf.worker.min.js' %}">
+        {% csrf_token %}
+        <input type="hidden" name="assinatura" value="{{ assinatura }}">
+        <input type="hidden" name="paginas" value="" data-pacote-paginas>
+        <div class="pc-pacote__grade" data-pacote-grade aria-live="polite"></div>
+        <noscript><p class="pc-pacote__nota">A revisão página por página precisa de JavaScript.</p></noscript>
+      </form>
+      <div class="frm-acoes-fim">
+        <a class="btn--secundaria" href="{{ documentos_url }}">Voltar</a>
+        {% if ajustado %}
+          <form method="post" data-confirmar="Descartar o ajuste e voltar à ordem oficial?">{% csrf_token %}<input type="hidden" name="acao" value="descartar"><button type="submit" class="btn--secundaria">Voltar à ordem oficial</button></form>
+        {% endif %}
+        <button type="submit" class="btn-primaria" form="pacote-form">Salvar ajuste</button>
+      </div>
+    </div>
+  </section>
+</div>
+{{ estado|json_script:"pacote-estado" }}
+{% endblock %}
+{% block pc_js %}<script src="{% static 'vendor/pdfjs/pdf.min.js' %}"></script><script src="{% static 'js/pages/prestacoes-pacote.js' %}" defer></script>{% endblock %}

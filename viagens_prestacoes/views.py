@@ -17,6 +17,7 @@ from .diario_views import *
 from .document_views import *
 from .download_views import *
 from .model_views import *
+from .pacote_views import *
 
 
 def _redirect_lista(request, _obj=None):

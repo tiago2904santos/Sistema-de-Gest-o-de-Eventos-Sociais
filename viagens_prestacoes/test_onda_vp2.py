@@ -3,6 +3,11 @@ from __future__ import annotations
 
 import json
 from decimal import Decimal
+from io import BytesIO
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
+from pypdf import PdfReader
 
 from django.urls import reverse
 
@@ -10,8 +15,14 @@ from cadastros.models import Estado, Municipio, Regiao
 from viagens_prestacoes.models import DiarioBordo
 from viagens_roteiros.models import DistanciaMunicipios, Roteiro, RoteiroTrecho
 
-from .test_helpers import PrestacaoFixturesMixin
+from .models import PrestacaoDocumentoAnexo as Anexo
+from .services import gerar_prestacao_consolidado_pdf
+from .test_helpers import PrestacaoFixturesMixin, pdf_minimo
 from .test_helpers import PrestacaoTestCase as TestCase
+
+
+def _textos(pdf: bytes) -> list[str]:
+    return [(p.extract_text() or "").strip() for p in PdfReader(BytesIO(pdf)).pages]
 
 
 class HodometroDoDiarioTests(PrestacaoFixturesMixin, TestCase):
@@ -338,3 +349,83 @@ class PainelDePendenciasTests(PrestacaoFixturesMixin, TestCase):
         self.assertEqual(len(linhas), 2)
         self.assertEqual(linhas[1][1], self.sem_nada.oficio.numero_formatado)
         self.assertIn("número da solicitação", linhas[1][10])
+
+
+@override_settings(OCR_ATIVO=False)
+class RevisarPacoteTests(PrestacaoFixturesMixin, TestCase):
+    """m099: reordenar, girar e ocultar páginas do pacote final, descartado quando os anexos mudam."""
+
+    def setUp(self):
+        super().setUp()
+        self.setUpPrestacaoFixtures()
+        self.fixture = self.criar_prestacao(numero=901)
+        self.pc = self.fixture.prestacao
+        self.ps = self.fixture.prestacoes_servidor[0]
+        self.ps.numero_solicitacao = "SOL-901"
+        self.ps.save(update_fields=["numero_solicitacao"])
+        for tipo, texto, individual in (
+            (Anexo.TIPO_OFICIO_ASSINADO, "OFICIO", False),
+            (Anexo.TIPO_DESPACHO, "DESPACHO", False),
+            (Anexo.TIPO_RT_ASSINADO, "RELATORIO", True),
+            (Anexo.TIPO_DB_ASSINADO, "DIARIO", False),
+            (Anexo.TIPO_COMPROVANTE, "COMPROVANTE", True),
+        ):
+            self.anexar(tipo, texto, individual=individual)
+
+    def anexar(self, tipo, texto, *, individual=False):
+        return Anexo.objects.create(
+            prestacao=self.pc, servidor_prestacao=self.ps if individual else None, tipo=tipo,
+            arquivo=SimpleUploadedFile(f"{texto}.pdf", pdf_minimo(texto)), nome_original=f"{texto}.pdf",
+        )
+
+    def tela(self):
+        return self.client.get(reverse("viagens_prestacoes:pacote_revisar", args=[self.ps.pk]))
+
+    def salvar(self, paginas, assinatura=None):
+        assinatura = assinatura or self.tela().context["assinatura"]
+        return self.client.post(
+            reverse("viagens_prestacoes:pacote_revisar", args=[self.ps.pk]),
+            {"assinatura": assinatura, "paginas": json.dumps(paginas)},
+        )
+
+    def test_tela_mostra_as_paginas_na_ordem_oficial(self):
+        resposta = self.tela()
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual([p[:2] for p in resposta.context["estado"]["paginas"]], [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]])
+        self.assertContains(resposta, 'id="pacote-estado"')
+        pdf = self.client.get(reverse("viagens_prestacoes:pacote_revisar_pdf", args=[self.ps.pk]))
+        self.assertEqual(_textos(pdf.content), ["OFICIO", "DESPACHO", "RELATORIO", "DIARIO", "COMPROVANTE"])
+
+    def test_ajuste_reordena_gira_e_oculta(self):
+        resposta = self.salvar([[1, 0, 0, False], [0, 0, 90, False], [2, 0, 0, True], [3, 0, 0, False], [4, 0, 0, False]])
+        self.assertEqual(resposta.status_code, 302)
+        self.ps.refresh_from_db()
+        self.assertTrue(self.ps.ajuste_pacote)
+        pdf = gerar_prestacao_consolidado_pdf(self.ps)
+        self.assertEqual(_textos(pdf), ["DESPACHO", "OFICIO", "DIARIO", "COMPROVANTE"])
+        self.assertEqual(PdfReader(BytesIO(pdf)).pages[1].rotation, 90)
+        # A Etapa 3 avisa que o pacote foi ajustado à mão.
+        etapa = self.client.get(reverse("viagens_prestacoes:documentos_servidor", args=[self.ps.pk]))
+        self.assertContains(etapa, "Pacote ajustado manualmente")
+
+    def test_mudar_um_anexo_descarta_o_ajuste(self):
+        self.salvar([[1, 0, 0, False], [0, 0, 0, False], [2, 0, 0, False], [3, 0, 0, False], [4, 0, 0, False]])
+        self.ps.refresh_from_db()
+        self.assertTrue(self.ps.ajuste_pacote)
+        self.anexar(Anexo.TIPO_COMPROVANTE, "COMPROVANTE-2", individual=True)
+        self.ps.refresh_from_db()
+        self.assertEqual(self.ps.ajuste_pacote, {})
+        self.assertEqual(_textos(gerar_prestacao_consolidado_pdf(self.ps))[:2], ["OFICIO", "DESPACHO"])
+
+    def test_ajuste_invalido_ou_desatualizado_e_recusado(self):
+        self.salvar([[0, 0, 0, False]])  # faltam páginas
+        self.salvar([[i, 0, 0, False] for i in range(5)], assinatura="outra")
+        self.salvar([[i, 0, 0, True] for i in range(5)])  # tudo oculto
+        self.ps.refresh_from_db()
+        self.assertEqual(self.ps.ajuste_pacote, {})
+
+    def test_descartar_volta_a_ordem_oficial(self):
+        self.salvar([[1, 0, 0, False], [0, 0, 0, False], [2, 0, 0, False], [3, 0, 0, False], [4, 0, 0, False]])
+        self.client.post(reverse("viagens_prestacoes:pacote_revisar", args=[self.ps.pk]), {"acao": "descartar"})
+        self.ps.refresh_from_db()
+        self.assertEqual(self.ps.ajuste_pacote, {})

@@ -569,12 +569,22 @@ def _append_pdf(writer, pdf_bytes: bytes, label: str) -> None:
         raise DocumentValidationError(f"Não foi possível ler o PDF de {label}.") from exc
 
 
-def _merge_pdf_parts(parts: list[tuple[str, bytes]]) -> bytes:
+def _merge_pdf_parts(parts: list[tuple[str, bytes]], ajuste=None) -> bytes:
+    """Junta as partes; com `ajuste` (m099), na ordem, no giro e sem as páginas ocultas dele."""
     from pypdf import PdfWriter
 
     writer = PdfWriter()
-    for label, content in parts:
-        _append_pdf(writer, content, label)
+    if ajuste:
+        leitores = [_leitor_pdf(content, label) for label, content in parts]
+        for parte, pagina, giro, oculta in ajuste:
+            if oculta:
+                continue
+            adicionada = writer.add_page(leitores[parte].pages[pagina])
+            if giro:
+                adicionada.rotate(giro)
+    else:
+        for label, content in parts:
+            _append_pdf(writer, content, label)
     output = BytesIO()
     writer.write(output)
     writer.close()
@@ -713,13 +723,24 @@ def divergencia_dos_comprovantes(servidor_prestacao) -> tuple[Decimal, Decimal] 
 
 
 @track_document_generation("prestacao_gerar_consolidado_pdf")
-def gerar_prestacao_consolidado_pdf(servidor_prestacao) -> bytes:
+def gerar_prestacao_consolidado_pdf(servidor_prestacao, *, com_ajuste=True) -> bytes:
     """Pacote final de um servidor: ofício + despacho (compartilhados) + RT do
     servidor + diário (compartilhado) + comprovante do servidor.
 
     Quando os documentos assinados foram anexados na Etapa 3 (RT assinado do
     servidor e diário de bordo assinado do motorista), eles têm prioridade sobre
-    a versão gerada/assinada eletronicamente pelo sistema."""
+    a versão gerada/assinada eletronicamente pelo sistema.
+
+    m099: o ajuste manual da revisão página por página (ordem, giro, ocultas) é
+    aplicado quando ainda descreve os mesmos documentos; `com_ajuste=False` dá o
+    pacote na ordem oficial, que é o que a tela de revisão mostra para ajustar."""
+    partes = partes_do_pacote(servidor_prestacao)
+    ajuste = ajuste_valido(servidor_prestacao, partes) if com_ajuste else None
+    return _merge_pdf_parts(partes, ajuste=ajuste)
+
+
+def partes_do_pacote(servidor_prestacao) -> list[tuple[str, bytes]]:
+    """Os documentos do pacote final, na ordem oficial, cada um em PDF (rótulo, bytes)."""
     prestacao = servidor_prestacao.prestacao
 
     # Uma lista só para as duas pontas: o que o fechamento mostra é exatamente o que
@@ -785,7 +806,115 @@ def gerar_prestacao_consolidado_pdf(servidor_prestacao) -> bytes:
         PrestacaoDocumentoAnexo.TIPO_DB_ASSINADO: db_parts,
         PrestacaoDocumentoAnexo.TIPO_COMPROVANTE: comprovante_parts,
     }
-    return _merge_pdf_parts([parte for tipo in ORDEM_DOCUMENTOS_PRESTACAO for parte in montadores[tipo]()])
+    return [parte for tipo in ORDEM_DOCUMENTOS_PRESTACAO for parte in montadores[tipo]()]
+
+
+# ---------------------------------------------------------------------------
+# m099 — revisar o pacote final página por página.
+#
+# O ajuste guarda a ordem final das páginas como pares (documento, página) da
+# ordem oficial, com o giro somado e se a página fica de fora:
+#
+#     {"assinatura": "<sha256>", "paginas": [[parte, pagina, giro, oculta], ...]}
+#
+# A assinatura resume os documentos (rótulo e número de páginas de cada um):
+# mudou um anexo ou o RT gerado ganhou uma página, o ajuste deixa de valer
+# sozinho — e o sinal de anexo já o apaga ao gravar (`signals.py`).
+# ---------------------------------------------------------------------------
+
+GIROS_VALIDOS = (0, 90, 180, 270)
+
+
+def _leitor_pdf(conteudo: bytes, rotulo: str):
+    from pypdf import PdfReader
+
+    try:
+        leitor = PdfReader(BytesIO(conteudo))
+        if getattr(leitor, "is_encrypted", False):
+            leitor.decrypt("")
+        return leitor
+    except Exception as exc:
+        raise DocumentValidationError(f"Não foi possível ler o PDF de {rotulo}.") from exc
+
+
+def mapa_do_pacote(partes) -> list[dict]:
+    """Um item por documento do pacote: rótulo e quantas páginas tem."""
+    return [
+        {"parte": indice, "rotulo": rotulo, "paginas": len(_leitor_pdf(conteudo, rotulo).pages)}
+        for indice, (rotulo, conteudo) in enumerate(partes)
+    ]
+
+
+def assinatura_do_pacote(mapa) -> str:
+    import hashlib
+    import json
+
+    return hashlib.sha256(
+        json.dumps([[item["rotulo"], item["paginas"]] for item in mapa], ensure_ascii=False).encode("utf-8")
+    ).hexdigest()
+
+
+def validar_ajuste_do_pacote(mapa, paginas) -> list[list]:
+    """Confere o ajuste enviado pela tela e devolve-o normalizado, ou levanta `ValueError`.
+
+    Precisa trazer todas as páginas do pacote, cada uma uma vez, com giro válido,
+    e deixar ao menos uma visível.
+    """
+    esperadas = {(item["parte"], pagina) for item in mapa for pagina in range(item["paginas"])}
+    normalizadas = []
+    vistas = set()
+    try:
+        for parte, pagina, giro, oculta in paginas:
+            chave = (int(parte), int(pagina))
+            giro = int(giro) % 360
+            if chave not in esperadas or chave in vistas or giro not in GIROS_VALIDOS:
+                raise ValueError
+            vistas.add(chave)
+            normalizadas.append([chave[0], chave[1], giro, bool(oculta)])
+    except (TypeError, ValueError) as exc:
+        raise ValueError("O ajuste enviado não corresponde às páginas do pacote. Abra a revisão de novo.") from exc
+    if vistas != esperadas:
+        raise ValueError("O ajuste enviado não corresponde às páginas do pacote. Abra a revisão de novo.")
+    if all(oculta for *_, oculta in normalizadas):
+        raise ValueError("Deixe ao menos uma página no pacote.")
+    return normalizadas
+
+
+def ajuste_valido(servidor_prestacao, partes):
+    """As páginas do ajuste gravado, se ele ainda descreve estas partes; senão `None`."""
+    ajuste = servidor_prestacao.ajuste_pacote or {}
+    if not ajuste.get("paginas"):
+        return None
+    mapa = mapa_do_pacote(partes)
+    if ajuste.get("assinatura") != assinatura_do_pacote(mapa):
+        return None
+    try:
+        return validar_ajuste_do_pacote(mapa, ajuste["paginas"])
+    except ValueError:
+        return None
+
+
+def salvar_ajuste_do_pacote(servidor_prestacao, *, assinatura, paginas) -> None:
+    """Grava o ajuste da tela de revisão, se ele descreve o pacote de agora."""
+    mapa = mapa_do_pacote(partes_do_pacote(servidor_prestacao))
+    if assinatura != assinatura_do_pacote(mapa):
+        raise ValueError("Os documentos do pacote mudaram desde que a revisão foi aberta. Abra de novo.")
+    normalizadas = validar_ajuste_do_pacote(mapa, paginas)
+    ordem_oficial = [[item["parte"], pagina, 0, False] for item in mapa for pagina in range(item["paginas"])]
+    servidor_prestacao.ajuste_pacote = {} if normalizadas == ordem_oficial else {"assinatura": assinatura, "paginas": normalizadas}
+    servidor_prestacao.save(update_fields=["ajuste_pacote", "atualizado_em"])
+
+
+def descartar_ajustes_do_pacote(prestacao_id, servidor_prestacao_id=None) -> None:
+    """Os anexos mudaram: o ajuste manual do pacote deixa de valer (m099).
+
+    Anexo do servidor apaga só o dele; anexo da equipe (ofício, despacho, diário),
+    o de todos do ofício.
+    """
+    filtro = {"prestacao_id": prestacao_id}
+    if servidor_prestacao_id:
+        filtro = {"pk": servidor_prestacao_id}
+    PrestacaoServidor.todos.filter(**filtro).exclude(ajuste_pacote={}).update(ajuste_pacote={})
 
 
 def nome_arquivo_prestacao_consolidado(servidor_prestacao) -> str:
