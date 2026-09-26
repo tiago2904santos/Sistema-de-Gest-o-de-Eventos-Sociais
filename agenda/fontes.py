@@ -70,16 +70,21 @@ def _evento(
     municipio: str = "",
     tipo: str = "",
     meu: bool = False,
+    chave: str = "",
 ) -> dict:
     """Um compromisso no formato do calendário.
 
     ``encerrado`` marca o que já não vai acontecer (cancelado, não atendido):
     a tela esconde por padrão e deixa mostrar, em vez de misturar com o que
     está de pé.
+
+    ``pk`` é o que abre o dossiê (``agenda:detalhe``); ``chave`` distingue o
+    evento quando vários apontam para o mesmo dossiê (os termos aditivos de um
+    contrato, as certidões de um fornecedor).
     """
     slug = (situacao_slug or "").lower().replace(" ", "_")
     return {
-        "id": f"{fonte}-{pk}",
+        "id": f"{fonte}-{chave or pk}",
         "title": titulo,
         "start": inicio.isoformat(),
         "end": _fim_exclusivo(fim or inicio),
@@ -310,11 +315,20 @@ def _demandas(usuario, inicio, fim) -> list[dict]:
 
 # A ordem é a ordem dos filtros na tela. Viagens primeiro porque é o módulo
 # de referência do sistema, e o que mais gera deslocamento de verdade.
+def _fontes_de_prazos() -> tuple[Fonte, ...]:
+    # Importado aqui porque ``agenda.prazos`` usa ``_evento`` e ``Fonte`` deste
+    # módulo: a camada de prazos (m129) entra depois dos compromissos.
+    from .prazos import FONTES as PRAZOS
+
+    return PRAZOS
+
+
 FONTES: tuple[Fonte, ...] = (
     Fonte("viagem", "Viagens", _pode_viagens, _viagens),
     Fonte("solicitacao", "Solicitações de evento", _pode_solicitacoes, _solicitacoes),
     Fonte("coffee", "Coffee break", _pode_coffee, _coffee),
     Fonte("demanda", "Palestras e eventos", _pode_demandas, _demandas),
+    *_fontes_de_prazos(),
 )
 
 

@@ -106,6 +106,13 @@ ICONES = {
     "contato do fornecedor": "mail", "termo aditivo": "clipboard",
     "quantidade contratada": "chart", "municípios": "map-pin",
     "servidor": "user", "por extenso": "chart",
+    # Prazos e pautas (agenda/prazos.py).
+    "prazo de saque": "clock", "prestar contas até": "clock", "deadline": "clock",
+    "liberação das diárias": "calendar", "vigência": "calendar", "validade": "calendar",
+    "publicada em": "calendar", "jornalista": "user", "veículo": "mail",
+    "situação da prestação": "activity", "situação": "activity", "certidão": "document",
+    "ofício": "document", "estimada": "info",
+    "número da solicitação": "clipboard", "objeto": "document", "fonte": "user",
 }
 
 
@@ -673,9 +680,17 @@ CONSTRUTORES = {
 }
 
 
+def _construtores() -> dict:
+    # A camada de prazos (agenda/prazos.py, m129) traz os seus dossiês; o
+    # import é tardio porque ela usa as peças deste módulo.
+    from .prazos import CONSTRUTORES as PRAZOS
+
+    return {**CONSTRUTORES, **PRAZOS}
+
+
 def montar(usuario, fonte: str, pk: int) -> dict:
     """O dossiê de um compromisso — ou ``Http404``/``PermissionDenied``."""
-    construtor = CONSTRUTORES.get(fonte)
+    construtor = _construtores().get(fonte)
     if construtor is None:
         raise Http404
     return construtor(usuario, pk)

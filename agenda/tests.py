@@ -77,7 +77,8 @@ class OQueCadaUmVe(BaseSolicitacaoTestCase):
         root = User.objects.create_superuser("agenda_root", "agenda_root@example.com", None)
         self.client.force_login(root)
         slugs = {f.slug for f in fontes.fontes_de(root)}
-        self.assertEqual(slugs, {"viagem", "solicitacao", "coffee", "demanda"})
+        # Os compromissos; a camada de prazos (agenda/prazos.py) entra além deles.
+        self.assertTrue({"viagem", "solicitacao", "coffee", "demanda"} <= slugs)
         ids = {e["id"] for e in _eventos(self.client).json()}
         self.assertIn(f"viagem-{self.viagem.pk}", ids)
         self.assertIn(f"solicitacao-{self.de_outro.pk}", ids)
