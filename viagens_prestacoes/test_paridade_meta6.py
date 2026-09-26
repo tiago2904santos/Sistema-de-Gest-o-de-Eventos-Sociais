@@ -121,7 +121,7 @@ class ListaPrestacoesTests(CenarioPrestacoes):
 
     def test_finalizar_e_arquivar_voltam_para_onde_estavam(self):
         volta = reverse("viagens_prestacoes:index") + "?q=JANINE"
-        r = self.client.post(reverse("viagens_prestacoes:prestacao_servidor_finalizar", args=[self.ps_janine.pk]), {"next": volta})
+        r = self.client.post(reverse("viagens_prestacoes:prestacao_servidor_finalizar", args=[self.ps_janine.pk]), {"next": volta, "justificativa": "teste"})
         self.assertRedirects(r, volta)
         self.ps_janine.refresh_from_db()
         self.assertTrue(self.ps_janine.finalizada)
@@ -139,7 +139,10 @@ class ListaPrestacoesTests(CenarioPrestacoes):
         url = reverse("viagens_prestacoes:prestacao_equipe_acao", args=[self.fixture.prestacao.pk, "finalizar"])
         self.assertContains(r, url)
         volta = reverse("viagens_prestacoes:index") + "?q=JANINE"
-        self.assertRedirects(self.client.post(url, {"next": volta}), volta)
+        # m092: quem tem pendência não é finalizado em lote; aqui ninguém tem.
+        from unittest import mock
+        with mock.patch("viagens_prestacoes.services.pendencias_para_finalizar", return_value=[]):
+            self.assertRedirects(self.client.post(url, {"next": volta}), volta)
         for ps in (self.ps_janine, self.ps_joao):
             ps.refresh_from_db()
             self.assertTrue(ps.finalizada)

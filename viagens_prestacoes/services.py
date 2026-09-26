@@ -655,6 +655,43 @@ def pendencias_consolidado(servidor_prestacao) -> list[str]:
     return pendencias
 
 
+def pendencias_para_finalizar(servidor_prestacao) -> list[str]:
+    """O que falta para dar a prestação deste servidor por concluída (m092).
+
+    Mais do que o pacote final cobra (`pendencias_consolidado`): diário e RT
+    preenchidos (ou assinados), o número carimbado no ofício assinado e a soma dos
+    comprovantes igual à diária. Não bloqueia: a tela pede "Finalizar mesmo assim"
+    com uma justificativa.
+    """
+    from .completude import diario_completo, rt_completo
+
+    prestacao = servidor_prestacao.prestacao
+    pendencias = list(pendencias_consolidado(servidor_prestacao))
+    if not diario_completo(prestacao):
+        pendencias.append("Preencha o km de todos os trechos do diário de bordo, ou anexe o diário assinado.")
+    if not rt_completo(servidor_prestacao):
+        pendencias.append("Escreva a descrição, o objetivo e a conclusão do relatório técnico, ou anexe o RT assinado.")
+
+    from .carimbo_services import anexo_do_oficio_assinado
+
+    oficio = anexo_do_oficio_assinado(prestacao)
+    if oficio is not None and str(servidor_prestacao.numero_solicitacao or "").strip():
+        if not oficio.carimbos.filter(servidor_prestacao=servidor_prestacao).exists():
+            pendencias.append("O número de solicitação não está carimbado no ofício assinado: use “Ajustar posição do número”.")
+
+    comprovantes = list(servidor_prestacao.documentos_anexos.filter(tipo=PrestacaoDocumentoAnexo.TIPO_COMPROVANTE))
+    esperado = servidor_prestacao.diaria_valor_override
+    if esperado is None:
+        esperado = valor_diaria_liberado(servidor_prestacao)
+    if comprovantes and esperado is not None and all(a.valor is not None for a in comprovantes):
+        soma = sum((a.valor for a in comprovantes), Decimal("0"))
+        if soma != esperado:
+            pendencias.append(
+                f"Os comprovantes somam {format_currency_br(soma)}, e a diária deste servidor é {format_currency_br(esperado)}."
+            )
+    return pendencias
+
+
 @track_document_generation("prestacao_gerar_consolidado_pdf")
 def gerar_prestacao_consolidado_pdf(servidor_prestacao) -> bytes:
     """Pacote final de um servidor: ofício + despacho (compartilhados) + RT do

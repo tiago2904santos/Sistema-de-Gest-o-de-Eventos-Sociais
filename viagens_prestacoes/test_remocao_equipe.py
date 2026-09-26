@@ -238,7 +238,7 @@ class CamposConhecidosDoServidorDaPrestacaoTests(TestCase):
     """
     # A marca histórica conta como dado coletado: a saída da equipe preserva a
     # linha importada e o rastro que permite conferir/reverter a migração.
-    ESPERADOS = {'id', 'prestacao', 'servidor', 'numero_solicitacao', 'diaria_valor_override', 'diaria_valor_override_observacao', 'data_liberacao_diarias', 'prazo_limite_saque', 'status', 'arquivada', 'arquivada_em', 'finalizada', 'finalizada_em', 'removida_em', 'criado_em', 'atualizado_em', 'legado_origem', 'legado_pk'}
+    ESPERADOS = {'id', 'prestacao', 'servidor', 'numero_solicitacao', 'diaria_valor_override', 'diaria_valor_override_observacao', 'data_liberacao_diarias', 'prazo_limite_saque', 'status', 'arquivada', 'arquivada_em', 'finalizada', 'finalizada_em', 'justificativa_finalizacao', 'removida_em', 'criado_em', 'atualizado_em', 'legado_origem', 'legado_pk'}
 
     def test_nenhum_campo_novo_escapou_de_tem_dados_coletados(self):
         atuais = {campo.name for campo in PrestacaoServidor._meta.concrete_fields}

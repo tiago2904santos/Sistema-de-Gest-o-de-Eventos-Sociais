@@ -21,8 +21,12 @@ urlpatterns = [path("oficio/<int:pk>/abrir/", views.abrir_oficio, name="abrir_of
 _POST_ONLY = {"prestacao_baixar", "prestacao_equipe_acao", "prestacao_servidor_arquivar", "prestacao_servidor_finalizar", "prestacao_arquivar", "prestacao_finalizar", "prestacao_documento_delete", "prestacao_documento_restaurar", "modelo_delete", "prestacao_despacho_assinado_anexar", "prestacao_oficio_assinado_anexar", "prestacao_servidor_assinado_anexar", "importacao_enviar", "importacao_enviar_prestacao", "importacao_enviar_oficio", "importacao_enviar_termo", "importacao_aplicar", "importacao_descartar", "importacao_desfazer"}
 # Leem o processo antes de gravar: a leitura fica fora da transação, e cada gravação abre a sua.
 _SEM_TRANSACAO = {"importacao_enviar", "importacao_enviar_prestacao", "importacao_enviar_oficio", "importacao_enviar_termo", "importacao_aplicar"}
+from .trava import ROTAS as _ROTAS_TRAVADAS, travar_se_finalizada
 for route in urlpatterns:
     callback = route.callback
+    if route.name in _ROTAS_TRAVADAS:
+        # m092: prestação finalizada fica só para leitura até "Reabrir".
+        callback = travar_se_finalizada(callback, route.name)
     if route.name in _POST_ONLY or "autosave" in route.name:
         callback = require_POST(callback)
     route.callback = acesso(callback, transacao=route.name not in _SEM_TRANSACAO)

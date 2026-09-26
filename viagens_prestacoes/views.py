@@ -26,6 +26,11 @@ def _redirect_lista(request, _obj=None):
 def index(request):
     if request.method == "POST":
         valores = valores_do_lote(request.POST)
+        # m092: finalizada fica só para leitura; o lote ignora essas linhas.
+        travados = set(_prestacao_servidor_queryset().filter(pk__in=valores, finalizada=True).values_list("pk", flat=True))
+        if travados:
+            messages.warning(request, "Prestação finalizada — reabra para editar. As linhas finalizadas não foram alteradas.")
+            valores = {pk: v for pk, v in valores.items() if pk not in travados}
         resultado = salvar_solicitacoes_em_lote(_prestacao_servidor_queryset().filter(pk__in=valores), valores, autor=request.user)
         if resultado.erro:
             messages.error(request, resultado.erro)
@@ -170,9 +175,30 @@ def prestacao_servidor_finalizar(request, ps_pk):
     if pedido == ps.finalizada:
         messages.info(request, f'A prestação de {ps.servidor.nome} já estava {"finalizada" if pedido else "aberta"}.')
         return _redirect_lista(request)
-    ps.definir_finalizada(pedido)
+    justificativa = None
+    if pedido:
+        # m092: com pendência, só finaliza com justificativa ("Finalizar mesmo assim").
+        from .services import pendencias_para_finalizar
+        pendencias = pendencias_para_finalizar(ps)
+        justificativa = normalize_spaces(request.POST.get("justificativa") or "") if pendencias else ""
+        if pendencias and not justificativa:
+            messages.error(request, f'A prestação de {ps.servidor.nome} tem pendências: ' + " ".join(pendencias) + ' Para finalizar mesmo assim, escreva a justificativa no fim da Etapa 3.')
+            return _redirect_lista(request)
+        if pendencias:
+            _registrar_finalizacao_com_pendencias(request, ps, pendencias, justificativa)
+    ps.definir_finalizada(pedido, justificativa=justificativa)
     messages.success(request, f'Prestação de {ps.servidor.nome} {"finalizada" if pedido else "reaberta"}.')
     return _redirect_lista(request)
+
+
+def _registrar_finalizacao_com_pendencias(request, ps, pendencias, justificativa):
+    """A justificativa vai para a auditoria, com o que faltava no momento."""
+    from auditoria.models import LogAuditoria
+    LogAuditoria.objects.create(
+        usuario=request.user if request.user.is_authenticated else None,
+        acao="prestacao_finalizada_com_pendencias",
+        descricao=f"{ps} — pendências: {' '.join(pendencias)} — justificativa: {justificativa}",
+    )
 
 def prestacao_equipe_acao(request, pc_pk, acao):
     """Finaliza, reabre, arquiva ou desarquiva a prestação da equipe inteira do ofício.
@@ -193,11 +219,25 @@ def prestacao_equipe_acao(request, pc_pk, acao):
     metodo, valor, rotulo = acoes[acao]
     prestacao = get_object_or_404(_prestacao_queryset(), pk=pc_pk)
     servidores = list(prestacao.servidores_prestacao.all())
+    com_pendencia = []
+    if acao == "finalizar":
+        # m092: quem tem pendência não é finalizado em lote; a justificativa é por servidor, na Etapa 3.
+        from .services import pendencias_para_finalizar
+        com_pendencia = [ps for ps in servidores if not ps.finalizada and pendencias_para_finalizar(ps)]
+        servidores = [ps for ps in servidores if ps not in com_pendencia]
     for ps in servidores:
-        getattr(ps, metodo)(valor)
+        if acao == "finalizar":
+            if not ps.finalizada:
+                ps.definir_finalizada(True, justificativa="")
+        else:
+            getattr(ps, metodo)(valor)
     total = len(servidores)
     plural = "es" if total != 1 else ""
-    messages.success(request, f"Prestação de {total} servidor{plural} {rotulo}.")
+    if total:
+        messages.success(request, f"Prestação de {total} servidor{plural} {rotulo}.")
+    if com_pendencia:
+        nomes = ", ".join(ps.servidor.nome for ps in com_pendencia)
+        messages.warning(request, f"Não finalizados por pendência: {nomes}. Abra a Etapa 3 de cada um para ver o que falta ou finalizar com justificativa.")
     return _redirect_lista(request)
 
 

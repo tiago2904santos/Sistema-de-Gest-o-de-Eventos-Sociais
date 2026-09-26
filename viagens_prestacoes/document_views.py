@@ -31,6 +31,7 @@ from .download_services import payload_downloads
 from .services import marcar_servidor_em_preenchimento
 from .services import marcar_servidores_pendentes
 from .services import pendencias_consolidado
+from .services import pendencias_para_finalizar
 from .prazos import selo_da_prestacao
 from .view_common import (
     _autosave_form_errors,
@@ -235,6 +236,8 @@ def documentos_servidor(request, ps_pk):
             # O fechamento (pacote final, downloads e finalização) virou o fim
             # desta etapa: a tela de PDF final deixou de existir.
             "pendencias": pendencias_consolidado(ps),
+            # m092: o que falta para finalizar (o pacote é só uma parte disso).
+            "pendencias_finalizar": [] if ps.finalizada else pendencias_para_finalizar(ps),
             # m094: 3 dias úteis depois do fim do prazo de saque, contando feriados.
             "selo_prestacao": selo_da_prestacao(ps),
             "downloads": payload_downloads(ps)["itens"],

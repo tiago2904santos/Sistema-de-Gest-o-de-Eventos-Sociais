@@ -10,7 +10,12 @@
   arquivo já envia); e o que falta para o pacote final, só quando falta.
 {% endcomment %}
 {% block pc_salvar_topo %}
+  {% if pendencias_finalizar %}
+    {# m092: com pendência, o botão leva à lista do que falta e à justificativa. #}
+    <a class="btn-primaria" href="#finalizar">Finalizar prestação</a>
+  {% else %}
   <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><input type="hidden" name="acao" value="{% if ps.finalizada %}reabrir{% else %}finalizar{% endif %}"><button type="submit" class="btn-primaria">{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
+  {% endif %}
 {% endblock %}
 {% block prestacao_conteudo %}
 <div class="editor-roteiro pc-diario pc-docs">
@@ -41,6 +46,7 @@
       </div>
     </header>
     <div class="section-card__corpo">
+      {% if ps.finalizada %}<p class="alerta alerta--info" role="status">Prestação finalizada — reabra para editar.{% if ps.justificativa_finalizacao %} Finalizada com pendências: {{ ps.justificativa_finalizacao }}{% endif %}</p>{% endif %}
       {% if selo_prestacao %}<p class="pc-docs__prazo"><span class="st st--pc-prazo-{{ selo_prestacao.tom }}"{% if selo_prestacao.detalhe %} title="{{ selo_prestacao.detalhe }}"{% endif %}>{% include "components/icon.html" with nome="clock" %}{{ selo_prestacao.texto }}</span></p>{% endif %}
       {# Solicitação e prazo de saque numa linha, como na lista; gravam sozinhos. #}
       <form method="post" action="{% url 'viagens_prestacoes:index' %}" id="form-prestacao-solicitacao" class="pc-docs__solicitacao" data-autosave data-autosave-url="{{ servidor.solicitacao_autosave_url }}" data-autosave-model="prestacao_servidor" data-autosave-id="{{ ps.pk|unlocalize }}">
@@ -103,10 +109,24 @@
         </div>
       {% endif %}
 
+      {% if pendencias_finalizar %}
+        {# m092: finalizar com pendência pede justificativa, gravada na auditoria. #}
+        <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" class="pc-docs__falta pc-docs__finalizar" id="finalizar">
+          {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><input type="hidden" name="acao" value="finalizar">
+          <b>{% include "components/icon.html" with nome="alert" %}Antes de finalizar, confira</b>
+          <ul>{% for p in pendencias_finalizar %}<li>{{ p }}</li>{% endfor %}</ul>
+          {% include "components/textarea.html" with name="justificativa" label="Justificativa para finalizar mesmo assim" obrigatorio=True linhas=2 %}
+          <div class="frm-acoes-fim">
+            <a class="btn--secundaria" href="{{ rt_url }}">Voltar ao relatório</a>
+            <button type="submit" class="btn-primaria">Finalizar mesmo assim</button>
+          </div>
+        </form>
+      {% else %}
       <div class="frm-acoes-fim">
         <a class="btn--secundaria" href="{{ rt_url }}">Voltar ao relatório</a>
         <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><input type="hidden" name="acao" value="{% if ps.finalizada %}reabrir{% else %}finalizar{% endif %}"><button type="submit" class="btn-primaria">{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
       </div>
+      {% endif %}
     </div>
   </section>
 </div>

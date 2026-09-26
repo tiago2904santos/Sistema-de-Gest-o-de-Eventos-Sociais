@@ -344,6 +344,55 @@ def timezone_hoje():
     return timezone.localdate()
 
 
+class PendenciasETravaTests(PrestacaoFixturesMixin, PrestacaoTestCase):
+    """m092: finalizar confere pendências; finalizada fica só para leitura."""
+
+    def setUp(self):
+        super().setUp()
+        self.setUpPrestacaoFixtures()
+        self.fixture = self.criar_prestacao(numero=92, servidores=(self.criar_servidor("Ana"), self.criar_servidor("Bia")))
+        self.prestacao = self.fixture.prestacao
+        self.ana, self.bia = self.fixture.prestacoes_servidor
+
+    def test_lista_de_pendencias_inclui_diario_rt_e_soma(self):
+        from decimal import Decimal
+
+        from .services import pendencias_para_finalizar
+
+        self.ana.diaria_valor_override = Decimal("300.00")
+        self.ana.save()
+        Anexo.objects.create(prestacao=self.prestacao, servidor_prestacao=self.ana, tipo=Anexo.TIPO_COMPROVANTE, arquivo=SimpleUploadedFile("c.pdf", pdf_minimo()), valor=Decimal("250.00"))
+        texto = " ".join(pendencias_para_finalizar(self.ana))
+        self.assertIn("diário de bordo", texto)
+        self.assertIn("relatório técnico", texto)
+        self.assertIn("somam R$", texto)
+
+    def test_finalizada_trava_o_autosave_do_servidor(self):
+        self.ana.definir_finalizada(True)
+        resposta = self.client.post(
+            reverse("viagens_prestacoes:prestacao_servidor_solicitacao_autosave", args=[self.ana.pk]),
+            data='{"model": "prestacao_servidor", "fields": {"numero_solicitacao": "999"}}',
+            content_type="application/json",
+        )
+        self.assertEqual(resposta.status_code, 409)
+        self.assertIn("reabra para editar", resposta.json()["message"])
+        self.ana.refresh_from_db()
+        self.assertEqual(self.ana.numero_solicitacao, "")
+
+    def test_compartilhado_so_trava_com_a_equipe_toda_finalizada(self):
+        from .trava import _travada
+
+        self.ana.definir_finalizada(True)
+        self.assertFalse(_travada("prestacao_despacho_assinado_anexar", {"pc_pk": self.prestacao.pk}))
+        self.bia.definir_finalizada(True)
+        self.assertTrue(_travada("prestacao_despacho_assinado_anexar", {"pc_pk": self.prestacao.pk}))
+
+    def test_equipe_nao_finaliza_quem_tem_pendencia(self):
+        self.client.post(reverse("viagens_prestacoes:prestacao_equipe_acao", args=[self.prestacao.pk, "finalizar"]))
+        self.ana.refresh_from_db()
+        self.assertFalse(self.ana.finalizada)
+
+
 class VersoesAnterioresTests(PrestacaoFixturesMixin, PrestacaoTestCase):
     """m084: remover e substituir guardam o anterior, que se restaura."""
 

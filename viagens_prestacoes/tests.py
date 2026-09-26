@@ -677,7 +677,7 @@ class PrestacaoAbasTests(TestCase):
         from viagens_prestacoes import selectors
         ps = self._criar_prestacao()
         ps.definir_arquivada(True)
-        self.client.post(reverse('viagens_prestacoes:prestacao_servidor_finalizar', args=[ps.pk]))
+        self.client.post(reverse('viagens_prestacoes:prestacao_servidor_finalizar', args=[ps.pk]), {'justificativa': 'teste'})
         ps.refresh_from_db()
         self.assertTrue(ps.finalizada)
         self.assertIn(ps.pk, self._pks(selectors.ABA_FINALIZADOS))

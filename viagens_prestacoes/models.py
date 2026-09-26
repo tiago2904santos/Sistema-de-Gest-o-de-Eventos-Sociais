@@ -90,6 +90,8 @@ class PrestacaoServidor(OrigemLegado):
     arquivada_em = models.DateTimeField(null=True, blank=True)
     finalizada = models.BooleanField(default=False)
     finalizada_em = models.DateTimeField(null=True, blank=True)
+    #: m092: por que foi finalizada com pendências (vazio = sem pendência).
+    justificativa_finalizacao = models.TextField('Justificativa para finalizar com pendências', blank=True, default='')
     removida_em = models.DateTimeField('Removida da equipe em', null=True, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
@@ -130,12 +132,20 @@ class PrestacaoServidor(OrigemLegado):
         self.arquivada_em = _tz.now() if arquivada else None
         self.save(update_fields=['arquivada', 'arquivada_em', 'atualizado_em'])
 
-    def definir_finalizada(self, finalizada: bool):
-        """Conclui/reabre a prestação deste servidor, registrando o momento."""
+    def definir_finalizada(self, finalizada: bool, *, justificativa: str | None = None):
+        """Conclui/reabre a prestação deste servidor, registrando o momento.
+
+        `justificativa` (m092) é gravada quando se finaliza com pendências; finalizar
+        sem pendência (`""`) apaga a de uma finalização anterior. `None` não mexe.
+        """
         from django.utils import timezone as _tz
         self.finalizada = finalizada
         self.finalizada_em = _tz.now() if finalizada else None
-        self.save(update_fields=['finalizada', 'finalizada_em', 'atualizado_em'])
+        campos = ['finalizada', 'finalizada_em', 'atualizado_em']
+        if justificativa is not None:
+            self.justificativa_finalizacao = justificativa
+            campos.append('justificativa_finalizacao')
+        self.save(update_fields=campos)
 
     def marcar_em_preenchimento(self):
         if self.status == self.STATUS_PENDENTE:
@@ -152,7 +162,7 @@ class PrestacaoServidor(OrigemLegado):
         """
         # A linha histórica importada deve continuar rastreável no diário da
         # migração, mesmo quando ainda não tem preenchimento financeiro.
-        return bool(self.legado_pk is not None or self.numero_solicitacao.strip() or self.diaria_valor_override is not None or self.diaria_valor_override_observacao.strip() or self.data_liberacao_diarias or self.prazo_limite_saque or (self.status != self.STATUS_PENDENTE) or self.arquivada or self.finalizada or self.documentos_anexos.exists())
+        return bool(self.legado_pk is not None or self.numero_solicitacao.strip() or self.diaria_valor_override is not None or self.diaria_valor_override_observacao.strip() or self.data_liberacao_diarias or self.prazo_limite_saque or (self.status != self.STATUS_PENDENTE) or self.arquivada or self.finalizada or self.justificativa_finalizacao.strip() or self.documentos_anexos.exists())
 
     def tem_prova_irrefazivel(self) -> bool:
         """Só o que ninguém consegue refazer se a linha sumir (`NOVO-35`).
