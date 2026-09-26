@@ -49,6 +49,7 @@
       {% else %}
         <form method="post" action="{% url 'demandas_eventos:encaminhar_dg' instancia.pk %}" id="form-encaminhar-dg" hidden>{% csrf_token %}</form>
       {% endif %}
+      {% include "pages/coffee_break/_pedir_coffee_break.html" with evento=instancia parametro="demanda" %}
       {% include "pages/demandas_eventos/_andamento.html" %}
     {% else %}
       {# Pedido que chegou por e-mail (ou WhatsApp): soltar o e-mail ou colar o texto preenche os campos vazios. #}

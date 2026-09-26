@@ -1,0 +1,33 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Relatório do contrato: consumo por mês e por município, ritmo e previsão
+  de quando o saldo acaba (contra o fim da vigência), valores gasto e pago,
+  tempo até o pagamento e entregas. Baixa em PDF e em planilha (CSV).
+  Contexto: o de `relatorio_contrato.montar` e `breadcrumb`.
+{% endcomment %}
+
+{% block title %}Relatório do contrato {{ contrato.numero }} — Coffee Break{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker kicker--junto">{{ fornecedor.razao_social }}</div>
+      <h1>Relatório do contrato {{ contrato.numero }}</h1>
+    </div>
+    <div class="frm-topo__acoes">
+      <a class="btn--secundaria" href="?formato=csv">{% include "components/icon.html" with nome="download" %}Planilha (CSV)</a>
+      <a class="btn-primaria" href="?formato=pdf" target="_blank" rel="noopener">{% include "components/icon.html" with nome="printer" %}PDF</a>
+    </div>
+  </div>
+
+  <div class="editor-roteiro cb-fluxo">
+    <section class="section-card reg">
+      <div class="section-card__corpo">
+        <p class="cb-ajuda">Para justificar um aditivo ou um reforço de empenho e estimar as quantidades da próxima licitação. Contam as OS não canceladas, no mês do evento (ou do pedido, quando o evento não tem data).</p>
+        {% include "coffee_break/documentos/_relatorio_contrato_corpo.html" %}
+      </div>
+    </section>
+  </div>
+{% endblock %}

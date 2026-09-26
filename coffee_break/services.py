@@ -247,18 +247,89 @@ def reativar(solicitacao, usuario=None):
     return solicitacao
 
 
-# Percentual de saldo abaixo do qual o painel destaca o lote.
+# Percentual de saldo abaixo do qual o painel destaca o lote quando não dá
+# para projetar (contrato sem vigência ou lote sem consumo recente).
 LIMIAR_ALERTA_SALDO = 15
+# Meses completos que dão o ritmo de consumo da projeção.
+MESES_DO_RITMO = 3
 
 
-def lotes_em_alerta(lotes_anotados):
-    """Lotes ativos com saldo igual ou abaixo do limiar de alerta."""
+def _data_de_referencia(solicitacao):
+    """O mês em que a OS consome: o do evento; sem data do evento, o do pedido."""
+    return solicitacao.data_inicio_evento or solicitacao.data_solicitacao
+
+
+def _inicio_do_mes(dia, recuar=0):
+    ano, mes = dia.year, dia.month - recuar
+    while mes < 1:
+        ano, mes = ano - 1, mes + 12
+    return date(ano, mes, 1)
+
+
+def ritmo_mensal(solicitacoes, hoje=None):
+    """Média de consumo (quantidade efetiva) por mês nos últimos meses
+    completos (``MESES_DO_RITMO``), das OS não canceladas."""
+    hoje = hoje or timezone.localdate()
+    inicio, fim = _inicio_do_mes(hoje, MESES_DO_RITMO), _inicio_do_mes(hoje)
+    total = sum(
+        s.quantidade_efetiva for s in solicitacoes
+        if not s.cancelada and inicio <= _data_de_referencia(s) < fim
+    )
+    return total / MESES_DO_RITMO
+
+
+def projecao_do_saldo(restante, ritmo, fim_vigencia, hoje=None):
+    """Quando o saldo acaba no ritmo atual e se isso é antes do fim do contrato.
+
+    ``acaba_em`` é None sem consumo recente (não dá para projetar); a
+    ``sobra`` é o que resta no fim da vigência (negativa quando falta).
+    """
+    from datetime import timedelta
+
+    hoje = hoje or timezone.localdate()
+    projecao = {"ritmo": round(ritmo, 1), "fim": fim_vigencia, "acaba_em": None, "acaba_antes": False, "sobra": None, "falta": 0}
+    if ritmo > 0:
+        projecao["acaba_em"] = hoje + timedelta(days=round(max(restante, 0) / ritmo * 30.44))
+        if fim_vigencia:
+            projecao["acaba_antes"] = projecao["acaba_em"] < fim_vigencia
+            meses_ate_o_fim = max((fim_vigencia - hoje).days, 0) / 30.44
+            projecao["sobra"] = round(restante - ritmo * meses_ate_o_fim)
+            projecao["falta"] = max(-projecao["sobra"], 0)
+    return projecao
+
+
+def projecao_do_lote(lote, hoje=None):
+    restante = lote.restante if hasattr(lote, "restante") else lote.saldo_restante
+    ritmo = ritmo_mensal(lote.solicitacoes.filter(cancelada=False), hoje)
+    return projecao_do_saldo(restante, ritmo, fim_da_vigencia(lote.contrato), hoje)
+
+
+def lotes_em_alerta(lotes_anotados, hoje=None):
+    """Lotes ativos cujo saldo acaba antes do fim do contrato, no ritmo dos
+    últimos meses; sem como projetar, os de saldo no limiar ou abaixo.
+
+    Cada lote devolvido leva o ``motivo_alerta`` (o texto do painel).
+    """
     em_alerta = []
     for lote in lotes_anotados:
         if not lote.quantidade_total:
             continue
+        projecao = projecao_do_lote(lote, hoje)
+        if projecao["acaba_em"] and projecao["fim"]:
+            if projecao["acaba_antes"]:
+                lote.motivo_alerta = (
+                    f"No ritmo dos últimos {MESES_DO_RITMO} meses ({str(projecao['ritmo']).replace('.', ',')} por mês), "
+                    f"os {lote.restante} de saldo acabam por volta de {projecao['acaba_em']:%d/%m/%Y}, antes do fim "
+                    f"do contrato ({projecao['fim']:%d/%m/%Y}): providencie o aditivo ou o reforço."
+                )
+                em_alerta.append(lote)
+            continue
         percentual_restante = lote.restante * 100 / lote.quantidade_total
         if percentual_restante <= LIMIAR_ALERTA_SALDO:
+            lote.motivo_alerta = (
+                f"Restam apenas {lote.restante} de {lote.quantidade_total} unidades "
+                f"(limite de alerta: {LIMIAR_ALERTA_SALDO}%)."
+            )
             em_alerta.append(lote)
     return em_alerta
 
@@ -682,6 +753,8 @@ def oficio_em_uso(numero, excluir_pk=None):
 CAMPOS_ESPELHADOS = (
     "numero_oficio", "data_oficio", "protocolo_pcpr_oficio",
     "protocolo_pagamento", "data_atesto_gaf", "data_ordem_bancaria", "data_envio_empresa",
+    # A OB paga o pagamento todo: o comprovante é o mesmo em todas as OS.
+    "arquivo_ordem_bancaria", "numero_ordem_bancaria", "valor_ordem_bancaria",
 )
 
 
@@ -690,6 +763,7 @@ CAMPOS_ESPELHADOS = (
 # protocolo de pagamento").
 CAMPOS_DEPOIS_DA_NOTA = (
     "protocolo_pagamento", "data_atesto_gaf", "data_ordem_bancaria", "data_envio_empresa",
+    "arquivo_ordem_bancaria", "numero_ordem_bancaria", "valor_ordem_bancaria",
 )
 
 
@@ -938,3 +1012,310 @@ def registrar_marco(solicitacao, usuario, valor, anotacao=""):
         f"{texto} — {anotacao}" if anotacao else texto,
     )
     return solicitacao
+
+
+# ---------------------------------------------------------------------------
+# Ordem bancária anexada (etapa 3)
+# ---------------------------------------------------------------------------
+
+@transaction.atomic
+def anexar_ordem_bancaria(solicitacao, usuario, arquivo, lidos):
+    """Guarda o PDF da OB (com o número e o valor lidos) em todas as OS do
+    pagamento e, se a OB é o próximo marco, registra a data dela (a lida do
+    PDF, senão a de hoje). Devolve a data registrada, ou None."""
+    trocou = bool(solicitacao.arquivo_ordem_bancaria)
+    solicitacao.arquivo_ordem_bancaria = arquivo
+    solicitacao.numero_ordem_bancaria = (lidos.get("numero") or "")[:30]
+    solicitacao.valor_ordem_bancaria = lidos.get("valor")
+    campos = ["arquivo_ordem_bancaria", "numero_ordem_bancaria", "valor_ordem_bancaria"]
+    solicitacao.save(update_fields=[*campos, "atualizado_em"])
+    lidas = []
+    if solicitacao.numero_ordem_bancaria:
+        lidas.append(f"número {solicitacao.numero_ordem_bancaria}")
+    if solicitacao.valor_ordem_bancaria is not None:
+        lidas.append(f"valor {formatar_reais(solicitacao.valor_ordem_bancaria)}")
+    registrar_historico(
+        solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO,
+        ("Ordem bancária (PDF) substituída" if trocou else "Ordem bancária (PDF) anexada")
+        + (f"; lido do PDF: {', '.join(lidas)}." if lidas else "."),
+    )
+    espelhar(solicitacao, campos, usuario)
+    marco = proximo_marco(solicitacao)
+    if marco and marco["campo"] == "data_ordem_bancaria":
+        dia = lidos.get("data") or timezone.localdate()
+        if solicitacao.data_atesto_gaf and dia < solicitacao.data_atesto_gaf:
+            dia = timezone.localdate()
+        registrar_marco(solicitacao, usuario, dia, "lida do PDF da ordem bancária" if lidos.get("data") else "")
+        return dia
+    return None
+
+
+@transaction.atomic
+def remover_ordem_bancaria(solicitacao, usuario):
+    """Tira o PDF da OB (e o que foi lido dele) de todas as OS do pagamento."""
+    if not solicitacao.arquivo_ordem_bancaria:
+        return False
+    nome = solicitacao.arquivo_ordem_bancaria.name
+    for membro in solicitacao.grupo_pagamento():
+        if membro.arquivo_ordem_bancaria.name != nome:
+            continue
+        membro.arquivo_ordem_bancaria = None
+        membro.numero_ordem_bancaria = ""
+        membro.valor_ordem_bancaria = None
+        membro.save(update_fields=[
+            "arquivo_ordem_bancaria", "numero_ordem_bancaria", "valor_ordem_bancaria", "atualizado_em",
+        ])
+        registrar_historico(membro, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO, "Ordem bancária (PDF) removida.")
+    from .models import SolicitacaoCoffeeBreak
+
+    # O arquivo só sai do disco quando nenhuma OS aponta mais para ele.
+    if not SolicitacaoCoffeeBreak.objects.filter(arquivo_ordem_bancaria=nome).exists():
+        from django.core.files.storage import default_storage
+
+        transaction.on_commit(lambda: default_storage.delete(nome))
+    return True
+
+
+def avisos_da_ob(solicitacao):
+    """O valor da OB contra o das notas do pagamento (ou o das OS, sem a nota lida)."""
+    from decimal import Decimal
+
+    if solicitacao.valor_ordem_bancaria is None:
+        return []
+    grupo = solicitacao.grupo_pagamento()
+    notas = [m.valor_nota_fiscal for m in grupo]
+    if all(v is not None for v in notas):
+        esperado, origem = sum(notas, Decimal("0.00")), "das notas fiscais" if len(grupo) > 1 else "da nota fiscal"
+    else:
+        valores = [m.valor for m in grupo]
+        if any(v is None for v in valores):
+            return []
+        esperado, origem = sum(valores, Decimal("0.00")), "das OS" if len(grupo) > 1 else "da OS"
+    if solicitacao.valor_ordem_bancaria == esperado:
+        return []
+    return [
+        f"O valor da ordem bancária ({formatar_reais(solicitacao.valor_ordem_bancaria)}) não bate com o valor "
+        f"{origem} ({formatar_reais(esperado)}). Confira o PDF anexado (retenções de imposto explicam diferença)."
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Entrega e ocorrências com o fornecedor
+# ---------------------------------------------------------------------------
+
+def entrega_liberada(solicitacao, hoje=None):
+    """A entrega se registra a partir do dia do evento (registro antigo sem
+    data também), e não na OS cancelada."""
+    if solicitacao.cancelada:
+        return False
+    inicio = solicitacao.data_inicio_evento
+    return inicio is None or inicio <= (hoje or timezone.localdate())
+
+
+def registrar_entrega(solicitacao, usuario, form):
+    """Grava a entrega (ou a ocorrência) do formulário e o histórico da OS."""
+    if not entrega_liberada(solicitacao):
+        raise ValidationError("A entrega se registra a partir do dia do evento.")
+    ocorrencia = form.save(commit=False)
+    ocorrencia.solicitacao = solicitacao
+    ocorrencia.registrada_por = usuario
+    ocorrencia.save()
+    partes = [ocorrencia.get_tipo_display()]
+    if ocorrencia.avaliacao:
+        partes.append(f"avaliação {ocorrencia.avaliacao}/5")
+    if ocorrencia.recebido_por:
+        partes.append(f"recebido por {ocorrencia.recebido_por}")
+    texto = "Entrega registrada: " + "; ".join(partes) + "."
+    if ocorrencia.descricao.strip():
+        texto += f" {ocorrencia.descricao.strip()}"
+    registrar_historico(solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO, texto)
+    return ocorrencia
+
+
+def resumo_de_entregas(ocorrencias):
+    """Entregas registradas, OS com a entrega confirmada, média das notas e
+    as ocorrências por tipo (sem o "entregue sem ocorrência")."""
+    from .models import TipoOcorrencia
+
+    ocorrencias = list(ocorrencias)
+    notas = [o.avaliacao for o in ocorrencias if o.avaliacao]
+    por_tipo = {}
+    for o in ocorrencias:
+        if o.tipo != TipoOcorrencia.ENTREGUE:
+            por_tipo[o.get_tipo_display()] = por_tipo.get(o.get_tipo_display(), 0) + 1
+    return {
+        "registros": len(ocorrencias),
+        "os": len({o.solicitacao_id for o in ocorrencias}),
+        "media": round(sum(notas) / len(notas), 1) if notas else None,
+        "problemas": sum(por_tipo.values()),
+        "por_tipo": sorted(por_tipo.items(), key=lambda item: -item[1]),
+    }
+
+
+def resumo_do_fornecedor(fornecedor):
+    from .models import OcorrenciaEntrega
+
+    return resumo_de_entregas(
+        OcorrenciaEntrega.objects.filter(solicitacao__lote__contrato__fornecedor=fornecedor)
+    )
+
+
+def texto_do_resumo(resumo):
+    """"12 entregas registradas · nota média 4,5 · 2 ocorrências" (ou "")."""
+    if not resumo["registros"]:
+        return ""
+    partes = [f"{resumo['os']} entrega{'s' if resumo['os'] != 1 else ''} registrada{'s' if resumo['os'] != 1 else ''}"]
+    if resumo["media"] is not None:
+        partes.append(f"nota média {str(resumo['media']).replace('.', ',')}")
+    problemas = resumo["problemas"]
+    partes.append(f"{problemas} ocorrência{'s' if problemas != 1 else ''}" if problemas else "sem ocorrências")
+    return " · ".join(partes)
+
+
+# ---------------------------------------------------------------------------
+# Painel "o que fazer hoje": a próxima ação de cada OS
+# ---------------------------------------------------------------------------
+
+# Os grupos da fila de trabalho, na ordem do fluxo: (chave, título, ajuda).
+GRUPOS_DE_ACAO = (
+    ("entrega", "Entregas desta semana", "Confirme com o fornecedor o local, o horário e quem recebe."),
+    ("sem_nota", "Eventos realizados sem nota fiscal", "Cobre a nota do fornecedor e anexe na etapa 2."),
+    ("sem_oficio", "Notas sem ofício", "Gere o ofício ao GAF na etapa 2."),
+    ("sem_protocolo", "Ofícios sem protocolo", "Protocole o ofício no eProtocolo e informe o número."),
+    ("sem_ob", "Protocolos sem ordem bancária", "Acompanhe o pagamento no GAF e registre a ordem bancária."),
+    ("ob_nao_enviada", "Ordens bancárias não enviadas à empresa", "Envie o comprovante da OB ao fornecedor."),
+)
+
+# O que resolve cada grupo: (rótulo do botão, rota da tela).
+BOTAO_DA_ACAO = {
+    "entrega": ("Abrir a OS", "coffee_break:editar"),
+    "sem_nota": ("Anexar a nota", "coffee_break:etapa_nota"),
+    "sem_oficio": ("Gerar o ofício", "coffee_break:etapa_nota"),
+    "sem_protocolo": ("Informar o protocolo", "coffee_break:etapa_nota"),
+    "sem_ob": ("Registrar a OB", "coffee_break:etapa_protocolo"),
+    "ob_nao_enviada": ("Enviar a OB", "coffee_break:etapa_protocolo"),
+}
+
+# Janela das "Entregas desta semana" (dias a partir de hoje).
+DIAS_ENTREGAS_PROXIMAS = 7
+# A partir de quantos dias sem movimento a lista mostra "parada há N dias".
+LIMIAR_PARADA_DIAS = 7
+
+
+def proxima_acao(solicitacao, hoje=None):
+    """A chave do grupo da fila de trabalho em que a OS está, ou "" quando não
+    depende da equipe agora (cancelada, concluída ou evento ainda distante).
+
+    Segue os marcos do pagamento (a `situacao_financeira`) e, antes da nota,
+    a data do evento: realizado sem nota, ou com entrega nos próximos dias.
+    """
+    from datetime import timedelta
+
+    if solicitacao.cancelada or solicitacao.data_envio_empresa:
+        return ""
+    hoje = hoje or timezone.localdate()
+    if solicitacao.data_ordem_bancaria:
+        return "ob_nao_enviada"
+    if solicitacao.protocolo_pagamento.strip():
+        return "sem_ob"
+    if solicitacao.numero_nota_fiscal.strip():
+        return "sem_protocolo" if solicitacao.numero_oficio.strip() else "sem_oficio"
+    inicio = solicitacao.data_inicio_evento
+    if not inicio:
+        return ""
+    fim = solicitacao.data_fim_evento or inicio
+    if fim < hoje:
+        return "sem_nota"
+    if hoje <= inicio <= hoje + timedelta(days=DIAS_ENTREGAS_PROXIMAS):
+        return "entrega"
+    return ""
+
+
+def dias_parada(solicitacao, hoje=None):
+    """Há quantos dias a OS não anda: desde o último registro do histórico
+    (ou a criação) e, para evento já realizado, desde o fim do evento.
+
+    Usa a anotação `ultimo_historico` quando a consulta a trouxe; sem ela,
+    lê o histórico.
+    """
+    hoje = hoje or timezone.localdate()
+    if hasattr(solicitacao, "ultimo_historico"):
+        ultimo = solicitacao.ultimo_historico
+    else:
+        ultimo = solicitacao.historico.order_by("-criado_em").values_list("criado_em", flat=True).first()
+    referencia = timezone.localtime(ultimo or solicitacao.criado_em).date()
+    fim = solicitacao.data_fim_evento or solicitacao.data_inicio_evento
+    if fim and referencia < fim <= hoje:
+        referencia = fim
+    return max((hoje - referencia).days, 0)
+
+
+def selo_parada(solicitacao, hoje=None):
+    """"Parada há N dias" para a OS que depende da equipe e não anda há o
+    limiar ou mais (a entrega da semana não conta: ainda não aconteceu)."""
+    acao = proxima_acao(solicitacao, hoje)
+    if not acao or acao == "entrega":
+        return ""
+    dias = dias_parada(solicitacao, hoje)
+    return f"Parada há {dias} dias" if dias >= LIMIAR_PARADA_DIAS else ""
+
+
+def fila_de_trabalho(hoje=None):
+    """Os grupos do painel, na ordem do fluxo, cada um com as OS dele.
+
+    Cada grupo: chave, título, ajuda, itens (a OS, a rota e o botão que
+    resolvem, os dias parada) e o maior tempo parado. Grupos vazios ficam de
+    fora.
+    """
+    from datetime import time
+
+    from django.urls import reverse
+
+    from .models import SolicitacaoCoffeeBreak
+
+    hoje = hoje or timezone.localdate()
+    abertas = (
+        SolicitacaoCoffeeBreak.objects.filter(cancelada=False, data_envio_empresa__isnull=True)
+        .select_related("lote__contrato__fornecedor")
+        .annotate(ultimo_historico=models.Max("historico__criado_em"))
+    )
+    por_grupo = {chave: [] for chave, *_ in GRUPOS_DE_ACAO}
+    for solicitacao in abertas:
+        chave = proxima_acao(solicitacao, hoje)
+        if not chave:
+            continue
+        rotulo, rota = BOTAO_DA_ACAO[chave]
+        if chave == "entrega" and not solicitacao.data_envio_ordem_servico:
+            from .documentos import pendencias_ordem_servico
+
+            # A OS pronta e ainda não enviada: o botão já é o envio ao fornecedor.
+            if not pendencias_ordem_servico(solicitacao):
+                rotulo, rota = "Enviar a OS", "coffee_break:enviar_os"
+        if chave == "ob_nao_enviada" and solicitacao.arquivo_ordem_bancaria:
+            rota = "coffee_break:enviar_ob"
+        elif chave == "sem_ob" and solicitacao.data_atesto_gaf:
+            rotulo = "Anexar a OB"
+        por_grupo[chave].append({
+            "s": solicitacao,
+            "dias": dias_parada(solicitacao, hoje),
+            "url": reverse(rota, args=[solicitacao.pk]),
+            "botao": rotulo,
+        })
+    grupos = []
+    for chave, titulo, ajuda in GRUPOS_DE_ACAO:
+        itens = por_grupo[chave]
+        if not itens:
+            continue
+        if chave == "entrega":
+            itens.sort(key=lambda i: (i["s"].data_inicio_evento, i["s"].horario_evento or time.min))
+        else:
+            itens.sort(key=lambda i: -i["dias"])
+        grupos.append({
+            "chave": chave,
+            "titulo": titulo,
+            "ajuda": ajuda,
+            "itens": itens,
+            "total": len(itens),
+            "max_dias": max(i["dias"] for i in itens),
+        })
+    return grupos

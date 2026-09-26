@@ -1,0 +1,76 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Enviar um documento ao fornecedor por e-mail (a OS; a ordem bancária): o
+  e-mail aparece antes, com o destinatário do cadastro do fornecedor, a
+  cópia da ASCOM, o assunto e o texto padrão, tudo editável, e a lista do que
+  vai anexado. Só sai com a confirmação; o envio fica no histórico.
+  Contexto: `solicitacao`, `envio` (titulo, o_que, ja_enviado, anexos, volta,
+  url_fornecedor, pendencias), `valores`, `erro`.
+{% endcomment %}
+
+{% block title %}{{ envio.titulo }} — Coffee Break{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker kicker--junto">Solicitação {{ solicitacao.numero|default:solicitacao.pk }} · {{ solicitacao.descricao_evento }}</div>
+      <h1>{{ envio.titulo }}</h1>
+    </div>
+  </div>
+
+  <div class="editor-roteiro cb-fluxo">
+    {% if envio.ja_enviado %}
+      <div class="aviso aviso--info" role="status">
+        {% include "components/icon.html" with nome="info" %}
+        <div>{{ envio.ja_enviado }} Enviar de novo registra outro envio no histórico.</div>
+      </div>
+    {% endif %}
+    {% if envio.pendencias %}
+      <div class="aviso aviso--erro" role="alert">
+        {% include "components/icon.html" with nome="alert" %}
+        <div><strong>Ainda não dá para enviar.</strong>
+          <ul>{% for p in envio.pendencias %}<li>{{ p }}</li>{% endfor %}</ul>
+          <a href="{{ envio.volta }}">Voltar à solicitação</a>
+        </div>
+      </div>
+    {% else %}
+      <form method="post" action="" data-confirmar="Enviar este e-mail ao fornecedor agora?">
+        {% csrf_token %}
+        <section class="section-card reg">
+          <header class="section-card__cabecalho reg__t">
+            <span class="section-card__icone" aria-hidden="true">{% include "components/icon.html" with nome="mail" %}</span>
+            <h2 class="section-card__titulo">E-mail ao fornecedor</h2>
+          </header>
+          <div class="section-card__corpo">
+            {% if erro %}<div class="aviso aviso--erro" role="alert">{% include "components/icon.html" with nome="alert" %}<div>{{ erro }}</div></div>{% endif %}
+            {% if not valores.para %}
+              <p class="cb-ajuda">O fornecedor {{ solicitacao.lote.contrato.fornecedor.razao_social }} não tem e-mail no cadastro. Informe abaixo{% if envio.url_fornecedor %} ou <a href="{{ envio.url_fornecedor }}">complete o cadastro</a>{% endif %}.</p>
+            {% endif %}
+            <div class="g-form g-form--2">
+              {% include "components/input.html" with name="para" label="Para" obrigatorio=True valor=valores.para ajuda="O e-mail do cadastro do fornecedor. Mais de um: separe por vírgula." erros=None %}
+              {% include "components/input.html" with name="copia" label="Cópia" valor=valores.copia ajuda="A ASCOM (Cadastros › Ofício e eProtocolo)." erros=None %}
+              <div class="cheia">
+                {% include "components/input.html" with name="assunto" label="Assunto" obrigatorio=True maxlength="200" valor=valores.assunto erros=None %}
+              </div>
+              <div class="cheia">
+                {% include "components/textarea.html" with name="texto" label="Texto" linhas="12" valor=valores.texto erros=None %}
+              </div>
+            </div>
+            <h3 class="sol-subtitulo">Anexo{{ envio.anexos|length|pluralize }}</h3>
+            <ul class="tm-fatos">
+              {% for anexo in envio.anexos %}
+                <li class="tm-fato">{% include "components/icon.html" with nome="document" %}<span class="vg-fato__valor">{% if anexo.url %}<a href="{{ anexo.url }}" target="_blank" rel="noopener">{{ anexo.nome }}</a>{% else %}{{ anexo.nome }}{% endif %}</span></li>
+              {% endfor %}
+            </ul>
+            <div class="frm-acoes-fim">
+              <a class="btn--secundaria" href="{{ envio.volta }}">Voltar</a>
+              <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="send" %}Enviar e-mail</button>
+            </div>
+          </div>
+        </section>
+      </form>
+    {% endif %}
+  </div>
+{% endblock %}
