@@ -128,3 +128,14 @@ class NumeroPreenchidoDepoisDoAnexoTests(PrestacaoFixturesMixin, PrestacaoTestCa
         textos = self._textos()
         self.assertIn("2026005678", textos)
         self.assertEqual(textos.count("2026001234"), 1)
+
+
+class RascunhoDoNavegadorTests(PrestacaoFixturesMixin, PrestacaoTestCase):
+    """m083: a Etapa 3 não usa o id do formulário de Solicitação de Evento."""
+
+    def test_etapa3_sem_o_id_do_rascunho(self):
+        self.setUpPrestacaoFixtures()
+        ps = self.criar_prestacao(numero=83).prestacoes_servidor[0]
+        resposta = self.client.get(reverse("viagens_prestacoes:documentos_servidor", args=[ps.pk]))
+        self.assertNotContains(resposta, 'id="form-solicitacao"')
+        self.assertContains(resposta, 'id="form-prestacao-solicitacao"')

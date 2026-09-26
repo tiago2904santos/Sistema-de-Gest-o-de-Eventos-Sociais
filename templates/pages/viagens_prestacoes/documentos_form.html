@@ -42,7 +42,7 @@
     </header>
     <div class="section-card__corpo">
       {# Solicitação e prazo de saque numa linha, como na lista; gravam sozinhos. #}
-      <form method="post" action="{% url 'viagens_prestacoes:index' %}" id="form-solicitacao" class="pc-docs__solicitacao" data-autosave data-autosave-url="{{ servidor.solicitacao_autosave_url }}" data-autosave-model="prestacao_servidor" data-autosave-id="{{ ps.pk|unlocalize }}">
+      <form method="post" action="{% url 'viagens_prestacoes:index' %}" id="form-prestacao-solicitacao" class="pc-docs__solicitacao" data-autosave data-autosave-url="{{ servidor.solicitacao_autosave_url }}" data-autosave-model="prestacao_servidor" data-autosave-id="{{ ps.pk|unlocalize }}">
         {% csrf_token %}<input type="hidden" name="action" value="save_solicitacoes"><input type="hidden" name="next" value="{{ request.path }}">
         {% include "components/input.html" with name=numero_name label="Número da solicitação" valor=ps.numero_solicitacao placeholder="0000000" autocomplete="off" %}
         {% include "components/date_range.html" with name="saque_documentos" start_name=liberacao_name end_name=prazo_name label="Prazo de saque (liberação → prazo limite)" valor_inicio=liberacao_iso valor_fim=prazo_iso erros=None %}
