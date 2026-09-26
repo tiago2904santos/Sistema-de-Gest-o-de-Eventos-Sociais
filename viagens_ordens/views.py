@@ -233,7 +233,10 @@ def _contexto_form(form, ordem, request):
         selo, selo_tom = "", ""
     return {
         "form": form, "ordem": ordem,
-        "valores": {n: _valor(form, n) for n in ["destino_estado", "destino_cidade", "data_evento_inicio", "data_evento_fim", "modelo_motivo", "motivo"]},
+        "valores": {n: _valor(form, n) for n in ["numero", "destino_estado", "destino_cidade", "data_evento_inicio", "data_evento_fim", "modelo_motivo", "motivo"]},
+        # O número como o do ofício: o reservado, ou em branco com o próximo livre sugerido.
+        "ano_numero": form.ano_do_numero,
+        "sugestao_numero": "" if ordem.numero else OrdemServico.proximo_numero_livre(form.ano_do_numero)[0],
         "erros": {n: form.errors.get(n) for n in form.fields},
         "erros_gerais": form.non_field_errors(),
         "tipos_necessidade": [{"valor": chave, "rotulo": rotulo, "dica": DICAS_DE_NECESSIDADE.get(chave, ""), "marcado": chave == tipo_atual,

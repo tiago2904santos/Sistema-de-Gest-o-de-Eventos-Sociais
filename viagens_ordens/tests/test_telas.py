@@ -138,6 +138,27 @@ class CadastroTests(CenarioOrdemMixin, TestCase):
         self.assertEqual(ordem.numero, 1)  # editar não renumera
         self.assertContains(_lista(self.client), "Ordem de Serviço atualizada.")
 
+    def test_numero_como_o_do_oficio(self):
+        # Tela nova sugere o próximo livre; em branco, é ele que vale.
+        r = self.client.get(reverse("viagens_ordens:novo"))
+        self.assertContains(r, 'name="numero"')
+        self.assertContains(r, "próximo número livre (1)")
+        # Digitado: vale o digitado; repetido: recusa.
+        self.client.post(reverse("viagens_ordens:novo"), self.payload(numero="12"))
+        self.assertEqual(OrdemServico.objects.get().numero, 12)
+        r = self.client.post(reverse("viagens_ordens:novo"), self.payload(numero="12"))
+        self.assertContains(r, "Já existe uma Ordem de Serviço com o número 12")
+        # Quem pula para 12 faz a seguinte ser 13.
+        self.client.post(reverse("viagens_ordens:novo"), self.payload())
+        self.assertEqual(OrdemServico.objects.order_by("-numero").first().numero, 13)
+
+    def test_numero_da_os_do_coffee_break_e_recusado(self):
+        from unittest import mock
+        with mock.patch("core.numeracao.numeros_externos", return_value={7}):
+            r = self.client.post(reverse("viagens_ordens:novo"), self.payload(numero="7"))
+        self.assertContains(r, "já foi usado por uma OS do Coffee Break")
+        self.assertFalse(OrdemServico.objects.exists())
+
     def test_next_e_respeitado(self):
         destino = reverse("viagens_ordens:lista") + "?q=x"
         r = self.client.post(reverse("viagens_ordens:novo"), self.payload(next=destino))

@@ -314,8 +314,9 @@ class Oficio(ModeloTemporal, ModeloCancelavel, OrigemLegado):
         # Livro único: os ofícios do Coffee Break saem da mesma sequência.
         from core.numeracao import NAMESPACE_OFICIO, numeros_externos
         usados |= numeros_externos(NAMESPACE_OFICIO, ano)
-        lacuna = OficioNumeroLacuna.objects.filter(ano=ano, numero__gte=piso).exclude(numero__in=usados).order_by("numero").first()
-        return lacuna.numero if lacuna else max(max(usados, default=piso-1)+1, piso)
+        from core.numeracao import proximo_do_livro
+        lacunas = OficioNumeroLacuna.objects.filter(ano=ano).values_list("numero", flat=True)
+        return proximo_do_livro(usados=usados, lacunas=lacunas, piso=piso)
 
     def save(self, *args, **kwargs):
         self.protocolo = normalize_protocolo(self.protocolo)

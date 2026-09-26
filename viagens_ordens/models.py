@@ -7,7 +7,6 @@ compartilhado de `core.numeracao`.
 """
 
 from django.db import models, transaction
-from django.db.models import Max
 from django.utils import timezone
 
 from core.constraints import periodo_ordenado
@@ -157,19 +156,17 @@ class OrdemServico(ModeloTemporal, ModeloCancelavel, OrigemLegado):
 
     @classmethod
     def proximo_numero_livre(cls, ano):
-        """(número, pk da lacuna usada ou None): a menor lacuna do ano, senão o
+        """(número, pk da lacuna usada ou None), na regra do número de ofício
+        (`core.numeracao.proximo_do_livro`): a menor lacuna do ano, senão o
         maior número mais um. A sequência é a mesma das OS do Coffee Break
         (livro único): os números de lá contam como ocupados."""
-        from core.numeracao import NAMESPACE_ORDEM_SERVICO, numeros_externos
+        from core.numeracao import NAMESPACE_ORDEM_SERVICO, numeros_externos, proximo_do_livro
 
-        externos = numeros_externos(NAMESPACE_ORDEM_SERVICO, ano)
-        lacuna = (
-            OrdemServicoNumeroLacuna.objects.filter(ano=ano).exclude(numero__in=externos).order_by("numero").first()
-        )
-        if lacuna is not None:
-            return lacuna.numero, lacuna.pk
-        maior = cls.objects.filter(ano=ano).aggregate(m=Max("numero"))["m"] or 0
-        return max(maior, max(externos, default=0)) + 1, None
+        usados = set(cls.objects.filter(ano=ano).exclude(numero__isnull=True).values_list("numero", flat=True))
+        usados |= numeros_externos(NAMESPACE_ORDEM_SERVICO, ano)
+        lacunas = dict(OrdemServicoNumeroLacuna.objects.filter(ano=ano).values_list("numero", "pk"))
+        numero = proximo_do_livro(usados=usados, lacunas=lacunas)
+        return numero, lacunas.get(numero)
 
     def _escolher_numero(self):
         numero, self._lacuna_numeracao_id = OrdemServico.proximo_numero_livre(self.ano)
@@ -177,7 +174,13 @@ class OrdemServico(ModeloTemporal, ModeloCancelavel, OrigemLegado):
 
     def save(self, *args, **kwargs):
         if self.numero:
-            return super().save(*args, **kwargs)
+            # Número digitado (como no ofício): vale no ano corrente e, se era
+            # uma lacuna, ela deixa de ser.
+            if not self.ano:
+                self.ano = timezone.localdate().year
+            super().save(*args, **kwargs)
+            OrdemServicoNumeroLacuna.objects.filter(ano=self.ano, numero=self.numero).delete()
+            return
         from core.numeracao import NAMESPACE_ORDEM_SERVICO, reservar_numero
 
         self.ano = timezone.localdate().year

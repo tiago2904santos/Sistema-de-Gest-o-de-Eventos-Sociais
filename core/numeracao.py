@@ -2,9 +2,9 @@
 
 Portado do Gerenciador de Viagens na Fase 4. Aqui mora a **mecânica** —
 serializar o escopo e repetir a escolha quando outro processo venceu a corrida.
-A **política** (reuso de lacuna, piso, contador) fica em cada documento, porque
-é diferente de propósito: o ofício e a ordem de serviço reusam lacunas, o plano
-de trabalho tem contador na configuração.
+A **política** (reuso de lacuna, piso) é a mesma para ofício, ordem de serviço
+e plano de trabalho — a do número de ofício, em `proximo_do_livro` —; cada
+documento só diz quais números usou e quais liberou.
 
 O escopo é **global por ano**: o sistema de origem numerava por área de trabalho
 e aqui não há área, então a unicidade é `(ano, numero)`, que é a versão mais
@@ -100,6 +100,46 @@ def numeros_externos(namespace: int, ano: int) -> set[int]:
     for fonte in _NUMEROS_EXTERNOS.get(namespace, ()):
         usados |= set(fonte(ano))
     return usados
+
+
+def proximo_do_livro(*, usados, lacunas=(), piso: int = 1) -> int:
+    """A política comum dos documentos de Viagens (ofício, OS e plano).
+
+    É a regra do número de ofício: a menor lacuna liberada por exclusão (a
+    partir do piso e ainda não reocupada), senão o maior número usado mais um
+    — quem pula para 12 faz o seguinte ser 13 —, nunca abaixo do piso.
+    `usados` já soma os números externos do mesmo livro.
+    """
+    piso = max(piso or 1, 1)
+    usados = set(usados)
+    for numero in sorted(lacunas):
+        if numero >= piso and numero not in usados:
+            return numero
+    return max(max(usados, default=piso - 1) + 1, piso)
+
+
+def conferir_numero_digitado(numero, *, ano: int, instancia, namespace: int | None = None,
+                             documento: str = "um documento", externo: str = "um documento do Coffee Break"):
+    """A validação do número digitado à mão, a mesma do ofício.
+
+    Em branco, mantém o número já reservado (ou deixa o sistema sugerir);
+    maior que zero; sem repetir outro do mesmo ano nem um já tirado do livro
+    compartilhado por outro módulo. Devolve o número a gravar.
+    """
+    from django.core.exceptions import ValidationError
+
+    if numero is None:
+        return instancia.numero
+    if numero < 1:
+        raise ValidationError("Informe um número válido (maior que zero).")
+    modelo = type(instancia)
+    if modelo.objects.filter(ano=ano, numero=numero).exclude(pk=instancia.pk).exists():
+        raise ValidationError(f"Já existe {documento} com o número {numero} em {ano}.")
+    if namespace is not None and numero != instancia.numero and numero in numeros_externos(namespace, ano):
+        raise ValidationError(
+            f"O número {numero} de {ano} já foi usado por {externo} (a numeração é conjunta)."
+        )
+    return numero
 
 
 def escopo_do_lock(*, ano: int) -> int:

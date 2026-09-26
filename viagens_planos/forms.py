@@ -28,7 +28,7 @@ class PlanoIdentificacaoForm(forms.ModelForm):
     class Meta:
         model = PlanoTrabalho
         fields = [
-            "programa", "programa_outros", "destino_estado", "destino_cidade",
+            "numero", "programa", "programa_outros", "destino_estado", "destino_cidade",
             "data_evento_inicio", "data_evento_fim", "horario_atendimento",
             # Contextualização, coordenação e considerações finais ficam de fora:
             # a tela não as oferece e quem as escreve é o `sincronizar_textos_padrao`,
@@ -119,6 +119,16 @@ class PlanoIdentificacaoForm(forms.ModelForm):
             self.fields[f"extra_cidade_{i}"] = forms.ModelChoiceField(
                 Municipio.objects.all(), required=False, label=f"Município adicional {i + 1}", initial=extra.cidade_id if extra else None,
             )
+
+    def clean_numero(self):
+        """Como o N° do Ofício: em branco mantém o reservado; não repete outro do ano."""
+        from django.utils import timezone
+
+        from core.numeracao import conferir_numero_digitado
+        return conferir_numero_digitado(
+            self.cleaned_data.get("numero"), ano=self.instance.ano or timezone.localdate().year,
+            instancia=self.instance, documento="um Plano de Trabalho",
+        )
 
     def clean_programa(self):
         valor = (self.cleaned_data.get("programa") or "").strip()
