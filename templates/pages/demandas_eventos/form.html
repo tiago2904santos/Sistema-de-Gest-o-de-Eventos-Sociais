@@ -68,6 +68,9 @@
         </div>
       {% endif %}
 
+      {# Palestrante em outra palestra na mesma data, ou pedido repetido no município (todos os setores): só aviso. #}
+      {% include "components/v32/avisos_conflito.html" with conflitos=conflitos formulario="form-demanda" campos="data_inicio_evento:inicio data_fim_evento:fim municipio:municipios palestrantes:palestrantes" fixos=conflitos_fixos %}
+
       <section class="section-card reg" id="sec-evento">
         <header class="section-card__cabecalho reg__t">
           <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
@@ -218,6 +221,7 @@
   {{ block.super }}
   <script src="{% estatico 'js/lista-escolha.js' %}" defer></script>
   <script src="{% estatico 'js/palestras-form.js' %}" defer></script>
+  <script src="{% estatico 'js/conflitos.js' %}" defer></script>
   <script src="{% estatico 'js/trilho.js' %}" defer></script>
   <script src="{% estatico 'js/sugestao-solicitante.js' %}" defer></script>
 {% endblock %}

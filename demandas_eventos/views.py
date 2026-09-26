@@ -14,6 +14,7 @@ from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_POST
 
 from core import preencher_por_email
+from core.conflitos import conflitos_da_demanda
 from integracoes.eprotocolo import andamento as andamento_eprotocolo
 from core.listagens import trilha_de_situacoes
 
@@ -199,9 +200,19 @@ def _contexto_form(form, instancia):
     evento_atual = valor("evento")
     temas_marcados = marcados("temas")
     palestrantes_marcados = marcados("palestrantes")
+    # Conflitos de agenda (core/conflitos.py): palestrante na mesma data e
+    # pedido repetido no município. Com o formulário recusado, os enviados.
+    if instancia is not None and instancia.status == StatusDemanda.CANCELADA:
+        conflitos = []
+    elif form.is_bound:
+        conflitos = conflitos_da_demanda(form.instance, palestrantes=sorted(palestrantes_marcados))
+    else:
+        conflitos = conflitos_da_demanda(instancia) if instancia is not None else []
     return {
         "form": form,
         "instancia": instancia,
+        "conflitos": conflitos,
+        "conflitos_fixos": "pedido=demanda" + (f"&excluir_demanda={instancia.pk}" if instancia else ""),
         "valores": {nome: valor(nome) for nome in form.fields if nome not in {"temas", "palestrantes"}},
         "erros": form.errors,
         "opcoes_eventos": [

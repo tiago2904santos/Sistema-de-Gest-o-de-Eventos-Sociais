@@ -31,6 +31,7 @@ from .models import (
     TipoOperacao,
 )
 from core import preencher_por_email
+from core.conflitos import conflitos_da_solicitacao
 from integracoes.eprotocolo import andamento as andamento_eprotocolo
 from integracoes.eprotocolo.andamento import formatar_numero
 from core.listagens import trilha_de_situacoes
@@ -200,10 +201,19 @@ def _contexto_formulario(request, form, solicitacao=None, reabrindo=False):
         for servico in opcoes_de("servicos", servicos_salvos)
     ]
 
+    # Conflitos de agenda (core/conflitos.py): com o formulário recusado,
+    # valem os valores enviados, que a validação já escreveu na instância.
+    alvo = form.instance if form.is_bound else solicitacao
+    encerrada = solicitacao is not None and solicitacao.finalizada
+    conflitos = [] if alvo is None or encerrada else conflitos_da_solicitacao(alvo)
+    conflitos_fixos = "pedido=solicitacao" + (f"&excluir_solicitacao={solicitacao.pk}" if solicitacao else "")
+
     return {
         "form": form,
         "solicitacao": solicitacao,
         "acoes": acoes,
+        "conflitos": conflitos,
+        "conflitos_fixos": conflitos_fixos,
         # Cabeçalho da tela de edição: só o título e o selo da situação.
         "selo": solicitacao.get_status_display() if solicitacao else "Rascunho",
         "selo_tom": solicitacao.status.lower() if solicitacao else "rascunho",

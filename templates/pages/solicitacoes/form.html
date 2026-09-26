@@ -121,6 +121,9 @@
         </div>
       {% endif %}
 
+      {# Unidade móvel, motorista ou pedido repetido já em outro evento no período (todas as unidades): só aviso. #}
+      {% include "components/v32/avisos_conflito.html" with conflitos=conflitos formulario="form-solicitacao" campos="data_inicio_evento:inicio data_fim_evento:fim municipio:municipios unidade_movel_designada:unidades_moveis motorista:servidores" fixos=conflitos_fixos %}
+
       <section class="section-card reg" id="sec-dados">
         <header class="section-card__cabecalho reg__t">
           <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
@@ -290,6 +293,8 @@
             {% endif %}
           </header>
           <div class="section-card__corpo">
+            {# Quem defere vê o conflito antes de decidir (o mesmo aviso do cartão 1). #}
+            {% include "components/v32/avisos_conflito.html" with conflitos=conflitos %}
             {# As quantidades de servidores ficam no cartão 2, nas próprias linhas das equipes (form="form-despacho"). #}
             <form method="post" action="{% url 'solicitacoes:despachar' solicitacao.pk %}" id="form-despacho">
               {% csrf_token %}
@@ -429,4 +434,4 @@
   <dialog class="mo v32-cadastro-modal" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{{ request.path }}"></dialog>
 {% endblock %}
 
-{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/trilho.js' %}" defer></script><script src="{% estatico 'js/solicitacoes-form.js' %}" defer></script><script src="{% estatico 'js/sugestao-solicitante.js' %}" defer></script>{% endblock %}
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/trilho.js' %}" defer></script><script src="{% estatico 'js/solicitacoes-form.js' %}" defer></script><script src="{% estatico 'js/conflitos.js' %}" defer></script><script src="{% estatico 'js/sugestao-solicitante.js' %}" defer></script>{% endblock %}

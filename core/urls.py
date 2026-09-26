@@ -12,5 +12,6 @@ urlpatterns = [
         views.marcar_notificacoes_lidas,
         name="notificacoes_marcar_lidas",
     ),
+    path("conflitos/", views.conflitos_de_agenda, name="conflitos"),
     path("notificacoes/<int:pk>/abrir/", views.abrir_notificacao, name="notificacao_abrir"),
 ]
