@@ -52,18 +52,20 @@ class UploadDeAssinadoNaoPodeDestruirOAnteriorTests(PrestacaoFixturesMixin, Test
         self.setUpPrestacaoFixtures()
         self.fixture = self.criar_prestacao(numero=61)
         self.prestacao = self.fixture.prestacao
-        self.anterior = PrestacaoDocumentoAnexo.objects.create(prestacao=self.prestacao, tipo=PrestacaoDocumentoAnexo.TIPO_DESPACHO, arquivo=arquivo('despacho-antigo.pdf'), nome_original='despacho-antigo.pdf')
+        # O RT assinado é o que se substitui; despacho e comprovante somam (m081).
+        self.ps = self.fixture.prestacoes_servidor[0]
+        self.anterior = PrestacaoDocumentoAnexo.objects.create(prestacao=self.prestacao, servidor_prestacao=self.ps, tipo=PrestacaoDocumentoAnexo.TIPO_RT_ASSINADO, arquivo=arquivo('rt-antigo.pdf'), nome_original='rt-antigo.pdf')
 
     def enviar(self):
-        return self.client.post(reverse('viagens_prestacoes:prestacao_despacho_assinado_anexar', args=[self.prestacao.pk]), {'arquivo': arquivo('despacho-novo.pdf')})
+        return self.client.post(reverse('viagens_prestacoes:prestacao_servidor_assinado_anexar', args=[self.ps.pk, PrestacaoDocumentoAnexo.TIPO_RT_ASSINADO]), {'arquivo': arquivo('rt-novo.pdf')})
 
     def test_substituicao_bem_sucedida_troca_o_anexo(self):
         caminho_antigo = Path(self.anterior.arquivo.path)
         self.assertTrue(caminho_antigo.exists())
         self.enviar()
-        restantes = PrestacaoDocumentoAnexo.objects.filter(prestacao=self.prestacao, tipo=PrestacaoDocumentoAnexo.TIPO_DESPACHO)
+        restantes = PrestacaoDocumentoAnexo.objects.filter(prestacao=self.prestacao, tipo=PrestacaoDocumentoAnexo.TIPO_RT_ASSINADO)
         self.assertEqual(restantes.count(), 1)
-        self.assertEqual(restantes.first().nome_original, 'despacho-novo.pdf')
+        self.assertEqual(restantes.first().nome_original, 'rt-novo.pdf')
 
     def test_falha_ao_criar_o_novo_nao_pode_destruir_o_anterior(self):
         """**Perda de dado, e reprova hoje.**

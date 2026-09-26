@@ -94,8 +94,13 @@ def substituir_anexo_assinado(
     nome_original,
     servidor_prestacao=None,
     substituir_todos_do_tipo=False,
+    adicionar=False,
 ) -> ResultadoAnexo:
     """Troca o documento assinado de um tipo, preservando o anterior se algo falhar.
+
+    Com `adicionar` (comprovante e despacho, que têm mais de um arquivo — m081), o
+    novo se soma aos que já estavam lá: anexar um terceiro comprovante pela lista não
+    pode apagar os dois primeiros.
 
     A ordem de hoje apagava os arquivos anteriores do disco **antes** de criar a linha
     nova: um `create` que falhasse destruía o documento assinado anterior para sempre.
@@ -106,7 +111,7 @@ def substituir_anexo_assinado(
     arquivo novo não pode custar o que já estava anexado, e esse era o motivo escrito no
     código antes desta fatia.
     """
-    substituidos = remover_anexos_do_tipo(
+    substituidos = 0 if adicionar else remover_anexos_do_tipo(
         prestacao,
         tipo=tipo,
         servidor_prestacao=servidor_prestacao,

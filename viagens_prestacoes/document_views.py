@@ -318,6 +318,7 @@ def _prestacao_assinado_upload(
     servidor_prestacao=None,
     substituir_todos_do_tipo=False,
     pos_anexo=None,
+    adicionar=False,
 ):
     fallback_url = reverse("viagens_prestacoes:index")
     destino = voltar_para(request, fallback_url)
@@ -339,6 +340,10 @@ def _prestacao_assinado_upload(
     except ValidationError as exc:
         return _upload_recusado(request, destino, list(exc.messages))
 
+    if adicionar and _ja_anexado(prestacao, tipo, servidor_prestacao, arquivo):
+        return _upload_recusado(request, destino, ["Este arquivo já está anexado."])
+    anteriores = PrestacaoDocumentoAnexo.objects.filter(prestacao=prestacao, tipo=tipo, servidor_prestacao=servidor_prestacao).count() if adicionar else 0
+
     # A validação vem antes da exclusão dos anteriores de propósito: recusar um
     # arquivo novo não pode custar o que já estava anexado.
     resultado = substituir_anexo_assinado(
@@ -348,9 +353,13 @@ def _prestacao_assinado_upload(
         nome_original=nome_original,
         servidor_prestacao=servidor_prestacao,
         substituir_todos_do_tipo=substituir_todos_do_tipo,
+        adicionar=adicionar,
     )
     if pos_anexo is not None and resultado.anexo is not None:
         pos_anexo(resultado.anexo)
+    elif anteriores:
+        plural = "s" if anteriores > 1 else ""
+        messages.success(request, f"Documento assinado anexado. O{plural} {anteriores} anterior{'es' if plural else ''} continua{'m' if plural else ''} anexado{plural}.")
     else:
         messages.success(request, "Documento assinado anexado.")
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
@@ -361,12 +370,52 @@ def _prestacao_assinado_upload(
     return redirect(destino)
 
 
+def _ja_anexado(prestacao, tipo, servidor_prestacao, arquivo) -> bool:
+    """O mesmo arquivo (byte a byte) já está entre os anexos deste tipo e escopo.
+
+    Só para os tipos que somam (m081): sem substituir, um duplo clique ou o mesmo PDF
+    enviado duas vezes duplicaria o documento no pacote final.
+    """
+    import hashlib
+
+    def resumo(leitor):
+        h = hashlib.sha256()
+        for bloco in iter(lambda: leitor.read(1 << 16), b""):
+            h.update(bloco)
+        return h.hexdigest()
+
+    tamanho = getattr(arquivo, "size", None)
+    anteriores = PrestacaoDocumentoAnexo.objects.filter(prestacao=prestacao, tipo=tipo, servidor_prestacao=servidor_prestacao)
+    candidatos = []
+    for anexo in anteriores:
+        try:
+            if tamanho is None or anexo.arquivo.size == tamanho:
+                candidatos.append(anexo)
+        except OSError:
+            continue
+    if not candidatos:
+        return False
+    arquivo.seek(0)
+    novo = resumo(arquivo)
+    arquivo.seek(0)
+    for anexo in candidatos:
+        try:
+            with anexo.arquivo.open("rb") as leitor:
+                if resumo(leitor) == novo:
+                    return True
+        except OSError:
+            continue
+    return False
+
+
 def prestacao_despacho_assinado_anexar(request, pc_pk):
+    # O despacho pode vir em mais de um arquivo (despacho + folha de assinatura): soma.
     prestacao = get_object_or_404(_prestacao_queryset(), pk=pc_pk)
     return _prestacao_assinado_upload(
         request,
         prestacao=prestacao,
         tipo=PrestacaoDocumentoAnexo.TIPO_DESPACHO,
+        adicionar=True,
     )
 
 
@@ -471,6 +520,8 @@ def prestacao_servidor_assinado_anexar(request, ps_pk, tipo):
         tipo=tipo,
         substituir_todos_do_tipo=diario_compartilhado,
         pos_anexo=endireitar if diario_compartilhado else None,
+        # Vários comprovantes por servidor (saque + transferência): soma, não troca.
+        adicionar=tipo == PrestacaoDocumentoAnexo.TIPO_COMPROVANTE,
     )
 
 

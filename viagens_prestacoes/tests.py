@@ -280,15 +280,15 @@ class PrestacaoAssinadoUploadTests(TestCase):
         self.ps_motorista = self.prestacao.servidores_prestacao.get(servidor=self.motorista)
         self.ps_servidor = self.prestacao.servidores_prestacao.get(servidor=self.servidor)
 
-    def test_anexa_e_substitui_despacho_assinado(self):
+    def test_anexa_despacho_assinado_somando_as_partes(self):
+        # m081: o despacho vem em mais de um arquivo (despacho + folha de assinatura).
         url = reverse('viagens_prestacoes:prestacao_despacho_assinado_anexar', args=[self.prestacao.pk])
         with tempfile.TemporaryDirectory() as tmpdir, override_settings(MEDIA_ROOT=tmpdir):
             for nome in ('despacho-1.pdf', 'despacho-2.pdf'):
-                response = self.client.post(url, data={'arquivo': SimpleUploadedFile(nome, pdf_minimo(), content_type='application/pdf'), 'next': reverse('viagens_prestacoes:index')})
+                response = self.client.post(url, data={'arquivo': SimpleUploadedFile(nome, pdf_minimo(nome), content_type='application/pdf'), 'next': reverse('viagens_prestacoes:index')})
                 self.assertEqual(response.status_code, 302)
             anexos = PrestacaoDocumentoAnexo.objects.filter(prestacao=self.prestacao, servidor_prestacao=None, tipo=PrestacaoDocumentoAnexo.TIPO_DESPACHO)
-            self.assertEqual(anexos.count(), 1)
-            self.assertEqual(anexos.get().nome_original, 'despacho-2.pdf')
+            self.assertEqual(sorted(anexos.values_list('nome_original', flat=True)), ['despacho-1.pdf', 'despacho-2.pdf'])
 
     def test_diario_assinado_pode_ser_anexado_por_qualquer_servidor_e_e_compartilhado(self):
         tipo = PrestacaoDocumentoAnexo.TIPO_DB_ASSINADO

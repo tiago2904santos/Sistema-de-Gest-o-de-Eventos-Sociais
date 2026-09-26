@@ -31,3 +31,47 @@ class FotoDoComprovanteEmPeTests(SimpleTestCase):
         largura, altura = float(pagina.mediabox.width), float(pagina.mediabox.height)
         self.assertGreater(altura, largura)
         self.assertAlmostEqual(largura, 595.28, delta=2)
+
+
+from django.core.files.uploadedfile import SimpleUploadedFile  # noqa: E402
+from django.urls import reverse  # noqa: E402
+
+from .models import PrestacaoDocumentoAnexo as Anexo  # noqa: E402
+from .test_helpers import PrestacaoFixturesMixin  # noqa: E402
+from .test_helpers import PrestacaoTestCase  # noqa: E402
+from .test_helpers import pdf_minimo  # noqa: E402
+
+
+class ComprovantePelaListaSomaTests(PrestacaoFixturesMixin, PrestacaoTestCase):
+    """m081: anexar pelo menu da lista soma o comprovante aos que já estavam lá."""
+
+    def setUp(self):
+        super().setUp()
+        self.setUpPrestacaoFixtures()
+        self.fixture = self.criar_prestacao(numero=81)
+        self.ps = self.fixture.prestacoes_servidor[0]
+
+    def _pela_etapa3(self, nome):
+        return self.client.post(
+            reverse("viagens_prestacoes:prestacao_servidor_arquivo_autosave", args=[self.ps.pk]),
+            {f"ps-{self.ps.pk}-comprovante_arquivos": SimpleUploadedFile(nome, pdf_minimo(nome), content_type="application/pdf")},
+        )
+
+    def _pela_lista(self, nome, conteudo=None):
+        return self.client.post(
+            reverse("viagens_prestacoes:prestacao_servidor_assinado_anexar", args=[self.ps.pk, Anexo.TIPO_COMPROVANTE]),
+            {"arquivo": SimpleUploadedFile(nome, conteudo or pdf_minimo(nome), content_type="application/pdf")},
+        )
+
+    def test_terceiro_comprovante_pela_lista_mantem_os_dois_primeiros(self):
+        self._pela_etapa3("c1.pdf")
+        self._pela_etapa3("c2.pdf")
+        self._pela_lista("c3.pdf")
+        nomes = sorted(self.ps.documentos_anexos.filter(tipo=Anexo.TIPO_COMPROVANTE).values_list("nome_original", flat=True))
+        self.assertEqual(nomes, ["c1.pdf", "c2.pdf", "c3.pdf"])
+
+    def test_mesmo_arquivo_duas_vezes_nao_duplica(self):
+        igual = pdf_minimo("igual")
+        self._pela_lista("c1.pdf", igual)
+        self._pela_lista("c1-de-novo.pdf", igual)
+        self.assertEqual(self.ps.documentos_anexos.filter(tipo=Anexo.TIPO_COMPROVANTE).count(), 1)
