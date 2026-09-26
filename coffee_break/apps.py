@@ -75,5 +75,13 @@ class CoffeeBreakConfig(AppConfig):
                     ),
                     "somente_admin": True,
                 },
+                # Textos-base da OS, do ofício e do certifico (m057).
+                {
+                    "rotulo": "Textos dos documentos",
+                    "icone": "document",
+                    "url": "documentos:modelos_tipo",
+                    "url_args": ("coffee_break_ordem_servico",),
+                    "somente_admin": True,
+                },
             ],
         )

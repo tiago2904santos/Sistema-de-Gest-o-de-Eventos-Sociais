@@ -505,6 +505,21 @@ class VinculoCoffee(VinculoBase):
     def contexto(self, solicitacao, *, modo, campos_editaveis):
         return contexto_da_folha(self.tipo, solicitacao, modo=modo, campos_editaveis=campos_editaveis)
 
+    def html_documento(self, solicitacao, *, com_edicao=True):
+        """Para o editor completo (m057): a folha do PDF (coffee_break/
+        documentos/), não a do editor de campos, que é um desenho à parte."""
+        from .documentos import html_do_documento
+
+        return html_do_documento(self.tipo, solicitacao, previa=True, com_edicao=com_edicao)
+
+    def folha(self, solicitacao, usuario):
+        # Com versão editada, a folha mostra o que sai no PDF: a versão editada.
+        from .documentos import versao_editada
+
+        if versao_editada(self.tipo, solicitacao) is not None and not self.pendencias(solicitacao):
+            return self.html_documento(solicitacao)
+        return super().folha(solicitacao, usuario)
+
     def situacao(self, solicitacao):
         if solicitacao.cancelada:
             return "Cancelada"

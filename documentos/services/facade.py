@@ -43,6 +43,13 @@ class DocumentoGerado:
     cache_hit: bool = False
 
 
+def _versao_editada(payload):
+    """A versão editada inteira que veio no payload (`documento`), ou None."""
+    documental = payload.get("documento") if hasattr(payload, "get") else None
+    editada = documental.get("versao_editada") if isinstance(documental, dict) else None
+    return editada if isinstance(editada, dict) and editada.get("regioes") else None
+
+
 class DocumentoFacade:
     def __init__(
         self,
@@ -151,7 +158,14 @@ class DocumentoFacade:
             "facade_gerar",
             {"tipo": tipo.value, "formato": formato.value, "reference": ref or "—"},
         ):
-            if tipo == DocumentoTipo.DIARIO_BORDO:
+            editada = _versao_editada(payload)
+            if editada is not None and formato == DocumentoFormato.DOCX:
+                # Documento editado à mão (m057): o DOCX sai do HTML da versão
+                # editada, não do modelo .docx.
+                from documentos.services.html_docx import regioes_para_docx
+
+                conteudo = regioes_para_docx(editada.get("regioes") or {})
+            elif tipo == DocumentoTipo.DIARIO_BORDO:
                 conteudo, pdf_engine_used = self._render_diario_html_ou_planilha(payload, formato)
             elif formato == DocumentoFormato.DOCX:
                 conteudo = self._render_docx(

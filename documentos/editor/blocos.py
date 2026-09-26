@@ -22,6 +22,9 @@ class BlocoDocumental:
     rotulo: str
     padrao: str
     ajuda: str = ""
+    # Marcadores que o texto aceita (`{periodo}`...), preenchidos com os dados
+    # do documento; a tela de modelos os lista (m057).
+    campos: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -42,6 +45,7 @@ BLOCOS_OFICIO = (
         "para combustível, conforme cronograma abaixo:",
         ajuda="Texto do modelo. {assunto} vira \"autorização\" ou \"convalidação\", conforme a data do ofício e a "
               "primeira saída do roteiro. O texto alterado vale só para este documento.",
+        campos=("assunto",),
     ),
     BlocoDocumental(
         "fecho", "Fecho", "Respeitosamente,",
@@ -72,12 +76,22 @@ def _blocos(*pares):
 
 BLOCOS_TERMO = _blocos(
     ("titulo", "Título", "Termo de autorização para participação em eventos da ASCOM"),
+) + (
+    BlocoDocumental(
+        "texto", "Texto da manifestação",
+        "manifesto o interesse em participar do PCPR na Comunidade, {periodo}, no município de {destino} para "
+        "execução de atividades inerentes à Assessoria de Comunicação Social - ASCOM/PCPR.",
+        ajuda="O parágrafo principal do termo, depois da identificação do servidor. {periodo} e {destino} saem em "
+              "negrito, com os dados do termo.",
+        campos=("periodo", "destino", "servidor", "unidade"),
+    ),
+) + _blocos(
     ("declaracao", "Declaração do cartão corporativo",
      "Declaro que estou ciente da necessidade de estar na posse de cartão corporativo vigente e apto para uso, "
      "no período do deslocamento."),
     ("assinatura_servidor", "Assinatura do servidor", "Assinatura servidor:"),
     ("assinatura_chefia", "Autorização da chefia", "Autorização da Chefia:"),
-)
+)[1:]  # sem repetir a linha da secretaria
 
 BLOCOS_JUSTIFICATIVA = _blocos(("titulo", "Título", "Justificativa"))
 

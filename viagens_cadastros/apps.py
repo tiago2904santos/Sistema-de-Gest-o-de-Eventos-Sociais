@@ -95,5 +95,12 @@ class ViagensCadastrosConfig(AppConfig):
                     "url_names": ("institucional",),
                     "visivel_para": eh_gestor_viagens,
                 },
+                # Textos-base dos modelos de documento (m057): também do gestor.
+                {
+                    "rotulo": "Textos dos documentos",
+                    "icone": "document",
+                    "url": "documentos:modelos",
+                    "visivel_para": eh_gestor_viagens,
+                },
             ],
         )

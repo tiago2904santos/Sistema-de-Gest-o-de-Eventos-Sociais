@@ -199,7 +199,50 @@ class VinculoBase:
     def documental(self, objeto) -> dict:
         from documentos.services.document_blocks import conteudo_documental
 
-        return conteudo_documental(self.tipo, self.dono_dos_blocos(objeto))
+        return conteudo_documental(self.tipo, self.dono_dos_blocos(objeto), self.variante_edicao(objeto))
+
+    # Edição completa (m057): o documento inteiro, editado à mão.
+    def variante_edicao(self, objeto) -> str:
+        """Separa os documentos do mesmo tipo e dono (o termo de cada
+        servidor); a mesma que a geração do documento usa."""
+        return ""
+
+    def html_documento(self, objeto, *, com_edicao=True) -> str:
+        """O documento montado, como sai no PDF, para o editor completo: sem
+        marcações do editor de campos e, com `com_edicao=False`, sem a versão
+        editada (o que os dados de hoje dão)."""
+        from documentos.services.pdf_renderer import renderizar_html
+
+        contexto = self.contexto(objeto, modo="editor", campos_editaveis={})
+        if not com_edicao:
+            contexto["versao_editada"] = None
+        return renderizar_html(self.tipo, contexto, modo="editor")
+
+    def artefatos(self, objeto):
+        """Os PDFs emitidos deste documento."""
+        from documentos.models import DocumentoArtefato
+        from documentos.services.document_blocks import _campo_do_dono
+
+        dono = self.dono_dos_blocos(objeto)
+        campo = _campo_do_dono(dono)
+        if campo is None or not getattr(dono, "pk", None):
+            return DocumentoArtefato.objects.none()
+        filtro = {"tipo": str(getattr(self.tipo, "value", self.tipo)), "formato": "pdf", campo: dono}
+        variante = self.variante_edicao(objeto)
+        if variante.isdigit() and variante != "0":
+            filtro["servidor_id"] = int(variante)
+        return DocumentoArtefato.objects.filter(**filtro)
+
+    def assinado(self, objeto) -> bool:
+        """Há versão assinada valendo: o documento está fechado, e só se edita
+        de novo removendo (revogando) a versão assinada."""
+        from documentos.models import DocumentoAssinaturaVersao
+
+        artefatos = self.artefatos(objeto)
+        return (
+            DocumentoAssinaturaVersao.objects.filter(artefato__in=artefatos, revogada_em__isnull=True).exists()
+            or artefatos.exclude(arquivo_assinado="").exists()
+        )
 
     def contexto(self, objeto, *, modo, campos_editaveis):
         raise NotImplementedError
@@ -378,6 +421,9 @@ class VinculoTermo(VinculoBase):
     def variante(self, termo):
         return termo.doc_variante
 
+    def variante_edicao(self, termo):
+        return termo.doc_variante
+
     def contexto(self, termo, *, modo, campos_editaveis):
         from documentos.services.document_context import contexto_do_termo
         from viagens_termos.services import _legacy_docx_context, build_termo_cadastro_payload
@@ -454,6 +500,13 @@ class VinculoTermoOficio(VinculoBase):
 
     def variante(self, oficio):
         return str(oficio.doc_servidor.pk)
+
+    def variante_edicao(self, oficio):
+        return str(oficio.doc_servidor.pk)
+
+    def artefatos(self, oficio):
+        # O termo do cadastro vinculado ao ofício também guarda o ofício.
+        return super().artefatos(oficio).filter(termo__isnull=True)
 
     def contexto(self, oficio, *, modo, campos_editaveis):
         from documentos.services.document_context import contexto_do_termo
@@ -672,6 +725,9 @@ class VinculoRelatorio(VinculoBase):
 
     def dono_dos_blocos(self, ps):
         return ps.prestacao
+
+    def variante_edicao(self, ps):
+        return str(ps.servidor_id)
 
     def contexto(self, ps, *, modo, campos_editaveis):
         from documentos.services.document_context import contexto_do_relatorio_tecnico

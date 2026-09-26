@@ -438,7 +438,9 @@ def gerar_relatorio_tecnico_documento(relatorio, servidor_prestacao, formato):
 
     context = build_relatorio_tecnico_context(relatorio, servidor_prestacao)
     # Os textos do modelo reescritos no editor entram no PDF e na chave do cache.
-    payload = dict(context, documento=conteudo_documental(DocumentoTipo.RELATORIO_TECNICO, relatorio.prestacao))
+    # A versão editada (m057) é a do relatório deste servidor.
+    payload = dict(context, documento=conteudo_documental(
+        DocumentoTipo.RELATORIO_TECNICO, relatorio.prestacao, str(servidor_prestacao.servidor_id)))
     return build_default_facade().gerar(
         tipo=DocumentoTipo.RELATORIO_TECNICO, formato=formato, payload=payload,
         docxtpl_context=context, docx_template_path="relatorio-tecnico.docx",

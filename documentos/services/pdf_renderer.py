@@ -74,7 +74,19 @@ def renderizar_html(tipo, contexto: dict, *, modo: str) -> str:
         nomes = (CSS_COMUM, CSS_EDITOR, *css_do_tipo(tipo))
         dados["css_inline"] = "\n".join(caminho_css(nome).read_text(encoding="utf-8") for nome in nomes)
     with measure_step("renderizar_html", {"tipo": getattr(tipo, "value", tipo), "modo": modo}):
-        return render_to_string(template_do_tipo(tipo), dados)
+        html = render_to_string(template_do_tipo(tipo), dados)
+    return aplicar_versao_editada(html, dados)
+
+
+def aplicar_versao_editada(html: str, contexto: dict) -> str:
+    """Com versão editada (m057), as regiões da folha montada dos dados dão
+    lugar às dela; margens, geometria e CSS continuam os do modelo."""
+    editada = (contexto or {}).get("versao_editada")
+    if not editada:
+        return html
+    from documentos.services.edicao_completa import aplicar_regioes
+
+    return aplicar_regioes(html, editada.get("regioes"), (contexto or {}).get("imagens"))
 
 
 def _weasyprint():

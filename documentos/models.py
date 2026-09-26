@@ -216,3 +216,101 @@ class DocumentoBloco(OrigemLegado):
 
     def __str__(self) -> str:
         return f"{self.tipo_documento}:{self.chave} ({self.get_tipo_display()})"
+
+
+class DocumentoVersaoEditada(OrigemLegado):
+    """Versão editada à mão de um documento inteiro (m057): o que o editor
+    completo gravou, em HTML já sanitizado, por região da folha — cabeçalho,
+    corpo e rodapé.
+
+    Append-only: cada gravação é uma linha nova, e o estado do documento é a
+    linha mais recente. "Voltar ao modelo" também é uma linha (sem conteúdo),
+    e restaurar uma versão antiga copia o conteúdo dela numa linha nova — o
+    histórico (quem, quando) nunca se perde. Enquanto a linha mais recente for
+    uma edição, é ela que sai no PDF, no DOCX, no pacote e nos envios.
+
+    O documento é o mesmo par (tipo, dono) dos blocos documentais, mais a
+    `variante` quando o dono tem vários documentos do mesmo tipo (o termo de
+    cada servidor, o relatório técnico de cada servidor da prestação).
+    """
+
+    class Acao(models.TextChoices):
+        EDICAO = "edicao", "Edição"
+        RESTAURACAO = "restauracao", "Versão restaurada"
+        MODELO = "modelo", "Voltou ao modelo"
+
+    tipo_documento = models.CharField(max_length=64, db_index=True)
+    variante = models.CharField(max_length=64, blank=True, default="")
+    oficio = models.ForeignKey("viagens_oficios.Oficio", on_delete=models.CASCADE, null=True, blank=True, related_name="versoes_editadas")
+    termo = models.ForeignKey("viagens_termos.TermoAutorizacao", on_delete=models.CASCADE, null=True, blank=True, related_name="versoes_editadas")
+    prestacao = models.ForeignKey("viagens_prestacoes.PrestacaoContas", on_delete=models.CASCADE, null=True, blank=True, related_name="versoes_editadas")
+    ordem_servico = models.ForeignKey("viagens_ordens.OrdemServico", on_delete=models.CASCADE, null=True, blank=True, related_name="versoes_editadas")
+    plano_trabalho = models.ForeignKey("viagens_planos.PlanoTrabalho", on_delete=models.CASCADE, null=True, blank=True, related_name="versoes_editadas")
+    coffee_break_solicitacao = models.ForeignKey("coffee_break.SolicitacaoCoffeeBreak", on_delete=models.CASCADE, null=True, blank=True, related_name="versoes_editadas")
+    acao = models.CharField(max_length=16, choices=Acao.choices, default=Acao.EDICAO)
+    # Região da folha → HTML sanitizado (documentos/services/edicao_completa.py).
+    regioes = models.JSONField(default=dict, blank=True)
+    # Impressão digital do documento montado dos dados no momento da edição:
+    # se a de hoje for outra, os dados mudaram e a versão editada pode estar
+    # desatualizada.
+    impressao_base = models.CharField(max_length=64, blank=True, default="")
+    restaurada_de = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-criado_em", "-pk"]
+        verbose_name = "Versão editada de documento"
+        verbose_name_plural = "Versões editadas de documentos"
+        constraints = [
+            models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_documentoversaoeditada_origem"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.tipo_documento} ({self.get_acao_display()})"
+
+    @property
+    def vigora(self) -> bool:
+        return self.acao != self.Acao.MODELO
+
+    def save(self, *args, **kwargs):
+        if self.pk and not self._state.adding:
+            raise ValidationError("Versões editadas são imutáveis: grave uma versão nova.")
+        super().save(*args, **kwargs)
+
+
+class ModeloTextoDocumento(OrigemLegado):
+    """Texto-base de um bloco do modelo de um tipo de documento (m057): o que
+    a administração escreveu no lugar do texto padrão do sistema
+    (documentos/editor/blocos.py), para os documentos desse tipo que não
+    tenham o parágrafo reescrito nem uma versão editada.
+
+    Append-only, como a versão editada: o texto em vigor é a linha mais
+    recente de (tipo, chave); `padrao_sistema` volta ao texto do sistema.
+    Documento já emitido fica no artefato guardado, e a via assinada nunca
+    muda.
+    """
+
+    tipo_documento = models.CharField(max_length=64, db_index=True)
+    chave = models.CharField(max_length=64)
+    texto = models.TextField(blank=True, default="")
+    padrao_sistema = models.BooleanField(default=False, help_text="Voltou ao texto padrão do sistema.")
+    criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-criado_em", "-pk"]
+        verbose_name = "Texto de modelo de documento"
+        verbose_name_plural = "Textos de modelo de documento"
+        indexes = [models.Index(fields=["tipo_documento", "chave"], name="modelotexto_tipo_chave")]
+        constraints = [
+            models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_modelotextodocumento_origem"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.tipo_documento}:{self.chave}"
+
+    def save(self, *args, **kwargs):
+        if self.pk and not self._state.adding:
+            raise ValidationError("Textos de modelo são imutáveis: grave um texto novo.")
+        super().save(*args, **kwargs)

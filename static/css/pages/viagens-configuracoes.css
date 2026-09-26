@@ -15,3 +15,7 @@
   .cfg-form .g-form > .cfg-dupla,
   .cfg-form .g-form > .cfg-cheia { grid-column: auto; }
 }
+
+/* Textos dos modelos de documento (templates/pages/documentos/modelos.html). */
+.modelos-tipos { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.modelos-tipos [aria-current="page"] { border-color: var(--n-700); font-weight: 600; }
