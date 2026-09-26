@@ -11,5 +11,6 @@ urlpatterns = [
     path("nova/", views.editar, name="novo"),
     path("<int:pk>/editar/", views.editar, name="editar"),
     path("<int:pk>/acao/<str:acao>/", views.acao, name="acao"),
+    path("<int:pk>/autosalvar/", views.autosalvar, name="autosalvar"),
     path("<int:pk>/gerar/<str:formato>/", views.gerar, name="gerar"),
 ]

@@ -22,6 +22,7 @@ urlpatterns = [
     path('catalogos/<str:tipo>/<int:pk>/', catalogs.catalogo, name='catalogo_editar'),
     path('<int:pk>/editar/', views.editar, name='editar'),
     path('<int:pk>/acao/<str:acao>/', views.acao, name='acao'),
+    path('<int:pk>/autosalvar/', views.autosalvar, name='autosalvar'),
     path('<int:pk>/oficios-do-motorista/', views.oficios_do_motorista, name='oficios_do_motorista'),
     path('<int:pk>/baixar/', views.baixar, name='baixar'),
     path('<int:pk>/gerar/<str:tipo>/<str:formato>/', views.gerar, name='gerar'),
