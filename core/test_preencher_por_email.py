@@ -230,3 +230,26 @@ class TokenDaTriagemTests(GuardarOriginalTests):
         token = pe._guardar(request, "solicitacoes", "pedido.txt", b"Pedido", mensagem)
         request.POST = {"email_origem": token}
         self.assertEqual(pe.origem_do_pedido(request, "solicitacoes").remetente_email, "ana@escola.exemplo")
+
+
+class ArquivoDoCelularTests(GuardarOriginalTests):
+    """O celular manda o arquivo sem extensão ("document"): o conteúdo decide."""
+
+    def test_pdf_sem_extensao(self):
+        from core.leitura.tests.test_mensagem import pdf_de_linhas
+
+        pdf = pdf_de_linhas(["De: Ana <ana@escola.exemplo>", "Enviado em: 24/09/2026 14:32", "Assunto: Palestra", "", "Pedido."])
+        request = self.pedido(arquivo=SimpleUploadedFile("document", pdf, content_type="application/octet-stream"))
+        mensagem, nome, _dados = pe.ler_do_pedido(request)
+        self.assertEqual((nome, mensagem.origem), ("document.pdf", "pdf"))
+
+    def test_eml_sem_extensao_pelo_tipo(self):
+        eml = b"From: Ana <ana@escola.exemplo>\r\nDate: Thu, 24 Sep 2026 14:32:00 -0300\r\nSubject: Palestra\r\nMIME-Version: 1.0\r\nContent-Type: text/plain\r\n\r\nPedido.\r\n"
+        request = self.pedido(arquivo=SimpleUploadedFile("mensagem", eml, content_type="message/rfc822"))
+        mensagem, nome, _dados = pe.ler_do_pedido(request)
+        self.assertEqual((nome, mensagem.remetente_email), ("mensagem.eml", "ana@escola.exemplo"))
+
+    def test_arquivo_desconhecido_continua_recusado(self):
+        request = self.pedido(arquivo=SimpleUploadedFile("foto", b"\x89PNG\r\n\x1a\n" + b"\x00" * 40, content_type="image/png"))
+        with self.assertRaises(pe.EmailRecusado):
+            pe.ler_do_pedido(request)

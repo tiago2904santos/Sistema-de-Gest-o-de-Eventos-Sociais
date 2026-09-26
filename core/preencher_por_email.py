@@ -494,6 +494,26 @@ def _tipo_real(dados: bytes) -> str:
     return "texto"
 
 
+_TIPOS_MIME = {"application/pdf": ".pdf", "message/rfc822": ".eml", "application/vnd.ms-outlook": ".msg", "text/plain": ".txt"}
+
+
+def _extensao_pelo_conteudo(dados: bytes, content_type: str = "") -> str:
+    """A extensão que o conteúdo (ou o tipo declarado) diz, para arquivo sem extensão."""
+    from core.leitura.mensagem import _parece_mime, _parece_texto
+
+    real = _tipo_real(dados)
+    if real == "pdf":
+        return ".pdf"
+    if real == "ole":
+        return ".msg"
+    if _parece_mime(dados):
+        return ".eml"
+    declarada = _TIPOS_MIME.get((content_type or "").split(";")[0].strip().lower(), "")
+    if declarada in (".eml", ".txt") and _parece_texto(dados):
+        return declarada
+    return ""
+
+
 def _verificar_antivirus(arquivo) -> None:
     if not getattr(settings, "PRIVATE_UPLOAD_REQUIRE_ANTIVIRUS", False):
         return
@@ -527,8 +547,6 @@ def ler_do_pedido(request) -> tuple[Mensagem, str, bytes]:
     if arquivo is not None:
         nome = _nome_seguro(arquivo.name)
         extensao = PurePath(nome).suffix.lower()
-        if extensao not in EXTENSOES_EMAIL:
-            raise EmailRecusado("Envie o e-mail em .eml, .msg, .pdf ou .txt — ou cole o texto.")
         limite = int(_ajuste("LEITURA_EMAIL_MAX_BYTES", LEITURA_EMAIL_MAX_BYTES))
         if arquivo.size > limite:
             raise EmailRecusado(f"O arquivo passa do limite de {limite // MIB} MB.")
@@ -537,6 +555,13 @@ def ler_do_pedido(request) -> tuple[Mensagem, str, bytes]:
         arquivo.seek(0)
         dados = arquivo.read()
         arquivo.seek(0)
+        if extensao not in EXTENSOES_EMAIL:
+            # Só sem extensão nenhuma (o celular manda "document") o conteúdo
+            # decide, desde que seja PDF, .msg ou e-mail; extensão errada é recusada.
+            extensao = _extensao_pelo_conteudo(dados, arquivo.content_type) if not extensao else ""
+            if not extensao:
+                raise EmailRecusado("Envie o e-mail em .eml, .msg, .pdf ou .txt — ou cole o texto.")
+            nome = f"{nome}{extensao}"
         if _tipo_real(dados) != EXTENSOES_EMAIL[extensao]:
             raise EmailRecusado(
                 f"O conteúdo de {nome} não corresponde a um arquivo {extensao}. "

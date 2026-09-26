@@ -13,7 +13,7 @@
 {% endcomment %}
 <section class="tri" data-triagem-email data-url="{% url 'core:triagem_ler' %}" data-max-bytes="26214400" aria-labelledby="tri-titulo">
   <div class="tri__zona">
-    <input type="file" id="tri-arquivo" class="tri__arquivo" accept=".eml,.msg,.pdf,.txt" aria-describedby="tri-ajuda" data-tri-arquivo>
+    <input type="file" id="tri-arquivo" class="tri__arquivo" accept=".eml,.msg,.pdf,.txt,application/pdf,message/rfc822,text/plain,application/vnd.ms-outlook" aria-describedby="tri-ajuda" data-tri-arquivo>
     <label for="tri-arquivo" class="tri__alvo">
       <span class="tri__icone" aria-hidden="true">{% include "components/icon.html" with nome="mail" %}</span>
       <span class="tri__textos">

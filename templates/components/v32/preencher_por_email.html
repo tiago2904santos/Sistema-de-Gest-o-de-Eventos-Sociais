@@ -34,7 +34,7 @@
 {% endcomment %}
 <section class="pe" data-preencher-email data-url="{{ url }}" data-formulario="{{ formulario }}"{% if origem.auto %} data-pe-auto="{{ origem.token }}" data-pe-encaminhar="{% url 'core:triagem_encaminhar' %}"{% endif %} data-substituir-padrao="{{ substituir_padrao }}" data-registro="{{ registro|default:'solicitação' }}" data-max-bytes="26214400"{% if anexa_original %} data-anexa-original{% endif %}{% if anexos %} data-anexos="{{ anexos }}"{% endif %} aria-labelledby="pe-titulo-{{ formulario }}">
   <div class="pe__zona">
-    <input type="file" id="pe-arquivo-{{ formulario }}" class="pe__arquivo" accept="{% if anexos %}.eml,.msg,.pdf,.txt,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods{% else %}.eml,.msg,.pdf,.txt{% endif %}" aria-describedby="pe-ajuda-{{ formulario }}" data-pe-arquivo{% if anexos %} multiple{% endif %}>
+    <input type="file" id="pe-arquivo-{{ formulario }}" class="pe__arquivo" accept="{% if anexos %}.eml,.msg,.pdf,.txt,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods,application/pdf,message/rfc822,text/plain,image/*{% else %}.eml,.msg,.pdf,.txt,application/pdf,message/rfc822,text/plain,application/vnd.ms-outlook{% endif %}" aria-describedby="pe-ajuda-{{ formulario }}" data-pe-arquivo{% if anexos %} multiple{% endif %}>
     <label for="pe-arquivo-{{ formulario }}" class="pe__alvo">
       <span class="pe__icone" aria-hidden="true">{% include "components/icon.html" with nome="mail" %}</span>
       <span class="pe__textos">
