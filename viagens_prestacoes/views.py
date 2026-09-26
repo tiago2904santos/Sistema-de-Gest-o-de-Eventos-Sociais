@@ -26,7 +26,12 @@ def _redirect_lista(request, _obj=None):
 def index(request):
     if request.method == "POST":
         valores = valores_do_lote(request.POST)
-        resultado = salvar_solicitacoes_em_lote(_prestacao_servidor_queryset().filter(pk__in=valores), valores)
+        # m092: finalizada fica só para leitura; o lote ignora essas linhas.
+        travados = set(_prestacao_servidor_queryset().filter(pk__in=valores, finalizada=True).values_list("pk", flat=True))
+        if travados:
+            messages.warning(request, "Prestação finalizada — reabra para editar. As linhas finalizadas não foram alteradas.")
+            valores = {pk: v for pk, v in valores.items() if pk not in travados}
+        resultado = salvar_solicitacoes_em_lote(_prestacao_servidor_queryset().filter(pk__in=valores), valores, autor=request.user)
         if resultado.erro:
             messages.error(request, resultado.erro)
         else:
@@ -52,7 +57,7 @@ def index(request):
     por_pk = {ps.pk: ps for ps in itens.filter(pk__in=ids)}
     contagem = contar_por_aba(**{k:v for k,v in filtros.items() if k != "sort"})
     rotulos = dict(SITUACOES)
-    vazias = {"nao_liberadas": "Nenhum servidor com diárias pendentes de liberação.", "liberadas": "Nenhum servidor com diárias já liberadas.", "arquivados": "Nenhuma prestação de servidor arquivada.", "finalizados": "Nenhuma prestação de servidor finalizada ainda."}
+    vazias = {"nao_liberadas": "Nenhum servidor com diárias pendentes de liberação.", "liberadas": "Nenhum servidor com diárias já liberadas.", "arquivados": "Nenhuma prestação de servidor arquivada.", "finalizados": "Nenhuma prestação de servidor finalizada ainda.", "devolvidas": "Nenhuma prestação devolvida para correção.", "saque_vencendo": "Nenhum saque perto do prazo sem comprovante.", "prestacao_vencida": "Nenhuma prestação com o prazo vencido."}
     configuracao = get_configuracao_sistema()
     cards = [cartao_da_lista(por_pk[pk], configuracao=configuracao) for pk in ids]
     grupos = {}
@@ -82,7 +87,7 @@ def index(request):
             destino["aba"] = aba
         return "?" + destino.urlencode()
 
-    icones = {"nao_liberadas": "hourglass", "liberadas": "check-circle", "arquivados": "lock", "finalizados": "checklist"}
+    icones = {"nao_liberadas": "hourglass", "liberadas": "check-circle", "arquivados": "lock", "finalizados": "checklist", "devolvidas": "undo", "saque_vencendo": "clock", "prestacao_vencida": "alert"}
     total = listar_prestacoes(**{k: v for k, v in filtros.items() if k != "sort"}).count()
     situacoes = [{"slug": "todas", "titulo": "Todas", "total": total, "icone": "chart", "url": url_da_aba()}] + [
         {"slug": chave, "titulo": rotulo, "total": contagem[chave], "icone": icones[chave], "url": url_da_aba(chave)}
@@ -137,25 +142,92 @@ def _date_autosave_value(payload, field_name):
             return (value or '').strip()
     return None
 
+def _estado_pedido(request, atual, *, ligar, desligar):
+    """O estado que o botão pediu (`acao`), e não o inverso do atual (m089).
+
+    Sem `acao` (formulário antigo, rota de compatibilidade) continua invertendo,
+    como sempre fez. Com ela, clicar de novo — ou numa aba antiga — não desfaz nada.
+    """
+    acao = (request.POST.get("acao") or "").strip()
+    if acao == ligar:
+        return True
+    if acao == desligar:
+        return False
+    return not atual
+
+
 def prestacao_servidor_arquivar(request, ps_pk):
     """Arquiva ou desarquiva a prestação deste servidor."""
     ps = get_object_or_404(_prestacao_servidor_queryset(), pk=ps_pk)
-    ps.definir_arquivada(not ps.arquivada)
-    if ps.arquivada:
-        messages.success(request, f'Prestação de {ps.servidor.nome} arquivada.')
-    else:
-        messages.success(request, f'Prestação de {ps.servidor.nome} desarquivada.')
+    pedido = _estado_pedido(request, ps.arquivada, ligar="arquivar", desligar="desarquivar")
+    rotulo = "arquivada" if pedido else "desarquivada"
+    if pedido == ps.arquivada:
+        messages.info(request, f'A prestação de {ps.servidor.nome} já estava {rotulo}.')
+        return _redirect_lista(request)
+    ps.definir_arquivada(pedido)
+    messages.success(request, f'Prestação de {ps.servidor.nome} {rotulo}.')
     return _redirect_lista(request)
 
 def prestacao_servidor_finalizar(request, ps_pk):
     """Conclui ou reabre a prestação deste servidor."""
     ps = get_object_or_404(_prestacao_servidor_queryset(), pk=ps_pk)
-    ps.definir_finalizada(not ps.finalizada)
-    if ps.finalizada:
-        messages.success(request, f'Prestação de {ps.servidor.nome} finalizada.')
-    else:
-        messages.success(request, f'Prestação de {ps.servidor.nome} reaberta.')
+    pedido = _estado_pedido(request, ps.finalizada, ligar="finalizar", desligar="reabrir")
+    if pedido == ps.finalizada:
+        messages.info(request, f'A prestação de {ps.servidor.nome} já estava {"finalizada" if pedido else "aberta"}.')
+        return _redirect_lista(request)
+    justificativa = None
+    if pedido:
+        # m092: com pendência, só finaliza com justificativa ("Finalizar mesmo assim").
+        from .services import pendencias_para_finalizar
+        pendencias = pendencias_para_finalizar(ps)
+        justificativa = normalize_spaces(request.POST.get("justificativa") or "") if pendencias else ""
+        if pendencias and not justificativa:
+            messages.error(request, f'A prestação de {ps.servidor.nome} tem pendências: ' + " ".join(pendencias) + ' Para finalizar mesmo assim, escreva a justificativa no fim da Etapa 3.')
+            return _redirect_lista(request)
+        if pendencias:
+            _registrar_finalizacao_com_pendencias(request, ps, pendencias, justificativa)
+    ps.definir_finalizada(pedido, justificativa=justificativa)
+    messages.success(request, f'Prestação de {ps.servidor.nome} {"finalizada" if pedido else "reaberta"}.')
     return _redirect_lista(request)
+
+
+def _registrar_finalizacao_com_pendencias(request, ps, pendencias, justificativa):
+    """A justificativa vai para a auditoria, com o que faltava no momento."""
+    from auditoria.models import LogAuditoria
+    LogAuditoria.objects.create(
+        usuario=request.user if request.user.is_authenticated else None,
+        acao="prestacao_finalizada_com_pendencias",
+        descricao=f"{ps} — pendências: {' '.join(pendencias)} — justificativa: {justificativa}",
+    )
+
+def prestacao_servidor_envio(request, ps_pk, acao):
+    """Registra o envio ao financeiro, a aprovação ou a devolução (m093)."""
+    import datetime
+    from django.http import Http404
+    from .envio_services import registrar_aprovacao, registrar_devolucao, registrar_envio
+    ps = get_object_or_404(_prestacao_servidor_queryset().select_related("servidor", "prestacao__oficio"), pk=ps_pk)
+    if acao == "enviar":
+        try:
+            data = datetime.date.fromisoformat(request.POST.get("enviada_em") or "") if request.POST.get("enviada_em") else None
+        except ValueError:
+            data = None
+        servidores = list(ps.prestacao.servidores_prestacao.select_related("servidor")) if request.POST.get("equipe") else [ps]
+        resultado = registrar_envio(servidores, data=data, protocolo=request.POST.get("protocolo_envio") or "")
+        sucesso = f"Envio registrado para {resultado.afetados} servidor{'es' if resultado.afetados != 1 else ''}."
+    elif acao == "aprovar":
+        resultado = registrar_aprovacao(ps)
+        sucesso = f"Prestação de {ps.servidor.nome} aprovada."
+    elif acao == "devolver":
+        resultado = registrar_devolucao(ps, motivo=request.POST.get("motivo_devolucao") or "", autor=request.user)
+        sucesso = f"Prestação de {ps.servidor.nome} devolvida e reaberta para correção."
+    else:
+        raise Http404
+    if resultado.erro:
+        messages.error(request, resultado.erro)
+    else:
+        messages.success(request, sucesso)
+    return _redirect_lista(request)
+
 
 def prestacao_equipe_acao(request, pc_pk, acao):
     """Finaliza, reabre, arquiva ou desarquiva a prestação da equipe inteira do ofício.
@@ -176,11 +248,25 @@ def prestacao_equipe_acao(request, pc_pk, acao):
     metodo, valor, rotulo = acoes[acao]
     prestacao = get_object_or_404(_prestacao_queryset(), pk=pc_pk)
     servidores = list(prestacao.servidores_prestacao.all())
+    com_pendencia = []
+    if acao == "finalizar":
+        # m092: quem tem pendência não é finalizado em lote; a justificativa é por servidor, na Etapa 3.
+        from .services import pendencias_para_finalizar
+        com_pendencia = [ps for ps in servidores if not ps.finalizada and pendencias_para_finalizar(ps)]
+        servidores = [ps for ps in servidores if ps not in com_pendencia]
     for ps in servidores:
-        getattr(ps, metodo)(valor)
+        if acao == "finalizar":
+            if not ps.finalizada:
+                ps.definir_finalizada(True, justificativa="")
+        else:
+            getattr(ps, metodo)(valor)
     total = len(servidores)
     plural = "es" if total != 1 else ""
-    messages.success(request, f"Prestação de {total} servidor{plural} {rotulo}.")
+    if total:
+        messages.success(request, f"Prestação de {total} servidor{plural} {rotulo}.")
+    if com_pendencia:
+        nomes = ", ".join(ps.servidor.nome for ps in com_pendencia)
+        messages.warning(request, f"Não finalizados por pendência: {nomes}. Abra a Etapa 3 de cada um para ver o que falta ou finalizar com justificativa.")
     return _redirect_lista(request)
 
 
@@ -208,7 +294,7 @@ def prestacao_servidor_solicitacao_autosave(request, ps_pk):
         payload = parse_autosave_payload(request, expected_model='prestacao_servidor')
     except AutosavePayloadError as exc:
         return autosave_json_response(ok=False, message=str(exc))
-    resultado = salvar_solicitacao_do_autosave(ps, numero=_solicitacao_autosave_value(payload), datas={campo: _date_autosave_value(payload, campo) for campo in ('data_liberacao_diarias', 'prazo_limite_saque')})
+    resultado = salvar_solicitacao_do_autosave(ps, numero=_solicitacao_autosave_value(payload), datas={campo: _date_autosave_value(payload, campo) for campo in ('data_liberacao_diarias', 'prazo_limite_saque')}, autor=request.user)
     if resultado.erro:
         return autosave_json_response(ok=False, message=resultado.erro)
     return autosave_json_response(ok=True, object_id=ps.pk, version=_autosave_version(ps))

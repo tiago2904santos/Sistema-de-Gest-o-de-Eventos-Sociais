@@ -41,7 +41,7 @@ class PrestacaoContas(OrigemLegado):
     STATUS_ENVIADA = 'enviada'
     STATUS_APROVADA = 'aprovada'
     STATUS_REPROVADA = 'reprovada'
-    STATUS_CHOICES = [(STATUS_PENDENTE, 'Pendente'), (STATUS_EM_PREENCHIMENTO, 'Em preenchimento'), (STATUS_ENVIADA, 'Enviada'), (STATUS_APROVADA, 'Aprovada'), (STATUS_REPROVADA, 'Reprovada')]
+    STATUS_CHOICES = [(STATUS_PENDENTE, 'Pendente'), (STATUS_EM_PREENCHIMENTO, 'Em preenchimento'), (STATUS_ENVIADA, 'Enviada'), (STATUS_APROVADA, 'Aprovada'), (STATUS_REPROVADA, 'Devolvida')]
     oficio = models.OneToOneField(Oficio, on_delete=models.CASCADE, related_name='prestacao_contas')
     roteiro_ajustado = models.ForeignKey('viagens_roteiros.Roteiro', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     despacho_assinado = ArquivoPrivadoField('Despacho assinado do ofício', upload_to=prestacao_documento_upload_to, blank=True, validators=[FileExtensionValidator(PRESTACAO_DOCUMENTO_EXTENSOES)])
@@ -90,6 +90,13 @@ class PrestacaoServidor(OrigemLegado):
     arquivada_em = models.DateTimeField(null=True, blank=True)
     finalizada = models.BooleanField(default=False)
     finalizada_em = models.DateTimeField(null=True, blank=True)
+    #: m092: por que foi finalizada com pendências (vazio = sem pendência).
+    justificativa_finalizacao = models.TextField('Justificativa para finalizar com pendências', blank=True, default='')
+    #: m093: envio ao financeiro e a decisão (aprovada ou devolvida para correção).
+    enviada_em = models.DateField('Enviada em', null=True, blank=True)
+    protocolo_envio = models.CharField('Protocolo ou e-mail do envio', max_length=120, blank=True, default='')
+    decidida_em = models.DateTimeField('Aprovada ou devolvida em', null=True, blank=True)
+    motivo_devolucao = models.TextField('Motivo da devolução', blank=True, default='')
     removida_em = models.DateTimeField('Removida da equipe em', null=True, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
@@ -130,12 +137,20 @@ class PrestacaoServidor(OrigemLegado):
         self.arquivada_em = _tz.now() if arquivada else None
         self.save(update_fields=['arquivada', 'arquivada_em', 'atualizado_em'])
 
-    def definir_finalizada(self, finalizada: bool):
-        """Conclui/reabre a prestação deste servidor, registrando o momento."""
+    def definir_finalizada(self, finalizada: bool, *, justificativa: str | None = None):
+        """Conclui/reabre a prestação deste servidor, registrando o momento.
+
+        `justificativa` (m092) é gravada quando se finaliza com pendências; finalizar
+        sem pendência (`""`) apaga a de uma finalização anterior. `None` não mexe.
+        """
         from django.utils import timezone as _tz
         self.finalizada = finalizada
         self.finalizada_em = _tz.now() if finalizada else None
-        self.save(update_fields=['finalizada', 'finalizada_em', 'atualizado_em'])
+        campos = ['finalizada', 'finalizada_em', 'atualizado_em']
+        if justificativa is not None:
+            self.justificativa_finalizacao = justificativa
+            campos.append('justificativa_finalizacao')
+        self.save(update_fields=campos)
 
     def marcar_em_preenchimento(self):
         if self.status == self.STATUS_PENDENTE:
@@ -152,7 +167,7 @@ class PrestacaoServidor(OrigemLegado):
         """
         # A linha histórica importada deve continuar rastreável no diário da
         # migração, mesmo quando ainda não tem preenchimento financeiro.
-        return bool(self.legado_pk is not None or self.numero_solicitacao.strip() or self.diaria_valor_override is not None or self.diaria_valor_override_observacao.strip() or self.data_liberacao_diarias or self.prazo_limite_saque or (self.status != self.STATUS_PENDENTE) or self.arquivada or self.finalizada or self.documentos_anexos.exists())
+        return bool(self.legado_pk is not None or self.numero_solicitacao.strip() or self.diaria_valor_override is not None or self.diaria_valor_override_observacao.strip() or self.data_liberacao_diarias or self.prazo_limite_saque or (self.status != self.STATUS_PENDENTE) or self.arquivada or self.finalizada or self.justificativa_finalizacao.strip() or self.enviada_em or self.protocolo_envio.strip() or self.decidida_em or self.motivo_devolucao.strip() or self.documentos_anexos.exists())
 
     def tem_prova_irrefazivel(self) -> bool:
         """Só o que ninguém consegue refazer se a linha sumir (`NOVO-35`).
@@ -199,6 +214,16 @@ class PrestacaoServidor(OrigemLegado):
         self.removida_em = None
         self.save(update_fields=['removida_em', 'atualizado_em'])
 
+class AnexosAtivosManager(models.Manager):
+    """Anexos em uso; ``todos`` inclui os removidos e os substituídos (m084)."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(removido_em__isnull=True)
+
+#: Por quantos dias o anexo removido ou substituído fica em "Versões anteriores"
+#: antes de `limpar_arquivos_orfaos --apagar` apagá-lo de vez.
+DIAS_GUARDA_ANEXO_REMOVIDO = 30
+
 #: Como o dinheiro chegou ao servidor, lido do comprovante bancário.
 OPERACAO_CHOICES = [('saque', 'Saque'), ('transferencia', 'Transferência'), ('pix', 'Pix'), ('ted', 'TED'), ('doc', 'DOC'), ('deposito', 'Depósito')]
 
@@ -209,6 +234,12 @@ class PrestacaoDocumentoAnexo(OrigemLegado):
     TIPO_RT_ASSINADO = 'rt_assinado'
     TIPO_DB_ASSINADO = 'db_assinado'
     TIPO_CHOICES = [(TIPO_DESPACHO, 'Despacho assinado do ofício'), (TIPO_OFICIO_ASSINADO, 'Ofício assinado'), (TIPO_COMPROVANTE, 'Comprovante de saque/transferência'), (TIPO_RT_ASSINADO, 'Relatório técnico assinado'), (TIPO_DB_ASSINADO, 'Diário de bordo assinado')]
+    #: Os tipos que têm um arquivo só: anexar de novo substitui. Despacho e
+    #: comprovante somam (m081).
+    TIPOS_UNICOS = (TIPO_OFICIO_ASSINADO, TIPO_RT_ASSINADO, TIPO_DB_ASSINADO)
+    REMOVIDO_EXCLUIDO = 'excluido'
+    REMOVIDO_SUBSTITUIDO = 'substituido'
+    REMOVIDO_CHOICES = [(REMOVIDO_EXCLUIDO, 'Removido'), (REMOVIDO_SUBSTITUIDO, 'Substituído')]
     prestacao = models.ForeignKey(PrestacaoContas, on_delete=models.CASCADE, related_name='documentos_anexos')
     servidor_prestacao = models.ForeignKey(PrestacaoServidor, on_delete=models.CASCADE, null=True, blank=True, related_name='documentos_anexos')
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, db_index=True)
@@ -226,6 +257,12 @@ class PrestacaoDocumentoAnexo(OrigemLegado):
     data_operacao = models.DateField('data da operação', null=True, blank=True)
     operacao = models.CharField('operação', max_length=20, choices=OPERACAO_CHOICES, blank=True, default='')
     criado_em = models.DateTimeField(auto_now_add=True)
+    #: m084: remover ou substituir só marca a linha; o arquivo fica em "Versões
+    #: anteriores" por `DIAS_GUARDA_ANEXO_REMOVIDO` dias, e dá para voltar a ele.
+    removido_em = models.DateTimeField('removido em', null=True, blank=True)
+    removido_motivo = models.CharField('motivo da remoção', max_length=12, choices=REMOVIDO_CHOICES, blank=True, default='')
+    objects = AnexosAtivosManager()
+    todos = models.Manager()
 
     @property
     def arquivo_para_carimbar(self):
@@ -238,6 +275,7 @@ class PrestacaoDocumentoAnexo(OrigemLegado):
         return self.arquivo_original if self.arquivo_original else self.arquivo
 
     class Meta:
+        default_manager_name = 'objects'
         ordering = ['tipo', 'criado_em', 'pk']
         verbose_name = 'Anexo da prestação de contas'
         verbose_name_plural = 'Anexos da prestação de contas'

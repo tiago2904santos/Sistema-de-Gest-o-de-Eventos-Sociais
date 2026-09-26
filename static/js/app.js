@@ -1733,6 +1733,7 @@
     var conteudoOriginal = botao.innerHTML;
     var rotuloArmado = formulario.getAttribute("data-confirmar") || "Confirmar?";
     var armado = false;
+    var travado = false;
     var temporizador = null;
 
     function desarmar() {
@@ -1746,7 +1747,19 @@
     }
 
     formulario.addEventListener("submit", function (evento) {
-      if (armado) return;
+      if (travado) {
+        evento.preventDefault();
+        return;
+      }
+      if (armado) {
+        // Um duplo clique no segundo toque mandaria dois POSTs (m089). Trava o botão
+        // depois que o envio segue — e só se ninguém o interceptou (envio por fetch
+        // fica na mesma tela e precisa do botão de volta).
+        setTimeout(function () {
+          if (!evento.defaultPrevented) { botao.disabled = true; travado = true; }
+        }, 0);
+        return;
+      }
       evento.preventDefault();
       armado = true;
       // Item com título (<b>) troca só o título e mantém ícone e descrição.
@@ -1758,6 +1771,13 @@
     });
 
     botao.addEventListener("blur", desarmar);
+    // Voltar pelo histórico (bfcache) devolve a página com o botão travado.
+    window.addEventListener("pageshow", function () {
+      if (!travado) return;
+      travado = false;
+      botao.disabled = false;
+      desarmar();
+    });
   });
 })();
 
@@ -2023,8 +2043,23 @@
     /* Sem storage disponível não há rascunho a limpar. */
   }
 
+  // m083: a Etapa 3 da prestação usava o mesmo id e ganhava este rascunho por
+  // engano — o número de solicitação antigo voltava por cima do que foi salvo em
+  // outro lugar. Os rascunhos que ficaram gravados nos navegadores saem uma vez.
+  try {
+    for (var i = window.localStorage.length - 1; i >= 0; i -= 1) {
+      var guardada = window.localStorage.key(i);
+      if (guardada && guardada.indexOf("rascunho:/viagens/prestacoes/") === 0) {
+        window.localStorage.removeItem(guardada);
+      }
+    }
+  } catch (erro) {
+    /* Sem storage, nada a limpar. */
+  }
+
   var formulario = document.getElementById("form-solicitacao");
-  if (!formulario || formulario.tagName !== "FORM") return;
+  // Formulário que grava sozinho (`data-autosave`) já está salvo: rascunho só atrapalha.
+  if (!formulario || formulario.tagName !== "FORM" || formulario.hasAttribute("data-autosave")) return;
 
   function disponivel() {
     try {

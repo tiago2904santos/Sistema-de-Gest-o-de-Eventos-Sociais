@@ -22,8 +22,11 @@ from .presenters import _iniciais_nome_servidor, apresentar_prestacao_servidor_c
 SITUACOES = [
     ("nao_liberadas", "Não liberadas"),
     ("liberadas", "Liberadas"),
+    ("devolvidas", "Devolvidas"),
     ("arquivados", "Arquivados"),
     ("finalizados", "Finalizados"),
+    ("saque_vencendo", "Saque vencendo"),
+    ("prestacao_vencida", "Prestação vencida"),
 ]
 
 TITULOS_DOWNLOAD = {"oficio": "Ofício", "despacho": "Despacho", "diario": "Diário de bordo", "rt": "Relatório técnico", "comprovante": "Comprovante"}
@@ -149,8 +152,14 @@ def cartao_da_lista(ps, *, configuracao=None):
     ], ensure_ascii=False)
     # Sem "remover" aqui: o anexo da prestação só se substitui (a rota não remove).
     # O comprovante pode ser foto ou print do banco: o modal aceita imagem só nele.
+    # Comprovante e despacho somam (m081): o texto do modal diz isso, em vez de
+    # "substituirá o arquivo gerado".
+    somam = {"comprovante": "Envie o comprovante (PDF, foto ou print). Ele se soma aos que já estão anexados.",
+             "despacho": "Envie o despacho assinado ou a folha de assinatura. Ele se soma aos que já estão anexados."}
     card["opcoes_anexar"] = json.dumps(
-        [{"nome": a["option_label"], "url": a["url"], "atual": False, **({"imagem": True} if a["key"] == "comprovante" else {})}
+        [{"nome": a["option_label"], "url": a["url"], "atual": False,
+          **({"imagem": True} if a["key"] == "comprovante" else {}),
+          **({"texto": somam[a["key"]]} if a["key"] in somam else {})}
          for a in card["anexos"]], ensure_ascii=False)
     card["rotulo_anexar"] = "Gerenciar documentos assinados" if card["tem_documento_assinado"] else "Anexar documentos assinados"
     return card

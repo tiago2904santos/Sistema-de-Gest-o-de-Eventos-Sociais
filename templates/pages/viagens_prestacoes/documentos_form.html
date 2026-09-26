@@ -10,7 +10,12 @@
   arquivo já envia); e o que falta para o pacote final, só quando falta.
 {% endcomment %}
 {% block pc_salvar_topo %}
-  <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn-primaria">{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
+  {% if pendencias_finalizar %}
+    {# m092: com pendência, o botão leva à lista do que falta e à justificativa. #}
+    <a class="btn-primaria" href="#finalizar">Finalizar prestação</a>
+  {% else %}
+  <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><input type="hidden" name="acao" value="{% if ps.finalizada %}reabrir{% else %}finalizar{% endif %}"><button type="submit" class="btn-primaria">{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
+  {% endif %}
 {% endblock %}
 {% block prestacao_conteudo %}
 <div class="editor-roteiro pc-diario pc-docs">
@@ -33,7 +38,7 @@
               <a class="dd__i of-item" href="{% url 'viagens_prestacoes:consolidado_download' ps.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="document" %}<span><b>Pacote final (PDF)</b><small>Ofício, despacho, relatório, diário e comprovante</small></span></a>
             {% endif %}
             <div class="dd__s"></div>
-            <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_arquivar' ps.pk %}" data-confirmar="{% if ps.arquivada %}Desarquivar a prestação?{% else %}Arquivar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+            <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_arquivar' ps.pk %}" data-confirmar="{% if ps.arquivada %}Desarquivar a prestação?{% else %}Arquivar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><input type="hidden" name="acao" value="{% if ps.arquivada %}desarquivar{% else %}arquivar{% endif %}">
               <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="lock" %}<span><b>{% if ps.arquivada %}Desarquivar{% else %}Arquivar prestação{% endif %}</b><small>{% if ps.arquivada %}Voltar para a lista ativa{% else %}Tirar da lista ativa, mantendo tudo{% endif %}</small></span></button>
             </form>
           </div>
@@ -41,8 +46,11 @@
       </div>
     </header>
     <div class="section-card__corpo">
+      {% if ps.status == "reprovada" and ps.motivo_devolucao %}<p class="alerta alerta--warning" role="status"><b>Devolvida para correção{% if ps.decidida_em %} em {{ ps.decidida_em|date:"d/m/Y" }}{% endif %}:</b> {{ ps.motivo_devolucao }}</p>{% endif %}
+      {% if ps.finalizada %}<p class="alerta alerta--info" role="status">Prestação finalizada — reabra para editar.{% if ps.justificativa_finalizacao %} Finalizada com pendências: {{ ps.justificativa_finalizacao }}{% endif %}</p>{% endif %}
+      {% if selo_prestacao %}<p class="pc-docs__prazo"><span class="st st--pc-prazo-{{ selo_prestacao.tom }}"{% if selo_prestacao.detalhe %} title="{{ selo_prestacao.detalhe }}"{% endif %}>{% include "components/icon.html" with nome="clock" %}{{ selo_prestacao.texto }}</span></p>{% endif %}
       {# Solicitação e prazo de saque numa linha, como na lista; gravam sozinhos. #}
-      <form method="post" action="{% url 'viagens_prestacoes:index' %}" id="form-solicitacao" class="pc-docs__solicitacao" data-autosave data-autosave-url="{{ servidor.solicitacao_autosave_url }}" data-autosave-model="prestacao_servidor" data-autosave-id="{{ ps.pk|unlocalize }}">
+      <form method="post" action="{% url 'viagens_prestacoes:index' %}" id="form-prestacao-solicitacao" class="pc-docs__solicitacao" data-autosave data-autosave-url="{{ servidor.solicitacao_autosave_url }}" data-autosave-model="prestacao_servidor" data-autosave-id="{{ ps.pk|unlocalize }}">
         {% csrf_token %}<input type="hidden" name="action" value="save_solicitacoes"><input type="hidden" name="next" value="{{ request.path }}">
         {% include "components/input.html" with name=numero_name label="Número da solicitação" valor=ps.numero_solicitacao placeholder="0000000" autocomplete="off" %}
         {% include "components/date_range.html" with name="saque_documentos" start_name=liberacao_name end_name=prazo_name label="Prazo de saque (liberação → prazo limite)" valor_inicio=liberacao_iso valor_fim=prazo_iso erros=None %}
@@ -61,11 +69,26 @@
                   {% for anexo in item.anexos %}
                     <span class="pc-doc__anexo">
                       <a href="{% url 'viagens_prestacoes:prestacao_documento_conteudo' prestacao.pk anexo.pk %}" target="_blank" rel="noopener" title="{{ anexo.nome_original|default:'Arquivo anexado' }}">{% include "components/icon.html" with nome="eye" %}<span class="pc-doc__arq">{{ anexo.nome_original|default:"Arquivo anexado" }}</span></a>
-                      <form data-excluir-anexo method="post" action="{% url 'viagens_prestacoes:prestacao_documento_delete' prestacao.pk anexo.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="pc-doc__remover" aria-label="Remover {{ anexo.nome_original|default:'arquivo' }}" title="Remover">{% include "components/icon.html" with nome="x" %}</button></form>
+                      <form data-excluir-anexo data-confirmar-remocao="Remover {{ anexo.nome_original|default:'o arquivo' }}?" method="post" action="{% url 'viagens_prestacoes:prestacao_documento_delete' prestacao.pk anexo.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="pc-doc__remover" aria-label="Remover {{ anexo.nome_original|default:'arquivo' }}" title="Remover">{% include "components/icon.html" with nome="x" %}</button></form>
                     </span>
                   {% endfor %}
                   {% if item.id == "oficio" %}<a class="pc-doc__ajuste" href="{% url 'viagens_prestacoes:prestacao_carimbo_ajustar' prestacao.pk %}?next={{ request.path|urlencode }}">{% include "components/icon.html" with nome="pencil" %}Ajustar posição do número</a>{% endif %}
                 </span>
+              {% endif %}
+              {% if item.anteriores %}
+                {# m084: o removido ou substituído fica aqui por 30 dias, e dá para voltar a ele. #}
+                <details class="pc-doc__versoes">
+                  <summary>Versões anteriores ({{ item.anteriores|length }})</summary>
+                  <ul>
+                    {% for anexo in item.anteriores %}
+                      <li>
+                        <a href="{% url 'viagens_prestacoes:prestacao_documento_conteudo' prestacao.pk anexo.pk %}" target="_blank" rel="noopener">{{ anexo.nome_original|default:"Arquivo" }}</a>
+                        <small>{{ anexo.get_removido_motivo_display }} em {{ anexo.removido_em|date:"d/m/Y H:i" }}</small>
+                        <form method="post" action="{% url 'viagens_prestacoes:prestacao_documento_restaurar' prestacao.pk anexo.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn--secundaria btn--compacto">{% if item.multiplo %}Restaurar{% else %}Voltar para esta versão{% endif %}</button></form>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </details>
               {% endif %}
             </div>
             <form method="post" enctype="multipart/form-data" action="{{ item.url }}" class="prestacao-upload" data-anexar-cartao>
@@ -87,10 +110,54 @@
         </div>
       {% endif %}
 
+      {% if pendencias_finalizar %}
+        {# m092: finalizar com pendência pede justificativa, gravada na auditoria. #}
+        <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" class="pc-docs__falta pc-docs__finalizar" id="finalizar">
+          {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><input type="hidden" name="acao" value="finalizar">
+          <b>{% include "components/icon.html" with nome="alert" %}Antes de finalizar, confira</b>
+          <ul>{% for p in pendencias_finalizar %}<li>{{ p }}</li>{% endfor %}</ul>
+          {% include "components/textarea.html" with name="justificativa" label="Justificativa para finalizar mesmo assim" obrigatorio=True linhas=2 %}
+          <div class="frm-acoes-fim">
+            <a class="btn--secundaria" href="{{ rt_url }}">Voltar ao relatório</a>
+            <button type="submit" class="btn-primaria">Finalizar mesmo assim</button>
+          </div>
+        </form>
+      {% else %}
       <div class="frm-acoes-fim">
         <a class="btn--secundaria" href="{{ rt_url }}">Voltar ao relatório</a>
-        <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn-primaria">{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
+        <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><input type="hidden" name="acao" value="{% if ps.finalizada %}reabrir{% else %}finalizar{% endif %}"><button type="submit" class="btn-primaria">{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
       </div>
+      {% endif %}
+
+      {# m093: envio ao financeiro, aprovação e devolução — por servidor. #}
+      {% if ps.finalizada or ps.status == "enviada" or ps.status == "aprovada" %}
+        <div class="pc-docs__envio" id="envio">
+          <h3 class="pc-docs__envio-titulo">Envio ao financeiro</h3>
+          {% if ps.status == "enviada" %}
+            <p>Enviada em {{ ps.enviada_em|date:"d/m/Y" }}{% if ps.protocolo_envio %} · {{ ps.protocolo_envio }}{% endif %}.</p>
+            <div class="pc-docs__envio-acoes">
+              <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_envio' ps.pk 'aprovar' %}" data-confirmar="Confirmar aprovação?">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn--secundaria btn--compacto">{% include "components/icon.html" with nome="check-circle" %}Aprovada</button></form>
+            </div>
+            <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_envio' ps.pk 'devolver' %}" class="pc-docs__envio-form">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+              {% include "components/textarea.html" with name="motivo_devolucao" label="Motivo da devolução" obrigatorio=True linhas=2 %}
+              <button type="submit" class="btn--secundaria btn--compacto">{% include "components/icon.html" with nome="undo" %}Devolver para correção</button>
+            </form>
+          {% elif ps.status == "aprovada" %}
+            <p><span class="st st--pc-aprovada">Aprovada</span>{% if ps.decidida_em %} em {{ ps.decidida_em|date:"d/m/Y" }}{% endif %} · enviada em {{ ps.enviada_em|date:"d/m/Y" }}{% if ps.protocolo_envio %} · {{ ps.protocolo_envio }}{% endif %}.</p>
+            <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_envio' ps.pk 'devolver' %}" class="pc-docs__envio-form">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+              {% include "components/textarea.html" with name="motivo_devolucao" label="Motivo da devolução" obrigatorio=True linhas=2 %}
+              <button type="submit" class="btn--secundaria btn--compacto">{% include "components/icon.html" with nome="undo" %}Devolver para correção</button>
+            </form>
+          {% else %}
+            <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_envio' ps.pk 'enviar' %}" class="pc-docs__envio-form">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+              {% include "components/input.html" with name="protocolo_envio" label="Protocolo ou e-mail do envio" placeholder="eProtocolo ou endereço de e-mail" %}
+              {% include "components/input.html" with name="enviada_em" label="Enviada em" tipo="date" valor=hoje_iso %}
+              <label class="pc-docs__envio-equipe"><input type="checkbox" name="equipe" value="1"> Registrar para toda a equipe já finalizada do ofício</label>
+              <button type="submit" class="btn-primaria btn--compacto">{% include "components/icon.html" with nome="send" %}Registrar envio</button>
+            </form>
+          {% endif %}
+        </div>
+      {% endif %}
     </div>
   </section>
 </div>

@@ -103,13 +103,20 @@ class AnexoExclusaoTests(PrestacaoFixturesMixin, TestCase):
     def url(self, prestacao=None, anexo=None):
         return reverse('viagens_prestacoes:prestacao_documento_delete', args=[(prestacao or self.fixture.prestacao).pk, (anexo or self.anexo).pk])
 
-    def test_exclusao_remove_registro_e_o_arquivo_do_disco(self):
+    def test_exclusao_tira_de_uso_e_so_a_limpeza_apaga_o_arquivo(self):
+        """m084: remover guarda em "Versões anteriores"; o arquivo sai depois da guarda."""
+        from viagens_prestacoes.anexo_services import purgar_anexos_removidos
         caminho = Path(self.anexo.arquivo.path)
         self.assertTrue(caminho.exists())
         with self.captureOnCommitCallbacks(execute=True):
             response = self.client.post(self.url())
         self.assertTrue(response.json()['ok'])
         self.assertFalse(PrestacaoDocumentoAnexo.objects.filter(pk=self.anexo.pk).exists())
+        self.assertTrue(PrestacaoDocumentoAnexo.todos.filter(pk=self.anexo.pk, removido_em__isnull=False).exists())
+        self.assertTrue(caminho.exists())
+        with self.captureOnCommitCallbacks(execute=True):
+            purgar_anexos_removidos(dias=-1, apagar=True)
+        self.assertFalse(PrestacaoDocumentoAnexo.todos.filter(pk=self.anexo.pk).exists())
         self.assertFalse(caminho.exists())
 
     def test_exclusao_por_get_e_recusada_e_o_anexo_sobrevive(self):

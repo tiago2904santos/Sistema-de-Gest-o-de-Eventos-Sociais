@@ -100,13 +100,10 @@ def _data_retorno_oficio(oficio):
 
 
 def _add_dias_uteis(data, quantidade: int):
-    atual = data
-    restantes = quantidade
-    while restantes > 0:
-        atual += timedelta(days=1)
-        if atual.weekday() < 5:
-            restantes -= 1
-    return atual
+    """Dias úteis pulando fins de semana e feriados (m094: `core.feriados`)."""
+    from core.feriados import somar_dias_uteis
+
+    return somar_dias_uteis(data, quantidade)
 
 
 def _data_relatorio_tecnico(oficio):
@@ -540,12 +537,17 @@ def _pdf_parts_from_anexos_opcional(anexos_qs, label: str) -> list[tuple[str, by
 
 
 def _image_bytes_to_pdf(content: bytes) -> bytes:
-    """A imagem anexada como PDF (a conversão mora em `core.leitura.pdf.imagem_para_pdf`)."""
+    """A imagem anexada como PDF (a conversão mora em `core.leitura.pdf.imagem_para_pdf`).
+
+    Numa folha A4 e em pé: a foto do celular é desvirada pela etiqueta EXIF, como o
+    importador já faz (`como_pdf`). Sem isso, o comprovante fotografado em pé entrava
+    deitado no pacote.
+    """
     from core.leitura.pdf import ImagemInvalida
     from core.leitura.pdf import imagem_para_pdf
 
     try:
-        return imagem_para_pdf(content)
+        return imagem_para_pdf(content, corrigir_exif=True)
     except ImagemInvalida as exc:
         raise DocumentValidationError(str(exc)) from exc
 
@@ -650,6 +652,43 @@ def pendencias_consolidado(servidor_prestacao) -> list[str]:
             "Anexe o comprovante de saque/transferência deste servidor, acima.",
         )
 
+    return pendencias
+
+
+def pendencias_para_finalizar(servidor_prestacao) -> list[str]:
+    """O que falta para dar a prestação deste servidor por concluída (m092).
+
+    Mais do que o pacote final cobra (`pendencias_consolidado`): diário e RT
+    preenchidos (ou assinados), o número carimbado no ofício assinado e a soma dos
+    comprovantes igual à diária. Não bloqueia: a tela pede "Finalizar mesmo assim"
+    com uma justificativa.
+    """
+    from .completude import diario_completo, rt_completo
+
+    prestacao = servidor_prestacao.prestacao
+    pendencias = list(pendencias_consolidado(servidor_prestacao))
+    if not diario_completo(prestacao):
+        pendencias.append("Preencha o km de todos os trechos do diário de bordo, ou anexe o diário assinado.")
+    if not rt_completo(servidor_prestacao):
+        pendencias.append("Escreva a descrição, o objetivo e a conclusão do relatório técnico, ou anexe o RT assinado.")
+
+    from .carimbo_services import anexo_do_oficio_assinado
+
+    oficio = anexo_do_oficio_assinado(prestacao)
+    if oficio is not None and str(servidor_prestacao.numero_solicitacao or "").strip():
+        if not oficio.carimbos.filter(servidor_prestacao=servidor_prestacao).exists():
+            pendencias.append("O número de solicitação não está carimbado no ofício assinado: use “Ajustar posição do número”.")
+
+    comprovantes = list(servidor_prestacao.documentos_anexos.filter(tipo=PrestacaoDocumentoAnexo.TIPO_COMPROVANTE))
+    esperado = servidor_prestacao.diaria_valor_override
+    if esperado is None:
+        esperado = valor_diaria_liberado(servidor_prestacao)
+    if comprovantes and esperado is not None and all(a.valor is not None for a in comprovantes):
+        soma = sum((a.valor for a in comprovantes), Decimal("0"))
+        if soma != esperado:
+            pendencias.append(
+                f"Os comprovantes somam {format_currency_br(soma)}, e a diária deste servidor é {format_currency_br(esperado)}."
+            )
     return pendencias
 
 

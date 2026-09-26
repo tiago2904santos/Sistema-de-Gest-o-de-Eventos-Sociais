@@ -114,22 +114,24 @@ def _build_prestacao_steps(ps, atual: str) -> list:
     rt_url = reverse('viagens_prestacoes:rt_servidor', args=[ps.pk])
     diario_url = reverse('viagens_prestacoes:diario_servidor', args=[ps.pk])
     etapas = [('diario', 'Etapa 1', 'Diário de Bordo', diario_url), ('rt', 'Etapa 2', 'Relatório Técnico', rt_url), ('documentos', 'Etapa 3', 'Documentos e fechamento', documentos_url)]
+    # m091: "Concluído" pelo que está pronto (preenchido ou assinado), e não por
+    # vir antes da tela aberta — abrir a tela cria a linha vazia.
+    from .completude import diario_completo, rt_completo
+    prontas = {'diario': diario_completo(ps.prestacao), 'rt': rt_completo(ps), 'documentos': ps.finalizada}
     steps = []
-    atingiu_atual = False
     for chave, step_label, titulo, url in etapas:
         if chave == atual:
             state_class = 'is-current'
             aria_current = 'step'
-            atingiu_atual = True
             status = 'Em edição'
-        elif atingiu_atual:
-            state_class = ''
-            aria_current = ''
-            status = 'A seguir'
-        else:
+        elif prontas[chave]:
             state_class = 'is-complete'
             aria_current = ''
             status = 'Concluído'
+        else:
+            state_class = ''
+            aria_current = ''
+            status = 'Pendente'
         steps.append({'label': titulo, 'state': 'current' if state_class == 'is-current' else 'done' if state_class == 'is-complete' else '', 'marker': '✓' if state_class == 'is-complete' else str(len(steps) + 1), 'step_label': step_label, 'title': titulo, 'status': status, 'state_class': state_class, 'aria_current': aria_current, 'url': url})
     return steps
 _ROTULO_DA_ETAPA = {'diario': 'Diário de Bordo', 'rt': 'Relatório Técnico', 'documentos': 'Documentos e fechamento'}

@@ -46,6 +46,8 @@
       // O nome do documento mora dentro do texto padrão: reencontra.
       nome = dialogo.querySelector('[data-anexar-nome]') || nome;
     }
+    // O texto do link (ou o padrão), para a opção sem texto próprio voltar a ele.
+    padrao.textoAtual = texto ? texto.innerHTML : '';
     padrao.acaoAtual = link.getAttribute('data-anexar-acao') || padrao.acao;
     enviar.textContent = padrao.acaoAtual;
     remover.textContent = link.getAttribute('data-anexar-remover-rotulo') || padrao.remover;
@@ -85,6 +87,14 @@
   // Aponta o formulário para um documento: endereço, nome e se dá para remover o assinado.
   function escolher(alvo) {
     form.action = alvo.url;
+    // A opção pode trazer o próprio texto (o comprovante que se soma aos anteriores).
+    if (texto) {
+      if (alvo.texto) texto.textContent = alvo.texto;
+      else if (texto.innerHTML !== padrao.textoAtual) {
+        texto.innerHTML = padrao.textoAtual;
+        nome = dialogo.querySelector('[data-anexar-nome]') || nome;
+      }
+    }
     if (nome) nome.textContent = alvo.nome || 'este documento';
     remover.hidden = !alvo.atual;
     aceitaImagem = !!alvo.imagem;

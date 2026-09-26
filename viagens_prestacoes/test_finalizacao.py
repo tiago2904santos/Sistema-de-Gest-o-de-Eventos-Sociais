@@ -5,12 +5,9 @@ desenho atual ficam registradas aqui, sem juízo de valor:
 
 * os endpoints são **alternadores**, não atribuições — o mesmo POST arquiva e
   desarquiva. Um duplo envio desfaz a ação;
-* **não há pré-condição**: finalizar não exige comprovante, relatório técnico
-  nem número de solicitação. A decisão é inteiramente do operador.
-
-A segunda pode ser deliberada — é uma pergunta de produto, não um defeito
-óbvio. Está travada como está para que uma mudança futura seja uma escolha
-explícita, e não um efeito colateral.
+* desde o m092, finalizar com pendência (sem comprovante, relatório técnico,
+  número de solicitação...) exige uma justificativa, gravada na auditoria. A
+  decisão continua do operador, mas deixa de ser silenciosa.
 """
 from __future__ import annotations
 from viagens_prestacoes.test_helpers import autorizar_viagens, pdf_minimo
@@ -79,9 +76,9 @@ class FinalizacaoTests(PrestacaoFixturesMixin, TestCase):
         self.fixture = self.criar_prestacao(numero=1)
         self.ps = self.fixture.prestacoes_servidor[0]
 
-    def finalizar(self, ps=None):
+    def finalizar(self, ps=None, justificativa='Finalizada no teste.'):
         ps = ps or self.ps
-        return self.client.post(reverse('viagens_prestacoes:prestacao_servidor_finalizar', args=[ps.pk]))
+        return self.client.post(reverse('viagens_prestacoes:prestacao_servidor_finalizar', args=[ps.pk]), {'justificativa': justificativa})
 
     def test_finalizar_marca_flag_e_carimba_o_momento(self):
         self.finalizar()
@@ -97,19 +94,20 @@ class FinalizacaoTests(PrestacaoFixturesMixin, TestCase):
         self.assertFalse(self.ps.finalizada)
         self.assertIsNone(self.ps.finalizada_em)
 
-    def test_finalizar_nao_exige_nenhuma_pre_condicao(self):
-        """Sem comprovante, sem RT e sem número de solicitação, finaliza igual.
-
-        Caracterização, não aprovação: pode ser decisão de produto (o operador
-        é quem julga). Fica travado para que mudar isso seja escolha explícita.
-        """
+    def test_finalizar_com_pendencia_exige_justificativa(self):
+        """m092: sem comprovante, RT e número, só finaliza com justificativa."""
+        from auditoria.models import LogAuditoria
         self.assertEqual(self.ps.numero_solicitacao, '')
         self.assertEqual(self.ps.documentos_anexos.count(), 0)
-        self.assertEqual(self.ps.status, PrestacaoServidor.STATUS_PENDENTE)
-        self.finalizar()
+        self.finalizar(justificativa='')
+        self.ps.refresh_from_db()
+        self.assertFalse(self.ps.finalizada)
+        self.finalizar(justificativa='Comprovante chega pelo malote.')
         self.ps.refresh_from_db()
         self.assertTrue(self.ps.finalizada)
+        self.assertEqual(self.ps.justificativa_finalizacao, 'Comprovante chega pelo malote.')
         self.assertEqual(self.ps.status, PrestacaoServidor.STATUS_PENDENTE)
+        self.assertTrue(LogAuditoria.objects.filter(acao='prestacao_finalizada_com_pendencias').exists())
 
     def test_finalizar_move_o_card_para_a_situacao_de_finalizados(self):
         """Comparado entre SITUAÇÕES — ver a nota do teste de arquivamento."""
@@ -137,7 +135,7 @@ class AcoesPorOficioTests(PrestacaoFixturesMixin, TestCase):
         segundo = self.criar_servidor('Servidor Dois')
         fixture = self.criar_prestacao(numero=1, servidores=[self.criar_servidor('Servidor Um'), segundo])
         ps_um, ps_dois = sorted(fixture.prestacoes_servidor, key=lambda ps: ps.pk)
-        self.client.post(reverse('viagens_prestacoes:prestacao_finalizar', args=[fixture.prestacao.pk]))
+        self.client.post(reverse('viagens_prestacoes:prestacao_finalizar', args=[fixture.prestacao.pk]), {'justificativa': 'teste'})
         ps_um.refresh_from_db()
         ps_dois.refresh_from_db()
         self.assertTrue(ps_um.finalizada)
