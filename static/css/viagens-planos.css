@@ -152,3 +152,9 @@
 
 /* Salvar rascunho e Finalizar lado a lado, à direita do Voltar. */
 .pt-acoes-fim__gravar{display:flex;gap:8px;margin-left:auto}
+
+/* m073: resultados do plano e relatório final. */
+.pt-resultados__tabela td{vertical-align:middle}
+.pt-resultados__meta{font-size:12.5px;color:var(--n-600);max-width:320px}
+.pt-resultados__ajuda{margin:0 0 8px;font-size:13px;color:var(--n-600)}
+.pt-resultados__relatorio{margin:0;white-space:pre-wrap;font:inherit;font-size:13.5px;color:var(--n-800)}

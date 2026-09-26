@@ -89,6 +89,12 @@ class Viagem(ModeloTemporal, ModeloCancelavel, OrigemLegado):
     tipos = models.ManyToManyField(TipoViagem, blank=True, related_name="viagens", verbose_name="Tipos da viagem")
     motivo = models.TextField("Motivo", blank=True, default="")
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default=STATUS_RASCUNHO)
+    # O "ambiente" da viagem: o setor (ex.: ASCOM) que vai executá-la. Nasce da
+    # equipe que a DG designou na solicitação; define de onde vêm sede e prazos.
+    setor = models.ForeignKey(
+        "accounts.Setor", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="viagens", verbose_name="Ambiente (setor)",
+    )
 
     class Meta:
         ordering = ["-data_inicio", "-criado_em"]
@@ -165,6 +171,33 @@ class Viagem(ModeloTemporal, ModeloCancelavel, OrigemLegado):
         for relacao in self.DOCUMENTOS:
             for documento in getattr(self, relacao).filter(cancelado=True, motivo_cancelamento__startswith="Viagem cancelada"):
                 documento.reativar()
+
+
+class EquipePrevista(ModeloTemporal):
+    """Quantos servidores de uma equipe a DG designou para esta viagem.
+
+    É a meta do contador "designados x em ofícios": a viagem nasce da
+    solicitação com "ASCOM: 2", e enquanto os ofícios dela não somarem dois
+    servidores a tela avisa que falta gente. Quantidade vazia é equipe
+    designada sem número — aparece, mas não conta para a meta.
+    """
+
+    viagem = models.ForeignKey(Viagem, on_delete=models.CASCADE, related_name="equipes_previstas")
+    equipe = models.ForeignKey("cadastros.Equipe", on_delete=models.PROTECT, related_name="+", verbose_name="equipe")
+    quantidade = models.PositiveIntegerField("servidores designados", null=True, blank=True)
+
+    class Meta:
+        ordering = ["equipe__nome"]
+        verbose_name = "Equipe prevista da viagem"
+        verbose_name_plural = "Equipes previstas da viagem"
+        constraints = [
+            models.UniqueConstraint(fields=["viagem", "equipe"], name="viagem_equipe_prevista_unica"),
+        ]
+
+    def __str__(self):
+        if self.quantidade:
+            return f"{self.equipe}: {self.quantidade}"
+        return f"{self.equipe} (sem quantidade)"
 
 
 VIAGEM_SOLICITACAO_EXTENSOES = ["pdf", "png", "jpg", "jpeg"]

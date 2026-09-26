@@ -97,6 +97,13 @@ def rt_servidor(request, ps_pk):
             initial["diaria"] = diaria_inicial_da_prestacao(prestacao)
         if not relatorio.motivo:
             initial["motivo"] = prestacao.oficio.motivo or ""
+        if not (relatorio.atividade and relatorio.conclusao):
+            # m073: os resultados lançados no Plano de Trabalho da mesma viagem.
+            from viagens_planos.resultados import sugestao_para_rt
+
+            for campo, texto in sugestao_para_rt(prestacao.oficio).items():
+                if texto and not getattr(relatorio, campo):
+                    initial[campo] = texto
         form = RelatorioTecnicoForm(instance=relatorio, relatorio=relatorio, initial=initial)
 
     servidores_ctx = [_servidor_rt_ctx(ps)]

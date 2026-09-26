@@ -1,0 +1,15 @@
+{% comment %}
+  O contador "servidores designados x servidores em ofícios" de uma viagem.
+  Contexto: `contador` (viagens_viagem.meta_equipe.contador_de_servidores).
+  Uma linha por equipe designada pela DG; o selo diz quanto falta.
+{% endcomment %}
+{% if contador %}
+  <div class="vg-meta" data-contador-servidores>
+    <p class="vg-meta__status"><span class="st st--{{ contador.tom }}">{% include "components/icon.html" with nome="users" %}{{ contador.em_oficios }}{% if contador.previstos %} de {{ contador.previstos }}{% endif %}</span> {{ contador.texto }}</p>
+    <ul class="vg-meta__linhas" aria-label="Servidores por equipe">
+      {% for l in contador.linhas %}
+        <li class="vg-meta__linha{% if l.faltam %} vg-meta__linha--falta{% endif %}"><b>{{ l.nome }}</b>: {{ l.em_oficios }} de {% if l.previstos %}{{ l.previstos }}{% else %}— (sem quantidade){% endif %} em ofícios</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}

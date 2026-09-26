@@ -1,0 +1,77 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
+{% comment %}
+  Resultados do plano de trabalho (m073): depois do evento, o realizado de
+  cada atividade prevista, lançado uma vez. Embaixo, o relatório final que
+  sai desses números — o mesmo texto que o RT das prestações da viagem usa
+  para sugerir "Objetivo da participação" e "Conclusão".
+{% endcomment %}
+
+{% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/viagens-planos.css' %}">{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with atual=titulo %}
+
+  <div class="of-form pt-form pt-resultados">
+    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="chart" %}</span>
+          <div class="frm-titulo">
+            <h1 class="page-header__titulo d-titulo-v32">Resultados do plano <span class="frm-ident">{{ plano.numero_formatado }}</span></h1>
+          </div>
+        </div>
+      </div>
+      <div class="frm-topo__acoes">
+        <a class="btn--secundaria" href="{{ url_voltar }}">Voltar ao plano</a>
+        {% if pode_editar and linhas %}<button type="submit" form="form-resultados" class="btn btn--dourado btn-primaria">Salvar resultados</button>{% endif %}
+      </div>
+    </div>
+
+    <section class="section-card reg">
+      <header class="section-card__cabecalho reg__t">
+        <h2 class="section-card__titulo">Realizado por atividade</h2>
+      </header>
+      <div class="section-card__corpo">
+        {% if linhas %}
+          <form method="post" id="form-resultados">{% csrf_token %}
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+            <fieldset class="frm-fieldset"{% if not pode_editar %} disabled{% endif %}>
+              <div class="tabela-wrapper dt-w" tabindex="0" role="region" aria-label="Resultados por atividade">
+                <table class="tabela dt tabela--compacta pt-resultados__tabela">
+                  <thead><tr><th scope="col">Atividade</th><th scope="col">Meta prevista</th><th scope="col">Realizado</th><th scope="col">Observação</th></tr></thead>
+                  <tbody>
+                    {% for l in linhas %}
+                      <tr>
+                        <th scope="row">{{ l.atividade.nome }}</th>
+                        <td class="pt-resultados__meta">{{ l.atividade.meta|default:"—" }}</td>
+                        <td><input class="form-controle" type="number" min="0" step="1" inputmode="numeric" name="realizado_{{ l.atividade.pk }}" value="{{ l.realizado|default_if_none:'' }}" aria-label="Realizado em {{ l.atividade.nome }}"></td>
+                        <td><input class="form-controle" type="text" maxlength="500" name="observacao_{{ l.atividade.pk }}" value="{{ l.observacao }}" aria-label="Observação sobre {{ l.atividade.nome }}" placeholder="Ex.: RGs emitidos, orientações"></td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </fieldset>
+          </form>
+        {% else %}
+          <p>Marque as atividades previstas no plano para lançar os resultados.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    {% if relatorio %}
+      <section class="section-card reg" data-relatorio-final>
+        <header class="section-card__cabecalho reg__t">
+          <h2 class="section-card__titulo">Relatório final</h2>
+        </header>
+        <div class="section-card__corpo">
+          <p class="pt-resultados__ajuda">Gerado dos resultados acima. O Relatório Técnico das prestações de contas desta viagem já abre com o objetivo e a conclusão sugeridos a partir dele.</p>
+          <pre class="pt-resultados__relatorio">{{ relatorio }}</pre>
+        </div>
+      </section>
+    {% endif %}
+  </div>
+{% endblock %}

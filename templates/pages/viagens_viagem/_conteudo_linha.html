@@ -4,7 +4,7 @@
   acontece), e os fatos com ícone — período, ofícios, documentos e quem
   viaja. Contexto: `l` (linha), `v` (viagem).
 {% endcomment %}
-<h2 class="of-cartao__titulo tm-titulo" id="viagem-{{ v.pk }}-titulo">{{ l.titulo }} <span class="st st--{{ l.selo_tom }}">{{ l.selo }}</span>{% if l.quando %} <span class="st st--{{ l.quando_tom }}">{% include "components/icon.html" with nome="clock" %}{{ l.quando }}</span>{% endif %}</h2>
+<h2 class="of-cartao__titulo tm-titulo" id="viagem-{{ v.pk }}-titulo">{{ l.titulo }} <span class="st st--{{ l.selo_tom }}">{{ l.selo }}</span>{% if l.quando %} <span class="st st--{{ l.quando_tom }}">{% include "components/icon.html" with nome="clock" %}{{ l.quando }}</span>{% endif %}{% if l.contador.faltam %} <span class="st st--pendente" title="{{ l.contador.texto }}" data-contador-servidores>{% include "components/icon.html" with nome="users" %}Falta{{ l.contador.faltam|pluralize:"m" }} {{ l.contador.faltam }} servidor{{ l.contador.faltam|pluralize:"es" }}</span>{% endif %}</h2>
 <ul class="tm-fatos" aria-label="Dados da viagem {{ l.titulo }}">
   {% for f in l.fatos %}
     <li class="tm-fato{% if f.ausente %} tm-fato--ausente{% endif %}"{% if not f.ausente %} title="{{ f.texto }}"{% endif %}>{% include "components/icon.html" with nome=f.icone %}<span class="sr-only">{{ f.rotulo }}: </span><span class="vg-fato__valor">{{ f.texto }}</span></li>
