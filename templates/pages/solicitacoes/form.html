@@ -152,6 +152,10 @@
                 {% include "components/select.html" with name="orgao_responsavel" label="Órgão responsável" rotulo_oculto=True opcoes=orgaos obrigatorio=True selecionado=valores.orgao_responsavel erros=erros.orgao_responsavel desabilitado=dados_desabilitado placeholder="Órgão responsável" %}
               </div>
             </div>
+            {% if not dados_desabilitado %}
+              {# Quem já pediu antes: ao digitar o nome, um clique traz cargo, contato e órgão do último pedido. #}
+              <div class="sugestao-solicitante" data-sugestao-solicitante data-url="{% url 'solicitacoes:solicitantes' %}" data-campo-nome="solicitante_nome" hidden></div>
+            {% endif %}
           </div>
           <div class="g-form g-form--4">
             {% include "components/select.html" with name="tipo_evento" label="Tipo do evento" opcoes=tipos_evento obrigatorio=True selecionado=valores.tipo_evento erros=erros.tipo_evento desabilitado=dados_desabilitado %}
@@ -424,4 +428,4 @@
   <dialog class="mo v32-cadastro-modal" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{{ request.path }}"></dialog>
 {% endblock %}
 
-{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/trilho.js' %}" defer></script><script src="{% estatico 'js/solicitacoes-form.js' %}" defer></script>{% endblock %}
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/trilho.js' %}" defer></script><script src="{% estatico 'js/solicitacoes-form.js' %}" defer></script><script src="{% estatico 'js/sugestao-solicitante.js' %}" defer></script>{% endblock %}

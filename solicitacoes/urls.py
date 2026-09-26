@@ -12,6 +12,8 @@ urlpatterns = [
     path("exportar/", views.exportar_solicitacoes, name="exportar"),
     # Sugestão (JSON) do que acompanha o tipo de evento; a tela aplica com um clique.
     path("sugestao-do-tipo/", views.sugestao_do_tipo, name="sugestao_tipo"),
+    # Quem já pediu antes (JSON): nome, cargo, contato e órgão do último pedido.
+    path("solicitantes/", views.solicitantes_anteriores, name="solicitantes"),
     # Tela única do registro: o formulário. Não existe mais rota de detalhe.
     path("<int:pk>/editar/", views.editar_solicitacao, name="editar"),
     # Transições de workflow — somente POST.

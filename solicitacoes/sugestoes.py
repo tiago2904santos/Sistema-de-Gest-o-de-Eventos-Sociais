@@ -108,3 +108,86 @@ def sugestao_do_tipo(tipo):
         "equipes": equipes,
         "solicitante": solicitante,
     }
+
+
+# ---------------------------------------------------------------------------
+# Solicitantes que já pediram antes (m009)
+# ---------------------------------------------------------------------------
+
+LIMITE_SOLICITANTES = 8
+# Quantas linhas recentes o agrupamento lê: o bastante para achar os nomes
+# sem varrer o histórico inteiro a cada tecla.
+LINHAS_LIDAS = 300
+
+
+def ultimos_por_nome(queryset, campo_nome, termo, campos, ordem, limite=LIMITE_SOLICITANTES):
+    """Os nomes que contêm `termo`, cada um com os dados do pedido mais recente.
+
+    `campos` mapeia o nome do campo no formulário -> caminho no banco; devolve
+    [{"nome", "campos": {campo: valor}, "pedidos": n}], dos mais recentes aos
+    mais antigos. Nomes iguais sem diferença de maiúsculas/espaços se juntam.
+    """
+    termo = (termo or "").strip()
+    if len(termo) < 2:
+        return []
+    linhas = (
+        queryset.filter(**{f"{campo_nome}__icontains": termo})
+        .order_by(*ordem)
+        .values(campo_nome, *campos.values())[:LINHAS_LIDAS]
+    )
+    achados = {}
+    for linha in linhas:
+        nome = " ".join(str(linha[campo_nome] or "").split())
+        if not nome:
+            continue
+        chave = nome.casefold()
+        if chave in achados:
+            achados[chave]["pedidos"] += 1
+            continue
+        if len(achados) >= limite:
+            continue
+        achados[chave] = {
+            "nome": nome,
+            "campos": {
+                campo: "" if linha[caminho] is None else str(linha[caminho])
+                for campo, caminho in campos.items()
+            },
+            "pedidos": 1,
+        }
+    return list(achados.values())
+
+
+def solicitantes_anteriores(usuario, termo):
+    """Quem já pediu evento (entre as solicitações que o usuário enxerga)."""
+    from cadastros.models import OrgaoResponsavel
+
+    from .permissions import queryset_visivel
+
+    achados = ultimos_por_nome(
+        queryset_visivel(usuario, SolicitacaoEvento.objects.all()),
+        "solicitante_nome",
+        termo,
+        {
+            "solicitante_cargo_unidade": "solicitante_cargo_unidade",
+            "contato": "contato",
+            "orgao_responsavel": "orgao_responsavel_id",
+        },
+        ordem=["-data_solicitacao", "-pk"],
+    )
+    ids_orgaos = [a["campos"]["orgao_responsavel"] for a in achados if a["campos"]["orgao_responsavel"]]
+    orgaos = {
+        str(pk): nome
+        for pk, nome in OrgaoResponsavel.objects.filter(pk__in=ids_orgaos).values_list("pk", "nome")
+    }
+    for achado in achados:
+        campos = achado["campos"]
+        achado["detalhe"] = " · ".join(
+            parte
+            for parte in (
+                campos["solicitante_cargo_unidade"],
+                campos["contato"],
+                orgaos.get(campos["orgao_responsavel"], ""),
+            )
+            if parte
+        )
+    return achados

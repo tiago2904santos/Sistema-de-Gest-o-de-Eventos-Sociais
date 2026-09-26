@@ -351,6 +351,14 @@ def sugestao_do_tipo(request):
 
 
 @login_required
+def solicitantes_anteriores(request):
+    """Solicitantes que já pediram, para sugerir ao digitar o nome (só leitura)."""
+    return JsonResponse(
+        {"resultados": sugestoes.solicitantes_anteriores(request.user, request.GET.get("q", ""))}
+    )
+
+
+@login_required
 def nova_solicitacao(request):
     """Tela "Nova Solicitação de Evento Social" com persistência real."""
     email_origem = None

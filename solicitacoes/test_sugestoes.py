@@ -1,12 +1,91 @@
 """Sugestões da tela da solicitação, aplicadas com um clique (m008, m009)."""
 
+from datetime import date
+
 from django.urls import reverse
 
 from cadastros.models import Equipe, OrgaoResponsavel, Servico, TipoEvento, TipoEventoEquipe
+from demandas_eventos.tests import BaseDemandasTestCase
 
 from .models import StatusSolicitacao
 from .sugestoes import sugestao_do_tipo
 from .tests import BaseSolicitacaoTestCase
+
+
+class SolicitantesAnterioresTests(BaseSolicitacaoTestCase):
+    def buscar(self, usuario, termo):
+        self.client.force_login(usuario)
+        resposta = self.client.get(reverse("solicitacoes:solicitantes"), {"q": termo})
+        self.assertEqual(resposta.status_code, 200)
+        return resposta.json()["resultados"]
+
+    def test_traz_os_dados_do_pedido_mais_recente_de_cada_nome(self):
+        outro_orgao = OrgaoResponsavel.objects.create(nome="Prefeitura")
+        self.criar_solicitacao(
+            solicitante_nome="Delegacia de Exemplo", contato="41 1111-1111",
+            data_solicitacao=date(2026, 1, 1),
+        )
+        self.criar_solicitacao(
+            solicitante_nome="delegacia  de exemplo", contato="41 2222-2222",
+            solicitante_cargo_unidade="Delegado / 1ª DP", orgao_responsavel=outro_orgao,
+            data_solicitacao=date(2026, 5, 1),
+        )
+        self.criar_solicitacao(solicitante_nome="Outra pessoa")
+
+        resultados = self.buscar(self.solicitante, "delegacia")
+
+        self.assertEqual(len(resultados), 1)
+        item = resultados[0]
+        self.assertEqual(item["nome"], "delegacia de exemplo")
+        self.assertEqual(item["pedidos"], 2)
+        self.assertEqual(
+            item["campos"],
+            {
+                "solicitante_cargo_unidade": "Delegado / 1ª DP",
+                "contato": "41 2222-2222",
+                "orgao_responsavel": str(outro_orgao.pk),
+            },
+        )
+        self.assertEqual(item["detalhe"], "Delegado / 1ª DP · 41 2222-2222 · Prefeitura")
+
+    def test_so_o_que_o_usuario_enxerga_e_termo_minimo(self):
+        self.criar_solicitacao(solicitante_nome="Secretaria Sigilosa")
+        self.assertEqual(self.buscar(self.outro_solicitante, "sigilosa"), [])
+        self.assertEqual(len(self.buscar(self.gestor, "sigilosa")), 1)
+        self.assertEqual(self.buscar(self.gestor, "s"), [])
+
+    def test_tela_editavel_tem_a_lista(self):
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(reverse("solicitacoes:nova"))
+        self.assertContains(resposta, "data-sugestao-solicitante")
+        self.assertContains(resposta, "js/sugestao-solicitante.js")
+
+
+class SolicitantesDePalestrasTests(BaseDemandasTestCase):
+    def test_telefone_e_email_do_ultimo_pedido(self):
+        self.criar_demanda(solicitante="Colégio Estadual X", telefone="41 3333-3333",
+                           data_solicitacao=date(2026, 1, 1))
+        self.criar_demanda(solicitante="Colégio Estadual X", telefone="41 4444-4444",
+                           email="colegio@exemplo.test", data_solicitacao=date(2026, 6, 1))
+        self.client.force_login(self.usuario)
+        resposta = self.client.get(reverse("demandas_eventos:solicitantes"), {"q": "colégio"})
+        resultados = resposta.json()["resultados"]
+        self.assertEqual(len(resultados), 1)
+        self.assertEqual(
+            resultados[0]["campos"], {"telefone": "41 4444-4444", "email": "colegio@exemplo.test"}
+        )
+        self.assertEqual(resultados[0]["pedidos"], 2)
+
+    def test_outro_setor_nao_ve(self):
+        self.criar_demanda(solicitante="Colégio Estadual X")
+        self.client.force_login(self.outro)
+        resposta = self.client.get(reverse("demandas_eventos:solicitantes"), {"q": "colégio"})
+        self.assertEqual(resposta.json()["resultados"], [])
+
+    def test_tela_nova_tem_a_lista(self):
+        self.client.force_login(self.usuario)
+        resposta = self.client.get(reverse("demandas_eventos:nova"))
+        self.assertContains(resposta, reverse("demandas_eventos:solicitantes"))
 
 
 class SugestaoDoTipoTests(BaseSolicitacaoTestCase):

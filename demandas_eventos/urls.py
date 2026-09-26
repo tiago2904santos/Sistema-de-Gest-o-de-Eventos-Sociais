@@ -8,6 +8,8 @@ urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("lista/", views.lista_demandas, name="lista"),
     path("exportar/", views.exportar_demandas, name="exportar"),
+    # Quem já pediu antes (JSON): telefone e e-mail do último pedido.
+    path("solicitantes/", views.solicitantes_anteriores, name="solicitantes"),
     path("nova/", views.editar_demanda, name="nova"),
     # "Preencher com um e-mail" da tela nova: lê e sugere, não grava (POST, JSON).
     path("nova/ler-email/", views.ler_email, name="ler_email"),
