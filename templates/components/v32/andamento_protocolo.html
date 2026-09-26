@@ -1,0 +1,14 @@
+{% comment %}
+  Cartão do "Consultar andamento": a última movimentação do protocolo no
+  eProtocolo, como veio da consulta (`integracoes.eprotocolo.andamento`).
+  Uso: {% include "components/v32/andamento_protocolo.html" with andamento=andamento_protocolo %}
+  Em modo simulado (sem credencial da Celepar) o cartão diz que o dado é fictício.
+{% endcomment %}
+<div class="aviso aviso--info aviso--fino andamento-protocolo" role="status" data-andamento-protocolo>
+  {% include "components/icon.html" with nome="clipboard" %}
+  <div class="aviso__corpo">
+    <b>Protocolo {{ andamento.numero }}{% if andamento.situacao %} — {{ andamento.situacao }}{% endif %}</b>
+    <p>{% if andamento.local %}Local atual: {{ andamento.local }}{% else %}Local atual não informado{% endif %}{% if andamento.ultima_movimentacao %} · última movimentação em {{ andamento.ultima_movimentacao }}{% endif %}</p>
+    <div class="aviso__meta">Consultado em {{ andamento.consultado_em }}{% if andamento.simulado %} · simulado: a integração com o eProtocolo ainda não está configurada{% endif %}</div>
+  </div>
+</div>

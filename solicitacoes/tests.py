@@ -2114,6 +2114,81 @@ class TimelineComORegistroMaisRecenteTests(BaseSolicitacaoTestCase):
         self.assertEqual(envio["quando"], "01/08/2026 10:00")
 
 
+@override_settings(EPROTOCOLO={"AMBIENTE": "mock"})
+class ProtocoloDaSolicitacaoTests(BaseSolicitacaoTestCase):
+    """Número do eProtocolo guardado, buscável e com a consulta do andamento."""
+
+    def test_formulario_normaliza_o_numero(self):
+        self.client.force_login(self.solicitante)
+        dados = self.dados_completos_post(acao="rascunho")
+        dados["protocolo"] = "123456789"
+        self.client.post(reverse("solicitacoes:nova"), dados)
+        solicitacao = SolicitacaoEvento.objects.get()
+        self.assertEqual(solicitacao.protocolo, "12.345.678-9")
+
+    def test_numero_com_digitos_errados_e_recusado(self):
+        form = SolicitacaoForm(data={**self.dados_completos_post(acao="rascunho"), "protocolo": "1234"})
+        self.assertFalse(form.is_valid())
+        self.assertIn("protocolo", form.errors)
+
+    def test_busca_pelo_numero_com_ou_sem_pontos(self):
+        alvo = self.criar_solicitacao(protocolo="12.345.678-9")
+        self.criar_solicitacao(protocolo="98.765.432-1")
+        self.client.force_login(self.solicitante)
+        for termo in ("12.345.678-9", "123456789"):
+            resposta = self.client.get(reverse("solicitacoes:lista"), {"q": termo})
+            self.assertEqual(
+                [s.pk for s in resposta.context["pagina"].object_list], [alvo.pk], termo
+            )
+
+    def test_consultar_andamento_mostra_o_cartao(self):
+        solicitacao = self.criar_solicitacao(protocolo="12.345.678-9")
+        self.client.force_login(self.solicitante)
+        url = reverse("solicitacoes:editar", args=[solicitacao.pk])
+        resposta = self.client.get(url)
+        self.assertContains(resposta, "Consultar andamento")
+        resposta = self.client.post(
+            reverse("solicitacoes:consultar_protocolo", args=[solicitacao.pk]), follow=True
+        )
+        self.assertContains(resposta, "data-andamento-protocolo")
+        self.assertContains(resposta, "Protocolo 12.345.678-9")
+        self.assertContains(resposta, "simulado")
+        # Lido uma vez: recarregar a tela não repete o cartão.
+        self.assertNotContains(self.client.get(url), "data-andamento-protocolo")
+
+    def test_sem_protocolo_nao_tem_botao(self):
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(reverse("solicitacoes:editar", args=[solicitacao.pk]))
+        self.assertNotContains(resposta, "Consultar andamento")
+
+    def test_falha_do_eprotocolo_vira_mensagem(self):
+        from unittest.mock import patch
+
+        from integracoes.eprotocolo.exceptions import EProtocoloUnavailableError
+
+        solicitacao = self.criar_solicitacao(protocolo="12.345.678-9")
+        self.client.force_login(self.solicitante)
+        with patch(
+            "integracoes.eprotocolo.services.consultar_protocolo",
+            side_effect=EProtocoloUnavailableError(),
+        ):
+            resposta = self.client.post(
+                reverse("solicitacoes:consultar_protocolo", args=[solicitacao.pk]),
+                follow=True,
+            )
+        self.assertContains(resposta, "Não foi possível consultar o eProtocolo")
+        self.assertNotContains(resposta, "data-andamento-protocolo")
+
+    def test_quem_nao_ve_a_solicitacao_nao_consulta(self):
+        solicitacao = self.criar_solicitacao(protocolo="12.345.678-9")
+        self.client.force_login(self.outro_solicitante)
+        resposta = self.client.post(
+            reverse("solicitacoes:consultar_protocolo", args=[solicitacao.pk])
+        )
+        self.assertEqual(resposta.status_code, 403)
+
+
 class EdicaoSimultaneaTests(BaseSolicitacaoTestCase):
     """Salvar a tela velha não desfaz o ajuste ou a decisão de outra pessoa."""
 

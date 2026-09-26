@@ -19,6 +19,7 @@ from cadastros.models import (
     TipoEvento,
     UnidadeMovel,
 )
+from integracoes.eprotocolo.andamento import formatar_numero
 from viagens_cadastros.models import Servidor
 
 from .models import (
@@ -187,6 +188,7 @@ class SolicitacaoForm(forms.ModelForm):
             "tipo_evento",
             "municipio",
             "local_evento",
+            "protocolo",
             "solicitante_nome",
             "solicitante_cargo_unidade",
             "contato",
@@ -329,6 +331,12 @@ class SolicitacaoForm(forms.ModelForm):
                 "Esta solicitação foi alterada por outra pessoa depois que você "
                 "abriu a tela. Recarregue a página antes de salvar."
             )
+
+    def clean_protocolo(self):
+        numero = formatar_numero(self.cleaned_data.get("protocolo"))
+        if numero is None:
+            raise forms.ValidationError("O protocolo tem 9 dígitos (00.000.000-0).")
+        return numero
 
     def clean_motorista(self):
         motorista = self.cleaned_data.get("motorista")

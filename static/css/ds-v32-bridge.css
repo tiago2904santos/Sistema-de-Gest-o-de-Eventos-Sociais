@@ -2607,6 +2607,13 @@ textarea.form-controle.cb-caixa-copiar__texto{width:100%;min-height:0;resize:ver
 .filtros-ativos .chip a{width:18px;height:18px;display:grid;place-items:center;border-radius:4px;color:var(--d-700)}
 .filtros-ativos .chip a:hover{background:var(--d-200)}
 .filtros-ativos .chip .ui-icon{width:12px;height:12px}
+/* Protocolo (eProtocolo): o campo com o "Consultar andamento" ao lado, e o cartão da consulta. */
+.sol-protocolo{display:flex;align-items:flex-end;gap:8px}
+.sol-protocolo .form-campo{flex:1 1 auto;min-width:0}
+.sol-protocolo>.btn--secundaria{flex:none;margin-bottom:2px}
+.sol-protocolo__acao{margin:0 0 12px}
+.andamento-protocolo{display:flex;align-items:flex-start;gap:8px}
+.andamento-protocolo p{margin:2px 0 0}
 /* Cartão "Viagem" da solicitação: situação, o que falta e o "Gerar viagem". */
 .sol-viagem{display:flex;flex-direction:column;gap:8px}
 .sol-viagem__situacao,.sol-viagem__texto{margin:0;font-size:13px;color:var(--n-600)}

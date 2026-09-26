@@ -109,6 +109,11 @@ class SolicitacaoEvento(models.Model):
         help_text="Qual unidade móvel vai ao evento (obrigatória quando há unidade móvel).",
     )
     local_evento = models.CharField("local do evento", max_length=255, blank=True)
+    # Muitos pedidos chegam por protocolo: o número do ofício liga a
+    # solicitação ao processo, no formato 00.000.000-0 (como nas Palestras).
+    protocolo = models.CharField(
+        "protocolo (eProtocolo)", max_length=20, blank=True, db_index=True
+    )
     descricao_complementar = models.TextField("descrição complementar", blank=True)
 
     quantidade_servidores = models.PositiveIntegerField(

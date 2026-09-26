@@ -108,6 +108,7 @@ CAMPOS_FOTOGRAFIA = [
     ("orgao_responsavel", "Órgão responsável"),
     ("tipo_evento", "Tipo do evento"),
     ("local_evento", "Local do evento"),
+    ("protocolo", "Protocolo (eProtocolo)"),
     ("tipo_operacao", "Tipo de operação"),
     ("quantidade_cin", "CIN agendadas"),
     ("descricao_complementar", "Descrição complementar"),

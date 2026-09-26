@@ -152,6 +152,16 @@
             {% include "components/input.html" with name="local_evento" label="Local do evento" placeholder="Ex.: Praça central, escola..." valor=valores.local_evento erros=erros.local_evento desabilitado=dados_desabilitado %}
             {% include "components/select.html" with name="tipo_operacao" label="Tipo de operação" opcoes=tipos_operacao selecionado=valores.tipo_operacao erros=erros.tipo_operacao desabilitado=planejamento_desabilitado %}
             {% include "components/input.html" with name="quantidade_cin" label="Quantidade de CIN agendadas" tipo="number" minimo=0 passo="1" valor=valores.quantidade_cin erros=erros.quantidade_cin desabilitado=planejamento_desabilitado %}
+            <div class="sol-protocolo" id="protocolo">
+              {% include "components/input.html" with name="protocolo" label="Protocolo (eProtocolo)" placeholder="00.000.000-0" inputmode="numeric" maxlength="12" autocomplete="off" valor=valores.protocolo erros=erros.protocolo desabilitado=dados_desabilitado %}
+              {% if solicitacao.protocolo %}
+                {# Formulário próprio, fora deste: o botão aponta para ele pelo atributo form. #}
+                <button type="submit" form="form-consultar-protocolo" class="btn--secundaria btn--compacto" formnovalidate>{% include "components/icon.html" with nome="search" %}Consultar andamento</button>
+              {% endif %}
+            </div>
+            {% if andamento_protocolo %}
+              <div class="cheia">{% include "components/v32/andamento_protocolo.html" with andamento=andamento_protocolo %}</div>
+            {% endif %}
             <div class="cheia">
               {% include "components/textarea.html" with name="descricao_complementar" label="Descrição complementar" linhas="2" placeholder="Detalhes adicionais sobre o evento, serviços e estrutura..." valor=valores.descricao_complementar erros=erros.descricao_complementar desabilitado=planejamento_desabilitado %}
             </div>
@@ -346,6 +356,9 @@
 
       {% include "pages/solicitacoes/_historico.html" %}
 
+      {% if solicitacao.protocolo %}
+        <form id="form-consultar-protocolo" method="post" action="{% url 'solicitacoes:consultar_protocolo' solicitacao.pk %}">{% csrf_token %}</form>
+      {% endif %}
       {% if acoes.excluir %}
         <form id="form-excluir-solicitacao" method="post" action="{% url 'solicitacoes:excluir' solicitacao.pk %}" data-confirmar-exclusao>{% csrf_token %}</form>
       {% endif %}

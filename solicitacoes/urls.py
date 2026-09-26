@@ -32,4 +32,6 @@ urlpatterns = [
     path("<int:pk>/cancelar-evento/", views.cancelar_evento, name="cancelar_evento"),
     # Viagem em Viagens a partir da solicitação deferida (quando não nasceu sozinha).
     path("<int:pk>/gerar-viagem/", views.gerar_viagem, name="gerar_viagem"),
+    # Última movimentação do protocolo no eProtocolo (só leitura).
+    path("<int:pk>/consultar-protocolo/", views.consultar_protocolo, name="consultar_protocolo"),
 ]

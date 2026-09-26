@@ -162,6 +162,11 @@
             </div>
           </div>
           {% if instancia.contato %}<p class="form-ajuda">Contato na planilha: {{ instancia.contato }}</p>{% endif %}
+          {% if instancia.protocolo %}
+            {# Formulário próprio (fora do principal): o botão aponta para ele pelo atributo form. #}
+            <p class="sol-protocolo__acao"><button type="submit" form="form-consultar-protocolo" class="btn--secundaria btn--compacto" formnovalidate>{% include "components/icon.html" with nome="search" %}Consultar andamento do protocolo {{ instancia.protocolo }}</button></p>
+          {% endif %}
+          {% if andamento_protocolo %}{% include "components/v32/andamento_protocolo.html" with andamento=andamento_protocolo %}{% endif %}
           <div class="g-form g-form--3">
             <div class="cheia">
               {% include "components/input.html" with name="assunto_email" label="Assunto e-mail" valor=valores.assunto_email erros=erros.assunto_email %}
@@ -185,6 +190,9 @@
 
     {% if instancia %}
       {% include "pages/demandas_eventos/_historico.html" %}
+      {% if instancia.protocolo %}
+        <form id="form-consultar-protocolo" method="post" action="{% url 'demandas_eventos:consultar_protocolo' instancia.pk %}">{% csrf_token %}</form>
+      {% endif %}
     {% endif %}
   </div>
 {% endblock %}

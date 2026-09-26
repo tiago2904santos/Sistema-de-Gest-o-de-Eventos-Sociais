@@ -31,6 +31,8 @@ from .models import (
     TipoOperacao,
 )
 from core import preencher_por_email
+from integracoes.eprotocolo import andamento as andamento_eprotocolo
+from integracoes.eprotocolo.andamento import formatar_numero
 from core.listagens import trilha_de_situacoes
 
 from .presenters import linha_da_lista
@@ -83,7 +85,7 @@ def _marcados(form, nome):
 
 CAMPOS_FORMULARIO = [
     "data_solicitacao", "data_inicio_evento", "data_fim_evento", "tipo_evento",
-    "municipio", "local_evento", "solicitante_nome", "solicitante_cargo_unidade",
+    "municipio", "local_evento", "protocolo", "solicitante_nome", "solicitante_cargo_unidade",
     "contato", "orgao_responsavel", "unidade_movel", "unidade_movel_designada",
     "descricao_complementar", "quantidade_servidores",
     "tipo_operacao", "quantidade_cin", "motorista", "decisao_dg", "observacoes_dg",
@@ -478,6 +480,9 @@ def editar_solicitacao(request, pk):
             "despacho_pendente": pendente,
             "decisoes_dg": _decisoes_dg(pendente),
             "cartao_viagem": None if reabrindo else _cartao_viagem(request.user, solicitacao),
+            "andamento_protocolo": andamento_eprotocolo.andamento_guardado(
+                request, "solicitacoes", solicitacao.pk
+            ),
         }
     )
     return render(request, "pages/solicitacoes/form.html", contexto)
@@ -661,11 +666,17 @@ def _queryset_filtrado(request):
         dados = filtros.cleaned_data
         if dados.get("q"):
             termo = dados["q"]
-            queryset = queryset.filter(
+            condicao = (
                 Q(solicitante_nome__icontains=termo)
                 | Q(local_evento__icontains=termo)
                 | Q(municipio__nome__icontains=termo)
+                | Q(protocolo__icontains=termo)
             )
+            # O número digitado sem pontos também acha o protocolo.
+            numero = formatar_numero(termo)
+            if numero:
+                condicao |= Q(protocolo=numero)
+            queryset = queryset.filter(condicao)
         if dados.get("status"):
             queryset = queryset.filter(status=dados["status"])
         if dados.get("municipio"):
@@ -826,7 +837,7 @@ def exportar_solicitacoes(request):
     escritor = csv.writer(resposta, delimiter=";", lineterminator="\r\n")
     escritor.writerow([
         "Nº", "Status", "Data da solicitação", "Início do evento", "Fim do evento",
-        "Município", "Região", "Tipo de evento", "Local", "Solicitante",
+        "Município", "Região", "Tipo de evento", "Local", "Protocolo", "Solicitante",
         "Cargo / unidade", "Contato", "Órgão responsável", "Serviços",
         "Equipes (servidores)", "Total de servidores", "Tipo de operação",
         "Unidade móvel", "Qtde CIN", "Motorista",
@@ -856,6 +867,7 @@ def exportar_solicitacoes(request):
             s.regiao or "",
             s.tipo_evento or "",
             s.local_evento,
+            s.protocolo,
             s.solicitante_nome,
             s.solicitante_cargo_unidade,
             s.contato,
@@ -965,6 +977,26 @@ def cancelar_evento(request, pk):
         f"Evento da solicitação #{solicitacao.pk} registrado como cancelado.",
         observacao=request.POST.get("motivo_cancelamento", ""),
     )
+
+
+@login_required
+@require_POST
+def consultar_protocolo(request, pk):
+    """"Consultar andamento": a última movimentação do protocolo no eProtocolo.
+
+    Só leitura; o resultado volta num cartão da própria tela.
+    """
+    solicitacao = _obter_visivel(request, pk)
+    if not solicitacao.protocolo:
+        messages.error(request, "Informe e salve o número do protocolo antes de consultar.")
+    else:
+        erro = andamento_eprotocolo.consultar_e_guardar(
+            request, "solicitacoes", solicitacao.pk, solicitacao.protocolo
+        )
+        if erro:
+            messages.error(request, erro)
+    url = reverse("solicitacoes:editar", args=[solicitacao.pk])
+    return redirect(f"{url}#protocolo")
 
 
 @login_required
