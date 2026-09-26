@@ -260,13 +260,14 @@
     atualizarBotoes();
   }
 
-  function regravar(passo, valores) {
+  function regravar(passo, valores, mensagemErro) {
+    var erro = mensagemErro || 'Não foi possível desfazer.';
     status('Salvando…', 'andamento');
     if (passo.especie === 'quebra') {
       return fetch(url('quebra', passo.chave), { method: 'PATCH', credentials: 'same-origin', headers: cabecalhos(true), body: JSON.stringify({ ativa: valores.ativa }) })
         .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
         .then(function (dados) { aplicarFolha(dados && dados.folha); status('Salvo', 'ok'); return true; })
-        .catch(function () { status('Não foi possível desfazer.', 'erro'); return false; });
+        .catch(function () { status(erro, 'erro'); return false; });
     }
     if (passo.especie === 'bloco') delete versaoDeBloco[passo.chave];
     var pedirVersao = passo.especie === 'bloco' ? versaoDoBloco(passo.chave) : versaoPara(passo.origem, passo.chave, passo.objeto);
@@ -280,7 +281,8 @@
                                   function () { return { codigo: resposta.status, dados: {} }; });
     }).then(function (res) {
       if (res.codigo !== 200) {
-        status(res.codigo === 409 ? (res.dados.mensagem || 'O documento mudou em outro lugar.') : 'Não foi possível desfazer.', 'erro');
+        var proprio = res.dados.erros && Object.keys(res.dados.erros).map(function (k) { return res.dados.erros[k][0]; })[0];
+        status(res.codigo === 409 ? (res.dados.mensagem || 'O documento mudou em outro lugar.') : (proprio || erro), 'erro');
         return false;
       }
       if (passo.especie === 'bloco') versaoDeBloco[passo.chave] = res.dados.versao;
@@ -290,8 +292,28 @@
       // O balão aberto no mesmo campo mostraria o valor velho: reabre.
       if (chaveAberta === passo.chave && objetoAberto === (passo.objeto || '')) abrir(passo.chave, especieAberta, null, false, objetoAberto, origemAberta);
       return true;
-    }).catch(function () { status('Não foi possível desfazer.', 'erro'); return false; });
+    }).catch(function () { status(erro, 'erro'); return false; });
   }
+
+  /* "Voltar a este valor" no painel Histórico (m116): regrava o valor de
+     antes daquela alteração pelo mesmo caminho da edição. O botão traz a
+     espécie, a chave e os valores (JSON montado pelo servidor). */
+  function voltarAoValor(botao) {
+    var pedido;
+    try { pedido = JSON.parse(botao.getAttribute('data-de-voltar') || ''); } catch (e) { return; }
+    if (!pedido || !pedido.especie || !pedido.chave) return;
+    if (chaveAberta) fechar();
+    botao.disabled = true;
+    var passo = { especie: pedido.especie, chave: pedido.chave, objeto: pedido.objeto || '', origem: pedido.origem || 'oficio' };
+    regravar(passo, pedido.valores || {}, 'Não foi possível voltar a este valor.').then(function (ok) {
+      botao.disabled = false;
+      if (ok) { botao.textContent = 'Valor regravado'; botao.disabled = true; }
+    });
+  }
+  ouvir(document, 'click', function (evento) {
+    var botao = evento.target.closest('[data-de-voltar]');
+    if (botao && raiz.contains(botao)) { evento.preventDefault(); voltarAoValor(botao); }
+  });
 
   function desfazer() {
     var passo = passosDesfazer.pop();

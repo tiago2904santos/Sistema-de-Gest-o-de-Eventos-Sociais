@@ -116,11 +116,19 @@
         <button type="button" class="de-icone" data-de-alternar-historico aria-label="Fechar o histórico">{% include "components/icon.html" with nome="x" %}</button>
       </div>
       <div class="de-historico__lista">
-        {% for registro in doc.historico %}
+        {# Cada entrada agrupa as gravações de uma digitação: rótulo do documento, de → para, e "Voltar a este valor" (m116). #}
+        {% for entrada in doc.historico %}
           <div class="de-historico__item{% if forloop.first %} de-historico__item--atual{% endif %}">
-            <span class="de-historico__quando">{{ registro.criado_em|date:"d/m/Y · H\hi" }}</span>
-            <strong>{{ registro.get_acao_display }}{% if registro.sobre_bloco %} de bloco documental{% endif %}</strong>
-            <span class="de-historico__quem">{{ registro.usuario|default:"Sistema" }} · {{ registro.get_origem_display }}{% if registro.campos_alterados %} · {{ registro.campos_alterados|join:", " }}{% endif %}</span>
+            <span class="de-historico__quando">{{ entrada.quando|date:"d/m/Y · H\hi" }}{% if entrada.agrupados > 1 %} · {{ entrada.agrupados }} gravações{% endif %}</span>
+            <strong>{{ entrada.acao }}{% if entrada.sobre_bloco %} do texto do modelo{% endif %}</strong>
+            <span class="de-historico__quem">{{ entrada.usuario|default:"Sistema" }} · {{ entrada.origem }}</span>
+            {% for m in entrada.mudancas %}
+              <div class="de-historico__mudanca">
+                <span class="de-historico__campo">{{ m.rotulo }}{% if m.antes or m.depois %}:{% endif %}</span>
+                {% if m.antes or m.depois %}<span class="de-historico__valores">{% if m.antes %}<s>{{ m.antes }}</s> → {% endif %}<b>{{ m.depois }}</b></span>{% endif %}
+                {% if m.voltar_json %}<button type="button" class="de-historico__voltar" data-de-voltar="{{ m.voltar_json }}" title="Regravar o valor anterior neste campo">{% include "components/icon.html" with nome="undo" %}Voltar a este valor</button>{% endif %}
+              </div>
+            {% endfor %}
           </div>
         {% empty %}
           <p class="texto-vazio">Nenhum registro no histórico.</p>

@@ -76,9 +76,10 @@ def _opcoes_de_servidores(form, valor):
     return opcoes
 
 
-def _historico(filtros, limite=20):
+def _historico(filtros, limite=60):
     """Os últimos registros da trilha de auditoria sobre os registros dados
-    (`[(modelo, [pks])]`), com os campos que mudaram — para a tela."""
+    (`[(modelo, [pks])]`), com os campos que mudaram — para a tela. O limite
+    é largo porque o painel agrupa as gravações de uma mesma digitação."""
     from django.db.models import Q
 
     from auditoria.models import RegistroAuditoria
@@ -372,7 +373,7 @@ class VinculoOficio(VinculoBase):
     def historico(self, oficio):
         from viagens_oficios.views import historico_do_oficio
 
-        return historico_do_oficio(oficio)
+        return historico_do_oficio(oficio, limite=60)
 
 
 def _servidores_do_documento(objeto):

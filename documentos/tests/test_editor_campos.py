@@ -79,11 +79,37 @@ class EditorDeCamposTests(CenarioOficioMixin, TestCase):
             self.patch(o, 'motivo', {'motivo': 'Diligência'})
             url_bloco = reverse('documentos:editor_bloco', args=['oficio', o.pk, 'declaracao_cartao'])
             self.client.patch(url_bloco, data=json.dumps({'versao': '', 'valores': {'conteudo': 'Parágrafo reescrito.'}}), content_type='application/json')
-        # O histórico mora no editor do documento, embutido no fim do formulário.
+        # O histórico mora no editor do documento, embutido no fim do formulário,
+        # em linguagem do documento: rótulo, de → para e "Voltar a este valor" (m116).
         r = self.client.get(reverse('documentos:editor_embutido', args=['oficio', o.pk]))
-        self.assertContains(r, 'Editor documental · motivo')
-        self.assertContains(r, 'Criação de bloco documental')
+        self.assertContains(r, 'Editor documental')
+        self.assertContains(r, 'Motivo da viagem:')
+        self.assertContains(r, '<s>Missão F4</s> → <b>Diligência</b>')
+        self.assertContains(r, 'Criação do texto do modelo')
+        self.assertContains(r, 'Declaração do cartão corporativo:')
         self.assertContains(r, 'Formulário')  # a criação do ofício, pela tela
+        self.assertContains(r, 'data-de-voltar=')
+        self.assertContains(r, '&quot;valores&quot;: {&quot;motivo&quot;: &quot;Missão F4&quot;}')
+        self.assertNotContains(r, 'Editor documental · motivo')
+
+    def test_historico_agrupa_a_mesma_digitacao_e_quem_so_le_nao_tem_voltar(self):
+        from documentos.editor.historico import historico_legivel
+        from documentos.editor.vinculos import vinculo_do_tipo
+        with self.captureOnCommitCallbacks(execute=True):
+            o = self.criar()
+            for texto in ('Dil', 'Dilig', 'Diligência'):
+                self.patch(o, 'motivo', {'motivo': texto})
+        vinculo = vinculo_do_tipo('oficio')
+        entradas = historico_legivel(vinculo, vinculo.historico(o), pode_editar=True)
+        motivo = entradas[0]
+        self.assertEqual(motivo['agrupados'], 3)
+        self.assertEqual(motivo['mudancas'][0]['rotulo'], 'Motivo da viagem')
+        self.assertEqual((motivo['mudancas'][0]['antes'], motivo['mudancas'][0]['depois']), ('Missão F4', 'Diligência'))
+        self.assertEqual(motivo['mudancas'][0]['voltar'], {'especie': 'campo', 'chave': 'motivo', 'origem': 'oficio', 'valores': {'motivo': 'Missão F4'}})
+        # Sem permissão de editar, o botão não existe; a criação do ofício é uma entrada só.
+        entradas = historico_legivel(vinculo, vinculo.historico(o), pode_editar=False)
+        self.assertTrue(all(m['voltar'] is None for e in entradas for m in e['mudancas']))
+        self.assertEqual(entradas[-1]['mudancas'][0]['rotulo'], 'Registro criado')
 
     def test_versao_antiga_e_409_e_nada_muda(self):
         o = self.criar()

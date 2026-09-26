@@ -21,6 +21,7 @@ from django.views.decorators.http import require_GET
 
 from .blocos import quebras_do_tipo
 from .campos import ORIGENS_POR_OBJETO, campos_do_tipo
+from .historico import historico_legivel
 from .vinculos import vinculo_do_tipo
 
 
@@ -48,7 +49,8 @@ def contexto_da_pagina(request, vinculo, objeto) -> dict:
             "url_pdf": vinculo.url_pdf(objeto),
             "pode_emitir": vinculo.pode_emitir(request.user, objeto),
             "pendencias": vinculo.pendencias(objeto),
-            "historico": vinculo.historico(objeto),
+            # Em linguagem do documento, agrupado por digitação, com "Voltar" (m116).
+            "historico": historico_legivel(vinculo, vinculo.historico(objeto), pode_editar=pode_editar),
             "url_folha": vinculo.url("folha", objeto),
             "api": {especie: vinculo.url(especie, objeto, "CHAVE") for especie in ("campo", "bloco", "quebra")},
             "principais": " ".join(vinculo.principais),

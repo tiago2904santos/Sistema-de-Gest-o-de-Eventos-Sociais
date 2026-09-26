@@ -126,6 +126,19 @@ body.de-pagina { margin: 0; background: var(--n-100); color: var(--n-900); font-
 .de-historico__item--atual { box-shadow: inset 3px 0 0 var(--d-500); }
 .de-historico__quando { font-size: 12px; color: var(--n-500); }
 .de-historico__campos { color: var(--n-500); }
+/* De → para de cada campo, e o botão de voltar ao valor anterior (m116). */
+.de-historico__mudanca { display: grid; gap: 1px; margin-top: 4px; padding-left: 8px; border-left: 2px solid var(--n-150); }
+.de-historico__campo { font-size: 12px; color: var(--n-500); }
+.de-historico__valores { color: var(--n-800); overflow-wrap: anywhere; }
+.de-historico__valores s { color: var(--n-500); }
+.de-historico__valores b { font-weight: 500; }
+.de-historico__voltar {
+  display: inline-flex; align-items: center; gap: 4px; justify-self: start;
+  margin-top: 2px; padding: 2px 6px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--d-600); font: inherit; font-size: 12px; cursor: pointer;
+}
+.de-historico__voltar:hover { background: var(--d-50); }
+.de-historico__voltar svg { width: 12px; height: 12px; }
 
 /* ---- Balão do campo ----------------------------------------------------- */
 .de-balao {
