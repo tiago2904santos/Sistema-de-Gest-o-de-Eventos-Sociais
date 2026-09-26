@@ -24,6 +24,7 @@
     </div>
     <div class="d-acoes">
       <a class="btn--secundaria" href="{% url 'viagens_cadastros:lista' 'modelos-texto-rt' %}">{% include "components/icon.html" with nome="document" %}Modelos de texto</a>
+      <a class="btn--secundaria" href="{{ exportar_url }}">{% include "components/icon.html" with nome="download" %}Exportar planilha</a>
       {% if pode_editar %}
         {# O processo inteiro do eProtocolo: o sistema descobre a prestação e anexa os documentos. #}
         <button type="button" class="btn-primaria" data-importar-processo data-url="{% url 'viagens_prestacoes:importacao_enviar' %}">{% include "components/icon.html" with nome="upload" %}Importar processo do eProtocolo</button>
@@ -33,6 +34,8 @@
 
   <div class="cad-grade cad-grade--sem-folga">
     {% include "components/v32/cad_rail.html" with grupos=situacoes slug_ativo=situacao_ativa rail_rotulo="Situação das prestações" sem_titulo=True %}
+    {# m100: o que falta, para trabalhar em lote (cobrar os comprovantes de uma vez) e o número do mês. #}
+    {% include "components/v32/cad_rail.html" with grupos=pendencias_rail slug_ativo=situacao_ativa rail_rotulo="Pendências das prestações" rail_titulo="Pendências" %}
 
     <div class="pa-card pa-card--lista cad-lista"{% if pode_editar %} data-importar-soltar data-url="{% url 'viagens_prestacoes:importacao_enviar' %}"{% endif %}>
       {% if pode_editar %}

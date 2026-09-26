@@ -29,6 +29,15 @@ SITUACOES = [
     ("prestacao_vencida", "Prestação vencida"),
 ]
 
+#: m100: contadores de pendência, numa segunda trilha acima da lista.
+PENDENCIAS = [
+    ("sem_solicitacao", "Sem nº de solicitação"),
+    ("sem_despacho", "Sem despacho"),
+    ("sem_comprovante", "Sem comprovante"),
+    ("comprovante_divergente", "Comprovante ≠ diária"),
+    ("finalizadas_mes", "Finalizadas no mês"),
+]
+
 TITULOS_DOWNLOAD = {"oficio": "Ofício", "despacho": "Despacho", "diario": "Diário de bordo", "rt": "Relatório técnico", "comprovante": "Comprovante"}
 
 

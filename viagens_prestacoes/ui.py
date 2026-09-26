@@ -74,6 +74,8 @@ def render(request, template, context, **kwargs):
             for nome in ["motivo", "atividade", "conclusao", "medidas", "info_complementares"]:
                 ordem.extend(["modelo_" + nome, nome])
             context["campos"] = [por_nome[n] for n in ordem if n in por_nome]
+    if context.get("rts_copiar"):
+        context["rts_copiar_opcoes"] = [{"valor": str(r["id"]), "rotulo": r["rotulo"]} for r in context["rts_copiar"]]
     if "oficios_prefill" in context:
         context["opcoes_prefill"] = [{"valor": str(o["id"]), "rotulo": o["label"]} for o in context["oficios_prefill"]]
     for trecho in context.get("trechos", []):

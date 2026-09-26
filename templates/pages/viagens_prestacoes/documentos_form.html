@@ -36,6 +36,8 @@
               <span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="document" %}<span><b>Pacote final (PDF)</b><small>Falta o que está indicado no cartão</small></span></span>
             {% else %}
               <a class="dd__i of-item" href="{% url 'viagens_prestacoes:consolidado_download' ps.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="document" %}<span><b>Pacote final (PDF)</b><small>Ofício, despacho, relatório, diário e comprovante</small></span></a>
+              {# m099: ordem, giro e páginas ocultas antes de baixar. #}
+              <a class="dd__i of-item" href="{% url 'viagens_prestacoes:pacote_revisar' ps.pk %}">{% include "components/icon.html" with nome="ordenar" %}<span><b>Revisar páginas do pacote</b><small>{% if ps.ajuste_pacote %}Ajustado manualmente{% else %}Ordenar, girar ou ocultar páginas{% endif %}</small></span></a>
             {% endif %}
             <div class="dd__s"></div>
             <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_arquivar' ps.pk %}" data-confirmar="{% if ps.arquivada %}Desarquivar a prestação?{% else %}Arquivar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><input type="hidden" name="acao" value="{% if ps.arquivada %}desarquivar{% else %}arquivar{% endif %}">
@@ -48,6 +50,7 @@
     <div class="section-card__corpo">
       {% if ps.status == "reprovada" and ps.motivo_devolucao %}<p class="alerta alerta--warning" role="status"><b>Devolvida para correção{% if ps.decidida_em %} em {{ ps.decidida_em|date:"d/m/Y" }}{% endif %}:</b> {{ ps.motivo_devolucao }}</p>{% endif %}
       {% if ps.finalizada %}<p class="alerta alerta--info" role="status">Prestação finalizada — reabra para editar.{% if ps.justificativa_finalizacao %} Finalizada com pendências: {{ ps.justificativa_finalizacao }}{% endif %}</p>{% endif %}
+      {% if ps.ajuste_pacote %}<p class="pc-docs__prazo"><a class="st st--aguardando" href="{% url 'viagens_prestacoes:pacote_revisar' ps.pk %}" title="Ordem, giro ou páginas do pacote final ajustados à mão. Mudar um anexo descarta o ajuste.">{% include "components/icon.html" with nome="ordenar" %}Pacote ajustado manualmente</a></p>{% endif %}
       {% if selo_prestacao %}<p class="pc-docs__prazo"><span class="st st--pc-prazo-{{ selo_prestacao.tom }}"{% if selo_prestacao.detalhe %} title="{{ selo_prestacao.detalhe }}"{% endif %}>{% include "components/icon.html" with nome="clock" %}{{ selo_prestacao.texto }}</span></p>{% endif %}
       {# Solicitação e prazo de saque numa linha, como na lista; gravam sozinhos. #}
       <form method="post" action="{% url 'viagens_prestacoes:index' %}" id="form-prestacao-solicitacao" class="pc-docs__solicitacao" data-autosave data-autosave-url="{{ servidor.solicitacao_autosave_url }}" data-autosave-model="prestacao_servidor" data-autosave-id="{{ ps.pk|unlocalize }}">
@@ -129,6 +132,15 @@
       </div>
       {% endif %}
 
+      {# m052: os dados para protocolar a prestação no eProtocolo, cada um com Copiar (a peça comum do ofício e do Coffee Break). #}
+      <details class="ofc-doc pc-docs__eprotocolo" id="eprotocolo">
+        <summary class="ofc-doc__cabeca">
+          <span class="ofc-doc__titulo">Dados para o eProtocolo</span>
+          <span class="ofc-doc__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+        </summary>
+        <div class="ofc-doc__corpo">{% include "components/v32/copiaveis.html" with campos=eprotocolo.campos textos=eprotocolo.textos %}</div>
+      </details>
+
       {# m093: envio ao financeiro, aprovação e devolução — por servidor. #}
       {% if ps.finalizada or ps.status == "enviada" or ps.status == "aprovada" %}
         <div class="pc-docs__envio" id="envio">
@@ -162,4 +174,4 @@
   </section>
 </div>
 {% endblock %}
-{% block pc_js %}{% include "components/v32/dialogo_baixar.html" %}{% endblock %}
+{% block pc_js %}{% include "components/v32/dialogo_baixar.html" %}<script src="{% estatico 'js/components/copiar.js' %}" defer></script>{% endblock %}

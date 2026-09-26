@@ -98,6 +98,10 @@ class PrestacaoServidor(OrigemLegado):
     decidida_em = models.DateTimeField('Aprovada ou devolvida em', null=True, blank=True)
     motivo_devolucao = models.TextField('Motivo da devolução', blank=True, default='')
     removida_em = models.DateTimeField('Removida da equipe em', null=True, blank=True)
+    #: m099: ajuste manual do pacote final — ordem, giro e páginas ocultas. Vale só
+    #: enquanto a `assinatura` (documentos e número de páginas) bater; mudou um
+    #: anexo, o ajuste é descartado. Formato em `services.aplicar_ajuste_do_pacote`.
+    ajuste_pacote = models.JSONField('Ajuste manual do pacote final', default=dict, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
     objects = PrestacaoServidorAtivosManager()
@@ -167,7 +171,7 @@ class PrestacaoServidor(OrigemLegado):
         """
         # A linha histórica importada deve continuar rastreável no diário da
         # migração, mesmo quando ainda não tem preenchimento financeiro.
-        return bool(self.legado_pk is not None or self.numero_solicitacao.strip() or self.diaria_valor_override is not None or self.diaria_valor_override_observacao.strip() or self.data_liberacao_diarias or self.prazo_limite_saque or (self.status != self.STATUS_PENDENTE) or self.arquivada or self.finalizada or self.justificativa_finalizacao.strip() or self.enviada_em or self.protocolo_envio.strip() or self.decidida_em or self.motivo_devolucao.strip() or self.documentos_anexos.exists())
+        return bool(self.legado_pk is not None or self.numero_solicitacao.strip() or self.diaria_valor_override is not None or self.diaria_valor_override_observacao.strip() or self.data_liberacao_diarias or self.prazo_limite_saque or (self.status != self.STATUS_PENDENTE) or self.arquivada or self.finalizada or self.justificativa_finalizacao.strip() or self.enviada_em or self.protocolo_envio.strip() or self.decidida_em or self.motivo_devolucao.strip() or bool(self.ajuste_pacote) or self.documentos_anexos.exists())
 
     def tem_prova_irrefazivel(self) -> bool:
         """Só o que ninguém consegue refazer se a linha sumir (`NOVO-35`).

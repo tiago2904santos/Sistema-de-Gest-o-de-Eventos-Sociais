@@ -24,6 +24,8 @@
           <a class="dd__i of-item" href="{{ primeiro.diario_url }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Abrir prestação</b><small>Diário, relatório técnico e documentos</small></span></a>
         {% endwith %}
         <a class="dd__i of-item" href="{{ g.oficio_url }}">{% include "components/icon.html" with nome="document" %}<span><b>Abrir ofício</b><small>O cadastro do ofício {{ g.oficio.numero }}</small></span></a>
+        {# m098: um PDF por servidor pronto, no nome combinado, e PENDENCIAS.txt para quem ainda não está. #}
+        <a class="dd__i of-item" href="{{ g.pacotes_url }}">{% include "components/icon.html" with nome="download" %}<span><b>Baixar pacotes da equipe (ZIP)</b><small>Um PDF final por servidor e o que ainda falta</small></span></a>
         {% if pode_editar %}
           <button type="button" class="dd__i of-item" data-importar-processo data-url="{{ g.importar_url }}" data-titulo="Ofício {{ g.oficio.numero }}">{% include "components/icon.html" with nome="upload" %}<span><b>Importar processo</b><small>O PDF do eProtocolo, direto nesta prestação</small></span></button>
           <div class="dd__s"></div>

@@ -569,12 +569,22 @@ def _append_pdf(writer, pdf_bytes: bytes, label: str) -> None:
         raise DocumentValidationError(f"Não foi possível ler o PDF de {label}.") from exc
 
 
-def _merge_pdf_parts(parts: list[tuple[str, bytes]]) -> bytes:
+def _merge_pdf_parts(parts: list[tuple[str, bytes]], ajuste=None) -> bytes:
+    """Junta as partes; com `ajuste` (m099), na ordem, no giro e sem as páginas ocultas dele."""
     from pypdf import PdfWriter
 
     writer = PdfWriter()
-    for label, content in parts:
-        _append_pdf(writer, content, label)
+    if ajuste:
+        leitores = [_leitor_pdf(content, label) for label, content in parts]
+        for parte, pagina, giro, oculta in ajuste:
+            if oculta:
+                continue
+            adicionada = writer.add_page(leitores[parte].pages[pagina])
+            if giro:
+                adicionada.rotate(giro)
+    else:
+        for label, content in parts:
+            _append_pdf(writer, content, label)
     output = BytesIO()
     writer.write(output)
     writer.close()
@@ -679,27 +689,58 @@ def pendencias_para_finalizar(servidor_prestacao) -> list[str]:
         if not oficio.carimbos.filter(servidor_prestacao=servidor_prestacao).exists():
             pendencias.append("O número de solicitação não está carimbado no ofício assinado: use “Ajustar posição do número”.")
 
-    comprovantes = list(servidor_prestacao.documentos_anexos.filter(tipo=PrestacaoDocumentoAnexo.TIPO_COMPROVANTE))
-    esperado = servidor_prestacao.diaria_valor_override
-    if esperado is None:
-        esperado = valor_diaria_liberado(servidor_prestacao)
-    if comprovantes and esperado is not None and all(a.valor is not None for a in comprovantes):
-        soma = sum((a.valor for a in comprovantes), Decimal("0"))
-        if soma != esperado:
-            pendencias.append(
-                f"Os comprovantes somam {format_currency_br(soma)}, e a diária deste servidor é {format_currency_br(esperado)}."
-            )
+    divergencia = divergencia_dos_comprovantes(servidor_prestacao)
+    if divergencia is not None:
+        soma, esperado = divergencia
+        pendencias.append(
+            f"Os comprovantes somam {format_currency_br(soma)}, e a diária deste servidor é {format_currency_br(esperado)}."
+        )
     return pendencias
 
 
+def divergencia_dos_comprovantes(servidor_prestacao) -> tuple[Decimal, Decimal] | None:
+    """(soma dos comprovantes, diária esperada) quando não batem; `None` quando batem ou não dá para saber.
+
+    A diária esperada é a recebida informada, ou a liberada pelo roteiro. Só compara
+    com todos os comprovantes com valor lido — um sem valor não prova nada.
+    Serve à conferência de finalizar (m092) e ao contador da lista (m100).
+    """
+    comprovantes = [
+        a for a in servidor_prestacao.documentos_anexos.all() if a.tipo == PrestacaoDocumentoAnexo.TIPO_COMPROVANTE
+    ]
+    if not comprovantes or any(a.valor is None for a in comprovantes):
+        return None
+    esperado = servidor_prestacao.diaria_valor_override
+    if esperado is None:
+        try:
+            esperado = valor_diaria_liberado(servidor_prestacao)
+        except DocumentValidationError:
+            return None
+    if esperado is None:
+        return None
+    soma = sum((a.valor for a in comprovantes), Decimal("0"))
+    return None if soma == esperado else (soma, esperado)
+
+
 @track_document_generation("prestacao_gerar_consolidado_pdf")
-def gerar_prestacao_consolidado_pdf(servidor_prestacao) -> bytes:
+def gerar_prestacao_consolidado_pdf(servidor_prestacao, *, com_ajuste=True) -> bytes:
     """Pacote final de um servidor: ofício + despacho (compartilhados) + RT do
     servidor + diário (compartilhado) + comprovante do servidor.
 
     Quando os documentos assinados foram anexados na Etapa 3 (RT assinado do
     servidor e diário de bordo assinado do motorista), eles têm prioridade sobre
-    a versão gerada/assinada eletronicamente pelo sistema."""
+    a versão gerada/assinada eletronicamente pelo sistema.
+
+    m099: o ajuste manual da revisão página por página (ordem, giro, ocultas) é
+    aplicado quando ainda descreve os mesmos documentos; `com_ajuste=False` dá o
+    pacote na ordem oficial, que é o que a tela de revisão mostra para ajustar."""
+    partes = partes_do_pacote(servidor_prestacao)
+    ajuste = ajuste_valido(servidor_prestacao, partes) if com_ajuste else None
+    return _merge_pdf_parts(partes, ajuste=ajuste)
+
+
+def partes_do_pacote(servidor_prestacao) -> list[tuple[str, bytes]]:
+    """Os documentos do pacote final, na ordem oficial, cada um em PDF (rótulo, bytes)."""
     prestacao = servidor_prestacao.prestacao
 
     # Uma lista só para as duas pontas: o que o fechamento mostra é exatamente o que
@@ -765,7 +806,115 @@ def gerar_prestacao_consolidado_pdf(servidor_prestacao) -> bytes:
         PrestacaoDocumentoAnexo.TIPO_DB_ASSINADO: db_parts,
         PrestacaoDocumentoAnexo.TIPO_COMPROVANTE: comprovante_parts,
     }
-    return _merge_pdf_parts([parte for tipo in ORDEM_DOCUMENTOS_PRESTACAO for parte in montadores[tipo]()])
+    return [parte for tipo in ORDEM_DOCUMENTOS_PRESTACAO for parte in montadores[tipo]()]
+
+
+# ---------------------------------------------------------------------------
+# m099 — revisar o pacote final página por página.
+#
+# O ajuste guarda a ordem final das páginas como pares (documento, página) da
+# ordem oficial, com o giro somado e se a página fica de fora:
+#
+#     {"assinatura": "<sha256>", "paginas": [[parte, pagina, giro, oculta], ...]}
+#
+# A assinatura resume os documentos (rótulo e número de páginas de cada um):
+# mudou um anexo ou o RT gerado ganhou uma página, o ajuste deixa de valer
+# sozinho — e o sinal de anexo já o apaga ao gravar (`signals.py`).
+# ---------------------------------------------------------------------------
+
+GIROS_VALIDOS = (0, 90, 180, 270)
+
+
+def _leitor_pdf(conteudo: bytes, rotulo: str):
+    from pypdf import PdfReader
+
+    try:
+        leitor = PdfReader(BytesIO(conteudo))
+        if getattr(leitor, "is_encrypted", False):
+            leitor.decrypt("")
+        return leitor
+    except Exception as exc:
+        raise DocumentValidationError(f"Não foi possível ler o PDF de {rotulo}.") from exc
+
+
+def mapa_do_pacote(partes) -> list[dict]:
+    """Um item por documento do pacote: rótulo e quantas páginas tem."""
+    return [
+        {"parte": indice, "rotulo": rotulo, "paginas": len(_leitor_pdf(conteudo, rotulo).pages)}
+        for indice, (rotulo, conteudo) in enumerate(partes)
+    ]
+
+
+def assinatura_do_pacote(mapa) -> str:
+    import hashlib
+    import json
+
+    return hashlib.sha256(
+        json.dumps([[item["rotulo"], item["paginas"]] for item in mapa], ensure_ascii=False).encode("utf-8")
+    ).hexdigest()
+
+
+def validar_ajuste_do_pacote(mapa, paginas) -> list[list]:
+    """Confere o ajuste enviado pela tela e devolve-o normalizado, ou levanta `ValueError`.
+
+    Precisa trazer todas as páginas do pacote, cada uma uma vez, com giro válido,
+    e deixar ao menos uma visível.
+    """
+    esperadas = {(item["parte"], pagina) for item in mapa for pagina in range(item["paginas"])}
+    normalizadas = []
+    vistas = set()
+    try:
+        for parte, pagina, giro, oculta in paginas:
+            chave = (int(parte), int(pagina))
+            giro = int(giro) % 360
+            if chave not in esperadas or chave in vistas or giro not in GIROS_VALIDOS:
+                raise ValueError
+            vistas.add(chave)
+            normalizadas.append([chave[0], chave[1], giro, bool(oculta)])
+    except (TypeError, ValueError) as exc:
+        raise ValueError("O ajuste enviado não corresponde às páginas do pacote. Abra a revisão de novo.") from exc
+    if vistas != esperadas:
+        raise ValueError("O ajuste enviado não corresponde às páginas do pacote. Abra a revisão de novo.")
+    if all(oculta for *_, oculta in normalizadas):
+        raise ValueError("Deixe ao menos uma página no pacote.")
+    return normalizadas
+
+
+def ajuste_valido(servidor_prestacao, partes):
+    """As páginas do ajuste gravado, se ele ainda descreve estas partes; senão `None`."""
+    ajuste = servidor_prestacao.ajuste_pacote or {}
+    if not ajuste.get("paginas"):
+        return None
+    mapa = mapa_do_pacote(partes)
+    if ajuste.get("assinatura") != assinatura_do_pacote(mapa):
+        return None
+    try:
+        return validar_ajuste_do_pacote(mapa, ajuste["paginas"])
+    except ValueError:
+        return None
+
+
+def salvar_ajuste_do_pacote(servidor_prestacao, *, assinatura, paginas) -> None:
+    """Grava o ajuste da tela de revisão, se ele descreve o pacote de agora."""
+    mapa = mapa_do_pacote(partes_do_pacote(servidor_prestacao))
+    if assinatura != assinatura_do_pacote(mapa):
+        raise ValueError("Os documentos do pacote mudaram desde que a revisão foi aberta. Abra de novo.")
+    normalizadas = validar_ajuste_do_pacote(mapa, paginas)
+    ordem_oficial = [[item["parte"], pagina, 0, False] for item in mapa for pagina in range(item["paginas"])]
+    servidor_prestacao.ajuste_pacote = {} if normalizadas == ordem_oficial else {"assinatura": assinatura, "paginas": normalizadas}
+    servidor_prestacao.save(update_fields=["ajuste_pacote", "atualizado_em"])
+
+
+def descartar_ajustes_do_pacote(prestacao_id, servidor_prestacao_id=None) -> None:
+    """Os anexos mudaram: o ajuste manual do pacote deixa de valer (m099).
+
+    Anexo do servidor apaga só o dele; anexo da equipe (ofício, despacho, diário),
+    o de todos do ofício.
+    """
+    filtro = {"prestacao_id": prestacao_id}
+    if servidor_prestacao_id:
+        filtro = {"pk": servidor_prestacao_id}
+    PrestacaoServidor.todos.filter(**filtro).exclude(ajuste_pacote={}).update(ajuste_pacote={})
 
 
 def nome_arquivo_prestacao_consolidado(servidor_prestacao) -> str:
@@ -804,3 +953,195 @@ def nome_arquivo_prestacao_consolidado(servidor_prestacao) -> str:
         partes.append(data_evento)
     ext = "pdf"
     return f"{naming.nome_arquivo_ascii(' '.join(partes))}.{ext}"
+
+
+def dados_eprotocolo_prestacao(servidor_prestacao) -> dict:
+    """Os dados para protocolar a prestação de contas no eProtocolo, prontos para colar (m052).
+
+    No molde do painel do ofício (`viagens_oficios.services.dados_eprotocolo`) e do
+    Coffee Break: campos curtos com Copiar e o detalhamento numa caixa. Valores e
+    prazos são os mesmos que a Etapa 3 usa (diária liberada, soma dos comprovantes,
+    prazo com feriados de `prazos.prazo_para_prestar`).
+    """
+    from core.utils.masks import format_protocolo
+    from viagens_oficios.campos_modelo import valores_do_oficio
+
+    from .prazos import prazo_para_prestar
+
+    ps = servidor_prestacao
+    oficio = ps.prestacao.oficio
+    valores = valores_do_oficio(oficio)
+    servidor = ps.servidor
+    nome = servidor.nome
+    cpf = getattr(servidor, "cpf_formatado", "") or ""
+    numero = oficio.numero_formatado if oficio.numero else ""
+    protocolo = format_protocolo(oficio.protocolo) or ""
+    solicitacao = str(ps.numero_solicitacao or "").strip()
+
+    liberado = valor_diaria_liberado(ps)
+    comprovantes = [
+        a.valor
+        for a in ps.documentos_anexos.filter(tipo=PrestacaoDocumentoAnexo.TIPO_COMPROVANTE)
+        if a.valor is not None
+    ]
+    recebido = ps.diaria_valor_override
+    if recebido is None and comprovantes:
+        recebido = sum(comprovantes, Decimal("0"))
+    liberado_txt = format_currency_br(liberado) if liberado is not None else ""
+    recebido_txt = format_currency_br(recebido) if recebido is not None else ""
+
+    def data(valor):
+        return f"{valor:%d/%m/%Y}" if valor else ""
+
+    partes = [f"PRESTAÇÃO DE CONTAS DE DIÁRIAS - OFÍCIO Nº {numero}" if numero else "PRESTAÇÃO DE CONTAS DE DIÁRIAS"]
+    if solicitacao:
+        partes.append(f"SOLICITAÇÃO Nº {solicitacao}")
+    partes.append(f"SERVIDOR: {nome.upper()}")
+    if valores["destino"]:
+        partes.append(f"DESTINO: {valores['destino']}")
+    if valores["periodo"]:
+        partes.append(f"PERÍODO: {valores['periodo']}")
+    if recebido_txt or liberado_txt:
+        partes.append(f"VALOR: {recebido_txt or liberado_txt}")
+
+    def campo(rotulo, valor):
+        return {"rotulo": rotulo, "valor": valor, "copiar": valor}
+
+    return {
+        "campos": [
+            campo("Interessado", nome),
+            campo("CPF", cpf),
+            campo("Assunto", "Prestação de contas de diárias"),
+            campo("Protocolo do ofício", protocolo),
+            campo("Nº/Ano do ofício", numero),
+            campo("Nº da solicitação", solicitacao),
+            campo("Destino", valores["destino"]),
+            campo("Período da viagem", valores["periodo"]),
+            campo("Diária liberada", liberado_txt),
+            campo("Valor recebido", recebido_txt),
+            campo("Liberação das diárias", data(ps.data_liberacao_diarias)),
+            campo("Prazo limite de saque", data(ps.prazo_limite_saque)),
+            campo("Prestar contas até", data(prazo_para_prestar(ps.prazo_limite_saque))),
+        ],
+        "textos": [
+            {"id": "eprotocolo-prestacao-detalhamento", "rotulo": "Detalhamento", "texto": " - ".join(partes), "linhas": 3},
+        ],
+    }
+
+
+def pacotes_da_equipe_zip(prestacao) -> tuple[bytes, int]:
+    """Os pacotes finais de toda a equipe do ofício num ZIP (m098).
+
+    Um PDF por servidor pronto, com o nome combinado
+    (`nome_arquivo_prestacao_consolidado`); quem ainda não está pronto entra em
+    `PENDENCIAS.txt` com o que falta (`pendencias_consolidado`), e o erro de
+    montagem de um servidor não derruba o dos outros. Devolve o ZIP e quantos
+    pacotes entraram.
+    """
+    import io
+    from zipfile import ZIP_DEFLATED, ZipFile
+
+    buffer = io.BytesIO()
+    pendentes = []
+    gerados = 0
+    usados = set()
+    with ZipFile(buffer, "w", ZIP_DEFLATED) as arquivo_zip:
+        for ps in prestacao.servidores_prestacao.select_related("servidor").order_by("servidor__nome", "pk"):
+            falta = pendencias_consolidado(ps)
+            if not falta:
+                try:
+                    conteudo = gerar_prestacao_consolidado_pdf(ps)
+                except DocumentValidationError as exc:
+                    falta = [str(exc)]
+                else:
+                    nome = nome_arquivo_prestacao_consolidado(ps)
+                    if nome in usados:
+                        nome = f"{nome[:-4]} {ps.pk}.pdf"
+                    usados.add(nome)
+                    arquivo_zip.writestr(nome, conteudo)
+                    gerados += 1
+            if falta:
+                pendentes.append((ps.servidor.nome, falta))
+        if pendentes:
+            linhas = [f"Pendências da prestação do ofício {prestacao.oficio.numero_formatado}", ""]
+            for nome, itens in pendentes:
+                linhas.append(nome)
+                linhas.extend(f"  - {item}" for item in itens)
+                linhas.append("")
+            arquivo_zip.writestr("PENDENCIAS.txt", "\n".join(linhas))
+    return buffer.getvalue(), gerados
+
+
+def nome_arquivo_pacotes_da_equipe(prestacao) -> str:
+    from . import filenames as naming
+
+    oficio = prestacao.oficio.numero_formatado.replace("/", "-")
+    return f"{naming.nome_arquivo_ascii(f'Pacotes da equipe Ofício {oficio}')}.zip"
+
+
+def planilha_de_prestacoes(servidores_prestacao) -> bytes:
+    """A planilha de saques e pendências (m100), com as linhas da lista filtrada.
+
+    Uma linha por servidor: ofício, protocolo, solicitação, liberação, prazos, diária
+    liberada, valor sacado (comprovantes, ou o recebido informado), situação e o que
+    falta para finalizar.
+    """
+    import io
+
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
+
+    from core.utils.masks import format_protocolo
+
+    from .prazos import prazo_para_prestar
+
+    livro = Workbook()
+    folha = livro.active
+    folha.title = "Prestações"
+    cabecalho = [
+        "Servidor", "Ofício", "Protocolo", "Solicitação", "Liberação das diárias", "Prazo limite de saque",
+        "Prestar contas até", "Diária liberada", "Valor sacado", "Situação", "O que falta",
+    ]
+    folha.append(cabecalho)
+    for celula in folha[1]:
+        celula.font = Font(bold=True)
+    for ps in servidores_prestacao:
+        oficio = ps.prestacao.oficio
+        try:
+            liberado = valor_diaria_liberado(ps)
+        except DocumentValidationError:
+            liberado = None
+        comprovantes = [
+            a.valor for a in ps.documentos_anexos.all()
+            if a.tipo == PrestacaoDocumentoAnexo.TIPO_COMPROVANTE and a.valor is not None
+        ]
+        sacado = sum(comprovantes, Decimal("0")) if comprovantes else ps.diaria_valor_override
+        if ps.finalizada:
+            situacao, falta = "Finalizada", ""
+        else:
+            situacao = "Arquivada" if ps.arquivada else ps.get_status_display()
+            falta = "; ".join(pendencias_para_finalizar(ps))
+        folha.append([
+            ps.servidor.nome,
+            oficio.numero_formatado,
+            format_protocolo(oficio.protocolo) or "",
+            ps.numero_solicitacao or "",
+            ps.data_liberacao_diarias,
+            ps.prazo_limite_saque,
+            prazo_para_prestar(ps.prazo_limite_saque),
+            float(liberado) if liberado is not None else None,
+            float(sacado) if sacado is not None else None,
+            situacao,
+            falta,
+        ])
+    for linha in folha.iter_rows(min_row=2):
+        for indice in (4, 5, 6):
+            linha[indice].number_format = "DD/MM/YYYY"
+        for indice in (7, 8):
+            linha[indice].number_format = '"R$" #,##0.00'
+    for coluna, largura in zip("ABCDEFGHIJK", (34, 10, 16, 13, 14, 14, 14, 13, 13, 16, 70)):
+        folha.column_dimensions[coluna].width = largura
+    folha.freeze_panes = "A2"
+    buffer = io.BytesIO()
+    livro.save(buffer)
+    return buffer.getvalue()
