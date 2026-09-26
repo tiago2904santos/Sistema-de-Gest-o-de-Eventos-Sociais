@@ -89,7 +89,7 @@ class PrestacaoListagemAtualTests(PrestacaoFixturesMixin, TestCase):
             with self.subTest(aba=aba):
                 response = self.get_listagem(aba=aba)
                 self.assertEqual(self._card_pks(response), [ps_pk])
-                self.assertEqual({item['value']: item['label'] for item in response.context['situacao_options']}, {'nao_liberadas': 'Não liberadas (1)', 'liberadas': 'Liberadas (1)', 'arquivados': 'Arquivados (1)', 'finalizados': 'Finalizados (1)', 'saque_vencendo': 'Saque vencendo (0)', 'prestacao_vencida': 'Prestação vencida (0)'})
+                self.assertEqual({item['value']: item['label'] for item in response.context['situacao_options']}, {'nao_liberadas': 'Não liberadas (1)', 'liberadas': 'Liberadas (1)', 'devolvidas': 'Devolvidas (0)', 'arquivados': 'Arquivados (1)', 'finalizados': 'Finalizados (1)', 'saque_vencendo': 'Saque vencendo (0)', 'prestacao_vencida': 'Prestação vencida (0)'})
 
     def test_filtro_status_retem_somente_status_de_dominio_solicitado(self):
         aprovada = self.criar_prestacao(numero=1, status='aprovada')

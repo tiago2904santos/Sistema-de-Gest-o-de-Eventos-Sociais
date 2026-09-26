@@ -2961,3 +2961,9 @@ tr[data-importar-url].is-alvo>td:first-child{box-shadow:inset 2px 0 0 var(--sel-
 /* m091: documento gerado (preenchido), ainda sem o assinado — outro sinal que o "✓". */
 .pc-chip--gerado{padding:0 6px;border:1px dashed var(--n-300,#cbd5e1);border-radius:10px;color:var(--n-600)}
 .pc-chip--gerado .ui-icon{color:var(--n-500)}
+/* m093: envio ao financeiro, aprovação e devolução, no fim da Etapa 3. */
+.pc-docs__envio{margin-top:16px;padding-top:16px;border-top:1px solid var(--n-150)}
+.pc-docs__envio-titulo{margin:0 0 8px;font-size:14px;font-weight:600}
+.pc-docs__envio-form{display:grid;gap:8px;max-width:520px;margin-top:8px}
+.pc-docs__envio-acoes{display:flex;gap:8px;flex-wrap:wrap}
+.pc-docs__envio-equipe{display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--n-600)}

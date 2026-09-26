@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from core.autosave import autosave_json_response
@@ -240,6 +241,7 @@ def documentos_servidor(request, ps_pk):
             "pendencias_finalizar": [] if ps.finalizada else pendencias_para_finalizar(ps),
             # m094: 3 dias úteis depois do fim do prazo de saque, contando feriados.
             "selo_prestacao": selo_da_prestacao(ps),
+            "hoje_iso": timezone.localdate().isoformat(),
             "downloads": payload_downloads(ps)["itens"],
             # O modal "Baixar documentos" (o mesmo da lista), no botão de ação do cartão.
             "url_baixar": reverse("viagens_prestacoes:prestacao_baixar", args=[ps.pk]),

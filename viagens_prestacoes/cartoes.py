@@ -22,6 +22,7 @@ from .presenters import _iniciais_nome_servidor, apresentar_prestacao_servidor_c
 SITUACOES = [
     ("nao_liberadas", "Não liberadas"),
     ("liberadas", "Liberadas"),
+    ("devolvidas", "Devolvidas"),
     ("arquivados", "Arquivados"),
     ("finalizados", "Finalizados"),
     ("saque_vencendo", "Saque vencendo"),

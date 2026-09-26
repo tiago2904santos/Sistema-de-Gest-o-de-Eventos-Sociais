@@ -11,13 +11,15 @@ ABA_NAO_LIBERADAS = 'nao_liberadas'
 ABA_LIBERADAS = 'liberadas'
 ABA_ARQUIVADOS = 'arquivados'
 ABA_FINALIZADOS = 'finalizados'
+#: m093: devolvida pelo financeiro para correção.
+ABA_DEVOLVIDAS = 'devolvidas'
 #: m094: prazo para prestar contas vencido. Diferente das de estado, cruza com elas.
 ABA_PRESTACAO_VENCIDA = 'prestacao_vencida'
 #: m085: prazo de saque vencendo (ou vencido) sem comprovante. Também cruza.
 ABA_SAQUE_VENCENDO = 'saque_vencendo'
 ABA_PADRAO = ABA_NAO_LIBERADAS
-ABAS_VALIDAS = {ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_ARQUIVADOS, ABA_FINALIZADOS, ABA_SAQUE_VENCENDO, ABA_PRESTACAO_VENCIDA}
-ORDEM_ABAS = (ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_ARQUIVADOS, ABA_FINALIZADOS, ABA_SAQUE_VENCENDO, ABA_PRESTACAO_VENCIDA)
+ABAS_VALIDAS = {ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_DEVOLVIDAS, ABA_ARQUIVADOS, ABA_FINALIZADOS, ABA_SAQUE_VENCENDO, ABA_PRESTACAO_VENCIDA}
+ORDEM_ABAS = (ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_DEVOLVIDAS, ABA_ARQUIVADOS, ABA_FINALIZADOS, ABA_SAQUE_VENCENDO, ABA_PRESTACAO_VENCIDA)
 
 def normalizar_aba(aba: str | None) -> str:
     aba = (aba or '').strip()
@@ -58,14 +60,21 @@ def _q_da_aba(aba: str) -> Q:
     if aba == ABA_PRESTACAO_VENCIDA:
         from .prazos import ultimo_saque_com_prestacao_vencida
         return Q(finalizada=False, arquivada=False, prazo_limite_saque__lte=ultimo_saque_com_prestacao_vencida())
+    # m093: a prestação é individual, mas só vai para "Finalizados" quando a equipe
+    # INTEIRA está finalizada; até lá, quem já finalizou continua junto dos colegas.
+    from django.db.models import Exists, OuterRef
+    em_aberto = Exists(PrestacaoServidor.objects.filter(prestacao=OuterRef('prestacao'), finalizada=False))
     if aba == ABA_FINALIZADOS:
-        return Q(finalizada=True)
+        return Q(~em_aberto)
     if aba == ABA_ARQUIVADOS:
-        return Q(arquivada=True, finalizada=False)
-    ativa = Q(arquivada=False, finalizada=False)
+        return Q(arquivada=True) & Q(em_aberto)
+    ativa = Q(arquivada=False) & Q(em_aberto)
+    devolvida = Q(status=PrestacaoServidor.STATUS_REPROVADA, finalizada=False)
+    if aba == ABA_DEVOLVIDAS:
+        return ativa & devolvida
     if aba == ABA_LIBERADAS:
-        return ativa & Q(data_liberacao_diarias__isnull=False)
-    return ativa & Q(data_liberacao_diarias__isnull=True)
+        return ativa & Q(data_liberacao_diarias__isnull=False) & ~devolvida
+    return ativa & Q(data_liberacao_diarias__isnull=True) & ~devolvida
 
 def servidores_removidos_da_equipe(prestacao):
     """Servidores que saíram da equipe do ofício mas cujos dados foram preservados (`DB-06`).

@@ -46,6 +46,7 @@
       </div>
     </header>
     <div class="section-card__corpo">
+      {% if ps.status == "reprovada" and ps.motivo_devolucao %}<p class="alerta alerta--warning" role="status"><b>Devolvida para correção{% if ps.decidida_em %} em {{ ps.decidida_em|date:"d/m/Y" }}{% endif %}:</b> {{ ps.motivo_devolucao }}</p>{% endif %}
       {% if ps.finalizada %}<p class="alerta alerta--info" role="status">Prestação finalizada — reabra para editar.{% if ps.justificativa_finalizacao %} Finalizada com pendências: {{ ps.justificativa_finalizacao }}{% endif %}</p>{% endif %}
       {% if selo_prestacao %}<p class="pc-docs__prazo"><span class="st st--pc-prazo-{{ selo_prestacao.tom }}"{% if selo_prestacao.detalhe %} title="{{ selo_prestacao.detalhe }}"{% endif %}>{% include "components/icon.html" with nome="clock" %}{{ selo_prestacao.texto }}</span></p>{% endif %}
       {# Solicitação e prazo de saque numa linha, como na lista; gravam sozinhos. #}
@@ -126,6 +127,36 @@
         <a class="btn--secundaria" href="{{ rt_url }}">Voltar ao relatório</a>
         <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><input type="hidden" name="acao" value="{% if ps.finalizada %}reabrir{% else %}finalizar{% endif %}"><button type="submit" class="btn-primaria">{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
       </div>
+      {% endif %}
+
+      {# m093: envio ao financeiro, aprovação e devolução — por servidor. #}
+      {% if ps.finalizada or ps.status == "enviada" or ps.status == "aprovada" %}
+        <div class="pc-docs__envio" id="envio">
+          <h3 class="pc-docs__envio-titulo">Envio ao financeiro</h3>
+          {% if ps.status == "enviada" %}
+            <p>Enviada em {{ ps.enviada_em|date:"d/m/Y" }}{% if ps.protocolo_envio %} · {{ ps.protocolo_envio }}{% endif %}.</p>
+            <div class="pc-docs__envio-acoes">
+              <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_envio' ps.pk 'aprovar' %}" data-confirmar="Confirmar aprovação?">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn--secundaria btn--compacto">{% include "components/icon.html" with nome="check-circle" %}Aprovada</button></form>
+            </div>
+            <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_envio' ps.pk 'devolver' %}" class="pc-docs__envio-form">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+              {% include "components/textarea.html" with name="motivo_devolucao" label="Motivo da devolução" obrigatorio=True linhas=2 %}
+              <button type="submit" class="btn--secundaria btn--compacto">{% include "components/icon.html" with nome="undo" %}Devolver para correção</button>
+            </form>
+          {% elif ps.status == "aprovada" %}
+            <p><span class="st st--pc-aprovada">Aprovada</span>{% if ps.decidida_em %} em {{ ps.decidida_em|date:"d/m/Y" }}{% endif %} · enviada em {{ ps.enviada_em|date:"d/m/Y" }}{% if ps.protocolo_envio %} · {{ ps.protocolo_envio }}{% endif %}.</p>
+            <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_envio' ps.pk 'devolver' %}" class="pc-docs__envio-form">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+              {% include "components/textarea.html" with name="motivo_devolucao" label="Motivo da devolução" obrigatorio=True linhas=2 %}
+              <button type="submit" class="btn--secundaria btn--compacto">{% include "components/icon.html" with nome="undo" %}Devolver para correção</button>
+            </form>
+          {% else %}
+            <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_envio' ps.pk 'enviar' %}" class="pc-docs__envio-form">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+              {% include "components/input.html" with name="protocolo_envio" label="Protocolo ou e-mail do envio" placeholder="eProtocolo ou endereço de e-mail" %}
+              {% include "components/input.html" with name="enviada_em" label="Enviada em" tipo="date" valor=hoje_iso %}
+              <label class="pc-docs__envio-equipe"><input type="checkbox" name="equipe" value="1"> Registrar para toda a equipe já finalizada do ofício</label>
+              <button type="submit" class="btn-primaria btn--compacto">{% include "components/icon.html" with nome="send" %}Registrar envio</button>
+            </form>
+          {% endif %}
+        </div>
       {% endif %}
     </div>
   </section>

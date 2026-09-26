@@ -41,7 +41,7 @@ class PrestacaoContas(OrigemLegado):
     STATUS_ENVIADA = 'enviada'
     STATUS_APROVADA = 'aprovada'
     STATUS_REPROVADA = 'reprovada'
-    STATUS_CHOICES = [(STATUS_PENDENTE, 'Pendente'), (STATUS_EM_PREENCHIMENTO, 'Em preenchimento'), (STATUS_ENVIADA, 'Enviada'), (STATUS_APROVADA, 'Aprovada'), (STATUS_REPROVADA, 'Reprovada')]
+    STATUS_CHOICES = [(STATUS_PENDENTE, 'Pendente'), (STATUS_EM_PREENCHIMENTO, 'Em preenchimento'), (STATUS_ENVIADA, 'Enviada'), (STATUS_APROVADA, 'Aprovada'), (STATUS_REPROVADA, 'Devolvida')]
     oficio = models.OneToOneField(Oficio, on_delete=models.CASCADE, related_name='prestacao_contas')
     roteiro_ajustado = models.ForeignKey('viagens_roteiros.Roteiro', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     despacho_assinado = ArquivoPrivadoField('Despacho assinado do ofício', upload_to=prestacao_documento_upload_to, blank=True, validators=[FileExtensionValidator(PRESTACAO_DOCUMENTO_EXTENSOES)])
@@ -92,6 +92,11 @@ class PrestacaoServidor(OrigemLegado):
     finalizada_em = models.DateTimeField(null=True, blank=True)
     #: m092: por que foi finalizada com pendências (vazio = sem pendência).
     justificativa_finalizacao = models.TextField('Justificativa para finalizar com pendências', blank=True, default='')
+    #: m093: envio ao financeiro e a decisão (aprovada ou devolvida para correção).
+    enviada_em = models.DateField('Enviada em', null=True, blank=True)
+    protocolo_envio = models.CharField('Protocolo ou e-mail do envio', max_length=120, blank=True, default='')
+    decidida_em = models.DateTimeField('Aprovada ou devolvida em', null=True, blank=True)
+    motivo_devolucao = models.TextField('Motivo da devolução', blank=True, default='')
     removida_em = models.DateTimeField('Removida da equipe em', null=True, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
@@ -162,7 +167,7 @@ class PrestacaoServidor(OrigemLegado):
         """
         # A linha histórica importada deve continuar rastreável no diário da
         # migração, mesmo quando ainda não tem preenchimento financeiro.
-        return bool(self.legado_pk is not None or self.numero_solicitacao.strip() or self.diaria_valor_override is not None or self.diaria_valor_override_observacao.strip() or self.data_liberacao_diarias or self.prazo_limite_saque or (self.status != self.STATUS_PENDENTE) or self.arquivada or self.finalizada or self.justificativa_finalizacao.strip() or self.documentos_anexos.exists())
+        return bool(self.legado_pk is not None or self.numero_solicitacao.strip() or self.diaria_valor_override is not None or self.diaria_valor_override_observacao.strip() or self.data_liberacao_diarias or self.prazo_limite_saque or (self.status != self.STATUS_PENDENTE) or self.arquivada or self.finalizada or self.justificativa_finalizacao.strip() or self.enviada_em or self.protocolo_envio.strip() or self.decidida_em or self.motivo_devolucao.strip() or self.documentos_anexos.exists())
 
     def tem_prova_irrefazivel(self) -> bool:
         """Só o que ninguém consegue refazer se a linha sumir (`NOVO-35`).

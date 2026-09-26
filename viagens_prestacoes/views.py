@@ -57,7 +57,7 @@ def index(request):
     por_pk = {ps.pk: ps for ps in itens.filter(pk__in=ids)}
     contagem = contar_por_aba(**{k:v for k,v in filtros.items() if k != "sort"})
     rotulos = dict(SITUACOES)
-    vazias = {"nao_liberadas": "Nenhum servidor com diárias pendentes de liberação.", "liberadas": "Nenhum servidor com diárias já liberadas.", "arquivados": "Nenhuma prestação de servidor arquivada.", "finalizados": "Nenhuma prestação de servidor finalizada ainda.", "saque_vencendo": "Nenhum saque perto do prazo sem comprovante.", "prestacao_vencida": "Nenhuma prestação com o prazo vencido."}
+    vazias = {"nao_liberadas": "Nenhum servidor com diárias pendentes de liberação.", "liberadas": "Nenhum servidor com diárias já liberadas.", "arquivados": "Nenhuma prestação de servidor arquivada.", "finalizados": "Nenhuma prestação de servidor finalizada ainda.", "devolvidas": "Nenhuma prestação devolvida para correção.", "saque_vencendo": "Nenhum saque perto do prazo sem comprovante.", "prestacao_vencida": "Nenhuma prestação com o prazo vencido."}
     configuracao = get_configuracao_sistema()
     cards = [cartao_da_lista(por_pk[pk], configuracao=configuracao) for pk in ids]
     grupos = {}
@@ -87,7 +87,7 @@ def index(request):
             destino["aba"] = aba
         return "?" + destino.urlencode()
 
-    icones = {"nao_liberadas": "hourglass", "liberadas": "check-circle", "arquivados": "lock", "finalizados": "checklist", "saque_vencendo": "clock", "prestacao_vencida": "alert"}
+    icones = {"nao_liberadas": "hourglass", "liberadas": "check-circle", "arquivados": "lock", "finalizados": "checklist", "devolvidas": "undo", "saque_vencendo": "clock", "prestacao_vencida": "alert"}
     total = listar_prestacoes(**{k: v for k, v in filtros.items() if k != "sort"}).count()
     situacoes = [{"slug": "todas", "titulo": "Todas", "total": total, "icone": "chart", "url": url_da_aba()}] + [
         {"slug": chave, "titulo": rotulo, "total": contagem[chave], "icone": icones[chave], "url": url_da_aba(chave)}
@@ -199,6 +199,35 @@ def _registrar_finalizacao_com_pendencias(request, ps, pendencias, justificativa
         acao="prestacao_finalizada_com_pendencias",
         descricao=f"{ps} — pendências: {' '.join(pendencias)} — justificativa: {justificativa}",
     )
+
+def prestacao_servidor_envio(request, ps_pk, acao):
+    """Registra o envio ao financeiro, a aprovação ou a devolução (m093)."""
+    import datetime
+    from django.http import Http404
+    from .envio_services import registrar_aprovacao, registrar_devolucao, registrar_envio
+    ps = get_object_or_404(_prestacao_servidor_queryset().select_related("servidor", "prestacao__oficio"), pk=ps_pk)
+    if acao == "enviar":
+        try:
+            data = datetime.date.fromisoformat(request.POST.get("enviada_em") or "") if request.POST.get("enviada_em") else None
+        except ValueError:
+            data = None
+        servidores = list(ps.prestacao.servidores_prestacao.select_related("servidor")) if request.POST.get("equipe") else [ps]
+        resultado = registrar_envio(servidores, data=data, protocolo=request.POST.get("protocolo_envio") or "")
+        sucesso = f"Envio registrado para {resultado.afetados} servidor{'es' if resultado.afetados != 1 else ''}."
+    elif acao == "aprovar":
+        resultado = registrar_aprovacao(ps)
+        sucesso = f"Prestação de {ps.servidor.nome} aprovada."
+    elif acao == "devolver":
+        resultado = registrar_devolucao(ps, motivo=request.POST.get("motivo_devolucao") or "", autor=request.user)
+        sucesso = f"Prestação de {ps.servidor.nome} devolvida e reaberta para correção."
+    else:
+        raise Http404
+    if resultado.erro:
+        messages.error(request, resultado.erro)
+    else:
+        messages.success(request, sucesso)
+    return _redirect_lista(request)
+
 
 def prestacao_equipe_acao(request, pc_pk, acao):
     """Finaliza, reabre, arquiva ou desarquiva a prestação da equipe inteira do ofício.

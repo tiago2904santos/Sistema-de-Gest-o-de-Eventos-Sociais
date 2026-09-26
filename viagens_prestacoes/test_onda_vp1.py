@@ -393,6 +393,70 @@ class PendenciasETravaTests(PrestacaoFixturesMixin, PrestacaoTestCase):
         self.assertFalse(self.ana.finalizada)
 
 
+class EnvioAprovacaoDevolucaoTests(PrestacaoFixturesMixin, PrestacaoTestCase):
+    """m093: envio, aprovação e devolução por servidor; "Finalizados" só com a equipe toda."""
+
+    def setUp(self):
+        super().setUp()
+        self.setUpPrestacaoFixtures()
+        self.fixture = self.criar_prestacao(numero=93, servidores=(self.criar_servidor("Ana"), self.criar_servidor("Bia")))
+        self.prestacao = self.fixture.prestacao
+        self.ana, self.bia = self.fixture.prestacoes_servidor
+
+    def _acao(self, ps, acao, **dados):
+        return self.client.post(reverse("viagens_prestacoes:prestacao_servidor_envio", args=[ps.pk, acao]), dados)
+
+    def _aba(self, aba):
+        from .selectors import listar_prestacoes
+
+        return set(listar_prestacoes(aba=aba).values_list("pk", flat=True))
+
+    def test_finalizados_so_com_a_equipe_toda(self):
+        self.ana.definir_finalizada(True)
+        self.assertNotIn(self.ana.pk, self._aba("finalizados"))
+        self.assertIn(self.ana.pk, self._aba("nao_liberadas"))
+        self.bia.definir_finalizada(True)
+        self.assertEqual(self._aba("finalizados"), {self.ana.pk, self.bia.pk})
+
+    def test_enviar_aprovar_e_devolver(self):
+        self._acao(self.ana, "enviar", protocolo_envio="26.123.456-7")
+        self.ana.refresh_from_db()
+        self.assertNotEqual(self.ana.status, "enviada")  # não finalizada: recusa
+
+        self.ana.definir_finalizada(True)
+        self._acao(self.ana, "enviar", protocolo_envio="26.123.456-7", enviada_em="2026-09-20")
+        self.ana.refresh_from_db()
+        self.assertEqual((self.ana.status, str(self.ana.enviada_em), self.ana.protocolo_envio), ("enviada", "2026-09-20", "26.123.456-7"))
+
+        self._acao(self.ana, "devolver", motivo_devolucao="")
+        self.ana.refresh_from_db()
+        self.assertEqual(self.ana.status, "enviada")
+
+        self._acao(self.ana, "devolver", motivo_devolucao="Falta o comprovante do saque.")
+        self.ana.refresh_from_db()
+        self.assertEqual(self.ana.status, "reprovada")
+        self.assertFalse(self.ana.finalizada)
+        self.assertIn(self.ana.pk, self._aba("devolvidas"))
+        self.assertNotIn(self.ana.pk, self._aba("nao_liberadas"))
+
+    def test_etapa3_mostra_o_envio_e_depois_a_decisao(self):
+        url = reverse("viagens_prestacoes:documentos_servidor", args=[self.ana.pk])
+        self.assertNotContains(self.client.get(url), "Registrar envio")
+        self.ana.definir_finalizada(True)
+        pagina = self.client.get(url)
+        self.assertContains(pagina, "Registrar envio")
+        self.assertContains(pagina, "reabra para editar")
+        self._acao(self.ana, "enviar", protocolo_envio="financeiro@example.org")
+        self.assertContains(self.client.get(url), "Devolver para correção")
+
+    def test_envio_para_a_equipe_so_leva_os_finalizados(self):
+        self.ana.definir_finalizada(True)
+        self._acao(self.ana, "enviar", equipe="1")
+        self.ana.refresh_from_db()
+        self.bia.refresh_from_db()
+        self.assertEqual((self.ana.status, self.bia.status), ("enviada", "pendente"))
+
+
 class VersoesAnterioresTests(PrestacaoFixturesMixin, PrestacaoTestCase):
     """m084: remover e substituir guardam o anterior, que se restaura."""
 
