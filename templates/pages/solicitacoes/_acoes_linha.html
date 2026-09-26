@@ -6,7 +6,7 @@
   Contexto: `l` (linha do presenter).
 {% endcomment %}
 {% with s=l.solicitacao %}
-{% if l.acoes.editar or l.acoes.despachar or l.acoes.concluir or l.acoes.excluir %}
+{% if l.acoes.editar or l.acoes.despachar or l.acoes.concluir or l.acoes.excluir or l.acoes.duplicar %}
   <div class="dd of-menu cad-acoes" data-menu>
     <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações da solicitação #{{ s.pk }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
     <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
@@ -14,6 +14,11 @@
         <a class="dd__i of-item" href="{{ l.principal.url }}">{% include "components/icon.html" with nome=l.principal.icone %}<span><b>{{ l.principal.rotulo }}</b><small>{{ l.principal.ajuda }}</small></span></a>
       {% endif %}
       <a class="dd__i of-item" href="{{ l.url_editar }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Abrir solicitação</b><small>Dados do evento, serviços, despacho e anexos</small></span></a>
+      {% if l.acoes.duplicar %}
+        <form method="post" action="{{ l.url_duplicar }}">{% csrf_token %}
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="copy" %}<span><b>Duplicar</b><small>Rascunho novo com os mesmos dados, serviços e equipes</small></span></button>
+        </form>
+      {% endif %}
       {% if l.acoes.excluir %}
         <div class="dd__s"></div>
         <form method="post" action="{{ l.url_excluir }}" data-confirmar-exclusao data-confirmar="Confirmar exclusão?">{% csrf_token %}

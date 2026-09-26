@@ -31,6 +31,10 @@
         </div>
       </div>
       <div class="frm-topo__acoes">
+        {% if solicitacao and acoes.duplicar and not reabrindo %}
+          {# Evento que se repete: rascunho novo com os mesmos dados, sem datas. #}
+          <button type="submit" form="form-duplicar" class="btn--secundaria" title="Cria um rascunho novo com os mesmos dados, serviços e equipes; faltam só as datas">{% include "components/icon.html" with nome="copy" %}Duplicar</button>
+        {% endif %}
         {# A data da solicitação mora no cabeçalho; o atributo form a leva junto com o formulário. #}
         <div class="pal-topo-data">
           {% include "components/input.html" with name="data_solicitacao" label="Data da solicitação" tipo="date" obrigatorio=True valor=valores.data_solicitacao erros=erros.data_solicitacao desabilitado=dados_desabilitado form_alvo="form-solicitacao" %}
@@ -394,6 +398,9 @@
 
       {% if solicitacao.protocolo %}
         <form id="form-consultar-protocolo" method="post" action="{% url 'solicitacoes:consultar_protocolo' solicitacao.pk %}">{% csrf_token %}</form>
+      {% endif %}
+      {% if acoes.duplicar %}
+        <form id="form-duplicar" method="post" action="{% url 'solicitacoes:duplicar' solicitacao.pk %}" data-confirmar="Criar um rascunho novo a partir desta solicitação?">{% csrf_token %}</form>
       {% endif %}
       {% if acoes.excluir %}
         <form id="form-excluir-solicitacao" method="post" action="{% url 'solicitacoes:excluir' solicitacao.pk %}" data-confirmar-exclusao>{% csrf_token %}</form>

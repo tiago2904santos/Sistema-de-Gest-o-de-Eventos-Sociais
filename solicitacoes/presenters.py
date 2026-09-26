@@ -200,5 +200,6 @@ def linha_da_lista(solicitacao, acoes):
         "principal": acao_principal(solicitacao, acoes),
         "url_editar": reverse("solicitacoes:editar", args=[solicitacao.pk]),
         "url_excluir": reverse("solicitacoes:excluir", args=[solicitacao.pk]),
+        "url_duplicar": reverse("solicitacoes:duplicar", args=[solicitacao.pk]),
         "cancelada": solicitacao.status == StatusSolicitacao.CANCELADA,
     }

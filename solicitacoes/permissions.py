@@ -209,6 +209,11 @@ def pode_transferir(user, solicitacao):
     )
 
 
+def pode_duplicar(user, solicitacao):
+    """Quem enxerga a solicitação pode usá-la de base para um rascunho novo."""
+    return pode_ver(user, solicitacao)
+
+
 def acoes_permitidas(user, solicitacao):
     """Mapa de ações para os templates decidirem o que exibir."""
     return {
@@ -224,4 +229,5 @@ def acoes_permitidas(user, solicitacao):
         "cancelar": pode_cancelar(user, solicitacao),
         "gerenciar_anexos": pode_gerenciar_anexos(user, solicitacao),
         "transferir": pode_transferir(user, solicitacao),
+        "duplicar": pode_duplicar(user, solicitacao),
     }

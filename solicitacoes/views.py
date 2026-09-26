@@ -1124,6 +1124,22 @@ def cancelar_evento(request, pk):
     )
 
 
+@login_required
+@require_POST
+def duplicar_solicitacao(request, pk):
+    """"Duplicar": um rascunho novo a partir desta, faltando só as datas."""
+    solicitacao = _obter_visivel(request, pk)
+    if not permissions.pode_duplicar(request.user, solicitacao):
+        raise PermissionDenied
+    nova = services.duplicar(solicitacao, request.user)
+    messages.success(
+        request,
+        f"Rascunho #{nova.pk} criado a partir da solicitação #{solicitacao.pk}. "
+        "Informe as datas do evento e envie.",
+    )
+    return redirect("solicitacoes:editar", pk=nova.pk)
+
+
 def _opcoes_responsaveis(solicitacao):
     """Usuários ativos que podem assumir a solicitação (menos o atual)."""
     from django.contrib.auth import get_user_model
