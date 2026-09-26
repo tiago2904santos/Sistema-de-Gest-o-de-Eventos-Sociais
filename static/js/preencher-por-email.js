@@ -464,6 +464,20 @@
       resultado.appendChild(titulo);
       resultado.appendChild(el("p", "pe__origem", descreverOrigem(dados)));
 
+      // Veio da triagem da página inicial: os outros módulos a um clique.
+      var outros = dados.outros_modulos || [];
+      if (outros.length) {
+        var troca = el("p", "pe__outros");
+        troca.appendChild(document.createTextNode("Não é uma " + registro + "? Abrir este e-mail como: "));
+        outros.forEach(function (o, i) {
+          if (i) troca.appendChild(document.createTextNode(" · "));
+          var link = el("a", "pe__outro", o.rotulo);
+          link.href = o.url;
+          troca.appendChild(link);
+        });
+        resultado.appendChild(troca);
+      }
+
       var avisos = (dados.avisos || []).slice();
       efeito.recusados.forEach(function (item) {
         avisos.push(rotulo(item) + ": “" + item.sugestao.exibir + "” não está entre as opções do campo; escolha à mão.");
@@ -710,9 +724,21 @@
       if (abrir && campoTexto) campoTexto.focus();
     }
 
+    // Veio da triagem da página inicial (?email_origem=): lê o e-mail sozinha.
+    var tokenAuto = bloco.getAttribute("data-pe-auto");
+    if (tokenAuto) {
+      var dadosAuto = new FormData();
+      dadosAuto.append("token", tokenAuto);
+      enviar(dadosAuto);
+      if (window.history && window.history.replaceState) {
+        // O token sai da URL: recarregar a página não lê de novo por cima do que a pessoa digitou.
+        try { window.history.replaceState(null, "", window.location.pathname); } catch (e) { /* sem histórico */ }
+      }
+    }
+
     // Página recarregada: o vínculo volta (o servidor confere se o e-mail ainda vale).
     var tokenDaTela = campoToken(false);
-    if (!tokenDaTela || !tokenDaTela.value) {
+    if (!tokenAuto && (!tokenDaTela || !tokenDaTela.value)) {
       var salvo = lembrado();
       if (salvo && salvo.token) {
         campoToken(true).value = salvo.token;

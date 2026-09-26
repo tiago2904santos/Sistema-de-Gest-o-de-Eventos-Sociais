@@ -24,13 +24,12 @@ import re
 
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.utils import timezone
 
 from cadastros.models import Municipio
-from core.leitura.casamento import cadastros_no_texto, municipio_no_texto, protocolo_no_texto, quantidade_de_pessoas
-from core.leitura.datas import dobrar, horarios_do_texto, quando_do_evento
+from core.leitura.casamento import cadastros_no_texto, quantidade_de_pessoas
+from core.leitura.datas import dobrar, horarios_do_texto
 from core.leitura.mensagem import Mensagem
-from core.preencher_por_email import Sugestao, Sugestoes, data_do_email, quem_pede
+from core.preencher_por_email import Sugestao, Sugestoes, data_do_email, municipio_do_pedido, protocolo_do_pedido, quando_do_pedido, quem_pede
 
 from .models import CanalSolicitacao, Palestrante, Tema, TipoEventoPalestra
 
@@ -58,7 +57,11 @@ _VAZIAS = frozenset({
     "para", "como", "sobre", "contra", "entre", "outros", "outras", "prevencao", "combate",
     "enfrentamento", "identificar", "importancia", "consequencias", "cuidados",
 })
-_DIAS = ("segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo")
+
+#: Campos que a memória guarda por remetente ao salvar (`core.aprendizado`):
+#: o que o próximo e-mail da mesma origem provavelmente repete.
+CAMPOS_APRENDIDOS = ["evento", "estado", "municipio", "solicitante", "telefone", "canal_solicitacao", "temas", "palestrantes"]
+
 
 
 def _trecho_de(texto: str, inicio: int, fim: int, margem: int = 70) -> str:
@@ -172,14 +175,17 @@ def _email(mensagem: Mensagem) -> Sugestao | None:
 def _canal_e_protocolo(s: Sugestoes, mensagem: Mensagem) -> None:
     """E-mail (ou WhatsApp) pela origem; Protocolo só com o número ancorado."""
     rotulos = dict(CanalSolicitacao.choices)
-    protocolo = protocolo_no_texto(mensagem.texto_para_busca)
+    protocolo = protocolo_do_pedido(mensagem)
     if protocolo is not None:
-        s.por("canal_solicitacao", Sugestao(CanalSolicitacao.PROTOCOLO, rotulos[CanalSolicitacao.PROTOCOLO], "M", protocolo.trecho))
-        s.por("protocolo", Sugestao.de_achado(protocolo, confianca="M"))
-        s.avisar(
-            f"O pedido cita o protocolo {protocolo.valor}: o canal ficou Protocolo. "
-            "Se o pedido veio só por e-mail, troque para E-mail."
-        )
+        do_processo = mensagem.origem == "eprotocolo"
+        confianca = "A" if do_processo else "M"
+        s.por("canal_solicitacao", Sugestao(CanalSolicitacao.PROTOCOLO, rotulos[CanalSolicitacao.PROTOCOLO], confianca, protocolo.trecho))
+        s.por("protocolo", Sugestao.de_achado(protocolo, confianca=confianca))
+        if not do_processo:
+            s.avisar(
+                f"O pedido cita o protocolo {protocolo.valor}: o canal ficou Protocolo. "
+                "Se o pedido veio só por e-mail, troque para E-mail."
+            )
         return
     canal = CanalSolicitacao.WHATSAPP if mensagem.origem == "whatsapp" else CanalSolicitacao.EMAIL
     motivo = "Conversa do WhatsApp colada." if canal == CanalSolicitacao.WHATSAPP else "O pedido chegou por e-mail."
@@ -259,18 +265,14 @@ def _informacoes_previas(mensagem: Mensagem, quando) -> Sugestao | None:
     return Sugestao(texto, " ".join(linhas), "M", "O que o pedido diz e não tem campo próprio.")
 
 
-def _datas(s: Sugestoes, mensagem: Mensagem, quando) -> None:
-    confianca = quando.confianca if mensagem.data_referencia else "M"
+def _datas(s: Sugestoes, quando) -> None:
+    confianca = quando.confianca
     exibir = f"{quando.inicio:%d/%m/%Y}" + (f" a {quando.fim:%d/%m/%Y}" if quando.fim else "")
     s.por("data_inicio_evento", Sugestao(quando.inicio, exibir, confianca, quando.trecho))
     if quando.fim:
         s.por("data_fim_evento", Sugestao(quando.fim, f"{quando.fim:%d/%m/%Y}", confianca, quando.trecho))
     if quando.hora_inicio:
         s.por("hora_inicio", Sugestao(quando.hora_inicio, f"{quando.hora_inicio:%H:%M}", confianca, quando.trecho))
-    if quando.inicio < timezone.localdate():
-        s.avisar(f"A data do evento lida ({quando.inicio:%d/%m/%Y}) já passou: confira.")
-    elif quando.inicio.weekday() >= 5:
-        s.avisar(f"A data lida cai num {_DIAS[quando.inicio.weekday()]} ({quando.inicio:%d/%m}): confira.")
 
 
 # ---------------------------------------------------------------------------
@@ -286,19 +288,20 @@ def sugestoes(mensagem: Mensagem, usuario=None) -> Sugestoes:
     """
     s = Sugestoes()
     texto = mensagem.texto_para_busca
-    referencia = mensagem.data_referencia or timezone.localdate()
 
     s.por("data_solicitacao", data_do_email(mensagem))
     s.por("evento", _evento(texto))
 
-    quando = quando_do_evento(texto, referencia)
+    quando, avisos_da_data = quando_do_pedido(mensagem)
+    for aviso in avisos_da_data:
+        s.avisar(aviso)
     if quando is not None:
-        _datas(s, mensagem, quando)
+        _datas(s, quando)
 
     pessoa = quem_pede(mensagem)
     ddd = pessoa.telefone.detalhes.get("digitos", "")[:2] if pessoa and pessoa.telefone else ""
     municipios = Municipio.objects.filter(ativo=True, estado__ativo=True).select_related("estado")
-    municipio = municipio_no_texto(texto, municipios, ddd=ddd)
+    municipio = municipio_do_pedido(mensagem, municipios, ddd=ddd)
     if municipio is not None:
         estado = municipio.valor.estado
         s.por("estado", Sugestao(estado, estado.nome, "A", municipio.trecho))

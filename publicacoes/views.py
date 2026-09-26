@@ -406,7 +406,8 @@ def ler_email(request):
 
 @acesso_ao_modulo
 def nova(request):
-    email_origem = None
+    # O e-mail da triagem da página inicial (?email_origem=) ou o do formulário que voltou com erro.
+    email_origem = preencher_por_email.origem_da_tela(request, "publicacoes")
     if request.method == "POST":
         form = PublicacaoForm(request.POST)
         # O e-mail lido em "Preencher com um e-mail", se a pauta veio dele.
@@ -420,11 +421,17 @@ def nova(request):
                         form.add_error(campo if campo in form.fields else None, mensagem)
             else:
                 _registrar_edicao(request, form, publicacao, nova=True, origem=origem)
+                preencher_por_email.registrar_cadastro(
+                    request, origem, "publicacoes", form, preenchimento.CAMPOS_APRENDIDOS,
+                    titulo=f"Pauta por e-mail cadastrada: {publicacao.titulo}"[:150],
+                    mensagem=f"Cadastrada por {request.user.get_full_name() or request.user.get_username()}.",
+                    link=reverse("publicacoes:editar", args=[publicacao.pk]),
+                )
                 preencher_por_email.concluir_origem(request, origem)
                 messages.success(request, "Pauta registrada.")
                 return redirect("publicacoes:editar", pk=publicacao.pk)
         messages.error(request, "Corrija os campos destacados para continuar.")
-        email_origem = preencher_por_email.origem_pendente(request, "publicacoes")
+        email_origem = preencher_por_email.origem_da_tela(request, "publicacoes")
     else:
         form = PublicacaoForm(initial={"data": timezone.localdate()})
     contexto = _contexto_formulario(form)

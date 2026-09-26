@@ -427,7 +427,8 @@ def ler_email(request):
 
 @acesso_ao_modulo
 def novo(request):
-    email_origem = None
+    # O e-mail da triagem da página inicial (?email_origem=) ou o do formulário que voltou com erro.
+    email_origem = preencher_por_email.origem_da_tela(request, "atendimento_imprensa")
     if request.method == "POST":
         form = AtendimentoForm(request.POST)
         # O e-mail lido em "Preencher com um e-mail", se o atendimento veio dele.
@@ -441,11 +442,19 @@ def novo(request):
                         form.add_error(campo if campo in form.fields else None, mensagem)
             else:
                 _registrar_edicao(request, form, atendimento, novo=True, origem=origem)
+                prazo = f" — deadline {atendimento.deadline:%d/%m/%Y}" if getattr(atendimento, "deadline", None) else ""
+                preencher_por_email.registrar_cadastro(
+                    request, origem, "atendimento_imprensa", form, preenchimento.CAMPOS_APRENDIDOS,
+                    titulo=f"Pedido de imprensa por e-mail cadastrado: {atendimento.jornalista or 'jornalista'}"[:150],
+                    mensagem=f"{atendimento.veiculo or 'Veículo'}{prazo}. "
+                             f"Cadastrado por {request.user.get_full_name() or request.user.get_username()}.",
+                    link=reverse("atendimento_imprensa:editar", args=[atendimento.pk]),
+                )
                 preencher_por_email.concluir_origem(request, origem)
                 messages.success(request, "Atendimento registrado.")
                 return redirect("atendimento_imprensa:editar", pk=atendimento.pk)
         messages.error(request, "Corrija os campos destacados para continuar.")
-        email_origem = preencher_por_email.origem_pendente(request, "atendimento_imprensa")
+        email_origem = preencher_por_email.origem_da_tela(request, "atendimento_imprensa")
     else:
         agora = timezone.localtime()
         form = AtendimentoForm(

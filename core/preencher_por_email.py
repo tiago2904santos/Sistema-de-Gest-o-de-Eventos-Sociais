@@ -31,7 +31,7 @@ import re
 import tempfile
 import time as relogio
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, time
 from pathlib import Path, PurePath
 from typing import Any, Callable
@@ -39,11 +39,12 @@ from typing import Any, Callable
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db.models import Model
+from django.forms import ModelMultipleChoiceField, MultipleChoiceField
 from django.http import JsonResponse
 from django.utils import timezone
 
-from core.leitura.casamento import Achado, telefone_no_texto
-from core.leitura.datas import dobrar
+from core.leitura.casamento import Achado, format_protocolo, municipio_no_texto, protocolo_no_texto, telefone_no_texto
+from core.leitura.datas import Quando, dobrar, quando_do_evento
 from core.leitura.mensagem import Mensagem, MensagemIlegivel, ler_mensagem, ler_texto_colado
 from core.leitura.triagem import MODULOS, triar_mensagem
 
@@ -51,21 +52,35 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "EXTENSOES_EMAIL",
+    "MODULOS_TRIAGEM",
+    "MODULO_TRIAGEM",
     "EmailRecusado",
     "Origem",
+    "avisar_equipe",
     "Pessoa",
     "Sugestao",
     "Sugestoes",
+    "candidatos_de_triagem",
     "concluir_origem",
     "data_do_email",
     "ler_do_pedido",
+    "ler_guardado",
     "local_no_texto",
+    "modulos_de_triagem",
+    "municipio_do_pedido",
+    "opcoes_de_triagem",
+    "origem_da_tela",
     "origem_do_pedido",
+    "protocolo_do_pedido",
     "origem_pendente",
+    "quando_do_pedido",
     "quem_pede",
+    "reencaminhar",
+    "registrar_cadastro",
     "responder_leitura",
     "texto_da_origem",
     "texto_de_origem",
+    "url_da_tela_nova",
 ]
 
 MIB = 1024 * 1024
@@ -192,6 +207,90 @@ def data_do_email(mensagem: Mensagem) -> Sugestao | None:
     return Sugestao(enviado.date(), f"{enviado:%d/%m/%Y}", "A", f"Enviado em {enviado:%d/%m/%Y %H:%M}")
 
 
+#: Evento a menos de tantos dias da leitura merece aviso: a agenda é curta.
+DIAS_DE_PRAZO_CURTO = 10
+_DIAS_DA_SEMANA = ("segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo")
+
+
+def quando_do_pedido(mensagem: Mensagem) -> tuple[Quando | None, list[str]]:
+    """(quando é o evento, avisos) pelo que o pedido diz.
+
+    Procura no assunto e no corpo; sem data ali, na conversa anterior
+    (`citado`) — a resposta "segue o ofício" não repete a data que o
+    primeiro e-mail deu — com confiança rebaixada e aviso. A data de envio
+    do e-mail nunca serve de data do evento (`datas.quando_do_evento` a
+    descarta), então sem data no texto o campo fica vazio, com aviso.
+
+    Também avisa quando o pedido oferece mais de uma data ("05, 07 ou 09 de
+    outubro"), quando a data já passou, cai no fim de semana ou está a menos
+    de `DIAS_DE_PRAZO_CURTO` dias.
+    """
+    avisos: list[str] = []
+    referencia = mensagem.data_referencia or timezone.localdate()
+    quando = quando_do_evento(mensagem.texto_para_busca, referencia)
+    if quando is None and (mensagem.citado or "").strip():
+        anterior = quando_do_evento(mensagem.citado, referencia)
+        if anterior is not None:
+            quando = replace(anterior, confianca="M")
+            avisos.append(
+                f"A data do evento ({quando.inicio:%d/%m/%Y}) veio de uma mensagem anterior da conversa, "
+                "não desta: confira."
+            )
+    if quando is None:
+        if mensagem.enviado_em is not None:
+            avisos.append(
+                "O e-mail não diz a data do evento: o período ficou em branco (a data de envio "
+                "não é a data do evento). Pergunte ao solicitante."
+            )
+        return None, avisos
+    if not mensagem.data_referencia:
+        quando = replace(quando, confianca="M")
+    if quando.alternativas:
+        opcoes = ", ".join(f"{d:%d/%m}" for d in quando.alternativas[:-1]) + f" ou {quando.alternativas[-1]:%d/%m}"
+        avisos.append(
+            f"O pedido oferece mais de uma data ({opcoes}): preenchi a primeira. Confirme com o solicitante."
+        )
+    hoje = timezone.localdate()
+    if quando.inicio < hoje:
+        avisos.append(f"A data do evento lida ({quando.inicio:%d/%m/%Y}) já passou: confira.")
+    else:
+        faltam = (quando.inicio - hoje).days
+        if faltam <= DIAS_DE_PRAZO_CURTO:
+            quando_texto = "é hoje" if faltam == 0 else ("é amanhã" if faltam == 1 else f"é em {faltam} dias")
+            avisos.append(
+                f"Prazo curto: o evento {quando_texto} ({quando.inicio:%d/%m/%Y}). Priorize o despacho e a equipe."
+            )
+        fim_de_semana = [d for d in (quando.dias or (quando.inicio,)) if d.weekday() >= 5]
+        if fim_de_semana:
+            lista = ", ".join(f"{_DIAS_DA_SEMANA[d.weekday()]} {d:%d/%m}" for d in fim_de_semana[:3])
+            avisos.append(f"O evento cai em fim de semana ({lista}): confira a data e o tipo de operação.")
+    return quando, avisos
+
+
+def municipio_do_pedido(mensagem: Mensagem, municipios, *, ddd: str = "") -> Achado | None:
+    """O município do evento: o citado no texto; na falta, o da capa do processo do
+    eProtocolo (a cidade de quem pede, por isso só como plano B, para conferir)."""
+    achado = municipio_no_texto(mensagem.texto_para_busca, municipios, ddd=ddd)
+    if achado is not None:
+        return achado
+    cidade = (mensagem.extras or {}).get("cidade", "")
+    if not cidade:
+        return None
+    achado = municipio_no_texto(f"em {cidade}", municipios, ddd=ddd)
+    if achado is None:
+        return None
+    return Achado(achado.valor, achado.exibir, f"Cidade da capa do processo: {cidade}", "M", achado.detalhes)
+
+
+def protocolo_do_pedido(mensagem: Mensagem) -> Achado | None:
+    """O nº do protocolo: o do processo do eProtocolo lido, ou o citado no texto."""
+    numero = (mensagem.extras or {}).get("protocolo", "")
+    if numero:
+        formatado = format_protocolo(re.sub(r"\D", "", numero))
+        return Achado(formatado, formatado, "Capa do processo do eProtocolo", "A")
+    return protocolo_no_texto(mensagem.texto_para_busca)
+
+
 @dataclass(frozen=True)
 class Pessoa:
     """Quem pede, pela assinatura (ou pelo remetente)."""
@@ -254,6 +353,21 @@ def _parece_nome(linha: str) -> bool:
     )
 
 
+_R_SOBRENOME_PRIMEIRO = re.compile(r"^\s*(?P<sobrenome>[^,\d@]{2,60}),\s*(?P<nome>[^,\d@]{2,60})\s*$")
+
+
+def _nome_na_ordem(nome: str) -> str:
+    """"PAIS, Andres" (o catálogo corporativo) vira "Andres Pais"."""
+    nome = " ".join((nome or "").split())
+    m = _R_SOBRENOME_PRIMEIRO.match(nome)
+    if not m:
+        return nome
+    sobrenome, primeiro = m.group("sobrenome").strip(), m.group("nome").strip()
+    if sobrenome.isupper() and len(sobrenome.split()) <= 3:
+        sobrenome = " ".join(p.lower() if p.lower() in ("de", "da", "do", "das", "dos", "e") else p.capitalize() for p in sobrenome.split())
+    return f"{primeiro} {sobrenome}"
+
+
 def quem_pede(mensagem: Mensagem) -> Pessoa | None:
     """Nome, cargo, unidade e telefone de quem pede.
 
@@ -269,7 +383,7 @@ def quem_pede(mensagem: Mensagem) -> Pessoa | None:
     if linhas and _parece_nome(linhas[0]):
         nome, resto = linhas[0], linhas[1:]
     if not nome:
-        nome = (mensagem.remetente_nome or "").strip()
+        nome = _nome_na_ordem(mensagem.remetente_nome)
     cargo, unidade = "", ""
     for linha in resto:
         dobrada = dobrar(linha)
@@ -488,6 +602,7 @@ def _guardar(request, modulo: str, nome: str, dados: bytes, mensagem: Mensagem) 
         "nome": nome,
         "assunto": mensagem.assunto_limpo[:300],
         "remetente": (mensagem.remetente or "")[:200],
+        "remetente_email": (mensagem.remetente_email or "")[:200],
         "enviado_em": _data_iso(mensagem.enviado_em),
         "message_id": (mensagem.message_id or "")[:300],
         "origem": mensagem.origem,
@@ -514,6 +629,7 @@ class Origem:
     enviado_em: datetime | None
     message_id: str
     origem: str
+    remetente_email: str = ""
 
     @property
     def colado(self) -> bool:
@@ -539,14 +655,72 @@ def _entrada(request, modulo: str, token: str) -> dict | None:
     return entrada
 
 
-def origem_pendente(request, modulo: str, campo: str = "email_origem") -> dict | None:
+def origem_pendente(request, modulo: str, campo: str = "email_origem", *, token: str | None = None) -> dict | None:
     """{token, nome, assunto} do e-mail já lido que o POST aponta — para a
-    tela que volta com erro não perder o vínculo com o e-mail."""
-    token = (request.POST.get(campo) or "").strip().lower()
+    tela que volta com erro não perder o vínculo com o e-mail.
+
+    Com `token` (o `?email_origem=` da triagem da página inicial), vale ele,
+    e `auto` diz à tela para ler o e-mail sozinha ao abrir.
+    """
+    auto = token is not None
+    token = (token if auto else (request.POST.get(campo) or "")).strip().lower()
     entrada = _entrada(request, modulo, token)
+    if entrada is None and auto:
+        entrada = _entrada(request, MODULO_TRIAGEM, token)  # ainda não assumido pela tela
     if entrada is None or not (_pasta() / f"{token}.bin").exists():
         return None
-    return {"token": token, "nome": entrada["nome"], "assunto": entrada.get("assunto", "")}
+    return {"token": token, "nome": entrada["nome"], "assunto": entrada.get("assunto", ""), "auto": auto}
+
+
+def origem_da_tela(request, modulo: str) -> dict | None:
+    """O e-mail que a tela nova deve ler ao abrir: o `?email_origem=` da triagem
+    (GET) ou o oculto do formulário que voltou com erro (POST)."""
+    if request.method == "POST":
+        return origem_pendente(request, modulo)
+    token = (request.GET.get("email_origem") or "").strip()
+    return origem_pendente(request, modulo, token=token) if token else None
+
+
+def reencaminhar(request, token: str, modulo: str) -> bool:
+    """Passa o e-mail guardado nesta sessão (em qualquer módulo) para `modulo`:
+    o clique em "abrir este e-mail como coffee break" na tela de palestras."""
+    token = (token or "").strip().lower()
+    if not _R_TOKEN.match(token):
+        return False
+    pendentes = dict(request.session.get(_CHAVE_SESSAO) or {})
+    entrada = pendentes.get(token)
+    if not entrada or not (_pasta() / f"{token}.bin").exists():
+        return False
+    pendentes[token] = {**entrada, "modulo": modulo}
+    request.session[_CHAVE_SESSAO] = pendentes
+    return True
+
+
+def ler_guardado(request, modulo: str, token: str) -> tuple[Mensagem, str, bytes] | None:
+    """(mensagem, nome, bytes) do e-mail já guardado nesta sessão, lido de novo.
+
+    O token vale no módulo dado ou vindo da triagem ("triagem"): a triagem da
+    página inicial guarda o e-mail antes de saber o módulo, e a tela do módulo
+    o assume ao ler.
+    """
+    token = (token or "").strip().lower()
+    entrada = _entrada(request, modulo, token) or _entrada(request, MODULO_TRIAGEM, token)
+    if entrada is None:
+        return None
+    try:
+        dados = (_pasta() / f"{token}.bin").read_bytes()
+    except OSError:
+        return None
+    nome = entrada["nome"]
+    try:
+        mensagem = ler_texto_colado(dados.decode("utf-8", "replace")) if nome == NOME_TEXTO_COLADO else ler_mensagem(nome, dados)
+    except MensagemIlegivel:
+        return None
+    if entrada.get("modulo") != modulo:
+        pendentes = dict(request.session.get(_CHAVE_SESSAO) or {})
+        pendentes[token] = {**entrada, "modulo": modulo}
+        request.session[_CHAVE_SESSAO] = pendentes
+    return mensagem, nome, dados
 
 
 def origem_do_pedido(request, modulo: str, campo: str = "email_origem") -> Origem | None:
@@ -579,7 +753,37 @@ def origem_do_pedido(request, modulo: str, campo: str = "email_origem") -> Orige
         enviado_em=enviado_em,
         message_id=entrada.get("message_id", ""),
         origem=entrada.get("origem", ""),
+        remetente_email=entrada.get("remetente_email", ""),
     )
+
+
+def registrar_cadastro(request, origem: Origem | None, modulo: str, form, campos_aprendidos, *,
+                       titulo: str = "", mensagem: str = "", link: str = "") -> None:
+    """Depois de salvo um registro que veio de e-mail: o sistema aprende com ele
+    (`core.aprendizado`) e avisa a equipe do módulo no sino (`titulo`, `mensagem`,
+    `link`), menos quem salvou. Sem `origem`, não faz nada."""
+    if origem is None:
+        return
+    from core import aprendizado
+
+    aprendizado.aprender_do_formulario(origem, modulo, form, campos_aprendidos)
+    if titulo:
+        avisar_equipe(request, modulo, titulo, mensagem, link)
+
+
+def avisar_equipe(request, modulo: str, titulo: str, mensagem: str = "", link: str = "") -> None:
+    """Aviso no sino para quem trabalha no módulo (pelos setores), menos o autor."""
+    from django.contrib.auth import get_user_model
+
+    from core.notificacoes import notificar
+
+    codigo = MODULOS_TRIAGEM.get(modulo, {}).get("codigo")
+    if not codigo:
+        return  # módulo aberto a todos (Eventos Sociais): o fluxo de despacho já avisa
+    equipe = get_user_model().objects.filter(
+        is_active=True, setores__ativo=True, setores__modulos__codigo=codigo, setores__modulos__ativo=True
+    ).distinct()
+    notificar(equipe, titulo, mensagem, link=link, exceto=getattr(request, "user", None))
 
 
 def concluir_origem(request, origem: Origem | None) -> None:
@@ -623,6 +827,79 @@ def _rotulo(formulario, campo: str) -> str:
     return rotulo[:1].upper() + rotulo[1:] if rotulo else campo.replace("_", " ").capitalize()
 
 
+#: O módulo "dono" do token enquanto a triagem da página inicial ainda não
+#: decidiu para onde o e-mail vai.
+MODULO_TRIAGEM = "triagem"
+
+#: Para cada módulo que lê e-mail: o código de acesso (None = aberto a todo
+#: usuário) e a rota da tela nova, que recebe `?email_origem=<token>`.
+MODULOS_TRIAGEM = {
+    "solicitacoes": {"codigo": None, "nova": "solicitacoes:nova"},
+    "demandas_eventos": {"codigo": "ASCOM_DEMANDAS_EVENTOS", "nova": "demandas_eventos:nova"},
+    "coffee_break": {"codigo": "ASCOM_COFFEE_BREAK", "nova": "coffee_break:nova"},
+    "publicacoes": {"codigo": "ASCOM_PUBLICACOES", "nova": "publicacoes:nova"},
+    "atendimento_imprensa": {"codigo": "ASCOM_ATENDIMENTO_IMPRENSA", "nova": "atendimento_imprensa:novo"},
+}
+
+
+def modulos_de_triagem(usuario) -> list[str]:
+    """Os módulos (chaves de `MODULOS`) que o usuário pode abrir."""
+    from accounts.modulos import usuario_tem_modulo
+
+    return [
+        modulo for modulo, dados in MODULOS_TRIAGEM.items()
+        if dados["codigo"] is None or usuario_tem_modulo(usuario, dados["codigo"])
+    ]
+
+
+def url_da_tela_nova(modulo: str, token: str = "") -> str:
+    """A tela nova do módulo; com `token`, passando por `core:triagem_encaminhar`,
+    que passa o e-mail guardado para o módulo e abre a tela com `?email_origem=`."""
+    from django.urls import reverse
+
+    if not token:
+        return reverse(MODULOS_TRIAGEM[modulo]["nova"])
+    return f"{reverse('core:triagem_encaminhar')}?token={token}&modulo={modulo}"
+
+
+def candidatos_de_triagem(mensagem: Mensagem, usuario, token: str = "") -> list[dict]:
+    """Os módulos candidatos ao e-mail, do mais ao menos provável, só os que o
+    usuário acessa: {modulo, rotulo, confianca, sinais, url}.
+
+    Aos sinais do texto (`core.leitura.triagem`) somam-se os da memória
+    (`core.aprendizado`): para onde foram os pedidos anteriores deste
+    remetente, deste domínio e com estas palavras no assunto.
+    """
+    from core import aprendizado
+
+    permitidos = modulos_de_triagem(usuario)
+    if not permitidos:
+        return []
+    extras = aprendizado.pesos_de_triagem(mensagem)
+    destinos = triar_mensagem(mensagem, modulos=permitidos, extras=extras)
+    return [
+        {
+            "modulo": d.modulo,
+            "rotulo": d.rotulo,
+            "confianca": d.confianca,
+            "sinais": list(d.sinais),
+            "url": url_da_tela_nova(d.modulo, token),
+        }
+        for d in destinos
+    ]
+
+
+def opcoes_de_triagem(mensagem: Mensagem, usuario, token: str = "") -> list[dict]:
+    """Os candidatos (`candidatos_de_triagem`) seguidos dos outros módulos do
+    usuário, sem sinal: tudo o que a pessoa pode escolher, do mais ao menos provável."""
+    candidatos = candidatos_de_triagem(mensagem, usuario, token)
+    vistos = {c["modulo"] for c in candidatos}
+    return candidatos + [
+        {"modulo": m, "rotulo": MODULOS[m], "confianca": 0, "sinais": [], "url": url_da_tela_nova(m, token)}
+        for m in modulos_de_triagem(usuario) if m not in vistos
+    ]
+
+
 def _aviso_de_triagem(mensagem: Mensagem, modulo: str) -> str:
     """"Este e-mail parece de outro módulo" quando a triagem aponta outro com folga."""
     destinos = triar_mensagem(mensagem)
@@ -658,19 +935,41 @@ def responder_leitura(
     `duplicados(texto_de_origem)` lista registros já criados deste e-mail.
     Erro de leitura volta com status 400 e `{"erro": "..."}`.
     """
-    try:
-        mensagem, nome, dados = ler_do_pedido(request)
-    except EmailRecusado as erro:
-        return JsonResponse({"erro": str(erro)}, status=400)
+    token = (request.POST.get("token") or "").strip().lower()
+    guardado = ler_guardado(request, modulo, token) if token else None
+    if guardado is not None:
+        mensagem, nome, dados = guardado
+    else:
+        try:
+            mensagem, nome, dados = ler_do_pedido(request)
+        except EmailRecusado as erro:
+            if token:
+                return JsonResponse({"erro": "O e-mail lido na página inicial não está mais disponível; envie-o de novo."}, status=400)
+            return JsonResponse({"erro": str(erro)}, status=400)
+        token = _guardar(request, modulo, nome, dados, mensagem)
     sugestoes = sugerir(mensagem, request.user)
-    token = _guardar(request, modulo, nome, dados, mensagem)
     avisos = list(mensagem.avisos) + list(getattr(sugestoes, "avisos", []))
     triagem = _aviso_de_triagem(mensagem, modulo)
     if triagem:
         avisos.insert(0, triagem)
+    outros_modulos = [
+        {"modulo": c["modulo"], "rotulo": c["rotulo"], "url": c["url"]}
+        for c in opcoes_de_triagem(mensagem, request.user, token)
+        if c["modulo"] != modulo
+    ][:3] if guardado is not None else []
     campos = {}
     for campo, sugestao in sugestoes.items():
         campos[campo] = {**sugestao.como_json(), "rotulo": _rotulo(formulario, campo)}
+    # O que o texto não disse e a memória sabe deste remetente.
+    from core import aprendizado
+
+    base_fields = (getattr(formulario, "base_fields", {}) or {}) if formulario is not None else {}
+    for campo, aprendida in aprendizado.sugestoes_aprendidas(mensagem, modulo, campos).items():
+        if base_fields and campo not in base_fields:
+            continue
+        if isinstance(base_fields.get(campo), (MultipleChoiceField, ModelMultipleChoiceField)) and isinstance(aprendida["valor"], str):
+            aprendida = {**aprendida, "valor": aprendida["valor"].split(",")}
+        campos[campo] = {**aprendida, "rotulo": _rotulo(formulario, campo)}
     enviado = _local(mensagem.enviado_em)
     lista_duplicados = []
     if duplicados and enviado and (mensagem.assunto_limpo or mensagem.remetente):
@@ -685,6 +984,7 @@ def responder_leitura(
     return JsonResponse({
         "campos": campos,
         "avisos": avisos,
+        "outros_modulos": outros_modulos,
         "duplicados": lista_duplicados,
         "mensagem": {
             "assunto": mensagem.assunto_limpo,

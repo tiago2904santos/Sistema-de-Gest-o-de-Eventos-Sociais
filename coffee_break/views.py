@@ -1201,7 +1201,8 @@ def locais_entrega(request):
 def nova_solicitacao(request):
     from . import origem as origem_evento
 
-    email_origem = None
+    # O e-mail da triagem da página inicial (?email_origem=) ou o do formulário que voltou com erro.
+    email_origem = preencher_por_email.origem_da_tela(request, "coffee_break")
     # "Duplicar" da lista: ?duplicar=<pk> (e o campo oculto no POST, para o histórico).
     copia_de = _origem_da_copia(request.POST if request.method == "POST" else request.GET)
     # "Pedir coffee break" do evento ou da palestra: ?solicitacao=<pk> ou ?demanda=<pk>.
@@ -1238,6 +1239,15 @@ def nova_solicitacao(request):
                     AcaoHistoricoCoffeeBreak.CRIACAO,
                     descricao,
                 )
+                preencher_por_email.registrar_cadastro(
+                    request, origem, "coffee_break", form, preenchimento.CAMPOS_APRENDIDOS,
+                    titulo=f"Pedido por e-mail cadastrado: coffee break {solicitacao.numero or '#' + str(solicitacao.pk)}",
+                    mensagem=f"{solicitacao.descricao_evento or 'Coffee break'} em {solicitacao.municipio}"
+                             f"{f' — {solicitacao.data_inicio_evento:%d/%m/%Y}' if solicitacao.data_inicio_evento else ''}, "
+                             f"{solicitacao.quantidade or '?'} pessoa(s). "
+                             f"Cadastrado por {request.user.get_full_name() or request.user.get_username()}.",
+                    link=reverse("coffee_break:editar", args=[solicitacao.pk]),
+                )
                 preencher_por_email.concluir_origem(request, origem)
                 _registrar_retroativo(form, solicitacao, request.user)
                 messages.success(
@@ -1249,7 +1259,7 @@ def nova_solicitacao(request):
                 return redirect("coffee_break:solicitacoes")
         else:
             messages.error(request, "Corrija os campos destacados para continuar.")
-        email_origem = preencher_por_email.origem_pendente(request, "coffee_break")
+        email_origem = preencher_por_email.origem_da_tela(request, "coffee_break")
     else:
         iniciais = origem_evento.valores_iniciais(campo_origem, evento_origem) if evento_origem is not None else {}
         if copia_de is not None:

@@ -180,6 +180,8 @@ _R_PONTO = re.compile(
     _ANTES_NUMERO + r"(?P<dia>\d{2})\.(?P<num>\d{2})(?:\.(?P<ano>\d{2}|20\d{2}))?(?!\.?\d)(?!\s*h)"
 )
 _R_HIFEN = re.compile(r"(?<![\d.,/-])(?P<dia>\d{1,2})-(?P<num>\d{1,2})-(?P<ano>20\d{2})(?!\d)")
+# "14 11 2026": quem digita a data sem barras. Só com o ano de quatro dígitos.
+_R_ESPACO = re.compile(r"(?<![\d.,/-])(?P<dia>\d{1,2}) (?P<num>\d{1,2}) (?P<ano>20\d{2})(?!\d)")
 _R_RELATIVA = re.compile(r"\b(depois de amanha|amanha|hoje)\b(?!\s+em\s+dia)")
 _SEMANA = "|".join(DIAS_DA_SEMANA)
 _R_DIA_SEMANA = re.compile(
@@ -194,7 +196,10 @@ _R_ORDINAL_DEPOIS = re.compile(
     r"reuniao|rodada|sessao|aula|semana|colocad[oa]|lugar|ano)\b"
 )
 _R_FAIXA_SEMANA = re.compile(r"^\s*(?:-?\s*feira)?\s*(?:a|ate|e|-)\s*(?:a\s+)?(?:" + _SEMANA + r")")
-_R_RECORRENTE_ANTES = re.compile(r"\b(?:toda|todas\s+as|todo|todos\s+os|de|entre)\s+$")
+_R_RECORRENTE_ANTES = re.compile(
+    r"\b(?:toda|todas\s+as|todo|todos\s+os|de|entre)\s+$"
+    r"|\b(?:sempre|geralmente|normalmente|habitualmente|anualmente|costuma\w*|tradicionalmente)\b[^.\n,;]{0,30}$"
+)
 # Número de documento, não data: "Ofício nº 05/10", "Lei 13.709/18".
 _R_DOCUMENTO_ANTES = re.compile(
     r"\b(?:oficio|of\.|memorando|memo\.?|lei|decreto|portaria|resolucao|processo|protocolo|"
@@ -286,7 +291,7 @@ def _listas(texto, dobrado, referencia, ocupados):
 
 def _unicas(texto, dobrado, referencia, ocupados):
     achadas = []
-    for regex in (_R_EXTENSO, _R_BARRA, _R_PONTO, _R_HIFEN):
+    for regex in (_R_EXTENSO, _R_BARRA, _R_PONTO, _R_HIFEN, _R_ESPACO):
         for m in regex.finditer(dobrado):
             if not ocupados.livre(m.start(), m.end()) or _eh_documento(dobrado, m.start()):
                 continue
@@ -586,6 +591,9 @@ class Quando:
     turno: str
     trecho: str
     confianca: str
+    #: "05, 07 ou 09 de outubro": as datas oferecidas como opção, quando o
+    #: pedido deixa a escolha; `inicio` é a primeira delas.
+    alternativas: tuple[date, ...] = ()
 
 
 _R_ANCORA_DATA_ANTES = re.compile(
@@ -595,15 +603,36 @@ _R_ANCORA_DATA_ANTES = re.compile(
 _R_EVENTO_NA_FRASE = re.compile(
     r"\b(?:realiz|sera\b|serao\b|ocorre|acontec|evento|palestra|encontro|reuniao|agend|program|previst|"
     r"solenidade|cerimonia|inaugura|formatura|curso|treinamento|capacita|acao\b|mutirao|feira|visita|"
-    r"apresenta|comemora|coffee|lanche|entrega|atendimento)"
+    r"apresenta|comemora|coffee|lanche|entrega|atendimento|missao|operacao|deflagra|tera\s+lugar|"
+    r"servid[oa]|servir|acontecera)"
 )
 _R_NEGATIVO_ANTES = re.compile(
     r"\b(?:prazo|ate|enviad[oa]|recebid[oa]|datad[oa]|nascid[oa]|nascimento|validade|vencimento|vence|"
-    r"emitid[oa]|emissao|publicad[oa]|desde|oficio|lei|decreto|portaria|escreveu)\b[^.\n]{0,20}$"
+    r"emitid[oa]|publicad[oa]|desde|oficio|lei|decreto|portaria|escreveu|inserid[oa]|assinad[oa]|"
+    r"realizada\s+por|protocolad[oa]|autuad[oa]|cadastrad[oa]|criad[oa]|registrad[oa])\b[^.\n]{0,20}$"
+    # "emissão em 10/10" é data de documento; "emissão de RG no dia 20/10" é o evento.
+    r"|\bemissao\s*:?\s*(?:em\s+)?$|\bem\s*:\s*$"
 )
+# A frase inteira é de carimbo, cabeçalho ou assinatura: a data é de quando o
+# documento foi feito, nunca a do evento (o eProtocolo, o "Em ... escreveu:",
+# o "Enviado em:" do Outlook).
+_R_NEGATIVO_NA_FRASE = re.compile(
+    r"assinatura\s+(?:avancada|qualificada|digital)|realizada\s+por|inserido\s+ao\s+protocolo|"
+    r"documento\s+assinado|autenticidade|validar\s*documento|\bescreveu\s*:|\bwrote\s*:|"
+    r"^\s*(?:em|enviad[oa](?:\s+em)?|sent|date|recebid[oa]\s+em|de|from)\s*:|"
+    r"\bprotocolo\s*:\s*\d|\bem\s*:\s*\d{1,2}/|\bdata\s*:\s*\d{1,2}/\d{1,2}/\d{2,4}\s+\d{1,2}:\d{2}|"
+    r"\d{1,2}:\d{2}\s*data\s*:|\binteressado\s*:"
+)
+# A linha de data do ofício: "Curitiba, 22 de setembro de 2026." — de quando ele
+# foi escrito, não do evento.
+_R_DATELINE_ANTES = re.compile(r"^\s*[^\d\n,;:]{3,40},\s*(?:aos\s+)?$")
+_R_DATELINE_DEPOIS = re.compile(r"^\s*\.?\s*$")
 
 
 _JANELA_DA_FRASE = 400
+#: Abaixo disto a data é de documento, não do evento: uma data solta vale 1;
+#: negativada, -5; a do e-mail sem âncora, -3.
+_PONTOS_MINIMOS = -3
 
 
 def _frase(dobrado: str, inicio: int, fim: int) -> tuple[int, int]:
@@ -620,17 +649,38 @@ def _frase(dobrado: str, inicio: int, fim: int) -> tuple[int, int]:
     return comeco, (fim + final.start() if final else min(len(dobrado), fim + _JANELA_DA_FRASE))
 
 
+def _linha(dobrado: str, inicio: int, fim: int) -> tuple[int, int]:
+    comeco = dobrado.rfind("\n", 0, inicio) + 1
+    final = dobrado.find("\n", fim)
+    return comeco, (len(dobrado) if final == -1 else final)
+
+
 def _pontos_da_data(item: DataAchada, dobrado: str, referencia: date) -> tuple[int, bool]:
+    """Quantos pontos a data faz como data do evento (e se está ancorada).
+
+    Perde quem é data de documento: a linha de data do ofício ("Curitiba, 22
+    de setembro de 2026."), o carimbo de assinatura do eProtocolo, o
+    "Enviado em:" e a data igual à do próprio e-mail sem nada que a ligue ao
+    evento — a data em que o pedido foi mandado nunca é o período do evento.
+    """
     base = {"periodo": 2, "lista": 2, "data": 1, "relativa": 0, "dia_semana": 0}[item.tipo]
     comeco, final = _frase(dobrado, item.inicio_pos, item.fim_pos)
     antes = dobrado[max(comeco, item.inicio_pos - 40):item.inicio_pos]
     frase = dobrado[comeco:final]
     ancorada = bool(_R_ANCORA_DATA_ANTES.search(antes)) or bool(re.match(r"\s*data\b", frase))
     evento = bool(_R_EVENTO_NA_FRASE.search(frase))
-    negativo = bool(_R_NEGATIVO_ANTES.search(antes))
-    pontos = base + (3 if ancorada else 0) + (2 if evento else 0) - (5 if negativo else 0)
+    negativo = bool(_R_NEGATIVO_ANTES.search(antes)) or bool(_R_NEGATIVO_NA_FRASE.search(frase))
+    linha_inicio, linha_fim = _linha(dobrado, item.inicio_pos, item.fim_pos)
+    if _R_DATELINE_ANTES.match(dobrado[linha_inicio:item.inicio_pos]) and _R_DATELINE_DEPOIS.match(
+        dobrado[item.fim_pos:linha_fim]
+    ):
+        negativo = True
+    # Negativo derruba de vez: "realizada por" também casa o "realiz" de evento.
+    pontos = base + (3 if ancorada else 0) + (2 if evento else 0) - (10 if negativo else 0)
     if (item.fim or item.inicio) < referencia:
         pontos -= 3
+    if item.absoluta and item.inicio == referencia and not item.fim and not (ancorada and evento):
+        pontos -= 4
     return pontos, (ancorada or evento) and not negativo
 
 
@@ -650,7 +700,14 @@ def quando_do_evento(texto: str, referencia) -> Quando | None:
     dobrado = dobrar(texto)
     avaliados = [(item, *_pontos_da_data(item, dobrado, referencia)) for item in itens]
     melhor, pontos, ancorada = max(avaliados, key=lambda a: (a[1], -a[0].inicio_pos))
+    if pontos <= _PONTOS_MINIMOS:
+        return None  # só datas de documento (carimbo, cabeçalho, linha de data do ofício)
     comeco, final = _frase(dobrado, melhor.inicio_pos, melhor.fim_pos)
+    alternativas: tuple[date, ...] = ()
+    if re.search(r"\bou\b", dobrado[comeco:final]):
+        na_frase = sorted({i.inicio for i, p, _ in avaliados if comeco <= i.inicio_pos < final and p > _PONTOS_MINIMOS})
+        if len(na_frase) >= 2 and melhor.inicio == na_frase[0] and not melhor.fim:
+            alternativas = tuple(na_frase)
     spans_datas = [(i.inicio_pos, i.fim_pos) for i in itens]
     ocupados = _Ocupados(spans_datas)
     horarios = [h for h in horarios_do_texto(texto) if ocupados.livre(h.inicio_pos, h.fim_pos)]
@@ -677,7 +734,8 @@ def quando_do_evento(texto: str, referencia) -> Quando | None:
         hora_fim=escolhido.fim if escolhido else None,
         turno=turno,
         trecho=trecho[:300],
-        confianca="A" if ancorada and pontos >= 3 else "M",
+        confianca="A" if ancorada and pontos >= 3 and not alternativas else "M",
+        alternativas=alternativas,
     )
 
 
