@@ -281,3 +281,60 @@ class RelatorioTecnicoPreenchidoTests(PrestacaoFixturesMixin, TestCase):
         self.assertEqual(segunda["nome"], "Padrão sintético (2)")
         self.assertEqual(ModeloTextoRelatorioTecnico.objects.filter(campo="conclusao").count(), 2)
         self.assertEqual(self.client.post(url, {"campo": "conclusao", "texto": ""}).status_code, 400)
+
+
+class PainelDePendenciasTests(PrestacaoFixturesMixin, TestCase):
+    """m100: contadores de pendência clicáveis e a planilha com os filtros da tela."""
+
+    def setUp(self):
+        super().setUp()
+        self.setUpPrestacaoFixtures()
+        from datetime import date
+
+        from django.core.files.base import ContentFile
+
+        from viagens_prestacoes.models import PrestacaoDocumentoAnexo as Anexo
+
+        self.sem_nada = self.criar_prestacao(numero=801, data_liberacao_diarias=date(2026, 9, 1))
+        self.completa = self.criar_prestacao(numero=802, data_liberacao_diarias=date(2026, 9, 1))
+        Roteiro.objects.filter(pk=self.completa.roteiro.pk).update(valor_diarias=Decimal("300.00"), quantidade_servidores=1)
+        ps = self.completa.prestacoes_servidor[0]
+        ps.numero_solicitacao = "1234567"
+        ps.save()
+        Anexo.objects.create(prestacao=self.completa.prestacao, tipo=Anexo.TIPO_DESPACHO, arquivo=ContentFile(b"%PDF-1.4", name="despacho.pdf"))
+        Anexo.objects.create(
+            prestacao=self.completa.prestacao, servidor_prestacao=ps, tipo=Anexo.TIPO_COMPROVANTE,
+            arquivo=ContentFile(b"%PDF-1.4", name="comprovante.pdf"), valor=Decimal("250.00"),
+        )
+
+    def test_contadores(self):
+        from viagens_prestacoes.selectors import contar_por_aba
+
+        contagem = contar_por_aba()
+        self.assertEqual(contagem["sem_solicitacao"], 1)
+        self.assertEqual(contagem["sem_despacho"], 1)
+        self.assertEqual(contagem["sem_comprovante"], 1)
+        self.assertEqual(contagem["comprovante_divergente"], 1)
+        self.assertEqual(contagem["finalizadas_mes"], 0)
+        self.completa.prestacoes_servidor[0].definir_finalizada(True)
+        self.assertEqual(contar_por_aba()["finalizadas_mes"], 1)
+
+    def test_contador_filtra_a_lista(self):
+        resposta = self.get_listagem(aba="comprovante_divergente")
+        self.assertEqual([c["ps_pk"] for c in resposta.context["cards"]], [self.completa.prestacoes_servidor[0].pk])
+        self.assertContains(resposta, "Comprovante ≠ diária")
+        self.assertContains(resposta, "Exportar planilha")
+
+    def test_planilha_com_os_filtros(self):
+        import io
+
+        from openpyxl import load_workbook
+
+        resposta = self.client.get(reverse("viagens_prestacoes:exportar_xlsx"), {"aba": "sem_solicitacao"})
+        self.assertEqual(resposta.status_code, 200)
+        folha = load_workbook(io.BytesIO(resposta.content)).active
+        linhas = list(folha.iter_rows(values_only=True))
+        self.assertEqual(linhas[0][0], "Servidor")
+        self.assertEqual(len(linhas), 2)
+        self.assertEqual(linhas[1][1], self.sem_nada.oficio.numero_formatado)
+        self.assertIn("número da solicitação", linhas[1][10])

@@ -679,17 +679,37 @@ def pendencias_para_finalizar(servidor_prestacao) -> list[str]:
         if not oficio.carimbos.filter(servidor_prestacao=servidor_prestacao).exists():
             pendencias.append("O número de solicitação não está carimbado no ofício assinado: use “Ajustar posição do número”.")
 
-    comprovantes = list(servidor_prestacao.documentos_anexos.filter(tipo=PrestacaoDocumentoAnexo.TIPO_COMPROVANTE))
+    divergencia = divergencia_dos_comprovantes(servidor_prestacao)
+    if divergencia is not None:
+        soma, esperado = divergencia
+        pendencias.append(
+            f"Os comprovantes somam {format_currency_br(soma)}, e a diária deste servidor é {format_currency_br(esperado)}."
+        )
+    return pendencias
+
+
+def divergencia_dos_comprovantes(servidor_prestacao) -> tuple[Decimal, Decimal] | None:
+    """(soma dos comprovantes, diária esperada) quando não batem; `None` quando batem ou não dá para saber.
+
+    A diária esperada é a recebida informada, ou a liberada pelo roteiro. Só compara
+    com todos os comprovantes com valor lido — um sem valor não prova nada.
+    Serve à conferência de finalizar (m092) e ao contador da lista (m100).
+    """
+    comprovantes = [
+        a for a in servidor_prestacao.documentos_anexos.all() if a.tipo == PrestacaoDocumentoAnexo.TIPO_COMPROVANTE
+    ]
+    if not comprovantes or any(a.valor is None for a in comprovantes):
+        return None
     esperado = servidor_prestacao.diaria_valor_override
     if esperado is None:
-        esperado = valor_diaria_liberado(servidor_prestacao)
-    if comprovantes and esperado is not None and all(a.valor is not None for a in comprovantes):
-        soma = sum((a.valor for a in comprovantes), Decimal("0"))
-        if soma != esperado:
-            pendencias.append(
-                f"Os comprovantes somam {format_currency_br(soma)}, e a diária deste servidor é {format_currency_br(esperado)}."
-            )
-    return pendencias
+        try:
+            esperado = valor_diaria_liberado(servidor_prestacao)
+        except DocumentValidationError:
+            return None
+    if esperado is None:
+        return None
+    soma = sum((a.valor for a in comprovantes), Decimal("0"))
+    return None if soma == esperado else (soma, esperado)
 
 
 @track_document_generation("prestacao_gerar_consolidado_pdf")
@@ -928,3 +948,71 @@ def nome_arquivo_pacotes_da_equipe(prestacao) -> str:
 
     oficio = prestacao.oficio.numero_formatado.replace("/", "-")
     return f"{naming.nome_arquivo_ascii(f'Pacotes da equipe Ofício {oficio}')}.zip"
+
+
+def planilha_de_prestacoes(servidores_prestacao) -> bytes:
+    """A planilha de saques e pendências (m100), com as linhas da lista filtrada.
+
+    Uma linha por servidor: ofício, protocolo, solicitação, liberação, prazos, diária
+    liberada, valor sacado (comprovantes, ou o recebido informado), situação e o que
+    falta para finalizar.
+    """
+    import io
+
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
+
+    from core.utils.masks import format_protocolo
+
+    from .prazos import prazo_para_prestar
+
+    livro = Workbook()
+    folha = livro.active
+    folha.title = "Prestações"
+    cabecalho = [
+        "Servidor", "Ofício", "Protocolo", "Solicitação", "Liberação das diárias", "Prazo limite de saque",
+        "Prestar contas até", "Diária liberada", "Valor sacado", "Situação", "O que falta",
+    ]
+    folha.append(cabecalho)
+    for celula in folha[1]:
+        celula.font = Font(bold=True)
+    for ps in servidores_prestacao:
+        oficio = ps.prestacao.oficio
+        try:
+            liberado = valor_diaria_liberado(ps)
+        except DocumentValidationError:
+            liberado = None
+        comprovantes = [
+            a.valor for a in ps.documentos_anexos.all()
+            if a.tipo == PrestacaoDocumentoAnexo.TIPO_COMPROVANTE and a.valor is not None
+        ]
+        sacado = sum(comprovantes, Decimal("0")) if comprovantes else ps.diaria_valor_override
+        if ps.finalizada:
+            situacao, falta = "Finalizada", ""
+        else:
+            situacao = "Arquivada" if ps.arquivada else ps.get_status_display()
+            falta = "; ".join(pendencias_para_finalizar(ps))
+        folha.append([
+            ps.servidor.nome,
+            oficio.numero_formatado,
+            format_protocolo(oficio.protocolo) or "",
+            ps.numero_solicitacao or "",
+            ps.data_liberacao_diarias,
+            ps.prazo_limite_saque,
+            prazo_para_prestar(ps.prazo_limite_saque),
+            float(liberado) if liberado is not None else None,
+            float(sacado) if sacado is not None else None,
+            situacao,
+            falta,
+        ])
+    for linha in folha.iter_rows(min_row=2):
+        for indice in (4, 5, 6):
+            linha[indice].number_format = "DD/MM/YYYY"
+        for indice in (7, 8):
+            linha[indice].number_format = '"R$" #,##0.00'
+    for coluna, largura in zip("ABCDEFGHIJK", (34, 10, 16, 13, 14, 14, 14, 13, 13, 16, 70)):
+        folha.column_dimensions[coluna].width = largura
+    folha.freeze_panes = "A2"
+    buffer = io.BytesIO()
+    livro.save(buffer)
+    return buffer.getvalue()

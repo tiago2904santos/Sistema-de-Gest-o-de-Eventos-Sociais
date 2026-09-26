@@ -17,9 +17,18 @@ ABA_DEVOLVIDAS = 'devolvidas'
 ABA_PRESTACAO_VENCIDA = 'prestacao_vencida'
 #: m085: prazo de saque vencendo (ou vencido) sem comprovante. Também cruza.
 ABA_SAQUE_VENCENDO = 'saque_vencendo'
+#: m100: contadores de pendência para trabalhar em lote. Cruzam com as de estado,
+#: e só contam prestações em aberto (nem finalizadas, nem arquivadas) — menos a
+#: última, que é o número do mês para a chefia.
+ABA_SEM_SOLICITACAO = 'sem_solicitacao'
+ABA_SEM_DESPACHO = 'sem_despacho'
+ABA_SEM_COMPROVANTE = 'sem_comprovante'
+ABA_COMPROVANTE_DIVERGENTE = 'comprovante_divergente'
+ABA_FINALIZADAS_MES = 'finalizadas_mes'
+ABAS_PENDENCIA = (ABA_SEM_SOLICITACAO, ABA_SEM_DESPACHO, ABA_SEM_COMPROVANTE, ABA_COMPROVANTE_DIVERGENTE, ABA_FINALIZADAS_MES)
 ABA_PADRAO = ABA_NAO_LIBERADAS
-ABAS_VALIDAS = {ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_DEVOLVIDAS, ABA_ARQUIVADOS, ABA_FINALIZADOS, ABA_SAQUE_VENCENDO, ABA_PRESTACAO_VENCIDA}
-ORDEM_ABAS = (ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_DEVOLVIDAS, ABA_ARQUIVADOS, ABA_FINALIZADOS, ABA_SAQUE_VENCENDO, ABA_PRESTACAO_VENCIDA)
+ORDEM_ABAS = (ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_DEVOLVIDAS, ABA_ARQUIVADOS, ABA_FINALIZADOS, ABA_SAQUE_VENCENDO, ABA_PRESTACAO_VENCIDA, *ABAS_PENDENCIA)
+ABAS_VALIDAS = set(ORDEM_ABAS)
 
 def normalizar_aba(aba: str | None) -> str:
     aba = (aba or '').strip()
@@ -57,6 +66,8 @@ def _q_da_aba(aba: str) -> Q:
         comprovante = PrestacaoDocumentoAnexo.objects.filter(servidor_prestacao=OuterRef('pk'), tipo=PrestacaoDocumentoAnexo.TIPO_COMPROVANTE)
         limite = timezone.localdate() + datetime.timedelta(days=DIAS_AVISO_SAQUE)
         return Q(finalizada=False, arquivada=False, prazo_limite_saque__lte=limite) & ~Q(Exists(comprovante))
+    if aba in ABAS_PENDENCIA:
+        return _q_da_pendencia(aba)
     if aba == ABA_PRESTACAO_VENCIDA:
         from .prazos import ultimo_saque_com_prestacao_vencida
         return Q(finalizada=False, arquivada=False, prazo_limite_saque__lte=ultimo_saque_com_prestacao_vencida())
@@ -75,6 +86,41 @@ def _q_da_aba(aba: str) -> Q:
     if aba == ABA_LIBERADAS:
         return ativa & Q(data_liberacao_diarias__isnull=False) & ~devolvida
     return ativa & Q(data_liberacao_diarias__isnull=True) & ~devolvida
+
+def _q_da_pendencia(aba: str) -> Q:
+    """m100: o recorte de cada contador de pendência."""
+    from django.db.models import Exists, OuterRef
+    from django.utils import timezone
+    from .models import PrestacaoDocumentoAnexo as Anexo
+    em_aberto = Q(finalizada=False, arquivada=False)
+    if aba == ABA_SEM_SOLICITACAO:
+        return em_aberto & Q(numero_solicitacao='')
+    if aba == ABA_SEM_DESPACHO:
+        despacho = Anexo.objects.filter(prestacao=OuterRef('prestacao'), tipo=Anexo.TIPO_DESPACHO)
+        legado = Q(prestacao__despacho_assinado='') | Q(prestacao__despacho_assinado__isnull=True)
+        return em_aberto & ~Q(Exists(despacho)) & legado
+    if aba == ABA_SEM_COMPROVANTE:
+        # Só quem já teve a diária liberada: antes disso não há o que sacar.
+        comprovante = Anexo.objects.filter(servidor_prestacao=OuterRef('pk'), tipo=Anexo.TIPO_COMPROVANTE)
+        return em_aberto & Q(data_liberacao_diarias__isnull=False) & ~Q(Exists(comprovante))
+    if aba == ABA_COMPROVANTE_DIVERGENTE:
+        return Q(pk__in=_ids_comprovante_divergente())
+    hoje = timezone.localdate()
+    return Q(finalizada=True, finalizada_em__date__gte=hoje.replace(day=1), finalizada_em__date__lte=hoje)
+
+def _ids_comprovante_divergente() -> list[int]:
+    """Prestações em aberto cuja soma dos comprovantes não bate com a diária.
+
+    A diária esperada sai do roteiro efetivo (ajustado ou do ofício) com o mesmo
+    arredondamento do documento — conta que não cabe numa consulta; aqui percorre
+    só quem tem comprovante, com os anexos e o roteiro já carregados.
+    """
+    from django.db.models import Exists, OuterRef
+    from .models import PrestacaoDocumentoAnexo as Anexo
+    from .services import divergencia_dos_comprovantes
+    comprovante = Anexo.objects.filter(servidor_prestacao=OuterRef('pk'), tipo=Anexo.TIPO_COMPROVANTE)
+    candidatos = PrestacaoServidor.objects.filter(finalizada=False, arquivada=False).filter(Exists(comprovante)).select_related('prestacao__oficio__roteiro', 'prestacao__roteiro_ajustado').prefetch_related('documentos_anexos')
+    return [ps.pk for ps in candidatos if divergencia_dos_comprovantes(ps) is not None]
 
 def servidores_removidos_da_equipe(prestacao):
     """Servidores que saíram da equipe do ofício mas cujos dados foram preservados (`DB-06`).
@@ -142,8 +188,10 @@ def listar_prestacoes(q: str | None=None, status: str | None=None, aba=None, via
 
 def contar_por_aba(q: str | None=None, status: str | None=None, viagem_de: str | None=None, viagem_ate: str | None=None) -> dict:
     """Total de servidores em cada aba, respeitando os filtros de busca ativos."""
+    from django.db.models import Count
     base = _base_servidores(q=q, status=status, viagem_de=viagem_de, viagem_ate=viagem_ate)
-    return {aba: base.filter(_q_da_aba(aba)).count() for aba in ORDEM_ABAS}
+    # m100: uma consulta só, com uma contagem condicional por aba.
+    return base.order_by().aggregate(**{aba: Count('pk', filter=_q_da_aba(aba), distinct=True) for aba in ORDEM_ABAS})
 LIMITE_OFICIOS_PREFILL = 200
 
 def oficios_para_prefill_de_motorista(oficio_atual):
