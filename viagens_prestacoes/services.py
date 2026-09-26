@@ -804,3 +804,77 @@ def nome_arquivo_prestacao_consolidado(servidor_prestacao) -> str:
         partes.append(data_evento)
     ext = "pdf"
     return f"{naming.nome_arquivo_ascii(' '.join(partes))}.{ext}"
+
+
+def dados_eprotocolo_prestacao(servidor_prestacao) -> dict:
+    """Os dados para protocolar a prestação de contas no eProtocolo, prontos para colar (m052).
+
+    No molde do painel do ofício (`viagens_oficios.services.dados_eprotocolo`) e do
+    Coffee Break: campos curtos com Copiar e o detalhamento numa caixa. Valores e
+    prazos são os mesmos que a Etapa 3 usa (diária liberada, soma dos comprovantes,
+    prazo com feriados de `prazos.prazo_para_prestar`).
+    """
+    from core.utils.masks import format_protocolo
+    from viagens_oficios.campos_modelo import valores_do_oficio
+
+    from .prazos import prazo_para_prestar
+
+    ps = servidor_prestacao
+    oficio = ps.prestacao.oficio
+    valores = valores_do_oficio(oficio)
+    servidor = ps.servidor
+    nome = servidor.nome
+    cpf = getattr(servidor, "cpf_formatado", "") or ""
+    numero = oficio.numero_formatado if oficio.numero else ""
+    protocolo = format_protocolo(oficio.protocolo) or ""
+    solicitacao = str(ps.numero_solicitacao or "").strip()
+
+    liberado = valor_diaria_liberado(ps)
+    comprovantes = [
+        a.valor
+        for a in ps.documentos_anexos.filter(tipo=PrestacaoDocumentoAnexo.TIPO_COMPROVANTE)
+        if a.valor is not None
+    ]
+    recebido = ps.diaria_valor_override
+    if recebido is None and comprovantes:
+        recebido = sum(comprovantes, Decimal("0"))
+    liberado_txt = format_currency_br(liberado) if liberado is not None else ""
+    recebido_txt = format_currency_br(recebido) if recebido is not None else ""
+
+    def data(valor):
+        return f"{valor:%d/%m/%Y}" if valor else ""
+
+    partes = [f"PRESTAÇÃO DE CONTAS DE DIÁRIAS - OFÍCIO Nº {numero}" if numero else "PRESTAÇÃO DE CONTAS DE DIÁRIAS"]
+    if solicitacao:
+        partes.append(f"SOLICITAÇÃO Nº {solicitacao}")
+    partes.append(f"SERVIDOR: {nome.upper()}")
+    if valores["destino"]:
+        partes.append(f"DESTINO: {valores['destino']}")
+    if valores["periodo"]:
+        partes.append(f"PERÍODO: {valores['periodo']}")
+    if recebido_txt or liberado_txt:
+        partes.append(f"VALOR: {recebido_txt or liberado_txt}")
+
+    def campo(rotulo, valor):
+        return {"rotulo": rotulo, "valor": valor, "copiar": valor}
+
+    return {
+        "campos": [
+            campo("Interessado", nome),
+            campo("CPF", cpf),
+            campo("Assunto", "Prestação de contas de diárias"),
+            campo("Protocolo do ofício", protocolo),
+            campo("Nº/Ano do ofício", numero),
+            campo("Nº da solicitação", solicitacao),
+            campo("Destino", valores["destino"]),
+            campo("Período da viagem", valores["periodo"]),
+            campo("Diária liberada", liberado_txt),
+            campo("Valor recebido", recebido_txt),
+            campo("Liberação das diárias", data(ps.data_liberacao_diarias)),
+            campo("Prazo limite de saque", data(ps.prazo_limite_saque)),
+            campo("Prestar contas até", data(prazo_para_prestar(ps.prazo_limite_saque))),
+        ],
+        "textos": [
+            {"id": "eprotocolo-prestacao-detalhamento", "rotulo": "Detalhamento", "texto": " - ".join(partes), "linhas": 3},
+        ],
+    }

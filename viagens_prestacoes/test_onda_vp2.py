@@ -142,3 +142,32 @@ class UltimoKmDaViaturaTests(PrestacaoFixturesMixin, TestCase):
         diario.viatura_modo = DiarioBordo.VIATURA_MODO_MANUAL
         diario.save()
         self.assertIsNone(ultimo_km_da_viatura(diario))
+
+
+class DadosEprotocoloDaPrestacaoTests(PrestacaoFixturesMixin, TestCase):
+    """m052: o painel "Dados para o eProtocolo" com Copiar na Etapa 3."""
+
+    def setUp(self):
+        super().setUp()
+        self.setUpPrestacaoFixtures()
+        from datetime import date
+
+        self.fixture = self.criar_prestacao(numero=501)
+        self.ps = self.fixture.prestacoes_servidor[0]
+        self.ps.numero_solicitacao = "7654321"
+        self.ps.prazo_limite_saque = date(2026, 9, 10)
+        self.ps.save()
+
+    def test_etapa_3_mostra_os_campos_com_copiar(self):
+        resposta = self.client.get(reverse("viagens_prestacoes:documentos_servidor", args=[self.ps.pk]))
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Dados para o eProtocolo")
+        self.assertContains(resposta, 'data-copiar="7654321"')
+        self.assertContains(resposta, "js/components/copiar.js")
+        campos = {c["rotulo"]: c["valor"] for c in resposta.context["eprotocolo"]["campos"]}
+        self.assertEqual(campos["Nº/Ano do ofício"], self.fixture.oficio.numero_formatado)
+        self.assertEqual(campos["Prazo limite de saque"], "10/09/2026")
+        self.assertTrue(campos["Prestar contas até"])
+        detalhamento = resposta.context["eprotocolo"]["textos"][0]["texto"]
+        self.assertIn("SOLICITAÇÃO Nº 7654321", detalhamento)
+        self.assertIn(self.ps.servidor.nome.upper(), detalhamento)

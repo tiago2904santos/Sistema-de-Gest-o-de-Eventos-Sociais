@@ -129,6 +129,15 @@
       </div>
       {% endif %}
 
+      {# m052: os dados para protocolar a prestação no eProtocolo, cada um com Copiar (a peça comum do ofício e do Coffee Break). #}
+      <details class="ofc-doc pc-docs__eprotocolo" id="eprotocolo">
+        <summary class="ofc-doc__cabeca">
+          <span class="ofc-doc__titulo">Dados para o eProtocolo</span>
+          <span class="ofc-doc__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+        </summary>
+        <div class="ofc-doc__corpo">{% include "components/v32/copiaveis.html" with campos=eprotocolo.campos textos=eprotocolo.textos %}</div>
+      </details>
+
       {# m093: envio ao financeiro, aprovação e devolução — por servidor. #}
       {% if ps.finalizada or ps.status == "enviada" or ps.status == "aprovada" %}
         <div class="pc-docs__envio" id="envio">
@@ -162,4 +171,4 @@
   </section>
 </div>
 {% endblock %}
-{% block pc_js %}{% include "components/v32/dialogo_baixar.html" %}{% endblock %}
+{% block pc_js %}{% include "components/v32/dialogo_baixar.html" %}<script src="{% estatico 'js/components/copiar.js' %}" defer></script>{% endblock %}

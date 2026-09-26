@@ -33,6 +33,7 @@ from .services import marcar_servidor_em_preenchimento
 from .services import marcar_servidores_pendentes
 from .services import pendencias_consolidado
 from .services import pendencias_para_finalizar
+from .services import dados_eprotocolo_prestacao
 from .prazos import selo_da_prestacao
 from .view_common import (
     _autosave_form_errors,
@@ -241,6 +242,8 @@ def documentos_servidor(request, ps_pk):
             "pendencias_finalizar": [] if ps.finalizada else pendencias_para_finalizar(ps),
             # m094: 3 dias úteis depois do fim do prazo de saque, contando feriados.
             "selo_prestacao": selo_da_prestacao(ps),
+            # m052: os campos para protocolar a prestação, cada um com Copiar.
+            "eprotocolo": dados_eprotocolo_prestacao(ps),
             "hoje_iso": timezone.localdate().isoformat(),
             "downloads": payload_downloads(ps)["itens"],
             # O modal "Baixar documentos" (o mesmo da lista), no botão de ação do cartão.
