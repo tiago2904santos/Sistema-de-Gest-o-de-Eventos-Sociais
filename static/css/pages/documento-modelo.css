@@ -1,0 +1,38 @@
+/* Textos dos documentos (m057): a lista dos tipos
+   (templates/pages/documentos/modelos.html) e o modelo de um tipo
+   (templates/documentos/editor/modelo.html), por cima do desenho do editor
+   completo (documento-completo.css). */
+
+/* A lista: um cartão por tipo de documento. */
+.mdl-grupo { margin: var(--s6) 0 var(--s3); font-size: 15px; color: var(--n-700); }
+.mdl-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--s4); margin-top: var(--s4); }
+.mdl-cartao .portal-card__descricao + .portal-card__descricao { margin-top: 4px; }
+.mdl-cartao .portal-card__acoes { padding-top: var(--s4); }
+
+/* O modelo. */
+.mdl-campo { min-width: 170px; }
+.mdl-foco { min-width: 0; gap: var(--s2); }
+.mdl-foco__texto { font-size: 12.5px; color: var(--n-500); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42ch; }
+.mdl-foco__texto b { color: var(--n-800); }
+.mdl-palco { flex-direction: column; align-items: center; gap: var(--s6); }
+.mdl-historico__texto { margin: 4px 0 0; font-size: 12.5px; color: var(--n-600); overflow-wrap: anywhere; }
+
+/* Os textos que não aparecem na folha deste exemplo. */
+.mdl-fora { width: min(23cm, 100%); box-sizing: border-box; padding: var(--s5); }
+.mdl-fora h2 { margin: 0 0 4px; font-size: 15px; }
+.mdl-fora__item { display: grid; gap: 4px; padding: var(--s3) 0; border-top: 1px solid var(--n-150); }
+.mdl-fora__rotulo { font-size: 12px; color: var(--n-500); }
+
+/* O trecho editável e as etiquetas dos campos (na folha, o mesmo desenho
+   vem de documentos/editor/modelo_folha.py). */
+.mdl .mod-bloco { display: block; padding: 6px 8px; border: 1px dashed var(--n-250); border-radius: 6px; background: var(--branco);
+  font: 14px/1.5 Georgia, "Times New Roman", serif; cursor: text; }
+.mdl .mod-bloco:hover { border-color: #2563eb; }
+.mdl .mod-bloco:focus { outline: 2px solid #2563eb; outline-offset: 1px; }
+.mdl .mod-bloco[data-mod-alterado] { border-left: 3px solid #d97706; }
+.mod-chip { display: inline-block; padding: 0 .35em; margin: 0 .08em; border: 1px solid #c7d2fe; border-radius: 4px;
+  background: #e0e7ff; color: #1e3a8a; font-size: .92em; line-height: 1.25; white-space: nowrap; cursor: default; user-select: all; }
+.mod-chip--negrito { font-weight: 700; }
+
+/* O aviso de erro só aparece quando há erro (o display da classe venceria o [hidden]). */
+[data-mdl-erro][hidden]{display:none}

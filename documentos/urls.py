@@ -26,6 +26,11 @@ urlpatterns = [
     path("editor/<str:tipo>/<int:pk>/completo/modelo/", editor_completo.voltar_ao_modelo, name="editor_completo_modelo"),
     path("editor/<str:tipo>/<int:pk>/completo/restaurar/<int:versao>/", editor_completo.restaurar, name="editor_completo_restaurar"),
     # Textos-base dos modelos de cada tipo de documento (m057).
+    # A lista dos tipos e, de cada um, o documento montado com os blocos do
+    # modelo editáveis no lugar.
     path("modelos/", editor_modelos.indice, name="modelos"),
+    path("modelos/de/<str:modulo>/", editor_modelos.indice, name="modelos_modulo"),
     path("modelos/<str:tipo>/", editor_modelos.tipo, name="modelos_tipo"),
+    path("modelos/<str:tipo>/folha/", editor_modelos.folha, name="modelos_folha"),
+    path("modelos/<str:tipo>/salvar/", editor_modelos.salvar, name="modelos_salvar"),
 ]

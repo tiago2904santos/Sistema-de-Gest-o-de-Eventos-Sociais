@@ -25,6 +25,10 @@ class BlocoDocumental:
     # Marcadores que o texto aceita (`{periodo}`...), preenchidos com os dados
     # do documento; a tela de modelos os lista (m057).
     campos: tuple[str, ...] = ()
+    # Campos que o documento põe em negrito (o termo: {periodo} e {destino});
+    # a tela de modelos os mostra assim. Quem decide o negrito no documento
+    # é o template (`{% texto_modelo destaque=... %}`).
+    destaque: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -84,6 +88,7 @@ BLOCOS_TERMO = _blocos(
         ajuda="O parágrafo principal do termo, depois da identificação do servidor. {periodo} e {destino} saem em "
               "negrito, com os dados do termo.",
         campos=("periodo", "destino", "servidor", "unidade"),
+        destaque=("periodo", "destino"),
     ),
 ) + _blocos(
     ("declaracao", "Declaração do cartão corporativo",

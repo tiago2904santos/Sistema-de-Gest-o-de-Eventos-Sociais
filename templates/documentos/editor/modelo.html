@@ -1,0 +1,132 @@
+{% extends "layouts/base.html" %}
+{% load estaticos %}
+{% comment %}
+  Modelo de um tipo de documento (m057): o documento montado como sai de
+  verdade, com cada texto do modelo (título, cabeçalho, parágrafos fixos,
+  rótulos) editável no lugar e os campos automáticos como etiquetas. No
+  desenho do editor completo (completo.html): barra de título, barra de
+  ferramentas, a folha num iframe e, ao lado, o histórico do modelo.
+  `documento-modelo.js` liga a barra à folha e grava.
+
+  O que é do tipo vem em `doc`, de documentos/editor/modelos.py.
+{% endcomment %}
+{% block title %}Modelo — {{ doc.rotulo }}{% endblock %}
+{% block body_class %}de-pagina{% endblock %}
+{% block css_principal %}
+  {# Os tokens e componentes V3.2 (como no app_shell_v32): sem eles o topo fica transparente. #}
+  <link rel="stylesheet" href="{% estatico 'css/ds-v32.css' %}">
+  <link rel="stylesheet" href="{% estatico 'css/ds-v32-bridge.css' %}">
+{% endblock %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{% estatico 'css/pages/viagens-documento.css' %}">
+  <link rel="stylesheet" href="{% estatico 'css/pages/documento-completo.css' %}">
+  <link rel="stylesheet" href="{% estatico 'css/pages/documento-modelo.css' %}">
+{% endblock %}
+
+{% block body %}
+{% csrf_token %}
+<div class="de-app dcp mdl" data-mdl data-mdl-salvar="{{ doc.url_salvar }}" data-mdl-estado="{{ doc.estado }}">
+  <header class="de-topo">
+    <div class="de-topo__ident">
+      <div class="de-topo__linha">
+        <h1 class="de-topo__titulo">Modelo: {{ doc.rotulo }}</h1>
+        {% if doc.personalizados %}<span class="de-topo__selo">{{ doc.personalizados }} texto{{ doc.personalizados|pluralize }} personalizado{{ doc.personalizados|pluralize }}</span>{% else %}<span class="de-topo__selo">Padrão do sistema</span>{% endif %}
+      </div>
+      <p class="de-topo__sub">
+        <a href="{{ doc.url_voltar }}">{% include "components/icon.html" with nome="chevron-left" %}Textos dos documentos</a>
+        <span data-mdl-origem>· Montado {% if doc.sintetico %}com <b>{{ doc.origem|lower }}</b>{% else %}a partir de <b>{{ doc.origem }}</b> (o mais recente deste tipo){% endif %}</span>
+      </p>
+    </div>
+    <div class="de-topo__acoes">
+      <span class="de-salvo" data-mdl-salvo aria-live="polite">{% include "components/icon.html" with nome="cloud-check" %}<span data-mdl-salvo-texto>Sem alterações</span></span>
+      <button type="button" class="btn-primaria" data-mdl-gravar title="Salvar modelo (Ctrl+S)">Salvar modelo</button>
+    </div>
+  </header>
+
+  <div class="de-barra" role="toolbar" aria-label="Ferramentas do modelo">
+    <div class="de-barra__grupo">
+      <button type="button" class="de-icone" data-mdl-cmd="undo" title="Desfazer (Ctrl+Z)" aria-label="Desfazer">{% include "components/icon.html" with nome="undo" %}</button>
+      <button type="button" class="de-icone" data-mdl-cmd="redo" title="Refazer (Ctrl+Y)" aria-label="Refazer">{% include "components/icon.html" with nome="redo" %}</button>
+    </div>
+    <span class="de-barra__sep" aria-hidden="true"></span>
+    <div class="de-barra__grupo">
+      <select class="de-zoom mdl-campo" data-mdl-inserir aria-label="Inserir campo" disabled>
+        <option value="">Inserir campo</option>
+      </select>
+    </div>
+    <span class="de-barra__sep" aria-hidden="true"></span>
+    <div class="de-barra__grupo mdl-foco" data-mdl-foco>
+      <span class="mdl-foco__texto" data-mdl-foco-texto>Clique num texto do modelo (contorno azul) para editar.</span>
+      <button type="button" class="de-texto-botao" data-mdl-padrao hidden>{% include "components/icon.html" with nome="undo" %}Voltar ao padrão do sistema</button>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for m in messages %}<div class="dc-aviso{% if m.level_tag != 'error' %} dcp-aviso--ok{% endif %}" role="status">{% if m.level_tag == 'error' %}{% include "components/icon.html" with nome="alert" %}{% else %}{% include "components/icon.html" with nome="check-circle" %}{% endif %}<div>{{ m }}</div></div>{% endfor %}
+  {% endif %}
+  <div class="dc-aviso dcp-aviso--info" role="note">
+    {% include "components/icon.html" with nome="info" %}
+    <div>
+      <strong>Vale para os próximos documentos.</strong> {{ doc.aviso }}
+      Os campos automáticos (em azul, como <span class="mod-chip">Destino</span>) são trocados pelos dados de cada documento.
+      {% if doc.sintetico %}Os dados desta folha são fictícios: ainda não há documento deste tipo para mostrar.{% endif %}
+    </div>
+  </div>
+  <div class="dc-aviso" role="alert" data-mdl-erro hidden>{% include "components/icon.html" with nome="alert" %}<div data-mdl-erro-texto></div></div>
+
+  <div class="de-area">
+    <div class="de-palco dcp-palco mdl-palco">
+      <iframe class="dcp-folha" src="{{ doc.url_folha }}" title="Modelo: {{ doc.rotulo }}" data-mdl-folha></iframe>
+      {% if doc.fora %}
+        <section class="pa-card mdl-fora" aria-labelledby="mdl-fora-titulo">
+          <h2 id="mdl-fora-titulo">Textos do modelo que não aparecem nesta folha</h2>
+          <p class="dcp-ajuda">Saem em outras situações do documento (outra variante, outro tipo de pedido, várias notas...).</p>
+          {% for item in doc.fora %}
+            <div class="mdl-fora__item">
+              <span class="mdl-fora__rotulo">{{ item.bloco.rotulo }}</span>
+              {{ item.html }}
+            </div>
+          {% endfor %}
+        </section>
+      {% endif %}
+    </div>
+
+    <aside class="de-historico dcp-historico" aria-label="Histórico do modelo">
+      <div class="de-historico__cabeca"><h2>Histórico<em>{{ doc.historico|length }}</em></h2></div>
+      <p class="dcp-ajuda">Cada gravação fica aqui, com quem e quando. Um texto antigo pode voltar a valer.</p>
+      <div class="de-historico__lista">
+        {% for h in doc.historico %}{% with linha=h.linha %}
+          <div class="de-historico__item{% if forloop.first %} de-historico__item--atual{% endif %}" data-mdl-historico="{{ linha.chave }}">
+            <span class="de-historico__quando">{{ linha.criado_em|date:"d/m/Y · H\hi" }}</span>
+            <strong>{{ h.rotulo }}</strong>
+            <span class="de-historico__quem">{{ linha.criado_por|default:"Sistema" }}</span>
+            {% if linha.padrao_sistema %}
+              <p class="mdl-historico__texto"><i>Voltou ao texto padrão do sistema.</i></p>
+            {% else %}
+              <p class="mdl-historico__texto">{{ linha.texto|truncatechars:160 }}</p>
+              {% if h.reusar %}
+                <form method="post" action="" class="dcp-form-linha" data-mdl-form>
+                  {% csrf_token %}
+                  <input type="hidden" name="estado" value="{{ doc.estado }}">
+                  <button type="submit" name="usar" value="{{ linha.pk }}" class="de-texto-botao">{% include "components/icon.html" with nome="undo" %}Usar este texto de novo</button>
+                </form>
+              {% endif %}
+            {% endif %}
+          </div>
+        {% endwith %}{% empty %}
+          <p class="texto-vazio">O modelo nunca foi alterado: vale o texto padrão do sistema.</p>
+        {% endfor %}
+      </div>
+    </aside>
+  </div>
+
+  <form method="post" action="" hidden data-mdl-form-padrao>
+    {% csrf_token %}
+    <input type="hidden" name="estado" value="{{ doc.estado }}">
+    <input type="hidden" name="padrao" value="">
+  </form>
+  {{ doc.blocos|json_script:"mdl-blocos" }}
+</div>
+{% endblock %}
+
+{% block extra_js %}<script src="{% estatico 'js/documento-modelo.js' %}" defer></script>{% endblock %}
