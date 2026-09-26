@@ -321,12 +321,18 @@ def servidores_para_termo_cadastro(termo: TermoAutorizacao) -> list[Servidor | N
 
 
 
-def _conteudo_documental(dono):
+def _conteudo_documental(dono, variante=None):
     """Os textos do modelo reescritos no editor (o termo do cadastro, ou o
-    ofício, para o termo tirado dele): entram no PDF e na chave do cache."""
+    ofício, para o termo tirado dele) e a versão editada do termo de um
+    servidor (`variante`, a mesma do editor): entram no PDF e na chave do cache."""
     from documentos.services.document_blocks import conteudo_documental
 
-    return conteudo_documental(DocumentoTipo.TERMO_AUTORIZACAO, dono)
+    return conteudo_documental(DocumentoTipo.TERMO_AUTORIZACAO, dono, variante)
+
+
+def variante_do_termo_cadastro(servidor=None, *, forcar_viatura=False) -> str:
+    """A variante do termo do cadastro no editor: o servidor, o da viatura ou o em branco."""
+    return str(servidor.pk) if servidor else ("viatura" if forcar_viatura else "0")
 
 
 def _gerar(payload, formato, ref, *, oficio_id=None, termo_id=None, servidor_id=None, roteiro_id=None, usar_assinado=True):
@@ -354,7 +360,10 @@ def gerar_termo_um(oficio, servidor, formato, *, modo_semipreenchido=False, vari
     if not listar_servidores_com_termo(oficio).filter(pk=servidor.pk).exists():
         raise ValueError("Servidor não selecionado para termo neste ofício.")
     payload = build_termo_payload(oficio, servidor, modo_semipreenchido=modo_semipreenchido, variante=variante)
-    payload["documento"] = _conteudo_documental(oficio)
+    # A versão editada é a do termo que o editor abre (o do servidor, na
+    # variante padrão); o semipreenchido sai sempre do modelo.
+    editavel = not modo_semipreenchido and variante is None
+    payload["documento"] = _conteudo_documental(oficio, str(servidor.pk) if editavel else None)
     return _gerar(payload, formato, referencia_termo_do_oficio(oficio, servidor),
         oficio_id=oficio.pk, servidor_id=servidor.pk, roteiro_id=oficio.roteiro_id, usar_assinado=usar_assinado)
 
@@ -368,7 +377,7 @@ def gerar_termo_cadastro_um(termo, servidor, formato, *, forcar_viatura=False, u
     if servidor is not None and not termo.servidores_efetivos().filter(pk=servidor.pk).exists():
         raise ValueError("Servidor não pertence a este termo.")
     payload = build_termo_cadastro_payload(termo, servidor, forcar_viatura=forcar_viatura)
-    payload["documento"] = _conteudo_documental(termo)
+    payload["documento"] = _conteudo_documental(termo, variante_do_termo_cadastro(servidor, forcar_viatura=forcar_viatura))
     return _gerar(payload, formato, referencia_termo_do_cadastro(termo, servidor, forcar_viatura=forcar_viatura),
         oficio_id=termo.oficio_id, termo_id=termo.pk, servidor_id=servidor.pk if servidor else None,
         roteiro_id=termo.oficio.roteiro_id if termo.oficio_id else None, usar_assinado=usar_assinado)

@@ -1,0 +1,151 @@
+{% extends "layouts/base.html" %}
+{% load estaticos %}
+{% comment %}
+  Editor completo do documento (m057): a folha inteira — cabeçalho, corpo com
+  os textos fixos e as tabelas, rodapé — editável como num editor de texto.
+  Tela própria, no desenho do editor de documento (viagens-documento.css):
+  barra de título, barra de formatação, a folha num iframe e o histórico de
+  versões ao lado. `documento-completo.js` liga a barra à folha e grava.
+
+  O que é de cada documento vem em `doc`, de documentos/editor/completo.py.
+{% endcomment %}
+{% block title %}Editar documento completo — {{ doc.rotulo }}{% endblock %}
+{% block body_class %}de-pagina{% endblock %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{% estatico 'css/pages/viagens-documento.css' %}">
+  <link rel="stylesheet" href="{% estatico 'css/pages/documento-completo.css' %}">
+{% endblock %}
+
+{% block body %}
+{% csrf_token %}
+<div class="de-app dcp" data-dcp{% if not doc.bloqueio and not doc.erro %} data-dcp-editavel{% endif %} data-dcp-salvar="{{ doc.url_salvar }}" data-dcp-estado="{{ doc.estado }}">
+  <header class="de-topo">
+    <div class="de-topo__ident">
+      <div class="de-topo__linha">
+        <h1 class="de-topo__titulo">{{ doc.rotulo }}</h1>
+        {% if doc.vigente %}<span class="de-topo__selo">Versão editada</span>{% else %}<span class="de-topo__selo">Do modelo</span>{% endif %}
+      </div>
+      <p class="de-topo__sub">
+        {% if doc.url_voltar %}<a href="{{ doc.url_voltar }}">{% include "components/icon.html" with nome="chevron-left" %}{{ doc.rotulo_voltar }}</a>{% endif %}
+        {% if doc.subtitulo %}<span>· {{ doc.subtitulo }}</span>{% endif %}
+      </p>
+    </div>
+    <div class="de-topo__acoes">
+      {% if not doc.bloqueio and not doc.erro %}
+        <span class="de-salvo" data-dcp-salvo aria-live="polite">{% include "components/icon.html" with nome="cloud-check" %}<span data-dcp-salvo-texto>{% if doc.vigente %}Versão editada em vigor{% else %}Sem alterações{% endif %}</span></span>
+        <button type="button" class="btn-primaria" data-dcp-gravar>Salvar versão</button>
+      {% endif %}
+      {% if doc.url_pdf %}<a class="btn--secundaria" href="{{ doc.url_pdf }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="printer" %}PDF</a>{% endif %}
+    </div>
+  </header>
+
+  {% if not doc.bloqueio and not doc.erro %}
+  <div class="de-barra" role="toolbar" aria-label="Formatação do documento">
+    <div class="de-barra__grupo">
+      <button type="button" class="de-icone" data-dcp-cmd="undo" title="Desfazer (Ctrl+Z)" aria-label="Desfazer">{% include "components/icon.html" with nome="undo" %}</button>
+      <button type="button" class="de-icone" data-dcp-cmd="redo" title="Refazer (Ctrl+Y)" aria-label="Refazer">{% include "components/icon.html" with nome="redo" %}</button>
+    </div>
+    <span class="de-barra__sep" aria-hidden="true"></span>
+    <div class="de-barra__grupo">
+      <select class="de-zoom dcp-estilo" data-dcp-bloco aria-label="Estilo do parágrafo">
+        <option value="">Estilo</option>
+        <option value="p">Texto normal</option>
+        <option value="h1">Título</option>
+        <option value="h2">Subtítulo</option>
+        <option value="h3">Título de seção</option>
+      </select>
+    </div>
+    <span class="de-barra__sep" aria-hidden="true"></span>
+    <div class="de-barra__grupo">
+      <button type="button" class="de-icone dcp-letra" data-dcp-cmd="bold" title="Negrito (Ctrl+B)" aria-label="Negrito"><b>N</b></button>
+      <button type="button" class="de-icone dcp-letra" data-dcp-cmd="italic" title="Itálico (Ctrl+I)" aria-label="Itálico"><i>I</i></button>
+      <button type="button" class="de-icone dcp-letra" data-dcp-cmd="underline" title="Sublinhado (Ctrl+U)" aria-label="Sublinhado"><u>S</u></button>
+      <button type="button" class="de-icone dcp-letra" data-dcp-cmd="strikeThrough" title="Tachado" aria-label="Tachado"><s>T</s></button>
+      <button type="button" class="de-icone dcp-letra" data-dcp-cmd="removeFormat" title="Limpar formatação" aria-label="Limpar formatação">{% include "components/icon.html" with nome="x" %}</button>
+    </div>
+    <span class="de-barra__sep" aria-hidden="true"></span>
+    <div class="de-barra__grupo">
+      <button type="button" class="de-icone dcp-alinha dcp-alinha--esq" data-dcp-cmd="justifyLeft" title="Alinhar à esquerda" aria-label="Alinhar à esquerda"><span></span></button>
+      <button type="button" class="de-icone dcp-alinha dcp-alinha--centro" data-dcp-cmd="justifyCenter" title="Centralizar" aria-label="Centralizar"><span></span></button>
+      <button type="button" class="de-icone dcp-alinha dcp-alinha--dir" data-dcp-cmd="justifyRight" title="Alinhar à direita" aria-label="Alinhar à direita"><span></span></button>
+      <button type="button" class="de-icone dcp-alinha dcp-alinha--just" data-dcp-cmd="justifyFull" title="Justificar" aria-label="Justificar"><span></span></button>
+    </div>
+    <span class="de-barra__sep" aria-hidden="true"></span>
+    <div class="de-barra__grupo">
+      <button type="button" class="de-texto-botao" data-dcp-cmd="insertUnorderedList" title="Lista com marcadores">• Lista</button>
+      <button type="button" class="de-texto-botao" data-dcp-cmd="insertOrderedList" title="Lista numerada">1. Lista</button>
+      <button type="button" class="de-icone" data-dcp-cmd="outdent" title="Diminuir recuo" aria-label="Diminuir recuo">{% include "components/icon.html" with nome="chevron-left" %}</button>
+      <button type="button" class="de-icone" data-dcp-cmd="indent" title="Aumentar recuo" aria-label="Aumentar recuo">{% include "components/icon.html" with nome="chevron-right" %}</button>
+    </div>
+    <span class="de-barra__sep" aria-hidden="true"></span>
+    <div class="de-barra__grupo">
+      <button type="button" class="de-texto-botao" data-dcp-tabela="inserir" title="Inserir tabela">{% include "components/icon.html" with nome="columns" %}Tabela</button>
+      <button type="button" class="de-texto-botao" data-dcp-tabela="linha" title="Inserir linha abaixo">+ Linha</button>
+      <button type="button" class="de-texto-botao" data-dcp-tabela="coluna" title="Inserir coluna à direita">+ Coluna</button>
+      <button type="button" class="de-texto-botao" data-dcp-tabela="sem-linha" title="Excluir a linha">− Linha</button>
+      <button type="button" class="de-texto-botao" data-dcp-tabela="sem-coluna" title="Excluir a coluna">− Coluna</button>
+      <button type="button" class="de-texto-botao" data-dcp-cmd="insertHorizontalRule" title="Linha horizontal">―</button>
+      <button type="button" class="de-texto-botao" data-dcp-quebra title="Quebra de página antes do parágrafo">{% include "components/icon.html" with nome="page-break" %}Quebra</button>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if messages %}
+    {% for m in messages %}<div class="dc-aviso dcp-aviso--ok" role="status">{% include "components/icon.html" with nome="check-circle" %}<div>{{ m }}</div></div>{% endfor %}
+  {% endif %}
+  {% if doc.erro %}
+    <div class="dc-aviso" role="alert">{% include "components/icon.html" with nome="alert" %}<div><strong>O documento ainda não pode ser montado.</strong>{{ doc.erro }}</div></div>
+  {% elif doc.bloqueio %}
+    <div class="dc-aviso" role="status">{% include "components/icon.html" with nome="lock" %}<div><strong>Só leitura.</strong>{{ doc.bloqueio }}</div></div>
+  {% endif %}
+  {% if doc.vigente %}
+    <div class="dc-aviso{% if not doc.desatualizada %} dcp-aviso--info{% endif %}" role="status">
+      {% include "components/icon.html" with nome=doc.desatualizada|yesno:"alert,info" %}
+      <div>
+        {% if doc.desatualizada %}
+          <strong>Os dados mudaram depois desta edição.</strong>
+          A versão editada (de {{ doc.vigente.criado_em|date:"d/m/Y H:i" }}{% if doc.vigente.criado_por %}, por {{ doc.vigente.criado_por }}{% endif %}) pode estar desatualizada. Revise o texto, ou volte ao modelo para regenerar o documento a partir dos dados de hoje.
+        {% else %}
+          <strong>Este documento sai da versão editada</strong> (de {{ doc.vigente.criado_em|date:"d/m/Y H:i" }}{% if doc.vigente.criado_por %}, por {{ doc.vigente.criado_por }}{% endif %}): é ela que vai no PDF, no DOCX, no pacote e nos envios. Mudanças nos dados só entram voltando ao modelo.
+        {% endif %}
+        {% if not doc.bloqueio %}
+          <form method="post" action="{{ doc.url_modelo }}" class="dcp-form-linha" data-dcp-voltar-modelo>
+            {% csrf_token %}
+            <button type="submit" class="btn--secundaria">Voltar ao modelo (regenerar dos dados)</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="de-area">
+    <div class="de-palco dcp-palco">
+      {% if not doc.erro %}<iframe class="dcp-folha" src="{{ doc.url_folha }}" title="{{ doc.rotulo }}" data-dcp-folha></iframe>{% endif %}
+    </div>
+
+    <aside class="de-historico dcp-historico" aria-label="Versões do documento">
+      <div class="de-historico__cabeca"><h2>Versões<em>{{ doc.versoes|length }}</em></h2></div>
+      <p class="dcp-ajuda">Cada gravação vira uma versão. Voltar ao modelo não apaga nada: qualquer versão pode ser restaurada.</p>
+      <div class="de-historico__lista">
+        {% for v in doc.versoes %}
+          <div class="de-historico__item{% if forloop.first %} de-historico__item--atual{% endif %}">
+            <span class="de-historico__quando">{{ v.linha.criado_em|date:"d/m/Y · H\hi" }}</span>
+            <strong>{{ v.linha.get_acao_display }}{% if forloop.first %} · em vigor{% endif %}</strong>
+            <span class="de-historico__quem">{{ v.linha.criado_por|default:"Sistema" }}</span>
+            {% if not doc.bloqueio and v.linha.vigora and not forloop.first %}
+              <form method="post" action="{{ v.url_restaurar }}" class="dcp-form-linha">
+                {% csrf_token %}
+                <button type="submit" class="de-texto-botao">{% include "components/icon.html" with nome="undo" %}Restaurar esta versão</button>
+              </form>
+            {% endif %}
+          </div>
+        {% empty %}
+          <p class="texto-vazio">O documento nunca foi editado por inteiro: sai do modelo e dos dados.</p>
+        {% endfor %}
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}<script src="{% estatico 'js/documento-completo.js' %}" defer></script>{% endblock %}

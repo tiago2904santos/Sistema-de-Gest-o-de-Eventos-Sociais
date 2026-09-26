@@ -26,6 +26,8 @@ from .vinculos import vinculo_do_tipo
 
 
 def contexto_da_pagina(request, vinculo, objeto) -> dict:
+    from .completo import situacao_da_edicao, url_do_editor_completo
+
     tipo = vinculo.tipo.value
     pode_editar = vinculo.pode_editar(request.user, objeto)
     origens = vinculo.origens_editaveis(request.user) if pode_editar else set()
@@ -54,6 +56,9 @@ def contexto_da_pagina(request, vinculo, objeto) -> dict:
             "pode_editar": pode_editar,
             "campos_menu": menu,
             "tem_quebras": bool(quebras_do_tipo(vinculo.tipo)),
+            # Editor completo (m057): o documento inteiro, editado à mão.
+            "url_completo": url_do_editor_completo(vinculo, objeto),
+            "edicao_completa": situacao_da_edicao(vinculo, objeto),
         },
     }
 

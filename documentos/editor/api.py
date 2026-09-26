@@ -205,11 +205,14 @@ def campo(request, tipo, pk, chave):
 def _fragmento_bloco(request, vinculo, objeto, definicao):
     from documentos.services.document_blocks import bloco_gravado
 
+    from documentos.services.modelos_texto import texto_vigente
+
     gravado = bloco_gravado(vinculo.tipo, vinculo.dono_dos_blocos(objeto), definicao.chave)
     editado = bool(gravado and gravado.editado_manualmente)
+    modelo = texto_vigente(vinculo.tipo, definicao.chave)
     return render_to_string("documentos/editor/bloco.html", {
         "bloco": definicao,
-        "conteudo": gravado.conteudo_atual if editado else definicao.padrao,
+        "conteudo": gravado.conteudo_atual if editado else (definicao.padrao if modelo is None else modelo),
         "editado": editado,
         "editado_por": str(gravado.editado_por) if editado and gravado.editado_por_id else "",
         "editado_em": gravado.editado_em if editado else None,
@@ -250,7 +253,11 @@ def bloco(request, tipo, pk, chave):
     conteudo = str(valores["conteudo"] or "").replace("\r\n", "\n").strip()[:TAMANHO_MAXIMO_TEXTO]
     # O texto do modelo com o marcador já preenchido (como a folha o mostra e
     # quem digita nela o devolve) também é o modelo: restaura, não grava.
-    iguais_ao_modelo = {definicao.padrao} | {definicao.padrao.replace("{assunto}", termo) for termo in ("autorização", "convalidação")}
+    from documentos.services.modelos_texto import texto_vigente
+
+    modelo = texto_vigente(vinculo.tipo, chave)
+    padrao = definicao.padrao if modelo is None else modelo
+    iguais_ao_modelo = {padrao} | {padrao.replace("{assunto}", termo) for termo in ("autorização", "convalidação")}
     if not conteudo or conteudo in iguais_ao_modelo:
         restaurar(vinculo.tipo, dono, chave)
         editado = False

@@ -42,6 +42,10 @@
   .timbre-marca { position: fixed; left: 50%; width: 56pt; margin-left: -28pt; display: block; }
   /* Endereço: Arial 10, bases a 814,3 e 825,8 pt (entrelinha 11,5 pt). */
   .timbre-rodape { position: fixed; left: 0; right: 0; text-align: center; color: #595959; font-size: 10pt; line-height: 11.5pt; }
+  /* Tabela e quebra de página inseridas no editor completo (m057). */
+  .doc-tabela-livre { width: 100%; border-collapse: collapse; margin: 4pt 0; }
+  .doc-tabela-livre td, .doc-tabela-livre th { border: 0.5pt solid #000; padding: 2pt 4pt; vertical-align: top; }
+  .doc-quebra { page-break-after: always; break-after: page; height: 0; }
   {% block geometria %}{% endblock %}
   {% block estilo %}{% endblock %}
   {% if previa %}
@@ -60,21 +64,22 @@
 <body>
   {% if previa %}<div class="folha"><div class="folha__area">{% endif %}
   <img class="timbre-brasao" src="{{ imagens.brasao }}" alt="">
-  <div class="timbre-cabecalho">
+  <div class="timbre-cabecalho"><!--ed:cabecalho-->
     {% block cabecalho_linhas %}
     <p>SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA</p>
     <p><b>POLÍCIA CIVIL DO PARANÁ</b></p>
     <p>ASSESSORIA DE COMUNICAÇÃO SOCIAL</p>
     {% endblock %}
-  </div>
+  <!--/ed:cabecalho--></div>
   <img class="timbre-marca" src="{{ imagens.marca }}" alt="">
-  <div class="timbre-rodape">
+  <div class="timbre-rodape"><!--ed:rodape-->
     {% block rodape_linhas %}
     <p>Avenida Iguaçu, 470 – Rebouças – Curitiba/PR—CEP: 80.230-020</p>
     <p>Fone: (41) 3235-6477 – e-mail:&nbsp; comunicacao@pc.pr.gov.br</p>
     {% endblock %}
-  </div>
-  {% block corpo %}{% endblock %}
+  <!--/ed:rodape--></div>
+  {# O corpo numa caixa própria: é a região que o editor completo edita (m057). #}
+  <div class="corpo-documento"><!--ed:corpo-->{% block corpo %}{% endblock %}<!--/ed:corpo--></div>
   {% if previa %}</div><div class="folha__pagina">1</div></div>
   <script>
     /* Em quadro estreito a folha diminui inteira para caber na largura, sem rolar para o lado. */

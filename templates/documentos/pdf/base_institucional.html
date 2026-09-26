@@ -15,6 +15,11 @@
   endereço embaixo. Documento com rodapé próprio troca o bloco `rodape`; a
   geometria e a tipografia dele vêm do `<tipo>.css`, marcado pela classe que
   o documento põe no bloco `classe`.
+
+  As marcas `<!--ed:cabecalho-->`, `<!--ed:corpo-->` e `<!--ed:rodape-->`
+  delimitam o que o editor completo (m057) edita e o que a versão editada de
+  um documento substitui (documentos/services/edicao_completa.py). Cada região
+  é o conteúdo inteiro do seu elemento.
 {% endcomment %}<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -25,16 +30,16 @@
 </head>
 <body class="documento documento--{{ modo|default:'pdf' }}{% block classe %}{% endblock %}">
 <div class="folha">
-  <header class="doc-cabecalho" id="doc-cabecalho">
+  <header class="doc-cabecalho" id="doc-cabecalho"><!--ed:cabecalho-->
     <img class="doc-cabecalho__brasao" src="{{ imagens.brasao }}" alt="Brasão da Polícia Civil do Paraná">
     {# No editor, cada linha leva a sua origem: o texto do modelo (bloco), o órgão e a unidade da configuração. #}
     {% bloco "secretaria" classe="doc-cabecalho__secretaria" padrao="SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA" %}
     <p class="doc-cabecalho__orgao"><span {% editavel "config_orgao" %}>{{ institucional.nome_orgao|default:"POLÍCIA CIVIL DO PARANÁ" }}</span></p>
     {% if institucional.divisao_cabecalho %}<p class="doc-cabecalho__unidade">{{ institucional.divisao_cabecalho }}</p>{% endif %}
     {% if institucional.unidade_cabecalho or campos_editaveis.config_unidade %}<p class="doc-cabecalho__unidade"><span {% editavel "config_unidade" %}>{{ institucional.unidade_cabecalho }}{% if not institucional.unidade_cabecalho %}{% vazio "Unidade emissora" %}{% endif %}</span></p>{% endif %}
-  </header>
+  <!--/ed:cabecalho--></header>
 
-  <footer class="doc-rodape" id="doc-rodape">
+  <footer class="doc-rodape" id="doc-rodape"><!--ed:rodape-->
     {% block rodape_topo %}{% endblock %}
     <img class="doc-rodape__marca" src="{{ imagens.marca }}" alt="">
     {% block rodape %}
@@ -46,11 +51,11 @@
     {% endblock %}
     <p class="doc-rodape__endereco">{{ institucional.unidade_rodape }}{% if institucional.endereco %} - {{ institucional.endereco }}{% endif %}{% if institucional.telefone %} {{ institucional.telefone }}{% endif %}{% if institucional.email %} – {{ institucional.email }}{% endif %}</p>
     {% endblock %}
-  </footer>
+  <!--/ed:rodape--></footer>
 
-  <main class="doc-corpo">
+  <main class="doc-corpo"><!--ed:corpo-->
     {% block corpo %}{% endblock %}
-  </main>
+  <!--/ed:corpo--></main>
 </div>
 </body>
 </html>

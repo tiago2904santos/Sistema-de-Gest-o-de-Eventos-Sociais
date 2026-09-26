@@ -1,0 +1,113 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
+{% comment %}
+  Textos-base dos modelos de documento (m057): os blocos do modelo de um tipo
+  (título, cabeçalho, parágrafos fixos) com o texto em vigor, o padrão do
+  sistema e os campos automáticos que cada um aceita. Na anatomia da tela de
+  configurações: seções numeradas, rótulo à esquerda e campo à direita.
+  Contexto em documentos/editor/modelos.py.
+{% endcomment %}
+
+{% block title %}{{ titulo }} — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% estatico 'css/pages/viagens-configuracoes.css' %}">{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+
+  <form method="post" action="" id="form-modelos" class="of-form cfg-form" novalidate>
+    {% csrf_token %}
+    <div class="solicitacao-intro d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="document" %}</span>
+          <div>
+            <div class="frm-titulo"><h1 class="page-header__titulo d-titulo-v32">{{ rotulo }}</h1></div>
+            <p class="page-header__subtitulo d-cabeca__sub frm-meta">
+              <span>{% include "components/icon.html" with nome="settings" %}{{ titulo }}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="frm-topo__acoes">
+        <button type="submit" class="btn-primaria" form="form-modelos">Salvar modelo</button>
+      </div>
+    </div>
+
+    <div class="of-form__principal">
+      {% if tipos|length > 1 %}
+        <nav class="modelos-tipos" aria-label="Tipos de documento">
+          {% for t in tipos %}<a href="{{ t.url }}" class="btn--secundaria btn--compacto"{% if t.valor == tipo %} aria-current="page"{% endif %}>{{ t.rotulo }}</a>{% endfor %}
+        </nav>
+      {% endif %}
+
+      <div class="aviso aviso--info" role="note">
+        {% include "components/icon.html" with nome="info" %}
+        <div>
+          O texto daqui vale para os <b>próximos documentos</b> deste tipo. Documento já emitido fica no arquivo guardado,
+          e a versão assinada nunca muda. Documento com o parágrafo reescrito ou editado por inteiro (“Editar documento
+          completo”) continua com o seu texto. Os campos automáticos, como <code>{periodo}</code>, são trocados pelos dados
+          de cada documento.
+        </div>
+      </div>
+
+      <section class="section-card reg">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+          <h2 class="section-card__titulo">Textos do modelo</h2>
+        </header>
+        <div class="section-card__corpo">
+          {% for item in itens %}
+            <div class="bloco-split">
+              <div class="bloco-split__rotulo">
+                <strong>{{ item.bloco.rotulo }}</strong>
+                {% if item.alterado %}<span class="chip">Alterado</span>{% endif %}
+                {% if item.ultima %}<p class="form-ajuda">{{ item.ultima.criado_em|date:"d/m/Y H:i" }}{% if item.ultima.criado_por %} · {{ item.ultima.criado_por }}{% endif %}</p>{% endif %}
+              </div>
+              <div class="bloco-split__corpo g-form g-form--1">
+                {% include "components/textarea.html" with name=item.campo label=item.bloco.rotulo rotulo_oculto=True valor=item.texto linhas=item.linhas ajuda=item.bloco.ajuda %}
+                {% if item.campos %}
+                  <p class="form-ajuda">Campos automáticos: {% for c in item.campos %}<code>{{ c.marcador }}</code> ({{ c.rotulo }}){% if not forloop.last %}, {% endif %}{% endfor %}.</p>
+                {% endif %}
+                {% if item.desconhecidos %}
+                  <p class="form-erro">Marcador que este texto não preenche (sai como está): {% for m in item.desconhecidos %}<code>{{ "{" }}{{ m }}{{ "}" }}</code>{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
+                {% endif %}
+                {% if item.alterado %}
+                  <details class="form-ajuda">
+                    <summary>Texto padrão do sistema</summary>
+                    <p>{{ item.bloco.padrao|linebreaksbr }}</p>
+                    <button type="submit" name="padrao" value="{{ item.bloco.chave }}" class="btn--secundaria btn--compacto" formnovalidate>Voltar ao texto padrão do sistema</button>
+                  </details>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="section-card reg">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+          <h2 class="section-card__titulo">Histórico do modelo</h2>
+        </header>
+        <div class="section-card__corpo">
+          {% for h in historico %}{% with linha=h.linha %}
+            <div class="bloco-split">
+              <div class="bloco-split__rotulo">
+                <strong>{{ h.rotulo }}</strong>
+                <p class="form-ajuda">{{ linha.criado_em|date:"d/m/Y H:i" }} · {{ linha.criado_por|default:"Sistema" }}</p>
+              </div>
+              <div class="bloco-split__corpo">
+                {% if linha.padrao_sistema %}<p><i>Voltou ao texto padrão do sistema.</i></p>{% else %}<p>{{ linha.texto|linebreaksbr }}</p>
+                  {% if not forloop.first %}<button type="submit" name="usar" value="{{ linha.pk }}" class="btn--secundaria btn--compacto" formnovalidate>Usar este texto de novo</button>{% endif %}
+                {% endif %}
+              </div>
+            </div>
+          {% endwith %}{% empty %}
+            <p class="texto-vazio">O modelo nunca foi alterado: vale o texto padrão do sistema.</p>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+  </form>
+{% endblock %}

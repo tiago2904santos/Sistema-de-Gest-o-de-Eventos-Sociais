@@ -1,0 +1,34 @@
+/* Editor completo do documento (templates/documentos/editor/completo.html):
+   por cima do desenho do editor de documento (viagens-documento.css), a
+   barra de formatação, a folha crescendo com o texto e o painel de versões. */
+
+.dcp .de-barra { top: 70px; }
+.dcp-letra { font-size: 15px; font-family: Georgia, "Times New Roman", serif; }
+.dcp-estilo { min-width: 132px; }
+
+/* Ícones de alinhamento desenhados em CSS: quatro traços de larguras
+   diferentes, na posição do alinhamento. */
+.dcp-alinha span { display: block; width: 16px; height: 12px; background:
+  linear-gradient(currentColor, currentColor) 0 0 / var(--l1, 100%) 2px no-repeat,
+  linear-gradient(currentColor, currentColor) 0 5px / var(--l2, 70%) 2px no-repeat,
+  linear-gradient(currentColor, currentColor) 0 10px / var(--l3, 100%) 2px no-repeat; }
+.dcp-alinha--esq span { --l2: 60%; }
+.dcp-alinha--centro span { background-position: 50% 0, 50% 5px, 50% 10px; --l1: 80%; --l2: 50%; --l3: 80%; }
+.dcp-alinha--dir span { background-position: 100% 0, 100% 5px, 100% 10px; --l2: 60%; }
+.dcp-alinha--just span { --l2: 100%; }
+
+.dcp-aviso--ok { border-color: var(--ok-r, #b7dfc3); background: var(--ok-b, #eef8f1); color: var(--ok-t, #1f6b3a); }
+.dcp-aviso--info { border-color: var(--n-150); background: var(--branco); color: var(--n-700); }
+.dcp-form-linha { margin: 8px 0 0; }
+
+.dcp-palco { display: flex; justify-content: center; }
+/* O quadro cresce com o documento (o script ajusta a altura). */
+.dcp-folha { display: block; width: min(23cm, 100%); min-height: 31cm; border: 0; background: transparent; }
+
+.dcp-historico { top: 128px; }
+.dcp-ajuda { margin: 0 0 var(--s3); font-size: 12.5px; color: var(--n-500); }
+
+@media (max-width: 900px) {
+  .de-area { flex-direction: column; }
+  .dcp-historico { position: static; width: auto; margin: var(--s4); }
+}
