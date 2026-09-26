@@ -10,6 +10,8 @@ urlpatterns = [
     # "Preencher com um e-mail" da tela nova: lê e sugere, não grava (POST, JSON).
     path("nova/ler-email/", views.ler_email, name="ler_email"),
     path("exportar/", views.exportar_solicitacoes, name="exportar"),
+    # Sugestão (JSON) do que acompanha o tipo de evento; a tela aplica com um clique.
+    path("sugestao-do-tipo/", views.sugestao_do_tipo, name="sugestao_tipo"),
     # Tela única do registro: o formulário. Não existe mais rota de detalhe.
     path("<int:pk>/editar/", views.editar_solicitacao, name="editar"),
     # Transições de workflow — somente POST.

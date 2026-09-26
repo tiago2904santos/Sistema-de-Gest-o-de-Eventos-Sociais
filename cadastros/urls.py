@@ -6,6 +6,12 @@ app_name = "cadastros"
 
 urlpatterns = [
     path("", views.index, name="index"),
+    # Modelo da solicitação de um tipo de evento: o que a tela sugere ao escolhê-lo.
+    path(
+        "tipos-evento/<int:pk>/modelo/",
+        views.modelo_tipo_evento,
+        name="modelo_tipo_evento",
+    ),
     path("<slug:slug>/", views.lista, name="lista"),
     path("<slug:slug>/novo/", views.editar, name="novo"),
     path("<slug:slug>/<int:pk>/editar/", views.editar, name="editar"),

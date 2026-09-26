@@ -2975,3 +2975,9 @@ tr[data-importar-url].is-alvo>td:first-child{box-shadow:inset 2px 0 0 var(--sel-
 .sol-responsavel__atual .ui-icon{width:16px;height:16px}
 .sol-transferir{margin-top:8px}
 .sol-transferir .btn--compacto{margin-top:4px}
+
+/* Sugestão do tipo de evento na solicitação: aparece ao escolher o tipo, aplica com um clique. */
+.sol-sugestao[hidden]{display:none}
+.sol-sugestao .aviso__corpo p{margin:2px 0}
+.sol-sugestao__origem,.sol-sugestao__nota{font-size:12px;color:var(--rotulo)}
+.sol-sugestao__acoes{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}

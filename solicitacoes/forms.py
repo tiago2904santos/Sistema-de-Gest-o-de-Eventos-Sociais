@@ -253,16 +253,14 @@ class SolicitacaoForm(forms.ModelForm):
         dados = super().clean()
         self._conferir_versao(dados.get("versao"))
         dados["tipo_operacao"] = dados.get("tipo_operacao") or TipoOperacao.DIARIA
-        tipo_evento = dados.get("tipo_evento")
         estado = dados.get("estado")
         municipio = dados.get("municipio")
         if estado and municipio and municipio.estado_id != estado.pk:
             self.add_error(
                 "municipio", "Selecione um município pertencente ao estado informado."
             )
-        if tipo_evento and tipo_evento.nome.casefold() == "paraná em ação".casefold():
-            dados["solicitante_nome"] = "Paraná em Ação"
-            dados["solicitante_cargo_unidade"] = "SEJU"
+        # O solicitante do "Paraná em Ação" deixou de ser gravado à força: é o
+        # modelo do tipo de evento, sugerido na tela e aplicado com um clique.
         inicio = dados.get("data_inicio_evento")
         fim = dados.get("data_fim_evento")
         if inicio and fim and fim < inicio:

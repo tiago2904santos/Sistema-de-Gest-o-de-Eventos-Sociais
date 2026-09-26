@@ -27,6 +27,7 @@ from .models import (
     Servico,
     TextoDespacho,
     TipoEvento,
+    TipoEventoEquipe,
     UnidadeMovel,
 )
 
@@ -367,3 +368,95 @@ def excluir(request, slug, pk):
         )
         messages.success(request, "Registro excluído com sucesso.")
     return redirect("cadastros:lista", slug=slug)
+
+
+class ModeloTipoEventoForm(forms.ModelForm):
+    """Os padrões de um tipo de evento: solicitante, cargo, órgão e serviços."""
+
+    class Meta:
+        model = TipoEvento
+        fields = ["solicitante_padrao", "cargo_padrao", "orgao_padrao", "servicos_sugeridos"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        tipo = self.instance
+        self.fields["orgao_padrao"].queryset = (
+            OrgaoResponsavel.objects.filter(ativo=True)
+            | OrgaoResponsavel.objects.filter(pk=tipo.orgao_padrao_id)
+        ).distinct()
+        self.fields["servicos_sugeridos"].queryset = (
+            Servico.objects.filter(ativo=True) | tipo.servicos_sugeridos.all()
+        ).distinct()
+
+
+def _equipes_do_modelo(request, tipo, form):
+    """Linhas de equipe do modelo; no POST, lê marcação e quantidade."""
+    salvas = {item.equipe_id: item.quantidade for item in tipo.equipes_sugeridas.all()}
+    equipes = (Equipe.objects.filter(ativo=True) | Equipe.objects.filter(pk__in=salvas)).distinct()
+    linhas, escolhidas = [], {}
+    marcadas = set(request.POST.getlist("equipes")) if request.method == "POST" else None
+    for equipe in equipes.order_by("nome"):
+        chave = str(equipe.pk)
+        if marcadas is None:
+            selecionada = equipe.pk in salvas
+            quantidade = salvas.get(equipe.pk) or ""
+        else:
+            selecionada = chave in marcadas
+            quantidade = str(request.POST.get(f"quantidade_{chave}", "")).strip()
+            if selecionada:
+                if quantidade and (not quantidade.isdigit() or int(quantidade) < 1):
+                    form.add_error(None, f"Informe uma quantidade válida para {equipe}.")
+                escolhidas[equipe.pk] = int(quantidade) if quantidade.isdigit() and int(quantidade) > 0 else None
+        linhas.append(
+            {"valor": chave, "rotulo": equipe.nome, "selecionada": selecionada, "quantidade": quantidade}
+        )
+    return linhas, escolhidas
+
+
+@login_required
+def modelo_tipo_evento(request, pk):
+    """Modelo da solicitação de um tipo: sugerido na tela, aplicado com um clique."""
+    _exigir_administrador(request, "tipos-evento")
+    tipo = get_object_or_404(TipoEvento, pk=pk)
+    form = ModeloTipoEventoForm(request.POST or None, instance=tipo)
+    if request.method == "POST":
+        form.full_clean()  # antes das equipes, que acrescentam os próprios erros
+    linhas_equipes, escolhidas = _equipes_do_modelo(request, tipo, form)
+    if request.method == "POST" and not form.errors:
+        tipo = form.save()
+        tipo.equipes_sugeridas.exclude(equipe_id__in=escolhidas).delete()
+        for equipe_id, quantidade in escolhidas.items():
+            TipoEventoEquipe.objects.update_or_create(
+                tipo_evento=tipo, equipe_id=equipe_id, defaults={"quantidade": quantidade}
+            )
+        _registrar_auditoria(request.user, "CADASTRO_ATUALIZADO", tipo)
+        messages.success(request, f"Modelo do tipo {tipo} salvo.")
+        return redirect("cadastros:lista", slug="tipos-evento")
+    marcados = {str(valor) for valor in (form["servicos_sugeridos"].value() or [])}
+    valores = {
+        nome: "" if form[nome].value() is None else str(form[nome].value())
+        for nome in ["solicitante_padrao", "cargo_padrao", "orgao_padrao"]
+    }
+    return render(
+        request,
+        "pages/cadastros/modelo_tipo_evento.html",
+        {
+            "tipo": tipo,
+            "form": form,
+            "valores": valores,
+            "erros": form.errors,
+            "servicos": [
+                {"valor": str(s.pk), "rotulo": s.nome, "marcado": str(s.pk) in marcados}
+                for s in form.fields["servicos_sugeridos"].queryset.order_by("nome")
+            ],
+            "orgaos": [
+                {"valor": str(o.pk), "rotulo": o.nome}
+                for o in form.fields["orgao_padrao"].queryset.order_by("nome")
+            ],
+            "equipes": linhas_equipes,
+            "breadcrumb": [
+                {"label": "Tipos de evento", "url": reverse("cadastros:lista", args=["tipos-evento"])},
+                {"label": f"Modelo — {tipo}"},
+            ],
+        },
+    )

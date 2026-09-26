@@ -36,7 +36,14 @@ from integracoes.eprotocolo.andamento import formatar_numero
 from core.listagens import trilha_de_situacoes
 
 from .presenters import linha_da_lista
-from . import integracao_viagens, lembretes, permissions, preenchimento, services
+from . import (
+    integracao_viagens,
+    lembretes,
+    permissions,
+    preenchimento,
+    services,
+    sugestoes,
+)
 
 ITENS_POR_PAGINA = 15
 
@@ -334,6 +341,13 @@ def ler_email(request):
         anexa_original=True,
         duplicados=_duplicados_do_email(request.user),
     )
+
+
+@login_required
+def sugestao_do_tipo(request):
+    """Serviços, equipes e solicitante sugeridos para o tipo (só leitura)."""
+    tipo = request.GET.get("tipo", "")
+    return JsonResponse(sugestoes.sugestao_do_tipo(int(tipo) if tipo.isdigit() else None))
 
 
 @login_required

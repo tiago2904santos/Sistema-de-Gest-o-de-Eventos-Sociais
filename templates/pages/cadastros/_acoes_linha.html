@@ -8,6 +8,9 @@
   <div class="dd__c of-menu__corpo" hidden data-menu-corpo>
     <div class="dd__t">{{ objeto.nome }}</div>
     <a class="dd__i of-item" href="{% url 'cadastros:editar' slug objeto.pk %}" data-cadastro-modal>{% include "components/icon.html" with nome="pencil" %}<span><b>Editar {{ singular }}</b><small>Alterar os dados do cadastro</small></span></a>
+    {% if slug == "tipos-evento" %}
+      <a class="dd__i of-item" href="{% url 'cadastros:modelo_tipo_evento' objeto.pk %}">{% include "components/icon.html" with nome="checklist" %}<span><b>Modelo da solicitação</b><small>Serviços, equipes e solicitante sugeridos para este tipo</small></span></a>
+    {% endif %}
     <form method="post" action="{% url 'cadastros:alternar_ativo' slug objeto.pk %}">{% csrf_token %}
       {% if objeto.ativo %}
         <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="ban" %}<span><b>Inativar</b><small>Deixa de ser oferecido nos formulários</small></span></button>

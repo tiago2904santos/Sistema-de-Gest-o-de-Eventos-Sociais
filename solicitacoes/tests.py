@@ -210,7 +210,8 @@ class FormsTests(BaseSolicitacaoTestCase):
 
         self.assertTrue(form.is_valid(), form.errors)
 
-    def test_parana_em_acao_define_solicitante_e_cargo_unidade(self):
+    def test_parana_em_acao_nao_sobrescreve_o_solicitante(self):
+        """O solicitante do Paraná em Ação é sugestão (modelo do tipo), não regra fixa."""
         dados = self.dados_completos_post()
         dados["tipo_evento"] = self.tipo_parana_em_acao.pk
         dados["solicitante_nome"] = "Outro solicitante"
@@ -219,8 +220,8 @@ class FormsTests(BaseSolicitacaoTestCase):
         form = SolicitacaoForm(dados, enviar=True)
 
         self.assertTrue(form.is_valid(), form.errors)
-        self.assertEqual(form.cleaned_data["solicitante_nome"], "Paraná em Ação")
-        self.assertEqual(form.cleaned_data["solicitante_cargo_unidade"], "SEJU")
+        self.assertEqual(form.cleaned_data["solicitante_nome"], "Outro solicitante")
+        self.assertEqual(form.cleaned_data["solicitante_cargo_unidade"], "Outro cargo")
 
     def test_municipio_deve_pertencer_ao_estado(self):
         dados = self.dados_completos_post()

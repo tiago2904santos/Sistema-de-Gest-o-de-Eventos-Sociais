@@ -168,6 +168,10 @@
             {% if andamento_protocolo %}
               <div class="cheia">{% include "components/v32/andamento_protocolo.html" with andamento=andamento_protocolo %}</div>
             {% endif %}
+            {% if not dados_desabilitado %}
+              {# Sugestão do tipo de evento: aparece ao escolher o tipo e só preenche com o clique em "Usar sugestão". #}
+              <div class="cheia aviso aviso--callout aviso--fino sol-sugestao" data-sugestao-tipo data-url="{% url 'solicitacoes:sugestao_tipo' %}" role="status" hidden></div>
+            {% endif %}
             <div class="cheia">
               {% include "components/textarea.html" with name="descricao_complementar" label="Descrição complementar" linhas="2" placeholder="Detalhes adicionais sobre o evento, serviços e estrutura..." valor=valores.descricao_complementar erros=erros.descricao_complementar desabilitado=planejamento_desabilitado %}
             </div>

@@ -1,0 +1,87 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  Modelo da solicitação de um tipo de evento: os serviços, as equipes (com a
+  quantidade usual) e o solicitante que costumam acompanhá-lo. Na tela da
+  solicitação isto aparece como sugestão ao escolher o tipo, e só entra no
+  pedido com o clique em "Usar sugestão". Sem modelo, a sugestão sai das
+  últimas solicitações do mesmo tipo.
+{% endcomment %}
+
+{% block title %}Modelo — {{ tipo }} — Cadastros — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+
+  <div class="editor-roteiro of-form">
+    <div class="d-cabeca d-cabeca--form frm-topo">
+      <div class="page-header d-cabeca__esq">
+        <div class="page-header__identificacao d-identificacao">
+          <span class="page-header__icone kpi__ic">{% include "components/icon.html" with nome="calendar" %}</span>
+          <div class="frm-titulo">
+            <h1 class="page-header__titulo d-titulo-v32">Modelo da solicitação — {{ tipo }}</h1>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form method="post" class="editor-roteiro__principal">
+      {% csrf_token %}
+      {% if form.errors %}
+        <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
+          {% include "components/icon.html" with nome="info" %}
+          <div><b>Não foi possível salvar o modelo</b>
+            <ul class="aviso--erro__lista">{% for campo, mensagens in form.errors.items %}{% for mensagem in mensagens %}<li>{{ mensagem }}</li>{% endfor %}{% endfor %}</ul>
+          </div>
+        </div>
+      {% endif %}
+
+      <section class="section-card reg">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">1</span>
+          <h2 class="section-card__titulo">Quem costuma pedir</h2>
+        </header>
+        <div class="section-card__corpo">
+          <p class="form-ajuda">Ao escolher este tipo, a solicitação sugere estes dados; o usuário aplica com um clique e pode mudar tudo. Deixe em branco o que varia de pedido para pedido.</p>
+          <div class="g-form g-form--3">
+            {% include "components/input.html" with name="solicitante_padrao" label="Solicitante padrão" placeholder="Ex.: Paraná em Ação" valor=valores.solicitante_padrao erros=erros.solicitante_padrao %}
+            {% include "components/input.html" with name="cargo_padrao" label="Cargo / unidade padrão" placeholder="Ex.: SEJU" valor=valores.cargo_padrao erros=erros.cargo_padrao %}
+            {% include "components/select.html" with name="orgao_padrao" label="Órgão responsável padrão" opcoes=orgaos selecionado=valores.orgao_padrao placeholder="Nenhum" permitir_vazio=True erros=erros.orgao_padrao %}
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card reg">
+        <header class="section-card__cabecalho reg__t">
+          <span class="section-card__numero reg-numero" aria-hidden="true">2</span>
+          <h2 class="section-card__titulo">Serviços e equipes sugeridos</h2>
+        </header>
+        <div class="section-card__corpo">
+          <p class="form-ajuda">Sem nada marcado aqui, a sugestão usa os serviços e as equipes mais frequentes nas últimas solicitações deste tipo.</p>
+          <fieldset class="linhas-quantidade" style="--equipes: {{ equipes|length }}">
+            <legend class="form-label">Equipes e quantidade usual de servidores</legend>
+            {% for equipe in equipes %}
+              <div class="linha-quantidade">
+                <input class="sr-only" type="checkbox" id="id_equipe_{{ equipe.valor }}" name="equipes" value="{{ equipe.valor }}"{% if equipe.selecionada %} checked{% endif %}>
+                <label class="linha-quantidade__marca" for="id_equipe_{{ equipe.valor }}" aria-hidden="true">{% include "components/icon.html" with nome="check" %}</label>
+                <label class="linha-quantidade__n" for="id_equipe_{{ equipe.valor }}">{{ equipe.rotulo }}</label>
+                <div class="linha-quantidade__q">
+                  <label class="sr-only" for="id_quantidade_{{ equipe.valor }}">Quantidade usual da equipe {{ equipe.rotulo }}</label>
+                  <input class="form-controle" type="number" min="1" step="1" id="id_quantidade_{{ equipe.valor }}" name="quantidade_{{ equipe.valor }}" value="{{ equipe.quantidade }}" placeholder="—">
+                </div>
+              </div>
+            {% empty %}
+              <p class="lista-vazia">Nenhuma equipe cadastrada.</p>
+            {% endfor %}
+          </fieldset>
+          {% include "components/v32/cartoes_escolha.html" with name="servicos_sugeridos" tipo="checkbox" label="Serviços sugeridos" opcoes=servicos erros=erros.servicos_sugeridos %}
+          <div class="frm-acoes-fim">
+            <a class="btn--secundaria" href="{% url 'cadastros:lista' 'tipos-evento' %}">Voltar</a>
+            <span class="frm-acoes-fim__dir">
+              <button type="submit" class="btn-primaria">Salvar modelo</button>
+            </span>
+          </div>
+        </div>
+      </section>
+    </form>
+  </div>
+{% endblock %}
