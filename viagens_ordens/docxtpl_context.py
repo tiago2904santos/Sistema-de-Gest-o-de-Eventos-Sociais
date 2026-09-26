@@ -42,7 +42,7 @@ def _periodo_extenso(inicio: date | None, fim: date | None) -> str:
 
 
 def _destinos_display(ordem: OrdemServico) -> str:
-    destinos = list(ordem.destinos.select_related("estado").order_by("nome"))
+    destinos = list(ordem.destinos_em_ordem())
     if not destinos:
         return ""
     # O documento é para leitura e assinatura: o nome sai capitalizado, como o

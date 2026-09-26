@@ -155,7 +155,8 @@ def semente_de_documentos(viagem):
     # 4. Ordem de serviço.
     ordem = viagem.ordens_servico.filter(cancelado=False).prefetch_related("destinos__estado", "servidores").order_by("-atualizado_em").first()
     if ordem is not None:
-        destino = sorted(ordem.destinos.all(), key=lambda d: d.nome)[:1]
+        # O primeiro da OS é o destino principal (a ordem vem da tela da OS).
+        destino = list(ordem.destinos_em_ordem()[:1])
         if semente["cidade"] is None and destino:
             semente["cidade"], semente["estado"] = destino[0], destino[0].estado
         semente["data_inicio"] = semente["data_inicio"] or ordem.data_evento_inicio

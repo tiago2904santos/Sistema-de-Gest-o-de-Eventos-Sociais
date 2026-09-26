@@ -91,6 +91,22 @@ class CadastroTests(CenarioOrdemMixin, TestCase):
         self.assertNotContains(r, 'value="CAMINHAO"')
         self.assertNotContains(r, 'value="MICROONIBUS"')
 
+    def test_ordem_dos_destinos_definida_na_tela_e_mantida(self):
+        """m069: Maringá primeiro fica primeiro — na tela reaberta, na lista e no documento."""
+        from viagens_ordens.docxtpl_context import _destinos_display
+
+        dados = self.payload(
+            destino_cidade=str(self.outro.pk), quantidade_destinos="1",
+            extra_estado_0=str(self.uf.pk), extra_cidade_0=str(self.destino.pk),
+        )
+        self.client.post(reverse("viagens_ordens:novo"), dados)
+        ordem = OrdemServico.objects.get()
+        self.assertEqual(list(ordem.destinos_em_ordem()), [self.outro, self.destino])
+        self.assertTrue(_destinos_display(ordem).startswith("Maringá"))
+        r = self.client.get(reverse("viagens_ordens:editar", args=[ordem.pk]))
+        self.assertEqual(r.context["form"].initial["destino_cidade"], self.outro.pk)
+        self.assertContains(_lista(self.client), "Maringá (PR), Londrina (PR)")
+
     def test_criar_pela_tela_com_destino_extra_e_funcoes(self):
         o = self.oficio(servidores=[self.a])
         dados = self.payload(
