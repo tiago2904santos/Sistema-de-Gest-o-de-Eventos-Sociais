@@ -1548,14 +1548,57 @@ class AnexosTests(BaseSolicitacaoTestCase):
         )
         anexo = solicitacao.anexos.get()
         caminho = anexo.arquivo.path
-        resposta = self.client.post(
-            reverse("solicitacoes:anexo_excluir", args=[solicitacao.pk, anexo.pk])
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            resposta = self.client.post(
+                reverse("solicitacoes:anexo_excluir", args=[solicitacao.pk, anexo.pk])
+            )
         self.assertEqual(resposta.status_code, 302)
         self.assertEqual(solicitacao.anexos.count(), 0)
         import os
 
         self.assertFalse(os.path.exists(caminho))
+
+    def test_excluir_rascunho_apaga_os_arquivos_dos_anexos(self):
+        """"Remove o rascunho e os anexos dele": o arquivo sai do servidor também."""
+        import os
+
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        for nome in ("oficio.pdf", "foto.pdf"):
+            self.client.post(
+                reverse("solicitacoes:anexo_adicionar", args=[solicitacao.pk]),
+                {"arquivo": self.arquivo(nome)},
+            )
+        caminhos = [anexo.arquivo.path for anexo in solicitacao.anexos.all()]
+        self.assertEqual(len(caminhos), 2)
+        with self.captureOnCommitCallbacks(execute=True):
+            resposta = self.client.post(
+                reverse("solicitacoes:excluir", args=[solicitacao.pk])
+            )
+        self.assertEqual(resposta.status_code, 302)
+        for caminho in caminhos:
+            self.assertFalse(os.path.exists(caminho))
+
+    def test_limpeza_de_orfaos_cobre_a_pasta_das_solicitacoes(self):
+        from io import StringIO
+
+        from django.core.files.base import ContentFile
+        from django.core.files.storage import default_storage
+        from django.core.management import call_command
+
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        self.client.post(
+            reverse("solicitacoes:anexo_adicionar", args=[solicitacao.pk]),
+            {"arquivo": self.arquivo()},
+        )
+        vivo = solicitacao.anexos.get().arquivo.name
+        orfao = default_storage.save("solicitacoes/999/sobra.pdf", ContentFile(b"%PDF-1.4"))
+        saida = StringIO()
+        call_command("limpar_arquivos_orfaos", "--apagar", stdout=saida)
+        self.assertIn(f"Arquivo órfão: {orfao}", saida.getvalue())
+        self.assertFalse(default_storage.exists(orfao))
+        self.assertTrue(default_storage.exists(vivo))
 
     def test_secao_anexos_na_tela_do_registro(self):
         """Os anexos do registro vivem na seção do próprio formulário."""
