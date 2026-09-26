@@ -22,6 +22,7 @@ from .forms import (
 from .models import (
     AcaoHistorico,
     AnexoSolicitacao,
+    DecisaoDG,
     HistoricoSolicitacao,
     SolicitacaoEvento,
     StatusSolicitacao,
@@ -31,7 +32,7 @@ from core import preencher_por_email
 from core.listagens import trilha_de_situacoes
 
 from .presenters import linha_da_lista
-from . import permissions, preenchimento, services
+from . import integracao_viagens, permissions, preenchimento, services
 
 ITENS_POR_PAGINA = 15
 
@@ -474,9 +475,38 @@ def editar_solicitacao(request, pk):
             "motivo_devolucao": devolucao,
             "despacho_pendente": pendente,
             "decisoes_dg": _decisoes_dg(pendente),
+            "cartao_viagem": None if reabrindo else _cartao_viagem(request.user, solicitacao),
         }
     )
     return render(request, "pages/solicitacoes/form.html", contexto)
+
+
+def _cartao_viagem(user, solicitacao):
+    """O cartão "Viagem" da solicitação: o link, a situação e o que falta.
+
+    Só aparece depois do deferimento (ou quando já existe viagem): antes
+    disso não há logística a acompanhar.
+    """
+    from viagens_cadastros.permissions import pode_acessar
+
+    viagem = integracao_viagens.viagem_da_solicitacao(solicitacao)
+    if viagem is None and solicitacao.decisao_dg != DecisaoDG.ATENDER:
+        return None
+    if viagem is not None:
+        return {
+            "viagem": viagem,
+            # Quem não tem o módulo vê a situação, mas não o link.
+            "url": reverse("viagens_viagem:painel", args=[viagem.pk])
+            if pode_acessar(user)
+            else "",
+            "falta": integracao_viagens.o_que_falta(viagem),
+        }
+    cabe, motivo = integracao_viagens.pode_gerar(solicitacao)
+    return {
+        "viagem": None,
+        "pode_gerar": cabe and permissions.pode_gerar_viagem(user),
+        "motivo": motivo,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -831,6 +861,37 @@ def cancelar_evento(request, pk):
         f"Evento da solicitação #{solicitacao.pk} registrado como cancelado.",
         observacao=request.POST.get("motivo_cancelamento", ""),
     )
+
+
+@login_required
+@require_POST
+def gerar_viagem(request, pk):
+    """"Gerar viagem": para a deferida que ficou sem viagem.
+
+    Vale para as deferidas antes da geração automática e para quando ela
+    falhou no despacho. Liberado à DG e a quem opera Viagens — este último
+    pode não enxergar a solicitação, e então vai direto para a viagem criada.
+    """
+    solicitacao = get_object_or_404(SolicitacaoEvento, pk=pk)
+    if not permissions.pode_gerar_viagem(request.user):
+        raise PermissionDenied
+    ve_a_solicitacao = permissions.pode_ver(request.user, solicitacao)
+    try:
+        viagem = integracao_viagens.gerar_viagem(solicitacao, request.user)
+    except ValueError as erro:
+        messages.error(request, f"Não foi possível gerar a viagem: {erro}")
+        if not ve_a_solicitacao:
+            return redirect("viagens_viagem:lista")
+    else:
+        messages.success(
+            request,
+            f"Viagem #{viagem.pk} gerada em rascunho. Complete sede, horário, "
+            "servidores, viatura e motorista em Viagens.",
+        )
+        if not ve_a_solicitacao:
+            return redirect("viagens_viagem:painel", pk=viagem.pk)
+    url = reverse("solicitacoes:editar", args=[solicitacao.pk])
+    return redirect(f"{url}#viagem")
 
 
 # ---------------------------------------------------------------------------

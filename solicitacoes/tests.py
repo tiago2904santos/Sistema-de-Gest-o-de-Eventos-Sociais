@@ -88,6 +88,11 @@ class BaseSolicitacaoTestCase(TestCase):
         solicitacao = SolicitacaoEvento.objects.create(**dados)
         return solicitacao
 
+    def efetivar(self, funcao, *args, **kwargs):
+        """Roda a ação e o que ela deixou para depois do commit (a viagem)."""
+        with self.captureOnCommitCallbacks(execute=True):
+            return funcao(*args, **kwargs)
+
     def solicitacao_completa(self):
         """Solicitação pronta para envio: serviços e planejamento preenchidos."""
         solicitacao = self.criar_solicitacao()
@@ -1581,7 +1586,7 @@ class GeracaoDeViagemPeloDespacho(BaseSolicitacaoTestCase):
 
     def _deferir(self, solicitacao):
         services.enviar(solicitacao, self.solicitante)
-        return services.despachar(
+        return self.efetivar(services.despachar,
             solicitacao, self.gestor, DecisaoDG.ATENDER, observacao="Autorizado"
         )
 
@@ -1639,7 +1644,7 @@ class GeracaoDeViagemPeloDespacho(BaseSolicitacaoTestCase):
 
         solicitacao = self.solicitacao_completa()
         services.enviar(solicitacao, self.solicitante)
-        services.despachar(
+        self.efetivar(services.despachar,
             solicitacao, self.gestor, DecisaoDG.NAO_ATENDER, observacao="Sem efetivo"
         )
         self.assertIsNone(iv.viagem_da_solicitacao(solicitacao))
@@ -1673,7 +1678,7 @@ class GeracaoDeViagemPeloDespacho(BaseSolicitacaoTestCase):
             "solicitacoes.integracao_viagens.gerar_viagem",
             side_effect=RuntimeError("banco fora do ar"),
         ):
-            services.despachar(
+            self.efetivar(services.despachar,
                 solicitacao, self.gestor, DecisaoDG.ATENDER, observacao="Autorizado"
             )
 
@@ -1810,7 +1815,7 @@ class ViagemAcompanhaSolicitacaoTests(BaseSolicitacaoTestCase):
 
         solicitacao = self.solicitacao_completa()
         services.enviar(solicitacao, self.solicitante)
-        services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER, observacao="Ok")
+        self.efetivar(services.despachar, solicitacao, self.gestor, DecisaoDG.ATENDER, observacao="Ok")
         viagem = iv.viagem_da_solicitacao(solicitacao)
         self.assertIsNotNone(viagem)
         return solicitacao, viagem
@@ -1828,7 +1833,7 @@ class ViagemAcompanhaSolicitacaoTests(BaseSolicitacaoTestCase):
 
     def test_cancelar_evento_cancela_a_viagem_sem_documentos(self):
         solicitacao, viagem = self._deferida_com_viagem()
-        services.cancelar_evento(solicitacao, self.solicitante, "Chuva forte")
+        self.efetivar(services.cancelar_evento, solicitacao, self.solicitante, "Chuva forte")
         viagem.refresh_from_db()
         self.assertTrue(viagem.cancelado)
         self.assertIn(f"Solicitação #{solicitacao.pk}", viagem.motivo_cancelamento)
@@ -1842,7 +1847,7 @@ class ViagemAcompanhaSolicitacaoTests(BaseSolicitacaoTestCase):
             solicitacao, self.solicitante,
             [{"campo": "Local do evento", "antes": "A", "depois": "B"}],
         )
-        services.despachar(
+        self.efetivar(services.despachar,
             solicitacao, self.gestor, DecisaoDG.NAO_ATENDER, observacao="Sem efetivo"
         )
         viagem.refresh_from_db()
@@ -1855,7 +1860,7 @@ class ViagemAcompanhaSolicitacaoTests(BaseSolicitacaoTestCase):
         operador = self._operador_viagens()
         solicitacao, viagem = self._deferida_com_viagem()
         Oficio.objects.create(motivo="Da viagem", viagem=viagem)
-        services.cancelar_evento(solicitacao, self.solicitante, "Evento adiado")
+        self.efetivar(services.cancelar_evento, solicitacao, self.solicitante, "Evento adiado")
         viagem.refresh_from_db()
         self.assertFalse(viagem.cancelado)
         aviso = Notificacao.objects.get(usuario=operador)
@@ -1876,7 +1881,7 @@ class ViagemAcompanhaSolicitacaoTests(BaseSolicitacaoTestCase):
             solicitacao, self.solicitante,
             [{"campo": "Local do evento", "antes": "Praça central", "depois": "Ginásio municipal"}],
         )
-        services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER, observacao="Ok")
+        self.efetivar(services.despachar, solicitacao, self.gestor, DecisaoDG.ATENDER, observacao="Ok")
         viagem.refresh_from_db()
         self.assertEqual(viagem.destino_municipio, novo_municipio)
         self.assertEqual(viagem.data_inicio, date(2026, 9, 20))
@@ -1899,7 +1904,7 @@ class ViagemAcompanhaSolicitacaoTests(BaseSolicitacaoTestCase):
             solicitacao, self.solicitante,
             [{"campo": "Local do evento", "antes": "Praça central", "depois": "Ginásio municipal"}],
         )
-        services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER)
+        self.efetivar(services.despachar, solicitacao, self.gestor, DecisaoDG.ATENDER)
         viagem.refresh_from_db()
         self.assertNotIn("Ginásio municipal", viagem.motivo)
         self.assertTrue(Notificacao.objects.filter(usuario=operador).exists())
@@ -1922,6 +1927,104 @@ class ViagemAcompanhaSolicitacaoTests(BaseSolicitacaoTestCase):
         resposta = self.client.get(reverse("viagens_viagem:etapa", args=[viagem.pk, 1]))
         self.assertContains(resposta, f"Solicitação de evento #{solicitacao.pk}")
         self.assertNotContains(resposta, "Viagem desatualizada")
+
+
+class ViagemNaTelaDaSolicitacaoTests(BaseSolicitacaoTestCase):
+    """O cartão "Viagem" na solicitação e o "Gerar viagem" pela tela."""
+
+    def _deferida_sem_viagem(self):
+        # Sem efetivar: o on_commit não roda e a viagem não nasce, como nas
+        # deferidas antes da geração automática.
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER)
+        return solicitacao
+
+    def test_viagem_so_nasce_depois_do_commit(self):
+        from solicitacoes import integracao_viagens as iv
+
+        solicitacao = self._deferida_sem_viagem()
+        self.assertIsNone(iv.viagem_da_solicitacao(solicitacao))
+
+    def test_falha_na_viagem_avisa_quem_despachou(self):
+        from unittest.mock import patch
+
+        from core.models import Notificacao
+
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        with patch(
+            "solicitacoes.integracao_viagens.gerar_viagem",
+            side_effect=RuntimeError("falhou"),
+        ):
+            self.efetivar(services.despachar, solicitacao, self.gestor, DecisaoDG.ATENDER)
+        self.assertTrue(
+            Notificacao.objects.filter(
+                usuario=self.gestor, titulo__contains="viagem não foi atualizada"
+            ).exists()
+        )
+
+    def test_cartao_mostra_gerar_viagem_para_a_dg(self):
+        solicitacao = self._deferida_sem_viagem()
+        self.client.force_login(self.gestor)
+        resposta = self.client.get(reverse("solicitacoes:editar", args=[solicitacao.pk]))
+        self.assertContains(resposta, 'id="viagem"')
+        self.assertContains(resposta, reverse("solicitacoes:gerar_viagem", args=[solicitacao.pk]))
+
+    def test_solicitante_ve_o_cartao_sem_o_botao(self):
+        solicitacao = self._deferida_sem_viagem()
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(reverse("solicitacoes:editar", args=[solicitacao.pk]))
+        self.assertContains(resposta, 'id="viagem"')
+        self.assertNotContains(resposta, reverse("solicitacoes:gerar_viagem", args=[solicitacao.pk]))
+
+    def test_rascunho_nao_tem_cartao(self):
+        solicitacao = self.solicitacao_completa()
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(reverse("solicitacoes:editar", args=[solicitacao.pk]))
+        self.assertNotContains(resposta, 'id="viagem"')
+
+    def test_gerar_viagem_pela_tela(self):
+        from solicitacoes import integracao_viagens as iv
+
+        solicitacao = self._deferida_sem_viagem()
+        self.client.force_login(self.gestor)
+        resposta = self.client.post(
+            reverse("solicitacoes:gerar_viagem", args=[solicitacao.pk]), follow=True
+        )
+        viagem = iv.viagem_da_solicitacao(solicitacao)
+        self.assertIsNotNone(viagem)
+        # O cartão passa a mostrar a viagem e o que falta completar.
+        self.assertContains(resposta, f"Viagem #{viagem.pk}")
+        self.assertContains(resposta, "Município de onde a equipe sai")
+
+    def test_gerar_viagem_de_novo_mostra_o_motivo(self):
+        solicitacao = self._deferida_sem_viagem()
+        self.client.force_login(self.gestor)
+        url = reverse("solicitacoes:gerar_viagem", args=[solicitacao.pk])
+        self.client.post(url)
+        resposta = self.client.post(url, follow=True)
+        self.assertContains(resposta, "já tem viagem gerada")
+
+    def test_solicitante_nao_gera_viagem(self):
+        solicitacao = self._deferida_sem_viagem()
+        self.client.force_login(self.solicitante)
+        resposta = self.client.post(reverse("solicitacoes:gerar_viagem", args=[solicitacao.pk]))
+        self.assertEqual(resposta.status_code, 403)
+
+    def test_operador_de_viagens_gera_e_vai_para_a_viagem(self):
+        from solicitacoes import integracao_viagens as iv
+
+        operador = User.objects.create_user("operador", password="x")
+        operador.groups.add(Group.objects.get_or_create(name="VIAGENS_OPERADOR")[0])
+        solicitacao = self._deferida_sem_viagem()
+        self.client.force_login(operador)
+        resposta = self.client.post(reverse("solicitacoes:gerar_viagem", args=[solicitacao.pk]))
+        viagem = iv.viagem_da_solicitacao(solicitacao)
+        self.assertRedirects(
+            resposta, reverse("viagens_viagem:painel", args=[viagem.pk]),
+            fetch_redirect_response=False,
+        )
 
 
 class ObservacaoLongaTests(BaseSolicitacaoTestCase):

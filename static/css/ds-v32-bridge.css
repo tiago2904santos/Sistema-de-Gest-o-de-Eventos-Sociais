@@ -2602,6 +2602,12 @@ textarea.form-controle.cb-caixa-copiar__texto{width:100%;min-height:0;resize:ver
 .sol-encerrar__linha{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 .sol-encerrar__texto{margin:0;font-size:13px;color:var(--n-600)}
 .sol-encerrar__linha form{margin:0}
+/* Cartão "Viagem" da solicitação: situação, o que falta e o "Gerar viagem". */
+.sol-viagem{display:flex;flex-direction:column;gap:8px}
+.sol-viagem__situacao,.sol-viagem__texto{margin:0;font-size:13px;color:var(--n-600)}
+.sol-viagem__situacao b{color:var(--n-800)}
+.sol-viagem__falta{margin:0;padding-left:18px;font-size:13px}
+.sol-viagem form{margin:0}
 .sol-cancelar-abre{margin-top:14px;padding-top:14px;border-top:1px solid var(--n-100)}
 .sol-cancelar-abre>summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--n-600);list-style:none}
 .sol-cancelar-abre>summary::-webkit-details-marker{display:none}

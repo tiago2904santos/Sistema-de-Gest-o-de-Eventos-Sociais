@@ -351,8 +351,15 @@ def despachar(solicitacao, usuario, decisao, observacao="", quantidades=None):
         solicitacao=solicitacao,
         exceto=usuario,
     )
-    _acompanhar_viagem(solicitacao, usuario, observacao)
+    _agendar_acompanhamento_da_viagem(solicitacao, usuario, observacao)
     return solicitacao
+
+
+def _agendar_acompanhamento_da_viagem(solicitacao, usuario, observacao="") -> None:
+    """Mexe na viagem só **depois** que a decisão estiver gravada."""
+    transaction.on_commit(
+        lambda: _acompanhar_viagem(solicitacao, usuario, observacao)
+    )
 
 
 def _acompanhar_viagem(solicitacao, usuario, observacao="") -> None:
@@ -363,16 +370,15 @@ def _acompanhar_viagem(solicitacao, usuario, observacao="") -> None:
     atendida ou cancelada? A viagem gerada é cancelada (ou o operador de
     Viagens é avisado, se ela já tem documentos).
 
-    Engole o próprio erro de propósito: a decisão da DG é o ato
-    administrativo e não pode se perder porque o módulo de Viagens teve um
-    problema. Se falhar, fica no log e a viagem pode ser gerada pela tela da
+    Roda depois da transação do despacho e engole o próprio erro de
+    propósito: a decisão da DG é o ato administrativo e não pode se perder
+    porque o módulo de Viagens teve um problema. Se falhar, fica no log,
+    quem despachou é avisado e a viagem pode ser gerada pela tela da
     solicitação.
     """
     from solicitacoes import integracao_viagens
 
     try:
-        # Savepoint: no PostgreSQL, um erro aqui sem ele deixaria a transação
-        # do despacho inutilizável.
         with transaction.atomic():
             if solicitacao.status == StatusSolicitacao.DEFERIDA_EM_ANDAMENTO:
                 if integracao_viagens.viagem_da_solicitacao(solicitacao) is not None:
@@ -388,6 +394,16 @@ def _acompanhar_viagem(solicitacao, usuario, observacao="") -> None:
         logger.exception(
             "Falha ao atualizar a viagem da solicitação %s; o despacho foi mantido.",
             solicitacao.pk,
+        )
+        # A falha não pode ficar só no registro técnico: quem despachou sabe.
+        notificar(
+            [usuario],
+            f"Solicitação #{solicitacao.pk}: a viagem não foi atualizada",
+            "A decisão foi registrada, mas a viagem em Viagens não pôde ser "
+            "gerada ou atualizada. Use \"Gerar viagem\" na solicitação ou "
+            "confira a viagem pelo módulo de Viagens.",
+            link=reverse("solicitacoes:editar", args=[solicitacao.pk]) + "#viagem",
+            solicitacao=solicitacao,
         )
 
 
@@ -461,7 +477,7 @@ def cancelar_evento(solicitacao, usuario, observacao):
         exceto=usuario,
     )
     # Evento cancelado depois do deferimento: a viagem gerada não vai acontecer.
-    _acompanhar_viagem(solicitacao, usuario, observacao)
+    _agendar_acompanhamento_da_viagem(solicitacao, usuario, observacao)
     return solicitacao
 
 

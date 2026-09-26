@@ -30,4 +30,6 @@ urlpatterns = [
     path("<int:pk>/despachar/", views.despachar, name="despachar"),
     path("<int:pk>/concluir/", views.concluir_solicitacao, name="concluir"),
     path("<int:pk>/cancelar-evento/", views.cancelar_evento, name="cancelar_evento"),
+    # Viagem em Viagens a partir da solicitação deferida (quando não nasceu sozinha).
+    path("<int:pk>/gerar-viagem/", views.gerar_viagem, name="gerar_viagem"),
 ]

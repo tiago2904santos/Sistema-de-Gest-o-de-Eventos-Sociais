@@ -286,6 +286,38 @@
         </div>
       {% endif %}
 
+      {% if cartao_viagem %}
+        {# A logística do evento deferido, sem trocar de módulo. #}
+        <section class="section-card reg" id="viagem">
+          <header class="section-card__cabecalho reg__t">
+            <h2 class="section-card__titulo">Viagem</h2>
+            {% if cartao_viagem.url %}
+              <div class="section-card__acao">
+                <a class="btn--secundaria btn--compacto" href="{{ cartao_viagem.url }}">{% include "components/icon.html" with nome="volante" %}Abrir viagem</a>
+              </div>
+            {% endif %}
+          </header>
+          <div class="section-card__corpo sol-viagem">
+            {% if cartao_viagem.viagem %}
+              <p class="sol-viagem__situacao"><b>Viagem #{{ cartao_viagem.viagem.pk }}</b> — {{ cartao_viagem.viagem.titulo }} · <span class="st st--{{ cartao_viagem.viagem.status }}">{{ cartao_viagem.viagem.get_status_display }}</span></p>
+              {% if cartao_viagem.falta %}
+                <p class="sol-viagem__texto">Falta completar em Viagens:</p>
+                <ul class="sol-viagem__falta">{% for item in cartao_viagem.falta %}<li>{{ item }}</li>{% endfor %}</ul>
+              {% else %}
+                <p class="sol-viagem__texto">Nada pendente: a viagem tem sede, horário, servidores, viatura e motorista.</p>
+              {% endif %}
+            {% elif cartao_viagem.pode_gerar %}
+              <p class="sol-viagem__texto">A solicitação foi deferida e ainda não tem viagem em Viagens.</p>
+              <form method="post" action="{% url 'solicitacoes:gerar_viagem' solicitacao.pk %}">{% csrf_token %}
+                <button type="submit" class="btn-primaria btn--compacto">{% include "components/icon.html" with nome="plus" %}Gerar viagem</button>
+              </form>
+            {% else %}
+              <p class="sol-viagem__texto">Sem viagem gerada.{% if cartao_viagem.motivo %} {{ cartao_viagem.motivo }}{% endif %}</p>
+            {% endif %}
+          </div>
+        </section>
+      {% endif %}
+
       {# No despacho, a decisão "Evento cancelado" cobre o encerramento. #}
       {% if not acoes.despachar %}{% if acoes.concluir or acoes.cancelar %}{% if not reabrindo %}
         <section class="section-card reg" id="encerramento">

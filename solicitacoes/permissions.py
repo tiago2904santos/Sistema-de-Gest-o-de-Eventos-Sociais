@@ -119,6 +119,14 @@ def pode_despachar(user, solicitacao):
     )
 
 
+def pode_gerar_viagem(user):
+    """"Gerar viagem" pela tela: a DG, que deferiu, ou quem opera Viagens."""
+    # Import tardio: as permissões de Viagens importam este módulo.
+    from viagens_cadastros.permissions import pode_editar_cadastros
+
+    return eh_gestor_dg(user) or pode_editar_cadastros(user)
+
+
 def pode_gerenciar_anexos(user, solicitacao):
     """Anexos seguem a edição dos dados, mas param na finalização.
 
