@@ -171,7 +171,7 @@ class PrestacaoServidor(OrigemLegado):
         """
         # A linha histórica importada deve continuar rastreável no diário da
         # migração, mesmo quando ainda não tem preenchimento financeiro.
-        return bool(self.legado_pk is not None or self.numero_solicitacao.strip() or self.diaria_valor_override is not None or self.diaria_valor_override_observacao.strip() or self.data_liberacao_diarias or self.prazo_limite_saque or (self.status != self.STATUS_PENDENTE) or self.arquivada or self.finalizada or self.justificativa_finalizacao.strip() or self.enviada_em or self.protocolo_envio.strip() or self.decidida_em or self.motivo_devolucao.strip() or self.documentos_anexos.exists())
+        return bool(self.legado_pk is not None or self.numero_solicitacao.strip() or self.diaria_valor_override is not None or self.diaria_valor_override_observacao.strip() or self.data_liberacao_diarias or self.prazo_limite_saque or (self.status != self.STATUS_PENDENTE) or self.arquivada or self.finalizada or self.justificativa_finalizacao.strip() or self.enviada_em or self.protocolo_envio.strip() or self.decidida_em or self.motivo_devolucao.strip() or bool(self.ajuste_pacote) or self.documentos_anexos.exists())
 
     def tem_prova_irrefazivel(self) -> bool:
         """Só o que ninguém consegue refazer se a linha sumir (`NOVO-35`).
