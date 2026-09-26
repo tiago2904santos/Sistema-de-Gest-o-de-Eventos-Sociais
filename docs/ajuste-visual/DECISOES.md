@@ -239,3 +239,44 @@ requisito e não são rediscutidas aqui.
   shell saiu e **`design-system.css` (4.130 linhas) foi apagado** — nada mais o
   lia. `viagens-cadastros.css` e `viagens-prestacoes.css`, sem nenhum
   `<link>`, também.
+
+## Fase 4 — limpeza
+
+- **CSS morto**: 306 classes do bridge não apareciam em template, JS nem
+  Python (levantamento com regex, contando prefixos montados em string como
+  `"st--" + tom`). Uma poda automática removeu ou reduziu 586 regras (2.954 →
+  2.550 linhas), inclusive os blocos inteiros dos protótipos nunca usados
+  (`m-sheet`, `fpanel`, `step-i`, `stepper-n`, `notificacao-cartao`, o
+  detalhe antigo do ofício `of-*`, as prestações antigas `pc-passo`…). A
+  conferência foi por imagem: captura completa antes e depois da poda, 319
+  das 325 telas idênticas; as seis diferentes foram 1px no termo e uma
+  mudança de **dados** num roteiro de teste (ver abaixo), não de CSS.
+- **JS morto**: a folha inferior do celular (`ds-v32.js`), o clique de linha
+  `data-linha-url` e o menu de usuário do cabeçalho antigo (`app.js`) saíram.
+- **`!important`**: de 25 para 9 no bridge. Ficaram os necessários
+  (`[hidden]`, `.coluna-oculta`, estado de erro do campo, arraste de destino,
+  `prefers-reduced-motion`); os outros caíram por especificidade ou junto com
+  as regras mortas.
+- **`pdf-place.css`** reescrito nos tokens do V3.2 (citava 17 tokens de outro
+  sistema, que nunca existiram aqui).
+- **Índice do bridge**: o cabeçalho ganhou o índice das 14 seções na ordem do
+  arquivo. A ordem física não foi trocada de propósito: é a ordem da cascata e
+  muitos blocos sobrepõem os anteriores; reagrupar por tema exigiria conferir
+  cada sobreposição.
+- **Ocorrência registrada**: durante a sessão, o roteiro de teste #76 (dev)
+  ganhou sede "Abadia dos Dourados" e dois trechos, às 13:59, pela conta de
+  auditoria — o select pesquisável de município escolhe a primeira opção
+  destacada ao Enter, e a aba do navegador do app estava aberta nessa conta.
+  A reprodução em navegador isolado (editor aberto em 1440 e 375px, roteiro
+  existente e novo) não dispara autosave nenhum. O roteiro foi devolvido ao
+  estado anterior (sede vazia, sem trechos); o histórico dele guarda o rastro.
+
+## Fase 5 — acessibilidade
+
+- `--rotulo` (rótulos pequenos em versalete) passou de `--n-450` (#777,
+  4,48:1 sobre branco) para `--n-500` (#6e6e6e, 5,3:1); `form-ajuda`, rodapé e
+  ajuda do login idem. O dourado `--d-600` em texto (números de seção, 2,3:1)
+  ficou: é regra do dono.
+- Foco por teclado visível em tudo (Fase 2). Botões só de ícone: todos com
+  `aria-label` (varredura sem exceção). No celular, botão de ícone, passos e
+  números da paginação e itens da trilha têm 44px de alvo.

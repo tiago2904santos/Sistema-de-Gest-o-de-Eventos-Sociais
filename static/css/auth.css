@@ -35,7 +35,7 @@
 .auth-card__link{margin:0;text-align:center;font-size:var(--fs-texto);font-weight:600}
 .auth-card__link a{display:inline-flex;align-items:center;gap:var(--s1)}
 .auth-card__link .ui-icon{width:14px;height:14px}
-.auth-card__ajuda{margin:0;text-align:center;font-size:var(--fs-apoio);color:var(--n-450);line-height:1.6}
+.auth-card__ajuda{margin:0;text-align:center;font-size:var(--fs-apoio);color:var(--n-500);line-height:1.6}
 
 @container (max-width:680px){
   .auth-shell__conteudo{padding:var(--s5) var(--s4)}

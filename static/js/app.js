@@ -1841,16 +1841,6 @@
 (function () {
   "use strict";
 
-  document.querySelectorAll("[data-linha-url]").forEach(function (linha) {
-    var destino = linha.getAttribute("data-linha-url");
-
-    linha.addEventListener("click", function (evento) {
-      if (evento.target.closest("a, button, input, label")) return;
-      if (window.getSelection && String(window.getSelection())) return;
-      window.location.href = destino;
-    });
-  });
-
   var resumoErros = document.querySelector("[data-resumo-erros]");
   if (resumoErros) resumoErros.focus();
 })();
@@ -2001,43 +1991,6 @@
     // O envio pode falhar e recarregar esta mesma página; por isso a limpeza
     // só acontece quando o navegador chega a outro endereço.
     window.sessionStorage.setItem("rascunho-enviado", chave);
-  });
-})();
-
-/**
- * Menu do avatar no cabeçalho: alterar senha, acesso gestor e sair moram
- * aqui para o topo da página carregar só identidade e notificações.
- */
-(function () {
-  "use strict";
-
-  document.querySelectorAll("[data-menu-usuario]").forEach(function (wrapper) {
-    var gatilho = wrapper.querySelector("[data-menu-usuario-gatilho]");
-    var menu = wrapper.querySelector("[data-menu-usuario-menu]");
-    if (!gatilho || !menu) return;
-
-    function fechar() {
-      menu.hidden = true;
-      gatilho.setAttribute("aria-expanded", "false");
-    }
-
-    gatilho.addEventListener("click", function (evento) {
-      evento.stopPropagation();
-      var abrir = menu.hidden;
-      menu.hidden = !abrir;
-      gatilho.setAttribute("aria-expanded", String(abrir));
-    });
-
-    document.addEventListener("click", function (evento) {
-      if (!menu.hidden && !wrapper.contains(evento.target)) fechar();
-    });
-
-    document.addEventListener("keydown", function (evento) {
-      if (evento.key === "Escape" && !menu.hidden) {
-        fechar();
-        gatilho.focus();
-      }
-    });
   });
 })();
 

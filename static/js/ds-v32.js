@@ -203,30 +203,6 @@
     }
   }
 
-  // Bottom sheets (mobile): Filtros e Ordenar abrem sobre um véu; Escape,
-  // o véu e o botão de fechar recolhem.
-  var veu = document.querySelector(".m-veu");
-  function fecharSheets() {
-    document.querySelectorAll(".m-sheet").forEach(function (sheet) { sheet.hidden = true; });
-    if (veu) veu.hidden = true;
-    document.body.classList.remove("m-sheet-aberto");
-    document.querySelectorAll("[data-abrir-sheet]").forEach(function (botao) { botao.setAttribute("aria-expanded", "false"); });
-  }
-  document.querySelectorAll("[data-abrir-sheet]").forEach(function (botao) {
-    botao.addEventListener("click", function () {
-      var alvo = document.querySelector(botao.getAttribute("data-abrir-sheet"));
-      if (!alvo) return;
-      fecharSheets();
-      alvo.hidden = false;
-      if (veu) veu.hidden = false;
-      document.body.classList.add("m-sheet-aberto");
-      botao.setAttribute("aria-expanded", "true");
-      var foco = alvo.querySelector("select, input, a, button");
-      if (foco) foco.focus();
-    });
-  });
-  document.querySelectorAll("[data-fechar-sheet]").forEach(function (el) { el.addEventListener("click", fecharSheets); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") fecharSheets(); });
 
   // Ao voltar de uma decisão com erro, a página abre já na seção do despacho.
   if (window.location.hash === "#despacho-dg") {
