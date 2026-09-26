@@ -6,6 +6,7 @@ urlpatterns = [
     path('documentos/<uuid:pk>/assinatura/', views.assinatura_artefato, name='assinatura_artefato'),
     path('documentos/<uuid:pk>/preview/', views.preview_artefato, name='preview_artefato'),
     path('', views.lista, name='lista'),
+    path('exportar/', views.exportar, name='exportar'),
     path('novo/', views.editar, name='novo'),
     path('criar/', views.criar, name='criar'),
     path('numeracao/', views.numeracao, name='numeracao'),

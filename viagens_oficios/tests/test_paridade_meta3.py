@@ -89,7 +89,7 @@ class ListaOficiosTests(Cenario):
         self.assertContains(r, "R$ 4.358,25 · 5 x 100%")
         self.assertContains(r, "Justificativa preenchida")
         # O cartão e os filtros antigos saíram.
-        for marca in ["of-cartao__rodape", "of-catalogos", "Número: maior", 'name="viagem_de"', "Mostrando <strong>"]:
+        for marca in ["of-cartao__rodape", "of-catalogos", "Mostrando <strong>"]:
             self.assertNotContains(r, marca)
 
     def test_linha_mostra_o_tipo_do_oficio(self):
@@ -97,6 +97,44 @@ class ListaOficiosTests(Cenario):
         r = self.lista()
         self.assertContains(r, ">Convalidação</span>")
         self.assertContains(r, "antes da data do ofício")
+
+    def test_filtros_prontos_e_ordenacao(self):
+        perto = self.oficio(dias=3)
+        longe = self.oficio(dias=40)
+        antigo = self.oficio(dias=-30)
+        de = (self.hoje + timedelta(days=1)).isoformat()
+        ate = (self.hoje + timedelta(days=15)).isoformat()
+        r = self.lista(viagem_de=de, viagem_ate=ate)
+        self.assertEqual([l["oficio"].pk for l in r.context["linhas"]], [perto.pk])
+        self.assertContains(r, f"Viagem a partir de: {(self.hoje + timedelta(days=1)):%d/%m/%Y}")
+        self.assertContains(r, 'name="viagem_de"')
+        r = self.lista(sort="viagem_asc")
+        self.assertEqual([l["oficio"].pk for l in r.context["linhas"]], [antigo.pk, perto.pk, longe.pk])
+        self.assertContains(r, "Ordem: Viagem: mais próxima")
+        # Filtro inválido é ignorado, não derruba a página.
+        r = self.lista(viagem_de="31/02", ano="abc")
+        self.assertEqual(len(r.context["linhas"]), 3)
+        # A exportação leva o mesmo recorte.
+        self.assertContains(r, reverse("viagens_oficios:exportar"))
+
+    def test_exportar_excel_com_o_recorte(self):
+        import io
+        from openpyxl import load_workbook
+        perto = self.oficio(dias=3, protocolo="123456789", servidores=[self.janine])
+        self.oficio(dias=40)
+        de = (self.hoje + timedelta(days=1)).isoformat()
+        ate = (self.hoje + timedelta(days=15)).isoformat()
+        r = self.client.get(reverse("viagens_oficios:exportar"), {"viagem_de": de, "viagem_ate": ate})
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("spreadsheetml", r["Content-Type"])
+        aba = load_workbook(io.BytesIO(r.content)).active
+        linhas = list(aba.iter_rows(values_only=True))
+        self.assertEqual(linhas[0][:5], ("Nº", "Data do ofício", "Protocolo", "Situação", "Tipo"))
+        self.assertEqual(len(linhas), 2)
+        self.assertEqual(linhas[1][0], perto.numero_formatado)
+        self.assertEqual(linhas[1][2], "12.345.678-9")
+        self.assertEqual(linhas[1][4], "Autorização")
+        self.assertEqual(linhas[1][8], "JANINE LACERDA DO PRADO")
 
     def test_linha_de_rascunho_vazio(self):
         self.oficio()
