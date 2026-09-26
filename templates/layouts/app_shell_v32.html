@@ -2,14 +2,9 @@
 {% load static estaticos %}
 {% comment %}
   App shell V3.2: composição do Design System aprovado (faixa de identidade,
-  barra de módulo, conteúdo e rodapé). Carrega apenas o CSS V3.2, sem o
-  design-system.css antigo — as páginas migram uma a uma para este layout.
+  barra de módulo, conteúdo e rodapé). O CSS (ds-v32 + bridge) vem do
+  layouts/base.html; as telas de autenticação usam o layouts/auth.html.
 {% endcomment %}
-
-{% block css_principal %}
-  <link rel="stylesheet" href="{% estatico 'css/ds-v32.css' %}">
-  <link rel="stylesheet" href="{% estatico 'css/ds-v32-bridge.css' %}">
-{% endblock %}
 
 {% block body %}
 <div class="pagina app-v32">

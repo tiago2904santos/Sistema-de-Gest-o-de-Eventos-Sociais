@@ -18,8 +18,8 @@
     </div>
 
     {% if form.non_field_errors %}
-      <div class="auth-alerta" role="alert">
-        <span class="auth-alerta__icone" aria-hidden="true">{% include "components/icon.html" with nome="alert" %}</span>
+      <div class="aviso aviso--erro" role="alert">
+        {% include "components/icon.html" with nome="alert" %}
         <div>{% for erro in form.non_field_errors %}{{ erro }}{% endfor %}</div>
       </div>
     {% endif %}
@@ -35,7 +35,7 @@
       {% for erro in form.email.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
     </div>
 
-    <button type="submit" class="btn btn--dourado btn--bloco auth-card__entrar">
+    <button type="submit" class="btn-primaria auth-card__entrar">
       Enviar link de recuperação
       {% include "components/icon.html" with nome="send" %}
     </button>

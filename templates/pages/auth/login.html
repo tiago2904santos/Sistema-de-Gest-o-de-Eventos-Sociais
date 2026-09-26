@@ -18,8 +18,8 @@
     </div>
 
     {% if form.non_field_errors %}
-      <div class="auth-alerta" role="alert">
-        <span class="auth-alerta__icone" aria-hidden="true">{% include "components/icon.html" with nome="alert" %}</span>
+      <div class="aviso aviso--erro" role="alert">
+        {% include "components/icon.html" with nome="alert" %}
         <div>{% for erro in form.non_field_errors %}{{ erro }}{% endfor %}</div>
       </div>
     {% endif %}
@@ -52,14 +52,15 @@
       {% for erro in form.password.errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}
     </div>
 
-    <label class="form-check auth-card__lembrar">
-      <input type="checkbox" name="manter_conectado" value="1">
-      Mantenha-me conectado
+    <label class="interruptor auth-card__lembrar">
+      <input class="sr-only" type="checkbox" name="manter_conectado" value="1">
+      <span class="interruptor__trilho" aria-hidden="true"><span class="interruptor__botao"></span></span>
+      <span class="interruptor__rotulo">Mantenha-me conectado</span>
     </label>
 
     <input type="hidden" name="next" value="{{ next }}">
 
-    <button type="submit" class="btn btn--dourado btn--bloco auth-card__entrar">
+    <button type="submit" class="btn-primaria auth-card__entrar">
       {% include "components/icon.html" with nome="login" %}
       Entrar
     </button>

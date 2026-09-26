@@ -1,13 +1,28 @@
 {% extends "layouts/base.html" %}
+{% load static estaticos %}
 {% comment %}
-  Layout das páginas de autenticação: barra institucional grafite no topo
-  (com linha dourada) e card centralizado sobre fundo cinza claro.
+  Layout das páginas de autenticação: a mesma faixa de identidade do sistema
+  (grafite com a linha dourada, sem as ações de usuário) e o cartão
+  centralizado sobre o papel. Usa o Design System V3.2 mais o auth.css, que
+  só tem a composição da tela.
 {% endcomment %}
 
+{% block css_principal %}
+  <link rel="stylesheet" href="{% estatico 'css/ds-v32.css' %}">
+  <link rel="stylesheet" href="{% estatico 'css/ds-v32-bridge.css' %}">
+  <link rel="stylesheet" href="{% estatico 'css/auth.css' %}">
+{% endblock %}
+
 {% block body %}
-{% load static %}
-<div class="auth-shell">
-  {% include "components/top_header.html" %}
+<div class="pagina app-v32 auth-shell">
+  <header class="ident"><div class="ident__in">
+    <a class="marca marca--login" href="{% url 'core:home' %}">
+      <img class="marca__brasao" src="{% static 'icons/favicon.svg' %}" alt="Brasão da Polícia Civil do Paraná">
+      <strong class="marca__sigla">PCPR</strong>
+      <span class="risco-i" aria-hidden="true"></span>
+      <span class="marca__produto"><span class="marca__titulo">Sistema de Gestão de Eventos Sociais</span><span class="marca__sub">Polícia Civil do Paraná</span></span>
+    </a>
+  </div></header>
   <div class="auth-shell__conteudo">
     <img class="auth-shell__marca" src="{% static 'icons/favicon.svg' %}" alt="" aria-hidden="true">
     {% block conteudo %}{% endblock %}

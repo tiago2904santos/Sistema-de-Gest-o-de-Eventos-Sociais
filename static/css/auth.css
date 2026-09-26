@@ -1,0 +1,43 @@
+/* Telas de autenticação (login, recuperação de senha) sobre o Design System
+   V3.2: a mesma faixa de identidade do sistema no topo e um cartão
+   centralizado sobre o papel, com o brasão em marca d'água à direita. Campos,
+   botões, avisos e o interruptor são os do sistema; aqui só mora a composição
+   da tela. Substitui o design-system.css antigo, que só estas telas usavam. */
+
+.auth-shell{min-height:100vh;display:flex;flex-direction:column;background:var(--papel)}
+.auth-shell__conteudo{flex:1;display:grid;place-items:center;padding:var(--s8) var(--s5);position:relative;overflow:hidden}
+/* Brasão em marca d'água e as duas setas geométricas da identidade, à esquerda. */
+.auth-shell__marca{position:absolute;right:-4%;top:50%;transform:translateY(-50%);width:min(34vw,460px);opacity:.05;filter:grayscale(1);pointer-events:none;user-select:none}
+.auth-shell__conteudo::before,.auth-shell__conteudo::after{content:"";position:absolute;top:50%;pointer-events:none}
+.auth-shell__conteudo::before{left:-21rem;width:26rem;height:26rem;transform:translateY(-58%) rotate(45deg);border-top:2.75rem solid var(--n-150);border-right:2.75rem solid var(--n-150)}
+.auth-shell__conteudo::after{left:-16rem;width:24rem;height:24rem;transform:translateY(-42%) rotate(45deg);border-top:2px solid var(--d-500);border-right:2px solid var(--d-500);opacity:.75}
+
+.auth-card{width:100%;max-width:460px;background:var(--branco);border:1px solid var(--n-200);border-radius:var(--raio-cartao);box-shadow:var(--sombra-2);overflow:hidden;position:relative;z-index:1}
+.auth-card__corpo{padding:var(--s8) var(--s8) var(--s6);display:flex;flex-direction:column;gap:var(--s4)}
+.auth-card__cabecalho{text-align:center}
+.auth-card__brasao{width:84px;height:auto;margin-bottom:var(--s3)}
+.auth-card__titulo{margin:0;font-size:var(--fs-titulo-1);font-weight:600;color:var(--n-900);letter-spacing:-.012em}
+.auth-card__subtitulo{margin:var(--s2) 0 0;font-size:var(--fs-texto);line-height:1.55;color:var(--n-500)}
+.auth-card .aviso{margin:0}
+.auth-card .form-campo{margin:0}
+/* Os botões do cartão ocupam a largura inteira. */
+.auth-card .btn-primaria,.auth-card .btn--secundaria{width:100%;justify-content:center}
+.auth-card__entrar{height:var(--alt-controle-celular)}
+/* Ícone à esquerda dentro do campo (usuário, senha, e-mail). */
+.campo-com-icone{position:relative;display:block}
+.campo-com-icone__icone{position:absolute;top:50%;left:var(--s3);transform:translateY(-50%);display:flex;color:var(--n-400);pointer-events:none;z-index:1}
+.campo-com-icone__icone .ui-icon{width:16px;height:16px}
+.campo-com-icone .form-controle{padding-left:38px}
+.auth-card__restrito{display:flex;align-items:center;gap:var(--s3);margin-top:var(--s2);font-size:var(--fs-apoio);color:var(--n-500);white-space:nowrap}
+.auth-card__restrito::before,.auth-card__restrito::after{content:"";flex:1;border-top:1px solid var(--n-200)}
+.auth-card__restrito span{display:flex;color:var(--n-400)}
+.auth-card__restrito .ui-icon{width:14px;height:14px}
+.auth-card__link{margin:0;text-align:center;font-size:var(--fs-texto);font-weight:600}
+.auth-card__link a{display:inline-flex;align-items:center;gap:var(--s1)}
+.auth-card__link .ui-icon{width:14px;height:14px}
+.auth-card__ajuda{margin:0;text-align:center;font-size:var(--fs-apoio);color:var(--n-450);line-height:1.6}
+
+@container (max-width:680px){
+  .auth-shell__conteudo{padding:var(--s5) var(--s4)}
+  .auth-card__corpo{padding:var(--s6) var(--s5) var(--s5)}
+}

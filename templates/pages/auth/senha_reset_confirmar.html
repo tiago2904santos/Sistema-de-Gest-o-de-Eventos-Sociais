@@ -18,8 +18,9 @@
       </div>
 
       {% if form.non_field_errors %}
-        <div class="alerta alerta--error">
-          {% for erro in form.non_field_errors %}{{ erro }}{% endfor %}
+        <div class="aviso aviso--erro" role="alert">
+          {% include "components/icon.html" with nome="alert" %}
+          <div>{% for erro in form.non_field_errors %}{{ erro }}{% endfor %}</div>
         </div>
       {% endif %}
 
@@ -37,7 +38,7 @@
         {% if form.new_password2.errors %}<p class="form-erro">{{ form.new_password2.errors.0 }}</p>{% endif %}
       </div>
 
-      <button type="submit" class="btn btn--dourado btn--bloco">Salvar nova senha</button>
+      <button type="submit" class="btn-primaria">Salvar nova senha</button>
     </form>
   {% else %}
     <div class="auth-card__corpo">
@@ -50,7 +51,7 @@
         </p>
       </div>
       {% url 'accounts:senha_reset' as url_reset %}
-      <a class="btn btn--dourado btn--bloco" href="{{ url_reset }}">Solicitar novo link</a>
+      <a class="btn-primaria" href="{{ url_reset }}">Solicitar novo link</a>
     </div>
   {% endif %}
 </div>

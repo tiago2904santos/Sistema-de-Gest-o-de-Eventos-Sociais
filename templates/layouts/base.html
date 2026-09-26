@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Sistema de Gestão de Eventos Sociais{% endblock %}</title>
   <link rel="icon" href="{% static 'icons/favicon.svg' %}" type="image/svg+xml">
-  {% block css_principal %}<link rel="stylesheet" href="{% estatico 'css/design-system.css' %}">{% endblock %}
+  {% block css_principal %}
+    <link rel="stylesheet" href="{% estatico 'css/ds-v32.css' %}">
+    <link rel="stylesheet" href="{% estatico 'css/ds-v32-bridge.css' %}">
+  {% endblock %}
   {% block extra_css %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">

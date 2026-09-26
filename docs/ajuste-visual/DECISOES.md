@@ -223,3 +223,19 @@ requisito e não são rediscutidas aqui.
   `change` passou a ser delegada no documento.
 - O cartão do calendário rola por dentro (`overflow-x:auto`) — a lista do
   FullCalendar empurrava a página para 490px no celular.
+
+## Fase 3 — autenticação e o fim do CSS antigo
+
+- Login e recuperação de senha passaram ao V3.2: `layouts/auth.html` carrega
+  `ds-v32.css` + bridge + um `auth.css` de 40 linhas (só a composição:
+  cartão centralizado, brasão em marca d'água, as duas setas geométricas,
+  ícone dentro do campo). A faixa de identidade é a mesma do shell (sem as
+  ações de usuário); `top_header.html` foi apagado. Botão dourado em caixa
+  alta → `btn-primaria`; `btn--secundario` → `btn--secundaria`; `auth-alerta`
+  e `alerta--error` → `aviso aviso--erro`; "Mantenha-me conectado" →
+  `interruptor`. A identidade da tela (cartão sobre o papel, brasão grande)
+  ficou.
+- `layouts/base.html` passou a carregar o V3.2 por padrão, o override do
+  shell saiu e **`design-system.css` (4.130 linhas) foi apagado** — nada mais o
+  lia. `viagens-cadastros.css` e `viagens-prestacoes.css`, sem nenhum
+  `<link>`, também.
