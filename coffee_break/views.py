@@ -52,6 +52,8 @@ from .models import (
 from core import preencher_por_email
 from core.listagens import trilha_de_situacoes
 
+from solicitacoes.permissions import eh_administrador
+
 from .permissions import acesso_ao_modulo, gerenciamento_de_cadastros
 from .presenters import filas_de_situacao, linha_da_lista, linha_do_cadastro, linha_do_lote, selo_do_consumo
 from . import certidoes, documentos, documents, preenchimento, services
@@ -735,6 +737,8 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
             solicitacao and (solicitacao.financeiro_iniciado or somente_leitura)
         ),
         "stepper": _stepper(solicitacao, etapa),
+        # Reabrir a concluída para correção: só administrador do módulo.
+        "pode_reabrir": bool(solicitacao and solicitacao.concluida and eh_administrador(request.user)),
         "hoje": timezone.localdate(),
         # Cabeçalho da tela de edição: só o título e o selo da situação.
         "selo": solicitacao.situacao_financeira_display if solicitacao else "Nova",
@@ -992,6 +996,23 @@ def _registrar_retroativo(form, solicitacao, usuario):
         )
 
 
+def _registrar_correcao(form, anterior, solicitacao, usuario):
+    """Na solicitação reaberta, cada campo corrigido: o valor anterior e o novo."""
+    mudancas = []
+    for nome in form.changed_data:
+        if nome not in form._meta.fields:
+            continue
+        antes, depois = getattr(anterior, nome), getattr(solicitacao, nome)
+        if antes != depois:
+            mudancas.append(
+                f"{form.fields[nome].label}: {services._valor_legivel(antes)} → {services._valor_legivel(depois)}"
+            )
+    if mudancas:
+        services.registrar_historico(
+            solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO, "Correção — " + "; ".join(mudancas) + "."
+        )
+
+
 def _avisar_antecedencia(request, solicitacao):
     aviso = services.aviso_de_antecedencia(solicitacao)
     if aviso:
@@ -1009,7 +1030,12 @@ def _tela_da_etapa(request, pk, etapa):
         pk=pk,
     )
     Formulario = config["form"]
-    somente_leitura = solicitacao.cancelada or solicitacao.concluida
+    somente_leitura = solicitacao.bloqueada_para_edicao
+    # Reaberta para correção: o histórico guarda o valor anterior e o novo.
+    anterior = (
+        SolicitacaoCoffeeBreak.objects.get(pk=solicitacao.pk)
+        if solicitacao.em_correcao and request.method == "POST" else None
+    )
     if somente_leitura:
         # Canceladas e concluídas continuam abrindo, mas sem gravar — só para
         # consulta, documentos, ações de situação e histórico.
@@ -1061,6 +1087,8 @@ def _tela_da_etapa(request, pk, etapa):
                     if alterados
                     else "Solicitação salva sem alteração de campos.",
                 )
+                if anterior is not None:
+                    _registrar_correcao(form, anterior, solicitacao, request.user)
                 if etapa == "pedido":
                     _registrar_retroativo(form, solicitacao, request.user)
                 messages.success(request, "Solicitação de coffee break atualizada.")
@@ -1281,6 +1309,24 @@ def baixar_arquivos(request, pk):
         resposta = HttpResponse(saida.getvalue(), content_type="application/zip")
     resposta["Content-Disposition"] = f'attachment; filename="{nome}"'
     return resposta
+
+
+@gerenciamento_de_cadastros
+@require_POST
+def reabrir_solicitacao(request, pk):
+    """Reabre a concluída para correção (ou encerra a correção), só para administradores do módulo."""
+    solicitacao = get_object_or_404(SolicitacaoCoffeeBreak, pk=pk)
+    try:
+        if request.POST.get("acao") == "encerrar":
+            services.encerrar_correcao(solicitacao, request.user)
+            messages.success(request, "Correção encerrada: a solicitação voltou a ficar só para consulta.")
+        else:
+            services.reabrir_para_correcao(solicitacao, request.user, request.POST.get("motivo", ""))
+            messages.success(request, "Solicitação reaberta para correção. O que mudar fica no histórico.")
+    except ValidationError as erro:
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+    return redirect("coffee_break:editar", pk=solicitacao.pk)
 
 
 @acesso_ao_modulo
@@ -1676,7 +1722,7 @@ def vincular_pagamento(request, pk):
     """Marcar ou desmarcar uma OS na lista "Vincular outra OS" já vincula,
     sem salvar a etapa (JSON para a tela)."""
     solicitacao = get_object_or_404(SolicitacaoCoffeeBreak, pk=pk)
-    if solicitacao.cancelada or solicitacao.concluida:
+    if solicitacao.bloqueada_para_edicao:
         return JsonResponse({"ok": False, "mensagem": "Solicitações canceladas ou concluídas ficam bloqueadas."}, status=400)
     try:
         services.definir_pagamento_conjunto(solicitacao, request.POST.getlist("vinculadas"), request.user)
@@ -1699,7 +1745,7 @@ def anexar_nota(request, pk):
     destino = request.POST.get("next") or reverse("coffee_break:etapa_nota", args=[pk])
     if not url_has_allowed_host_and_scheme(destino, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
         destino = reverse("coffee_break:etapa_nota", args=[pk])
-    if solicitacao.cancelada or solicitacao.concluida:
+    if solicitacao.bloqueada_para_edicao:
         messages.warning(request, "Solicitações canceladas ou concluídas ficam bloqueadas para edição.")
         return redirect(destino)
     if request.POST.get("acao") == "remover":

@@ -1772,6 +1772,62 @@ class DataEAntecedenciaDoEventoTests(BaseCoffeeBreakTestCase):
         self.assertEqual(services.aviso_de_antecedencia(s, hoje - dt.timedelta(days=5)), "")
 
 
+class ReabrirParaCorrecaoTests(BaseCoffeeBreakTestCase):
+    """m043: administrador reabre a concluída para corrigir, com motivo e rastro."""
+
+    def setUp(self):
+        self.s = self.criar_solicitacao(
+            numero="41/2026", local_entrega="1DP", responsavel_recebimento="Ana",
+            numero_nota_fiscal="8957", protocolo_pagamento="26.617.058-0",
+            data_atesto_gaf=dt.date(2026, 9, 1), data_ordem_bancaria=dt.date(2026, 9, 10),
+            data_envio_empresa=dt.date(2026, 9, 12),
+        )
+        self.url = reverse("coffee_break:reabrir", args=[self.s.pk])
+
+    def _post_etapa3(self, **extra):
+        self.s.refresh_from_db()
+        dados = {
+            "data_atesto_gaf": "2026-09-01", "data_ordem_bancaria": "2026-09-10",
+            "data_envio_empresa": "2026-09-12", "observacoes": "",
+            "versao": str(int(self.s.atualizado_em.timestamp() * 1_000_000)),
+        }
+        dados.update(extra)
+        return self.client.post(reverse("coffee_break:etapa_protocolo", args=[self.s.pk]), dados)
+
+    def test_so_administrador_reabre(self):
+        self.client.force_login(self.ascom)
+        self.assertEqual(self.client.post(self.url, {"motivo": "Data errada"}).status_code, 403)
+        tela = self.client.get(reverse("coffee_break:etapa_protocolo", args=[self.s.pk]))
+        self.assertNotContains(tela, "Reabrir para correção")
+
+    def test_reabrir_pede_motivo_e_libera_a_edicao_com_rastro(self):
+        self.client.force_login(self.admin_modulo)
+        tela = self.client.get(reverse("coffee_break:etapa_protocolo", args=[self.s.pk]))
+        self.assertContains(tela, "Reabrir para correção")
+        self.client.post(self.url, {"motivo": ""})
+        self.s.refresh_from_db()
+        self.assertFalse(self.s.em_correcao)
+        # Concluída e não reaberta: não grava.
+        self._post_etapa3(data_ordem_bancaria="2026-09-11")
+        self.s.refresh_from_db()
+        self.assertEqual(self.s.data_ordem_bancaria, dt.date(2026, 9, 10))
+
+        self.client.post(self.url, {"motivo": "OB digitada errada"})
+        self.s.refresh_from_db()
+        self.assertTrue(self.s.em_correcao)
+        self.assertTrue(self.s.historico.filter(descricao="Reaberta para correção: OB digitada errada").exists())
+        self._post_etapa3(data_ordem_bancaria="2026-09-11")
+        self.s.refresh_from_db()
+        self.assertEqual(self.s.data_ordem_bancaria, dt.date(2026, 9, 11))
+        self.assertTrue(
+            self.s.historico.filter(descricao__contains="10/09/2026 \u2192 11/09/2026").exists()
+        )
+        self.client.post(self.url, {"acao": "encerrar"})
+        self.s.refresh_from_db()
+        self.assertFalse(self.s.em_correcao)
+        self.assertTrue(self.s.bloqueada_para_edicao)
+
+
 class DescricaoUmaLinhaTests(BaseCoffeeBreakTestCase):
     def test_descricao_vira_uma_linha(self):
         self.client.force_login(self.ascom)

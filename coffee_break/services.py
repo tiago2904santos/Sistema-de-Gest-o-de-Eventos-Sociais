@@ -174,6 +174,34 @@ def sair_do_pagamento_conjunto(solicitacao, usuario=None, aviso=""):
     return ficam
 
 
+def reabrir_para_correcao(solicitacao, usuario, motivo=""):
+    """Libera a edição de uma solicitação concluída, com o motivo no histórico."""
+    if not solicitacao.concluida:
+        raise ValidationError("Só solicitações concluídas são reabertas para correção.")
+    if solicitacao.em_correcao:
+        raise ValidationError("A solicitação já está aberta para correção.")
+    motivo = (motivo or "").strip()
+    if not motivo:
+        raise ValidationError("Informe o motivo da correção.")
+    solicitacao.em_correcao = True
+    solicitacao.save(update_fields=["em_correcao", "atualizado_em"])
+    registrar_historico(
+        solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO,
+        f"Reaberta para correção: {motivo[:255]}",
+    )
+    return solicitacao
+
+
+def encerrar_correcao(solicitacao, usuario):
+    """Volta a solicitação reaberta para só consulta."""
+    if not solicitacao.em_correcao:
+        raise ValidationError("A solicitação não está aberta para correção.")
+    solicitacao.em_correcao = False
+    solicitacao.save(update_fields=["em_correcao", "atualizado_em"])
+    registrar_historico(solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO, "Correção encerrada.")
+    return solicitacao
+
+
 def reativar(solicitacao, usuario=None):
     """Desfaz um cancelamento, revalidando o saldo do lote."""
     if not solicitacao.cancelada:

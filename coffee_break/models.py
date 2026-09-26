@@ -451,6 +451,9 @@ class SolicitacaoCoffeeBreak(models.Model):
     motivo_cancelamento = models.CharField(
         "motivo do cancelamento", max_length=255, blank=True
     )
+    # Concluída reaberta por um administrador do módulo para corrigir um dado
+    # (com o motivo no histórico); volta a ser só consulta ao encerrar.
+    em_correcao = models.BooleanField("reaberta para correção", default=False)
 
     # Pagamento conjunto: várias OS do mesmo lote num ofício e num protocolo
     # (como o 26.613.666-8, com as notas 8952 e 8954). As outras apontam para
@@ -630,6 +633,11 @@ class SolicitacaoCoffeeBreak(models.Model):
     @property
     def concluida(self):
         return bool(self.data_envio_empresa) and not self.cancelada
+
+    @property
+    def bloqueada_para_edicao(self):
+        """Cancelada, ou concluída sem ter sido reaberta para correção."""
+        return self.cancelada or (self.concluida and not self.em_correcao)
 
     # -- Pagamento conjunto ---------------------------------------------------
 
