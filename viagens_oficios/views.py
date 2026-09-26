@@ -537,6 +537,7 @@ def editar(request, pk=None):
     from core.retorno import next_valido, voltar_para
     from .form_context import contexto_conferencia, contexto_dados_viajantes, contexto_justificativa
     from .justificativas_services import get_or_create_justificativa_oficio, oficio_exige_justificativa
+    from .campos_modelo import aplicar, preencher_marcadores_do_oficio, valores_do_oficio
     from .presenters import artefatos_pdf_por_oficio, tipo_do_oficio
     from .protocolo_services import abrir_protocolo_do_oficio, mensagens_do_protocolo
     from .services import criar_oficio_rascunho
@@ -585,6 +586,8 @@ def editar(request, pk=None):
                 else:
                     gravacao = _gravar_roteiro(request, oficio, finalizar=finalizar)
                 atualizar_justificativa_oficio(oficio, jform, action='save_continue' if finalizar else 'save_draft')
+                # Campos automáticos que ficaram marcados ({destino}...) viram valor agora que tudo está gravado.
+                preencher_marcadores_do_oficio(oficio)
             # Fora da transação de propósito: abrir o protocolo é uma chamada
             # a outro sistema e não pode segurar a gravação do ofício — se
             # falhar, o ofício já está salvo e a tela explica o que houve.
@@ -647,6 +650,7 @@ def editar(request, pk=None):
         else:
             messages.error(request, 'Não foi possível salvar o ofício. Revise os campos indicados.')
     oficio = get_oficio_by_id(oficio.pk)
+    campos = valores_do_oficio(oficio)
     conferencia = contexto_conferencia(oficio, artefatos_pdf_por_oficio([oficio]).get(oficio.pk, {}))
     return render(request, 'pages/viagens_oficios/form.html', {
         'titulo': 'Cadastro de ofício',
@@ -659,9 +663,10 @@ def editar(request, pk=None):
         'next': next_valido(request),
         'url_voltar': lista,
         'url_atual': request.get_full_path(),
+        # O texto de cada modelo já com os campos automáticos do ofício.
         'modelos_texto': {
-            'modelo_motivo': dict(ModeloMotivoOficio.objects.values_list('pk', 'texto')),
-            'justificativa-modelo': dict(ModeloJustificativa.objects.values_list('pk', 'texto')),
+            'modelo_motivo': {pk: aplicar(texto, campos) for pk, texto in ModeloMotivoOficio.objects.values_list('pk', 'texto')},
+            'justificativa-modelo': {pk: aplicar(texto, campos) for pk, texto in ModeloJustificativa.objects.values_list('pk', 'texto')},
         },
     })
 

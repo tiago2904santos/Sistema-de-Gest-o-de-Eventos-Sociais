@@ -5,6 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 from core.utils.masks import normalize_protocolo
 from core.normalizers import normalize_plate, normalize_spaces
+from .campos_modelo import AJUDA_CAMPOS
 from .models import Oficio, Justificativa, ModeloMotivoOficio, ModeloJustificativa, ConfiguracaoNumeracaoOficio
 
 
@@ -69,7 +70,8 @@ class OficioForm(ProtocoloManualMixin, forms.ModelForm):
             if not motivo:
                 padrao = modelos.filter(is_padrao=True).first()
                 if padrao:
-                    self.initial.update(modelo_motivo=padrao.pk, motivo=padrao.texto)
+                    from .campos_modelo import aplicar, valores_do_oficio
+                    self.initial.update(modelo_motivo=padrao.pk, motivo=aplicar(padrao.texto, valores_do_oficio(self.instance)))
             else:
                 correspondente = modelos.filter(texto=motivo).first()
                 if correspondente:
@@ -271,7 +273,11 @@ class JustificativaForm(forms.ModelForm):
         if not self.is_bound and not self.instance.texto:
             padrao = self.fields['modelo'].queryset.filter(is_padrao=True).first()
             if padrao:
-                self.initial.update(modelo=padrao.pk, texto=padrao.texto)
+                texto = padrao.texto
+                if self.instance.oficio_id:
+                    from .campos_modelo import aplicar, valores_do_oficio
+                    texto = aplicar(texto, valores_do_oficio(self.instance.oficio))
+                self.initial.update(modelo=padrao.pk, texto=texto)
 
     def clean_texto(self):
         texto = (self.cleaned_data.get('texto') or '').strip()
@@ -333,6 +339,7 @@ class ModeloMotivoOficioForm(forms.ModelForm):
         labels = {'nome': 'Nome do modelo', 'texto': 'Texto', 'is_padrao': 'Usar como padrão'}
         help_texts = {
             'is_padrao': 'Será sugerido automaticamente nos ofícios novos.',
+            'texto': AJUDA_CAMPOS,
         }
         widgets = {
             'nome': forms.TextInput(attrs={'placeholder': 'Ex.: COBERTURA JORNALÍSTICA', 'data-uppercase': 'true'}),

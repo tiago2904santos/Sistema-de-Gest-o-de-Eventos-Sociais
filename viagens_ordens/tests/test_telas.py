@@ -159,6 +159,12 @@ class CadastroTests(CenarioOrdemMixin, TestCase):
         self.assertContains(r, "já foi usado por uma OS do Coffee Break")
         self.assertFalse(OrdemServico.objects.exists())
 
+    def test_campos_automaticos_no_motivo(self):
+        self.client.post(reverse("viagens_ordens:novo"), self.payload(motivo="Apoio em {destino} de {periodo}."))
+        ordem = OrdemServico.objects.get()
+        inicio, fim = self.hoje + timedelta(days=5), self.hoje + timedelta(days=6)
+        self.assertEqual(ordem.motivo, f"Apoio em {self.destino.nome.upper()}/{self.uf.sigla} de {inicio:%d/%m/%Y} a {fim:%d/%m/%Y}.")
+
     def test_next_e_respeitado(self):
         destino = reverse("viagens_ordens:lista") + "?q=x"
         r = self.client.post(reverse("viagens_ordens:novo"), self.payload(next=destino))

@@ -502,6 +502,28 @@ class CadastroTests(Cenario):
         o.save()
         self.assertEqual(pendencias_motorista_documento(o), [])
 
+    def test_campos_automaticos_nos_modelos(self):
+        from viagens_oficios.campos_modelo import aplicar
+        modelo = ModeloMotivoOficio.objects.create(nome="COBERTURA", texto="Cobertura em {destino} de {periodo}, com {servidores}. {desconhecido}")
+        ModeloJustificativa.objects.create(nome="URGENTE", texto="Pedido feito {dias_antecedencia} dias antes (prazo {prazo}).")
+        o = self.oficio(dias=5, servidores=[self.janine, self.joao])
+        r = self.editar(o)
+        saida = self.hoje + timedelta(days=5)
+        volta = saida + timedelta(days=5)
+        esperado = (f"Cobertura em ANTONINA/PR de {saida:%d/%m/%Y} a {volta:%d/%m/%Y}, "
+                    "com JANINE LACERDA DO PRADO e JOÃO MARIO DE GOES. {desconhecido}")
+        textos = r.context["modelos_texto"]
+        self.assertEqual(textos["modelo_motivo"][modelo.pk], esperado)
+        self.assertIn("Pedido feito 5 dias antes (prazo 10).", textos["justificativa-modelo"].values())
+        # Sem roteiro, o marcador fica à vista e é preenchido na gravação.
+        vazio = self.oficio(servidores=[self.janine])
+        self.assertIn("{destino}", self.editar(vazio).context["modelos_texto"]["modelo_motivo"][modelo.pk])
+        self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(motivo="Em {destino} por {evento}."))
+        o.refresh_from_db()
+        self.assertEqual(o.motivo, "Em ANTONINA/PR por {evento}.")
+        # Chave solta não derruba nada.
+        self.assertEqual(aplicar("texto { solto", {"destino": "X"}), "texto { solto")
+
     def _finalizar(self, o, **extra):
         return self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(
             servidores=[str(self.janine.pk)], servidores_termo_autorizacao=[str(self.janine.pk)], acao="finalizar", **extra),

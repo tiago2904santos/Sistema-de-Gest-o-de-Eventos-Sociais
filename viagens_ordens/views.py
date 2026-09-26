@@ -225,6 +225,8 @@ def _contexto_form(form, ordem, request):
     ]
     oficios, resumos = opcoes_de_oficio(form)
     modelos = list(form.fields["modelo_motivo"].queryset)
+    from viagens_oficios.campos_modelo import aplicar, valores_da_ordem
+    campos = valores_da_ordem(ordem)
     tipo_atual = _valor(form, "tipo_necessidade") or OrdemServico.TIPO_PADRAO
     aqui = daqui(request)
     if ordem.pk:
@@ -249,7 +251,7 @@ def _contexto_form(form, ordem, request):
         "estados": estados, "municipios": municipios,
         "adicionais": adicionais, "quantidade_destinos": str(form.quantidade_destinos),
         "opcoes_motivos": [{"valor": str(m.pk), "rotulo": m.nome} for m in modelos],
-        "modelos_texto": {str(m.pk): m.texto for m in modelos},
+        "modelos_texto": {str(m.pk): aplicar(m.texto, campos) for m in modelos},
         "url_modelos_motivo": com_next(reverse("viagens_cadastros:lista", args=["motivos-oficio"]), aqui),
         "url_novo_servidor": com_next(reverse("viagens_cadastros:novo", args=["servidores"]), aqui),
         "funcoes_servidores": dict(ordem.funcoes_servidores or {}) if ordem.pk else {},

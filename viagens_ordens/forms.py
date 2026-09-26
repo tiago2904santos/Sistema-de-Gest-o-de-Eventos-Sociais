@@ -159,4 +159,11 @@ class OrdemServicoForm(forms.ModelForm):
             ordem.save()
             self.save_m2m()
             ordem.destinos.set(getattr(self, "cleaned_destinos", []) or [])
+            if "{" in (ordem.motivo or ""):
+                # Campos automáticos do modelo de motivo ({destino}...) viram valor.
+                from viagens_oficios.campos_modelo import aplicar, valores_da_ordem
+                motivo = aplicar(ordem.motivo, valores_da_ordem(ordem))
+                if motivo != ordem.motivo:
+                    ordem.motivo = motivo
+                    ordem.save(update_fields=["motivo", "atualizado_em"])
         return ordem
