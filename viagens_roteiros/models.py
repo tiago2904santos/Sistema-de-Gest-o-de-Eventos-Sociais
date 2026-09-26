@@ -378,3 +378,51 @@ class RoteiroDiariaComponente(ModeloTemporal, OrigemLegado):
 
     def __str__(self):
         return f"{self.quantidade} x {self.percentual}% ({self.faixa})"
+
+
+class DistanciaMunicipios(ModeloTemporal):
+    """Distância rodoviária entre dois municípios, guardada para sempre (m078).
+
+    Alimentada por cada estimativa do serviço de rotas e pelos trechos já
+    gravados nos roteiros; consultada antes de qualquer chamada externa. O
+    diário de bordo usa a mesma tabela para sugerir o km de chegada e conferir
+    o que foi rodado. Uma distância corrigida à mão (``fonte = manual``) não é
+    sobrescrita por estimativas novas.
+
+    O par é gravado no sentido em que apareceu; a consulta aceita o inverso
+    (ida e volta pela mesma estrada têm, na prática, a mesma distância).
+    """
+
+    class Fonte(models.TextChoices):
+        SERVICO = "openrouteservice", "Serviço de rotas"
+        ROTEIRO = "roteiro", "Trecho de roteiro"
+        MANUAL = "manual", "Corrigida manualmente"
+
+    origem = models.ForeignKey(
+        "cadastros.Municipio",
+        verbose_name="origem",
+        on_delete=models.CASCADE,
+        related_name="+",
+    )
+    destino = models.ForeignKey(
+        "cadastros.Municipio",
+        verbose_name="destino",
+        on_delete=models.CASCADE,
+        related_name="+",
+    )
+    distancia_km = models.DecimalField("distância (km)", max_digits=8, decimal_places=2)
+    duracao_min = models.PositiveIntegerField("duração do serviço (min)", blank=True, null=True)
+    tempo_viagem_min = models.PositiveIntegerField("tempo de viagem (min)", blank=True, null=True)
+    fonte = models.CharField("fonte", max_length=20, choices=Fonte.choices, default=Fonte.SERVICO)
+
+    class Meta:
+        ordering = ["origem__nome", "destino__nome"]
+        verbose_name = "distância entre municípios"
+        verbose_name_plural = "distâncias entre municípios"
+        constraints = [
+            models.UniqueConstraint(fields=["origem", "destino"], name="distancia_municipios_par_unico"),
+            nao_negativo("distancia_km", name="distancia_municipios_km_nao_negativa"),
+        ]
+
+    def __str__(self):
+        return f"{self.origem} → {self.destino}: {self.distancia_km} km"

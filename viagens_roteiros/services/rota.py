@@ -195,6 +195,15 @@ def calcular_rota(municipios):
             }
         )
 
+    # m078: cada segmento calculado fica guardado para os próximos roteiros e diários.
+    from . import distancias
+
+    for segmento in segmentos:
+        distancias.registrar(
+            segmento["de"], segmento["para"], segmento["distancia_km"], fonte=FONTE,
+            duracao_min=segmento["duracao_min"], tempo_viagem_min=segmento["tempo_viagem_min"],
+        )
+
     geometria = atributos.get("geometry")
     if not (isinstance(geometria, dict) and geometria.get("type") == "LineString"):
         geometria = None
@@ -215,10 +224,32 @@ def estimar_trecho(origem, destino):
     """Distância e tempo de viagem entre dois municípios, sem desenho.
 
     É o que preenche os trechos assim que sede e destinos existem, antes de
-    qualquer "Calcular rota" — como no editor de referência. O par é guardado
-    em cache por um dia: o mesmo trecho aparece em roteiros diferentes e a
-    resposta da API não muda de um minuto para o outro.
+    qualquer "Calcular rota" — como no editor de referência. O par fica
+    guardado de vez em ``DistanciaMunicipios`` (m078), consultada antes da API:
+    o mesmo trecho aparece em roteiros diferentes, e a estimativa continua
+    saindo com o serviço fora do ar.
     """
+    from . import distancias
+
+    # m078: a distância guardada vem antes de tudo — continua valendo com o
+    # serviço fora do ar, e uma correção manual manda.
+    gravada = distancias.buscar(origem.pk, destino.pk)
+    if gravada is not None:
+        distancia_km = float(gravada.distancia_km)
+        viagem = gravada.tempo_viagem_min or tempo_de_viagem(
+            distancia_km,
+            gravada.duracao_min
+            or (distancia_km + DISTANCIA_FIXA_KM) / VELOCIDADE_MEDIA_KMH * 60.0,
+        )
+        return {
+            "origem": origem.pk,
+            "destino": destino.pk,
+            "distancia_km": distancia_km,
+            "duracao_min": gravada.duracao_min or 0,
+            "tempo_viagem_min": viagem,
+            "tempo_adicional_sugerido_min": tempo_adicional_sugerido(viagem),
+            "fonte": gravada.fonte,
+        }
     chave = f"viagens:estimativa:{origem.pk}:{destino.pk}"
     guardado = cache.get(chave)
     if guardado:
@@ -242,6 +273,10 @@ def estimar_trecho(origem, destino):
         "fonte": FONTE,
     }
     cache.set(chave, resultado, CACHE_ESTIMATIVA_SEGUNDOS)
+    distancias.registrar(
+        origem.pk, destino.pk, distancia_km, fonte=FONTE,
+        duracao_min=duracao_api, tempo_viagem_min=viagem,
+    )
     return resultado
 
 
