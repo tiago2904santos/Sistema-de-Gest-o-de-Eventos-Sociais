@@ -179,6 +179,7 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
                 "Use as datas estruturadas ou o período em texto, não os dois.",
             )
         self._escolher_lote(dados)
+        self._conferir_vigencia(dados)
         if self.instance.pk:
             atual = type(self.instance).objects.filter(pk=self.instance.pk).values_list(
                 "atualizado_em", flat=True
@@ -221,6 +222,31 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
             return
         self.instance.lote = lote
         self.lote_escolhido = lote
+
+    def _conferir_vigencia(self, dados):
+        """Evento depois do fim da vigência do contrato (com o aditivo): não passa.
+
+        Só vale para pedido novo ou quando o lote, a data ou o município mudam:
+        registro antigo continua editável.
+        """
+        if not self.instance.lote_id:
+            return
+        campos = {"municipio", "data_inicio_evento", "data_solicitacao"}
+        if self.instance.pk and not campos.intersection(self.changed_data):
+            return
+        data = dados.get("data_inicio_evento") or dados.get("data_solicitacao")
+        lote = self.instance.lote
+        vencido = services.contrato_vencido_em(lote.contrato, data)
+        if vencido:
+            campo = "data_inicio_evento" if dados.get("data_inicio_evento") and "data_inicio_evento" in self.fields else None
+            if campo is None and "municipio" in self.fields:
+                campo = "municipio"
+            self.add_error(
+                campo,
+                f"Contrato vencido em {vencido:%d/%m/%Y}: o contrato {lote.contrato.numero} do "
+                f"{lote.rotulo_curto} não cobre um evento em {data:%d/%m/%Y}. Providencie o aditivo "
+                "de prorrogação ou cadastre outro lote para o município.",
+            )
 
     def save(self, criado_por=None):
         solicitacao = super().save(commit=False)

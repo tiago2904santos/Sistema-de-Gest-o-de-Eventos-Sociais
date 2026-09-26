@@ -1681,6 +1681,55 @@ class NumeroDaOSTests(BaseCoffeeBreakTestCase):
         self.assertNotIn("número da solicitação", s.historico.last().descricao)
 
 
+class VigenciaDoContratoTests(BaseCoffeeBreakTestCase):
+    """m027: aviso do fim da vigência no painel e OS barrada em contrato vencido."""
+
+    def setUp(self):
+        self.client.force_login(self.ascom)
+
+    def _post_nova(self, data_evento):
+        return self.client.post(reverse("coffee_break:nova"), {
+            "municipio": self.curitiba.pk, "data_solicitacao": "2026-08-01", "numero": "",
+            "descricao_evento": "Evento", "quantidade": "10", "data_inicio_evento": data_evento,
+        })
+
+    def test_evento_depois_do_fim_da_vigencia_e_barrado(self):
+        ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(vigencia_fim=dt.date(2026, 10, 30))
+        resposta = self._post_nova("2026-11-05")
+        self.assertContains(resposta, "Contrato vencido em 30/10/2026")
+        self.assertFalse(SolicitacaoCoffeeBreak.objects.exists())
+        self._post_nova("2026-10-30")
+        self.assertEqual(SolicitacaoCoffeeBreak.objects.count(), 1)
+
+    def test_aditivo_estende_a_vigencia(self):
+        from .models import AditivoContrato
+
+        ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(vigencia_fim=dt.date(2026, 10, 30))
+        AditivoContrato.objects.create(contrato=self.contrato, numero="0400/2026", vigencia_fim=dt.date(2027, 10, 30))
+        self._post_nova("2026-11-05")
+        self.assertEqual(SolicitacaoCoffeeBreak.objects.count(), 1)
+
+    def test_lote_de_contrato_vigente_tem_preferencia(self):
+        ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(vigencia_fim=dt.date(2026, 1, 31))
+        novo = ContratoCoffeeBreak.objects.create(fornecedor=self.fornecedor, numero="0999/2026", vigencia_fim=dt.date(2027, 12, 31))
+        vigente = LoteCoffeeBreak.objects.create(contrato=novo, numero=3, exercicio="2025", quantidade_total=10)
+        vigente.municipios.add(self.curitiba)
+        lote, _distancia = services.escolher_lote(self.curitiba, dt.date(2026, 9, 1))
+        self.assertEqual(lote, vigente)
+
+    def test_painel_avisa_as_faixas_de_90_60_e_30_dias(self):
+        hoje = dt.date.today()
+        with mock.patch("django.utils.timezone.localdate", return_value=hoje):
+            ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(vigencia_fim=hoje + dt.timedelta(days=35))
+            itens = services.contratos_perto_do_fim(hoje)
+            self.assertEqual([(i["contrato"].pk, i["faixa"]) for i in itens], [(self.contrato.pk, 60)])
+            resposta = self.client.get(reverse("coffee_break:painel"))
+        self.assertContains(resposta, "Contrato 0762/2024")
+        self.assertContains(resposta, "em 35 dias")
+        ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(vigencia_fim=hoje + dt.timedelta(days=200))
+        self.assertEqual(services.contratos_perto_do_fim(hoje), [])
+
+
 class DescricaoUmaLinhaTests(BaseCoffeeBreakTestCase):
     def test_descricao_vira_uma_linha(self):
         self.client.force_login(self.ascom)

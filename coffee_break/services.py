@@ -226,6 +226,55 @@ def lotes_em_alerta(lotes_anotados):
 
 
 # ---------------------------------------------------------------------------
+# Vigência do contrato
+# ---------------------------------------------------------------------------
+
+# Faixas de aviso do fim da vigência no painel (dias antes do fim): prazo
+# para providenciar o aditivo de prorrogação.
+FAIXAS_AVISO_VIGENCIA = (30, 60, 90)
+
+
+def fim_da_vigencia(contrato):
+    """O fim da vigência considerando o aditivo vigente (o de fim mais longe)."""
+    fins = [contrato.vigencia_fim, *(aditivo.vigencia_fim for aditivo in contrato.aditivos.all())]
+    fins = [fim for fim in fins if fim]
+    return max(fins) if fins else None
+
+
+def contrato_vencido_em(contrato, data):
+    """O fim da vigência quando `data` (a do evento) cai depois dele; senão None."""
+    fim = fim_da_vigencia(contrato)
+    return fim if fim and data and data > fim else None
+
+
+def contratos_perto_do_fim(hoje=None):
+    """Contratos com lote ativo cuja vigência acaba em até 90 dias (ou já acabou).
+
+    Cada item: contrato, fim, dias (negativo quando já venceu) e a faixa
+    (30, 60 ou 90), do fim mais próximo para o mais distante.
+    """
+    from .models import ContratoCoffeeBreak
+
+    hoje = hoje or timezone.localdate()
+    limite = max(FAIXAS_AVISO_VIGENCIA)
+    saida = []
+    contratos = (
+        ContratoCoffeeBreak.objects.filter(lotes__ativo=True).distinct()
+        .select_related("fornecedor").prefetch_related("aditivos")
+    )
+    for contrato in contratos:
+        fim = fim_da_vigencia(contrato)
+        if fim is None:
+            continue
+        dias = (fim - hoje).days
+        if dias > limite:
+            continue
+        faixa = next(f for f in FAIXAS_AVISO_VIGENCIA if dias <= f)
+        saida.append({"contrato": contrato, "fim": fim, "dias": dias, "faixa": faixa, "vencido": dias < 0})
+    return sorted(saida, key=lambda item: item["fim"])
+
+
+# ---------------------------------------------------------------------------
 # Lote pelo município
 # ---------------------------------------------------------------------------
 
@@ -257,13 +306,14 @@ class EscolhaDeLotes:
     """
 
     def __init__(self, data=None, lotes=None):
-        self.ano = str((data or timezone.localdate()).year)
+        self.data = data or timezone.localdate()
+        self.ano = str(self.data.year)
         if lotes is None:
             lotes = (
                 LoteCoffeeBreak.objects.filter(ativo=True)
                 .com_consumo()
                 .select_related("contrato__fornecedor")
-                .prefetch_related("municipios")
+                .prefetch_related("municipios", "contrato__aditivos")
             )
         self.lotes = list(lotes)
         self._por_municipio = {}
@@ -271,10 +321,14 @@ class EscolhaDeLotes:
             for municipio in lote.municipios.all():
                 self._por_municipio.setdefault(municipio.pk, []).append(lote)
 
+    def _vencido(self, lote):
+        """Contrato vencido na data do evento: o lote fica para o fim da fila."""
+        return contrato_vencido_em(lote.contrato, self.data) is not None
+
     def _preferido(self, lotes):
         return max(
             lotes,
-            key=lambda l: (l.exercicio == self.ano, getattr(l, "restante", 0)),
+            key=lambda l: (not self._vencido(l), l.exercicio == self.ano, getattr(l, "restante", 0)),
         )
 
     def escolher(self, municipio):
@@ -292,7 +346,7 @@ class EscolhaDeLotes:
                 if not _tem_coordenadas(sede):
                     continue
                 distancia = _distancia_km(municipio, sede)
-                chave = (round(distancia), lote.exercicio != self.ano)
+                chave = (self._vencido(lote), round(distancia), lote.exercicio != self.ano)
                 if melhor is None or chave < melhor[0]:
                     melhor = (chave, lote, distancia, sede)
         if melhor is None:

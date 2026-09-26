@@ -322,6 +322,8 @@ def painel(request):
         .order_by("-criado_em")[:5]
     )
     alertas_certidoes = certidoes.fornecedores_com_alerta(_fornecedores_com_lote_ativo())
+    # Fim da vigência a 90, 60 e 30 dias: prazo para o aditivo de prorrogação.
+    alertas_vigencia = services.contratos_perto_do_fim()
 
     return render(
         request,
@@ -339,6 +341,7 @@ def painel(request):
             "url_lotes": url_lotes,
             "url_solicitacoes": url_solicitacoes,
             "alertas_certidoes": alertas_certidoes,
+            "alertas_vigencia": alertas_vigencia,
         },
     )
 
@@ -641,9 +644,10 @@ def _opcoes_municipios(form):
             }
             if lote.empenho:
                 dados["empenho"] = f"Empenho {lote.empenho}"
-            if contrato.vigencia_fim:
-                vencido = contrato.vigencia_fim < timezone.localdate()
-                dados["vigencia"] = f"{'Vencido em' if vencido else 'Vigente até'} {contrato.vigencia_fim:%d/%m/%Y}"
+            fim = services.fim_da_vigencia(contrato)
+            if fim:
+                vencido = fim < timezone.localdate()
+                dados["vigencia"] = f"{'Vencido em' if vencido else 'Vigente até'} {fim:%d/%m/%Y}"
             if distancia:
                 dados["perto"] = f"{lote.sede_mais_proxima.nome}, a {distancia} km"
         opcoes.append({"valor": str(municipio.pk), "rotulo": municipio.nome, "dados": dados})
