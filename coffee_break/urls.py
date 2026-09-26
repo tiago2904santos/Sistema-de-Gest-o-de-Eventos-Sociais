@@ -58,6 +58,8 @@ urlpatterns = [
     path("envios-fornecedor/<int:pk>/arquivo/", views.envio_fornecedor_arquivo, name="envio_fornecedor_arquivo"),
     path("solicitacoes/<int:pk>/ordem-bancaria/", views.ordem_bancaria_arquivo, name="ordem_bancaria_arquivo"),
     path("solicitacoes/<int:pk>/ordem-bancaria/anexar/", views.anexar_ob, name="anexar_ob"),
+    # O número do protocolo aberto à mão no eProtocolo (etapa 3).
+    path("solicitacoes/<int:pk>/protocolo/registrar/", views.registrar_protocolo, name="registrar_protocolo"),
     path("solicitacoes/<int:pk>/oficio.pdf", views.oficio, name="oficio"),
     path("solicitacoes/<int:pk>/certifico.pdf", views.certifico, name="certifico"),
     # A via assinada da OS, do ofício ou do certifico (os, oficio, certifico); as vias guardadas.

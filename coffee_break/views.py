@@ -954,6 +954,14 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
             contexto["partes_anexo"] = documentos.partes_do_anexo(solicitacao)
             contexto["avisos_anexo"] = documentos.avisos_do_pacote(itens)
             contexto["eprotocolo"] = documentos.textos_eprotocolo(solicitacao)
+            # O protocolo de pagamento se abre à mão (o eProtocolo alcançado é
+            # só de treinamento): passo a passo, "Baixar documentos" e o
+            # registro do número aberto (coffee_break/protocolo_pagamento.py).
+            from . import presenters, protocolo_pagamento
+
+            contexto["passos_eprotocolo"] = protocolo_pagamento.passos(solicitacao)
+            contexto["url_baixar"] = reverse("coffee_break:baixar_arquivos", args=[solicitacao.pk])
+            contexto["itens_baixar"] = presenters.ITENS_BAIXAR
             # O comprovante da OB: anexar (modal de anexo de documentos) e enviar ao fornecedor.
             contexto["usa_dialogo_assinado"] = True
             contexto["url_anexar_ob"] = reverse("coffee_break:anexar_ob", args=[solicitacao.pk])
@@ -1636,11 +1644,17 @@ def baixar_arquivos(request, pk):
 
     from pypdf import PdfReader, PdfWriter
 
+    from django.utils.http import url_has_allowed_host_and_scheme
+
     solicitacao = _solicitacao_documental(pk)
+    # Aberto da etapa 3, volta para ela quando não há o que baixar.
+    volta = request.POST.get("next") or reverse("coffee_break:solicitacoes")
+    if not url_has_allowed_host_and_scheme(volta, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        volta = reverse("coffee_break:solicitacoes")
     escolhidas = [p for p in documentos.PARTES if p in request.POST.getlist("itens")]
     if not escolhidas:
         messages.error(request, "Marque ao menos um arquivo para baixar.")
-        return redirect("coffee_break:solicitacoes")
+        return redirect(volta)
     nomes = {"os": "1 - Ordem de servico", "oficio": "2 - Oficio", "notas": "3 - Notas e certificos", "contratos": "4 - Contratos e certidoes"}
     arquivos = []
     for parte in escolhidas:
@@ -1650,7 +1664,7 @@ def baixar_arquivos(request, pk):
             for mensagem in erro.messages:
                 messages.warning(request, mensagem)
     if not arquivos:
-        return redirect("coffee_break:solicitacoes")
+        return redirect(volta)
     services.marcar_atesto(solicitacao, request.user)
     if request.POST.get("saida") == "unico" and len(arquivos) > 1:
         escritor = PdfWriter()
@@ -2421,6 +2435,38 @@ def anexar_ob(request, pk):
     solicitacao.refresh_from_db()
     for aviso in services.avisos_da_ob(solicitacao):
         messages.warning(request, aviso)
+    return redirect(destino)
+
+
+@require_POST
+@acesso_ao_modulo
+def registrar_protocolo(request, pk):
+    """O número do protocolo aberto à mão no eProtocolo (00.000.000-0): vira
+    o do ofício e, com a nota, o do pagamento. Integração real: ver
+    coffee_break/protocolo_pagamento.py."""
+    from . import protocolo_pagamento
+
+    solicitacao = _solicitacao_documental(pk)
+    destino = reverse("coffee_break:etapa_protocolo", args=[pk]) + "#sec-pagamento"
+    try:
+        numero, pagamento = protocolo_pagamento.registrar_numero(
+            solicitacao, request.POST.get("numero_protocolo", ""), request.user
+        )
+    except ValidationError as erro:
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+        return redirect(destino)
+    if pagamento:
+        messages.success(request, f"Protocolo {numero} registrado como protocolo de pagamento. Ficou no histórico.")
+    else:
+        pendentes = "" if not solicitacao.numero_nota_fiscal.strip() else ", ".join(
+            m.numero or f"#{m.pk}" for m in services.sem_nota_no_pagamento(solicitacao)
+        )
+        messages.warning(
+            request,
+            f"Protocolo {numero} registrado no ofício. Ele vira o protocolo de pagamento quando "
+            + (f"as OS {pendentes} tiverem a nota fiscal." if pendentes else "a nota fiscal for registrada."),
+        )
     return redirect(destino)
 
 
