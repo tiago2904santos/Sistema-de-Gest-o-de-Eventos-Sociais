@@ -105,6 +105,8 @@
     <form method="post" action="" id="form-solicitacao" class="editor-roteiro__principal" enctype="multipart/form-data">
       {% csrf_token %}
       {% if reabrindo %}<input type="hidden" name="reabrir" value="1">{% endif %}
+      {# Versão do registro ao abrir: salvar por cima da mudança de outra pessoa é barrado. #}
+      {% if solicitacao %}<input type="hidden" name="versao" value="{{ valores.versao }}">{% endif %}
       {% if form.errors %}
         <div class="aviso aviso--erro" role="alert" tabindex="-1" data-resumo-erros>
           {% include "components/icon.html" with nome="info" %}
@@ -152,6 +154,16 @@
             {% include "components/input.html" with name="local_evento" label="Local do evento" placeholder="Ex.: Praça central, escola..." valor=valores.local_evento erros=erros.local_evento desabilitado=dados_desabilitado %}
             {% include "components/select.html" with name="tipo_operacao" label="Tipo de operação" opcoes=tipos_operacao selecionado=valores.tipo_operacao erros=erros.tipo_operacao desabilitado=planejamento_desabilitado %}
             {% include "components/input.html" with name="quantidade_cin" label="Quantidade de CIN agendadas" tipo="number" minimo=0 passo="1" valor=valores.quantidade_cin erros=erros.quantidade_cin desabilitado=planejamento_desabilitado %}
+            <div class="sol-protocolo" id="protocolo">
+              {% include "components/input.html" with name="protocolo" label="Protocolo (eProtocolo)" placeholder="00.000.000-0" inputmode="numeric" maxlength="12" autocomplete="off" valor=valores.protocolo erros=erros.protocolo desabilitado=dados_desabilitado %}
+              {% if solicitacao.protocolo %}
+                {# Formulário próprio, fora deste: o botão aponta para ele pelo atributo form. #}
+                <button type="submit" form="form-consultar-protocolo" class="btn--secundaria btn--compacto" formnovalidate>{% include "components/icon.html" with nome="search" %}Consultar andamento</button>
+              {% endif %}
+            </div>
+            {% if andamento_protocolo %}
+              <div class="cheia">{% include "components/v32/andamento_protocolo.html" with andamento=andamento_protocolo %}</div>
+            {% endif %}
             <div class="cheia">
               {% include "components/textarea.html" with name="descricao_complementar" label="Descrição complementar" linhas="2" placeholder="Detalhes adicionais sobre o evento, serviços e estrutura..." valor=valores.descricao_complementar erros=erros.descricao_complementar desabilitado=planejamento_desabilitado %}
             </div>
@@ -288,6 +300,38 @@
         </div>
       {% endif %}
 
+      {% if cartao_viagem %}
+        {# A logística do evento deferido, sem trocar de módulo. #}
+        <section class="section-card reg" id="viagem">
+          <header class="section-card__cabecalho reg__t">
+            <h2 class="section-card__titulo">Viagem</h2>
+            {% if cartao_viagem.url %}
+              <div class="section-card__acao">
+                <a class="btn--secundaria btn--compacto" href="{{ cartao_viagem.url }}">{% include "components/icon.html" with nome="volante" %}Abrir viagem</a>
+              </div>
+            {% endif %}
+          </header>
+          <div class="section-card__corpo sol-viagem">
+            {% if cartao_viagem.viagem %}
+              <p class="sol-viagem__situacao"><b>Viagem #{{ cartao_viagem.viagem.pk }}</b> — {{ cartao_viagem.viagem.titulo }} · <span class="st st--{{ cartao_viagem.viagem.status }}">{{ cartao_viagem.viagem.get_status_display }}</span></p>
+              {% if cartao_viagem.falta %}
+                <p class="sol-viagem__texto">Falta completar em Viagens:</p>
+                <ul class="sol-viagem__falta">{% for item in cartao_viagem.falta %}<li>{{ item }}</li>{% endfor %}</ul>
+              {% else %}
+                <p class="sol-viagem__texto">Nada pendente: a viagem tem sede, horário, servidores, viatura e motorista.</p>
+              {% endif %}
+            {% elif cartao_viagem.pode_gerar %}
+              <p class="sol-viagem__texto">A solicitação foi deferida e ainda não tem viagem em Viagens.</p>
+              <form method="post" action="{% url 'solicitacoes:gerar_viagem' solicitacao.pk %}">{% csrf_token %}
+                <button type="submit" class="btn-primaria btn--compacto">{% include "components/icon.html" with nome="plus" %}Gerar viagem</button>
+              </form>
+            {% else %}
+              <p class="sol-viagem__texto">Sem viagem gerada.{% if cartao_viagem.motivo %} {{ cartao_viagem.motivo }}{% endif %}</p>
+            {% endif %}
+          </div>
+        </section>
+      {% endif %}
+
       {# No despacho, a decisão "Evento cancelado" cobre o encerramento. #}
       {% if not acoes.despachar %}{% if acoes.concluir or acoes.cancelar %}{% if not reabrindo %}
         <section class="section-card reg" id="encerramento">
@@ -314,6 +358,9 @@
 
       {% include "pages/solicitacoes/_historico.html" %}
 
+      {% if solicitacao.protocolo %}
+        <form id="form-consultar-protocolo" method="post" action="{% url 'solicitacoes:consultar_protocolo' solicitacao.pk %}">{% csrf_token %}</form>
+      {% endif %}
       {% if acoes.excluir %}
         <form id="form-excluir-solicitacao" method="post" action="{% url 'solicitacoes:excluir' solicitacao.pk %}" data-confirmar-exclusao>{% csrf_token %}</form>
       {% endif %}

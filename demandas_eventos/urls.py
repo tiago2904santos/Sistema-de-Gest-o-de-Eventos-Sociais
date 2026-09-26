@@ -15,6 +15,8 @@ urlpatterns = [
     path("<int:pk>/andamento/", views.registrar_andamento, name="andamento"),
     path("<int:pk>/responder/", views.responder, name="responder"),
     path("<int:pk>/encaminhar-dg/", views.encaminhar_dg, name="encaminhar_dg"),
+    # Última movimentação do protocolo no eProtocolo (só leitura).
+    path("<int:pk>/consultar-protocolo/", views.consultar_protocolo, name="consultar_protocolo"),
     path("cadastros/<slug:tipo>/", views.lista_cadastro, name="cadastro_lista"),
     path("cadastros/<slug:tipo>/novo/", views.editar_cadastro, name="cadastro_novo"),
     path("cadastros/<slug:tipo>/<int:pk>/editar/", views.editar_cadastro, name="cadastro_editar"),

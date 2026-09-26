@@ -69,6 +69,22 @@
       </div>
     {% endif %}
 
+    {% if origem_solicitacao %}
+      {# De onde a viagem veio: o fio até a solicitação, e se ela mudou depois. #}
+      {% if origem_solicitacao.aviso %}
+        <div class="aviso aviso--callout vg-origem" role="status" data-origem-solicitacao>
+          <div class="aviso__txt">{% include "components/icon.html" with nome="alert" %}<div class="aviso__corpo"><b>{{ origem_solicitacao.aviso }}</b>
+            {% if origem_solicitacao.alteracoes %}<ul class="vg-origem__mudancas">{% for a in origem_solicitacao.alteracoes %}<li>{{ a.campo }}{% if a.antes or a.depois %}: {{ a.antes|default:"—" }} → {{ a.depois|default:"—" }}{% endif %}</li>{% endfor %}</ul>{% endif %}
+          </div></div>
+          <a class="btn--secundaria" href="{{ origem_solicitacao.url }}">Abrir solicitação #{{ origem_solicitacao.solicitacao.pk }}</a>
+        </div>
+      {% else %}
+        <div class="aviso aviso--info aviso--fino vg-origem" data-origem-solicitacao>
+          {% include "components/icon.html" with nome="link" %}<span>Gerada a partir da <a href="{{ origem_solicitacao.url }}">Solicitação de evento #{{ origem_solicitacao.solicitacao.pk }}</a> ({{ origem_solicitacao.solicitacao.get_status_display|lower }}).</span>
+        </div>
+      {% endif %}
+    {% endif %}
+
     {% if etapa_atual == 1 %}{% include "pages/viagens_viagem/_etapa_1.html" %}
     {% elif etapa_atual == 2 %}{% include "pages/viagens_viagem/_etapa_2.html" %}
     {% elif etapa_atual == 3 %}{% include "pages/viagens_viagem/_etapa_3.html" %}

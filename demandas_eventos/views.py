@@ -14,6 +14,7 @@ from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_POST
 
 from core import preencher_por_email
+from integracoes.eprotocolo import andamento as andamento_eprotocolo
 from core.listagens import trilha_de_situacoes
 
 from solicitacoes import permissions as permissoes_solicitacoes
@@ -339,6 +340,9 @@ def editar_demanda(request, pk=None):
             # O andamento como nas Solicitações: etapas no stepper e os
             # cartões do próximo status, com a anotação que vai ao histórico.
             **_contexto_andamento(instancia),
+            "andamento_protocolo": andamento_eprotocolo.andamento_guardado(
+                request, "demandas_eventos", instancia.pk
+            ),
         })
     return render(request, "pages/demandas_eventos/form.html", contexto)
 
@@ -378,6 +382,23 @@ def encaminhar_dg(request, pk):
         "Complete o que falta e envie à DG.",
     )
     return redirect("solicitacoes:editar", pk=solicitacao.pk)
+
+
+@login_required
+@require_POST
+def consultar_protocolo(request, pk):
+    """"Consultar andamento" do protocolo da palestra, como nas Solicitações."""
+    demanda = _demanda_visivel(request, pk)
+    if not demanda.protocolo:
+        messages.error(request, "Informe e salve o número do protocolo antes de consultar.")
+    else:
+        erro = andamento_eprotocolo.consultar_e_guardar(
+            request, "demandas_eventos", demanda.pk, demanda.protocolo
+        )
+        if erro:
+            messages.error(request, erro)
+    url = reverse("demandas_eventos:editar", args=[demanda.pk])
+    return redirect(f"{url}#sec-solicitacao")
 
 
 def _contexto_andamento(demanda, erro="", escolhido="", texto="", extras=None):
