@@ -12,8 +12,8 @@ from datetime import date
 from itertools import groupby
 from typing import Any
 
-from django.utils import timezone
 
+from documentos.services.data_documento import data_do_documento
 from documentos.services.formatters import format_document_display
 from viagens_cadastros.selectors import build_configuracao_context
 from viagens_oficios.docxtpl_context import _assinatura_nome_cargo, _build_endereco, _build_sede
@@ -400,7 +400,7 @@ def build_os_docxtpl_context(ordem: OrdemServico) -> dict[str, Any]:
         "competencias_equipe": textos_modelo["competencias_equipe"],
         "finalidade": textos_modelo["finalidade"],
         "sede": _build_sede(inst),
-        "data_atual_extenso": _fmt_extenso(timezone.localdate()),
+        "data_atual_extenso": _fmt_extenso(data_do_documento(ordem)),
         "endereco": _build_endereco(inst),
         "telefone": _txt(inst.get("telefone_formatado") or inst.get("telefone")),
         "email": (_txt(inst.get("email")) or "").lower(),

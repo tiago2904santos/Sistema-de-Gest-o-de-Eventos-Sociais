@@ -94,6 +94,25 @@ class GeracaoPelasViewsTests(CenarioPlanoMixin, TestCase):
         self.assertEqual(self.plano.status, PlanoTrabalho.STATUS_GERADO)
         self.assertTrue(DocumentoArtefato.objects.filter(plano_trabalho=self.plano).exists())
 
+    def test_data_do_documento_nasce_na_primeira_emissao_e_nao_muda_mais(self):
+        from datetime import date
+
+        from django.utils import timezone
+
+        self.assertIsNone(self.plano.data_documento)
+        r = self.client.post(reverse("viagens_planos:gerar", args=[self.plano.pk, "pdf"]))
+        self.assertEqual(r.status_code, 200)
+        self.plano.refresh_from_db()
+        self.assertEqual(self.plano.data_documento, timezone.localdate())
+        # Ajustada (na folha), a data vale na reimpressão e a emissão não a troca.
+        self.plano.data_documento = date(2026, 3, 5)
+        self.plano.save(update_fields=["data_documento"])
+        r = self.client.post(reverse("viagens_planos:gerar", args=[self.plano.pk, "pdf"]))
+        self.assertEqual(r.status_code, 200)
+        self.plano.refresh_from_db()
+        self.assertEqual(self.plano.data_documento, date(2026, 3, 5))
+        self.assertEqual(build_plano_docxtpl_context(self.plano)["data_extenso"], "5 de março de 2026")
+
     def test_plano_de_varios_eventos_gera_pelo_modelo_proprio(self):
         aplicar_textos_padrao(self.plano)
         self.plano.save()

@@ -217,7 +217,11 @@ CAMPOS_TERMO = CAMPOS_COMUNS + CAMPOS_DO_SERVIDOR + CAMPOS_VIATURA + (
 # O termo tirado do ofício: data, destino e viatura são os do próprio ofício.
 CAMPOS_TERMO_OFICIO = CAMPOS_COMUNS + CAMPOS_DO_SERVIDOR + _do_oficio("roteiro", "transporte")
 
+_DATA_DOCUMENTO = "Nasce na primeira emissão e vale para todas as vias; antes disso, a folha mostra a data de hoje."
+
 CAMPOS_JUSTIFICATIVA = CAMPOS_COMUNS + (
+    CampoEditavel("justificativa_data", "Data da justificativa", (Parte("data_documento", "data", "Data do documento"),),
+                  origem="documento", ajuda=_DATA_DOCUMENTO),
     CampoEditavel("justificativa_texto", "Texto da justificativa", (Parte("texto", "texto_longo", "Texto", linhas=10),),
                   origem="documento", ajuda="Cada linha é um parágrafo do documento."),
     _assinante("assina_justificativa", "Assina as justificativas"),
@@ -235,6 +239,8 @@ CAMPOS_ORDEM = CAMPOS_COMUNS + (
         Parte("data_evento_fim", "data", "Data final", ajuda="Vazia, vale a inicial."),
     ), origem="documento"),
     CampoEditavel("os_motivo", "Motivo", (Parte("motivo", "texto_longo", "Motivo"),), origem="documento"),
+    CampoEditavel("os_data", "Data da ordem de serviço", (Parte("data_documento", "data", "Data do documento"),),
+                  origem="documento", ajuda=_DATA_DOCUMENTO),
     CampoEditavel("os_destinos", "Destinos", (), origem="documento",
                   ajuda="Os municípios de destino se escolhem na ordem de serviço, por estado."),
     CampoEditavel("os_funcoes", "Atribuições da equipe", (), origem="documento",
@@ -253,6 +259,8 @@ CAMPOS_PLANO = CAMPOS_COMUNS + (
         Parte("data_evento_inicio", "data", "Data inicial"),
         Parte("data_evento_fim", "data", "Data final"),
     ), origem="documento"),
+    CampoEditavel("plano_data", "Data do plano", (Parte("data_documento", "data", "Data do documento"),),
+                  origem="documento", ajuda=_DATA_DOCUMENTO),
     CampoEditavel("plano_horario", "Horário de atendimento", (Parte("horario_atendimento", "escolha", "Horário"),), origem="documento"),
     CampoEditavel("plano_atividades", "Atividades", (Parte("atividades_selecionadas", "escolha_multipla", "Atividades"),),
                   origem="documento", ajuda="Atividades, metas, recursos e a unidade móvel saem do catálogo de cada atividade."),

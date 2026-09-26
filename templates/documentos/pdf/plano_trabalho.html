@@ -75,7 +75,7 @@
     <div{% editavel "plano_consideracoes" %}>{% for paragrafo in plano.consideracao_final %}<p class="doc-plano__texto">{{ paragrafo|linhas }}</p>{% empty %}{% vazio "Considerações finais" %}{% endfor %}</div>
 
     <div class="doc-plano__assinatura">
-      <p class="doc-plano__local">{% if plano.sede %}{% trecho "config_endereco" %}{{ plano.sede }}{% endtrecho %}, {% endif %}{{ plano.data_extenso }}</p>
+      <p class="doc-plano__local">{% if plano.sede %}{% trecho "config_endereco" %}{{ plano.sede }}{% endtrecho %}, {% endif %}{% trecho "plano_data" %}{{ plano.data_extenso }}{% endtrecho %}</p>
       <div{% editavel "config_assina_plano_trabalho" %}>
         <p class="doc-plano__chefia">{{ plano.nome_chefia }}{% if not plano.nome_chefia %}{% vazio "Quem assina" %}{% endif %}</p>
         <p class="doc-plano__chefia">{{ plano.cargo_chefia }}</p>

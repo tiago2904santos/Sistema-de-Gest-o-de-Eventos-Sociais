@@ -140,6 +140,9 @@ class PlanoTrabalho(ModeloTemporal, ModeloCancelavel, OrigemLegado):
     ano = models.PositiveIntegerField(null=True, blank=True, db_index=True)
     sufixo_numero = models.CharField(max_length=20, blank=True, default="")
     data_criacao = models.DateField(default=timezone.localdate, db_index=True)
+    # A data que sai no documento: nasce na primeira emissão e não muda mais
+    # sozinha (todas as vias saem com a mesma data); ajusta-se na folha.
+    data_documento = models.DateField("Data do documento", null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_RASCUNHO)
     viagem = models.ForeignKey(
         "viagens_viagem.Viagem", on_delete=models.CASCADE, null=True, blank=True,

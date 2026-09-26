@@ -112,6 +112,28 @@ class EditorEmTodosOsDocumentosTests(CenarioOficioMixin, TestCase):
         self.assertEqual(r.status_code, 400)
         self.assertIn("texto", r.json()["erros"])
 
+    def test_data_da_justificativa_nasce_na_emissao_e_se_ajusta_na_folha(self):
+        from django.utils import timezone
+
+        from documentos.services.types import DocumentoFormato, DocumentoTipo
+        from viagens_oficios.document_generation import gerar_documento
+        from viagens_oficios.models import Justificativa
+
+        folha = self.folha("justificativa", self.oficio.pk)
+        self.assertIn('data-doc-campo="justificativa_data"', folha)
+        gerar_documento(self.oficio, DocumentoFormato.PDF, DocumentoTipo.JUSTIFICATIVA)
+        j = Justificativa.objects.get(oficio=self.oficio)
+        self.assertEqual(j.data_documento, timezone.localdate())
+        r = self.patch("justificativa", self.oficio.pk, "justificativa_data", {"data_documento": "2026-03-05"})
+        self.assertEqual(r.status_code, 200, r.content)
+        j.refresh_from_db()
+        self.assertEqual(j.data_documento, date(2026, 3, 5))
+        self.assertIn("5 de março de 2026", r.json()["folha"])
+        # Emitir de novo não troca a data ajustada.
+        gerar_documento(self.oficio, DocumentoFormato.PDF, DocumentoTipo.JUSTIFICATIVA)
+        j.refresh_from_db()
+        self.assertEqual(j.data_documento, date(2026, 3, 5))
+
     # Ordem de serviço
     def ordem(self):
         from viagens_ordens.models import OrdemServico
@@ -135,6 +157,16 @@ class EditorEmTodosOsDocumentosTests(CenarioOficioMixin, TestCase):
         ordem.refresh_from_db()
         self.assertEqual(ordem.motivo, "Cobertura da feira")
         self.assertEqual(set(ordem.servidores.values_list("pk", flat=True)), {self.a.pk, self.b.pk})
+
+    def test_data_da_ordem_de_servico_se_ajusta_na_folha(self):
+        ordem = self.ordem()
+        folha = self.folha("ordem_servico", ordem.pk)
+        self.assertIn('data-doc-campo="os_data"', folha)
+        r = self.patch("ordem_servico", ordem.pk, "os_data", {"data_documento": "2026-03-05"})
+        self.assertEqual(r.status_code, 200, r.content)
+        ordem.refresh_from_db()
+        self.assertEqual(ordem.data_documento, date(2026, 3, 5))
+        self.assertIn("5 de março de 2026", r.json()["folha"])
 
     def test_bloco_da_ordem_fica_na_ordem(self):
         ordem = self.ordem()
@@ -165,6 +197,16 @@ class EditorEmTodosOsDocumentosTests(CenarioOficioMixin, TestCase):
         plano.refresh_from_db()
         self.assertTrue(plano.contextualizacao_auto)
         self.assertNotEqual(plano.contextualizacao, "")
+
+    def test_data_do_plano_se_ajusta_na_folha(self):
+        from viagens_planos.services import criar_plano_rascunho
+
+        plano = criar_plano_rascunho()
+        r = self.patch("plano_trabalho", plano.pk, "plano_data", {"data_documento": "2026-03-05"})
+        self.assertEqual(r.status_code, 200, r.content)
+        plano.refresh_from_db()
+        self.assertEqual(plano.data_documento, date(2026, 3, 5))
+        self.assertIn("5 de março de 2026", r.json()["folha"])
 
     # Prestação: relatório técnico e diário
     def servidor_da_prestacao(self):

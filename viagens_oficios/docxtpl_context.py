@@ -14,6 +14,7 @@ from django.utils import timezone
 from core.normalizers import normalize_upper
 from core.errors import capture
 from viagens_cadastros.selectors import build_configuracao_context
+from documentos.services.data_documento import data_do_documento
 from documentos.services.timing import measure_step
 from documentos.services.formatters import format_city_uf
 from documentos.services.formatters import format_currency_br
@@ -631,15 +632,16 @@ def _build_justificativa_docxtpl_context_impl(oficio: Oficio) -> dict[str, Any]:
     nome_a, cargo_a = _assinatura_nome_cargo(inst, "JUSTIFICATIVA", fallback_geral=False)
     unidade = _txt(inst.get("unidade")) or _txt(inst.get("nome_orgao")) or _txt(inst.get("sigla_orgao"))
     texto = ""
+    justificativa = None
     try:
-        j = oficio.justificativa
-        texto = _txt(j.texto)
+        justificativa = oficio.justificativa
+        texto = _txt(justificativa.texto)
     except Justificativa.DoesNotExist:
         pass
 
     ctx: dict[str, Any] = {
         "sede": _build_sede(inst),
-        "data_extenso": _format_data_extenso(timezone.localdate()),
+        "data_extenso": _format_data_extenso(data_do_documento(justificativa)),
         "justificativa": texto,
         "assinante_justificativa": format_document_display(nome_a) if nome_a else "",
         "cargo_assinante_justificativa": format_document_display(cargo_a) if cargo_a else "",

@@ -928,8 +928,12 @@ def gerar_plano_documento(plano, formato, *, usar_assinado=True):
 
     from .docxtpl_context import build_plano_docxtpl_context
 
-    contexto = build_plano_docxtpl_context(plano)
+    from documentos.services.data_documento import fixar_data_documento
     from documentos.services.document_blocks import conteudo_documental
+
+    # A data do documento nasce na primeira emissão e vale para todas as vias.
+    fixar_data_documento(plano)
+    contexto = build_plano_docxtpl_context(plano)
 
     # Os títulos reescritos no editor entram no PDF e na chave do cache.
     payload = {"institucional": build_configuracao_context(), "plano": contexto,

@@ -41,7 +41,7 @@
   {% endif %}
 
   <div class="doc-os__assinatura">
-    <p class="doc-os__local">{% if os.sede %}{% trecho "config_endereco" %}{{ os.sede }}{% endtrecho %}, {% endif %}{{ os.data_atual_extenso }}</p>
+    <p class="doc-os__local">{% if os.sede %}{% trecho "config_endereco" %}{{ os.sede }}{% endtrecho %}, {% endif %}{% trecho "os_data" %}{{ os.data_atual_extenso }}{% endtrecho %}</p>
     <div{% editavel "config_assina_ordem_servico" %}>
       <p class="doc-os__chefia">{{ os.nome_chefia }}</p>
       <p class="doc-os__chefia">{{ os.cargo_chefia }}</p>

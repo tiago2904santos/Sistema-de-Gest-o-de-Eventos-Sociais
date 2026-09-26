@@ -455,6 +455,10 @@ class Justificativa(ModeloTemporal, OrigemLegado):
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_RASCUNHO)
 
+    # A data que sai no documento: nasce na primeira emissão e não muda mais
+    # sozinha (todas as vias saem com a mesma data); ajusta-se na folha.
+    data_documento = models.DateField("Data do documento", null=True, blank=True)
+
     def __str__(self):
         return f"Justificativa do Ofício {self.oficio.numero_formatado}"
 

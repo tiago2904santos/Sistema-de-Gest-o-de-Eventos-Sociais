@@ -23,6 +23,11 @@ def gerar_documento(oficio, formato, tipo=DocumentoTipo.OFICIO, *, usar_assinado
     if avaliacao['pendencias']:
         raise ValidationError(avaliacao['pendencias'])
     reservar_numero_oficio(oficio, ano=oficio.data_criacao.year)
+    if tipo == DocumentoTipo.JUSTIFICATIVA:
+        # A data da justificativa nasce na primeira emissão e vale para todas as vias.
+        from documentos.services.data_documento import fixar_data_documento
+        from .justificativas_services import get_or_create_justificativa_oficio
+        fixar_data_documento(get_or_create_justificativa_oficio(oficio))
     payload = build_canonical_document_payload(oficio, tipo)
     # Overrides de parágrafo e quebras de página são parte do documento: no
     # payload eles entram na chave de cache e no snapshot do artefato.

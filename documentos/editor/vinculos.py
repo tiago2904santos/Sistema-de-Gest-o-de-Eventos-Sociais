@@ -1118,7 +1118,7 @@ class FonteTermo(FonteBase):
 
 class FonteJustificativa(FonteBase):
     """O texto da justificativa do ofício, gravado pelo serviço do domínio
-    (que também atualiza a regra de prazo)."""
+    (que também atualiza a regra de prazo), e a data do documento."""
 
     def versao(self, oficio):
         return self.vinculo.versao(oficio)
@@ -1128,25 +1128,32 @@ class FonteJustificativa(FonteBase):
 
         class JustificativaTextoForm(forms.Form):
             texto = forms.CharField(label="Texto", widget=forms.Textarea, error_messages={"required": "Escreva a justificativa."})
+            data_documento = forms.DateField(label="Data do documento", required=False)
 
         return JustificativaTextoForm(dados)
 
     def dados_atuais(self, oficio):
         registro = self.vinculo.registro(oficio)
-        return {"texto": registro.texto if registro else ""}
+        return {"texto": registro.texto if registro else "", "data_documento": (registro.data_documento if registro else None) or ""}
 
     def gravar(self, form, nomes, oficio):
-        from viagens_oficios.justificativas_services import salvar_justificativa
+        from viagens_oficios.justificativas_services import get_or_create_justificativa_oficio, salvar_justificativa
 
         registro = self.vinculo.registro(oficio)
-        return salvar_justificativa(oficio, registro.modelo if registro else None, form.cleaned_data["texto"])
+        if "texto" in nomes:
+            registro = salvar_justificativa(oficio, registro.modelo if registro else None, form.cleaned_data["texto"])
+        if "data_documento" in nomes:
+            registro = registro or get_or_create_justificativa_oficio(oficio)
+            registro.data_documento = form.cleaned_data.get("data_documento") or None
+            registro.save(update_fields=["data_documento", "atualizado_em"])
+        return registro
 
     def links(self, definicao, oficio, alvo):
         return _link("Abrir o ofício", "viagens_oficios:editar", oficio.pk)
 
 
 class FonteOrdem(FonteBase):
-    CAMPOS = ("tipo_necessidade", "servidores", "data_evento_inicio", "data_evento_fim", "motivo")
+    CAMPOS = ("tipo_necessidade", "servidores", "data_evento_inicio", "data_evento_fim", "motivo", "data_documento")
     # Tipos que a tela oferece; os demais só aparecem se a OS já os tem.
     TIPOS_NA_TELA = ("PADRAO", "OPERACAO_RETORNO_POSTERIOR", "CERIMONIAL_ANTECIPADO")
 
@@ -1172,7 +1179,7 @@ class FonteOrdem(FonteBase):
 
 class FontePlano(FonteBase):
     CAMPOS = ("contextualizacao", "coordenacao", "consideracao_final", "data_evento_inicio", "data_evento_fim",
-              "horario_atendimento", "atividades_selecionadas")
+              "horario_atendimento", "atividades_selecionadas", "data_documento")
     # Texto automático de cada campo: o interruptor e quem o refaz.
     AUTOMATICOS = {
         "contextualizacao": ("contextualizacao_auto", "texto_padrao_contextualizacao"),
