@@ -10,7 +10,7 @@
   arquivo já envia); e o que falta para o pacote final, só quando falta.
 {% endcomment %}
 {% block pc_salvar_topo %}
-  <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn-primaria">{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
+  <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><input type="hidden" name="acao" value="{% if ps.finalizada %}reabrir{% else %}finalizar{% endif %}"><button type="submit" class="btn-primaria">{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
 {% endblock %}
 {% block prestacao_conteudo %}
 <div class="editor-roteiro pc-diario pc-docs">
@@ -33,7 +33,7 @@
               <a class="dd__i of-item" href="{% url 'viagens_prestacoes:consolidado_download' ps.pk %}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="document" %}<span><b>Pacote final (PDF)</b><small>Ofício, despacho, relatório, diário e comprovante</small></span></a>
             {% endif %}
             <div class="dd__s"></div>
-            <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_arquivar' ps.pk %}" data-confirmar="{% if ps.arquivada %}Desarquivar a prestação?{% else %}Arquivar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+            <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_arquivar' ps.pk %}" data-confirmar="{% if ps.arquivada %}Desarquivar a prestação?{% else %}Arquivar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><input type="hidden" name="acao" value="{% if ps.arquivada %}desarquivar{% else %}arquivar{% endif %}">
               <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="lock" %}<span><b>{% if ps.arquivada %}Desarquivar{% else %}Arquivar prestação{% endif %}</b><small>{% if ps.arquivada %}Voltar para a lista ativa{% else %}Tirar da lista ativa, mantendo tudo{% endif %}</small></span></button>
             </form>
           </div>
@@ -89,7 +89,7 @@
 
       <div class="frm-acoes-fim">
         <a class="btn--secundaria" href="{{ rt_url }}">Voltar ao relatório</a>
-        <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn-primaria">{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
+        <form method="post" action="{% url 'viagens_prestacoes:prestacao_servidor_finalizar' ps.pk %}" data-confirmar="{% if ps.finalizada %}Reabrir a prestação?{% else %}Finalizar a prestação?{% endif %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><input type="hidden" name="acao" value="{% if ps.finalizada %}reabrir{% else %}finalizar{% endif %}"><button type="submit" class="btn-primaria">{% if ps.finalizada %}Reabrir prestação{% else %}Finalizar prestação{% endif %}</button></form>
       </div>
     </div>
   </section>

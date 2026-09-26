@@ -1618,6 +1618,7 @@
     var conteudoOriginal = botao.innerHTML;
     var rotuloArmado = formulario.getAttribute("data-confirmar") || "Confirmar?";
     var armado = false;
+    var travado = false;
     var temporizador = null;
 
     function desarmar() {
@@ -1631,7 +1632,19 @@
     }
 
     formulario.addEventListener("submit", function (evento) {
-      if (armado) return;
+      if (travado) {
+        evento.preventDefault();
+        return;
+      }
+      if (armado) {
+        // Um duplo clique no segundo toque mandaria dois POSTs (m089). Trava o botão
+        // depois que o envio segue — e só se ninguém o interceptou (envio por fetch
+        // fica na mesma tela e precisa do botão de volta).
+        setTimeout(function () {
+          if (!evento.defaultPrevented) { botao.disabled = true; travado = true; }
+        }, 0);
+        return;
+      }
       evento.preventDefault();
       armado = true;
       // Item com título (<b>) troca só o título e mantém ícone e descrição.
@@ -1643,6 +1656,13 @@
     });
 
     botao.addEventListener("blur", desarmar);
+    // Voltar pelo histórico (bfcache) devolve a página com o botão travado.
+    window.addEventListener("pageshow", function () {
+      if (!travado) return;
+      travado = false;
+      botao.disabled = false;
+      desarmar();
+    });
   });
 })();
 

@@ -137,24 +137,41 @@ def _date_autosave_value(payload, field_name):
             return (value or '').strip()
     return None
 
+def _estado_pedido(request, atual, *, ligar, desligar):
+    """O estado que o botão pediu (`acao`), e não o inverso do atual (m089).
+
+    Sem `acao` (formulário antigo, rota de compatibilidade) continua invertendo,
+    como sempre fez. Com ela, clicar de novo — ou numa aba antiga — não desfaz nada.
+    """
+    acao = (request.POST.get("acao") or "").strip()
+    if acao == ligar:
+        return True
+    if acao == desligar:
+        return False
+    return not atual
+
+
 def prestacao_servidor_arquivar(request, ps_pk):
     """Arquiva ou desarquiva a prestação deste servidor."""
     ps = get_object_or_404(_prestacao_servidor_queryset(), pk=ps_pk)
-    ps.definir_arquivada(not ps.arquivada)
-    if ps.arquivada:
-        messages.success(request, f'Prestação de {ps.servidor.nome} arquivada.')
-    else:
-        messages.success(request, f'Prestação de {ps.servidor.nome} desarquivada.')
+    pedido = _estado_pedido(request, ps.arquivada, ligar="arquivar", desligar="desarquivar")
+    rotulo = "arquivada" if pedido else "desarquivada"
+    if pedido == ps.arquivada:
+        messages.info(request, f'A prestação de {ps.servidor.nome} já estava {rotulo}.')
+        return _redirect_lista(request)
+    ps.definir_arquivada(pedido)
+    messages.success(request, f'Prestação de {ps.servidor.nome} {rotulo}.')
     return _redirect_lista(request)
 
 def prestacao_servidor_finalizar(request, ps_pk):
     """Conclui ou reabre a prestação deste servidor."""
     ps = get_object_or_404(_prestacao_servidor_queryset(), pk=ps_pk)
-    ps.definir_finalizada(not ps.finalizada)
-    if ps.finalizada:
-        messages.success(request, f'Prestação de {ps.servidor.nome} finalizada.')
-    else:
-        messages.success(request, f'Prestação de {ps.servidor.nome} reaberta.')
+    pedido = _estado_pedido(request, ps.finalizada, ligar="finalizar", desligar="reabrir")
+    if pedido == ps.finalizada:
+        messages.info(request, f'A prestação de {ps.servidor.nome} já estava {"finalizada" if pedido else "aberta"}.')
+        return _redirect_lista(request)
+    ps.definir_finalizada(pedido)
+    messages.success(request, f'Prestação de {ps.servidor.nome} {"finalizada" if pedido else "reaberta"}.')
     return _redirect_lista(request)
 
 def prestacao_equipe_acao(request, pc_pk, acao):

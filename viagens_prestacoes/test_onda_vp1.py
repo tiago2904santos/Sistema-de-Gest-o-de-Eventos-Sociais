@@ -139,3 +139,30 @@ class RascunhoDoNavegadorTests(PrestacaoFixturesMixin, PrestacaoTestCase):
         resposta = self.client.get(reverse("viagens_prestacoes:documentos_servidor", args=[ps.pk]))
         self.assertNotContains(resposta, 'id="form-solicitacao"')
         self.assertContains(resposta, 'id="form-prestacao-solicitacao"')
+
+
+class FinalizarSemInverterTests(PrestacaoFixturesMixin, PrestacaoTestCase):
+    """m089: cada botão diz o que quer; clicar de novo não desfaz."""
+
+    def setUp(self):
+        super().setUp()
+        self.setUpPrestacaoFixtures()
+        self.ps = self.criar_prestacao(numero=89).prestacoes_servidor[0]
+
+    def _post(self, rota, acao):
+        return self.client.post(reverse(f"viagens_prestacoes:{rota}", args=[self.ps.pk]), {"acao": acao, "justificativa": "teste"})
+
+    def test_finalizar_duas_vezes_continua_finalizada(self):
+        self._post("prestacao_servidor_finalizar", "finalizar")
+        self._post("prestacao_servidor_finalizar", "finalizar")
+        self.ps.refresh_from_db()
+        self.assertTrue(self.ps.finalizada)
+
+    def test_arquivar_duas_vezes_continua_arquivada(self):
+        self._post("prestacao_servidor_arquivar", "arquivar")
+        self._post("prestacao_servidor_arquivar", "arquivar")
+        self.ps.refresh_from_db()
+        self.assertTrue(self.ps.arquivada)
+        self._post("prestacao_servidor_arquivar", "desarquivar")
+        self.ps.refresh_from_db()
+        self.assertFalse(self.ps.arquivada)
