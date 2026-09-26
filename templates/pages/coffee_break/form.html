@@ -17,6 +17,15 @@
 {% endblock %}
 
 {% block avisos_etapa %}
+  {% if origem_evento %}
+    {# Pedida pelo "Pedir coffee break" do evento ou da palestra: o link de lá e, se o evento mudou de data, o aviso. #}
+    <div class="aviso aviso--callout aviso--fino" role="status">
+      <div class="aviso__txt">{% include "components/icon.html" with nome="link" %}<div class="aviso__corpo"><b>{% if solicitacao %}Pedida a partir de{% else %}Preenchida a partir de{% endif %}</b><p>{% if origem_evento.url %}<a href="{{ origem_evento.url }}">{{ origem_evento.rotulo }}</a>{% else %}{{ origem_evento.rotulo }}{% endif %}{% if not solicitacao %} — confira os campos antes de salvar.{% endif %}</p></div></div>
+    </div>
+    {% if origem_evento.aviso %}
+      <div class="aviso aviso--erro" role="alert">{% include "components/icon.html" with nome="alert" %}<div>{{ origem_evento.aviso }}</div></div>
+    {% endif %}
+  {% endif %}
   {% if not solicitacao %}
     {# Pedido que chegou por e-mail: soltar o e-mail (ou colar o texto) preenche os campos vazios. #}
     {% url 'coffee_break:ler_email' as url_ler_email %}
@@ -34,6 +43,7 @@
   <form method="post" action="" id="form-coffee-break" class="editor-roteiro__principal" enctype="multipart/form-data">
     {% csrf_token %}
     <input type="hidden" name="versao" value="{{ valores.versao }}">
+    {% if origem_evento.parametro %}<input type="hidden" name="{{ origem_evento.parametro }}" value="{{ origem_evento.pk }}">{% endif %}
     {% include "pages/coffee_break/_erros_form.html" %}
 
     <section class="section-card reg" id="sec-lote">

@@ -81,6 +81,7 @@
     {% endif %}
 
     {% if solicitacao %}{% include "pages/demandas_eventos/_origem_na_solicitacao.html" %}{% endif %}
+    {% if solicitacao %}{% include "pages/coffee_break/_pedir_coffee_break.html" with evento=solicitacao parametro="solicitacao" %}{% endif %}
 
     {% if motivo_devolucao %}
       {# O aviso da devolução vem antes dos campos: é o que precisa ser resolvido. #}

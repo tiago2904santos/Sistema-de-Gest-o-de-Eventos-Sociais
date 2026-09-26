@@ -786,6 +786,10 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
         )
     if solicitacao is not None and etapa == "pedido":
         contexto["aviso_antecedencia"] = services.aviso_de_antecedencia(solicitacao)
+        from . import origem as origem_evento
+
+        # Pedida do evento ou da palestra: o link de lá e o aviso de remarcação.
+        contexto["origem_evento"] = origem_evento.cartao(solicitacao, request.user)
     if "numero" in form.fields:
         contexto["numero_ano"] = _ano_do_numero(form)
         # Número fora do "NN/AAAA" (texto antigo da planilha): campo de texto livre.
@@ -975,12 +979,20 @@ def ler_email(request):
 
 @acesso_ao_modulo
 def nova_solicitacao(request):
+    from . import origem as origem_evento
+
     email_origem = None
+    # "Pedir coffee break" do evento ou da palestra: ?solicitacao=<pk> ou ?demanda=<pk>.
+    campo_origem, evento_origem = origem_evento.origem_do_pedido(
+        request.POST if request.method == "POST" else request.GET, request.user
+    )
     if request.method == "POST":
         form = PedidoCoffeeBreakForm(request.POST, request.FILES)
         # O e-mail lido em "Preencher com um e-mail", se a tela veio dele.
         origem = preencher_por_email.origem_do_pedido(request, "coffee_break")
         if form.is_valid():
+            if evento_origem is not None:
+                setattr(form.instance, campo_origem, evento_origem)
             try:
                 solicitacao = form.save(criado_por=request.user)
             except ValidationError as erro:
@@ -992,6 +1004,8 @@ def nova_solicitacao(request):
                 messages.error(request, "Corrija os campos destacados para continuar.")
             else:
                 descricao = "Solicitação registrada no sistema."
+                if evento_origem is not None:
+                    descricao += f" Pedida a partir de: {origem_evento.rotulo(campo_origem, evento_origem)}."
                 if origem:
                     descricao += f" {preencher_por_email.texto_da_origem(origem)}."
                 services.registrar_historico(
@@ -1013,9 +1027,18 @@ def nova_solicitacao(request):
             messages.error(request, "Corrija os campos destacados para continuar.")
         email_origem = preencher_por_email.origem_pendente(request, "coffee_break")
     else:
-        form = PedidoCoffeeBreakForm()
+        iniciais = origem_evento.valores_iniciais(campo_origem, evento_origem) if evento_origem is not None else {}
+        form = PedidoCoffeeBreakForm(initial=iniciais)
     contexto = _contexto_formulario(request, form)
     contexto["email_origem"] = email_origem
+    if evento_origem is not None:
+        parametro = "solicitacao" if campo_origem == "solicitacao_evento" else "demanda"
+        contexto["origem_evento"] = {
+            "rotulo": origem_evento.rotulo(campo_origem, evento_origem),
+            "url": origem_evento.url(campo_origem, evento_origem),
+            "parametro": parametro,
+            "pk": evento_origem.pk,
+        }
     # A OS abre já na nova solicitação, no editor de documentos, e acompanha o preenchimento.
     contexto["doc_os_nova"] = {
         "titulo": "Ordem de serviço",

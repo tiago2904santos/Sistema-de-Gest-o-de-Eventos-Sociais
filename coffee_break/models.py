@@ -452,6 +452,24 @@ class SolicitacaoCoffeeBreak(models.Model):
         help_text="O lote é escolhido pelo município.",
     )
     horario_evento = models.TimeField("horário", blank=True, null=True)
+    # De onde o pedido veio, quando foi aberto pelo "Pedir coffee break" do
+    # evento (Solicitações de evento) ou da palestra (Palestras e eventos).
+    solicitacao_evento = models.ForeignKey(
+        "solicitacoes.SolicitacaoEvento",
+        verbose_name="solicitação de evento",
+        on_delete=models.SET_NULL,
+        related_name="coffee_breaks",
+        blank=True,
+        null=True,
+    )
+    demanda_evento = models.ForeignKey(
+        "demandas_eventos.DemandaEvento",
+        verbose_name="palestra ou evento da ASCOM",
+        on_delete=models.SET_NULL,
+        related_name="coffee_breaks",
+        blank=True,
+        null=True,
+    )
     detalhamento_pedido = models.TextField(
         "detalhamento do pedido", blank=True,
         help_text="Em branco, a OS monta o texto com as datas, o horário e a quantidade.",
