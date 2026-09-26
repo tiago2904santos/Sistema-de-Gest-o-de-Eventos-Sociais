@@ -1040,7 +1040,7 @@ def criar_plano_rascunho(viagem=None):
     if viagem is not None:
         plano.programa_outros = viagem.titulo or ""
         if viagem.horario_inicio and viagem.horario_fim:
-            plano.horario_atendimento = f"{viagem.horario_inicio:%H:%M} ate {viagem.horario_fim:%H:%M}"
+            plano.horario_atendimento = f"{viagem.horario_inicio:%H:%M} até {viagem.horario_fim:%H:%M}"
     # A contextualização NÃO herda o motivo da viagem: é texto curto de agenda,
     # não o parágrafo de abertura. Fica automática até alguém editar à mão.
     plano = salvar_plano_numerado(plano)
