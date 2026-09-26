@@ -90,6 +90,14 @@ class CriarEPainelTests(CenarioViagem):
         self.client.post(reverse("viagens_viagem:criar"))
         self.assertEqual(Viagem.objects.count(), 3)
 
+    def test_etapa_1_busca_municipios_em_vez_de_embutir(self):
+        """m075: só o destino escolhido vem na página; o resto, pela busca."""
+        v = self.viagem()
+        corpo = self.client.get(self.etapa(v, 1)).content.decode()
+        self.assertIn('data-remote-url="%s"' % reverse("cadastros:municipios_buscar"), corpo)
+        self.assertIn(">Londrina<", corpo)
+        self.assertNotIn(">Maringá<", corpo)
+
     def test_etapa_1_traz_os_blocos_da_origem_sem_avisos(self):
         v = Viagem.objects.create()
         r = self.client.get(self.etapa(v, 1))

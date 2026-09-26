@@ -622,11 +622,34 @@ class MontagemPelaTelaTests(BaseTelaRoteiroTestCase):
 
     def test_a_tela_oferece_estado_para_filtrar_municipio(self):
         """Estado é filtro de tela: o município carrega o dono no `data-parent-value`."""
-        resposta = self.client.get(reverse("viagens_roteiros:novo"))
+        roteiro = Roteiro.objects.create(origem_municipio=self.curitiba)
+        resposta = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
         corpo = resposta.content.decode()
         self.assertIn('name="origem_estado"', corpo)
         self.assertIn('data-depends-on="id_origem_estado"', corpo)
         self.assertIn('data-parent-value="%s"' % self.curitiba.estado_id, corpo)
+
+    def test_municipios_vem_da_busca_e_nao_embutidos(self):
+        """m075: os seletores trazem só os municípios do roteiro e buscam o resto."""
+        roteiro = Roteiro.objects.create(origem_municipio=self.curitiba)
+        corpo = self.client.get(
+            reverse("viagens_roteiros:editar", args=[roteiro.pk])
+        ).content.decode()
+        self.assertIn('data-remote-url="%s"' % reverse("cadastros:municipios_buscar"), corpo)
+        self.assertIn(">Curitiba<", corpo)
+        self.assertNotIn(">Abatiá<", corpo)
+        busca = self.client.get(
+            reverse("cadastros:municipios_buscar"), {"q": "abati", "uf": self.pr.pk}
+        ).json()["resultados"]
+        self.assertEqual([r["rotulo"] for r in busca], ["Abatiá"])
+        self.assertEqual(busca[0]["estado"], str(self.pr.pk))
+        sem_acento = self.client.get(reverse("cadastros:municipios_buscar"), {"q": "sao paulo"}).json()
+        self.assertIn("São Paulo", [r["rotulo"] for r in sem_acento["resultados"]])
+
+    def test_dados_do_roteiro_trazem_os_nomes_dos_municipios(self):
+        roteiro = self.roteiro_curitiba_sp_abatia()
+        dados = self.client.get(reverse("viagens_roteiros:dados", args=[roteiro.pk])).json()
+        self.assertEqual(dados["rotulos"][str(self.abatia.pk)], "Abatiá")
 
     def test_destinos_sao_gravados_na_ordem_da_visita(self):
         self.client.post(reverse("viagens_roteiros:novo"), self.dados())

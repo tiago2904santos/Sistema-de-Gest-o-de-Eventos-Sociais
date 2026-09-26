@@ -46,12 +46,31 @@
   var urlAutosave = editor.getAttribute("data-url-autosave");
   var autosaveLigado = editor.getAttribute("data-autosave") === "1";
 
-  // Rótulo de qualquer município pelo id — o select da sede lista todos.
+  // Rótulo de município pelo id. Os selects trazem só os municípios já no
+  // roteiro (o resto vem da busca remota), então o dicionário também aprende
+  // cada escolha nova e os nomes que chegam com um roteiro base.
   var rotulos = {};
-  if (sede) {
-    Array.prototype.forEach.call(sede.options, function (opcao) {
+  function registrarRotulos(select) {
+    if (!select) return;
+    Array.prototype.forEach.call(select.options, function (opcao) {
       if (opcao.value) rotulos[opcao.value] = opcao.text;
     });
+  }
+  registrarRotulos(sede);
+  editor.addEventListener("change", function (evento) {
+    var alvo = evento.target;
+    if (alvo && alvo.tagName === "SELECT" && /municipio$/.test(alvo.name || "")) registrarRotulos(alvo);
+  }, true);
+
+  // Escolhe o município por código: garante a opção antes (modo remoto).
+  function definirMunicipio(select, valor, estado) {
+    if (select && valor && window.DS && window.DS.garantirOpcaoSelect) {
+      window.DS.garantirOpcaoSelect(select, {
+        valor: String(valor), rotulo: rotulos[String(valor)] || String(valor),
+        estado: estado ? String(estado) : ""
+      });
+    }
+    definirCampo(select, valor);
   }
 
   // Enquanto um estado inteiro é aplicado (roteiro base, datas em sequência),
@@ -1222,12 +1241,13 @@
   var seletorBase = editor.querySelector('select[name="roteiro_base"]');
 
   function aplicarRoteiroBase(dados) {
+    Object.keys(dados.rotulos || {}).forEach(function (id) { rotulos[id] = dados.rotulos[id]; });
     aplicandoEstado = true;
     try {
       if (dados.sede) {
         var estadoSede = editor.querySelector('select[name="origem_estado"]');
         definirCampo(estadoSede, dados.sede.estado);
-        definirCampo(sede, dados.sede.municipio);
+        definirMunicipio(sede, dados.sede.municipio, dados.sede.estado);
       }
       // Zera os destinos atuais antes de repetir os do roteiro escolhido.
       destinosVisiveis().forEach(function (linha, indice) {
@@ -1238,7 +1258,7 @@
         var linha = indice === 0 ? primeira : criarLinhaDestino(null);
         if (!linha) return;
         definirCampo(linha.querySelector('select[name$="-estado"]'), destino.estado);
-        definirCampo(selectDaLinha(linha), destino.municipio);
+        definirMunicipio(selectDaLinha(linha), destino.municipio, destino.estado);
       });
       if (!dados.destinos.length && primeira) {
         definirCampo(selectDaLinha(primeira), "");

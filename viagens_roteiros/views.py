@@ -472,19 +472,19 @@ def _opcoes(iteravel):
     ]
 
 
-def _opcoes_municipios(queryset):
-    """Municípios com o estado no `data-parent-value`, para o filtro em cascata.
+def _municipios_referenciados(form, formset, destinos):
+    """Opções dos municípios que a tela já mostra: sede, destinos e trechos.
 
-    O select do estado é só da tela: quem vai para o banco é o município.
+    Também servem de dicionário de rótulos ao roteiro-editor.js, que nomeia
+    os trechos pelo id do município.
     """
-    return [
-        {
-            "valor": str(municipio.pk),
-            "rotulo": municipio.nome,
-            "estado": str(municipio.estado_id),
-        }
-        for municipio in queryset
-    ]
+    from cadastros.busca_municipios import opcoes_dos_municipios
+
+    ids = [form["origem_municipio"].value()]
+    ids += [f["municipio"].value() for f in destinos.forms]
+    for trecho in formset.forms:
+        ids += [trecho["origem_municipio"].value(), trecho["destino_municipio"].value()]
+    return opcoes_dos_municipios(getattr(i, "pk", i) for i in ids)
 
 
 def _valor_str(campo_bound):
@@ -549,9 +549,9 @@ def _contexto_do_form(roteiro, form, formset, destinos, viagem=None):
         "destinos": destinos,
         "trechos_cards": _cards_de_trechos(formset),
         "destinos_cards": _cards_de_destinos(destinos),
-        "opcoes_municipios": _opcoes_municipios(
-            form.fields["origem_municipio"].queryset
-        ),
+        # Só os municípios já no roteiro: o resto o seletor busca conforme se
+        # digita (m075). A lista inteira pesava megabytes em cada campo.
+        "opcoes_municipios": _municipios_referenciados(form, formset, destinos),
         "opcoes_estados": _opcoes(
             Estado.objects.filter(municipios__ativo=True).distinct().order_by("nome")
         ),
@@ -599,6 +599,15 @@ def _contexto_do_form(roteiro, form, formset, destinos, viagem=None):
     }
 
 
+def _rotulos_do_roteiro(roteiro):
+    ids = {roteiro.origem_municipio_id}
+    ids.update(roteiro.destinos.values_list("municipio_id", flat=True))
+    for origem, destino in roteiro.trechos.values_list("origem_municipio_id", "destino_municipio_id"):
+        ids.update((origem, destino))
+    ids.discard(None)
+    return {str(pk): nome for pk, nome in Municipio.objects.filter(pk__in=ids).values_list("pk", "nome")}
+
+
 @acesso_ao_modulo
 def dados_do_roteiro(request, pk):
     """Sede, destinos, trechos e rota de um roteiro salvo, para reaproveitar na montagem.
@@ -634,6 +643,9 @@ def dados_do_roteiro(request, pk):
             # Com os trechos e a rota, a tela do ofício mostra o roteiro
             # escolhido inteiro sem recarregar; a de roteiros usa só sede e destinos.
             "trechos": trechos,
+            # Nome de cada município citado: os seletores da tela só trazem
+            # os já escolhidos e buscam o resto (m075).
+            "rotulos": _rotulos_do_roteiro(roteiro),
             "rota": rota_para_tela(roteiro),
             "sede": (
                 {

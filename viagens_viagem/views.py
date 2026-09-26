@@ -106,7 +106,8 @@ def _url_criar(nome, viagem, *, metodo="get"):
 
 
 def _contexto_da_etapa_1(request, viagem, form):
-    from cadastros.models import Estado, Municipio
+    from cadastros.busca_municipios import opcoes_dos_municipios
+    from cadastros.models import Estado
     from viagens_oficios.models import ModeloMotivoOficio
 
     valor = lambda nome: (str(getattr(form[nome].value(), "pk", form[nome].value())) if form[nome].value() not in (None, "") else "")
@@ -126,7 +127,9 @@ def _contexto_da_etapa_1(request, viagem, form):
         "opcoes_motivos": [{"valor": str(m.pk), "rotulo": m.nome} for m in form.fields["modelo_motivo"].queryset],
         "modelos_texto": dict(ModeloMotivoOficio.objects.values_list("pk", "texto")),
         "estados": [{"valor": str(e.pk), "rotulo": f"{e.sigla} — {e.nome}"} for e in Estado.objects.order_by("sigla")],
-        "municipios": [{"valor": str(m.pk), "rotulo": m.nome, "estado": str(m.estado_id)} for m in Municipio.objects.select_related("estado").order_by("nome")],
+        # Só os municípios já escolhidos; o seletor busca o resto ao digitar (m075).
+        "municipios": opcoes_dos_municipios([valor("destino_municipio")] + [a["cidade"] for a in adicionais]),
+        "remoto_municipios": reverse("cadastros:municipios_buscar"),
         "adicionais": adicionais, "quantidade_destinos": str(form.quantidade_destinos),
         "abas_documentos": abas_de_documentos(form),
         "url_tipos": com_next(reverse("viagens_cadastros:lista", args=["tipos-viagem"]), volta),
