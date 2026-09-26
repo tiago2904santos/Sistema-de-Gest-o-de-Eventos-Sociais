@@ -2108,6 +2108,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .ofc-origem{display:grid;grid-template-columns:120px minmax(0,1fr) minmax(0,1fr);align-items:end;gap:12px;margin:0}
 .ofc-origem .form-campo{margin:0}
 .ofc-origem__rotulo{align-self:center;padding-top:20px}
+.ofc-origem__opcoes{grid-column:1/-1}
 @container(max-width:680px){.ofc-origem{grid-template-columns:1fr}.ofc-origem__rotulo{padding-top:0}}
 
 /* Rótulo sobre a borda do campo, em todo o sistema (18/09/2026): o rótulo

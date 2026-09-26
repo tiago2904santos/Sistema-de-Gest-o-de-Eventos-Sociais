@@ -10,7 +10,8 @@
  *   condutores autorizados; escolhida a viatura, os autorizados dela vêm
  *   primeiro na lista de motoristas;
  * - o cartão do motorista aparece com viatura escolhida e ninguém da equipe
- *   ao volante; "No sistema" / "Manual" alterna o que ele pede;
+ *   ao volante; "No sistema" / "Manual" alterna o que ele pede; escolhido o
+ *   motorista, o ofício e o protocolo de origem vêm do ofício em que ele viaja;
  * - o PDF da conferência só é pedido quando o cartão abre.
  */
 (function () {
@@ -386,6 +387,70 @@
     if (evento.target.name === "viatura") destacarCondutores();
   });
   destacarCondutores();
+
+  // 5b. Ofício de origem do motorista de fora da equipe ------------------------
+  // Escolhido o motorista, o sistema procura os ofícios ativos em que ele viaja
+  // (da mesma viagem e de período que se sobrepõe primeiro). Com um candidato
+  // provável, preenche N° e Protocolo; com mais de um, mostra a lista.
+  var origem = form.querySelector("[data-ofc-origem]");
+  var campoRef = form.querySelector('[name="motorista_oficio_referencia"]');
+  var campoProto = form.querySelector('[name="motorista_protocolo_ref"]');
+  var opcoesOrigem = form.querySelector("[data-ofc-origem-opcoes]");
+  var listaOrigem = form.querySelector("[data-ofc-origem-lista]");
+  var preenchidoPeloSistema = false;
+
+  function aplicarOrigem(item) {
+    if (!campoRef || !campoProto) return;
+    var partes = item.referencia.split("/");
+    campoRef.value = partes[1] === origem.getAttribute("data-ano") ? partes[0] : item.referencia;
+    campoProto.value = mascaraProtocolo(item.protocolo_digitos || "");
+    disparar(campoRef);
+    disparar(campoProto);
+    preenchidoPeloSistema = true;
+    if (listaOrigem) listaOrigem.querySelectorAll(".ofc-sugestao").forEach(function (b) {
+      b.setAttribute("aria-pressed", b.getAttribute("data-id") === String(item.id) ? "true" : "false");
+    });
+  }
+
+  function buscarOrigem() {
+    if (!origem || !window.fetch) return;
+    var marcado = form.querySelector('input[name="motorista"]:checked');
+    if (!marcado || motoristaEquipe) { if (opcoesOrigem) opcoesOrigem.hidden = true; return; }
+    fetch(origem.getAttribute("data-url") + "?motorista=" + encodeURIComponent(marcado.value), { headers: { "X-Requested-With": "fetch" } })
+      .then(function (resposta) { return resposta.ok ? resposta.json() : null; })
+      .then(function (dados) {
+        var oficios = (dados && dados.oficios) || [];
+        listaOrigem.innerHTML = "";
+        oficios.forEach(function (item) {
+          var botao = document.createElement("button");
+          botao.type = "button";
+          botao.className = "ofc-sugestao";
+          botao.setAttribute("data-id", String(item.id));
+          botao.setAttribute("aria-pressed", "false");
+          botao.textContent = "Ofício " + item.numero_formatado + (item.protocolo ? " · " + item.protocolo : "");
+          var motivo = document.createElement("span");
+          motivo.className = "ofc-sugestao__sigla";
+          motivo.textContent = item.motivo;
+          botao.appendChild(motivo);
+          botao.addEventListener("click", function () { aplicarOrigem(item); });
+          listaOrigem.appendChild(botao);
+        });
+        opcoesOrigem.hidden = oficios.length < 2;
+        var vazios = !campoRef.value.trim() && !campoProto.value.trim();
+        var provaveis = oficios.filter(function (item) { return item.provavel; });
+        var escolhido = oficios.length === 1 ? oficios[0] : (provaveis.length === 1 ? provaveis[0] : null);
+        if (escolhido && (vazios || preenchidoPeloSistema)) aplicarOrigem(escolhido);
+      })
+      .catch(function () { /* sem rede, os campos continuam à mão */ });
+  }
+  [campoRef, campoProto].forEach(function (campo) {
+    if (campo) campo.addEventListener("input", function (evento) {
+      if (evento.isTrusted) preenchidoPeloSistema = false;
+    });
+  });
+  form.addEventListener("change", function (evento) {
+    if (evento.target.name === "motorista") buscarOrigem();
+  });
 
   // 6. Vincular a um roteiro existente ---------------------------------------
   // Ligado: só a busca do roteiro; os cartões do mapa, trechos e diárias ficam

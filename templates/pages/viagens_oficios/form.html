@@ -208,7 +208,8 @@
               </div>
 
               {# O documento que autorizou esse motorista, numa caixa como a do bate-volta. #}
-              <div class="bate-volta ofc-origem">
+              {# Escolhido o motorista, o sistema procura o ofício em que ele viaja e preenche os dois campos. #}
+              <div class="bate-volta ofc-origem" data-ofc-origem data-url="{% url 'viagens_oficios:oficios_do_motorista' oficio.pk %}" data-ano="{{ dados.ano }}">
                 <span class="bate-volta__rotulo ofc-origem__rotulo">Ofício de origem</span>
                 <div class="form-campo">
                   <label class="form-label" for="id_motorista_oficio_referencia">N° do Ofício</label>
@@ -219,6 +220,10 @@
                   {% for erro in e.motorista_oficio_referencia %}<p class="form-erro">{{ erro }}</p>{% endfor %}
                 </div>
                 {% include "components/input.html" with name="motorista_protocolo_ref" label="Protocolo" inputmode="numeric" maxlength="12" autocomplete="off" valor=v.motorista_protocolo_ref erros=e.motorista_protocolo_ref %}
+                <div class="ofc-origem__opcoes" data-ofc-origem-opcoes hidden>
+                  <span class="form-label">Ofícios em que o motorista viaja</span>
+                  <div class="ofc-sugestoes__lista" data-ofc-origem-lista></div>
+                </div>
               </div>
             </div>
           </div>

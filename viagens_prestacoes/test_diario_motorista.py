@@ -68,6 +68,17 @@ class MotoristaDiarioServiceTest(DiarioMotoristaBaseTest):
         self.assertEqual(header['ano'], '2025')
         self.assertEqual(header['protocolo_motorista'], '98.765.432-1')
 
+    def test_modo_outro_oficio_em_branco_herda_do_oficio(self):
+        self.oficio.motorista_oficio_referencia = '1234/2026'
+        self.oficio.motorista_protocolo_ref = '111222333'
+        self.oficio.save()
+        self.diario.motorista_modo = DiarioBordo.MOTORISTA_MODO_OUTRO
+        self.diario.motorista_manual_nome = 'Fulano de Tal'
+        self.diario.save()
+        header, _linhas = build_diario_bordo_context(self.diario)
+        self.assertEqual((header['oficio_motorista'], header['ano']), ('1234', '2026'))
+        self.assertEqual(header['protocolo_motorista'], '11.122.233-3')
+
     def test_modo_oficio_mantem_dados_do_oficio_no_cabecalho(self):
         header, _linhas = build_diario_bordo_context(self.diario)
         self.assertEqual(header['motorista'], 'MOTORISTA OFICIO')

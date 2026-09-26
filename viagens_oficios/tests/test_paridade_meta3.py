@@ -441,6 +441,29 @@ class CadastroTests(Cenario):
         r = self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(), follow=True)
         self.assertNotContains(r, "condutores autorizados")
 
+    def test_oficio_do_motorista_de_fora_e_sugerido(self):
+        from viagens_oficios.services import pendencias_motorista_documento
+        # O ofício em que João viaja, com período que se sobrepõe.
+        dele = self.oficio(dias=10, protocolo="112223334", servidores=[self.joao])
+        antigo = self.oficio(servidores=[self.joao])
+        self.oficio(dias=10, servidores=[self.joao], cancelar=True)
+        o = self.oficio(dias=10, servidores=[self.janine])
+        url = reverse("viagens_oficios:oficios_do_motorista", args=[o.pk])
+        dados = self.client.get(url, {"motorista": self.joao.pk}).json()["oficios"]
+        self.assertEqual([d["id"] for d in dados], [dele.pk, antigo.pk])
+        self.assertEqual(dados[0]["referencia"], f"{dele.numero}/{dele.ano}")
+        self.assertEqual(dados[0]["protocolo"], "11.222.333-4")
+        self.assertEqual(dados[0]["motivo"], "Período que se sobrepõe")
+        self.assertTrue(dados[0]["provavel"])
+        self.assertFalse(dados[1]["provavel"])
+        self.assertEqual(self.client.get(url, {"motorista": "x"}).json(), {"oficios": []})
+        # O cartão sabe onde buscar.
+        self.assertContains(self.editar(o), f'data-url="{url}"')
+        # Ofício de número com 4 dígitos passa na conferência.
+        o.motorista, o.motorista_oficio_referencia, o.motorista_protocolo_ref = self.joao, "1000/2026", "112223334"
+        o.save()
+        self.assertEqual(pendencias_motorista_documento(o), [])
+
     def _finalizar(self, o, **extra):
         return self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(
             servidores=[str(self.janine.pk)], servidores_termo_autorizacao=[str(self.janine.pk)], acao="finalizar", **extra),

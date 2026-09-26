@@ -479,9 +479,11 @@ def build_diario_bordo_context(diario: DiarioBordo) -> tuple[dict, list[dict]]:
 
     # Ofício/protocolo do motorista: por padrão são os do próprio ofício; quando o
     # motorista é de outro ofício, usam a referência informada no override.
+    # Em branco no diário, herda o que o ofício já registrou do motorista de fora.
     if diario.motorista_modo == DiarioBordo.MOTORISTA_MODO_OUTRO:
-        numero_motorista, ano_motorista = _split_oficio_ref(diario.motorista_oficio_referencia)
-        protocolo_motorista = format_protocolo(diario.motorista_protocolo_ref) or ""
+        numero_motorista, ano_motorista = _split_oficio_ref(
+            diario.motorista_oficio_referencia or oficio.motorista_oficio_referencia)
+        protocolo_motorista = format_protocolo(diario.motorista_protocolo_ref or oficio.motorista_protocolo_ref) or ""
     else:
         numero_motorista = str(oficio.numero or "").strip()
         ano_motorista = str(oficio.ano or "").strip()

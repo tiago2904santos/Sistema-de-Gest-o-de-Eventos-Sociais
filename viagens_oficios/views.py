@@ -532,6 +532,21 @@ def editar(request, pk=None):
 
 @acesso_ao_modulo
 @require_GET
+def oficios_do_motorista(request, pk):
+    """JSON do cartão do motorista: os ofícios ativos em que ele viaja, para
+    preencher sozinho o N° do Ofício e o Protocolo de origem."""
+    from django.http import JsonResponse
+    from .services import oficios_do_motorista as buscar
+    exigir_operador(request)
+    oficio = get_oficio_by_id(pk)
+    motorista = request.GET.get('motorista', '')
+    if not motorista.isdigit():
+        return JsonResponse({'oficios': []})
+    return JsonResponse({'oficios': buscar(oficio, int(motorista))})
+
+
+@acesso_ao_modulo
+@require_GET
 @xframe_options_sameorigin
 def visualizar(request, pk, tipo):
     """O PDF do ofício ou da justificativa dentro do cartão da conferência."""
