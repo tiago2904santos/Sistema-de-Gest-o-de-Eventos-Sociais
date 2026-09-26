@@ -1,0 +1,100 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% load estaticos %}
+{% comment %}
+  Escala — uma linha por pessoa, uma coluna por dia (m134).
+
+  A tabela é própria (sem plugin de linha do tempo): cada célula lista os
+  compromissos em que a pessoa está naquele dia, com a cor da fonte. A
+  navegação é por links com o período na URL, então a escala da semana
+  pode ser mandada por link e impressa como está.
+{% endcomment %}
+
+{% block title %}Escala — Agenda — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/agenda.css' %}"><link rel="stylesheet" href="{% estatico 'css/agenda-extras.css' %}">{% endblock %}
+
+{% block conteudo %}
+  <div class="d-cabeca d-cabeca--secao">
+    <div class="d-cabeca__esq">
+      <div class="kicker kicker--junto"><a href="{{ url_agenda }}" class="ag-kicker-link">Agenda</a></div>
+      <h1>Escala</h1>
+    </div>
+  </div>
+
+  <div class="ag-topo" role="toolbar" aria-label="Navegação da escala">
+    <div class="ag-topo__nav">
+      <a class="ag-ico" href="{{ url_anterior }}" aria-label="Período anterior">{% include "components/icon.html" with nome="chevron-left" %}</a>
+      <a class="ag-ico" href="{{ url_proximo }}" aria-label="Próximo período">{% include "components/icon.html" with nome="chevron-right" %}</a>
+      <a class="ag-btn" href="{{ url_hoje }}">Esta semana</a>
+    </div>
+    <h2 class="ag-topo__titulo">{{ inicio|date:"d/m" }} a {{ fim|date:"d/m/Y" }}</h2>
+    <div class="ag-seg" role="group" aria-label="Quantos dias">
+      {% for o in opcoes_dias %}<a href="{{ o.url }}" aria-pressed="{{ o.ativo|yesno:'true,false' }}">{{ o.n }} dias</a>{% endfor %}
+    </div>
+    <div class="ag-topo__acoes">
+      <a class="ag-btn" href="{{ url_agenda }}">{% include "components/icon.html" with nome="calendar" %}Calendário</a>
+      <button type="button" class="ag-btn" onclick="window.print()">{% include "components/icon.html" with nome="printer" %}Imprimir</button>
+    </div>
+  </div>
+
+  <form method="get" class="ag-escala__filtros" role="search">
+    <input type="hidden" name="inicio" value="{{ inicio|date:'Y-m-d' }}">
+    <input type="hidden" name="dias" value="{{ dias }}">
+    <label class="ag-f__h" for="ag-escala-pessoa">Pessoa</label>
+    <input type="search" id="ag-escala-pessoa" name="pessoa" class="ag-busca ag-escala__pessoa" value="{{ pessoa }}" placeholder="Nome do servidor ou palestrante" autocomplete="off">
+    <div class="ag-chips">
+      {% for f in fontes %}
+        <label class="ag-chip ag-chip--{{ f.slug }}">
+          <input type="checkbox" name="fontes_lista" value="{{ f.slug }}"{% if f.ligada %} checked{% endif %} data-escala-fonte>
+          <span class="ag-chip__pt" aria-hidden="true"></span>
+          <span class="ag-chip__t">{{ f.rotulo }}</span>
+        </label>
+      {% endfor %}
+    </div>
+    <input type="hidden" name="fontes" value="{{ fontes_texto }}" data-escala-fontes>
+    <button type="submit" class="ag-btn ag-btn--peq">Aplicar</button>
+    {% if pessoa or fontes_texto %}<a class="ag-link" href="{{ url_hoje }}">Limpar</a>{% endif %}
+  </form>
+
+  <section class="pa-card ag-escala-card">
+    {% if linhas %}
+      <div class="ag-escala__rolagem">
+        <table class="ag-escala">
+          <thead>
+            <tr>
+              <th scope="col" class="ag-escala__pessoa-col">Pessoa</th>
+              {% for c in colunas %}
+                <th scope="col" class="ag-escala__dia{% if c.fim_de_semana %} ag-escala__dia--fds{% endif %}{% if c.hoje %} ag-escala__dia--hoje{% endif %}">
+                  <span class="ag-escala__sem">{{ c.semana }}</span>
+                  <span class="ag-escala__num">{{ c.data|date:"d/m" }}</span>
+                </th>
+              {% endfor %}
+              <th scope="col" class="ag-escala__total">Dias fora</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in linhas %}
+              <tr>
+                <th scope="row" class="ag-escala__nome">{{ l.nome }}</th>
+                {% for celula in l.celulas %}
+                  <td class="ag-escala__cel">
+                    {% for i in celula %}
+                      <a class="ag-escala__item ag-{{ i.fonte }}{% if i.encerrado %} ag-encerrado{% endif %}" href="{{ i.url }}" title="{{ i.rotulo }}: {{ i.titulo }} — {{ i.situacao }}">{{ i.titulo|truncatechars:34 }}</a>
+                    {% endfor %}
+                  </td>
+                {% endfor %}
+                <td class="ag-escala__total">{{ l.dias_fora }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="ag-vazio">Ninguém escalado no período{% if pessoa %} com "{{ pessoa }}"{% endif %}. A escala lê a equipe dos ofícios, termos e ordens de serviço das viagens, o motorista das solicitações e os palestrantes.</p>
+    {% endif %}
+  </section>
+{% endblock %}
+
+{% block extra_js %}{{ block.super }}
+  <script src="{% estatico 'js/agenda-extras.js' %}" defer></script>
+{% endblock %}

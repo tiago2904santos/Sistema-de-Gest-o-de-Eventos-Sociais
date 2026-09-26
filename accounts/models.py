@@ -67,6 +67,17 @@ class User(AbstractUser, OrigemLegado):
         related_name="usuarios",
         blank=True,
     )
+    # A pessoa do domínio de viagens que este usuário é. É o que deixa a
+    # agenda dizer "onde eu estou escalado" (ofícios, termos, ordens) e não
+    # só "o que eu registrei". Opcional: nem todo usuário viaja.
+    servidor = models.OneToOneField(
+        "viagens_cadastros.Servidor",
+        verbose_name="servidor correspondente",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="usuario",
+    )
 
     class Meta:
         verbose_name = "usuário"

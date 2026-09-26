@@ -60,4 +60,17 @@
     // Volta do POST (gerar/revogar): a URL vem com #assinar e o modal reabre.
     if (location.hash === "#assinar") { abrirDialogo(assinar); history.replaceState(null, "", location.pathname + location.search); }
   }
+
+  // ---- escala (m134): as caixas de fonte viram o parâmetro `fontes` ------
+  var formEscala = document.querySelector(".ag-escala__filtros");
+  if (formEscala) {
+    formEscala.addEventListener("submit", function () {
+      var caixas = Array.prototype.slice.call(formEscala.querySelectorAll("[data-escala-fonte]"));
+      var ligadas = caixas.filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
+      var oculto = formEscala.querySelector("[data-escala-fontes]");
+      // Todas ligadas = sem parâmetro. As caixas não vão na URL: só o resumo.
+      if (oculto) oculto.value = (ligadas.length && ligadas.length < caixas.length) ? ligadas.join(",") : "";
+      caixas.forEach(function (c) { c.disabled = true; });
+    });
+  }
 })();

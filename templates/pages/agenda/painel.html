@@ -43,6 +43,7 @@
     <button type="button" class="ag-btn ag-btn--filtros" data-ag="filtros" aria-expanded="false" aria-controls="ag-filtros">{% include "components/icon.html" with nome="filter" %}Filtros</button>
     {# Ações da onda AG-B: assinar no calendário pessoal (m133). #}
     <div class="ag-topo__acoes">
+      <a class="ag-btn" href="{% url 'agenda:escala' %}">{% include "components/icon.html" with nome="users" %}Escala</a>
       <button type="button" class="ag-btn" data-ag-abrir="ag-assinar" aria-haspopup="dialog">{% include "components/icon.html" with nome="link" %}Assinar</button>
     </div>
   </div>
@@ -82,7 +83,14 @@
       </section>
 
       <section class="ag-f">
-        <label class="ag-toggle"><input type="checkbox" id="ag-meus"><span>Só o que eu criei</span></label>
+        <h3 class="ag-f__h"><label for="ag-pessoa">Pessoa</label></h3>
+        <select id="ag-pessoa" class="ag-sel"><option value="">Todas</option></select>
+      </section>
+
+      <section class="ag-f">
+        {# "Minha agenda" (m134): o que eu registrei e onde estou escalado. #}
+        <label class="ag-toggle"><input type="checkbox" id="ag-meus"><span>Minha agenda</span></label>
+        <p class="ag-f__dica">O que você registrou e as viagens em que está escalado{% if not request.user.servidor_id %} — peça ao administrador para ligar seu usuário ao seu cadastro de servidor{% endif %}.</p>
       </section>
 
       <section class="ag-f">

@@ -28,6 +28,7 @@
   var elSituacoes = $("ag-situacoes");
   var selMunicipio = $("ag-municipio");
   var selTipo = $("ag-tipo");
+  var selPessoa = $("ag-pessoa"); // filtro por pessoa escalada (m134)
   var chkMeus = $("ag-meus");
   var busca = $("ag-busca");
   var vazio = $("ag-vazio");
@@ -63,6 +64,7 @@
     if (!situacaoLigada(p.fonte + ":" + p.situacao_slug, p.encerrado)) return false;
     if (pref.municipio && p.municipio !== pref.municipio) return false;
     if (pref.tipo && p.tipo !== pref.tipo) return false;
+    if (pref.pessoa && (p.pessoas || []).indexOf(pref.pessoa) === -1) return false;
     if (chkMeus && chkMeus.checked && !p.meu) return false;
     var q = (busca && busca.value || "").trim().toLowerCase();
     if (q) {
@@ -75,7 +77,7 @@
   // As opções dos filtros nascem do que está carregado: mostrar "Umuarama"
   // num mês em que não há nada em Umuarama só confunde.
   function montarOpcoes(lista) {
-    var porFonte = {}, situacoes = {}, municipios = {}, tipos = {};
+    var porFonte = {}, situacoes = {}, municipios = {}, tipos = {}, pessoas = {};
     lista.forEach(function (ev) {
       var p = ev.extendedProps;
       porFonte[p.fonte] = (porFonte[p.fonte] || 0) + 1;
@@ -84,7 +86,9 @@
       s.n += 1;
       if (p.municipio) municipios[p.municipio] = (municipios[p.municipio] || 0) + 1;
       if (p.tipo) tipos[p.tipo] = (tipos[p.tipo] || 0) + 1;
+      (p.pessoas || []).forEach(function (nome) { pessoas[nome] = (pessoas[nome] || 0) + 1; });
     });
+    renderSelect(selPessoa, pessoas, pref.pessoa);
     document.querySelectorAll("[data-conta]").forEach(function (n) {
       var t = porFonte[n.dataset.conta] || 0; n.textContent = t ? String(t) : "";
     });
@@ -223,6 +227,7 @@
   });
   if (selMunicipio) selMunicipio.addEventListener("change", function () { pref.municipio = selMunicipio.value; gravar(); cal.refetchEvents(); });
   if (selTipo) selTipo.addEventListener("change", function () { pref.tipo = selTipo.value; gravar(); cal.refetchEvents(); });
+  if (selPessoa) selPessoa.addEventListener("change", function () { pref.pessoa = selPessoa.value; gravar(); cal.refetchEvents(); });
   if (chkMeus) chkMeus.addEventListener("change", function () { pref.meus = chkMeus.checked; gravar(); cal.refetchEvents(); });
   var temporizador = null;
   if (busca) busca.addEventListener("input", function () {
@@ -232,7 +237,7 @@
   var limpar = $("ag-limpar");
   if (limpar) limpar.addEventListener("click", function () {
     pref.fontesDesligadas = []; pref.sitDesligadas = []; pref.encLigadas = [];
-    pref.municipio = ""; pref.tipo = ""; pref.meus = false;
+    pref.municipio = ""; pref.tipo = ""; pref.pessoa = ""; pref.meus = false;
     caixas.forEach(function (c) { c.checked = true; });
     if (chkMeus) chkMeus.checked = false;
     if (busca) busca.value = "";

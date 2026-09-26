@@ -70,6 +70,7 @@ def _evento(
     municipio: str = "",
     tipo: str = "",
     meu: bool = False,
+    pessoas: list[str] | None = None,
 ) -> dict:
     """Um compromisso no formato do calendário.
 
@@ -97,6 +98,8 @@ def _evento(
             "municipio": municipio,
             "tipo": tipo,
             "meu": meu,
+            # Quem está escalado (m134): alimenta o filtro "Pessoa" e a escala.
+            "pessoas": list(pessoas or ()),
             "detalhes": [[rotulo, valor] for rotulo, valor in detalhes if valor],
         },
     }
@@ -116,14 +119,20 @@ def _pode_viagens(usuario) -> bool:
 def _viagens(usuario, inicio, fim) -> list[dict]:
     from viagens_viagem.models import Viagem
 
-    consulta = (
+    from . import pessoas as equipes
+
+    consulta = equipes.prefetch_equipes(
         Viagem.objects.filter(_sobrepoe("data_inicio", "data_fim", inicio, fim))
         .select_related("destino_municipio__estado", "destino_estado", "unidade_responsavel")
         .order_by("data_inicio", "id")
     )
+    # "Meu" (m134): criei a viagem/ofício/roteiro, ou estou escalado.
+    criacoes = equipes.criacoes_de(usuario)
+    servidor_pk = getattr(usuario, "servidor_id", None)
     saida = []
     for v in consulta:
         motivo = (v.motivo or "").strip()
+        nomes, escalados = equipes.equipe_da_viagem(v)
         saida.append(
             _evento(
                 fonte="viagem",
@@ -137,11 +146,14 @@ def _viagens(usuario, inicio, fim) -> list[dict]:
                 encerrado=bool(v.cancelado),
                 municipio=v.destino_display,
                 tipo=str(v.unidade_responsavel) if v.unidade_responsavel_id else "",
+                meu=equipes.viagem_e_minha(v, criacoes=criacoes, servidor_pk=servidor_pk, escalados=escalados),
+                pessoas=nomes,
                 detalhes=[
                     ("Destino", v.destino_display),
                     ("Período", v.periodo_display),
                     ("Motivo", motivo),
                     ("Unidade", str(v.unidade_responsavel) if v.unidade_responsavel_id else ""),
+                    ("Equipe", ", ".join(nomes)),
                     ("Cancelada", v.motivo_cancelamento if v.cancelado else ""),
                 ],
             )
@@ -168,7 +180,7 @@ def _solicitacoes(usuario, inicio, fim) -> list[dict]:
         permissions.queryset_visivel(usuario, SolicitacaoEvento.objects.all())
         .filter(data_inicio_evento__isnull=False)
         .filter(_sobrepoe("data_inicio_evento", "data_fim_evento", inicio, fim))
-        .select_related("municipio", "tipo_evento")
+        .select_related("municipio", "tipo_evento", "motorista")
         .order_by("data_inicio_evento", "id")
     )
     encerrados = {StatusSolicitacao.CANCELADA, StatusSolicitacao.NAO_ATENDIDA}
@@ -189,7 +201,9 @@ def _solicitacoes(usuario, inicio, fim) -> list[dict]:
                 encerrado=s.status in encerrados,
                 municipio=lugar,
                 tipo=tipo,
-                meu=s.criado_por_id == getattr(usuario, "pk", None),
+                meu=s.criado_por_id == getattr(usuario, "pk", None)
+                or (bool(s.motorista_id) and s.motorista_id == getattr(usuario, "servidor_id", None)),
+                pessoas=[s.motorista.nome] if s.motorista_id else [],
                 detalhes=[
                     ("Município", lugar),
                     ("Tipo de evento", tipo),
@@ -294,6 +308,7 @@ def _demandas(usuario, inicio, fim) -> list[dict]:
                 municipio=lugar,
                 tipo=d.get_evento_display(),
                 meu=d.criado_por_id == getattr(usuario, "pk", None),
+                pessoas=[p.nome for p in d.palestrantes.all()],
                 detalhes=[
                     ("Município", lugar),
                     ("Evento", d.get_evento_display()),
