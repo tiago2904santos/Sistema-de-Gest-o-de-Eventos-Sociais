@@ -178,12 +178,16 @@ def home(request):
             }
         )
 
+    from core.preencher_por_email import modulos_de_triagem
+
     return render(
         request,
         "pages/core/hub.html",
         {
             "cartoes": cartoes,
             "mostrar_usuarios": pode_gerenciar_usuarios(request.user),
+            # A faixa "solte o e-mail aqui": só para quem tem módulo que lê e-mail.
+            "triagem_email": bool(modulos_de_triagem(request.user)),
         },
     )
 

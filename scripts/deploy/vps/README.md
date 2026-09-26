@@ -146,17 +146,28 @@ equivalente é um `pg_dump` no cron:
 **Não suba sem backup funcionando.** É a única coisa desta lista que não dá
 para consertar depois que faz falta.
 
-## Lembretes diários das solicitações
+## Lembretes diários (sem cron)
 
-`manage.py enviar_lembretes_solicitacoes` avisa pelo sino (e por e-mail, com
-`EMAIL_HOST` configurado): o autor, no dia seguinte ao evento deferido, para
-marcar "Atendida"; a DG, quando um pedido aguarda despacho com o evento em até
-7 dias; e o autor da devolução parada há mais de 3 dias. Cada aviso sai uma
-vez só (fica gravado), então o comando pode rodar de novo sem repetir nada;
-`--simular` só conta. Para agendar uma vez por dia, por exemplo no cron:
+Os lembretes diários rodam sozinhos no primeiro acesso de usuário logado de
+cada dia (`core/rotinas.py`, `RotinasDiariasMiddleware`; a chave do dia fica
+na tabela `cache_django`, então os workers do gunicorn não repetem a rodada):
+
+- `enviar_lembretes_solicitacoes`: o autor, no dia seguinte ao evento
+  deferido, para marcar "Atendida"; a DG, quando um pedido aguarda despacho
+  com o evento em até 7 dias; o autor da devolução parada há mais de 3 dias;
+- `avisar_prazos_prestacao`: saque, prazo de prestação, documentos gerados e
+  assinados, saídas e chegadas de viagem;
+- o resumo do dia de cada usuário ativo no sino ("Eventos Sociais: 2
+  aguardando despacho, 1 evento em 7 dias · Palestras: 3 pendentes").
+
+Cada aviso sai uma vez só (fica gravado), então os comandos continuam
+podendo rodar à mão ou no cron sem repetir nada; `--simular` só conta. Para
+desligar o disparo automático (e voltar ao cron), ponha
+`ROTINAS_DIARIAS_AUTOMATICAS=0` no `.env`:
 
 ```cron
 15 7 * * * cd /var/www/eventos-sociais/app && sudo -u eventos .venv/bin/python manage.py enviar_lembretes_solicitacoes
+20 7 * * * cd /var/www/eventos-sociais/app && sudo -u eventos .venv/bin/python manage.py avisar_prazos_prestacao
 ```
 
 ## Deploy automático (GitHub Actions)

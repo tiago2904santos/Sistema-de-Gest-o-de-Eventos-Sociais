@@ -67,3 +67,31 @@ class TriagemTests(SimpleTestCase):
             "Assunto: RES: Palestra sobre golpes\n\nPara 80 alunos.\n\nAtt,\nAna\nPedagoga"
         )
         self.assertEqual(triar_mensagem(mensagem)[0].modulo, "demandas_eventos")
+
+
+class SinaisNovosETriagemComMemoriaTests(SimpleTestCase):
+    def test_identificacao_civil_e_evento_social_mesmo_com_escola_e_alunos(self):
+        destino = triar(
+            assunto="Programa Criança e Adolescente Protegidos – apoio institucional",
+            corpo="Emissão da Carteira de Identidade Nacional (CIN) para estudantes da rede municipal; "
+                  "426 alunos sem RG nas escolas das ilhas; identificação civil pelo Instituto de Identificação.",
+        )[0]
+        self.assertEqual(destino.modulo, "solicitacoes")
+        self.assertIn("identificação civil", destino.sinais)
+
+    def test_atendimento_in_loco_para_acamados(self):
+        destino = triar(
+            assunto="Solicitação de ação para emissão da Carteira de Identidade Nacional (CIN)",
+            corpo="Atendimento in loco para regularização da documentação de identificação civil de 10 pacientes.",
+        )[0]
+        self.assertEqual(destino.modulo, "solicitacoes")
+
+    def test_extras_da_memoria_entram_na_conta(self):
+        destinos = triar(
+            corpo="Bom dia, segue em anexo o ofício.",
+            extras={"coffee_break": [(6.0, "3 pedidos anteriores deste remetente")]},
+        )
+        self.assertEqual(destinos[0].modulo, "coffee_break")
+        self.assertIn("3 pedidos anteriores deste remetente", destinos[0].sinais)
+        # Módulo desconhecido e peso zero são ignorados.
+        self.assertEqual(triar(corpo="x", extras={"nada": [(9, "x")], "publicacoes": [(0, "y")]}), [])
