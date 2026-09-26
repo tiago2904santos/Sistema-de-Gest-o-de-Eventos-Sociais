@@ -100,6 +100,9 @@ class Mensagem:
     citado: str = ""
     anexos_citados: list[str] = field(default_factory=list)
     avisos: list[str] = field(default_factory=list)
+    #: O que o formato diz além do e-mail: num processo do eProtocolo, o
+    #: protocolo, a cidade da capa, o interessado e o nº/ano do ofício.
+    extras: dict = field(default_factory=dict)
 
     @property
     def assunto_limpo(self) -> str:
@@ -178,7 +181,8 @@ def ler_texto_colado(texto: str) -> Mensagem:
     return _finalizar(_mensagem_de_texto(texto, "texto"))
 
 
-_NOME_ORIGEM = {"msg": ".msg do Outlook", "pdf": "PDF", "eml": ".eml", "mht": ".mht", "txt": ".txt"}
+_NOME_ORIGEM = {"msg": ".msg do Outlook", "pdf": "PDF", "eml": ".eml", "mht": ".mht", "txt": ".txt",
+                "eprotocolo": "processo do eProtocolo"}
 
 
 def _parece_mime(dados: bytes) -> bool:
@@ -239,6 +243,8 @@ class _Bruto:
     internas: list["_Bruto"] = field(default_factory=list)
     citado: str = ""
     avisos: list[str] = field(default_factory=list)
+    anexos_citados: list[str] = field(default_factory=list)
+    extras: dict = field(default_factory=dict)
 
 
 def _mensagem_de_texto(texto: str, origem: str) -> Mensagem:
@@ -269,7 +275,7 @@ def _montar(bruto: _Bruto, origem: str, profundidade: int = 0) -> Mensagem:
             return mensagem
 
     remetente, assunto, enviado_em = bruto.remetente, bruto.assunto, bruto.enviado_em
-    encaminhada_por, anexos_citados = "", []
+    encaminhada_por, anexos_citados = "", list(bruto.anexos_citados)
     for nivel in niveis:
         novo = _remetente(nivel.get("de", ""))
         if any(novo):
@@ -281,7 +287,7 @@ def _montar(bruto: _Bruto, origem: str, profundidade: int = 0) -> Mensagem:
         if nivel.get("anexos"):
             anexos_citados = [n.strip() for n in re.split(r"[;,]\s*|\s{2,}", nivel["anexos"]) if n.strip()]
 
-    interno, citado_linhas = _cortar_citacoes(interno)
+    interno, citado_linhas = _cortar_citacoes(_sem_cabecalho_residual(interno))
     corpo, assinatura = separar_assinatura(interno)
     partes_citadas = [x for x in (bruto.citado, citado, citado_linhas) if x.strip()]
     mensagem = Mensagem(
@@ -298,8 +304,31 @@ def _montar(bruto: _Bruto, origem: str, profundidade: int = 0) -> Mensagem:
         citado="\n\n".join(partes_citadas)[:_MAX_CARACTERES],
         anexos_citados=anexos_citados,
         avisos=list(bruto.avisos),
+        extras=dict(bruto.extras),
     )
     return mensagem
+
+
+_R_PARA_CURTO = re.compile(r"^\s*(?:para|to)\s+[\w.@-]{1,40}\s*$")
+
+
+def _sem_cabecalho_residual(texto: str) -> str:
+    """Tira do começo a linha "Fulano <f@x> seg., 27 de jul., 16:37" e o "para dg"
+    que o Gmail imprime dentro de uma mensagem encaminhada."""
+    linhas = texto.split("\n")
+    i = 0
+    while i < len(linhas) and i < 4:
+        linha = linhas[i]
+        if not linha.strip():
+            i += 1
+            continue
+        m = _R_GMAIL_REMETENTE.match(linha)
+        if (m and data_hora_de_cabecalho(m.group("resto"))) or _R_PARA_CURTO.match(dobrar(linha)) \
+                or _R_GMAIL_CABECALHO.match(linha):
+            i += 1
+            continue
+        break
+    return "\n".join(linhas[i:])
 
 
 def _finalizar(mensagem: Mensagem) -> Mensagem:
@@ -724,6 +753,9 @@ _R_FECHO = re.compile(
     r"(?=[\s,.!;:]|$)[\s,.!;:]*(?P<resto>.*)$"
 )
 _R_ENVIADO_DO = re.compile(r"^\s*(?:enviado do meu|enviado de meu|enviado a partir d|sent from my|obter o outlook|get outlook)\b")
+_R_RESTO_DO_FECHO = re.compile(
+    r"^(?:desde\s+ja|pela|pelo|por|e\s|a\s|aguardo|no\s+aguardo|fico|ficamos|permane[cç]o|estamos|estou)\b[^@\d]{0,160}$"
+)
 _R_RODAPE = re.compile(
     r"(?:confidencial|confidential|destinatario\(?s?\)?\s+(?:indicado|exclusivo|especific)|mensagem\s+e\s+seus\s+anexos|"
     r"this\s+(?:e-?mail|message)\s+(?:and|is|may)|antes\s+de\s+imprimir|aviso\s+legal|privilegiad|sigilos|"
@@ -750,13 +782,16 @@ def separar_assinatura(texto: str) -> tuple[str, str]:
     linhas = [linha for linha in (texto or "").split("\n") if not _R_ENVIADO_DO.match(dobrar(linha))]
     dobradas = [dobrar(linha) for linha in linhas]
     # Rodapé legal: do parágrafo que o contém até o fim (só na segunda metade).
+    # O texto de PDF não tem linha em branco: se o "parágrafo" começa antes
+    # da segunda metade, ele é a mensagem inteira, e o corte fica na linha.
     inicio_paragrafo = 0
     for i, linha in enumerate(dobradas):
         if not linha.strip():
             inicio_paragrafo = i + 1
             continue
         if i >= len(linhas) * 0.4 and _R_RODAPE.search(linha):
-            linhas, dobradas = linhas[:inicio_paragrafo], dobradas[:inicio_paragrafo]
+            corte = inicio_paragrafo if inicio_paragrafo >= len(linhas) * 0.4 else i
+            linhas, dobradas = linhas[:corte], dobradas[:corte]
             break
 
     # Do fim para o começo: quantas linhas com texto restam e a maior delas.
@@ -780,6 +815,10 @@ def separar_assinatura(texto: str) -> tuple[str, str]:
         fecho = _R_FECHO.match(linha)
         if fecho and curto_ate_o_fim(i + 1):
             resto = linhas[i][len(linhas[i]) - len(fecho.group("resto")):].strip() if fecho.group("resto") else ""
+            # "Obrigado pela sua atenção", "Grato desde já, Andrés.": o resto
+            # do fecho é cortesia, não a primeira linha da assinatura.
+            if resto and _R_RESTO_DO_FECHO.match(dobrar(resto)):
+                resto = ""
             assinatura = "\n".join(([resto] if resto else []) + linhas[i + 1:]).strip()
             return "\n".join(linhas[:i]).strip(), assinatura
 
@@ -1241,6 +1280,14 @@ def _ler_pdf(dados: bytes, origem: str) -> Mensagem:
     avisos = []
     if total > _MAX_PAGINAS_PDF:
         avisos.append(f"Só as primeiras {_MAX_PAGINAS_PDF} páginas do PDF foram lidas.")
+    if _palavra_por_linha("\n".join(textos)):
+        # As páginas viram um texto só: a frase cortada na virada de página continua.
+        textos = [_refluir_palavra_por_linha("\n".join(textos))]
+    if _parece_processo_eprotocolo(textos):
+        mensagem = _ler_processo_eprotocolo(dados, textos)
+        if mensagem is not None:
+            mensagem.avisos = avisos + mensagem.avisos
+            return mensagem
     texto = "\n".join(textos)
     if not texto.strip():
         texto = _texto_por_ocr(dados, min(total, _MAX_PAGINAS_OCR))
@@ -1248,12 +1295,156 @@ def _ler_pdf(dados: bytes, origem: str) -> Mensagem:
             avisos.append("O PDF é imagem: o texto foi lido por OCR e pode ter erros. Confira os campos.")
         else:
             avisos.append("O PDF não tem texto (parece imagem escaneada); preencha os campos à mão.")
+    mensagem = _mensagem_de_texto(_sem_ruido_de_impressao(texto), origem)
+    mensagem.avisos = avisos + mensagem.avisos
+    return mensagem
+
+
+def _sem_ruido_de_impressao(texto: str) -> str:
     linhas = [
         linha for linha in texto.replace("\r", "\n").split("\n")
         if len(linha) > _MAX_LINHA_CABECALHO or not any(r.match(dobrar(linha)) for r in _R_RUIDO_IMPRESSAO)
     ]
-    mensagem = _mensagem_de_texto("\n".join(linhas), origem)
-    mensagem.avisos = avisos + mensagem.avisos
+    return "\n".join(linhas)
+
+
+def _palavra_por_linha(texto: str) -> bool:
+    """O PDF saiu com uma palavra por linha? (30+ linhas, 60% delas de uma palavra.)"""
+    com_texto = [linha for linha in texto.replace("\r", "\n").split("\n") if linha.strip()]
+    if len(com_texto) < 30:
+        return False
+    curtas = sum(1 for linha in com_texto if len(linha.split()) <= 1)
+    return curtas >= 0.6 * len(com_texto)
+
+
+def _refluir_palavra_por_linha(texto: str) -> str:
+    """Página que saiu do PDF com uma palavra por linha volta a ser texto corrido.
+
+    Alguns geradores (o Google Docs exportado, por exemplo) posicionam cada
+    palavra à parte, e o pypdf entrega "Ofício\\n \\nn.º\\n \\n450". O texto é
+    juntado com espaços; a pontuação de fim de frase vira quebra de linha
+    para as datas e os rótulos continuarem em frases separadas.
+    """
+    com_texto = [linha.strip() for linha in texto.replace("\r", "\n").split("\n") if linha.strip()]
+    if not com_texto:
+        return texto
+    corrido = " ".join(com_texto)
+    corrido = re.sub(r"\s+([,.;:!?)])", r"\1", corrido)
+    corrido = re.sub(r"\(\s+", "(", corrido)
+    return re.sub(r"([.!?])\s+(?=[A-ZÀ-Ý])", r"\1\n", corrido)
+
+
+# ---------------------------------------------------------------------------
+# Processo do eProtocolo (ofício ou despacho que chegou pelo protocolo)
+# ---------------------------------------------------------------------------
+
+_R_ASSINATURA_EPROTOCOLO = re.compile(r"inserido ao protocolo|assinatura (?:avancada|qualificada) realizada por")
+_R_LINHA_DE_MOLDURA = [
+    re.compile(r"^\s*(?:assinatura (?:avancada|qualificada)|inserido ao protocolo|documento assinado nos termos|"
+               r"a autenticidade deste documento|https?://www\.eprotocolo|demais assinaturas na folha|"
+               r"documento:\s*\S+\.pdf|powered by tcpdf|para informacoes acesse)"),
+    re.compile(r"^\s*\d{1,4}[a-z]?\s*$"),                       # "2", "2a" do carimbo Fls./Mov.
+    re.compile(r"^\s*(?:com o codigo:\s*)?[0-9a-f]{20,32}\s*$"),   # o código de validação sozinho
+    re.compile(r"^\s*(?:estado do parana|folha 1)\s*$"),
+]
+
+
+def _parece_processo_eprotocolo(textos: list[str]) -> bool:
+    """A capa do eProtocolo na 1ª página, ou os carimbos de assinatura em pelo menos metade delas."""
+    if not textos:
+        return False
+    primeira = dobrar(textos[0])
+    if "orgao cadastro" in primeira and ("folha 1" in primeira or "protocolo:" in primeira):
+        return True
+    com_carimbo = sum(1 for t in textos if _R_ASSINATURA_EPROTOCOLO.search(dobrar(t)))
+    return com_carimbo * 2 >= len(textos)
+
+
+def _corpo_do_documento(texto: str) -> str:
+    """O texto de uma página do processo sem a moldura (carimbos, assinaturas, código)."""
+    from .pdf import separar_moldura
+
+    corpo, _moldura, folha_de_assinatura = separar_moldura(texto)
+    if folha_de_assinatura:
+        return ""
+    linhas = []
+    for linha in corpo.split("\n"):
+        dobrada = dobrar(linha)
+        if any(r.match(dobrada) for r in _R_LINHA_DE_MOLDURA):
+            continue
+        linhas.append(linha)
+    return "\n".join(linhas).strip()
+
+
+def _ler_processo_eprotocolo(dados: bytes, textos: list[str]) -> Mensagem | None:
+    """O processo do eProtocolo como pedido: a capa dá assunto, interessado e data;
+    o corpo é o ofício (ou o despacho) que veio dentro, sem os carimbos.
+
+    Um e-mail impresso dentro do processo (o pedido que a Delegacia Geral
+    encaminhou) dá o remetente com endereço; o interessado da capa fica como
+    nome quando não há e-mail. A cidade da capa é a de quem pede, não a do
+    evento: vai em `extras`, para a tela usar só na falta de outra.
+    """
+    from . import classificacao as tipos
+    from .eprotocolo import ler_processo
+
+    try:
+        processo = ler_processo(dados, "")
+    except Exception as exc:  # PDF fora do padrão: vale a leitura comum
+        logger.warning("Leitura do processo em PDF falhou: %s", type(exc).__name__)
+        return None
+    capa = processo.capa or {}
+    corpos: list[str] = []
+    email_interno: Mensagem | None = None
+    for documento in processo.documentos:
+        if documento.tipo == tipos.CAPA:
+            continue
+        paginas = [processo.paginas[i] for i in documento.paginas_de_conteudo if i < len(processo.paginas)]
+        texto = "\n".join(_corpo_do_documento(textos[p.indice] if p.indice < len(textos) else p.texto) for p in paginas)
+        if not texto.strip():
+            continue
+        if documento.tipo == tipos.EMAIL and email_interno is None:
+            lido = _mensagem_de_texto(_sem_ruido_de_impressao(texto), "pdf")
+            if lido.remetente_email or lido.corpo.strip():
+                email_interno = lido
+                continue
+        corpos.append(texto)
+    if not corpos and email_interno is None:
+        return None
+    interessados = list(capa.get("interessados") or [])
+    assunto = " ".join(str(capa.get("detalhamento") or capa.get("assunto") or "").split())
+    if not assunto and email_interno is not None:
+        assunto = email_interno.assunto
+    corpo_emails = [email_interno.corpo] if email_interno is not None and email_interno.corpo.strip() else []
+    texto = "\n\n".join(corpo_emails + corpos)
+    enviado_em = capa.get("em")
+    if not isinstance(enviado_em, datetime):
+        enviado_em = email_interno.enviado_em if email_interno is not None else None
+    remetente_nome = interessados[0] if interessados else (email_interno.remetente_nome if email_interno else "")
+    remetente_email = email_interno.remetente_email if email_interno is not None else ""
+    extras = {
+        "protocolo": processo.protocolo or capa.get("protocolo", ""),
+        "cidade": str(capa.get("cidade") or "").strip(),
+        "interessado": interessados[0] if interessados else "",
+        "numero_ano": str(capa.get("numero_ano") or "").strip(),
+        "palavras_chave": str(capa.get("palavras_chave") or "").strip(),
+    }
+    corpo, assinatura = separar_assinatura(_limpar_texto(texto))
+    mensagem = Mensagem(
+        assunto=assunto[:300],
+        remetente_nome=remetente_nome[:150],
+        remetente_email=remetente_email,
+        enviado_em=_com_fuso(enviado_em),
+        corpo=_arrumar_linhas(corpo),
+        assinatura=_arrumar_linhas(assinatura),
+        origem="eprotocolo",
+        citado=email_interno.citado if email_interno is not None else "",
+        anexos_citados=list(email_interno.anexos_citados) if email_interno is not None else [],
+        avisos=list(processo.avisos),
+        extras={chave: valor for chave, valor in extras.items() if valor},
+    )
+    if extras["protocolo"]:
+        mensagem.avisos.insert(0, f"Processo do eProtocolo {extras['protocolo']}: o pedido veio pelo protocolo.")
     return mensagem
 
 
@@ -1287,7 +1478,17 @@ def _ler_impressao_gmail(texto: str) -> _Bruto | None:
     contagem = next((i for i, linha in enumerate(linhas[:25]) if _R_GMAIL_CONTAGEM.match(dobrar(linha))), None)
     if contagem is None:
         return None
-    assunto = next((linhas[k].strip() for k in range(contagem - 1, -1, -1) if linhas[k].strip()), "")
+    # O assunto fica entre a conta ("<comunicacao@...>") e "N mensagens", e
+    # quebra em mais de uma linha quando é comprido.
+    partes_assunto = []
+    for k in range(contagem - 1, -1, -1):
+        linha = linhas[k].strip()
+        if not linha or _R_GMAIL_CONTA.search(linha):
+            if partes_assunto:
+                break
+            continue
+        partes_assunto.insert(0, linha)
+    assunto = " ".join(partes_assunto)
     inicios = []
     for i in range(contagem + 1, len(linhas)):
         m = _R_GMAIL_REMETENTE.match(linhas[i])
@@ -1304,21 +1505,50 @@ def _ler_impressao_gmail(texto: str) -> _Bruto | None:
     for n, (i, m, data) in enumerate(inicios):
         fim = inicios[n + 1][0] if n + 1 < len(inicios) else len(linhas)
         k = i + 1
-        while k < fim and (
-            _R_GMAIL_CABECALHO.match(linhas[k])
-            or (not m.group("resto").strip() and k == i + 1)
-            or not linhas[k].strip()
-        ):
+        continua = False
+        while k < fim:
+            linha = linhas[k]
+            if _R_GMAIL_CABECALHO.match(linha):
+                continua = linha.rstrip().endswith(",")
+            elif (not m.group("resto").strip() and k == i + 1) or not linha.strip():
+                pass
+            elif continua or _R_GMAIL_DESTINATARIO.match(linha):
+                # "Para:" com vários destinatários quebra em outras linhas.
+                continua = linha.rstrip().endswith(",")
+            else:
+                break
             k += 1
-        mensagens.append((m, data, "\n".join(linhas[k:fim])))
-    primeira, data, corpo = mensagens[0]
+        corpo, citados = _separar_anexos_impressos(linhas[k:fim])
+        mensagens.append((m, data, corpo, citados))
+    primeira, data, corpo, citados = mensagens[0]
     return _Bruto(
         assunto=assunto,
         remetente=(primeira.group("nome").strip(" \"'"), primeira.group("email").lower()),
         enviado_em=data,
         texto=corpo,
-        citado="\n\n".join(c for _, _, c in mensagens[1:]),
+        citado="\n\n".join(c for _, _, c, _ in mensagens[1:]),
+        anexos_citados=citados,
     )
+
+
+_R_GMAIL_CONTA = re.compile(r"<[^<>\s@]+@[^<>\s]+>")
+_R_GMAIL_DESTINATARIO = re.compile(r"^(?:\s*\"?[^<>\n\"]{0,80}\"?\s*<[^<>\s@]+@[^<>\s]+>\s*,?\s*)+$")
+_R_TAMANHO_DE_ANEXO = re.compile(r"^\s*\d+(?:[.,]\d+)?\s*[KMG]B?\s*$", re.IGNORECASE)
+_R_NOME_DE_ANEXO = re.compile(r"^\s*\S.{0,150}\.(?:pdf|docx?|xlsx?|pptx?|odt|ods|jpe?g|png|zip|csv|txt|eml|msg)\s*$", re.IGNORECASE)
+
+
+def _separar_anexos_impressos(linhas: list[str]) -> tuple[str, list[str]]:
+    """Tira do fim da mensagem impressa a lista de anexos ("oficio.docx" / "15K")."""
+    citados: list[str] = []
+    fim = len(linhas)
+    while fim > 0 and not linhas[fim - 1].strip():
+        fim -= 1
+    while fim >= 2 and _R_TAMANHO_DE_ANEXO.match(linhas[fim - 1]) and _R_NOME_DE_ANEXO.match(linhas[fim - 2]):
+        citados.insert(0, linhas[fim - 2].strip())
+        fim -= 2
+        while fim > 0 and not linhas[fim - 1].strip():
+            fim -= 1
+    return "\n".join(linhas[:fim]), citados
 
 
 # ---------------------------------------------------------------------------
@@ -1327,8 +1557,10 @@ def _ler_impressao_gmail(texto: str) -> _Bruto | None:
 
 _R_WHATSAPP = [
     # "[24/09/2026 14:32] Maria:", "[24/09/26, 14:32:10] Maria:", "24/09/2026 14:32 - Maria:"
+    # Entre a hora e o nome há sempre "]", espaço ou " - ": "24/09/2026 10:25Data:"
+    # (o despacho do eProtocolo, com o valor colado ao rótulo) não é conversa.
     re.compile(
-        r"^\s*\[?(?P<data>\d{1,2}/\d{1,2}/\d{2,4}),?\s+(?P<hora>\d{1,2}:\d{2})(?::\d{2})?\]?\s*(?:-\s*)?"
+        r"^\s*\[?(?P<data>\d{1,2}/\d{1,2}/\d{2,4}),?\s+(?P<hora>\d{1,2}:\d{2})(?::\d{2})?(?:\]\s*|\s+)(?:-\s*)?"
         r"(?P<nome>[^:\n\]]{1,60}?):\s?(?P<texto>.*)$"
     ),
     # WhatsApp Web copiado: "[14:32, 24/09/2026] Maria:"
