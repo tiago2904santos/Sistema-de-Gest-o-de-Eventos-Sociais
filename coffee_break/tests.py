@@ -2431,6 +2431,29 @@ class PagamentoConjuntoTests(EtapasBase):
         self.assertIsNone(self.b.pagamento_com)
         self.assertEqual(self.a.grupo_pagamento(), [self.a])
 
+    def test_os_sem_nota_nao_recebe_protocolo_nem_atesto(self):
+        """m024: salvar a etapa 2 de uma OS não leva o protocolo para a OS do grupo sem nota."""
+        SolicitacaoCoffeeBreak.objects.filter(pk=self.b.pk).update(numero_nota_fiscal="")
+        services.definir_pagamento_conjunto(self.a, [self.b.pk])
+        self._salvar_nota(self.a, protocolo_pcpr_oficio="266136668")
+        self.a.refresh_from_db()
+        self.b.refresh_from_db()
+        self.assertEqual(self.b.protocolo_pcpr_oficio, "26.613.666-8")
+        self.assertEqual(self.b.protocolo_pagamento, "")
+        # Nem a própria OS recebe o protocolo enquanto o ofício não pode ser gerado.
+        self.assertEqual(self.a.protocolo_pagamento, "")
+        self.assertFalse(services.marcar_atesto(self.a))
+        self.assertEqual(self.b.situacao_financeira, SituacaoFinanceira.AGUARDANDO_NOTA_FISCAL)
+        # O marco registrado à mão também não passa para a OS sem nota.
+        services.registrar_marco(self.a, self.ascom, "26.613.666-8")
+        self.b.refresh_from_db()
+        self.assertEqual(self.b.protocolo_pagamento, "")
+        self.assertIsNone(self.b.data_atesto_gaf)
+        # Chegou a nota da outra: o protocolo vale para as duas.
+        self._salvar_nota(self.b, numero_nota_fiscal="8954", protocolo_pcpr_oficio="266136668")
+        self.b.refresh_from_db()
+        self.assertEqual(self.b.protocolo_pagamento, "26.613.666-8")
+
     def test_so_entra_os_do_mesmo_lote(self):
         from django.core.exceptions import ValidationError
 

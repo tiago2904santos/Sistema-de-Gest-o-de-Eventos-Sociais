@@ -346,16 +346,39 @@ CAMPOS_ESPELHADOS = (
 )
 
 
+# O que só existe depois da nota (protocolo, atesto e ordem bancária): não vai
+# para a OS do grupo que ainda não tem nota ("Informe a nota fiscal antes do
+# protocolo de pagamento").
+CAMPOS_DEPOIS_DA_NOTA = (
+    "protocolo_pagamento", "data_atesto_gaf", "data_ordem_bancaria", "data_envio_empresa",
+)
+
+
+def sem_nota_no_pagamento(solicitacao):
+    """As OS do mesmo pagamento que ainda não têm a nota fiscal."""
+    return [membro for membro in solicitacao.grupo_pagamento() if not membro.numero_nota_fiscal.strip()]
+
+
 def espelhar(solicitacao, campos=None):
-    """Copia os campos do pagamento para as outras OS do mesmo pagamento."""
+    """Copia os campos do pagamento para as outras OS do mesmo pagamento.
+
+    Protocolo, atesto e ordem bancária só vão para as OS que já têm nota.
+    """
     from .models import SolicitacaoCoffeeBreak
 
     campos = [c for c in (campos or CAMPOS_ESPELHADOS) if c in CAMPOS_ESPELHADOS]
-    outras = [s.pk for s in solicitacao.grupo_pagamento() if s.pk != solicitacao.pk]
+    outras = [s for s in solicitacao.grupo_pagamento() if s.pk != solicitacao.pk]
     if not campos or not outras:
         return 0
-    valores = {campo: getattr(solicitacao, campo) for campo in campos}
-    return SolicitacaoCoffeeBreak.objects.filter(pk__in=outras).update(atualizado_em=timezone.now(), **valores)
+    copiadas = 0
+    for outra in outras:
+        valores = {
+            campo: getattr(solicitacao, campo) for campo in campos
+            if campo not in CAMPOS_DEPOIS_DA_NOTA or outra.numero_nota_fiscal.strip()
+        }
+        if valores:
+            copiadas += SolicitacaoCoffeeBreak.objects.filter(pk=outra.pk).update(atualizado_em=timezone.now(), **valores)
+    return copiadas
 
 
 def sincronizar_protocolo(solicitacao, usuario=None):
@@ -368,6 +391,9 @@ def sincronizar_protocolo(solicitacao, usuario=None):
 
     protocolo = (solicitacao.protocolo_pcpr_oficio or "").strip()
     if not protocolo or not solicitacao.numero_nota_fiscal.strip() or solicitacao.protocolo_pagamento == protocolo:
+        return False
+    # Pagamento conjunto: o protocolo só entra quando todas as OS têm nota.
+    if sem_nota_no_pagamento(solicitacao):
         return False
     # O "PCPR protocolo n.º" em outro formato (o número interno da PCPR,
     # "2026.050880.000") não é o do eProtocolo: não troca o protocolo de
@@ -388,6 +414,9 @@ def marcar_atesto(solicitacao, usuario=None, dia=None):
     from .models import SolicitacaoCoffeeBreak
 
     if solicitacao.data_atesto_gaf or not solicitacao.protocolo_pagamento or solicitacao.cancelada:
+        return False
+    # Pagamento conjunto com OS ainda sem nota: o ofício nem pode ser gerado.
+    if sem_nota_no_pagamento(solicitacao):
         return False
     dia = dia or timezone.localdate()
     SolicitacaoCoffeeBreak.objects.filter(pk=solicitacao.pk).update(data_atesto_gaf=dia, atualizado_em=timezone.now())
