@@ -1053,6 +1053,12 @@ def fila_de_trabalho(hoje=None):
         if not chave:
             continue
         rotulo, rota = BOTAO_DA_ACAO[chave]
+        if chave == "entrega" and not solicitacao.data_envio_ordem_servico:
+            from .documentos import pendencias_ordem_servico
+
+            # A OS pronta e ainda não enviada: o botão já é o envio ao fornecedor.
+            if not pendencias_ordem_servico(solicitacao):
+                rotulo, rota = "Enviar a OS", "coffee_break:enviar_os"
         por_grupo[chave].append({
             "s": solicitacao,
             "dias": dias_parada(solicitacao, hoje),

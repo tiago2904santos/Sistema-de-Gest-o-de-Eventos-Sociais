@@ -124,6 +124,12 @@
           <div class="ofc-docs cb-docs-gerados">
             {% include "pages/coffee_break/_documento_inline.html" with d=doc_os menu_id="cb-menu-os" aberto=True %}
           </div>
+          {# A OS por e-mail ao fornecedor (com cópia para a ASCOM): a data do envio fica gravada. #}
+          <div class="cbi-etapa">
+            <span class="cbi-etapa__icone" aria-hidden="true">{% include "components/icon.html" with nome="mail" %}</span>
+            <span class="cbi-etapa__texto">{% if solicitacao.data_envio_ordem_servico %}<b>OS enviada ao fornecedor em {{ solicitacao.data_envio_ordem_servico|date:"d/m/Y" }}</b><small>O envio (para quem e o que foi) está no histórico.</small>{% else %}<b>OS ainda não enviada ao fornecedor</b><small>Envie o PDF por e-mail para {{ lote.contrato.fornecedor.email|default:"o fornecedor" }}, com cópia para a ASCOM.</small>{% endif %}</span>
+            {% if not solicitacao.cancelada and doc_os.disponivel %}<a class="btn--secundaria btn--compacto" href="{% url 'coffee_break:enviar_os' solicitacao.pk %}">{% include "components/icon.html" with nome="send" %}{% if solicitacao.data_envio_ordem_servico %}Reenviar{% else %}Enviar ao fornecedor{% endif %}</a>{% endif %}
+          </div>
         {% else %}
           {# A OS já abre na nova solicitação e acompanha o que se preenche acima. #}
           <div class="ofc-docs cb-docs-gerados" data-cb-os-nova>

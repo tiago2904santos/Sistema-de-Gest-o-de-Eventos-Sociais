@@ -225,6 +225,29 @@ class ConfiguracaoCoffeeBreak(models.Model):
     despacho_destino = models.CharField(
         "despacho: a quem vai", max_length=80, default="Ao GAF,",
     )
+    # E-mails ao fornecedor enviados do sistema (OS e ordem bancária).
+    email_copia = models.CharField(
+        "e-mail da ASCOM em cópia", max_length=300, blank=True,
+        help_text="Vai em cópia nos e-mails ao fornecedor. Mais de um: separe por vírgula.",
+    )
+    email_os_assunto = models.CharField(
+        "assunto do e-mail da OS", max_length=200,
+        default="Ordem de Serviço {numero} – Coffee Break – {evento}",
+        help_text="Pode usar {numero}, {evento}, {data}, {horario}, {local}, {responsavel}, {quantidade} e {fornecedor}.",
+    )
+    email_os_texto = models.TextField(
+        "texto do e-mail da OS",
+        default=(
+            "Prezados,\n\n"
+            "Segue em anexo a Ordem de Serviço {numero}, referente ao coffee break para "
+            "{quantidade} pessoas no evento \"{evento}\".\n\n"
+            "Data: {data}\nHorário: {horario}\nLocal de entrega: {local}\n"
+            "Responsável pelo recebimento: {responsavel}\n\n"
+            "Por favor, confirmem o recebimento desta mensagem.\n\n"
+            "Atenciosamente,\nAssessoria de Comunicação Social – PCPR"
+        ),
+        help_text="Os mesmos campos do assunto, entre chaves.",
+    )
     atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
 
     class Meta:
@@ -712,6 +735,7 @@ class AcaoHistoricoCoffeeBreak(models.TextChoices):
     ATUALIZACAO = "ATUALIZACAO", "Solicitação atualizada"
     CANCELAMENTO = "CANCELAMENTO", "Solicitação cancelada"
     REATIVACAO = "REATIVACAO", "Solicitação reativada"
+    EMAIL = "EMAIL", "E-mail enviado"
 
 
 class HistoricoCoffeeBreak(models.Model):

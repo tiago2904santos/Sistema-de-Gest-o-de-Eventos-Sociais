@@ -1747,6 +1747,96 @@ def pacote_parte(request, pk, parte):
     return resposta
 
 
+# ---------------------------------------------------------------------------
+# E-mails ao fornecedor (a OS; a ordem bancária)
+# ---------------------------------------------------------------------------
+
+def _tela_de_email(request, solicitacao, envio, modelo_assunto, modelo_texto, gerar_anexos, depois):
+    """Mostra o e-mail pronto (editável) e, no POST confirmado, envia.
+
+    `envio`: titulo, o_que (como o histórico chama o documento), ja_enviado,
+    anexos (nome e url, para a tela), volta, pendencias. `gerar_anexos()`
+    devolve [(nome, bytes, tipo)] na hora de enviar; `depois(solicitacao)`
+    grava o que o envio conclui (a data) e devolve a mensagem de sucesso.
+    """
+    from smtplib import SMTPException
+
+    from . import emails
+
+    fornecedor = solicitacao.lote.contrato.fornecedor
+    envio.setdefault(
+        "url_fornecedor",
+        reverse("coffee_break:cadastro_lista", args=["fornecedores"]) + f"?editar={fornecedor.pk}"
+        if eh_administrador(request.user) else "",
+    )
+    valores = emails.rascunho(solicitacao, modelo_assunto, modelo_texto)
+    erro = ""
+    if request.method == "POST" and not envio["pendencias"]:
+        valores = {chave: request.POST.get(chave, "") for chave in ("para", "copia", "assunto", "texto")}
+        try:
+            anexos = gerar_anexos()
+            emails.enviar(
+                solicitacao, request.user, anexos=anexos, o_que=envio["o_que"], **{
+                    "para": valores["para"], "copia": valores["copia"],
+                    "assunto": valores["assunto"], "texto": valores["texto"],
+                },
+            )
+        except ValidationError as exc:
+            erro = " ".join(exc.messages)
+        except (SMTPException, OSError) as exc:
+            erro = f"O e-mail não foi enviado: o servidor de e-mail recusou ou não respondeu ({exc}). Tente de novo."
+        else:
+            messages.success(request, depois(solicitacao))
+            return redirect(envio["volta"])
+    rotulo = solicitacao.numero or f"#{solicitacao.pk}"
+    return render(
+        request,
+        "pages/coffee_break/enviar_email.html",
+        {
+            "solicitacao": solicitacao,
+            "envio": envio,
+            "valores": valores,
+            "erro": erro,
+            "breadcrumb": _breadcrumb(
+                {"label": "Solicitações", "url": reverse("coffee_break:solicitacoes")},
+                {"label": rotulo, "url": envio["volta"]},
+                {"label": envio["titulo"]},
+            ),
+        },
+    )
+
+
+@acesso_ao_modulo
+def enviar_os(request, pk):
+    """"Enviar ao fornecedor": a OS em PDF, com o texto padrão, para o e-mail
+    do cadastro do fornecedor e cópia para a ASCOM. Grava a data do envio."""
+    solicitacao = _solicitacao_documental(pk)
+    config = ConfiguracaoCoffeeBreak.atual()
+    nome = documentos.nome_arquivo("Ordem de Servico", solicitacao)
+    pendencias = list(documentos.pendencias_ordem_servico(solicitacao))
+    if solicitacao.cancelada:
+        pendencias.insert(0, "A solicitação está cancelada.")
+    enviada = solicitacao.data_envio_ordem_servico
+    envio = {
+        "titulo": f"Enviar a OS {solicitacao.numero} ao fornecedor".replace("  ", " "),
+        "o_que": f"Ordem de serviço {solicitacao.numero}".strip(),
+        "ja_enviado": f"A OS já foi enviada ao fornecedor em {enviada:%d/%m/%Y}." if enviada else "",
+        "anexos": [{"nome": nome, "url": reverse("coffee_break:ordem_servico", args=[solicitacao.pk])}],
+        "volta": reverse("coffee_break:editar", args=[solicitacao.pk]),
+        "pendencias": pendencias,
+    }
+
+    def anexos():
+        return [(nome, documentos.ordem_servico_pdf(solicitacao), "application/pdf")]
+
+    def depois(s):
+        s.data_envio_ordem_servico = timezone.localdate()
+        s.save(update_fields=["data_envio_ordem_servico", "atualizado_em"])
+        return f"OS {s.numero} enviada ao fornecedor por e-mail. O envio ficou no histórico."
+
+    return _tela_de_email(request, solicitacao, envio, config.email_os_assunto, config.email_os_texto, anexos, depois)
+
+
 @acesso_ao_modulo
 def aditivo_arquivo(request, pk):
     from .models import AditivoContrato

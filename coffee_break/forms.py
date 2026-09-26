@@ -545,6 +545,9 @@ class ConfiguracaoCoffeeBreakForm(FormularioCadastroVersionado):
             "eprotocolo_assunto",
             "eprotocolo_palavras_chave",
             "despacho_destino",
+            "email_copia",
+            "email_os_assunto",
+            "email_os_texto",
         )
 
 

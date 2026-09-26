@@ -39,6 +39,8 @@ urlpatterns = [
     path("solicitacoes/<int:pk>/andamento/", views.registrar_andamento, name="andamento"),
     path("solicitacoes/<int:pk>/ordem-de-servico.pdf", views.ordem_servico, name="ordem_servico"),
     path("solicitacoes/<int:pk>/ordem-de-servico/previa/", views.ordem_servico_previa, name="ordem_servico_previa"),
+    # E-mail ao fornecedor: mostra o e-mail pronto e só envia com a confirmação (POST).
+    path("solicitacoes/<int:pk>/enviar-os/", views.enviar_os, name="enviar_os"),
     path("solicitacoes/<int:pk>/oficio.pdf", views.oficio, name="oficio"),
     path("solicitacoes/<int:pk>/certifico.pdf", views.certifico, name="certifico"),
     path("solicitacoes/<int:pk>/protocolo.pdf", views.pacote_protocolo, name="pacote_protocolo"),
