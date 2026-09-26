@@ -1,0 +1,39 @@
+{% load estaticos %}
+{% comment %}
+  Componente: triagem do e-mail na página inicial (Central de módulos).
+
+  Soltar o e-mail do pedido (.eml, .msg, PDF impresso, processo do eProtocolo
+  em PDF ou .txt) ou colar o texto. O `js/triagem-email.js` manda para
+  `core:triagem_ler`, que diz para qual módulo o pedido parece ir. Com um
+  candidato claro, a página vai direto para a tela nova daquele módulo, já
+  com o e-mail sendo lido; senão, mostra as opções para escolher.
+
+  Uso: {% include "components/v32/triagem_email.html" %}
+  (só aparece quando o usuário tem algum módulo que lê e-mail).
+{% endcomment %}
+<section class="tri" data-triagem-email data-url="{% url 'core:triagem_ler' %}" data-max-bytes="26214400" aria-labelledby="tri-titulo">
+  <div class="tri__zona">
+    <input type="file" id="tri-arquivo" class="tri__arquivo" accept=".eml,.msg,.pdf,.txt" aria-describedby="tri-ajuda" data-tri-arquivo>
+    <label for="tri-arquivo" class="tri__alvo">
+      <span class="tri__icone" aria-hidden="true">{% include "components/icon.html" with nome="mail" %}</span>
+      <span class="tri__textos">
+        <b id="tri-titulo">Chegou um pedido? Solte o e-mail aqui</b>
+        <small id="tri-ajuda">E-mail (.eml, .msg, PDF impresso ou .txt) ou o processo do eProtocolo em PDF. O sistema descobre se é palestra, evento social, coffee break, pauta ou imprensa e abre a tela certa já preenchida — você só confere e salva.</small>
+      </span>
+    </label>
+    <button type="button" class="btn--secundaria" aria-expanded="false" aria-controls="tri-texto" data-tri-colar>{% include "components/icon.html" with nome="copy" %}Colar o texto</button>
+  </div>
+  <div class="pe__texto" id="tri-texto" data-tri-texto hidden>
+    <label class="form-label" for="tri-texto-campo">Texto do e-mail</label>
+    <textarea class="form-controle" id="tri-texto-campo" rows="6" spellcheck="false" placeholder="Cole o e-mail inteiro — com De:, Enviado em: e Assunto:, se tiver." data-tri-texto-campo></textarea>
+    <div class="pe__texto-acoes">
+      <small class="pe__dica">Ctrl + Enter também lê.</small>
+      <button type="button" class="btn-primaria pe__ler" data-tri-ler-texto>Ler o texto</button>
+    </div>
+  </div>
+  <p class="tri__estado" role="status" aria-live="polite" data-tri-estado></p>
+  <p class="tri__erro msg-erro" role="alert" data-tri-erro hidden></p>
+  <div class="tri__resultado" data-tri-resultado hidden></div>
+  {% csrf_token %}
+</section>
+<script src="{% estatico 'js/triagem-email.js' %}" defer></script>

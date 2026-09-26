@@ -18,10 +18,10 @@ import re
 from django.utils import timezone
 
 from cadastros.models import Municipio, OrgaoResponsavel, Servico, TipoEvento
-from core.leitura.casamento import cadastro_no_texto, cadastros_no_texto, municipio_no_texto, quantidade_no_texto
-from core.leitura.datas import dobrar, quando_do_evento
+from core.leitura.casamento import cadastro_no_texto, cadastros_no_texto, quantidade_no_texto
+from core.leitura.datas import dobrar
 from core.leitura.mensagem import Mensagem
-from core.preencher_por_email import Sugestao, Sugestoes, data_do_email, local_no_texto, quem_pede
+from core.preencher_por_email import Sugestao, Sugestoes, data_do_email, local_no_texto, municipio_do_pedido, quando_do_pedido, quem_pede
 
 PARANA_EM_ACAO = "Paraná em Ação"
 # O que o formulário grava no solicitante quando o tipo é Paraná em Ação
@@ -80,7 +80,11 @@ _R_IDENTIFICACAO = re.compile(r"\b(?:cin|rg|carteiras?\s+de\s+identidade|identid
 _R_UNIDADE_MOVEL = re.compile(r"\b(?:unidade\s+movel|onibus|carreta|van)\b")
 # "quinta-feira": a "feira" do dia da semana não é o tipo Feira.
 _R_DIA_DA_SEMANA = re.compile(r"\b(segunda|terca|quarta|quinta|sexta)(\s*-?\s*)feira\b")
-_DIAS = ("segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo")
+
+#: Campos que a memória guarda por remetente ao salvar (`core.aprendizado`):
+#: o que o próximo e-mail da mesma origem provavelmente repete.
+CAMPOS_APRENDIDOS = ["tipo_evento", "estado", "municipio", "local_evento", "solicitante_nome", "solicitante_cargo_unidade", "contato", "orgao_responsavel", "servicos", "unidade_movel", "tipo_operacao"]
+
 
 
 def _sem_dia_da_semana(texto: str) -> str:
@@ -135,32 +139,22 @@ def _orgao(texto: str) -> Sugestao | None:
     return None
 
 
-def _aviso_de_fim_de_semana(quando) -> str:
-    dias = [d for d in quando.dias or (quando.inicio,) if d.weekday() >= 5]
-    if not dias:
-        return ""
-    lista = ", ".join(f"{_DIAS[d.weekday()]} {d:%d/%m}" for d in dias[:3])
-    return f"O evento inclui fim de semana ({lista}): confira o tipo de operação (diária ou extrajornada)."
-
-
 def sugestoes(mensagem: Mensagem, usuario=None) -> Sugestoes:
     """As sugestões para a tela "Nova solicitação", campo a campo, na ordem de aplicar."""
     s = Sugestoes()
     texto = mensagem.texto_para_busca
-    referencia = mensagem.data_referencia or timezone.localdate()
 
     s.por("data_solicitacao", data_do_email(mensagem))
 
-    quando = quando_do_evento(texto, referencia)
+    quando, avisos_da_data = quando_do_pedido(mensagem)
+    for aviso in avisos_da_data:
+        s.avisar(aviso)
     if quando is not None:
-        confianca = quando.confianca if mensagem.data_referencia else "M"
+        confianca = quando.confianca
         fim = quando.fim or quando.inicio
         exibir = f"{quando.inicio:%d/%m/%Y}" + (f" a {fim:%d/%m/%Y}" if fim != quando.inicio else "")
         s.por("data_inicio_evento", Sugestao(quando.inicio, exibir, confianca, quando.trecho))
         s.por("data_fim_evento", Sugestao(fim, f"{fim:%d/%m/%Y}", confianca, quando.trecho))
-        s.avisar(_aviso_de_fim_de_semana(quando))
-        if quando.inicio < timezone.localdate():
-            s.avisar(f"A data do evento lida ({quando.inicio:%d/%m/%Y}) já passou: confira.")
 
     tipo = _tipo_do_evento(texto)
     s.por("tipo_evento", tipo)
@@ -169,7 +163,7 @@ def sugestoes(mensagem: Mensagem, usuario=None) -> Sugestoes:
     pessoa = quem_pede(mensagem)
     ddd = pessoa.telefone.detalhes.get("digitos", "")[:2] if pessoa and pessoa.telefone else ""
     municipios = Municipio.objects.filter(ativo=True, estado__ativo=True).select_related("estado")
-    municipio = municipio_no_texto(texto, municipios, ddd=ddd)
+    municipio = municipio_do_pedido(mensagem, municipios, ddd=ddd)
     if municipio is not None:
         estado = municipio.valor.estado
         s.por("estado", Sugestao(estado, estado.nome, "A", municipio.trecho))

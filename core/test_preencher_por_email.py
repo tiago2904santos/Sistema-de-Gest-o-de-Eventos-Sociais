@@ -4,7 +4,7 @@ import os
 import shutil
 import tempfile
 import time
-from datetime import date, datetime, time as hora, timezone as fuso
+from datetime import date, datetime, time as hora, timedelta, timezone as fuso
 from pathlib import Path
 
 from django.contrib.sessions.backends.db import SessionStore
@@ -154,3 +154,79 @@ class GuardarOriginalTests(TestCase):
         pe.concluir_origem(request, origem)
         self.assertIsNone(pe.origem_do_pedido(request, "coffee_break"))
         self.assertFalse((Path(self.pasta) / "preencher-por-email" / f"{token}.bin").exists())
+
+
+class QuandoDoPedidoTests(SimpleTestCase):
+    def mensagem(self, corpo, citado="", enviado=datetime(2026, 9, 22, 8, 41, tzinfo=fuso.utc)):
+        return Mensagem(assunto="Solicitação de palestra", corpo=corpo, citado=citado, enviado_em=enviado)
+
+    def test_sem_data_no_corpo_procura_na_conversa_anterior_com_aviso(self):
+        quando, avisos = pe.quando_do_pedido(self.mensagem(
+            "Segue o ofício para confirmação da palestra.",
+            citado="Gostaríamos da palestra em uma das datas: 05 de outubro ou 07 de outubro de 2026, às 14h.",
+        ))
+        self.assertEqual((quando.inicio, quando.confianca), (date(2026, 10, 5), "M"))
+        self.assertTrue(any("mensagem anterior" in a for a in avisos), avisos)
+        self.assertTrue(any("mais de uma data (05/10 ou 07/10)" in a for a in avisos), avisos)
+
+    def test_sem_data_nenhuma_avisa_que_a_de_envio_nao_vale(self):
+        quando, avisos = pe.quando_do_pedido(self.mensagem("Pedimos a emissão de identidades para 10 pacientes."))
+        self.assertIsNone(quando)
+        self.assertTrue(any("não é a data do evento" in a for a in avisos), avisos)
+
+    def test_prazo_curto_e_fim_de_semana(self):
+        hoje = date.today()
+        dia = hoje + timedelta(days=3)
+        quando, avisos = pe.quando_do_pedido(self.mensagem(
+            f"A palestra será no dia {dia:%d/%m/%Y} às 9h.", enviado=datetime.combine(hoje, hora(8), tzinfo=fuso.utc)
+        ))
+        self.assertEqual(quando.inicio, dia)
+        self.assertTrue(any("Prazo curto" in a and "3 dias" in a for a in avisos), avisos)
+        if dia.weekday() >= 5:
+            self.assertTrue(any("fim de semana" in a for a in avisos), avisos)
+
+
+class NomeNaOrdemTests(SimpleTestCase):
+    def test_sobrenome_primeiro_vira_nome_sobrenome(self):
+        self.assertEqual(pe._nome_na_ordem("PAIS, Andres"), "Andres Pais")
+        self.assertEqual(pe._nome_na_ordem("DA SILVA, Ana"), "Ana da Silva")
+        self.assertEqual(pe._nome_na_ordem("Maria Souza"), "Maria Souza")
+        self.assertEqual(pe._nome_na_ordem("Escola, a melhor, de Castro"), "Escola, a melhor, de Castro")
+
+    def test_quem_pede_usa_o_nome_na_ordem(self):
+        pessoa = pe.quem_pede(Mensagem(remetente_nome="PAIS, Andres", remetente_email="a@x.com"))
+        self.assertEqual(pessoa.nome, "Andres Pais")
+
+
+class TokenDaTriagemTests(GuardarOriginalTests):
+    def test_ler_guardado_assume_o_token_da_triagem(self):
+        request = self.pedido()
+        token = pe._guardar(request, pe.MODULO_TRIAGEM, "pedido.txt", b"Pedido de palestra dia 15/10.", ler_texto_colado("Pedido."))
+        self.assertIsNone(pe.ler_guardado(request, "coffee_break", "x" * 32))
+        lido = pe.ler_guardado(request, "coffee_break", token)
+        self.assertIsNotNone(lido)
+        mensagem, nome, dados = lido
+        self.assertEqual((nome, dados), ("pedido.txt", b"Pedido de palestra dia 15/10."))
+        self.assertIn("palestra", mensagem.corpo)
+        # O token passou a ser do módulo: o formulário salvo dele o encontra.
+        request.POST = {"email_origem": token}
+        self.assertIsNotNone(pe.origem_do_pedido(request, "coffee_break"))
+        self.assertIsNone(pe.origem_do_pedido(request, "solicitacoes"))
+
+    def test_origem_da_tela_por_get_e_por_post(self):
+        request = self.pedido()
+        token = pe._guardar(request, "solicitacoes", "pedido.txt", b"Pedido", ler_texto_colado("Pedido."))
+        get = RequestFactory().get("/x/", {"email_origem": token})
+        get.session = request.session
+        origem = pe.origem_da_tela(get, "solicitacoes")
+        self.assertEqual((origem["token"], origem["auto"]), (token, True))
+        self.assertIsNone(pe.origem_da_tela(get, "coffee_break"))
+        request.POST = {"email_origem": token}
+        self.assertEqual(pe.origem_da_tela(request, "solicitacoes")["auto"], False)
+
+    def test_origem_traz_o_email_do_remetente(self):
+        request = self.pedido()
+        mensagem = ler_texto_colado("De: Ana <ana@escola.exemplo>\nEnviado em: 24/09/2026 14:32\nAssunto: Palestra\n\nPedido.")
+        token = pe._guardar(request, "solicitacoes", "pedido.txt", b"Pedido", mensagem)
+        request.POST = {"email_origem": token}
+        self.assertEqual(pe.origem_do_pedido(request, "solicitacoes").remetente_email, "ana@escola.exemplo")

@@ -5,6 +5,8 @@
 {% block conteudo %}
   {% include "components/v32/page_header.html" with titulo="Central de módulos" subtitulo="Escolha um módulo para trabalhar — os indicadores mostram a situação atual de cada um" icone="home" %}
 
+  {% if triagem_email %}{% include "components/v32/triagem_email.html" %}{% endif %}
+
   <div class="portal-grid">
     {% for cartao in cartoes %}
       <section class="pa-card portal-card" aria-labelledby="portal-{{ cartao.slug }}">

@@ -51,6 +51,10 @@ _SINAIS: dict[str, list[tuple[re.Pattern, float, str]]] = {
     ],
     "solicitacoes": [
         (re.compile(r"\bcin\b|\brg\b|\bcarteiras?\s+de\s+identidade\b|\bidentidade\b"), 2, "RG/CIN"),
+        (re.compile(r"\bemiss(?:ao|oes)\s+d[aeo]s?\s+(?:cin|rg|carteiras?|documentos?|identidade|nova\s+identidade)\b"), 3, "emissão de identidade"),
+        (re.compile(r"\bidentificacao\s+civil\b|\binstituto\s+de\s+identificacao\b|\biipr\b"), 3, "identificação civil"),
+        (re.compile(r"\bposto\s+(?:movel|de\s+atendimento)\b|\batendimento\s+in\s+loco\b|\bkits?\s+biometric"), 2, "posto de atendimento"),
+        (re.compile(r"\bcrianca\s+e\s+adolescente\s+protegidos\b"), 3, "Criança e Adolescente Protegidos"),
         (re.compile(r"\bunidade\s+movel\b|\bonibus\b|\bcarreta\b"), 3, "unidade móvel"),
         (re.compile(r"\bparana\s+em\s+acao\b"), 3, "Paraná em Ação"),
         (re.compile(r"\bjustica\s+no\s+bairro\b"), 3, "Justiça no Bairro"),
@@ -103,11 +107,14 @@ def triar(
     assinatura: str = "",
     remetente_email: str = "",
     modulos: Iterable[str] | None = None,
+    extras: dict[str, list[tuple[float, str]]] | None = None,
 ) -> list[Destino]:
     """Os módulos candidatos, do mais provável ao menos provável (só os com pontos).
 
-    `modulos` limita aos módulos que o usuário acessa. A confiança do
-    primeiro cai quando o segundo está perto ou quando há poucos sinais.
+    `modulos` limita aos módulos que o usuário acessa. `extras` são pontos de
+    fora do texto — {modulo: [(pontos, sinal), ...]} — como a memória dos
+    pedidos anteriores do mesmo remetente. A confiança do primeiro cai
+    quando o segundo está perto ou quando há poucos sinais.
     """
     permitidos = set(modulos) if modulos is not None else set(MODULOS)
     assunto_d, corpo_d, assinatura_d = dobrar(assunto), dobrar(corpo), dobrar(assinatura)
@@ -131,6 +138,10 @@ def triar(
         somar("atendimento_imprensa", 3, "assinatura de jornalista")
     if email and _R_REMETENTE_PCPR.search(email) and pontos.get("publicacoes"):
         somar("publicacoes", 2, "remetente da PCPR")
+    for modulo, itens in (extras or {}).items():
+        for valor, sinal in itens:
+            if modulo in MODULOS and valor:
+                somar(modulo, valor, sinal)
 
     candidatos = sorted(
         ((m, p) for m, p in pontos.items() if p > 0 and m in permitidos), key=lambda c: -c[1]
@@ -145,7 +156,7 @@ def triar(
     return destinos
 
 
-def triar_mensagem(mensagem, *, modulos: Iterable[str] | None = None) -> list[Destino]:
+def triar_mensagem(mensagem, *, modulos: Iterable[str] | None = None, extras=None) -> list[Destino]:
     """`triar` a partir de uma `Mensagem` já lida (mensagem.py)."""
     return triar(
         assunto=mensagem.assunto_limpo,
@@ -153,4 +164,5 @@ def triar_mensagem(mensagem, *, modulos: Iterable[str] | None = None) -> list[De
         assinatura=mensagem.assinatura,
         remetente_email=mensagem.remetente_email,
         modulos=modulos,
+        extras=extras,
     )
