@@ -1093,11 +1093,64 @@ def ler_email(request):
     )
 
 
+# O que a cópia leva da solicitação original: o evento que se repete. Nunca
+# datas, número, nota, ofício, protocolo nem pagamento — esses são da nova.
+CAMPOS_DUPLICADOS = ("municipio", "descricao_evento", "quantidade", "horario_evento", "local_entrega", "responsavel_recebimento")
+
+
+def _origem_da_copia(dados):
+    """A solicitação que se duplica (?duplicar=<pk>), ou None."""
+    pk = dados.get("duplicar")
+    if not pk or not str(pk).isdigit():
+        return None
+    return SolicitacaoCoffeeBreak.objects.filter(pk=pk).first()
+
+
+@acesso_ao_modulo
+def duplicar_solicitacao(request, pk):
+    """"Duplicar" da lista: abre a nova solicitação com o evento copiado e a data em branco."""
+    get_object_or_404(SolicitacaoCoffeeBreak, pk=pk)
+    return redirect(f"{reverse('coffee_break:nova')}?duplicar={pk}")
+
+
+@acesso_ao_modulo
+@require_GET
+def locais_entrega(request):
+    """Local de entrega e responsável já usados no município (JSON), do mais
+    recente ao mais antigo, sem repetir. A tela sugere; só o clique preenche."""
+    municipio = request.GET.get("municipio") or ""
+    resultados = []
+    if municipio.isdigit():
+        vistos = set()
+        recentes = (
+            SolicitacaoCoffeeBreak.objects.filter(municipio_id=municipio)
+            .exclude(local_entrega="")
+            .order_by("-data_inicio_evento", "-pk")
+            .values_list("local_entrega", "responsavel_recebimento", "numero", "data_inicio_evento")[:200]
+        )
+        for local, responsavel, numero, data in recentes:
+            chave = (local.strip().casefold(), responsavel.strip().casefold())
+            if chave in vistos:
+                continue
+            vistos.add(chave)
+            detalhe = " · ".join(p for p in (responsavel, f"OS {numero}" if numero else "", f"{data:%d/%m/%Y}" if data else "") if p)
+            resultados.append({
+                "nome": local,
+                "detalhe": detalhe,
+                "campos": {"local_entrega": local, "responsavel_recebimento": responsavel},
+            })
+            if len(resultados) == 10:
+                break
+    return JsonResponse({"resultados": resultados})
+
+
 @acesso_ao_modulo
 def nova_solicitacao(request):
     from . import origem as origem_evento
 
     email_origem = None
+    # "Duplicar" da lista: ?duplicar=<pk> (e o campo oculto no POST, para o histórico).
+    copia_de = _origem_da_copia(request.POST if request.method == "POST" else request.GET)
     # "Pedir coffee break" do evento ou da palestra: ?solicitacao=<pk> ou ?demanda=<pk>.
     campo_origem, evento_origem = origem_evento.origem_do_pedido(
         request.POST if request.method == "POST" else request.GET, request.user
@@ -1122,6 +1175,8 @@ def nova_solicitacao(request):
                 descricao = "Solicitação registrada no sistema."
                 if evento_origem is not None:
                     descricao += f" Pedida a partir de: {origem_evento.rotulo(campo_origem, evento_origem)}."
+                if copia_de is not None:
+                    descricao += f" Duplicada da solicitação {copia_de.numero or '#' + str(copia_de.pk)}."
                 if origem:
                     descricao += f" {preencher_por_email.texto_da_origem(origem)}."
                 services.registrar_historico(
@@ -1144,9 +1199,21 @@ def nova_solicitacao(request):
         email_origem = preencher_por_email.origem_pendente(request, "coffee_break")
     else:
         iniciais = origem_evento.valores_iniciais(campo_origem, evento_origem) if evento_origem is not None else {}
+        if copia_de is not None:
+            iniciais = {
+                campo: getattr(copia_de, f"{campo}_id" if campo == "municipio" else campo)
+                for campo in CAMPOS_DUPLICADOS
+                if getattr(copia_de, f"{campo}_id" if campo == "municipio" else campo) not in ("", None)
+            }
         form = PedidoCoffeeBreakForm(initial=iniciais)
     contexto = _contexto_formulario(request, form)
     contexto["email_origem"] = email_origem
+    if copia_de is not None:
+        contexto["copia_de"] = {
+            "pk": copia_de.pk,
+            "rotulo": f"Solicitação {copia_de.numero or '#' + str(copia_de.pk)} — {copia_de.descricao_evento}",
+            "url": reverse("coffee_break:editar", args=[copia_de.pk]),
+        }
     if evento_origem is not None:
         parametro = "solicitacao" if campo_origem == "solicitacao_evento" else "demanda"
         contexto["origem_evento"] = {

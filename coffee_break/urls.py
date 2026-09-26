@@ -35,6 +35,10 @@ urlpatterns = [
     path("solicitacoes/nova/ler-email/", views.ler_email, name="ler_email"),
     path("solicitacoes/nova/ordem-de-servico/", views.nova_os_embutido, name="nova_os_embutido"),
     path("solicitacoes/nova/ordem-de-servico/folha/", views.nova_os_folha, name="nova_os_folha"),
+    # "Duplicar": a nova solicitação com o evento copiado, pedindo só a data.
+    path("solicitacoes/<int:pk>/duplicar/", views.duplicar_solicitacao, name="duplicar"),
+    # Local e responsável já usados no município (JSON): a tela sugere, o clique preenche.
+    path("solicitacoes/locais-de-entrega/", views.locais_entrega, name="locais_entrega"),
     path("solicitacoes/<int:pk>/editar/", views.editar_solicitacao, name="editar"),
     path("solicitacoes/<int:pk>/nota/", views.etapa_nota, name="etapa_nota"),
     path("solicitacoes/<int:pk>/protocolo/", views.etapa_protocolo, name="etapa_protocolo"),
