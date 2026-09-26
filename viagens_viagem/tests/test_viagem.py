@@ -38,6 +38,23 @@ class ListaTests(CenarioViagem):
         r = self.client.get(reverse("viagens_viagem:lista"), {"q": "Londrina"})
         self.assertEqual(r.context["pagina"].paginator.count, 3)
 
+    def test_busca_por_servidor_placa_oficio_e_protocolo(self):
+        """m079: acha a viagem pelo dado que se tem em mãos."""
+        alvo = self.viagem(titulo="Justiça no Bairro")
+        self.viagem(titulo="Outra viagem")
+        oficio = Oficio.objects.create(viagem=alvo, numero=15, ano=2026, protocolo="123456789",
+                                       viatura=self.viatura, motorista=self.b)
+        oficio.servidores.set([self.a])
+
+        def achadas(termo):
+            r = self.client.get(reverse("viagens_viagem:lista"), {"q": termo})
+            return [l["viagem"].pk for l in r.context["linhas"]]
+
+        for termo in ("ANA VIAGEM", "bruno", "abc-1d23", "15/2026", "12.345.678-9"):
+            with self.subTest(termo=termo):
+                self.assertEqual(achadas(termo), [alvo.pk])
+        self.assertEqual(achadas("16/2026"), [])
+
     def test_selo_quando_pela_saida_do_roteiro(self):
         v = self.viagem()
         saida = timezone.make_aware(datetime.combine(timezone.localdate() + timedelta(days=3), datetime.min.time().replace(hour=8)))
