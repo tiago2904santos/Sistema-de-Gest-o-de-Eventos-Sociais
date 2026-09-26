@@ -1038,7 +1038,7 @@ def _aplicar_na_solicitacao(solicitacao, plano: Plano, dados: bytes, usuario, he
     solicitacao.save(update_fields=[*dict.fromkeys(campos), "atualizado_em"])
     # O que é do pagamento vale para todas as OS do mesmo pagamento.
     espelhados = [c for c in campos if c in services.CAMPOS_ESPELHADOS]
-    if espelhados and services.espelhar(solicitacao, espelhados):
+    if espelhados and services.espelhar(solicitacao, espelhados, usuario, registrar=False):
         frases = {
             "protocolo_pagamento": f"Protocolo de pagamento: {solicitacao.protocolo_pagamento} (o do pagamento conjunto, com a {_rotulo(solicitacao)}).",
             "data_atesto_gaf": f"Atesto e envio ao GAF: {_dia(solicitacao.data_atesto_gaf)} (o do pagamento conjunto).",

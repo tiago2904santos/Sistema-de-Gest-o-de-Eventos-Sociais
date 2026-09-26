@@ -346,11 +346,16 @@ class FonteSolicitacaoCoffee(FonteBase):
     def gravar(self, form, nomes, alvo):
         from . import services
 
+        from core.middleware import obter_requisicao_atual
+
+        requisicao = obter_requisicao_atual()
+        usuario = getattr(requisicao, "user", None)
+        usuario = usuario if getattr(usuario, "is_authenticated", False) else None
         gravado = _gravar_recorte(form, nomes)
         # O ofício é de todas as OS do mesmo pagamento: o número, a data e o protocolo vão para todas.
-        services.espelhar(gravado, nomes)
+        services.espelhar(gravado, nomes, usuario)
         # O protocolo do ofício é o do pagamento.
-        services.sincronizar_protocolo(gravado)
+        services.sincronizar_protocolo(gravado, usuario)
         return gravado
 
     def links(self, definicao, solicitacao, alvo):

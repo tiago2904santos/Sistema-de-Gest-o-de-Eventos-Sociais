@@ -359,10 +359,18 @@ def sem_nota_no_pagamento(solicitacao):
     return [membro for membro in solicitacao.grupo_pagamento() if not membro.numero_nota_fiscal.strip()]
 
 
-def espelhar(solicitacao, campos=None):
+def _valor_legivel(valor):
+    if isinstance(valor, date):
+        return f"{valor:%d/%m/%Y}"
+    return str(valor) if valor not in (None, "") else "(em branco)"
+
+
+def espelhar(solicitacao, campos=None, usuario=None, registrar=True):
     """Copia os campos do pagamento para as outras OS do mesmo pagamento.
 
     Protocolo, atesto e ordem bancária só vão para as OS que já têm nota.
+    Cada OS é gravada com ``save`` (a auditoria vê a mudança) e, com
+    ``registrar``, o histórico dela diz de qual OS veio a cópia.
     """
     from .models import SolicitacaoCoffeeBreak
 
@@ -372,12 +380,27 @@ def espelhar(solicitacao, campos=None):
         return 0
     copiadas = 0
     for outra in outras:
-        valores = {
-            campo: getattr(solicitacao, campo) for campo in campos
-            if campo not in CAMPOS_DEPOIS_DA_NOTA or outra.numero_nota_fiscal.strip()
-        }
-        if valores:
-            copiadas += SolicitacaoCoffeeBreak.objects.filter(pk=outra.pk).update(atualizado_em=timezone.now(), **valores)
+        mudaram = []
+        for campo in campos:
+            if campo in CAMPOS_DEPOIS_DA_NOTA and not outra.numero_nota_fiscal.strip():
+                continue
+            valor = getattr(solicitacao, campo)
+            if getattr(outra, campo) != valor:
+                setattr(outra, campo, valor)
+                mudaram.append(campo)
+        if not mudaram:
+            continue
+        outra.save(update_fields=[*mudaram, "atualizado_em"])
+        copiadas += 1
+        if registrar:
+            texto = "; ".join(
+                f"{SolicitacaoCoffeeBreak._meta.get_field(c).verbose_name}: {_valor_legivel(getattr(outra, c))}"
+                for c in mudaram
+            )
+            registrar_historico(
+                outra, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO,
+                f"Copiado da OS {solicitacao.numero or '#' + str(solicitacao.pk)} (pagamento conjunto) — {texto}.",
+            )
     return copiadas
 
 
@@ -385,8 +408,6 @@ def sincronizar_protocolo(solicitacao, usuario=None):
     """O protocolo de pagamento é o do ofício (etapa 2): com a nota
     registrada, o protocolo do ofício vira o do pagamento, em todas as OS do
     mesmo pagamento."""
-    from .models import SolicitacaoCoffeeBreak
-
     from core.utils.masks import normalize_protocolo
 
     protocolo = (solicitacao.protocolo_pcpr_oficio or "").strip()
@@ -400,9 +421,9 @@ def sincronizar_protocolo(solicitacao, usuario=None):
     # pagamento já gravado (o do processo, vindo da importação).
     if solicitacao.protocolo_pagamento.strip() and len(normalize_protocolo(protocolo)) != 9:
         return False
-    SolicitacaoCoffeeBreak.objects.filter(pk=solicitacao.pk).update(protocolo_pagamento=protocolo, atualizado_em=timezone.now())
     solicitacao.protocolo_pagamento = protocolo
-    espelhar(solicitacao, ["protocolo_pagamento"])
+    solicitacao.save(update_fields=["protocolo_pagamento", "atualizado_em"])
+    espelhar(solicitacao, ["protocolo_pagamento"], usuario)
     registrar_historico(solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO, f"Protocolo de pagamento: {protocolo} (o do ofício).")
     return True
 
@@ -411,17 +432,15 @@ def marcar_atesto(solicitacao, usuario=None, dia=None):
     """Atesto e envio ao GAF: o dia em que a etapa 3 se conclui — quando os
     arquivos do protocolo são baixados. Só com o protocolo registrado, e
     uma vez (a data da primeira vez fica)."""
-    from .models import SolicitacaoCoffeeBreak
-
     if solicitacao.data_atesto_gaf or not solicitacao.protocolo_pagamento or solicitacao.cancelada:
         return False
     # Pagamento conjunto com OS ainda sem nota: o ofício nem pode ser gerado.
     if sem_nota_no_pagamento(solicitacao):
         return False
     dia = dia or timezone.localdate()
-    SolicitacaoCoffeeBreak.objects.filter(pk=solicitacao.pk).update(data_atesto_gaf=dia, atualizado_em=timezone.now())
     solicitacao.data_atesto_gaf = dia
-    espelhar(solicitacao, ["data_atesto_gaf"])
+    solicitacao.save(update_fields=["data_atesto_gaf", "atualizado_em"])
+    espelhar(solicitacao, ["data_atesto_gaf"], usuario)
     registrar_historico(solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO, f"Atesto e envio ao GAF: {dia:%d/%m/%Y} (arquivos do protocolo baixados).")
     return True
 
@@ -462,14 +481,15 @@ def definir_pagamento_conjunto(solicitacao, outras_pks, usuario=None):
     principal_antigo = solicitacao.principal_do_pagamento
     principal = principal_antigo if principal_antigo.pk in alvo else solicitacao
     saem = antigos - alvo
-    if saem:
-        SolicitacaoCoffeeBreak.objects.filter(pk__in=saem).update(pagamento_com=None, atualizado_em=timezone.now())
-    SolicitacaoCoffeeBreak.objects.filter(pk=principal.pk).update(pagamento_com=None)
-    membros = alvo - {principal.pk}
-    if membros:
-        SolicitacaoCoffeeBreak.objects.filter(pk__in=membros).update(pagamento_com=principal, atualizado_em=timezone.now())
+    # Um save por OS (e não update em lote): a auditoria registra cada vínculo.
+    for pk in alvo | saem:
+        membro = SolicitacaoCoffeeBreak.objects.get(pk=pk)
+        destino = None if pk == principal.pk or pk in saem else principal.pk
+        if membro.pagamento_com_id != destino:
+            membro.pagamento_com_id = destino
+            membro.save(update_fields=["pagamento_com", "atualizado_em"])
     principal.refresh_from_db()
-    espelhar(principal)
+    espelhar(principal, usuario=usuario)
     for pk in novos | saem:
         outra = SolicitacaoCoffeeBreak.objects.get(pk=pk)
         registrar_historico(
@@ -571,7 +591,7 @@ def registrar_marco(solicitacao, usuario, valor, anotacao=""):
         ) from erro
     solicitacao.save()
     # Marco do pagamento vale para todas as OS do mesmo pagamento.
-    espelhar(solicitacao, [marco["campo"]])
+    espelhar(solicitacao, [marco["campo"]], usuario)
     texto = f"{marco['rotulo']}: {valor:%d/%m/%Y}" if marco["tipo"] == "date" else f"{marco['rotulo']}: {valor}"
     anotacao = (anotacao or "").strip()
     registrar_historico(

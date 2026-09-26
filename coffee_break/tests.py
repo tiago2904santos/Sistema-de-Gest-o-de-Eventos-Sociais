@@ -2454,6 +2454,25 @@ class PagamentoConjuntoTests(EtapasBase):
         self.b.refresh_from_db()
         self.assertEqual(self.b.protocolo_pagamento, "26.613.666-8")
 
+    def test_copia_do_pagamento_vai_para_o_historico_e_a_auditoria(self):
+        """m029: o que o pagamento conjunto copia fica no histórico e na trilha da outra OS."""
+        from auditoria.models import RegistroAuditoria
+
+        services.definir_pagamento_conjunto(self.a, [self.b.pk], self.ascom)
+        with self.captureOnCommitCallbacks(execute=True):
+            self._salvar_nota(self.a, numero_oficio="130", protocolo_pcpr_oficio="266136668")
+        self.b.refresh_from_db()
+        self.assertEqual(self.b.numero_oficio, "130/2026")
+        copia = self.b.historico.filter(descricao__contains="número do ofício: 130/2026").first()
+        self.assertIsNotNone(copia)
+        self.assertTrue(copia.descricao.startswith("Copiado da OS 41/2026"))
+        self.assertEqual(copia.usuario, self.ascom)
+        self.assertTrue(self.b.historico.filter(descricao__contains="protocolo de pagamento: 26.613.666-8").exists())
+        trilha = RegistroAuditoria.objects.filter(
+            modelo="coffee_break.solicitacaocoffeebreak", objeto_id=str(self.b.pk)
+        )
+        self.assertTrue(any("numero_oficio" in r.alteracoes for r in trilha))
+
     def test_so_entra_os_do_mesmo_lote(self):
         from django.core.exceptions import ValidationError
 

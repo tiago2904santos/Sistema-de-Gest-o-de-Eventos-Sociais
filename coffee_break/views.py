@@ -1007,7 +1007,7 @@ def _tela_da_etapa(request, pk, etapa):
                 messages.error(request, "Corrija os campos destacados para continuar.")
             else:
                 # O que é do pagamento (ofício, protocolo, marcos) vale para as OS do mesmo pagamento.
-                services.espelhar(solicitacao, form.changed_data)
+                services.espelhar(solicitacao, form.changed_data, request.user)
                 if etapa == "nota":
                     services.sincronizar_protocolo(solicitacao, request.user)
                 if etapa == "nota" and "vinculadas_enviado" in request.POST and not somente_leitura:
