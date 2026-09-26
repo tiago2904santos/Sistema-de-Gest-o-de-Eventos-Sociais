@@ -352,7 +352,6 @@ def painel(request):
             # As duas listas do painel usam a mesma linha das listagens.
             "linhas_lotes": [linha_do_lote(lote) for lote in lotes_ativos],
             "lotes_em_alerta": em_alerta,
-            "limiar_alerta": services.LIMIAR_ALERTA_SALDO,
             "recentes": recentes,
             "linhas_recentes": [linha_da_lista(s) for s in recentes],
             "url_lotes": url_lotes,
@@ -484,6 +483,44 @@ def detalhe_lote(request, pk):
             ),
         },
     )
+
+
+@acesso_ao_modulo
+def relatorio_contrato(request, pk):
+    """Relatório do contrato na tela, em PDF (`?formato=pdf`) ou planilha (`?formato=csv`)."""
+    import csv
+
+    from django.template.loader import render_to_string
+
+    from . import relatorio_contrato as relatorio
+
+    contrato = get_object_or_404(ContratoCoffeeBreak.objects.select_related("fornecedor"), pk=pk)
+    dados = relatorio.montar(contrato)
+    nome = f"Relatorio do contrato {contrato.numero}".replace("/", "-")
+    formato = request.GET.get("formato")
+    if formato == "csv":
+        resposta = HttpResponse(content_type="text/csv; charset=utf-8")
+        resposta["Content-Disposition"] = f'attachment; filename="{nome}.csv"'
+        resposta.write("﻿")
+        escritor = csv.writer(resposta, delimiter=";", lineterminator="\r\n")
+        for linha in relatorio.linhas_csv(dados):
+            escritor.writerow(linha)
+        return resposta
+    if formato == "pdf":
+        try:
+            pdf = documentos._pdf("coffee_break/documentos/relatorio_contrato.html", dados)
+        except ValidationError as erro:
+            for mensagem in erro.messages:
+                messages.error(request, mensagem)
+            return redirect("coffee_break:relatorio_contrato", pk=contrato.pk)
+        resposta = HttpResponse(pdf, content_type="application/pdf")
+        resposta["Content-Disposition"] = f'inline; filename="{nome}.pdf"'
+        return resposta
+    dados["breadcrumb"] = _breadcrumb(
+        {"label": "Lotes", "url": reverse("coffee_break:lotes")},
+        {"label": f"Relatório do contrato {contrato.numero}"},
+    )
+    return render(request, "pages/coffee_break/relatorio_contrato.html", dados)
 
 
 # ---------------------------------------------------------------------------

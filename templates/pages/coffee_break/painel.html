@@ -27,8 +27,8 @@
         <div class="aviso__txt">
           {% include "components/icon.html" with nome="alert" %}
           <div class="aviso__corpo">
-            <b>{{ lote.rotulo_curto }} — {{ lote.contrato.fornecedor.razao_social }}</b>
-            <p>Restam apenas {{ lote.restante }} de {{ lote.quantidade_total }} unidades (limite de alerta: {{ limiar_alerta }}%).</p>
+            <b>{{ lote.rotulo_curto }} — {{ lote.contrato.fornecedor.razao_social }}</b> <a href="{% url 'coffee_break:relatorio_contrato' lote.contrato_id %}">Relatório do contrato</a>
+            <p>{{ lote.motivo_alerta }}</p>
           </div>
         </div>
       </div>

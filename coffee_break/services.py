@@ -247,18 +247,89 @@ def reativar(solicitacao, usuario=None):
     return solicitacao
 
 
-# Percentual de saldo abaixo do qual o painel destaca o lote.
+# Percentual de saldo abaixo do qual o painel destaca o lote quando não dá
+# para projetar (contrato sem vigência ou lote sem consumo recente).
 LIMIAR_ALERTA_SALDO = 15
+# Meses completos que dão o ritmo de consumo da projeção.
+MESES_DO_RITMO = 3
 
 
-def lotes_em_alerta(lotes_anotados):
-    """Lotes ativos com saldo igual ou abaixo do limiar de alerta."""
+def _data_de_referencia(solicitacao):
+    """O mês em que a OS consome: o do evento; sem data do evento, o do pedido."""
+    return solicitacao.data_inicio_evento or solicitacao.data_solicitacao
+
+
+def _inicio_do_mes(dia, recuar=0):
+    ano, mes = dia.year, dia.month - recuar
+    while mes < 1:
+        ano, mes = ano - 1, mes + 12
+    return date(ano, mes, 1)
+
+
+def ritmo_mensal(solicitacoes, hoje=None):
+    """Média de consumo (quantidade efetiva) por mês nos últimos meses
+    completos (``MESES_DO_RITMO``), das OS não canceladas."""
+    hoje = hoje or timezone.localdate()
+    inicio, fim = _inicio_do_mes(hoje, MESES_DO_RITMO), _inicio_do_mes(hoje)
+    total = sum(
+        s.quantidade_efetiva for s in solicitacoes
+        if not s.cancelada and inicio <= _data_de_referencia(s) < fim
+    )
+    return total / MESES_DO_RITMO
+
+
+def projecao_do_saldo(restante, ritmo, fim_vigencia, hoje=None):
+    """Quando o saldo acaba no ritmo atual e se isso é antes do fim do contrato.
+
+    ``acaba_em`` é None sem consumo recente (não dá para projetar); a
+    ``sobra`` é o que resta no fim da vigência (negativa quando falta).
+    """
+    from datetime import timedelta
+
+    hoje = hoje or timezone.localdate()
+    projecao = {"ritmo": round(ritmo, 1), "fim": fim_vigencia, "acaba_em": None, "acaba_antes": False, "sobra": None, "falta": 0}
+    if ritmo > 0:
+        projecao["acaba_em"] = hoje + timedelta(days=round(max(restante, 0) / ritmo * 30.44))
+        if fim_vigencia:
+            projecao["acaba_antes"] = projecao["acaba_em"] < fim_vigencia
+            meses_ate_o_fim = max((fim_vigencia - hoje).days, 0) / 30.44
+            projecao["sobra"] = round(restante - ritmo * meses_ate_o_fim)
+            projecao["falta"] = max(-projecao["sobra"], 0)
+    return projecao
+
+
+def projecao_do_lote(lote, hoje=None):
+    restante = lote.restante if hasattr(lote, "restante") else lote.saldo_restante
+    ritmo = ritmo_mensal(lote.solicitacoes.filter(cancelada=False), hoje)
+    return projecao_do_saldo(restante, ritmo, fim_da_vigencia(lote.contrato), hoje)
+
+
+def lotes_em_alerta(lotes_anotados, hoje=None):
+    """Lotes ativos cujo saldo acaba antes do fim do contrato, no ritmo dos
+    últimos meses; sem como projetar, os de saldo no limiar ou abaixo.
+
+    Cada lote devolvido leva o ``motivo_alerta`` (o texto do painel).
+    """
     em_alerta = []
     for lote in lotes_anotados:
         if not lote.quantidade_total:
             continue
+        projecao = projecao_do_lote(lote, hoje)
+        if projecao["acaba_em"] and projecao["fim"]:
+            if projecao["acaba_antes"]:
+                lote.motivo_alerta = (
+                    f"No ritmo dos últimos {MESES_DO_RITMO} meses ({str(projecao['ritmo']).replace('.', ',')} por mês), "
+                    f"os {lote.restante} de saldo acabam por volta de {projecao['acaba_em']:%d/%m/%Y}, antes do fim "
+                    f"do contrato ({projecao['fim']:%d/%m/%Y}): providencie o aditivo ou o reforço."
+                )
+                em_alerta.append(lote)
+            continue
         percentual_restante = lote.restante * 100 / lote.quantidade_total
         if percentual_restante <= LIMIAR_ALERTA_SALDO:
+            lote.motivo_alerta = (
+                f"Restam apenas {lote.restante} de {lote.quantidade_total} unidades "
+                f"(limite de alerta: {LIMIAR_ALERTA_SALDO}%)."
+            )
             em_alerta.append(lote)
     return em_alerta
 

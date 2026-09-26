@@ -280,6 +280,10 @@ def linha_do_cadastro(item, tipo):
         "fatos": fatos,
         "url_editar": reverse("coffee_break:cadastro_editar", args=[tipo, item.pk]),
         "url_excluir": reverse("coffee_break:cadastro_excluir", args=[tipo, item.pk]),
+        "url_relatorio": (
+            reverse("coffee_break:relatorio_contrato", args=[item.pk]) if tipo == "contratos"
+            else reverse("coffee_break:relatorio_contrato", args=[item.contrato_id]) if tipo == "lotes" else ""
+        ),
         "cancelada": tipo == "lotes" and not item.ativo,
         "excluivel": tipo != "oficio",
     }

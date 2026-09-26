@@ -1,0 +1,30 @@
+<!doctype html>
+{% comment %}
+  Relatório do contrato em PDF (WeasyPrint): o mesmo conteúdo da tela, em
+  tabelas simples, para anexar à justificativa do aditivo, do reforço de
+  empenho ou do termo de referência da próxima licitação.
+{% endcomment %}
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Relatório do contrato {{ contrato.numero }}</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; @bottom-right { content: "Página " counter(page) " de " counter(pages); font: 8pt Arial, sans-serif; color: #555; } }
+  body { font: 9.5pt/1.35 Arial, sans-serif; color: #111; }
+  h1 { font-size: 14pt; margin: 0 0 2pt; }
+  h2 { font-size: 11pt; margin: 14pt 0 4pt; border-bottom: 1px solid #999; padding-bottom: 2pt; }
+  .sub { color: #444; margin: 0 0 8pt; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 2.5pt 4pt; border-bottom: 0.5pt solid #ccc; vertical-align: top; }
+  th { background: #eee; font-weight: 700; }
+  td.n, th.n { text-align: right; }
+  .aviso { border: 1pt solid #b00; color: #800; padding: 5pt 7pt; margin: 8pt 0; }
+  .resumo td:first-child { width: 55%; color: #333; }
+</style>
+</head>
+<body>
+  <h1>Relatório do contrato {{ contrato.numero }}</h1>
+  <p class="sub">{{ fornecedor.razao_social }}{% if fornecedor.cnpj %} · CNPJ {{ fornecedor.cnpj_formatado }}{% endif %} · gerado em {{ hoje|date:"d/m/Y" }}</p>
+  {% include "coffee_break/documentos/_relatorio_contrato_corpo.html" %}
+</body>
+</html>

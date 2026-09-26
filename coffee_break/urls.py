@@ -26,6 +26,7 @@ urlpatterns = [
     ),
     path("lotes/", views.lista_lotes, name="lotes"),
     path("lotes/<int:pk>/", views.detalhe_lote, name="lote_detalhe"),
+    path("contratos/<int:pk>/relatorio/", views.relatorio_contrato, name="relatorio_contrato"),
     path("solicitacoes/", views.lista_solicitacoes, name="solicitacoes"),
     path("solicitacoes/exportar/", views.exportar_solicitacoes, name="exportar"),
     path("solicitacoes/nova/", views.nova_solicitacao, name="nova"),
