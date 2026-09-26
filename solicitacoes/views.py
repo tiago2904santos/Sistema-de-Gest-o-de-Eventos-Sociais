@@ -481,6 +481,9 @@ def editar_solicitacao(request, pk):
             "decisoes_dg": _decisoes_dg(pendente),
             **_contexto_despacho(request.user, solicitacao),
             "cartao_viagem": None if reabrindo else _cartao_viagem(request.user, solicitacao),
+            "responsaveis": _opcoes_responsaveis(solicitacao)
+            if permissions.pode_transferir(request.user, solicitacao) and not reabrindo
+            else [],
             "andamento_protocolo": andamento_eprotocolo.andamento_guardado(
                 request, "solicitacoes", solicitacao.pk
             ),
@@ -1119,6 +1122,52 @@ def cancelar_evento(request, pk):
         f"Evento da solicitação #{solicitacao.pk} registrado como cancelado.",
         observacao=request.POST.get("motivo_cancelamento", ""),
     )
+
+
+def _opcoes_responsaveis(solicitacao):
+    """Usuários ativos que podem assumir a solicitação (menos o atual)."""
+    from django.contrib.auth import get_user_model
+
+    usuarios = (
+        get_user_model()
+        .objects.filter(is_active=True)
+        .exclude(pk=solicitacao.criado_por_id)
+        .order_by("first_name", "last_name", "username")
+    )
+    return [{"valor": str(u.pk), "rotulo": str(u)} for u in usuarios]
+
+
+@login_required
+@require_POST
+def transferir_solicitacao(request, pk):
+    """Passa a solicitação para outro responsável (histórico e aviso no sino)."""
+    from django.contrib.auth import get_user_model
+
+    solicitacao = _obter_visivel(request, pk)
+    if not permissions.pode_transferir(request.user, solicitacao):
+        raise PermissionDenied
+    escolhido = str(request.POST.get("responsavel", "")).strip()
+    novo = (
+        get_user_model().objects.filter(pk=escolhido).first()
+        if escolhido.isdigit()
+        else None
+    )
+    try:
+        services.transferir(
+            solicitacao, request.user, novo, request.POST.get("motivo_transferencia", "")
+        )
+    except ValidationError as erro:
+        for mensagem_erro in erro.messages:
+            messages.error(request, mensagem_erro)
+        url = reverse("solicitacoes:editar", args=[solicitacao.pk])
+        return redirect(f"{url}#responsavel")
+    messages.success(
+        request, f"Solicitação #{solicitacao.pk} transferida para {novo}."
+    )
+    # Quem passou adiante pode deixar de enxergar o pedido.
+    if not permissions.pode_ver(request.user, solicitacao):
+        return redirect("solicitacoes:lista")
+    return redirect("solicitacoes:editar", pk=solicitacao.pk)
 
 
 @login_required

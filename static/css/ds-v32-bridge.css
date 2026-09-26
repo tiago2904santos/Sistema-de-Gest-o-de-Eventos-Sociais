@@ -2969,3 +2969,9 @@ tr[data-importar-url].is-alvo>td:first-child{box-shadow:inset 2px 0 0 var(--sel-
 .sol-texto-pronto:hover{background:var(--hover-b)}
 .sol-texto-pronto .ui-icon{width:12px;height:12px}
 .sol-textos-prontos__editar{font-size:12px;margin-left:auto;color:var(--link)}
+
+/* Responsável pela solicitação e a transferência para outra pessoa. */
+.sol-responsavel__atual{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 8px}
+.sol-responsavel__atual .ui-icon{width:16px;height:16px}
+.sol-transferir{margin-top:8px}
+.sol-transferir .btn--compacto{margin-top:4px}

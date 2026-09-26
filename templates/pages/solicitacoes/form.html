@@ -368,6 +368,28 @@
         </section>
       {% endif %}{% endif %}{% endif %}
 
+      {# Responsável: quem edita, envia e confirma. Passar adiante fica no histórico e avisa a pessoa. #}
+      <section class="section-card reg" id="responsavel">
+        <header class="section-card__cabecalho reg__t">
+          <h2 class="section-card__titulo">Responsável</h2>
+        </header>
+        <div class="section-card__corpo sol-responsavel">
+          <p class="sol-responsavel__atual">{% include "components/icon.html" with nome="user" %}<b>{{ solicitacao.criado_por }}</b> <span class="v32-suave">edita, envia e confirma o atendimento desta solicitação.</span></p>
+          {% if acoes.transferir and responsaveis %}
+            <details class="sol-cancelar-abre">
+              <summary>Transferir para outro responsável</summary>
+              <form method="post" action="{% url 'solicitacoes:transferir' solicitacao.pk %}" class="sol-transferir" data-confirmar="Transferir a solicitação?">{% csrf_token %}
+                <div class="g-form g-form--2">
+                  {% include "components/select.html" with name="responsavel" label="Novo responsável" opcoes=responsaveis obrigatorio=True pesquisavel=True placeholder="Escolha quem assume" erros=None %}
+                  {% include "components/input.html" with name="motivo_transferencia" label="Motivo (opcional)" placeholder="Ex.: férias, mudança de setor" erros=None %}
+                </div>
+                <button type="submit" class="btn--secundaria btn--compacto">{% include "components/icon.html" with nome="arrow-right" %}Transferir</button>
+              </form>
+            </details>
+          {% endif %}
+        </div>
+      </section>
+
       {% include "pages/solicitacoes/_historico.html" %}
 
       {% if solicitacao.protocolo %}

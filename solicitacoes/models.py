@@ -401,6 +401,8 @@ class AcaoHistorico(models.TextChoices):
     DECISAO = "DECISAO", "Decisão da DG registrada"
     CONCLUSAO = "CONCLUSAO", "Atendimento confirmado"
     CANCELAMENTO = "CANCELAMENTO", "Evento cancelado"
+    # A solicitação passou para outro responsável (quem edita, envia e confirma).
+    TRANSFERENCIA = "TRANSFERENCIA", "Responsável transferido"
 
 
 class HistoricoSolicitacao(models.Model):

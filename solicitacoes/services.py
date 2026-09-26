@@ -488,6 +488,58 @@ def cancelar_evento(solicitacao, usuario, observacao):
     return solicitacao
 
 
+@transaction.atomic
+def transferir(solicitacao, usuario, novo_responsavel, motivo=""):
+    """Passa a solicitação para outro responsável, com histórico e aviso.
+
+    O responsável é quem a criou (`criado_por`): é ele quem edita, envia,
+    reenvia e confirma o atendimento. O rascunho original continua no
+    histórico ("Rascunho criado" por quem criou).
+    """
+    from .permissions import pode_transferir
+
+    if not pode_transferir(usuario, solicitacao):
+        raise PermissionDenied("Você não pode transferir esta solicitação.")
+    if novo_responsavel is None or not novo_responsavel.is_active:
+        raise ValidationError("Escolha um usuário ativo para ser o novo responsável.")
+    anterior = solicitacao.criado_por
+    if novo_responsavel.pk == anterior.pk:
+        raise ValidationError("Essa pessoa já é a responsável pela solicitação.")
+    motivo = (motivo or "").strip()
+    solicitacao.criado_por = novo_responsavel
+    solicitacao.save(update_fields=["criado_por", "atualizado_em"])
+    # De quem e para quem nas alterações; por quem no usuário; o motivo no texto.
+    registrar_historico(
+        solicitacao,
+        usuario,
+        AcaoHistorico.TRANSFERENCIA,
+        observacao=f"Motivo: {motivo}" if motivo else "",
+        alteracoes=[
+            {"campo": "Responsável", "antes": str(anterior), "depois": str(novo_responsavel)}
+        ],
+    )
+    link = reverse("solicitacoes:editar", args=[solicitacao.pk])
+    notificar(
+        [novo_responsavel],
+        f"Solicitação #{solicitacao.pk} transferida para você",
+        f"{usuario} passou a solicitação para você"
+        + (f": {motivo}" if motivo else ".")
+        + " Agora é você quem edita, envia e confirma o atendimento.",
+        link=link,
+        solicitacao=solicitacao,
+        exceto=usuario,
+    )
+    notificar(
+        [anterior],
+        f"Solicitação #{solicitacao.pk} transferida para {novo_responsavel}",
+        motivo or f"{usuario} registrou a transferência.",
+        link=link,
+        solicitacao=solicitacao,
+        exceto=usuario,
+    )
+    return solicitacao
+
+
 STATUS_REABRIVEIS = {
     StatusSolicitacao.AGUARDANDO_DESPACHO,
     StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
