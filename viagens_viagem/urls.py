@@ -13,6 +13,7 @@ urlpatterns = [
     path("<int:pk>/acao/<str:acao>/", views.acao, name="acao"),
     path("<int:pk>/repetir/", views.repetir, name="repetir"),
     path("<int:pk>/baixar/", views.baixar, name="baixar"),
+    path("<int:pk>/baixar-tudo/", views.baixar_tudo, name="baixar_tudo"),
     path("<int:pk>/solicitacao/anexar/", views.solicitacao_anexar, name="solicitacao_anexar"),
     path("<int:pk>/solicitacao/<int:anexo_pk>/", views.solicitacao_conteudo, name="solicitacao_conteudo"),
     path("<int:pk>/solicitacao/<int:anexo_pk>/excluir/", views.solicitacao_excluir, name="solicitacao_excluir"),

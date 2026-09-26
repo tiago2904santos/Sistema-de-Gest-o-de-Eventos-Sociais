@@ -318,6 +318,38 @@ class BaixarDocumentosTests(CenarioViagem):
         self.assertContains(r, "Marque ao menos um documento para baixar.")
 
 
+    def test_baixar_tudo_entrega_zip_com_cada_documento_separado_e_numerado(self):
+        """m065: um arquivo por documento (cada um é assinado à parte), numerados."""
+        import zipfile
+
+        from viagens_ordens.models import OrdemServico
+
+        v = self.viagem()
+        OrdemServico.objects.create(numero=9, ano=2026, viagem=v, motivo="Apoio")
+        self._anexar(v, "convite.pdf")
+        # Ofício incompleto (sem protocolo, equipe...) não impede o resto.
+        Oficio.objects.create(viagem=v, numero=21, ano=2026)
+        r = self.client.get(self.etapa(v, 1))
+        self.assertContains(r, "Baixar tudo (ZIP)")
+        r = self.client.post(reverse("viagens_viagem:baixar_tudo", args=[v.pk]))
+        self.assertEqual(r["Content-Type"], "application/zip")
+        with zipfile.ZipFile(io.BytesIO(r.content)) as z:
+            nomes = z.namelist()
+            leia = z.read("00 - LEIA-ME.txt").decode("utf-8")
+        self.assertEqual(nomes[0], "00 - LEIA-ME.txt")
+        self.assertTrue(any(n.startswith("01 - ") and "OS 009-2026" in n for n in nomes), nomes)
+        self.assertTrue(any(n.startswith("02 - ") and n.endswith(".pdf") and "convite" in n for n in nomes), nomes)
+        self.assertNotIn("/", "".join(nomes))
+        self.assertIn("Não entraram", leia)
+        self.assertIn("Ofício 21/2026", leia)
+        self.assertIn("Ainda sem a versão assinada", leia)
+
+    def test_baixar_tudo_sem_documento_pronto_avisa(self):
+        v = self.viagem()
+        r = self.client.post(reverse("viagens_viagem:baixar_tudo", args=[v.pk]), follow=True)
+        self.assertContains(r, "Nenhum documento pronto para baixar ainda.")
+
+
 class AcoesTests(CenarioViagem):
     def test_cancelar_exige_motivo_e_cancela_os_documentos(self):
         v = self.viagem()

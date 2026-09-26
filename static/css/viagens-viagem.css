@@ -77,3 +77,6 @@
 .vg-fab{position:fixed;right:max(24px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));z-index:30}
 .vg-fab .btn-flutuante{position:static}
 .vg-fab__menu{right:0;left:auto;min-width:300px}
+
+/* ---------- Cabeçalho: "Baixar tudo" é um formulário ao lado dos botões -- */
+.vg-baixar-tudo{display:contents}

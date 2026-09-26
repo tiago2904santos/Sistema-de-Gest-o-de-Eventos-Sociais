@@ -237,6 +237,7 @@ def etapa(request, pk, etapa):
 
         # "Baixar documentos" do cabeçalho: o mesmo modal das listas, com tudo o que a viagem reúne.
         contexto["url_baixar"] = reverse("viagens_viagem:baixar", args=[viagem.pk])
+        contexto["url_baixar_tudo"] = reverse("viagens_viagem:baixar_tudo", args=[viagem.pk])
         contexto["itens_baixar"] = json.dumps(itens_para_baixar(viagem), ensure_ascii=False)
     if etapa == 1:
         contexto.update(_contexto_da_etapa_1(request, viagem, form))
@@ -314,6 +315,30 @@ def baixar(request, pk):
             zipfile.writestr(nome, doc.conteudo)
     resposta = HttpResponse(buffer.getvalue(), content_type="application/zip")
     resposta["Content-Disposition"] = f'attachment; filename="{referencia}-documentos.zip"'
+    resposta["Cache-Control"] = "no-store"
+    return resposta
+
+
+@acesso_ao_modulo
+@require_POST
+def baixar_tudo(request, pk):
+    """"Baixar tudo" (m065): um ZIP com cada documento da viagem em arquivo separado."""
+    from django.http import HttpResponse
+
+    from .downloads import pacote_do_processo
+
+    exigir_operador(request)
+    viagem = get_viagem_by_id(pk)
+    retorno = voltar_para(request, reverse("viagens_viagem:etapa", args=[pk, 1]))
+    if viagem.cancelado:
+        messages.error(request, "Reative a viagem antes de baixar documentos.")
+        return redirect(retorno)
+    conteudo, quantos = pacote_do_processo(viagem, usar_assinado=request.POST.get("versao", "assinado") != "original")
+    if not quantos:
+        messages.error(request, "Nenhum documento pronto para baixar ainda.")
+        return redirect(retorno)
+    resposta = HttpResponse(conteudo, content_type="application/zip")
+    resposta["Content-Disposition"] = f'attachment; filename="viagem-{viagem.pk}-processo.zip"'
     resposta["Cache-Control"] = "no-store"
     return resposta
 
