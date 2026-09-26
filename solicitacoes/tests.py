@@ -1800,3 +1800,71 @@ class RedespachoAposAlteracaoTests(BaseSolicitacaoTestCase):
         self.client.force_login(self.solicitante)
         resposta = self.client.get(reverse("solicitacoes:editar", args=[solicitacao.pk]))
         self.assertContains(resposta, "Atendida só após")
+
+
+class ObservacaoLongaTests(BaseSolicitacaoTestCase):
+    """Observação longa da DG não pode derrubar o despacho (aviso do sino tem limite)."""
+
+    LONGA = "Justificativa detalhada da Diretoria-Geral. " * 12  # ~500 caracteres
+
+    def _limites_ok(self, solicitacao):
+        from core.models import Notificacao
+
+        avisos = Notificacao.objects.filter(solicitacao=solicitacao)
+        self.assertTrue(avisos.exists())
+        for aviso in avisos:
+            self.assertLessEqual(len(aviso.mensagem), 255)
+            self.assertLessEqual(len(aviso.titulo), 150)
+
+    def test_devolver_com_observacao_longa(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.devolver(solicitacao, self.gestor, self.LONGA)
+        self._limites_ok(solicitacao)
+        # A íntegra fica no histórico.
+        self.assertEqual(solicitacao.historico.last().observacao, self.LONGA.strip())
+
+    def test_despachar_com_observacao_longa(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.despachar(solicitacao, self.gestor, DecisaoDG.NAO_ATENDER, self.LONGA)
+        self._limites_ok(solicitacao)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.observacoes_dg, self.LONGA.strip())
+
+    def test_cancelar_evento_com_observacao_longa(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.cancelar_evento(solicitacao, self.solicitante, self.LONGA)
+        self._limites_ok(solicitacao)
+
+    def test_reenviar_com_muitas_alteracoes(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        alteracoes = [
+            {"campo": f"Campo alterado número {i}", "antes": "a", "depois": "b"}
+            for i in range(40)
+        ]
+        services.reenviar_apos_edicao(solicitacao, self.solicitante, alteracoes)
+        self._limites_ok(solicitacao)
+        self.assertEqual(len(solicitacao.historico.last().alteracoes), 40)
+
+    def test_falha_de_banco_no_despacho_volta_com_mensagem(self):
+        """Erro de banco não vira página 500: a DG volta ao despacho com o texto."""
+        from unittest.mock import patch
+
+        from django.db import DataError
+
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.client.force_login(self.gestor)
+        with patch("solicitacoes.services.despachar", side_effect=DataError("value too long")):
+            resposta = self.client.post(
+                reverse("solicitacoes:despachar", args=[solicitacao.pk]),
+                {"decisao": DecisaoDG.NAO_ATENDER, "observacao": self.LONGA},
+            )
+        self.assertEqual(resposta.status_code, 302)
+        self.assertIn("#despacho-dg", resposta["Location"])
+        self.assertEqual(
+            self.client.session["despacho_pendente"]["observacao"], self.LONGA.strip()
+        )

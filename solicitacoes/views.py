@@ -1,9 +1,11 @@
-﻿from django.contrib import messages
+﻿import logging
+
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.db import DatabaseError, transaction
 from django.db.models import Count, Q
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -32,6 +34,8 @@ from .presenters import linha_da_lista
 from . import permissions, preenchimento, services
 
 ITENS_POR_PAGINA = 15
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -996,6 +1000,16 @@ def despachar(request, pk):
     except ValidationError as erro:
         for mensagem_erro in erro.messages:
             messages.error(request, mensagem_erro)
+        return _voltar_ao_despacho(request, solicitacao, decisao, observacao)
+    except DatabaseError:
+        # A transação do serviço já foi desfeita: nada ficou pela metade. A
+        # DG volta ao despacho com o que escreveu, em vez de uma página 500.
+        logger.exception("Falha ao gravar o despacho da solicitação %s.", solicitacao.pk)
+        messages.error(
+            request,
+            "Não foi possível gravar o despacho agora. Nada foi alterado; "
+            "confira o texto e tente de novo.",
+        )
         return _voltar_ao_despacho(request, solicitacao, decisao, observacao)
 
     messages.success(request, sucesso)

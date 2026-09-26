@@ -500,7 +500,8 @@ def reenviar_apos_edicao(solicitacao, usuario, alteracoes):
     notificar(
         usuarios_do_grupo("GESTOR_DG"),
         f"Solicitação #{solicitacao.pk} alterada: aguarda novo despacho",
-        "; ".join(a["campo"] for a in alteracoes)[:300],
+        # O sino corta no limite dele; a lista inteira fica no histórico.
+        "; ".join(a["campo"] for a in alteracoes),
         link=reverse("solicitacoes:editar", args=[solicitacao.pk]) + "#despacho-dg",
         solicitacao=solicitacao,
         exceto=usuario,
