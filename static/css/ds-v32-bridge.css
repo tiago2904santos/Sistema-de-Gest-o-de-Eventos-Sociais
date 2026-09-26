@@ -2945,3 +2945,10 @@ tr[data-importar-url].is-alvo>td:first-child{box-shadow:inset 2px 0 0 var(--sel-
 
 /* Limpar a solicitação nova: só aparece com algo preenchido (o display do botão venceria o [hidden]). */
 [data-limpar-rascunho][hidden]{display:none}
+/* m084: versões anteriores de um documento da prestação (Etapa 3). */
+.pc-doc__versoes{margin-top:6px;font-size:12px;color:var(--n-600)}
+.pc-doc__versoes summary{cursor:pointer}
+.pc-doc__versoes ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:4px}
+.pc-doc__versoes li{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.pc-doc__versoes form{display:inline}
+.pc-doc__remover.is-armado{width:auto;padding:0 6px;font-size:12px;background:var(--dg-b);color:var(--dg-t)}

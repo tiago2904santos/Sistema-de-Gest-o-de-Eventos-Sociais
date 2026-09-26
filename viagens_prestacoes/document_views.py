@@ -19,6 +19,7 @@ from .models import PrestacaoDocumentoAnexo
 from .presenters import _anexo_assinado_info
 from .anexo_services import endireitar_diario_anexado
 from .anexo_services import excluir_anexo
+from .anexo_services import restaurar_anexo
 from .anexo_services import substituir_anexo_assinado
 from .carimbo_services import anexo_do_oficio_assinado
 from .carimbo_services import caixas_para_ajuste
@@ -65,8 +66,9 @@ def _anexos_rows(prestacao, anexos_qs):
 
 def prestacao_documento_conteudo(request, pc_pk, anexo_pk):
     prestacao = get_object_or_404(_prestacao_queryset(), pk=pc_pk)
+    # `todos`: as versões anteriores (m084) também se abrem, para conferir antes de voltar.
     anexo = get_object_or_404(
-        PrestacaoDocumentoAnexo,
+        PrestacaoDocumentoAnexo.todos,
         pk=anexo_pk,
         prestacao=prestacao,
     )
@@ -601,14 +603,30 @@ def prestacao_documento_excluir(request, pc_pk, anexo_pk):
         pk=anexo_pk,
         prestacao=prestacao,
     )
-    # BE-07: apagar o arquivo primeiro zera `FieldFile.name`, e com `nome_original`
-    # vazio o `__str__` do anexo passava a devolver None — o que derrubava o sinal
-    # de auditoria no pre_delete. A linha sai primeiro; o arquivo, no `on_commit`.
+    # m084: não apaga — guarda em "Versões anteriores", de onde dá para restaurar.
     excluir_anexo(anexo, prestacao)
+    messages.success(
+        request,
+        f"“{anexo.nome_original or 'Arquivo'}” removido. Para desfazer, use “Restaurar” em Versões anteriores.",
+    )
     return autosave_json_response(
         ok=True,
         object_id=prestacao.pk,
         version=_autosave_version(prestacao),
     )
+
+
+@require_POST
+def prestacao_documento_restaurar(request, pc_pk, anexo_pk):
+    """Volta um anexo removido ou substituído (m084)."""
+    prestacao = get_object_or_404(_prestacao_queryset(), pk=pc_pk)
+    anexo = get_object_or_404(PrestacaoDocumentoAnexo.todos, pk=anexo_pk, prestacao=prestacao)
+    resultado = restaurar_anexo(anexo)
+    nome = anexo.nome_original or "Arquivo"
+    if resultado.substituidos:
+        messages.success(request, f"“{nome}” voltou a ser o documento em uso; o que estava no lugar ficou em Versões anteriores.")
+    else:
+        messages.success(request, f"“{nome}” restaurado.")
+    return redirect(voltar_para(request, reverse("viagens_prestacoes:index")))
 
 from .ui import render

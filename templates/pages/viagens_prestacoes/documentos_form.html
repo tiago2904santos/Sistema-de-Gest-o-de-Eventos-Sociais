@@ -61,11 +61,26 @@
                   {% for anexo in item.anexos %}
                     <span class="pc-doc__anexo">
                       <a href="{% url 'viagens_prestacoes:prestacao_documento_conteudo' prestacao.pk anexo.pk %}" target="_blank" rel="noopener" title="{{ anexo.nome_original|default:'Arquivo anexado' }}">{% include "components/icon.html" with nome="eye" %}<span class="pc-doc__arq">{{ anexo.nome_original|default:"Arquivo anexado" }}</span></a>
-                      <form data-excluir-anexo method="post" action="{% url 'viagens_prestacoes:prestacao_documento_delete' prestacao.pk anexo.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="pc-doc__remover" aria-label="Remover {{ anexo.nome_original|default:'arquivo' }}" title="Remover">{% include "components/icon.html" with nome="x" %}</button></form>
+                      <form data-excluir-anexo data-confirmar-remocao="Remover {{ anexo.nome_original|default:'o arquivo' }}?" method="post" action="{% url 'viagens_prestacoes:prestacao_documento_delete' prestacao.pk anexo.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="pc-doc__remover" aria-label="Remover {{ anexo.nome_original|default:'arquivo' }}" title="Remover">{% include "components/icon.html" with nome="x" %}</button></form>
                     </span>
                   {% endfor %}
                   {% if item.id == "oficio" %}<a class="pc-doc__ajuste" href="{% url 'viagens_prestacoes:prestacao_carimbo_ajustar' prestacao.pk %}?next={{ request.path|urlencode }}">{% include "components/icon.html" with nome="pencil" %}Ajustar posição do número</a>{% endif %}
                 </span>
+              {% endif %}
+              {% if item.anteriores %}
+                {# m084: o removido ou substituído fica aqui por 30 dias, e dá para voltar a ele. #}
+                <details class="pc-doc__versoes">
+                  <summary>Versões anteriores ({{ item.anteriores|length }})</summary>
+                  <ul>
+                    {% for anexo in item.anteriores %}
+                      <li>
+                        <a href="{% url 'viagens_prestacoes:prestacao_documento_conteudo' prestacao.pk anexo.pk %}" target="_blank" rel="noopener">{{ anexo.nome_original|default:"Arquivo" }}</a>
+                        <small>{{ anexo.get_removido_motivo_display }} em {{ anexo.removido_em|date:"d/m/Y H:i" }}</small>
+                        <form method="post" action="{% url 'viagens_prestacoes:prestacao_documento_restaurar' prestacao.pk anexo.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit" class="btn--secundaria btn--compacto">{% if item.multiplo %}Restaurar{% else %}Voltar para esta versão{% endif %}</button></form>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </details>
               {% endif %}
             </div>
             <form method="post" enctype="multipart/form-data" action="{{ item.url }}" class="prestacao-upload" data-anexar-cartao>

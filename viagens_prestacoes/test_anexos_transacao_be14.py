@@ -111,12 +111,17 @@ class ExclusaoDeAnexoTests(PrestacaoFixturesMixin, TestCase):
         hoje não há nada pendurado e o teste passa igual; depois da fatia é ele que
         dispara a remoção do arquivo. A intenção não muda: o arquivo sai do disco.
         """
+        from viagens_prestacoes.anexo_services import purgar_anexos_removidos
         caminho = Path(self.anexo.arquivo.path)
         self.assertTrue(caminho.exists())
         with self.captureOnCommitCallbacks(execute=True):
             resposta = self.client.post(self.url())
         self.assertTrue(resposta.json()['ok'])
         self.assertFalse(PrestacaoDocumentoAnexo.objects.filter(pk=self.anexo.pk).exists())
+        # m084: o arquivo fica guardado para o "Restaurar"; a limpeza o leva junto com a linha.
+        self.assertTrue(caminho.exists())
+        with self.captureOnCommitCallbacks(execute=True):
+            purgar_anexos_removidos(dias=-1, apagar=True)
         self.assertFalse(caminho.exists(), 'arquivo órfão no storage')
 
     def test_falha_depois_de_apagar_devolve_a_linha_e_preserva_o_arquivo(self):

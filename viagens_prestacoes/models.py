@@ -199,6 +199,16 @@ class PrestacaoServidor(OrigemLegado):
         self.removida_em = None
         self.save(update_fields=['removida_em', 'atualizado_em'])
 
+class AnexosAtivosManager(models.Manager):
+    """Anexos em uso; ``todos`` inclui os removidos e os substituídos (m084)."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(removido_em__isnull=True)
+
+#: Por quantos dias o anexo removido ou substituído fica em "Versões anteriores"
+#: antes de `limpar_arquivos_orfaos --apagar` apagá-lo de vez.
+DIAS_GUARDA_ANEXO_REMOVIDO = 30
+
 #: Como o dinheiro chegou ao servidor, lido do comprovante bancário.
 OPERACAO_CHOICES = [('saque', 'Saque'), ('transferencia', 'Transferência'), ('pix', 'Pix'), ('ted', 'TED'), ('doc', 'DOC'), ('deposito', 'Depósito')]
 
@@ -209,6 +219,12 @@ class PrestacaoDocumentoAnexo(OrigemLegado):
     TIPO_RT_ASSINADO = 'rt_assinado'
     TIPO_DB_ASSINADO = 'db_assinado'
     TIPO_CHOICES = [(TIPO_DESPACHO, 'Despacho assinado do ofício'), (TIPO_OFICIO_ASSINADO, 'Ofício assinado'), (TIPO_COMPROVANTE, 'Comprovante de saque/transferência'), (TIPO_RT_ASSINADO, 'Relatório técnico assinado'), (TIPO_DB_ASSINADO, 'Diário de bordo assinado')]
+    #: Os tipos que têm um arquivo só: anexar de novo substitui. Despacho e
+    #: comprovante somam (m081).
+    TIPOS_UNICOS = (TIPO_OFICIO_ASSINADO, TIPO_RT_ASSINADO, TIPO_DB_ASSINADO)
+    REMOVIDO_EXCLUIDO = 'excluido'
+    REMOVIDO_SUBSTITUIDO = 'substituido'
+    REMOVIDO_CHOICES = [(REMOVIDO_EXCLUIDO, 'Removido'), (REMOVIDO_SUBSTITUIDO, 'Substituído')]
     prestacao = models.ForeignKey(PrestacaoContas, on_delete=models.CASCADE, related_name='documentos_anexos')
     servidor_prestacao = models.ForeignKey(PrestacaoServidor, on_delete=models.CASCADE, null=True, blank=True, related_name='documentos_anexos')
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, db_index=True)
@@ -226,6 +242,12 @@ class PrestacaoDocumentoAnexo(OrigemLegado):
     data_operacao = models.DateField('data da operação', null=True, blank=True)
     operacao = models.CharField('operação', max_length=20, choices=OPERACAO_CHOICES, blank=True, default='')
     criado_em = models.DateTimeField(auto_now_add=True)
+    #: m084: remover ou substituir só marca a linha; o arquivo fica em "Versões
+    #: anteriores" por `DIAS_GUARDA_ANEXO_REMOVIDO` dias, e dá para voltar a ele.
+    removido_em = models.DateTimeField('removido em', null=True, blank=True)
+    removido_motivo = models.CharField('motivo da remoção', max_length=12, choices=REMOVIDO_CHOICES, blank=True, default='')
+    objects = AnexosAtivosManager()
+    todos = models.Manager()
 
     @property
     def arquivo_para_carimbar(self):
@@ -238,6 +260,7 @@ class PrestacaoDocumentoAnexo(OrigemLegado):
         return self.arquivo_original if self.arquivo_original else self.arquivo
 
     class Meta:
+        default_manager_name = 'objects'
         ordering = ['tipo', 'criado_em', 'pk']
         verbose_name = 'Anexo da prestação de contas'
         verbose_name_plural = 'Anexos da prestação de contas'

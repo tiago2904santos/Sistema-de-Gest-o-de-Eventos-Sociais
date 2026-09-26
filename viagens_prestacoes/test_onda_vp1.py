@@ -166,3 +166,53 @@ class FinalizarSemInverterTests(PrestacaoFixturesMixin, PrestacaoTestCase):
         self._post("prestacao_servidor_arquivar", "desarquivar")
         self.ps.refresh_from_db()
         self.assertFalse(self.ps.arquivada)
+
+
+class VersoesAnterioresTests(PrestacaoFixturesMixin, PrestacaoTestCase):
+    """m084: remover e substituir guardam o anterior, que se restaura."""
+
+    def setUp(self):
+        super().setUp()
+        self.setUpPrestacaoFixtures()
+        self.fixture = self.criar_prestacao(numero=84)
+        self.prestacao = self.fixture.prestacao
+        self.ps = self.fixture.prestacoes_servidor[0]
+
+    def _rt(self, nome):
+        self.client.post(
+            reverse("viagens_prestacoes:prestacao_servidor_assinado_anexar", args=[self.ps.pk, Anexo.TIPO_RT_ASSINADO]),
+            {"arquivo": SimpleUploadedFile(nome, pdf_minimo(nome), content_type="application/pdf")},
+        )
+        return Anexo.todos.get(nome_original=nome)
+
+    def _restaurar(self, anexo):
+        return self.client.post(reverse("viagens_prestacoes:prestacao_documento_restaurar", args=[self.prestacao.pk, anexo.pk]))
+
+    def test_substituir_guarda_o_anterior_e_voltar_troca_de_lugar(self):
+        antigo = self._rt("rt-1.pdf")
+        novo = self._rt("rt-2.pdf")
+        antigo.refresh_from_db()
+        self.assertEqual(antigo.removido_motivo, Anexo.REMOVIDO_SUBSTITUIDO)
+        self._restaurar(antigo)
+        ativos = list(self.ps.documentos_anexos.filter(tipo=Anexo.TIPO_RT_ASSINADO).values_list("nome_original", flat=True))
+        self.assertEqual(ativos, ["rt-1.pdf"])
+        novo.refresh_from_db()
+        self.assertIsNotNone(novo.removido_em)
+
+    def test_remover_e_desfazer(self):
+        anexo = self._rt("rt-1.pdf")
+        self.client.post(reverse("viagens_prestacoes:prestacao_documento_delete", args=[self.prestacao.pk, anexo.pk]))
+        self.assertFalse(self.ps.documentos_anexos.exists())
+        pagina = self.client.get(reverse("viagens_prestacoes:documentos_servidor", args=[self.ps.pk]))
+        self.assertContains(pagina, "Versões anteriores (1)")
+        self._restaurar(anexo)
+        self.assertTrue(self.ps.documentos_anexos.filter(pk=anexo.pk).exists())
+
+    def test_versao_anterior_do_oficio_volta_com_os_carimbos(self):
+        from .models import CarimboSolicitacao
+
+        anexo = Anexo.objects.create(prestacao=self.prestacao, tipo=Anexo.TIPO_OFICIO_ASSINADO, arquivo=SimpleUploadedFile("o.pdf", pdf_minimo()), nome_original="o.pdf")
+        CarimboSolicitacao.objects.create(anexo=anexo, servidor_prestacao=self.ps, x=0.5, y=0.5, ajustado_manualmente=True)
+        self.client.post(reverse("viagens_prestacoes:prestacao_documento_delete", args=[self.prestacao.pk, anexo.pk]))
+        self._restaurar(anexo)
+        self.assertTrue(anexo.carimbos.filter(ajustado_manualmente=True).exists())
