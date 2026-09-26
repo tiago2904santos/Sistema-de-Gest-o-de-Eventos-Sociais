@@ -391,7 +391,10 @@ def acao(request, pk, acao):
 @acesso_ao_modulo
 @require_POST
 def solicitacao_anexar(request, pk):
+    from django.core.exceptions import ValidationError
     from PIL import UnidentifiedImageError
+
+    from core.uploads import validate_private_document_upload
 
     exigir_operador(request)
     viagem = get_viagem_by_id(pk)
@@ -400,13 +403,25 @@ def solicitacao_anexar(request, pk):
     if not arquivos:
         messages.error(request, "Nenhum arquivo selecionado.")
         return redirect(retorno)
-    try:
-        convertidos = [converter_para_pdf_se_necessario(arquivo) for arquivo in arquivos]
-    except (UnidentifiedImageError, OSError, ValueError):
-        messages.error(request, "Formato inválido. Envie um PDF ou arquivo de imagem.")
-        return redirect(retorno)
-    anexar_documentos_solicitacao(viagem, convertidos)
-    messages.success(request, "Documentos de solicitação anexados com sucesso.")
+    # A política central de anexos (m070): PDF de verdade ou imagem legível,
+    # dentro do limite. O nome terminar em ".pdf" não basta. Cada recusado
+    # ganha a sua mensagem; os bons entram mesmo assim.
+    convertidos, recusados = [], []
+    for arquivo in arquivos:
+        nome = arquivo.name
+        try:
+            validate_private_document_upload(arquivo)
+            convertidos.append(converter_para_pdf_se_necessario(arquivo))
+        except ValidationError as exc:
+            recusados.append(f"{nome}: {' '.join(exc.messages)}")
+        except (UnidentifiedImageError, OSError, ValueError):
+            recusados.append(f"{nome}: formato inválido. Envie um PDF ou arquivo de imagem.")
+    for texto in recusados:
+        messages.error(request, f"Arquivo recusado — {texto}")
+    if convertidos:
+        anexar_documentos_solicitacao(viagem, convertidos)
+        messages.success(request, "Documentos de solicitação anexados com sucesso." if not recusados
+                         else f"{len(convertidos)} documento(s) anexado(s); os demais foram recusados.")
     return redirect(retorno)
 
 

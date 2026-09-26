@@ -209,8 +209,9 @@ class SolicitacaoTests(CenarioViagem):
         r = self.client.post(url, {}, follow=True)
         self.assertContains(r, "Nenhum arquivo selecionado.")
         r = self.client.post(url, {"arquivo": SimpleUploadedFile("x.txt", b"nada", content_type="text/plain")}, follow=True)
-        self.assertContains(r, "Formato inválido. Envie um PDF ou arquivo de imagem.")
-        r = self.client.post(url, {"arquivo": [SimpleUploadedFile("oficio.pdf", b"%PDF-1.4", content_type="application/pdf"), self._imagem()]}, follow=True)
+        self.assertContains(r, "Arquivo recusado — x.txt")
+        pdf = _pdf_valido()
+        r = self.client.post(url, {"arquivo": [SimpleUploadedFile("oficio.pdf", pdf, content_type="application/pdf"), self._imagem()]}, follow=True)
         self.assertContains(r, "Documentos de solicitação anexados com sucesso.")
         anexos = list(ViagemDocumentoSolicitacao.objects.filter(viagem=v).order_by("pk"))
         self.assertEqual([a.nome_original for a in anexos], ["oficio.pdf", "convite.pdf"])
@@ -218,7 +219,7 @@ class SolicitacaoTests(CenarioViagem):
             self.assertTrue(arquivo.read().startswith(b"%PDF"))
         r = self.client.get(reverse("viagens_viagem:solicitacao_conteudo", args=[v.pk, anexos[0].pk]))
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(b"".join(r.streaming_content), b"%PDF-1.4")
+        self.assertEqual(b"".join(r.streaming_content), pdf)
         # Fecha só o arquivo servido (não a resposta: `close()` derrubaria a
         # conexão da transação do teste); no Windows o arquivo aberto impede a
         # limpeza da pasta temporária.
@@ -229,6 +230,31 @@ class SolicitacaoTests(CenarioViagem):
         self.assertEqual(ViagemDocumentoSolicitacao.objects.filter(viagem=v).count(), 1)
         # Com solicitação anexada e nenhum rascunho, a viagem está pronta.
         self.assertContains(self.client.get(reverse("viagens_viagem:lista")), 'class="st st--atendido">Pronto')
+
+
+    def test_anexo_disfarcado_ou_grande_demais_e_recusado(self):
+        """m070: o nome terminar em .pdf não basta; o tamanho tem limite."""
+        v = self.viagem()
+        url = reverse("viagens_viagem:solicitacao_anexar", args=[v.pk])
+        html = SimpleUploadedFile("oficio.pdf", b"<html><script>alert(1)</script></html>", content_type="application/pdf")
+        r = self.client.post(url, {"arquivo": [html, SimpleUploadedFile("bom.pdf", _pdf_valido(), content_type="application/pdf")]}, follow=True)
+        self.assertContains(r, "Arquivo recusado — oficio.pdf")
+        self.assertContains(r, "1 documento(s) anexado(s)")
+        self.assertEqual(list(ViagemDocumentoSolicitacao.objects.filter(viagem=v).values_list("nome_original", flat=True)), ["bom.pdf"])
+        with self.settings(PRIVATE_UPLOAD_MAX_BYTES=100):
+            r = self.client.post(url, {"arquivo": SimpleUploadedFile("grande.pdf", _pdf_valido(), content_type="application/pdf")}, follow=True)
+        self.assertContains(r, "excede o limite")
+        self.assertEqual(ViagemDocumentoSolicitacao.objects.filter(viagem=v).count(), 1)
+
+
+def _pdf_valido():
+    from pypdf import PdfWriter
+
+    buffer = io.BytesIO()
+    escritor = PdfWriter()
+    escritor.add_blank_page(width=72, height=72)
+    escritor.write(buffer)
+    return buffer.getvalue()
 
 
 class Etapa4ListasTests(CenarioViagem):
