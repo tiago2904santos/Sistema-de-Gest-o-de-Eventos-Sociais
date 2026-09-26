@@ -309,8 +309,8 @@ a.btn--quieta{color:var(--n-500);display:inline-flex;align-items:center}
 
 @container (max-width:900px){
   .db-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .db-2col,.db-linha2{grid-template-columns:1fr}
-  .cad-grade{grid-template-columns:1fr}
+  .db-2col,.db-linha2{grid-template-columns:minmax(0,1fr)}
+  .cad-grade{grid-template-columns:minmax(0,1fr)}
   .cad-rail__h{display:none}
   .cad-visao{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
@@ -759,7 +759,10 @@ textarea.form-controle{height:auto;min-height:calc(3 * 1.5em + 22px);line-height
 .etapas-roteiro{list-style:none;padding:0;margin:0}.etapa-roteiro{cursor:default}.etapa-roteiro__numero{display:grid;place-items:center;width:20px;height:20px;border:1.5px solid var(--n-250);border-radius:var(--raio-circulo);font-size:var(--fs-rotulo);flex-shrink:0}.etapa-roteiro__texto{display:grid;gap:var(--s1);flex:1}.etapa-roteiro__texto strong{font-size:var(--fs-apoio);font-weight:500}.etapa-roteiro__texto small{font-size:var(--fs-rotulo);color:var(--n-450)}.etapa-roteiro__marca{visibility:hidden;color:var(--ok-t)}.etapa-roteiro--concluida .etapa-roteiro__marca{visibility:visible}.etapa-roteiro--concluida .etapa-roteiro__numero{background:var(--ok-t);border-color:var(--ok-t);color:var(--branco)}.etapa-roteiro--ativa .etapa-roteiro__numero{border-color:var(--d-500);color:var(--d-700);background:var(--d-50)}
 /* A navegação horizontal não precisa de uma segunda barra no Windows. */
 .nav-mod{overflow:visible;scrollbar-width:none}
-@container(max-width:680px){.nav-mod{overflow-x:auto;overflow-y:hidden}.nav-mod__gaveta{display:none!important}}
+/* A navegação do módulo rola dentro da faixa quando não cabe (Viagens tem 11
+   itens e estourava a página até ~1100px); a gaveta de hover, que a rolagem
+   cortaria, só existe com espaço de sobra. */
+@container (max-width:1100px){.nav-mod{flex:1 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;gap:var(--s4)}.nav-mod::-webkit-scrollbar{display:none}.nav-mod__gaveta{display:none}}
 @container(max-width:1100px){.editor-roteiro .bloco-split{grid-template-columns:1fr}.rota-metricas{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @container(max-width:900px){.editor-roteiro.frm-grade{grid-template-columns:1fr}.editor-roteiro__acoes.frm-acoes{position:static}}
 @container(max-width:680px){.editor-roteiro .destino-row{grid-template-columns:22px 38px minmax(0,1fr) 38px}.destino-row__estado{grid-column:3/5}.destino-row__campo{grid-column:1/5}.destino-row--sede .destino-row__estado,.destino-row--sede .destino-row__campo{grid-column:1/5}.editor-roteiro .section-card__acao{margin-left:0}.editor-roteiro__acoes-cabecalho{justify-content:flex-start}.bate-volta__sentido,.diarias-metricas{grid-template-columns:1fr}.rota-metricas{grid-template-columns:1fr 1fr}.mapa__superficie{height:300px}.editor-roteiro .trechos-tabela,.trechos-tabela tbody{display:block;min-width:0;width:100%}.trechos-tabela thead{display:none}.trechos-tabela .trecho-linha{display:grid;gap:var(--s1);border:1px solid var(--n-200);border-radius:var(--raio-bloco);margin-bottom:var(--s3);padding:var(--s2)}.trechos-tabela .trecho-linha[hidden]{display:none}.trechos-tabela td{display:block;padding:var(--s2);border:0;white-space:normal}.trechos-tabela td[data-rotulo]::before{content:attr(data-rotulo);display:block;font-size:var(--fs-rotulo);color:var(--n-450);margin-bottom:var(--s1-5)}.trechos-tabela .form-campo{min-width:0}.editor-roteiro [data-trechos-tabela]{overflow:visible}.editor-roteiro__acoes.frm-acoes{padding-inline:0}}
@@ -1573,6 +1576,12 @@ a.step-i{text-decoration:none;color:inherit}
 .frm-topo{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s4);flex-wrap:wrap;padding-bottom:0;margin-bottom:var(--s5)}
 .frm-topo .d-cabeca__esq{flex:1;min-width:0;margin:0;padding:0;border:0}
 .frm-topo__acoes{display:flex;align-items:center;gap:var(--s2-5);flex:none}
+/* Celular: a barra de ações no fim do cartão quebra linha; um botão de rótulo
+   longo pode ocupar duas linhas em vez de esticar a página. */
+@container (max-width:680px){.frm-acoes-fim{flex-wrap:wrap}.frm-acoes-fim>.btn-primaria,.frm-acoes-fim>.btn--secundaria,.frm-acoes-fim>form{flex:1 1 auto;min-width:0}.frm-acoes-fim .btn-primaria,.frm-acoes-fim .btn--secundaria{justify-content:center;white-space:normal;height:auto;min-height:var(--alt-controle-celular);padding-block:var(--s2);text-align:center}}
+/* Celular: as ações do cabeçalho do formulário ocupam a linha inteira e dividem
+   a largura, em vez de esticar a página. */
+@container (max-width:680px){.frm-topo__acoes{flex:1 1 100%;min-width:0;flex-wrap:wrap}.frm-topo__acoes>.btn-primaria,.frm-topo__acoes>.btn--secundaria,.frm-topo__acoes>form{flex:1 1 auto;min-width:0;justify-content:center}}
 .frm-titulo{display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap}
 .frm-titulo .d-titulo-v32{margin:0}
 .frm-ident{overflow-wrap:anywhere}
@@ -1592,6 +1601,9 @@ a.step-i{text-decoration:none;color:inherit}
 .btn--quadrado{width:38px;min-width:38px;height:38px;padding:0;justify-content:center;flex:none;border-radius:var(--raio-bloco)}
 /* Lista com ações à direita do cabeçalho: o botão principal virou flutuante; sobram só as secundárias. */
 .d-acoes:empty{display:none}
+/* Celular: as ações do cabeçalho da lista quebram linha e dividem a largura,
+   em vez de empurrar a página para o lado. */
+@container (max-width:680px){.d-cabeca--secao .d-acoes{flex-wrap:wrap;width:100%}.d-cabeca--secao .d-acoes>.btn--secundaria,.d-cabeca--secao .d-acoes>.btn-primaria,.d-cabeca--secao .d-acoes>form{flex:1 1 auto;min-width:0;justify-content:center}.d-cabeca--secao .d-acoes>form>.btn--secundaria,.d-cabeca--secao .d-acoes>form>.btn-primaria{width:100%;justify-content:center}}
 /* Botão flutuante dentro de <form> (Novo ofício é um POST): o form não ocupa espaço no cabeçalho. */
 form.btn-flutuante-form{margin:0;display:contents}
 /* Kicker junto do título em todas as listas e painéis. */
@@ -1708,6 +1720,8 @@ form.btn-flutuante-form{margin:0;display:contents}
 *:focus{outline:none}
 :focus-visible{outline:none;box-shadow:var(--sombra-foco)}
 .form-controle:focus,.busca input:focus{box-shadow:var(--sombra-foco)}
+/* O valor escolhido no select nunca alarga o campo: corta com reticências. */
+.custom-select__valor{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .is-invalid .form-controle:focus,.is-invalid.form-controle:focus,.is-invalid :focus-visible{box-shadow:var(--sombra-foco-erro)}
 
 /* As buscas que comandam uma lista têm a mesma altura dos outros campos. */
@@ -2325,10 +2339,12 @@ form.btn-flutuante-form{margin:0;display:contents}
 .app-v32 .marca__brasao{width:48px;height:60px;display:block;object-fit:contain;flex:none}
 .app-v32 .marca__sigla{font-size:var(--fs-h1);line-height:1;font-weight:700;letter-spacing:-1px;color:var(--sobre-grafite)}
 .app-v32 .marca--login .risco-i{height:34px;margin:0 var(--s1);background:rgba(255,255,255,.25)}
-.app-v32 .marca__produto{display:grid;gap:var(--s0);line-height:1.25;min-width:0}
+.app-v32 .marca__produto{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s0);line-height:1.25;min-width:0}
 .app-v32 .marca__titulo{font-size:var(--fs-destaque);font-weight:650;color:var(--sobre-grafite);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .app-v32 .marca__sub{font-size:var(--fs-apoio);color:var(--sobre-grafite-suave);white-space:nowrap}
-@media (max-width:720px){.app-v32 .ident__in{height:68px}.app-v32 .marca__brasao{width:36px;height:45px}.app-v32 .marca__sigla,.app-v32 .marca--login .risco-i{display:none}}
+@container (max-width:720px){.app-v32 .ident__in{height:68px}.app-v32 .marca__brasao{width:36px;height:45px}.app-v32 .marca__sigla,.app-v32 .marca--login .risco-i{display:none}}
+/* Celular: fica o avatar do usuário (o nome não cabe ao lado dos três ícones). */
+@container (max-width:680px){.ident-user__n{display:none}.ident-user{margin-left:var(--s1);padding:0 var(--s1)}.ident__fim{gap:0}}
 
 /* Listas que não são tabelas de verdade (ícone, uma coluna de conteúdo e as
    ações): a linha de cabeçalho ("ROTEIRO | AÇÕES") não diz nada e sai.
