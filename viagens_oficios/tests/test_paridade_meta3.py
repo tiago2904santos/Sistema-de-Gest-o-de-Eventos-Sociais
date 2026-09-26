@@ -399,6 +399,46 @@ class CadastroTests(Cenario):
         o.refresh_from_db()
         self.assertEqual(o.status, Oficio.STATUS_FINALIZADO)
 
+    def _finalizar(self, o, **extra):
+        return self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(
+            servidores=[str(self.janine.pk)], servidores_termo_autorizacao=[str(self.janine.pk)], acao="finalizar", **extra),
+            follow=True)
+
+    def test_finalizar_confere_com_a_data_de_hoje(self):
+        # Rascunho antigo: pela data dele a saída tinha folga; pela de hoje, não.
+        o = self.oficio(dias=5, protocolo="123456789", servidores=[self.janine], motorista=self.janine,
+                        viatura=self.duster, data_criacao=self.hoje - timedelta(days=20))
+        r = self._finalizar(o)
+        o.refresh_from_db()
+        self.assertEqual(o.status, Oficio.STATUS_RASCUNHO)
+        self.assertContains(r, "Informe o texto da justificativa.")
+        # O rascunho continua com a data que tinha.
+        self.assertEqual(o.data_criacao, self.hoje - timedelta(days=20))
+        # Com a justificativa, finaliza com a data de hoje — e o PDF pode sair.
+        self._finalizar(o, **{"justificativa-texto": "Convite recebido em cima da hora."})
+        o.refresh_from_db()
+        self.assertEqual(o.status, Oficio.STATUS_FINALIZADO)
+        self.assertEqual(o.data_criacao, self.hoje)
+        from viagens_oficios.services import validar_oficio_para_documento
+        self.assertEqual(validar_oficio_para_documento(o)["pendencias"], [])
+
+    def test_finalizar_mantem_a_data_digitada(self):
+        o = self.oficio(dias=30, protocolo="123456789", servidores=[self.janine], motorista=self.janine, viatura=self.duster)
+        digitada = self.hoje - timedelta(days=2)
+        self._finalizar(o, data_criacao=digitada.isoformat())
+        o.refresh_from_db()
+        self.assertEqual(o.status, Oficio.STATUS_FINALIZADO)
+        self.assertEqual(o.data_criacao, digitada)
+
+    def test_finalizar_em_outro_ano_avisa(self):
+        o = self.oficio(dias=30, protocolo="123456789", servidores=[self.janine], motorista=self.janine, viatura=self.duster)
+        Oficio.objects.filter(pk=o.pk).update(ano=self.hoje.year - 1)
+        o.refresh_from_db()
+        r = self._finalizar(o)
+        o.refresh_from_db()
+        self.assertEqual(o.status, Oficio.STATUS_FINALIZADO)
+        self.assertContains(r, "Confira se ele deve ser renumerado")
+
     def test_roteiro_montado_no_cadastro_fica_ligado_ao_oficio(self):
         o = self.oficio()
         saida = self.hoje + timedelta(days=15)

@@ -359,6 +359,19 @@ def _vincular_roteiro(request, oficio):
     return roteiro
 
 
+def _data_final_do_oficio(form):
+    """A data com que o ofício é finalizado e se ela foi posta pelo sistema.
+
+    Vale a digitada em "Data do ofício" quando a pessoa a mudou; sem mudança
+    (ou em branco), a de hoje — o dia em que o ofício sai.
+    """
+    from django.utils import timezone
+    digitada = (form.data.get('data_criacao') or '').strip()
+    if digitada and 'data_criacao' in form.changed_data:
+        return form.cleaned_data['data_criacao'], False
+    return timezone.localdate(), True
+
+
 @acesso_ao_modulo
 @require_http_methods(['GET', 'POST'])
 def editar(request, pk=None):
@@ -368,7 +381,6 @@ def editar(request, pk=None):
     justificativa e documentos. "Salvar rascunho" grava e volta para a lista;
     "Finalizar Ofício" grava, confere as pendências e só finaliza sem elas.
     """
-    from django.utils import timezone
     from core.retorno import next_valido, voltar_para
     from .form_context import contexto_conferencia, contexto_dados_viajantes, contexto_justificativa
     from .justificativas_services import get_or_create_justificativa_oficio, oficio_exige_justificativa
@@ -394,8 +406,18 @@ def editar(request, pk=None):
         obrigatoria=finalizar and oficio_exige_justificativa(oficio),
     )
     gravacao = None
+    data_anterior = oficio.data_criacao
+    data_automatica = False
     if request.method == 'POST':
-        if form.is_valid() and jform.is_valid():
+        form_ok = form.is_valid()
+        if form_ok and finalizar:
+            # A data final do ofício vem ANTES da conferência: a digitada, ou a
+            # de hoje se o campo não mudou. É com ela que se decide Autorização
+            # ou Convalidação e se a justificativa é obrigatória.
+            data_final, data_automatica = _data_final_do_oficio(form)
+            form.instance.data_criacao = data_final
+            jform._obrigatoria = oficio_exige_justificativa(form.instance)
+        if form_ok and jform.is_valid():
             with transaction.atomic():
                 oficio = form.save()
                 reservar_numero_oficio(oficio, ano=oficio.data_criacao.year)
@@ -447,13 +469,21 @@ def editar(request, pk=None):
             elif finalizar:
                 pendencias = validar_oficio_para_documento(oficio)['pendencias']
                 if pendencias:
+                    if data_automatica and oficio.data_criacao != data_anterior:
+                        # Não finalizou: o rascunho fica com a data que tinha.
+                        oficio.data_criacao = data_anterior
+                        oficio.save(update_fields=['data_criacao', 'atualizado_em'])
                     for pendencia in pendencias:
                         messages.error(request, pendencia)
                     return redirect('viagens_oficios:editar', pk=oficio.pk)
                 oficio.status = Oficio.STATUS_FINALIZADO
-                oficio.data_criacao = timezone.localdate()
-                oficio.save(update_fields=['status', 'data_criacao', 'atualizado_em'])
+                oficio.save(update_fields=['status', 'atualizado_em'])
                 messages.success(request, 'Ofício finalizado com sucesso.')
+                if oficio.ano and oficio.ano != oficio.data_criacao.year:
+                    # Ex.: rascunho de dezembro finalizado em janeiro.
+                    messages.warning(request, (
+                        f'O ofício {oficio.numero_formatado} tem número de {oficio.ano}, mas a data é de '
+                        f'{oficio.data_criacao:%d/%m/%Y}. Confira se ele deve ser renumerado no ano da data.'))
                 return redirect(lista)
             else:
                 messages.success(request, 'Rascunho salvo.')
