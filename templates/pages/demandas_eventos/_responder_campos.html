@@ -1,0 +1,30 @@
+{% comment %}
+  Os campos do "Responder", iguais na tela própria e no modal da lista: cada
+  resposta padrão já preenchida com os dados da palestra, com o e-mail (com
+  o assunto) e o WhatsApp do contato prontos para abrir, a escolha de qual
+  foi enviada e o status que a palestra passa a ter. Contexto: `demanda`,
+  `respostas`, `opcoes_status_resposta`, `status_resposta`, `erro_resposta`.
+{% endcomment %}
+{% if respostas %}
+  <fieldset class="pal-respostas" id="id_resposta">
+    <legend class="form-label">Resposta enviada <span class="form-label__obrigatorio">*</span></legend>
+    {% for r in respostas %}
+      <div class="pal-resposta">
+        <label class="pal-resposta__cabeca">
+          <input type="radio" name="resposta" value="{{ r.valor }}"{% if r.marcado %} checked{% endif %}>
+          <b>{{ r.rotulo }}</b>
+        </label>
+        <p class="pal-resposta__texto">{{ r.texto }}</p>
+        <div class="pal-resposta__acoes">
+          {% if r.link_email %}<a class="btn--secundaria btn--compacto" href="{{ r.link_email }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="mail" %}Abrir no e-mail</a>{% endif %}
+          {% if r.link_whatsapp %}<a class="btn--secundaria btn--compacto" href="{{ r.link_whatsapp }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="send" %}Abrir no WhatsApp</a>{% endif %}
+          {% if not r.link_email and not r.link_whatsapp %}<span class="form-ajuda">Sem e-mail nem celular no pedido: copie o texto.</span>{% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </fieldset>
+  {% include "components/select.html" with name="novo_status" label="Depois de responder" opcoes=opcoes_status_resposta selecionado=status_resposta placeholder="Manter o status atual" permitir_vazio=True ajuda="A resposta enviada fica no histórico da palestra." erros=None %}
+{% else %}
+  <p class="texto-vazio">Nenhuma resposta padrão cadastrada. Cadastre em <a href="{% url 'demandas_eventos:cadastro_lista' 'respostas' %}">Respostas padrão</a>.</p>
+{% endif %}
+{% if erro_resposta %}<p class="form-erro" role="alert">{{ erro_resposta }}</p>{% endif %}

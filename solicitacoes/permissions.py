@@ -33,8 +33,26 @@ STATUS_FINAIS = {
 }
 
 
+def _grupos(user):
+    """Nomes dos grupos do usuário, lidos uma vez e guardados nele.
+
+    A lista chama várias verificações de perfil por linha; uma consulta por
+    verificação somava dezenas por página. O `request.user` vive uma
+    requisição só, então o cache não atravessa mudanças de grupo.
+    """
+    grupos = getattr(user, "_grupos_cache", None)
+    if grupos is None:
+        grupos = (
+            frozenset(user.groups.values_list("name", flat=True))
+            if user.pk
+            else frozenset()
+        )
+        user._grupos_cache = grupos
+    return grupos
+
+
 def _pertence(user, *grupos):
-    return user.groups.filter(name__in=grupos).exists()
+    return not _grupos(user).isdisjoint(grupos)
 
 
 def eh_administrador(user):
@@ -117,6 +135,14 @@ def pode_despachar(user, solicitacao):
     return solicitacao.status == StatusSolicitacao.AGUARDANDO_DESPACHO and eh_gestor_dg(
         user
     )
+
+
+def pode_gerar_viagem(user):
+    """"Gerar viagem" pela tela: a DG, que deferiu, ou quem opera Viagens."""
+    # Import tardio: as permissões de Viagens importam este módulo.
+    from viagens_cadastros.permissions import pode_editar_cadastros
+
+    return eh_gestor_dg(user) or pode_editar_cadastros(user)
 
 
 def pode_gerenciar_anexos(user, solicitacao):

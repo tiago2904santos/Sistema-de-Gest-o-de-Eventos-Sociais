@@ -1,13 +1,17 @@
-﻿from django.contrib import messages
+﻿import logging
+from datetime import timedelta
+
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.db import DatabaseError, transaction
 from django.db.models import Count, Q
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .forms import (
@@ -20,18 +24,23 @@ from .forms import (
 from .models import (
     AcaoHistorico,
     AnexoSolicitacao,
+    DecisaoDG,
     HistoricoSolicitacao,
     SolicitacaoEvento,
     StatusSolicitacao,
     TipoOperacao,
 )
 from core import preencher_por_email
+from integracoes.eprotocolo import andamento as andamento_eprotocolo
+from integracoes.eprotocolo.andamento import formatar_numero
 from core.listagens import trilha_de_situacoes
 
 from .presenters import linha_da_lista
-from . import permissions, preenchimento, services
+from . import integracao_viagens, permissions, preenchimento, services
 
 ITENS_POR_PAGINA = 15
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -76,7 +85,7 @@ def _marcados(form, nome):
 
 CAMPOS_FORMULARIO = [
     "data_solicitacao", "data_inicio_evento", "data_fim_evento", "tipo_evento",
-    "municipio", "local_evento", "solicitante_nome", "solicitante_cargo_unidade",
+    "municipio", "local_evento", "protocolo", "solicitante_nome", "solicitante_cargo_unidade",
     "contato", "orgao_responsavel", "unidade_movel", "unidade_movel_designada",
     "descricao_complementar", "quantidade_servidores",
     "tipo_operacao", "quantidade_cin", "motorista", "decisao_dg", "observacoes_dg",
@@ -470,9 +479,41 @@ def editar_solicitacao(request, pk):
             "motivo_devolucao": devolucao,
             "despacho_pendente": pendente,
             "decisoes_dg": _decisoes_dg(pendente),
+            "cartao_viagem": None if reabrindo else _cartao_viagem(request.user, solicitacao),
+            "andamento_protocolo": andamento_eprotocolo.andamento_guardado(
+                request, "solicitacoes", solicitacao.pk
+            ),
         }
     )
     return render(request, "pages/solicitacoes/form.html", contexto)
+
+
+def _cartao_viagem(user, solicitacao):
+    """O cartão "Viagem" da solicitação: o link, a situação e o que falta.
+
+    Só aparece depois do deferimento (ou quando já existe viagem): antes
+    disso não há logística a acompanhar.
+    """
+    from viagens_cadastros.permissions import pode_acessar
+
+    viagem = integracao_viagens.viagem_da_solicitacao(solicitacao)
+    if viagem is None and solicitacao.decisao_dg != DecisaoDG.ATENDER:
+        return None
+    if viagem is not None:
+        return {
+            "viagem": viagem,
+            # Quem não tem o módulo vê a situação, mas não o link.
+            "url": reverse("viagens_viagem:painel", args=[viagem.pk])
+            if pode_acessar(user)
+            else "",
+            "falta": integracao_viagens.o_que_falta(viagem),
+        }
+    cabe, motivo = integracao_viagens.pode_gerar(solicitacao)
+    return {
+        "viagem": None,
+        "pode_gerar": cabe and permissions.pode_gerar_viagem(user),
+        "motivo": motivo,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -507,7 +548,43 @@ FILAS = {
         "rotulo": "Minhas",
         "apenas_do_usuario": True,
     },
+    # Destinos dos cartões do Dashboard: fora da trilha, mas com o mesmo
+    # recorte do número clicado. Aparecem como filtro ativo acima da lista.
+    "deferidas_ano": {
+        "rotulo": "Deferidas no ano",
+        "status": [
+            StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
+            StatusSolicitacao.ATENDIDA,
+        ],
+        "ano_corrente": True,
+        "oculta": True,
+    },
+    "proximos": {
+        "rotulo": "Eventos nos próximos 30 dias",
+        "proximos_dias": 30,
+        "oculta": True,
+    },
 }
+
+
+def _condicao_da_fila(config, user):
+    """O recorte de uma fila como Q, o mesmo na contagem e na lista."""
+    condicao = Q()
+    if config.get("status"):
+        condicao &= Q(status__in=config["status"])
+    if config.get("apenas_do_usuario"):
+        condicao &= Q(criado_por=user)
+    if config.get("ano_corrente"):
+        condicao &= Q(data_solicitacao__year=timezone.localdate().year)
+    if config.get("proximos_dias"):
+        hoje = timezone.localdate()
+        condicao &= Q(
+            data_inicio_evento__gte=hoje,
+            data_inicio_evento__lte=hoje + timedelta(days=config["proximos_dias"]),
+        ) & ~Q(
+            status__in=[StatusSolicitacao.CANCELADA, StatusSolicitacao.NAO_ATENDIDA]
+        )
+    return condicao
 
 
 def _filas_do_usuario(user, queryset):
@@ -517,15 +594,10 @@ def _filas_do_usuario(user, queryset):
     if permissions.eh_gestor_dg(user):
         filas.append("despacho")
     filas.extend(["devolvidas", "andamento", "canceladas", "rascunhos", "minhas"])
-    agregacoes = {}
-    for chave in filas:
-        config = FILAS[chave]
-        condicao = Q()
-        if config.get("status"):
-            condicao &= Q(status__in=config["status"])
-        if config.get("apenas_do_usuario"):
-            condicao &= Q(criado_por=user)
-        agregacoes[chave] = Count("pk", filter=condicao)
+    agregacoes = {
+        chave: Count("pk", filter=_condicao_da_fila(FILAS[chave], user))
+        for chave in filas
+    }
     totais = queryset.aggregate(**agregacoes)
     resultado = []
     for chave in filas:
@@ -576,7 +648,9 @@ def _queryset_filtrado(request):
     base = permissions.queryset_visivel(
         request.user,
         SolicitacaoEvento.objects.select_related(
-            "municipio", "tipo_evento", "regiao", "criado_por"
+            "municipio", "tipo_evento", "regiao", "criado_por",
+            # A linha mostra qual unidade móvel vai ao evento.
+            "unidade_movel_designada",
         ),
     )
     _pedido, campos_ordem = _ordenacao(request)
@@ -584,20 +658,25 @@ def _queryset_filtrado(request):
 
     fila = request.GET.get("fila", "")
     if fila in FILAS:
-        if FILAS[fila].get("status"):
-            queryset = queryset.filter(status__in=FILAS[fila]["status"])
-        if FILAS[fila].get("apenas_do_usuario"):
-            queryset = queryset.filter(criado_por=request.user)
+        queryset = queryset.filter(_condicao_da_fila(FILAS[fila], request.user))
+    else:
+        fila = ""
 
     if filtros.is_valid():
         dados = filtros.cleaned_data
         if dados.get("q"):
             termo = dados["q"]
-            queryset = queryset.filter(
+            condicao = (
                 Q(solicitante_nome__icontains=termo)
                 | Q(local_evento__icontains=termo)
                 | Q(municipio__nome__icontains=termo)
+                | Q(protocolo__icontains=termo)
             )
+            # O número digitado sem pontos também acha o protocolo.
+            numero = formatar_numero(termo)
+            if numero:
+                condicao |= Q(protocolo=numero)
+            queryset = queryset.filter(condicao)
         if dados.get("status"):
             queryset = queryset.filter(status=dados["status"])
         if dados.get("municipio"):
@@ -626,6 +705,60 @@ ICONES_FILA = {
 }
 
 
+def _filtros_ativos(request, filtros, fila, filas_da_trilha):
+    """Os filtros que a trilha não mostra, cada um com o "x" que o remove.
+
+    Quem chega por um cartão do Dashboard (ou por um link salvo) traz status,
+    período ou uma fila fora da trilha: sem isto o filtro ficava invisível e
+    a lista parecia vazia ou errada.
+    """
+    base = request.GET.copy()
+    base.pop("pagina", None)
+
+    def sem(*nomes):
+        destino = base.copy()
+        for nome in nomes:
+            destino.pop(nome, None)
+        consulta = destino.urlencode()
+        return f"?{consulta}" if consulta else "?"
+
+    ativos = []
+    if fila and fila not in filas_da_trilha:
+        ativos.append({"rotulo": FILAS[fila]["rotulo"], "url_remover": sem("fila")})
+    dados = filtros.cleaned_data if filtros.is_valid() else {}
+    if dados.get("status"):
+        ativos.append({
+            "rotulo": f"Situação: {StatusSolicitacao(dados['status']).label}",
+            "url_remover": sem("status"),
+        })
+    if dados.get("municipio"):
+        ativos.append({
+            "rotulo": f"Município: {dados['municipio']}",
+            "url_remover": sem("municipio"),
+        })
+    if dados.get("tipo_evento"):
+        ativos.append({
+            "rotulo": f"Tipo: {dados['tipo_evento']}",
+            "url_remover": sem("tipo_evento"),
+        })
+    if dados.get("inicio"):
+        ativos.append({
+            "rotulo": f"Eventos a partir de {dados['inicio']:%d/%m/%Y}",
+            "url_remover": sem("inicio"),
+        })
+    if dados.get("fim"):
+        ativos.append({
+            "rotulo": f"Eventos até {dados['fim']:%d/%m/%Y}",
+            "url_remover": sem("fim"),
+        })
+    return ativos
+
+
+# Filtros que a busca carrega escondidos: buscar não pode descartar o
+# período ou a situação que vieram do Dashboard.
+CAMPOS_OCULTOS_NA_BUSCA = ["status", "municipio", "tipo_evento", "inicio", "fim", "ordem"]
+
+
 @login_required
 def lista_solicitacoes(request):
     queryset, base, filtros, fila = _queryset_filtrado(request)
@@ -640,6 +773,10 @@ def lista_solicitacoes(request):
     parametros = request.GET.copy()
     parametros.pop("pagina", None)
     total_geral = base.count()
+    filas = _filas_do_usuario(request.user, base)
+    filtros_ativos = _filtros_ativos(
+        request, filtros, fila, {item["chave"] for item in filas}
+    )
 
     return render(
         request,
@@ -648,13 +785,25 @@ def lista_solicitacoes(request):
             "pagina": pagina,
             "q": request.GET.get("q", ""),
             "querystring": parametros.urlencode(),
+            # Trocar de situação na trilha substitui o status que veio do
+            # Dashboard, em vez de somar os dois e esvaziar a lista.
             "situacoes": trilha_de_situacoes(
-                request, _filas_do_usuario(request.user, base), total_geral, ICONES_FILA
+                request, filas, total_geral, ICONES_FILA, descartar=("status",)
             ),
-            # Chip aceso: sem fila escolhida, "Todas".
-            "situacao_ativa": fila or "todas",
+            # Item aceso: a fila escolhida; "Todas" só quando nada filtra a
+            # situação — com status na URL, "Todas" mentiria.
+            "situacao_ativa": fila
+            or ("" if request.GET.get("status") else "todas"),
             "fila_ativa": fila,
-            "tem_filtros": any(request.GET.get(nome) for nome in CAMPOS_FILTRO),
+            "filtros_ativos": filtros_ativos,
+            "campos_ocultos_busca": [
+                {"nome": nome, "valor": request.GET[nome]}
+                for nome in CAMPOS_OCULTOS_NA_BUSCA
+                if request.GET.get(nome)
+            ],
+            "tem_filtros": bool(fila) or any(
+                request.GET.get(nome) for nome in CAMPOS_FILTRO
+            ),
             "paginas_visiveis": paginas_visiveis,
             "elipse": Paginator.ELLIPSIS,
             "linhas": [
@@ -688,7 +837,7 @@ def exportar_solicitacoes(request):
     escritor = csv.writer(resposta, delimiter=";", lineterminator="\r\n")
     escritor.writerow([
         "Nº", "Status", "Data da solicitação", "Início do evento", "Fim do evento",
-        "Município", "Região", "Tipo de evento", "Local", "Solicitante",
+        "Município", "Região", "Tipo de evento", "Local", "Protocolo", "Solicitante",
         "Cargo / unidade", "Contato", "Órgão responsável", "Serviços",
         "Equipes (servidores)", "Total de servidores", "Tipo de operação",
         "Unidade móvel", "Qtde CIN", "Motorista",
@@ -718,6 +867,7 @@ def exportar_solicitacoes(request):
             s.regiao or "",
             s.tipo_evento or "",
             s.local_evento,
+            s.protocolo,
             s.solicitante_nome,
             s.solicitante_cargo_unidade,
             s.contato,
@@ -827,6 +977,57 @@ def cancelar_evento(request, pk):
         f"Evento da solicitação #{solicitacao.pk} registrado como cancelado.",
         observacao=request.POST.get("motivo_cancelamento", ""),
     )
+
+
+@login_required
+@require_POST
+def consultar_protocolo(request, pk):
+    """"Consultar andamento": a última movimentação do protocolo no eProtocolo.
+
+    Só leitura; o resultado volta num cartão da própria tela.
+    """
+    solicitacao = _obter_visivel(request, pk)
+    if not solicitacao.protocolo:
+        messages.error(request, "Informe e salve o número do protocolo antes de consultar.")
+    else:
+        erro = andamento_eprotocolo.consultar_e_guardar(
+            request, "solicitacoes", solicitacao.pk, solicitacao.protocolo
+        )
+        if erro:
+            messages.error(request, erro)
+    url = reverse("solicitacoes:editar", args=[solicitacao.pk])
+    return redirect(f"{url}#protocolo")
+
+
+@login_required
+@require_POST
+def gerar_viagem(request, pk):
+    """"Gerar viagem": para a deferida que ficou sem viagem.
+
+    Vale para as deferidas antes da geração automática e para quando ela
+    falhou no despacho. Liberado à DG e a quem opera Viagens — este último
+    pode não enxergar a solicitação, e então vai direto para a viagem criada.
+    """
+    solicitacao = get_object_or_404(SolicitacaoEvento, pk=pk)
+    if not permissions.pode_gerar_viagem(request.user):
+        raise PermissionDenied
+    ve_a_solicitacao = permissions.pode_ver(request.user, solicitacao)
+    try:
+        viagem = integracao_viagens.gerar_viagem(solicitacao, request.user)
+    except ValueError as erro:
+        messages.error(request, f"Não foi possível gerar a viagem: {erro}")
+        if not ve_a_solicitacao:
+            return redirect("viagens_viagem:lista")
+    else:
+        messages.success(
+            request,
+            f"Viagem #{viagem.pk} gerada em rascunho. Complete sede, horário, "
+            "servidores, viatura e motorista em Viagens.",
+        )
+        if not ve_a_solicitacao:
+            return redirect("viagens_viagem:painel", pk=viagem.pk)
+    url = reverse("solicitacoes:editar", args=[solicitacao.pk])
+    return redirect(f"{url}#viagem")
 
 
 # ---------------------------------------------------------------------------
@@ -996,6 +1197,16 @@ def despachar(request, pk):
     except ValidationError as erro:
         for mensagem_erro in erro.messages:
             messages.error(request, mensagem_erro)
+        return _voltar_ao_despacho(request, solicitacao, decisao, observacao)
+    except DatabaseError:
+        # A transação do serviço já foi desfeita: nada ficou pela metade. A
+        # DG volta ao despacho com o que escreveu, em vez de uma página 500.
+        logger.exception("Falha ao gravar o despacho da solicitação %s.", solicitacao.pk)
+        messages.error(
+            request,
+            "Não foi possível gravar o despacho agora. Nada foi alterado; "
+            "confira o texto e tente de novo.",
+        )
         return _voltar_ao_despacho(request, solicitacao, decisao, observacao)
 
     messages.success(request, sucesso)

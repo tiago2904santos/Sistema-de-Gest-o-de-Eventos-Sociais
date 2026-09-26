@@ -155,14 +155,25 @@ class OrdemServico(ModeloTemporal, ModeloCancelavel, OrigemLegado):
     def _numero_ocupado(self, numero):
         return OrdemServico.objects.filter(ano=self.ano, numero=numero).exclude(pk=self.pk).exists()
 
-    def _escolher_numero(self):
-        lacuna = OrdemServicoNumeroLacuna.objects.filter(ano=self.ano).order_by("numero").first()
+    @classmethod
+    def proximo_numero_livre(cls, ano):
+        """(número, pk da lacuna usada ou None): a menor lacuna do ano, senão o
+        maior número mais um. A sequência é a mesma das OS do Coffee Break
+        (livro único): os números de lá contam como ocupados."""
+        from core.numeracao import NAMESPACE_ORDEM_SERVICO, numeros_externos
+
+        externos = numeros_externos(NAMESPACE_ORDEM_SERVICO, ano)
+        lacuna = (
+            OrdemServicoNumeroLacuna.objects.filter(ano=ano).exclude(numero__in=externos).order_by("numero").first()
+        )
         if lacuna is not None:
-            self._lacuna_numeracao_id = lacuna.pk
-            return lacuna.numero
-        self._lacuna_numeracao_id = None
-        maior = OrdemServico.objects.filter(ano=self.ano).aggregate(m=Max("numero"))["m"] or 0
-        return maior + 1
+            return lacuna.numero, lacuna.pk
+        maior = cls.objects.filter(ano=ano).aggregate(m=Max("numero"))["m"] or 0
+        return max(maior, max(externos, default=0)) + 1, None
+
+    def _escolher_numero(self):
+        numero, self._lacuna_numeracao_id = OrdemServico.proximo_numero_livre(self.ano)
+        return numero
 
     def save(self, *args, **kwargs):
         if self.numero:

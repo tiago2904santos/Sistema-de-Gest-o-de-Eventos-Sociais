@@ -102,6 +102,29 @@ class NotificacoesWorkflowTests(TestCase):
         self.assertFalse(Notificacao.objects.filter(usuario=self.gestor).exists())
 
 
+class LimiteDaNotificacaoTests(TestCase):
+    """Texto longo não estoura a coluna do sino (no PostgreSQL, derrubava a operação)."""
+
+    def test_titulo_e_mensagem_cabem_na_coluna_e_o_email_vai_inteiro(self):
+        from core.notificacoes import notificar
+
+        usuario = User.objects.create_user("avisado", password="x", email="a@pc.pr.gov.br")
+        with self.captureOnCommitCallbacks(execute=True):
+            [aviso] = notificar([usuario], "T" * 400, "M" * 600)
+        aviso.refresh_from_db()
+        self.assertEqual(len(aviso.titulo), 150)
+        self.assertEqual(len(aviso.mensagem), 255)
+        self.assertTrue(aviso.mensagem.endswith("…"))
+        self.assertIn("M" * 600, mail.outbox[0].body)
+
+    def test_mensagem_curta_nao_muda(self):
+        from core.notificacoes import notificar
+
+        usuario = User.objects.create_user("avisado2", password="x")
+        [aviso] = notificar([usuario], "Título", "Curta")
+        self.assertEqual(aviso.mensagem, "Curta")
+
+
 class CentralNotificacoesTests(TestCase):
     @classmethod
     def setUpTestData(cls):

@@ -1681,6 +1681,253 @@ class NumeroDaOSTests(BaseCoffeeBreakTestCase):
         self.assertNotIn("número da solicitação", s.historico.last().descricao)
 
 
+class VigenciaDoContratoTests(BaseCoffeeBreakTestCase):
+    """m027: aviso do fim da vigência no painel e OS barrada em contrato vencido."""
+
+    def setUp(self):
+        self.client.force_login(self.ascom)
+
+    def _post_nova(self, data_evento):
+        return self.client.post(reverse("coffee_break:nova"), {
+            "municipio": self.curitiba.pk, "data_solicitacao": "2026-08-01", "numero": "",
+            "descricao_evento": "Evento", "quantidade": "10", "data_inicio_evento": data_evento,
+        })
+
+    def test_evento_depois_do_fim_da_vigencia_e_barrado(self):
+        ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(vigencia_fim=dt.date(2026, 10, 30))
+        resposta = self._post_nova("2026-11-05")
+        self.assertContains(resposta, "Contrato vencido em 30/10/2026")
+        self.assertFalse(SolicitacaoCoffeeBreak.objects.exists())
+        self._post_nova("2026-10-30")
+        self.assertEqual(SolicitacaoCoffeeBreak.objects.count(), 1)
+
+    def test_aditivo_estende_a_vigencia(self):
+        from .models import AditivoContrato
+
+        ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(vigencia_fim=dt.date(2026, 10, 30))
+        AditivoContrato.objects.create(contrato=self.contrato, numero="0400/2026", vigencia_fim=dt.date(2027, 10, 30))
+        self._post_nova("2026-11-05")
+        self.assertEqual(SolicitacaoCoffeeBreak.objects.count(), 1)
+
+    def test_lote_de_contrato_vigente_tem_preferencia(self):
+        ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(vigencia_fim=dt.date(2026, 1, 31))
+        novo = ContratoCoffeeBreak.objects.create(fornecedor=self.fornecedor, numero="0999/2026", vigencia_fim=dt.date(2027, 12, 31))
+        vigente = LoteCoffeeBreak.objects.create(contrato=novo, numero=3, exercicio="2025", quantidade_total=10)
+        vigente.municipios.add(self.curitiba)
+        lote, _distancia = services.escolher_lote(self.curitiba, dt.date(2026, 9, 1))
+        self.assertEqual(lote, vigente)
+
+    def test_painel_avisa_as_faixas_de_90_60_e_30_dias(self):
+        hoje = dt.date.today()
+        with mock.patch("django.utils.timezone.localdate", return_value=hoje):
+            ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(vigencia_fim=hoje + dt.timedelta(days=35))
+            itens = services.contratos_perto_do_fim(hoje)
+            self.assertEqual([(i["contrato"].pk, i["faixa"]) for i in itens], [(self.contrato.pk, 60)])
+            resposta = self.client.get(reverse("coffee_break:painel"))
+        self.assertContains(resposta, "Contrato 0762/2024")
+        self.assertContains(resposta, "em 35 dias")
+        ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(vigencia_fim=hoje + dt.timedelta(days=200))
+        self.assertEqual(services.contratos_perto_do_fim(hoje), [])
+
+
+class DataEAntecedenciaDoEventoTests(BaseCoffeeBreakTestCase):
+    """m039: evento anterior à solicitação só como registro retroativo; aviso de antecedência."""
+
+    def setUp(self):
+        self.client.force_login(self.ascom)
+
+    def _post_nova(self, **extra):
+        dados = {
+            "municipio": self.curitiba.pk, "data_solicitacao": "2026-08-10", "numero": "",
+            "descricao_evento": "Evento", "quantidade": "10", "data_inicio_evento": "2026-08-05",
+        }
+        dados.update(extra)
+        return self.client.post(reverse("coffee_break:nova"), dados, follow=True)
+
+    def test_evento_anterior_a_solicitacao_e_barrado(self):
+        resposta = self._post_nova()
+        self.assertContains(resposta, "O evento é anterior à data da solicitação")
+        self.assertContains(resposta, 'name="registro_retroativo"')
+        self.assertFalse(SolicitacaoCoffeeBreak.objects.exists())
+
+    def test_retroativo_pede_justificativa(self):
+        resposta = self._post_nova(registro_retroativo="1")
+        self.assertContains(resposta, "Justifique o registro retroativo.")
+        self.assertFalse(SolicitacaoCoffeeBreak.objects.exists())
+
+    def test_retroativo_justificado_grava_e_vai_para_o_historico(self):
+        self._post_nova(registro_retroativo="1", justificativa_retroativo="Pedido feito por telefone")
+        s = SolicitacaoCoffeeBreak.objects.get()
+        self.assertTrue(s.historico.filter(descricao__contains="Registro retroativo").exists())
+        self.assertTrue(s.historico.filter(descricao__contains="Pedido feito por telefone").exists())
+
+    def test_aviso_quando_falta_menos_que_a_antecedencia(self):
+        hoje = dt.date.today()
+        amanha = hoje + dt.timedelta(days=1)
+        resposta = self._post_nova(data_solicitacao=hoje.isoformat(), data_inicio_evento=amanha.isoformat())
+        self.assertTrue(SolicitacaoCoffeeBreak.objects.exists())
+        self.assertContains(resposta, "ligue para o fornecedor")
+        s = SolicitacaoCoffeeBreak.objects.get()
+        self.assertIn("amanhã", services.aviso_de_antecedencia(s, hoje))
+        self.assertEqual(services.aviso_de_antecedencia(s, hoje - dt.timedelta(days=5)), "")
+
+
+class ReabrirParaCorrecaoTests(BaseCoffeeBreakTestCase):
+    """m043: administrador reabre a concluída para corrigir, com motivo e rastro."""
+
+    def setUp(self):
+        self.s = self.criar_solicitacao(
+            numero="41/2026", local_entrega="1DP", responsavel_recebimento="Ana",
+            numero_nota_fiscal="8957", protocolo_pagamento="26.617.058-0",
+            data_atesto_gaf=dt.date(2026, 9, 1), data_ordem_bancaria=dt.date(2026, 9, 10),
+            data_envio_empresa=dt.date(2026, 9, 12),
+        )
+        self.url = reverse("coffee_break:reabrir", args=[self.s.pk])
+
+    def _post_etapa3(self, **extra):
+        self.s.refresh_from_db()
+        dados = {
+            "data_atesto_gaf": "2026-09-01", "data_ordem_bancaria": "2026-09-10",
+            "data_envio_empresa": "2026-09-12", "observacoes": "",
+            "versao": str(int(self.s.atualizado_em.timestamp() * 1_000_000)),
+        }
+        dados.update(extra)
+        return self.client.post(reverse("coffee_break:etapa_protocolo", args=[self.s.pk]), dados)
+
+    def test_so_administrador_reabre(self):
+        self.client.force_login(self.ascom)
+        self.assertEqual(self.client.post(self.url, {"motivo": "Data errada"}).status_code, 403)
+        tela = self.client.get(reverse("coffee_break:etapa_protocolo", args=[self.s.pk]))
+        self.assertNotContains(tela, "Reabrir para correção")
+
+    def test_reabrir_pede_motivo_e_libera_a_edicao_com_rastro(self):
+        self.client.force_login(self.admin_modulo)
+        tela = self.client.get(reverse("coffee_break:etapa_protocolo", args=[self.s.pk]))
+        self.assertContains(tela, "Reabrir para correção")
+        self.client.post(self.url, {"motivo": ""})
+        self.s.refresh_from_db()
+        self.assertFalse(self.s.em_correcao)
+        # Concluída e não reaberta: não grava.
+        self._post_etapa3(data_ordem_bancaria="2026-09-11")
+        self.s.refresh_from_db()
+        self.assertEqual(self.s.data_ordem_bancaria, dt.date(2026, 9, 10))
+
+        self.client.post(self.url, {"motivo": "OB digitada errada"})
+        self.s.refresh_from_db()
+        self.assertTrue(self.s.em_correcao)
+        self.assertTrue(self.s.historico.filter(descricao="Reaberta para correção: OB digitada errada").exists())
+        self._post_etapa3(data_ordem_bancaria="2026-09-11")
+        self.s.refresh_from_db()
+        self.assertEqual(self.s.data_ordem_bancaria, dt.date(2026, 9, 11))
+        self.assertTrue(
+            self.s.historico.filter(descricao__contains="10/09/2026 \u2192 11/09/2026").exists()
+        )
+        self.client.post(self.url, {"acao": "encerrar"})
+        self.s.refresh_from_db()
+        self.assertFalse(self.s.em_correcao)
+        self.assertTrue(self.s.bloqueada_para_edicao)
+
+
+class QuantidadeFaturadaTests(EtapasBase):
+    """m032: o lote desconta o que a nota faturou, e a diferença volta ao saldo."""
+
+    def test_saldo_desconta_a_quantidade_faturada(self):
+        self.assertEqual(self.lote.quantidade_consumida, 40)
+        self.solicitacao.refresh_from_db()
+        resposta = self.client.post(reverse("coffee_break:etapa_nota", args=[self.solicitacao.pk]), {
+            "numero_nota_fiscal": "8957", "quantidade_faturada": "30", "numero_oficio": "124",
+            "data_oficio": "2026-09-21", "protocolo_pcpr_oficio": "", "versao": self._versao(self.solicitacao),
+        })
+        self.assertEqual(resposta.status_code, 302)
+        self.solicitacao.refresh_from_db()
+        self.assertEqual(self.solicitacao.quantidade_faturada, 30)
+        self.assertEqual(self.lote.quantidade_consumida, 30)
+        anotado = LoteCoffeeBreak.objects.com_consumo().get(pk=self.lote.pk)
+        self.assertEqual((anotado.consumido, anotado.restante), (30, 70))
+        self.assertTrue(
+            self.solicitacao.historico.filter(descricao__contains="30 de 40 pedidas; 10 voltaram ao saldo").exists()
+        )
+        # O saldo que voltou serve a um novo pedido.
+        services.validar_saldo(self.lote, 70)
+        with self.assertRaises(ValidationError):
+            services.validar_saldo(self.lote, 71)
+
+    def test_faturada_acima_do_saldo_e_recusada(self):
+        self.criar_solicitacao(numero="42/2026", quantidade=55)
+        self.solicitacao.refresh_from_db()
+        resposta = self.client.post(reverse("coffee_break:etapa_nota", args=[self.solicitacao.pk]), {
+            "numero_nota_fiscal": "8957", "quantidade_faturada": "50", "numero_oficio": "124",
+            "data_oficio": "2026-09-21", "protocolo_pcpr_oficio": "", "versao": self._versao(self.solicitacao),
+        })
+        self.assertEqual(resposta.status_code, 200)
+        self.solicitacao.refresh_from_db()
+        self.assertIsNone(self.solicitacao.quantidade_faturada)
+
+
+class ControleEmReaisTests(BaseCoffeeBreakTestCase):
+    """m031: valor da OS (com o preço guardado), do lote, do empenho e do ano."""
+
+    def setUp(self):
+        from decimal import Decimal
+
+        self.client.force_login(self.ascom)
+        ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(valor_unitario=Decimal("21.07"))
+        LoteCoffeeBreak.objects.filter(pk=self.lote.pk).update(valor_empenho=Decimal("5000.00"))
+        self.lote.refresh_from_db()
+
+    def _nova(self, quantidade="40"):
+        self.client.post(reverse("coffee_break:nova"), {
+            "municipio": self.curitiba.pk, "data_solicitacao": "2026-08-01", "numero": "",
+            "descricao_evento": "Evento", "quantidade": quantidade, "data_inicio_evento": "2026-09-01",
+        })
+        return SolicitacaoCoffeeBreak.objects.latest("pk")
+
+    def test_valor_da_os_com_o_preco_guardado(self):
+        from decimal import Decimal
+
+        s = self._nova()
+        self.assertEqual(s.valor_unitario, Decimal("21.07"))
+        self.assertEqual(s.valor, Decimal("842.80"))
+        # Reajuste do contrato não muda a OS já registrada.
+        ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(valor_unitario=Decimal("25.00"))
+        s.refresh_from_db()
+        self.assertEqual(s.valor, Decimal("842.80"))
+        # Com a nota, vale a quantidade faturada.
+        s.quantidade_faturada = 30
+        self.assertEqual(s.valor, Decimal("632.10"))
+
+    def test_lote_painel_csv_e_relatorio(self):
+        from decimal import Decimal
+
+        from relatorios.consolidacao import secao_coffee
+
+        a = self._nova()
+        b = self._nova("10")
+        SolicitacaoCoffeeBreak.objects.filter(pk=b.pk).update(
+            numero_nota_fiscal="1", protocolo_pagamento="26.000.000-1",
+            data_atesto_gaf=dt.date(2026, 9, 2), data_ordem_bancaria=dt.date(2026, 9, 3),
+        )
+        valores = services.valores_do_lote(self.lote)
+        self.assertEqual(valores["comprometido"], Decimal("1053.50"))
+        self.assertEqual(valores["pago"], Decimal("210.70"))
+        self.assertEqual(valores["saldo_empenho"], Decimal("3946.50"))
+        self.assertEqual(services.formatar_reais(valores["comprometido"]), "R$ 1.053,50")
+        tela = self.client.get(reverse("coffee_break:lote_detalhe", args=[self.lote.pk]))
+        self.assertContains(tela, "R$ 1.053,50 comprometidos")
+        with mock.patch("django.utils.timezone.localdate", return_value=dt.date(2026, 9, 26)):
+            painel = self.client.get(reverse("coffee_break:painel"))
+        self.assertContains(painel, "Gasto em 2026")
+        self.assertContains(painel, "R$ 1.053,50")
+        csv = self.client.get(reverse("coffee_break:exportar")).content.decode("utf-8")
+        self.assertIn("Valor", csv.splitlines()[0])
+        self.assertIn("842,80", csv)
+        periodo = mock.Mock(ano=2026, contem=lambda d: True, chave=lambda d: d.month,
+                            chaves=lambda _c: [9], rotulo_da_chave=lambda c: "09/2026")
+        secao = secao_coffee(self.ascom, periodo)
+        self.assertEqual(secao["totais"][4], Decimal("1053.50"))
+        self.assertEqual(a.valor + b.valor, Decimal("1053.50"))
+
+
 class DescricaoUmaLinhaTests(BaseCoffeeBreakTestCase):
     def test_descricao_vira_uma_linha(self):
         self.client.force_login(self.ascom)
@@ -2084,6 +2331,78 @@ class NumeroDaNotaNoPDFTests(BaseCoffeeBreakTestCase):
             self.assertContains(resposta, 'placeholder="Não foi lido do PDF — digite"')
 
 
+class ConferenciaDaNotaTests(BaseCoffeeBreakTestCase):
+    """m026: ao anexar, a nota é conferida (emitente, valor, data e duplicidade)."""
+
+    DANFE = (
+        "DANFE\nNº 000.008.957\nSÉRIE 001\nCHAVE DE ACESSO\n"
+        "4126 0935 0147 1900 0166 5500 1000 0089 5715 7240 4356\n"
+        "DATA DA EMISSÃO\n21/09/2026\nVALOR TOTAL DA NOTA\n842,80\n"
+    )
+
+    def test_le_emitente_valor_e_emissao(self):
+        from decimal import Decimal
+
+        from .nota_fiscal import dados_no_texto
+
+        dados = dados_no_texto(self.DANFE)
+        self.assertEqual(dados["numero"], "8957")
+        self.assertEqual(dados["cnpj"], "35014719000166")
+        self.assertEqual(dados["ano_mes"], (2026, 9))
+        self.assertEqual(dados["valor"], Decimal("842.80"))
+        self.assertEqual(dados["emissao"], dt.date(2026, 9, 21))
+        nfse = dados_no_texto(
+            "Número da NFS-e 456\nData e Hora de Emissão 02/10/2026 10:00\n"
+            "PRESTADOR DE SERVIÇOS\nCNPJ: 11.222.333/0001-81\nValor Líquido da NFS-e R$ 1.053,50"
+        )
+        self.assertEqual((nfse["numero"], nfse["cnpj"], nfse["valor"]), ("456", "11222333000181", Decimal("1053.50")))
+        self.assertEqual(nfse["emissao"], dt.date(2026, 10, 2))
+        self.assertEqual(dados_no_texto("sem nada")["valor"], None)
+
+    def test_avisos_ao_anexar(self):
+        import tempfile
+        from decimal import Decimal
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.test import override_settings
+
+        from .nota_fiscal import dados_no_texto
+
+        ContratoCoffeeBreak.objects.filter(pk=self.contrato.pk).update(valor_unitario=Decimal("21.07"))
+        self.criar_solicitacao(numero="40/2026", numero_nota_fiscal="8957")
+        s = self.criar_solicitacao(
+            numero="41/2026", quantidade=40, data_inicio_evento=dt.date(2026, 9, 25),
+            valor_unitario=Decimal("21.07"),
+        )
+        self.client.force_login(self.ascom)
+        url = reverse("coffee_break:anexar_nota", args=[s.pk])
+        lidos = dados_no_texto(self.DANFE)
+        with tempfile.TemporaryDirectory() as pasta, override_settings(MEDIA_ROOT=pasta):
+            with mock.patch("coffee_break.nota_fiscal.numero_da_nota", return_value="8957"), \
+                    mock.patch("coffee_break.nota_fiscal.dados_da_nota", return_value=lidos):
+                resposta = self.client.post(
+                    url, {"arquivo": SimpleUploadedFile("nf.pdf", _pdf_em_branco(), content_type="application/pdf")},
+                    follow=True,
+                )
+        s.refresh_from_db()
+        self.assertEqual(s.valor_nota_fiscal, Decimal("842.80"))
+        self.assertEqual(s.cnpj_emitente_nf, "35014719000166")
+        # O valor bate (40 × 21,07); a emissão é anterior ao evento e o número já foi usado.
+        self.assertNotContains(resposta, "não bate com")
+        self.assertContains(resposta, "antes do evento (25/09/2026)")
+        self.assertContains(resposta, "já está na OS 40/2026")
+        # Emitente e valor divergentes.
+        s.cnpj_emitente_nf = "11222333000181"
+        s.valor_nota_fiscal = Decimal("900.00")
+        avisos = " ".join(services.avisos_da_nota(s))
+        self.assertIn("11.222.333/0001-81", avisos)
+        self.assertIn("R$ 900,00", avisos)
+        self.assertIn("40 pessoas × R$ 21,07 = R$ 842,80", avisos)
+        # A tela da etapa 2 mostra a conferência.
+        tela = self.client.get(reverse("coffee_break:etapa_nota", args=[s.pk]))
+        self.assertContains(tela, "Confira a nota fiscal")
+
+
 class Etapa3VisualizadorTests(EtapasBase):
     """Etapa 3: visualizador inline (sem editor), tudo fechado, PDF único com
     as certidões e aviso de certidão vencida."""
@@ -2431,6 +2750,73 @@ class PagamentoConjuntoTests(EtapasBase):
         self.assertIsNone(self.b.pagamento_com)
         self.assertEqual(self.a.grupo_pagamento(), [self.a])
 
+    def test_os_sem_nota_nao_recebe_protocolo_nem_atesto(self):
+        """m024: salvar a etapa 2 de uma OS não leva o protocolo para a OS do grupo sem nota."""
+        SolicitacaoCoffeeBreak.objects.filter(pk=self.b.pk).update(numero_nota_fiscal="")
+        services.definir_pagamento_conjunto(self.a, [self.b.pk])
+        self._salvar_nota(self.a, protocolo_pcpr_oficio="266136668")
+        self.a.refresh_from_db()
+        self.b.refresh_from_db()
+        self.assertEqual(self.b.protocolo_pcpr_oficio, "26.613.666-8")
+        self.assertEqual(self.b.protocolo_pagamento, "")
+        # Nem a própria OS recebe o protocolo enquanto o ofício não pode ser gerado.
+        self.assertEqual(self.a.protocolo_pagamento, "")
+        self.assertFalse(services.marcar_atesto(self.a))
+        self.assertEqual(self.b.situacao_financeira, SituacaoFinanceira.AGUARDANDO_NOTA_FISCAL)
+        # O marco registrado à mão também não passa para a OS sem nota.
+        services.registrar_marco(self.a, self.ascom, "26.613.666-8")
+        self.b.refresh_from_db()
+        self.assertEqual(self.b.protocolo_pagamento, "")
+        self.assertIsNone(self.b.data_atesto_gaf)
+        # Chegou a nota da outra: o protocolo vale para as duas.
+        self._salvar_nota(self.b, numero_nota_fiscal="8954", protocolo_pcpr_oficio="266136668")
+        self.b.refresh_from_db()
+        self.assertEqual(self.b.protocolo_pagamento, "26.613.666-8")
+
+    def test_copia_do_pagamento_vai_para_o_historico_e_a_auditoria(self):
+        """m029: o que o pagamento conjunto copia fica no histórico e na trilha da outra OS."""
+        from auditoria.models import RegistroAuditoria
+
+        services.definir_pagamento_conjunto(self.a, [self.b.pk], self.ascom)
+        with self.captureOnCommitCallbacks(execute=True):
+            self._salvar_nota(self.a, numero_oficio="130", protocolo_pcpr_oficio="266136668")
+        self.b.refresh_from_db()
+        self.assertEqual(self.b.numero_oficio, "130/2026")
+        copia = self.b.historico.filter(descricao__contains="número do ofício: 130/2026").first()
+        self.assertIsNotNone(copia)
+        self.assertTrue(copia.descricao.startswith("Copiado da OS 41/2026"))
+        self.assertEqual(copia.usuario, self.ascom)
+        self.assertTrue(self.b.historico.filter(descricao__contains="protocolo de pagamento: 26.613.666-8").exists())
+        trilha = RegistroAuditoria.objects.filter(
+            modelo="coffee_break.solicitacaocoffeebreak", objeto_id=str(self.b.pk)
+        )
+        self.assertTrue(any("numero_oficio" in r.alteracoes for r in trilha))
+
+    def test_os_cancelada_sai_do_oficio_e_do_anexo(self):
+        """m025: a OS cancelada deixa o pagamento conjunto; a principal cancelada passa a vez."""
+        c = self.criar_solicitacao(
+            numero="43/2026", descricao_evento="Palestra C", quantidade=10,
+            local_entrega="DP", responsavel_recebimento="Ana", numero_nota_fiscal="8960",
+        )
+        services.definir_pagamento_conjunto(self.a, [self.b.pk, c.pk])
+        self.b.refresh_from_db()
+        services.cancelar(self.b, self.ascom, "Evento desmarcado")
+        self.b.refresh_from_db()
+        self.assertIsNone(self.b.pagamento_com_id)
+        self.assertEqual([s.pk for s in self.a.grupo_pagamento()], [self.a.pk, c.pk])
+        self.assertEqual(documentos.juntar(documentos.notas_do_pagamento(self.a)), "8952 e 8960")
+        self.assertNotIn(f"nota-{self.b.pk}", [i["chave"] for i in documentos.itens_anexo(self.a)])
+        self.assertTrue(self.a.historico.filter(descricao__contains="42/2026 foi cancelada").exists())
+        # Cancelar a principal: a próxima assume o pagamento.
+        self.a.refresh_from_db()
+        services.cancelar(self.a, self.ascom, "Evento desmarcado")
+        c.refresh_from_db()
+        self.assertIsNone(c.pagamento_com_id)
+        self.assertEqual([s.pk for s in c.grupo_pagamento()], [c.pk])
+        # Mesmo que algum registro antigo ainda aponte para o grupo, cancelada não entra.
+        SolicitacaoCoffeeBreak.objects.filter(pk=self.b.pk).update(pagamento_com=c)
+        self.assertEqual([s.pk for s in c.grupo_pagamento()], [c.pk])
+
     def test_so_entra_os_do_mesmo_lote(self):
         from django.core.exceptions import ValidationError
 
@@ -2570,3 +2956,133 @@ class PreviaDaOSTests(BaseCoffeeBreakTestCase):
         s = self.criar_solicitacao(numero="41/2026")
         resposta = self.client.get(reverse("coffee_break:ordem_servico_previa", args=[s.pk]))
         self.assertContains(resposta, "Informe o local de entrega.")
+
+
+class NumeracaoConjuntaComViagensTests(BaseCoffeeBreakTestCase):
+    """m041: o ofício e a OS do Coffee Break saem da mesma sequência dos
+    ofícios e das ordens de serviço de Viagens, sem repetição."""
+
+    def setUp(self):
+        self.client.force_login(self.ascom)
+
+    def _oficio_viagens(self, numero, ano=2026):
+        from viagens_oficios.models import Oficio
+
+        return Oficio.objects.create(numero=numero, ano=ano)
+
+    def _os_viagens(self, numero, ano=2026):
+        from viagens_ordens.models import OrdemServico
+
+        return OrdemServico.objects.create(numero=numero, ano=ano)
+
+    def test_oficio_segue_o_maior_dos_dois_modulos(self):
+        from viagens_oficios.models import Oficio
+
+        self.criar_solicitacao(numero="01/2026", numero_oficio="124/2026")
+        self._oficio_viagens(130)
+        self.assertEqual(services.proxima_sequencia_oficio(2026), 131)
+        self.criar_solicitacao(numero="02/2026", numero_oficio="140/2026")
+        # E Viagens enxerga os ofícios do Coffee Break.
+        self.assertEqual(Oficio.get_next_available_numero(2026), 141)
+        # Números de outro ano não contam.
+        self._oficio_viagens(900, ano=2025)
+        self.assertEqual(services.proxima_sequencia_oficio(2026), 141)
+
+    def test_os_segue_o_maior_dos_dois_modulos(self):
+        from viagens_ordens.models import OrdemServico
+
+        self.criar_solicitacao(numero="10/2026")
+        self._os_viagens(15)
+        self.assertEqual(services.proximo_numero(2026), "16/2026")
+        self.criar_solicitacao(numero="20/2026")
+        self.assertEqual(OrdemServico.proximo_numero_livre(2026), (21, None))
+
+    def test_lacuna_de_viagens_ocupada_pelo_coffee_nao_e_reusada(self):
+        from viagens_ordens.models import OrdemServico, OrdemServicoNumeroLacuna
+
+        self._os_viagens(8)
+        OrdemServicoNumeroLacuna.objects.create(ano=2026, numero=3)
+        self.criar_solicitacao(numero="03/2026")
+        self.assertEqual(OrdemServico.proximo_numero_livre(2026), (9, None))
+
+    def test_nova_os_em_branco_reserva_na_sequencia_conjunta(self):
+        self._os_viagens(30)
+        dados = {
+            "municipio": self.curitiba.pk, "data_solicitacao": "2026-08-01",
+            "descricao_evento": "Evento", "quantidade": "10", "numero": "",
+        }
+        self.client.post(reverse("coffee_break:nova"), dados)
+        self.assertTrue(SolicitacaoCoffeeBreak.objects.filter(numero="31/2026").exists())
+
+    def test_numero_de_os_de_viagens_nao_pode_ser_repetido(self):
+        self._os_viagens(5)
+        dados = {
+            "municipio": self.curitiba.pk, "data_solicitacao": "2026-08-01",
+            "descricao_evento": "Evento", "quantidade": "10", "numero": "5",
+        }
+        resposta = self.client.post(reverse("coffee_break:nova"), dados)
+        self.assertContains(resposta, "ordem de serviço de Viagens")
+        self.assertFalse(SolicitacaoCoffeeBreak.objects.filter(numero="05/2026").exists())
+
+    def _form_nota(self, s, numero_oficio):
+        from .forms import NotaCoffeeBreakForm
+
+        return NotaCoffeeBreakForm(
+            {
+                "numero_nota_fiscal": "8957", "numero_oficio": numero_oficio, "data_oficio": "2026-09-21",
+                "protocolo_pcpr_oficio": "", "versao": str(int(s.atualizado_em.timestamp() * 1_000_000)),
+            },
+            instance=s,
+        )
+
+    def test_oficio_de_viagens_nao_pode_ser_repetido(self):
+        s = self.criar_solicitacao(numero="41/2026")
+        self._oficio_viagens(125)
+        form = self._form_nota(s, "125")
+        self.assertFalse(form.is_valid())
+        self.assertIn("ofício de Viagens", form.errors["numero_oficio"][0])
+
+    def test_sugerido_que_outro_usou_antes_de_gravar_pega_o_seguinte(self):
+        s = self.criar_solicitacao(numero="41/2026")
+        self._oficio_viagens(124)
+        form = self._form_nota(s, "125")  # o sugerido na tela
+        self.assertTrue(form.is_valid(), form.errors)
+        # Entre a tela e o salvar, Viagens emitiu o 125.
+        self._oficio_viagens(125)
+        form.save()
+        s.refresh_from_db()
+        self.assertEqual(s.numero_oficio, "126/2026")
+
+    def test_digitado_que_outro_usou_antes_de_gravar_e_recusado(self):
+        s = self.criar_solicitacao(numero="41/2026")
+        form = self._form_nota(s, "200")
+        self.assertTrue(form.is_valid(), form.errors)
+        self._oficio_viagens(200)
+        with self.assertRaises(ValidationError):
+            form.save()
+        s.refresh_from_db()
+        self.assertEqual(s.numero_oficio, "")
+
+    def test_numero_usado_deixa_de_ser_lacuna_em_viagens(self):
+        from viagens_oficios.models import Oficio, OficioNumeroLacuna
+
+        self._oficio_viagens(9)
+        OficioNumeroLacuna.objects.create(ano=2026, numero=4)
+        s = self.criar_solicitacao(numero="41/2026")
+        form = self._form_nota(s, "4")
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+        self.assertFalse(OficioNumeroLacuna.objects.filter(ano=2026, numero=4).exists())
+        self.assertEqual(Oficio.get_next_available_numero(2026), 10)
+
+    def test_formulario_de_viagens_recusa_numero_do_coffee(self):
+        from django import forms as dj_forms
+
+        from viagens_oficios.forms import OficioForm
+
+        self.criar_solicitacao(numero="41/2026", numero_oficio="77/2026")
+        oficio = self._oficio_viagens(10)
+        form = OficioForm(instance=oficio)
+        form.cleaned_data = {"numero": 77}
+        with self.assertRaises(dj_forms.ValidationError):
+            form.clean_numero()

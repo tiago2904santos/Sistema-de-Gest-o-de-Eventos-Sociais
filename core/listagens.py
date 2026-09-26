@@ -95,16 +95,22 @@ def colunas_ordenaveis(request, pedido, colunas, ordenacoes):
     return resultado
 
 
-def trilha_de_situacoes(request, filas, total_geral, icones, parametro="fila"):
+def trilha_de_situacoes(
+    request, filas, total_geral, icones, parametro="fila", descartar=()
+):
     """As filas de uma listagem como itens da trilha lateral (`cad_rail`).
 
     É a composição das listas do módulo de Viagens: cada item troca só a
     situação e mantém o que foi digitado na busca. `filas` são dicts com
     `chave`, `rotulo` e `total`; `icones` mapeia chave -> ícone.
+    `descartar` lista outros parâmetros que a troca de situação substitui
+    (ex.: o `status` que veio de um cartão do Dashboard).
     """
     parametros = request.GET.copy()
     parametros.pop("pagina", None)
     parametros.pop(parametro, None)
+    for nome in descartar:
+        parametros.pop(nome, None)
 
     def url(chave=None):
         destino = parametros.copy()

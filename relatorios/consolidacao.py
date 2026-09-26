@@ -240,6 +240,8 @@ def secao_pcpr(usuario, periodo, solicitacoes, pode_palestras):
     A edição nasce como solicitação de evento (que traz a quantidade de CIN)
     e costuma estar também na planilha da ASCOM (que traz o público). Quando
     as duas falam do mesmo município no mesmo período, viram uma linha só.
+    A palestra encaminhada à DG (`solicitacao_dg`) casa primeiro pelo vínculo;
+    a comparação por município e data fica para as que não têm vínculo.
     """
     from demandas_eventos.models import TipoEventoPalestra
 
@@ -248,6 +250,7 @@ def secao_pcpr(usuario, periodo, solicitacoes, pode_palestras):
         if not _eh_pcpr(s):
             continue
         linhas.append({
+            "solicitacao_id": s.pk,
             "data": s.data_inicio_evento,
             "fim": s.data_fim_evento or s.data_inicio_evento,
             "municipio_id": s.municipio_id,
@@ -259,7 +262,14 @@ def secao_pcpr(usuario, periodo, solicitacoes, pode_palestras):
     if pode_palestras:
         for d in _palestras_atendidas(usuario, periodo, TipoEventoPalestra.PCPR_NA_COMUNIDADE):
             data = d.data_inicio_evento
-            par = next(
+            vinculada = next(
+                (
+                    linha for linha in linhas
+                    if d.solicitacao_dg_id and linha.get("solicitacao_id") == d.solicitacao_dg_id
+                ),
+                None,
+            )
+            par = vinculada or next(
                 (
                     linha for linha in linhas
                     if linha["origem"] == "Solicitação"
@@ -351,23 +361,24 @@ def secao_coffee(usuario, periodo):
             Q(data_inicio_evento__year=periodo.ano)
             | Q(data_inicio_evento__isnull=True, data_solicitacao__year=periodo.ano)
         )
-    itens = list(consulta.only("data_inicio_evento", "data_solicitacao", "quantidade", "cancelada"))
+    itens = list(consulta.select_related("lote__contrato"))
     linhas, totais = _por_mes(
         periodo,
         itens,
         lambda s: s.data_inicio_evento or s.data_solicitacao,
-        lambda s: (0, 0, 1) if s.cancelada else (1, s.quantidade, 0),
-        ["Solicitações", "Quantidade servida", "Canceladas"],
+        lambda s: (0, 0, 1, 0) if s.cancelada else (1, s.quantidade_efetiva, 0, s.valor),
+        ["Solicitações", "Quantidade servida", "Canceladas", "Valor (R$)"],
     )
     return _secao(
         "coffee",
         "Coffee break",
         "coffee",
-        ["Mês/ano" if periodo.ano else "Ano", "Solicitações", "Quantidade servida", "Canceladas"],
+        ["Mês/ano" if periodo.ano else "Ano", "Solicitações", "Quantidade servida", "Canceladas", "Valor (R$)"],
         linhas,
         totais,
-        "Solicitações de coffee break no mês do evento; a quantidade soma só as não canceladas.",
-        numericas=(1, 2, 3),
+        "Solicitações de coffee break no mês do evento; a quantidade e o valor (quantidade × preço "
+        "unitário do contrato guardado na OS) somam só as não canceladas.",
+        numericas=(1, 2, 3, 4),
     )
 
 

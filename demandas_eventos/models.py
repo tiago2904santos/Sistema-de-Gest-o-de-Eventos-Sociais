@@ -85,7 +85,12 @@ class Palestrante(models.Model):
 
 
 class RespostaPadrao(models.Model):
-    """A aba "Respostas Padrão" da planilha."""
+    """A aba "Respostas Padrão" da planilha.
+
+    A mensagem aceita marcadores ({solicitante}, {data}, {horario},
+    {municipio}, {palestrante}, {tema}) que o "Responder" da palestra troca
+    pelos dados dela (`services.preencher_resposta`).
+    """
 
     tipo = models.CharField("tipo", max_length=200, unique=True)
     mensagem = models.TextField("mensagem")
@@ -170,6 +175,16 @@ class DemandaEvento(models.Model):
         verbose_name="criado por",
         on_delete=models.PROTECT,
         related_name="demandas_ascom_criadas",
+        blank=True,
+        null=True,
+    )
+    # A solicitação de evento criada pelo "Encaminhar à DG": o mesmo evento
+    # nos dois cadastros, ligado aqui (o app de solicitações não muda).
+    solicitacao_dg = models.OneToOneField(
+        "solicitacoes.SolicitacaoEvento",
+        verbose_name="solicitação de evento (DG)",
+        on_delete=models.SET_NULL,
+        related_name="demanda_ascom",
         blank=True,
         null=True,
     )
@@ -270,6 +285,9 @@ class AcaoHistoricoDemanda(models.TextChoices):
     CRIACAO = "CRIACAO", "Registro criado"
     ATUALIZACAO = "ATUALIZACAO", "Registro atualizado"
     TRANSICAO = "TRANSICAO", "Status alterado"
+    RESPOSTA = "RESPOSTA", "Resposta enviada"
+    ENCAMINHAMENTO_DG = "ENCAMINHAMENTO_DG", "Encaminhada à DG"
+    ANDAMENTO_DG = "ANDAMENTO_DG", "Andamento na DG"
 
 
 class HistoricoDemanda(models.Model):

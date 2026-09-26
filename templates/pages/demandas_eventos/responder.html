@@ -1,0 +1,27 @@
+{% extends "layouts/app_shell_v32.html" %}
+{% comment %}
+  "Responder" em tela própria, para quando o modal não abre (link aberto em
+  nova aba). Os campos são os mesmos do modal (`_responder_campos.html`).
+{% endcomment %}
+
+{% block title %}Responder — {{ demanda.get_evento_display }} #{{ demanda.pk }} — ASCOM{% endblock %}
+
+{% block conteudo %}
+  {% include "components/v32/breadcrumb.html" with itens=breadcrumb %}
+  <section class="section-card reg">
+    <header class="section-card__cabecalho reg__t">
+      <span class="section-card__numero reg-numero" aria-hidden="true">{% include "components/icon.html" with nome="mail" %}</span>
+      <h2 class="section-card__titulo">Responder — {{ demanda.solicitante|truncatechars:60 }}</h2>
+    </header>
+    <div class="section-card__corpo">
+      <form method="post" action="{% url 'demandas_eventos:responder' demanda.pk %}" novalidate>
+        {% csrf_token %}
+        {% include "pages/demandas_eventos/_responder_campos.html" %}
+        <div class="frm-acoes-fim">
+          <a class="btn--secundaria" href="{% url 'demandas_eventos:editar' demanda.pk %}">Voltar</a>
+          {% if respostas %}<button type="submit" class="btn-primaria">Registrar resposta enviada</button>{% endif %}
+        </div>
+      </form>
+    </div>
+  </section>
+{% endblock %}

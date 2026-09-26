@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from django.utils import timezone
 
 
@@ -107,6 +109,11 @@ class SolicitacaoEvento(models.Model):
         help_text="Qual unidade móvel vai ao evento (obrigatória quando há unidade móvel).",
     )
     local_evento = models.CharField("local do evento", max_length=255, blank=True)
+    # Muitos pedidos chegam por protocolo: o número do ofício liga a
+    # solicitação ao processo, no formato 00.000.000-0 (como nas Palestras).
+    protocolo = models.CharField(
+        "protocolo (eProtocolo)", max_length=20, blank=True, db_index=True
+    )
     descricao_complementar = models.TextField("descrição complementar", blank=True)
 
     quantidade_servidores = models.PositiveIntegerField(
@@ -360,9 +367,22 @@ class AnexoSolicitacao(models.Model):
             return f"{self.tamanho / (1024 * 1024):.1f} MB"
         return f"{max(self.tamanho, 1) / 1024:.0f} KB"
 
-    def delete(self, *args, **kwargs):
-        self.arquivo.delete(save=False)
-        return super().delete(*args, **kwargs)
+
+
+@receiver(post_delete, sender=AnexoSolicitacao)
+def _apagar_arquivo_do_anexo(sender, instance, **kwargs):
+    """Some o registro, some o arquivo — também na exclusão em cascata.
+
+    O `delete()` do modelo não roda quando a solicitação inteira é apagada
+    (o cascade apaga em lote), e o arquivo ficava no servidor sem vínculo:
+    ofícios e documentos com dados pessoais. O sinal cobre os dois caminhos,
+    e só apaga depois do commit — se a exclusão for desfeita, o arquivo fica.
+    """
+    arquivo = instance.arquivo
+    if not arquivo or not arquivo.name:
+        return
+    storage, nome = arquivo.storage, arquivo.name
+    transaction.on_commit(lambda: storage.delete(nome))
 
 
 class AcaoHistorico(models.TextChoices):

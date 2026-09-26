@@ -99,6 +99,12 @@ class OficioForm(ProtocoloManualMixin, forms.ModelForm):
         conflito = Oficio.objects.filter(ano=self.ano, numero=numero).exclude(pk=self.instance.pk)
         if conflito.exists():
             raise forms.ValidationError(f'Já existe um ofício com o número {numero} em {self.ano}.')
+        # Livro único: o número também não pode ser de um ofício do Coffee Break.
+        from core.numeracao import NAMESPACE_OFICIO, numeros_externos
+        if numero != self.instance.numero and numero in numeros_externos(NAMESPACE_OFICIO, self.ano):
+            raise forms.ValidationError(
+                f'O número {numero} de {self.ano} já foi usado por um ofício do Coffee Break (a numeração é conjunta).'
+            )
         return numero
 
     def clean_data_criacao(self):

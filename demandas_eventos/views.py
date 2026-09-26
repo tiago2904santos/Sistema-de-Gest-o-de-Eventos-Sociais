@@ -14,9 +14,12 @@ from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_POST
 
 from core import preencher_por_email
+from integracoes.eprotocolo import andamento as andamento_eprotocolo
 from core.listagens import trilha_de_situacoes
 
-from . import preenchimento, services
+from solicitacoes import permissions as permissoes_solicitacoes
+
+from . import encaminhamento, preenchimento, services
 from .forms import DemandaEventoForm, PalestranteForm, RespostaPadraoForm, TemaForm
 from .models import (
     AcaoHistoricoDemanda,
@@ -53,7 +56,7 @@ def _demanda_visivel(request, pk):
     return get_object_or_404(
         queryset_visivel(
             request.user,
-            DemandaEvento.objects.select_related("municipio__estado", "criado_por").prefetch_related("temas", "palestrantes"),
+            DemandaEvento.objects.select_related("municipio__estado", "criado_por", "solicitacao_dg").prefetch_related("temas", "palestrantes"),
         ),
         pk=pk,
     )
@@ -67,7 +70,8 @@ def dashboard(request):
     resumo = [
         {"titulo": "Em aberto", "valor": visiveis.exclude(status__in=[StatusDemanda.ATENDIDA, StatusDemanda.CANCELADA]).count(), "icone": "document", "cor": "dourada", "url": lista},
         {"titulo": "Agendadas", "valor": visiveis.filter(status=StatusDemanda.EVENTO_AGENDADO).count(), "icone": "calendar", "cor": "info", "url": f"{lista}?status={StatusDemanda.EVENTO_AGENDADO}"},
-        {"titulo": "Atendidas no ano", "valor": visiveis.filter(status=StatusDemanda.ATENDIDA, data_solicitacao__year=hoje.year).count(), "icone": "check-circle", "cor": "sucesso", "url": f"{lista}?status={StatusDemanda.ATENDIDA}"},
+        # Pelo ano do evento; sem data do evento, pelo da solicitação (o "Mês" da planilha).
+        {"titulo": "Atendidas no ano", "valor": visiveis.filter(Q(data_inicio_evento__year=hoje.year) | Q(data_inicio_evento__isnull=True, data_solicitacao__year=hoje.year), status=StatusDemanda.ATENDIDA).count(), "icone": "check-circle", "cor": "sucesso", "url": f"{lista}?status={StatusDemanda.ATENDIDA}"},
         {"titulo": "Aguardando retorno", "valor": visiveis.filter(status=StatusDemanda.AGUARDANDO_RETORNO).count(), "icone": "hourglass", "cor": "neutra", "url": f"{lista}?status={StatusDemanda.AGUARDANDO_RETORNO}"},
     ]
     proximas = visiveis.filter(data_inicio_evento__gte=hoje).exclude(
@@ -332,16 +336,87 @@ def editar_demanda(request, pk=None):
     if instancia:
         contexto.update({
             "historico": instancia.historico.select_related("usuario"),
+            "solicitacao_dg": _solicitacao_dg(request.user, instancia),
             # O andamento como nas Solicitações: etapas no stepper e os
             # cartões do próximo status, com a anotação que vai ao histórico.
             **_contexto_andamento(instancia),
+            "andamento_protocolo": andamento_eprotocolo.andamento_guardado(
+                request, "demandas_eventos", instancia.pk
+            ),
         })
     return render(request, "pages/demandas_eventos/form.html", contexto)
 
 
-def _contexto_andamento(demanda, erro="", escolhido="", texto=""):
+def _solicitacao_dg(usuario, demanda):
+    """A solicitação de evento ligada pelo "Encaminhar à DG", como a tela a mostra."""
+    solicitacao = demanda.solicitacao_dg
+    if solicitacao is None:
+        return None
+    return {
+        "numero": solicitacao.pk,
+        "status": solicitacao.get_status_display(),
+        "status_tom": solicitacao.status.lower(),
+        # Quem não enxerga a solicitação (não criou e não é da DG) vê só a situação.
+        "url": reverse("solicitacoes:editar", args=[solicitacao.pk])
+        if permissoes_solicitacoes.pode_ver(usuario, solicitacao)
+        else "",
+    }
+
+
+@login_required
+@require_POST
+def encaminhar_dg(request, pk):
+    """Cria a solicitação de evento da palestra (rascunho) e abre para completar."""
+    demanda = _demanda_visivel(request, pk)
+    if not pode_editar(request.user, demanda):
+        raise Http404
+    try:
+        solicitacao = encaminhamento.encaminhar_a_dg(demanda, request.user)
+    except ValidationError as erro:
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+        return redirect("demandas_eventos:editar", pk=demanda.pk)
+    messages.success(
+        request,
+        f"Solicitação #{solicitacao.pk} criada a partir da {demanda.get_evento_display().lower()}. "
+        "Complete o que falta e envie à DG.",
+    )
+    return redirect("solicitacoes:editar", pk=solicitacao.pk)
+
+
+@login_required
+@require_POST
+def consultar_protocolo(request, pk):
+    """"Consultar andamento" do protocolo da palestra, como nas Solicitações."""
+    demanda = _demanda_visivel(request, pk)
+    if not demanda.protocolo:
+        messages.error(request, "Informe e salve o número do protocolo antes de consultar.")
+    else:
+        erro = andamento_eprotocolo.consultar_e_guardar(
+            request, "demandas_eventos", demanda.pk, demanda.protocolo
+        )
+        if erro:
+            messages.error(request, erro)
+    url = reverse("demandas_eventos:editar", args=[demanda.pk])
+    return redirect(f"{url}#sec-solicitacao")
+
+
+def _contexto_andamento(demanda, erro="", escolhido="", texto="", extras=None):
+    faltas = services.faltas_do_andamento(demanda)
     return {
         "demanda": demanda,
+        # O que Agendada e Atendida pedem e a palestra ainda não tem: só isso
+        # aparece no formulário do andamento.
+        "faltas_andamento": faltas,
+        "extras_andamento": extras or {},
+        "opcoes_palestrante_andamento": (
+            [
+                {"valor": str(p.pk), "rotulo": p.nome}
+                for p in Palestrante.objects.only("pk", "nome")
+            ]
+            if faltas["palestrante"]
+            else []
+        ),
         "opcoes_andamento": [
             {**opcao, "marcado": opcao["valor"] == escolhido}
             for opcao in services.opcoes_de_status(demanda, ICONES_STATUS)
@@ -353,6 +428,30 @@ def _contexto_andamento(demanda, erro="", escolhido="", texto=""):
         "erro_andamento": erro,
         "texto_andamento": texto,
     }
+
+
+def _extras_do_andamento(extras):
+    """Data, palestrante e público que o formulário do andamento pediu, já convertidos."""
+    texto_data, texto_palestrante, texto_publico = (
+        extras["andamento_data"], extras["andamento_palestrante"], extras["andamento_publico"]
+    )
+    try:
+        data_evento = parse_date(texto_data) if texto_data else None
+    except ValueError:
+        data_evento = None
+    if texto_data and data_evento is None:
+        raise ValidationError("Informe a data do evento no formato dd/mm/aaaa.")
+    palestrante = None
+    if texto_palestrante:
+        palestrante = Palestrante.objects.filter(pk=texto_palestrante).first() if texto_palestrante.isdigit() else None
+        if palestrante is None:
+            raise ValidationError("Escolha um palestrante da lista.")
+    publico = None
+    if texto_publico:
+        if not texto_publico.isdigit():
+            raise ValidationError("A quantidade de público é um número inteiro.")
+        publico = int(texto_publico)
+    return {"data_evento": data_evento, "palestrante": palestrante, "quantidade_publico": publico}
 
 
 @login_required
@@ -372,19 +471,92 @@ def registrar_andamento(request, pk):
         return render(request, "pages/demandas_eventos/_modal_andamento.html", _contexto_andamento(demanda))
     novo_status = request.POST.get("novo_status", "")
     texto = request.POST.get("andamento", "")
+    extras = {nome: request.POST.get(nome, "").strip() for nome in ("andamento_data", "andamento_palestrante", "andamento_publico")}
     try:
-        services.registrar_andamento(demanda, request.user, novo_status, texto)
+        services.registrar_andamento(demanda, request.user, novo_status, texto, **_extras_do_andamento(extras))
     except ValidationError as erro:
+        # A palestra pode ter ficado com dados da tentativa: volta ao banco.
+        demanda.refresh_from_db()
         if via_modal:
             return render(
                 request,
                 "pages/demandas_eventos/_modal_andamento.html",
-                _contexto_andamento(demanda, " ".join(erro.messages), novo_status, texto),
+                _contexto_andamento(demanda, " ".join(erro.messages), novo_status, texto, extras),
             )
         for mensagem in erro.messages:
             messages.error(request, mensagem)
         return redirect(destino)
     messages.success(request, f"Status atualizado para {demanda.get_status_display()}.")
+    if via_modal:
+        return JsonResponse({"ok": True})
+    return redirect(destino)
+
+
+# Para onde a palestra costuma ir depois de respondida.
+STATUS_APOS_RESPOSTA = [StatusDemanda.EM_ANDAMENTO, StatusDemanda.AGUARDANDO_RETORNO]
+
+
+def _contexto_resposta(demanda, erro="", escolhida="", status=""):
+    respostas = []
+    for resposta in RespostaPadrao.objects.all():
+        texto = services.preencher_resposta(resposta, demanda)
+        respostas.append({
+            "valor": str(resposta.pk),
+            "rotulo": resposta.tipo,
+            "texto": texto,
+            "link_email": services.link_email(demanda, texto),
+            "link_whatsapp": services.link_whatsapp(demanda, texto),
+            "marcado": str(resposta.pk) == escolhida,
+        })
+    return {
+        "demanda": demanda,
+        "respostas": respostas,
+        "opcoes_status_resposta": [
+            {"valor": valor, "rotulo": StatusDemanda(valor).label}
+            for valor in STATUS_APOS_RESPOSTA
+            if valor != demanda.status
+        ],
+        "status_resposta": status,
+        "erro_resposta": erro,
+        "breadcrumb": [
+            {"label": "Palestras", "url": reverse("demandas_eventos:lista")},
+            {"label": f"{demanda.get_evento_display()} #{demanda.pk}", "url": reverse("demandas_eventos:editar", args=[demanda.pk])},
+            {"label": "Responder"},
+        ],
+    }
+
+
+@login_required
+def responder(request, pk):
+    """Responde o pedido com uma resposta padrão preenchida com os dados da palestra.
+
+    A tela mostra cada resposta já preenchida, com o e-mail (com assunto) e
+    o WhatsApp do contato prontos para abrir; o POST registra no histórico a
+    que foi enviada e, se pedido, muda o status. Mesmo protocolo de modal do
+    andamento (`X-Cadastro-Modal`).
+    """
+    demanda = _demanda_visivel(request, pk)
+    if not pode_editar(request.user, demanda):
+        raise Http404
+    via_modal = request.headers.get("X-Cadastro-Modal") == "1"
+    modelo = "pages/demandas_eventos/_modal_responder.html" if via_modal else "pages/demandas_eventos/responder.html"
+    destino = reverse("demandas_eventos:editar", args=[demanda.pk])
+    if request.method != "POST":
+        return render(request, modelo, _contexto_resposta(demanda))
+    escolhida = request.POST.get("resposta", "")
+    status = request.POST.get("novo_status", "")
+    resposta = RespostaPadrao.objects.filter(pk=escolhida).first() if escolhida.isdigit() else None
+    try:
+        if resposta is None:
+            raise ValidationError("Escolha a resposta enviada.")
+        if status and status not in STATUS_APOS_RESPOSTA:
+            raise ValidationError("Escolha um status válido.")
+        services.registrar_resposta(
+            demanda, request.user, resposta, services.preencher_resposta(resposta, demanda), status
+        )
+    except ValidationError as erro:
+        return render(request, modelo, _contexto_resposta(demanda, " ".join(erro.messages), escolhida, status))
+    messages.success(request, f"Resposta \"{resposta.tipo}\" registrada no histórico.")
     if via_modal:
         return JsonResponse({"ok": True})
     return redirect(destino)
@@ -506,6 +678,7 @@ def _campos_cadastro(form):
             "obrigatorio": campo.required,
             "valor": "" if value is None else str(value),
             "largura": LARGURAS.get(nome, ""),
+            "ajuda": campo.help_text,
         }
         if isinstance(campo, forms.ModelChoiceField):
             item.update({"tipo": "select", "opcoes": _opcoes(campo.queryset)})

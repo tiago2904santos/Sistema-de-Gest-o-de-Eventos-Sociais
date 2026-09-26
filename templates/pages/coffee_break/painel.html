@@ -35,6 +35,23 @@
     {% endfor %}
   {% endif %}
 
+  {% for item in alertas_vigencia %}
+    {# Fim da vigência do contrato a 90, 60 e 30 dias: prazo do aditivo. #}
+    <div class="aviso aviso--callout" role="status">
+      <div class="aviso__txt">
+        {% include "components/icon.html" with nome="alert" %}
+        <div class="aviso__corpo">
+          <b>Contrato {{ item.contrato.numero }} — {{ item.contrato.fornecedor.razao_social }}</b>
+          {% if item.vencido %}
+            <p>Vigência encerrada em {{ item.fim|date:"d/m/Y" }}. Novas solicitações com evento depois dessa data não são aceitas neste contrato.</p>
+          {% else %}
+            <p>A vigência termina em {{ item.fim|date:"d/m/Y" }} ({% if item.dias == 0 %}hoje{% elif item.dias == 1 %}amanhã{% else %}em {{ item.dias }} dias{% endif %}, faixa de {{ item.faixa }} dias). Providencie o aditivo de prorrogação.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+
   {% for fornecedor, alertas in alertas_certidoes %}
     {# Certidão vencida, vencendo ou faltando trava o pacote do protocolo. #}
     <div class="aviso aviso--callout" role="status">

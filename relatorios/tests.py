@@ -87,6 +87,26 @@ class RelatorioConsolidadoTests(BaseSolicitacaoTestCase):
         linha = pcpr["linhas"][0]
         self.assertEqual(linha[3:], [900, 230, "Solicitação + ASCOM"])
 
+    def test_pcpr_casa_primeiro_pelo_vinculo_do_encaminhamento(self):
+        solicitacao = self.criar_solicitacao(criado_por=self.da_ascom)
+        solicitacao.tipo_evento = self.pcpr
+        solicitacao.status = StatusSolicitacao.ATENDIDA
+        solicitacao.data_inicio_evento = date(2026, 5, 9)
+        solicitacao.data_fim_evento = date(2026, 5, 9)
+        solicitacao.quantidade_cin = 120
+        solicitacao.save()
+        # Sem município e com a data remarcada na planilha: só o vínculo junta as duas.
+        self.palestra(
+            evento=TipoEventoPalestra.PCPR_NA_COMUNIDADE,
+            data_inicio_evento=date(2026, 5, 16),
+            quantidade_publico=400,
+            solicitacao_dg=solicitacao,
+        )
+        dados = relatorio(self.da_ascom, 2026, HOJE)
+        pcpr = next(s for s in dados["secoes"] if s["slug"] == "pcpr")
+        self.assertEqual(len(pcpr["linhas"]), 1)
+        self.assertEqual(pcpr["linhas"][0][3:], [400, 120, "Solicitação + ASCOM"])
+
     def test_painel_e_planilha_trazem_as_mesmas_secoes(self):
         self.palestra()
         self.client.force_login(self.da_ascom)

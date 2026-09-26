@@ -1,0 +1,13 @@
+{% load palestras %}
+{% comment %}
+  Na solicitação de evento criada pelo "Encaminhar à DG": de qual palestra
+  ou evento da ASCOM ela veio e a situação de lá. O link só aparece para
+  quem enxerga a palestra. Contexto: `solicitacao`.
+{% endcomment %}
+{% with demanda=solicitacao.demanda_ascom %}
+  {% if demanda %}
+    <div class="aviso aviso--callout aviso--fino" role="status">
+      <div class="aviso__txt">{% include "components/icon.html" with nome="users" %}<div class="aviso__corpo"><b>Veio da ASCOM</b><p>{% if demanda|palestra_visivel_para:request.user %}<a href="{% url 'demandas_eventos:editar' demanda.pk %}">{{ demanda.get_evento_display }} #{{ demanda.pk }}</a>{% else %}{{ demanda.get_evento_display }} #{{ demanda.pk }}{% endif %} <span class="st st--{{ demanda.status|lower }}">{{ demanda.get_status_display }}</span></p></div></div>
+    </div>
+  {% endif %}
+{% endwith %}

@@ -88,6 +88,11 @@ class BaseSolicitacaoTestCase(TestCase):
         solicitacao = SolicitacaoEvento.objects.create(**dados)
         return solicitacao
 
+    def efetivar(self, funcao, *args, **kwargs):
+        """Roda a ação e o que ela deixou para depois do commit (a viagem)."""
+        with self.captureOnCommitCallbacks(execute=True):
+            return funcao(*args, **kwargs)
+
     def solicitacao_completa(self):
         """Solicitação pronta para envio: serviços e planejamento preenchidos."""
         solicitacao = self.criar_solicitacao()
@@ -1543,14 +1548,57 @@ class AnexosTests(BaseSolicitacaoTestCase):
         )
         anexo = solicitacao.anexos.get()
         caminho = anexo.arquivo.path
-        resposta = self.client.post(
-            reverse("solicitacoes:anexo_excluir", args=[solicitacao.pk, anexo.pk])
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            resposta = self.client.post(
+                reverse("solicitacoes:anexo_excluir", args=[solicitacao.pk, anexo.pk])
+            )
         self.assertEqual(resposta.status_code, 302)
         self.assertEqual(solicitacao.anexos.count(), 0)
         import os
 
         self.assertFalse(os.path.exists(caminho))
+
+    def test_excluir_rascunho_apaga_os_arquivos_dos_anexos(self):
+        """"Remove o rascunho e os anexos dele": o arquivo sai do servidor também."""
+        import os
+
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        for nome in ("oficio.pdf", "foto.pdf"):
+            self.client.post(
+                reverse("solicitacoes:anexo_adicionar", args=[solicitacao.pk]),
+                {"arquivo": self.arquivo(nome)},
+            )
+        caminhos = [anexo.arquivo.path for anexo in solicitacao.anexos.all()]
+        self.assertEqual(len(caminhos), 2)
+        with self.captureOnCommitCallbacks(execute=True):
+            resposta = self.client.post(
+                reverse("solicitacoes:excluir", args=[solicitacao.pk])
+            )
+        self.assertEqual(resposta.status_code, 302)
+        for caminho in caminhos:
+            self.assertFalse(os.path.exists(caminho))
+
+    def test_limpeza_de_orfaos_cobre_a_pasta_das_solicitacoes(self):
+        from io import StringIO
+
+        from django.core.files.base import ContentFile
+        from django.core.files.storage import default_storage
+        from django.core.management import call_command
+
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        self.client.post(
+            reverse("solicitacoes:anexo_adicionar", args=[solicitacao.pk]),
+            {"arquivo": self.arquivo()},
+        )
+        vivo = solicitacao.anexos.get().arquivo.name
+        orfao = default_storage.save("solicitacoes/999/sobra.pdf", ContentFile(b"%PDF-1.4"))
+        saida = StringIO()
+        call_command("limpar_arquivos_orfaos", "--apagar", stdout=saida)
+        self.assertIn(f"Arquivo órfão: {orfao}", saida.getvalue())
+        self.assertFalse(default_storage.exists(orfao))
+        self.assertTrue(default_storage.exists(vivo))
 
     def test_secao_anexos_na_tela_do_registro(self):
         """Os anexos do registro vivem na seção do próprio formulário."""
@@ -1581,7 +1629,7 @@ class GeracaoDeViagemPeloDespacho(BaseSolicitacaoTestCase):
 
     def _deferir(self, solicitacao):
         services.enviar(solicitacao, self.solicitante)
-        return services.despachar(
+        return self.efetivar(services.despachar,
             solicitacao, self.gestor, DecisaoDG.ATENDER, observacao="Autorizado"
         )
 
@@ -1639,7 +1687,7 @@ class GeracaoDeViagemPeloDespacho(BaseSolicitacaoTestCase):
 
         solicitacao = self.solicitacao_completa()
         services.enviar(solicitacao, self.solicitante)
-        services.despachar(
+        self.efetivar(services.despachar,
             solicitacao, self.gestor, DecisaoDG.NAO_ATENDER, observacao="Sem efetivo"
         )
         self.assertIsNone(iv.viagem_da_solicitacao(solicitacao))
@@ -1673,7 +1721,7 @@ class GeracaoDeViagemPeloDespacho(BaseSolicitacaoTestCase):
             "solicitacoes.integracao_viagens.gerar_viagem",
             side_effect=RuntimeError("banco fora do ar"),
         ):
-            services.despachar(
+            self.efetivar(services.despachar,
                 solicitacao, self.gestor, DecisaoDG.ATENDER, observacao="Autorizado"
             )
 
@@ -1800,3 +1848,574 @@ class RedespachoAposAlteracaoTests(BaseSolicitacaoTestCase):
         self.client.force_login(self.solicitante)
         resposta = self.client.get(reverse("solicitacoes:editar", args=[solicitacao.pk]))
         self.assertContains(resposta, "Atendida só após")
+
+
+class ViagemAcompanhaSolicitacaoTests(BaseSolicitacaoTestCase):
+    """Depois de gerada, a viagem segue a solicitação: muda, cancela ou avisa."""
+
+    def _deferida_com_viagem(self):
+        from solicitacoes import integracao_viagens as iv
+
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.efetivar(services.despachar, solicitacao, self.gestor, DecisaoDG.ATENDER, observacao="Ok")
+        viagem = iv.viagem_da_solicitacao(solicitacao)
+        self.assertIsNotNone(viagem)
+        return solicitacao, viagem
+
+    def _operador_viagens(self):
+        operador = User.objects.create_user("operador-vg", password="x")
+        operador.groups.add(Group.objects.get_or_create(name="VIAGENS_OPERADOR")[0])
+        return operador
+
+    def test_roteiro_nasce_do_tipo_solicitacao_de_evento(self):
+        from viagens_roteiros.models import Roteiro
+
+        _solicitacao, viagem = self._deferida_com_viagem()
+        self.assertEqual(viagem.roteiros.get().tipo, Roteiro.Tipo.EVENTO)
+
+    def test_cancelar_evento_cancela_a_viagem_sem_documentos(self):
+        solicitacao, viagem = self._deferida_com_viagem()
+        self.efetivar(services.cancelar_evento, solicitacao, self.solicitante, "Chuva forte")
+        viagem.refresh_from_db()
+        self.assertTrue(viagem.cancelado)
+        self.assertIn(f"Solicitação #{solicitacao.pk}", viagem.motivo_cancelamento)
+        self.assertIn("Chuva forte", viagem.motivo_cancelamento)
+        # O roteiro vai junto, em cascata.
+        self.assertTrue(viagem.roteiros.get().cancelado)
+
+    def test_nao_atender_no_novo_despacho_cancela_a_viagem(self):
+        solicitacao, viagem = self._deferida_com_viagem()
+        services.reenviar_apos_edicao(
+            solicitacao, self.solicitante,
+            [{"campo": "Local do evento", "antes": "A", "depois": "B"}],
+        )
+        self.efetivar(services.despachar,
+            solicitacao, self.gestor, DecisaoDG.NAO_ATENDER, observacao="Sem efetivo"
+        )
+        viagem.refresh_from_db()
+        self.assertTrue(viagem.cancelado)
+
+    def test_com_documento_emitido_avisa_o_operador_em_vez_de_cancelar(self):
+        from core.models import Notificacao
+        from viagens_oficios.models import Oficio
+
+        operador = self._operador_viagens()
+        solicitacao, viagem = self._deferida_com_viagem()
+        Oficio.objects.create(motivo="Da viagem", viagem=viagem)
+        self.efetivar(services.cancelar_evento, solicitacao, self.solicitante, "Evento adiado")
+        viagem.refresh_from_db()
+        self.assertFalse(viagem.cancelado)
+        aviso = Notificacao.objects.get(usuario=operador)
+        self.assertIn(f"Viagem #{viagem.pk}", aviso.titulo)
+        self.assertIn(reverse("viagens_viagem:painel", args=[viagem.pk]), aviso.link)
+
+    def test_novo_deferimento_atualiza_a_viagem(self):
+        novo_municipio = Municipio.objects.create(
+            nome="Outra Cidade", estado=self.estado, regiao=self.regiao
+        )
+        solicitacao, viagem = self._deferida_com_viagem()
+        solicitacao.local_evento = "Ginásio municipal"
+        solicitacao.municipio = novo_municipio
+        solicitacao.data_inicio_evento = date(2026, 9, 20)
+        solicitacao.data_fim_evento = date(2026, 9, 21)
+        solicitacao.save()
+        services.reenviar_apos_edicao(
+            solicitacao, self.solicitante,
+            [{"campo": "Local do evento", "antes": "Praça central", "depois": "Ginásio municipal"}],
+        )
+        self.efetivar(services.despachar, solicitacao, self.gestor, DecisaoDG.ATENDER, observacao="Ok")
+        viagem.refresh_from_db()
+        self.assertEqual(viagem.destino_municipio, novo_municipio)
+        self.assertEqual(viagem.data_inicio, date(2026, 9, 20))
+        self.assertEqual(viagem.data_fim, date(2026, 9, 21))
+        self.assertIn("Ginásio municipal", viagem.motivo)
+        roteiro = viagem.roteiros.get()
+        self.assertIn("Ginásio municipal", roteiro.observacoes)
+        self.assertEqual(roteiro.destinos.get().municipio, novo_municipio)
+
+    def test_novo_deferimento_com_documento_nao_mexe_e_avisa(self):
+        from core.models import Notificacao
+        from viagens_oficios.models import Oficio
+
+        operador = self._operador_viagens()
+        solicitacao, viagem = self._deferida_com_viagem()
+        Oficio.objects.create(motivo="Da viagem", viagem=viagem)
+        solicitacao.local_evento = "Ginásio municipal"
+        solicitacao.save()
+        services.reenviar_apos_edicao(
+            solicitacao, self.solicitante,
+            [{"campo": "Local do evento", "antes": "Praça central", "depois": "Ginásio municipal"}],
+        )
+        self.efetivar(services.despachar, solicitacao, self.gestor, DecisaoDG.ATENDER)
+        viagem.refresh_from_db()
+        self.assertNotIn("Ginásio municipal", viagem.motivo)
+        self.assertTrue(Notificacao.objects.filter(usuario=operador).exists())
+
+    def test_painel_mostra_viagem_desatualizada_com_o_que_mudou(self):
+        solicitacao, viagem = self._deferida_com_viagem()
+        services.reenviar_apos_edicao(
+            solicitacao, self.solicitante,
+            [{"campo": "Local do evento", "antes": "Praça central", "depois": "Ginásio municipal"}],
+        )
+        self.client.force_login(self.superusuario)
+        resposta = self.client.get(reverse("viagens_viagem:etapa", args=[viagem.pk, 1]))
+        self.assertContains(resposta, "Viagem desatualizada")
+        self.assertContains(resposta, "Ginásio municipal")
+        self.assertContains(resposta, reverse("solicitacoes:editar", args=[solicitacao.pk]))
+
+    def test_painel_mostra_de_qual_solicitacao_veio(self):
+        solicitacao, viagem = self._deferida_com_viagem()
+        self.client.force_login(self.superusuario)
+        resposta = self.client.get(reverse("viagens_viagem:etapa", args=[viagem.pk, 1]))
+        self.assertContains(resposta, f"Solicitação de evento #{solicitacao.pk}")
+        self.assertNotContains(resposta, "Viagem desatualizada")
+
+
+class ViagemNaTelaDaSolicitacaoTests(BaseSolicitacaoTestCase):
+    """O cartão "Viagem" na solicitação e o "Gerar viagem" pela tela."""
+
+    def _deferida_sem_viagem(self):
+        # Sem efetivar: o on_commit não roda e a viagem não nasce, como nas
+        # deferidas antes da geração automática.
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER)
+        return solicitacao
+
+    def test_viagem_so_nasce_depois_do_commit(self):
+        from solicitacoes import integracao_viagens as iv
+
+        solicitacao = self._deferida_sem_viagem()
+        self.assertIsNone(iv.viagem_da_solicitacao(solicitacao))
+
+    def test_falha_na_viagem_avisa_quem_despachou(self):
+        from unittest.mock import patch
+
+        from core.models import Notificacao
+
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        with patch(
+            "solicitacoes.integracao_viagens.gerar_viagem",
+            side_effect=RuntimeError("falhou"),
+        ):
+            self.efetivar(services.despachar, solicitacao, self.gestor, DecisaoDG.ATENDER)
+        self.assertTrue(
+            Notificacao.objects.filter(
+                usuario=self.gestor, titulo__contains="viagem não foi atualizada"
+            ).exists()
+        )
+
+    def test_cartao_mostra_gerar_viagem_para_a_dg(self):
+        solicitacao = self._deferida_sem_viagem()
+        self.client.force_login(self.gestor)
+        resposta = self.client.get(reverse("solicitacoes:editar", args=[solicitacao.pk]))
+        self.assertContains(resposta, 'id="viagem"')
+        self.assertContains(resposta, reverse("solicitacoes:gerar_viagem", args=[solicitacao.pk]))
+
+    def test_solicitante_ve_o_cartao_sem_o_botao(self):
+        solicitacao = self._deferida_sem_viagem()
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(reverse("solicitacoes:editar", args=[solicitacao.pk]))
+        self.assertContains(resposta, 'id="viagem"')
+        self.assertNotContains(resposta, reverse("solicitacoes:gerar_viagem", args=[solicitacao.pk]))
+
+    def test_rascunho_nao_tem_cartao(self):
+        solicitacao = self.solicitacao_completa()
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(reverse("solicitacoes:editar", args=[solicitacao.pk]))
+        self.assertNotContains(resposta, 'id="viagem"')
+
+    def test_gerar_viagem_pela_tela(self):
+        from solicitacoes import integracao_viagens as iv
+
+        solicitacao = self._deferida_sem_viagem()
+        self.client.force_login(self.gestor)
+        resposta = self.client.post(
+            reverse("solicitacoes:gerar_viagem", args=[solicitacao.pk]), follow=True
+        )
+        viagem = iv.viagem_da_solicitacao(solicitacao)
+        self.assertIsNotNone(viagem)
+        # O cartão passa a mostrar a viagem e o que falta completar.
+        self.assertContains(resposta, f"Viagem #{viagem.pk}")
+        self.assertContains(resposta, "Município de onde a equipe sai")
+
+    def test_gerar_viagem_de_novo_mostra_o_motivo(self):
+        solicitacao = self._deferida_sem_viagem()
+        self.client.force_login(self.gestor)
+        url = reverse("solicitacoes:gerar_viagem", args=[solicitacao.pk])
+        self.client.post(url)
+        resposta = self.client.post(url, follow=True)
+        self.assertContains(resposta, "já tem viagem gerada")
+
+    def test_solicitante_nao_gera_viagem(self):
+        solicitacao = self._deferida_sem_viagem()
+        self.client.force_login(self.solicitante)
+        resposta = self.client.post(reverse("solicitacoes:gerar_viagem", args=[solicitacao.pk]))
+        self.assertEqual(resposta.status_code, 403)
+
+    def test_operador_de_viagens_gera_e_vai_para_a_viagem(self):
+        from solicitacoes import integracao_viagens as iv
+
+        operador = User.objects.create_user("operador", password="x")
+        operador.groups.add(Group.objects.get_or_create(name="VIAGENS_OPERADOR")[0])
+        solicitacao = self._deferida_sem_viagem()
+        self.client.force_login(operador)
+        resposta = self.client.post(reverse("solicitacoes:gerar_viagem", args=[solicitacao.pk]))
+        viagem = iv.viagem_da_solicitacao(solicitacao)
+        self.assertRedirects(
+            resposta, reverse("viagens_viagem:painel", args=[viagem.pk]),
+            fetch_redirect_response=False,
+        )
+
+
+class TimelineComORegistroMaisRecenteTests(BaseSolicitacaoTestCase):
+    """A barra de etapas mostra o envio e a decisão que valem, não os primeiros."""
+
+    def _datar(self, solicitacao):
+        """Espaça o histórico em horas cheias, na ordem em que foi gravado."""
+        from datetime import datetime, timedelta
+
+        from django.utils import timezone
+
+        inicio = timezone.make_aware(datetime(2026, 8, 1, 9, 0))
+        for i, registro in enumerate(solicitacao.historico.order_by("pk")):
+            type(registro).objects.filter(pk=registro.pk).update(
+                criado_em=inicio + timedelta(hours=i)
+            )
+
+    def test_reenvio_e_novo_despacho(self):
+        solicitacao = self.solicitacao_completa()
+        services.registrar_historico(solicitacao, self.solicitante, AcaoHistorico.CRIACAO)
+        services.enviar(solicitacao, self.solicitante)                      # 10:00
+        services.despachar(solicitacao, self.gestor, DecisaoDG.ATENDER)     # 11:00
+        services.reenviar_apos_edicao(                                      # 12:00
+            solicitacao, self.solicitante,
+            [{"campo": "Local do evento", "antes": "A", "depois": "B"}],
+        )
+        services.despachar(solicitacao, self.superusuario, DecisaoDG.ATENDER)  # 13:00
+        self._datar(solicitacao)
+        solicitacao = SolicitacaoEvento.objects.prefetch_related("historico__usuario").get(
+            pk=solicitacao.pk
+        )
+        envio, _aguardando, deferida, _final = services.montar_timeline(solicitacao)
+        self.assertEqual(envio["quando"], "01/08/2026 12:00")
+        self.assertEqual(deferida["quando"], "01/08/2026 13:00")
+        self.assertEqual(deferida["usuario"], str(self.superusuario))
+
+    def test_envio_prefere_o_envio_a_criacao(self):
+        solicitacao = self.solicitacao_completa()
+        services.registrar_historico(solicitacao, self.solicitante, AcaoHistorico.CRIACAO)
+        services.enviar(solicitacao, self.solicitante)
+        self._datar(solicitacao)
+        solicitacao.refresh_from_db()
+        envio = services.montar_timeline(solicitacao)[0]
+        self.assertEqual(envio["quando"], "01/08/2026 10:00")
+
+
+@override_settings(EPROTOCOLO={"AMBIENTE": "mock"})
+class ProtocoloDaSolicitacaoTests(BaseSolicitacaoTestCase):
+    """Número do eProtocolo guardado, buscável e com a consulta do andamento."""
+
+    def test_formulario_normaliza_o_numero(self):
+        self.client.force_login(self.solicitante)
+        dados = self.dados_completos_post(acao="rascunho")
+        dados["protocolo"] = "123456789"
+        self.client.post(reverse("solicitacoes:nova"), dados)
+        solicitacao = SolicitacaoEvento.objects.get()
+        self.assertEqual(solicitacao.protocolo, "12.345.678-9")
+
+    def test_numero_com_digitos_errados_e_recusado(self):
+        form = SolicitacaoForm(data={**self.dados_completos_post(acao="rascunho"), "protocolo": "1234"})
+        self.assertFalse(form.is_valid())
+        self.assertIn("protocolo", form.errors)
+
+    def test_busca_pelo_numero_com_ou_sem_pontos(self):
+        alvo = self.criar_solicitacao(protocolo="12.345.678-9")
+        self.criar_solicitacao(protocolo="98.765.432-1")
+        self.client.force_login(self.solicitante)
+        for termo in ("12.345.678-9", "123456789"):
+            resposta = self.client.get(reverse("solicitacoes:lista"), {"q": termo})
+            self.assertEqual(
+                [s.pk for s in resposta.context["pagina"].object_list], [alvo.pk], termo
+            )
+
+    def test_consultar_andamento_mostra_o_cartao(self):
+        solicitacao = self.criar_solicitacao(protocolo="12.345.678-9")
+        self.client.force_login(self.solicitante)
+        url = reverse("solicitacoes:editar", args=[solicitacao.pk])
+        resposta = self.client.get(url)
+        self.assertContains(resposta, "Consultar andamento")
+        resposta = self.client.post(
+            reverse("solicitacoes:consultar_protocolo", args=[solicitacao.pk]), follow=True
+        )
+        self.assertContains(resposta, "data-andamento-protocolo")
+        self.assertContains(resposta, "Protocolo 12.345.678-9")
+        self.assertContains(resposta, "simulado")
+        # Lido uma vez: recarregar a tela não repete o cartão.
+        self.assertNotContains(self.client.get(url), "data-andamento-protocolo")
+
+    def test_sem_protocolo_nao_tem_botao(self):
+        solicitacao = self.criar_solicitacao()
+        self.client.force_login(self.solicitante)
+        resposta = self.client.get(reverse("solicitacoes:editar", args=[solicitacao.pk]))
+        self.assertNotContains(resposta, "Consultar andamento")
+
+    def test_falha_do_eprotocolo_vira_mensagem(self):
+        from unittest.mock import patch
+
+        from integracoes.eprotocolo.exceptions import EProtocoloUnavailableError
+
+        solicitacao = self.criar_solicitacao(protocolo="12.345.678-9")
+        self.client.force_login(self.solicitante)
+        with patch(
+            "integracoes.eprotocolo.services.consultar_protocolo",
+            side_effect=EProtocoloUnavailableError(),
+        ):
+            resposta = self.client.post(
+                reverse("solicitacoes:consultar_protocolo", args=[solicitacao.pk]),
+                follow=True,
+            )
+        self.assertContains(resposta, "Não foi possível consultar o eProtocolo")
+        self.assertNotContains(resposta, "data-andamento-protocolo")
+
+    def test_quem_nao_ve_a_solicitacao_nao_consulta(self):
+        solicitacao = self.criar_solicitacao(protocolo="12.345.678-9")
+        self.client.force_login(self.outro_solicitante)
+        resposta = self.client.post(
+            reverse("solicitacoes:consultar_protocolo", args=[solicitacao.pk])
+        )
+        self.assertEqual(resposta.status_code, 403)
+
+
+class EdicaoSimultaneaTests(BaseSolicitacaoTestCase):
+    """Salvar a tela velha não desfaz o ajuste ou a decisão de outra pessoa."""
+
+    def _versao_da_tela(self, url):
+        resposta = self.client.get(url)
+        versao = resposta.context["valores"]["versao"]
+        self.assertContains(resposta, f'name="versao" value="{versao}"')
+        return versao
+
+    def test_ajuste_da_dg_no_meio_barra_o_salvar_do_solicitante(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.client.force_login(self.solicitante)
+        url = reverse("solicitacoes:editar", args=[solicitacao.pk])
+        versao = self._versao_da_tela(url + "?reabrir=1")
+        self.assertTrue(versao)
+
+        # Enquanto a tela está aberta, a DG ajusta os servidores.
+        services.salvar_ajustes_dg(solicitacao, self.gestor, {self.equipe.pk: 9})
+
+        dados = self.dados_completos_post(acao="rascunho")
+        dados.update({"reabrir": "1", "versao": versao, "local_evento": "Outro local"})
+        resposta = self.client.post(url, dados)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "alterada por outra pessoa")
+        item = solicitacao.itens_equipe.get()
+        self.assertEqual(item.quantidade_servidores, 9)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.local_evento, "Praça central")
+
+    def test_versao_em_dia_salva_normalmente(self):
+        solicitacao = self.solicitacao_completa()
+        self.client.force_login(self.solicitante)
+        url = reverse("solicitacoes:editar", args=[solicitacao.pk])
+        dados = self.dados_completos_post(acao="rascunho")
+        dados.update({"versao": self._versao_da_tela(url), "local_evento": "Ginásio"})
+        resposta = self.client.post(url, dados)
+        self.assertEqual(resposta.status_code, 302)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.local_evento, "Ginásio")
+
+    def test_ajuste_da_dg_muda_a_versao(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        antes = SolicitacaoEvento.objects.get(pk=solicitacao.pk).atualizado_em
+        services.salvar_ajustes_dg(solicitacao, self.gestor, {self.equipe.pk: 7})
+        depois = SolicitacaoEvento.objects.get(pk=solicitacao.pk).atualizado_em
+        self.assertGreater(depois, antes)
+
+
+class ConsultasDaListaTests(BaseSolicitacaoTestCase):
+    """O perfil do usuário é lido uma vez por requisição, não uma por linha."""
+
+    def test_lista_da_dg_nao_consulta_grupos_por_linha(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        for _ in range(15):
+            self.criar_solicitacao(unidade_movel=True, unidade_movel_designada=self.van)
+        self.client.force_login(self.gestor)
+        with CaptureQueriesContext(connection) as consultas:
+            resposta = self.client.get(reverse("solicitacoes:lista"))
+        self.assertEqual(resposta.status_code, 200)
+        de_grupo = [c for c in consultas.captured_queries if '"auth_group"' in c["sql"]]
+        self.assertLessEqual(len(de_grupo), 3)
+        de_unidade = [
+            c for c in consultas.captured_queries
+            if 'FROM "cadastros_unidademovel"' in c["sql"]
+        ]
+        self.assertEqual(de_unidade, [])
+
+    def test_cache_de_grupos_vale_para_o_objeto(self):
+        from . import permissions
+
+        usuario = User.objects.create_user("sem-grupo", password="x")
+        self.assertFalse(permissions.eh_gestor_dg(usuario))
+        with self.assertNumQueries(0):
+            permissions.eh_gestor_dg(usuario)
+            permissions.eh_administrador(usuario)
+
+
+class FiltrosVisiveisDaListaTests(BaseSolicitacaoTestCase):
+    """Filtro que veio do Dashboard aparece, sai com um "x" e não se soma às filas."""
+
+    def setUp(self):
+        from django.utils import timezone
+
+        self.hoje = timezone.localdate()
+        # Deferida deste ano, deferida de ano passado e uma aguardando despacho.
+        self.deste_ano = self.criar_solicitacao(
+            status=StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
+            data_solicitacao=self.hoje,
+        )
+        self.antiga = self.criar_solicitacao(
+            status=StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
+            data_solicitacao=date(self.hoje.year - 1, 3, 1),
+        )
+        self.aguardando = self.criar_solicitacao(
+            status=StatusSolicitacao.AGUARDANDO_DESPACHO,
+            data_solicitacao=self.hoje,
+        )
+        self.client.force_login(self.gestor)
+
+    def _ids(self, resposta):
+        return {s.pk for s in resposta.context["pagina"].object_list}
+
+    def test_fila_deferidas_no_ano_bate_com_o_cartao(self):
+        resposta = self.client.get(reverse("solicitacoes:lista"), {"fila": "deferidas_ano"})
+        self.assertEqual(self._ids(resposta), {self.deste_ano.pk})
+        self.assertContains(resposta, "Deferidas no ano")
+        self.assertContains(resposta, "data-filtro-ativo")
+        # A fila é oculta: "Todas" não fica aceso.
+        self.assertEqual(resposta.context["situacao_ativa"], "deferidas_ano")
+
+    def test_fila_proximos_30_dias(self):
+        from datetime import timedelta
+
+        proxima = self.criar_solicitacao(
+            status=StatusSolicitacao.DEFERIDA_EM_ANDAMENTO,
+            data_inicio_evento=self.hoje + timedelta(days=5),
+            data_fim_evento=self.hoje + timedelta(days=5),
+        )
+        self.criar_solicitacao(
+            status=StatusSolicitacao.CANCELADA,
+            data_inicio_evento=self.hoje + timedelta(days=5),
+            data_fim_evento=self.hoje + timedelta(days=5),
+        )
+        resposta = self.client.get(reverse("solicitacoes:lista"), {"fila": "proximos"})
+        self.assertEqual(self._ids(resposta), {proxima.pk})
+
+    def test_status_da_url_aparece_com_x_e_nao_acende_todas(self):
+        resposta = self.client.get(
+            reverse("solicitacoes:lista"), {"status": StatusSolicitacao.AGUARDANDO_DESPACHO}
+        )
+        self.assertEqual(self._ids(resposta), {self.aguardando.pk})
+        self.assertContains(resposta, "Situação: Aguardando despacho")
+        self.assertNotEqual(resposta.context["situacao_ativa"], "todas")
+        [filtro] = resposta.context["filtros_ativos"]
+        self.assertNotIn("status=", filtro["url_remover"])
+
+    def test_trocar_de_fila_substitui_o_status(self):
+        resposta = self.client.get(
+            reverse("solicitacoes:lista"), {"status": StatusSolicitacao.DEFERIDA_EM_ANDAMENTO}
+        )
+        despacho = next(i for i in resposta.context["situacoes"] if i["slug"] == "despacho")
+        self.assertNotIn("status=", despacho["url"])
+
+    def test_busca_mantem_o_periodo(self):
+        resposta = self.client.get(
+            reverse("solicitacoes:lista"), {"inicio": "2026-01-01", "fim": "2026-12-31"}
+        )
+        self.assertContains(resposta, 'type="hidden" name="inicio" value="2026-01-01"')
+        self.assertContains(resposta, 'type="hidden" name="fim" value="2026-12-31"')
+        self.assertContains(resposta, "Eventos a partir de 01/01/2026")
+
+    def test_cartoes_do_dashboard_usam_as_filas(self):
+        resposta = self.client.get(reverse("dashboard:index"))
+        urls = [cartao["url"] for cartao in resposta.context["resumo"]]
+        self.assertIn(reverse("solicitacoes:lista") + "?fila=despacho", urls)
+        self.assertIn(reverse("solicitacoes:lista") + "?fila=deferidas_ano", urls)
+        self.assertIn(reverse("solicitacoes:lista") + "?fila=proximos", urls)
+        self.assertFalse(any("status=" in url for url in urls))
+
+
+class ObservacaoLongaTests(BaseSolicitacaoTestCase):
+    """Observação longa da DG não pode derrubar o despacho (aviso do sino tem limite)."""
+
+    LONGA = "Justificativa detalhada da Diretoria-Geral. " * 12  # ~500 caracteres
+
+    def _limites_ok(self, solicitacao):
+        from core.models import Notificacao
+
+        avisos = Notificacao.objects.filter(solicitacao=solicitacao)
+        self.assertTrue(avisos.exists())
+        for aviso in avisos:
+            self.assertLessEqual(len(aviso.mensagem), 255)
+            self.assertLessEqual(len(aviso.titulo), 150)
+
+    def test_devolver_com_observacao_longa(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.devolver(solicitacao, self.gestor, self.LONGA)
+        self._limites_ok(solicitacao)
+        # A íntegra fica no histórico.
+        self.assertEqual(solicitacao.historico.last().observacao, self.LONGA.strip())
+
+    def test_despachar_com_observacao_longa(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.despachar(solicitacao, self.gestor, DecisaoDG.NAO_ATENDER, self.LONGA)
+        self._limites_ok(solicitacao)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.observacoes_dg, self.LONGA.strip())
+
+    def test_cancelar_evento_com_observacao_longa(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        services.cancelar_evento(solicitacao, self.solicitante, self.LONGA)
+        self._limites_ok(solicitacao)
+
+    def test_reenviar_com_muitas_alteracoes(self):
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        alteracoes = [
+            {"campo": f"Campo alterado número {i}", "antes": "a", "depois": "b"}
+            for i in range(40)
+        ]
+        services.reenviar_apos_edicao(solicitacao, self.solicitante, alteracoes)
+        self._limites_ok(solicitacao)
+        self.assertEqual(len(solicitacao.historico.last().alteracoes), 40)
+
+    def test_falha_de_banco_no_despacho_volta_com_mensagem(self):
+        """Erro de banco não vira página 500: a DG volta ao despacho com o texto."""
+        from unittest.mock import patch
+
+        from django.db import DataError
+
+        solicitacao = self.solicitacao_completa()
+        services.enviar(solicitacao, self.solicitante)
+        self.client.force_login(self.gestor)
+        with patch("solicitacoes.services.despachar", side_effect=DataError("value too long")):
+            resposta = self.client.post(
+                reverse("solicitacoes:despachar", args=[solicitacao.pk]),
+                {"decisao": DecisaoDG.NAO_ATENDER, "observacao": self.LONGA},
+            )
+        self.assertEqual(resposta.status_code, 302)
+        self.assertIn("#despacho-dg", resposta["Location"])
+        self.assertEqual(
+            self.client.session["despacho_pendente"]["observacao"], self.LONGA.strip()
+        )

@@ -176,7 +176,8 @@ class FormulariosViewsTests(BaseDemandasTestCase):
         self.assertNotContains(resposta, 'name="status"')
 
         url = reverse("demandas_eventos:andamento", args=[demanda.pk])
-        resposta = self.client.post(url, {"novo_status": StatusDemanda.EVENTO_AGENDADO, "andamento": "Palestrante confirmado"})
+        palestrante = Palestrante.objects.create(nome="Servidor Exemplo")
+        resposta = self.client.post(url, {"novo_status": StatusDemanda.EVENTO_AGENDADO, "andamento": "Palestrante confirmado", "andamento_palestrante": palestrante.pk})
         self.assertRedirects(resposta, reverse("demandas_eventos:editar", args=[demanda.pk]) + "#sec-andamento", fetch_redirect_response=False)
         demanda.refresh_from_db()
         self.assertEqual(demanda.status, StatusDemanda.EVENTO_AGENDADO)
@@ -268,6 +269,32 @@ class FormulariosViewsTests(BaseDemandasTestCase):
         )
         self.assertEqual(resposta.status_code, 302)
         self.assertTrue(RespostaPadrao.objects.filter(tipo="Pedido incompleto").exists())
+
+
+class ConsultarProtocoloTests(BaseDemandasTestCase):
+    """O mesmo "Consultar andamento" das Solicitações, na palestra."""
+
+    def test_consulta_mostra_o_cartao(self):
+        from django.test import override_settings
+
+        demanda = self.criar_demanda(canal_solicitacao="PROTOCOLO", protocolo="12.345.678-9")
+        self.client.force_login(self.usuario)
+        url = reverse("demandas_eventos:editar", args=[demanda.pk])
+        self.assertContains(self.client.get(url), "Consultar andamento")
+        with override_settings(EPROTOCOLO={"AMBIENTE": "mock"}):
+            resposta = self.client.post(
+                reverse("demandas_eventos:consultar_protocolo", args=[demanda.pk]), follow=True
+            )
+        self.assertContains(resposta, "data-andamento-protocolo")
+        self.assertContains(resposta, "Protocolo 12.345.678-9")
+
+    def test_outro_setor_nao_consulta(self):
+        demanda = self.criar_demanda(canal_solicitacao="PROTOCOLO", protocolo="12.345.678-9")
+        self.client.force_login(self.outro)
+        resposta = self.client.post(
+            reverse("demandas_eventos:consultar_protocolo", args=[demanda.pk])
+        )
+        self.assertEqual(resposta.status_code, 404)
 
 
 class CadastrosEmModalTests(BaseDemandasTestCase):

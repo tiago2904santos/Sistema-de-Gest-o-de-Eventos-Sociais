@@ -234,8 +234,10 @@ def _numero_com_ano(forms, numero, atual, data, repetido, rotulo):
         if int(numero) < 1 or ano is None:
             raise forms.ValidationError(f"O número {rotulo} deve ser 1 ou mais.")
         numero = services.formatar_numero(int(numero), ano)
-    if numero != atual and repetido(numero):
-        raise forms.ValidationError(f"O número {numero} já existe.")
+    if numero != atual:
+        ocupado = repetido(numero)
+        if ocupado:
+            raise forms.ValidationError(ocupado if isinstance(ocupado, str) else f"O número {numero} já existe.")
     return numero
 
 
@@ -288,7 +290,7 @@ class FonteSolicitacaoCoffee(FonteBase):
             def clean_numero(self):
                 return _numero_com_ano(
                     forms, self.cleaned_data.get("numero"), alvo.numero, alvo.data_solicitacao,
-                    lambda n: services.numero_em_uso(n, excluir_pk=alvo.pk), "da OS",
+                    lambda n: services.numero_ocupado(n, excluir_pk=alvo.pk), "da OS",
                 )
 
             def clean_numero_oficio(self):
@@ -297,7 +299,7 @@ class FonteSolicitacaoCoffee(FonteBase):
                     return ""
                 return _numero_com_ano(
                     forms, valor, alvo.numero_oficio, alvo.data_oficio or timezone.localdate(),
-                    lambda n: SolicitacaoCoffeeBreak.objects.filter(numero_oficio=n).exclude(pk=alvo.pk).exists(),
+                    lambda n: services.oficio_ocupado(n, excluir_pk=alvo.pk),
                     "do ofício",
                 )
 
@@ -346,11 +348,32 @@ class FonteSolicitacaoCoffee(FonteBase):
     def gravar(self, form, nomes, alvo):
         from . import services
 
-        gravado = _gravar_recorte(form, nomes)
+        from core.middleware import obter_requisicao_atual
+
+        requisicao = obter_requisicao_atual()
+        usuario = getattr(requisicao, "user", None)
+        usuario = usuario if getattr(usuario, "is_authenticated", False) else None
+        from django.db import transaction
+
+        with transaction.atomic():
+            # Número da OS ou do ofício digitado na folha: conferido de novo
+            # sob a trava do livro conjunto com Viagens.
+            instancia = form.instance
+            antes = form.initial
+            modo_numero = services.CONFERIR if "numero" in nomes and instancia.numero != antes.get("numero") else None
+            modo_oficio = (
+                services.CONFERIR
+                if "numero_oficio" in nomes and instancia.numero_oficio
+                and instancia.numero_oficio != antes.get("numero_oficio")
+                else None
+            )
+            if modo_numero or modo_oficio:
+                services.numerar_sob_trava(instancia, numero=modo_numero, oficio=modo_oficio)
+            gravado = _gravar_recorte(form, nomes)
         # O ofício é de todas as OS do mesmo pagamento: o número, a data e o protocolo vão para todas.
-        services.espelhar(gravado, nomes)
+        services.espelhar(gravado, nomes, usuario)
         # O protocolo do ofício é o do pagamento.
-        services.sincronizar_protocolo(gravado)
+        services.sincronizar_protocolo(gravado, usuario)
         return gravado
 
     def links(self, definicao, solicitacao, alvo):

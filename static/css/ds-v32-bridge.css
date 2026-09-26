@@ -2501,7 +2501,17 @@ form.btn-flutuante-form{margin:0;display:contents}
 .pal-linha1{grid-template-columns:minmax(0,1.3fr) minmax(150px,.8fr) minmax(0,1.1fr) minmax(0,1.1fr)}
 .pal-andamento__atual{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0 0 14px;font-size:13px;color:var(--n-600)}
 .pal-andamento__ultimo{flex-basis:100%;color:var(--n-700);white-space:pre-line}
+/* O que Agendada e Atendida pedem e a palestra ainda não tem, entre o status e a anotação. */
+.pal-andamento__faltas{margin:12px 0;padding:10px 12px;border:1px dashed var(--n-300);border-radius:8px}
+.pal-andamento__faltas>.form-ajuda{margin:0 0 8px}
 #sec-andamento{margin-top:14px}
+/* Palestras: o "Responder" — cada resposta padrão já preenchida, com os atalhos de e-mail e WhatsApp. */
+.pal-respostas{border:0;margin:0 0 14px;padding:0;display:grid;gap:10px}
+.pal-resposta{border:1px solid var(--n-200);border-radius:8px;padding:10px 12px;background:var(--n-50)}
+.pal-resposta:has(input:checked){border-color:var(--n-500);background:#fff}
+.pal-resposta__cabeca{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+.pal-resposta__texto{margin:6px 0 8px;font-size:13px;color:var(--n-700);white-space:pre-line;overflow-wrap:anywhere;max-height:180px;overflow:auto}
+.pal-resposta__acoes{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 @container (max-width:680px){.pal-periodo{grid-template-columns:minmax(0,1fr)}.pal-topo-data{width:100%}.frm-topo__acoes:has(.pal-topo-data){flex-wrap:wrap}}
 /* Coffee Break: as três etapas da solicitação, no desenho das etapas da
    prestação de contas — os documentos gerados em linhas `pc-doc`, os textos
@@ -2602,6 +2612,24 @@ textarea.form-controle.cb-caixa-copiar__texto{width:100%;min-height:0;resize:ver
 .sol-encerrar__linha{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 .sol-encerrar__texto{margin:0;font-size:13px;color:var(--n-600)}
 .sol-encerrar__linha form{margin:0}
+/* Filtros ativos acima da lista (os que a trilha não mostra), com o "x". */
+.filtros-ativos{padding:10px 18px;border-bottom:1px solid var(--n-150)}
+.filtros-ativos .chip a{width:18px;height:18px;display:grid;place-items:center;border-radius:4px;color:var(--d-700)}
+.filtros-ativos .chip a:hover{background:var(--d-200)}
+.filtros-ativos .chip .ui-icon{width:12px;height:12px}
+/* Protocolo (eProtocolo): o campo com o "Consultar andamento" ao lado, e o cartão da consulta. */
+.sol-protocolo{display:flex;align-items:flex-end;gap:8px}
+.sol-protocolo .form-campo{flex:1 1 auto;min-width:0}
+.sol-protocolo>.btn--secundaria{flex:none;margin-bottom:2px}
+.sol-protocolo__acao{margin:0 0 12px}
+.andamento-protocolo{display:flex;align-items:flex-start;gap:8px}
+.andamento-protocolo p{margin:2px 0 0}
+/* Cartão "Viagem" da solicitação: situação, o que falta e o "Gerar viagem". */
+.sol-viagem{display:flex;flex-direction:column;gap:8px}
+.sol-viagem__situacao,.sol-viagem__texto{margin:0;font-size:13px;color:var(--n-600)}
+.sol-viagem__situacao b{color:var(--n-800)}
+.sol-viagem__falta{margin:0;padding-left:18px;font-size:13px}
+.sol-viagem form{margin:0}
 .sol-cancelar-abre{margin-top:14px;padding-top:14px;border-top:1px solid var(--n-100)}
 .sol-cancelar-abre>summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--n-600);list-style:none}
 .sol-cancelar-abre>summary::-webkit-details-marker{display:none}

@@ -12,6 +12,9 @@ from django.db import transaction
 
 from .models import Notificacao
 
+LIMITE_TITULO = Notificacao._meta.get_field("titulo").max_length
+LIMITE_MENSAGEM = Notificacao._meta.get_field("mensagem").max_length
+
 
 def usuarios_do_grupo(nome_grupo, exceto=None):
     """Usuários ativos de um grupo de perfil, opcionalmente excluindo um."""
@@ -29,6 +32,19 @@ def usuarios_ativos(exceto=None):
     if exceto is not None:
         queryset = queryset.exclude(pk=exceto.pk)
     return queryset
+
+
+def _cabe(texto, limite):
+    """Corta o texto no tamanho da coluna, com reticências.
+
+    O aviso do sino é só um resumo: a íntegra fica no histórico da origem e
+    vai no e-mail. Sem o corte, uma observação longa estourava a coluna no
+    PostgreSQL e desfazia a operação inteira (despacho, devolução...).
+    """
+    texto = texto or ""
+    if len(texto) <= limite:
+        return texto
+    return texto[: limite - 1].rstrip() + "…"
 
 
 def notificar(usuarios, titulo, mensagem="", link="", solicitacao=None, exceto=None):
@@ -50,8 +66,8 @@ def notificar(usuarios, titulo, mensagem="", link="", solicitacao=None, exceto=N
         Notificacao(
             usuario=usuario,
             solicitacao=solicitacao,
-            titulo=titulo,
-            mensagem=mensagem,
+            titulo=_cabe(titulo, LIMITE_TITULO),
+            mensagem=_cabe(mensagem, LIMITE_MENSAGEM),
             link=link,
         )
         for usuario in destinatarios

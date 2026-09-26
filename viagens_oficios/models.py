@@ -311,6 +311,9 @@ class Oficio(ModeloTemporal, ModeloCancelavel, OrigemLegado):
         cfg = ConfiguracaoNumeracaoOficio.objects.filter(ano=ano).first() if getattr(settings, "OFICIO_NUMERACAO_USAR_CONFIGURACAO", True) else None
         piso = max(cfg.numero_inicial if cfg else 1, 1)
         usados = set(cls.objects.filter(ano=ano).exclude(numero__isnull=True).values_list("numero", flat=True))
+        # Livro único: os ofícios do Coffee Break saem da mesma sequência.
+        from core.numeracao import NAMESPACE_OFICIO, numeros_externos
+        usados |= numeros_externos(NAMESPACE_OFICIO, ano)
         lacuna = OficioNumeroLacuna.objects.filter(ano=ano, numero__gte=piso).exclude(numero__in=usados).order_by("numero").first()
         return lacuna.numero if lacuna else max(max(usados, default=piso-1)+1, piso)
 

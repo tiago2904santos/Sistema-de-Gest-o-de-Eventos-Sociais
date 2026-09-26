@@ -6,7 +6,6 @@ system; aqui mora a validação e a persistência.
 
 from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.db.models import Sum
 from django.utils import timezone
 
 from cadastros.models import Municipio
@@ -57,6 +56,7 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
             "responsavel_recebimento",
             "data_envio_ordem_servico",
             "numero_nota_fiscal",
+            "quantidade_faturada",
             "arquivo_nota_fiscal",
             "protocolo_pagamento",
             "data_atesto_gaf",
@@ -127,14 +127,19 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
             numero = services.formatar_numero(sequencia, self.ano_do_numero())
         elif not services.partes_numero(numero):
             return numero
-        # Uma numeração só para todos os lotes: o número não se repete.
-        # (Registro que já tinha este número fica como está, mesmo repetido na planilha.)
-        em_uso = None if numero == self.instance.numero else services.numero_em_uso(numero, excluir_pk=self.instance.pk)
-        if em_uso:
-            raise forms.ValidationError(
-                f"A OS {numero} já existe ({em_uso.descricao_evento[:60]}). "
-                f"A próxima livre é {services.proxima_sequencia(self.ano_do_numero())}."
-            )
+        # Uma numeração só para todos os lotes e para as ordens de serviço de
+        # Viagens: o número não se repete. (Registro que já tinha este número
+        # fica como está, mesmo repetido na planilha.)
+        if numero == self.instance.numero:
+            return numero
+        ano = services.partes_numero(numero)[1]
+        proxima = services.proxima_sequencia(ano)
+        ocupado = services.numero_ocupado(numero, excluir_pk=self.instance.pk)
+        if ocupado:
+            raise forms.ValidationError(f"{ocupado} A próxima livre é {proxima}.")
+        # O próximo sugerido é reservado ao gravar (sob a trava do livro); o
+        # digitado é conferido de novo lá.
+        self.modo_numero = services.RESERVAR if numero == services.formatar_numero(proxima, ano) else services.CONFERIR
         return numero
 
     def ano_do_numero(self):
@@ -174,6 +179,7 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
                 "Use as datas estruturadas ou o período em texto, não os dois.",
             )
         self._escolher_lote(dados)
+        self._conferir_vigencia(dados)
         if self.instance.pk:
             atual = type(self.instance).objects.filter(pk=self.instance.pk).values_list(
                 "atualizado_em", flat=True
@@ -217,12 +223,41 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
         self.instance.lote = lote
         self.lote_escolhido = lote
 
+    def _conferir_vigencia(self, dados):
+        """Evento depois do fim da vigência do contrato (com o aditivo): não passa.
+
+        Só vale para pedido novo ou quando o lote, a data ou o município mudam:
+        registro antigo continua editável.
+        """
+        if not self.instance.lote_id:
+            return
+        campos = {"municipio", "data_inicio_evento", "data_solicitacao"}
+        if self.instance.pk and not campos.intersection(self.changed_data):
+            return
+        data = dados.get("data_inicio_evento") or dados.get("data_solicitacao")
+        lote = self.instance.lote
+        vencido = services.contrato_vencido_em(lote.contrato, data)
+        if vencido:
+            campo = "data_inicio_evento" if dados.get("data_inicio_evento") and "data_inicio_evento" in self.fields else None
+            if campo is None and "municipio" in self.fields:
+                campo = "municipio"
+            self.add_error(
+                campo,
+                f"Contrato vencido em {vencido:%d/%m/%Y}: o contrato {lote.contrato.numero} do "
+                f"{lote.rotulo_curto} não cobre um evento em {data:%d/%m/%Y}. Providencie o aditivo "
+                "de prorrogação ou cadastre outro lote para o município.",
+            )
+
     def save(self, criado_por=None):
         solicitacao = super().save(commit=False)
         if not solicitacao.pk:
             solicitacao.criado_por = criado_por
         # Trava o lote e revalida o saldo na mesma transação da escrita.
-        return services.salvar_com_saldo(solicitacao)
+        return services.salvar_com_saldo(
+            solicitacao,
+            numero=getattr(self, "modo_numero", None),
+            oficio=getattr(self, "modo_oficio", None),
+        )
 
     def _update_errors(self, errors):
         """Erro do modelo num campo de outra etapa sobe para o topo do formulário.
@@ -259,6 +294,8 @@ CAMPOS_PEDIDO = [
 ]
 CAMPOS_NOTA = [
     "numero_nota_fiscal",
+    # O que a nota cobrou: o lote passa a descontar isso, e não o pedido.
+    "quantidade_faturada",
     # A data antes do número: o ano do número sai dela.
     "data_oficio",
     "numero_oficio",
@@ -280,8 +317,39 @@ class PedidoCoffeeBreakForm(SolicitacaoCoffeeBreakForm):
     salvar com a data aberta limpa um fim antigo.
     """
 
+    registro_retroativo = forms.BooleanField(label="Registro retroativo", required=False)
+    justificativa_retroativo = forms.CharField(
+        label="Justificativa do registro retroativo", required=False, max_length=255,
+    )
+
     class Meta(SolicitacaoCoffeeBreakForm.Meta):
         fields = CAMPOS_PEDIDO
+
+    def clean(self):
+        dados = super().clean()
+        self._conferir_data_do_evento(dados)
+        return dados
+
+    def _conferir_data_do_evento(self, dados):
+        """Evento anterior à data da solicitação só como registro retroativo justificado.
+
+        Vale para o pedido novo e quando a data muda: registro antigo segue editável.
+        """
+        inicio = dados.get("data_inicio_evento")
+        pedido = dados.get("data_solicitacao")
+        self.evento_retroativo = bool(inicio and pedido and inicio < pedido)
+        if not self.evento_retroativo:
+            return
+        if self.instance.pk and not {"data_inicio_evento", "data_solicitacao"}.intersection(self.changed_data):
+            return
+        if not dados.get("registro_retroativo"):
+            self.add_error(
+                "data_inicio_evento",
+                "O evento é anterior à data da solicitação. Confira a data ou marque "
+                "\"registro retroativo\" e justifique.",
+            )
+        elif not (dados.get("justificativa_retroativo") or "").strip():
+            self.add_error("justificativa_retroativo", "Justifique o registro retroativo.")
 
     def save(self, criado_por=None):
         if not self.fields["data_inicio_evento"].disabled:
@@ -322,20 +390,28 @@ class NotaCoffeeBreakForm(SolicitacaoCoffeeBreakForm):
         return self.cleaned_data.get("data_oficio") or timezone.localdate()
 
     def clean_numero_oficio(self):
-        """ "125" vira "125/2026"; em branco, o próximo da numeração; não repete."""
+        """ "125" vira "125/2026"; em branco, o próximo da numeração; não repete.
+
+        A numeração é a dos ofícios de Viagens (livro único). Em branco ou o
+        próximo sugerido, o número é reservado ao gravar, sob a trava do
+        livro; o digitado é conferido de novo lá.
+        """
         numero = " ".join((self.cleaned_data.get("numero_oficio") or "").split())
         ano = self.ano_do_oficio()
         if not numero:
-            return services.formatar_numero(services.proxima_sequencia_oficio(ano), ano)
+            self.modo_oficio = services.RESERVAR
+            return ""
         if numero.isdigit():
             if int(numero) < 1:
                 raise forms.ValidationError("O número do ofício deve ser 1 ou mais.")
             numero = services.formatar_numero(int(numero), ano)
-        if services.partes_numero(numero) and numero != self.instance.numero_oficio:
-            if services.oficio_em_uso(numero, excluir_pk=self.instance.pk):
-                raise forms.ValidationError(
-                    f"O ofício {numero} já existe. O próximo livre é {services.proxima_sequencia_oficio(ano)}."
-                )
+        partes = services.partes_numero(numero)
+        if partes and numero != self.instance.numero_oficio:
+            proximo = services.proxima_sequencia_oficio(partes[1])
+            ocupado = services.oficio_ocupado(numero, excluir_pk=self.instance.pk)
+            if ocupado:
+                raise forms.ValidationError(f"{ocupado} O próximo livre é {proximo}.")
+            self.modo_oficio = services.RESERVAR if partes[0] == proximo else services.CONFERIR
         return numero
 
 
@@ -446,6 +522,7 @@ class ContratoCoffeeBreakForm(FormularioCadastroVersionado):
             "vigencia_fim",
             "quantidade_contratada",
             "valor_unitario",
+            "antecedencia_minima_dias",
             "objeto",
             "observacoes",
         )
@@ -480,6 +557,7 @@ class LoteCoffeeBreakForm(FormularioCadastroVersionado):
             "exercicio",
             "quantidade_total",
             "empenho",
+            "valor_empenho",
             "municipios",
             "municipios_texto",
             "orientacoes",
@@ -500,9 +578,9 @@ class LoteCoffeeBreakForm(FormularioCadastroVersionado):
     def clean_quantidade_total(self):
         quantidade = self.cleaned_data["quantidade_total"]
         if self.instance.pk:
-            consumido = self.instance.solicitacoes.filter(cancelada=False).aggregate(
-                total=Sum("quantidade")
-            )["total"] or 0
+            from .models import soma_consumida
+
+            consumido = soma_consumida(self.instance.solicitacoes.filter(cancelada=False))
             if quantidade < consumido:
                 raise forms.ValidationError(
                     f"O lote já consumiu {consumido} unidades; a capacidade não pode ficar abaixo disso."

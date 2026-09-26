@@ -9,6 +9,10 @@ from django.db import models
 
 
 PREFIXO_PRESTACOES = "viagens_prestacoes"
+# Anexos das solicitações de evento: ofícios e documentos com dados pessoais
+# que sobraram de exclusões antigas, antes de o arquivo sair junto do registro.
+PREFIXO_SOLICITACOES = "solicitacoes"
+PREFIXOS = (PREFIXO_PRESTACOES, PREFIXO_SOLICITACOES)
 
 
 def _listar_arquivos(prefixo: str) -> Iterator[str]:
@@ -45,7 +49,8 @@ def _arquivos_referenciados(prefixo: str) -> set[str]:
 
 class Command(BaseCommand):
     help = (
-        "Lista arquivos órfãos no storage privado de prestações; "
+        "Lista arquivos órfãos no storage privado de prestações e de anexos "
+        "das solicitações; "
         "só os remove quando --apagar é informado."
     )
 
@@ -57,8 +62,10 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        referenciados = _arquivos_referenciados(PREFIXO_PRESTACOES)
-        orfaos = sorted(set(_listar_arquivos(PREFIXO_PRESTACOES)) - referenciados)
+        orfaos = []
+        for prefixo in PREFIXOS:
+            referenciados = _arquivos_referenciados(prefixo)
+            orfaos.extend(sorted(set(_listar_arquivos(prefixo)) - referenciados))
 
         if not orfaos:
             self.stdout.write(self.style.SUCCESS("Nenhum arquivo órfão encontrado."))

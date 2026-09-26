@@ -1,13 +1,14 @@
 {% comment %}
   Ações de uma linha de palestra num botão único, no padrão das listas de
-  Viagens: registrar o andamento (em modal, sem sair da lista) e abrir a
-  palestra. Contexto: `l` (linha do presenter).
+  Viagens: registrar o andamento e responder com a resposta padrão (em
+  modal, sem sair da lista) e abrir a palestra. Contexto: `l` (linha do presenter).
 {% endcomment %}
 {% with d=l.demanda %}
 <div class="dd of-menu cad-acoes" data-menu>
   <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações de {{ d.get_evento_display|lower }} #{{ d.pk }}" title="Ações">{% include "components/icon.html" with nome="kebab" %}</button>
   <div class="dd__c of-menu__corpo tm-menu" hidden data-menu-corpo>
     <a class="dd__i of-item" href="{{ l.url_andamento }}" data-cadastro-modal>{% include "components/icon.html" with nome="activity" %}<span><b>Registrar andamento</b><small>Mudar o status sem abrir a palestra</small></span></a>
+    <a class="dd__i of-item" href="{{ l.url_responder }}" data-cadastro-modal>{% include "components/icon.html" with nome="mail" %}<span><b>Responder</b><small>Resposta padrão pronta para o e-mail ou WhatsApp</small></span></a>
     <a class="dd__i of-item" href="{{ l.url_editar }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Abrir</b><small>Evento, solicitação e histórico</small></span></a>
   </div>
 </div>

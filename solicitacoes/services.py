@@ -108,6 +108,7 @@ CAMPOS_FOTOGRAFIA = [
     ("orgao_responsavel", "Órgão responsável"),
     ("tipo_evento", "Tipo do evento"),
     ("local_evento", "Local do evento"),
+    ("protocolo", "Protocolo (eProtocolo)"),
     ("tipo_operacao", "Tipo de operação"),
     ("quantidade_cin", "CIN agendadas"),
     ("descricao_complementar", "Descrição complementar"),
@@ -293,6 +294,12 @@ def ajustar_quantidades_dg(solicitacao, usuario, quantidades):
             item.save(update_fields=["quantidade_servidores"])
     if mudancas:
         solicitacao.recalcular_quantidade_servidores()
+        # A solicitação mudou, ainda que só nos itens: quem estiver com o
+        # "Editar" aberto precisa recarregar antes de salvar por cima.
+        solicitacao.atualizado_em = timezone.now()
+        type(solicitacao).objects.filter(pk=solicitacao.pk).update(
+            atualizado_em=solicitacao.atualizado_em
+        )
         registrar_historico(
             solicitacao,
             usuario,
@@ -351,29 +358,59 @@ def despachar(solicitacao, usuario, decisao, observacao="", quantidades=None):
         solicitacao=solicitacao,
         exceto=usuario,
     )
-    _gerar_viagem_do_despacho(solicitacao, usuario)
+    _agendar_acompanhamento_da_viagem(solicitacao, usuario, observacao)
     return solicitacao
 
 
-def _gerar_viagem_do_despacho(solicitacao, usuario) -> None:
-    """Deferiu com atendimento? Então a viagem já nasce, em rascunho.
+def _agendar_acompanhamento_da_viagem(solicitacao, usuario, observacao="") -> None:
+    """Mexe na viagem só **depois** que a decisão estiver gravada."""
+    transaction.on_commit(
+        lambda: _acompanhar_viagem(solicitacao, usuario, observacao)
+    )
 
-    Roda **depois** da transação do despacho, e engole o próprio erro de
+
+def _acompanhar_viagem(solicitacao, usuario, observacao="") -> None:
+    """A viagem segue a solicitação: nasce, se atualiza ou é cancelada.
+
+    Deferiu com atendimento? A viagem nasce em rascunho — ou, se já existia
+    de um despacho anterior, é atualizada com o que foi deferido agora. Não
+    atendida ou cancelada? A viagem gerada é cancelada (ou o operador de
+    Viagens é avisado, se ela já tem documentos).
+
+    Roda depois da transação do despacho e engole o próprio erro de
     propósito: a decisão da DG é o ato administrativo e não pode se perder
-    porque o módulo de Viagens teve um problema. Se falhar, fica no log e a
-    viagem pode ser gerada pela tela da solicitação.
+    porque o módulo de Viagens teve um problema. Se falhar, fica no log,
+    quem despachou é avisado e a viagem pode ser gerada pela tela da
+    solicitação.
     """
     from solicitacoes import integracao_viagens
 
-    cabe, _motivo = integracao_viagens.pode_gerar(solicitacao)
-    if not cabe:
-        return
     try:
-        integracao_viagens.gerar_viagem(solicitacao, usuario)
+        with transaction.atomic():
+            if solicitacao.status == StatusSolicitacao.DEFERIDA_EM_ANDAMENTO:
+                if integracao_viagens.viagem_da_solicitacao(solicitacao) is not None:
+                    integracao_viagens.sincronizar_viagem(solicitacao, usuario)
+                elif integracao_viagens.pode_gerar(solicitacao)[0]:
+                    integracao_viagens.gerar_viagem(solicitacao, usuario)
+            elif solicitacao.status in {
+                StatusSolicitacao.NAO_ATENDIDA,
+                StatusSolicitacao.CANCELADA,
+            }:
+                integracao_viagens.encerrar_viagem(solicitacao, usuario, observacao)
     except Exception:  # noqa: BLE001 - o despacho não depende disto
         logger.exception(
-            "Falha ao gerar viagem da solicitação %s; o despacho foi mantido.",
+            "Falha ao atualizar a viagem da solicitação %s; o despacho foi mantido.",
             solicitacao.pk,
+        )
+        # A falha não pode ficar só no registro técnico: quem despachou sabe.
+        notificar(
+            [usuario],
+            f"Solicitação #{solicitacao.pk}: a viagem não foi atualizada",
+            "A decisão foi registrada, mas a viagem em Viagens não pôde ser "
+            "gerada ou atualizada. Use \"Gerar viagem\" na solicitação ou "
+            "confira a viagem pelo módulo de Viagens.",
+            link=reverse("solicitacoes:editar", args=[solicitacao.pk]) + "#viagem",
+            solicitacao=solicitacao,
         )
 
 
@@ -446,6 +483,8 @@ def cancelar_evento(solicitacao, usuario, observacao):
         solicitacao=solicitacao,
         exceto=usuario,
     )
+    # Evento cancelado depois do deferimento: a viagem gerada não vai acontecer.
+    _agendar_acompanhamento_da_viagem(solicitacao, usuario, observacao)
     return solicitacao
 
 
@@ -500,7 +539,8 @@ def reenviar_apos_edicao(solicitacao, usuario, alteracoes):
     notificar(
         usuarios_do_grupo("GESTOR_DG"),
         f"Solicitação #{solicitacao.pk} alterada: aguarda novo despacho",
-        "; ".join(a["campo"] for a in alteracoes)[:300],
+        # O sino corta no limite dele; a lista inteira fica no histórico.
+        "; ".join(a["campo"] for a in alteracoes),
         link=reverse("solicitacoes:editar", args=[solicitacao.pk]) + "#despacho-dg",
         solicitacao=solicitacao,
         exceto=usuario,
@@ -517,10 +557,13 @@ def montar_timeline(solicitacao=None):
     """
 
     def registro_de(*acoes):
+        """O registro **mais recente** destas ações: depois de um reenvio ou
+        de um novo despacho, a etapa mostra o último, não o primeiro."""
         if not solicitacao or not solicitacao.pk:
             return None
         return next(
-            (h for h in solicitacao.historico.all() if h.acao in acoes), None
+            (h for h in reversed(list(solicitacao.historico.all())) if h.acao in acoes),
+            None,
         )
 
     def detalhes(registro):
@@ -542,16 +585,19 @@ def montar_timeline(solicitacao=None):
     deferida = status == StatusSolicitacao.DEFERIDA_EM_ANDAMENTO
     finalizada = bool(solicitacao) and solicitacao.finalizada
 
-    # Origem da etapa de envio: o envio em si ou, nas importadas da
-    # planilha, o registro de importação.
-    registro_envio = registro_de(
-        AcaoHistorico.ENVIO, AcaoHistorico.IMPORTACAO, AcaoHistorico.CRIACAO
+    # Origem da etapa de envio, em ordem de preferência: o envio (ou o
+    # reenvio depois de alterada); nas importadas da planilha, a importação;
+    # só na falta dos dois, a criação do rascunho.
+    registro_envio = (
+        registro_de(AcaoHistorico.ENVIO, AcaoHistorico.REENVIO)
+        or registro_de(AcaoHistorico.IMPORTACAO)
+        or registro_de(AcaoHistorico.CRIACAO)
     )
     registro_decisao = registro_de(AcaoHistorico.DECISAO)
-    registro_final = (
-        registro_de(AcaoHistorico.CONCLUSAO)
-        or registro_de(AcaoHistorico.CANCELAMENTO)
-        or registro_decisao
+    # O que encerrou: a confirmação do atendimento, o cancelamento do evento
+    # ou a própria decisão — o que veio por último.
+    registro_final = registro_de(
+        AcaoHistorico.CONCLUSAO, AcaoHistorico.CANCELAMENTO, AcaoHistorico.DECISAO
     )
 
     # As quatro etapas existem sempre, desde o rascunho: quem abre a tela vê o

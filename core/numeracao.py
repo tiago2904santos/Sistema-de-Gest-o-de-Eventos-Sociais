@@ -72,6 +72,35 @@ NAMESPACE_PLANO_TRABALHO = 0x50544E55  # "PTNU"
 
 TENTATIVAS_PADRAO = 3
 
+# ---------------------------------------------------------------------------
+# Livro compartilhado: números que outros módulos tiram da mesma sequência
+# ---------------------------------------------------------------------------
+#
+# O ofício e a ordem de serviço do Coffee Break saem da mesma sequência dos de
+# Viagens (um livro só por ano). Cada módulo que usa a sequência registra aqui,
+# para o namespace do documento, uma função `ano -> set[int]` com os números
+# que já ocupou; a escolha do próximo número (a política de cada documento)
+# os soma aos seus. Quem grava num livro compartilhado toma o mesmo lock
+# (`bloquear_escopo_numeracao` com o mesmo namespace), o que serializa os
+# módulos entre si.
+
+_NUMEROS_EXTERNOS: dict[int, list[Callable[[int], set[int]]]] = {}
+
+
+def registrar_numeros_externos(namespace: int, fonte: Callable[[int], set[int]]) -> None:
+    """Registra uma fonte de números já usados por outro módulo no livro `namespace`."""
+    fontes = _NUMEROS_EXTERNOS.setdefault(namespace, [])
+    if fonte not in fontes:
+        fontes.append(fonte)
+
+
+def numeros_externos(namespace: int, ano: int) -> set[int]:
+    """Os números do ano que outros módulos já tiraram do livro `namespace`."""
+    usados: set[int] = set()
+    for fonte in _NUMEROS_EXTERNOS.get(namespace, ()):
+        usados |= set(fonte(ano))
+    return usados
+
 
 def escopo_do_lock(*, ano: int) -> int:
     """Escopo anual global, estável entre processos."""
