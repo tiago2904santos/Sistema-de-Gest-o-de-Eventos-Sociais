@@ -169,6 +169,15 @@ def formatar_valor(valor):
     return f"{quantizado:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
 
 
+def _data_local(momento):
+    """Data no fuso do sistema. O banco devolve UTC, e a prévia monta o horário
+    local: sem isto, saída às 22h da véspera de uma vigência nova caía no dia
+    seguinte só no valor gravado."""
+    if timezone.is_aware(momento):
+        return timezone.localdate(momento)
+    return momento.date()
+
+
 def _tabelas_vigentes(data_referencia):
     """Valores das três faixas vigentes na data, com a identidade da linha.
 
@@ -262,7 +271,7 @@ def montar_trechos(
     # decidida pela saída mais antiga. Resolver por trecho abriria a porta para
     # um roteiro que atravessa a virada de vigência cobrar dois valores.
     ordenados = sorted(marcadores, key=lambda m: m.saida)
-    tabelas = _tabelas_vigentes(min(m.saida for m in ordenados).date())
+    tabelas = _tabelas_vigentes(_data_local(min(m.saida for m in ordenados)))
     servidores = max(0, int(quantidade_servidores or 0))
 
     periodos = []

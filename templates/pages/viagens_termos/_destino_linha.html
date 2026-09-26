@@ -14,7 +14,8 @@
 
   Espera no contexto: nome_estado, nome_cidade, id_estado, rotulo_estado,
   rotulo_cidade, estados, municipios e, nas linhas já existentes, estado,
-  cidade, erros_estado e erros_cidade.
+  cidade, erros_estado e erros_cidade. Com `remoto_municipios` (URL), a cidade
+  vem só com as escolhidas e busca o resto ao digitar.
 {% endcomment %}
 <div class="destino-row{% if sem_acoes %} destino-row--unico{% endif %}" data-destino data-destino-linha>
   {% if not sem_acoes %}
@@ -30,7 +31,7 @@
     {% include "components/select.html" with name=nome_estado label=rotulo_estado rotulo_oculto=True opcoes=estados placeholder="Buscar estado..." pesquisavel=True selecionado=estado erros=erros_estado %}
   </div>
   <div class="destino-row__campo">
-    {% include "components/select.html" with name=nome_cidade label=rotulo_cidade rotulo_oculto=True opcoes=municipios placeholder="Buscar município..." pesquisavel=True dependente_de=id_estado selecionado=cidade erros=erros_cidade %}
+    {% include "components/select.html" with name=nome_cidade label=rotulo_cidade rotulo_oculto=True opcoes=municipios placeholder="Buscar município..." pesquisavel=True remoto=remoto_municipios dependente_de=id_estado selecionado=cidade erros=erros_cidade %}
   </div>
   {% if not sem_acoes %}
   <button type="button" class="btn btn--perigo btn--secundaria btn--destrutiva btn--compacto destino-row__remover" data-destino-remover

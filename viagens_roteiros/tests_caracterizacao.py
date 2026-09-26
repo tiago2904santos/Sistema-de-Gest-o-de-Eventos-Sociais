@@ -440,3 +440,39 @@ class RoteiroInvalidoTests(BaseDiariasTestCase):
                 [marcador(datetime(2025, 8, 12, 8, 0), datetime(2025, 8, 12, 18, 0), SAO_PAULO)],
                 datetime(2025, 8, 13, 18, 0),
             )
+
+
+class VigenciaNaVesperaTests(BaseDiariasTestCase):
+    """m068: a data da vigência é a local, venha o horário da tela ou do banco."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        TabelaDiaria.objects.create(
+            faixa=TabelaDiaria.Faixa.CAPITAL,
+            vigencia_inicio=date(2026, 10, 1),
+            valor_24h=VALOR_CAPITAL * 2,
+        )
+
+    def test_saida_as_22h_na_vespera_usa_a_tabela_antiga(self):
+        from datetime import timezone as dt_timezone
+
+        from django.utils import timezone
+
+        local = [marcador(
+            timezone.make_aware(datetime(2026, 9, 30, 22, 0)),
+            timezone.make_aware(datetime(2026, 10, 1, 6, 0)),
+            SAO_PAULO,
+        )]
+        # O mesmo instante como o banco devolve: em UTC, já em 01/10.
+        utc = [marcador(
+            local[0].saida.astimezone(dt_timezone.utc),
+            local[0].chegada.astimezone(dt_timezone.utc),
+            SAO_PAULO,
+        )]
+        volta = timezone.make_aware(datetime(2026, 10, 2, 18, 0))
+        previa = self.calcular(local, volta)
+        gravado = self.calcular(utc, volta.astimezone(dt_timezone.utc))
+        self.assertEqual(previa["totais"]["total_valor"], gravado["totais"]["total_valor"])
+        # 44 horas na capital pela tabela antiga: duas diárias de R$ 371,26.
+        self.assertEqual(gravado["totais"]["total_valor"], "742,52")

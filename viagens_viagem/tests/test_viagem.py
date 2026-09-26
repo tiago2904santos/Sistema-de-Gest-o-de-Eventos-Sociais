@@ -38,6 +38,23 @@ class ListaTests(CenarioViagem):
         r = self.client.get(reverse("viagens_viagem:lista"), {"q": "Londrina"})
         self.assertEqual(r.context["pagina"].paginator.count, 3)
 
+    def test_busca_por_servidor_placa_oficio_e_protocolo(self):
+        """m079: acha a viagem pelo dado que se tem em mãos."""
+        alvo = self.viagem(titulo="Justiça no Bairro")
+        self.viagem(titulo="Outra viagem")
+        oficio = Oficio.objects.create(viagem=alvo, numero=15, ano=2026, protocolo="123456789",
+                                       viatura=self.viatura, motorista=self.b)
+        oficio.servidores.set([self.a])
+
+        def achadas(termo):
+            r = self.client.get(reverse("viagens_viagem:lista"), {"q": termo})
+            return [l["viagem"].pk for l in r.context["linhas"]]
+
+        for termo in ("ANA VIAGEM", "bruno", "abc-1d23", "15/2026", "12.345.678-9"):
+            with self.subTest(termo=termo):
+                self.assertEqual(achadas(termo), [alvo.pk])
+        self.assertEqual(achadas("16/2026"), [])
+
     def test_selo_quando_pela_saida_do_roteiro(self):
         v = self.viagem()
         saida = timezone.make_aware(datetime.combine(timezone.localdate() + timedelta(days=3), datetime.min.time().replace(hour=8)))
@@ -72,6 +89,14 @@ class CriarEPainelTests(CenarioViagem):
         Viagem.objects.update(titulo="Expo")
         self.client.post(reverse("viagens_viagem:criar"))
         self.assertEqual(Viagem.objects.count(), 3)
+
+    def test_etapa_1_busca_municipios_em_vez_de_embutir(self):
+        """m075: só o destino escolhido vem na página; o resto, pela busca."""
+        v = self.viagem()
+        corpo = self.client.get(self.etapa(v, 1)).content.decode()
+        self.assertIn('data-remote-url="%s"' % reverse("cadastros:municipios_buscar"), corpo)
+        self.assertIn(">Londrina<", corpo)
+        self.assertNotIn(">Maringá<", corpo)
 
     def test_etapa_1_traz_os_blocos_da_origem_sem_avisos(self):
         v = Viagem.objects.create()
@@ -362,3 +387,93 @@ class DocumentosNascidosDaViagemTests(CenarioViagem):
         termo = TermoAutorizacao.objects.latest("pk")
         self.assertRedirects(r, self.etapa(v, 5))
         self.assertEqual(termo.viagem, v)
+
+
+class RepetirViagemTests(CenarioViagem):
+    """m076: repetir a viagem em outra data, com os documentos em rascunho."""
+
+    def montar(self):
+        from viagens_ordens.models import OrdemServico
+        from viagens_planos.models import PlanoTrabalho
+        from viagens_planos.services import salvar_plano_numerado
+        from viagens_roteiros.models import RoteiroTrecho
+
+        v = self.viagem(data_inicio=date(2026, 10, 5), data_fim=date(2026, 10, 7))
+        saida = timezone.make_aware(datetime(2026, 10, 5, 8, 0))
+        roteiro = Roteiro.objects.create(origem_municipio=self.sede, viagem=v, saida_dt=saida)
+        RoteiroDestino.objects.create(roteiro=roteiro, municipio=self.londrina)
+        RoteiroTrecho.objects.create(roteiro=roteiro, ordem=1, origem_municipio=self.sede, destino_municipio=self.londrina,
+                                     saida_dt=saida, chegada_dt=saida + timedelta(hours=5), distancia_km=380)
+        oficio = Oficio.objects.create(viagem=v, roteiro=roteiro, numero=7, ano=2026, protocolo="123456789",
+                                       viatura=self.viatura, motorista=self.a, status=Oficio.STATUS_FINALIZADO)
+        oficio.servidores.set([self.a, self.b])
+        ordem = OrdemServico.objects.create(viagem=v, data_evento_inicio=date(2026, 10, 5), motivo="Apoio")
+        ordem.definir_destinos([self.londrina.pk, self.maringa.pk])
+        ordem.oficios.set([oficio])
+        plano = salvar_plano_numerado(PlanoTrabalho(viagem=v, destino_estado=self.pr, destino_cidade=self.londrina,
+                                                    data_evento_inicio=date(2026, 10, 5), data_evento_fim=date(2026, 10, 6)))
+        termo = TermoAutorizacao.objects.create(viagem=v, oficio=oficio, destino_estado=self.pr, destino_cidade=self.londrina,
+                                                data_evento_inicio=date(2026, 10, 5))
+        termo.servidores.set([self.a])
+        return v, oficio, ordem, plano
+
+    def test_repetir_copia_documentos_com_datas_novas_e_sem_numeros_antigos(self):
+        from viagens_ordens.models import OrdemServico
+        from viagens_planos.models import PlanoTrabalho
+
+        v, oficio, ordem, plano = self.montar()
+        r = self.client.post(reverse("viagens_viagem:repetir", args=[v.pk]), {"nova_data": "2026-11-02"})
+        nova = Viagem.objects.exclude(pk=v.pk).get()
+        self.assertRedirects(r, self.etapa(nova, 1), fetch_redirect_response=False)
+        self.assertEqual((nova.data_inicio, nova.data_fim), (date(2026, 11, 2), date(2026, 11, 4)))
+        self.assertEqual(list(nova.tipos.all()), [self.tipo])
+
+        roteiro = nova.roteiros.get()
+        self.assertEqual(timezone.localtime(roteiro.saida_dt), timezone.make_aware(datetime(2026, 11, 2, 8, 0)))
+        self.assertEqual(timezone.localtime(roteiro.trechos.get().chegada_dt).hour, 13)
+
+        novo_oficio = nova.oficios.get()
+        self.assertEqual(novo_oficio.roteiro, roteiro)
+        self.assertNotEqual((novo_oficio.numero, novo_oficio.ano), (oficio.numero, oficio.ano))
+        self.assertEqual(novo_oficio.protocolo, "")
+        self.assertEqual(novo_oficio.status, Oficio.STATUS_RASCUNHO)
+        self.assertEqual(set(novo_oficio.servidores.all()), {self.a, self.b})
+        self.assertEqual((novo_oficio.viatura, novo_oficio.motorista), (self.viatura, self.a))
+
+        nova_os = OrdemServico.objects.get(viagem=nova)
+        self.assertNotEqual(nova_os.numero, ordem.numero)
+        self.assertEqual(nova_os.data_evento_inicio, date(2026, 11, 2))
+        self.assertEqual(list(nova_os.destinos_em_ordem()), [self.londrina, self.maringa])
+        self.assertEqual(list(nova_os.oficios.all()), [novo_oficio])
+
+        novo_plano = PlanoTrabalho.objects.get(viagem=nova)
+        self.assertNotEqual(novo_plano.numero, plano.numero)
+        self.assertEqual(novo_plano.data_evento_fim, date(2026, 11, 3))
+
+        novo_termo = TermoAutorizacao.objects.get(viagem=nova)
+        self.assertEqual(novo_termo.oficio, novo_oficio)
+        self.assertEqual(list(novo_termo.servidores.all()), [self.a])
+        # A original fica como estava.
+        oficio.refresh_from_db()
+        self.assertEqual((oficio.numero, oficio.protocolo), (7, "123456789"))
+
+    def test_repetir_em_outra_cidade_troca_o_destino_principal(self):
+        from viagens_ordens.models import OrdemServico
+
+        v = self.montar()[0]
+        self.client.post(reverse("viagens_viagem:repetir", args=[v.pk]),
+                         {"nova_data": "2026-11-02", f"nova_cidade_{v.pk}": self.maringa.pk})
+        nova = Viagem.objects.exclude(pk=v.pk).get()
+        self.assertEqual(nova.destino_municipio, self.maringa)
+        roteiro = nova.roteiros.get()
+        self.assertEqual(list(roteiro.destinos.values_list("municipio", flat=True)), [self.maringa.pk])
+        self.assertIsNone(roteiro.trechos.get().distancia_km)
+        self.assertEqual(TermoAutorizacao.objects.get(viagem=nova).destino_cidade, self.maringa)
+        self.assertEqual(OrdemServico.objects.get(viagem=nova).destinos_em_ordem()[0], self.maringa)
+
+    def test_repetir_exige_data_e_a_lista_oferece_a_acao(self):
+        v = self.viagem()
+        r = self.client.post(reverse("viagens_viagem:repetir", args=[v.pk]), {"nova_data": ""}, follow=True)
+        self.assertContains(r, "Informe a data da nova edição")
+        self.assertEqual(Viagem.objects.count(), 1)
+        self.assertContains(self.client.get(reverse("viagens_viagem:lista")), reverse("viagens_viagem:repetir", args=[v.pk]))

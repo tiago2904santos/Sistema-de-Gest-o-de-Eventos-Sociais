@@ -87,7 +87,7 @@ class OrdemServicoForm(forms.ModelForm):
         if self.is_bound:
             return []
         if self.instance.pk:
-            return [(m.estado_id, m.pk) for m in self.instance.destinos.select_related("estado").order_by("nome", "pk")]
+            return [(m.estado_id, m.pk) for m in self.instance.destinos_em_ordem()]
         semente = self.initial.get("destinos_seed") or []
         if semente:
             return [(e, c) for e, c in semente]
@@ -158,7 +158,7 @@ class OrdemServicoForm(forms.ModelForm):
         if commit:
             ordem.save()
             self.save_m2m()
-            ordem.destinos.set(getattr(self, "cleaned_destinos", []) or [])
+            ordem.definir_destinos(getattr(self, "cleaned_destinos", []) or [])
             if "{" in (ordem.motivo or ""):
                 # Campos automáticos do modelo de motivo ({destino}...) viram valor.
                 from viagens_oficios.campos_modelo import aplicar, valores_da_ordem

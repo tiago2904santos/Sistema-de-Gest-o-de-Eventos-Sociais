@@ -106,7 +106,8 @@ def _url_criar(nome, viagem, *, metodo="get"):
 
 
 def _contexto_da_etapa_1(request, viagem, form):
-    from cadastros.models import Estado, Municipio
+    from cadastros.busca_municipios import opcoes_dos_municipios
+    from cadastros.models import Estado
     from viagens_oficios.models import ModeloMotivoOficio
 
     valor = lambda nome: (str(getattr(form[nome].value(), "pk", form[nome].value())) if form[nome].value() not in (None, "") else "")
@@ -126,7 +127,9 @@ def _contexto_da_etapa_1(request, viagem, form):
         "opcoes_motivos": [{"valor": str(m.pk), "rotulo": m.nome} for m in form.fields["modelo_motivo"].queryset],
         "modelos_texto": dict(ModeloMotivoOficio.objects.values_list("pk", "texto")),
         "estados": [{"valor": str(e.pk), "rotulo": f"{e.sigla} — {e.nome}"} for e in Estado.objects.order_by("sigla")],
-        "municipios": [{"valor": str(m.pk), "rotulo": m.nome, "estado": str(m.estado_id)} for m in Municipio.objects.select_related("estado").order_by("nome")],
+        # Só os municípios já escolhidos; o seletor busca o resto ao digitar (m075).
+        "municipios": opcoes_dos_municipios([valor("destino_municipio")] + [a["cidade"] for a in adicionais]),
+        "remoto_municipios": reverse("cadastros:municipios_buscar"),
         "adicionais": adicionais, "quantidade_destinos": str(form.quantidade_destinos),
         "abas_documentos": abas_de_documentos(form),
         "url_tipos": com_next(reverse("viagens_cadastros:lista", args=["tipos-viagem"]), volta),
@@ -309,6 +312,40 @@ def baixar(request, pk):
     resposta["Content-Disposition"] = f'attachment; filename="{referencia}-documentos.zip"'
     resposta["Cache-Control"] = "no-store"
     return resposta
+
+
+@acesso_ao_modulo
+@require_POST
+def repetir(request, pk):
+    """Repete a viagem em outra data (e cidade), com os documentos em rascunho."""
+    from datetime import date
+
+    from cadastros.models import Municipio
+
+    from .duplicar import ViagemSemData, repetir_viagem
+
+    exigir_operador(request)
+    viagem = get_viagem_by_id(pk)
+    volta = voltar_para(request, reverse("viagens_viagem:lista"))
+    try:
+        nova_data = date.fromisoformat((request.POST.get("nova_data") or "").strip())
+    except ValueError:
+        messages.error(request, "Informe a data da nova edição.")
+        return redirect(volta)
+    # Na lista, cada linha nomeia o campo com o id da viagem (ids únicos na página).
+    cidade_id = (request.POST.get(f"nova_cidade_{pk}") or request.POST.get("nova_cidade") or "").strip()
+    nova_cidade = Municipio.objects.filter(pk=cidade_id).first() if cidade_id.isdigit() else None
+    try:
+        nova = repetir_viagem(viagem, nova_data, nova_cidade)
+    except ViagemSemData as erro:
+        messages.error(request, str(erro))
+        return redirect(volta)
+    messages.success(
+        request,
+        "Viagem repetida em rascunho, com roteiro, ofícios, plano, ordem de serviço e termos. "
+        "Números e protocolos são novos; confira os documentos antes de emitir.",
+    )
+    return redirect("viagens_viagem:etapa", nova.pk, 1)
 
 
 @acesso_ao_modulo

@@ -116,7 +116,7 @@ class RascunhoDaViagemTests(CenarioPlanoMixin, TestCase):
         self.assertEqual(plano.destino_cidade, self.maringa)
         self.assertEqual((plano.data_evento_inicio, plano.data_evento_fim), (date(2026, 6, 25), date(2026, 6, 27)))
         self.assertEqual(plano.programa_outros, "PCPR na Comunidade em Maringá")
-        self.assertEqual(plano.horario_atendimento, "09:00 ate 17:00")
+        self.assertEqual(plano.horario_atendimento, "09:00 até 17:00")
         self.assertEqual(plano.contextualizacao, "")
         self.assertEqual([d.cidade for d in plano.destinos_rascunho()], [self.maringa, self.sarandi])
 
