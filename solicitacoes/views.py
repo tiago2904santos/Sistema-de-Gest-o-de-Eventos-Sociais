@@ -7,7 +7,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.db import DatabaseError, transaction
-from django.db.models import Count, Q
+from django.db.models import Count, F, Q
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -479,6 +479,7 @@ def editar_solicitacao(request, pk):
             "motivo_devolucao": devolucao,
             "despacho_pendente": pendente,
             "decisoes_dg": _decisoes_dg(pendente),
+            **_contexto_despacho(request.user, solicitacao),
             "cartao_viagem": None if reabrindo else _cartao_viagem(request.user, solicitacao),
             "andamento_protocolo": andamento_eprotocolo.andamento_guardado(
                 request, "solicitacoes", solicitacao.pk
@@ -486,6 +487,20 @@ def editar_solicitacao(request, pk):
         }
     )
     return render(request, "pages/solicitacoes/form.html", contexto)
+
+
+def _contexto_despacho(user, solicitacao):
+    """Posição na fila ("3 de 7") e os textos prontos, só para quem despacha."""
+    if not permissions.pode_despachar(user, solicitacao):
+        return {}
+    from cadastros.models import TextoDespacho
+
+    fila = _fila_de_despacho(user)
+    posicao = fila.index(solicitacao.pk) + 1 if solicitacao.pk in fila else None
+    return {
+        "fila_despacho": {"posicao": posicao, "total": len(fila)},
+        "textos_despacho": list(TextoDespacho.objects.filter(ativo=True)),
+    }
 
 
 def _cartao_viagem(user, solicitacao):
@@ -635,6 +650,23 @@ ORDENACOES = {
     "status": ["status", "-data_solicitacao"],
 }
 ORDENACAO_PADRAO = "-data"
+# Na fila de despacho o que vence primeiro vem primeiro: o evento mais
+# próximo no topo, os sem data no fim.
+ORDEM_DESPACHO = [F("data_inicio_evento").asc(nulls_last=True), "pk"]
+
+
+def _fila_de_despacho(user):
+    """As solicitações aguardando despacho, na ordem de trabalho da DG."""
+    return list(
+        permissions.queryset_visivel(
+            user,
+            SolicitacaoEvento.objects.filter(
+                status=StatusSolicitacao.AGUARDANDO_DESPACHO
+            ),
+        )
+        .order_by(*ORDEM_DESPACHO)
+        .values_list("pk", flat=True)
+    )
 
 
 def _ordenacao(request):
@@ -671,6 +703,8 @@ def _queryset_filtrado(request):
         queryset = queryset.filter(_condicao_da_fila(FILAS[fila], request.user))
     else:
         fila = ""
+    if fila == "despacho" and not request.GET.get("ordem"):
+        queryset = queryset.order_by(*ORDEM_DESPACHO)
 
     if filtros.is_valid():
         dados = filtros.cleaned_data
@@ -1288,6 +1322,9 @@ def despachar(request, pk):
 
     decisao = form.cleaned_data["decisao"]
     observacao = form.cleaned_data["observacao"]
+    # "Registrar e abrir a próxima": a ordem é a de antes da decisão.
+    seguir = request.POST.get("seguir") == "proxima"
+    fila = _fila_de_despacho(request.user) if seguir else []
     try:
         if decisao == DespachoForm.DEVOLVER:
             services.devolver(solicitacao, request.user, observacao=observacao)
@@ -1318,4 +1355,23 @@ def despachar(request, pk):
         return _voltar_ao_despacho(request, solicitacao, decisao, observacao)
 
     messages.success(request, sucesso)
+    if seguir:
+        return _abrir_proxima_do_despacho(request, solicitacao.pk, fila)
     return redirect("solicitacoes:editar", pk=solicitacao.pk)
+
+
+def _abrir_proxima_do_despacho(request, atual, fila):
+    """Depois da decisão, a próxima da fila (a que vinha depois da atual)."""
+    depois = fila[fila.index(atual) + 1:] if atual in fila else fila
+    antes = fila[:fila.index(atual)] if atual in fila else []
+    ainda_pendentes = set(
+        SolicitacaoEvento.objects.filter(
+            pk__in=fila, status=StatusSolicitacao.AGUARDANDO_DESPACHO
+        ).values_list("pk", flat=True)
+    )
+    proxima = next((pk for pk in depois + antes if pk in ainda_pendentes), None)
+    if proxima is None:
+        messages.info(request, "Não há mais solicitações aguardando despacho.")
+        return redirect(f"{reverse('solicitacoes:lista')}?fila=despacho")
+    url = reverse("solicitacoes:editar", args=[proxima])
+    return redirect(f"{url}#despacho-dg")

@@ -18,13 +18,14 @@ from django.utils.http import urlencode
 from django.views.decorators.http import require_POST
 
 from auditoria.models import LogAuditoria
-from solicitacoes.permissions import eh_administrador
+from solicitacoes.permissions import eh_administrador, eh_gestor_dg
 
 from .models import (
     Equipe,
     Municipio,
     OrgaoResponsavel,
     Servico,
+    TextoDespacho,
     TipoEvento,
     UnidadeMovel,
 )
@@ -98,14 +99,30 @@ CADASTROS = {
         "novo": "Nova unidade móvel",
         "exemplo": "Ex.: Caminhão",
     },
+    "textos-despacho": {
+        "model": TextoDespacho,
+        "titulo": "Textos prontos do despacho",
+        "campos": ["nome", "texto"],
+        "icone": "gavel",
+        "cor": "#bea45a",
+        "singular": "texto pronto",
+        "genitivo": "do texto pronto",
+        "novo": "Novo texto pronto",
+        "exemplo": "Ex.: Falta o ofício do solicitante",
+        # Quem despacha mantém os próprios textos, mesmo sem ser administrador.
+        "gestor_dg": True,
+    },
 }
 
 ITENS_POR_PAGINA = 20
 
 
-def _exigir_administrador(request):
-    if not eh_administrador(request.user):
-        raise PermissionDenied
+def _exigir_administrador(request, slug=None):
+    if eh_administrador(request.user):
+        return
+    if slug in CADASTROS and CADASTROS[slug].get("gestor_dg") and eh_gestor_dg(request.user):
+        return
+    raise PermissionDenied
 
 
 def _config(slug):
@@ -174,7 +191,7 @@ def index(request):
 
 @login_required
 def lista(request, slug):
-    _exigir_administrador(request)
+    _exigir_administrador(request, slug)
     config = _config(slug)
     modal = None
     if request.GET.get("novo") or request.GET.get("editar"):
@@ -238,7 +255,7 @@ def _render_lista(request, slug, modal=None):
 
 @login_required
 def editar(request, slug, pk=None):
-    _exigir_administrador(request)
+    _exigir_administrador(request, slug)
     config = _config(slug)
     instancia = get_object_or_404(config["model"], pk=pk) if pk else None
     FormClass = _form_class(config)
@@ -311,7 +328,7 @@ def _contexto_modal(slug, config, form, instancia):
 @login_required
 @require_POST
 def alternar_ativo(request, slug, pk):
-    _exigir_administrador(request)
+    _exigir_administrador(request, slug)
     config = _config(slug)
     objeto = get_object_or_404(config["model"], pk=pk)
     objeto.ativo = not objeto.ativo
@@ -331,7 +348,7 @@ def alternar_ativo(request, slug, pk):
 @login_required
 @require_POST
 def excluir(request, slug, pk):
-    _exigir_administrador(request)
+    _exigir_administrador(request, slug)
     config = _config(slug)
     objeto = get_object_or_404(config["model"], pk=pk)
     descricao = f"{objeto._meta.verbose_name} '{objeto}' (id {objeto.pk})"

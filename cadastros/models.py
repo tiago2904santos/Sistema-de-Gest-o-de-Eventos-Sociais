@@ -100,3 +100,16 @@ class UnidadeMovel(CadastroBase):
     class Meta(CadastroBase.Meta):
         verbose_name = "unidade móvel"
         verbose_name_plural = "unidades móveis"
+
+
+class TextoDespacho(CadastroBase):
+    """Texto pronto da observação do despacho da DG, inserido com um clique.
+
+    O `nome` é o rótulo curto do botão; o `texto` é o que entra no campo.
+    """
+
+    texto = models.TextField("texto")
+
+    class Meta(CadastroBase.Meta):
+        verbose_name = "texto pronto do despacho"
+        verbose_name_plural = "textos prontos do despacho"

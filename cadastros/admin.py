@@ -7,6 +7,7 @@ from .models import (
     OrgaoResponsavel,
     Regiao,
     Servico,
+    TextoDespacho,
     TipoEvento,
 )
 
@@ -53,3 +54,6 @@ class MunicipioAdmin(CadastroBaseAdmin):
     list_filter = ("ativo", "estado", "regiao")
 
 
+@admin.register(TextoDespacho)
+class TextoDespachoAdmin(CadastroBaseAdmin):
+    pass

@@ -2957,3 +2957,15 @@ tr[data-importar-url].is-alvo>td:first-child{box-shadow:inset 2px 0 0 var(--sel-
 .filtros-painel__form{padding:4px 18px 14px}
 .filtros-painel__acoes{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
 @media(max-width:720px){.filtros-painel__gatilho small{display:none}}
+
+/* Despacho da DG: prazo do evento no selo da lista, pedido em cima da hora, fila e textos prontos. */
+.st--prazo_urgente{background:var(--dg-b);color:var(--dg-t);border:1px solid var(--dg-r)}
+.st--prazo_proximo{background:var(--wn-b);color:var(--wn-t);border:1px solid var(--wn-r)}
+.tm-fato--alerta{color:var(--wn-t)}
+.sol-fila-despacho{font-size:13px;color:var(--rotulo);white-space:nowrap}
+.sol-textos-prontos{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0 8px}
+.sol-textos-prontos__rotulo{font-size:12px;color:var(--rotulo);margin-right:2px}
+.sol-texto-pronto{cursor:pointer;border:1px solid var(--n-200);background:var(--n-50)}
+.sol-texto-pronto:hover{background:var(--hover-b)}
+.sol-texto-pronto .ui-icon{width:12px;height:12px}
+.sol-textos-prontos__editar{font-size:12px;margin-left:auto;color:var(--link)}

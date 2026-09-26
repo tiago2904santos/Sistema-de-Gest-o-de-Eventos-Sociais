@@ -272,15 +272,27 @@
           <header class="section-card__cabecalho reg__t">
             <span class="section-card__numero reg-numero" aria-hidden="true">4</span>
             <h2 class="section-card__titulo">Despacho da DG</h2>
+            {% if fila_despacho.posicao %}
+              <div class="section-card__acao"><span class="sol-fila-despacho" title="Posição na fila de despacho, do evento mais próximo ao mais distante">{{ fila_despacho.posicao }} de {{ fila_despacho.total }} na fila</span></div>
+            {% endif %}
           </header>
           <div class="section-card__corpo">
             {# As quantidades de servidores ficam no cartão 2, nas próprias linhas das equipes (form="form-despacho"). #}
             <form method="post" action="{% url 'solicitacoes:despachar' solicitacao.pk %}" id="form-despacho">
               {% csrf_token %}
               {% include "components/v32/cartoes_escolha.html" with name="decisao" label="Decisão" obrigatorio=True opcoes=decisoes_dg colunas="2" id_primeiro=True erros=None %}
+              {# Textos prontos: um clique acrescenta o texto à observação, que continua editável. #}
+              <div class="sol-textos-prontos" role="group" aria-label="Textos prontos da observação">
+                <span class="sol-textos-prontos__rotulo">Textos prontos</span>
+                {% for texto in textos_despacho %}<button type="button" class="chip sol-texto-pronto" data-texto-pronto="{{ texto.texto }}" data-texto-alvo="id_observacao" title="{{ texto.texto }}">{% include "components/icon.html" with nome="plus" %}{{ texto.nome }}</button>{% empty %}<span class="v32-suave">Nenhum cadastrado.</span>{% endfor %}
+                <a class="sol-textos-prontos__editar" href="{% url 'cadastros:lista' 'textos-despacho' %}">Editar textos</a>
+              </div>
               {% include "components/textarea.html" with name="observacao" label="Observações da decisão" linhas="3" placeholder="Obrigatórias para não atendimento, cancelamento ou correção — no caso da correção, diga brevemente o que deve mudar." valor=despacho_pendente.observacao erros=None %}
               <div class="frm-acoes-fim">
                 {% if solicitacao.itens_equipe.all %}<button type="submit" class="btn--secundaria" name="acao_despacho" value="salvar_ajustes" formnovalidate>Salvar servidores</button>{% endif %}
+                {% if fila_despacho.total > 1 %}
+                  <button type="submit" class="btn--secundaria" name="seguir" value="proxima" title="Registra esta decisão e abre a próxima solicitação da fila">Registrar e abrir a próxima</button>
+                {% endif %}
                 <button type="submit" class="btn-primaria">Registrar decisão</button>
               </div>
             </form>
@@ -379,4 +391,4 @@
   <dialog class="mo v32-cadastro-modal" aria-labelledby="cadastro-modal-titulo" data-cadastro-dialog data-cadastro-lista="{{ request.path }}"></dialog>
 {% endblock %}
 
-{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/trilho.js' %}" defer></script>{% endblock %}
+{% block extra_js %}{{ block.super }}<script src="{% estatico 'js/trilho.js' %}" defer></script><script src="{% estatico 'js/solicitacoes-form.js' %}" defer></script>{% endblock %}
