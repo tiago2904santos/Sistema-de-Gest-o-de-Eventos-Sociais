@@ -1017,6 +1017,12 @@ def _contexto_da_nota(contexto, form, solicitacao):
         "com a nota, desconta o faturado e a diferença volta ao saldo."
     )
     contexto["url_anexar_nota"] = reverse("coffee_break:anexar_nota", args=[solicitacao.pk])
+    # Link seguro do fornecedor (m036): o link ativo e o que chegou por ele.
+    from . import link_fornecedor
+
+    contexto["link_fornecedor"] = link_fornecedor.link_ativo(solicitacao)
+    contexto["envios_fornecedor"] = link_fornecedor.envios_pendentes(solicitacao)
+    contexto["link_fornecedor_disponivel"] = link_fornecedor.pode_receber(solicitacao)
     # Pagamento conjunto: as OS do mesmo pagamento e as que podem entrar
     # (mesmo lote, sem protocolo, não pagas), na lista de escolha do cabeçalho.
     grupo = solicitacao.grupo_pagamento()
@@ -2144,14 +2150,20 @@ def _tela_de_email(request, solicitacao, envio, modelo_assunto, modelo_texto, ge
     if request.method == "POST" and not envio["pendencias"]:
         valores = {chave: request.POST.get(chave, "") for chave in ("para", "copia", "assunto", "texto")}
         try:
-            anexos = gerar_anexos()
-            emails.enviar(
-                solicitacao, request.user, anexos=anexos, o_que=envio["o_que"],
-                tambem_em=envio.get("tambem_em", ()), **{
-                    "para": valores["para"], "copia": valores["copia"],
-                    "assunto": valores["assunto"], "texto": valores["texto"],
-                },
-            )
+            # Atômico: o que `preparar_texto` grava (o link do fornecedor)
+            # só fica se o e-mail sair.
+            with transaction.atomic():
+                anexos = gerar_anexos()
+                texto = valores["texto"]
+                if envio.get("preparar_texto"):
+                    texto = envio["preparar_texto"](texto)
+                emails.enviar(
+                    solicitacao, request.user, anexos=anexos, o_que=envio["o_que"],
+                    tambem_em=envio.get("tambem_em", ()), **{
+                        "para": valores["para"], "copia": valores["copia"],
+                        "assunto": valores["assunto"], "texto": texto,
+                    },
+                )
         except ValidationError as exc:
             erro = " ".join(exc.messages)
         except (SMTPException, OSError) as exc:
@@ -2253,6 +2265,109 @@ def enviar_ob(request, pk):
         return "Ordem bancária enviada ao fornecedor. O envio ficou no histórico."
 
     return _tela_de_email(request, solicitacao, envio, config.email_ob_assunto, config.email_ob_texto, anexos, depois)
+
+
+# ---------------------------------------------------------------------------
+# Link seguro do fornecedor (m036) — regras em link_fornecedor.py
+# ---------------------------------------------------------------------------
+
+@acesso_ao_modulo
+def enviar_link_fornecedor(request, pk):
+    """"Enviar link ao fornecedor": a tela de e-mail ao fornecedor (a mesma da
+    OS) com o texto que leva o link. O link só nasce no envio confirmado —
+    o token vai no e-mail e não aparece em nenhuma tela — e revoga o anterior."""
+    from . import link_fornecedor
+
+    solicitacao = _solicitacao_documental(pk)
+    pendencias = []
+    if not link_fornecedor.pode_receber(solicitacao):
+        pendencias.append("Solicitações canceladas ou concluídas não recebem envio do fornecedor.")
+    anterior = link_fornecedor.link_ativo(solicitacao)
+    from datetime import timedelta
+
+    validade = timezone.localdate() + timedelta(days=link_fornecedor.dias_de_validade())
+    envio = {
+        "titulo": "Enviar link ao fornecedor",
+        "o_que": "Mensagem com o link para envio da nota fiscal e das certidões",
+        "ja_enviado": (
+            f"Já há um link ativo, válido até {timezone.localtime(anterior.expira_em):%d/%m/%Y}; "
+            "o novo o substitui (o antigo deixa de funcionar)." if anterior else ""
+        ),
+        "anexos": [],
+        "volta": reverse("coffee_break:etapa_nota", args=[solicitacao.pk]) + "#envios-fornecedor",
+        "pendencias": pendencias,
+        "nota_texto": (
+            f"{{link}} vira o endereço do link seguro na hora do envio (vale até {validade:%d/%m/%Y}). "
+            "O link não aparece em nenhuma tela do sistema: só no e-mail."
+        ),
+    }
+    criado = {}
+
+    def preparar_texto(texto):
+        link, token = link_fornecedor.gerar(solicitacao, request.user)
+        criado["link"] = link
+        url = link_fornecedor.url_publica(request, token)
+        return texto.replace("{link}", url) if "{link}" in texto else f"{texto}\n\n{url}"
+
+    envio["preparar_texto"] = preparar_texto
+
+    def depois(s):
+        link = criado["link"]
+        return (
+            f"Link enviado ao fornecedor; vale até {timezone.localtime(link.expira_em):%d/%m/%Y}. "
+            "O que ele mandar aparece aqui para conferência."
+        )
+
+    texto = link_fornecedor.EMAIL_TEXTO.replace("{validade}", f"{validade:%d/%m/%Y}")
+    return _tela_de_email(request, solicitacao, envio, link_fornecedor.EMAIL_ASSUNTO, texto, list, depois)
+
+
+@require_POST
+@acesso_ao_modulo
+def revogar_link_fornecedor(request, pk):
+    from . import link_fornecedor
+
+    solicitacao = get_object_or_404(SolicitacaoCoffeeBreak, pk=pk)
+    link = link_fornecedor.link_ativo(solicitacao)
+    if link:
+        link_fornecedor.revogar(link, request.user)
+        messages.success(request, "Link do fornecedor revogado: ele deixa de funcionar agora.")
+    return redirect(reverse("coffee_break:etapa_nota", args=[pk]) + "#envios-fornecedor")
+
+
+@require_POST
+@acesso_ao_modulo
+def conferir_envio_fornecedor(request, pk):
+    """Aceitar (entra na OS ou nas certidões) ou recusar o que o fornecedor mandou."""
+    from . import link_fornecedor
+    from .models import EnvioFornecedor
+
+    envio = get_object_or_404(EnvioFornecedor.objects.select_related("link__solicitacao"), pk=pk)
+    solicitacao = envio.link.solicitacao
+    try:
+        if request.POST.get("acao") == "aceitar":
+            link_fornecedor.aceitar(envio, request.user)
+            messages.success(request, f"{envio.get_tipo_display()} conferida e aceita.")
+            if envio.eh_nota:
+                for aviso in services.avisos_da_nota(solicitacao):
+                    messages.warning(request, aviso)
+        elif request.POST.get("acao") == "recusar":
+            link_fornecedor.recusar(envio, request.user, request.POST.get("motivo", ""))
+            messages.success(request, f"{envio.get_tipo_display()} recusada. O fornecedor pode enviar de novo pelo link.")
+        else:
+            raise Http404
+    except ValidationError as erro:
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+    return redirect(reverse("coffee_break:etapa_nota", args=[solicitacao.pk]) + "#envios-fornecedor")
+
+
+@acesso_ao_modulo
+def envio_fornecedor_arquivo(request, pk):
+    from .models import EnvioFornecedor
+
+    envio = get_object_or_404(EnvioFornecedor, pk=pk)
+    return _arquivo(envio.arquivo)
 
 
 @require_POST
@@ -2389,30 +2504,9 @@ def anexar_nota(request, pk):
         for mensagem in erro.messages:
             messages.error(request, mensagem)
         return redirect(destino)
-    from .nota_fiscal import dados_da_nota, numero_da_nota
-
     # Basta anexar: o número da nota sai do próprio PDF (e, para a
     # conferência, o emitente, o valor e a data de emissão).
-    arquivo.seek(0)
-    conteudo = arquivo.read()
-    numero = numero_da_nota(conteudo)
-    lidos = dados_da_nota(conteudo)
-    arquivo.seek(0)
-    trocou = bool(solicitacao.arquivo_nota_fiscal)
-    solicitacao.arquivo_nota_fiscal = arquivo
-    solicitacao.valor_nota_fiscal = lidos["valor"]
-    solicitacao.data_emissao_nf = lidos["emissao"]
-    solicitacao.cnpj_emitente_nf = lidos["cnpj"]
-    campos = ["arquivo_nota_fiscal", "valor_nota_fiscal", "data_emissao_nf", "cnpj_emitente_nf", "atualizado_em"]
-    if numero:
-        solicitacao.numero_nota_fiscal = numero
-        campos.append("numero_nota_fiscal")
-    solicitacao.save(update_fields=campos)
-    services.registrar_historico(
-        solicitacao, request.user, AcaoHistoricoCoffeeBreak.ATUALIZACAO,
-        ("Nota fiscal (PDF) substituída" if trocou else "Nota fiscal (PDF) anexada")
-        + (f"; número {numero} lido do PDF." if numero else "."),
-    )
+    numero = services.aplicar_nota(solicitacao, arquivo, request.user)
     if numero:
         messages.success(request, f"Nota fiscal {numero} anexada — o número foi lido do PDF.")
     else:

@@ -50,6 +50,12 @@ urlpatterns = [
     # E-mail ao fornecedor: mostra o e-mail pronto e só envia com a confirmação (POST).
     path("solicitacoes/<int:pk>/enviar-os/", views.enviar_os, name="enviar_os"),
     path("solicitacoes/<int:pk>/enviar-ob/", views.enviar_ob, name="enviar_ob"),
+    # Link seguro para o fornecedor mandar a nota e as certidões (a página
+    # pública fica em coffee_break/urls_publicas.py, fora deste namespace).
+    path("solicitacoes/<int:pk>/link-fornecedor/", views.enviar_link_fornecedor, name="enviar_link_fornecedor"),
+    path("solicitacoes/<int:pk>/link-fornecedor/revogar/", views.revogar_link_fornecedor, name="revogar_link_fornecedor"),
+    path("envios-fornecedor/<int:pk>/conferir/", views.conferir_envio_fornecedor, name="conferir_envio_fornecedor"),
+    path("envios-fornecedor/<int:pk>/arquivo/", views.envio_fornecedor_arquivo, name="envio_fornecedor_arquivo"),
     path("solicitacoes/<int:pk>/ordem-bancaria/", views.ordem_bancaria_arquivo, name="ordem_bancaria_arquivo"),
     path("solicitacoes/<int:pk>/ordem-bancaria/anexar/", views.anexar_ob, name="anexar_ob"),
     path("solicitacoes/<int:pk>/oficio.pdf", views.oficio, name="oficio"),

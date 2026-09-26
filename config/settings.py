@@ -343,6 +343,9 @@ EPROTOCOLO = {
 # (só o último endereço, o que o proxy acrescenta). Com vários processos, um
 # cache compartilhado (arquivo, banco ou Redis) mantém o limite entre eles.
 PEDIDO_PUBLICO_CONFIAR_X_FORWARDED_FOR = _flag_env("PEDIDO_PUBLICO_CONFIAR_X_FORWARDED_FOR", "0")
+# Validade, em dias, do link que o fornecedor do Coffee Break recebe para
+# enviar a nota fiscal e as certidões (coffee_break/link_fornecedor.py).
+COFFEE_LINK_FORNECEDOR_DIAS = int(os.environ.get("COFFEE_LINK_FORNECEDOR_DIAS", "30") or "30")
 # Na suíte, nada de rede: o ambiente volta a mock mesmo com .env preenchido.
 if sys.argv[1:2] == ["test"]:
     EPROTOCOLO["AMBIENTE"] = "mock"

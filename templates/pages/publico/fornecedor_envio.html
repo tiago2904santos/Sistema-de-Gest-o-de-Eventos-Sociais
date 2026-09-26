@@ -1,0 +1,86 @@
+{% extends "layouts/auth.html" %}
+{% load static %}
+
+{% block title %}Envio da nota fiscal — Polícia Civil do Paraná{% endblock %}
+
+{% block conteudo %}
+{% comment %}
+  Página do link seguro do fornecedor (sem login). Só o mínimo para saber o
+  que enviar: OS, evento, data e valor, e a situação das certidões da
+  empresa — nenhum dado de servidor. Regras em coffee_break/link_fornecedor.py.
+{% endcomment %}
+<div class="auth-card auth-card--largo">
+  <div class="auth-card__corpo auth-card__corpo--formulario">
+    <div class="auth-card__cabecalho">
+      <img class="auth-card__brasao" src="{% static 'icons/favicon.svg' %}" alt="Brasão da Polícia Civil do Paraná">
+      <h1 class="auth-card__titulo">Nota fiscal e certidões — OS {{ resumo.numero_os }}</h1>
+      <p class="auth-card__subtitulo">{{ resumo.fornecedor }}</p>
+    </div>
+
+    {% if confirmacao %}
+      <div class="publico-aviso" role="status">
+        <strong>{{ confirmacao.o_que }} recebida.</strong> A Assessoria de Comunicação vai conferir.
+        {% if confirmacao.avisos %}
+          <br>Pontos que serão conferidos:
+          {% for aviso in confirmacao.avisos %}<br>• {{ aviso }}{% endfor %}
+        {% endif %}
+      </div>
+    {% endif %}
+    {% if erro %}
+      <div class="auth-alerta" role="alert">
+        <span class="auth-alerta__icone" aria-hidden="true">{% include "components/icon.html" with nome="alert" %}</span>
+        <div>{{ erro }}</div>
+      </div>
+    {% endif %}
+
+    <dl class="publico-dados">
+      <dt>Ordem de serviço</dt><dd>{{ resumo.numero_os }}</dd>
+      <dt>Evento</dt><dd>{{ resumo.evento }}</dd>
+      <dt>Data</dt><dd>{{ resumo.data|default:"—" }}</dd>
+      <dt>Valor</dt><dd>{{ resumo.valor }}</dd>
+      <dt>Nota fiscal</dt><dd>{{ resumo.nota }}</dd>
+    </dl>
+
+    <form method="post" enctype="multipart/form-data" class="form-grid">
+      {% csrf_token %}
+      <input type="hidden" name="tipo" value="{{ tipo_nota }}">
+      <div class="form-campo form-campo--9">
+        <label class="form-label" for="id_nota">Nota fiscal desta OS (PDF)</label>
+        <input class="form-controle" type="file" name="arquivo" id="id_nota" accept="application/pdf,.pdf" required>
+      </div>
+      <div class="form-campo form-campo--3">
+        <span class="form-label">&nbsp;</span>
+        <button type="submit" class="btn btn--dourado btn--bloco">{% include "components/icon.html" with nome="upload" %}Enviar nota</button>
+      </div>
+    </form>
+
+    <h2 class="form-label">Certidões da empresa</h2>
+    <dl class="publico-dados">
+      {% for c in resumo.certidoes %}<dt>{{ c.rotulo }}</dt><dd>{{ c.situacao }}</dd>{% endfor %}
+    </dl>
+    <form method="post" enctype="multipart/form-data" class="form-grid">
+      {% csrf_token %}
+      <div class="form-campo form-campo--4">
+        <label class="form-label" for="id_tipo">Certidão</label>
+        <select class="form-controle" name="tipo" id="id_tipo" required>
+          {% for valor, rotulo in tipos_certidao %}<option value="{{ valor }}">{{ rotulo }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-campo form-campo--4">
+        <label class="form-label" for="id_certidao">Arquivo (PDF)</label>
+        <input class="form-controle" type="file" name="arquivo" id="id_certidao" accept="application/pdf,.pdf" required>
+      </div>
+      <div class="form-campo form-campo--4">
+        <label class="form-label" for="id_validade">Válida até</label>
+        <input class="form-controle" type="date" name="validade" id="id_validade">
+        <p class="form-ajuda">Só se o PDF for uma imagem; senão a data é lida dele.</p>
+      </div>
+      <div class="form-campo">
+        <button type="submit" class="btn btn--secundario">{% include "components/icon.html" with nome="upload" %}Enviar certidão</button>
+      </div>
+    </form>
+
+    <p class="auth-card__ajuda">Este link é pessoal e vale até {{ resumo.vale_ate|date:"d/m/Y" }}. Não o compartilhe.</p>
+  </div>
+</div>
+{% endblock %}

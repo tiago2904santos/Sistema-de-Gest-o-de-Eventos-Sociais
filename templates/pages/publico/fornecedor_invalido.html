@@ -1,0 +1,19 @@
+{% extends "layouts/auth.html" %}
+{% load static %}
+
+{% block title %}Link indisponível — Polícia Civil do Paraná{% endblock %}
+
+{% block conteudo %}
+<div class="auth-card">
+  <div class="auth-card__corpo">
+    <div class="auth-card__cabecalho">
+      <img class="auth-card__brasao" src="{% static 'icons/favicon.svg' %}" alt="Brasão da Polícia Civil do Paraná">
+      <h1 class="auth-card__titulo">Link indisponível</h1>
+      <p class="auth-card__subtitulo">
+        Este link não é válido, expirou ou foi substituído por um mais novo.
+        Peça um novo link à Assessoria de Comunicação da PCPR.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
