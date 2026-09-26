@@ -201,7 +201,12 @@ def _servidor_row(ps, solicitacao_form=None, prestacao_anexos=None, diario_pdf_u
     from .prazos import selo_da_prestacao
     selo_prestacao = selo_da_prestacao(ps)
 
+    # m091: "✓" só com o assinado anexado; "Gerado" quando preenchido e sem o assinado.
+    from .completude import situacao_diario, situacao_rt
+
     row = {
+        "diario_situacao": situacao_diario(ps.prestacao),
+        "rt_situacao": situacao_rt(ps),
         "selo_prestacao": selo_prestacao,
         "ps_pk": ps.pk,
         "name": servidor.nome,

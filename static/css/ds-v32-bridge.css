@@ -2958,3 +2958,6 @@ tr[data-importar-url].is-alvo>td:first-child{box-shadow:inset 2px 0 0 var(--sel-
 .st--pc-prazo-vencido{background:var(--dg-b);color:var(--dg-t);border:1px solid var(--dg-r)}
 .st--pc-prazo-ok .ui-icon,.st--pc-prazo-alerta .ui-icon,.st--pc-prazo-vencido .ui-icon{width:12px;height:12px;margin-right:4px}
 .pc-docs__prazo{margin:0 0 12px}
+/* m091: documento gerado (preenchido), ainda sem o assinado — outro sinal que o "✓". */
+.pc-chip--gerado{padding:0 6px;border:1px dashed var(--n-300,#cbd5e1);border-radius:10px;color:var(--n-600)}
+.pc-chip--gerado .ui-icon{color:var(--n-500)}

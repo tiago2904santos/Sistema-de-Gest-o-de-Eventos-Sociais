@@ -234,6 +234,43 @@ class PrazoParaPrestarTests(PrestacaoFixturesMixin, PrestacaoTestCase):
             self.assertNotIn(self.ps.pk, set(listar_prestacoes(aba="prestacao_vencida").values_list("pk", flat=True)))
 
 
+class SelosDoDiarioEDoRelatorioTests(PrestacaoFixturesMixin, PrestacaoTestCase):
+    """m091: abrir a tela não acende selo; preenchido = "gerado"; ✓ só com o assinado."""
+
+    def setUp(self):
+        super().setUp()
+        self.setUpPrestacaoFixtures()
+        self.fixture = self.criar_prestacao(numero=91)
+        self.prestacao = self.fixture.prestacao
+        self.ps = self.fixture.prestacoes_servidor[0]
+
+    def test_tres_estados(self):
+        from .completude import GERADO, ASSINADO, situacao_diario, situacao_rt
+        from .models import DiarioBordo, DiarioBordoTrecho, RelatorioTecnico
+
+        diario = DiarioBordo.objects.create(prestacao=self.prestacao)
+        trecho = DiarioBordoTrecho.objects.create(diario=diario, ordem=0)
+        rt = RelatorioTecnico.objects.create(prestacao=self.prestacao)
+        self.assertEqual((situacao_diario(self.prestacao), situacao_rt(self.ps)), ("", ""))
+
+        trecho.km_inicial, trecho.km_final = 100, 180
+        trecho.save()
+        rt.motivo, rt.atividade, rt.conclusao = "Evento", "Cobertura", "Concluído"
+        rt.save()
+        self.prestacao.refresh_from_db()
+        self.assertEqual((situacao_diario(self.prestacao), situacao_rt(self.ps)), (GERADO, GERADO))
+
+        Anexo.objects.create(prestacao=self.prestacao, servidor_prestacao=self.ps, tipo=Anexo.TIPO_RT_ASSINADO, arquivo=SimpleUploadedFile("rt.pdf", pdf_minimo()))
+        self.assertEqual(situacao_rt(self.ps), ASSINADO)
+
+    def test_lista_nao_acende_so_por_abrir_a_tela(self):
+        self.client.get(reverse("viagens_prestacoes:diario_servidor", args=[self.ps.pk]))
+        self.client.get(reverse("viagens_prestacoes:rt_servidor", args=[self.ps.pk]))
+        resposta = self.client.get(reverse("viagens_prestacoes:index"))
+        self.assertNotContains(resposta, "Diário gerado")
+        self.assertNotContains(resposta, 'title="Relatório técnico assinado anexado"')
+
+
 class VersoesAnterioresTests(PrestacaoFixturesMixin, PrestacaoTestCase):
     """m084: remover e substituir guardam o anterior, que se restaura."""
 

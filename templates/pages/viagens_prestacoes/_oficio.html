@@ -66,8 +66,9 @@
       <div class="pc-linha__pessoa">
         <span class="pc-linha__nome-linha">
           <span class="pc-linha__nome">{{ s.name }}</span>
-          {% if s.diario_pdf_url %}<span class="pc-chip pc-chip--feito">{% include "components/icon.html" with nome="check" %}Diário</span>{% endif %}
-          {% if c.tem_rt %}<span class="pc-chip pc-chip--feito">{% include "components/icon.html" with nome="check" %}Relatório</span>{% endif %}
+          {# m091: ✓ só com o assinado anexado; "gerado" quando preenchido e o assinado ainda não voltou. #}
+          {% if s.diario_situacao == "assinado" %}<span class="pc-chip pc-chip--feito" title="Diário de bordo assinado anexado">{% include "components/icon.html" with nome="check" %}Diário</span>{% elif s.diario_situacao == "gerado" %}<span class="pc-chip pc-chip--gerado" title="Diário preenchido e gerado; falta anexar o assinado">{% include "components/icon.html" with nome="document" %}Diário gerado</span>{% endif %}
+          {% if s.rt_situacao == "assinado" %}<span class="pc-chip pc-chip--feito" title="Relatório técnico assinado anexado">{% include "components/icon.html" with nome="check" %}Relatório</span>{% elif s.rt_situacao == "gerado" %}<span class="pc-chip pc-chip--gerado" title="Relatório preenchido e gerado; falta anexar o assinado">{% include "components/icon.html" with nome="document" %}Relatório gerado</span>{% endif %}
           {% if s.comprovante_ok %}<span class="pc-chip pc-chip--feito"{% if s.comprovante_detalhe %} title="{{ s.comprovante_detalhe }}"{% endif %}>{% include "components/icon.html" with nome="check" %}{{ s.comprovante_rotulo }}{% if s.comprovante_resumo %}<span class="pc-chip__dado">{{ s.comprovante_resumo }}</span>{% endif %}</span>{% endif %}
           {% if c.tem_documento_assinado %}<span class="pc-chip pc-chip--feito">{% include "components/icon.html" with nome="check" %}Assinados</span>{% endif %}
           <span class="st st--pc-{{ c.status_value }}">{% if c.finalizada %}Finalizada{% else %}{{ c.status_label }}{% endif %}</span>
