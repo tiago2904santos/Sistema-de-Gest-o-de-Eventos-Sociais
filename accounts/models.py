@@ -75,3 +75,43 @@ class User(AbstractUser, OrigemLegado):
 
     def __str__(self):
         return self.get_full_name() or self.username
+
+
+class AssinaturaAgenda(models.Model):
+    """O link pessoal de assinatura da Agenda (feed iCalendar, ver `agenda.ics`).
+
+    O token é a única chave do feed: quem tem o link vê o que o dono do
+    token vê no sistema, sem senha. Por isso ele é longo, aleatório e
+    descartável — "Gerar novo link" troca o token e o anterior deixa de
+    responder na hora; revogar apaga a linha.
+    """
+
+    usuario = models.OneToOneField(
+        User,
+        verbose_name="usuário",
+        on_delete=models.CASCADE,
+        related_name="assinatura_agenda",
+    )
+    token = models.CharField("token", max_length=64, unique=True, editable=False)
+    gerado_em = models.DateTimeField("gerado em", auto_now=True)
+
+    class Meta:
+        verbose_name = "assinatura da agenda"
+        verbose_name_plural = "assinaturas da agenda"
+
+    def __str__(self):
+        return f"Assinatura da agenda de {self.usuario}"
+
+    @staticmethod
+    def novo_token() -> str:
+        import secrets
+
+        return secrets.token_urlsafe(32)
+
+    @classmethod
+    def gerar(cls, usuario):
+        """Cria ou troca o token da pessoa; o link antigo deixa de valer."""
+        assinatura, _ = cls.objects.update_or_create(
+            usuario=usuario, defaults={"token": cls.novo_token()}
+        )
+        return assinatura

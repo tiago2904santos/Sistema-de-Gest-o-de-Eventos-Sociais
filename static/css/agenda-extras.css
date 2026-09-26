@@ -1,0 +1,29 @@
+/* Agenda — complementos da onda AG-B: assinatura (m133), escala e filtro por
+   pessoa (m134), "Criar aqui" (m135), pauta (m136), visão Ano e link (m137).
+
+   Separado de agenda.css de propósito: o calendário em si continua lá; aqui
+   ficam só os modais e as telas novas, com os mesmos tokens do DS. */
+
+/* Ações à direita do cabeçalho do calendário. */
+.ag-topo__acoes { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.ag-topo__acoes .ag-btn .ui-icon { width: 16px; height: 16px; }
+
+/* Modal "Assinar no seu calendário" ---------------------------------------- */
+.ag-assinar { width: min(620px, calc(100vw - 32px)); }
+.ag-assinar__opcoes { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ag-assinar__meus { margin-left: auto; font-size: .88rem; }
+.ag-assinar__caixa { gap: 8px; }
+.ag-assinar__caixa .ag-f__h { margin: 0; }
+.ag-assinar__url { font-size: .82rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--nt-t); }
+.ag-assinar__acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ag-assinar__acoes a.ag-btn { text-decoration: none; }
+.ag-assinar__ok { font-size: .82rem; color: var(--ok-t); font-weight: 600; }
+.ag-assinar__aviso { font-size: .82rem; color: var(--rotulo); }
+.ag-assinar__rodape { flex-wrap: wrap; }
+.ag-assinar__form { display: inline-flex; }
+.ag-assinar__form:first-child { margin-right: auto; }
+
+@media (max-width: 900px) {
+  .ag-topo__acoes { width: 100%; margin-left: 0; }
+  .ag-topo__acoes .ag-btn { flex: 1; justify-content: center; }
+}

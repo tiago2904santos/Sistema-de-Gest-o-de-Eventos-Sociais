@@ -15,7 +15,7 @@
 
 {% block title %}Agenda — Sistema de Gestão de Eventos Sociais{% endblock %}
 
-{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/agenda.css' %}">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/agenda.css' %}"><link rel="stylesheet" href="{% estatico 'css/agenda-extras.css' %}">{% endblock %}
 
 {% block conteudo %}
   <div class="d-cabeca d-cabeca--secao">
@@ -41,6 +41,10 @@
       <button type="button" data-view="list30">30 dias</button>
     </div>
     <button type="button" class="ag-btn ag-btn--filtros" data-ag="filtros" aria-expanded="false" aria-controls="ag-filtros">{% include "components/icon.html" with nome="filter" %}Filtros</button>
+    {# Ações da onda AG-B: assinar no calendário pessoal (m133). #}
+    <div class="ag-topo__acoes">
+      <button type="button" class="ag-btn" data-ag-abrir="ag-assinar" aria-haspopup="dialog">{% include "components/icon.html" with nome="link" %}Assinar</button>
+    </div>
   </div>
 
   <div class="ag-grade">
@@ -115,10 +119,14 @@
       <p class="ag-m__carregando">Carregando…</p>
     </div>
   </dialog>
+
+  {# Modais da onda AG-B (assinatura, criar aqui). #}
+  {% include "pages/agenda/_assinar.html" %}
 {% endblock %}
 
 {% block extra_js %}{{ block.super }}
   <script src="{% estatico 'vendor/fullcalendar/index.global.min.js' %}"></script>
   <script src="{% estatico 'vendor/fullcalendar/pt-br.global.min.js' %}"></script>
   <script src="{% estatico 'js/agenda.js' %}" defer></script>
+  <script src="{% estatico 'js/agenda-extras.js' %}" defer></script>
 {% endblock %}
