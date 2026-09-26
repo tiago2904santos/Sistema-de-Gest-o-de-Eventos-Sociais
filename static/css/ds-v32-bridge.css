@@ -2287,6 +2287,10 @@ form.btn-flutuante-form{margin:0;display:contents}
 .pc-doc .prestacao-upload{flex:none;margin:0}
 .pc-doc .prestacao-upload label{cursor:pointer}
 .pc-docs__nota{margin:8px 0 0;font-size:11.5px;color:var(--n-500)}
+/* Coffee Break: as vias guardadas da OS, do ofício e do certifico (_documento_inline). */
+.cb-vias{margin:4px 0 8px;font-size:11.5px;color:var(--n-500)}
+.cb-vias summary{cursor:pointer;padding:2px 4px}
+.cb-vias__lista{margin:4px 0 0;padding-left:20px;display:grid;gap:4px}
 .pc-docs__falta{margin-top:16px;padding:12px 14px;border-radius:10px;background:var(--av-b,#fdf3dc);color:var(--av-t,#6b4e10);font-size:12.5px}
 .pc-docs__falta b{display:flex;align-items:center;gap:6px;font-size:13px}
 .pc-docs__falta b .ui-icon{width:14px;height:14px}

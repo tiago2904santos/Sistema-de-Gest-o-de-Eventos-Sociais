@@ -16,7 +16,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.clickjacking import xframe_options_sameorigin
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django.db import transaction
 from django.db.models import ProtectedError
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
@@ -25,7 +25,6 @@ from documentos.editor.pagina import cartao
 
 from .editor import CHAVE_CERTIFICO, CHAVE_OFICIO, CHAVE_OS
 from .forms import (
-    CertidaoForm,
     ConfiguracaoCoffeeBreakForm,
     NotaCoffeeBreakForm,
     PedidoCoffeeBreakForm,
@@ -937,7 +936,10 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
             "url_pdf": url_os + "?baixar=1",
             # O editor de documentos de Viagens: barra, pendências e a folha editável.
             "embutido": cartao(CHAVE_OS, solicitacao.pk, f"Ordem de serviço {solicitacao.numero}".strip()),
+            # A via emitida e a assinada (anexar assinado no menu do cartão).
+            **_vias_do_documento("os", solicitacao),
         }
+        contexto["usa_dialogo_assinado"] = True
         contexto["pendencias_oficio"] = documentos.pendencias_oficio(solicitacao)
         contexto["pendencias_certifico"] = documentos.pendencias_certifico(solicitacao)
         if etapa == "nota":
@@ -957,6 +959,40 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
             contexto["url_anexar_ob"] = reverse("coffee_break:anexar_ob", args=[solicitacao.pk])
             contexto["avisos_ob"] = services.avisos_da_ob(solicitacao)
     return contexto
+
+
+def _vias_do_documento(documento, solicitacao):
+    """O que o cartão do documento mostra das vias guardadas (coffee_break/vias.py):
+    a assinada, se houver, a última emitida e o anexar assinado."""
+    from . import vias
+
+    tipo = vias.TIPOS[documento]
+    lista = list(vias.vias(tipo, solicitacao)[:10])
+    versoes = {}
+    if lista:
+        from documentos.models import DocumentoAssinaturaVersao
+
+        for versao in DocumentoAssinaturaVersao.objects.filter(artefato__in=lista).select_related("criado_por"):
+            versoes.setdefault(versao.artefato_id, []).append(versao)
+    vigente = vias.assinada(tipo, solicitacao)
+    return {
+        "assinado": vigente is not None,
+        "assinatura": vigente,
+        "url_anexar": "" if solicitacao.bloqueada_para_edicao else reverse(
+            "coffee_break:anexar_assinado", args=[solicitacao.pk, documento]
+        ),
+        "vias": [
+            {
+                "via": via,
+                "url": reverse("coffee_break:via_arquivo", args=[via.pk]),
+                "assinadas": [
+                    {"versao": v, "url": reverse("coffee_break:via_arquivo", args=[via.pk]) + f"?assinada={v.pk}"}
+                    for v in versoes.get(via.pk, [])
+                ],
+            }
+            for via in lista
+        ],
+    }
 
 
 def _contexto_da_nota(contexto, form, solicitacao):
@@ -1019,6 +1055,7 @@ def _contexto_da_nota(contexto, form, solicitacao):
         "src": url_oficio,
         "url_pdf": url_oficio + "?baixar=1",
         "embutido": cartao(CHAVE_OFICIO, solicitacao.pk, titulo_oficio),
+        **_vias_do_documento("oficio", solicitacao),
     }
     contexto["doc_certifico"] = {
         "titulo": "Certifico digital",
@@ -1039,6 +1076,7 @@ def _contexto_da_nota(contexto, form, solicitacao):
             "src": url_m,
             "url_pdf": url_m + "?baixar=1",
             "embutido": cartao(CHAVE_CERTIFICO, membro.pk, titulo_m),
+            **_vias_do_documento("certifico", membro),
         })
 
 
@@ -1094,11 +1132,64 @@ def ler_email(request):
     )
 
 
+# O que a cópia leva da solicitação original: o evento que se repete. Nunca
+# datas, número, nota, ofício, protocolo nem pagamento — esses são da nova.
+CAMPOS_DUPLICADOS = ("municipio", "descricao_evento", "quantidade", "horario_evento", "local_entrega", "responsavel_recebimento")
+
+
+def _origem_da_copia(dados):
+    """A solicitação que se duplica (?duplicar=<pk>), ou None."""
+    pk = dados.get("duplicar")
+    if not pk or not str(pk).isdigit():
+        return None
+    return SolicitacaoCoffeeBreak.objects.filter(pk=pk).first()
+
+
+@acesso_ao_modulo
+def duplicar_solicitacao(request, pk):
+    """"Duplicar" da lista: abre a nova solicitação com o evento copiado e a data em branco."""
+    get_object_or_404(SolicitacaoCoffeeBreak, pk=pk)
+    return redirect(f"{reverse('coffee_break:nova')}?duplicar={pk}")
+
+
+@acesso_ao_modulo
+@require_GET
+def locais_entrega(request):
+    """Local de entrega e responsável já usados no município (JSON), do mais
+    recente ao mais antigo, sem repetir. A tela sugere; só o clique preenche."""
+    municipio = request.GET.get("municipio") or ""
+    resultados = []
+    if municipio.isdigit():
+        vistos = set()
+        recentes = (
+            SolicitacaoCoffeeBreak.objects.filter(municipio_id=municipio)
+            .exclude(local_entrega="")
+            .order_by("-data_inicio_evento", "-pk")
+            .values_list("local_entrega", "responsavel_recebimento", "numero", "data_inicio_evento")[:200]
+        )
+        for local, responsavel, numero, data in recentes:
+            chave = (local.strip().casefold(), responsavel.strip().casefold())
+            if chave in vistos:
+                continue
+            vistos.add(chave)
+            detalhe = " · ".join(p for p in (responsavel, f"OS {numero}" if numero else "", f"{data:%d/%m/%Y}" if data else "") if p)
+            resultados.append({
+                "nome": local,
+                "detalhe": detalhe,
+                "campos": {"local_entrega": local, "responsavel_recebimento": responsavel},
+            })
+            if len(resultados) == 10:
+                break
+    return JsonResponse({"resultados": resultados})
+
+
 @acesso_ao_modulo
 def nova_solicitacao(request):
     from . import origem as origem_evento
 
     email_origem = None
+    # "Duplicar" da lista: ?duplicar=<pk> (e o campo oculto no POST, para o histórico).
+    copia_de = _origem_da_copia(request.POST if request.method == "POST" else request.GET)
     # "Pedir coffee break" do evento ou da palestra: ?solicitacao=<pk> ou ?demanda=<pk>.
     campo_origem, evento_origem = origem_evento.origem_do_pedido(
         request.POST if request.method == "POST" else request.GET, request.user
@@ -1123,6 +1214,8 @@ def nova_solicitacao(request):
                 descricao = "Solicitação registrada no sistema."
                 if evento_origem is not None:
                     descricao += f" Pedida a partir de: {origem_evento.rotulo(campo_origem, evento_origem)}."
+                if copia_de is not None:
+                    descricao += f" Duplicada da solicitação {copia_de.numero or '#' + str(copia_de.pk)}."
                 if origem:
                     descricao += f" {preencher_por_email.texto_da_origem(origem)}."
                 services.registrar_historico(
@@ -1145,9 +1238,21 @@ def nova_solicitacao(request):
         email_origem = preencher_por_email.origem_pendente(request, "coffee_break")
     else:
         iniciais = origem_evento.valores_iniciais(campo_origem, evento_origem) if evento_origem is not None else {}
+        if copia_de is not None:
+            iniciais = {
+                campo: getattr(copia_de, f"{campo}_id" if campo == "municipio" else campo)
+                for campo in CAMPOS_DUPLICADOS
+                if getattr(copia_de, f"{campo}_id" if campo == "municipio" else campo) not in ("", None)
+            }
         form = PedidoCoffeeBreakForm(initial=iniciais)
     contexto = _contexto_formulario(request, form)
     contexto["email_origem"] = email_origem
+    if copia_de is not None:
+        contexto["copia_de"] = {
+            "pk": copia_de.pk,
+            "rotulo": f"Solicitação {copia_de.numero or '#' + str(copia_de.pk)} — {copia_de.descricao_evento}",
+            "url": reverse("coffee_break:editar", args=[copia_de.pk]),
+        }
     if evento_origem is not None:
         parametro = "solicitacao" if campo_origem == "solicitacao_evento" else "demanda"
         contexto["origem_evento"] = {
@@ -1917,14 +2022,6 @@ def certifico(request, pk):
 
 
 @acesso_ao_modulo
-def pacote_protocolo(request, pk):
-    return _pdf_ou_volta(
-        request, _solicitacao_documental(pk), documentos.pacote_protocolo_pdf,
-        "Anexo do protocolo", volta="etapa_protocolo",
-    )
-
-
-@acesso_ao_modulo
 def pacote_parte(request, pk, parte):
     """Um dos quatro arquivos da etapa 3 (OS, ofício, notas e certificos,
     contratos e certidões)."""
@@ -1939,6 +2036,85 @@ def pacote_parte(request, pk, parte):
         # Baixar os arquivos conclui a etapa 3: é o dia do atesto e do envio ao GAF.
         services.marcar_atesto(solicitacao, request.user)
     return resposta
+
+
+# ---------------------------------------------------------------------------
+# Vias guardadas: a emitida e a assinada da OS, do ofício e do certifico
+# ---------------------------------------------------------------------------
+
+@require_POST
+@acesso_ao_modulo
+def anexar_assinado(request, pk, documento):
+    """A via assinada da OS, do ofício ou do certifico, pelo modal de anexo de
+    documentos: anexa (ou troca) e passa a valer no lugar da gerada; remover
+    revoga a assinada (o arquivo fica guardado) e a gerada volta a valer."""
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    from documentos.services.exceptions import DocumentError
+    from documentos.services.persistence import anexar_arquivo_assinado, remover_arquivo_assinado
+
+    from . import vias
+
+    if documento not in vias.TIPOS:
+        raise Http404
+    tipo = vias.TIPOS[documento]
+    solicitacao = _solicitacao_documental(pk)
+    tela = "coffee_break:editar" if documento == "os" else "coffee_break:etapa_nota"
+    destino = request.POST.get("next") or reverse(tela, args=[pk])
+    if not url_has_allowed_host_and_scheme(destino, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        destino = reverse(tela, args=[pk])
+    if solicitacao.bloqueada_para_edicao:
+        messages.warning(request, "Solicitações canceladas ou concluídas ficam bloqueadas para edição.")
+        return redirect(destino)
+    rotulo = {"os": "da ordem de serviço", "oficio": "do ofício", "certifico": "do certifico"}[documento]
+    dono = vias.dono(tipo, solicitacao)
+    if request.POST.get("acao") == "remover":
+        versao = vias.assinada(tipo, solicitacao)
+        if versao is not None:
+            remover_arquivo_assinado(versao.artefato)
+            services.registrar_historico(
+                dono, request.user, AcaoHistoricoCoffeeBreak.ATUALIZACAO,
+                f"Via assinada {rotulo} removida; o PDF gerado volta a valer.",
+            )
+            messages.success(request, "Versão assinada removida. O PDF gerado volta a valer.")
+        return redirect(destino)
+    arquivo = request.FILES.get("arquivo")
+    if arquivo is None:
+        messages.error(request, "Escolha o PDF assinado.")
+        return redirect(destino)
+    gerar = {"os": documentos.ordem_servico_pdf, "oficio": documentos.oficio_pdf, "certifico": documentos.certifico_pdf}[documento]
+    via = vias.ultima_via(tipo, solicitacao)
+    try:
+        if via is None:
+            # Ainda não saiu nenhuma via: a gerada agora é a que se assinou.
+            gerar(solicitacao)
+            via = vias.ultima_via(tipo, solicitacao)
+        if via is None:
+            raise ValidationError("Não foi possível guardar a via emitida deste documento.")
+        anexar_arquivo_assinado(via, arquivo)
+    except (ValidationError, DocumentError) as erro:
+        for mensagem in getattr(erro, "messages", [str(erro)]):
+            messages.error(request, mensagem)
+        return redirect(destino)
+    services.registrar_historico(
+        dono, request.user, AcaoHistoricoCoffeeBreak.ATUALIZACAO,
+        f"Via assinada {rotulo} anexada ({arquivo.name}); passa a valer nos downloads e no pagamento.",
+    )
+    messages.success(request, "Documento assinado anexado. Ele passa a valer no lugar do gerado; a versão anterior fica guardada.")
+    return redirect(destino)
+
+
+@acesso_ao_modulo
+def via_arquivo(request, pk):
+    """Uma via guardada (a emitida) ou, com `?assinada=<id>`, uma versão assinada dela."""
+    from documentos.models import DocumentoArtefato
+
+    via = get_object_or_404(DocumentoArtefato, pk=pk, coffee_break_solicitacao__isnull=False)
+    assinada = request.GET.get("assinada")
+    if assinada:
+        versao = get_object_or_404(via.versoes_assinadas, pk=assinada)
+        return _arquivo(versao.arquivo, nome=versao.nome_original or None)
+    return _arquivo(via.arquivo, nome=via.nome_exibicao or None)
 
 
 # ---------------------------------------------------------------------------
@@ -2145,16 +2321,6 @@ def aditivo_arquivo(request, pk):
     return _arquivo(get_object_or_404(AditivoContrato, pk=pk).arquivo)
 
 
-@acesso_ao_modulo
-def pacote_protocolo_zip(request, pk):
-    request.GET = request.GET.copy()
-    request.GET["baixar"] = "1"
-    return _pdf_ou_volta(
-        request, _solicitacao_documental(pk), documentos.pacote_protocolo_zip,
-        "Anexo do protocolo", volta="etapa_protocolo", tipo="application/zip", extensao=".zip",
-    )
-
-
 def _arquivo(campo, nome=None):
     if not campo:
         raise Http404
@@ -2281,28 +2447,11 @@ def _fornecedores_com_lote_ativo():
     ).distinct().prefetch_related("certidoes")
 
 
+@require_GET
 @acesso_ao_modulo
 def lista_certidoes(request):
-    if request.method == "POST":
-        fornecedor = get_object_or_404(Fornecedor, pk=request.POST.get("fornecedor"))
-        form = CertidaoForm(request.POST, request.FILES)
-        if form.is_valid():
-            dados = form.cleaned_data
-            certidao = certidoes.registrar(
-                fornecedor, dados["tipo"], dados["arquivo"], dados["validade"], request.user
-            )
-            origem = " (lida do PDF)" if getattr(form, "validade_lida", False) else ""
-            messages.success(
-                request,
-                f"Certidão {certidao.get_tipo_display()} de {fornecedor.razao_social} "
-                f"registrada, válida até {certidao.validade:%d/%m/%Y}{origem}.",
-            )
-        else:
-            for mensagens in form.errors.values():
-                for mensagem in mensagens:
-                    messages.error(request, mensagem)
-        return redirect(f"{reverse('coffee_break:certidoes')}#fornecedor-{fornecedor.pk}")
-
+    """O quadro das certidões. Anexar é só pelo modal (anexar_certidao),
+    que confere se o PDF é a certidão certa, do CNPJ do fornecedor."""
     hoje = timezone.localdate()
     fornecedores = [
         {"fornecedor": f, "linhas": certidoes.quadro(f, hoje)}

@@ -53,3 +53,80 @@
   select.addEventListener("change", mostrar);
   if (select.value) mostrar();
 })();
+
+/* Coffee Break — etapa 1: local de entrega e responsável já usados no
+   município. Ao escolher o município, lista os pares mais recentes de lá
+   (`coffee_break:locais_entrega`); um clique preenche os dois campos. Nada é
+   preenchido sem o clique, e tudo continua editável — como a sugestão do
+   solicitante nas outras telas (sugestao-solicitante.js). */
+(function () {
+  "use strict";
+  var caixa = document.querySelector("[data-cb-locais]");
+  var select = document.querySelector("select[name=municipio]");
+  var formulario = caixa && caixa.closest("form");
+  if (!caixa || !select || !formulario || select.disabled) return;
+  var pedido = 0;
+
+  function el(tag, classe, texto) {
+    var elemento = document.createElement(tag);
+    if (classe) elemento.className = classe;
+    if (texto) elemento.textContent = texto;
+    return elemento;
+  }
+
+  function esconder() {
+    caixa.hidden = true;
+    caixa.textContent = "";
+  }
+
+  function definir(nome, valor) {
+    var campo = formulario.querySelector('[name="' + nome + '"]');
+    if (!campo || campo.disabled || campo.readOnly) return;
+    campo.value = valor;
+    campo.dispatchEvent(new Event("input", { bubbles: true }));
+    campo.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function mostrar(resultados) {
+    caixa.textContent = "";
+    if (!resultados.length) { esconder(); return; }
+    caixa.appendChild(el("p", "sugestao-solicitante__titulo", "Já entregues neste município — clique para preencher o local e o responsável:"));
+    var lista = el("ul", "sugestao-solicitante__lista");
+    resultados.forEach(function (item) {
+      var li = el("li");
+      var botao = el("button", "sugestao-solicitante__item");
+      botao.type = "button";
+      botao.appendChild(el("b", "", item.nome));
+      if (item.detalhe) botao.appendChild(el("small", "", item.detalhe));
+      botao.addEventListener("click", function () {
+        Object.keys(item.campos || {}).forEach(function (chave) { definir(chave, item.campos[chave]); });
+        esconder();
+      });
+      li.appendChild(botao);
+      lista.appendChild(li);
+    });
+    caixa.appendChild(lista);
+    var fechar = el("button", "sugestao-solicitante__fechar", "Fechar");
+    fechar.type = "button";
+    fechar.addEventListener("click", esconder);
+    caixa.appendChild(fechar);
+    caixa.hidden = false;
+  }
+
+  function buscar() {
+    var numero = ++pedido;
+    if (!select.value) { esconder(); return; }
+    fetch(caixa.getAttribute("data-url") + "?municipio=" + encodeURIComponent(select.value), {
+      credentials: "same-origin",
+      headers: { Accept: "application/json" }
+    })
+      .then(function (resposta) { return resposta.ok ? resposta.json() : null; })
+      .then(function (dados) {
+        if (dados && numero === pedido) mostrar(dados.resultados || []);
+      })
+      .catch(function () { /* sugestão é ajuda: sem ela, a tela segue igual */ });
+  }
+
+  // Só quando o município muda na tela; ao abrir, o que já está preenchido fica como está.
+  select.addEventListener("change", buscar);
+})();
