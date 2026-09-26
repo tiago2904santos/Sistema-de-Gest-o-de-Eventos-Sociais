@@ -7,8 +7,9 @@ chave de cache do PDF — um documento com texto alterado nunca é servido de
 um artefato antigo.
 
 Conteúdo é texto simples com quebras de linha; a renderização escapa. O
-DOCX (renderizador à parte, pelo docxtpl) não conhece overrides: sai sempre
-com o texto do modelo.
+DOCX (renderizador à parte, pelo docxtpl) recebe os overrides e as quebras
+depois de renderizado (`docx_blocos.aplicar_conteudo_documental`, m111):
+sai com o mesmo texto do PDF.
 
 m057: o texto-base que a administração gravou para o modelo
 (`modelos_texto`) entra no lugar do padrão do registro, e a versão editada
