@@ -6,7 +6,9 @@
  * - protocolo com a máscara 00.000.000-0;
  * - seletor com busca da equipe (com Motorista e Termo em cada pessoa);
  *   viatura e motorista do sistema são a lista de escolha do termo;
- * - sugestões de viatura pela unidade da equipe e do motorista;
+ * - sugestões de viatura pela unidade da equipe e do motorista e pelos
+ *   condutores autorizados; escolhida a viatura, os autorizados dela vêm
+ *   primeiro na lista de motoristas;
  * - o cartão do motorista aparece com viatura escolhida e ninguém da equipe
  *   ao volante; "No sistema" / "Manual" alterna o que ele pede;
  * - o PDF da conferência só é pedido quando o cartão abre.
@@ -326,7 +328,9 @@
     }
     listaSugestoes.innerHTML = "";
     linhasViatura.forEach(function (l) {
-      if (!unidades.has(l.getAttribute("data-unidade"))) return;
+      // Viatura que o motorista escolhido está autorizado a conduzir também é sugestão.
+      var conduz = marcado && (l.getAttribute("data-motoristas") || "").split(" ").indexOf(marcado.value) !== -1;
+      if (!conduz && !unidades.has(l.getAttribute("data-unidade"))) return;
       var radio = l.querySelector('input[name="viatura"]');
       var chip = document.createElement("button");
       chip.type = "button";
@@ -349,6 +353,39 @@
     sugestoes.hidden = !listaSugestoes.children.length;
   }
   atualizarSugestoes();
+
+  // 5a. Condutores autorizados da viatura -------------------------------------
+  // Escolhida a viatura, os condutores autorizados no cadastro dela sobem para
+  // o topo da lista de motoristas, com o selo; os demais seguem na ordem.
+  var listaMotoristas = form.querySelector('[data-lista-escolha="motorista"]');
+  var itensMotorista = listaMotoristas ? Array.prototype.slice.call(listaMotoristas.querySelectorAll("[data-lista-item]")) : [];
+
+  function destacarCondutores() {
+    if (!listaMotoristas) return;
+    var marcada = form.querySelector('input[name="viatura"]:checked');
+    var itemViatura = marcada && form.querySelector('[data-lista-escolha="viatura"] [data-lista-item="' + marcada.value + '"]');
+    var autorizados = itemViatura ? (itemViatura.getAttribute("data-motoristas") || "").split(" ").filter(Boolean) : [];
+    var primeiro = [], resto = [];
+    itensMotorista.forEach(function (item) {
+      var autorizado = autorizados.indexOf(item.getAttribute("data-lista-item")) !== -1;
+      var selo = item.querySelector("[data-ofc-autorizado]");
+      if (autorizado && !selo) {
+        selo = document.createElement("span");
+        selo.className = "st st--atendido lista-escolha__chip";
+        selo.setAttribute("data-ofc-autorizado", "");
+        selo.textContent = "Condutor autorizado";
+        item.querySelector(".of-pessoa__nome").appendChild(selo);
+      } else if (!autorizado && selo) {
+        selo.remove();
+      }
+      (autorizado ? primeiro : resto).push(item);
+    });
+    primeiro.concat(resto).forEach(function (item) { listaMotoristas.appendChild(item); });
+  }
+  form.addEventListener("change", function (evento) {
+    if (evento.target.name === "viatura") destacarCondutores();
+  });
+  destacarCondutores();
 
   // 6. Vincular a um roteiro existente ---------------------------------------
   // Ligado: só a busca do roteiro; os cartões do mapa, trechos e diárias ficam

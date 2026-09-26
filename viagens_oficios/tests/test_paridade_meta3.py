@@ -424,6 +424,23 @@ class CadastroTests(Cenario):
         r = self.editar(self.oficio())
         self.assertContains(r, "Sem data de saída no roteiro: por enquanto vale Autorização.")
 
+    def test_condutores_autorizados_da_viatura(self):
+        self.duster.motoristas.set([self.joao])
+        o = self.oficio()
+        r = self.editar(o)
+        self.assertContains(r, f'data-motoristas="{self.joao.pk}"')
+        # Motorista fora dos autorizados: grava, mas avisa.
+        r = self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(), follow=True)
+        o.refresh_from_db()
+        self.assertEqual(o.motorista, self.janine)
+        self.assertContains(r, "não está entre os condutores autorizados da viatura AAA-1234")
+        r = self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(motorista=self.joao.pk), follow=True)
+        self.assertNotContains(r, "condutores autorizados")
+        # Viatura sem condutores cadastrados não tem restrição.
+        self.duster.motoristas.clear()
+        r = self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(), follow=True)
+        self.assertNotContains(r, "condutores autorizados")
+
     def _finalizar(self, o, **extra):
         return self.client.post(reverse("viagens_oficios:editar", args=[o.pk]), self.payload(
             servidores=[str(self.janine.pk)], servidores_termo_autorizacao=[str(self.janine.pk)], acao="finalizar", **extra),

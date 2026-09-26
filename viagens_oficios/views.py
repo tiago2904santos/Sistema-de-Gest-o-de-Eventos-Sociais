@@ -361,6 +361,21 @@ def _vincular_roteiro(request, oficio):
     return roteiro
 
 
+def _aviso_de_condutor(oficio):
+    """Avisa, sem impedir, quando o motorista não é condutor autorizado da viatura.
+
+    Só vale para viatura com condutores cadastrados: lista vazia é viatura
+    sem restrição.
+    """
+    if not (oficio.viatura_id and oficio.motorista_id):
+        return ''
+    autorizados = list(oficio.viatura.motoristas.all())
+    if not autorizados or any(m.pk == oficio.motorista_id for m in autorizados):
+        return ''
+    return (f'{oficio.motorista.nome} não está entre os condutores autorizados da viatura '
+            f'{oficio.viatura.placa_formatada}. Confira antes de emitir o ofício.')
+
+
 def _data_final_do_oficio(form):
     """A data com que o ofício é finalizado e se ela foi posta pelo sistema.
 
@@ -456,6 +471,9 @@ def editar(request, pk=None):
                     messages.warning(request, f'O protocolo {format_protocolo(oficio.protocolo)} também está no ofício {nomes}.'
                                      if outros.count() == 1 else
                                      f'O protocolo {format_protocolo(oficio.protocolo)} também está nos ofícios {nomes}.')
+            aviso_condutor = _aviso_de_condutor(oficio)
+            if aviso_condutor:
+                messages.warning(request, aviso_condutor)
             for nivel, texto in (gravacao.mensagens if gravacao else []):
                 if texto.startswith('Diárias: R$'):
                     # O roteiro calcula por servidor; o aviso fala do ofício inteiro.
