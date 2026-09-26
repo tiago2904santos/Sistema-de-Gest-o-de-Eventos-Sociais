@@ -45,7 +45,8 @@ def anotar_finalizacao(queryset):
 
     `Exists` em vez de contagem: evita agrupamento e deixa a negação correta.
     """
-    from viagens_prestacoes.models import PrestacaoServidor
+    from viagens_oficios.models import Oficio
+    from viagens_prestacoes.models import PrestacaoContas, PrestacaoServidor
 
     from .models import RoteiroTrecho
 
@@ -61,6 +62,9 @@ def anotar_finalizacao(queryset):
     return queryset.annotate(
         _tem_prestacao=Exists(todas),
         _tem_prestacao_pendente=Exists(todas.filter(finalizada=False)),
+        # Usado por ofício ou como roteiro ajustado de prestação: não se exclui.
+        _em_uso=Exists(Oficio.objects.filter(roteiro=OuterRef("pk")))
+        | Exists(PrestacaoContas.objects.filter(roteiro_ajustado=OuterRef("pk"))),
         _inicio=TruncDate(
             Coalesce("saida_dt", Subquery(primeira_saida, output_field=DateTimeField()))
         ),

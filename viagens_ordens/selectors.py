@@ -1,7 +1,7 @@
 """Consultas de leitura das ordens de serviço, no molde de `viagens_termos/selectors.py`.
 
 Mesmos `prefetch_related` do `ordens_servico/selectors.py` da origem, sem o
-recorte por área. Os destinos vêm num `Prefetch` já ordenado por nome e com o
+recorte por área. Os destinos vêm num `Prefetch` na ordem da OS e com o
 estado junto: é o que deixa o presenter usar `ordem.destinos.all()` sem uma
 consulta por linha.
 """
@@ -14,7 +14,7 @@ from cadastros.models import Municipio
 from .abas import anotar_situacao, q_das_abas
 from .models import OrdemServico
 
-_DESTINOS_DO_CARTAO = Prefetch("destinos", queryset=Municipio.objects.select_related("estado").order_by("nome"))
+_DESTINOS_DO_CARTAO = Prefetch("destinos", queryset=Municipio.objects.select_related("estado").order_by("ordemservicodestino__ordem", "ordemservicodestino__pk"))
 
 
 def base_ordens():

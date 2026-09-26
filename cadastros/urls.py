@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import busca_municipios, views
 
 app_name = "cadastros"
 
@@ -12,6 +12,7 @@ urlpatterns = [
         views.modelo_tipo_evento,
         name="modelo_tipo_evento",
     ),
+    path("municipios/buscar/", busca_municipios.buscar_municipios, name="municipios_buscar"),
     path("<slug:slug>/", views.lista, name="lista"),
     path("<slug:slug>/novo/", views.editar, name="novo"),
     path("<slug:slug>/<int:pk>/editar/", views.editar, name="editar"),

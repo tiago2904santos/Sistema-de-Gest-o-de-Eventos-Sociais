@@ -38,8 +38,15 @@ from .models import (
 )
 
 
+@transaction.atomic
 def excluir_plano(plano):
+    """Exclui o plano e libera o número para o próximo do ano, como no ofício."""
+    from .models import PlanoTrabalhoNumeroLacuna
+
+    numero, ano = plano.numero, plano.ano
     excluir_com_protecao(plano)
+    if numero and ano:
+        PlanoTrabalhoNumeroLacuna.objects.get_or_create(ano=ano, numero=numero)
 
 
 _MESES_PT = (
@@ -947,7 +954,7 @@ def marcar_plano_gerado(plano):
 
 @transaction.atomic
 def salvar_plano_numerado(plano):
-    """Reserva e grava o número com a mecânica comum; a política é o contador da configuração."""
+    """Reserva e grava o número com a mecânica comum e a política do número de ofício."""
     if plano.numero and plano.ano:
         plano.save()
         return plano
@@ -1040,7 +1047,7 @@ def criar_plano_rascunho(viagem=None):
     if viagem is not None:
         plano.programa_outros = viagem.titulo or ""
         if viagem.horario_inicio and viagem.horario_fim:
-            plano.horario_atendimento = f"{viagem.horario_inicio:%H:%M} ate {viagem.horario_fim:%H:%M}"
+            plano.horario_atendimento = f"{viagem.horario_inicio:%H:%M} até {viagem.horario_fim:%H:%M}"
     # A contextualização NÃO herda o motivo da viagem: é texto curto de agenda,
     # não o parágrafo de abertura. Fica automática até alguém editar à mão.
     plano = salvar_plano_numerado(plano)

@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from core.autosave import autosave_json_response
@@ -19,6 +20,7 @@ from .models import PrestacaoDocumentoAnexo
 from .presenters import _anexo_assinado_info
 from .anexo_services import endireitar_diario_anexado
 from .anexo_services import excluir_anexo
+from .anexo_services import restaurar_anexo
 from .anexo_services import substituir_anexo_assinado
 from .carimbo_services import anexo_do_oficio_assinado
 from .carimbo_services import caixas_para_ajuste
@@ -30,6 +32,8 @@ from .download_services import payload_downloads
 from .services import marcar_servidor_em_preenchimento
 from .services import marcar_servidores_pendentes
 from .services import pendencias_consolidado
+from .services import pendencias_para_finalizar
+from .prazos import selo_da_prestacao
 from .view_common import (
     _autosave_form_errors,
     _autosave_version,
@@ -65,8 +69,9 @@ def _anexos_rows(prestacao, anexos_qs):
 
 def prestacao_documento_conteudo(request, pc_pk, anexo_pk):
     prestacao = get_object_or_404(_prestacao_queryset(), pk=pc_pk)
+    # `todos`: as versões anteriores (m084) também se abrem, para conferir antes de voltar.
     anexo = get_object_or_404(
-        PrestacaoDocumentoAnexo,
+        PrestacaoDocumentoAnexo.todos,
         pk=anexo_pk,
         prestacao=prestacao,
     )
@@ -232,6 +237,11 @@ def documentos_servidor(request, ps_pk):
             # O fechamento (pacote final, downloads e finalização) virou o fim
             # desta etapa: a tela de PDF final deixou de existir.
             "pendencias": pendencias_consolidado(ps),
+            # m092: o que falta para finalizar (o pacote é só uma parte disso).
+            "pendencias_finalizar": [] if ps.finalizada else pendencias_para_finalizar(ps),
+            # m094: 3 dias úteis depois do fim do prazo de saque, contando feriados.
+            "selo_prestacao": selo_da_prestacao(ps),
+            "hoje_iso": timezone.localdate().isoformat(),
             "downloads": payload_downloads(ps)["itens"],
             # O modal "Baixar documentos" (o mesmo da lista), no botão de ação do cartão.
             "url_baixar": reverse("viagens_prestacoes:prestacao_baixar", args=[ps.pk]),
@@ -318,6 +328,7 @@ def _prestacao_assinado_upload(
     servidor_prestacao=None,
     substituir_todos_do_tipo=False,
     pos_anexo=None,
+    adicionar=False,
 ):
     fallback_url = reverse("viagens_prestacoes:index")
     destino = voltar_para(request, fallback_url)
@@ -339,6 +350,10 @@ def _prestacao_assinado_upload(
     except ValidationError as exc:
         return _upload_recusado(request, destino, list(exc.messages))
 
+    if adicionar and _ja_anexado(prestacao, tipo, servidor_prestacao, arquivo):
+        return _upload_recusado(request, destino, ["Este arquivo já está anexado."])
+    anteriores = PrestacaoDocumentoAnexo.objects.filter(prestacao=prestacao, tipo=tipo, servidor_prestacao=servidor_prestacao).count() if adicionar else 0
+
     # A validação vem antes da exclusão dos anteriores de propósito: recusar um
     # arquivo novo não pode custar o que já estava anexado.
     resultado = substituir_anexo_assinado(
@@ -348,9 +363,13 @@ def _prestacao_assinado_upload(
         nome_original=nome_original,
         servidor_prestacao=servidor_prestacao,
         substituir_todos_do_tipo=substituir_todos_do_tipo,
+        adicionar=adicionar,
     )
     if pos_anexo is not None and resultado.anexo is not None:
         pos_anexo(resultado.anexo)
+    elif anteriores:
+        plural = "s" if anteriores > 1 else ""
+        messages.success(request, f"Documento assinado anexado. O{plural} {anteriores} anterior{'es' if plural else ''} continua{'m' if plural else ''} anexado{plural}.")
     else:
         messages.success(request, "Documento assinado anexado.")
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
@@ -361,12 +380,52 @@ def _prestacao_assinado_upload(
     return redirect(destino)
 
 
+def _ja_anexado(prestacao, tipo, servidor_prestacao, arquivo) -> bool:
+    """O mesmo arquivo (byte a byte) já está entre os anexos deste tipo e escopo.
+
+    Só para os tipos que somam (m081): sem substituir, um duplo clique ou o mesmo PDF
+    enviado duas vezes duplicaria o documento no pacote final.
+    """
+    import hashlib
+
+    def resumo(leitor):
+        h = hashlib.sha256()
+        for bloco in iter(lambda: leitor.read(1 << 16), b""):
+            h.update(bloco)
+        return h.hexdigest()
+
+    tamanho = getattr(arquivo, "size", None)
+    anteriores = PrestacaoDocumentoAnexo.objects.filter(prestacao=prestacao, tipo=tipo, servidor_prestacao=servidor_prestacao)
+    candidatos = []
+    for anexo in anteriores:
+        try:
+            if tamanho is None or anexo.arquivo.size == tamanho:
+                candidatos.append(anexo)
+        except OSError:
+            continue
+    if not candidatos:
+        return False
+    arquivo.seek(0)
+    novo = resumo(arquivo)
+    arquivo.seek(0)
+    for anexo in candidatos:
+        try:
+            with anexo.arquivo.open("rb") as leitor:
+                if resumo(leitor) == novo:
+                    return True
+        except OSError:
+            continue
+    return False
+
+
 def prestacao_despacho_assinado_anexar(request, pc_pk):
+    # O despacho pode vir em mais de um arquivo (despacho + folha de assinatura): soma.
     prestacao = get_object_or_404(_prestacao_queryset(), pk=pc_pk)
     return _prestacao_assinado_upload(
         request,
         prestacao=prestacao,
         tipo=PrestacaoDocumentoAnexo.TIPO_DESPACHO,
+        adicionar=True,
     )
 
 
@@ -471,6 +530,8 @@ def prestacao_servidor_assinado_anexar(request, ps_pk, tipo):
         tipo=tipo,
         substituir_todos_do_tipo=diario_compartilhado,
         pos_anexo=endireitar if diario_compartilhado else None,
+        # Vários comprovantes por servidor (saque + transferência): soma, não troca.
+        adicionar=tipo == PrestacaoDocumentoAnexo.TIPO_COMPROVANTE,
     )
 
 
@@ -550,14 +611,30 @@ def prestacao_documento_excluir(request, pc_pk, anexo_pk):
         pk=anexo_pk,
         prestacao=prestacao,
     )
-    # BE-07: apagar o arquivo primeiro zera `FieldFile.name`, e com `nome_original`
-    # vazio o `__str__` do anexo passava a devolver None — o que derrubava o sinal
-    # de auditoria no pre_delete. A linha sai primeiro; o arquivo, no `on_commit`.
+    # m084: não apaga — guarda em "Versões anteriores", de onde dá para restaurar.
     excluir_anexo(anexo, prestacao)
+    messages.success(
+        request,
+        f"“{anexo.nome_original or 'Arquivo'}” removido. Para desfazer, use “Restaurar” em Versões anteriores.",
+    )
     return autosave_json_response(
         ok=True,
         object_id=prestacao.pk,
         version=_autosave_version(prestacao),
     )
+
+
+@require_POST
+def prestacao_documento_restaurar(request, pc_pk, anexo_pk):
+    """Volta um anexo removido ou substituído (m084)."""
+    prestacao = get_object_or_404(_prestacao_queryset(), pk=pc_pk)
+    anexo = get_object_or_404(PrestacaoDocumentoAnexo.todos, pk=anexo_pk, prestacao=prestacao)
+    resultado = restaurar_anexo(anexo)
+    nome = anexo.nome_original or "Arquivo"
+    if resultado.substituidos:
+        messages.success(request, f"“{nome}” voltou a ser o documento em uso; o que estava no lugar ficou em Versões anteriores.")
+    else:
+        messages.success(request, f"“{nome}” restaurado.")
+    return redirect(voltar_para(request, reverse("viagens_prestacoes:index")))
 
 from .ui import render

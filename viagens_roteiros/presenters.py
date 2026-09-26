@@ -148,4 +148,51 @@ def linha_da_lista(roteiro, *, editar_url, excluir_url):
         "icone": "document" if roteiro.solicitacao_id else "map-pin",
         "editar_url": editar_url,
         "excluir_url": excluir_url,
+        # Anotado em `abas.anotar_finalizacao`; sem a anotação, deixa o menu
+        # oferecer e a própria exclusão recusa.
+        "em_uso": bool(getattr(roteiro, "_em_uso", False)),
     }
+
+
+def _moeda(valor):
+    if valor is None:
+        return "—"
+    return f"R$ {number_format(valor, decimal_pos=2, force_grouping=True)}"
+
+
+def _momento(valor):
+    if not valor:
+        return "—"
+    local = timezone.localtime(valor) if timezone.is_aware(valor) else valor
+    return f"{local:%d/%m/%Y %H:%M}"
+
+
+def linhas_do_calculo(componentes):
+    """"Como foi calculado": uma linha por parcela das diárias.
+
+    Aceita as parcelas gravadas (`RoteiroDiariaComponente`) e as da prévia
+    (dicts de `calcular_diarias`): a tela mostra o mesmo quadro antes e depois
+    de salvar.
+    """
+    from viagens_cadastros.models import TabelaDiaria
+
+    rotulos = dict(TabelaDiaria.Faixa.choices)
+
+    def campo(parcela, nome):
+        return parcela.get(nome) if isinstance(parcela, dict) else getattr(parcela, nome)
+
+    linhas = []
+    for parcela in componentes:
+        vigencia = campo(parcela, "tabela_vigencia_inicio")
+        faixa = campo(parcela, "faixa")
+        linhas.append({
+            "faixa": rotulos.get(faixa, faixa or "—"),
+            "inicio": _momento(campo(parcela, "periodo_inicio")),
+            "fim": _momento(campo(parcela, "periodo_fim")),
+            "percentual": f"{campo(parcela, 'percentual')}%",
+            "quantidade": campo(parcela, "quantidade"),
+            "valor_unitario": _moeda(campo(parcela, "valor_unitario")),
+            "subtotal": _moeda(campo(parcela, "subtotal")),
+            "vigencia": f"{vigencia:%d/%m/%Y}" if vigencia else "—",
+        })
+    return linhas

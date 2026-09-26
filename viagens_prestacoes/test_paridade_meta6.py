@@ -47,7 +47,7 @@ class ListaPrestacoesTests(CenarioPrestacoes):
                       'class="st st--pc-pendente">Pendente', 'placeholder="0000000"']:
             self.assertContains(r, texto)
         self.assertEqual({g["slug"]: g["total"] for g in r.context["situacoes"]},
-                         {"todas": 2, "nao_liberadas": 2, "liberadas": 0, "arquivados": 0, "finalizados": 0})
+                         {"todas": 2, "nao_liberadas": 2, "liberadas": 0, "devolvidas": 0, "arquivados": 0, "finalizados": 0, "saque_vencendo": 0, "prestacao_vencida": 0})
         self.assertContains(r, reverse("viagens_prestacoes:diario_servidor", args=[self.ps_janine.pk]))
         # Finalizar e arquivar são da prestação do ofício (a equipe toda), no menu da linha do ofício.
         self.assertContains(r, reverse("viagens_prestacoes:prestacao_equipe_acao", args=[self.fixture.prestacao.pk, "finalizar"]))
@@ -98,10 +98,16 @@ class ListaPrestacoesTests(CenarioPrestacoes):
         self.assertEqual((totais["liberadas"], totais["nao_liberadas"]), (1, 1))
 
     def test_situacoes_e_busca(self):
+        # m093: a prestação é individual, mas só vai para "Finalizados" com a equipe
+        # toda finalizada; até lá, quem finalizou continua ao lado do colega.
         self.ps_joao.definir_finalizada(True)
-        r = self.lista(aba="finalizados")
-        self.assertEqual([c["ps_pk"] for c in r.context["cards"]], [self.ps_joao.pk])
+        self.assertEqual([c["ps_pk"] for c in self.lista(aba="finalizados").context["cards"]], [])
+        r = self.lista(aba="nao_liberadas")
+        self.assertIn(self.ps_joao.pk, [c["ps_pk"] for c in r.context["cards"]])
         self.assertContains(r, "Finalizada")
+        self.ps_janine.definir_finalizada(True)
+        r = self.lista(aba="finalizados")
+        self.assertEqual(sorted(c["ps_pk"] for c in r.context["cards"]), sorted([self.ps_joao.pk, self.ps_janine.pk]))
         r = self.lista(q="JANINE")
         self.assertEqual([c["ps_pk"] for c in r.context["cards"]], [self.ps_janine.pk])
         r = self.lista(q="ZZZ")
@@ -121,7 +127,7 @@ class ListaPrestacoesTests(CenarioPrestacoes):
 
     def test_finalizar_e_arquivar_voltam_para_onde_estavam(self):
         volta = reverse("viagens_prestacoes:index") + "?q=JANINE"
-        r = self.client.post(reverse("viagens_prestacoes:prestacao_servidor_finalizar", args=[self.ps_janine.pk]), {"next": volta})
+        r = self.client.post(reverse("viagens_prestacoes:prestacao_servidor_finalizar", args=[self.ps_janine.pk]), {"next": volta, "justificativa": "teste"})
         self.assertRedirects(r, volta)
         self.ps_janine.refresh_from_db()
         self.assertTrue(self.ps_janine.finalizada)
@@ -139,7 +145,10 @@ class ListaPrestacoesTests(CenarioPrestacoes):
         url = reverse("viagens_prestacoes:prestacao_equipe_acao", args=[self.fixture.prestacao.pk, "finalizar"])
         self.assertContains(r, url)
         volta = reverse("viagens_prestacoes:index") + "?q=JANINE"
-        self.assertRedirects(self.client.post(url, {"next": volta}), volta)
+        # m092: quem tem pendência não é finalizado em lote; aqui ninguém tem.
+        from unittest import mock
+        with mock.patch("viagens_prestacoes.services.pendencias_para_finalizar", return_value=[]):
+            self.assertRedirects(self.client.post(url, {"next": volta}), volta)
         for ps in (self.ps_janine, self.ps_joao):
             ps.refresh_from_db()
             self.assertTrue(ps.finalizada)

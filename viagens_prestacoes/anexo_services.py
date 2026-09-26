@@ -34,6 +34,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from django.db import transaction
+from django.utils import timezone
 from .arquivos import atomico_com_arquivos
 
 from .models import PrestacaoDocumentoAnexo
@@ -61,28 +62,19 @@ def _apagar_arquivo_apos_commit(campo_arquivo) -> None:
 
 
 def remover_anexos_do_tipo(prestacao, *, tipo, servidor_prestacao=None, todos_do_tipo=False) -> int:
-    """Apaga os anexos de um (tipo, escopo): as linhas agora, os arquivos depois do commit.
+    """Tira de uso os anexos de um (tipo, escopo), guardando-os como "substituídos".
 
     Escopo: os do `servidor_prestacao` (vazio = os compartilhados do ofício) ou,
-    com `todos_do_tipo`, todos os daquele tipo na prestação. Chamada dentro de uma
-    transação de quem vai criar os novos — sozinha, um rollback depois dela
-    devolveria as linhas, e os arquivos continuam lá porque só saem no commit.
+    com `todos_do_tipo`, todos os daquele tipo na prestação.
+
+    m084: a linha fica, marcada, e o arquivo também — o anterior aparece em
+    "Versões anteriores" e dá para voltar a ele. Quem apaga de vez é
+    `purgar_anexos_removidos`, depois do período de guarda.
     """
     anteriores = PrestacaoDocumentoAnexo.objects.filter(prestacao=prestacao, tipo=tipo)
     if not todos_do_tipo:
         anteriores = anteriores.filter(servidor_prestacao=servidor_prestacao)
-
-    arquivos_antigos = [
-        campo
-        for anexo in anteriores
-        for campo in (anexo.arquivo, anexo.arquivo_original)
-        if campo
-    ]
-    removidos = anteriores.count()
-    anteriores.delete()
-    for campo_arquivo in arquivos_antigos:
-        _apagar_arquivo_apos_commit(campo_arquivo)
-    return removidos
+    return anteriores.update(removido_em=timezone.now(), removido_motivo=PrestacaoDocumentoAnexo.REMOVIDO_SUBSTITUIDO)
 
 
 @atomico_com_arquivos
@@ -94,19 +86,24 @@ def substituir_anexo_assinado(
     nome_original,
     servidor_prestacao=None,
     substituir_todos_do_tipo=False,
+    adicionar=False,
 ) -> ResultadoAnexo:
     """Troca o documento assinado de um tipo, preservando o anterior se algo falhar.
 
-    A ordem de hoje apagava os arquivos anteriores do disco **antes** de criar a linha
+    Com `adicionar` (comprovante e despacho, que têm mais de um arquivo — m081), o
+    novo se soma aos que já estavam lá: anexar um terceiro comprovante pela lista não
+    pode apagar os dois primeiros.
+
+    A ordem antiga apagava os arquivos anteriores do disco **antes** de criar a linha
     nova: um `create` que falhasse destruía o documento assinado anterior para sempre.
-    Aqui as linhas antigas saem dentro da transação e os arquivos só depois do commit,
-    então uma falha na criação devolve tudo — linha e arquivo.
+    Desde o m084 o anterior só é marcado como substituído (arquivo intacto), dentro da
+    mesma transação: uma falha na criação o devolve ao uso.
 
     A validação do arquivo continua na view, antes de chamar esta função: recusar um
     arquivo novo não pode custar o que já estava anexado, e esse era o motivo escrito no
     código antes desta fatia.
     """
-    substituidos = remover_anexos_do_tipo(
+    substituidos = 0 if adicionar else remover_anexos_do_tipo(
         prestacao,
         tipo=tipo,
         servidor_prestacao=servidor_prestacao,
@@ -130,25 +127,90 @@ def substituir_anexo_assinado(
 
 @atomico_com_arquivos
 def excluir_anexo(anexo, prestacao) -> ResultadoAnexo:
-    """Apaga a linha e agenda o arquivo para depois do commit.
+    """Tira o anexo de uso, guardando-o em "Versões anteriores" (m084).
 
-    `BE-07`: a linha sai primeiro. Antes isso dependia de duas chamadas na sequência
-    certa; agora o arquivo sai no callback, então sair depois deixou de ser convenção e
-    virou consequência de onde a chamada está.
+    Antes a linha e o arquivo saíam na hora, sem volta: um clique errado no "x"
+    destruía o despacho ou o comprovante que chegou pelo eProtocolo. O arquivo só
+    sai de vez em `purgar_anexos_removidos`.
     """
     servidor_prestacao = anexo.servidor_prestacao
-    # Os DOIS arquivos: o entregue e o cru de onde o carimbo parte. Esquecer o cru
-    # deixaria órfão o PDF do eProtocolo, que é o maior dos dois.
-    campos = [campo for campo in (anexo.arquivo, anexo.arquivo_original) if campo]
-    anexo.delete()
-    for campo_arquivo in campos:
-        _apagar_arquivo_apos_commit(campo_arquivo)
+    anexo.removido_em = timezone.now()
+    anexo.removido_motivo = PrestacaoDocumentoAnexo.REMOVIDO_EXCLUIDO
+    anexo.save(update_fields=["removido_em", "removido_motivo"])
 
     if servidor_prestacao is not None:
         marcar_servidor_em_preenchimento(servidor_prestacao)
     else:
         marcar_servidores_pendentes(prestacao)
     return ResultadoAnexo(substituidos=1)
+
+
+@atomico_com_arquivos
+def restaurar_anexo(anexo) -> ResultadoAnexo:
+    """Volta um anexo removido ou substituído (o "Desfazer" e o "voltar para esta versão").
+
+    Nos tipos de arquivo único (ofício, RT, diário), o que estiver em uso no mesmo
+    escopo passa a ser a versão anterior — trocam de lugar. No ofício, os carimbos
+    do número de solicitação nunca saíram da linha, e voltam junto; o PDF é
+    redesenhado depois do commit, porque o número pode ter mudado nesse meio-tempo.
+    """
+    if anexo.removido_em is None:
+        return ResultadoAnexo(anexo=anexo)
+    substituidos = 0
+    if anexo.tipo in PrestacaoDocumentoAnexo.TIPOS_UNICOS:
+        substituidos = remover_anexos_do_tipo(
+            anexo.prestacao,
+            tipo=anexo.tipo,
+            servidor_prestacao=anexo.servidor_prestacao,
+            todos_do_tipo=anexo.servidor_prestacao_id is None,
+        )
+    anexo.removido_em = None
+    anexo.removido_motivo = ""
+    anexo.save(update_fields=["removido_em", "removido_motivo"])
+    if anexo.servidor_prestacao_id is not None:
+        marcar_servidor_em_preenchimento(anexo.servidor_prestacao)
+    else:
+        marcar_servidores_pendentes(anexo.prestacao)
+    if anexo.tipo == PrestacaoDocumentoAnexo.TIPO_OFICIO_ASSINADO:
+        from .carimbo_services import recarimbar_prestacao
+
+        prestacao = anexo.prestacao
+        transaction.on_commit(lambda: recarimbar_prestacao(prestacao))
+    return ResultadoAnexo(anexo=anexo, substituidos=substituidos)
+
+
+def versoes_anteriores(queryset):
+    """Os removidos/substituídos ainda guardados, do mais recente para o mais antigo."""
+    from datetime import timedelta
+
+    from .models import DIAS_GUARDA_ANEXO_REMOVIDO
+
+    limite = timezone.now() - timedelta(days=DIAS_GUARDA_ANEXO_REMOVIDO)
+    return queryset.filter(removido_em__isnull=False, removido_em__gte=limite).order_by("-removido_em", "-pk")
+
+
+def purgar_anexos_removidos(*, dias=None, apagar=False) -> list[PrestacaoDocumentoAnexo]:
+    """Os anexos removidos há mais de `dias`; com `apagar`, saem de vez (linha e arquivos).
+
+    Os arquivos saem depois do commit, pelo mesmo motivo de sempre: rollback do
+    banco não devolve arquivo apagado.
+    """
+    from datetime import timedelta
+
+    from .models import DIAS_GUARDA_ANEXO_REMOVIDO
+
+    dias = DIAS_GUARDA_ANEXO_REMOVIDO if dias is None else dias
+    limite = timezone.now() - timedelta(days=dias)
+    vencidos = list(PrestacaoDocumentoAnexo.todos.filter(removido_em__isnull=False, removido_em__lt=limite))
+    if not apagar:
+        return vencidos
+    with transaction.atomic():
+        for anexo in vencidos:
+            campos = [campo for campo in (anexo.arquivo, anexo.arquivo_original) if campo]
+            anexo.delete()
+            for campo_arquivo in campos:
+                _apagar_arquivo_apos_commit(campo_arquivo)
+    return vencidos
 
 
 @atomico_com_arquivos

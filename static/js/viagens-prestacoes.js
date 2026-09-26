@@ -125,9 +125,29 @@
 
   /* ---------- etapa Documentos ---------- */
   document.querySelectorAll("[data-excluir-anexo]").forEach(function (form) {
+    // m084: o "x" pede confirmação em dois toques, como o finalizar: o primeiro
+    // arma (o botão vira "Remover?"), o segundo remove.
+    var armado = false;
+    var temporizador = null;
+    var botao = form.querySelector("button");
+    var original = botao ? botao.innerHTML : "";
+    function desarmar() {
+      armado = false;
+      if (botao) { botao.innerHTML = original; botao.classList.remove("is-armado"); }
+      if (temporizador) { clearTimeout(temporizador); temporizador = null; }
+    }
+    if (botao) botao.addEventListener("blur", desarmar);
     form.addEventListener("submit", function (event) {
       event.preventDefault();
       var button = form.querySelector("button");
+      if (!armado) {
+        armado = true;
+        button.textContent = "Remover?";
+        button.title = form.getAttribute("data-confirmar-remocao") || "Remover?";
+        button.classList.add("is-armado");
+        temporizador = setTimeout(desarmar, 4000);
+        return;
+      }
       button.disabled = true;
       fetch(form.action, {method: "POST", body: new FormData(form), headers: {"X-Requested-With": "XMLHttpRequest"}})
         .then(function (r) { return r.json().then(function (d) { if (!r.ok || !d.ok) throw new Error("Não foi possível remover o anexo."); }); })

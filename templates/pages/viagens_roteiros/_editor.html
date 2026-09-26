@@ -11,7 +11,9 @@
   Contexto: o de `viagens_roteiros.views._contexto_do_form` (form, formset,
   destinos, destinos_cards, trechos_cards, opcoes_*, valores, roteiro,
   historico) — o cadastro de ofício o repassa com `include ... with`.
+  Os municípios vêm só os já escolhidos; o resto, pela busca remota (m075).
 {% endcomment %}
+{% url "cadastros:municipios_buscar" as url_busca_municipios %}
       {% comment %}
         A última rota calculada viaja com o formulário e fica gravada no
         roteiro (geometria, totais, fonte, assinatura do percurso e quando
@@ -78,7 +80,7 @@
                 {% include "components/select.html" with name="origem_estado" label="Estado da sede" rotulo_oculto=True opcoes=opcoes_estados placeholder="Buscar estado..." pesquisavel=True %}
               </div>
               <div class="destino-row__campo">
-                {% include "components/select.html" with name="origem_municipio" label="Município sede" rotulo_oculto=True opcoes=opcoes_municipios placeholder="Buscar município..." pesquisavel=True dependente_de="id_origem_estado" selecionado=valores.origem_municipio erros=form.errors.origem_municipio %}
+                {% include "components/select.html" with name="origem_municipio" label="Município sede" rotulo_oculto=True opcoes=opcoes_municipios placeholder="Buscar município..." pesquisavel=True remoto=url_busca_municipios dependente_de="id_origem_estado" selecionado=valores.origem_municipio erros=form.errors.origem_municipio %}
               </div>
             </div>
           </div>
@@ -342,6 +344,8 @@
               <strong class="metrica__valor" data-diarias-extenso>{% if embutido %}{{ diarias_tela.extenso|default:"—" }}{% else %}{{ roteiro.valor_diarias_extenso|default:"—" }}{% endif %}</strong>
             </div>
           </div>
+
+          {% include "pages/viagens_roteiros/_como_calculado.html" %}
 
           {% if roteiro.pk and not embutido %}{% include "components/v32/historico_alteracoes.html" %}{% endif %}
 

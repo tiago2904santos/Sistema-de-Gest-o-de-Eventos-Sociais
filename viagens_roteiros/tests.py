@@ -550,6 +550,40 @@ class MontagemPelaTelaTests(BaseTelaRoteiroTestCase):
         self.assertEqual(roteiro.trechos.count(), 1)
         self.assertEqual(roteiro.trechos.get().destino_municipio, self.sao_paulo)
 
+    def test_salvar_grava_o_periodo_no_proprio_roteiro(self):
+        """m062: lista de viagens, documentos e prestação leem o cabeçalho."""
+        dados = self.dados(**{
+            "trechos-TOTAL_FORMS": "2",
+            "trechos-1-ordem": "2",
+            "trechos-1-sentido": "RETORNO",
+            "trechos-1-origem_municipio": self.sao_paulo.pk,
+            "trechos-1-destino_municipio": self.curitiba.pk,
+            "trechos-1-saida_data": "2026-08-14",
+            "trechos-1-saida_hora": "08:00",
+            "trechos-1-chegada_data": "2026-08-14",
+            "trechos-1-chegada_hora": "18:00",
+            "trechos-1-distancia_km": "",
+        })
+        self.client.post(reverse("viagens_roteiros:novo"), dados)
+        roteiro = Roteiro.objects.latest("pk")
+        self.assertEqual(roteiro.saida_dt, dt(2026, 8, 12, 8, 0))
+        self.assertEqual(roteiro.chegada_dt, dt(2026, 8, 12, 18, 0))
+        self.assertEqual(roteiro.retorno_saida_dt, dt(2026, 8, 14, 8, 0))
+        self.assertEqual(roteiro.retorno_chegada_dt, dt(2026, 8, 14, 18, 0))
+
+    def test_sem_trecho_de_retorno_nao_inventa_volta(self):
+        self.client.post(reverse("viagens_roteiros:novo"), self.dados())
+        roteiro = Roteiro.objects.latest("pk")
+        self.assertEqual(roteiro.saida_dt, dt(2026, 8, 12, 8, 0))
+        self.assertEqual(roteiro.chegada_dt, dt(2026, 8, 12, 18, 0))
+        self.assertIsNone(roteiro.retorno_saida_dt)
+        self.assertIsNone(roteiro.retorno_chegada_dt)
+
+    def test_autosave_tambem_grava_o_periodo(self):
+        resposta = self.client.post(reverse("viagens_roteiros:autosave_novo"), self.dados())
+        roteiro = Roteiro.objects.get(pk=resposta.json()["pk"])
+        self.assertEqual(roteiro.saida_dt, dt(2026, 8, 12, 8, 0))
+
     def test_salvar_ja_calcula_as_diarias(self):
         """O cálculo acompanha o salvamento — sem passo extra de "calcular"."""
         resposta = self.client.post(
@@ -588,11 +622,34 @@ class MontagemPelaTelaTests(BaseTelaRoteiroTestCase):
 
     def test_a_tela_oferece_estado_para_filtrar_municipio(self):
         """Estado é filtro de tela: o município carrega o dono no `data-parent-value`."""
-        resposta = self.client.get(reverse("viagens_roteiros:novo"))
+        roteiro = Roteiro.objects.create(origem_municipio=self.curitiba)
+        resposta = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
         corpo = resposta.content.decode()
         self.assertIn('name="origem_estado"', corpo)
         self.assertIn('data-depends-on="id_origem_estado"', corpo)
         self.assertIn('data-parent-value="%s"' % self.curitiba.estado_id, corpo)
+
+    def test_municipios_vem_da_busca_e_nao_embutidos(self):
+        """m075: os seletores trazem só os municípios do roteiro e buscam o resto."""
+        roteiro = Roteiro.objects.create(origem_municipio=self.curitiba)
+        corpo = self.client.get(
+            reverse("viagens_roteiros:editar", args=[roteiro.pk])
+        ).content.decode()
+        self.assertIn('data-remote-url="%s"' % reverse("cadastros:municipios_buscar"), corpo)
+        self.assertIn(">Curitiba<", corpo)
+        self.assertNotIn(">Abatiá<", corpo)
+        busca = self.client.get(
+            reverse("cadastros:municipios_buscar"), {"q": "abati", "uf": self.pr.pk}
+        ).json()["resultados"]
+        self.assertEqual([r["rotulo"] for r in busca], ["Abatiá"])
+        self.assertEqual(busca[0]["estado"], str(self.pr.pk))
+        sem_acento = self.client.get(reverse("cadastros:municipios_buscar"), {"q": "sao paulo"}).json()
+        self.assertIn("São Paulo", [r["rotulo"] for r in sem_acento["resultados"]])
+
+    def test_dados_do_roteiro_trazem_os_nomes_dos_municipios(self):
+        roteiro = self.roteiro_curitiba_sp_abatia()
+        dados = self.client.get(reverse("viagens_roteiros:dados", args=[roteiro.pk])).json()
+        self.assertEqual(dados["rotulos"][str(self.abatia.pk)], "Abatiá")
 
     def test_destinos_sao_gravados_na_ordem_da_visita(self):
         self.client.post(reverse("viagens_roteiros:novo"), self.dados())
@@ -640,6 +697,20 @@ class MontagemPelaTelaTests(BaseTelaRoteiroTestCase):
         self.assertTrue(dados["ok"])
         self.assertIn("total_valor", dados["totais"])
         self.assertEqual(Roteiro.objects.count(), antes)
+
+    def test_como_foi_calculado_na_previa_e_na_tela(self):
+        """m074: parcela a parcela, com faixa, período, unitário e vigência."""
+        resposta = self.client.post(reverse("viagens_roteiros:previa_diarias"), self.dados())
+        linhas = resposta.json()["como_calculado"]
+        self.assertTrue(linhas)
+        self.assertEqual(linhas[0]["faixa"], "Capital")
+        self.assertEqual(linhas[0]["inicio"], "12/08/2026 08:00")
+        self.assertEqual(linhas[0]["vigencia"], "01/01/2026")
+        self.client.post(reverse("viagens_roteiros:novo"), self.dados())
+        roteiro = Roteiro.objects.latest("pk")
+        tela = self.client.get(reverse("viagens_roteiros:editar", args=[roteiro.pk]))
+        self.assertContains(tela, "Como foi calculado")
+        self.assertContains(tela, "<td>R$ 111,38</td>", html=False)
 
     def test_previa_incompleta_explica_o_que_falta(self):
         incompleto = self.dados(
@@ -780,6 +851,39 @@ class CicloDeVidaPelaTelaTests(BaseTelaRoteiroTestCase):
         self.client.post(reverse("viagens_roteiros:excluir", args=[roteiro.pk]))
         self.assertFalse(Roteiro.objects.filter(pk=roteiro.pk).exists())
         self.assertEqual(RoteiroDiariaComponente.objects.count(), 0)
+
+    def test_excluir_recusa_roteiro_usado_por_oficio(self):
+        from viagens_oficios.models import Oficio
+
+        roteiro = self.roteiro_curitiba_sp_abatia()
+        oficio = Oficio.objects.create(ano=2026, numero=15, roteiro=roteiro)
+        resposta = self.client.post(
+            reverse("viagens_roteiros:excluir", args=[roteiro.pk]), follow=True
+        )
+        self.assertTrue(Roteiro.objects.filter(pk=roteiro.pk).exists())
+        self.assertContains(resposta, "não pode ser excluído")
+        self.assertContains(resposta, reverse("viagens_oficios:editar", args=[oficio.pk]))
+        self.assertContains(resposta, "Ofício 15/2026")
+
+    def test_excluir_recusa_roteiro_ajustado_de_prestacao(self):
+        from viagens_oficios.models import Oficio
+        from viagens_prestacoes.models import PrestacaoContas
+
+        roteiro = self.roteiro_curitiba_sp_abatia()
+        PrestacaoContas.objects.update_or_create(
+            oficio=Oficio.objects.create(), defaults={"roteiro_ajustado": roteiro}
+        )
+        self.client.post(reverse("viagens_roteiros:excluir", args=[roteiro.pk]))
+        self.assertTrue(Roteiro.objects.filter(pk=roteiro.pk).exists())
+
+    def test_lista_nao_oferece_excluir_roteiro_em_uso(self):
+        from viagens_oficios.models import Oficio
+
+        roteiro = self.roteiro_curitiba_sp_abatia()
+        Oficio.objects.create(roteiro=roteiro)
+        resposta = self.client.get(reverse("viagens_roteiros:lista"))
+        self.assertNotContains(resposta, reverse("viagens_roteiros:excluir", args=[roteiro.pk]))
+        self.assertContains(resposta, "Em uso por ofício")
 
 
 class DefeitosEncontradosNoSmokeTests(BaseTelaRoteiroTestCase):

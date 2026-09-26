@@ -1,0 +1,35 @@
+{% comment %}
+  Componente: campos copiáveis — cada um com rótulo, valor e o botão Copiar —
+  e, opcionalmente, caixas de texto longo com o próprio Copiar. Nasceu na
+  etapa "Dados para o eProtocolo" do Coffee Break e serve igual em Viagens.
+  Quem liga os botões é o `static/js/components/copiar.js` (a página inclui).
+
+  Uso:
+    {% include "components/v32/copiaveis.html" with campos=dados.campos textos=dados.textos %}
+
+  `campos`: lista de dicts {"rotulo", "valor", "copiar"} — sem `copiar`, o
+    campo aparece sem botão (valor vazio mostrado como "—").
+  `textos`: lista de dicts {"id", "rotulo", "texto", "linhas"} — caixas
+    somente leitura, para o detalhamento e o despacho.
+{% endcomment %}
+{% if campos %}
+<dl class="cb-copiaveis">
+  {% for campo in campos %}
+    <div class="cb-copiavel">
+      <dt>{{ campo.rotulo }}</dt>
+      <dd><span class="cb-copiavel__valor">{{ campo.valor|default:"—" }}</span>
+        {% if campo.copiar %}<button type="button" class="ib-linha cb-copiar-mini" data-copiar="{{ campo.copiar }}" aria-label="Copiar {{ campo.rotulo }}" title="Copiar">{% include "components/icon.html" with nome="copy" %}</button>{% endif %}
+      </dd>
+    </div>
+  {% endfor %}
+</dl>
+{% endif %}
+{% for caixa in textos %}
+  <div class="cb-caixa-copiar">
+    <div class="cb-caixa-copiar__topo">
+      <label class="form-label" for="{{ caixa.id }}">{{ caixa.rotulo }}</label>
+      <button type="button" class="btn--secundaria btn--compacto" data-copiar-de="{{ caixa.id }}">{% include "components/icon.html" with nome="copy" %}<span data-copiar-rotulo>Copiar</span></button>
+    </div>
+    <textarea class="form-controle cb-caixa-copiar__texto" id="{{ caixa.id }}" rows="{{ caixa.linhas|default:3 }}" readonly>{{ caixa.texto }}</textarea>
+  </div>
+{% endfor %}

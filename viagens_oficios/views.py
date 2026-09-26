@@ -12,6 +12,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from core.listagens import ITENS_POR_PAGINA, paginar, opcoes_choices
 from core.numeracao import bloquear_escopo_numeracao, NAMESPACE_OFICIO
+from core.utils.masks import format_protocolo
 from viagens_cadastros.permissions import acesso_ao_modulo, pode_editar_cadastros, eh_gestor_viagens
 from documentos.services.types import DocumentoTipo, DocumentoFormato
 from documentos.services.responses import build_download_response, build_inline_pdf_response
@@ -96,33 +97,89 @@ def _artefatos_pdf_da_pagina(oficios):
     return mapa
 
 
+#: Os filtros prontos de `listar_oficios` que a lista oferece, com o rótulo do chip.
+FILTROS_DA_LISTA = (
+    ('viagem_de', 'Viagem a partir de'),
+    ('viagem_ate', 'Viagem até'),
+    ('criacao_de', 'Ofício a partir de'),
+    ('criacao_ate', 'Ofício até'),
+    ('ano', 'Ano'),
+)
+
+
+def _filtros_da_lista(request):
+    """Busca, situações, períodos, ano e ordenação pedidos na URL da lista."""
+    from datetime import date
+    from . import abas as abas_de_oficio
+    from .selectors import normalizar_ordenacao
+
+    filtros = {}
+    for nome, _rotulo in FILTROS_DA_LISTA:
+        valor = request.GET.get(nome, '').strip()
+        if nome == 'ano':
+            valor = valor if valor.isdigit() and len(valor) == 4 else ''
+        elif valor:
+            try:
+                date.fromisoformat(valor)
+            except ValueError:
+                valor = ''
+        filtros[nome] = valor
+    sort = request.GET.get('sort', '')
+    return {
+        'q': request.GET.get('q', '').strip(),
+        'situacoes': abas_de_oficio.normalizar_abas(request.GET.getlist('situacao')),
+        'filtros': filtros,
+        'sort': normalizar_ordenacao(sort) if sort else '',
+    }
+
+
+def _oficios_filtrados(pedido, *, com_situacoes=True):
+    return listar_oficios(
+        pedido['q'], ano=pedido['filtros']['ano'],
+        situacoes=pedido['situacoes'] if com_situacoes else None,
+        viagem_de=pedido['filtros']['viagem_de'], viagem_ate=pedido['filtros']['viagem_ate'],
+        criacao_de=pedido['filtros']['criacao_de'], criacao_ate=pedido['filtros']['criacao_ate'],
+        sort=pedido['sort'],
+    )
+
+
 @acesso_ao_modulo
 def lista(request):
     """Lista de ofícios no padrão das listas de termos, roteiros e
     justificativas: situações na trilha à esquerda, busca na barra do cartão,
-    uma célula por ofício e um menu único de ações."""
+    uma célula por ofício e um menu único de ações. Os filtros prontos
+    (períodos, ano, ordenação) ficam em "Filtros", e o recorte sai em planilha."""
     from django.core.paginator import Paginator
     from core.retorno import daqui
+    from datetime import date
     from . import abas as abas_de_oficio
+    from .justificativas_services import get_prazo_justificativa_dias
     from .presenters import artefatos_pdf_por_oficio, linha_da_lista
+    from .selectors import opcoes_de_ordenacao
     from viagens_prestacoes.importacao.entrada import limite_de_bytes
 
-    q = request.GET.get('q', '').strip()
-    escolhidas = abas_de_oficio.normalizar_abas(request.GET.getlist('situacao'))
-    base = listar_oficios(q)
-    queryset = listar_oficios(q, situacoes=escolhidas)
+    pedido = _filtros_da_lista(request)
+    q, escolhidas = pedido['q'], pedido['situacoes']
+    base = _oficios_filtrados(pedido, com_situacoes=False)
+    queryset = _oficios_filtrados(pedido)
     paginator = Paginator(queryset, ITENS_POR_PAGINA)
     pagina = paginator.get_page(request.GET.get('pagina'))
     parametros = request.GET.copy()
     parametros.pop('pagina', None)
     artefatos = artefatos_pdf_por_oficio(pagina.object_list)
-    linhas = [linha_da_lista(o, artefatos_pdf=artefatos.get(o.pk, {})) for o in pagina]
+    prazo = get_prazo_justificativa_dias()
+    linhas = [linha_da_lista(o, artefatos_pdf=artefatos.get(o.pk, {}), prazo=prazo) for o in pagina]
 
     def url_da_situacao(aba=None):
         destino = parametros.copy()
         destino.pop('situacao', None)
         if aba:
             destino['situacao'] = aba
+        return '?' + destino.urlencode()
+
+    def url_sem(nome):
+        destino = parametros.copy()
+        destino.pop(nome, None)
         return '?' + destino.urlencode()
 
     icones = {
@@ -136,6 +193,18 @@ def lista(request):
         {'slug': chave, 'titulo': rotulo, 'total': contagem[chave], 'icone': icones[chave], 'url': url_da_situacao(chave)}
         for chave, rotulo in abas_de_oficio.ABA_ROTULOS
     ]
+    filtros = pedido['filtros']
+    ativos = []
+    for nome, rotulo in FILTROS_DA_LISTA:
+        valor = filtros[nome]
+        if valor:
+            texto = valor if nome == 'ano' else date.fromisoformat(valor).strftime('%d/%m/%Y')
+            ativos.append({'rotulo': f'{rotulo}: {texto}', 'url_remover': url_sem(nome)})
+    ordenacoes = opcoes_de_ordenacao()
+    if pedido['sort']:
+        rotulo = next(o['rotulo'] for o in ordenacoes if o['valor'] == pedido['sort'])
+        ativos.append({'rotulo': f'Ordem: {rotulo}', 'url_remover': url_sem('sort')})
+    anos = sorted({a for a in Oficio.objects.exclude(ano__isnull=True).values_list('ano', flat=True)}, reverse=True)
 
     return render(request, 'pages/viagens_oficios/lista.html', {
         'linhas': linhas, 'pagina': pagina, 'querystring': parametros.urlencode(), 'q': q,
@@ -144,11 +213,80 @@ def lista(request):
         'situacoes': situacoes,
         'situacoes_escolhidas': escolhidas,
         'situacao_ativa': 'todas' if not escolhidas else escolhidas[0] if len(escolhidas) == 1 else '',
-        'tem_filtros': bool(q or escolhidas), 'url_atual': daqui(request),
+        'filtros': filtros, 'filtros_ativos': ativos, 'sort': pedido['sort'],
+        'opcoes_ordenacao': ordenacoes,
+        'opcoes_ano': [{'valor': str(a), 'rotulo': str(a)} for a in anos],
+        'url_exportar': reverse('viagens_oficios:exportar') + ('?' + parametros.urlencode() if parametros else ''),
+        'tem_filtros': bool(q or escolhidas or ativos), 'url_atual': daqui(request),
         'pode_editar': pode_editar_cadastros(request.user), 'gestor': eh_gestor_viagens(request.user),
         # O modal "Importar processo do eProtocolo" (importador da prestação) diz o limite do arquivo.
         'importacao_limite_mb': limite_de_bytes() // (1024 * 1024),
     })
+
+
+@acesso_ao_modulo
+@require_GET
+def exportar(request):
+    """O recorte da lista (busca, situações, filtros e ordem) numa planilha Excel."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+    from openpyxl.utils import get_column_letter
+    from django.utils import timezone
+    from .justificativas_services import get_prazo_justificativa_dias
+    from .presenters import destinos_resumidos, justificativa_do_cartao, tipo_do_oficio, transporte_do_cartao
+    from .roteiro_context import periodo_roteiro
+
+    pedido = _filtros_da_lista(request)
+    prazo = get_prazo_justificativa_dias()
+    colunas = ['Nº', 'Data do ofício', 'Protocolo', 'Situação', 'Tipo', 'Destinos', 'Saída', 'Retorno',
+               'Servidores', 'Motorista', 'Viatura', 'Diárias (R$)', 'Quantidade de diárias', 'Justificativa']
+    livro = Workbook()
+    aba = livro.active
+    aba.title = 'Ofícios'
+    aba.append(colunas)
+    for celula in aba[1]:
+        celula.font = Font(bold=True)
+        celula.fill = PatternFill('solid', fgColor='D1D3D4')
+    for o in _oficios_filtrados(pedido):
+        saida, retorno = periodo_roteiro(o.roteiro) if o.roteiro_id else (None, None)
+        transporte = transporte_do_cartao(o)
+        try:
+            diarias = o.diarias_para_servidores() if o.roteiro_id else None
+        except ValidationError:  # roteiro sem efetivo: a linha sai sem o valor
+            diarias = None
+        motorista = o.motorista.nome if o.motorista_id else (o.motorista_manual_nome or '')
+        tipo = tipo_do_oficio(o, prazo=prazo)
+        aba.append([
+            o.numero_formatado,
+            o.data_criacao,
+            format_protocolo(o.protocolo),
+            'Cancelado' if o.cancelado else o.get_status_display(),
+            tipo['rotulo'] + (f" ({tipo['marcador']})" if tipo['marcador'] else ''),
+            destinos_resumidos(o.roteiro, maximo=100) if o.roteiro_id else '',
+            timezone.localtime(saida).replace(tzinfo=None) if saida else None,
+            timezone.localtime(retorno).replace(tzinfo=None) if retorno else None,
+            ', '.join(s.nome for s in o.servidores.all()),
+            motorista,
+            ' · '.join(p for p in [transporte['modelo'], transporte['placa']] if p),
+            diarias['valor_decimal'] if diarias else None,
+            (diarias or {}).get('quantidade') or '',
+            'Preenchida' if justificativa_do_cartao(o)['preenchida'] else ('Pendente' if tipo['justificativa_obrigatoria'] else ''),
+        ])
+    for linha in aba.iter_rows(min_row=2):
+        linha[1].number_format = 'DD/MM/YYYY'
+        linha[6].number_format = linha[7].number_format = 'DD/MM/YYYY HH:MM'
+        linha[11].number_format = '#,##0.00'
+    for indice, coluna in enumerate(colunas, start=1):
+        maior = max([len(coluna)] + [len(str(c.value or '')) for c in aba[get_column_letter(indice)][1:]])
+        aba.column_dimensions[get_column_letter(indice)].width = min(60, maior + 2)
+    aba.freeze_panes = 'A2'
+    buffer = io.BytesIO()
+    livro.save(buffer)
+    response = HttpResponse(buffer.getvalue(),
+                            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="oficios-{timezone.localdate():%Y-%m-%d}.xlsx"'
+    response['Cache-Control'] = 'no-store'
+    return response
 
 
 @acesso_ao_modulo
@@ -359,6 +497,34 @@ def _vincular_roteiro(request, oficio):
     return roteiro
 
 
+def _aviso_de_condutor(oficio):
+    """Avisa, sem impedir, quando o motorista não é condutor autorizado da viatura.
+
+    Só vale para viatura com condutores cadastrados: lista vazia é viatura
+    sem restrição.
+    """
+    if not (oficio.viatura_id and oficio.motorista_id):
+        return ''
+    autorizados = list(oficio.viatura.motoristas.all())
+    if not autorizados or any(m.pk == oficio.motorista_id for m in autorizados):
+        return ''
+    return (f'{oficio.motorista.nome} não está entre os condutores autorizados da viatura '
+            f'{oficio.viatura.placa_formatada}. Confira antes de emitir o ofício.')
+
+
+def _data_final_do_oficio(form):
+    """A data com que o ofício é finalizado e se ela foi posta pelo sistema.
+
+    Vale a digitada em "Data do ofício" quando a pessoa a mudou; sem mudança
+    (ou em branco), a de hoje — o dia em que o ofício sai.
+    """
+    from django.utils import timezone
+    digitada = (form.data.get('data_criacao') or '').strip()
+    if digitada and 'data_criacao' in form.changed_data:
+        return form.cleaned_data['data_criacao'], False
+    return timezone.localdate(), True
+
+
 @acesso_ao_modulo
 @require_http_methods(['GET', 'POST'])
 def editar(request, pk=None):
@@ -368,13 +534,13 @@ def editar(request, pk=None):
     justificativa e documentos. "Salvar rascunho" grava e volta para a lista;
     "Finalizar Ofício" grava, confere as pendências e só finaliza sem elas.
     """
-    from django.utils import timezone
     from core.retorno import next_valido, voltar_para
     from .form_context import contexto_conferencia, contexto_dados_viajantes, contexto_justificativa
     from .justificativas_services import get_or_create_justificativa_oficio, oficio_exige_justificativa
-    from .presenters import artefatos_pdf_por_oficio
+    from .campos_modelo import aplicar, preencher_marcadores_do_oficio, valores_do_oficio
+    from .presenters import artefatos_pdf_por_oficio, tipo_do_oficio
     from .protocolo_services import abrir_protocolo_do_oficio, mensagens_do_protocolo
-    from .services import criar_oficio_rascunho
+    from .services import criar_oficio_rascunho, dados_eprotocolo
     exigir_operador(request)
     if pk is None:
         # O cadastro sempre edita um rascunho já numerado; sem ele, cria-se um.
@@ -394,8 +560,18 @@ def editar(request, pk=None):
         obrigatoria=finalizar and oficio_exige_justificativa(oficio),
     )
     gravacao = None
+    data_anterior = oficio.data_criacao
+    data_automatica = False
     if request.method == 'POST':
-        if form.is_valid() and jform.is_valid():
+        form_ok = form.is_valid()
+        if form_ok and finalizar:
+            # A data final do ofício vem ANTES da conferência: a digitada, ou a
+            # de hoje se o campo não mudou. É com ela que se decide Autorização
+            # ou Convalidação e se a justificativa é obrigatória.
+            data_final, data_automatica = _data_final_do_oficio(form)
+            form.instance.data_criacao = data_final
+            jform._obrigatoria = oficio_exige_justificativa(form.instance)
+        if form_ok and jform.is_valid():
             with transaction.atomic():
                 oficio = form.save()
                 reservar_numero_oficio(oficio, ano=oficio.data_criacao.year)
@@ -410,6 +586,8 @@ def editar(request, pk=None):
                 else:
                     gravacao = _gravar_roteiro(request, oficio, finalizar=finalizar)
                 atualizar_justificativa_oficio(oficio, jform, action='save_continue' if finalizar else 'save_draft')
+                # Campos automáticos que ficaram marcados ({destino}...) viram valor agora que tudo está gravado.
+                preencher_marcadores_do_oficio(oficio)
             # Fora da transação de propósito: abrir o protocolo é uma chamada
             # a outro sistema e não pode segurar a gravação do ofício — se
             # falhar, o ofício já está salvo e a tela explica o que houve.
@@ -432,6 +610,9 @@ def editar(request, pk=None):
                     messages.warning(request, f'O protocolo {format_protocolo(oficio.protocolo)} também está no ofício {nomes}.'
                                      if outros.count() == 1 else
                                      f'O protocolo {format_protocolo(oficio.protocolo)} também está nos ofícios {nomes}.')
+            aviso_condutor = _aviso_de_condutor(oficio)
+            if aviso_condutor:
+                messages.warning(request, aviso_condutor)
             for nivel, texto in (gravacao.mensagens if gravacao else []):
                 if texto.startswith('Diárias: R$'):
                     # O roteiro calcula por servidor; o aviso fala do ofício inteiro.
@@ -447,13 +628,21 @@ def editar(request, pk=None):
             elif finalizar:
                 pendencias = validar_oficio_para_documento(oficio)['pendencias']
                 if pendencias:
+                    if data_automatica and oficio.data_criacao != data_anterior:
+                        # Não finalizou: o rascunho fica com a data que tinha.
+                        oficio.data_criacao = data_anterior
+                        oficio.save(update_fields=['data_criacao', 'atualizado_em'])
                     for pendencia in pendencias:
                         messages.error(request, pendencia)
                     return redirect('viagens_oficios:editar', pk=oficio.pk)
                 oficio.status = Oficio.STATUS_FINALIZADO
-                oficio.data_criacao = timezone.localdate()
-                oficio.save(update_fields=['status', 'data_criacao', 'atualizado_em'])
+                oficio.save(update_fields=['status', 'atualizado_em'])
                 messages.success(request, 'Ofício finalizado com sucesso.')
+                if oficio.ano and oficio.ano != oficio.data_criacao.year:
+                    # Ex.: rascunho de dezembro finalizado em janeiro.
+                    messages.warning(request, (
+                        f'O ofício {oficio.numero_formatado} tem número de {oficio.ano}, mas a data é de '
+                        f'{oficio.data_criacao:%d/%m/%Y}. Confira se ele deve ser renumerado no ano da data.'))
                 return redirect(lista)
             else:
                 messages.success(request, 'Rascunho salvo.')
@@ -461,6 +650,7 @@ def editar(request, pk=None):
         else:
             messages.error(request, 'Não foi possível salvar o ofício. Revise os campos indicados.')
     oficio = get_oficio_by_id(oficio.pk)
+    campos = valores_do_oficio(oficio)
     conferencia = contexto_conferencia(oficio, artefatos_pdf_por_oficio([oficio]).get(oficio.pk, {}))
     return render(request, 'pages/viagens_oficios/form.html', {
         'titulo': 'Cadastro de ofício',
@@ -469,14 +659,32 @@ def editar(request, pk=None):
         'rot': _contexto_roteiro(request, oficio, gravacao),
         'justificativa': contexto_justificativa(jform),
         'conferencia': conferencia,
+        'tipo': tipo_do_oficio(oficio),
+        'eprotocolo': dados_eprotocolo(oficio),
         'next': next_valido(request),
         'url_voltar': lista,
         'url_atual': request.get_full_path(),
+        # O texto de cada modelo já com os campos automáticos do ofício.
         'modelos_texto': {
-            'modelo_motivo': dict(ModeloMotivoOficio.objects.values_list('pk', 'texto')),
-            'justificativa-modelo': dict(ModeloJustificativa.objects.values_list('pk', 'texto')),
+            'modelo_motivo': {pk: aplicar(texto, campos) for pk, texto in ModeloMotivoOficio.objects.values_list('pk', 'texto')},
+            'justificativa-modelo': {pk: aplicar(texto, campos) for pk, texto in ModeloJustificativa.objects.values_list('pk', 'texto')},
         },
     })
+
+
+@acesso_ao_modulo
+@require_GET
+def oficios_do_motorista(request, pk):
+    """JSON do cartão do motorista: os ofícios ativos em que ele viaja, para
+    preencher sozinho o N° do Ofício e o Protocolo de origem."""
+    from django.http import JsonResponse
+    from .services import oficios_do_motorista as buscar
+    exigir_operador(request)
+    oficio = get_oficio_by_id(pk)
+    motorista = request.GET.get('motorista', '')
+    if not motorista.isdigit():
+        return JsonResponse({'oficios': []})
+    return JsonResponse({'oficios': buscar(oficio, int(motorista))})
 
 
 @acesso_ao_modulo

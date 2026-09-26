@@ -71,3 +71,38 @@ class Notificacao(models.Model):
 
     def __str__(self):
         return f"{self.usuario} — {self.titulo}"
+
+
+class Feriado(models.Model):
+    """Feriado estadual, municipal ou ponto facultativo local (m094).
+
+    Os nacionais são calculados em `core.feriados` e não precisam de cadastro.
+    Com `anual`, a data vale todo ano no mesmo dia e mês (o ano digitado é
+    ignorado); sem, só naquela data (ponto facultativo de um ano, por exemplo).
+    """
+
+    data = models.DateField("data")
+    nome = models.CharField("nome", max_length=120)
+    anual = models.BooleanField("repete todo ano", default=True)
+
+    class Meta:
+        verbose_name = "feriado"
+        verbose_name_plural = "feriados"
+        ordering = ["data"]
+
+    def __str__(self):
+        return f"{self.data:%d/%m}{'' if self.anual else f'/{self.data:%Y}'} — {self.nome}"
+
+    def save(self, *args, **kwargs):
+        from .feriados import limpar_cache
+
+        super().save(*args, **kwargs)
+        limpar_cache()
+
+    def delete(self, *args, **kwargs):
+        from .feriados import limpar_cache
+
+        resultado = super().delete(*args, **kwargs)
+        limpar_cache()
+        return resultado
+

@@ -27,9 +27,14 @@ def base_viagens():
 
 
 def _filtro_busca(q):
-    """Título, descrição, motivo, destino, responsável ou unidade — a busca da origem."""
+    """Título, descrição, motivo, destino, responsável ou unidade — a busca da
+    origem — e, dos ofícios, servidor, motorista, placa, protocolo e número."""
+    import re
+
+    from viagens_cadastros.normalizacao import normalizar_digitos, normalizar_placa
+
     q = q.strip()
-    return (
+    filtro = (
         Q(titulo__icontains=q)
         | Q(descricao__icontains=q)
         | Q(motivo__icontains=q)
@@ -38,7 +43,25 @@ def _filtro_busca(q):
         | Q(responsavel__nome__icontains=q)
         | Q(unidade_responsavel__nome__icontains=q)
         | Q(tipos__nome__icontains=q)
+        | Q(oficios__servidores__nome__icontains=q)
+        | Q(oficios__motorista__nome__icontains=q)
+        | Q(oficios__motorista_manual_nome__icontains=q)
     )
+    # Placa em qualquer grafia ("abc-1d23"): a gravada não tem hífen.
+    placa = normalizar_placa(q)
+    if len(placa) >= 3 and re.search(r"\d", placa):
+        filtro |= Q(oficios__viatura__placa__icontains=placa) | Q(oficios__transporte_placa_manual__icontains=placa)
+    # Protocolo é gravado só com dígitos: "12.345.678-9" acha "123456789".
+    digitos = normalizar_digitos(q)
+    if len(digitos) >= 5:
+        filtro |= Q(oficios__protocolo__contains=digitos)
+    # Número do ofício: "15/2026" ou "15".
+    numero_ano = re.fullmatch(r"(\d{1,5})\s*/\s*(\d{4})", q)
+    if numero_ano:
+        filtro |= Q(oficios__numero=int(numero_ano[1]), oficios__ano=int(numero_ano[2]))
+    elif q.isdigit() and len(q) <= 5:
+        filtro |= Q(oficios__numero=int(q))
+    return filtro
 
 
 def listar_viagens(q="", *, situacoes=None):

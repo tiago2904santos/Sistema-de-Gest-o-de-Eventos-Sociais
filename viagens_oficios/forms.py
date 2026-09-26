@@ -5,6 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 from core.utils.masks import normalize_protocolo
 from core.normalizers import normalize_plate, normalize_spaces
+from .campos_modelo import AJUDA_CAMPOS
 from .models import Oficio, Justificativa, ModeloMotivoOficio, ModeloJustificativa, ConfiguracaoNumeracaoOficio
 
 
@@ -69,7 +70,8 @@ class OficioForm(ProtocoloManualMixin, forms.ModelForm):
             if not motivo:
                 padrao = modelos.filter(is_padrao=True).first()
                 if padrao:
-                    self.initial.update(modelo_motivo=padrao.pk, motivo=padrao.texto)
+                    from .campos_modelo import aplicar, valores_do_oficio
+                    self.initial.update(modelo_motivo=padrao.pk, motivo=aplicar(padrao.texto, valores_do_oficio(self.instance)))
             else:
                 correspondente = modelos.filter(texto=motivo).first()
                 if correspondente:
@@ -90,22 +92,12 @@ class OficioForm(ProtocoloManualMixin, forms.ModelForm):
         return self.instance.ano or timezone.localdate().year
 
     def clean_numero(self):
-        """Em branco, mantém o número já reservado."""
-        numero = self.cleaned_data.get('numero')
-        if numero is None:
-            return self.instance.numero
-        if numero < 1:
-            raise forms.ValidationError('Informe um número de ofício válido (maior que zero).')
-        conflito = Oficio.objects.filter(ano=self.ano, numero=numero).exclude(pk=self.instance.pk)
-        if conflito.exists():
-            raise forms.ValidationError(f'Já existe um ofício com o número {numero} em {self.ano}.')
-        # Livro único: o número também não pode ser de um ofício do Coffee Break.
-        from core.numeracao import NAMESPACE_OFICIO, numeros_externos
-        if numero != self.instance.numero and numero in numeros_externos(NAMESPACE_OFICIO, self.ano):
-            raise forms.ValidationError(
-                f'O número {numero} de {self.ano} já foi usado por um ofício do Coffee Break (a numeração é conjunta).'
-            )
-        return numero
+        """Em branco, mantém o número já reservado. A mesma validação da OS e do plano."""
+        from core.numeracao import NAMESPACE_OFICIO, conferir_numero_digitado
+        return conferir_numero_digitado(
+            self.cleaned_data.get('numero'), ano=self.ano, instancia=self.instance,
+            namespace=NAMESPACE_OFICIO, documento='um ofício', externo='um ofício do Coffee Break',
+        )
 
     def clean_data_criacao(self):
         """Em branco, mantém a data já gravada."""
@@ -281,7 +273,11 @@ class JustificativaForm(forms.ModelForm):
         if not self.is_bound and not self.instance.texto:
             padrao = self.fields['modelo'].queryset.filter(is_padrao=True).first()
             if padrao:
-                self.initial.update(modelo=padrao.pk, texto=padrao.texto)
+                texto = padrao.texto
+                if self.instance.oficio_id:
+                    from .campos_modelo import aplicar, valores_do_oficio
+                    texto = aplicar(texto, valores_do_oficio(self.instance.oficio))
+                self.initial.update(modelo=padrao.pk, texto=texto)
 
     def clean_texto(self):
         texto = (self.cleaned_data.get('texto') or '').strip()
@@ -343,6 +339,7 @@ class ModeloMotivoOficioForm(forms.ModelForm):
         labels = {'nome': 'Nome do modelo', 'texto': 'Texto', 'is_padrao': 'Usar como padrão'}
         help_texts = {
             'is_padrao': 'Será sugerido automaticamente nos ofícios novos.',
+            'texto': AJUDA_CAMPOS,
         }
         widgets = {
             'nome': forms.TextInput(attrs={'placeholder': 'Ex.: COBERTURA JORNALÍSTICA', 'data-uppercase': 'true'}),

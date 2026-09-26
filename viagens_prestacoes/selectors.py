@@ -11,8 +11,15 @@ ABA_NAO_LIBERADAS = 'nao_liberadas'
 ABA_LIBERADAS = 'liberadas'
 ABA_ARQUIVADOS = 'arquivados'
 ABA_FINALIZADOS = 'finalizados'
+#: m093: devolvida pelo financeiro para correção.
+ABA_DEVOLVIDAS = 'devolvidas'
+#: m094: prazo para prestar contas vencido. Diferente das de estado, cruza com elas.
+ABA_PRESTACAO_VENCIDA = 'prestacao_vencida'
+#: m085: prazo de saque vencendo (ou vencido) sem comprovante. Também cruza.
+ABA_SAQUE_VENCENDO = 'saque_vencendo'
 ABA_PADRAO = ABA_NAO_LIBERADAS
-ABAS_VALIDAS = {ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_ARQUIVADOS, ABA_FINALIZADOS}
+ABAS_VALIDAS = {ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_DEVOLVIDAS, ABA_ARQUIVADOS, ABA_FINALIZADOS, ABA_SAQUE_VENCENDO, ABA_PRESTACAO_VENCIDA}
+ORDEM_ABAS = (ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_DEVOLVIDAS, ABA_ARQUIVADOS, ABA_FINALIZADOS, ABA_SAQUE_VENCENDO, ABA_PRESTACAO_VENCIDA)
 
 def normalizar_aba(aba: str | None) -> str:
     aba = (aba or '').strip()
@@ -28,8 +35,7 @@ def normalizar_abas(valores) -> list[str]:
     if isinstance(valores, str):
         valores = [valores]
     escolhidas = {(valor or '').strip() for valor in valores or []}
-    ordem = (ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_ARQUIVADOS, ABA_FINALIZADOS)
-    normalizadas = [chave for chave in ordem if chave in escolhidas]
+    normalizadas = [chave for chave in ORDEM_ABAS if chave in escolhidas]
     return normalizadas or [ABA_PADRAO]
 
 def _q_das_abas(abas) -> Q:
@@ -41,15 +47,34 @@ def _q_das_abas(abas) -> Q:
     return combinado
 
 def _q_da_aba(aba: str) -> Q:
-    """Filtro que define quais servidores pertencem a cada aba (mutuamente exclusivas)."""
+    """Filtro que define quais servidores pertencem a cada aba (as de estado são mutuamente exclusivas)."""
+    if aba == ABA_SAQUE_VENCENDO:
+        import datetime
+        from django.db.models import Exists, OuterRef
+        from django.utils import timezone
+        from .models import PrestacaoDocumentoAnexo
+        from .prazos import DIAS_AVISO_SAQUE
+        comprovante = PrestacaoDocumentoAnexo.objects.filter(servidor_prestacao=OuterRef('pk'), tipo=PrestacaoDocumentoAnexo.TIPO_COMPROVANTE)
+        limite = timezone.localdate() + datetime.timedelta(days=DIAS_AVISO_SAQUE)
+        return Q(finalizada=False, arquivada=False, prazo_limite_saque__lte=limite) & ~Q(Exists(comprovante))
+    if aba == ABA_PRESTACAO_VENCIDA:
+        from .prazos import ultimo_saque_com_prestacao_vencida
+        return Q(finalizada=False, arquivada=False, prazo_limite_saque__lte=ultimo_saque_com_prestacao_vencida())
+    # m093: a prestação é individual, mas só vai para "Finalizados" quando a equipe
+    # INTEIRA está finalizada; até lá, quem já finalizou continua junto dos colegas.
+    from django.db.models import Exists, OuterRef
+    em_aberto = Exists(PrestacaoServidor.objects.filter(prestacao=OuterRef('prestacao'), finalizada=False))
     if aba == ABA_FINALIZADOS:
-        return Q(finalizada=True)
+        return Q(~em_aberto)
     if aba == ABA_ARQUIVADOS:
-        return Q(arquivada=True, finalizada=False)
-    ativa = Q(arquivada=False, finalizada=False)
+        return Q(arquivada=True) & Q(em_aberto)
+    ativa = Q(arquivada=False) & Q(em_aberto)
+    devolvida = Q(status=PrestacaoServidor.STATUS_REPROVADA, finalizada=False)
+    if aba == ABA_DEVOLVIDAS:
+        return ativa & devolvida
     if aba == ABA_LIBERADAS:
-        return ativa & Q(data_liberacao_diarias__isnull=False)
-    return ativa & Q(data_liberacao_diarias__isnull=True)
+        return ativa & Q(data_liberacao_diarias__isnull=False) & ~devolvida
+    return ativa & Q(data_liberacao_diarias__isnull=True) & ~devolvida
 
 def servidores_removidos_da_equipe(prestacao):
     """Servidores que saíram da equipe do ofício mas cujos dados foram preservados (`DB-06`).
@@ -84,7 +109,7 @@ def get_servidor_prestacao_by_id(pk):
 def _base_servidores(q: str | None=None, status: str | None=None, viagem_de: str | None=None, viagem_ate: str | None=None, sort: str | None=None):
     """Queryset com filtros de busca/ordenação, sem o recorte por aba."""
     order_fields = _SORT_MAP.get(sort or 'criacao_desc', _SORT_MAP['criacao_desc'])
-    queryset = PrestacaoServidor.objects.select_related('servidor', 'servidor__cargo', 'servidor__unidade', 'prestacao', 'prestacao__oficio', 'prestacao__oficio__roteiro', 'prestacao__oficio__roteiro__origem_municipio', 'prestacao__oficio__roteiro__origem_municipio__estado', 'prestacao__oficio__viatura', 'prestacao__oficio__motorista').prefetch_related(Prefetch('prestacao__oficio__roteiro__trechos', queryset=RoteiroTrecho.objects.select_related('origem_municipio', 'origem_municipio__estado', 'destino_municipio', 'destino_municipio__estado').order_by('ordem')), Prefetch('prestacao__oficio__roteiro__destinos', queryset=RoteiroDestino.objects.select_related('municipio', 'municipio__estado').order_by('ordem')), Prefetch('prestacao__servidores_prestacao', queryset=PrestacaoServidor.objects.select_related('servidor', 'servidor__cargo', 'servidor__unidade').order_by('pk')), 'documentos_anexos', 'prestacao__documentos_anexos', 'prestacao__relatorio_tecnico', 'prestacao__diario_bordo').filter(prestacao__oficio__cancelado=False).order_by(*order_fields)
+    queryset = PrestacaoServidor.objects.select_related('servidor', 'servidor__cargo', 'servidor__unidade', 'prestacao', 'prestacao__oficio', 'prestacao__oficio__roteiro', 'prestacao__oficio__roteiro__origem_municipio', 'prestacao__oficio__roteiro__origem_municipio__estado', 'prestacao__oficio__viatura', 'prestacao__oficio__motorista').prefetch_related(Prefetch('prestacao__oficio__roteiro__trechos', queryset=RoteiroTrecho.objects.select_related('origem_municipio', 'origem_municipio__estado', 'destino_municipio', 'destino_municipio__estado').order_by('ordem')), Prefetch('prestacao__oficio__roteiro__destinos', queryset=RoteiroDestino.objects.select_related('municipio', 'municipio__estado').order_by('ordem')), Prefetch('prestacao__servidores_prestacao', queryset=PrestacaoServidor.objects.select_related('servidor', 'servidor__cargo', 'servidor__unidade').order_by('pk')), 'documentos_anexos', 'prestacao__documentos_anexos', 'prestacao__relatorio_tecnico', 'prestacao__diario_bordo', 'prestacao__diario_bordo__trechos').filter(prestacao__oficio__cancelado=False).order_by(*order_fields)
     if status:
         queryset = queryset.filter(status=status)
     if q:
@@ -118,7 +143,7 @@ def listar_prestacoes(q: str | None=None, status: str | None=None, aba=None, via
 def contar_por_aba(q: str | None=None, status: str | None=None, viagem_de: str | None=None, viagem_ate: str | None=None) -> dict:
     """Total de servidores em cada aba, respeitando os filtros de busca ativos."""
     base = _base_servidores(q=q, status=status, viagem_de=viagem_de, viagem_ate=viagem_ate)
-    return {aba: base.filter(_q_da_aba(aba)).count() for aba in (ABA_NAO_LIBERADAS, ABA_LIBERADAS, ABA_ARQUIVADOS, ABA_FINALIZADOS)}
+    return {aba: base.filter(_q_da_aba(aba)).count() for aba in ORDEM_ABAS}
 LIMITE_OFICIOS_PREFILL = 200
 
 def oficios_para_prefill_de_motorista(oficio_atual):

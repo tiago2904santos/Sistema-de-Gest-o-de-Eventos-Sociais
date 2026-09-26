@@ -9,6 +9,7 @@
   O DELETE sai sempre, mesmo em linha nova: a gravação automática dá id à
   linha sem recarregar a tela, e a partir daí removê-la é marcar o DELETE.
 {% endcomment %}
+{% url "cadastros:municipios_buscar" as url_busca_municipios %}
 {% with id_estado="id_"|add:destino.prefix|add:"-estado" nome_estado=destino.prefix|add:"-estado" %}
 <div class="destino-row" data-destino {% if not visivel %}hidden{% endif %}>
   {{ destino.id }}
@@ -26,7 +27,7 @@
     {% include "components/select.html" with name=nome_estado label="Estado do destino" rotulo_oculto=True opcoes=opcoes_estados placeholder="Buscar estado..." pesquisavel=True %}
   </div>
   <div class="destino-row__campo">
-    {% include "components/select.html" with name=destino.municipio.html_name label="Município do destino" rotulo_oculto=True opcoes=opcoes_municipios placeholder="Buscar município..." pesquisavel=True dependente_de=id_estado selecionado=destino.municipio.value|default_if_none:""|stringformat:"s" erros=destino.municipio.errors %}
+    {% include "components/select.html" with name=destino.municipio.html_name label="Município do destino" rotulo_oculto=True opcoes=opcoes_municipios placeholder="Buscar município..." pesquisavel=True remoto=url_busca_municipios dependente_de=id_estado selecionado=destino.municipio.value|default_if_none:""|stringformat:"s" erros=destino.municipio.errors %}
   </div>
   <button type="button" class="btn btn--perigo btn--secundaria btn--destrutiva btn--compacto destino-row__remover" data-destino-remover
           aria-label="Remover destino" title="Remover destino">

@@ -150,6 +150,61 @@ class Roteiro(ModeloTemporal, ModeloCancelavel, OrigemLegado):
         rotulo = destino.municipio if destino else "sem destino"
         return f"Roteiro {self.pk} — {rotulo}"
 
+    CAMPOS_DE_PERIODO = ("saida_dt", "chegada_dt", "retorno_saida_dt", "retorno_chegada_dt")
+
+    def periodo_dos_trechos(self):
+        """As quatro datas do cabeçalho tiradas dos trechos, na ordem.
+
+        - saída: a primeira saída do percurso;
+        - chegada: a última chegada da ida (o destino final antes de voltar);
+        - retorno: saída e chegada do último trecho de retorno. Sem trecho de
+          retorno ficam vazias — o documento do ofício inventaria uma volta.
+
+        Uma data que quebraria o encadeamento (trechos fora de ordem) fica
+        vazia em vez de barrar a gravação. Devolve None sem trechos.
+        """
+        trechos = sorted(self.trechos.all(), key=lambda t: (t.ordem, t.pk or 0))
+        if not trechos:
+            return None
+        ida = [t for t in trechos if t.sentido != RoteiroTrecho.Sentido.RETORNO]
+        volta = [t for t in trechos if t.sentido == RoteiroTrecho.Sentido.RETORNO]
+        saidas = [t.saida_dt for t in trechos if t.saida_dt]
+        chegadas_ida = [t.chegada_dt for t in ida if t.chegada_dt]
+        ultimo_retorno = volta[-1] if volta else None
+        datas = [
+            saidas[0] if saidas else None,
+            chegadas_ida[-1] if chegadas_ida else None,
+            ultimo_retorno.saida_dt if ultimo_retorno else None,
+            ultimo_retorno.chegada_dt if ultimo_retorno else None,
+        ]
+        anterior = None
+        for indice, valor in enumerate(datas):
+            if valor is None:
+                continue
+            if anterior is not None and valor < anterior:
+                datas[indice] = None
+                continue
+            anterior = valor
+        return dict(zip(self.CAMPOS_DE_PERIODO, datas))
+
+    def sincronizar_periodo(self):
+        """Grava no cabeçalho o período que os trechos descrevem.
+
+        O editor guarda os horários só nos trechos; lista de viagens, documentos
+        herdados e prestação leem o cabeçalho. Sem trechos, nada muda (roteiros
+        migrados podem ter só o cabeçalho).
+        """
+        periodo = self.periodo_dos_trechos()
+        if periodo is None:
+            return False
+        mudou = [campo for campo, valor in periodo.items() if getattr(self, campo) != valor]
+        if not mudou:
+            return False
+        for campo in mudou:
+            setattr(self, campo, periodo[campo])
+        self.save(update_fields=[*mudou, "atualizado_em"])
+        return True
+
     @property
     def sede_cidade(self):
         return self.origem_municipio.nome if self.origem_municipio_id else ""

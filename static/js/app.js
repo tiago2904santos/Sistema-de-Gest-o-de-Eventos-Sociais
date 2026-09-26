@@ -346,7 +346,7 @@
       });
     }
 
-    opcoes.forEach(function (opcao) {
+    function ligarOpcao(opcao) {
       opcao.addEventListener("click", function () { selecionar(opcao); });
       // mousemove (e não mouseenter): rolar a lista com o teclado não rouba o
       // destaque só porque uma opção passou por baixo do cursor parado.
@@ -364,7 +364,129 @@
         else if (event.key === "Escape") { event.preventDefault(); fecharSeletor(instancia, true); }
         else if (event.key === "Tab") fecharSeletor(instancia, false);
       });
-    });
+    }
+    opcoes.forEach(ligarOpcao);
+
+    // Modo remoto (`remoto` no components/select.html): a página traz só as
+    // opções escolhidas e o resto vem da busca conforme se digita — a base de
+    // municípios inteira em cada campo deixava a tela com megabytes.
+    var urlRemota = busca ? wrapper.getAttribute("data-remote-url") : null;
+    var paiRemoto = wrapper.getAttribute("data-depends-on");
+    var chaveRemota = null;
+    var pedidoRemoto = 0;
+    var esperaRemota = null;
+    var modeloCheck = wrapper.querySelector("template[data-custom-select-check]");
+    var listaMenu = menu.querySelector("[role='listbox']") || menu;
+
+    function valorDoPai() {
+      var pai = paiRemoto ? document.getElementById(paiRemoto) : null;
+      return pai ? pai.value : "";
+    }
+
+    function criarOpcaoMenu(item) {
+      var botao = document.createElement("button");
+      botao.type = "button";
+      botao.className = "custom-select__opcao";
+      botao.setAttribute("role", "option");
+      botao.setAttribute("aria-selected", "false");
+      botao.setAttribute("data-value", item.valor);
+      if (item.estado) botao.setAttribute("data-parent-value", item.estado);
+      var texto = document.createElement("span");
+      texto.textContent = item.rotulo;
+      var check = document.createElement("span");
+      check.className = "custom-select__check";
+      check.setAttribute("aria-hidden", "true");
+      if (modeloCheck) check.appendChild(modeloCheck.content.cloneNode(true));
+      botao.appendChild(texto);
+      botao.appendChild(check);
+      return botao;
+    }
+
+    function criarOpcaoNativa(item) {
+      var opcao = document.createElement("option");
+      opcao.value = item.valor;
+      opcao.textContent = item.rotulo;
+      if (item.estado) opcao.setAttribute("data-parent-value", item.estado);
+      return opcao;
+    }
+
+    // Garante a opção (nativa e no menu) sem trocar a escolha; devolve se criou.
+    function garantirOpcao(item) {
+      var valorItem = String(item.valor);
+      var existe = Array.prototype.some.call(nativo.options, function (o) { return o.value === valorItem; });
+      if (existe) return false;
+      nativo.appendChild(criarOpcaoNativa(item));
+      var botao = criarOpcaoMenu(item);
+      listaMenu.insertBefore(botao, mensagemVazia && mensagemVazia.parentNode === listaMenu ? mensagemVazia : null);
+      ligarOpcao(botao);
+      opcoes.push(botao);
+      instancia.opcoes = opcoes;
+      return true;
+    }
+    instancia.garantirOpcao = garantirOpcao;
+
+    // Troca as opções pelas da busca, preservando a escolhida.
+    function substituirOpcoes(itens) {
+      var atual = nativo.value;
+      Array.prototype.slice.call(nativo.options).forEach(function (o) {
+        if (o.value && o.value !== atual) o.remove();
+      });
+      opcoes.forEach(function (botao) {
+        var v = botao.getAttribute("data-value");
+        if (v && v !== atual) botao.remove();
+      });
+      opcoes = opcoes.filter(function (botao) { return botao.isConnected; });
+      instancia.opcoes = opcoes;
+      (itens || []).forEach(garantirOpcao);
+      opcoes.forEach(function (botao) {
+        if (botao.getAttribute("data-value") !== atual) botao.removeAttribute("data-filtered-out");
+      });
+      // Sem sincronizar(): ele reescreveria o texto que a pessoa está digitando.
+      if (instancia.aberto) {
+        filtrarOpcoes();
+        ativarInicial(false);
+      }
+    }
+
+    function carregarRemoto(termo) {
+      var pai = valorDoPai();
+      var chave = pai + "|" + termo;
+      if (chave === chaveRemota) return;
+      chaveRemota = chave;
+      var pedido = ++pedidoRemoto;
+      var url = urlRemota + (urlRemota.indexOf("?") === -1 ? "?" : "&") +
+        "q=" + encodeURIComponent(termo) + (pai ? "&uf=" + encodeURIComponent(pai) : "");
+      wrapper.setAttribute("aria-busy", "true");
+      fetch(url, { headers: { "X-Requested-With": "fetch" }, credentials: "same-origin" })
+        .then(function (resposta) { return resposta.ok ? resposta.json() : { resultados: [] }; })
+        .then(function (dados) {
+          if (pedido !== pedidoRemoto) return;  // chegou depois de outra busca
+          substituirOpcoes(dados.resultados || []);
+        })
+        .catch(function () { chaveRemota = null; })
+        .then(function () { if (pedido === pedidoRemoto) wrapper.removeAttribute("aria-busy"); });
+    }
+
+    if (urlRemota) {
+      busca.addEventListener("input", function () {
+        clearTimeout(esperaRemota);
+        var termo = busca.value.trim();
+        esperaRemota = setTimeout(function () { carregarRemoto(termo); }, 250);
+      });
+      // Abrir sem digitar mostra os primeiros do estado escolhido.
+      busca.addEventListener("focus", function () {
+        var selecionada = opcaoAtual();
+        var termo = nativo.value && selecionada && busca.value === selecionada.text ? "" : busca.value.trim();
+        carregarRemoto(termo);
+      });
+      var paiElemento = paiRemoto ? document.getElementById(paiRemoto) : null;
+      if (paiElemento) {
+        paiElemento.addEventListener("change", function () {
+          chaveRemota = null;
+          substituirOpcoes([]);
+        });
+      }
+    }
 
     if (limpar) {
       // mousedown sem padrão: o campo não perde o foco antes do clique chegar.
@@ -1042,6 +1164,21 @@
       if (instancia.wrapper === wrapper && instancia.relerOpcoes) instancia.relerOpcoes();
     });
   };
+  // Põe uma opção num select (aprimorado ou não) antes de escolhê-la por
+  // código: no modo remoto a opção pode ainda não ter vindo da busca.
+  // `item`: {valor, rotulo, estado}.
+  window.DS.garantirOpcaoSelect = function (nativo, item) {
+    if (!nativo || !item || item.valor === undefined || item.valor === null || item.valor === "") return;
+    var instancia = seletoresAbertos.filter(function (i) { return i.nativo === nativo; })[0];
+    if (instancia && instancia.garantirOpcao) { instancia.garantirOpcao(item); return; }
+    var valor = String(item.valor);
+    if (Array.prototype.some.call(nativo.options, function (o) { return o.value === valor; })) return;
+    var opcao = document.createElement("option");
+    opcao.value = valor;
+    opcao.textContent = item.rotulo || valor;
+    if (item.estado) opcao.setAttribute("data-parent-value", item.estado);
+    nativo.appendChild(opcao);
+  };
   window.DS.aprimorar = function (raiz) {
     var alvo = raiz || document;
     alvo.querySelectorAll("[data-custom-select]").forEach(aprimorarSelect);
@@ -1596,6 +1733,7 @@
     var conteudoOriginal = botao.innerHTML;
     var rotuloArmado = formulario.getAttribute("data-confirmar") || "Confirmar?";
     var armado = false;
+    var travado = false;
     var temporizador = null;
 
     function desarmar() {
@@ -1609,7 +1747,19 @@
     }
 
     formulario.addEventListener("submit", function (evento) {
-      if (armado) return;
+      if (travado) {
+        evento.preventDefault();
+        return;
+      }
+      if (armado) {
+        // Um duplo clique no segundo toque mandaria dois POSTs (m089). Trava o botão
+        // depois que o envio segue — e só se ninguém o interceptou (envio por fetch
+        // fica na mesma tela e precisa do botão de volta).
+        setTimeout(function () {
+          if (!evento.defaultPrevented) { botao.disabled = true; travado = true; }
+        }, 0);
+        return;
+      }
       evento.preventDefault();
       armado = true;
       // Item com título (<b>) troca só o título e mantém ícone e descrição.
@@ -1621,6 +1771,13 @@
     });
 
     botao.addEventListener("blur", desarmar);
+    // Voltar pelo histórico (bfcache) devolve a página com o botão travado.
+    window.addEventListener("pageshow", function () {
+      if (!travado) return;
+      travado = false;
+      botao.disabled = false;
+      desarmar();
+    });
   });
 })();
 
@@ -1886,8 +2043,23 @@
     /* Sem storage disponível não há rascunho a limpar. */
   }
 
+  // m083: a Etapa 3 da prestação usava o mesmo id e ganhava este rascunho por
+  // engano — o número de solicitação antigo voltava por cima do que foi salvo em
+  // outro lugar. Os rascunhos que ficaram gravados nos navegadores saem uma vez.
+  try {
+    for (var i = window.localStorage.length - 1; i >= 0; i -= 1) {
+      var guardada = window.localStorage.key(i);
+      if (guardada && guardada.indexOf("rascunho:/viagens/prestacoes/") === 0) {
+        window.localStorage.removeItem(guardada);
+      }
+    }
+  } catch (erro) {
+    /* Sem storage, nada a limpar. */
+  }
+
   var formulario = document.getElementById("form-solicitacao");
-  if (!formulario || formulario.tagName !== "FORM") return;
+  // Formulário que grava sozinho (`data-autosave`) já está salvo: rascunho só atrapalha.
+  if (!formulario || formulario.tagName !== "FORM" || formulario.hasAttribute("data-autosave")) return;
 
   function disponivel() {
     try {

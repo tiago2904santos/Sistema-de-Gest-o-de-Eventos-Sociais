@@ -6,7 +6,6 @@ from unittest import mock
 from django.test import TestCase
 from django.utils import timezone
 
-from viagens_cadastros.models import ConfiguracaoSistema
 from viagens_planos.models import EfetivoPlano, PlanoTrabalho
 from viagens_planos.services import (
     aplicar_textos_padrao,
@@ -24,17 +23,34 @@ from .fixtures import CenarioPlanoMixin
 
 
 class NumeracaoTests(CenarioPlanoMixin, TestCase):
-    def test_numeracao_sequencial_com_contador_da_configuracao(self):
+    def test_numeracao_sequencial(self):
         ano = timezone.localdate().year
         p1 = salvar_plano_numerado(PlanoTrabalho())
         p2 = salvar_plano_numerado(PlanoTrabalho())
         self.assertEqual((p1.numero, p1.ano), (1, ano))
         self.assertEqual((p2.numero, p2.ano), (2, ano))
-        config = ConfiguracaoSistema.get_singleton()
-        self.assertEqual((config.pt_ultimo_numero, config.pt_ano), (2, ano))
         self.assertEqual(p1.numero_formatado, f"01/{ano}/ASCOM")
 
-    def test_virada_de_ano_zera_o_contador(self):
+    def test_numero_liberado_por_exclusao_e_reaproveitado(self):
+        # A regra do número de ofício: a lacuna volta antes do maior + 1.
+        from viagens_planos.models import PlanoTrabalhoNumeroLacuna
+        from viagens_planos.services import excluir_plano
+        p1, p2, p3 = (salvar_plano_numerado(PlanoTrabalho()) for _ in range(3))
+        excluir_plano(p2)
+        self.assertTrue(PlanoTrabalhoNumeroLacuna.objects.filter(numero=2).exists())
+        novo = salvar_plano_numerado(PlanoTrabalho())
+        self.assertEqual(novo.numero, 2)
+        self.assertFalse(PlanoTrabalhoNumeroLacuna.objects.exists())
+        self.assertEqual(salvar_plano_numerado(PlanoTrabalho()).numero, 4)
+
+    def test_numero_digitado_ocupa_a_lacuna(self):
+        from viagens_planos.models import PlanoTrabalhoNumeroLacuna
+        ano = timezone.localdate().year
+        PlanoTrabalhoNumeroLacuna.objects.create(ano=ano, numero=5)
+        PlanoTrabalho.objects.create(numero=5, ano=ano)
+        self.assertFalse(PlanoTrabalhoNumeroLacuna.objects.exists())
+
+    def test_contador_antigo_da_configuracao_nao_pesa_mais(self):
         self.cfg.pt_ano = timezone.localdate().year - 1
         self.cfg.pt_ultimo_numero = 42
         self.cfg.save()
@@ -68,12 +84,10 @@ class NumeracaoTests(CenarioPlanoMixin, TestCase):
         self.assertEqual(len(chamadas), 2)
         self.assertEqual(plano.numero, 78)
 
-    def test_falha_ao_gravar_desfaz_o_contador(self):
-        anterior = ConfiguracaoSistema.get_singleton().pt_ultimo_numero
+    def test_falha_ao_gravar_nao_deixa_plano(self):
         with mock.patch.object(PlanoTrabalho, "save", side_effect=RuntimeError("falha")):
             with self.assertRaisesRegex(RuntimeError, "falha"):
                 salvar_plano_numerado(PlanoTrabalho())
-        self.assertEqual(ConfiguracaoSistema.get_singleton().pt_ultimo_numero, anterior)
         self.assertFalse(PlanoTrabalho.objects.exists())
 
 
@@ -102,7 +116,7 @@ class RascunhoDaViagemTests(CenarioPlanoMixin, TestCase):
         self.assertEqual(plano.destino_cidade, self.maringa)
         self.assertEqual((plano.data_evento_inicio, plano.data_evento_fim), (date(2026, 6, 25), date(2026, 6, 27)))
         self.assertEqual(plano.programa_outros, "PCPR na Comunidade em Maringá")
-        self.assertEqual(plano.horario_atendimento, "09:00 ate 17:00")
+        self.assertEqual(plano.horario_atendimento, "09:00 até 17:00")
         self.assertEqual(plano.contextualizacao, "")
         self.assertEqual([d.cidade for d in plano.destinos_rascunho()], [self.maringa, self.sarandi])
 

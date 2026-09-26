@@ -95,6 +95,17 @@
           {# Período e destinos agrupados na caixa do bate-volta, como no plano de trabalho. #}
           <div class="bate-volta ofc-percurso">
             <div class="ofc-percurso__linha">
+              <label class="bate-volta__rotulo ofc-percurso__rotulo" for="id_numero">N° da OS</label>
+              <div class="form-campo">
+                <div class="ofc-numero">
+                  <div class="form-controle-wrapper{% if erros.numero %} is-invalid{% endif %}"><input class="form-controle" type="number" min="1" step="1" inputmode="numeric" id="id_numero" name="numero" value="{{ valores.numero }}"{% if sugestao_numero %} placeholder="{{ sugestao_numero }}" aria-describedby="id_numero_ajuda"{% endif %}{% if erros.numero %} aria-invalid="true"{% endif %}></div>
+                  <span class="ofc-numero__ano">/ {{ ano_numero }}</span>
+                </div>
+                {% if sugestao_numero %}<p class="form-ajuda" id="id_numero_ajuda">Em branco, a OS recebe o próximo número livre ({{ sugestao_numero }}).</p>{% endif %}
+                {% for erro in erros.numero %}<p class="form-erro">{{ erro }}</p>{% endfor %}
+              </div>
+            </div>
+            <div class="ofc-percurso__linha">
               <div class="bate-volta__rotulo ofc-percurso__rotulo">Período</div>
               <div>
                 {% include "components/date_range.html" with name="periodo_atividade" start_name="data_evento_inicio" end_name="data_evento_fim" label="Período da atividade" rotulo_oculto=True dois_campos=True valor_inicio=valores.data_evento_inicio valor_fim=valores.data_evento_fim erros=erros.data_evento_inicio|default:erros.data_evento_fim %}

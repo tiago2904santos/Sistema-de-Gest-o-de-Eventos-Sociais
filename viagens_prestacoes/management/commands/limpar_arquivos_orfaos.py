@@ -50,7 +50,7 @@ def _arquivos_referenciados(prefixo: str) -> set[str]:
 class Command(BaseCommand):
     help = (
         "Lista arquivos órfãos no storage privado de prestações e de anexos "
-        "das solicitações; "
+        "das solicitações, e os anexos de prestação removidos há mais de 30 dias; "
         "só os remove quando --apagar é informado."
     )
 
@@ -62,6 +62,16 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        # m084: os anexos removidos ou substituídos ficam guardados por um tempo
+        # ("Versões anteriores"); passado ele, saem de vez — linha e arquivos.
+        from viagens_prestacoes.anexo_services import purgar_anexos_removidos
+        from viagens_prestacoes.models import DIAS_GUARDA_ANEXO_REMOVIDO
+
+        vencidos = purgar_anexos_removidos(apagar=options["apagar"])
+        if vencidos:
+            verbo = "Apagados" if options["apagar"] else "A apagar com --apagar:"
+            self.stdout.write(f"{verbo} {len(vencidos)} anexo(s) de prestação removido(s) há mais de {DIAS_GUARDA_ANEXO_REMOVIDO} dias.")
+
         orfaos = []
         for prefixo in PREFIXOS:
             referenciados = _arquivos_referenciados(prefixo)

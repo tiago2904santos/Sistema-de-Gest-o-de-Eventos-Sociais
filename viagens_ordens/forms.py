@@ -10,6 +10,7 @@ equipe não tem função.
 
 from django import forms
 from django.db.models import Q
+from django.utils import timezone
 
 from cadastros.models import Estado, Municipio
 from viagens_cadastros.models import Servidor
@@ -36,7 +37,7 @@ class OrdemServicoForm(forms.ModelForm):
     class Meta:
         model = OrdemServico
         fields = [
-            "oficios", "data_evento_inicio", "data_evento_fim", "servidores", "tipo_necessidade",
+            "numero", "oficios", "data_evento_inicio", "data_evento_fim", "servidores", "tipo_necessidade",
             *CAMPOS_DE_PAPEL, "motivo",
         ]
         widgets = {campo: forms.HiddenInput() for campo in CAMPOS_DE_PAPEL}
@@ -45,6 +46,9 @@ class OrdemServicoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         ja_vinculados = list(self.instance.oficios.values_list("pk", flat=True)) if self.instance.pk else []
         self.fields["oficios"].required = False
+        # Como o N° do Ofício: em branco, fica o reservado (ou o próximo livre).
+        self.fields["numero"].required = False
+        self.fields["numero"].label = "N° da OS"
         # Ofício cancelado não é oferecido como vínculo novo, mas o já vinculado
         # continua válido — senão qualquer salvamento seguinte o apagaria.
         self.fields["oficios"].queryset = Oficio.objects.filter(Q(cancelado=False) | Q(pk__in=ja_vinculados)).order_by("-ano", "-numero", "-pk")
@@ -83,13 +87,24 @@ class OrdemServicoForm(forms.ModelForm):
         if self.is_bound:
             return []
         if self.instance.pk:
-            return [(m.estado_id, m.pk) for m in self.instance.destinos.select_related("estado").order_by("nome", "pk")]
+            return [(m.estado_id, m.pk) for m in self.instance.destinos_em_ordem()]
         semente = self.initial.get("destinos_seed") or []
         if semente:
             return [(e, c) for e, c in semente]
         if self.initial.get("destino_cidade") or self.initial.get("destino_estado"):
             return [(self.initial.get("destino_estado"), self.initial.get("destino_cidade"))]
         return []
+
+    @property
+    def ano_do_numero(self):
+        return self.instance.ano or timezone.localdate().year
+
+    def clean_numero(self):
+        from core.numeracao import NAMESPACE_ORDEM_SERVICO, conferir_numero_digitado
+        return conferir_numero_digitado(
+            self.cleaned_data.get("numero"), ano=self.ano_do_numero, instancia=self.instance,
+            namespace=NAMESPACE_ORDEM_SERVICO, documento="uma Ordem de Serviço", externo="uma OS do Coffee Break",
+        )
 
     def clean(self):
         cd = super().clean()
@@ -143,5 +158,12 @@ class OrdemServicoForm(forms.ModelForm):
         if commit:
             ordem.save()
             self.save_m2m()
-            ordem.destinos.set(getattr(self, "cleaned_destinos", []) or [])
+            ordem.definir_destinos(getattr(self, "cleaned_destinos", []) or [])
+            if "{" in (ordem.motivo or ""):
+                # Campos automáticos do modelo de motivo ({destino}...) viram valor.
+                from viagens_oficios.campos_modelo import aplicar, valores_da_ordem
+                motivo = aplicar(ordem.motivo, valores_da_ordem(ordem))
+                if motivo != ordem.motivo:
+                    ordem.motivo = motivo
+                    ordem.save(update_fields=["motivo", "atualizado_em"])
         return ordem

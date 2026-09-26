@@ -15,6 +15,10 @@
   `unidade_gv`: pesquisa de lotação com sigla/nome, limpeza e teclado do GV.
   `desabilitado`: bloqueia a edição preservando o visual.
   `vazio`: texto que a lista aberta mostra quando não há opção nenhuma.
+  `remoto`: URL de busca (JSON {"resultados": [opção...]}) — o campo traz só
+    as opções já escolhidas e pede as demais conforme a pessoa digita, com
+    `?q=` e, se depender de outro campo, `&uf=` com o valor dele. Exige
+    `pesquisavel`. Para listas enormes, como os municípios do IBGE.
   `sem_vazio`: não oferece a opção vazia — para escolhas que não podem
     ficar em branco; sem ela também não aparece o "×" de limpar.
 {% endcomment %}
@@ -27,7 +31,7 @@
     {{ label }}{% if obrigatorio %} <span class="form-label__obrigatorio">*</span>{% endif %}
   </label>
   <div class="form-controle-wrapper form-controle-wrapper--select custom-select{% if pesquisavel %} custom-select--pesquisavel{% endif %}{% if erros %} is-invalid{% endif %}"
-       {% if unidade_gv %}data-unidade-picker{% else %}data-custom-select{% endif %}{% if pesquisavel %} data-searchable{% endif %}{% if dependente_de %} data-depends-on="{{ dependente_de }}"{% endif %}{% if cascata_obrigatoria %} data-depends-on-required{% endif %}>
+       {% if unidade_gv %}data-unidade-picker{% else %}data-custom-select{% endif %}{% if pesquisavel %} data-searchable{% endif %}{% if dependente_de %} data-depends-on="{{ dependente_de }}"{% endif %}{% if remoto and pesquisavel %} data-remote-url="{{ remoto }}"{% endif %}{% if cascata_obrigatoria %} data-depends-on-required{% endif %}>
     {# form_alvo: campo fora do <form> que ainda é enviado com ele. #}
     <select class="form-controle custom-select__native" id="id_{{ name }}" name="{{ name }}"
             {% if form_alvo %}form="{{ form_alvo }}"{% endif %}
@@ -77,6 +81,8 @@
         {% if pesquisavel %}
           <p class="custom-select__vazio" data-custom-select-empty hidden>{% if unidade_gv %}Nenhuma unidade encontrada.{% else %}Nenhuma opção encontrada.{% endif %}</p>
         {% endif %}
+        {# Modo remoto: o ícone de marcado das opções que chegam pela busca. #}
+        {% if remoto and pesquisavel %}<template data-custom-select-check>{% include "components/icon.html" with nome="check" %}</template>{% endif %}
       </div>
     </div>
   </div>

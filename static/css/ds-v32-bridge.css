@@ -1959,6 +1959,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .ofc-identificacao{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media (max-width:900px){.ofc-identificacao{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:600px){.ofc-identificacao{grid-template-columns:1fr}}
+.ofc-tipo__explicacao{flex-basis:100%;margin:0;font-size:13px;color:var(--n-500)}
 .ofc-numero{display:flex;align-items:center;gap:8px}
 .ofc-numero .form-controle-wrapper{flex:1 1 auto;min-width:0}
 .ofc-numero__ano{flex:none;font-size:13px;color:var(--n-500)}
@@ -2107,6 +2108,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .ofc-origem{display:grid;grid-template-columns:120px minmax(0,1fr) minmax(0,1fr);align-items:end;gap:12px;margin:0}
 .ofc-origem .form-campo{margin:0}
 .ofc-origem__rotulo{align-self:center;padding-top:20px}
+.ofc-origem__opcoes{grid-column:1/-1}
 @container(max-width:680px){.ofc-origem{grid-template-columns:1fr}.ofc-origem__rotulo{padding-top:0}}
 
 /* Rótulo sobre a borda do campo, em todo o sistema (18/09/2026): o rótulo
@@ -2613,6 +2615,12 @@ textarea.form-controle.cb-caixa-copiar__texto{width:100%;min-height:0;resize:ver
 .sol-encerrar__texto{margin:0;font-size:13px;color:var(--n-600)}
 .sol-encerrar__linha form{margin:0}
 /* Filtros ativos acima da lista (os que a trilha não mostra), com o "x". */
+/* Lista de ofícios: os filtros prontos, recolhidos sob a busca. */
+.of-filtros{border-bottom:1px solid var(--n-150)}
+.of-filtros__cabeca{display:flex;align-items:center;gap:6px;padding:10px 18px;font-size:12.5px;font-weight:600;color:var(--n-600);cursor:pointer}
+.of-filtros__cabeca .ui-icon{width:14px;height:14px}
+.of-filtros__corpo{grid-template-columns:repeat(3,minmax(0,1fr));padding:0 18px 14px}
+@container (max-width:680px){.of-filtros__corpo{grid-template-columns:1fr}.of-filtros__cabeca{padding:10px 16px}}
 .filtros-ativos{padding:10px 18px;border-bottom:1px solid var(--n-150)}
 .filtros-ativos .chip a{width:18px;height:18px;display:grid;place-items:center;border-radius:4px;color:var(--d-700)}
 .filtros-ativos .chip a:hover{background:var(--d-200)}
@@ -2991,3 +2999,25 @@ tr[data-importar-url].is-alvo>td:first-child{box-shadow:inset 2px 0 0 var(--sel-
 .sugestao-solicitante__item:hover,.sugestao-solicitante__item:focus-visible{background:var(--hover-b);border-color:var(--n-200)}
 .sugestao-solicitante__item small{color:var(--rotulo);font-size:12px}
 .sugestao-solicitante__fechar{margin-top:4px;border:0;background:none;color:var(--link);font-size:12px;cursor:pointer;padding:2px 0}
+/* m084: versões anteriores de um documento da prestação (Etapa 3). */
+.pc-doc__versoes{margin-top:6px;font-size:12px;color:var(--n-600)}
+.pc-doc__versoes summary{cursor:pointer}
+.pc-doc__versoes ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:4px}
+.pc-doc__versoes li{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.pc-doc__versoes form{display:inline}
+.pc-doc__remover.is-armado{width:auto;padding:0 6px;font-size:12px;background:var(--dg-b);color:var(--dg-t)}
+/* m085/m094: selos de prazo (saque e prestação de contas) na lista e na Etapa 3. */
+.st--pc-prazo-ok{background:var(--nt-b);color:var(--n-600);border:1px solid var(--nt-r)}
+.st--pc-prazo-alerta{background:var(--wn-b);color:var(--wn-t);border:1px solid var(--wn-r)}
+.st--pc-prazo-vencido{background:var(--dg-b);color:var(--dg-t);border:1px solid var(--dg-r)}
+.st--pc-prazo-ok .ui-icon,.st--pc-prazo-alerta .ui-icon,.st--pc-prazo-vencido .ui-icon{width:12px;height:12px;margin-right:4px}
+.pc-docs__prazo{margin:0 0 12px}
+/* m091: documento gerado (preenchido), ainda sem o assinado — outro sinal que o "✓". */
+.pc-chip--gerado{padding:0 6px;border:1px dashed var(--n-300,#cbd5e1);border-radius:10px;color:var(--n-600)}
+.pc-chip--gerado .ui-icon{color:var(--n-500)}
+/* m093: envio ao financeiro, aprovação e devolução, no fim da Etapa 3. */
+.pc-docs__envio{margin-top:16px;padding-top:16px;border-top:1px solid var(--n-150)}
+.pc-docs__envio-titulo{margin:0 0 8px;font-size:14px;font-weight:600}
+.pc-docs__envio-form{display:grid;gap:8px;max-width:520px;margin-top:8px}
+.pc-docs__envio-acoes{display:flex;gap:8px;flex-wrap:wrap}
+.pc-docs__envio-equipe{display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--n-600)}

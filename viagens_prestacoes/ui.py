@@ -47,6 +47,12 @@ def render(request, template, context, **kwargs):
         specs = {Anexo.TIPO_DESPACHO: ("despacho", "Despacho assinado", "prestacao_despacho_assinado_anexar", [pc.pk]), Anexo.TIPO_OFICIO_ASSINADO: ("oficio", "Ofício assinado", "prestacao_oficio_assinado_anexar", [pc.pk]), Anexo.TIPO_COMPROVANTE: ("comprovante", "Comprovante de saque ou transferência", "prestacao_servidor_assinado_anexar", [ps.pk, "comprovante"]), Anexo.TIPO_RT_ASSINADO: ("rt", "Relatório técnico assinado", "prestacao_servidor_assinado_anexar", [ps.pk, Anexo.TIPO_RT_ASSINADO]), Anexo.TIPO_DB_ASSINADO: ("diario", "Diário de bordo assinado", "prestacao_servidor_assinado_anexar", [ps.pk, Anexo.TIPO_DB_ASSINADO])}
         # Na ordem da prestação: ofício, despacho, RT, diário, comprovante (este pela data da operação).
         context["uploads"] = [{"id": specs[tipo][0], "titulo": specs[tipo][1], "url": reverse("viagens_prestacoes:"+specs[tipo][2], args=specs[tipo][3]), "anexos": (pc.documentos_anexos.filter(tipo=tipo) if tipo in [Anexo.TIPO_DESPACHO, Anexo.TIPO_OFICIO_ASSINADO, Anexo.TIPO_DB_ASSINADO] else ps.documentos_anexos.filter(tipo=tipo)).order_by(*ordenacao_dos_anexos(tipo))} for tipo in ORDEM_DOCUMENTOS_PRESTACAO]
+        from .anexo_services import versoes_anteriores
+        for item, tipo in zip(context["uploads"], ORDEM_DOCUMENTOS_PRESTACAO):
+            # m084: o que foi removido ou substituído, para restaurar.
+            escopo = Anexo.todos.filter(prestacao=pc, tipo=tipo)
+            escopo = escopo.filter(servidor_prestacao__isnull=True) if tipo in [Anexo.TIPO_DESPACHO, Anexo.TIPO_OFICIO_ASSINADO, Anexo.TIPO_DB_ASSINADO] else escopo.filter(servidor_prestacao=ps)
+            item["anteriores"] = list(versoes_anteriores(escopo)[:10])
         for item in context["uploads"]:
             item["campo"] = "arquivo"
             if item["id"] in {"despacho", "comprovante"}:

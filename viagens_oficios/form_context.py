@@ -68,7 +68,7 @@ def _opcoes_servidores(form):
 def _viaturas(form):
     """"AAA-1234 - DUSTER", com combustível, tipo e unidade embaixo."""
     opcoes = []
-    for viatura in form.fields["viatura"].queryset.select_related("combustivel", "unidade").order_by("placa"):
+    for viatura in form.fields["viatura"].queryset.select_related("combustivel", "unidade").prefetch_related("motoristas").order_by("placa"):
         detalhes = [
             str(viatura.combustivel) if viatura.combustivel_id else "",
             viatura.get_tipo_display() if viatura.tipo else "",
@@ -83,6 +83,9 @@ def _viaturas(form):
             "dados": {
                 "unidade": str(viatura.unidade_id or ""),
                 "sigla": (viatura.unidade.sigla or viatura.unidade.nome) if viatura.unidade_id else "",
+                # Condutores autorizados no cadastro da viatura, como na tela de termos:
+                # vão para o topo da lista de motoristas e sugerem a viatura de volta.
+                "motoristas": " ".join(str(m.pk) for m in viatura.motoristas.all()),
             },
         })
     return opcoes

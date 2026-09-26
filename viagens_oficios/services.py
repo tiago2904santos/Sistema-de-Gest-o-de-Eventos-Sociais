@@ -186,7 +186,8 @@ def pendencias_motorista_documento(oficio):
 def _pendencias_oficio_protocolo_motorista(oficio):
     pendencias = []
     ref = (oficio.motorista_oficio_referencia or "").strip()
-    if not ref or not re.match(r"^\d{1,3}/\d{4}$", ref):
+    # Até 6 dígitos, como o campo aceita: o ofício 1000/2026 também vale.
+    if not ref or not re.match(r"^\d{1,6}/\d{4}$", ref):
         pendencias.append("Informe o ofício do motorista no formato número/ano.")
     proto = normalize_protocolo(oficio.motorista_protocolo_ref or "")
     if len(proto) != 9:
@@ -362,3 +363,84 @@ def build_oficio_document_payload(oficio):
         "custeio": oficio.custeio,
     }
 
+
+
+def oficios_do_motorista(oficio, motorista_id, limite=10):
+    """Os ofícios ativos em que o motorista de fora da equipe viaja, do mais
+    provável ao menos: da mesma viagem, depois os de período que se sobrepõe ao
+    deste ofício, depois os mais recentes. Cada um com a referência
+    "número/ano" e o protocolo, prontos para o cartão do motorista."""
+    from .roteiro_context import periodo_roteiro
+
+    candidatos = list(
+        Oficio.objects.filter(servidores__pk=motorista_id, cancelado=False, numero__isnull=False, ano__isnull=False)
+        .exclude(pk=oficio.pk).select_related("roteiro").distinct().order_by("-ano", "-numero")[:50]
+    )
+    inicio, fim = periodo_roteiro(oficio.roteiro) if oficio.roteiro_id else (None, None)
+    fim = fim or inicio
+
+    def sobrepoe(outro):
+        if not (inicio and outro.roteiro_id):
+            return False
+        o_inicio, o_fim = periodo_roteiro(outro.roteiro)
+        o_fim = o_fim or o_inicio
+        return bool(o_inicio) and o_inicio <= fim and inicio <= o_fim
+
+    def prioridade(outro):
+        mesma_viagem = bool(oficio.viagem_id) and outro.viagem_id == oficio.viagem_id
+        return (0 if mesma_viagem else 1 if sobrepoe(outro) else 2)
+
+    candidatos.sort(key=prioridade)  # estável: dentro de cada grupo, o mais recente primeiro
+    resultado = []
+    for outro in candidatos[:limite]:
+        motivo = prioridade(outro)
+        resultado.append({
+            "id": outro.pk,
+            "referencia": f"{outro.numero}/{outro.ano}",
+            "numero_formatado": outro.numero_formatado,
+            "protocolo": format_protocolo(outro.protocolo),
+            "protocolo_digitos": outro.protocolo,
+            "motivo": ["Mesma viagem", "Período que se sobrepõe", "Outro ofício"][motivo],
+            "provavel": motivo < 2,
+        })
+    return resultado
+
+
+def dados_eprotocolo(oficio):
+    """Os dados para abrir o processo do ofício no eProtocolo, prontos para colar.
+
+    No molde do Coffee Break (`coffee_break.documentos.textos_eprotocolo`):
+    campos curtos com Copiar e o detalhamento numa caixa. O assunto é a
+    linha que o documento resolve por data (autorização ou convalidação),
+    a mesma que a integração envia.
+    """
+    from .campos_modelo import valores_do_oficio
+
+    assunto = resolver_assunto_oficio(oficio)
+    assunto_texto = f"{assunto['assunto_linha']} {assunto['assunto_rotulo']}".strip()
+    valores = valores_do_oficio(oficio)
+    servidores = [s.nome for s in oficio.servidores.order_by("nome")]
+    interessados = ", ".join(servidores)
+    protocolo = format_protocolo(oficio.protocolo)
+    numero = oficio.numero_formatado if oficio.numero else ""
+    partes = [f"OFÍCIO Nº {numero}" if numero else "OFÍCIO", assunto["assunto_linha"].rstrip(".").upper()]
+    if valores["destino"]:
+        partes.append(f"DESTINO: {valores['destino']}")
+    if valores["periodo"]:
+        partes.append(f"PERÍODO: {valores['periodo']}")
+    if servidores:
+        partes.append(f"SERVIDORES: {interessados}")
+    detalhamento = " - ".join(partes)
+    if oficio.motivo:
+        detalhamento += f"\n{oficio.motivo}"
+    return {
+        "campos": [
+            {"rotulo": "Interessados", "valor": interessados, "copiar": interessados},
+            {"rotulo": "Assunto", "valor": assunto_texto, "copiar": assunto_texto},
+            {"rotulo": "Nº/Ano do ofício", "valor": numero, "copiar": numero},
+            {"rotulo": "Protocolo", "valor": protocolo, "copiar": protocolo},
+        ],
+        "textos": [
+            {"id": "eprotocolo-detalhamento", "rotulo": "Detalhamento", "texto": detalhamento, "linhas": 3},
+        ],
+    }

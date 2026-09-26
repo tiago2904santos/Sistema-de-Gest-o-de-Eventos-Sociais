@@ -27,6 +27,7 @@ from cadastros.models import Estado, Municipio
 from .forms import DestinoFormSet, RoteiroForm, TrechoFormSet
 from .models import Roteiro
 from .permissions import acesso_ao_modulo, pode_editar_roteiros
+from .presenters import linhas_do_calculo
 from .services.calculo import previa_diarias, recalcular_diarias
 from .services.rota import (
     RotaIndisponivel,
@@ -300,6 +301,7 @@ def gravar_editor(dados, roteiro, *, rascunho, usuario):
         trechos_ok = formset.is_valid()
         if trechos_ok:
             formset.save()
+            salvo.sincronizar_periodo()
     resultado.roteiro, resultado.formset, resultado.destinos = salvo, formset, destinos
     if not trechos_ok:
         return resultado
@@ -470,19 +472,19 @@ def _opcoes(iteravel):
     ]
 
 
-def _opcoes_municipios(queryset):
-    """Municípios com o estado no `data-parent-value`, para o filtro em cascata.
+def _municipios_referenciados(form, formset, destinos):
+    """Opções dos municípios que a tela já mostra: sede, destinos e trechos.
 
-    O select do estado é só da tela: quem vai para o banco é o município.
+    Também servem de dicionário de rótulos ao roteiro-editor.js, que nomeia
+    os trechos pelo id do município.
     """
-    return [
-        {
-            "valor": str(municipio.pk),
-            "rotulo": municipio.nome,
-            "estado": str(municipio.estado_id),
-        }
-        for municipio in queryset
-    ]
+    from cadastros.busca_municipios import opcoes_dos_municipios
+
+    ids = [form["origem_municipio"].value()]
+    ids += [f["municipio"].value() for f in destinos.forms]
+    for trecho in formset.forms:
+        ids += [trecho["origem_municipio"].value(), trecho["destino_municipio"].value()]
+    return opcoes_dos_municipios(getattr(i, "pk", i) for i in ids)
 
 
 def _valor_str(campo_bound):
@@ -547,9 +549,9 @@ def _contexto_do_form(roteiro, form, formset, destinos, viagem=None):
         "destinos": destinos,
         "trechos_cards": _cards_de_trechos(formset),
         "destinos_cards": _cards_de_destinos(destinos),
-        "opcoes_municipios": _opcoes_municipios(
-            form.fields["origem_municipio"].queryset
-        ),
+        # Só os municípios já no roteiro: o resto o seletor busca conforme se
+        # digita (m075). A lista inteira pesava megabytes em cada campo.
+        "opcoes_municipios": _municipios_referenciados(form, formset, destinos),
         "opcoes_estados": _opcoes(
             Estado.objects.filter(municipios__ativo=True).distinct().order_by("nome")
         ),
@@ -584,6 +586,8 @@ def _contexto_do_form(roteiro, form, formset, destinos, viagem=None):
         "autosave_ligado": not (
             roteiro and roteiro.pk and roteiro.status == Roteiro.Status.FINALIZADO
         ),
+        # Parcela a parcela, como o valor gravado foi composto (m074).
+        "como_calculado": linhas_do_calculo(roteiro.componentes_diarias.all()) if roteiro and roteiro.pk else [],
         "titulo": "Editar roteiro" if roteiro and roteiro.pk else "Novo roteiro",
         "url_voltar": _url_de_volta(roteiro, viagem),
         "viagem_id": getattr(viagem, "pk", None),
@@ -593,6 +597,15 @@ def _contexto_do_form(roteiro, form, formset, destinos, viagem=None):
             {"label": "Editar roteiro" if roteiro and roteiro.pk else "Novo roteiro"},
         ],
     }
+
+
+def _rotulos_do_roteiro(roteiro):
+    ids = {roteiro.origem_municipio_id}
+    ids.update(roteiro.destinos.values_list("municipio_id", flat=True))
+    for origem, destino in roteiro.trechos.values_list("origem_municipio_id", "destino_municipio_id"):
+        ids.update((origem, destino))
+    ids.discard(None)
+    return {str(pk): nome for pk, nome in Municipio.objects.filter(pk__in=ids).values_list("pk", "nome")}
 
 
 @acesso_ao_modulo
@@ -630,6 +643,9 @@ def dados_do_roteiro(request, pk):
             # Com os trechos e a rota, a tela do ofício mostra o roteiro
             # escolhido inteiro sem recarregar; a de roteiros usa só sede e destinos.
             "trechos": trechos,
+            # Nome de cada município citado: os seletores da tela só trazem
+            # os já escolhidos e buscam o resto (m075).
+            "rotulos": _rotulos_do_roteiro(roteiro),
             "rota": rota_para_tela(roteiro),
             "sede": (
                 {
@@ -690,6 +706,7 @@ def previa(request):
                 "valor_por_servidor": totais["valor_por_servidor"],
                 "tipo_destino": " + ".join(faixas),
             },
+            "como_calculado": linhas_do_calculo(getattr(resultado, "componentes", [])),
         }
     )
 
@@ -797,6 +814,7 @@ def autosave(request, pk=None):
             if gravou["trechos"]:
                 formset.save()
                 ids.update(_ids_gravados(formset))
+                salvo.sincronizar_periodo()
         if not pk:
             _registrar_auditoria(request.user, "VIAGENS_ROTEIRO_CRIADO", salvo)
     if gravou["trechos"]:
@@ -877,6 +895,32 @@ def reativar(request, pk):
     return redirect("viagens_roteiros:editar", pk=roteiro.pk)
 
 
+def _recusa_de_exclusao(roteiro):
+    """Mensagem de recusa quando o roteiro está em uso, ou None.
+
+    Apagar um roteiro usado tiraria destino, período e diárias do ofício (a
+    chave é SET_NULL) e o "roteiro ajustado" da prestação, sem aviso.
+    """
+    from django.utils.html import format_html, format_html_join
+
+    from viagens_prestacoes.models import PrestacaoContas
+
+    oficios = list(roteiro.oficios.order_by("ano", "numero", "pk"))
+    prestacoes = PrestacaoContas.objects.filter(roteiro_ajustado=roteiro).select_related("oficio")
+    oficios += [p.oficio for p in prestacoes if p.oficio not in oficios]
+    if not oficios:
+        return None
+    links = format_html_join(
+        ", ", '<a href="{}">Ofício {}</a>',
+        ((reverse("viagens_oficios:editar", args=[o.pk]), o.numero_formatado if o.numero else f"sem número (#{o.pk})") for o in oficios),
+    )
+    return format_html(
+        "Este roteiro não pode ser excluído: está em uso por {}. "
+        "Se a viagem não vai mais acontecer, cancele o ofício.",
+        links,
+    )
+
+
 @acesso_ao_modulo
 @require_POST
 def excluir(request, pk):
@@ -884,12 +928,16 @@ def excluir(request, pk):
     roteiro = get_object_or_404(Roteiro, pk=pk)
     descricao = f"roteiro {roteiro.pk} ({roteiro.sede_cidade or 'sem sede'})"
     volta = _url_de_volta(roteiro)
+    from core.retorno import voltar_para
+
+    recusa = _recusa_de_exclusao(roteiro)
+    if recusa:
+        messages.error(request, recusa)
+        return redirect(voltar_para(request, volta))
     roteiro.delete()
     LogAuditoria.objects.create(
         usuario=request.user, acao="VIAGENS_ROTEIRO_EXCLUIDO", descricao=descricao
     )
     messages.success(request, "Roteiro excluído.")
     # Excluir da lista devolve à lista como ela estava, com busca e filtros.
-    from core.retorno import voltar_para
-
     return redirect(voltar_para(request, volta))

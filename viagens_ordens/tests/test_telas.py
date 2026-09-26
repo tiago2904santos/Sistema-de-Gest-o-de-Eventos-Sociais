@@ -91,6 +91,22 @@ class CadastroTests(CenarioOrdemMixin, TestCase):
         self.assertNotContains(r, 'value="CAMINHAO"')
         self.assertNotContains(r, 'value="MICROONIBUS"')
 
+    def test_ordem_dos_destinos_definida_na_tela_e_mantida(self):
+        """m069: Maringá primeiro fica primeiro — na tela reaberta, na lista e no documento."""
+        from viagens_ordens.docxtpl_context import _destinos_display
+
+        dados = self.payload(
+            destino_cidade=str(self.outro.pk), quantidade_destinos="1",
+            extra_estado_0=str(self.uf.pk), extra_cidade_0=str(self.destino.pk),
+        )
+        self.client.post(reverse("viagens_ordens:novo"), dados)
+        ordem = OrdemServico.objects.get()
+        self.assertEqual(list(ordem.destinos_em_ordem()), [self.outro, self.destino])
+        self.assertTrue(_destinos_display(ordem).startswith("Maringá"))
+        r = self.client.get(reverse("viagens_ordens:editar", args=[ordem.pk]))
+        self.assertEqual(r.context["form"].initial["destino_cidade"], self.outro.pk)
+        self.assertContains(_lista(self.client), "Maringá (PR), Londrina (PR)")
+
     def test_criar_pela_tela_com_destino_extra_e_funcoes(self):
         o = self.oficio(servidores=[self.a])
         dados = self.payload(
@@ -137,6 +153,33 @@ class CadastroTests(CenarioOrdemMixin, TestCase):
         self.assertEqual(list(ordem.servidores.all()), [self.c])
         self.assertEqual(ordem.numero, 1)  # editar não renumera
         self.assertContains(_lista(self.client), "Ordem de Serviço atualizada.")
+
+    def test_numero_como_o_do_oficio(self):
+        # Tela nova sugere o próximo livre; em branco, é ele que vale.
+        r = self.client.get(reverse("viagens_ordens:novo"))
+        self.assertContains(r, 'name="numero"')
+        self.assertContains(r, "próximo número livre (1)")
+        # Digitado: vale o digitado; repetido: recusa.
+        self.client.post(reverse("viagens_ordens:novo"), self.payload(numero="12"))
+        self.assertEqual(OrdemServico.objects.get().numero, 12)
+        r = self.client.post(reverse("viagens_ordens:novo"), self.payload(numero="12"))
+        self.assertContains(r, "Já existe uma Ordem de Serviço com o número 12")
+        # Quem pula para 12 faz a seguinte ser 13.
+        self.client.post(reverse("viagens_ordens:novo"), self.payload())
+        self.assertEqual(OrdemServico.objects.order_by("-numero").first().numero, 13)
+
+    def test_numero_da_os_do_coffee_break_e_recusado(self):
+        from unittest import mock
+        with mock.patch("core.numeracao.numeros_externos", return_value={7}):
+            r = self.client.post(reverse("viagens_ordens:novo"), self.payload(numero="7"))
+        self.assertContains(r, "já foi usado por uma OS do Coffee Break")
+        self.assertFalse(OrdemServico.objects.exists())
+
+    def test_campos_automaticos_no_motivo(self):
+        self.client.post(reverse("viagens_ordens:novo"), self.payload(motivo="Apoio em {destino} de {periodo}."))
+        ordem = OrdemServico.objects.get()
+        inicio, fim = self.hoje + timedelta(days=5), self.hoje + timedelta(days=6)
+        self.assertEqual(ordem.motivo, f"Apoio em {self.destino.nome.upper()}/{self.uf.sigla} de {inicio:%d/%m/%Y} a {fim:%d/%m/%Y}.")
 
     def test_next_e_respeitado(self):
         destino = reverse("viagens_ordens:lista") + "?q=x"
