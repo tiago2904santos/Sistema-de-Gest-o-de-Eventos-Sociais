@@ -147,3 +147,37 @@ def mapear_oficio_para_payload_eprotocolo(oficio) -> dict:
             "Códigos institucionais ausentes no .env: " + ", ".join(faltantes)
         )
     return payload
+
+
+def mapear_pagamento_coffee(*, textos: dict, partes: list, fornecedor, numero_oficio: str = "") -> dict:
+    """Protocolo de pagamento do Coffee Break → payload do eProtocolo.
+
+    Ponto de entrada da integração futura (hoje o protocolo se abre à mão;
+    ver coffee_break/protocolo_pagamento.py). Recebe o que a etapa 3 já
+    mostra para copiar (``documentos.textos_eprotocolo``) e os quatro
+    arquivos do anexo na ordem (``documentos.partes_do_anexo``), e só traduz
+    — nunca quebra. Antes de ir para a rede, falta o equivalente de
+    ``mapear_oficio_para_payload_eprotocolo`` (validação e códigos
+    institucionais de assunto/espécie do pagamento, que ainda não existem no
+    ``.env``) e o cliente de ``Endpoints.DOCUMENTOS`` para os anexos.
+    """
+    campos = {c.get("rotulo"): c.get("valor") for c in textos.get("campos", [])}
+    payload = _defaults_institucionais()
+    payload.update({
+        "numeroDocumento": _truncar(numero_oficio, 40),
+        "assunto": _truncar(campos.get("Assunto")),
+        "palavrasChave": _truncar(campos.get("Palavras-chave")),
+        "descricao": _truncar(textos.get("detalhamento"), 1000),
+        "interessado": {
+            "nome": _truncar(getattr(fornecedor, "razao_social", "")),
+            "cnpj": getattr(fornecedor, "cnpj", "") or "",
+        },
+        "despacho": _truncar(textos.get("despacho"), 2000),
+        # A ordem dos anexos é a do processo; cada parte vira um documento.
+        "documentos": [
+            {"ordem": ordem, "titulo": parte.get("titulo", ""), "chave": parte.get("chave", "")}
+            for ordem, parte in enumerate(partes, start=1)
+            if parte.get("disponivel")
+        ],
+    })
+    return payload

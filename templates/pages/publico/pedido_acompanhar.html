@@ -1,0 +1,25 @@
+{% extends "layouts/auth.html" %}
+{% load static %}
+
+{% block title %}Acompanhar pedido — Polícia Civil do Paraná{% endblock %}
+
+{% block conteudo %}
+{# Só a situação e as datas do próprio pedido: nada do andamento interno. #}
+<div class="auth-card">
+  <div class="auth-card__corpo">
+    <div class="auth-card__cabecalho">
+      <img class="auth-card__brasao" src="{% static 'icons/favicon.svg' %}" alt="Brasão da Polícia Civil do Paraná">
+      <h1 class="auth-card__titulo">Pedido nº {{ numero }}</h1>
+      <p class="auth-card__subtitulo">{{ tipo }}</p>
+    </div>
+    <dl class="publico-dados">
+      <dt>Situação</dt><dd>{{ situacao }}</dd>
+      <dt>Pedido feito em</dt><dd>{{ data_pedido|date:"d/m/Y" }}</dd>
+      {% if agendado and data_evento %}
+        <dt>Data agendada</dt><dd>{{ data_evento|date:"d/m/Y" }}{% if hora_evento %} às {{ hora_evento|time:"H:i" }}{% endif %}</dd>
+      {% endif %}
+    </dl>
+    <p class="auth-card__ajuda">Dúvidas? Responda ao contato da Assessoria de Comunicação.</p>
+  </div>
+</div>
+{% endblock %}

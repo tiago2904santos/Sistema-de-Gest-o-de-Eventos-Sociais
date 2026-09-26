@@ -49,6 +49,12 @@
       {% else %}
         <form method="post" action="{% url 'demandas_eventos:encaminhar_dg' instancia.pk %}" id="form-encaminhar-dg" hidden>{% csrf_token %}</form>
       {% endif %}
+      {% if instancia.canal_solicitacao == "PORTAL" %}
+        {# Pedido feito pelo próprio solicitante no formulário público: conferir antes de agendar. #}
+        <div class="aviso aviso--callout aviso--fino" role="status">
+          <div class="aviso__txt">{% include "components/icon.html" with nome="alert" %}<div class="aviso__corpo"><b>Pedido do formulário público</b><p>Preenchido pelo próprio solicitante: confira os dados na triagem.{% if instancia.anexo_pedido %} <a href="{% url 'demandas_eventos:anexo_pedido' instancia.pk %}" target="_blank" rel="noopener">Ver o anexo enviado</a>{% endif %}</p></div></div>
+        </div>
+      {% endif %}
       {% include "pages/coffee_break/_pedir_coffee_break.html" with evento=instancia parametro="demanda" %}
       {% include "pages/demandas_eventos/_andamento.html" %}
     {% else %}

@@ -56,14 +56,17 @@
               </div>
               <div class="cheia">
                 {% include "components/textarea.html" with name="texto" label="Texto" linhas="12" valor=valores.texto erros=None %}
+                {% if envio.nota_texto %}<p class="form-ajuda">{{ envio.nota_texto }}</p>{% endif %}
               </div>
             </div>
-            <h3 class="sol-subtitulo">Anexo{{ envio.anexos|length|pluralize }}</h3>
-            <ul class="tm-fatos">
-              {% for anexo in envio.anexos %}
-                <li class="tm-fato">{% include "components/icon.html" with nome="document" %}<span class="vg-fato__valor">{% if anexo.url %}<a href="{{ anexo.url }}" target="_blank" rel="noopener">{{ anexo.nome }}</a>{% else %}{{ anexo.nome }}{% endif %}</span></li>
-              {% endfor %}
-            </ul>
+            {% if envio.anexos %}
+              <h3 class="sol-subtitulo">Anexo{{ envio.anexos|length|pluralize }}</h3>
+              <ul class="tm-fatos">
+                {% for anexo in envio.anexos %}
+                  <li class="tm-fato">{% include "components/icon.html" with nome="document" %}<span class="vg-fato__valor">{% if anexo.url %}<a href="{{ anexo.url }}" target="_blank" rel="noopener">{{ anexo.nome }}</a>{% else %}{{ anexo.nome }}{% endif %}</span></li>
+                {% endfor %}
+              </ul>
+            {% endif %}
             <div class="frm-acoes-fim">
               <a class="btn--secundaria" href="{{ envio.volta }}">Voltar</a>
               <button type="submit" class="btn-primaria">{% include "components/icon.html" with nome="send" %}Enviar e-mail</button>

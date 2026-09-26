@@ -11,7 +11,8 @@
     if (d.length > 8) s += "-" + d.slice(8);
     return s;
   }
-  ["protocolo_pcpr_oficio", "protocolo_pagamento"].forEach(function (nome) {
+  // numero_protocolo: o registro do protocolo aberto à mão, na etapa 3.
+  ["protocolo_pcpr_oficio", "protocolo_pagamento", "numero_protocolo"].forEach(function (nome) {
     var campo = document.querySelector('[name="' + nome + '"]');
     if (!campo || campo.type === "hidden") return;
     campo.placeholder = "00.000.000-0";

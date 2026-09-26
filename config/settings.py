@@ -338,6 +338,14 @@ EPROTOCOLO = {
     "COD_PALAVRA_CHAVE_VIAGEM": (os.environ.get("EPROTOCOLO_COD_PALAVRA_CHAVE_VIAGEM") or "").strip(),
     "CPF_USUARIO_SISTEMA": (os.environ.get("EPROTOCOLO_CPF_USUARIO_SISTEMA") or "").strip(),
 }
+# Páginas públicas (sem login). O limite de envios por IP usa o cache do
+# Django; atrás do nginx, ligue a flag para o IP real vir do X-Forwarded-For
+# (só o último endereço, o que o proxy acrescenta). Com vários processos, um
+# cache compartilhado (arquivo, banco ou Redis) mantém o limite entre eles.
+PEDIDO_PUBLICO_CONFIAR_X_FORWARDED_FOR = _flag_env("PEDIDO_PUBLICO_CONFIAR_X_FORWARDED_FOR", "0")
+# Validade, em dias, do link que o fornecedor do Coffee Break recebe para
+# enviar a nota fiscal e as certidões (coffee_break/link_fornecedor.py).
+COFFEE_LINK_FORNECEDOR_DIAS = int(os.environ.get("COFFEE_LINK_FORNECEDOR_DIAS", "30") or "30")
 # Na suíte, nada de rede: o ambiente volta a mock mesmo com .env preenchido.
 if sys.argv[1:2] == ["test"]:
     EPROTOCOLO["AMBIENTE"] = "mock"

@@ -1,0 +1,68 @@
+{% extends "layouts/auth.html" %}
+{% load static %}
+
+{% block title %}Pedir palestra ou evento — Polícia Civil do Paraná{% endblock %}
+
+{% block conteudo %}
+{% comment %}
+  Página pública, sem login: nada do banco aparece aqui além da lista de
+  municípios do Paraná. Proteções em demandas_eventos/pedido_publico.py.
+{% endcomment %}
+<div class="auth-card auth-card--largo">
+  <form method="post" enctype="multipart/form-data" class="auth-card__corpo auth-card__corpo--formulario">
+    {% csrf_token %}
+    <div class="auth-card__cabecalho">
+      <img class="auth-card__brasao" src="{% static 'icons/favicon.svg' %}" alt="Brasão da Polícia Civil do Paraná">
+      <h1 class="auth-card__titulo">Pedir palestra, PCPR na Comunidade ou evento</h1>
+      <p class="auth-card__subtitulo">
+        Escolas, prefeituras e entidades podem pedir aqui uma ação da Polícia Civil
+        do Paraná. A Assessoria de Comunicação analisa o pedido e entra em contato.
+      </p>
+    </div>
+
+    {% if erro %}
+      <div class="auth-alerta" role="alert">
+        <span class="auth-alerta__icone" aria-hidden="true">{% include "components/icon.html" with nome="alert" %}</span>
+        <div>{{ erro }}</div>
+      </div>
+    {% endif %}
+
+    <div class="form-campo">
+      <span class="form-label">{{ form.evento.label }} <span class="form-label__obrigatorio">*</span></span>
+      <div class="publico-opcoes">{% for opcao in form.evento %}<label for="{{ opcao.id_for_label }}">{{ opcao.tag }} {{ opcao.choice_label }}</label>{% endfor %}</div>
+      {% for erro_campo in form.evento.errors %}<p class="form-erro">{{ erro_campo }}</p>{% endfor %}
+    </div>
+
+    <div class="form-grid">
+      {% include "pages/publico/_campo.html" with campo=form.instituicao largura=6 %}
+      {% include "pages/publico/_campo.html" with campo=form.nome_contato largura=6 %}
+      {% include "pages/publico/_campo.html" with campo=form.telefone largura=6 %}
+      {% include "pages/publico/_campo.html" with campo=form.email largura=6 %}
+      {% include "pages/publico/_campo.html" with campo=form.municipio largura=6 %}
+      {% include "pages/publico/_campo.html" with campo=form.local largura=6 %}
+      {% include "pages/publico/_campo.html" with campo=form.data_desejada largura=4 %}
+      {% include "pages/publico/_campo.html" with campo=form.horario largura=4 %}
+      {% include "pages/publico/_campo.html" with campo=form.publico_estimado largura=4 %}
+      {% include "pages/publico/_campo.html" with campo=form.tema %}
+      {% include "pages/publico/_campo.html" with campo=form.descricao %}
+      {% include "pages/publico/_campo.html" with campo=form.anexo %}
+    </div>
+
+    {# Isca para robôs: pessoas não veem nem alcançam pelo teclado. #}
+    <div class="campo-isca" aria-hidden="true">
+      <label for="{{ form.site.id_for_label }}">Não preencha este campo</label>
+      {{ form.site }}
+    </div>
+    <input type="hidden" name="carimbo" value="{{ carimbo }}">
+
+    <p class="publico-aviso">{{ aviso_lgpd }}</p>
+    <label class="form-check">{{ form.aceite_lgpd }} {{ form.aceite_lgpd.label }}</label>
+    {% for erro_campo in form.aceite_lgpd.errors %}<p class="form-erro">{{ erro_campo }}</p>{% endfor %}
+
+    <button type="submit" class="btn btn--dourado btn--bloco">
+      {% include "components/icon.html" with nome="send" %}
+      Enviar pedido
+    </button>
+  </form>
+</div>
+{% endblock %}

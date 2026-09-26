@@ -358,6 +358,15 @@ def editar_demanda(request, pk=None):
     return render(request, "pages/demandas_eventos/form.html", contexto)
 
 
+@login_required
+def anexo_pedido(request, pk):
+    """O anexo que veio pelo formulário público, só para quem enxerga a linha."""
+    from core.private_media import private_file_response
+
+    demanda = _demanda_visivel(request, pk)
+    return private_file_response(demanda.anexo_pedido)
+
+
 def _solicitacao_dg(usuario, demanda):
     """A solicitação de evento ligada pelo "Encaminhar à DG", como a tela a mostra."""
     solicitacao = demanda.solicitacao_dg

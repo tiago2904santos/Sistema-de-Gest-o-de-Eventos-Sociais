@@ -1,0 +1,29 @@
+{% extends "layouts/auth.html" %}
+{% load static %}
+
+{% block title %}Pedido recebido — Polícia Civil do Paraná{% endblock %}
+
+{% block conteudo %}
+<div class="auth-card auth-card--largo">
+  <div class="auth-card__corpo">
+    <div class="auth-card__cabecalho">
+      <img class="auth-card__brasao" src="{% static 'icons/favicon.svg' %}" alt="Brasão da Polícia Civil do Paraná">
+      <h1 class="auth-card__titulo">Pedido recebido</h1>
+      <p class="auth-card__subtitulo">
+        A Assessoria de Comunicação vai analisar o pedido e entrar em contato
+        pelo telefone ou e-mail informados.
+      </p>
+    </div>
+    {% if recebido.numero %}
+      <p class="auth-card__ajuda">Número do pedido</p>
+      <p class="publico-numero">{{ recebido.numero }}</p>
+      <p class="publico-aviso">
+        Guarde este link para acompanhar a situação do pedido. Ele é pessoal e
+        não será mostrado de novo:<br>
+        <a class="publico-link" href="{{ recebido.link }}">{{ recebido.link }}</a>
+      </p>
+    {% endif %}
+    <a class="btn btn--secundario btn--bloco" href="{% url 'pedido_publico:pedido' %}">Fazer outro pedido</a>
+  </div>
+</div>
+{% endblock %}
