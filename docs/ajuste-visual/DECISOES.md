@@ -205,3 +205,21 @@ requisito e não são rediscutidas aqui.
 - **Teste ajustado**: `viagens_cadastros.test_paridade_unidades` esperava o
   passo Anterior/Próxima desabilitado nas pontas; a paginação do sistema
   esconde o passo que não há.
+
+## Fase 3 — Agenda
+
+- Os controles próprios saíram: `ag-btn`/`ag-btn--peq`/`ag-ico` viraram
+  `btn--secundaria` e `btn--secundaria btn--quadrado`; o segmentado `ag-seg`
+  ficou no desenho do `bx-seg` dos diálogos (trilho cinza, escolhido em
+  branco com sombra — o dourado sólido de antes era o único lugar com fundo
+  dourado num controle); `ag-toggle` virou o `interruptor`; a busca usa o
+  `.busca` das listas; o X do modal é o `mo__fechar` com ícone (era o
+  caractere ×). Tamanhos em `rem` viraram os tokens de fonte.
+- **Selects nativos nos filtros**: Município e Tipo/tema agora são o
+  `components/select.html`. Como o `agenda.js` refaz as opções a cada
+  período carregado e o custom-select do `app.js` desenha a lista a partir de
+  botões próprios, o JS ganhou `religarSelect`: refaz os botões da lista,
+  troca o invólucro por uma cópia crua e chama `DS.aprimorar`; a escuta de
+  `change` passou a ser delegada no documento.
+- O cartão do calendário rola por dentro (`overflow-x:auto`) — a lista do
+  FullCalendar empurrava a página para 490px no celular.

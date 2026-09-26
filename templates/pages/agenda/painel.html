@@ -28,9 +28,9 @@
   {# Cabeçalho do calendário: o que o FullCalendar desenharia, no nosso desenho. #}
   <div class="ag-topo" role="toolbar" aria-label="Navegação do calendário">
     <div class="ag-topo__nav">
-      <button type="button" class="ag-ico" data-ag="prev" aria-label="Período anterior">{% include "components/icon.html" with nome="chevron-left" %}</button>
-      <button type="button" class="ag-ico" data-ag="next" aria-label="Próximo período">{% include "components/icon.html" with nome="chevron-right" %}</button>
-      <button type="button" class="ag-btn" data-ag="hoje">Hoje</button>
+      <button type="button" class="btn--secundaria btn--quadrado" data-ag="prev" aria-label="Período anterior">{% include "components/icon.html" with nome="chevron-left" %}</button>
+      <button type="button" class="btn--secundaria btn--quadrado" data-ag="next" aria-label="Próximo período">{% include "components/icon.html" with nome="chevron-right" %}</button>
+      <button type="button" class="btn--secundaria" data-ag="hoje">Hoje</button>
     </div>
     <h2 class="ag-topo__titulo" id="ag-titulo" aria-live="polite">&nbsp;</h2>
     <div class="ag-seg" role="group" aria-label="Visão">
@@ -40,7 +40,7 @@
       <button type="button" data-view="listMonth">Lista</button>
       <button type="button" data-view="list30">30 dias</button>
     </div>
-    <button type="button" class="ag-btn ag-btn--filtros" data-ag="filtros" aria-expanded="false" aria-controls="ag-filtros">{% include "components/icon.html" with nome="filter" %}Filtros</button>
+    <button type="button" class="btn--secundaria ag-filtros-botao" data-ag="filtros" aria-expanded="false" aria-controls="ag-filtros">{% include "components/icon.html" with nome="filter" %}Filtros</button>
   </div>
 
   <div class="ag-grade">
@@ -68,31 +68,30 @@
       </section>
 
       <section class="ag-f">
-        <h3 class="ag-f__h"><label for="ag-municipio">Município</label></h3>
-        <select id="ag-municipio" class="ag-sel"><option value="">Todos</option></select>
+        {# O select do sistema; o agenda.js refaz as opções com o que o período carregou. #}
+        {% include "components/select.html" with name="ag_municipio" label="Município" placeholder="Todos" permitir_vazio=True %}
       </section>
 
       <section class="ag-f">
-        <h3 class="ag-f__h"><label for="ag-tipo">Tipo / tema</label></h3>
-        <select id="ag-tipo" class="ag-sel"><option value="">Todos</option></select>
+        {% include "components/select.html" with name="ag_tipo" label="Tipo / tema" placeholder="Todos" permitir_vazio=True %}
       </section>
 
       <section class="ag-f">
-        <label class="ag-toggle"><input type="checkbox" id="ag-meus"><span>Só o que eu criei</span></label>
+        <label class="interruptor"><input class="sr-only" type="checkbox" id="ag-meus"><span class="interruptor__trilho" aria-hidden="true"><span class="interruptor__botao"></span></span><span class="interruptor__rotulo">Só o que eu criei</span></label>
       </section>
 
       <section class="ag-f">
         <h3 class="ag-f__h"><label for="ag-busca">Buscar</label></h3>
-        <input type="search" id="ag-busca" class="ag-busca" placeholder="Município, motivo, tema, solicitante…" autocomplete="off">
+        <div class="busca">{% include "components/icon.html" with nome="search" %}<input type="search" id="ag-busca" placeholder="Município, motivo, tema, solicitante…" autocomplete="off"></div>
       </section>
 
       <section class="ag-f">
         <h3 class="ag-f__h">Ir para</h3>
         <div class="ag-atalhos">
-          <button type="button" class="ag-btn ag-btn--peq" data-ir="hoje">Hoje</button>
-          <button type="button" class="ag-btn ag-btn--peq" data-ir="semana">Esta semana</button>
-          <button type="button" class="ag-btn ag-btn--peq" data-ir="mes">Este mês</button>
-          <button type="button" class="ag-btn ag-btn--peq" data-ir="30">Próximos 30 dias</button>
+          <button type="button" class="btn--secundaria" data-ir="hoje">Hoje</button>
+          <button type="button" class="btn--secundaria" data-ir="semana">Esta semana</button>
+          <button type="button" class="btn--secundaria" data-ir="mes">Este mês</button>
+          <button type="button" class="btn--secundaria" data-ir="30">Próximos 30 dias</button>
         </div>
       </section>
 
@@ -110,6 +109,8 @@
   </div>
 
   {# O modal do dossiê: o miolo vem do servidor (agenda:detalhe) já desenhado. #}
+  {# Ícone do X do modal: o agenda.js clona daqui (o × nunca é o caractere). #}
+  <template id="ag-tpl-x">{% include "components/icon.html" with nome="x" %}</template>
   <dialog class="an-dialogo ag-modal" id="ag-modal" aria-labelledby="ag-modal-titulo">
     <div class="ag-modal__c" id="ag-modal-c">
       <p class="ag-m__carregando">Carregando…</p>

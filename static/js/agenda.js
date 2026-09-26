@@ -26,8 +26,8 @@
   var $ = function (id) { return document.getElementById(id); };
   var caixas = Array.prototype.slice.call(document.querySelectorAll('input[name="fonte"]'));
   var elSituacoes = $("ag-situacoes");
-  var selMunicipio = $("ag-municipio");
-  var selTipo = $("ag-tipo");
+  var selMunicipio = $("id_ag_municipio");
+  var selTipo = $("id_ag_tipo");
   var chkMeus = $("ag-meus");
   var busca = $("ag-busca");
   var vazio = $("ag-vazio");
@@ -89,8 +89,8 @@
       var t = porFonte[n.dataset.conta] || 0; n.textContent = t ? String(t) : "";
     });
     renderSituacoes(Object.keys(situacoes).map(function (k) { return situacoes[k]; }));
-    renderSelect(selMunicipio, municipios, pref.municipio);
-    renderSelect(selTipo, tipos, pref.tipo);
+    selMunicipio = renderSelect(selMunicipio, municipios, pref.municipio);
+    selTipo = renderSelect(selTipo, tipos, pref.tipo);
   }
   function renderSituacoes(itens) {
     if (!elSituacoes) return;
@@ -132,6 +132,40 @@
     // Mantém a escolha se ela ainda existe no período; senão, volta a "Todos"
     // e diz isso pelo próprio select, em vez de esconder tudo em silêncio.
     sel.value = (atual && mapa[atual]) ? atual : "";
+    return religarSelect(sel);
+  }
+  // O select é o do sistema (custom-select do app.js), que desenha a lista a
+  // partir de botões próprios: depois de trocar as opções nativas, refaz os
+  // botões, troca o invólucro por uma cópia crua e pede ao app.js para religar.
+  // Devolve o select nativo novo (o antigo saiu da página).
+  function religarSelect(sel) {
+    var wrapper = sel.closest("[data-custom-select]");
+    if (!wrapper || !window.DS || !DS.aprimorar) return sel;
+    var lista = wrapper.querySelector(".custom-select__lista");
+    if (lista) {
+      var check = lista.querySelector(".custom-select__check");
+      var checkHtml = check ? check.outerHTML : "";
+      lista.innerHTML = "";
+      Array.prototype.forEach.call(sel.options, function (o) {
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "custom-select__opcao"; b.setAttribute("role", "option");
+        b.dataset.value = o.value; b.setAttribute("aria-selected", o.selected ? "true" : "false");
+        var rotulo = document.createElement("span"); rotulo.textContent = o.textContent; b.appendChild(rotulo);
+        b.insertAdjacentHTML("beforeend", checkHtml);
+        lista.appendChild(b);
+      });
+    }
+    var valor = sel.value;
+    var novo = wrapper.cloneNode(true);
+    novo.classList.remove("is-enhanced", "tem-limpar", "is-open");
+    var limpar = novo.querySelector(".custom-select__limpar"); if (limpar) limpar.remove();
+    var nativo = novo.querySelector(".custom-select__native");
+    nativo.removeAttribute("aria-hidden"); nativo.removeAttribute("tabindex");
+    var pai = wrapper.parentElement;
+    wrapper.replaceWith(novo);
+    nativo.value = valor;
+    DS.aprimorar(pai);
+    return nativo;
   }
 
   // ---- cache por período ----------------------------------------------
@@ -221,8 +255,11 @@
       gravar(); cal.refetchEvents();
     });
   });
-  if (selMunicipio) selMunicipio.addEventListener("change", function () { pref.municipio = selMunicipio.value; gravar(); cal.refetchEvents(); });
-  if (selTipo) selTipo.addEventListener("change", function () { pref.tipo = selTipo.value; gravar(); cal.refetchEvents(); });
+  // Delegado: o invólucro do select é trocado a cada carga (ver religarSelect).
+  document.addEventListener("change", function (e) {
+    if (e.target.id === "id_ag_municipio") { pref.municipio = e.target.value; gravar(); cal.refetchEvents(); }
+    else if (e.target.id === "id_ag_tipo") { pref.tipo = e.target.value; gravar(); cal.refetchEvents(); }
+  });
   if (chkMeus) chkMeus.addEventListener("change", function () { pref.meus = chkMeus.checked; gravar(); cal.refetchEvents(); });
   var temporizador = null;
   if (busca) busca.addEventListener("input", function () {
@@ -260,7 +297,7 @@
       .then(function (html) { corpo.innerHTML = html; ligarModal(); })
       .catch(function (e) {
         corpo.innerHTML = '<div class="ag-m"><header class="ag-m__topo"><div class="ag-m__linha"><h2 class="ag-m__t">Não deu para abrir</h2></div>' +
-          '<div class="ag-m__acoes"><button type="button" class="ag-m__x" data-ag-fechar aria-label="Fechar">&times;</button></div></header>' +
+          '<div class="ag-m__acoes"><button type="button" class="mo__fechar" data-ag-fechar aria-label="Fechar"></button></div></header>' +
           '<section class="ag-painel"><p class="ag-erro" style="text-align:left">' + escapar(e.message) + "</p></section></div>";
         ligarModal();
       });
@@ -276,6 +313,8 @@
       });
     });
     var x = corpo.querySelector("[data-ag-fechar]");
+    var tplX = document.getElementById("ag-tpl-x");
+    if (x && tplX && !x.firstChild) x.appendChild(tplX.content.cloneNode(true));
     if (x) x.focus();
   }
   function fechar() {
