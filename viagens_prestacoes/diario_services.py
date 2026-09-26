@@ -526,6 +526,112 @@ def build_diario_bordo_context(diario: DiarioBordo) -> tuple[dict, list[dict]]:
     return header, linhas
 
 
+# ---------------------------------------------------------------------------
+# m078 / m095 — hodômetro encadeado, distância prevista e conferência.
+#
+# O operador digita o km de saída e o de chegada; a distância de cada trecho vem
+# da tabela permanente de distâncias (`viagens_roteiros.services.distancias`),
+# a mesma que o roteiro usa. A tela sugere o km de chegada de cada trecho
+# (saída + distância) e aqui se confere o que foi digitado. Tudo é aviso: nada
+# impede de salvar — só o km final menor que o inicial, que o banco já recusa.
+# ---------------------------------------------------------------------------
+
+#: Diferença tolerada entre o rodado e a distância prevista do trecho: 20% da
+#: distância, nunca menos que 10 km (desvio, abastecimento, entrada na cidade).
+TOLERANCIA_KM_PERCENTUAL = 20
+TOLERANCIA_KM_MINIMA = 10
+
+
+def tolerancia_km(prevista: int) -> int:
+    return max(TOLERANCIA_KM_MINIMA, (prevista * TOLERANCIA_KM_PERCENTUAL + 99) // 100)
+
+
+def _rota_da_linha(linha) -> str:
+    t = linha.trecho
+    if t is None:
+        return f"trecho {linha.ordem + 1}"
+    origem = format_document_display(_cidade_label(t.origem_municipio, None)) or "—"
+    destino = format_document_display(_cidade_label(t.destino_municipio, None)) or "—"
+    return f"{origem} → {destino}"
+
+
+def _fmt_km(valor) -> str:
+    return f"{int(valor):,}".replace(",", ".")
+
+
+def conferir_hodometro(diario: DiarioBordo, linhas=None) -> dict:
+    """Distância prevista por trecho, rodado, totais e avisos do diário.
+
+    Os avisos são o que parece estranho no hodômetro: o km de saída de um trecho
+    menor que o de chegada do anterior (voltou para trás) e o rodado de um trecho
+    fora da tolerância da distância prevista. A tela mostra ao abrir e a cada
+    gravação automática (vai na resposta do autosave).
+    """
+    from viagens_roteiros.services.distancias import distancia_do_trecho
+
+    if linhas is None:
+        linhas = list(
+            diario.trechos.select_related(
+                "trecho__origem_municipio", "trecho__destino_municipio"
+            ).order_by("ordem", "pk")
+        )
+    itens = []
+    avisos = []
+    total_rodado = 0
+    total_previsto = 0
+    anterior = None
+    for linha in linhas:
+        distancia = distancia_do_trecho(linha.trecho)
+        prevista = int(round(distancia)) if distancia else None
+        rodado = None
+        if linha.km_inicial is not None and linha.km_final is not None:
+            rodado = linha.km_final - linha.km_inicial
+            total_rodado += rodado
+        if prevista:
+            total_previsto += prevista
+        rota = _rota_da_linha(linha)
+        if (
+            anterior is not None
+            and anterior.km_final is not None
+            and linha.km_inicial is not None
+            and linha.km_inicial < anterior.km_final
+        ):
+            avisos.append(
+                f"{rota}: o km de saída ({_fmt_km(linha.km_inicial)}) é menor que o de chegada "
+                f"do trecho anterior ({_fmt_km(anterior.km_final)}) — o hodômetro voltou para trás."
+            )
+        if rodado is not None and prevista and abs(rodado - prevista) > tolerancia_km(prevista):
+            avisos.append(
+                f"{rota}: {_fmt_km(rodado)} km rodados, e a distância prevista é de "
+                f"{_fmt_km(prevista)} km (diferença de {_fmt_km(abs(rodado - prevista))} km)."
+            )
+        itens.append({"id": linha.pk, "prevista": prevista, "rodado": rodado})
+        anterior = linha
+    return {
+        "linhas": itens,
+        "total_rodado": total_rodado,
+        "total_previsto": total_previsto,
+        "total_rodado_label": _fmt_km(total_rodado),
+        "total_previsto_label": _fmt_km(total_previsto),
+        "avisos": avisos,
+    }
+
+
+def corrigir_distancia_da_linha(linha: DiarioBordoTrecho, distancia_km) -> None:
+    """Corrige, na tabela permanente, a distância entre os municípios do trecho.
+
+    Vale para todos os roteiros e diários daqui para a frente — é a distância
+    entre as cidades, não um dado desta prestação. Levanta `ValueError` com a
+    mensagem para o operador.
+    """
+    from viagens_roteiros.services.distancias import corrigir
+
+    trecho = linha.trecho
+    if trecho is None or not trecho.origem_municipio_id or not trecho.destino_municipio_id:
+        raise ValueError("Este trecho não tem origem e destino cadastrados.")
+    corrigir(trecho.origem_municipio_id, trecho.destino_municipio_id, distancia_km)
+
+
 def _template_path() -> Path:
     return Path(settings.BASE_DIR) / "documentos" / "resources" / "diario_bordo.xlsx"
 

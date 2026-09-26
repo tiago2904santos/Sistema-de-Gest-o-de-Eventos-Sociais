@@ -60,11 +60,11 @@
             <div class="tabela-wrapper dt-w cad-lista trechos-lista" tabindex="0" role="region" aria-label="Trechos do diário de bordo">
               <table class="tabela dt tabela--compacta trechos-tabela pc-diario__tabela">
                 <thead>
-                  <tr><th>Origem</th><th>Destino</th><th>Saída</th><th>Km inicial</th><th>Chegada</th><th>Km final</th><th>Abastecimento</th></tr>
+                  <tr><th>Origem</th><th>Destino</th><th>Saída</th><th>Km inicial</th><th>Chegada</th><th>Km final</th><th>Abastecimento</th><th>Distância</th></tr>
                 </thead>
                 <tbody>
                   {% for trecho in trechos %}
-                    <tr class="trecho-linha">
+                    <tr class="trecho-linha" data-hodometro-linha data-prevista="{{ trecho.prevista|default_if_none:''|unlocalize }}">
                       <td data-rotulo="Origem"><span class="trecho-linha__cidade">{{ trecho.display.origem }}</span><input type="hidden" name="{{ trecho.form.id.html_name }}" value="{{ trecho.form.instance.pk|unlocalize }}">{% for erro in trecho.form.non_field_errors %}<p class="form-erro">{{ erro }}</p>{% endfor %}</td>
                       <td data-rotulo="Destino"><span class="trecho-linha__cidade">{{ trecho.display.destino }}</span></td>
                       <td data-rotulo="Saída" class="pc-diario__hora">{{ trecho.display.saida.data }}<small>{{ trecho.display.saida.hora }}</small></td>
@@ -72,10 +72,36 @@
                       <td data-rotulo="Chegada" class="pc-diario__hora">{{ trecho.display.chegada.data }}<small>{{ trecho.display.chegada.hora }}</small></td>
                       <td data-rotulo="Km final">{% include "components/input.html" with name=trecho.form.km_final.html_name label="Km final" rotulo_oculto=True valor=trecho.form.km_final.value placeholder="0" inputmode="numeric" autocomplete="off" erros=trecho.form.km_final.errors %}</td>
                       <td data-rotulo="Abastecimento">{% include "components/select.html" with name=trecho.form.abastecimento.html_name label="Necessidade de abastecimento" rotulo_oculto=True opcoes=opcoes_abastecimento selecionado=trecho.form.abastecimento.value erros=trecho.form.abastecimento.errors %}</td>
+                      <td data-rotulo="Distância" class="pc-diario__distancia">
+                        {% if trecho.linha.trecho.origem_municipio_id and trecho.linha.trecho.destino_municipio_id %}
+                          {# m078: a distância prevista vem da tabela permanente; corrigir aqui vale para os próximos roteiros e diários. #}
+                          <details class="pc-distancia">
+                            <summary title="Corrigir a distância entre as cidades">{% if trecho.prevista %}≈ {{ trecho.prevista|unlocalize }} km{% else %}Informar{% endif %}</summary>
+                            <div class="pc-distancia__corpo">
+                              <input class="form-controle" type="text" inputmode="decimal" name="distancia_km" form="form-distancia-{{ trecho.linha.pk|unlocalize }}" value="{{ trecho.prevista|default_if_none:''|unlocalize }}" aria-label="Distância em km entre {{ trecho.display.origem }} e {{ trecho.display.destino }}" autocomplete="off">
+                              <button type="submit" class="btn--secundaria" form="form-distancia-{{ trecho.linha.pk|unlocalize }}">Salvar</button>
+                              <small>Vale para os próximos roteiros e diários.</small>
+                            </div>
+                          </details>
+                        {% else %}—{% endif %}
+                      </td>
                     </tr>
                   {% endfor %}
                 </tbody>
+                <tfoot>
+                  <tr class="pc-hodometro__totais">
+                    <td colspan="8">Total rodado: <b data-hodometro-rodado>{{ hodometro.total_rodado_label }}</b> km · distância prevista: <b data-hodometro-previsto>{{ hodometro.total_previsto_label }}</b> km</td>
+                  </tr>
+                </tfoot>
               </table>
+            </div>
+            {# m078/m095: digite o km de saída; a tela sugere a chegada de cada trecho pela distância e confere o que foi digitado. #}
+            <div class="pc-hodometro">
+              <button type="button" class="btn--secundaria" data-hodometro-preencher hidden title="Preenche os km vazios somando a distância de cada trecho ao km de saída; o km de chegada do último trecho fica para você">Preencher pelas distâncias</button>
+              <small class="pc-hodometro__dica">Digite o km de saída; a chegada de cada trecho é sugerida pela distância. Diferenças acima de {{ tolerancia_percentual }}% (mín. {{ tolerancia_minima }} km) geram aviso, sem impedir de salvar.</small>
+            </div>
+            <div class="aviso pc-hodometro__avisos" role="status" data-hodometro-avisos{% if not hodometro.avisos %} hidden{% endif %}>
+              <div class="aviso__corpo"><b>Confira o hodômetro</b><ul data-hodometro-lista>{% for aviso in hodometro.avisos %}<li>{{ aviso }}</li>{% endfor %}</ul></div>
             </div>
           {% else %}
             <div class="trechos-vazio">
@@ -85,6 +111,8 @@
             </div>
           {% endif %}
         </form>
+        {# As correções de distância são formulários à parte: o campo fica na linha, ligado pelo atributo form. #}
+        {% for trecho in trechos %}<form method="post" id="form-distancia-{{ trecho.linha.pk|unlocalize }}" action="{% url 'viagens_prestacoes:diario_servidor_distancia' ps.pk trecho.linha.pk %}" hidden>{% csrf_token %}</form>{% endfor %}
       </div>
 
       <div class="frm-acoes-fim">

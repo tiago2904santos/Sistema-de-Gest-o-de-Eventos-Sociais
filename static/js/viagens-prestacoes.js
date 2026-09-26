@@ -83,6 +83,8 @@
 
     function agendar(campo, atraso) {
       if (!campo.name || campo.name === "csrfmiddlewaretoken" || campo.type === "hidden" || campo.type === "file" || campo.type === "submit") return;
+      // Campo de outro formulário que só mora dentro deste (atributo `form`): não é daqui.
+      if (campo.form && campo.form !== form) return;
       sujos[campo.name] = valorDe(campo);
       clearTimeout(temporizador);
       temporizador = setTimeout(enviar, atraso);
@@ -94,6 +96,89 @@
       // Com JS, o submit do cartão só confirma o que o autosave já gravou.
       if (form.hasAttribute("data-autosave-so-ajax")) { e.preventDefault(); clearTimeout(temporizador); enviar(); }
     });
+  });
+
+  /* ---------- diário de bordo: hodômetro (m078/m095) ----------
+     Cada linha traz a distância prevista (`data-prevista`). O km de saída de
+     um trecho vazio é o de chegada do anterior; o de chegada, saída +
+     distância — mostrados como sugestão (placeholder). "Preencher pelas
+     distâncias" grava as sugestões nos campos vazios, menos a chegada do
+     último trecho, que é o hodômetro de verdade na volta. Ao sair do km de
+     chegada, o km de saída do trecho seguinte, se vazio, recebe o mesmo valor.
+     Os avisos vêm do servidor, na resposta de cada gravação automática. */
+  document.querySelectorAll("form[data-autosave-model='diario_bordo']").forEach(function (form) {
+    var linhas = Array.prototype.slice.call(form.querySelectorAll("[data-hodometro-linha]"));
+    if (!linhas.length) return;
+    var botao = document.querySelector("[data-hodometro-preencher]");
+    function campo(linha, nome) { return linha.querySelector('input[name$="-' + nome + '"]'); }
+    function numero(texto) { var d = String(texto || "").replace(/\D/g, ""); return d ? parseInt(d, 10) : null; }
+    function prevista(linha) { var v = parseFloat(String(linha.getAttribute("data-prevista") || "").replace(",", ".")); return isNaN(v) ? null : Math.round(v); }
+
+    function sugestoes() {
+      var anterior = null;  // chegada (digitada ou sugerida) do trecho anterior
+      return linhas.map(function (linha) {
+        var ini = numero(campo(linha, "km_inicial").value);
+        var fim = numero(campo(linha, "km_final").value);
+        var saida = ini !== null ? ini : anterior;
+        var dist = prevista(linha);
+        var chegada = saida !== null && dist !== null ? saida + dist : null;
+        anterior = fim !== null ? fim : chegada;
+        return {saida: saida, chegada: chegada};
+      });
+    }
+
+    function atualizarSugestoes() {
+      sugestoes().forEach(function (s, i) {
+        var ini = campo(linhas[i], "km_inicial"), fim = campo(linhas[i], "km_final");
+        ini.placeholder = s.saida !== null ? "≈ " + s.saida : "0";
+        fim.placeholder = s.chegada !== null ? "≈ " + s.chegada : "0";
+      });
+    }
+
+    function preencher(input, valor) {
+      if (!input || input.value.trim() || valor === null) return;
+      input.value = String(valor);
+      input.dispatchEvent(new Event("input", {bubbles: true}));
+    }
+
+    form.addEventListener("input", atualizarSugestoes);
+    form.addEventListener("change", function (e) {
+      var i = linhas.indexOf(e.target.closest("[data-hodometro-linha]"));
+      if (i < 0 || !/-km_final$/.test(e.target.name || "") || i + 1 >= linhas.length) return;
+      preencher(campo(linhas[i + 1], "km_inicial"), numero(e.target.value));
+    });
+    if (botao) {
+      botao.hidden = false;
+      botao.addEventListener("click", function () {
+        var lista = sugestoes();
+        linhas.forEach(function (linha, i) {
+          preencher(campo(linha, "km_inicial"), lista[i].saida);
+          if (i < linhas.length - 1) preencher(campo(linha, "km_final"), lista[i].chegada);
+          lista = sugestoes();
+        });
+        atualizarSugestoes();
+      });
+    }
+
+    var caixa = document.querySelector("[data-hodometro-avisos]");
+    form.addEventListener("autosave:salvo", function (e) {
+      var h = e.detail && e.detail.hodometro;
+      if (!h) return;
+      var rodado = document.querySelector("[data-hodometro-rodado]");
+      var previsto = document.querySelector("[data-hodometro-previsto]");
+      if (rodado) rodado.textContent = h.total_rodado_label;
+      if (previsto) previsto.textContent = h.total_previsto_label;
+      if (!caixa) return;
+      var lista = caixa.querySelector("[data-hodometro-lista]");
+      lista.textContent = "";
+      (h.avisos || []).forEach(function (texto) {
+        var li = document.createElement("li");
+        li.textContent = texto;
+        lista.appendChild(li);
+      });
+      caixa.hidden = !(h.avisos || []).length;
+    });
+    atualizarSugestoes();
   });
 
   /* O motivo da recusa, venha de onde vier. Ofício, RT e diário vão para as

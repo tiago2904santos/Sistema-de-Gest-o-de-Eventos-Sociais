@@ -2241,6 +2241,20 @@ form.btn-flutuante-form{margin:0;display:contents}
 .editor-roteiro .pc-diario__tabela th:nth-child(4),.editor-roteiro .pc-diario__tabela th:nth-child(6){width:124px}
 .editor-roteiro .pc-diario__tabela th:nth-child(7){width:150px}
 .pc-diario__trechos{padding-top:16px;border-top:1px solid var(--n-150)}
+/* m078/m095: distância prevista por trecho (corrigível), totais e avisos do hodômetro. */
+.editor-roteiro .pc-diario__tabela th:nth-child(8){width:120px}
+.pc-diario__distancia{white-space:nowrap;font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--n-800)}
+.pc-distancia summary{cursor:pointer;list-style:none;text-decoration:underline dotted;text-underline-offset:3px}
+.pc-distancia summary::-webkit-details-marker{display:none}
+.pc-distancia__corpo{display:grid;gap:6px;min-width:150px;margin-top:6px;white-space:normal}
+.pc-distancia__corpo small{font-size:11.5px;color:var(--n-500)}
+.pc-hodometro__totais td{font-size:12.5px;text-align:right;color:var(--n-600)}
+.pc-hodometro__totais b{font-variant-numeric:tabular-nums;color:var(--n-900)}
+.pc-hodometro{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:10px}
+.pc-hodometro__dica{font-size:12px;color:var(--n-500)}
+.pc-hodometro__avisos{margin-top:10px}
+.pc-hodometro__avisos ul{margin:4px 0 0;padding-left:18px}
+.pc-hodometro [hidden],.pc-hodometro__avisos[hidden]{display:none}
 .pc-removidos{margin-top:14px;font-size:12.5px;color:var(--n-600)}
 /* Relatório técnico: grupos leves dentro do cartão, separados por um fio; o
    modelo de cada texto fica ao lado do título. */
