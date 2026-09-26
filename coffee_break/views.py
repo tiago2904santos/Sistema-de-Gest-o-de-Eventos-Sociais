@@ -831,6 +831,10 @@ def _contexto_formulario(request, form, solicitacao=None, somente_leitura=False,
             contexto["partes_anexo"] = documentos.partes_do_anexo(solicitacao)
             contexto["avisos_anexo"] = documentos.avisos_do_pacote(itens)
             contexto["eprotocolo"] = documentos.textos_eprotocolo(solicitacao)
+            # O comprovante da OB: anexar (modal de anexo de documentos) e enviar ao fornecedor.
+            contexto["usa_dialogo_assinado"] = True
+            contexto["url_anexar_ob"] = reverse("coffee_break:anexar_ob", args=[solicitacao.pk])
+            contexto["avisos_ob"] = services.avisos_da_ob(solicitacao)
     return contexto
 
 
@@ -1776,7 +1780,8 @@ def _tela_de_email(request, solicitacao, envio, modelo_assunto, modelo_texto, ge
         try:
             anexos = gerar_anexos()
             emails.enviar(
-                solicitacao, request.user, anexos=anexos, o_que=envio["o_que"], **{
+                solicitacao, request.user, anexos=anexos, o_que=envio["o_que"],
+                tambem_em=envio.get("tambem_em", ()), **{
                     "para": valores["para"], "copia": valores["copia"],
                     "assunto": valores["assunto"], "texto": valores["texto"],
                 },
@@ -1835,6 +1840,112 @@ def enviar_os(request, pk):
         return f"OS {s.numero} enviada ao fornecedor por e-mail. O envio ficou no histórico."
 
     return _tela_de_email(request, solicitacao, envio, config.email_os_assunto, config.email_os_texto, anexos, depois)
+
+
+@acesso_ao_modulo
+def enviar_ob(request, pk):
+    """"Enviar OB ao fornecedor": o comprovante da ordem bancária por e-mail.
+    Enviado, registra o envio à empresa (o último marco) em todas as OS do
+    mesmo pagamento, e o pagamento se encerra."""
+    solicitacao = _solicitacao_documental(pk)
+    config = ConfiguracaoCoffeeBreak.atual()
+    arquivo = solicitacao.arquivo_ordem_bancaria
+    nome = f"Ordem bancaria {solicitacao.numero_ordem_bancaria or solicitacao.numero}".replace("/", "-").strip() + ".pdf"
+    pendencias = []
+    if solicitacao.cancelada:
+        pendencias.append("A solicitação está cancelada.")
+    if not arquivo:
+        pendencias.append("Anexe o PDF da ordem bancária na etapa 3.")
+    if not solicitacao.data_ordem_bancaria:
+        pendencias.append("Registre a data da ordem bancária (o atesto vem antes).")
+    grupo = solicitacao.grupo_pagamento()
+    outras = [m for m in grupo if m.pk != solicitacao.pk]
+    enviada = solicitacao.data_envio_empresa
+    os_do_pagamento = ", ".join(m.numero or f"#{m.pk}" for m in grupo)
+    envio = {
+        "titulo": "Enviar a ordem bancária ao fornecedor",
+        "o_que": f"Ordem bancária {solicitacao.numero_ordem_bancaria}".strip()
+        + (f" (pagamento das OS {os_do_pagamento})" if outras else ""),
+        "ja_enviado": f"A ordem bancária já foi enviada à empresa em {enviada:%d/%m/%Y}." if enviada else "",
+        "anexos": [{"nome": nome, "url": reverse("coffee_break:ordem_bancaria_arquivo", args=[solicitacao.pk])}] if arquivo else [],
+        "volta": reverse("coffee_break:etapa_protocolo", args=[solicitacao.pk]),
+        "pendencias": pendencias,
+        "tambem_em": outras,
+    }
+
+    def anexos():
+        with arquivo.open("rb") as aberto:
+            return [(nome, aberto.read(), "application/pdf")]
+
+    def depois(s):
+        marco = services.proximo_marco(s)
+        if marco and marco["campo"] == "data_envio_empresa":
+            services.registrar_marco(s, request.user, timezone.localdate(), "por e-mail, do sistema")
+            return "Ordem bancária enviada ao fornecedor. O pagamento foi concluído" + (
+                " em todas as OS dele." if outras else "."
+            )
+        return "Ordem bancária enviada ao fornecedor. O envio ficou no histórico."
+
+    return _tela_de_email(request, solicitacao, envio, config.email_ob_assunto, config.email_ob_texto, anexos, depois)
+
+
+@require_POST
+@acesso_ao_modulo
+def anexar_ob(request, pk):
+    """O PDF da ordem bancária pelo modal de anexo de documentos (etapa 3):
+    lê número, data e valor, guarda em todas as OS do pagamento e registra a
+    data da OB quando ela é o próximo marco. Também troca ou remove."""
+    from .forms import validar_pdf
+    from .ordem_bancaria import dados_da_ob
+
+    solicitacao = get_object_or_404(SolicitacaoCoffeeBreak, pk=pk)
+    destino = reverse("coffee_break:etapa_protocolo", args=[pk])
+    if solicitacao.bloqueada_para_edicao:
+        messages.warning(request, "Solicitações canceladas ou concluídas ficam bloqueadas para edição.")
+        return redirect(destino)
+    if not solicitacao.numero_nota_fiscal.strip():
+        messages.error(request, "Registre a nota fiscal antes da ordem bancária.")
+        return redirect(destino)
+    if request.POST.get("acao") == "remover":
+        if services.remover_ordem_bancaria(solicitacao, request.user):
+            messages.success(request, "Ordem bancária removida.")
+        return redirect(destino)
+    arquivo = request.FILES.get("arquivo")
+    if arquivo is None:
+        messages.error(request, "Escolha o PDF da ordem bancária.")
+        return redirect(destino)
+    try:
+        validar_pdf(arquivo)
+    except ValidationError as erro:
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+        return redirect(destino)
+    arquivo.seek(0)
+    lidos = dados_da_ob(arquivo.read())
+    arquivo.seek(0)
+    try:
+        dia = services.anexar_ordem_bancaria(solicitacao, request.user, arquivo, lidos)
+    except ValidationError as erro:
+        for mensagem in erro.messages:
+            messages.error(request, mensagem)
+        return redirect(destino)
+    texto = "Ordem bancária anexada"
+    if lidos.get("numero"):
+        texto += f" — nº {lidos['numero']} lido do PDF"
+    if dia:
+        texto += f"; OB emitida em {dia:%d/%m/%Y}" + (" (data lida do PDF)" if lidos.get("data") == dia else "")
+    elif not solicitacao.data_ordem_bancaria:
+        texto += "; registre o atesto para a data da OB entrar"
+    messages.success(request, texto + ".")
+    solicitacao.refresh_from_db()
+    for aviso in services.avisos_da_ob(solicitacao):
+        messages.warning(request, aviso)
+    return redirect(destino)
+
+
+@acesso_ao_modulo
+def ordem_bancaria_arquivo(request, pk):
+    return _arquivo(_solicitacao_documental(pk).arquivo_ordem_bancaria)
 
 
 @acesso_ao_modulo

@@ -55,12 +55,22 @@ def campos_do_texto(solicitacao):
         responsavel=solicitacao.responsavel_recebimento or "a combinar",
         quantidade=solicitacao.quantidade,
         fornecedor=solicitacao.lote.contrato.fornecedor.razao_social,
-        nota=solicitacao.numero_nota_fiscal or "—",
+        # Pagamento conjunto: as notas de todas as OS pagas pela mesma OB.
+        nota=_notas(solicitacao) or "—",
         ordem_bancaria=getattr(solicitacao, "numero_ordem_bancaria", "") or "—",
         data_ordem_bancaria=(
             f"{solicitacao.data_ordem_bancaria:%d/%m/%Y}" if solicitacao.data_ordem_bancaria else "—"
         ),
     )
+
+
+def _notas(solicitacao):
+    from .documentos import notas_do_pagamento
+
+    notas = notas_do_pagamento(solicitacao) if solicitacao.pk else []
+    if len(notas) > 1:
+        return ", ".join(notas[:-1]) + " e " + notas[-1]
+    return notas[0] if notas else ""
 
 
 def preencher(modelo, solicitacao):
@@ -78,11 +88,12 @@ def rascunho(solicitacao, assunto, texto):
     }
 
 
-def enviar(solicitacao, usuario, *, para, copia, assunto, texto, anexos, o_que):
+def enviar(solicitacao, usuario, *, para, copia, assunto, texto, anexos, o_que, tambem_em=()):
     """Envia o e-mail com os anexos e registra no histórico.
 
     ``anexos``: lista de (nome, conteúdo em bytes, tipo). ``o_que``: como o
-    histórico chama o envio ("Ordem de serviço 11/2026"). Levanta
+    histórico chama o envio ("Ordem de serviço 11/2026"); ``tambem_em``: outras
+    OS que registram o mesmo envio (as do mesmo pagamento). Levanta
     ValidationError com o que falta (destinatário, assunto) e deixa passar o
     erro do servidor de e-mail, para a tela dizer que não foi enviado.
     """
@@ -113,5 +124,6 @@ def enviar(solicitacao, usuario, *, para, copia, assunto, texto, anexos, o_que):
     descricao += f". Assunto: {assunto}."
     if anexos:
         descricao += " Anexos: " + ", ".join(nome for nome, *_ in anexos) + "."
-    services.registrar_historico(solicitacao, usuario, AcaoHistoricoCoffeeBreak.EMAIL, descricao)
+    for registro in (solicitacao, *tambem_em):
+        services.registrar_historico(registro, usuario, AcaoHistoricoCoffeeBreak.EMAIL, descricao)
     return {"para": destinatarios, "copia": copias, "quando": quando}

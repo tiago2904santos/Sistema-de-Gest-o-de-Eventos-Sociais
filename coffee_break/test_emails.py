@@ -91,3 +91,117 @@ class EnviarOSTests(BaseCoffeeBreakTestCase):
         item = grupos["entrega"]["itens"][0]
         self.assertEqual(item["botao"], "Enviar a OS")
         self.assertEqual(item["url"], self.url)
+
+
+class LeituraDaOBTests(BaseCoffeeBreakTestCase):
+    def test_le_numero_data_e_valor(self):
+        from decimal import Decimal
+
+        from .ordem_bancaria import dados_no_texto
+
+        texto = "ORDEM BANCÁRIA\nNúmero: 2026OB004512\nData de emissão: 14/10/2026\nValor líquido R$ 1.264,20"
+        dados = dados_no_texto(texto)
+        self.assertEqual(dados["numero"], "2026OB004512")
+        self.assertEqual(dados["data"], dt.date(2026, 10, 14))
+        self.assertEqual(dados["valor"], Decimal("1264.20"))
+        self.assertEqual(dados_no_texto("sem nada"), {"numero": "", "data": None, "valor": None})
+
+
+@override_settings(EMAIL_BACKEND=LOCMEM)
+class OrdemBancariaTests(BaseCoffeeBreakTestCase):
+    def setUp(self):
+        import tempfile
+        from decimal import Decimal
+
+        pasta = tempfile.TemporaryDirectory(prefix="coffee-ob-")
+        self.addCleanup(pasta.cleanup)
+        ajuste = override_settings(MEDIA_ROOT=pasta.name)
+        ajuste.enable()
+        self.addCleanup(ajuste.disable)
+        self.client.force_login(self.ascom)
+        comum = {
+            "numero_nota_fiscal": "8957", "protocolo_pagamento": "26.617.058-0",
+            "data_atesto_gaf": dt.date(2026, 9, 20), "valor_unitario": Decimal("20.00"),
+        }
+        self.principal = self.criar_solicitacao(numero="31/2026", quantidade=30, valor_nota_fiscal=Decimal("600.00"), **comum)
+        comum["numero_nota_fiscal"] = "8958"
+        self.outra = self.criar_solicitacao(
+            numero="32/2026", quantidade=10, valor_nota_fiscal=Decimal("200.00"), pagamento_com=self.principal, **comum
+        )
+
+    def _anexar(self, lidos):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from .tests import _pdf_em_branco
+
+        with mock.patch("coffee_break.ordem_bancaria.dados_da_ob", return_value=lidos):
+            return self.client.post(
+                reverse("coffee_break:anexar_ob", args=[self.principal.pk]),
+                {"arquivo": SimpleUploadedFile("ob.pdf", _pdf_em_branco(), content_type="application/pdf")},
+                follow=True,
+            )
+
+    def test_anexar_le_o_pdf_registra_a_data_e_copia_para_o_pagamento(self):
+        from decimal import Decimal
+
+        resposta = self._anexar({"numero": "2026OB000777", "data": dt.date(2026, 9, 25), "valor": Decimal("800.00")})
+        self.assertContains(resposta, "Ordem bancária anexada")
+        for s in (self.principal, self.outra):
+            s.refresh_from_db()
+            self.assertTrue(s.arquivo_ordem_bancaria)
+            self.assertEqual(s.numero_ordem_bancaria, "2026OB000777")
+            self.assertEqual(s.data_ordem_bancaria, dt.date(2026, 9, 25))
+            self.assertTrue(s.historico.filter(descricao__icontains="ordem bancária").exists())
+        self.assertEqual(services.avisos_da_ob(self.principal), [])
+        tela = self.client.get(reverse("coffee_break:etapa_protocolo", args=[self.principal.pk]))
+        self.assertContains(tela, "Enviar OB ao fornecedor")
+        self.assertContains(tela, "Ordem bancária 2026OB000777")
+
+    def test_valor_diferente_das_notas_avisa(self):
+        from decimal import Decimal
+
+        resposta = self._anexar({"numero": "", "data": None, "valor": Decimal("700.00")})
+        self.assertContains(resposta, "não bate com o valor das notas fiscais")
+        self.principal.refresh_from_db()
+        self.assertEqual(self.principal.data_ordem_bancaria, timezone.localdate())
+
+    def test_enviar_ob_manda_o_pdf_e_conclui_todas_as_os_do_pagamento(self):
+        from decimal import Decimal
+
+        self._anexar({"numero": "2026OB000777", "data": dt.date(2026, 9, 25), "valor": Decimal("800.00")})
+        url = reverse("coffee_break:enviar_ob", args=[self.principal.pk])
+        tela = self.client.get(url)
+        self.assertIn("8957 e 8958", tela.context["valores"]["texto"])
+        self.assertIn("2026OB000777", tela.context["valores"]["assunto"])
+        resposta = self.client.post(url, {
+            "para": "contato@favoemel.com.br", "copia": "", "assunto": "OB paga", "texto": "Segue a OB.",
+        })
+        self.assertRedirects(
+            resposta, reverse("coffee_break:etapa_protocolo", args=[self.principal.pk]), fetch_redirect_response=False
+        )
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].attachments[0][0], "Ordem bancaria 2026OB000777.pdf")
+        for s in (self.principal, self.outra):
+            s.refresh_from_db()
+            self.assertEqual(s.data_envio_empresa, timezone.localdate())
+            self.assertTrue(s.concluida)
+            self.assertTrue(
+                s.historico.filter(acao=AcaoHistoricoCoffeeBreak.EMAIL, descricao__contains="contato@favoemel.com.br").exists()
+            )
+
+    def test_sem_ob_anexada_nao_envia(self):
+        resposta = self.client.post(
+            reverse("coffee_break:enviar_ob", args=[self.principal.pk]), {"para": "a@b.com", "assunto": "x"}
+        )
+        self.assertContains(resposta, "Anexe o PDF da ordem bancária")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_remover_tira_de_todas_as_os(self):
+        from decimal import Decimal
+
+        self._anexar({"numero": "2026OB000777", "data": None, "valor": Decimal("800.00")})
+        self.client.post(reverse("coffee_break:anexar_ob", args=[self.principal.pk]), {"acao": "remover"})
+        for s in (self.principal, self.outra):
+            s.refresh_from_db()
+            self.assertFalse(s.arquivo_ordem_bancaria)
+            self.assertEqual(s.numero_ordem_bancaria, "")

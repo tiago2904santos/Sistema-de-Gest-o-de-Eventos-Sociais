@@ -548,6 +548,8 @@ class ConfiguracaoCoffeeBreakForm(FormularioCadastroVersionado):
             "email_copia",
             "email_os_assunto",
             "email_os_texto",
+            "email_ob_assunto",
+            "email_ob_texto",
         )
 
 

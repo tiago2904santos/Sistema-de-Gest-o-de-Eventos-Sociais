@@ -682,6 +682,8 @@ def oficio_em_uso(numero, excluir_pk=None):
 CAMPOS_ESPELHADOS = (
     "numero_oficio", "data_oficio", "protocolo_pcpr_oficio",
     "protocolo_pagamento", "data_atesto_gaf", "data_ordem_bancaria", "data_envio_empresa",
+    # A OB paga o pagamento todo: o comprovante é o mesmo em todas as OS.
+    "arquivo_ordem_bancaria", "numero_ordem_bancaria", "valor_ordem_bancaria",
 )
 
 
@@ -690,6 +692,7 @@ CAMPOS_ESPELHADOS = (
 # protocolo de pagamento").
 CAMPOS_DEPOIS_DA_NOTA = (
     "protocolo_pagamento", "data_atesto_gaf", "data_ordem_bancaria", "data_envio_empresa",
+    "arquivo_ordem_bancaria", "numero_ordem_bancaria", "valor_ordem_bancaria",
 )
 
 
@@ -941,6 +944,91 @@ def registrar_marco(solicitacao, usuario, valor, anotacao=""):
 
 
 # ---------------------------------------------------------------------------
+# Ordem bancária anexada (etapa 3)
+# ---------------------------------------------------------------------------
+
+@transaction.atomic
+def anexar_ordem_bancaria(solicitacao, usuario, arquivo, lidos):
+    """Guarda o PDF da OB (com o número e o valor lidos) em todas as OS do
+    pagamento e, se a OB é o próximo marco, registra a data dela (a lida do
+    PDF, senão a de hoje). Devolve a data registrada, ou None."""
+    trocou = bool(solicitacao.arquivo_ordem_bancaria)
+    solicitacao.arquivo_ordem_bancaria = arquivo
+    solicitacao.numero_ordem_bancaria = (lidos.get("numero") or "")[:30]
+    solicitacao.valor_ordem_bancaria = lidos.get("valor")
+    campos = ["arquivo_ordem_bancaria", "numero_ordem_bancaria", "valor_ordem_bancaria"]
+    solicitacao.save(update_fields=[*campos, "atualizado_em"])
+    lidas = []
+    if solicitacao.numero_ordem_bancaria:
+        lidas.append(f"número {solicitacao.numero_ordem_bancaria}")
+    if solicitacao.valor_ordem_bancaria is not None:
+        lidas.append(f"valor {formatar_reais(solicitacao.valor_ordem_bancaria)}")
+    registrar_historico(
+        solicitacao, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO,
+        ("Ordem bancária (PDF) substituída" if trocou else "Ordem bancária (PDF) anexada")
+        + (f"; lido do PDF: {', '.join(lidas)}." if lidas else "."),
+    )
+    espelhar(solicitacao, campos, usuario)
+    marco = proximo_marco(solicitacao)
+    if marco and marco["campo"] == "data_ordem_bancaria":
+        dia = lidos.get("data") or timezone.localdate()
+        if solicitacao.data_atesto_gaf and dia < solicitacao.data_atesto_gaf:
+            dia = timezone.localdate()
+        registrar_marco(solicitacao, usuario, dia, "lida do PDF da ordem bancária" if lidos.get("data") else "")
+        return dia
+    return None
+
+
+@transaction.atomic
+def remover_ordem_bancaria(solicitacao, usuario):
+    """Tira o PDF da OB (e o que foi lido dele) de todas as OS do pagamento."""
+    if not solicitacao.arquivo_ordem_bancaria:
+        return False
+    nome = solicitacao.arquivo_ordem_bancaria.name
+    for membro in solicitacao.grupo_pagamento():
+        if membro.arquivo_ordem_bancaria.name != nome:
+            continue
+        membro.arquivo_ordem_bancaria = None
+        membro.numero_ordem_bancaria = ""
+        membro.valor_ordem_bancaria = None
+        membro.save(update_fields=[
+            "arquivo_ordem_bancaria", "numero_ordem_bancaria", "valor_ordem_bancaria", "atualizado_em",
+        ])
+        registrar_historico(membro, usuario, AcaoHistoricoCoffeeBreak.ATUALIZACAO, "Ordem bancária (PDF) removida.")
+    from .models import SolicitacaoCoffeeBreak
+
+    # O arquivo só sai do disco quando nenhuma OS aponta mais para ele.
+    if not SolicitacaoCoffeeBreak.objects.filter(arquivo_ordem_bancaria=nome).exists():
+        from django.core.files.storage import default_storage
+
+        transaction.on_commit(lambda: default_storage.delete(nome))
+    return True
+
+
+def avisos_da_ob(solicitacao):
+    """O valor da OB contra o das notas do pagamento (ou o das OS, sem a nota lida)."""
+    from decimal import Decimal
+
+    if solicitacao.valor_ordem_bancaria is None:
+        return []
+    grupo = solicitacao.grupo_pagamento()
+    notas = [m.valor_nota_fiscal for m in grupo]
+    if all(v is not None for v in notas):
+        esperado, origem = sum(notas, Decimal("0.00")), "das notas fiscais" if len(grupo) > 1 else "da nota fiscal"
+    else:
+        valores = [m.valor for m in grupo]
+        if any(v is None for v in valores):
+            return []
+        esperado, origem = sum(valores, Decimal("0.00")), "das OS" if len(grupo) > 1 else "da OS"
+    if solicitacao.valor_ordem_bancaria == esperado:
+        return []
+    return [
+        f"O valor da ordem bancária ({formatar_reais(solicitacao.valor_ordem_bancaria)}) não bate com o valor "
+        f"{origem} ({formatar_reais(esperado)}). Confira o PDF anexado (retenções de imposto explicam diferença)."
+    ]
+
+
+# ---------------------------------------------------------------------------
 # Painel "o que fazer hoje": a próxima ação de cada OS
 # ---------------------------------------------------------------------------
 
@@ -1059,6 +1147,10 @@ def fila_de_trabalho(hoje=None):
             # A OS pronta e ainda não enviada: o botão já é o envio ao fornecedor.
             if not pendencias_ordem_servico(solicitacao):
                 rotulo, rota = "Enviar a OS", "coffee_break:enviar_os"
+        if chave == "ob_nao_enviada" and solicitacao.arquivo_ordem_bancaria:
+            rota = "coffee_break:enviar_ob"
+        elif chave == "sem_ob" and solicitacao.data_atesto_gaf:
+            rotulo = "Anexar a OB"
         por_grupo[chave].append({
             "s": solicitacao,
             "dias": dias_parada(solicitacao, hoje),

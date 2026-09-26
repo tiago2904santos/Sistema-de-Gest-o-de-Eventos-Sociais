@@ -248,6 +248,21 @@ class ConfiguracaoCoffeeBreak(models.Model):
         ),
         help_text="Os mesmos campos do assunto, entre chaves.",
     )
+    email_ob_assunto = models.CharField(
+        "assunto do e-mail da ordem bancária", max_length=200,
+        default="Ordem bancária {ordem_bancaria} – pagamento da nota fiscal {nota} – Coffee Break",
+        help_text="Além dos campos da OS: {nota}, {ordem_bancaria} e {data_ordem_bancaria}.",
+    )
+    email_ob_texto = models.TextField(
+        "texto do e-mail da ordem bancária",
+        default=(
+            "Prezados,\n\n"
+            "Informamos que foi emitida a ordem bancária {ordem_bancaria}, de {data_ordem_bancaria}, "
+            "referente ao pagamento da nota fiscal {nota} (coffee break do evento \"{evento}\"). "
+            "Segue o comprovante em anexo.\n\n"
+            "Atenciosamente,\nAssessoria de Comunicação Social – PCPR"
+        ),
+    )
     atualizado_em = models.DateTimeField("atualizado em", auto_now=True)
 
     class Meta:
@@ -482,6 +497,15 @@ class SolicitacaoCoffeeBreak(models.Model):
     )
     data_envio_empresa = models.DateField(
         "ordem bancária enviada à empresa em", blank=True, null=True
+    )
+    # O comprovante da OB anexado na etapa 3 (número e valor lidos do PDF,
+    # coffee_break/ordem_bancaria.py); vai por e-mail ao fornecedor.
+    arquivo_ordem_bancaria = models.FileField(
+        "ordem bancária (PDF)", upload_to="coffee_break/ordens_bancarias/%Y/", blank=True
+    )
+    numero_ordem_bancaria = models.CharField("número da ordem bancária", max_length=30, blank=True)
+    valor_ordem_bancaria = models.DecimalField(
+        "valor da ordem bancária", max_digits=12, decimal_places=2, blank=True, null=True
     )
     observacoes = models.TextField("observações", blank=True)
 
