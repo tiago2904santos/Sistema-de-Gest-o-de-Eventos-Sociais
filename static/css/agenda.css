@@ -130,6 +130,12 @@
 .ag-linhas--conflito a:hover { text-decoration: underline; }
 .fc .ag-encerrado { --fc-event-bg-color: var(--nt-r); --fc-event-border-color: var(--nt-r); --fc-event-text-color: var(--nt-t); }
 .fc .ag-encerrado .fc-event-title, .fc .ag-encerrado .fc-list-event-title a { text-decoration: line-through; font-weight: 500; }
+/* Feriados (m138): faixa de fundo no dia, com o nome pequeno no rodapé da célula. */
+.fc .fc-bg-event.ag-feriado { --fc-bg-event-color: var(--wn-t); --fc-bg-event-opacity: .14; position: relative; }
+.fc .fc-bg-event.ag-feriado--municipal { --fc-bg-event-color: var(--in-t); }
+.ag-feriado__nome { position: absolute; left: 4px; right: 4px; bottom: 2px; font-size: .66rem; line-height: 1.2; color: var(--nt-t); opacity: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.fc .fc-timegrid .ag-feriado__nome { top: 4px; bottom: auto; }
+.ag-chip--feriado .ag-chip__pt { background: var(--wn-b); border: 2px solid var(--wn-t); }
 .fc .fc-list-event-dot { border-color: var(--fc-event-border-color); border-width: 5px; }
 .fc .fc-list-event-title a { color: var(--grafite); text-decoration: none; font-weight: 500; }
 .fc .fc-list-event { cursor: pointer; }

@@ -81,7 +81,9 @@ def _cadastro() -> tuple[list[datetime.date], list[datetime.date]]:
 
     agora = time.monotonic()
     if _CACHE.get("ate", 0) < agora:
-        linhas = list(Feriado.objects.values_list("data", "anual"))
+        # Só os gerais: feriado municipal (m138) vale para a cidade, não para o
+        # expediente da casa nem para os prazos.
+        linhas = list(Feriado.objects.filter(municipio__isnull=True).values_list("data", "anual"))
         _CACHE["anuais"] = [data for data, anual in linhas if anual]
         _CACHE["datados"] = [data for data, anual in linhas if not anual]
         _CACHE["ate"] = agora + _CACHE_SEGUNDOS
@@ -134,6 +136,48 @@ def somar_dias_uteis(data: datetime.date, quantidade: int) -> datetime.date:
         if calendario.eh_dia_util(atual):
             restantes -= 1
     return atual
+
+
+def _projetar(data: datetime.date, inicio: datetime.date, fim: datetime.date, anual: bool):
+    """As ocorrências de um feriado cadastrado dentro de [inicio, fim]."""
+    if not anual:
+        return [data] if inicio <= data <= fim else []
+    saida = []
+    for ano in range(inicio.year, fim.year + 1):
+        try:
+            projetada = data.replace(year=ano)
+        except ValueError:  # 29/02 em ano não bissexto
+            continue
+        if inicio <= projetada <= fim:
+            saida.append(projetada)
+    return saida
+
+
+def feriados_no_periodo(inicio: datetime.date, fim: datetime.date, municipios=()) -> list[dict]:
+    """Os feriados de [inicio, fim] para mostrar: nacionais, os gerais do cadastro
+    e os municipais das cidades pedidas (m138).
+
+    Cada item é ``{"data", "nome", "municipio"}`` — ``municipio`` é o nome da
+    cidade num feriado municipal, ou "" nos demais. Ordem: data, depois nome.
+    """
+    from .models import Feriado
+
+    saida = []
+    for ano in range(inicio.year, fim.year + 1):
+        for data, nome in feriados_nacionais(ano).items():
+            if inicio <= data <= fim:
+                saida.append({"data": data, "nome": nome, "municipio": ""})
+    pks = {int(getattr(m, "pk", m)) for m in municipios or () if m}
+    cadastrados = Feriado.objects.filter(municipio__isnull=True)
+    if pks:
+        from django.db.models import Q
+
+        cadastrados = Feriado.objects.filter(Q(municipio__isnull=True) | Q(municipio_id__in=pks))
+    for f in cadastrados.select_related("municipio"):
+        for data in _projetar(f.data, inicio, fim, f.anual):
+            saida.append({"data": data, "nome": f.nome, "municipio": f.municipio.nome if f.municipio_id else ""})
+    saida.sort(key=lambda x: (x["data"], x["municipio"], x["nome"]))
+    return saida
 
 
 def dias_uteis_entre(inicio: datetime.date, fim: datetime.date) -> int:

@@ -427,11 +427,13 @@ def _demandas(usuario, inicio, fim) -> list[dict]:
 # A ordem é a ordem dos filtros na tela. Viagens primeiro porque é o módulo
 # de referência do sistema, e o que mais gera deslocamento de verdade.
 def _fontes_de_prazos() -> tuple[Fonte, ...]:
-    # Importado aqui porque ``agenda.prazos`` usa ``_evento`` e ``Fonte`` deste
-    # módulo: a camada de prazos (m129) entra depois dos compromissos.
+    # Importados aqui porque usam ``_evento`` e ``Fonte`` deste módulo: a
+    # camada de prazos (m129) e os feriados (m138) entram depois dos
+    # compromissos.
+    from .feriados import FONTE as FERIADOS
     from .prazos import FONTES as PRAZOS
 
-    return PRAZOS
+    return (*PRAZOS, FERIADOS)
 
 
 FONTES: tuple[Fonte, ...] = (

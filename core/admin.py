@@ -7,6 +7,7 @@ from .models import Feriado
 class FeriadoAdmin(admin.ModelAdmin):
     """Feriados locais (estaduais, municipais, pontos facultativos). Os nacionais são calculados."""
 
-    list_display = ("data", "nome", "anual")
+    list_display = ("data", "nome", "anual", "municipio")
     list_filter = ("anual",)
-    search_fields = ("nome",)
+    search_fields = ("nome", "municipio__nome")
+    autocomplete_fields = ("municipio",)

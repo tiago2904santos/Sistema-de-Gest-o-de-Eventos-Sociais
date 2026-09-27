@@ -52,8 +52,8 @@ class FontesDePrazo(BasePrazos):
     def test_as_fontes_de_prazo_entram_para_quem_tem_o_modulo(self):
         slugs = {f.slug for f in fontes.fontes_de(self.root)}
         self.assertTrue({"prazo_diarias", "imprensa", "pauta", "contratos", "certidoes"} <= slugs)
-        # Sem módulo nenhum: só o núcleo (solicitações), sem prazo de nada.
-        self.assertEqual({f.slug for f in fontes.fontes_de(self.comum)}, {"solicitacao"})
+        # Sem módulo nenhum: só o núcleo (solicitações e feriados), sem prazo de nada.
+        self.assertEqual({f.slug for f in fontes.fontes_de(self.comum)}, {"solicitacao", "feriado"})
 
     def test_prazo_de_saque_vira_evento_de_um_dia_com_as_classes_de_prazo(self):
         vencido = self.prestacao("ANA PRAZO", self.hoje - timedelta(days=2), numero=12)
