@@ -5,7 +5,7 @@ o lote e o saldo conferidos já na leitura (falta de saldo vira aviso antes
 de salvar), uma data só por OS (um período vira aviso: uma OS por dia) e o
 número da OS nunca sugerido — ele é da numeração única do sistema.
 
-A leitura genérica (datas, município, telefone, assinatura, local) vem de
+A leitura genérica (datas, município, telefone, assinatura, local, endereço) vem de
 `core.leitura` e de `core.preencher_por_email`. Nada aqui grava.
 """
 
@@ -17,7 +17,16 @@ import re
 from core.leitura.casamento import quantidade_de_pessoas
 from core.leitura.datas import dobrar, horarios_do_texto
 from core.leitura.mensagem import Mensagem
-from core.preencher_por_email import Sugestao, Sugestoes, data_do_email, local_no_texto, municipio_do_pedido, quando_do_pedido, quem_pede
+from core.preencher_por_email import (
+    Sugestao,
+    Sugestoes,
+    data_do_email,
+    local_no_texto,
+    municipio_do_pedido,
+    quando_do_pedido,
+    quem_pede,
+    sugerir_endereco,
+)
 
 from . import services
 
@@ -48,7 +57,7 @@ _R_RESPONSAVEL = re.compile(
 
 #: Campos que a memória guarda por remetente ao salvar (`core.aprendizado`):
 #: o que o próximo e-mail da mesma origem provavelmente repete.
-CAMPOS_APRENDIDOS = ["municipio", "local_entrega", "responsavel_recebimento"]
+CAMPOS_APRENDIDOS = ["municipio", "local_entrega", "endereco", "bairro", "cep", "responsavel_recebimento"]
 
 
 
@@ -184,6 +193,7 @@ def sugestoes(mensagem: Mensagem, usuario=None) -> Sugestoes:
     s.por("horario_evento", _horario(texto, quando))
 
     s.por("local_entrega", Sugestao.de_achado(local_no_texto(mensagem.corpo)))
+    sugerir_endereco(s, mensagem)
     s.por("responsavel_recebimento", _responsavel(mensagem, pessoa))
 
     if municipio is not None:

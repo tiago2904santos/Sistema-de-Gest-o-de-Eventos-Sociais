@@ -136,7 +136,9 @@ def linha_da_acao(item, chave, hoje=None):
             {"icone": "coffee", "rotulo": "Quantidade", "texto": f"{solicitacao.quantidade} pessoas", "ausente": False},
             {
                 "icone": "map-pin", "rotulo": "Local de entrega",
-                "texto": solicitacao.local_entrega or "Sem local de entrega", "ausente": not solicitacao.local_entrega,
+                "texto": " — ".join(p for p in (solicitacao.local_entrega, solicitacao.endereco_completo) if p)
+                or "Sem local de entrega",
+                "ausente": not (solicitacao.local_entrega or solicitacao.endereco_completo),
             },
             {
                 "icone": "user", "rotulo": "Responsável pelo recebimento",

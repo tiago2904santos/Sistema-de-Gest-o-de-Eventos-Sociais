@@ -123,6 +123,9 @@ class LerEmailTests(BasePreencherPorEmail):
         self.assertEqual(campos["estado"], str(self.parana.pk))
         self.assertEqual(campos["municipio"], str(self.ponta_grossa.pk))
         self.assertEqual(campos["local_evento"], "Ginásio de Esportes Oscar Pereira, Rua Carlos Cavalcanti, 500")
+        # O endereço também vai para o campo próprio; o da assinatura, não.
+        self.assertEqual(campos["endereco"], "Rua Carlos Cavalcanti, 500")
+        self.assertNotIn("cep", campos)
         self.assertEqual(campos["solicitante_nome"], "Maria Aparecida Souza")
         self.assertEqual(
             campos["solicitante_cargo_unidade"],

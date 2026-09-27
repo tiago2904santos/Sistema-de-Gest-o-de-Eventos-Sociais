@@ -1,0 +1,15 @@
+{% comment %}
+  Componente: os campos do endereço (endereço, bairro e CEP), ao lado do local.
+  Uso:
+    {% include "components/endereco_campos.html" with valores=valores erros=erros desabilitado=... %}
+  O endereço ocupa a linha inteira; bairro e CEP ficam lado a lado. Os nomes
+  dos campos são os do modelo (`endereco`, `bairro`, `cep`): o "Preencher com
+  um e-mail" aplica as sugestões pelo nome.
+{% endcomment %}
+<div class="endereco-campos">
+  <div class="endereco-campos__linha">
+    {% include "components/input.html" with name="endereco" label="Endereço" placeholder="Rua, número e complemento — ex.: Rua das Flores, 123, sala 2" maxlength="255" autocomplete="off" valor=valores.endereco erros=erros.endereco desabilitado=desabilitado %}
+  </div>
+  {% include "components/input.html" with name="bairro" label="Bairro" placeholder="Ex.: Centro" maxlength="120" autocomplete="off" valor=valores.bairro erros=erros.bairro desabilitado=desabilitado %}
+  {% include "components/input.html" with name="cep" label="CEP" placeholder="00000-000" mascara="cep" valor=valores.cep erros=erros.cep desabilitado=desabilitado %}
+</div>

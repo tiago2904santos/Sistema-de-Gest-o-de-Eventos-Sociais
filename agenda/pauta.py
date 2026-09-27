@@ -57,6 +57,12 @@ def _detalhe(props: dict, rotulo: str) -> str:
     return ""
 
 
+def _local(props: dict) -> str:
+    """O local e o endereço dele ("Ginásio X — Rua Y, 10 - Centro"); sem local, o município."""
+    partes = [p for p in (_detalhe(props, "Local"), _detalhe(props, "Endereço")) if p]
+    return " — ".join(partes) or props.get("municipio", "")
+
+
 def montar(usuario, inicio: dt.date, fim: dt.date, *, slugs=None, so_meus=False, hoje: dt.date | None = None) -> dict:
     """Os dias do período [inicio, fim], cada um com os seus compromissos.
 
@@ -85,7 +91,7 @@ def montar(usuario, inicio: dt.date, fim: dt.date, *, slugs=None, so_meus=False,
                 "rotulo": _ROTULOS.get(props["fonte"], props["fonte"]),
                 "titulo": ev["title"],
                 "horario": _detalhe(props, "Horário"),
-                "local": _detalhe(props, "Local") or props.get("municipio", ""),
+                "local": _local(props),
                 "equipe": ", ".join(props.get("pessoas") or ()),
                 "situacao": props.get("situacao", ""),
                 "continua": ev_inicio < d,

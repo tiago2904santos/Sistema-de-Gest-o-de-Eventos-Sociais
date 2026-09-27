@@ -166,6 +166,8 @@
             {% include "components/input.html" with name="local_evento" label="Local do evento" placeholder="Ex.: Praça central, escola..." valor=valores.local_evento erros=erros.local_evento desabilitado=dados_desabilitado %}
             {% include "components/select.html" with name="tipo_operacao" label="Tipo de operação" opcoes=tipos_operacao selecionado=valores.tipo_operacao erros=erros.tipo_operacao desabilitado=planejamento_desabilitado %}
             {% include "components/input.html" with name="quantidade_cin" label="Quantidade de CIN agendadas" tipo="number" minimo=0 passo="1" valor=valores.quantidade_cin erros=erros.quantidade_cin desabilitado=planejamento_desabilitado %}
+            {# O endereço do local do evento: a linha larga do logradouro, bairro e CEP lado a lado. #}
+            <div class="cheia">{% include "components/endereco_campos.html" with valores=valores erros=erros desabilitado=dados_desabilitado %}</div>
             <div class="sol-protocolo" id="protocolo">
               {% include "components/input.html" with name="protocolo" label="Protocolo (eProtocolo)" placeholder="00.000.000-0" inputmode="numeric" maxlength="12" autocomplete="off" valor=valores.protocolo erros=erros.protocolo desabilitado=dados_desabilitado %}
               {% if solicitacao.protocolo %}

@@ -36,6 +36,7 @@
       {% if uppercase %}data-uppercase="true"{% endif %}
       {% if diaria_base %}data-diaria-base="true"{% endif %}
       {% if mascara == "telefone" %}inputmode="tel" autocomplete="tel" maxlength="15" data-mask-telefone{% endif %}
+      {% if mascara == "cep" %}inputmode="numeric" autocomplete="postal-code" maxlength="10" data-mask-cep{% endif %}
       {% if erros %}aria-invalid="true" aria-describedby="id_{{ name }}_erro{% if ajuda %} id_{{ name }}_ajuda{% endif %}"{% elif ajuda %}aria-describedby="id_{{ name }}_ajuda"{% endif %}
       {% if desabilitado %}disabled{% endif %}
       {% if somente_leitura %}readonly{% endif %}

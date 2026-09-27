@@ -255,3 +255,26 @@ class PortalTests(TestCase):
         self.client.force_login(self.superusuario)
         resposta = self.client.get(reverse("dashboard:index"))
         self.assertContains(resposta, f'href="{reverse("cadastros:index")}"')
+
+
+class CepEEnderecoTests(TestCase):
+    """O CEP do formulário (8 dígitos, gravado como 00000-000) e o endereço numa linha."""
+
+    def test_cep_do_formulario(self):
+        from django.core.exceptions import ValidationError
+
+        from core.utils.masks import limpar_cep_do_formulario
+
+        self.assertEqual(limpar_cep_do_formulario("84010000"), "84010-000")
+        self.assertEqual(limpar_cep_do_formulario(" 84.010-000 "), "84010-000")
+        self.assertEqual(limpar_cep_do_formulario(""), "")
+        for errado in ("8401000", "840100000", "84O10-000"):
+            with self.assertRaises(ValidationError):
+                limpar_cep_do_formulario(errado)
+
+    def test_endereco_numa_linha(self):
+        from core.utils.masks import juntar_endereco
+
+        self.assertEqual(juntar_endereco("Rua Um, 10", "Centro", "84010000"), "Rua Um, 10 - Centro - CEP 84010-000")
+        self.assertEqual(juntar_endereco("Rua Um, 10", "", ""), "Rua Um, 10")
+        self.assertEqual(juntar_endereco("", "", ""), "")

@@ -135,6 +135,8 @@
           {% include "components/input.html" with name="local_entrega" label="Local de entrega" placeholder="Ex.: Casa da Cultura - Rua do Centenário, 2011 - Centro - Campo Largo" valor=valores.local_entrega erros=erros.local_entrega desabilitado=somente_leitura %}
           {% include "components/input.html" with name="responsavel_recebimento" label="Responsável pelo recebimento" placeholder="Ex.: Tadeu 41 99988-6010" valor=valores.responsavel_recebimento erros=erros.responsavel_recebimento desabilitado=somente_leitura %}
         </div>
+        {# O endereço da entrega, abaixo do local: o logradouro numa linha, bairro e CEP lado a lado. #}
+        <div class="cb-endereco">{% include "components/endereco_campos.html" with valores=valores erros=erros desabilitado=somente_leitura %}</div>
         {% if not somente_leitura %}
           {# Ao escolher o município: local e responsável já usados ali (coffee-break-lote.js). Só o clique preenche. #}
           <div class="sugestao-solicitante" data-cb-locais data-url="{% url 'coffee_break:locais_entrega' %}" hidden></div>

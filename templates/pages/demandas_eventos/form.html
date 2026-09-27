@@ -110,6 +110,14 @@
                 {% if instancia and not instancia.municipio_id and instancia.municipio_texto %}<p class="form-ajuda">Na planilha: {{ instancia.municipio_texto }}</p>{% endif %}
               </div>
             </div>
+            {# O lugar e o endereço dele, logo abaixo do município. #}
+            <div class="ofc-percurso__linha">
+              <div class="bate-volta__rotulo ofc-percurso__rotulo">Local</div>
+              <div class="pal-local">
+                {% include "components/input.html" with name="local" label="Local do evento" placeholder="Ex.: Colégio Estadual, auditório da prefeitura..." maxlength="255" valor=valores.local erros=erros.local %}
+                {% include "components/endereco_campos.html" with valores=valores erros=erros %}
+              </div>
+            </div>
             <div class="ofc-percurso__linha">
               <div class="bate-volta__rotulo ofc-percurso__rotulo">Público</div>
               <div class="pal-publico">

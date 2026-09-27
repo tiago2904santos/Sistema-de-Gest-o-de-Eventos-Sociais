@@ -65,6 +65,32 @@ def format_cep(value):
     return f"{digits[:5]}-{digits[5:]}"
 
 
+def juntar_endereco(endereco, bairro="", cep=""):
+    """"Rua X, 10 - Centro - CEP 84010-000": o endereço numa linha, para mostrar e imprimir."""
+    partes = [str(endereco or "").strip(), str(bairro or "").strip()]
+    cep = format_cep(cep)
+    if cep:
+        partes.append(f"CEP {cep}")
+    return " - ".join(p for p in partes if p)
+
+
+def limpar_cep_do_formulario(value):
+    """O CEP digitado no formulário: vazio ou "00000-000".
+
+    Aceita "84010000", "84.010-000", "84010-000"; com outro número de
+    dígitos é erro de validação (o campo não guarda CEP pela metade).
+    """
+    from django.core.exceptions import ValidationError
+
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    digits = only_digits(text)
+    if len(digits) != 8 or re.search(r"[^\d.\-\s]", text):
+        raise ValidationError("Informe o CEP com 8 dígitos (00000-000).")
+    return f"{digits[:5]}-{digits[5:]}"
+
+
 def format_rg(value):
     text = str(value or "").strip()
     if not text:

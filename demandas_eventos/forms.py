@@ -8,6 +8,8 @@ from cadastros.models import Estado, Municipio
 
 from .models import CanalSolicitacao, DemandaEvento, Palestrante, RespostaPadrao, Tema
 from .permissions import setores_do_usuario_para_modulo
+from core.utils.masks import limpar_cep_do_formulario
+
 from .planilha import formatar_telefone
 
 
@@ -32,6 +34,10 @@ class DemandaEventoForm(forms.ModelForm):
             "data_fim_evento",
             "hora_inicio",
             "evento",
+            "local",
+            "endereco",
+            "bairro",
+            "cep",
             "informacoes_previas",
             "solicitante",
             "telefone",
@@ -81,6 +87,9 @@ class DemandaEventoForm(forms.ModelForm):
         if not telefone:
             raise forms.ValidationError("Informe o telefone com DDD: (00) 0000-0000 ou (00) 00000-0000.")
         return telefone
+
+    def clean_cep(self):
+        return limpar_cep_do_formulario(self.cleaned_data.get("cep"))
 
     def clean_email(self):
         return (self.cleaned_data.get("email") or "").strip().lower()

@@ -54,6 +54,7 @@
   {% if "antes_local" in quebras %}<div class="quebra"></div>{% endif %}
   <p class="local"><span class="rotulo">{{ b.cb_rotulo_local|linhas }}</span></p>
   <p class="local-texto">{{ s.local_entrega|default:"—" }}</p>
+  {% if s.endereco_completo %}<p class="local-texto">{{ s.endereco_completo }}</p>{% endif %}
 
   <p class="responsavel"><span class="rotulo">{{ b.cb_rotulo_responsavel|linhas }}</span> {{ s.responsavel_recebimento|default:"—" }}</p>
 

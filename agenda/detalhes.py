@@ -72,6 +72,7 @@ ROTULOS_DE_TIPO = {
 # dossiê não inventar um vocabulário visual próprio.
 ICONES = {
     "destino": "map-pin", "município": "map-pin", "local": "map-pin",
+    "endereço": "map-pin", "local de entrega": "map-pin",
     "destinos": "map-pin", "sai de": "map-pin", "região": "map-pin",
     "período": "calendar", "evento": "calendar", "data da solicitação": "calendar",
     "criada em": "calendar", "atesto gaf": "calendar", "ordem bancária": "calendar",
@@ -510,6 +511,7 @@ def _solicitacao(usuario, pk) -> dict:
         ("Data da solicitação", s.data_solicitacao.strftime("%d/%m/%Y") if s.data_solicitacao else ""),
         ("Região", str(s.regiao) if s.regiao_id else ""),
         ("Local", s.local_evento),
+        ("Endereço", s.endereco_completo),
         ("Solicitante", s.solicitante_nome),
         ("Cargo / unidade", s.solicitante_cargo_unidade),
         ("Contato", s.contato),
@@ -610,6 +612,8 @@ def _coffee(usuario, pk) -> dict:
     )
     d["campos"] = _campos([
         ("Quantidade", f"{c.quantidade or 0} unidade(s)"),
+        ("Local de entrega", c.local_entrega),
+        ("Endereço", c.endereco_completo),
         ("Número", c.numero),
         ("Data da solicitação", c.data_solicitacao.strftime("%d/%m/%Y") if c.data_solicitacao else ""),
         ("Nota fiscal", c.numero_nota_fiscal),
@@ -682,6 +686,8 @@ def _demanda(usuario, pk) -> dict:
     d["campos"] = _campos([
         ("Horário", dm.horario_display),
         ("Observação do período", dm.periodo_evento_texto),
+        ("Local", dm.local),
+        ("Endereço", dm.endereco_completo),
         ("Andamento", (dm.andamento or "").strip()),
         ("Informações prévias", (dm.informacoes_previas or "").strip()),
         ("Solicitante", dm.solicitante),

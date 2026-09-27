@@ -45,6 +45,7 @@ from django.utils import timezone
 
 from core.leitura.casamento import Achado, format_protocolo, municipio_no_texto, protocolo_no_texto, telefone_no_texto
 from core.leitura.datas import Quando, dobrar, quando_do_evento
+from core.leitura.endereco import Endereco, endereco_no_texto
 from core.leitura.mensagem import Mensagem, MensagemIlegivel, ler_mensagem, ler_texto_colado
 from core.leitura.triagem import MODULOS, triar_mensagem
 
@@ -66,6 +67,8 @@ __all__ = [
     "ler_do_pedido",
     "ler_guardado",
     "local_no_texto",
+    "local_sem_endereco",
+    "sugerir_endereco",
     "modulos_de_triagem",
     "municipio_do_pedido",
     "opcoes_de_triagem",
@@ -475,6 +478,43 @@ def local_no_texto(texto: str) -> Achado | None:
             comeco = max(texto.rfind("\n", 0, m.start()) + 1, m.start() - 80)
             return Achado(valor, valor, texto[comeco:fim + 1].strip(), "M")
     return None
+
+
+def sugerir_endereco(s: Sugestoes, mensagem: Mensagem) -> Endereco | None:
+    """Endereço, bairro e CEP do evento (ou da entrega), campo a campo.
+
+    Lê só o corpo e passa a assinatura para ser ignorada: o endereço de
+    quem escreve não é o do evento. Confiança "A" com CEP ou palavra-âncora
+    ("local", "será realizado", "entrega"); senão "M" (preenche e destaca).
+    """
+    achado = endereco_no_texto(mensagem.corpo or "", assinatura=mensagem.assinatura or "")
+    if achado is None:
+        return None
+    confianca = achado.confianca
+    endereco = achado.endereco[:255]
+    s.por("endereco", Sugestao(endereco, endereco, confianca, achado.trecho))
+    s.por("bairro", Sugestao(achado.bairro, achado.bairro, confianca, achado.trecho))
+    s.por("cep", Sugestao(achado.cep, achado.cep, "A", achado.trecho))
+    return achado
+
+
+def local_sem_endereco(local: Achado | None, endereco: Endereco | None) -> Achado | None:
+    """O nome do lugar, sem o endereço que veio junto.
+
+    "Ginásio Municipal, Rua X, 500" vira "Ginásio Municipal" quando o
+    endereço já foi para os campos próprios; um "local" que é só o
+    endereço ("Rua X, 500") não sugere nada.
+    """
+    if local is None or endereco is None or not endereco.logradouro_numero:
+        return local
+    nome_da_rua = dobrar(endereco.logradouro_numero.split(",")[0]).strip()
+    posicao = dobrar(local.valor).find(nome_da_rua) if nome_da_rua else -1
+    if posicao == -1:
+        return local
+    valor = local.valor[:posicao].strip(" ,;:-–—")
+    if not valor:
+        return None
+    return Achado(valor, valor, local.trecho, local.confianca)
 
 
 # ---------------------------------------------------------------------------

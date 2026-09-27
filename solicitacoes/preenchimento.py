@@ -4,7 +4,7 @@ As regras do domínio do evento social: o tipo do evento por nome ou
 sinônimo (curso é Capacitação, formatura é Inauguração/Solenidade), o
 Paraná em Ação que fixa o solicitante, os serviços por palavra-chave, a
 quantidade de CIN, o órgão e a unidade móvel só como sugestão (são decisão
-interna). A leitura genérica (datas, município, telefone, assinatura, local)
+interna). A leitura genérica (datas, município, telefone, assinatura, local, endereço)
 vem de `core.leitura` e de `core.preencher_por_email`.
 
 Nada aqui grava: a tela aplica as sugestões nos campos vazios e quem
@@ -21,7 +21,16 @@ from cadastros.models import Municipio, OrgaoResponsavel, Servico, TipoEvento
 from core.leitura.casamento import cadastro_no_texto, cadastros_no_texto, quantidade_no_texto
 from core.leitura.datas import dobrar
 from core.leitura.mensagem import Mensagem
-from core.preencher_por_email import Sugestao, Sugestoes, data_do_email, local_no_texto, municipio_do_pedido, quando_do_pedido, quem_pede
+from core.preencher_por_email import (
+    Sugestao,
+    Sugestoes,
+    data_do_email,
+    local_no_texto,
+    municipio_do_pedido,
+    quando_do_pedido,
+    quem_pede,
+    sugerir_endereco,
+)
 
 PARANA_EM_ACAO = "Paraná em Ação"
 # O que o formulário grava no solicitante quando o tipo é Paraná em Ação
@@ -83,7 +92,7 @@ _R_DIA_DA_SEMANA = re.compile(r"\b(segunda|terca|quarta|quinta|sexta)(\s*-?\s*)f
 
 #: Campos que a memória guarda por remetente ao salvar (`core.aprendizado`):
 #: o que o próximo e-mail da mesma origem provavelmente repete.
-CAMPOS_APRENDIDOS = ["tipo_evento", "estado", "municipio", "local_evento", "solicitante_nome", "solicitante_cargo_unidade", "contato", "orgao_responsavel", "servicos", "unidade_movel", "tipo_operacao"]
+CAMPOS_APRENDIDOS = ["tipo_evento", "estado", "municipio", "local_evento", "endereco", "bairro", "cep", "solicitante_nome", "solicitante_cargo_unidade", "contato", "orgao_responsavel", "servicos", "unidade_movel", "tipo_operacao"]
 
 
 
@@ -170,6 +179,7 @@ def sugestoes(mensagem: Mensagem, usuario=None) -> Sugestoes:
         s.por("municipio", Sugestao.de_achado(municipio))
 
     s.por("local_evento", Sugestao.de_achado(local_no_texto(mensagem.corpo)))
+    sugerir_endereco(s, mensagem)
 
     if parana_em_acao:
         nome, unidade = SOLICITANTE_PARANA_EM_ACAO

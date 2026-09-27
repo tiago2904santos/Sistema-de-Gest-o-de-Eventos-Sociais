@@ -109,6 +109,13 @@ class SolicitacaoEvento(models.Model):
         help_text="Qual unidade móvel vai ao evento (obrigatória quando há unidade móvel).",
     )
     local_evento = models.CharField("local do evento", max_length=255, blank=True)
+    # O endereço em campos separados (o "local" é o nome do lugar): o
+    # "Preencher com um e-mail" lê cada parte e o CEP vai no formato 00000-000.
+    endereco = models.CharField(
+        "endereço", max_length=255, blank=True, help_text="Logradouro, número e complemento."
+    )
+    bairro = models.CharField("bairro", max_length=120, blank=True)
+    cep = models.CharField("CEP", max_length=9, blank=True, help_text="00000-000")
     # Muitos pedidos chegam por protocolo: o número do ofício liga a
     # solicitação ao processo, no formato 00.000.000-0 (como nas Palestras).
     protocolo = models.CharField(
@@ -195,6 +202,13 @@ class SolicitacaoEvento(models.Model):
                 name="periodo_evento_valido",
             ),
         ]
+
+    @property
+    def endereco_completo(self) -> str:
+        """Endereço, bairro e CEP numa linha ("Rua X, 10 - Centro - CEP 84010-000")."""
+        from core.utils.masks import juntar_endereco
+
+        return juntar_endereco(self.endereco, self.bairro, self.cep)
 
     def __str__(self):
         return f"Solicitação #{self.pk} — {self.municipio} ({self.get_status_display()})"

@@ -3129,3 +3129,12 @@ tr[data-importar-url].is-alvo>td:first-child{box-shadow:inset 2px 0 0 var(--sel-
 .tri__opcao--sugerida{border-color:var(--d-400);background:var(--d-50);font-weight:600}
 .tri__opcao small{font-size:11.5px;font-weight:400;color:var(--n-500)}
 @media (max-width:680px){.tri__zona{flex-wrap:wrap}}
+
+/* Endereço ao lado do local: a linha larga do logradouro, bairro e CEP lado a lado. */
+.endereco-campos{display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,160px);gap:12px;align-items:start}
+.endereco-campos .form-campo{margin:0}
+.endereco-campos__linha{grid-column:1/-1}
+@container (max-width:680px){.endereco-campos{grid-template-columns:minmax(0,1fr)}}
+.cb-endereco{margin-top:12px}
+.pal-local{display:grid;gap:12px}
+.pal-local>.form-campo{margin:0}

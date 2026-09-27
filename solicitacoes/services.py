@@ -108,6 +108,9 @@ CAMPOS_FOTOGRAFIA = [
     ("orgao_responsavel", "Órgão responsável"),
     ("tipo_evento", "Tipo do evento"),
     ("local_evento", "Local do evento"),
+    ("endereco", "Endereço"),
+    ("bairro", "Bairro"),
+    ("cep", "CEP"),
     ("protocolo", "Protocolo (eProtocolo)"),
     ("tipo_operacao", "Tipo de operação"),
     ("quantidade_cin", "CIN agendadas"),
@@ -543,7 +546,7 @@ def transferir(solicitacao, usuario, novo_responsavel, motivo=""):
 # O que a cópia leva: o evento que se repete, sem datas, protocolo, decisão
 # nem anexos (esses são de cada pedido).
 CAMPOS_DUPLICADOS = [
-    "municipio", "tipo_evento", "local_evento", "solicitante_nome",
+    "municipio", "tipo_evento", "local_evento", "endereco", "bairro", "cep", "solicitante_nome",
     "solicitante_cargo_unidade", "contato", "orgao_responsavel", "unidade_movel",
     "unidade_movel_designada", "descricao_complementar", "tipo_operacao",
     "quantidade_cin", "motorista",
