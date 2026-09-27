@@ -53,7 +53,9 @@ def contexto_da_pagina(request, vinculo, objeto) -> dict:
             # Em linguagem do documento, agrupado por digitação, com "Voltar" (m116).
             "historico": historico_legivel(vinculo, vinculo.historico(objeto), pode_editar=pode_editar),
             "url_folha": vinculo.url("folha", objeto),
-            "api": {especie: vinculo.url(especie, objeto, "CHAVE") for especie in ("campo", "bloco", "quebra")},
+            "api": {especie: vinculo.url(especie, objeto, "CHAVE") for especie in ("campo", "bloco", "quebra", "textos")},
+            # Campos com textos prontos para inserir (m118).
+            "textos_prontos": " ".join(vinculo.campos_com_textos(objeto)) if pode_editar else "",
             "principais": " ".join(vinculo.principais),
             "versao": vinculo.versao(objeto),
             "pode_editar": pode_editar,

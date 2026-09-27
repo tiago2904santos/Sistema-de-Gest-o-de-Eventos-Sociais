@@ -362,7 +362,7 @@ CADASTROS = {
             {
                 "titulo": "Modelo de texto",
                 "subtitulo": "O campo do relatório em que o modelo entra, o nome e o texto.",
-                "campos": ["campo", "nome", "texto"],
+                "campos": ["campo", "nome", "texto", "is_padrao"],
             }
         ],
     },
@@ -409,7 +409,7 @@ DIARIAS["secoes"] = DIARIA_SECOES
 CATALOGOS_DE_OFICIO = {"motivos-oficio", "modelos-justificativa"}
 # Modelos de texto: vivem na seção "Modelos" da navegação, com trilha própria.
 CATALOGOS_DE_MODELO = ("motivos-oficio", "modelos-justificativa", "modelos-texto-rt")
-COM_PADRAO = {"cargos", "combustiveis", "presets-pt", *CATALOGOS_DE_OFICIO}
+COM_PADRAO = {"cargos", "combustiveis", "presets-pt", "modelos-texto-rt", *CATALOGOS_DE_OFICIO}
 
 
 def _config(slug):

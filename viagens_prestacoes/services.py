@@ -315,6 +315,38 @@ def relatorio_tecnico_default_values(prestacao) -> dict:
     return values
 
 
+def valores_do_relatorio_tecnico(prestacao) -> dict:
+    """Os campos automáticos dos modelos de texto do RT (m118): os do ofício
+    (`{destino}`, `{periodo}`, `{servidores}`...), o `{motivo}` do ofício e,
+    havendo plano de trabalho na viagem, `{atividades}` e `{metas}` dele."""
+    from viagens_oficios.campos_modelo import valores_do_oficio
+
+    oficio = prestacao.oficio
+    valores = valores_do_oficio(oficio)
+    valores["motivo"] = normalize_spaces(oficio.motivo or "")
+    valores.update(atividades="", metas="")
+    if oficio.viagem_id:
+        plano = oficio.viagem.planos_trabalho.filter(cancelado=False).order_by("-pk").first()
+        if plano is not None:
+            valores["atividades"] = (plano.atividades or "").strip()
+            valores["metas"] = (plano.metas or "").strip()
+    return valores
+
+
+def textos_padrao_relatorio_tecnico(prestacao) -> dict:
+    """Campo do RT → texto do modelo padrão daquele campo, já com os
+    marcadores trocados (m118). Só os campos que têm padrão."""
+    from viagens_oficios.campos_modelo import aplicar
+
+    from .models import ModeloTextoRelatorioTecnico
+
+    padroes = {m.campo: m.texto for m in ModeloTextoRelatorioTecnico.objects.filter(is_padrao=True)}
+    if not padroes:
+        return {}
+    valores = valores_do_relatorio_tecnico(prestacao)
+    return {campo: aplicar(texto, valores).strip() for campo, texto in padroes.items()}
+
+
 def garantir_campos_padrao_relatorio_tecnico(relatorio: RelatorioTecnico) -> list[str]:
     prestacao = relatorio.prestacao
     defaults = relatorio_tecnico_default_values(prestacao)
@@ -347,6 +379,13 @@ def garantir_campos_padrao_relatorio_tecnico(relatorio: RelatorioTecnico) -> lis
 
         if deve_atualizar:
             setattr(relatorio, campo, valor_padrao)
+            update_fields.append(campo)
+
+    # Os textos do relatório que ainda estão em branco recebem o modelo padrão
+    # do campo (m118); o que já foi escrito fica como está.
+    for campo, texto in textos_padrao_relatorio_tecnico(prestacao).items():
+        if texto and not normalize_spaces(getattr(relatorio, campo, "") or ""):
+            setattr(relatorio, campo, texto)
             update_fields.append(campo)
 
     if update_fields:

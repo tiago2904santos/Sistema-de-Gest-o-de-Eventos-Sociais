@@ -284,3 +284,14 @@ def quebra(request, tipo, pk, chave):
     request.auditoria_origem = "editor"
     ativa = definir_quebra(vinculo.tipo, vinculo.dono_dos_blocos(objeto), chave, corpo["ativa"], request.user)
     return _gravado(request, vinculo, objeto, ativa=ativa)
+
+
+@require_http_methods(["GET"])
+def textos(request, tipo, pk, chave):
+    """Os textos prontos de um campo (m118): os modelos de motivo, de
+    justificativa e do relatório técnico, com os marcadores já trocados pelos
+    dados do documento. Campo sem modelos devolve a lista vazia."""
+    vinculo, objeto = _acesso(request, tipo, pk)
+    if registro.campo(vinculo.chave, chave) is None:
+        raise Http404("Campo fora do registro do editor.")
+    return JsonResponse({"ok": True, "textos": vinculo.textos_prontos(objeto, chave)})

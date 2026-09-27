@@ -140,6 +140,24 @@ def _gravar_recorte(form, nomes, derivados=None):
     return objeto
 
 
+def _modelos_de_motivo():
+    from viagens_oficios.models import ModeloMotivoOficio
+
+    return ModeloMotivoOficio.objects.order_by("nome")
+
+
+def _modelos_de_justificativa():
+    from viagens_oficios.models import ModeloJustificativa
+
+    return ModeloJustificativa.objects.order_by("nome")
+
+
+def _modelos_do_rt(campo):
+    from viagens_prestacoes.models import ModeloTextoRelatorioTecnico
+
+    return ModeloTextoRelatorioTecnico.objects.filter(campo=campo).order_by("nome")
+
+
 # ---- Vínculos ------------------------------------------------------------
 
 
@@ -309,6 +327,32 @@ class VinculoBase:
     def pode_emitir(self, usuario, objeto) -> bool:
         return self.pode_editar(usuario, objeto) and not self.pendencias(objeto)
 
+    # Textos prontos (m118): campo do editor → consulta dos modelos de texto
+    # do sistema que servem a ele (`.values_list("pk", "nome", "texto")`).
+    # `valores_para_textos` dá os campos automáticos ({destino}, {periodo}...).
+    TEXTOS_PRONTOS: dict = {}
+
+    def valores_para_textos(self, objeto) -> dict:
+        return {}
+
+    def campos_com_textos(self, objeto) -> list[str]:
+        """As chaves dos campos que têm ao menos um texto pronto."""
+        return [chave for chave, consulta in self.TEXTOS_PRONTOS.items() if consulta(objeto).exists()]
+
+    def textos_prontos(self, objeto, chave) -> list[dict]:
+        """Os textos prontos de um campo, com os marcadores já trocados pelos
+        dados do documento."""
+        from viagens_oficios.campos_modelo import aplicar
+
+        consulta = self.TEXTOS_PRONTOS.get(chave)
+        if consulta is None:
+            return []
+        valores = self.valores_para_textos(objeto)
+        return [
+            {"id": pk, "nome": str(nome), "texto": aplicar(str(texto or ""), valores)}
+            for pk, nome, texto in consulta(objeto).values_list("pk", "nome", "texto")
+        ]
+
     def historico(self, objeto) -> list:
         return []
 
@@ -399,6 +443,13 @@ class VinculoOficio(VinculoBase):
         from viagens_oficios.services import validar_oficio_para_documento
 
         return validar_oficio_para_documento(oficio)["pendencias"]
+
+    TEXTOS_PRONTOS = {"motivo": lambda oficio: _modelos_de_motivo()}
+
+    def valores_para_textos(self, oficio):
+        from viagens_oficios.campos_modelo import valores_do_oficio
+
+        return valores_do_oficio(oficio)
 
     def historico(self, oficio):
         from viagens_oficios.views import historico_do_oficio
@@ -612,6 +663,12 @@ class VinculoJustificativa(VinculoBase):
         return reverse("viagens_oficios:gerar", args=[oficio.pk, "justificativa", "pdf"])
 
     DESTINOS_DE_PENDENCIAS = ((r"justificativa", "justificativa_texto"),)
+    TEXTOS_PRONTOS = {"justificativa_texto": lambda oficio: _modelos_de_justificativa()}
+
+    def valores_para_textos(self, oficio):
+        from viagens_oficios.campos_modelo import valores_do_oficio
+
+        return valores_do_oficio(oficio)
 
     def pendencias(self, oficio):
         from viagens_oficios.services import validar_oficio_para_documento
@@ -644,6 +701,13 @@ class VinculoOrdem(VinculoBase):
 
         payload = {"institucional": build_configuracao_context(), "ordem_servico": resumo_da_ordem(ordem), "documento": self.documental(ordem)}
         return contexto_da_ordem_servico(payload, build_os_docxtpl_context(ordem), modo=modo, campos_editaveis=campos_editaveis)
+
+    TEXTOS_PRONTOS = {"os_motivo": lambda ordem: _modelos_de_motivo()}
+
+    def valores_para_textos(self, ordem):
+        from viagens_oficios.campos_modelo import valores_da_ordem
+
+        return valores_da_ordem(ordem)
 
     def rotulo(self, ordem):
         numero = f"{ordem.numero:03d}/{ordem.ano}" if ordem.numero and ordem.ano else ordem.numero_formatado
@@ -779,6 +843,18 @@ class VinculoRelatorio(VinculoBase):
         contexto = contexto_do_relatorio_tecnico(payload, tx, modo=modo, campos_editaveis=campos_editaveis)
         contexto["ids"] = {"servidor": ps.servidor_id}
         return contexto
+
+    # Os modelos de texto do RT, por campo do relatório.
+    TEXTOS_PRONTOS = {
+        f"rt_{trecho}": (lambda campo: (lambda ps: _modelos_do_rt(campo)))(campo)
+        for trecho, campo in (("motivo", "motivo"), ("atividade", "atividade"), ("conclusao", "conclusao"),
+                              ("medidas", "medidas"), ("info", "info_complementares"))
+    }
+
+    def valores_para_textos(self, ps):
+        from viagens_prestacoes.services import valores_do_relatorio_tecnico
+
+        return valores_do_relatorio_tecnico(ps.prestacao)
 
     def rotulo(self, ps):
         return f"Relatório técnico – {ps.servidor.nome}"

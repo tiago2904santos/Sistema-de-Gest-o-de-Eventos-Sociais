@@ -64,8 +64,13 @@ def render(request, template, context, **kwargs):
         context["diaria_name"] = f"ps-{context['ps'].pk}-diaria_valor_override"
         context["diaria_recebida"] = diaria_recebida_display(context['ps'])
     if context.get("relatorio"):
+        from viagens_oficios.campos_modelo import aplicar
+
         from .models import ModeloTextoRelatorioTecnico
-        context["modelos_texto"] = {str(m.pk): m.texto for m in ModeloTextoRelatorioTecnico.objects.all()}
+        from .services import valores_do_relatorio_tecnico
+        # O texto de cada modelo já com os campos automáticos do ofício (m118).
+        valores = valores_do_relatorio_tecnico(context["relatorio"].prestacao)
+        context["modelos_texto"] = {str(m.pk): aplicar(m.texto, valores) for m in ModeloTextoRelatorioTecnico.objects.all()}
     if "form" in context:
         context["campos"] = campos_v32(context["form"])
         if template.endswith("relatorio_tecnico_form.html"):

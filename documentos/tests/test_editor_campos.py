@@ -334,3 +334,29 @@ class PendenciasNavegaveisTests(CenarioOficioMixin, TestCase):
         self.cfg.assinaturas.all().delete()
         folha = self.client.get(reverse('documentos:editor_folha', args=['oficio', o.pk])).content.decode()
         self.assertIn('data-doc-vazio="quem assina"', folha)
+
+
+class TextosProntosTests(CenarioOficioMixin, TestCase):
+    """Os modelos de texto do sistema dentro do editor (m118)."""
+
+    def test_endpoint_lista_os_modelos_do_campo_com_marcadores_trocados(self):
+        from viagens_oficios.models import ModeloMotivoOficio
+        o = self.criar()
+        ModeloMotivoOficio.objects.create(nome="COBERTURA", texto="Cobertura em {destino}, {periodo}.")
+        r = self.client.get(reverse("documentos:editor_textos", args=["oficio", o.pk, "motivo"]))
+        self.assertEqual(r.status_code, 200, r.content)
+        textos = r.json()["textos"]
+        self.assertEqual(textos[0]["nome"], "COBERTURA")
+        self.assertEqual(textos[0]["texto"], "Cobertura em LONDRINA/PR, 10/09/2026 a 11/09/2026.")
+        # Campo sem modelos: lista vazia; campo fora do registro: 404.
+        self.assertEqual(self.client.get(reverse("documentos:editor_textos", args=["oficio", o.pk, "protocolo"])).json()["textos"], [])
+        self.assertEqual(self.client.get(reverse("documentos:editor_textos", args=["oficio", o.pk, "nada"])).status_code, 404)
+        r = self.client.get(reverse("documentos:editor_embutido", args=["oficio", o.pk]))
+        self.assertContains(r, 'data-de-textos-campos="motivo"')
+        self.assertContains(r, "Inserir texto pronto")
+
+    def test_sem_modelos_o_menu_nao_aparece(self):
+        o = self.criar()
+        r = self.client.get(reverse("documentos:editor_embutido", args=["oficio", o.pk]))
+        self.assertContains(r, 'data-de-textos-campos=""')
+        self.assertNotContains(r, "Inserir texto pronto")

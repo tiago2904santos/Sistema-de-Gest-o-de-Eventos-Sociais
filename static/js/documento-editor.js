@@ -41,7 +41,8 @@
   var urls = {
     campo: editor.getAttribute('data-de-url'),
     bloco: editor.getAttribute('data-de-url-bloco'),
-    quebra: editor.getAttribute('data-de-url-quebra')
+    quebra: editor.getAttribute('data-de-url-quebra'),
+    textos: editor.getAttribute('data-de-url-textos') || ''
   };
   var versao = editor.getAttribute('data-de-versao') || '';
   /* Origens do registro principal do documento (o ofício, o termo, a ordem de
@@ -461,6 +462,11 @@
       if (!el) return;
       if (chaveAberta) fechar();
       sessaoDoTrecho.set(el, { id: ++sessoes, antes: valoresDoTrecho(enderecoDoTrecho(el), textoDoTrecho(el)) });
+      guardarCursor(el);
+    });
+    doc.addEventListener('selectionchange', function () {
+      var el = alvoDigitavel(doc.activeElement);
+      if (el) guardarCursor(el);
     });
     doc.addEventListener('input', function (evento) {
       var el = alvoDigitavel(evento.target);
@@ -489,6 +495,12 @@
       if (evento.key === 'Enter' && el.getAttribute('data-doc-digitavel') !== 'varias') {
         evento.preventDefault();
         el.blur();
+      }
+      // "/" num trecho vazio que tem textos prontos abre o menu deles (m118).
+      if (evento.key === '/' && !textoDoTrecho(el).trim() && temTextos(chaveDoTrecho(el))) {
+        evento.preventDefault();
+        guardarCursor(el);
+        abrirMenuTextos();
       }
     });
     // Colar entra como texto puro, mesmo onde plaintext-only não vale.
@@ -817,6 +829,117 @@
     if (!item || !raiz.contains(item)) return;
     irAoCampo(item.getAttribute('data-de-abrir'), item.getAttribute('data-de-especie') || 'campo', item.getAttribute('data-de-origem') || 'oficio', '');
   });
+
+  /* ---- Textos prontos (m118) -------------------------------------------
+     Os modelos de texto do sistema (motivo, justificativa, campos do
+     relatório técnico) dentro do editor: o botão da barra fica ativo quando
+     o cursor está num trecho que tem modelos, e o menu insere o texto
+     escolhido onde o cursor estava. "/" num trecho vazio abre o menu. */
+  var menuTextos = raiz.querySelector('[data-de-textos]');
+  var corpoTextos = raiz.querySelector('[data-de-textos-corpo]');
+  var camposComTextos = (editor.getAttribute('data-de-textos-campos') || '').split(' ').filter(Boolean);
+  var ultimoTrecho = null;   // o último trecho digitável em que o cursor esteve
+  var ultimaFaixa = null;    // e onde estava o cursor nele
+  var textosCarregados = {}; // chave do campo → lista de modelos
+
+  function temTextos(chave) { return !!chave && camposComTextos.indexOf(chave) >= 0; }
+  function chaveDoTrecho(el) { return el && el.hasAttribute('data-doc-campo') ? el.getAttribute('data-doc-campo') : ''; }
+  function atualizarBotaoTextos() {
+    if (!menuTextos) return;
+    var chave = ultimoTrecho ? chaveDoTrecho(ultimoTrecho) : '';
+    menuTextos.disabled = !temTextos(chave);
+  }
+  function guardarCursor(el) {
+    ultimoTrecho = el;
+    var doc = documentoDaFolha();
+    var selecao = doc && doc.defaultView ? doc.defaultView.getSelection() : null;
+    ultimaFaixa = selecao && selecao.rangeCount && el.contains(selecao.getRangeAt(0).startContainer) ? selecao.getRangeAt(0).cloneRange() : null;
+    atualizarBotaoTextos();
+  }
+  function carregarTextos(chave) {
+    if (textosCarregados[chave]) return Promise.resolve(textosCarregados[chave]);
+    return fetch(url('textos', chave), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (dados) { textosCarregados[chave] = dados.textos || []; return textosCarregados[chave]; })
+      .catch(function () { return []; });
+  }
+  function montarMenuTextos(lista) {
+    if (!corpoTextos) return;
+    corpoTextos.querySelectorAll('[data-de-texto], .de-menu__vazio').forEach(function (el) { el.remove(); });
+    if (!lista.length) {
+      var vazio = document.createElement('p');
+      vazio.className = 'de-menu__vazio';
+      vazio.textContent = 'Nenhum texto pronto para este campo.';
+      corpoTextos.appendChild(vazio);
+      return;
+    }
+    lista.forEach(function (item, i) {
+      var botao = document.createElement('button');
+      botao.type = 'button';
+      botao.className = 'dd__i de-menu__texto';
+      botao.setAttribute('role', 'menuitem');
+      botao.setAttribute('data-de-texto', String(i));
+      var nome = document.createElement('b');
+      nome.textContent = item.nome;
+      var previa = document.createElement('small');
+      previa.textContent = item.texto.length > 90 ? item.texto.slice(0, 89) + '…' : item.texto;
+      botao.appendChild(nome);
+      botao.appendChild(previa);
+      corpoTextos.appendChild(botao);
+    });
+  }
+  function inserirTexto(texto) {
+    var el = ultimoTrecho;
+    var doc = documentoDaFolha();
+    if (!el || !doc || !doc.defaultView || !texto) return;
+    var textoAtual = textoDoTrecho(el);
+    if (textoAtual.trim() && !window.confirm('Inserir o texto pronto onde o cursor estava? O que já está escrito fica.')) return;
+    el.focus({ preventScroll: true });
+    var selecao = doc.defaultView.getSelection();
+    var faixa = ultimaFaixa && el.contains(ultimaFaixa.startContainer) ? ultimaFaixa : null;
+    if (!faixa) {
+      faixa = doc.createRange();
+      faixa.selectNodeContents(el);
+      faixa.collapse(false);
+    }
+    // Um trecho de uma linha não tem quebra: o texto entra numa linha só.
+    var conteudo = el.getAttribute('data-doc-digitavel') === 'varias' ? texto : texto.replace(/\s*\n+\s*/g, ' ');
+    if (!textoAtual.trim()) el.textContent = '';
+    if (!textoAtual.trim()) { faixa = doc.createRange(); faixa.selectNodeContents(el); faixa.collapse(false); }
+    faixa.deleteContents();
+    var no = doc.createTextNode(conteudo);
+    faixa.insertNode(no);
+    faixa.setStartAfter(no);
+    faixa.collapse(true);
+    selecao.removeAllRanges();
+    selecao.addRange(faixa);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  function abrirMenuTextos() {
+    if (!menuTextos || !corpoTextos || menuTextos.disabled) return;
+    carregarTextos(chaveDoTrecho(ultimoTrecho)).then(function (lista) {
+      montarMenuTextos(lista);
+      corpoTextos.hidden = false;
+      menuTextos.setAttribute('aria-expanded', 'true');
+    });
+  }
+  if (menuTextos && corpoTextos) {
+    // O menu abre pelo gatilho comum dos menus (documento-embutido.js); aqui
+    // só se garante que a lista é a do trecho em que o cursor está.
+    menuTextos.addEventListener('mousedown', function () {
+      if (menuTextos.disabled) return;
+      carregarTextos(chaveDoTrecho(ultimoTrecho)).then(montarMenuTextos);
+    });
+    corpoTextos.addEventListener('click', function (evento) {
+      var item = evento.target.closest('[data-de-texto]');
+      if (!item) return;
+      var lista = textosCarregados[chaveDoTrecho(ultimoTrecho)] || [];
+      var escolhido = lista[parseInt(item.getAttribute('data-de-texto'), 10)];
+      corpoTextos.hidden = true;
+      menuTextos.setAttribute('aria-expanded', 'false');
+      if (escolhido) inserirTexto(escolhido.texto);
+    });
+  }
 
   /* ---- Próximo campo vazio (m117) --------------------------------------
      As lacunas em cinza da folha (`data-doc-vazio`) e as linhas para

@@ -101,6 +101,11 @@ body.de-pagina { margin: 0; background: var(--n-100); color: var(--n-900); font-
 }
 .dc-aviso__ir:hover { color: var(--d-700); text-decoration-style: solid; }
 .dc-aviso__ir .ui-icon { width: 14px; height: 14px; }
+/* Menu dos textos prontos (m118): nome e o começo do texto. */
+.de-menu__texto { display: grid; gap: 1px; text-align: left; }
+.de-menu__texto b { font-weight: 600; }
+.de-menu__texto small { font-size: 12px; color: var(--n-500); white-space: normal; }
+.de-menu__vazio { margin: 0; padding: 6px 10px; font-size: 13px; color: var(--n-500); }
 .de-contador {
   margin-left: 2px; padding: 1px 7px; border-radius: 999px;
   background: var(--d-100); color: var(--d-800); font-style: normal; font-size: 12px; font-weight: 600;
