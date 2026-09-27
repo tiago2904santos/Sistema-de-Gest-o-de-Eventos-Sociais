@@ -15,7 +15,7 @@
   O que é de cada documento vem em `doc`, de
   `documentos.editor.pagina.contexto_da_pagina`.
 {% endcomment %}
-<div class="de-app de-app--embutido"{% if doc.pode_editar %} data-de-editor data-de-url="{{ doc.api.campo }}" data-de-url-bloco="{{ doc.api.bloco }}" data-de-url-quebra="{{ doc.api.quebra }}" data-de-url-textos="{{ doc.api.textos }}" data-de-textos-campos="{{ doc.textos_prontos }}" data-de-versao="{{ doc.versao }}" data-de-principais="{{ doc.principais }}"{% endif %}>
+<div class="de-app de-app--embutido"{% if doc.pode_editar %} data-de-editor data-de-url="{{ doc.api.campo }}" data-de-url-bloco="{{ doc.api.bloco }}" data-de-url-quebra="{{ doc.api.quebra }}" data-de-url-textos="{{ doc.api.textos }}" data-de-url-paragrafo="{{ doc.api.paragrafo }}" data-de-textos-campos="{{ doc.textos_prontos }}" data-de-versao="{{ doc.versao }}" data-de-principais="{{ doc.principais }}"{% endif %}>
   {# Barra de ferramentas. Formatação não entra: a letra e o layout são os do modelo oficial. #}
   <div class="de-barra" role="toolbar" aria-label="Ferramentas do documento">
     {% if doc.pode_editar %}
@@ -49,8 +49,8 @@
             </div>
           </div>
         {% endif %}
-        {% if doc.tem_quebras %}
-          <button type="button" class="de-texto-botao" data-de-alternar-quebras aria-pressed="false" title="Mostrar onde se pode inserir uma quebra de página">{% include "components/icon.html" with nome="page-break" %}Quebras de página</button>
+        {% if doc.tem_quebras or doc.tem_paragrafos %}
+          <button type="button" class="de-texto-botao" data-de-alternar-quebras aria-pressed="false" title="Mostrar onde se pode inserir {% if doc.tem_quebras %}uma quebra de página{% if doc.tem_paragrafos %} ou {% endif %}{% endif %}{% if doc.tem_paragrafos %}um parágrafo{% endif %}">{% include "components/icon.html" with nome="page-break" %}{% if doc.tem_quebras and doc.tem_paragrafos %}Quebras e parágrafos{% elif doc.tem_quebras %}Quebras de página{% else %}Parágrafo extra{% endif %}</button>
         {% endif %}
         {% if doc.textos_prontos %}
           {# Textos prontos (m118): os modelos do campo em que o cursor está (motivo, justificativa, relatório técnico); "/" num trecho vazio também abre. #}

@@ -138,3 +138,68 @@ class BlocosDocumentaisTests(CenarioOficioMixin, TestCase):
         self.assertEqual(self.client.get(self.url_bloco(o)).status_code, 403)
         self.assertEqual(self.patch_bloco(o, 'x', versao='').status_code, 403)
         self.assertEqual(self.client.patch(self.url_quebra(o, 'apos_roteiro'), data='{"ativa": true}', content_type='application/json').status_code, 403)
+
+
+class ParagrafoExtraTests(CenarioOficioMixin, TestCase):
+    """Parágrafo livre em ponto marcado do modelo (m123): sai no PDF e no
+    DOCX, entra no payload e some quando apagado."""
+
+    def url(self, o, chave):
+        return reverse('documentos:editor_paragrafo', args=['oficio', o.pk, chave])
+
+    def patch(self, o, chave, conteudo):
+        return self.client.patch(self.url(o, chave), data=json.dumps({'valores': {'conteudo': conteudo}}), content_type='application/json')
+
+    def folha(self, o):
+        return self.client.get(reverse('viagens_oficios:documento_folha', args=[o.pk])).content.decode()
+
+    def test_fenda_no_editor_e_nada_no_pdf_sem_texto(self):
+        o = self.criar()
+        folha = self.folha(o)
+        self.assertIn('data-doc-paragrafo-slot="antes_assinatura"', folha)
+        self.assertIn('data-doc-paragrafo-slot="apos_abertura"', folha)
+        self.assertNotIn('doc-paragrafo', renderizar_html(DocumentoTipo.OFICIO, contexto_do_oficio(o, modo='pdf'), modo='pdf'))
+
+    def test_paragrafo_gravado_sai_na_folha_no_pdf_no_payload_e_no_docx(self):
+        from io import BytesIO
+
+        from docx import Document
+
+        from documentos.services.types import DocumentoFormato
+        from viagens_oficios.document_generation import gerar_documento
+        o = self.criar()
+        self.assertEqual(self.patch(o, 'qualquer', 'x').status_code, 404)
+        r = self.patch(o, 'antes_assinatura', 'Solicito ainda <b>apoio</b>.\r\nSegunda linha.')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.json()['conteudo'], 'Solicito ainda <b>apoio</b>.\nSegunda linha.')
+        bloco = DocumentoBloco.objects.get(oficio=o, chave='antes_assinatura', tipo='paragrafo_extra')
+        self.assertEqual(bloco.editado_por, self.user)
+        folha = self.folha(o)
+        self.assertIn('<p data-doc-paragrafo="antes_assinatura" data-doc-digitavel="varias"', folha)
+        self.assertIn('Solicito ainda &lt;b&gt;apoio&lt;/b&gt;.<br>Segunda linha.', folha)
+        pdf = renderizar_html(DocumentoTipo.OFICIO, contexto_do_oficio(o, modo='pdf'), modo='pdf')
+        self.assertIn('<p class="doc-bloco doc-paragrafo-extra doc-oficio__abertura">Solicito ainda &lt;b&gt;apoio&lt;/b&gt;.<br>Segunda linha.</p>', pdf)
+        self.assertNotIn('data-doc', pdf)
+        with mock.patch('viagens_oficios.document_generation.DocumentoFacade.gerar') as gerar:
+            gerar_documento(o, DocumentoFormato.PDF)
+        self.assertEqual(gerar.call_args.kwargs['payload']['documento']['paragrafos'], {'antes_assinatura': 'Solicito ainda <b>apoio</b>.\nSegunda linha.'})
+        docx = gerar_documento(o, DocumentoFormato.DOCX).conteudo
+        textos = [p.text for p in Document(BytesIO(docx)).paragraphs]
+        self.assertIn('Solicito ainda <b>apoio</b>.\nSegunda linha.', textos)
+        # Texto vazio apaga o parágrafo; a fenda volta.
+        r = self.patch(o, 'antes_assinatura', '   ')
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(DocumentoBloco.objects.filter(oficio=o, tipo='paragrafo_extra').exists())
+        self.assertIn('data-doc-paragrafo-slot="antes_assinatura"', self.folha(o))
+
+    def test_historico_mostra_o_paragrafo_extra_com_voltar(self):
+        from documentos.editor.historico import historico_legivel
+        from documentos.editor.vinculos import vinculo_do_tipo
+        o = self.criar()
+        with self.captureOnCommitCallbacks(execute=True):
+            self.patch(o, 'apos_abertura', 'Frase a mais.')
+        vinculo = vinculo_do_tipo('oficio')
+        entrada = historico_legivel(vinculo, vinculo.historico(o), pode_editar=True)[0]
+        self.assertEqual(entrada['mudancas'][0]['rotulo'], 'Parágrafo extra · depois da abertura')
+        self.assertEqual(entrada['mudancas'][0]['depois'], 'Frase a mais.')
+        self.assertEqual(entrada['mudancas'][0]['voltar'], {'especie': 'paragrafo', 'chave': 'apos_abertura', 'valores': {'conteudo': ''}})

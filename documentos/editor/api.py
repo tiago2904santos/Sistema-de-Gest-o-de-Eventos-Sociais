@@ -286,6 +286,27 @@ def quebra(request, tipo, pk, chave):
     return _gravado(request, vinculo, objeto, ativa=ativa)
 
 
+@require_http_methods(["PATCH"])
+def paragrafo(request, tipo, pk, chave):
+    """Parágrafo extra num ponto registrado (m123): PATCH com o texto grava;
+    texto vazio apaga."""
+    from documentos.editor import blocos as registro_blocos
+    from documentos.services.document_blocks import definir_paragrafo
+
+    vinculo, objeto = _acesso(request, tipo, pk)
+    if registro_blocos.ponto_de_paragrafo(vinculo.tipo, chave) is None:
+        raise Http404("Ponto de parágrafo fora do registro.")
+    corpo, erro = _corpo(request)
+    if erro is not None:
+        return erro
+    valores = corpo.get("valores")
+    if not isinstance(valores, dict) or set(valores) != {"conteudo"} or isinstance(valores["conteudo"], (dict, list)):
+        return JsonResponse({"ok": False, "mensagem": "Esperava só o texto do parágrafo."}, status=400)
+    request.auditoria_origem = "editor"
+    texto = definir_paragrafo(vinculo.tipo, vinculo.dono_dos_blocos(objeto), chave, str(valores["conteudo"] or "")[:TAMANHO_MAXIMO_TEXTO], request.user)
+    return _gravado(request, vinculo, objeto, versao="", conteudo=texto)
+
+
 @require_http_methods(["GET"])
 def textos(request, tipo, pk, chave):
     """Os textos prontos de um campo (m118): os modelos de motivo, de

@@ -42,7 +42,8 @@
     campo: editor.getAttribute('data-de-url'),
     bloco: editor.getAttribute('data-de-url-bloco'),
     quebra: editor.getAttribute('data-de-url-quebra'),
-    textos: editor.getAttribute('data-de-url-textos') || ''
+    textos: editor.getAttribute('data-de-url-textos') || '',
+    paragrafo: editor.getAttribute('data-de-url-paragrafo') || ''
   };
   var versao = editor.getAttribute('data-de-versao') || '';
   /* Origens do registro principal do documento (o ofício, o termo, a ordem de
@@ -110,7 +111,9 @@
     return h;
   }
 
-  function atributoDa(especie) { return especie === 'bloco' ? 'data-doc-bloco' : especie === 'quebra' ? 'data-doc-quebra' : 'data-doc-campo'; }
+  function atributoDa(especie) {
+    return especie === 'bloco' ? 'data-doc-bloco' : especie === 'quebra' ? 'data-doc-quebra' : especie === 'paragrafo' ? 'data-doc-paragrafo' : 'data-doc-campo';
+  }
   function seletorDo(chave, especie, objeto) {
     var seletor = '[' + atributoDa(especie) + '="' + chave + '"]';
     return objeto ? seletor + '[data-doc-objeto="' + objeto + '"]' : seletor;
@@ -272,7 +275,8 @@
         .catch(function () { status(erro, 'erro'); return false; });
     }
     if (passo.especie === 'bloco') delete versaoDeBloco[passo.chave];
-    var pedirVersao = passo.especie === 'bloco' ? versaoDoBloco(passo.chave) : versaoPara(passo.origem, passo.chave, passo.objeto);
+    // O parágrafo extra não tem versão própria (como a quebra).
+    var pedirVersao = passo.especie === 'bloco' ? versaoDoBloco(passo.chave) : passo.especie === 'paragrafo' ? Promise.resolve(undefined) : versaoPara(passo.origem, passo.chave, passo.objeto);
     return pedirVersao.then(function (versaoAtual) {
       return fetch(url(passo.especie, passo.chave, passo.objeto), {
         method: 'PATCH', credentials: 'same-origin', headers: cabecalhos(true),
@@ -288,7 +292,7 @@
         return false;
       }
       if (passo.especie === 'bloco') versaoDeBloco[passo.chave] = res.dados.versao;
-      else { guardarVersao(passo.origem, passo.chave, passo.objeto, res.dados.versao); avisarGravado(passo.origem, valores, res.dados.versao); }
+      else if (passo.especie !== 'paragrafo') { guardarVersao(passo.origem, passo.chave, passo.objeto, res.dados.versao); avisarGravado(passo.origem, valores, res.dados.versao); }
       aplicarFolha(res.dados.folha);
       status('Salvo', 'ok');
       // O balão aberto no mesmo campo mostraria o valor velho: reabre.
@@ -382,6 +386,9 @@
     if (el.hasAttribute('data-doc-bloco')) {
       return { especie: 'bloco', chave: el.getAttribute('data-doc-bloco') };
     }
+    if (el.hasAttribute('data-doc-paragrafo')) {
+      return { especie: 'paragrafo', chave: el.getAttribute('data-doc-paragrafo') };
+    }
     return {
       especie: 'campo', chave: el.getAttribute('data-doc-campo'), parte: el.getAttribute('data-doc-parte'),
       objeto: el.getAttribute('data-doc-objeto') || '', origem: el.getAttribute('data-doc-origem') || 'oficio'
@@ -390,7 +397,7 @@
 
   function valoresDoTrecho(onde, texto) {
     var valores = {};
-    if (onde.especie === 'bloco') valores.conteudo = texto;
+    if (onde.especie === 'bloco' || onde.especie === 'paragrafo') valores.conteudo = texto;
     else valores[onde.parte] = texto;
     return valores;
   }
@@ -415,7 +422,7 @@
     var texto = textoDoTrecho(el);
     var valores = valoresDoTrecho(onde, texto);
     var sessao = sessaoDoTrecho.get(el);
-    var pedirVersao = onde.especie === 'bloco' ? versaoDoBloco(onde.chave) : versaoPara(onde.origem, onde.chave, onde.objeto);
+    var pedirVersao = onde.especie === 'bloco' ? versaoDoBloco(onde.chave) : onde.especie === 'paragrafo' ? Promise.resolve(undefined) : versaoPara(onde.origem, onde.chave, onde.objeto);
     marcarEstado(el, 'Salvando…', 'andamento');
     return pedirVersao.then(function (versaoAtual) {
       return fetch(url(onde.especie, onde.chave, onde.objeto), {
@@ -428,8 +435,10 @@
     }).then(function (res) {
       if (res.codigo === 200) {
         if (onde.especie === 'bloco') versaoDeBloco[onde.chave] = res.dados.versao;
-        else { guardarVersao(onde.origem, onde.chave, onde.objeto, res.dados.versao); avisarGravado(onde.origem, valores, res.dados.versao); }
+        else if (onde.especie !== 'paragrafo') { guardarVersao(onde.origem, onde.chave, onde.objeto, res.dados.versao); avisarGravado(onde.origem, valores, res.dados.versao); }
         marcarEstado(el, 'Salvo', 'ok');
+        // Parágrafo extra apagado (m123): a folha volta a mostrar a fenda no lugar.
+        if (onde.especie === 'paragrafo' && !texto.trim() && el !== digitando) aplicarFolha(res.dados.folha);
         if (sessao) registrar({ especie: onde.especie, chave: onde.chave, objeto: onde.objeto, origem: onde.origem, antes: sessao.antes, depois: valores, sessao: sessao.id });
         // O domínio pode normalizar o que foi gravado (o motivo vai para caixa
         // de título, o protocolo ganha máscara). Só se ajusta o texto na tela
@@ -754,6 +763,8 @@
       alternarQuebra(quebra.getAttribute('data-doc-quebra'), !quebra.hasAttribute('data-doc-quebra-ativa'));
       return true;
     }
+    var fenda = alvoInicial.closest('[data-doc-paragrafo-slot]');
+    if (fenda) { abrirParagrafo(fenda); return true; }
     var bloco = alvoInicial.closest('[data-doc-bloco]');
     if (bloco) { abrir(bloco.getAttribute('data-doc-bloco'), 'bloco'); return true; }
     var campo = alvoInicial.closest('[data-doc-campo]');
@@ -763,6 +774,31 @@
       return true;
     }
     return false;
+  }
+
+  /* ---- Parágrafo extra (m123) --------------------------------------------
+     A fenda "+ parágrafo" vira, na própria folha, um parágrafo em que se
+     escreve; ele é gravado como qualquer trecho digitável. Sair dele vazio
+     devolve a fenda, sem gravar nada. */
+  function abrirParagrafo(fenda) {
+    var doc = documentoDaFolha();
+    if (!doc) return;
+    if (chaveAberta) fechar();
+    var p = doc.createElement('p');
+    p.setAttribute('data-doc-paragrafo', fenda.getAttribute('data-doc-paragrafo-slot'));
+    p.setAttribute('data-doc-digitavel', 'varias');
+    p.setAttribute('contenteditable', 'plaintext-only');
+    p.setAttribute('spellcheck', 'true');
+    p.className = (fenda.getAttribute('data-doc-classe') || 'doc-bloco doc-paragrafo-extra') + ' doc-editavel doc-editavel--texto';
+    fenda.replaceWith(p);
+    var devolver = function (evento) {
+      if (evento.target !== p) return;
+      if (textoDoTrecho(p).trim()) { p.removeEventListener('focusout', devolver); return; }
+      setTimeout(function () { if (!textoDoTrecho(p).trim() && p.parentNode) { p.replaceWith(fenda); if (palco()) palco().atualizar(); } }, 0);
+    };
+    p.addEventListener('focusout', devolver);
+    focar(p);
+    if (palco()) palco().atualizar();
   }
 
   /* ---- Pontos de quebra à vista ------------------------------------------

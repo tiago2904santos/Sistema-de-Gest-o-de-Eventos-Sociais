@@ -42,6 +42,15 @@ QUEBRAS_DOCX = {
     },
 }
 
+# Onde os pontos de parágrafo extra (m123) ficam no .docx, na mesma
+# convenção das quebras. Fora daqui, o parágrafo sai só no PDF.
+PARAGRAFOS_DOCX = {
+    DocumentoTipo.OFICIO: {
+        "apos_abertura": ("antes", "NOME"),
+        "antes_assinatura": ("depois", "Custos:"),
+    },
+}
+
 # Valor de cada marcador dos blocos no contexto do DOCX (`docxtpl_context`),
 # para os marcadores que o texto novo traz e o padrão não tinha.
 VALORES_DOCX = {
@@ -165,6 +174,38 @@ def _paragrafo_da_quebra(documento, tabela, onde):
     return Paragraph(novo, tabela._parent)
 
 
+def _tabela_ancora(documento, inicio):
+    return next(
+        (t for t in documento.tables if t.rows and t.rows[0].cells and t.rows[0].cells[0].text.strip().startswith(inicio)),
+        None,
+    )
+
+
+def _aplicar_paragrafos(documento, tipo, paragrafos: dict) -> bool:
+    """Os parágrafos extras (m123) nos pontos do .docx: um parágrafo novo
+    ao lado da tabela-âncora, antes de uma eventual quebra no mesmo lugar."""
+    from docx.oxml import OxmlElement
+    from docx.text.paragraph import Paragraph
+
+    pontos = PARAGRAFOS_DOCX.get(tipo, {})
+    mudou = False
+    for chave, texto in sorted(paragrafos.items()):
+        if chave not in pontos or not str(texto or "").strip():
+            continue
+        onde, inicio = pontos[chave]
+        tabela = _tabela_ancora(documento, inicio)
+        if tabela is None:
+            continue
+        novo = OxmlElement("w:p")
+        if onde == "depois":
+            tabela._tbl.addnext(novo)
+        else:
+            tabela._tbl.addprevious(novo)
+        Paragraph(novo, tabela._parent).add_run(str(texto).strip())
+        mudou = True
+    return mudou
+
+
 def _aplicar_quebras(documento, tipo, quebras) -> bool:
     from docx.enum.text import WD_BREAK
 
@@ -175,10 +216,7 @@ def _aplicar_quebras(documento, tipo, quebras) -> bool:
         if chave not in pontos or chave not in registradas:
             continue
         onde, inicio = pontos[chave]
-        tabela = next(
-            (t for t in documento.tables if t.rows and t.rows[0].cells and t.rows[0].cells[0].text.strip().startswith(inicio)),
-            None,
-        )
+        tabela = _tabela_ancora(documento, inicio)
         if tabela is None:
             continue
         _paragrafo_da_quebra(documento, tabela, onde).add_run().add_break(WD_BREAK.PAGE)
@@ -195,12 +233,13 @@ def aplicar_conteudo_documental(tipo, docx_bytes: bytes, documental, contexto=No
         return docx_bytes
     blocos = documental.get("blocos") or {}
     quebras = [q for q in (documental.get("quebras") or ()) if q in QUEBRAS_DOCX.get(tipo, {})]
+    paragrafos = {c: t for c, t in (documental.get("paragrafos") or {}).items() if c in PARAGRAFOS_DOCX.get(tipo, {}) and str(t or "").strip()}
     registro = blocos_do_tipo(tipo)
     alterados = {
         chave: dados for chave, dados in blocos.items()
         if chave in registro and isinstance(dados, dict) and dados.get("conteudo") not in (None, registro[chave].padrao)
     }
-    if not alterados and not quebras:
+    if not alterados and not quebras and not paragrafos:
         return docx_bytes
     from docx import Document
 
@@ -208,6 +247,7 @@ def aplicar_conteudo_documental(tipo, docx_bytes: bytes, documental, contexto=No
     contexto = contexto or {}
     valores = {marcador: contexto.get(chave) for marcador, chave in VALORES_DOCX.get(tipo, {}).items()}
     mudou = _aplicar_blocos(documento, tipo, alterados, valores)
+    mudou = _aplicar_paragrafos(documento, tipo, paragrafos) or mudou
     mudou = _aplicar_quebras(documento, tipo, quebras) or mudou
     if not mudou:
         return docx_bytes

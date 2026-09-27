@@ -21,7 +21,7 @@ from datetime import date, datetime, timedelta
 
 from django.apps import apps
 
-from .blocos import blocos_do_tipo, quebras_do_tipo
+from .blocos import blocos_do_tipo, paragrafos_do_tipo, quebras_do_tipo
 from .campos import campos_do_tipo
 
 JANELA_AGRUPAMENTO = timedelta(minutes=2)
@@ -138,9 +138,25 @@ def _mudancas_do_bloco(vinculo, registro, blocos_por_id) -> list[dict]:
             "rotulo": rotulo, "antes": "Não" if ativa else "Sim", "depois": "Sim" if ativa else "Não",
             "voltar": {"especie": "quebra", "chave": chave, "valores": {"ativa": not ativa}} if chave else None,
         }]
+    delta = registro.alteracoes
+    if tipo == "paragrafo_extra" or (not tipo and chave in paragrafos_do_tipo(vinculo.tipo)):
+        # Parágrafo extra (m123): criar é escrever, apagar é remover.
+        ponto = paragrafos_do_tipo(vinculo.tipo).get(chave)
+        rotulo = f"Parágrafo extra · {ponto.rotulo.lower()}" if ponto else "Parágrafo extra"
+        if registro.acao == "CRIACAO":
+            antes, depois = "", (delta.get("novo") or {}).get("conteudo_atual", "")
+        elif registro.acao == "EXCLUSAO":
+            antes, depois = (delta.get("antigo") or {}).get("conteudo_atual", ""), ""
+        elif "conteudo_atual" in delta:
+            antes, depois = delta["conteudo_atual"].get("antes", ""), delta["conteudo_atual"].get("depois", "")
+        else:
+            return []
+        return [{
+            "rotulo": rotulo, "antes": _resumo(antes), "depois": _resumo(depois),
+            "voltar": {"especie": "paragrafo", "chave": chave, "valores": {"conteudo": antes}} if chave else None,
+        }]
     definicao = blocos_do_tipo(vinculo.tipo).get(chave)
     rotulo = definicao.rotulo if definicao else (chave or "Parágrafo do modelo")
-    delta = registro.alteracoes
     if registro.acao == "CRIACAO":
         novo = delta.get("novo") or {}
         if not novo.get("editado_manualmente"):

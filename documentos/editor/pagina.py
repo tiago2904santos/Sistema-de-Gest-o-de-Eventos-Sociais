@@ -19,7 +19,7 @@ from django.urls import reverse
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.http import require_GET
 
-from .blocos import quebras_do_tipo
+from .blocos import paragrafos_do_tipo, quebras_do_tipo
 from .campos import ORIGENS_POR_OBJETO, campos_do_tipo
 from .historico import historico_legivel
 from .vinculos import vinculo_do_tipo
@@ -53,7 +53,7 @@ def contexto_da_pagina(request, vinculo, objeto) -> dict:
             # Em linguagem do documento, agrupado por digitação, com "Voltar" (m116).
             "historico": historico_legivel(vinculo, vinculo.historico(objeto), pode_editar=pode_editar),
             "url_folha": vinculo.url("folha", objeto),
-            "api": {especie: vinculo.url(especie, objeto, "CHAVE") for especie in ("campo", "bloco", "quebra", "textos")},
+            "api": {especie: vinculo.url(especie, objeto, "CHAVE") for especie in ("campo", "bloco", "quebra", "textos", "paragrafo")},
             # Campos com textos prontos para inserir (m118).
             "textos_prontos": " ".join(vinculo.campos_com_textos(objeto)) if pode_editar else "",
             "principais": " ".join(vinculo.principais),
@@ -61,6 +61,8 @@ def contexto_da_pagina(request, vinculo, objeto) -> dict:
             "pode_editar": pode_editar,
             "campos_menu": menu,
             "tem_quebras": bool(quebras_do_tipo(vinculo.tipo)),
+            # Pontos onde cabe um parágrafo livre (m123): o mesmo botão da barra os mostra.
+            "tem_paragrafos": bool(paragrafos_do_tipo(vinculo.tipo)),
             # Editor completo (m057): o documento inteiro, editado à mão.
             "url_completo": url_do_editor_completo(vinculo, objeto),
             "edicao_completa": situacao_da_edicao(vinculo, objeto),
