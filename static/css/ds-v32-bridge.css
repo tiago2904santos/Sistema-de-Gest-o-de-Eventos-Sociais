@@ -3134,6 +3134,16 @@ tr[data-importar-url].is-alvo>td:first-child{box-shadow:inset 2px 0 0 var(--sel-
 .endereco-campos{display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,160px);gap:12px;align-items:start}
 .endereco-campos .form-campo{margin:0}
 .endereco-campos__linha{grid-column:1/-1}
+/* Buscador de endereço (buscar-endereco.js): lista suspensa no visual do select pesquisável. */
+.endereco-busca__campo{padding-right:34px}
+.endereco-busca__menu{z-index:70}
+.endereco-busca__menu .custom-select__opcao{min-height:44px;align-items:center}
+.endereco-busca__texto{min-width:0;display:grid;gap:1px}
+.endereco-busca__texto b{font-weight:600;color:var(--n-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.endereco-busca__texto small{font-size:12px;color:var(--rotulo);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.endereco-busca__fonte{flex:none;height:20px;display:inline-flex;align-items:center;padding:0 7px;border-radius:5px;background:var(--n-100);font-size:11px;font-weight:600;color:var(--n-600)}
+.endereco-busca__aviso{padding:8px 10px;text-align:left}
+.endereco-busca__aviso[hidden]{display:none}
 @container (max-width:680px){.endereco-campos{grid-template-columns:minmax(0,1fr)}}
 .cb-endereco{margin-top:12px}
 .pal-local{display:grid;gap:12px}

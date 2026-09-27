@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import triagem_email, views
+from . import buscar_endereco, triagem_email, views
 
 app_name = "core"
 
@@ -17,4 +17,6 @@ urlpatterns = [
     # Triagem do e-mail na página inicial: lê, diz o módulo e abre a tela certa.
     path("triagem/ler/", triagem_email.ler, name="triagem_ler"),
     path("triagem/encaminhar/", triagem_email.encaminhar, name="triagem_encaminhar"),
+    # Buscador de endereço dos campos Endereço/Bairro/CEP (endereco_campos.html).
+    path("buscar-endereco/", buscar_endereco.buscar_endereco, name="buscar_endereco"),
 ]
