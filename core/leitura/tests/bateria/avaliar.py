@@ -44,7 +44,7 @@ def carregar(modulos=MODULOS) -> tuple[list[Caso], dict]:
     # casos_<modulo>.py e os lotes temáticos (casos_whatsapp.py…): cada caso diz o seu módulo.
     for nome in sorted(p.stem for p in _PASTA.glob("casos_*.py")):
         arquivo = importlib.import_module(f"{__package__}.{nome}")
-        casos.extend(c for c in arquivo.CASOS if c.modulo in modulos)
+        casos.extend(c for c in getattr(arquivo, "CASOS", []) if c.modulo in modulos)
         for tipo, nomes in getattr(arquivo, "CADASTROS", {}).items():
             cadastros.setdefault(tipo, [])
             cadastros[tipo].extend(n for n in nomes if n not in cadastros[tipo])

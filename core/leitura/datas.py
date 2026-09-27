@@ -31,6 +31,7 @@ __all__ = [
     "dobrar",
     "horarios_do_texto",
     "prazo_do_texto",
+    "data_do_documento",
     "quando_do_evento",
     "turno_do_texto",
 ]
@@ -177,7 +178,7 @@ _R_BARRA = re.compile(
 )
 # "05.01.27", "15.10": dois dígitos de cada lado (não confunde com valor ou versão).
 _R_PONTO = re.compile(
-    _ANTES_NUMERO + r"(?P<dia>\d{2})\.(?P<num>\d{2})(?:\.(?P<ano>\d{2}|20\d{2}))?(?!\.?\d)(?!\s*h)"
+    _ANTES_NUMERO + r"(?P<dia>\d{2})\.(?P<num>\d{2})(?:\.(?P<ano>\d{2}|20\d{2}))?(?!\.?\d)(?![ \t]*h(?:s|rs|oras?)?\b)"
 )
 _R_HIFEN = re.compile(r"(?<![\d.,/-])(?P<dia>\d{1,2})-(?P<num>\d{1,2})-(?P<ano>20\d{2})(?!\d)")
 # "14 11 2026": quem digita a data sem barras. Só com o ano de quatro dígitos.
@@ -382,15 +383,27 @@ def _dia_com_semana(numero: int, dia_semana: int, referencia: date) -> date | No
     return candidatos[0] if candidatos else None
 
 
-def _dias_soltos(texto, dobrado, referencia, ocupados_por):
-    """"no dia 22" sem mês: o próximo dia 22 a partir da referência."""
+def _dias_soltos(texto, dobrado, referencia, ocupados_por, absolutas=()):
+    """"no dia 22" sem mês: o próximo dia 22 a partir da referência — ou, se
+    uma data com mês veio antes ("de 3 a 5 de novembro … no dia 4"), no mês dela."""
     achadas = []
+    absolutas = sorted(absolutas, key=lambda a: a.inicio_pos)
     for m in _R_DIA_SOLTO.finditer(dobrado):
         if any(a < m.end() and m.start() < b for a, b in ocupados_por):
             continue
         numero = int(m.group(1))
         if not 1 <= numero <= 31:
             continue
+        anterior = next((a for a in reversed(absolutas) if a.fim_pos <= m.start()), None)
+        if anterior is not None:
+            base = anterior.inicio
+            try:
+                no_mes = date(base.year, base.month, numero)
+            except ValueError:
+                no_mes = None
+            if no_mes is not None and no_mes >= referencia:
+                achadas.append(DataAchada(no_mes, None, (no_mes,), "dia", texto[m.start():m.end()], m.start(), m.end()))
+                continue
         ano, mes = referencia.year, referencia.month
         if numero < referencia.day:
             mes += 1
@@ -478,7 +491,7 @@ def datas_do_texto(texto: str, referencia) -> list[DataAchada]:
     ocupados = _Ocupados((a.inicio_pos, a.fim_pos) for a in absolutas)
     relativas = _relativas(texto, dobrado, referencia, ocupados)
     semana = _dias_da_semana(texto, dobrado, referencia, absolutas)
-    soltos = _dias_soltos(texto, dobrado, referencia, [(a.inicio_pos, a.fim_pos) for a in absolutas + relativas + semana])
+    soltos = _dias_soltos(texto, dobrado, referencia, [(a.inicio_pos, a.fim_pos) for a in absolutas + relativas + semana], absolutas)
     return sorted(absolutas + relativas + semana + soltos, key=lambda a: a.inicio_pos)
 
 
@@ -684,7 +697,7 @@ _R_EVENTO_NA_FRASE = re.compile(
     r"servid[oa]|servir|acontecera)"
 )
 _R_NEGATIVO_ANTES = re.compile(
-    r"\b(?:prazo|ate|enviad[oa]|recebid[oa]|datad[oa]|nascid[oa]|nascimento|validade|vencimento|vence|"
+    r"\bprazo\b[^.\n]{0,45}$|\b(?:ate|enviad[oa]|recebid[oa]|datad[oa]|nascid[oa]|nascimento|validade|vencimento|vence|"
     r"emitid[oa]|publicad[oa]|desde|oficio|lei|decreto|portaria|escreveu|inserid[oa]|assinad[oa]|"
     r"realizada\s+por|protocolad[oa]|autuad[oa]|cadastrad[oa]|criad[oa]|registrad[oa])\b[^.\n]{0,20}$"
     # "emissão em 10/10" é data de documento; "emissão de RG no dia 20/10" é o evento.
@@ -717,12 +730,14 @@ _R_DATA_VELHA_DEPOIS = re.compile(
 _R_DESCONSIDERAR = re.compile(r"\b(?:desconsider\w+|esquec\w+|ignor\w+|cancel\w+)\b[^.\n]{0,50}$")
 _R_DATA_NOVA_ANTES = re.compile(
     r"\b(?:adiad[oa]s?|transferid[oa]s?|remarcad[oa]s?|alterad[oa]s?|mudou|mudamos|mudaram|passou|passamos|passaram|"
-    r"passar|antecipad[oa]s?|nova\s+data|novo\s+pedido|confirm\w+(?:\s+a\s+data)?|fica(?:\s+(?:para|pro|pra))?|ficou(?:\s+(?:para|pro|pra))?)\b"
+    r"passar|antecipad[oa]s?|nova\s+data|novo\s+pedido|corrigind\w*|correcao|corrigid[oa]|errata|na\s+verdade|alias|"
+    r"confirm\w+(?:\s+a\s+data)?|fica(?:\s+(?:para|pro|pra))?|ficou(?:\s+(?:para|pro|pra))?)\b"
     r"[^.\n]{0,40}$"
 )
 _R_DATA_NOVA_DEPOIS = re.compile(r"^\s*,?\s*(?:mesmo|entao|confirmad[oa]|combinad[oa])\b")
 
 
+_R_CABECALHO_DOCUMENTO = re.compile(r"\b(?:origem|destino|despacho|remetente|interessad[oa]|protocolo|recado)\b[^\n]{0,80}\n")
 _JANELA_DA_FRASE = 400
 #: Abaixo disto a data é de documento, não do evento: uma data solta vale 1;
 #: negativada, -5; a do e-mail sem âncora, -3.
@@ -780,10 +795,45 @@ def _pontos_da_data(item: DataAchada, dobrado: str, referencia: date) -> tuple[i
     pontos = base + (3 if ancorada else 0) + (2 if evento else 0) - (10 if negativo else 0)
     pontos += (5 if nova and not velha else 0) - (8 if velha else 0)
     if (item.fim or item.inicio) < referencia:
-        pontos -= 3
+        # Data que já passou é o evento anterior ("como no ano passado, em
+        # 12/05/2025"), não o que se pede agora.
+        pontos -= 12 if (item.fim or item.inicio).year < referencia.year and re.search(r"20\d{2}", item.trecho) else 3
+    # "Data:" no bloco de cabeçalho do despacho (Origem/Destino/Protocolo): é
+    # a data do documento.
+    if re.match(r"\s*data\s*:", dobrado[linha_inicio:item.inicio_pos]) and _R_CABECALHO_DOCUMENTO.search(
+        dobrado[max(0, linha_inicio - 160):linha_inicio]
+    ):
+        pontos -= 10
     if item.absoluta and item.inicio == referencia and not item.fim and not (ancorada and evento):
         pontos -= 4
     return pontos, (ancorada or evento) and not negativo
+
+
+_R_DATA_DO_DOCUMENTO = [
+    # "Siqueira Campos, 3 de novembro de 2026." — a linha de data do ofício
+    re.compile(r"^[ \t]*[a-z][a-z \t'-]{2,40},[ \t]*(?:em[ \t]+)?(?P<d>\d{1,2})[ \t]*(?:o|º)?[ \t]+de[ \t]+(?P<mes>" + _MES_COMPLETO + r")[ \t]+de[ \t]+(?P<a>20\d{2})\.?[ \t]*$", re.M),
+    # "RECADO - 14/10/2026 - 15h20", "Data: 11/11/2026" no cabeçalho
+    re.compile(r"^[ \t]*(?:recado|data|despacho|oficio|memorando|registro)\b[^\n\d]{0,30}(?P<d>\d{1,2})/(?P<num>\d{1,2})/(?P<a>20\d{2})", re.M),
+    # "pedido datado de 05/11/2026"
+    re.compile(r"\bdatad[oa]\s+de\s+(?P<d>\d{1,2})/(?P<num>\d{1,2})/(?P<a>20\d{2})"),
+]
+
+
+def data_do_documento(texto: str) -> date | None:
+    """A data em que o documento colado foi escrito (ofício, recado,
+    despacho), quando não há cabeçalho de e-mail que diga."""
+    dobrado = dobrar(texto or "")
+    for regex in _R_DATA_DO_DOCUMENTO:
+        m = regex.search(dobrado)
+        if not m:
+            continue
+        g = m.groupdict()
+        mes = MESES[g["mes"]] if g.get("mes") else int(g["num"])
+        try:
+            return date(int(g["a"]), mes, int(g["d"]))
+        except ValueError:
+            continue
+    return None
 
 
 def quando_do_evento(texto: str, referencia) -> Quando | None:
@@ -801,6 +851,11 @@ def quando_do_evento(texto: str, referencia) -> Quando | None:
         return None
     dobrado = dobrar(texto)
     avaliados = [(item, *_pontos_da_data(item, dobrado, referencia)) for item in itens]
+    # Havendo data por vir, a que já passou é de outro evento (a edição anterior).
+    if any((i.fim or i.inicio) >= referencia and p > _PONTOS_MINIMOS for i, p, _a in avaliados):
+        avaliados = [
+            (i, p - 9 if (i.fim or i.inicio) < referencia - timedelta(days=2) else p, a) for i, p, a in avaliados
+        ]
     melhor, pontos, ancorada = max(avaliados, key=lambda a: (a[1], -a[0].inicio_pos))
     if pontos <= _PONTOS_MINIMOS:
         return None  # só datas de documento (carimbo, cabeçalho, linha de data do ofício)
@@ -810,7 +865,7 @@ def quando_do_evento(texto: str, referencia) -> Quando | None:
         dentro = [
             (i, p) for i, p, _a in avaliados
             if i is not melhor and not i.fim and melhor.inicio <= i.inicio <= melhor.fim
-            and 0 < i.inicio_pos - melhor.fim_pos <= 200 and p > _PONTOS_MINIMOS
+            and 0 < i.inicio_pos - melhor.fim_pos <= 500 and p > _PONTOS_MINIMOS
         ]
         if dentro:
             melhor, pontos = dentro[0]

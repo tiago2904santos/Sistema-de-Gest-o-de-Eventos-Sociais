@@ -44,7 +44,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 
 from core.leitura.casamento import Achado, format_protocolo, municipio_no_texto, protocolo_no_texto, telefone_no_texto
-from core.leitura.datas import Quando, dobrar, quando_do_evento
+from core.leitura.datas import Quando, data_do_documento, dobrar, quando_do_evento
 from core.leitura.endereco import Endereco, endereco_no_texto
 from core.leitura.mensagem import Mensagem, MensagemIlegivel, ler_mensagem, ler_texto_colado
 from core.leitura.triagem import MODULOS, triar_mensagem
@@ -206,7 +206,12 @@ def data_do_email(mensagem: Mensagem) -> Sugestao | None:
     """A data em que o pedido foi enviado (a da mensagem mais interna). Nunca "hoje"."""
     enviado = _local(mensagem.enviado_em)
     if enviado is None:
-        return None
+        # Texto colado sem cabeçalho: a data do próprio documento (o ofício, o
+        # recado, o despacho), para conferir.
+        documento = data_do_documento("\n".join(x for x in (mensagem.corpo, mensagem.assinatura) if x))
+        if documento is None:
+            return None
+        return Sugestao(documento, f"{documento:%d/%m/%Y}", "M", "Data do documento colado")
     return Sugestao(enviado.date(), f"{enviado:%d/%m/%Y}", "A", f"Enviado em {enviado:%d/%m/%Y %H:%M}")
 
 
