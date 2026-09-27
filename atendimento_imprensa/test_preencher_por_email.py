@@ -212,3 +212,59 @@ class IntegranteDoUsuarioTests(SimpleTestCase):
         # Sem nome no cadastro do usuário, o login "joao.pedro" serve.
         self.assertIs(integrante_do_usuario(self.Usuario("", "", "joao.pedro"), equipe).valor, joao_p)
         self.assertIsNone(integrante_do_usuario(None, equipe))
+
+
+class QuemPedeEVeiculoTests(TestCase):
+    """Jornalista, veículo e contato: apresentação, produção pelo repórter, domínio."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.tv = Veiculo.objects.create(nome="TV Paraná Sul")
+        cls.diario = Veiculo.objects.create(nome="Jornal Diário do Oeste")
+
+    @staticmethod
+    def ler(texto=None, *, remetente="Ana Souza <ana.souza@gmail.com>", corpo="", assunto="Pedido"):
+        from core.leitura.mensagem import ler_mensagem, ler_texto_colado
+
+        from .preenchimento import sugestoes
+
+        if texto is not None:
+            return sugestoes(ler_texto_colado(texto))
+        mensagem = EmailMessage()
+        mensagem["Subject"] = assunto
+        mensagem["From"] = remetente
+        mensagem["To"] = "imprensa@pc.pr.gov.br"
+        mensagem["Date"] = "Thu, 24 Sep 2026 14:32:00 -0300"
+        mensagem.set_content(corpo)
+        return sugestoes(ler_mensagem("pedido.eml", mensagem.as_bytes()))
+
+    def test_apresentacao_vence_o_nome_do_contato_do_whatsapp(self):
+        s = self.ler("[24/09/2026 08:44] Juliano Gazeta: Juliano Ferraz aqui, TV Paraná Sul\n"
+                     "[24/09/2026 08:45] Juliano Gazeta: consegue os dados de furtos?")
+        self.assertEqual(s["jornalista"].valor, "Juliano Ferraz")
+        self.assertEqual(s["veiculo"].valor, self.tv)
+
+    def test_producao_em_nome_do_reporter(self):
+        s = self.ler(remetente="Produção TV <producao@tvparanasul.com.br>", corpo=(
+            "Em nome da repórter Luana Brandt, solicitamos entrevista com o delegado.\n"
+            "Contato direto da Luana: (41) 99901-2230.\n\nRoberta Kist\nProdutora - TV Paraná Sul\n(41) 3025-7700\n"))
+        self.assertEqual(s["jornalista"].valor, "Luana Brandt")
+        self.assertIn("99901-2230", s["contato"].valor)
+        self.assertNotIn("producao@", s["contato"].valor)
+
+    def test_veiculo_citado_como_fonte_nao_e_o_veiculo(self):
+        s = self.ler(remetente="Eduardo Lima <eduardo@exemplo.com.br>", corpo=(
+            "A matéria da TV Paraná Sul de ontem afirmou que o inquérito foi arquivado. Confirmam?\n\n"
+            "Eduardo Lima\nDiário do Oeste\n"))
+        self.assertEqual(s["veiculo"].valor, self.diario)
+
+    def test_veiculo_pelo_nome_colado_no_dominio(self):
+        s = self.ler(remetente="Everson M <everson@tvparanasul.com.br>", corpo="Aguardo a entrevista.\n\nEverson\n")
+        self.assertEqual(s["veiculo"].valor, self.tv)
+
+    def test_whatsapp_de_numero_sem_nome(self):
+        s = self.ler("[24/09/2026 08:44] +55 41 99734-5521: Boa tarde, sou o Henrique Sato, da Rádio Nova FM\n")
+        self.assertEqual(s["jornalista"].valor, "Henrique Sato")
+        self.assertIn("99734-5521", s["contato"].valor)
+        self.assertEqual(s["veiculo_novo"].valor, "Rádio Nova FM")
+        self.assertNotIn("veiculo", s)
