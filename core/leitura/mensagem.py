@@ -91,6 +91,14 @@ class Mensagem:
     remetente_nome: str = ""
     remetente_email: str = ""
     enviado_em: datetime | None = None
+    #: Numa conversa (WhatsApp), o momento da fala que faz o pedido — o
+    #: "bom dia" das 22h de ontem não muda o "hoje" do pedido desta manhã.
+    #: Sem conversa, fica vazio e vale `enviado_em`.
+    pedido_em: datetime | None = None
+    #: Quando a mensagem de fora (a que chegou na caixa) foi enviada: num
+    #: encaminhamento, `enviado_em` é o do pedido original e este é o do
+    #: "ENC:" que trouxe o e-mail até a equipe.
+    recebido_em: datetime | None = None
     corpo: str = ""
     assinatura: str = ""
     anexos: list[tuple[str, bytes]] = field(default_factory=list)
@@ -116,17 +124,18 @@ class Mensagem:
 
     @property
     def data_referencia(self):
-        """A data do e-mail no fuso do sistema: referência de "amanhã", "próxima terça"."""
-        if self.enviado_em is None:
+        """A data do pedido no fuso do sistema: referência de "amanhã", "próxima terça"."""
+        momento = self.pedido_em or self.enviado_em
+        if momento is None:
             return None
-        if self.enviado_em.tzinfo is None:
-            return self.enviado_em.date()
+        if momento.tzinfo is None:
+            return momento.date()
         try:
             from django.utils import timezone
 
-            return timezone.localtime(self.enviado_em).date()
+            return timezone.localtime(momento).date()
         except Exception:
-            return self.enviado_em.date()
+            return momento.date()
 
     @property
     def texto_para_busca(self) -> str:
@@ -269,6 +278,7 @@ def _montar(bruto: _Bruto, origem: str, profundidade: int = 0) -> Mensagem:
         if _eh_encaminhamento(bruto.assunto) or len(corpo_externo.strip()) < 400:
             mensagem = _montar(bruto.internas[0], origem, profundidade + 1)
             mensagem.encaminhada_por = mensagem.encaminhada_por or _exibir(*bruto.remetente)
+            mensagem.recebido_em = _com_fuso(bruto.enviado_em) or mensagem.recebido_em
             mensagem.anexos = mensagem.anexos + bruto.anexos
             mensagem.avisos = bruto.avisos + mensagem.avisos
             mensagem.message_id = bruto.message_id or mensagem.message_id
@@ -295,6 +305,7 @@ def _montar(bruto: _Bruto, origem: str, profundidade: int = 0) -> Mensagem:
         remetente_nome=remetente[0],
         remetente_email=remetente[1],
         enviado_em=_com_fuso(enviado_em),
+        recebido_em=_com_fuso(bruto.enviado_em) or _com_fuso(enviado_em),
         corpo=_arrumar_linhas(corpo),
         assinatura=_arrumar_linhas(assinatura),
         anexos=list(bruto.anexos),
@@ -1570,7 +1581,15 @@ _R_WHATSAPP = [
 ]
 _R_WHATSAPP_SISTEMA = re.compile(
     r"(?:protegidas com a criptografia|<midia oculta>|<arquivo de midia oculto>|mensagem (?:foi )?apagada|"
-    r"imagem ocultada|<media omitted>|end-to-end encrypted)"
+    r"imagem ocultada|<media omitted>|end-to-end encrypted|^\s*<anexad[oa]:|audio omitido|figurinha omitida)"
+)
+
+
+# Fala que só cumprimenta, se apresenta ou agradece: não é o pedido.
+_R_WHATSAPP_SO_CONVERSA = re.compile(
+    r"^\W*(?:(?:oi+|ola+|opa+|e\s+ai|bo[mn]\s+dia+|boa\s+tarde+|boa\s+noite+|tudo\s+(?:bem|bom)|td\s+bem|blz|beleza|"
+    r"obrigad[oa]|obg|valeu|vlw|ok|certo|combinado|desculp\w+(?:\s+o\s+horario)?|"
+    r"(?:aqui\s+e|sou|meu\s+nome\s+e)\s+(?:o\s+|a\s+)?[\w\s.,-]{0,60}|[\w\s.]{2,40}\s+aqui\b[\w\s.,-]{0,50})[\s!?.,;:)(-]*)+$"
 )
 
 
@@ -1597,16 +1616,28 @@ def _ler_whatsapp(texto: str) -> Mensagem | None:
         elif falas:
             falas[-1][3].append(linha)
     corpo = []
-    for _nome, _data, _hora, partes in falas:
+    uteis = []
+    for nome_fala, data_fala, hora_fala, partes in falas:
         fala = "\n".join(partes).strip()
         if fala and not _R_WHATSAPP_SISTEMA.search(dobrar(fala)):
             corpo.append(fala)
+            if not _R_WHATSAPP_SO_CONVERSA.match(dobrar(fala)):
+                uteis.append((nome_fala, data_fala, hora_fala))
     nome, data, hora, _ = falas[0]
     enviado_em = data_hora_de_cabecalho(f"{data} {hora}")
+    # O momento do pedido: a primeira fala que diz alguma coisa (não o "bom
+    # dia", nem o "aqui é a Fulana") do último dia da conversa — numa conversa
+    # que passa da meia-noite, "hoje" é o dia do pedido.
+    pedido_em = None
+    if uteis:
+        ultimo_dia = data_hora_de_cabecalho(f"{uteis[-1][1]} 00:00")
+        _n, data_p, hora_p = next(u for u in uteis if data_hora_de_cabecalho(f"{u[1]} 00:00") == ultimo_dia)
+        pedido_em = data_hora_de_cabecalho(f"{data_p} {hora_p}")
     return Mensagem(
         remetente_nome=nome,
         enviado_em=_com_fuso(enviado_em),
-        corpo=_arrumar_linhas("\n".join(corpo)),
+        pedido_em=_com_fuso(pedido_em) if pedido_em else None,
+        corpo=_arrumar_linhas("\n\n".join(corpo)),
         origem="whatsapp",
     )
 

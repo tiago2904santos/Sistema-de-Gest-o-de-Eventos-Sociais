@@ -12,8 +12,12 @@ Convenções do gabarito deste módulo:
   Em texto colado sem data nenhuma do pedido, fica fora do gabarito.
 - ``quantidade_cin`` só quando o e-mail estima atendimentos/carteiras;
   público estimado do evento (pessoas) não é quantidade de CIN.
-- ``_endereco`` / ``_bairro``: o endereço do LOCAL do evento, que precisa
-  aparecer no local sugerido. Endereço da assinatura não é local do evento.
+- ``local_evento`` é o nome do lugar; ``endereco`` (logradouro + número +
+  complemento), ``bairro`` (texto exato) e ``cep`` são do LOCAL do evento.
+  Endereço da assinatura/da sede de quem pede não é do evento: `AUSENTE`
+  quando o e-mail não dá o endereço do evento.
+- ``unidade_movel`` só quando o pedido é inequívoco ("unidade móvel",
+  "ônibus/caminhão/van da identificação").
 """
 
 from datetime import datetime, timedelta, timezone
@@ -43,7 +47,7 @@ def _eml(de, para, assunto, enviado, corpo, *, html=False, cc=None):
     cab += [
         f"Subject: {assunto}",
         f"Date: {format_datetime(dt)}",
-        f"Message-ID: <{dt:%Y%m%d%H%M}.{abs(hash(assunto)) % 10**8}@mail.exemplo.test>",
+        f"Message-ID: <{dt:%Y%m%d%H%M}.{sum(map(ord, assunto)) % 10**8}@mail.exemplo.test>",
         "MIME-Version: 1.0",
     ]
     corpo = corpo.strip("\n") + "\n"
@@ -3478,3 +3482,2000 @@ Coordenadora Executiva
         },
         nota="Outlook sem e-mail do remetente e sem telefone; 'Tancredo Neves' é nome do ginásio.",
     ),
+    # ------------------------------------------------------------------ 081
+    Caso(
+        id="sol-081",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-11-09 10:00",
+        texto=_eml(
+            "Habitação Piraquara <habitacao@piraquara.pr.gov.br>",
+            _PCPR,
+            "Mutirão de regularização fundiária - Jardim Holandês",
+            "2026-11-06 16:22",
+            """
+Prezados,
+
+No mutirão de regularização fundiária do Jardim Holandês, dia 28/11 (sábado),
+na Escola Estadual Romário Martins - Rua Pedro Sabbag, 90 - Jardim Holandês,
+gostaríamos de contar com orientação jurídica e atendimento social da Polícia
+Civil às famílias (muitas relatam conflitos de vizinhança e ameaças).
+
+Não será necessária a emissão de documentos, pois o Detran e o Instituto já
+estiveram no bairro em setembro.
+
+Atenciosamente,
+Rodrigo Pasqualin Machado
+Diretor de Habitação
+(41) 3590-3500
+""",
+        ),
+        esperado={
+            "estado": "PR",
+            "municipio": "Piraquara",
+            "local_evento": Contem("Escola Estadual Romário Martins"),
+            "endereco": Contem("Rua Pedro Sabbag, 90"),
+            "bairro": "Jardim Holandês",
+            "data_inicio_evento": "2026-11-28",
+            "data_fim_evento": "2026-11-28",
+            "data_solicitacao": "2026-11-06",
+            "servicos": [_JUR, _SOCIAL],
+            "quantidade_cin": AUSENTE,
+            "solicitante_nome": "Rodrigo Pasqualin Machado",
+            "solicitante_cargo_unidade": Contem("Diretor de Habitação"),
+            "contato": Contem("3590-3500"),
+        },
+        nota="Negação: 'não será necessária a emissão de documentos' — CIN fica de fora; só orientação jurídica e atendimento social.",
+    ),
+    # ------------------------------------------------------------------ 082
+    Caso(
+        id="sol-082",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-11-25 09:00",
+        texto="""[24/11/2026 21:03] Marta Assist. Social: Boa noite! Aqui é a Marta, da assistência social de Santa Helena, oeste do Paraná
+[24/11/2026 21:04] Marta Assist. Social: dia 12/12 vamos fazer o Natal Cidadão no ginásio de esportes do centro (Av. Curitiba, 1000)
+[24/11/2026 21:04] Marta Assist. Social: vcs poderiam vir fazer RG? acho que umas 90 carteiras
+[24/11/2026 21:06] Marta Assist. Social: Marta Luzia Scheid - (45) 3268-8200
+""",
+        esperado={
+            "estado": "PR",
+            "municipio": "Santa Helena",
+            "local_evento": Contem("ginásio de esportes"),
+            "endereco": Contem("Av. Curitiba, 1000"),
+            "data_inicio_evento": "2026-12-12",
+            "data_fim_evento": "2026-12-12",
+            "data_solicitacao": "2026-11-24",
+            "servicos": [_CIN],
+            "quantidade_cin": 90,
+            "solicitante_nome": "Marta Luzia Scheid",
+            "contato": Contem("3268-8200"),
+        },
+        nota="Santa Helena existe no PR e em SC ('oeste do Paraná' decide); 'Av. Curitiba' não é o município.",
+    ),
+    # ------------------------------------------------------------------ 083
+    Caso(
+        id="sol-083",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-10-13 10:00",
+        texto=_eml(
+            "Secretaria de Governo Rio Branco do Sul <governo@riobrancodosul.pr.gov.br>",
+            _PCPR,
+            "PCPR na Comunidade em Rio Branco do Sul",
+            "2026-10-09 15:00",
+            """
+Senhores,
+
+Solicitamos o PCPR na Comunidade em Rio Branco do Sul no dia 21 de novembro,
+das 9h às 15h, na Praça Cândido Loyola:
+
+Endereço: Rua Cândido Loyola, 400 – Centro – CEP 83540-000
+
+Serviços: emissão de CIN, coleta de digitais, fotos, atendimento social e
+exposição de viaturas.
+
+Atenciosamente,
+Priscila Taborda Ribas
+Assessora de Governo
+(41)3652-1000
+""",
+        ),
+        esperado={
+            "tipo_evento": "PCPR na Comunidade",
+            "estado": "PR",
+            "municipio": "Rio Branco do Sul",
+            "local_evento": Contem("Praça Cândido Loyola"),
+            "endereco": Contem("Rua Cândido Loyola, 400"),
+            "bairro": "Centro",
+            "cep": "83540-000",
+            "data_inicio_evento": "2026-11-21",
+            "data_fim_evento": "2026-11-21",
+            "data_solicitacao": "2026-10-09",
+            "servicos": [_CIN, _DIG, _FOTO, _SOCIAL, _VTR],
+            "solicitante_nome": "Priscila Taborda Ribas",
+            "solicitante_cargo_unidade": Contem("Assessora de Governo"),
+            "contato": Contem("3652-1000"),
+        },
+        nota="Cinco serviços; endereço em linha separada com CEP e travessão; telefone '(41)3652-1000' sem espaço.",
+    ),
+    # ------------------------------------------------------------------ 084
+    Caso(
+        id="sol-084",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-11-05 11:00",
+        texto="""PREFEITURA MUNICIPAL DE SIQUEIRA CAMPOS
+Gabinete do Prefeito
+
+Siqueira Campos, 3 de novembro de 2026.
+
+OFÍCIO Nº 402/2026
+Protocolo eProtocolo nº 24.873.112-5
+
+À Polícia Civil do Paraná
+Divisão de Eventos Sociais
+
+Assunto: Feira de Serviços e Cidadania
+
+Senhor(a) Chefe,
+
+Solicitamos a participação da Polícia Civil do Paraná na Feira de Serviços e
+Cidadania nos dias 20, 21 e 22 de novembro de 2026, no Parque de Exposições
+Tereza Guimarães, Rodovia PR-092, km 245, com emissão da CIN, com previsão de
+450 carteiras.
+
+Respeitosamente,
+
+Valdecir Pinto de Almeida
+Prefeito Municipal
+(43) 3571-1212
+""",
+        esperado={
+            "tipo_evento": "Feira",
+            "estado": "PR",
+            "municipio": "Siqueira Campos",
+            "local_evento": Contem("Parque de Exposições Tereza Guimarães"),
+            "endereco": Contem("Rodovia PR-092, km 245"),
+            "data_inicio_evento": "2026-11-20",
+            "data_fim_evento": "2026-11-22",
+            "data_solicitacao": "2026-11-03",
+            "servicos": [_CIN],
+            "quantidade_cin": 450,
+            "solicitante_nome": "Valdecir Pinto de Almeida",
+            "solicitante_cargo_unidade": Contem("Prefeito"),
+            "contato": Contem("3571-1212"),
+        },
+        nota="Ofício colado sem cabeçalho de e-mail; número do eProtocolo (24.873.112-5) não é data nem telefone; 'km 245' não é quantidade.",
+    ),
+    # ------------------------------------------------------------------ 085
+    Caso(
+        id="sol-085",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-10-29 10:00",
+        texto=_eml(
+            "Mallet Solidário <malletsolidario@mallet.pr.gov.br>",
+            _PCPR,
+            "Ação Comunitária Mallet Solidário - 20.11.2026",
+            "2026-10-28 14:14",
+            """
+Prezados,
+
+Convidamos a PCPR para a Ação Comunitária Mallet Solidário, em 20.11.2026, no
+Centro de Eventos Municipal (Rua Castro Alves, 500 - Centro), com emissão de
+carteira de identidade e fotos 3x4. Estimamos 150 atendimentos.
+
+Att.,
+Oksana Mazurek Kulka
+Coordenadora do Programa Mallet Solidário
+(42) 3542-1500 / 42 99911-0022
+""",
+            html=True,
+        ),
+        esperado={
+            "tipo_evento": "Ação Comunitária",
+            "estado": "PR",
+            "municipio": "Mallet",
+            "local_evento": Contem("Centro de Eventos Municipal"),
+            "endereco": Contem("Rua Castro Alves, 500"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-11-20",
+            "data_fim_evento": "2026-11-20",
+            "data_solicitacao": "2026-10-28",
+            "servicos": [_CIN, _FOTO],
+            "quantidade_cin": 150,
+            "solicitante_nome": "Oksana Mazurek Kulka",
+            "solicitante_cargo_unidade": Contem("Coordenadora do Programa Mallet Solidário"),
+            "contato": UmDe(Contem("3542-1500"), Contem("99911-0022")),
+        },
+        nota="Data 'dd.mm.aaaa'; 'Rua Castro Alves' não é Castro; 'fotos 3x4' = fotografia para documento ('3x4' não é data).",
+    ),
+    # ------------------------------------------------------------------ 086
+    Caso(
+        id="sol-086",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-09-20 10:00",
+        texto=_eml(
+            "Veteran Car Club Blumenau <contato@veterancarblumenau.com.br>",
+            _PCPR,
+            _q("Convite – Encontro de Carros Antigos – Blumenau/SC"),
+            "2026-09-19 09:30",
+            """
+Prezados amigos da Polícia Civil do Paraná,
+
+O Veteran Car Club de Blumenau convida a PCPR a expor suas viaturas antigas e
+modernas no 25º Encontro de Carros Antigos de Blumenau, de 16 a 18/10, no
+Parque Vila Germânica - Rua Alberto Stein, 199 - Velha.
+
+Vocês já participaram em 2023 e foi o estande mais visitado.
+
+Saudações antigomobilistas,
+Günther Fischer Hass
+Presidente
+(47) 3322-6677
+""",
+        ),
+        esperado={
+            "estado": "SC",
+            "municipio": "Blumenau",
+            "local_evento": Contem("Parque Vila Germânica"),
+            "endereco": Contem("Rua Alberto Stein, 199"),
+            "bairro": "Velha",
+            "data_inicio_evento": "2026-10-16",
+            "data_fim_evento": "2026-10-18",
+            "data_solicitacao": "2026-09-19",
+            "servicos": [_VTR],
+            "solicitante_nome": "Günther Fischer Hass",
+            "solicitante_cargo_unidade": Contem("Presidente"),
+            "contato": Contem("3322-6677"),
+        },
+        nota="Evento em SC só com exposição de viaturas; bairro 'Velha' é palavra comum; '25º' e 2023 são armadilhas numéricas.",
+    ),
+    # ------------------------------------------------------------------ 087
+    Caso(
+        id="sol-087",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-11-12 14:00",
+        texto="""De: Justiça no Bairro TJPR
+Enviado em: quarta-feira, 11 de novembro de 2026 18:05
+Para: eventos.sociais@pc.pr.gov.br
+Cc: Fórum de Assis Chateaubriand
+Assunto: Justiça no Bairro - Assis Chateaubriand - 07, 08 e 09/12
+
+Prezados,
+
+Confirmamos o Justiça no Bairro em Assis Chateaubriand nos dias 07, 08 e 09 de
+dezembro, no Colégio Estadual Santo Agostinho - Rua Pernambuco, 1500 - Centro.
+Solicitamos a emissão de CIN e a coleta de digitais, com previsão de 700 CINs.
+
+Atenciosamente,
+Rafael Tokarski Nunes
+Analista Judiciário
+(41) 3200-5890
+""",
+        esperado={
+            "tipo_evento": "Justiça no Bairro",
+            "estado": "PR",
+            "municipio": "Assis Chateaubriand",
+            "local_evento": Contem("Colégio Estadual Santo Agostinho"),
+            "endereco": Contem("Rua Pernambuco, 1500"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-12-07",
+            "data_fim_evento": "2026-12-09",
+            "data_solicitacao": "2026-11-11",
+            "servicos": [_CIN, _DIG],
+            "quantidade_cin": 700,
+            "solicitante_nome": "Rafael Tokarski Nunes",
+            "solicitante_cargo_unidade": Contem("Analista Judiciário"),
+            "contato": Contem("3200-5890"),
+        },
+        nota="Município com nome de pessoa; 'Rua Pernambuco' não é estado; datas com zero à esquerda.",
+    ),
+    # ------------------------------------------------------------------ 088
+    Caso(
+        id="sol-088",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-11-13 10:00",
+        texto=_eml(
+            "CRAS Balsa Nova <cras@balsanova.pr.gov.br>",
+            _PCPR,
+            "Ação Comunitária de Natal - Balsa Nova",
+            "2026-11-12 13:13",
+            """
+Bom dia,
+
+Vamos realizar a Ação Comunitária de Natal no sábado, 28/11, das 9:00 às
+17:00, no Pavilhão da Igreja Matriz de Balsa Nova (Rua Getúlio Vargas, 70 -
+Centro).
+
+Pedimos a emissão de RG e atendimento social. Público estimado: 600 pessoas,
+das quais cerca de 120 vão precisar do documento.
+
+Tereza Cristina Loyola
+Coordenadora do CRAS
+(41) 3636-8100
+""",
+        ),
+        esperado={
+            "tipo_evento": "Ação Comunitária",
+            "estado": "PR",
+            "municipio": "Balsa Nova",
+            "local_evento": Contem("Pavilhão da Igreja Matriz"),
+            "endereco": Contem("Rua Getúlio Vargas, 70"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-11-28",
+            "data_fim_evento": "2026-11-28",
+            "data_solicitacao": "2026-11-12",
+            "servicos": [_CIN, _SOCIAL],
+            "quantidade_cin": 120,
+            "solicitante_nome": "Tereza Cristina Loyola",
+            "solicitante_cargo_unidade": Contem("Coordenadora do CRAS"),
+            "contato": Contem("3636-8100"),
+        },
+        nota="600 pessoas é público; 120 precisam do documento = CIN; horário '9:00 às 17:00'.",
+    ),
+    # ------------------------------------------------------------------ 089
+    Caso(
+        id="sol-089",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-11-26 09:00",
+        texto="""Prezados,
+
+Gostaríamos da participação da Polícia Civil no Natal Solidário do Distrito
+de Entre Rios, no dia 19 de dezembro, no Centro Cultural Mathias Leh (Colônia
+Vitória), com emissão de carteiras de identidade para os moradores das colônias.
+
+Atenciosamente,
+Rainer Lichtenfeld Nogueira
+Administrador Distrital de Entre Rios
+Prefeitura Municipal de Guarapuava
+(42) 3625-1010
+""",
+        esperado={
+            "estado": "PR",
+            "municipio": "Guarapuava",
+            "local_evento": Contem("Centro Cultural Mathias Leh"),
+            "data_inicio_evento": "2026-12-19",
+            "data_fim_evento": "2026-12-19",
+            "servicos": [_CIN],
+            "solicitante_nome": "Rainer Lichtenfeld Nogueira",
+            "solicitante_cargo_unidade": Contem("Administrador Distrital"),
+            "contato": Contem("3625-1010"),
+        },
+        nota="'Entre Rios' é distrito de Guarapuava (e nome de município de SC; 'Entre Rios do Oeste' é outro município do PR): vale Guarapuava.",
+    ),
+    # ------------------------------------------------------------------ 090
+    Caso(
+        id="sol-090",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-11-03 10:00",
+        texto=_eml(
+            "Saúde Jaguariaíva <saude@jaguariaiva.pr.gov.br>",
+            _PCPR,
+            "Coleta de digitais e fotos - cadastro de acamados",
+            "2026-11-02 16:40",
+            """
+Prezados,
+
+A Secretaria de Saúde de Jaguariaíva está atualizando o cadastro de pacientes
+acamados e precisa apenas da coleta de digitais e das fotos para o cadastro
+biométrico. Não haverá emissão de RG nesta ação.
+
+A ação será no dia 25/11, com a equipe indo às casas a partir da Unidade de
+Saúde Central (Rua Dr. Nestor Lima, 20 - Centro). São 35 pacientes.
+
+Juliana Mercer Batista
+Enfermeira - Coordenadora da Atenção Básica
+(43) 3535-9200
+""",
+        ),
+        esperado={
+            "estado": "PR",
+            "municipio": "Jaguariaíva",
+            "local_evento": Contem("Unidade de Saúde Central"),
+            "endereco": Contem("Rua Dr. Nestor Lima, 20"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-11-25",
+            "data_fim_evento": "2026-11-25",
+            "data_solicitacao": "2026-11-02",
+            "servicos": [_DIG, _FOTO],
+            "quantidade_cin": AUSENTE,
+            "solicitante_nome": "Juliana Mercer Batista",
+            "solicitante_cargo_unidade": Contem("Coordenadora da Atenção Básica"),
+            "contato": Contem("3535-9200"),
+        },
+        nota="Digitais e fotos SEM emissão ('não haverá emissão de RG'): CIN fora e sem quantidade de CIN.",
+    ),
+    # ------------------------------------------------------------------ 091
+    Caso(
+        id="sol-091",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-11-17 10:00",
+        texto=_eml(
+            "CREAS Rebouças <creas@reboucas.pr.gov.br>",
+            _PCPR,
+            "Orientação jurídica - mulheres em situação de violência",
+            "2026-11-16 15:30",
+            """
+Boa tarde!
+
+Gostaríamos de solicitar orientação jurídica às mulheres atendidas pelo CREAS
+de Rebouças, em plantão de atendimento no dia 10 de dezembro, quinta-feira,
+das 13h às 17h, na sala de reuniões do CREAS (Rua Coronel Pedro Bonifácio de
+Souza, 404 - Centro). Não precisamos de emissão de RG.
+
+Obrigada,
+Luciana Chornobai Ferraz
+Coordenadora do CREAS
+(42) 3457-1260
+""",
+        ),
+        esperado={
+            "estado": "PR",
+            "municipio": "Rebouças",
+            "local_evento": Contem("CREAS"),
+            "endereco": Contem("Rua Coronel Pedro Bonifácio de Souza, 404"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-12-10",
+            "data_fim_evento": "2026-12-10",
+            "data_solicitacao": "2026-11-16",
+            "servicos": [_JUR],
+            "quantidade_cin": AUSENTE,
+            "solicitante_nome": "Luciana Chornobai Ferraz",
+            "solicitante_cargo_unidade": Contem("Coordenadora do CREAS"),
+            "contato": Contem("3457-1260"),
+        },
+        nota="Só orientação jurídica; 'não precisamos de emissão de RG' é negação.",
+    ),
+    # ------------------------------------------------------------------ 092
+    Caso(
+        id="sol-092",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-09-24 11:00",
+        texto="""24/09/2026 10:15 - Gilberto Matelândia: Bom dia sr. Delegado
+24/09/2026 10:16 - Gilberto Matelândia: A Secretaria de Assistência Social de Matelândia pede a unidade móvel pra fazer RG no dia 17 de outubro
+24/09/2026 10:16 - Gilberto Matelândia: Local: Ginásio de Esportes Pedro Stedile, Av. Irio Jacob Welp, 1560 - Centro
+24/09/2026 10:17 - Gilberto Matelândia: Previsão 180 carteiras
+24/09/2026 10:19 - Gilberto Matelândia: Gilberto Antônio Welter - secretário - 45 3262-1344
+""",
+        esperado={
+            "estado": "PR",
+            "municipio": "Matelândia",
+            "local_evento": Contem("Ginásio de Esportes Pedro Stedile"),
+            "endereco": Contem("Av. Irio Jacob Welp, 1560"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-10-17",
+            "data_fim_evento": "2026-10-17",
+            "data_solicitacao": "2026-09-24",
+            "servicos": [_CIN],
+            "quantidade_cin": 180,
+            "unidade_movel": True,
+            "solicitante_nome": "Gilberto Antônio Welter",
+            "solicitante_cargo_unidade": Contem("secretário"),
+            "contato": Contem("3262-1344"),
+        },
+        nota="Exportação do WhatsApp no formato Android ('24/09/2026 10:15 - Nome:'), sem colchetes.",
+    ),
+    # ------------------------------------------------------------------ 093
+    Caso(
+        id="sol-093",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-10-05 10:00",
+        texto=_eml(
+            "Moto Clube Tres Fronteiras <motoclube3f@gmail.com>",
+            _PCPR,
+            "Encontro de Motociclistas - Foz do Iguacu",
+            "2026-10-04 12:12",
+            """
+Ola, boa tarde
+
+Somos do Moto Clube Tres Fronteiras e vamos fazer o 10o Encontro de
+Motociclistas de Foz do Iguacu no sabado e domingo, 31/10 e 01/11, no espaco
+do Marco das Tres Fronteiras (Av. General Meira, s/n).
+
+Queriamos saber se a Policia Civil pode expor as viaturas antigas e modernas.
+Publico esperado 5 mil pessoas.
+
+Valeu
+Adriano "Gaúcho" Pereira Lenz
+Presidente do MC
+45 99920-1010
+""",
+        ),
+        esperado={
+            "estado": "PR",
+            "municipio": "Foz do Iguaçu",
+            "local_evento": Contem("Marco das Três Fronteiras"),
+            "endereco": Contem("Av. General Meira, s/n"),
+            "data_inicio_evento": "2026-10-31",
+            "data_fim_evento": "2026-11-01",
+            "data_solicitacao": "2026-10-04",
+            "servicos": [_VTR],
+            "quantidade_cin": AUSENTE,
+            "solicitante_nome": Contem("Pereira Lenz"),
+            "solicitante_cargo_unidade": Contem("Presidente"),
+            "contato": Contem("99920-1010"),
+        },
+        nota="Sem acentos ('Foz do Iguacu'); evento que vira o mês (31/10 e 01/11); '10o' e 5 mil não são data nem CIN; apelido no nome.",
+    ),
+    # ------------------------------------------------------------------ 094
+    Caso(
+        id="sol-094",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-11-11 10:00",
+        texto=_eml(
+            "Polícia Comunitária Umuarama <npc.umuarama@pc.pr.gov.br>",
+            _PCPR,
+            _q("PCPR na Comunidade – Umuarama – caminhão da identificação"),
+            "2026-11-10 17:03",
+            """
+Prezados,
+
+Solicito o caminhão da identificação para o PCPR na Comunidade de Umuarama,
+em 10/12, no Parque Dom Pedro II? Não: o local mudou para a Praça Arthur
+Thomas (Av. Paraná, 3500 - Zona I), por causa da obra no parque.
+
+Serviços: emissão de CIN e fotos. Previsão de 250 carteiras.
+
+Escrivão Paulo Sérgio Andrade Moura
+NPC - 7ª SDP Umuarama
+(44) 3621-4500
+""",
+        ),
+        esperado={
+            "tipo_evento": "PCPR na Comunidade",
+            "estado": "PR",
+            "municipio": "Umuarama",
+            "local_evento": Contem("Praça Arthur Thomas"),
+            "endereco": Contem("Av. Paraná, 3500"),
+            "bairro": "Zona I",
+            "data_inicio_evento": "2026-12-10",
+            "data_fim_evento": "2026-12-10",
+            "data_solicitacao": "2026-11-10",
+            "servicos": [_CIN, _FOTO],
+            "quantidade_cin": 250,
+            "unidade_movel": True,
+            "solicitante_nome": "Paulo Sérgio Andrade Moura",
+            "solicitante_cargo_unidade": Contem("NPC"),
+            "contato": Contem("3621-4500"),
+        },
+        nota="Autocorreção no texto: o Parque Dom Pedro II foi descartado; 'caminhão da identificação' = unidade móvel; 'Av. Paraná' não é estado.",
+    ),
+    # ------------------------------------------------------------------ 095
+    Caso(
+        id="sol-095",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-10-07 09:00",
+        texto="""From: Núcleo de Igualdade Racial <igualdaderacial@cornelioprocopio.pr.gov.br>
+Sent: Tuesday, October 6, 2026 9:14 AM
+To: Eventos Sociais PCPR <eventos.sociais@pc.pr.gov.br>
+Subject: Palestra - Semana da Consciência Negra
+
+Prezados,
+
+Na Semana da Consciência Negra, convidamos a Polícia Civil para uma palestra
+sobre crimes de racismo e injúria racial, no dia 20 de novembro, às 19h, no
+Teatro Municipal Cláudio Lopes (Av. XV de Novembro, 820 - Centro), em
+Cornélio Procópio.
+
+Atenciosamente,
+Jefferson Aparecido dos Santos Lima
+Coordenador do Núcleo de Igualdade Racial
+(43) 3401-1800
+""",
+        esperado={
+            "tipo_evento": "Palestra",
+            "estado": "PR",
+            "municipio": "Cornélio Procópio",
+            "local_evento": Contem("Teatro Municipal Cláudio Lopes"),
+            "endereco": Contem("Av. XV de Novembro, 820"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-11-20",
+            "data_fim_evento": "2026-11-20",
+            "data_solicitacao": "2026-10-06",
+            "servicos": [],
+            "solicitante_nome": "Jefferson Aparecido dos Santos Lima",
+            "solicitante_cargo_unidade": Contem("Coordenador do Núcleo de Igualdade Racial"),
+            "contato": Contem("3401-1800"),
+        },
+        nota="Cabeçalho do Outlook em inglês; evento em 20 de novembro e endereço 'Av. XV de Novembro' (15/11 não é data).",
+    ),
+    # ------------------------------------------------------------------ 096
+    Caso(
+        id="sol-096",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-11-20 10:00",
+        texto=_eml(
+            "Assistência Social Ortigueira <social@ortigueira.pr.gov.br>",
+            _PCPR,
+            "Pedido - Ortigueira em Ação",
+            "2026-11-19 11:40",
+            """
+Prezados,
+
+No próximo dia 5 realizaremos o "Ortigueira em Ação" no Ginásio Municipal
+Irineu Ferreira (Rua Tertuliano Vieira, 150, Centro), das 8h às 16h, e pedimos
+a presença da Polícia Civil para emissão da carteira de identidade.
+
+A ação deve reunir aproximadamente 1.200 pessoas, entre saúde, assistência e
+cidadania.
+
+Atenciosamente,
+Marilene Farias Guimarães
+Secretária de Assistência Social
+(42) 3277-1133
+""",
+        ),
+        esperado={
+            "estado": "PR",
+            "municipio": "Ortigueira",
+            "local_evento": Contem("Ginásio Municipal Irineu Ferreira"),
+            "endereco": Contem("Rua Tertuliano Vieira, 150"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-12-05",
+            "data_fim_evento": "2026-12-05",
+            "data_solicitacao": "2026-11-19",
+            "servicos": [_CIN],
+            "quantidade_cin": AUSENTE,
+            "solicitante_nome": "Marilene Farias Guimarães",
+            "solicitante_cargo_unidade": Contem("Secretária de Assistência Social"),
+            "contato": Contem("3277-1133"),
+        },
+        nota="'No próximo dia 5' lido em 19/11 = 05/12; 1.200 pessoas é público da ação toda, não CIN; 'Ortigueira em Ação' não é 'Paraná em Ação'.",
+    ),
+    # ------------------------------------------------------------------ 097
+    Caso(
+        id="sol-097",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-11-04 10:00",
+        texto=_eml(
+            "Gabinete Quedas do Iguaçu <gabinete@quedasdoiguacu.pr.gov.br>",
+            _PCPR,
+            _q("Aniversário do Município – desfile e exposição – 30/11"),
+            "2026-11-03 16:00",
+            """
+Senhores,
+
+No aniversário de emancipação de Quedas do Iguaçu, em 30/11, teremos desfile
+e programação na Av. Pedro Álvares Cabral, a partir das 9h. Solicitamos a
+exposição de viaturas antigas e modernas da PCPR em frente à Prefeitura.
+
+O município foi emancipado em 1968.
+
+Atenciosamente,
+Everson Taborda Moreira
+Chefe de Gabinete
+(46) 3532-8000
+""",
+        ),
+        esperado={
+            "estado": "PR",
+            "municipio": "Quedas do Iguaçu",
+            "local_evento": Contem("Pedro Álvares Cabral"),
+            "endereco": Contem("Av. Pedro Álvares Cabral"),
+            "data_inicio_evento": "2026-11-30",
+            "data_fim_evento": "2026-11-30",
+            "data_solicitacao": "2026-11-03",
+            "servicos": [_VTR],
+            "solicitante_nome": "Everson Taborda Moreira",
+            "solicitante_cargo_unidade": Contem("Chefe de Gabinete"),
+            "contato": Contem("3532-8000"),
+        },
+        nota="Ano de emancipação (1968) não é data; 'Quedas do Iguaçu' ≠ Foz do Iguaçu; tipo fica fora (aniversário/desfile).",
+    ),
+    # ------------------------------------------------------------------ 098
+    Caso(
+        id="sol-098",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-10-21 10:00",
+        texto="""Secretaria Municipal de Saúde de Nova Esperança - PR
+
+Solicitamos capacitação para os agentes comunitários de saúde sobre
+identificação e notificação de violência contra crianças e adolescentes, na
+sexta-feira 20/11, das 8h às 12h, no Auditório da Secretaria de Saúde,
+Rua Santos Dumont, 1255, Centro. Participantes: 70 agentes.
+
+Solicitante: Enf. Camila Rossato Venâncio - Coordenadora de Vigilância Epidemiológica
+Fone/Fax: (44) 3252-1500 - Celular: (44) 99845-3120
+""",
+        esperado={
+            "tipo_evento": "Capacitação",
+            "estado": "PR",
+            "municipio": "Nova Esperança",
+            "local_evento": Contem("Auditório da Secretaria de Saúde"),
+            "endereco": Contem("Rua Santos Dumont, 1255"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-11-20",
+            "data_fim_evento": "2026-11-20",
+            "servicos": [],
+            "quantidade_cin": AUSENTE,
+            "solicitante_nome": "Camila Rossato Venâncio",
+            "solicitante_cargo_unidade": Contem("Coordenadora de Vigilância Epidemiológica"),
+            "contato": UmDe(Contem("3252-1500"), Contem("99845-3120")),
+        },
+        nota="Município só no título ('Nova Esperança - PR'); 'Enf.' é título; Fone/Fax e celular.",
+    ),
+    # ------------------------------------------------------------------ 099
+    Caso(
+        id="sol-099",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-11-18 10:00",
+        texto=_eml(
+            "CRAS Central <cras.central@ibipora.pr.gov.br>",
+            _PCPR,
+            "Ação Cidadania - Ibiporã - sábado 5/12",
+            "2026-11-17 14:48",
+            """
+Bom dia!
+
+Aqui no município vamos fazer uma ação de cidadania no sábado, 5/12, no CRAS
+Central (Rua Paraíba, 480 - Centro), e gostaríamos da emissão de RG, com
+previsão de 110 carteiras.
+
+Atenciosamente,
+Sandra Regina Fiorin
+Coordenadora
+""",
+        ),
+        esperado={
+            "estado": "PR",
+            "municipio": "Ibiporã",
+            "local_evento": Contem("CRAS Central"),
+            "endereco": Contem("Rua Paraíba, 480"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-12-05",
+            "data_fim_evento": "2026-12-05",
+            "data_solicitacao": "2026-11-17",
+            "servicos": [_CIN],
+            "quantidade_cin": 110,
+            "solicitante_nome": "Sandra Regina Fiorin",
+            "solicitante_cargo_unidade": Contem("Coordenadora"),
+        },
+        nota="O município só aparece no assunto e no domínio do e-mail; 'Rua Paraíba' não é estado; sem telefone.",
+    ),
+    # ------------------------------------------------------------------ 100
+    Caso(
+        id="sol-100",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-11-09 10:00",
+        texto="""Atualização: a prefeitura passou a ação para 28/11, mesmo local e horário. Grato. Sgt. Oliveira (apoio - 4ª CIPM)
+
+---------- Forwarded message ---------
+De: Prefeitura de Reserva - Assistência Social <social@reserva.pr.gov.br>
+Date: sex., 30 de out. de 2026 às 10:22
+Subject: Pedido de RG - Reserva
+To: <eventos.sociais@pc.pr.gov.br>
+
+
+Prezados,
+
+Solicitamos a emissão de carteiras de identidade no dia 14/11, das 8h às 14h,
+na Escola Municipal Castro Alves (Rua Dr. Paula Xavier, 320 - Centro), em
+Reserva. Previsão: 140 carteiras.
+
+Adriana Kossatz Moreira
+Secretária de Assistência Social
+(42) 3276-1122
+""",
+        esperado={
+            "estado": "PR",
+            "municipio": "Reserva",
+            "local_evento": Contem("Escola Municipal Castro Alves"),
+            "endereco": Contem("Rua Dr. Paula Xavier, 320"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-11-28",
+            "data_fim_evento": "2026-11-28",
+            "data_solicitacao": "2026-10-30",
+            "servicos": [_CIN],
+            "quantidade_cin": 140,
+            "solicitante_nome": "Adriana Kossatz Moreira",
+            "solicitante_cargo_unidade": Contem("Secretária de Assistência Social"),
+            "contato": Contem("3276-1122"),
+        },
+        nota="Nota de quem encaminhou, no topo, muda a data (28/11 vale sobre 14/11); 'Reserva' é palavra comum; 'Castro Alves' não é Castro.",
+    ),
+    # ------------------------------------------------------------------ 101
+    Caso(
+        id="sol-101",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-10-14 10:00",
+        texto=_eml(
+            "Josiane Toledo Castro <josiane.castro@patobragado.pr.gov.br>",
+            _PCPR,
+            "Pedido de RG itinerante - Pato Bragado",
+            "2026-10-13 10:30",
+            """
+Bom dia,
+
+Solicito a emissão de carteiras de identidade em Pato Bragado, no dia
+12/11/2026, no Centro de Convivência da Terceira Idade (Rua Arnoldo Diel, 95 -
+Centro). Previsão de 75 carteiras.
+
+Josiane Toledo Castro
+Assistente Social - CRAS Pato Bragado
+(45) 3282-1188
+""",
+        ),
+        esperado={
+            "estado": "PR",
+            "municipio": "Pato Bragado",
+            "local_evento": Contem("Centro de Convivência da Terceira Idade"),
+            "endereco": Contem("Rua Arnoldo Diel, 95"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-11-12",
+            "data_fim_evento": "2026-11-12",
+            "data_solicitacao": "2026-10-13",
+            "servicos": [_CIN],
+            "quantidade_cin": 75,
+            "solicitante_nome": "Josiane Toledo Castro",
+            "solicitante_cargo_unidade": Contem("Assistente Social"),
+            "contato": Contem("3282-1188"),
+        },
+        nota="Sobrenome da solicitante tem dois municípios (Toledo, Castro); 'Pato Bragado' ≠ Pato Branco.",
+    ),
+    # ------------------------------------------------------------------ 102
+    Caso(
+        id="sol-102",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-11-20 08:00",
+        texto="""[19/11/2026 18:02] Eliseu Andirá: Boa tarde, a equipe confirmou pra amanhã às 9h?
+[19/11/2026 18:03] Eliseu Andirá: Tá tudo pronto aqui no Salão Paroquial Santo Antônio, Rua Dom Pedro II, 440
+[19/11/2026 18:03] Eliseu Andirá: 85 pessoas agendadas pra fazer a identidade
+[19/11/2026 18:05] Eliseu Andirá: Eliseu Carvalho Neto, secretário de ação social de Andirá, 43 3538-1100
+""",
+        esperado={
+            "estado": "PR",
+            "municipio": "Andirá",
+            "local_evento": Contem("Salão Paroquial Santo Antônio"),
+            "endereco": Contem("Rua Dom Pedro II, 440"),
+            "data_inicio_evento": "2026-11-20",
+            "data_fim_evento": "2026-11-20",
+            "data_solicitacao": "2026-11-19",
+            "servicos": [_CIN],
+            "quantidade_cin": 85,
+            "solicitante_nome": "Eliseu Carvalho Neto",
+            "solicitante_cargo_unidade": Contem("secretário de ação social"),
+            "contato": Contem("3538-1100"),
+        },
+        nota="'amanhã' dito em 19/11 e lido em 20/11: o evento é 20/11 (relativo à mensagem, não ao agora).",
+    ),
+    # ------------------------------------------------------------------ 103
+    Caso(
+        id="sol-103",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-12-18 10:00",
+        texto=_eml(
+            "Turismo Matinhos <turismo@matinhos.pr.gov.br>",
+            _PCPR,
+            "PCPR na Comunidade no Verão - Caiobá",
+            "2026-12-17 15:20",
+            """
+Prezados,
+
+Solicitamos o PCPR na Comunidade na temporada de verão, no dia 9 de janeiro,
+sábado, das 16h às 21h, na Praça do Mirante - Av. Paranaguá, s/n - Caiobá,
+com emissão de RG e exposição de viaturas.
+
+Agradecemos a parceria de janeiro de 2026, quando atendemos 230 pessoas.
+
+Atenciosamente,
+Rogério Machado Leitner
+Secretário de Turismo de Matinhos
+(41) 3453-1500
+""",
+        ),
+        esperado={
+            "tipo_evento": "PCPR na Comunidade",
+            "estado": "PR",
+            "municipio": "Matinhos",
+            "local_evento": Contem("Praça do Mirante"),
+            "endereco": Contem("Av. Paranaguá, s/n"),
+            "bairro": "Caiobá",
+            "data_inicio_evento": "2027-01-09",
+            "data_fim_evento": "2027-01-09",
+            "data_solicitacao": "2026-12-17",
+            "servicos": [_CIN, _VTR],
+            "quantidade_cin": AUSENTE,
+            "solicitante_nome": "Rogério Machado Leitner",
+            "solicitante_cargo_unidade": Contem("Secretário de Turismo"),
+            "contato": Contem("3453-1500"),
+        },
+        nota="'9 de janeiro' lido em dezembro é 2027; 'janeiro de 2026' e 230 pessoas são do ano anterior; 'Av. Paranaguá' não é o município.",
+    ),
+    # ------------------------------------------------------------------ 104
+    Caso(
+        id="sol-104",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-11-12 10:00",
+        texto=_eml(
+            "Educação Ipiranga <educacao@ipiranga.pr.gov.br>",
+            _PCPR,
+            "RG nas escolas - Ipiranga",
+            "2026-11-11 13:50",
+            """
+[image: Brasão Prefeitura de Ipiranga]
+
+Prezados,
+
+Solicitamos a emissão de carteiras de identidade para os alunos da rede
+municipal, na quinta, 26/11, na Escola Municipal Professora Zilda Arns
+(Rua Rio Branco, 600 - Vila São José). São 130 alunos sem documento.
+
+Cordialmente,
+Maristela Hauer Carneiro
+Secretária Municipal de Educação
+(42) 3242-1222
+
+[image: Selo Município Amigo da Criança]
+
+CONFIDENTIALITY NOTICE: This e-mail and any attachments are confidential and
+intended solely for the addressee. AVISO: esta mensagem é confidencial.
+""",
+            html=True,
+        ),
+        esperado={
+            "estado": "PR",
+            "municipio": "Ipiranga",
+            "local_evento": Contem("Escola Municipal Professora Zilda Arns"),
+            "endereco": Contem("Rua Rio Branco, 600"),
+            "bairro": "Vila São José",
+            "data_inicio_evento": "2026-11-26",
+            "data_fim_evento": "2026-11-26",
+            "data_solicitacao": "2026-11-11",
+            "servicos": [_CIN],
+            "quantidade_cin": 130,
+            "solicitante_nome": "Maristela Hauer Carneiro",
+            "solicitante_cargo_unidade": Contem("Secretária Municipal de Educação"),
+            "contato": Contem("3242-1222"),
+        },
+        nota="Marcadores '[image: ...]' e aviso em inglês; 'Rua Rio Branco' não é Rio Branco do Sul; 130 alunos sem documento = CIN.",
+    ),
+    # ------------------------------------------------------------------ 105
+    Caso(
+        id="sol-105",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-10-19 10:00",
+        texto="""De: Indústria e Comércio Barracão
+Enviado em: sexta-feira, 16 de outubro de 2026 11:30
+Para: eventos.sociais@pc.pr.gov.br
+Assunto: Feira Binacional de Barracão
+
+Prezados,
+
+A Feira Binacional da Fronteira será em Barracão/PR, de 19 a 22 de novembro,
+na Praça da Integração, na divisa com Dionísio Cerqueira (SC) e Bernardo de
+Irigoyen (Argentina). Pedimos o estande da PCPR com emissão de CIN e
+exposição de viaturas.
+
+Nilton César Folle
+Diretor de Indústria e Comércio
+(49) 3644-1212
+""",
+        esperado={
+            "tipo_evento": "Feira",
+            "estado": "PR",
+            "municipio": "Barracão",
+            "local_evento": Contem("Praça da Integração"),
+            "data_inicio_evento": "2026-11-19",
+            "data_fim_evento": "2026-11-22",
+            "data_solicitacao": "2026-10-16",
+            "servicos": [_CIN, _VTR],
+            "solicitante_nome": "Nilton César Folle",
+            "solicitante_cargo_unidade": Contem("Diretor de Indústria e Comércio"),
+            "contato": Contem("3644-1212"),
+        },
+        nota="Tríplice divisa: Dionísio Cerqueira (SC) é vizinha, o evento é em Barracão/PR; DDD 49 é de SC mas não muda o estado.",
+    ),
+    # ------------------------------------------------------------------ 106
+    Caso(
+        id="sol-106",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-09-28 09:00",
+        texto=_eml(
+            "Conselho Tutelar Rio Negro <ct.rionegro@rionegro.pr.gov.br>",
+            _PCPR,
+            "Capacitação regional - Mafra/SC",
+            "2026-09-25 17:15",
+            """
+Prezados,
+
+Os Conselhos Tutelares de Rio Negro (PR) e Mafra (SC) organizam juntos uma
+capacitação regional sobre crimes contra crianças e adolescentes, nos dias
+22 e 23/10, no Auditório da UnC Mafra (Av. Presidente Nereu Ramos, 1071 -
+Jardim do Moinho, Mafra/SC). Pedimos um instrutor da PCPR.
+
+Atenciosamente,
+Eloir Buba Schreiber
+Conselheiro Tutelar de Rio Negro
+Rua Dr. Vicente Machado, 300 - Centro - Rio Negro/PR
+(47) 3642-0303
+""",
+        ),
+        esperado={
+            "tipo_evento": "Capacitação",
+            "estado": "SC",
+            "municipio": "Mafra",
+            "local_evento": Contem("Auditório da UnC"),
+            "endereco": Contem("Av. Presidente Nereu Ramos, 1071"),
+            "bairro": "Jardim do Moinho",
+            "data_inicio_evento": "2026-10-22",
+            "data_fim_evento": "2026-10-23",
+            "data_solicitacao": "2026-09-25",
+            "servicos": [],
+            "solicitante_nome": "Eloir Buba Schreiber",
+            "solicitante_cargo_unidade": Contem("Conselheiro Tutelar"),
+            "contato": Contem("3642-0303"),
+        },
+        nota="Pedido de Rio Negro/PR (endereço na assinatura) para evento em Mafra/SC; 'Presidente Nereu' é município de SC dentro do nome da avenida.",
+    ),
+    # ------------------------------------------------------------------ 107
+    Caso(
+        id="sol-107",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-12-03 10:00",
+        texto="""segue pedido: amanha no centro dia do idoso de paiçandu (rua sao joao 555) as 14h
+precisamos fazer a carteirinha de identidade de cerca de 50 idosos
+
+Sueli Aparecida Ferro
+coordenadora do centro dia
+
+Enviado do meu iPhone
+""",
+        esperado={
+            "estado": "PR",
+            "municipio": "Paiçandu",
+            "local_evento": Contem("Centro Dia do Idoso"),
+            "endereco": Contem("Rua São João 555"),
+            "data_inicio_evento": "2026-12-04",
+            "data_fim_evento": "2026-12-04",
+            "servicos": [_CIN],
+            "quantidade_cin": 50,
+            "solicitante_nome": "Sueli Aparecida Ferro",
+            "solicitante_cargo_unidade": Contem("coordenadora do centro dia"),
+        },
+        nota="Texto puro sem data de envio: 'amanha' pelo agora (03/12) = 04/12; 'Centro Dia' é nome do lugar, não bairro Centro.",
+    ),
+    # ------------------------------------------------------------------ 108
+    Caso(
+        id="sol-108",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-10-30 10:00",
+        texto=_eml(
+            "Colégio Estadual Rio Branco <direcao.riobranco.sap@escola.pr.gov.br>",
+            _PCPR,
+            "Feira de Profissões - estande da PCPR",
+            "2026-10-29 19:05",
+            """
+Prezados,
+
+O Colégio Estadual Rio Branco, de Santo Antônio da Platina, realiza a Feira de
+Profissões de quarta a sexta, 25 a 27/11, no próprio colégio (Rua Rui Barbosa,
+1001 - Centro). Gostaríamos de um estande da Polícia Civil apresentando as
+carreiras e, se possível, emissão de carteira de identidade para os
+estudantes, com previsão de 300 carteiras.
+
+Atenciosamente,
+Prof. Everton Kaminski de Lara
+Diretor
+(43) 3534-2211
+""",
+        ),
+        esperado={
+            "tipo_evento": "Feira",
+            "estado": "PR",
+            "municipio": "Santo Antônio da Platina",
+            "local_evento": Contem("Colégio Estadual Rio Branco"),
+            "endereco": Contem("Rua Rui Barbosa, 1001"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-11-25",
+            "data_fim_evento": "2026-11-27",
+            "data_solicitacao": "2026-10-29",
+            "servicos": [_CIN],
+            "quantidade_cin": 300,
+            "solicitante_nome": "Everton Kaminski de Lara",
+            "solicitante_cargo_unidade": Contem("Diretor"),
+            "contato": Contem("3534-2211"),
+        },
+        nota="'Colégio Estadual Rio Branco' não é Rio Branco do Sul; 'de quarta a sexta, 25 a 27/11'.",
+    ),
+    # ------------------------------------------------------------------ 109
+    Caso(
+        id="sol-109",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-11-24 10:00",
+        texto="""---------- Forwarded message ---------
+De: Paróquia Nossa Senhora do Rosário <paroquia.contenda@gmail.com>
+Date: dom., 22 de nov. de 2026 às 19:40
+Subject: Natal com Cidadania - Contenda
+To: Delegacia de Contenda <dp.contenda@pc.pr.gov.br>
+
+
+Prezado Delegado,
+
+A Paróquia Nossa Senhora do Rosário de Contenda fará o Natal com Cidadania em
+13/12/2026 (domingo), após a missa das 9h, no Salão Paroquial (Praça Padre
+Vicente, 20 - Centro). Pedimos, se possível, a emissão de RG e orientação
+jurídica às famílias.
+
+Frei Adalberto Kunz, OFM
+Pároco
+(41) 3625-1515
+""",
+        esperado={
+            "estado": "PR",
+            "municipio": "Contenda",
+            "local_evento": Contem("Salão Paroquial"),
+            "endereco": Contem("Praça Padre Vicente, 20"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-12-13",
+            "data_fim_evento": "2026-12-13",
+            "data_solicitacao": "2026-11-22",
+            "servicos": [_CIN, _JUR],
+            "solicitante_nome": "Adalberto Kunz",
+            "solicitante_cargo_unidade": Contem("Pároco"),
+            "contato": Contem("3625-1515"),
+        },
+        nota="'Frei' e 'OFM' não fazem parte do nome; 'Contenda' é palavra comum; 'missa das 9h' é horário.",
+    ),
+    # ------------------------------------------------------------------ 110
+    Caso(
+        id="sol-110",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-11-16 10:00",
+        texto=_eml(
+            "Cultura Pinhão <cultura@pinhao.pr.gov.br>",
+            _PCPR,
+            _q("Festa do Pinhão e da Erva-Mate – 11 a 13 de dezembro"),
+            "2026-11-13 12:30",
+            """
+Prezados,
+
+Pinhão realiza a 20ª Festa do Pinhão e da Erva-Mate, de 11 a 13 de dezembro,
+no Parque Municipal Ivo Leão (Rodovia PR-170, km 2). Pedimos a exposição de
+viaturas antigas e modernas e a emissão de CIN no sábado.
+
+Atenciosamente,
+Dirceu Lustosa de Araújo
+Diretor de Cultura
+(42) 3677-1166
+""",
+        ),
+        esperado={
+            "estado": "PR",
+            "municipio": "Pinhão",
+            "local_evento": Contem("Parque Municipal Ivo Leão"),
+            "endereco": Contem("Rodovia PR-170, km 2"),
+            "data_inicio_evento": "2026-12-11",
+            "data_fim_evento": "2026-12-13",
+            "data_solicitacao": "2026-11-13",
+            "servicos": [_VTR, _CIN],
+            "solicitante_nome": "Dirceu Lustosa de Araújo",
+            "solicitante_cargo_unidade": Contem("Diretor de Cultura"),
+            "contato": Contem("3677-1166"),
+        },
+        nota="'Pinhão' é o município e também o nome da festa (e da semente); '20ª' não é data.",
+    ),
+    # ------------------------------------------------------------------ 111
+    Caso(
+        id="sol-111",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-11-30 10:00",
+        texto="""De: Assistência Social Palotina <social@palotina.pr.gov.br>
+Enviado em: sexta-feira, 27 de novembro de 2026 09:45
+Para: eventos.sociais@pc.pr.gov.br
+Assunto: Planejamento 2027 - emissão de RG
+
+Bom dia,
+
+Estamos montando o calendário de 2027 e gostaríamos de incluir uma ação de
+emissão de carteiras de identidade em Palotina, provavelmente em março de
+2027, com data a confirmar conforme a agenda de vocês. Nas ações de
+15/08/2026 e 28/11/2025 foram cerca de 200 carteiras cada.
+
+Att.,
+Rosane Beatriz Hammes
+Diretora de Proteção Social
+(44) 3649-7700
+""",
+        esperado={
+            "estado": "PR",
+            "municipio": "Palotina",
+            "data_inicio_evento": AUSENTE,
+            "data_fim_evento": AUSENTE,
+            "data_solicitacao": "2026-11-27",
+            "local_evento": AUSENTE,
+            "servicos": [_CIN],
+            "quantidade_cin": AUSENTE,
+            "solicitante_nome": "Rosane Beatriz Hammes",
+            "solicitante_cargo_unidade": Contem("Diretora de Proteção Social"),
+            "contato": Contem("3649-7700"),
+        },
+        nota="Só 'provavelmente em março de 2027, data a confirmar': sem dia, não se preenche; datas e quantidades de ações anteriores são armadilha.",
+    ),
+    # ------------------------------------------------------------------ 112
+    Caso(
+        id="sol-112",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-10-20 10:00",
+        texto=_eml(
+            "Assistência Social MCR <social@mcr.pr.gov.br>",
+            _PCPR,
+            "Ação social em Mal. Cândido Rondon - sábado 7/11",
+            "2026-10-19 13:20",
+            """
+Prezados,
+
+Solicitamos a emissão de RG e a exposição de viaturas na ação social do
+bairro Botafogo, em Mal. Cândido Rondon, no sábado, 7/11, das 8h às 13h, na
+Escola Municipal Tiradentes (Rua Sete de Setembro, 1717 - Botafogo).
+
+Previsão de 140 carteiras.
+
+Att.,
+Marlise Grasel Seibert
+Diretora do Departamento de Assistência Social
+(45) 3284-8740
+""",
+        ),
+        esperado={
+            "estado": "PR",
+            "municipio": "Marechal Cândido Rondon",
+            "local_evento": Contem("Escola Municipal Tiradentes"),
+            "endereco": Contem("Rua Sete de Setembro, 1717"),
+            "bairro": "Botafogo",
+            "data_inicio_evento": "2026-11-07",
+            "data_fim_evento": "2026-11-07",
+            "data_solicitacao": "2026-10-19",
+            "servicos": [_CIN, _VTR],
+            "quantidade_cin": 140,
+            "solicitante_nome": "Marlise Grasel Seibert",
+            "solicitante_cargo_unidade": Contem("Diretora do Departamento de Assistência Social"),
+            "contato": Contem("3284-8740"),
+        },
+        nota="Município abreviado 'Mal. Cândido Rondon'; 'Rua Sete de Setembro' e 'Tiradentes' não são datas; bairro 'Botafogo'.",
+    ),
+    # ------------------------------------------------------------------ 113
+    Caso(
+        id="sol-113",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-11-10 12:00",
+        texto="""[10/11/2026 09:30] Jussara Campo de Santana: Bom dia! Sou da Associação de Moradores do Campo de Santana, em Curitiba (bem na divisa com Fazenda Rio Grande)
+[10/11/2026 09:31] Jussara Campo de Santana: Vamos fazer a festa da comunidade no sábado dia 21 e queríamos o PCPR na Comunidade
+[10/11/2026 09:32] Jussara Campo de Santana: Local: Praça do Rio Bonito, Rua Pedro Gusso, 5000 - Campo de Santana
+[10/11/2026 09:33] Jussara Campo de Santana: RG, fotos e atendimento social. Uns 200 atendimentos
+[10/11/2026 09:34] Jussara Campo de Santana: Jussara Nascimento Pinto, vice-presidente, 41 99633-8080
+""",
+        esperado={
+            "tipo_evento": "PCPR na Comunidade",
+            "estado": "PR",
+            "municipio": "Curitiba",
+            "local_evento": Contem("Praça do Rio Bonito"),
+            "endereco": Contem("Rua Pedro Gusso, 5000"),
+            "bairro": "Campo de Santana",
+            "data_inicio_evento": "2026-11-21",
+            "data_fim_evento": "2026-11-21",
+            "data_solicitacao": "2026-11-10",
+            "servicos": [_CIN, _FOTO, _SOCIAL],
+            "quantidade_cin": 200,
+            "solicitante_nome": "Jussara Nascimento Pinto",
+            "solicitante_cargo_unidade": Contem("vice-presidente"),
+            "contato": Contem("99633-8080"),
+        },
+        nota="Divisa com Fazenda Rio Grande citada, mas o evento é em Curitiba; 'sábado dia 21' deduz novembro.",
+    ),
+    # ------------------------------------------------------------------ 114
+    Caso(
+        id="sol-114",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-12-01 10:00",
+        texto=_eml(
+            "Secretaria de Juventude de Cambé <juventude@cambe.pr.gov.br>",
+            _PCPR,
+            "Parceria para 2027",
+            "2026-11-30 16:16",
+            """
+Olá,
+
+A Secretaria de Juventude de Cambé gostaria de firmar uma parceria com a
+Polícia Civil para eventos ao longo de 2027 (palestras, feiras, ações nos
+bairros). Podemos marcar uma conversa?
+
+Abraço,
+Felipe Augusto Morikawa
+Secretário Municipal de Juventude
+(43) 3174-0500
+""",
+        ),
+        esperado={
+            "tipo_evento": AUSENTE,
+            "estado": "PR",
+            "municipio": "Cambé",
+            "data_inicio_evento": AUSENTE,
+            "data_fim_evento": AUSENTE,
+            "data_solicitacao": "2026-11-30",
+            "local_evento": AUSENTE,
+            "servicos": [],
+            "solicitante_nome": "Felipe Augusto Morikawa",
+            "solicitante_cargo_unidade": Contem("Secretário Municipal de Juventude"),
+            "contato": Contem("3174-0500"),
+        },
+        nota="Pedido genérico de parceria: 'palestras, feiras' não definem o tipo; sem data nem local.",
+    ),
+    # ------------------------------------------------------------------ 115
+    Caso(
+        id="sol-115",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-11-17 10:00",
+        texto=_eml(
+            "Colégio Estadual de Piên <direcao.pien@escola.pr.gov.br>",
+            _PCPR,
+            "Roda de conversa - cyberbullying",
+            "2026-11-16 20:10",
+            """
+Boa noite,
+
+Pedimos uma roda de conversa sobre cyberbullying e exposição de imagens íntimas
+com os alunos do 9º ano e do ensino médio, na sexta-feira, 4 de dezembro, às
+10h, no Colégio Estadual de Piên (Rua Anita Garibaldi, 500 - Centro).
+
+Obrigada,
+Sirlei Voigt Lemke
+Diretora
+(41) 3632-1188
+""",
+            html=True,
+        ),
+        esperado={
+            "tipo_evento": "Palestra",
+            "estado": "PR",
+            "municipio": "Piên",
+            "local_evento": Contem("Colégio Estadual de Piên"),
+            "endereco": Contem("Rua Anita Garibaldi, 500"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-12-04",
+            "data_fim_evento": "2026-12-04",
+            "data_solicitacao": "2026-11-16",
+            "servicos": [],
+            "solicitante_nome": "Sirlei Voigt Lemke",
+            "solicitante_cargo_unidade": Contem("Diretora"),
+            "contato": Contem("3632-1188"),
+        },
+        nota="Roda de conversa = Palestra; 'Rua Anita Garibaldi' tem nome de município de SC; '9º ano' não é data.",
+    ),
+    # ------------------------------------------------------------------ 116
+    Caso(
+        id="sol-116",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-10-01 10:00",
+        texto=_eml(
+            "Encontro Nacional de Viaturas Policiais <contato@enviaturas.com.br>",
+            _PCPR,
+            _q("Convite – Encontro Nacional de Viaturas Policiais – Balneário Camboriú"),
+            "2026-09-30 10:10",
+            """
+Prezados,
+
+Convidamos a PCPR para expor suas viaturas antigas e modernas no Encontro
+Nacional de Viaturas Policiais, de 5 a 8 de novembro, no Centro de Eventos de
+Balneário Camboriú - Av. Normando Tedesco, 1400 - Barra Sul.
+
+Atenciosamente,
+Cap. PM RR Jonas Wolff Bittencourt
+Organizador
+(47) 99800-1122
+""",
+        ),
+        esperado={
+            "estado": "SC",
+            "municipio": "Balneário Camboriú",
+            "local_evento": Contem("Centro de Eventos"),
+            "endereco": Contem("Av. Normando Tedesco, 1400"),
+            "bairro": "Barra Sul",
+            "data_inicio_evento": "2026-11-05",
+            "data_fim_evento": "2026-11-08",
+            "data_solicitacao": "2026-09-30",
+            "servicos": [_VTR],
+            "solicitante_nome": "Jonas Wolff Bittencourt",
+            "solicitante_cargo_unidade": Contem("Organizador"),
+            "contato": Contem("99800-1122"),
+        },
+        nota="SC; posto militar 'Cap. PM RR' antes do nome; 'Balneário Camboriú' ≠ 'Camboriú' (os dois existem em SC).",
+    ),
+    # ------------------------------------------------------------------ 117
+    Caso(
+        id="sol-117",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-10-06 10:00",
+        texto="""PEDIDO DE ATENDIMENTO - CARLÓPOLIS
+
+Data do evento: Sábado 17 de outubro de 2026
+Horário: 8h às 15h
+Local: Ginásio Municipal Zé Pequeno - R. Benedito Salles, s/n, Vila Nova
+Serviços: emissão de RG e atendimento social
+Responsável: Maria Aparecida Guerra Lopes - Secretaria de Promoção Social
+Telefone: (43) 3566-1100
+
+Obs.: ofício 77/2026 protocolado em 05/10/2026.
+""",
+        esperado={
+            "estado": "PR",
+            "municipio": "Carlópolis",
+            "local_evento": Contem("Ginásio Municipal Zé Pequeno"),
+            "endereco": Contem("R. Benedito Salles, s/n"),
+            "bairro": "Vila Nova",
+            "data_inicio_evento": "2026-10-17",
+            "data_fim_evento": "2026-10-17",
+            "data_solicitacao": "2026-10-05",
+            "servicos": [_CIN, _SOCIAL],
+            "solicitante_nome": "Maria Aparecida Guerra Lopes",
+            "solicitante_cargo_unidade": Contem("Secretaria de Promoção Social"),
+            "contato": Contem("3566-1100"),
+        },
+        nota="Ficha em campos 'rótulo: valor'; data do protocolo (05/10) é a data da solicitação, não do evento.",
+    ),
+    # ------------------------------------------------------------------ 118
+    Caso(
+        id="sol-118",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-10-15 10:00",
+        texto=_eml(
+            "Ação Social Jandaia <acaosocial@jandaiadosul.pr.gov.br>",
+            _PCPR,
+            "Ação Comunitária Jandaia do Sul - 31/10",
+            "2026-10-14 09:09",
+            """
+Bom dia,
+
+Na Ação Comunitária de 31/10, no Ginásio Municipal Almir Nelson de Almeida
+(Av. Getúlio Vargas, 2020 - Centro), vamos distribuir 300 senhas para a
+emissão da carteira de identidade. Solicitamos a equipe da PCPR com a unidade
+móvel.
+
+Atenciosamente,
+Cleusa Aparecida Rampazzo
+Secretária de Ação Social
+(43) 3432-4141
+""",
+        ),
+        esperado={
+            "tipo_evento": "Ação Comunitária",
+            "estado": "PR",
+            "municipio": "Jandaia do Sul",
+            "local_evento": Contem("Ginásio Municipal Almir Nelson de Almeida"),
+            "endereco": Contem("Av. Getúlio Vargas, 2020"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-10-31",
+            "data_fim_evento": "2026-10-31",
+            "data_solicitacao": "2026-10-14",
+            "servicos": [_CIN],
+            "quantidade_cin": 300,
+            "unidade_movel": True,
+            "solicitante_nome": "Cleusa Aparecida Rampazzo",
+            "solicitante_cargo_unidade": Contem("Secretária de Ação Social"),
+            "contato": Contem("3432-4141"),
+        },
+        nota="'300 senhas para a emissão' = 300 CIN; 'Av. Getúlio Vargas' é nome de pessoa.",
+    ),
+    # ------------------------------------------------------------------ 119
+    Caso(
+        id="sol-119",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-10-27 10:00",
+        texto=_eml(
+            "Delegacia de Castro <dp.castro@pc.pr.gov.br>",
+            _PCPR,
+            "PCPR na Comunidade - Vila Rio Branco - Castro",
+            "2026-10-26 14:00",
+            """
+Senhores,
+
+Esta Delegacia solicita a realização do PCPR na Comunidade na Vila Rio Branco,
+em Castro, no dia 21/11/26, das 9h às 15h, no Centro Comunitário da Vila Rio
+Branco (Rua Coronel Jorge Marcondes, 1200 - Vila Rio Branco).
+
+Serviços: emissão da CIN, coleta de digitais e exposição de viaturas.
+Estimamos 180 atendimentos.
+
+Dra. Priscila Almeida Kaminski
+Delegada de Polícia - DP de Castro
+42 99876-5432
+""",
+        ),
+        esperado={
+            "tipo_evento": "PCPR na Comunidade",
+            "estado": "PR",
+            "municipio": "Castro",
+            "local_evento": Contem("Centro Comunitário da Vila Rio Branco"),
+            "endereco": Contem("Rua Coronel Jorge Marcondes, 1200"),
+            "bairro": "Vila Rio Branco",
+            "data_inicio_evento": "2026-11-21",
+            "data_fim_evento": "2026-11-21",
+            "data_solicitacao": "2026-10-26",
+            "servicos": [_CIN, _DIG, _VTR],
+            "quantidade_cin": 180,
+            "solicitante_nome": "Priscila Almeida Kaminski",
+            "solicitante_cargo_unidade": Contem("Delegada de Polícia"),
+            "contato": Contem("99876-5432"),
+        },
+        nota="Pedido interno da própria PCPR; data com ano de dois dígitos '21/11/26'; bairro 'Vila Rio Branco' não é Rio Branco do Sul.",
+    ),
+    # ------------------------------------------------------------------ 120
+    Caso(
+        id="sol-120",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-10-09 07:30",
+        texto="""[09/10/2026 07:05] Pastoral Colônia Murici: Bom dia!!! Hoje é o dia! 🙏
+[09/10/2026 07:06] Pastoral Colônia Murici: Às 14h no salão da Capela São Pedro, Colônia Murici, São José dos Pinhais. Estrada da Colônia Murici, km 7
+[09/10/2026 07:06] Pastoral Colônia Murici: Já temos 45 pessoas pra fazer o RG
+[09/10/2026 07:08] Pastoral Colônia Murici: Qualquer coisa me liga: Ir. Terezinha Bolzon 41 3383-9090
+""",
+        esperado={
+            "estado": "PR",
+            "municipio": "São José dos Pinhais",
+            "local_evento": Contem("Capela São Pedro"),
+            "endereco": Contem("Estrada da Colônia Murici, km 7"),
+            "data_inicio_evento": "2026-10-09",
+            "data_fim_evento": "2026-10-09",
+            "data_solicitacao": "2026-10-09",
+            "servicos": [_CIN],
+            "quantidade_cin": 45,
+            "solicitante_nome": "Terezinha Bolzon",
+            "contato": Contem("3383-9090"),
+        },
+        nota="'Hoje' = data da mensagem; 'Ir.' (irmã) é tratamento; Colônia Murici é localidade rural (bairro fora do gabarito).",
+    ),
+    # ------------------------------------------------------------------ 121
+    Caso(
+        id="sol-121",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-10-26 10:00",
+        texto=_eml(
+            "Segurança Campina Grande do Sul <seguranca@campinagrandedosul.pr.gov.br>",
+            _PCPR,
+            "Semana Municipal de Segurança - viaturas",
+            "2026-10-23 11:45",
+            """
+Prezados,
+
+Na Semana Municipal de Segurança Pública de Campina Grande do Sul, pedimos a
+exposição de viaturas antigas e modernas nos dias 16 e 17/11, na Praça
+Bento Munhoz da Rocha Neto (Rua Pedro Rosa, s/n - Centro).
+
+Att.,
+Anderson Luiz Tulio
+Diretor de Segurança e Trânsito
+(41) 3676-8000
+""",
+        ),
+        esperado={
+            "estado": "PR",
+            "municipio": "Campina Grande do Sul",
+            "local_evento": Contem("Praça Bento Munhoz da Rocha Neto"),
+            "endereco": Contem("Rua Pedro Rosa, s/n"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-11-16",
+            "data_fim_evento": "2026-11-17",
+            "data_solicitacao": "2026-10-23",
+            "servicos": [_VTR],
+            "solicitante_nome": "Anderson Luiz Tulio",
+            "solicitante_cargo_unidade": Contem("Diretor de Segurança e Trânsito"),
+            "contato": Contem("3676-8000"),
+        },
+        nota="'Campina Grande do Sul' não pode virar outro município por prefixo; 'Semana' dura mais, o pedido é para 16 e 17/11.",
+    ),
+    # ------------------------------------------------------------------ 122
+    Caso(
+        id="sol-122",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-11-02 10:00",
+        texto=_eml(
+            "Paraná em Ação <paranaemacao@seju.pr.gov.br>",
+            _PCPR,
+            _q("Paraná em Ação – Ivaí – 9 a 11 de dezembro"),
+            "2026-10-30 18:00",
+            """
+Prezados,
+
+Confirmada a última edição do ano do Paraná em Ação: Ivaí, de 9 a 11/12, no
+Ginásio de Esportes Municipal (Rua Carlos Gomes, 350 - Centro). Solicitamos a
+unidade móvel com emissão de CIN, digitais e fotos, e atendimento social.
+Estimativa: cerca de 900 atendimentos da PCPR.
+
+A edição anterior, em Goioerê (4 e 5/12), segue mantida.
+
+Fernanda Scheffer Guimarães
+Coordenadora Executiva - Paraná em Ação
+(41) 3221-7300
+""",
+        ),
+        esperado={
+            "tipo_evento": "Paraná em Ação",
+            "estado": "PR",
+            "municipio": "Ivaí",
+            "local_evento": Contem("Ginásio de Esportes Municipal"),
+            "endereco": Contem("Rua Carlos Gomes, 350"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-12-09",
+            "data_fim_evento": "2026-12-11",
+            "data_solicitacao": "2026-10-30",
+            "servicos": [_CIN, _DIG, _FOTO, _SOCIAL],
+            "quantidade_cin": 900,
+            "unidade_movel": True,
+            "solicitante_nome": "Fernanda Scheffer Guimarães",
+            "solicitante_cargo_unidade": Contem("Coordenadora Executiva"),
+            "contato": Contem("3221-7300"),
+        },
+        nota="'Ivaí' é também rio (e parte de 'Ivaiporã'); outra edição (Goioerê, 4 e 5/12) citada é armadilha.",
+    ),
+    # ------------------------------------------------------------------ 123
+    Caso(
+        id="sol-123",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-10-13 10:00",
+        texto="""De: Escola de Gestão SEDEF <escoladegestao@sedef.pr.gov.br>
+Enviado em: sexta-feira, 9 de outubro de 2026 17:10
+Para: eventos.sociais@pc.pr.gov.br
+Assunto: Capacitação SUAS - Sudoeste
+
+Prezados,
+
+A Secretaria de Estado do Desenvolvimento Social e Família (sede em Curitiba)
+realizará capacitação para trabalhadores do SUAS da região Sudoeste em
+Francisco Beltrão, nos dias 3 e 4 de novembro, no Auditório do Núcleo Regional
+de Educação (Rua Octaviano Teixeira dos Santos, 1000 - Centro). Solicitamos
+um(a) instrutor(a) da PCPR para o módulo sobre rede de proteção e
+notificação de crimes.
+
+Atenciosamente,
+Gisele Amaral Pontes
+Coordenadora da Escola de Gestão do SUAS
+Palácio das Araucárias - Rua Jacy Loureiro de Campos, s/n - Centro Cívico
+Curitiba/PR - CEP 80530-915
+(41) 3210-2400
+
+Este e-mail pode conter informações sigilosas. Se você não é o destinatário,
+favor apagá-lo. Antes de imprimir, pense no meio ambiente.
+""",
+        esperado={
+            "tipo_evento": "Capacitação",
+            "estado": "PR",
+            "municipio": "Francisco Beltrão",
+            "local_evento": Contem("Auditório do Núcleo Regional de Educação"),
+            "endereco": Contem("Rua Octaviano Teixeira dos Santos, 1000"),
+            "bairro": "Centro",
+            "cep": AUSENTE,
+            "data_inicio_evento": "2026-11-03",
+            "data_fim_evento": "2026-11-04",
+            "data_solicitacao": "2026-10-09",
+            "servicos": [],
+            "solicitante_nome": "Gisele Amaral Pontes",
+            "solicitante_cargo_unidade": Contem("Coordenadora da Escola de Gestão"),
+            "contato": Contem("3210-2400"),
+        },
+        nota="Sede em Curitiba com endereço e CEP na assinatura: o CEP não é do evento (interior); rodapé de sigilo.",
+    ),
+    # ------------------------------------------------------------------ 124
+    Caso(
+        id="sol-124",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-10-15 10:00",
+        texto=_eml(
+            "Prefeitura de General Carneiro <social@generalcarneiro.pr.gov.br>",
+            _PCPR,
+            "RG itinerante no interior - General Carneiro",
+            "2026-10-14 10:40",
+            """
+Prezados,
+
+Solicitamos a equipe de identificação para o Dia 07 (sete) de novembro, na
+comunidade de Santa Maria, interior de General Carneiro, na Escola Rural
+Municipal Santa Maria (Estrada Geral Santa Maria, km 18), para atender as
+famílias da localidade. Previsão de 60 carteiras.
+
+Atenciosamente,
+Dalva Rodrigues Kotz
+Secretária de Assistência Social
+(42) 3558-1100
+""",
+        ),
+        esperado={
+            "estado": "PR",
+            "municipio": "General Carneiro",
+            "local_evento": Contem("Escola Rural Municipal Santa Maria"),
+            "endereco": Contem("Estrada Geral Santa Maria, km 18"),
+            "data_inicio_evento": "2026-11-07",
+            "data_fim_evento": "2026-11-07",
+            "data_solicitacao": "2026-10-14",
+            "servicos": [_CIN],
+            "quantidade_cin": 60,
+            "solicitante_nome": "Dalva Rodrigues Kotz",
+            "solicitante_cargo_unidade": Contem("Secretária de Assistência Social"),
+            "contato": Contem("3558-1100"),
+        },
+        nota="Dia com número e por extenso '07 (sete) de novembro'; 'General Carneiro' é município (e nome de praça em outro caso); 'km 18' não é quantidade.",
+    ),
+    # ------------------------------------------------------------------ 125
+    Caso(
+        id="sol-125",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-10-28 10:00",
+        texto="""Silvana Céu Azul: Bom dia doutor
+Silvana Céu Azul: aqui é a Silvana do CRAS de Céu Azul
+Silvana Céu Azul: aquela ação que eu tinha falado ficou marcada pro dia 14/11
+Silvana Céu Azul: no CRAS mesmo, Av. Nilo Umberto Deitos, 1426, Centro
+Silvana Céu Azul: RG e digitais, umas 90 pessoas
+Silvana Céu Azul: Silvana Reolon Dalpiaz 45 3266-1500
+""",
+        esperado={
+            "estado": "PR",
+            "municipio": "Céu Azul",
+            "local_evento": Contem("CRAS"),
+            "endereco": Contem("Av. Nilo Umberto Deitos, 1426"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-11-14",
+            "data_fim_evento": "2026-11-14",
+            "servicos": [_CIN, _DIG],
+            "quantidade_cin": 90,
+            "solicitante_nome": "Silvana Reolon Dalpiaz",
+            "solicitante_cargo_unidade": Contem("CRAS"),
+            "contato": Contem("3266-1500"),
+        },
+        nota="Conversa copiada do WhatsApp Web sem data/hora (não há data da solicitação); 'RG ... umas 90 pessoas' = 90 CIN.",
+    ),
+    # ------------------------------------------------------------------ 126
+    Caso(
+        id="sol-126",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-10-21 10:00",
+        texto=_eml(
+            "Gabinete Antonina <gabinete@antonina.pr.gov.br>",
+            _PCPR,
+            "PCPR na Comunidade - Antonina - 15/11",
+            "2026-10-20 12:00",
+            """
+Senhores,
+
+Por determinação do Senhor Prefeito, encaminho o pedido do Município de
+Antonina para o PCPR na Comunidade no domingo, 15/11, feriado da Proclamação
+da República, das 9h às 14h, na Praça Coronel Macedo, Centro Histórico.
+
+Serviços: emissão de CIN, fotos e exposição de viaturas.
+
+Atenciosamente,
+Gilson Mendes Correa
+Assessor de Comunicação
+Fone: (41) 3978-1010 | Cel.: (41) 99201-4455 | WhatsApp: 41 99201-4455
+""",
+        ),
+        esperado={
+            "tipo_evento": "PCPR na Comunidade",
+            "estado": "PR",
+            "municipio": "Antonina",
+            "local_evento": Contem("Praça Coronel Macedo"),
+            "endereco": Contem("Praça Coronel Macedo"),
+            "bairro": "Centro Histórico",
+            "data_inicio_evento": "2026-11-15",
+            "data_fim_evento": "2026-11-15",
+            "data_solicitacao": "2026-10-20",
+            "servicos": [_CIN, _FOTO, _VTR],
+            "solicitante_nome": "Gilson Mendes Correa",
+            "solicitante_cargo_unidade": Contem("Assessor de Comunicação"),
+            "contato": UmDe(Contem("3978-1010"), Contem("99201-4455")),
+        },
+        nota="Assessor em nome do prefeito (sem nome do prefeito); evento em feriado/domingo; três telefones na assinatura.",
+    ),
+    # ------------------------------------------------------------------ 127
+    Caso(
+        id="sol-127",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-11-12 10:00",
+        texto=_eml(
+            "CRAS Terra Roxa <cras@terraroxa.pr.gov.br>",
+            _PCPR,
+            "Emissão de RG no CRAS - 02/12",
+            "2026-11-11 09:20",
+            """
+Bom dia,
+
+Solicitamos a emissão de carteiras de identidade no dia 02/12, das 8h às 16h,
+na sala de reuniões do CRAS de Terra Roxa (Rua Rui Barbosa, 855 - Centro).
+Não é necessário trazer a unidade móvel, temos sala com tomada e internet.
+Previsão de 70 carteiras.
+
+Att.,
+Ivone Kunzler Berti
+Coordenadora do CRAS
+(44) 3645-1020
+""",
+        ),
+        esperado={
+            "estado": "PR",
+            "municipio": "Terra Roxa",
+            "local_evento": Contem("CRAS de Terra Roxa"),
+            "endereco": Contem("Rua Rui Barbosa, 855"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-12-02",
+            "data_fim_evento": "2026-12-02",
+            "data_solicitacao": "2026-11-11",
+            "servicos": [_CIN],
+            "quantidade_cin": 70,
+            "unidade_movel": False,
+            "solicitante_nome": "Ivone Kunzler Berti",
+            "solicitante_cargo_unidade": Contem("Coordenadora do CRAS"),
+            "contato": Contem("3645-1020"),
+        },
+        nota="Negação da unidade móvel ('não é necessário trazer a unidade móvel'): não marcar.",
+    ),
+    # ------------------------------------------------------------------ 128
+    Caso(
+        id="sol-128",
+        modulo="solicitacoes",
+        formato="texto",
+        agora="2026-09-21 10:00",
+        texto="""De: Associação dos Municípios do Oeste do Paraná
+Enviado em: sexta-feira, 18 de setembro de 2026 16:00
+Para: eventos.sociais@pc.pr.gov.br
+Assunto: Expo Corbélia 2026
+
+Prezados,
+
+Repassamos o pedido do Município de Corbélia para a participação da PCPR na
+Expo Corbélia, de 20 a 22 de outubro, no Parque de Exposições Municipal
+(Rodovia BR-369, km 480), com emissão de RG e exposição de viaturas.
+
+Atenciosamente,
+Marcos Vinícius Dreher
+Assessor Técnico - AMOP
+Rua Paraná, 3056 - Centro - Cascavel/PR
+(45) 3220-3400
+""",
+        esperado={
+            "tipo_evento": "Feira",
+            "estado": "PR",
+            "municipio": "Corbélia",
+            "local_evento": Contem("Parque de Exposições Municipal"),
+            "endereco": Contem("Rodovia BR-369, km 480"),
+            "data_inicio_evento": "2026-10-20",
+            "data_fim_evento": "2026-10-22",
+            "data_solicitacao": "2026-09-18",
+            "servicos": [_CIN, _VTR],
+            "solicitante_nome": "Marcos Vinícius Dreher",
+            "solicitante_cargo_unidade": Contem("Assessor Técnico"),
+            "contato": Contem("3220-3400"),
+        },
+        nota="Assinatura com endereço em Cascavel (AMOP); o evento é em Corbélia; rodovia federal com km.",
+    ),
+    # ------------------------------------------------------------------ 129
+    Caso(
+        id="sol-129",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-11-25 10:00",
+        texto=_eml(
+            "Habitação Fazenda Rio Grande <habitacao@fazendariogrande.pr.gov.br>",
+            _PCPR,
+            _q("Solenidade de entrega de títulos – 10/12 – pedido de CIN"),
+            "2026-11-24 15:15",
+            """
+Prezados,
+
+Na quinta-feira, 10/12, às 10h, faremos a solenidade de entrega de 320 títulos
+de regularização fundiária às famílias do Jardim Eucaliptos, no Ginásio
+Municipal Irmã Dulce (Rua Jequitibá, 1500 - Eucaliptos). Muitos moradores não
+têm documento de identidade e precisam dele para receber o título: pedimos a
+emissão de CIN no local, com previsão de 90 carteiras.
+
+Atenciosamente,
+Andressa Wojcik Prado
+Diretora do Departamento de Habitação
+(41) 3627-8500
+""",
+            html=True,
+        ),
+        esperado={
+            "tipo_evento": "Inauguração/Solenidade",
+            "estado": "PR",
+            "municipio": "Fazenda Rio Grande",
+            "local_evento": Contem("Ginásio Municipal Irmã Dulce"),
+            "endereco": Contem("Rua Jequitibá, 1500"),
+            "bairro": "Eucaliptos",
+            "data_inicio_evento": "2026-12-10",
+            "data_fim_evento": "2026-12-10",
+            "data_solicitacao": "2026-11-24",
+            "servicos": [_CIN],
+            "quantidade_cin": 90,
+            "solicitante_nome": "Andressa Wojcik Prado",
+            "solicitante_cargo_unidade": Contem("Diretora do Departamento de Habitação"),
+            "contato": Contem("3627-8500"),
+        },
+        nota="320 títulos não são carteiras (são 90); bairro 'Eucaliptos' (o e-mail também diz 'Jardim Eucaliptos').",
+    ),
+    # ------------------------------------------------------------------ 130
+    Caso(
+        id="sol-130",
+        modulo="solicitacoes",
+        formato="eml",
+        agora="2026-11-26 10:00",
+        texto=_eml(
+            "Assistência Social Foz do Jordão <social@fozdojordao.pr.gov.br>",
+            _PCPR,
+            "Ação Comunitária de Natal - Foz do Jordão",
+            "2026-11-25 14:00",
+            """
+Prezados,
+
+O Município de Foz do Jordão realiza a Ação Comunitária de Natal no dia 12/12,
+das 9h às 15h, na Escola Municipal Rui Barbosa (Rua Iguaçu, 210 - Centro).
+Pedimos a emissão de RG, fotos e atendimento social, com estimativa de 110
+atendimentos. Ano passado, em Foz do Iguaçu, vimos a unidade móvel e
+gostaríamos muito de tê-la aqui também.
+
+Atenciosamente,
+Rosimar Chaves Padilha
+Secretária de Assistência Social
+(42) 3637-1122
+""",
+        ),
+        esperado={
+            "tipo_evento": "Ação Comunitária",
+            "estado": "PR",
+            "municipio": "Foz do Jordão",
+            "local_evento": Contem("Escola Municipal Rui Barbosa"),
+            "endereco": Contem("Rua Iguaçu, 210"),
+            "bairro": "Centro",
+            "data_inicio_evento": "2026-12-12",
+            "data_fim_evento": "2026-12-12",
+            "data_solicitacao": "2026-11-25",
+            "servicos": [_CIN, _FOTO, _SOCIAL],
+            "quantidade_cin": 110,
+            "unidade_movel": True,
+            "solicitante_nome": "Rosimar Chaves Padilha",
+            "solicitante_cargo_unidade": Contem("Secretária de Assistência Social"),
+            "contato": Contem("3637-1122"),
+        },
+        nota="'Foz do Jordão' não é Foz do Iguaçu (citado como lembrança do ano passado); 'Rua Iguaçu' também puxa para Foz.",
+    ),
+]

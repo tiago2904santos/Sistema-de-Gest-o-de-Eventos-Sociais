@@ -567,7 +567,7 @@ class TextoColadoTests(SimpleTestCase):
         self.assertEqual(mensagem.origem, "whatsapp")
         self.assertEqual(mensagem.remetente_nome, "Maria Exemplo")
         self.assertEqual(mensagem.enviado_em.replace(tzinfo=None), datetime(2026, 9, 24, 14, 32))
-        self.assertEqual(mensagem.corpo, "Bom dia! Gostaria de agendar uma palestra\npara 80 alunos\nQual a data?")
+        self.assertEqual(mensagem.corpo, "Bom dia! Gostaria de agendar uma palestra\npara 80 alunos\n\nQual a data?")
 
     def test_whatsapp_web_e_android(self):
         self.assertEqual(ler_texto_colado("[14:32, 24/09/2026] Ana: palestra amanhã").remetente_nome, "Ana")

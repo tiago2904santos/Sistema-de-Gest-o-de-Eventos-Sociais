@@ -753,40 +753,156 @@ class Prazo:
     trecho: str
 
 
-_R_PRAZO = re.compile(
-    r"\b(?:prazo|deadline|fechamento|vai\s+ao\s+ar|retorno\s+ate|resposta\s+ate|responder\s+ate|"
-    r"ate\s+as|ate\s+o\s+dia|ate\s+dia|ate\s+hoje|ate\s+amanha|ate\s+o\s+(?:final|fim)\s+d[oa])\b"
+# Onde o prazo costuma estar. Forte: logo antes da data ("até sexta", "prazo:
+# 30/09", "pra hj 15h", "preciso para segunda"). Médio: na mesma frase,
+# um pouco antes ("fechamos a matéria amanhã", "entramos ao vivo amanhã às
+# 7h", "a edição de sábado", "vamos exibir no jornal de amanhã").
+_R_PRAZO_FORTE = re.compile(
+    r"\b(?:ate|prazo|deadline|pra|para|precis\w*|consig\w*|consegue\w*|aguard\w*|esperar|responder)\b"
+    r"(?:\s*(?:e|:|-))?(?:\s+(?:o|a|as|os|no|na|dia|ainda|mesmo|material|resposta|retorno|isso|de|do|da|me|nos|dele|dela|confirmacao|informacoes|nota|sonora|entrevista|posicionamento)\b){0,4}[\s,:(]*$"
 )
+_R_PRAZO_MEDIO = re.compile(
+    r"\b(?:fech\w*|edicao|ao\s+ar|no\s+ar|ao\s+vivo|exib\w*|publica\w*|veicula\w*|programa|gravac\w*|grava\w*|"
+    r"entrevista\s+seria|seria|precis\w*|responder|resposta|retorno|aguardar|esperar|entrega\w*|prazo|deadline|"
+    r"pauta\s+e)\b"
+)
+_R_SEM_PRAZO = re.compile(r"\b(?:sem\s+(?:data|prazo|dia)\s+(?:definid|fechad|marcad)\w*|a\s+definir|sem\s+pressa|quanto\s+antes)\b")
+_R_PRAZO_DIA_SEMANA = re.compile(
+    r"\b(?P<prox>proxim[ao]\s+)?(?P<dia>" + _SEMANA + r")(?:\s*-?\s*feira)?\b"
+    r"(?P<vem>\s*(?:da\s+)?(?:que\s+vem|semana\s+que\s+vem))?"
+    r"(?:\s*,?\s*(?:dia\s+)?\(?\s*(?P<num>\d{1,2})(?:[/.](?P<mes>\d{1,2}))?\s*\)?(?![\d/]))?"
+)
+_R_PRAZO_DIA_N = re.compile(r"\b(?:o\s+)?dia\s+(?P<num>\d{1,2})(?!\d|[/.]\d|\s+de\s+(?:" + _MES_COMPLETO + r"))")
+_R_PRAZO_RELATIVO = re.compile(r"\b(?P<rel>depois\s+de\s+amanha|amanha|hoje|hj|ainda\s+hoje|(?:o\s+)?(?:fim|final)\s+d[oa]\s+(?:dia|tarde|expediente))\b")
+_R_MEIO_DIA_PRAZO = re.compile(r"\bmeio[\s-]?dia\b")
+
+
+def _dia_do_mes(numero: int, referencia: date) -> date | None:
+    """"dia 25": neste mês, ou no próximo se o dia já passou."""
+    ano, mes = referencia.year, referencia.month
+    if numero < referencia.day:
+        mes += 1
+        if mes > 12:
+            ano, mes = ano + 1, 1
+    try:
+        return date(ano, mes, numero)
+    except ValueError:
+        return None
+
+
+def _candidatos_de_prazo(texto: str, dobrado: str, referencia: date) -> list[tuple[int, int, date | None, time | None, str]]:
+    """(início, fim, data, hora, tipo) de tudo que pode ser o dia/hora de um prazo."""
+    itens = []
+    ocupado = []
+    for d in datas_do_texto(texto, referencia):
+        itens.append((d.inicio_pos, d.fim_pos, d.inicio, None, "data"))
+        ocupado.append((d.inicio_pos, d.fim_pos))
+
+    def livre(i, f):
+        return all(f <= a or i >= b for a, b in ocupado)
+
+    for m in _R_PRAZO_DIA_SEMANA.finditer(dobrado):
+        num = m.group("num")
+        if num:
+            mes = m.group("mes")
+            if mes:
+                dia = _com_ano(int(num), int(mes), None, referencia)
+            else:
+                dia = _dia_do_mes(int(num), referencia)
+        else:
+            alvo = DIAS_DA_SEMANA[m.group("dia")]
+            passo = (alvo - referencia.weekday()) % 7
+            if m.group("vem") or (m.group("prox") and passo == 0):
+                passo = passo or 7
+                if m.group("vem"):
+                    passo = (7 - referencia.weekday()) + alvo
+            dia = referencia + timedelta(days=passo)
+        if dia is not None:
+            # A data explícita colada ("quinta, 10/09") já está nos itens: substitui.
+            ocupado_por = [x for x in itens if x[4] == "data" and x[0] < m.end() + 3 and x[1] > m.start()]
+            for x in ocupado_por:
+                itens.remove(x)
+            itens.append((m.start(), m.end(), dia, None, "semana"))
+            ocupado.append((m.start(), m.end()))
+    for m in _R_PRAZO_DIA_N.finditer(dobrado):
+        if livre(m.start(), m.end()):
+            dia = _dia_do_mes(int(m.group("num")), referencia)
+            if dia:
+                itens.append((m.start(), m.end(), dia, None, "dia"))
+    for m in _R_PRAZO_RELATIVO.finditer(dobrado):
+        if not livre(m.start(), m.end()):
+            continue
+        rel = m.group("rel")
+        dias = 2 if rel.startswith("depois") else 1 if rel == "amanha" else 0
+        itens.append((m.start(), m.end(), referencia + timedelta(days=dias), None, "relativa"))
+    for h in horarios_do_texto(texto):
+        if dobrado[max(0, h.inicio_pos - 9):h.inicio_pos].rstrip().endswith(("jornal do", "jornal da")):
+            continue  # "Jornal do Meio-Dia" é o programa, não o prazo
+        itens.append((h.inicio_pos, h.fim_pos, None, h.fim or h.inicio, "hora"))
+    for m in _R_MEIO_DIA_PRAZO.finditer(dobrado):
+        if dobrado[max(0, m.start() - 9):m.start()].rstrip().endswith(("jornal do", "jornal da")):
+            continue
+        if not any(i <= m.start() < f for i, f, *_ in itens):
+            itens.append((m.start(), m.end(), None, time(12, 0), "hora"))
+    return sorted(itens, key=lambda x: x[0])
+
+
+def _oracao(dobrado: str, inicio: int, fim: int) -> tuple[int, int]:
+    """A frase em volta, ignorando a quebra de linha simples do e-mail (que
+    corta a frase no meio): termina em ".!?", linha em branco ou "[dd/mm" do WhatsApp."""
+    fronteira = re.compile(r"[.!?](?:\s|$)|\n\s*\n|\n\[\d")
+    comeco = 0
+    for m in fronteira.finditer(dobrado, 0, inicio):
+        comeco = m.end()
+    m = fronteira.search(dobrado, fim)
+    return comeco, (m.start() + 1 if m else len(dobrado))
 
 
 def prazo_do_texto(texto: str, referencia) -> Prazo | None:
-    """O prazo pedido ("até às 17h de hoje", "prazo: 30/09"), se houver.
+    """O prazo pedido pelo jornalista ("até sexta", "fechamos amanhã às 10h").
 
-    Só hora, sem dia: vale o dia da referência. Prazo antes da referência
-    não serve (é outra coisa).
+    Entre as datas e horas do texto, vale a que vem logo depois de "até",
+    "prazo", "preciso para"… (forte) e, sem essa, a que está na mesma frase
+    de "fechamento", "edição", "ao vivo", "publicamos"… (médio). Só hora:
+    o dia é o da frase ("amanhã até as 9h") ou o da referência. Data antes
+    da referência é o fato da matéria, não o prazo; "o quanto antes" e
+    "sem data definida" não dão prazo.
     """
     texto = texto or ""
     referencia = _referencia(referencia)
     dobrado = dobrar(texto)
-    datas = datas_do_texto(texto, referencia)
-    posicoes_datas = [d.inicio_pos for d in datas]
-    horarios = horarios_do_texto(texto)
-    posicoes_horas = [h.inicio_pos for h in horarios]
-    for m in _R_PRAZO.finditer(dobrado):
-        _comeco, final = _frase(dobrado, m.start(), m.end())
-        janela_fim = min(final, m.end() + 80)
-        dia = _primeiro_a_partir(datas, posicoes_datas, m.start())
-        dia = dia if dia and dia.inicio_pos < janela_fim else None
-        hora = _primeiro_a_partir(horarios, posicoes_horas, m.start())
-        hora = hora if hora and hora.inicio_pos < janela_fim else None
-        if dia is None and hora is None:
+    candidatos = _candidatos_de_prazo(texto, dobrado, referencia)
+    melhor, melhor_nota = None, 0
+    for item in candidatos:
+        inicio, fim, dia, hora, tipo = item
+        if dia is not None and dia < referencia:
             continue
-        data = dia.inicio if dia else referencia
-        if data < referencia:
+        comeco, _final = _oracao(dobrado, inicio, fim)
+        antes = dobrado[max(comeco, inicio - 60):inicio]
+        nota = 3 if _R_PRAZO_FORTE.search(dobrado[max(comeco, inicio - 45):inicio]) else 2 if _R_PRAZO_MEDIO.search(antes) else 0
+        if nota == 0 and tipo in ("relativa", "semana", "hora"):
+            # "amanhã até as 9h", "segunda às 10h": a âncora vem logo depois.
+            depois = dobrado[fim:fim + 25]
+            if re.match(r"\s*(?:,\s*)?(?:ate|as|a\s+partir)\b", depois) and _R_PRAZO_MEDIO.search(dobrado[comeco:inicio] + " " + depois) or re.match(r"\s*ate\b", depois):
+                nota = 2
+        if nota < 3 and _R_SEM_PRAZO.search(dobrado[comeco:_final]):
             continue
-        fim_trecho = max([m.end()] + [x.fim_pos for x in (dia, hora) if x])
-        return Prazo(data, hora.fim or hora.inicio if hora else None, texto[m.start():fim_trecho].strip())
-    return None
+        if nota > melhor_nota:
+            melhor, melhor_nota = item, nota
+    if melhor is None:
+        return None
+    inicio, fim, dia, hora, _tipo = melhor
+    comeco, final = _oracao(dobrado, inicio, fim)
+    # Completa dia e hora com o que está na mesma frase, perto.
+    vizinhos = [c for c in candidatos if c is not melhor and comeco <= c[0] < final and abs(c[0] - inicio) <= 40]
+    if dia is None:
+        dias = [c for c in vizinhos if c[2] is not None and c[2] >= referencia]
+        dia = min(dias, key=lambda c: abs(c[0] - inicio))[2] if dias else referencia
+    if hora is None:
+        horas = [c for c in vizinhos if c[3] is not None and c[0] > inicio]
+        hora = horas[0][3] if horas else None
+    trecho_ini = max(comeco, inicio - 30)
+    return Prazo(dia, hora, " ".join(texto[trecho_ini:min(final, fim + 40)].split()))
 
 
 # ---------------------------------------------------------------------------

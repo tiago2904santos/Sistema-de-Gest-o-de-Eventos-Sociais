@@ -197,7 +197,8 @@ def _deadline(mensagem: Mensagem, prazo) -> Sugestao | None:
 
 
 def _horario_do_email(mensagem: Mensagem) -> Sugestao | None:
-    enviado = mensagem.enviado_em
+    # Numa conversa, a hora da fala que pede (não a do "bom dia").
+    enviado = mensagem.pedido_em or mensagem.enviado_em
     if enviado is None:
         return None
     if timezone.is_aware(enviado):

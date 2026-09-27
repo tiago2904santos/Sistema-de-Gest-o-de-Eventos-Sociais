@@ -247,8 +247,8 @@ acontece de 3 a 5 de novembro e gostaríamos muito de uma palestra da Polícia
 Civil sobre golpes e fraudes (golpe do Pix, falso boleto, falsa central
 bancária) no dia 4, às 8h30.
 
-A palestra seria no refeitório da fábrica: Rodovia PR-218, km 3, Parque
-Industrial II. Estimamos cerca de 350 colaboradores.
+A palestra seria no refeitório da fábrica: Rodovia PR-218, km 3,
+Parque Industrial II. Estimamos cerca de 350 colaboradores.
 
 Att.,
 Karina Szymanski
@@ -823,8 +823,8 @@ Colégio Estadual Arminda Kuster - Guarapuava
 Em sex., 2 de out. de 2026 às 10:05, Colégio Estadual Arminda Kuster <ce.armindakuster@escola.pr.gov.br> escreveu:
 > Bom dia,
 > Solicitamos palestra sobre violência escolar para 220 alunos no dia
-> 10/11, às 9h, no ginásio do colégio (Rua Saldanha Marinho, 1500 - Santa
-> Cruz), em Guarapuava.
+> 10/11, às 9h, no ginásio do colégio (Rua Saldanha Marinho, 1500 -
+> Santa Cruz), em Guarapuava.
 > Atenciosamente, Equipe Pedagógica
 """,
         ),
@@ -1035,8 +1035,8 @@ Boa tarde,
 
 A Cooperativa Agroindustrial Oeste Forte, de Toledo, convida a Polícia Civil
 para uma palestra sobre crimes cibernéticos na SIPAT, no dia 3 de dezembro de
-2026, às 15h, no auditório da matriz (Rua Barão do Rio Branco, 2233 - Jardim
-Gisela).
+2026, às 15h, no auditório da matriz (Rua Barão do Rio Branco, 2233 -
+Jardim Gisela).
 
 Público: cerca de 600 cooperados e colaboradores.
 
@@ -1126,8 +1126,8 @@ PREZADOS,
 
 A CÂMARA MUNICIPAL DA LAPA CONVIDA A POLÍCIA CIVIL DO PARANÁ PARA A SESSÃO
 SOLENE DE ENTREGA DE MOÇÕES DE APLAUSO AOS POLICIAIS CIVIS DA 22ª DELEGACIA,
-NO DIA 21 DE OUTUBRO, ÀS 19H, NO PLENÁRIO DA CÂMARA - RUA BARÃO DO RIO BRANCO,
-1675 - CENTRO HISTÓRICO - LAPA.
+NO DIA 21 DE OUTUBRO, ÀS 19H, NO PLENÁRIO DA CÂMARA -
+RUA BARÃO DO RIO BRANCO, 1675 - CENTRO HISTÓRICO - LAPA.
 
 PEDIMOS A GENTILEZA DE INFORMAR OS NOMES DOS REPRESENTANTES ATÉ 14/10.
 
@@ -1718,8 +1718,8 @@ Prezados,
 A Associação de Moradores do Jardim Araucária, em Campo Mourão, solicita uma
 palestra sobre golpes e fraudes pela internet e telefone para a comunidade.
 
-Sugerimos o dia 18 de novembro, às 19h30, no auditório da Escola Estadual
-Ivone Castanharo (R. das Flores, s/n, Jardim Araucária).
+Sugerimos o dia 18 de novembro, às 19h30, no auditório da
+Escola Estadual Ivone Castanharo (R. das Flores, s/n, Jardim Araucária).
 
 Contamos com a presença de cerca de 100 moradores.
 
@@ -1989,8 +1989,8 @@ O Sindicato Rural de Castro organiza, junto com a Associação Rural de Carambe�
 o Dia de Campo 2026 e gostaria de uma palestra sobre posse e porte de armas de
 fogo na propriedade rural (registro, regularização, desarmamento).
 
-O evento será em Carambeí, no dia 15/10, às 10h, no Pavilhão da Associação
-Rural - Rua dos Pioneiros, 3000.
+O evento será em Carambeí, no dia 15/10, às 10h, no
+Pavilhão da Associação Rural - Rua dos Pioneiros, 3000.
 
 Esperamos 250 produtores.
 
@@ -2157,8 +2157,8 @@ Telefone dele: (42) 99902-6611.
 Bom dia,
 
 O Colégio Estadual Ilha dos Valadares, de Paranaguá, solicita palestra sobre
-drogas nos dias 24 e 25/11 (um dia para cada turno), sempre às 10h, na quadra
-do colégio: Rua Principal, s/n - Ilha dos Valadares.
+drogas nos dias 24 e 25/11 (um dia para cada turno), sempre às 10h,
+na quadra do colégio: Rua Principal, s/n - Ilha dos Valadares.
 
 Serão cerca de 350 alunos no total.
 
@@ -2229,8 +2229,8 @@ A paz do Senhor!
 
 A União de Mocidade da Assembleia de Deus em Sarandi convida a Polícia Civil
 para uma palestra sobre drogas e álcool no nosso Congresso de Jovens, nos dias
-13 e 14 de novembro, às 19h30, no templo central: Av. Maringá, 1200 - Jardim
-Independência.
+13 e 14 de novembro, às 19h30, no templo central: Av. Maringá, 1200 -
+Jardim Independência.
 
 Público esperado: cerca de 800 jovens por noite.
 
@@ -2711,3 +2711,2050 @@ Coordenação do Seminário
         },
         nota="'Trânsito' no nome da secretaria não é tema pedido; painel sem tema do cadastro; sem acentos no assunto.",
     ),
+    # ------------------------------------------------------------------ 061
+    Caso(
+        id="dem-061",
+        modulo=_M,
+        formato="texto",
+        agora="2026-10-30 09:00",
+        texto="""
+De: Escola Municipal Rocha Pombo <em.rochapombo@morretes-exemplo.pr.gov.br>
+Enviado em: quinta-feira, 29 de outubro de 2026 16:50
+Para: ascom.palestras@pc.pr.gov.br
+Cc: Secretaria Municipal de Educação
+Assunto: Palestra - autoproteção infantil
+
+Prezados,
+
+A Escola Municipal Rocha Pombo, de Morretes, solicita palestra sobre abuso
+sexual infantil (autoproteção) para os alunos do 3º ao 5º ano no dia 19 de
+novembro, quinta-feira, em dois horários: às 8h (turma da manhã) e às 13h30
+(turma da tarde).
+
+Endereço: Rua XV de Novembro, 45 - Centro Histórico.
+Total de aproximadamente 160 crianças.
+
+Atenciosamente,
+Terezinha Bonato
+Diretora
+(41) 3462-1155
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Abuso sexual infantil"],
+            "solicitante": Contem("Rocha Pombo"),
+            "email": "em.rochapombo@morretes-exemplo.pr.gov.br",
+            "telefone": Contem("3462-1155"),
+            "data_inicio_evento": "2026-11-19",
+            "hora_inicio": "08:00",
+            "municipio": "Morretes",
+            "estado": "PR",
+            "quantidade_publico": 160,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-10-29",
+            "local": Contem("Rocha Pombo"),
+            "endereco": Contem("Rua XV de Novembro, 45"),
+            "bairro": "Centro Histórico",
+        },
+        nota="Dois horários no mesmo dia: o início é 8h; Cc para a Secretaria não muda o solicitante.",
+    ),
+    # ------------------------------------------------------------------ 062
+    Caso(
+        id="dem-062",
+        modulo=_M,
+        formato="eml",
+        agora="2026-11-20 10:00",
+        texto=_eml(
+            "Compliance - Rede Farmavida <compliance@farmavida-exemplo.com.br>",
+            _ASCOM,
+            "Palestra assédio - filial Maringá",
+            "2026-11-19 15:40",
+            """
+Prezados,
+
+A Rede Farmavida gostaria de uma palestra sobre assédio moral e sexual para os
+gerentes da regional norte, no encontro que faremos na filial de Maringá:
+
+11/12, às 16h - Av. Colombo, 5790 - Zona 7 - Maringá
+Cerca de 70 gerentes.
+
+Atenciosamente,
+
+Departamento de Compliance
+Rede Farmavida - Matriz
+Rua Marechal Deodoro, 900 - Centro - Curitiba/PR - CEP 80010-010
+(41) 3021-5500
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Assédio moral e sexual"],
+            "solicitante": Contem("Farmavida"),
+            "email": "compliance@farmavida-exemplo.com.br",
+            "telefone": Contem("3021-5500"),
+            "data_inicio_evento": "2026-12-11",
+            "hora_inicio": "16:00",
+            "municipio": "Maringá",
+            "estado": "PR",
+            "quantidade_publico": 70,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-11-19",
+            "endereco": Contem("Av. Colombo, 5790"),
+            "bairro": "Zona 7",
+            "cep": AUSENTE,
+        },
+        nota="'Av. Colombo' não é o município Colombo; matriz em Curitiba (CEP da assinatura não é do evento).",
+    ),
+    # ------------------------------------------------------------------ 063
+    Caso(
+        id="dem-063",
+        modulo=_M,
+        formato="eml",
+        agora="2026-11-05 10:00",
+        texto=_eml(
+            "EEB Dom Pio de Freitas <eeb.dompio.mafra@sed.sc.gov.br>",
+            _ASCOM,
+            _q("Solicitação de palestra – Mafra/SC"),
+            "2026-11-04 08:20",
+            """
+Bom dia!
+
+A Escola de Educação Básica Dom Pio de Freitas, de Mafra (SC), cidade gêmea de
+Rio Negro (PR), solicita uma palestra sobre drogas para os alunos do ensino
+médio, no dia 1º de dezembro, às 14h.
+
+Endereço: Rua Felipe Schmidt, 300 - Centro - Mafra/SC - CEP 89300-000.
+Aproximadamente 230 alunos.
+
+Atenciosamente,
+Orientação Escolar
+(47) 3642-0303
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Drogas"],
+            "solicitante": Contem("Dom Pio de Freitas"),
+            "email": "eeb.dompio.mafra@sed.sc.gov.br",
+            "telefone": Contem("3642-0303"),
+            "data_inicio_evento": "2026-12-01",
+            "hora_inicio": "14:00",
+            "municipio": "Mafra",
+            "estado": "SC",
+            "quantidade_publico": 230,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-11-04",
+            "endereco": Contem("Rua Felipe Schmidt, 300"),
+            "bairro": "Centro",
+            "cep": "89300-000",
+        },
+        nota="Evento em SC; Rio Negro (PR) só como cidade gêmea; '1º de dezembro'.",
+    ),
+    # ------------------------------------------------------------------ 064
+    Caso(
+        id="dem-064",
+        modulo=_M,
+        formato="texto",
+        agora="2026-11-26 10:00",
+        texto="""
+[25/11/2026 11:30] Profe Nilce: Bom dia!! A palestra do ano passado foi nota 10, merece uma salva de palmas 👏👏
+[25/11/2026 11:31] Profe Nilce: Queremos de novo sobre bullying aqui no Colégio Estadual Floriano Peixoto, em Laranjeiras do Sul
+[25/11/2026 11:32] Profe Nilce: dia 9/12 as 10h, umas 200 crianças
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Bullying"],
+            "solicitante": Contem("Floriano Peixoto"),
+            "data_inicio_evento": "2026-12-09",
+            "hora_inicio": "10:00",
+            "municipio": "Laranjeiras do Sul",
+            "estado": "PR",
+            "quantidade_publico": 200,
+            "canal_solicitacao": "WHATSAPP",
+            "data_solicitacao": "2026-11-25",
+            "local": Contem("Floriano Peixoto"),
+        },
+        nota="'salva de palmas' não é o município Palmas.",
+    ),
+    # ------------------------------------------------------------------ 065
+    Caso(
+        id="dem-065",
+        modulo=_M,
+        formato="eml",
+        agora="2026-10-23 14:00",
+        texto=_eml(
+            "Vara da Infância e Juventude - Ivaiporã <vij.ivaipora@tj-exemplo.jus.br>",
+            _ASCOM,
+            _q("Ofício nº 1.104/2026 – Projeto Justiça na Escola"),
+            "2026-10-22 13:15",
+            """
+Ivaiporã, 20 de outubro de 2026.
+
+Ofício nº 1.104/2026 - VIJ
+
+Senhor(a) Assessor(a),
+
+Com os cumprimentos de estilo, no âmbito do Projeto Justiça na Escola,
+solicito a Vossa Senhoria a designação de policial civil para proferir
+palestra sobre drogas e ato infracional aos alunos do
+Colégio Estadual Barbosa Ferraz, no dia 24 de novembro próximo, às 14 horas, no auditório do colégio
+(Rua Paraná, 1400 - Centro, Ivaiporã).
+
+Público estimado: 280 estudantes.
+
+Contato da Secretaria: (43) 3472-8800.
+
+Respeitosamente,
+
+Juíza de Direito
+Vara da Infância e Juventude da Comarca de Ivaiporã
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Drogas"],
+            "solicitante": Contem("Vara da Infância"),
+            "email": "vij.ivaipora@tj-exemplo.jus.br",
+            "telefone": Contem("3472-8800"),
+            "data_inicio_evento": "2026-11-24",
+            "hora_inicio": "14:00",
+            "municipio": "Ivaiporã",
+            "estado": "PR",
+            "quantidade_publico": 280,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": UmDe("2026-10-20", "2026-10-22"),
+            "local": Contem("Colégio Estadual Barbosa Ferraz"),
+            "endereco": Contem("Rua Paraná, 1400"),
+            "bairro": "Centro",
+        },
+        nota="Ofício formal; 'Ivaiporã' ≠ 'Ivaí'; número do ofício '1.104/2026' não é protocolo nem público; 'Barbosa Ferraz' também é município.",
+    ),
+    # ------------------------------------------------------------------ 066
+    Caso(
+        id="dem-066",
+        modulo=_M,
+        formato="texto",
+        agora="2026-11-18 10:00",
+        texto="""
+Semana de Prevenção às Drogas - Colégio Estadual Presidente Castelo Branco (Toledo)
+
+Prezados, o colégio fará a Semana de Prevenção às Drogas nos dias 10, 11 e 12
+de dezembro e gostaríamos de uma palestra da Polícia Civil em cada dia, às 9h,
+para turmas diferentes (cerca de 150 alunos por dia).
+
+Local: anfiteatro do colégio - Rua Almirante Barroso, 2900 - Vila Industrial.
+
+Contato: Coordenação Pedagógica - (45) 3252-1020 - ce.castelobranco@escola.pr.gov.br
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Drogas"],
+            "solicitante": Contem("Presidente Castelo Branco"),
+            "email": "ce.castelobranco@escola.pr.gov.br",
+            "telefone": Contem("3252-1020"),
+            "data_inicio_evento": "2026-12-10",
+            "data_fim_evento": "2026-12-12",
+            "hora_inicio": "09:00",
+            "municipio": "Toledo",
+            "estado": "PR",
+            "local": Contem("anfiteatro do colégio"),
+            "endereco": Contem("Rua Almirante Barroso, 2900"),
+            "bairro": "Vila Industrial",
+        },
+        nota="'nos dias 10, 11 e 12' → período; '150 alunos por dia' fica fora; município só entre parênteses no título.",
+    ),
+    # ------------------------------------------------------------------ 067
+    Caso(
+        id="dem-067",
+        modulo=_M,
+        formato="eml",
+        agora="2026-11-09 11:00",
+        texto=_eml(
+            "Conselho Municipal do Idoso de Apucarana <cmi@apucarana-exemplo.pr.gov.br>",
+            _ASCOM,
+            "Palestra - violência contra a pessoa idosa",
+            "2026-11-06 10:00",
+            """
+Prezados,
+
+O Conselho Municipal dos Direitos da Pessoa Idosa de Apucarana solicita uma
+palestra sobre violência contra a pessoa idosa (maus-tratos, abandono,
+apropriação de benefício) para cuidadores e familiares.
+
+Dia 1/12, às 14h30, no Centro de Convivência do Idoso:
+Rua Osvaldo Cruz, 510 - Centro - CEP 86800-720.
+
+Público de cerca de 120 pessoas.
+
+Atenciosamente,
+Hilda Marcondes Prestes
+Presidente do CMDPI
+(43) 3162-4120
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Violência contra a pessoa idosa"],
+            "solicitante": Contem("Pessoa Idosa"),
+            "email": "cmi@apucarana-exemplo.pr.gov.br",
+            "telefone": Contem("3162-4120"),
+            "data_inicio_evento": "2026-12-01",
+            "hora_inicio": "14:30",
+            "municipio": "Apucarana",
+            "estado": "PR",
+            "quantidade_publico": 120,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-11-06",
+            "local": Contem("Centro de Convivência do Idoso"),
+            "endereco": Contem("Rua Osvaldo Cruz, 510"),
+            "bairro": "Centro",
+            "cep": "86800-720",
+        },
+        nota="Data '1/12' sem zero; CEP do local do evento.",
+    ),
+    # ------------------------------------------------------------------ 068
+    Caso(
+        id="dem-068",
+        modulo=_M,
+        formato="eml",
+        agora="2026-10-01 10:00",
+        texto=_eml(
+            "Colégio Integração <coordenacao@colegiointegracao-exemplo.com.br>",
+            _ASCOM,
+            _q("Solicitação de palestra – crimes cibernéticos (7h45)"),
+            "2026-09-30 17:25",
+            """
+Prezados,
+
+O Colégio Integração, escola particular de Telêmaco Borba, gostaria de agendar
+uma palestra sobre crimes cibernéticos (golpes em jogos on-line, sextorsão,
+vazamento de dados) para o ensino fundamental II.
+
+Data: 20/10
+Horário: às 7h45
+Local: Auditório - Rua Marechal Floriano, 777 - Centro
+Público: 260 alunos
+
+Horário da secretaria: 7h às 18h.
+
+Coordenação Pedagógica
+(42) 3272-3131
+""",
+            html=True,
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Crimes cibernéticos"],
+            "solicitante": Contem("Colégio Integração"),
+            "email": "coordenacao@colegiointegracao-exemplo.com.br",
+            "telefone": Contem("3272-3131"),
+            "data_inicio_evento": "2026-10-20",
+            "hora_inicio": "07:45",
+            "municipio": "Telêmaco Borba",
+            "estado": "PR",
+            "quantidade_publico": 260,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-09-30",
+            "local": Contem("Auditório"),
+            "endereco": Contem("Rua Marechal Floriano, 777"),
+            "bairro": "Centro",
+        },
+        nota="Horário da secretaria (7h às 18h) não é o do evento (7h45).",
+    ),
+    # ------------------------------------------------------------------ 069
+    Caso(
+        id="dem-069",
+        modulo=_M,
+        formato="texto",
+        agora="2026-10-09 10:00",
+        texto="""
+---------- Forwarded message ---------
+De: Colégio Estadual Dom Carlos <ce.domcarlos@escola.pr.gov.br>
+Date: qui., 8 de out. de 2026 às 11:03
+Subject: palestra bullying
+To: <nucleo.palmas@educacao.pr.gov.br>
+
+Bom dia, pessoal do Núcleo!
+
+Aqui é de Palmas-PR (não é Tocantins, rs). Precisamos de uma palestra sobre
+bullying na próxima sexta-feira (16/10), às 13h30, para 120 alunos do 6º ano.
+Pode encaminhar para a Polícia Civil?
+
+Endereço do colégio: Av. Coronel José Osório, 890 - Centro.
+
+Obrigada, Kelly (vice-direção) - (46) 3262-1414
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Bullying"],
+            "solicitante": Contem("Dom Carlos"),
+            "email": "ce.domcarlos@escola.pr.gov.br",
+            "telefone": Contem("3262-1414"),
+            "data_inicio_evento": "2026-10-16",
+            "hora_inicio": "13:30",
+            "municipio": "Palmas",
+            "estado": "PR",
+            "quantidade_publico": 120,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-10-08",
+            "local": Contem("Dom Carlos"),
+            "endereco": Contem("Av. Coronel José Osório, 890"),
+            "bairro": "Centro",
+        },
+        nota="Palmas-PR, não Palmas/TO; encaminhado pelo Núcleo (e-mail de contato é o da escola).",
+    ),
+    # ------------------------------------------------------------------ 070
+    Caso(
+        id="dem-070",
+        modulo=_M,
+        formato="eml",
+        agora="2026-10-27 09:00",
+        texto=_eml(
+            "APMF CE Leocádia Braga Ramos <apmf.leocadia@exemplo-mail.com>",
+            _ASCOM,
+            "pedido palestra piraquara",
+            "2026-10-26 20:30",
+            """
+Boa noite
+
+A APMF do Colégio Estadual Leocádia Braga Ramos, de Piraquara, pede palestra
+sobre drogas e violência escolar para pais e alunos, dia 19/11 as 19h, no
+ginásio do colégio.
+
+Rua Mário Seabra, 100 - Centro
+CEP 83301-010
+
+grata
+Dirce (presidente da APMF)
+41 99680-7272
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Drogas", "Violência escolar"],
+            "solicitante": Contem("Leocádia Braga Ramos"),
+            "email": "apmf.leocadia@exemplo-mail.com",
+            "telefone": Contem("99680-7272"),
+            "data_inicio_evento": "2026-11-19",
+            "hora_inicio": "19:00",
+            "municipio": "Piraquara",
+            "estado": "PR",
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-10-26",
+            "local": Contem("ginásio do colégio"),
+            "endereco": Contem("Rua Mário Seabra, 100"),
+            "bairro": "Centro",
+            "cep": "83301-010",
+        },
+        nota="Dois temas; endereço e CEP em linhas separadas.",
+    ),
+    # ------------------------------------------------------------------ 071
+    Caso(
+        id="dem-071",
+        modulo=_M,
+        formato="eml",
+        agora="2026-12-01 15:00",
+        texto=_eml(
+            "Segurança do Trabalho - Cerâmica Itaqui <seg.trabalho@ceramicaitaqui-exemplo.com.br>",
+            _ASCOM,
+            _q("URGENTE – DDS especial amanhã às 8h"),
+            "2026-12-01 09:05",
+            """
+Bom dia,
+
+Sei que o prazo é curto, mas surgiu a oportunidade: a Cerâmica Itaqui, de
+Campo Largo, gostaria de uma fala rápida (30 min) sobre trânsito e álcool na
+direção no nosso DDS especial de fim de ano, amanhã às 8h.
+
+Local: Rodovia do Café (BR-277), km 115 - Itaqui.
+Cerca de 180 colaboradores.
+
+Rafael Moro
+Técnico de Segurança do Trabalho
+(41) 3292-6060
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Trânsito"],
+            "solicitante": Contem("Cerâmica Itaqui"),
+            "email": "seg.trabalho@ceramicaitaqui-exemplo.com.br",
+            "telefone": Contem("3292-6060"),
+            "data_inicio_evento": "2026-12-02",
+            "hora_inicio": "08:00",
+            "municipio": "Campo Largo",
+            "estado": "PR",
+            "quantidade_publico": 180,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-12-01",
+            "endereco": Contem("km 115"),
+            "bairro": "Itaqui",
+        },
+        nota="'amanhã às 8h' relativo ao envio (01/12); '30 min' não é hora.",
+    ),
+    # ------------------------------------------------------------------ 072
+    Caso(
+        id="dem-072",
+        modulo=_M,
+        formato="texto",
+        agora="2026-11-12 10:00",
+        texto="""
+[11/11/2026 20:15] Coord. Grupo Mulheres Vivas: Oi, boa noite! Sou a Rosemeri, coordeno o grupo Mulheres Vivas, de apoio a mulheres vítimas de violência, aqui em Castro
+[11/11/2026 20:16] Coord. Grupo Mulheres Vivas: Queremos uma palestra sobre violência doméstica, medidas protetivas, como denunciar
+[11/11/2026 20:17] Coord. Grupo Mulheres Vivas: Dia 5 de dezembro, sábado, às 15h, no Salão da Igreja São Judas - Rua Santos Dumont, 45 - Santa Cruz
+[11/11/2026 20:17] Coord. Grupo Mulheres Vivas: umas 35 mulheres
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Violência doméstica"],
+            "solicitante": Contem("Mulheres Vivas"),
+            "data_inicio_evento": "2026-12-05",
+            "hora_inicio": "15:00",
+            "municipio": "Castro",
+            "estado": "PR",
+            "quantidade_publico": 35,
+            "canal_solicitacao": "WHATSAPP",
+            "data_solicitacao": "2026-11-11",
+            "local": Contem("Salão da Igreja São Judas"),
+            "endereco": Contem("Rua Santos Dumont, 45"),
+            "bairro": "Santa Cruz",
+        },
+        nota="'Mulheres Vivas'/'vítimas de violência' não tornam o tema 'Segurança da mulher': pedem violência doméstica.",
+    ),
+    # ------------------------------------------------------------------ 073
+    Caso(
+        id="dem-073",
+        modulo=_M,
+        formato="eml",
+        agora="2026-10-30 10:00",
+        texto=_eml(
+            "AMUVI - Associação dos Municípios do Vale do Ivaí <eventos@amuvi-exemplo.org.br>",
+            _ASCOM,
+            "Encontro Regional de Mulheres - Jandaia do Sul",
+            "2026-10-29 14:00",
+            """
+Prezados,
+
+A Associação dos Municípios do Vale do Ivaí (AMUVI) promove o Encontro Regional
+de Mulheres Lideranças e solicita uma palestra sobre segurança da mulher.
+
+O encontro será em Jandaia do Sul, no dia 25/11, às 8h30, no
+Centro de Eventos Municipal - Rua Marechal Deodoro, 555 - Centro. Público: 300 mulheres.
+
+Atenciosamente,
+
+AMUVI
+Av. Curitiba, 1000 - Centro - Apucarana/PR
+(43) 3422-5050
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Segurança da mulher"],
+            "solicitante": Contem("AMUVI"),
+            "email": "eventos@amuvi-exemplo.org.br",
+            "telefone": Contem("3422-5050"),
+            "data_inicio_evento": "2026-11-25",
+            "hora_inicio": "08:30",
+            "municipio": "Jandaia do Sul",
+            "estado": "PR",
+            "quantidade_publico": 300,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-10-29",
+            "local": Contem("Centro de Eventos Municipal"),
+            "endereco": Contem("Rua Marechal Deodoro, 555"),
+            "bairro": "Centro",
+        },
+        nota="Sede da AMUVI em Apucarana (assinatura) e 'Vale do Ivaí' no nome; o evento é em Jandaia do Sul.",
+    ),
+    # ------------------------------------------------------------------ 074
+    Caso(
+        id="dem-074",
+        modulo=_M,
+        formato="texto",
+        agora="2026-11-20 10:00",
+        texto="""
+Solicito palestra sobre drogas para os alunos do 9º ano da Escola Estadual
+Monsenhor Pedro Lech, de Imbituva, no dia 4/12 (sexta), no período da tarde,
+na própria escola. São 3 turmas.
+
+Atenciosamente,
+Direção
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Drogas"],
+            "solicitante": Contem("Monsenhor Pedro Lech"),
+            "data_inicio_evento": "2026-12-04",
+            "hora_inicio": AUSENTE,
+            "municipio": "Imbituva",
+            "estado": "PR",
+            "local": Contem("Monsenhor Pedro Lech"),
+            "email": AUSENTE,
+            "telefone": AUSENTE,
+        },
+        nota="Texto curto sem contato; 'período da tarde' não é hora; '3 turmas' não é número de público.",
+    ),
+    # ------------------------------------------------------------------ 075
+    Caso(
+        id="dem-075",
+        modulo=_M,
+        formato="eml",
+        agora="2026-10-16 09:00",
+        texto=_eml(
+            "Centro Acadêmico de Direito - Faculdade Metropolitana <cadir@facmetro-exemplo.edu.br>",
+            _ASCOM,
+            _q("Semana Jurídica – mesa sobre crimes cibernéticos"),
+            "2026-10-15 16:00",
+            """
+Prezados,
+
+O Centro Acadêmico de Direito da Faculdade Metropolitana de Curitiba realizará
+a Semana Jurídica de 9 a 11 de novembro. Gostaríamos de convidar os Delegados
+Ricardo Faoro e Simone Czelusniak para a mesa sobre crimes cibernéticos, no
+dia 10/11, às 19h.
+
+Local: Auditório Principal - Rua Chile, 1800 - Rebouças.
+Público: 250 estudantes.
+
+Atenciosamente,
+Gabriel Nowak - Presidente do CADIR
+(41) 99876-1010
+""",
+            html=True,
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Crimes cibernéticos"],
+            "palestrantes": ["Ricardo Faoro", "Simone Czelusniak"],
+            "solicitante": Contem("Faculdade Metropolitana"),
+            "email": "cadir@facmetro-exemplo.edu.br",
+            "telefone": Contem("99876-1010"),
+            "data_inicio_evento": "2026-11-10",
+            "hora_inicio": "19:00",
+            "municipio": "Curitiba",
+            "estado": "PR",
+            "quantidade_publico": 250,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-10-15",
+            "local": Contem("Auditório Principal"),
+            "endereco": Contem("Rua Chile, 1800"),
+            "bairro": "Rebouças",
+        },
+        nota="A Semana vai de 9 a 11/11, mas a mesa pedida é só no dia 10; dois palestrantes nominais.",
+    ),
+    # ------------------------------------------------------------------ 076
+    Caso(
+        id="dem-076",
+        modulo=_M,
+        formato="texto",
+        agora="2026-10-28 10:00",
+        texto="""
+De: CREAS Goioerê <creas@goioere-exemplo.pr.gov.br>
+Enviado em: terça-feira, 27 de outubro de 2026 11:12
+Para: ASCOM PCPR <ascom.palestras@pc.pr.gov.br>
+Assunto: 21 Dias de Ativismo - palestra
+
+Bom dia!
+
+Dentro da campanha dos 21 Dias de Ativismo pelo Fim da Violência contra as
+Mulheres, o CREAS de Goioerê solicita palestra sobre violência doméstica e Lei
+Maria da Penha no dia 20.11.2026 às 14h, no auditório da Prefeitura
+(Rua Mato Grosso, 1234 - Centro). Público: 100 pessoas.
+
+Atenciosamente,
+Equipe CREAS
+(44) 3522-7070
+Atendimento: segunda a sexta, das 8h às 17h
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Violência doméstica"],
+            "solicitante": Contem("CREAS"),
+            "email": "creas@goioere-exemplo.pr.gov.br",
+            "telefone": Contem("3522-7070"),
+            "data_inicio_evento": "2026-11-20",
+            "hora_inicio": "14:00",
+            "municipio": "Goioerê",
+            "estado": "PR",
+            "quantidade_publico": 100,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-10-27",
+            "local": Contem("auditório da Prefeitura"),
+            "endereco": Contem("Rua Mato Grosso, 1234"),
+            "bairro": "Centro",
+        },
+        nota="'21 Dias' não é data; '20.11.2026'; horário de atendimento não é hora.",
+    ),
+    # ------------------------------------------------------------------ 077
+    Caso(
+        id="dem-077",
+        modulo=_M,
+        formato="eml",
+        agora="2026-10-13 10:00",
+        texto=_eml(
+            "Escola Estadual Nossa Senhora do Carmo <ee.nscarmo.mallet@escola.pr.gov.br>",
+            _ASCOM,
+            "Palestra bullying - Mallet",
+            "2026-10-12 19:35",
+            """
+Boa noite,
+
+Pedimos uma palestra sobre bullying para os alunos do 6º e 7º ano, na quinta,
+dia 22/10, às 13h, aqui na escola, em Mallet: Rua Barão do Rio Branco, 300 -
+Centro. Uns 130 alunos.
+
+Na última vez (em 2024, dia 17/10/2024) foi muito proveitoso.
+
+Irmã Olga Kobren
+Diretora
+(42) 3542-1188
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Bullying"],
+            "solicitante": Contem("Nossa Senhora do Carmo"),
+            "email": "ee.nscarmo.mallet@escola.pr.gov.br",
+            "telefone": Contem("3542-1188"),
+            "data_inicio_evento": "2026-10-22",
+            "hora_inicio": "13:00",
+            "municipio": "Mallet",
+            "estado": "PR",
+            "quantidade_publico": 130,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-10-12",
+            "endereco": Contem("Rua Barão do Rio Branco, 300"),
+            "bairro": "Centro",
+        },
+        nota="Data de 2024 citada; 'quinta, dia 22/10'.",
+    ),
+    # ------------------------------------------------------------------ 078
+    Caso(
+        id="dem-078",
+        modulo=_M,
+        formato="eml",
+        agora="2026-11-06 14:00",
+        texto=_eml(
+            "CE Timbu Velho <ce.timbuvelho@escola.pr.gov.br>",
+            _ASCOM,
+            "Re: Palestra sobre drogas - Campina Grande do Sul",
+            "2026-11-06 10:02",
+            """
+Pode ser a segunda opção, dia 20. Obrigada!!
+
+Edna Loyola - Pedagoga
+CE Timbu Velho - Campina Grande do Sul
+(41) 3676-2020
+
+Em qui., 5 de nov. de 2026 às 16:20, ASCOM - Polícia Civil do Paraná <ascom.palestras@pc.pr.gov.br> escreveu:
+> Boa tarde, Edna. Podemos atender no dia 19/11 às 9h ou no dia 20/11 às 14h.
+> Qual prefere?
+>
+> Em ter., 3 de nov. de 2026 às 08:40, CE Timbu Velho <ce.timbuvelho@escola.pr.gov.br> escreveu:
+>> Bom dia, gostaríamos de uma palestra sobre drogas para 150 alunos do
+>> ensino médio, em novembro, no Colégio Estadual Timbu Velho
+>> (Estrada da Ribeira, 3500 - Timbu Velho).
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Drogas"],
+            "solicitante": Contem("Timbu Velho"),
+            "email": "ce.timbuvelho@escola.pr.gov.br",
+            "telefone": Contem("3676-2020"),
+            "data_inicio_evento": "2026-11-20",
+            "hora_inicio": "14:00",
+            "municipio": "Campina Grande do Sul",
+            "estado": "PR",
+            "quantidade_publico": 150,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": UmDe("2026-11-03", "2026-11-06"),
+            "local": Contem("Timbu Velho"),
+            "endereco": Contem("Estrada da Ribeira, 3500"),
+        },
+        nota="Resposta escolhe a 'segunda opção' da ASCOM (20/11 às 14h), não 19/11 às 9h.",
+    ),
+    # ------------------------------------------------------------------ 079
+    Caso(
+        id="dem-079",
+        modulo=_M,
+        formato="texto",
+        agora="2026-11-23 09:00",
+        texto="""
+[23/11/2026 08:02] Neide - Assoc. Aposentados Ibiporã: Bom dia! Sei que é em cima da hora, mas o palestrante que tínhamos para hoje cancelou
+[23/11/2026 08:03] Neide - Assoc. Aposentados Ibiporã: Tem como alguém da Polícia Civil falar sobre golpes e fraudes com os aposentados hoje às 19h?
+[23/11/2026 08:04] Neide - Assoc. Aposentados Ibiporã: É na sede da Associação dos Aposentados de Ibiporã, Rua Pará, 250, uns 60 associados
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Golpes e fraudes"],
+            "solicitante": Contem("Associação dos Aposentados"),
+            "data_inicio_evento": "2026-11-23",
+            "hora_inicio": "19:00",
+            "municipio": "Ibiporã",
+            "estado": "PR",
+            "quantidade_publico": 60,
+            "canal_solicitacao": "WHATSAPP",
+            "data_solicitacao": "2026-11-23",
+            "local": Contem("Associação dos Aposentados"),
+            "endereco": Contem("Rua Pará, 250"),
+        },
+        nota="'hoje às 19h' = dia da mensagem.",
+    ),
+    # ------------------------------------------------------------------ 080
+    Caso(
+        id="dem-080",
+        modulo=_M,
+        formato="eml",
+        agora="2026-11-13 09:00",
+        texto=_eml(
+            "eProtocolo - Notificação <naoresponda@eprotocolo-exemplo.pr.gov.br>",
+            _ASCOM,
+            "Protocolo 24.556.019-2 tramitado para ASCOM/PCPR",
+            "2026-11-12 18:00",
+            """
+Protocolo: 24.556.019-2
+Data de abertura: 10/11/2026
+Interessado: APMF do Colégio Estadual Castro Alves - Cornélio Procópio
+Assunto: Solicitação de palestra
+Tramitado para: ASCOM/PCPR em 12/11/2026
+
+Detalhamento:
+A APMF do Colégio Estadual Castro Alves, de Cornélio Procópio, solicita
+palestra sobre violência escolar para pais e alunos, no dia 01/12, às 19h30,
+no ginásio do colégio - Rua Minas Gerais, 800 - Vila Seugling. Público
+estimado: 400 pessoas. Contato: apmf.castroalves@exemplo-mail.com - (43)
+99144-3030.
+
+Esta é uma mensagem automática. Não responda.
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Violência escolar"],
+            "solicitante": Contem("Castro Alves"),
+            "email": "apmf.castroalves@exemplo-mail.com",
+            "telefone": Contem("99144-3030"),
+            "data_inicio_evento": "2026-12-01",
+            "hora_inicio": "19:30",
+            "municipio": "Cornélio Procópio",
+            "estado": "PR",
+            "quantidade_publico": 400,
+            "canal_solicitacao": "PROTOCOLO",
+            "protocolo": "24.556.019-2",
+            "data_solicitacao": UmDe("2026-11-10", "2026-11-12"),
+            "local": Contem("ginásio do colégio"),
+            "endereco": Contem("Rua Minas Gerais, 800"),
+            "bairro": "Vila Seugling",
+        },
+        nota="Notificação automática do eProtocolo: e-mail 'naoresponda' não é contato; 'Castro Alves' não é Castro.",
+    ),
+    # ------------------------------------------------------------------ 081
+    Caso(
+        id="dem-081",
+        modulo=_M,
+        formato="texto",
+        agora="2026-11-10 10:00",
+        texto="""
+De: EEB Almirante Barroso <eeb.almirantebarroso@sed.sc.gov.br>
+Enviado em: segunda-feira, 9 de novembro de 2026 13:30
+Para: ascom.palestras@pc.pr.gov.br
+Assunto: Palestra sobre drogas - Três Barras (SC)
+
+Boa tarde,
+
+Somos a Escola de Educação Básica Almirante Barroso, de Três Barras (SC), no
+Planalto Norte catarinense. Solicitamos palestra sobre drogas para os alunos
+do ensino médio no dia 26/11, às 9h.
+
+Endereço: Rua Ruy Barbosa, 100 - Centro.
+Público: 170 alunos.
+
+Att.
+Direção - (47) 3623-1100
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Drogas"],
+            "solicitante": Contem("Almirante Barroso"),
+            "email": "eeb.almirantebarroso@sed.sc.gov.br",
+            "telefone": Contem("3623-1100"),
+            "data_inicio_evento": "2026-11-26",
+            "hora_inicio": "09:00",
+            "municipio": "Três Barras",
+            "estado": "SC",
+            "quantidade_publico": 170,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-11-09",
+            "endereco": Contem("Rua Ruy Barbosa, 100"),
+            "bairro": "Centro",
+        },
+        nota="Três Barras (SC) ≠ Três Barras do Paraná (PR).",
+    ),
+    # ------------------------------------------------------------------ 082
+    Caso(
+        id="dem-082",
+        modulo=_M,
+        formato="eml",
+        agora="2026-11-11 10:00",
+        texto=_eml(
+            "Fórum Regional dos Conselhos Tutelares dos Campos Gerais <forumct.camposgerais@exemplo-mail.com>",
+            _ASCOM,
+            _q("Encontro Regional de Conselheiros Tutelares – Tibagi"),
+            "2026-11-10 17:10",
+            """
+Prezados,
+
+O Fórum Regional dos Conselhos Tutelares dos Campos Gerais (Castro, Palmeira,
+Carambeí, Tibagi, Ponta Grossa e Telêmaco Borba) realizará o Encontro Regional
+de Conselheiros Tutelares nos dias 3 e 4 de dezembro, em Tibagi.
+
+Solicitamos uma palestra sobre abuso sexual infantil e escuta protegida no
+primeiro dia (3/12), às 14h, no Centro de Eventos de Tibagi -
+Rua Coronel Pedro Dias, 100 - Centro.
+
+Público: 120 conselheiros.
+
+Coordenação do Fórum
+(42) 99915-8080
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Abuso sexual infantil"],
+            "solicitante": Contem("Conselhos Tutelares"),
+            "email": "forumct.camposgerais@exemplo-mail.com",
+            "telefone": Contem("99915-8080"),
+            "data_inicio_evento": "2026-12-03",
+            "hora_inicio": "14:00",
+            "municipio": "Tibagi",
+            "estado": "PR",
+            "quantidade_publico": 120,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-11-10",
+            "local": Contem("Centro de Eventos de Tibagi"),
+            "endereco": Contem("Rua Coronel Pedro Dias, 100"),
+            "bairro": "Centro",
+        },
+        nota="Lista de seis municípios; o evento é em Tibagi e a palestra é no dia 3/12.",
+    ),
+    # ------------------------------------------------------------------ 083
+    Caso(
+        id="dem-083",
+        modulo=_M,
+        formato="texto",
+        agora="2026-11-04 10:00",
+        texto="""
+[03/11/2026 14:20] EM Monteiro Lobato: Boa tarde
+[03/11/2026 14:21] EM Monteiro Lobato: Gostaria de solicitar uma palestra sobre drogas para os alunos do 5º ano da Escola Municipal Monteiro Lobato
+[03/11/2026 14:21] EM Monteiro Lobato: dia 20/11 às 9h
+[03/11/2026 14:22] EM Monteiro Lobato: 80 alunos. Obrigada
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Drogas"],
+            "solicitante": Contem("Monteiro Lobato"),
+            "data_inicio_evento": "2026-11-20",
+            "hora_inicio": "09:00",
+            "municipio": AUSENTE,
+            "quantidade_publico": 80,
+            "canal_solicitacao": "WHATSAPP",
+            "data_solicitacao": "2026-11-03",
+            "local": Contem("Monteiro Lobato"),
+        },
+        nota="Nenhuma cidade citada ('Monteiro Lobato' não é município do PR): não inventar município.",
+    ),
+    # ------------------------------------------------------------------ 084
+    Caso(
+        id="dem-084",
+        modulo=_M,
+        formato="eml",
+        agora="2026-10-20 10:00",
+        texto=_eml(
+            "CE Mendes Gonçalves <ce.mendesgoncalves@escola.pr.gov.br>",
+            _ASCOM,
+            "Palestra - tráfico de pessoas na fronteira",
+            "2026-10-19 09:15",
+            """
+Prezados,
+
+O Colégio Estadual Mendes Gonçalves, de Guaíra, na fronteira com o Paraguai,
+pede palestra sobre tráfico de pessoas e aliciamento de jovens, para alunos e
+pais, no dia 17/11, às 19h, no pátio do colégio (Av. Otávio Tosta, 1200 -
+Centro).
+
+Cerca de 250 pessoas.
+
+Atenciosamente,
+Direção
+(44) 3642-1515
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Tráfico de pessoas"],
+            "solicitante": Contem("Mendes Gonçalves"),
+            "email": "ce.mendesgoncalves@escola.pr.gov.br",
+            "telefone": Contem("3642-1515"),
+            "data_inicio_evento": "2026-11-17",
+            "hora_inicio": "19:00",
+            "municipio": "Guaíra",
+            "estado": "PR",
+            "quantidade_publico": 250,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-10-19",
+            "local": Contem("pátio do colégio"),
+            "endereco": Contem("Av. Otávio Tosta, 1200"),
+            "bairro": "Centro",
+        },
+        nota="Paraguai citado não muda o estado.",
+    ),
+    # ------------------------------------------------------------------ 085
+    Caso(
+        id="dem-085",
+        modulo=_M,
+        formato="eml",
+        agora="2026-10-09 10:00",
+        texto=_eml(
+            "Comissão Organizadora - CONDIRE 2026 <condire2026@exemplo-mail.com>",
+            _ASCOM,
+            _q("Convite – palestra no Congresso Estadual de Diretores Escolares"),
+            "2026-10-08 11:45",
+            """
+Prezados,
+
+O Congresso Estadual de Diretores Escolares (CONDIRE 2026) acontecerá de 26 a
+28 de novembro, em Foz do Iguaçu, no Centro de Convenções do Hotel Cataratas
+Park - Av. das Cataratas, 1118 - Vila Yolanda.
+
+Convidamos a Polícia Civil do Paraná para a palestra "Violência escolar:
+prevenção e protocolo de resposta", no dia 27/11, às 10h.
+
+Estimamos cerca de 1.000 diretores.
+
+Comissão Organizadora
+(45) 3025-9090
+""",
+            html=True,
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Violência escolar"],
+            "solicitante": Contem("CONDIRE"),
+            "email": "condire2026@exemplo-mail.com",
+            "telefone": Contem("3025-9090"),
+            "data_inicio_evento": "2026-11-27",
+            "hora_inicio": "10:00",
+            "municipio": "Foz do Iguaçu",
+            "estado": "PR",
+            "quantidade_publico": 1000,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-10-08",
+            "local": Contem("Centro de Convenções"),
+            "endereco": Contem("Av. das Cataratas, 1118"),
+            "bairro": "Vila Yolanda",
+        },
+        nota="Congresso de 26 a 28/11, palestra só em 27/11.",
+    ),
+    # ------------------------------------------------------------------ 086
+    Caso(
+        id="dem-086",
+        modulo=_M,
+        formato="texto",
+        agora="2026-12-18 10:00",
+        texto="""
+[17/12/2026 10:40] Cláudio - Assoc. Motoristas Aplicativo Litoral: Bom dia! Aqui é o Cláudio, presidente da Associação dos Motoristas de Aplicativo do Litoral
+[17/12/2026 10:41] Cláudio - Assoc. Motoristas Aplicativo Litoral: Queremos uma palestra sobre trânsito, álcool e direção para os motoristas antes do pico da temporada
+[17/12/2026 10:42] Cláudio - Assoc. Motoristas Aplicativo Litoral: Dia 8 de janeiro, às 20h, no salão da colônia de pescadores, em Pontal do Paraná (Av. Beira-Mar, 2500 - Shangri-lá)
+[17/12/2026 10:42] Cláudio - Assoc. Motoristas Aplicativo Litoral: uns 90 motoristas
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Trânsito"],
+            "solicitante": Contem("Associação dos Motoristas de Aplicativo"),
+            "data_inicio_evento": "2027-01-08",
+            "hora_inicio": "20:00",
+            "municipio": "Pontal do Paraná",
+            "estado": "PR",
+            "quantidade_publico": 90,
+            "canal_solicitacao": "WHATSAPP",
+            "data_solicitacao": "2026-12-17",
+            "local": Contem("colônia de pescadores"),
+            "endereco": Contem("Av. Beira-Mar, 2500"),
+            "bairro": "Shangri-lá",
+            "palestrantes": AUSENTE,
+        },
+        nota="Virada de ano (8 de janeiro → 2027); 'Cláudio' remetente não é o palestrante Cláudio Wosniak.",
+    ),
+    # ------------------------------------------------------------------ 087
+    Caso(
+        id="dem-087",
+        modulo=_M,
+        formato="eml",
+        agora="2026-10-22 10:00",
+        texto=_eml(
+            "Faculdade do Noroeste Paranaense <extensao@fanop-exemplo.edu.br>",
+            _ASCOM,
+            "Palestra carreira policial",
+            "2026-10-21 08:44",
+            """
+Prezados,
+
+A Faculdade do Noroeste Paranaense (FANOP), de Cruzeiro do Oeste, gostaria de
+uma palestra sobre a carreira policial (Polícia Civil: cargos, concurso,
+atribuições) para os acadêmicos de Direito e de Gestão Pública, em 14/11/26
+às 9h.
+
+Local: Auditório Central - Rua Prof. Bento Munhoz, 60 - Centro.
+Público: 150 acadêmicos.
+
+Setor de Extensão
+(44) 3676-4400
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Carreira policial"],
+            "solicitante": Contem("Faculdade do Noroeste Paranaense"),
+            "email": "extensao@fanop-exemplo.edu.br",
+            "telefone": Contem("3676-4400"),
+            "data_inicio_evento": "2026-11-14",
+            "hora_inicio": "09:00",
+            "municipio": "Cruzeiro do Oeste",
+            "estado": "PR",
+            "quantidade_publico": 150,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-10-21",
+            "local": Contem("Auditório Central"),
+            "endereco": Contem("Rua Prof. Bento Munhoz, 60"),
+            "bairro": "Centro",
+        },
+        nota="Ano com dois dígitos ('14/11/26').",
+    ),
+    # ------------------------------------------------------------------ 088
+    Caso(
+        id="dem-088",
+        modulo=_M,
+        formato="eml",
+        agora="2026-11-05 10:00",
+        texto=_eml(
+            "DIRECAO ESCOLA <escolaestadualsengesdirecao@exemplo-mail.com>",
+            _ASCOM,
+            "PALESTRA",
+            "2026-11-04 12:12",
+            """
+BOM DIA
+SOLICITO PALESTRA SOBRE DROGAS NA ESCOLA ESTADUAL VEREADOR JOAO BATISTA DE SOUZA EM SENGES DIA 25 DE NOVEMBRO AS 10 HORAS PARA 200 ALUNOS
+ENDERECO RUA SAO PAULO 300 CENTRO
+TELEFONE 43 3567 1234
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Drogas"],
+            "solicitante": Contem("VEREADOR JOAO BATISTA DE SOUZA"),
+            "email": "escolaestadualsengesdirecao@exemplo-mail.com",
+            "telefone": Contem("1234"),
+            "data_inicio_evento": "2026-11-25",
+            "hora_inicio": "10:00",
+            "municipio": "Sengés",
+            "estado": "PR",
+            "quantidade_publico": 200,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-11-04",
+            "local": Contem("VEREADOR JOAO BATISTA DE SOUZA"),
+            "endereco": Contem("RUA SAO PAULO 300"),
+        },
+        nota="Tudo em CAIXA ALTA, sem acento nem pontuação ('SENGES' → Sengés); 'Rua São Paulo' não é estado.",
+    ),
+    # ------------------------------------------------------------------ 089
+    Caso(
+        id="dem-089",
+        modulo=_M,
+        formato="texto",
+        agora="2026-11-18 10:00",
+        texto="""
+De: Andressa Cordeiro <andressa.cordeiro@transportesmatrix-exemplo.com.br>
+Enviado em: terça-feira, 17 de novembro de 2026 16:05
+Para: ASCOM PCPR <ascom.palestras@pc.pr.gov.br>
+Assunto: Palestra sobre assédio - Transportes Matrix
+
+Olá,
+
+A Transportes Matrix, de Guarapuava, está implantando o canal de denúncias e
+gostaria de uma palestra sobre assédio moral e sexual para os colaboradores.
+
+Dia 3/12, às 14h, no galpão da empresa: Rua Rio Grande do Sul, 3300 - Boqueirão.
+Aproximadamente 110 pessoas.
+
+Obrigada,
+Andressa Cordeiro | Recursos Humanos
+(42) 3035-2020 | (42) 99812-0909
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Assédio moral e sexual"],
+            "solicitante": Contem("Transportes Matrix"),
+            "email": "andressa.cordeiro@transportesmatrix-exemplo.com.br",
+            "data_inicio_evento": "2026-12-03",
+            "hora_inicio": "14:00",
+            "municipio": "Guarapuava",
+            "estado": "PR",
+            "quantidade_publico": 110,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-11-17",
+            "local": Contem("galpão da empresa"),
+            "endereco": Contem("Rua Rio Grande do Sul, 3300"),
+            "bairro": "Boqueirão",
+        },
+        nota="'Rua Rio Grande do Sul' não é estado; bairro Boqueirão (também bairro de Curitiba).",
+    ),
+    # ------------------------------------------------------------------ 090
+    Caso(
+        id="dem-090",
+        modulo=_M,
+        formato="eml",
+        agora="2026-11-16 10:00",
+        texto=_eml(
+            "Grupo de Jovens Unidos <jovensunidos.cg@exemplo-mail.com>",
+            _ASCOM,
+            "palestra drogas dezembro",
+            "2026-11-14 20:20",
+            """
+Oi, boa noite
+
+Somos um grupo de jovens de igrejas dos Campos Gerais e queremos fazer um
+encontro com palestra sobre drogas no dia 10/12, às 19h. Ainda estamos
+decidindo se vai ser em Castro ou em Carambeí, dependendo do salão que
+conseguirmos. Assim que definir mandamos o endereço.
+
+Devem ser umas 150 pessoas.
+
+Mateus Holzmann
+(42) 99901-3355
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Drogas"],
+            "email": "jovensunidos.cg@exemplo-mail.com",
+            "telefone": Contem("99901-3355"),
+            "data_inicio_evento": "2026-12-10",
+            "hora_inicio": "19:00",
+            "municipio": AUSENTE,
+            "quantidade_publico": 150,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-11-14",
+            "endereco": AUSENTE,
+        },
+        nota="Local indefinido entre Castro e Carambeí: não escolher município.",
+    ),
+    # ------------------------------------------------------------------ 091
+    Caso(
+        id="dem-091",
+        modulo=_M,
+        formato="eml",
+        agora="2026-11-09 10:00",
+        texto=_eml(
+            "Pastoral Familiar - Paróquia Santa Rita <pastoral.santarita@exemplo-mail.com>",
+            _ASCOM,
+            _q("Encontro de Pais – segurança dos filhos na internet"),
+            "2026-11-07 09:30",
+            """
+Bom dia!
+
+A Pastoral Familiar da Paróquia Santa Rita de Cássia, de Almirante Tamandaré,
+convida a Polícia Civil para uma palestra sobre crimes cibernéticos e a
+proteção dos filhos na internet, no Encontro de Pais do dia 29/11 (domingo),
+às 9h, no salão paroquial (Rua Ângelo Tosin, 90 - Lamenha Pequena).
+
+Esperamos umas 100 pessoas.
+
+Deus abençoe,
+Casal coordenador: Vilmar e Rosana Pasqualin
+(41) 99677-4545
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Crimes cibernéticos"],
+            "solicitante": Contem("Paróquia Santa Rita"),
+            "email": "pastoral.santarita@exemplo-mail.com",
+            "telefone": Contem("99677-4545"),
+            "data_inicio_evento": "2026-11-29",
+            "hora_inicio": "09:00",
+            "municipio": "Almirante Tamandaré",
+            "estado": "PR",
+            "quantidade_publico": 100,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-11-07",
+            "local": Contem("salão paroquial"),
+            "endereco": Contem("Rua Ângelo Tosin, 90"),
+            "bairro": "Lamenha Pequena",
+        },
+        nota="Domingo 29/11; 'Santa Rita' não é município aqui.",
+    ),
+    # ------------------------------------------------------------------ 092
+    Caso(
+        id="dem-092",
+        modulo=_M,
+        formato="texto",
+        agora="2026-11-02 10:00",
+        texto="""
+Olá! Sou a conselheira do Clube de Desbravadores Águias do Norte, de Arapongas.
+Gostaríamos de uma palestra sobre drogas para os desbravadores (10 a 15 anos)
+no próximo sábado, das 14h às 16h, na Igreja Adventista Central - Rua
+Beija-Flor, 1200 - Centro. Somos 45 crianças e adolescentes.
+Contato: Priscila (43) 99744-2323
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Drogas"],
+            "solicitante": Contem("Clube de Desbravadores"),
+            "telefone": Contem("99744-2323"),
+            "data_inicio_evento": "2026-11-07",
+            "hora_inicio": "14:00",
+            "municipio": "Arapongas",
+            "estado": "PR",
+            "quantidade_publico": 45,
+            "local": Contem("Igreja Adventista Central"),
+            "endereco": Contem("Beija-Flor, 1200"),
+            "bairro": "Centro",
+        },
+        nota="Texto sem data do pedido: 'próximo sábado' relativo a agora (seg 02/11) → 07/11; 'das 14h às 16h'.",
+    ),
+    # ------------------------------------------------------------------ 093
+    Caso(
+        id="dem-093",
+        modulo=_M,
+        formato="eml",
+        agora="2026-10-14 10:00",
+        texto=_eml(
+            "Escola Municipal Irati <em.irati@araucaria-exemplo.pr.gov.br>",
+            _ASCOM,
+            "Palestra para pais - autoproteção infantil",
+            "2026-10-13 15:22",
+            """
+Boa tarde,
+
+A Escola Municipal Irati, de Araucária, solicita uma palestra sobre abuso
+sexual infantil para os pais dos alunos da educação infantil e anos iniciais,
+no dia 05/11, às 19h, no refeitório da escola.
+
+Rua Irati, 455 - Capela Velha - Araucária/PR - CEP 83705-000
+
+Público: cerca de 130 pais.
+
+Direção
+(41) 3614-2626
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Abuso sexual infantil"],
+            "solicitante": Contem("Escola Municipal Irati"),
+            "email": "em.irati@araucaria-exemplo.pr.gov.br",
+            "telefone": Contem("3614-2626"),
+            "data_inicio_evento": "2026-11-05",
+            "hora_inicio": "19:00",
+            "municipio": "Araucária",
+            "estado": "PR",
+            "quantidade_publico": 130,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-10-13",
+            "local": Contem("refeitório da escola"),
+            "endereco": Contem("Rua Irati, 455"),
+            "bairro": "Capela Velha",
+            "cep": "83705-000",
+        },
+        nota="'Irati' é nome da escola e da rua; o município é Araucária.",
+    ),
+    # ------------------------------------------------------------------ 094
+    Caso(
+        id="dem-094",
+        modulo=_M,
+        formato="texto",
+        agora="2026-08-04 10:00",
+        texto="""
+[03/08/2026 17:30] Auto Escola Esperança: Boa tarde, somos da Auto Escola Esperança de Nova Esperança
+[03/08/2026 17:31] Auto Escola Esperança: Queríamos uma palestra sobre trânsito (embriaguez ao volante, fuga do local de acidente) para nossos alunos no dia 15/08 às 9h
+[03/08/2026 17:31] Auto Escola Esperança: na nossa sala: Av. Rocha Pombo, 1450 - Centro. São 40 alunos
+[03/08/2026 17:32] Auto Escola Esperança: Atendemos de segunda a sábado das 8h às 20h, qualquer coisa liga (44) 3252-8181
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Trânsito"],
+            "solicitante": Contem("Auto Escola Esperança"),
+            "telefone": Contem("3252-8181"),
+            "data_inicio_evento": "2026-08-15",
+            "hora_inicio": "09:00",
+            "municipio": "Nova Esperança",
+            "estado": "PR",
+            "quantidade_publico": 40,
+            "canal_solicitacao": "WHATSAPP",
+            "data_solicitacao": "2026-08-03",
+            "endereco": Contem("Av. Rocha Pombo, 1450"),
+            "bairro": "Centro",
+        },
+        nota="'Esperança' repetido no nome da empresa; horário de atendimento não é hora.",
+    ),
+    # ------------------------------------------------------------------ 095
+    Caso(
+        id="dem-095",
+        modulo=_M,
+        formato="eml",
+        agora="2026-09-08 10:00",
+        texto=_eml(
+            "Coordenação de Direito - Faculdade Vale do Jordão <direito@fvj-exemplo.edu.br>",
+            _ASCOM,
+            _q("Semana de Direito – palestra com a Escrivã Tatiane Rauber"),
+            "2026-09-04 16:40",
+            """
+Prezados,
+
+Na Semana de Direito da Faculdade Vale do Jordão, em Guarapuava, gostaríamos
+de uma palestra sobre carreira policial, com a Escrivã Tatiane Rauber, ex-aluna
+da nossa instituição.
+
+Data: 29/09
+Horário: 19h
+Local: Auditório - Rua XV de Novembro, 7050 - Centro
+Público: 200 acadêmicos
+
+Atenciosamente,
+Profª Daniela Ferri
+(42) 3629-7000
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Carreira policial"],
+            "palestrantes": ["Tatiane Rauber"],
+            "solicitante": Contem("Faculdade Vale do Jordão"),
+            "email": "direito@fvj-exemplo.edu.br",
+            "telefone": Contem("3629-7000"),
+            "data_inicio_evento": "2026-09-29",
+            "hora_inicio": "19:00",
+            "municipio": "Guarapuava",
+            "estado": "PR",
+            "quantidade_publico": 200,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-09-04",
+            "local": Contem("Auditório"),
+            "endereco": Contem("Rua XV de Novembro, 7050"),
+            "bairro": "Centro",
+        },
+        nota="Palestrante nominal no assunto e no corpo.",
+    ),
+    # ------------------------------------------------------------------ 096
+    Caso(
+        id="dem-096",
+        modulo=_M,
+        formato="texto",
+        agora="2026-11-26 10:00",
+        texto="""
+De: Sindicato dos Vigilantes de Londrina <secretaria@sindvigilantes-exemplo.org.br>
+Enviado em: quarta-feira, 25 de novembro de 2026 08:48
+Para: ascom.palestras@pc.pr.gov.br
+Assunto: Palestra - armas de fogo
+
+Prezados,
+
+O Sindicato dos Vigilantes de Londrina solicita palestra sobre armas de fogo
+(legislação, porte funcional, Estatuto do Desarmamento) para a reciclagem dos
+vigilantes, no dia 9/12, às 8h, na sede do sindicato: Rua Pernambuco, 540 -
+Centro - CEP 86020-120.
+
+Público: 60 vigilantes.
+
+Secretaria do Sindicato
+(43) 3324-1122
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Armas de fogo e desarmamento"],
+            "solicitante": Contem("Sindicato dos Vigilantes"),
+            "email": "secretaria@sindvigilantes-exemplo.org.br",
+            "telefone": Contem("3324-1122"),
+            "data_inicio_evento": "2026-12-09",
+            "hora_inicio": "08:00",
+            "municipio": "Londrina",
+            "estado": "PR",
+            "quantidade_publico": 60,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-11-25",
+            "local": Contem("sede do sindicato"),
+            "endereco": Contem("Rua Pernambuco, 540"),
+            "bairro": "Centro",
+            "cep": "86020-120",
+        },
+        nota="Outlook colado; 'Rua Pernambuco' não é estado.",
+    ),
+    # ------------------------------------------------------------------ 097
+    Caso(
+        id="dem-097",
+        modulo=_M,
+        formato="eml",
+        agora="2026-11-24 10:00",
+        texto=_eml(
+            "Escola Estadual do Campo Faxinal dos Silvérios <ee.faxinalsilverios@escola.pr.gov.br>",
+            _ASCOM,
+            "Pedido de palestra sobre drogas",
+            "2026-11-23 13:00",
+            """
+Boa tarde!
+
+A Escola Estadual do Campo Faxinal dos Silvérios, no interior de Pinhão,
+solicita uma palestra sobre drogas para os alunos do 6º ao 9º ano, no dia
+10/12 às 9h, na própria escola (Estrada Faxinal dos Silvérios, km 18 - Distrito
+de Faxinal dos Silvérios).
+
+São cerca de 75 alunos.
+
+Direção
+(42) 3677-1290
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Drogas"],
+            "solicitante": Contem("Faxinal dos Silvérios"),
+            "email": "ee.faxinalsilverios@escola.pr.gov.br",
+            "telefone": Contem("3677-1290"),
+            "data_inicio_evento": "2026-12-10",
+            "hora_inicio": "09:00",
+            "municipio": "Pinhão",
+            "estado": "PR",
+            "quantidade_publico": 75,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-11-23",
+            "local": Contem("Faxinal dos Silvérios"),
+            "endereco": Contem("Estrada Faxinal dos Silvérios, km 18"),
+        },
+        nota="'Faxinal' (também município) é distrito de Pinhão aqui.",
+    ),
+    # ------------------------------------------------------------------ 098
+    Caso(
+        id="dem-098",
+        modulo=_M,
+        formato="texto",
+        agora="2026-11-25 10:00",
+        texto="""
+ASSOCIAÇÃO DE MORADORES DO JARDIM CONCÓRDIA - PALOTINA
+
+Prezados,
+
+Solicitamos uma palestra sobre golpes e fraudes (golpe do falso parente,
+falso sequestro, Pix) para a comunidade, no dia 7 de dezembro, segunda-feira,
+às 19h.
+
+Local: Salão Comunitário do Jardim Concórdia
+Rua Rio de Janeiro, 850
+Jardim Concórdia
+CEP 85950-000
+
+Público estimado: 70 moradores.
+
+Contato: Ivo Kunz - (44) 99988-7070
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Golpes e fraudes"],
+            "solicitante": Contem("Associação de Moradores do Jardim Concórdia"),
+            "telefone": Contem("99988-7070"),
+            "data_inicio_evento": "2026-12-07",
+            "hora_inicio": "19:00",
+            "municipio": "Palotina",
+            "estado": "PR",
+            "quantidade_publico": 70,
+            "local": Contem("Salão Comunitário do Jardim Concórdia"),
+            "endereco": Contem("Rua Rio de Janeiro, 850"),
+            "bairro": "Jardim Concórdia",
+            "cep": "85950-000",
+        },
+        nota="Endereço em linhas separadas; 'Concórdia' é município de SC mas aqui é bairro de Palotina.",
+    ),
+    # ------------------------------------------------------------------ 099
+    Caso(
+        id="dem-099",
+        modulo=_M,
+        formato="eml",
+        agora="2026-12-18 10:00",
+        texto=_eml(
+            "CE Carlos Gomes <ce.carlosgomes.assis@escola.pr.gov.br>",
+            _ASCOM,
+            "Abertura do ano letivo 2027 - palestra",
+            "2026-12-16 11:30",
+            """
+Prezados,
+
+O Colégio Estadual Carlos Gomes, de Assis Chateaubriand, gostaria de uma
+palestra sobre educação para a cidadania na abertura do ano letivo, no dia
+18/02/2027, às 8h, na quadra do colégio (Rua Guaíra, 1500 - Centro).
+
+Público: 500 alunos.
+
+Em 2026 a abertura foi dia 12/02/2026 e a direção quer repetir o formato.
+
+Atenciosamente,
+Direção
+(44) 3528-3030
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Educação para a cidadania"],
+            "solicitante": Contem("Carlos Gomes"),
+            "email": "ce.carlosgomes.assis@escola.pr.gov.br",
+            "telefone": Contem("3528-3030"),
+            "data_inicio_evento": "2027-02-18",
+            "hora_inicio": "08:00",
+            "municipio": "Assis Chateaubriand",
+            "estado": "PR",
+            "quantidade_publico": 500,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-12-16",
+            "local": Contem("quadra do colégio"),
+            "endereco": Contem("Rua Guaíra, 1500"),
+            "bairro": "Centro",
+        },
+        nota="Evento em 2027 com ano explícito; data de 2026 citada; 'Rua Guaíra' não é o município.",
+    ),
+    # ------------------------------------------------------------------ 100
+    Caso(
+        id="dem-100",
+        modulo=_M,
+        formato="texto",
+        agora="2026-11-17 10:00",
+        texto="""
+[16/11/2026 19:10] Lurdes Arapongas: Oi, boa noite. Sou de Arapongas, mas a palestra que quero pedir é em Apucarana, no Grupo de Mulheres Empreendedoras
+[16/11/2026 19:11] Lurdes Arapongas: tema: segurança da mulher, dicas de autoproteção
+[16/11/2026 19:12] Lurdes Arapongas: sexta dia 27/11 as 20h no Hotel Colonial, Rua Ponta Grossa, 1500 - Centro
+[16/11/2026 19:12] Lurdes Arapongas: 50 mulheres
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Segurança da mulher"],
+            "solicitante": Contem("Grupo de Mulheres Empreendedoras"),
+            "data_inicio_evento": "2026-11-27",
+            "hora_inicio": "20:00",
+            "municipio": "Apucarana",
+            "estado": "PR",
+            "quantidade_publico": 50,
+            "canal_solicitacao": "WHATSAPP",
+            "data_solicitacao": "2026-11-16",
+            "local": Contem("Hotel Colonial"),
+            "endereco": Contem("Rua Ponta Grossa, 1500"),
+            "bairro": "Centro",
+        },
+        nota="Remetente é de Arapongas (até no nome do contato); o evento é em Apucarana; 'Rua Ponta Grossa'.",
+    ),
+    # ------------------------------------------------------------------ 101
+    Caso(
+        id="dem-101",
+        modulo=_M,
+        formato="eml",
+        agora="2026-10-27 10:00",
+        texto=_eml(
+            "Débora Chiquim <debora.chiquim@escola.pr.gov.br>",
+            _ASCOM,
+            "palestra bullying rio branco do sul",
+            "2026-10-26 22:47",
+            """
+boa noite, sou pedagoga do colegio estadual rio branco, em rio branco do sul.
+precisamos de palestra sobre bullying dia 18/11 as 13h para o 6 ano (uns 90 alunos)
+endereço rua horacio lemos 50 centro
+
+Enviado do meu iPhone
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Bullying"],
+            "solicitante": Contem("rio branco"),
+            "email": "debora.chiquim@escola.pr.gov.br",
+            "data_inicio_evento": "2026-11-18",
+            "hora_inicio": "13:00",
+            "municipio": "Rio Branco do Sul",
+            "estado": "PR",
+            "quantidade_publico": 90,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-10-26",
+            "endereco": Contem("rua horacio lemos 50"),
+            "bairro": UmDe("Centro", "centro"),
+        },
+        nota="Minúsculas e sem acento; 'rio branco' escola vs 'rio branco do sul' município; hora do envio (22h47) não é do evento.",
+    ),
+    # ------------------------------------------------------------------ 102
+    Caso(
+        id="dem-102",
+        modulo=_M,
+        formato="eml",
+        agora="2026-11-20 10:00",
+        texto=_eml(
+            "Associação Comunitária do Cajuru <ascajuru@exemplo-mail.com>",
+            _ASCOM,
+            _q("PCPR na Comunidade – pedido para o Cajuru"),
+            "2026-11-18 14:14",
+            """
+Prezados,
+
+A Associação Comunitária do Cajuru, em Curitiba, gostaria de receber o PCPR na
+Comunidade no sábado, 12/12, das 9h às 13h, na quadra da associação
+(Rua Luiz França, 2200 - Cajuru).
+
+Esperamos cerca de 500 moradores ao longo da manhã.
+
+Diretoria
+(41) 3266-4040
+""",
+            html=True,
+        ),
+        esperado={
+            "evento": "PCPR_NA_COMUNIDADE",
+            "solicitante": Contem("Associação Comunitária do Cajuru"),
+            "email": "ascajuru@exemplo-mail.com",
+            "telefone": Contem("3266-4040"),
+            "data_inicio_evento": "2026-12-12",
+            "hora_inicio": "09:00",
+            "municipio": "Curitiba",
+            "estado": "PR",
+            "quantidade_publico": 500,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-11-18",
+            "local": Contem("quadra da associação"),
+            "endereco": Contem("Rua Luiz França, 2200"),
+            "bairro": "Cajuru",
+            "temas": AUSENTE,
+        },
+        nota="Programa PCPR na Comunidade citado pelo nome; sem tema.",
+    ),
+    # ------------------------------------------------------------------ 103
+    Caso(
+        id="dem-103",
+        modulo=_M,
+        formato="texto",
+        agora="2026-10-30 10:00",
+        texto="""
+De: Secretaria de Assistência Social - Teixeira Soares <social@teixeirasoares-exemplo.pr.gov.br>
+Enviado em: quinta-feira, 29 de outubro de 2026 09:05
+Para: ascom.palestras@pc.pr.gov.br
+Assunto: Ciclo de palestras - violência doméstica
+
+Bom dia,
+
+A Secretaria Municipal de Assistência Social de Teixeira Soares organiza um
+ciclo de palestras sobre violência doméstica nas comunidades rurais, de 23 a
+25/11, sempre às 19h, no Salão Paroquial Central (Rua Coronel Dulcídio, 40 -
+Centro).
+
+Pedimos a participação da Polícia Civil nas três noites.
+
+Rosicler Mazur
+Secretária
+(42) 3460-1212
+Endereço da Secretaria: Rua Getúlio Vargas, 222 - Centro - Teixeira Soares/PR
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Violência doméstica"],
+            "solicitante": Contem("Assistência Social"),
+            "email": "social@teixeirasoares-exemplo.pr.gov.br",
+            "telefone": Contem("3460-1212"),
+            "data_inicio_evento": "2026-11-23",
+            "data_fim_evento": "2026-11-25",
+            "hora_inicio": "19:00",
+            "municipio": "Teixeira Soares",
+            "estado": "PR",
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-10-29",
+            "local": Contem("Salão Paroquial Central"),
+            "endereco": Contem("Rua Coronel Dulcídio, 40"),
+            "bairro": "Centro",
+        },
+        nota="Dois endereços: o do evento (salão) e o da Secretaria na assinatura; período '23 a 25/11'.",
+    ),
+    # ------------------------------------------------------------------ 104
+    Caso(
+        id="dem-104",
+        modulo=_M,
+        formato="eml",
+        agora="2026-11-26 10:00",
+        texto=_eml(
+            "Eventos - Cresol Campos Gerais <eventos@cresolcg-exemplo.coop.br>",
+            _ASCOM,
+            "Palestra golpes - agência Castro",
+            "2026-11-25 16:16",
+            """
+Prezados,
+
+A cooperativa de crédito Cresol Campos Gerais convida a Polícia Civil para uma
+palestra sobre golpes e fraudes bancárias para os associados da agência de
+Castro, no dia 15/12, às 10h, no auditório da agência (Av. Pedro Gomes, 3000 -
+Santa Cruz - Castro).
+
+Público: 120 associados.
+
+Na edição passada (dezembro de 2025) a palestra foi em Ponta Grossa.
+
+Att.,
+Marketing e Eventos
+Cresol Campos Gerais - Sede Administrativa
+Rua Balduíno Taques, 1200 - Centro - Ponta Grossa/PR
+(42) 3223-9900
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Golpes e fraudes"],
+            "solicitante": Contem("Cresol"),
+            "email": "eventos@cresolcg-exemplo.coop.br",
+            "telefone": Contem("3223-9900"),
+            "data_inicio_evento": "2026-12-15",
+            "hora_inicio": "10:00",
+            "municipio": "Castro",
+            "estado": "PR",
+            "quantidade_publico": 120,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-11-25",
+            "local": Contem("auditório da agência"),
+            "endereco": Contem("Av. Pedro Gomes, 3000"),
+            "bairro": "Santa Cruz",
+        },
+        nota="Sede em Ponta Grossa e edição de 2025 em Ponta Grossa: o evento é em Castro.",
+    ),
+    # ------------------------------------------------------------------ 105
+    Caso(
+        id="dem-105",
+        modulo=_M,
+        formato="texto",
+        agora="2026-11-12 10:00",
+        texto="""
+DESPACHO - eProtocolo nº 25.001.442-8
+
+Origem: 9ª Subdivisão Policial - Medianeira
+Destino: ASCOM/PCPR
+Data: 11/11/2026
+
+Encaminho a esta Assessoria o pedido do Colégio Estadual João Manoel Mondrone,
+de Medianeira, que solicita palestra sobre drogas para pais e alunos no dia
+11/12/2026, às 19h, no ginásio do colégio (Rua Argentina, 1100 - Centro).
+Público estimado de 300 pessoas.
+
+Contato do colégio: (45) 3264-2020 - ce.mondrone@escola.pr.gov.br
+Pedido do colégio datado de 05/11/2026.
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Drogas"],
+            "solicitante": Contem("João Manoel Mondrone"),
+            "email": "ce.mondrone@escola.pr.gov.br",
+            "telefone": Contem("3264-2020"),
+            "data_inicio_evento": "2026-12-11",
+            "hora_inicio": "19:00",
+            "municipio": "Medianeira",
+            "estado": "PR",
+            "quantidade_publico": 300,
+            "canal_solicitacao": "PROTOCOLO",
+            "protocolo": "25.001.442-8",
+            "data_solicitacao": UmDe("2026-11-05", "2026-11-11"),
+            "local": Contem("ginásio do colégio"),
+            "endereco": Contem("Rua Argentina, 1100"),
+            "bairro": "Centro",
+        },
+        nota="Despacho do eProtocolo colado; '9ª Subdivisão' não é quantidade nem data; 'Rua Argentina'.",
+    ),
+    # ------------------------------------------------------------------ 106
+    Caso(
+        id="dem-106",
+        modulo=_M,
+        formato="eml",
+        agora="2026-11-04 10:00",
+        texto=_eml(
+            "Feira de Profissões - Universidade do Oeste <feiradeprofissoes@unioeste-exemplo.edu.br>",
+            _ASCOM,
+            _q("Convite – Feira de Profissões 2026 (estande da Polícia Civil)"),
+            "2026-11-03 10:30",
+            """
+Prezados,
+
+A Universidade do Oeste realizará a Feira de Profissões 2026 nos dias 2 e 3 de
+dezembro, das 8h às 17h, no Campus Cascavel
+(Rua Universitária, 2069 - Jardim Universitário), e convida a Polícia Civil a montar um estande e apresentar a
+carreira policial aos estudantes do ensino médio.
+
+Público estimado: aproximadamente 6.000 estudantes nos dois dias.
+
+Comissão da Feira
+(45) 3220-3000
+""",
+        ),
+        esperado={
+            "temas": ["Carreira policial"],
+            "solicitante": Contem("Universidade do Oeste"),
+            "email": "feiradeprofissoes@unioeste-exemplo.edu.br",
+            "telefone": Contem("3220-3000"),
+            "data_inicio_evento": "2026-12-02",
+            "data_fim_evento": "2026-12-03",
+            "hora_inicio": "08:00",
+            "municipio": "Cascavel",
+            "estado": "PR",
+            "quantidade_publico": 6000,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-11-03",
+            "local": Contem("Campus Cascavel"),
+            "endereco": Contem("Rua Universitária, 2069"),
+            "bairro": "Jardim Universitário",
+        },
+        nota="Dois dias; 'aproximadamente 6.000' com ponto de milhar.",
+    ),
+    # ------------------------------------------------------------------ 107
+    Caso(
+        id="dem-107",
+        modulo=_M,
+        formato="texto",
+        agora="2026-11-16 10:00",
+        texto="""
+ola bom dia
+aqui é do cras de uvaranas em ponta grossa
+queremos palestra de violencia domestica pras mulheres do grupo
+dia 30/11 as 19 e 30
+rua carlos cavalcanti 4000 bairro uvaranas
+umas 40 mulher
+tel 42 3220 5566
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Violência doméstica"],
+            "solicitante": Contem("cras"),
+            "telefone": Contem("5566"),
+            "data_inicio_evento": "2026-11-30",
+            "hora_inicio": "19:30",
+            "municipio": "Ponta Grossa",
+            "estado": "PR",
+            "quantidade_publico": 40,
+            "endereco": Contem("rua carlos cavalcanti 4000"),
+            "bairro": UmDe("Uvaranas", "uvaranas"),
+        },
+        nota="'19 e 30' = 19h30; tudo minúsculo sem acento.",
+    ),
+    # ------------------------------------------------------------------ 108
+    Caso(
+        id="dem-108",
+        modulo=_M,
+        formato="eml",
+        agora="2026-11-19 10:00",
+        texto=_eml(
+            "Igreja do Evangelho Quadrangular - Sede <ieq.sap@exemplo-mail.com>",
+            _ASCOM,
+            "Culto da Família - palestra sobre drogas",
+            "2026-11-18 08:08",
+            """
+Prezados, bom dia.
+
+A Igreja do Evangelho Quadrangular - Sede, de Santo Antônio da Platina,
+convida a Polícia Civil para falar sobre drogas no Culto da Família do
+domingo, 6 de dezembro, às 18h.
+
+Endereço: Rua Rui Barbosa, 1010 - Vila Setti.
+Público: cerca de 300 membros.
+
+Pr. Josué Machado
+(43) 99621-7788
+Secretaria: terça a sexta, 14h às 18h
+""",
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Drogas"],
+            "solicitante": Contem("Evangelho Quadrangular"),
+            "email": "ieq.sap@exemplo-mail.com",
+            "telefone": Contem("99621-7788"),
+            "data_inicio_evento": "2026-12-06",
+            "hora_inicio": "18:00",
+            "municipio": "Santo Antônio da Platina",
+            "estado": "PR",
+            "quantidade_publico": 300,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-11-18",
+            "endereco": Contem("Rua Rui Barbosa, 1010"),
+            "bairro": "Vila Setti",
+        },
+        nota="Sobrenome 'Machado' do pastor não é município; horário da secretaria 14h às 18h não é o da palestra.",
+    ),
+    # ------------------------------------------------------------------ 109
+    Caso(
+        id="dem-109",
+        modulo=_M,
+        formato="eml",
+        agora="2026-08-04 10:00",
+        texto=_eml(
+            "CE Dom Pedro I - Guaratuba <ce.dompedro.guaratuba@escola.pr.gov.br>",
+            _ASCOM,
+            _q("Palestra crimes cibernéticos – volta às aulas"),
+            "2026-08-03 14:30",
+            """
+Boa tarde,
+
+Na volta às aulas do segundo semestre, o Colégio Estadual Dom Pedro I, de
+Guaratuba, gostaria de uma palestra sobre crimes cibernéticos (nudes,
+extorsão, perfis falsos) para o ensino médio.
+
+Data: 18/08, às 10h
+Local: pátio coberto - Av. Damião Botelho de Souza, 1000 - Centro
+Público: aproximadamente 280 alunos
+
+Prazo para retorno: 10/08.
+
+Direção
+(41) 3442-1818
+""",
+            html=True,
+        ),
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Crimes cibernéticos"],
+            "solicitante": Contem("Dom Pedro I"),
+            "email": "ce.dompedro.guaratuba@escola.pr.gov.br",
+            "telefone": Contem("3442-1818"),
+            "data_inicio_evento": "2026-08-18",
+            "hora_inicio": "10:00",
+            "municipio": "Guaratuba",
+            "estado": "PR",
+            "quantidade_publico": 280,
+            "canal_solicitacao": "EMAIL",
+            "data_solicitacao": "2026-08-03",
+            "local": Contem("pátio coberto"),
+            "endereco": Contem("Av. Damião Botelho de Souza, 1000"),
+            "bairro": "Centro",
+        },
+        nota="Prazo para retorno 10/08 não é data do evento.",
+    ),
+    # ------------------------------------------------------------------ 110
+    Caso(
+        id="dem-110",
+        modulo=_M,
+        formato="texto",
+        agora="2026-08-10 10:00",
+        texto="""
+[10/08/2026 09:12] Tio Beto - Van Escolar: bom dia sou presidente da associacao dos transportadores escolares de rio negro
+[10/08/2026 09:13] Tio Beto - Van Escolar: queria uma palestra de transito pros motoristas de van dia 1/9 as 15h na camara de vereadores
+[10/08/2026 09:14] Tio Beto - Van Escolar: uns 35 motoristas, vlw
+""",
+        esperado={
+            "evento": "PALESTRA",
+            "temas": ["Trânsito"],
+            "solicitante": Contem("transportadores escolares"),
+            "data_inicio_evento": "2026-09-01",
+            "hora_inicio": "15:00",
+            "municipio": "Rio Negro",
+            "estado": "PR",
+            "quantidade_publico": 35,
+            "canal_solicitacao": "WHATSAPP",
+            "data_solicitacao": "2026-08-10",
+            "local": Contem("camara de vereadores"),
+        },
+        nota="'rio negro' minúsculo (PR, não Rio Negrinho/SC); '1/9' sem zero.",
+    ),
+]

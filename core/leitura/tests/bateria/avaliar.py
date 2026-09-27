@@ -138,6 +138,9 @@ def confere(esperado, obtido) -> bool:
     """O valor normalizado bate com o gabarito?"""
     if isinstance(esperado, UmDe):
         return any(confere(opcao, obtido) for opcao in esperado.opcoes)
+    if esperado is False or (isinstance(esperado, (list, tuple)) and not esperado):
+        # "Não marque": vale não sugerir nada.
+        return obtido in (None, "", [], False, "0") or (isinstance(obtido, str) and _chave(obtido) in ("false", "nao"))
     if obtido is None or obtido == "" or obtido == []:
         return False
     if isinstance(esperado, Contem):
