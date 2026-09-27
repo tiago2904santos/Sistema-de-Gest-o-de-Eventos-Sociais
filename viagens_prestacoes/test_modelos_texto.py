@@ -91,3 +91,58 @@ class ModelosDeTextoRTTests(TestCase):
             self.assertContains(r, rotulo)
         self.assertContains(r, LISTA)
         self.assertNotContains(r, reverse("viagens_prestacoes:modelos_index"))
+
+
+class ModeloPadraoDoRTTests(TestCase):
+    """Um modelo padrão por campo do RT entra sozinho no relatório em branco,
+    com os marcadores trocados pelos dados do ofício (m118)."""
+
+    def setUp(self):
+        from decimal import Decimal
+
+        from viagens_cadastros.models import Cargo, Servidor
+        from viagens_oficios.models import Oficio
+        from viagens_prestacoes.models import PrestacaoContas
+        from viagens_roteiros.models import Roteiro
+
+        self.user = get_user_model().objects.create_user(username="rt_padrao", password="123456")
+        autorizar_viagens(self.user)
+        self.user.groups.add(Group.objects.get(name="VIAGENS_OPERADOR"))
+        self.client.force_login(self.user)
+        cargo = Cargo.objects.create(nome="Agente")
+        self.servidor = Servidor.objects.create(nome="Servidor A", cargo=cargo, cpf="11122233344")
+        roteiro = Roteiro.objects.create(valor_diarias=Decimal("100.00"))
+        self.oficio = Oficio.objects.create(numero=7, ano=2026, protocolo="123456789", roteiro=roteiro, motivo="COBERTURA DO EVENTO")
+        self.oficio.servidores.add(self.servidor)
+        self.prestacao = PrestacaoContas.objects.get(oficio=self.oficio)
+
+    def test_padrao_e_um_por_campo(self):
+        a = ModeloTextoRelatorioTecnico.objects.create(nome="A", texto="a", campo=ModeloTextoRelatorioTecnico.CAMPO_CONCLUSAO, is_padrao=True)
+        outro_campo = ModeloTextoRelatorioTecnico.objects.create(nome="M", texto="m", campo=ModeloTextoRelatorioTecnico.CAMPO_MEDIDAS, is_padrao=True)
+        b = ModeloTextoRelatorioTecnico.objects.create(nome="B", texto="b", campo=ModeloTextoRelatorioTecnico.CAMPO_CONCLUSAO, is_padrao=True)
+        a.refresh_from_db(); outro_campo.refresh_from_db()
+        self.assertEqual((a.is_padrao, b.is_padrao, outro_campo.is_padrao), (False, True, True))
+
+    def test_relatorio_em_branco_recebe_o_padrao_com_marcadores_e_texto_escrito_fica(self):
+        from viagens_prestacoes.models import RelatorioTecnico
+        from viagens_prestacoes.services import garantir_campos_padrao_relatorio_tecnico
+
+        ModeloTextoRelatorioTecnico.objects.create(nome="Objetivo", texto="Participar de {motivo} com {servidores}.",
+                                                   campo=ModeloTextoRelatorioTecnico.CAMPO_ATIVIDADE, is_padrao=True)
+        ModeloTextoRelatorioTecnico.objects.create(nome="Fecho", texto="Concluiu-se.", campo=ModeloTextoRelatorioTecnico.CAMPO_CONCLUSAO, is_padrao=True)
+        ModeloTextoRelatorioTecnico.objects.create(nome="Solto", texto="Não é padrão.", campo=ModeloTextoRelatorioTecnico.CAMPO_MEDIDAS)
+        relatorio = RelatorioTecnico.objects.create(prestacao=self.prestacao, conclusao="Já escrito.")
+        atualizados = garantir_campos_padrao_relatorio_tecnico(relatorio)
+        relatorio.refresh_from_db()
+        self.assertIn("atividade", atualizados)
+        self.assertEqual(relatorio.atividade, "Participar de COBERTURA DO EVENTO com SERVIDOR A.")
+        self.assertEqual(relatorio.conclusao, "Já escrito.")
+        self.assertEqual(relatorio.medidas, "")
+
+    def test_padrao_pelo_catalogo(self):
+        modelo = ModeloTextoRelatorioTecnico.objects.create(nome="A", texto="a", campo=ModeloTextoRelatorioTecnico.CAMPO_CONCLUSAO)
+        r = self.client.post(reverse("viagens_cadastros:definir_padrao", args=["modelos-texto-rt", modelo.pk]))
+        self.assertEqual(r.status_code, 302)
+        modelo.refresh_from_db()
+        self.assertTrue(modelo.is_padrao)
+        self.assertContains(self.client.get(LISTA), '<span class="st st--padrao">Padrão</span>', status_code=200)

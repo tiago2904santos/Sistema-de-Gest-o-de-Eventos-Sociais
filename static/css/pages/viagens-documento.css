@@ -37,6 +37,17 @@ body.de-pagina { margin: 0; background: var(--n-100); color: var(--n-900); font-
 .de-topo__acoes .btn-primaria { height: 38px; }
 
 /* Estado da gravação, como o "Todas as alterações foram salvas" do Docs. */
+/* Páginas do PDF (m124): "1 página · letra reduzida" ou "2 páginas". */
+.de-paginas {
+  display: inline-flex; align-items: center; gap: 5px; flex: none; padding: 0 8px; height: 28px;
+  border: 0; border-radius: 6px; background: transparent; color: var(--n-600); font: inherit; font-size: 12.5px; white-space: nowrap;
+}
+.de-paginas[hidden] { display: none; }
+button.de-paginas { cursor: pointer; }
+button.de-paginas:hover { background: var(--n-150); color: var(--n-800); }
+.de-paginas .ui-icon { width: 15px; height: 15px; }
+.de-paginas[data-estado="reduzida"] { color: var(--d-800); }
+.de-paginas[data-estado="varias"] { color: var(--n-800); font-weight: 500; }
 .de-salvo { display: inline-flex; align-items: center; gap: 5px; flex: none; font-size: 12.5px; color: var(--n-500); }
 .de-salvo .ui-icon { width: 16px; height: 16px; }
 .de-salvo[data-estado="andamento"] { color: var(--n-600); }
@@ -94,6 +105,22 @@ body.de-pagina { margin: 0; background: var(--n-100); color: var(--n-900); font-
 .dc-aviso strong { display: block; margin-bottom: 2px; }
 .dc-aviso__lista { margin: 0; padding-left: 18px; }
 .dc-aviso__lista li { margin: 2px 0; }
+/* Pendência que leva ao trecho na folha (m117). */
+.dc-aviso__ir {
+  display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0;
+  background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; text-decoration: underline dotted;
+}
+.dc-aviso__ir:hover { color: var(--d-700); text-decoration-style: solid; }
+.dc-aviso__ir .ui-icon { width: 14px; height: 14px; }
+/* Menu dos textos prontos (m118): nome e o começo do texto. */
+.de-menu__texto { display: grid; gap: 1px; text-align: left; }
+.de-menu__texto b { font-weight: 600; }
+.de-menu__texto small { font-size: 12px; color: var(--n-500); white-space: normal; }
+.de-menu__vazio { margin: 0; padding: 6px 10px; font-size: 13px; color: var(--n-500); }
+.de-contador {
+  margin-left: 2px; padding: 1px 7px; border-radius: 999px;
+  background: var(--d-100); color: var(--d-800); font-style: normal; font-size: 12px; font-weight: 600;
+}
 
 /* ---- Área das páginas e histórico ------------------------------------------ */
 .de-area { flex: 1 1 auto; display: flex; align-items: flex-start; min-height: 0; }
@@ -126,6 +153,19 @@ body.de-pagina { margin: 0; background: var(--n-100); color: var(--n-900); font-
 .de-historico__item--atual { box-shadow: inset 3px 0 0 var(--d-500); }
 .de-historico__quando { font-size: 12px; color: var(--n-500); }
 .de-historico__campos { color: var(--n-500); }
+/* De → para de cada campo, e o botão de voltar ao valor anterior (m116). */
+.de-historico__mudanca { display: grid; gap: 1px; margin-top: 4px; padding-left: 8px; border-left: 2px solid var(--n-150); }
+.de-historico__campo { font-size: 12px; color: var(--n-500); }
+.de-historico__valores { color: var(--n-800); overflow-wrap: anywhere; }
+.de-historico__valores s { color: var(--n-500); }
+.de-historico__valores b { font-weight: 500; }
+.de-historico__voltar {
+  display: inline-flex; align-items: center; gap: 4px; justify-self: start;
+  margin-top: 2px; padding: 2px 6px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--d-600); font: inherit; font-size: 12px; cursor: pointer;
+}
+.de-historico__voltar:hover { background: var(--d-50); }
+.de-historico__voltar svg { width: 12px; height: 12px; }
 
 /* ---- Balão do campo ----------------------------------------------------- */
 .de-balao {

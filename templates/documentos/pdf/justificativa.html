@@ -21,6 +21,8 @@
     {% for paragrafo in justificativa.paragrafos %}<p>{{ paragrafo }}</p>{% empty %}{% vazio "Texto da justificativa" %}{% endfor %}
   </div>
 
+  {% ponto_de_paragrafo "apos_texto" classe="doc-justificativa__texto" %}
+
   {% if justificativa.assinante or campos_editaveis.config_assina_justificativa %}
     <div{% editavel "config_assina_justificativa" classe="doc-justificativa__assinatura" %}>
       <p class="doc-justificativa__assinante">{{ justificativa.assinante }}{% if not justificativa.assinante %}{% vazio "Quem assina" %}{% endif %}</p>

@@ -284,3 +284,75 @@ def quebra(request, tipo, pk, chave):
     request.auditoria_origem = "editor"
     ativa = definir_quebra(vinculo.tipo, vinculo.dono_dos_blocos(objeto), chave, corpo["ativa"], request.user)
     return _gravado(request, vinculo, objeto, ativa=ativa)
+
+
+@require_http_methods(["PATCH"])
+def paragrafo(request, tipo, pk, chave):
+    """Parágrafo extra num ponto registrado (m123): PATCH com o texto grava;
+    texto vazio apaga."""
+    from documentos.editor import blocos as registro_blocos
+    from documentos.services.document_blocks import definir_paragrafo
+
+    vinculo, objeto = _acesso(request, tipo, pk)
+    if registro_blocos.ponto_de_paragrafo(vinculo.tipo, chave) is None:
+        raise Http404("Ponto de parágrafo fora do registro.")
+    corpo, erro = _corpo(request)
+    if erro is not None:
+        return erro
+    valores = corpo.get("valores")
+    if not isinstance(valores, dict) or set(valores) != {"conteudo"} or isinstance(valores["conteudo"], (dict, list)):
+        return JsonResponse({"ok": False, "mensagem": "Esperava só o texto do parágrafo."}, status=400)
+    request.auditoria_origem = "editor"
+    texto = definir_paragrafo(vinculo.tipo, vinculo.dono_dos_blocos(objeto), chave, str(valores["conteudo"] or "")[:TAMANHO_MAXIMO_TEXTO], request.user)
+    return _gravado(request, vinculo, objeto, versao="", conteudo=texto)
+
+
+@require_http_methods(["GET"])
+def paginas(request, tipo, pk):
+    """Quantas páginas o PDF terá e se a letra foi reduzida (m124): o HTML
+    do documento como o PDF o recebe, paginado pelo mesmo motor. Cache curto
+    pelo conteúdo, para as gravações seguidas não refazerem a conta."""
+    import hashlib
+
+    from django.core.cache import cache
+
+    from documentos.services.exceptions import DocumentRendererUnavailable
+    from documentos.services.pdf_renderer import medir_paginas, renderizar_html, tipo_e_html_nativo
+
+    vinculo, objeto = _carregar_para_ver(request, tipo, pk)
+    if not tipo_e_html_nativo(vinculo.tipo):
+        return JsonResponse({"ok": False, "indisponivel": True})
+    html = renderizar_html(vinculo.tipo, vinculo.contexto(objeto, modo="pdf", campos_editaveis={}), modo="pdf")
+    chave = "editor-paginas:" + hashlib.sha256(html.encode("utf-8")).hexdigest()
+    medida = cache.get(chave)
+    if medida is None:
+        try:
+            medida = medir_paginas(html, tipo=vinculo.tipo)
+        except DocumentRendererUnavailable:
+            return JsonResponse({"ok": False, "indisponivel": True})
+        cache.set(chave, medida, 120)
+    return JsonResponse({"ok": True, **medida})
+
+
+def _carregar_para_ver(request, tipo, pk):
+    """Quem pode ver o documento (não só quem edita) mede as páginas."""
+    if not request.user.is_authenticated:
+        raise PermissionDenied
+    vinculo = vinculo_do_tipo(tipo)
+    if vinculo is None:
+        raise Http404
+    objeto = vinculo.carregar(pk, request.GET.get("v", ""))
+    if not vinculo.pode_ver(request.user):
+        raise PermissionDenied
+    return vinculo, objeto
+
+
+@require_http_methods(["GET"])
+def textos(request, tipo, pk, chave):
+    """Os textos prontos de um campo (m118): os modelos de motivo, de
+    justificativa e do relatório técnico, com os marcadores já trocados pelos
+    dados do documento. Campo sem modelos devolve a lista vazia."""
+    vinculo, objeto = _acesso(request, tipo, pk)
+    if registro.campo(vinculo.chave, chave) is None:
+        raise Http404("Campo fora do registro do editor.")
+    return JsonResponse({"ok": True, "textos": vinculo.textos_prontos(objeto, chave)})

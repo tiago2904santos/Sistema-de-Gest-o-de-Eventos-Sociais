@@ -177,6 +177,8 @@ class DocumentoBloco(OrigemLegado):
     class Tipo(models.TextChoices):
         PARAGRAFO = "paragrafo", "Parágrafo"
         QUEBRA_PAGINA = "quebra_pagina", "Quebra de página"
+        # Parágrafo livre inserido num ponto marcado do modelo (m123).
+        PARAGRAFO_EXTRA = "paragrafo_extra", "Parágrafo extra"
 
     tipo_documento = models.CharField(max_length=64, db_index=True)
     oficio = models.ForeignKey("viagens_oficios.Oficio", on_delete=models.CASCADE, null=True, blank=True, related_name="blocos_documentais")

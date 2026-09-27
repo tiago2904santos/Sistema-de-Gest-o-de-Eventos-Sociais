@@ -102,7 +102,8 @@ def vazio(context, rotulo):
     nada — o documento sai como sempre saiu."""
     if context.get("modo") != "editor" or not context.get("campos_editaveis"):
         return ""
-    return format_html('<span class="doc-vazio">{}</span>', rotulo)
+    # `data-doc-vazio` é o que "Próximo campo vazio" percorre (m117).
+    return format_html('<span class="doc-vazio" data-doc-vazio="{}">{}</span>', rotulo, rotulo)
 
 
 def _editando(context):
@@ -212,6 +213,29 @@ def ponto_de_quebra(context, chave):
             return format_html('<div class="doc-quebra" data-doc-quebra="{}" data-doc-quebra-ativa="1" tabindex="0" title="Remover a quebra de página"></div>', chave)
         return format_html('<div class="doc-quebra-slot" data-doc-quebra="{}" tabindex="0" title="Inserir quebra de página aqui"></div>', chave)
     return mark_safe('<div class="doc-quebra"></div>') if ativa else ""
+
+
+@register.simple_tag(takes_context=True)
+def ponto_de_paragrafo(context, chave, classe=""):
+    """Onde o template admite um parágrafo livre (m123). Com texto gravado
+    em `paragrafos`, é o parágrafo (no PDF e na tela; no editor, escreve-se
+    nele direto na folha); sem texto, no editor é uma fenda "+ parágrafo",
+    e fora dele não é nada."""
+    texto = (context.get("paragrafos") or {}).get(chave) or ""
+    propria = "doc-bloco doc-paragrafo-extra" + (f" {classe}" if classe else "")
+    if _editando(context):
+        if texto:
+            return format_html(
+                '<p data-doc-paragrafo="{}" data-doc-digitavel="varias" class="{} doc-editavel doc-editavel--texto"'
+                ' contenteditable="plaintext-only" spellcheck="true">{}</p>', chave, propria, linhas(texto),
+            )
+        return format_html(
+            '<div class="doc-paragrafo-slot" data-doc-paragrafo-slot="{}" data-doc-classe="{}" tabindex="0" title="Inserir um parágrafo aqui"></div>',
+            chave, propria,
+        )
+    if not texto:
+        return ""
+    return format_html('<p class="{}">{}</p>', propria, linhas(texto))
 
 
 @register.filter(name="linhas", is_safe=True)

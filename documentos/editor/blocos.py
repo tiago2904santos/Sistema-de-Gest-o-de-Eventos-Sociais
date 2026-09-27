@@ -37,6 +37,14 @@ class PontoDeQuebra:
     rotulo: str
 
 
+@dataclass(frozen=True)
+class PontoDeParagrafo:
+    """Onde o modelo admite um parágrafo livre (m123): `{% ponto_de_paragrafo
+    "chave" %}`. O texto é um bloco `paragrafo_extra` gravado para a chave."""
+    chave: str
+    rotulo: str
+
+
 BLOCOS_OFICIO = (
     BlocoDocumental(
         "secretaria", "Linha da secretaria no cabeçalho",
@@ -144,6 +152,23 @@ REGISTRO_QUEBRAS: dict[DocumentoTipo, dict[str, PontoDeQuebra]] = {
     DocumentoTipo.OFICIO: {ponto.chave: ponto for ponto in QUEBRAS_OFICIO},
 }
 
+# Pontos de parágrafo extra por tipo (m123): onde cabe uma frase a mais
+# ("Solicito ainda..." no ofício, uma observação na OS) sem distorcer campo.
+REGISTRO_PARAGRAFOS: dict[DocumentoTipo, dict[str, PontoDeParagrafo]] = {
+    tipo: {ponto.chave: ponto for ponto in pontos}
+    for tipo, pontos in (
+        (DocumentoTipo.OFICIO, (
+            PontoDeParagrafo("apos_abertura", "Depois da abertura"),
+            PontoDeParagrafo("antes_assinatura", "Antes da assinatura"),
+        )),
+        (DocumentoTipo.TERMO_AUTORIZACAO, (PontoDeParagrafo("apos_declaracao", "Depois da declaração"),)),
+        (DocumentoTipo.JUSTIFICATIVA, (PontoDeParagrafo("apos_texto", "Depois do texto"),)),
+        (DocumentoTipo.ORDEM_SERVICO, (PontoDeParagrafo("antes_assinatura", "Antes da assinatura"),)),
+        (DocumentoTipo.PLANO_TRABALHO, (PontoDeParagrafo("antes_assinatura", "Antes da assinatura"),)),
+        (DocumentoTipo.RELATORIO_TECNICO, (PontoDeParagrafo("antes_declaracao", "Antes da declaração"),)),
+    )
+}
+
 
 def blocos_do_tipo(tipo) -> dict[str, BlocoDocumental]:
     return REGISTRO_BLOCOS.get(tipo, {})
@@ -159,3 +184,11 @@ def quebras_do_tipo(tipo) -> dict[str, PontoDeQuebra]:
 
 def ponto_de_quebra(tipo, chave: str) -> PontoDeQuebra | None:
     return quebras_do_tipo(tipo).get(chave)
+
+
+def paragrafos_do_tipo(tipo) -> dict[str, PontoDeParagrafo]:
+    return REGISTRO_PARAGRAFOS.get(tipo, {})
+
+
+def ponto_de_paragrafo(tipo, chave: str) -> PontoDeParagrafo | None:
+    return paragrafos_do_tipo(tipo).get(chave)

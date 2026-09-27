@@ -51,18 +51,19 @@ def _conteudo_documental(tipo, doc, objeto, blocos):
         documental = conteudo_documental(tipo, objeto)
     documental = dict(documental or {})
     finais = completar_blocos(tipo, blocos if blocos is not None else documental.get("blocos"))
-    return finais, set(documental.get("quebras") or ()), documental.get("versao_editada")
+    return finais, set(documental.get("quebras") or ()), documental.get("versao_editada"), dict(documental.get("paragrafos") or {})
 
 
 def _do_editor(tipo, payload, campos_editaveis, edicao) -> dict:
     """O que o editor acrescenta a qualquer documento: os trechos marcados, os
     blocos do modelo (com os textos reescritos, que o payload traz em
     `documento` — no PDF e na folha do editor) e as quebras de página."""
-    blocos, quebras, versao_editada = _conteudo_documental(tipo, dict(payload or {}), None, None)
+    blocos, quebras, versao_editada, paragrafos = _conteudo_documental(tipo, dict(payload or {}), None, None)
     return {
         "campos_editaveis": dict(campos_editaveis or {}),
         "blocos": blocos,
         "quebras": quebras,
+        "paragrafos": paragrafos,
         # A versão editada inteira do documento (m057): `renderizar_html` troca
         # as regiões da folha pelas dela.
         "versao_editada": versao_editada,
@@ -95,7 +96,7 @@ def contexto_do_oficio(oficio=None, *, modo: str = "pdf", campos_editaveis=None,
         "telefone": tx.get("telefone", ""),
         "email": tx.get("email", ""),
     }
-    blocos_finais, quebras, versao_editada = _conteudo_documental(DocumentoTipo.OFICIO, doc, oficio, blocos)
+    blocos_finais, quebras, versao_editada, paragrafos = _conteudo_documental(DocumentoTipo.OFICIO, doc, oficio, blocos)
     return {
         "doc": doc,
         "tx": tx,
@@ -104,6 +105,7 @@ def contexto_do_oficio(oficio=None, *, modo: str = "pdf", campos_editaveis=None,
         "campos_editaveis": dict(campos_editaveis or {}),
         "blocos": blocos_finais,
         "quebras": quebras,
+        "paragrafos": paragrafos,
         "versao_editada": versao_editada,
         "edicao": bool(campos_editaveis) if edicao is None else bool(edicao),
         "modo": modo,

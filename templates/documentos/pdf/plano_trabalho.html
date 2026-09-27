@@ -74,6 +74,7 @@
     {% bloco "secao_consideracoes" classe="doc-plano__secao" elemento="h2" base=False %}
     <div{% editavel "plano_consideracoes" %}>{% for paragrafo in plano.consideracao_final %}<p class="doc-plano__texto">{{ paragrafo|linhas }}</p>{% empty %}{% vazio "Considerações finais" %}{% endfor %}</div>
 
+    {% ponto_de_paragrafo "antes_assinatura" classe="doc-plano__texto" %}
     <div class="doc-plano__assinatura">
       <p class="doc-plano__local">{% if plano.sede %}{% trecho "config_endereco" %}{{ plano.sede }}{% endtrecho %}, {% endif %}{{ plano.data_extenso }}</p>
       <div{% editavel "config_assina_plano_trabalho" %}>

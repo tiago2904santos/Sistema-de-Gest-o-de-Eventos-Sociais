@@ -171,6 +171,7 @@ class DocumentoFacade:
                 conteudo = self._render_docx(
                     template_def, docx_ctx, template_path_override=docx_template_path
                 )
+                conteudo = self._com_conteudo_documental(tipo, conteudo, payload, docx_ctx)
             else:
                 conteudo, pdf_engine_used = self._render_pdf(
                     tipo,
@@ -281,7 +282,17 @@ class DocumentoFacade:
     ) -> bytes:
         docx_def = self._templates.get(tipo, DocumentoFormato.DOCX)
         docx_ctx = docxtpl_context if docxtpl_context is not None else payload
-        return self._render_docx(docx_def, docx_ctx, template_path_override=template_path_override)
+        conteudo = self._render_docx(docx_def, docx_ctx, template_path_override=template_path_override)
+        return self._com_conteudo_documental(tipo, conteudo, payload, docx_ctx)
+
+    @staticmethod
+    def _com_conteudo_documental(tipo, conteudo: bytes, payload, docx_ctx) -> bytes:
+        """Os parágrafos reescritos e as quebras de página do documento
+        (`documento` no payload) no DOCX, como o PDF já os tem (m111)."""
+        from documentos.services.docx_blocos import aplicar_conteudo_documental
+
+        documental = payload.get("documento") if hasattr(payload, "get") else None
+        return aplicar_conteudo_documental(tipo, conteudo, documental, docx_ctx)
 
     def _render_pdf(
         self,

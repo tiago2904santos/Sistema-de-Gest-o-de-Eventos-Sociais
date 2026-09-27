@@ -35,6 +35,7 @@
   {% endif %}
 
   {% bloco "declaracao" classe="doc-termo__declaracao" base=False %}
+  {% ponto_de_paragrafo "apos_declaracao" classe="doc-termo__declaracao" %}
 
   {% if termo.com_viatura %}
     <p class="doc-termo__linha"><strong>Viatura:</strong> {% include "documentos/pdf/_lacuna.html" with valor=termo.viatura campo=marcas.modelo objeto=marcas.viatura %}</p>

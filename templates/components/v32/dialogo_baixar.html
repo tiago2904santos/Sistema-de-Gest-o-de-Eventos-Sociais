@@ -48,6 +48,10 @@
       </fieldset>
     </div>
 
+    {# Enquanto os PDFs são gerados (m122): a janela fica aberta e avisa; um erro do servidor aparece aqui. #}
+    <p class="an-texto bx-aviso" data-baixar-aviso hidden aria-live="polite">Os documentos estão sendo gerados. O download começa sozinho quando ficarem prontos.</p>
+    <p class="form-erro" data-baixar-erro hidden role="alert"></p>
+
     <div class="an-rodape">
       <button type="button" class="btn--secundaria" data-baixar-fechar>Fechar</button>
       <button type="submit" class="btn-primaria" data-baixar-enviar>{% include "components/icon.html" with nome="download" %}Baixar</button>

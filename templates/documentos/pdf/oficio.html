@@ -48,6 +48,7 @@
   </table>
 
   {% bloco "abertura" classe="doc-oficio__abertura" assunto=tx.assunto_termo negrito_ate="," %}
+  {% ponto_de_paragrafo "apos_abertura" classe="doc-oficio__abertura" %}
 
   <div {% editavel "servidores" %}>
     <table class="doc-oficio__tabela doc-oficio__equipe">
@@ -117,6 +118,7 @@
     <tr><td class="doc-oficio__declaracao">{% bloco "declaracao_cartao" %}</td></tr>
   </table>
 
+  {% ponto_de_paragrafo "antes_assinatura" classe="doc-oficio__abertura" %}
   {% ponto_de_quebra "antes_assinatura" %}
   <div class="doc-oficio__assinatura">
     {% bloco "fecho" %}

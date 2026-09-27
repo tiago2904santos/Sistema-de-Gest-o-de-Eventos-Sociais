@@ -483,15 +483,25 @@ class ModeloTextoRelatorioTecnico(OrigemLegado):
     campo = models.CharField(max_length=30, choices=CAMPO_CHOICES, db_index=True)
     nome = models.CharField(max_length=120)
     texto = models.TextField()
+    # Um padrão por campo (m118): entra sozinho no relatório novo, com os
+    # marcadores ({destino}, {periodo}, {motivo}...) trocados pelos dados do ofício.
+    is_padrao = models.BooleanField('usar como padrão do campo', default=False)
 
     class Meta:
         ordering = ['campo', 'nome']
         verbose_name = 'Modelo de texto do RT'
         verbose_name_plural = 'Modelos de texto do RT'
-        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_modelotextorelatoriotecnico_origem"), models.UniqueConstraint(fields=['campo', 'nome'], name='unique_modelo_texto_rt_campo_nome')]
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_modelotextorelatoriotecnico_origem"), models.UniqueConstraint(fields=['campo', 'nome'], name='unique_modelo_texto_rt_campo_nome'),
+                       models.UniqueConstraint(fields=['campo'], condition=models.Q(is_padrao=True), name='viagens_rt_modelo_padrao_por_campo')]
 
     def __str__(self):
         return f'{self.get_campo_display()} — {self.nome}'
+
+    def save(self, *args, **kwargs):
+        if self.is_padrao:
+            # O padrão anterior do mesmo campo sai, senão a gravação estoura na restrição.
+            ModeloTextoRelatorioTecnico.objects.filter(campo=self.campo, is_padrao=True).exclude(pk=self.pk).update(is_padrao=False)
+        super().save(*args, **kwargs)
 
 
 def _token_do_link() -> str:

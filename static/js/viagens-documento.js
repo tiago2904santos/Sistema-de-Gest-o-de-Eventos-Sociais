@@ -139,6 +139,7 @@
   function atualizar() {
     paginar();
     ajustar();
+    agendarMedicao();
   }
 
   function definirZoom(valor) {
@@ -188,6 +189,44 @@
     if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(atualizar);
   }
 
+  /* ---- Páginas do PDF (m124) -------------------------------------------
+     A paginação da tela é uma aproximação; o número certo vem do motor do
+     PDF, por `data-de-paginas` (URL), medido ao carregar a folha e 2 s depois
+     de cada mudança nela — nunca a cada tecla. */
+  var indicador = raiz.querySelector('[data-de-paginas]');
+  var indicadorTexto = raiz.querySelector('[data-de-paginas-texto]');
+  var medicao = null;
+  var medindo = false;
+  var remedir = false;
+  function mostrarPaginas(dados) {
+    if (!indicador || !indicadorTexto) return;
+    if (!dados || !dados.ok) { indicador.hidden = true; return; }
+    var texto = dados.paginas === 1 ? '1 página' : dados.paginas + ' páginas';
+    var estado = dados.paginas > 1 ? 'varias' : 'uma';
+    if (dados.reduzida) { texto += ' · letra reduzida'; estado = 'reduzida'; }
+    indicadorTexto.textContent = texto;
+    indicador.setAttribute('data-estado', estado);
+    indicador.title = (dados.reduzida
+      ? 'Para caber numa página, o PDF sai com a letra e os espaçamentos reduzidos (degrau ' + dados.reduzida + ').'
+      : 'Páginas do PDF, medidas pelo motor que o imprime.') + (indicador.tagName === 'BUTTON' ? ' Clique para ver como vai imprimir.' : '');
+    indicador.hidden = false;
+  }
+  function medirPaginas() {
+    if (!indicador) return;
+    if (medindo) { remedir = true; return; }
+    medindo = true;
+    fetch(indicador.getAttribute('data-de-paginas'), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(mostrarPaginas)
+      .catch(function () { if (indicador) indicador.hidden = true; })
+      .then(function () { medindo = false; if (remedir) { remedir = false; medirPaginas(); } });
+  }
+  function agendarMedicao() {
+    if (!indicador) return;
+    clearTimeout(medicao);
+    medicao = setTimeout(function () { medicao = null; medirPaginas(); }, 2000);
+  }
+
   /* ---- Histórico: painel lateral que abre e fecha ------------------------ */
   var historico = raiz.querySelector('[data-de-historico]');
   var alternadores = raiz.querySelectorAll('[data-de-alternar-historico]');
@@ -209,7 +248,8 @@
     atualizar: atualizar,
     ajustar: ajustar,
     escala: function () { return zoom; },
-    desmontar: function () { if (observador) observador.disconnect(); observador = null; }
+    medir: agendarMedicao,
+    desmontar: function () { if (observador) observador.disconnect(); observador = null; clearTimeout(medicao); }
   };
   }
 
