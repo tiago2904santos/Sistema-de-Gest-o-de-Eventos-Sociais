@@ -14,7 +14,7 @@
 
     <section class="reg">
       <h2 class="reg__t">{% include "components/icon.html" with nome="pencil" %}Ajustar carimbo</h2>
-      <p class="pc-nota">Arraste o número para a linha do servidor. A alça ajusta o tamanho.</p>
+      <p class="pc-nota" id="carimbo-teclado">Arraste o número para a linha do servidor; a alça ajusta o tamanho. Pelo teclado: Tab seleciona a caixa, as setas movem (com Shift, em passos maiores) e + e − mudam o tamanho.</p>
       <div>
         <div class="pdf-place__pager">
           <button type="button" class="btn--secundaria" id="carimbo-prev">Página anterior</button>
@@ -33,10 +33,16 @@
             <canvas id="carimbo-canvas"></canvas>
             
             {% for caixa in caixas %}
+              {# m107: a caixa entra na ordem do Tab e diz de quem é; o JS mantém a página no rótulo. #}
               <div class="pdf-place__box"
                    data-pdf-place-box
                    data-ps="{{ caixa.ps_pk|unlocalize }}"
                    data-pagina="{{ caixa.pagina|unlocalize }}"
+                   data-nome="{{ caixa.nome }}"
+                   tabindex="0"
+                   role="button"
+                   aria-label="Número de {{ caixa.nome }}, página {{ caixa.pagina|add:1 }}"
+                   aria-describedby="carimbo-teclado"
                    hidden>
                 <span class="pdf-place__box-text" data-pdf-place-text>{{ caixa.numero|default:"—" }}</span>
                 <span class="pdf-place__box-handle" data-pdf-place-handle aria-hidden="true"></span>
