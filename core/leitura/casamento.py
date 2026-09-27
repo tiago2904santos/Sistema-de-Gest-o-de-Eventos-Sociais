@@ -309,8 +309,12 @@ def municipios_no_texto(
         so_numero = ancorado and not uf_escrita and bool(
             re.search(r"\d+\s*[-–,]\s*$", antes)
         ) and (bool(_R_LOGRADOURO_NA_LINHA.search(antes)) or not _R_ANCORA_ANTES.search(re.sub(r"\d+\s*[-–,]\s*$", "", antes)))
-        if so_numero and (chave in MUNICIPIOS_AMBIGUOS or re.match(r"\s*[-–,]\s*[A-ZÀ-Ý][\wÀ-ÿ ]{2,40}(?:/[A-Z]{2}|\s*[-–]\s*[A-Z]{2}\b)", texto[fim:fim + 50])):
+        # Depois do número pode ser o bairro ("Rua Chile, 1800 - Rebouças") ou a
+        # cidade ("Av. Brasil, 100 - Toledo"): vale só se nenhuma outra cidade
+        # aparecer — e nunca se outra cidade vem logo depois ("- Rebouças - Curitiba/PR").
+        if so_numero and re.match(r"\s*[-–,]\s*[A-ZÀ-Ý][\wÀ-ÿ ]{2,40}(?:/[A-Z]{2}|\s*[-–]\s*[A-Z]{2}\b)", texto[fim:fim + 50]):
             continue
+        posicao_de_bairro = so_numero and chave in MUNICIPIOS_AMBIGUOS
         instituicao = not ancorado and bool(_R_INSTITUICAO_ANTES.search(antes))
         # Linha de endereço ("Av. Iguaçu, 470 - Rebouças - Curitiba/PR") diz
         # onde fica quem escreve; a UF escrita ali não vale como âncora forte.
@@ -353,6 +357,7 @@ def municipios_no_texto(
         registro["ancorado"] |= ancorado
         registro["instituicao"] |= instituicao
         registro["endereco"] &= linha_endereco
+        registro["bairro"] = registro.get("bairro", True) and posicao_de_bairro
         registro["dateline"] |= dateline
         registro["evento"] |= bool(_R_EVENTO.search(dobrado[comeco:final]))
 
@@ -360,6 +365,8 @@ def municipios_no_texto(
         ancora = (1 if r["endereco"] else 3) * r["ancorado"]
         return ancora + 2 * r["instituicao"] + 2 * r["dateline"] + min(r["vezes"] - 1, 2) + r["evento"]
 
+    if any(not r.get("bairro") for r in candidatos.values()):
+        candidatos = {k: r for k, r in candidatos.items() if not r.get("bairro")}
     ordenados = sorted(candidatos.values(), key=lambda r: (-pontos(r), r["inicio"]))
     # "Vai ser em Castro ou em Carambeí": a cidade ainda não foi decidida.
     if len(ordenados) >= 2:
