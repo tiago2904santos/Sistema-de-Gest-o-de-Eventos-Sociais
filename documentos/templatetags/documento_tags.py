@@ -142,8 +142,17 @@ def bloco(context, chave, classe="", assunto=None, negrito_ate="", padrao=None, 
     texto = dados.get("conteudo")
     if texto is None:
         texto = dados.get("padrao", "")
+    fixo = None
     if assunto is not None:
-        texto = texto.replace("{assunto}", str(assunto))
+        if _editando(context) and "{assunto}" in texto:
+            # No editor, o termo que segue a data ("autorização"/"convalidação")
+            # sai como trecho fixo dentro do parágrafo digitável: não se apaga
+            # sem querer, e a gravação o devolve ao marcador (m110).
+            fixo = format_html('<span class="doc-marcador" contenteditable="false" data-doc-marcador="assunto" '
+                               'title="Segue a data do ofício: autorização ou convalidação">{}</span>', str(assunto))
+            texto = texto.replace("{assunto}", _TOKEN_MARCADOR)
+        else:
+            texto = texto.replace("{assunto}", str(assunto))
     if _editando(context):
         # Parágrafo do modelo é texto puro: escreve-se nele direto na folha.
         atributos = format_html(
@@ -159,7 +168,15 @@ def bloco(context, chave, classe="", assunto=None, negrito_ate="", padrao=None, 
         return _texto_do_bloco(texto, negrito_ate)
     else:
         atributos = format_html(' class="{}"', propria) if propria else ""
-    return format_html("<{}{}>{}</{}>", elemento, atributos, _texto_do_bloco(texto, negrito_ate), elemento)
+    corpo = _texto_do_bloco(texto, negrito_ate)
+    if fixo is not None:
+        corpo = mark_safe(str(corpo).replace(_TOKEN_MARCADOR, str(fixo)))
+    return format_html("<{}{}>{}</{}>", elemento, atributos, corpo, elemento)
+
+
+# Marca provisória do `{assunto}` enquanto o texto é escapado: não tem
+# caracteres que o escape altere, e não aparece em texto de documento.
+_TOKEN_MARCADOR = "\u2063ASSUNTO\u2063"
 
 
 _MARCADOR = __import__("re").compile(r"\{(\w+)\}")

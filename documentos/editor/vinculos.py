@@ -224,6 +224,12 @@ class VinculoBase:
 
         return conteudo_documental(self.tipo, self.dono_dos_blocos(objeto), self.variante_edicao(objeto))
 
+    def valores_dos_marcadores(self, objeto) -> dict:
+        """O valor de hoje de cada marcador que os blocos deste documento
+        preenchem ({assunto} → "autorização"): a gravação de um parágrafo
+        editado devolve a palavra ao marcador, para ela seguir os dados."""
+        return {}
+
     # Edição completa (m057): o documento inteiro, editado à mão.
     def variante_edicao(self, objeto) -> str:
         """Separa os documentos do mesmo tipo e dono (o termo de cada
@@ -376,6 +382,11 @@ class VinculoOficio(VinculoBase):
         from documentos.services.document_context import contexto_do_oficio
 
         return contexto_do_oficio(oficio, modo=modo, campos_editaveis=campos_editaveis)
+
+    def valores_dos_marcadores(self, oficio):
+        from viagens_oficios.assunto_oficio import resolver_assunto_oficio
+
+        return {"assunto": resolver_assunto_oficio(oficio)["assunto_termo"]}
 
     def finalizado(self, oficio):
         return oficio.status == oficio.STATUS_FINALIZADO

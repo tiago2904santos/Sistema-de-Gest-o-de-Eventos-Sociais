@@ -88,6 +88,32 @@ class BlocosDocumentaisTests(CenarioOficioMixin, TestCase):
         self.assertTrue(documento['blocos']['declaracao_cartao']['editado'])
         self.assertEqual(documento['quebras'], [])
 
+    def test_abertura_editada_continua_seguindo_autorizacao_ou_convalidacao(self):
+        """m110: a palavra digitada volta a ser o marcador; mudou a data, muda a palavra."""
+        from datetime import date
+        from viagens_oficios.models import Oficio
+        o = self.criar()  # data 09/09 e saída 10/09: autorização
+        folha = self.folha(o)
+        self.assertIn('data-doc-marcador="assunto"', folha)
+        self.assertIn('contenteditable="false"', folha)
+        url = self.url_bloco(o, 'abertura')
+        versao = self.client.get(url).json()['versao']
+        texto = 'Senhor Delegado, com urgência solicito Autorização e medidas para a concessão de diárias, conforme abaixo:'
+        r = self.client.patch(url, data=json.dumps({'versao': versao, 'valores': {'conteudo': texto}}), content_type='application/json')
+        self.assertEqual(r.status_code, 200, r.content)
+        gravado = DocumentoBloco.objects.get(oficio=o, chave='abertura')
+        self.assertIn('solicito {assunto} e medidas', gravado.conteudo_atual)
+        self.assertIn('solicito autorização e medidas', self.html_pdf(o))
+        Oficio.objects.filter(pk=o.pk).update(data_criacao=date(2026, 9, 11))
+        o.refresh_from_db()
+        self.assertIn('solicito convalidação e medidas', self.html_pdf(o))
+        self.assertIn('solicito <span class="doc-marcador"', self.folha(o))
+        # Quem escreve o marcador à mão, ou apaga a palavra, é respeitado.
+        versao = self.client.get(url).json()['versao']
+        r = self.client.patch(url, data=json.dumps({'versao': versao, 'valores': {'conteudo': 'Solicito {assunto} já.'}}), content_type='application/json')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(DocumentoBloco.objects.get(oficio=o, chave='abertura').conteudo_atual, 'Solicito {assunto} já.')
+
     def test_quebra_de_pagina_so_em_ponto_registrado(self):
         o = self.criar()
         self.assertEqual(self.client.patch(self.url_quebra(o, 'qualquer'), data='{"ativa": true}', content_type='application/json').status_code, 404)

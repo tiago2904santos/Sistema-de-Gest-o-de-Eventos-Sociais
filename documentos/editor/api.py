@@ -262,9 +262,28 @@ def bloco(request, tipo, pk, chave):
         restaurar(vinculo.tipo, dono, chave)
         editado = False
     else:
+        # A folha mostra o marcador já preenchido ("autorização"); quem edita o
+        # parágrafo devolve a palavra, e ela voltaria fixa. Vira marcador de
+        # novo, para seguir a data do ofício (autorização → convalidação) (m110).
+        conteudo = _devolver_marcadores(conteudo, definicao, vinculo.valores_dos_marcadores(objeto))
         gravar_override(vinculo.tipo, dono, chave, conteudo, request.user)
         editado = True
     return _gravado(request, vinculo, objeto, versao=versao_do_bloco(vinculo.tipo, dono, chave), editado=editado)
+
+
+def _devolver_marcadores(conteudo, definicao, valores):
+    """Troca, no texto digitado, a primeira ocorrência do valor atual de cada
+    marcador do bloco pelo próprio marcador (`{assunto}`), quando o texto não
+    o traz escrito. Palavra inteira, sem distinguir maiúsculas."""
+    import re
+
+    for nome in definicao.campos:
+        valor = str(valores.get(nome) or "").strip()
+        marcador = "{" + nome + "}"
+        if not valor or marcador in conteudo:
+            continue
+        conteudo = re.sub(rf"(?<!\w){re.escape(valor)}(?!\w)", marcador, conteudo, count=1, flags=re.IGNORECASE)
+    return conteudo
 
 
 @require_http_methods(["PATCH"])
