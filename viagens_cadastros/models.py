@@ -516,6 +516,19 @@ class ConfiguracaoSistema(ModeloTemporal, OrigemLegado):
 
     destinatario_oficio_unidade = models.CharField(max_length=255, blank=True, default="")
 
+    # Textos oficiais que estavam escritos no programa (m115): o Delegado-Geral
+    # da ordem de serviço e o cabeçalho/rodapé da ASCOM nos documentos do
+    # Coffee Break. Os valores iniciais são os que o código usava.
+    delegado_geral_nome = models.CharField("Delegado-Geral", max_length=120, blank=True, default="Silvio Jacob Rockembach")
+    ascom_cabecalho_unidade = models.CharField(
+        "Unidade no cabeçalho (Coffee Break)", max_length=160, blank=True, default="ASSESSORIA DE COMUNICAÇÃO SOCIAL")
+    ascom_rodape_endereco = models.CharField(
+        "Endereço no rodapé (Coffee Break)", max_length=255, blank=True,
+        default="Avenida Iguaçu, 470 – Rebouças – Curitiba/PR—CEP: 80.230-020")
+    ascom_rodape_contato = models.CharField(
+        "Contato no rodapé (Coffee Break)", max_length=255, blank=True,
+        default="Fone: (41) 3235-6477 – e-mail:  comunicacao@pc.pr.gov.br")
+
     def __str__(self):
         return "Configurações do sistema"
 

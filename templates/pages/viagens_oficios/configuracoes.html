@@ -106,6 +106,25 @@
               {% include "pages/viagens_cadastros/_campo.html" with campo=campos.email %}
             </div>
           </div>
+          {# Textos oficiais que estavam no programa (m115): valem para os documentos novos. #}
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Textos oficiais</strong>
+            </div>
+            <div class="bloco-split__corpo g-form">
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.delegado_geral_nome %}
+            </div>
+          </div>
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Coffee Break (ASCOM)</strong>
+            </div>
+            <div class="bloco-split__corpo g-form">
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.ascom_cabecalho_unidade %}
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.ascom_rodape_endereco %}
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.ascom_rodape_contato %}
+            </div>
+          </div>
         </div>
       </section>
 

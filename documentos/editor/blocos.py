@@ -103,7 +103,7 @@ BLOCOS_JUSTIFICATIVA = _blocos(("titulo", "Título", "Justificativa"))
 BLOCOS_ORDEM = _blocos(
     ("atribuicoes", "Atribuições de quem determina",
      "da Polícia Civil do Paraná, no uso das atribuições que me foram conferidas pelo Delegado-Geral "
-     "Silvio Jacob Rockembach, bem como pelo Conselho da Polícia Civil,"),
+     "{delegado_geral}, bem como pelo Conselho da Polícia Civil,"),
     ("determino", "Determino", "Determino"),
 )
 

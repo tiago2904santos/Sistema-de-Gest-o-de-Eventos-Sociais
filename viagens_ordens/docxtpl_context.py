@@ -16,6 +16,7 @@ from typing import Any
 from documentos.services.data_documento import data_do_documento
 from documentos.services.formatters import format_document_display
 from viagens_cadastros.selectors import build_configuracao_context
+from viagens_cadastros.models import ConfiguracaoSistema
 from viagens_oficios.docxtpl_context import _assinatura_nome_cargo, _build_endereco, _build_sede
 
 from .models import OrdemServico
@@ -402,6 +403,8 @@ def build_os_docxtpl_context(ordem: OrdemServico) -> dict[str, Any]:
         "finalidade": textos_modelo["finalidade"],
         "sede": _build_sede(inst),
         "data_atual_extenso": _fmt_extenso(data_do_documento(ordem)),
+        # O Delegado-Geral vem da configuração (m115), não mais do modelo DOCX.
+        "delegado_geral": _txt(ConfiguracaoSistema.atual().delegado_geral_nome),
         "endereco": _build_endereco(inst),
         "telefone": _txt(inst.get("telefone_formatado") or inst.get("telefone")),
         "email": (_txt(inst.get("email")) or "").lower(),

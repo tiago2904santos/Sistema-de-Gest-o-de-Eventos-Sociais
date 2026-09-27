@@ -256,7 +256,9 @@ def bloco(request, tipo, pk, chave):
     from documentos.services.modelos_texto import texto_vigente
 
     modelo = texto_vigente(vinculo.tipo, chave)
-    padrao = definicao.padrao if modelo is None else modelo
+    from documentos.services.document_blocks import preencher_institucionais
+
+    padrao = preencher_institucionais(definicao.padrao if modelo is None else modelo)
     iguais_ao_modelo = {padrao} | {padrao.replace("{assunto}", termo) for termo in ("autorização", "convalidação")}
     if not conteudo or conteudo in iguais_ao_modelo:
         restaurar(vinculo.tipo, dono, chave)

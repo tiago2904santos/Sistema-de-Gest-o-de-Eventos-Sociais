@@ -157,6 +157,26 @@ class ConfiguracoesDosDocumentosTests(TestCase):
         self.assertEqual((s.servidor, s.configuracao), (self.bia, ConfiguracaoSistema.get_singleton()))
         self.assertContains(self.client.get(url), '01/07/2026 a 31/07/2026')
 
+    def test_delegado_geral_e_rodape_da_ascom_vem_da_configuracao(self):
+        """m115: o nome do Delegado-Geral e os dados da ASCOM saem da configuração."""
+        from documentos.services.document_blocks import completar_blocos
+        from documentos.services.types import DocumentoTipo
+        from coffee_break.editor import BLOCOS_OS  # noqa: F401 (registra os blocos do Coffee Break)
+        cfg = ConfiguracaoSistema.atual()
+        self.assertEqual(cfg.delegado_geral_nome, 'Silvio Jacob Rockembach')
+        blocos = completar_blocos(DocumentoTipo.ORDEM_SERVICO)
+        self.assertIn('Delegado-Geral Silvio Jacob Rockembach, bem como', blocos['atribuicoes']['conteudo'])
+        cfg.delegado_geral_nome = 'Fulano Delegado'
+        cfg.ascom_rodape_endereco = 'Rua Nova, 10 – Centro—CEP: 80.000-000'
+        cfg.save()
+        blocos = completar_blocos(DocumentoTipo.ORDEM_SERVICO)
+        self.assertIn('Delegado-Geral Fulano Delegado, bem como', blocos['atribuicoes']['conteudo'])
+        from documentos.services.document_blocks import valores_institucionais
+        self.assertEqual(valores_institucionais()['ascom_endereco_hifens'], 'Rua Nova, 10 - Centro - CEP: 80000-000')
+        r = self.client.get(self.url)
+        self.assertContains(r, 'name="delegado_geral_nome"')
+        self.assertContains(r, 'name="ascom_rodape_contato"')
+
     def test_antigo_catalogo_de_assinantes_leva_para_a_secao(self):
         r = self.client.get(reverse('viagens_oficios:catalogo', args=['assinaturas']))
         self.assertRedirects(r, self.url + '#assinaturas')
