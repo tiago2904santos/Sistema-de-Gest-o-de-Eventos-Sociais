@@ -37,6 +37,17 @@ body.de-pagina { margin: 0; background: var(--n-100); color: var(--n-900); font-
 .de-topo__acoes .btn-primaria { height: 38px; }
 
 /* Estado da gravação, como o "Todas as alterações foram salvas" do Docs. */
+/* Páginas do PDF (m124): "1 página · letra reduzida" ou "2 páginas". */
+.de-paginas {
+  display: inline-flex; align-items: center; gap: 5px; flex: none; padding: 0 8px; height: 28px;
+  border: 0; border-radius: 6px; background: transparent; color: var(--n-600); font: inherit; font-size: 12.5px; white-space: nowrap;
+}
+.de-paginas[hidden] { display: none; }
+button.de-paginas { cursor: pointer; }
+button.de-paginas:hover { background: var(--n-150); color: var(--n-800); }
+.de-paginas .ui-icon { width: 15px; height: 15px; }
+.de-paginas[data-estado="reduzida"] { color: var(--d-800); }
+.de-paginas[data-estado="varias"] { color: var(--n-800); font-weight: 500; }
 .de-salvo { display: inline-flex; align-items: center; gap: 5px; flex: none; font-size: 12.5px; color: var(--n-500); }
 .de-salvo .ui-icon { width: 16px; height: 16px; }
 .de-salvo[data-estado="andamento"] { color: var(--n-600); }

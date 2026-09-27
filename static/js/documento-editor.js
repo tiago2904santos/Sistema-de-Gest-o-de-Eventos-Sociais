@@ -437,6 +437,8 @@
         if (onde.especie === 'bloco') versaoDeBloco[onde.chave] = res.dados.versao;
         else if (onde.especie !== 'paragrafo') { guardarVersao(onde.origem, onde.chave, onde.objeto, res.dados.versao); avisarGravado(onde.origem, valores, res.dados.versao); }
         marcarEstado(el, 'Salvo', 'ok');
+        // O texto digitado não remonta a folha: pede-se a medida das páginas (m124).
+        if (palco() && palco().medir) palco().medir();
         // Parágrafo extra apagado (m123): a folha volta a mostrar a fenda no lugar.
         if (onde.especie === 'paragrafo' && !texto.trim() && el !== digitando) aplicarFolha(res.dados.folha);
         if (sessao) registrar({ especie: onde.especie, chave: onde.chave, objeto: onde.objeto, origem: onde.origem, antes: sessao.antes, depois: valores, sessao: sessao.id });

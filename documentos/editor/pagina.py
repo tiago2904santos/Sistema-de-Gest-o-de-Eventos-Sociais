@@ -19,6 +19,8 @@ from django.urls import reverse
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.http import require_GET
 
+from documentos.services.pdf_renderer import tipo_e_html_nativo
+
 from .blocos import paragrafos_do_tipo, quebras_do_tipo
 from .campos import ORIGENS_POR_OBJETO, campos_do_tipo
 from .historico import historico_legivel
@@ -53,6 +55,8 @@ def contexto_da_pagina(request, vinculo, objeto) -> dict:
             # Em linguagem do documento, agrupado por digitação, com "Voltar" (m116).
             "historico": historico_legivel(vinculo, vinculo.historico(objeto), pode_editar=pode_editar),
             "url_folha": vinculo.url("folha", objeto),
+            # Indicador de páginas do PDF (m124); vazio para os tipos que não saem do HTML.
+            "url_paginas": vinculo.url("paginas", objeto) if tipo_e_html_nativo(vinculo.tipo) else "",
             "api": {especie: vinculo.url(especie, objeto, "CHAVE") for especie in ("campo", "bloco", "quebra", "textos", "paragrafo")},
             # Campos com textos prontos para inserir (m118).
             "textos_prontos": " ".join(vinculo.campos_com_textos(objeto)) if pode_editar else "",

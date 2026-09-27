@@ -308,6 +308,46 @@ def paragrafo(request, tipo, pk, chave):
 
 
 @require_http_methods(["GET"])
+def paginas(request, tipo, pk):
+    """Quantas páginas o PDF terá e se a letra foi reduzida (m124): o HTML
+    do documento como o PDF o recebe, paginado pelo mesmo motor. Cache curto
+    pelo conteúdo, para as gravações seguidas não refazerem a conta."""
+    import hashlib
+
+    from django.core.cache import cache
+
+    from documentos.services.exceptions import DocumentRendererUnavailable
+    from documentos.services.pdf_renderer import medir_paginas, renderizar_html, tipo_e_html_nativo
+
+    vinculo, objeto = _carregar_para_ver(request, tipo, pk)
+    if not tipo_e_html_nativo(vinculo.tipo):
+        return JsonResponse({"ok": False, "indisponivel": True})
+    html = renderizar_html(vinculo.tipo, vinculo.contexto(objeto, modo="pdf", campos_editaveis={}), modo="pdf")
+    chave = "editor-paginas:" + hashlib.sha256(html.encode("utf-8")).hexdigest()
+    medida = cache.get(chave)
+    if medida is None:
+        try:
+            medida = medir_paginas(html, tipo=vinculo.tipo)
+        except DocumentRendererUnavailable:
+            return JsonResponse({"ok": False, "indisponivel": True})
+        cache.set(chave, medida, 120)
+    return JsonResponse({"ok": True, **medida})
+
+
+def _carregar_para_ver(request, tipo, pk):
+    """Quem pode ver o documento (não só quem edita) mede as páginas."""
+    if not request.user.is_authenticated:
+        raise PermissionDenied
+    vinculo = vinculo_do_tipo(tipo)
+    if vinculo is None:
+        raise Http404
+    objeto = vinculo.carregar(pk, request.GET.get("v", ""))
+    if not vinculo.pode_ver(request.user):
+        raise PermissionDenied
+    return vinculo, objeto
+
+
+@require_http_methods(["GET"])
 def textos(request, tipo, pk, chave):
     """Os textos prontos de um campo (m118): os modelos de motivo, de
     justificativa e do relatório técnico, com os marcadores já trocados pelos

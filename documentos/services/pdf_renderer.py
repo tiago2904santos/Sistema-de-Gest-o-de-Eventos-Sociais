@@ -173,29 +173,48 @@ def _tabelas_apertadas(documento) -> list[str]:
     return achados
 
 
-def render_pdf(html: str, *, tipo=None) -> bytes:
-    """PDF em memória a partir do HTML já renderizado (modo `pdf`)."""
+def _documento_paginado(html: str, tipo):
+    """O documento do WeasyPrint já paginado, e o degrau de compactação com
+    que ficou (0 = letra e espaçamentos do modelo). É o miolo de `render_pdf`
+    e do indicador de páginas do editor (m124): uma regra só para os dois."""
     CSS, HTML = _weasyprint()
     base_url = Path(settings.BASE_DIR).resolve().as_uri() + "/"
     folhas = [CSS(filename=str(caminho_css(nome))) for nome in (CSS_COMUM, CSS_IMPRESSAO, *css_do_tipo(tipo))]
     degraus = CABER_EM_UMA_PAGINA.get(str(getattr(tipo, "value", tipo) or ""), 0)
+    # `presentational_hints=False`: nada de cor/fundo vindos de atributos
+    # HTML — os textos de campo são conteúdo do usuário, escapado, e o
+    # visual é só do CSS institucional.
+    documento = HTML(string=html, base_url=base_url).render(stylesheets=folhas, presentational_hints=False)
+    if str(getattr(tipo, "value", tipo) or "") in COLUNAS_SIMETRICAS:
+        apertadas = _tabelas_apertadas(documento)
+        if apertadas:
+            regra = "".join(f"{seletor}{{table-layout:auto}}" for seletor in apertadas)
+            html = html.replace("</head>", f"<style>{regra}</style></head>", 1)
+            documento = HTML(string=html, base_url=base_url).render(stylesheets=folhas, presentational_hints=False)
+    aplicado = 0
+    for degrau in range(1, degraus + 1):
+        if len(documento.pages) <= 1:
+            break
+        compacto = html.replace('class="documento ', f'class="documento doc-compacto-{degrau} ', 1)
+        documento = HTML(string=compacto, base_url=base_url).render(stylesheets=folhas, presentational_hints=False)
+        aplicado = degrau
+    return documento, aplicado
+
+
+def render_pdf(html: str, *, tipo=None) -> bytes:
+    """PDF em memória a partir do HTML já renderizado (modo `pdf`)."""
     with measure_step("render_pdf_html", {"tipo": getattr(tipo, "value", tipo) or "—"}):
-        # `presentational_hints=False`: nada de cor/fundo vindos de atributos
-        # HTML — os textos de campo são conteúdo do usuário, escapado, e o
-        # visual é só do CSS institucional.
-        documento = HTML(string=html, base_url=base_url).render(stylesheets=folhas, presentational_hints=False)
-        if str(getattr(tipo, "value", tipo) or "") in COLUNAS_SIMETRICAS:
-            apertadas = _tabelas_apertadas(documento)
-            if apertadas:
-                regra = "".join(f"{seletor}{{table-layout:auto}}" for seletor in apertadas)
-                html = html.replace("</head>", f"<style>{regra}</style></head>", 1)
-                documento = HTML(string=html, base_url=base_url).render(stylesheets=folhas, presentational_hints=False)
-        for degrau in range(1, degraus + 1):
-            if len(documento.pages) <= 1:
-                break
-            compacto = html.replace('class="documento ', f'class="documento doc-compacto-{degrau} ', 1)
-            documento = HTML(string=compacto, base_url=base_url).render(stylesheets=folhas, presentational_hints=False)
+        documento, _ = _documento_paginado(html, tipo)
         return documento.write_pdf()
+
+
+def medir_paginas(html: str, *, tipo=None) -> dict:
+    """Quantas páginas o PDF terá e se a letra foi reduzida para caber
+    (m124): o mesmo motor e o mesmo laço de compactação, sem escrever o PDF.
+    `reduzida` é o degrau de compactação aplicado (0 = não reduziu)."""
+    with measure_step("medir_paginas", {"tipo": getattr(tipo, "value", tipo) or "—"}):
+        documento, degrau = _documento_paginado(html, tipo)
+    return {"paginas": len(documento.pages), "reduzida": degrau, "cabe_em_uma": str(getattr(tipo, "value", tipo) or "") in CABER_EM_UMA_PAGINA}
 
 
 def caminhos_dos_templates(tipo) -> tuple[Path, ...]:

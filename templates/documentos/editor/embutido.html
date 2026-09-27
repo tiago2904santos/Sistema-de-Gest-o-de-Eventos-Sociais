@@ -77,6 +77,14 @@
       {% endif %}
     </div>
     <div class="de-barra__fim">
+      {% if doc.url_paginas %}
+        {# Páginas do PDF e letra reduzida (m124), medidas pelo motor do PDF; clicar abre o PDF como vai imprimir. #}
+        {% if doc.pode_emitir and doc.url_pdf %}
+          <button type="button" class="de-paginas" data-de-paginas="{{ doc.url_paginas }}" data-de-pdf="{{ doc.url_pdf }}{% if '?' in doc.url_pdf %}&{% else %}?{% endif %}inline=1" data-de-alvo="_blank" hidden title="Ver como vai imprimir">{% include "components/icon.html" with nome="document" %}<span data-de-paginas-texto></span></button>
+        {% else %}
+          <span class="de-paginas" data-de-paginas="{{ doc.url_paginas }}" hidden>{% include "components/icon.html" with nome="document" %}<span data-de-paginas-texto></span></span>
+        {% endif %}
+      {% endif %}
       {% if doc.pode_editar %}
         <span class="de-salvo" data-de-salvo aria-live="polite" title="As alterações são gravadas enquanto você edita">{% include "components/icon.html" with nome="cloud-check" %}<span data-de-salvo-texto>Tudo salvo</span></span>
       {% endif %}
