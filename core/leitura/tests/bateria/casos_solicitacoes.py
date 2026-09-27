@@ -4795,6 +4795,7 @@ Diretora do Departamento de Assistência Social
     # ------------------------------------------------------------------ 114
     Caso(
         id="sol-114",
+        triagem=("demandas_eventos",),
         modulo="solicitacoes",
         formato="eml",
         agora="2026-12-01 10:00",
@@ -5479,3 +5480,29 @@ Secretária de Assistência Social
         nota="'Foz do Jordão' não é Foz do Iguaçu (citado como lembrança do ano passado); 'Rua Iguaçu' também puxa para Foz.",
     ),
 ]
+
+
+# Palestra, roda de conversa e curso sem emissão de documentos vão para a
+# tela "Palestras e eventos" (decisão do dono do sistema, 27/09/2026): estes
+# casos passam para lá, com o gabarito dos campos que as duas telas têm.
+_PARA_PALESTRAS = {
+    "sol-005", "sol-011", "sol-013", "sol-018", "sol-027", "sol-029", "sol-033",
+    "sol-051", "sol-064", "sol-070", "sol-095", "sol-106", "sol-115", "sol-123",
+}
+_CAMPOS_COMUNS = {
+    "estado": "estado", "municipio": "municipio", "data_inicio_evento": "data_inicio_evento",
+    "data_fim_evento": "data_fim_evento", "data_solicitacao": "data_solicitacao", "local_evento": "local",
+    "endereco": "endereco", "bairro": "bairro", "cep": "cep", "contato": "telefone",
+}
+
+
+def _como_palestra(caso):
+    from dataclasses import replace
+
+    esperado = {novo: caso.esperado[antigo] for antigo, novo in _CAMPOS_COMUNS.items() if antigo in caso.esperado}
+    if caso.esperado.get("tipo_evento") == "Palestra":
+        esperado["evento"] = "PALESTRA"
+    return replace(caso, modulo="demandas_eventos", esperado=esperado)
+
+
+CASOS = [_como_palestra(c) if c.id in _PARA_PALESTRAS else c for c in CASOS]

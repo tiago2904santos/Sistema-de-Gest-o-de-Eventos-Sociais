@@ -31,6 +31,9 @@ _SINAIS: dict[str, list[tuple[re.Pattern, float, str]]] = {
         (re.compile(r"\bkits?\s+(?:de\s+)?lanches?\b|\blanches?\b"), 2, "lanche"),
         (re.compile(r"\bsalgad(?:o|os|inhos)\b"), 1.5, "salgados"),
         (re.compile(r"\bbuffet\b|\bcoquetel\b"), 1, "buffet"),
+        (re.compile(r"\blocal\s+de\s+entrega\b|\bentregar\s+n[oa]\b|\bhorario\s+(?:da|de)\s+entrega\b"), 3, "entrega"),
+        (re.compile(r"\brecebe\s*:|\bresponsavel\s+(?:pelo\s+)?recebimento\b|\bquem\s+(?:vai\s+)?receber?\b"), 2, "quem recebe"),
+        (re.compile(r"\b(?:coffee|cafe|lanches?|kits?)\s+(?:break\s+)?(?:para|p/|pra)\s+\d+"), 3, "lanche para N pessoas"),
     ],
     "atendimento_imprensa": [
         (re.compile(r"\bentrevistas?\b"), 2, "entrevista"),
@@ -81,6 +84,13 @@ _SINAIS: dict[str, list[tuple[re.Pattern, float, str]]] = {
         (re.compile(r"\bacao\s+social\b|\bacao\s+de\s+cidadania\b"), 2, "ação social"),
         (re.compile(r"\bfeiras?\b"), 1, "feira"),
         (re.compile(r"\bemissao\s+de\s+documentos\b|\bcoleta\s+de\s+digitais\b|\bbiometria\b"), 2, "emissão de documentos"),
+        # Os serviços que só a unidade móvel / o evento social leva.
+        (re.compile(r"\bfotos?\s+3\s?x\s?4\b|\bfotografia\s+para\s+documento\b"), 2, "fotos para documento"),
+        (re.compile(r"\borientac\w+\s+juridica\b|\batendimento\s+juridico\b"), 1.5, "orientação jurídica"),
+        (re.compile(r"\bviaturas?\b[^.\n]{0,60}\b(?:expo\w*|desfil\w*|antigas?|historic\w*|exibi\w*)|"
+                    r"\b(?:expo\w*|desfil\w*|encontro\s+de\s+(?:carros|veiculos|motociclistas|viaturas))\b[^.\n]{0,60}\bviaturas?\b"), 3, "exposição de viaturas"),
+        (re.compile(r"\bpcpr\s+na\s+comunidade\b"), 3, "PCPR na Comunidade"),
+        (re.compile(r"\bdigitais\b|\bsegunda\s+via\b|\b1a\s+via\b|\bprimeira\s+via\b"), 1.5, "documentos"),
     ],
     "demandas_eventos": [
         (re.compile(r"\bpalestras?\b"), 3, "palestra"),
@@ -90,6 +100,10 @@ _SINAIS: dict[str, list[tuple[re.Pattern, float, str]]] = {
         (re.compile(r"\bbate[\s-]?papo\b|\broda\s+de\s+conversa\b"), 2, "bate-papo"),
         (re.compile(r"\bconscientizacao\b|\borientacao\s+sobre\b"), 1, "conscientização"),
         (re.compile(r"\btemas?\b"), 0.5, "tema"),
+        (re.compile(r"\bcapacitac\w+|\bcursos?\b|\boficinas?\b|\bworkshops?\b|\binstrutor\w*|\bministrar\b|\bseminarios?\b|\bforum\b|\bcongresso\b|\bsimposio\b"), 2, "capacitação/seminário"),
+        (re.compile(r"\b(?:tem\s+a\s+honra\s+de\s+)?convid\w+\s+(?:a\s+|o\s+)?(?:policia\s+civil|pcpr|vossa|v\.?\s*s\.?|delegad\w+)|\bconvites?\b"), 2, "convite"),
+        (re.compile(r"\bsessao\s+solene\b|\bformatura\b|\bdesfile\b|\bcompor\s+a\s+mesa\b|\bmesa\s+de\s+abertura\b|\baudiencia\s+publica\b|\bhomenage\w+|\bmoc(?:ao|oes)\s+de\b|\bsolenidade\b|\bcerimonia\w*"), 2, "cerimônia"),
+        (re.compile(r"\b(?:falar|conversar|orientar|explicar)\s+(?:sobre|com|os|as)\b|\bpalestrantes?\b"), 1.5, "fala de policial"),
     ],
 }
 
@@ -105,6 +119,12 @@ _R_ASSINATURA_IMPRENSA = re.compile(
     r"\b(?:reporter|produtor[a]?|produc[ao]|redacao|jornalista|editor[a]?|pauteir[oa]|chefe\s+de\s+reportagem|"
     r"assessoria\s+de\s+imprensa|apresentador[a]?)\b"
 )
+_SINAIS_DE_SERVICO = {
+    "RG/CIN", "emissão de identidade", "identificação civil", "unidade móvel", "Paraná em Ação", "Justiça no Bairro",
+    "emissão de documentos", "fotos para documento", "orientação jurídica", "exposição de viaturas",
+    "PCPR na Comunidade", "documentos", "posto de atendimento",
+}
+_SINAIS_DE_LANCHE = {"coffee break", "lanche", "entrega", "quem recebe", "lanche para N pessoas", "salgados"}
 _R_VEICULO_NO_NOME = re.compile(r"\b(?:portal|jornal|gazeta|radio|tv|agencia|revista|folha|diario|tribuna|blog|redacao|noticias|fm|am)\b")
 _R_REMETENTE_PCPR = re.compile(r"@(?:[\w-]+\.)*(?:pc|policiacivil)\.pr\.gov\.br$")
 
@@ -161,6 +181,16 @@ def triar(
         somar("atendimento_imprensa", 3, "assinatura de jornalista")
     if email and _R_REMETENTE_PCPR.search(email) and pontos.get("publicacoes"):
         somar("publicacoes", 2, "remetente da PCPR")
+    # O convite, o seminário e a palestra descrevem o evento; o que se pede
+    # nele decide a tela: serviço da unidade móvel (CIN, fotos, viaturas em
+    # exposição…) é Evento social; lanche e entrega é Coffee break.
+    if pontos.get("demandas_eventos"):
+        if any(s.split(" (")[0] in _SINAIS_DE_SERVICO for s in sinais.get("solicitacoes", [])) and not any(
+            s.startswith(("palestra", "bate-papo")) for s in sinais.get("demandas_eventos", [])
+        ):
+            somar("solicitacoes", 4, "serviço pedido no evento")
+        if any(s.split(" (")[0] in _SINAIS_DE_LANCHE for s in sinais.get("coffee_break", [])):
+            somar("coffee_break", 4, "pedido de lanche para o evento")
     # Quem pergunta sobre a prisão é o jornalista; o release conta a prisão.
     # Sem pedido de publicação, as palavras de ocorrência valem metade.
     if pontos.get("publicacoes") and _R_PERGUNTA_IMPRENSA.search(assunto_d + "\n" + corpo_d) and not (

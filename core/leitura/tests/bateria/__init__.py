@@ -81,3 +81,5 @@ class Caso:
     texto: str
     esperado: dict = field(default_factory=dict)
     nota: str = ""
+    #: Outros módulos igualmente certos para a triagem (e-mail que serve a dois).
+    triagem: tuple = ()

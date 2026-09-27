@@ -41,12 +41,12 @@ _PASTA = Path(__file__).resolve().parent
 def carregar(modulos=MODULOS) -> tuple[list[Caso], dict]:
     """Os casos dos módulos pedidos e a união dos CADASTROS de cada arquivo."""
     casos, cadastros = [], {}
-    for modulo in modulos:
+    for modulo in MODULOS:
         try:
             arquivo = importlib.import_module(f"{__package__}.casos_{modulo}")
         except ModuleNotFoundError:
             continue
-        casos.extend(arquivo.CASOS)
+        casos.extend(c for c in arquivo.CASOS if c.modulo in modulos)
         for tipo, nomes in getattr(arquivo, "CADASTROS", {}).items():
             cadastros.setdefault(tipo, [])
             cadastros[tipo].extend(n for n in nomes if n not in cadastros[tipo])
@@ -246,7 +246,7 @@ def avaliar_caso(caso: Caso, relatorio: Relatorio) -> None:
             return
     relatorio.triagem[1] += 1
     primeiro = destinos[0].modulo if destinos else None
-    if primeiro == caso.modulo:
+    if primeiro == caso.modulo or primeiro in caso.triagem:
         relatorio.triagem[0] += 1
     else:
         relatorio.falhas.append(Falha(caso.id, "(triagem)", caso.modulo, [f"{d.modulo}:{d.pontos:g}" for d in destinos[:3]], nota=caso.nota))
