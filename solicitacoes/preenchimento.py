@@ -1,11 +1,12 @@
 """Sugestões para a solicitação nova a partir de um e-mail ("Preencher com um e-mail").
 
 As regras do domínio do evento social: o tipo do evento por nome ou
-sinônimo (curso é Capacitação, formatura é Inauguração/Solenidade), o
-Paraná em Ação que fixa o solicitante, os serviços por palavra-chave, a
-quantidade de CIN, o órgão e a unidade móvel só como sugestão (são decisão
-interna). A leitura genérica (datas, município, telefone, assinatura, local, endereço)
-vem de `core.leitura` e de `core.preencher_por_email`.
+sinônimo (curso é Capacitação, formatura é Inauguração/Solenidade), os
+serviços por palavra-chave (sem os negados), a quantidade de CIN, o órgão e
+a unidade móvel só como sugestão (são decisão interna). O local, quem pede
+e a quantidade saem de `solicitacoes.leitura`; a leitura genérica (datas,
+município, telefone, endereço) vem de `core.leitura` e de
+`core.preencher_por_email`.
 
 Nada aqui grava: a tela aplica as sugestões nos campos vazios e quem
 preenche confere antes de salvar.
@@ -18,24 +19,27 @@ import re
 from django.utils import timezone
 
 from cadastros.models import Municipio, OrgaoResponsavel, Servico, TipoEvento
-from core.leitura.casamento import cadastro_no_texto, cadastros_no_texto, quantidade_no_texto
+from core.leitura.casamento import cadastros_no_texto, telefone_no_texto
 from core.leitura.datas import dobrar
 from core.leitura.mensagem import Mensagem
 from core.preencher_por_email import (
     Sugestao,
     Sugestoes,
     data_do_email,
-    local_no_texto,
     municipio_do_pedido,
     quando_do_pedido,
     quem_pede,
     sugerir_endereco,
 )
 
-PARANA_EM_ACAO = "Paraná em Ação"
-# O que o formulário grava no solicitante quando o tipo é Paraná em Ação
-# (SolicitacaoForm.clean e o app.js fazem o mesmo).
-SOLICITANTE_PARANA_EM_ACAO = ("Paraná em Ação", "SEJU")
+from .leitura import (
+    desquebrar,
+    local_do_evento,
+    quantidade_de_cin,
+    sem_tratamento,
+    solicitante_do_pedido,
+    texto_do_pedido,
+)
 
 # Termo do e-mail -> nome do tipo de evento cadastrado. "*" casa o começo da palavra.
 SINONIMOS_TIPO = {
@@ -68,27 +72,36 @@ SINONIMOS_SERVICO = {
     "carteiras de identidade": "Emissão de CIN",
     "identidade*": "Emissão de CIN",
     "digitais": "Coleta de digitais",
+    # "tirar as digital": o singular coloquial (sozinho, "digital" é outra coisa).
+    "as digital": "Coleta de digitais",
+    "a digital": "Coleta de digitais",
     "biometria": "Coleta de digitais",
     "foto": "Fotografia para documento",
     "fotos": "Fotografia para documento",
     "fotografia*": "Fotografia para documento",
     "atendimento social": "Atendimento social",
+    # "Assistência social" sozinha é quase sempre quem pede ("diretora de
+    # assistência social", "Secretaria de Assistência Social"), não o serviço.
+    "atendimento de assistência social": "Atendimento social",
     "jurídic*": "Orientação jurídica",
     "viatura*": "Exposição de viaturas antigas e modernas",
     "exposição de viaturas": "Exposição de viaturas antigas e modernas",
 }
-# "Secretaria de Assistência Social" é quem pede, não o serviço pedido.
-_R_ORGAO_SOCIAL = re.compile(r"\b(?:secretaria|departamento|diretoria|coordenacao)\s+(?:\w+\s+){0,2}(?:de\s+)?assistencia\s+social\b")
-_R_ASSISTENCIA = re.compile(r"\bassistencia\s+social\b")
 
-PALAVRAS_CIN = (
-    "cin", "cins", "rg", "rgs", "carteiras", "carteira", "identidades", "atendimentos",
-    "agendamentos", "documentos", "emissões", "emissoes",
-)
 _R_IDENTIFICACAO = re.compile(r"\b(?:cin|rg|carteiras?\s+de\s+identidade|identidade|identificacao)\b")
-_R_UNIDADE_MOVEL = re.compile(r"\b(?:unidade\s+movel|onibus|carreta|van)\b")
+# Unidade móvel só quando inequívoca: "ônibus" sozinho pode ser o da excursão.
+_R_UNIDADE_MOVEL = re.compile(
+    r"\bunidade\s+movel\b|\b(?:onibus|carreta|van|caminhao|micro-?onibus|veiculo)\s+(?:da|de|do)\s+"
+    r"(?:identificacao|instituto|pcpr|policia|cin|rg|documentos?)\b"
+)
 # "quinta-feira": a "feira" do dia da semana não é o tipo Feira.
 _R_DIA_DA_SEMANA = re.compile(r"\b(segunda|terca|quarta|quinta|sexta)(\s*-?\s*)feira\b")
+# "eventos ao longo do ano (palestras, feiras, ações)": tipos listados no
+# plural descrevem uma parceria, não o evento pedido.
+_TIPOS_NO_PLURAL = r"(?:palestras|feiras|cursos|capacitacoes|oficinas|reunioes|visitas|solenidades|inauguracoes|formaturas)"
+_R_LISTA_DE_TIPOS = re.compile(_TIPOS_NO_PLURAL + r"(?:\s*(?:,|\be\b)\s*" + _TIPOS_NO_PLURAL + r")+")
+# "reunião de alinhamento do calendário do Paraná em Ação": o evento é a reunião.
+_R_REUNIAO_SOBRE = re.compile(r"\breunia\w*\s+(?:de|sobre|para)\b[^.;\n]{0,80}$")
 
 #: Campos que a memória guarda por remetente ao salvar (`core.aprendizado`):
 #: o que o próximo e-mail da mesma origem provavelmente repete.
@@ -108,11 +121,29 @@ def _sem_dia_da_semana(texto: str) -> str:
     return "".join(partes)
 
 
+def _sem_posicao(texto: str, regex: re.Pattern) -> str:
+    """Troca por espaços o que o regex (no texto dobrado) casar, mantendo as posições."""
+    saida = list(texto)
+    for m in regex.finditer(dobrar(texto)):
+        saida[m.start():m.end()] = " " * (m.end() - m.start())
+    return "".join(saida)
+
+
 def _tipo_do_evento(texto: str) -> Sugestao | None:
     tipos = list(TipoEvento.objects.filter(ativo=True).order_by("nome"))
     especificos = [t for t in tipos if t.nome.casefold() != TIPO_GENERICO.casefold()]
-    achado = cadastro_no_texto(_sem_dia_da_semana(texto), especificos, sinonimos=SINONIMOS_TIPO)
-    if achado is not None:
+    texto = _sem_posicao(_sem_dia_da_semana(texto), _R_LISTA_DE_TIPOS)
+    achados = cadastros_no_texto(texto, especificos, sinonimos=SINONIMOS_TIPO)
+    if achados:
+        achado = achados[0]
+        reuniao = next((a for a in achados if a.valor.nome.casefold() == "reunião"), None)
+        if reuniao is not None and reuniao is not achado:
+            # A reunião "sobre o Paraná em Ação" é reunião: o outro tipo é o assunto.
+            dobrado = dobrar(texto)
+            for m in re.finditer(re.escape(dobrar(achado.valor.nome)), dobrado):
+                if _R_REUNIAO_SOBRE.search(dobrado[max(0, m.start() - 120):m.start()]):
+                    achado = reuniao
+                    break
         return Sugestao.de_achado(achado)
     generico = next((t for t in tipos if t.nome.casefold() == TIPO_GENERICO.casefold()), None)
     if generico is None:
@@ -121,11 +152,8 @@ def _tipo_do_evento(texto: str) -> Sugestao | None:
 
 
 def _servicos(texto: str) -> Sugestao | None:
-    dobrado = dobrar(texto)
-    sinonimos = dict(SINONIMOS_SERVICO)
-    if _R_ASSISTENCIA.search(_R_ORGAO_SOCIAL.sub(" ", dobrado)):
-        sinonimos["assistência social"] = "Atendimento social"
-    achados = cadastros_no_texto(texto, Servico.objects.filter(ativo=True), sinonimos=sinonimos)
+    """Os serviços pedidos à PCPR: sem os negados, os de outro órgão e a CIN como tema."""
+    achados = cadastros_no_texto(texto_do_pedido(texto), Servico.objects.filter(ativo=True), sinonimos=SINONIMOS_SERVICO)
     if not achados:
         return None
     servicos = [a.valor for a in achados]
@@ -165,9 +193,7 @@ def sugestoes(mensagem: Mensagem, usuario=None) -> Sugestoes:
         s.por("data_inicio_evento", Sugestao(quando.inicio, exibir, confianca, quando.trecho))
         s.por("data_fim_evento", Sugestao(fim, f"{fim:%d/%m/%Y}", confianca, quando.trecho))
 
-    tipo = _tipo_do_evento(texto)
-    s.por("tipo_evento", tipo)
-    parana_em_acao = bool(tipo and tipo.confianca != "B" and tipo.valor.nome.casefold() == PARANA_EM_ACAO.casefold())
+    s.por("tipo_evento", _tipo_do_evento(texto))
 
     pessoa = quem_pede(mensagem)
     ddd = pessoa.telefone.detalhes.get("digitos", "")[:2] if pessoa and pessoa.telefone else ""
@@ -178,28 +204,44 @@ def sugestoes(mensagem: Mensagem, usuario=None) -> Sugestoes:
         s.por("estado", Sugestao(estado, estado.nome, "A", municipio.trecho))
         s.por("municipio", Sugestao.de_achado(municipio))
 
-    s.por("local_evento", Sugestao.de_achado(local_no_texto(mensagem.corpo)))
+    s.por("local_evento", Sugestao.de_achado(local_do_evento(mensagem.corpo, remetente=mensagem.remetente_nome)))
     sugerir_endereco(s, mensagem)
 
-    if parana_em_acao:
-        nome, unidade = SOLICITANTE_PARANA_EM_ACAO
-        motivo = "Tipo do evento Paraná em Ação: o solicitante é sempre o programa."
-        s.por("solicitante_nome", Sugestao(nome, nome, "A", motivo))
-        s.por("solicitante_cargo_unidade", Sugestao(unidade, unidade, "A", motivo))
+    # O "Paraná em Ação" não fixa mais o solicitante (o modelo do tipo é
+    # aplicado na tela, com um clique): aqui vai quem de fato pede.
+    solicitante = solicitante_do_pedido(mensagem)
+    if solicitante is not None:
+        s.por("solicitante_nome", Sugestao(solicitante.nome, solicitante.nome, "M", solicitante.trecho))
+        s.por("solicitante_cargo_unidade", Sugestao(solicitante.cargo, solicitante.cargo, "M", solicitante.trecho))
     elif pessoa is not None:
-        s.por("solicitante_nome", Sugestao(pessoa.nome, pessoa.nome, "M", pessoa.trecho))
+        nome = sem_tratamento(pessoa.nome)
+        s.por("solicitante_nome", Sugestao(nome, nome, "M", pessoa.trecho))
         cargo = pessoa.cargo_e_unidade[:255]
         s.por("solicitante_cargo_unidade", Sugestao(cargo, cargo, "M", pessoa.trecho))
-    if pessoa is not None and pessoa.telefone is not None:
-        s.por("contato", Sugestao.de_achado(pessoa.telefone))
+    telefone = (
+        (solicitante.telefone if solicitante else None)
+        or (pessoa.telefone if pessoa else None)
+        # WhatsApp: o remetente é o próprio número de quem pede.
+        or telefone_no_texto(mensagem.remetente_nome or "")
+    )
+    s.por("contato", Sugestao.de_achado(telefone))
 
     s.por("orgao_responsavel", _orgao(texto))
-    s.por("servicos", _servicos(texto))
-    s.por("quantidade_cin", Sugestao.de_achado(quantidade_no_texto(mensagem.corpo, PALAVRAS_CIN)))
+    # "O resto continua igual": sem serviço nem quantidade na resposta, valem os da conversa anterior.
+    servicos = _servicos(texto) or _servicos(mensagem.citado or "")
+    s.por("servicos", servicos)
+    dias = len(quando.dias) if quando is not None and quando.dias else (
+        ((quando.fim or quando.inicio) - quando.inicio).days + 1 if quando is not None else 1
+    )
+    quantidade = quantidade_de_cin(texto_do_pedido(mensagem.corpo), dias=dias)
+    if quantidade is None and servicos is not None and (mensagem.citado or "").strip():
+        quantidade = quantidade_de_cin(texto_do_pedido(mensagem.citado), dias=dias)
+    s.por("quantidade_cin", Sugestao.de_achado(quantidade))
 
-    movel = _R_UNIDADE_MOVEL.search(dobrar(texto))
+    movel = _R_UNIDADE_MOVEL.search(dobrar(texto_do_pedido(texto)))
     if movel:
-        trecho = texto[max(0, movel.start() - 60):movel.end() + 60].strip()
+        pedido = desquebrar(texto)
+        trecho = pedido[max(0, movel.start() - 60):movel.end() + 60].strip()
         s.por("unidade_movel", Sugestao(True, "Sim", "B", trecho))
 
     s.por("descricao_complementar", _descricao(mensagem))

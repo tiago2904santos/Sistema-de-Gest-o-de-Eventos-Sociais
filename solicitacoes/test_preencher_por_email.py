@@ -122,8 +122,8 @@ class LerEmailTests(BasePreencherPorEmail):
         self.assertEqual(campos["data_fim_evento"], "2026-10-21")
         self.assertEqual(campos["estado"], str(self.parana.pk))
         self.assertEqual(campos["municipio"], str(self.ponta_grossa.pk))
-        self.assertEqual(campos["local_evento"], "Ginásio de Esportes Oscar Pereira, Rua Carlos Cavalcanti, 500")
-        # O endereço também vai para o campo próprio; o da assinatura, não.
+        # O local é o nome do lugar; o endereço vai para o campo próprio (o da assinatura, não).
+        self.assertEqual(campos["local_evento"], "Ginásio de Esportes Oscar Pereira")
         self.assertEqual(campos["endereco"], "Rua Carlos Cavalcanti, 500")
         self.assertNotIn("cep", campos)
         self.assertEqual(campos["solicitante_nome"], "Maria Aparecida Souza")
@@ -185,15 +185,17 @@ class LerEmailTests(BasePreencherPorEmail):
         self.assertEqual(campos["data_inicio_evento"]["valor"], "2026-10-20")
         self.assertEqual(campos["municipio"]["valor"], str(self.ponta_grossa.pk))
 
-    def test_texto_colado_com_parana_em_acao_fixa_o_solicitante(self):
+    def test_texto_colado_com_parana_em_acao_sugere_quem_pede(self):
         resposta = self.ler(texto=TEXTO_PARANA_EM_ACAO)
         self.assertEqual(resposta.status_code, 200)
         dados = resposta.json()
         campos = dados["campos"]
         self.assertEqual(campos["tipo_evento"]["valor"], str(self.parana_em_acao.pk))
         self.assertEqual(campos["tipo_evento"]["confianca"], "M")
-        self.assertEqual(campos["solicitante_nome"]["valor"], "Paraná em Ação")
-        self.assertEqual(campos["solicitante_cargo_unidade"]["valor"], "SEJU")
+        # O modelo do tipo (Paraná em Ação / SEJU) é aplicado na tela com um
+        # clique; a leitura sugere quem de fato assina o pedido.
+        self.assertEqual(campos["solicitante_nome"]["valor"], "João Pereira")
+        self.assertEqual(campos["solicitante_cargo_unidade"]["valor"], "Assessor de Eventos / Prefeitura de Toledo")
         self.assertEqual(campos["municipio"]["valor"], str(self.toledo.pk))
         self.assertEqual(campos["data_inicio_evento"]["valor"], "2026-10-17")
         self.assertEqual(campos["data_solicitacao"]["valor"], "2026-09-24")
