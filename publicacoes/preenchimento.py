@@ -401,9 +401,36 @@ def _fonte(mensagem: Mensagem, pessoa, leitor: leitura_unidades.Leitor) -> Suges
 # ---------------------------------------------------------------------------
 
 
+def _chegada(mensagem: Mensagem):
+    """Quando a pauta chegou à assessoria.
+
+    E-mail encaminhado: o encaminhamento que chegou (`recebido_em`), não o
+    original. Conversa do WhatsApp: a primeira fala depois da última pausa
+    longa (mais de 12 horas) — o "obrigada" de três dias antes é outra conversa.
+    """
+    falas = [f["enviado_em"] for f in (mensagem.extras or {}).get("falas") or [] if f.get("enviado_em")]
+    if falas:
+        inicio = anterior = None
+        for quando in falas:
+            if anterior is None or (quando - anterior).total_seconds() > 12 * 3600:
+                inicio = quando
+            anterior = quando
+        return inicio
+    return mensagem.recebido_em or mensagem.enviado_em
+
+
+def _data_da_pauta(mensagem: Mensagem) -> Sugestao | None:
+    chegada = _chegada(mensagem)
+    if chegada is None:
+        return None
+    if timezone.is_aware(chegada):
+        chegada = timezone.localtime(chegada)
+    return Sugestao(chegada.date(), f"{chegada:%d/%m/%Y}", "A", f"Chegou em {chegada:%d/%m/%Y %H:%M}")
+
+
 def _inicio_da_pauta(mensagem: Mensagem) -> Sugestao | None:
-    """A hora do e-mail: é quando a pauta chegou à assessoria."""
-    enviado = mensagem.enviado_em
+    """A hora em que a pauta chegou à assessoria (ver `_chegada`)."""
+    enviado = _chegada(mensagem)
     if enviado is None:
         return None
     if timezone.is_aware(enviado):
@@ -427,7 +454,7 @@ def sugestoes(mensagem: Mensagem, usuario=None) -> Sugestoes:
     s = Sugestoes()
     pessoa = quem_pede(mensagem)
     leitor = _leitor()
-    s.por("data", data_do_email(mensagem))
+    s.por("data", _data_da_pauta(mensagem))
     s.por("titulo", _titulo(mensagem, leitor))
     s.por("jornalista", Sugestao.de_achado(integrante_do_usuario(usuario, Responsavel.objects.order_by("nome"))))
     _unidade(s, mensagem, leitor)

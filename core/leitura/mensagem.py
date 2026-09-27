@@ -99,6 +99,9 @@ class Mensagem:
     #: encaminhamento, `enviado_em` é o do pedido original e este é o do
     #: "ENC:" que trouxe o e-mail até a equipe.
     recebido_em: datetime | None = None
+    #: O "Cc" da mensagem ("Nome <email>, ..."): às vezes é ali que está quem
+    #: pede de verdade (a repórter em cópia no e-mail da chefia).
+    copia: str = ""
     corpo: str = ""
     assinatura: str = ""
     anexos: list[tuple[str, bytes]] = field(default_factory=list)
@@ -245,6 +248,7 @@ def _ler_txt(dados: bytes, origem: str) -> Mensagem:
 class _Bruto:
     assunto: str = ""
     remetente: tuple[str, str] = ("", "")
+    copia: str = ""
     enviado_em: datetime | None = None
     texto: str = ""
     anexos: list[tuple[str, bytes]] = field(default_factory=list)
@@ -285,8 +289,11 @@ def _montar(bruto: _Bruto, origem: str, profundidade: int = 0) -> Mensagem:
             return mensagem
 
     remetente, assunto, enviado_em = bruto.remetente, bruto.assunto, bruto.enviado_em
+    copia = bruto.copia
     encaminhada_por, anexos_citados = "", list(bruto.anexos_citados)
     for nivel in niveis:
+        if nivel.get("cc"):
+            copia = nivel["cc"]
         novo = _remetente(nivel.get("de", ""))
         if any(novo):
             if any(remetente):
@@ -306,6 +313,7 @@ def _montar(bruto: _Bruto, origem: str, profundidade: int = 0) -> Mensagem:
         remetente_email=remetente[1],
         enviado_em=_com_fuso(enviado_em),
         recebido_em=_com_fuso(bruto.enviado_em) or _com_fuso(enviado_em),
+        copia=" ".join((copia or "").split())[:500],
         corpo=_arrumar_linhas(corpo),
         assinatura=_arrumar_linhas(assinatura),
         anexos=list(bruto.anexos),
@@ -899,6 +907,7 @@ def _bruto_de_email(email, profundidade: int) -> _Bruto:
     bruto = _Bruto(
         assunto=_cabecalho(email, "subject"),
         remetente=_remetente(_cabecalho(email, "from")),
+        copia=_cabecalho(email, "cc"),
         message_id=_cabecalho(email, "message-id"),
     )
     data = _cabecalho(email, "date")
@@ -1617,10 +1626,12 @@ def _ler_whatsapp(texto: str) -> Mensagem | None:
             falas[-1][3].append(linha)
     corpo = []
     uteis = []
+    registro = []
     for nome_fala, data_fala, hora_fala, partes in falas:
         fala = "\n".join(partes).strip()
         if fala and not _R_WHATSAPP_SISTEMA.search(dobrar(fala)):
             corpo.append(fala)
+            registro.append({"nome": nome_fala, "enviado_em": _com_fuso(data_hora_de_cabecalho(f"{data_fala} {hora_fala}"))})
             if not _R_WHATSAPP_SO_CONVERSA.match(dobrar(fala)):
                 uteis.append((nome_fala, data_fala, hora_fala))
     nome, data, hora, _ = falas[0]
@@ -1637,6 +1648,9 @@ def _ler_whatsapp(texto: str) -> Mensagem | None:
         remetente_nome=nome,
         enviado_em=_com_fuso(enviado_em),
         pedido_em=_com_fuso(pedido_em) if pedido_em else None,
+        # Quem falou e quando, fala a fala (sem o texto): para saber onde
+        # começou o assunto numa conversa que vem de dias antes.
+        extras={"falas": registro},
         corpo=_arrumar_linhas("\n\n".join(corpo)),
         origem="whatsapp",
     )
