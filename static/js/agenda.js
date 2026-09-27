@@ -61,7 +61,8 @@
     var p = ev.extendedProps || {};
     if (fontesAtivas().indexOf(p.fonte) === -1) return false;
     if (!situacaoLigada(p.fonte + ":" + p.situacao_slug, p.encerrado)) return false;
-    if (pref.municipio && p.municipio !== pref.municipio) return false;
+    // Todos os municípios por onde o compromisso passa (m132), não só o primeiro.
+    if (pref.municipio && (p.municipios || [p.municipio]).indexOf(pref.municipio) === -1) return false;
     if (pref.tipo && p.tipo !== pref.tipo) return false;
     if (chkMeus && chkMeus.checked && !p.meu) return false;
     var q = (busca && busca.value || "").trim().toLowerCase();
@@ -82,7 +83,7 @@
       var chave = p.fonte + ":" + p.situacao_slug;
       var s = situacoes[chave] || (situacoes[chave] = { chave: chave, fonte: p.fonte, rotulo: p.situacao, encerrado: !!p.encerrado, n: 0 });
       s.n += 1;
-      if (p.municipio) municipios[p.municipio] = (municipios[p.municipio] || 0) + 1;
+      (p.municipios || [p.municipio]).forEach(function (m) { if (m) municipios[m] = (municipios[m] || 0) + 1; });
       if (p.tipo) tipos[p.tipo] = (tipos[p.tipo] || 0) + 1;
     });
     document.querySelectorAll("[data-conta]").forEach(function (n) {
@@ -170,7 +171,10 @@
     navLinks: true,
     dayMaxEvents: 4,
     eventDisplay: "block",
-    displayEventTime: false,
+    // O que tem hora (saída do roteiro, palestra, pauta) mostra a hora; o que
+    // é dia inteiro leva o horário no título, montado no servidor (m132).
+    displayEventTime: true,
+    eventTimeFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
     nowIndicator: true,
     events: carregar,
     eventClick: function (arg) { arg.jsEvent.preventDefault(); abrir(arg.event); },

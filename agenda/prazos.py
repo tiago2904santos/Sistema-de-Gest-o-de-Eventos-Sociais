@@ -186,13 +186,15 @@ def _pautas(usuario, inicio, fim) -> list[dict]:
         hora = f"{p.inicio_pauta:%H:%M}" if p.inicio_pauta else ""
         saida.append(_prazo(
             fonte="pauta", pk=p.pk,
-            titulo=(f"{hora} " if hora else "") + f"Pauta — {p.titulo}",
+            titulo=f"Pauta — {p.titulo}",
             data=p.data,
             url=reverse("publicacoes:editar", args=[p.pk]),
             encerrado=p.status == StatusPublicacao.CANCELADA,
             # Pauta é compromisso, não prazo: a situação é a do módulo.
             situacao=(p.get_status_display(), p.status.lower()),
             tipo="Pauta",
+            # Com horário, entra na grade das visões Semana e Dia (m132).
+            hora_inicio=p.inicio_pauta,
             meu=p.criado_por_id == getattr(usuario, "pk", None),
             detalhes=[
                 ("Jornalista", str(p.jornalista) if p.jornalista_id else ""),

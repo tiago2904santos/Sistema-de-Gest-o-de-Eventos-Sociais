@@ -274,7 +274,12 @@ def _viagem(usuario, pk) -> dict:
         url_abrir=reverse("viagens_viagem:painel", args=[v.pk]),
     )
     d["selo_tom"] = tom
+    from .fontes import _destinos_da_viagem, _municipios_extras
+
+    destinos = _destinos_da_viagem(v, _municipios_extras([v]))
     d["campos"] = _campos([
+        # Todos os destinos da viagem (m132), não só o principal do título.
+        ("Destinos", ", ".join(destinos) if len(destinos) > 1 else ""),
         ("Motivo", (v.motivo or "").strip()),
         ("Descrição", (v.descricao or "").strip()),
         ("Unidade responsável", str(v.unidade_responsavel) if v.unidade_responsavel_id else ""),

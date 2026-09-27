@@ -107,7 +107,9 @@ class FontesDePrazo(BasePrazos):
             titulo="Operação na região", inicio_pauta=time(8, 30),
         )
         (ev,) = [e for e in self.eventos(fontes="pauta") if e["id"] == f"pauta-{p.pk}"]
-        self.assertIn("08:30", ev["title"])
+        # Com horário, a pauta entra com hora (m132): a hora vai no start, não no título.
+        self.assertFalse(ev["allDay"])
+        self.assertTrue(ev["start"].endswith("T08:30"))
         self.assertIn("Operação na região", ev["title"])
         self.assertEqual(ev["extendedProps"]["situacao"], "Pendente")
         self.assertEqual(ev["extendedProps"]["url"], reverse("publicacoes:editar", args=[p.pk]))

@@ -107,7 +107,8 @@
 /* Compromissos: faixa sólida, texto claro, cor da fonte. */
 .fc .fc-event { border: 0; border-radius: 4px; padding: 2px 7px; font-size: .78rem; line-height: 1.35; cursor: pointer; box-shadow: none; }
 .fc .fc-event .fc-event-title, .fc .fc-event .fc-event-main { font-weight: 600; }
-.fc .fc-daygrid-block-event .fc-event-time { display: none; }
+/* A hora de quem tem hora (m132), antes do título, sem roubar a linha inteira. */
+.fc .fc-daygrid-block-event .fc-event-time { display: inline; font-weight: 500; margin-right: 4px; opacity: .85; }
 .fc .ag-viagem { --fc-event-bg-color: var(--ag-viagem); --fc-event-border-color: var(--ag-viagem); --fc-event-text-color: var(--ag-viagem-t); }
 .fc .ag-solicitacao { --fc-event-bg-color: var(--ag-solicitacao); --fc-event-border-color: var(--ag-solicitacao); --fc-event-text-color: var(--ag-solicitacao-t); }
 .fc .ag-coffee { --fc-event-bg-color: var(--ag-coffee); --fc-event-border-color: var(--ag-coffee); --fc-event-text-color: var(--ag-coffee-t); }
