@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("documentos", "0011_versao_editada_e_modelos_de_texto"),
+        ("documentos", "0012_paragrafo_extra"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
