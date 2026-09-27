@@ -462,6 +462,9 @@ class DiarioBordoTrecho(OrigemLegado):
     km_inicial = models.PositiveIntegerField(null=True, blank=True)
     km_final = models.PositiveIntegerField(null=True, blank=True)
     abastecimento = models.BooleanField(null=True, blank=True)
+    # A versão da linha no editor documental (m125): duas pessoas no mesmo
+    # trecho não se sobrescrevem sem aviso.
+    atualizado_em = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['diario', 'ordem', 'pk']

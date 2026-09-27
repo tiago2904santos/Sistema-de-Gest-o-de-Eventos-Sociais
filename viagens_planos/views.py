@@ -24,7 +24,7 @@ from core.listagens import ITENS_POR_PAGINA
 from core.retorno import com_next, daqui, next_valido, voltar_para
 from documentos.services.exceptions import DocumentError
 from documentos.services.responses import build_inline_pdf_response
-from documentos.services.types import DocumentoFormato
+from documentos.services.types import DocumentoFormato, DocumentoTipo
 from viagens_cadastros.permissions import acesso_ao_modulo, pode_editar_cadastros
 from viagens_oficios.views import exigir_operador, resposta_documento
 from viagens_viagem.services import viagem_do_request
@@ -48,6 +48,7 @@ from .services import (
     eventos_para_cards,
     excluir_plano,
     gerar_plano_documento,
+    referencia_do_plano,
     marcar_plano_gerado,
     preset_padrao,
     presets_atividades,
@@ -287,8 +288,11 @@ def _contexto_atividades(plano, request):
 
 def _contexto_documentos(plano, request, pendencias):
     from documentos.editor.pagina import cartao
+    from documentos.services.emissao import resumo_da_via, via_emitida
 
     disponivel = not pendencias and not plano.cancelado
+    # A via emitida (m113): "Versão 1 emitida em dd/mm" e "Emitir nova versão".
+    via = resumo_da_via(via_emitida(DocumentoTipo.PLANO_TRABALHO, reference=referencia_do_plano(plano), plano_trabalho_id=plano.pk)) if plano.pk else resumo_da_via(None)
     return {
         "pendencias": pendencias,
         "mostrar_pendencias": bool(pendencias) and request.GET.get("pendencias") == "1",
@@ -301,6 +305,8 @@ def _contexto_documentos(plano, request, pendencias):
             "url_docx": reverse("viagens_planos:gerar", args=[plano.pk, "docx"]),
             "url_anexar": "",
             "assinado": False,
+            "versao": via["versao"],
+            "emitida_em": via["emitida_em"],
             # O corpo do cartão é o editor do documento (a folha A4 editável).
             "embutido": cartao("plano_trabalho", plano.pk, f"Plano de Trabalho {plano.numero_formatado}"),
         },
@@ -541,7 +547,7 @@ def gerar(request, pk, formato):
         messages.error(request, bloqueio)
         return redirect(url_editar + ("?pendencias=1" if not plano.cancelado else ""))
     try:
-        doc = gerar_plano_documento(plano, DocumentoFormato(formato))
+        doc = gerar_plano_documento(plano, DocumentoFormato(formato), nova_versao=request.POST.get("nova_versao") == "1")
     except (ValidationError, DocumentError) as exc:
         messages.error(request, "; ".join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
         return redirect(url_editar)

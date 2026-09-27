@@ -60,6 +60,7 @@ def contexto_da_pagina(request, vinculo, objeto) -> dict:
             "api": {especie: vinculo.url(especie, objeto, "CHAVE") for especie in ("campo", "bloco", "quebra", "textos", "paragrafo")},
             # Campos com textos prontos para inserir (m118).
             "textos_prontos": " ".join(vinculo.campos_com_textos(objeto)) if pode_editar else "",
+            "url_presenca": vinculo.url("presenca", objeto),
             "principais": " ".join(vinculo.principais),
             "versao": vinculo.versao(objeto),
             "pode_editar": pode_editar,

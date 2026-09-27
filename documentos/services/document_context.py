@@ -379,24 +379,50 @@ def contexto_do_diario_bordo(payload, *, modo: str = "pdf", campos_editaveis=Non
     }
 
 
+ROTULOS_DOS_TIPOS = {
+    "oficio": "Ofício", "justificativa": "Justificativa de prazo", "termo_autorizacao": "Termo de autorização",
+    "ordem_servico": "Ordem de serviço", "plano_trabalho": "Plano de trabalho",
+    "relatorio_tecnico": "Relatório técnico", "diario_bordo": "Diário de bordo",
+}
+
+
+def metadados_do_documento(tipo, contexto: dict) -> dict:
+    """As propriedades do PDF (m126): autor institucional (a unidade e o
+    órgão do cabeçalho), assunto e palavras-chave. Vão em `<meta>` na folha
+    e o motor as copia para o arquivo."""
+    institucional = contexto.get("institucional") or {}
+    unidade = (institucional.get("unidade_cabecalho") or "").strip()
+    orgao = (institucional.get("nome_orgao") or "").strip() or "POLÍCIA CIVIL DO PARANÁ"
+    rotulo = ROTULOS_DOS_TIPOS.get(str(getattr(tipo, "value", tipo)), "Documento")
+    autor = " – ".join(p for p in (unidade, orgao) if p)
+    return {
+        "autor": autor,
+        "assunto": f"{rotulo} – {autor}" if autor else rotulo,
+        "palavras_chave": ", ".join(p for p in (rotulo, unidade, orgao, "Polícia Civil do Paraná") if p),
+    }
+
+
 def contexto_de_payload(tipo, payload, docxtpl_context, *, modo: str = "pdf", **opcoes) -> dict:
     """Contexto a partir dos insumos que a façade já tem em mãos (sem nova
     consulta ao banco): o payload canônico e os textos calculados."""
     if tipo == DocumentoTipo.OFICIO:
-        return contexto_do_oficio(modo=modo, doc=dict(payload), tx=dict(docxtpl_context or {}), **opcoes)
-    if tipo == DocumentoTipo.TERMO_AUTORIZACAO:
-        return contexto_do_termo(dict(payload), docxtpl_context, modo=modo, **opcoes)
-    if tipo == DocumentoTipo.JUSTIFICATIVA:
-        return contexto_da_justificativa(dict(payload), docxtpl_context, modo=modo, **opcoes)
-    if tipo == DocumentoTipo.ORDEM_SERVICO:
-        return contexto_da_ordem_servico(dict(payload), docxtpl_context, modo=modo, **opcoes)
-    if tipo == DocumentoTipo.PLANO_TRABALHO:
-        return contexto_do_plano_trabalho(dict(payload), docxtpl_context, modo=modo, **opcoes)
-    if tipo == DocumentoTipo.RELATORIO_TECNICO:
-        return contexto_do_relatorio_tecnico(dict(payload), docxtpl_context, modo=modo, **opcoes)
-    if tipo == DocumentoTipo.DIARIO_BORDO:
-        return contexto_do_diario_bordo(dict(payload), modo=modo, **opcoes)
-    raise NotImplementedError(f"Contexto HTML ainda não existe para {getattr(tipo, 'value', tipo)}")
+        contexto = contexto_do_oficio(modo=modo, doc=dict(payload), tx=dict(docxtpl_context or {}), **opcoes)
+    elif tipo == DocumentoTipo.TERMO_AUTORIZACAO:
+        contexto = contexto_do_termo(dict(payload), docxtpl_context, modo=modo, **opcoes)
+    elif tipo == DocumentoTipo.JUSTIFICATIVA:
+        contexto = contexto_da_justificativa(dict(payload), docxtpl_context, modo=modo, **opcoes)
+    elif tipo == DocumentoTipo.ORDEM_SERVICO:
+        contexto = contexto_da_ordem_servico(dict(payload), docxtpl_context, modo=modo, **opcoes)
+    elif tipo == DocumentoTipo.PLANO_TRABALHO:
+        contexto = contexto_do_plano_trabalho(dict(payload), docxtpl_context, modo=modo, **opcoes)
+    elif tipo == DocumentoTipo.RELATORIO_TECNICO:
+        contexto = contexto_do_relatorio_tecnico(dict(payload), docxtpl_context, modo=modo, **opcoes)
+    elif tipo == DocumentoTipo.DIARIO_BORDO:
+        contexto = contexto_do_diario_bordo(dict(payload), modo=modo, **opcoes)
+    else:
+        raise NotImplementedError(f"Contexto HTML ainda não existe para {getattr(tipo, 'value', tipo)}")
+    contexto.setdefault("metadados", metadados_do_documento(tipo, contexto))
+    return contexto
 
 
 def contexto_do_documento(tipo, objeto, **opcoes) -> dict:

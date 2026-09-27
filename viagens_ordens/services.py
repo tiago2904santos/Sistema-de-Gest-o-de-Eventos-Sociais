@@ -57,20 +57,31 @@ def resumo_da_ordem(ordem: OrdemServico) -> dict:
     }
 
 
-def gerar_ordem_servico(ordem: OrdemServico, formato: DocumentoFormato, *, usar_assinado: bool = True):
-    """`usar_assinado=False` pede o arquivo original mesmo com PDF assinado anexado."""
+def gerar_ordem_servico(ordem: OrdemServico, formato: DocumentoFormato, *, usar_assinado: bool = True, nova_versao: bool = False):
+    """`usar_assinado=False` pede o arquivo original mesmo com PDF assinado anexado.
+
+    O PDF é a via emitida (m113): a primeira geração fica guardada e volta nos
+    pedidos seguintes; `nova_versao=True` refaz e numera a versão seguinte.
+    """
     if ordem.cancelado:
         raise ValidationError("Reative a Ordem de Serviço antes de emitir documentos.")
     from documentos.services.document_blocks import conteudo_documental
+    from documentos.services.emissao import emitir
 
-    payload = {
-        "institucional": build_configuracao_context(), "ordem_servico": resumo_da_ordem(ordem),
-        # Os textos do modelo reescritos no editor: entram no PDF e na chave do cache.
-        "documento": conteudo_documental(DocumentoTipo.ORDEM_SERVICO, ordem),
-    }
-    return DocumentoFacade().gerar(
-        tipo=DocumentoTipo.ORDEM_SERVICO, formato=formato, payload=payload,
-        reference=referencia_da_ordem(ordem), docxtpl_context=build_os_docxtpl_context(ordem),
-        docx_template_path=_template_ordem_servico(ordem), ordem_servico_id=ordem.pk,
-        usar_assinado=usar_assinado,
-    )
+    referencia = referencia_da_ordem(ordem)
+
+    def gerar():
+        payload = {
+            "institucional": build_configuracao_context(), "ordem_servico": resumo_da_ordem(ordem),
+            # Os textos do modelo reescritos no editor: entram no PDF e na chave do cache.
+            "documento": conteudo_documental(DocumentoTipo.ORDEM_SERVICO, ordem),
+        }
+        return DocumentoFacade().gerar(
+            tipo=DocumentoTipo.ORDEM_SERVICO, formato=formato, payload=payload,
+            reference=referencia, docxtpl_context=build_os_docxtpl_context(ordem),
+            docx_template_path=_template_ordem_servico(ordem), ordem_servico_id=ordem.pk,
+            usar_assinado=usar_assinado,
+        )
+
+    return emitir(DocumentoTipo.ORDEM_SERVICO, formato, gerar, reference=referencia, usar_assinado=usar_assinado,
+                  nova_versao=nova_versao, ordem_servico_id=ordem.pk)

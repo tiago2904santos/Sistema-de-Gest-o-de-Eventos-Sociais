@@ -1464,13 +1464,14 @@ class FonteTrecho(FonteBase):
         }
 
     def versao(self, trecho):
-        return ""
+        # A linha tem versão própria (m125): o conflito é da linha, não do diário.
+        return _versao(trecho)
 
     def gravar(self, form, nomes, trecho):
         from viagens_prestacoes.models import DiarioBordo
 
         objeto = _gravar_recorte(form, nomes)
-        # A linha não tem versão; a do diário acompanha.
+        # A versão do diário acompanha a da linha.
         DiarioBordo.objects.filter(pk=trecho.diario_id).update(atualizado_em=_agora())
         return objeto
 

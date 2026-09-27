@@ -22,7 +22,7 @@ from documentos.services.exceptions import DocumentError
 from documentos.services.types import DocumentoFormato
 from viagens_cadastros.permissions import acesso_ao_modulo, pode_editar_cadastros
 from viagens_oficios.busca_oficios import buscar_oficios as buscar_oficios_para_picker, opcao_do_oficio
-from viagens_oficios.views import exigir_operador, resposta_documento, resposta_lote
+from viagens_oficios.views import exigir_operador, nova_versao_pedida, resposta_documento, resposta_lote
 
 from . import abas as abas_de_termo
 from .forms import TermoAutorizacaoForm
@@ -335,10 +335,11 @@ def gerar(request, pk, formato, servidor_id=None, viatura=False, todos=False):
             if fmt == DocumentoFormato.PDF and request.resolver_match.url_name == "todos_pdf":
                 return resposta_pdf_consolidado(documentos, f"termo-{termo.pk}-todos.pdf")
             return resposta_lote(documentos)
+        nova_versao = nova_versao_pedida(request)
         if viatura:
-            return resposta_documento(request, gerar_termo_cadastro_um(termo, None, fmt, forcar_viatura=True))
+            return resposta_documento(request, gerar_termo_cadastro_um(termo, None, fmt, forcar_viatura=True, nova_versao=nova_versao))
         servidor = get_object_or_404(termo.servidores_efetivos(), pk=servidor_id) if servidor_id else None
-        return resposta_documento(request, gerar_termo_cadastro_um(termo, servidor, fmt))
+        return resposta_documento(request, gerar_termo_cadastro_um(termo, servidor, fmt, nova_versao=nova_versao))
     except (ValidationError, DocumentError) as exc:
         messages.error(request, "; ".join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
         return redirect("viagens_termos:editar", pk=pk)

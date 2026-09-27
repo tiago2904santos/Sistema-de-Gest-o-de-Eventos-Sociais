@@ -173,6 +173,34 @@ def _tabelas_apertadas(documento) -> list[str]:
     return achados
 
 
+#: O formato de arquivo do PDF (m126): PDF/A-2a, o de guarda de longo prazo
+#: dos documentos públicos, com marcação de estrutura (nível "a") para
+#: leitores de tela. Fontes embutidas e metadados vão junto. `""` desliga.
+VARIANTE_PDF_PADRAO = "pdf/a-2a"
+
+
+def opcoes_do_pdf() -> dict:
+    """As opções do `write_pdf`: a variante PDF/A e a marcação de acessibilidade."""
+    variante = getattr(settings, "DOCUMENTOS_PDF_VARIANTE", VARIANTE_PDF_PADRAO)
+    opcoes = {"pdf_tags": True}
+    if variante:
+        opcoes["pdf_variant"] = variante
+    return opcoes
+
+
+def _escrever_pdf(documento) -> bytes:
+    """`write_pdf` com as opções do sistema; um motor que não conheça a
+    variante pedida (WeasyPrint antigo) ainda entrega o PDF comum, com aviso."""
+    opcoes = opcoes_do_pdf()
+    try:
+        return documento.write_pdf(**opcoes)
+    except (TypeError, ValueError, KeyError) as exc:
+        if not opcoes.get("pdf_variant"):
+            raise
+        logger.warning("Variante %s indisponível no motor de PDF (%s); gerando PDF comum.", opcoes["pdf_variant"], exc)
+        return documento.write_pdf()
+
+
 def _documento_paginado(html: str, tipo):
     """O documento do WeasyPrint já paginado, e o degrau de compactação com
     que ficou (0 = letra e espaçamentos do modelo). É o miolo de `render_pdf`
@@ -205,7 +233,7 @@ def render_pdf(html: str, *, tipo=None) -> bytes:
     """PDF em memória a partir do HTML já renderizado (modo `pdf`)."""
     with measure_step("render_pdf_html", {"tipo": getattr(tipo, "value", tipo) or "—"}):
         documento, _ = _documento_paginado(html, tipo)
-        return documento.write_pdf()
+        return _escrever_pdf(documento)
 
 
 def medir_paginas(html: str, *, tipo=None) -> dict:

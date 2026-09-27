@@ -16,14 +16,18 @@
 {% endcomment %}
 <details class="ofc-doc{% if aninhado %} ofc-doc--aninhado{% endif %}" data-ofc-doc{% if d.embutido %} id="{{ d.embutido.id }}"{% endif %}{% if aberto %} open{% endif %}>
   <summary class="ofc-doc__cabeca">
-    <span class="ofc-doc__titulo">{{ d.titulo }}{% if d.assinado %} <span class="st st--atendido">Assinado</span>{% endif %}</span>
+    <span class="ofc-doc__titulo">{{ d.titulo }}{% if d.assinado %} <span class="st st--atendido">Assinado</span>{% endif %}{% if d.versao %} <span class="st st--aguardando" title="A via emitida: o PDF que saiu do sistema e se reimprime igual">Versão {{ d.versao }} emitida em {{ d.emitida_em|date:"d/m/Y" }}</span>{% endif %}</span>
     {% if d.disponivel %}
       <span class="dd of-menu ofc-doc__acoes" data-menu>
         <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações de {{ d.titulo }}" title="Visualizar e baixar">{% include "components/icon.html" with nome="document" %}</button>
         <span class="dd__c of-menu__corpo" hidden data-menu-corpo id="{{ menu_id }}">
           {% if d.disponivel %}
           <a class="dd__i of-item" href="{{ d.src }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar documento</b><small>Abrir o PDF no navegador</small></span></a>
-          <button type="submit" class="dd__i of-item" formaction="{{ d.url_pdf }}" formnovalidate>{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>{% if d.servidor %}Documento pronto para assinatura{% else %}Documento pronto para impressão{% endif %}</small></span></button>
+          <button type="submit" class="dd__i of-item" formaction="{{ d.url_pdf }}" formnovalidate>{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>{% if d.versao %}A via emitida (versão {{ d.versao }}){% elif d.servidor %}Documento pronto para assinatura{% else %}Documento pronto para impressão{% endif %}</small></span></button>
+          {% if d.versao %}
+          {# A via emitida não muda com os dados (m113): mudar o que saiu é emitir a versão seguinte. #}
+          <button type="submit" class="dd__i of-item" formaction="{{ d.url_pdf }}" name="nova_versao" value="1" formnovalidate>{% include "components/icon.html" with nome="redo" %}<span><b>Emitir nova versão</b><small>Refazer o PDF com os dados de hoje (versão {{ d.versao|add:1 }})</small></span></button>
+          {% endif %}
           {% endif %}
           {% if d.url_anexar %}
             <a class="dd__i of-item" href="{{ d.url_anexar }}" data-anexar-assinado data-anexar-nome="{{ d.titulo }}"{% if d.assinado %} data-anexar-atual="1"{% endif %}>{% include "components/icon.html" with nome="upload" %}<span><b>{% if d.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}</b><small>Enviar o PDF depois da assinatura</small></span></a>

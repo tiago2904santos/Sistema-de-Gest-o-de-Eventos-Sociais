@@ -36,7 +36,10 @@ def render_pdf_bytes_weasyprint(
     # Não habilitar dicas de apresentação vindas do HTML. Além de os nossos
     # templates não dependerem disso, essa opção reduz a superfície de ataque
     # ao renderizar conteúdo preenchido por usuários.
+    from documentos.services.pdf_renderer import opcoes_do_pdf
+
     return HTML(string=html_string, base_url=base_url).write_pdf(
         stylesheets=stylesheets,
         presentational_hints=False,
+        **opcoes_do_pdf(),
     )
