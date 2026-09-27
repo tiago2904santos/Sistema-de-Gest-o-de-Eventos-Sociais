@@ -29,6 +29,7 @@
   var selMunicipio = $("ag-municipio");
   var selTipo = $("ag-tipo");
   var selPessoa = $("ag-pessoa"); // filtro por pessoa escalada (m134)
+  var linkPauta = $("ag-pauta");  // "Baixar pauta" (m136)
   var chkMeus = $("ag-meus");
   var busca = $("ag-busca");
   var vazio = $("ag-vazio");
@@ -160,6 +161,7 @@
     var visiveis = lista.filter(passa);
     vazio.hidden = visiveis.length > 0;
     ok(visiveis);
+    atualizarPauta();
   }
 
   // ---- o calendário (sem a barra dele: a nossa está no template) ----------
@@ -197,8 +199,25 @@
         b.setAttribute("aria-pressed", b.dataset.view === info.view.type ? "true" : "false");
       });
       pref.view = info.view.type; gravar();
+      atualizarPauta(info);
     }
   });
+  // "Baixar pauta" (m136): o PDF do período visível, com as fontes e o "minha
+  // agenda" atuais. O fim do FullCalendar é exclusivo; a pauta quer o último dia.
+  function isoLocal(d) {
+    var m = d.getMonth() + 1, dia = d.getDate();
+    return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (dia < 10 ? "0" : "") + dia;
+  }
+  function atualizarPauta(info) {
+    var view = (info && info.view) || cal.view;
+    if (!linkPauta || !view || !view.currentStart) return;
+    var fim = new Date(view.currentEnd.getTime() - 86400000);
+    var params = new URLSearchParams({ inicio: isoLocal(view.currentStart), fim: isoLocal(fim) });
+    var fontes = fontesAtivas();
+    if (fontes.length && fontes.length < caixas.length) params.set("fontes", fontes.join(","));
+    if (chkMeus && chkMeus.checked) params.set("meus", "1");
+    linkPauta.href = linkPauta.dataset.base + "?" + params.toString();
+  }
   cal.render();
 
   // ---- cabeçalho próprio ------------------------------------------------

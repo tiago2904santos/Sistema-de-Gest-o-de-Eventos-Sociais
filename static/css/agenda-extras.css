@@ -20,6 +20,9 @@
 .ag-assinar__ok { font-size: .82rem; color: var(--ok-t); font-weight: 600; }
 .ag-assinar__aviso { font-size: .82rem; color: var(--rotulo); }
 .ag-assinar__rodape { flex-wrap: wrap; }
+.ag-assinar__pauta .an-texto { font-size: .86rem; }
+.ag-assinar__pauta .ag-assinar__form { align-items: center; gap: 10px; }
+.ag-assinar__pauta .ag-btn:disabled { opacity: .5; cursor: not-allowed; }
 .ag-assinar__form { display: inline-flex; }
 .ag-assinar__form:first-child { margin-right: auto; }
 

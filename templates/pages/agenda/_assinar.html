@@ -40,6 +40,21 @@
       <p class="an-texto">Você ainda não tem um link. Ele é pessoal e aleatório: quem tiver o link vê a sua agenda, então guarde-o só nos seus aplicativos.</p>
     {% endif %}
 
+    {# A pauta da semana por e-mail (m136): toda segunda, para quem ligar. #}
+    <div class="an-caixa ag-assinar__caixa ag-assinar__pauta">
+      <span class="ag-f__h">Pauta da semana por e-mail</span>
+      <p class="an-texto">Toda segunda-feira, a pauta da sua semana em PDF{% if pauta_sem_email %} — seu usuário não tem e-mail cadastrado; peça ao administrador{% endif %}.</p>
+      <form method="post" action="{{ url_assinatura }}" class="ag-assinar__form">
+        {% csrf_token %}
+        {% if pauta_ativa %}
+          <button type="submit" name="acao" value="pauta_desligar" class="ag-btn ag-btn--peq">Desligar</button>
+          <span class="ag-assinar__ok">Ligada.</span>
+        {% else %}
+          <button type="submit" name="acao" value="pauta_ligar" class="ag-btn ag-btn--peq"{% if pauta_sem_email %} disabled{% endif %}>{% include "components/icon.html" with nome="mail" %}Receber toda segunda</button>
+        {% endif %}
+      </form>
+    </div>
+
     <div class="an-rodape ag-assinar__rodape">
       {% if assinatura_url %}
         <form method="post" action="{{ url_assinatura }}" class="ag-assinar__form">

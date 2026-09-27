@@ -45,6 +45,8 @@
     <div class="ag-topo__acoes">
       {% if atalhos %}<button type="button" class="ag-btn" data-ag-criar-hoje aria-haspopup="dialog">{% include "components/icon.html" with nome="plus" %}Criar</button>{% endif %}
       <a class="ag-btn" href="{% url 'agenda:escala' %}">{% include "components/icon.html" with nome="users" %}Escala</a>
+      {# "Baixar pauta" (m136): o JS troca o href pelo período visível e as fontes ligadas. #}
+      <a class="ag-btn" id="ag-pauta" href="{{ url_pauta }}" data-base="{{ url_pauta }}" title="PDF do período visível">{% include "components/icon.html" with nome="printer" %}Baixar pauta</a>
       <button type="button" class="ag-btn" data-ag-abrir="ag-assinar" aria-haspopup="dialog">{% include "components/icon.html" with nome="link" %}Assinar</button>
     </div>
   </div>

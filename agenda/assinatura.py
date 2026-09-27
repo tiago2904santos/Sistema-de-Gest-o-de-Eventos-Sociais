@@ -16,7 +16,7 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from accounts.models import AssinaturaAgenda
+from accounts.models import AssinaturaAgenda, PautaSemanal
 
 from . import ics
 from .fontes import fontes_de
@@ -58,6 +58,10 @@ def contexto_assinatura(request) -> dict:
         "assinatura_gerada_em": assinatura.gerado_em if assinatura else None,
         "url_assinatura": reverse("agenda:assinatura"),
         "fontes_assinatura": fontes_de(request.user),
+        # A pauta da semana por e-mail (m136): a opção da pessoa.
+        "pauta_ativa": PautaSemanal.objects.filter(usuario=request.user, ativa=True).exists(),
+        "pauta_sem_email": not request.user.email,
+        "url_pauta": reverse("agenda:pauta"),
     }
 
 
@@ -65,7 +69,15 @@ def contexto_assinatura(request) -> dict:
 @require_POST
 def assinatura(request):
     acao = request.POST.get("acao", "gerar")
-    if acao == "revogar":
+    if acao in ("pauta_ligar", "pauta_desligar"):
+        ligar = acao == "pauta_ligar"
+        PautaSemanal.objects.update_or_create(usuario=request.user, defaults={"ativa": ligar})
+        messages.success(
+            request,
+            "Você vai receber a pauta da semana por e-mail toda segunda-feira." if ligar
+            else "Pauta semanal por e-mail desligada.",
+        )
+    elif acao == "revogar":
         apagados, _ = AssinaturaAgenda.objects.filter(usuario=request.user).delete()
         messages.success(request, "Link de assinatura revogado." if apagados else "Não havia link para revogar.")
     else:

@@ -126,3 +126,28 @@ class AssinaturaAgenda(models.Model):
             usuario=usuario, defaults={"token": cls.novo_token()}
         )
         return assinatura
+
+
+class PautaSemanal(models.Model):
+    """Quem quer a pauta da semana por e-mail toda segunda (ver `agenda.pauta`).
+
+    ``enviada_para_semana`` guarda a segunda-feira da última semana enviada:
+    é o que torna a rotina idempotente — roda no primeiro acesso da segunda
+    (ou do primeiro dia útil em que alguém entra) e não repete na semana.
+    """
+
+    usuario = models.OneToOneField(
+        User,
+        verbose_name="usuário",
+        on_delete=models.CASCADE,
+        related_name="pauta_semanal",
+    )
+    ativa = models.BooleanField("receber a pauta da semana por e-mail", default=True)
+    enviada_para_semana = models.DateField("semana da última pauta enviada", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "pauta semanal"
+        verbose_name_plural = "pautas semanais"
+
+    def __str__(self):
+        return f"Pauta semanal de {self.usuario}"
