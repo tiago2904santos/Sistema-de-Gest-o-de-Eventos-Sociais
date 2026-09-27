@@ -144,7 +144,19 @@ _R_ANCORA_ANTES = re.compile(
     r"(?:\bem|\bno\s+municipio\s+de|\bmunicipio\s+de|\bmunicipio\s*:|\bcidade\s+de|\bcidade\s*:|"
     r"\bcomarca\s+de|\bprefeitura\s+(?:municipal\s+)?de|\bcamara\s+(?:municipal\s+)?de|\bmunicipal\s+de|"
     r"\b(?:local|endereco|onde|localidade)\s*:[^\n]*|\bsediad[oa]\s+em|\brealizad[oa]\s+em|\bde\s+onde|"
-    r"\d+\s*[-–,]|\bcep\s*:?\s*\d{5}-?\d{3}\s*[-–,]?)\s*[,:-]?\s*$"
+    r"\d+\s*[-–,]|\bcep\s*:?\s*\d{5}-?\d{3}\s*[-–,]?|\binterior\s+d[eo]|\bzona\s+rural\s+de|\bdistrito\s+de|"
+    r"\baqui\s+em)\s*[,:-]?\s*$"
+)
+# Instituição da cidade logo antes: "CRAS de Pinhão", "Conselho Municipal
+# dos Direitos da Mulher de Campo Largo", "Escola Estadual X, de Lapa". Diz a
+# cidade de quem pede — quase sempre a do evento, mas vale menos que "em X".
+_R_INSTITUICAO_ANTES = re.compile(
+    r"\b(?:cras|creas|caps|ubs|apae|nre|nucleo\s+regional\s+de\s+educacao|conselho(?:\s+[\w-]+){0,7}?|"
+    r"secretaria(?:\s+[\w-]+){0,6}?|prefeitura(?:\s+municipal)?|camara(?:\s+municipal)?|guarda\s+municipal|"
+    r"associacao(?:\s+[\w-]+){0,6}?|delegacia(?:\s+[\w-]+){0,4}?|sdp|subdivisao\s+policial|paroquia(?:\s+[\w-]+){0,4}?|"
+    r"comunidade(?:\s+[\w-]+){0,3}?|rotary|lions|sindicato(?:\s+[\w-]+){0,5}?|cooperativa(?:\s+[\w-]+){0,4}?|"
+    r"(?:colegio|escola|centro|instituto)(?:\s+[\w.-]+){0,6}?|municipio|cidade|distrito\s+sede|regiao|assistencia(?:\s+social)?|"
+    r"grupo(?:\s+[\w-]+){0,5}?|nucleo(?:\s+[\w-]+){0,4}?|somos|sou|aqui)(?:\s*,?\s+(?:de|do|da)|\s*[-–(])\s*$"
 )
 # UF logo depois: "Toledo/PR", "Toledo - PR", "Toledo (PR)", "Toledo, Paraná".
 _R_UF_DEPOIS = re.compile(r"^\s*(?:/|-|–|,|\()\s*([A-Za-z]{2})\b\)?")
@@ -246,10 +258,18 @@ def municipios_no_texto(
     dobrado = dobrar(texto)
     uf_do_ddd = UF_DO_DDD.get(re.sub(r"\D", "", ddd or "")[:2], "")
     candidatos: dict[str, dict] = {}
+    # Texto todo em minúsculas ("sou da escola de ivai"): a maiúscula não
+    # pode ser exigida de quem não usa maiúscula nenhuma.
+    letras = sum(c.isalpha() for c in texto)
+    sem_maiusculas = letras >= 80 and sum(c.isupper() for c in texto) < 0.02 * letras
     for chave, inicio, fim in _municipios_citados(texto, indice):
+        # A quebra de linha do e-mail corta a frase no meio ("município de" /
+        # "Reserva"): o "antes" atravessa a quebra simples, não a linha em branco.
         antes = dobrado[max(0, inicio - 60):inicio]
-        comeco_linha = dobrado.rfind("\n", 0, inicio) + 1
-        antes = antes[max(0, len(antes) - (inicio - comeco_linha)):]
+        paragrafo = max(dobrado.rfind("\n\n", 0, inicio), dobrado.rfind("\n>", 0, inicio))
+        if paragrafo >= 0:
+            antes = antes[max(0, len(antes) - (inicio - paragrafo - 1)):]
+        antes = antes.replace("\n", " ")
         if _R_LOGRADOURO_ANTES.search(antes):
             continue
         uf_escrita = ""
@@ -261,11 +281,19 @@ def municipios_no_texto(
             if m:
                 uf_escrita = _UF_POR_NOME[m.group(1)]
         ancorado = bool(uf_escrita) or bool(_R_ANCORA_ANTES.search(antes))
+        instituicao = not ancorado and bool(_R_INSTITUICAO_ANTES.search(antes))
+        maiuscula = texto[inicio:inicio + 1].isupper() or sem_maiusculas
         if chave in MUNICIPIOS_AMBIGUOS or _GRAFIAS.get(chave, chave) in MUNICIPIOS_AMBIGUOS:
-            if not ancorado or not texto[inicio:inicio + 1].isupper():
+            if not (ancorado or instituicao) or not maiuscula:
                 continue
         comeco, final = _frase(dobrado, inicio, fim)
         opcoes = indice.por_chave[chave]
+        # Nome que só existe fora do estado de sempre (Penha, Anchieta, São
+        # José em SC): sem a UF escrita ou o DDD de lá, só com âncora e maiúscula.
+        fora = uf_preferida and not any(_uf_do_municipio(o) == uf_preferida.upper() for o in opcoes)
+        if fora and not uf_escrita and not (uf_do_ddd and any(_uf_do_municipio(o) == uf_do_ddd for o in opcoes)):
+            if not ancorado or not maiuscula:
+                continue
         escolhido = (
             next((o for o in opcoes if uf_escrita and _uf_do_municipio(o) == uf_escrita), None)
             or next((o for o in opcoes if uf_do_ddd and _uf_do_municipio(o) == uf_do_ddd), None)
@@ -276,17 +304,18 @@ def municipios_no_texto(
             continue
         registro = candidatos.setdefault(
             f"{escolhido.pk}:{_uf_do_municipio(escolhido)}:{escolhido.nome}",
-            {"municipio": escolhido, "vezes": 0, "ancorado": False, "evento": False,
+            {"municipio": escolhido, "vezes": 0, "ancorado": False, "evento": False, "instituicao": False,
              "inicio": inicio, "trecho": _trecho(texto, dobrado, inicio, fim)},
         )
         registro["vezes"] += 1
         if ancorado and not registro["ancorado"]:
             registro["trecho"] = _trecho(texto, dobrado, inicio, fim)
         registro["ancorado"] |= ancorado
+        registro["instituicao"] |= instituicao
         registro["evento"] |= bool(_R_EVENTO.search(dobrado[comeco:final]))
 
     def pontos(r):
-        return 3 * r["ancorado"] + min(r["vezes"] - 1, 2) + r["evento"]
+        return 3 * r["ancorado"] + 2 * r["instituicao"] + min(r["vezes"] - 1, 2) + r["evento"]
 
     ordenados = sorted(candidatos.values(), key=lambda r: (-pontos(r), r["inicio"]))
     achados = []

@@ -270,10 +270,40 @@ def quando_do_pedido(mensagem: Mensagem) -> tuple[Quando | None, list[str]]:
     return quando, avisos
 
 
+_R_DOMINIO_PUBLICO = re.compile(r"@(?:[\w-]+\.)*?(?P<nome>[a-z0-9-]+)\.(?P<uf>pr|sc)\.gov\.br$")
+
+
+def _municipio_do_dominio(email: str, municipios) -> Achado | None:
+    """"cras@cruzmachado.pr.gov.br": a prefeitura de Cruz Machado (para conferir)."""
+    m = _R_DOMINIO_PUBLICO.search((email or "").strip().lower())
+    if not m:
+        return None
+    alvo = m.group("nome").replace("-", "")
+    for municipio in municipios:
+        uf = getattr(getattr(municipio, "estado", None), "sigla", "") or ""
+        if uf.lower() == m.group("uf") and re.sub(r"[^a-z0-9]", "", dobrar(municipio.nome)) == alvo:
+            return Achado(municipio, f"{municipio.nome}/{uf}", f"Domínio do e-mail: {email}", "M", {"uf": uf})
+    return None
+
+
 def municipio_do_pedido(mensagem: Mensagem, municipios, *, ddd: str = "") -> Achado | None:
     """O município do evento: o citado no texto; na falta, o da capa do processo do
     eProtocolo (a cidade de quem pede, por isso só como plano B, para conferir)."""
     achado = municipio_no_texto(mensagem.texto_para_busca, municipios, ddd=ddd)
+    if achado is not None:
+        return achado
+    # O texto não diz a cidade: a de quem pede (assinatura, nome do remetente,
+    # a mensagem citada, o domínio da prefeitura) — para conferir.
+    for rotulo, onde in (
+        ("Assinatura", mensagem.assinatura),
+        ("Remetente", mensagem.remetente_nome),
+        ("Mensagem citada", mensagem.citado),
+    ):
+        if onde and onde.strip():
+            achado = municipio_no_texto(onde, municipios, ddd=ddd)
+            if achado is not None:
+                return Achado(achado.valor, achado.exibir, f"{rotulo}: {achado.trecho}", "M", achado.detalhes)
+    achado = _municipio_do_dominio(mensagem.remetente_email, municipios)
     if achado is not None:
         return achado
     cidade = (mensagem.extras or {}).get("cidade", "")
