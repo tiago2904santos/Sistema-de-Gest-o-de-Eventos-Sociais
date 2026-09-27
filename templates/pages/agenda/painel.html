@@ -43,6 +43,7 @@
     <button type="button" class="ag-btn ag-btn--filtros" data-ag="filtros" aria-expanded="false" aria-controls="ag-filtros">{% include "components/icon.html" with nome="filter" %}Filtros</button>
     {# Ações da onda AG-B: assinar no calendário pessoal (m133). #}
     <div class="ag-topo__acoes">
+      {% if atalhos %}<button type="button" class="ag-btn" data-ag-criar-hoje aria-haspopup="dialog">{% include "components/icon.html" with nome="plus" %}Criar</button>{% endif %}
       <a class="ag-btn" href="{% url 'agenda:escala' %}">{% include "components/icon.html" with nome="users" %}Escala</a>
       <button type="button" class="ag-btn" data-ag-abrir="ag-assinar" aria-haspopup="dialog">{% include "components/icon.html" with nome="link" %}Assinar</button>
     </div>
@@ -130,6 +131,7 @@
 
   {# Modais da onda AG-B (assinatura, criar aqui). #}
   {% include "pages/agenda/_assinar.html" %}
+  {% include "pages/agenda/_criar.html" %}
 {% endblock %}
 
 {% block extra_js %}{{ block.super }}

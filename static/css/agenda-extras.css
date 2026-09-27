@@ -23,6 +23,25 @@
 .ag-assinar__form { display: inline-flex; }
 .ag-assinar__form:first-child { margin-right: auto; }
 
+/* Modal "Criar aqui" (m135) ------------------------------------------------- */
+.ag-criar { width: min(520px, calc(100vw - 32px)); }
+.ag-criar__lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ag-criar__form { display: block; }
+.ag-criar__item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 1px solid var(--nt-r); border-radius: 10px; background: var(--branco); color: var(--grafite); font: inherit; text-align: left; text-decoration: none; cursor: pointer; }
+.ag-criar__item:hover { background: var(--hover-b); border-color: var(--sel-r); }
+.ag-criar__item:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--foco); }
+.ag-criar__ico { width: 36px; height: 36px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; flex: none; background: var(--nt-b); color: var(--grafite); }
+.ag-criar__ico .ui-icon { width: 18px; height: 18px; }
+.ag-criar__item--viagem .ag-criar__ico { background: var(--ag-viagem); color: var(--ag-viagem-t); }
+.ag-criar__item--solicitacao .ag-criar__ico { background: var(--ag-solicitacao); color: var(--ag-solicitacao-t); }
+.ag-criar__item--coffee .ag-criar__ico { background: var(--ag-coffee); color: var(--ag-coffee-t); }
+.ag-criar__item--demanda .ag-criar__ico { background: var(--ag-demanda); color: var(--ag-demanda-t); }
+.ag-criar__txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ag-criar__txt small { color: var(--rotulo); font-size: .8rem; }
+/* O dia (ou os dias) sendo escolhido no calendário. */
+.fc .fc-highlight { background: var(--sel-b); }
+.fc .fc-daygrid-day.fc-day:not(.fc-day-disabled) { cursor: cell; }
+
 /* Escala: pessoa × dia (m134) ---------------------------------------------- */
 .ag-kicker-link { color: inherit; text-decoration: none; }
 .ag-kicker-link:hover { text-decoration: underline; }

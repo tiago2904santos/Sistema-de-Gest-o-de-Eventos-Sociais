@@ -1,6 +1,8 @@
 /* Agenda — complementos da onda AG-B, fora do calendário em si (agenda.js):
    - o modal "Assinar": abre/fecha, recompõe o link do feed conforme as
-     caixas (fontes, "só a minha agenda") e copia para a área de transferência.
+     caixas (fontes, "só a minha agenda") e copia para a área de transferência;
+   - o modal "Criar aqui" (window.AgendaCriar), chamado pela seleção de dias;
+   - o formulário de filtros da escala.
 
    Qualquer botão com data-ag-abrir="<id>" abre o <dialog> daquele id; um
    botão com data-ag-assinar-fechar (ou clique no fundo, ou Esc) fecha. */
@@ -59,6 +61,44 @@
     });
     // Volta do POST (gerar/revogar): a URL vem com #assinar e o modal reabre.
     if (location.hash === "#assinar") { abrirDialogo(assinar); history.replaceState(null, "", location.pathname + location.search); }
+  }
+
+  // ---- "Criar aqui" (m135) ------------------------------------------------
+  // agenda.js chama window.AgendaCriar.abrir(inicio, fimExclusivo) na seleção
+  // de dias; aqui as datas entram no título, nos links (?inicio=&fim=) e no
+  // formulário POST da viagem. O fim vem exclusivo do FullCalendar e vira o
+  // último dia de verdade, que é o que as telas esperam.
+  var criar = document.getElementById("ag-criar");
+  if (criar) {
+    var periodo = criar.querySelector("[data-criar-periodo]");
+    function diaAntes(iso) {
+      var d = new Date(iso + "T12:00:00");
+      d.setDate(d.getDate() - 1);
+      return d.toISOString().slice(0, 10);
+    }
+    function porExtenso(iso) {
+      var d = new Date(iso + "T12:00:00");
+      return d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
+    }
+    window.AgendaCriar = {
+      abrir: function (inicio, fimExclusivo) {
+        var fim = fimExclusivo ? diaAntes(fimExclusivo) : inicio;
+        if (fim < inicio) fim = inicio;
+        if (periodo) periodo.textContent = inicio === fim ? "Em " + porExtenso(inicio) + "." : "De " + porExtenso(inicio) + " a " + porExtenso(fim) + ".";
+        var q = "?" + new URLSearchParams({ inicio: inicio, fim: fim }).toString();
+        criar.querySelectorAll("[data-criar-link]").forEach(function (a) { a.href = a.dataset.base + q; });
+        criar.querySelectorAll("[data-criar-inicio]").forEach(function (i) { i.value = inicio; });
+        criar.querySelectorAll("[data-criar-fim]").forEach(function (i) { i.value = fim; });
+        abrirDialogo(criar);
+        var primeiro = criar.querySelector(".ag-criar__item");
+        if (primeiro) primeiro.focus();
+      }
+    };
+    // O botão "Criar" do cabeçalho: hoje, sem precisar clicar no dia.
+    var hoje = (document.getElementById("agenda") || {}).dataset ? document.getElementById("agenda").dataset.hoje : "";
+    document.querySelectorAll("[data-ag-criar-hoje]").forEach(function (b) {
+      b.addEventListener("click", function () { window.AgendaCriar.abrir(hoje || new Date().toISOString().slice(0, 10), ""); });
+    });
   }
 
   // ---- escala (m134): as caixas de fonte viram o parâmetro `fontes` ------

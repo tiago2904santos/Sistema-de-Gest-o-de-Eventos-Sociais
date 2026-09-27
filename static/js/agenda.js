@@ -178,6 +178,15 @@
     nowIndicator: true,
     events: carregar,
     eventClick: function (arg) { arg.jsEvent.preventDefault(); abrir(arg.event); },
+    // "Criar aqui" (m135): clicar num dia ou arrastar sobre vários abre o
+    // menu com as telas novas (agenda-extras.js); `end` vem exclusivo.
+    selectable: !!document.getElementById("ag-criar"),
+    selectMirror: true,
+    unselectAuto: true,
+    select: function (info) {
+      if (window.AgendaCriar) window.AgendaCriar.abrir(info.startStr.slice(0, 10), info.endStr.slice(0, 10));
+      cal.unselect();
+    },
     eventDidMount: function (arg) {
       var p = arg.event.extendedProps || {};
       arg.el.title = arg.event.title + (p.situacao ? " — " + p.situacao : "") + " · " + (rotulos[p.fonte] || "");
