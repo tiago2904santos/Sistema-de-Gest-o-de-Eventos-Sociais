@@ -132,13 +132,15 @@ class ArtefatosTests(TestCase):
             second = self.gerar()
         self.assertNotEqual(first.artefato_id, second.artefato_id)
 
-    def test_cache_respeita_vinculos_opcionais_e_criador(self):
+    def test_cache_respeita_vinculos_opcionais_e_vale_para_todos(self):
         first = self.gerar()
         servidor = Servidor.objects.create(nome="Pessoa F3")
         linked = self.gerar(servidor_id=servidor.pk)
         outro = get_user_model().objects.create_user(username="outro")
         other_actor = self.gerar(criado_por=outro)
-        self.assertEqual(len({first.artefato_id, linked.artefato_id, other_actor.artefato_id}), 3)
+        # O vínculo muda o documento; quem gera não muda (m127: o PDF pronto vale para todos).
+        self.assertNotEqual(first.artefato_id, linked.artefato_id)
+        self.assertEqual(first.artefato_id, other_actor.artefato_id)
 
     def test_arquivo_ausente_regenera(self):
         first = self.gerar()

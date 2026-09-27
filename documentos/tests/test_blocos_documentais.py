@@ -82,6 +82,8 @@ class BlocosDocumentaisTests(CenarioOficioMixin, TestCase):
         o = self.criar()
         self.patch_bloco(o, 'Texto alterado.')
         with mock.patch('viagens_oficios.document_generation.DocumentoFacade.gerar') as gerar:
+            # Sem artefato gravado: a via emitida (m113) não tem o que registrar.
+            gerar.return_value.artefato_id = None
             gerar_documento(o, DocumentoFormato.PDF)
         documento = gerar.call_args.kwargs['payload']['documento']
         self.assertEqual(documento['blocos']['declaracao_cartao']['conteudo'], 'Texto alterado.')
@@ -207,6 +209,8 @@ class ParagrafoExtraTests(CenarioOficioMixin, TestCase):
         self.assertIn('<p class="doc-bloco doc-paragrafo-extra doc-oficio__abertura">Solicito ainda &lt;b&gt;apoio&lt;/b&gt;.<br>Segunda linha.</p>', pdf)
         self.assertNotIn('data-doc', pdf)
         with mock.patch('viagens_oficios.document_generation.DocumentoFacade.gerar') as gerar:
+            # Sem artefato gravado: a via emitida (m113) não tem o que registrar.
+            gerar.return_value.artefato_id = None
             gerar_documento(o, DocumentoFormato.PDF)
         self.assertEqual(gerar.call_args.kwargs['payload']['documento']['paragrafos'], {'antes_assinatura': 'Solicito ainda <b>apoio</b>.\nSegunda linha.'})
         docx = gerar_documento(o, DocumentoFormato.DOCX).conteudo
