@@ -115,7 +115,7 @@ class LerEmailCoffeeTests(BaseCoffeePorEmail):
             "quantidade": "60",
             "data_inicio_evento": "2026-10-08",
             "horario_evento": "10:00",
-            "local_entrega": "Auditório da 1ª DP - Rua José Loureiro, 376 - Centro - Curitiba",
+            "local_entrega": "Auditório da 1ª DP",  # o nome do lugar: o endereço tem campos próprios
             "endereco": "Rua José Loureiro, 376",
             "bairro": "Centro",
             "responsavel_recebimento": "Tadeu Silva (41) 99988-6010",
