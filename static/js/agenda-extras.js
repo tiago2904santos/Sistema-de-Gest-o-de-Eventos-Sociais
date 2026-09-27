@@ -106,6 +106,14 @@
     var rotulo = b.querySelector("[data-ag-copiar-rotulo]");
     var original = rotulo ? rotulo.textContent : "";
     function avisar(texto) {
+      // No desenho do Google o botão é só o ícone: o aviso sai embaixo, à esquerda.
+      var toast = document.getElementById("gca-aviso");
+      if (toast) {
+        toast.textContent = texto === "Copiado" ? "Link copiado para a área de transferência" : texto;
+        toast.hidden = false;
+        clearTimeout(avisar.t);
+        avisar.t = setTimeout(function () { toast.hidden = true; }, 3000);
+      }
       if (!rotulo) return;
       rotulo.textContent = texto;
       setTimeout(function () { rotulo.textContent = original; }, 2500);

@@ -200,7 +200,11 @@
   }
   function entregar(lista, ok) {
     montarOpcoes(lista);
-    var visiveis = lista.filter(passa);
+    // Feriado (m138): no desenho do Google é uma faixa de dia inteiro, como a
+    // agenda "Feriados", e não um fundo pintado na célula.
+    var visiveis = lista.filter(passa).map(function (ev) {
+      return ev.display === "background" ? Object.assign({}, ev, { display: "block", allDay: true }) : ev;
+    });
     vazio.hidden = visiveis.length > 0;
     ok(visiveis);
     atualizarPauta();
@@ -209,6 +213,20 @@
 
   // ---- o calendário (sem a barra dele: a nossa está no template) ----------
   function estreito() { return window.matchMedia("(max-width: 900px)").matches; }
+  var gca = $("gca");
+  var principal = $("gca-principal");
+  var MESES_CURTOS = ["jan.", "fev.", "mar.", "abr.", "mai.", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez."];
+  var DIAS_CURTOS = ["dom.", "seg.", "ter.", "qua.", "qui.", "sex.", "sáb."];
+  // A grade ocupa a altura da tela, como no Google Agenda: o que não cabe
+  // no dia vira "Mais N", e semana, dia e lista rolam por dentro.
+  function ajustarAltura() {
+    if (!principal) return;
+    var topo = principal.getBoundingClientRect().top + window.scrollY;
+    var alt = Math.max(estreito() ? 480 : 560, window.innerHeight - topo - 16);
+    principal.style.height = alt + "px";
+    if (gca) gca.style.setProperty("--gc-alt", alt + "px");
+  }
+  ajustarAltura();
   var cal = new FullCalendar.Calendar(el, {
     locale: "pt-br",
     headerToolbar: false,
@@ -216,18 +234,46 @@
     initialDate: dataInicial || undefined,
     // Visão anual (m137): os 12 meses em colunas; o servidor aceita o período inteiro.
     views: { list30: { type: "list", duration: { days: 30 } }, multiMonthYear: { multiMonthMaxColumns: 3, dayMaxEvents: 2 } },
-    height: "auto",
+    height: "100%",
     firstDay: 0,
     navLinks: true,
-    dayMaxEvents: 4,
-    eventDisplay: "block",
+    dayMaxEvents: true,
+    // Como no Google: dia inteiro e vários dias em faixa colorida; o que tem
+    // hora vira "● 09:00 Título".
+    eventDisplay: "auto",
+    moreLinkContent: function (arg) { return "Mais " + arg.num; },
+    dayPopoverFormat: { weekday: "long", day: "numeric", month: "long" },
+    allDayText: "",
+    scrollTime: "07:00:00",
+    slotLabelFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
+    noEventsContent: "Nada no período com os filtros atuais.",
+    // Mês: "DOM." no topo da coluna e "1 de set." no primeiro dia do mês.
+    // Semana e dia: o dia da semana pequeno e o número grande, hoje em azul.
+    dayHeaderContent: function (arg) {
+      if (arg.view.type.indexOf("timeGrid") === 0) {
+        return { html: '<span class="gca-dia"><span class="gca-dia__s">' + DIAS_CURTOS[arg.date.getDay()] + '</span><span class="gca-dia__n">' + arg.date.getDate() + "</span></span>" };
+      }
+      // Programação: o número grande e "SET., TER." ao lado, como no Google.
+      if (arg.view.type.indexOf("list") === 0) {
+        return { html: '<span class="gca-ldia__n">' + arg.date.getDate() + '</span><span class="gca-ldia__s">' + MESES_CURTOS[arg.date.getMonth()] + ", " + DIAS_CURTOS[arg.date.getDay()] + "</span>" };
+      }
+      return DIAS_CURTOS[arg.date.getDay()];
+    },
+    dayCellContent: function (arg) {
+      if (arg.view.type === "dayGridMonth" && arg.date.getDate() === 1) return "1 de " + MESES_CURTOS[arg.date.getMonth()];
+      return arg.dayNumberText.replace(/\D/g, "") || arg.dayNumberText;
+    },
     // O que tem hora (saída do roteiro, palestra, pauta) mostra a hora; o que
     // é dia inteiro leva o horário no título, montado no servidor (m132).
     displayEventTime: true,
     eventTimeFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
     nowIndicator: true,
     events: carregar,
-    eventClick: function (arg) { arg.jsEvent.preventDefault(); abrir(arg.event); },
+    eventClick: function (arg) {
+      arg.jsEvent.preventDefault();
+      if ((arg.event.extendedProps || {}).fundo) return; // feriado: não tem dossiê
+      abrir(arg.event);
+    },
     // "Criar aqui" (m135): clicar num dia ou arrastar sobre vários abre o
     // menu com as telas novas (agenda-extras.js); `end` vem exclusivo.
     selectable: !!document.getElementById("ag-criar"),
@@ -239,21 +285,18 @@
     },
     eventDidMount: function (arg) {
       var p = arg.event.extendedProps || {};
-      if (p.fundo) {
-        // Faixa de fundo do feriado (m138): o FullCalendar não escreve o nome; escrevemos.
-        arg.el.title = arg.event.title;
-        var nome = document.createElement("span"); nome.className = "ag-feriado__nome"; nome.textContent = arg.event.title;
-        arg.el.appendChild(nome);
-        return;
-      }
+      if (p.fundo) { arg.el.title = arg.event.title; return; } // feriado (m138)
       arg.el.title = arg.event.title + (p.situacao ? " — " + p.situacao : "") + " · " + (rotulos[p.fonte] || "") +
         (p.conflitos && p.conflitos.length ? "\nConflito de agenda: " + p.conflitos.join("; ") : "");
     },
     datesSet: function (info) {
       titulo.textContent = info.view.title;
       document.querySelectorAll("[data-view]").forEach(function (b) {
-        b.setAttribute("aria-pressed", b.dataset.view === info.view.type ? "true" : "false");
+        var sim = b.dataset.view === info.view.type;
+        b.setAttribute(b.getAttribute("role") === "menuitemradio" ? "aria-checked" : "aria-pressed", sim ? "true" : "false");
+        if (sim && rotuloVisao) rotuloVisao.textContent = (b.querySelector("span") || b).textContent.trim();
       });
+      mini.sincronizar(info.view);
       pref.view = info.view.type; gravar();
       atualizarPauta(info);
       sincronizarUrl();
@@ -275,7 +318,88 @@
     if (chkMeus && chkMeus.checked) params.set("meus", "1");
     linkPauta.href = linkPauta.dataset.base + "?" + params.toString();
   }
+  var rotuloVisao = $("gca-visao-rotulo");
+
+  // ---- minicalendário (à esquerda, como no Google) -----------------------
+  var mini = (function () {
+    var caixa = $("gca-mini");
+    var mes = null, faixa = null;
+    var seta = function (d) { return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="' + (d < 0 ? "M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z" : "M8.59 16.59 10 18l6-6-6-6-1.41 1.41L13.17 12z") + '"/></svg>'; };
+    function desenhar() {
+      if (!caixa || !mes) return;
+      var hoje = isoLocal(new Date());
+      var inicio = new Date(mes.getFullYear(), mes.getMonth(), 1);
+      inicio.setDate(1 - inicio.getDay());
+      var nomeMes = mes.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      var h = '<div class="gca-mini__topo"><span class="gca-mini__t">' + nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1) + "</span>" +
+        '<button type="button" class="gca-ico" data-mini="-1" aria-label="Mês anterior">' + seta(-1) + "</button>" +
+        '<button type="button" class="gca-ico" data-mini="1" aria-label="Próximo mês">' + seta(1) + "</button></div>" +
+        "<table><thead><tr>" + ["D", "S", "T", "Q", "Q", "S", "S"].map(function (l) { return "<th>" + l + "</th>"; }).join("") + "</tr></thead><tbody>";
+      var d = new Date(inicio);
+      for (var s = 0; s < 6; s++) {
+        h += "<tr>";
+        for (var i = 0; i < 7; i++) {
+          var iso = isoLocal(d);
+          var cls = "gca-mini__d" + (d.getMonth() !== mes.getMonth() ? " is-fora" : "") + (iso === hoje ? " is-hoje" : "") +
+            (faixa && iso >= faixa[0] && iso < faixa[1] ? " is-sel" : "");
+          h += '<td><button type="button" class="' + cls + '" data-dia="' + iso + '" aria-label="' + d.toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" }) + '">' + d.getDate() + "</button></td>";
+          d.setDate(d.getDate() + 1);
+        }
+        h += "</tr>";
+      }
+      caixa.innerHTML = h + "</tbody></table>";
+    }
+    if (caixa) caixa.addEventListener("click", function (e) {
+      var b = e.target.closest("button");
+      if (!b) return;
+      if (b.dataset.mini) { mes = new Date(mes.getFullYear(), mes.getMonth() + Number(b.dataset.mini), 1); desenhar(); }
+      else if (b.dataset.dia) cal.gotoDate(b.dataset.dia);
+    });
+    return {
+      sincronizar: function (view) {
+        var ref = view.type === "dayGridMonth" || view.type === "listMonth" || view.type === "multiMonthYear" ? view.currentStart : view.activeStart;
+        mes = new Date(ref.getFullYear(), ref.getMonth(), 1);
+        // Semana e dia marcam os dias na tela; mês, ano e lista não marcam nada.
+        faixa = view.type.indexOf("timeGrid") === 0 ? [isoLocal(view.currentStart), isoLocal(view.currentEnd)] : null;
+        desenhar();
+      }
+    };
+  })();
+
   cal.render();
+  window.addEventListener("resize", function () { ajustarAltura(); cal.updateSize(); });
+
+  // ---- menu das visões (Dia, Semana, Mês…) ----------------------------------
+  var btnVisao = $("gca-visao"), menuVisao = $("gca-visao-menu");
+  function menu(abrirMenu) {
+    if (!menuVisao) return;
+    menuVisao.hidden = !abrirMenu;
+    btnVisao.setAttribute("aria-expanded", abrirMenu ? "true" : "false");
+    if (abrirMenu) { var marcado = menuVisao.querySelector('[aria-checked="true"]') || menuVisao.querySelector("button"); if (marcado) marcado.focus(); }
+  }
+  if (btnVisao) btnVisao.addEventListener("click", function (e) { e.stopPropagation(); menu(menuVisao.hidden); });
+  document.addEventListener("click", function (e) { if (menuVisao && !menuVisao.hidden && !menuVisao.contains(e.target)) menu(false); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && menuVisao && !menuVisao.hidden) { menu(false); btnVisao.focus(); }
+  });
+
+  // ---- atalhos de teclado do Google Agenda -------------------------------------
+  var ATALHOS = { d: "timeGridDay", "1": "timeGridDay", w: "timeGridWeek", "2": "timeGridWeek", m: "dayGridMonth", "3": "dayGridMonth", y: "multiMonthYear", a: "listMonth", x: "list30" };
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var alvo = e.target;
+    if (alvo && (alvo.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(alvo.tagName))) return;
+    if (document.querySelector("dialog[open]")) return;
+    var k = e.key.toLowerCase();
+    if (ATALHOS[k]) cal.changeView(ATALHOS[k]);
+    else if (k === "t") cal.today();
+    else if (k === "j" || k === "n") cal.next();
+    else if (k === "k" || k === "p") cal.prev();
+    else if (k === "/" && busca) busca.focus();
+    else if (k === "c") { var criarBtn = document.querySelector("[data-ag-criar-hoje]"); if (criarBtn) criarBtn.click(); else return; }
+    else return;
+    e.preventDefault();
+  });
 
   // ---- cabeçalho próprio ------------------------------------------------
   document.querySelectorAll("[data-ag]").forEach(function (b) {
@@ -285,13 +409,25 @@
       else if (acao === "next") cal.next();
       else if (acao === "hoje") cal.today();
       else if (acao === "filtros") {
-        var painel = $("ag-filtros"); var aberto = painel.classList.toggle("is-aberto");
+        // Menu principal: no computador recolhe a coluna da esquerda (como o
+        // Google); no celular ela abre por cima da grade.
+        var painel = $("ag-filtros"), aberto;
+        if (estreito()) aberto = painel.classList.toggle("is-aberto");
+        else aberto = !gca.classList.toggle("gca--recolhido");
         b.setAttribute("aria-expanded", aberto ? "true" : "false");
+        setTimeout(function () { cal.updateSize(); }, 0);
       }
     });
   });
   document.querySelectorAll("[data-view]").forEach(function (b) {
-    b.addEventListener("click", function () { cal.changeView(b.dataset.view); });
+    b.addEventListener("click", function () { cal.changeView(b.dataset.view); menu(false); if (btnVisao) btnVisao.focus(); });
+  });
+  // No celular, tocar fora da gaveta de filtros a fecha.
+  document.addEventListener("click", function (e) {
+    var painel = $("ag-filtros");
+    if (!estreito() || !painel || !painel.classList.contains("is-aberto")) return;
+    if (painel.contains(e.target) || e.target.closest('[data-ag="filtros"]')) return;
+    painel.classList.remove("is-aberto");
   });
   document.querySelectorAll("[data-ir]").forEach(function (b) {
     b.addEventListener("click", function () {
