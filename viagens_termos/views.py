@@ -147,6 +147,23 @@ def lista(request):
     })
 
 
+def _conflitos_da_tela(form, termo):
+    """Conflitos de agenda do que está na tela (core/conflitos.py, m130).
+
+    Com o formulário recusado, valem as escolhas enviadas (``form.errors`` já
+    limpou o que dava); senão, as gravadas.
+    """
+    from core.conflitos import conflitos_do_termo
+
+    if form.is_bound and not form.errors.get("servidores"):
+        dados = form.cleaned_data
+        return conflitos_do_termo(
+            termo, servidores=list(dados.get("servidores") or []), viatura=dados.get("viatura"),
+            oficio=dados.get("oficio"), inicio=dados.get("data_evento_inicio"), fim=dados.get("data_evento_fim"),
+        )
+    return conflitos_do_termo(termo) if termo.pk else []
+
+
 def _contexto_form(form, termo, request):
     from cadastros.models import Estado, Municipio
     from viagens_cadastros.models import Servidor, Viatura
@@ -172,6 +189,9 @@ def _contexto_form(form, termo, request):
     oficios = opcoes_de_oficio(termo)
     return {
         "form": form, "termo": termo, "valores": {n: valor(n) for n in ["oficio", "destino_estado", "destino_cidade", "data_evento_inicio", "data_evento_fim", "viatura"]},
+        # Choque de agenda (core/conflitos.py, m130): só aviso, a tela salva assim mesmo.
+        "conflitos": [] if termo.cancelado else _conflitos_da_tela(form, termo),
+        "conflitos_fixos": f"excluir_termo={termo.pk}" if termo.pk else "",
         "erros": {n: form.errors.get(n) for n in form.fields}, "servidores": servidores, "estados": estados, "municipios": municipios,
         "viaturas": opcoes_de_viatura(),
         "adicionais": adicionais, "quantidade_destinos": str(form.quantidade_destinos),
@@ -256,6 +276,10 @@ def editar(request, pk=None):
         if form.is_valid():
             termo = form.save()
             messages.success(request, f"Termo #{termo.pk} salvo.")
+            # Choque de agenda (core/conflitos.py, m130): avisa, não impede.
+            from core.conflitos import avisos, conflitos_do_termo
+            for texto in avisos(conflitos_do_termo(termo), abrir="abra o termo"):
+                messages.warning(request, texto)
             # Salvou, acabou: a lista (ou a etapa 5 da viagem) é para onde se
             # volta. Quem chegou com `next` continua voltando para lá.
             return redirect(voltar_para(request, _url_de_volta(termo)))

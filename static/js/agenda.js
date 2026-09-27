@@ -176,7 +176,8 @@
     eventClick: function (arg) { arg.jsEvent.preventDefault(); abrir(arg.event); },
     eventDidMount: function (arg) {
       var p = arg.event.extendedProps || {};
-      arg.el.title = arg.event.title + (p.situacao ? " — " + p.situacao : "") + " · " + (rotulos[p.fonte] || "");
+      arg.el.title = arg.event.title + (p.situacao ? " — " + p.situacao : "") + " · " + (rotulos[p.fonte] || "") +
+        (p.conflitos && p.conflitos.length ? "\nConflito de agenda: " + p.conflitos.join("; ") : "");
     },
     datesSet: function (info) {
       titulo.textContent = info.view.title;

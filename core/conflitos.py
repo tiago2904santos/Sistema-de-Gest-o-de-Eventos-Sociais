@@ -1,7 +1,8 @@
 """Conflitos de agenda: a mesma pessoa, viatura ou unidade móvel em dois lugares.
 
-Um serviço só, usado por Solicitações (m011), Palestras, Ofícios (m049) e
-Viagem (m067). Três regras valem para todos:
+Um serviço só, usado por Solicitações (m011), Palestras, Ofícios (m049),
+Viagem (m067), Termos e Ordens de serviço e pela Agenda (m130). Três regras
+valem para todos:
 
 **Todas as unidades ao mesmo tempo.** A pergunta é "esse recurso está livre?",
 e não "está livre na minha unidade?": nenhuma fonte filtra por unidade, setor
@@ -234,6 +235,13 @@ def consulta(inicio, fim, **kwargs):
     for nome in ("servidores", "viaturas", "unidades_moveis", "palestrantes", "municipios"):
         valores = kwargs.pop(nome, ()) or ()
         limpos[nome] = _ids(getattr(v, "pk", v) for v in valores)
+    if limpos["palestrantes"]:
+        # Palestrante ligado ao cadastro de Viagens ocupa a pessoa: é o que
+        # cruza a palestra com a viagem (m130).
+        from demandas_eventos.models import Palestrante
+
+        vinculados = Palestrante.objects.filter(pk__in=limpos["palestrantes"], servidor__isnull=False)
+        limpos["servidores"] |= frozenset(vinculados.values_list("servidor_id", flat=True))
     return Consulta(inicio=_aware(inicio), fim=_aware(fim), **limpos, **kwargs)
 
 
@@ -305,9 +313,68 @@ def conflitos_da_demanda(demanda, palestrantes=None):
     return conflitos(consulta_da_demanda(demanda, palestrantes))
 
 
+def consulta_do_termo(termo, *, servidores=None, viatura=None, oficio=None, inicio=None, fim=None):
+    """Recursos do termo (ou os escolhidos na tela) no período do evento.
+
+    Sem datas próprias vale o período do roteiro do ofício vinculado, com
+    horário. O ofício vinculado é excluído: a equipe do termo é a dele, e
+    "já está no Ofício" seria avisar do próprio documento.
+    """
+    if servidores is None:
+        servidores = list(termo.servidores.values_list("pk", flat=True)) if termo.pk else []
+        viatura, oficio = termo.viatura_id, termo.oficio_id
+        inicio, fim = termo.data_evento_inicio, termo.data_evento_fim
+    oficio_pk = getattr(oficio, "pk", oficio)
+    comeco = termino = None
+    if inicio:
+        comeco, termino = periodo_de_datas(inicio, fim)
+    elif oficio_pk:
+        from viagens_oficios.models import Oficio
+
+        vinculado = Oficio.objects.select_related("roteiro").filter(pk=oficio_pk).first()
+        if vinculado is not None:
+            comeco, termino = periodo_do_oficio(vinculado)
+    excluir = {"termo": {termo.pk}}
+    if oficio_pk:
+        excluir["oficio"] = {int(oficio_pk)}
+    return consulta(comeco, termino, servidores=servidores, viaturas=[viatura], excluir=excluir)
+
+
+def conflitos_do_termo(termo, **kwargs):
+    return conflitos(consulta_do_termo(termo, **kwargs))
+
+
+def consulta_da_ordem(ordem, *, servidores=None, oficios=None, inicio=None, fim=None):
+    """Servidores da OS (ou os escolhidos na tela) no período do evento, dia
+    inteiro. Os ofícios vinculados são excluídos pelo mesmo motivo do termo."""
+    if servidores is None:
+        servidores = list(ordem.servidores.values_list("pk", flat=True)) if ordem.pk else []
+        oficios = list(ordem.oficios.values_list("pk", flat=True)) if ordem.pk else []
+        inicio, fim = ordem.data_evento_inicio, ordem.data_evento_fim
+    comeco, termino = periodo_de_datas(inicio, fim)
+    excluir = {"ordem": {ordem.pk}, "oficio": _ids(getattr(o, "pk", o) for o in oficios or ())}
+    return consulta(comeco, termino, servidores=servidores, excluir=excluir)
+
+
+def conflitos_da_ordem(ordem, **kwargs):
+    return conflitos(consulta_da_ordem(ordem, **kwargs))
+
+
+def avisos(achados, *, abrir="abra o documento", limite=5):
+    """Os conflitos em texto para o aviso depois de salvar (sem bloquear)."""
+    textos = [f"Conflito de agenda: {c.mensagem}." for c in achados[:limite]]
+    if len(achados) > limite:
+        textos.append(f"E mais {len(achados) - limite} conflito(s) de agenda: {abrir} para ver todos.")
+    return textos
+
+
 def conflitos_da_viagem(viagem):
     """Conflitos de cada ofício ativo da viagem, fora os da própria viagem."""
-    proprios = set(viagem.oficios.values_list("pk", flat=True))
+    proprios = {
+        "oficio": set(viagem.oficios.values_list("pk", flat=True)),
+        "termo": set(viagem.termos_autorizacao.values_list("pk", flat=True)),
+        "ordem": set(viagem.ordens_servico.values_list("pk", flat=True)),
+    }
     achados, vistos = [], set()
     oficios = viagem.oficios.filter(cancelado=False).select_related("roteiro").prefetch_related("servidores")
     for oficio in oficios:
@@ -317,7 +384,7 @@ def conflitos_da_viagem(viagem):
         )
         if base is None:
             continue
-        base = replace(base, excluir={"oficio": proprios})
+        base = replace(base, excluir=proprios)
         for conflito in conflitos(base):
             chave = (conflito.chave, conflito.tipo, conflito.recurso)
             if chave not in vistos:
@@ -329,6 +396,28 @@ def conflitos_da_viagem(viagem):
 
 # ---------------------------------------------------------------------------
 # Fontes do sistema
+
+
+def anotar_periodo_do_oficio(queryset):
+    """``_ini``/``_fim`` do ofício pelo roteiro, no banco.
+
+    A mesma regra de ``periodo_roteiro`` (cabeçalho, senão os trechos)
+    expressa em SQL, para filtrar pelo período antes de trazer linha alguma.
+    A Agenda usa o mesmo anotador para montar as ocupações do mês.
+    """
+    from viagens_roteiros.models import RoteiroTrecho
+
+    trechos = RoteiroTrecho.objects.filter(roteiro=OuterRef("roteiro_id"))
+    primeira_saida = trechos.exclude(saida_dt=None).order_by("saida_dt").values("saida_dt")[:1]
+    ultima_chegada = trechos.exclude(chegada_dt=None).order_by("-chegada_dt").values("chegada_dt")[:1]
+    return queryset.annotate(
+        _ini=Coalesce(F("roteiro__saida_dt"), Subquery(primeira_saida), output_field=DateTimeField()),
+        _fim=Coalesce(
+            F("roteiro__retorno_chegada_dt"), F("roteiro__retorno_saida_dt"),
+            Subquery(ultima_chegada), F("roteiro__chegada_dt"), F("roteiro__saida_dt"),
+            output_field=DateTimeField(),
+        ),
+    )
 
 
 @registrar_fonte("oficios")
@@ -343,28 +432,15 @@ def _oficios(consulta):
         return []
     from viagens_cadastros.models import Servidor
     from viagens_oficios.models import Oficio
-    from viagens_roteiros.models import RoteiroTrecho
     from django.db.models import Prefetch
 
-    trechos = RoteiroTrecho.objects.filter(roteiro=OuterRef("roteiro_id"))
-    primeira_saida = trechos.exclude(saida_dt=None).order_by("saida_dt").values("saida_dt")[:1]
-    ultima_chegada = trechos.exclude(chegada_dt=None).order_by("-chegada_dt").values("chegada_dt")[:1]
     por_recurso = Q(viatura_id__in=consulta.viaturas) | Q(motorista_id__in=consulta.servidores)
     if consulta.servidores:
         equipe = Oficio.servidores.through.objects.filter(servidor_id__in=consulta.servidores)
         por_recurso |= Q(pk__in=equipe.values("oficio_id"))
     oficios = (
-        Oficio.objects.filter(cancelado=False)
-        .filter(por_recurso)
+        anotar_periodo_do_oficio(Oficio.objects.filter(cancelado=False).filter(por_recurso))
         .exclude(pk__in=consulta.excluidos("oficio"))
-        .annotate(
-            _ini=Coalesce(F("roteiro__saida_dt"), Subquery(primeira_saida), output_field=DateTimeField()),
-            _fim=Coalesce(
-                F("roteiro__retorno_chegada_dt"), F("roteiro__retorno_saida_dt"),
-                Subquery(ultima_chegada), F("roteiro__chegada_dt"), F("roteiro__saida_dt"),
-                output_field=DateTimeField(),
-            ),
-        )
         .filter(_ini__lt=consulta.fim, _fim__gt=consulta.inicio)
         .select_related("viatura", "motorista", "viagem")
         .prefetch_related(
@@ -390,6 +466,105 @@ def _oficios(consulta):
             achados.append(Conflito(tipo="servidor", recurso=oficio.motorista.nome, papel=" como motorista", **base))
         if oficio.viatura_id in consulta.viaturas:
             achados.append(Conflito(tipo="viatura", recurso=f"Viatura {oficio.viatura.placa_formatada}", **base))
+    return achados
+
+
+def _equipe_dos_oficios(oficios):
+    """Servidores (equipe e motorista) dos ofícios ativos — o que um termo ou
+    uma OS vinculada a eles só repete, e por isso não conta de novo."""
+    pessoas, viaturas = set(), set()
+    for oficio in oficios:
+        if oficio.cancelado:
+            continue
+        pessoas.update(s.pk for s in oficio.servidores.all())
+        if oficio.motorista_id:
+            pessoas.add(oficio.motorista_id)
+        if oficio.viatura_id:
+            viaturas.add(oficio.viatura_id)
+    return pessoas, viaturas
+
+
+@registrar_fonte("termos")
+def _termos(consulta):
+    """Termos de autorização não cancelados com datas próprias: servidores e
+    viatura no período do evento, dia inteiro.
+
+    Termo sem datas herda o período e a equipe do ofício, que a fonte
+    ``oficios`` já cobre; com datas, só conta o que acrescenta ao ofício
+    vinculado (gente ou viatura que não está nele).
+    """
+    if not (consulta.servidores or consulta.viaturas):
+        return []
+    from django.db.models import Prefetch
+    from viagens_cadastros.models import Servidor
+    from viagens_termos.models import TermoAutorizacao
+
+    por_recurso = Q(viatura_id__in=consulta.viaturas)
+    if consulta.servidores:
+        equipe = TermoAutorizacao.servidores.through.objects.filter(servidor_id__in=consulta.servidores)
+        por_recurso |= Q(pk__in=equipe.values("termoautorizacao_id"))
+    termos = (
+        TermoAutorizacao.objects.filter(cancelado=False, data_evento_inicio__isnull=False)
+        .filter(por_recurso)
+        .filter(_filtro_de_datas(consulta, "data_evento_inicio", "data_evento_fim"))
+        .exclude(pk__in=consulta.excluidos("termo"))
+        .select_related("viatura", "oficio", "destino_cidade__estado")
+        .prefetch_related(
+            Prefetch("servidores", queryset=Servidor.objects.filter(pk__in=consulta.servidores), to_attr="_procurados"),
+            "oficio__servidores",
+        )
+    )
+    achados = []
+    for t in termos:
+        no_oficio, viaturas_do_oficio = _equipe_dos_oficios([t.oficio] if t.oficio_id else [])
+        inicio, fim = periodo_de_datas(t.data_evento_inicio, t.data_evento_fim)
+        documento = f"Termo #{t.pk}"
+        base = dict(
+            no_documento=f"no {documento}", documento=documento, inicio=inicio, fim=fim,
+            local=t.destino_efetivo(), url=reverse("viagens_termos:editar", args=[t.pk]),
+            chave=("termo", t.pk), dia_inteiro=True,
+        )
+        for servidor in t._procurados:
+            if servidor.pk not in no_oficio:
+                achados.append(Conflito(tipo="servidor", recurso=servidor.nome, **base))
+        if t.viatura_id in consulta.viaturas and t.viatura_id not in viaturas_do_oficio:
+            achados.append(Conflito(tipo="viatura", recurso=f"Viatura {t.viatura.placa_formatada}", **base))
+    return achados
+
+
+@registrar_fonte("ordens")
+def _ordens(consulta):
+    """Ordens de serviço não canceladas: a equipe no período do evento, dia
+    inteiro — fora quem já está nos ofícios vinculados."""
+    if not consulta.servidores:
+        return []
+    from django.db.models import Prefetch
+    from viagens_cadastros.models import Servidor
+    from viagens_ordens.models import OrdemServico
+
+    equipe = OrdemServico.servidores.through.objects.filter(servidor_id__in=consulta.servidores)
+    ordens = (
+        OrdemServico.objects.filter(cancelado=False, data_evento_inicio__isnull=False, pk__in=equipe.values("ordemservico_id"))
+        .filter(_filtro_de_datas(consulta, "data_evento_inicio", "data_evento_fim"))
+        .exclude(pk__in=consulta.excluidos("ordem"))
+        .prefetch_related(
+            Prefetch("servidores", queryset=Servidor.objects.filter(pk__in=consulta.servidores), to_attr="_procurados"),
+            "oficios__servidores", "destinos__estado",
+        )
+    )
+    achados = []
+    for o in ordens:
+        no_oficio, _ = _equipe_dos_oficios(o.oficios.all())
+        inicio, fim = periodo_de_datas(o.data_evento_inicio, o.data_evento_fim)
+        documento = o.numero_formatado
+        base = dict(
+            no_documento=f"na {documento}", documento=documento, inicio=inicio, fim=fim,
+            local=", ".join(f"{d.nome}/{d.estado.sigla}" for d in o.destinos.all()),
+            url=reverse("viagens_ordens:editar", args=[o.pk]), chave=("ordem", o.pk), dia_inteiro=True,
+        )
+        for servidor in o._procurados:
+            if servidor.pk not in no_oficio:
+                achados.append(Conflito(tipo="servidor", recurso=servidor.nome, **base))
     return achados
 
 
@@ -471,6 +646,25 @@ def _palestras(consulta):
                     inicio=inicio, fim=fim, local=d.municipio_display,
                     url=reverse("demandas_eventos:editar", args=[d.pk]), chave=("demanda", d.pk), dia_inteiro=True,
                 ))
+    if consulta.servidores:
+        # O servidor de uma viagem que também é palestrante (Palestrante.servidor,
+        # m130). Quem já foi achado como palestrante acima não repete.
+        vinculados = Palestrante.objects.filter(servidor_id__in=consulta.servidores).exclude(pk__in=consulta.palestrantes)
+        through = DemandaEvento.palestrantes.through.objects.filter(palestrante_id__in=vinculados.values("pk"))
+        como_servidor = (
+            ativas.filter(pk__in=through.values("demandaevento_id"))
+            .select_related("municipio")
+            .prefetch_related(Prefetch("palestrantes", queryset=vinculados.select_related("servidor"), to_attr="_vinculados"))
+        )
+        for d in como_servidor:
+            inicio, fim = periodo_de_datas(d.data_inicio_evento, d.data_fim_evento)
+            rotulo = f"{d.get_evento_display()} #{d.pk}"
+            for p in d._vinculados:
+                achados.append(Conflito(
+                    tipo="servidor", recurso=p.servidor.nome, papel=" como palestrante",
+                    no_documento=f"na {rotulo}", documento=rotulo, inicio=inicio, fim=fim, local=d.municipio_display,
+                    url=reverse("demandas_eventos:editar", args=[d.pk]), chave=("demanda", d.pk), dia_inteiro=True,
+                ))
     if consulta.pedido == "demanda" and consulta.municipios:
         for d in ativas.filter(municipio_id__in=consulta.municipios).select_related("municipio"):
             inicio, fim = periodo_de_datas(d.data_inicio_evento, d.data_fim_evento)
@@ -507,7 +701,7 @@ def consulta_do_pedido(parametros):
     """
     lista = parametros.getlist
     excluir = {}
-    for fonte in ("oficio", "solicitacao", "demanda"):
+    for fonte in ("oficio", "solicitacao", "demanda", "termo", "ordem"):
         pks = _ids(lista(f"excluir_{fonte}"))
         if pks:
             excluir[fonte] = set(pks)

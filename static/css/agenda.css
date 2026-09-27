@@ -120,6 +120,13 @@
 .fc .ag-prazo--vencido { --fc-event-bg-color: var(--ag-prazo-vencido); --fc-event-border-color: var(--ag-prazo-vencido-r); --fc-event-text-color: var(--ag-prazo-vencido-t); }
 .fc .ag-prazo--vencido .fc-event-title { font-weight: 700; }
 .fc .fc-event:hover { filter: brightness(1.06); }
+/* Choque de agenda (m130): moldura vermelha, sem trocar a cor da fonte. */
+.fc .fc-event.ag-conflito { box-shadow: inset 0 0 0 2px var(--dg-t); }
+.fc .fc-event.ag-conflito .fc-event-title::before { content: "⚠ "; }
+.fc .fc-list-event.ag-conflito .fc-list-event-title a { color: var(--dg-t); font-weight: 600; }
+.ag-linhas--conflito li { background: var(--dg-b); border-color: var(--dg-r); }
+.ag-linhas--conflito a { color: var(--dg-t); text-decoration: none; }
+.ag-linhas--conflito a:hover { text-decoration: underline; }
 .fc .ag-encerrado { --fc-event-bg-color: var(--nt-r); --fc-event-border-color: var(--nt-r); --fc-event-text-color: var(--nt-t); }
 .fc .ag-encerrado .fc-event-title, .fc .ag-encerrado .fc-list-event-title a { text-decoration: line-through; font-weight: 500; }
 .fc .fc-list-event-dot { border-color: var(--fc-event-border-color); border-width: 5px; }

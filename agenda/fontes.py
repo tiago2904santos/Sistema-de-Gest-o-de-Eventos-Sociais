@@ -343,10 +343,14 @@ def eventos_de(usuario, inicio: dt.date, fim: dt.date, slugs=None) -> list[dict]
     ``slugs`` restringe às fontes pedidas; uma fonte pedida fora do acesso é
     ignorada em silêncio — pedir pelo nome não é o que abre a porta.
     """
+    from .conflitos import marcar
+
     pedidas = set(slugs or ())
     saida = []
     for fonte in fontes_de(usuario):
         if pedidas and fonte.slug not in pedidas:
             continue
         saida.extend(fonte.eventos(usuario, inicio, fim))
-    return saida
+    # Choques de agenda (m130): a mesma pessoa, viatura ou palestrante em dois
+    # compromissos ao mesmo tempo ganha ag-conflito.
+    return marcar(saida, inicio, fim)

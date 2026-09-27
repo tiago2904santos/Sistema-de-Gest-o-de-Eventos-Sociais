@@ -448,6 +448,15 @@ def _viagem(usuario, pk) -> dict:
     if anexos:
         d["documentos"].append({"titulo": "Documentos da solicitação (anexos)", "itens": anexos})
 
+    # Choques de agenda (m130): com o que a equipe, o motorista ou a viatura
+    # dos ofícios se sobrepõem — a mesma pergunta do painel da viagem.
+    if not v.cancelado:
+        from core.conflitos import conflitos_da_viagem
+
+        from .conflitos import secao_de_conflitos
+
+        d["secoes"].extend(secao_de_conflitos(conflitos_da_viagem(v)))
+
     return d
 
 
@@ -539,6 +548,14 @@ def _solicitacao(usuario, pk) -> dict:
     viagem = integracao_viagens.viagem_da_solicitacao(s)
     if viagem is not None:
         d["origem"] = {"rotulo": f"Viagem gerada: #{viagem.pk} — {viagem}", "url": reverse("viagens_viagem:painel", args=[viagem.pk])}
+
+    # Choques de agenda (m130): motorista e unidade móvel designados.
+    if not d["encerrado"]:
+        from core.conflitos import conflitos_da_solicitacao
+
+        from .conflitos import secao_de_conflitos
+
+        d["secoes"].extend(secao_de_conflitos(conflitos_da_solicitacao(s)))
 
     d["historico"] = _historico(s.historico.select_related("usuario"))
     return d
@@ -668,6 +685,13 @@ def _demanda(usuario, pk) -> dict:
         ("Servidor", dm.servidores_display),
         ("Criada por", f"{dm.criado_por} em {dm.criado_em:%d/%m/%Y %H:%M}" if dm.criado_por_id and dm.criado_em else ""),
     ])
+    # Choques de agenda (m130): palestrante (e o servidor dele) em outro lugar.
+    if not d["encerrado"]:
+        from core.conflitos import conflitos_da_demanda
+
+        from .conflitos import secao_de_conflitos
+
+        d["secoes"].extend(secao_de_conflitos(conflitos_da_demanda(dm)))
     d["historico"] = _historico(dm.historico.select_related("usuario"))
     return d
 

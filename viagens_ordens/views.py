@@ -212,6 +212,23 @@ def ordem_esta_completa(form):
     return tem_datas and tem_destino and tem_equipe and tem_tipo and tem_motivo
 
 
+def _conflitos_da_tela(form, ordem):
+    """Conflitos de agenda do que está na tela (core/conflitos.py, m130).
+
+    Com o formulário recusado, valem as escolhas enviadas (``form.errors`` já
+    limpou o que dava); senão, as gravadas.
+    """
+    from core.conflitos import conflitos_da_ordem
+
+    if form.is_bound and not form.errors.get("servidores"):
+        dados = form.cleaned_data
+        return conflitos_da_ordem(
+            ordem, servidores=list(dados.get("servidores") or []), oficios=list(dados.get("oficios") or []),
+            inicio=dados.get("data_evento_inicio"), fim=dados.get("data_evento_fim"),
+        )
+    return conflitos_da_ordem(ordem) if ordem.pk else []
+
+
 def _contexto_form(form, ordem, request):
     from cadastros.models import Estado, Municipio
 
@@ -246,6 +263,9 @@ def _contexto_form(form, ordem, request):
                               for chave, rotulo in OrdemServico.TIPO_NECESSIDADE_CHOICES
                               if chave in TIPOS_NA_TELA or chave == tipo_atual],
         "servidores": opcoes_de_servidor(form),
+        # Choque de agenda (core/conflitos.py, m130): só aviso, a tela salva assim mesmo.
+        "conflitos": [] if ordem.cancelado else _conflitos_da_tela(form, ordem),
+        "conflitos_fixos": f"excluir_ordem={ordem.pk}" if ordem.pk else "",
         "oficios": oficios, "resumos_oficios": resumos,
         "oficios_vinculados": any(o["selecionado"] for o in oficios),
         "estados": estados, "municipios": municipios,
@@ -366,6 +386,10 @@ def editar(request, pk=None):
             nova = ordem.pk is None
             ordem = form.save()
             messages.success(request, "Ordem de Serviço cadastrada." if nova else "Ordem de Serviço atualizada.")
+            # Choque de agenda (core/conflitos.py, m130): avisa, não impede.
+            from core.conflitos import avisos, conflitos_da_ordem
+            for texto in avisos(conflitos_da_ordem(ordem), abrir="abra a OS"):
+                messages.warning(request, texto)
             return redirect(voltar_para(request, _url_da_lista(ordem)))
         messages.error(request, "Não foi possível salvar a Ordem de Serviço. Revise os campos indicados.")
     return render(request, "pages/viagens_ordens/form.html", _contexto_form(form, ordem, request))

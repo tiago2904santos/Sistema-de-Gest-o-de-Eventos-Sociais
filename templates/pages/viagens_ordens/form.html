@@ -65,6 +65,9 @@
         </div>
       {% endif %}
 
+      {# Choque de agenda (m130): a mesma pessoa em outro compromisso no mesmo período. Só aviso. #}
+      {% include "components/v32/avisos_conflito.html" with conflitos=conflitos formulario="form-os" campos="servidores:servidores data_evento_inicio:inicio data_evento_fim:fim" fixos=conflitos_fixos %}
+
       {% comment %}
         No molde do termo: os ofícios são um interruptor do cartão 1. Ligado,
         abre a lista e os marcados copiam datas, destino, servidores e motivo
@@ -214,5 +217,6 @@
   <script src="{% estatico 'js/lista-escolha.js' %}" defer></script>
   <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-ordens.js' %}" defer></script>
+  <script src="{% estatico 'js/conflitos.js' %}" defer></script>
   <script src="{% estatico 'js/autosave-rascunho.js' %}" defer></script>
 {% endblock %}
