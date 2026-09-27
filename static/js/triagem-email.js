@@ -1,8 +1,8 @@
 /**
  * Triagem do e-mail na página inicial (components/v32/triagem_email.html).
  *
- * A pessoa solta o e-mail (ou o processo do eProtocolo em PDF) ou cola o
- * texto. O endpoint `core:triagem_ler` (POST) responde
+ * A pessoa solta o e-mail (ou o processo do eProtocolo em PDF, a conversa
+ * do WhatsApp exportada em .zip ou o print dela) ou cola o texto. O endpoint `core:triagem_ler` (POST) responde
  *   {token, resumo: {assunto, remetente, enviado_em, quando, quem, avisos},
  *    candidatos: [{modulo, rotulo, confianca, sinais, url}], sugerido, decidir}
  * e aqui:
@@ -18,7 +18,8 @@
 (function () {
   "use strict";
 
-  var EXTENSOES = [".eml", ".msg", ".pdf", ".txt"];
+  // O .zip é a conversa exportada pelo WhatsApp; a imagem, o print da conversa.
+  var EXTENSOES = [".eml", ".msg", ".pdf", ".txt", ".zip", ".png", ".jpg", ".jpeg", ".webp"];
 
   // O celular entrega o arquivo como uma referência que às vezes expira antes
   // do envio (Drive, Gmail, "Recentes") — o fetch morre com "Failed to fetch".
@@ -45,7 +46,11 @@
   }
 
   // Pelo nome; sem extensão (o celular às vezes manda "document"), pelo tipo.
-  var TIPOS = { "application/pdf": ".pdf", "message/rfc822": ".eml", "text/plain": ".txt", "application/vnd.ms-outlook": ".msg" };
+  var TIPOS = {
+    "application/pdf": ".pdf", "message/rfc822": ".eml", "text/plain": ".txt", "application/vnd.ms-outlook": ".msg",
+    "application/zip": ".zip", "application/x-zip-compressed": ".zip",
+    "image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"
+  };
   function extensaoDe(arquivo) {
     var nome = (arquivo.name || "").toLowerCase();
     var ponto = nome.lastIndexOf(".");
@@ -184,7 +189,7 @@
     function lerArquivo(arquivo) {
       if (!arquivo) return;
       if (EXTENSOES.indexOf(extensaoDe(arquivo)) === -1) {
-        mostrarErro("Envie o e-mail em .eml, .msg, .pdf ou .txt — ou cole o texto.");
+        mostrarErro("Envie o e-mail (.eml, .msg), PDF, conversa do WhatsApp exportada (.zip/.txt) ou print — ou cole o texto.");
         return;
       }
       if (maximo && arquivo.size > maximo) {

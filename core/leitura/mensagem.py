@@ -3,7 +3,9 @@
 Aceita .eml e .mht (biblioteca padrão), .msg do Outlook (olefile, lendo os
 streams MAPI e os cabeçalhos de transporte), PDF impresso do Outlook (em
 português ou inglês) ou do Gmail, .txt e texto colado — inclusive conversa
-do WhatsApp ("[24/09/2026 14:32] Maria: ...").
+do WhatsApp ("[24/09/2026 14:32] Maria: ...") —, a conversa exportada pelo
+WhatsApp em .zip (o .txt de dentro e as fotos e PDFs como anexos) e o print
+(captura de tela) da conversa, lido pelo OCR.
 
 O que interessa é a mensagem de quem pediu. Num encaminhamento vale a mais
 interna, e quem encaminhou fica em `encaminhada_por`. As citações de
@@ -44,7 +46,9 @@ __all__ = [
     "ler_mensagem",
     "ler_texto_colado",
     "mascarar_para_log",
+    "conversa_do_print",
     "separar_assinatura",
+    "tipo_de_imagem",
 ]
 
 MIB = 1024 * 1024
@@ -58,6 +62,12 @@ _MAX_PROFUNDIDADE = 5                       # e-mail anexado dentro de e-mail an
 _MAX_PAGINAS_PDF = 15
 _MAX_PAGINAS_OCR = 3
 _MAX_RTF_BYTES = 5 * MIB
+# Exportação do WhatsApp em .zip (a bomba de descompactação é recusada):
+LEITURA_ZIP_MAX_ARQUIVOS = 1000             # itens no .zip
+LEITURA_ZIP_MAX_DESCOMPACTADO = 100 * MIB   # tudo o que se descompacta dele
+_MAX_TEXTO_DA_CONVERSA = 10 * MIB           # o _chat.txt
+_MAX_TAXA_DE_COMPRESSAO = 100               # item de mais de 1 MB que encolheu mais que isto é bomba
+_MAGIC_ZIP = (b"PK\x03\x04", b"PK\x05\x06")
 _MAGIC_OLE = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 # Linha maior que isto não é cabeçalho, marca de encaminhamento nem fecho.
 _MAX_LINHA_CABECALHO = 400
@@ -84,7 +94,8 @@ class Mensagem:
     sistema). `corpo` já vem sem citações e sem assinatura; a `assinatura`
     fica à parte. `anexos` são (nome, bytes), dentro dos limites; os que
     passaram do limite viram aviso. `origem`: "eml", "mht", "msg", "pdf",
-    "txt", "texto" (colado) ou "whatsapp".
+    "txt", "texto" (colado), "whatsapp" (conversa exportada, em .txt, .zip
+    ou colada) ou "print" (captura de tela da conversa, lida por OCR).
     """
 
     assunto: str = ""
@@ -152,7 +163,8 @@ class Mensagem:
 
 
 def ler_mensagem(nome_arquivo: str, dados: bytes) -> Mensagem:
-    """Lê um e-mail salvo em arquivo (.eml, .mht, .msg, .pdf impresso, .txt).
+    """Lê um e-mail salvo em arquivo (.eml, .mht, .msg, .pdf impresso, .txt), a
+    conversa do WhatsApp exportada (.zip) ou o print dela (.png, .jpg, .webp).
 
     O tipo sai do conteúdo, não só da extensão (um .msg renomeado para .eml
     ainda é lido como .msg). Levanta `MensagemIlegivel`, com mensagem para a
@@ -169,12 +181,19 @@ def ler_mensagem(nome_arquivo: str, dados: bytes) -> Mensagem:
         origem, leitor = "msg", _ler_msg
     elif b"%PDF-" in dados[:1024]:
         origem, leitor = "pdf", _ler_pdf
+    elif dados.startswith(_MAGIC_ZIP):
+        origem, leitor = "zip", _ler_zip_whatsapp
+    elif tipo_de_imagem(dados):
+        origem, leitor = "print", _ler_print
     elif extensao in (".eml", ".mht", ".mhtml") or _parece_mime(dados):
         origem, leitor = ("mht" if extensao in (".mht", ".mhtml") else "eml"), _ler_eml
     elif _parece_texto(dados):
         origem, leitor = "txt", _ler_txt
     else:
-        raise MensagemIlegivel("Formato não reconhecido. Envie o e-mail em .eml, .msg, .mht, .pdf ou .txt, ou cole o texto.")
+        raise MensagemIlegivel(
+            "Formato não reconhecido. Envie o e-mail em .eml, .msg, .mht, .pdf ou .txt, a conversa do WhatsApp "
+            "exportada (.zip) ou o print dela — ou cole o texto."
+        )
     try:
         mensagem = leitor(dados, origem)
     except MensagemIlegivel:
@@ -194,7 +213,7 @@ def ler_texto_colado(texto: str) -> Mensagem:
 
 
 _NOME_ORIGEM = {"msg": ".msg do Outlook", "pdf": "PDF", "eml": ".eml", "mht": ".mht", "txt": ".txt",
-                "eprotocolo": "processo do eProtocolo"}
+                "eprotocolo": "processo do eProtocolo", "zip": "conversa do WhatsApp em .zip", "print": "print da conversa"}
 
 
 def _parece_mime(dados: bytes) -> bool:
@@ -1572,26 +1591,407 @@ def _separar_anexos_impressos(linhas: list[str]) -> tuple[str, list[str]]:
 
 
 # ---------------------------------------------------------------------------
+# Exportação do WhatsApp (.zip): a conversa em .txt e as mídias
+# ---------------------------------------------------------------------------
+
+# "Conversa do WhatsApp com Fulano.zip" (Mais > Exportar conversa > Anexar
+# mídia) traz "_chat.txt" (iPhone) ou "Conversa do WhatsApp com Fulano.txt"
+# (Android) e as fotos, áudios e documentos. O .zip nunca é extraído em
+# disco: cada arquivo é lido na memória, com teto de tamanho, e o que não é
+# conversa, foto ou PDF fica de fora.
+_R_NOME_DA_CONVERSA = re.compile(
+    r"^(?:_chat|(?:conversa do whatsapp com|whatsapp chat with|chat de whatsapp con|conversa de whatsapp com)\b.*)\.txt$"
+)
+_MIDIAS_DO_ZIP = {".jpg": "jpeg", ".jpeg": "jpeg", ".png": "png", ".webp": "webp", ".pdf": "pdf"}
+_MAX_CONVERSAS_TENTADAS = 5
+
+
+def tipo_de_imagem(dados: bytes) -> str:
+    """"jpeg", "png" ou "webp" pela assinatura do conteúdo; "" se não for uma delas."""
+    if dados.startswith(b"\xff\xd8\xff"):
+        return "jpeg"
+    if dados.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if dados[:4] == b"RIFF" and dados[8:12] == b"WEBP":
+        return "webp"
+    return ""
+
+
+def _tipo_da_midia(dados: bytes) -> str:
+    return "pdf" if dados.startswith(b"%PDF-") else tipo_de_imagem(dados)
+
+
+class _ZipGrandeDemais(Exception):
+    pass
+
+
+def _ler_do_zip(arquivo_zip, info, limite: int) -> bytes:
+    """O conteúdo de um item do .zip, sem nunca descompactar mais que `limite`.
+
+    O tamanho declarado no .zip pode mentir (a "bomba"): a leitura para em
+    `limite` + 1 bytes, e passar disso levanta `_ZipGrandeDemais`.
+    """
+    with arquivo_zip.open(info) as origem:
+        dados = origem.read(limite + 1)
+    if len(dados) > limite:
+        raise _ZipGrandeDemais(info.filename)
+    return dados
+
+
+def _caminho_inseguro(nome: str) -> bool:
+    """Caminho absoluto, com unidade do Windows ou com ".." (path traversal)."""
+    nome = (nome or "").replace("\\", "/")
+    return nome.startswith("/") or bool(re.match(r"^[A-Za-z]:", nome)) or ".." in nome.split("/") or "\x00" in nome
+
+
+def _ler_zip_whatsapp(dados: bytes, origem: str) -> Mensagem:
+    import zipfile
+
+    max_itens = _ajuste("LEITURA_ZIP_MAX_ARQUIVOS", LEITURA_ZIP_MAX_ARQUIVOS)
+    orcamento = _ajuste("LEITURA_ZIP_MAX_DESCOMPACTADO", LEITURA_ZIP_MAX_DESCOMPACTADO)
+    limite_anexo = _ajuste("LEITURA_EMAIL_ANEXO_MAX_BYTES", LEITURA_EMAIL_ANEXO_MAX_BYTES)
+    max_anexos = _ajuste("LEITURA_EMAIL_MAX_ANEXOS", LEITURA_EMAIL_MAX_ANEXOS)
+    try:
+        arquivo_zip = zipfile.ZipFile(io.BytesIO(dados))
+    except (zipfile.BadZipFile, zipfile.LargeZipFile, OSError, ValueError) as exc:
+        raise MensagemIlegivel("Não foi possível abrir o .zip (arquivo corrompido ou incompleto).") from exc
+    with arquivo_zip:
+        itens = arquivo_zip.infolist()
+        if len(itens) > max_itens:
+            raise MensagemIlegivel(
+                f"O .zip tem arquivos demais (mais de {max_itens}). Exporte só a conversa do pedido pelo WhatsApp."
+            )
+        if any(_caminho_inseguro(item.filename) for item in itens):
+            raise MensagemIlegivel("O .zip tem caminhos de arquivo inválidos e foi recusado por segurança.")
+        declarado = sum(item.file_size for item in itens if not item.is_dir())
+        if declarado > orcamento or any(
+            item.file_size > MIB and item.file_size > _MAX_TAXA_DE_COMPRESSAO * max(item.compress_size, 1)
+            for item in itens
+        ):
+            raise MensagemIlegivel(
+                f"O .zip descompactado passa do limite de {orcamento / MIB:.0f} MB e foi recusado por segurança."
+            )
+        arquivos = [
+            item for item in itens
+            # 0x1: arquivo com senha; "__MACOSX/": a sombra que o Mac cria ao compactar de novo.
+            if not item.is_dir() and not item.flag_bits & 0x1 and not item.filename.startswith("__MACOSX/")
+        ]
+        textos = [item for item in arquivos if PurePath(item.filename).suffix.lower() == ".txt"]
+        # A conversa: pelo nome que o WhatsApp dá; senão, o .txt que se lê como conversa.
+        textos.sort(key=lambda item: not _R_NOME_DA_CONVERSA.match(dobrar(PurePath(item.filename.replace("\\", "/")).name)))
+        lidos = 0
+        mensagem = None
+        conversa = None
+        try:
+            for item in textos[:_MAX_CONVERSAS_TENTADAS]:
+                bruto = _ler_do_zip(arquivo_zip, item, max(min(_MAX_TEXTO_DA_CONVERSA, orcamento - lidos), 0))
+                lidos += len(bruto)
+                mensagem = _ler_whatsapp(_decodificar_texto(bruto).replace("\x00", ""))
+                if mensagem is not None:
+                    conversa = item
+                    break
+            if mensagem is None:
+                raise MensagemIlegivel(
+                    "Este .zip não tem uma conversa exportada do WhatsApp (o arquivo _chat.txt ou "
+                    "“Conversa do WhatsApp com….txt”). No WhatsApp, abra a conversa e use Mais > "
+                    "Exportar conversa — ou cole o texto."
+                )
+            anexos: list[tuple[str, bytes]] = []
+            grandes, ignorados, sobra = [], 0, 0
+            for item in arquivos:
+                if item is conversa:
+                    continue
+                nome = PurePath(item.filename.replace("\\", "/")).name
+                if PurePath(nome).suffix.lower() not in _MIDIAS_DO_ZIP:
+                    ignorados += 1
+                    continue
+                if item.file_size > limite_anexo:
+                    grandes.append(nome)
+                    continue
+                if len(anexos) >= max_anexos:
+                    sobra += 1
+                    continue
+                conteudo = _ler_do_zip(arquivo_zip, item, min(limite_anexo, max(orcamento - lidos, 0)))
+                lidos += len(conteudo)
+                # O tipo real manda: um executável renomeado para .jpg fica de fora.
+                if _tipo_da_midia(conteudo) != _MIDIAS_DO_ZIP[PurePath(nome).suffix.lower()]:
+                    ignorados += 1
+                    continue
+                anexos.append((nome, conteudo))
+        except _ZipGrandeDemais as exc:
+            raise MensagemIlegivel(
+                f"O .zip descompactado passa do limite de {orcamento / MIB:.0f} MB e foi recusado por segurança."
+            ) from exc
+    mensagem.anexos = anexos
+    if grandes:
+        mensagem.avisos.append(
+            f"Arquivo(s) da conversa acima de {limite_anexo / MIB:.0f} MB não foram anexados: {', '.join(grandes[:5])}."
+        )
+    if sobra:
+        mensagem.avisos.append(
+            f"A conversa tem mais de {max_anexos} fotos e documentos; só os {max_anexos} primeiros foram anexados."
+        )
+    if ignorados:
+        mensagem.avisos.append(
+            f"{ignorados} arquivo(s) da conversa (áudio, vídeo, contato ou outro tipo) não foram anexados."
+        )
+    return mensagem
+
+
+# ---------------------------------------------------------------------------
+# Print (captura de tela) da conversa, lido por OCR
+# ---------------------------------------------------------------------------
+
+# A hora da bolha: sozinha na linha ("10:35", "10:35 ✓✓" que o OCR lê "10:35 W")
+# ou no fim da última linha da fala ("Pode ser amanhã? 10:41").
+_R_HORA_SOLTA = re.compile(r"^\W{0,3}(?P<h>\d{1,2})[:.](?P<mi>\d{2})(?:\s?(?P<ampm>[ap]\.?\s?m\.?))?(?:\s*\S{1,3})?\s*$")
+_R_HORA_NO_FIM = re.compile(
+    r"^(?P<texto>.*?\S)\s+(?P<h>\d{1,2})[:.](?P<mi>\d{2})(?:\s?(?P<ampm>[ap]\.?\s?m\.?))?(?:\s*[^\w\s]{1,3}|\s*[a-z]{1,2})?\s*$"
+)
+# "às 14:30" no fim da frase é conteúdo, não a hora da bolha.
+_R_HORA_E_CONTEUDO = re.compile(r"(?:\b(?:as|das|ate|a partir das|pelas|para|entre|e|at|from)|:)\s*$")
+_R_BARRA_DE_STATUS = re.compile(
+    r"(?:\d{1,3}\s?%|\b(?:[345]g\+?|lte|volte|wi-?fi)\b|"
+    r"^\W*(?:vivo|tim|claro|oi|nextel|algar|sercomtel)\W*(?:[345]g\+?|lte)?\W*$)"
+)
+_R_PRESENCA = re.compile(
+    r"^\W*(?:online|digitando|gravando (?:audio|video)|visto por ultimo|visto (?:hoje|ontem|em)\b|"
+    r"toque (?:aqui )?para (?:dados|mostrar|ver)|clique (?:aqui )?para (?:dados|mostrar|ver)|"
+    r"typing|last seen|tap here for contact info|click here for contact info)"
+)
+_R_RODAPE_DO_PRINT = re.compile(r"^\W*(?:mensagem|digite uma mensagem|message|type a message)\W*$")
+_R_NAO_LIDAS = re.compile(r"^\W*\d+\s+(?:mensage(?:m|ns)\s+nao\s+lidas?|unread messages?)\W*$")
+_DIAS_DA_SEMANA_PRINT = (
+    "segunda-feira", "terca-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sabado", "domingo",
+    "segunda", "terca", "quarta", "quinta", "sexta",
+)
+_R_SEPARADOR_DE_DATA = re.compile(
+    r"^\W*(?:(?P<relativa>hoje|ontem|today|yesterday)|(?:(?:" + "|".join(_DIAS_DA_SEMANA_PRINT) + r"|seg|ter|qua|qui|sex|sab|dom)\.?,?\s*)?"
+    r"(?:(?P<d>\d{1,2})\s*(?:de\s+)?(?P<mes>[a-z]{3,9})\.?(?:\s*(?:de\s+)?(?P<a>\d{4}))?|"
+    r"(?P<d2>\d{1,2})/(?P<m2>\d{1,2})/(?P<a2>\d{2,4})|(?P<semana>" + "|".join(_DIAS_DA_SEMANA_PRINT) + r")))\W*$"
+)
+_R_NOME_DO_CONTATO = re.compile(r"^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'.-]*(?:\s+[A-Za-zÀ-ÿ0-9'.()-]+){0,6}$")
+_R_TELEFONE_DO_CONTATO = re.compile(r"^\+?\d[\d\s().-]{7,20}\d$")
+
+
+def _data_do_separador(m, hoje) -> tuple[object, str]:
+    """(data, aviso) de um separador de data do print; (None, "") se ele não disser o dia."""
+    from datetime import date as data_
+
+    from .datas import _MESES_CABECALHO
+
+    if m.group("relativa"):
+        dia = hoje if m.group("relativa") in ("hoje", "today") else hoje - timedelta(days=1)
+        return dia, (
+            f"O print diz “{m.group('relativa').upper()}”: entendi como {dia:%d/%m/%Y}, a data desta leitura. Confira."
+        )
+    try:
+        if m.group("d2"):
+            ano = int(m.group("a2"))
+            return data_(ano + (2000 if ano < 100 else 0), int(m.group("m2")), int(m.group("d2"))), ""
+        if m.group("d"):
+            mes = _MESES_CABECALHO.get(m.group("mes"))
+            if not mes:
+                return None, ""
+            if m.group("a"):
+                return data_(int(m.group("a")), mes, int(m.group("d"))), ""
+            # "24 de setembro", sem ano: o mais recente que já passou.
+            dia = data_(hoje.year, mes, int(m.group("d")))
+            return (dia if dia <= hoje else data_(hoje.year - 1, mes, int(m.group("d")))), ""
+    except ValueError:
+        return None, ""
+    return None, ""  # só o dia da semana: não dá o dia sem inventar
+
+
+def _hora_do_print(m) -> tuple[int, int] | None:
+    h, minuto = int(m.group("h")), int(m.group("mi"))
+    ampm = re.sub(r"[.\s]", "", m.group("ampm") or "")
+    if ampm:
+        h = h % 12 + (12 if ampm == "pm" else 0)
+    return (h, minuto) if h < 24 and minuto < 60 else None
+
+
+def _contato_do_topo(linhas: list[str]) -> tuple[str, int]:
+    """(nome do contato, índice da linha seguinte) no topo do print; ("", 0) se não achar.
+
+    O nome está logo abaixo da barra de status (hora, bateria, operadora),
+    às vezes depois da seta de voltar e do número de não lidas ("< 12 Maria"),
+    e acima do "online" / "digitando…" / "visto por último…".
+    """
+    topo = [(i, linha) for i, linha in enumerate(linhas) if linha.strip()][:6]
+    for posicao, (i, linha) in enumerate(topo):
+        dobrada = dobrar(linha)
+        if _R_SEPARADOR_DE_DATA.match(dobrada) or _R_HORA_SOLTA.match(dobrada):
+            break
+        if _R_BARRA_DE_STATUS.search(dobrada) or re.match(r"^\W*\d{1,2}:\d{2}\b", dobrada):
+            continue  # a barra de status
+        seta = bool(re.match(r"^\s*[<‹←«(]", linha))
+        limpa = re.sub(r"^[\W\d_]+", "", linha).strip()
+        limpa = re.sub(r"(?:\s+[^\w\s]{1,3})+$", "", limpa).strip()  # ícones de vídeo e ligação
+        candidato = limpa if _R_NOME_DO_CONTATO.match(limpa) and len(limpa) <= 60 else ""
+        numero = re.sub(r"^[^\d+]+", "", linha).strip()
+        if not candidato and _R_TELEFONE_DO_CONTATO.match(numero):
+            candidato = numero
+        if not candidato or _R_PRESENCA.match(dobrar(candidato)) or _R_RODAPE_DO_PRINT.match(dobrar(candidato)):
+            continue
+        seguinte = topo[posicao + 1][1] if posicao + 1 < len(topo) else ""
+        antes_status = posicao > 0 and _R_BARRA_DE_STATUS.search(dobrar(topo[posicao - 1][1]) or "")
+        if seta or _R_PRESENCA.match(dobrar(seguinte)) or antes_status:
+            return candidato, i + 1
+        return "", 0
+    return "", 0
+
+
+def conversa_do_print(texto: str, hoje=None) -> Mensagem | None:
+    """A conversa de um print do WhatsApp, a partir do texto do OCR.
+
+    Remetente: o nome do contato no topo, quando reconhecível. Corpo: as
+    falas, cada bolha terminando na hora dela, sem as horas soltas, a barra
+    de status, o "online"/"digitando…" e a caixa "Mensagem" de baixo.
+    `enviado_em`: a data do separador ("24 de setembro de 2026", "HOJE") com
+    a primeira hora depois dele; sem separador, vazio (a tela pede a data).
+    None se não houver nenhuma bolha com hora (não parece conversa).
+    """
+    from datetime import datetime as data_hora
+
+    if hoje is None:
+        try:
+            from django.utils import timezone
+
+            hoje = timezone.localdate()
+        except Exception:
+            hoje = data_hora.now().date()
+    linhas = [" ".join(linha.split()) for linha in (texto or "").replace("\r", "\n").split("\n")]
+    contato, inicio = _contato_do_topo(linhas)
+    falas: list[str] = []
+    atual: list[str] = []
+    horas = 0
+    dia, aviso_do_dia, enviado_em = None, "", None
+    for linha in linhas[inicio:]:
+        if not linha:
+            continue
+        dobrada = dobrar(linha)
+        if inicio == 0 and not falas and not atual and (
+            _R_BARRA_DE_STATUS.search(dobrada) and re.match(r"^\W*\d{1,2}:\d{2}\b", dobrada)
+        ):
+            continue  # barra de status de um print sem o nome do contato
+        if _R_PRESENCA.match(dobrada) or _R_RODAPE_DO_PRINT.match(dobrada) or _R_NAO_LIDAS.match(dobrada):
+            continue
+        if _R_WHATSAPP_SISTEMA.search(dobrada):
+            continue
+        separador = _R_SEPARADOR_DE_DATA.match(dobrada)
+        if separador:
+            novo, aviso = _data_do_separador(separador, hoje)
+            if novo is not None and dia is None:
+                dia, aviso_do_dia = novo, aviso
+            continue
+        hora = None
+        m = _R_HORA_SOLTA.match(dobrada)
+        if m:
+            linha = ""
+            hora = _hora_do_print(m)
+        else:
+            m = _R_HORA_NO_FIM.match(dobrada)
+            if m and not _R_HORA_E_CONTEUDO.search(m.group("texto")):
+                hora = _hora_do_print(m)
+                if hora is not None:
+                    linha = linha[:m.end("texto")]
+        if linha:
+            atual.append(linha)
+        if hora is not None:
+            horas += 1
+            if dia is not None and enviado_em is None:
+                enviado_em = data_hora(dia.year, dia.month, dia.day, *hora)
+            if atual:
+                falas.append("\n".join(atual))
+                atual = []
+    if atual:
+        falas.append("\n".join(atual))
+    corpo = _arrumar_linhas("\n\n".join(falas))
+    if not horas or len(corpo) < 5:
+        return None
+    avisos = ["Conversa lida de um print por OCR: pode haver erros de leitura. Confira os campos."]
+    if enviado_em is None:
+        avisos.append("O print não mostra a data da conversa: informe a data do pedido.")
+    elif aviso_do_dia:
+        avisos.append(aviso_do_dia)
+    return Mensagem(
+        remetente_nome=contato[:150],
+        enviado_em=_com_fuso(enviado_em),
+        corpo=corpo,
+        origem="print",
+        avisos=avisos,
+    )
+
+
+def _ler_print(dados: bytes, origem: str) -> Mensagem:
+    from . import ocr
+
+    if not ocr.disponivel():
+        raise MensagemIlegivel(
+            "Não consigo ler o print neste servidor (o leitor de imagem não está disponível). "
+            "No WhatsApp, copie as mensagens e use “Colar o texto”, ou exporte a conversa (.zip)."
+        )
+    try:
+        texto = ocr.texto_de_print(dados)
+    except ValueError as exc:
+        raise MensagemIlegivel("Não foi possível abrir a imagem do print.") from exc
+    mensagem = conversa_do_print(texto)
+    if mensagem is None:
+        raise MensagemIlegivel(
+            "Não achei uma conversa neste print. Envie o print da conversa do WhatsApp inteira na tela, "
+            "ou copie as mensagens e use “Colar o texto”."
+        )
+    return mensagem
+
+
+# ---------------------------------------------------------------------------
 # WhatsApp
 # ---------------------------------------------------------------------------
 
+# A hora da fala: "14:32", "14:32:10" ou, no celular em 12 horas, "2:32 PM"
+# (o iPhone põe um espaço fino U+202F antes do "PM", que o \s aceita).
+_HORA_WHATSAPP = r"(?P<hora>\d{1,2}:\d{2})(?::\d{2})?(?:\s?(?P<ampm>[AaPp]\.?\s?[Mm]\.?))?"
 _R_WHATSAPP = [
-    # "[24/09/2026 14:32] Maria:", "[24/09/26, 14:32:10] Maria:", "24/09/2026 14:32 - Maria:"
+    # "[24/09/2026 14:32] Maria:", "[24/09/26, 14:32:10] Maria:", "24/09/2026 14:32 - Maria:",
+    # "24/09/2026 2:32 PM - Maria:".
     # Entre a hora e o nome há sempre "]", espaço ou " - ": "24/09/2026 10:25Data:"
     # (o despacho do eProtocolo, com o valor colado ao rótulo) não é conversa.
     re.compile(
-        r"^\s*\[?(?P<data>\d{1,2}/\d{1,2}/\d{2,4}),?\s+(?P<hora>\d{1,2}:\d{2})(?::\d{2})?(?:\]\s*|\s+)(?:-\s*)?"
+        r"^\s*\[?(?P<data>\d{1,2}/\d{1,2}/\d{2,4}),?\s+" + _HORA_WHATSAPP + r"(?:\]\s*|\s+)(?:-\s*)?"
         r"(?P<nome>[^:\n\]]{1,60}?):\s?(?P<texto>.*)$"
     ),
     # WhatsApp Web copiado: "[14:32, 24/09/2026] Maria:"
     re.compile(
-        r"^\s*\[(?P<hora>\d{1,2}:\d{2}),\s*(?P<data>\d{1,2}/\d{1,2}/\d{2,4})\]\s*(?P<nome>[^:\n]{1,60}?):\s?(?P<texto>.*)$"
+        r"^\s*\[" + _HORA_WHATSAPP + r",\s*(?P<data>\d{1,2}/\d{1,2}/\d{2,4})\]\s*(?P<nome>[^:\n]{1,60}?):\s?(?P<texto>.*)$"
     ),
 ]
-_R_WHATSAPP_SISTEMA = re.compile(
-    r"(?:protegidas com a criptografia|<midia oculta>|<arquivo de midia oculto>|mensagem (?:foi )?apagada|"
-    r"imagem ocultada|<media omitted>|end-to-end encrypted|^\s*<anexad[oa]:|audio omitido|figurinha omitida)"
+# Linha com data e hora mas sem "Nome:": aviso do sistema na exportação do
+# Android ("24/09/2026 14:30 - Maria adicionou você", "... - Você saiu").
+_R_WHATSAPP_SEM_NOME = re.compile(
+    r"^\s*\[?\d{1,2}/\d{1,2}/\d{2,4},?\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AaPp]\.?\s?[Mm]\.?)?(?:\]|\s+-)\s"
 )
+_R_WHATSAPP_SISTEMA = re.compile(
+    r"(?:protegidas com a criptografia|criptografia de ponta a ponta|<midia oculta>|<arquivo de midia oculto>|"
+    r"mensagem (?:foi )?apagada|voce apagou esta mensagem|imagem ocultada|<media omitted>|end-to-end encrypted|"
+    r"this message was deleted|you deleted this message|^\s*<anexad[oa]:|^\s*<attached:|audio omitido|"
+    r"figurinha omitida|(?:imagem|video|audio|figurinha|documento|gif|contato|sticker|image|document) omitted|"
+    r"(?:imagem|video|audio|figurinha|documento|gif) (?:omitid[oa]|ocultad[oa]))"
+)
+# Linha que só aponta o arquivo anexado: sai da fala, a legenda (se houver) fica.
+_R_WHATSAPP_LINHA_DE_ANEXO = re.compile(
+    r"^\s*(?:<(?:anexad[oa]|attached):[^>\n]{1,200}>|<midia oculta>|<media omitted>|"
+    r"\S.{0,200}\s\((?:arquivo anexado|file attached)\))\s*$"
+)
+_R_WHATSAPP_EDITADA = re.compile(r"\s*<(?:mensagem editada|this message was edited)>\s*$", re.IGNORECASE)
+# O iPhone marca com U+200E o texto dos avisos do grupo: "‎Maria adicionou você".
+_R_WHATSAPP_AVISO_DO_GRUPO = re.compile(
+    r"\b(?:adicionou|saiu|removeu|entrou usando|criou (?:o )?grupo|mudou (?:o assunto|a descricao|a imagem|"
+    r"o nome|seu numero|para)|agora e (?:um )?admin|added|left|removed|joined using|created group|changed)\b"
+)
+# Marcas de direção do texto (o iPhone põe U+200E no começo das linhas de sistema).
+_MARCAS_DE_DIRECAO = dict.fromkeys(map(ord, "‎‏‪‫‬‭‮⁦⁧⁨⁩"), None)
+_R_MARCAS_NO_INICIO = re.compile(r"^[\s‎‏‪-‮⁦-⁩﻿]+")
 
 
 # Fala que só cumprimenta, se apresenta ou agradece: não é o pedido.
@@ -1603,11 +2003,41 @@ _R_WHATSAPP_SO_CONVERSA = re.compile(
 
 
 def _linha_whatsapp(linha: str):
+    linha = _R_MARCAS_NO_INICIO.sub("", linha)
     for regex in _R_WHATSAPP:
         m = regex.match(linha)
         if m:
             return m
     return None
+
+
+def _hora_24(m) -> str:
+    """"2:32 PM" vira "14:32"; a hora de 24 horas passa direto."""
+    hora = m.group("hora")
+    ampm = re.sub(r"[.\s]", "", m.group("ampm") or "").lower()
+    if not ampm:
+        return hora
+    h, minuto = hora.split(":")
+    return f"{int(h) % 12 + (12 if ampm == 'pm' else 0):02d}:{minuto}"
+
+
+def _texto_da_fala(partes: list[str]) -> str:
+    """A fala sem as marcas invisíveis, sem as linhas que só apontam anexo e sem o "<Mensagem editada>"."""
+    linhas = []
+    for linha in "\n".join(partes).translate(_MARCAS_DE_DIRECAO).split("\n"):
+        linha = _R_WHATSAPP_EDITADA.sub("", linha.replace(" ", " "))
+        if _R_WHATSAPP_LINHA_DE_ANEXO.match(dobrar(linha)):
+            continue
+        linhas.append(linha)
+    return "\n".join(linhas).strip()
+
+
+def _fala_de_sistema(fala: str, primeira_parte: str) -> bool:
+    dobrada = dobrar(fala)
+    if _R_WHATSAPP_SISTEMA.search(dobrada):
+        return True
+    # "‎Maria adicionou você", marcado pelo iPhone: aviso do grupo, não fala.
+    return primeira_parte.startswith("‎") and len(fala) <= 200 and bool(_R_WHATSAPP_AVISO_DO_GRUPO.search(dobrada))
 
 
 def _ler_whatsapp(texto: str) -> Mensagem | None:
@@ -1621,20 +2051,29 @@ def _ler_whatsapp(texto: str) -> Mensagem | None:
     for i, linha in enumerate(linhas):
         m = _linha_whatsapp(linha)
         if m:
-            falas.append((m.group("nome").strip(), m.group("data"), m.group("hora"), [m.group("texto")]))
+            falas.append((m.group("nome").strip(), m.group("data"), _hora_24(m), [m.group("texto")]))
+        elif falas and _R_WHATSAPP_SEM_NOME.match(_R_MARCAS_NO_INICIO.sub("", linha)):
+            # Aviso do sistema (Android): não é continuação da fala anterior.
+            falas.append(("", "", "", []))
         elif falas:
             falas[-1][3].append(linha)
     corpo = []
     uteis = []
     registro = []
+    validas = []
     for nome_fala, data_fala, hora_fala, partes in falas:
-        fala = "\n".join(partes).strip()
-        if fala and not _R_WHATSAPP_SISTEMA.search(dobrar(fala)):
+        if not nome_fala:
+            continue
+        fala = _texto_da_fala(partes)
+        if fala and not _fala_de_sistema(fala, partes[0] if partes else ""):
             corpo.append(fala)
+            validas.append((nome_fala, data_fala, hora_fala))
             registro.append({"nome": nome_fala, "enviado_em": _com_fuso(data_hora_de_cabecalho(f"{data_fala} {hora_fala}"))})
             if not _R_WHATSAPP_SO_CONVERSA.match(dobrar(fala)):
                 uteis.append((nome_fala, data_fala, hora_fala))
-    nome, data, hora, _ = falas[0]
+    # Quem abre a conversa e quando: a primeira fala de verdade (o aviso da
+    # criptografia, no topo da exportação, não conta).
+    nome, data, hora = validas[0] if validas else falas[0][:3]
     enviado_em = data_hora_de_cabecalho(f"{data} {hora}")
     # O momento do pedido: a primeira fala que diz alguma coisa (não o "bom
     # dia", nem o "aqui é a Fulana") do último dia da conversa — numa conversa

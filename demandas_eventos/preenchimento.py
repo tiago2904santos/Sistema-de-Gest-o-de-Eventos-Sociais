@@ -408,7 +408,7 @@ def _canal_e_protocolo(s: Sugestoes, mensagem: Mensagem) -> None:
         canal, motivo = registro
         s.por("canal_solicitacao", Sugestao(canal, rotulos[canal], "M", motivo))
         return
-    canal = CanalSolicitacao.WHATSAPP if mensagem.origem == "whatsapp" else CanalSolicitacao.EMAIL
+    canal = CanalSolicitacao.WHATSAPP if mensagem.origem in ("whatsapp", "print") else CanalSolicitacao.EMAIL
     motivo = "Conversa do WhatsApp colada." if canal == CanalSolicitacao.WHATSAPP else "O pedido chegou por e-mail."
     s.por("canal_solicitacao", Sugestao(canal, rotulos[canal], "A", motivo))
 

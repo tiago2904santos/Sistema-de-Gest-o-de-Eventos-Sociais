@@ -213,7 +213,7 @@ class LerEmailTests(BasePreencherPorEmail):
     def test_arquivo_de_outro_tipo_e_recusado(self):
         resposta = self.ler(arquivo=SimpleUploadedFile("planilha.xlsx", b"PK\x03\x04 planilha"))
         self.assertEqual(resposta.status_code, 400)
-        self.assertIn(".eml, .msg, .pdf ou .txt", resposta.json()["erro"])
+        self.assertIn("conversa do WhatsApp exportada (.zip/.txt) ou print", resposta.json()["erro"])
 
     def test_conteudo_que_nao_confere_com_a_extensao_e_recusado(self):
         resposta = self.ler(arquivo=SimpleUploadedFile("pedido.eml", PDF_OFICIO))
