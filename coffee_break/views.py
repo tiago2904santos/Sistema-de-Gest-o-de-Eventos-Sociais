@@ -744,7 +744,8 @@ def exportar_solicitacoes(request):
     escritor.writerow(
         [
             "Nº", "Lote", "Fornecedor", "Data da solicitação", "Evento",
-            "Período", "Quantidade", "Quantidade faturada", "Valor unitário", "Valor",
+            "Período", "Local de entrega", "Endereço", "Bairro", "CEP",
+            "Quantidade", "Quantidade faturada", "Valor unitário", "Valor",
             "Nota fiscal", "Protocolo",
             "Atesto GAF", "Ordem bancária", "Envio à empresa", "Situação",
             "Criado por",
@@ -759,6 +760,10 @@ def exportar_solicitacoes(request):
                 solicitacao.data_solicitacao.strftime("%d/%m/%Y"),
                 solicitacao.descricao_evento,
                 solicitacao.periodo_evento_display,
+                solicitacao.local_entrega,
+                solicitacao.endereco,
+                solicitacao.bairro,
+                solicitacao.cep,
                 solicitacao.quantidade,
                 "" if solicitacao.quantidade_faturada is None else solicitacao.quantidade_faturada,
                 _decimal_csv(solicitacao.valor_unitario_efetivo),
@@ -1148,7 +1153,10 @@ def ler_email(request):
 
 # O que a cópia leva da solicitação original: o evento que se repete. Nunca
 # datas, número, nota, ofício, protocolo nem pagamento — esses são da nova.
-CAMPOS_DUPLICADOS = ("municipio", "descricao_evento", "quantidade", "horario_evento", "local_entrega", "responsavel_recebimento")
+CAMPOS_DUPLICADOS = (
+    "municipio", "descricao_evento", "quantidade", "horario_evento",
+    "local_entrega", "endereco", "bairro", "cep", "responsavel_recebimento",
+)
 
 
 def _origem_da_copia(dados):
@@ -1179,9 +1187,11 @@ def locais_entrega(request):
             SolicitacaoCoffeeBreak.objects.filter(municipio_id=municipio)
             .exclude(local_entrega="")
             .order_by("-data_inicio_evento", "-pk")
-            .values_list("local_entrega", "responsavel_recebimento", "numero", "data_inicio_evento")[:200]
+            .values_list(
+                "local_entrega", "responsavel_recebimento", "numero", "data_inicio_evento", "endereco", "bairro", "cep"
+            )[:200]
         )
-        for local, responsavel, numero, data in recentes:
+        for local, responsavel, numero, data, endereco, bairro, cep in recentes:
             chave = (local.strip().casefold(), responsavel.strip().casefold())
             if chave in vistos:
                 continue
@@ -1190,7 +1200,12 @@ def locais_entrega(request):
             resultados.append({
                 "nome": local,
                 "detalhe": detalhe,
-                "campos": {"local_entrega": local, "responsavel_recebimento": responsavel},
+                # O endereço vai junto do local (o mesmo lugar, o mesmo endereço),
+                # só quando gravado: vazio não apaga o que a pessoa já digitou.
+                "campos": {
+                    "local_entrega": local, "responsavel_recebimento": responsavel,
+                    **{nome: valor for nome, valor in (("endereco", endereco), ("bairro", bairro), ("cep", cep)) if valor},
+                },
             })
             if len(resultados) == 10:
                 break

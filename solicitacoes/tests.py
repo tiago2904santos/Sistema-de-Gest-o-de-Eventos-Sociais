@@ -210,6 +210,18 @@ class FormsTests(BaseSolicitacaoTestCase):
 
         self.assertTrue(form.is_valid(), form.errors)
 
+    def test_endereco_do_local_com_cep_formatado(self):
+        dados = self.dados_completos_post()
+        dados.update({"endereco": "Rua Fictícia, 100, sala 2", "bairro": "Centro", "cep": "84010000"})
+        form = SolicitacaoForm(dados, enviar=True)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["cep"], "84010-000")
+
+        dados["cep"] = "8401-000"
+        form = SolicitacaoForm(dados, enviar=True)
+        self.assertFalse(form.is_valid())
+        self.assertIn("cep", form.errors)
+
     def test_parana_em_acao_nao_sobrescreve_o_solicitante(self):
         """O solicitante do Paraná em Ação é sugestão (modelo do tipo), não regra fixa."""
         dados = self.dados_completos_post()

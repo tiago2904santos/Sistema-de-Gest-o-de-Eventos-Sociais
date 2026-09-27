@@ -49,6 +49,7 @@
     {% ponto_de_quebra "antes_local" %}
     <p class="doc-cb-os__local"><b>{% bloco "cb_rotulo_local" elemento="span" base=False %}</b></p>
     <p{% editavel "cb_local" classe="doc-cb-os__local-texto" %}>{{ s.local_entrega }}{% if not s.local_entrega %}{% if campos_editaveis %}{% vazio "Local de entrega" %}{% else %}<span class="doc-vazio">Local de entrega</span>{% endif %}{% endif %}</p>
+    {% if s.endereco_completo %}<p class="doc-cb-os__local-texto">{{ s.endereco_completo }}</p>{% endif %}
 
     <p class="doc-cb-os__responsavel"><b>{% bloco "cb_rotulo_responsavel" elemento="span" base=False %}</b> {% trecho "cb_responsavel" %}{{ s.responsavel_recebimento }}{% if not s.responsavel_recebimento %}{% if campos_editaveis %}{% vazio "Responsável" %}{% else %}<span class="doc-vazio">Responsável</span>{% endif %}{% endif %}{% endtrecho %}</p>
 

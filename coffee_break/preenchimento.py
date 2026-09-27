@@ -5,7 +5,7 @@ o lote e o saldo conferidos já na leitura (falta de saldo vira aviso antes
 de salvar), uma data só por OS (um período vira aviso: uma OS por dia) e o
 número da OS nunca sugerido — ele é da numeração única do sistema.
 
-A leitura genérica (datas, município, telefone, assinatura, local) vem de
+A leitura genérica (datas, município, telefone, assinatura, local, endereço) vem de
 `core.leitura` e de `core.preencher_por_email`. Nada aqui grava.
 """
 
@@ -14,12 +14,20 @@ from __future__ import annotations
 import re
 
 
-from core.leitura.casamento import quantidade_de_pessoas
-from core.leitura.datas import dobrar, horarios_do_texto
+from core.leitura.datas import dobrar
 from core.leitura.mensagem import Mensagem
-from core.preencher_por_email import Sugestao, Sugestoes, data_do_email, local_no_texto, municipio_do_pedido, quando_do_pedido, quem_pede
+from core.preencher_por_email import (
+    Sugestao,
+    Sugestoes,
+    data_do_email,
+    municipio_do_pedido,
+    quando_do_pedido,
+    quem_pede,
+    sugerir_endereco,
+)
 
 from . import services
+from .leitura_pedido import evento_do_texto, horario_do_texto, local_do_texto, quantidade_do_texto, quem_recebe_no_texto
 
 # "Solicitação de coffee break – Ciclo de Palestras" -> "Ciclo de Palestras".
 _R_PEDIDO_NO_ASSUNTO = re.compile(
@@ -28,50 +36,45 @@ _R_PEDIDO_NO_ASSUNTO = re.compile(
     r"\s*(?:(?:para|p/)\s+(?:o|a|os|as)?\s*)?[-–:,/|]*\s*"
 )
 _R_ASSUNTO_GENERICO = re.compile(r"^(?:solicitacao|pedido|requisicao|urgente|importante|informacao|duvida)?\W*$")
-_R_COFFEE = re.compile(r"\b(?:cof+e+(?:[\s-]?break)?|cafe|lanches?|intervalo|servir|servido|entrega|entregar)\b")
-_R_PARA_QUANTOS = re.compile(
-    r"\b(?:cof+e+(?:[\s-]?break)?|cafe|lanches?|kits?)\b[^.\n]{0,40}?\bpara\s+"
-    r"(?:cerca\s+de\s+|aproximadamente\s+|aprox\.?\s+|uns\s+|umas\s+|ate\s+)?(?P<n>\d{1,4})\b"
-    r"(?!\s*(?:h\b|hs\b|horas?|min|/|de\s+(?:jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)))"
-)
-_R_COFFEE_NO_CORPO = re.compile(r"\b(?:cof+e+(?:[\s-]?break)?|lanches?|kits?\s+(?:de\s+)?lanches?)\b")
-# "para o Encontro Regional", "do Ciclo de Palestras": palavras com inicial maiúscula.
-_R_NOME_DO_EVENTO = re.compile(
-    r"\b(?:para|do|da|no|na)\s+(?:o|a|os|as)\s+(?P<nome>[A-ZÀ-Ý][\wÀ-ÿ'ºª-]*"
-    r"(?:\s+(?:(?:d[aeo]s?|e)\s+)?[A-ZÀ-Ý0-9][\wÀ-ÿ'ºª-]*){1,8})"
-)
-_R_RESPONSAVEL = re.compile(
-    r"\b(?:respons[a]vel\s+(?:pelo\s+|pela\s+|por\s+)?(?:recebimento|receber|entrega)|"
-    r"quem\s+(?:vai\s+)?receber(?:a)?|recebedor[a]?|contato\s+(?:no|do)\s+local|receber\s+no\s+local)"
-    r"\s*(?:[:–-]|sera|e)?\s*(?P<valor>[^\n;]{3,150})"
+
+# "De:/Enviado em:/Assunto:" do e-mail citado: o assunto abreviado não é o nome do evento.
+_R_CABECALHO_CITADO = re.compile(
+    r"(?im)^\s*(?:de|from|enviado\s+em|sent|date|data|para|to|cc|assunto|subject)\s*:.*$"
 )
 
 #: Campos que a memória guarda por remetente ao salvar (`core.aprendizado`):
 #: o que o próximo e-mail da mesma origem provavelmente repete.
-CAMPOS_APRENDIDOS = ["municipio", "local_entrega", "responsavel_recebimento"]
+CAMPOS_APRENDIDOS = ["municipio", "local_entrega", "endereco", "bairro", "cep", "responsavel_recebimento"]
 
 
 
-def _nome_do_evento(corpo: str, municipio) -> Sugestao | None:
-    """Sem assunto que sirva: o nome próprio do evento na frase do coffee, e o município.
+def _partes(mensagem: Mensagem) -> list[str]:
+    """Onde procurar: o corpo e, se faltar, a conversa citada (a correção
+    "serão 55, e não 40" vem no corpo; o resto do pedido, no e-mail citado)."""
+    citado = _R_CABECALHO_CITADO.sub("", mensagem.citado or "")
+    return [t for t in (mensagem.corpo or "", citado) if t.strip()]
 
-    "coffee break para o Encontro Regional em Ponta Grossa" vira
-    "Encontro Regional - Ponta Grossa" (no molde "Ciclo de Palestras - 1DP Curitiba").
-    """
-    dobrado = dobrar(corpo)
-    for pedido in _R_COFFEE_NO_CORPO.finditer(dobrado):
-        m = _R_NOME_DO_EVENTO.search(corpo, pedido.end(), min(len(corpo), pedido.end() + 120))
-        if not m:
-            continue
-        nome = " ".join(m.group("nome").split())
-        if municipio is not None and dobrar(municipio.nome) not in dobrar(nome):
-            nome = f"{nome} - {municipio.nome}"
-        return Sugestao(nome[:255], nome[:255], "M", corpo[pedido.start():m.end()].strip())
-    return None
+
+def _com_municipio(nome: str, municipio) -> str:
+    """No molde da OS, "Encontro Regional em Ponta Grossa" vira "Encontro Regional - Ponta Grossa"."""
+    if municipio is None:
+        return nome
+    cidade = municipio.nome
+    m = re.search(r"\s+(?:em|de)\s+" + re.escape(dobrar(cidade)) + r"$", dobrar(nome))
+    if m:
+        nome = nome[:m.start()]
+    if dobrar(cidade) not in dobrar(nome):
+        nome = f"{nome} - {cidade}"
+    return nome
 
 
 def _descricao_do_evento(mensagem: Mensagem, municipio=None) -> Sugestao | None:
-    """O objeto da OS: o assunto sem "RES:"/"ENC:" e sem "Solicitação de coffee break –"."""
+    """O evento para o qual é o coffee: o nome dito no corpo (com o município); senão, o assunto limpo."""
+    for texto in _partes(mensagem):
+        evento = evento_do_texto(texto)
+        if evento is not None:
+            nome = _com_municipio(evento.nome, municipio)[:255]
+            return Sugestao(nome, nome, evento.confianca, evento.trecho)
     assunto = mensagem.assunto_limpo
     if assunto:
         m = _R_PEDIDO_NO_ASSUNTO.match(dobrar(assunto))
@@ -80,44 +83,49 @@ def _descricao_do_evento(mensagem: Mensagem, municipio=None) -> Sugestao | None:
         if len(resto) >= 4 and not _R_ASSUNTO_GENERICO.match(dobrar(resto)):
             resto = resto[:1].upper() + resto[1:]
             return Sugestao(resto[:255], resto[:255], "M", assunto)
-    return _nome_do_evento(mensagem.corpo or "", municipio)
-
-
-def _quantidade(corpo: str) -> Sugestao | None:
-    achado = quantidade_de_pessoas(corpo)
-    if achado is not None:
-        return Sugestao.de_achado(achado)
-    m = _R_PARA_QUANTOS.search(dobrar(corpo))
-    if m and 0 < int(m.group("n")) <= 10000:
-        valor = int(m.group("n"))
-        return Sugestao(valor, str(valor), "M", corpo[m.start():m.end()].strip())
     return None
 
 
-def _horario(texto: str, quando) -> Sugestao | None:
-    """O horário do coffee ("coffee às 10h", "intervalo às 15h30"); senão, o início do evento."""
-    dobrado = dobrar(texto)
-    for horario in horarios_do_texto(texto):
-        antes = dobrado[max(0, horario.inicio_pos - 60):horario.inicio_pos]
-        frase = antes[max(antes.rfind("\n"), antes.rfind(". ")) + 1:]
-        if _R_COFFEE.search(frase):
-            trecho = texto[max(0, horario.inicio_pos - len(frase)):horario.fim_pos].strip()
-            return Sugestao(horario.inicio, f"{horario.inicio:%H:%M}", "M", trecho)
+def _quantidade(mensagem: Mensagem) -> Sugestao | None:
+    for texto in _partes(mensagem):
+        achado = quantidade_do_texto(texto)
+        if achado is not None:
+            return Sugestao(achado.valor, str(achado.valor), achado.confianca, achado.trecho)
+    return None
+
+
+def _horario(mensagem: Mensagem, quando) -> Sugestao | None:
+    """O horário do coffee ("coffee às 10h", "intervalo às 15h30"); senão, o do evento."""
+    achados = [h for h in (horario_do_texto(t) for t in _partes(mensagem)) if h is not None]
+    for hora in achados:
+        if hora.do_coffee:
+            return Sugestao(hora.valor, f"{hora.valor:%H:%M}", "M", hora.trecho)
+    # O 1º horário do texto (já sem "15h\n30 participantes" virar 15h30); senão, o do evento.
+    if achados:
+        hora = achados[0]
+        return Sugestao(hora.valor, f"{hora.valor:%H:%M}", "M", hora.trecho)
     if quando is not None and quando.hora_inicio:
         return Sugestao(quando.hora_inicio, f"{quando.hora_inicio:%H:%M}", "M", quando.trecho)
     return None
 
 
+def _local_entrega(mensagem: Mensagem) -> Sugestao | None:
+    """O nome do lugar da entrega (o endereço vai nos campos próprios)."""
+    for texto in _partes(mensagem):
+        local = local_do_texto(texto)
+        if local is not None:
+            return Sugestao(local.nome[:255], local.nome[:255], local.confianca, local.trecho)
+    return None
+
+
 def _responsavel(mensagem: Mensagem, pessoa) -> Sugestao | None:
-    """Quem recebe no local: o que o e-mail disser; senão, nome e celular de quem pede."""
-    corpo = mensagem.corpo or ""
-    m = _R_RESPONSAVEL.search(dobrar(corpo))
-    if m:
-        valor = corpo[m.start("valor"):m.end("valor")]
-        valor = re.split(r"\.\s|\.$", valor)[0]
-        valor = " ".join(valor.split()).strip(" ,.;:-–")
-        if len(valor) >= 3:
-            return Sugestao(valor[:150], valor[:150], "M", corpo[m.start():m.end()].strip())
+    """Quem recebe no local: o que o e-mail disser; senão (ou "eu recebo"), nome e celular de quem pede."""
+    for texto in _partes(mensagem):
+        quem = quem_recebe_no_texto(texto)
+        if quem is not None and not quem.eh_quem_pede:
+            return Sugestao(quem.nome, quem.nome, "M", quem.trecho)
+        if quem is not None:
+            break
     if pessoa is None or not pessoa.nome:
         return None
     valor = pessoa.nome
@@ -165,7 +173,7 @@ def sugestoes(mensagem: Mensagem, usuario=None) -> Sugestoes:
     s.por("municipio", Sugestao.de_achado(municipio))
 
     s.por("descricao_evento", _descricao_do_evento(mensagem, municipio.valor if municipio else None))
-    quantidade = _quantidade(mensagem.corpo)
+    quantidade = _quantidade(mensagem)
     s.por("quantidade", quantidade)
 
     quando, avisos_da_data = quando_do_pedido(mensagem)
@@ -181,9 +189,10 @@ def sugestoes(mensagem: Mensagem, usuario=None) -> Sugestoes:
                 f"preenchi o primeiro dia. Para os outros dias, registre uma solicitação por dia."
             )
         s.por("data_inicio_evento", Sugestao(quando.inicio, f"{quando.inicio:%d/%m/%Y}", confianca, quando.trecho))
-    s.por("horario_evento", _horario(texto, quando))
+    s.por("horario_evento", _horario(mensagem, quando))
 
-    s.por("local_entrega", Sugestao.de_achado(local_no_texto(mensagem.corpo)))
+    s.por("local_entrega", _local_entrega(mensagem))
+    sugerir_endereco(s, mensagem)
     s.por("responsavel_recebimento", _responsavel(mensagem, pessoa))
 
     if municipio is not None:

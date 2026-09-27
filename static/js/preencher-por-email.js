@@ -1,11 +1,12 @@
 /**
  * Preencher com um e-mail (components/v32/preencher_por_email.html).
  *
- * A pessoa solta o arquivo do e-mail (.eml, .msg, PDF impresso ou .txt) ou
- * cola o texto. O endpoint do módulo (`data-url`, POST) lê e devolve
+ * A pessoa solta o arquivo do e-mail (.eml, .msg, PDF impresso ou .txt), a
+ * conversa do WhatsApp exportada (.zip) ou o print dela (.png, .jpg, .webp),
+ * ou cola o texto. O endpoint do módulo (`data-url`, POST) lê e devolve
  *   {campos: {nome: {valor, exibir, confianca, trecho, rotulo}},
  *    avisos: [...], duplicados: [{titulo, url}],
- *    mensagem: {assunto, remetente, enviado_em},
+ *    mensagem: {assunto, remetente, enviado_em, origem},
  *    arquivo: {token, nome, anexos}}
  * e aqui:
  *
@@ -35,9 +36,11 @@
  * restaurou conta como preenchido, não é sobrescrito.
  *
  * Com `data-anexos` (o id do seletor de anexos do formulário), a faixa também
- * recebe os anexos: soltar vários arquivos lê o e-mail (ou, sem e-mail, o
- * primeiro PDF) e manda o resto — ofício, fotos, documentos — para a lista de
- * anexos, que vai junto ao salvar. PDF que não se lê como e-mail vira anexo.
+ * recebe os anexos: soltar vários arquivos lê o e-mail ou a conversa do
+ * WhatsApp (ou, sem eles, o primeiro PDF; sem PDF, a primeira imagem, como
+ * print da conversa) e manda o resto — ofício, fotos, documentos — para a
+ * lista de anexos, que vai junto ao salvar. PDF que não se lê como e-mail e
+ * imagem que não é print de conversa viram anexo.
  *
  * O conteúdo do e-mail nunca entra como HTML: tudo vai por textContent.
  */
@@ -45,11 +48,18 @@
   "use strict";
 
   var PRIMEIROS = ["estado", "tipo_evento", "canal_solicitacao", "unidade_movel", "evento"];
-  var EXTENSOES = [".eml", ".msg", ".pdf", ".txt"];
-  var EMAILS = [".eml", ".msg", ".txt"];
+  // O .zip é a conversa exportada pelo WhatsApp; a imagem, o print da conversa.
+  var EXTENSOES = [".eml", ".msg", ".pdf", ".txt", ".zip", ".png", ".jpg", ".jpeg", ".webp"];
+  var EMAILS = [".eml", ".msg", ".txt", ".zip"];
+  var IMAGENS = [".png", ".jpg", ".jpeg", ".webp"];
+  var MSG_FORMATO = "Envie o e-mail (.eml, .msg), PDF, conversa do WhatsApp exportada (.zip/.txt) ou print — ou cole o texto.";
 
   // Pelo nome; sem extensão (o celular às vezes manda "document"), pelo tipo.
-  var TIPOS = { "application/pdf": ".pdf", "message/rfc822": ".eml", "text/plain": ".txt", "application/vnd.ms-outlook": ".msg" };
+  var TIPOS = {
+    "application/pdf": ".pdf", "message/rfc822": ".eml", "text/plain": ".txt", "application/vnd.ms-outlook": ".msg",
+    "application/zip": ".zip", "application/x-zip-compressed": ".zip",
+    "image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"
+  };
   function extensaoDe(arquivo) {
     var nome = (arquivo.name || "").toLowerCase();
     var ponto = nome.lastIndexOf(".");
@@ -446,8 +456,9 @@
     function descreverOrigem(dados) {
       var m = dados.mensagem || {};
       var partes = [];
-      if (m.remetente) partes.push("E-mail de " + m.remetente);
-      else partes.push("E-mail");
+      var fonte = m.origem === "whatsapp" ? "Conversa do WhatsApp" : (m.origem === "print" ? "Print da conversa" : "E-mail");
+      if (m.remetente) partes.push(fonte + (m.origem === "whatsapp" || m.origem === "print" ? " com " : " de ") + m.remetente);
+      else partes.push(fonte);
       if (m.enviado_em) partes[0] += " (" + m.enviado_em + ")";
       var texto = partes[0] + (m.assunto ? ": “" + m.assunto + "”." : ".");
       var arquivo = dados.arquivo || {};
@@ -634,7 +645,7 @@
     function lerArquivo(arquivo, seNaoLer) {
       if (!arquivo) return;
       if (EXTENSOES.indexOf(extensaoDe(arquivo)) === -1) {
-        mostrarErro("Envie o e-mail em .eml, .msg, .pdf ou .txt — ou cole o texto.");
+        mostrarErro(MSG_FORMATO);
         return;
       }
       if (maximo && arquivo.size > maximo) {
@@ -709,16 +720,19 @@
         lerArquivo(arquivos[0]);
         return;
       }
-      // O e-mail é lido; sem e-mail, o primeiro PDF (e-mail impresso ou ofício).
+      // O e-mail (ou a conversa do WhatsApp) é lido; sem ele, o primeiro PDF
+      // (e-mail impresso ou ofício); sem PDF, a primeira imagem (o print da conversa).
       var ler = arquivos.filter(function (a) { return EMAILS.indexOf(extensaoDe(a)) !== -1; })[0] ||
-        arquivos.filter(function (a) { return extensaoDe(a) === ".pdf"; })[0];
+        arquivos.filter(function (a) { return extensaoDe(a) === ".pdf"; })[0] ||
+        arquivos.filter(function (a) { return IMAGENS.indexOf(extensaoDe(a)) !== -1; })[0];
       var resto = arquivos.filter(function (a) { return a !== ler; });
       if (!ler) {
         mostrarErro("");
         anexar(resto);
         return;
       }
-      var pdf = extensaoDe(ler) === ".pdf";
+      // PDF ou imagem que não se lê como pedido fica só como anexo.
+      var pdf = extensaoDe(ler) === ".pdf" || IMAGENS.indexOf(extensaoDe(ler)) !== -1;
       if (maximo && ler.size > maximo) {
         resto.unshift(ler);
         mostrarErro("");
@@ -727,7 +741,7 @@
       }
       anexar(resto);
       lerArquivo(ler, pdf ? function () {
-        // PDF que não é e-mail (um ofício escaneado, por exemplo): só anexa.
+        // PDF que não é e-mail (um ofício escaneado) ou foto que não é print: só anexa.
         anexar([ler]);
         return true;
       } : null);

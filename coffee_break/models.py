@@ -475,6 +475,13 @@ class SolicitacaoCoffeeBreak(models.Model):
         help_text="Em branco, a OS monta o texto com as datas, o horário e a quantidade.",
     )
     local_entrega = models.CharField("local de entrega", max_length=255, blank=True)
+    # O endereço em campos separados (o "local de entrega" é o nome do lugar): o
+    # "Preencher com um e-mail" lê cada parte e o CEP vai no formato 00000-000.
+    endereco = models.CharField(
+        "endereço", max_length=255, blank=True, help_text="Logradouro, número e complemento."
+    )
+    bairro = models.CharField("bairro", max_length=120, blank=True)
+    cep = models.CharField("CEP", max_length=9, blank=True, help_text="00000-000")
     responsavel_recebimento = models.CharField(
         "responsável pelo recebimento", max_length=150, blank=True,
         help_text="Nome e telefone de quem recebe no local.",
@@ -603,6 +610,13 @@ class SolicitacaoCoffeeBreak(models.Model):
                 name="coffee_envio_apos_ob",
             ),
         ]
+
+    @property
+    def endereco_completo(self) -> str:
+        """Endereço, bairro e CEP numa linha ("Rua X, 10 - Centro - CEP 84010-000")."""
+        from core.utils.masks import juntar_endereco
+
+        return juntar_endereco(self.endereco, self.bairro, self.cep)
 
     def __str__(self):
         rotulo = self.numero or f"#{self.pk}"

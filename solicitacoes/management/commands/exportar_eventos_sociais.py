@@ -44,10 +44,13 @@ def _municipio(municipio):
 CAMPOS_SIMPLES = [
     "status", "data_solicitacao", "data_inicio_evento", "data_fim_evento",
     "solicitante_nome", "solicitante_cargo_unidade", "contato",
-    "unidade_movel", "local_evento", "descricao_complementar",
+    "unidade_movel", "local_evento", "endereco", "bairro", "cep", "descricao_complementar",
     "quantidade_servidores", "tipo_operacao", "quantidade_cin",
     "decisao_dg", "observacoes_dg", "decidido_em", "criado_em", "atualizado_em",
 ]
+# Campos que entraram depois: o JSON exportado antes deles não os tem, e a
+# importação usa vazio.
+CAMPOS_OPCIONAIS = {"endereco", "bairro", "cep"}
 
 
 class Command(BaseCommand):

@@ -36,7 +36,7 @@ from solicitacoes.models import (
 )
 from viagens_cadastros.models import Servidor
 
-from .exportar_eventos_sociais import CAMPOS_SIMPLES
+from .exportar_eventos_sociais import CAMPOS_OPCIONAIS, CAMPOS_SIMPLES
 
 User = get_user_model()
 
@@ -128,8 +128,8 @@ class Command(BaseCommand):
             self.pulados.append(f"já importada: #{registro['referencia']}")
             return
         solicitacao = SolicitacaoEvento(
-            **{campo: registro[campo] for campo in CAMPOS_SIMPLES if campo not in
-               {"criado_em", "atualizado_em"}},
+            **{campo: registro.get(campo, "") if campo in CAMPOS_OPCIONAIS else registro[campo]
+               for campo in CAMPOS_SIMPLES if campo not in {"criado_em", "atualizado_em"}},
             municipio=self._municipio(registro["municipio"]),
             regiao=self._por_nome(Regiao, registro["regiao"]),
             tipo_evento=self._por_nome(TipoEvento, registro["tipo_evento"]),

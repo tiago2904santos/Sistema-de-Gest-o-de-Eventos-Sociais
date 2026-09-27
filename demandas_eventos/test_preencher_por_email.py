@@ -177,7 +177,8 @@ class LerEmailPalestraTests(BasePalestraPorEmail):
         self.assertEqual(campos["hora_inicio"], "19:00")
         self.assertEqual(campos["quantidade_publico"], "80")
         self.assertEqual(campos["telefone"], "(42) 99911-2233")
-        self.assertEqual(campos["solicitante"], "Joana Lima")
+        # "Aqui é da Escola X": quem pede é a escola, com a pessoa de contato ao lado.
+        self.assertEqual(campos["solicitante"], "Joana Lima — Escola Municipal Castro Alves")
         self.assertNotIn("email", campos)
         # "violência … doméstico" casa pelas palavras do tema: fica como sugestão.
         self.assertEqual(campos["temas"], [str(self.violencia.pk)])
@@ -193,6 +194,29 @@ class LerEmailPalestraTests(BasePalestraPorEmail):
         self.assertEqual(campos["canal_solicitacao"], CanalSolicitacao.PROTOCOLO)
         self.assertEqual(campos["protocolo"], "26.613.666-8")
         self.assertTrue(any("26.613.666-8" in aviso for aviso in dados["avisos"]))
+
+    def test_local_e_endereco(self):
+        corpo = CORPO.replace(
+            "Caso haja disponibilidade",
+            "Local: Auditório do Colégio, Rua dos Pinheiros Fictícios, 900 - Vila Estrela - CEP 84040-000.\n\n"
+            "Caso haja disponibilidade",
+        )
+        dados = self.ler_eml(email_do_pedido(corpo=corpo)).json()
+        campos = self.valores(dados)
+        self.assertEqual(campos["local"], "Auditório do Colégio")
+        self.assertEqual(campos["endereco"], "Rua dos Pinheiros Fictícios, 900")
+        self.assertEqual(campos["bairro"], "Vila Estrela")
+        self.assertEqual(campos["cep"], "84040-000")
+        self.assertEqual(dados["campos"]["local"]["confianca"], "A")
+        # O que a tela recebe salva a palestra com o endereço.
+        post = {nome: campo["valor"] for nome, campo in dados["campos"].items() if campo["confianca"] != "B"}
+        self.client.post(reverse("demandas_eventos:nova"), post)
+        demanda = DemandaEvento.objects.get()
+        self.assertEqual(
+            (demanda.local, demanda.endereco, demanda.bairro, demanda.cep),
+            ("Auditório do Colégio", "Rua dos Pinheiros Fictícios, 900", "Vila Estrela", "84040-000"),
+        )
+        self.assertEqual(demanda.endereco_completo, "Rua dos Pinheiros Fictícios, 900 - Vila Estrela - CEP 84040-000")
 
     def test_telefone_nao_vira_protocolo(self):
         dados = self.ler_eml().json()

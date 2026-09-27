@@ -93,7 +93,7 @@ def _marcados(form, nome):
 
 CAMPOS_FORMULARIO = [
     "data_solicitacao", "data_inicio_evento", "data_fim_evento", "tipo_evento",
-    "municipio", "local_evento", "protocolo", "solicitante_nome", "solicitante_cargo_unidade",
+    "municipio", "local_evento", "endereco", "bairro", "cep", "protocolo", "solicitante_nome", "solicitante_cargo_unidade",
     "contato", "orgao_responsavel", "unidade_movel", "unidade_movel_designada",
     "descricao_complementar", "quantidade_servidores",
     "tipo_operacao", "quantidade_cin", "motorista", "decisao_dg", "observacoes_dg",
@@ -935,7 +935,7 @@ def lista_solicitacoes(request):
 COLUNAS_EXPORTACAO = [
     ("Nº", 8), ("Status", 22), ("Data da solicitação", 14), ("Início do evento", 14),
     ("Fim do evento", 14), ("Município", 22), ("Região", 18), ("Tipo de evento", 24),
-    ("Local", 30), ("Protocolo", 14), ("Solicitante", 28), ("Cargo / unidade", 28),
+    ("Local", 30), ("Endereço", 34), ("Bairro", 18), ("CEP", 11), ("Protocolo", 14), ("Solicitante", 28), ("Cargo / unidade", 28),
     ("Contato", 16), ("Órgão responsável", 24), ("Serviços", 36),
     ("Equipes (servidores)", 36), ("Total de servidores", 12), ("Tipo de operação", 14),
     ("Unidade móvel", 10), ("Qtde CIN", 10), ("Motorista", 22), ("Decisão DG", 16),
@@ -943,7 +943,7 @@ COLUNAS_EXPORTACAO = [
 ]
 # Colunas de data (índice a partir de 0) e a data/hora da decisão.
 COLUNAS_DATA = {2, 3, 4}
-COLUNA_DATA_HORA = 24
+COLUNA_DATA_HORA = 27
 
 
 def _linhas_exportacao(queryset):
@@ -965,6 +965,9 @@ def _linhas_exportacao(queryset):
             str(s.regiao or ""),
             str(s.tipo_evento or ""),
             s.local_evento,
+            s.endereco,
+            s.bairro,
+            s.cep,
             s.protocolo,
             s.solicitante_nome,
             s.solicitante_cargo_unidade,

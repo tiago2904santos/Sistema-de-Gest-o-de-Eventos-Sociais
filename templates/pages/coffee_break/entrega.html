@@ -23,7 +23,7 @@
         <h2 class="section-card__titulo">Registros</h2>
       </header>
       <div class="section-card__corpo">
-        <p class="cb-ajuda">{{ solicitacao.descricao_evento }} · {{ solicitacao.periodo_evento_display|default:"sem data" }}{% if solicitacao.local_entrega %} · {{ solicitacao.local_entrega }}{% endif %}</p>
+        <p class="cb-ajuda">{{ solicitacao.descricao_evento }} · {{ solicitacao.periodo_evento_display|default:"sem data" }}{% if solicitacao.local_entrega %} · {{ solicitacao.local_entrega }}{% endif %}{% if solicitacao.endereco_completo %} · {{ solicitacao.endereco_completo }}{% endif %}</p>
         <ul class="tm-fatos">
           {% for o in ocorrencias %}
             <li class="tm-fato">{% include "components/icon.html" with nome=o.com_problema|yesno:"alert,check-circle" %}<span class="vg-fato__valor"><b>{{ o.get_tipo_display }}</b>{% if o.avaliacao %} · nota {{ o.avaliacao }}/5{% endif %}{% if o.recebido_por %} · recebido por {{ o.recebido_por }}{% endif %}{% if o.descricao %} — {{ o.descricao }}{% endif %}{% if o.foto %} · <a href="{% url 'coffee_break:ocorrencia_arquivo' o.pk %}" target="_blank" rel="noopener">anexo</a>{% endif %} <small>({{ o.criado_em|date:"d/m/Y H:i" }}{% if o.registrada_por %}, {{ o.registrada_por }}{% endif %})</small></span></li>

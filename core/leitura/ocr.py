@@ -49,6 +49,7 @@ __all__ = [
     "texto_da_pagina",
     "orientacao_da_pagina",
     "texto_de_foto",
+    "texto_de_print",
 ]
 
 _LOG = logging.getLogger(__name__)
@@ -355,4 +356,49 @@ def texto_de_foto(dados: bytes) -> str:
     saida = _tesseract(png, (["-l", idioma] if idioma else []) + argumentos, "foto")
     if saida is None and idioma:
         saida = _tesseract(png, argumentos, "foto")
+    return (saida or "").strip()
+
+
+#: Print (captura de tela) acima disto não é aberto: nenhum celular gera
+#: uma tela desse tamanho, e a imagem descomprimida iria para a memória.
+MAX_PIXELS_PRINT = 40_000_000
+
+
+def texto_de_print(dados: bytes) -> str:
+    """O texto de um PRINT de conversa (PNG/JPG/WEBP), linha a linha.
+
+    Tons de cinza; o tema escuro (letra clara em fundo escuro) é invertido;
+    a tela pequena é ampliada. `--psm 4` (uma coluna de tamanhos variados)
+    mantém a ordem das bolhas de cima para baixo. "" se não houver OCR;
+    levanta ValueError se a imagem não abrir ou passar do tamanho.
+    """
+    if not disponivel():
+        return ""
+    from PIL import Image
+    from PIL import ImageOps
+    from PIL import ImageStat
+
+    try:
+        with Image.open(BytesIO(dados)) as original:
+            if original.width * original.height > MAX_PIXELS_PRINT:
+                raise ValueError("imagem grande demais")
+            imagem = ImageOps.grayscale(ImageOps.exif_transpose(original))
+    except ValueError:
+        raise
+    except Exception as exc:
+        raise ValueError("imagem ilegível") from exc
+    if ImageStat.Stat(imagem).mean[0] < 110:
+        imagem = ImageOps.invert(imagem)
+    fator = min(2.0, MAIOR_LADO / max(imagem.width, imagem.height, 1))
+    if fator > 1 and imagem.width < 1000:
+        imagem = imagem.resize((int(imagem.width * fator), int(imagem.height * fator)), Image.LANCZOS)
+    elif fator < 1:
+        imagem = imagem.resize((int(imagem.width * fator), int(imagem.height * fator)), Image.LANCZOS)
+    imagem = ImageOps.autocontrast(imagem, cutoff=1)
+    idioma = _idioma()
+    argumentos = ["--psm", "4", "--dpi", "300"]
+    png = _png(imagem, 300)
+    saida = _tesseract(png, (["-l", idioma] if idioma else []) + argumentos, "print")
+    if saida is None and idioma:
+        saida = _tesseract(png, argumentos, "print")
     return (saida or "").strip()

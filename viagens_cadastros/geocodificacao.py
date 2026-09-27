@@ -1,7 +1,9 @@
 """Coordenadas de municípios pela API Nominatim (OpenStreetMap).
 
 Usado pelo comando `geocodificar_municipios` e, sob demanda, pelo cálculo de
-rota quando um município do percurso ainda não tem coordenadas.
+rota quando um município do percurso ainda não tem coordenadas. O buscador de
+endereço das telas de eventos (`core.buscar_endereco`) usa `buscar_enderecos`
+para achar bairro, lugar ou rua pelo nome.
 """
 
 import json
@@ -50,3 +52,37 @@ def geocodificar(municipio):
         latitude=municipio.latitude, longitude=municipio.longitude
     )
     return True
+
+
+class MapaIndisponivel(Exception):
+    """O Nominatim não respondeu (rede, timeout ou resposta estranha)."""
+
+
+def buscar_enderecos(texto, limite=6, timeout=4):
+    """Lugares do Nominatim para um texto livre, com o endereço em partes.
+
+    Devolve a lista crua do Nominatim (`addressdetails=1`, só Brasil) — cada
+    item com `name`, `addresstype` e `address` (road, suburb, city, postcode…).
+    Quem chama respeita o limite de 1 requisição por segundo.
+    """
+    parametros = urllib.parse.urlencode(
+        {
+            "q": texto,
+            "format": "jsonv2",
+            "limit": limite,
+            "countrycodes": "br",
+            "addressdetails": 1,
+            "accept-language": "pt-BR",
+        }
+    )
+    pedido = urllib.request.Request(
+        f"{NOMINATIM_URL}?{parametros}", headers={"User-Agent": USER_AGENT}
+    )
+    try:
+        with urllib.request.urlopen(pedido, timeout=timeout) as resposta:
+            resultados = json.load(resposta)
+    except Exception as exc:
+        raise MapaIndisponivel from exc
+    if not isinstance(resultados, list):
+        raise MapaIndisponivel
+    return [item for item in resultados if isinstance(item, dict)]

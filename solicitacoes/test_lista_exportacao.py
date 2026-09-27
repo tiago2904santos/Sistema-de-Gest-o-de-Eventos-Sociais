@@ -43,7 +43,7 @@ class ExportarPlanilhaTests(BaseSolicitacaoTestCase):
         self.criar_solicitacao(solicitante_nome="=HYPERLINK(\"x\")")
         self.client.force_login(self.solicitante)
         aba = self._planilha(self.client.get(reverse("solicitacoes:exportar")))
-        celula = aba["K2"]
+        celula = aba["N2"]
         self.assertEqual(celula.data_type, "s")
 
     def test_exportacao_respeita_a_fila_e_a_busca(self):

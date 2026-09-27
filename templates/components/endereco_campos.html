@@ -1,0 +1,45 @@
+{% comment %}
+  Componente: os campos do endereço (endereço, bairro e CEP), ao lado do local.
+  Uso:
+    {% include "components/endereco_campos.html" with valores=valores erros=erros desabilitado=... %}
+  O endereço ocupa a linha inteira; bairro e CEP ficam lado a lado. Os nomes
+  dos campos são os do modelo (`endereco`, `bairro`, `cep`): o "Preencher com
+  um e-mail" aplica as sugestões pelo nome.
+
+  Acima, o buscador de endereço (fora do envio: o campo não tem `name`): a
+  pessoa digita rua, bairro, lugar ou CEP e escolhe uma sugestão, que preenche
+  endereço, bairro, CEP e — se a tela tiver — estado e município, sem apagar o
+  número já digitado. Sugestões do cadastro, do ViaCEP e do mapa, pelo
+  servidor (`core.buscar_endereco`); a interação é do buscar-endereco.js.
+  Com `desabilitado`, o buscador não aparece.
+{% endcomment %}
+{% load estaticos %}
+<div class="endereco-campos">
+  {% if not desabilitado %}
+  <div class="endereco-campos__linha endereco-busca" data-buscar-endereco data-url="{% url 'core:buscar_endereco' %}">
+    <div class="form-campo">
+      <label class="form-label" for="id_endereco_busca">Buscar endereço</label>
+      <div class="form-controle-wrapper endereco-busca__caixa">
+        <span class="form-controle__icone endereco-busca__lupa" aria-hidden="true">{% include "components/icon.html" with nome="search" %}</span>
+        <input class="form-controle endereco-busca__campo" type="text" id="id_endereco_busca"
+               autocomplete="off" spellcheck="false" enterkeyhint="search"
+               placeholder="Rua, bairro, lugar ou CEP — ex.: Rua XV de Novembro, Uvaranas, Ginásio Municipal"
+               role="combobox" aria-autocomplete="list" aria-expanded="false"
+               aria-controls="id_endereco_busca_lista" aria-describedby="id_endereco_busca_ajuda"
+               data-be-campo>
+        <div class="custom-select__menu is-navegavel endereco-busca__menu" data-be-menu hidden>
+          <div class="custom-select__lista" id="id_endereco_busca_lista" role="listbox" aria-label="Sugestões de endereço" data-be-lista></div>
+          <p class="custom-select__vazio endereco-busca__aviso" data-be-aviso hidden></p>
+        </div>
+      </div>
+      <p class="form-ajuda" id="id_endereco_busca_ajuda" aria-live="polite" data-be-estado>Digite ao menos 3 letras. A sugestão escolhida preenche endereço, bairro e CEP; o número fica com você.</p>
+    </div>
+  </div>
+  <script src="{% estatico 'js/buscar-endereco.js' %}" defer></script>
+  {% endif %}
+  <div class="endereco-campos__linha">
+    {% include "components/input.html" with name="endereco" label="Endereço" placeholder="Rua, número e complemento — ex.: Rua das Flores, 123, sala 2" maxlength="255" autocomplete="off" valor=valores.endereco erros=erros.endereco desabilitado=desabilitado %}
+  </div>
+  {% include "components/input.html" with name="bairro" label="Bairro" placeholder="Ex.: Centro" maxlength="120" autocomplete="off" valor=valores.bairro erros=erros.bairro desabilitado=desabilitado %}
+  {% include "components/input.html" with name="cep" label="CEP" placeholder="00000-000" mascara="cep" valor=valores.cep erros=erros.cep desabilitado=desabilitado %}
+</div>

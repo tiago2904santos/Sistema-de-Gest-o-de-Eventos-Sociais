@@ -31,6 +31,7 @@ __all__ = [
     "dobrar",
     "horarios_do_texto",
     "prazo_do_texto",
+    "data_do_documento",
     "quando_do_evento",
     "turno_do_texto",
 ]
@@ -177,7 +178,7 @@ _R_BARRA = re.compile(
 )
 # "05.01.27", "15.10": dois dígitos de cada lado (não confunde com valor ou versão).
 _R_PONTO = re.compile(
-    _ANTES_NUMERO + r"(?P<dia>\d{2})\.(?P<num>\d{2})(?:\.(?P<ano>\d{2}|20\d{2}))?(?!\.?\d)(?!\s*h)"
+    _ANTES_NUMERO + r"(?P<dia>\d{2})\.(?P<num>\d{2})(?:\.(?P<ano>\d{2}|20\d{2}))?(?!\.?\d)(?![ \t]*h(?:s|rs|oras?)?\b)"
 )
 _R_HIFEN = re.compile(r"(?<![\d.,/-])(?P<dia>\d{1,2})-(?P<num>\d{1,2})-(?P<ano>20\d{2})(?!\d)")
 # "14 11 2026": quem digita a data sem barras. Só com o ano de quatro dígitos.
@@ -185,7 +186,7 @@ _R_ESPACO = re.compile(r"(?<![\d.,/-])(?P<dia>\d{1,2}) (?P<num>\d{1,2}) (?P<ano>
 _R_RELATIVA = re.compile(r"\b(depois de amanha|amanha|hoje)\b(?!\s+em\s+dia)")
 _SEMANA = "|".join(DIAS_DA_SEMANA)
 _R_DIA_SEMANA = re.compile(
-    r"\b(?:(?P<prefixo>proxim[oa]|nest[ea]|est[ea]|n[ao]|dia)\s+)?"
+    r"(?:(?:\b|(?<=\s))(?P<prefixo>proxim[oa]|nest[ea]|est[ea]|n[ao]|dia|p/|pra|pro|para|p|ate)\s+|\b)"
     r"(?P<dia>" + _SEMANA + r")(?P<feira>\s*-?\s*feira)?\b"
     r"(?P<sufixo>\s*,?\s*(?:d?a\s+)?(?:que\s+vem|semana\s+que\s+vem|proxima\s+semana)\b)?"
 )
@@ -351,6 +352,71 @@ def _primeiro_a_partir(itens, posicoes, inicio):
     return itens[i] if i < len(itens) else None
 
 
+_R_NUMERO_DEPOIS_SEMANA = re.compile(
+    r"\s*(?:-?\s*feira)?\s*,?\s*(?:dia\s+(\d{1,2})(?:o|º)?\b|\(\s*(?:dia\s+)?(\d{1,2})\s*\)|(\d{1,2})(?=\s*(?:[,.;)]|$|\s+(?:as|a|pela|de\s+manha|a\s+tarde|a\s+noite)\b)))"
+    r"(?!\s*[/.:h]\s*\d|\s*h\b|\s*(?:de\s+)?(?:" + _MES_COMPLETO + "|" + _MES_ABREVIADO + r")\b)"
+)
+_R_DIA_SOLTO = re.compile(
+    r"\b(?:n?o\s+|para\s+o\s+|pro\s+|ate\s+o\s+|o\s+)?dia\s+(\d{1,2})(?:o|º)?\b"
+    r"(?!\s*[/.:h-]\s*\d|\s*h\b|\s*,?\s*(?:e|a|ao|ate)\s+\d|\s*(?:de\s+)?(?:" + _MES_COMPLETO + "|" + _MES_ABREVIADO + r")\b|\s+de\s+cada)"
+)
+
+
+def _dia_com_semana(numero: int, dia_semana: int, referencia: date) -> date | None:
+    """O próximo dia `numero` (a partir da referência) que cai no dia da
+    semana dito; se nenhum dos próximos meses bater, o próximo dia `numero`."""
+    candidatos = []
+    ano, mes = referencia.year, referencia.month
+    for _ in range(4):
+        try:
+            dia = date(ano, mes, numero)
+        except ValueError:
+            dia = None
+        if dia is not None and dia >= referencia:
+            candidatos.append(dia)
+        mes += 1
+        if mes > 12:
+            ano, mes = ano + 1, 1
+    for dia in candidatos:
+        if dia.weekday() == dia_semana:
+            return dia
+    return candidatos[0] if candidatos else None
+
+
+def _dias_soltos(texto, dobrado, referencia, ocupados_por, absolutas=()):
+    """"no dia 22" sem mês: o próximo dia 22 a partir da referência — ou, se
+    uma data com mês veio antes ("de 3 a 5 de novembro … no dia 4"), no mês dela."""
+    achadas = []
+    absolutas = sorted(absolutas, key=lambda a: a.inicio_pos)
+    for m in _R_DIA_SOLTO.finditer(dobrado):
+        if any(a < m.end() and m.start() < b for a, b in ocupados_por):
+            continue
+        numero = int(m.group(1))
+        if not 1 <= numero <= 31:
+            continue
+        anterior = next((a for a in reversed(absolutas) if a.fim_pos <= m.start()), None)
+        if anterior is not None:
+            base = anterior.inicio
+            try:
+                no_mes = date(base.year, base.month, numero)
+            except ValueError:
+                no_mes = None
+            if no_mes is not None and no_mes >= referencia:
+                achadas.append(DataAchada(no_mes, None, (no_mes,), "dia", texto[m.start():m.end()], m.start(), m.end()))
+                continue
+        ano, mes = referencia.year, referencia.month
+        if numero < referencia.day:
+            mes += 1
+            if mes > 12:
+                ano, mes = ano + 1, 1
+        try:
+            dia = date(ano, mes, numero)
+        except ValueError:
+            continue
+        achadas.append(DataAchada(dia, None, (dia,), "dia", texto[m.start():m.end()], m.start(), m.end()))
+    return achadas
+
+
 def _dias_da_semana(texto, dobrado, referencia, absolutas):
     achadas = []
     descartar_proximo = False
@@ -370,11 +436,20 @@ def _dias_da_semana(texto, dobrado, referencia, absolutas):
             continue
         if _R_RECORRENTE_ANTES.search(antes):
             continue
+        # "sábado, dia 7", "quarta-feira, dia 21": vale o número, no mês em que
+        # o dia da semana bate (o dia da semana sozinho daria a próxima quarta).
+        numero = _R_NUMERO_DEPOIS_SEMANA.match(dobrado[m.end():m.end() + 16])
+        if numero:
+            dia = _dia_com_semana(int(next(g for g in numero.groups() if g)), DIAS_DA_SEMANA[m.group("dia")], referencia)
+            if dia is not None:
+                fim = m.end() + numero.end()
+                achadas.append(DataAchada(dia, None, (dia,), "data", texto[m.start():fim], m.start(), fim))
+                continue
         prefixo = m.group("prefixo") or ""
         semana_que_vem = bool(m.group("sufixo")) or bool(_R_SEMANA_QUE_VEM_ANTES.search(antes))
         explicito = bool(m.group("feira")) or prefixo.startswith(("proxim", "nest", "est")) or semana_que_vem
         if not explicito:
-            if prefixo not in ("na", "no", "dia") or _R_ORDINAL_DEPOIS.match(depois):
+            if prefixo not in ("na", "no", "dia", "p/", "pra", "pro", "para", "p", "ate") or _R_ORDINAL_DEPOIS.match(depois):
                 continue
         # Dia da semana colado a uma data absoluta é só rótulo dela:
         # "quinta-feira, 24 de setembro", "25/09 (sexta)".
@@ -416,7 +491,8 @@ def datas_do_texto(texto: str, referencia) -> list[DataAchada]:
     ocupados = _Ocupados((a.inicio_pos, a.fim_pos) for a in absolutas)
     relativas = _relativas(texto, dobrado, referencia, ocupados)
     semana = _dias_da_semana(texto, dobrado, referencia, absolutas)
-    return sorted(absolutas + relativas + semana, key=lambda a: a.inicio_pos)
+    soltos = _dias_soltos(texto, dobrado, referencia, [(a.inicio_pos, a.fim_pos) for a in absolutas + relativas + semana], absolutas)
+    return sorted(absolutas + relativas + semana + soltos, key=lambda a: a.inicio_pos)
 
 
 # ---------------------------------------------------------------------------
@@ -437,7 +513,7 @@ class Horario:
 
 _R_HORA_MARCADA = re.compile(
     r"(?<![\d/.,:])(?P<h>\d{1,2})\s*(?:"
-    r"(?P<unidade>h|hs|hrs|hr|horas?)(?:\s*(?P<m1>\d{2})(?:\s*(?:min|mins|minutos?))?)?"
+    r"(?P<unidade>h|hs|hrs|hr|horas?)(?:[ \t]*(?P<m1>\d{2})(?:\s*(?:min|mins|minutos?))?)?"
     r"|:\s?(?P<m2>\d{2})(?:\s*(?:h|hs|hrs|horas?)\b)?"
     r")(?![\d/])(?!\w)"
 )
@@ -445,6 +521,10 @@ _PREFIXO_HORA = r"(?:as|das|pelas|a\s+partir\s+das|por\s+volta\s+das|ate\s+as|in
 _R_HORA_NUA = re.compile(
     r"\b(?P<prefixo>" + _PREFIXO_HORA + r")\s+(?P<h>\d{1,2})(?![\d/]|[.,:]\d)"
     r"(?=\s*(?:$|[,.;:)\n]|e\s|a\s|as\s|ate\s|-|da\s+(?:manha|tarde|noite)|horas?\b|h\b))"
+)
+# "às 8 e meia", "às 19 e 30"
+_R_HORA_E_MEIA = re.compile(
+    r"\b(?P<prefixo>" + _PREFIXO_HORA + r")\s+(?P<h>\d{1,2})\s*(?:h\s*)?e\s+(?P<min>meia|[0-5]\d)\b(?!\s*(?:pessoas|min))"
 )
 _R_MEIO_DIA = re.compile(
     r"(?:\b(?:ao|as|a|das|do|ate\s+o|ate|partir\s+do)\s+)?\bmei[oa]\s*(?P<hifen>-)?\s*(?P<qual>dia|noite)\b(?P<meia>\s+e\s+meia)?"
@@ -502,6 +582,16 @@ def _fichas_de_hora(dobrado: str) -> list[_Ficha]:
                 continue
         h, fim = _com_turno(h, dobrado, m.end())
         fichas.append(_Ficha(time(h, minutos), m.start(), fim, ""))
+        ocupados.marcar(m.start(), m.end())
+    for m in _R_HORA_E_MEIA.finditer(dobrado):
+        if not ocupados.livre(m.start("h"), m.end()):
+            continue
+        h = int(m.group("h"))
+        minutos = 30 if m.group("min") == "meia" else int(m.group("min"))
+        if h > 23 or minutos > 59:
+            continue
+        h, fim = _com_turno(h, dobrado, m.end())
+        fichas.append(_Ficha(time(h, minutos), m.start(), fim, re.sub(r"\s+", " ", m.group("prefixo"))))
         ocupados.marcar(m.start(), m.end())
     for m in _R_HORA_NUA.finditer(dobrado):
         if not ocupados.livre(m.start("h"), m.end("h")):
@@ -607,11 +697,13 @@ _R_EVENTO_NA_FRASE = re.compile(
     r"servid[oa]|servir|acontecera)"
 )
 _R_NEGATIVO_ANTES = re.compile(
-    r"\b(?:prazo|ate|enviad[oa]|recebid[oa]|datad[oa]|nascid[oa]|nascimento|validade|vencimento|vence|"
+    r"\bprazo\b[^.\n]{0,45}$|\b(?:ate|enviad[oa]|recebid[oa]|datad[oa]|nascid[oa]|nascimento|validade|vencimento|vence|"
     r"emitid[oa]|publicad[oa]|desde|oficio|lei|decreto|portaria|escreveu|inserid[oa]|assinad[oa]|"
     r"realizada\s+por|protocolad[oa]|autuad[oa]|cadastrad[oa]|criad[oa]|registrad[oa])\b[^.\n]{0,20}$"
     # "emissão em 10/10" é data de documento; "emissão de RG no dia 20/10" é o evento.
     r"|\bemissao\s*:?\s*(?:em\s+)?$|\bem\s*:\s*$"
+    # "Nas ações de 15/08/2026 e 28/11/2025 foram 200 carteiras": o que já houve.
+    r"|\b(?:nas?\s+ac(?:ao|oes)|no\s+evento|nos\s+eventos|na\s+edicao|nas\s+edicoes|no\s+ano\s+passado|anteriores?)\s+(?:de|do|em|realizad[oa]s?\s+em)?\s*$"
 )
 # A frase inteira é de carimbo, cabeçalho ou assinatura: a data é de quando o
 # documento foi feito, nunca a do evento (o eProtocolo, o "Em ... escreveu:",
@@ -629,6 +721,25 @@ _R_DATELINE_ANTES = re.compile(r"^\s*[^\d\n,;:]{3,40},\s*(?:aos\s+)?$")
 _R_DATELINE_DEPOIS = re.compile(r"^\s*\.?\s*$")
 
 
+_R_DATA_VELHA_ANTES = re.compile(
+    r"\b(?:que\s+(?:seria|era)|estava\s+(?:previst|marcad|agendad)\w*(?:\s+para)?|ao\s+inves\s+d[eo]|em\s+vez\s+d[eo]|no\s+lugar\s+d[eo]|"
+    r"anterior(?:mente)?|antig[oa]|a\s+data\s+de)\s*(?:o\s+|a\s+|para\s+o\s+)?(?:dia\s+)?$"
+)
+_R_DATA_VELHA_DEPOIS = re.compile(
+    r"^\s*(?:\)|,)?\s*(?:nao\s+(?:sera|vai\s+ser|e|da|dara)\s+(?:mais\s+)?possivel|nao\s+(?:vai\s+)?(?:da|dar|rola|podemos|conseguimos)|"
+    r"foi\s+(?:adiad|cancelad|transferid|remarcad|alterad)\w*|(?:esta|fica)\s+cancelad\w*|nao\s+vale\s+mais)"
+)
+_R_DESCONSIDERAR = re.compile(r"\b(?:desconsider\w+|esquec\w+|ignor\w+|cancel\w+)\b[^.\n]{0,50}$")
+_R_DATA_NOVA_ANTES = re.compile(
+    r"\b(?:adiad[oa]s?|transferid[oa]s?|remarcad[oa]s?|alterad[oa]s?|mudou|mudamos|mudaram|passou|passamos|passaram|"
+    r"passar|antecipad[oa]s?|nova\s+data|novo\s+pedido|corrigind\w*|correcao|corrigid[oa]|errata|na\s+verdade|alias|"
+    r"confirm\w+(?:\s+a\s+data)?|fica(?:\s+(?:para|pro|pra))?|ficou(?:\s+(?:para|pro|pra))?)\b"
+    r"[^.\n]{0,40}$"
+)
+_R_DATA_NOVA_DEPOIS = re.compile(r"^\s*,?\s*(?:mesmo|entao|confirmad[oa]|combinad[oa])\b")
+
+
+_R_CABECALHO_DOCUMENTO = re.compile(r"\b(?:origem|destino|despacho|remetente|interessad[oa]|protocolo|recado)\b[^\n]{0,80}\n")
 _JANELA_DA_FRASE = 400
 #: Abaixo disto a data é de documento, não do evento: uma data solta vale 1;
 #: negativada, -5; a do e-mail sem âncora, -3.
@@ -663,25 +774,74 @@ def _pontos_da_data(item: DataAchada, dobrado: str, referencia: date) -> tuple[i
     "Enviado em:" e a data igual à do próprio e-mail sem nada que a ligue ao
     evento — a data em que o pedido foi mandado nunca é o período do evento.
     """
-    base = {"periodo": 2, "lista": 2, "data": 1, "relativa": 0, "dia_semana": 0}[item.tipo]
+    base = {"periodo": 2, "lista": 2, "data": 1, "dia": 0, "relativa": 0, "dia_semana": 0}[item.tipo]
     comeco, final = _frase(dobrado, item.inicio_pos, item.fim_pos)
     antes = dobrado[max(comeco, item.inicio_pos - 40):item.inicio_pos]
     frase = dobrado[comeco:final]
     ancorada = bool(_R_ANCORA_DATA_ANTES.search(antes)) or bool(re.match(r"\s*data\b", frase))
     evento = bool(_R_EVENTO_NA_FRASE.search(frase))
-    negativo = bool(_R_NEGATIVO_ANTES.search(antes)) or bool(_R_NEGATIVO_NA_FRASE.search(frase))
+    # O "antes" do negativo atravessa a quebra de linha simples ("Nas ações de" /
+    # "15/08/2026"), não a linha em branco.
+    paragrafo = dobrado.rfind("\n\n", 0, item.inicio_pos)
+    antes_largo = dobrado[max(paragrafo + 1, item.inicio_pos - 40):item.inicio_pos].replace("\n", " ")
+    negativo = bool(_R_NEGATIVO_ANTES.search(antes) or _R_NEGATIVO_ANTES.search(antes_largo)) or bool(_R_NEGATIVO_NA_FRASE.search(frase))
     linha_inicio, linha_fim = _linha(dobrado, item.inicio_pos, item.fim_pos)
     if _R_DATELINE_ANTES.match(dobrado[linha_inicio:item.inicio_pos]) and _R_DATELINE_DEPOIS.match(
         dobrado[item.fim_pos:linha_fim]
     ):
         negativo = True
+    # A data mudou: a antiga ("que seria dia 12", "desconsiderar o pedido do
+    # dia 14", "a data de 14/10 não será possível") perde; a nova ("adiada
+    # para 19/11", "passou para 28/11", "fica 21/11 mesmo") ganha.
+    depois = dobrado[item.fim_pos:min(final, item.fim_pos + 40)]
+    velha = bool(_R_DATA_VELHA_ANTES.search(antes) or _R_DATA_VELHA_DEPOIS.match(depois)
+                 or _R_DESCONSIDERAR.search(dobrado[max(comeco, item.inicio_pos - 60):item.inicio_pos]))
+    nova = bool(_R_DATA_NOVA_ANTES.search(dobrado[max(comeco, item.inicio_pos - 50):item.inicio_pos]) or _R_DATA_NOVA_DEPOIS.match(depois))
     # Negativo derruba de vez: "realizada por" também casa o "realiz" de evento.
     pontos = base + (3 if ancorada else 0) + (2 if evento else 0) - (10 if negativo else 0)
+    pontos += (5 if nova and not velha else 0) - (8 if velha else 0)
     if (item.fim or item.inicio) < referencia:
-        pontos -= 3
+        # Data que já passou é o evento anterior ("como no ano passado, em
+        # 12/05/2025"), não o que se pede agora.
+        pontos -= 12 if (item.fim or item.inicio).year < referencia.year and re.search(r"20\d{2}", item.trecho) else 3
+    # "Data:" no bloco de cabeçalho do despacho (Origem/Destino/Protocolo): é
+    # a data do documento.
+    if re.match(r"\s*data\s*:", dobrado[linha_inicio:item.inicio_pos]) and _R_CABECALHO_DOCUMENTO.search(
+        dobrado[max(0, linha_inicio - 160):linha_inicio]
+    ):
+        pontos -= 10
     if item.absoluta and item.inicio == referencia and not item.fim and not (ancorada and evento):
         pontos -= 4
     return pontos, (ancorada or evento) and not negativo
+
+
+_R_DATA_DO_DOCUMENTO = [
+    # "Siqueira Campos, 3 de novembro de 2026." — a linha de data do ofício
+    re.compile(r"^[ \t]*[a-z][a-z \t'-]{2,40},[ \t]*(?:em[ \t]+)?(?P<d>\d{1,2})[ \t]*(?:o|º)?[ \t]+de[ \t]+(?P<mes>" + _MES_COMPLETO + r")[ \t]+de[ \t]+(?P<a>20\d{2})\.?[ \t]*$", re.M),
+    # "RECADO - 14/10/2026 - 15h20", "Data: 11/11/2026" no cabeçalho
+    re.compile(r"^[ \t]*(?:recado|data|despacho|oficio|memorando|registro|atendimento)\b[^\n\d]{0,30}(?P<d>\d{1,2})/(?P<num>\d{1,2})/(?P<a>20\d{2})", re.M),
+    # "ofício 77/2026 protocolado em 05/10/2026"
+    re.compile(r"\bprotocolad[oa]\s+em\s+(?P<d>\d{1,2})/(?P<num>\d{1,2})/(?P<a>20\d{2})"),
+    # "pedido datado de 05/11/2026"
+    re.compile(r"\bdatad[oa]\s+de\s+(?P<d>\d{1,2})/(?P<num>\d{1,2})/(?P<a>20\d{2})"),
+]
+
+
+def data_do_documento(texto: str) -> date | None:
+    """A data em que o documento colado foi escrito (ofício, recado,
+    despacho), quando não há cabeçalho de e-mail que diga."""
+    dobrado = dobrar(texto or "")
+    for regex in _R_DATA_DO_DOCUMENTO:
+        m = regex.search(dobrado)
+        if not m:
+            continue
+        g = m.groupdict()
+        mes = MESES[g["mes"]] if g.get("mes") else int(g["num"])
+        try:
+            return date(int(g["a"]), mes, int(g["d"]))
+        except ValueError:
+            continue
+    return None
 
 
 def quando_do_evento(texto: str, referencia) -> Quando | None:
@@ -699,9 +859,25 @@ def quando_do_evento(texto: str, referencia) -> Quando | None:
         return None
     dobrado = dobrar(texto)
     avaliados = [(item, *_pontos_da_data(item, dobrado, referencia)) for item in itens]
+    # Havendo data por vir, a que já passou é de outro evento (a edição anterior).
+    if any((i.fim or i.inicio) >= referencia and p > _PONTOS_MINIMOS for i, p, _a in avaliados):
+        avaliados = [
+            (i, p - 9 if (i.fim or i.inicio) < referencia - timedelta(days=2) else p, a) for i, p, a in avaliados
+        ]
     melhor, pontos, ancorada = max(avaliados, key=lambda a: (a[1], -a[0].inicio_pos))
     if pontos <= _PONTOS_MINIMOS:
         return None  # só datas de documento (carimbo, cabeçalho, linha de data do ofício)
+    # "A SIPAT vai de 3 a 5 de novembro e queremos a palestra no dia 4": o
+    # período é do evento maior; o dia pedido está dentro dele, logo depois.
+    if melhor.fim:
+        dentro = [
+            (i, p) for i, p, _a in avaliados
+            if i is not melhor and not i.fim and melhor.inicio <= i.inicio <= melhor.fim
+            and 0 < i.inicio_pos - melhor.fim_pos <= 500 and p > _PONTOS_MINIMOS
+        ]
+        if dentro:
+            melhor, pontos = dentro[0]
+            ancorada = True
     comeco, final = _frase(dobrado, melhor.inicio_pos, melhor.fim_pos)
     alternativas: tuple[date, ...] = ()
     if re.search(r"\bou\b", dobrado[comeco:final]):
@@ -723,6 +899,13 @@ def quando_do_evento(texto: str, referencia) -> Quando | None:
             if h.fim or _R_CONTEXTO_HORA.search(antes) or re.match(r"(?:as|das|pelas)\b", dobrado[h.inicio_pos:]):
                 escolhido = h
                 break
+        # Um horário só no pedido inteiro ("70 pessoas, 17h"): é o do evento.
+        if escolhido is None:
+            unicos = {(h.inicio, h.fim) for h in horarios}
+            if len(unicos) == 1:
+                h = horarios[0]
+                if not _R_NEGATIVO_ANTES.search(dobrado[max(0, h.inicio_pos - 25):h.inicio_pos]):
+                    escolhido = h
     turno = turno_do_texto(texto[comeco:final]) or turno_do_texto(texto)
     fim = melhor.fim if melhor.fim and melhor.fim != melhor.inicio else None
     trecho = texto[comeco:final].strip() or melhor.trecho
@@ -753,40 +936,173 @@ class Prazo:
     trecho: str
 
 
-_R_PRAZO = re.compile(
-    r"\b(?:prazo|deadline|fechamento|vai\s+ao\s+ar|retorno\s+ate|resposta\s+ate|responder\s+ate|"
-    r"ate\s+as|ate\s+o\s+dia|ate\s+dia|ate\s+hoje|ate\s+amanha|ate\s+o\s+(?:final|fim)\s+d[oa])\b"
+# Onde o prazo costuma estar. Forte: logo antes da data ("até sexta", "prazo:
+# 30/09", "pra hj 15h", "preciso para segunda"). Médio: na mesma frase,
+# um pouco antes ("fechamos a matéria amanhã", "entramos ao vivo amanhã às
+# 7h", "a edição de sábado", "vamos exibir no jornal de amanhã").
+_R_PRAZO_FORTE = re.compile(
+    r"\b(?:ate|prazo|deadline|pra|para|precis\w*|consig\w*|consegue\w*|aguard\w*|esperar|responder)\b"
+    r"(?:\s*(?:e|:|-))?(?:\s+(?:o|a|as|os|no|na|dia|ainda|mesmo|material|resposta|retorno|isso|de|do|da|me|nos|dele|dela|confirmacao|informacoes|nota|sonora|entrevista|posicionamento)\b){0,4}[\s,:(]*$"
 )
+_R_PRAZO_MEDIO = re.compile(
+    r"\b(?:fech\w*|edicao|ao\s+ar|no\s+ar|ao\s+vivo|exib\w*|publica\w*|veicula\w*|programa|gravac\w*|grava\w*|"
+    r"entrevista\s+seria|seria|precis\w*|responder|resposta|retorno|aguardar|esperar|entrega\w*|prazo|deadline|"
+    r"pauta\s+e|entra\w*|entreg\w*|estreia\w*|sai|vai\s+sair|materia)\b"
+)
+_R_SEM_PRAZO = re.compile(r"\b(?:sem\s+(?:data|prazo|dia)\s+(?:definid|fechad|marcad)\w*|a\s+definir|sem\s+pressa|quanto\s+antes)\b")
+_R_PRAZO_DIA_SEMANA = re.compile(
+    r"\b(?P<prox>proxim[ao]\s+)?(?P<dia>" + _SEMANA + r")(?:\s*-?\s*feira)?\b"
+    r"(?P<vem>\s*(?:da\s+)?(?:que\s+vem|semana\s+que\s+vem))?"
+    r"(?:\s*,?\s*(?:dia\s+)?\(?\s*(?P<num>\d{1,2})(?:[/.](?P<mes>\d{1,2}))?\s*\)?(?![\d/]))?"
+)
+_R_PRAZO_DIA_N = re.compile(r"\b(?:o\s+)?dia\s+(?P<num>\d{1,2})(?!\d|[/.]\d|\s+de\s+(?:" + _MES_COMPLETO + r"))")
+_R_PRAZO_RELATIVO = re.compile(
+    r"\b(?P<rel>depois\s+de\s+amanha|amanha|hoje|hj|ainda\s+hoje|nesta\s+(?:manha|tarde|noite)|esta\s+(?:manha|tarde|noite)|"
+    r"hoje\s+a\s+noite|(?:o\s+)?(?:fim|final)\s+d[oa]\s+(?:dia|tarde|expediente)|(?:o\s+)?(?:fim|final)\s+do\s+mes)\b"
+)
+_HORAS_POR_EXTENSO = {"uma": 1, "duas": 2, "tres": 3, "quatro": 4, "cinco": 5, "seis": 6, "sete": 7, "oito": 8,
+                      "nove": 9, "dez": 10, "onze": 11, "doze": 12}
+_R_HORA_EXTENSO = re.compile(r"\b(?P<h>" + "|".join(_HORAS_POR_EXTENSO) + r")\s+(?:horas?\s+)?da\s+(?P<turno>manha|tarde|noite)\b")
+_R_MEIO_DIA_PRAZO = re.compile(r"\bmeio[\s-]?dia\b")
+
+
+def _dia_do_mes(numero: int, referencia: date) -> date | None:
+    """"dia 25": neste mês, ou no próximo se o dia já passou."""
+    ano, mes = referencia.year, referencia.month
+    if numero < referencia.day:
+        mes += 1
+        if mes > 12:
+            ano, mes = ano + 1, 1
+    try:
+        return date(ano, mes, numero)
+    except ValueError:
+        return None
+
+
+def _candidatos_de_prazo(texto: str, dobrado: str, referencia: date) -> list[tuple[int, int, date | None, time | None, str]]:
+    """(início, fim, data, hora, tipo) de tudo que pode ser o dia/hora de um prazo."""
+    itens = []
+    ocupado = []
+    for d in datas_do_texto(texto, referencia):
+        itens.append((d.inicio_pos, d.fim_pos, d.inicio, None, "data"))
+        ocupado.append((d.inicio_pos, d.fim_pos))
+
+    def livre(i, f):
+        return all(f <= a or i >= b for a, b in ocupado)
+
+    for m in _R_PRAZO_DIA_SEMANA.finditer(dobrado):
+        num = m.group("num")
+        if num:
+            mes = m.group("mes")
+            if mes:
+                dia = _com_ano(int(num), int(mes), None, referencia)
+            else:
+                dia = _dia_do_mes(int(num), referencia)
+        else:
+            alvo = DIAS_DA_SEMANA[m.group("dia")]
+            passo = (alvo - referencia.weekday()) % 7
+            if m.group("vem") or (m.group("prox") and passo == 0):
+                passo = passo or 7
+                if m.group("vem"):
+                    passo = (7 - referencia.weekday()) + alvo
+            dia = referencia + timedelta(days=passo)
+        if dia is not None:
+            # A data explícita colada ("quinta, 10/09") já está nos itens: substitui.
+            ocupado_por = [x for x in itens if x[4] == "data" and x[0] < m.end() + 3 and x[1] > m.start()]
+            for x in ocupado_por:
+                itens.remove(x)
+            itens.append((m.start(), m.end(), dia, None, "semana"))
+            ocupado.append((m.start(), m.end()))
+    for m in _R_PRAZO_DIA_N.finditer(dobrado):
+        if livre(m.start(), m.end()):
+            dia = _dia_do_mes(int(m.group("num")), referencia)
+            if dia:
+                itens.append((m.start(), m.end(), dia, None, "dia"))
+    for m in _R_PRAZO_RELATIVO.finditer(dobrado):
+        if not livre(m.start(), m.end()):
+            continue
+        rel = m.group("rel")
+        if rel.endswith("mes"):
+            proximo = date(referencia.year + (referencia.month == 12), referencia.month % 12 + 1, 1)
+            itens.append((m.start(), m.end(), proximo - timedelta(days=1), None, "relativa"))
+            continue
+        dias = 2 if rel.startswith("depois") else 1 if rel == "amanha" else 0
+        itens.append((m.start(), m.end(), referencia + timedelta(days=dias), None, "relativa"))
+    for m in _R_HORA_EXTENSO.finditer(dobrado):
+        h = _HORAS_POR_EXTENSO[m.group("h")]
+        if m.group("turno") in ("tarde", "noite") and h < 12:
+            h += 12
+        itens.append((m.start(), m.end(), None, time(h % 24, 0), "hora"))
+    for h in horarios_do_texto(texto):
+        if dobrado[max(0, h.inicio_pos - 9):h.inicio_pos].rstrip().endswith(("jornal do", "jornal da")):
+            continue  # "Jornal do Meio-Dia" é o programa, não o prazo
+        itens.append((h.inicio_pos, h.fim_pos, None, h.fim or h.inicio, "hora"))
+    for m in _R_MEIO_DIA_PRAZO.finditer(dobrado):
+        if dobrado[max(0, m.start() - 9):m.start()].rstrip().endswith(("jornal do", "jornal da")):
+            continue
+        if not any(i <= m.start() < f for i, f, *_ in itens):
+            itens.append((m.start(), m.end(), None, time(12, 0), "hora"))
+    return sorted(itens, key=lambda x: x[0])
+
+
+def _oracao(dobrado: str, inicio: int, fim: int) -> tuple[int, int]:
+    """A frase em volta, ignorando a quebra de linha simples do e-mail (que
+    corta a frase no meio): termina em ".!?", linha em branco ou "[dd/mm" do WhatsApp."""
+    fronteira = re.compile(r"[.!?](?:\s|$)|\n\s*\n|\n\[\d")
+    comeco = 0
+    for m in fronteira.finditer(dobrado, 0, inicio):
+        comeco = m.end()
+    m = fronteira.search(dobrado, fim)
+    return comeco, (m.start() + 1 if m else len(dobrado))
 
 
 def prazo_do_texto(texto: str, referencia) -> Prazo | None:
-    """O prazo pedido ("até às 17h de hoje", "prazo: 30/09"), se houver.
+    """O prazo pedido pelo jornalista ("até sexta", "fechamos amanhã às 10h").
 
-    Só hora, sem dia: vale o dia da referência. Prazo antes da referência
-    não serve (é outra coisa).
+    Entre as datas e horas do texto, vale a que vem logo depois de "até",
+    "prazo", "preciso para"… (forte) e, sem essa, a que está na mesma frase
+    de "fechamento", "edição", "ao vivo", "publicamos"… (médio). Só hora:
+    o dia é o da frase ("amanhã até as 9h") ou o da referência. Data antes
+    da referência é o fato da matéria, não o prazo; "o quanto antes" e
+    "sem data definida" não dão prazo.
     """
     texto = texto or ""
     referencia = _referencia(referencia)
     dobrado = dobrar(texto)
-    datas = datas_do_texto(texto, referencia)
-    posicoes_datas = [d.inicio_pos for d in datas]
-    horarios = horarios_do_texto(texto)
-    posicoes_horas = [h.inicio_pos for h in horarios]
-    for m in _R_PRAZO.finditer(dobrado):
-        _comeco, final = _frase(dobrado, m.start(), m.end())
-        janela_fim = min(final, m.end() + 80)
-        dia = _primeiro_a_partir(datas, posicoes_datas, m.start())
-        dia = dia if dia and dia.inicio_pos < janela_fim else None
-        hora = _primeiro_a_partir(horarios, posicoes_horas, m.start())
-        hora = hora if hora and hora.inicio_pos < janela_fim else None
-        if dia is None and hora is None:
+    candidatos = _candidatos_de_prazo(texto, dobrado, referencia)
+    melhor, melhor_nota = None, 0
+    for item in candidatos:
+        inicio, fim, dia, hora, tipo = item
+        if dia is not None and dia < referencia:
             continue
-        data = dia.inicio if dia else referencia
-        if data < referencia:
+        comeco, _final = _oracao(dobrado, inicio, fim)
+        antes = dobrado[max(comeco, inicio - 60):inicio]
+        nota = 3 if _R_PRAZO_FORTE.search(dobrado[max(comeco, inicio - 45):inicio]) else 2 if _R_PRAZO_MEDIO.search(antes) else 0
+        if nota == 0 and tipo != "hora" and _R_PRAZO_MEDIO.search(dobrado[max(comeco, inicio - 140):inicio]):
+            nota = 1  # "entrevista ao vivo com a delegada … sobre a campanha, amanhã às 7h30"
+        if nota == 0 and tipo in ("relativa", "semana", "hora"):
+            # "amanhã até as 9h", "segunda às 10h": a âncora vem logo depois.
+            depois = dobrado[fim:fim + 25]
+            if re.match(r"\s*(?:,\s*)?(?:ate|as|a\s+partir)\b", depois) and _R_PRAZO_MEDIO.search(dobrado[comeco:inicio] + " " + depois) or re.match(r"\s*ate\b", depois):
+                nota = 2
+        if nota < 3 and _R_SEM_PRAZO.search(dobrado[comeco:_final]):
             continue
-        fim_trecho = max([m.end()] + [x.fim_pos for x in (dia, hora) if x])
-        return Prazo(data, hora.fim or hora.inicio if hora else None, texto[m.start():fim_trecho].strip())
-    return None
+        if nota > melhor_nota:
+            melhor, melhor_nota = item, nota
+    if melhor is None:
+        return None
+    inicio, fim, dia, hora, _tipo = melhor
+    comeco, final = _oracao(dobrado, inicio, fim)
+    # Completa dia e hora com o que está na mesma frase, perto.
+    vizinhos = [c for c in candidatos if c is not melhor and comeco <= c[0] < final and abs(c[0] - inicio) <= 40]
+    if dia is None:
+        dias = [c for c in vizinhos if c[2] is not None and c[2] >= referencia]
+        dia = min(dias, key=lambda c: abs(c[0] - inicio))[2] if dias else referencia
+    if hora is None:
+        horas = [c for c in vizinhos if c[3] is not None and c[0] > inicio]
+        hora = horas[0][3] if horas else None
+    trecho_ini = max(comeco, inicio - 30)
+    return Prazo(dia, hora, " ".join(texto[trecho_ini:min(final, fim + 40)].split()))
 
 
 # ---------------------------------------------------------------------------

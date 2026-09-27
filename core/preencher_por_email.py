@@ -9,7 +9,7 @@ A tela manda o arquivo do e-mail (ou o texto colado) para o endpoint
     {"campos": {"municipio": {"valor": "12", "exibir": "Ponta Grossa/PR",
                               "confianca": "A", "trecho": "...", "rotulo": "Município"}},
      "avisos": ["..."], "duplicados": [{"titulo": "...", "url": "..."}],
-     "mensagem": {"assunto": "...", "remetente": "...", "enviado_em": "24/09/2026 14:32"},
+     "mensagem": {"assunto": "...", "remetente": "...", "enviado_em": "24/09/2026 14:32", "origem": "eml"},
      "arquivo": {"token": "...", "nome": "pedido.eml", "anexos": ["oficio.pdf"]}}
 
 Nada é gravado na leitura. O original fica numa pasta temporária do
@@ -44,14 +44,16 @@ from django.http import JsonResponse
 from django.utils import timezone
 
 from core.leitura.casamento import Achado, format_protocolo, municipio_no_texto, protocolo_no_texto, telefone_no_texto
-from core.leitura.datas import Quando, dobrar, quando_do_evento
-from core.leitura.mensagem import Mensagem, MensagemIlegivel, ler_mensagem, ler_texto_colado
+from core.leitura.datas import Quando, data_do_documento, dobrar, quando_do_evento
+from core.leitura.endereco import Endereco, endereco_no_texto
+from core.leitura.mensagem import Mensagem, MensagemIlegivel, ler_mensagem, ler_texto_colado, tipo_de_imagem
 from core.leitura.triagem import MODULOS, triar_mensagem
 
 logger = logging.getLogger(__name__)
 
 __all__ = [
     "EXTENSOES_EMAIL",
+    "FORMATOS_ACEITOS",
     "MODULOS_TRIAGEM",
     "MODULO_TRIAGEM",
     "EmailRecusado",
@@ -66,6 +68,8 @@ __all__ = [
     "ler_do_pedido",
     "ler_guardado",
     "local_no_texto",
+    "local_sem_endereco",
+    "sugerir_endereco",
     "modulos_de_triagem",
     "municipio_do_pedido",
     "opcoes_de_triagem",
@@ -96,8 +100,14 @@ _CHAVE_SESSAO = "preencher_por_email"
 _R_TOKEN = re.compile(r"^[0-9a-f]{32}$")
 
 # Extensão aceita -> o que o conteúdo precisa parecer (o tipo real manda).
-EXTENSOES_EMAIL = {".eml": "texto", ".msg": "ole", ".pdf": "pdf", ".txt": "texto"}
+# O .zip é a conversa exportada pelo WhatsApp; a imagem, o print da conversa.
+EXTENSOES_EMAIL = {
+    ".eml": "texto", ".msg": "ole", ".pdf": "pdf", ".txt": "texto", ".zip": "zip",
+    ".png": "imagem", ".jpg": "imagem", ".jpeg": "imagem", ".webp": "imagem",
+}
+FORMATOS_ACEITOS = "e-mail (.eml, .msg), PDF, conversa do WhatsApp exportada (.zip/.txt) ou print"
 _MAGIC_OLE = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+_MAGIC_ZIP = (b"PK\x03\x04", b"PK\x05\x06")
 NOME_TEXTO_COLADO = "texto-do-email.txt"
 
 
@@ -203,13 +213,23 @@ def data_do_email(mensagem: Mensagem) -> Sugestao | None:
     """A data em que o pedido foi enviado (a da mensagem mais interna). Nunca "hoje"."""
     enviado = _local(mensagem.enviado_em)
     if enviado is None:
-        return None
+        # Texto colado sem cabeçalho: a data do próprio documento (o ofício, o
+        # recado, o despacho), para conferir.
+        documento = data_do_documento("\n".join(x for x in (mensagem.corpo, mensagem.assinatura) if x))
+        if documento is None:
+            return None
+        return Sugestao(documento, f"{documento:%d/%m/%Y}", "M", "Data do documento colado")
     return Sugestao(enviado.date(), f"{enviado:%d/%m/%Y}", "A", f"Enviado em {enviado:%d/%m/%Y %H:%M}")
 
 
 #: Evento a menos de tantos dias da leitura merece aviso: a agenda é curta.
 DIAS_DE_PRAZO_CURTO = 10
 _DIAS_DA_SEMANA = ("segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo")
+
+
+_R_MUDOU_A_DATA = re.compile(
+    r"\b(?:passou|passaram|mudou|mudaram|adiad\w*|remarcad\w*|transferid\w*|antecipad\w*|alterad\w*|atualiza\w*|nova\s+data|corrig\w*)\b"
+)
 
 
 def quando_do_pedido(mensagem: Mensagem) -> tuple[Quando | None, list[str]]:
@@ -228,6 +248,16 @@ def quando_do_pedido(mensagem: Mensagem) -> tuple[Quando | None, list[str]]:
     avisos: list[str] = []
     referencia = mensagem.data_referencia or timezone.localdate()
     quando = quando_do_evento(mensagem.texto_para_busca, referencia)
+    # Quem encaminhou avisou que a data mudou ("passou a ação para 28/11"):
+    # a nota dele vale sobre a data do e-mail original.
+    nota = (mensagem.nota_encaminhamento or "").strip()
+    if nota and _R_MUDOU_A_DATA.search(dobrar(nota)):
+        corrigida = quando_do_evento(nota, referencia)
+        if corrigida is not None:
+            if quando is not None and not corrigida.hora_inicio:
+                corrigida = replace(corrigida, hora_inicio=quando.hora_inicio, hora_fim=quando.hora_fim)
+            quando = replace(corrigida, confianca="M")
+            avisos.append(f"A data veio da nota de quem encaminhou ({quando.inicio:%d/%m/%Y}): confira.")
     if quando is None and (mensagem.citado or "").strip():
         anterior = quando_do_evento(mensagem.citado, referencia)
         if anterior is not None:
@@ -267,10 +297,41 @@ def quando_do_pedido(mensagem: Mensagem) -> tuple[Quando | None, list[str]]:
     return quando, avisos
 
 
+_R_DOMINIO_PUBLICO = re.compile(r"@(?:[\w-]+\.)*?(?P<nome>[a-z0-9-]+)\.(?P<uf>pr|sc)\.gov\.br$")
+
+
+def _municipio_do_dominio(email: str, municipios) -> Achado | None:
+    """"cras@cruzmachado.pr.gov.br": a prefeitura de Cruz Machado (para conferir)."""
+    m = _R_DOMINIO_PUBLICO.search((email or "").strip().lower())
+    if not m:
+        return None
+    alvo = m.group("nome").replace("-", "")
+    for municipio in municipios:
+        uf = getattr(getattr(municipio, "estado", None), "sigla", "") or ""
+        if uf.lower() == m.group("uf") and re.sub(r"[^a-z0-9]", "", dobrar(municipio.nome)) == alvo:
+            return Achado(municipio, f"{municipio.nome}/{uf}", f"Domínio do e-mail: {email}", "M", {"uf": uf})
+    return None
+
+
 def municipio_do_pedido(mensagem: Mensagem, municipios, *, ddd: str = "") -> Achado | None:
     """O município do evento: o citado no texto; na falta, o da capa do processo do
     eProtocolo (a cidade de quem pede, por isso só como plano B, para conferir)."""
     achado = municipio_no_texto(mensagem.texto_para_busca, municipios, ddd=ddd)
+    if achado is not None:
+        return achado
+    # O texto não diz a cidade: a de quem pede (assinatura, nome do remetente,
+    # a mensagem citada, o domínio da prefeitura) — para conferir.
+    for rotulo, onde in (
+        ("Assinatura", mensagem.assinatura),
+        ("Remetente", mensagem.remetente_nome),
+        ("Quem encaminhou", mensagem.encaminhada_por),
+        ("Mensagem citada", mensagem.citado),
+    ):
+        if onde and onde.strip():
+            achado = municipio_no_texto(onde, municipios, ddd=ddd)
+            if achado is not None:
+                return Achado(achado.valor, achado.exibir, f"{rotulo}: {achado.trecho}", "M", achado.detalhes)
+    achado = _municipio_do_dominio(mensagem.remetente_email, municipios)
     if achado is not None:
         return achado
     cidade = (mensagem.extras or {}).get("cidade", "")
@@ -477,6 +538,52 @@ def local_no_texto(texto: str) -> Achado | None:
     return None
 
 
+def sugerir_endereco(s: Sugestoes, mensagem: Mensagem) -> Endereco | None:
+    """Endereço, bairro e CEP do evento (ou da entrega), campo a campo.
+
+    Lê só o corpo e passa a assinatura para ser ignorada: o endereço de
+    quem escreve não é o do evento. Confiança "A" com CEP ou palavra-âncora
+    ("local", "será realizado", "entrega"); senão "M" (preenche e destaca).
+
+    Sem endereço nenhum no corpo (a resposta "pode ser o dia 20", a
+    correção "serão 55 pessoas"), vale o do pedido na mensagem citada —
+    sem as marcas ">" da citação e com confiança "M".
+    """
+    achado = endereco_no_texto(mensagem.corpo or "", assinatura=mensagem.assinatura or "")
+    citado = False
+    if achado is None and (mensagem.citado or "").strip():
+        texto_citado = re.sub(r"(?m)^[ \t]*(?:>[ \t]?)+", "", mensagem.citado)
+        achado = endereco_no_texto(texto_citado)
+        citado = achado is not None
+    if achado is None:
+        return None
+    confianca = "M" if citado else achado.confianca
+    endereco = achado.endereco[:255]
+    s.por("endereco", Sugestao(endereco, endereco, confianca, achado.trecho))
+    s.por("bairro", Sugestao(achado.bairro, achado.bairro, confianca, achado.trecho))
+    s.por("cep", Sugestao(achado.cep, achado.cep, "A", achado.trecho))
+    return achado
+
+
+def local_sem_endereco(local: Achado | None, endereco: Endereco | None) -> Achado | None:
+    """O nome do lugar, sem o endereço que veio junto.
+
+    "Ginásio Municipal, Rua X, 500" vira "Ginásio Municipal" quando o
+    endereço já foi para os campos próprios; um "local" que é só o
+    endereço ("Rua X, 500") não sugere nada.
+    """
+    if local is None or endereco is None or not endereco.logradouro_numero:
+        return local
+    nome_da_rua = dobrar(endereco.logradouro_numero.split(",")[0]).strip()
+    posicao = dobrar(local.valor).find(nome_da_rua) if nome_da_rua else -1
+    if posicao == -1:
+        return local
+    valor = local.valor[:posicao].strip(" ,;:-–—")
+    if not valor:
+        return None
+    return Achado(valor, valor, local.trecho, local.confianca)
+
+
 # ---------------------------------------------------------------------------
 # Leitura do pedido (arquivo ou texto colado)
 # ---------------------------------------------------------------------------
@@ -491,10 +598,15 @@ def _tipo_real(dados: bytes) -> str:
         return "ole"
     if b"%PDF-" in dados[:1024]:
         return "pdf"
+    if dados.startswith(_MAGIC_ZIP):
+        return "zip"
+    if tipo_de_imagem(dados):
+        return "imagem"
     return "texto"
 
 
 _TIPOS_MIME = {"application/pdf": ".pdf", "message/rfc822": ".eml", "application/vnd.ms-outlook": ".msg", "text/plain": ".txt"}
+_EXTENSAO_DA_IMAGEM = {"jpeg": ".jpg", "png": ".png", "webp": ".webp"}
 
 
 def _extensao_pelo_conteudo(dados: bytes, content_type: str = "") -> str:
@@ -506,6 +618,10 @@ def _extensao_pelo_conteudo(dados: bytes, content_type: str = "") -> str:
         return ".pdf"
     if real == "ole":
         return ".msg"
+    if real == "zip":
+        return ".zip"
+    if real == "imagem":
+        return _EXTENSAO_DA_IMAGEM[tipo_de_imagem(dados)]
     if _parece_mime(dados):
         return ".eml"
     declarada = _TIPOS_MIME.get((content_type or "").split(";")[0].strip().lower(), "")
@@ -538,10 +654,13 @@ def _nome_seguro(nome: str) -> str:
 def ler_do_pedido(request) -> tuple[Mensagem, str, bytes]:
     """(mensagem, nome do arquivo, bytes do original) do POST.
 
-    O POST traz `arquivo` (.eml, .msg, .pdf impresso ou .txt) ou `texto`
-    (o e-mail colado). Confere tamanho, extensão e se o conteúdo é mesmo do
-    tipo da extensão (um .msg renomeado para .pdf é recusado), passa pelo
-    antivírus quando ele é exigido e só então lê. Levanta `EmailRecusado`.
+    O POST traz `arquivo` (.eml, .msg, .pdf impresso, .txt, a conversa do
+    WhatsApp exportada em .zip ou o print dela em .png/.jpg/.webp) ou
+    `texto` (o e-mail colado). Confere tamanho, extensão e se o conteúdo é
+    mesmo do tipo da extensão (um .msg renomeado para .pdf é recusado), passa
+    pelo antivírus quando ele é exigido e só então lê (o .zip, com os limites
+    de `core.leitura.mensagem` contra a bomba de descompactação). Levanta
+    `EmailRecusado`.
     """
     arquivo = request.FILES.get("arquivo")
     if arquivo is not None:
@@ -557,10 +676,10 @@ def ler_do_pedido(request) -> tuple[Mensagem, str, bytes]:
         arquivo.seek(0)
         if extensao not in EXTENSOES_EMAIL:
             # Só sem extensão nenhuma (o celular manda "document") o conteúdo
-            # decide, desde que seja PDF, .msg ou e-mail; extensão errada é recusada.
+            # decide, desde que seja um dos formatos aceitos; extensão errada é recusada.
             extensao = _extensao_pelo_conteudo(dados, arquivo.content_type) if not extensao else ""
             if not extensao:
-                raise EmailRecusado("Envie o e-mail em .eml, .msg, .pdf ou .txt — ou cole o texto.")
+                raise EmailRecusado(f"Envie o {FORMATOS_ACEITOS} — ou cole o texto.")
             nome = f"{nome}{extensao}"
         if _tipo_real(dados) != EXTENSOES_EMAIL[extensao]:
             raise EmailRecusado(
@@ -824,7 +943,7 @@ def concluir_origem(request, origem: Origem | None) -> None:
 def texto_de_origem(assunto: str, remetente: str, enviado_em: datetime | None, *,
                     verbo: str = "Criada", origem: str = "") -> str:
     """"Criada a partir do e-mail 'Assunto' de Fulano (24/09/2026 14:32)" — para o histórico."""
-    fonte = "da conversa do WhatsApp" if origem == "whatsapp" else "do e-mail"
+    fonte = {"whatsapp": "da conversa do WhatsApp", "print": "do print da conversa"}.get(origem, "do e-mail")
     partes = [f"{verbo} a partir {fonte}"]
     if assunto:
         partes.append(f"'{assunto}'")
@@ -1015,6 +1134,7 @@ def responder_leitura(
             "assunto": mensagem.assunto_limpo,
             "remetente": mensagem.remetente,
             "enviado_em": f"{enviado:%d/%m/%Y %H:%M}" if enviado else "",
+            "origem": mensagem.origem,
         },
         "arquivo": {
             "token": token,

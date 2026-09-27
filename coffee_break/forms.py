@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from cadastros.models import Municipio
 from core.uploads import validate_private_document_upload
-from core.utils.masks import format_protocolo
+from core.utils.masks import format_protocolo, limpar_cep_do_formulario
 
 from .models import (
     OcorrenciaEntrega,
@@ -54,6 +54,9 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
             "horario_evento",
             "detalhamento_pedido",
             "local_entrega",
+            "endereco",
+            "bairro",
+            "cep",
             "responsavel_recebimento",
             "data_envio_ordem_servico",
             "numero_nota_fiscal",
@@ -109,6 +112,9 @@ class SolicitacaoCoffeeBreakForm(forms.ModelForm):
                 ):
                     if nome in self.fields:
                         self.fields[nome].disabled = True
+
+    def clean_cep(self):
+        return limpar_cep_do_formulario(self.cleaned_data.get("cep"))
 
     def clean_descricao_evento(self):
         """Uma linha só: quebras de linha (de registros antigos) viram espaço."""
@@ -291,6 +297,9 @@ CAMPOS_PEDIDO = [
     "periodo_evento_texto",
     "horario_evento",
     "local_entrega",
+    "endereco",
+    "bairro",
+    "cep",
     "responsavel_recebimento",
 ]
 CAMPOS_NOTA = [

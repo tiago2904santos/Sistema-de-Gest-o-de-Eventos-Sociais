@@ -19,6 +19,7 @@ from cadastros.models import (
     TipoEvento,
     UnidadeMovel,
 )
+from core.utils.masks import limpar_cep_do_formulario
 from integracoes.eprotocolo.andamento import formatar_numero
 from viagens_cadastros.models import Servidor
 
@@ -188,6 +189,9 @@ class SolicitacaoForm(forms.ModelForm):
             "tipo_evento",
             "municipio",
             "local_evento",
+            "endereco",
+            "bairro",
+            "cep",
             "protocolo",
             "solicitante_nome",
             "solicitante_cargo_unidade",
@@ -335,6 +339,9 @@ class SolicitacaoForm(forms.ModelForm):
         if numero is None:
             raise forms.ValidationError("O protocolo tem 9 dígitos (00.000.000-0).")
         return numero
+
+    def clean_cep(self):
+        return limpar_cep_do_formulario(self.cleaned_data.get("cep"))
 
     def clean_motorista(self):
         motorista = self.cleaned_data.get("motorista")

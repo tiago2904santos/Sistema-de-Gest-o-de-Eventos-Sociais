@@ -66,6 +66,10 @@ def valores_iniciais(campo, objeto):
         iniciais["responsavel_recebimento"] = _juntar(objeto.solicitante[:100], objeto.telefone, separador=" ")
         if objeto.quantidade_publico:
             iniciais["quantidade"] = objeto.quantidade_publico
+        iniciais["local_entrega"] = objeto.local
+    # O endereço do evento é o da entrega (os dois modelos têm os mesmos campos).
+    for nome in ("endereco", "bairro", "cep"):
+        iniciais[nome] = getattr(objeto, nome, "")
     iniciais["descricao_evento"] = iniciais["descricao_evento"][:255]
     iniciais["local_entrega"] = (iniciais.get("local_entrega") or "")[:255]
     iniciais["responsavel_recebimento"] = iniciais["responsavel_recebimento"][:150]
