@@ -43,24 +43,32 @@ def prefetch_equipes(consulta):
     from viagens_termos.models import TermoAutorizacao
 
     return consulta.prefetch_related(
-        Prefetch("oficios", queryset=Oficio.objects.filter(cancelado=False).only("id", "viagem_id", "motorista_id").prefetch_related("servidores").select_related("motorista")),
-        Prefetch("termos_autorizacao", queryset=TermoAutorizacao.objects.filter(cancelado=False).only("id", "viagem_id").prefetch_related("servidores")),
-        Prefetch("ordens_servico", queryset=OrdemServico.objects.filter(cancelado=False).only("id", "viagem_id").prefetch_related("servidores")),
+        # `to_attr`: a situação da viagem (agenda.situacao) pré-carrega as mesmas
+        # relações sem filtro; atributos próprios evitam o choque entre as duas.
+        Prefetch("oficios", queryset=Oficio.objects.filter(cancelado=False).only("id", "viagem_id", "motorista_id").prefetch_related("servidores").select_related("motorista"), to_attr="equipe_oficios"),
+        Prefetch("termos_autorizacao", queryset=TermoAutorizacao.objects.filter(cancelado=False).only("id", "viagem_id").prefetch_related("servidores"), to_attr="equipe_termos"),
+        Prefetch("ordens_servico", queryset=OrdemServico.objects.filter(cancelado=False).only("id", "viagem_id").prefetch_related("servidores"), to_attr="equipe_ordens"),
         "roteiros",
     )
+
+
+def _escalados(viagem, atributo, relacao):
+    """O pré-carregado de `prefetch_equipes`, ou a consulta direta (sem cancelados)."""
+    pre = getattr(viagem, atributo, None)
+    return pre if pre is not None else getattr(viagem, relacao).filter(cancelado=False)
 
 
 def equipe_da_viagem(viagem) -> tuple[list[str], set[int]]:
     """Nomes (motorista primeiro) e pks dos servidores escalados na viagem."""
     nomes: dict[int, str] = {}
     motoristas: set[int] = set()
-    for o in viagem.oficios.all():
+    for o in _escalados(viagem, "equipe_oficios", "oficios"):
         if o.motorista_id:
             nomes.setdefault(o.motorista_id, o.motorista.nome)
             motoristas.add(o.motorista_id)
         for s in o.servidores.all():
             nomes.setdefault(s.pk, s.nome)
-    for grupo in (viagem.termos_autorizacao.all(), viagem.ordens_servico.all()):
+    for grupo in (_escalados(viagem, "equipe_termos", "termos_autorizacao"), _escalados(viagem, "equipe_ordens", "ordens_servico")):
         for doc in grupo:
             for s in doc.servidores.all():
                 nomes.setdefault(s.pk, s.nome)
