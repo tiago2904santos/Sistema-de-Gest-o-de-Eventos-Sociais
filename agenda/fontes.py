@@ -121,7 +121,9 @@ def _pode_viagens(usuario) -> bool:
 def _viagens(usuario, inicio, fim) -> list[dict]:
     from viagens_viagem.models import Viagem
 
-    consulta = (
+    from .situacao import consulta_de_viagens, situacao_da_viagem
+
+    consulta = consulta_de_viagens(
         Viagem.objects.filter(_sobrepoe("data_inicio", "data_fim", inicio, fim))
         .select_related("destino_municipio__estado", "destino_estado", "unidade_responsavel")
         .order_by("data_inicio", "id")
@@ -129,6 +131,8 @@ def _viagens(usuario, inicio, fim) -> list[dict]:
     saida = []
     for v in consulta:
         motivo = (v.motivo or "").strip()
+        # A situação real, como na lista de Viagens (m131) — não o campo status.
+        situacao, situacao_slug, _tom = situacao_da_viagem(v)
         saida.append(
             _evento(
                 fonte="viagem",
@@ -136,8 +140,8 @@ def _viagens(usuario, inicio, fim) -> list[dict]:
                 titulo=v.destino_display + (f" — {motivo}" if motivo else ""),
                 inicio=v.data_inicio,
                 fim=v.data_fim,
-                situacao=v.get_status_display(),
-                situacao_slug=v.status,
+                situacao=situacao,
+                situacao_slug=situacao_slug,
                 url=reverse("viagens_viagem:painel", args=[v.pk]),
                 encerrado=bool(v.cancelado),
                 municipio=v.destino_display,

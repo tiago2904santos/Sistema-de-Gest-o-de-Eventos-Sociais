@@ -249,26 +249,31 @@ def _viagem(usuario, pk) -> dict:
     if not pode_acessar(usuario):
         raise PermissionDenied
 
+    from .situacao import consulta_de_viagens, situacao_da_viagem
+
     v = (
-        Viagem.objects.select_related(
+        consulta_de_viagens(Viagem.objects.select_related(
             "destino_municipio__estado", "destino_estado", "unidade_responsavel", "responsavel"
-        )
+        ))
         .filter(pk=pk)
         .first()
     )
     if v is None:
         raise Http404
 
+    # A situação real, como na lista de Viagens (m131) — não o campo status.
+    situacao, situacao_slug, tom = situacao_da_viagem(v)
     d = _base(
         fonte="viagem",
         rotulo="Viagem",
         titulo=v.destino_display,
         subtitulo=v.periodo_display,
-        situacao=v.get_status_display(),
-        situacao_slug=v.status,
+        situacao=situacao,
+        situacao_slug=situacao_slug,
         encerrado=bool(v.cancelado),
         url_abrir=reverse("viagens_viagem:painel", args=[v.pk]),
     )
+    d["selo_tom"] = tom
     d["campos"] = _campos([
         ("Motivo", (v.motivo or "").strip()),
         ("Descrição", (v.descricao or "").strip()),
