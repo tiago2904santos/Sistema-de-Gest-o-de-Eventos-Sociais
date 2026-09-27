@@ -141,6 +141,15 @@
         <div class="ofc-doc__corpo">{% include "components/v32/copiaveis.html" with campos=eprotocolo.campos textos=eprotocolo.textos %}</div>
       </details>
 
+      {# m104: o histórico da prestação (anexos, remoções, finalização, datas e números), no molde do roteiro. #}
+      <details class="ofc-doc pc-docs__historico" id="historico">
+        <summary class="ofc-doc__cabeca">
+          <span class="ofc-doc__titulo">Histórico ({{ historico|length }})</span>
+          <span class="ofc-doc__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
+        </summary>
+        <div class="ofc-doc__corpo">{% include "components/v32/historico_alteracoes.html" %}</div>
+      </details>
+
       {# m093: envio ao financeiro, aprovação e devolução — por servidor. #}
       {% if ps.finalizada or ps.status == "enviada" or ps.status == "aprovada" %}
         <div class="pc-docs__envio" id="envio">

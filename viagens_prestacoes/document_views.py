@@ -143,6 +143,27 @@ def documentos(request, pc_pk):
     return _redirect_primeiro_servidor(request, prestacao, "viagens_prestacoes:documentos_servidor")
 
 
+def historico_da_prestacao(prestacao):
+    """A trilha da prestação e dos seus filhos (servidores, anexos, RT e diário), do mais recente ao mais antigo (m104)."""
+    from auditoria.historico import historico_de
+
+    return historico_de(
+        prestacao,
+        filhos=(
+            ("viagens_prestacoes.prestacaoservidor", "prestacao"),
+            ("viagens_prestacoes.prestacaodocumentoanexo", "prestacao"),
+            ("viagens_prestacoes.relatoriotecnico", "prestacao"),
+            ("viagens_prestacoes.diariobordo", "prestacao"),
+        ),
+        sobre_filhos={
+            "viagens_prestacoes.prestacaoservidor": "Servidor",
+            "viagens_prestacoes.prestacaodocumentoanexo": "Documento",
+            "viagens_prestacoes.relatoriotecnico": "Relatório técnico",
+            "viagens_prestacoes.diariobordo": "Diário de bordo",
+        },
+    )
+
+
 def documentos_servidor(request, ps_pk):
     """Etapa 3: despacho compartilhado + documentos do servidor atual."""
     ps = _prestacao_servidor_full(ps_pk)
@@ -245,6 +266,9 @@ def documentos_servidor(request, ps_pk):
             # m052: os campos para protocolar a prestação, cada um com Copiar.
             "eprotocolo": dados_eprotocolo_prestacao(ps),
             "hoje_iso": timezone.localdate().isoformat(),
+            # m104: quem anexou, removeu, finalizou ou mudou datas e números — o mesmo
+            # bloco da tela do roteiro.
+            "historico": historico_da_prestacao(prestacao),
             "downloads": payload_downloads(ps)["itens"],
             # O modal "Baixar documentos" (o mesmo da lista), no botão de ação do cartão.
             "url_baixar": reverse("viagens_prestacoes:prestacao_baixar", args=[ps.pk]),
