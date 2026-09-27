@@ -529,11 +529,20 @@ def sugerir_endereco(s: Sugestoes, mensagem: Mensagem) -> Endereco | None:
     Lê só o corpo e passa a assinatura para ser ignorada: o endereço de
     quem escreve não é o do evento. Confiança "A" com CEP ou palavra-âncora
     ("local", "será realizado", "entrega"); senão "M" (preenche e destaca).
+
+    Sem endereço nenhum no corpo (a resposta "pode ser o dia 20", a
+    correção "serão 55 pessoas"), vale o do pedido na mensagem citada —
+    sem as marcas ">" da citação e com confiança "M".
     """
     achado = endereco_no_texto(mensagem.corpo or "", assinatura=mensagem.assinatura or "")
+    citado = False
+    if achado is None and (mensagem.citado or "").strip():
+        texto_citado = re.sub(r"(?m)^[ \t]*(?:>[ \t]?)+", "", mensagem.citado)
+        achado = endereco_no_texto(texto_citado)
+        citado = achado is not None
     if achado is None:
         return None
-    confianca = achado.confianca
+    confianca = "M" if citado else achado.confianca
     endereco = achado.endereco[:255]
     s.por("endereco", Sugestao(endereco, endereco, confianca, achado.trecho))
     s.por("bairro", Sugestao(achado.bairro, achado.bairro, confianca, achado.trecho))
