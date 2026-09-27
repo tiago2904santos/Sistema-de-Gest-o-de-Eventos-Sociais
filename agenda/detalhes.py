@@ -106,6 +106,13 @@ ICONES = {
     "contato do fornecedor": "mail", "termo aditivo": "clipboard",
     "quantidade contratada": "chart", "municípios": "map-pin",
     "servidor": "user", "por extenso": "chart",
+    # Prazos e pautas (agenda/prazos.py).
+    "prazo de saque": "clock", "prestar contas até": "clock", "deadline": "clock",
+    "liberação das diárias": "calendar", "vigência": "calendar", "validade": "calendar",
+    "publicada em": "calendar", "jornalista": "user", "veículo": "mail",
+    "situação da prestação": "activity", "situação": "activity", "certidão": "document",
+    "ofício": "document", "estimada": "info",
+    "número da solicitação": "clipboard", "objeto": "document", "fonte": "user",
 }
 
 
@@ -242,27 +249,37 @@ def _viagem(usuario, pk) -> dict:
     if not pode_acessar(usuario):
         raise PermissionDenied
 
+    from .situacao import consulta_de_viagens, situacao_da_viagem
+
     v = (
-        Viagem.objects.select_related(
+        consulta_de_viagens(Viagem.objects.select_related(
             "destino_municipio__estado", "destino_estado", "unidade_responsavel", "responsavel"
-        )
+        ))
         .filter(pk=pk)
         .first()
     )
     if v is None:
         raise Http404
 
+    # A situação real, como na lista de Viagens (m131) — não o campo status.
+    situacao, situacao_slug, tom = situacao_da_viagem(v)
     d = _base(
         fonte="viagem",
         rotulo="Viagem",
         titulo=v.destino_display,
         subtitulo=v.periodo_display,
-        situacao=v.get_status_display(),
-        situacao_slug=v.status,
+        situacao=situacao,
+        situacao_slug=situacao_slug,
         encerrado=bool(v.cancelado),
         url_abrir=reverse("viagens_viagem:painel", args=[v.pk]),
     )
+    d["selo_tom"] = tom
+    from .fontes import _destinos_da_viagem, _municipios_extras
+
+    destinos = _destinos_da_viagem(v, _municipios_extras([v]))
     d["campos"] = _campos([
+        # Todos os destinos da viagem (m132), não só o principal do título.
+        ("Destinos", ", ".join(destinos) if len(destinos) > 1 else ""),
         ("Motivo", (v.motivo or "").strip()),
         ("Descrição", (v.descricao or "").strip()),
         ("Unidade responsável", str(v.unidade_responsavel) if v.unidade_responsavel_id else ""),
@@ -441,6 +458,15 @@ def _viagem(usuario, pk) -> dict:
     if anexos:
         d["documentos"].append({"titulo": "Documentos da solicitação (anexos)", "itens": anexos})
 
+    # Choques de agenda (m130): com o que a equipe, o motorista ou a viatura
+    # dos ofícios se sobrepõem — a mesma pergunta do painel da viagem.
+    if not v.cancelado:
+        from core.conflitos import conflitos_da_viagem
+
+        from .conflitos import secao_de_conflitos
+
+        d["secoes"].extend(secao_de_conflitos(conflitos_da_viagem(v)))
+
     return d
 
 
@@ -532,6 +558,14 @@ def _solicitacao(usuario, pk) -> dict:
     viagem = integracao_viagens.viagem_da_solicitacao(s)
     if viagem is not None:
         d["origem"] = {"rotulo": f"Viagem gerada: #{viagem.pk} — {viagem}", "url": reverse("viagens_viagem:painel", args=[viagem.pk])}
+
+    # Choques de agenda (m130): motorista e unidade móvel designados.
+    if not d["encerrado"]:
+        from core.conflitos import conflitos_da_solicitacao
+
+        from .conflitos import secao_de_conflitos
+
+        d["secoes"].extend(secao_de_conflitos(conflitos_da_solicitacao(s)))
 
     d["historico"] = _historico(s.historico.select_related("usuario"))
     return d
@@ -661,6 +695,13 @@ def _demanda(usuario, pk) -> dict:
         ("Servidor", dm.servidores_display),
         ("Criada por", f"{dm.criado_por} em {dm.criado_em:%d/%m/%Y %H:%M}" if dm.criado_por_id and dm.criado_em else ""),
     ])
+    # Choques de agenda (m130): palestrante (e o servidor dele) em outro lugar.
+    if not d["encerrado"]:
+        from core.conflitos import conflitos_da_demanda
+
+        from .conflitos import secao_de_conflitos
+
+        d["secoes"].extend(secao_de_conflitos(conflitos_da_demanda(dm)))
     d["historico"] = _historico(dm.historico.select_related("usuario"))
     return d
 
@@ -673,9 +714,17 @@ CONSTRUTORES = {
 }
 
 
+def _construtores() -> dict:
+    # A camada de prazos (agenda/prazos.py, m129) traz os seus dossiês; o
+    # import é tardio porque ela usa as peças deste módulo.
+    from .prazos import CONSTRUTORES as PRAZOS
+
+    return {**CONSTRUTORES, **PRAZOS}
+
+
 def montar(usuario, fonte: str, pk: int) -> dict:
     """O dossiê de um compromisso — ou ``Http404``/``PermissionDenied``."""
-    construtor = CONSTRUTORES.get(fonte)
+    construtor = _construtores().get(fonte)
     if construtor is None:
         raise Http404
     return construtor(usuario, pk)

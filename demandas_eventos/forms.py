@@ -151,7 +151,13 @@ class TemaForm(forms.ModelForm):
 class PalestranteForm(forms.ModelForm):
     class Meta:
         model = Palestrante
-        fields = ["municipio", "divisao", "lotacao", "nome", "contato", "email", "tema_abordagem"]
+        fields = ["municipio", "divisao", "lotacao", "nome", "servidor", "contato", "email", "tema_abordagem"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # O vínculo com o cadastro de Viagens é o que cruza palestra com
+        # viagem no aviso de choque de agenda (m130).
+        self.fields["servidor"].queryset = self.fields["servidor"].queryset.order_by("nome")
 
 
 class RespostaPadraoForm(forms.ModelForm):

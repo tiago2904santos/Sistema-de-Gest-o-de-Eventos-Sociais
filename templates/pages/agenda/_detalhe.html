@@ -70,6 +70,10 @@
         {% if secao.linhas %}
           <ul class="ag-linhas">{% for linha in secao.linhas %}<li>{{ linha }}</li>{% endfor %}</ul>
         {% endif %}
+        {% if secao.links %}
+          {# Conflitos de agenda (m130): cada linha abre o outro documento. #}
+          <ul class="ag-linhas ag-linhas--conflito">{% for l in secao.links %}<li>{% if l.url %}<a href="{{ l.url }}" target="_blank" rel="noopener">{{ l.texto }}</a>{% else %}{{ l.texto }}{% endif %}</li>{% endfor %}</ul>
+        {% endif %}
       </section>
     {% endfor %}
   </section>

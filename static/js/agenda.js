@@ -60,8 +60,11 @@
   function passa(ev) {
     var p = ev.extendedProps || {};
     if (fontesAtivas().indexOf(p.fonte) === -1) return false;
+    // Faixa de fundo (feriado, m138): só a fonte decide; não tem situação nem município próprio.
+    if (p.fundo) return true;
     if (!situacaoLigada(p.fonte + ":" + p.situacao_slug, p.encerrado)) return false;
-    if (pref.municipio && p.municipio !== pref.municipio) return false;
+    // Todos os municípios por onde o compromisso passa (m132), não só o primeiro.
+    if (pref.municipio && (p.municipios || [p.municipio]).indexOf(pref.municipio) === -1) return false;
     if (pref.tipo && p.tipo !== pref.tipo) return false;
     if (chkMeus && chkMeus.checked && !p.meu) return false;
     var q = (busca && busca.value || "").trim().toLowerCase();
@@ -79,10 +82,11 @@
     lista.forEach(function (ev) {
       var p = ev.extendedProps;
       porFonte[p.fonte] = (porFonte[p.fonte] || 0) + 1;
+      if (p.fundo) return; // feriado: conta na fonte, não vira situação nem município
       var chave = p.fonte + ":" + p.situacao_slug;
       var s = situacoes[chave] || (situacoes[chave] = { chave: chave, fonte: p.fonte, rotulo: p.situacao, encerrado: !!p.encerrado, n: 0 });
       s.n += 1;
-      if (p.municipio) municipios[p.municipio] = (municipios[p.municipio] || 0) + 1;
+      (p.municipios || [p.municipio]).forEach(function (m) { if (m) municipios[m] = (municipios[m] || 0) + 1; });
       if (p.tipo) tipos[p.tipo] = (tipos[p.tipo] || 0) + 1;
     });
     document.querySelectorAll("[data-conta]").forEach(function (n) {
@@ -170,13 +174,24 @@
     navLinks: true,
     dayMaxEvents: 4,
     eventDisplay: "block",
-    displayEventTime: false,
+    // O que tem hora (saída do roteiro, palestra, pauta) mostra a hora; o que
+    // é dia inteiro leva o horário no título, montado no servidor (m132).
+    displayEventTime: true,
+    eventTimeFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
     nowIndicator: true,
     events: carregar,
     eventClick: function (arg) { arg.jsEvent.preventDefault(); abrir(arg.event); },
     eventDidMount: function (arg) {
       var p = arg.event.extendedProps || {};
-      arg.el.title = arg.event.title + (p.situacao ? " — " + p.situacao : "") + " · " + (rotulos[p.fonte] || "");
+      if (p.fundo) {
+        // Faixa de fundo do feriado (m138): o FullCalendar não escreve o nome; escrevemos.
+        arg.el.title = arg.event.title;
+        var nome = document.createElement("span"); nome.className = "ag-feriado__nome"; nome.textContent = arg.event.title;
+        arg.el.appendChild(nome);
+        return;
+      }
+      arg.el.title = arg.event.title + (p.situacao ? " — " + p.situacao : "") + " · " + (rotulos[p.fonte] || "") +
+        (p.conflitos && p.conflitos.length ? "\nConflito de agenda: " + p.conflitos.join("; ") : "");
     },
     datesSet: function (info) {
       titulo.textContent = info.view.title;

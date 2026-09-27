@@ -71,6 +71,9 @@
         </div>
       {% endif %}
 
+      {# Choque de agenda (m130): a mesma pessoa ou viatura em outro compromisso. Só aviso. #}
+      {% include "components/v32/avisos_conflito.html" with conflitos=conflitos formulario="form-termo" campos="servidores:servidores viatura:viaturas data_evento_inicio:inicio data_evento_fim:fim" fixos=conflitos_fixos %}
+
       {% comment %}
         O ofício deixou de ser uma seção só dele: virou um interruptor deste
         cartão, no molde do bate-volta do roteiro. Desligado, o termo é avulso
@@ -252,5 +255,6 @@
   <script src="{% estatico 'js/destinos-arraste.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-termos.js' %}" defer></script>
   <script src="{% estatico 'js/components/copiar.js' %}" defer></script>
+  <script src="{% estatico 'js/conflitos.js' %}" defer></script>
   {% include "components/v32/dialogo_assinado.html" %}
 {% endblock %}

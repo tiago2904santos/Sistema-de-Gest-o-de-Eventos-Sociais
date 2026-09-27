@@ -128,6 +128,18 @@ class Feriado(models.Model):
     data = models.DateField("data")
     nome = models.CharField("nome", max_length=120)
     anual = models.BooleanField("repete todo ano", default=True)
+    # Feriado municipal (m138): só vale para aquela cidade. Na Agenda aparece
+    # quando há compromisso nela no período; não entra na conta de dias úteis
+    # da casa, que segue os feriados gerais (sem município).
+    municipio = models.ForeignKey(
+        "cadastros.Municipio",
+        verbose_name="município (feriado municipal)",
+        on_delete=models.CASCADE,
+        related_name="feriados",
+        null=True,
+        blank=True,
+        help_text="Em branco: feriado geral (estadual ou ponto facultativo da casa).",
+    )
 
     class Meta:
         verbose_name = "feriado"
@@ -135,7 +147,8 @@ class Feriado(models.Model):
         ordering = ["data"]
 
     def __str__(self):
-        return f"{self.data:%d/%m}{'' if self.anual else f'/{self.data:%Y}'} — {self.nome}"
+        lugar = f" ({self.municipio.nome})" if self.municipio_id else ""
+        return f"{self.data:%d/%m}{'' if self.anual else f'/{self.data:%Y}'} — {self.nome}{lugar}"
 
     def save(self, *args, **kwargs):
         from .feriados import limpar_cache
