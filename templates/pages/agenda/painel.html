@@ -39,6 +39,8 @@
       <button type="button" data-view="timeGridDay" class="ag-seg--largo">Dia</button>
       <button type="button" data-view="listMonth">Lista</button>
       <button type="button" data-view="list30">30 dias</button>
+      {# Visão anual (m137): os 12 meses numa tela, para planejar o ano. #}
+      <button type="button" data-view="multiMonthYear" class="ag-seg--largo">Ano</button>
     </div>
     <button type="button" class="ag-btn ag-btn--filtros" data-ag="filtros" aria-expanded="false" aria-controls="ag-filtros">{% include "components/icon.html" with nome="filter" %}Filtros</button>
     {# Ações da onda AG-B: assinar no calendário pessoal (m133). #}
@@ -47,6 +49,8 @@
       <a class="ag-btn" href="{% url 'agenda:escala' %}">{% include "components/icon.html" with nome="users" %}Escala</a>
       {# "Baixar pauta" (m136): o JS troca o href pelo período visível e as fontes ligadas. #}
       <a class="ag-btn" id="ag-pauta" href="{{ url_pauta }}" data-base="{{ url_pauta }}" title="PDF do período visível">{% include "components/icon.html" with nome="printer" %}Baixar pauta</a>
+      {# "Copiar link" (m137): a URL guarda período, visão e filtros; abre igual para quem receber. #}
+      <button type="button" class="ag-btn" data-ag-copiar-link title="Copiar o endereço desta agenda com os filtros aplicados">{% include "components/icon.html" with nome="copy" %}<span data-ag-copiar-rotulo>Copiar link</span></button>
       <button type="button" class="ag-btn" data-ag-abrir="ag-assinar" aria-haspopup="dialog">{% include "components/icon.html" with nome="link" %}Assinar</button>
     </div>
   </div>

@@ -101,6 +101,22 @@
     });
   }
 
+  // ---- "Copiar link" (m137): a URL já traz visão, período e filtros -------
+  document.querySelectorAll("[data-ag-copiar-link]").forEach(function (b) {
+    var rotulo = b.querySelector("[data-ag-copiar-rotulo]");
+    var original = rotulo ? rotulo.textContent : "";
+    function avisar(texto) {
+      if (!rotulo) return;
+      rotulo.textContent = texto;
+      setTimeout(function () { rotulo.textContent = original; }, 2500);
+    }
+    b.addEventListener("click", function () {
+      var alvo = location.href;
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(alvo).then(function () { avisar("Copiado"); }, function () { window.prompt("Copie o link:", alvo); });
+      else window.prompt("Copie o link:", alvo);
+    });
+  });
+
   // ---- escala (m134): as caixas de fonte viram o parâmetro `fontes` ------
   var formEscala = document.querySelector(".ag-escala__filtros");
   if (formEscala) {

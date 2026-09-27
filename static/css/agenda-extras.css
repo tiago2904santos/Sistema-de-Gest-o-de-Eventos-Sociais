@@ -45,6 +45,18 @@
 .fc .fc-highlight { background: var(--sel-b); }
 .fc .fc-daygrid-day.fc-day:not(.fc-day-disabled) { cursor: cell; }
 
+/* Visão anual (m137): doze meses, três por linha, no mesmo desenho do mês. */
+.fc .fc-multimonth { border: 0; }
+.fc .fc-multimonth-title { font-size: .9rem; font-weight: 600; text-transform: capitalize; padding: 8px 0 4px; color: var(--grafite); }
+.fc .fc-multimonth-daygrid .fc-daygrid-day-frame { min-height: 0; }
+.fc .fc-multimonth .fc-daygrid-day-number { font-size: .72rem; padding: 2px 4px; }
+.fc .fc-multimonth .fc-day-today .fc-daygrid-day-number { min-width: 1.5em; height: 1.5em; margin: 1px; }
+.fc .fc-multimonth .fc-event { font-size: .62rem; padding: 0 4px; }
+.fc .fc-multimonth .fc-col-header-cell-cushion { padding: 4px 2px; font-size: .62rem; }
+@media (max-width: 900px) {
+  .fc .fc-multimonth-month { width: 100% !important; }
+}
+
 /* Escala: pessoa × dia (m134) ---------------------------------------------- */
 .ag-kicker-link { color: inherit; text-decoration: none; }
 .ag-kicker-link:hover { text-decoration: underline; }
