@@ -182,6 +182,32 @@ class LerEmailPautaTests(BasePautaPorEmail):
         self.assertEqual(sugestoes["fonte"].valor, "Carla Bento")
         self.assertEqual(sugestoes["unidade"].valor, self.dhpp)
 
+    def test_whatsapp_fonte_com_o_nome_que_a_conversa_diz(self):
+        mensagem = ler_texto_colado(
+            "[09/10/2026 16:20] Del. Marcos DHPP: Segue para divulgação\n\n"
+            "DHPP PRENDE SUSPEITO DE HOMICÍDIO NO CAJURU\n\n"
+            "O DHPP prendeu o suspeito no Cajuru, disse o delegado Artur Lemos.\n\n"
+            "Delegado Marcos Wendler – DHPP\n"
+            "[09/10/2026 16:25] Ascom PCPR: Recebido, doutor!"
+        )
+        self.assertEqual(preenchimento.sugestoes(mensagem)["fonte"].valor, "Del. Marcos Wendler")
+        # Número sem nome: quem se apresenta no texto.
+        mensagem = ler_texto_colado(
+            "[09/10/2026 09:02] +55 42 99744-3310: Prendemos ontem o suspeito do roubo à lotérica\n"
+            "[09/10/2026 09:10] Ascom PCPR: Quem fala?\n"
+            "[09/10/2026 09:12] +55 42 99744-3310: Aqui é a escrivã Rosana Kuchla, do DHPP"
+        )
+        self.assertEqual(preenchimento.sugestoes(mensagem)["fonte"].valor, "Rosana Kuchla")
+
+    def test_whatsapp_titulo_nao_e_a_apresentacao(self):
+        mensagem = ler_texto_colado(
+            "[09/10/2026 09:02] Inv. Moacir: Bom dia! Aqui é o investigador Moacir Stroparo, da DP de Castro\n"
+            "[09/10/2026 09:03] Inv. Moacir: Ontem prendemos dois homens que furtavam cabos de energia. Dá pra divulgar?"
+        )
+        sugestoes = preenchimento.sugestoes(mensagem)
+        self.assertIn("cabos de energia", sugestoes["titulo"].valor)
+        self.assertEqual(sugestoes["fonte"].valor, "Moacir Stroparo")
+
     def test_permissao_e_metodo(self):
         self.assertEqual(self.client.get(self.url).status_code, 405)
         self.client.force_login(self.sem_modulo)

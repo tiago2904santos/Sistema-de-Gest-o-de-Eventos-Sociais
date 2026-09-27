@@ -70,7 +70,7 @@ def _chave(texto: str) -> str:
 # ---------------------------------------------------------------------------
 
 # Palavra que abre nome de veículo: separa "Everton Zanella" de "do Jornal…".
-_MIDIA = r"(?:R[aá]dio|TV|Jornal|Portal|Revista|Ag[eê]ncia|Folha|Gazeta|Tribuna|Di[aá]rio|Blog|Site|Canal|Programa)"
+_MIDIA = r"(?:R[aá]dio|TV|Jornal|Portal|Revista|Ag[eê]ncia|Folha|Gazeta|Tribuna|Di[aá]rio|Blog|Site|Canal|Programa|Podcast)"
 _PALAVRA_NOME = r"[A-ZÀ-Ý][a-zà-ÿ]+(?:-[A-ZÀ-Ý]?[a-zà-ÿ]+)?"
 # Nome de gente numa linha só (sem atravessar a quebra: a linha de baixo é outra coisa).
 _NOME = rf"{_PALAVRA_NOME}(?:[ \t]+(?:d[aeo]s?[ \t]+)?(?!{_MIDIA}\b){_PALAVRA_NOME}){{0,4}}"
@@ -127,6 +127,144 @@ def _so_telefone(texto: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Quem pede numa conversa do WhatsApp
+# ---------------------------------------------------------------------------
+
+# A própria assessoria na conversa: "Ascom PCPR", "Paula Ascom" (grupo interno que repassa).
+_R_DA_CASA = re.compile(r"\b(?:ascom|assessoria|pcpr)\b")
+# Nome completo escrito no texto (duas palavras ou mais): "Kátia Gonçalves", "Osvaldo Júnior Tanaka".
+_R_NOME_COMPLETO = re.compile(
+    rf"(?<![\wÀ-ÿ])(?!{_MIDIA}\b)(?P<nome>{_PALAVRA_NOME}(?:[ \t]+(?:d[aeo]s?[ \t]+)?(?!{_MIDIA}\b){_PALAVRA_NOME}){{1,4}})"
+)
+_CARGO_DE_IMPRENSA = r"(?:rep[oó]rter|produtor[a]?|editor[a]?|jornalista|apresentador[a]?|colunista|redator[a]?|pauteir[oa])"
+# Depois do nome, o veículo: "Fulana, TV X", "Fulana – Jornal X", "Fulana, da Rádio X", "Fulana, editor do blog X".
+_R_LIGA_AO_VEICULO = re.compile(
+    rf"[ \t]*(?:,|[-–—|])?[ \t]*(?:(?:d[aeo]|n[ao])[ \t]+)?(?:{_CARGO_DE_IMPRENSA}[ \t]+(?:d[aeo][ \t]+)?)?",
+    re.IGNORECASE,
+)
+# A assinatura em linhas: "Beatriz Almeida Souza" / "Repórter | TV Norte Paranaense".
+_R_LINHA_DE_CARGO = re.compile(rf"[ \t]*\n[ \t]*{_CARGO_DE_IMPRENSA}\b", re.IGNORECASE)
+# "produzido pela jornalista Fulana", "a produtora Fulana".
+_R_CARGO_E_NOME = re.compile(rf"(?i:\b{_CARGO_DE_IMPRENSA})[ \t]+(?P<nome>{_PALAVRA_NOME}(?:[ \t]+{_PALAVRA_NOME}){{1,3}})")
+
+
+_NAO_ABRE_NOME = _PALAVRAS_QUE_NAO_SAO_NOME | frozenset(
+    "sou somos aqui att atenciosamente abraco abs obrigado obrigada ola meu minha e o a".split()
+)
+
+
+def _quem_fala(mensagem: Mensagem) -> tuple[bool, str]:
+    """(é conversa, nome do contato de quem pede): o primeiro de fora da assessoria
+    na última conversa (depois da última pausa de mais de 12 horas).
+
+    Vazio quando só a assessoria fala (grupo interno repassando a ligação).
+    """
+    falas = [f for f in (mensagem.extras or {}).get("falas") or [] if f.get("nome")]
+    if not falas:
+        return False, ""
+    inicio, anterior = 0, None
+    for i, fala in enumerate(falas):
+        quando = fala.get("enviado_em")
+        if quando is not None and anterior is not None and (quando - anterior).total_seconds() > 12 * 3600:
+            inicio = i
+        anterior = quando or anterior
+    for fala in falas[inicio:] + falas[:inicio]:
+        if not _R_DA_CASA.search(dobrar(fala["nome"])):
+            return True, " ".join(fala["nome"].split())
+    return True, ""
+
+
+def _palavras_de_veiculo(veiculos) -> set[str]:
+    return {p for v in veiculos for p in _chave(v.nome).split() if p not in _PARTICULAS and len(p) >= 3}
+
+
+def _nomes_no_texto(corpo: str, veiculos) -> list[tuple[int, int, str]]:
+    """(início, fim, nome) de cada nome completo no texto, sem o veículo que vem colado
+    ("Kátia Gonçalves da Educadora" → "Kátia Gonçalves")."""
+    do_veiculo = _palavras_de_veiculo(veiculos)
+    achados = []
+    for m in _R_NOME_COMPLETO.finditer(corpo or ""):
+        palavras = list(re.finditer(r"\S+", m.group("nome")))
+        fim = len(palavras)
+        for i in range(1, len(palavras)):
+            palavra = dobrar(palavras[i].group(0))
+            anterior = dobrar(palavras[i - 1].group(0))
+            # "da Educadora": a partícula liga ao veículo, não ao sobrenome.
+            if palavra in do_veiculo and (anterior in _PARTICULAS or i == len(palavras) - 1 and i >= 2):
+                fim = i - 1 if anterior in _PARTICULAS else i
+                break
+        # "Sou Diego Anhaia", "Att Débora…": a palavra do começo da frase não é nome.
+        comeco = 0
+        while comeco < fim and dobrar(palavras[comeco].group(0)) in _NAO_ABRE_NOME:
+            comeco += 1
+        nomes = [p for p in palavras[comeco:fim] if dobrar(p.group(0)) not in _PARTICULAS]
+        if len(nomes) < 2:
+            continue
+        inicio = m.start("nome") + palavras[comeco].start()
+        final = m.start("nome") + palavras[fim - 1].end()
+        achados.append((inicio, final, corpo[inicio:final]))
+    return achados
+
+
+def _se_identifica(corpo: str, veiculos, nomes) -> tuple[str, str]:
+    """(nome, trecho) de quem se identifica com o veículo no texto: a apresentação,
+    "Fulana, TV X", "Att, Fulana – Jornal X", a assinatura em linhas ("Fulana" /
+    "Repórter | TV X"), "produzido pela jornalista Fulana"."""
+    achados = []
+    apresentado, trecho, fim = _apresentacao(corpo)
+    if apresentado:
+        achados.append((fim - len(apresentado), apresentado, trecho))
+    for inicio, fim, nome in nomes:
+        liga = _R_LIGA_AO_VEICULO.match(corpo, fim)
+        depois = corpo[liga.end():liga.end() + 80] if liga else ""
+        veiculo_logo_depois = re.match(rf"(?i:{_MIDIA}|podcast)\b", depois) or any(
+            i == 0 for i, _, _ in _mencoes(depois, veiculos))
+        if (liga and liga.end() > fim and veiculo_logo_depois) or _R_LINHA_DE_CARGO.match(corpo, fim):
+            achados.append((inicio, nome, " ".join(corpo[inicio:fim + 60].split())))
+    for m in _R_CARGO_E_NOME.finditer(corpo):
+        achados.append((m.start("nome"), m.group("nome"), " ".join(m.group(0).split())))
+    if not achados:
+        return "", ""
+    _inicio, nome, trecho = min(achados, key=lambda a: a[0])
+    return nome, trecho
+
+
+def _jornalista_na_conversa(mensagem: Mensagem, veiculos) -> tuple[str, str]:
+    """(nome, trecho) de quem pede numa conversa do WhatsApp; vazio quando a conversa não diz.
+
+    O contato salvo é apelido ("Ju Gazeta", "Fernanda Litoral", "Kátia 📻
+    Educadora AM"): vale o nome completo do texto com o mesmo nome. Contato
+    que não é gente (número, "Tribuna PG - Redação", "Podcast…", a própria
+    assessoria repassando a ligação) ou só um apelido ("Bia TV Norte",
+    "Juninho Rádio Vale", "Beto Plantão"): vale quem se identifica no texto;
+    sem ninguém que se identifique, o contato com nome e sobrenome. A assessoria
+    que abre a conversa nunca é o jornalista.
+    """
+    conversa, quem = _quem_fala(mensagem)
+    if not conversa:
+        return "", ""
+    corpo = mensagem.corpo or ""
+    nomes = _nomes_no_texto(corpo, veiculos)
+    # O contato sem o veículo: "Thiago Rádio Cidade" → "Thiago"; "Everton Blog Fronteira" → "Everton".
+    contato = re.split(rf"(?i:\b(?:{_MIDIA}|podcast)\b)", quem)[0] if not _so_telefone(quem) else ""
+    contato = _sem_veiculo(contato, veiculos)
+    do_veiculo = _palavras_de_veiculo(veiculos)
+    palavras = [p for p in _chave(contato).split() if len(p) >= 3 and p not in do_veiculo]
+    if _R_NAO_E_PESSOA.search(dobrar(quem)):
+        palavras = []
+    for _inicio, _fim, nome in nomes:
+        if set(palavras) & set(_chave(nome).split()):
+            return nome, f"{quem} · {nome}"
+    # O contato não aparece no texto: quem se identifica nele vale mais ("Beto Plantão" → "Aqui é o Roberto…").
+    nome, trecho = _se_identifica(corpo, veiculos, nomes)
+    if nome:
+        return nome, trecho
+    if len(palavras) >= 2:
+        return " ".join(contato.split()).strip(" -–—|,"), quem
+    return "", ""
+
+
+# ---------------------------------------------------------------------------
 # Jornalista
 # ---------------------------------------------------------------------------
 
@@ -149,8 +287,11 @@ def _jornalista(pessoa, mensagem: Mensagem, veiculos) -> tuple[Sugestao | None, 
     apresentado, trecho_apresentado, _ = _apresentacao(mensagem.corpo or "")
     reporter, trecho_reporter = _reporter_citado(mensagem)
     trecho_remetente = pessoa.trecho if pessoa else mensagem.remetente
+    na_conversa, trecho_conversa = _jornalista_na_conversa(mensagem, veiculos) if mensagem.origem == "whatsapp" else ("", "")
     if reporter and _chave(reporter).split()[:1] != _chave(remetente).split()[:1]:
         nome, trecho = reporter, trecho_reporter
+    elif na_conversa:
+        nome, trecho = na_conversa, trecho_conversa
     elif apresentado and (not mensagem.remetente_email or not remetente):
         nome, trecho = apresentado, trecho_apresentado
     elif remetente:
@@ -186,7 +327,7 @@ _R_CITADO_COMO_FONTE = re.compile(
 # O que liga quem escreve ao veículo no corpo: "sou do Portal X", "trabalho no Jornal X",
 # "editora da Revista X", "colaboradora da Revista X", "assino uma coluna no Portal X".
 _R_VINCULO = re.compile(
-    r"\b(?:sou|trabalho|escrevo|assino|coluna|colaborador[a]?|reporter|produtor[a]?|jornalista|editor[a]?|"
+    r"\b(?:sou|somos|trabalho|escrevo|assino|coluna|colaborador[a]?|reporter|produtor[a]?|jornalista|editor[a]?|"
     r"pauteir[oa]|apresentador[a]?|redator[a]?|colunista|correspondente)\b[^.\n]{0,25}?"
     r"\b(?:d[aeo]s?|n[ao]s?|pel[ao])\s+"
 )
@@ -413,12 +554,19 @@ def _contato_do_reporter(nome: str, mensagem: Mensagem) -> Sugestao | None:
     emails = [e for e in _emails_em(f"{mensagem.corpo}\n{copia}") if any(p in dobrar(e.split("@")[0]) for p in partes)]
     telefone = ""
     primeiro = partes[0] if partes else ""
-    for linha in (mensagem.corpo or "").split("\n"):
+    linhas = (mensagem.corpo or "").split("\n")
+    for i, linha in enumerate(linhas):
         if primeiro and (primeiro in dobrar(linha) or re.search(r"\bdel[ae]\b", dobrar(linha))):
             achado = telefone_no_texto(linha)
             if achado is not None:
                 telefone = achado.valor
                 break
+            # Cartão de contato do WhatsApp: "Contato: Fulano TV X" e o número na linha de baixo.
+            seguinte = linhas[i + 1] if i + 1 < len(linhas) else ""
+            if re.match(r"\s*contato\b", dobrar(linha)) and not re.search(r"[A-Za-zÀ-ÿ]", seguinte):
+                telefone = _telefone_colado(seguinte)
+                if telefone:
+                    break
     valor = " / ".join(p for p in (emails[0] if emails else "", telefone) if p)[:150]
     if not valor:
         return None
