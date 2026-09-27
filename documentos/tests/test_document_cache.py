@@ -23,7 +23,9 @@ class DocumentCacheKeyTests(SimpleTestCase):
         )
         html = Path(settings.BASE_DIR) / "templates" / "documentos" / "pdf" / "oficio.html"
         self.assertTrue(html.exists(), "modelo HTML do ofício ausente")
-        self.assertIn(str(html.resolve()), assinatura)
+        # O nome é relativo ao projeto e a impressão é do conteúdo (m127).
+        self.assertIn("templates/documentos/pdf/oficio.html:", assinatura)
+        self.assertNotIn(str(Path(settings.BASE_DIR).resolve()), assinatura)
         self.assertNotIn(":missing", assinatura)
 
     def test_chave_altera_quando_payload_muda(self):
