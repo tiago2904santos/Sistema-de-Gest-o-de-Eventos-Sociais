@@ -177,7 +177,8 @@ class LerEmailPalestraTests(BasePalestraPorEmail):
         self.assertEqual(campos["hora_inicio"], "19:00")
         self.assertEqual(campos["quantidade_publico"], "80")
         self.assertEqual(campos["telefone"], "(42) 99911-2233")
-        self.assertEqual(campos["solicitante"], "Joana Lima")
+        # "Aqui é da Escola X": quem pede é a escola, com a pessoa de contato ao lado.
+        self.assertEqual(campos["solicitante"], "Joana Lima — Escola Municipal Castro Alves")
         self.assertNotIn("email", campos)
         # "violência … doméstico" casa pelas palavras do tema: fica como sugestão.
         self.assertEqual(campos["temas"], [str(self.violencia.pk)])
