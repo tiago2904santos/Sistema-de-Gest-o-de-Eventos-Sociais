@@ -168,6 +168,20 @@ class EditorEmTodosOsDocumentosTests(CenarioOficioMixin, TestCase):
         self.assertEqual(ordem.data_documento, date(2026, 3, 5))
         self.assertIn("5 de março de 2026", r.json()["folha"])
 
+    def test_assinante_da_ordem_de_servico_escolhido_na_folha(self):
+        ordem = self.ordem()
+        folha = self.folha("ordem_servico", ordem.pk)
+        self.assertIn('data-doc-campo="os_assinante"', folha)
+        r = self.patch("ordem_servico", ordem.pk, "os_assinante", {"assinante": str(self.a.pk)})
+        self.assertEqual(r.status_code, 200, r.content)
+        ordem.refresh_from_db()
+        self.assertEqual(ordem.assinante, self.a)
+        self.assertIn("Ana Teste", r.json()["folha"])
+        r = self.patch("ordem_servico", ordem.pk, "os_assinante", {"assinante": ""})
+        self.assertEqual(r.status_code, 200, r.content)
+        ordem.refresh_from_db()
+        self.assertIsNone(ordem.assinante)
+
     def test_bloco_da_ordem_fica_na_ordem(self):
         ordem = self.ordem()
         r = self.patch("ordem_servico", ordem.pk, "determino", {"conteudo": "Determino e ordeno"}, especie="bloco")

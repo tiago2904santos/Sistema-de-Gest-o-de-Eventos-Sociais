@@ -194,7 +194,7 @@ class OficioDocumentoForm(ProtocoloManualMixin, forms.ModelForm):
                   'motorista_oficio_referencia', 'motorista_protocolo_ref',
                   'transporte_placa_manual', 'transporte_modelo_manual',
                   'transporte_combustivel_manual', 'transporte_tipo_manual',
-                  'porte_transporte_armas', 'roteiro']
+                  'porte_transporte_armas', 'roteiro', 'assinante']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

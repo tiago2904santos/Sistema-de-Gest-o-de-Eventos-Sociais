@@ -657,3 +657,55 @@ class AssinaturaConfiguracao(ModeloTemporal, OrigemLegado):
     class Meta:
         ordering = ["tipo", "ordem"]
         constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_assinaturaconfiguracao_origem"), models.UniqueConstraint(fields=["configuracao", "tipo", "ordem"], name="viagens_assinatura_ordem_unica")]
+
+
+class AssinaturaSubstituicao(ModeloTemporal, OrigemLegado):
+    """Assinante substituto por período (m114): férias ou afastamento do titular.
+
+    Os documentos datados dentro do período (a data do ofício, da OS, do plano
+    ou da justificativa) saem com o substituto, sem mexer na configuração
+    geral nem precisar desfazer depois. `fim` vazio é "até segunda ordem".
+    """
+
+    TODOS = "TODOS"
+    TIPO_CHOICES = [(TODOS, "Todos os documentos")] + AssinaturaConfiguracao.TIPO_CHOICES
+
+    configuracao = models.ForeignKey(ConfiguracaoSistema, on_delete=models.CASCADE, related_name="substituicoes_assinatura")
+    tipo = models.CharField("Documentos", max_length=30, choices=TIPO_CHOICES, default=TODOS)
+    servidor = models.ForeignKey(
+        Servidor, on_delete=models.CASCADE, related_name="+", verbose_name="Substituto",
+    )
+    inicio = models.DateField("Início")
+    fim = models.DateField("Fim", null=True, blank=True, help_text="Vazio: até ser encerrada.")
+    motivo = models.CharField("Motivo", max_length=120, blank=True, default="", help_text="Ex.: férias do titular.")
+    ativo = models.BooleanField("Ativa", default=True)
+
+    class Meta:
+        ordering = ["-inicio", "tipo"]
+        verbose_name = "Substituição de assinante"
+        verbose_name_plural = "Substituições de assinante"
+        constraints = [
+            models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_assinaturasubstituicao_origem"),
+            models.CheckConstraint(condition=models.Q(fim__isnull=True) | models.Q(fim__gte=models.F("inicio")), name="viagens_substituicao_periodo_ordenado"),
+        ]
+
+    def __str__(self):
+        return f"{self.servidor} — {self.periodo_display}"
+
+    @property
+    def periodo_display(self) -> str:
+        inicio = self.inicio.strftime("%d/%m/%Y") if self.inicio else "—"
+        return f"{inicio} a {self.fim:%d/%m/%Y}" if self.fim else f"a partir de {inicio}"
+
+    @property
+    def nome(self) -> str:
+        """O que a lista mostra como principal."""
+        return self.servidor.nome if self.servidor_id else "—"
+
+    def vigente_em(self, data) -> bool:
+        if not self.ativo or data is None or self.inicio is None:
+            return False
+        return self.inicio <= data and (self.fim is None or data <= self.fim)
+
+    def vale_para(self, tipo: str) -> bool:
+        return self.tipo == self.TODOS or self.tipo == tipo

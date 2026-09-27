@@ -371,7 +371,8 @@ def build_os_docxtpl_context(ordem: OrdemServico) -> dict[str, Any]:
     divisao = _txt(inst.get("divisao"))
     unidade = unidade_campo or nome_orgao or sigla
 
-    nome_chefia, cargo_chefia = _assinatura_nome_cargo(inst, "ORDEM_SERVICO", fallback_geral=False)
+    nome_chefia, cargo_chefia = _assinatura_nome_cargo(inst, "ORDEM_SERVICO", fallback_geral=False, data=data_do_documento(ordem),
+                                                       assinante=ordem.assinante if ordem.assinante_id else None)
 
     numero_str = f"{ordem.numero:03d}/{ordem.ano}" if ordem.numero and ordem.ano else str(ordem.pk or "—")
 

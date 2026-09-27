@@ -180,7 +180,20 @@ def _assinatura_nome_cargo(
     tipo: str | None = None,
     *,
     fallback_geral: bool = True,
+    data=None,
+    assinante=None,
 ) -> tuple[str, str]:
+    """Nome e cargo de quem assina: o `assinante` escolhido para o documento;
+    senão o substituto vigente na `data` do documento (m114); senão o titular
+    da configuração para o `tipo`."""
+    if assinante is not None:
+        return _txt(assinante.nome), _txt(assinante.cargo.nome) if getattr(assinante, "cargo_id", None) else ""
+    if tipo is not None and data is not None:
+        from viagens_cadastros.selectors import substituto_vigente
+
+        substituto = substituto_vigente(inst, tipo, data)
+        if substituto is not None:
+            return _txt(substituto.nome), _txt(substituto.cargo.nome) if getattr(substituto, "cargo_id", None) else ""
     ass = inst.get("assinaturas") or {}
     rows: list[dict[str, Any]] = []
     if isinstance(ass, dict):
@@ -535,6 +548,8 @@ def _build_oficio_docxtpl_context_impl(
         inst,
         "OFICIO",
         fallback_geral=False,
+        data=oficio.data_criacao,
+        assinante=oficio.assinante if oficio.assinante_id else None,
     )
     nome_destinatario, cargo_destinatario = _destinatario_nome_cargo(inst)
     nome_orgao_raw = _txt(inst.get("nome_orgao"))
@@ -629,7 +644,6 @@ def build_justificativa_docxtpl_context(oficio: Oficio) -> dict[str, Any]:
 
 def _build_justificativa_docxtpl_context_impl(oficio: Oficio) -> dict[str, Any]:
     inst = build_configuracao_context()
-    nome_a, cargo_a = _assinatura_nome_cargo(inst, "JUSTIFICATIVA", fallback_geral=False)
     unidade = _txt(inst.get("unidade")) or _txt(inst.get("nome_orgao")) or _txt(inst.get("sigla_orgao"))
     texto = ""
     justificativa = None
@@ -638,6 +652,10 @@ def _build_justificativa_docxtpl_context_impl(oficio: Oficio) -> dict[str, Any]:
         texto = _txt(justificativa.texto)
     except Justificativa.DoesNotExist:
         pass
+    nome_a, cargo_a = _assinatura_nome_cargo(
+        inst, "JUSTIFICATIVA", fallback_geral=False, data=data_do_documento(justificativa),
+        assinante=justificativa.assinante if justificativa is not None and justificativa.assinante_id else None,
+    )
 
     ctx: dict[str, Any] = {
         "sede": _build_sede(inst),

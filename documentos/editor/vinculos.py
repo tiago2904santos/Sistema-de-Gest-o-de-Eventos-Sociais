@@ -1235,15 +1235,20 @@ class FonteJustificativa(FonteBase):
     def form(self, oficio, dados=None):
         from django import forms
 
+        from viagens_cadastros.models import Servidor
+
         class JustificativaTextoForm(forms.Form):
             texto = forms.CharField(label="Texto", widget=forms.Textarea, error_messages={"required": "Escreva a justificativa."})
             data_documento = forms.DateField(label="Data do documento", required=False)
+            assinante = forms.ModelChoiceField(Servidor.objects.select_related("cargo").order_by("nome"), required=False,
+                                               label="Assinante", empty_label="Quem a configuração indica")
 
         return JustificativaTextoForm(dados)
 
     def dados_atuais(self, oficio):
         registro = self.vinculo.registro(oficio)
-        return {"texto": registro.texto if registro else "", "data_documento": (registro.data_documento if registro else None) or ""}
+        return {"texto": registro.texto if registro else "", "data_documento": (registro.data_documento if registro else None) or "",
+                "assinante": (registro.assinante_id if registro else None) or ""}
 
     def gravar(self, form, nomes, oficio):
         from viagens_oficios.justificativas_services import get_or_create_justificativa_oficio, salvar_justificativa
@@ -1255,6 +1260,10 @@ class FonteJustificativa(FonteBase):
             registro = registro or get_or_create_justificativa_oficio(oficio)
             registro.data_documento = form.cleaned_data.get("data_documento") or None
             registro.save(update_fields=["data_documento", "atualizado_em"])
+        if "assinante" in nomes:
+            registro = registro or get_or_create_justificativa_oficio(oficio)
+            registro.assinante = form.cleaned_data.get("assinante")
+            registro.save(update_fields=["assinante", "atualizado_em"])
         return registro
 
     def links(self, definicao, oficio, alvo):
@@ -1262,7 +1271,7 @@ class FonteJustificativa(FonteBase):
 
 
 class FonteOrdem(FonteBase):
-    CAMPOS = ("tipo_necessidade", "servidores", "data_evento_inicio", "data_evento_fim", "motivo", "data_documento")
+    CAMPOS = ("tipo_necessidade", "servidores", "data_evento_inicio", "data_evento_fim", "motivo", "data_documento", "assinante")
     # Tipos que a tela oferece; os demais só aparecem se a OS já os tem.
     TIPOS_NA_TELA = ("PADRAO", "OPERACAO_RETORNO_POSTERIOR", "CERIMONIAL_ANTECIPADO")
 
@@ -1288,7 +1297,7 @@ class FonteOrdem(FonteBase):
 
 class FontePlano(FonteBase):
     CAMPOS = ("contextualizacao", "coordenacao", "consideracao_final", "data_evento_inicio", "data_evento_fim",
-              "horario_atendimento", "atividades_selecionadas", "data_documento")
+              "horario_atendimento", "atividades_selecionadas", "data_documento", "assinante")
     # Texto automático de cada campo: o interruptor e quem o refaz.
     AUTOMATICOS = {
         "contextualizacao": ("contextualizacao_auto", "texto_padrao_contextualizacao"),

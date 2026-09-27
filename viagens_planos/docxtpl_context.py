@@ -129,7 +129,8 @@ def build_plano_docxtpl_context(plano):
         valor_blocos = []
 
     inst = build_configuracao_context()
-    nome_chefia, cargo_chefia = _assinatura_nome_cargo(inst, "PLANO_TRABALHO", fallback_geral=False)
+    nome_chefia, cargo_chefia = _assinatura_nome_cargo(inst, "PLANO_TRABALHO", fallback_geral=False, data=data_do_documento(plano),
+                                                       assinante=plano.assinante if plano.assinante_id else None)
     if plano.is_multi_evento:
         destinos = _destinos_unicos(plano)
     else:

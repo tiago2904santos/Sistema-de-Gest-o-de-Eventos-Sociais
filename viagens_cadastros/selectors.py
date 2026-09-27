@@ -5,13 +5,20 @@ def build_configuracao_context():
     configuracao = ConfiguracaoSistema.atual()
     cidade_doc = configuracao.cidade_endereco or ""
     assinaturas: dict = {}
-    for ass in ConfiguracaoSistema.get_singleton().assinaturas.filter(ativo=True).select_related("servidor__cargo").order_by("tipo", "ordem"):
+    global_ = ConfiguracaoSistema.get_singleton()
+    for ass in global_.assinaturas.filter(ativo=True).select_related("servidor__cargo").order_by("tipo", "ordem"):
         assinaturas.setdefault(ass.tipo, []).append({
             "servidor": ass.servidor,
             "nome": ass.servidor.nome if ass.servidor else "",
             "ordem": ass.ordem,
         })
+    # Substitutos por período (m114): o documento datado no período sai com o substituto.
+    substituicoes = [
+        {"tipo": s.tipo, "servidor": s.servidor, "nome": s.servidor.nome, "inicio": s.inicio, "fim": s.fim, "objeto": s}
+        for s in global_.substituicoes_assinatura.filter(ativo=True).select_related("servidor__cargo").order_by("-inicio")
+    ]
     return {
+        "substituicoes": substituicoes,
         "nome_orgao": configuracao.nome_orgao,
         "sigla_orgao": configuracao.sigla_orgao,
         # Campo "divisão" removido do cabeçalho: mantido vazio apenas por
@@ -40,3 +47,16 @@ def build_configuracao_context():
         "prazo_justificativa_dias": configuracao.prazo_justificativa_dias,
         "assinaturas": assinaturas,
     }
+
+
+def substituto_vigente(inst, tipo, data):
+    """O servidor substituto que assina o documento `tipo` datado em `data`,
+    ou None: a substituição ativa (do tipo, ou de todos) cujo período contém a
+    data. Duas valendo ao mesmo tempo: a mais recente."""
+    if data is None:
+        return None
+    for s in inst.get("substituicoes") or []:
+        objeto = s.get("objeto")
+        if objeto is not None and objeto.vale_para(tipo) and objeto.vigente_em(data):
+            return s.get("servidor")
+    return None
