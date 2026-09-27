@@ -16,8 +16,14 @@
           <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="eye" %}<span><b>Visualizar</b><small>Abrir a Ordem de Serviço</small></span></button>
         </form>
         <form method="post" action="{{ l.url_pdf }}">{% csrf_token %}
-          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>Ordem de Serviço em PDF</small></span></button>
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="download" %}<span><b>Baixar PDF</b><small>{% if l.versao %}Versão {{ l.versao }}, emitida em {{ l.emitida_em|date:"d/m/Y" }}{% else %}Ordem de Serviço em PDF{% endif %}</small></span></button>
         </form>
+        {% if l.versao %}
+        {# A via emitida não muda com os dados (m113): mudar o que saiu é emitir a versão seguinte. #}
+        <form method="post" action="{{ l.url_pdf }}" data-confirmar="Emitir a versão {{ l.versao|add:1 }}?">{% csrf_token %}<input type="hidden" name="nova_versao" value="1">
+          <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="redo" %}<span><b>Emitir nova versão</b><small>Refazer o PDF com os dados de hoje (versão {{ l.versao|add:1 }})</small></span></button>
+        </form>
+        {% endif %}
         <a class="dd__i of-item" href="{% url 'documentos:editor_pagina' 'ordem_servico' o.pk %}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar documento</b><small>Alterar o texto pela prévia A4</small></span></a>
         {% if l.url_assinado %}<a class="dd__i of-item" href="{{ l.url_assinado }}" data-anexar-assinado data-anexar-nome="{{ o.numero_formatado }}"{% if l.assinado %} data-anexar-atual="1"{% endif %}>{% include "components/icon.html" with nome=l.assinado|yesno:"check-circle,upload" %}<span><b>{% if l.assinado %}Trocar assinado{% else %}Anexar assinado{% endif %}</b><small>Enviar o PDF assinado da OS</small></span></a>
         {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Gere o PDF da OS primeiro</small></span></span>{% endif %}

@@ -59,6 +59,8 @@ td.doc-editavel, p.doc-editavel { border-radius: 0; }
 .doc-editavel--texto:focus { background: rgba(190, 164, 90, .14); outline: none; }
 .doc-editavel--texto[data-doc-estado="erro"],
 .doc-editavel--texto[data-doc-estado="erro"]:focus { background: rgba(190, 70, 60, .16); }
+/* O termo que segue a data (autorização/convalidação) dentro do parágrafo editável (m110): fixo, e marcado como tal. */
+.doc-marcador { border-bottom: 1px dotted rgba(120, 100, 40, .7); cursor: default; }
 
 /* Dado que ainda não existe (unidade, destinatário...): só no editor, um
    texto cinza para ter onde clicar e preencher. */
@@ -77,6 +79,18 @@ td.doc-editavel, p.doc-editavel { border-radius: 0; }
   content: "+ quebra de página"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   padding: 0 4pt; background: #fff; font-size: 7pt; color: #7a7a7a; line-height: 1; white-space: nowrap;
 }
+
+/* Ponto de parágrafo extra sem texto (m123): a mesma fenda, com "+ parágrafo";
+   clicada, vira um parágrafo para escrever. */
+.doc-paragrafo-slot { position: relative; height: 8pt; margin: -4pt 0; cursor: text; }
+.doc-paragrafo-slot:focus { outline: none; }
+.doc-paragrafo-slot::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dotted transparent; }
+.doc-paragrafo-slot:hover::before, .mostrar-quebras .doc-paragrafo-slot::before { border-color: #b5b5b5; }
+.doc-paragrafo-slot:hover::after, .mostrar-quebras .doc-paragrafo-slot::after {
+  content: "+ parágrafo"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  padding: 0 4pt; background: #fff; font-size: 7pt; color: #7a7a7a; line-height: 1; white-space: nowrap;
+}
+.doc-paragrafo-extra:empty::before { content: "Escreva o parágrafo…"; color: #9a9a9a; font-style: italic; }
 
 /* Quebra de página: no PDF não aparece; na tela é uma linha tracejada com
    o nome, para se saber onde o documento vira a página. */
@@ -101,3 +115,13 @@ td.doc-editavel, p.doc-editavel { border-radius: 0; }
 .documento--editor.doc-folha-ascom .doc-rodape { left: 1.5cm; right: 1.5cm; box-sizing: border-box; }
 .documento--editor.doc-folha-ascom .doc-cabecalho { height: 6.8cm; justify-content: flex-start; padding-top: 1.25cm; }
 .documento--editor.doc-folha-ascom .doc-rodape { height: 3cm; justify-content: flex-end; padding-bottom: 0.8cm; }
+
+/* As mesmas fontes do PDF na prévia da tela (m126), servidas pelos estáticos. */
+@font-face { font-family: "Liberation Serif"; font-style: normal; font-weight: 400; src: url("/static/fonts/LiberationSerif-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Liberation Serif"; font-style: normal; font-weight: 700; src: url("/static/fonts/LiberationSerif-Bold.ttf") format("truetype"); }
+@font-face { font-family: "Liberation Serif"; font-style: italic; font-weight: 400; src: url("/static/fonts/LiberationSerif-Italic.ttf") format("truetype"); }
+@font-face { font-family: "Liberation Serif"; font-style: italic; font-weight: 700; src: url("/static/fonts/LiberationSerif-BoldItalic.ttf") format("truetype"); }
+@font-face { font-family: "Liberation Sans"; font-style: normal; font-weight: 400; src: url("/static/fonts/LiberationSans-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Liberation Sans"; font-style: normal; font-weight: 700; src: url("/static/fonts/LiberationSans-Bold.ttf") format("truetype"); }
+@font-face { font-family: "Liberation Sans"; font-style: italic; font-weight: 400; src: url("/static/fonts/LiberationSans-Italic.ttf") format("truetype"); }
+@font-face { font-family: "Liberation Sans"; font-style: italic; font-weight: 700; src: url("/static/fonts/LiberationSans-BoldItalic.ttf") format("truetype"); }

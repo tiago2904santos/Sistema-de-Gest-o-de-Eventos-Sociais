@@ -266,6 +266,14 @@ def sincronizar_trechos(diario: DiarioBordo) -> list[DiarioBordoTrecho]:
     roteiro = roteiro_efetivo(diario.prestacao)
     trechos = trechos_ordenados(roteiro)
 
+    # m101: a tela do diário e cada autosave chamavam isto, e cada chamada
+    # regravava todas as linhas (um `UPDATE`, um `save()` por linha e um
+    # `DELETE`) mesmo sem nada ter mudado. Se o diário já espelha o roteiro —
+    # uma linha por trecho, na mesma ordem —, não há o que sincronizar.
+    atuais = list(diario.trechos.select_related("trecho").order_by("ordem", "pk"))
+    if [(dt.trecho_id, dt.ordem) for dt in atuais] == [(t.id, i) for i, t in enumerate(trechos)]:
+        return atuais
+
     # `DB-08` fatia 2, **primeiro passo**. As posições finais entram uma a uma no
     # laço abaixo, e a linha é reaproveitada por `id`: quando o roteiro muda de
     # ordem, a posição que estou gravando ainda pertence a outra linha. Este

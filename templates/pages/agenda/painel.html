@@ -15,7 +15,7 @@
 
 {% block title %}Agenda — Sistema de Gestão de Eventos Sociais{% endblock %}
 
-{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/agenda.css' %}">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% estatico 'css/agenda.css' %}"><link rel="stylesheet" href="{% estatico 'css/agenda-extras.css' %}">{% endblock %}
 
 {% block conteudo %}
   <div class="d-cabeca d-cabeca--secao">
@@ -39,8 +39,20 @@
       <button type="button" data-view="timeGridDay" class="ag-seg--largo">Dia</button>
       <button type="button" data-view="listMonth">Lista</button>
       <button type="button" data-view="list30">30 dias</button>
+      {# Visão anual (m137): os 12 meses numa tela, para planejar o ano. #}
+      <button type="button" data-view="multiMonthYear" class="ag-seg--largo">Ano</button>
     </div>
     <button type="button" class="ag-btn ag-btn--filtros" data-ag="filtros" aria-expanded="false" aria-controls="ag-filtros">{% include "components/icon.html" with nome="filter" %}Filtros</button>
+    {# Ações da onda AG-B: assinar no calendário pessoal (m133). #}
+    <div class="ag-topo__acoes">
+      {% if atalhos %}<button type="button" class="ag-btn" data-ag-criar-hoje aria-haspopup="dialog">{% include "components/icon.html" with nome="plus" %}Criar</button>{% endif %}
+      <a class="ag-btn" href="{% url 'agenda:escala' %}">{% include "components/icon.html" with nome="users" %}Escala</a>
+      {# "Baixar pauta" (m136): o JS troca o href pelo período visível e as fontes ligadas. #}
+      <a class="ag-btn" id="ag-pauta" href="{{ url_pauta }}" data-base="{{ url_pauta }}" title="PDF do período visível">{% include "components/icon.html" with nome="printer" %}Baixar pauta</a>
+      {# "Copiar link" (m137): a URL guarda período, visão e filtros; abre igual para quem receber. #}
+      <button type="button" class="ag-btn" data-ag-copiar-link title="Copiar o endereço desta agenda com os filtros aplicados">{% include "components/icon.html" with nome="copy" %}<span data-ag-copiar-rotulo>Copiar link</span></button>
+      <button type="button" class="ag-btn" data-ag-abrir="ag-assinar" aria-haspopup="dialog">{% include "components/icon.html" with nome="link" %}Assinar</button>
+    </div>
   </div>
 
   <div class="ag-grade">
@@ -78,7 +90,14 @@
       </section>
 
       <section class="ag-f">
-        <label class="ag-toggle"><input type="checkbox" id="ag-meus"><span>Só o que eu criei</span></label>
+        <h3 class="ag-f__h"><label for="ag-pessoa">Pessoa</label></h3>
+        <select id="ag-pessoa" class="ag-sel"><option value="">Todas</option></select>
+      </section>
+
+      <section class="ag-f">
+        {# "Minha agenda" (m134): o que eu registrei e onde estou escalado. #}
+        <label class="ag-toggle"><input type="checkbox" id="ag-meus"><span>Minha agenda</span></label>
+        <p class="ag-f__dica">O que você registrou e as viagens em que está escalado{% if not request.user.servidor_id %} — peça ao administrador para ligar seu usuário ao seu cadastro de servidor{% endif %}.</p>
       </section>
 
       <section class="ag-f">
@@ -115,10 +134,15 @@
       <p class="ag-m__carregando">Carregando…</p>
     </div>
   </dialog>
+
+  {# Modais da onda AG-B (assinatura, criar aqui). #}
+  {% include "pages/agenda/_assinar.html" %}
+  {% include "pages/agenda/_criar.html" %}
 {% endblock %}
 
 {% block extra_js %}{{ block.super }}
   <script src="{% estatico 'vendor/fullcalendar/index.global.min.js' %}"></script>
   <script src="{% estatico 'vendor/fullcalendar/pt-br.global.min.js' %}"></script>
   <script src="{% estatico 'js/agenda.js' %}" defer></script>
+  <script src="{% estatico 'js/agenda-extras.js' %}" defer></script>
 {% endblock %}

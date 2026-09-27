@@ -369,8 +369,17 @@ class RelatorioTecnicoForm(forms.ModelForm):
 class ModeloTextoRelatorioTecnicoForm(forms.ModelForm):
     campo = forms.ChoiceField(label='Campo do relatório', choices=ModeloTextoRelatorioTecnico.CAMPO_CHOICES, widget=forms.Select(attrs={**{'class': 'campo__input'}}))
     nome = forms.CharField(label='Nome', help_text='Use um nome curto para identificar o modelo.', widget=forms.TextInput(attrs={**{'class': 'campo__input'}}))
-    texto = forms.CharField(label='Texto do modelo', help_text='Este texto será copiado para o campo do relatório e poderá ser editado antes de gerar.', widget=forms.Textarea(attrs={**{'class': 'campo__input'}, 'rows': 3}))
+    texto = forms.CharField(label='Texto do modelo', help_text='Este texto será copiado para o campo do relatório e poderá ser editado antes de gerar. '
+                            'Campos automáticos, trocados ao aplicar: {destino}, {periodo}, {data_saida}, {data_retorno}, {motivo} (do ofício), '
+                            '{servidores}, {evento}, {numero_oficio}, {atividades} e {metas} (do plano de trabalho).',
+                            widget=forms.Textarea(attrs={**{'class': 'campo__input'}, 'rows': 3}))
+
+    def _get_validation_exclusions(self):
+        # A troca de padrão é feita pelo save do modelo (um por campo).
+        return super()._get_validation_exclusions() | {'is_padrao'}
 
     class Meta:
         model = ModeloTextoRelatorioTecnico
-        fields = ['campo', 'nome', 'texto']
+        fields = ['campo', 'nome', 'texto', 'is_padrao']
+        labels = {'is_padrao': 'Usar como padrão deste campo'}
+        help_texts = {'is_padrao': 'Entra sozinho no relatório técnico novo, no lugar do campo em branco.'}

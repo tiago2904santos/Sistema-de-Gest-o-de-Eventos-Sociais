@@ -1788,6 +1788,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .an-limpar[hidden]{display:none}
 .an-limpar .ui-icon{width:14px;height:14px}
 .an-erro{margin:0;font-size:12.5px;color:var(--erro-t,#b3261e)}
+.an-conferencia{display:grid;gap:4px;margin-top:8px}.an-conferencia__linha{margin:0;font-size:12.5px;padding:6px 8px;border-radius:6px;background:var(--fundo-suave,#f3f1ec)}.an-conferencia__linha--ok{color:var(--ok-t,#1d6b3a);background:rgba(29,107,58,.08)}.an-conferencia__linha--aviso{color:var(--aviso-t,#8a5a00);background:rgba(190,140,20,.12)}
 .an-rodape{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:2px}
 .an-rodape .btn-primaria,.an-rodape .btn--secundaria{height:40px;padding:0 18px;border-radius:8px;font-size:14px}
 .an-rodape .btn-primaria:disabled{opacity:.45;cursor:not-allowed}
@@ -1799,6 +1800,9 @@ form.btn-flutuante-form{margin:0;display:contents}
    grupos segmentados (formato, versão e saída). */
 .bx-dialogo{width:min(640px,calc(100vw - 32px))}
 .bx-sub{margin-top:4px;font-size:13px;color:var(--n-500)}
+/* Gerando (m122): aviso enquanto o servidor monta os arquivos e o giro no botão. */
+.bx-aviso{margin:0;font-size:13px;color:var(--n-700)}.bx-aviso[hidden]{display:none}
+.bx-espera{display:inline-block;width:14px;height:14px;margin-right:6px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;vertical-align:-2px;animation:v32-girar .8s linear infinite}
 .bx-cabeca{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13.5px;color:var(--n-700)}
 .bx-todos{padding:0;border:0;background:none;font:inherit;font-size:13px;font-weight:600;color:var(--n-700);cursor:pointer}
 .bx-todos:hover{color:var(--n-900);text-decoration:underline}
@@ -1876,6 +1880,13 @@ form.btn-flutuante-form{margin:0;display:contents}
 /* O ⋮ do ofício na mesma coluna do ⋮ dos cartões (o recuo é o padding do cartão). */
 .pc-oficio__acoes{margin-left:auto;margin-right:10px}
 .pc-oficio__rotulo{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--n-450)}
+/* m105: o setor do processo no eProtocolo, com o botão de atualizar colado. */
+.pc-oficio__processo{gap:6px}
+.pc-oficio__processo--despacho{font-weight:600}
+.pc-oficio__atualizar{display:inline-flex;margin:0}
+.pc-oficio__atualizar .ib-linha{width:24px;height:24px;min-width:24px}
+.pc-oficio__atualizar .ui-icon{width:13px;height:13px}
+.pc-docs__processo{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 12px}
 .pc-cards{display:grid;gap:8px}
 /* O cartão do servidor numa linha: crachá, solicitação, prazo de saque, a
    pessoa (nome com chips; embaixo o resto) e o menu. */

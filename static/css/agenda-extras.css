@@ -1,0 +1,102 @@
+/* Agenda — complementos da onda AG-B: assinatura (m133), escala e filtro por
+   pessoa (m134), "Criar aqui" (m135), pauta (m136), visão Ano e link (m137).
+
+   Separado de agenda.css de propósito: o calendário em si continua lá; aqui
+   ficam só os modais e as telas novas, com os mesmos tokens do DS. */
+
+/* Ações à direita do cabeçalho do calendário. */
+.ag-topo__acoes { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.ag-topo__acoes .ag-btn .ui-icon { width: 16px; height: 16px; }
+
+/* Modal "Assinar no seu calendário" ---------------------------------------- */
+.ag-assinar { width: min(620px, calc(100vw - 32px)); }
+.ag-assinar__opcoes { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ag-assinar__meus { margin-left: auto; font-size: .88rem; }
+.ag-assinar__caixa { gap: 8px; }
+.ag-assinar__caixa .ag-f__h { margin: 0; }
+.ag-assinar__url { font-size: .82rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--nt-t); }
+.ag-assinar__acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ag-assinar__acoes a.ag-btn { text-decoration: none; }
+.ag-assinar__ok { font-size: .82rem; color: var(--ok-t); font-weight: 600; }
+.ag-assinar__aviso { font-size: .82rem; color: var(--rotulo); }
+.ag-assinar__rodape { flex-wrap: wrap; }
+.ag-assinar__pauta .an-texto { font-size: .86rem; }
+.ag-assinar__pauta .ag-assinar__form { align-items: center; gap: 10px; }
+.ag-assinar__pauta .ag-btn:disabled { opacity: .5; cursor: not-allowed; }
+.ag-assinar__form { display: inline-flex; }
+.ag-assinar__form:first-child { margin-right: auto; }
+
+/* Modal "Criar aqui" (m135) ------------------------------------------------- */
+.ag-criar { width: min(520px, calc(100vw - 32px)); }
+.ag-criar__lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ag-criar__form { display: block; }
+.ag-criar__item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 1px solid var(--nt-r); border-radius: 10px; background: var(--branco); color: var(--grafite); font: inherit; text-align: left; text-decoration: none; cursor: pointer; }
+.ag-criar__item:hover { background: var(--hover-b); border-color: var(--sel-r); }
+.ag-criar__item:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--foco); }
+.ag-criar__ico { width: 36px; height: 36px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; flex: none; background: var(--nt-b); color: var(--grafite); }
+.ag-criar__ico .ui-icon { width: 18px; height: 18px; }
+.ag-criar__item--viagem .ag-criar__ico { background: var(--ag-viagem); color: var(--ag-viagem-t); }
+.ag-criar__item--solicitacao .ag-criar__ico { background: var(--ag-solicitacao); color: var(--ag-solicitacao-t); }
+.ag-criar__item--coffee .ag-criar__ico { background: var(--ag-coffee); color: var(--ag-coffee-t); }
+.ag-criar__item--demanda .ag-criar__ico { background: var(--ag-demanda); color: var(--ag-demanda-t); }
+.ag-criar__txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ag-criar__txt small { color: var(--rotulo); font-size: .8rem; }
+/* O dia (ou os dias) sendo escolhido no calendário. */
+.fc .fc-highlight { background: var(--sel-b); }
+.fc .fc-daygrid-day.fc-day:not(.fc-day-disabled) { cursor: cell; }
+
+/* Visão anual (m137): doze meses, três por linha, no mesmo desenho do mês. */
+.fc .fc-multimonth { border: 0; }
+.fc .fc-multimonth-title { font-size: .9rem; font-weight: 600; text-transform: capitalize; padding: 8px 0 4px; color: var(--grafite); }
+.fc .fc-multimonth-daygrid .fc-daygrid-day-frame { min-height: 0; }
+.fc .fc-multimonth .fc-daygrid-day-number { font-size: .72rem; padding: 2px 4px; }
+.fc .fc-multimonth .fc-day-today .fc-daygrid-day-number { min-width: 1.5em; height: 1.5em; margin: 1px; }
+.fc .fc-multimonth .fc-event { font-size: .62rem; padding: 0 4px; }
+.fc .fc-multimonth .fc-col-header-cell-cushion { padding: 4px 2px; font-size: .62rem; }
+@media (max-width: 900px) {
+  .fc .fc-multimonth-month { width: 100% !important; }
+}
+
+/* Escala: pessoa × dia (m134) ---------------------------------------------- */
+.ag-kicker-link { color: inherit; text-decoration: none; }
+.ag-kicker-link:hover { text-decoration: underline; }
+.ag-topo__acoes a.ag-btn, .ag-topo__nav a.ag-btn, .ag-topo__nav a.ag-ico { text-decoration: none; }
+.ag-seg a { border: 0; background: none; font: inherit; font-weight: 600; font-size: .85rem; padding: 6px 14px; border-radius: 999px; color: var(--grafite); text-decoration: none; }
+.ag-seg a:hover { background: var(--hover-b); }
+.ag-seg a[aria-pressed="true"] { background: var(--d-500); }
+.ag-escala__filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 14px; padding: 12px 14px; background: var(--branco); border: 1px solid var(--nt-r); border-radius: 12px; }
+.ag-escala__filtros .ag-f__h { margin: 0; }
+.ag-escala__pessoa { width: min(320px, 100%); }
+.ag-escala-card { padding: 0; overflow: hidden; }
+.ag-escala__rolagem { overflow-x: auto; }
+.ag-escala { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 720px; font-size: .82rem; }
+.ag-escala th, .ag-escala td { border-bottom: 1px solid var(--nt-r); border-right: 1px solid var(--nt-r); vertical-align: top; padding: 6px; }
+.ag-escala thead th { position: sticky; top: 0; z-index: 2; background: var(--papel); text-align: center; font-weight: 600; }
+.ag-escala__pessoa-col, .ag-escala__nome { position: sticky; left: 0; z-index: 3; background: var(--branco); text-align: left; min-width: 180px; max-width: 240px; font-weight: 600; }
+.ag-escala thead .ag-escala__pessoa-col { z-index: 4; background: var(--papel); }
+.ag-escala__sem { display: block; font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--rotulo); }
+.ag-escala__num { display: block; font-variant-numeric: tabular-nums; }
+.ag-escala__dia { min-width: 92px; }
+.ag-escala__dia--fds { background: var(--nt-b); }
+.ag-escala__dia--hoje .ag-escala__num { background: var(--d-500); color: var(--grafite); border-radius: 999px; display: inline-block; padding: 0 8px; font-weight: 700; }
+.ag-escala__cel { min-width: 92px; }
+.ag-escala__item { display: block; margin: 0 0 3px; padding: 2px 6px; border-radius: 4px; font-size: .74rem; font-weight: 600; line-height: 1.3; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--fc-event-bg-color, var(--nt-r)); color: var(--fc-event-text-color, var(--grafite)); }
+.ag-escala__item.ag-viagem { --fc-event-bg-color: var(--ag-viagem); --fc-event-text-color: var(--ag-viagem-t); }
+.ag-escala__item.ag-solicitacao { --fc-event-bg-color: var(--ag-solicitacao); --fc-event-text-color: var(--ag-solicitacao-t); }
+.ag-escala__item.ag-coffee { --fc-event-bg-color: var(--ag-coffee); --fc-event-text-color: var(--ag-coffee-t); }
+.ag-escala__item.ag-demanda { --fc-event-bg-color: var(--ag-demanda); --fc-event-text-color: var(--ag-demanda-t); }
+.ag-escala__item.ag-encerrado { --fc-event-bg-color: var(--nt-r); --fc-event-text-color: var(--nt-t); text-decoration: line-through; font-weight: 500; }
+.ag-escala__item:hover { filter: brightness(1.06); }
+.ag-escala__total { text-align: center; font-variant-numeric: tabular-nums; color: var(--nt-t); white-space: nowrap; }
+
+@media (max-width: 900px) {
+  .ag-topo__acoes { width: 100%; margin-left: 0; }
+  .ag-topo__acoes .ag-btn { flex: 1; justify-content: center; }
+}
+
+@media print {
+  .ident, .app-shell__topo, .ag-topo, .ag-escala__filtros, .ag-filtros, .ag-topo__acoes { display: none !important; }
+  .ag-escala-card { border: 0; box-shadow: none; }
+  .ag-escala { min-width: 0; font-size: .7rem; }
+  .ag-escala__item { white-space: normal; }
+}

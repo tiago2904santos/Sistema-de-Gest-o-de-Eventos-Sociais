@@ -1,8 +1,9 @@
 /* Ajustar onde cada número de solicitação é carimbado no ofício assinado.
  *
- * O visualizador de PDF e o arraste vêm de `components/pdf-place.js`. O que é desta
- * tela: uma caixa POR SERVIDOR, a troca de página escondendo as caixas que não são daquela folha, e o corpo
- * da fonte saindo da altura da caixa.
+ * O visualizador de PDF e o arraste (e o teclado, m107) vêm de `components/pdf-place.js`.
+ * O que é desta tela: uma caixa POR SERVIDOR, a troca de página escondendo as caixas que
+ * não são daquela folha, o corpo da fonte saindo da altura da caixa e o rótulo de cada
+ * caixa para o leitor de tela ("Número de João, página 2").
  *
  * Os campos ocultos guardam frações da página com origem no topo-esquerdo — a mesma
  * convenção de `documentos/services/pdf_overlay.py`, que desenha do outro lado.
@@ -50,6 +51,12 @@
     campo(ps, "pagina").value = String(caixa.dataset.pagina || 0);
   }
 
+  /* "Número de João, página 2": o leitor de tela diz de quem é a caixa e em que folha está. */
+  function rotular(caixa) {
+    var pagina = (parseInt(caixa.dataset.pagina || "0", 10) || 0) + 1;
+    caixa.setAttribute("aria-label", "Número de " + (caixa.dataset.nome || "servidor") + ", página " + pagina);
+  }
+
   function ajustarCorpo(caixa) {
     // O texto dentro da caixa tem de sair do tamanho que vai para o PDF, senão o
     // operador posiciona olhando um número e recebe outro.
@@ -75,11 +82,14 @@
       },
     });
 
-    caixa.addEventListener("mousedown", function () {
+    function ativar() {
       caixas.forEach(function (outra) {
         outra.classList.toggle("pdf-place__box--ativa", outra === caixa);
       });
-    });
+    }
+    caixa.addEventListener("mousedown", ativar);
+    // Tab seleciona a caixa como o clique: a ativa é a que as setas movem.
+    caixa.addEventListener("focus", ativar);
 
     return { ps: ps, caixa: caixa, texto: texto, arrastavel: arrastavel };
   });
@@ -99,6 +109,7 @@
       var pagina = parseInt(ctrl.caixa.dataset.pagina || "0", 10) || 0;
       var daPagina = pagina === paginaAtual;
       ctrl.caixa.hidden = !daPagina;
+      rotular(ctrl.caixa);
       if (!daPagina) return;
 
       var altura = lerNumero(campo(ctrl.ps, "tamanho").value, 0.012) * sh;

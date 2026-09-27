@@ -102,7 +102,8 @@ def vazio(context, rotulo):
     nada — o documento sai como sempre saiu."""
     if context.get("modo") != "editor" or not context.get("campos_editaveis"):
         return ""
-    return format_html('<span class="doc-vazio">{}</span>', rotulo)
+    # `data-doc-vazio` é o que "Próximo campo vazio" percorre (m117).
+    return format_html('<span class="doc-vazio" data-doc-vazio="{}">{}</span>', rotulo, rotulo)
 
 
 def _editando(context):
@@ -142,8 +143,17 @@ def bloco(context, chave, classe="", assunto=None, negrito_ate="", padrao=None, 
     texto = dados.get("conteudo")
     if texto is None:
         texto = dados.get("padrao", "")
+    fixo = None
     if assunto is not None:
-        texto = texto.replace("{assunto}", str(assunto))
+        if _editando(context) and "{assunto}" in texto:
+            # No editor, o termo que segue a data ("autorização"/"convalidação")
+            # sai como trecho fixo dentro do parágrafo digitável: não se apaga
+            # sem querer, e a gravação o devolve ao marcador (m110).
+            fixo = format_html('<span class="doc-marcador" contenteditable="false" data-doc-marcador="assunto" '
+                               'title="Segue a data do ofício: autorização ou convalidação">{}</span>', str(assunto))
+            texto = texto.replace("{assunto}", _TOKEN_MARCADOR)
+        else:
+            texto = texto.replace("{assunto}", str(assunto))
     if _editando(context):
         # Parágrafo do modelo é texto puro: escreve-se nele direto na folha.
         atributos = format_html(
@@ -159,7 +169,15 @@ def bloco(context, chave, classe="", assunto=None, negrito_ate="", padrao=None, 
         return _texto_do_bloco(texto, negrito_ate)
     else:
         atributos = format_html(' class="{}"', propria) if propria else ""
-    return format_html("<{}{}>{}</{}>", elemento, atributos, _texto_do_bloco(texto, negrito_ate), elemento)
+    corpo = _texto_do_bloco(texto, negrito_ate)
+    if fixo is not None:
+        corpo = mark_safe(str(corpo).replace(_TOKEN_MARCADOR, str(fixo)))
+    return format_html("<{}{}>{}</{}>", elemento, atributos, corpo, elemento)
+
+
+# Marca provisória do `{assunto}` enquanto o texto é escapado: não tem
+# caracteres que o escape altere, e não aparece em texto de documento.
+_TOKEN_MARCADOR = "\u2063ASSUNTO\u2063"
 
 
 _MARCADOR = __import__("re").compile(r"\{(\w+)\}")
@@ -212,6 +230,29 @@ def ponto_de_quebra(context, chave):
             return format_html('<div class="doc-quebra" data-doc-quebra="{}" data-doc-quebra-ativa="1" tabindex="0" title="Remover a quebra de página"></div>', chave)
         return format_html('<div class="doc-quebra-slot" data-doc-quebra="{}" tabindex="0" title="Inserir quebra de página aqui"></div>', chave)
     return mark_safe('<div class="doc-quebra"></div>') if ativa else ""
+
+
+@register.simple_tag(takes_context=True)
+def ponto_de_paragrafo(context, chave, classe=""):
+    """Onde o template admite um parágrafo livre (m123). Com texto gravado
+    em `paragrafos`, é o parágrafo (no PDF e na tela; no editor, escreve-se
+    nele direto na folha); sem texto, no editor é uma fenda "+ parágrafo",
+    e fora dele não é nada."""
+    texto = (context.get("paragrafos") or {}).get(chave) or ""
+    propria = "doc-bloco doc-paragrafo-extra" + (f" {classe}" if classe else "")
+    if _editando(context):
+        if texto:
+            return format_html(
+                '<p data-doc-paragrafo="{}" data-doc-digitavel="varias" class="{} doc-editavel doc-editavel--texto"'
+                ' contenteditable="plaintext-only" spellcheck="true">{}</p>', chave, propria, linhas(texto),
+            )
+        return format_html(
+            '<div class="doc-paragrafo-slot" data-doc-paragrafo-slot="{}" data-doc-classe="{}" tabindex="0" title="Inserir um parágrafo aqui"></div>',
+            chave, propria,
+        )
+    if not texto:
+        return ""
+    return format_html('<p class="{}">{}</p>', propria, linhas(texto))
 
 
 @register.filter(name="linhas", is_safe=True)

@@ -97,3 +97,59 @@ def documento_assinado(tipo, formato, *, reference=None, **vinculos):
         pdf_engine_used="assinado",
         cache_hit=True,
     )
+
+
+# ---- "Assinado, mas os dados mudaram" (m109) ------------------------------
+#
+# O PDF assinado vale no lugar do gerado, mas nada o liga aos dados de hoje:
+# se o cadastro do servidor, o roteiro ou a configuração mudam depois da
+# assinatura, o arquivo entregue já não corresponde ao sistema. O artefato
+# guarda o payload com que o PDF nasceu (`payload_snapshot`); comparar esse
+# snapshot com o payload de agora diz se o assinado ficou para trás, e o quê.
+
+ROTULOS_DAS_PARTES = {
+    "oficio": "Ofício", "institucional": "Configuração do setor", "justificativa": "Justificativa",
+    "documento": "Textos do documento", "ordem_servico": "Ordem de serviço", "plano": "Plano de trabalho",
+    "participante": "Servidor", "viagem": "Viagem", "transporte": "Transporte", "textos": "Textos do termo",
+    "header": "Cabeçalho do diário", "trechos": "Trechos do diário",
+}
+
+
+def artefato_assinado(artefatos):
+    """O artefato cuja versão assinada vale (a viva mais recente; na falta,
+    o do modelo antigo com `arquivo_assinado`), ou None."""
+    from documentos.models import DocumentoAssinaturaVersao
+
+    versao = (DocumentoAssinaturaVersao.objects
+              .filter(artefato__in=artefatos, revogada_em__isnull=True)
+              .select_related("artefato").order_by("-criado_em").first())
+    if versao is not None:
+        return versao.artefato
+    return artefatos.exclude(arquivo_assinado="").order_by("-criado_em").first()
+
+
+def mudancas_desde_a_assinatura(artefato, payload_atual) -> list[str]:
+    """O que mudou nos dados desde que o PDF assinado foi gerado, uma linha
+    por parte ("Ofício: motivo, servidores"). Vazia, o assinado ainda bate.
+
+    Artefato sem snapshot (gerado antes de o snapshot existir) ou documento
+    sem payload comparável não têm como ser conferidos: também vazia.
+    """
+    from documentos.services.persistence import _payload_snapshot_json_seguro
+
+    antes = (artefato.payload_snapshot or {}) if artefato is not None else {}
+    if not antes or payload_atual is None:
+        return []
+    agora = _payload_snapshot_json_seguro(payload_atual)
+    mudancas = []
+    for parte in sorted(set(antes) | set(agora)):
+        a, b = antes.get(parte), agora.get(parte)
+        if a == b:
+            continue
+        rotulo = ROTULOS_DAS_PARTES.get(parte, parte)
+        if isinstance(a, dict) and isinstance(b, dict):
+            campos = sorted(chave for chave in set(a) | set(b) if a.get(chave) != b.get(chave))
+            mudancas.append(f"{rotulo}: {', '.join(campos)}")
+        else:
+            mudancas.append(rotulo)
+    return mudancas

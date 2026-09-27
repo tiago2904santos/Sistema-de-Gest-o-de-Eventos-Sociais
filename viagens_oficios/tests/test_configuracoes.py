@@ -121,6 +121,62 @@ class ConfiguracoesDosDocumentosTests(TestCase):
         self.client.post(self.url, self.payload(assina_oficio=''))
         self.assertEqual(self.ativos('OFICIO'), [])
 
+    def test_substituto_por_periodo_assina_pela_data_do_documento(self):
+        """m114: o documento datado no período sai com o substituto; fora dele, o titular; o assinante do documento vence os dois."""
+        from datetime import date
+        from viagens_cadastros.models import AssinaturaSubstituicao
+        from viagens_oficios.docxtpl_context import _assinatura_nome_cargo
+        global_ = ConfiguracaoSistema.get_singleton()
+        AssinaturaConfiguracao.objects.create(configuracao=global_, tipo=AssinaturaConfiguracao.ORDEM_SERVICO, servidor=self.ana)
+        AssinaturaSubstituicao.objects.create(configuracao=global_, tipo=AssinaturaSubstituicao.TODOS, servidor=self.bia,
+                                              inicio=date(2026, 7, 1), fim=date(2026, 7, 31), motivo='Férias')
+        inst = build_configuracao_context()
+        self.assertEqual(_assinatura_nome_cargo(inst, 'ORDEM_SERVICO', fallback_geral=False, data=date(2026, 7, 15))[0], 'BIA CONFIG')
+        self.assertEqual(_assinatura_nome_cargo(inst, 'ORDEM_SERVICO', fallback_geral=False, data=date(2026, 8, 1))[0], 'ANA CONFIG')
+        self.assertEqual(_assinatura_nome_cargo(inst, 'ORDEM_SERVICO', fallback_geral=False, data=date(2026, 7, 15), assinante=self.ana)[0], 'ANA CONFIG')
+        # Substituição só de um tipo não alcança os outros; sem fim, vale até segunda ordem.
+        AssinaturaSubstituicao.objects.create(configuracao=global_, tipo=AssinaturaConfiguracao.OFICIO, servidor=self.bia, inicio=date(2026, 9, 1))
+        inst = build_configuracao_context()
+        self.assertEqual(_assinatura_nome_cargo(inst, 'ORDEM_SERVICO', fallback_geral=False, data=date(2026, 9, 20))[0], 'ANA CONFIG')
+        self.assertEqual(_assinatura_nome_cargo(inst, 'OFICIO', fallback_geral=False, data=date(2027, 1, 1))[0], 'BIA CONFIG')
+
+    def test_tela_de_substituicoes_no_catalogo_e_link_nas_configuracoes(self):
+        from viagens_cadastros.models import AssinaturaSubstituicao
+        url = reverse('viagens_cadastros:lista', args=['substituicoes-assinatura'])
+        self.assertContains(self.client.get(self.url), url)
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'Substituições de assinante')
+        r = self.client.post(reverse('viagens_cadastros:novo', args=['substituicoes-assinatura']),
+                             {'tipo': 'TODOS', 'servidor': self.bia.pk, 'inicio': '2026-07-01', 'fim': '2026-06-01', 'motivo': 'Férias', 'ativo': 'on'})
+        self.assertFalse(AssinaturaSubstituicao.objects.exists())
+        r = self.client.post(reverse('viagens_cadastros:novo', args=['substituicoes-assinatura']),
+                             {'tipo': 'TODOS', 'servidor': self.bia.pk, 'inicio': '2026-07-01', 'fim': '2026-07-31', 'motivo': 'Férias', 'ativo': 'on'})
+        self.assertEqual(r.status_code, 302, r.content[:300])
+        s = AssinaturaSubstituicao.objects.get()
+        self.assertEqual((s.servidor, s.configuracao), (self.bia, ConfiguracaoSistema.get_singleton()))
+        self.assertContains(self.client.get(url), '01/07/2026 a 31/07/2026')
+
+    def test_delegado_geral_e_rodape_da_ascom_vem_da_configuracao(self):
+        """m115: o nome do Delegado-Geral e os dados da ASCOM saem da configuração."""
+        from documentos.services.document_blocks import completar_blocos
+        from documentos.services.types import DocumentoTipo
+        from coffee_break.editor import BLOCOS_OS  # noqa: F401 (registra os blocos do Coffee Break)
+        cfg = ConfiguracaoSistema.atual()
+        self.assertEqual(cfg.delegado_geral_nome, 'Silvio Jacob Rockembach')
+        blocos = completar_blocos(DocumentoTipo.ORDEM_SERVICO)
+        self.assertIn('Delegado-Geral Silvio Jacob Rockembach, bem como', blocos['atribuicoes']['conteudo'])
+        cfg.delegado_geral_nome = 'Fulano Delegado'
+        cfg.ascom_rodape_endereco = 'Rua Nova, 10 – Centro—CEP: 80.000-000'
+        cfg.save()
+        blocos = completar_blocos(DocumentoTipo.ORDEM_SERVICO)
+        self.assertIn('Delegado-Geral Fulano Delegado, bem como', blocos['atribuicoes']['conteudo'])
+        from documentos.services.document_blocks import valores_institucionais
+        self.assertEqual(valores_institucionais()['ascom_endereco_hifens'], 'Rua Nova, 10 - Centro - CEP: 80000-000')
+        r = self.client.get(self.url)
+        self.assertContains(r, 'name="delegado_geral_nome"')
+        self.assertContains(r, 'name="ascom_rodape_contato"')
+
     def test_antigo_catalogo_de_assinantes_leva_para_a_secao(self):
         r = self.client.get(reverse('viagens_oficios:catalogo', args=['assinaturas']))
         self.assertRedirects(r, self.url + '#assinaturas')

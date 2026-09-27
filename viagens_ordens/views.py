@@ -26,7 +26,7 @@ from viagens_cadastros.permissions import acesso_ao_modulo, pode_editar_cadastro
 from viagens_oficios.picker import LIMITE_BUSCA, pks_ja_escolhidos
 from viagens_oficios.presenters import iniciais
 from viagens_oficios.roteiro_context import periodo_roteiro
-from viagens_oficios.views import exigir_operador, resposta_documento
+from viagens_oficios.views import exigir_operador, nova_versao_pedida, resposta_documento
 from viagens_viagem.services import destinos_para_formulario, semente_de_documentos, viagem_do_request
 
 from . import abas as abas_de_ordem
@@ -212,6 +212,23 @@ def ordem_esta_completa(form):
     return tem_datas and tem_destino and tem_equipe and tem_tipo and tem_motivo
 
 
+def _conflitos_da_tela(form, ordem):
+    """Conflitos de agenda do que está na tela (core/conflitos.py, m130).
+
+    Com o formulário recusado, valem as escolhas enviadas (``form.errors`` já
+    limpou o que dava); senão, as gravadas.
+    """
+    from core.conflitos import conflitos_da_ordem
+
+    if form.is_bound and not form.errors.get("servidores"):
+        dados = form.cleaned_data
+        return conflitos_da_ordem(
+            ordem, servidores=list(dados.get("servidores") or []), oficios=list(dados.get("oficios") or []),
+            inicio=dados.get("data_evento_inicio"), fim=dados.get("data_evento_fim"),
+        )
+    return conflitos_da_ordem(ordem) if ordem.pk else []
+
+
 def _contexto_form(form, ordem, request):
     from cadastros.models import Estado, Municipio
 
@@ -246,6 +263,9 @@ def _contexto_form(form, ordem, request):
                               for chave, rotulo in OrdemServico.TIPO_NECESSIDADE_CHOICES
                               if chave in TIPOS_NA_TELA or chave == tipo_atual],
         "servidores": opcoes_de_servidor(form),
+        # Choque de agenda (core/conflitos.py, m130): só aviso, a tela salva assim mesmo.
+        "conflitos": [] if ordem.cancelado else _conflitos_da_tela(form, ordem),
+        "conflitos_fixos": f"excluir_ordem={ordem.pk}" if ordem.pk else "",
         "oficios": oficios, "resumos_oficios": resumos,
         "oficios_vinculados": any(o["selecionado"] for o in oficios),
         "estados": estados, "municipios": municipios,
@@ -289,7 +309,7 @@ def lista(request):
     parametros = request.GET.copy()
     parametros.pop("pagina", None)
     assinante = assinante_da_ordem()
-    artefatos = artefatos_pdf_por_ordem(pagina.object_list)
+    artefatos = artefatos_pdf_por_ordem(pagina.object_list, conferir=True)
     linhas = [linha_da_lista(o, assinante=assinante, artefato_pdf=artefatos.get(o.pk)) for o in pagina]
 
     def url_da_situacao(aba=None):
@@ -366,6 +386,10 @@ def editar(request, pk=None):
             nova = ordem.pk is None
             ordem = form.save()
             messages.success(request, "Ordem de Serviço cadastrada." if nova else "Ordem de Serviço atualizada.")
+            # Choque de agenda (core/conflitos.py, m130): avisa, não impede.
+            from core.conflitos import avisos, conflitos_da_ordem
+            for texto in avisos(conflitos_da_ordem(ordem), abrir="abra a OS"):
+                messages.warning(request, texto)
             return redirect(voltar_para(request, _url_da_lista(ordem)))
         messages.error(request, "Não foi possível salvar a Ordem de Serviço. Revise os campos indicados.")
     return render(request, "pages/viagens_ordens/form.html", _contexto_form(form, ordem, request))
@@ -409,7 +433,7 @@ def gerar(request, pk, formato):
         messages.error(request, "Reative a Ordem de Serviço antes de gerar documentos.")
         return redirect(voltar_para(request, reverse("viagens_ordens:editar", args=[pk])))
     try:
-        return resposta_documento(request, gerar_ordem_servico(ordem, DocumentoFormato(formato)))
+        return resposta_documento(request, gerar_ordem_servico(ordem, DocumentoFormato(formato), nova_versao=nova_versao_pedida(request)))
     except (ValidationError, DocumentError) as exc:
         messages.error(request, "; ".join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
         return redirect(voltar_para(request, reverse("viagens_ordens:editar", args=[pk])))
@@ -468,8 +492,12 @@ def assinatura_artefato(request, pk):
                 messages.success(request, "Versão assinada removida. O PDF gerado volta a valer.")
                 return redirect(retorno)
             if form.is_valid():
+                from documentos.services.conferencia_assinado import mensagens_da_conferencia
                 anexar_arquivo_assinado(artefato, form.cleaned_data["arquivo"])
                 messages.success(request, "Documento assinado anexado. A versão anterior permanece no histórico.")
+                # O que o sistema leu do PDF (m112): quem assinou, ou os avisos.
+                for nivel, texto in mensagens_da_conferencia(getattr(artefato, "conferencia_assinado", None)):
+                    messages.add_message(request, nivel, texto)
                 return redirect(retorno)
         except DocumentError as exc:
             form.add_error("arquivo", str(exc))

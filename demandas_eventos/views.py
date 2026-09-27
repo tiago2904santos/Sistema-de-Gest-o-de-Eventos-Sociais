@@ -346,7 +346,11 @@ def editar_demanda(request, pk=None):
         if not instancia:
             email_origem = preencher_por_email.origem_da_tela(request, "demandas_eventos")
     else:
-        form = DemandaEventoForm(instance=instancia, usuario=request.user)
+        # "Criar aqui" da Agenda (m135): ?inicio=&fim= já preenchem o período da nova.
+        from core.periodo_url import iniciais_do_periodo
+
+        iniciais = {} if instancia else iniciais_do_periodo(request.GET)
+        form = DemandaEventoForm(instance=instancia, usuario=request.user, initial=iniciais)
     contexto = _contexto_form(form, instancia)
     contexto["email_origem"] = email_origem
     contexto["breadcrumb"] = [

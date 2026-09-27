@@ -41,6 +41,7 @@ from .cep import CEPIndisponivel, CEPNaoEncontrado, consultar_cep
 from core.normalizers import normalize_digits
 
 from .forms import (
+    AssinaturaSubstituicaoForm,
     CargoForm,
     CombustivelForm,
     ServidorForm,
@@ -48,7 +49,7 @@ from .forms import (
     UnidadeForm,
     ViaturaForm,
 )
-from .models import Cargo, Combustivel, ConfiguracaoSistema, Servidor, TabelaDiaria, Unidade, Viatura, setor_de_viagens
+from .models import Cargo, Combustivel, ConfiguracaoSistema, Servidor, TabelaDiaria, Unidade, Viatura, setor_de_viagens, AssinaturaSubstituicao
 from .permissions import (
     acesso_ao_modulo,
     pode_editar_cadastros,
@@ -200,6 +201,39 @@ CADASTROS = {
                 "titulo": "Dados do combustível",
                 "subtitulo": "Defina o nome e, se desejar, marque-o como sugestão padrão.",
                 "campos": ["nome", "is_padrao"],
+            }
+        ],
+    },
+    # Substitutos de assinante por período (m114): a tela de configurações
+    # aponta para aqui; o documento datado no período sai com o substituto.
+    "substituicoes-assinatura": {
+        "model": AssinaturaSubstituicao,
+        "form": AssinaturaSubstituicaoForm,
+        "busca_rotulo": "Buscar substituição pelo nome do substituto",
+        "busca_campos": ("servidor__nome", "motivo"),
+        "vazio": "Nenhuma substituição cadastrada. Nas férias ou afastamentos do titular, cadastre aqui quem assina e de quando a quando.",
+        "intro_modal": "Quem assina no lugar do titular e em que período. Os documentos datados no período saem com o substituto; depois, volta o titular sozinho.",
+        "titulo": "Substituições de assinante",
+        "singular": "substituição",
+        "novo": "Nova substituição",
+        "icone": "users",
+        "descricao": "Assinante substituto por período: férias e afastamentos do titular.",
+        "exemplo": "",
+        "busca": ["servidor__nome__icontains"],
+        "select_related": ["servidor__cargo"],
+        "ordenar": ("-inicio", "tipo"),
+        "situacao_ativo": True,
+        "colunas": [
+            {"rotulo": "Documentos", "attr": "get_tipo_display"},
+            {"rotulo": "Período", "attr": "periodo_display", "classe": "c-fixo"},
+            {"rotulo": "Motivo", "attr": "motivo"},
+        ],
+        "secoes": [
+            {
+                "titulo": "Substituição",
+                "subtitulo": "O substituto, os documentos que ele assina e o período.",
+                "campos": ["servidor", "tipo", "inicio", "fim", "motivo", "ativo"],
+                "larguras": {"servidor": "12", "tipo": "12", "inicio": "6", "fim": "6", "motivo": "12"},
             }
         ],
     },
@@ -362,7 +396,7 @@ CADASTROS = {
             {
                 "titulo": "Modelo de texto",
                 "subtitulo": "O campo do relatório em que o modelo entra, o nome e o texto.",
-                "campos": ["campo", "nome", "texto"],
+                "campos": ["campo", "nome", "texto", "is_padrao"],
             }
         ],
     },
@@ -409,7 +443,7 @@ DIARIAS["secoes"] = DIARIA_SECOES
 CATALOGOS_DE_OFICIO = {"motivos-oficio", "modelos-justificativa"}
 # Modelos de texto: vivem na seção "Modelos" da navegação, com trilha própria.
 CATALOGOS_DE_MODELO = ("motivos-oficio", "modelos-justificativa", "modelos-texto-rt")
-COM_PADRAO = {"cargos", "combustiveis", "presets-pt", *CATALOGOS_DE_OFICIO}
+COM_PADRAO = {"cargos", "combustiveis", "presets-pt", "modelos-texto-rt", *CATALOGOS_DE_OFICIO}
 
 
 def _config(slug):
@@ -452,6 +486,7 @@ CONTAGEM_CARTAO = {
     "horarios": ("horário cadastrado", "horários cadastrados"),
     "atividades-pt": ("atividade cadastrada", "atividades cadastradas"),
     "presets-pt": ("preset cadastrado", "presets cadastrados"),
+    "substituicoes-assinatura": ("substituição cadastrada", "substituições cadastradas"),
 }
 
 
@@ -903,6 +938,7 @@ def _lista_catalogo(request, slug, modal=None):
                            "Voltar à viatura" if slug == "combustiveis" else
                            "Voltar ao servidor" if slug == "unidades" else
                            "Voltar ao servidor" if retorno.startswith("/viagens/cadastros/servidores/") else
+                           "Voltar às configurações" if slug == "substituicoes-assinatura" else
                            "Voltar ao formulário"),
     })
     return render(request, "pages/viagens_cadastros/lista.html", contexto)

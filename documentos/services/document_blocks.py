@@ -7,8 +7,9 @@ chave de cache do PDF — um documento com texto alterado nunca é servido de
 um artefato antigo.
 
 Conteúdo é texto simples com quebras de linha; a renderização escapa. O
-DOCX (renderizador à parte, pelo docxtpl) não conhece overrides: sai sempre
-com o texto do modelo.
+DOCX (renderizador à parte, pelo docxtpl) recebe os overrides e as quebras
+depois de renderizado (`docx_blocos.aplicar_conteudo_documental`, m111):
+sai com o mesmo texto do PDF.
 
 m057: o texto-base que a administração gravou para o modelo
 (`modelos_texto`) entra no lugar do padrão do registro, e a versão editada
@@ -18,9 +19,11 @@ inteira do documento (`edicao_completa`), quando houver, vai junto em
 
 from __future__ import annotations
 
+import re
+
 from django.utils import timezone
 
-from documentos.editor.blocos import blocos_do_tipo, quebras_do_tipo
+from documentos.editor.blocos import blocos_do_tipo, paragrafos_do_tipo, quebras_do_tipo
 
 # Dono dos blocos de um documento, pelo model: o ofício (ofício, justificativa
 # e o termo tirado do ofício), o termo do cadastro, a prestação (relatório
@@ -55,13 +58,64 @@ def blocos_gravados(tipo, objeto):
     return DocumentoBloco.objects.filter(**_filtro(tipo, objeto)).select_related("editado_por")
 
 
+MARCADORES_INSTITUCIONAIS = ("delegado_geral", "ascom_unidade", "ascom_endereco", "ascom_contato",
+                             "ascom_endereco_hifens", "ascom_contato_hifens")
+_RX_INSTITUCIONAL = re.compile(r"\{(" + "|".join(MARCADORES_INSTITUCIONAIS) + r")\}")
+
+
+def _com_hifens(texto: str) -> str:
+    """"Rua X, 1 – Centro—CEP: 80.230-020" → "Rua X, 1 - Centro - CEP: 80230-020" (o ofício do Coffee Break)."""
+    texto = re.sub(r"\s*[–—]\s*", " - ", texto or "")
+    texto = re.sub(r"(\d{2})\.(\d{3})-(\d{3})", r"\1\2-\3", texto)
+    return " ".join(texto.split())
+
+
+def valores_institucionais() -> dict[str, str]:
+    """Os textos oficiais que moram na configuração (m115): o nome do
+    Delegado-Geral e o cabeçalho/rodapé da ASCOM do Coffee Break."""
+    from viagens_cadastros.models import ConfiguracaoSistema
+
+    try:
+        cfg = ConfiguracaoSistema.atual()
+    except Exception:  # noqa: BLE001 — sem banco (montagem isolada do modelo): os valores iniciais.
+        cfg = ConfiguracaoSistema()
+    return {
+        "delegado_geral": cfg.delegado_geral_nome or "",
+        "ascom_unidade": cfg.ascom_cabecalho_unidade or "",
+        "ascom_endereco": cfg.ascom_rodape_endereco or "",
+        "ascom_contato": cfg.ascom_rodape_contato or "",
+        "ascom_endereco_hifens": _com_hifens(cfg.ascom_rodape_endereco),
+        "ascom_contato_hifens": _com_hifens(cfg.ascom_rodape_contato),
+    }
+
+
+def preencher_institucionais(texto, valores=None):
+    """Troca os marcadores institucionais pelo valor da configuração; os demais
+    (`{assunto}`, `{periodo}`...) ficam para quem monta o documento."""
+    if not texto or "{" not in texto or not _RX_INSTITUCIONAL.search(texto):
+        return texto
+    valores = valores if valores is not None else valores_institucionais()
+    return _RX_INSTITUCIONAL.sub(lambda m: valores.get(m.group(1), m.group(0)), texto)
+
+
+def _preencher_blocos(blocos) -> dict:
+    valores = None
+    for bloco in blocos.values():
+        for campo in ("conteudo", "padrao"):
+            texto = bloco.get(campo)
+            if isinstance(texto, str) and _RX_INSTITUCIONAL.search(texto):
+                valores = valores if valores is not None else valores_institucionais()
+                bloco[campo] = preencher_institucionais(texto, valores)
+    return blocos
+
+
 def completar_blocos(tipo, dados=None) -> dict[str, dict]:
     """Começa do registro (texto padrão) e aplica o que veio por cima."""
     blocos = {chave: {"conteudo": b.padrao, "padrao": b.padrao, "editado": False} for chave, b in blocos_do_tipo(tipo).items()}
     for chave, valor in (dados or {}).items():
         base = blocos.setdefault(chave, {"conteudo": None, "padrao": "", "editado": False})
         base.update({k: v for k, v in dict(valor).items() if v is not None})
-    return blocos
+    return _preencher_blocos(blocos)
 
 
 def _com_textos_do_modelo(tipo, blocos) -> dict:
@@ -72,7 +126,7 @@ def _com_textos_do_modelo(tipo, blocos) -> dict:
     for chave, texto in textos_vigentes(tipo).items():
         if chave in blocos:
             blocos[chave].update({"conteudo": texto, "padrao": texto})
-    return blocos
+    return _preencher_blocos(blocos)
 
 
 def conteudo_documental(tipo, objeto, variante="") -> dict:
@@ -83,13 +137,20 @@ def conteudo_documental(tipo, objeto, variante="") -> dict:
     semipreenchido, que o editor não abre)."""
     blocos = _com_textos_do_modelo(tipo, completar_blocos(tipo))
     pontos = quebras_do_tipo(tipo)
+    pontos_de_paragrafo = paragrafos_do_tipo(tipo)
     quebras = []
+    # Parágrafos extras (m123): chave do ponto → texto; entram no payload e
+    # na chave de cache como os demais blocos.
+    paragrafos = {}
     if objeto is None or not getattr(objeto, "pk", None) or _campo_do_dono(objeto) is None:
-        return {"blocos": blocos, "quebras": quebras}
+        return {"blocos": blocos, "quebras": quebras, "paragrafos": paragrafos}
     for gravado in blocos_gravados(tipo, objeto):
         if gravado.tipo == gravado.Tipo.QUEBRA_PAGINA:
             if gravado.chave in pontos:
                 quebras.append(gravado.chave)
+        elif gravado.tipo == gravado.Tipo.PARAGRAFO_EXTRA:
+            if gravado.chave in pontos_de_paragrafo and gravado.conteudo_atual.strip():
+                paragrafos[gravado.chave] = gravado.conteudo_atual
         elif gravado.chave in blocos and gravado.editado_manualmente:
             blocos[gravado.chave].update({
                 "conteudo": gravado.conteudo_atual,
@@ -97,7 +158,7 @@ def conteudo_documental(tipo, objeto, variante="") -> dict:
                 "editado_por": str(gravado.editado_por) if gravado.editado_por_id else "",
                 "editado_em": gravado.editado_em.isoformat() if gravado.editado_em else "",
             })
-    documental = {"blocos": blocos, "quebras": sorted(quebras)}
+    documental = {"blocos": blocos, "quebras": sorted(quebras), "paragrafos": paragrafos}
     if variante is not None:
         from documentos.services.edicao_completa import para_payload
 
@@ -114,6 +175,37 @@ def bloco_gravado(tipo, objeto, chave):
 def versao_do_bloco(tipo, objeto, chave) -> str:
     gravado = bloco_gravado(tipo, objeto, chave)
     return gravado.atualizado_em.isoformat() if gravado and gravado.atualizado_em else ""
+
+
+def paragrafo_gravado(tipo, objeto, chave):
+    return blocos_gravados(tipo, objeto).filter(chave=chave, tipo="paragrafo_extra").first()
+
+
+def definir_paragrafo(tipo, objeto, chave, conteudo: str, usuario) -> str:
+    """Grava (ou apaga, com texto vazio) o parágrafo extra de um ponto
+    registrado (m123). Devolve o texto que ficou."""
+    from documentos.models import DocumentoBloco
+
+    if chave not in paragrafos_do_tipo(tipo):
+        raise ValueError(f"Ponto de parágrafo desconhecido: {chave}")
+    conteudo = (conteudo or "").replace("\r\n", "\n").strip()
+    existente = paragrafo_gravado(tipo, objeto, chave)
+    if not conteudo:
+        if existente is not None:
+            existente.delete()
+        return ""
+    if existente is None:
+        DocumentoBloco.objects.create(
+            **_filtro(tipo, objeto), chave=chave, tipo=DocumentoBloco.Tipo.PARAGRAFO_EXTRA,
+            conteudo_atual=conteudo, editado_manualmente=True,
+            editado_por=usuario if getattr(usuario, "is_authenticated", False) else None, editado_em=timezone.now(),
+        )
+    elif existente.conteudo_atual != conteudo:
+        existente.conteudo_atual = conteudo
+        existente.editado_por = usuario if getattr(usuario, "is_authenticated", False) else None
+        existente.editado_em = timezone.now()
+        existente.save()
+    return conteudo
 
 
 def gravar_override(tipo, objeto, chave, conteudo: str, usuario):

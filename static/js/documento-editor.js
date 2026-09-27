@@ -41,9 +41,12 @@
   var urls = {
     campo: editor.getAttribute('data-de-url'),
     bloco: editor.getAttribute('data-de-url-bloco'),
-    quebra: editor.getAttribute('data-de-url-quebra')
+    quebra: editor.getAttribute('data-de-url-quebra'),
+    textos: editor.getAttribute('data-de-url-textos') || '',
+    paragrafo: editor.getAttribute('data-de-url-paragrafo') || ''
   };
   var versao = editor.getAttribute('data-de-versao') || '';
+  var urlPresenca = editor.getAttribute('data-de-url-presenca') || '';
   /* Origens do registro principal do documento (o ofício, o termo, a ordem de
      serviço...): usam a versão da página. As demais guardam a própria. */
   var principais = (editor.getAttribute('data-de-principais') || 'oficio marcacao').split(' ');
@@ -109,7 +112,9 @@
     return h;
   }
 
-  function atributoDa(especie) { return especie === 'bloco' ? 'data-doc-bloco' : especie === 'quebra' ? 'data-doc-quebra' : 'data-doc-campo'; }
+  function atributoDa(especie) {
+    return especie === 'bloco' ? 'data-doc-bloco' : especie === 'quebra' ? 'data-doc-quebra' : especie === 'paragrafo' ? 'data-doc-paragrafo' : 'data-doc-campo';
+  }
   function seletorDo(chave, especie, objeto) {
     var seletor = '[' + atributoDa(especie) + '="' + chave + '"]';
     return objeto ? seletor + '[data-doc-objeto="' + objeto + '"]' : seletor;
@@ -223,6 +228,7 @@
     marcar(chaveAberta, especieAberta, objetoAberto);
     if (palco()) palco().atualizar();
     posicionar();
+    atualizarVazios();
   }
 
   /* ---- Desfazer e refazer ------------------------------------------------
@@ -260,16 +266,18 @@
     atualizarBotoes();
   }
 
-  function regravar(passo, valores) {
+  function regravar(passo, valores, mensagemErro) {
+    var erro = mensagemErro || 'Não foi possível desfazer.';
     status('Salvando…', 'andamento');
     if (passo.especie === 'quebra') {
       return fetch(url('quebra', passo.chave), { method: 'PATCH', credentials: 'same-origin', headers: cabecalhos(true), body: JSON.stringify({ ativa: valores.ativa }) })
         .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
         .then(function (dados) { aplicarFolha(dados && dados.folha); status('Salvo', 'ok'); return true; })
-        .catch(function () { status('Não foi possível desfazer.', 'erro'); return false; });
+        .catch(function () { status(erro, 'erro'); return false; });
     }
     if (passo.especie === 'bloco') delete versaoDeBloco[passo.chave];
-    var pedirVersao = passo.especie === 'bloco' ? versaoDoBloco(passo.chave) : versaoPara(passo.origem, passo.chave, passo.objeto);
+    // O parágrafo extra não tem versão própria (como a quebra).
+    var pedirVersao = passo.especie === 'bloco' ? versaoDoBloco(passo.chave) : passo.especie === 'paragrafo' ? Promise.resolve(undefined) : versaoPara(passo.origem, passo.chave, passo.objeto);
     return pedirVersao.then(function (versaoAtual) {
       return fetch(url(passo.especie, passo.chave, passo.objeto), {
         method: 'PATCH', credentials: 'same-origin', headers: cabecalhos(true),
@@ -280,18 +288,39 @@
                                   function () { return { codigo: resposta.status, dados: {} }; });
     }).then(function (res) {
       if (res.codigo !== 200) {
-        status(res.codigo === 409 ? (res.dados.mensagem || 'O documento mudou em outro lugar.') : 'Não foi possível desfazer.', 'erro');
+        var proprio = res.dados.erros && Object.keys(res.dados.erros).map(function (k) { return res.dados.erros[k][0]; })[0];
+        status(res.codigo === 409 ? (res.dados.mensagem || 'O documento mudou em outro lugar.') : (proprio || erro), 'erro');
         return false;
       }
       if (passo.especie === 'bloco') versaoDeBloco[passo.chave] = res.dados.versao;
-      else { guardarVersao(passo.origem, passo.chave, passo.objeto, res.dados.versao); avisarGravado(passo.origem, valores, res.dados.versao); }
+      else if (passo.especie !== 'paragrafo') { guardarVersao(passo.origem, passo.chave, passo.objeto, res.dados.versao); avisarGravado(passo.origem, valores, res.dados.versao); }
       aplicarFolha(res.dados.folha);
       status('Salvo', 'ok');
       // O balão aberto no mesmo campo mostraria o valor velho: reabre.
       if (chaveAberta === passo.chave && objetoAberto === (passo.objeto || '')) abrir(passo.chave, especieAberta, null, false, objetoAberto, origemAberta);
       return true;
-    }).catch(function () { status('Não foi possível desfazer.', 'erro'); return false; });
+    }).catch(function () { status(erro, 'erro'); return false; });
   }
+
+  /* "Voltar a este valor" no painel Histórico (m116): regrava o valor de
+     antes daquela alteração pelo mesmo caminho da edição. O botão traz a
+     espécie, a chave e os valores (JSON montado pelo servidor). */
+  function voltarAoValor(botao) {
+    var pedido;
+    try { pedido = JSON.parse(botao.getAttribute('data-de-voltar') || ''); } catch (e) { return; }
+    if (!pedido || !pedido.especie || !pedido.chave) return;
+    if (chaveAberta) fechar();
+    botao.disabled = true;
+    var passo = { especie: pedido.especie, chave: pedido.chave, objeto: pedido.objeto || '', origem: pedido.origem || 'oficio' };
+    regravar(passo, pedido.valores || {}, 'Não foi possível voltar a este valor.').then(function (ok) {
+      botao.disabled = false;
+      if (ok) { botao.textContent = 'Valor regravado'; botao.disabled = true; }
+    });
+  }
+  ouvir(document, 'click', function (evento) {
+    var botao = evento.target.closest('[data-de-voltar]');
+    if (botao && raiz.contains(botao)) { evento.preventDefault(); voltarAoValor(botao); }
+  });
 
   function desfazer() {
     var passo = passosDesfazer.pop();
@@ -358,6 +387,9 @@
     if (el.hasAttribute('data-doc-bloco')) {
       return { especie: 'bloco', chave: el.getAttribute('data-doc-bloco') };
     }
+    if (el.hasAttribute('data-doc-paragrafo')) {
+      return { especie: 'paragrafo', chave: el.getAttribute('data-doc-paragrafo') };
+    }
     return {
       especie: 'campo', chave: el.getAttribute('data-doc-campo'), parte: el.getAttribute('data-doc-parte'),
       objeto: el.getAttribute('data-doc-objeto') || '', origem: el.getAttribute('data-doc-origem') || 'oficio'
@@ -366,7 +398,7 @@
 
   function valoresDoTrecho(onde, texto) {
     var valores = {};
-    if (onde.especie === 'bloco') valores.conteudo = texto;
+    if (onde.especie === 'bloco' || onde.especie === 'paragrafo') valores.conteudo = texto;
     else valores[onde.parte] = texto;
     return valores;
   }
@@ -391,7 +423,7 @@
     var texto = textoDoTrecho(el);
     var valores = valoresDoTrecho(onde, texto);
     var sessao = sessaoDoTrecho.get(el);
-    var pedirVersao = onde.especie === 'bloco' ? versaoDoBloco(onde.chave) : versaoPara(onde.origem, onde.chave, onde.objeto);
+    var pedirVersao = onde.especie === 'bloco' ? versaoDoBloco(onde.chave) : onde.especie === 'paragrafo' ? Promise.resolve(undefined) : versaoPara(onde.origem, onde.chave, onde.objeto);
     marcarEstado(el, 'Salvando…', 'andamento');
     return pedirVersao.then(function (versaoAtual) {
       return fetch(url(onde.especie, onde.chave, onde.objeto), {
@@ -404,8 +436,12 @@
     }).then(function (res) {
       if (res.codigo === 200) {
         if (onde.especie === 'bloco') versaoDeBloco[onde.chave] = res.dados.versao;
-        else { guardarVersao(onde.origem, onde.chave, onde.objeto, res.dados.versao); avisarGravado(onde.origem, valores, res.dados.versao); }
+        else if (onde.especie !== 'paragrafo') { guardarVersao(onde.origem, onde.chave, onde.objeto, res.dados.versao); avisarGravado(onde.origem, valores, res.dados.versao); }
         marcarEstado(el, 'Salvo', 'ok');
+        // O texto digitado não remonta a folha: pede-se a medida das páginas (m124).
+        if (palco() && palco().medir) palco().medir();
+        // Parágrafo extra apagado (m123): a folha volta a mostrar a fenda no lugar.
+        if (onde.especie === 'paragrafo' && !texto.trim() && el !== digitando) aplicarFolha(res.dados.folha);
         if (sessao) registrar({ especie: onde.especie, chave: onde.chave, objeto: onde.objeto, origem: onde.origem, antes: sessao.antes, depois: valores, sessao: sessao.id });
         // O domínio pode normalizar o que foi gravado (o motivo vai para caixa
         // de título, o protocolo ganha máscara). Só se ajusta o texto na tela
@@ -438,6 +474,11 @@
       if (!el) return;
       if (chaveAberta) fechar();
       sessaoDoTrecho.set(el, { id: ++sessoes, antes: valoresDoTrecho(enderecoDoTrecho(el), textoDoTrecho(el)) });
+      guardarCursor(el);
+    });
+    doc.addEventListener('selectionchange', function () {
+      var el = alvoDigitavel(doc.activeElement);
+      if (el) guardarCursor(el);
     });
     doc.addEventListener('input', function (evento) {
       var el = alvoDigitavel(evento.target);
@@ -466,6 +507,12 @@
       if (evento.key === 'Enter' && el.getAttribute('data-doc-digitavel') !== 'varias') {
         evento.preventDefault();
         el.blur();
+      }
+      // "/" num trecho vazio que tem textos prontos abre o menu deles (m118).
+      if (evento.key === '/' && !textoDoTrecho(el).trim() && temTextos(chaveDoTrecho(el))) {
+        evento.preventDefault();
+        guardarCursor(el);
+        abrirMenuTextos();
       }
     });
     // Colar entra como texto puro, mesmo onde plaintext-only não vale.
@@ -570,6 +617,40 @@
         status('Salvo', 'ok');
       })
       .catch(function () { status('Não foi possível alterar a quebra de página.', 'erro'); });
+  }
+
+  /* ---- Quem mais está no documento (m125) -----------------------------
+     A cada 30 s o navegador avisa que a pessoa continua aqui e recebe os
+     nomes dos outros que também estão; ao desmontar, avisa que saiu. */
+  var INTERVALO_PRESENCA = 30000;
+  var relogioPresenca = null;
+  var presenca = raiz.querySelector('[data-de-presenca]');
+  var presencaTexto = raiz.querySelector('[data-de-presenca-texto]');
+
+  function mostrarPresenca(outros) {
+    if (!presenca) return;
+    outros = outros || [];
+    presenca.hidden = !outros.length;
+    if (!outros.length) return;
+    var texto = outros.length === 1 ? outros[0] + ' também está editando'
+      : outros.slice(0, -1).join(', ') + ' e ' + outros[outros.length - 1] + ' também estão editando';
+    if (presencaTexto) presencaTexto.textContent = texto;
+    presenca.title = 'Quem mais está com este documento aberto agora. Se as duas pessoas mudarem o mesmo trecho, a segunda gravação é avisada.';
+  }
+
+  function avisarPresenca(sair) {
+    if (!urlPresenca) return;
+    var pedido = { method: 'POST', credentials: 'same-origin', headers: cabecalhos(true), body: JSON.stringify(sair ? { sair: true } : {}) };
+    if (sair) pedido.keepalive = true;
+    fetch(urlPresenca, pedido)
+      .then(function (r) { return r.ok && !sair ? r.json() : null; })
+      .then(function (dados) { if (dados) mostrarPresenca(dados.outros); })
+      .catch(function () {});
+  }
+
+  if (urlPresenca) {
+    avisarPresenca(false);
+    relogioPresenca = setInterval(function () { if (!document.hidden) avisarPresenca(false); }, INTERVALO_PRESENCA);
   }
 
   function oferecerRecarga() {
@@ -719,6 +800,8 @@
       alternarQuebra(quebra.getAttribute('data-doc-quebra'), !quebra.hasAttribute('data-doc-quebra-ativa'));
       return true;
     }
+    var fenda = alvoInicial.closest('[data-doc-paragrafo-slot]');
+    if (fenda) { abrirParagrafo(fenda); return true; }
     var bloco = alvoInicial.closest('[data-doc-bloco]');
     if (bloco) { abrir(bloco.getAttribute('data-doc-bloco'), 'bloco'); return true; }
     var campo = alvoInicial.closest('[data-doc-campo]');
@@ -728,6 +811,31 @@
       return true;
     }
     return false;
+  }
+
+  /* ---- Parágrafo extra (m123) --------------------------------------------
+     A fenda "+ parágrafo" vira, na própria folha, um parágrafo em que se
+     escreve; ele é gravado como qualquer trecho digitável. Sair dele vazio
+     devolve a fenda, sem gravar nada. */
+  function abrirParagrafo(fenda) {
+    var doc = documentoDaFolha();
+    if (!doc) return;
+    if (chaveAberta) fechar();
+    var p = doc.createElement('p');
+    p.setAttribute('data-doc-paragrafo', fenda.getAttribute('data-doc-paragrafo-slot'));
+    p.setAttribute('data-doc-digitavel', 'varias');
+    p.setAttribute('contenteditable', 'plaintext-only');
+    p.setAttribute('spellcheck', 'true');
+    p.className = (fenda.getAttribute('data-doc-classe') || 'doc-bloco doc-paragrafo-extra') + ' doc-editavel doc-editavel--texto';
+    fenda.replaceWith(p);
+    var devolver = function (evento) {
+      if (evento.target !== p) return;
+      if (textoDoTrecho(p).trim()) { p.removeEventListener('focusout', devolver); return; }
+      setTimeout(function () { if (!textoDoTrecho(p).trim() && p.parentNode) { p.replaceWith(fenda); if (palco()) palco().atualizar(); } }, 0);
+    };
+    p.addEventListener('focusout', devolver);
+    focar(p);
+    if (palco()) palco().atualizar();
   }
 
   /* ---- Pontos de quebra à vista ------------------------------------------
@@ -761,20 +869,187 @@
     ligarDigitacao(doc);
     marcar(chaveAberta, especieAberta, objetoAberto);
     aplicarModoQuebras();
+    atualizarVazios();
   }
 
-  quadro.addEventListener('load', ligarFolha);
-  if (quadro.contentDocument && quadro.contentDocument.readyState === 'complete' && quadro.contentDocument.body && quadro.contentDocument.body.children.length) ligarFolha();
+  /* Põe o cursor no fim de um trecho que se digita na folha. */
+  function focar(trecho) {
+    var doc = documentoDaFolha();
+    if (!doc || !doc.defaultView) return;
+    trecho.focus({ preventScroll: true });
+    try {
+      var faixa = doc.createRange();
+      faixa.selectNodeContents(trecho);
+      faixa.collapse(false);
+      var selecao = doc.defaultView.getSelection();
+      selecao.removeAllRanges();
+      selecao.addRange(faixa);
+    } catch (e) { /* sem seleção: o foco basta */ }
+  }
 
-  // Menu "Campos": abre o balão do campo junto ao trecho dele na folha.
+  /* Leva ao trecho de um campo e o abre: o que se digita ganha o cursor; o
+     resto abre o balão. Serve ao menu "Campos" e às pendências (m117). */
+  function irAoCampo(chave, especie, origem, objeto) {
+    var trecho = trechoNaFolha(chave, especie, objeto);
+    trazerParaVista(trecho);
+    if (trecho && alvoDigitavel(trecho)) { if (chaveAberta) fechar(); marcar(chave, especie, objeto); focar(trecho); return; }
+    abrir(chave, especie, null, false, objeto || '', origem || 'oficio');
+  }
+
+  // Menu "Campos" e pendências: levam ao trecho do campo na folha.
   ouvir(document, 'click', function (evento) {
     var item = evento.target.closest('[data-de-abrir]');
     if (!item || !raiz.contains(item)) return;
-    var chave = item.getAttribute('data-de-abrir');
-    var especie = item.getAttribute('data-de-especie') || 'campo';
-    trazerParaVista(trechoNaFolha(chave, especie));
-    abrir(chave, especie, null, false, "", item.getAttribute("data-de-origem") || "oficio");
+    irAoCampo(item.getAttribute('data-de-abrir'), item.getAttribute('data-de-especie') || 'campo', item.getAttribute('data-de-origem') || 'oficio', '');
   });
+
+  /* ---- Textos prontos (m118) -------------------------------------------
+     Os modelos de texto do sistema (motivo, justificativa, campos do
+     relatório técnico) dentro do editor: o botão da barra fica ativo quando
+     o cursor está num trecho que tem modelos, e o menu insere o texto
+     escolhido onde o cursor estava. "/" num trecho vazio abre o menu. */
+  var menuTextos = raiz.querySelector('[data-de-textos]');
+  var corpoTextos = raiz.querySelector('[data-de-textos-corpo]');
+  var camposComTextos = (editor.getAttribute('data-de-textos-campos') || '').split(' ').filter(Boolean);
+  var ultimoTrecho = null;   // o último trecho digitável em que o cursor esteve
+  var ultimaFaixa = null;    // e onde estava o cursor nele
+  var textosCarregados = {}; // chave do campo → lista de modelos
+
+  function temTextos(chave) { return !!chave && camposComTextos.indexOf(chave) >= 0; }
+  function chaveDoTrecho(el) { return el && el.hasAttribute('data-doc-campo') ? el.getAttribute('data-doc-campo') : ''; }
+  function atualizarBotaoTextos() {
+    if (!menuTextos) return;
+    var chave = ultimoTrecho ? chaveDoTrecho(ultimoTrecho) : '';
+    menuTextos.disabled = !temTextos(chave);
+  }
+  function guardarCursor(el) {
+    ultimoTrecho = el;
+    var doc = documentoDaFolha();
+    var selecao = doc && doc.defaultView ? doc.defaultView.getSelection() : null;
+    ultimaFaixa = selecao && selecao.rangeCount && el.contains(selecao.getRangeAt(0).startContainer) ? selecao.getRangeAt(0).cloneRange() : null;
+    atualizarBotaoTextos();
+  }
+  function carregarTextos(chave) {
+    if (textosCarregados[chave]) return Promise.resolve(textosCarregados[chave]);
+    return fetch(url('textos', chave), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (dados) { textosCarregados[chave] = dados.textos || []; return textosCarregados[chave]; })
+      .catch(function () { return []; });
+  }
+  function montarMenuTextos(lista) {
+    if (!corpoTextos) return;
+    corpoTextos.querySelectorAll('[data-de-texto], .de-menu__vazio').forEach(function (el) { el.remove(); });
+    if (!lista.length) {
+      var vazio = document.createElement('p');
+      vazio.className = 'de-menu__vazio';
+      vazio.textContent = 'Nenhum texto pronto para este campo.';
+      corpoTextos.appendChild(vazio);
+      return;
+    }
+    lista.forEach(function (item, i) {
+      var botao = document.createElement('button');
+      botao.type = 'button';
+      botao.className = 'dd__i de-menu__texto';
+      botao.setAttribute('role', 'menuitem');
+      botao.setAttribute('data-de-texto', String(i));
+      var nome = document.createElement('b');
+      nome.textContent = item.nome;
+      var previa = document.createElement('small');
+      previa.textContent = item.texto.length > 90 ? item.texto.slice(0, 89) + '…' : item.texto;
+      botao.appendChild(nome);
+      botao.appendChild(previa);
+      corpoTextos.appendChild(botao);
+    });
+  }
+  function inserirTexto(texto) {
+    var el = ultimoTrecho;
+    var doc = documentoDaFolha();
+    if (!el || !doc || !doc.defaultView || !texto) return;
+    var textoAtual = textoDoTrecho(el);
+    if (textoAtual.trim() && !window.confirm('Inserir o texto pronto onde o cursor estava? O que já está escrito fica.')) return;
+    el.focus({ preventScroll: true });
+    var selecao = doc.defaultView.getSelection();
+    var faixa = ultimaFaixa && el.contains(ultimaFaixa.startContainer) ? ultimaFaixa : null;
+    if (!faixa) {
+      faixa = doc.createRange();
+      faixa.selectNodeContents(el);
+      faixa.collapse(false);
+    }
+    // Um trecho de uma linha não tem quebra: o texto entra numa linha só.
+    var conteudo = el.getAttribute('data-doc-digitavel') === 'varias' ? texto : texto.replace(/\s*\n+\s*/g, ' ');
+    if (!textoAtual.trim()) el.textContent = '';
+    if (!textoAtual.trim()) { faixa = doc.createRange(); faixa.selectNodeContents(el); faixa.collapse(false); }
+    faixa.deleteContents();
+    var no = doc.createTextNode(conteudo);
+    faixa.insertNode(no);
+    faixa.setStartAfter(no);
+    faixa.collapse(true);
+    selecao.removeAllRanges();
+    selecao.addRange(faixa);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  function abrirMenuTextos() {
+    if (!menuTextos || !corpoTextos || menuTextos.disabled) return;
+    carregarTextos(chaveDoTrecho(ultimoTrecho)).then(function (lista) {
+      montarMenuTextos(lista);
+      corpoTextos.hidden = false;
+      menuTextos.setAttribute('aria-expanded', 'true');
+    });
+  }
+  if (menuTextos && corpoTextos) {
+    // O menu abre pelo gatilho comum dos menus (documento-embutido.js); aqui
+    // só se garante que a lista é a do trecho em que o cursor está.
+    menuTextos.addEventListener('mousedown', function () {
+      if (menuTextos.disabled) return;
+      carregarTextos(chaveDoTrecho(ultimoTrecho)).then(montarMenuTextos);
+    });
+    corpoTextos.addEventListener('click', function (evento) {
+      var item = evento.target.closest('[data-de-texto]');
+      if (!item) return;
+      var lista = textosCarregados[chaveDoTrecho(ultimoTrecho)] || [];
+      var escolhido = lista[parseInt(item.getAttribute('data-de-texto'), 10)];
+      corpoTextos.hidden = true;
+      menuTextos.setAttribute('aria-expanded', 'false');
+      if (escolhido) inserirTexto(escolhido.texto);
+    });
+  }
+
+  /* ---- Próximo campo vazio (m117) --------------------------------------
+     As lacunas em cinza da folha (`data-doc-vazio`) e as linhas para
+     preencher (`.doc-lacuna`) que estão num trecho editável. O botão da barra
+     mostra quantas faltam e, a cada clique, vai à próxima. */
+  var botaoVazio = raiz.querySelector('[data-de-proximo-vazio]');
+  var contadorVazios = raiz.querySelector('[data-de-vazios-contador]');
+  var indiceVazio = -1;
+  function vazios() {
+    var doc = documentoDaFolha();
+    if (!doc || !doc.body) return [];
+    return Array.prototype.filter.call(doc.querySelectorAll('[data-doc-vazio], .doc-lacuna'), function (el) {
+      return el.closest('[data-doc-campo]') && !el.closest('[aria-hidden="true"]');
+    });
+  }
+  function atualizarVazios() {
+    if (!botaoVazio) return;
+    var lista = vazios();
+    botaoVazio.hidden = !lista.length;
+    if (contadorVazios) contadorVazios.textContent = lista.length ? 'Faltam ' + lista.length : '';
+    if (lista.length === 1 && contadorVazios) contadorVazios.textContent = 'Falta 1';
+    if (indiceVazio >= lista.length) indiceVazio = -1;
+  }
+  function proximoVazio() {
+    var lista = vazios();
+    if (!lista.length) return;
+    indiceVazio = (indiceVazio + 1) % lista.length;
+    var lacuna = lista[indiceVazio];
+    var trecho = lacuna.closest('[data-doc-campo]');
+    trazerParaVista(trecho);
+    if (alvoDigitavel(trecho)) { if (chaveAberta) fechar(); marcar(trecho.getAttribute('data-doc-campo'), 'campo', trecho.getAttribute('data-doc-objeto') || ''); focar(trecho); return; }
+    acionar(trecho);
+  }
+  if (botaoVazio) botaoVazio.addEventListener('click', proximoVazio);
+
+  quadro.addEventListener('load', ligarFolha);
+  if (quadro.contentDocument && quadro.contentDocument.readyState === 'complete' && quadro.contentDocument.body && quadro.contentDocument.body.children.length) ligarFolha();
 
   // Clicar fora do balão (e fora de um menu) fecha; Escape também.
   ouvir(document, 'mousedown', function (evento) {
@@ -795,6 +1070,7 @@
   return {
     desmontar: function () {
       fechar();
+      if (relogioPresenca) { clearInterval(relogioPresenca); relogioPresenca = null; avisarPresenca(true); }
       ouvintes.forEach(function (o) { o[0].removeEventListener(o[1], o[2]); });
       ouvintes = [];
       if (painel && painel.parentNode) painel.parentNode.removeChild(painel);

@@ -84,6 +84,9 @@ class WeasyPrintAdapterErrorTests(SimpleTestCase):
 
         self.assertEqual(result, b"%PDF-ok")
         html_factory.assert_called_once_with(string="<p>ok</p>", base_url="https://documentos.example/")
-        html.write_pdf.assert_called_once_with(stylesheets=[], presentational_hints=False)
+        # PDF/A com marcação de acessibilidade (m126).
+        html.write_pdf.assert_called_once_with(
+            stylesheets=[], presentational_hints=False, pdf_tags=True, pdf_variant="pdf/a-2a"
+        )
 
 

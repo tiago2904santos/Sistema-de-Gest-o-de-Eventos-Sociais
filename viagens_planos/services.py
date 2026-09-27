@@ -922,25 +922,40 @@ def referencia_do_plano(plano):
     return f"{plano.numero:02d}-{plano.ano}" if plano.numero and plano.ano else f"plano-{plano.pk}"
 
 
-def gerar_plano_documento(plano, formato, *, usar_assinado=True):
-    """O DOCX ou o PDF do plano pela fachada documental (que também o persiste)."""
+def gerar_plano_documento(plano, formato, *, usar_assinado=True, nova_versao=False):
+    """O DOCX ou o PDF do plano pela fachada documental (que também o persiste).
+
+    O PDF é a via emitida (m113): a primeira geração fica guardada e volta nos
+    pedidos seguintes; `nova_versao=True` refaz e numera a versão seguinte.
+    """
+    from documentos.services.emissao import emitir
     from viagens_cadastros.selectors import build_configuracao_context
 
     from .docxtpl_context import build_plano_docxtpl_context
 
-    contexto = build_plano_docxtpl_context(plano)
-    from documentos.services.document_blocks import conteudo_documental
+    from documentos.services.data_documento import fixar_data_documento
 
-    # Os títulos reescritos no editor entram no PDF e na chave do cache.
-    payload = {"institucional": build_configuracao_context(), "plano": contexto,
-               "documento": conteudo_documental(DocumentoTipo.PLANO_TRABALHO, plano)}
-    # O plano de vários eventos tem modelo próprio, com os laços por evento.
-    docx_template = "plano_trabalho_multievento.docx" if plano.is_multi_evento else None
-    return DocumentoFacade().gerar(
-        tipo=DocumentoTipo.PLANO_TRABALHO, formato=formato, payload=payload,
-        reference=referencia_do_plano(plano), docxtpl_context=contexto, docx_template_path=docx_template,
-        plano_trabalho_id=plano.pk, usar_assinado=usar_assinado,
-    )
+    # A data do documento nasce na primeira emissão e vale para todas as vias.
+    fixar_data_documento(plano)
+    referencia = referencia_do_plano(plano)
+
+    def gerar():
+        contexto = build_plano_docxtpl_context(plano)
+        from documentos.services.document_blocks import conteudo_documental
+
+        # Os títulos reescritos no editor entram no PDF e na chave do cache.
+        payload = {"institucional": build_configuracao_context(), "plano": contexto,
+                   "documento": conteudo_documental(DocumentoTipo.PLANO_TRABALHO, plano)}
+        # O plano de vários eventos tem modelo próprio, com os laços por evento.
+        docx_template = "plano_trabalho_multievento.docx" if plano.is_multi_evento else None
+        return DocumentoFacade().gerar(
+            tipo=DocumentoTipo.PLANO_TRABALHO, formato=formato, payload=payload,
+            reference=referencia, docxtpl_context=contexto, docx_template_path=docx_template,
+            plano_trabalho_id=plano.pk, usar_assinado=usar_assinado,
+        )
+
+    return emitir(DocumentoTipo.PLANO_TRABALHO, formato, gerar, reference=referencia, usar_assinado=usar_assinado,
+                  nova_versao=nova_versao, plano_trabalho_id=plano.pk)
 
 
 def marcar_plano_gerado(plano):

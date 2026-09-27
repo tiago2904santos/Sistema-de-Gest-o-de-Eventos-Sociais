@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from django.utils import timezone
 
+from documentos.services.data_documento import data_do_documento
 from documentos.services.formatters import format_city_uf, format_document_display
 from viagens_cadastros.selectors import build_configuracao_context
 from viagens_oficios.docxtpl_context import _assinatura_nome_cargo, _build_endereco, _build_sede
@@ -129,7 +129,8 @@ def build_plano_docxtpl_context(plano):
         valor_blocos = []
 
     inst = build_configuracao_context()
-    nome_chefia, cargo_chefia = _assinatura_nome_cargo(inst, "PLANO_TRABALHO", fallback_geral=False)
+    nome_chefia, cargo_chefia = _assinatura_nome_cargo(inst, "PLANO_TRABALHO", fallback_geral=False, data=data_do_documento(plano),
+                                                       assinante=plano.assinante if plano.assinante_id else None)
     if plano.is_multi_evento:
         destinos = _destinos_unicos(plano)
     else:
@@ -159,7 +160,7 @@ def build_plano_docxtpl_context(plano):
         "telefone": _txt(inst.get("telefone_formatado") or inst.get("telefone")),
         "email": (_txt(inst.get("email")) or "").lower(),
         "sede": _build_sede(inst),
-        "data_extenso": services.format_data_extenso(timezone.localdate()),
+        "data_extenso": services.format_data_extenso(data_do_documento(plano)),
         "nome_chefia": format_document_display(nome_chefia) if nome_chefia else "",
         "cargo_chefia": format_document_display(cargo_chefia) if cargo_chefia else "",
         "is_multi_evento": multi,

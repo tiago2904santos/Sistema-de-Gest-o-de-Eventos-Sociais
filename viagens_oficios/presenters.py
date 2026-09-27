@@ -253,12 +253,16 @@ def cartao_da_lista(oficio, *, editar_url, artefatos_termo=None, artefato_oficio
     }
 
 
-def artefatos_pdf_por_oficio(oficios):
+def artefatos_pdf_por_oficio(oficios, *, conferir=False):
     """oficio_id → {(tipo, servidor_id): {"pk", "assinado"}} dos PDFs já gerados.
 
     Mesma regra de `viagens_termos.presenters.artefatos_pdf_por_termo`: o PDF
     apontado é o primeiro gerado (alvo de "Anexar assinado") e `assinado` vale
     se qualquer PDF daquele documento tiver versão assinada, lido do banco.
+
+    Com `conferir`, cada assinado ganha `desatualizado` e `mudancas` (m109):
+    se os dados mudaram desde a assinatura, e o quê — custa montar o payload
+    de cada documento assinado, por isso é opcional.
     """
     from django.db.models import Exists, OuterRef
     from documentos.models import DocumentoArtefato, DocumentoAssinaturaVersao
@@ -271,13 +275,50 @@ def artefatos_pdf_por_oficio(oficios):
         .filter(oficio_id__in=ids, termo_id__isnull=True, formato="pdf")
         .annotate(tem_versao=Exists(versao_viva))
         .order_by("criado_em")
-        .values_list("oficio_id", "tipo", "servidor_id", "pk", "tem_versao", "arquivo_assinado")
+        .values_list("oficio_id", "tipo", "servidor_id", "pk", "tem_versao", "arquivo_assinado", "versao_emitida", "emitida_em")
     )
     mapa = {}
-    for oficio_id, tipo, servidor_id, pk, tem_versao, arquivo_assinado in consulta:
-        entrada = mapa.setdefault(oficio_id, {}).setdefault((tipo, servidor_id), {"pk": pk, "assinado": False})
+    for oficio_id, tipo, servidor_id, pk, tem_versao, arquivo_assinado, versao_emitida, emitida_em in consulta:
+        entrada = mapa.setdefault(oficio_id, {}).setdefault((tipo, servidor_id), {"pk": pk, "assinado": False, "versao": None, "emitida_em": None})
         entrada["assinado"] = entrada["assinado"] or bool(tem_versao) or bool(arquivo_assinado)
+        # A via emitida (m113) é o que foi impresso e assinado: é o alvo de
+        # "Anexar assinado" e o que a tela nomeia ("Versão 2 emitida em...").
+        if versao_emitida and versao_emitida >= (entrada["versao"] or 0):
+            entrada.update(pk=pk, versao=versao_emitida, emitida_em=emitida_em)
+    if conferir:
+        _conferir_assinados(oficios, mapa)
     return mapa
+
+
+def _conferir_assinados(oficios, mapa):
+    """Marca em cada PDF assinado se os dados mudaram desde a assinatura (m109)."""
+    from django.http import Http404
+    from documentos.editor.vinculos import vinculo_do_tipo
+    from documentos.services.types import DocumentoTipo
+    por_id = {o.pk: o for o in oficios}
+    for oficio_id, documentos in mapa.items():
+        for (tipo, servidor_id), entrada in documentos.items():
+            entrada.setdefault("desatualizado", False)
+            entrada.setdefault("mudancas", [])
+            if not entrada["assinado"]:
+                continue
+            try:
+                if tipo == DocumentoTipo.TERMO_AUTORIZACAO.value:
+                    vinculo = vinculo_do_tipo("termo_oficio")
+                    objeto = vinculo.carregar(oficio_id, servidor_id or "")
+                else:
+                    vinculo = vinculo_do_tipo(tipo)
+                    objeto = por_id[oficio_id]
+            except Http404:
+                entrada.update(desatualizado=True, mudancas=["O servidor já não tem termo neste ofício"])
+                continue
+            if vinculo is None:
+                continue
+            situacao = vinculo.assinatura(objeto)
+            entrada.update(desatualizado=situacao["desatualizado"], mudancas=situacao["mudancas"])
+
+
+ESTADO_ASSINADO_DESATUALIZADO = "Assinado, mas os dados mudaram"
 
 
 def fatos_do_oficio(oficio):
@@ -312,7 +353,11 @@ def documentos_do_oficio(oficio, artefatos_pdf):
         artefato = artefatos_pdf.get(chave)
         if artefato is None:
             return {"estado": "Sem PDF", "assinado": False, "url_assinado": ""}
-        return {"estado": "Assinado" if artefato["assinado"] else "PDF gerado", "assinado": artefato["assinado"],
+        if artefato.get("desatualizado"):
+            estado = ESTADO_ASSINADO_DESATUALIZADO
+        else:
+            estado = "Assinado" if artefato["assinado"] else "PDF gerado"
+        return {"estado": estado, "assinado": artefato["assinado"],
                 "url_assinado": reverse("viagens_oficios:assinatura_artefato", args=[artefato["pk"]])}
 
     documentos = [("oficio", "Ofício", f"Ofício {oficio.numero_formatado}", estado((DocumentoTipo.OFICIO.value, None)))]

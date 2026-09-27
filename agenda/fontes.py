@@ -55,6 +55,16 @@ def _sobrepoe(campo_inicio: str, campo_fim: str, inicio: dt.date, fim: dt.date) 
     )
 
 
+#: Quanto dura um compromisso que só tem hora de início (palestra, pauta).
+DURACAO_PADRAO = dt.timedelta(hours=2)
+
+
+def _horario_texto(hora_inicio, hora_fim) -> str:
+    if not hora_inicio:
+        return ""
+    return f"{hora_inicio:%H:%M}" + (f"–{hora_fim:%H:%M}" if hora_fim else "")
+
+
 def _evento(
     *,
     fonte: str,
@@ -68,22 +78,55 @@ def _evento(
     detalhes: list[tuple[str, str]],
     encerrado: bool = False,
     municipio: str = "",
+    municipios: list[str] | None = None,
     tipo: str = "",
     meu: bool = False,
+    chave: str = "",
+    hora_inicio: dt.time | None = None,
+    hora_fim: dt.time | None = None,
+    pessoas: list[str] | None = None,
 ) -> dict:
     """Um compromisso no formato do calendário.
 
     ``encerrado`` marca o que já não vai acontecer (cancelado, não atendido):
     a tela esconde por padrão e deixa mostrar, em vez de misturar com o que
     está de pé.
+
+    ``pk`` é o que abre o dossiê (``agenda:detalhe``); ``chave`` distingue o
+    evento quando vários apontam para o mesmo dossiê (os termos aditivos de um
+    contrato, as certidões de um fornecedor).
+
+    **Horário (m132).** Com ``hora_inicio`` e um dia só, o compromisso entra
+    com hora (``allDay=False``) e ocupa a grade das visões Semana e Dia; sem
+    hora de fim, dura ``DURACAO_PADRAO``. O que atravessa dias continua
+    como dia inteiro, com o horário no título — uma viagem de três dias não
+    é uma faixa das 6h de segunda às 22h de quarta.
+
+    ``municipios`` lista todos os lugares por onde o compromisso passa: é o
+    que o filtro de município da tela consulta; ``municipio`` é o principal.
     """
     slug = (situacao_slug or "").lower().replace(" ", "_")
+    lugares = [m for m in (municipios or []) if m]
+    if municipio and municipio not in lugares:
+        lugares.insert(0, municipio)
+    horario = _horario_texto(hora_inicio, hora_fim)
+    um_dia = not fim or fim == inicio
+    if hora_inicio and um_dia:
+        comeco = dt.datetime.combine(inicio, hora_inicio)
+        termino = dt.datetime.combine(inicio, hora_fim) if hora_fim else None
+        if termino is None or termino <= comeco:
+            termino = comeco + DURACAO_PADRAO
+        start, end, dia_inteiro = comeco.isoformat(timespec="minutes"), termino.isoformat(timespec="minutes"), False
+    else:
+        start, end, dia_inteiro = inicio.isoformat(), _fim_exclusivo(fim or inicio), True
+        if horario:
+            titulo = f"{titulo} · {horario}"
     return {
-        "id": f"{fonte}-{pk}",
+        "id": f"{fonte}-{chave or pk}",
         "title": titulo,
-        "start": inicio.isoformat(),
-        "end": _fim_exclusivo(fim or inicio),
-        "allDay": True,
+        "start": start,
+        "end": end,
+        "allDay": dia_inteiro,
         "classNames": [f"ag-{fonte}", f"ag-sit-{slug}", "ag-encerrado" if encerrado else "ag-ativo"],
         "extendedProps": {
             "fonte": fonte,
@@ -94,9 +137,13 @@ def _evento(
             "encerrado": encerrado,
             # Para os filtros locais da tela; a agenda monta as opções a
             # partir do que veio, com contagem.
-            "municipio": municipio,
+            "municipio": municipio or (lugares[0] if lugares else ""),
+            "municipios": lugares,
             "tipo": tipo,
             "meu": meu,
+            "horario": horario,
+            # Quem está escalado (m134): alimenta o filtro "Pessoa" e a escala.
+            "pessoas": list(pessoas or ()),
             "detalhes": [[rotulo, valor] for rotulo, valor in detalhes if valor],
         },
     }
@@ -113,35 +160,113 @@ def _pode_viagens(usuario) -> bool:
     return pode_acessar(usuario)
 
 
+def _municipios_extras(viagens) -> dict[int, str]:
+    """{pk: "Cidade/UF"} dos destinos adicionais de todas as viagens, numa consulta."""
+    from cadastros.models import Municipio
+
+    pks = {
+        municipio_id
+        for v in viagens
+        for _estado_id, municipio_id in v.destinos_pares()[1:]
+        if municipio_id
+    }
+    if not pks:
+        return {}
+    return {m.pk: f"{m.nome}/{m.estado.sigla}" for m in Municipio.objects.filter(pk__in=pks).select_related("estado")}
+
+
+def _destinos_da_viagem(v, extras: dict[int, str]) -> list[str]:
+    """O destino principal e os adicionais, sem repetir."""
+    destinos = [v.destino_display]
+    for _estado_id, municipio_id in v.destinos_pares()[1:]:
+        nome = extras.get(municipio_id)
+        if nome and nome not in destinos:
+            destinos.append(nome)
+    return destinos
+
+
+def _roteiros_da_viagem(v):
+    candidatos = list(v.roteiros.all())
+    for oficio in v.oficios.all():
+        if oficio.roteiro_id and oficio.roteiro:
+            candidatos.append(oficio.roteiro)
+    return {r.pk: r for r in candidatos if not r.cancelado}.values()
+
+
+def _destinos_dos_roteiros(v) -> list[str]:
+    """Os municípios dos roteiros (trecho a trecho): a busca por cidade acha a viagem que passa por ela."""
+    nomes = []
+    for r in _roteiros_da_viagem(v):
+        for d in r.destinos.all():
+            nome = f"{d.municipio.nome}/{d.municipio.estado.sigla}"
+            if nome not in nomes:
+                nomes.append(nome)
+    return nomes
+
+
+def _horario_da_viagem(v):
+    """(hora da saída, hora da chegada de volta) do roteiro mais cedo; senão, os da viagem."""
+    from django.utils import timezone
+
+    com_saida = [r for r in _roteiros_da_viagem(v) if r.saida_dt]
+    if com_saida:
+        r = min(com_saida, key=lambda r: r.saida_dt)
+        volta = r.retorno_chegada_dt or r.chegada_dt
+        return timezone.localtime(r.saida_dt).time(), timezone.localtime(volta).time() if volta else None
+    return v.horario_inicio, v.horario_fim
+
+
 def _viagens(usuario, inicio, fim) -> list[dict]:
     from viagens_viagem.models import Viagem
 
-    consulta = (
+    from . import pessoas as equipes
+    from .situacao import consulta_de_viagens, situacao_da_viagem
+
+    consulta = equipes.prefetch_equipes(consulta_de_viagens(
         Viagem.objects.filter(_sobrepoe("data_inicio", "data_fim", inicio, fim))
         .select_related("destino_municipio__estado", "destino_estado", "unidade_responsavel")
+        .prefetch_related("roteiros__destinos__municipio__estado", "oficios__roteiro__destinos__municipio__estado")
         .order_by("data_inicio", "id")
-    )
+    ))
+    viagens = list(consulta)
+    extras = _municipios_extras(viagens)
+    # "Meu" (m134): criei a viagem/ofício/roteiro, ou estou escalado.
+    criacoes = equipes.criacoes_de(usuario)
+    servidor_pk = getattr(usuario, "servidor_id", None)
     saida = []
-    for v in consulta:
+    for v in viagens:
         motivo = (v.motivo or "").strip()
+        # A situação real, como na lista de Viagens (m131) — não o campo status.
+        situacao, situacao_slug, _tom = situacao_da_viagem(v)
+        # Todos os destinos (m132): os da viagem no título, os dos roteiros no filtro.
+        destinos = _destinos_da_viagem(v, extras)
+        hora_inicio, hora_fim = _horario_da_viagem(v)
+        nomes, escalados = equipes.equipe_da_viagem(v)
         saida.append(
             _evento(
                 fonte="viagem",
                 pk=v.pk,
-                titulo=v.destino_display + (f" — {motivo}" if motivo else ""),
+                titulo=", ".join(destinos) + (f" — {motivo}" if motivo else ""),
                 inicio=v.data_inicio,
                 fim=v.data_fim,
-                situacao=v.get_status_display(),
-                situacao_slug=v.status,
+                situacao=situacao,
+                situacao_slug=situacao_slug,
                 url=reverse("viagens_viagem:painel", args=[v.pk]),
                 encerrado=bool(v.cancelado),
                 municipio=v.destino_display,
+                municipios=destinos + _destinos_dos_roteiros(v),
                 tipo=str(v.unidade_responsavel) if v.unidade_responsavel_id else "",
+                hora_inicio=hora_inicio,
+                hora_fim=hora_fim,
+                meu=equipes.viagem_e_minha(v, criacoes=criacoes, servidor_pk=servidor_pk, escalados=escalados),
+                pessoas=nomes,
                 detalhes=[
-                    ("Destino", v.destino_display),
+                    ("Destino", ", ".join(destinos)),
                     ("Período", v.periodo_display),
+                    ("Horário", _horario_texto(hora_inicio, hora_fim)),
                     ("Motivo", motivo),
                     ("Unidade", str(v.unidade_responsavel) if v.unidade_responsavel_id else ""),
+                    ("Equipe", ", ".join(nomes)),
                     ("Cancelada", v.motivo_cancelamento if v.cancelado else ""),
                 ],
             )
@@ -168,7 +293,7 @@ def _solicitacoes(usuario, inicio, fim) -> list[dict]:
         permissions.queryset_visivel(usuario, SolicitacaoEvento.objects.all())
         .filter(data_inicio_evento__isnull=False)
         .filter(_sobrepoe("data_inicio_evento", "data_fim_evento", inicio, fim))
-        .select_related("municipio", "tipo_evento")
+        .select_related("municipio", "tipo_evento", "motorista")
         .order_by("data_inicio_evento", "id")
     )
     encerrados = {StatusSolicitacao.CANCELADA, StatusSolicitacao.NAO_ATENDIDA}
@@ -189,7 +314,9 @@ def _solicitacoes(usuario, inicio, fim) -> list[dict]:
                 encerrado=s.status in encerrados,
                 municipio=lugar,
                 tipo=tipo,
-                meu=s.criado_por_id == getattr(usuario, "pk", None),
+                meu=s.criado_por_id == getattr(usuario, "pk", None)
+                or (bool(s.motorista_id) and s.motorista_id == getattr(usuario, "servidor_id", None)),
+                pessoas=[s.motorista.nome] if s.motorista_id else [],
                 detalhes=[
                     ("Município", lugar),
                     ("Tipo de evento", tipo),
@@ -294,6 +421,9 @@ def _demandas(usuario, inicio, fim) -> list[dict]:
                 municipio=lugar,
                 tipo=d.get_evento_display(),
                 meu=d.criado_por_id == getattr(usuario, "pk", None),
+                # A palestra tem hora de início, não de fim: dura DURACAO_PADRAO (m132).
+                hora_inicio=d.hora_inicio,
+                pessoas=[p.nome for p in d.palestrantes.all()],
                 detalhes=[
                     ("Município", lugar),
                     ("Evento", d.get_evento_display()),
@@ -310,11 +440,22 @@ def _demandas(usuario, inicio, fim) -> list[dict]:
 
 # A ordem é a ordem dos filtros na tela. Viagens primeiro porque é o módulo
 # de referência do sistema, e o que mais gera deslocamento de verdade.
+def _fontes_de_prazos() -> tuple[Fonte, ...]:
+    # Importados aqui porque usam ``_evento`` e ``Fonte`` deste módulo: a
+    # camada de prazos (m129) e os feriados (m138) entram depois dos
+    # compromissos.
+    from .feriados import FONTE as FERIADOS
+    from .prazos import FONTES as PRAZOS
+
+    return (*PRAZOS, FERIADOS)
+
+
 FONTES: tuple[Fonte, ...] = (
     Fonte("viagem", "Viagens", _pode_viagens, _viagens),
     Fonte("solicitacao", "Solicitações de evento", _pode_solicitacoes, _solicitacoes),
     Fonte("coffee", "Coffee break", _pode_coffee, _coffee),
     Fonte("demanda", "Palestras e eventos", _pode_demandas, _demandas),
+    *_fontes_de_prazos(),
 )
 
 
@@ -329,10 +470,14 @@ def eventos_de(usuario, inicio: dt.date, fim: dt.date, slugs=None) -> list[dict]
     ``slugs`` restringe às fontes pedidas; uma fonte pedida fora do acesso é
     ignorada em silêncio — pedir pelo nome não é o que abre a porta.
     """
+    from .conflitos import marcar
+
     pedidas = set(slugs or ())
     saida = []
     for fonte in fontes_de(usuario):
         if pedidas and fonte.slug not in pedidas:
             continue
         saida.extend(fonte.eventos(usuario, inicio, fim))
-    return saida
+    # Choques de agenda (m130): a mesma pessoa, viatura ou palestrante em dois
+    # compromissos ao mesmo tempo ganha ag-conflito.
+    return marcar(saida, inicio, fim)

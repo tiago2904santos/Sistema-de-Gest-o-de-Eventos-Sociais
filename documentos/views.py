@@ -5,7 +5,7 @@ from pathlib import Path
 
 from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, Http404
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_GET, require_POST
 
 from .services.access import obter_artefato_para_download
 from .services.regeneracao import precisa_regerar, regerar
@@ -86,3 +86,23 @@ def _resposta_inline(handle):
     response["Cache-Control"] = "no-store, must-revalidate"
     response["X-Content-Type-Options"] = "nosniff"
     return response
+
+
+@login_required
+@require_POST
+def conferir_assinado(request, pk):
+    """O que o sistema lê do PDF que vai ser anexado como assinado (m112):
+    assinatura, quem assinou e se é o documento certo. Só leitura — o anexo
+    continua sendo o POST do modal; aqui é a prévia que ele mostra."""
+    from django.http import JsonResponse
+
+    from .services.conferencia_assinado import conferir_artefato
+
+    artefato = obter_artefato_para_download(request.user, pk)
+    upload = request.FILES.get("arquivo")
+    if upload is None:
+        return JsonResponse({"ok": False, "mensagem": "Envie o PDF para conferir."}, status=400)
+    dados = upload.read()
+    if not dados.startswith(b"%PDF-"):
+        return JsonResponse({"ok": False, "mensagem": "O arquivo não parece ser um PDF."}, status=400)
+    return JsonResponse({"ok": True, **conferir_artefato(artefato, dados).como_json()})

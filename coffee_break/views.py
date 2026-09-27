@@ -1261,7 +1261,14 @@ def nova_solicitacao(request):
             messages.error(request, "Corrija os campos destacados para continuar.")
         email_origem = preencher_por_email.origem_da_tela(request, "coffee_break")
     else:
+        # "Criar aqui" da Agenda (m135): ?inicio= já preenche a data do evento
+        # (o coffee break é de um dia só; o fim é descartado no save).
+        from core.periodo_url import datas_da_url
+
         iniciais = origem_evento.valores_iniciais(campo_origem, evento_origem) if evento_origem is not None else {}
+        data_da_agenda, _ = datas_da_url(request.GET)
+        if data_da_agenda is not None:
+            iniciais = {"data_inicio_evento": data_da_agenda, **iniciais}
         if copia_de is not None:
             iniciais = {
                 campo: getattr(copia_de, f"{campo}_id" if campo == "municipio" else campo)
@@ -1760,7 +1767,10 @@ def importar_planilha(request):
 
     from django.core.management.base import CommandError
 
-    pasta = Path(tempfile.gettempdir()) / "coffee-break-importacao"
+    from core.limpeza import pasta_importacao_coffee
+
+    # A limpeza semanal (core.limpeza) apaga o que ficar aqui mais de um dia.
+    pasta = pasta_importacao_coffee()
     pasta.mkdir(exist_ok=True)
     contexto = {
         "breadcrumb": _breadcrumb(

@@ -346,3 +346,39 @@ class TabelaDiariaForm(forms.ModelForm):
                     "Edite a existente em vez de cadastrar outra."
                 )
         return dados
+
+
+class AssinaturaSubstituicaoForm(forms.ModelForm):
+    """Substituto por período (m114): quem assina no lugar do titular, de quando a quando."""
+
+    class Meta:
+        from .models import AssinaturaSubstituicao
+
+        model = AssinaturaSubstituicao
+        fields = ["tipo", "servidor", "inicio", "fim", "motivo", "ativo"]
+        widgets = {
+            "inicio": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "fim": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "motivo": forms.TextInput(attrs={"placeholder": "Ex.: férias do titular"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import Servidor
+
+        self.fields["servidor"].queryset = Servidor.objects.select_related("cargo").order_by("nome")
+        self.fields["servidor"].empty_label = "Escolha o substituto"
+
+    def clean(self):
+        dados = super().clean()
+        inicio, fim = dados.get("inicio"), dados.get("fim")
+        if inicio and fim and fim < inicio:
+            self.add_error("fim", "O fim não pode ser anterior ao início.")
+        return dados
+
+    def save(self, commit=True):
+        from .models import ConfiguracaoSistema
+
+        # As substituições, como os assinantes, moram na configuração global.
+        self.instance.configuracao = ConfiguracaoSistema.get_singleton()
+        return super().save(commit=commit)

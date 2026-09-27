@@ -128,6 +128,9 @@ def documentos_do_termo(termo, artefatos_pdf):
             "url_assinado": reverse("viagens_oficios:assinatura_artefato", args=[artefato["pk"]]) if artefato else "",
             "tem_pdf": artefato is not None,
             "assinado": bool(artefato and artefato["assinado"]),
+            # A via emitida (m113): "Versão 1 emitida em dd/mm" e "Emitir nova versão".
+            "versao": artefato.get("versao") if artefato else None,
+            "emitida_em": artefato.get("emitida_em") if artefato else None,
             **estado_do_documento(artefato),
         }
 
@@ -172,6 +175,9 @@ def estado_do_documento(artefato):
     """O selo de um documento só: onde ele está entre "nem saiu" e "voltou assinado"."""
     if artefato is None:
         return {"estado": "Sem PDF", "estado_tom": "neutro"}
+    if artefato.get("desatualizado"):
+        # Assinado, mas os dados mudaram desde então (m109): o título traz o que mudou.
+        return {"estado": "Assinado, mas os dados mudaram", "estado_tom": "prazo_proximo", "mudancas": artefato.get("mudancas") or []}
     if artefato["assinado"]:
         return {"estado": "Assinado", "estado_tom": "atendido"}
     return {"estado": "PDF gerado", "estado_tom": "aguardando"}
@@ -220,8 +226,11 @@ def linha_da_lista(termo, *, artefatos_pdf=None):
     }
 
 
-def artefatos_pdf_por_termo(termos):
+def artefatos_pdf_por_termo(termos, *, conferir=False):
     """(termo_id, servidor_id) → PDF de termo gerado e se já há versão assinada.
+
+    Com `conferir`, cada assinado ganha `desatualizado` e `mudancas` (m109) —
+    custa montar o payload de cada termo assinado, por isso só na tela do termo.
 
     O PDF apontado continua sendo o primeiro da ordem de criação, como antes —
     é o alvo de "Anexar assinado". Já `assinado` olha **todos** os PDFs
@@ -243,11 +252,27 @@ def artefatos_pdf_por_termo(termos):
         .filter(termo_id__in=ids, formato="pdf", tipo=DocumentoTipo.TERMO_AUTORIZACAO.value)
         .annotate(tem_versao=Exists(versao_viva))
         .order_by("criado_em")
-        .values_list("termo_id", "servidor_id", "pk", "tem_versao", "arquivo_assinado")
+        .values_list("termo_id", "servidor_id", "pk", "tem_versao", "arquivo_assinado", "versao_emitida", "emitida_em")
     )
     mapa = {}
-    for termo_id, servidor_id, pk, tem_versao, arquivo_assinado in consulta:
+    for termo_id, servidor_id, pk, tem_versao, arquivo_assinado, versao_emitida, emitida_em in consulta:
         por_servidor = mapa.setdefault(termo_id, {})
-        entrada = por_servidor.setdefault(servidor_id, {"pk": pk, "assinado": False})
+        entrada = por_servidor.setdefault(servidor_id, {"pk": pk, "assinado": False, "versao": None, "emitida_em": None})
         entrada["assinado"] = entrada["assinado"] or bool(tem_versao) or bool(arquivo_assinado)
+        # A via emitida (m113) é o alvo de "Anexar assinado" e o que a tela nomeia.
+        if versao_emitida and versao_emitida >= (entrada["versao"] or 0):
+            entrada.update(pk=pk, versao=versao_emitida, emitida_em=emitida_em)
+    if conferir:
+        from django.http import Http404
+        from documentos.editor.vinculos import vinculo_do_tipo
+        vinculo = vinculo_do_tipo(DocumentoTipo.TERMO_AUTORIZACAO)
+        for termo_id, por_servidor in mapa.items():
+            for servidor_id, entrada in por_servidor.items():
+                if not entrada["assinado"]:
+                    continue
+                try:
+                    situacao = vinculo.assinatura(vinculo.carregar(termo_id, str(servidor_id or 0)))
+                except Http404:
+                    situacao = {"desatualizado": True, "mudancas": ["O servidor já não está neste termo"]}
+                entrada.update(desatualizado=situacao["desatualizado"], mudancas=situacao["mudancas"])
     return mapa

@@ -16,10 +16,12 @@ entre várias (o termo de cada servidor) tem **variante** (`?v=` na URL).
 
 from __future__ import annotations
 
+from django.core.exceptions import ValidationError
 from django.forms.models import model_to_dict
 from django.http import Http404
 from django.urls import NoReverseMatch, reverse
 
+from documentos.services.exceptions import DocumentError
 from documentos.services.types import DocumentoTipo
 
 
@@ -76,9 +78,10 @@ def _opcoes_de_servidores(form, valor):
     return opcoes
 
 
-def _historico(filtros, limite=20):
+def _historico(filtros, limite=60):
     """Os últimos registros da trilha de auditoria sobre os registros dados
-    (`[(modelo, [pks])]`), com os campos que mudaram — para a tela."""
+    (`[(modelo, [pks])]`), com os campos que mudaram — para a tela. O limite
+    é largo porque o painel agrupa as gravações de uma mesma digitação."""
     from django.db.models import Q
 
     from auditoria.models import RegistroAuditoria
@@ -139,6 +142,24 @@ def _gravar_recorte(form, nomes, derivados=None):
     return objeto
 
 
+def _modelos_de_motivo():
+    from viagens_oficios.models import ModeloMotivoOficio
+
+    return ModeloMotivoOficio.objects.order_by("nome")
+
+
+def _modelos_de_justificativa():
+    from viagens_oficios.models import ModeloJustificativa
+
+    return ModeloJustificativa.objects.order_by("nome")
+
+
+def _modelos_do_rt(campo):
+    from viagens_prestacoes.models import ModeloTextoRelatorioTecnico
+
+    return ModeloTextoRelatorioTecnico.objects.filter(campo=campo).order_by("nome")
+
+
 # ---- Vínculos ------------------------------------------------------------
 
 
@@ -170,10 +191,31 @@ class VinculoBase:
     def cancelado(self, objeto) -> bool:
         return bool(getattr(objeto, "cancelado", False))
 
-    def pode_editar(self, usuario, objeto) -> bool:
+    def pode_operar(self, usuario, objeto) -> bool:
+        """Quem pode mexer no documento (emitir, anexar): permissão de
+        edição e registro não cancelado."""
         from viagens_cadastros.permissions import pode_editar_cadastros
 
         return pode_editar_cadastros(usuario) and not self.cancelado(objeto)
+
+    def finalizado(self, objeto) -> bool:
+        """O registro do documento está fechado (ofício finalizado, prestação
+        finalizada): cada vínculo diz o que é "finalizado" para ele."""
+        return False
+
+    def fechado(self, objeto) -> str:
+        """Por que o documento não se edita ("" = aberto): há versão assinada
+        valendo (`assinado`) ou o registro está finalizado (`finalizado`).
+        Editar de novo é reabrir — revogar o assinado, ou reabrir o registro
+        com o motivo."""
+        if self.assinado(objeto):
+            return "assinado"
+        if self.finalizado(objeto):
+            return "finalizado"
+        return ""
+
+    def pode_editar(self, usuario, objeto) -> bool:
+        return self.pode_operar(usuario, objeto) and not self.fechado(objeto)
 
     def origens_editaveis(self, usuario) -> set[str]:
         """De quais origens quem vê pode editar trechos: a configuração do
@@ -200,6 +242,12 @@ class VinculoBase:
         from documentos.services.document_blocks import conteudo_documental
 
         return conteudo_documental(self.tipo, self.dono_dos_blocos(objeto), self.variante_edicao(objeto))
+
+    def valores_dos_marcadores(self, objeto) -> dict:
+        """O valor de hoje de cada marcador que os blocos deste documento
+        preenchem ({assunto} → "autorização"): a gravação de um parágrafo
+        editado devolve a palavra ao marcador, para ela seguir os dados."""
+        return {}
 
     # Edição completa (m057): o documento inteiro, editado à mão.
     def variante_edicao(self, objeto) -> str:
@@ -285,8 +333,76 @@ class VinculoBase:
     def pendencias(self, objeto) -> list:
         return []
 
+    # Para onde cada pendência leva na folha (m117): pares (expressão sobre o
+    # texto da pendência, chave do campo do editor), na ordem de teste. O
+    # texto das pendências é do domínio; o vínculo só o liga ao trecho.
+    DESTINOS_DE_PENDENCIAS: tuple = ()
+
+    def pendencias_navegaveis(self, objeto) -> list[dict]:
+        """As pendências com o campo do editor que as resolve (`campo` e a
+        origem dele), quando há um; senão só o texto."""
+        import re
+
+        from documentos.editor.campos import campos_do_tipo
+
+        campos = campos_do_tipo(self.chave)
+        saida = []
+        for texto in self.pendencias(objeto):
+            texto = str(texto)
+            campo = next((campos.get(chave) for padrao, chave in self.DESTINOS_DE_PENDENCIAS if re.search(padrao, texto, re.IGNORECASE)), None)
+            saida.append({"texto": texto, "campo": campo.chave if campo else "", "origem": campo.origem if campo else ""})
+        return saida
+
     def pode_emitir(self, usuario, objeto) -> bool:
-        return self.pode_editar(usuario, objeto) and not self.pendencias(objeto)
+        return self.pode_operar(usuario, objeto) and not self.pendencias(objeto)
+
+    # Assinado, mas os dados mudaram (m109)
+    def payload_atual(self, objeto, artefato=None):
+        """O payload com que o documento seria gerado agora — o mesmo que a
+        geração persiste em `payload_snapshot`; None quando o vínculo não o
+        reproduz (e então o assinado não se confere)."""
+        return None
+
+    def assinatura(self, objeto) -> dict:
+        """A versão assinada valendo e se ela ficou para trás dos dados:
+        `assinado`, `desatualizado` e `mudancas` (o que mudou, por parte)."""
+        from documentos.services.assinados import artefato_assinado, mudancas_desde_a_assinatura
+
+        artefato = artefato_assinado(self.artefatos(objeto))
+        if artefato is None:
+            return {"assinado": False, "desatualizado": False, "mudancas": []}
+        try:
+            mudancas = mudancas_desde_a_assinatura(artefato, self.payload_atual(objeto, artefato))
+        except (ValidationError, DocumentError):
+            # Documento que hoje nem gera (pendência nova): já não bate.
+            mudancas = ["O documento não gera mais com os dados de hoje"]
+        return {"assinado": True, "desatualizado": bool(mudancas), "mudancas": mudancas}
+
+    # Textos prontos (m118): campo do editor → consulta dos modelos de texto
+    # do sistema que servem a ele (`.values_list("pk", "nome", "texto")`).
+    # `valores_para_textos` dá os campos automáticos ({destino}, {periodo}...).
+    TEXTOS_PRONTOS: dict = {}
+
+    def valores_para_textos(self, objeto) -> dict:
+        return {}
+
+    def campos_com_textos(self, objeto) -> list[str]:
+        """As chaves dos campos que têm ao menos um texto pronto."""
+        return [chave for chave, consulta in self.TEXTOS_PRONTOS.items() if consulta(objeto).exists()]
+
+    def textos_prontos(self, objeto, chave) -> list[dict]:
+        """Os textos prontos de um campo, com os marcadores já trocados pelos
+        dados do documento."""
+        from viagens_oficios.campos_modelo import aplicar
+
+        consulta = self.TEXTOS_PRONTOS.get(chave)
+        if consulta is None:
+            return []
+        valores = self.valores_para_textos(objeto)
+        return [
+            {"id": pk, "nome": str(nome), "texto": aplicar(str(texto or ""), valores)}
+            for pk, nome, texto in consulta(objeto).values_list("pk", "nome", "texto")
+        ]
 
     def historico(self, objeto) -> list:
         return []
@@ -332,6 +448,21 @@ class VinculoOficio(VinculoBase):
 
         return contexto_do_oficio(oficio, modo=modo, campos_editaveis=campos_editaveis)
 
+    def valores_dos_marcadores(self, oficio):
+        from viagens_oficios.assunto_oficio import resolver_assunto_oficio
+
+        return {"assunto": resolver_assunto_oficio(oficio)["assunto_termo"]}
+
+    def finalizado(self, oficio):
+        return oficio.status == oficio.STATUS_FINALIZADO
+
+    def payload_atual(self, oficio, artefato=None):
+        from viagens_oficios.documents import build_canonical_document_payload
+
+        payload = build_canonical_document_payload(oficio, self.tipo)
+        payload["documento"] = self.documental(oficio)
+        return payload
+
     def dados_atuais(self, oficio) -> dict:
         """O ofício inteiro como o formulário o receberia: o PATCH troca só as
         partes pedidas e o resto vai como está, para as regras de `clean()`
@@ -364,15 +495,32 @@ class VinculoOficio(VinculoBase):
     def url_pdf(self, oficio):
         return reverse("viagens_oficios:gerar", args=[oficio.pk, "oficio", "pdf"])
 
+    DESTINOS_DE_PENDENCIAS = (
+        (r"motorista", "motorista"),
+        (r"protocolo", "protocolo"),
+        (r"motivo", "motivo"),
+        (r"custeio", "custeio"),
+        (r"viajante", "servidores"),
+        (r"transporte|viatura|placa", "transporte"),
+        (r"roteiro|saída|destino", "roteiro"),
+    )
+
     def pendencias(self, oficio):
         from viagens_oficios.services import validar_oficio_para_documento
 
         return validar_oficio_para_documento(oficio)["pendencias"]
 
+    TEXTOS_PRONTOS = {"motivo": lambda oficio: _modelos_de_motivo()}
+
+    def valores_para_textos(self, oficio):
+        from viagens_oficios.campos_modelo import valores_do_oficio
+
+        return valores_do_oficio(oficio)
+
     def historico(self, oficio):
         from viagens_oficios.views import historico_do_oficio
 
-        return historico_do_oficio(oficio)
+        return historico_do_oficio(oficio, limite=60)
 
 
 def _servidores_do_documento(objeto):
@@ -424,12 +572,18 @@ class VinculoTermo(VinculoBase):
     def variante_edicao(self, termo):
         return termo.doc_variante
 
-    def contexto(self, termo, *, modo, campos_editaveis):
-        from documentos.services.document_context import contexto_do_termo
-        from viagens_termos.services import _legacy_docx_context, build_termo_cadastro_payload
+    def payload_atual(self, termo, artefato=None):
+        from viagens_termos.services import build_termo_cadastro_payload
 
         payload = build_termo_cadastro_payload(termo, termo.doc_servidor, forcar_viatura=termo.doc_forcar_viatura)
         payload["documento"] = self.documental(termo)
+        return payload
+
+    def contexto(self, termo, *, modo, campos_editaveis):
+        from documentos.services.document_context import contexto_do_termo
+        from viagens_termos.services import _legacy_docx_context
+
+        payload = self.payload_atual(termo)
         contexto = contexto_do_termo(payload, _legacy_docx_context(payload), modo=modo, campos_editaveis=campos_editaveis)
         viatura = termo.viatura_efetiva()
         contexto["ids"] = {"servidor": termo.doc_servidor.pk if termo.doc_servidor else ""}
@@ -495,8 +649,20 @@ class VinculoTermoOficio(VinculoBase):
             raise Http404("Servidor sem termo neste ofício.")
         return oficio
 
-    def pode_editar(self, usuario, oficio):
-        return VINCULOS_BASE["oficio"].pode_editar(usuario, oficio)
+    def pode_operar(self, usuario, oficio):
+        return VINCULOS_BASE["oficio"].pode_operar(usuario, oficio)
+
+    def finalizado(self, oficio):
+        return VINCULOS_BASE["oficio"].finalizado(oficio)
+
+    def payload_atual(self, oficio, artefato=None):
+        from viagens_oficios.documents import build_termo_payload
+
+        # O termo assinado pode ser de outra variante (o semipreenchido): compara-se com a mesma.
+        variante = (artefato.payload_snapshot or {}).get("variante") if artefato is not None else None
+        payload = build_termo_payload(oficio, oficio.doc_servidor, variante=variante or None)
+        payload["documento"] = self.documental(oficio)
+        return payload
 
     def variante(self, oficio):
         return str(oficio.doc_servidor.pk)
@@ -510,11 +676,9 @@ class VinculoTermoOficio(VinculoBase):
 
     def contexto(self, oficio, *, modo, campos_editaveis):
         from documentos.services.document_context import contexto_do_termo
-        from viagens_oficios.documents import build_termo_payload
         from viagens_termos.services import _legacy_docx_context
 
-        payload = build_termo_payload(oficio, oficio.doc_servidor)
-        payload["documento"] = self.documental(oficio)
+        payload = self.payload_atual(oficio)
         contexto = contexto_do_termo(payload, _legacy_docx_context(payload), modo=modo, campos_editaveis=campos_editaveis)
         contexto["ids"] = {"servidor": oficio.doc_servidor.pk}
         # Data e destino vêm do roteiro do ofício; a viatura, do transporte dele.
@@ -562,14 +726,22 @@ class VinculoJustificativa(VinculoBase):
     def versao(self, oficio):
         return _versao(self.registro(oficio))
 
-    def contexto(self, oficio, *, modo, campos_editaveis):
-        from documentos.services.document_context import contexto_da_justificativa
+    def finalizado(self, oficio):
+        return oficio.status == oficio.STATUS_FINALIZADO
+
+    def payload_atual(self, oficio, artefato=None):
         from viagens_oficios.documents import build_canonical_document_payload
-        from viagens_oficios.docxtpl_context import build_justificativa_docxtpl_context
 
         payload = build_canonical_document_payload(oficio, self.tipo)
         payload["documento"] = self.documental(oficio)
-        return contexto_da_justificativa(payload, build_justificativa_docxtpl_context(oficio), modo=modo, campos_editaveis=campos_editaveis)
+        return payload
+
+    def contexto(self, oficio, *, modo, campos_editaveis):
+        from documentos.services.document_context import contexto_da_justificativa
+        from viagens_oficios.docxtpl_context import build_justificativa_docxtpl_context
+
+        return contexto_da_justificativa(self.payload_atual(oficio), build_justificativa_docxtpl_context(oficio), modo=modo,
+                                         campos_editaveis=campos_editaveis)
 
     def rotulo(self, oficio):
         return f"Justificativa – Ofício {oficio.numero_formatado}"
@@ -579,6 +751,14 @@ class VinculoJustificativa(VinculoBase):
 
     def url_pdf(self, oficio):
         return reverse("viagens_oficios:gerar", args=[oficio.pk, "justificativa", "pdf"])
+
+    DESTINOS_DE_PENDENCIAS = ((r"justificativa", "justificativa_texto"),)
+    TEXTOS_PRONTOS = {"justificativa_texto": lambda oficio: _modelos_de_justificativa()}
+
+    def valores_para_textos(self, oficio):
+        from viagens_oficios.campos_modelo import valores_do_oficio
+
+        return valores_do_oficio(oficio)
 
     def pendencias(self, oficio):
         from viagens_oficios.services import validar_oficio_para_documento
@@ -603,14 +783,24 @@ class VinculoOrdem(VinculoBase):
 
         return get_ordem_by_id(pk)
 
-    def contexto(self, ordem, *, modo, campos_editaveis):
-        from documentos.services.document_context import contexto_da_ordem_servico
+    def payload_atual(self, ordem, artefato=None):
         from viagens_cadastros.selectors import build_configuracao_context
-        from viagens_ordens.docxtpl_context import build_os_docxtpl_context
         from viagens_ordens.services import resumo_da_ordem
 
-        payload = {"institucional": build_configuracao_context(), "ordem_servico": resumo_da_ordem(ordem), "documento": self.documental(ordem)}
-        return contexto_da_ordem_servico(payload, build_os_docxtpl_context(ordem), modo=modo, campos_editaveis=campos_editaveis)
+        return {"institucional": build_configuracao_context(), "ordem_servico": resumo_da_ordem(ordem), "documento": self.documental(ordem)}
+
+    def contexto(self, ordem, *, modo, campos_editaveis):
+        from documentos.services.document_context import contexto_da_ordem_servico
+        from viagens_ordens.docxtpl_context import build_os_docxtpl_context
+
+        return contexto_da_ordem_servico(self.payload_atual(ordem), build_os_docxtpl_context(ordem), modo=modo, campos_editaveis=campos_editaveis)
+
+    TEXTOS_PRONTOS = {"os_motivo": lambda ordem: _modelos_de_motivo()}
+
+    def valores_para_textos(self, ordem):
+        from viagens_oficios.campos_modelo import valores_da_ordem
+
+        return valores_da_ordem(ordem)
 
     def rotulo(self, ordem):
         numero = f"{ordem.numero:03d}/{ordem.ano}" if ordem.numero and ordem.ano else ordem.numero_formatado
@@ -642,14 +832,18 @@ class VinculoPlano(VinculoBase):
 
         return get_plano_by_id(pk)
 
-    def contexto(self, plano, *, modo, campos_editaveis):
-        from documentos.services.document_context import contexto_do_plano_trabalho
+    def payload_atual(self, plano, artefato=None):
         from viagens_cadastros.selectors import build_configuracao_context
         from viagens_planos.docxtpl_context import build_plano_docxtpl_context
 
         tx = build_plano_docxtpl_context(plano)
-        payload = {"institucional": build_configuracao_context(), "plano": tx, "documento": self.documental(plano)}
-        return contexto_do_plano_trabalho(payload, tx, modo=modo, campos_editaveis=campos_editaveis)
+        return {"institucional": build_configuracao_context(), "plano": tx, "documento": self.documental(plano)}
+
+    def contexto(self, plano, *, modo, campos_editaveis):
+        from documentos.services.document_context import contexto_do_plano_trabalho
+
+        payload = self.payload_atual(plano)
+        return contexto_do_plano_trabalho(payload, payload["plano"], modo=modo, campos_editaveis=campos_editaveis)
 
     def rotulo(self, plano):
         return f"Plano de Trabalho {plano.numero_formatado}"
@@ -662,6 +856,14 @@ class VinculoPlano(VinculoBase):
 
     def url_pdf(self, plano):
         return reverse("viagens_planos:gerar", args=[plano.pk, "pdf"])
+
+    DESTINOS_DE_PENDENCIAS = (
+        (r"coordenador", "plano_coordenacao"),
+        (r"evento \d|ao menos um evento", "plano_eventos"),
+        (r"destino", "plano_local"),
+        (r"data", "plano_periodo"),
+        (r"efetivo|diárias", "plano_efetivo"),
+    )
 
     def pendencias(self, plano):
         from viagens_planos.services import avaliar_pendencias_documento
@@ -729,15 +931,33 @@ class VinculoRelatorio(VinculoBase):
     def variante_edicao(self, ps):
         return str(ps.servidor_id)
 
-    def contexto(self, ps, *, modo, campos_editaveis):
-        from documentos.services.document_context import contexto_do_relatorio_tecnico
+    def finalizado(self, ps):
+        return bool(ps.finalizada)
+
+    def payload_atual(self, ps, artefato=None):
         from viagens_prestacoes.services import build_relatorio_tecnico_context
 
-        tx = build_relatorio_tecnico_context(self.relatorio(ps), ps)
-        payload = dict(tx, documento=self.documental(ps))
-        contexto = contexto_do_relatorio_tecnico(payload, tx, modo=modo, campos_editaveis=campos_editaveis)
+        return dict(build_relatorio_tecnico_context(self.relatorio(ps), ps), documento=self.documental(ps))
+
+    def contexto(self, ps, *, modo, campos_editaveis):
+        from documentos.services.document_context import contexto_do_relatorio_tecnico
+
+        payload = self.payload_atual(ps)
+        contexto = contexto_do_relatorio_tecnico(payload, payload, modo=modo, campos_editaveis=campos_editaveis)
         contexto["ids"] = {"servidor": ps.servidor_id}
         return contexto
+
+    # Os modelos de texto do RT, por campo do relatório.
+    TEXTOS_PRONTOS = {
+        f"rt_{trecho}": (lambda campo: (lambda ps: _modelos_do_rt(campo)))(campo)
+        for trecho, campo in (("motivo", "motivo"), ("atividade", "atividade"), ("conclusao", "conclusao"),
+                              ("medidas", "medidas"), ("info", "info_complementares"))
+    }
+
+    def valores_para_textos(self, ps):
+        from viagens_prestacoes.services import valores_do_relatorio_tecnico
+
+        return valores_do_relatorio_tecnico(ps.prestacao)
 
     def rotulo(self, ps):
         return f"Relatório técnico – {ps.servidor.nome}"
@@ -789,13 +1009,19 @@ class VinculoDiario(VinculoBase):
     def dono_dos_blocos(self, ps):
         return ps.prestacao
 
-    def contexto(self, ps, *, modo, campos_editaveis):
-        from documentos.services.document_context import contexto_do_diario_bordo
+    def finalizado(self, ps):
+        return bool(ps.finalizada)
+
+    def payload_atual(self, ps, artefato=None):
         from viagens_prestacoes.diario_services import build_diario_bordo_context
 
         header, trechos = build_diario_bordo_context(ps.doc_diario)
-        payload = {"header": header, "trechos": trechos, "documento": self.documental(ps)}
-        return contexto_do_diario_bordo(payload, modo=modo, campos_editaveis=campos_editaveis)
+        return {"header": header, "trechos": trechos, "documento": self.documental(ps)}
+
+    def contexto(self, ps, *, modo, campos_editaveis):
+        from documentos.services.document_context import contexto_do_diario_bordo
+
+        return contexto_do_diario_bordo(self.payload_atual(ps), modo=modo, campos_editaveis=campos_editaveis)
 
     def rotulo(self, ps):
         return f"Diário de bordo – Ofício {ps.prestacao.oficio.numero_formatado}"
@@ -1118,7 +1344,7 @@ class FonteTermo(FonteBase):
 
 class FonteJustificativa(FonteBase):
     """O texto da justificativa do ofício, gravado pelo serviço do domínio
-    (que também atualiza a regra de prazo)."""
+    (que também atualiza a regra de prazo), e a data do documento."""
 
     def versao(self, oficio):
         return self.vinculo.versao(oficio)
@@ -1126,27 +1352,43 @@ class FonteJustificativa(FonteBase):
     def form(self, oficio, dados=None):
         from django import forms
 
+        from viagens_cadastros.models import Servidor
+
         class JustificativaTextoForm(forms.Form):
             texto = forms.CharField(label="Texto", widget=forms.Textarea, error_messages={"required": "Escreva a justificativa."})
+            data_documento = forms.DateField(label="Data do documento", required=False)
+            assinante = forms.ModelChoiceField(Servidor.objects.select_related("cargo").order_by("nome"), required=False,
+                                               label="Assinante", empty_label="Quem a configuração indica")
 
         return JustificativaTextoForm(dados)
 
     def dados_atuais(self, oficio):
         registro = self.vinculo.registro(oficio)
-        return {"texto": registro.texto if registro else ""}
+        return {"texto": registro.texto if registro else "", "data_documento": (registro.data_documento if registro else None) or "",
+                "assinante": (registro.assinante_id if registro else None) or ""}
 
     def gravar(self, form, nomes, oficio):
-        from viagens_oficios.justificativas_services import salvar_justificativa
+        from viagens_oficios.justificativas_services import get_or_create_justificativa_oficio, salvar_justificativa
 
         registro = self.vinculo.registro(oficio)
-        return salvar_justificativa(oficio, registro.modelo if registro else None, form.cleaned_data["texto"])
+        if "texto" in nomes:
+            registro = salvar_justificativa(oficio, registro.modelo if registro else None, form.cleaned_data["texto"])
+        if "data_documento" in nomes:
+            registro = registro or get_or_create_justificativa_oficio(oficio)
+            registro.data_documento = form.cleaned_data.get("data_documento") or None
+            registro.save(update_fields=["data_documento", "atualizado_em"])
+        if "assinante" in nomes:
+            registro = registro or get_or_create_justificativa_oficio(oficio)
+            registro.assinante = form.cleaned_data.get("assinante")
+            registro.save(update_fields=["assinante", "atualizado_em"])
+        return registro
 
     def links(self, definicao, oficio, alvo):
         return _link("Abrir o ofício", "viagens_oficios:editar", oficio.pk)
 
 
 class FonteOrdem(FonteBase):
-    CAMPOS = ("tipo_necessidade", "servidores", "data_evento_inicio", "data_evento_fim", "motivo")
+    CAMPOS = ("tipo_necessidade", "servidores", "data_evento_inicio", "data_evento_fim", "motivo", "data_documento", "assinante")
     # Tipos que a tela oferece; os demais só aparecem se a OS já os tem.
     TIPOS_NA_TELA = ("PADRAO", "OPERACAO_RETORNO_POSTERIOR", "CERIMONIAL_ANTECIPADO")
 
@@ -1172,7 +1414,7 @@ class FonteOrdem(FonteBase):
 
 class FontePlano(FonteBase):
     CAMPOS = ("contextualizacao", "coordenacao", "consideracao_final", "data_evento_inicio", "data_evento_fim",
-              "horario_atendimento", "atividades_selecionadas")
+              "horario_atendimento", "atividades_selecionadas", "data_documento", "assinante")
     # Texto automático de cada campo: o interruptor e quem o refaz.
     AUTOMATICOS = {
         "contextualizacao": ("contextualizacao_auto", "texto_padrao_contextualizacao"),
@@ -1347,13 +1589,14 @@ class FonteTrecho(FonteBase):
         }
 
     def versao(self, trecho):
-        return ""
+        # A linha tem versão própria (m125): o conflito é da linha, não do diário.
+        return _versao(trecho)
 
     def gravar(self, form, nomes, trecho):
         from viagens_prestacoes.models import DiarioBordo
 
         objeto = _gravar_recorte(form, nomes)
-        # A linha não tem versão; a do diário acompanha.
+        # A versão do diário acompanha a da linha.
         DiarioBordo.objects.filter(pk=trecho.diario_id).update(atualizado_em=_agora())
         return objeto
 

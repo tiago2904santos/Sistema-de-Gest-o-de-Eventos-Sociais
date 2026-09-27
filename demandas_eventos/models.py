@@ -55,6 +55,17 @@ class Palestrante(models.Model):
     """A aba PALESTRANTES da planilha."""
 
     nome = models.CharField("servidor", max_length=200)
+    # O palestrante da planilha é só um nome; ligado ao cadastro de Viagens, a
+    # mesma pessoa numa viagem e numa palestra no mesmo dia vira aviso de
+    # choque de agenda (core/conflitos.py, m130).
+    servidor = models.ForeignKey(
+        "viagens_cadastros.Servidor",
+        verbose_name="servidor no cadastro de Viagens",
+        on_delete=models.SET_NULL,
+        related_name="palestrantes_ascom",
+        blank=True,
+        null=True,
+    )
     municipio = models.ForeignKey(
         "cadastros.Municipio",
         verbose_name="município",

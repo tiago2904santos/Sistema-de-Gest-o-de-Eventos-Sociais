@@ -150,6 +150,11 @@ class Oficio(ModeloTemporal, ModeloCancelavel, OrigemLegado):
         related_name="oficios",
     )
 
+    # Quem assina só este ofício (m114); vazio, vale a configuração (e o
+    # substituto do período, pela data do ofício).
+    assinante = models.ForeignKey(
+        Servidor, on_delete=models.SET_NULL, null=True, blank=True, related_name="+", verbose_name="Assinante deste ofício",
+    )
     motorista = models.ForeignKey(
         Servidor,
         on_delete=models.SET_NULL,
@@ -454,6 +459,15 @@ class Justificativa(ModeloTemporal, OrigemLegado):
     primeira_saida_dt = models.DateTimeField(null=True, blank=True)
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_RASCUNHO)
+
+    # A data que sai no documento: nasce na primeira emissão e não muda mais
+    # sozinha (todas as vias saem com a mesma data); ajusta-se na folha.
+    data_documento = models.DateField("Data do documento", null=True, blank=True)
+    # Quem assina só esta justificativa (m114); vazio, vale a configuração.
+    assinante = models.ForeignKey(
+        "viagens_cadastros.Servidor", on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+        verbose_name="Assinante desta justificativa",
+    )
 
     def __str__(self):
         return f"Justificativa do Ofício {self.oficio.numero_formatado}"

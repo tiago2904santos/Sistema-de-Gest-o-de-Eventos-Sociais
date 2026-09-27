@@ -415,7 +415,10 @@ def nova_solicitacao(request):
             messages.error(request, "Corrija os campos destacados para continuar.")
             email_origem = preencher_por_email.origem_da_tela(request, "solicitacoes")
     else:
-        form = SolicitacaoForm()
+        # "Criar aqui" da Agenda (m135): ?inicio=&fim= já preenchem o período.
+        from core.periodo_url import iniciais_do_periodo
+
+        form = SolicitacaoForm(initial=iniciais_do_periodo(request.GET))
     contexto = _contexto_formulario(request, form)
     contexto["email_origem"] = email_origem
     contexto["titulo_pagina"] = "Nova Solicitação de Evento Social"

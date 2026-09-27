@@ -12,7 +12,9 @@ PREFIXO_PRESTACOES = "viagens_prestacoes"
 # Anexos das solicitações de evento: ofícios e documentos com dados pessoais
 # que sobraram de exclusões antigas, antes de o arquivo sair junto do registro.
 PREFIXO_SOLICITACOES = "solicitacoes"
-PREFIXOS = (PREFIXO_PRESTACOES, PREFIXO_SOLICITACOES)
+# Todas as pastas de `upload_to` (m128): os PDFs gerados e assinados, os
+# arquivos do Coffee Break, os pedidos de eventos e as solicitações de viagem.
+PREFIXOS = (PREFIXO_PRESTACOES, PREFIXO_SOLICITACOES, "documentos", "coffee_break", "demandas_eventos", "viagens")
 
 
 def _listar_arquivos(prefixo: str) -> Iterator[str]:

@@ -132,10 +132,10 @@ def _gravado(request, vinculo, objeto, *, versao=None, **extra):
     })
 
 
-def _conflito(versao_atual):
+def _conflito(versao_atual, mensagem=None):
     return JsonResponse({
         "ok": False, "conflito": True, "versao": versao_atual,
-        "mensagem": "Este documento foi alterado por outra pessoa desde que você o abriu. Recarregue para ver a versão atual.",
+        "mensagem": mensagem or "Este documento foi alterado por outra pessoa desde que você o abriu. Recarregue para ver a versão atual.",
     }, status=409)
 
 
@@ -162,13 +162,19 @@ def campo(request, tipo, pk, chave):
     corpo, erro = _corpo(request)
     if erro is not None:
         return erro
-    versao_lida = corpo.get("versao")
-    if versao_lida is not None and versao_lida != fonte.versao(alvo):
-        return _conflito(fonte.versao(alvo))
-
     valores = corpo.get("valores")
     if not isinstance(valores, dict) or not valores or set(valores) - set(definicao.nomes):
         return JsonResponse({"ok": False, "mensagem": "Valores fora do campo pedido."}, status=400)
+    # Versão antiga só é conflito se o que mudou desde então foi este mesmo
+    # campo (m125): outra pessoa mexendo em outro trecho não trava ninguém.
+    from .concorrencia import conflito, mensagem_do_conflito, registrar_mudanca
+
+    versao_lida = corpo.get("versao")
+    versao_antes = fonte.versao(alvo)
+    if versao_lida is not None:
+        detalhe = conflito(alvo, versao_lida, versao_antes, valores)
+        if detalhe is not None:
+            return _conflito(versao_antes, mensagem_do_conflito(detalhe, definicao.rotulo))
     dados = fonte.dados_atuais(alvo)
     try:
         for parte in definicao.partes:
@@ -199,6 +205,7 @@ def campo(request, tipo, pk, chave):
         return JsonResponse({"ok": False, "erros": erros, "outros_erros": []}, status=400)
     objeto = vinculo.carregar(objeto.pk, request.GET.get("v", ""))
     alvo = fonte.alvo(objeto, objeto_id, request.user)
+    registrar_mudanca(alvo, versao_antes, fonte.versao(alvo), list(valores), request.user)
     return _gravado(request, vinculo, objeto, versao=fonte.versao(alvo), avisos=outros)
 
 
@@ -256,15 +263,51 @@ def bloco(request, tipo, pk, chave):
     from documentos.services.modelos_texto import texto_vigente
 
     modelo = texto_vigente(vinculo.tipo, chave)
-    padrao = definicao.padrao if modelo is None else modelo
+    from documentos.services.document_blocks import preencher_institucionais
+
+    padrao = preencher_institucionais(definicao.padrao if modelo is None else modelo)
     iguais_ao_modelo = {padrao} | {padrao.replace("{assunto}", termo) for termo in ("autorização", "convalidação")}
     if not conteudo or conteudo in iguais_ao_modelo:
         restaurar(vinculo.tipo, dono, chave)
         editado = False
     else:
+        # A folha mostra o marcador já preenchido ("autorização"); quem edita o
+        # parágrafo devolve a palavra, e ela voltaria fixa. Vira marcador de
+        # novo, para seguir a data do ofício (autorização → convalidação) (m110).
+        conteudo = _devolver_marcadores(conteudo, definicao, vinculo.valores_dos_marcadores(objeto))
         gravar_override(vinculo.tipo, dono, chave, conteudo, request.user)
         editado = True
     return _gravado(request, vinculo, objeto, versao=versao_do_bloco(vinculo.tipo, dono, chave), editado=editado)
+
+
+@require_http_methods(["POST"])
+def presenca(request, tipo, pk):
+    """Quem está no documento (m125): o navegador avisa a cada 30 s que a
+    pessoa continua nele (`{"sair": true}` ao fechar) e recebe os nomes dos
+    outros que também estão, para a barra dizer "Fulana também está editando"."""
+    from .concorrencia import marcar_presenca
+
+    vinculo, objeto = _acesso(request, tipo, pk)
+    corpo, erro = _corpo(request)
+    if erro is not None:
+        return erro
+    outros = marcar_presenca(vinculo.chave, objeto.pk, request.user, variante=request.GET.get("v", ""), sair=bool(corpo.get("sair")))
+    return JsonResponse({"ok": True, "outros": outros})
+
+
+def _devolver_marcadores(conteudo, definicao, valores):
+    """Troca, no texto digitado, a primeira ocorrência do valor atual de cada
+    marcador do bloco pelo próprio marcador (`{assunto}`), quando o texto não
+    o traz escrito. Palavra inteira, sem distinguir maiúsculas."""
+    import re
+
+    for nome in definicao.campos:
+        valor = str(valores.get(nome) or "").strip()
+        marcador = "{" + nome + "}"
+        if not valor or marcador in conteudo:
+            continue
+        conteudo = re.sub(rf"(?<!\w){re.escape(valor)}(?!\w)", marcador, conteudo, count=1, flags=re.IGNORECASE)
+    return conteudo
 
 
 @require_http_methods(["PATCH"])
@@ -284,3 +327,75 @@ def quebra(request, tipo, pk, chave):
     request.auditoria_origem = "editor"
     ativa = definir_quebra(vinculo.tipo, vinculo.dono_dos_blocos(objeto), chave, corpo["ativa"], request.user)
     return _gravado(request, vinculo, objeto, ativa=ativa)
+
+
+@require_http_methods(["PATCH"])
+def paragrafo(request, tipo, pk, chave):
+    """Parágrafo extra num ponto registrado (m123): PATCH com o texto grava;
+    texto vazio apaga."""
+    from documentos.editor import blocos as registro_blocos
+    from documentos.services.document_blocks import definir_paragrafo
+
+    vinculo, objeto = _acesso(request, tipo, pk)
+    if registro_blocos.ponto_de_paragrafo(vinculo.tipo, chave) is None:
+        raise Http404("Ponto de parágrafo fora do registro.")
+    corpo, erro = _corpo(request)
+    if erro is not None:
+        return erro
+    valores = corpo.get("valores")
+    if not isinstance(valores, dict) or set(valores) != {"conteudo"} or isinstance(valores["conteudo"], (dict, list)):
+        return JsonResponse({"ok": False, "mensagem": "Esperava só o texto do parágrafo."}, status=400)
+    request.auditoria_origem = "editor"
+    texto = definir_paragrafo(vinculo.tipo, vinculo.dono_dos_blocos(objeto), chave, str(valores["conteudo"] or "")[:TAMANHO_MAXIMO_TEXTO], request.user)
+    return _gravado(request, vinculo, objeto, versao="", conteudo=texto)
+
+
+@require_http_methods(["GET"])
+def paginas(request, tipo, pk):
+    """Quantas páginas o PDF terá e se a letra foi reduzida (m124): o HTML
+    do documento como o PDF o recebe, paginado pelo mesmo motor. Cache curto
+    pelo conteúdo, para as gravações seguidas não refazerem a conta."""
+    import hashlib
+
+    from django.core.cache import cache
+
+    from documentos.services.exceptions import DocumentRendererUnavailable
+    from documentos.services.pdf_renderer import medir_paginas, renderizar_html, tipo_e_html_nativo
+
+    vinculo, objeto = _carregar_para_ver(request, tipo, pk)
+    if not tipo_e_html_nativo(vinculo.tipo):
+        return JsonResponse({"ok": False, "indisponivel": True})
+    html = renderizar_html(vinculo.tipo, vinculo.contexto(objeto, modo="pdf", campos_editaveis={}), modo="pdf")
+    chave = "editor-paginas:" + hashlib.sha256(html.encode("utf-8")).hexdigest()
+    medida = cache.get(chave)
+    if medida is None:
+        try:
+            medida = medir_paginas(html, tipo=vinculo.tipo)
+        except DocumentRendererUnavailable:
+            return JsonResponse({"ok": False, "indisponivel": True})
+        cache.set(chave, medida, 120)
+    return JsonResponse({"ok": True, **medida})
+
+
+def _carregar_para_ver(request, tipo, pk):
+    """Quem pode ver o documento (não só quem edita) mede as páginas."""
+    if not request.user.is_authenticated:
+        raise PermissionDenied
+    vinculo = vinculo_do_tipo(tipo)
+    if vinculo is None:
+        raise Http404
+    objeto = vinculo.carregar(pk, request.GET.get("v", ""))
+    if not vinculo.pode_ver(request.user):
+        raise PermissionDenied
+    return vinculo, objeto
+
+
+@require_http_methods(["GET"])
+def textos(request, tipo, pk, chave):
+    """Os textos prontos de um campo (m118): os modelos de motivo, de
+    justificativa e do relatório técnico, com os marcadores já trocados pelos
+    dados do documento. Campo sem modelos devolve a lista vazia."""
+    vinculo, objeto = _acesso(request, tipo, pk)
+    if registro.campo(vinculo.chave, chave) is None:
+        raise Http404("Campo fora do registro do editor.")
+    return JsonResponse({"ok": True, "textos": vinculo.textos_prontos(objeto, chave)})

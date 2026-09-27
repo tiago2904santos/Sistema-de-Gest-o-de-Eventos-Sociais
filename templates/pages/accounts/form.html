@@ -65,6 +65,13 @@
         <div class="section-card__corpo">
           {% include "components/v32/cartoes_escolha.html" with name="setores" tipo="checkbox" label="Setores autorizados" opcoes=opcoes_setores erros=erros.setores id_primeiro=True %}
           <p class="form-ajuda">Os módulos disponíveis são derivados dos setores selecionados. Deixe vazio apenas para usuários sem acesso operacional.</p>
+          {# O servidor de viagens que este usuário é: liga a pessoa à escala da Agenda (m134). #}
+          <div class="g-form g-form--2">
+            {% include "components/select.html" with name="servidor" label="Servidor correspondente" opcoes=opcoes_servidores selecionado=valores.servidor erros=erros.servidor pesquisavel=True placeholder="Nenhum" ajuda="O cadastro de servidor (módulo Viagens) desta pessoa: com ele, \"Minha agenda\" mostra onde ela está escalada." %}
+          </div>
+          {% if servidor_sugerido %}
+            <p class="form-ajuda">Sugerido pelo nome: <strong>{{ servidor_sugerido.nome }}</strong>. Confira antes de salvar.</p>
+          {% endif %}
         </div>
       </section>
 

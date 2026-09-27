@@ -79,11 +79,37 @@ class EditorDeCamposTests(CenarioOficioMixin, TestCase):
             self.patch(o, 'motivo', {'motivo': 'Diligência'})
             url_bloco = reverse('documentos:editor_bloco', args=['oficio', o.pk, 'declaracao_cartao'])
             self.client.patch(url_bloco, data=json.dumps({'versao': '', 'valores': {'conteudo': 'Parágrafo reescrito.'}}), content_type='application/json')
-        # O histórico mora no editor do documento, embutido no fim do formulário.
+        # O histórico mora no editor do documento, embutido no fim do formulário,
+        # em linguagem do documento: rótulo, de → para e "Voltar a este valor" (m116).
         r = self.client.get(reverse('documentos:editor_embutido', args=['oficio', o.pk]))
-        self.assertContains(r, 'Editor documental · motivo')
-        self.assertContains(r, 'Criação de bloco documental')
+        self.assertContains(r, 'Editor documental')
+        self.assertContains(r, 'Motivo da viagem:')
+        self.assertContains(r, '<s>Missão F4</s> → <b>Diligência</b>')
+        self.assertContains(r, 'Criação do texto do modelo')
+        self.assertContains(r, 'Declaração do cartão corporativo:')
         self.assertContains(r, 'Formulário')  # a criação do ofício, pela tela
+        self.assertContains(r, 'data-de-voltar=')
+        self.assertContains(r, '&quot;valores&quot;: {&quot;motivo&quot;: &quot;Missão F4&quot;}')
+        self.assertNotContains(r, 'Editor documental · motivo')
+
+    def test_historico_agrupa_a_mesma_digitacao_e_quem_so_le_nao_tem_voltar(self):
+        from documentos.editor.historico import historico_legivel
+        from documentos.editor.vinculos import vinculo_do_tipo
+        with self.captureOnCommitCallbacks(execute=True):
+            o = self.criar()
+            for texto in ('Dil', 'Dilig', 'Diligência'):
+                self.patch(o, 'motivo', {'motivo': texto})
+        vinculo = vinculo_do_tipo('oficio')
+        entradas = historico_legivel(vinculo, vinculo.historico(o), pode_editar=True)
+        motivo = entradas[0]
+        self.assertEqual(motivo['agrupados'], 3)
+        self.assertEqual(motivo['mudancas'][0]['rotulo'], 'Motivo da viagem')
+        self.assertEqual((motivo['mudancas'][0]['antes'], motivo['mudancas'][0]['depois']), ('Missão F4', 'Diligência'))
+        self.assertEqual(motivo['mudancas'][0]['voltar'], {'especie': 'campo', 'chave': 'motivo', 'origem': 'oficio', 'valores': {'motivo': 'Missão F4'}})
+        # Sem permissão de editar, o botão não existe; a criação do ofício é uma entrada só.
+        entradas = historico_legivel(vinculo, vinculo.historico(o), pode_editar=False)
+        self.assertTrue(all(m['voltar'] is None for e in entradas for m in e['mudancas']))
+        self.assertEqual(entradas[-1]['mudancas'][0]['rotulo'], 'Registro criado')
 
     def test_versao_antiga_e_409_e_nada_muda(self):
         o = self.criar()
@@ -199,6 +225,23 @@ class EditorDeCamposTests(CenarioOficioMixin, TestCase):
         o.save(update_fields=['cancelado', 'atualizado_em'])
         self.assertEqual(self.patch(o, 'motivo', {'motivo': 'x'}).status_code, 403)
 
+    def test_oficio_finalizado_ou_assinado_nao_se_edita_no_editor(self):
+        from django.core.files.base import ContentFile
+        from documentos.models import DocumentoArtefato, DocumentoAssinaturaVersao
+        o = self.criar()
+        o.status = o.STATUS_FINALIZADO
+        o.save(update_fields=['status', 'atualizado_em'])
+        self.assertEqual(self.patch(o, 'motivo', {'motivo': 'x'}).status_code, 403)
+        folha = self.client.get(reverse('documentos:editor_folha', args=['oficio', o.pk])).content.decode()
+        self.assertNotIn('data-doc-campo="motivo"', folha)
+        o.status = o.STATUS_GERADO
+        o.save(update_fields=['status', 'atualizado_em'])
+        self.assertEqual(self.patch(o, 'motivo', {'motivo': 'De novo'}).status_code, 200)
+        artefato = DocumentoArtefato.objects.create(tipo='oficio', formato='pdf', oficio=o, hash_sha256='0' * 64,
+                                                    arquivo=ContentFile(b'%PDF-1.4', name='o.pdf'))
+        DocumentoAssinaturaVersao.objects.create(artefato=artefato, arquivo=ContentFile(b'%PDF-1.4 a', name='a.pdf'), hash_sha256='1' * 64)
+        self.assertEqual(self.patch(o, 'motivo', {'motivo': 'x'}).status_code, 403)
+
 
 class FolhaNaRespostaTests(CenarioOficioMixin, TestCase):
     """A gravação já devolve a folha remontada, para o navegador trocar o
@@ -287,3 +330,50 @@ class RegistroDigitavelTests(TestCase):
         self.assertFalse(campos['servidores'].digitavel)
         self.assertFalse(campos['porte_transporte_armas'].digitavel)
         self.assertFalse(campos['data_criacao'].digitavel)
+
+
+class PendenciasNavegaveisTests(CenarioOficioMixin, TestCase):
+    """Cada pendência leva ao trecho que a resolve; as lacunas da folha são
+    marcadas para o atalho "Próximo campo vazio" (m117)."""
+
+    def test_pendencia_vira_botao_para_o_campo_e_lacuna_e_marcada(self):
+        from documentos.editor.vinculos import vinculo_do_tipo
+        o = self.criar()
+        type(o).objects.filter(pk=o.pk).update(motivo='', protocolo='')
+        o.refresh_from_db()
+        navegaveis = vinculo_do_tipo('oficio').pendencias_navegaveis(o)
+        self.assertEqual([(p['texto'], p['campo'], p['origem']) for p in navegaveis],
+                         [('Informe o protocolo.', 'protocolo', 'oficio'), ('Informe o motivo.', 'motivo', 'oficio')])
+        r = self.client.get(reverse('documentos:editor_embutido', args=['oficio', o.pk]))
+        self.assertContains(r, 'class="dc-aviso__ir" data-de-abrir="motivo" data-de-origem="oficio"')
+        self.assertContains(r, 'data-de-proximo-vazio')
+        # Sem quem assina, a folha traz a lacuna marcada para a navegação.
+        self.cfg.assinaturas.all().delete()
+        folha = self.client.get(reverse('documentos:editor_folha', args=['oficio', o.pk])).content.decode()
+        self.assertIn('data-doc-vazio="quem assina"', folha)
+
+
+class TextosProntosTests(CenarioOficioMixin, TestCase):
+    """Os modelos de texto do sistema dentro do editor (m118)."""
+
+    def test_endpoint_lista_os_modelos_do_campo_com_marcadores_trocados(self):
+        from viagens_oficios.models import ModeloMotivoOficio
+        o = self.criar()
+        ModeloMotivoOficio.objects.create(nome="COBERTURA", texto="Cobertura em {destino}, {periodo}.")
+        r = self.client.get(reverse("documentos:editor_textos", args=["oficio", o.pk, "motivo"]))
+        self.assertEqual(r.status_code, 200, r.content)
+        textos = r.json()["textos"]
+        self.assertEqual(textos[0]["nome"], "COBERTURA")
+        self.assertEqual(textos[0]["texto"], "Cobertura em LONDRINA/PR, 10/09/2026 a 11/09/2026.")
+        # Campo sem modelos: lista vazia; campo fora do registro: 404.
+        self.assertEqual(self.client.get(reverse("documentos:editor_textos", args=["oficio", o.pk, "protocolo"])).json()["textos"], [])
+        self.assertEqual(self.client.get(reverse("documentos:editor_textos", args=["oficio", o.pk, "nada"])).status_code, 404)
+        r = self.client.get(reverse("documentos:editor_embutido", args=["oficio", o.pk]))
+        self.assertContains(r, 'data-de-textos-campos="motivo"')
+        self.assertContains(r, "Inserir texto pronto")
+
+    def test_sem_modelos_o_menu_nao_aparece(self):
+        o = self.criar()
+        r = self.client.get(reverse("documentos:editor_embutido", args=["oficio", o.pk]))
+        self.assertContains(r, 'data-de-textos-campos=""')
+        self.assertNotContains(r, "Inserir texto pronto")

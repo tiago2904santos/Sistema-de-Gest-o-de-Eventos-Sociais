@@ -82,11 +82,39 @@ class BlocosDocumentaisTests(CenarioOficioMixin, TestCase):
         o = self.criar()
         self.patch_bloco(o, 'Texto alterado.')
         with mock.patch('viagens_oficios.document_generation.DocumentoFacade.gerar') as gerar:
+            # Sem artefato gravado: a via emitida (m113) não tem o que registrar.
+            gerar.return_value.artefato_id = None
             gerar_documento(o, DocumentoFormato.PDF)
         documento = gerar.call_args.kwargs['payload']['documento']
         self.assertEqual(documento['blocos']['declaracao_cartao']['conteudo'], 'Texto alterado.')
         self.assertTrue(documento['blocos']['declaracao_cartao']['editado'])
         self.assertEqual(documento['quebras'], [])
+
+    def test_abertura_editada_continua_seguindo_autorizacao_ou_convalidacao(self):
+        """m110: a palavra digitada volta a ser o marcador; mudou a data, muda a palavra."""
+        from datetime import date
+        from viagens_oficios.models import Oficio
+        o = self.criar()  # data 09/09 e saída 10/09: autorização
+        folha = self.folha(o)
+        self.assertIn('data-doc-marcador="assunto"', folha)
+        self.assertIn('contenteditable="false"', folha)
+        url = self.url_bloco(o, 'abertura')
+        versao = self.client.get(url).json()['versao']
+        texto = 'Senhor Delegado, com urgência solicito Autorização e medidas para a concessão de diárias, conforme abaixo:'
+        r = self.client.patch(url, data=json.dumps({'versao': versao, 'valores': {'conteudo': texto}}), content_type='application/json')
+        self.assertEqual(r.status_code, 200, r.content)
+        gravado = DocumentoBloco.objects.get(oficio=o, chave='abertura')
+        self.assertIn('solicito {assunto} e medidas', gravado.conteudo_atual)
+        self.assertIn('solicito autorização e medidas', self.html_pdf(o))
+        Oficio.objects.filter(pk=o.pk).update(data_criacao=date(2026, 9, 11))
+        o.refresh_from_db()
+        self.assertIn('solicito convalidação e medidas', self.html_pdf(o))
+        self.assertIn('solicito <span class="doc-marcador"', self.folha(o))
+        # Quem escreve o marcador à mão, ou apaga a palavra, é respeitado.
+        versao = self.client.get(url).json()['versao']
+        r = self.client.patch(url, data=json.dumps({'versao': versao, 'valores': {'conteudo': 'Solicito {assunto} já.'}}), content_type='application/json')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(DocumentoBloco.objects.get(oficio=o, chave='abertura').conteudo_atual, 'Solicito {assunto} já.')
 
     def test_quebra_de_pagina_so_em_ponto_registrado(self):
         o = self.criar()
@@ -138,3 +166,70 @@ class BlocosDocumentaisTests(CenarioOficioMixin, TestCase):
         self.assertEqual(self.client.get(self.url_bloco(o)).status_code, 403)
         self.assertEqual(self.patch_bloco(o, 'x', versao='').status_code, 403)
         self.assertEqual(self.client.patch(self.url_quebra(o, 'apos_roteiro'), data='{"ativa": true}', content_type='application/json').status_code, 403)
+
+
+class ParagrafoExtraTests(CenarioOficioMixin, TestCase):
+    """Parágrafo livre em ponto marcado do modelo (m123): sai no PDF e no
+    DOCX, entra no payload e some quando apagado."""
+
+    def url(self, o, chave):
+        return reverse('documentos:editor_paragrafo', args=['oficio', o.pk, chave])
+
+    def patch(self, o, chave, conteudo):
+        return self.client.patch(self.url(o, chave), data=json.dumps({'valores': {'conteudo': conteudo}}), content_type='application/json')
+
+    def folha(self, o):
+        return self.client.get(reverse('viagens_oficios:documento_folha', args=[o.pk])).content.decode()
+
+    def test_fenda_no_editor_e_nada_no_pdf_sem_texto(self):
+        o = self.criar()
+        folha = self.folha(o)
+        self.assertIn('data-doc-paragrafo-slot="antes_assinatura"', folha)
+        self.assertIn('data-doc-paragrafo-slot="apos_abertura"', folha)
+        self.assertNotIn('doc-paragrafo', renderizar_html(DocumentoTipo.OFICIO, contexto_do_oficio(o, modo='pdf'), modo='pdf'))
+
+    def test_paragrafo_gravado_sai_na_folha_no_pdf_no_payload_e_no_docx(self):
+        from io import BytesIO
+
+        from docx import Document
+
+        from documentos.services.types import DocumentoFormato
+        from viagens_oficios.document_generation import gerar_documento
+        o = self.criar()
+        self.assertEqual(self.patch(o, 'qualquer', 'x').status_code, 404)
+        r = self.patch(o, 'antes_assinatura', 'Solicito ainda <b>apoio</b>.\r\nSegunda linha.')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.json()['conteudo'], 'Solicito ainda <b>apoio</b>.\nSegunda linha.')
+        bloco = DocumentoBloco.objects.get(oficio=o, chave='antes_assinatura', tipo='paragrafo_extra')
+        self.assertEqual(bloco.editado_por, self.user)
+        folha = self.folha(o)
+        self.assertIn('<p data-doc-paragrafo="antes_assinatura" data-doc-digitavel="varias"', folha)
+        self.assertIn('Solicito ainda &lt;b&gt;apoio&lt;/b&gt;.<br>Segunda linha.', folha)
+        pdf = renderizar_html(DocumentoTipo.OFICIO, contexto_do_oficio(o, modo='pdf'), modo='pdf')
+        self.assertIn('<p class="doc-bloco doc-paragrafo-extra doc-oficio__abertura">Solicito ainda &lt;b&gt;apoio&lt;/b&gt;.<br>Segunda linha.</p>', pdf)
+        self.assertNotIn('data-doc', pdf)
+        with mock.patch('viagens_oficios.document_generation.DocumentoFacade.gerar') as gerar:
+            # Sem artefato gravado: a via emitida (m113) não tem o que registrar.
+            gerar.return_value.artefato_id = None
+            gerar_documento(o, DocumentoFormato.PDF)
+        self.assertEqual(gerar.call_args.kwargs['payload']['documento']['paragrafos'], {'antes_assinatura': 'Solicito ainda <b>apoio</b>.\nSegunda linha.'})
+        docx = gerar_documento(o, DocumentoFormato.DOCX).conteudo
+        textos = [p.text for p in Document(BytesIO(docx)).paragraphs]
+        self.assertIn('Solicito ainda <b>apoio</b>.\nSegunda linha.', textos)
+        # Texto vazio apaga o parágrafo; a fenda volta.
+        r = self.patch(o, 'antes_assinatura', '   ')
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(DocumentoBloco.objects.filter(oficio=o, tipo='paragrafo_extra').exists())
+        self.assertIn('data-doc-paragrafo-slot="antes_assinatura"', self.folha(o))
+
+    def test_historico_mostra_o_paragrafo_extra_com_voltar(self):
+        from documentos.editor.historico import historico_legivel
+        from documentos.editor.vinculos import vinculo_do_tipo
+        o = self.criar()
+        with self.captureOnCommitCallbacks(execute=True):
+            self.patch(o, 'apos_abertura', 'Frase a mais.')
+        vinculo = vinculo_do_tipo('oficio')
+        entrada = historico_legivel(vinculo, vinculo.historico(o), pode_editar=True)[0]
+        self.assertEqual(entrada['mudancas'][0]['rotulo'], 'Parágrafo extra · depois da abertura')
+        self.assertEqual(entrada['mudancas'][0]['depois'], 'Frase a mais.')
+        self.assertEqual(entrada['mudancas'][0]['voltar'], {'especie': 'paragrafo', 'chave': 'apos_abertura', 'valores': {'conteudo': ''}})

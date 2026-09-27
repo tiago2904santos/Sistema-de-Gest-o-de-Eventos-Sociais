@@ -58,7 +58,7 @@
       </div>
       <div class="frm-topo__acoes">
         {% if autosave_url %}<span class="autosave-estado" data-autosave-estado data-autosave-de="form-oficio" role="status" aria-live="polite"></span>{% endif %}
-        <button type="submit" form="form-oficio" name="acao" value="rascunho" class="btn btn--dourado btn-primaria">Salvar ofício</button>
+        {% if not fechado %}<button type="submit" form="form-oficio" name="acao" value="rascunho" class="btn btn--dourado btn-primaria">Salvar ofício</button>{% endif %}
       </div>
     </div>
 
@@ -68,7 +68,22 @@
       </div>
     {% endif %}
 
-    <form method="post" action="{% url 'viagens_oficios:editar' oficio.pk %}" id="form-oficio" class="editor-roteiro__principal" novalidate{% if autosave_url %} data-autosave-rascunho data-autosave-url="{{ autosave_url }}" data-autosave-model="oficio" data-autosave-id="{{ oficio.pk }}"{% endif %}>
+    {% if fechado %}
+      {# Finalizado ou com PDF assinado (m109): os campos ficam só para leitura até a reabertura, que pede o motivo. #}
+      <div class="aviso aviso--callout" role="status">
+        <div class="aviso__txt">{% include "components/icon.html" with nome="lock" %}<div class="aviso__corpo"><b>{{ fechado_rotulo }}: somente leitura</b>
+          <p>{% if fechado == 'assinado' %}Há um PDF assinado valendo para este ofício. Reabrir para correção revoga a versão assinada (ela fica no histórico) e libera a edição; o ofício corrigido precisa ser assinado de novo.{% else %}Para alterar o ofício, reabra-o para correção. O motivo fica registrado no histórico.{% endif %}</p>
+          <form method="post" action="{% url 'viagens_oficios:acao' oficio.pk 'reabrir' %}" class="ofc-reabrir g-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ url_atual }}">
+            {% include "components/input.html" with name="motivo" label="Motivo da reabertura" obrigatorio=True largura="6" placeholder="Ex.: corrigir a data da viagem" %}
+            <div class="form-campo form-campo--3"><button type="submit" class="btn--secundaria">{% include "components/icon.html" with nome="undo" %}Reabrir para correção</button></div>
+          </form>
+        </div></div>
+      </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'viagens_oficios:editar' oficio.pk %}" id="form-oficio" class="editor-roteiro__principal" novalidate{% if fechado %} data-ofc-fechado="1"{% endif %}{% if autosave_url %} data-autosave-rascunho data-autosave-url="{{ autosave_url }}" data-autosave-model="oficio" data-autosave-id="{{ oficio.pk }}"{% endif %}>
       {% csrf_token %}
       {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
@@ -303,7 +318,8 @@
           {# Ações no fim do último cartão, como no roteiro: voltar à esquerda, salvar à direita. Com pendência, o botão salva o rascunho; sem, finaliza. #}
           <div class="frm-acoes-fim">
             <a class="btn--secundaria" href="{{ url_voltar }}">Voltar</a>
-            {% if c.pendencias %}
+            {% if fechado %}
+            {% elif c.pendencias %}
               <button type="submit" class="btn btn--dourado btn-primaria" name="acao" value="rascunho">Salvar rascunho</button>
             {% else %}
               <button type="submit" class="btn btn--dourado btn-primaria" name="acao" value="finalizar">Finalizar Ofício</button>

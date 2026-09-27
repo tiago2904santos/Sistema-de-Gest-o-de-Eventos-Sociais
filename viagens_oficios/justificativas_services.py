@@ -43,7 +43,10 @@ def get_primeira_saida_oficio(oficio):
             dt = timezone.make_aware(dt, timezone.get_current_timezone())
         return dt
 
-    for trecho in roteiro.trechos.order_by("ordem", "pk"):
+    # m101: lê os trechos pré-carregados da lista em vez de consultar por ofício.
+    from .roteiro_context import trechos_do_roteiro
+
+    for trecho in trechos_do_roteiro(roteiro):
         if trecho.saida_dt:
             dt = trecho.saida_dt
             if timezone.is_naive(dt):

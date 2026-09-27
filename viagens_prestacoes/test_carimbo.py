@@ -281,3 +281,15 @@ class TelaDeAjusteTests(PrestacaoFixturesMixin, TestCase):
 
     def test_recarimbo_sem_anexo_nao_faz_nada(self):
         self.assertIsNone(carimbo_services.recarimbar_prestacao(self.prestacao))
+
+    def test_a_tela_de_ajuste_expoe_a_caixa_ao_teclado(self):
+        """m107: a caixa entra no Tab, com rótulo para o leitor de tela e a dica das teclas."""
+        cru = pdf_do_oficio([('Joao Da Silva', '')], com_numero=False)
+        PrestacaoDocumentoAnexo.objects.create(prestacao=self.prestacao, tipo=PrestacaoDocumentoAnexo.TIPO_OFICIO_ASSINADO, arquivo=SimpleUploadedFile('oficio.pdf', cru, content_type='application/pdf'), arquivo_original=SimpleUploadedFile('cru.pdf', cru, content_type='application/pdf'))
+        resposta = self.client.get(reverse('viagens_prestacoes:prestacao_carimbo_ajustar', args=[self.prestacao.pk]))
+        self.assertEqual(resposta.status_code, 200)
+        conteudo = resposta.content.decode()
+        self.assertIn('tabindex="0"', conteudo)
+        self.assertIn('aria-label="Número de JOAO DA SILVA, página 1"', conteudo)
+        self.assertIn('aria-describedby="carimbo-teclado"', conteudo)
+        self.assertIn('Tab seleciona a caixa, as setas movem', conteudo)

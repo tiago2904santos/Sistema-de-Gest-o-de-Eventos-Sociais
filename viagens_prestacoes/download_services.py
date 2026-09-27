@@ -38,7 +38,9 @@ def anexos_por_tipo(ps) -> dict[str, list]:
     (RT, comprovantes). Lista, e não um anexo por tipo: dois despachos ou três
     comprovantes entram todos — antes o último ganhava e os outros sumiam do download.
     """
-    compartilhados = list(ps.prestacao.documentos_anexos.filter(servidor_prestacao__isnull=True))
+    # m101: `.all()` reaproveita o `prefetch_related` da lista; o `.filter` de antes
+    # consultava o banco em todo cartão. O recorte por servidor fica em memória.
+    compartilhados = [anexo for anexo in ps.prestacao.documentos_anexos.all() if anexo.servidor_prestacao_id is None]
     individuais = list(ps.documentos_anexos.all())
     saida = {}
     for tipo in ORDEM_DOCUMENTOS_PRESTACAO:

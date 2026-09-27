@@ -11,8 +11,14 @@ compartilhado garante isso entre os workers) ele roda tudo o que é diário:
    aguardando despacho, devolução parada);
 2. os avisos da prestação de contas (saque, prazo, documentos, saídas e
    chegadas de viagem);
-3. o resumo do dia de cada usuário ativo: o que está pendente nos módulos
-   dele, no sino — a secretária dizendo "hoje você tem isto".
+3. o andamento dos processos no eProtocolo (m105): em que setor cada ofício
+   com prestação em aberto está, e o aviso quando chega ao setor do despacho;
+4. o resumo do dia de cada usuário ativo: o que está pendente nos módulos
+   dele, no sino — a secretária dizendo "hoje você tem isto";
+5. a pauta da semana por e-mail (`agenda.pauta`), toda segunda, para quem
+   ligou a opção — uma por semana, mesmo que saia na terça;
+6. a limpeza semanal de arquivos (`core.limpeza`): PDFs antigos, órfãos,
+   importações temporárias e sessões vencidas, com o resumo à administração.
 
 Cada rotina é idempotente (avisa uma vez só) e roda protegida: uma falha
 vira log e não impede as outras nem a página que a pessoa abriu. O comando
@@ -74,14 +80,21 @@ def _protegido(nome, funcao, *args):
 
 def rodar(hoje=None) -> None:
     """Todas as rotinas do dia, cada uma protegida da falha das outras."""
+    from agenda.pauta import enviar_pauta_semanal
+    from core.limpeza import rotina_semanal
     from solicitacoes.lembretes import enviar_lembretes
     from viagens_prestacoes.avisos import avisar_prazos, avisar_viagens
+    from viagens_prestacoes.protocolo_services import atualizar_protocolos
 
     hoje = hoje or timezone.localdate()
     _protegido("lembretes das solicitações", enviar_lembretes, hoje)
     _protegido("avisos da prestação de contas", avisar_prazos, hoje)
     _protegido("saídas e chegadas de viagem", avisar_viagens)
+    _protegido("andamento dos processos no eProtocolo", atualizar_protocolos, hoje)
     _protegido("resumo do dia", resumo_do_dia, hoje)
+    # A pauta da semana por e-mail (m136): uma vez por semana, para quem ligou.
+    _protegido("pauta semanal da agenda", enviar_pauta_semanal, hoje)
+    _protegido("limpeza de arquivos", rotina_semanal, hoje)
 
 
 def _linhas_do_resumo(usuario, hoje) -> list[str]:

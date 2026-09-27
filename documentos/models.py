@@ -71,6 +71,16 @@ class DocumentoArtefato(OrigemLegadoUUID):
         default="",
         help_text="Nome do arquivo enviado pelo usuário, para exibição.",
     )
+    # A via emitida (m113): o PDF que saiu do sistema na emissão do documento
+    # e que se reimprime igual depois, mesmo que os dados mudem. Numerada por
+    # documento (1 na primeira emissão; "Emitir nova versão" dá a seguinte).
+    # Nula nas gerações que não são via (prévia, cache, DOCX).
+    versao_emitida = models.PositiveIntegerField(null=True, blank=True)
+    emitida_em = models.DateTimeField(null=True, blank=True)
+    emitida_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="+",
+    )
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -134,6 +144,11 @@ class DocumentoAssinaturaVersao(OrigemLegadoUUID):
         blank=True,
         related_name="+",
     )
+    # O que o sistema leu do PDF ao anexar (m112): quem assinou e quando, e a
+    # conferência inteira (assinatura encontrada, avisos de número/protocolo/nome).
+    assinante_nome = models.CharField(max_length=255, blank=True, default="")
+    assinado_em_digital = models.DateTimeField(null=True, blank=True)
+    conferencia = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ["-criado_em"]
@@ -177,6 +192,8 @@ class DocumentoBloco(OrigemLegado):
     class Tipo(models.TextChoices):
         PARAGRAFO = "paragrafo", "Parágrafo"
         QUEBRA_PAGINA = "quebra_pagina", "Quebra de página"
+        # Parágrafo livre inserido num ponto marcado do modelo (m123).
+        PARAGRAFO_EXTRA = "paragrafo_extra", "Parágrafo extra"
 
     tipo_documento = models.CharField(max_length=64, db_index=True)
     oficio = models.ForeignKey("viagens_oficios.Oficio", on_delete=models.CASCADE, null=True, blank=True, related_name="blocos_documentais")

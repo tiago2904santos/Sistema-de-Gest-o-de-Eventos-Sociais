@@ -158,6 +158,9 @@ CAMPOS_OFICIO = (
     ), origem="configuracao", ajuda="Configuração do setor: muda em todos os documentos."),
     CampoEditavel("config_assinante", "Quem assina", (Parte("assina_oficio", "escolha", "Assina os ofícios"),), origem="configuracao",
                   ajuda="Nome e cargo saem do cadastro do servidor escolhido. Vale para todos os ofícios."),
+    CampoEditavel("assinante", "Quem assina este ofício", (Parte("assinante", "escolha", "Assinante deste ofício"),),
+                  ajuda="Só para este ofício. Vazio, assina quem a configuração indica para a data do ofício "
+                        "(o titular, ou o substituto do período)."),
     CampoEditavel("config_endereco", "Endereço da unidade", (
         Parte("cep", "texto", "CEP"),
         Parte("logradouro", "texto", "Logradouro"),
@@ -217,15 +220,25 @@ CAMPOS_TERMO = CAMPOS_COMUNS + CAMPOS_DO_SERVIDOR + CAMPOS_VIATURA + (
 # O termo tirado do ofício: data, destino e viatura são os do próprio ofício.
 CAMPOS_TERMO_OFICIO = CAMPOS_COMUNS + CAMPOS_DO_SERVIDOR + _do_oficio("roteiro", "transporte")
 
+_DATA_DOCUMENTO = "Nasce na primeira emissão e vale para todas as vias; antes disso, a folha mostra a data de hoje."
+_ASSINANTE_DOCUMENTO = ("Só para este documento. Vazio, assina quem a configuração indica para a data do documento "
+                        "(o titular, ou o substituto do período).")
+
 CAMPOS_JUSTIFICATIVA = CAMPOS_COMUNS + (
+    CampoEditavel("justificativa_data", "Data da justificativa", (Parte("data_documento", "data", "Data do documento"),),
+                  origem="documento", ajuda=_DATA_DOCUMENTO),
     CampoEditavel("justificativa_texto", "Texto da justificativa", (Parte("texto", "texto_longo", "Texto", linhas=10),),
                   origem="documento", ajuda="Cada linha é um parágrafo do documento."),
     _assinante("assina_justificativa", "Assina as justificativas"),
+    CampoEditavel("justificativa_assinante", "Quem assina esta justificativa", (Parte("assinante", "escolha", "Assinante"),),
+                  origem="documento", ajuda=_ASSINANTE_DOCUMENTO),
 )
 
 CAMPOS_ORDEM = CAMPOS_COMUNS + (
     CampoEditavel("config_sigla", "Sigla da unidade", (Parte("sigla_orgao", "texto", "Sigla"),), origem="configuracao", ajuda=_CONFIG),
     _assinante("assina_ordem_servico", "Assina as ordens de serviço"),
+    CampoEditavel("os_assinante", "Quem assina esta ordem de serviço", (Parte("assinante", "escolha", "Assinante"),),
+                  origem="documento", ajuda=_ASSINANTE_DOCUMENTO),
     CampoEditavel("os_tipo", "Tipo da ordem de serviço", (Parte("tipo_necessidade", "escolha", "Tipo"),), origem="documento",
                   ajuda="A referência, a determinação, as justificativas e a finalidade são o texto do modelo deste tipo."),
     CampoEditavel("os_equipe", "Equipe", (Parte("servidores", "escolha_multipla", "Servidores"),), origem="documento",
@@ -235,6 +248,8 @@ CAMPOS_ORDEM = CAMPOS_COMUNS + (
         Parte("data_evento_fim", "data", "Data final", ajuda="Vazia, vale a inicial."),
     ), origem="documento"),
     CampoEditavel("os_motivo", "Motivo", (Parte("motivo", "texto_longo", "Motivo"),), origem="documento"),
+    CampoEditavel("os_data", "Data da ordem de serviço", (Parte("data_documento", "data", "Data do documento"),),
+                  origem="documento", ajuda=_DATA_DOCUMENTO),
     CampoEditavel("os_destinos", "Destinos", (), origem="documento",
                   ajuda="Os municípios de destino se escolhem na ordem de serviço, por estado."),
     CampoEditavel("os_funcoes", "Atribuições da equipe", (), origem="documento",
@@ -243,6 +258,8 @@ CAMPOS_ORDEM = CAMPOS_COMUNS + (
 
 CAMPOS_PLANO = CAMPOS_COMUNS + (
     _assinante("assina_plano_trabalho", "Assina os planos de trabalho"),
+    CampoEditavel("plano_assinante", "Quem assina este plano", (Parte("assinante", "escolha", "Assinante"),),
+                  origem="documento", ajuda=_ASSINANTE_DOCUMENTO),
     CampoEditavel("plano_contextualizacao", "Breve contextualização", (Parte("contextualizacao", "texto_longo", "Texto", linhas=8),),
                   origem="documento", ajuda="Apagar o texto volta ao automático, feito do programa e do destino."),
     CampoEditavel("plano_coordenacao", "Coordenador do evento", (Parte("coordenacao", "texto_longo", "Texto", linhas=6),),
@@ -253,6 +270,8 @@ CAMPOS_PLANO = CAMPOS_COMUNS + (
         Parte("data_evento_inicio", "data", "Data inicial"),
         Parte("data_evento_fim", "data", "Data final"),
     ), origem="documento"),
+    CampoEditavel("plano_data", "Data do plano", (Parte("data_documento", "data", "Data do documento"),),
+                  origem="documento", ajuda=_DATA_DOCUMENTO),
     CampoEditavel("plano_horario", "Horário de atendimento", (Parte("horario_atendimento", "escolha", "Horário"),), origem="documento"),
     CampoEditavel("plano_atividades", "Atividades", (Parte("atividades_selecionadas", "escolha_multipla", "Atividades"),),
                   origem="documento", ajuda="Atividades, metas, recursos e a unidade móvel saem do catálogo de cada atividade."),

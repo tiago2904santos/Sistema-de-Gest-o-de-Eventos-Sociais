@@ -12,7 +12,13 @@ def _iniciais_nome_servidor(nome):
 def _destino_display_oficio(oficio):
     if not oficio.roteiro_id:
         return ""
-    destinos = list(oficio.roteiro.destinos.select_related("municipio__estado").order_by("ordem", "pk"))
+    roteiro = oficio.roteiro
+    # m101: a lista pré-carrega os destinos (com município e estado); `.filter`/
+    # `.order_by` ignorariam esse cache e fariam uma consulta por cartão.
+    if "destinos" in getattr(roteiro, "_prefetched_objects_cache", {}):
+        destinos = sorted(roteiro.destinos.all(), key=lambda d: (d.ordem, d.pk or 0))
+    else:
+        destinos = list(roteiro.destinos.select_related("municipio__estado").order_by("ordem", "pk"))
     return ", ".join(str(d.municipio) for d in destinos[:2]) + (f" +{len(destinos)-2}" if len(destinos)>2 else "")
 
 def _data_evento_display_oficio(oficio):
@@ -268,12 +274,15 @@ def _servidor_row(ps, solicitacao_form=None, prestacao_anexos=None, diario_pdf_u
 
 def apresentar_prestacao_servidor_card(
     ps, *, group_position="alone", solicitacao_form=None, configuracao=None,
-    menus_sob_demanda=True,
+    menus_sob_demanda=True, dados_oficio=None,
 ):
     """Monta o card de um único servidor, com cabeçalho do ofício compartilhado.
 
     ``group_position``: ``alone`` | ``start`` | ``middle`` | ``end`` — usado para
     agrupar visualmente cards consecutivos do mesmo ofício.
+
+    ``dados_oficio`` (m101): destino e período já calculados para a equipe
+    (`cartoes.dados_do_oficio`), para não refazê-los a cada servidor.
     """
     menus_src = ""
 
@@ -306,8 +315,12 @@ def apresentar_prestacao_servidor_card(
         except (AttributeError, TypeError, ValueError):
             data_criacao_display = ""
 
-    destino_display = _destino_display_oficio(oficio)
-    data_evento_display = _data_evento_display_oficio(oficio)
+    if dados_oficio is not None:
+        destino_display = dados_oficio["destino_display"]
+        data_evento_display = dados_oficio["data_evento_display"]
+    else:
+        destino_display = _destino_display_oficio(oficio)
+        data_evento_display = _data_evento_display_oficio(oficio)
     temporal_label, temporal_tone = _temporal_badge_oficio(oficio)
 
     veiculo_placa = ""

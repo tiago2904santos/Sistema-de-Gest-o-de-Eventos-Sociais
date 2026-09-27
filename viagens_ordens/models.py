@@ -59,6 +59,14 @@ class OrdemServico(ModeloTemporal, ModeloCancelavel, OrigemLegado):
     )
     data_evento_inicio = models.DateField("Data inicial do evento", null=True, blank=True)
     data_evento_fim = models.DateField("Data final do evento", null=True, blank=True)
+    # A data que sai no documento: nasce na primeira emissão e não muda mais
+    # sozinha (todas as vias saem com a mesma data); ajusta-se na folha.
+    data_documento = models.DateField("Data do documento", null=True, blank=True)
+    # Quem assina só esta OS (m114); vazio, vale a configuração (e o substituto do período).
+    assinante = models.ForeignKey(
+        "viagens_cadastros.Servidor", on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+        verbose_name="Assinante desta ordem de serviço",
+    )
     # Com ordem: a tela deixa arrastar os destinos, e o primeiro é o principal.
     destinos = models.ManyToManyField(
         "cadastros.Municipio", blank=True, related_name="ordens_servico", verbose_name="Destinos",

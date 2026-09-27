@@ -516,6 +516,26 @@ class ConfiguracaoSistema(ModeloTemporal, OrigemLegado):
 
     destinatario_oficio_unidade = models.CharField(max_length=255, blank=True, default="")
 
+    #: m105: o setor do eProtocolo que emite o despacho das diárias. Quando o
+    #: processo do ofício chega nele, a equipe recebe o aviso no sino.
+    setor_despacho_eprotocolo = models.CharField(
+        "Setor do despacho no eProtocolo", max_length=160, blank=True, default="",
+        help_text="Nome do setor, como aparece no eProtocolo. Quando o processo chega nele, a equipe é avisada.",
+    )
+
+    # Textos oficiais que estavam escritos no programa (m115): o Delegado-Geral
+    # da ordem de serviço e o cabeçalho/rodapé da ASCOM nos documentos do
+    # Coffee Break. Os valores iniciais são os que o código usava.
+    delegado_geral_nome = models.CharField("Delegado-Geral", max_length=120, blank=True, default="Silvio Jacob Rockembach")
+    ascom_cabecalho_unidade = models.CharField(
+        "Unidade no cabeçalho (Coffee Break)", max_length=160, blank=True, default="ASSESSORIA DE COMUNICAÇÃO SOCIAL")
+    ascom_rodape_endereco = models.CharField(
+        "Endereço no rodapé (Coffee Break)", max_length=255, blank=True,
+        default="Avenida Iguaçu, 470 – Rebouças – Curitiba/PR—CEP: 80.230-020")
+    ascom_rodape_contato = models.CharField(
+        "Contato no rodapé (Coffee Break)", max_length=255, blank=True,
+        default="Fone: (41) 3235-6477 – e-mail:  comunicacao@pc.pr.gov.br")
+
     def __str__(self):
         return "Configurações do sistema"
 
@@ -657,3 +677,55 @@ class AssinaturaConfiguracao(ModeloTemporal, OrigemLegado):
     class Meta:
         ordering = ["tipo", "ordem"]
         constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_assinaturaconfiguracao_origem"), models.UniqueConstraint(fields=["configuracao", "tipo", "ordem"], name="viagens_assinatura_ordem_unica")]
+
+
+class AssinaturaSubstituicao(ModeloTemporal, OrigemLegado):
+    """Assinante substituto por período (m114): férias ou afastamento do titular.
+
+    Os documentos datados dentro do período (a data do ofício, da OS, do plano
+    ou da justificativa) saem com o substituto, sem mexer na configuração
+    geral nem precisar desfazer depois. `fim` vazio é "até segunda ordem".
+    """
+
+    TODOS = "TODOS"
+    TIPO_CHOICES = [(TODOS, "Todos os documentos")] + AssinaturaConfiguracao.TIPO_CHOICES
+
+    configuracao = models.ForeignKey(ConfiguracaoSistema, on_delete=models.CASCADE, related_name="substituicoes_assinatura")
+    tipo = models.CharField("Documentos", max_length=30, choices=TIPO_CHOICES, default=TODOS)
+    servidor = models.ForeignKey(
+        Servidor, on_delete=models.CASCADE, related_name="+", verbose_name="Substituto",
+    )
+    inicio = models.DateField("Início")
+    fim = models.DateField("Fim", null=True, blank=True, help_text="Vazio: até ser encerrada.")
+    motivo = models.CharField("Motivo", max_length=120, blank=True, default="", help_text="Ex.: férias do titular.")
+    ativo = models.BooleanField("Ativa", default=True)
+
+    class Meta:
+        ordering = ["-inicio", "tipo"]
+        verbose_name = "Substituição de assinante"
+        verbose_name_plural = "Substituições de assinante"
+        constraints = [
+            models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_assinaturasubstituicao_origem"),
+            models.CheckConstraint(condition=models.Q(fim__isnull=True) | models.Q(fim__gte=models.F("inicio")), name="viagens_substituicao_periodo_ordenado"),
+        ]
+
+    def __str__(self):
+        return f"{self.servidor} — {self.periodo_display}"
+
+    @property
+    def periodo_display(self) -> str:
+        inicio = self.inicio.strftime("%d/%m/%Y") if self.inicio else "—"
+        return f"{inicio} a {self.fim:%d/%m/%Y}" if self.fim else f"a partir de {inicio}"
+
+    @property
+    def nome(self) -> str:
+        """O que a lista mostra como principal."""
+        return self.servidor.nome if self.servidor_id else "—"
+
+    def vigente_em(self, data) -> bool:
+        if not self.ativo or data is None or self.inicio is None:
+            return False
+        return self.inicio <= data and (self.fim is None or data <= self.fim)
+
+    def vale_para(self, tipo: str) -> bool:
+        return self.tipo == self.TODOS or self.tipo == tipo

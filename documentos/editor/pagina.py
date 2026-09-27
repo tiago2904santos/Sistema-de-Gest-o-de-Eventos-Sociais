@@ -19,8 +19,11 @@ from django.urls import reverse
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.http import require_GET
 
-from .blocos import quebras_do_tipo
+from documentos.services.pdf_renderer import tipo_e_html_nativo
+
+from .blocos import paragrafos_do_tipo, quebras_do_tipo
 from .campos import ORIGENS_POR_OBJETO, campos_do_tipo
+from .historico import historico_legivel
 from .vinculos import vinculo_do_tipo
 
 
@@ -47,15 +50,27 @@ def contexto_da_pagina(request, vinculo, objeto) -> dict:
             "rotulo_voltar": vinculo.rotulo_voltar,
             "url_pdf": vinculo.url_pdf(objeto),
             "pode_emitir": vinculo.pode_emitir(request.user, objeto),
-            "pendencias": vinculo.pendencias(objeto),
-            "historico": vinculo.historico(objeto),
+            # Cada pendência leva ao trecho que a resolve (m117).
+            "pendencias": vinculo.pendencias_navegaveis(objeto),
+            # Em linguagem do documento, agrupado por digitação, com "Voltar" (m116).
+            "historico": historico_legivel(vinculo, vinculo.historico(objeto), pode_editar=pode_editar),
             "url_folha": vinculo.url("folha", objeto),
-            "api": {especie: vinculo.url(especie, objeto, "CHAVE") for especie in ("campo", "bloco", "quebra")},
+            # Indicador de páginas do PDF (m124); vazio para os tipos que não saem do HTML.
+            "url_paginas": vinculo.url("paginas", objeto) if tipo_e_html_nativo(vinculo.tipo) else "",
+            "api": {especie: vinculo.url(especie, objeto, "CHAVE") for especie in ("campo", "bloco", "quebra", "textos", "paragrafo")},
+            # Campos com textos prontos para inserir (m118).
+            "textos_prontos": " ".join(vinculo.campos_com_textos(objeto)) if pode_editar else "",
+            "url_presenca": vinculo.url("presenca", objeto),
             "principais": " ".join(vinculo.principais),
             "versao": vinculo.versao(objeto),
             "pode_editar": pode_editar,
+            # Fechado para edição (versão assinada valendo ou registro finalizado) e o assinado que ficou para trás.
+            "fechado": vinculo.fechado(objeto),
+            "assinatura": vinculo.assinatura(objeto),
             "campos_menu": menu,
             "tem_quebras": bool(quebras_do_tipo(vinculo.tipo)),
+            # Pontos onde cabe um parágrafo livre (m123): o mesmo botão da barra os mostra.
+            "tem_paragrafos": bool(paragrafos_do_tipo(vinculo.tipo)),
             # Editor completo (m057): o documento inteiro, editado à mão.
             "url_completo": url_do_editor_completo(vinculo, objeto),
             "edicao_completa": situacao_da_edicao(vinculo, objeto),

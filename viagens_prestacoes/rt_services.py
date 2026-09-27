@@ -354,3 +354,161 @@ def criar_modelo_do_campo(campo: str, nome: str, texto: str):
         nome_final = f"{base} ({sufixo})"
         sufixo += 1
     return ModeloTextoRelatorioTecnico.objects.create(campo=campo, nome=nome_final, texto=texto)
+
+
+# ---------------------------------------------------------------------------
+# m103 — "Sugerir texto" para a conclusão e as medidas do RT.
+# ---------------------------------------------------------------------------
+#
+# Regra local, sem serviço externo: o rascunho é montado com modelos de frase em
+# português a partir do que o sistema já sabe — o evento (viagem ou motivo do
+# ofício), o destino e o período do roteiro, as atividades e os resultados do
+# plano de trabalho da mesma viagem e o que já está escrito no próprio RT. O texto
+# só volta para a tela; quem grava é o operador, depois de revisar.
+
+#: Os campos do RT que têm o botão "Sugerir texto".
+CAMPOS_SUGERIR_RT = ("conclusao", "medidas")
+
+
+def _contexto_da_viagem(prestacao) -> dict:
+    """Evento, destino, período e atividades, como frases prontas para os modelos."""
+    from viagens_oficios.presenters import periodo_curto
+    from viagens_oficios.roteiro_context import periodo_roteiro
+    from viagens_roteiros.presenters import rotulo_cidade
+
+    oficio = prestacao.oficio
+    viagem = oficio.viagem if getattr(oficio, "viagem_id", None) else None
+    roteiro = oficio.roteiro if getattr(oficio, "roteiro_id", None) else None
+
+    destinos = []
+    if roteiro is not None:
+        destinos = [rotulo_cidade(d.municipio) for d in roteiro.destinos.all() if d.municipio_id]
+    if not destinos and viagem is not None and viagem.destino_municipio_id:
+        destinos = [rotulo_cidade(viagem.destino_municipio)]
+    destinos = list(dict.fromkeys(destinos))
+    if len(destinos) > 3:
+        destino = ", ".join(destinos[:3]) + f" e mais {len(destinos) - 3}"
+    else:
+        destino = _listar(destinos)
+
+    periodo = periodo_curto(*periodo_roteiro(roteiro)) if roteiro is not None else ""
+    if not periodo and viagem is not None and viagem.data_inicio:
+        inicio, fim = viagem.data_inicio, viagem.data_fim or viagem.data_inicio
+        periodo = f"{inicio:%d/%m/%Y}" if inicio == fim else f"{inicio:%d/%m} a {fim:%d/%m/%Y}"
+
+    atividades, realizados = [], []
+    plano = plano_da_prestacao(prestacao)
+    if plano is not None:
+        from viagens_planos.resultados import linhas_de_resultado
+
+        for linha in linhas_de_resultado(plano):
+            atividades.append(linha["atividade"].nome)
+            if linha["realizado"] is not None:
+                realizados.append(f"{linha['atividade'].nome}: {linha['realizado']}")
+    return {
+        "evento": normalize_spaces((viagem.titulo if viagem else "") or ""),
+        "motivo": normalize_spaces(oficio.motivo or ""),
+        "destino": destino,
+        "periodo": periodo,
+        "atividades": atividades,
+        "realizados": realizados,
+    }
+
+
+def _listar(itens, maximo=4) -> str:
+    """"a, b e c" — e "a, b, c e outras 2" quando a lista é longa."""
+    itens = [normalize_spaces(i or "") for i in itens if normalize_spaces(i or "")]
+    if not itens:
+        return ""
+    if len(itens) > maximo:
+        return ", ".join(itens[:maximo]) + f" e outras {len(itens) - maximo}"
+    if len(itens) == 1:
+        return itens[0]
+    return ", ".join(itens[:-1]) + f" e {itens[-1]}"
+
+
+def _frase(texto) -> str:
+    """Primeira letra maiúscula e ponto final, sem dobrar a pontuação."""
+    texto = normalize_spaces(texto or "")
+    if not texto:
+        return ""
+    texto = texto[0].upper() + texto[1:]
+    return texto if texto[-1] in ".!?" else texto + "."
+
+
+def _onde_e_quando(ctx) -> str:
+    partes = []
+    if ctx["destino"]:
+        partes.append(f"em {ctx['destino']}")
+    if ctx["periodo"]:
+        partes.append(("no período de " if " a " in ctx["periodo"] else "no dia ") + ctx["periodo"])
+    return ", ".join(partes)
+
+
+def _sugerir_conclusao(ctx, textos) -> str:
+    if ctx["evento"]:
+        abertura = f"a participação no evento “{ctx['evento']}”"
+    elif ctx["motivo"]:
+        abertura = f"a viagem para {ctx['motivo'][0].lower() + ctx['motivo'][1:]}"
+    else:
+        abertura = "a viagem"
+    onde = _onde_e_quando(ctx)
+    frases = [_frase(f"{abertura}{', ' + onde if onde else ''}, foi realizada conforme o planejado")]
+    if ctx["realizados"]:
+        frases.append(_frase(f"foram realizados: {'; '.join(ctx['realizados'])}"))
+    elif ctx["atividades"]:
+        frases.append(_frase(f"as atividades previstas no plano de trabalho ({_listar(ctx['atividades'])}) foram desenvolvidas"))
+    objetivo = normalize_spaces(textos.get("atividade") or "")
+    if objetivo and len(objetivo) <= 160 and not ctx["realizados"]:
+        frases.append(_frase(f"o objetivo da participação — {objetivo.rstrip('.')} — foi atingido"))
+    elif objetivo:
+        frases.append("O objetivo da participação foi atingido.")
+    frases.append("Não houve intercorrências que comprometessem os resultados.")
+    return " ".join(frases)
+
+
+#: Palavras na conclusão que pedem acompanhamento nas medidas.
+_SINAIS_DE_PENDENCIA = ("pendên", "pendente", "não foi possível", "não pôde", "faltou", "faltaram", "intercorrência", "problema", "dificuldade")
+
+
+def _sugerir_medidas(ctx, textos) -> str:
+    if ctx["evento"]:
+        referencia = f"do evento “{ctx['evento']}”"
+    else:
+        referencia = "da viagem" + (f" a {ctx['destino']}" if ctx["destino"] else "")
+    itens = [f"registrar e divulgar internamente os resultados {referencia}"]
+    if ctx["atividades"]:
+        itens.append(f"dar seguimento às demandas identificadas durante as atividades ({_listar(ctx['atividades'], maximo=3)})")
+    else:
+        itens.append("dar seguimento às demandas identificadas durante a viagem")
+    conclusao = normalize_spaces(textos.get("conclusao") or "").lower()
+    if any(sinal in conclusao for sinal in _SINAIS_DE_PENDENCIA):
+        itens.append("acompanhar a pendência apontada na conclusão até a sua solução")
+    if ctx["destino"]:
+        itens.append(f"avaliar a necessidade de novas ações em {ctx['destino']}, conforme a demanda da unidade")
+    else:
+        itens.append("avaliar a necessidade de novas ações, conforme a demanda da unidade")
+    return f"Recomenda-se ao órgão: {'; '.join(itens)}. Não há outras medidas a adotar além da prestação de contas das diárias."
+
+
+def sugerir_texto_rt(prestacao, campo: str, rascunho=None) -> str:
+    """O rascunho da conclusão ou das medidas do RT, montado por regra local.
+
+    `rascunho` é o que está na tela agora (os campos de texto do RT, ainda não
+    gravados); sem ele, vale o que está salvo. Levanta `ValueError` para um
+    campo que não tem sugestão. Nunca grava.
+    """
+    if campo not in CAMPOS_SUGERIR_RT:
+        raise ValueError("Este campo não tem sugestão de texto.")
+    try:
+        relatorio = prestacao.relatorio_tecnico
+    except RelatorioTecnico.DoesNotExist:
+        relatorio = None
+    textos = {c: (getattr(relatorio, c, "") or "") for c in CAMPOS_TEXTO_RT}
+    for c, valor in (rascunho or {}).items():
+        if c in textos and valor is not None:
+            textos[c] = str(valor)
+    ctx = _contexto_da_viagem(prestacao)
+    if campo == "conclusao":
+        return _sugerir_conclusao(ctx, textos)
+    return _sugerir_medidas(ctx, textos)

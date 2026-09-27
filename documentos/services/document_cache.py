@@ -41,12 +41,35 @@ def canonical_json_blob(data: Mapping[str, Any] | None) -> str:
     return json.dumps(data, sort_keys=True, separators=(",", ":"), default=_json_default)
 
 
+# Impressão digital por arquivo, memorizada neste processo: (caminho, mtime,
+# tamanho) → SHA-256 do conteúdo. Editar o arquivo muda mtime e refaz o hash;
+# um deploy (git pull, tar) que só reescreve o arquivo igual não muda nada.
+_impressoes: dict[tuple[str, int, int], str] = {}
+
+
+def _nome_estavel(path: Path) -> str:
+    """O caminho relativo ao projeto: a chave não pode depender de onde o
+    sistema foi instalado (m127), senão todo deploy invalidaria o cache."""
+    try:
+        return path.resolve().relative_to(Path(settings.BASE_DIR).resolve()).as_posix()
+    except ValueError:
+        return path.name
+
+
 def _file_fp(path: Path) -> str:
     try:
         st = path.stat()
-        return f"{path.resolve()}:{st.st_mtime_ns}:{st.st_size}"
     except OSError:
-        return f"{path}:missing"
+        return f"{_nome_estavel(path)}:missing"
+    chave = (str(path.resolve()), st.st_mtime_ns, st.st_size)
+    digest = _impressoes.get(chave)
+    if digest is None:
+        try:
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+        except OSError:
+            return f"{_nome_estavel(path)}:missing"
+        _impressoes[chave] = digest
+    return f"{_nome_estavel(path)}:{digest}"
 
 
 def _caminho_do_html(nome: str) -> Path:
@@ -155,7 +178,10 @@ def get_cached_document_artifact(
     formato: DocumentoFormato,
     cache_key: str,
 ) -> DocumentoArtefato | None:
-    # Sem tenancy: as FKs opcionais e o criador definem o contexto do cache.
+    # Sem tenancy: as FKs opcionais definem o contexto do cache. O criador
+    # não entra (m127): o mesmo documento com os mesmos dados é um só para
+    # todos — os dados institucionais do setor já estão no payload, logo na
+    # chave; `criado_por` fica só como informação de quem gerou.
     if not cache_key or not getattr(settings, "DOCUMENTOS_ARTIFACT_CACHE", True):
         return None
     try:
@@ -165,7 +191,7 @@ def get_cached_document_artifact(
             "cache_key": cache_key,
         }
         filters.update(
-            roteiro_id=roteiro_id, oficio_id=oficio_id, termo_id=termo_id, prestacao_id=prestacao_id, servidor_id=servidor_id, criado_por_id=criado_por_id,
+            roteiro_id=roteiro_id, oficio_id=oficio_id, termo_id=termo_id, prestacao_id=prestacao_id, servidor_id=servidor_id,
             ordem_servico_id=ordem_servico_id, plano_trabalho_id=plano_trabalho_id,
         )
         art = DocumentoArtefato.objects.filter(**filters).order_by("-criado_em").first()

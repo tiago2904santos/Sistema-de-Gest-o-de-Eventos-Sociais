@@ -49,6 +49,9 @@ def precisa_regerar(artefato, *, assinado: bool) -> bool:
         return False
     if artefato.engine == MOTOR_ATUAL:
         return False
+    # A via emitida (m113) é o que saiu: reimprime-se igual, nunca refeita.
+    if getattr(artefato, "versao_emitida", None):
+        return False
     if artefato.tipo not in _REGERADORES:
         return False
     from documentos.services.pdf_renderer import tipo_e_html_nativo

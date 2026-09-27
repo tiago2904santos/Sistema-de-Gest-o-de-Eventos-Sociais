@@ -46,6 +46,14 @@ class PrestacaoContas(OrigemLegado):
     roteiro_ajustado = models.ForeignKey('viagens_roteiros.Roteiro', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     despacho_assinado = ArquivoPrivadoField('Despacho assinado do ofício', upload_to=prestacao_documento_upload_to, blank=True, validators=[FileExtensionValidator(PRESTACAO_DOCUMENTO_EXTENSOES)])
     observacoes = models.TextField(blank=True, default='')
+    #: m105: onde o processo do ofício está no eProtocolo, pela última consulta
+    #: (diária, em `core/rotinas.py`, ou pelo botão "Atualizar"). Em modo simulado
+    #: (a integração real não está configurada) `protocolo_simulado` marca o dado.
+    protocolo_situacao = models.CharField('Situação no eProtocolo', max_length=60, blank=True, default='')
+    protocolo_local = models.CharField('Setor atual no eProtocolo', max_length=160, blank=True, default='')
+    protocolo_movimentado_em = models.DateTimeField('Última movimentação no eProtocolo', null=True, blank=True)
+    protocolo_consultado_em = models.DateTimeField('Consultado no eProtocolo em', null=True, blank=True)
+    protocolo_simulado = models.BooleanField('Consulta simulada', default=False)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
 
@@ -454,6 +462,9 @@ class DiarioBordoTrecho(OrigemLegado):
     km_inicial = models.PositiveIntegerField(null=True, blank=True)
     km_final = models.PositiveIntegerField(null=True, blank=True)
     abastecimento = models.BooleanField(null=True, blank=True)
+    # A versão da linha no editor documental (m125): duas pessoas no mesmo
+    # trecho não se sobrescrevem sem aviso.
+    atualizado_em = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['diario', 'ordem', 'pk']
@@ -475,15 +486,25 @@ class ModeloTextoRelatorioTecnico(OrigemLegado):
     campo = models.CharField(max_length=30, choices=CAMPO_CHOICES, db_index=True)
     nome = models.CharField(max_length=120)
     texto = models.TextField()
+    # Um padrão por campo (m118): entra sozinho no relatório novo, com os
+    # marcadores ({destino}, {periodo}, {motivo}...) trocados pelos dados do ofício.
+    is_padrao = models.BooleanField('usar como padrão do campo', default=False)
 
     class Meta:
         ordering = ['campo', 'nome']
         verbose_name = 'Modelo de texto do RT'
         verbose_name_plural = 'Modelos de texto do RT'
-        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_modelotextorelatoriotecnico_origem"), models.UniqueConstraint(fields=['campo', 'nome'], name='unique_modelo_texto_rt_campo_nome')]
+        constraints = [models.UniqueConstraint(fields=["legado_origem", "legado_pk"], condition=models.Q(legado_pk__isnull=False), name="f6_modelotextorelatoriotecnico_origem"), models.UniqueConstraint(fields=['campo', 'nome'], name='unique_modelo_texto_rt_campo_nome'),
+                       models.UniqueConstraint(fields=['campo'], condition=models.Q(is_padrao=True), name='viagens_rt_modelo_padrao_por_campo')]
 
     def __str__(self):
         return f'{self.get_campo_display()} — {self.nome}'
+
+    def save(self, *args, **kwargs):
+        if self.is_padrao:
+            # O padrão anterior do mesmo campo sai, senão a gravação estoura na restrição.
+            ModeloTextoRelatorioTecnico.objects.filter(campo=self.campo, is_padrao=True).exclude(pk=self.pk).update(is_padrao=False)
+        super().save(*args, **kwargs)
 
 
 def _token_do_link() -> str:

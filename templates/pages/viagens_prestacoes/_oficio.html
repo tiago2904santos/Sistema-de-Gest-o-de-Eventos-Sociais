@@ -15,6 +15,14 @@
       <li><span class="pc-oficio__rotulo">Destino</span>{{ g.oficio.destino|default:"—" }}</li>
       <li><span class="pc-oficio__rotulo">Período</span>{{ g.oficio.periodo|default:"—" }}</li>
       <li><span class="pc-oficio__rotulo">Por servidor</span>{% if g.valor_por_servidor %}{{ g.valor_por_servidor }}{% if g.quantidade_diarias %} <span class="pc-oficio__qtd">{{ g.quantidade_diarias }}</span>{% endif %}{% else %}—{% endif %}</li>
+      {# m105: em que setor o processo está no eProtocolo (consulta diária ou "Atualizar"). Em modo simulado o dado é fictício, e diz. #}
+      {% if g.protocolo.tem_protocolo %}
+        <li class="pc-oficio__processo{% if g.protocolo.no_setor_do_despacho %} pc-oficio__processo--despacho{% endif %}" data-protocolo-andamento{% if g.protocolo.consultado_em %} title="Consultado em {{ g.protocolo.consultado_em }}{% if g.protocolo.situacao %} · {{ g.protocolo.situacao }}{% endif %}"{% endif %}>
+          <span class="pc-oficio__rotulo">Processo em</span>
+          {% if g.protocolo.consultado %}{{ g.protocolo.local|default:"setor não informado" }}{% if g.protocolo.desde %} <span class="pc-oficio__qtd">desde {{ g.protocolo.desde }}</span>{% endif %}{% if g.protocolo.simulado %} <span class="st st--aguardando" title="A integração real com o eProtocolo não está configurada: este dado é fictício.">SIMULADO</span>{% endif %}{% else %}<span class="pc-oficio__qtd">ainda não consultado</span>{% endif %}
+          {% if pode_editar %}<form method="post" action="{{ g.protocolo.atualizar_url }}" class="pc-oficio__atualizar">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}"><button type="submit" class="ib-linha" aria-label="Atualizar o andamento do processo do ofício {{ g.oficio.numero }} no eProtocolo" title="Atualizar no eProtocolo">{% include "components/icon.html" with nome="redo" %}</button></form>{% endif %}
+        </li>
+      {% endif %}
     </ul>
     {# Ações da prestação do ofício: abrir a prestação e o ofício, e finalizar ou arquivar a equipe toda. #}
     <div class="pc-oficio__acoes dd of-menu cad-acoes" data-menu>

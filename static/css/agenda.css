@@ -10,6 +10,12 @@
   --ag-solicitacao: var(--in-t);  --ag-solicitacao-t: #fff;
   --ag-coffee: var(--ok-t);       --ag-coffee-t: #fff;
   --ag-demanda: var(--wn-t);      --ag-demanda-t: #fff;
+  /* Prazos e pautas (agenda/prazos.py): datas-limite, não compromissos. Um
+     tom neutro por padrão; o que vence em breve fica em aviso e o vencido em
+     vermelho, pelas classes ag-prazo--proximo / ag-prazo--vencido. */
+  --ag-prazo: var(--nt-b);        --ag-prazo-t: var(--grafite); --ag-prazo-r: var(--nt-t);
+  --ag-prazo-proximo: var(--wn-b); --ag-prazo-proximo-r: var(--wn-t);
+  --ag-prazo-vencido: var(--dg-b); --ag-prazo-vencido-r: var(--dg-t); --ag-prazo-vencido-t: var(--dg-t);
 }
 
 /* Cabeçalho do calendário ------------------------------------------------ */
@@ -49,6 +55,8 @@
 .ag-chip--solicitacao .ag-chip__pt { background: var(--ag-solicitacao); }
 .ag-chip--coffee .ag-chip__pt { background: var(--ag-coffee); }
 .ag-chip--demanda .ag-chip__pt { background: var(--ag-demanda); }
+.ag-chip--prazo_diarias .ag-chip__pt, .ag-chip--imprensa .ag-chip__pt, .ag-chip--pauta .ag-chip__pt,
+.ag-chip--contratos .ag-chip__pt, .ag-chip--certidoes .ag-chip__pt { background: var(--ag-prazo); border: 2px solid var(--ag-prazo-r); }
 .ag-chip--enc .ag-chip__t { text-decoration: line-through; color: var(--rotulo); }
 .ag-chip:not(:has(input:checked)) .ag-chip__pt { opacity: .35; }
 .ag-sel, .ag-busca { width: 100%; height: 38px; border: 1px solid var(--nt-r); border-radius: 8px; padding: 0 10px; font: inherit; background: var(--branco); color: var(--grafite); }
@@ -99,14 +107,35 @@
 /* Compromissos: faixa sólida, texto claro, cor da fonte. */
 .fc .fc-event { border: 0; border-radius: 4px; padding: 2px 7px; font-size: .78rem; line-height: 1.35; cursor: pointer; box-shadow: none; }
 .fc .fc-event .fc-event-title, .fc .fc-event .fc-event-main { font-weight: 600; }
-.fc .fc-daygrid-block-event .fc-event-time { display: none; }
+/* A hora de quem tem hora (m132), antes do título, sem roubar a linha inteira. */
+.fc .fc-daygrid-block-event .fc-event-time { display: inline; font-weight: 500; margin-right: 4px; opacity: .85; }
 .fc .ag-viagem { --fc-event-bg-color: var(--ag-viagem); --fc-event-border-color: var(--ag-viagem); --fc-event-text-color: var(--ag-viagem-t); }
 .fc .ag-solicitacao { --fc-event-bg-color: var(--ag-solicitacao); --fc-event-border-color: var(--ag-solicitacao); --fc-event-text-color: var(--ag-solicitacao-t); }
 .fc .ag-coffee { --fc-event-bg-color: var(--ag-coffee); --fc-event-border-color: var(--ag-coffee); --fc-event-text-color: var(--ag-coffee-t); }
 .fc .ag-demanda { --fc-event-bg-color: var(--ag-demanda); --fc-event-border-color: var(--ag-demanda); --fc-event-text-color: var(--ag-demanda-t); }
+/* Prazos: faixa clara com borda à esquerda, para não se confundir com um
+   compromisso; o vencido fica em vermelho e o que vence em 7 dias em aviso. */
+.fc .ag-prazo { --fc-event-bg-color: var(--ag-prazo); --fc-event-border-color: var(--ag-prazo-r); --fc-event-text-color: var(--ag-prazo-t); border-left: 3px solid var(--fc-event-border-color); }
+.fc .ag-prazo .fc-event-title { font-weight: 500; }
+.fc .ag-prazo--proximo { --fc-event-bg-color: var(--ag-prazo-proximo); --fc-event-border-color: var(--ag-prazo-proximo-r); }
+.fc .ag-prazo--vencido { --fc-event-bg-color: var(--ag-prazo-vencido); --fc-event-border-color: var(--ag-prazo-vencido-r); --fc-event-text-color: var(--ag-prazo-vencido-t); }
+.fc .ag-prazo--vencido .fc-event-title { font-weight: 700; }
 .fc .fc-event:hover { filter: brightness(1.06); }
+/* Choque de agenda (m130): moldura vermelha, sem trocar a cor da fonte. */
+.fc .fc-event.ag-conflito { box-shadow: inset 0 0 0 2px var(--dg-t); }
+.fc .fc-event.ag-conflito .fc-event-title::before { content: "⚠ "; }
+.fc .fc-list-event.ag-conflito .fc-list-event-title a { color: var(--dg-t); font-weight: 600; }
+.ag-linhas--conflito li { background: var(--dg-b); border-color: var(--dg-r); }
+.ag-linhas--conflito a { color: var(--dg-t); text-decoration: none; }
+.ag-linhas--conflito a:hover { text-decoration: underline; }
 .fc .ag-encerrado { --fc-event-bg-color: var(--nt-r); --fc-event-border-color: var(--nt-r); --fc-event-text-color: var(--nt-t); }
 .fc .ag-encerrado .fc-event-title, .fc .ag-encerrado .fc-list-event-title a { text-decoration: line-through; font-weight: 500; }
+/* Feriados (m138): faixa de fundo no dia, com o nome pequeno no rodapé da célula. */
+.fc .fc-bg-event.ag-feriado { --fc-bg-event-color: var(--wn-t); --fc-bg-event-opacity: .14; position: relative; }
+.fc .fc-bg-event.ag-feriado--municipal { --fc-bg-event-color: var(--in-t); }
+.ag-feriado__nome { position: absolute; left: 4px; right: 4px; bottom: 2px; font-size: .66rem; line-height: 1.2; color: var(--nt-t); opacity: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.fc .fc-timegrid .ag-feriado__nome { top: 4px; bottom: auto; }
+.ag-chip--feriado .ag-chip__pt { background: var(--wn-b); border: 2px solid var(--wn-t); }
 .fc .fc-list-event-dot { border-color: var(--fc-event-border-color); border-width: 5px; }
 .fc .fc-list-event-title a { color: var(--grafite); text-decoration: none; font-weight: 500; }
 .fc .fc-list-event { cursor: pointer; }

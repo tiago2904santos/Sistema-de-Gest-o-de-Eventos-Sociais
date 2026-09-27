@@ -162,7 +162,14 @@ def contexto_conferencia(oficio, artefatos_pdf):
             "disponivel": completo,
             "mensagem": mensagem,
             "assinado": bool(artefato and artefato["assinado"]),
+            # Assinado, mas os dados mudaram desde então (m109): o selo e a lista do que mudou.
+            "desatualizado": bool(artefato and artefato.get("desatualizado")),
+            "mudancas": list(artefato.get("mudancas") or []) if artefato else [],
             "url_anexar": reverse("viagens_oficios:assinatura_artefato", args=[artefato["pk"]]) if artefato else "",
+            # A via emitida (m113): a tela diz "Versão 1 emitida em dd/mm" e
+            # oferece "Emitir nova versão" quando os dados mudaram.
+            "versao": artefato.get("versao") if artefato else None,
+            "emitida_em": artefato.get("emitida_em") if artefato else None,
         }
         if servidor is None:
             base.update(

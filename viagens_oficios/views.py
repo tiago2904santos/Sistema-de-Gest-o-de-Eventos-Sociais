@@ -71,8 +71,12 @@ def assinatura_artefato(request, pk):
                 messages.success(request, 'Versão assinada removida. O PDF gerado volta a valer.')
                 return redirect(retorno)
             if form.is_valid():
+                from documentos.services.conferencia_assinado import mensagens_da_conferencia
                 anexar_arquivo_assinado(artefato, form.cleaned_data['arquivo'])
                 messages.success(request, 'Documento assinado anexado. A versão anterior permanece no histórico.')
+                # O que o sistema leu do PDF (m112): quem assinou, ou os avisos.
+                for nivel, texto in mensagens_da_conferencia(getattr(artefato, 'conferencia_assinado', None)):
+                    messages.add_message(request, nivel, texto)
                 return redirect(retorno)
         except DocumentError as exc:
             form.add_error('arquivo', str(exc))
@@ -166,7 +170,7 @@ def lista(request):
     pagina = paginator.get_page(request.GET.get('pagina'))
     parametros = request.GET.copy()
     parametros.pop('pagina', None)
-    artefatos = artefatos_pdf_por_oficio(pagina.object_list)
+    artefatos = artefatos_pdf_por_oficio(pagina.object_list, conferir=True)
     prazo = get_prazo_justificativa_dias()
     linhas = [linha_da_lista(o, artefatos_pdf=artefatos.get(o.pk, {}), prazo=prazo) for o in pagina]
 
@@ -567,7 +571,7 @@ def editar(request, pk=None):
     from .campos_modelo import aplicar, preencher_marcadores_do_oficio, valores_do_oficio
     from .presenters import artefatos_pdf_por_oficio, tipo_do_oficio
     from .protocolo_services import abrir_protocolo_do_oficio, mensagens_do_protocolo
-    from .services import criar_oficio_rascunho, dados_eprotocolo
+    from .services import ROTULO_DO_FECHAMENTO, criar_oficio_rascunho, dados_eprotocolo, fechamento_do_oficio
     exigir_operador(request)
     if pk is None:
         # O cadastro sempre edita um rascunho já numerado; sem ele, cria-se um.
@@ -577,6 +581,11 @@ def editar(request, pk=None):
     else:
         oficio = get_oficio_by_id(pk)
     lista = voltar_para(request, _url_de_volta(oficio))
+    # Finalizado ou com PDF assinado (m109): só leitura até "Reabrir para correção".
+    fechado = fechamento_do_oficio(oficio)
+    if request.method == 'POST' and fechado:
+        messages.error(request, f'{ROTULO_DO_FECHAMENTO[fechado]}: reabra o ofício para correção antes de alterar.')
+        return redirect('viagens_oficios:editar', pk=oficio.pk)
     finalizar = request.POST.get('acao') == 'finalizar'
     vincular = request.POST.get('acao') == 'vincular_roteiro'
     from viagens_cadastros.models import ConfiguracaoSistema
@@ -680,10 +689,11 @@ def editar(request, pk=None):
             messages.error(request, 'Não foi possível salvar o ofício. Revise os campos indicados.')
     oficio = get_oficio_by_id(oficio.pk)
     campos = valores_do_oficio(oficio)
-    conferencia = contexto_conferencia(oficio, artefatos_pdf_por_oficio([oficio]).get(oficio.pk, {}))
+    conferencia = contexto_conferencia(oficio, artefatos_pdf_por_oficio([oficio], conferir=True).get(oficio.pk, {}))
     return render(request, 'pages/viagens_oficios/form.html', {
         'titulo': 'Cadastro de ofício',
         'oficio': oficio, 'form': form, 'jform': jform,
+        'fechado': fechado, 'fechado_rotulo': ROTULO_DO_FECHAMENTO.get(fechado, ''),
         # Rascunho que se salva sozinho (m050): só enquanto é rascunho.
         'autosave_url': (reverse('viagens_oficios:autosalvar', args=[oficio.pk])
                          if oficio.status == Oficio.STATUS_RASCUNHO and not oficio.cancelado else ''),
@@ -797,12 +807,20 @@ def visualizar_termo(request, pk, servidor_id):
 @require_POST
 def acao(request, pk, acao):
     from core.retorno import voltar_para
-    from .services import OficioVinculadoError, desfazer_complementar_oficio, desfazer_retificacao_oficio
+    from .services import OficioVinculadoError, desfazer_complementar_oficio, desfazer_retificacao_oficio, reabrir_oficio
     exigir_operador(request)
     oficio = get_oficio_by_id(pk)
     # Da lista a ação volta para a lista como estava; do formulário, para o formulário.
     destino = voltar_para(request, reverse('viagens_oficios:editar', args=[pk]))
-    if acao == 'cancelar':
+    if acao == 'reabrir':
+        # Finalizado ou assinado (m109): volta a editável, com o motivo no histórico.
+        try:
+            reabrir_oficio(oficio, request.POST.get('motivo', ''), request.user)
+        except ValidationError as exc:
+            messages.error(request, '; '.join(exc.messages))
+            return redirect(destino)
+        messages.success(request, f'Ofício {oficio.numero_formatado} reaberto para correção. O motivo ficou no histórico.')
+    elif acao == 'cancelar':
         oficio.cancelar(request.POST.get('motivo', ''))
         messages.success(request, f'Ofício {oficio.numero_formatado} cancelado. O histórico foi mantido.')
     elif acao == 'reativar':
@@ -842,6 +860,12 @@ def acao(request, pk, acao):
     return redirect(destino)
 
 
+def nova_versao_pedida(request) -> bool:
+    """"Emitir nova versão" (m113): o botão manda `nova_versao=1`; sem ele, o
+    PDF que volta é a via emitida, mesmo que os dados tenham mudado."""
+    return request.POST.get('nova_versao') == '1'
+
+
 def resposta_documento(request, doc):
     if request.GET.get('inline') == '1' and doc.formato == DocumentoFormato.PDF:
         return build_inline_pdf_response(request, content=doc.conteudo, tipo=doc.tipo,
@@ -857,7 +881,7 @@ def gerar(request, pk, tipo, formato):
         raise Http404
     oficio = get_oficio_by_id(pk)
     try:
-        doc = gerar_documento(oficio, DocumentoFormato(formato), DocumentoTipo(tipo))
+        doc = gerar_documento(oficio, DocumentoFormato(formato), DocumentoTipo(tipo), nova_versao=nova_versao_pedida(request))
     except (ValidationError, DocumentError) as exc:
         messages.error(request, '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
         return redirect('viagens_oficios:editar', pk=pk)
@@ -927,7 +951,7 @@ def termos(request, pk, formato, servidor_id=None):
     try:
         if servidor_id:
             servidor = get_object_or_404(oficio.servidores_termo_autorizacao, pk=servidor_id)
-            return resposta_documento(request, gerar_termo_um(oficio, servidor, fmt))
+            return resposta_documento(request, gerar_termo_um(oficio, servidor, fmt, nova_versao=nova_versao_pedida(request)))
         return resposta_lote(gerar_termo_lote(oficio, fmt))
     except (ValidationError, DocumentError) as exc:
         messages.error(request, '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc))

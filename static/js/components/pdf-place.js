@@ -8,6 +8,10 @@
  * `documentos/services/pdf_overlay.py` espera do outro lado. Converter cedo, num lugar só,
  * é o que evita o sinal trocado no eixo Y aparecer em cada tela nova.
  *
+ * A caixa também anda pelo teclado (m107): Tab a seleciona, as setas movem, Shift dá o
+ * passo maior, "+" e "−" mudam o tamanho. Passa pelo mesmo `posicionar`, então grava
+ * igual ao arraste.
+ *
  * Depende do `pdfjsLib` já carregado pela página (vendorizado em `static/vendor/pdfjs/`).
  */
 (function () {
@@ -114,6 +118,8 @@
    *
    * `aspecto` (largura/altura) é mantido no redimensionamento: o número precisa que a
    * altura acompanhe a largura porque é dela que sai o corpo da fonte.
+   *
+   * `passo` e `passoGrande` (px) são o quanto uma tecla move; `teclado: false` desliga.
    */
   function caixaArrastavel(opcoes) {
     var caixa = opcoes.caixa;
@@ -123,6 +129,8 @@
 
     var aspecto = opcoes.aspecto || 4;
     var larguraMinima = opcoes.larguraMinima || 40;
+    var passo = opcoes.passo || 1;
+    var passoGrande = opcoes.passoGrande || 10;
     var modo = null;
     var inicio = null;
 
@@ -189,6 +197,35 @@
 
     function aoSubir() { modo = null; inicio = null; }
 
+    /* Teclado: setas movem, Shift dá o passo maior, "+" e "−" mudam o tamanho (mantendo
+     * o aspecto, como a alça). Passa por `posicionar` sem `silencioso`: grava como o
+     * arraste. Só as teclas tratadas são engolidas — Tab continua saindo da caixa. */
+    function aoTeclar(evento) {
+      if (caixa.hidden) return;
+      var delta = evento.shiftKey ? passoGrande : passo;
+      var esquerda = caixa.offsetLeft;
+      var topo = caixa.offsetTop;
+      var largura = caixa.offsetWidth;
+      var altura = caixa.offsetHeight;
+      switch (evento.key) {
+        case "ArrowLeft": esquerda -= delta; break;
+        case "ArrowRight": esquerda += delta; break;
+        case "ArrowUp": topo -= delta; break;
+        case "ArrowDown": topo += delta; break;
+        case "+": case "=":
+          largura = limitar(largura + delta, larguraMinima, stage.clientWidth);
+          altura = largura / aspecto;
+          break;
+        case "-": case "_":
+          largura = limitar(largura - delta, larguraMinima, stage.clientWidth);
+          altura = largura / aspecto;
+          break;
+        default: return;
+      }
+      evento.preventDefault();
+      posicionar(esquerda, topo, largura, altura);
+    }
+
     caixa.addEventListener("mousedown", function (e) {
       if (alca && e.target === alca) return;
       aoDescer(e, "mover");
@@ -205,6 +242,10 @@
     window.addEventListener("touchmove", aoMover, { passive: false });
     window.addEventListener("mouseup", aoSubir);
     window.addEventListener("touchend", aoSubir);
+    if (opcoes.teclado !== false) {
+      if (!caixa.hasAttribute("tabindex")) caixa.tabIndex = 0;
+      caixa.addEventListener("keydown", aoTeclar);
+    }
 
     return {
       posicionar: posicionar,

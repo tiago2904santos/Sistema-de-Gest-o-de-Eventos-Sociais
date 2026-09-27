@@ -184,3 +184,81 @@ class TelasConflitosTests(BaseConflitos):
         self.client.force_login(self.user)
         conteudo = self.client.get(reverse("demandas_eventos:editar", args=[demanda.pk])).content.decode()
         self.assertIn(f"PALESTRANTE Y já está na Palestra #{outra.pk}", conteudo)
+
+
+class TermosOrdensPalestranteTests(BaseConflitos):
+    """m130: termo, ordem de serviço e o palestrante ligado ao servidor."""
+
+    def termo(self, inicio, fim=None, *, servidores=(), viatura=None, oficio=None):
+        from viagens_termos.models import TermoAutorizacao
+
+        termo = TermoAutorizacao.objects.create(data_evento_inicio=inicio, data_evento_fim=fim, viatura=viatura,
+                                                oficio=oficio, destino_cidade=self.londrina)
+        termo.servidores.set(servidores)
+        return termo
+
+    def ordem(self, inicio, fim=None, *, servidores=(), oficios=()):
+        from viagens_ordens.models import OrdemServico
+
+        ordem = OrdemServico.objects.create(data_evento_inicio=inicio, data_evento_fim=fim, numero=3, ano=2026)
+        ordem.servidores.set(servidores)
+        ordem.oficios.set(oficios)
+        return ordem
+
+    def test_termo_avulso_ocupa_servidores_e_viatura_o_dia_inteiro(self):
+        termo = self.termo(date(2026, 10, 12), date(2026, 10, 13), servidores=[self.ana], viatura=self.viatura)
+        achados = self.buscar(quando(13, 9), quando(13, 11), servidores=[self.ana], viaturas=[self.viatura])
+        mensagens = sorted(c.mensagem for c in achados)
+        self.assertEqual(mensagens, [
+            f"ANA CONFLITO já está no Termo #{termo.pk} de 12/10 a 13/10/2026 (Londrina Teste/PR)",
+            f"Viatura {self.viatura.placa_formatada} já está no Termo #{termo.pk} de 12/10 a 13/10/2026 (Londrina Teste/PR)",
+        ])
+        self.assertEqual(self.buscar(quando(14, 9), quando(14, 11), servidores=[self.ana]), [])
+        # O próprio termo, excluído, não conflita consigo.
+        self.assertEqual(servico.conflitos_do_termo(termo), [])
+
+    def test_termo_ligado_a_oficio_so_conta_o_que_acrescenta(self):
+        oficio = self.oficio(quando(12, 8), quando(12, 17), servidores=[self.ana], numero=12, ano=2026)
+        self.termo(date(2026, 10, 12), servidores=[self.ana, self.bia], oficio=oficio)
+        achados = self.buscar(quando(12, 9), quando(12, 10), servidores=[self.ana, self.bia])
+        pares = sorted((c.recurso, c.documento) for c in achados)
+        # ANA vem pelo ofício (uma vez só); BIA, que só está no termo, pelo termo.
+        self.assertEqual([p for p in pares if p[0] == "ANA CONFLITO"], [("ANA CONFLITO", "Ofício 12/2026")])
+        self.assertEqual([p[1][:5] for p in pares if p[0] == "BIA CONFLITO"], ["Termo"])
+
+    def test_ordem_de_servico_ocupa_a_equipe_fora_dos_oficios_vinculados(self):
+        oficio = self.oficio(quando(12, 8), quando(12, 17), servidores=[self.ana], numero=12, ano=2026)
+        ordem = self.ordem(date(2026, 10, 12), servidores=[self.ana, self.bia], oficios=[oficio])
+        achados = self.buscar(quando(12, 9), quando(12, 10), servidores=[self.ana, self.bia])
+        pares = sorted((c.recurso, c.documento) for c in achados)
+        self.assertEqual(pares, [("ANA CONFLITO", "Ofício 12/2026"), ("BIA CONFLITO", "OS 003/2026")])
+        self.assertIn("BIA CONFLITO já está na OS 003/2026 em 12/10/2026", [c.mensagem for c in achados])
+        self.assertEqual(servico.conflitos_da_ordem(ordem), [
+            c for c in servico.conflitos_da_ordem(ordem) if c.documento != "OS 003/2026"
+        ])
+
+    def test_palestrante_ligado_ao_servidor_cruza_palestra_com_viagem(self):
+        palestrante = Palestrante.objects.create(nome="ANA PALESTRANTE", servidor=self.ana)
+        palestra = DemandaEvento.objects.create(data_solicitacao=date(2026, 9, 1), solicitante="Escola", data_inicio_evento=date(2026, 10, 12))
+        palestra.palestrantes.add(palestrante)
+        # Do lado da viagem: escalar ANA no dia da palestra avisa.
+        achados = self.buscar(quando(12, 9), quando(12, 10), servidores=[self.ana])
+        self.assertEqual([c.mensagem for c in achados], [f"ANA CONFLITO já está na Palestra #{palestra.pk} como palestrante em 12/10/2026"])
+        # Do lado da palestra: marcar o palestrante no dia da viagem avisa, sem repetir a pessoa.
+        self.oficio(quando(12, 8), quando(12, 17), servidores=[self.ana], numero=12, ano=2026)
+        nova = DemandaEvento(data_solicitacao=date(2026, 9, 1), data_inicio_evento=date(2026, 10, 12))
+        mensagens = [c.mensagem for c in servico.conflitos_da_demanda(nova, palestrantes=[palestrante.pk])]
+        self.assertEqual(len(mensagens), 2)
+        self.assertIn("ANA CONFLITO já está no Ofício 12/2026 de 12/10 08:00 a 12/10 17:00 (Londrina Teste)", mensagens)
+        self.assertIn(f"ANA PALESTRANTE já está na Palestra #{palestra.pk} em 12/10/2026", mensagens)
+
+    def test_termo_e_ordem_mostram_o_aviso_na_tela(self):
+        self.oficio(quando(12, 8), quando(12, 17), servidores=[self.ana], numero=12, ano=2026)
+        termo = self.termo(date(2026, 10, 12), servidores=[self.ana])
+        ordem = self.ordem(date(2026, 10, 12), servidores=[self.ana])
+        self.client.force_login(self.user)
+        for url in (reverse("viagens_termos:editar", args=[termo.pk]), reverse("viagens_ordens:editar", args=[ordem.pk])):
+            conteudo = self.client.get(url).content.decode()
+            self.assertIn("Conflito de agenda", conteudo, url)
+            self.assertIn("ANA CONFLITO já está no Ofício 12/2026", conteudo, url)
+            self.assertIn("js/conflitos.js", conteudo, url)

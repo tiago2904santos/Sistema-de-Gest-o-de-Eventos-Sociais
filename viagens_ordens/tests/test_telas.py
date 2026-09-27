@@ -288,6 +288,26 @@ class DocumentoTests(CenarioOrdemMixin, TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, reverse("viagens_ordens:editar", args=[ordem.pk]))
 
+    def test_data_do_documento_nasce_na_primeira_emissao_e_nao_muda_mais(self):
+        from datetime import date
+
+        from viagens_ordens.docxtpl_context import build_os_docxtpl_context
+
+        ordem = self.ordem(servidores=[self.a, self.b])
+        self.assertIsNone(ordem.data_documento)
+        r = self.client.post(reverse("viagens_ordens:gerar", args=[ordem.pk, "pdf"]))
+        self.assertEqual(r.status_code, 200)
+        ordem.refresh_from_db()
+        self.assertEqual(ordem.data_documento, self.hoje)
+        # Ajustada (na folha), a data vale na reimpressão e a emissão não a troca.
+        ordem.data_documento = date(2026, 3, 5)
+        ordem.save(update_fields=["data_documento"])
+        r = self.client.post(reverse("viagens_ordens:gerar", args=[ordem.pk, "pdf"]))
+        self.assertEqual(r.status_code, 200)
+        ordem.refresh_from_db()
+        self.assertEqual(ordem.data_documento, date(2026, 3, 5))
+        self.assertEqual(build_os_docxtpl_context(ordem)["data_atual_extenso"], "5 de março de 2026")
+
     def test_modelo_docx_segue_o_tipo(self):
         from viagens_ordens.services import _template_ordem_servico
         self.assertEqual(_template_ordem_servico(self.ordem()), "ordem_servico.docx")

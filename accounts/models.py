@@ -67,6 +67,17 @@ class User(AbstractUser, OrigemLegado):
         related_name="usuarios",
         blank=True,
     )
+    # A pessoa do domínio de viagens que este usuário é. É o que deixa a
+    # agenda dizer "onde eu estou escalado" (ofícios, termos, ordens) e não
+    # só "o que eu registrei". Opcional: nem todo usuário viaja.
+    servidor = models.OneToOneField(
+        "viagens_cadastros.Servidor",
+        verbose_name="servidor correspondente",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="usuario",
+    )
 
     class Meta:
         verbose_name = "usuário"
@@ -75,3 +86,68 @@ class User(AbstractUser, OrigemLegado):
 
     def __str__(self):
         return self.get_full_name() or self.username
+
+
+class AssinaturaAgenda(models.Model):
+    """O link pessoal de assinatura da Agenda (feed iCalendar, ver `agenda.ics`).
+
+    O token é a única chave do feed: quem tem o link vê o que o dono do
+    token vê no sistema, sem senha. Por isso ele é longo, aleatório e
+    descartável — "Gerar novo link" troca o token e o anterior deixa de
+    responder na hora; revogar apaga a linha.
+    """
+
+    usuario = models.OneToOneField(
+        User,
+        verbose_name="usuário",
+        on_delete=models.CASCADE,
+        related_name="assinatura_agenda",
+    )
+    token = models.CharField("token", max_length=64, unique=True, editable=False)
+    gerado_em = models.DateTimeField("gerado em", auto_now=True)
+
+    class Meta:
+        verbose_name = "assinatura da agenda"
+        verbose_name_plural = "assinaturas da agenda"
+
+    def __str__(self):
+        return f"Assinatura da agenda de {self.usuario}"
+
+    @staticmethod
+    def novo_token() -> str:
+        import secrets
+
+        return secrets.token_urlsafe(32)
+
+    @classmethod
+    def gerar(cls, usuario):
+        """Cria ou troca o token da pessoa; o link antigo deixa de valer."""
+        assinatura, _ = cls.objects.update_or_create(
+            usuario=usuario, defaults={"token": cls.novo_token()}
+        )
+        return assinatura
+
+
+class PautaSemanal(models.Model):
+    """Quem quer a pauta da semana por e-mail toda segunda (ver `agenda.pauta`).
+
+    ``enviada_para_semana`` guarda a segunda-feira da última semana enviada:
+    é o que torna a rotina idempotente — roda no primeiro acesso da segunda
+    (ou do primeiro dia útil em que alguém entra) e não repete na semana.
+    """
+
+    usuario = models.OneToOneField(
+        User,
+        verbose_name="usuário",
+        on_delete=models.CASCADE,
+        related_name="pauta_semanal",
+    )
+    ativa = models.BooleanField("receber a pauta da semana por e-mail", default=True)
+    enviada_para_semana = models.DateField("semana da última pauta enviada", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "pauta semanal"
+        verbose_name_plural = "pautas semanais"
+
+    def __str__(self):
+        return f"Pauta semanal de {self.usuario}"

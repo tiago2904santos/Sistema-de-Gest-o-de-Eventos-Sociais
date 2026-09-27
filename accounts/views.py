@@ -102,6 +102,21 @@ def _fatos_do_usuario(usuario):
     ]
 
 
+def _servidor_pelo_nome(usuario, servidores):
+    """O servidor de viagens com o mesmo nome completo do usuário, se for um só.
+
+    É só sugestão para o cadastro: quem edita confirma ou troca. Dois
+    homônimos não viram sugestão nenhuma — melhor em branco do que errado.
+    """
+    from viagens_cadastros.normalizacao import normalizar_maiusculas
+
+    nome = normalizar_maiusculas(usuario.get_full_name())
+    if not nome or " " not in nome:
+        return None
+    candidatos = list(servidores.filter(nome=nome)[:2])
+    return candidatos[0] if len(candidatos) == 1 else None
+
+
 def _perfil_slug(usuario):
     """Chave visual do selo de perfil (superusuário tem selo próprio)."""
     if usuario.is_superuser:
@@ -229,9 +244,14 @@ def editar_usuario(request, pk=None):
         form = UsuarioForm(instance=instancia)
 
     valores = {}
-    for nome in ["first_name", "last_name", "username", "email", "perfil"]:
+    for nome in ["first_name", "last_name", "username", "email", "perfil", "servidor"]:
         valor = form[nome].value()
-        valores[nome] = "" if valor is None else str(valor)
+        valores[nome] = "" if valor is None else str(getattr(valor, "pk", valor))
+    servidor_sugerido = None
+    if request.method == "GET" and not valores["servidor"] and instancia is not None:
+        servidor_sugerido = _servidor_pelo_nome(instancia, form.fields["servidor"].queryset)
+        if servidor_sugerido is not None:
+            valores["servidor"] = str(servidor_sugerido.pk)
     setores_marcados = [
         str(getattr(setor, "pk", setor))
         for setor in (form["setores"].value() or [])
@@ -267,6 +287,13 @@ def editar_usuario(request, pk=None):
                 for setor in form.fields["setores"].queryset
             ],
             "setores_marcados": setores_marcados,
+            # O servidor de viagens que o usuário é (m134): lista pesquisável
+            # e, sem escolha salva, a sugestão pelo nome completo.
+            "opcoes_servidores": [
+                {"valor": str(pk), "rotulo": nome}
+                for pk, nome in form.fields["servidor"].queryset.values_list("pk", "nome")
+            ],
+            "servidor_sugerido": servidor_sugerido,
             "titulo_pagina": (
                 f"Editar usuário: {instancia.username}" if instancia else "Novo usuário"
             ),
