@@ -302,6 +302,7 @@ def municipio_do_pedido(mensagem: Mensagem, municipios, *, ddd: str = "") -> Ach
     for rotulo, onde in (
         ("Assinatura", mensagem.assinatura),
         ("Remetente", mensagem.remetente_nome),
+        ("Quem encaminhou", mensagem.encaminhada_por),
         ("Mensagem citada", mensagem.citado),
     ):
         if onde and onde.strip():

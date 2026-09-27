@@ -144,8 +144,8 @@ _R_ANCORA_ANTES = re.compile(
     r"(?:\bem|\bno\s+municipio\s+de|\bmunicipio\s+de|\bmunicipio\s*:|\bcidade\s+de|\bcidade\s*:|"
     r"\bcomarca\s+de|\bprefeitura\s+(?:municipal\s+)?de|\bcamara\s+(?:municipal\s+)?de|\bmunicipal\s+de|"
     r"\b(?:local|endereco|onde|localidade)\s*:[^\n]*|\bsediad[oa]\s+em|\brealizad[oa]\s+em|\bde\s+onde|"
-    r"\d+\s*[-–,]|\bcep\s*:?\s*\d{5}-?\d{3}\s*[-–,]?|\binterior\s+d[eo]|\bzona\s+rural\s+de|\bdistrito\s+de|"
-    r"\baqui\s+em)\s*[,:-]?\s*$"
+    r"\d+\s*[-–,]|\bcep\s*:?\s*\d{5}-?\d{3}\s*[-–,]?|\binterior\s+d[eo]|\bzona\s+rural\s+de|"
+    r"\baqui\s+em|\bcentro\s*[,–-])\s*[,:-]?\s*$"
 )
 # Instituição da cidade logo antes: "CRAS de Pinhão", "Conselho Municipal
 # dos Direitos da Mulher de Campo Largo", "Escola Estadual X, de Lapa". Diz a
@@ -156,12 +156,30 @@ _R_INSTITUICAO_ANTES = re.compile(
     r"associacao(?:\s+[\w-]+){0,6}?|delegacia(?:\s+[\w-]+){0,4}?|sdp|subdivisao\s+policial|paroquia(?:\s+[\w-]+){0,4}?|"
     r"comunidade(?:\s+[\w-]+){0,3}?|rotary|lions|sindicato(?:\s+[\w-]+){0,5}?|cooperativa(?:\s+[\w-]+){0,4}?|"
     r"(?:colegio|escola|centro|instituto)(?:\s+[\w.-]+){0,6}?|municipio|cidade|distrito\s+sede|regiao|assistencia(?:\s+social)?|"
-    r"grupo(?:\s+[\w-]+){0,5}?|nucleo(?:\s+[\w-]+){0,4}?|somos|sou|aqui)(?:\s*,?\s+(?:de|do|da)|\s*[-–(])\s*$"
+    r"grupo(?:\s+[\w-]+){0,5}?|nucleo(?:\s+[\w-]+){0,4}?|somos|sou|aqui|[a-z][\w-]*\s*,)(?:\s*,?\s+(?:de|do|da)|\s*[-–(])\s*$"
+)
+# Título ou nome antes: "Visconde de Guarapuava", "Barão do Cerro Azul",
+# "Escola Monteiro Lobato" — é gente, não a cidade.
+_R_TITULO_ANTES = re.compile(
+    r"\b(?:visconde|viscondessa|barao|baronesa|conde|condessa|marques|marquesa|duque|dom|dona|princesa|principe|"
+    r"imperador|imperatriz|general|marechal|coronel|cel|almirante|brigadeiro|presidente|senador|deputad[oa]|"
+    r"governador|prefeito|doutor|dr|professor[a]?|prof|padre|frei|monteiro|distrito|localidade|comunidade\s+rural)\.?"
+    r"\s+(?:d[aeo]s?\s+)?$"
+)
+# O município de outra coisa que não o evento: "a edição passada foi em
+# Ponta Grossa", "sede em Curitiba", "como no ano passado, em X".
+_R_OUTRO_CONTEXTO = re.compile(
+    r"\b(?:edicao\s+(?:passada|anterior)|ano\s+passado|(?:foi|esteve|estiveram|aconteceu|ocorreu)\s+em|"
+    r"sede\s+(?:em|na|no)|sediad[oa]|matriz\s+(?:em|na|no)|vizinh[oa]\s+d[eo]|divisa\s+com|proxim[oa]\s+(?:a|de))\b[^.;\n]{0,40}$"
 )
 # UF logo depois: "Toledo/PR", "Toledo - PR", "Toledo (PR)", "Toledo, Paraná".
 _R_UF_DEPOIS = re.compile(r"^\s*(?:/|-|–|,|\()\s*([A-Za-z]{2})\b\)?")
 _R_ESTADO_DEPOIS = re.compile(r"^\s*(?:/|-|–|,|\()\s*(" + "|".join(sorted(_UF_POR_NOME, key=len, reverse=True)) + r")\b")
 # Rua, escola, bairro com nome de cidade: "Rua Curitiba", "Colégio Estadual Castro Alves".
+_R_LINHA_ENDERECO = re.compile(r"\s*(?:rua|r\.|av\.?|avenida|travessa|tv\.|alameda|al\.|rodovia|rod\.|estrada|praca)\b")
+_R_DATA_DEPOIS = re.compile(r"\s*,\s*(?:n[oa]s?\s+dias?\s+\d|dias?\s+\d|de\s+\d{1,2}\s+a\s+\d|em\s+\d{1,2}[/ ]|\d{1,2}/\d{1,2})")
+_R_LOGRADOURO_NA_LINHA = re.compile(r"\b(?:rua|r\.|av\.?|avenida|travessa|alameda|rodovia|estrada|praca)\s[^\n]{1,60}\d+\s*[-–,]\s*$")
+_R_SO_EM = re.compile(r"\b(?:de|do|da)\s*$")
 _R_LOGRADOURO_ANTES = re.compile(
     r"\b(?:rua|r\.|av\.?|avenida|travessa|tv\.|alameda|al\.|praca|rodovia|estrada|largo|edificio|ed\.|"
     r"condominio|residencial|jardim|jd\.?|vila|bairro|conjunto|parque|loteamento|colegio|escola|"
@@ -193,7 +211,9 @@ class _IndiceMunicipios:
         if "doeste" in chave.split():
             # "Diamante D'Oeste" também se escreve "d'Oeste", "do Oeste".
             variacoes |= {chave.replace("doeste", "d oeste"), chave.replace("doeste", "do oeste")}
-        for longo, curto in (("santa ", "sta "), ("santo ", "sto "), ("sao ", "s ")):
+        for longo, curto in (("santa ", "sta "), ("santo ", "sto "), ("sao ", "s "), ("marechal ", "mal "),
+                             ("general ", "gal "), ("coronel ", "cel "), ("presidente ", "pres "),
+                             ("doutor ", "dr "), ("professor ", "prof "), ("capitao ", "cap "), ("senador ", "sen ")):
             for v in list(variacoes):
                 if v.startswith(longo):
                     variacoes.add(curto + v[len(longo):])
@@ -270,7 +290,10 @@ def municipios_no_texto(
         if paragrafo >= 0:
             antes = antes[max(0, len(antes) - (inicio - paragrafo - 1)):]
         antes = antes.replace("\n", " ")
-        if _R_LOGRADOURO_ANTES.search(antes):
+        if _R_LOGRADOURO_ANTES.search(antes) or _R_TITULO_ANTES.search(antes) or _R_OUTRO_CONTEXTO.search(antes):
+            continue
+        # Parte de um nome maior: "Faxinal do Céu", "Rio Negro do Sul Colégio".
+        if re.match(r"\s+d[aeo]s?\s+[A-ZÀ-Ý]", texto[fim:fim + 6]) and chave in MUNICIPIOS_AMBIGUOS:
             continue
         uf_escrita = ""
         m = _R_UF_DEPOIS.match(texto[fim:fim + 8])
@@ -281,7 +304,23 @@ def municipios_no_texto(
             if m:
                 uf_escrita = _UF_POR_NOME[m.group(1)]
         ancorado = bool(uf_escrita) or bool(_R_ANCORA_ANTES.search(antes))
+        # "Rua Chile, 1800 - Rebouças": o que vem depois do número é o bairro
+        # quando o nome é ambíguo ou vem outra cidade logo depois.
+        so_numero = ancorado and not uf_escrita and bool(
+            re.search(r"\d+\s*[-–,]\s*$", antes)
+        ) and (bool(_R_LOGRADOURO_NA_LINHA.search(antes)) or not _R_ANCORA_ANTES.search(re.sub(r"\d+\s*[-–,]\s*$", "", antes)))
+        if so_numero and (chave in MUNICIPIOS_AMBIGUOS or re.match(r"\s*[-–,]\s*[A-ZÀ-Ý][\wÀ-ÿ ]{2,40}(?:/[A-Z]{2}|\s*[-–]\s*[A-Z]{2}\b)", texto[fim:fim + 50])):
+            continue
         instituicao = not ancorado and bool(_R_INSTITUICAO_ANTES.search(antes))
+        # Linha de endereço ("Av. Iguaçu, 470 - Rebouças - Curitiba/PR") diz
+        # onde fica quem escreve; a UF escrita ali não vale como âncora forte.
+        linha_ini = dobrado.rfind("\n", 0, inicio) + 1
+        linha_endereco = bool(_R_LINHA_ENDERECO.match(dobrado[linha_ini:inicio]))
+        # "Castro, no dia 15/12", "Ivaí, de 9 a 11/12": a cidade com a data logo depois.
+        if not ancorado and _R_DATA_DEPOIS.match(dobrado[fim:fim + 20]):
+            ancorado = True
+        # Linha de data do ofício ("Telêmaco Borba, 15 de setembro de 2026").
+        dateline = bool(re.match(r"\s*,\s*\d{1,2}\s*(?:o|º)?\s+de\s+[a-z]+\s+de\s+20\d{2}", dobrado[fim:fim + 40])) and not dobrado[linha_ini:inicio].strip()
         maiuscula = texto[inicio:inicio + 1].isupper() or sem_maiusculas
         if chave in MUNICIPIOS_AMBIGUOS or _GRAFIAS.get(chave, chave) in MUNICIPIOS_AMBIGUOS:
             if not (ancorado or instituicao) or not maiuscula:
@@ -292,7 +331,7 @@ def municipios_no_texto(
         # José em SC): sem a UF escrita ou o DDD de lá, só com âncora e maiúscula.
         fora = uf_preferida and not any(_uf_do_municipio(o) == uf_preferida.upper() for o in opcoes)
         if fora and not uf_escrita and not (uf_do_ddd and any(_uf_do_municipio(o) == uf_do_ddd for o in opcoes)):
-            if not ancorado or not maiuscula:
+            if not ancorado or not maiuscula or chave in MUNICIPIOS_AMBIGUOS or _R_SO_EM.search(antes):
                 continue
         escolhido = (
             next((o for o in opcoes if uf_escrita and _uf_do_municipio(o) == uf_escrita), None)
@@ -305,6 +344,7 @@ def municipios_no_texto(
         registro = candidatos.setdefault(
             f"{escolhido.pk}:{_uf_do_municipio(escolhido)}:{escolhido.nome}",
             {"municipio": escolhido, "vezes": 0, "ancorado": False, "evento": False, "instituicao": False,
+             "endereco": True, "dateline": False,
              "inicio": inicio, "trecho": _trecho(texto, dobrado, inicio, fim)},
         )
         registro["vezes"] += 1
@@ -312,12 +352,21 @@ def municipios_no_texto(
             registro["trecho"] = _trecho(texto, dobrado, inicio, fim)
         registro["ancorado"] |= ancorado
         registro["instituicao"] |= instituicao
+        registro["endereco"] &= linha_endereco
+        registro["dateline"] |= dateline
         registro["evento"] |= bool(_R_EVENTO.search(dobrado[comeco:final]))
 
     def pontos(r):
-        return 3 * r["ancorado"] + 2 * r["instituicao"] + min(r["vezes"] - 1, 2) + r["evento"]
+        ancora = (1 if r["endereco"] else 3) * r["ancorado"]
+        return ancora + 2 * r["instituicao"] + 2 * r["dateline"] + min(r["vezes"] - 1, 2) + r["evento"]
 
     ordenados = sorted(candidatos.values(), key=lambda r: (-pontos(r), r["inicio"]))
+    # "Vai ser em Castro ou em Carambeí": a cidade ainda não foi decidida.
+    if len(ordenados) >= 2:
+        a, b = sorted(ordenados[:2], key=lambda r: r["inicio"])
+        entre = dobrado[a["inicio"]:b["inicio"]]
+        if len(entre) <= 40 and re.search(r"\bou\b", entre) and pontos(ordenados[0]) - pontos(ordenados[1]) <= 1:
+            return []
     achados = []
     for r in ordenados:
         municipio = r["municipio"]
