@@ -185,7 +185,7 @@ _R_ESPACO = re.compile(r"(?<![\d.,/-])(?P<dia>\d{1,2}) (?P<num>\d{1,2}) (?P<ano>
 _R_RELATIVA = re.compile(r"\b(depois de amanha|amanha|hoje)\b(?!\s+em\s+dia)")
 _SEMANA = "|".join(DIAS_DA_SEMANA)
 _R_DIA_SEMANA = re.compile(
-    r"\b(?:(?P<prefixo>proxim[oa]|nest[ea]|est[ea]|n[ao]|dia)\s+)?"
+    r"(?:(?:\b|(?<=\s))(?P<prefixo>proxim[oa]|nest[ea]|est[ea]|n[ao]|dia|p/|pra|pro|para|p|ate)\s+|\b)"
     r"(?P<dia>" + _SEMANA + r")(?P<feira>\s*-?\s*feira)?\b"
     r"(?P<sufixo>\s*,?\s*(?:d?a\s+)?(?:que\s+vem|semana\s+que\s+vem|proxima\s+semana)\b)?"
 )
@@ -352,8 +352,8 @@ def _primeiro_a_partir(itens, posicoes, inicio):
 
 
 _R_NUMERO_DEPOIS_SEMANA = re.compile(
-    r"\s*(?:-?\s*feira)?\s*,?\s*(?:\(\s*)?(?:dia\s+)?(\d{1,2})(?:o|º)?\b(?!\s*[/.:h]\s*\d|\s*h\b|\s*(?:de\s+)?(?:"
-    + _MES_COMPLETO + "|" + _MES_ABREVIADO + r")\b)"
+    r"\s*(?:-?\s*feira)?\s*,?\s*(?:dia\s+(\d{1,2})(?:o|º)?\b|\(\s*(?:dia\s+)?(\d{1,2})\s*\)|(\d{1,2})(?=\s*(?:[,.;)]|$|\s+(?:as|a|pela|de\s+manha|a\s+tarde|a\s+noite)\b)))"
+    r"(?!\s*[/.:h]\s*\d|\s*h\b|\s*(?:de\s+)?(?:" + _MES_COMPLETO + "|" + _MES_ABREVIADO + r")\b)"
 )
 _R_DIA_SOLTO = re.compile(
     r"\b(?:n?o\s+|para\s+o\s+|pro\s+|ate\s+o\s+|o\s+)?dia\s+(\d{1,2})(?:o|º)?\b"
@@ -427,7 +427,7 @@ def _dias_da_semana(texto, dobrado, referencia, absolutas):
         # o dia da semana bate (o dia da semana sozinho daria a próxima quarta).
         numero = _R_NUMERO_DEPOIS_SEMANA.match(dobrado[m.end():m.end() + 16])
         if numero:
-            dia = _dia_com_semana(int(numero.group(1)), DIAS_DA_SEMANA[m.group("dia")], referencia)
+            dia = _dia_com_semana(int(next(g for g in numero.groups() if g)), DIAS_DA_SEMANA[m.group("dia")], referencia)
             if dia is not None:
                 fim = m.end() + numero.end()
                 achadas.append(DataAchada(dia, None, (dia,), "data", texto[m.start():fim], m.start(), fim))
@@ -436,7 +436,7 @@ def _dias_da_semana(texto, dobrado, referencia, absolutas):
         semana_que_vem = bool(m.group("sufixo")) or bool(_R_SEMANA_QUE_VEM_ANTES.search(antes))
         explicito = bool(m.group("feira")) or prefixo.startswith(("proxim", "nest", "est")) or semana_que_vem
         if not explicito:
-            if prefixo not in ("na", "no", "dia") or _R_ORDINAL_DEPOIS.match(depois):
+            if prefixo not in ("na", "no", "dia", "p/", "pra", "pro", "para", "p", "ate") or _R_ORDINAL_DEPOIS.match(depois):
                 continue
         # Dia da semana colado a uma data absoluta é só rótulo dela:
         # "quinta-feira, 24 de setembro", "25/09 (sexta)".
@@ -500,7 +500,7 @@ class Horario:
 
 _R_HORA_MARCADA = re.compile(
     r"(?<![\d/.,:])(?P<h>\d{1,2})\s*(?:"
-    r"(?P<unidade>h|hs|hrs|hr|horas?)(?:\s*(?P<m1>\d{2})(?:\s*(?:min|mins|minutos?))?)?"
+    r"(?P<unidade>h|hs|hrs|hr|horas?)(?:[ \t]*(?P<m1>\d{2})(?:\s*(?:min|mins|minutos?))?)?"
     r"|:\s?(?P<m2>\d{2})(?:\s*(?:h|hs|hrs|horas?)\b)?"
     r")(?![\d/])(?!\w)"
 )
@@ -508,6 +508,10 @@ _PREFIXO_HORA = r"(?:as|das|pelas|a\s+partir\s+das|por\s+volta\s+das|ate\s+as|in
 _R_HORA_NUA = re.compile(
     r"\b(?P<prefixo>" + _PREFIXO_HORA + r")\s+(?P<h>\d{1,2})(?![\d/]|[.,:]\d)"
     r"(?=\s*(?:$|[,.;:)\n]|e\s|a\s|as\s|ate\s|-|da\s+(?:manha|tarde|noite)|horas?\b|h\b))"
+)
+# "às 8 e meia", "às 19 e 30"
+_R_HORA_E_MEIA = re.compile(
+    r"\b(?P<prefixo>" + _PREFIXO_HORA + r")\s+(?P<h>\d{1,2})\s*(?:h\s*)?e\s+(?P<min>meia|[0-5]\d)\b(?!\s*(?:pessoas|min))"
 )
 _R_MEIO_DIA = re.compile(
     r"(?:\b(?:ao|as|a|das|do|ate\s+o|ate|partir\s+do)\s+)?\bmei[oa]\s*(?P<hifen>-)?\s*(?P<qual>dia|noite)\b(?P<meia>\s+e\s+meia)?"
@@ -565,6 +569,16 @@ def _fichas_de_hora(dobrado: str) -> list[_Ficha]:
                 continue
         h, fim = _com_turno(h, dobrado, m.end())
         fichas.append(_Ficha(time(h, minutos), m.start(), fim, ""))
+        ocupados.marcar(m.start(), m.end())
+    for m in _R_HORA_E_MEIA.finditer(dobrado):
+        if not ocupados.livre(m.start("h"), m.end()):
+            continue
+        h = int(m.group("h"))
+        minutos = 30 if m.group("min") == "meia" else int(m.group("min"))
+        if h > 23 or minutos > 59:
+            continue
+        h, fim = _com_turno(h, dobrado, m.end())
+        fichas.append(_Ficha(time(h, minutos), m.start(), fim, re.sub(r"\s+", " ", m.group("prefixo"))))
         ocupados.marcar(m.start(), m.end())
     for m in _R_HORA_NUA.finditer(dobrado):
         if not ocupados.livre(m.start("h"), m.end("h")):
@@ -693,7 +707,7 @@ _R_DATELINE_DEPOIS = re.compile(r"^\s*\.?\s*$")
 
 
 _R_DATA_VELHA_ANTES = re.compile(
-    r"\b(?:seria|era|estava\s+(?:previst|marcad|agendad)\w*(?:\s+para)?|ao\s+inves\s+d[eo]|em\s+vez\s+d[eo]|no\s+lugar\s+d[eo]|"
+    r"\b(?:que\s+(?:seria|era)|estava\s+(?:previst|marcad|agendad)\w*(?:\s+para)?|ao\s+inves\s+d[eo]|em\s+vez\s+d[eo]|no\s+lugar\s+d[eo]|"
     r"anterior(?:mente)?|antig[oa]|a\s+data\s+de)\s*(?:o\s+|a\s+|para\s+o\s+)?(?:dia\s+)?$"
 )
 _R_DATA_VELHA_DEPOIS = re.compile(
@@ -790,6 +804,17 @@ def quando_do_evento(texto: str, referencia) -> Quando | None:
     melhor, pontos, ancorada = max(avaliados, key=lambda a: (a[1], -a[0].inicio_pos))
     if pontos <= _PONTOS_MINIMOS:
         return None  # só datas de documento (carimbo, cabeçalho, linha de data do ofício)
+    # "A SIPAT vai de 3 a 5 de novembro e queremos a palestra no dia 4": o
+    # período é do evento maior; o dia pedido está dentro dele, logo depois.
+    if melhor.fim:
+        dentro = [
+            (i, p) for i, p, _a in avaliados
+            if i is not melhor and not i.fim and melhor.inicio <= i.inicio <= melhor.fim
+            and 0 < i.inicio_pos - melhor.fim_pos <= 200 and p > _PONTOS_MINIMOS
+        ]
+        if dentro:
+            melhor, pontos = dentro[0]
+            ancorada = True
     comeco, final = _frase(dobrado, melhor.inicio_pos, melhor.fim_pos)
     alternativas: tuple[date, ...] = ()
     if re.search(r"\bou\b", dobrado[comeco:final]):
@@ -811,6 +836,13 @@ def quando_do_evento(texto: str, referencia) -> Quando | None:
             if h.fim or _R_CONTEXTO_HORA.search(antes) or re.match(r"(?:as|das|pelas)\b", dobrado[h.inicio_pos:]):
                 escolhido = h
                 break
+        # Um horário só no pedido inteiro ("70 pessoas, 17h"): é o do evento.
+        if escolhido is None:
+            unicos = {(h.inicio, h.fim) for h in horarios}
+            if len(unicos) == 1:
+                h = horarios[0]
+                if not _R_NEGATIVO_ANTES.search(dobrado[max(0, h.inicio_pos - 25):h.inicio_pos]):
+                    escolhido = h
     turno = turno_do_texto(texto[comeco:final]) or turno_do_texto(texto)
     fim = melhor.fim if melhor.fim and melhor.fim != melhor.inicio else None
     trecho = texto[comeco:final].strip() or melhor.trecho
