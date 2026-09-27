@@ -1760,7 +1760,10 @@ def importar_planilha(request):
 
     from django.core.management.base import CommandError
 
-    pasta = Path(tempfile.gettempdir()) / "coffee-break-importacao"
+    from core.limpeza import pasta_importacao_coffee
+
+    # A limpeza semanal (core.limpeza) apaga o que ficar aqui mais de um dia.
+    pasta = pasta_importacao_coffee()
     pasta.mkdir(exist_ok=True)
     contexto = {
         "breadcrumb": _breadcrumb(

@@ -56,10 +56,12 @@ class RodarSeForHoraTests(TestCase):
         with mock.patch("solicitacoes.lembretes.enviar_lembretes", side_effect=RuntimeError("x")), \
                 mock.patch("viagens_prestacoes.avisos.avisar_prazos", return_value=0), \
                 mock.patch("viagens_prestacoes.avisos.avisar_viagens", return_value=0), \
+                mock.patch("core.limpeza.rotina_semanal", return_value="") as limpeza, \
                 mock.patch("core.rotinas.resumo_do_dia", return_value=0) as resumo, \
                 self.assertLogs("core.rotinas", level="INFO") as registro:
             rotinas.rodar(date(2026, 9, 28))
         self.assertEqual(resumo.call_count, 1)
+        self.assertEqual(limpeza.call_count, 1)
         self.assertTrue(any("falhou" in linha for linha in registro.output))
 
 
