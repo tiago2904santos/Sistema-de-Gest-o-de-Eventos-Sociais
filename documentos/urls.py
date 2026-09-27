@@ -10,6 +10,8 @@ app_name = "documentos"
 urlpatterns = [
     path("<uuid:pk>/baixar/", views.baixar, name="baixar"),
     path("<uuid:pk>/abrir/", views.abrir, name="abrir"),
+    # Prévia da conferência do PDF assinado antes de anexar (m112): o modal envia o arquivo e mostra o que o sistema leu.
+    path("<uuid:pk>/conferir-assinado/", views.conferir_assinado, name="conferir_assinado"),
     # Editor documental: o editor embutido nos formulários, a folha e o
     # endereço antigo da tela (leva ao formulário).
     path("editor/<str:tipo>/<int:pk>/", editor_pagina.pagina, name="editor_pagina"),

@@ -134,6 +134,11 @@ class DocumentoAssinaturaVersao(OrigemLegadoUUID):
         blank=True,
         related_name="+",
     )
+    # O que o sistema leu do PDF ao anexar (m112): quem assinou e quando, e a
+    # conferência inteira (assinatura encontrada, avisos de número/protocolo/nome).
+    assinante_nome = models.CharField(max_length=255, blank=True, default="")
+    assinado_em_digital = models.DateTimeField(null=True, blank=True)
+    conferencia = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ["-criado_em"]

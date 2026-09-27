@@ -147,11 +147,16 @@ def _validar_upload_assinado(upload: UploadedFile) -> None:
         raise ArquivoAssinadoInvalido("O arquivo não parece ser um PDF válido.")
 
 
-def anexar_arquivo_assinado(artefato: DocumentoArtefato, upload: UploadedFile) -> DocumentoArtefato:
+def anexar_arquivo_assinado(artefato: DocumentoArtefato, upload: UploadedFile, *, conferencia=None) -> DocumentoArtefato:
     """Anexa manualmente a versão assinada (ex.: escaneada) de um artefato gerado.
 
     A partir daqui ela passa a ser a versão "oficial": preferida na exibição/
     download .
+
+    O PDF é conferido antes (m112): assinatura digital, quem assinou e se é o
+    documento certo. O resultado fica na versão e volta em
+    `artefato.conferencia_assinado`, para a tela avisar; nada é bloqueado.
+    `conferencia` já pronta (a prévia do modal) evita ler o PDF duas vezes.
 
     Tudo ou nada, como a geração (`persist_geracao`): a versão e o artefato são
     gravados numa transação, e o arquivo novo fica registrado para compensação
@@ -165,6 +170,11 @@ def anexar_arquivo_assinado(artefato: DocumentoArtefato, upload: UploadedFile) -
 
     _validar_upload_assinado(upload)
     raw = upload.read()
+    if conferencia is None:
+        from documentos.services.conferencia_assinado import conferir_artefato
+
+        conferencia = conferir_artefato(artefato, raw)
+    assinante = conferencia.assinante
     request = None
     try:
         from core.middleware import obter_requisicao_atual
@@ -181,6 +191,9 @@ def anexar_arquivo_assinado(artefato: DocumentoArtefato, upload: UploadedFile) -
             hash_sha256=hashlib.sha256(raw).hexdigest(),
             nome_original=upload.name or "",
             criado_por=actor,
+            assinante_nome=(assinante.nome if assinante else "")[:255],
+            assinado_em_digital=assinante.quando if assinante else None,
+            conferencia=conferencia.como_json(),
         )
         versao.arquivo.save(
             f"assinado_{artefato.pk}_{versao.pk}.pdf",
@@ -195,6 +208,7 @@ def anexar_arquivo_assinado(artefato: DocumentoArtefato, upload: UploadedFile) -
         artefato.assinado_em = timezone.now()
         artefato.assinado_nome_original = upload.name or ""
         artefato.save(update_fields=["arquivo_assinado", "assinado_em", "assinado_nome_original"])
+    artefato.conferencia_assinado = conferencia
     return artefato
 
 
