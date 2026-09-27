@@ -227,6 +227,11 @@ DIAS_DE_PRAZO_CURTO = 10
 _DIAS_DA_SEMANA = ("segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo")
 
 
+_R_MUDOU_A_DATA = re.compile(
+    r"\b(?:passou|passaram|mudou|mudaram|adiad\w*|remarcad\w*|transferid\w*|antecipad\w*|alterad\w*|atualiza\w*|nova\s+data|corrig\w*)\b"
+)
+
+
 def quando_do_pedido(mensagem: Mensagem) -> tuple[Quando | None, list[str]]:
     """(quando é o evento, avisos) pelo que o pedido diz.
 
@@ -243,6 +248,16 @@ def quando_do_pedido(mensagem: Mensagem) -> tuple[Quando | None, list[str]]:
     avisos: list[str] = []
     referencia = mensagem.data_referencia or timezone.localdate()
     quando = quando_do_evento(mensagem.texto_para_busca, referencia)
+    # Quem encaminhou avisou que a data mudou ("passou a ação para 28/11"):
+    # a nota dele vale sobre a data do e-mail original.
+    nota = (mensagem.nota_encaminhamento or "").strip()
+    if nota and _R_MUDOU_A_DATA.search(dobrar(nota)):
+        corrigida = quando_do_evento(nota, referencia)
+        if corrigida is not None:
+            if quando is not None and not corrigida.hora_inicio:
+                corrigida = replace(corrigida, hora_inicio=quando.hora_inicio, hora_fim=quando.hora_fim)
+            quando = replace(corrigida, confianca="M")
+            avisos.append(f"A data veio da nota de quem encaminhou ({quando.inicio:%d/%m/%Y}): confira.")
     if quando is None and (mensagem.citado or "").strip():
         anterior = quando_do_evento(mensagem.citado, referencia)
         if anterior is not None:

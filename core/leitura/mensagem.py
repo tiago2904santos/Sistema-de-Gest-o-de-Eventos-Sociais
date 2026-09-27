@@ -113,6 +113,10 @@ class Mensagem:
     #: O "Cc" da mensagem ("Nome <email>, ..."): às vezes é ali que está quem
     #: pede de verdade (a repórter em cópia no e-mail da chefia).
     copia: str = ""
+    #: O que quem encaminhou escreveu acima do e-mail original ("Atualização:
+    #: a prefeitura passou a ação para 28/11"). Não entra no corpo: é de quem
+    #: repassa, mas pode corrigir o pedido.
+    nota_encaminhamento: str = ""
     corpo: str = ""
     assinatura: str = ""
     anexos: list[tuple[str, bytes]] = field(default_factory=list)
@@ -292,7 +296,8 @@ def _montar(bruto: _Bruto, origem: str, profundidade: int = 0) -> Mensagem:
     if len(bruto.texto) > _MAX_CARACTERES:
         bruto.avisos.append("O texto do e-mail é muito longo; só o começo foi lido.")
     texto = _limpar_texto(bruto.texto)
-    niveis, interno, citado = _desembrulhar(texto, bruto.assunto)
+    notas: list[str] = []
+    niveis, interno, citado = _desembrulhar(texto, bruto.assunto, notas)
 
     # E-mail encaminhado "como anexo" (.eml ou .msg dentro do e-mail): se a
     # mensagem de fora é só um "segue", quem pediu é a de dentro.
@@ -333,6 +338,7 @@ def _montar(bruto: _Bruto, origem: str, profundidade: int = 0) -> Mensagem:
         enviado_em=_com_fuso(enviado_em),
         recebido_em=_com_fuso(bruto.enviado_em) or _com_fuso(enviado_em),
         copia=" ".join((copia or "").split())[:500],
+        nota_encaminhamento="\n\n".join(notas)[:4000],
         corpo=_arrumar_linhas(corpo),
         assinatura=_arrumar_linhas(assinatura),
         anexos=list(bruto.anexos),
@@ -739,7 +745,7 @@ def _proxima_fronteira(linhas: list[str]):
     return None
 
 
-def _desembrulhar(texto: str, assunto: str) -> tuple[list[dict], str, str]:
+def _desembrulhar(texto: str, assunto: str, notas: list | None = None) -> tuple[list[dict], str, str]:
     """Desce até a mensagem mais interna e corta a resposta citada.
 
     Devolve (cabeçalhos achados no texto, do mais externo ao mais interno;
@@ -762,6 +768,8 @@ def _desembrulhar(texto: str, assunto: str) -> tuple[list[dict], str, str]:
             linhas = linhas[:inicio]
             break
         seguintes = linhas[fim:]
+        if antes and notas is not None:
+            notas.append(antes)  # o que quem encaminhou escreveu em cima
         if tipo == "encaminhada":
             citadas = [x for x in seguintes if x.strip()]
             if citadas and sum(x.lstrip().startswith(">") for x in citadas) >= 0.8 * len(citadas):
@@ -2040,6 +2048,46 @@ def _fala_de_sistema(fala: str, primeira_parte: str) -> bool:
     return primeira_parte.startswith("‎") and len(fala) <= 200 and bool(_R_WHATSAPP_AVISO_DO_GRUPO.search(dobrada))
 
 
+_R_NOME_DA_CASA = re.compile(r"\b(?:ascom|assessoria(?:\s+de\s+imprensa)?\s+(?:da\s+)?(?:pcpr|policia)|pcpr|policia\s+civil|imprensa\s+pcpr)\b")
+_R_SO_ANEXO = re.compile(r"^\W*(?:<?anexad[oa]:?[^\n]*|img-[^\n]*|[\w-]+\.(?:jpe?g|png|webp|pdf|mp4|opus)\b[^\n]*|foto|fotos|video)\W*$")
+_R_COBRANCA = re.compile(
+    r"^\W*(?:oi+[!,.]*\s*)?(?:alguma\s+novidade|tem\s+(?:alguma\s+)?(?:novidade|retorno)|conseguiu|conseguiram|e\s+ai|"
+    r"so\s+reforcando|reforcando|lembrando|cobrando|ainda\s+(?:aguardo|estou\s+aguardando))"
+)
+#: Pausa que separa duas conversas no mesmo chat (a de hoje e a de semanas atrás).
+_PAUSA_ENTRE_CONVERSAS = 8 * 3600
+
+
+def _momento_do_pedido(falas: list[dict]):
+    """Quando o pedido foi feito, numa conversa do WhatsApp.
+
+    Separa o chat em conversas (pausa de mais de 8 horas); vale a última
+    conversa em que alguém de fora pediu alguma coisa — a cobrança "alguma
+    novidade?" dois dias depois não é pedido novo, e a resposta da Ascom na
+    segunda-feira também não. Dentro dela, a primeira fala de fora que diz
+    alguma coisa (não o "bom dia", nem o "aqui é a Fulana"); numa conversa
+    que passa da meia-noite, vale a hora em que o pedido começou.
+    """
+    conversas, anterior = [], None
+    for fala in falas:
+        quando = fala.get("enviado_em")
+        if quando is None:
+            continue
+        if anterior is None or (quando - anterior).total_seconds() > _PAUSA_ENTRE_CONVERSAS:
+            conversas.append([])
+        conversas[-1].append(fala)
+        anterior = quando
+
+    def de_fora(f):
+        return not f["casa"] and not f["so_anexo"]
+
+    for conversa in reversed(conversas):
+        pedidos = [f for f in conversa if de_fora(f) and not f["so_conversa"] and not f["cobranca"]]
+        if pedidos:
+            return pedidos[0]["enviado_em"]
+    return None
+
+
 def _ler_whatsapp(texto: str) -> Mensagem | None:
     linhas = texto.replace("\r", "\n").split("\n")
     marcadas = [(i, _linha_whatsapp(linha)) for i, linha in enumerate(linhas)]
@@ -2058,7 +2106,6 @@ def _ler_whatsapp(texto: str) -> Mensagem | None:
         elif falas:
             falas[-1][3].append(linha)
     corpo = []
-    uteis = []
     registro = []
     validas = []
     for nome_fala, data_fala, hora_fala, partes in falas:
@@ -2068,25 +2115,28 @@ def _ler_whatsapp(texto: str) -> Mensagem | None:
         if fala and not _fala_de_sistema(fala, partes[0] if partes else ""):
             corpo.append(fala)
             validas.append((nome_fala, data_fala, hora_fala))
-            registro.append({"nome": nome_fala, "enviado_em": _com_fuso(data_hora_de_cabecalho(f"{data_fala} {hora_fala}"))})
-            if not _R_WHATSAPP_SO_CONVERSA.match(dobrar(fala)):
-                uteis.append((nome_fala, data_fala, hora_fala))
+            dobrada = dobrar(fala)
+            registro.append({
+                "nome": nome_fala,
+                "enviado_em": _com_fuso(data_hora_de_cabecalho(f"{data_fala} {hora_fala}")),
+                # Da casa (Ascom/PCPR respondendo), só anexo ou só conversa
+                # ("bom dia", "obrigada", "alguma novidade?"): não é o pedido.
+                "casa": bool(_R_NOME_DA_CASA.search(dobrar(nome_fala))),
+                "so_anexo": bool(_R_SO_ANEXO.match(dobrada)),
+                "so_conversa": bool(_R_WHATSAPP_SO_CONVERSA.match(dobrada)),
+                "cobranca": bool(_R_COBRANCA.match(dobrada)),
+                # O texto da fala, para ler "hoje"/"amanhã" pelo dia dela.
+                "texto": fala,
+            })
     # Quem abre a conversa e quando: a primeira fala de verdade (o aviso da
     # criptografia, no topo da exportação, não conta).
     nome, data, hora = validas[0] if validas else falas[0][:3]
     enviado_em = data_hora_de_cabecalho(f"{data} {hora}")
-    # O momento do pedido: a primeira fala que diz alguma coisa (não o "bom
-    # dia", nem o "aqui é a Fulana") do último dia da conversa — numa conversa
-    # que passa da meia-noite, "hoje" é o dia do pedido.
-    pedido_em = None
-    if uteis:
-        ultimo_dia = data_hora_de_cabecalho(f"{uteis[-1][1]} 00:00")
-        _n, data_p, hora_p = next(u for u in uteis if data_hora_de_cabecalho(f"{u[1]} 00:00") == ultimo_dia)
-        pedido_em = data_hora_de_cabecalho(f"{data_p} {hora_p}")
+    pedido_em = _momento_do_pedido(registro)
     return Mensagem(
         remetente_nome=nome,
         enviado_em=_com_fuso(enviado_em),
-        pedido_em=_com_fuso(pedido_em) if pedido_em else None,
+        pedido_em=pedido_em,
         # Quem falou e quando, fala a fala (sem o texto): para saber onde
         # começou o assunto numa conversa que vem de dias antes.
         extras={"falas": registro},

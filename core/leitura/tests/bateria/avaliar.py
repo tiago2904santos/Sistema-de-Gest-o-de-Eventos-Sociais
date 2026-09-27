@@ -31,6 +31,14 @@ from . import AUSENTE, Caso, Contem, UmDe
 MODULOS = ("solicitacoes", "demandas_eventos", "coffee_break", "atendimento_imprensa", "publicacoes")
 _FUSO = ZoneInfo("America/Sao_Paulo")
 _PASTA = Path(__file__).resolve().parent
+TIPOS_DE_EVENTO = (
+    "Ação Comunitária", "Capacitação", "Demafe", "Evento", "Feira", "Inauguração/Solenidade", "Justiça no Bairro",
+    "PCPR na Comunidade", "Palestra", "Paraná em Ação", "Reunião", "Visita",
+)
+SERVICOS = (
+    "Atendimento social", "Coleta de digitais", "Emissão de CIN", "Exposição de viaturas antigas e modernas",
+    "Fotografia para documento", "Orientação jurídica",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -69,6 +77,14 @@ def preparar_banco(cadastros: dict) -> None:
                       capital=(nome in ("Curitiba", "Florianópolis")))
             for nome, ibge in lista[sigla] if nome not in existentes
         ])
+    # Os tipos de evento e os serviços que os casos citam (no banco de produção
+    # eles vêm do cadastro; no de testes, só parte vem das migrações).
+    from cadastros.models import Servico, TipoEvento
+
+    for nome in TIPOS_DE_EVENTO:
+        TipoEvento.objects.update_or_create(nome=nome, defaults={"ativo": True})
+    for nome in SERVICOS:
+        Servico.objects.update_or_create(nome=nome, defaults={"ativo": True})
     criadores = {
         "orgao": lambda nome: OrgaoResponsavel.objects.get_or_create(nome=nome),
     }
@@ -102,6 +118,12 @@ def preparar_banco(cadastros: dict) -> None:
 # ---------------------------------------------------------------------------
 # Comparação
 # ---------------------------------------------------------------------------
+
+
+def _ausente(valor) -> bool:
+    # Por tipo, não por identidade: o pacote pode ser importado duas vezes
+    # (manage.py test e o comando), e cada importação tem o seu AUSENTE.
+    return type(valor).__name__ == "_Ausente"
 
 
 def _chave(texto) -> str:
@@ -174,7 +196,7 @@ class Falha:
     def tipo(self) -> str:
         if self.campo == "(triagem)":
             return "triagem"
-        if self.esperado is AUSENTE:
+        if _ausente(self.esperado):
             return "inventou"
         if self.obtido in (None, "", []):
             return "faltou"
@@ -253,7 +275,7 @@ def avaliar_caso(caso: Caso, relatorio: Relatorio) -> None:
         par = relatorio.por_campo.setdefault((caso.modulo, campo), [0, 0])
         par[1] += 1
         sugestao = sugestoes.get(campo)
-        if esperado is AUSENTE:
+        if _ausente(esperado):
             if sugestao is None or sugestao.confianca == "B":
                 par[0] += 1
             else:

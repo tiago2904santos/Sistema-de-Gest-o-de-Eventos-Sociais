@@ -702,6 +702,8 @@ _R_NEGATIVO_ANTES = re.compile(
     r"realizada\s+por|protocolad[oa]|autuad[oa]|cadastrad[oa]|criad[oa]|registrad[oa])\b[^.\n]{0,20}$"
     # "emissão em 10/10" é data de documento; "emissão de RG no dia 20/10" é o evento.
     r"|\bemissao\s*:?\s*(?:em\s+)?$|\bem\s*:\s*$"
+    # "Nas ações de 15/08/2026 e 28/11/2025 foram 200 carteiras": o que já houve.
+    r"|\b(?:nas?\s+ac(?:ao|oes)|no\s+evento|nos\s+eventos|na\s+edicao|nas\s+edicoes|no\s+ano\s+passado|anteriores?)\s+(?:de|do|em|realizad[oa]s?\s+em)?\s*$"
 )
 # A frase inteira é de carimbo, cabeçalho ou assinatura: a data é de quando o
 # documento foi feito, nunca a do evento (o eProtocolo, o "Em ... escreveu:",
@@ -778,7 +780,11 @@ def _pontos_da_data(item: DataAchada, dobrado: str, referencia: date) -> tuple[i
     frase = dobrado[comeco:final]
     ancorada = bool(_R_ANCORA_DATA_ANTES.search(antes)) or bool(re.match(r"\s*data\b", frase))
     evento = bool(_R_EVENTO_NA_FRASE.search(frase))
-    negativo = bool(_R_NEGATIVO_ANTES.search(antes)) or bool(_R_NEGATIVO_NA_FRASE.search(frase))
+    # O "antes" do negativo atravessa a quebra de linha simples ("Nas ações de" /
+    # "15/08/2026"), não a linha em branco.
+    paragrafo = dobrado.rfind("\n\n", 0, item.inicio_pos)
+    antes_largo = dobrado[max(paragrafo + 1, item.inicio_pos - 40):item.inicio_pos].replace("\n", " ")
+    negativo = bool(_R_NEGATIVO_ANTES.search(antes) or _R_NEGATIVO_ANTES.search(antes_largo)) or bool(_R_NEGATIVO_NA_FRASE.search(frase))
     linha_inicio, linha_fim = _linha(dobrado, item.inicio_pos, item.fim_pos)
     if _R_DATELINE_ANTES.match(dobrado[linha_inicio:item.inicio_pos]) and _R_DATELINE_DEPOIS.match(
         dobrado[item.fim_pos:linha_fim]
@@ -813,7 +819,9 @@ _R_DATA_DO_DOCUMENTO = [
     # "Siqueira Campos, 3 de novembro de 2026." — a linha de data do ofício
     re.compile(r"^[ \t]*[a-z][a-z \t'-]{2,40},[ \t]*(?:em[ \t]+)?(?P<d>\d{1,2})[ \t]*(?:o|º)?[ \t]+de[ \t]+(?P<mes>" + _MES_COMPLETO + r")[ \t]+de[ \t]+(?P<a>20\d{2})\.?[ \t]*$", re.M),
     # "RECADO - 14/10/2026 - 15h20", "Data: 11/11/2026" no cabeçalho
-    re.compile(r"^[ \t]*(?:recado|data|despacho|oficio|memorando|registro)\b[^\n\d]{0,30}(?P<d>\d{1,2})/(?P<num>\d{1,2})/(?P<a>20\d{2})", re.M),
+    re.compile(r"^[ \t]*(?:recado|data|despacho|oficio|memorando|registro|atendimento)\b[^\n\d]{0,30}(?P<d>\d{1,2})/(?P<num>\d{1,2})/(?P<a>20\d{2})", re.M),
+    # "ofício 77/2026 protocolado em 05/10/2026"
+    re.compile(r"\bprotocolad[oa]\s+em\s+(?P<d>\d{1,2})/(?P<num>\d{1,2})/(?P<a>20\d{2})"),
     # "pedido datado de 05/11/2026"
     re.compile(r"\bdatad[oa]\s+de\s+(?P<d>\d{1,2})/(?P<num>\d{1,2})/(?P<a>20\d{2})"),
 ]
@@ -939,7 +947,7 @@ _R_PRAZO_FORTE = re.compile(
 _R_PRAZO_MEDIO = re.compile(
     r"\b(?:fech\w*|edicao|ao\s+ar|no\s+ar|ao\s+vivo|exib\w*|publica\w*|veicula\w*|programa|gravac\w*|grava\w*|"
     r"entrevista\s+seria|seria|precis\w*|responder|resposta|retorno|aguardar|esperar|entrega\w*|prazo|deadline|"
-    r"pauta\s+e)\b"
+    r"pauta\s+e|entra\w*|entreg\w*|estreia\w*|sai|vai\s+sair|materia)\b"
 )
 _R_SEM_PRAZO = re.compile(r"\b(?:sem\s+(?:data|prazo|dia)\s+(?:definid|fechad|marcad)\w*|a\s+definir|sem\s+pressa|quanto\s+antes)\b")
 _R_PRAZO_DIA_SEMANA = re.compile(
@@ -948,7 +956,13 @@ _R_PRAZO_DIA_SEMANA = re.compile(
     r"(?:\s*,?\s*(?:dia\s+)?\(?\s*(?P<num>\d{1,2})(?:[/.](?P<mes>\d{1,2}))?\s*\)?(?![\d/]))?"
 )
 _R_PRAZO_DIA_N = re.compile(r"\b(?:o\s+)?dia\s+(?P<num>\d{1,2})(?!\d|[/.]\d|\s+de\s+(?:" + _MES_COMPLETO + r"))")
-_R_PRAZO_RELATIVO = re.compile(r"\b(?P<rel>depois\s+de\s+amanha|amanha|hoje|hj|ainda\s+hoje|(?:o\s+)?(?:fim|final)\s+d[oa]\s+(?:dia|tarde|expediente))\b")
+_R_PRAZO_RELATIVO = re.compile(
+    r"\b(?P<rel>depois\s+de\s+amanha|amanha|hoje|hj|ainda\s+hoje|nesta\s+(?:manha|tarde|noite)|esta\s+(?:manha|tarde|noite)|"
+    r"hoje\s+a\s+noite|(?:o\s+)?(?:fim|final)\s+d[oa]\s+(?:dia|tarde|expediente)|(?:o\s+)?(?:fim|final)\s+do\s+mes)\b"
+)
+_HORAS_POR_EXTENSO = {"uma": 1, "duas": 2, "tres": 3, "quatro": 4, "cinco": 5, "seis": 6, "sete": 7, "oito": 8,
+                      "nove": 9, "dez": 10, "onze": 11, "doze": 12}
+_R_HORA_EXTENSO = re.compile(r"\b(?P<h>" + "|".join(_HORAS_POR_EXTENSO) + r")\s+(?:horas?\s+)?da\s+(?P<turno>manha|tarde|noite)\b")
 _R_MEIO_DIA_PRAZO = re.compile(r"\bmeio[\s-]?dia\b")
 
 
@@ -1008,8 +1022,17 @@ def _candidatos_de_prazo(texto: str, dobrado: str, referencia: date) -> list[tup
         if not livre(m.start(), m.end()):
             continue
         rel = m.group("rel")
+        if rel.endswith("mes"):
+            proximo = date(referencia.year + (referencia.month == 12), referencia.month % 12 + 1, 1)
+            itens.append((m.start(), m.end(), proximo - timedelta(days=1), None, "relativa"))
+            continue
         dias = 2 if rel.startswith("depois") else 1 if rel == "amanha" else 0
         itens.append((m.start(), m.end(), referencia + timedelta(days=dias), None, "relativa"))
+    for m in _R_HORA_EXTENSO.finditer(dobrado):
+        h = _HORAS_POR_EXTENSO[m.group("h")]
+        if m.group("turno") in ("tarde", "noite") and h < 12:
+            h += 12
+        itens.append((m.start(), m.end(), None, time(h % 24, 0), "hora"))
     for h in horarios_do_texto(texto):
         if dobrado[max(0, h.inicio_pos - 9):h.inicio_pos].rstrip().endswith(("jornal do", "jornal da")):
             continue  # "Jornal do Meio-Dia" é o programa, não o prazo
@@ -1055,6 +1078,8 @@ def prazo_do_texto(texto: str, referencia) -> Prazo | None:
         comeco, _final = _oracao(dobrado, inicio, fim)
         antes = dobrado[max(comeco, inicio - 60):inicio]
         nota = 3 if _R_PRAZO_FORTE.search(dobrado[max(comeco, inicio - 45):inicio]) else 2 if _R_PRAZO_MEDIO.search(antes) else 0
+        if nota == 0 and tipo != "hora" and _R_PRAZO_MEDIO.search(dobrado[max(comeco, inicio - 140):inicio]):
+            nota = 1  # "entrevista ao vivo com a delegada … sobre a campanha, amanhã às 7h30"
         if nota == 0 and tipo in ("relativa", "semana", "hora"):
             # "amanhã até as 9h", "segunda às 10h": a âncora vem logo depois.
             depois = dobrado[fim:fim + 25]

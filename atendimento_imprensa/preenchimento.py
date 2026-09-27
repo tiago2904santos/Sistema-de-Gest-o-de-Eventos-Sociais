@@ -25,6 +25,7 @@ depois do pedido. Nada aqui grava.
 from __future__ import annotations
 
 import re
+from datetime import time
 
 from django.db.models import Count
 from django.utils import timezone
@@ -621,7 +622,41 @@ def _deadline(mensagem: Mensagem, prazo) -> Sugestao | None:
     return Sugestao(prazo.data, exibir, confianca, prazo.trecho)
 
 
+def _prazo_da_conversa(mensagem: Mensagem):
+    """Numa conversa, o prazo fala a fala, com "hoje"/"amanhã" pelo dia de
+    cada mensagem (o "até as 6h" mandado depois da meia-noite é do dia
+    seguinte). Vale o último dito por quem pede: a correção ("corrigindo:
+    pode ser até amanhã") substitui o anterior."""
+    prazo = None
+    for fala in (mensagem.extras or {}).get("falas") or []:
+        quando = fala.get("enviado_em")
+        if fala.get("casa") or not fala.get("texto") or quando is None:
+            continue
+        dia = timezone.localtime(quando).date() if timezone.is_aware(quando) else quando.date()
+        achado = prazo_do_texto(fala["texto"], dia)
+        if achado is not None:
+            prazo = achado
+    return prazo
+
+
+def _data_do_pedido(mensagem: Mensagem) -> Sugestao | None:
+    """A data do pedido: numa conversa, a da fala que pede (não a do "obrigada"
+    de um mês antes); no e-mail, a do envio."""
+    if mensagem.pedido_em is None:
+        return data_do_email(mensagem)
+    quando = timezone.localtime(mensagem.pedido_em) if timezone.is_aware(mensagem.pedido_em) else mensagem.pedido_em
+    return Sugestao(quando.date(), f"{quando:%d/%m/%Y}", "A", f"Pedido em {quando:%d/%m/%Y %H:%M}")
+
+
+_R_LIGOU_AS = re.compile(r"\b(?:ligou|telefonou|ligacao|recado)\b[^.\n]{0,40}?\b(?:as|a)\s+(\d{1,2})\s*(?:h|:)\s*(\d{2})?")
+
+
 def _horario_do_email(mensagem: Mensagem) -> Sugestao | None:
+    # Recado repassado ("a repórter ligou às 10h20"): a hora é a da ligação.
+    m = _R_LIGOU_AS.search(dobrar(mensagem.corpo or ""))
+    if m and int(m.group(1)) < 24:
+        hora = time(int(m.group(1)), int(m.group(2) or 0))
+        return Sugestao(hora, f"{hora:%H:%M}", "M", m.group(0))
     # Numa conversa, a hora da fala que pede (não a do "bom dia").
     enviado = mensagem.pedido_em or mensagem.enviado_em
     if enviado is None:
@@ -642,9 +677,9 @@ def sugestoes(mensagem: Mensagem, usuario=None) -> Sugestoes:
     s = Sugestoes()
     referencia = mensagem.data_referencia or timezone.localdate()
     pessoa = quem_pede(mensagem)
-    prazo = prazo_do_texto(mensagem.texto_para_busca, referencia)
+    prazo = _prazo_da_conversa(mensagem) or prazo_do_texto(mensagem.texto_para_busca, referencia)
 
-    s.por("data", data_do_email(mensagem))
+    s.por("data", _data_do_pedido(mensagem))
     s.por("horario", _horario_do_email(mensagem))
     veiculos = list(Veiculo.objects.order_by("nome"))
     jornalista, citado = _jornalista(pessoa, mensagem, veiculos)

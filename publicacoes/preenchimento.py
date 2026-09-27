@@ -547,7 +547,11 @@ def _chegada(mensagem: Mensagem):
     original. Conversa do WhatsApp: a primeira fala depois da última pausa
     longa (mais de 12 horas) — o "obrigada" de três dias antes é outra conversa.
     """
-    falas = [f["enviado_em"] for f in (mensagem.extras or {}).get("falas") or [] if f.get("enviado_em")]
+    # A Ascom respondendo e a foto que chega depois não abrem pauta nova.
+    falas = [
+        f["enviado_em"] for f in (mensagem.extras or {}).get("falas") or []
+        if f.get("enviado_em") and not f.get("casa") and not f.get("so_anexo")
+    ]
     if falas:
         inicio = anterior = None
         for quando in falas:
