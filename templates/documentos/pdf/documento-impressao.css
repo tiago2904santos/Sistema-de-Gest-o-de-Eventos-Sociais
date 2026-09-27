@@ -12,3 +12,17 @@
 .doc-cabecalho { position: running(cabecalho); }
 .doc-rodape { position: running(rodape); }
 .doc-corpo { orphans: 2; widows: 2; }
+
+/* Fontes próprias (m126): Liberation Serif e Sans, livres (SIL OFL) e
+   métricas iguais às de Times New Roman e Arial, levadas em static/fonts.
+   Ficam embutidas no PDF e o documento sai igual em qualquer servidor,
+   mesmo sem fonte instalada; quando Times/Arial existem, elas valem. O
+   caminho é relativo a este arquivo (o motor o resolve pelo próprio CSS). */
+@font-face { font-family: "Liberation Serif"; font-style: normal; font-weight: 400; src: url("../../../static/fonts/LiberationSerif-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Liberation Serif"; font-style: normal; font-weight: 700; src: url("../../../static/fonts/LiberationSerif-Bold.ttf") format("truetype"); }
+@font-face { font-family: "Liberation Serif"; font-style: italic; font-weight: 400; src: url("../../../static/fonts/LiberationSerif-Italic.ttf") format("truetype"); }
+@font-face { font-family: "Liberation Serif"; font-style: italic; font-weight: 700; src: url("../../../static/fonts/LiberationSerif-BoldItalic.ttf") format("truetype"); }
+@font-face { font-family: "Liberation Sans"; font-style: normal; font-weight: 400; src: url("../../../static/fonts/LiberationSans-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Liberation Sans"; font-style: normal; font-weight: 700; src: url("../../../static/fonts/LiberationSans-Bold.ttf") format("truetype"); }
+@font-face { font-family: "Liberation Sans"; font-style: italic; font-weight: 400; src: url("../../../static/fonts/LiberationSans-Italic.ttf") format("truetype"); }
+@font-face { font-family: "Liberation Sans"; font-style: italic; font-weight: 700; src: url("../../../static/fonts/LiberationSans-BoldItalic.ttf") format("truetype"); }

@@ -81,8 +81,11 @@ def _pdf_do_html(html):
         raise ValidationError(
             "O gerador de PDF (WeasyPrint) não está disponível neste servidor."
         ) from exc
+    from documentos.services.pdf_renderer import opcoes_do_pdf
+
     base = Path(settings.BASE_DIR).resolve().as_uri() + "/"
-    return HTML(string=html, base_url=base).write_pdf(presentational_hints=False)
+    # PDF/A com marcação de estrutura (m126), como os documentos de Viagens.
+    return HTML(string=html, base_url=base).write_pdf(presentational_hints=False, **opcoes_do_pdf())
 
 
 def _pdf(template, contexto):

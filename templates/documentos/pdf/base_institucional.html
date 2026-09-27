@@ -25,6 +25,8 @@
 <head>
   <meta charset="utf-8">
   <title>{% block titulo %}Documento{% endblock %}</title>
+  {# Propriedades do PDF (m126): o motor as copia para o arquivo (autor, assunto, palavras-chave). #}
+  {% if metadados %}<meta name="author" content="{{ metadados.autor }}"><meta name="description" content="{{ metadados.assunto }}"><meta name="keywords" content="{{ metadados.palavras_chave }}">{% endif %}
   {% if css_inline %}<style>{{ css_inline|safe }}</style>{% endif %}
   {% block css %}{% endblock %}
 </head>
