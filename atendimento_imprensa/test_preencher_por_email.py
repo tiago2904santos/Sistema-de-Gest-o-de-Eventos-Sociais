@@ -268,3 +268,27 @@ class QuemPedeEVeiculoTests(TestCase):
         self.assertIn("99734-5521", s["contato"].valor)
         self.assertEqual(s["veiculo_novo"].valor, "Rádio Nova FM")
         self.assertNotIn("veiculo", s)
+
+    def test_whatsapp_apelido_do_contato_cede_ao_nome_completo(self):
+        s = self.ler("[24/09/2026 08:44] Fernanda Litoral: Bom dia! Fernanda Reis aqui\n"
+                     "[24/09/2026 08:45] Fernanda Litoral: preciso de uma nota sobre a fuga")
+        self.assertEqual(s["jornalista"].valor, "Fernanda Reis")
+        # Contato só com apelido: vale quem assina com o veículo.
+        s = self.ler("[24/09/2026 08:44] Juninho TV: Queria uma entrevista com o delegado amanhã. "
+                     "Osvaldo Júnior Tanaka, TV Paraná Sul")
+        self.assertEqual(s["jornalista"].valor, "Osvaldo Júnior Tanaka")
+
+    def test_whatsapp_a_assessoria_nao_e_o_jornalista(self):
+        s = self.ler("[24/09/2026 11:30] Ascom PCPR: Bom dia, Anderson! Mandamos o release.\n"
+                     "[24/09/2026 14:08] Anderson Lückmann: Obrigado! Consigo uma entrevista hoje?")
+        self.assertEqual(s["jornalista"].valor, "Anderson Lückmann")
+        # Grupo interno repassando a ligação: a jornalista é a citada com o veículo.
+        s = self.ler("[24/09/2026 10:45] Paula Ascom: Gente, a Tânia Weber, da TV Paraná Sul, ligou pedindo entrevista\n"
+                     "[24/09/2026 10:46] Marcelo Ascom: Deixa comigo")
+        self.assertEqual(s["jornalista"].valor, "Tânia Weber")
+
+    def test_whatsapp_cartao_de_contato_do_reporter(self):
+        s = self.ler("[24/09/2026 10:00] Sabrina Produção TV: O repórter Gustavo Lenz quer gravar entrevista\n"
+                     "[24/09/2026 10:01] Sabrina Produção TV: Contato: Gustavo Lenz TV Paraná Sul\n+55 41 99702-5518")
+        self.assertEqual(s["jornalista"].valor, "Gustavo Lenz")
+        self.assertIn("99702-5518", s["contato"].valor)

@@ -13,8 +13,11 @@ As regras do domínio das publicações (mapas/demandas.md §2.5):
   então só a pessoa decide;
 - a fonte é quem assina ("Del. Fulano"); se o remetente é a caixa da
   unidade ("DP Ortigueira"), quem assina o texto ("Inv. Fulano",
-  "Informações: escrivão Fulano"). O jornalista responsável é quem está
-  registrando, quando o nome casa com a equipe;
+  "Informações: escrivão Fulano"). Na conversa do WhatsApp, quem manda a
+  pauta (não a Ascom que responde nem quem repassa num grupo interno), com
+  o nome que o texto diz ("Del. Marcos DP Palmas" → "Delegado Marcos
+  Wendler"). O jornalista responsável é quem está registrando, quando o
+  nome casa com a equipe;
 - as fotos do e-mail não têm onde ficar na pauta: viram aviso.
 
 Nada aqui grava.
@@ -119,7 +122,8 @@ def _manchete(texto: str) -> str:
         linha = " ".join(linha.split())
         if len(linha.split()) < 4 or not _eh_caixa_alta(linha) or _R_SO_ROTULO.match(dobrar(linha)):
             continue
-        return linha.strip(" -–:")
+        # Sem os emojis de enfeite nas pontas: "🔥 PCPR DEFLAGRA OPERAÇÃO… 🔥".
+        return re.sub(r"^[^\wÀ-ÿ\"“]+|[^\wÀ-ÿ\"”.!?)]+$", "", linha)
     return ""
 
 
@@ -249,21 +253,52 @@ def _limpar_abertura(linha: str) -> str:
     return linha.strip()
 
 
+# "(áudio transcrito)", "[áudio]": a marca da transcrição, não o texto.
+_R_MARCA_DE_AUDIO = re.compile(r"^\s*[(\[]\s*(?i:[aá]udio|transcri)[^)\]]{0,40}[)\]]\s*")
+# Quem se apresenta ("aqui é o delegado Fulano, da DP de Castro") não diz o fato.
+_R_SO_APRESENTACAO = re.compile(r"^(?:aqui\s+(?:e|quem\s+fala\s+e)|sou|meu\s+nome\s+e|quem\s+fala\s+e)\b")
+# A frase curta seguinte que diz o crime completa o fato: "… no Pinheirinho. Foi autuado por porte ilegal de arma".
+_R_DIZ_O_CRIME = re.compile(
+    r"^(?:(?:ele|ela|eles|elas|o\s+suspeito|a\s+suspeita|os\s+suspeitos)\s+)?"
+    r"(?:foi|foram|vai|vao|sera|serao)\s+(?:autuad|indiciad|responder|preso\s+por|presa\s+por|presos\s+por)"
+)
+# O anexo que a exportação do WhatsApp deixa no texto: "IMG-20260819-WA0012.jpg (arquivo anexado)".
+_R_LINHA_DE_ANEXO = re.compile(r"^\s*\S+\.[A-Za-z0-9]{2,5}\s*\((?:arquivo\s+anexado|file\s+attached)\)\s*$", re.I)
+_R_FIM_DE_FRASE = re.compile(r"[.!?](?=\s+[A-ZÀ-Ý0-9]|\s*$)")
+
+
+def _frases(texto: str) -> list[str]:
+    """Ponto final seguido de espaço e maiúscula: "(PCPR) prendeu… Curitiba. A ação…"."""
+    frases, pos = [], 0
+    for m in _R_FIM_DE_FRASE.finditer(texto):
+        frases.append(texto[pos:m.start()].strip())
+        pos = m.end()
+    frases.append(texto[pos:].strip())
+    return [f for f in frases if f]
+
+
 def _primeira_frase(corpo: str) -> str:
     for paragrafo in re.split(r"\n\s*\n", corpo or ""):
-        linhas = [linha for linha in paragrafo.strip().split("\n") if linha.strip()]
+        linhas = [linha for linha in paragrafo.strip().split("\n") if linha.strip() and not _R_LINHA_DE_ANEXO.match(linha)]
         while linhas:
-            limpa = _limpar_abertura(linhas[0])
+            limpa = _limpar_abertura(_R_MARCA_DE_AUDIO.sub("", linhas[0]))
             if limpa:
                 linhas[0] = limpa
                 break
             linhas.pop(0)
-        texto = " ".join(" ".join(linhas).split())
-        if len(texto) < 20:
+        frases = _frases(" ".join(" ".join(linhas).split()))
+        # Na conversa, quem manda se apresenta antes do fato: essa frase não é o título.
+        apresentou = False
+        while frases and _R_SO_APRESENTACAO.match(dobrar(_limpar_abertura(frases[0]))):
+            frases.pop(0)
+            apresentou = True
+        if frases and apresentou:
+            frases[0] = _limpar_abertura(frases[0])
+        if not frases or len(" ".join(frases)) < 20:
             continue
-        # Ponto final seguido de espaço e maiúscula: "(PCPR) prendeu… Curitiba. A ação…".
-        fim = re.search(r"[.!?](?=\s+[A-ZÀ-Ý0-9]|\s*$)", texto)
-        frase = texto[: fim.start()] if fim else texto
+        frase = frases[0]
+        if len(frases) > 1 and len(frases[1]) <= 80 and _R_DIZ_O_CRIME.match(dobrar(frases[1])):
+            frase = f"{frase}. {frases[1]}"
         return frase[:1].upper() + frase[1:]
     return ""
 
@@ -371,8 +406,112 @@ def _nome_do_contato(nome: str, leitor: leitura_unidades.Leitor) -> tuple[str, s
     return nome.rstrip(" -–|/"), cargo
 
 
+# ---------------------------------------------------------------------------
+# Fonte numa conversa do WhatsApp
+# ---------------------------------------------------------------------------
+
+# A própria assessoria na conversa: "Ascom PCPR", "Paula Ascom" (grupo interno que repassa).
+_R_DA_CASA = re.compile(r"\b(?:ascom|assessoria|pcpr|comunicacao\s+pcpr)\b")
+_CARGO_SERVIDOR = (r"(?i:del\.|dra?\.|inv\.|invest\.|esc\.|delegad[oa](?:\s+de\s+pol[ií]cia)?|investigador[a]?|"
+                   r"escriv[ãa]o?|agente|papiloscopista)")
+# "Aqui é o investigador Fulano", "sou a escrivã Fulana", "falar comigo, investigadora Fulana".
+_R_SERVIDOR_SE_APRESENTA = re.compile(
+    r"(?i:\baqui[ \t]+[eé]|\bsou|\bmeu[ \t]+nome[ \t]+[eé]|\bfalar[ \t]+comigo,?)[ \t]+(?i:[oa][ \t]+)?"
+    r"(?P<cargo>" + _CARGO_SERVIDOR + r")[ \t]+" + _NOME
+)
+# Quem assina a mensagem: "Delegado Fulano – DHPP" no começo da linha ou "Fulano – escrivã",
+# "Fulana, investigadora" (também no fim de uma frase: "… pediu pra repassar. Denise Farias, escrivã").
+_R_SERVIDOR_ASSINA = re.compile(
+    r"(?:^|(?<=[.!?])[ \t]+)[^\w\n]*(?:(?i:contato)[ \t]*:[ \t]*)?"
+    r"(?:(?P<cargo>" + _CARGO_SERVIDOR + r")[ \t]+" + _NOME
+    + r"|(?P<nome2>[A-ZÀ-Ý][\wÀ-ÿ'-]+(?:[ \t]+(?:d[aeo]s?[ \t]+)?[A-ZÀ-Ý][\wÀ-ÿ'-]+){1,4})[ \t]*[,–—-][ \t]*"
+    r"(?P<cargo2>" + _CARGO_SERVIDOR + r")(?![\wÀ-ÿ]))",
+    re.M,
+)
+# Palavras do nome do contato que não são o nome da pessoa: cargo, "Regional", "Sgt".
+_NAO_E_NOME = frozenset(
+    "del dr dra inv invest esc delegado delegada investigador investigadora escriva escrivao agente "
+    "papiloscopista sgt sargento regional ascom pcpr dp dm sdp".split()
+)
+
+
+def _fala_da_pauta(mensagem: Mensagem) -> tuple[bool, str]:
+    """(é conversa, nome de quem mandou a pauta): o primeiro de fora da assessoria
+    na última conversa (depois da última pausa de mais de 12 horas).
+
+    Vazio quando só a assessoria fala (grupo interno repassando o material).
+    """
+    falas = [f for f in (mensagem.extras or {}).get("falas") or [] if f.get("nome")]
+    if not falas:
+        return False, ""
+    inicio, anterior = 0, None
+    for i, fala in enumerate(falas):
+        quando = fala.get("enviado_em")
+        if quando is not None and anterior is not None and (quando - anterior).total_seconds() > 12 * 3600:
+            inicio = i
+        anterior = quando or anterior
+    for fala in falas[inicio:]:
+        if not _R_DA_CASA.search(dobrar(fala["nome"])):
+            return True, fala["nome"]
+    return True, ""
+
+
+def _servidores_no_texto(corpo: str) -> list[tuple[int, int, str, str, str]]:
+    """(prioridade, posição, cargo, nome, trecho) de cada servidor que o texto nomeia:
+    quem se apresenta (0), quem assina (1), quem é citado ("disse o delegado Fulano", 2)."""
+    achados = []
+    for prioridade, regex in enumerate((_R_SERVIDOR_SE_APRESENTA, _R_SERVIDOR_ASSINA, _R_FONTE_NO_TEXTO)):
+        for m in regex.finditer(corpo or ""):
+            grupos = m.groupdict()
+            nome = grupos.get("nome") or grupos.get("nome2")
+            cargo = grupos.get("cargo") or grupos.get("cargo2") or ""
+            if nome:
+                achados.append((prioridade, m.start(), " ".join(cargo.split()), " ".join(nome.split()),
+                                " ".join(m.group(0).split())))
+    return sorted(achados)
+
+
+def _com_cargo(cargo: str, nome: str) -> str:
+    """ "Del. Fulano" para delegado; o nome só para os demais (como na assinatura do e-mail)."""
+    return f"Del. {nome}" if re.match(r"^(?:del|dr)", dobrar(cargo)) else nome
+
+
+def _fonte_na_conversa(mensagem: Mensagem, leitor: leitura_unidades.Leitor) -> Sugestao | None:
+    """A fonte numa conversa do WhatsApp: quem manda a pauta, com o nome que a conversa diz.
+
+    O contato salvo ("Del. Marcos DP Palmas", "Inv. Szeremeta DENARC") não é o
+    nome: vale o servidor do texto com o mesmo nome ou sobrenome ("Delegado
+    Marcos Wendler"). Quando quem manda não é gente (número sem nome, a caixa
+    da unidade, a própria assessoria repassando), vale quem se apresenta ou
+    assina no texto. O contato do cartão para a imprensa não passa na frente
+    de quem mandou (ele só vence quando o contato bate com ele).
+    """
+    conversa, quem = _fala_da_pauta(mensagem)
+    if not conversa:
+        return None
+    servidores = _servidores_no_texto(mensagem.corpo)
+    if not servidores:
+        return None
+    palavras = {p for p in _chave(quem).split() if len(p) >= 3 and p not in _NAO_E_NOME}
+    for _prioridade, _pos, cargo, nome, trecho in servidores:
+        if palavras & set(_chave(nome).split()):
+            # O cargo pode estar só no contato: "Del. Marcos DP Palmas" + "Marcos Wendler".
+            cargo = cargo or _nome_do_contato(quem, leitor)[1] or quem
+            valor = _com_cargo(cargo, nome)[:200]
+            return Sugestao(valor, valor, "M", f"{quem} · {trecho}")
+    sem_nome = not quem or not re.search(r"[A-Za-zÀ-ÿ]", quem) or _institucional(quem, leitor) or not palavras
+    if sem_nome:
+        _prioridade, _pos, cargo, nome, trecho = servidores[0]
+        valor = _com_cargo(cargo, nome)[:200]
+        return Sugestao(valor, valor, "M", trecho)
+    return None
+
+
 def _fonte(mensagem: Mensagem, pessoa, leitor: leitura_unidades.Leitor) -> Sugestao | None:
     """Quem passou a informação: "Del. Fulano" pela assinatura, ou quem assina o texto."""
+    na_conversa = _fonte_na_conversa(mensagem, leitor) if mensagem.origem == "whatsapp" else None
+    if na_conversa is not None:
+        return na_conversa
     if pessoa is not None and pessoa.nome and not _institucional(pessoa.nome, leitor):
         nome, cargo_no_nome = _nome_do_contato(pessoa.nome, leitor)
         cargo = dobrar(pessoa.cargo) or cargo_no_nome
