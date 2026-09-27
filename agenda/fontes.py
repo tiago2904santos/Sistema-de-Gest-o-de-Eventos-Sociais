@@ -84,6 +84,7 @@ def _evento(
     chave: str = "",
     hora_inicio: dt.time | None = None,
     hora_fim: dt.time | None = None,
+    pessoas: list[str] | None = None,
 ) -> dict:
     """Um compromisso no formato do calendário.
 
@@ -141,6 +142,8 @@ def _evento(
             "tipo": tipo,
             "meu": meu,
             "horario": horario,
+            # Quem está escalado (m134): alimenta o filtro "Pessoa" e a escala.
+            "pessoas": list(pessoas or ()),
             "detalhes": [[rotulo, valor] for rotulo, valor in detalhes if valor],
         },
     }
@@ -216,16 +219,20 @@ def _horario_da_viagem(v):
 def _viagens(usuario, inicio, fim) -> list[dict]:
     from viagens_viagem.models import Viagem
 
+    from . import pessoas as equipes
     from .situacao import consulta_de_viagens, situacao_da_viagem
 
-    consulta = consulta_de_viagens(
+    consulta = equipes.prefetch_equipes(consulta_de_viagens(
         Viagem.objects.filter(_sobrepoe("data_inicio", "data_fim", inicio, fim))
         .select_related("destino_municipio__estado", "destino_estado", "unidade_responsavel")
         .prefetch_related("roteiros__destinos__municipio__estado", "oficios__roteiro__destinos__municipio__estado")
         .order_by("data_inicio", "id")
-    )
+    ))
     viagens = list(consulta)
     extras = _municipios_extras(viagens)
+    # "Meu" (m134): criei a viagem/ofício/roteiro, ou estou escalado.
+    criacoes = equipes.criacoes_de(usuario)
+    servidor_pk = getattr(usuario, "servidor_id", None)
     saida = []
     for v in viagens:
         motivo = (v.motivo or "").strip()
@@ -234,6 +241,7 @@ def _viagens(usuario, inicio, fim) -> list[dict]:
         # Todos os destinos (m132): os da viagem no título, os dos roteiros no filtro.
         destinos = _destinos_da_viagem(v, extras)
         hora_inicio, hora_fim = _horario_da_viagem(v)
+        nomes, escalados = equipes.equipe_da_viagem(v)
         saida.append(
             _evento(
                 fonte="viagem",
@@ -250,12 +258,15 @@ def _viagens(usuario, inicio, fim) -> list[dict]:
                 tipo=str(v.unidade_responsavel) if v.unidade_responsavel_id else "",
                 hora_inicio=hora_inicio,
                 hora_fim=hora_fim,
+                meu=equipes.viagem_e_minha(v, criacoes=criacoes, servidor_pk=servidor_pk, escalados=escalados),
+                pessoas=nomes,
                 detalhes=[
                     ("Destino", ", ".join(destinos)),
                     ("Período", v.periodo_display),
                     ("Horário", _horario_texto(hora_inicio, hora_fim)),
                     ("Motivo", motivo),
                     ("Unidade", str(v.unidade_responsavel) if v.unidade_responsavel_id else ""),
+                    ("Equipe", ", ".join(nomes)),
                     ("Cancelada", v.motivo_cancelamento if v.cancelado else ""),
                 ],
             )
@@ -282,7 +293,7 @@ def _solicitacoes(usuario, inicio, fim) -> list[dict]:
         permissions.queryset_visivel(usuario, SolicitacaoEvento.objects.all())
         .filter(data_inicio_evento__isnull=False)
         .filter(_sobrepoe("data_inicio_evento", "data_fim_evento", inicio, fim))
-        .select_related("municipio", "tipo_evento")
+        .select_related("municipio", "tipo_evento", "motorista")
         .order_by("data_inicio_evento", "id")
     )
     encerrados = {StatusSolicitacao.CANCELADA, StatusSolicitacao.NAO_ATENDIDA}
@@ -303,7 +314,9 @@ def _solicitacoes(usuario, inicio, fim) -> list[dict]:
                 encerrado=s.status in encerrados,
                 municipio=lugar,
                 tipo=tipo,
-                meu=s.criado_por_id == getattr(usuario, "pk", None),
+                meu=s.criado_por_id == getattr(usuario, "pk", None)
+                or (bool(s.motorista_id) and s.motorista_id == getattr(usuario, "servidor_id", None)),
+                pessoas=[s.motorista.nome] if s.motorista_id else [],
                 detalhes=[
                     ("Município", lugar),
                     ("Tipo de evento", tipo),
@@ -410,6 +423,7 @@ def _demandas(usuario, inicio, fim) -> list[dict]:
                 meu=d.criado_por_id == getattr(usuario, "pk", None),
                 # A palestra tem hora de início, não de fim: dura DURACAO_PADRAO (m132).
                 hora_inicio=d.hora_inicio,
+                pessoas=[p.nome for p in d.palestrantes.all()],
                 detalhes=[
                     ("Município", lugar),
                     ("Evento", d.get_evento_display()),

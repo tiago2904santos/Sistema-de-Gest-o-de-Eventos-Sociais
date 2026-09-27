@@ -23,6 +23,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from . import detalhes
+from .assinatura import contexto_assinatura
+from .criar import atalhos_de_criacao
 from .fontes import eventos_de, fontes_de
 
 # Um ano e pouco: cobre a visão anual com folga e nada além.
@@ -51,6 +53,10 @@ def painel(request):
             # Com marcadores: o JS troca "/f/0/" pela fonte e pelo número.
             "url_detalhe": reverse("agenda:detalhe", args=["f", 0]),
             "hoje": timezone.localdate().isoformat(),
+            # O modal "Assinar": link do feed iCalendar e fontes (m133).
+            **contexto_assinatura(request),
+            # "Criar aqui" (m135): as telas novas que a pessoa pode abrir.
+            "atalhos": atalhos_de_criacao(request.user),
         },
     )
 

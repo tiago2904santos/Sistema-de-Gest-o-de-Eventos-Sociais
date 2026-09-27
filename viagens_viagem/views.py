@@ -86,9 +86,16 @@ def criar(request):
     if request.method == "GET":
         return redirect("viagens_viagem:lista")
     exigir_operador(request)
+    from core.periodo_url import datas_da_url
+
     from .services import criar_viagem_rascunho
 
     viagem = criar_viagem_rascunho()
+    # "Criar aqui" da Agenda (m135): o POST traz inicio/fim e o rascunho já nasce com o período.
+    inicio, fim = datas_da_url(request.POST)
+    if inicio is not None:
+        viagem.data_inicio, viagem.data_fim = inicio, fim
+        viagem.save(update_fields=["data_inicio", "data_fim", "atualizado_em"])
     return redirect("viagens_viagem:etapa", pk=viagem.pk, etapa=1)
 
 

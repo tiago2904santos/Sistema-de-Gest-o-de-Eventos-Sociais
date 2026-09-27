@@ -1,0 +1,72 @@
+{% comment %}
+  Modal "Assinar a agenda": o link pessoal do feed iCalendar (m133).
+
+  O link vem pronto do servidor (agenda:ics com o token da pessoa). As
+  caixas escolhem o que entra — fontes e "só a minha agenda" — e o JS
+  (agenda-extras.js) recompõe a query string do link na hora. Gerar, trocar
+  e revogar são POSTs comuns para agenda:assinatura.
+{% endcomment %}
+<dialog class="an-dialogo ag-assinar" id="ag-assinar" aria-labelledby="ag-assinar-titulo">
+  <div class="an-form">
+    <div>
+      <h2 class="an-titulo" id="ag-assinar-titulo">Assinar no seu calendário</h2>
+      <p class="an-texto">Cole o link no Outlook, no Google Agenda ou no celular ("adicionar calendário por URL"). Os compromissos que você vê aqui aparecem lá, com lembrete, e acompanham as mudanças de data sozinhos.</p>
+    </div>
+
+    {% if assinatura_url %}
+      <div class="ag-assinar__opcoes" role="group" aria-label="O que entra no calendário">
+        {% for fonte in fontes_assinatura %}
+          <label class="ag-chip ag-chip--{{ fonte.slug }}">
+            <input type="checkbox" data-ics-fonte value="{{ fonte.slug }}" checked>
+            <span class="ag-chip__pt" aria-hidden="true"></span>
+            <span class="ag-chip__t">{{ fonte.rotulo }}</span>
+          </label>
+        {% endfor %}
+        <label class="ag-toggle ag-assinar__meus"><input type="checkbox" data-ics-meus><span>Só a minha agenda</span></label>
+      </div>
+
+      <div class="an-caixa ag-assinar__caixa">
+        <label class="ag-f__h" for="ag-ics-url">Seu link pessoal</label>
+        <input id="ag-ics-url" class="ag-busca ag-assinar__url" type="text" readonly
+               value="{{ assinatura_url }}" data-ics-url data-ics-base="{{ assinatura_url }}">
+        <div class="ag-assinar__acoes">
+          <button type="button" class="ag-btn ag-btn--peq" data-ics-copiar>{% include "components/icon.html" with nome="copy" %}Copiar link</button>
+          <a class="ag-btn ag-btn--peq" href="{{ assinatura_url }}" data-ics-baixar download="agenda.ics">{% include "components/icon.html" with nome="download" %}Baixar .ics</a>
+          <span class="ag-assinar__ok" data-ics-copiado hidden>Copiado.</span>
+        </div>
+      </div>
+      <p class="an-texto ag-assinar__aviso">Quem tiver este link vê a sua agenda sem senha. Se ele vazar, gere outro: o anterior deixa de funcionar na hora. Gerado em {{ assinatura_gerada_em|date:"d/m/Y H:i" }}.</p>
+    {% else %}
+      <p class="an-texto">Você ainda não tem um link. Ele é pessoal e aleatório: quem tiver o link vê a sua agenda, então guarde-o só nos seus aplicativos.</p>
+    {% endif %}
+
+    {# A pauta da semana por e-mail (m136): toda segunda, para quem ligar. #}
+    <div class="an-caixa ag-assinar__caixa ag-assinar__pauta">
+      <span class="ag-f__h">Pauta da semana por e-mail</span>
+      <p class="an-texto">Toda segunda-feira, a pauta da sua semana em PDF{% if pauta_sem_email %} — seu usuário não tem e-mail cadastrado; peça ao administrador{% endif %}.</p>
+      <form method="post" action="{{ url_assinatura }}" class="ag-assinar__form">
+        {% csrf_token %}
+        {% if pauta_ativa %}
+          <button type="submit" name="acao" value="pauta_desligar" class="ag-btn ag-btn--peq">Desligar</button>
+          <span class="ag-assinar__ok">Ligada.</span>
+        {% else %}
+          <button type="submit" name="acao" value="pauta_ligar" class="ag-btn ag-btn--peq"{% if pauta_sem_email %} disabled{% endif %}>{% include "components/icon.html" with nome="mail" %}Receber toda segunda</button>
+        {% endif %}
+      </form>
+    </div>
+
+    <div class="an-rodape ag-assinar__rodape">
+      {% if assinatura_url %}
+        <form method="post" action="{{ url_assinatura }}" class="ag-assinar__form">
+          {% csrf_token %}
+          <button type="submit" name="acao" value="revogar" class="an-remover">Revogar link</button>
+        </form>
+      {% endif %}
+      <button type="button" class="btn--secundaria" data-ag-assinar-fechar>Fechar</button>
+      <form method="post" action="{{ url_assinatura }}" class="ag-assinar__form">
+        {% csrf_token %}
+        <button type="submit" name="acao" value="gerar" class="btn-primaria">{% if assinatura_url %}Gerar novo link{% else %}Gerar link{% endif %}</button>
+      </form>
+    </div>
+  </div>
+</dialog>

@@ -12,7 +12,9 @@
    que é onde a permissão mora. Aqui só se liga aba e fechamento.
 
    Preferências (visão, filtros) ficam no localStorage — conveniência deste
-   navegador, nunca estado do sistema. */
+   navegador, nunca estado do sistema. A URL espelha o mesmo estado (m137):
+   ela é lida antes do localStorage e reescrita a cada mudança, para que um
+   link copiado abra a agenda exatamente como está na tela. */
 (function () {
   "use strict";
 
@@ -28,6 +30,8 @@
   var elSituacoes = $("ag-situacoes");
   var selMunicipio = $("ag-municipio");
   var selTipo = $("ag-tipo");
+  var selPessoa = $("ag-pessoa"); // filtro por pessoa escalada (m134)
+  var linkPauta = $("ag-pauta");  // "Baixar pauta" (m136)
   var chkMeus = $("ag-meus");
   var busca = $("ag-busca");
   var vazio = $("ag-vazio");
@@ -47,8 +51,44 @@
   pref.fontesDesligadas = pref.fontesDesligadas || [];
   pref.sitDesligadas = pref.sitDesligadas || [];   // situações ativas que a pessoa desligou
   pref.encLigadas = pref.encLigadas || [];         // encerradas que a pessoa quis ver
+
+  // A URL guarda o que está na tela (m137): visão, período, fontes, situação,
+  // município, tipo, pessoa, "minha agenda" e busca. Ela vale mais que o
+  // localStorage — um link recebido abre exatamente como foi mandado — e é
+  // reescrita (replaceState) a cada mudança, sem entrar no histórico.
+  var VISOES = ["dayGridMonth", "timeGridWeek", "timeGridDay", "listMonth", "list30", "multiMonthYear"];
+  var url = new URLSearchParams(location.search);
+  var dataInicial = /^\d{4}-\d{2}-\d{2}$/.test(url.get("data") || "") ? url.get("data") : null;
+  var buscaInicial = url.get("q") || "";
+  if (VISOES.indexOf(url.get("view")) !== -1) pref.view = url.get("view");
+  if (url.has("fontes")) {
+    var ligadas = url.get("fontes").split(",");
+    pref.fontesDesligadas = caixas.map(function (c) { return c.value; }).filter(function (v) { return ligadas.indexOf(v) === -1; });
+  }
+  if (url.has("sit")) pref.sitDesligadas = url.get("sit").split(",").filter(Boolean);
+  if (url.has("enc")) pref.encLigadas = url.get("enc").split(",").filter(Boolean);
+  ["municipio", "tipo", "pessoa"].forEach(function (k) { if (url.has(k)) pref[k] = url.get(k); });
+  if (url.has("meus")) pref.meus = url.get("meus") === "1";
   caixas.forEach(function (c) { if (pref.fontesDesligadas.indexOf(c.value) !== -1) c.checked = false; });
   if (chkMeus) chkMeus.checked = !!pref.meus;
+  if (busca && buscaInicial) busca.value = buscaInicial;
+
+  function sincronizarUrl() {
+    if (!window.history || !history.replaceState) return;
+    var p = new URLSearchParams();
+    var v = cal && cal.view;
+    if (v && v.currentStart) { p.set("view", v.type); p.set("data", isoLocal(v.currentStart)); }
+    var fontes = fontesAtivas();
+    if (fontes.length < caixas.length) p.set("fontes", fontes.join(","));
+    if (pref.sitDesligadas.length) p.set("sit", pref.sitDesligadas.join(","));
+    if (pref.encLigadas.length) p.set("enc", pref.encLigadas.join(","));
+    ["municipio", "tipo", "pessoa"].forEach(function (k) { if (pref[k]) p.set(k, pref[k]); });
+    if (chkMeus && chkMeus.checked) p.set("meus", "1");
+    var q = (busca && busca.value || "").trim();
+    if (q) p.set("q", q);
+    var s = p.toString();
+    history.replaceState(null, "", location.pathname + (s ? "?" + s : "") + location.hash);
+  }
 
   // ---- filtros locais -------------------------------------------------
   function fontesAtivas() {
@@ -66,6 +106,7 @@
     // Todos os municípios por onde o compromisso passa (m132), não só o primeiro.
     if (pref.municipio && (p.municipios || [p.municipio]).indexOf(pref.municipio) === -1) return false;
     if (pref.tipo && p.tipo !== pref.tipo) return false;
+    if (pref.pessoa && (p.pessoas || []).indexOf(pref.pessoa) === -1) return false;
     if (chkMeus && chkMeus.checked && !p.meu) return false;
     var q = (busca && busca.value || "").trim().toLowerCase();
     if (q) {
@@ -78,7 +119,7 @@
   // As opções dos filtros nascem do que está carregado: mostrar "Umuarama"
   // num mês em que não há nada em Umuarama só confunde.
   function montarOpcoes(lista) {
-    var porFonte = {}, situacoes = {}, municipios = {}, tipos = {};
+    var porFonte = {}, situacoes = {}, municipios = {}, tipos = {}, pessoas = {};
     lista.forEach(function (ev) {
       var p = ev.extendedProps;
       porFonte[p.fonte] = (porFonte[p.fonte] || 0) + 1;
@@ -88,7 +129,9 @@
       s.n += 1;
       (p.municipios || [p.municipio]).forEach(function (m) { if (m) municipios[m] = (municipios[m] || 0) + 1; });
       if (p.tipo) tipos[p.tipo] = (tipos[p.tipo] || 0) + 1;
+      (p.pessoas || []).forEach(function (nome) { pessoas[nome] = (pessoas[nome] || 0) + 1; });
     });
+    renderSelect(selPessoa, pessoas, pref.pessoa);
     document.querySelectorAll("[data-conta]").forEach(function (n) {
       var t = porFonte[n.dataset.conta] || 0; n.textContent = t ? String(t) : "";
     });
@@ -160,6 +203,8 @@
     var visiveis = lista.filter(passa);
     vazio.hidden = visiveis.length > 0;
     ok(visiveis);
+    atualizarPauta();
+    sincronizarUrl();
   }
 
   // ---- o calendário (sem a barra dele: a nossa está no template) ----------
@@ -167,8 +212,10 @@
   var cal = new FullCalendar.Calendar(el, {
     locale: "pt-br",
     headerToolbar: false,
-    initialView: pref.view || (estreito() ? "listMonth" : "dayGridMonth"),
-    views: { list30: { type: "list", duration: { days: 30 } } },
+    initialView: (VISOES.indexOf(pref.view) !== -1 && pref.view) || (estreito() ? "listMonth" : "dayGridMonth"),
+    initialDate: dataInicial || undefined,
+    // Visão anual (m137): os 12 meses em colunas; o servidor aceita o período inteiro.
+    views: { list30: { type: "list", duration: { days: 30 } }, multiMonthYear: { multiMonthMaxColumns: 3, dayMaxEvents: 2 } },
     height: "auto",
     firstDay: 0,
     navLinks: true,
@@ -181,6 +228,15 @@
     nowIndicator: true,
     events: carregar,
     eventClick: function (arg) { arg.jsEvent.preventDefault(); abrir(arg.event); },
+    // "Criar aqui" (m135): clicar num dia ou arrastar sobre vários abre o
+    // menu com as telas novas (agenda-extras.js); `end` vem exclusivo.
+    selectable: !!document.getElementById("ag-criar"),
+    selectMirror: true,
+    unselectAuto: true,
+    select: function (info) {
+      if (window.AgendaCriar) window.AgendaCriar.abrir(info.startStr.slice(0, 10), info.endStr.slice(0, 10));
+      cal.unselect();
+    },
     eventDidMount: function (arg) {
       var p = arg.event.extendedProps || {};
       if (p.fundo) {
@@ -199,8 +255,26 @@
         b.setAttribute("aria-pressed", b.dataset.view === info.view.type ? "true" : "false");
       });
       pref.view = info.view.type; gravar();
+      atualizarPauta(info);
+      sincronizarUrl();
     }
   });
+  // "Baixar pauta" (m136): o PDF do período visível, com as fontes e o "minha
+  // agenda" atuais. O fim do FullCalendar é exclusivo; a pauta quer o último dia.
+  function isoLocal(d) {
+    var m = d.getMonth() + 1, dia = d.getDate();
+    return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (dia < 10 ? "0" : "") + dia;
+  }
+  function atualizarPauta(info) {
+    var view = (info && info.view) || cal.view;
+    if (!linkPauta || !view || !view.currentStart) return;
+    var fim = new Date(view.currentEnd.getTime() - 86400000);
+    var params = new URLSearchParams({ inicio: isoLocal(view.currentStart), fim: isoLocal(fim) });
+    var fontes = fontesAtivas();
+    if (fontes.length && fontes.length < caixas.length) params.set("fontes", fontes.join(","));
+    if (chkMeus && chkMeus.checked) params.set("meus", "1");
+    linkPauta.href = linkPauta.dataset.base + "?" + params.toString();
+  }
   cal.render();
 
   // ---- cabeçalho próprio ------------------------------------------------
@@ -238,6 +312,7 @@
   });
   if (selMunicipio) selMunicipio.addEventListener("change", function () { pref.municipio = selMunicipio.value; gravar(); cal.refetchEvents(); });
   if (selTipo) selTipo.addEventListener("change", function () { pref.tipo = selTipo.value; gravar(); cal.refetchEvents(); });
+  if (selPessoa) selPessoa.addEventListener("change", function () { pref.pessoa = selPessoa.value; gravar(); cal.refetchEvents(); });
   if (chkMeus) chkMeus.addEventListener("change", function () { pref.meus = chkMeus.checked; gravar(); cal.refetchEvents(); });
   var temporizador = null;
   if (busca) busca.addEventListener("input", function () {
@@ -247,7 +322,7 @@
   var limpar = $("ag-limpar");
   if (limpar) limpar.addEventListener("click", function () {
     pref.fontesDesligadas = []; pref.sitDesligadas = []; pref.encLigadas = [];
-    pref.municipio = ""; pref.tipo = ""; pref.meus = false;
+    pref.municipio = ""; pref.tipo = ""; pref.pessoa = ""; pref.meus = false;
     caixas.forEach(function (c) { c.checked = true; });
     if (chkMeus) chkMeus.checked = false;
     if (busca) busca.value = "";

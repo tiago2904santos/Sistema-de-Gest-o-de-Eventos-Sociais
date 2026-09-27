@@ -1,0 +1,74 @@
+{% comment %}
+  Pauta da semana (m136): documento independente, renderizado pelo
+  WeasyPrint em PDF ou servido como HTML (imprimível) quando o PDF não sai.
+  Sem o shell nem o DS: o CSS é o mínimo para a folha A4, com as cores das
+  fontes iguais às do calendário.
+{% endcomment %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>{{ titulo }} — {{ inicio|date:"d/m" }} a {{ fim|date:"d/m/Y" }}</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 16mm; @bottom-right { content: "Página " counter(page) " de " counter(pages); font: 9px Arial, sans-serif; color: #777; } }
+  * { box-sizing: border-box; }
+  body { font: 11px/1.45 Arial, Helvetica, sans-serif; color: #1a1917; margin: 0; }
+  .topo { border-bottom: 2px solid #c9a227; padding-bottom: 8px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .topo h1 { margin: 0; font-size: 20px; }
+  .topo p { margin: 2px 0 0; color: #555; }
+  .meta { text-align: right; color: #777; font-size: 9.5px; }
+  .aviso { background: #fff5d6; border: 1px solid #e8cf7a; padding: 8px 10px; border-radius: 6px; margin-bottom: 12px; }
+  .dia { page-break-inside: avoid; margin-bottom: 12px; }
+  .dia h2 { font-size: 13px; margin: 0 0 4px; padding: 4px 8px; background: #f2f0ea; border-radius: 4px; }
+  .dia h2.hoje { background: #f7e7ad; }
+  .dia h2 small { font-weight: normal; color: #666; margin-left: 6px; }
+  .vazio { color: #888; margin: 0 8px 4px; font-style: italic; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: .04em; color: #777; padding: 2px 6px; border-bottom: 1px solid #ddd; }
+  td { padding: 4px 6px; border-bottom: 1px solid #eee; vertical-align: top; }
+  td.fonte { width: 16%; }
+  .pt { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: middle; background: #bbb; }
+  .pt.viagem { background: #c9a227; } .pt.solicitacao { background: #2f6db5; } .pt.coffee { background: #2e8b57; } .pt.demanda { background: #d97706; }
+  .continua { color: #777; font-size: 9.5px; }
+  .sit { white-space: nowrap; }
+  .rodape { margin-top: 16px; color: #888; font-size: 9px; border-top: 1px solid #ddd; padding-top: 6px; }
+  @media screen { body { max-width: 900px; margin: 24px auto; padding: 0 16px; } }
+  @media print { .so-tela { display: none; } }
+</style>
+</head>
+<body>
+  {% if aviso %}<p class="aviso so-tela">{{ aviso }}</p>{% endif %}
+  <header class="topo">
+    <div>
+      <h1>{{ titulo }}</h1>
+      <p>{{ inicio|date:"l, d/m" }} a {{ fim|date:"l, d/m/Y" }} · {{ total }} compromisso{{ total|pluralize }}</p>
+    </div>
+    <div class="meta">Sistema de Gestão de Eventos Sociais<br>Gerada em {{ gerada_em|date:"d/m/Y H:i" }} para {{ usuario.get_full_name|default:usuario.username }}</div>
+  </header>
+
+  {% for dia in dias %}
+    <section class="dia">
+      <h2{% if dia.hoje %} class="hoje"{% endif %}>{{ dia.data|date:"d/m" }}<small>{{ dia.semana }}</small></h2>
+      {% if dia.itens %}
+        <table>
+          <thead><tr><th>Compromisso</th><th>Horário</th><th>Local</th><th>Equipe</th><th>Situação</th></tr></thead>
+          <tbody>
+            {% for i in dia.itens %}
+              <tr>
+                <td><span class="pt {{ i.fonte }}"></span><strong>{{ i.titulo }}</strong> <span class="continua">({{ i.rotulo }}{% if i.continua %}, continua{% endif %}{% if i.ate %}, até {{ i.ate|date:"d/m" }}{% endif %})</span></td>
+                <td>{{ i.horario|default:"—" }}</td>
+                <td>{{ i.local|default:"—" }}</td>
+                <td>{{ i.equipe|default:"—" }}</td>
+                <td class="sit">{{ i.situacao }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="vazio">Sem compromissos.</p>
+      {% endif %}
+    </section>
+  {% endfor %}
+
+  <p class="rodape">Só o que a pessoa tem acesso no sistema; cancelados e não atendidos ficam de fora.</p>
+</body>
+</html>

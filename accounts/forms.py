@@ -59,7 +59,7 @@ class UsuarioForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "username", "email", "setores"]
+        fields = ["first_name", "last_name", "username", "email", "setores", "servidor"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -68,6 +68,16 @@ class UsuarioForm(forms.ModelForm):
         self.fields["last_name"].label = "Sobrenome"
         self.fields["username"].label = "Usuário"
         self.fields["email"].label = "E-mail institucional"
+        # O servidor do módulo de viagens que esta pessoa é (m134): liga o
+        # usuário à escala. Um servidor só corresponde a um usuário.
+        from viagens_cadastros.models import Servidor
+
+        servidores = Servidor.objects.filter(usuario__isnull=True)
+        if self.instance.pk and self.instance.servidor_id:
+            servidores = servidores | Servidor.objects.filter(pk=self.instance.servidor_id)
+        self.fields["servidor"].queryset = servidores.order_by("nome")
+        self.fields["servidor"].required = False
+        self.fields["servidor"].label = "Servidor correspondente"
         # Sem e-mail o usuário não recebe aviso de evento nem recupera a
         # própria senha. Exigido em cadastros novos e de quem já tem um — os
         # usuários antigos sem e-mail continuam editáveis sem inventar um.

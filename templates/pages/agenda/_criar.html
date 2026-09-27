@@ -1,0 +1,45 @@
+{% comment %}
+  Modal "Criar aqui" (m135): abre ao clicar num dia ou arrastar sobre vários.
+
+  Os atalhos vêm de agenda.criar.atalhos_de_criacao — só os módulos que a
+  pessoa pode usar. O JS (agenda-extras.js, window.AgendaCriar) põe as datas
+  escolhidas no título e na query string de cada link; o atalho com
+  metodo="post" (viagem) vira um formulário com inicio e fim.
+{% endcomment %}
+<dialog class="an-dialogo ag-criar" id="ag-criar" aria-labelledby="ag-criar-titulo">
+  <div class="an-form">
+    <div>
+      <h2 class="an-titulo" id="ag-criar-titulo">Criar aqui</h2>
+      <p class="an-texto" data-criar-periodo>Escolha o dia no calendário.</p>
+    </div>
+    {% if atalhos %}
+      <ul class="ag-criar__lista" role="list">
+        {% for a in atalhos %}
+          <li>
+            {% if a.metodo == "post" %}
+              <form method="post" action="{{ a.url }}" class="ag-criar__form" data-criar-post>
+                {% csrf_token %}
+                <input type="hidden" name="inicio" value="" data-criar-inicio>
+                <input type="hidden" name="fim" value="" data-criar-fim>
+                <button type="submit" class="ag-criar__item ag-criar__item--{{ a.slug }}">
+                  <span class="ag-criar__ico" aria-hidden="true">{% include "components/icon.html" with nome=a.icone %}</span>
+                  <span class="ag-criar__txt"><strong>{{ a.rotulo }}</strong><small>{{ a.dica }}</small></span>
+                </button>
+              </form>
+            {% else %}
+              <a class="ag-criar__item ag-criar__item--{{ a.slug }}" href="{{ a.url }}" data-criar-link data-base="{{ a.url }}">
+                <span class="ag-criar__ico" aria-hidden="true">{% include "components/icon.html" with nome=a.icone %}</span>
+                <span class="ag-criar__txt"><strong>{{ a.rotulo }}</strong><small>{{ a.dica }}</small></span>
+              </a>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="an-texto">Você não tem acesso a nenhum módulo que crie compromissos.</p>
+    {% endif %}
+    <div class="an-rodape">
+      <button type="button" class="btn--secundaria" data-ag-fechar-dialogo>Fechar</button>
+    </div>
+  </div>
+</dialog>
