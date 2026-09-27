@@ -16,10 +16,12 @@ entre várias (o termo de cada servidor) tem **variante** (`?v=` na URL).
 
 from __future__ import annotations
 
+from django.core.exceptions import ValidationError
 from django.forms.models import model_to_dict
 from django.http import Http404
 from django.urls import NoReverseMatch, reverse
 
+from documentos.services.exceptions import DocumentError
 from documentos.services.types import DocumentoTipo
 
 
@@ -170,10 +172,31 @@ class VinculoBase:
     def cancelado(self, objeto) -> bool:
         return bool(getattr(objeto, "cancelado", False))
 
-    def pode_editar(self, usuario, objeto) -> bool:
+    def pode_operar(self, usuario, objeto) -> bool:
+        """Quem pode mexer no documento (emitir, anexar): permissão de
+        edição e registro não cancelado."""
         from viagens_cadastros.permissions import pode_editar_cadastros
 
         return pode_editar_cadastros(usuario) and not self.cancelado(objeto)
+
+    def finalizado(self, objeto) -> bool:
+        """O registro do documento está fechado (ofício finalizado, prestação
+        finalizada): cada vínculo diz o que é "finalizado" para ele."""
+        return False
+
+    def fechado(self, objeto) -> str:
+        """Por que o documento não se edita ("" = aberto): há versão assinada
+        valendo (`assinado`) ou o registro está finalizado (`finalizado`).
+        Editar de novo é reabrir — revogar o assinado, ou reabrir o registro
+        com o motivo."""
+        if self.assinado(objeto):
+            return "assinado"
+        if self.finalizado(objeto):
+            return "finalizado"
+        return ""
+
+    def pode_editar(self, usuario, objeto) -> bool:
+        return self.pode_operar(usuario, objeto) and not self.fechado(objeto)
 
     def origens_editaveis(self, usuario) -> set[str]:
         """De quais origens quem vê pode editar trechos: a configuração do
@@ -286,7 +309,29 @@ class VinculoBase:
         return []
 
     def pode_emitir(self, usuario, objeto) -> bool:
-        return self.pode_editar(usuario, objeto) and not self.pendencias(objeto)
+        return self.pode_operar(usuario, objeto) and not self.pendencias(objeto)
+
+    # Assinado, mas os dados mudaram (m109)
+    def payload_atual(self, objeto, artefato=None):
+        """O payload com que o documento seria gerado agora — o mesmo que a
+        geração persiste em `payload_snapshot`; None quando o vínculo não o
+        reproduz (e então o assinado não se confere)."""
+        return None
+
+    def assinatura(self, objeto) -> dict:
+        """A versão assinada valendo e se ela ficou para trás dos dados:
+        `assinado`, `desatualizado` e `mudancas` (o que mudou, por parte)."""
+        from documentos.services.assinados import artefato_assinado, mudancas_desde_a_assinatura
+
+        artefato = artefato_assinado(self.artefatos(objeto))
+        if artefato is None:
+            return {"assinado": False, "desatualizado": False, "mudancas": []}
+        try:
+            mudancas = mudancas_desde_a_assinatura(artefato, self.payload_atual(objeto, artefato))
+        except (ValidationError, DocumentError):
+            # Documento que hoje nem gera (pendência nova): já não bate.
+            mudancas = ["O documento não gera mais com os dados de hoje"]
+        return {"assinado": True, "desatualizado": bool(mudancas), "mudancas": mudancas}
 
     def historico(self, objeto) -> list:
         return []
@@ -331,6 +376,16 @@ class VinculoOficio(VinculoBase):
         from documentos.services.document_context import contexto_do_oficio
 
         return contexto_do_oficio(oficio, modo=modo, campos_editaveis=campos_editaveis)
+
+    def finalizado(self, oficio):
+        return oficio.status == oficio.STATUS_FINALIZADO
+
+    def payload_atual(self, oficio, artefato=None):
+        from viagens_oficios.documents import build_canonical_document_payload
+
+        payload = build_canonical_document_payload(oficio, self.tipo)
+        payload["documento"] = self.documental(oficio)
+        return payload
 
     def dados_atuais(self, oficio) -> dict:
         """O ofício inteiro como o formulário o receberia: o PATCH troca só as
@@ -424,12 +479,18 @@ class VinculoTermo(VinculoBase):
     def variante_edicao(self, termo):
         return termo.doc_variante
 
-    def contexto(self, termo, *, modo, campos_editaveis):
-        from documentos.services.document_context import contexto_do_termo
-        from viagens_termos.services import _legacy_docx_context, build_termo_cadastro_payload
+    def payload_atual(self, termo, artefato=None):
+        from viagens_termos.services import build_termo_cadastro_payload
 
         payload = build_termo_cadastro_payload(termo, termo.doc_servidor, forcar_viatura=termo.doc_forcar_viatura)
         payload["documento"] = self.documental(termo)
+        return payload
+
+    def contexto(self, termo, *, modo, campos_editaveis):
+        from documentos.services.document_context import contexto_do_termo
+        from viagens_termos.services import _legacy_docx_context
+
+        payload = self.payload_atual(termo)
         contexto = contexto_do_termo(payload, _legacy_docx_context(payload), modo=modo, campos_editaveis=campos_editaveis)
         viatura = termo.viatura_efetiva()
         contexto["ids"] = {"servidor": termo.doc_servidor.pk if termo.doc_servidor else ""}
@@ -495,8 +556,20 @@ class VinculoTermoOficio(VinculoBase):
             raise Http404("Servidor sem termo neste ofício.")
         return oficio
 
-    def pode_editar(self, usuario, oficio):
-        return VINCULOS_BASE["oficio"].pode_editar(usuario, oficio)
+    def pode_operar(self, usuario, oficio):
+        return VINCULOS_BASE["oficio"].pode_operar(usuario, oficio)
+
+    def finalizado(self, oficio):
+        return VINCULOS_BASE["oficio"].finalizado(oficio)
+
+    def payload_atual(self, oficio, artefato=None):
+        from viagens_oficios.documents import build_termo_payload
+
+        # O termo assinado pode ser de outra variante (o semipreenchido): compara-se com a mesma.
+        variante = (artefato.payload_snapshot or {}).get("variante") if artefato is not None else None
+        payload = build_termo_payload(oficio, oficio.doc_servidor, variante=variante or None)
+        payload["documento"] = self.documental(oficio)
+        return payload
 
     def variante(self, oficio):
         return str(oficio.doc_servidor.pk)
@@ -510,11 +583,9 @@ class VinculoTermoOficio(VinculoBase):
 
     def contexto(self, oficio, *, modo, campos_editaveis):
         from documentos.services.document_context import contexto_do_termo
-        from viagens_oficios.documents import build_termo_payload
         from viagens_termos.services import _legacy_docx_context
 
-        payload = build_termo_payload(oficio, oficio.doc_servidor)
-        payload["documento"] = self.documental(oficio)
+        payload = self.payload_atual(oficio)
         contexto = contexto_do_termo(payload, _legacy_docx_context(payload), modo=modo, campos_editaveis=campos_editaveis)
         contexto["ids"] = {"servidor": oficio.doc_servidor.pk}
         # Data e destino vêm do roteiro do ofício; a viatura, do transporte dele.
@@ -562,14 +633,22 @@ class VinculoJustificativa(VinculoBase):
     def versao(self, oficio):
         return _versao(self.registro(oficio))
 
-    def contexto(self, oficio, *, modo, campos_editaveis):
-        from documentos.services.document_context import contexto_da_justificativa
+    def finalizado(self, oficio):
+        return oficio.status == oficio.STATUS_FINALIZADO
+
+    def payload_atual(self, oficio, artefato=None):
         from viagens_oficios.documents import build_canonical_document_payload
-        from viagens_oficios.docxtpl_context import build_justificativa_docxtpl_context
 
         payload = build_canonical_document_payload(oficio, self.tipo)
         payload["documento"] = self.documental(oficio)
-        return contexto_da_justificativa(payload, build_justificativa_docxtpl_context(oficio), modo=modo, campos_editaveis=campos_editaveis)
+        return payload
+
+    def contexto(self, oficio, *, modo, campos_editaveis):
+        from documentos.services.document_context import contexto_da_justificativa
+        from viagens_oficios.docxtpl_context import build_justificativa_docxtpl_context
+
+        return contexto_da_justificativa(self.payload_atual(oficio), build_justificativa_docxtpl_context(oficio), modo=modo,
+                                         campos_editaveis=campos_editaveis)
 
     def rotulo(self, oficio):
         return f"Justificativa – Ofício {oficio.numero_formatado}"
@@ -603,14 +682,17 @@ class VinculoOrdem(VinculoBase):
 
         return get_ordem_by_id(pk)
 
-    def contexto(self, ordem, *, modo, campos_editaveis):
-        from documentos.services.document_context import contexto_da_ordem_servico
+    def payload_atual(self, ordem, artefato=None):
         from viagens_cadastros.selectors import build_configuracao_context
-        from viagens_ordens.docxtpl_context import build_os_docxtpl_context
         from viagens_ordens.services import resumo_da_ordem
 
-        payload = {"institucional": build_configuracao_context(), "ordem_servico": resumo_da_ordem(ordem), "documento": self.documental(ordem)}
-        return contexto_da_ordem_servico(payload, build_os_docxtpl_context(ordem), modo=modo, campos_editaveis=campos_editaveis)
+        return {"institucional": build_configuracao_context(), "ordem_servico": resumo_da_ordem(ordem), "documento": self.documental(ordem)}
+
+    def contexto(self, ordem, *, modo, campos_editaveis):
+        from documentos.services.document_context import contexto_da_ordem_servico
+        from viagens_ordens.docxtpl_context import build_os_docxtpl_context
+
+        return contexto_da_ordem_servico(self.payload_atual(ordem), build_os_docxtpl_context(ordem), modo=modo, campos_editaveis=campos_editaveis)
 
     def rotulo(self, ordem):
         numero = f"{ordem.numero:03d}/{ordem.ano}" if ordem.numero and ordem.ano else ordem.numero_formatado
@@ -642,14 +724,18 @@ class VinculoPlano(VinculoBase):
 
         return get_plano_by_id(pk)
 
-    def contexto(self, plano, *, modo, campos_editaveis):
-        from documentos.services.document_context import contexto_do_plano_trabalho
+    def payload_atual(self, plano, artefato=None):
         from viagens_cadastros.selectors import build_configuracao_context
         from viagens_planos.docxtpl_context import build_plano_docxtpl_context
 
         tx = build_plano_docxtpl_context(plano)
-        payload = {"institucional": build_configuracao_context(), "plano": tx, "documento": self.documental(plano)}
-        return contexto_do_plano_trabalho(payload, tx, modo=modo, campos_editaveis=campos_editaveis)
+        return {"institucional": build_configuracao_context(), "plano": tx, "documento": self.documental(plano)}
+
+    def contexto(self, plano, *, modo, campos_editaveis):
+        from documentos.services.document_context import contexto_do_plano_trabalho
+
+        payload = self.payload_atual(plano)
+        return contexto_do_plano_trabalho(payload, payload["plano"], modo=modo, campos_editaveis=campos_editaveis)
 
     def rotulo(self, plano):
         return f"Plano de Trabalho {plano.numero_formatado}"
@@ -729,13 +815,19 @@ class VinculoRelatorio(VinculoBase):
     def variante_edicao(self, ps):
         return str(ps.servidor_id)
 
-    def contexto(self, ps, *, modo, campos_editaveis):
-        from documentos.services.document_context import contexto_do_relatorio_tecnico
+    def finalizado(self, ps):
+        return bool(ps.finalizada)
+
+    def payload_atual(self, ps, artefato=None):
         from viagens_prestacoes.services import build_relatorio_tecnico_context
 
-        tx = build_relatorio_tecnico_context(self.relatorio(ps), ps)
-        payload = dict(tx, documento=self.documental(ps))
-        contexto = contexto_do_relatorio_tecnico(payload, tx, modo=modo, campos_editaveis=campos_editaveis)
+        return dict(build_relatorio_tecnico_context(self.relatorio(ps), ps), documento=self.documental(ps))
+
+    def contexto(self, ps, *, modo, campos_editaveis):
+        from documentos.services.document_context import contexto_do_relatorio_tecnico
+
+        payload = self.payload_atual(ps)
+        contexto = contexto_do_relatorio_tecnico(payload, payload, modo=modo, campos_editaveis=campos_editaveis)
         contexto["ids"] = {"servidor": ps.servidor_id}
         return contexto
 
@@ -789,13 +881,19 @@ class VinculoDiario(VinculoBase):
     def dono_dos_blocos(self, ps):
         return ps.prestacao
 
-    def contexto(self, ps, *, modo, campos_editaveis):
-        from documentos.services.document_context import contexto_do_diario_bordo
+    def finalizado(self, ps):
+        return bool(ps.finalizada)
+
+    def payload_atual(self, ps, artefato=None):
         from viagens_prestacoes.diario_services import build_diario_bordo_context
 
         header, trechos = build_diario_bordo_context(ps.doc_diario)
-        payload = {"header": header, "trechos": trechos, "documento": self.documental(ps)}
-        return contexto_do_diario_bordo(payload, modo=modo, campos_editaveis=campos_editaveis)
+        return {"header": header, "trechos": trechos, "documento": self.documental(ps)}
+
+    def contexto(self, ps, *, modo, campos_editaveis):
+        from documentos.services.document_context import contexto_do_diario_bordo
+
+        return contexto_do_diario_bordo(self.payload_atual(ps), modo=modo, campos_editaveis=campos_editaveis)
 
     def rotulo(self, ps):
         return f"Diário de bordo – Ofício {ps.prestacao.oficio.numero_formatado}"

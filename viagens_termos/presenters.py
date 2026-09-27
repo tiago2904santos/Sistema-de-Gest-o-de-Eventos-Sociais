@@ -172,6 +172,9 @@ def estado_do_documento(artefato):
     """O selo de um documento só: onde ele está entre "nem saiu" e "voltou assinado"."""
     if artefato is None:
         return {"estado": "Sem PDF", "estado_tom": "neutro"}
+    if artefato.get("desatualizado"):
+        # Assinado, mas os dados mudaram desde então (m109): o título traz o que mudou.
+        return {"estado": "Assinado, mas os dados mudaram", "estado_tom": "prazo_proximo", "mudancas": artefato.get("mudancas") or []}
     if artefato["assinado"]:
         return {"estado": "Assinado", "estado_tom": "atendido"}
     return {"estado": "PDF gerado", "estado_tom": "aguardando"}
@@ -220,8 +223,11 @@ def linha_da_lista(termo, *, artefatos_pdf=None):
     }
 
 
-def artefatos_pdf_por_termo(termos):
+def artefatos_pdf_por_termo(termos, *, conferir=False):
     """(termo_id, servidor_id) → PDF de termo gerado e se já há versão assinada.
+
+    Com `conferir`, cada assinado ganha `desatualizado` e `mudancas` (m109) —
+    custa montar o payload de cada termo assinado, por isso só na tela do termo.
 
     O PDF apontado continua sendo o primeiro da ordem de criação, como antes —
     é o alvo de "Anexar assinado". Já `assinado` olha **todos** os PDFs
@@ -250,4 +256,17 @@ def artefatos_pdf_por_termo(termos):
         por_servidor = mapa.setdefault(termo_id, {})
         entrada = por_servidor.setdefault(servidor_id, {"pk": pk, "assinado": False})
         entrada["assinado"] = entrada["assinado"] or bool(tem_versao) or bool(arquivo_assinado)
+    if conferir:
+        from django.http import Http404
+        from documentos.editor.vinculos import vinculo_do_tipo
+        vinculo = vinculo_do_tipo(DocumentoTipo.TERMO_AUTORIZACAO)
+        for termo_id, por_servidor in mapa.items():
+            for servidor_id, entrada in por_servidor.items():
+                if not entrada["assinado"]:
+                    continue
+                try:
+                    situacao = vinculo.assinatura(vinculo.carregar(termo_id, str(servidor_id or 0)))
+                except Http404:
+                    situacao = {"desatualizado": True, "mudancas": ["O servidor já não está neste termo"]}
+                entrada.update(desatualizado=situacao["desatualizado"], mudancas=situacao["mudancas"])
     return mapa

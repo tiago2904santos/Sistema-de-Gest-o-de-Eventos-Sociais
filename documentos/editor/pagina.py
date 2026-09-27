@@ -54,6 +54,9 @@ def contexto_da_pagina(request, vinculo, objeto) -> dict:
             "principais": " ".join(vinculo.principais),
             "versao": vinculo.versao(objeto),
             "pode_editar": pode_editar,
+            # Fechado para edição (versão assinada valendo ou registro finalizado) e o assinado que ficou para trás.
+            "fechado": vinculo.fechado(objeto),
+            "assinatura": vinculo.assinatura(objeto),
             "campos_menu": menu,
             "tem_quebras": bool(quebras_do_tipo(vinculo.tipo)),
             # Editor completo (m057): o documento inteiro, editado à mão.

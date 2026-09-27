@@ -289,7 +289,7 @@ def lista(request):
     parametros = request.GET.copy()
     parametros.pop("pagina", None)
     assinante = assinante_da_ordem()
-    artefatos = artefatos_pdf_por_ordem(pagina.object_list)
+    artefatos = artefatos_pdf_por_ordem(pagina.object_list, conferir=True)
     linhas = [linha_da_lista(o, assinante=assinante, artefato_pdf=artefatos.get(o.pk)) for o in pagina]
 
     def url_da_situacao(aba=None):

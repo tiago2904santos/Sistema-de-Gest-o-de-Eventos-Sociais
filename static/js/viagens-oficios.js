@@ -20,6 +20,16 @@
   var form = document.getElementById("form-oficio");
   if (!form) return;
 
+  // Ofício finalizado ou com PDF assinado (m109): os campos ficam só para
+  // leitura até "Reabrir para correção". Os documentos (cartão 7) seguem
+  // operáveis — visualizar, baixar e anexar não mudam o ofício.
+  if (form.dataset.ofcFechado) {
+    form.querySelectorAll("input, select, textarea, button").forEach(function (campo) {
+      if (campo.closest("#documentos")) return;
+      campo.disabled = true;
+    });
+  }
+
   function lerJson(id) {
     var no = document.getElementById(id);
     if (!no) return {};

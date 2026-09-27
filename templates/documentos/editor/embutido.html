@@ -75,6 +75,7 @@
     </div>
   </div>
 
+  {% include "documentos/editor/_assinatura.html" with assinatura=doc.assinatura %}
   {% if doc.edicao_completa.vigente %}
     <div class="dc-aviso" role="status">
       {% include "components/icon.html" with nome=doc.edicao_completa.desatualizada|yesno:"alert,info" %}
