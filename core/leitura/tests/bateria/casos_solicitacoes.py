@@ -5500,6 +5500,9 @@ def _como_palestra(caso):
     from dataclasses import replace
 
     esperado = {novo: caso.esperado[antigo] for antigo, novo in _CAMPOS_COMUNS.items() if antigo in caso.esperado}
+    # A palestra de um dia só não tem "fim" na tela de palestras.
+    if esperado.get("data_fim_evento") == esperado.get("data_inicio_evento"):
+        esperado.pop("data_fim_evento", None)
     if caso.esperado.get("tipo_evento") == "Palestra":
         esperado["evento"] = "PALESTRA"
     return replace(caso, modulo="demandas_eventos", esperado=esperado)

@@ -351,6 +351,59 @@ def _primeiro_a_partir(itens, posicoes, inicio):
     return itens[i] if i < len(itens) else None
 
 
+_R_NUMERO_DEPOIS_SEMANA = re.compile(
+    r"\s*(?:-?\s*feira)?\s*,?\s*(?:\(\s*)?(?:dia\s+)?(\d{1,2})(?:o|º)?\b(?!\s*[/.:h]\s*\d|\s*h\b|\s*(?:de\s+)?(?:"
+    + _MES_COMPLETO + "|" + _MES_ABREVIADO + r")\b)"
+)
+_R_DIA_SOLTO = re.compile(
+    r"\b(?:n?o\s+|para\s+o\s+|pro\s+|ate\s+o\s+|o\s+)?dia\s+(\d{1,2})(?:o|º)?\b"
+    r"(?!\s*[/.:h-]\s*\d|\s*h\b|\s*,?\s*(?:e|a|ao|ate)\s+\d|\s*(?:de\s+)?(?:" + _MES_COMPLETO + "|" + _MES_ABREVIADO + r")\b|\s+de\s+cada)"
+)
+
+
+def _dia_com_semana(numero: int, dia_semana: int, referencia: date) -> date | None:
+    """O próximo dia `numero` (a partir da referência) que cai no dia da
+    semana dito; se nenhum dos próximos meses bater, o próximo dia `numero`."""
+    candidatos = []
+    ano, mes = referencia.year, referencia.month
+    for _ in range(4):
+        try:
+            dia = date(ano, mes, numero)
+        except ValueError:
+            dia = None
+        if dia is not None and dia >= referencia:
+            candidatos.append(dia)
+        mes += 1
+        if mes > 12:
+            ano, mes = ano + 1, 1
+    for dia in candidatos:
+        if dia.weekday() == dia_semana:
+            return dia
+    return candidatos[0] if candidatos else None
+
+
+def _dias_soltos(texto, dobrado, referencia, ocupados_por):
+    """"no dia 22" sem mês: o próximo dia 22 a partir da referência."""
+    achadas = []
+    for m in _R_DIA_SOLTO.finditer(dobrado):
+        if any(a < m.end() and m.start() < b for a, b in ocupados_por):
+            continue
+        numero = int(m.group(1))
+        if not 1 <= numero <= 31:
+            continue
+        ano, mes = referencia.year, referencia.month
+        if numero < referencia.day:
+            mes += 1
+            if mes > 12:
+                ano, mes = ano + 1, 1
+        try:
+            dia = date(ano, mes, numero)
+        except ValueError:
+            continue
+        achadas.append(DataAchada(dia, None, (dia,), "dia", texto[m.start():m.end()], m.start(), m.end()))
+    return achadas
+
+
 def _dias_da_semana(texto, dobrado, referencia, absolutas):
     achadas = []
     descartar_proximo = False
@@ -370,6 +423,15 @@ def _dias_da_semana(texto, dobrado, referencia, absolutas):
             continue
         if _R_RECORRENTE_ANTES.search(antes):
             continue
+        # "sábado, dia 7", "quarta-feira, dia 21": vale o número, no mês em que
+        # o dia da semana bate (o dia da semana sozinho daria a próxima quarta).
+        numero = _R_NUMERO_DEPOIS_SEMANA.match(dobrado[m.end():m.end() + 16])
+        if numero:
+            dia = _dia_com_semana(int(numero.group(1)), DIAS_DA_SEMANA[m.group("dia")], referencia)
+            if dia is not None:
+                fim = m.end() + numero.end()
+                achadas.append(DataAchada(dia, None, (dia,), "data", texto[m.start():fim], m.start(), fim))
+                continue
         prefixo = m.group("prefixo") or ""
         semana_que_vem = bool(m.group("sufixo")) or bool(_R_SEMANA_QUE_VEM_ANTES.search(antes))
         explicito = bool(m.group("feira")) or prefixo.startswith(("proxim", "nest", "est")) or semana_que_vem
@@ -416,7 +478,8 @@ def datas_do_texto(texto: str, referencia) -> list[DataAchada]:
     ocupados = _Ocupados((a.inicio_pos, a.fim_pos) for a in absolutas)
     relativas = _relativas(texto, dobrado, referencia, ocupados)
     semana = _dias_da_semana(texto, dobrado, referencia, absolutas)
-    return sorted(absolutas + relativas + semana, key=lambda a: a.inicio_pos)
+    soltos = _dias_soltos(texto, dobrado, referencia, [(a.inicio_pos, a.fim_pos) for a in absolutas + relativas + semana])
+    return sorted(absolutas + relativas + semana + soltos, key=lambda a: a.inicio_pos)
 
 
 # ---------------------------------------------------------------------------
@@ -629,6 +692,23 @@ _R_DATELINE_ANTES = re.compile(r"^\s*[^\d\n,;:]{3,40},\s*(?:aos\s+)?$")
 _R_DATELINE_DEPOIS = re.compile(r"^\s*\.?\s*$")
 
 
+_R_DATA_VELHA_ANTES = re.compile(
+    r"\b(?:seria|era|estava\s+(?:previst|marcad|agendad)\w*(?:\s+para)?|ao\s+inves\s+d[eo]|em\s+vez\s+d[eo]|no\s+lugar\s+d[eo]|"
+    r"anterior(?:mente)?|antig[oa]|a\s+data\s+de)\s*(?:o\s+|a\s+|para\s+o\s+)?(?:dia\s+)?$"
+)
+_R_DATA_VELHA_DEPOIS = re.compile(
+    r"^\s*(?:\)|,)?\s*(?:nao\s+(?:sera|vai\s+ser|e|da|dara)\s+(?:mais\s+)?possivel|nao\s+(?:vai\s+)?(?:da|dar|rola|podemos|conseguimos)|"
+    r"foi\s+(?:adiad|cancelad|transferid|remarcad|alterad)\w*|(?:esta|fica)\s+cancelad\w*|nao\s+vale\s+mais)"
+)
+_R_DESCONSIDERAR = re.compile(r"\b(?:desconsider\w+|esquec\w+|ignor\w+|cancel\w+)\b[^.\n]{0,50}$")
+_R_DATA_NOVA_ANTES = re.compile(
+    r"\b(?:adiad[oa]s?|transferid[oa]s?|remarcad[oa]s?|alterad[oa]s?|mudou|mudamos|mudaram|passou|passamos|passaram|"
+    r"passar|antecipad[oa]s?|nova\s+data|novo\s+pedido|confirm\w+(?:\s+a\s+data)?|fica(?:\s+(?:para|pro|pra))?|ficou(?:\s+(?:para|pro|pra))?)\b"
+    r"[^.\n]{0,40}$"
+)
+_R_DATA_NOVA_DEPOIS = re.compile(r"^\s*,?\s*(?:mesmo|entao|confirmad[oa]|combinad[oa])\b")
+
+
 _JANELA_DA_FRASE = 400
 #: Abaixo disto a data é de documento, não do evento: uma data solta vale 1;
 #: negativada, -5; a do e-mail sem âncora, -3.
@@ -663,7 +743,7 @@ def _pontos_da_data(item: DataAchada, dobrado: str, referencia: date) -> tuple[i
     "Enviado em:" e a data igual à do próprio e-mail sem nada que a ligue ao
     evento — a data em que o pedido foi mandado nunca é o período do evento.
     """
-    base = {"periodo": 2, "lista": 2, "data": 1, "relativa": 0, "dia_semana": 0}[item.tipo]
+    base = {"periodo": 2, "lista": 2, "data": 1, "dia": 0, "relativa": 0, "dia_semana": 0}[item.tipo]
     comeco, final = _frase(dobrado, item.inicio_pos, item.fim_pos)
     antes = dobrado[max(comeco, item.inicio_pos - 40):item.inicio_pos]
     frase = dobrado[comeco:final]
@@ -675,8 +755,16 @@ def _pontos_da_data(item: DataAchada, dobrado: str, referencia: date) -> tuple[i
         dobrado[item.fim_pos:linha_fim]
     ):
         negativo = True
+    # A data mudou: a antiga ("que seria dia 12", "desconsiderar o pedido do
+    # dia 14", "a data de 14/10 não será possível") perde; a nova ("adiada
+    # para 19/11", "passou para 28/11", "fica 21/11 mesmo") ganha.
+    depois = dobrado[item.fim_pos:min(final, item.fim_pos + 40)]
+    velha = bool(_R_DATA_VELHA_ANTES.search(antes) or _R_DATA_VELHA_DEPOIS.match(depois)
+                 or _R_DESCONSIDERAR.search(dobrado[max(comeco, item.inicio_pos - 60):item.inicio_pos]))
+    nova = bool(_R_DATA_NOVA_ANTES.search(dobrado[max(comeco, item.inicio_pos - 50):item.inicio_pos]) or _R_DATA_NOVA_DEPOIS.match(depois))
     # Negativo derruba de vez: "realizada por" também casa o "realiz" de evento.
     pontos = base + (3 if ancorada else 0) + (2 if evento else 0) - (10 if negativo else 0)
+    pontos += (5 if nova and not velha else 0) - (8 if velha else 0)
     if (item.fim or item.inicio) < referencia:
         pontos -= 3
     if item.absoluta and item.inicio == referencia and not item.fim and not (ancorada and evento):
