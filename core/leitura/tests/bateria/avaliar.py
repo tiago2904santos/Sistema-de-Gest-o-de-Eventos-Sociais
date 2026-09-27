@@ -41,11 +41,9 @@ _PASTA = Path(__file__).resolve().parent
 def carregar(modulos=MODULOS) -> tuple[list[Caso], dict]:
     """Os casos dos módulos pedidos e a união dos CADASTROS de cada arquivo."""
     casos, cadastros = [], {}
-    for modulo in MODULOS:
-        try:
-            arquivo = importlib.import_module(f"{__package__}.casos_{modulo}")
-        except ModuleNotFoundError:
-            continue
+    # casos_<modulo>.py e os lotes temáticos (casos_whatsapp.py…): cada caso diz o seu módulo.
+    for nome in sorted(p.stem for p in _PASTA.glob("casos_*.py")):
+        arquivo = importlib.import_module(f"{__package__}.{nome}")
         casos.extend(c for c in arquivo.CASOS if c.modulo in modulos)
         for tipo, nomes in getattr(arquivo, "CADASTROS", {}).items():
             cadastros.setdefault(tipo, [])
