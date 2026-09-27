@@ -116,7 +116,12 @@ def registrar_emissao(artefato, *, reference=None, usuario=None, nova_versao=Fal
     vinculos = _vinculos_do_artefato(artefato)
     vigente = via_emitida(tipo, reference=reference, **vinculos)
     if vigente is not None:
-        if not nova_versao or vigente.pk == artefato.pk or vigente.hash_sha256 == artefato.hash_sha256:
+        # "Nada mudou" é a mesma chave de cache (dados + modelo): os bytes do
+        # PDF variam a cada geração (identificador e subconjuntos de fonte).
+        mesma = vigente.pk == artefato.pk or vigente.hash_sha256 == artefato.hash_sha256 or (
+            bool(vigente.cache_key) and vigente.cache_key == artefato.cache_key
+        )
+        if not nova_versao or mesma:
             return vigente
         if artefato.versao_emitida is not None:
             artefato = _copia(artefato)

@@ -43,6 +43,10 @@ class ViaEmitidaTests(CenarioOficioMixin, TestCase):
         self.assertEqual(self._via().versao_emitida, 1)
 
     def test_nova_versao_refaz_com_os_dados_de_hoje_e_numera_a_seguinte(self):
+        # Já gerado: a primeira geração muda o status (RASCUNHO → GERADO), e o
+        # status é parte do payload — aqui interessa só a mudança de conteúdo.
+        Oficio.objects.filter(pk=self.oficio.pk).update(status=Oficio.STATUS_GERADO)
+        self.oficio.refresh_from_db()
         primeiro = gerar_documento(self.oficio, DocumentoFormato.PDF)
         # Sem mudança, "nova versão" não gasta número.
         igual = gerar_documento(self.oficio, DocumentoFormato.PDF, nova_versao=True)
