@@ -134,6 +134,54 @@ class LerEmailPautaTests(BasePautaPorEmail):
         mensagem = Mensagem(corpo="Segundo o delegado Rafael Guimarães Lopes, o suspeito confessou.")
         self.assertEqual(preenchimento.sugestoes(mensagem)["fonte"].valor, "Del. Rafael Guimarães Lopes")
 
+    def test_manchete_em_caixa_alta_vira_o_titulo(self):
+        mensagem = Mensagem(
+            assunto="Material para divulgação - DHPP",
+            corpo="Boa tarde,\n\nSegue material.\n\nDHPP PRENDE SUSPEITO DE HOMICÍDIO EM COLOMBO\n\n"
+                  "A DHPP prendeu nesta quarta um homem suspeito de matar um jovem em Colombo.",
+        )
+        titulo = preenchimento.sugestoes(mensagem)["titulo"].valor
+        self.assertEqual(titulo, "DHPP prende suspeito de homicídio em Colombo")
+
+    def test_titulo_sugerido_no_texto(self):
+        mensagem = Mensagem(corpo="Sugestão de título: PCPR prende quadrilha de furto de fios\n\nTexto: A 10ª DP prendeu…")
+        self.assertEqual(preenchimento.sugestoes(mensagem)["titulo"].valor, "PCPR prende quadrilha de furto de fios")
+
+    def test_unidade_que_so_apoiou_nao_e_a_da_pauta(self):
+        mensagem = Mensagem(corpo="A DHPP prendeu nesta quarta o suspeito, com apoio da 10ª DP de Curitiba.")
+        self.assertEqual(preenchimento.sugestoes(mensagem)["unidade"].valor, self.dhpp)
+        mensagem = Mensagem(corpo="A 10ª DP de Curitiba prendeu nesta quarta o suspeito, em ação conjunta com a DHPP.")
+        self.assertEqual(preenchimento.sugestoes(mensagem)["unidade"].valor, self.dp10)
+
+    def test_sigla_definida_no_proprio_texto(self):
+        # DEAM costuma ser a Delegacia da Mulher; aqui o texto diz que é outra.
+        mensagem = Mensagem(
+            assunto="DEAM - apreensão de armas",
+            corpo="A Delegacia de Explosivos, Armas e Munições (DEAM) apreendeu 40 armas em Pinhais.",
+            assinatura="Ricardo Fontanella\nInvestigador – DEAM",
+        )
+        sugestoes = preenchimento.sugestoes(mensagem)
+        self.assertNotIn("unidade", sugestoes)
+        self.assertEqual(sugestoes["unidade_nova"].valor, "Delegacia de Explosivos, Armas e Munições")
+
+    def test_remetente_e_a_caixa_da_unidade_fonte_e_quem_assina(self):
+        mensagem = Mensagem(
+            remetente_nome="DHPP - Cartório",
+            corpo="Segue release.\n\nA DHPP prendeu o suspeito no Cajuru.\n\nInv. Paulo Ricardo Souza\nDHPP – Curitiba",
+        )
+        sugestoes = preenchimento.sugestoes(mensagem)
+        self.assertEqual(sugestoes["fonte"].valor, "Inv. Paulo Ricardo Souza")
+        self.assertEqual(sugestoes["unidade"].valor, self.dhpp)
+
+    def test_contato_do_whatsapp_com_a_unidade(self):
+        mensagem = ler_texto_colado(
+            "[09/10/2026 16:20] Carla Bento DHPP: Boa tarde, segue p/ divulgação\n"
+            "[09/10/2026 16:21] Carla Bento DHPP: A equipe prendeu o suspeito no Cajuru."
+        )
+        sugestoes = preenchimento.sugestoes(mensagem)
+        self.assertEqual(sugestoes["fonte"].valor, "Carla Bento")
+        self.assertEqual(sugestoes["unidade"].valor, self.dhpp)
+
     def test_permissao_e_metodo(self):
         self.assertEqual(self.client.get(self.url).status_code, 405)
         self.client.force_login(self.sem_modulo)
