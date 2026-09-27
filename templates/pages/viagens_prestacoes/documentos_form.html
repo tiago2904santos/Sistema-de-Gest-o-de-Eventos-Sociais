@@ -138,7 +138,17 @@
           <span class="ofc-doc__titulo">Dados para o eProtocolo</span>
           <span class="ofc-doc__abrir" aria-hidden="true">{% include "components/icon.html" with nome="chevron-down" %}</span>
         </summary>
-        <div class="ofc-doc__corpo">{% include "components/v32/copiaveis.html" with campos=eprotocolo.campos textos=eprotocolo.textos %}</div>
+        <div class="ofc-doc__corpo">
+          {# m105: onde o processo do ofício está, e o botão para consultar agora. #}
+          {% if protocolo_andamento.tem_protocolo %}
+            <div class="pc-docs__processo" data-protocolo-andamento>
+              <b>Processo em:</b>
+              {% if protocolo_andamento.consultado %}{{ protocolo_andamento.local|default:"setor não informado" }}{% if protocolo_andamento.desde %} desde {{ protocolo_andamento.desde }}{% endif %}{% if protocolo_andamento.situacao %} · {{ protocolo_andamento.situacao }}{% endif %}{% if protocolo_andamento.simulado %} <span class="st st--aguardando" title="A integração real com o eProtocolo não está configurada: este dado é fictício.">SIMULADO</span>{% endif %} <small>(consultado em {{ protocolo_andamento.consultado_em }})</small>{% else %}ainda não consultado{% endif %}
+              <form method="post" action="{{ protocolo_andamento.atualizar_url }}" class="pc-oficio__atualizar">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}#eprotocolo"><button type="submit" class="btn--secundaria btn--compacto">{% include "components/icon.html" with nome="redo" %}Atualizar</button></form>
+            </div>
+          {% endif %}
+          {% include "components/v32/copiaveis.html" with campos=eprotocolo.campos textos=eprotocolo.textos %}
+        </div>
       </details>
 
       {# m104: o histórico da prestação (anexos, remoções, finalização, datas e números), no molde do roteiro. #}

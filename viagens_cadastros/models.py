@@ -516,6 +516,13 @@ class ConfiguracaoSistema(ModeloTemporal, OrigemLegado):
 
     destinatario_oficio_unidade = models.CharField(max_length=255, blank=True, default="")
 
+    #: m105: o setor do eProtocolo que emite o despacho das diárias. Quando o
+    #: processo do ofício chega nele, a equipe recebe o aviso no sino.
+    setor_despacho_eprotocolo = models.CharField(
+        "Setor do despacho no eProtocolo", max_length=160, blank=True, default="",
+        help_text="Nome do setor, como aparece no eProtocolo. Quando o processo chega nele, a equipe é avisada.",
+    )
+
     def __str__(self):
         return "Configurações do sistema"
 

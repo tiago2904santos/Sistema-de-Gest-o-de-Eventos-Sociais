@@ -143,6 +143,9 @@ def documentos(request, pc_pk):
     return _redirect_primeiro_servidor(request, prestacao, "viagens_prestacoes:documentos_servidor")
 
 
+from .protocolo_services import andamento_do_protocolo
+
+
 def historico_da_prestacao(prestacao):
     """A trilha da prestação e dos seus filhos (servidores, anexos, RT e diário), do mais recente ao mais antigo (m104)."""
     from auditoria.historico import historico_de
@@ -265,6 +268,8 @@ def documentos_servidor(request, ps_pk):
             "selo_prestacao": selo_da_prestacao(ps),
             # m052: os campos para protocolar a prestação, cada um com Copiar.
             "eprotocolo": dados_eprotocolo_prestacao(ps),
+            # m105: em que setor o processo está no eProtocolo.
+            "protocolo_andamento": andamento_do_protocolo(prestacao),
             "hoje_iso": timezone.localdate().isoformat(),
             # m104: quem anexou, removeu, finalizou ou mudou datas e números — o mesmo
             # bloco da tela do roteiro.

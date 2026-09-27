@@ -1876,6 +1876,13 @@ form.btn-flutuante-form{margin:0;display:contents}
 /* O ⋮ do ofício na mesma coluna do ⋮ dos cartões (o recuo é o padding do cartão). */
 .pc-oficio__acoes{margin-left:auto;margin-right:10px}
 .pc-oficio__rotulo{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--n-450)}
+/* m105: o setor do processo no eProtocolo, com o botão de atualizar colado. */
+.pc-oficio__processo{gap:6px}
+.pc-oficio__processo--despacho{font-weight:600}
+.pc-oficio__atualizar{display:inline-flex;margin:0}
+.pc-oficio__atualizar .ib-linha{width:24px;height:24px;min-width:24px}
+.pc-oficio__atualizar .ui-icon{width:13px;height:13px}
+.pc-docs__processo{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 12px}
 .pc-cards{display:grid;gap:8px}
 /* O cartão do servidor numa linha: crachá, solicitação, prazo de saque, a
    pessoa (nome com chips; embaixo o resto) e o menu. */

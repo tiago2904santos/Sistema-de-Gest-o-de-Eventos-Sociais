@@ -101,6 +101,7 @@ CAMPOS_DA_CONFIGURACAO = {
     'coordenador_adm_plano_trabalho': {'label': 'Coordenador administrativo padrão', 'pesquisavel': True, 'placeholder': 'Buscar servidor...', 'ajuda': 'Sugerido em todo plano de trabalho novo.'},
     'pt_sufixo_numero': {'label': 'Sufixo da numeração do plano', 'uppercase': True, 'maxlength': 20, 'ajuda': 'Ex.: 07/2026/ASCOM.'},
     'prazo_justificativa_dias': {'label': 'Antecedência mínima (dias)', 'tipo': 'number', 'min': 0, 'step': 1, 'obrigatorio': True},
+    'setor_despacho_eprotocolo': {'label': 'Setor que emite o despacho', 'placeholder': 'Ex.: DAF/DP', 'maxlength': 160, 'ajuda': 'Como aparece no eProtocolo. Quando o processo do ofício chega nele, a equipe é avisada no sino.'},
 }
 
 

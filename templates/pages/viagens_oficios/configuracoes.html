@@ -187,6 +187,16 @@
             </div>
           </div>
 
+          {# m105: o setor do eProtocolo cuja chegada do processo avisa a equipe da prestação. #}
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>eProtocolo</strong>
+            </div>
+            <div class="bloco-split__corpo g-form g-form--3">
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.setor_despacho_eprotocolo %}
+            </div>
+          </div>
+
           {# Ações no fim do último cartão, como no roteiro: voltar à esquerda, salvar à direita. #}
           <div class="frm-acoes-fim">
             <a class="btn--secundaria" href="{{ url_voltar }}">Voltar</a>

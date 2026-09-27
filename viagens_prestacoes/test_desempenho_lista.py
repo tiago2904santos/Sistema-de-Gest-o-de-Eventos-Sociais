@@ -19,7 +19,7 @@ from .models import DiarioBordoTrecho, PrestacaoDocumentoAnexo
 from .test_helpers import PDF_MINIMO, PrestacaoFixturesMixin, PrestacaoTestCase as TestCase
 
 #: Consultas da página da lista, depois da primeira visita (que cria a configuração).
-CONSULTAS_DA_LISTA = 33
+CONSULTAS_DA_LISTA = 34  # m105 somou uma: os setores do despacho, lidos uma vez por página.
 
 
 class ListaPrestacoesConsultasTests(PrestacaoFixturesMixin, TestCase):

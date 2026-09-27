@@ -60,6 +60,9 @@ def index(request):
     rotulos = dict(SITUACOES)
     vazias = {"nao_liberadas": "Nenhum servidor com diárias pendentes de liberação.", "liberadas": "Nenhum servidor com diárias já liberadas.", "arquivados": "Nenhuma prestação de servidor arquivada.", "finalizados": "Nenhuma prestação de servidor finalizada ainda.", "devolvidas": "Nenhuma prestação devolvida para correção.", "saque_vencendo": "Nenhum saque perto do prazo sem comprovante.", "prestacao_vencida": "Nenhuma prestação com o prazo vencido.", "sem_solicitacao": "Nenhuma prestação em aberto sem número de solicitação.", "sem_despacho": "Nenhuma prestação em aberto sem despacho.", "sem_comprovante": "Nenhuma diária liberada sem comprovante.", "comprovante_divergente": "Nenhum comprovante diferente da diária.", "finalizadas_mes": "Nenhuma prestação finalizada neste mês."}
     configuracao = get_configuracao_sistema()
+    # m105: em que setor o processo está no eProtocolo; os setores configurados lidos uma vez.
+    from .protocolo_services import andamento_do_protocolo, setores_do_despacho
+    setores_despacho = setores_do_despacho()
     # m101: destino e período do ofício calculados uma vez por equipe, não por servidor.
     dados_por_oficio = {}
     cards = []
@@ -79,6 +82,7 @@ def index(request):
                           for a in ("finalizar", "reabrir", "arquivar", "desarquivar")},
             "importar_url": reverse("viagens_prestacoes:importacao_enviar_prestacao", args=[card["prestacao_pk"]]),
             "pacotes_url": reverse("viagens_prestacoes:prestacao_pacotes_zip", args=[card["prestacao_pk"]]),
+            "protocolo": andamento_do_protocolo(por_pk[card["ps_pk"]].prestacao, setores_despacho),
         })
         grupo["cards"].append(card)
     for grupo in grupos.values():
@@ -255,6 +259,21 @@ def prestacao_servidor_envio(request, ps_pk, acao):
         messages.error(request, resultado.erro)
     else:
         messages.success(request, sucesso)
+    return _redirect_lista(request)
+
+
+def prestacao_protocolo_atualizar(request, pc_pk):
+    """"Atualizar": consulta agora em que setor o processo do ofício está no eProtocolo (m105)."""
+    from .protocolo_services import consultar_protocolo_da_prestacao
+    prestacao = get_object_or_404(_prestacao_queryset().select_related("oficio"), pk=pc_pk)
+    resultado = consultar_protocolo_da_prestacao(prestacao)
+    if resultado.erro:
+        messages.error(request, resultado.erro)
+    else:
+        onde = f"Processo em {prestacao.protocolo_local}" if prestacao.protocolo_local else "Andamento do processo atualizado"
+        situacao = f" — {prestacao.protocolo_situacao}" if prestacao.protocolo_situacao else ""
+        aviso = " Consulta SIMULADA: a integração real com o eProtocolo não está configurada." if resultado.simulado else ""
+        messages.success(request, f"{onde}{situacao}.{aviso}")
     return _redirect_lista(request)
 
 
