@@ -253,3 +253,54 @@ class ArquivoDoCelularTests(GuardarOriginalTests):
         request = self.pedido(arquivo=SimpleUploadedFile("foto", b"\x89PNG\r\n\x1a\n" + b"\x00" * 40, content_type="image/png"))
         with self.assertRaises(pe.EmailRecusado):
             pe.ler_do_pedido(request)
+
+
+class ConversaDoWhatsappTests(GuardarOriginalTests):
+    """A exportação do WhatsApp (.zip) e o print da conversa chegam pela mesma porta do e-mail."""
+
+    def test_zip_exportado_e_lido_com_as_fotos(self):
+        from core.leitura.tests import fabrica_whatsapp as w
+
+        arquivo = SimpleUploadedFile("Conversa do WhatsApp com Maria Exemplo.zip", w.zip_whatsapp(), content_type="application/zip")
+        mensagem, nome, dados = pe.ler_do_pedido(self.pedido(arquivo=arquivo))
+        self.assertEqual((nome, mensagem.origem, mensagem.remetente_nome), (
+            "Conversa do WhatsApp com Maria Exemplo.zip", "whatsapp", "Maria Exemplo"))
+        self.assertEqual(len(mensagem.anexos), 1)
+        # Guardado e lido de novo (a tela do módulo que assume o da triagem).
+        request = self.pedido()
+        token = pe._guardar(request, pe.MODULO_TRIAGEM, nome, dados, mensagem)
+        relido, _nome, _dados = pe.ler_guardado(request, "atendimento_imprensa", token)
+        self.assertEqual(relido.corpo, mensagem.corpo)
+
+    def test_zip_sem_extensao_pelo_conteudo(self):
+        from core.leitura.tests import fabrica_whatsapp as w
+
+        request = self.pedido(arquivo=SimpleUploadedFile("document", w.zip_whatsapp(), content_type="application/octet-stream"))
+        _mensagem, nome, _dados = pe.ler_do_pedido(request)
+        self.assertEqual(nome, "document.zip")
+
+    def test_tipo_real_manda(self):
+        from core.leitura.tests import fabrica_whatsapp as w
+
+        for nome, dados in (("conversa.pdf", w.zip_whatsapp()), ("print.jpg", b"texto qualquer"), ("conversa.zip", w.png_pequeno())):
+            with self.subTest(nome=nome):
+                with self.assertRaisesMessage(pe.EmailRecusado, "não corresponde"):
+                    pe.ler_do_pedido(self.pedido(arquivo=SimpleUploadedFile(nome, dados)))
+
+    def test_zip_malicioso_e_recusado(self):
+        from core.leitura.tests import fabrica_whatsapp as w
+
+        arquivo = SimpleUploadedFile("conversa.zip", w.zip_whatsapp({"../../x.png": w.png_pequeno()}))
+        with self.assertRaisesMessage(pe.EmailRecusado, "caminhos de arquivo inválidos"):
+            pe.ler_do_pedido(self.pedido(arquivo=arquivo))
+
+    @override_settings(OCR_ATIVO=False)
+    def test_print_sem_ocr_recusa_pedindo_o_texto(self):
+        from core.leitura.tests import fabrica_whatsapp as w
+
+        arquivo = SimpleUploadedFile("Screenshot_20260924.png", w.png_pequeno(), content_type="image/png")
+        with self.assertRaisesMessage(pe.EmailRecusado, "Colar o texto"):
+            pe.ler_do_pedido(self.pedido(arquivo=arquivo))
+
+    def test_texto_de_origem_do_print(self):
+        self.assertEqual(pe.texto_de_origem("", "Ana", None, origem="print"), "Criada a partir do print da conversa de Ana")

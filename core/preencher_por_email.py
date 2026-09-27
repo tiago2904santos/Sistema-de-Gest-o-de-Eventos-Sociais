@@ -9,7 +9,7 @@ A tela manda o arquivo do e-mail (ou o texto colado) para o endpoint
     {"campos": {"municipio": {"valor": "12", "exibir": "Ponta Grossa/PR",
                               "confianca": "A", "trecho": "...", "rotulo": "Município"}},
      "avisos": ["..."], "duplicados": [{"titulo": "...", "url": "..."}],
-     "mensagem": {"assunto": "...", "remetente": "...", "enviado_em": "24/09/2026 14:32"},
+     "mensagem": {"assunto": "...", "remetente": "...", "enviado_em": "24/09/2026 14:32", "origem": "eml"},
      "arquivo": {"token": "...", "nome": "pedido.eml", "anexos": ["oficio.pdf"]}}
 
 Nada é gravado na leitura. O original fica numa pasta temporária do
@@ -46,13 +46,14 @@ from django.utils import timezone
 from core.leitura.casamento import Achado, format_protocolo, municipio_no_texto, protocolo_no_texto, telefone_no_texto
 from core.leitura.datas import Quando, dobrar, quando_do_evento
 from core.leitura.endereco import Endereco, endereco_no_texto
-from core.leitura.mensagem import Mensagem, MensagemIlegivel, ler_mensagem, ler_texto_colado
+from core.leitura.mensagem import Mensagem, MensagemIlegivel, ler_mensagem, ler_texto_colado, tipo_de_imagem
 from core.leitura.triagem import MODULOS, triar_mensagem
 
 logger = logging.getLogger(__name__)
 
 __all__ = [
     "EXTENSOES_EMAIL",
+    "FORMATOS_ACEITOS",
     "MODULOS_TRIAGEM",
     "MODULO_TRIAGEM",
     "EmailRecusado",
@@ -99,8 +100,14 @@ _CHAVE_SESSAO = "preencher_por_email"
 _R_TOKEN = re.compile(r"^[0-9a-f]{32}$")
 
 # Extensão aceita -> o que o conteúdo precisa parecer (o tipo real manda).
-EXTENSOES_EMAIL = {".eml": "texto", ".msg": "ole", ".pdf": "pdf", ".txt": "texto"}
+# O .zip é a conversa exportada pelo WhatsApp; a imagem, o print da conversa.
+EXTENSOES_EMAIL = {
+    ".eml": "texto", ".msg": "ole", ".pdf": "pdf", ".txt": "texto", ".zip": "zip",
+    ".png": "imagem", ".jpg": "imagem", ".jpeg": "imagem", ".webp": "imagem",
+}
+FORMATOS_ACEITOS = "e-mail (.eml, .msg), PDF, conversa do WhatsApp exportada (.zip/.txt) ou print"
 _MAGIC_OLE = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+_MAGIC_ZIP = (b"PK\x03\x04", b"PK\x05\x06")
 NOME_TEXTO_COLADO = "texto-do-email.txt"
 
 
@@ -561,10 +568,15 @@ def _tipo_real(dados: bytes) -> str:
         return "ole"
     if b"%PDF-" in dados[:1024]:
         return "pdf"
+    if dados.startswith(_MAGIC_ZIP):
+        return "zip"
+    if tipo_de_imagem(dados):
+        return "imagem"
     return "texto"
 
 
 _TIPOS_MIME = {"application/pdf": ".pdf", "message/rfc822": ".eml", "application/vnd.ms-outlook": ".msg", "text/plain": ".txt"}
+_EXTENSAO_DA_IMAGEM = {"jpeg": ".jpg", "png": ".png", "webp": ".webp"}
 
 
 def _extensao_pelo_conteudo(dados: bytes, content_type: str = "") -> str:
@@ -576,6 +588,10 @@ def _extensao_pelo_conteudo(dados: bytes, content_type: str = "") -> str:
         return ".pdf"
     if real == "ole":
         return ".msg"
+    if real == "zip":
+        return ".zip"
+    if real == "imagem":
+        return _EXTENSAO_DA_IMAGEM[tipo_de_imagem(dados)]
     if _parece_mime(dados):
         return ".eml"
     declarada = _TIPOS_MIME.get((content_type or "").split(";")[0].strip().lower(), "")
@@ -608,10 +624,13 @@ def _nome_seguro(nome: str) -> str:
 def ler_do_pedido(request) -> tuple[Mensagem, str, bytes]:
     """(mensagem, nome do arquivo, bytes do original) do POST.
 
-    O POST traz `arquivo` (.eml, .msg, .pdf impresso ou .txt) ou `texto`
-    (o e-mail colado). Confere tamanho, extensão e se o conteúdo é mesmo do
-    tipo da extensão (um .msg renomeado para .pdf é recusado), passa pelo
-    antivírus quando ele é exigido e só então lê. Levanta `EmailRecusado`.
+    O POST traz `arquivo` (.eml, .msg, .pdf impresso, .txt, a conversa do
+    WhatsApp exportada em .zip ou o print dela em .png/.jpg/.webp) ou
+    `texto` (o e-mail colado). Confere tamanho, extensão e se o conteúdo é
+    mesmo do tipo da extensão (um .msg renomeado para .pdf é recusado), passa
+    pelo antivírus quando ele é exigido e só então lê (o .zip, com os limites
+    de `core.leitura.mensagem` contra a bomba de descompactação). Levanta
+    `EmailRecusado`.
     """
     arquivo = request.FILES.get("arquivo")
     if arquivo is not None:
@@ -627,10 +646,10 @@ def ler_do_pedido(request) -> tuple[Mensagem, str, bytes]:
         arquivo.seek(0)
         if extensao not in EXTENSOES_EMAIL:
             # Só sem extensão nenhuma (o celular manda "document") o conteúdo
-            # decide, desde que seja PDF, .msg ou e-mail; extensão errada é recusada.
+            # decide, desde que seja um dos formatos aceitos; extensão errada é recusada.
             extensao = _extensao_pelo_conteudo(dados, arquivo.content_type) if not extensao else ""
             if not extensao:
-                raise EmailRecusado("Envie o e-mail em .eml, .msg, .pdf ou .txt — ou cole o texto.")
+                raise EmailRecusado(f"Envie o {FORMATOS_ACEITOS} — ou cole o texto.")
             nome = f"{nome}{extensao}"
         if _tipo_real(dados) != EXTENSOES_EMAIL[extensao]:
             raise EmailRecusado(
@@ -894,7 +913,7 @@ def concluir_origem(request, origem: Origem | None) -> None:
 def texto_de_origem(assunto: str, remetente: str, enviado_em: datetime | None, *,
                     verbo: str = "Criada", origem: str = "") -> str:
     """"Criada a partir do e-mail 'Assunto' de Fulano (24/09/2026 14:32)" — para o histórico."""
-    fonte = "da conversa do WhatsApp" if origem == "whatsapp" else "do e-mail"
+    fonte = {"whatsapp": "da conversa do WhatsApp", "print": "do print da conversa"}.get(origem, "do e-mail")
     partes = [f"{verbo} a partir {fonte}"]
     if assunto:
         partes.append(f"'{assunto}'")
@@ -1085,6 +1104,7 @@ def responder_leitura(
             "assunto": mensagem.assunto_limpo,
             "remetente": mensagem.remetente,
             "enviado_em": f"{enviado:%d/%m/%Y %H:%M}" if enviado else "",
+            "origem": mensagem.origem,
         },
         "arquivo": {
             "token": token,
