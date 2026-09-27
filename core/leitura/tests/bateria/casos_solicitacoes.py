@@ -1174,6 +1174,7 @@ obrigado e fiquem com Deus
     # ------------------------------------------------------------------ 026
     Caso(
         id="sol-026",
+        triagem=("demandas_eventos",),
         modulo="solicitacoes",
         formato="eml",
         agora="2026-10-19 11:00",
@@ -5487,7 +5488,7 @@ Secretária de Assistência Social
 # casos passam para lá, com o gabarito dos campos que as duas telas têm.
 _PARA_PALESTRAS = {
     "sol-005", "sol-011", "sol-013", "sol-018", "sol-027", "sol-029", "sol-033",
-    "sol-051", "sol-064", "sol-070", "sol-095", "sol-106", "sol-115", "sol-123",
+    "sol-051", "sol-064", "sol-070", "sol-095", "sol-098", "sol-106", "sol-115", "sol-123",
 }
 _CAMPOS_COMUNS = {
     "estado": "estado", "municipio": "municipio", "data_inicio_evento": "data_inicio_evento",

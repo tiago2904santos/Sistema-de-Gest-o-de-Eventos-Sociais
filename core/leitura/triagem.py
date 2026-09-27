@@ -45,12 +45,17 @@ _SINAIS: dict[str, list[tuple[re.Pattern, float, str]]] = {
         (re.compile(r"\bsonora\b|\bvai\s+ao\s+ar\b|\bfechamento\s+da\s+(?:edicao|materia)\b"), 1.5, "fechamento"),
         # Quem pergunta à polícia (o jornalista) e não quem manda o release.
         (_R_PERGUNTA_IMPRENSA := re.compile(
-            r"\b(?:voces|vcs)\s+(?:ja\s+)?(?:confirma\w*|podem|poderiam|conseguem|tem|teriam|sabem)\b"
+            r"\b(?:voces|vcs)\s+(?:ja\s+)?(?:confirma\w*|sabem|tem\s+(?:alguma\s+)?(?:informac|posicionamento|dados|nota|numero)\w*|teriam\s+(?:dados|informac)\w*)"
+            r"|\b(?:voces|vcs)\s+(?:podem|poderiam|conseguem)\s+(?:me\s+)?(?:confirmar|informar|passar|enviar|mandar)\b"
             r"|\bconsegue[m]?\s+(?:me\s+)?(?:passar|enviar|mandar|informar|confirmar|os\s+dados|o\s+numero|dados)\b"
             r"|\bgostaria\s+de\s+(?:saber|confirmar|informac\w*|um\s+posicionamento|uma\s+nota)\b"
             r"|\bpoderiam\s+(?:me\s+)?(?:informar|confirmar|passar|enviar)\b|\bpedido\s+de\s+informac\w*\b"
             r"|\bsolicito\s+(?:o\s+numero|os\s+dados|dados|nota|um\s+posicionamento|sonora|informac\w*)\b"
-            r"|\bja\s+(?:tem|ha|existe)\s+(?:suspeit|laudo|previsao|informac)\w*"), 2.5, "pergunta à polícia"),
+            r"|\bja\s+(?:tem|ha|existe)\s+(?:suspeit|laudo|previsao|informac)\w*"
+            r"|\b(?:consigo|conseguimos|podemos|queremos|quero|queria|gostariamos\s+de)\s+(?:uma\s+|um\s+)?(?:entrevista|sonora|gravar|posicionamento|nota)\b"
+            r"|\b(?:preciso|precisamos)\s+(?:de\s+)?(?:confirmar|uma\s+nota|um\s+posicionamento|de\s+uma\s+sonora|saber)\b"
+            r"|\bpode(?:m)?\s+(?:me\s+)?responder\b"), 2.5, "pergunta à polícia"),
+        (re.compile(r"\bpodcasts?\b|\bepisodios?\b|\bcanal\s+(?:do|no)\s+youtube\b|\bprograma\s+de\s+(?:radio|tv)\b"), 2, "podcast/programa"),
         (re.compile(r"\b(?:queria|vamos|vou|pretendo|pretendemos)\s+publicar\b|\bpublicamos\b|\bnossa\s+materia\b"
                     r"|\bestamos\s+fechando\b|\bfechamos\b|\btelejornal\b|\bedicao\s+d[eoa]\b|\bao\s+vivo\b"), 2, "veiculação"),
         (re.compile(r"\bdados\s+(?:de|sobre|estatisticos|do|da)\b|\bestatisticas?\b|\blevantamento\s+d[eo]s?\b"
@@ -64,7 +69,7 @@ _SINAIS: dict[str, list[tuple[re.Pattern, float, str]]] = {
         (re.compile(r"\b(?:segue|seguem|encaminho)\s+(?:\w+\s+){0,3}(?:para|p/)\s+(?:publicac|divulgac|o\s+site|as\s+redes)\w*"
                     r"|\b(?:favor|por\s+favor)\s+(?:publicar|divulgar)\b|\bpara\s+publicac\w*\b|\bsugest\w+\s+de\s+titulo\b|\btitulo\s+sugest\w*\b"
                     r"|\bfazer\s+uma\s+materia\b|\bsem\s+(?:divulgar\s+)?nomes\b"), 3, "pedido de publicação"),
-        (re.compile(r"\bpcpr\s+(?:prende|apreende|esclarece|cumpre|deflagra|recupera|localiza|resgata|indicia|identifica|desarticula|prendem)\b"), 3, "título de release"),
+        (re.compile(r"\b(?:pcpr|policia\s+civil|[a-z]{3,}|\d+a?\s+sdp)\s+(?:prende|apreende|esclarece|cumpre|deflagra|recupera|localiza|resgata|indicia|identifica|desarticula|prendem|resgatam|apreendem|cumprem|deflagram|recuperam)\b"), 3, "título de release"),
         (re.compile(r"\bprend(?:e|eu|eram|em|emos)\b|\bapreend(?:e|eu|eram|em)\b|\bcumpri(?:u|ram)\s+mandados?\b"), 1.5, "prisão"),
         (re.compile(r"\boperac(?:ao|oes)\b"), 1.5, "operação"),
         (re.compile(r"\bpris(?:ao|oes)\b|\bpres[oa]s?\b|\bflagrante\b"), 1.5, "prisão"),
@@ -89,7 +94,7 @@ _SINAIS: dict[str, list[tuple[re.Pattern, float, str]]] = {
         (re.compile(r"\borientac\w+\s+juridica\b|\batendimento\s+juridico\b"), 1.5, "orientação jurídica"),
         (re.compile(r"\bviaturas?\b[^.\n]{0,60}\b(?:expo\w*|desfil\w*|antigas?|historic\w*|exibi\w*)|"
                     r"\b(?:expo\w*|desfil\w*|encontro\s+de\s+(?:carros|veiculos|motociclistas|viaturas))\b[^.\n]{0,60}\bviaturas?\b"), 3, "exposição de viaturas"),
-        (re.compile(r"\bpcpr\s+na\s+comunidade\b"), 3, "PCPR na Comunidade"),
+        (re.compile(r"\bcarteiras\b"), 1.5, "carteiras"),
         (re.compile(r"\bdigitais\b|\bsegunda\s+via\b|\b1a\s+via\b|\bprimeira\s+via\b"), 1.5, "documentos"),
     ],
     "demandas_eventos": [
@@ -103,7 +108,9 @@ _SINAIS: dict[str, list[tuple[re.Pattern, float, str]]] = {
         (re.compile(r"\bcapacitac\w+|\bcursos?\b|\boficinas?\b|\bworkshops?\b|\binstrutor\w*|\bministrar\b|\bseminarios?\b|\bforum\b|\bcongresso\b|\bsimposio\b"), 2, "capacitação/seminário"),
         (re.compile(r"\b(?:tem\s+a\s+honra\s+de\s+)?convid\w+\s+(?:a\s+|o\s+)?(?:policia\s+civil|pcpr|vossa|v\.?\s*s\.?|delegad\w+)|\bconvites?\b"), 2, "convite"),
         (re.compile(r"\bsessao\s+solene\b|\bformatura\b|\bdesfile\b|\bcompor\s+a\s+mesa\b|\bmesa\s+de\s+abertura\b|\baudiencia\s+publica\b|\bhomenage\w+|\bmoc(?:ao|oes)\s+de\b|\bsolenidade\b|\bcerimonia\w*"), 2, "cerimônia"),
-        (re.compile(r"\b(?:falar|conversar|orientar|explicar)\s+(?:sobre|com|os|as)\b|\bpalestrantes?\b"), 1.5, "fala de policial"),
+        (re.compile(r"\b(?:falar|conversar|orientar|explicar)\s+(?:sobre|com|os|as)\b|\bpalestrantes?\b|"
+                    r"\bfala\s+(?:rapida\s+)?(?:\([^)]{0,20}\)\s*)?sobre\b"), 1.5, "fala de policial"),
+        (re.compile(r"\bdds\b|\bdialogo\s+(?:diario\s+)?de\s+seguranca\b|\bsipat\b|\bsemana\s+(?:interna|academica|de\s+prevencao)\b"), 2, "semana/DDS"),
     ],
 }
 
@@ -122,7 +129,7 @@ _R_ASSINATURA_IMPRENSA = re.compile(
 _SINAIS_DE_SERVICO = {
     "RG/CIN", "emissão de identidade", "identificação civil", "unidade móvel", "Paraná em Ação", "Justiça no Bairro",
     "emissão de documentos", "fotos para documento", "orientação jurídica", "exposição de viaturas",
-    "PCPR na Comunidade", "documentos", "posto de atendimento",
+    "documentos", "posto de atendimento", "carteiras",
 }
 _SINAIS_DE_LANCHE = {"coffee break", "lanche", "entrega", "quem recebe", "lanche para N pessoas", "salgados"}
 _R_VEICULO_NO_NOME = re.compile(r"\b(?:portal|jornal|gazeta|radio|tv|agencia|revista|folha|diario|tribuna|blog|redacao|noticias|fm|am)\b")
@@ -189,6 +196,7 @@ def triar(
             s.startswith(("palestra", "bate-papo")) for s in sinais.get("demandas_eventos", [])
         ):
             somar("solicitacoes", 4, "serviço pedido no evento")
+            pontos["demandas_eventos"] /= 2
         if any(s.split(" (")[0] in _SINAIS_DE_LANCHE for s in sinais.get("coffee_break", [])):
             somar("coffee_break", 4, "pedido de lanche para o evento")
     # Quem pergunta sobre a prisão é o jornalista; o release conta a prisão.
