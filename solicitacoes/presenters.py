@@ -108,8 +108,10 @@ def fatos_da_solicitacao(solicitacao):
         {
             "icone": "map-pin",
             "rotulo": "Local",
-            "texto": solicitacao.local_evento or "Local não informado",
-            "ausente": not solicitacao.local_evento,
+            # O local e, quando houver, o endereço dele na mesma linha.
+            "texto": " — ".join(p for p in (solicitacao.local_evento, solicitacao.endereco_completo) if p)
+            or "Local não informado",
+            "ausente": not (solicitacao.local_evento or solicitacao.endereco_completo),
         },
         {
             "icone": "user",

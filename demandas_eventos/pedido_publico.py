@@ -225,6 +225,7 @@ def criar_pedido(dados):
             quantidade_publico=dados["publico_estimado"],
             data_solicitacao=timezone.localdate(),
             canal_solicitacao=CanalSolicitacao.PORTAL,
+            local=dados["local"][:255],
             descricao="\n".join(partes),
             pedido_contato=f"Pedido feito pelo formulário público por {dados['nome_contato']}.",
             token_acompanhamento=hash_do_token(token),

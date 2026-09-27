@@ -116,6 +116,8 @@ class LerEmailCoffeeTests(BaseCoffeePorEmail):
             "data_inicio_evento": "2026-10-08",
             "horario_evento": "10:00",
             "local_entrega": "Auditório da 1ª DP - Rua José Loureiro, 376 - Centro - Curitiba",
+            "endereco": "Rua José Loureiro, 376",
+            "bairro": "Centro",
             "responsavel_recebimento": "Tadeu Silva (41) 99988-6010",
         })
         # O número da OS é da numeração única: nunca vem do e-mail.
@@ -144,6 +146,20 @@ class LerEmailCoffeeTests(BaseCoffeePorEmail):
         self.assertEqual(campos["descricao_evento"], "Encontro Regional - Ponta Grossa")
         self.assertEqual(campos["responsavel_recebimento"], "Ana Paula Lima (42) 99111-2222")
         self.assertNotIn("data_solicitacao", campos)  # texto sem cabeçalho: a data fica a da tela
+
+    def test_endereco_da_entrega_com_cep(self):
+        texto = (
+            "Boa tarde! Precisamos de coffee break para 40 pessoas no dia 12/10/2026 às 9h.\n"
+            "Entrega na Rua das Araucárias Fictícias, 250, sala 3 - Jardim Botânico - CEP 84.015-120.\n\n"
+            "Att,\nFulano de Tal\nRua da Secretaria, 10 - Centro - CEP 80000-000"
+        )
+        dados = self.client.post(self.url, {"texto": texto}).json()
+        campos = dados["campos"]
+        self.assertEqual(campos["endereco"]["valor"], "Rua das Araucárias Fictícias, 250, sala 3")
+        self.assertEqual(campos["bairro"]["valor"], "Jardim Botânico")
+        self.assertEqual(campos["cep"]["valor"], "84015-120")
+        self.assertEqual(campos["endereco"]["confianca"], "A")
+        self.assertEqual(campos["cep"]["rotulo"], "CEP")
 
     def test_falta_de_saldo_vira_aviso_na_leitura(self):
         SolicitacaoCoffeeBreak.objects.create(

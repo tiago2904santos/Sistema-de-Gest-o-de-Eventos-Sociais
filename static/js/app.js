@@ -1718,6 +1718,24 @@
 })();
 
 /**
+ * Máscara leve de CEP: só dígitos, com o traço depois do quinto ("00000-000").
+ * A validação de verdade é do formulário (8 dígitos).
+ */
+(function () {
+  "use strict";
+
+  function formatarCep(valor) {
+    var digitos = String(valor || "").replace(/\D/g, "").slice(0, 8);
+    return digitos.length > 5 ? digitos.slice(0, 5) + "-" + digitos.slice(5) : digitos;
+  }
+
+  document.querySelectorAll("[data-mask-cep]").forEach(function (campo) {
+    campo.addEventListener("input", function () { campo.value = formatarCep(campo.value); });
+    campo.value = formatarCep(campo.value);
+  });
+})();
+
+/**
  * Confirmação em duas etapas para ações sem volta, sem diálogo nativo do
  * navegador. Primeiro clique arma o botão; o segundo envia.
  * `data-confirmar="texto"` personaliza o rótulo armado.

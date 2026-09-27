@@ -14,8 +14,9 @@ As regras do domínio das palestras (mapas/demandas.md §2.3):
 - o que não tem campo (horário de término, turno, dias soltos, anexos)
   vai para "Informações prévias", para não se perder.
 
-A leitura genérica (datas, município, telefone, assinatura) vem de
-`core.leitura` e de `core.preencher_por_email`. Nada aqui grava.
+A leitura genérica (datas, município, telefone, assinatura, local e
+endereço) vem de `core.leitura` e de `core.preencher_por_email`. Nada aqui
+grava.
 """
 
 from __future__ import annotations
@@ -29,7 +30,18 @@ from cadastros.models import Municipio
 from core.leitura.casamento import cadastros_no_texto, quantidade_de_pessoas
 from core.leitura.datas import dobrar, horarios_do_texto
 from core.leitura.mensagem import Mensagem
-from core.preencher_por_email import Sugestao, Sugestoes, data_do_email, municipio_do_pedido, protocolo_do_pedido, quando_do_pedido, quem_pede
+from core.preencher_por_email import (
+    Sugestao,
+    Sugestoes,
+    data_do_email,
+    local_no_texto,
+    local_sem_endereco,
+    municipio_do_pedido,
+    protocolo_do_pedido,
+    quando_do_pedido,
+    quem_pede,
+    sugerir_endereco,
+)
 
 from .models import CanalSolicitacao, Palestrante, Tema, TipoEventoPalestra
 
@@ -60,7 +72,7 @@ _VAZIAS = frozenset({
 
 #: Campos que a memória guarda por remetente ao salvar (`core.aprendizado`):
 #: o que o próximo e-mail da mesma origem provavelmente repete.
-CAMPOS_APRENDIDOS = ["evento", "estado", "municipio", "solicitante", "telefone", "canal_solicitacao", "temas", "palestrantes"]
+CAMPOS_APRENDIDOS = ["evento", "estado", "municipio", "local", "endereco", "bairro", "cep", "solicitante", "telefone", "canal_solicitacao", "temas", "palestrantes"]
 
 
 
@@ -306,6 +318,10 @@ def sugestoes(mensagem: Mensagem, usuario=None) -> Sugestoes:
         estado = municipio.valor.estado
         s.por("estado", Sugestao(estado, estado.nome, "A", municipio.trecho))
         s.por("municipio", Sugestao.de_achado(municipio))
+
+    # O local é o nome do lugar; o endereço vai para os campos próprios.
+    endereco = sugerir_endereco(s, mensagem)
+    s.por("local", Sugestao.de_achado(local_sem_endereco(local_no_texto(mensagem.corpo), endereco)))
 
     s.por("quantidade_publico", Sugestao.de_achado(quantidade_de_pessoas(mensagem.corpo)))
     s.por("temas", _temas(mensagem.corpo, mensagem.assunto_limpo))

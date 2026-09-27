@@ -51,7 +51,7 @@ def campos_do_texto(solicitacao):
         evento=solicitacao.descricao_evento,
         data=solicitacao.periodo_evento_display or "a combinar",
         horario=f"{horario:%H:%M}" if horario else "a combinar",
-        local=solicitacao.local_entrega or "a combinar",
+        local=" — ".join(p for p in (solicitacao.local_entrega, solicitacao.endereco_completo) if p) or "a combinar",
         responsavel=solicitacao.responsavel_recebimento or "a combinar",
         quantidade=solicitacao.quantidade,
         fornecedor=solicitacao.lote.contrato.fornecedor.razao_social,

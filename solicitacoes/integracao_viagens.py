@@ -718,8 +718,9 @@ def _observacoes_do_roteiro(solicitacao) -> str:
         linhas.append(f"Equipes autorizadas pela DG — {equipes}.")
     if solicitacao.solicitante_nome:
         linhas.append(f"Solicitante: {solicitacao.solicitante_nome}.")
-    if solicitacao.local_evento:
-        linhas.append(f"Local: {solicitacao.local_evento}.")
+    local = " — ".join(p for p in (solicitacao.local_evento, solicitacao.endereco_completo) if p)
+    if local:
+        linhas.append(f"Local: {local}.")
     if solicitacao.unidade_movel:
         if solicitacao.unidade_movel_designada_id:
             linhas.append(f"Unidade móvel designada: {solicitacao.unidade_movel_designada}.")

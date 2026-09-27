@@ -615,6 +615,11 @@ COLUNAS_EXPORTACAO = [
     ("PEDIDO/CONTATO", lambda d: d.pedido_contato),
     ("TEMA", lambda d: d.temas_display),
     ("SERVIDOR", lambda d: d.servidores_display),
+    # Não são colunas da planilha: vão no fim, para a ordem dela continuar a mesma.
+    ("LOCAL", lambda d: d.local),
+    ("ENDEREÇO", lambda d: d.endereco),
+    ("BAIRRO", lambda d: d.bairro),
+    ("CEP", lambda d: d.cep),
 ]
 
 

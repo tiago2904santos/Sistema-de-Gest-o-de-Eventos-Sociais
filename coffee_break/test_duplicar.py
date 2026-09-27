@@ -70,6 +70,17 @@ class DuplicarSolicitacaoTests(BaseCoffeeBreakTestCase):
         )
         self.assertEqual(self.client.get(reverse("coffee_break:locais_entrega")).json(), {"resultados": []})
 
+    def test_local_ja_usado_traz_o_endereco_gravado(self):
+        self.criar_solicitacao(
+            municipio=self.curitiba, descricao_evento="Com endereço", local_entrega="Ginásio Fictício", data_inicio_evento=dt.date(2026, 12, 1),
+            endereco="Rua Inventada, 50", bairro="Centro", cep="80010-000",
+        )
+        resposta = self.client.get(reverse("coffee_break:locais_entrega") + f"?municipio={self.curitiba.pk}")
+        campos = resposta.json()["resultados"][0]["campos"]
+        self.assertEqual(
+            (campos["endereco"], campos["bairro"], campos["cep"]), ("Rua Inventada, 50", "Centro", "80010-000")
+        )
+
     def test_tela_nova_traz_a_caixa_de_sugestao_sem_preencher(self):
         resposta = self.client.get(reverse("coffee_break:nova"))
         self.assertContains(resposta, "data-cb-locais")
