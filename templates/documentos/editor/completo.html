@@ -103,6 +103,7 @@
   {% elif doc.bloqueio %}
     <div class="dc-aviso" role="status">{% include "components/icon.html" with nome="lock" %}<div><strong>Só leitura.</strong>{{ doc.bloqueio }}</div></div>
   {% endif %}
+  {% include "documentos/editor/_assinatura.html" with assinatura=doc.assinatura %}
   {% if doc.vigente %}
     <div class="dc-aviso{% if not doc.desatualizada %} dcp-aviso--info{% endif %}" role="status">
       {% include "components/icon.html" with nome=doc.desatualizada|yesno:"alert,info" %}

@@ -78,6 +78,11 @@ class ConfiguracaoInstitucionalForm(ConfiguracaoForm):
 # Rótulo, largura e comportamento de cada campo na tela. Tipo "text" é o input
 # comum; máscara e caixa alta são ligadas por `js/viagens-cadastros.js`.
 CAMPOS_DA_CONFIGURACAO = {
+    'delegado_geral_nome': {'label': 'Delegado-Geral', 'placeholder': 'Nome como sai na ordem de serviço',
+                            'ajuda': 'Sai nas atribuições da ordem de serviço.'},
+    'ascom_cabecalho_unidade': {'label': 'Unidade no cabeçalho', 'uppercase': True},
+    'ascom_rodape_endereco': {'label': 'Endereço no rodapé'},
+    'ascom_rodape_contato': {'label': 'Telefone e e-mail no rodapé'},
     'nome_orgao': {'label': 'Nome do órgão', 'placeholder': 'Ex.: POLÍCIA CIVIL DO PARANÁ', 'uppercase': True},
     'sigla_orgao': {'label': 'Sigla', 'placeholder': 'Ex.: PCPR', 'uppercase': True, 'maxlength': 20},
     'unidade': {'label': 'Unidade emissora', 'pesquisavel': True, 'placeholder': 'Buscar unidade...'},

@@ -29,6 +29,11 @@ def gerar_documento(oficio, formato, tipo=DocumentoTipo.OFICIO, *, usar_assinado
     if avaliacao['pendencias']:
         raise ValidationError(avaliacao['pendencias'])
     reservar_numero_oficio(oficio, ano=oficio.data_criacao.year)
+    if tipo == DocumentoTipo.JUSTIFICATIVA:
+        # A data da justificativa nasce na primeira emissão e vale para todas as vias.
+        from documentos.services.data_documento import fixar_data_documento
+        from .justificativas_services import get_or_create_justificativa_oficio
+        fixar_data_documento(get_or_create_justificativa_oficio(oficio))
     referencia = referencia_do_oficio(oficio)
 
     def gerar():

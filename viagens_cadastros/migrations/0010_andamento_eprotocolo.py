@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
     dependencies = [
         (
             "viagens_cadastros",
-            "0007_configuracaosistema_coordenador_adm_plano_trabalho_and_more",
+            "0009_textos_oficiais",
         ),
     ]
 

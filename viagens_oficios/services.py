@@ -1,5 +1,5 @@
 from datetime import timedelta
-from django.db import transaction
+from django.db import models, transaction
 from django.utils import timezone
 from core.numeracao import NAMESPACE_OFICIO, reservar_numero
 from core.deletion import excluir_com_protecao, DelecaoProtegidaError
@@ -444,3 +444,61 @@ def dados_eprotocolo(oficio):
             {"id": "eprotocolo-detalhamento", "rotulo": "Detalhamento", "texto": detalhamento, "linhas": 3},
         ],
     }
+
+
+# ── Ofício fechado para edição e reabertura para correção (m109) ─────────────
+
+ROTULO_DO_FECHAMENTO = {"finalizado": "Ofício finalizado", "assinado": "Ofício com PDF assinado"}
+
+
+def fechamento_do_oficio(oficio) -> str:
+    """Por que o ofício não se edita: "finalizado", "assinado" (há PDF
+    assinado valendo) ou "" (aberto). O cancelado tem o aviso próprio."""
+    from documentos.editor.vinculos import vinculo_do_tipo
+    from documentos.services.types import DocumentoTipo
+
+    if oficio.cancelado:
+        return ""
+    return vinculo_do_tipo(DocumentoTipo.OFICIO).fechado(oficio)
+
+
+@transaction.atomic
+def reabrir_oficio(oficio, motivo, usuario=None):
+    """Reabre o ofício finalizado ou assinado para correção.
+
+    O status volta a "Gerado"; a versão assinada do ofício, se houver, é
+    revogada (fica no histórico, nunca é apagada) — o ofício corrigido tem de
+    ser assinado de novo. O motivo vai para a trilha de auditoria, junto do
+    registro que a própria gravação produz.
+    """
+    from django.core.exceptions import ValidationError
+
+    from auditoria.models import RegistroAuditoria
+    from documentos.models import DocumentoArtefato
+    from documentos.services.persistence import remover_arquivo_assinado
+    from documentos.services.types import DocumentoTipo
+
+    motivo = (motivo or "").strip()
+    if not motivo:
+        raise ValidationError("Escreva o motivo da reabertura.")
+    situacao = fechamento_do_oficio(oficio)
+    if not situacao:
+        raise ValidationError("O ofício já está aberto para edição.")
+    assinados = (DocumentoArtefato.objects.filter(oficio=oficio, tipo=DocumentoTipo.OFICIO.value, termo__isnull=True, formato="pdf")
+                 .filter(models.Q(versoes_assinadas__revogada_em__isnull=True) | ~models.Q(arquivo_assinado="")).distinct())
+    revogados = 0
+    for artefato in assinados:
+        remover_arquivo_assinado(artefato)
+        revogados += 1
+    if oficio.status == Oficio.STATUS_FINALIZADO:
+        oficio.status = Oficio.STATUS_GERADO
+        oficio.save(update_fields=["status", "atualizado_em"])
+    RegistroAuditoria.objects.create(
+        usuario=usuario if getattr(usuario, "is_authenticated", False) else None,
+        acao=RegistroAuditoria.Acao.ATUALIZACAO,
+        modelo=oficio._meta.label_lower, objeto_id=str(oficio.pk), objeto_repr=str(oficio)[:255],
+        alteracoes={"reabertura": {"antes": ROTULO_DO_FECHAMENTO[situacao], "depois": f"Reaberto para correção: {motivo}"},
+                    **({"versoes_assinadas_revogadas": {"antes": revogados, "depois": 0}} if revogados else {})},
+        origem=RegistroAuditoria.Origem.FORMULARIO,
+    )
+    return oficio

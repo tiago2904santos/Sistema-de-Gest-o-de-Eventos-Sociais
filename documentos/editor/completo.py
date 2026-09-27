@@ -58,13 +58,16 @@ def _chaves(vinculo, objeto):
 
 def bloqueio(vinculo, objeto, usuario) -> str:
     """Por que este documento não se edita agora ("" = edita)."""
-    if not vinculo.pode_editar(usuario, objeto):
+    if not vinculo.pode_operar(usuario, objeto):
         if vinculo.cancelado(objeto):
             return "Documento cancelado ou concluído: reative o registro para editar."
         return "Você não tem permissão para editar este documento."
-    if vinculo.assinado(objeto):
+    fechado = vinculo.fechado(objeto)
+    if fechado == "assinado":
         return ("Documento com versão assinada valendo: para editar, remova a versão assinada (reabre o "
                 "documento). A versão assinada nunca é alterada.")
+    if fechado == "finalizado":
+        return "Documento finalizado: para editar, reabra para correção na tela do cadastro, com o motivo."
     return ""
 
 
@@ -112,6 +115,7 @@ def pagina(request, tipo, pk):
             "url_salvar": _url(vinculo, objeto, "editor_completo_salvar"),
             "url_modelo": _url(vinculo, objeto, "editor_completo_modelo"),
             "bloqueio": bloqueio(vinculo, objeto, request.user),
+            "assinatura": vinculo.assinatura(objeto),
             "erro": erro,
             "estado": estado.pk if estado else "",
             "versoes": [

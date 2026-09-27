@@ -933,6 +933,10 @@ def gerar_plano_documento(plano, formato, *, usar_assinado=True, nova_versao=Fal
 
     from .docxtpl_context import build_plano_docxtpl_context
 
+    from documentos.services.data_documento import fixar_data_documento
+
+    # A data do documento nasce na primeira emissão e vale para todas as vias.
+    fixar_data_documento(plano)
     referencia = referencia_do_plano(plano)
 
     def gerar():

@@ -59,6 +59,8 @@ td.doc-editavel, p.doc-editavel { border-radius: 0; }
 .doc-editavel--texto:focus { background: rgba(190, 164, 90, .14); outline: none; }
 .doc-editavel--texto[data-doc-estado="erro"],
 .doc-editavel--texto[data-doc-estado="erro"]:focus { background: rgba(190, 70, 60, .16); }
+/* O termo que segue a data (autorização/convalidação) dentro do parágrafo editável (m110): fixo, e marcado como tal. */
+.doc-marcador { border-bottom: 1px dotted rgba(120, 100, 40, .7); cursor: default; }
 
 /* Dado que ainda não existe (unidade, destinatário...): só no editor, um
    texto cinza para ter onde clicar e preencher. */

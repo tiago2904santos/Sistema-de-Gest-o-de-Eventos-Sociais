@@ -43,6 +43,8 @@
         <button type="button" class="an-limpar" data-anexar-limpar aria-label="Tirar o arquivo escolhido" title="Tirar o arquivo escolhido" hidden>{% include "components/icon.html" with nome="x" %}</button>
       </div>
       <p class="an-erro" data-anexar-erro hidden></p>
+      {# O que o sistema leu do PDF escolhido (m112): quem assinou, ou os avisos. É aviso; quem anexa decide. #}
+      <div class="an-conferencia" data-anexar-conferencia hidden aria-live="polite"></div>
     </div>
     {# Só quando o link pede (`data-anexar-validade`): a validade, para PDF que é imagem e não se lê. #}
     <div class="form-campo an-validade" data-anexar-validade-campo hidden>

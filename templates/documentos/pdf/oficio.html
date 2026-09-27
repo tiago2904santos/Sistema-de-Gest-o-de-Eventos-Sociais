@@ -122,7 +122,7 @@
   {% ponto_de_quebra "antes_assinatura" %}
   <div class="doc-oficio__assinatura">
     {% bloco "fecho" %}
-    <p class="doc-oficio__chefia"><span {% editavel "config_assinante" %}>{{ tx.nome_chefia }}{% if not tx.nome_chefia %}{% vazio "quem assina" %}{% endif %}</span></p>
-    <p class="doc-oficio__cargo"><span {% editavel "config_assinante" %}>{{ tx.cargo_chefia }}</span></p>
+    <p class="doc-oficio__chefia"><span {% editavel "assinante" %}>{{ tx.nome_chefia }}{% if not tx.nome_chefia %}{% vazio "quem assina" %}{% endif %}</span></p>
+    <p class="doc-oficio__cargo"><span {% editavel "assinante" %}>{{ tx.cargo_chefia }}</span></p>
   </div>
 {% endblock %}

@@ -1,0 +1,9 @@
+{% comment %}
+  O PDF assinado que ficou para trás dos dados (m109). O assinado continua
+  valendo (é o que sai em visualizar e baixar), mas já não corresponde ao que
+  o sistema tem: o selo diz o que mudou. Contexto: `assinatura`, de
+  `documentos.editor.vinculos.VinculoBase.assinatura`.
+{% endcomment %}
+{% if assinatura.desatualizado %}
+  <div class="dc-aviso" role="status" data-de-assinado-desatualizado>{% include "components/icon.html" with nome="alert" %}<div><strong>Assinado, mas os dados mudaram desde então.</strong> O PDF assinado continua valendo, mas já não bate com o sistema — {{ assinatura.mudancas|join:"; " }}. Para emitir o documento atualizado, remova a versão assinada e assine de novo.</div></div>
+{% endif %}

@@ -219,7 +219,7 @@ def _contexto_do_registro(termo, request):
     """
     if not termo.pk:
         return {}
-    artefatos_pdf = artefatos_pdf_por_termo([termo]).get(termo.pk, {})
+    artefatos_pdf = artefatos_pdf_por_termo([termo], conferir=True).get(termo.pk, {})
     selo, tom = selo_do_termo(termo)
     return {
         "selo": selo, "selo_tom": tom,

@@ -1,6 +1,6 @@
 ORDEM DE SERVIÇO [[ordem_de_servico]] - [[unidade_abreviado]]
 Ref.:  [[referencia]]
-Eu, [[nome_chefia]], [[cargo_chefia]] da Polícia Civil do Paraná, no uso das atribuições que me foram conferidas pelo Delegado-Geral Silvio Jacob Rockembach, bem como pelo Conselho da Polícia Civil,
+Eu, [[nome_chefia]], [[cargo_chefia]] da Polícia Civil do Paraná, no uso das atribuições que me foram conferidas pelo Delegado-Geral [[delegado_geral]], bem como pelo Conselho da Polícia Civil,
 DETERMINO
 [[determinacao]]
 • [;

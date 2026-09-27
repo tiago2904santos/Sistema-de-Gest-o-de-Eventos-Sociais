@@ -1788,6 +1788,7 @@ form.btn-flutuante-form{margin:0;display:contents}
 .an-limpar[hidden]{display:none}
 .an-limpar .ui-icon{width:14px;height:14px}
 .an-erro{margin:0;font-size:12.5px;color:var(--erro-t,#b3261e)}
+.an-conferencia{display:grid;gap:4px;margin-top:8px}.an-conferencia__linha{margin:0;font-size:12.5px;padding:6px 8px;border-radius:6px;background:var(--fundo-suave,#f3f1ec)}.an-conferencia__linha--ok{color:var(--ok-t,#1d6b3a);background:rgba(29,107,58,.08)}.an-conferencia__linha--aviso{color:var(--aviso-t,#8a5a00);background:rgba(190,140,20,.12)}
 .an-rodape{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:2px}
 .an-rodape .btn-primaria,.an-rodape .btn--secundaria{height:40px;padding:0 18px;border-radius:8px;font-size:14px}
 .an-rodape .btn-primaria:disabled{opacity:.45;cursor:not-allowed}

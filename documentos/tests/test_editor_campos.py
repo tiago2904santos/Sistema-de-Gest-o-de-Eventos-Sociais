@@ -225,6 +225,23 @@ class EditorDeCamposTests(CenarioOficioMixin, TestCase):
         o.save(update_fields=['cancelado', 'atualizado_em'])
         self.assertEqual(self.patch(o, 'motivo', {'motivo': 'x'}).status_code, 403)
 
+    def test_oficio_finalizado_ou_assinado_nao_se_edita_no_editor(self):
+        from django.core.files.base import ContentFile
+        from documentos.models import DocumentoArtefato, DocumentoAssinaturaVersao
+        o = self.criar()
+        o.status = o.STATUS_FINALIZADO
+        o.save(update_fields=['status', 'atualizado_em'])
+        self.assertEqual(self.patch(o, 'motivo', {'motivo': 'x'}).status_code, 403)
+        folha = self.client.get(reverse('documentos:editor_folha', args=['oficio', o.pk])).content.decode()
+        self.assertNotIn('data-doc-campo="motivo"', folha)
+        o.status = o.STATUS_GERADO
+        o.save(update_fields=['status', 'atualizado_em'])
+        self.assertEqual(self.patch(o, 'motivo', {'motivo': 'De novo'}).status_code, 200)
+        artefato = DocumentoArtefato.objects.create(tipo='oficio', formato='pdf', oficio=o, hash_sha256='0' * 64,
+                                                    arquivo=ContentFile(b'%PDF-1.4', name='o.pdf'))
+        DocumentoAssinaturaVersao.objects.create(artefato=artefato, arquivo=ContentFile(b'%PDF-1.4 a', name='a.pdf'), hash_sha256='1' * 64)
+        self.assertEqual(self.patch(o, 'motivo', {'motivo': 'x'}).status_code, 403)
+
 
 class FolhaNaRespostaTests(CenarioOficioMixin, TestCase):
     """A gravação já devolve a folha remontada, para o navegador trocar o

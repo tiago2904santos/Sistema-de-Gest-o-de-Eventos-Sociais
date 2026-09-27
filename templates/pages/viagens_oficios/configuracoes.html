@@ -106,6 +106,25 @@
               {% include "pages/viagens_cadastros/_campo.html" with campo=campos.email %}
             </div>
           </div>
+          {# Textos oficiais que estavam no programa (m115): valem para os documentos novos. #}
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Textos oficiais</strong>
+            </div>
+            <div class="bloco-split__corpo g-form">
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.delegado_geral_nome %}
+            </div>
+          </div>
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Coffee Break (ASCOM)</strong>
+            </div>
+            <div class="bloco-split__corpo g-form">
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.ascom_cabecalho_unidade %}
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.ascom_rodape_endereco %}
+              {% include "pages/viagens_cadastros/_campo.html" with campo=campos.ascom_rodape_contato %}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -158,6 +177,16 @@
             <div class="bloco-split__corpo g-form g-form--2">
               {% include "pages/viagens_cadastros/_campo.html" with campo=campos.assina_ordem_servico %}
               {% include "pages/viagens_cadastros/_campo.html" with campo=campos.assina_plano_trabalho %}
+            </div>
+          </div>
+          {# Férias e afastamentos (m114): o substituto por período, sem trocar o titular aqui. #}
+          <div class="bloco-split">
+            <div class="bloco-split__rotulo">
+              <strong>Substituições</strong>
+            </div>
+            <div class="bloco-split__corpo">
+              <p class="form-ajuda">Nas férias ou afastamentos do titular, cadastre quem assina e de quando a quando: os documentos datados no período saem com o substituto, e depois volta o titular sozinho. Um documento também pode ter o próprio assinante, escolhido na folha.</p>
+              <a class="btn--secundaria" href="{% url 'viagens_cadastros:lista' 'substituicoes-assinatura' %}?next={{ request.get_full_path|urlencode }}">{% include "components/icon.html" with nome="users" %}Substituições de assinante</a>
             </div>
           </div>
           <div class="bloco-split">

@@ -397,6 +397,10 @@ def _prestacao_assinado_upload(
         substituir_todos_do_tipo=substituir_todos_do_tipo,
         adicionar=adicionar,
     )
+    # O que o sistema leu do PDF (m112): quem assinou, ou os avisos de que não
+    # tem assinatura ou não é o documento certo. Só aviso: o anexo já valeu.
+    for nivel, texto in _conferencia_do_anexo(arquivo, prestacao, servidor_prestacao):
+        messages.add_message(request, nivel, texto)
     if pos_anexo is not None and resultado.anexo is not None:
         pos_anexo(resultado.anexo)
     elif anteriores:
@@ -410,6 +414,31 @@ def _prestacao_assinado_upload(
         # que o redirect seguido pelo `fetch` engolia junto com os erros.
         return JsonResponse({"ok": True})
     return redirect(destino)
+
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def _conferencia_do_anexo(arquivo, prestacao, servidor_prestacao):
+    """Mensagens da conferência do PDF anexado à prestação (m112): o número do
+    ofício e o nome do servidor têm de aparecer; imagem (comprovante) não se confere."""
+    from documentos.services.conferencia_assinado import conferir_pdf_assinado, mensagens_da_conferencia
+    try:
+        arquivo.seek(0)
+        dados = arquivo.read()
+        arquivo.seek(0)
+        if not dados.startswith(b"%PDF-"):
+            return []
+        oficio = prestacao.oficio
+        nomes = [servidor_prestacao.servidor.nome] if servidor_prestacao is not None and servidor_prestacao.servidor_id else []
+        conferencia = conferir_pdf_assinado(dados, numero=oficio.numero_formatado if oficio.numero else "",
+                                            protocolo=oficio.protocolo or "", nomes=nomes, rotulo="ofício")
+    except Exception:
+        logger.exception("Falha ao conferir o PDF anexado à prestação %s", getattr(prestacao, "pk", "?"))
+        return []
+    return mensagens_da_conferencia(conferencia)
 
 
 def _ja_anexado(prestacao, tipo, servidor_prestacao, arquivo) -> bool:

@@ -16,7 +16,7 @@
 {% endcomment %}
 <details class="ofc-doc{% if aninhado %} ofc-doc--aninhado{% endif %}" data-ofc-doc{% if d.embutido %} id="{{ d.embutido.id }}"{% endif %}{% if aberto %} open{% endif %}>
   <summary class="ofc-doc__cabeca">
-    <span class="ofc-doc__titulo">{{ d.titulo }}{% if d.assinado %} <span class="st st--atendido">Assinado</span>{% endif %}{% if d.versao %} <span class="st st--aguardando" title="A via emitida: o PDF que saiu do sistema e se reimprime igual">Versão {{ d.versao }} emitida em {{ d.emitida_em|date:"d/m/Y" }}</span>{% endif %}</span>
+    <span class="ofc-doc__titulo">{{ d.titulo }}{% if d.desatualizado %} <span class="st st--prazo_proximo" title="{{ d.mudancas|join:"; " }}">Assinado, mas os dados mudaram</span>{% elif d.assinado %} <span class="st st--atendido">Assinado</span>{% endif %}{% if d.versao %} <span class="st st--aguardando" title="A via emitida: o PDF que saiu do sistema e se reimprime igual">Versão {{ d.versao }} emitida em {{ d.emitida_em|date:"d/m/Y" }}</span>{% endif %}</span>
     {% if d.disponivel %}
       <span class="dd of-menu ofc-doc__acoes" data-menu>
         <button type="button" class="ib-linha" data-menu-gatilho aria-haspopup="true" aria-expanded="false" aria-label="Ações de {{ d.titulo }}" title="Visualizar e baixar">{% include "components/icon.html" with nome="document" %}</button>

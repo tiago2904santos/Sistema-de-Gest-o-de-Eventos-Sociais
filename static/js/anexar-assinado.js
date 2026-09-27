@@ -65,10 +65,54 @@
     erro.hidden = !texto;
   }
 
+  // Prévia da conferência (m112): antes de anexar, o sistema lê o PDF e diz
+  // quem assinou — ou avisa que não há assinatura, ou que o número, o
+  // protocolo ou o nome não batem. Só aviso: o botão de anexar continua.
+  var conferencia = dialogo.querySelector('[data-anexar-conferencia]');
+  var pedidoDeConferencia = 0;
+  function urlDeConferencia() {
+    var id = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i.exec(form.action || '');
+    return id ? '/documentos/' + id[1] + '/conferir-assinado/' : '';
+  }
+  function limparConferencia() {
+    if (!conferencia) return;
+    conferencia.hidden = true;
+    conferencia.innerHTML = '';
+  }
+  function mostrarConferencia(dados) {
+    if (!conferencia) return;
+    var linhas = [];
+    if (dados.resumo) linhas.push({ texto: dados.resumo, tom: dados.assinado ? 'ok' : 'aviso' });
+    (dados.avisos || []).forEach(function (aviso) { linhas.push({ texto: aviso, tom: 'aviso' }); });
+    conferencia.innerHTML = '';
+    linhas.forEach(function (linha) {
+      var p = document.createElement('p');
+      p.className = 'an-conferencia__linha an-conferencia__linha--' + linha.tom;
+      p.textContent = linha.texto;
+      conferencia.appendChild(p);
+    });
+    conferencia.hidden = !linhas.length;
+  }
+  function conferir(arquivo) {
+    limparConferencia();
+    var url = urlDeConferencia();
+    if (!url || !conferencia || !window.fetch || !window.FormData) return;
+    var pedido = ++pedidoDeConferencia;
+    var corpo = new FormData();
+    corpo.append('arquivo', arquivo);
+    var csrf = form.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (csrf) corpo.append('csrfmiddlewaretoken', csrf.value);
+    fetch(url, { method: 'POST', body: corpo, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (r) { return r.json(); })
+      .then(function (dados) { if (pedido === pedidoDeConferencia && dados && dados.ok) mostrarConferencia(dados); })
+      .catch(function () { /* a prévia é só ajuda: sem ela, o envio segue igual */ });
+  }
+
   function atualizar() {
     var arquivo = campo.files && campo.files[0];
     mostrarErro('');
     if (!arquivo) {
+      limparConferencia();
       rotulo.textContent = VAZIO;
       quadro.classList.remove('an-arquivo--escolhido');
       limpar.hidden = true;
@@ -82,6 +126,7 @@
     var imagem = aceitaImagem && (/\.(png|jpe?g)$/i.test(arquivo.name) || /^image\/(png|jpeg)$/.test(arquivo.type));
     if (!pdf && !imagem) mostrarErro(aceitaImagem ? 'Escolha um PDF ou uma imagem PNG ou JPG.' : 'Escolha um arquivo PDF.');
     enviar.disabled = !(pdf || imagem);
+    if (pdf) conferir(arquivo); else limparConferencia();
   }
 
   // Aponta o formulário para um documento: endereço, nome e se dá para remover o assinado.

@@ -19,6 +19,8 @@ inteira do documento (`edicao_completa`), quando houver, vai junto em
 
 from __future__ import annotations
 
+import re
+
 from django.utils import timezone
 
 from documentos.editor.blocos import blocos_do_tipo, paragrafos_do_tipo, quebras_do_tipo
@@ -56,13 +58,64 @@ def blocos_gravados(tipo, objeto):
     return DocumentoBloco.objects.filter(**_filtro(tipo, objeto)).select_related("editado_por")
 
 
+MARCADORES_INSTITUCIONAIS = ("delegado_geral", "ascom_unidade", "ascom_endereco", "ascom_contato",
+                             "ascom_endereco_hifens", "ascom_contato_hifens")
+_RX_INSTITUCIONAL = re.compile(r"\{(" + "|".join(MARCADORES_INSTITUCIONAIS) + r")\}")
+
+
+def _com_hifens(texto: str) -> str:
+    """"Rua X, 1 – Centro—CEP: 80.230-020" → "Rua X, 1 - Centro - CEP: 80230-020" (o ofício do Coffee Break)."""
+    texto = re.sub(r"\s*[–—]\s*", " - ", texto or "")
+    texto = re.sub(r"(\d{2})\.(\d{3})-(\d{3})", r"\1\2-\3", texto)
+    return " ".join(texto.split())
+
+
+def valores_institucionais() -> dict[str, str]:
+    """Os textos oficiais que moram na configuração (m115): o nome do
+    Delegado-Geral e o cabeçalho/rodapé da ASCOM do Coffee Break."""
+    from viagens_cadastros.models import ConfiguracaoSistema
+
+    try:
+        cfg = ConfiguracaoSistema.atual()
+    except Exception:  # noqa: BLE001 — sem banco (montagem isolada do modelo): os valores iniciais.
+        cfg = ConfiguracaoSistema()
+    return {
+        "delegado_geral": cfg.delegado_geral_nome or "",
+        "ascom_unidade": cfg.ascom_cabecalho_unidade or "",
+        "ascom_endereco": cfg.ascom_rodape_endereco or "",
+        "ascom_contato": cfg.ascom_rodape_contato or "",
+        "ascom_endereco_hifens": _com_hifens(cfg.ascom_rodape_endereco),
+        "ascom_contato_hifens": _com_hifens(cfg.ascom_rodape_contato),
+    }
+
+
+def preencher_institucionais(texto, valores=None):
+    """Troca os marcadores institucionais pelo valor da configuração; os demais
+    (`{assunto}`, `{periodo}`...) ficam para quem monta o documento."""
+    if not texto or "{" not in texto or not _RX_INSTITUCIONAL.search(texto):
+        return texto
+    valores = valores if valores is not None else valores_institucionais()
+    return _RX_INSTITUCIONAL.sub(lambda m: valores.get(m.group(1), m.group(0)), texto)
+
+
+def _preencher_blocos(blocos) -> dict:
+    valores = None
+    for bloco in blocos.values():
+        for campo in ("conteudo", "padrao"):
+            texto = bloco.get(campo)
+            if isinstance(texto, str) and _RX_INSTITUCIONAL.search(texto):
+                valores = valores if valores is not None else valores_institucionais()
+                bloco[campo] = preencher_institucionais(texto, valores)
+    return blocos
+
+
 def completar_blocos(tipo, dados=None) -> dict[str, dict]:
     """Começa do registro (texto padrão) e aplica o que veio por cima."""
     blocos = {chave: {"conteudo": b.padrao, "padrao": b.padrao, "editado": False} for chave, b in blocos_do_tipo(tipo).items()}
     for chave, valor in (dados or {}).items():
         base = blocos.setdefault(chave, {"conteudo": None, "padrao": "", "editado": False})
         base.update({k: v for k, v in dict(valor).items() if v is not None})
-    return blocos
+    return _preencher_blocos(blocos)
 
 
 def _com_textos_do_modelo(tipo, blocos) -> dict:
@@ -73,7 +126,7 @@ def _com_textos_do_modelo(tipo, blocos) -> dict:
     for chave, texto in textos_vigentes(tipo).items():
         if chave in blocos:
             blocos[chave].update({"conteudo": texto, "padrao": texto})
-    return blocos
+    return _preencher_blocos(blocos)
 
 
 def conteudo_documental(tipo, objeto, variante="") -> dict:

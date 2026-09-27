@@ -65,9 +65,12 @@ def gerar_ordem_servico(ordem: OrdemServico, formato: DocumentoFormato, *, usar_
     """
     if ordem.cancelado:
         raise ValidationError("Reative a Ordem de Serviço antes de emitir documentos.")
+    from documentos.services.data_documento import fixar_data_documento
     from documentos.services.document_blocks import conteudo_documental
     from documentos.services.emissao import emitir
 
+    # A data do documento nasce na primeira emissão e vale para todas as vias.
+    fixar_data_documento(ordem)
     referencia = referencia_da_ordem(ordem)
 
     def gerar():

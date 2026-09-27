@@ -126,8 +126,11 @@ def fatos_da_ordem(ordem, equipe, oficios, assinante):
     return fatos
 
 
-def artefatos_pdf_por_ordem(ordens):
+def artefatos_pdf_por_ordem(ordens, *, conferir=False):
     """ordem_id → PDF de OS já gerado (`{"pk", "assinado"}`), o alvo de "Anexar assinado".
+
+    Com `conferir`, a OS assinada ganha `desatualizado` e `mudancas` (m109):
+    se os dados mudaram desde a assinatura, e o quê.
 
     O PDF apontado é o mais recente; `assinado` olha o banco, não o storage —
     uma ida ao disco por linha pesaria na lista paginada.
@@ -158,6 +161,15 @@ def artefatos_pdf_por_ordem(ordens):
         if versao_emitida and versao_emitida >= (anterior["versao"] or 0):
             entrada.update(pk=pk, versao=versao_emitida, emitida_em=emitida_em)
         mapa[ordem_id] = entrada
+    if conferir:
+        from documentos.editor.vinculos import vinculo_do_tipo
+
+        vinculo = vinculo_do_tipo(DocumentoTipo.ORDEM_SERVICO)
+        por_id = {o.pk: o for o in ordens}
+        for ordem_id, entrada in mapa.items():
+            if entrada["assinado"]:
+                situacao = vinculo.assinatura(por_id[ordem_id])
+                entrada.update(desatualizado=situacao["desatualizado"], mudancas=situacao["mudancas"])
     return mapa
 
 
@@ -190,5 +202,7 @@ def linha_da_lista(ordem, *, assinante=None, artefato_pdf=None):
         # A via emitida (m113): "Versão 1 emitida em dd/mm" e "Emitir nova versão".
         "versao": artefato_pdf.get("versao") if artefato_pdf else None,
         "emitida_em": artefato_pdf.get("emitida_em") if artefato_pdf else None,
+        "assinado_desatualizado": bool(artefato_pdf and artefato_pdf.get("desatualizado")),
+        "mudancas_desde_assinatura": list(artefato_pdf.get("mudancas") or []) if artefato_pdf else [],
         **urls_da_ordem(ordem),
     }

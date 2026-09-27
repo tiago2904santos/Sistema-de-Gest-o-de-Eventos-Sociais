@@ -309,7 +309,7 @@ def lista(request):
     parametros = request.GET.copy()
     parametros.pop("pagina", None)
     assinante = assinante_da_ordem()
-    artefatos = artefatos_pdf_por_ordem(pagina.object_list)
+    artefatos = artefatos_pdf_por_ordem(pagina.object_list, conferir=True)
     linhas = [linha_da_lista(o, assinante=assinante, artefato_pdf=artefatos.get(o.pk)) for o in pagina]
 
     def url_da_situacao(aba=None):
@@ -492,8 +492,12 @@ def assinatura_artefato(request, pk):
                 messages.success(request, "Versão assinada removida. O PDF gerado volta a valer.")
                 return redirect(retorno)
             if form.is_valid():
+                from documentos.services.conferencia_assinado import mensagens_da_conferencia
                 anexar_arquivo_assinado(artefato, form.cleaned_data["arquivo"])
                 messages.success(request, "Documento assinado anexado. A versão anterior permanece no histórico.")
+                # O que o sistema leu do PDF (m112): quem assinou, ou os avisos.
+                for nivel, texto in mensagens_da_conferencia(getattr(artefato, "conferencia_assinado", None)):
+                    messages.add_message(request, nivel, texto)
                 return redirect(retorno)
         except DocumentError as exc:
             form.add_error("arquivo", str(exc))

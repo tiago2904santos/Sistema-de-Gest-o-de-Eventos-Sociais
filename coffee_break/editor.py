@@ -119,12 +119,12 @@ def _blocos(*trios):
 _TIMBRE = (
     ("cb_secretaria", "Cabeçalho — secretaria", "SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA"),
     ("cb_orgao", "Cabeçalho — órgão", "POLÍCIA CIVIL DO PARANÁ"),
-    ("cb_unidade", "Cabeçalho — unidade", "ASSESSORIA DE COMUNICAÇÃO SOCIAL"),
+    ("cb_unidade", "Cabeçalho — unidade", "{ascom_unidade}"),
 )
 # O rodapé da OS e do certifico (o do ofício do processo é com hífens).
 _RODAPE = (
-    ("cb_rodape_endereco", "Rodapé — endereço", "Avenida Iguaçu, 470 – Rebouças – Curitiba/PR—CEP: 80.230-020"),
-    ("cb_rodape_contato", "Rodapé — contato", "Fone: (41) 3235-6477 – e-mail:  comunicacao@pc.pr.gov.br"),
+    ("cb_rodape_endereco", "Rodapé — endereço", "{ascom_endereco}"),
+    ("cb_rodape_contato", "Rodapé — contato", "{ascom_contato}"),
 )
 
 BLOCOS_OS = _blocos(
@@ -147,8 +147,8 @@ QUEBRAS_OS = (
 
 BLOCOS_OFICIO = _blocos(
     *_TIMBRE,
-    ("cb_rodape_endereco", "Rodapé — endereço", "Avenida Iguaçu, 470 - Rebouças - Curitiba/PR - CEP: 80230-020"),
-    ("cb_rodape_contato", "Rodapé — contato", "Fone: (41) 3235-6477 - e-mail: comunicacao@pc.pr.gov.br"),
+    ("cb_rodape_endereco", "Rodapé — endereço", "{ascom_endereco_hifens}"),
+    ("cb_rodape_contato", "Rodapé — contato", "{ascom_contato_hifens}"),
     ("cb_titulo", "Título", "OFÍCIO"),
     ("cb_rotulo_protocolo", "Rótulo do protocolo PCPR", "PCPR Protocolo n.º:"),
     ("cb_cidade", "Cidade da data", "Curitiba"),
@@ -490,7 +490,8 @@ class VinculoCoffee(VinculoBase):
     def cancelado(self, solicitacao):
         return bool(solicitacao.cancelada or solicitacao.concluida)
 
-    def pode_editar(self, usuario, solicitacao):
+    def pode_operar(self, usuario, solicitacao):
+        # A permissão do módulo; `pode_editar` junta a trava do documento assinado (m109).
         return self.pode_ver(usuario) and not self.cancelado(solicitacao)
 
     def origens_editaveis(self, usuario):
