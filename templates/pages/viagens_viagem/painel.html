@@ -79,6 +79,14 @@
       </div>
     {% endif %}
 
+    {% if so_falta_equipe and url_gerar_documentos %}
+      {# O planejamento já saiu do histórico (roteiro, horários, diárias): falta só quem vai e em qual viatura. #}
+      <div class="aviso aviso--callout vg-so-equipe" role="status" data-so-falta-equipe>
+        <div class="aviso__txt">{% include "components/icon.html" with nome="volante" %}<div class="aviso__corpo"><b>Só falta a equipe</b><p>O roteiro já está montado. Escolha os servidores e a viatura: o sistema gera ofícios, justificativa, termos, ordem de serviço e plano de trabalho.</p></div></div>
+        <a class="btn btn--dourado btn-primaria" href="{{ url_gerar_documentos }}">Escolher equipe e viatura</a>
+      </div>
+    {% endif %}
+
     {% if origem_solicitacao %}
       {# De onde a viagem veio: o fio até a solicitação, e se ela mudou depois. #}
       {% if origem_solicitacao.aviso %}

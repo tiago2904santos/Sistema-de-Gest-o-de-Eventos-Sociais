@@ -553,7 +553,11 @@ def _cartao_viagem(user, solicitacao):
     """
     viagens = integracao_viagens.viagens_da_solicitacao(solicitacao)
     if not viagens and solicitacao.decisao_dg != DecisaoDG.ATENDER:
-        return None
+        # Antes do deferimento: os eventos vizinhos que vão virar uma viagem só.
+        from viagens_viagem.multieventos import eventos_vizinhos
+
+        vizinhos = eventos_vizinhos(solicitacao)
+        return {"viagens": [], "vizinhos": vizinhos, "so_vizinhos": True} if vizinhos else None
     if viagens:
         # Uma por ambiente (ASCOM, ...), cada uma com o contador de servidores.
         return {

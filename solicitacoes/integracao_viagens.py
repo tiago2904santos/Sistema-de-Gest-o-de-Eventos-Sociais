@@ -64,10 +64,13 @@ def resumo_das_equipes(solicitacao) -> str:
 
 def viagens_da_solicitacao(solicitacao):
     """As viagens geradas a partir desta solicitação — uma por ambiente."""
+    from django.db.models import Q
+
     from viagens_viagem.models import Viagem
 
+    # A viagem pode ser de origem (roteiro) ou multieventos (juntada).
     return list(
-        Viagem.objects.filter(roteiros__solicitacao=solicitacao, cancelado=False)
+        Viagem.objects.filter(Q(roteiros__solicitacao=solicitacao) | Q(solicitacoes_juntadas=solicitacao), cancelado=False)
         .select_related("setor")
         .distinct()
         .order_by("id")
@@ -262,12 +265,19 @@ def gerar_viagens(solicitacao, usuario):
     if not cabe:
         raise ValueError(motivo)
 
+    from viagens_viagem.multieventos import viagem_para_juntar
+
     grupos = grupos_por_ambiente(solicitacao)
     with transaction.atomic():
-        viagens = [
-            _criar_viagem_do_grupo(solicitacao, setor, itens, unico=len(grupos) == 1)
-            for setor, itens in grupos
-        ]
+        viagens = []
+        for setor, itens in grupos:
+            # Multieventos: mesma cidade e dias encostados numa viagem ainda sem
+            # documentos — a mesma equipe atende os dois; é uma viagem só.
+            vizinha, pode_juntar = viagem_para_juntar(solicitacao, setor)
+            if vizinha is not None and pode_juntar:
+                viagens.append(_juntar_na_viagem(vizinha, solicitacao, setor, itens, unico=len(grupos) == 1))
+            else:
+                viagens.append(_criar_viagem_do_grupo(solicitacao, setor, itens, unico=len(grupos) == 1))
 
     logger.info(
         "Viagens %s geradas a partir da solicitação %s por %s",
@@ -319,41 +329,107 @@ def _criar_viagem_do_grupo(solicitacao, setor, itens, *, unico):
         observacoes=_observacoes_do_roteiro(solicitacao),
     )
     RoteiroDestino.objects.create(roteiro=roteiro, municipio=municipio, ordem=1)
-    _montar_trechos(roteiro, sede, municipio, inicio, fim)
+    veiculo = solicitacao.unidade_movel_designada if solicitacao.unidade_movel else None
+    _montar_trechos(roteiro, sede, municipio, inicio, fim, veiculo=veiculo)
     _copiar_anexos(solicitacao, viagem)
     return viagem
 
 
-def _montar_trechos(roteiro, sede, municipio, inicio, fim):
-    """Ida no primeiro dia às 08:00 e volta no último às 16:00, como o editor.
+def _veiculo_pesado(solicitacoes):
+    """A unidade móvel designada que vai junto (a primeira), ou None."""
+    return next((s.unidade_movel_designada for s in solicitacoes
+                 if s.unidade_movel and s.unidade_movel_designada_id), None)
 
-    A distância e o tempo vêm do serviço de rotas quando ele responde; sem
-    ele os trechos ficam só com a saída e o operador completa a chegada. As
-    diárias só são calculadas com o percurso inteiro datado.
+
+def _juntar_na_viagem(viagem, solicitacao, setor, itens, *, unico):
+    """Põe mais um evento na viagem vizinha (multieventos) e refaz o roteiro."""
+    from viagens_viagem.models import EquipePrevista
+    from viagens_viagem.multieventos import solicitacoes_da_viagem
+
+    viagem.solicitacoes_juntadas.add(solicitacao)
+    todas = solicitacoes_da_viagem(viagem)
+    viagem.data_inicio = min(s.data_inicio_evento for s in todas)
+    viagem.data_fim = max(s.data_fim_evento or s.data_inicio_evento for s in todas)
+    rotulo = _rotulo_do_ambiente(setor)
+    viagem.titulo = (f"{solicitacao.municipio} — {viagem.data_inicio:%d/%m} a {viagem.data_fim:%d/%m/%Y} "
+                     f"({len(todas)} eventos)" + (f" ({rotulo})" if rotulo else ""))
+    viagem.motivo = "; ".join(_motivo_da_solicitacao(s) for s in todas)
+    viagem.save(update_fields=["data_inicio", "data_fim", "titulo", "motivo", "atualizado_em"])
+    tipos = _tipos_da_viagem(solicitacao)
+    if tipos:
+        viagem.tipos.add(*tipos)
+    # A mesma equipe atende todos os eventos: a meta é a maior, não a soma.
+    for item in itens:
+        prevista = viagem.equipes_previstas.filter(equipe=item.equipe).first()
+        if prevista is None:
+            EquipePrevista.objects.create(viagem=viagem, equipe=item.equipe, quantidade=item.quantidade_servidores)
+        elif item.quantidade_servidores and (prevista.quantidade or 0) < item.quantidade_servidores:
+            prevista.quantidade = item.quantidade_servidores
+            prevista.save(update_fields=["quantidade", "atualizado_em"])
+
+    roteiro = viagem.roteiros.filter(cancelado=False).order_by("id").first()
+    if roteiro is not None:
+        roteiro.quantidade_servidores = max(roteiro.quantidade_servidores, _quantidade_do_grupo(solicitacao, itens, unico))
+        roteiro.observacoes = f"{roteiro.observacoes}\n\nTambém nesta viagem (multieventos):\n{_observacoes_do_roteiro(solicitacao)}".strip()
+        roteiro.save(update_fields=["quantidade_servidores", "observacoes", "atualizado_em"])
+        # O percurso é o do período todo: sai antes do primeiro evento, volta depois do último.
+        roteiro.trechos.all().delete()
+        roteiro.saida_dt = roteiro.chegada_dt = roteiro.retorno_saida_dt = roteiro.retorno_chegada_dt = None
+        roteiro.save(update_fields=["saida_dt", "chegada_dt", "retorno_saida_dt", "retorno_chegada_dt", "atualizado_em"])
+        _montar_trechos(roteiro, roteiro.origem_municipio, solicitacao.municipio, viagem.data_inicio, viagem.data_fim,
+                        veiculo=_veiculo_pesado(todas))
+    _copiar_anexos(solicitacao, viagem)
+    logger.info("Solicitação %s juntada à viagem %s (multieventos).", solicitacao.pk, viagem.pk)
+    return viagem
+
+
+def _montar_trechos(roteiro, sede, municipio, inicio, fim, *, veiculo=None):
+    """Ida e volta nos horários que as viagens feitas ensinam.
+
+    `viagens_viagem.planejamento.planejar_horarios` olha os roteiros já
+    emitidos — primeiro os da mesma cidade, depois os de distância parecida —
+    e, sem histórico, fica a regra do editor: ida às 08:00 do primeiro dia,
+    volta às 16:00 do último. A distância e o tempo vêm do serviço de rotas
+    quando ele responde; sem ele os trechos ficam só com a saída e o operador
+    completa a chegada. As diárias só são calculadas com o percurso inteiro
+    datado.
+
+    Com unidade móvel pesada (`veiculo`: ônibus, micro-ônibus, caminhão), o
+    trecho ganha o acréscimo de `planejamento.acrescimo_do_veiculo` no tempo
+    adicional; a van anda como a viatura.
     """
-    from datetime import datetime, time, timedelta
+    from datetime import timedelta
 
     from django.utils import timezone
 
     from viagens_roteiros.models import RoteiroTrecho
+    from viagens_viagem.planejamento import acrescimo_do_veiculo, planejar_horarios
 
     if sede is None or sede.pk == municipio.pk:
         return
+    estimativas = {"ida": _estimar(sede, municipio), "volta": _estimar(municipio, sede)}
+    tempo = (estimativas["ida"] or {}).get("tempo_viagem_min")
+    nome_veiculo = getattr(veiculo, "nome", "")
+    acrescimo, rotulo = acrescimo_do_veiculo(nome_veiculo, tempo)
+    plano = planejar_horarios(sede, municipio, inicio, fim, tempo_min=tempo, acrescimo_min=acrescimo,
+                              excluir_viagem=roteiro.viagem)
+    logger.info("Roteiro %s: %s", roteiro.pk, plano.explicacao)
+    if acrescimo:
+        logger.info("Roteiro %s: %s (%s) soma %s min por trecho.", roteiro.pk, nome_veiculo, rotulo, acrescimo)
     pernas = [
-        (RoteiroTrecho.Sentido.IDA, sede, municipio, datetime.combine(inicio, time(8, 0))),
-        (RoteiroTrecho.Sentido.RETORNO, municipio, sede, datetime.combine(fim, time(16, 0))),
+        (RoteiroTrecho.Sentido.IDA, sede, municipio, plano.ida, estimativas["ida"]),
+        (RoteiroTrecho.Sentido.RETORNO, municipio, sede, plano.volta, estimativas["volta"]),
     ]
     completo = True
-    for ordem, (sentido, origem, destino, saida) in enumerate(pernas, 1):
-        saida = timezone.make_aware(saida)
+    for ordem, (sentido, origem, destino, saida, estimativa) in enumerate(pernas, 1):
         trecho = RoteiroTrecho(
             roteiro=roteiro, ordem=ordem, sentido=sentido,
             origem_municipio=origem, destino_municipio=destino, saida_dt=saida,
         )
-        estimativa = _estimar(origem, destino)
         if estimativa:
             viagem_min = estimativa.get("tempo_viagem_min") or 0
-            adicional = estimativa.get("tempo_adicional_sugerido_min") or 0
+            adicional = (estimativa.get("tempo_adicional_sugerido_min") or 0)
+            adicional += acrescimo_do_veiculo(nome_veiculo, viagem_min)[0]
             trecho.distancia_km = estimativa.get("distancia_km")
             trecho.tempo_viagem_min = viagem_min
             trecho.tempo_adicional_min = adicional
@@ -445,13 +521,21 @@ def resumo_da_viagem(viagem, user=None):
     from viagens_cadastros.permissions import pode_acessar
     from viagens_viagem.meta_equipe import contador_de_servidores
 
+    from viagens_viagem.multieventos import solicitacoes_da_viagem
+
     limite = data_limite_sem_justificativa(viagem)
+    acessa = user is None or pode_acessar(user)
+    eventos = solicitacoes_da_viagem(viagem)
     return {
+        # Multieventos: os eventos que a viagem atende (vazio quando é um só).
+        "eventos": eventos if len(eventos) > 1 else [],
         "viagem": viagem,
         "ambiente": _rotulo_do_ambiente(viagem.setor),
         # Quem não tem o módulo vê a situação, mas não o link.
-        "url": reverse("viagens_viagem:painel", args=[viagem.pk])
-        if user is None or pode_acessar(user)
+        "url": reverse("viagens_viagem:painel", args=[viagem.pk]) if acessa else "",
+        # O atalho da tela em que só se escolhe a equipe e a viatura, enquanto não há ofício.
+        "url_equipe": reverse("viagens_viagem:gerar_documentos", args=[viagem.pk])
+        if acessa and not viagem.cancelado and not viagem.oficios.filter(cancelado=False).exists()
         else "",
         "falta": o_que_falta(viagem),
         "contador": contador_de_servidores(viagem),
