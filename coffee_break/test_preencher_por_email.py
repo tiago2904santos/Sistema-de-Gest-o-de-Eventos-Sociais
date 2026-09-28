@@ -123,7 +123,8 @@ class LerEmailCoffeeTests(BaseCoffeePorEmail):
         # O número da OS é da numeração única: nunca vem do e-mail.
         self.assertNotIn("numero", dados["campos"])
         self.assertEqual(dados["campos"]["local_entrega"]["confianca"], "A")
-        self.assertEqual(dados["avisos"], [])
+        # O "prazo curto" depende de hoje (o evento é em 08/10/2026): não é o que este teste confere.
+        self.assertEqual([a for a in dados["avisos"] if not a.startswith("Prazo curto")], [])
         self.assertEqual(dados["arquivo"]["anexos"], [])  # o coffee break não guarda o original como anexo
         self.assertFalse(SolicitacaoCoffeeBreak.objects.exists())
 
