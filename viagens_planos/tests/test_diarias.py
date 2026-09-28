@@ -83,3 +83,35 @@ class DiariasMultiEventoTests(CenarioPlanoMixin, TestCase):
         self.assertEqual(plano.diarias_combinada_valor_total, Decimal("7234.68"))
         self.assertIsNone(plano.destino_cidade)  # o rascunho foi limpo
         self.assertEqual(calcular_diarias_combinadas(plano)["quantidade_servidores"], 6)
+
+    def test_total_de_varios_eventos_e_um_trajeto_so_da_primeira_saida_a_ultima_chegada(self):
+        """Antonina: 06, 07 e 08–09/10. A pessoa foi ajustando saída e chegada evento por
+        evento; o total é um trajeto só, de 06/10 (saída) a 09/10 (chegada)."""
+        from viagens_planos.services import montar_valor_multi_texto
+
+        plano = self.criar_plano_maringa(efetivo=9)
+        for inicio, fim in ((date(2026, 10, 6), date(2026, 10, 6)), (date(2026, 10, 7), date(2026, 10, 7)),
+                            (date(2026, 10, 8), date(2026, 10, 9))):
+            plano.destino_estado, plano.destino_cidade = self.uf, self.maringa
+            plano.data_evento_inicio, plano.data_evento_fim = inicio, fim
+            plano.saida_sede_data, plano.saida_sede_hora = inicio, time(7, 0)
+            plano.chegada_sede_data, plano.chegada_sede_hora = fim, time(18, 0)
+            plano.save()
+            if not plano.efetivos.exists():
+                EfetivoPlano.objects.create(plano=plano, unidade=self.ascom, cargo=self.cargo_policial, quantidade=9)
+            adicionar_evento_ao_plano(plano)
+            plano.refresh_from_db()
+        self.assertEqual(plano.eventos.count(), 3)
+        # O mesmo período num plano de evento único: 06/10 07:00 → 09/10 18:00.
+        unico = PlanoTrabalho.objects.create(
+            destino_estado=self.uf, destino_cidade=self.maringa,
+            saida_sede_data=date(2026, 10, 6), saida_sede_hora=time(7, 0),
+            chegada_sede_data=date(2026, 10, 9), chegada_sede_hora=time(18, 0),
+        )
+        EfetivoPlano.objects.create(plano=unico, cargo=self.cargo_policial, quantidade=9)
+        esperado = calcular_diarias_plano(unico)
+        combinado = calcular_diarias_combinadas(plano)
+        self.assertTrue(combinado["ok"], combinado.get("erros"))
+        self.assertEqual((combinado["composicao"], combinado["valor_total"]), (esperado["composicao"], esperado["valor_total"]))
+        texto = montar_valor_multi_texto(plano)
+        self.assertIn(f"Valor total do evento dias: 06 a 09/10/2026: R${esperado['valor_total_display']}", texto)
