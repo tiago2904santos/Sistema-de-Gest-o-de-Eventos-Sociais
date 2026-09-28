@@ -17,7 +17,8 @@
 (function () {
   "use strict";
 
-  var ESPERA = 2500;
+  // Curto: a prévia do documento acompanha o que se digita (m141).
+  var ESPERA = 900;
 
   function csrf(form) {
     var campo = form.querySelector('input[name="csrfmiddlewaretoken"]') || document.querySelector('input[name="csrfmiddlewaretoken"]');
@@ -88,6 +89,8 @@
           if (res.ok) {
             var hora = (res.dados.saved_at_display || "").split(" ")[1] || "";
             mostrar(hora ? "Rascunho salvo às " + hora : "Rascunho salvo", "ok");
+            // A prévia do documento (documento-embutido.js) recarrega com o que foi gravado.
+            form.dispatchEvent(new CustomEvent("autosave:salvo", {bubbles: true, detail: res.dados}));
           } else {
             var erros = res.dados && res.dados.errors ? Object.keys(res.dados.errors).map(function (k) { return [].concat(res.dados.errors[k]).join(" "); }).join(" ") : "";
             mostrar(((res.dados && res.dados.message) || "Rascunho não salvo.") + (erros ? " " + erros : ""), "erro");

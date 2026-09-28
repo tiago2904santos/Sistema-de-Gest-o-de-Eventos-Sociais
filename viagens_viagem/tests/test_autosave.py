@@ -62,7 +62,7 @@ class AutosaveRascunhoTests(CenarioViagem):
         # Modelo errado no payload não passa.
         self.assertEqual(self._post(url, "oficio", ordem.pk, {}).status_code, 400)
 
-    def test_plano_grava_rascunho_e_para_depois_de_finalizado(self):
+    def test_plano_grava_rascunho_e_continua_depois_de_gerado(self):
         plano = PlanoTrabalho.objects.create(numero=70, ano=2026)
         url = reverse("viagens_planos:autosalvar", args=[plano.pk])
         self.assertContains(self.client.get(reverse("viagens_planos:editar", args=[plano.pk])), f'data-autosave-url="{url}"')
@@ -76,6 +76,10 @@ class AutosaveRascunhoTests(CenarioViagem):
         self.assertEqual(r.status_code, 200, r.content)
         plano.refresh_from_db()
         self.assertEqual((plano.numero, plano.destino_cidade, plano.data_evento_inicio), (70, self.londrina, date(2026, 10, 5)))
+        # Depois de gerado continua se salvando sozinho: o documento acompanha o preenchimento (m141).
         plano.status = PlanoTrabalho.STATUS_GERADO
         plano.save(update_fields=["status"])
+        self.assertEqual(self._post(url, "plano_trabalho", plano.pk, campos).status_code, 200)
+        # Cancelado, não.
+        PlanoTrabalho.objects.filter(pk=plano.pk).update(cancelado=True)
         self.assertEqual(self._post(url, "plano_trabalho", plano.pk, campos).status_code, 400)

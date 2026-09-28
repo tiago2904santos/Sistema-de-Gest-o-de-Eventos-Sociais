@@ -696,7 +696,7 @@ def editar(request, pk=None):
         'fechado': fechado, 'fechado_rotulo': ROTULO_DO_FECHAMENTO.get(fechado, ''),
         # Rascunho que se salva sozinho (m050): só enquanto é rascunho.
         'autosave_url': (reverse('viagens_oficios:autosalvar', args=[oficio.pk])
-                         if oficio.status == Oficio.STATUS_RASCUNHO and not oficio.cancelado else ''),
+                         if oficio.status in (Oficio.STATUS_RASCUNHO, Oficio.STATUS_GERADO) and not oficio.cancelado else ''),
         'dados': contexto_dados_viajantes(form, oficio),
         'conflitos': _conflitos_da_tela(oficio, form),
         'conflitos_fixos': f'oficio={oficio.pk}',
@@ -733,8 +733,8 @@ def autosalvar(request, pk):
     from .justificativas_services import get_or_create_justificativa_oficio
     exigir_operador(request)
     oficio = get_oficio_by_id(pk)
-    if oficio.cancelado or oficio.status != Oficio.STATUS_RASCUNHO:
-        return autosave_json_response(ok=False, message='Ofício fora de rascunho: salve pelo botão.')
+    if oficio.cancelado or oficio.status not in (Oficio.STATUS_RASCUNHO, Oficio.STATUS_GERADO):
+        return autosave_json_response(ok=False, message='Ofício finalizado: salve pelo botão.')
     try:
         payload = parse_autosave_payload(request, expected_model='oficio')
     except AutosavePayloadError as exc:
