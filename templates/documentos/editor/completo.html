@@ -40,7 +40,8 @@
         <span class="de-salvo" data-dcp-salvo aria-live="polite">{% include "components/icon.html" with nome="cloud-check" %}<span data-dcp-salvo-texto>{% if doc.vigente %}Versão editada em vigor{% else %}Sem alterações{% endif %}</span></span>
         <button type="button" class="btn-primaria" data-dcp-gravar>Salvar versão</button>
       {% endif %}
-      {% if doc.url_pdf %}<a class="btn--secundaria" href="{{ doc.url_pdf }}" target="_blank" rel="noopener">{% include "components/icon.html" with nome="printer" %}PDF</a>{% endif %}
+      {# A geração do PDF só aceita POST (como o "Imprimir" do editor de campos): um link levava à página de erro. #}
+      {% if doc.url_pdf %}<form method="post" action="{{ doc.url_pdf }}{% if '?' in doc.url_pdf %}&{% else %}?{% endif %}inline=1" target="_blank" class="de-topo__form" data-dcp-pdf>{% csrf_token %}<button type="submit" class="btn--secundaria" title="Abre o PDF numa aba nova, pronto para imprimir">{% include "components/icon.html" with nome="printer" %}PDF</button></form>{% endif %}
     </div>
   </header>
 

@@ -33,6 +33,7 @@ body.de-pagina { margin: 0; background: var(--n-100); color: var(--n-900); font-
 .de-topo__sub a:hover { color: var(--n-900); text-decoration: underline; }
 .de-topo__sub .ui-icon { width: 14px; height: 14px; }
 .de-topo__acoes { display: flex; align-items: center; gap: var(--s2); flex: none; }
+.de-topo__form { display: contents; } /* o botão PDF é um formulário (POST), alinhado aos outros */
 .de-topo__acoes form { margin: 0; }
 .de-topo__acoes .btn-primaria { height: 38px; }
 

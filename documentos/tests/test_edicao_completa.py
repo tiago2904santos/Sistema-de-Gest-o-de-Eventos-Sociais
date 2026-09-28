@@ -151,6 +151,20 @@ class EdicaoCompletaTests(CenarioOficioMixin, TestCase):
         with self.assertRaises(ValidationError):
             versao.save()  # imutável
 
+    def test_botao_pdf_da_edicao_completa_imprime_depois_de_editar(self):
+        """O botão PDF era um link (GET) para uma geração que só aceita POST: dava a página de erro."""
+        import re
+
+        self.salvar({'corpo': '<p>Corpo alterado antes de imprimir</p>'})
+        pagina = self.client.get(self.url('editor_completo')).content.decode()
+        achado = re.search(r'<form method="post" action="([^"]+)" target="_blank"[^>]*data-dcp-pdf', pagina)
+        self.assertIsNotNone(achado, 'o PDF da edição completa sai por formulário POST')
+        acao = achado.group(1).replace('&amp;', '&')
+        self.assertEqual(self.client.get(acao).status_code, 405)  # o link antigo
+        r = self.client.post(acao)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r['Content-Type'], 'application/pdf')
+
     def test_geracao_real_usa_a_versao_editada_no_pdf_e_no_docx(self):
         from docx import Document
 
