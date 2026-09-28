@@ -118,6 +118,28 @@
     form.remove();
   });
 
+  /* O formulário se salva sozinho (autosave-rascunho.js, viagens-prestacoes.js):
+     a folha aberta recarrega com o que foi gravado, no mesmo ponto da página.
+     Sem salvar, sem finalizar: o documento acompanha o preenchimento (m141). */
+  var recarga = null;
+  function recarregarFolha() {
+    if (!atual) return;
+    var quadro = atual.alvo.querySelector('iframe');
+    if (!quadro || !quadro.contentWindow) return;
+    // Quem está digitando dentro do documento não perde o que digita.
+    if (document.activeElement === quadro) { clearTimeout(recarga); recarga = setTimeout(recarregarFolha, 1500); return; }
+    var janela = quadro.contentWindow;
+    var rolagem = janela.scrollY || 0;
+    quadro.addEventListener('load', function () {
+      try { quadro.contentWindow.scrollTo(0, rolagem); } catch (e) { /* folha de outra origem */ }
+    }, { once: true });
+    try { janela.location.reload(); } catch (e) { quadro.src = quadro.src; }
+  }
+  document.addEventListener('autosave:salvo', function () {
+    clearTimeout(recarga);
+    recarga = setTimeout(recarregarFolha, 150);
+  });
+
   function iniciar() {
     document.querySelectorAll('[data-de-embutir]').forEach(ligar);
     abrirPeloEndereco();

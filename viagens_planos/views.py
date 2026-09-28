@@ -342,7 +342,7 @@ def _contexto_form(request, plano, form, diarias_form, formset):
         "pode_editar": pode_editar_cadastros(request.user),
         # Rascunho que se salva sozinho (m050): só enquanto é rascunho.
         "autosave_url": (reverse("viagens_planos:autosalvar", args=[plano.pk])
-                         if plano.status == plano.STATUS_RASCUNHO and not plano.cancelado and pode_editar_cadastros(request.user) else ""),
+                         if not plano.cancelado and pode_editar_cadastros(request.user) else ""),
         **_contexto_identificacao(form, plano, request),
         **_contexto_efetivo(formset, plano),
         **_contexto_atividades(plano, request),
@@ -395,8 +395,8 @@ def autosalvar(request, pk):
 
     exigir_operador(request)
     plano = get_plano_by_id(pk)
-    if plano.cancelado or plano.status != plano.STATUS_RASCUNHO:
-        return autosave_json_response(ok=False, message="Plano fora de rascunho: salve pelo botão.")
+    if plano.cancelado:
+        return autosave_json_response(ok=False, message="Plano cancelado: reative antes de editar.")
     try:
         payload = parse_autosave_payload(request, expected_model="plano_trabalho")
     except AutosavePayloadError as exc:
@@ -408,6 +408,10 @@ def autosalvar(request, pk):
         if formset.total_error_count():
             mensagens["efetivo"] = ["Revise as linhas do efetivo."]
         return autosave_json_response(ok=False, message="Rascunho não salvo: revise os campos indicados.", errors=mensagens)
+    # Vários eventos: o evento em edição já entra no documento, sem "Adicionar evento".
+    plano = get_plano_by_id(pk)
+    if plano.is_multi_evento:
+        sincronizar_scratchpad(plano)
     return autosave_json_response(ok=True, object_id=plano.pk)
 
 
