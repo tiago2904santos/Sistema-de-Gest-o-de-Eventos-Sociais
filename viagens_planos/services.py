@@ -402,8 +402,7 @@ def atualizar_snapshot_diarias(plano, *, save=True):
 def montar_valor_do_plano_texto(plano):
     """O bloco do placeholder {{valor_do_plano}}; no plano de vários eventos, o combinado."""
     if plano.is_multi_evento:
-        composicao = plano.diarias_combinada_composicao
-        unitario_val, total_val = plano.diarias_combinada_valor_unitario, plano.diarias_combinada_valor_total
+        composicao, unitario_val, total_val = valores_combinados(plano)
     else:
         composicao = plano.diarias_composicao
         unitario_val, total_val = plano.diarias_valor_unitario, plano.diarias_valor_total
@@ -465,9 +464,8 @@ def montar_valor_multi_texto(plano):
         )
         if bloco:
             blocos.append(bloco)
-    total = _valor_bloco_texto(
-        "Valor total", plano.diarias_combinada_composicao, plano.diarias_combinada_valor_unitario, plano.diarias_combinada_valor_total,
-    )
+    rotulo, periodo = rotulo_do_total_combinado(plano)
+    total = _valor_bloco_texto(f"{rotulo}: {periodo}" if periodo else rotulo, *valores_combinados(plano))
     if total:
         blocos.append(total)
     return "\n\n".join(blocos)
@@ -527,47 +525,105 @@ def _parse_hora_inicio(horario):
     return time(9, 0)
 
 
+def _periodo_da_viagem(plano):
+    """(saída, chegada) da sede pelo roteiro da viagem, em hora local sem fuso; ou (None, None)."""
+    if not plano.viagem_id:
+        return None, None
+    roteiro = (
+        plano.viagem.roteiros.filter(cancelado=False, saida_dt__isnull=False)
+        .order_by("-atualizado_em", "-pk").first()
+    )
+    if roteiro is None:
+        return None, None
+    volta = roteiro.retorno_chegada_dt or roteiro.retorno_saida_dt
+    if volta is None:
+        return None, None
+    local = lambda dt: timezone.localtime(dt).replace(tzinfo=None)
+    return local(roteiro.saida_dt), local(volta)
+
+
+def periodo_combinado(plano, eventos=None):
+    """(saída, chegada) do plano de vários eventos: a primeira saída e a última chegada.
+
+    Vale o roteiro da viagem, quando há um datado. Sem ele, a saída e a chegada
+    gravadas no plano — e, se elas não cobrem todos os eventos (a pessoa foi
+    ajustando evento por evento), a saída vai para o dia do primeiro evento e a
+    chegada para o dia do último, nos mesmos horários.
+    """
+    saida, chegada = _periodo_da_viagem(plano)
+    if saida is not None:
+        return saida, chegada
+    if not (plano.saida_sede_data and plano.saida_sede_hora and plano.chegada_sede_data and plano.chegada_sede_hora):
+        return None, None
+    saida = datetime.combine(plano.saida_sede_data, plano.saida_sede_hora)
+    chegada = datetime.combine(plano.chegada_sede_data, plano.chegada_sede_hora)
+    eventos = [e for e in (eventos if eventos is not None else plano.eventos.all()) if e.data_evento_inicio]
+    if eventos:
+        primeiro = min(e.data_evento_inicio for e in eventos)
+        ultimo = max(e.data_evento_fim or e.data_evento_inicio for e in eventos)
+        if saida.date() > primeiro:
+            saida = datetime.combine(primeiro, plano.saida_sede_hora)
+        if chegada.date() < ultimo:
+            chegada = datetime.combine(ultimo, plano.chegada_sede_hora)
+    return saida, chegada
+
+
 def calcular_diarias_combinadas(plano):
-    """Sede → todos os eventos (na ordem das datas) → sede."""
+    """Um trajeto só: da primeira saída da sede até a última chegada, para o destino dos eventos.
+
+    Não soma o valor de cada evento nem quebra o percurso por evento: a mesma
+    equipe sai uma vez e volta uma vez, e as diárias são as desse período.
+    """
     erros = []
-    if not (plano.saida_sede_data and plano.saida_sede_hora):
-        erros.append("Informe data e hora de saída da sede.")
-    if not (plano.chegada_sede_data and plano.chegada_sede_hora):
-        erros.append("Informe data e hora de chegada na sede.")
     eventos = list(plano.eventos.order_by("data_evento_inicio", "ordem", "pk")) if plano.pk else []
     if not eventos:
         erros.append("Adicione ao menos um evento ao plano.")
-
-    marcadores = []
+    saida, chegada = periodo_combinado(plano, eventos)
+    if saida is None:
+        erros.append("Informe data e hora de saída e de chegada na sede.")
+    destino = None
     for evento in eventos:
         destino = _destino_principal_evento(evento)
-        if destino is None:
-            erros.append(f"Informe o destino do evento {evento.ordem}.")
-            continue
-        if not evento.data_evento_inicio:
-            erros.append(f"Informe a data de início do evento {evento.ordem}.")
-            continue
-        # A saída de cada trecho é o início do evento, na hora do atendimento.
-        saida_evento = datetime.combine(evento.data_evento_inicio, _parse_hora_inicio(evento.horario_atendimento))
-        cidade, uf = destino
-        marcadores.append(Marcador(saida=saida_evento, destino_cidade=cidade, destino_uf=uf))
+        if destino is not None:
+            break
+    if eventos and destino is None:
+        erros.append("Informe o destino dos eventos.")
     if erros:
         return {"ok": False, "erros": erros}
-
-    chegada = datetime.combine(plano.chegada_sede_data, plano.chegada_sede_hora)
-    saida_sede = datetime.combine(plano.saida_sede_data, plano.saida_sede_hora)
-    # O primeiro marcador parte da sede na hora da saída, quando ela vem antes.
-    if marcadores and saida_sede < marcadores[0].saida:
-        marcadores[0] = Marcador(saida=saida_sede, destino_cidade=marcadores[0].destino_cidade, destino_uf=marcadores[0].destino_uf)
-    if chegada <= marcadores[0].saida:
+    if chegada <= saida:
         return {"ok": False, "erros": ["A chegada na sede deve ser depois da saída."]}
     total = plano.total_efetivo_combinado
     if total <= 0:
         return {"ok": False, "erros": ["Informe o efetivo dos eventos."]}
+    cidade, uf = destino
     try:
-        return _resultado_diarias(marcadores, chegada, total)
+        resultado = _resultado_diarias([Marcador(saida=saida, destino_cidade=cidade, destino_uf=uf)], chegada, total)
     except (RoteiroIncalculavel, SemTabelaDeDiarias, ValueError) as exc:
         return _erro_de_calculo(exc)
+    resultado["saida"], resultado["chegada"] = saida, chegada
+    return resultado
+
+
+def rotulo_do_total_combinado(plano):
+    """"Valor total do evento dias: 06 a 09/10/2026" — o período de todos os eventos."""
+    eventos = [e for e in plano.eventos.all() if e.data_evento_inicio] if plano.pk else []
+    if not eventos:
+        return "Valor total", ""
+    inicio = min(e.data_evento_inicio for e in eventos)
+    fim = max(e.data_evento_fim or e.data_evento_inicio for e in eventos)
+    if fim == inicio:
+        return "Valor total do evento dia", inicio.strftime("%d/%m/%Y")
+    if inicio.month == fim.month and inicio.year == fim.year:
+        return "Valor total do evento dias", f"{inicio.day:02d} a {fim.strftime('%d/%m/%Y')}"
+    return "Valor total do evento dias", f"{inicio.strftime('%d/%m/%Y')} a {fim.strftime('%d/%m/%Y')}"
+
+
+def valores_combinados(plano):
+    """(composição, unitário, total) do total combinado, calculado agora; o gravado se não der."""
+    resultado = calcular_diarias_combinadas(plano)
+    if resultado["ok"]:
+        return resultado["composicao"], resultado["valor_unitario"], resultado["valor_total"]
+    return plano.diarias_combinada_composicao, plano.diarias_combinada_valor_unitario, plano.diarias_combinada_valor_total
 
 
 def atualizar_snapshot_diarias_evento(evento, *, save=True):

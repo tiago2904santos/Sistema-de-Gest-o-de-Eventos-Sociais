@@ -60,10 +60,9 @@ def _valor_multi_blocos(plano):
             f"Valor do evento {'dia' if dia_unico else 'dias'}:", f" {curta}" if curta else "",
             evento.diarias_composicao, evento.diarias_valor_unitario, evento.diarias_valor_total,
         )
-    bloco(
-        "Valor total:", "", plano.diarias_combinada_composicao,
-        plano.diarias_combinada_valor_unitario, plano.diarias_combinada_valor_total,
-    )
+    # O período inteiro, num trajeto só (primeira saída → última chegada).
+    rotulo, periodo = services.rotulo_do_total_combinado(plano)
+    bloco(f"{rotulo}:", f" {periodo}" if periodo else "", *services.valores_combinados(plano))
     return blocos
 
 
