@@ -13,6 +13,12 @@ refeito com os dados de hoje e vira a versão seguinte (2, 3...). Se nada
 mudou, a via continua a mesma e nenhum número novo é gasto. A via assinada
 anexada continua valendo por cima de tudo, como antes.
 
+O próprio documento alterado depois da via (m140) — os dados do ofício, do
+plano, da OS…, um bloco reescrito no editor ou uma versão editada — também
+faz a versão seguinte sozinho: quem mudou o documento e clica em baixar quer
+o que está vendo, não a via de antes. O que continua congelado é a mudança
+de fora (o chefe que assina, o endereço da unidade na configuração).
+
 "Mesmo documento" é o recorte de `documentos.services.assinados`: o tipo,
 os vínculos (ofício, termo, prestação, OS, plano, servidor) e a referência
 de geração, que separa, por exemplo, o termo vazio do termo da viatura.
@@ -136,6 +142,32 @@ def registrar_emissao(artefato, *, reference=None, usuario=None, nova_versao=Fal
     return artefato
 
 
+_VINCULOS_DO_DOCUMENTO = ("oficio_id", "termo_id", "prestacao_id", "ordem_servico_id", "plano_trabalho_id")
+
+
+def documento_alterado_depois(via, **vinculos) -> bool:
+    """O documento (o objeto, os blocos do editor ou a versão editada) mudou depois da via?"""
+    from documentos.models import DocumentoArtefato, DocumentoBloco, DocumentoVersaoEditada
+
+    quando = via.emitida_em or via.criado_em
+    if quando is None:
+        return False
+    for campo in _VINCULOS_DO_DOCUMENTO:
+        valor = vinculos.get(campo)
+        if not valor:
+            continue
+        modelo = DocumentoArtefato._meta.get_field(campo[:-3]).related_model
+        if any(f.name == "atualizado_em" for f in modelo._meta.get_fields()):
+            if modelo.objects.filter(pk=valor, atualizado_em__gt=quando).exists():
+                return True
+        filtro = {campo: valor}
+        if DocumentoBloco.objects.filter(atualizado_em__gt=quando, **filtro).exists():
+            return True
+        if DocumentoVersaoEditada.objects.filter(criado_em__gt=quando, **filtro).exists():
+            return True
+    return False
+
+
 def emitir(tipo, formato, gerar, *, reference=None, usar_assinado=True, nova_versao=False, usuario=None, **vinculos):
     """O PDF do documento: a via assinada, se houver; senão a via emitida;
     senão o que `gerar()` produz, que passa a ser a via (versão 1, ou a
@@ -151,7 +183,10 @@ def emitir(tipo, formato, gerar, *, reference=None, usar_assinado=True, nova_ver
             return assinado
     if not nova_versao:
         via = via_emitida(tipo, reference=reference, **vinculos)
-        if via is not None:
+        if via is not None and documento_alterado_depois(via, **vinculos):
+            # Mudou depois da via: refaz; conteúdo igual mantém a mesma via.
+            nova_versao = True
+        elif via is not None:
             pronto = documento_da_via(via, tipo=tipo, reference=reference)
             if pronto is not None:
                 return pronto
