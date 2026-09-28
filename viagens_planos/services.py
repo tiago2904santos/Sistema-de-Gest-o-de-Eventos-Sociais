@@ -545,27 +545,38 @@ def _periodo_da_viagem(plano):
 def periodo_combinado(plano, eventos=None):
     """(saída, chegada) do plano de vários eventos: a primeira saída e a última chegada.
 
-    Vale o roteiro da viagem, quando há um datado. Sem ele, a saída e a chegada
-    gravadas no plano — e, se elas não cobrem todos os eventos (a pessoa foi
-    ajustando evento por evento), a saída vai para o dia do primeiro evento e a
-    chegada para o dia do último, nos mesmos horários.
+    O plano guarda uma saída e uma chegada só (as do evento editado por
+    último). A antecedência delas vale para o período todo: saída na véspera
+    do evento 08/10 vira saída na véspera do primeiro evento (06/10 → 05/10),
+    no mesmo horário; a chegada guarda a folga depois do último evento. Com
+    roteiro datado na viagem, vale a saída mais cedo e a chegada mais tarde
+    dos dois.
     """
-    saida, chegada = _periodo_da_viagem(plano)
-    if saida is not None:
-        return saida, chegada
-    if not (plano.saida_sede_data and plano.saida_sede_hora and plano.chegada_sede_data and plano.chegada_sede_hora):
-        return None, None
-    saida = datetime.combine(plano.saida_sede_data, plano.saida_sede_hora)
-    chegada = datetime.combine(plano.chegada_sede_data, plano.chegada_sede_hora)
     eventos = [e for e in (eventos if eventos is not None else plano.eventos.all()) if e.data_evento_inicio]
-    if eventos:
-        primeiro = min(e.data_evento_inicio for e in eventos)
-        ultimo = max(e.data_evento_fim or e.data_evento_inicio for e in eventos)
-        if saida.date() > primeiro:
-            saida = datetime.combine(primeiro, plano.saida_sede_hora)
-        if chegada.date() < ultimo:
-            chegada = datetime.combine(ultimo, plano.chegada_sede_hora)
-    return saida, chegada
+    candidatos_saida, candidatos_chegada = [], []
+    if plano.saida_sede_data and plano.saida_sede_hora and plano.chegada_sede_data and plano.chegada_sede_hora:
+        saida = datetime.combine(plano.saida_sede_data, plano.saida_sede_hora)
+        chegada = datetime.combine(plano.chegada_sede_data, plano.chegada_sede_hora)
+        if eventos:
+            inicios = sorted(e.data_evento_inicio for e in eventos)
+            fins = sorted(e.data_evento_fim or e.data_evento_inicio for e in eventos)
+            # A saída e a chegada gravadas são as do evento editado por último
+            # (o em edição, senão o último adicionado): dele sai a antecedência e a folga.
+            referencia = next((e for e in eventos if e.pk == plano.evento_em_edicao_id), None) or max(
+                eventos, key=lambda e: (e.ordem, e.pk))
+            antecedencia = max((referencia.data_evento_inicio - saida.date()).days, 0)
+            folga = max((chegada.date() - (referencia.data_evento_fim or referencia.data_evento_inicio)).days, 0)
+            saida = min(saida, datetime.combine(inicios[0] - timedelta(days=antecedencia), plano.saida_sede_hora))
+            chegada = max(chegada, datetime.combine(fins[-1] + timedelta(days=folga), plano.chegada_sede_hora))
+        candidatos_saida.append(saida)
+        candidatos_chegada.append(chegada)
+    saida_viagem, chegada_viagem = _periodo_da_viagem(plano)
+    if saida_viagem is not None:
+        candidatos_saida.append(saida_viagem)
+        candidatos_chegada.append(chegada_viagem)
+    if not candidatos_saida:
+        return None, None
+    return min(candidatos_saida), max(candidatos_chegada)
 
 
 def calcular_diarias_combinadas(plano):

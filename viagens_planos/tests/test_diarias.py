@@ -1,6 +1,6 @@
 """As diárias com o motor da casa, reproduzindo os planos reais 20/2026 (Maringá) e 18/2026 (Sarandi)."""
 
-from datetime import date, time
+from datetime import date, time, timedelta
 from decimal import Decimal
 
 from django.test import TestCase
@@ -94,7 +94,8 @@ class DiariasMultiEventoTests(CenarioPlanoMixin, TestCase):
                             (date(2026, 10, 8), date(2026, 10, 9))):
             plano.destino_estado, plano.destino_cidade = self.uf, self.maringa
             plano.data_evento_inicio, plano.data_evento_fim = inicio, fim
-            plano.saida_sede_data, plano.saida_sede_hora = inicio, time(7, 0)
+            # A equipe sai na véspera de cada evento.
+            plano.saida_sede_data, plano.saida_sede_hora = inicio - timedelta(days=1), time(7, 0)
             plano.chegada_sede_data, plano.chegada_sede_hora = fim, time(18, 0)
             plano.save()
             if not plano.efetivos.exists():
@@ -102,10 +103,10 @@ class DiariasMultiEventoTests(CenarioPlanoMixin, TestCase):
             adicionar_evento_ao_plano(plano)
             plano.refresh_from_db()
         self.assertEqual(plano.eventos.count(), 3)
-        # O mesmo período num plano de evento único: 06/10 07:00 → 09/10 18:00.
+        # O mesmo período num plano de evento único: 05/10 07:00 (véspera do primeiro) → 09/10 18:00.
         unico = PlanoTrabalho.objects.create(
             destino_estado=self.uf, destino_cidade=self.maringa,
-            saida_sede_data=date(2026, 10, 6), saida_sede_hora=time(7, 0),
+            saida_sede_data=date(2026, 10, 5), saida_sede_hora=time(7, 0),
             chegada_sede_data=date(2026, 10, 9), chegada_sede_hora=time(18, 0),
         )
         EfetivoPlano.objects.create(plano=unico, cargo=self.cargo_policial, quantidade=9)
@@ -113,5 +114,6 @@ class DiariasMultiEventoTests(CenarioPlanoMixin, TestCase):
         combinado = calcular_diarias_combinadas(plano)
         self.assertTrue(combinado["ok"], combinado.get("erros"))
         self.assertEqual((combinado["composicao"], combinado["valor_total"]), (esperado["composicao"], esperado["valor_total"]))
+        self.assertTrue(combinado["composicao"].startswith("4 x 100%"), combinado["composicao"])
         texto = montar_valor_multi_texto(plano)
         self.assertIn(f"Valor total do evento dias: 06 a 09/10/2026: R${esperado['valor_total_display']}", texto)
