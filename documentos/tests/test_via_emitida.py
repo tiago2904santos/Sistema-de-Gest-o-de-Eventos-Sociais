@@ -99,3 +99,21 @@ class ViaEmitidaTests(CenarioOficioMixin, TestCase):
         tela = self.client.get(reverse("viagens_oficios:editar", args=[self.oficio.pk]))
         self.assertContains(tela, "Versão 2 emitida em")
         self.assertContains(tela, "Emitir nova versão")
+
+    def test_documento_alterado_depois_da_via_sai_com_o_conteudo_atual(self):
+        """O plano baixado com um evento e depois virado multieventos: baixar dá o de agora."""
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        gerar_documento(self.oficio, DocumentoFormato.PDF)
+        via = self._via()
+        DocumentoArtefato.objects.filter(pk=via.pk).update(emitida_em=timezone.now() - timedelta(hours=1))
+        Oficio.objects.filter(pk=self.oficio.pk).update(motivo="MOTIVO NOVO", atualizado_em=timezone.now())
+        self.oficio.refresh_from_db()
+        novo = gerar_documento(self.oficio, DocumentoFormato.PDF)
+        self.assertEqual(self._via().versao_emitida, 2)
+        self.assertEqual(self._via().pk, novo.artefato_id)
+        # Baixar de novo, sem mudar nada, devolve a mesma via.
+        self.assertEqual(gerar_documento(self.oficio, DocumentoFormato.PDF).artefato_id, novo.artefato_id)
+        self.assertEqual(self._via().versao_emitida, 2)

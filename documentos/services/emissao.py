@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import replace
+from datetime import timedelta
 
 from django.conf import settings
 from django.core.files.base import ContentFile
@@ -142,6 +143,8 @@ def registrar_emissao(artefato, *, reference=None, usuario=None, nova_versao=Fal
     return artefato
 
 
+FOLGA_DA_EMISSAO_S = 20
+
 _VINCULOS_DO_DOCUMENTO = ("oficio_id", "termo_id", "prestacao_id", "ordem_servico_id", "plano_trabalho_id")
 
 
@@ -152,6 +155,9 @@ def documento_alterado_depois(via, **vinculos) -> bool:
     quando = via.emitida_em or via.criado_em
     if quando is None:
         return False
+    # A própria emissão mexe no documento logo depois (status "gerado", data
+    # do documento): isso não é alteração de quem edita.
+    quando = quando + timedelta(seconds=FOLGA_DA_EMISSAO_S)
     for campo in _VINCULOS_DO_DOCUMENTO:
         valor = vinculos.get(campo)
         if not valor:
