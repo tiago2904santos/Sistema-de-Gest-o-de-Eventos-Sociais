@@ -88,6 +88,10 @@ def rodar(hoje=None) -> None:
 
     hoje = hoje or timezone.localdate()
     _protegido("lembretes das solicitações", enviar_lembretes, hoje)
+    # Deferidas sem viagem (importadas, anteriores à integração, falhas): a viagem nasce.
+    from solicitacoes.integracao_viagens import gerar_viagens_pendentes
+
+    _protegido("viagens das solicitações deferidas", gerar_viagens_pendentes, None, hoje)
     _protegido("avisos da prestação de contas", avisar_prazos, hoje)
     _protegido("saídas e chegadas de viagem", avisar_viagens)
     _protegido("andamento dos processos no eProtocolo", atualizar_protocolos, hoje)

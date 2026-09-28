@@ -102,3 +102,30 @@ class MultieventosTests(BaseSolicitacaoTestCase):
         self.assertNotEqual(nova, viagem)
         viagem.refresh_from_db()
         self.assertEqual(viagem.data_fim, date(2026, 10, 6))
+
+
+class ViagensPendentesTests(BaseSolicitacaoTestCase):
+    """Deferidas sem viagem (importadas da planilha, anteriores à integração) ganham a sua."""
+
+    def deferida_sem_despacho(self, inicio, **extra):
+        from solicitacoes.models import StatusSolicitacao
+
+        solicitacao = self.criar_solicitacao(data_inicio_evento=inicio, data_fim_evento=inicio,
+                                             status=StatusSolicitacao.DEFERIDA_EM_ANDAMENTO, **extra)
+        solicitacao.itens_equipe.create(equipe=self.equipe, quantidade_servidores=2)
+        return solicitacao
+
+    def test_importada_deferida_ganha_viagem_e_evento_passado_nao(self):
+        from django.core.management import call_command
+
+        hoje = date(2026, 9, 28)
+        futura = self.deferida_sem_despacho(date(2026, 10, 15))
+        passada = self.deferida_sem_despacho(date(2026, 9, 1))
+        self.assertEqual(iv.viagens_da_solicitacao(futura), [])
+        self.assertEqual(iv.gerar_viagens_pendentes(hoje=hoje), 1)
+        self.assertEqual(len(iv.viagens_da_solicitacao(futura)), 1)
+        self.assertEqual(iv.viagens_da_solicitacao(passada), [])
+        # Rodar de novo não duplica.
+        self.assertEqual(iv.gerar_viagens_pendentes(hoje=hoje), 0)
+        call_command("gerar_viagens_pendentes", stdout=__import__("io").StringIO())
+        self.assertEqual(len(iv.viagens_da_solicitacao(futura)), 1)

@@ -87,7 +87,8 @@ def pode_gerar(solicitacao) -> tuple[bool, str]:
     """Se cabe gerar viagem para esta solicitação, e por que não quando não cabe."""
     from solicitacoes.models import DecisaoDG, StatusSolicitacao
 
-    if solicitacao.decisao_dg != DecisaoDG.ATENDER:
+    # Deferida vale como autorizada: a importada da planilha chega assim sem despacho.
+    if solicitacao.decisao_dg != DecisaoDG.ATENDER and solicitacao.status != StatusSolicitacao.DEFERIDA_EM_ANDAMENTO:
         return False, "A DG ainda não autorizou o atendimento desta solicitação."
     if solicitacao.status != StatusSolicitacao.DEFERIDA_EM_ANDAMENTO:
         return False, f"A solicitação está {solicitacao.get_status_display().lower()}."
@@ -246,6 +247,43 @@ def _tipos_da_viagem(solicitacao):
         return []
     alvo = chave_de_nome(solicitacao.tipo_evento.nome)
     return [t for t in TipoViagem.objects.all() if chave_de_nome(t.nome) == alvo]
+
+
+def gerar_viagens_pendentes(usuario=None, hoje=None) -> int:
+    """A rede de segurança: toda solicitação deferida sem viagem ganha a sua.
+
+    A viagem nasce no despacho da DG, mas há deferidas que nunca passaram por
+    ele (importadas da planilha, deferidas antes da integração) e gerações
+    que falharam. Aqui cada deferida com município e data, de evento que
+    ainda não terminou, e sem viagem, é gerada — na ordem das datas, para os
+    eventos vizinhos se juntarem (multieventos). Uma falha não para as
+    outras. Devolve quantas solicitações ganharam viagem.
+    """
+    from django.db import transaction
+    from django.db.models import Q
+    from django.utils import timezone
+
+    from solicitacoes.models import SolicitacaoEvento, StatusSolicitacao
+
+    hoje = hoje or timezone.localdate()
+    candidatas = (
+        SolicitacaoEvento.objects.filter(
+            status=StatusSolicitacao.DEFERIDA_EM_ANDAMENTO, municipio__isnull=False, data_inicio_evento__isnull=False,
+        )
+        .filter(Q(data_fim_evento__gte=hoje) | Q(data_fim_evento__isnull=True, data_inicio_evento__gte=hoje))
+        .order_by("data_inicio_evento", "pk")
+    )
+    geradas = 0
+    for solicitacao in candidatas:
+        if not pode_gerar(solicitacao)[0]:
+            continue
+        try:
+            with transaction.atomic():
+                gerar_viagens(solicitacao, usuario)
+            geradas += 1
+        except Exception:  # noqa: BLE001 - uma não impede as outras
+            logger.exception("Viagem da solicitação %s não gerada.", solicitacao.pk)
+    return geradas
 
 
 def gerar_viagem(solicitacao, usuario):
