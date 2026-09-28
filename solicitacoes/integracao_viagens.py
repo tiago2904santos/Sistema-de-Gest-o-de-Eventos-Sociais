@@ -319,12 +319,13 @@ def _criar_viagem_do_grupo(solicitacao, setor, itens, *, unico):
         observacoes=_observacoes_do_roteiro(solicitacao),
     )
     RoteiroDestino.objects.create(roteiro=roteiro, municipio=municipio, ordem=1)
-    _montar_trechos(roteiro, sede, municipio, inicio, fim)
+    veiculo = solicitacao.unidade_movel_designada if solicitacao.unidade_movel else None
+    _montar_trechos(roteiro, sede, municipio, inicio, fim, veiculo=veiculo)
     _copiar_anexos(solicitacao, viagem)
     return viagem
 
 
-def _montar_trechos(roteiro, sede, municipio, inicio, fim):
+def _montar_trechos(roteiro, sede, municipio, inicio, fim, *, veiculo=None):
     """Ida e volta nos horários que as viagens feitas ensinam.
 
     `viagens_viagem.planejamento.planejar_horarios` olha os roteiros já
@@ -334,20 +335,29 @@ def _montar_trechos(roteiro, sede, municipio, inicio, fim):
     quando ele responde; sem ele os trechos ficam só com a saída e o operador
     completa a chegada. As diárias só são calculadas com o percurso inteiro
     datado.
+
+    Com unidade móvel pesada (`veiculo`: ônibus, micro-ônibus, caminhão), o
+    trecho ganha o acréscimo de `planejamento.acrescimo_do_veiculo` no tempo
+    adicional; a van anda como a viatura.
     """
     from datetime import timedelta
 
     from django.utils import timezone
 
     from viagens_roteiros.models import RoteiroTrecho
-    from viagens_viagem.planejamento import planejar_horarios
+    from viagens_viagem.planejamento import acrescimo_do_veiculo, planejar_horarios
 
     if sede is None or sede.pk == municipio.pk:
         return
     estimativas = {"ida": _estimar(sede, municipio), "volta": _estimar(municipio, sede)}
     tempo = (estimativas["ida"] or {}).get("tempo_viagem_min")
-    plano = planejar_horarios(sede, municipio, inicio, fim, tempo_min=tempo, excluir_viagem=roteiro.viagem)
+    nome_veiculo = getattr(veiculo, "nome", "")
+    acrescimo, rotulo = acrescimo_do_veiculo(nome_veiculo, tempo)
+    plano = planejar_horarios(sede, municipio, inicio, fim, tempo_min=tempo, acrescimo_min=acrescimo,
+                              excluir_viagem=roteiro.viagem)
     logger.info("Roteiro %s: %s", roteiro.pk, plano.explicacao)
+    if acrescimo:
+        logger.info("Roteiro %s: %s (%s) soma %s min por trecho.", roteiro.pk, nome_veiculo, rotulo, acrescimo)
     pernas = [
         (RoteiroTrecho.Sentido.IDA, sede, municipio, plano.ida, estimativas["ida"]),
         (RoteiroTrecho.Sentido.RETORNO, municipio, sede, plano.volta, estimativas["volta"]),
@@ -360,7 +370,8 @@ def _montar_trechos(roteiro, sede, municipio, inicio, fim):
         )
         if estimativa:
             viagem_min = estimativa.get("tempo_viagem_min") or 0
-            adicional = estimativa.get("tempo_adicional_sugerido_min") or 0
+            adicional = (estimativa.get("tempo_adicional_sugerido_min") or 0)
+            adicional += acrescimo_do_veiculo(nome_veiculo, viagem_min)[0]
             trecho.distancia_km = estimativa.get("distancia_km")
             trecho.tempo_viagem_min = viagem_min
             trecho.tempo_adicional_min = adicional

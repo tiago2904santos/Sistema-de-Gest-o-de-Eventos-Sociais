@@ -158,3 +158,35 @@ class TelaSoFaltaEquipeTests(CenarioViagem):
         oficio = Oficio.objects.get(viagem=self.v)
         self.assertTrue(Justificativa.objects.get(oficio=oficio).texto.startswith("Justificativa de"))
         self.assertNotContains(self.client.get(self.etapa(self.v, 1)), "Só falta a equipe")
+
+
+class VeiculoPesadoTests(CenarioViagem):
+    def test_acrescimo_por_tipo_de_veiculo(self):
+        from viagens_viagem.planejamento import acrescimo_do_veiculo
+
+        cinco_horas = 300
+        self.assertEqual(acrescimo_do_veiculo("Ônibus da Cidadania", cinco_horas), (120, "ônibus"))
+        self.assertEqual(acrescimo_do_veiculo("MICRO-ÔNIBUS 2", cinco_horas), (120, "micro-ônibus"))
+        self.assertEqual(acrescimo_do_veiculo("Microonibus", cinco_horas), (120, "micro-ônibus"))
+        self.assertEqual(acrescimo_do_veiculo("Caminhão Unidade Móvel", cinco_horas), (240, "caminhão"))
+        self.assertEqual(acrescimo_do_veiculo("Van", cinco_horas), (0, ""))
+        self.assertEqual(acrescimo_do_veiculo("", cinco_horas), (0, ""))
+        # Proporcional: 2h30 de estrada de caminhão somam 2h.
+        self.assertEqual(acrescimo_do_veiculo("Caminhão", 150)[0], 120)
+
+    def test_deferimento_com_caminhao_soma_no_tempo_adicional(self):
+        from unittest import mock
+
+        from cadastros.models import UnidadeMovel
+        from solicitacoes.integracao_viagens import _montar_trechos
+
+        caminhao = UnidadeMovel.objects.create(nome="Caminhão PCPR")
+        viagem = self.viagem()
+        roteiro = Roteiro.objects.create(origem_municipio=self.sede, viagem=viagem)
+        estimativa = {"tempo_viagem_min": 300, "tempo_adicional_sugerido_min": 45, "distancia_km": 380, "fonte": "teste"}
+        with mock.patch("solicitacoes.integracao_viagens._estimar", return_value=estimativa):
+            _montar_trechos(roteiro, self.sede, self.londrina, date(2026, 11, 3), date(2026, 11, 4), veiculo=caminhao)
+        ida, volta = roteiro.trechos.order_by("ordem")
+        self.assertEqual((ida.tempo_viagem_min, ida.tempo_adicional_min, ida.duracao_min), (300, 45 + 240, 585))
+        self.assertEqual(volta.tempo_adicional_min, 45 + 240)
+        self.assertEqual(ida.chegada_dt - ida.saida_dt, timedelta(minutes=585))

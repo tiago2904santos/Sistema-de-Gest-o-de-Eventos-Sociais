@@ -35,6 +35,15 @@ FAIXAS_DE_TEMPO = (90, 180, 300, 480)
 #: digitação, viagem remarcada): não ensina nada.
 DESLOCAMENTO_MAXIMO = 3
 
+#: Veículo pesado anda mais devagar que a viatura: a cada 5 h de estrada,
+#: ônibus e micro-ônibus somam 2 h e o caminhão, 4 h. A van anda como viatura.
+#: (trecho do nome sem acento, fração do tempo de viagem, rótulo)
+ACRESCIMO_POR_VEICULO = (
+    ("caminh", 0.8, "caminhão"),
+    ("micro", 0.4, "micro-ônibus"),
+    ("onibus", 0.4, "ônibus"),
+)
+
 #: O custeio só é copiado quando as viagens à cidade concordam.
 CUSTEIO_MINIMO_AMOSTRAS = 2
 CUSTEIO_CONCORDANCIA = 0.6
@@ -151,6 +160,22 @@ def amostras_de_roteiros(excluir_viagem=None):
     return amostras
 
 
+# ── Veículo pesado ─────────────────────────────────────────────────────────
+
+
+def acrescimo_do_veiculo(nome, tempo_viagem_min):
+    """(minutos a mais, rótulo) para o veículo pelo nome; van e viatura: (0, "")."""
+    import unicodedata
+
+    texto = unicodedata.normalize("NFKD", str(nome or "")).encode("ascii", "ignore").decode().lower()
+    if not texto or not tempo_viagem_min or "van" in texto.split():
+        return 0, ""
+    for trecho, fracao, rotulo in ACRESCIMO_POR_VEICULO:
+        if trecho in texto:
+            return int(round(tempo_viagem_min * fracao / 15.0)) * 15, rotulo
+    return 0, ""
+
+
 # ── Horários do roteiro ────────────────────────────────────────────────────
 
 
@@ -185,8 +210,12 @@ def _quando(padrao, referencia, hora_padrao):
     return timezone.make_aware(datetime.combine(referencia + timedelta(days=dias), time(h, m)))
 
 
-def planejar_horarios(sede, municipio, inicio, fim, *, tempo_min=None, amostras=None, excluir_viagem=None):
-    """Quando a equipe sai e quando volta, pelo que as viagens feitas mostram."""
+def planejar_horarios(sede, municipio, inicio, fim, *, tempo_min=None, acrescimo_min=0, amostras=None, excluir_viagem=None):
+    """Quando a equipe sai e quando volta, pelo que as viagens feitas mostram.
+
+    `tempo_min` é o tempo de estrada (escolhe a faixa de distância);
+    `acrescimo_min`, o que o veículo pesado soma — conta para a volta caber.
+    """
     fim = fim or inicio
     if amostras is None:
         amostras = amostras_de_roteiros(excluir_viagem)
@@ -204,7 +233,7 @@ def planejar_horarios(sede, municipio, inicio, fim, *, tempo_min=None, amostras=
     ida = _quando(ida_padrao, inicio, IDA_PADRAO)
     volta = _quando(volta_padrao, fim, VOLTA_PADRAO)
     # A volta tem de caber depois da chegada; senão o histórico não serve aqui.
-    if volta <= ida + timedelta(minutes=tempo_min or 0):
+    if volta <= ida + timedelta(minutes=(tempo_min or 0) + acrescimo_min):
         ida = _quando(None, inicio, IDA_PADRAO)
         volta = _quando(None, fim, VOLTA_PADRAO)
         base, grupo, ida_padrao, volta_padrao = "padrao", [], None, None
