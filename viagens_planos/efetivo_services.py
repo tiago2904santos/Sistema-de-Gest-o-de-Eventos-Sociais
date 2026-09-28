@@ -33,13 +33,12 @@ def reconciliar_efetivo(plano, rows):
     """Reconcilia o efetivo com as linhas da tela, por id.
 
     Linha com cargo e quantidade válidos é criada ou atualizada; incompleta é
-    ignorada; (unidade, cargo) repetido fica só na primeira; id que não veio
-    é apagado.
+    ignorada; id que não veio é apagado. O mesmo cargo pode aparecer em
+    mais de uma linha (ex.: agentes de funções diferentes, contados à parte).
     """
     existentes = {e.pk: e for e in plano.efetivos.all()}
     mantidos = set()
     saida = []
-    vistos = set()
     for indice, row in enumerate(rows or []):
         if not isinstance(row, dict):
             continue
@@ -50,10 +49,6 @@ def reconciliar_efetivo(plano, rows):
             continue
         if unidade_id and not Unidade.objects.filter(pk=unidade_id).exists():
             unidade_id = None
-        chave = (unidade_id, cargo_id)
-        if chave in vistos:
-            continue
-        vistos.add(chave)
         row_id = _inteiro(row.get("id"))
         if row_id and row_id in existentes:
             efetivo = existentes[row_id]

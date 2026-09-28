@@ -391,7 +391,6 @@ class EfetivoPlano(ModeloTemporal, OrigemLegado):
         ordering = ["plano", "unidade__nome", "cargo__nome"]
         constraints = [
             _constraint_legado("efetivoplano"),
-            models.UniqueConstraint(fields=["plano", "unidade", "cargo"], name="viagens_efetivo_plano_unidade_cargo_unique"),
         ]
 
     def __str__(self):
@@ -495,7 +494,6 @@ class EfetivoEvento(ModeloTemporal, OrigemLegado):
         ordering = ["evento", "unidade__nome", "cargo__nome"]
         constraints = [
             _constraint_legado("efetivoevento"),
-            models.UniqueConstraint(fields=["evento", "unidade", "cargo"], name="viagens_efetivo_evento_unidade_cargo_unique"),
         ]
 
     def __str__(self):
