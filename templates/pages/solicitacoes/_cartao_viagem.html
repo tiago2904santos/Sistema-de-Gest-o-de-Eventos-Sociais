@@ -18,6 +18,11 @@
           {% if r.url %}<a class="btn--secundaria btn--compacto" href="{{ r.url }}">{% include "components/icon.html" with nome="volante" %}Abrir viagem</a>{% endif %}
           {% if r.url_equipe %}<a class="btn-primaria btn--compacto" href="{{ r.url_equipe }}">Escolher equipe e viatura</a>{% endif %}
         </p>
+        {% if r.eventos %}
+          {# Multieventos: mesma cidade, dias encostados, a mesma equipe — uma viagem e um plano multieventos. #}
+          <p class="sol-viagem__texto">Viagem multieventos — {{ r.eventos|length }} eventos, um plano de trabalho com todos:</p>
+          <ul class="sol-viagem__falta">{% for e in r.eventos %}<li>{% if e.pk == solicitacao.pk %}<b>{% endif %}Solicitação #{{ e.pk }} — {{ e.data_inicio_evento|date:"d/m" }}{% if e.data_fim_evento and e.data_fim_evento != e.data_inicio_evento %} a {{ e.data_fim_evento|date:"d/m" }}{% endif %}{% if e.local_evento %} · {{ e.local_evento }}{% endif %}{% if e.pk == solicitacao.pk %}</b>{% endif %}</li>{% endfor %}</ul>
+        {% endif %}
         {% include "pages/viagens_viagem/_contador_servidores.html" with contador=r.contador %}
         {% if r.data_limite %}
           <p class="sol-viagem__texto">{% if r.limite_vencido %}O prazo para o ofício sem justificativa terminou em {{ r.data_limite|date:"d/m/Y" }}: o ofício vai precisar de justificativa.{% else %}Faça o ofício até <b>{{ r.data_limite|date:"d/m/Y" }}</b> para não precisar de justificativa.{% endif %}</p>
@@ -30,7 +35,10 @@
         {% endif %}
       </div>
     {% empty %}
-      {% if cartao_viagem.pode_gerar %}
+      {% if cartao_viagem.so_vizinhos %}
+        <p class="sol-viagem__texto">Há outros eventos em {{ solicitacao.municipio }} em dias encostados. Deferidos, viram <b>uma viagem só</b>, com a mesma equipe e o plano de trabalho multieventos:</p>
+        <ul class="sol-viagem__falta">{% for e in cartao_viagem.vizinhos %}<li><a href="{% url 'solicitacoes:editar' e.pk %}">Solicitação #{{ e.pk }}</a> — {{ e.data_inicio_evento|date:"d/m/Y" }}{% if e.data_fim_evento and e.data_fim_evento != e.data_inicio_evento %} a {{ e.data_fim_evento|date:"d/m/Y" }}{% endif %}{% if e.local_evento %} · {{ e.local_evento }}{% endif %} · {{ e.get_status_display }}</li>{% endfor %}</ul>
+      {% elif cartao_viagem.pode_gerar %}
         <p class="sol-viagem__texto">A viagem não foi gerada automaticamente no deferimento.</p>
         <form method="post" action="{% url 'solicitacoes:gerar_viagem' solicitacao.pk %}">{% csrf_token %}
           <button type="submit" class="btn-primaria btn--compacto">{% include "components/icon.html" with nome="refresh" %}Tentar de novo</button>

@@ -96,6 +96,12 @@ class Viagem(ModeloTemporal, ModeloCancelavel, OrigemLegado):
         "accounts.Setor", on_delete=models.SET_NULL, null=True, blank=True,
         related_name="viagens", verbose_name="Ambiente (setor)",
     )
+    # Multieventos: as outras solicitações que a mesma equipe atende nesta
+    # viagem (mesma cidade, dias vizinhos). A primeira fica no roteiro.
+    solicitacoes_juntadas = models.ManyToManyField(
+        "solicitacoes.SolicitacaoEvento", blank=True, related_name="viagens_juntadas",
+        verbose_name="Outros eventos atendidos nesta viagem",
+    )
 
     class Meta:
         ordering = ["-data_inicio", "-criado_em"]

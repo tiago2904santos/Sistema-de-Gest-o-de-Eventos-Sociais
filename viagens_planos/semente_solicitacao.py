@@ -113,11 +113,17 @@ def semear_da_solicitacao(plano, viagem) -> bool:
     Só completa o que está vazio: atividades, programa, efetivo. Devolve se
     havia solicitação para semear.
     """
+    from viagens_viagem.multieventos import solicitacoes_da_viagem
+
     from .services import TEXTO_UNIDADE_MOVEL, sincronizar_atividades
 
     solicitacao = solicitacao_da_viagem(viagem)
     if solicitacao is None:
         return False
+    todas = solicitacoes_da_viagem(viagem)
+    if len(todas) > 1 and not plano.eventos.exists():
+        semear_multieventos(plano, viagem, todas)
+        return True
 
     if not plano.atividades_selecionadas.exists():
         atividades = atividades_da_solicitacao(solicitacao)
@@ -147,3 +153,55 @@ def semear_da_solicitacao(plano, viagem) -> bool:
         for unidade_id, cargo_id, quantidade in _efetivo_previsto(plano, viagem):
             plano.efetivos.create(unidade_id=unidade_id, cargo_id=cargo_id, quantidade=quantidade)
     return True
+
+
+def _programa_do_evento(solicitacao):
+    """(programa, programa_outros) de um evento, como no plano de evento único."""
+    programa = programa_da_solicitacao(solicitacao)
+    if programa is not None:
+        return programa, ""
+    return None, solicitacao.tipo_evento.nome if solicitacao.tipo_evento_id else ""
+
+
+def semear_multieventos(plano, viagem, solicitacoes):
+    """Plano multieventos: um evento por solicitação da viagem, já completo.
+
+    Usa o mesmo caminho da tela ("Adicionar evento ao plano"): cada evento é
+    montado no rascunho — programa, período, destino, atividades (com metas,
+    recursos e unidade móvel), coordenador e efetivo — e gravado como
+    EventoPlano. O efetivo é o mesmo em todos: a equipe é uma só.
+    """
+    from .services import TEXTO_UNIDADE_MOVEL, adicionar_evento_ao_plano, sincronizar_atividades_evento
+
+    efetivo = _efetivo_previsto(plano, viagem)
+    # O rascunho é limpo a cada evento: o que vale para todos é guardado antes.
+    coordenador = {campo: getattr(plano, campo) for campo in (
+        "coordenador_op_modo", "coordenador_op_id", "coordenador_op_nome_manual",
+        "coordenador_op_cargo_manual", "coordenador_op_genero", "horario_atendimento")}
+    for solicitacao in solicitacoes:
+        for campo, valor in coordenador.items():
+            setattr(plano, campo, valor)
+        plano.programa, plano.programa_outros = _programa_do_evento(solicitacao)
+        plano.data_evento_inicio = solicitacao.data_inicio_evento
+        plano.data_evento_fim = solicitacao.data_fim_evento or solicitacao.data_inicio_evento
+        plano.destino_cidade = solicitacao.municipio
+        plano.destino_estado = solicitacao.municipio.estado
+        plano.save()
+        plano.destinos.filter(evento__isnull=True).delete()
+        plano.atividades_selecionadas.set(atividades_da_solicitacao(solicitacao))
+        plano.efetivos.all().delete()
+        for unidade_id, cargo_id, quantidade in efetivo:
+            plano.efetivos.create(unidade_id=unidade_id, cargo_id=cargo_id, quantidade=quantidade)
+        evento = adicionar_evento_ao_plano(plano)
+        if evento is None:
+            continue
+        sincronizar_atividades_evento(evento)
+        if solicitacao.unidade_movel:
+            texto = evento.unidade_movel_texto or TEXTO_UNIDADE_MOVEL
+            if solicitacao.unidade_movel_designada_id:
+                texto = f"{texto} Unidade designada: {solicitacao.unidade_movel_designada}."
+            evento.unidade_movel_texto = texto
+            evento.save(update_fields=["unidade_movel_texto", "atualizado_em"])
+    # O plano cobre o período todo (o rascunho fica limpo para mais um evento).
+    plano.refresh_from_db()
+    return plano
