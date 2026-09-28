@@ -14,7 +14,9 @@ cria, em rascunho e já vinculados:
 - uma ordem de serviço com toda a equipe e os ofícios vinculados, se a
   viagem ainda não tiver;
 - o plano de trabalho, se a viagem ainda não tiver (o rascunho semeado pela
-  viagem, como no "Novo plano").
+  viagem, como no "Novo plano");
+- em cada ofício, o que o histórico permite (`planejamento.completar_oficio`):
+  motivo pelo modelo padrão, custeio e a justificativa quando o prazo exige.
 
 Nada é finalizado nem protocolado: a pessoa revisa cada documento e
 finaliza no módulo dele. Documento que já existe não é mexido.
@@ -38,6 +40,8 @@ class ResultadoDoPacote:
     ordem: object = None
     plano: object = None
     avisos: list = field(default_factory=list)
+    #: O que o histórico preencheu sozinho (planejamento.completar_oficio).
+    preenchidos: list = field(default_factory=list)
 
 
 class PacoteInvalido(ValueError):
@@ -182,6 +186,13 @@ def gerar_pacote(viagem, equipes, *, gerar_ordem=True, gerar_plano=True, gerar_t
             _criar_oficio(viagem, equipe, roteiro, com_termos=gerar_termos, unidade_emissora=unidade_emissora)
         )
     _referenciar_motorista_de_outro_oficio(viagem, resultado.oficios, equipes)
+    # Motivo, custeio e justificativa: o que as viagens feitas ensinam.
+    from .planejamento import completar_oficio
+
+    for oficio in resultado.oficios:
+        feito = completar_oficio(oficio)
+        if feito:
+            resultado.preenchidos.append(f"Ofício {oficio.numero_formatado}: " + "; ".join(feito) + ".")
 
     if gerar_ordem:
         existente = viagem.ordens_servico.filter(cancelado=False).first()

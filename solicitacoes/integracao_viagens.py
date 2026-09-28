@@ -325,32 +325,39 @@ def _criar_viagem_do_grupo(solicitacao, setor, itens, *, unico):
 
 
 def _montar_trechos(roteiro, sede, municipio, inicio, fim):
-    """Ida no primeiro dia às 08:00 e volta no último às 16:00, como o editor.
+    """Ida e volta nos horários que as viagens feitas ensinam.
 
-    A distância e o tempo vêm do serviço de rotas quando ele responde; sem
-    ele os trechos ficam só com a saída e o operador completa a chegada. As
-    diárias só são calculadas com o percurso inteiro datado.
+    `viagens_viagem.planejamento.planejar_horarios` olha os roteiros já
+    emitidos — primeiro os da mesma cidade, depois os de distância parecida —
+    e, sem histórico, fica a regra do editor: ida às 08:00 do primeiro dia,
+    volta às 16:00 do último. A distância e o tempo vêm do serviço de rotas
+    quando ele responde; sem ele os trechos ficam só com a saída e o operador
+    completa a chegada. As diárias só são calculadas com o percurso inteiro
+    datado.
     """
-    from datetime import datetime, time, timedelta
+    from datetime import timedelta
 
     from django.utils import timezone
 
     from viagens_roteiros.models import RoteiroTrecho
+    from viagens_viagem.planejamento import planejar_horarios
 
     if sede is None or sede.pk == municipio.pk:
         return
+    estimativas = {"ida": _estimar(sede, municipio), "volta": _estimar(municipio, sede)}
+    tempo = (estimativas["ida"] or {}).get("tempo_viagem_min")
+    plano = planejar_horarios(sede, municipio, inicio, fim, tempo_min=tempo, excluir_viagem=roteiro.viagem)
+    logger.info("Roteiro %s: %s", roteiro.pk, plano.explicacao)
     pernas = [
-        (RoteiroTrecho.Sentido.IDA, sede, municipio, datetime.combine(inicio, time(8, 0))),
-        (RoteiroTrecho.Sentido.RETORNO, municipio, sede, datetime.combine(fim, time(16, 0))),
+        (RoteiroTrecho.Sentido.IDA, sede, municipio, plano.ida, estimativas["ida"]),
+        (RoteiroTrecho.Sentido.RETORNO, municipio, sede, plano.volta, estimativas["volta"]),
     ]
     completo = True
-    for ordem, (sentido, origem, destino, saida) in enumerate(pernas, 1):
-        saida = timezone.make_aware(saida)
+    for ordem, (sentido, origem, destino, saida, estimativa) in enumerate(pernas, 1):
         trecho = RoteiroTrecho(
             roteiro=roteiro, ordem=ordem, sentido=sentido,
             origem_municipio=origem, destino_municipio=destino, saida_dt=saida,
         )
-        estimativa = _estimar(origem, destino)
         if estimativa:
             viagem_min = estimativa.get("tempo_viagem_min") or 0
             adicional = estimativa.get("tempo_adicional_sugerido_min") or 0
@@ -446,12 +453,15 @@ def resumo_da_viagem(viagem, user=None):
     from viagens_viagem.meta_equipe import contador_de_servidores
 
     limite = data_limite_sem_justificativa(viagem)
+    acessa = user is None or pode_acessar(user)
     return {
         "viagem": viagem,
         "ambiente": _rotulo_do_ambiente(viagem.setor),
         # Quem não tem o módulo vê a situação, mas não o link.
-        "url": reverse("viagens_viagem:painel", args=[viagem.pk])
-        if user is None or pode_acessar(user)
+        "url": reverse("viagens_viagem:painel", args=[viagem.pk]) if acessa else "",
+        # O atalho da tela em que só se escolhe a equipe e a viatura, enquanto não há ofício.
+        "url_equipe": reverse("viagens_viagem:gerar_documentos", args=[viagem.pk])
+        if acessa and not viagem.cancelado and not viagem.oficios.filter(cancelado=False).exists()
         else "",
         "falta": o_que_falta(viagem),
         "contador": contador_de_servidores(viagem),

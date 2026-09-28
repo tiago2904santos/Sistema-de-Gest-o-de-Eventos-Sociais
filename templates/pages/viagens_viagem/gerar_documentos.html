@@ -59,6 +59,13 @@
           {% if oficios_existentes %}
             <p class="vg-meta__status">A viagem já tem: {% for o in oficios_existentes %}ofício {{ o.numero_formatado }} ({% for s in o.servidores.all %}{{ s.nome }}{% if not forloop.last %}, {% endif %}{% empty %}sem equipe{% endfor %}){% if not forloop.last %}; {% endif %}{% endfor %}. Os ofícios abaixo são novos.</p>
           {% endif %}
+          {% if aprendido %}
+            {# O que as viagens já feitas ensinaram (viagens_viagem/planejamento.py). #}
+            <div class="vg-aprendido" data-planejado-historico>
+              <p class="vg-meta__status"><b>Planejado pelo histórico.</b> Só falta escolher quem vai e em qual viatura:</p>
+              <ul class="vg-aprendido__lista">{% for linha in aprendido %}<li>{{ linha }}</li>{% endfor %}</ul>
+            </div>
+          {% endif %}
           {% if not tem_roteiro %}
             <p class="vg-meta__status">{% include "components/icon.html" with nome="alert" %}A viagem ainda não tem roteiro: os ofícios sairão sem roteiro e sem diárias. <a href="{{ url_roteiro }}">Criar o roteiro primeiro</a>.</p>
           {% endif %}

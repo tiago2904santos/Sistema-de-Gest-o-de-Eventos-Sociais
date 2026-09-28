@@ -252,6 +252,10 @@ def etapa(request, pk, etapa):
         contexto["url_baixar_tudo"] = reverse("viagens_viagem:baixar_tudo", args=[viagem.pk])
     if contexto["pode_editar"] and not viagem.cancelado:
         contexto["url_gerar_documentos"] = reverse("viagens_viagem:gerar_documentos", args=[viagem.pk])
+        # Roteiro pronto e nenhum ofício ainda: o próximo passo é só a equipe.
+        contexto["so_falta_equipe"] = (
+            viagem.roteiros.filter(cancelado=False).exists() and not viagem.oficios.filter(cancelado=False).exists()
+        )
         contexto["itens_baixar"] = json.dumps(itens_para_baixar(viagem), ensure_ascii=False)
     if etapa == 1:
         contexto.update(_contexto_da_etapa_1(request, viagem, form))
@@ -365,15 +369,22 @@ def _contexto_gerar_documentos(viagem, equipes, opcoes, erros):
 
     from .meta_equipe import contador_de_servidores
     from .pacote import servidores_ja_em_oficios
+    from .planejamento import sugestoes_de_equipe
 
-    servidores = list(Servidor.objects.select_related("cargo", "unidade").order_by("nome"))
-    viaturas = list(Viatura.objects.order_by("placa"))
+    # Quem costuma ir às viagens parecidas vem primeiro; ninguém é marcado sozinho.
+    sugestoes = sugestoes_de_equipe(viagem)
+    servidores = sorted(Servidor.objects.select_related("cargo", "unidade"),
+                        key=lambda s: (-sugestoes.servidores[s.pk], s.nome))
+    motoristas = sorted(servidores, key=lambda s: (-sugestoes.motoristas[s.pk], -sugestoes.servidores[s.pk], s.nome))
+    viaturas = sorted(Viatura.objects.all(), key=lambda v: (-sugestoes.viaturas[v.pk], v.placa))
     ja_em_oficios = servidores_ja_em_oficios(viagem)
 
     def detalhes(s):
         partes = [str(s.cargo) if s.cargo_id else "", (s.unidade.sigla or s.unidade.nome) if s.unidade_id else ""]
         if s.pk in ja_em_oficios:
             partes.append(f"já no ofício {ja_em_oficios[s.pk].numero_formatado}")
+        elif sugestoes.servidores[s.pk]:
+            partes.append("costuma ir em viagens assim")
         return " · ".join(p for p in partes if p)
 
     blocos = []
@@ -384,7 +395,7 @@ def _contexto_gerar_documentos(viagem, equipes, opcoes, erros):
             "nome_servidores": f"oficio-{i}-servidores", "nome_motorista": f"oficio-{i}-motorista", "nome_viatura": f"oficio-{i}-viatura",
             "servidores": [{"valor": str(s.pk), "rotulo": s.nome, "detalhes": detalhes(s), "selecionado": s.pk in escolhidos,
                             "dados": {"iniciais": iniciais(s.nome)}} for s in servidores],
-            "motoristas": [{"valor": str(s.pk), "rotulo": s.nome} for s in servidores],
+            "motoristas": [{"valor": str(s.pk), "rotulo": s.nome} for s in motoristas],
             "viaturas": [{"valor": str(v.pk), "rotulo": " — ".join(p for p in [v.placa_formatada, v.modelo] if p)} for v in viaturas],
             "motorista": str(equipe.motorista.pk) if equipe.motorista else "",
             "viatura": str(equipe.viatura.pk) if equipe.viatura else "",
@@ -402,7 +413,33 @@ def _contexto_gerar_documentos(viagem, equipes, opcoes, erros):
         "plano_existente": viagem.planos_trabalho.filter(cancelado=False).first(),
         "url_painel": reverse("viagens_viagem:etapa", args=[viagem.pk, 3]),
         "url_roteiro": reverse("viagens_viagem:etapa", args=[viagem.pk, 2]),
+        "aprendido": _o_que_o_historico_diz(viagem, sugestoes),
     }
+
+
+def _o_que_o_historico_diz(viagem, sugestoes):
+    """O cartão "Planejado pelo histórico": o roteiro pronto e o que vai sair sozinho."""
+    from django.utils import timezone
+
+    from .planejamento import modelo_de_justificativa
+
+    linhas = []
+    roteiro = viagem.roteiros.filter(cancelado=False).order_by("-atualizado_em", "-pk").first()
+    if roteiro is not None and roteiro.saida_dt:
+        texto = f"Roteiro: saída em {timezone.localtime(roteiro.saida_dt):%d/%m às %H:%M}"
+        volta = roteiro.retorno_saida_dt
+        if volta:
+            texto += f", volta em {timezone.localtime(volta):%d/%m às %H:%M}"
+        if roteiro.valor_diarias is not None:
+            texto += ", diárias calculadas"
+        linhas.append(texto + ".")
+    modelo = modelo_de_justificativa()
+    if modelo is not None:
+        linhas.append(f"Se o prazo exigir, a justificativa sai com o modelo {modelo.nome}.")
+    if sugestoes.viagens:
+        plural = "viagem parecida" if sugestoes.viagens == 1 else "viagens parecidas"
+        linhas.append(f"Quem foi nas {sugestoes.viagens} {plural} com esta aparece primeiro na lista, junto da viatura mais usada.")
+    return linhas
 
 
 @acesso_ao_modulo
@@ -457,6 +494,8 @@ def gerar_documentos(request, pk):
                                  + ". Revise e finalize cada um no seu módulo.")
                 for aviso in resultado.avisos:
                     messages.warning(request, aviso)
+                for preenchido in resultado.preenchidos:
+                    messages.info(request, f"Preenchido pelo histórico — {preenchido}")
                 return redirect("viagens_viagem:etapa", pk=pk, etapa=3)
     return render(request, "pages/viagens_viagem/gerar_documentos.html",
                   _contexto_gerar_documentos(viagem, equipes, opcoes, erros))

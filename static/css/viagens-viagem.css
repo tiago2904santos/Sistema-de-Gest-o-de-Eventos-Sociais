@@ -21,6 +21,10 @@
 .vg-origem.aviso--fino{display:flex;align-items:center;gap:8px}
 .vg-origem>.btn--secundaria{flex:none;text-decoration:none}
 .vg-origem__mudancas{margin:6px 0 0;padding-left:18px;font-size:12.5px}
+/* "Só falta a equipe": o planejamento saiu do histórico, falta quem vai. */
+.vg-so-equipe{margin-bottom:14px}
+.vg-so-equipe>.btn{flex:none;text-decoration:none}
+.vg-aprendido__lista{margin:4px 0 8px;padding-left:18px;font-size:13px}
 
 /* ---------- Painel: cartões das etapas ------------------------------ */
 .vg-painel .section-card__identificacao{display:flex;flex-direction:column;min-width:0}
