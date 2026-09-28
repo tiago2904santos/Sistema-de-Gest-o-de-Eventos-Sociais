@@ -49,6 +49,8 @@ sudo -u eventos .venv/bin/pip install -q -r requirements.txt gunicorn
 
 echo "== migrações"
 sudo -u eventos "$PY" manage.py migrate --noinput
+# Solicitações deferidas sem viagem ganham a sua (não para o deploy se falhar).
+sudo -u eventos "$PY" manage.py gerar_viagens_pendentes || echo "Aviso: gerar_viagens_pendentes falhou; o deploy segue."
 # Cache compartilhado dos processos (limite das páginas públicas); não recria se já existe.
 sudo -u eventos "$PY" manage.py createcachetable
 

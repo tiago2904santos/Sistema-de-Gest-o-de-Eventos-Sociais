@@ -552,7 +552,7 @@ def _cartao_viagem(user, solicitacao):
     disso não há logística a acompanhar.
     """
     viagens = integracao_viagens.viagens_da_solicitacao(solicitacao)
-    if not viagens and solicitacao.decisao_dg != DecisaoDG.ATENDER:
+    if not viagens and solicitacao.decisao_dg != DecisaoDG.ATENDER and solicitacao.status != StatusSolicitacao.DEFERIDA_EM_ANDAMENTO:
         # Antes do deferimento: os eventos vizinhos que vão virar uma viagem só.
         from viagens_viagem.multieventos import eventos_vizinhos
 
