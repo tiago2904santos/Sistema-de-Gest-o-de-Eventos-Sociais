@@ -95,13 +95,23 @@ def _classes_limpas(valor: str) -> str:
     )
 
 
+# O estático em produção leva o hash no nome (brasao-pcpr.3f9a1c2b.png).
+_HASH_ESTATICO = re.compile(r"\.[0-9a-f]{6,}(?=\.[a-z0-9]+$)", re.IGNORECASE)
+
+
+def _nome_da_imagem(src: str) -> str | None:
+    arquivo = (src or "").split("?")[0].split("#")[0].rsplit("/", 1)[-1]
+    if not arquivo:
+        return None
+    return IMAGENS_PERMITIDAS.get(arquivo) or IMAGENS_PERMITIDAS.get(_HASH_ESTATICO.sub("", arquivo))
+
+
 def _imagem(atributos) -> str | None:
     dados = dict(atributos)
     nome = dados.get("data-imagem")
     if nome in IMAGENS_PERMITIDAS.values():
         return nome
-    src = (dados.get("src") or "").split("?")[0].split("#")[0]
-    return IMAGENS_PERMITIDAS.get(src.rsplit("/", 1)[-1]) if src else None
+    return _nome_da_imagem(dados.get("src") or "")
 
 
 class _Sanitizador(HTMLParser):
@@ -246,13 +256,33 @@ def _com_imagens(html: str, imagens) -> str:
     return re.sub(r'<img data-imagem="(\w+)"', trocar, html)
 
 
+_TAG_IMG = re.compile(r"<img\b[^>]*>", re.IGNORECASE)
+_ATRIBUTO = re.compile(r'([\w-]+)\s*=\s*"([^"]*)"')
+
+
+def _imagens_perdidas(original: str, conteudo: str) -> str:
+    """As imagens do timbre que a região do modelo tem e a editada perdeu.
+
+    Versões gravadas antes da correção do nome com hash (m139) perderam o
+    brasão ao salvar; ele volta na saída, igual ao do modelo.
+    """
+    faltando = []
+    for tag in _TAG_IMG.findall(original or ""):
+        nome = _imagem(_ATRIBUTO.findall(tag))
+        if nome and f'data-imagem="{nome}"' not in conteudo:
+            faltando.append(tag)
+    return "".join(faltando)
+
+
 def aplicar_regioes(html: str, regioes, imagens=None) -> str:
     """A folha com as regiões da versão editada no lugar das do modelo. As
     marcas ficam (o editor completo as usa para achar a região de novo)."""
     for nome, conteudo in (regioes or {}).items():
         if nome not in REGIOES:
             continue
-        novo = f"<!--ed:{nome}-->{_com_imagens(conteudo, imagens)}<!--/ed:{nome}-->"
+        achado = _padrao(nome).search(html)
+        perdidas = _imagens_perdidas(achado.group(1), conteudo) if achado else ""
+        novo = f"<!--ed:{nome}-->{perdidas}{_com_imagens(conteudo, imagens)}<!--/ed:{nome}-->"
         html = _padrao(nome).sub(lambda _achado, novo=novo: novo, html, count=1)
     return html
 

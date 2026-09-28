@@ -15,14 +15,14 @@
 <body class="documento documento--{{ modo|default:'pdf' }} doc-cb doc-cb-oficio">
 <div class="folha">
   <header class="doc-cabecalho" id="doc-cabecalho">
-    <img class="doc-cabecalho__brasao" src="{{ imagens.brasao }}" alt="Brasão da Polícia Civil do Paraná">
+    <img class="doc-cabecalho__brasao" data-imagem="brasao" src="{{ imagens.brasao }}" alt="Brasão da Polícia Civil do Paraná">
     {% bloco "cb_secretaria" classe="doc-cabecalho__secretaria" base=False %}
     {% bloco "cb_orgao" classe="doc-cabecalho__orgao" base=False %}
     {% bloco "cb_unidade" classe="doc-cabecalho__unidade" base=False %}
   </header>
 
   <footer class="doc-rodape" id="doc-rodape">
-    <img class="doc-rodape__marca" src="{{ imagens.marca }}" alt="">
+    <img class="doc-rodape__marca" data-imagem="marca" src="{{ imagens.marca }}" alt="">
     {% bloco "cb_rodape_endereco" classe="doc-cb__endereco" base=False %}
     {% bloco "cb_rodape_contato" classe="doc-cb__endereco" base=False %}
   </footer>

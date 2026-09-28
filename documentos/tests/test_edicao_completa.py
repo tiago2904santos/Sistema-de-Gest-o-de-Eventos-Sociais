@@ -66,6 +66,21 @@ class SanitizacaoTests(SimpleTestCase):
         self.assertEqual(edicao.impressao_digital(folha), edicao.impressao_digital(folha.replace('<p>', '<p class="z">')))
         self.assertNotEqual(edicao.impressao_digital(folha), edicao.impressao_digital(nova))
 
+    def test_brasao_com_hash_do_estatico_de_producao_nao_some(self):
+        # Em produção o estático leva o hash no nome; o editor manda o src assim.
+        limpo = edicao.sanitizar('<img class="doc-cabecalho__brasao" src="/static/img/brasao-pcpr.3f9a1c2b7d4e.png"><p>SESP</p>')
+        self.assertEqual(limpo, '<img data-imagem="brasao" class="doc-cabecalho__brasao"><p>SESP</p>')
+        self.assertIn('data-imagem="marca"', edicao.sanitizar('<img src="/static/img/marca-pcpr.abc123def.png">'))
+
+    def test_versao_gravada_sem_o_brasao_volta_com_o_do_modelo(self):
+        folha = ('<header><!--ed:cabecalho--><img class="doc-cabecalho__brasao" src="/static/img/brasao-pcpr.3f9a1c2b.png">'
+                 '<p>X</p><!--/ed:cabecalho--></header>')
+        nova = edicao.aplicar_regioes(folha, {'cabecalho': '<p>Y</p>'})
+        self.assertIn('<!--ed:cabecalho--><img class="doc-cabecalho__brasao" src="/static/img/brasao-pcpr.3f9a1c2b.png"><p>Y</p>', nova)
+        # Quem manteve o brasão não ganha outro.
+        mantida = edicao.aplicar_regioes(folha, {'cabecalho': '<img data-imagem="brasao"><p>Y</p>'}, {'brasao': '/b.png'})
+        self.assertEqual(mantida.count('<img'), 1)
+
     def test_docx_da_versao_editada(self):
         from docx import Document
 

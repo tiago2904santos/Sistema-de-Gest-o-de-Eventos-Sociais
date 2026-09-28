@@ -33,7 +33,7 @@
 <body class="documento documento--{{ modo|default:'pdf' }}{% block classe %}{% endblock %}">
 <div class="folha">
   <header class="doc-cabecalho" id="doc-cabecalho"><!--ed:cabecalho-->
-    <img class="doc-cabecalho__brasao" src="{{ imagens.brasao }}" alt="Brasão da Polícia Civil do Paraná">
+    <img class="doc-cabecalho__brasao" data-imagem="brasao" src="{{ imagens.brasao }}" alt="Brasão da Polícia Civil do Paraná">
     {# No editor, cada linha leva a sua origem: o texto do modelo (bloco), o órgão e a unidade da configuração. #}
     {% bloco "secretaria" classe="doc-cabecalho__secretaria" padrao="SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA" %}
     <p class="doc-cabecalho__orgao"><span {% editavel "config_orgao" %}>{{ institucional.nome_orgao|default:"POLÍCIA CIVIL DO PARANÁ" }}</span></p>
@@ -43,7 +43,7 @@
 
   <footer class="doc-rodape" id="doc-rodape"><!--ed:rodape-->
     {% block rodape_topo %}{% endblock %}
-    <img class="doc-rodape__marca" src="{{ imagens.marca }}" alt="">
+    <img class="doc-rodape__marca" data-imagem="marca" src="{{ imagens.marca }}" alt="">
     {% block rodape %}
     {% block rodape_destinatario %}
       <p class="doc-rodape__linha">Exmo. Sr</p>
