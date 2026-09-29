@@ -20,8 +20,9 @@ valem para todos. Detalhes específicos do Claude estão em `CLAUDE.md`.
 
 - Commitar `.env`, dumps, `media/`, `.lab/`, `node_modules/`, `reports/`.
 - Rodar comandos destrutivos em banco que não seja do laboratório.
-- Rodar `git` na cópia de trabalho Windows a partir da VM do Cowork sem `core.autocrlf=true`
-  e sem necessidade (deixa `index.lock` órfão — ver `docs/agent/memory/corrections.md`).
+- Rodar `git` na cópia de trabalho Windows a partir da VM do Cowork sem necessidade; quando inevitável, só com
+  `-c core.autocrlf=true -c gc.auto=0 -c maintenance.auto=false` e conferindo travas órfãs no fim
+  (`.git/*.lock`, `.git/gc.pid` — ver `docs/agent/memory/corrections.md`).
 - Instalar dependência sem registrar em `requirements*.txt`/`package.json` e em `docs/agent/tooling-inventory.md`.
 - Atualizar baseline visual/a11y/responsivo para "fazer o teste passar" sem revisar a diferença.
 - Alterar regra de negócio (cálculo de diárias, numeração, documentos oficiais) sem teste de caracterização antes.

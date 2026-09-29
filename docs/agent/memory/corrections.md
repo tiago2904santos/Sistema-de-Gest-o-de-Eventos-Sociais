@@ -10,3 +10,6 @@
 - **2026-09-29 · `playwright.clock.setFixedTime` quebra `performance.getEntriesByType("navigation")`.** Métricas de desempenho
   usam `asRole(role, { clock: false })`.
 - **2026-09-29 · `JSON.stringify(obj, arrayDeChaves)` filtra também chaves aninhadas** — gerou baseline vazio. Use `sort` antes.
+- **2026-09-29 · `git fetch` na cópia Windows disparou `gc --auto`** e deixou `.git/gc.log.lock` e `.git/gc.pid` órfãos (removidos).
+  **Regra**: na pasta montada, sempre `git -c core.autocrlf=true -c gc.auto=0 -c maintenance.auto=false …` e conferir `ls .git/*.lock .git/gc.pid` no fim.
+- **2026-09-29 · Entrega sem push**: a branch vai por `git bundle` → `git fetch <bundle> agent/x:agent/x` na cópia do usuário (só cria a ref; não toca índice nem arquivos).
