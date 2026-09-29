@@ -28,7 +28,7 @@ Leia também [`AGENTS.md`](AGENTS.md) (regras comuns a qualquer agente).
 ## Regras que não se negociam
 
 - **Nunca** leia, copie ou commite `.env`, tokens ou credenciais. O laboratório não precisa deles.
-- O laboratório usa banco próprio (`.lab/lab.sqlite3` ou `<db>_lab`); `agent_reset` recusa bancos sem `dev/lab/test/ci/local` no nome.
+- O laboratório usa banco próprio (`.lab/lab.sqlite3` ou `<db>_lab`); `agent_reset`/`agent_seed` só rodam em ambiente **LAB** (marca gravada dentro do banco) ou em banco novo do lab — ver `agent_lab/environment.py` (`manage.py agent_env`).
 - Integrações externas ficam desligadas no lab (eProtocolo = mock, sem geocodificação, sem e-mail real).
 - Suíte verde **não é** tela conferida: toda mudança de UI passa pelo ciclo de `docs/agent/design-review-loop.md` (captura antes/depois, axe, responsivo).
 - Catracas (`tests/a11y/baseline.json`, `tests/responsive/baseline.json`, snapshots visuais) só podem **melhorar**. Atualize baseline apenas depois de revisar a diferença.

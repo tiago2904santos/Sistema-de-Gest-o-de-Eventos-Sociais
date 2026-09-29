@@ -113,6 +113,9 @@ MIDDLEWARE = [
     # Lembretes e resumo do dia no primeiro acesso de cada dia (sem cron).
     "core.rotinas.RotinasDiariasMiddleware",
 ]
+if AGENT_LAB:
+    # Observabilidade local (requisições, SQL, erros). Repasse sem custo se AGENT_LAB_OBS != 1.
+    MIDDLEWARE.insert(0, "agent_lab.observability.ObservabilidadeMiddleware")
 
 ROOT_URLCONF = "config.urls"
 

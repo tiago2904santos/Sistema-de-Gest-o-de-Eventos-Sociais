@@ -127,17 +127,29 @@ PAPEIS = [
 
 
 class Semeador:
-    def __init__(self, cenario: str, stdout=None):
+    def __init__(self, cenario: str, stdout=None, *, custom: dict | None = None):
+        self.out = stdout
+        self.rng = random.Random(SEMENTE)
+        self.relatorio: dict[str, int | str] = {}
+        self.modulos = None
+        if custom is not None:
+            # Cenário sob medida (tests/scenarios/<nome>.json) — ver criar_cenario().
+            self.cenario = custom["name"]
+            self.n = int(custom.get("volume", 10))
+            self.longo = bool(custom.get("long_text"))
+            self.faltando = bool(custom.get("missing_data"))
+            self.invalido = bool(custom.get("invalid_data"))
+            self.todos_status = bool(custom.get("all_statuses"))
+            self.modulos = set(custom.get("modules") or []) or None
+            return
         if cenario not in CENARIOS:
             raise ValueError(f"Cenário desconhecido: {cenario}. Opções: {', '.join(CENARIOS)}")
         self.cenario = cenario
         self.n = CENARIOS[cenario]
-        self.rng = random.Random(SEMENTE)
-        self.out = stdout
-        self.relatorio: dict[str, int | str] = {}
         self.longo = cenario in {"edge_case", "long_text"}
         self.faltando = cenario in {"edge_case", "missing_data"}
         self.invalido = cenario in {"edge_case", "invalid_data"}
+        self.todos_status = cenario == "edge_case"
 
     # -- utilidades -------------------------------------------------------
     def log(self, msg):
@@ -246,7 +258,7 @@ class Semeador:
             # defende isso no banco (descoberta registrada em docs/agent/memory).
             objs.append(
                 SolicitacaoEvento(
-                    status=status[i % len(status)] if (self.cenario == "edge_case" or i % 5) else "RASCUNHO",
+                    status=status[i % len(status)] if (self.todos_status or i % 5) else "RASCUNHO",
                     data_solicitacao=inicio - timedelta(days=15),
                     data_inicio_evento=inicio,
                     data_fim_evento=fim,
@@ -347,7 +359,7 @@ class Semeador:
                     quantidade_servidores=1 + i % 4,
                     observacoes=self.texto(i, "Roteiro"),
                     status="FINALIZADO" if i % 3 else "RASCUNHO",
-                    cancelado=(self.cenario == "edge_case" and i % 5 == 4),
+                    cancelado=(self.todos_status and i % 5 == 4),
                 )
                 destino = self.escolher(municipios, i + 1)
                 RoteiroDestino.objects.create(roteiro=roteiro, municipio=destino, ordem=1)
@@ -383,7 +395,7 @@ class Semeador:
                     viatura=None if self.faltando else self.escolher(viaturas, i),
                     motorista=self.escolher(servidores, i + 2),
                     assinante=self.escolher(servidores, i + 1),
-                    cancelado=(self.cenario == "edge_case" and i % 7 == 6),
+                    cancelado=(self.todos_status and i % 7 == 6),
                 )
                 equipe = [servidores[(i + k) % len(servidores)] for k in range(1 + i % 3)] if servidores else []
                 oficio.servidores.add(*equipe)
@@ -502,7 +514,7 @@ class Semeador:
                         data_solicitacao=self.dia(-(i % 40)),
                         data_inicio_evento=self.dia(i % 40),
                         municipio=self.escolher(municipios, i),
-                        cancelada=(self.cenario == "edge_case" and i % 6 == 5),
+                        cancelada=(self.todos_status and i % 6 == 5),
                         criado_por=autor,
                     )
                     for i in range(min(self.n, 2000))
@@ -561,3 +573,73 @@ def estado_atual():
         "lab_users": User.objects.filter(username__startswith="lab.").count(),
         "anchor": ANCORA.isoformat(),
     }
+
+
+PASTA_CENARIOS = "tests/scenarios"
+ETAPAS = ("eventos_sociais", "viagens_cadastros", "viagens_documentos", "ascom", "coffee_break")
+
+
+def criar_cenario(
+    nome,
+    *,
+    volume=10,
+    long_text=False,
+    missing_data=False,
+    invalid_data=False,
+    all_statuses=False,
+    modules=None,
+    descricao="",
+):
+    """Grava um cenário sob medida em tests/scenarios/<nome>.json (versionável e reprodutível)."""
+    import json
+    import re
+    from pathlib import Path
+
+    from django.conf import settings
+
+    if not re.fullmatch(r"[a-z0-9_\-]{2,40}", nome):
+        raise ValueError("nome deve ter 2–40 caracteres [a-z0-9_-]")
+    if nome in CENARIOS:
+        raise ValueError(f"'{nome}' é um cenário embutido")
+    desconhecidos = set(modules or []) - set(ETAPAS)
+    if desconhecidos:
+        raise ValueError(f"módulos desconhecidos: {sorted(desconhecidos)}; opções: {ETAPAS}")
+    dados = {
+        "name": nome,
+        "description": descricao,
+        "volume": int(volume),
+        "long_text": long_text,
+        "missing_data": missing_data,
+        "invalid_data": invalid_data,
+        "all_statuses": all_statuses,
+        "modules": list(modules or []),
+    }
+    pasta = Path(settings.BASE_DIR) / PASTA_CENARIOS
+    pasta.mkdir(parents=True, exist_ok=True)
+    (pasta / f"{nome}.json").write_text(json.dumps(dados, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return dados
+
+
+def carregar_cenario(nome):
+    import json
+    from pathlib import Path
+
+    from django.conf import settings
+
+    arq = Path(settings.BASE_DIR) / PASTA_CENARIOS / f"{nome}.json"
+    if not arq.exists():
+        return None
+    return json.loads(arq.read_text(encoding="utf-8"))
+
+
+def listar_cenarios():
+    from pathlib import Path
+
+    from django.conf import settings
+
+    embutidos = [{"name": k, "volume": v, "builtin": True} for k, v in CENARIOS.items()]
+    pasta = Path(settings.BASE_DIR) / PASTA_CENARIOS
+    proprios = (
+        [carregar_cenario(p.stem) | {"builtin": False} for p in sorted(pasta.glob("*.json"))] if pasta.exists() else []
+    )
+    return embutidos + proprios

@@ -1,0 +1,302 @@
+{
+  "/agenda/eventos/": {
+    "content_type": "application/json",
+    "module_code": null,
+    "name": "agenda:eventos",
+    "schema": {
+      "properties": {
+        "erro": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "status": 400,
+    "view": "agenda.views.eventos"
+  },
+  "/ascom/palestras/solicitantes/": {
+    "content_type": "application/json",
+    "module_code": "ASCOM_DEMANDAS_EVENTOS",
+    "name": "demandas_eventos:solicitantes",
+    "schema": {
+      "properties": {
+        "resultados": {
+          "items": {},
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "status": 200,
+    "view": "demandas_eventos.views.solicitantes_anteriores"
+  },
+  "/buscar-endereco/": {
+    "content_type": "application/json",
+    "module_code": null,
+    "name": "core:buscar_endereco",
+    "schema": {
+      "properties": {
+        "avisos": {
+          "items": {},
+          "type": "array"
+        },
+        "resultados": {
+          "items": {},
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "status": 200,
+    "view": "core.buscar_endereco.buscar_endereco"
+  },
+  "/cadastros/municipios/buscar/": {
+    "content_type": "application/json",
+    "module_code": null,
+    "name": "cadastros:municipios_buscar",
+    "schema": {
+      "properties": {
+        "resultados": {
+          "items": {
+            "properties": {
+              "estado": {
+                "type": "string"
+              },
+              "rotulo": {
+                "type": "string"
+              },
+              "valor": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "status": 200,
+    "view": "cadastros.busca_municipios.buscar_municipios"
+  },
+  "/coffee-break/solicitacoes/locais-de-entrega/": {
+    "content_type": "application/json",
+    "module_code": "ASCOM_COFFEE_BREAK",
+    "name": "coffee_break:locais_entrega",
+    "schema": {
+      "properties": {
+        "resultados": {
+          "items": {},
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "status": 200,
+    "view": "coffee_break.views.locais_entrega"
+  },
+  "/conflitos/": {
+    "content_type": "application/json",
+    "module_code": null,
+    "name": "core:conflitos",
+    "schema": {
+      "properties": {
+        "conflitos": {
+          "items": {},
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "status": 200,
+    "view": "core.views.conflitos_de_agenda"
+  },
+  "/solicitacoes/solicitantes/": {
+    "content_type": "application/json",
+    "module_code": null,
+    "name": "solicitacoes:solicitantes",
+    "schema": {
+      "properties": {
+        "resultados": {
+          "items": {},
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "status": 200,
+    "view": "solicitacoes.views.solicitantes_anteriores"
+  },
+  "/solicitacoes/sugestao-do-tipo/": {
+    "content_type": "application/json",
+    "module_code": null,
+    "name": "solicitacoes:sugestao_tipo",
+    "schema": {
+      "properties": {
+        "equipes": {
+          "items": {},
+          "type": "array"
+        },
+        "origem": {
+          "items": {},
+          "type": "array"
+        },
+        "servicos": {
+          "items": {},
+          "type": "array"
+        },
+        "solicitante": {
+          "type": "null"
+        },
+        "tipo": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "status": 200,
+    "view": "solicitacoes.views.sugestao_do_tipo"
+  },
+  "/viagens/ordens/api/oficios/": {
+    "content_type": "application/json",
+    "module_code": "VIAGENS",
+    "name": "viagens_ordens:api_buscar_oficios",
+    "schema": {
+      "properties": {
+        "resultados": {
+          "items": {
+            "properties": {
+              "cidade_id": {
+                "type": "integer"
+              },
+              "cidade_ids": {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              "data_fim": {
+                "type": "string"
+              },
+              "data_inicio": {
+                "type": "string"
+              },
+              "destino": {
+                "type": "string"
+              },
+              "estado_id": {
+                "type": "integer"
+              },
+              "id": {
+                "type": "integer"
+              },
+              "label": {
+                "type": "string"
+              },
+              "motivo": {
+                "type": "string"
+              },
+              "numero": {
+                "type": "string"
+              },
+              "numero_busca": {
+                "type": "string"
+              },
+              "periodo": {
+                "type": "string"
+              },
+              "protocolo": {
+                "type": "string"
+              },
+              "protocolo_busca": {
+                "type": "string"
+              },
+              "roteiro": {
+                "type": "string"
+              },
+              "search_text": {
+                "type": "string"
+              },
+              "sede": {
+                "type": "string"
+              },
+              "servidor_ids": {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              "servidores": {
+                "type": "integer"
+              },
+              "servidores_label": {
+                "type": "string"
+              },
+              "servidores_nomes": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "viatura": {
+                "type": "string"
+              },
+              "viatura_id": {
+                "type": "integer"
+              },
+              "viatura_modelo": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "status": 200,
+    "view": "viagens_ordens.views.api_buscar_oficios"
+  },
+  "/viagens/termos/api/oficios/": {
+    "content_type": "application/json",
+    "module_code": "VIAGENS",
+    "name": "viagens_termos:api_buscar_oficios",
+    "schema": {
+      "properties": {
+        "limite": {
+          "type": "integer"
+        },
+        "results": {
+          "items": {
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "main": {
+                "type": "string"
+              },
+              "meta": {
+                "type": "string"
+              },
+              "search": {
+                "type": "string"
+              },
+              "texto": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "truncado": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "status": 200,
+    "view": "viagens_oficios.busca_oficios.buscar_oficios"
+  }
+}

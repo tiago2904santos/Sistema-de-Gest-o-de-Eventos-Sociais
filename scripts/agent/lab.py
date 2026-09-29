@@ -91,6 +91,7 @@ def lab_env(freeze: bool = True) -> dict:
             "WHATSAPP_VERIFY_TOKEN": "",
             "LEGADO_DB_NAME": "",
             "MEDIA_ROOT": str(LAB_DIR / "media"),
+        "AGENT_LAB_OBS": os.environ.get("AGENT_LAB_OBS", "1"),
             "PYTHONIOENCODING": "utf-8",
             "PYTHONUTF8": "1",
         }

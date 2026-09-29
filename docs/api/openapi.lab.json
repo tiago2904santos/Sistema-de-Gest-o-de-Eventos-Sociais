@@ -1,0 +1,435 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Endpoints JSON internos (inferidos no laboratório)",
+    "version": "lab"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8031"
+    }
+  ],
+  "paths": {
+    "/agenda/eventos/": {
+      "get": {
+        "operationId": "agenda_eventos",
+        "tags": [
+          "agenda"
+        ],
+        "x-view": "agenda.views.eventos",
+        "x-module-code": null,
+        "responses": {
+          "400": {
+            "description": "Resposta observada no laboratório",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "erro": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ascom/palestras/solicitantes/": {
+      "get": {
+        "operationId": "demandas_eventos_solicitantes",
+        "tags": [
+          "demandas_eventos"
+        ],
+        "x-view": "demandas_eventos.views.solicitantes_anteriores",
+        "x-module-code": "ASCOM_DEMANDAS_EVENTOS",
+        "responses": {
+          "200": {
+            "description": "Resposta observada no laboratório",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "resultados": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buscar-endereco/": {
+      "get": {
+        "operationId": "core_buscar_endereco",
+        "tags": [
+          "core"
+        ],
+        "x-view": "core.buscar_endereco.buscar_endereco",
+        "x-module-code": null,
+        "responses": {
+          "200": {
+            "description": "Resposta observada no laboratório",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "avisos": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "resultados": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cadastros/municipios/buscar/": {
+      "get": {
+        "operationId": "cadastros_municipios_buscar",
+        "tags": [
+          "cadastros"
+        ],
+        "x-view": "cadastros.busca_municipios.buscar_municipios",
+        "x-module-code": null,
+        "responses": {
+          "200": {
+            "description": "Resposta observada no laboratório",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "resultados": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "estado": {
+                            "type": "string"
+                          },
+                          "rotulo": {
+                            "type": "string"
+                          },
+                          "valor": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coffee-break/solicitacoes/locais-de-entrega/": {
+      "get": {
+        "operationId": "coffee_break_locais_entrega",
+        "tags": [
+          "coffee_break"
+        ],
+        "x-view": "coffee_break.views.locais_entrega",
+        "x-module-code": "ASCOM_COFFEE_BREAK",
+        "responses": {
+          "200": {
+            "description": "Resposta observada no laboratório",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "resultados": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conflitos/": {
+      "get": {
+        "operationId": "core_conflitos",
+        "tags": [
+          "core"
+        ],
+        "x-view": "core.views.conflitos_de_agenda",
+        "x-module-code": null,
+        "responses": {
+          "200": {
+            "description": "Resposta observada no laboratório",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conflitos": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/solicitacoes/solicitantes/": {
+      "get": {
+        "operationId": "solicitacoes_solicitantes",
+        "tags": [
+          "solicitacoes"
+        ],
+        "x-view": "solicitacoes.views.solicitantes_anteriores",
+        "x-module-code": null,
+        "responses": {
+          "200": {
+            "description": "Resposta observada no laboratório",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "resultados": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/solicitacoes/sugestao-do-tipo/": {
+      "get": {
+        "operationId": "solicitacoes_sugestao_tipo",
+        "tags": [
+          "solicitacoes"
+        ],
+        "x-view": "solicitacoes.views.sugestao_do_tipo",
+        "x-module-code": null,
+        "responses": {
+          "200": {
+            "description": "Resposta observada no laboratório",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "equipes": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "origem": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "servicos": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "solicitante": {
+                      "type": "null"
+                    },
+                    "tipo": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/viagens/ordens/api/oficios/": {
+      "get": {
+        "operationId": "viagens_ordens_api_buscar_oficios",
+        "tags": [
+          "viagens_ordens"
+        ],
+        "x-view": "viagens_ordens.views.api_buscar_oficios",
+        "x-module-code": "VIAGENS",
+        "responses": {
+          "200": {
+            "description": "Resposta observada no laboratório",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "resultados": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "cidade_id": {
+                            "type": "integer"
+                          },
+                          "cidade_ids": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer"
+                            }
+                          },
+                          "data_fim": {
+                            "type": "string"
+                          },
+                          "data_inicio": {
+                            "type": "string"
+                          },
+                          "destino": {
+                            "type": "string"
+                          },
+                          "estado_id": {
+                            "type": "integer"
+                          },
+                          "id": {
+                            "type": "integer"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "motivo": {
+                            "type": "string"
+                          },
+                          "numero": {
+                            "type": "string"
+                          },
+                          "numero_busca": {
+                            "type": "string"
+                          },
+                          "periodo": {
+                            "type": "string"
+                          },
+                          "protocolo": {
+                            "type": "string"
+                          },
+                          "protocolo_busca": {
+                            "type": "string"
+                          },
+                          "roteiro": {
+                            "type": "string"
+                          },
+                          "search_text": {
+                            "type": "string"
+                          },
+                          "sede": {
+                            "type": "string"
+                          },
+                          "servidor_ids": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer"
+                            }
+                          },
+                          "servidores": {
+                            "type": "integer"
+                          },
+                          "servidores_label": {
+                            "type": "string"
+                          },
+                          "servidores_nomes": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "viatura": {
+                            "type": "string"
+                          },
+                          "viatura_id": {
+                            "type": "integer"
+                          },
+                          "viatura_modelo": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/viagens/termos/api/oficios/": {
+      "get": {
+        "operationId": "viagens_termos_api_buscar_oficios",
+        "tags": [
+          "viagens_termos"
+        ],
+        "x-view": "viagens_oficios.busca_oficios.buscar_oficios",
+        "x-module-code": "VIAGENS",
+        "responses": {
+          "200": {
+            "description": "Resposta observada no laboratório",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "limite": {
+                      "type": "integer"
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "main": {
+                            "type": "string"
+                          },
+                          "meta": {
+                            "type": "string"
+                          },
+                          "search": {
+                            "type": "string"
+                          },
+                          "texto": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "truncado": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-note": "Gerado por agent_lab/api_intel.py — descreve o que o front consome; não é uma API pública."
+}
